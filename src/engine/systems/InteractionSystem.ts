@@ -34,6 +34,15 @@ function isSamePlayerId(a: unknown, b: unknown): boolean {
 export interface PromptOption<T = unknown> {
     id: string;
     label: string;
+    /**
+     * 可选的 i18n key。
+     * UI 层若检测到此字段，会优先用 key + params 渲染 label。
+     */
+    labelKey?: string;
+    /**
+     * labelKey 对应的插值参数。
+     */
+    labelParams?: Record<string, string | number>;
     value: T;
     disabled?: boolean;
     /**

@@ -187,6 +187,17 @@
   - `双方各可选择 1 张 duel card 或跳过`
   - `Deputy`：弃置手牌中的 `Deputy`，再选择一个随从获得直到回合结束 `+2` 力量
   - `destroy_loser / high_noon / run_em_off / vp_to_winner / draw2_to_winner` 等结局分支复用同一 duel 状态机
+- Cowboys 决斗链此前还存在一处 UI 文案层的 i18n 断裂：
+  - `Board.tsx` 顶部决斗横幅与卡名已经跟随 locale 渲染
+  - 但 `src/games/smashup/domain/duel.ts` 的阶段标题、跳过按钮、Pinkerton 数量按钮仍是硬编码中文
+  - 同时 `Board.tsx` 里用于手牌/基地/随从直点交互的快捷按钮没有复用 `PromptOverlay` 的 i18n 解析
+  - 结果就是英文 locale 下会出现“英文横幅 + 中文交互标题/按钮”的混搭
+- 本轮修复后：
+  - `PromptOption` 新增 `labelKey / labelParams`
+  - `PromptOverlay.tsx` 支持把整句 `ui.xxx` 直接解析成翻译文本
+  - `Board.tsx` 的 hand/base/minion 快捷按钮也统一走同一套 label 解析
+  - `duel.ts` 的 `Pinkerton / duel card / Deputy / Run 'Em Off` 相关提示全部改成 locale key
+  - 复跑 Cowboys 浏览器 E2E 后，决斗横幅、阶段提示与跳过按钮已经统一成同一语言，不再混搭
 - 本轮 E2E 还额外暴露并修复了一个真实的 duel 收尾 bug：
   - `smashup_duel_deputy_target` 之前会在弃掉 `Deputy` 后继续用旧状态推进阶段，导致同一玩家再次收到已失效的 `Deputy` 提示
   - 现已改为先模拟 `CARDS_DISCARDED + addTempPower` 再推进下一阶段，浏览器与单测都已验证修复

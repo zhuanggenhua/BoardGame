@@ -123,16 +123,16 @@ function getStageTitle(stage: DuelStage): string {
     switch (stage) {
         case 'pinkerton_challenger':
         case 'pinkerton_challenged':
-            return 'Pinkerton：选择这场决斗前要放置多少个 +1 力量指示物';
+            return 'ui.duel_prompt_pinkerton_title';
         case 'card_challenger':
         case 'card_challenged':
-            return '决斗：从手牌选择 1 张决斗牌，或跳过';
+            return 'ui.duel_prompt_card_title';
         case 'deputy_challenger':
         case 'deputy_challenged':
-            return 'Deputy：你可以弃掉一张 Deputy，使一个随从直到回合结束获得 +2 力量';
+            return 'ui.duel_prompt_deputy_title';
         case 'resolve':
         default:
-            return '决斗结算';
+            return 'ui.duel_prompt_resolve_title';
     }
 }
 
@@ -152,6 +152,8 @@ function queuePinkertonPrompt(
     const options = Array.from({ length: pinkertons + 1 }, (_, index) => ({
         id: `pinkerton-${index}`,
         label: index === 0 ? '不放置指示物' : `放置 ${index} 个指示物`,
+        labelKey: index === 0 ? 'ui.duel_option_no_counters' : 'ui.duel_option_add_counters',
+        labelParams: index === 0 ? undefined : { count: index },
         value: { amount: index },
         displayMode: 'button' as const,
     }));
@@ -192,7 +194,13 @@ function queueDuelCardPrompt(
         `smashup_duel_card_${duel.id}_${stage}_${now}`,
         playerId,
         getStageTitle(stage),
-        [...buildDuelHandOptions(state, playerId), createSkipOption('跳过（不放决斗牌）')] as any[],
+        [
+            ...buildDuelHandOptions(state, playerId),
+            {
+                ...createSkipOption('跳过（不放决斗牌）'),
+                labelKey: 'ui.duel_option_skip_duel_card',
+            },
+        ] as any[],
         { sourceId: 'smashup_duel_card', targetType: 'hand', autoRefresh: 'hand' },
     );
     (interaction.data as any).continuationContext = {
@@ -241,7 +249,13 @@ function queueDeputyPrompt(
         `smashup_duel_deputy_${duel.id}_${stage}_${now}`,
         playerId,
         getStageTitle(stage),
-        [...deputyOptions, createSkipOption('跳过（不弃 Deputy）')] as any[],
+        [
+            ...deputyOptions,
+            {
+                ...createSkipOption('跳过（不弃 Deputy）'),
+                labelKey: 'ui.duel_option_skip_deputy',
+            },
+        ] as any[],
         { sourceId: 'smashup_duel_deputy_card', targetType: 'hand', autoRefresh: 'hand' },
     );
     (interaction.data as any).continuationContext = {
@@ -271,7 +285,7 @@ function queueDeputyTargetPrompt(
     const interaction = createSimpleChoice(
         `smashup_duel_deputy_target_${duel.id}_${now}`,
         playerId,
-        'Deputy：选择一个随从获得 +2 力量直到回合结束',
+        'ui.duel_prompt_deputy_target_title',
         buildMinionTargetOptions(minionOptions, { state: state.core, sourcePlayerId: playerId }) as any[],
         { sourceId: 'smashup_duel_deputy_target', targetType: 'minion' },
     );
@@ -307,7 +321,7 @@ function queueOngoingTargetPrompt(
         const interaction = createSimpleChoice(
             `smashup_duel_action_target_base_${duel.id}_${now}`,
             playerId,
-            '决斗牌：选择此持续行动的目标基地',
+            'ui.duel_prompt_ongoing_base_title',
             buildBaseTargetOptions(baseOptions, state.core),
             { sourceId: 'smashup_duel_action_target_base', targetType: 'base' },
         );
@@ -338,7 +352,7 @@ function queueOngoingTargetPrompt(
     const interaction = createSimpleChoice(
         `smashup_duel_action_target_minion_${duel.id}_${now}`,
         playerId,
-        '决斗牌：选择此持续行动的目标随从',
+        'ui.duel_prompt_ongoing_minion_title',
         buildMinionTargetOptions(minionOptions, { state: state.core, sourcePlayerId: playerId }) as any[],
         { sourceId: 'smashup_duel_action_target_minion', targetType: 'minion' },
     );
@@ -579,7 +593,7 @@ function buildRunEmOffTieMovePrompts(
         const interaction = createSimpleChoice(
             `smashup_duel_run_em_off_move_${duel.id}_${mover}_${now}`,
             mover,
-            '赶走他们：选择对方随从要移动到的基地',
+            'ui.duel_prompt_run_em_off_tie_title',
             buildBaseTargetOptions(destinationOptions, nextState.core),
             { sourceId: 'smashup_duel_run_em_off_move', targetType: 'base' },
         );
@@ -758,7 +772,7 @@ function resolveDuelResult(
             const interaction = createSimpleChoice(
                 `smashup_duel_run_em_off_move_${duel.id}_${winner.controller}_${now}`,
                 winner.controller,
-                '赶走他们：选择失败者要移动到的基地',
+                'ui.duel_prompt_run_em_off_title',
                 buildBaseTargetOptions(destinationOptions, state.core),
                 { sourceId: 'smashup_duel_run_em_off_move', targetType: 'base' },
             );

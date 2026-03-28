@@ -67,8 +67,8 @@ npm run test:e2e:ci:file -- smashup-phase-transition-simple.e2e.ts "Oops Samurai
 观察结论：
 
 - 决斗横幅在全流程持续可见，文案明确提示处理顺序为 `Pinkerton / 决斗牌 / Deputy / 再结算胜负`。
-- `Pinkerton` 阶段会弹出数量按钮，浏览器里可直接点击 `放置 1 个指示物`。
-- `决斗牌` 阶段显示专用提示与 `跳过（不放决斗牌）` 按钮。
+- `Pinkerton` 阶段会弹出数量按钮，浏览器里可直接点击对应的放置指示物按钮。
+- `决斗牌` 阶段显示专用提示与对应的跳过按钮，文案会随当前 locale 统一切换。
 - `Deputy` 阶段先展示弃牌选择，再进入场上随从目标点击阶段。
 - `Deputy` 目标选中后，`Deputy` 进入弃牌堆，失败随从离场，决斗横幅消失。
 
@@ -99,6 +99,7 @@ npm run test:e2e:ci:file -- smashup-phase-transition-simple.e2e.ts "Oops Samurai
   - `Ancient Egyptians` 直接注入 `ancient_egyptians_seal_the_tomb_uncover`
   - `Samurai` 直接注入 `samurai_yokai_attack`
 - 因此这两条证明的是“埋葬翻开 UI / 目标点击 UI / 额度兑现 UI 已可工作”，不是“从手牌正常打出整张牌直到最终结算的 full-chain E2E”。
+- 本轮额外修正了 Cowboys 决斗链的 i18n 不一致：决斗横幅、阶段提示和跳过按钮现在会一起跟随 locale，不再出现“英文横幅 + 中文交互按钮”的混搭。
 
 ## 同批门禁
 

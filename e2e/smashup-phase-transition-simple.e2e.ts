@@ -526,6 +526,9 @@ test('Oops Ancient Egyptians 埋葬条带与翻开交互应在浏览器中可完
 
 test('Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Deputy/结算', async ({ page, game }, testInfo) => {
     test.setTimeout(60000);
+    const duelBannerText = /决斗进行中|Duel in progress/i;
+    const duelCardPromptText = /决斗：从手牌选择 1 张决斗牌|Duel: choose 1 duel card from hand/i;
+    const deputyPromptText = /Deputy：你可以弃掉一张 Deputy|Deputy: you may discard a Deputy/i;
 
     await game.openTestGame('smashup');
     await game.setupScene({
@@ -579,14 +582,14 @@ test('Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Depu
     await clickSelectableMinion(page, 'enemy-1');
 
     await expect.poll(async () => (await getCurrentInteraction(page))?.data?.sourceId ?? null).toBe('smashup_duel_pinkerton');
-    await expect(page.getByText(/决斗进行中/i)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(duelBannerText)).toBeVisible({ timeout: 8000 });
     await saveEvidenceScreenshot(page, testInfo, 'oops-duel-pinkerton-prompt');
-    await page.getByRole('button', { name: '放置 1 个指示物' }).click();
+    await page.getByRole('button', { name: /放置 1 个指示物|Place 1 counter/i }).click();
 
     await expect.poll(async () => (await getCurrentInteraction(page))?.data?.sourceId ?? null).toBe('smashup_duel_card');
-    await expect(page.getByText(/决斗：从手牌选择 1 张决斗牌/i)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(duelCardPromptText)).toBeVisible({ timeout: 8000 });
     await saveEvidenceScreenshot(page, testInfo, 'oops-duel-card-prompt');
-    await page.getByRole('button', { name: '跳过（不放决斗牌）' }).click();
+    await page.getByRole('button', { name: /跳过（不放决斗牌）|Skip \(play no duel card\)/i }).click();
 
     await expect.poll(async () => {
         const interaction = await getCurrentInteraction(page);
@@ -600,7 +603,7 @@ test('Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Depu
         const interaction = await getCurrentInteraction(page);
         return interaction ? { sourceId: interaction.data?.sourceId ?? null, playerId: interaction.playerId ?? null } : null;
     }, { timeout: 8000 }).toEqual({ sourceId: 'smashup_duel_deputy_card', playerId: '0' });
-    await expect(page.getByText(/Deputy：你可以弃掉一张 Deputy/i)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(deputyPromptText)).toBeVisible({ timeout: 8000 });
     await saveEvidenceScreenshot(page, testInfo, 'oops-duel-deputy-card-prompt');
     await page.locator('[data-card-uid="deputy-1"]').click({ force: true });
 
@@ -620,7 +623,7 @@ test('Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Depu
         deputyDiscarded: true,
         activeDuel: null,
     });
-    await expect(page.getByText(/决斗进行中/i)).toHaveCount(0);
+    await expect(page.getByText(duelBannerText)).toHaveCount(0);
 
     await saveEvidenceScreenshot(page, testInfo, 'oops-duel-after-resolve');
 });

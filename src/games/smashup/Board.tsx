@@ -170,9 +170,20 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
     const topFloatingBannerClassName = isMobileViewport
         ? 'absolute inset-x-0 z-30 flex justify-center pointer-events-none'
         : 'fixed inset-x-0 z-30 flex justify-center pointer-events-none';
+    const duelBannerTopOffset = isMobileViewport ? 10 : 14;
+    const stackedTopBannerGap = isMobileViewport ? 40 : 48;
     const turnNoticeClassName = isMobileViewport
         ? 'absolute inset-0 flex items-center justify-center pointer-events-none'
         : 'fixed inset-0 flex items-center justify-center pointer-events-none';
+    const resolvePromptOptionLabel = useCallback((opt: { label: string; labelKey?: string; labelParams?: Record<string, string | number> }) => {
+        if (typeof opt.labelKey === 'string') {
+            return t(opt.labelKey, {
+                ...(opt.labelParams ?? {}),
+                defaultValue: resolveI18nKeys(opt.label, t),
+            });
+        }
+        return resolveI18nKeys(opt.label, t);
+    }, [t]);
     
     // 更新选择的派系到 Context（游戏开始后）
     useEffect(() => {
@@ -325,8 +336,11 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
             if (!val) return false;
             // 非手牌选项：没有 cardUid 字段的选项（如 skip/done/confirm）
             return !val.cardUid && !val.titanUid;
-        });
-    }, [isHandDiscardPrompt, currentPrompt]);
+        }).map(opt => ({
+            ...opt,
+            label: resolvePromptOptionLabel(opt as any),
+        }));
+    }, [isHandDiscardPrompt, currentPrompt, resolvePromptOptionLabel]);
 
     // 基地选择交互检测：当前 interaction 的选项包含有效 baseIndex 时，用基地区直接点击选择
     const isBaseSelectPrompt = useMemo(() => {
@@ -362,8 +376,11 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
             if (typeof val.baseIndex === 'number' && val.baseIndex >= 0) return false;
             // 其余都是非基地操作选项（skip / done / cancel 等）
             return true;
-        });
-    }, [isBaseSelectPrompt, currentPrompt]);
+        }).map(opt => ({
+            ...opt,
+            label: resolvePromptOptionLabel(opt as any),
+        }));
+    }, [isBaseSelectPrompt, currentPrompt, resolvePromptOptionLabel]);
 
     // 随从选择交互检测：targetType === 'minion' 或有随从选项（跳过选项不影响判断）
     const isMinionSelectPrompt = useMemo(() => {
@@ -395,8 +412,11 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
             if (typeof val.minionUid === 'string') return false;
             // 其余都是非随从操作选项（skip / done / cancel 等）
             return true;
-        });
-    }, [isMinionSelectPrompt, currentPrompt]);
+        }).map(opt => ({
+            ...opt,
+            label: resolvePromptOptionLabel(opt as any),
+        }));
+    }, [isMinionSelectPrompt, currentPrompt, resolvePromptOptionLabel]);
 
     // 多选随从模式检测
     const isMultiMinionSelect = useMemo(() => {
@@ -2057,7 +2077,7 @@ const SmashUpBoardInner: React.FC<Props> = ({ G, dispatch, playerID: rawPlayerID
                         animate={{ y: 0, opacity: 1 }}
                         className={topFloatingBannerClassName}
                         style={{
-                            top: `${layout.hudTopOffset + (myPlayer && needDiscard ? (isMobileViewport ? 44 : 52) : 0)}px`,
+                            top: `${duelBannerTopOffset + (myPlayer && needDiscard ? stackedTopBannerGap : 0)}px`,
                         }}
                     >
                         <div className="bg-amber-950/92 text-amber-50 px-5 py-2 rounded border-2 border-amber-400 shadow-lg max-w-[min(92vw,680px)]">

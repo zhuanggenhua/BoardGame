@@ -89,6 +89,11 @@ function extractContextPreview(prompt: any): CardPreviewRef | undefined {
 
 /** 解析文本中嵌入的 i18n key（如 cards.xxx.name / cards.xxx.abilityText） */
 export function resolveI18nKeys(text: string, t: (key: string, opts?: any) => string): string {
+    const directResolved = t(text, { defaultValue: '' });
+    if (directResolved && directResolved !== text) {
+        return directResolved;
+    }
+
     return text.replace(/cards\.[\w-]+\.\w+|ui\.reaction_timing\.[\w-]+/gi, key => {
         if (/^cards\./i.test(key)) {
             const match = /^cards\.([\w-]+)\.(\w+)$/i.exec(key);
@@ -249,7 +254,12 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         if (!prompt?.options) return [];
         return prompt.options.map(opt => ({
             ...opt,
-            label: resolveI18nKeys(opt.label, t),
+            label: typeof (opt as { labelKey?: unknown }).labelKey === 'string'
+                ? t((opt as { labelKey: string }).labelKey, {
+                    ...((opt as { labelParams?: Record<string, string | number> }).labelParams ?? {}),
+                    defaultValue: resolveI18nKeys(opt.label, t),
+                })
+                : resolveI18nKeys(opt.label, t),
         }));
     }, [prompt?.options, t]);
 
