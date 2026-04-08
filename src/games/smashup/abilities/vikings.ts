@@ -40,7 +40,7 @@ import { reduce } from '../domain/reduce';
 type PlayerChoice = { targetPlayerId: PlayerId };
 type HandChoice = { cardUid: string; defId: string };
 type MinionChoice = { minionUid: string; baseIndex: number };
-type CastRunesChoice = { topCardUid: string };
+type CastRunesChoice = { topCardUid: string; cardUid?: string; defId?: string };
 type RaidingPartyChoice = { cardUid: string; ownerId: PlayerId; defId: string; type: 'action' | 'minion' } | { skip: true };
 
 function getCurrentDeckTopSnapshotCards<T extends { uid: string; defId: string }>(
@@ -59,7 +59,7 @@ function buildCastTheRunesOrderOptions(
     return getCurrentDeckTopSnapshotCards(state, targetPlayerId, revealedCards).map((card, index) => ({
         id: `card-${index}`,
         label: getCardDef(card.defId)?.name ?? card.defId,
-        value: { topCardUid: card.uid },
+        value: { topCardUid: card.uid, cardUid: card.uid, defId: card.defId },
         _source: 'static' as const,
         displayMode: 'card' as const,
     }));

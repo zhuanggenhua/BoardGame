@@ -43,11 +43,22 @@ const readCliFlag = (flagName: string): string | undefined => {
   return undefined
 }
 
+const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa'])
+
+const isNonReleaseAndroidAppId = (appId: string) => (
+  appId
+    .split('.')
+    .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()))
+)
+
 const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string) => ({
   name: 'android-build-meta',
   apply: 'build' as const,
   generateBundle() {
     if (mode !== 'android') return
+
+    const appId = process.env.VITE_CAPACITOR_APP_ID?.trim() || process.env.CAPACITOR_APP_ID?.trim() || ''
+    const appName = process.env.CAPACITOR_APP_NAME?.trim() || ''
 
     this.emitFile({
       type: 'asset',
@@ -57,6 +68,9 @@ const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string) => ({
           mode,
           backendUrl,
           builtAt: new Date().toISOString(),
+          appId,
+          appName,
+          shellType: appId && !isNonReleaseAndroidAppId(appId) ? 'release' : 'non-release',
         },
         null,
         2,

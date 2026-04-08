@@ -8,6 +8,9 @@ const command = rawArgs[0] || '';
 const args = rawArgs.slice(1);
 const packageJsonPath = path.join(rootDir, 'package.json');
 const packageLockPath = path.join(rootDir, 'package-lock.json');
+const releaseAndroidAppId = 'top.easyboardgame.app';
+const releaseAndroidAppName = '易桌游';
+const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa']);
 
 const helpText = `
 Android 统一发布入口
@@ -177,6 +180,44 @@ const ensureSupportedCommand = () => {
     }
 };
 
+const isNonReleaseAndroidAppId = (appId) => appId
+    .split('.')
+    .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()));
+
+const assertReleaseShellConfig = () => {
+    const appId = process.env.CAPACITOR_APP_ID?.trim() || '';
+    const viteAppId = process.env.VITE_CAPACITOR_APP_ID?.trim() || '';
+    const appName = process.env.CAPACITOR_APP_NAME?.trim() || '';
+
+    if (!appId) {
+        throw new Error('release 流程缺少 CAPACITOR_APP_ID。');
+    }
+    if (!viteAppId) {
+        throw new Error('release 流程缺少 VITE_CAPACITOR_APP_ID。');
+    }
+    if (appId !== viteAppId) {
+        throw new Error(`release 壳配置不一致：CAPACITOR_APP_ID=${appId}，VITE_CAPACITOR_APP_ID=${viteAppId}`);
+    }
+    if (appId !== releaseAndroidAppId) {
+        throw new Error(`release 壳 appId 非正式包：期望 ${releaseAndroidAppId}，实际 ${appId}`);
+    }
+    if (isNonReleaseAndroidAppId(appId)) {
+        throw new Error(`release 流程检测到测试壳 appId=${appId}，已阻止发布。`);
+    }
+    if (appName !== releaseAndroidAppName) {
+        throw new Error(`release 壳 appName 非正式包：期望 ${releaseAndroidAppName}，实际 ${appName || '(空)'}`);
+    }
+};
+
+const applyReleaseShellDefaults = () => {
+    process.env.CAPACITOR_APP_ID = process.env.CAPACITOR_APP_ID?.trim() || releaseAndroidAppId;
+    process.env.VITE_CAPACITOR_APP_ID = process.env.VITE_CAPACITOR_APP_ID?.trim() || process.env.CAPACITOR_APP_ID;
+    process.env.CAPACITOR_APP_NAME = process.env.CAPACITOR_APP_NAME?.trim() || releaseAndroidAppName;
+
+    assertReleaseShellConfig();
+    logStep(`release 壳配置: appId=${process.env.CAPACITOR_APP_ID}, appName=${process.env.CAPACITOR_APP_NAME}`);
+};
+
 const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
     new Set([
         'channel',
@@ -305,6 +346,7 @@ const runFullRelease = async () => {
 
 const run = async () => {
     ensureSupportedCommand();
+    applyReleaseShellDefaults();
 
     switch (command) {
         case 'ota':

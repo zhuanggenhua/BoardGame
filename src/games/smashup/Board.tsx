@@ -1560,7 +1560,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const isSpecialAction = card.type === 'fusion'
             ? cardDef?.actionSubtype === 'special'
             : cardDef?.subtype === 'special';
-        if (!isSpecialAction && myPlayer && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
+        const isResponseWindowAction = !!responseWindow
+            && !!cardDef
+            && isActionLikeRespondableInWindow(cardDef, responseWindow.windowType);
+        if (!isSpecialAction && !isResponseWindowAction && myPlayer && myPlayer.actionsPlayed >= myPlayer.actionLimit) {
             playDeniedSound();
             toast(t('ui.action_limit_reached', { defaultValue: '本回合战术额度已用完' }));
             setSelectedCardUid(null);
@@ -1572,7 +1575,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         setSelectedCardUid(null);
         setSelectedCardMode(null);
         return true;
-    }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed, myPlayer, t, validateImmediateActionPlay]);
+    }, [dispatch, isTutorialCommandAllowed, isTutorialTargetAllowed, myPlayer, responseWindow, t, validateImmediateActionPlay]);
 
     const enterActionTargetSelection = useCallback((card: CardInstance, cardMode: 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion') => {
         if (cardMode !== 'action') {

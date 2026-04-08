@@ -64,6 +64,12 @@ const apkPath = path.resolve(
     readArgValue('apk', path.join('android', 'app', 'build', 'outputs', 'apk', 'release', 'easyboardgame-release.apk')),
 );
 const releasePrefix = `official/native-app-updates/android/${channel}`;
+const releaseAndroidAppId = 'top.easyboardgame.app';
+const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa']);
+
+const isNonReleaseAndroidAppId = (appId) => appId
+    .split('.')
+    .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()));
 const versionManifestKey = `${releasePrefix}/manifests/${encodeURIComponent(version)}.json`;
 const latestManifestKey = `${releasePrefix}/latest.json`;
 const apkKey = `${releasePrefix}/packages/${encodeURIComponent(version)}.apk`;
@@ -72,6 +78,17 @@ const apkUrl = `${assetsBaseUrl}/native-app-updates/android/${channel}/packages/
 
 if (!existsSync(apkPath)) {
     throw new Error(`未找到 APK：${path.relative(rootDir, apkPath)}。请先执行 npm run mobile:android:build:release，或用 --apk 指定。`);
+}
+
+const releaseAppId = process.env.CAPACITOR_APP_ID?.trim() || process.env.VITE_CAPACITOR_APP_ID?.trim() || '';
+if (!releaseAppId) {
+    throw new Error('native 发布缺少 CAPACITOR_APP_ID / VITE_CAPACITOR_APP_ID，已阻止上传。');
+}
+if (releaseAppId !== releaseAndroidAppId) {
+    throw new Error(`native 发布 appId 非正式包：期望 ${releaseAndroidAppId}，实际 ${releaseAppId}`);
+}
+if (isNonReleaseAndroidAppId(releaseAppId)) {
+    throw new Error(`native 发布检测到测试壳 appId=${releaseAppId}，已阻止上传。`);
 }
 
 if (!dryRun) {

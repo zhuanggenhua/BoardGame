@@ -168,6 +168,12 @@ const latestManifestKey = `${manifestPrefix}/latest.json`;
 const assetsBaseUrl = (process.env.VITE_ASSETS_BASE_URL?.trim() || 'https://assets.easyboardgame.top/official').replace(/\/+$/, '');
 const bundleUrl = `${assetsBaseUrl}/app-updates/android/${channel}/bundles/${encodeURIComponent(bundleVersion)}.zip`;
 const validChannelPattern = /^[a-z0-9][a-z0-9._-]*$/i;
+const releaseAndroidAppId = 'top.easyboardgame.app';
+const debugAndroidAppIdSegments = new Set(['debug', 'dev', 'test', 'qa']);
+
+const isNonReleaseAndroidAppId = (appId) => appId
+    .split('.')
+    .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()));
 
 if (!validChannelPattern.test(channel)) {
     throw new Error(`非法 channel: ${channel}。仅允许字母、数字、点、下划线、短横线。`);
@@ -186,6 +192,15 @@ if (androidBuildMeta.mode !== 'android') {
 }
 if (typeof androidBuildMeta.backendUrl !== 'string' || !/^https?:\/\//i.test(androidBuildMeta.backendUrl.trim())) {
     throw new Error('dist/android-build-meta.json 缺少合法 backendUrl。请先执行 `npm run mobile:android:sync`。');
+}
+if (typeof androidBuildMeta.appId !== 'string' || !androidBuildMeta.appId.trim()) {
+    throw new Error('dist/android-build-meta.json 缺少 appId。已阻止 OTA 发布，请先使用最新 Android 发布链路重新构建。');
+}
+if (androidBuildMeta.appId.trim() !== releaseAndroidAppId) {
+    throw new Error(`dist/android-build-meta.json 的 appId 非正式包：期望 ${releaseAndroidAppId}，实际 ${String(androidBuildMeta.appId || '')}`);
+}
+if (isNonReleaseAndroidAppId(androidBuildMeta.appId.trim())) {
+    throw new Error(`dist/android-build-meta.json 检测到测试壳 appId=${androidBuildMeta.appId.trim()}，已阻止 OTA 发布。`);
 }
 
 if (!dryRun) {

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen, cleanup } from '@testing-library/react';
+import { render, screen, cleanup, act } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
@@ -200,6 +200,44 @@ describe('SmashUp UI 交互验证', () => {
             type: 'renderer',
             rendererId: 'smashup-card-renderer',
             payload: { defId: 'zombie_lord_pod' },
+        });
+    });
+
+    it('PromptOverlay 的排序卡牌选项只要带 defId，就应显示对应卡面而不是占位块', async () => {
+        const interaction = createSimpleChoice(
+            'deck-order-preview-check',
+            '0',
+            '选择放回牌库顶的顺序',
+            [
+                {
+                    id: 'card-0',
+                    label: '召唤',
+                    value: { topCardUid: 'top-b', cardUid: 'top-b', defId: 'wizard_summon' },
+                    displayMode: 'card' as const,
+                },
+            ],
+            { sourceId: 'vikings_cast_the_runes_order', targetType: 'generic' },
+        );
+
+        await act(async () => {
+            render(
+                React.createElement(
+                    ToastProvider,
+                    null,
+                    React.createElement(PromptOverlay, {
+                        interaction,
+                        dispatch: () => undefined,
+                        playerID: '0',
+                    }),
+                ),
+            );
+        });
+
+        const preview = screen.getByTestId('mock-card-preview');
+        expect(JSON.parse(preview.getAttribute('data-preview-ref') ?? 'null')).toEqual({
+            type: 'renderer',
+            rendererId: 'smashup-card-renderer',
+            payload: { defId: 'wizard_summon' },
         });
     });
 

@@ -346,6 +346,7 @@ export function scoreOneBase(
             baseIndex,
             triggerMinionUid: m.uid,
             triggerMinionDefId: m.defId,
+            triggerMinionPower: getEffectivePower(core, m, baseIndex),
             triggerMinion: m,
             random: rng,
             now,
