@@ -35,6 +35,7 @@ import { SU_COMMANDS } from '../domain/types';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
+import { defaultTestRandom, runCommand } from './testRunner';
 
 // ============================================================================
 // 测试辅助
@@ -106,6 +107,46 @@ describe('suppressed source triggers', () => {
         });
 
         expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+    });
+});
+
+describe('ancient_egyptians Lost Knowledge normal play regression', () => {
+    it('allows Lost Knowledge to be played during playCards and opens the same choice prompt', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        { uid: 'lost', defId: 'ancient_egyptians_lost_knowledge', type: 'action', owner: '0' },
+                        { uid: 'bury-target', defId: 'robot_warbot', type: 'minion', owner: '0' },
+                    ],
+                    factions: ['ancient_egyptians', 'robots'] as any,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({ defId: 'base_pyramids' }), makeBase({ defId: 'base_star_portal' })],
+        });
+
+        const matchState = {
+            core,
+            sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } as any,
+        };
+        const validation = validate(matchState as any, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'lost' },
+        } as any);
+        expect(validation.valid).toBe(true);
+
+        const played = runCommand(matchState as any, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'lost' },
+        } as any, defaultTestRandom);
+
+        expect(played.success).toBe(true);
+        expect(played.events.some(event => event.type === SU_EVENTS.ACTION_PLAYED)).toBe(true);
+        const prompt = played.finalState.sys.interaction.current as any;
+        expect(prompt?.data?.sourceId).toBe('ancient_egyptians_lost_knowledge_bury');
     });
 });
 

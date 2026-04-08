@@ -34,6 +34,7 @@ const DEFAULT_RANDOM: any = {
 export function registerAncientEgyptiansAbilities(): void {
     registerAbility('ancient_egyptians_pyramid_engineer', 'onPlay', ancientEgyptiansPyramidEngineerOnPlay);
     registerAbility('ancient_egyptians_pyramid_engineer', 'talent', ancientEgyptiansPyramidEngineerTalent);
+    registerAbility('ancient_egyptians_lost_knowledge', 'onPlay', ancientEgyptiansLostKnowledge);
     registerAbility('ancient_egyptians_lost_knowledge', 'special', ancientEgyptiansLostKnowledge);
     registerAbility('ancient_egyptians_you_can_take_it_with_you', 'onPlay', ancientEgyptiansBurySelfOnPlay);
     registerAbility('ancient_egyptians_you_can_take_it_with_you', 'onUncover', ancientEgyptiansYouCanTakeItWithYouOnUncover);
