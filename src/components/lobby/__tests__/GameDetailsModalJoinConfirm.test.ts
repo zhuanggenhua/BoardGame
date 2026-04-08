@@ -608,8 +608,8 @@ describe('AI seat controller helpers', () => {
 
     it('AI controller 默认使用统一最小时长，并支持自定义覆盖', () => {
         expect(resolveAiMinimumActionDelayMs({ type: 'human' })).toBe(0);
-        expect(resolveAiMinimumActionDelayMs({ type: 'local-ai' })).toBe(200);
-        expect(resolveAiMinimumActionDelayMs({ type: 'remote-ai', providerId: 'astrbot' })).toBe(200);
+        expect(resolveAiMinimumActionDelayMs({ type: 'local-ai' })).toBe(400);
+        expect(resolveAiMinimumActionDelayMs({ type: 'remote-ai', providerId: 'astrbot' })).toBe(400);
         expect(resolveAiMinimumActionDelayMs({ type: 'local-ai', minimumActionDelayMs: 950 })).toBe(950);
     });
 
