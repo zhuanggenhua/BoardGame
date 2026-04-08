@@ -650,6 +650,8 @@ function resolveDuelResult(
     const loser = winner?.uid === challengerFound.minion.uid ? challengedFound.minion : winner?.uid === challengedFound.minion.uid ? challengerFound.minion : undefined;
     const events: SmashUpEvent[] = [];
     let nextState = withActiveDuel(state, undefined);
+    const destroySourceId = duel.destroyReason ?? duel.sourceId;
+    const destroySourceKind = getCardDef(destroySourceId)?.type === 'action' ? 'action' : 'nonAction';
 
     if (duel.outcome === 'destroy_loser') {
         if (isTie) {
@@ -658,16 +660,18 @@ function resolveDuelResult(
                 minionDefId: challengerFound.minion.defId,
                 fromBaseIndex: baseIndex,
                 destroyerId: duel.sourcePlayerId,
-                reason: duel.destroyReason ?? duel.sourceId,
+                reason: destroySourceId,
                 now,
+                sourceKind: destroySourceKind,
             }));
             events.push(...buildValidatedDestroyEvents(state, {
                 minionUid: challengedFound.minion.uid,
                 minionDefId: challengedFound.minion.defId,
                 fromBaseIndex: baseIndex,
                 destroyerId: duel.sourcePlayerId,
-                reason: duel.destroyReason ?? duel.sourceId,
+                reason: destroySourceId,
                 now,
+                sourceKind: destroySourceKind,
             }));
         } else if (loser) {
             events.push(...buildValidatedDestroyEvents(state, {
@@ -675,8 +679,9 @@ function resolveDuelResult(
                 minionDefId: loser.defId,
                 fromBaseIndex: baseIndex,
                 destroyerId: duel.sourcePlayerId,
-                reason: duel.destroyReason ?? duel.sourceId,
+                reason: destroySourceId,
                 now,
+                sourceKind: destroySourceKind,
             }));
         }
     } else if (duel.outcome === 'vp_to_winner') {

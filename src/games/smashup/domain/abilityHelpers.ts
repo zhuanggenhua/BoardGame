@@ -120,11 +120,12 @@ export function destroyMinion(
     ownerId: PlayerId,
     destroyerId: PlayerId | undefined,
     reason: string,
-    now: number
+    now: number,
+    sourceKind?: 'action' | 'nonAction',
 ): MinionDestroyedEvent {
     return {
         type: SU_EVENTS.MINION_DESTROYED,
-        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId, reason },
+        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId, reason, sourceKind } as MinionDestroyedEvent['payload'],
         timestamp: now,
     };
 }
@@ -370,6 +371,7 @@ export function buildValidatedDestroyEvents(
         destroyerId?: PlayerId;
         reason: string;
         now: number;
+        sourceKind?: 'action' | 'nonAction';
     },
 ): MinionDestroyedEvent[] {
     const minion = findMinionOnBase(state, params.fromBaseIndex, params.minionUid);
@@ -384,6 +386,7 @@ export function buildValidatedDestroyEvents(
             params.destroyerId,
             params.reason,
             params.now,
+            params.sourceKind,
         ),
     ];
 }

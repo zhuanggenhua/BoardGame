@@ -15,8 +15,9 @@ import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry, isMinionProtected } from '../domain/ongoingEffects';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { startDuel } from '../domain/duel';
 import { runCommand } from './testRunner';
-import { makeMinion, makePlayer, makeState, makeMatchState, makeCard } from './helpers';
+import { findInteractionOption, makeMinion, makePlayer, makeState, makeMatchState, makeCard, resolveInteractionChain } from './helpers';
 import type { BaseInPlay, OngoingActionOnBase } from '../domain/types';
 import { SU_EVENTS, SU_COMMANDS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
@@ -218,5 +219,48 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
         const finalBase = respondResult.finalState.core.bases[0];
         const targetMinion = finalBase.minions.find(m => m.uid === 'target_m');
         expect(targetMinion).toBeUndefined(); // 随从已被消灭
+    });
+
+    it('wildlife_preserve 不应阻止枪手决斗消灭失败的敌方随从', () => {
+        const base = makeBase('test_base', {
+            minions: [
+                makeMinion('gun-1', 'cowboys_gunfighter', '0', 3, { powerModifier: 4 }),
+                makeMinion('enemy-1', 'alien_collector', '1', 2, { powerModifier: 1 }),
+            ],
+            ongoingActions: [makeOngoing('wp1', 'dino_wildlife_preserve', '1')],
+        });
+        const started = startDuel(makeMatchState(makeState({
+            bases: [base],
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.COWBOYS, SMASHUP_FACTION_IDS.WIZARDS],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.DINOSAURS, SMASHUP_FACTION_IDS.ALIENS],
+                }),
+            },
+        })), {
+            sourceId: 'cowboys_gunfighter',
+            sourcePlayerId: '0',
+            challengerMinionUid: 'gun-1',
+            challengedMinionUid: 'enemy-1',
+            outcome: 'destroy_loser',
+            destroyReason: 'cowboys_gunfighter',
+        }, 1000);
+
+        const resolved = resolveInteractionChain(started, (prompt) => {
+            const skip = findInteractionOption(prompt, option => option?.value?.skip === true);
+            if (!skip) {
+                throw new Error(`未找到可跳过的决斗选项: ${prompt?.data?.sourceId ?? 'unknown'}`);
+            }
+            return { optionId: skip.id };
+        });
+
+        const destroyEvents = resolved.events.filter(
+            event => event.type === SU_EVENTS.MINION_DESTROYED && (event as any).payload?.minionUid === 'enemy-1',
+        );
+        expect(destroyEvents).toHaveLength(1);
+        expect(resolved.finalState.core.bases[0].minions.some(m => m.uid === 'enemy-1')).toBe(false);
+        expect(resolved.finalState.core.bases[0].minions.some(m => m.uid === 'gun-1')).toBe(true);
     });
 });
