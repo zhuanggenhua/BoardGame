@@ -2522,6 +2522,50 @@ describe('Samurai abilities', () => {
         expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
     });
 
+    it('samurai_way_of_the_warrior_pod 在目标因基地结算进入弃牌堆时也会抽一张牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('warrior-pod-1', 'samurai_way_of_the_warrior_pod', 'action', '0')],
+                    deck: [makeCard('draw-pod-1', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-pod-1', 'samurai_ronin_pod', '0', 3)],
+                ongoingActions: [],
+            }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'warrior-pod-1', targetBaseIndex: 0, targetMinionUid: 'ally-pod-1' },
+            },
+            defaultTestRandom,
+        );
+
+        const target = play.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-pod-1');
+        expect(target?.tempPowerModifier).toBe(3);
+
+        const result = fireTriggers(play.finalState.core, 'onMinionDiscardedFromBase', {
+            state: play.finalState.core,
+            matchState: play.finalState,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinion: target,
+            triggerMinionUid: 'ally-pod-1',
+            triggerMinionDefId: 'samurai_ronin_pod',
+            random: defaultTestRandom,
+            now: 1104,
+        });
+
+        expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+    });
+
     it('samurai_way_of_the_warrior 在焦油坑把目标改放牌库底时不会抽牌', () => {
         const core = makeState({
             players: {

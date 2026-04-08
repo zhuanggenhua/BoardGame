@@ -44,6 +44,7 @@ export function registerSamuraiAbilities(): void {
     registerAbility('samurai_code_of_bushido', 'onPlay', samuraiCodeOfBushidoOnPlay);
     registerAbility('samurai_honor_the_ancestors', 'onPlay', samuraiHonorTheAncestorsOnPlay);
     registerAbility('samurai_way_of_the_warrior', 'onPlay', samuraiWayOfTheWarriorOnPlay);
+    registerAbility('samurai_way_of_the_warrior_pod', 'onPlay', samuraiWayOfTheWarriorOnPlay);
     registerAbility('samurai_heart_of_the_battle', 'special', samuraiHeartOfTheBattleSpecial);
 
     registerTrigger('samurai_samurai_chan', 'onMinionDestroyed', samuraiChanTrigger, { perInstance: true });
@@ -56,6 +57,8 @@ export function registerSamuraiAbilities(): void {
     registerTrigger('samurai_final_haiku', 'onMinionDiscardedFromBase', samuraiFinalHaikuTrigger, { perInstance: true });
     registerTrigger('samurai_way_of_the_warrior', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, { global: true });
     registerTrigger('samurai_way_of_the_warrior', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, { global: true });
+    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, { global: true });
+    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, { global: true });
     registerTrigger('samurai_honor_the_fallen', 'onMinionDestroyed', samuraiHonorTheFallenTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
