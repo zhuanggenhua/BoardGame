@@ -110,6 +110,43 @@ describe('基地记分与力量计算', () => {
             ]);
         });
 
+        it('scoreOneBase 会保留武士 POD 计分弃牌瞬间的有效战力并额外给 1VP', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0', { factions: [SMASHUP_FACTION_IDS.SAMURAI_POD, SMASHUP_FACTION_IDS.ALIENS] }),
+                    '1': makePlayer('1'),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [{
+                    defId: 'base_tar_pits',
+                    minions: [
+                        { uid: 'bushi-pod-1', defId: 'samurai_bushi_pod', controller: '0', owner: '0', basePower: 4, powerCounters: 1, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'ally-13', defId: 'ally_big', controller: '0', owner: '0', basePower: 13, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [],
+                }],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const result = scoreOneBase(state, 0, [], '0', 1000);
+            const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
+            const bonusVpEvent = result.events.find((event) =>
+                event.type === SU_EVENTS.VP_AWARDED
+                && (event as any).payload?.reason === 'samurai_bushi'
+            ) as any;
+
+            expect(scoredEvent).toBeDefined();
+            expect(bonusVpEvent).toBeDefined();
+            expect(bonusVpEvent.payload.playerId).toBe('0');
+            expect(bonusVpEvent.payload.amount).toBe(1);
+
+            const finalState = result.events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), state);
+            expect(finalState.players['0'].vp).toBe(scoredEvent.payload.rankings[0].vp + 1);
+        });
+
         it('reduce BASE_SCORED 正确分配 VP', () => {
             const { reduce } = SmashUpDomain;
             const state: SmashUpCore = {

@@ -72,6 +72,7 @@ import { fireTriggers, collectTriggers, hasPlayerTurnRestriction, isMinionProtec
 import { maybeResolveReactionQueue } from './reactionQueue';
 import { canPlayFromDiscard } from './discardPlayability';
 import { reduce } from './reduce';
+import { getEffectivePower } from './ongoingModifiers';
 
 // ============================================================================
 // execute：命令 → 事件
@@ -925,6 +926,7 @@ export function processDestroyTriggers(
             baseIndex: fromBaseIndex,
             triggerMinionUid: minionUid,
             triggerMinionDefId: minionDefId,
+            triggerMinionPower: minion ? getEffectivePower(core, minion, fromBaseIndex) : undefined,
             triggerMinion: minion,
             destroyerId,
             reason: de.payload.reason,
@@ -995,6 +997,7 @@ export function processDestroyTriggers(
                 baseIndex: fromBaseIndex,
                 triggerMinionUid: minionUid,
                 triggerMinionDefId: minionDefId,
+                triggerMinionPower: minion ? getEffectivePower(core, minion, fromBaseIndex) : undefined,
                 triggerMinion: minion,
                 destroyerId,
                 reason: de.payload.reason,
