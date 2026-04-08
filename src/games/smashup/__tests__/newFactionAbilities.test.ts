@@ -407,6 +407,13 @@ describe('Vikings abilities', () => {
             defaultTestRandom,
         );
 
+        const initialOrderPrompt = getInteractionsFromMS(afterPlayer.finalState)[0] as any;
+        expect(initialOrderPrompt?.data?.sourceId).toBe('vikings_cast_the_runes_order');
+        expect(initialOrderPrompt.data.options.map((entry: any) => entry.value)).toEqual(expect.arrayContaining([
+            expect.objectContaining({ topCardUid: 'top-a', cardUid: 'top-a', defId: 'robot_microbot_beta' }),
+            expect.objectContaining({ topCardUid: 'top-b', cardUid: 'top-b', defId: 'wizard_summon' }),
+        ]));
+
         const refreshedState = refreshInteractionOptions({
             ...afterPlayer.finalState,
             core: {
@@ -1321,6 +1328,10 @@ describe('Cowboys abilities', () => {
 
         const orderPrompt = getInteractionsFromMS(afterChoice.finalState)[0] as any;
         expect(orderPrompt?.data?.sourceId).toBe('cowboys_gold_in_them_thar_hills_order');
+        expect(orderPrompt.data.options.map((entry: any) => entry.value)).toEqual(expect.arrayContaining([
+            expect.objectContaining({ topCardUid: 'top-a', cardUid: 'top-a', defId: 'robot_microbot_alpha' }),
+            expect.objectContaining({ topCardUid: 'top-c', cardUid: 'top-c', defId: 'robot_microbot_beta' }),
+        ]));
         const chooseTopC = orderPrompt.data.options.find((entry: any) => entry.value?.topCardUid === 'top-c');
         const afterOrder = runCommand(
             afterChoice.finalState,

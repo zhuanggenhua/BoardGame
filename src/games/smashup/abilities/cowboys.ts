@@ -61,7 +61,7 @@ type StagecoachDestinationContinuation = {
 };
 type GoldChoice = { cardUid: string; defId: string };
 type GoldModeChoice = { mode: 'hand' | 'play' };
-type GoldOrderChoice = { topCardUid: string };
+type GoldOrderChoice = { topCardUid: string; cardUid?: string; defId?: string };
 type GoldPromptContext = {
     chosenCard: CardInstance;
     remainingCards: CardInstance[];
@@ -105,7 +105,7 @@ function buildGoldOrderOptions(
         .map((card, index) => ({
             id: `gold-order-${index}`,
             label: getCardDef(card.defId)?.name ?? card.defId,
-            value: { topCardUid: card.uid },
+            value: { topCardUid: card.uid, cardUid: card.uid, defId: card.defId },
             _source: 'static' as const,
             displayMode: 'card' as const,
         }));
