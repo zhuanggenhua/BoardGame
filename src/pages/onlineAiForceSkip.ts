@@ -30,7 +30,7 @@ export type ForceSkippableHiddenAiInteraction = {
 
 export type ForceEndTurnStalledAiResolution = {
     playerId: string;
-    reason: 'hidden-interaction' | 'visible-interaction' | 'response-window' | 'active-turn';
+    reason: 'hidden-interaction' | 'visible-interaction' | 'response-window';
     resolution: AiResolution;
 };
 
@@ -61,22 +61,6 @@ function buildAiBatchId(playerId: string, attemptKey: string): string {
     return `ai-${playerId}-${normalizedAttemptKey}`;
 }
 
-function resolveCurrentPlayerId(sharedState: MatchState<unknown> | null | undefined): string | null {
-    const core = sharedState?.core as {
-        activePlayerId?: unknown;
-        currentPlayer?: unknown;
-        turnOrder?: unknown;
-        currentPlayerIndex?: unknown;
-    } | undefined;
-    if (!core) return null;
-    if (typeof core.activePlayerId === 'string') return core.activePlayerId;
-    if (typeof core.currentPlayer === 'string') return core.currentPlayer;
-    if (Array.isArray(core.turnOrder) && typeof core.currentPlayerIndex === 'number') {
-        const current = core.turnOrder[core.currentPlayerIndex];
-        return typeof current === 'string' ? current : null;
-    }
-    return null;
-}
 
 function buildForceEndTurnResolution(args: {
     playerId: string;

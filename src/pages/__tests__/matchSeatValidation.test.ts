@@ -1167,8 +1167,8 @@ describe('resolveForceEndTurnForStalledAi', () => {
         ]);
     });
 
-    it('无交互阻塞但轮到 AI 时，应直接 ADVANCE_PHASE', () => {
-        const candidate = resolveForceEndTurnForStalledAi({
+    it('仅凭轮到 AI 且共享态 8 秒未变化，不应直接强制 ADVANCE_PHASE', () => {
+        expect(resolveForceEndTurnForStalledAi({
             sharedState: {
                 core: {
                     activePlayerId: '1',
@@ -1189,12 +1189,7 @@ describe('resolveForceEndTurnForStalledAi', () => {
                 '1': { type: 'local-ai' },
             },
             seatStates: {},
-        });
-
-        expect(candidate?.reason).toBe('active-turn');
-        expect(candidate?.resolution.action.commands).toEqual([
-            { type: 'ADVANCE_PHASE', payload: {} },
-        ]);
+        })).toBeNull();
     });
 });
 
