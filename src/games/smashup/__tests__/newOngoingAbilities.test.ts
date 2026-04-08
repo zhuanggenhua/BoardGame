@@ -1636,7 +1636,7 @@ describe('samurai_pod audit regressions', () => {
         return { core, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } as any } as any;
     }
 
-    it('Ronin POD 在自己是该基地唯一己方随从时会提供可选的一个 +1 指示物交互', () => {
+    it('Ronin POD 在自己是该基地唯一己方随从时会提供可选的两个 +1 指示物交互', () => {
         const executor = resolveAbility('samurai_ronin_pod', 'onPlay');
         expect(executor).toBeDefined();
 
@@ -1656,17 +1656,18 @@ describe('samurai_pod audit regressions', () => {
             now: 101,
         });
         const prompt = prompted.matchState?.sys.interaction.current as any;
-        expect(prompt?.data?.sourceId).toBe('samurai_ronin');
+        expect(prompt?.data?.sourceId).toBe('samurai_ronin_pod');
 
         const yesOption = prompt.data.options.find((option: any) => option.value?.apply === true);
         expect(yesOption).toBeDefined();
 
-        const handler = getInteractionHandler('samurai_ronin');
+        const handler = getInteractionHandler('samurai_ronin_pod');
         expect(handler).toBeDefined();
         const resolved = handler!(prompted.matchState!, '0', yesOption.value, prompt.data, dummyRandom, 102);
         const counterEvents = resolved.events.filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED) as any[];
 
         expect(counterEvents).toHaveLength(1);
+        expect(counterEvents[0]?.payload?.amount).toBe(2);
         expect(counterEvents.every(event => event.payload.minionUid === 'ronin-pod')).toBe(true);
     });
 

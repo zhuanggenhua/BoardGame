@@ -27,7 +27,12 @@ import { getBaseDef, getCardDef } from '../data/cards';
 
 type BaseChoice = { baseIndex?: number; baseDefId?: string };
 type MinionChoice = { minionUid?: string; baseIndex?: number; defId?: string };
-type RoninContinuation = { minionUid: string; baseIndex: number };
+type RoninContinuation = {
+    minionUid: string;
+    baseIndex: number;
+    counterAmount?: number;
+    sourceId?: 'samurai_ronin' | 'samurai_ronin_pod';
+};
 type HonorAncestorsContinuation = { maxShuffle: number };
 type CombatContinuation = {
     sourceId: string;
@@ -39,6 +44,7 @@ type CombatContinuation = {
 
 export function registerSamuraiAbilities(): void {
     registerAbility('samurai_ronin', 'onPlay', samuraiRoninOnPlay);
+    registerAbility('samurai_ronin_pod', 'onPlay', samuraiRoninPodOnPlay);
     registerAbility('samurai_yokai_attack', 'onPlay', samuraiYokaiAttackOnPlay);
     registerAbility('samurai_honorable_combat', 'onPlay', samuraiHonorableCombatOnPlay);
     registerAbility('samurai_code_of_bushido', 'onPlay', samuraiCodeOfBushidoOnPlay);
@@ -81,6 +87,7 @@ export function registerSamuraiAbilities(): void {
 
 export function registerSamuraiInteractionHandlers(): void {
     registerInteractionHandler('samurai_ronin', handleSamuraiRonin);
+    registerInteractionHandler('samurai_ronin_pod', handleSamuraiRonin);
     registerInteractionHandler('samurai_yokai_attack', handleSamuraiYokaiAttack);
     registerInteractionHandler('samurai_honorable_combat_base', handleSamuraiCombatBase);
     registerInteractionHandler('samurai_honorable_combat_friendly', handleSamuraiCombatFriendly);
@@ -120,6 +127,41 @@ function samuraiRoninOnPlay(ctx: AbilityContext): AbilityResult {
     (roninInteraction.data as any).continuationContext = {
         minionUid: source.minion.uid,
         baseIndex: source.baseIndex,
+    } satisfies RoninContinuation;
+    return { events: [], matchState: queueInteraction(ctx.matchState, roninInteraction) };
+}
+
+
+function samuraiRoninPodOnPlay(ctx: AbilityContext): AbilityResult {
+    const source = findMinionOnBases(ctx.state, ctx.cardUid);
+    if (!source) return { events: [] };
+    const ownMinions = ctx.state.bases[source.baseIndex]?.minions.filter(minion => minion.controller === ctx.playerId) ?? [];
+    if (ownMinions.length !== 1) return { events: [] };
+    const roninInteraction = createSimpleChoice(
+        `samurai_ronin_pod_${ctx.now}`,
+        ctx.playerId,
+        '浪人（POD）：若这是你在此基地唯一的随从，你可以在此随从上放置两个 +1 力量指示物',
+        [
+            {
+                id: 'yes',
+                label: '放置两个指示物',
+                value: { apply: true },
+                displayMode: 'button' as const,
+            },
+            {
+                id: 'no',
+                label: '跳过',
+                value: { apply: false },
+                displayMode: 'button' as const,
+            },
+        ],
+        { sourceId: 'samurai_ronin_pod', targetType: 'button' },
+    );
+    (roninInteraction.data as any).continuationContext = {
+        minionUid: source.minion.uid,
+        baseIndex: source.baseIndex,
+        counterAmount: 2,
+        sourceId: 'samurai_ronin_pod',
     } satisfies RoninContinuation;
     return { events: [], matchState: queueInteraction(ctx.matchState, roninInteraction) };
 }
@@ -368,10 +410,12 @@ const handleSamuraiRonin: InteractionHandler = (state, _playerId, value, data, _
     if (!(value as any)?.apply) return { state, events: [] };
     const ctx = data?.continuationContext as RoninContinuation | undefined;
     if (!ctx) return { state, events: [] };
+    const counterAmount = ctx.counterAmount ?? 1;
+    const sourceId = ctx.sourceId ?? 'samurai_ronin';
     return {
         state,
         events: [
-            addPowerCounter(ctx.minionUid, ctx.baseIndex, 1, 'samurai_ronin', now),
+            addPowerCounter(ctx.minionUid, ctx.baseIndex, counterAmount, sourceId, now),
         ],
     };
 };
