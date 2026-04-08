@@ -1042,6 +1042,30 @@ describe('ancient_egyptians audit regressions', () => {
         expect(getEffectivePower(withOwnBuried, ownPriest, 0)).toBe(6);
     });
 
+    it('Priest of Anubis does not buff other minions on the base, and each Priest only gets its own +2', () => {
+        const priestA = makeMinion('priest-a', 'ancient_egyptians_priest_of_anubis', '0', 4, { powerModifier: 0 });
+        const priestB = makeMinion('priest-b', 'ancient_egyptians_priest_of_anubis', '0', 4, { powerModifier: 0 });
+        const ally = makeMinion('ally', 'ghost_apparition', '0', 3, { powerModifier: 0 });
+        const enemy = makeMinion('enemy', 'robot_warbot', '1', 5, { powerModifier: 0 });
+        const state = makeState({
+            bases: [makeBase({
+                minions: [priestA, priestB, ally, enemy],
+                buriedCards: [{
+                    uid: 'own-buried-shared',
+                    defId: 'robot_microbot_alpha',
+                    trueOwnerId: '0',
+                    controllerId: '0',
+                    buriedFrom: 'hand',
+                }],
+            })],
+        });
+
+        expect(getEffectivePower(state, priestA, 0)).toBe(6);
+        expect(getEffectivePower(state, priestB, 0)).toBe(6);
+        expect(getEffectivePower(state, ally, 0)).toBe(3);
+        expect(getEffectivePower(state, enemy, 0)).toBe(5);
+    });
+
     it('Priest of Anubis POD 也只在你有埋葬牌时获得 +2 力量', () => {
         const priest = makeMinion('priest-pod', 'ancient_egyptians_priest_of_anubis_pod', '0', 4, { powerModifier: 0 });
         const withOpponentBuried = makeState({

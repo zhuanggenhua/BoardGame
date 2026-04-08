@@ -250,13 +250,10 @@ function registerVampireModifiers(): void {
 function registerAncientEgyptiansModifiers(): void {
     // ��Ŭ��˹��˾������˻�����������Ƶ������ƣ����ڴ˻��ص��������+2����
     registerPowerModifier('ancient_egyptians_priest_of_anubis', (ctx: PowerModifierContext) => {
-        const alliedPriests = ctx.base.minions.filter(
-            m => matchesDefId(m, 'ancient_egyptians_priest_of_anubis') && m.controller === ctx.minion.controller,
-        );
-        if (alliedPriests.length === 0) return 0;
+        if (!matchesDefId(ctx.minion, 'ancient_egyptians_priest_of_anubis')) return 0;
         const hasOwnedBuried = (ctx.base.buriedCards ?? []).some(card => card.controllerId === ctx.minion.controller);
         if (!hasOwnedBuried) return 0;
-        return alliedPriests.length * 2;
+        return 2;
     }, { handlesPodInternally: true });
 
     registerOngoingPowerModifier('ancient_egyptians_ancient_curse', 'minion', 'self', -2);
