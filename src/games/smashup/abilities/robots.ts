@@ -7,6 +7,7 @@
 import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
+    grantContextualExtraMinion,
     grantExtraMinion,
     destroyMinion,
     getMinionPower,
@@ -82,7 +83,7 @@ function robotMicrobotFixer(ctx: AbilityContext): AbilityResult {
     // onPlay 在 reduce 之后执行，第一个随从打出后 minionsPlayed 已从 0 变为 1
     // 所以 minionsPlayed > 1 表示“之前已经打过随从”，此时不触发
     if (player.minionsPlayed > 1) return { events: [] };
-    return { events: [grantExtraMinion(ctx.playerId, 'robot_microbot_fixer', ctx.now)] };
+    return { events: [grantContextualExtraMinion(ctx, 'robot_microbot_fixer')] };
 }
 
 /** 微型机回收者 onPlay：如果是本回合第一个随从，额外出牌；将弃牌堆中的微型机洗回牌库 */
@@ -93,7 +94,7 @@ function robotMicrobotReclaimer(ctx: AbilityContext): AbilityResult {
     // onPlay 在 reduce 之后执行，第一个随从打出后 minionsPlayed 已从 0 变为 1
     // 所以 minionsPlayed === 1 表示“这是本回合第一个随从”
     if (player.minionsPlayed === 1) {
-        events.push(grantExtraMinion(ctx.playerId, 'robot_microbot_reclaimer', ctx.now));
+        events.push(grantContextualExtraMinion(ctx, 'robot_microbot_reclaimer'));
     }
 
     // 将弃牌堆中的微型机洗回牌库（“任意数量”：玩家选择）
@@ -220,7 +221,7 @@ function robotHoverbot(ctx: AbilityContext): AbilityResult {
 /** 高速机器人 onPlay：你可以打出一张力量≤2的额外随从（+1 额度，力量限制由验证层自动检查） */
 function robotZapbot(ctx: AbilityContext): AbilityResult {
     return {
-        events: [grantExtraMinion(ctx.playerId, 'robot_zapbot', ctx.now, undefined, { powerMax: 2 })],
+        events: [grantContextualExtraMinion(ctx, 'robot_zapbot', undefined, { powerMax: 2 })],
     };
 }
 

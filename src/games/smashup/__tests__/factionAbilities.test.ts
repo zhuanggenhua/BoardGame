@@ -18,6 +18,7 @@ import type {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
+import { resolveAbility } from '../domain/abilityRegistry';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { makeMatchState } from './helpers';
@@ -479,6 +480,7 @@ describe('机器人派系能力', () => {
         const limitEvents = events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
         expect(limitEvents.length).toBe(1);
         expect((limitEvents[0] as any).payload.powerMax).toBe(2);
+        expect((limitEvents[0] as any).payload.playTiming).toBe('banked');
     });
 
     it('robot_zapbot: 无论手牌是否有力量≤2随从都给额度', () => {
@@ -496,6 +498,38 @@ describe('机器人派系能力', () => {
         const limitEvents = events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
         // 即使手牌没有力量≤2随从，也给额度（玩家可以选择不用）
         expect(limitEvents.length).toBe(1);
+    });
+
+    it('robot_zapbot: 非 playCards 阶段获得的额外随从必须立即处理', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
+        });
+
+        const matchState = makeMatchState(state);
+        matchState.sys.phase = 'startTurn';
+
+        const executor = resolveAbility('robot_zapbot', 'onPlay');
+        expect(executor).toBeDefined();
+
+        const result = executor!({
+            state,
+            matchState,
+            playerId: '0',
+            cardUid: 'm1',
+            defId: 'robot_zapbot',
+            baseIndex: 0,
+            random: defaultRandom,
+            now: 1000,
+        });
+
+        const limitEvents = result.events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
+        expect(limitEvents.length).toBe(1);
+        expect((limitEvents[0] as any).payload.powerMax).toBe(2);
+        expect((limitEvents[0] as any).payload.playTiming).toBe('immediate');
     });
 
     it('robot_tech_center: 单个基地时创建 Prompt', () => {

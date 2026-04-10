@@ -8,7 +8,7 @@ import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addPowerCounter, removePowerCounter, destroyMinion,
-    getMinionPower, grantExtraMinion, queueMinionPlayEffect, buildMinionTargetOptions,
+    getMinionPower, grantContextualExtraMinion, grantExtraMinion, queueMinionPlayEffect, buildMinionTargetOptions,
     resolveOrPrompt, findMinionOnBases, buildAbilityFeedback, buildValidatedCardToDeckBottomEvents, buildValidatedDestroyEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
@@ -150,7 +150,7 @@ function frankensteinTheMonster(ctx: AbilityContext): AbilityResult {
     return {
         events: [
             removePowerCounter(found.minion.uid, found.baseIndex, 1, 'frankenstein_the_monster', ctx.now),
-            grantExtraMinion(ctx.playerId, 'frankenstein_the_monster', ctx.now),
+            grantContextualExtraMinion(ctx, 'frankenstein_the_monster'),
         ],
     };
 }
@@ -209,7 +209,7 @@ function frankensteinJolt(ctx: AbilityContext): AbilityResult {
 function frankensteinItsAlive(ctx: AbilityContext): AbilityResult {
     return {
         events: [
-            grantExtraMinion(ctx.playerId, 'frankenstein_its_alive', ctx.now),
+            grantExtraMinion(ctx.playerId, 'frankenstein_its_alive', ctx.now, undefined, { playTiming: 'immediate' }),
             queueMinionPlayEffect(ctx.playerId, 'addPowerCounter', 1, ctx.now),
         ],
     };

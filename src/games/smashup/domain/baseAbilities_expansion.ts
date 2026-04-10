@@ -16,6 +16,7 @@ import type {
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from './types';
 import { getEffectivePower } from './ongoingModifiers';
 import {
+    grantContextualExtraMinion,
     returnMadnessCard,
     grantExtraMinion,
     grantExtraAction,
@@ -282,12 +283,7 @@ export function registerExpansionBaseAbilities(): void {
     // 力量的 限制通过 BaseCardDef.restrictions ?extraPlayMinionPowerMax 数据驱动实现（同母星模式）
     registerBaseAbility('base_secret_garden', 'onTurnStart', (ctx) => {
         return {
-            events: [grantExtraMinion(
-                ctx.playerId,
-                '神秘花园：额外打出力量≤2的随从',
-                ctx.now,
-                ctx.baseIndex,
-            )],
+            events: [grantContextualExtraMinion(ctx, '神秘花园：额外打出力量≤2的随从', ctx.baseIndex)],
         };
     });
 

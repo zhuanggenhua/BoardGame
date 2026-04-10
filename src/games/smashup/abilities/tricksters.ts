@@ -10,7 +10,9 @@ import {
     destroyMinion,
     getMinionPower,
     buildMinionTargetOptions,
+    grantContextualExtraMinion,
     resolveOrPrompt,
+    resolveExtraPlayTiming,
     buildAbilityFeedback,
     createSkipOption,
 } from '../domain/abilityHelpers';
@@ -132,19 +134,8 @@ function tricksterDisenchant(ctx: AbilityContext): AbilityResult {
 
 /** 隐蔽迷雾 onPlay：打出当回合给予额外随从（与大法师同理，ongoing 能力在进入场上时生效） */
 function tricksterEnshroudingMistOnPlay(ctx: AbilityContext): AbilityResult {
-    // 打出当回合立即给予额外随从（限定到此基地）
     return {
-        events: [{
-            type: SU_EVENTS.LIMIT_MODIFIED,
-            payload: {
-                playerId: ctx.playerId,
-                limitType: 'minion' as const,
-                delta: 1,
-                reason: 'trickster_enshrouding_mist',
-                restrictToBase: ctx.baseIndex,
-            },
-            timestamp: ctx.now,
-        } as LimitModifiedEvent],
+        events: [grantContextualExtraMinion(ctx, 'trickster_enshrouding_mist', ctx.baseIndex)],
     };
 }
 
@@ -171,17 +162,7 @@ export function registerTricksterAbilities(): void {
 
 function tricksterEnshroudingMistPodTalent(ctx: AbilityContext): AbilityResult {
     return {
-        events: [{
-            type: SU_EVENTS.LIMIT_MODIFIED,
-            payload: {
-                playerId: ctx.playerId,
-                limitType: 'minion' as const,
-                delta: 1,
-                reason: 'trickster_enshrouding_mist_pod',
-                restrictToBase: ctx.baseIndex,
-            },
-            timestamp: ctx.now,
-        } as LimitModifiedEvent],
+        events: [grantContextualExtraMinion(ctx, 'trickster_enshrouding_mist_pod', ctx.baseIndex)],
     };
 }
 
@@ -876,6 +857,7 @@ function registerTricksterOngoingEffects(): void {
                     delta: 1,
                     reason: 'trickster_enshrouding_mist',
                     restrictToBase: bi,
+                    playTiming: 'immediate',
                 },
                 timestamp: trigCtx.now,
             }];

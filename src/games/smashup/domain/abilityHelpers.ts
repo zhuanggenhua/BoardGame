@@ -735,12 +735,13 @@ export function grantExtraMinion(
     /** 限定额度只能用于指定基地（不设则为全局额度） */
     restrictToBase?: number,
     /** 额外选项 */
-    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number },
+    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number; playTiming?: 'banked' | 'immediate' },
 ): LimitModifiedEvent {
     return {
         type: SU_EVENTS.LIMIT_MODIFIED,
         payload: {
             playerId, limitType: 'minion', delta: 1, reason,
+            ...(options?.playTiming ? { playTiming: options.playTiming } : {}),
             ...(restrictToBase !== undefined ? { restrictToBase } : {}),
             ...(options?.powerMax !== undefined ? { powerMax: options.powerMax } : {}),
             ...(options?.sameNameOnly ? { sameNameOnly: true } : {}),
@@ -755,13 +756,51 @@ export function grantExtraMinion(
 export function grantExtraAction(
     playerId: PlayerId,
     reason: string,
-    now: number
+    now: number,
+    options?: { playTiming?: 'banked' | 'immediate' },
 ): LimitModifiedEvent {
     return {
         type: SU_EVENTS.LIMIT_MODIFIED,
-        payload: { playerId, limitType: 'action', delta: 1, reason },
+        payload: {
+            playerId,
+            limitType: 'action',
+            delta: 1,
+            reason,
+            ...(options?.playTiming ? { playTiming: options.playTiming } : {}),
+        },
         timestamp: now,
     };
+}
+
+export function resolveExtraPlayTiming(matchState?: Pick<MatchState<SmashUpCore>, 'sys'>): 'banked' | 'immediate' {
+    return matchState?.sys?.phase === 'playCards' ? 'banked' : 'immediate';
+}
+
+export function grantContextualExtraMinion(
+    ctx: { playerId: PlayerId; now: number; matchState?: Pick<MatchState<SmashUpCore>, 'sys'> },
+    reason: string,
+    restrictToBase?: number,
+    options?: { sameNameOnly?: boolean; sameNameDefId?: string; powerMax?: number },
+): LimitModifiedEvent {
+    return grantExtraMinion(
+        ctx.playerId,
+        reason,
+        ctx.now,
+        restrictToBase,
+        {
+            ...options,
+            playTiming: resolveExtraPlayTiming(ctx.matchState),
+        },
+    );
+}
+
+export function grantContextualExtraAction(
+    ctx: { playerId: PlayerId; now: number; matchState?: Pick<MatchState<SmashUpCore>, 'sys'> },
+    reason: string,
+): LimitModifiedEvent {
+    return grantExtraAction(ctx.playerId, reason, ctx.now, {
+        playTiming: resolveExtraPlayTiming(ctx.matchState),
+    });
 }
 
 // ============================================================================

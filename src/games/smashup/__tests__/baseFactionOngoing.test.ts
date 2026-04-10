@@ -1021,6 +1021,7 @@ describe('巫师 ongoing 能力', () => {
             expect((events[0] as any).payload.playerId).toBe('0');
             expect((events[0] as any).payload.limitType).toBe('action');
             expect((events[0] as any).payload.delta).toBe(1);
+            expect((events[0] as any).payload.playTiming).toBe('immediate');
         });
 
         test('POD 版不在 onTurnStart 触发（POD 为 talent）', () => {
@@ -1242,6 +1243,7 @@ describe('诡术师 ongoing 能力', () => {
             expect(events).toHaveLength(1);
             expect(events[0].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
             expect((events[0] as any).payload.limitType).toBe('minion');
+            expect((events[0] as any).payload.playTiming).toBe('immediate');
         });
 
         test('非拥有者回合不触发', () => {

@@ -910,6 +910,8 @@ export interface LimitModifiedEvent extends GameEvent<'su:limit_modified'> {
         limitType: 'minion' | 'action';
         delta: number;
         reason: string;
+        /** 额外出牌时机：banked=可在当前出牌阶段暂存；immediate=必须立刻打出或放弃 */
+        playTiming?: 'banked' | 'immediate';
         /** 限定额度只能用于指定基地（不设则为全局额度） */
         restrictToBase?: number;
         /** 额外出牌的力量上限（如家园：力量≤2），不设则无限制 */

@@ -192,10 +192,8 @@ function bearHugProcessNext(
 function bearCavalryCommission(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const handMinions = player.hand.filter(c => c.type === 'minion');
-    const events: SmashUpEvent[] = [grantExtraMinion(ctx.playerId, 'bear_cavalry_commission', ctx.now)];
     if (handMinions.length === 0) {
-        // 原版语义：即使当前没有可打出的随从，也先给予额外随从额度
-        return { events };
+        return { events: [] };
     }
 
     // 让玩家选择要打出的手牌随从
@@ -212,7 +210,7 @@ function bearCavalryCommission(ctx: AbilityContext): AbilityResult {
     );
     // 标记是否为 POD 版本，用于后续交互链区分“必须移动”与“可以跳过”
     (interaction.data as any).isPod = ctx.defId === 'bear_cavalry_commission_pod';
-    return { events, matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 

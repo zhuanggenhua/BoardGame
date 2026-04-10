@@ -21,6 +21,7 @@ import type {
     BaseClearedEvent,
     BaseReplacedEvent,
     DeckReshuffledEvent,
+    LimitModifiedEvent,
     MinionPlayedEvent,
     MinionPowerBreakdown,
 } from './types';
@@ -51,6 +52,7 @@ import { RESPONSE_WINDOW_EVENTS } from '../../../engine/systems/ResponseWindowSy
 import { resolveSpecial } from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
 import type { SpecialAfterScoringConsumedEvent } from './types';
+import { queueImmediateExtraPlayInteractions } from './extraPlay';
 
 // ============================================================================
 // 基地记分辅助函数（供 FlowHooks 和 Prompt 继续函数共用）
@@ -1843,6 +1845,13 @@ function postProcessSystemEvents(
     const rq = maybeResolveReactionQueue(msForQueue, random, now);
     if (rq) {
         return { events: [...combined, ...rq.events], matchState: rq.state };
+    }
+
+    const immediateExtraEvents = combined.filter((event): event is LimitModifiedEvent =>
+        event.type === SU_EVENTS.LIMIT_MODIFIED && event.payload.playTiming === 'immediate',
+    );
+    if (immediateExtraEvents.length > 0) {
+        ms = queueImmediateExtraPlayInteractions(ms, immediateExtraEvents);
     }
 
     return { events: combined, matchState: ms };

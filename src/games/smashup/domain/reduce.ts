@@ -985,8 +985,12 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.LIMIT_MODIFIED: {
-            const { playerId, limitType, delta, restrictToBase, powerMax, sameNameOnly, sameNameDefId } = event.payload;
+            const { playerId, limitType, delta, restrictToBase, powerMax, sameNameOnly, sameNameDefId, playTiming } = event.payload;
             const player = state.players[playerId];
+            if (playTiming === 'immediate') {
+                // 立即额外出牌只作为交互信号存在，不应沉淀为可跨时机保留的额度。
+                return state;
+            }
             if (limitType === 'minion') {
                 // 基地限定额度：写入 baseLimitedMinionQuota
                 if (restrictToBase !== undefined) {

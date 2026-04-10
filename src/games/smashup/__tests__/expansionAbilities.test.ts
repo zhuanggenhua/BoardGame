@@ -528,21 +528,27 @@ describe('黑熊骑兵派系能力', () => {
     });
 
     describe('bear_cavalry_commission（委任：额外随从）', () => {
-        it('给予额外随从额度', () => {
+        it('立即创建额外随从选择交互，而不是留下可暂存额度', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
-                        hand: [makeCard('a1', 'bear_cavalry_commission', 'action', '0')],
+                        hand: [
+                            makeCard('a1', 'bear_cavalry_commission', 'action', '0'),
+                            makeCard('m1', 'robot_microbot_guard', 'minion', '0'),
+                        ],
                     }),
                     '1': makePlayer('1'),
                 },
+                bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
             });
 
             const events = execPlayAction(state, '0', 'a1');
             const limitEvents = events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
-            expect(limitEvents.length).toBe(1);
-            expect((limitEvents[0] as any).payload.limitType).toBe('minion');
-            expect((limitEvents[0] as any).payload.delta).toBe(1);
+            expect(limitEvents.length).toBe(0);
+
+            const interactions = getLastInteractions();
+            expect(interactions.length).toBe(1);
+            expect(interactions[0].data.sourceId).toBe('bear_cavalry_commission_choose_minion');
         });
     });
 });

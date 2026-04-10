@@ -8,6 +8,8 @@ import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { resolveOnPlay, resolveSpecial } from '../domain/abilityRegistry';
 import {
+    grantContextualExtraAction,
+    grantContextualExtraMinion,
     grantExtraAction,
     grantExtraMinion,
     destroyMinion,
@@ -19,6 +21,7 @@ import {
     buildAbilityFeedback,
     findCardInPlayerZone,
     filterCardsPresentInPlayerZone,
+    resolveExtraPlayTiming,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { CardsDrawnEvent, SmashUpEvent, DeckReorderedEvent, MinionCardDef, CardToDeckTopEvent, ActionCardDef, SmashUpCore } from '../domain/types';
@@ -32,12 +35,12 @@ import { reduce } from '../domain/reduce';
 
 /** 时间法师 onPlay：额外打出一个行动*/
 function wizardChronomage(ctx: AbilityContext): AbilityResult {
-    return { events: [grantExtraAction(ctx.playerId, 'wizard_chronomage', ctx.now)] };
+    return { events: [grantContextualExtraAction(ctx, 'wizard_chronomage')] };
 }
 
 /** 大法师 POD talent：额外打出一个行动 */
 function wizardArchmagePodTalent(ctx: AbilityContext): AbilityResult {
-    return { events: [grantExtraAction(ctx.playerId, 'wizard_archmage_pod', ctx.now)] };
+    return { events: [grantContextualExtraAction(ctx, 'wizard_archmage_pod')] };
 }
 
 /** 女巫 onPlay：抽一张牌 */
@@ -68,15 +71,15 @@ function wizardMysticStudies(ctx: AbilityContext): AbilityResult {
 
 /** 召唤 onPlay：额外打出一个随从*/
 function wizardSummon(ctx: AbilityContext): AbilityResult {
-    return { events: [grantExtraMinion(ctx.playerId, 'wizard_summon', ctx.now)] };
+    return { events: [grantContextualExtraMinion(ctx, 'wizard_summon')] };
 }
 
 /** 时间圆环 onPlay：额外打出两个行动*/
 function wizardTimeLoop(ctx: AbilityContext): AbilityResult {
     return {
         events: [
-            grantExtraAction(ctx.playerId, 'wizard_time_loop', ctx.now),
-            grantExtraAction(ctx.playerId, 'wizard_time_loop', ctx.now),
+            grantContextualExtraAction(ctx, 'wizard_time_loop'),
+            grantContextualExtraAction(ctx, 'wizard_time_loop'),
         ],
     };
 }
@@ -485,7 +488,7 @@ function wizardWindsOfChange(ctx: AbilityContext): AbilityResult {
     }
 
     // 3. 额外打出一个行动
-    events.push(grantExtraAction(ctx.playerId, 'wizard_winds_of_change', ctx.now));
+    events.push(grantContextualExtraAction(ctx, 'wizard_winds_of_change'));
 
     return { events };
 }
@@ -548,6 +551,7 @@ function registerWizardOngoingEffects(): void {
                 limitType: 'action' as const,
                 delta: 1,
                 reason: archmageDefId ?? 'wizard_archmage',
+                playTiming: 'immediate',
             },
             timestamp: trigCtx.now,
         }];
@@ -566,6 +570,7 @@ function registerWizardOngoingEffects(): void {
                 limitType: 'action' as const,
                 delta: 1,
                 reason: trigCtx.triggerMinionDefId,
+                playTiming: resolveExtraPlayTiming(trigCtx.matchState),
             },
             timestamp: trigCtx.now,
         }];

@@ -42,6 +42,7 @@ import { registerBaseAbilities, registerBaseInteractionHandlers, clearBaseAbilit
 import { registerMultiBaseScoringInteractionHandler } from '../domain/index';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { registerMulliganInteractionHandlers } from '../domain/mulliganHandlers';
+import { registerImmediateExtraPlayInteractionHandlers } from '../domain/extraPlay';
 import { registerAllOngoingModifiers } from './ongoing_modifiers';
 import { clearPowerModifierRegistry, registerPodPowerModifierAliases } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry, registerPodOngoingAliases } from '../domain/ongoingEffects';
@@ -93,6 +94,7 @@ export function initAllAbilities(): void {
     registerReactionQueueInteractionHandlers();
     registerMulliganInteractionHandlers();
     registerBuryInteractionHandlers();
+    registerImmediateExtraPlayInteractionHandlers();
 
     // 扩展派系
     registerGhostAbilities();
