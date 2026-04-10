@@ -114,7 +114,15 @@ export type TriggerTiming =
 /** 閻熸粍婢樺畷顒勫箹妞嬪海灏甸悹鍥皺閳ь剛鍏橀弫宥夊醇濠婂懐鐓?onMinionAffected 闂佸搫鍟抽崺鏍э耿娓氣偓瀹曟劗娑垫搴ｎ槴 */
 export type TitanAwareTriggerTiming = TriggerTiming | 'onTitanMoved';
 
-export type AffectType = 'destroy' | 'move' | 'power_change' | 'attach_action' | 'control_change';
+export type AffectType =
+    | 'destroy'
+    | 'move'
+    | 'return'
+    | 'power_change'
+    | 'attach_action'
+    | 'control_change'
+    | 'cancel_ability'
+    | 'shuffle_into_deck';
 
 /** 闁荤喐鐟辩粻鎴ｃ亹閸屾稓鈻斿┑鐘辫兌閻熸捇鏌?*/
 export interface TriggerContext {

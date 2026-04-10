@@ -16,6 +16,7 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry, isMinionProtected } from '../domain/ongoingEffects';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { startDuel } from '../domain/duel';
+import { filterProtectedAffectEvents } from '../domain/reducer';
 import { runCommand } from './testRunner';
 import { findInteractionOption, makeMinion, makePlayer, makeState, makeMatchState, makeCard, resolveInteractionChain } from './helpers';
 import type { BaseInPlay, OngoingActionOnBase } from '../domain/types';
@@ -33,6 +34,108 @@ beforeAll(() => {
     clearInteractionHandlers();
     resetAbilityInit();
     initAllAbilities();
+});
+
+describe('wildlife_preserve: 统一 affect 保护过滤', () => {
+    function makeProtectedState() {
+        const base = makeBase('test_base', {
+            minions: [makeMinion('target_m', 'test_minion', '0', 3, { powerModifier: 0 })],
+            ongoingActions: [makeOngoing('wp1', 'dino_wildlife_preserve', '0')],
+        });
+        return makeState({ bases: [base] });
+    }
+
+    it('会拦住对手行动牌导致的回手', () => {
+        const state = makeProtectedState();
+        const filtered = filterProtectedAffectEvents([{
+            type: SU_EVENTS.MINION_RETURNED,
+            payload: {
+                minionUid: 'target_m',
+                minionDefId: 'test_minion',
+                fromBaseIndex: 0,
+                toPlayerId: '0',
+                reason: 'pirate_shanghai',
+                sourcePlayerId: '1',
+                sourceCardUid: 'opp-action-1',
+                sourceDefId: 'pirate_shanghai',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1000,
+        } as any], state, '1');
+
+        expect(filtered).toEqual([]);
+    });
+
+    it.each([
+        ['牌库底', SU_EVENTS.CARD_TO_DECK_BOTTOM],
+        ['牌库顶', SU_EVENTS.CARD_TO_DECK_TOP],
+    ])('会拦住对手行动牌导致的洗回%s', (_label, eventType) => {
+        const state = makeProtectedState();
+        const filtered = filterProtectedAffectEvents([{
+            type: eventType,
+            payload: {
+                cardUid: 'target_m',
+                defId: 'test_minion',
+                ownerId: '0',
+                reason: 'pirate_full_sail',
+                sourcePlayerId: '1',
+                sourceCardUid: 'opp-action-2',
+                sourceDefId: 'pirate_full_sail',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1000,
+        } as any], state, '1');
+
+        expect(filtered).toEqual([]);
+    });
+
+    it('会拦住对手行动牌导致的控制权变化', () => {
+        const state = makeProtectedState();
+        const filtered = filterProtectedAffectEvents([{
+            type: SU_EVENTS.MINION_CONTROL_CHANGED,
+            payload: {
+                minionUid: 'target_m',
+                minionDefId: 'test_minion',
+                baseIndex: 0,
+                ownerId: '0',
+                fromControllerId: '0',
+                toControllerId: '1',
+                reason: 'ghost_make_contact',
+                sourcePlayerId: '1',
+                sourceCardUid: 'opp-action-3',
+                sourceDefId: 'ghost_make_contact',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1000,
+        } as any], state, '1');
+
+        expect(filtered).toEqual([]);
+    });
+
+    it('会拦住对手行动牌导致的压制', () => {
+        const state = makeProtectedState();
+        const filtered = filterProtectedAffectEvents([{
+            type: SU_EVENTS.CARD_SUPPRESSED,
+            payload: {
+                cardUid: 'target_m',
+                baseIndex: 0,
+                suppressorPlayerId: '1',
+                cardType: 'minion',
+                reason: 'wizard_mass_enchantment',
+                sourcePlayerId: '1',
+                sourceCardUid: 'opp-action-4',
+                sourceDefId: 'wizard_mass_enchantment',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1000,
+        } as any], state, '1');
+
+        expect(filtered).toEqual([]);
+    });
 });
 
 // ============================================================================

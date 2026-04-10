@@ -787,15 +787,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     if (i !== targetBaseIndex) return base;
                     return {
                         ...base,
-                        minions: base.minions.map(m => {
-                            if (m.uid !== targetMinionUid) return m;
-                            const updated = { ...m, attachedActions: [...m.attachedActions, { uid: cardUid, defId, ownerId }] };
-                            // ghost_make_contact：附着时改变控制权
-                            if (defId === 'ghost_make_contact') {
-                                updated.controller = ownerId;
-                            }
-                            return updated;
-                        }),
+                        minions: base.minions.map(m => (
+                            m.uid !== targetMinionUid
+                                ? m
+                                : { ...m, attachedActions: [...m.attachedActions, { uid: cardUid, defId, ownerId }] }
+                        )),
                     };
                 });
                 return { ...state, bases: newBases };
@@ -2068,7 +2064,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     if (!hadAttachment) return { ...m, attachedActions: filtered };
                     const updated = { ...m, attachedActions: filtered };
                     // ghost_make_contact：移除时恢复控制权为原始 owner
-                    if (defId === 'ghost_make_contact') {
+                    if (defId.startsWith('ghost_make_contact')) {
                         updated.controller = m.owner;
                     }
                     return updated;

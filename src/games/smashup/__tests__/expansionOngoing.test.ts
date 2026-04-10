@@ -26,6 +26,7 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { callHandler } from './helpers';
+import { buildAffectRecords } from '../domain/affect';
 import { registerGhostAbilities } from '../abilities/ghosts';
 import { registerSteampunkAbilities, registerSteampunkInteractionHandlers } from '../abilities/steampunks';
 import { registerKillerPlantAbilities, registerKillerPlantInteractionHandlers } from '../abilities/killer_plants';
@@ -169,7 +170,7 @@ describe('幽灵 ongoing 能力', () => {
     });
 
     describe('ghost_make_contact: 控制对手随从', () => {
-        test('唯一手牌时 onPlay 直接返回空事件（控制权由 ONGOING_ATTACHED reduce 处理）', () => {
+        test('唯一手牌时 onPlay 显式发出控制权变更事件', () => {
             const oppMinion = makeMinion({ defId: 'opp_m', uid: 'om-1', controller: '1', owner: '1', basePower: 5 });
             const base = makeBase({ minions: [oppMinion] });
             const state = makeState([base]);
@@ -180,13 +181,22 @@ describe('幽灵 ongoing 能力', () => {
             const executor = resolveAbility('ghost_make_contact', 'onPlay')!;
             const result = executor({
                 state, matchState: ms, playerId: '0', cardUid: 'mc-1', defId: 'ghost_make_contact',
-                baseIndex: 0, random: dummyRandom, now: 1000,
+                baseIndex: 0, targetMinionUid: 'om-1', random: dummyRandom, now: 1000,
             });
 
             // 不应弹出交互（目标随从已通过 targetMinionUid 在打出时确定）
             const current = (result.matchState?.sys as any)?.interaction?.current;
             expect(current).toBeUndefined();
-            expect(result.events).toHaveLength(0);
+            expect(result.events).toHaveLength(1);
+            expect(result.events[0].type).toBe(SU_EVENTS.MINION_CONTROL_CHANGED);
+            expect((result.events[0] as any).payload).toMatchObject({
+                minionUid: 'om-1',
+                fromControllerId: '1',
+                toControllerId: '0',
+                sourcePlayerId: '0',
+                sourceCardUid: 'mc-1',
+                sourceDefId: 'ghost_make_contact',
+            });
         });
 
         test('非唯一手牌时 onPlay 返回 condition_not_met 反馈', () => {
@@ -207,6 +217,54 @@ describe('幽灵 ongoing 能力', () => {
 
             expect(result.events).toHaveLength(1);
             expect((result.events[0] as any).payload?.messageKey).toBe('feedback.condition_not_met');
+        });
+
+        test('POD 版无手牌时也显式发出控制权变更事件', () => {
+            const oppMinion = makeMinion({ defId: 'opp_m', uid: 'om-1', controller: '1', owner: '1', basePower: 5 });
+            const base = makeBase({ minions: [oppMinion] });
+            const state = makeState([base]);
+            state.players['0'].hand = [];
+            const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+
+            const executor = resolveAbility('ghost_make_contact_pod', 'onPlay')!;
+            const result = executor({
+                state, matchState: ms, playerId: '0', cardUid: 'mc-pod-1', defId: 'ghost_make_contact_pod',
+                baseIndex: 0, targetMinionUid: 'om-1', random: dummyRandom, now: 1000,
+            });
+
+            expect(result.events).toHaveLength(1);
+            expect(result.events[0].type).toBe(SU_EVENTS.MINION_CONTROL_CHANGED);
+            expect((result.events[0] as any).payload.sourceDefId).toBe('ghost_make_contact_pod');
+        });
+
+        test('Make Contact 脱离时恢复控制权不会再次记成随从被影响', () => {
+            const controlledMinion = makeMinion({
+                defId: 'opp_m',
+                uid: 'om-1',
+                controller: '0',
+                owner: '1',
+                attachedActions: [{ uid: 'mc-1', defId: 'ghost_make_contact', ownerId: '0' }],
+            });
+            const state = makeState([makeBase({ minions: [controlledMinion] })]);
+
+            const records = buildAffectRecords(state, {
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: {
+                    cardUid: 'mc-1',
+                    defId: 'ghost_make_contact',
+                    ownerId: '0',
+                    reason: 'ghost_make_contact_expired',
+                },
+                timestamp: 1000,
+            } as any);
+
+            expect(records).toHaveLength(1);
+            expect(records[0]).toMatchObject({
+                targetKind: 'attached_action',
+                targetUid: 'mc-1',
+                affectType: 'destroy',
+                countsForOnMinionAffected: false,
+            });
         });
     });
 });
@@ -236,12 +294,76 @@ describe('蒸汽朋克 ongoing 能力', () => {
             // steam_queen 通过 interceptor 保护 ongoing 行动卡不被对手移除
             const detachEvt = {
                 type: SU_EVENTS.ONGOING_DETACHED,
-                payload: { cardUid: 'oa-1', defId: 'test_ongoing', ownerId: '0', reason: 'opponent_action' },
+                payload: {
+                    cardUid: 'oa-1',
+                    defId: 'test_ongoing',
+                    ownerId: '0',
+                    reason: 'opponent_action',
+                    sourcePlayerId: '1',
+                    sourceCardUid: 'opp-action-1',
+                    sourceDefId: 'pirate_shanghai',
+                    sourceControllerId: '1',
+                    sourceBaseIndex: 0,
+                },
                 timestamp: 0,
             };
             const result = interceptEvent(state, detachEvt);
             // 拦截器应阻止移除（返回 null）
             expect(result).toBeNull();
+        });
+
+        test('不会误拦截自毁导致的行动牌离场', () => {
+            const queen = makeMinion({ defId: 'steampunk_steam_queen', uid: 'sq-1', controller: '0' });
+            const base = makeBase({
+                minions: [queen],
+                ongoingActions: [{ uid: 'oa-1', defId: 'test_ongoing', ownerId: '0' }],
+            });
+            const state = makeState([base]);
+
+            const detachEvt = {
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: {
+                    cardUid: 'oa-1',
+                    defId: 'test_ongoing',
+                    ownerId: '0',
+                    reason: 'test_ongoing_self_destruct',
+                    sourcePlayerId: '1',
+                    sourceCardUid: 'opp-action-1',
+                    sourceDefId: 'pirate_shanghai',
+                    sourceControllerId: '1',
+                    sourceBaseIndex: 0,
+                },
+                timestamp: 0,
+            };
+
+            expect(interceptEvent(state, detachEvt)).toBeUndefined();
+        });
+
+        test('不会误拦截过期导致的行动牌离场', () => {
+            const queen = makeMinion({ defId: 'steampunk_steam_queen', uid: 'sq-1', controller: '0' });
+            const base = makeBase({
+                minions: [queen],
+                ongoingActions: [{ uid: 'oa-1', defId: 'test_ongoing', ownerId: '0' }],
+            });
+            const state = makeState([base]);
+
+            const detachEvt = {
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: {
+                    cardUid: 'oa-1',
+                    defId: 'test_ongoing',
+                    ownerId: '0',
+                    reason: 'test_ongoing_expired',
+                    sourcePlayerId: '1',
+                    sourceCardUid: 'opp-action-1',
+                    sourceDefId: 'pirate_shanghai',
+                    sourceControllerId: '1',
+                    sourceBaseIndex: 0,
+                },
+                timestamp: 0,
+            };
+
+            expect(interceptEvent(state, detachEvt)).toBeUndefined();
         });
 
         test('不保护对手随从', () => {

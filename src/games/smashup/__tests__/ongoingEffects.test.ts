@@ -20,6 +20,7 @@ import {
 import type { SmashUpCore, MinionOnBase, BaseInPlay, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { buildAffectRecords } from '../domain/affect';
 
 // ============================================================================
 // 测试辅助
@@ -463,6 +464,288 @@ describe('持续效果拦截框架', () => {
                 sourceBaseIndex: 1,
             });
         });
+    });
+});
+
+describe('Affect 分类', () => {
+    test('MINION_RETURNED、MINION_CONTROL_CHANGED、CARD_SUPPRESSED 被正确分类为随从 affect', () => {
+        const minion = makeMinion({
+            uid: 'm-1',
+            defId: 'test_minion',
+            controller: '0',
+            owner: '0',
+        });
+        const state = makeState([makeBase({ minions: [minion] })]);
+
+        const returned = buildAffectRecords(state, {
+            type: SU_EVENTS.MINION_RETURNED,
+            payload: {
+                minionUid: 'm-1',
+                minionDefId: 'test_minion',
+                fromBaseIndex: 0,
+                toPlayerId: '0',
+                reason: 'pirate_shanghai',
+                sourcePlayerId: '1',
+                sourceCardUid: 'a-1',
+                sourceDefId: 'pirate_shanghai',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1000,
+        } as SmashUpEvent);
+        expect(returned).toHaveLength(1);
+        expect(returned[0]).toMatchObject({
+            targetKind: 'minion',
+            targetUid: 'm-1',
+            baseIndex: 0,
+            affectType: 'return',
+            countsForOnMinionAffected: true,
+            sourcePlayerId: '1',
+            sourceCardUid: 'a-1',
+            sourceDefId: 'pirate_shanghai',
+        });
+
+        const controlChanged = buildAffectRecords(state, {
+            type: SU_EVENTS.MINION_CONTROL_CHANGED,
+            payload: {
+                minionUid: 'm-1',
+                minionDefId: 'test_minion',
+                baseIndex: 0,
+                ownerId: '0',
+                fromControllerId: '0',
+                toControllerId: '1',
+                sourcePlayerId: '1',
+                sourceCardUid: 'a-2',
+                sourceDefId: 'ghost_make_contact',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+                reason: 'ghost_make_contact',
+            },
+            timestamp: 1001,
+        } as SmashUpEvent);
+        expect(controlChanged).toHaveLength(1);
+        expect(controlChanged[0]).toMatchObject({
+            targetKind: 'minion',
+            affectType: 'control_change',
+            countsForOnMinionAffected: true,
+            sourceDefId: 'ghost_make_contact',
+        });
+
+        const suppressed = buildAffectRecords(state, {
+            type: SU_EVENTS.CARD_SUPPRESSED,
+            payload: {
+                cardUid: 'm-1',
+                baseIndex: 0,
+                suppressorPlayerId: '1',
+                cardType: 'minion',
+                reason: 'wizard_mass_enchantment',
+                sourcePlayerId: '1',
+                sourceCardUid: 'a-3',
+                sourceDefId: 'wizard_mass_enchantment',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1002,
+        } as SmashUpEvent);
+        expect(suppressed).toHaveLength(1);
+        expect(suppressed[0]).toMatchObject({
+            targetKind: 'minion',
+            affectType: 'cancel_ability',
+            countsForOnMinionAffected: true,
+            sourceDefId: 'wizard_mass_enchantment',
+        });
+    });
+
+    test('CARD_TO_DECK_TOP/BOTTOM 会把在场卡分类为 shuffle_into_deck', () => {
+        const minion = makeMinion({
+            uid: 'm-1',
+            defId: 'test_minion',
+            controller: '0',
+            owner: '0',
+            attachedActions: [{ uid: 'attach-1', defId: 'test_attached_action', ownerId: '0' }],
+        });
+        const state = makeState([makeBase({
+            minions: [minion],
+            ongoingActions: [{ uid: 'ongoing-1', defId: 'test_ongoing_action', ownerId: '0' }],
+        })]);
+
+        const bottom = buildAffectRecords(state, {
+            type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+            payload: {
+                cardUid: 'm-1',
+                defId: 'test_minion',
+                ownerId: '0',
+                reason: 'pirate_full_sail',
+                sourcePlayerId: '1',
+                sourceCardUid: 'a-1',
+                sourceDefId: 'pirate_full_sail',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1000,
+        } as SmashUpEvent);
+        expect(bottom).toHaveLength(1);
+        expect(bottom[0]).toMatchObject({
+            targetKind: 'minion',
+            targetUid: 'm-1',
+            affectType: 'shuffle_into_deck',
+            countsForOnMinionAffected: true,
+        });
+
+        const top = buildAffectRecords(state, {
+            type: SU_EVENTS.CARD_TO_DECK_TOP,
+            payload: {
+                cardUid: 'ongoing-1',
+                defId: 'test_ongoing_action',
+                ownerId: '0',
+                reason: 'wizard_word_of_recall',
+                sourcePlayerId: '1',
+                sourceCardUid: 'a-2',
+                sourceDefId: 'wizard_word_of_recall',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1001,
+        } as SmashUpEvent);
+        expect(top).toHaveLength(1);
+        expect(top[0]).toMatchObject({
+            targetKind: 'ongoing',
+            targetUid: 'ongoing-1',
+            affectType: 'shuffle_into_deck',
+            countsForOnMinionAffected: false,
+        });
+    });
+
+    test('PERMANENT_POWER_ADDED 正负都算 power_change', () => {
+        const minion = makeMinion({ uid: 'm-1', defId: 'test_minion', controller: '0', owner: '0' });
+        const state = makeState([makeBase({ minions: [minion] })]);
+
+        const positive = buildAffectRecords(state, {
+            type: SU_EVENTS.PERMANENT_POWER_ADDED,
+            payload: {
+                minionUid: 'm-1',
+                baseIndex: 0,
+                amount: 2,
+                reason: 'robot_augmentation',
+                sourcePlayerId: '0',
+                sourceCardUid: 'a-1',
+                sourceDefId: 'robot_augmentation',
+                sourceControllerId: '0',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1000,
+        } as SmashUpEvent);
+        expect(positive).toHaveLength(1);
+        expect(positive[0]).toMatchObject({
+            affectType: 'power_change',
+            countsForOnMinionAffected: true,
+            sourceDefId: 'robot_augmentation',
+        });
+
+        const negative = buildAffectRecords(state, {
+            type: SU_EVENTS.PERMANENT_POWER_ADDED,
+            payload: {
+                minionUid: 'm-1',
+                baseIndex: 0,
+                amount: -2,
+                reason: 'sleep_spores',
+                sourcePlayerId: '1',
+                sourceCardUid: 'a-2',
+                sourceDefId: 'killer_plant_sleep_spores',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1001,
+        } as SmashUpEvent);
+        expect(negative).toHaveLength(1);
+        expect(negative[0]).toMatchObject({
+            affectType: 'power_change',
+            countsForOnMinionAffected: true,
+            sourceDefId: 'killer_plant_sleep_spores',
+        });
+    });
+
+    test('BASE_ABILITY_SUPPRESSED 只记为基地被影响，不进入 onMinionAffected', () => {
+        const state = makeState([makeBase({ defId: 'base_the_central_brain' })]);
+
+        const records = buildAffectRecords(state, {
+            type: SU_EVENTS.BASE_ABILITY_SUPPRESSED,
+            payload: {
+                baseIndex: 0,
+                suppressorPlayerId: '1',
+                reason: 'wizard_mass_enchantment',
+                sourcePlayerId: '1',
+                sourceCardUid: 'a-1',
+                sourceDefId: 'wizard_mass_enchantment',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1000,
+        } as SmashUpEvent);
+
+        expect(records).toHaveLength(1);
+        expect(records[0]).toMatchObject({
+            targetKind: 'base',
+            baseIndex: 0,
+            affectType: 'cancel_ability',
+            countsForOnMinionAffected: false,
+        });
+    });
+
+    test('ONGOING_DETACHED、CARD_TRANSFERRED、ACTION_PLAYED 不会被当成随从 affect', () => {
+        const minion = makeMinion({
+            uid: 'm-1',
+            defId: 'test_minion',
+            controller: '0',
+            owner: '0',
+            attachedActions: [{ uid: 'attach-1', defId: 'test_attached_action', ownerId: '0' }],
+        });
+        const state = makeState([makeBase({ minions: [minion] })]);
+
+        const detached = buildAffectRecords(state, {
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: {
+                cardUid: 'attach-1',
+                defId: 'test_attached_action',
+                ownerId: '0',
+                reason: 'test_attached_action_expired',
+                sourcePlayerId: '1',
+                sourceCardUid: 'a-1',
+                sourceDefId: 'pirate_shanghai',
+                sourceControllerId: '1',
+                sourceBaseIndex: 0,
+            },
+            timestamp: 1000,
+        } as SmashUpEvent);
+        expect(detached).toHaveLength(1);
+        expect(detached[0]).toMatchObject({
+            targetKind: 'attached_action',
+            countsForOnMinionAffected: false,
+        });
+
+        const transferred = buildAffectRecords(state, {
+            type: SU_EVENTS.CARD_TRANSFERRED,
+            payload: {
+                cardUid: 'h-1',
+                defId: 'test_action',
+                fromPlayerId: '1',
+                toPlayerId: '0',
+                reason: 'trade',
+            },
+            timestamp: 1001,
+        } as SmashUpEvent);
+        expect(transferred).toEqual([]);
+
+        const played = buildAffectRecords(state, {
+            type: SU_EVENTS.ACTION_PLAYED,
+            payload: {
+                playerId: '0',
+                cardUid: 'a-1',
+                defId: 'test_action',
+            },
+            timestamp: 1002,
+        } as SmashUpEvent);
+        expect(played).toEqual([]);
     });
 });
 

@@ -17,6 +17,7 @@ import { getInteractionHandler, registerInteractionHandler } from '../domain/abi
 import { resolveOnPlay } from '../domain/abilityRegistry';
 import { reduce } from '../domain/reduce';
 import { validateActionPlaySemantics } from '../domain/playLegality';
+import { buildAffectRecords } from '../domain/affect';
 
 /** 注册蒸汽朋克派系所有能力*/
 export function registerSteampunkAbilities(): void {
@@ -74,16 +75,35 @@ export function steampunkScrapDiving(ctx: AbilityContext): AbilityResult {
  * 规则：当 steam_queen 在场时，拥有者的行动卡不能被对手的卡牌影响
  */
 export function steampunkSteamQueenInterceptor(state: SmashUpCore, event: SmashUpEvent): SmashUpEvent | SmashUpEvent[] | null | undefined {
-    if (event.type !== SU_EVENTS.ONGOING_DETACHED) return undefined;
-    const payload = (event as OngoingDetachedEvent).payload;
-    if (payload.reason?.includes('self_destruct') || payload.reason?.includes('expired')) return undefined;
+    const affectRecords = buildAffectRecords(state, event);
+    if (affectRecords.length === 0) return undefined;
+
+    for (const record of affectRecords) {
+        if (record.targetKind !== 'ongoing' && record.targetKind !== 'attached_action') continue;
+        if (!record.sourcePlayerId) continue;
+        if (record.reason?.includes('self_destruct') || record.reason?.includes('expired')) continue;
+
+        const actionOwnerId = findInPlayActionOwner(state, record.targetUid);
+        if (!actionOwnerId) continue;
+        if (record.sourcePlayerId === actionOwnerId) continue;
+
+        const hasSteamQueen = state.bases.some(base =>
+            base.minions.some(minion => minion.defId.startsWith('steampunk_steam_queen') && minion.controller === actionOwnerId),
+        );
+        if (hasSteamQueen) return null;
+    }
+
+    return undefined;
+}
+
+function findInPlayActionOwner(state: SmashUpCore, cardUid: string): string | undefined {
     for (const base of state.bases) {
-        const queen = base.minions.find(m => m.defId.startsWith('steampunk_steam_queen'));
-        if (!queen) continue;
-        const isOwnerAction = base.ongoingActions.some(o => o.uid === payload.cardUid && o.ownerId === queen.controller);
-        const isAttachedAction = base.minions.some(m => m.attachedActions.some(a => a.uid === payload.cardUid && a.ownerId === queen.controller));
-        if (isOwnerAction || isAttachedAction) {
-            return null;
+        const ongoing = base.ongoingActions.find(action => action.uid === cardUid);
+        if (ongoing) return ongoing.ownerId;
+
+        for (const minion of base.minions) {
+            const attached = minion.attachedActions.find(action => action.uid === cardUid);
+            if (attached) return attached.ownerId;
         }
     }
     return undefined;
@@ -122,6 +142,11 @@ export function steampunkOrnateDomeOnPlay(ctx: AbilityContext): AbilityResult {
                 defId: ongoing.defId,
                 ownerId: ongoing.ownerId,
                 reason: 'steampunk_ornate_dome_destroy',
+                sourcePlayerId: ctx.playerId,
+                sourceCardUid: ctx.cardUid,
+                sourceDefId: ctx.defId,
+                sourceControllerId: ctx.playerId,
+                sourceBaseIndex: ctx.baseIndex,
             },
             timestamp: ctx.now,
         } as OngoingDetachedEvent);
@@ -138,6 +163,11 @@ export function steampunkOrnateDomeOnPlay(ctx: AbilityContext): AbilityResult {
                     defId: a.defId,
                     ownerId: a.ownerId,
                     reason: 'steampunk_ornate_dome_destroy',
+                    sourcePlayerId: ctx.playerId,
+                    sourceCardUid: ctx.cardUid,
+                    sourceDefId: ctx.defId,
+                    sourceControllerId: ctx.playerId,
+                    sourceBaseIndex: ctx.baseIndex,
                 },
                 timestamp: ctx.now,
             } as OngoingDetachedEvent);

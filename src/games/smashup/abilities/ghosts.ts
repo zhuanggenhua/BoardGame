@@ -8,7 +8,7 @@ import { registerAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { grantExtraMinion, grantExtraAction, destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, recoverCardsFromDiscard, buildAbilityFeedback } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { CardsDrawnEvent, VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, OngoingDetachedEvent, CardsDiscardedEvent, ActionPlayedEvent, CardToDeckBottomEvent } from '../domain/types';
+import type { CardsDrawnEvent, VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, OngoingDetachedEvent, CardsDiscardedEvent, ActionPlayedEvent, CardToDeckBottomEvent, MinionControlChangedEvent } from '../domain/types';
 import type { MinionCardDef, ActionCardDef } from '../domain/types';
 import { drawCards } from '../domain/utils';
 import { registerProtection } from '../domain/ongoingEffects';
@@ -202,8 +202,7 @@ function ghostHauntingChecker(ctx: ProtectionCheckContext): boolean {
 function ghostMakeContact(ctx: AbilityContext): AbilityResult {
     const handAfterPlay = ctx.handSizeAfterPlay ?? (ctx.state.players[ctx.playerId].hand.length - 1);
     if (handAfterPlay > 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
-    // 控制权转移已由 reducer 的 ONGOING_ATTACHED 处理，此处无需额外操作
-    return { events: [] };
+    return { events: buildMakeContactControlChangeEvents(ctx) };
 }
 
 /**
@@ -581,7 +580,35 @@ function ghostMakeContactPod(ctx: AbilityContext): AbilityResult {
         };
         return { events: [detachEvt] };
     }
-    return { events: [] };
+    return { events: buildMakeContactControlChangeEvents(ctx) };
+}
+
+function buildMakeContactControlChangeEvents(ctx: AbilityContext): SmashUpEvent[] {
+    if (ctx.baseIndex === undefined || !ctx.targetMinionUid) return [];
+    const base = ctx.state.bases[ctx.baseIndex];
+    const targetMinion = base?.minions.find(minion => minion.uid === ctx.targetMinionUid);
+    if (!targetMinion || targetMinion.controller === ctx.playerId) return [];
+
+    const controlChangedEvent: MinionControlChangedEvent = {
+        type: SU_EVENTS.MINION_CONTROL_CHANGED,
+        payload: {
+            minionUid: targetMinion.uid,
+            minionDefId: targetMinion.defId,
+            baseIndex: ctx.baseIndex,
+            ownerId: targetMinion.owner,
+            fromControllerId: targetMinion.controller,
+            toControllerId: ctx.playerId,
+            sourcePlayerId: ctx.playerId,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+            sourceControllerId: ctx.playerId,
+            sourceBaseIndex: ctx.baseIndex,
+            reason: ctx.defId,
+        },
+        timestamp: ctx.now,
+    };
+
+    return [controlChangedEvent];
 }
 
 
