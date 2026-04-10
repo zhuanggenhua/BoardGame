@@ -5,6 +5,7 @@ import { createSimpleChoice, queueInteraction } from '../../../engine/systems/In
 import { getCurrentPlayerId } from './types';
 import { getTriggerExecutor } from './triggerExecutors';
 import { reduce } from './reduce';
+import { getBaseDef, getCardDef } from '../data/cards';
 
 function getClockwiseOrder(turnOrder: PlayerId[], startingPlayerId: PlayerId): PlayerId[] {
   const idx = turnOrder.indexOf(startingPlayerId);
@@ -12,19 +13,52 @@ function getClockwiseOrder(turnOrder: PlayerId[], startingPlayerId: PlayerId): P
   return [...turnOrder.slice(idx), ...turnOrder.slice(0, idx)];
 }
 
-function chooseNextTriggerOwner(
-  core: SmashUpCore,
-  pending: TriggerInstance[],
-): PlayerId {
+function chooseNextTriggerOwner(core: SmashUpCore): PlayerId {
+  const pending = core.triggerQueue ?? [];
   const current = getCurrentPlayerId(core);
-  const mandatory = pending.filter(t => t.mandatory);
-  if (mandatory.length > 0) return current;
-  // optional: clockwise by ownerPlayerId (best effort)
-  const order = getClockwiseOrder(core.turnOrder, current);
+
+  // Wiki: mandatory triggers resolve first, ordered by current player.
+  // We model this by making the current player the decider whenever any pending trigger is mandatory.
+  if (pending.some(t => t.mandatory)) {
+    return current;
+  }
+
+  // Wiki: optional triggers are offered in clockwise order starting from current player.
+  // We approximate this by letting the first player in clockwise order who owns any pending trigger decide.
+  const order = getClockwiseOrder(core.turnOrder ?? [], current);
   for (const pid of order) {
     if (pending.some(t => t.ownerPlayerId === pid)) return pid;
   }
   return current;
+}
+
+function getReactionTimingLabelKey(timing: TriggerInstance['timing']): string {
+  switch (timing) {
+    case 'onMinionPlayed':
+    case 'onActionPlayed':
+    case 'onCardsDiscarded':
+    case 'onCardBuried':
+    case 'onBuriedCardUncovered':
+    case 'onBaseRevealed':
+    case 'onMinionDestroyed':
+    case 'onMinionMoved':
+    case 'onMinionAffected':
+    case 'onMinionDiscardedFromBase':
+    case 'onTurnEnd':
+    case 'onTurnStart':
+    case 'beforeScoring':
+    case 'whenScoring':
+    case 'afterScoring':
+      return `ui.reaction_timing.${timing}`;
+    default:
+      return 'ui.reaction_timing.unknown';
+  }
+}
+
+function buildReactionQueueOptionLabel(trigger: TriggerInstance): string {
+  const sourceDef = getCardDef(trigger.sourceDefId) ?? getBaseDef(trigger.sourceDefId);
+  const sourceLabel = sourceDef ? `cards.${trigger.sourceDefId}.name` : trigger.sourceDefId;
+  return `${sourceLabel} · ${getReactionTimingLabelKey(trigger.timing)}`;
 }
 
 export function maybeResolveReactionQueue(
@@ -52,8 +86,13 @@ export function maybeResolveReactionQueue(
         state: coreAfterConsume,
         matchState: { ...state, core: coreAfterConsume },
         timing: t.timing,
+        sourceCardUid: t.sourceCardUid,
+        sourceBaseIndex: t.sourceBaseIndex,
+        sourceControllerId: t.sourceControllerId,
         playerId: t.ownerPlayerId,
         baseIndex: t.baseIndex,
+        moveFromBaseIndex: t.moveFromBaseIndex,
+        moveToBaseIndex: t.moveToBaseIndex,
         rankings: t.rankings,
         triggerMinionUid: t.triggerMinionUid,
         triggerMinionDefId: t.triggerMinionDefId,
@@ -71,12 +110,22 @@ export function maybeResolveReactionQueue(
             tempPowerModifier: t.lkiMinion.tempPowerModifier,
             talentUsed: false,
             attachedActions: [],
+            metadata: t.lkiMinion.metadata ? { ...t.lkiMinion.metadata } : undefined,
           }
           : undefined,
         reason: t.reason,
         affectType: t.affectType,
         actionTargetBaseIndex: t.actionTargetBaseIndex,
+        actionTargetType: (t as any).actionTargetType,
         actionTargetMinionUid: t.actionTargetMinionUid,
+        buriedCardUid: t.buriedCardUid,
+        buriedCardDefId: t.buriedCardDefId,
+        buriedCardControllerId: t.buriedCardControllerId,
+        buriedFrom: t.buriedFrom,
+        inspectionCards: t.inspectionCards,
+        inspectionZone: t.inspectionZone,
+        inspectionTargetPlayerIds: t.inspectionTargetPlayerIds,
+        inspectionCausePlayerId: t.inspectionCausePlayerId,
         random,
         now,
       } as any);
@@ -92,14 +141,14 @@ export function maybeResolveReactionQueue(
   if (state.sys.interaction?.current) return undefined;
 
   // choose who decides ordering at this step
-  const decider = chooseNextTriggerOwner(core, pending);
+  const decider = chooseNextTriggerOwner(core);
 
   // multiple triggers: ask decider to choose next trigger to resolve
   const options = pending
     .filter(t => t.mandatory ? decider === getCurrentPlayerId(core) : t.ownerPlayerId === decider)
     .map(t => ({
       id: t.id,
-      label: `${t.sourceDefId} @${t.timing}`,
+      label: buildReactionQueueOptionLabel(t),
       value: { triggerId: t.id },
       displayMode: 'button' as const,
     }));
@@ -114,4 +163,3 @@ export function maybeResolveReactionQueue(
   );
   return { state: queueInteraction(state, interaction), events: [] };
 }
-

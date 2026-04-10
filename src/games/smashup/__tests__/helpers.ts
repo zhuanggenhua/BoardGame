@@ -5,7 +5,7 @@
  * 消除 16+ 个测试文件中的重复定义。
  */
 
-import type { MatchState } from '../../../engine/types';
+import type { GameEvent, MatchState } from '../../../engine/types';
 import type {
     SmashUpCore,
     SmashUpEvent,
@@ -130,8 +130,22 @@ export function makeCard(
 // ============================================================================
 
 /** 创建空基地 */
-export function makeBase(defId: string, minions: MinionOnBase[] = []): BaseInPlay {
-    return { defId, minions, ongoingActions: [] };
+export function makeBase(defId: string, minions?: MinionOnBase[]): BaseInPlay;
+export function makeBase(overrides: Partial<BaseInPlay>): BaseInPlay;
+export function makeBase(
+    defIdOrOverrides: string | Partial<BaseInPlay>,
+    minions: MinionOnBase[] = [],
+): BaseInPlay {
+    if (typeof defIdOrOverrides === 'string') {
+        return { defId: defIdOrOverrides, minions, ongoingActions: [] };
+    }
+
+    return {
+        defId: 'test_base',
+        minions: [],
+        ongoingActions: [],
+        ...defIdOrOverrides,
+    };
 }
 
 // ============================================================================
@@ -192,6 +206,7 @@ export function applyEvents(state: SmashUpCore, events: SmashUpEvent[]): SmashUp
 
 import type { InteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
+import { defaultTestRandom, runCommand } from './testRunner';
 
 /**
  * 旧式 handler 调用桥接：将对象参数转为位置参数
@@ -239,7 +254,7 @@ import { triggerBaseAbility as _triggerBaseAbility } from '../domain/baseAbiliti
  */
 export function triggerBaseAbilityWithMS(
     baseDefId: string,
-    timing: 'onMinionPlayed' | 'onMinionDestroyed' | 'onTurnStart' | 'afterScoring' | 'onActionPlayed',
+    timing: 'onMinionPlayed' | 'onMinionDestroyed' | 'onTurnStart' | 'whenScoring' | 'afterScoring' | 'onActionPlayed',
     ctx: BaseAbilityContext,
 ): BaseAbilityResult {
     const ctxWithMS: BaseAbilityContext = {
@@ -274,4 +289,47 @@ export function getInteractionsFromMS(ms: MatchState<SmashUpCore>): any[] {
     if (interaction.current) list.push(interaction.current);
     if (interaction.queue?.length) list.push(...interaction.queue);
     return list;
+}
+
+export function findInteractionOption(
+    prompt: any,
+    predicate: (option: any) => boolean,
+): any | undefined {
+    return prompt?.data?.options?.find((option: any) => predicate(option));
+}
+
+export function resolveInteractionChain(
+    initialState: MatchState<SmashUpCore>,
+    resolver: (
+        prompt: any,
+        state: MatchState<SmashUpCore>,
+        step: number,
+    ) => { optionId?: string; optionIds?: string[]; mergedValue?: unknown },
+    random: RandomFn = defaultTestRandom,
+    maxSteps = 20,
+): { finalState: MatchState<SmashUpCore>; events: GameEvent[] } {
+    let state = initialState;
+    const events: GameEvent[] = [];
+
+    for (let step = 0; step < maxSteps; step += 1) {
+        const prompt = getInteractionsFromMS(state)[0];
+        if (!prompt) {
+            return { finalState: state, events };
+        }
+
+        const payload = resolver(prompt, state, step);
+        const result = runCommand(
+            state,
+            {
+                type: 'SYS_INTERACTION_RESPOND' as any,
+                playerId: prompt.playerId,
+                payload,
+            } as any,
+            random,
+        );
+        events.push(...result.events);
+        state = result.finalState;
+    }
+
+    throw new Error(`交互链在 ${maxSteps} 步内未完成`);
 }

@@ -17,6 +17,9 @@ const CARD_DRAW_KEY = 'card.handling.decks_and_cards_sound_fx_pack.card_take_001
 const CARD_DISCARD_KEY = 'card.fx.decks_and_cards_sound_fx_pack.fx_discard_001';
 const CARD_SHUFFLE_KEY = 'card.handling.decks_and_cards_sound_fx_pack.cards_shuffle_fast_001';
 const CARD_SCROLL_KEY = 'card.handling.decks_and_cards_sound_fx_pack.cards_scrolling_001';
+const BURY_KEY = 'magic.general.spells_variations_vol_3.stonebound_summon.magspel_stonebound_summon_01_krst_none';
+const UNEARTH_KEY = 'system.general.casual_mobile_sound_fx_pack_vol.interactions.misc_interactions.shovel_and_dig';
+const BURIED_RETURN_TO_HAND_KEY = 'magic.general.spells_variations_vol_1.close_temporal_rift_summoning.magspel_close_temporal_rift_summoning_01_krst';
 const MOVE_KEY = 'card.handling.mini_games_sound_effects_and_music_pack.card.sfx_card_play_1';
 const POWER_GAIN_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.charged_a';
 const POWER_LOSE_KEY = 'status.general.player_status_sound_fx_pack_vol.positive_buffs_and_cures.purged_a';
@@ -35,10 +38,18 @@ const MADNESS_KEY = 'magic.dark.32.dark_spell_01';
 export const SU_EVENTS = defineEvents({
   // ========== UI 交互（本地播放）==========
   'su:faction_selected': { audio: 'ui', sound: SELECTION_KEY },
+  'su:faction_deselected': 'silent',
 
   // ========== 即时反馈（EventStream）==========
   'su:minion_played': { audio: 'immediate', sound: MINION_PLAY_KEY },
   'su:action_played': 'fx',                                    // 行动卡展示（FX 系统 FeedbackPack）
+  'su:titan_played': { audio: 'immediate', sound: MINION_PLAY_KEY },
+  'su:titan_moved': { audio: 'immediate', sound: MOVE_KEY },
+  'su:titan_removed_from_play': { audio: 'immediate', sound: CARD_DISCARD_KEY },
+  'su:titan_power_counter_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
+  'su:titan_power_counter_removed': { audio: 'immediate', sound: POWER_LOSE_KEY },
+  'su:titan_ongoing_suppressed': 'silent',
+  'su:titan_metadata_updated': 'silent',
   
   'su:cards_drawn': { audio: 'immediate', sound: CARD_DRAW_KEY },
   'su:cards_discarded': { audio: 'immediate', sound: CARD_DISCARD_KEY },
@@ -48,10 +59,12 @@ export const SU_EVENTS = defineEvents({
   'su:trigger_queued': 'silent',
   'su:trigger_consumed': 'silent',
   'su:card_removed_from_deck': 'silent',
+  'su:card_boxed': 'silent',
   'su:card_removed_from_game': 'silent',
   'su:stakeout_pod_block_added': 'silent',
-  'su:card_buried': 'silent',
-  'su:buried_card_uncovered': 'silent',
+  'su:card_buried': { audio: 'immediate', sound: BURY_KEY },
+  'su:buried_card_uncovered': { audio: 'immediate', sound: UNEARTH_KEY },
+  'su:buried_card_returned_to_hand': { audio: 'immediate', sound: BURIED_RETURN_TO_HAND_KEY },
   'su:buried_cards_discarded_with_base': 'silent',
   'su:card_to_deck_top': { audio: 'immediate', sound: CARD_SCROLL_KEY },
   'su:card_to_deck_bottom': { audio: 'immediate', sound: CARD_SCROLL_KEY },
@@ -70,8 +83,10 @@ export const SU_EVENTS = defineEvents({
   
   'su:minion_returned': { audio: 'immediate', sound: CARD_SCROLL_KEY },
   'su:minion_moved': { audio: 'immediate', sound: MOVE_KEY },
+  'su:minion_control_changed': { audio: 'immediate', sound: CARD_SCROLL_KEY },
   'su:minion_metadata_updated': 'silent',
   'su:base_ability_suppressed': 'silent',
+  'su:card_suppressed': 'silent',
   
   'su:power_counter_added': { audio: 'immediate', sound: POWER_GAIN_KEY },
   'su:power_counter_removed': { audio: 'immediate', sound: POWER_LOSE_KEY },
@@ -82,6 +97,7 @@ export const SU_EVENTS = defineEvents({
   'su:ongoing_detached': { audio: 'immediate', sound: CARD_DISCARD_KEY },
   'su:ongoing_card_counter_changed': { audio: 'immediate', sound: POWER_GAIN_KEY },
   
+  'su:base_ability_used': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:talent_used': { audio: 'immediate', sound: TALENT_KEY },
   'su:minion_play_effect_queued': 'silent',
   'su:minion_play_effect_consumed': 'silent',
@@ -91,6 +107,7 @@ export const SU_EVENTS = defineEvents({
   
   'su:reveal_hand': { audio: 'immediate', sound: CARD_SCROLL_KEY },
   'su:reveal_deck_top': { audio: 'immediate', sound: CARD_SCROLL_KEY },
+  'su:deck_inspected': 'silent',
   
   'su:breakpoint_modified': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:limit_modified': { audio: 'immediate', sound: POSITIVE_SIGNAL_KEY },
@@ -103,6 +120,8 @@ export const SU_EVENTS = defineEvents({
   'su:after_scoring_triggered': 'silent',  // 标记基地已触发 afterScoring（防止重复触发）
   'su:after_scoring_cleared': 'silent',  // 清空 afterScoring 触发标记（计分阶段结束）
   
+  'su:when_scoring_triggered': 'silent',
+  'su:when_scoring_cleared': 'silent',
   'su:ability_feedback': { audio: 'immediate', sound: UPDATE_CHIME_KEY },
   'su:ability_triggered': 'fx',        // 持续效果/触发器激活（FX 动画）
 
@@ -121,6 +140,13 @@ export const SU_EVENTS = defineEvents({
 export const SU_EVENT_TYPES = {
   MINION_PLAYED: SU_EVENTS['su:minion_played'].type,
   ACTION_PLAYED: SU_EVENTS['su:action_played'].type,
+  TITAN_PLAYED: SU_EVENTS['su:titan_played'].type,
+  TITAN_MOVED: SU_EVENTS['su:titan_moved'].type,
+  TITAN_REMOVED_FROM_PLAY: SU_EVENTS['su:titan_removed_from_play'].type,
+  TITAN_POWER_COUNTER_ADDED: SU_EVENTS['su:titan_power_counter_added'].type,
+  TITAN_POWER_COUNTER_REMOVED: SU_EVENTS['su:titan_power_counter_removed'].type,
+  TITAN_ONGOING_SUPPRESSED: SU_EVENTS['su:titan_ongoing_suppressed'].type,
+  TITAN_METADATA_UPDATED: SU_EVENTS['su:titan_metadata_updated'].type,
   BASE_SCORED: SU_EVENTS['su:base_scored'].type,
   VP_AWARDED: SU_EVENTS['su:vp_awarded'].type,
   CARDS_DRAWN: SU_EVENTS['su:cards_drawn'].type,
@@ -129,10 +155,12 @@ export const SU_EVENT_TYPES = {
   TRIGGER_QUEUED: SU_EVENTS['su:trigger_queued'].type,
   TRIGGER_CONSUMED: SU_EVENTS['su:trigger_consumed'].type,
   CARD_REMOVED_FROM_DECK: SU_EVENTS['su:card_removed_from_deck'].type,
+  CARD_BOXED: SU_EVENTS['su:card_boxed'].type,
   CARD_REMOVED_FROM_GAME: SU_EVENTS['su:card_removed_from_game'].type,
   STAKEOUT_POD_BLOCK_ADDED: SU_EVENTS['su:stakeout_pod_block_added'].type,
   CARD_BURIED: SU_EVENTS['su:card_buried'].type,
   BURIED_CARD_UNCOVERED: SU_EVENTS['su:buried_card_uncovered'].type,
+  BURIED_CARD_RETURNED_TO_HAND: SU_EVENTS['su:buried_card_returned_to_hand'].type,
   BURIED_CARDS_DISCARDED_WITH_BASE: SU_EVENTS['su:buried_cards_discarded_with_base'].type,
   TURN_STARTED: SU_EVENTS['su:turn_started'].type,
   TURN_ENDED: SU_EVENTS['su:turn_ended'].type,
@@ -142,18 +170,22 @@ export const SU_EVENT_TYPES = {
   MINION_RETURNED: SU_EVENTS['su:minion_returned'].type,
   LIMIT_MODIFIED: SU_EVENTS['su:limit_modified'].type,
   FACTION_SELECTED: SU_EVENTS['su:faction_selected'].type,
+  FACTION_DESELECTED: SU_EVENTS['su:faction_deselected'].type,
   ALL_FACTIONS_SELECTED: SU_EVENTS['su:all_factions_selected'].type,
   STARTING_HAND_MULLIGAN_USED: SU_EVENTS['su:starting_hand_mulligan_used'].type,
   MINION_DESTROYED: SU_EVENTS['su:minion_destroyed'].type,
   MINION_MOVED: SU_EVENTS['su:minion_moved'].type,
+  MINION_CONTROL_CHANGED: SU_EVENTS['su:minion_control_changed'].type,
   MINION_METADATA_UPDATED: SU_EVENTS['su:minion_metadata_updated'].type,
   BASE_ABILITY_SUPPRESSED: SU_EVENTS['su:base_ability_suppressed'].type,
+  CARD_SUPPRESSED: SU_EVENTS['su:card_suppressed'].type,
   POWER_COUNTER_ADDED: SU_EVENTS['su:power_counter_added'].type,
   POWER_COUNTER_REMOVED: SU_EVENTS['su:power_counter_removed'].type,
   PERMANENT_POWER_ADDED: SU_EVENTS['su:permanent_power_added'].type,
   ONGOING_ATTACHED: SU_EVENTS['su:ongoing_attached'].type,
   ONGOING_DETACHED: SU_EVENTS['su:ongoing_detached'].type,
   ONGOING_CARD_COUNTER_CHANGED: SU_EVENTS['su:ongoing_card_counter_changed'].type,
+  BASE_ABILITY_USED: SU_EVENTS['su:base_ability_used'].type,
   TALENT_USED: SU_EVENTS['su:talent_used'].type,
   CARD_TO_DECK_TOP: SU_EVENTS['su:card_to_deck_top'].type,
   CARD_TO_DECK_BOTTOM: SU_EVENTS['su:card_to_deck_bottom'].type,
@@ -165,6 +197,7 @@ export const SU_EVENT_TYPES = {
   BASE_DECK_REORDERED: SU_EVENTS['su:base_deck_reordered'].type,
   REVEAL_HAND: SU_EVENTS['su:reveal_hand'].type,
   REVEAL_DECK_TOP: SU_EVENTS['su:reveal_deck_top'].type,
+  DECK_INSPECTED: SU_EVENTS['su:deck_inspected'].type,
   TEMP_POWER_ADDED: SU_EVENTS['su:temp_power_added'].type,
   BREAKPOINT_MODIFIED: SU_EVENTS['su:breakpoint_modified'].type,
   BASE_DECK_SHUFFLED: SU_EVENTS['su:base_deck_shuffled'].type,
@@ -174,6 +207,8 @@ export const SU_EVENT_TYPES = {
   SCORING_ELIGIBLE_BASES_LOCKED: SU_EVENTS['su:scoring_eligible_bases_locked'].type,
   BEFORE_SCORING_TRIGGERED: SU_EVENTS['su:before_scoring_triggered'].type,
   BEFORE_SCORING_CLEARED: SU_EVENTS['su:before_scoring_cleared'].type,
+  WHEN_SCORING_TRIGGERED: SU_EVENTS['su:when_scoring_triggered'].type,
+  WHEN_SCORING_CLEARED: SU_EVENTS['su:when_scoring_cleared'].type,
   AFTER_SCORING_TRIGGERED: SU_EVENTS['su:after_scoring_triggered'].type,
   AFTER_SCORING_CLEARED: SU_EVENTS['su:after_scoring_cleared'].type,
   ABILITY_FEEDBACK: SU_EVENTS['su:ability_feedback'].type,

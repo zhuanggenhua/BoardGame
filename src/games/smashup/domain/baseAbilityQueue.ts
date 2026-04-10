@@ -1,15 +1,14 @@
 import type { PlayerId } from '../../../engine/types';
 import type { SmashUpCore, TriggerQueuedEvent, TriggerInstance } from './types';
-import type { BaseTriggerTiming, BaseAbilityContext } from './baseAbilities';
+import type { BaseAbilityContext, BaseTriggerTiming } from './baseAbilities';
 import { SU_EVENTS } from './types';
 import { getBaseAbilityOptions, getExtendedBaseAbilityOptions, hasBaseAbility, triggerBaseAbility, triggerExtendedBaseAbility } from './baseAbilities';
 import { registerTriggerExecutor } from './triggerExecutors';
 
 type BaseTriggerTimingAsTrigger = BaseTriggerTiming;
 
-function timingToTriggerTiming(timing: BaseTriggerTimingAsTrigger): import('./ongoingEffects').TriggerTiming {
-  // BaseTriggerTiming is a subset of TriggerTiming (we extended TriggerTiming to include onActionPlayed)
-  return timing as unknown as import('./ongoingEffects').TriggerTiming;
+function timingToTriggerTiming(timing: BaseTriggerTimingAsTrigger): import('./ongoingEffects').TitanAwareTriggerTiming {
+  return timing as unknown as import('./ongoingEffects').TitanAwareTriggerTiming;
 }
 
 export function registerBaseAbilityAsQueuedTrigger(
@@ -31,6 +30,7 @@ export function registerBaseAbilityAsQueuedTrigger(
       minionPower: ctx.triggerMinionPower,
       rankings: ctx.rankings,
       actionTargetBaseIndex: ctx.actionTargetBaseIndex,
+      actionTargetType: ctx.actionTargetType,
       actionTargetMinionUid: ctx.actionTargetMinionUid,
       now: ctx.now,
     };
@@ -50,6 +50,7 @@ export function collectBaseAbilityTriggers(params: {
   triggerMinionPower?: number;
   rankings?: { playerId: PlayerId; power: number; vp: number }[];
   actionTargetBaseIndex?: number;
+  actionTargetType?: 'base' | 'minion';
   actionTargetMinionUid?: string;
   now: number;
 }): TriggerQueuedEvent | undefined {
@@ -63,6 +64,7 @@ export function collectBaseAbilityTriggers(params: {
     triggerMinionPower,
     rankings,
     actionTargetBaseIndex,
+    actionTargetType,
     actionTargetMinionUid,
     now,
   } = params;
@@ -91,6 +93,7 @@ export function collectBaseAbilityTriggers(params: {
     triggerMinionPower,
     rankings,
     actionTargetBaseIndex,
+    actionTargetType,
     actionTargetMinionUid,
     lkiBase: { baseIndex, defId: base.defId },
   };
@@ -120,6 +123,7 @@ export function registerExtendedBaseAbilityAsQueuedTrigger(
       minionPower: ctx.triggerMinionPower,
       rankings: ctx.rankings,
       actionTargetBaseIndex: ctx.actionTargetBaseIndex,
+      actionTargetType: ctx.actionTargetType,
       actionTargetMinionUid: ctx.actionTargetMinionUid,
       now: ctx.now,
     };
@@ -163,4 +167,3 @@ export function collectExtendedBaseAbilityTriggers(params: {
     timestamp: now,
   } as any;
 }
-

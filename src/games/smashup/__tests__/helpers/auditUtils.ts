@@ -16,7 +16,7 @@ import { getRegisteredOngoingEffectIds } from '../../domain/ongoingEffects';
 import type { TriggerTiming } from '../../domain/ongoingEffects';
 import { getRegisteredModifierIds } from '../../domain/ongoingModifiers';
 import { hasBaseAbility } from '../../domain/baseAbilities';
-import type { BaseTriggerTiming } from '../../domain/baseAbilities';
+import type { RegisteredBaseTriggerTiming } from '../../domain/baseAbilities';
 import { getRegisteredInteractionHandlerIds } from '../../domain/abilityInteractionHandlers';
 
 // ============================================================================
@@ -194,13 +194,14 @@ export interface BaseAbilityRegistrationResult {
     /** 是否在任一时机有注册 */
     registered: boolean;
     /** 各时机的注册状态 */
-    timings: Record<BaseTriggerTiming, boolean>;
+    timings: Record<RegisteredBaseTriggerTiming, boolean>;
 }
 
 /** 所有基地能力触发时机 */
-const ALL_BASE_TIMINGS: BaseTriggerTiming[] = [
+const ALL_BASE_TIMINGS: RegisteredBaseTriggerTiming[] = [
     'onMinionPlayed',
     'beforeScoring',
+    'whenScoring',
     'afterScoring',
     'onTurnStart',
     'onActionPlayed',
@@ -208,7 +209,7 @@ const ALL_BASE_TIMINGS: BaseTriggerTiming[] = [
 
 /** 检查基地能力注册表中是否有指定 baseDefId 的注册 */
 export function checkBaseAbilityRegistration(baseDefId: string): BaseAbilityRegistrationResult {
-    const timings = {} as Record<BaseTriggerTiming, boolean>;
+    const timings = {} as Record<RegisteredBaseTriggerTiming, boolean>;
     let registered = false;
 
     for (const timing of ALL_BASE_TIMINGS) {
