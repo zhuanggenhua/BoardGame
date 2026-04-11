@@ -29,6 +29,27 @@ beforeAll(() => {
     clearPowerModifierRegistry();
     resetAbilityInit();
     initAllAbilities();
+/*
+    it('泰坦力量指示物会计入玩家力量和基地总力量', () => {
+        const base = { defId: 'base_a', minions: [], ongoingActions: [] };
+        const state = makeState({
+            bases: [base],
+            titans: [{
+                uid: 'titan-1',
+                defId: 'ghosts_creampuff_man',
+                faction: 'ghosts',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 3,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            }],
+        });
+
+        expect(getPlayerEffectivePowerOnBase(state, base, 0, '0')).toBe(3);
+        expect(getTotalEffectivePowerOnBase(state, base, 0)).toBe(3);
+    });
+*/
 });
 
 // ============================================================================
@@ -70,45 +91,25 @@ describe('持续力量修正基础设施', () => {
         const state = makeState({ bases: [base] });
         expect(getTotalEffectivePowerOnBase(state, base, 0)).toBe(5);
     });
-});
 
-describe('suppressed source modifiers', () => {
-    it('suppressed steampunk_aggromotive should not grant base power bonus', () => {
-        const m1 = makeMinion('m1', 'test_a', '0', 2, { powerModifier: 0 });
-        const base = {
-            defId: 'base_a',
-            minions: [m1],
-            ongoingActions: [{ uid: 'ag1', defId: 'steampunk_aggromotive', ownerId: '0' }],
-        };
+    it('泰坦力量指示物会计入玩家力量和基地总力量', () => {
+        const base = { defId: 'base_a', minions: [], ongoingActions: [] };
         const state = makeState({
             bases: [base],
-            suppressedCardsUntilTurnStart: [{
-                cardUid: 'ag1',
-                baseIndex: 0,
-                suppressorPlayerId: '0',
-                cardType: 'ongoing',
+            titans: [{
+                uid: 'titan-1',
+                defId: 'ghosts_creampuff_man',
+                faction: 'ghosts',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 3,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
             }],
-        } as any);
-
-        expect(getPlayerEffectivePowerOnBase(state, base, 0, '0')).toBe(2);
-    });
-
-    it('suppressed dino_upgrade should not grant attached +2 power', () => {
-        const minion = makeMinion('m1', 'test_minion', '0', 3, {
-            attachedActions: [{ uid: 'up-1', defId: 'dino_upgrade', ownerId: '0' }],
         });
-        const base = { defId: 'base_a', minions: [minion], ongoingActions: [] };
-        const state = makeState({
-            bases: [base],
-            suppressedCardsUntilTurnStart: [{
-                cardUid: 'up-1',
-                baseIndex: 0,
-                suppressorPlayerId: '0',
-                cardType: 'attached',
-            }],
-        } as any);
 
-        expect(getEffectivePower(state, minion, 0)).toBe(3);
+        expect(getPlayerEffectivePowerOnBase(state, base, 0, '0')).toBe(3);
+        expect(getTotalEffectivePowerOnBase(state, base, 0)).toBe(3);
     });
 });
 

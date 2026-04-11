@@ -491,7 +491,6 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     },
                 },
                 titans: nextTitans,
-                cardsPlayedThisTurn: (state.cardsPlayedThisTurn ?? 0) + 1,
             };
         }
 
@@ -538,7 +537,12 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 metadata: undefined,
                 location: { zone: 'setaside' },
             };
-            return { ...state, titans: nextTitans };
+            return {
+                ...state,
+                titans: nextTitans,
+                titanOngoingSuppressedUntilTurnEnd: (state.titanOngoingSuppressedUntilTurnEnd ?? [])
+                    .filter(uid => uid !== titanUid),
+            };
         }
 
         case SU_EVENTS.TITAN_POWER_COUNTER_ADDED: {
@@ -889,6 +893,9 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 };
             }
 
+            const removedTitanUids = titans
+                .filter(titan => titan.location.zone === 'base' && titan.location.baseIndex === baseIndex)
+                .map(titan => titan.uid);
             const newBases = state.bases.filter((_, i) => i !== baseIndex);
             const newTitans = titans.map(titan => {
                 if (titan.location.zone !== 'base') return titan;
@@ -927,6 +934,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 titans: newTitans,
                 baseDiscard: newBaseDiscard,
                 scoringEligibleBaseIndices: newEligible?.length ? newEligible : undefined,
+                titanOngoingSuppressedUntilTurnEnd: (state.titanOngoingSuppressedUntilTurnEnd ?? [])
+                    .filter(uid => !removedTitanUids.includes(uid)),
             };
         }
 
@@ -1308,7 +1317,6 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 specialLimitUsed: undefined,
                 // 清空巨石阵双才能追踪
                 standingStonesDoubleTalentMinionUid: undefined,
-                greatWolfSpiritDoubleTalentCardUids: undefined,
                 // 清空计分后延迟 special 记录
                 pendingAfterScoringSpecials: undefined,
                 // 清空计分后等待基地替换完成的动作
@@ -1378,13 +1386,30 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                     if (i !== baseIndex) return base;
                     return { ...base, defId: newBaseDefId };
                 });
+                const removedTitanUids = (state.titans ?? [])
+                    .filter(titan => titan.location.zone === 'base' && titan.location.baseIndex === baseIndex)
+                    .map(titan => titan.uid);
+                const updatedTitans = (state.titans ?? []).map((titan) => {
+                    if (titan.location.zone !== 'base' || titan.location.baseIndex !== baseIndex) return titan;
+                    return {
+                        ...titan,
+                        controllerId: titan.ownerId,
+                        powerCounters: 0,
+                        talentUsed: false,
+                        metadata: undefined,
+                        location: { zone: 'setaside' } as const,
+                    };
+                });
                 return {
                     ...state,
                     bases: updatedBases,
+                    titans: updatedTitans,
                     baseDeck: [...newBaseDeck, oldBaseDefId],
                     beforeScoringTriggeredBases: cleanedBeforeScoring.length > 0 ? cleanedBeforeScoring : undefined,
                     whenScoringTriggeredBases: cleanedWhenScoring.length > 0 ? cleanedWhenScoring : undefined,
                     afterScoringTriggeredBases: cleanedAfterScoring.length > 0 ? cleanedAfterScoring : undefined,
+                    titanOngoingSuppressedUntilTurnEnd: (state.titanOngoingSuppressedUntilTurnEnd ?? [])
+                        .filter(uid => !removedTitanUids.includes(uid)),
                 };
             }
             // 默认模式：插入新空基地（配合 BASE_SCORED 删除旧基地后使用）
@@ -1395,8 +1420,21 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             };
             const newBases = [...state.bases];
             newBases.splice(baseIndex, 0, newBase);
+            const removedTitanUids = (state.titans ?? [])
+                .filter(titan => titan.location.zone === 'base' && titan.location.baseIndex === baseIndex)
+                .map(titan => titan.uid);
             const adjustedTitans = (state.titans ?? []).map(titan => {
                 if (titan.location.zone !== 'base') return titan;
+                if (titan.location.baseIndex === baseIndex) {
+                    return {
+                        ...titan,
+                        controllerId: titan.ownerId,
+                        powerCounters: 0,
+                        talentUsed: false,
+                        metadata: undefined,
+                        location: { zone: 'setaside' } as const,
+                    };
+                }
                 if (titan.location.baseIndex >= baseIndex) {
                     return {
                         ...titan,
@@ -1421,6 +1459,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 beforeScoringTriggeredBases: cleanedBeforeScoring.length > 0 ? cleanedBeforeScoring : undefined,
                 whenScoringTriggeredBases: cleanedWhenScoring.length > 0 ? cleanedWhenScoring : undefined,
                 afterScoringTriggeredBases: cleanedAfterScoring.length > 0 ? cleanedAfterScoring : undefined,
+                titanOngoingSuppressedUntilTurnEnd: (state.titanOngoingSuppressedUntilTurnEnd ?? [])
+                    .filter(uid => !removedTitanUids.includes(uid)),
                 ...(adjustedEligible ? { scoringEligibleBaseIndices: adjustedEligible } : {}),
             };
         }
@@ -1953,6 +1993,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const oldBase = baseIndex < state.bases.length ? state.bases[baseIndex] : undefined;
             let reusedTalent = false;
             let consumedStandingStones = false;
+            let standingStonesHostMinionUid: string | undefined;
 
             if (ongoingCardUid) {
                 const baseOngoing = oldBase?.ongoingActions.find(o => o.uid === ongoingCardUid);
@@ -1964,6 +2005,11 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         const attached = minion.attachedActions.find(action => action.uid === ongoingCardUid);
                         if (attached?.talentUsed) {
                             reusedTalent = true;
+                            consumedStandingStones =
+                                oldBase?.defId === 'base_standing_stones'
+                                && minion.controller === playerId
+                                && !state.standingStonesDoubleTalentMinionUid;
+                            standingStonesHostMinionUid = minion.uid;
                             break;
                         }
                     }
@@ -2006,32 +2052,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             });
             // 巨石阵双才能追踪：如果随从在使用前 talentUsed 已为 true，说明这是第二次使用
             let newStandingStonesUid = state.standingStonesDoubleTalentMinionUid;
-            if (minionUid && !ongoingCardUid && consumedStandingStones) {
-                newStandingStonesUid = minionUid;
-            }
-            const talentCardUid = ongoingCardUid ?? titanUid ?? minionUid;
-            const greatWolfSpiritBaseIndex = (state.titans ?? []).find(titan =>
-                titan.defId === 'werewolves_great_wolf_spirit'
-                && titan.location.zone === 'base'
-                && titan.controllerId === playerId
-                && !(state.titanOngoingSuppressedUntilTurnEnd ?? []).includes(titan.uid),
-            )?.location.baseIndex;
-            const consumedGreatWolfSpirit =
-                reusedTalent
-                && !consumedStandingStones
-                && talentCardUid !== undefined
-                && greatWolfSpiritBaseIndex !== undefined
-                && baseIndex === greatWolfSpiritBaseIndex;
-            let newGreatWolfSpiritDoubleTalentCardUids = state.greatWolfSpiritDoubleTalentCardUids;
-            if (
-                consumedGreatWolfSpirit
-                && talentCardUid
-                && !(newGreatWolfSpiritDoubleTalentCardUids ?? []).includes(talentCardUid)
-            ) {
-                newGreatWolfSpiritDoubleTalentCardUids = [
-                    ...(newGreatWolfSpiritDoubleTalentCardUids ?? []),
-                    talentCardUid,
-                ];
+            if (consumedStandingStones) {
+                newStandingStonesUid = standingStonesHostMinionUid ?? minionUid;
             }
             const newTitans = titanUid
                 ? (state.titans ?? []).map(titan =>
@@ -2039,7 +2061,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 )
                 : state.titans;
             const currentPlayer = state.players[playerId];
-            const nextPlayer = reusedTalent && !consumedStandingStones && !consumedGreatWolfSpirit && currentPlayer
+            const nextPlayer = reusedTalent && !consumedStandingStones && currentPlayer
                 ? {
                     ...currentPlayer,
                     extraTalentUsesConsumed: (currentPlayer.extraTalentUsesConsumed ?? 0) + 1,
@@ -2050,7 +2072,6 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                 bases: newBases,
                 titans: newTitans,
                 standingStonesDoubleTalentMinionUid: newStandingStonesUid,
-                greatWolfSpiritDoubleTalentCardUids: newGreatWolfSpiritDoubleTalentCardUids,
                 players: nextPlayer
                     ? { ...state.players, [playerId]: nextPlayer }
                     : state.players,
@@ -2379,14 +2400,10 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
             const player = state.players[playerId];
             if (!player || !state.madnessDeck) return state;
             // 从手牌或弃牌堆移除疯狂卡，放回疯狂牌库
-            const returningCard = player.hand.find(c => c.uid === cardUid)
-                ?? player.discard.find(c => c.uid === cardUid);
-            if (!returningCard) return state;
             const newHand = player.hand.filter(c => c.uid !== cardUid);
             const newDiscard = player.discard.filter(c => c.uid !== cardUid);
             return {
                 ...state,
-                madnessDeck: [...state.madnessDeck, returningCard.defId],
                 players: {
                     ...state.players,
                     [playerId]: { ...player, hand: newHand, discard: newDiscard },

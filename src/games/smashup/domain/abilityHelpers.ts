@@ -6,8 +6,6 @@
  */
 
 import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
-import { buildTargetAiHint, OPTIONAL_SKIP_AI_HINT } from '../../../engine/ai';
-import type { AiEffectIntent, AiHint } from '../../../engine/ai';
 import type {
     PromptOption as EnginePromptOption,
     SimpleChoiceConfig,
@@ -18,17 +16,15 @@ import type { AbilityContext, AbilityResult } from './abilityRegistry';
 import { resolveOnPlay } from './abilityRegistry';
 import { isMinionProtected, isMinionProtectedNonConsumable, type ProtectionType } from './ongoingEffects';
 import { collectBaseAbilityTriggers } from './baseAbilityQueue';
-import { resolveLiveBaseIndex } from './utils';
 import type {
     SmashUpCore,
     MinionOnBase,
+    TitanState,
     MinionPlayedEvent,
     LimitModifiedEvent,
     MinionReturnedEvent,
     MinionDestroyedEvent,
     MinionMovedEvent,
-    MinionControlChangedEvent,
-    MinionCardDef,
     PowerCounterAddedEvent,
     PowerCounterRemovedEvent,
     CardRecoveredFromDiscardEvent,
@@ -39,28 +35,21 @@ import type {
     BaseDeckShuffledEvent,
     RevealHandEvent,
     RevealDeckTopEvent,
-    DeckInspectedEvent,
     CardInstance,
     SmashUpEvent,
     CardsDrawnEvent,
+    DeckReshuffledEvent,
     DeckReorderedEvent,
     AbilityFeedbackEvent,
     OngoingCardCounterChangedEvent,
     CardToDeckBottomEvent,
-    TitanState,
-    TitanPlayedEvent,
-    TitanMovedEvent,
     TitanRemovedFromPlayEvent,
-    TitanPowerCounterAddedEvent,
-    TitanPowerCounterRemovedEvent,
-    TitanPlayAsKind,
-    ActionCardDef,
-    SpecialLimitUsedEvent,
 } from './types';
 import { SU_EVENT_TYPES as SU_EVENTS } from './events';
 import { getEffectivePower } from './ongoingModifiers';
-import { collectTriggers } from './ongoingEffects';
-import { getCardDef, getMinionDef, getTitanDef } from '../data/cards';
+import { triggerAllBaseAbilities } from './baseAbilities';
+import { collectTriggers, fireTriggers } from './ongoingEffects';
+import { getMinionDef } from '../data/cards';
 import { drawCards } from './utils';
 
 // ============================================================================
@@ -93,8 +82,7 @@ export function createSkipOption(label: string = '跳过'): EnginePromptOption<{
         id: 'skip',
         label,
         value: { skip: true },
-        displayMode: 'button',
-        _ai: OPTIONAL_SKIP_AI_HINT,
+        displayMode: 'button'
     };
 }
 
@@ -112,6 +100,57 @@ export function getMinionPower(state: SmashUpCore, minion: MinionOnBase, baseInd
 }
 
 // ============================================================================
+// 泰坦查询与离场
+// ============================================================================
+
+export function getTitanByUid(
+    state: SmashUpCore | MatchState<SmashUpCore>,
+    titanUid: string,
+): TitanState | undefined {
+    const core = 'core' in state ? state.core : state;
+    return (core.titans ?? []).find((titan) => titan.uid === titanUid);
+}
+
+export function getTitansOnBase(
+    state: SmashUpCore | MatchState<SmashUpCore>,
+    baseIndex: number,
+): TitanState[] {
+    const core = 'core' in state ? state.core : state;
+    return (core.titans ?? []).filter(
+        (titan) => titan.location.zone === 'base' && titan.location.baseIndex === baseIndex,
+    );
+}
+
+export function getTitanByController(
+    state: SmashUpCore | MatchState<SmashUpCore>,
+    controllerId: PlayerId,
+): TitanState | undefined {
+    const core = 'core' in state ? state.core : state;
+    return (core.titans ?? []).find(
+        (titan) => titan.controllerId === controllerId && titan.location.zone === 'base',
+    );
+}
+
+export function removeTitanFromPlay(
+    titan: TitanState,
+    reason: string,
+    now: number,
+): TitanRemovedFromPlayEvent {
+    return {
+        type: SU_EVENTS.TITAN_REMOVED_FROM_PLAY,
+        payload: {
+            titanUid: titan.uid,
+            defId: titan.defId,
+            ownerId: titan.ownerId,
+            controllerId: titan.controllerId,
+            fromBaseIndex: titan.location.zone === 'base' ? titan.location.baseIndex : undefined,
+            reason,
+        },
+        timestamp: now,
+    };
+}
+
+// ============================================================================
 // 随从消灭
 // ============================================================================
 
@@ -123,12 +162,11 @@ export function destroyMinion(
     ownerId: PlayerId,
     destroyerId: PlayerId | undefined,
     reason: string,
-    now: number,
-    sourceKind?: 'action' | 'nonAction',
+    now: number
 ): MinionDestroyedEvent {
     return {
         type: SU_EVENTS.MINION_DESTROYED,
-        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId, reason, sourceKind } as MinionDestroyedEvent['payload'],
+        payload: { minionUid, minionDefId, fromBaseIndex, ownerId, destroyerId, reason },
         timestamp: now,
     };
 }
@@ -144,177 +182,11 @@ export function moveMinion(
     fromBaseIndex: number,
     toBaseIndex: number,
     reason: string,
-    now: number,
-    toBaseDefId?: string,
+    now: number
 ): MinionMovedEvent {
     return {
         type: SU_EVENTS.MINION_MOVED,
-        payload: { minionUid, minionDefId, fromBaseIndex, toBaseIndex, ...(toBaseDefId ? { toBaseDefId } : {}), reason },
-        timestamp: now,
-    };
-}
-
-/** 生成随从控制权变更事件 */
-export function changeMinionController(
-    minionUid: string,
-    minionDefId: string,
-    baseIndex: number,
-    ownerId: PlayerId,
-    fromControllerId: PlayerId,
-    toControllerId: PlayerId,
-    sourcePlayerId: PlayerId,
-    reason: string,
-    now: number,
-): MinionControlChangedEvent {
-    return {
-        type: SU_EVENTS.MINION_CONTROL_CHANGED,
-        payload: {
-            minionUid,
-            minionDefId,
-            baseIndex,
-            ownerId,
-            fromControllerId,
-            toControllerId,
-            sourcePlayerId,
-            reason,
-        },
-        timestamp: now,
-    };
-}
-
-// ============================================================================
-// 泰坦
-// ============================================================================
-
-export function getAllTitans(state: SmashUpCore): TitanState[] {
-    return state.titans ?? [];
-}
-
-export function getTitansOnBase(state: SmashUpCore, baseIndex: number): TitanState[] {
-    return getAllTitans(state).filter(
-        titan => titan.location.zone === 'base' && titan.location.baseIndex === baseIndex,
-    );
-}
-
-export function getTitanByUid(state: SmashUpCore, titanUid: string): TitanState | undefined {
-    return getAllTitans(state).find(titan => titan.uid === titanUid);
-}
-
-export function getTitanByController(state: SmashUpCore, controllerId: PlayerId): TitanState | undefined {
-    return getAllTitans(state).find(
-        titan => titan.controllerId === controllerId && titan.location.zone === 'base',
-    );
-}
-
-export function getSetAsideTitansPlayableAs(
-    state: SmashUpCore,
-    playerId: PlayerId,
-    playKind: TitanPlayAsKind,
-): TitanState[] {
-    if (getTitanByController(state, playerId)) return [];
-    return getAllTitans(state).filter((titan) => {
-        if (titan.ownerId !== playerId || titan.location.zone !== 'setaside') return false;
-        const titanDef = getTitanDef(titan.defId);
-        return !!titanDef?.playAsKinds?.includes(playKind);
-    });
-}
-
-export function playTitan(
-    titan: TitanState,
-    controllerId: PlayerId,
-    baseIndex: number,
-    reason: string,
-    now: number,
-    baseDefId?: string,
-    consumesRegularPlayKinds?: TitanPlayAsKind | TitanPlayAsKind[],
-): TitanPlayedEvent {
-    const normalizedKinds = Array.isArray(consumesRegularPlayKinds)
-        ? consumesRegularPlayKinds
-        : consumesRegularPlayKinds
-            ? [consumesRegularPlayKinds]
-            : [];
-
-    return {
-        type: SU_EVENTS.TITAN_PLAYED,
-        payload: {
-            titanUid: titan.uid,
-            defId: titan.defId,
-            ownerId: titan.ownerId,
-            controllerId,
-            baseIndex,
-            ...(baseDefId ? { baseDefId } : {}),
-            ...(normalizedKinds.length === 1 ? { consumesRegularPlayKind: normalizedKinds[0] } : {}),
-            ...(normalizedKinds.length > 1 ? { consumesRegularPlayKinds: normalizedKinds } : {}),
-            reason,
-        },
-        timestamp: now,
-    };
-}
-
-export function moveTitan(
-    titanUid: string,
-    defId: string,
-    fromBaseIndex: number,
-    toBaseIndex: number,
-    reason: string,
-    now: number,
-    toBaseDefId?: string,
-): TitanMovedEvent {
-    return {
-        type: SU_EVENTS.TITAN_MOVED,
-        payload: {
-            titanUid,
-            defId,
-            fromBaseIndex,
-            toBaseIndex,
-            ...(toBaseDefId ? { toBaseDefId } : {}),
-            reason,
-        },
-        timestamp: now,
-    };
-}
-
-export function removeTitanFromPlay(
-    titan: TitanState,
-    reason: string,
-    now: number,
-): TitanRemovedFromPlayEvent {
-    return {
-        type: SU_EVENTS.TITAN_REMOVED_FROM_PLAY,
-        payload: {
-            titanUid: titan.uid,
-            defId: titan.defId,
-            ownerId: titan.ownerId,
-            controllerId: titan.controllerId,
-            ...(titan.location.zone === 'base' ? { fromBaseIndex: titan.location.baseIndex } : {}),
-            reason,
-        },
-        timestamp: now,
-    };
-}
-
-export function addTitanPowerCounter(
-    titanUid: string,
-    amount: number,
-    reason: string,
-    now: number,
-): TitanPowerCounterAddedEvent {
-    return {
-        type: SU_EVENTS.TITAN_POWER_COUNTER_ADDED,
-        payload: { titanUid, amount, reason },
-        timestamp: now,
-    };
-}
-
-export function removeTitanPowerCounter(
-    titanUid: string,
-    amount: number,
-    reason: string,
-    now: number,
-): TitanPowerCounterRemovedEvent {
-    return {
-        type: SU_EVENTS.TITAN_POWER_COUNTER_REMOVED,
-        payload: { titanUid, amount, reason },
+        payload: { minionUid, minionDefId, fromBaseIndex, toBaseIndex, reason },
         timestamp: now,
     };
 }
@@ -326,7 +198,6 @@ export function buildValidatedMoveEvents(
         minionDefId: string;
         fromBaseIndex: number;
         toBaseIndex: number;
-        toBaseDefId?: string;
         reason: string;
         now: number;
     },
@@ -334,8 +205,7 @@ export function buildValidatedMoveEvents(
     const core = 'core' in state ? state.core : state;
     const sourceBase = core.bases[params.fromBaseIndex];
     if (!sourceBase) return [];
-    const resolvedToBaseIndex = resolveLiveBaseIndex(core, params.toBaseIndex, params.toBaseDefId) ?? params.toBaseIndex;
-    const targetBase = core.bases[resolvedToBaseIndex];
+    const targetBase = core.bases[params.toBaseIndex];
     if (!targetBase) return [];
 
     const minion = sourceBase.minions.find(candidate => candidate.uid === params.minionUid);
@@ -346,10 +216,9 @@ export function buildValidatedMoveEvents(
             params.minionUid,
             minion.defId ?? params.minionDefId,
             params.fromBaseIndex,
-            resolvedToBaseIndex,
+            params.toBaseIndex,
             params.reason,
             params.now,
-            params.toBaseDefId,
         ),
     ];
 }
@@ -374,7 +243,6 @@ export function buildValidatedDestroyEvents(
         destroyerId?: PlayerId;
         reason: string;
         now: number;
-        sourceKind?: 'action' | 'nonAction';
     },
 ): MinionDestroyedEvent[] {
     const minion = findMinionOnBase(state, params.fromBaseIndex, params.minionUid);
@@ -389,7 +257,6 @@ export function buildValidatedDestroyEvents(
             params.destroyerId,
             params.reason,
             params.now,
-            params.sourceKind,
         ),
     ];
 }
@@ -630,21 +497,6 @@ export function revealDeckTop(
     };
 }
 
-/** 生成牌库被查看 / 展示 / 检索的统一见证事件 */
-export function inspectDeck(
-    targetPlayerId: PlayerId | PlayerId[],
-    inspectorPlayerId: PlayerId,
-    count: number,
-    reason: string,
-    now: number,
-): DeckInspectedEvent {
-    return {
-        type: SU_EVENTS.DECK_INSPECTED,
-        payload: { targetPlayerId, inspectorPlayerId, count, reason },
-        timestamp: now,
-    };
-}
-
 // ============================================================================
 // 牌库顶翻牌通用 helper
 // ============================================================================
@@ -730,14 +582,14 @@ export function revealAndPickFromDeck(params: {
         return { events: [], picked: [], missed: [] };
     }
 
-    const events: SmashUpEvent[] = [inspectDeck(playerId, playerId, revealed.length, reason, now)];
+    const events: SmashUpEvent[] = [];
 
     // 1. 展示事件（仅当 revealTo 不为 'none' 时生成）
     if (revealTo !== 'none') {
         const revealEvent = revealDeckTop(
             playerId, revealTo,
             revealed.map(c => ({ uid: c.uid, defId: c.defId })),
-            revealed.length, reason, now, playerId,
+            revealed.length, reason, now,
         );
         events.push(revealEvent);
     }
@@ -785,12 +637,11 @@ export function peekDeckTop(
     state: SmashUpCore,
     random: RandomFn,
     playerId: PlayerId,
-    /** 展示给谁：'all' = 所有玩家，playerId = 仅自己，'none' = 仅记私有查看 */
-    revealTo: PlayerId | 'all' | 'none',
+    /** 展示给谁：'all' = 所有玩家，playerId = 仅自己 */
+    revealTo: PlayerId | 'all',
     reason: string,
     now: number,
-    inspectorPlayerId: PlayerId = playerId,
-): { card: CardInstance; revealEvent?: RevealDeckTopEvent; events: SmashUpEvent[] } | undefined {
+): { card: CardInstance; revealEvent: RevealDeckTopEvent; events: SmashUpEvent[] } | undefined {
     const player = state.players[playerId];
     if (!player) return undefined;
 
@@ -812,28 +663,20 @@ export function peekDeckTop(
         // 才会在后续流程中体现为“弃牌堆洗回牌库”。
         // 为了本次 peek 能返回正确的 card，我们用模拟的 shuffled[0]。
         const card = shuffled[0];
-        events.push(inspectDeck(playerId, inspectorPlayerId, 1, reason, now));
-        if (revealTo === 'none') {
-            return { card, events };
-        }
         const revealEvent = revealDeckTop(
             playerId, revealTo,
             [{ uid: card.uid, defId: card.defId }],
-            1, reason, now, inspectorPlayerId,
+            1, reason, now,
         );
         events.push(revealEvent);
         return { card, revealEvent, events };
     }
 
     const card = player.deck[0];
-    events.push(inspectDeck(playerId, inspectorPlayerId, 1, reason, now));
-    if (revealTo === 'none') {
-        return { card, events };
-    }
     const revealEvent = revealDeckTop(
         playerId, revealTo,
         [{ uid: card.uid, defId: card.defId }],
-        1, reason, now, inspectorPlayerId,
+        1, reason, now,
     );
     events.push(revealEvent);
     return { card, revealEvent, events };
@@ -890,6 +733,8 @@ export function fireMinionPlayedTriggers(params: {
 
     // 2. 基地能力触发 onMinionPlayed（改为入队，按 Wiki 同时触发排序解决）
     const minionDef = getMinionDef(defId);
+    const sourceEventId = `minion-played:${cardUid}:${baseIndex}:${now}`;
+    const frameId = `minion-played-frame:${cardUid}:${baseIndex}:${now}`;
     const queuedBase = collectBaseAbilityTriggers({
         core,
         timing: 'onMinionPlayed',
@@ -898,6 +743,8 @@ export function fireMinionPlayedTriggers(params: {
         triggerMinionUid: cardUid,
         triggerMinionDefId: defId,
         triggerMinionPower: minionDef?.power ?? power,
+        frameId,
+        sourceEventId,
         now,
     });
     if (queuedBase) events.push(queuedBase as unknown as SmashUpEvent);
@@ -912,6 +759,8 @@ export function fireMinionPlayedTriggers(params: {
         triggerMinionUid: cardUid,
         triggerMinionDefId: defId,
         triggerMinion: playedMinion,
+        frameId,
+        sourceEventId,
         random,
         now,
     });
@@ -984,10 +833,48 @@ export function grantExtraAction(
     };
 }
 
+export function buildStandardDrawEvents(
+    state: SmashUpCore | MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    count: number,
+    random: RandomFn,
+    now: number,
+): SmashUpEvent[] {
+    const core = 'core' in state ? state.core : state;
+    const player = core.players[playerId];
+    if (!player || count <= 0) return [];
+
+    const drawResult = drawCards(player, count, random);
+    const events: SmashUpEvent[] = [];
+
+    if (drawResult.reshuffledDeckUids && drawResult.reshuffledDeckUids.length > 0) {
+        events.push({
+            type: SU_EVENTS.DECK_RESHUFFLED,
+            payload: {
+                playerId,
+                deckUids: drawResult.reshuffledDeckUids,
+            },
+            timestamp: now,
+        } as DeckReshuffledEvent);
+    }
+
+    if (drawResult.drawnUids.length > 0) {
+        events.push({
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: {
+                playerId,
+                count: drawResult.drawnUids.length,
+                cardUids: drawResult.drawnUids,
+            },
+            timestamp: now,
+        } as CardsDrawnEvent);
+    }
+
+    return events;
+}
+
 export function resolveExtraPlayTiming(matchState?: Pick<MatchState<SmashUpCore>, 'sys'>): 'banked' | 'immediate' {
-    const phase = matchState?.sys?.phase;
-    // startTurn 阶段产生的额外出牌应当视作“本回合可用额度”，避免打断计分/结算链路
-    return phase === 'playCards' || phase === 'startTurn' ? 'banked' : 'immediate';
+    return matchState?.sys?.phase === 'playCards' ? 'banked' : 'immediate';
 }
 
 export function grantContextualExtraMinion(
@@ -1159,6 +1046,9 @@ export function shuffleHandIntoDeck(
 // Special 能力限制组（每基地每回合一次）
 // ============================================================================
 
+import type { MinionCardDef, ActionCardDef, SpecialLimitUsedEvent } from './types';
+import { getCardDef } from '../data/cards';
+
 /**
  * 检查指定 defId 的 special 能力在指定基地是否已被限制组阻止
  * @returns true = 已被使用，不能再用
@@ -1238,35 +1128,6 @@ export function drawMadnessCards(
     };
 }
 
-export function buildStandardDrawEvents(
-    state: SmashUpCore,
-    playerId: PlayerId,
-    count: number,
-    random: RandomFn,
-    now: number,
-): SmashUpEvent[] {
-    if (count <= 0) return [];
-    const player = state.players[playerId];
-    if (!player) return [];
-    const draw = drawCards(player, count, random);
-    const events: SmashUpEvent[] = [];
-    if (draw.reshuffledDeckUids && draw.reshuffledDeckUids.length > 0) {
-        events.push({
-            type: SU_EVENTS.DECK_REORDERED,
-            payload: { playerId, deckUids: draw.reshuffledDeckUids },
-            timestamp: now,
-        } as DeckReorderedEvent);
-    }
-    if (draw.drawnUids.length > 0) {
-        events.push({
-            type: SU_EVENTS.CARDS_DRAWN,
-            payload: { playerId, count: draw.drawnUids.length, cardUids: draw.drawnUids },
-            timestamp: now,
-        } as CardsDrawnEvent);
-    }
-    return events;
-}
-
 /**
  * 生成返回疯狂卡事件
  * 
@@ -1293,7 +1154,7 @@ export function hasCthulhuExpansionFaction(players: Record<string, { factions: [
     for (const player of Object.values(players)) {
         for (const f of player.factions) {
             const baseFactionId = f.endsWith('_pod') ? f.slice(0, -4) : f;
-            if (CTHULHU_EXPANSION_FACTIONS.some((factionId) => factionId === baseFactionId)) return true;
+            if ((CTHULHU_EXPANSION_FACTIONS as readonly string[]).includes(baseFactionId as any)) return true;
         }
     }
     return false;
@@ -1305,23 +1166,6 @@ export function countMadnessCards(player: { hand: { defId: string }[]; deck: { d
     for (const c of player.hand) if (c.defId === MADNESS_CARD_DEF_ID) count++;
     for (const c of player.deck) if (c.defId === MADNESS_CARD_DEF_ID) count++;
     for (const c of player.discard) if (c.defId === MADNESS_CARD_DEF_ID) count++;
-    return count;
-}
-
-/** 计算某位玩家整局持有的疯狂卡数量（含埋葬区） */
-export function countMadnessCardsForPlayer(state: SmashUpCore, playerId: PlayerId): number {
-    const player = state.players[playerId];
-    if (!player) return 0;
-
-    let count = countMadnessCards(player);
-    for (const base of state.bases) {
-        for (const buried of base.buriedCards ?? []) {
-            if (buried.controllerId === playerId && buried.defId === MADNESS_CARD_DEF_ID) {
-                count++;
-            }
-        }
-    }
-
     return count;
 }
 
@@ -1406,78 +1250,6 @@ export function openAfterScoringWindow(
 // 交互辅助函数（目标选择）
 // ============================================================================
 
-type MinionTargetEffectType = ProtectionType | 'buff';
-
-function inferMinionEffectIntent(
-    effectType: MinionTargetEffectType | undefined,
-): AiEffectIntent | undefined {
-    switch (effectType) {
-        case 'buff':
-            return 'buff';
-        case 'destroy':
-            return 'destroy';
-        case 'move':
-            return 'move';
-        case 'action':
-        case 'affect':
-            return 'affect';
-        default:
-            return undefined;
-    }
-}
-
-function buildMinionTargetAiHint(args: {
-    minion: MinionOnBase;
-    sourcePlayerId: PlayerId;
-    effectType?: MinionTargetEffectType;
-}): AiHint {
-    const effectIntent = inferMinionEffectIntent(args.effectType);
-    return buildTargetAiHint({
-        actorPlayerId: args.sourcePlayerId,
-        targetPlayerId: args.minion.controller,
-        effectIntent,
-        targetKind: 'minion',
-        targetOwnerId: args.minion.owner,
-        targetControllerId: args.minion.controller,
-    });
-}
-
-export function buildPlayerTargetOptions<TExtraValue extends Record<string, unknown> = Record<string, never>>(
-    candidates: Array<{
-        id?: string;
-        label: string;
-        targetPlayerId: PlayerId;
-        value?: TExtraValue;
-        displayMode?: EnginePromptOption<{ targetPlayerId: PlayerId } & TExtraValue>['displayMode'];
-        priorityHint?: number;
-        forcedTargetPolicy?: AiHint['forcedTargetPolicy'];
-    }>,
-    context: {
-        sourcePlayerId: PlayerId;
-        effectIntent?: AiEffectIntent;
-        derivedFrom?: AiHint['derivedFrom'];
-    },
-): EnginePromptOption<{ targetPlayerId: PlayerId } & TExtraValue>[] {
-    return candidates.map((candidate, index) => ({
-        id: candidate.id ?? `player-${index}`,
-        label: candidate.label,
-        value: {
-            targetPlayerId: candidate.targetPlayerId,
-            ...((candidate.value ?? {}) as TExtraValue),
-        },
-        ...(candidate.displayMode ? { displayMode: candidate.displayMode } : {}),
-        _ai: buildTargetAiHint({
-            actorPlayerId: context.sourcePlayerId,
-            targetPlayerId: candidate.targetPlayerId,
-            effectIntent: context.effectIntent,
-            targetKind: 'player',
-            priorityHint: candidate.priorityHint,
-            forcedTargetPolicy: candidate.forcedTargetPolicy,
-            derivedFrom: context.derivedFrom ?? 'inferred',
-        }),
-    }));
-}
-
 /**
  * 构建随从目标选择的交互选项（自动保护过滤）
  * 
@@ -1495,35 +1267,16 @@ export function buildMinionTargetOptions(
         state: SmashUpCore;
         /** 发起效果的玩家 */
         sourcePlayerId: PlayerId;
-        /** 来源卡牌 defId；若是行动卡，会自动尊重 action 保护 */
-        sourceDefId?: string;
-        /** 显式来源类型；仅在无法提供 sourceDefId 时使用 */
-        sourceKind?: 'action' | 'nonAction';
         /** 效果类型覆盖（可选，不传则自动检查 destroy + affect） */
-        effectType?: MinionTargetEffectType;
-        /** 是否额外尊重“行动卡保护”（如烟雾弹） */
-        respectActionProtection?: boolean;
+        effectType?: ProtectionType;
     }
 ): EnginePromptOption<{ minionUid: string; baseIndex: number; defId: string }>[] {
-    const {
-        state,
-        sourcePlayerId,
-        sourceDefId,
-        sourceKind,
-        effectType,
-        respectActionProtection = false,
-    } = context;
-    const inferredActionSource = sourceKind === 'action'
-        || (sourceKind !== 'nonAction' && !!sourceDefId && getCardDef(sourceDefId)?.type === 'action');
-    const shouldRespectActionProtection = respectActionProtection || inferredActionSource;
+    const { state, sourcePlayerId, effectType } = context;
     const filteredCandidates = candidates.filter(c => {
         const minion = state.bases[c.baseIndex]?.minions.find(m => m.uid === c.uid);
         if (!minion) return false;
         // 己方随从不做保护检查（保护只针对对手效果）
         if (minion.controller === sourcePlayerId) return true;
-        if (shouldRespectActionProtection && isMinionProtected(state, minion, c.baseIndex, sourcePlayerId, 'action')) {
-            return false;
-        }
         // 对手随从：检查保护
         if (effectType) {
             // 指定了 effectType → 只检查该类型（非消耗型）+ affect（非消耗型广义保护）
@@ -1537,50 +1290,12 @@ export function buildMinionTargetOptions(
         return true;
     });
 
-    return filteredCandidates.map((c, i) => {
-        const minion = state.bases[c.baseIndex]?.minions.find(m => m.uid === c.uid);
-        if (!minion) {
-            return {
-                id: `minion-${i}`,
-                label: c.label,
-                value: { minionUid: c.uid, baseIndex: c.baseIndex, defId: c.defId },
-                _source: 'field' as const,
-            };
-        }
-
-        return {
-            id: `minion-${i}`,
-            label: c.label,
-            value: { minionUid: c.uid, baseIndex: c.baseIndex, defId: c.defId },
-            _source: 'field' as const,
-            _ai: buildMinionTargetAiHint({
-                minion,
-                sourcePlayerId,
-                effectType,
-            }),
-        };
-    });
-}
-
-/**
- * 构建“行动卡来源”的随从目标选择选项。
- *
- * 仅用于行动卡/特殊行动卡/行动卡持续效果这类真实会影响目标随从的场景。
- * 若某张行动只是把随从当作参照物（例如查同名、统计条件），不要用这个 helper。
- */
-export function buildActionMinionTargetOptions(
-    candidates: { uid: string; defId: string; baseIndex: number; label: string }[],
-    context: {
-        state: SmashUpCore;
-        sourcePlayerId: PlayerId;
-        effectType?: MinionTargetEffectType;
-    },
-): EnginePromptOption<{ minionUid: string; baseIndex: number; defId: string }>[] {
-    return buildMinionTargetOptions(candidates, {
-        ...context,
-        sourceKind: 'action',
-        respectActionProtection: true,
-    });
+    return filteredCandidates.map((c, i) => ({
+        id: `minion-${i}`,
+        label: c.label,
+        value: { minionUid: c.uid, baseIndex: c.baseIndex, defId: c.defId },
+        _source: 'field' as const,
+    }));
 }
 
 /**

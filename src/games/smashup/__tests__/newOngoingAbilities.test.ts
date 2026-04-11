@@ -1,7 +1,7 @@
 /**
  * 新增 ongoing 能力测试
  *
- * 覆盖：
+ * 覆盖�?
  * - 黑熊骑兵：general_ivan / polar_commando / superiority / cub_scout / high_ground
  * - 恐龙：tooth_and_claw / upgrade
  * - 克苏鲁：altar / furthering_the_cause
@@ -24,6 +24,7 @@ import {
     clearOngoingEffectRegistry,
     isMinionProtected,
     fireTriggers,
+    collectTriggers,
     interceptEvent,
 } from '../domain/ongoingEffects';
 import { reduce } from '../domain/reducer';
@@ -145,11 +146,11 @@ describe('bear_cavalry_polar_commando 保护', () => {
         expect(isMinionProtected(state, commando, 0, '1', 'destroy')).toBe(false);
     });
 
-    it('唯一时 +2 力量', () => {
+    it('唯一时获得 +2 力量', () => {
         const commando = makeMinion('pc', 'bear_cavalry_polar_commando', '0', 4, { powerModifier: 0 });
         const base = makeBase({ minions: [commando] });
         const state = makeState({ bases: [base] });
-        // getEffectivePower 使用卡牌定义中的 printed power（bear_cavalry_polar_commando 为 6），再叠加唯一随从 +2
+        // getEffectivePower 使用卡牌定义中的 printed power（bear_cavalry_polar_commando �?6），再叠加唯一随从 +2
         expect(getEffectivePower(state, commando, 0)).toBe(8);
     });
 });
@@ -305,7 +306,7 @@ describe('dino_tooth_and_claw 保护', () => {
             timestamp: 0,
         };
         const result = interceptEvent(state, destroyEvt);
-        // 拦截器应替换消灭事件为自毁事件
+        // 拦截器应替换消灭事件为自毁事�?
         expect(result).toBeDefined();
         expect(Array.isArray(result) ? result : [result]).toEqual(
             expect.arrayContaining([expect.objectContaining({ type: SU_EVENTS.ONGOING_DETACHED })])
@@ -317,7 +318,7 @@ describe('dino_tooth_and_claw 保护', () => {
 });
 
 // ============================================================================
-// 克苏鲁 - 触发
+// 克苏�?- 触发
 // ============================================================================
 
 describe('cthulhu_altar 触发', () => {
@@ -351,11 +352,11 @@ describe('cthulhu_altar 触发', () => {
 });
 
 describe('cthulhu_furthering_the_cause 触发', () => {
-    it('本回合该基地有对手随从被消灭→获得 1VP', () => {
+    it('本回合该基地有对手随从被消灭时获得 1 VP', () => {
         const base = makeBase({
             ongoingActions: [{ uid: 'ftc-1', defId: 'cthulhu_furthering_the_cause', ownerId: '0' }],
         });
-        // 模拟本回合在基地 0 消灭了对手随从
+        // 模拟本回合在基地 0 消灭了对手随�?
         const state = makeState({
             bases: [base],
             turnDestroyedMinions: [{ uid: 'destroyed-1', defId: 'test_minion', baseIndex: 0, owner: '1' }],
@@ -382,7 +383,7 @@ describe('cthulhu_furthering_the_cause 触发', () => {
         expect(events.some(e => e.type === SU_EVENTS.VP_AWARDED)).toBe(false);
     });
 
-    it('reducer: MINION_DESTROYED 追踪到 turnDestroyedMinions', () => {
+    it('reducer: MINION_DESTROYED 会追踪到 turnDestroyedMinions', () => {
         const minion = makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [minion] });
         const state = makeState({ bases: [base] });
@@ -439,7 +440,7 @@ describe('cthulhu_furthering_the_cause 触发', () => {
 });
 
 // ============================================================================
-// 杀手植物
+// 杀手植�?
 // ============================================================================
 
 describe('killer_plant_overgrowth 回合开始临界点降为0', () => {
@@ -498,7 +499,7 @@ describe('killer_plant_overgrowth 回合开始临界点降为0', () => {
         expect(bpEvents.length).toBe(0);
     });
 
-    it('reduce 后 tempBreakpointModifiers 生效，临界点为0', () => {
+    it('reduce 后 tempBreakpointModifiers 生效，临界点变为 0', () => {
         const base = makeBase({
             defId: 'base_the_jungle',
             ongoingActions: [{ uid: 'og-1', defId: 'killer_plant_overgrowth', ownerId: '0' }],
@@ -517,7 +518,7 @@ describe('killer_plant_overgrowth 回合开始临界点降为0', () => {
         expect(bp).toBe(0);
     });
 
-    it('打出当回合 scoreBases 阶段不生效（未经过 onTurnStart）', () => {
+    it('打出当回合的 scoreBases 阶段不生效（未经 onTurnStart）', () => {
         // 过度生长刚打出，还没经过 onTurnStart，tempBreakpointModifiers 为空
         const base = makeBase({
             defId: 'base_the_jungle',
@@ -527,7 +528,7 @@ describe('killer_plant_overgrowth 回合开始临界点降为0', () => {
             currentPlayerIndex: 0,
             bases: [base],
         });
-        // 直接查询临界点——不应该被修正（因为没有触发 onTurnStart）
+        // 直接查询临界点——不应该被修正（因为没有触发 onTurnStart�?
         const bp = getEffectiveBreakpoint(state, 0);
         expect(bp).toBe(12);
     });
@@ -542,7 +543,7 @@ describe('killer_plant_entangled 保护 + 自毁', () => {
             ongoingActions: [{ uid: 'ent-1', defId: 'killer_plant_entangled', ownerId: '0' }],
         });
         const state = makeState({ bases: [base] });
-        // 己方和对手随从都受 move 保护
+        // 己方和对手随从都�?move 保护
         expect(isMinionProtected(state, myMinion, 0, '1', 'move')).toBe(true);
         expect(isMinionProtected(state, enemyMinion, 0, '0', 'move')).toBe(true);
     });
@@ -604,7 +605,7 @@ describe('elder_thing_dunwich_horror', () => {
 });
 
 // ============================================================================
-// beforeScoring / afterScoring 触发器
+// beforeScoring / afterScoring 触发�?
 // ============================================================================
 
 describe('pirate_king beforeScoring', () => {
@@ -699,15 +700,111 @@ describe('pirate_first_mate afterScoring', () => {
         });
         expect(events.filter(e => e.type === SU_EVENTS.MINION_MOVED).length).toBe(0);
     });
+
+    it('已取得触发资格后，即使先被其他 afterScoring 效果移走，仍可继续结算自己的移动', () => {
+        const mate = makeMinion('mate', 'pirate_first_mate', '0', 2, { powerModifier: 0 });
+        const scoringBase = makeBase({ minions: [mate] });
+        const otherBase = makeBase({});
+        const thirdBase = makeBase({});
+        const state0 = makeState({ bases: [scoringBase, otherBase, thirdBase] });
+
+        const queued = collectTriggers(state0, 'afterScoring', {
+            state: state0,
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 2, vp: 3 }],
+            random: dummyRandom,
+            now: 100,
+        });
+        expect(queued).toBeDefined();
+
+        const trigger = queued!.payload.triggers.find(t => t.sourceCardUid === 'mate');
+        expect(trigger).toBeDefined();
+        expect(trigger?.ownerPlayerId).toBe('0');
+
+        const movedCore = reduce(state0, {
+            type: SU_EVENTS.MINION_MOVED,
+            payload: {
+                minionUid: 'mate',
+                minionDefId: 'pirate_first_mate',
+                fromBaseIndex: 0,
+                toBaseIndex: 1,
+                reason: 'base_pirate_cove',
+            },
+            timestamp: 101,
+        } as any);
+
+        const ms = {
+            core: { ...movedCore, triggerQueue: [trigger!] },
+            sys: {
+                phase: 'scoreBases',
+                interaction: { current: undefined, queue: [] },
+                responseWindow: { current: undefined },
+                smashupReactionSession: {
+                    frameId: trigger!.frameId ?? trigger!.id,
+                    frameKind: 'score-after',
+                    phase: 'optional',
+                    activePlayerId: '0',
+                    currentPlayerId: '0',
+                    consecutivePasses: 0,
+                    sourceBaseIndex: 0,
+                    responseWindowType: 'afterScoring',
+                },
+            },
+        } as any;
+
+        const reactionHandler = getInteractionHandler('smashup_reaction_choose');
+        expect(reactionHandler).toBeDefined();
+
+        const resolvedTrigger = reactionHandler!(
+            ms,
+            '0',
+            { kind: 'trigger', triggerId: trigger!.id },
+            undefined,
+            dummyRandom,
+            102,
+        );
+        expect(resolvedTrigger).toBeDefined();
+
+        const current = (resolvedTrigger!.state.sys.interaction.current as any);
+        let moveEvents: MinionMovedEvent[] = [];
+        if (current) {
+            expect(current.data.sourceId).toBe('pirate_first_mate_choose_base');
+
+            const targetOption = current.data.options.find((option: any) => option.value?.baseIndex === 2);
+            expect(targetOption).toBeDefined();
+
+            const mateHandler = getInteractionHandler('pirate_first_mate_choose_base');
+            expect(mateHandler).toBeDefined();
+
+            const finished = mateHandler!(
+                resolvedTrigger!.state,
+                '0',
+                targetOption.value,
+                current.data,
+                dummyRandom,
+                103,
+            );
+            expect(finished).toBeDefined();
+            moveEvents = finished!.events.filter(event => event.type === SU_EVENTS.MINION_MOVED) as MinionMovedEvent[];
+        } else {
+            moveEvents = resolvedTrigger!.events.filter(event => event.type === SU_EVENTS.MINION_MOVED) as MinionMovedEvent[];
+        }
+
+        expect(moveEvents).toHaveLength(1);
+        expect(moveEvents[0].payload.minionUid).toBe('mate');
+        expect(moveEvents[0].payload.fromBaseIndex).toBe(1);
+        expect(moveEvents[0].payload.toBaseIndex).toBe(2);
+    });
 });
 
 describe('cthulhu_chosen beforeScoring', () => {
-    /** 包装为 MatchState */
+    /** 包装�?MatchState */
     function makeMS(core: SmashUpCore) {
         return { core, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } as any } as any;
     }
 
-    it('有 matchState 时创建确认交互（"你可以"语义）', () => {
+    it('有 matchState 时创建确认交互（“你可以”语义）', () => {
         const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [chosen] });
         const state = makeState({
@@ -720,7 +817,7 @@ describe('cthulhu_chosen beforeScoring', () => {
         const result = fireTriggers(state, 'beforeScoring', {
             state, matchState: ms, playerId: '0', baseIndex: 0, random: dummyRandom, now: 0,
         });
-        // 有 matchState 时创建交互确认，不直接产生事件
+        // �?matchState 时创建交互确认，不直接产生事�?
         expect(result.events.length).toBe(0);
         expect(result.matchState).toBeDefined();
     });
@@ -737,7 +834,7 @@ describe('cthulhu_chosen beforeScoring', () => {
         const result = fireTriggers(state, 'beforeScoring', {
             state, matchState: undefined as any, playerId: '0', baseIndex: 0, random: dummyRandom, now: 0,
         });
-        // 无 matchState 时自动执行
+        // �?matchState 时自动执�?
         expect(result.events.some(e => e.type === SU_EVENTS.MADNESS_DRAWN)).toBe(true);
         const powerEvts = result.events.filter(e => e.type === SU_EVENTS.TEMP_POWER_ADDED) as TempPowerAddedEvent[];
         expect(powerEvts.length).toBe(1);
@@ -763,7 +860,7 @@ describe('cthulhu_chosen beforeScoring', () => {
         expect(powerEvts[0].payload.minionUid).toBe('ch1-pod');
     });
 
-    it('无疯狂牌库时回退自动执行仍获得+2力量', () => {
+    it('无疯狂牌库时回退自动执行仍获得 2 力量', () => {
         const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [chosen] });
         const state = makeState({
@@ -775,7 +872,7 @@ describe('cthulhu_chosen beforeScoring', () => {
         const result = fireTriggers(state, 'beforeScoring', {
             state, matchState: undefined as any, playerId: '0', baseIndex: 0, random: dummyRandom, now: 0,
         });
-        // 无疯狂牌库 → 不产生 MADNESS_DRAWN，但仍获得 +2 力量
+        // 无疯狂牌�?�?不产�?MADNESS_DRAWN，但仍获�?+2 力量
         expect(result.events.some(e => e.type === SU_EVENTS.MADNESS_DRAWN)).toBe(false);
         const powerEvts = result.events.filter(e => e.type === SU_EVENTS.TEMP_POWER_ADDED) as TempPowerAddedEvent[];
         expect(powerEvts.length).toBe(1);
@@ -796,7 +893,7 @@ describe('cthulhu_chosen beforeScoring', () => {
         const result = fireTriggers(state, 'beforeScoring', {
             state, matchState: ms, playerId: '0', baseIndex: 0, random: dummyRandom, now: 0,
         });
-        // 有 matchState 时创建交互，不直接产生事件
+        // �?matchState 时创建交互，不直接产生事�?
         expect(result.events.length).toBe(0);
         expect(result.matchState).toBeDefined();
     });
@@ -814,7 +911,7 @@ describe('cthulhu_chosen beforeScoring', () => {
         const result = fireTriggers(state, 'beforeScoring', {
             state, matchState: undefined as any, playerId: '0', baseIndex: 0, random: dummyRandom, now: 0,
         });
-        // 天选之人在 base[1]，计分的是 base[0]，仍然触发
+        // 天选之人在 base[1]，计分的�?base[0]，仍然触�?
         const powerEvts = result.events.filter(e => e.type === SU_EVENTS.TEMP_POWER_ADDED) as TempPowerAddedEvent[];
         expect(powerEvts.length).toBe(1);
         expect(powerEvts[0].payload.minionUid).toBe('ch1');
@@ -852,7 +949,7 @@ describe('elder_thing_the_price_of_power special 能力', () => {
             baseIndex: 0, random: dummyRandom, now: 0,
         } as AbilityContext);
         const powerEvts = result.events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED) as PowerCounterAddedEvent[];
-        // 对手有2张疯狂卡 → 己方随从获得2次+2力量
+        // 对手�?张疯狂卡 �?己方随从获得2�?2力量
         expect(powerEvts.length).toBe(2);
         expect(powerEvts.every(e => e.payload.amount === 2)).toBe(true);
     });
@@ -979,7 +1076,7 @@ describe('alien_jammed_signal: 无视基地能力', () => {
 });
 
 describe('cthulhu_complete_the_ritual onTurnStart', () => {
-    it('拥有者回合开始时返回随从+移除ongoing+换基地', () => {
+    it('拥有者回合开始时返回随从、移除 ongoing 并换基地', () => {
         const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const m2 = makeMinion('m2', 'test_minion', '1', 4, { powerModifier: 0 });
         const base = makeBase({
@@ -996,11 +1093,11 @@ describe('cthulhu_complete_the_ritual onTurnStart', () => {
         });
         // 随从放回拥有者牌库底
         const toDeckBottom = events.filter(e => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM) as CardToDeckBottomEvent[];
-        // 2 个随从 + 2 个 ongoing 行动卡 = 4 个 CARD_TO_DECK_BOTTOM 事件
+        // 2 个随�?+ 2 �?ongoing 行动�?= 4 �?CARD_TO_DECK_BOTTOM 事件
         expect(toDeckBottom.length).toBe(4);
-        // 基地清除（BASE_CLEARED 用于删除基地）
+        // 基地清除（BASE_CLEARED 用于删除基地�?
         expect(events.some(e => e.type === SU_EVENTS.BASE_CLEARED)).toBe(true);
-        // 新基地插入
+        // 新基地插�?
         const replaced = events.filter(e => e.type === SU_EVENTS.BASE_REPLACED) as BaseReplacedEvent[];
         expect(replaced.length).toBe(1);
         expect(replaced[0].payload.newBaseDefId).toBe('new_base_def');
@@ -1065,8 +1162,43 @@ describe('BASE_REPLACED keepCards 模式 (terraform)', () => {
         expect(next.beforeScoringTriggeredBases).toBeUndefined();
         expect(next.afterScoringTriggeredBases).toBeUndefined();
     });
+    it('BASE_REPLACED 会让原基地上的泰坦离场并清空状态', () => {
+        const state = makeState({
+            bases: [makeBase({ defId: 'old_base' })],
+            baseDeck: ['new_base'],
+            titans: [{
+                uid: 'titan-1',
+                defId: 'ghosts_creampuff_man',
+                faction: 'ghosts',
+                ownerId: '0',
+                controllerId: '1',
+                powerCounters: 4,
+                talentUsed: true,
+                metadata: { armed: true },
+                location: { zone: 'base', baseIndex: 0, enteredAt: 9 },
+            }],
+            titanOngoingSuppressedUntilTurnEnd: ['titan-1'],
+        });
 
-    it('keepCards=false/默认时创建空基地并插入', () => {
+        const evt: BaseReplacedEvent = {
+            type: SU_EVENTS.BASE_REPLACED,
+            payload: { baseIndex: 0, oldBaseDefId: 'old_base', newBaseDefId: 'new_base', keepCards: true },
+            timestamp: 0,
+        };
+
+        const next = reduce(state, evt);
+        expect(next.titans?.[0]).toMatchObject({
+            uid: 'titan-1',
+            controllerId: '0',
+            powerCounters: 0,
+            talentUsed: false,
+            metadata: undefined,
+            location: { zone: 'setaside' },
+        });
+        expect(next.titanOngoingSuppressedUntilTurnEnd ?? []).not.toContain('titan-1');
+    });
+
+    it('keepCards=false 时不保留原基地上的卡牌', () => {
         const base = makeBase({ defId: 'old_base' });
         const state = makeState({ bases: [base], baseDeck: ['new_base'] });
 
@@ -1076,7 +1208,7 @@ describe('BASE_REPLACED keepCards 模式 (terraform)', () => {
             timestamp: 0,
         };
         const next = reduce(state, evt);
-        // 插入了新基地（旧基地仍在，总数+1）
+        // replace 语义是保留基地槽位并补入新基地，所以基地数量仍为玩家数 + 1
         expect(next.bases.length).toBe(2);
         expect(next.bases[0].defId).toBe('new_base');
         expect(next.bases[0].minions.length).toBe(0);
@@ -1084,11 +1216,11 @@ describe('BASE_REPLACED keepCards 模式 (terraform)', () => {
 });
 
 // ============================================================================
-// 海盗 Buccaneer - onMinionDestroyed 触发器（被消灭→移动）
+// 海盗 Buccaneer - onMinionDestroyed 触发器（被消灭后移动）
 // ============================================================================
 
 describe('pirate_buccaneer 触发器：被消灭→移动', () => {
-    it('两个基地时自动移动（产生 MINION_MOVED）', () => {
+    it('两个基地时自动移动（产生 MINION_MOVED 事件）', () => {
         const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4, { powerModifier: 0 });
         const base0 = makeBase({ minions: [buccaneer] });
         const base1 = makeBase();
@@ -1142,7 +1274,7 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
     it('无其他基地时不触发（正常消灭）', () => {
         const buccaneer = makeMinion('buc-1', 'pirate_buccaneer', '0', 4, { powerModifier: 0 });
         const base = makeBase({ minions: [buccaneer] });
-        const state = makeState({ bases: [base] }); // 只有一个基地
+        const state = makeState({ bases: [base] }); // 只有一个基�?
 
         const result = fireTriggers(state, 'onMinionDestroyed', {
             state,
@@ -1189,7 +1321,7 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
             random: dummyRandom,
             now: 0,
         });
-        // isSourceActive 检查 buccaneer 不在场，触发器不触发
+        // isSourceActive 检�?buccaneer 不在场，触发器不触发
         expect(result.events.length).toBe(0);
     });
 
@@ -1199,7 +1331,7 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
         const base1 = makeBase();
         const base2 = makeBase();
         const state = makeState({ bases: [base0, base1, base2] });
-        // 构造 matchState 以支持交互创建
+        // 构�?matchState 以支持交互创�?
         const matchState = {
             core: state,
             playerIds: ['0', '1'],
@@ -1216,9 +1348,9 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
             random: dummyRandom,
             now: 1,
         });
-        // 不产生移动事件（等待玩家选择）
+        // 不产生移动事件（等待玩家选择�?
         expect(result.events.length).toBe(0);
-        // 应创建交互
+        // 应创建交�?
         expect(result.matchState).toBeDefined();
         const ms = result.matchState!;
         const pending = ms.sys.interaction.current ?? ms.sys.interaction.queue[0];
@@ -1243,7 +1375,7 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
             timestamp: 0,
         };
         const next = reduce(state, moveEvt);
-        // 基地 0 上没有随从
+        // 基地 0 上没有随�?
         expect(next.bases[0].minions.length).toBe(0);
         // 基地 1 上有 buccaneer
         expect(next.bases[1].minions.length).toBe(1);
@@ -1257,14 +1389,14 @@ describe('pirate_buccaneer 触发器：被消灭→移动', () => {
 // ============================================================================
 
 describe('elder_thing_elder_thing 保护', () => {
-    it('对手消灭远古之物被保护', () => {
+    it('对手消灭远古之物时会被保护', () => {
         const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing] });
         const state = makeState({ bases: [base] });
         expect(isMinionProtected(state, elderThing, 0, '1', 'destroy')).toBe(true);
     });
 
-    it('对手移动远古之物被保护', () => {
+    it('对手移动远古之物时会被保护', () => {
         const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing] });
         const state = makeState({ bases: [base] });
@@ -1288,7 +1420,7 @@ describe('elder_thing_elder_thing 保护', () => {
 });
 
 describe('elder_thing_elder_thing onPlay', () => {
-    it('不足2个其他随从→产生 Interaction（消灭选项置灰）', () => {
+    it('不足 2 个其他随从时产生 Interaction（消灭选项置灰）', () => {
         const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing] });
         const state = makeState({ bases: [base] });
@@ -1300,17 +1432,17 @@ describe('elder_thing_elder_thing onPlay', () => {
             state, matchState: ms, playerId: '0', cardUid: 'et-1', defId: 'elder_thing_elder_thing',
             baseIndex: 0, random: dummyRandom, now: 0,
         } as AbilityContext);
-        // 始终走 Interaction，不足时消灭选项 disabled
+        // 始终�?Interaction，不足时消灭选项 disabled
         const current = (result.matchState?.sys as any)?.interaction?.current;
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('elder_thing_elder_thing_choice');
         expect(current?.data?.targetType).toBe('button');
-        // 消灭选项应该被禁用
+        // 消灭选项应该被禁�?
         const destroyOption = current?.data?.options?.find((o: any) => o.id === 'destroy');
         expect(destroyOption?.disabled).toBe(true);
     });
 
-    it('≥2个其他随从→产生 Interaction 选择', () => {
+    it('有 2 个其他随从时产生 Interaction 选择', () => {
         const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
         const ally1 = makeMinion('a1', 'test_minion', '0', 3, { powerModifier: 0 });
         const ally2 = makeMinion('a2', 'test_minion', '0', 3, { powerModifier: 0 });
@@ -1331,7 +1463,7 @@ describe('elder_thing_elder_thing onPlay', () => {
         expect(current?.data?.targetType).toBe('button');
     });
 
-    it('CARD_TO_DECK_BOTTOM reducer 从基地移除随从到牌库底', () => {
+    it('CARD_TO_DECK_BOTTOM reducer 会从基地移除随从到牌库底', () => {
         const elderThing = makeMinion('et-1', 'elder_thing_elder_thing', '0', 10, { powerModifier: 0 });
         const base = makeBase({ minions: [elderThing] });
         const state = makeState({ bases: [base] });
@@ -1342,16 +1474,16 @@ describe('elder_thing_elder_thing onPlay', () => {
             timestamp: 0,
         };
         const next = reduce(state, evt);
-        // 基地上不再有该随从
+        // 基地上不再有该随�?
         expect(next.bases[0].minions.length).toBe(0);
-        // 玩家牌库底多了一张
+        // 玩家牌库底多了一�?
         expect(next.players['0'].deck.length).toBe(1);
         expect(next.players['0'].deck[0].uid).toBe('et-1');
     });
 });
 
 // ============================================================================
-// 修格斯 (Shoggoth) - 打出限制 + onPlay
+// 修格�?(Shoggoth) - 打出限制 + onPlay
 // ============================================================================
 
 describe('elder_thing_shoggoth 打出限制', () => {
@@ -1373,7 +1505,7 @@ describe('elder_thing_shoggoth 打出限制', () => {
         expect(result.error).toContain('6点力量');
     });
 
-    it('己方力量≥6的基地可以打出修格斯', () => {
+    it('己方力量足够的基地可以打出修格斯', () => {
         const bigMinion = makeMinion('big', 'test_minion', '0', 6, { powerModifier: 0 });
         const base = makeBase({ minions: [bigMinion] });
         const shoggothCard: CardInstance = { uid: 'sh-1', defId: 'elder_thing_shoggoth', type: 'minion', owner: '0' };
@@ -1439,14 +1571,14 @@ describe('elder_thing_shoggoth onPlay', () => {
 });
 
 // ============================================================================
-// 食人花 (Killer Plants) - 完善测试
+// 食人�?(Killer Plants) - 完善测试
 // ============================================================================
 
 describe('killer_plant_venus_man_trap 搜索牌库', () => {
-    it('牌库有多个力量≤2随从→产生 Interaction', () => {
+    it('牌库有多个力量≤2随从时产生 Interaction', () => {
         const trap = makeMinion('trap', 'killer_plant_venus_man_trap', '0', 5, { powerModifier: 0 });
         const base = makeBase({ minions: [trap] });
-        // 牌库中放入两个 power≤2 的随从卡
+        // 牌库中放入两�?power�? 的随从卡
         const deckCard1: CardInstance = { uid: 'd1', defId: 'killer_plant_sprout', type: 'minion', owner: '0' };
         const deckCard2: CardInstance = { uid: 'd2', defId: 'killer_plant_sprout', type: 'minion', owner: '0' };
         const state = makeState({
@@ -1469,7 +1601,7 @@ describe('killer_plant_venus_man_trap 搜索牌库', () => {
         expect(current?.data?.autoRefresh).toBe('deck');
     });
 
-    it('牌库只有一个力量≤2随从→自动抽取+额外随从+洗牌', () => {
+    it('牌库只有一个力量≤2随从时自动抽牌、额外打随从并洗牌', () => {
         const trap = makeMinion('trap', 'killer_plant_venus_man_trap', '0', 5, { powerModifier: 0 });
         const base = makeBase({ minions: [trap] });
         const deckCard: CardInstance = { uid: 'd1', defId: 'killer_plant_sprout', type: 'minion', owner: '0' };
@@ -1484,20 +1616,20 @@ describe('killer_plant_venus_man_trap 搜索牌库', () => {
             state, playerId: '0', cardUid: 'trap', defId: 'killer_plant_venus_man_trap',
             baseIndex: 0, random: dummyRandom, now: 0,
         } as AbilityContext);
-        // 应产生 4 个事件：CARDS_DRAWN + LIMIT_MODIFIED + MINION_PLAYED + DECK_REORDERED
+        // 应产�?4 个事件：CARDS_DRAWN + LIMIT_MODIFIED + MINION_PLAYED + DECK_REORDERED
         expect(result.events.length).toBe(4);
         expect(result.events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
         expect(result.events[1].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
         expect(result.events[2].type).toBe(SU_EVENTS.MINION_PLAYED);
-        // 验证随从被打出到此基地（baseIndex=0）
+        // 验证随从被打出到此基地（baseIndex=0�?
         expect((result.events[2] as any).payload.baseIndex).toBe(0);
         expect(result.events[3].type).toBe(SU_EVENTS.DECK_REORDERED);
     });
 
-    it('牌库无合格随从→不产生事件', () => {
+    it('牌库无合格随从时不产生事件', () => {
         const trap = makeMinion('trap', 'killer_plant_venus_man_trap', '0', 5, { powerModifier: 0 });
         const base = makeBase({ minions: [trap] });
-        // 牌库中只有 power>2 的卡
+        // 牌库中只�?power>2 的卡
         const bigCard: CardInstance = { uid: 'd1', defId: 'killer_plant_venus_man_trap', type: 'minion', owner: '0' };
         const state = makeState({
             bases: [base],
@@ -1509,7 +1641,7 @@ describe('killer_plant_venus_man_trap 搜索牌库', () => {
             state, playerId: '0', cardUid: 'trap', defId: 'killer_plant_venus_man_trap',
             baseIndex: 0, random: dummyRandom, now: 0,
         } as AbilityContext);
-        // 搜索不到合格随从，但规则仍要求重洗牌库，并发送反馈提示
+        // 搜索不到合格随从，但规则仍要求重洗牌库，并发送反馈提�?
         expect(result.events.length).toBe(2);
         expect(result.events[0].type).toBe('su:deck_reordered');
         expect(result.events[1].type).toBe(SU_EVENTS.ABILITY_FEEDBACK);
@@ -1533,7 +1665,7 @@ describe('killer_plant_budding 选择场上随从', () => {
         expect(current).toBeDefined();
     });
 
-    it('场上无随从→不产生事件', () => {
+    it('场上无随从时不产生事件', () => {
         const base = makeBase();
         const state = makeState({ bases: [base] });
 
@@ -1579,7 +1711,7 @@ describe('killer_plant_deep_roots 保护修复', () => {
 });
 
 describe('killer_plant_choking_vines 触发修复', () => {
-    it('消灭附着了 choking_vines 的随从', () => {
+    it('消灭附着 choking_vines 的随从', () => {
         const target = makeMinion('m1', 'test_minion', '1', 5, {
             attachedActions: [{ uid: 'cv-1', defId: 'killer_plant_choking_vines', ownerId: '0' }],
         });
@@ -1612,18 +1744,11 @@ describe('killer_plant_choking_vines 触发修复', () => {
 });
 
 // ============================================================================
-// 海盗 - pirate_full_sail 全速航行
+// 海盗 - pirate_full_sail 全速航�?
 // ============================================================================
 
 describe('pirate_full_sail special', () => {
-    it('onPlay executor 已注册，并与 special 复用同一实现', () => {
-        const onPlayExecutor = resolveAbility('pirate_full_sail', 'onPlay');
-        const specialExecutor = resolveAbility('pirate_full_sail', 'special');
-        expect(onPlayExecutor).toBeDefined();
-        expect(onPlayExecutor).toBe(specialExecutor);
-    });
-
-    it('有己方随从→产生 Prompt（含完成选项）', () => {
+    it('有己方随从时产生 Prompt（含完成选项）', () => {
         const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [m1] });
         const state = makeState({ bases: [base, makeBase()] });
@@ -1636,16 +1761,16 @@ describe('pirate_full_sail special', () => {
             baseIndex: 0, random: dummyRandom, now: 0,
         } as AbilityContext);
         expect(result.events.length).toBe(0);
-        // 迁移后直接创建 Interaction
+        // 迁移后直接创�?Interaction
         const current = (result.matchState?.sys as any)?.interaction?.current;
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('pirate_full_sail_choose_minion');
-        // 应包含 "完成移动" 选项
+        // 应包�?"完成移动" 选项
         const promptOptions = (current?.data as any)?.options;
         expect(promptOptions.some((o: any) => o.value.done === true)).toBe(true);
     });
 
-    it('无己方随从→不产生事件', () => {
+    it('无己方随从时不产生事件', () => {
         const enemyMinion = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({ minions: [enemyMinion] });
         const state = makeState({ bases: [base, makeBase()] });
@@ -1676,35 +1801,12 @@ describe('pirate_full_sail special', () => {
     });
 });
 
-describe('ancient_egyptians_plague_of_locusts onPlay', () => {
-    it('onPlay executor 已注册，正常打出时会创建选基地交互', () => {
-        const state = makeState({ bases: [makeBase(), makeBase()] });
-        const executor = resolveAbility('ancient_egyptians_plague_of_locusts', 'onPlay');
-        expect(executor).toBeDefined();
-        const ms = { core: state, sys: { phase: 'playCards', interaction: { queue: [] } } } as any;
-        const result = executor!({
-            state,
-            matchState: ms,
-            playerId: '0',
-            cardUid: 'plague-1',
-            defId: 'ancient_egyptians_plague_of_locusts',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
-
-        const current = (result.matchState?.sys as any)?.interaction?.current;
-        expect(current?.data?.sourceId).toBe('ancient_egyptians_plague_of_locusts');
-        expect((current?.data as any)?.targetType).toBe('base');
-    });
-});
-
 // ============================================================================
-// 克苏鲁 - special_madness 疯狂卡 onPlay + 终局 VP 扣减
+// 克苏�?- special_madness 疯狂�?onPlay + 终局 VP 扣减
 // ============================================================================
 
 describe('special_madness onPlay', () => {
-    it('产生2选1 Interaction（抽卡 / 返回牌堆）', () => {
+    it('产生 2 选 1 Interaction（抽牌 / 返回牌堆）', () => {
         const state = makeState();
         const executor = resolveAbility('special_madness', 'onPlay');
         expect(executor).toBeDefined();
@@ -1723,7 +1825,7 @@ describe('special_madness onPlay', () => {
         expect(options.some((o: any) => o.value.action === 'return')).toBe(true);
     });
 
-    it('选择抽卡→产生 CARDS_DRAWN 事件', () => {
+    it('选择抽卡时产生 CARDS_DRAWN 事件', () => {
         const card1: CardInstance = { uid: 'd1', defId: 'test_action', type: 'action' };
         const card2: CardInstance = { uid: 'd2', defId: 'test_minion', type: 'minion' };
         const state = makeState({
@@ -1743,7 +1845,7 @@ describe('special_madness onPlay', () => {
         expect(drawEvt.payload.cardUids).toEqual(['d1', 'd2']);
     });
 
-    it('选择返回→产生 MADNESS_RETURNED 事件', () => {
+    it('选择返回时产生 MADNESS_RETURNED 事件', () => {
         const state = makeState();
         const handler = getInteractionHandler('special_madness');
         expect(handler).toBeDefined();
@@ -1758,7 +1860,7 @@ describe('special_madness onPlay', () => {
 });
 
 describe('疯狂卡终局 VP 扣减', () => {
-    it('每2张疯狂卡扣1VP', () => {
+    it('每 2 张疯狂卡扣 1 VP', () => {
         expect(madnessVpPenalty(0)).toBe(0);
         expect(madnessVpPenalty(1)).toBe(0);
         expect(madnessVpPenalty(2)).toBe(1);
@@ -1767,7 +1869,7 @@ describe('疯狂卡终局 VP 扣减', () => {
         expect(madnessVpPenalty(5)).toBe(2);
     });
 
-    it('countMadnessCards 统计手牌+牌库+弃牌堆', () => {
+    it('countMadnessCards 统计手牌、牌库和弃牌堆', () => {
         const player = makePlayer('0', {
             hand: [
                 { uid: 'h1', defId: 'special_madness', type: 'minion' },
@@ -1781,18 +1883,18 @@ describe('疯狂卡终局 VP 扣减', () => {
                 { uid: 'dis2', defId: 'test_minion', type: 'minion' },
             ],
         });
-        // 手牌1 + 牌库1 + 弃牌堆1 = 3张疯狂卡
+        // 手牌1 + 牌库1 + 弃牌�? = 3张疯狂卡
         expect(countMadnessCards(player)).toBe(3);
         expect(madnessVpPenalty(countMadnessCards(player))).toBe(1);
     });
 });
 
 // ============================================================================
-// 基地能力 Prompt 化测试
+// 基地能力 Prompt 化测�?
 // ============================================================================
 
 describe('base_haunted_house_al9000 鬼屋 Interaction 化', () => {
-    it('多张手牌→产生 Interaction', () => {
+    it('多张手牌时产生 Interaction', () => {
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -1848,7 +1950,7 @@ describe('base_haunted_house_al9000 鬼屋 Interaction 化', () => {
 });
 
 describe('base_rlyeh 拉莱耶 onTurnStart', () => {
-    it('有己方随从→产生 Interaction（含不消灭选项）', () => {
+    it('有己方随从时产生 Interaction（含不消灭选项）', () => {
         const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_rlyeh', minions: [m1] });
         const state = makeState({ bases: [base] });
@@ -1864,7 +1966,7 @@ describe('base_rlyeh 拉莱耶 onTurnStart', () => {
         expect(current?.data?.options[0].value.skip).toBe(true);
     });
 
-    it('无己方随从→不产生事件', () => {
+    it('无己方随从时不产生事件', () => {
         const enemy = makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_rlyeh', minions: [enemy] });
         const state = makeState({ bases: [base] });
@@ -1877,7 +1979,7 @@ describe('base_rlyeh 拉莱耶 onTurnStart', () => {
         expect(current).toBeUndefined();
     });
 
-    it('handler 选择消灭→产生 MINION_DESTROYED + VP_AWARDED', () => {
+    it('handler 选择消灭时产生 MINION_DESTROYED', () => {
         const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_rlyeh', minions: [m1] });
         const state = makeState({ bases: [base] });
@@ -1885,12 +1987,11 @@ describe('base_rlyeh 拉莱耶 onTurnStart', () => {
         expect(handler).toBeDefined();
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
         const result = handler!(ms, '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 0);
-        expect(result.events.length).toBe(2);
+        expect(result.events.length).toBe(1);
         expect(result.events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
-        expect(result.events[1].type).toBe(SU_EVENTS.VP_AWARDED);
     });
 
-    it('handler 选择不消灭→不产生事件', () => {
+    it('handler 选择不消灭时不产生事件', () => {
         const state = makeState({ bases: [makeBase({ defId: 'base_rlyeh' })] });
         const handler = getInteractionHandler('base_rlyeh');
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
@@ -1916,7 +2017,7 @@ describe('base_mountains_of_madness 疯狂之山', () => {
         expect((result.events[0] as MadnessDrawnEvent).payload.count).toBe(1);
     });
 
-    it('无疯狂牌库→不产生事件', () => {
+    it('无疯狂牌库时不产生事件', () => {
         const state = makeState({
             bases: [makeBase({ defId: 'base_mountains_of_madness' })],
         });
@@ -1948,7 +2049,7 @@ describe('base_the_homeworld 母星', () => {
 });
 
 describe('base_the_mothership 母舰 afterScoring', () => {
-    it('冠军有力量≤3随从→产生 Interaction', () => {
+    it('冠军有力量≤3随从时产生 Interaction', () => {
         const m1 = makeMinion('m1', 'test_minion', '0', 2, { powerModifier: 0 });
         const m2 = makeMinion('m2', 'test_minion', '0', 5, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_the_mothership', minions: [m1, m2] });
@@ -1961,11 +2062,11 @@ describe('base_the_mothership 母舰 afterScoring', () => {
         const current = (result.matchState?.sys as any)?.interaction?.current;
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('base_the_mothership');
-        // skip + m1(力量2) — m2(力量5) 不符合条件
+        // skip + m1(力量2) �?m2(力量5) 不符合条�?
         expect(current?.data?.options.length).toBe(2);
     });
 
-    it('handler 收回随从→产生 MINION_RETURNED', () => {
+    it('handler 收回随从时产生 MINION_RETURNED', () => {
         const state = makeState({ bases: [makeBase({ defId: 'base_the_mothership' })] });
         const handler = getInteractionHandler('base_the_mothership');
         expect(handler).toBeDefined();
@@ -1980,7 +2081,7 @@ describe('base_the_mothership 母舰 afterScoring', () => {
 });
 
 describe('base_ninja_dojo 忍者道场 afterScoring', () => {
-    it('基地有随从→产生 Interaction（含不消灭选项）', () => {
+    it('基地有随从时产生 Interaction（含不消灭选项）', () => {
         const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const m2 = makeMinion('m2', 'test_minion', '1', 4, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_ninja_dojo', minions: [m1, m2] });
@@ -1993,11 +2094,11 @@ describe('base_ninja_dojo 忍者道场 afterScoring', () => {
         const current = (result.matchState?.sys as any)?.interaction?.current;
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('base_ninja_dojo');
-        // skip + 2个随从
+        // skip + 2个随�?
         expect(current?.data?.options.length).toBe(3);
     });
 
-    it('handler 消灭随从→产生 MINION_DESTROYED', () => {
+    it('handler 消灭随从时产生 MINION_DESTROYED', () => {
         const m1 = makeMinion('m1', 'test_minion', '1', 4, { powerModifier: 0 });
         const base = makeBase({ defId: 'base_ninja_dojo', minions: [m1] });
         const state = makeState({ bases: [base] });
@@ -2043,7 +2144,7 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
         const otherBase = makeBase({ defId: 'base_b', minions: [target] });
         const state = makeState({ bases: [scoredBase, otherBase] });
 
-        // 被弃的随从是 igor1 自身 → 触发
+        // 被弃的随从是 igor1 自身 �?触发
         const result = fireTriggers(state, 'onMinionDiscardedFromBase', {
             state,
             playerId: '0',
@@ -2116,7 +2217,7 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
         const scoredBase = makeBase({ defId: 'base_a', minions: [igor, allyOnSameBase] });
         const state = makeState({ bases: [scoredBase] });
 
-        // 只有被弃基地上有己方随从，其他基地无候选 → 不触发
+        // 只有被弃基地上有己方随从，其他基地无候�?�?不触�?
         const result = fireTriggers(state, 'onMinionDiscardedFromBase', {
             state,
             playerId: '0',
@@ -2147,7 +2248,7 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
             random: dummyRandom,
             now: 100,
         });
-        // 雄蜂仅注册 onMinionDestroyed，不应在弃置时触发防消灭交互
+        // 雄蜂仅注�?onMinionDestroyed，不应在弃置时触发防消灭交互
         const current = (result.matchState?.sys as any)?.interaction?.current;
         const hasDroneInteraction = current?.data?.sourceId === 'giant_ant_drone_prevent_destroy';
         expect(hasDroneInteraction).toBeFalsy();
@@ -2155,11 +2256,11 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
 });
 
 // ============================================================================
-// 吸血鬼 - 自助餐 afterScoring
+// 吸血�?- 自助�?afterScoring
 // ============================================================================
 
 describe('vampire_buffet afterScoring', () => {
-    it('赢家拥有 buffet 时，所有己方随从获得+1指示物', () => {
+    it('赢家拥有 buffet 时，所有己方随从获得 +1 指示物', () => {
         const m1 = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const m2 = makeMinion('m2', 'test_minion', '0', 2, { powerModifier: 0 });
         const m3 = makeMinion('m3', 'test_minion', '1', 1, { powerModifier: 0 });
@@ -2188,7 +2289,7 @@ describe('vampire_buffet afterScoring', () => {
         });
 
         const pcEvents = events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
-        // 应该给 m1 和 m2 各+1（m1 在计分基地，m2 在其他基地）
+        // 应该�?m1 �?m2 �?1（m1 在计分基地，m2 在其他基地）
         expect(pcEvents.length).toBe(2);
         const uids = pcEvents.map(e => (e as any).payload.minionUid);
         expect(uids).toContain('m1');
@@ -2220,194 +2321,5 @@ describe('vampire_buffet afterScoring', () => {
 
         const pcEvents = events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
         expect(pcEvents.length).toBe(0);
-    });
-});
-
-describe('bear_cavalry_bear_necessities_pod 限制', () => {
-    it('激活后会禁止受影响对手打出额外随从和额外行动', () => {
-        const restrictedBase = makeBase({
-            minions: [makeMinion('enemy-on-base', 'test_minion', '1', 3, { powerModifier: 0 })],
-            ongoingActions: [{ uid: 'bn-1', defId: 'bear_cavalry_bear_necessities_pod', ownerId: '0', talentUsed: true } as any],
-        });
-        const state = makeState({
-            currentPlayerIndex: 1,
-            bases: [restrictedBase, makeBase()],
-            players: {
-                '0': makePlayer('0'),
-                '1': makePlayer('1', {
-                    minionsPlayed: 1,
-                    minionLimit: 2,
-                    actionsPlayed: 1,
-                    actionLimit: 2,
-                    hand: [
-                        { uid: 'm-extra', defId: 'dino_war_raptor', type: 'minion', owner: '1' } as CardInstance,
-                        { uid: 'a-extra', defId: 'bear_cavalry_bear_hug', type: 'action', owner: '1' } as CardInstance,
-                    ],
-                }),
-            },
-        });
-        const matchState = { core: state, sys: { phase: 'playCards' } } as any;
-
-        const minionResult = validate(matchState, {
-            type: SU_COMMANDS.PLAY_MINION,
-            playerId: '1',
-            payload: { cardUid: 'm-extra', baseIndex: 1 },
-        } as any);
-        expect(minionResult.valid).toBe(false);
-        expect(minionResult.error).toContain('额外牌');
-
-        const actionResult = validate(matchState, {
-            type: SU_COMMANDS.PLAY_ACTION,
-            playerId: '1',
-            payload: { cardUid: 'a-extra' },
-        } as any);
-        expect(actionResult.valid).toBe(false);
-        expect(actionResult.error).toContain('额外牌');
-    });
-
-    it('正常随从额度仍可用时，不应因基地额外额度可用而误判为额外出牌', () => {
-        const restrictedBase = makeBase({
-            minions: [makeMinion('enemy-on-base', 'test_minion', '1', 3, { powerModifier: 0 })],
-            ongoingActions: [{ uid: 'bn-1', defId: 'bear_cavalry_bear_necessities_pod', ownerId: '0', talentUsed: true } as any],
-        });
-        const state = makeState({
-            currentPlayerIndex: 1,
-            bases: [restrictedBase, makeBase()],
-            players: {
-                '0': makePlayer('0'),
-                '1': makePlayer('1', {
-                    minionsPlayed: 0,
-                    minionLimit: 1,
-                    baseLimitedMinionQuota: { 1: 1 },
-                    hand: [
-                        { uid: 'm-normal', defId: 'dino_war_raptor', type: 'minion', owner: '1' } as CardInstance,
-                    ],
-                }),
-            },
-        });
-        const matchState = { core: state, sys: { phase: 'playCards' } } as any;
-
-        const result = validate(matchState, {
-            type: SU_COMMANDS.PLAY_MINION,
-            playerId: '1',
-            payload: { cardUid: 'm-normal', baseIndex: 1 },
-        } as any);
-
-        expect(result.valid).toBe(true);
-    });
-
-    it('拥有者下回合开始时会销毁已激活的口粮POD', () => {
-        const state = makeState({
-            bases: [makeBase({
-                ongoingActions: [{ uid: 'bn-1', defId: 'bear_cavalry_bear_necessities_pod', ownerId: '0', talentUsed: true } as any],
-            })],
-        });
-
-        const ownerTurnStart = fireTriggers(state, 'onTurnStart', {
-            state,
-            playerId: '0',
-            random: dummyRandom,
-            now: 12,
-        });
-        expect(ownerTurnStart.events).toEqual(expect.arrayContaining([
-            expect.objectContaining({
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: expect.objectContaining({ cardUid: 'bn-1' }),
-            }),
-        ]));
-
-        const opponentTurnStart = fireTriggers(state, 'onTurnStart', {
-            state,
-            playerId: '1',
-            random: dummyRandom,
-            now: 13,
-        });
-        const detachedCount = opponentTurnStart.events.filter(e => e.type === SU_EVENTS.ONGOING_DETACHED).length;
-        expect(detachedCount).toBe(0);
-    });
-});
-
-describe('bear_cavalry_superiority_pod 保护模式', () => {
-    it('protect 分支开启保护，且在拥有者下回合开始后失效', () => {
-        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
-        const state = makeState({
-            bases: [makeBase({
-                minions: [myMinion],
-                ongoingActions: [{ uid: 'sup-1', defId: 'bear_cavalry_superiority_pod', ownerId: '0', talentUsed: true, metadata: {} } as any],
-            })],
-        });
-        const handler = getInteractionHandler('bear_cavalry_superiority_pod_talent');
-        expect(handler).toBeDefined();
-
-        const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
-        const protectResult = handler!(ms, '0', 'protect', { cardUid: 'sup-1' }, dummyRandom, 0);
-        expect(isMinionProtected(protectResult.state.core, myMinion, 0, '1', 'destroy')).toBe(true);
-
-        const afterTurnStart = reduce(protectResult.state.core, {
-            type: SU_EVENTS.TURN_STARTED,
-            payload: { playerId: '0', turnNumber: 2 },
-            timestamp: 1,
-        } as TurnStartedEvent);
-        expect(isMinionProtected(afterTurnStart, myMinion, 0, '1', 'destroy')).toBe(false);
-    });
-
-    it('draw 分支会关闭保护标记并正常摸牌', () => {
-        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
-        const drawCard: CardInstance = { uid: 'd1', defId: 'test_action', type: 'action' } as any;
-        const state = makeState({
-            players: {
-                '0': makePlayer('0', { deck: [drawCard] }),
-                '1': makePlayer('1'),
-            },
-            bases: [makeBase({
-                minions: [myMinion],
-                ongoingActions: [{ uid: 'sup-1', defId: 'bear_cavalry_superiority_pod', ownerId: '0', talentUsed: true, metadata: { superiorityProtect: true } } as any],
-            })],
-        });
-        const handler = getInteractionHandler('bear_cavalry_superiority_pod_talent');
-        expect(handler).toBeDefined();
-
-        const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
-        const drawResult = handler!(ms, '0', 'draw', { cardUid: 'sup-1' }, dummyRandom, 0);
-        expect(drawResult.events.some(e => e.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
-        expect(isMinionProtected(drawResult.state.core, myMinion, 0, '1', 'destroy')).toBe(false);
-    });
-});
-
-describe('bear_cavalry_bear_rides_you_pod 交互选项', () => {
-    it('移动己方随从后仅提供基地压制与跳过两个有效选项', () => {
-        const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
-        const fromBase = makeBase({ minions: [myMinion] });
-        const toBase = makeBase({
-            minions: [makeMinion('e1', 'test_minion', '1', 2, { powerModifier: 0 })],
-            ongoingActions: [{ uid: 'oa1', defId: 'bear_cavalry_superiority_pod', ownerId: '1' } as any],
-        });
-        const state = makeState({ bases: [fromBase, toBase] });
-        const handler = getInteractionHandler('bear_cavalry_bear_rides_you_pod_choose_base');
-        expect(handler).toBeDefined();
-
-        const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
-        const result = handler!(
-            ms,
-            '0',
-            { baseIndex: 1 },
-            { continuationContext: { minionUid: 'm1', minionDefId: 'test_minion', fromBase: 0, isMyMinion: true } },
-            dummyRandom,
-            0,
-        );
-        expect(result.events.some(e => e.type === SU_EVENTS.MINION_MOVED)).toBe(true);
-
-        const pending = result.state.sys.interaction.current ?? result.state.sys.interaction.queue[0];
-        expect(pending).toBeDefined();
-        const kinds = (pending?.data?.options ?? [])
-            .map((option: any) => option?.value?.kind)
-            .filter((kind: unknown) => typeof kind === 'string');
-
-        expect(kinds).toContain('base');
-        expect(kinds).toContain('skip');
-        expect(kinds).not.toContain('minion');
-        expect(kinds).not.toContain('ongoing');
-        expect(kinds).not.toContain('attached');
-        expect(kinds).not.toContain('titan');
     });
 });

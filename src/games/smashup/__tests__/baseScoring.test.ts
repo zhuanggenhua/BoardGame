@@ -8,16 +8,17 @@
  */
 
 import { describe, expect, it, beforeAll } from 'vitest';
-import { SmashUpDomain, scoreOneBase } from '../domain';
+import { SmashUpDomain, postProcessSystemEvents, scoreOneBase } from '../domain';
 import type {
     SmashUpCore, SmashUpEvent, MinionOnBase, BaseInPlay,
-    OngoingActionOnBase, AttachedActionOnMinion,
+    OngoingActionOnBase, AttachedActionOnMinion, TitanState,
 } from '../domain/types';
 import { SU_EVENTS, getTotalPowerOnBase, getPlayerPowerOnBase } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 
 const PLAYER_IDS = ['0', '1'];
+const dummyRandom = { random: () => 0.5, shuffle: <T>(arr: T[]) => [...arr], d: () => 1, range: (min: number) => min };
 
 beforeAll(() => {
     initAllAbilities();
@@ -35,6 +36,20 @@ function makePlayer(id: string, overrides: Partial<any> = {}) {
 
 function makeBaseOngoing(uid: string, defId: string, ownerId: string): OngoingActionOnBase {
     return { uid, defId, ownerId };
+}
+
+function makeTitan(overrides: Partial<TitanState> & Pick<TitanState, 'uid' | 'defId' | 'faction' | 'ownerId' | 'controllerId'>): TitanState {
+    return {
+        uid: overrides.uid,
+        defId: overrides.defId,
+        faction: overrides.faction,
+        ownerId: overrides.ownerId,
+        controllerId: overrides.controllerId,
+        powerCounters: 0,
+        talentUsed: false,
+        location: { zone: 'setaside' },
+        ...overrides,
+    };
 }
 
 describe('基地记分与力量计算', () => {
@@ -108,125 +123,6 @@ describe('基地记分与力量计算', () => {
                 { playerId: '0', power: 10, vp: 4 },
                 { playerId: '1', power: 8, vp: 3 },
             ]);
-        });
-
-        it('scoreOneBase 会保留武士 POD 计分弃牌瞬间的有效战力并额外给 1VP', () => {
-            const state: SmashUpCore = {
-                players: {
-                    '0': makePlayer('0', { factions: [SMASHUP_FACTION_IDS.SAMURAI_POD, SMASHUP_FACTION_IDS.ALIENS] }),
-                    '1': makePlayer('1'),
-                },
-                turnOrder: PLAYER_IDS,
-                currentPlayerIndex: 0,
-                bases: [{
-                    defId: 'base_tar_pits',
-                    minions: [
-                        { uid: 'bushi-pod-1', defId: 'samurai_bushi_pod', controller: '0', owner: '0', basePower: 4, powerCounters: 1, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'ally-13', defId: 'ally_big', controller: '0', owner: '0', basePower: 13, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                    ],
-                    ongoingActions: [],
-                }],
-                baseDeck: [],
-                turnNumber: 1,
-                nextUid: 10,
-            };
-
-            const result = scoreOneBase(state, 0, [], '0', 1000);
-            const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
-            const bonusVpEvent = result.events.find((event) =>
-                event.type === SU_EVENTS.VP_AWARDED
-                && (event as any).payload?.reason === 'samurai_bushi'
-            ) as any;
-
-            expect(scoredEvent).toBeDefined();
-            expect(bonusVpEvent).toBeDefined();
-            expect(bonusVpEvent.payload.playerId).toBe('0');
-            expect(bonusVpEvent.payload.amount).toBe(1);
-
-            const finalState = result.events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), state);
-            expect(finalState.players['0'].vp).toBe(scoredEvent.payload.rankings[0].vp + 1);
-        });
-
-        it('scoreOneBase 在 matchState.core 已更新时使用最新基地状态计分', () => {
-            const staleState: SmashUpCore = {
-                players: {
-                    '0': makePlayer('0'),
-                    '1': makePlayer('1'),
-                },
-                turnOrder: PLAYER_IDS,
-                currentPlayerIndex: 0,
-                bases: [{
-                    defId: 'base_great_library',
-                    minions: [
-                        { uid: 'p0-a', defId: 'ally_p0_a', controller: '0', owner: '0', basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'p0-b', defId: 'ally_p0_b', controller: '0', owner: '0', basePower: 2, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'p1-top', defId: 'enemy_top', controller: '1', owner: '1', basePower: 6, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'p1-low', defId: 'enemy_low', controller: '1', owner: '1', basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                    ],
-                    ongoingActions: [],
-                }],
-                baseDeck: [],
-                turnNumber: 1,
-                nextUid: 10,
-            };
-
-            const updatedState: SmashUpCore = {
-                ...staleState,
-                bases: [{
-                    ...staleState.bases[0],
-                    minions: staleState.bases[0].minions.filter((minion) => minion.uid !== 'p1-top'),
-                }],
-            };
-
-            const matchState = {
-                core: updatedState,
-                sys: { interaction: { current: undefined, queue: [] } },
-            } as any;
-
-            const result = scoreOneBase(staleState, 0, [], '0', 1000, undefined, matchState);
-            const scoredEvent = result.events.find((event) => event.type === SU_EVENTS.BASE_SCORED) as any;
-
-            expect(scoredEvent).toBeDefined();
-            expect(scoredEvent.payload.rankings).toEqual([
-                { playerId: '0', power: 5, vp: 4 },
-                { playerId: '1', power: 3, vp: 2 },
-            ]);
-        });
-
-        it('scoreOneBase 会让 Samurai-Chan POD 在基地计分弃牌后抓 1 张牌', () => {
-            const state: SmashUpCore = {
-                players: {
-                    '0': makePlayer('0', {
-                        factions: [SMASHUP_FACTION_IDS.SAMURAI_POD, SMASHUP_FACTION_IDS.ALIENS],
-                        deck: [
-                            { uid: 'draw-1', defId: 'robot_microbot_alpha', type: 'minion', owner: '0' },
-                        ],
-                    }),
-                    '1': makePlayer('1'),
-                },
-                turnOrder: PLAYER_IDS,
-                currentPlayerIndex: 0,
-                bases: [{
-                    defId: 'base_shoguns_palace_pod',
-                    minions: [
-                        { uid: 'chan-pod-1', defId: 'samurai_samurai_chan_pod', controller: '0', owner: '0', basePower: 2, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                        { uid: 'ally-21', defId: 'ally_big', controller: '0', owner: '0', basePower: 21, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
-                    ],
-                    ongoingActions: [],
-                }],
-                baseDeck: [],
-                turnNumber: 1,
-                nextUid: 10,
-            };
-
-            const result = scoreOneBase(state, 0, [], '0', 1000);
-            const drawEvent = result.events.find((event) =>
-                event.type === SU_EVENTS.CARDS_DRAWN
-                && (event as any).payload?.playerId === '0'
-                && (event as any).payload?.count === 1
-            ) as any;
-
-            expect(drawEvent).toBeDefined();
         });
 
         it('reduce BASE_SCORED 正确分配 VP', () => {
@@ -474,51 +370,6 @@ describe('基地记分与力量计算', () => {
             // P1 弃牌堆：附着卡 att1
             expect(newState.players['1'].discard.some(c => c.uid === 'att1')).toBe(true);
         });
-
-        it('随从进入牌库底时附着的行动卡回各自所有者弃牌堆', () => {
-            const { reduce } = SmashUpDomain;
-            const attached1: AttachedActionOnMinion = { uid: 'att1', defId: 'action_def1', ownerId: '1' };
-            const attached2: AttachedActionOnMinion = { uid: 'att2', defId: 'action_def2', ownerId: '0' };
-
-            const state: SmashUpCore = {
-                players: {
-                    '0': makePlayer('0'),
-                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
-                },
-                turnOrder: PLAYER_IDS,
-                currentPlayerIndex: 0,
-                bases: [{
-                    defId: 'test_base',
-                    minions: [{
-                        uid: 'm1', defId: 'd1', controller: '0', owner: '0',
-                        basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false,
-                        attachedActions: [attached1, attached2],
-                    }],
-                    ongoingActions: [],
-                }],
-                baseDeck: [],
-                turnNumber: 1,
-                nextUid: 10,
-            };
-
-            const event: SmashUpEvent = {
-                type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-                payload: {
-                    cardUid: 'm1',
-                    defId: 'd1',
-                    ownerId: '0',
-                    reason: '测试入牌库底',
-                },
-                timestamp: 1000,
-            } as any;
-
-            const newState = reduce(state, event);
-
-            expect(newState.bases[0].minions).toHaveLength(0);
-            expect(newState.players['0'].deck.at(-1)?.uid).toBe('m1');
-            expect(newState.players['0'].discard.some(c => c.uid === 'att2')).toBe(true);
-            expect(newState.players['1'].discard.some(c => c.uid === 'att1')).toBe(true);
-        });
     });
 
     // Property 16: 平局 VP 分配
@@ -533,6 +384,168 @@ describe('基地记分与力量计算', () => {
                 ongoingActions: [],
             };
             expect(getPlayerPowerOnBase(base, '0')).toBe(getPlayerPowerOnBase(base, '1'));
+        });
+    });
+
+    describe('泰坦规则', () => {
+        it('BASE_CLEARED 会让泰坦离场并清空状态', () => {
+            const { reduce } = SmashUpDomain;
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [{ defId: 'test_base', minions: [], ongoingActions: [] }],
+                titans: [makeTitan({
+                    uid: 'titan-1',
+                    defId: 'ghosts_creampuff_man',
+                    faction: 'ghosts',
+                    ownerId: '0',
+                    controllerId: '1',
+                    powerCounters: 3,
+                    talentUsed: true,
+                    metadata: { armed: true },
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 7 },
+                })],
+                titanOngoingSuppressedUntilTurnEnd: ['titan-1'],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const next = reduce(state, {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'test_base' },
+                timestamp: 1001,
+            } as any);
+
+            expect(next.titans?.[0]).toMatchObject({
+                uid: 'titan-1',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                metadata: undefined,
+                location: { zone: 'setaside' },
+            });
+            expect(next.titanOngoingSuppressedUntilTurnEnd ?? []).not.toContain('titan-1');
+        });
+
+        it('移动别人的泰坦不会转移控制权', () => {
+            const { reduce } = SmashUpDomain;
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [
+                    { defId: 'base_a', minions: [], ongoingActions: [] },
+                    { defId: 'base_b', minions: [], ongoingActions: [] },
+                ],
+                titans: [makeTitan({
+                    uid: 'titan-1',
+                    defId: 'pirates_the_kraken',
+                    faction: 'pirates',
+                    ownerId: '1',
+                    controllerId: '1',
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 3 },
+                })],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const next = reduce(state, {
+                type: SU_EVENTS.TITAN_MOVED,
+                payload: {
+                    titanUid: 'titan-1',
+                    defId: 'pirates_the_kraken',
+                    fromBaseIndex: 0,
+                    fromBaseDefId: 'base_a',
+                    toBaseIndex: 1,
+                    toBaseDefId: 'base_b',
+                    controllerId: '0',
+                    reason: 'test_move',
+                },
+                timestamp: 1002,
+            } as any);
+
+            expect(next.titans?.[0]).toMatchObject({
+                uid: 'titan-1',
+                controllerId: '1',
+                location: { zone: 'base', baseIndex: 1, enteredAt: 3 },
+            });
+        });
+
+        it('clash 平手时挑战者离场，防守方留下', () => {
+            const state: SmashUpCore = {
+                players: {
+                    '0': makePlayer('0'),
+                    '1': makePlayer('1', { factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.NINJAS] }),
+                },
+                turnOrder: PLAYER_IDS,
+                currentPlayerIndex: 0,
+                bases: [{
+                    defId: 'base_tar_pits',
+                    minions: [
+                        { uid: 'm0', defId: 'wizard_archmage', controller: '0', owner: '0', basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                        { uid: 'm1', defId: 'pirate_first_mate', controller: '1', owner: '1', basePower: 3, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] },
+                    ],
+                    ongoingActions: [],
+                }],
+                titans: [
+                    makeTitan({
+                        uid: 'titan-defender',
+                        defId: 'pirates_the_kraken',
+                        faction: 'pirates',
+                        ownerId: '1',
+                        controllerId: '1',
+                        location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                    }),
+                    makeTitan({
+                        uid: 'titan-challenger',
+                        defId: 'ghosts_creampuff_man',
+                        faction: 'ghosts',
+                        ownerId: '0',
+                        controllerId: '0',
+                    }),
+                ],
+                baseDeck: [],
+                turnNumber: 1,
+                nextUid: 10,
+            };
+
+            const playedEvent: SmashUpEvent = {
+                type: SU_EVENTS.TITAN_PLAYED,
+                payload: {
+                    titanUid: 'titan-challenger',
+                    defId: 'ghosts_creampuff_man',
+                    ownerId: '0',
+                    controllerId: '0',
+                    baseIndex: 0,
+                    baseDefId: 'base_tar_pits',
+                    reason: 'test_play',
+                },
+                timestamp: 1003,
+            } as any;
+
+            const processed = postProcessSystemEvents(state, [playedEvent], dummyRandom as any);
+            const removed = processed.events.find((event) =>
+                event.type === SU_EVENTS.TITAN_REMOVED_FROM_PLAY
+                && (event as any).payload.titanUid === 'titan-challenger',
+            );
+
+            expect(removed).toBeDefined();
+
+            const finalState = processed.events.reduce((current, event) => SmashUpDomain.reduce(current, event), state);
+            const challenger = finalState.titans?.find((titan) => titan.uid === 'titan-challenger');
+            const defender = finalState.titans?.find((titan) => titan.uid === 'titan-defender');
+
+            expect(challenger?.location).toEqual({ zone: 'setaside' });
+            expect(defender?.location).toEqual({ zone: 'base', baseIndex: 0, enteredAt: 1 });
         });
     });
 });

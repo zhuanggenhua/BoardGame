@@ -530,6 +530,11 @@ export interface TriggerInstance {
 
     /** Wiki ordering */
     mandatory: boolean;
+    resolutionClass: 'mandatory' | 'optional';
+    /** 同一张牌/同一时点产生的反应 frame */
+    frameId?: string;
+    /** 触发源事件快照 id */
+    sourceEventId?: string;
     /** who decides / is credited */
     ownerPlayerId: PlayerId;
     witnessRequirement: WitnessRequirement;
@@ -547,7 +552,6 @@ export interface TriggerInstance {
     reason?: string;
     affectType?: import('./ongoingEffects').AffectType;
     rankings?: { playerId: PlayerId; power: number; vp: number }[];
-    triggerBaseControllersAtTrigger?: PlayerId[];
     actionTargetBaseIndex?: number;
     actionTargetType?: 'base' | 'minion';
     actionTargetMinionUid?: string;
@@ -563,6 +567,27 @@ export interface TriggerInstance {
     /** LKI snapshots captured at queue time */
     lkiMinion?: MinionLkiSnapshot;
     lkiBase?: BaseLkiSnapshot;
+}
+
+export type SmashUpReactionPhase = 'mandatory' | 'optional';
+
+export type SmashUpReactionFrameKind =
+    | 'generic'
+    | 'turn-start'
+    | 'turn-end'
+    | 'score-before'
+    | 'score-when'
+    | 'score-after';
+
+export interface SmashUpReactionSession {
+    frameId: string;
+    frameKind: SmashUpReactionFrameKind;
+    phase: SmashUpReactionPhase;
+    activePlayerId: PlayerId;
+    currentPlayerId: PlayerId;
+    consecutivePasses: number;
+    sourceBaseIndex?: number;
+    responseWindowType?: 'meFirst' | 'afterScoring';
 }
 
 export type DuelOutcomeKind =
@@ -694,9 +719,10 @@ export interface SmashUpCore {
     specialLimitUsed?: Record<string, number[]>;
     /** 巨石阵：本回合已使用双才能的随从 UID（每回合只有一个随从可用才能两次） */
     standingStonesDoubleTalentMinionUid?: string;
-    greatWolfSpiritDoubleTalentCardUids?: string[];
     /** 计分后触发的 special 延迟记录（回合开始自动清空） */
     pendingAfterScoringSpecials?: PendingAfterScoringSpecial[];
+    /** 计分后需等待基地完成清场/替换后再落地的动作 */
+    pendingPostScoringActions?: PendingPostScoringAction[];
     /**
      * 进入 scoreBases 阶段时锁定的 eligible 基地索引列表。
      * 规则：一旦基地在进入计分阶段时达到 breakpoint，即使 Me First! 响应窗口中
@@ -948,6 +974,9 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         fromDeck?: boolean;
         /** 从埋葬区打出（揭开时使用） */
         fromBuried?: boolean;
+        targetBaseIndex?: number;
+        targetType?: 'base' | 'minion';
+        targetMinionUid?: string;
         /** 弃牌堆出牌来源能力 ID（用于每回合限制追踪） */
         discardPlaySourceId?: string;
         /** 是否消耗正常随从额度 */

@@ -6,8 +6,7 @@
  */
 
 import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
-import type { SmashUpCore, SmashUpEvent, AbilityTag, ActiveDuel } from './types';
-import { getTitanDef } from '../data/cards';
+import type { SmashUpCore, SmashUpEvent, AbilityTag } from './types';
 
 // ============================================================================
 // 能力执行上下文与结果
@@ -25,10 +24,6 @@ export interface AbilityContext {
     baseIndex: number;
     /** 行动卡目标随从 */
     targetMinionUid?: string;
-    /** 当前决斗上下文（仅 duel 内核触发的卡牌结算时提供） */
-    duel?: ActiveDuel;
-    /** 行动卡结算时，牌离手后的手牌数。外部来源打行动时由调用方显式传入。 */
-    handSizeAfterPlay?: number;
     random: RandomFn;
     now: number;
 }
@@ -87,19 +82,14 @@ export function resolveSpecial(defId: string): AbilityExecutor | undefined {
     return resolveAbility(defId, 'special');
 }
 
+/** 快捷：解析主动 ongoing 能力 */
+export function resolveOngoingActivation(defId: string): AbilityExecutor | undefined {
+    return resolveAbility(defId, 'ongoingActivation');
+}
+
 /** 快捷：解析 onDestroy 能力 */
 export function resolveOnDestroy(defId: string): AbilityExecutor | undefined {
     return resolveAbility(defId, 'onDestroy');
-}
-
-/** 快捷：解析 onUncover 能力 */
-export function resolveOnUncover(defId: string): AbilityExecutor | undefined {
-    return resolveAbility(defId, 'onUncover');
-}
-
-/** 快捷：解析在场主动 ongoing 能力 */
-export function resolveOngoingActivation(defId: string): AbilityExecutor | undefined {
-    return resolveAbility(defId, 'ongoingActivation');
 }
 
 /** 检查某 defId 是否注册了指定 tag 的能力 */
@@ -136,7 +126,6 @@ export function registerPodAbilityAliases(): void {
     for (const [defId, tagMap] of allEntries) {
         // 跳过已经是 _pod 和非完整 defId 的条目
         if (defId.endsWith('_pod')) continue;
-        if (getTitanDef(defId)) continue;
 
         const podDefId = `${defId}_pod`;
         // 如果 _pod 版本已经有自己的注册，跳过（不覆盖最新定制)
