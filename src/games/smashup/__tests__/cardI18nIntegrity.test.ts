@@ -213,6 +213,33 @@ describe('SmashUp 卡牌 i18n 完整性', () => {
     expect(resolveI18nKeys('cards.ninja_infiltrate_pod.name 路 ui.reaction_timing.onActionPlayed', zhTranslator)).toContain('路 行动打出后');
   });
 
+  it('Oops 四派系 POD 卡牌的关键中文效果文本已修正', () => {
+    expect(zhCN.cards?.ancient_egyptians_mummy_pod?.abilityText).toBe(
+      '特殊：本基地计分后，你可以将此随从埋葬到另一个基地。',
+    );
+    expect(zhCN.cards?.ancient_egyptians_mummy_strength_pod?.effectText).toBe(
+      '选择你的一个随从。若其所在基地有埋葬的牌，则其直到回合结束 +4 战力；否则其直到回合结束 +2 战力。',
+    );
+    expect(zhCN.cards?.cowboys_gunfighter_pod?.abilityText).toBe(
+      '此随从可以与此处另一位玩家的一个随从决斗。消灭失败的随从。',
+    );
+    expect(zhCN.cards?.cowboys_dynamite_surprise_pod?.effectText).toBe(
+      '特殊：在一个你有随从且你并非领先的基地计分前，消灭该处一个战力 4 或以下的随从。特殊：若另一位玩家的卡牌展示或查看了你手牌或牌库中的牌，消灭其一个战力 4 或以下的随从。',
+    );
+    expect(zhCN.cards?.samurai_ronin_pod?.abilityText).toBe(
+      '若此随从是本基地中你唯一的随从，你可以在其上放置 2 枚 +1 战力指示物。',
+    );
+    expect(zhCN.cards?.samurai_final_haiku_pod?.effectText).toBe(
+      '对你的一个随从打出。持续：当此随从从场上进入弃牌堆后，你的每个随从直到回合结束各 +2 战力。',
+    );
+    expect(zhCN.cards?.vikings_berserk_pod?.effectText).toBe(
+      '将一张手牌置于你的牌库顶，使你的一个随从直到回合结束 +4 战力。',
+    );
+    expect(zhCN.cards?.vikings_raiding_party_pod?.effectText).toBe(
+      '展示另一位玩家牌库顶的 3 张牌。你可以将其中展示出的一张战术，或一张战力 4 或以下的随从，作为额外牌打出。其余牌以任意顺序放回。',
+    );
+  });
+
   it('Samurai POD 的 faction、cards 与 bases 在中英文 locale 中都有键', () => {
     expect(zhCN.factions?.samurai_pod?.name).toBe('武士');
     expect(en.factions?.samurai_pod?.name).toBe('Samurai');
