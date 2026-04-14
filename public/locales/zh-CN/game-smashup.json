@@ -2963,51 +2963,51 @@
     },
     "ancient_egyptians_mummy_pod": {
       "name": "木乃伊",
-      "abilityText": "持续： 本基迦计；， 你可以将此随从埋葬 另-个基地。"
+      "abilityText": "特殊：本基地计分后，你可以将此随从埋葬到另一个基地。"
     },
     "ancient_egyptians_pyramid_engineer_pod": {
       "name": "金字塔工程师",
-      "abilityText": "发掘本基地一张 你埋葬的牌。 天赋：埋葬你-张手牌至此。"
+      "abilityText": "你可以发掘此处你埋葬的一张牌。天赋：将一张手牌埋葬于此。"
     },
     "ancient_egyptians_priest_of_anubis_pod": {
       "name": "阿努比斯祭司",
-      "abilityText": "持续： 若此处有你埋葬的牌； 此随从+2战力。"
+      "abilityText": "持续：如果此处有你埋葬的牌，此随从获得 +2 战力。"
     },
     "ancient_egyptians_pharaoh_pod": {
       "name": "法老",
-      "abilityText": "持续： 另-张埋葬中的牌被 发掘后。抓-张牌。 特殊： 市基坳计笳；侧以 发掘此处 ~张你埋葬的牌。"
+      "abilityText": "持续：另一张埋葬的牌被发掘后，抓 1 张牌。特殊：本基地计分前，你可以发掘此处你埋葬的一张牌。"
     },
     "ancient_egyptians_lost_knowledge_pod": {
       "name": "失落知识",
-      "effectText": "埋葬你的一张手牌或发掘你埋葬的一张牌。特殊：你可以在一个基地计分前打出此牌。"
+      "effectText": "埋葬你的一张手牌，或发掘你埋葬的一张牌。特殊：你可以在一个基地计分前打出此牌。"
     },
     "ancient_egyptians_you_can_take_it_with_you_pod": {
       "name": "随身带走",
-      "effectText": "埋葬此牌。 特殊： 当此牌被发掘时 抓3张牌。"
+      "effectText": "埋葬此牌。特殊：当此牌被发掘时，抓 3 张牌。"
     },
     "ancient_egyptians_plague_of_locusts_pod": {
       "name": "蝗灾",
-      "effectText": "选择一个基地。该处所有其他玩家的随从-1战力，直到回合结束。特殊：你可以在一个基地计分前打出此牌。"
+      "effectText": "选择一个基地。该处所有其他玩家的随从直到回合结束 -1 战力。特殊：你可以在一个基地计分前打出此牌。"
     },
     "ancient_egyptians_mummy_strength_pod": {
       "name": "木乃伊之力",
-      "effectText": "选择你的一个随从。 若其基地中有埋葬的牌，其 +3战力至回合结束，否则 其+2战力直至回合结束。"
+      "effectText": "选择你的一个随从。若其所在基地有埋葬的牌，则其直到回合结束 +4 战力；否则其直到回合结束 +2 战力。"
     },
     "ancient_egyptians_tomb_trap_pod": {
       "name": "墓穴陷阱",
-      "effectText": "埋葬此牌。特殊：此牌被发掘时，你可以消灭此处一个战力 4 或更低的随从。"
+      "effectText": "埋葬此牌。特殊：当此牌被发掘时，你可以消灭此处一个战力 4 或以下的随从。"
     },
     "ancient_egyptians_ancient_curse_pod": {
       "name": "远古诅咒",
-      "effectText": "对随从 出。伽可以移)其 1个+1战力棘记。 持续 此随从-2战力。"
+      "effectText": "对一个随从打出。你可以移除其上的 1 枚 +1 战力指示物。持续：此随从 -2 战力。"
     },
     "ancient_egyptians_blessing_of_anubis_pod": {
       "name": "阿努比斯的祝福",
-      "effectText": "埋葬这张牌。 特殊： 此牌被发掘时 本基地 中你的每个随从各 +2战馗 至回合结束。"
+      "effectText": "埋葬此牌。特殊：当此牌被发掘时，你在此处的每个随从直到回合结束各 +2 战力。"
     },
     "ancient_egyptians_seal_the_tomb_pod": {
       "name": "封印墓穴",
-      "effectText": "埋葬你>至多2张手}至 一个基地 或 发 同-个基 地至多2张你埋葬的牌。"
+      "effectText": "将你手中的至多 2 张牌埋葬在同一个基地，或发掘同一个基地中你埋葬的至多 2 张牌。"
     },
     "cowboys_deputy": {
       "name": "副警长",
@@ -3107,51 +3107,51 @@
     },
     "samurai_samurai_chan_pod": {
       "name": "武士酱",
-      "abilityText": "持续：此随从自场上进入 弃牌堆后。抓1张牌。"
+      "abilityText": "持续：此随从从场上进入弃牌堆后，抓 1 张牌。"
     },
     "samurai_ronin_pod": {
       "name": "浪人",
-      "abilityText": "随从-3战力-浪人 若此随从是本基坳中你唯 的随从，放置1赦+1战 力林记于其上。"
+      "abilityText": "若此随从是本基地中你唯一的随从，你可以在其上放置 2 枚 +1 战力指示物。"
     },
     "samurai_bushi_pod": {
       "name": "武士",
-      "abilityText": "持续：此随从自场上进入 奔牌堆后，若其战力为5 或高，获得 1VP。"
+      "abilityText": "持续：当此随从从场上进入弃牌堆且其战力为 5 或更高时，获得 1 VP。"
     },
     "samurai_shogun_pod": {
       "name": "将军",
-      "abilityText": "将军 持续：你的其他随州自上 进入奔牌堆后，放置1枚+1 战力棘记于其上。"
+      "abilityText": "持续：当你的另一个随从从场上进入弃牌堆后，在此随从上放置 1 枚 +1 战力指示物。"
     },
     "samurai_yokai_attack_pod": {
       "name": "妖怪来袭！",
-      "effectText": "你的一个随从来打 出一个额外随从和-个 额外战术。"
+      "effectText": "消灭你的一个随从，以额外打出 1 个随从和 1 个战术。"
     },
     "samurai_way_of_the_warrior_pod": {
       "name": "武者之道",
-      "effectText": "你的一个随 从+3胡租且如果其自场 上进入弃牌堆。抓1张牌。"
+      "effectText": "直到回合结束，你的一个随从 +3 战力；若其从场上进入弃牌堆，抓 1 张牌。"
     },
     "samurai_honorable_combat_pod": {
       "name": "荣耀决斗",
-      "effectText": "选择一个有其他玩家总战力高于你的基地。该处你的一个随从与该玩家的随从决斗。胜利随从的控制者获得 1VP。"
+      "effectText": "选择一个有其他玩家总战力高于你的基地。你在那里的一个随从与该玩家在那里的一个随从决斗。胜利随从的控制者获得 1 VP。"
     },
     "samurai_honor_the_fallen_pod": {
       "name": "致敬阵亡者",
-      "effectText": "对基地打出。 持续：每当本基地你的随从 进入弃牌堆后，抓1张牌。"
+      "effectText": "对一个基地打出。持续：当你在此处的一个随从进入弃牌堆后，抓 1 张牌。"
     },
     "samurai_honor_the_ancestors_pod": {
       "name": "致敬先祖",
-      "effectText": "你的 一^随从上。漪戏中每有1位 其他玩家，你便可}你弃牌堆 中的1个随队洗回牌库。"
+      "effectText": "在你的一个随从上放置 1 枚 +1 战力指示物。游戏中每有 1 位其他玩家，你便可以将你弃牌堆中的 1 个随从洗回牌库。"
     },
     "samurai_heart_of_the_battle_pod": {
       "name": "战斗之心",
-      "effectText": "特殊：你可以在一个基地计分前打出此牌。该处你的一个随从与该处另一位玩家的随从对斗。消灭失败的随从。"
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。你在该处的一个随从与该处另一位玩家的一个随从决斗。消灭失败的随从。"
     },
     "samurai_final_haiku_pod": {
       "name": "终曲俳句",
-      "effectText": "对你酌随从打出。 持续：此 端正进入弃 牌#后；你.个随胳 +2 战力荃回合缮弟。"
+      "effectText": "对你的一个随从打出。持续：当此随从从场上进入弃牌堆后，你的每个随从直到回合结束各 +2 战力。"
     },
     "samurai_code_of_bushido_pod": {
       "name": "武士道",
-      "effectText": "你的至多3个随从上各 放置1枚+1 战力棘记。"
+      "effectText": "在你的随从上总共放置 3 枚 +1 战力指示物。"
     },
     "vikings_huscarl": {
       "name": "侍卫",
@@ -3251,51 +3251,51 @@
     },
     "cowboys_deputy_pod": {
       "name": "副警长",
-      "abilityText": "特殊：你的回合内或你的随从参与决斗时，你可以从手中弃置此牌来使一个随从 +2 战力直到回合结束。"
+      "abilityText": "特殊：在你的回合内，或你的随从参与决斗时，你可以从手中弃置此牌，使一个随从直到回合结束 +2 战力。"
     },
     "cowboys_gunfighter_pod": {
       "name": "枪手",
-      "abilityText": "随从-3断力 榧手 此随1以与本坳；其她 玩家的 个随从料。瀚灭 失败的随从。"
+      "abilityText": "此随从可以与此处另一位玩家的一个随从决斗。消灭失败的随从。"
     },
     "cowboys_pinkerton_pod": {
       "name": "平克顿",
-      "abilityText": "持续： 当此处你的随从参 斗时向上添加1赦+1战力 棘记。"
+      "abilityText": "持续：每场决斗一次，当你的一个随从参与决斗时，你可以在其上放置 1 枚 +1 战力指示物。"
     },
     "cowboys_sheriff_pod": {
       "name": "警长",
-      "abilityText": "特殊： 本基地计分前。此随从 可与处其他玩家的一个随 从决斗。消灭失败的随从。"
+      "abilityText": "特殊：本基地计分前，此随从可以与此处另一位玩家的一个随从决斗。消灭失败的随从。"
     },
     "cowboys_form_a_posse_pod": {
       "name": "召集帮手",
-      "effectText": "你的每个随从+1 战力且无法 被消灭移动或返回手牌直至 回结束。"
+      "effectText": "你的每个随从直到回合结束 +1 战力，且不能被消灭、移动或返回手牌。"
     },
     "cowboys_quick_draw_pod": {
       "name": "快拔枪",
-      "effectText": "选择你的- 个随从。 若-正在\"，其 +4战力直至 回结束 ，否则其 +2战力直至 回结束。"
+      "effectText": "选择你的一个随从。若其正在决斗中，则其直到回合结束 +4 战力；否则其直到回合结束 +2 战力。"
     },
     "cowboys_gold_in_them_thar_hills_pod": {
       "name": "那山里有金子",
-      "effectText": "抓取欺1张；伽可以将其额外 打出。其呆按任意顺序返回。"
+      "effectText": "查看你牌库顶的 3 张牌。展示并抓取其中 1 张；你可以将其额外打出。其余牌以任意顺序放回。"
     },
     "cowboys_stagecoach_pod": {
       "name": "驿站马车",
-      "effectText": "移动或转移同一基地上至多 2 张你的牌至另一个基地。"
+      "effectText": "移动或转移同一基地上至多 2 张你的牌到另一个基地。"
     },
     "cowboys_run_em_off_pod": {
       "name": "赶走他们",
-      "effectText": "你的一个随从峒基另 位玩 家的随从料。胜利的随从 +3战 力至合结束。且其控制者移 动失败的随从至其他基地。"
+      "effectText": "你的一个随从与同一基地中另一位玩家的一个随从决斗。胜利的随从直到回合结束 +3 战力，且其控制者将失败的随从移动到另一个基地。"
     },
     "cowboys_high_noon_pod": {
       "name": "正午决斗",
-      "effectText": "你的一个随从与基另-位 玩家的随从决斗。消灭失贩的 随从。若你的随从.利孓/ 以该处额外打出 个随从。"
+      "effectText": "你的一个随从与同一基地中另一位玩家的一个随从决斗。消灭失败的随从。若你的随从获胜，你可以在该处额外打出 1 个随从。"
     },
     "cowboys_dynamite_surprise_pod": {
       "name": "炸药惊喜",
-      "effectText": "特殊： 在你有`从@战力不最高的 止地计分时。消灭该处 个汩力4 或低的随从。 特殊： 若其他玩家的卡牌 示鲢 看你手牌或牌库中的牌，鞘灭其 个力49低的随从。"
+      "effectText": "特殊：在一个你有随从且你并非领先的基地计分前，消灭该处一个战力 4 或以下的随从。特殊：若另一位玩家的卡牌展示或查看了你手牌或牌库中的牌，消灭其一个战力 4 或以下的随从。"
     },
     "cowboys_gold_strike_pod": {
       "name": "淘到金了",
-      "effectText": "对基地打出。 持续： 在你向市基地打出 随从后，抓1张牌。"
+      "effectText": "对一个基地打出。持续：在你于此处打出随从后，抓 1 张牌。"
     },
     "base_saloon_pod": {
       "name": "酒馆",
@@ -3307,51 +3307,51 @@
     },
     "vikings_huscarl_pod": {
       "name": "侍卫",
-      "abilityText": "天赋： 将-张手牌罾于你 昀牌库顶来使此随从+2 战力直至回合结束。"
+      "abilityText": "天赋：将一张手牌置于你的牌库顶，使此随从直到回合结束 +2 战力。"
     },
     "vikings_shield_maiden_pod": {
       "name": "盾女",
-      "abilityText": "展示另一位玩家牌库顶的 牌。若是战 或战力3或 更低的随从。将其置于你 的手牌。否则放回。"
+      "abilityText": "展示另一位玩家牌库顶的牌。若其是战术，或战力 3 或以下的随从，则将其置入你的手牌；否则将其放回。"
     },
     "vikings_raider_pod": {
       "name": "袭击者",
-      "abilityText": "天赋 将你至多3张手牌 置于你的牌库顶。每张使此 随从+1 战力直至回合结束。"
+      "abilityText": "天赋：将你至多 3 张手牌置于牌库顶。每放 1 张，此随从直到回合结束 +1 战力。"
     },
     "vikings_valkyrie_pod": {
       "name": "女武神",
-      "abilityText": "将其他玩家弃牌堆中的一 张随从置于你的手牌。"
+      "abilityText": "将另一位玩家弃牌堆中的 1 个随从置入你的手牌。"
     },
     "vikings_berserk_pod": {
       "name": "狂战",
-      "effectText": "将一张手牌置于你的牌库顶 来使你的一个随从+3战力 直至回合结束。"
+      "effectText": "将一张手牌置于你的牌库顶，使你的一个随从直到回合结束 +4 战力。"
     },
     "vikings_cast_the_runes_pod": {
       "name": "掷符文",
-      "effectText": "查看另-位玩家的手牌。查 看其牌库顶的2张}并挺任 意放回。额外打出1个战术。"
+      "effectText": "查看另一位玩家的手牌。查看其牌库顶的 2 张牌，并以任意顺序放回。额外打出 1 个战术。"
     },
     "vikings_combat_training_pod": {
       "name": "战斗训练",
-      "effectText": "你的每个随从各 +1汩力 直至回合结束。"
+      "effectText": "你的每个随从直到回合结束各 +1 战力。"
     },
     "vikings_pillage_pod": {
       "name": "掠夺",
-      "effectText": "随机抽取另一位玩家的一 张手牌置于你的手牌。"
+      "effectText": "从另一位玩家手牌中随机抽取 1 张牌，置入你的手牌。"
     },
     "vikings_raiding_party_pod": {
       "name": "突袭队",
-      "effectText": "对 展示另一玩家牌库顶的3张 牌。你可以额外打出展示出的 1张醚术；或战力4「佃的 随从。 骡以意顺序回。乓；"
+      "effectText": "展示另一位玩家牌库顶的 3 张牌。你可以将其中展示出的一张战术，或一张战力 4 或以下的随从，作为额外牌打出。其余牌以任意顺序放回。"
     },
     "vikings_ransack_pod": {
       "name": "洗劫",
-      "effectText": "将1张打出在基地上或随从上的的战术，或被埋葬的牌置于你的手牌。"
+      "effectText": "将一张打出在随从上的战术、一张打出在基地上的战术，或一张埋葬的牌置入你的手牌。"
     },
     "vikings_tribute_pod": {
       "name": "贡品",
-      "effectText": "抓3张牌。"
+      "effectText": "抓 3 张牌。"
     },
     "vikings_viking_funeral_pod": {
       "name": "维京葬礼",
-      "effectText": "对你战力 5 或更高的随从打出。持续：此随从进入弃牌堆后，获得 1VP。如果你拥有该随从，将其放回游戏盒。"
+      "effectText": "对你一个战力 5 或更高的随从打出。持续：当此随从进入弃牌堆后，获得 1 VP。若你拥有它，则将其放回盒中。"
     },
     "base_drakkar_pod": {
       "name": "德拉卡尔号",
