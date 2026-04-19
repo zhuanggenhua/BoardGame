@@ -1,10 +1,14 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
-import { getOptimizedImageUrls } from '../core/AssetLoader';
 import { HomeSceneRenderer, type HomeV2SceneState } from '../ugc/runtime';
 import { getAllGames, getGameById } from '../config/games.config';
+import {
+    HomeV2ChangelogPanel,
+    HomeV2LoginPanel,
+} from '../components/home-v2/HomeTabPanels';
 import { LobbyDirectory } from '../components/home-v2/LobbyDirectory';
-import { GameDetails } from '../components/home-v2/GameDetails';
+import { GameDetailsLeft, GameDetailsRight } from '../components/home-v2/GameDetails';
 import { useAuth } from '../contexts/AuthContext';
 import compiledHomeV2Scene from '../ui-scenes/home-v2/home-v2.compiled.json';
 import assetRegistryYamlRaw from '../ui-scenes/home-v2/asset-registry.yaml?raw';
@@ -32,7 +36,6 @@ import {
     appendChildNode,
     createAuthoringDocument,
     saveUiSceneAuthoring,
-    serializeAssetRegistryYaml,
     serializeSceneYaml,
     serializeSkinYaml,
     updateNineSliceSkin,
@@ -51,10 +54,12 @@ import {
     type UISceneNodeMovePosition,
 } from '../ui-scene';
 
-const HOME_V2_BOOK_DESK = getOptimizedImageUrls('/assets/common/images/home-v2/book-desk/1.png').webp;
+const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
+const HOME_V2_BOOK_DESK = `${HOME_V2_ASSET_ROOT}/book-desk/compressed/1.webp`;
 const HOME_V2_COMPILED_SCENE = compiledHomeV2Scene as UISceneCompiledArtifact;
 const HOME_V2_SCENE_ID = 'home-v2';
-type HomeV2TabId = 'lobby' | 'rooms' | 'leaderboard' | 'changelog' | 'about';
+type HomeV2TabId = 'lobby' | 'rooms' | 'changelog';
+const HOME_V2_TAB_ORDER: HomeV2TabId[] = ['lobby', 'rooms', 'changelog'];
 const HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY = 9;
 const LEFT_DRAWER_MIN_WIDTH = 300;
 const LEFT_DRAWER_MAX_WIDTH = 520;
@@ -80,17 +85,10 @@ type DrawerResizeSession = {
     startSize: number;
 };
 
-function HomeV2TabPlaceholder({ title, description }: { title: string; description: string }) {
-    return (
-        <div className="pointer-events-auto flex h-full w-full flex-col items-center justify-center px-[12%] text-center text-[#6a4a33]">
-            <div className="mb-[4%] text-[clamp(18px,1.8vw,24px)] font-bold tracking-[0.08em] text-[#5b3822]">
-                {title}
-            </div>
-            <div className="max-w-[82%] text-[clamp(11px,0.95vw,14px)] leading-[1.7] text-[#7a5d46]">
-                {description}
-            </div>
-        </div>
-    );
+function resolveTabFlipDirection(from: HomeV2TabId, to: HomeV2TabId): 'flippingTabForward' | 'flippingTabBackward' {
+    const fromIndex = HOME_V2_TAB_ORDER.indexOf(from);
+    const toIndex = HOME_V2_TAB_ORDER.indexOf(to);
+    return toIndex >= fromIndex ? 'flippingTabForward' : 'flippingTabBackward';
 }
 
 function formatAuthoringError(error: unknown): string {
@@ -180,17 +178,23 @@ type SelectionArrangeMode =
     | 'sameHeight'
     | 'sameSize';
 
-export const HomeV2Draft = () => {
+export interface HomeV2DraftProps {
+    authoringMode?: boolean;
+}
+
+export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
+    const { t } = useTranslation('lobby');
     const [searchParams] = useSearchParams();
     const { user } = useAuth();
     const [sceneState, setSceneState] = React.useState<HomeV2SceneState>('open');
     const [activeTab, setActiveTab] = React.useState<HomeV2TabId>('lobby');
     const [selectedGameId, setSelectedGameId] = React.useState<string | null>(null);
     const pendingGameIdRef = React.useRef<string | null>(null);
+    const pendingTabIdRef = React.useRef<HomeV2TabId | null>(null);
+    const queuedTabAfterOverviewRef = React.useRef<HomeV2TabId | null>(null);
     const debugRegions = searchParams.get('homeV2Debug') === '1';
-    const wantsAuthorMode = searchParams.get('author') === '1';
     const isAuthorAllowed = import.meta.env.DEV || user?.role === 'admin' || user?.role === 'developer';
-    const isAuthorMode = wantsAuthorMode && isAuthorAllowed;
+    const isAuthorMode = authoringMode && isAuthorAllowed;
     const [compiledContentScene, setCompiledContentScene] = React.useState<UISceneCompiledArtifact>(HOME_V2_COMPILED_SCENE);
     const [authoringDocument, setAuthoringDocument] = React.useState<UISceneAuthoringDocument | null>(null);
     const [assetRegistryYamlDraft, setAssetRegistryYamlDraft] = React.useState(assetRegistryYamlRaw);
@@ -213,7 +217,6 @@ export const HomeV2Draft = () => {
     const [inspectorWidth, setInspectorWidth] = React.useState(360);
     const [sourcePanelHeight, setSourcePanelHeight] = React.useState(320);
     const drawerResizeSessionRef = React.useRef<DrawerResizeSession | null>(null);
-    const homeVisibilityReplayArmedRef = React.useRef(typeof document !== 'undefined' ? document.hidden : false);
     const currentDraftsRef = React.useRef<AuthoringDrafts>({
         assetRegistryYaml: assetRegistryYamlRaw,
         skinYaml: homeV2SkinYamlRaw,
@@ -234,7 +237,10 @@ export const HomeV2Draft = () => {
     );
     const authoringMeta = React.useMemo(() => parseAuthoringMetaYaml(homeV2AuthoringMetaYamlRaw), []);
     const selectedGame = selectedGameId ? getGameById(selectedGameId) ?? null : null;
-    const isPageFlipping = sceneState === 'flippingToDetail' || sceneState === 'flippingToOverview';
+    const isPageFlipping = sceneState === 'flippingToDetail'
+        || sceneState === 'flippingToOverview'
+        || sceneState === 'flippingTabForward'
+        || sceneState === 'flippingTabBackward';
     const selectedSourceNode = React.useMemo(
         () => (authoringDocument && selectedNodeId ? findNodeById(authoringDocument.sceneDocument.scene.root, selectedNodeId) : null),
         [authoringDocument, selectedNodeId],
@@ -303,6 +309,12 @@ export const HomeV2Draft = () => {
         setSceneState('flippingToDetail');
     }, [isPageFlipping, sceneState]);
 
+    const handleDirectGameDetailOpen = React.useCallback((gameId: string) => {
+        pendingGameIdRef.current = null;
+        setSelectedGameId(gameId);
+        setSceneState('detail');
+    }, []);
+
     const handleBackToOverview = React.useCallback(() => {
         if (sceneState !== 'detail' || isPageFlipping || !selectedGameId) {
             return;
@@ -311,6 +323,26 @@ export const HomeV2Draft = () => {
         pendingGameIdRef.current = null;
         setSceneState('flippingToOverview');
     }, [isPageFlipping, sceneState, selectedGameId]);
+
+    const handleTabChange = React.useCallback((tabId: HomeV2TabId) => {
+        if (tabId === activeTab || isPageFlipping) {
+            return;
+        }
+
+        if (sceneState === 'detail') {
+            queuedTabAfterOverviewRef.current = tabId;
+            pendingGameIdRef.current = null;
+            setSceneState('flippingToOverview');
+            return;
+        }
+
+        if (sceneState !== 'overview') {
+            return;
+        }
+
+        pendingTabIdRef.current = tabId;
+        setSceneState(resolveTabFlipDirection(activeTab, tabId));
+    }, [activeTab, isPageFlipping, sceneState]);
 
     const handleSceneEvent = React.useCallback((event: { eventId: string }) => {
         if (event.eventId === 'page.flip.to-detail.complete') {
@@ -321,17 +353,26 @@ export const HomeV2Draft = () => {
 
         if (event.eventId === 'page.flip.to-overview.complete') {
             setSelectedGameId(null);
+            const queuedTab = queuedTabAfterOverviewRef.current;
+            queuedTabAfterOverviewRef.current = null;
+            if (queuedTab && queuedTab !== activeTab) {
+                pendingTabIdRef.current = queuedTab;
+                setSceneState(resolveTabFlipDirection(activeTab, queuedTab));
+                return;
+            }
             setSceneState('overview');
+            return;
         }
-    }, []);
 
-    const handleTabChange = React.useCallback((tabId: HomeV2TabId) => {
-        setActiveTab(tabId);
-        if (sceneState === 'detail') {
-            setSelectedGameId(null);
+        if (event.eventId === 'page.flip.tab.forward.complete' || event.eventId === 'page.flip.tab.backward.complete') {
+            const nextTab = pendingTabIdRef.current;
+            pendingTabIdRef.current = null;
+            if (nextTab) {
+                setActiveTab(nextTab);
+            }
             setSceneState('overview');
         }
-    }, [sceneState]);
+    }, [activeTab]);
 
     const buildAuthoringDocument = React.useCallback((drafts: {
         assetRegistryYaml: string;
@@ -460,34 +501,6 @@ export const HomeV2Draft = () => {
             window.removeEventListener('pointerup', handlePointerUp);
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
-        };
-    }, []);
-
-    React.useEffect(() => {
-        if (typeof document === 'undefined') {
-            return;
-        }
-
-        const handleVisibilityChange = () => {
-            if (document.hidden) {
-                homeVisibilityReplayArmedRef.current = true;
-                return;
-            }
-
-            if (!homeVisibilityReplayArmedRef.current) {
-                return;
-            }
-
-            homeVisibilityReplayArmedRef.current = false;
-            pendingGameIdRef.current = null;
-            setSelectedGameId(null);
-            setSceneState('open');
-        };
-
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        return () => {
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
     }, []);
 
@@ -1137,20 +1150,17 @@ export const HomeV2Draft = () => {
     const sceneContext = React.useMemo(() => ({
         activeTab,
         tabLabels: {
-            lobby: '大厅',
-            rooms: '房间',
-            leaderboard: '榜单',
-            changelog: '更新',
-            about: '关于',
+            lobby: t('homeV2.sceneTabs.lobby'),
+            rooms: t('homeV2.sceneTabs.rooms'),
+            changelog: t('homeV2.sceneTabs.changelog'),
+            leaderboard: '',
         },
-    }), [activeTab]);
+    }), [activeTab, t]);
 
     const actionHandlers = React.useMemo<Record<string, () => void>>(() => ({
         openLobbyTab: () => handleTabChange('lobby'),
         openRoomsTab: () => handleTabChange('rooms'),
-        openLeaderboardTab: () => handleTabChange('leaderboard'),
         openChangelogTab: () => handleTabChange('changelog'),
-        openAboutTab: () => handleTabChange('about'),
     }), [handleTabChange]);
 
     const sceneSlots = React.useMemo(() => {
@@ -1170,47 +1180,29 @@ export const HomeV2Draft = () => {
                 />
             );
         } else if (activeTab === 'rooms') {
-            slots.overview_left_page = (
-                <HomeV2TabPlaceholder
-                    title="房间目录"
-                    description="这里会接入按页签组织的房间列表和房间筛选。当前先保留书页容器与 authoring 对位能力。"
-                />
-            );
-        } else if (activeTab === 'leaderboard') {
-            slots.overview_left_page = (
-                <HomeV2TabPlaceholder
-                    title="排行榜"
-                    description="这里会接入胜场排行、近期战绩和玩家概览。当前先打通真实页面上的 scene authoring 链路。"
-                />
-            );
+            slots.overview_left_page = <HomeV2LoginPanel />;
         } else if (activeTab === 'changelog') {
             slots.overview_left_page = (
-                <HomeV2TabPlaceholder
-                    title="更新日志"
-                    description="这里会接入按日期编排的版本日志与置顶公告。当前先保留书页真实版式和 YAML 真源。"
+                <HomeV2ChangelogPanel
+                    games={overviewGames}
+                    onOpenGame={handleDirectGameDetailOpen}
                 />
             );
-        } else {
-            slots.overview_left_page = (
-                <HomeV2TabPlaceholder
-                    title="关于"
-                    description="这里会接入首页 V2 的项目说明、作者信息和入口说明。当前占位用于验证 tab actionId 宿主映射。"
-                />
-            );
+            slots.overview_right_page = <HomeV2LoginPanel />;
         }
 
         if (sceneState === 'detail') {
             slots.detail_left_page = (
-                <GameDetails.Left
+                <GameDetailsLeft
                     game={selectedGame}
                     onBack={handleBackToOverview}
                 />
             );
-            slots.detail_right_page = <GameDetails.Right game={selectedGame} />;
+            slots.detail_right_page = <GameDetailsRight game={selectedGame} />;
         }
 
         return slots;
-    }, [activeTab, handleBackToOverview, handleGameOpen, overviewGames, sceneState, selectedGame]);
+    }, [activeTab, handleBackToOverview, handleDirectGameDetailOpen, handleGameOpen, overviewGames, sceneState, selectedGame]);
 
     const stage = (
         <div className="relative flex h-full items-center justify-center overflow-hidden">
@@ -1509,3 +1501,4 @@ export const HomeV2Draft = () => {
         </main>
     );
 };
+

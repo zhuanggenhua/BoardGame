@@ -41,32 +41,20 @@
         "height": 318
       },
       "tab_lobby": {
-        "x": 806.4,
-        "y": 108,
+        "x": 766,
+        "y": 223.5,
         "width": 53.76,
         "height": 72
       },
       "tab_rooms": {
-        "x": 806.4,
-        "y": 187.2,
-        "width": 53.76,
-        "height": 72
-      },
-      "tab_leaderboard": {
-        "x": 806.4,
-        "y": 266.4,
+        "x": 766,
+        "y": 261.5,
         "width": 53.76,
         "height": 72
       },
       "tab_changelog": {
-        "x": 806.4,
-        "y": 345.6,
-        "width": 53.76,
-        "height": 72
-      },
-      "tab_about": {
-        "x": 806.4,
-        "y": 424.8,
+        "x": 766,
+        "y": 299.5,
         "width": 53.76,
         "height": 72
       },
@@ -162,8 +150,8 @@
         ],
         "zoneRef": "tab_lobby",
         "rect": {
-          "x": 806.4,
-          "y": 108,
+          "x": 766,
+          "y": 223.5,
           "width": 53.76,
           "height": 72
         },
@@ -180,30 +168,12 @@
         ],
         "zoneRef": "tab_rooms",
         "rect": {
-          "x": 806.4,
-          "y": 187.2,
+          "x": 766,
+          "y": 261.5,
           "width": 53.76,
           "height": 72
         },
         "actionId": "openRoomsTab",
-        "children": []
-      },
-      {
-        "id": "tab_button_leaderboard",
-        "type": "button",
-        "visible": true,
-        "visibleIn": [
-          "overview",
-          "detail"
-        ],
-        "zoneRef": "tab_leaderboard",
-        "rect": {
-          "x": 806.4,
-          "y": 266.4,
-          "width": 53.76,
-          "height": 72
-        },
-        "actionId": "openLeaderboardTab",
         "children": []
       },
       {
@@ -216,30 +186,12 @@
         ],
         "zoneRef": "tab_changelog",
         "rect": {
-          "x": 806.4,
-          "y": 345.6,
+          "x": 766,
+          "y": 299.5,
           "width": 53.76,
           "height": 72
         },
         "actionId": "openChangelogTab",
-        "children": []
-      },
-      {
-        "id": "tab_button_about",
-        "type": "button",
-        "visible": true,
-        "visibleIn": [
-          "overview",
-          "detail"
-        ],
-        "zoneRef": "tab_about",
-        "rect": {
-          "x": 806.4,
-          "y": 424.8,
-          "width": 53.76,
-          "height": 72
-        },
-        "actionId": "openAboutTab",
         "children": []
       }
     ],

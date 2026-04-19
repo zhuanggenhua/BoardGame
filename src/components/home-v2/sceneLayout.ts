@@ -1,15 +1,13 @@
 import type { CSSProperties } from 'react';
 import { HOME_V2_BOOK_SCENE, resolveArtboardRegion } from '../../ugc/runtime';
 
-export const HOME_V2_TAB_ORDER = ['lobby', 'rooms', 'leaderboard', 'changelog', 'about'] as const;
+export const HOME_V2_TAB_ORDER = ['lobby', 'rooms', 'changelog'] as const;
 export type HomeV2TabId = typeof HOME_V2_TAB_ORDER[number];
 
 const HOME_V2_TAB_REGION_IDS: Record<HomeV2TabId, string> = {
     lobby: 'tabLobby',
     rooms: 'tabRooms',
-    leaderboard: 'tabLeaderboard',
     changelog: 'tabChangelog',
-    about: 'tabAbout',
 };
 
 function toPercent(value: number, total: number): string {

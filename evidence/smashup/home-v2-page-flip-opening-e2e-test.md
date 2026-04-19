@@ -27,7 +27,7 @@
 
 ### 1. 首页稳态
 
-截图：`test-results/evidence-screenshots/lobby.e2e/Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳/lobby-home-v2-draft-shell-mobile.png`
+截图：`test-results/evidence-screenshots/_shared/lobby.e2e/Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳/lobby-home-v2-draft-shell-mobile.png`
 
 人工观察：
 
@@ -38,7 +38,7 @@
 
 ### 2. 详情页稳态
 
-截图：`test-results/evidence-screenshots/lobby.e2e/Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳/lobby-home-v2-draft-detail-mobile.png`
+截图：`test-results/evidence-screenshots/_shared/lobby.e2e/Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳/lobby-home-v2-draft-detail-mobile.png`
 
 人工观察：
 
@@ -48,7 +48,7 @@
 
 ### 3. 返回目录稳态
 
-截图：`test-results/evidence-screenshots/lobby.e2e/Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳/lobby-home-v2-draft-catalog-mobile.png`
+截图：`test-results/evidence-screenshots/_shared/lobby.e2e/Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳/lobby-home-v2-draft-catalog-mobile.png`
 
 人工观察：
 
@@ -58,7 +58,7 @@
 
 ### 4. 后台回前台时的重新开书
 
-截图：`test-results/evidence-screenshots/lobby.e2e/Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳/lobby-home-v2-draft-resume-opening-mobile.png`
+截图：`test-results/evidence-screenshots/_shared/lobby.e2e/Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳/lobby-home-v2-draft-resume-opening-mobile.png`
 
 人工观察：
 

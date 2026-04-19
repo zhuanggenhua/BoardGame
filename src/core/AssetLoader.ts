@@ -1187,7 +1187,10 @@ export function getLocalizedImageCandidateUrls(src: string, locale: string): str
     const effectiveLocale = locale || 'zh-CN';
     const fallbackLocale = getImageFallbackLocale(effectiveLocale);
     const localizedUrls = getLocalizedImageUrls(src, effectiveLocale);
-    const remoteBaseUrl = getAssetsBaseUrl();
+    const configuredBaseUrl = getAssetsBaseUrl();
+    const remoteBaseUrl = /^https?:\/\//i.test(configuredBaseUrl)
+        ? configuredBaseUrl
+        : DEFAULT_ASSETS_BASE_URL;
     const remotePrimaryRelative = toLocalizedCompressedRelativePath(src, effectiveLocale);
     const remoteFallbackRelative = toLocalizedCompressedRelativePath(src, fallbackLocale);
     const remotePrimary = /^https?:\/\//i.test(remoteBaseUrl)

@@ -30,7 +30,7 @@ import { installGlobalErrorContextCapture } from './lib/feedback/errorContext';
 import { isNativeAndroidRuntime } from './lib/mobile/androidRuntime';
 import { AdminShellSkeleton } from './pages/admin/components/AdminSkeletons';
 
-import { Home } from './pages/Home';
+import { HomeEntry } from './pages/HomeEntry';
 import { NotFound } from './pages/NotFound';
 import { MaintenancePage } from './pages/Maintenance';
 
@@ -64,6 +64,9 @@ const DevToolsArchView = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./p
 const UgcBuilderPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/builder/pages/UnifiedBuilderWithAudio')) : null;
 const UgcSandboxPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/builder/pages/UGCSandbox')) : null;
 const UgcRuntimeViewPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/runtime/RuntimeViewPage')) : null;
+const HomeV2AuthoringPage = ENABLE_INTERNAL_DEVTOOLS
+  ? React.lazy(() => import('./pages/HomeV2Draft').then(m => ({ default: m.HomeV2Draft })))
+  : null;
 const AdminLayout = React.lazy(() => import('./pages/admin/components/AdminLayout'));
 const AdminDashboard = React.lazy(() => import('./pages/admin/index'));
 const UsersPage = React.lazy(() => import('./pages/admin/Users'));
@@ -126,7 +129,7 @@ const AppContent = () => {
                   <Routes>
                     <Route
                       path="/"
-                      element={<Home />}
+                      element={<HomeEntry />}
                     />
                     <Route
                       path="/play/:gameId/match/:matchId"
@@ -165,6 +168,9 @@ const AppContent = () => {
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && DevToolsArchView && (
                       <Route path="/dev/arch" element={<React.Suspense fallback={null}><DevToolsArchView /></React.Suspense>} />
+                    )}
+                    {ENABLE_INTERNAL_DEVTOOLS && HomeV2AuthoringPage && (
+                      <Route path="/dev/home-v2-authoring" element={<React.Suspense fallback={null}><HomeV2AuthoringPage /></React.Suspense>} />
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && UgcBuilderPage && (
                       <Route path="/dev/ugc" element={<React.Suspense fallback={null}><UgcBuilderPage /></React.Suspense>} />

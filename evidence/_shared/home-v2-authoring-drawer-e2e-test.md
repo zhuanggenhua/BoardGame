@@ -74,7 +74,7 @@ npm run test:e2e:ci:file -- lobby.e2e.ts "Home v2 作者态按真实画布流程
 ## 截图证据
 
 - 正式 E2E 截图：
-  - [lobby-home-v2-authoring-figma-flow.png](D:/gongzuo/webgame/BoardGame-wt-home-v2/test-results/evidence-screenshots/lobby.e2e/Home-v2-作者态按真实画布流程工作：选中即开属性、同抽屉切换与尺寸拖拽/lobby-home-v2-authoring-figma-flow.png)
+  - [lobby-home-v2-authoring-figma-flow.png](D:/gongzuo/webgame/BoardGame-wt-home-v2/test-results/evidence-screenshots/_shared/lobby.e2e/Home-v2-作者态按真实画布流程工作：选中即开属性、同抽屉切换与尺寸拖拽/lobby-home-v2-authoring-figma-flow.png)
   - 观察：
     - 顶部工具条仍保留 `撤销 / 重做 / 删除所选 / 图层 / 组件 / 资源 / 属性 / 画布辅助 / 高级源码 / 保存` 这些中文入口，但整体收敛成更紧凑的一条头部工具条，不再像一整块横向操作面板压在画布上。
     - 左侧 `资源`、右侧 `属性`、底部 `高级源码` 三个工作区已经把书页画布压缩到中间可视区，而不是直接半透明盖在书页上；书页主体和选区边框现在能完整看见，这一版更接近 Figma / Penpot 的 docked workspace。

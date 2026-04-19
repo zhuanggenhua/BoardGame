@@ -1,14 +1,19 @@
+import React from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Home } from './Home';
-import { HomeV2Draft } from './HomeV2Draft';
+import { isHomeV2DraftEnabled } from '../lib/homeV2Routing';
 
-const isHomeV2DraftEnabled = import.meta.env.VITE_HOME_V2_DRAFT === '1';
+const LazyHomeV2 = React.lazy(() => import('./HomeV2').then((module) => ({ default: module.HomeV2 })));
 
 export const HomeEntry = () => {
     const [searchParams] = useSearchParams();
 
-    if (searchParams.get('homeV2Draft') === '1' || isHomeV2DraftEnabled) {
-        return <HomeV2Draft />;
+    if (isHomeV2DraftEnabled(searchParams)) {
+        return (
+            <React.Suspense fallback={null}>
+                <LazyHomeV2 />
+            </React.Suspense>
+        );
     }
 
     return <Home />;

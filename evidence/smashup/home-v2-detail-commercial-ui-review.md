@@ -48,9 +48,9 @@
 ## 本轮证据
 
 - 详情页截图：
-  `D:\gongzuo\webgame\BoardGame-wt-home-v2\test-results\evidence-screenshots\lobby.e2e\Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳\lobby-home-v2-draft-detail-mobile.png`
+  `D:\gongzuo\webgame\BoardGame-wt-home-v2\test-results\evidence-screenshots\_shared\lobby.e2e\Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳\lobby-home-v2-draft-detail-mobile.png`
 - 总览截图：
-  `D:\gongzuo\webgame\BoardGame-wt-home-v2\test-results\evidence-screenshots\lobby.e2e\Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳\lobby-home-v2-draft-catalog-mobile.png`
+  `D:\gongzuo\webgame\BoardGame-wt-home-v2\test-results\evidence-screenshots\_shared\lobby.e2e\Home-v2-草稿在移动横屏下显示全屏背景与逐帧书本壳\lobby-home-v2-draft-catalog-mobile.png`
 - 相关实现：
   `src/components/home-v2/GameDetails.tsx`
 

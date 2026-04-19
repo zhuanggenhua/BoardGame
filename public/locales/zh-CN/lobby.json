@@ -1,6 +1,6 @@
 {
   "home": {
-    "title": "易桌游",
+    "title": "桌游平台",
     "subtitle": "桌游教程、联机与原型制作平台",
     "logoAlt": "桌游平台 Logo",
     "gameDetailsLoadingEyebrow": "正在准备",
@@ -14,6 +14,58 @@
       "status": "当前进行中",
       "room": "房间 #{{id}}",
       "players": "{{count}} 人在席"
+    }
+  },
+  "homeV2": {
+    "waitingPlayers": "等待玩家进入",
+    "roomTitleFallback": "房间 {{id}}",
+    "roomLedgerTitle": "房间簿",
+    "roomCount": "{{count}} 间",
+    "emptyRoomTitle": "还没有公开房间",
+    "emptyRoomDescription": "暂无可加入房间记录。",
+    "lockedRoomLabel": "加密",
+    "lockedRoomHint": "密码房间暂时请从原大厅进入。",
+    "details": {
+      "typeLabel": "类型",
+      "defaultCategory": "桌游",
+      "playerCountLabel": "建议人数",
+      "overviewLabel": "玩法概览"
+    },
+    "sceneTabs": {
+      "lobby": "大厅",
+      "rooms": "登录",
+      "leaderboard": "",
+      "changelog": "更新"
+    },
+    "tabs": {
+      "rooms": {
+        "eyebrow": "账号",
+        "title": "账号登录",
+        "description": "查看最近活跃的公开房间。",
+        "loading": "正在读取账号状态…",
+        "emptyTitle": "还没有公开房间",
+        "emptyDescription": "暂无公开房间记录。",
+        "loggedInHint": "已登录",
+        "playerSummary": "{{players}} / {{seats}} 在席",
+        "openGame": "查看游戏"
+      },
+      "leaderboard": {
+        "eyebrow": "排行榜",
+        "title": "实时排行",
+        "description": "查看当前热门游戏。",
+        "loading": "正在读取排行…",
+        "emptyTitle": "还没有排行数据",
+        "emptyDescription": "暂无排行数据。",
+        "statSummary": "{{rooms}} 间房 · {{players}} 位玩家"
+      },
+      "changelog": {
+        "eyebrow": "更新日志",
+        "title": "最近更新",
+        "description": "查看最近更新记录。",
+        "loading": "正在翻阅更新札记…",
+        "emptyTitle": "暂时没有更新记录",
+        "emptyDescription": "暂无更新记录。"
+      }
     }
   },
   "password": {

@@ -9,6 +9,7 @@ import {
     type GameMobileBannerKind,
 } from '../../games/mobileSupport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
+import { isHomeV2DraftRoute } from '../../lib/homeV2Routing';
 
 type GameMobileEntry = Pick<
     GameManifestEntry,
@@ -150,12 +151,6 @@ const getBannerMessage = (bannerKind: GameMobileBannerKind) => {
         case 'not-supported':
             return '该游戏暂未完成手机适配，建议使用 PC 端';
     }
-};
-
-const isHomeV2DraftRoute = (pathname: string, search: string) => {
-    if (pathname !== '/') return false;
-    const searchParams = new URLSearchParams(search);
-    return searchParams.get('homeV2Draft') === '1' || import.meta.env.VITE_HOME_V2_DRAFT === '1';
 };
 
 export function MobileOrientationGuard({ children }: { children: React.ReactNode }) {

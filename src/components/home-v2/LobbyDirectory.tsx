@@ -1,6 +1,18 @@
 import type { GameConfig } from '../../config/games.config';
 import { GameListCard } from '../lobby/GameList';
 
+const BOOK_GAME_SLOT_TRANSFORMS = [
+    { x: '-4.5%', y: '4.5%', rotate: '-2deg' },
+    { x: '0%', y: '-2.8%', rotate: '0deg' },
+    { x: '4.5%', y: '-3.4%', rotate: '0deg' },
+    { x: '-3%', y: '2.2%', rotate: '-1.4deg' },
+    { x: '0%', y: '-4.2%', rotate: '0deg' },
+    { x: '3%', y: '2.2%', rotate: '1.4deg' },
+    { x: '-2.2%', y: '5.2%', rotate: '-1deg' },
+    { x: '0%', y: '-1.2%', rotate: '0deg' },
+    { x: '2.2%', y: '5.2%', rotate: '1deg' },
+] as const;
+
 function BookGamePage({
     games,
     onSelect,
@@ -19,14 +31,21 @@ function BookGamePage({
             }}
         >
             {slots.map((game, index) => (game ? (
-                <GameListCard
+                <div
                     key={game.id}
-                    game={game}
-                    index={index}
-                    onGameClick={onSelect}
-                    variant="homeV2Compact"
-                    className="max-w-[62px]"
-                />
+                    className="flex h-full w-full items-center justify-center"
+                    style={{
+                        transform: `translate(${BOOK_GAME_SLOT_TRANSFORMS[index]?.x ?? '0%'}, ${BOOK_GAME_SLOT_TRANSFORMS[index]?.y ?? '0%'}) rotate(${BOOK_GAME_SLOT_TRANSFORMS[index]?.rotate ?? '0deg'})`,
+                    }}
+                >
+                    <GameListCard
+                        game={game}
+                        index={index}
+                        onGameClick={onSelect}
+                        variant="homeV2Compact"
+                        className="max-w-[68px]"
+                    />
+                </div>
             ) : (
                 <div key={`placeholder-${index}`} className="h-full w-full" aria-hidden="true" />
             )))}

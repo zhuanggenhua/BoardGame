@@ -2,10 +2,10 @@ import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flame } from 'lucide-react';
 import type { GameConfig } from '../../config/games.config';
-import { getOptimizedImageUrls } from '../../core/AssetLoader';
 import { resolveGameDescription, resolveGameDisplayName } from './gameDetailsContent';
 
-const HOME_V2_HOLDER_BG = getOptimizedImageUrls('/assets/common/images/home-v2/holders/1.png').webp;
+const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
+const HOME_V2_HOLDER_BG = `${HOME_V2_ASSET_ROOT}/holders/compressed/1.webp`;
 
 export interface GameListCardProps {
     game: GameConfig;
@@ -60,8 +60,8 @@ export const GameListCard = ({
                             backgroundPosition: 'center',
                         }}
                     >
-                        <div className="absolute inset-[11%] overflow-hidden rounded-[4px] bg-[#ead9ba]">
-                            <div className="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]">
+                        <div className="absolute inset-[11.5%] overflow-hidden rounded-[6px]">
+                            <div className="h-full w-full transition-transform duration-300 group-hover:scale-[1.03] [&_*img]:!block [&_*img]:!h-full [&_*img]:!w-full [&_*img]:!object-contain [&_*img]:!object-center">
                                 {game.thumbnail ? (
                                     game.thumbnail
                                 ) : (
@@ -197,3 +197,4 @@ export const GameList = ({ games, onGameClick, onGameIntent, mostPopularGameId }
         </div>
     );
 };
+

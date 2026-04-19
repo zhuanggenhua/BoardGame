@@ -1,6 +1,6 @@
 {
   "home": {
-    "title": "Yi Board Game",
+    "title": "Board Game Platform",
     "subtitle": "Platform for Tutorials, Online Play, and Prototyping",
     "logoAlt": "Board Game Platform Logo",
     "gameDetailsLoadingEyebrow": "Preparing",
@@ -14,6 +14,58 @@
       "status": "In Progress",
       "room": "Room #{{id}}",
       "players": "{{count}} seated"
+    }
+  },
+  "homeV2": {
+    "waitingPlayers": "Waiting for players",
+    "roomTitleFallback": "Room {{id}}",
+    "roomLedgerTitle": "Room Ledger",
+    "roomCount": "{{count}} rooms",
+    "emptyRoomTitle": "No public rooms yet",
+    "emptyRoomDescription": "No joinable room records yet.",
+    "lockedRoomLabel": "Locked",
+    "lockedRoomHint": "Please use the legacy lobby to enter password-protected rooms for now.",
+    "details": {
+      "typeLabel": "Type",
+      "defaultCategory": "Board Game",
+      "playerCountLabel": "Recommended Players",
+      "overviewLabel": "Overview"
+    },
+    "sceneTabs": {
+      "lobby": "Lobby",
+      "rooms": "Login",
+      "leaderboard": "",
+      "changelog": "Updates"
+    },
+    "tabs": {
+      "rooms": {
+        "eyebrow": "Account",
+        "title": "Account Login",
+        "description": "View recent active public rooms.",
+        "loading": "Checking account status…",
+        "emptyTitle": "No public rooms yet",
+        "emptyDescription": "No public room records yet.",
+        "loggedInHint": "Signed in",
+        "playerSummary": "{{players}} / {{seats}} seated",
+        "openGame": "Open Game"
+      },
+      "leaderboard": {
+        "eyebrow": "Leaderboard",
+        "title": "Live Ranking",
+        "description": "View current trending games.",
+        "loading": "Loading ranking data…",
+        "emptyTitle": "No ranking data yet",
+        "emptyDescription": "No ranking data yet.",
+        "statSummary": "{{rooms}} rooms · {{players}} players"
+      },
+      "changelog": {
+        "eyebrow": "Changelog",
+        "title": "Recent Updates",
+        "description": "View recent update entries.",
+        "loading": "Reading release notes…",
+        "emptyTitle": "No updates yet",
+        "emptyDescription": "No update records yet."
+      }
     }
   },
   "password": {
