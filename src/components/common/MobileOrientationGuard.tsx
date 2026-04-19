@@ -9,7 +9,7 @@ import {
     type GameMobileBannerKind,
 } from '../../games/mobileSupport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
-import { isHomeV2DraftRoute } from '../../lib/homeV2Routing';
+import { isHomeV2DraftRoute, isHomeV2PreviewRoute } from '../../lib/homeV2Routing';
 
 type GameMobileEntry = Pick<
     GameManifestEntry,
@@ -161,7 +161,8 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     const [dynamicGameConfig, setDynamicGameConfig] = useState<GameMobileEntry | undefined>(undefined);
 
     const gameId = extractGameIdFromPlayPath(location.pathname);
-    const isHomeV2Route = isHomeV2DraftRoute(location.pathname, location.search);
+    const isHomeV2Route = isHomeV2PreviewRoute(location.pathname)
+        || isHomeV2DraftRoute(location.pathname, location.search);
     const builtInGameConfig = gameId ? GAME_MANIFEST_BY_ID[gameId] : undefined;
     const gameConfig = builtInGameConfig ?? dynamicGameConfig;
     const preferredOrientation = gameId
