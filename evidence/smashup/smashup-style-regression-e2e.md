@@ -11,7 +11,7 @@
 ### 1. PC 派系详情打开态
 
 截图：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\PC-打开派系详情时应保持居中并可点击空白关闭\14-desktop-faction-detail-open.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\PC-打开派系详情时应保持居中并可点击空白关闭\14-desktop-faction-detail-open.png`
 
 人工观察：
 - 派系详情面板位于桌面端画面中部，没有再贴右侧停靠。
@@ -21,7 +21,7 @@
 ### 2. PC 空白关闭后
 
 截图：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\PC-打开派系详情时应保持居中并可点击空白关闭\15-desktop-faction-detail-blank-close.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\PC-打开派系详情时应保持居中并可点击空白关闭\15-desktop-faction-detail-blank-close.png`
 
 人工观察：
 - 详情面板已经完全消失，只剩派系选择卡阵列。
@@ -31,7 +31,7 @@
 ### 3. 结束回合按钮恢复态
 
 截图：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\13-desktop-end-turn-restored.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\13-desktop-end-turn-restored.png`
 
 人工观察：
 - 右下角 `FINISH TURN` 主按钮外圈有清晰的白色描边，不再是边框消失的深色圆块。

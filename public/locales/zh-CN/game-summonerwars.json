@@ -45,6 +45,7 @@
     "confirmMove": "确认移动",
     "withdrawCharge": "消耗充能",
     "withdrawMagic": "消耗1魔力",
+    "payMagic": "消耗1魔力",
     "confirmControl": "控制",
     "continue": "继续",
     "finish": "完成",
@@ -371,9 +372,36 @@
   "eventCard": {
     "noSummoner": "召唤师不在场上",
     "noValidTarget": "没有符合条件的目标",
+    "chantPowerNeedFriendlyInRange": "力量颂歌需要召唤师3格内至少1个友方士兵/英雄",
     "entanglementNeedTwoCommons": "交缠颂歌需要召唤师3格内至少2个友方士兵"
   },
   "interaction": {
+    "sw": {
+      "eventTarget": "选择事件卡目标",
+      "magicEventChoice": "魔力阶段：选择打出或弃牌换魔力",
+      "funeralPyre": "殉葬火堆：选择治疗目标",
+      "bloodSummonTarget": "血契召唤：选择承伤友方单位",
+      "bloodSummonCard": "血契召唤：选择要召唤的单位卡",
+      "bloodSummonPosition": "血契召唤：选择放置位置",
+      "bloodSummonConfirm": "血契召唤：确认是否继续",
+      "annihilateTargets": "除灭：选择要牺牲的友方单位",
+      "annihilateDamage": "除灭：为目标选择伤害承受者",
+      "mindControl": "心灵操控：选择敌方目标",
+      "stunTarget": "震慑：选择目标",
+      "stunDestination": "震慑：选择推拉终点",
+      "hypnoticLure": "催眠引诱：选择目标",
+      "chantEntanglement": "交缠颂歌：选择两个友方士兵",
+      "sneakUnit": "潜行：选择要移动的友方单位",
+      "sneakDirection": "潜行：选择移动方向",
+      "glacialShiftBuilding": "冰川位移：选择友方建筑",
+      "glacialShiftDestination": "冰川位移：选择目标位置",
+      "infection": "感染：选择要复活的疫病体",
+      "grabFollow": "抓附：选择跟随位置",
+      "soulTransfer": "灵魂转移：确认是否移动",
+      "mindCapture": "心灵捕获：选择控制或造成伤害",
+      "iceShards": "寒冰碎屑：确认是否消耗充能",
+      "feedBeast": "喂养巨食兽：选择吞噬目标或自毁"
+    },
     "fireSacrifice": {
       "mustSelectAlly": "请选择一个友方单位作为牺牲品"
     },
@@ -390,6 +418,9 @@
   "statusBanners": {
     "insufficientMagic": "魔力不足",
     "insufficientCharge": "需要至少1点充能",
+    "eventTarget": {
+      "message": "选择事件卡目标"
+    },
     "magicEventChoice": {
       "message": "选择：打出事件卡或弃牌换魔力"
     },

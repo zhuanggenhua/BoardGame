@@ -177,9 +177,9 @@ export const waitForHandArea = async (page: Page, timeout = 30000) => {
 
 export const clickHandCard = async (page: Page, index: number) => {
     const handArea = page.getByTestId('su-hand-area');
-    const cards = handArea.locator('> div > div');
-    await expect(cards.nth(index)).toBeVisible({ timeout: 5000 });
-    await cards.nth(index).click();
+    const card = handArea.locator('> div > div').nth(index);
+    await expect(card).toBeVisible({ timeout: 5000 });
+    await card.click({ force: true });
 };
 
 export const clickBase = async (page: Page, index: number) => {

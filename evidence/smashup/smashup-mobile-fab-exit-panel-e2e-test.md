@@ -3,14 +3,14 @@
 ## 测试命令
 
 ```bash
-npm run test:e2e:ci -- e2e/smashup-4p-layout-test.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-4p-layout-test.e2e.ts
 ```
 
 ## 证据截图
 
 ### 1. 横屏主状态图
 
-![横屏主状态图](../test-results/evidence-screenshots/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04-mobile-landscape-layout.png)
+![横屏主状态图](../test-results/evidence-screenshots/smashup/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04-mobile-landscape-layout.png)
 
 本图只在以下条件满足后才允许截取：
 
@@ -26,7 +26,7 @@ npm run test:e2e:ci -- e2e/smashup-4p-layout-test.e2e.ts
 
 ### 2. 退出悬浮面板
 
-![退出悬浮面板](../test-results/evidence-screenshots/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04a-mobile-exit-fab-panel.png)
+![退出悬浮面板](../test-results/evidence-screenshots/smashup/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04a-mobile-exit-fab-panel.png)
 
 结论：
 
@@ -38,14 +38,14 @@ npm run test:e2e:ci -- e2e/smashup-4p-layout-test.e2e.ts
 
 当前仓库里仍保留：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
 
 我已重新人工查看这张图，确认右侧仍残留旧版 `Exit` hover tooltip。
 因此这张图只能说明“第一次点击会展开附着行动卡”，不能再作为“当前 FAB 最终视觉状态”的证据。
 
 ## 实现与测试收口
 
-- [e2e/smashup-4p-layout-test.e2e.ts](/D:/gongzuo/webgame/BoardGame/e2e/smashup-4p-layout-test.e2e.ts)
+- [e2e/smashup/smashup-4p-layout-test.e2e.ts](/D:/gongzuo/webgame/BoardGame/e2e/smashup/smashup-4p-layout-test.e2e.ts)
   - 新增首图前的 UI 就绪等待，禁止在 i18n key fallback 阶段截主状态图
   - 保留悬浮球尺寸断言与退出面板视口内断言
 - [src/components/system/FabMenu.tsx](/D:/gongzuo/webgame/BoardGame/src/components/system/FabMenu.tsx)

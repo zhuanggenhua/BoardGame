@@ -27,10 +27,10 @@ import {
     type SUMatchSetup,
 } from './smashup-debug-helpers';
 
-/** 等待随从部署模式的基地高亮（ring-green-400） */
+/** 等待随从部署模式的基地高亮（ring-purple-300） */
 async function waitForDeployBaseSelect(page: import('@playwright/test').Page, timeout = 10000) {
     await page.waitForFunction(
-        () => document.querySelectorAll('[class*="ring-green-400"]').length > 0,
+        () => document.querySelectorAll('[class*="ring-purple-300"]').length > 0,
         { timeout },
     );
 }
@@ -38,7 +38,7 @@ async function waitForDeployBaseSelect(page: import('@playwright/test').Page, ti
 /** 点击部署模式下高亮的基地 */
 async function clickDeployBase(page: import('@playwright/test').Page, index = 0) {
     await page.evaluate((idx) => {
-        const bases = document.querySelectorAll('[class*="ring-green-400"]');
+        const bases = document.querySelectorAll('[class*="ring-purple-300"]');
         if (bases[idx]) (bases[idx] as HTMLElement).click();
     }, index);
     await page.waitForTimeout(500);

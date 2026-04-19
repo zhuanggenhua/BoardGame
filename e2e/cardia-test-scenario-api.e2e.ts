@@ -313,6 +313,134 @@ test.describe('Cardia 测试场景API验证', () => {
         expect(myCardBox!.height, '标准视口下卡牌高度应保持原版').toBeLessThanOrEqual(162);
     });
 
+    test('紧凑横屏下卡牌选择弹窗确认按钮不应被已聚焦手牌遮挡', async ({ page, game }, testInfo) => {
+        const scenario: CardiaTestScenario = {
+            player1: {
+                hand: ['deck_i_card_01', 'deck_i_card_02', 'deck_i_card_03', 'deck_i_card_04'],
+                deck: ['deck_i_card_05'],
+            },
+            player2: {
+                hand: ['deck_i_card_06'],
+                deck: ['deck_i_card_07'],
+            },
+            phase: 'ability',
+        };
+
+        await game.openTestGame('cardia');
+        await applyCardiaScenarioToPage(page, scenario);
+
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await page.setViewportSize({ width: 932, height: 412 });
+        await page.waitForTimeout(800);
+        await hideDebugChrome(page);
+
+        const state = await readHarnessCoreState(page) as Record<string, unknown> | null;
+        expect(state, 'TestHarness 应返回 core 状态').not.toBeNull();
+        const players = state!.players as Record<string, { hand: Array<{ uid: string }> }>;
+        const focusedHandCardUid = players['0'].hand[2].uid;
+
+        const focusedHandCard = page.locator(`[data-testid="card-${focusedHandCardUid}"]`).first();
+        await expect(focusedHandCard).toBeVisible({ timeout: 10000 });
+        await focusedHandCard.hover();
+        await page.waitForTimeout(200);
+
+        await page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const state = harness?.state?.get?.();
+            if (!state) throw new Error('TestHarness state.get 不可用');
+
+            const selectionCards = [
+                {
+                    uid: 'selection-card-1',
+                    defId: 'deck_i_card_08',
+                    ownerId: '0',
+                    baseInfluence: 3,
+                    faction: 'swamp',
+                    abilityIds: [],
+                    difficulty: 1,
+                    modifiers: { entries: [], nextOrder: 0 },
+                    tags: { entries: [], nextOrder: 0 },
+                    signets: 0,
+                    ongoingMarkers: [],
+                    imageIndex: 0,
+                    imagePath: '',
+                    optionId: 'selection-option-1',
+                },
+                {
+                    uid: 'selection-card-2',
+                    defId: 'deck_i_card_09',
+                    ownerId: '1',
+                    baseInfluence: 5,
+                    faction: 'academy',
+                    abilityIds: [],
+                    difficulty: 2,
+                    modifiers: { entries: [], nextOrder: 0 },
+                    tags: { entries: [], nextOrder: 0 },
+                    signets: 0,
+                    ongoingMarkers: [],
+                    imageIndex: 1,
+                    imagePath: '',
+                    optionId: 'selection-option-2',
+                },
+            ];
+
+            harness.state.patch({
+                sys: {
+                    ...state.sys,
+                    interaction: {
+                        current: {
+                            id: 'cardia-feedback-selection-modal',
+                            kind: 'simple-choice',
+                            playerId: '0',
+                            data: {
+                                interactionType: 'card-selection',
+                                title: '选择要操作的卡牌',
+                                minSelect: 1,
+                                maxSelect: 1,
+                                cards: selectionCards,
+                                options: selectionCards.map((card) => ({
+                                    id: card.optionId,
+                                    label: card.defId,
+                                    value: { cardUid: card.uid },
+                                })),
+                            },
+                        },
+                        queue: [],
+                        isBlocked: false,
+                    },
+                },
+            });
+        });
+
+        const confirmButton = page.getByRole('button', { name: /确认|confirm/i });
+        await expect(confirmButton).toBeVisible({ timeout: 10000 });
+
+        const overlapCheck = await page.evaluate(() => {
+            const confirm = Array.from(document.querySelectorAll<HTMLButtonElement>('button'))
+                .find((button) => /确认|confirm/i.test(button.textContent ?? ''));
+            if (!confirm) return null;
+            const rect = confirm.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const topElement = document.elementFromPoint(centerX, centerY) as HTMLElement | null;
+            return {
+                centerX,
+                centerY,
+                topTag: topElement?.tagName ?? null,
+                topText: topElement?.textContent?.trim() ?? null,
+                coveredByButton: !!topElement?.closest('button') && topElement.closest('button') === confirm,
+            };
+        });
+
+        expect(overlapCheck, '应能命中确认按钮中心点').not.toBeNull();
+        expect(overlapCheck!.coveredByButton, '确认按钮中心点顶部元素应仍是弹窗按钮，而不是手牌层').toBe(true);
+
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'cardia-selection-modal-over-hand'),
+            fullPage: true,
+        });
+    });
+
     test('紧凑横屏下长手牌与弃牌堆共存时不应挤出战场与手牌区', async ({ browser }, testInfo) => {
         const setup = await setupCardiaTestScenario(browser, {
             player1: {

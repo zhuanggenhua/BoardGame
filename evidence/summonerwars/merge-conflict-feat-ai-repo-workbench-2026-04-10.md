@@ -15,8 +15,8 @@
 2. `android/app/src/main/assets/game-orientation-map.json`
 3. `docs/ai-rules/ui-ux.md`
 4. `docs/mobile-adaptation.md`
-5. `e2e/lobby.e2e.ts`
-6. `e2e/summonerwars.e2e.ts`
+5. `e2e/_shared/lobby.e2e.ts`
+6. `e2e/summonerwars/summonerwars.e2e.ts`
 7. `server.ts`
 8. `src/components/social/FriendsChatModal.tsx`
 9. `src/games/manifest.client.generated.tsx`
@@ -37,10 +37,10 @@
 - `docs/mobile-adaptation.md`
   - 合并保留 `PC 1920x1080` 基线。
   - 同时补入横屏 `13:6`（`2340x1080` / `936x432`）验收口径，并保留 `375x812` 的非棋盘页竖屏参考值。
-- `e2e/lobby.e2e.ts`
+- `e2e/_shared/lobby.e2e.ts`
   - 保留本分支“AI 仓库工作台已从首页工具入口下线”用例。
   - 同时并入主线新增的首页详情 loading fallback / 下载 App 等测试。
-- `e2e/summonerwars.e2e.ts`
+- `e2e/summonerwars/summonerwars.e2e.ts`
   - 保留本分支已有的桌面对照截图步骤。
   - 同时保留主线新的手机横屏 viewport 常量与后续布局断言。
 - `server.ts`
@@ -77,24 +77,24 @@
 ## 本轮验证
 
 - `node scripts/game/generate_game_manifests.js`
-- `npx eslint e2e/lobby.e2e.ts e2e/navbar.e2e.ts e2e/summonerwars.e2e.ts server.ts src/components/social/FriendsChatModal.tsx src/pages/Home.tsx src/vite-env.d.ts src/games/manifest.client.generated.tsx`
+- `npx eslint e2e/_shared/lobby.e2e.ts e2e/smashup/navbar.e2e.ts e2e/summonerwars/summonerwars.e2e.ts server.ts src/components/social/FriendsChatModal.tsx src/pages/Home.tsx src/vite-env.d.ts src/games/manifest.client.generated.tsx`
 - `npm run typecheck`
 - `npm run i18n:check`
 - `npx openspec validate add-ai-repo-workbench --strict --no-interactive`
 - `npx openspec validate add-ai-repo-cli-console --strict --no-interactive`
 - `npx openspec validate add-flowise-unity-closed-loop-migration --strict --no-interactive`
 - `npx openspec validate update-ai-repo-workbench-official-chat-executors --strict --no-interactive`
-- `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "AI 仓库工作台已从首页工具入口下线，避免继续走旧主壳"`
-- `npm run test:e2e:ci:file -- e2e/navbar.e2e.ts`
+- `npm run test:e2e:ci:file -- e2e/_shared/lobby.e2e.ts "AI 仓库工作台已从首页工具入口下线，避免继续走旧主壳"`
+- `npm run test:e2e:ci:file -- e2e/smashup/navbar.e2e.ts`
 
 ## 关键截图证据
 
 - 首页旧入口已下线：
-  - `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\lobby.e2e\AI-仓库工作台已从首页工具入口下线，避免继续走旧主壳\ai-repo-workbench-home-entry-retired.png`
+  - `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\_shared\lobby.e2e\AI-仓库工作台已从首页工具入口下线，避免继续走旧主壳\ai-repo-workbench-home-entry-retired.png`
 - 官方聊天页发送后：
-  - `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-03-chatbot-after-send.png`
+  - `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\summonerwars\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-03-chatbot-after-send.png`
 - reset 后会话清空但 projectPath 仍在：
-  - `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-04-chatbot-after-reset.png`
+  - `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\summonerwars\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-04-chatbot-after-reset.png`
 
 ## merge audit 结果
 

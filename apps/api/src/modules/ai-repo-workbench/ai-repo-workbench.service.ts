@@ -3,7 +3,7 @@ import { execFile } from 'node:child_process';
 import { access, mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { basename, dirname, extname, relative, resolve } from 'node:path';
 import { promisify } from 'node:util';
-import { AI_REPO_WORKBENCH_FLOW_HOST_CATALOG } from '../../../../../src/features/ai-repo-workbench/flowiseForkBaseline';
+import { resolveFlowHostCatalog } from '../../../../../src/features/ai-repo-workbench/flowiseForkBaseline';
 import {
     createInitialWorkbenchJournal,
     focusManagedWorktree,
@@ -37,7 +37,7 @@ export class AiRepoWorkbenchService {
     private readonly logger = new Logger(AiRepoWorkbenchService.name);
     private readonly repoRoot = process.cwd();
     private readonly journalPath = resolve(this.repoRoot, 'temp/ai-repo-workbench/workbench-journal.json');
-    private readonly e2eAssetDir = resolve(this.repoRoot, 'evidence/assets/ai-repo-workbench-e2e');
+    private readonly e2eAssetDir = resolve(this.repoRoot, 'evidence/_shared/assets/ai-repo-workbench-e2e');
     private readonly orchestrator: NewFactionLangGraphOrchestrator;
 
     constructor(@Inject(AiRepoWorkbenchExecutorService) private readonly executorService: AiRepoWorkbenchExecutorService) {
@@ -63,8 +63,8 @@ export class AiRepoWorkbenchService {
         return this.loadJournal();
     }
 
-    getHostCatalog() {
-        return AI_REPO_WORKBENCH_FLOW_HOST_CATALOG;
+    async getHostCatalog() {
+        return resolveFlowHostCatalog();
     }
 
     async resetJournal(now = Date.now()): Promise<WorkbenchJournal> {

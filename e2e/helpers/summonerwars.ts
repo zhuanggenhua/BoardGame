@@ -19,7 +19,7 @@ export const GAME_NAME = 'summonerwars';
 export const SUMMONERWARS_FACTION_INDEX: Record<string, number> = {
   necromancer: 0,
   trickster: 1,
-  phoenix_elf: 2,
+  paladin: 2,
   goblin: 3,
   frost: 4,
   barbaric: 5,
@@ -47,7 +47,16 @@ export const initSWContext = async (context: BrowserContext, storageKey?: string
 // ============================================================================
 
 /** 通过 API 创建 SW 房间并注入凭据，返回 matchID */
-export const createSWRoomViaAPI = async (page: Page): Promise<string | null> => {
+export const createSWRoomViaAPI = async (
+  page: Page,
+  options: {
+    /**
+     * 透传到 setupData 的额外字段（会与默认 guestId/ownerKey/ownerType 合并）。
+     * 用于在线 AI 房间创建（seatControllers/enableAi 等）。
+     */
+    setupData?: Record<string, unknown>;
+  } = {},
+): Promise<string | null> => {
   try {
     const guestId = `sw_e2e_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
     // 注入 guestId 到 localStorage
@@ -62,7 +71,15 @@ export const createSWRoomViaAPI = async (page: Page): Promise<string | null> => 
 
     const base = getGameServerBaseURL();
     const res = await page.request.post(`${base}/games/${GAME_NAME}/create`, {
-      data: { numPlayers: 2, setupData: { guestId, ownerKey: `guest:${guestId}`, ownerType: 'guest' } },
+      data: {
+        numPlayers: 2,
+        setupData: {
+          guestId,
+          ownerKey: `guest:${guestId}`,
+          ownerType: 'guest',
+          ...(options.setupData ?? {}),
+        },
+      },
     });
     if (!res.ok()) return null;
     const resData = (await res.json().catch(() => null)) as { matchID?: string } | null;
@@ -470,9 +487,6 @@ export const completeFactionSelection = async (hostPage: Page, guestPage: Page) 
 export const clickBoardElement = async (page: Page, selector: string) => {
   const locator = page.locator(selector).first();
   try {
-    await locator.click({ force: true, timeout: 3000 });
-    return;
-  } catch {
     const clicked = await page.evaluate((sel) => {
       const candidates = Array.from(document.querySelectorAll<HTMLElement>(sel));
       const el = candidates.find((node) => {
@@ -481,10 +495,18 @@ export const clickBoardElement = async (page: Page, selector: string) => {
         return style.visibility !== 'hidden' && style.display !== 'none' && rect.width > 0 && rect.height > 0;
       }) ?? candidates[0];
       if (!el) return false;
+      el.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
+      el.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
       el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
       return true;
     }, selector);
     if (!clicked) throw new Error(`无法点击元素: ${selector}`);
+    await locator.evaluate((el) => {
+      if (el instanceof HTMLElement) el.focus?.();
+    }).catch(() => {});
+    return;
+  } catch {
+    await locator.click({ force: true, timeout: 3000 });
   }
 };
 
@@ -578,9 +600,9 @@ export const setupSWOnlineMatch = async (
     await selectFactionsViaDispatch(hostPage, guestPage, hostFactionId, guestFactionId);
   } catch {
     // dispatch 失败时 fallback 到 UI 点击
-    // 阵营索引映射：necromancer=0, trickster=1, phoenix_elf=2, goblin=3, frost=4, barbaric=5
+    // 阵营索引映射：necromancer=0, trickster=1, paladin=2, goblin=3, frost=4, barbaric=5
     const factionIndexMap: Record<string, number> = {
-      necromancer: 0, trickster: 1, phoenix_elf: 2, goblin: 3, frost: 4, barbaric: 5,
+      necromancer: 0, trickster: 1, paladin: 2, goblin: 3, frost: 4, barbaric: 5,
     };
     const hostIdx = factionIndexMap[hostFactionId] ?? 0;
     const guestIdx = factionIndexMap[guestFactionId] ?? 0;

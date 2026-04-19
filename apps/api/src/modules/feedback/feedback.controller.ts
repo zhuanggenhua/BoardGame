@@ -1,10 +1,11 @@
 import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Query, UseGuards, Request, NotFoundException } from '@nestjs/common';
 import { FeedbackService } from './feedback.service';
-import { BulkFeedbackIdsDto, CreateFeedbackDto, FeedbackFilterDto, UpdateFeedbackStatusDto, QueryFeedbackDto } from './dto';
+import { BulkFeedbackIdsDto, CreateFeedbackDto, CreateSystemFeedbackDto, FeedbackFilterDto, UpdateFeedbackStatusDto, QueryFeedbackDto } from './dto';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../../shared/guards/optional-jwt-auth.guard';
 import { Roles } from '../admin/guards/roles.decorator';
 import { AdminGuard } from '../admin/guards/admin.guard';
+import { InternalFeedbackGuard } from '../../shared/guards/internal-feedback.guard';
 
 type FeedbackAdminRequest = {
     user: {
@@ -32,6 +33,17 @@ export class FeedbackController {
         // 如果用户已登录，使用用户 ID；否则使用 null（匿名反馈）
         const userId = req.user?.userId || null;
         return this.feedbackService.create(userId, dto);
+    }
+}
+
+@UseGuards(InternalFeedbackGuard)
+@Controller('internal/feedback')
+export class FeedbackInternalController {
+    constructor(@Inject(FeedbackService) private readonly feedbackService: FeedbackService) { }
+
+    @Post('system')
+    async createSystem(@Body() dto: CreateSystemFeedbackDto) {
+        return this.feedbackService.createSystem(dto);
     }
 }
 

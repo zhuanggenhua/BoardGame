@@ -17,28 +17,28 @@
 
 ```powershell
 $env:PW_PORT='5173'
-node scripts/infra/run-e2e-command.mjs dev e2e/smashup-zombie-lord.e2e.ts --grep "zombie_they_keep_coming: 应从弃牌堆直接额外打出，不回手也不返还随从位"
+node scripts/infra/run-e2e-command.mjs dev e2e/smashup/smashup-zombie-lord.e2e.ts --grep "zombie_they_keep_coming: 应从弃牌堆直接额外打出，不回手也不返还随从位"
 ```
 
 ## 截图路径
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-they-keep-coming\01-discard-panel.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-they-keep-coming\02-card-selected.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-they-keep-coming\03-after-deploy.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-they-keep-coming\01-discard-panel.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-they-keep-coming\02-card-selected.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-they-keep-coming\03-after-deploy.png`
 
 ## 截图
 
 ### 1. 打出行动卡后，弃牌堆面板打开
 
-![它们为你而来-弃牌堆面板](../test-results/evidence-screenshots/smashup-they-keep-coming/01-discard-panel.png)
+![它们为你而来-弃牌堆面板](../test-results/evidence-screenshots/smashup/smashup-they-keep-coming/01-discard-panel.png)
 
 ### 2. 选中弃牌堆随从后，基地进入可部署状态
 
-![它们为你而来-选中弃牌堆随从](../test-results/evidence-screenshots/smashup-they-keep-coming/02-card-selected.png)
+![它们为你而来-选中弃牌堆随从](../test-results/evidence-screenshots/smashup/smashup-they-keep-coming/02-card-selected.png)
 
 ### 3. 选择基地后，随从直接落场
 
-![它们为你而来-随从直接落场](../test-results/evidence-screenshots/smashup-they-keep-coming/03-after-deploy.png)
+![它们为你而来-随从直接落场](../test-results/evidence-screenshots/smashup/smashup-they-keep-coming/03-after-deploy.png)
 
 ## 截图分析
 

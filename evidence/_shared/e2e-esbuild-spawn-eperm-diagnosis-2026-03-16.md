@@ -24,7 +24,7 @@ npm run check:child-process:e2e
 命令：
 
 ```bash
-node node_modules/playwright/cli.js test e2e/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --list
+node node_modules/playwright/cli.js test e2e/smashup/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --list
 ```
 
 结果：
@@ -37,7 +37,7 @@ node node_modules/playwright/cli.js test e2e/smashup-tutorial.e2e.ts --grep "手
 命令：
 
 ```bash
-node node_modules/playwright/cli.js test e2e/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --workers=1
+node node_modules/playwright/cli.js test e2e/smashup/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --workers=1
 ```
 
 结果：
@@ -91,7 +91,7 @@ npm run build
 2. `global-setup` 能启动 E2E 服务
 3. `vite/esbuild` 相关链路可正常执行
 4. 新截图能落盘到：
-   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\`
+   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\`
 ## 2026-03-16 追加：手工绕过三服务启动后的复核
 
 本轮额外验证了“先手工把三服务准备好，再直接跑 Playwright”这条链路，结果如下：
@@ -129,7 +129,7 @@ PW_USE_DEV_SERVERS=true \
 VITE_DEV_PORT=6173 \
 GAME_SERVER_PORT=20000 \
 API_SERVER_PORT=21000 \
-node node_modules/playwright/cli.js test e2e/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --workers=1
+node node_modules/playwright/cli.js test e2e/smashup/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --workers=1
 ```
 
 结果：
@@ -175,7 +175,7 @@ node node_modules/vite/bin/vite.js build --configLoader native
 
 ```bash
 npm run check:child-process:e2e
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
 ```
 
 结果：
@@ -184,7 +184,7 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
   - 失败阶段：`fork`
   - 错误：`EPERM (spawn)`
 - `test:e2e:ci:file` 会先正常识别并打印：
-  - 目标文件：`e2e/smashup-tutorial.e2e.ts`
+  - 目标文件：`e2e/smashup/smashup-tutorial.e2e.ts`
   - 用例：`手机横屏下教程浮层不应跑出视口`
 - 然后在真正进入 E2E 基建前，同样被同一个 `fork -> spawn EPERM` 门禁拦下。
 

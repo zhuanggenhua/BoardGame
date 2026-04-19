@@ -12,7 +12,7 @@
 
 ```bash
 npm run typecheck
-npx eslint e2e/smashup-tutorial.e2e.ts e2e/smashup-4p-layout-test.e2e.ts e2e/summonerwars.e2e.ts src/components/tutorial/TutorialOverlay.tsx src/components/system/FabMenu.tsx src/components/game/framework/widgets/GameHUD.tsx src/games/smashup/Board.tsx src/games/summonerwars/Board.tsx src/games/summonerwars/ui/MapContainer.tsx src/games/summonerwars/ui/EnergyBar.tsx --max-warnings 999
+npx eslint e2e/smashup/smashup-tutorial.e2e.ts e2e/smashup/smashup-4p-layout-test.e2e.ts e2e/summonerwars/summonerwars.e2e.ts src/components/tutorial/TutorialOverlay.tsx src/components/system/FabMenu.tsx src/components/game/framework/widgets/GameHUD.tsx src/games/smashup/Board.tsx src/games/summonerwars/Board.tsx src/games/summonerwars/ui/MapContainer.tsx src/games/summonerwars/ui/EnergyBar.tsx --max-warnings 999
 ```
 
 结果：
@@ -27,14 +27,14 @@ npx eslint e2e/smashup-tutorial.e2e.ts e2e/smashup-4p-layout-test.e2e.ts e2e/sum
 
 ```bash
 npm run check:child-process:e2e
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
 ```
 
 结果：
 
 - `check:child-process:e2e` 仍然失败在 `fork -> spawn EPERM`
 - `test:e2e:ci:file` 会先正确打印：
-  - 目标文件：`e2e/smashup-tutorial.e2e.ts`
+  - 目标文件：`e2e/smashup/smashup-tutorial.e2e.ts`
   - 用例名：`手机横屏下教程浮层不应跑出视口`
 - 随后同样在进入 E2E 基建前失败于 `fork -> spawn EPERM`
 
@@ -50,9 +50,9 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 
 已实际查看：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
 
 结论：
 
@@ -69,7 +69,7 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 
 已实际查看：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
 
 结论：
 
@@ -118,20 +118,20 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 一旦进入允许 `child_process` 的环境，优先执行：
 
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
-npm run test:e2e:ci:file -- e2e/summonerwars.e2e.ts "移动横屏：触屏放大入口与阶段说明在手机和平板都可达"
-npm run test:e2e:ci -- e2e/smashup-4p-layout-test.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/summonerwars/summonerwars.e2e.ts "移动横屏：触屏放大入口与阶段说明在手机和平板都可达"
+npm run test:e2e:ci -- e2e/smashup/smashup-4p-layout-test.e2e.ts
 ```
 
 然后优先重审这些截图：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\11-phone-hand-magnify-open.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\12-phone-phase-detail-open.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\13-phone-action-log-open.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\20-tablet-landscape-board.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\11-phone-hand-magnify-open.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\12-phone-phase-detail-open.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\13-phone-action-log-open.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\20-tablet-landscape-board.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
 
 ## 相关文档
 
@@ -167,7 +167,7 @@ node -e "const {fork}=require('node:child_process'); const fs=require('fs'); con
 
 ```bash
 node node_modules/typescript/bin/tsc --noEmit
-node node_modules/eslint/bin/eslint.js e2e/smashup-tutorial.e2e.ts e2e/smashup-4p-layout-test.e2e.ts e2e/summonerwars.e2e.ts src/components/tutorial/TutorialOverlay.tsx src/components/system/FabMenu.tsx src/components/game/framework/widgets/GameHUD.tsx src/components/common/overlays/ConfirmModal.tsx src/games/smashup/Board.tsx src/games/smashup/ui/BaseZone.tsx src/games/smashup/ui/HandArea.tsx src/games/smashup/ui/PromptOverlay.tsx src/games/smashup/ui/layoutConfig.ts src/games/summonerwars/Board.tsx src/games/summonerwars/ui/EnergyBar.tsx src/games/summonerwars/ui/HandArea.tsx src/games/summonerwars/ui/MapContainer.tsx src/index.css vite.config.ts --max-warnings 999
+node node_modules/eslint/bin/eslint.js e2e/smashup/smashup-tutorial.e2e.ts e2e/smashup/smashup-4p-layout-test.e2e.ts e2e/summonerwars/summonerwars.e2e.ts src/components/tutorial/TutorialOverlay.tsx src/components/system/FabMenu.tsx src/components/game/framework/widgets/GameHUD.tsx src/components/common/overlays/ConfirmModal.tsx src/games/smashup/Board.tsx src/games/smashup/ui/BaseZone.tsx src/games/smashup/ui/HandArea.tsx src/games/smashup/ui/PromptOverlay.tsx src/games/smashup/ui/layoutConfig.ts src/games/summonerwars/Board.tsx src/games/summonerwars/ui/EnergyBar.tsx src/games/summonerwars/ui/HandArea.tsx src/games/summonerwars/ui/MapContainer.tsx src/index.css vite.config.ts --max-warnings 999
 ```
 
 结果：
@@ -184,7 +184,7 @@ node node_modules/eslint/bin/eslint.js e2e/smashup-tutorial.e2e.ts e2e/smashup-4
 
 命令：
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
 ```
 
 结果：
@@ -200,7 +200,7 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 ### 2. 教程截图目录当前为空
 
 实际核对：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-tutorial.e2e\`
 
 结果：
 - 目录下当前没有可读的显式证据截图
@@ -209,10 +209,10 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 ### 3. 本轮重新读图结论
 
 重新查看了这些截图：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
 
 从图里确认到：
 - `smashup 04` 仍可作为当前有效主状态图：棋盘、计分板、结束回合按钮都在视口内
@@ -246,9 +246,9 @@ node -e "const {spawnSync}=require('node:child_process'); const r=spawnSync(proc
 
 本会话重新查看了以下截图：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
 
 从图里确认到：
 - `smashup 04` 仍可作为有效主状态图：棋盘、计分板、结束回合按钮都在视口内，旧的 `Exit` tooltip 残影未出现
@@ -267,7 +267,7 @@ node -e "const {spawnSync}=require('node:child_process'); const r=spawnSync(proc
 
 ```bash
 node node_modules/typescript/bin/tsc --noEmit
-node node_modules/eslint/bin/eslint.js e2e/smashup-tutorial.e2e.ts e2e/smashup-4p-layout-test.e2e.ts e2e/summonerwars.e2e.ts src/components/tutorial/TutorialOverlay.tsx src/components/system/FabMenu.tsx src/components/game/framework/widgets/GameHUD.tsx src/components/common/overlays/ConfirmModal.tsx src/games/smashup/Board.tsx src/games/smashup/ui/BaseZone.tsx src/games/smashup/ui/HandArea.tsx src/games/smashup/ui/PromptOverlay.tsx src/games/smashup/ui/layoutConfig.ts src/games/summonerwars/Board.tsx src/games/summonerwars/ui/EnergyBar.tsx src/games/summonerwars/ui/HandArea.tsx src/games/summonerwars/ui/MapContainer.tsx src/index.css vite.config.ts --max-warnings 999
+node node_modules/eslint/bin/eslint.js e2e/smashup/smashup-tutorial.e2e.ts e2e/smashup/smashup-4p-layout-test.e2e.ts e2e/summonerwars/summonerwars.e2e.ts src/components/tutorial/TutorialOverlay.tsx src/components/system/FabMenu.tsx src/components/game/framework/widgets/GameHUD.tsx src/components/common/overlays/ConfirmModal.tsx src/games/smashup/Board.tsx src/games/smashup/ui/BaseZone.tsx src/games/smashup/ui/HandArea.tsx src/games/smashup/ui/PromptOverlay.tsx src/games/smashup/ui/layoutConfig.ts src/games/summonerwars/Board.tsx src/games/summonerwars/ui/EnergyBar.tsx src/games/summonerwars/ui/HandArea.tsx src/games/summonerwars/ui/MapContainer.tsx src/index.css vite.config.ts --max-warnings 999
 ```
 
 结果：
@@ -308,10 +308,10 @@ node scripts/infra/assert-child-process-support.mjs E2E --probe-fork --probe-esb
 
 本轮实际重新查看了以下截图：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
 
 从图里确认到：
 
@@ -348,7 +348,7 @@ node scripts/infra/assert-child-process-support.mjs E2E --probe-fork --probe-esb
 
 ```bash
 npm run check:child-process:e2e
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
 ```
 
 结果：
@@ -367,9 +367,9 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 
 本会话实际再次查看了以下截图：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
 
 重新确认到：
 

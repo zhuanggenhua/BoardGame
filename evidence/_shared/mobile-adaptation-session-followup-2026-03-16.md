@@ -6,7 +6,7 @@
 
 ```bash
 node node_modules/typescript/bin/tsc --noEmit
-node node_modules/eslint/bin/eslint.js e2e/smashup-tutorial.e2e.ts e2e/smashup-4p-layout-test.e2e.ts e2e/summonerwars.e2e.ts src/components/tutorial/TutorialOverlay.tsx src/components/system/FabMenu.tsx src/components/game/framework/widgets/GameHUD.tsx src/components/common/overlays/ConfirmModal.tsx src/games/smashup/Board.tsx src/games/smashup/ui/BaseZone.tsx src/games/smashup/ui/HandArea.tsx src/games/smashup/ui/PromptOverlay.tsx src/games/smashup/ui/layoutConfig.ts src/games/summonerwars/Board.tsx src/games/summonerwars/ui/EnergyBar.tsx src/games/summonerwars/ui/HandArea.tsx src/games/summonerwars/ui/MapContainer.tsx vite.config.ts --max-warnings 999
+node node_modules/eslint/bin/eslint.js e2e/smashup/smashup-tutorial.e2e.ts e2e/smashup/smashup-4p-layout-test.e2e.ts e2e/summonerwars/summonerwars.e2e.ts src/components/tutorial/TutorialOverlay.tsx src/components/system/FabMenu.tsx src/components/game/framework/widgets/GameHUD.tsx src/components/common/overlays/ConfirmModal.tsx src/games/smashup/Board.tsx src/games/smashup/ui/BaseZone.tsx src/games/smashup/ui/HandArea.tsx src/games/smashup/ui/PromptOverlay.tsx src/games/smashup/ui/layoutConfig.ts src/games/summonerwars/Board.tsx src/games/summonerwars/ui/EnergyBar.tsx src/games/summonerwars/ui/HandArea.tsx src/games/summonerwars/ui/MapContainer.tsx vite.config.ts --max-warnings 999
 node scripts/infra/assert-child-process-support.mjs E2E --probe-fork --probe-esbuild
 ```
 
@@ -25,10 +25,10 @@ node scripts/infra/assert-child-process-support.mjs E2E --probe-fork --probe-esb
 
 本会话实际重新查看了以下截图：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
 
 重新确认：
 
@@ -61,7 +61,7 @@ node scripts/infra/assert-child-process-support.mjs E2E --probe-fork --probe-esb
 
 ## 本会话补充核对
 
-- 我额外核对了 [summonerwars.e2e.ts](/D:/gongzuo/webgame/BoardGame/e2e/summonerwars.e2e.ts#L638) 里的 `countVisibleHandMagnifyButtons`。
+- 我额外核对了 [summonerwars.e2e.ts](/D:/gongzuo/webgame/BoardGame/e2e/summonerwars/summonerwars.e2e.ts#L638) 里的 `countVisibleHandMagnifyButtons`。
 - 当前实现不是只看按钮几何尺寸，而是同时检查 `display`、`visibility`、`opacity` 和 `getBoundingClientRect()`。
 - 这意味着“默认存在于 DOM、但通过 `opacity: 0` 隐藏的放大按钮”不会被误计为可见按钮。
 - 因此当前 `summonerwars` 移动端断言里“初始 0 个可见放大按钮 -> 选中后 1 个可见放大按钮”这条路径本身没有明显的统计假阳性风险。

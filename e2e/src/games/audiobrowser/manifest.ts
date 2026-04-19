@@ -1,0 +1,23 @@
+import type { GameManifestEntry } from '../manifest.types';
+
+const entry: GameManifestEntry = {
+    id: 'audiobrowser',
+    type: 'tool',
+    enabled: true,
+    titleKey: 'games.audiobrowser.title',
+    descriptionKey: 'games.audiobrowser.description',
+    category: 'tools',
+    playersKey: 'games.audiobrowser.players',
+    ai: {
+        capture: false,
+        localAi: false,
+        remoteAi: false,
+    },
+    icon: '🔊',
+    mobileProfile: 'none',
+    shellTargets: ['pwa'],
+};
+
+export const AUDIO_BROWSER_MANIFEST: GameManifestEntry = entry;
+
+export default entry;

@@ -9,13 +9,13 @@
 ## 2. 冲突文件
 - `.windsurf/skills/adapt-game-mobile/SKILL.md`
 - `e2e/dicethrone-paladin-vengeance-select-player.e2e.ts`
-- `e2e/dicethrone-simple-start.e2e.ts`
+- `e2e/dicethrone/dicethrone-simple-start.e2e.ts`
 - `e2e/dicethrone-status-interaction-cancel.e2e.ts`
-- `e2e/dicethrone-status-interaction-complete.e2e.ts`
+- `e2e/dicethrone/dicethrone-status-interaction-complete.e2e.ts`
 - `e2e/dicethrone-status-removal.e2e.ts`
-- `e2e/dicethrone-tutorial-simple.e2e.ts`
-- `e2e/smashup-4p-layout-test.e2e.ts`
-- `e2e/summonerwars-custom-deck.e2e.ts`
+- `e2e/dicethrone/dicethrone-tutorial-simple.e2e.ts`
+- `e2e/smashup/smashup-4p-layout-test.e2e.ts`
+- `e2e/summonerwars/summonerwars-custom-deck.e2e.ts`
 - `scripts/infra/e2e-port-config.js`
 - `scripts/infra/vite-with-logging.js`
 - `src/games/smashup/ui/FactionSelection.tsx`
@@ -31,7 +31,7 @@
 - 合并要点：不恢复被主分支删除的旧用例。
 - 原因：主分支已把相关覆盖收口到新的 `dicethrone-simple-start.e2e.ts` 中，旧文件恢复会造成重复和维护分叉。
 
-### `e2e/dicethrone-simple-start.e2e.ts`
+### `e2e/dicethrone/dicethrone-simple-start.e2e.ts`
 - 策略：保留主分支版本。
 - 合并要点：采用主分支更完整的在线对局/四人模式/状态交互收口版本，不退回本分支较早基线上的精简 smoke 版本。
 - 原因：主分支覆盖面更大，且已吸收部分本分支原先独立文件承担的职责。
@@ -41,7 +41,7 @@
 - 合并要点：不恢复被主分支删除的旧取消按钮专项。
 - 原因：主分支已把该交互契约并入 `dicethrone-status-interaction-complete.e2e.ts`。
 
-### `e2e/dicethrone-status-interaction-complete.e2e.ts`
+### `e2e/dicethrone/dicethrone-status-interaction-complete.e2e.ts`
 - 策略：保留主分支版本。
 - 合并要点：采用主分支当前的共享 UI 契约测试集合，不回退到本分支旧基线上的另一版实现。
 - 原因：主分支版语义更清晰，也已覆盖取消、不选状态、转移状态等主路径。
@@ -51,17 +51,17 @@
 - 合并要点：不恢复旧的状态移除专项文件。
 - 原因：对应覆盖已并入主分支现有收口文件，恢复旧文件会重复。
 
-### `e2e/dicethrone-tutorial-simple.e2e.ts`
+### `e2e/dicethrone/dicethrone-tutorial-simple.e2e.ts`
 - 策略：保留主分支版本。
 - 合并要点：采用主分支当前更完整的教程推进流程，不回退到本分支的较简化版本。
 - 原因：主分支版覆盖了更多真实教程阶段。
 
-### `e2e/smashup-4p-layout-test.e2e.ts`
+### `e2e/smashup/smashup-4p-layout-test.e2e.ts`
 - 策略：合并两侧。
 - 合并要点：保留主分支已有的四人布局与怪物天赋移动端测试，同时加入本分支新增的“横屏移动端派系详情应完整显示并可滚动查看全部卡牌”用例及其场景构造函数。
 - 原因：两侧覆盖点不同，互补而非替代。
 
-### `e2e/summonerwars-custom-deck.e2e.ts`
+### `e2e/summonerwars/summonerwars-custom-deck.e2e.ts`
 - 策略：保留主分支版本。
 - 合并要点：采用主分支更完整的构牌器入口、开关、长按放大、卡池浏览等覆盖，不退回本分支的精简入口版。
 - 原因：主分支版覆盖更完整，且更接近当前产品风险面。

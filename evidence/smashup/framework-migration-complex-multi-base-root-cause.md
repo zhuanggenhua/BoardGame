@@ -1,7 +1,7 @@
 # 框架迁移 - 复杂多基地计分测试根因分析
 
 ## 测试状态
-- **文件**: `e2e/smashup-complex-multi-base-scoring.e2e.ts`
+- **文件**: `e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`
 - **状态**: 失败（bases 未替换，scores 仍为 0，phase 卡在 scoreBases）
 
 ## 根因分析

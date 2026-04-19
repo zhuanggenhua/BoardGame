@@ -19,7 +19,7 @@
 
 ### 武士手牌
 
-![武士手牌](../test-results/evidence-screenshots/dicethrone-hand-final/samurai-hand.png)
+![武士手牌](../../test-results/evidence-screenshots/dicethrone/dicethrone-hand-final/samurai-hand.png)
 
 观察：
 
@@ -29,7 +29,7 @@
 
 ### 枪手手牌
 
-![枪手手牌](../test-results/evidence-screenshots/dicethrone-hand-final/gunslinger-hand.png)
+![枪手手牌](../../test-results/evidence-screenshots/dicethrone/dicethrone-hand-final/gunslinger-hand.png)
 
 观察：
 
@@ -39,7 +39,7 @@
 
 ### Monk 对照
 
-![Monk 手牌对照](../test-results/evidence-screenshots/dicethrone-hand-final/monk-hand.png)
+![Monk 手牌对照](../../test-results/evidence-screenshots/dicethrone/dicethrone-hand-final/monk-hand.png)
 
 观察：
 

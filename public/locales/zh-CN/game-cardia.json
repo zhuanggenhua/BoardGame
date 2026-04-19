@@ -399,5 +399,33 @@
       "summary": "教学总结：\n\n• 双方在同一打牌阶段同时出牌\n• 失败方可以激活能力\n• 赢得遭遇战获得印戒\n• 率先获得5个印戒获胜\n\n现在你已经掌握了基本规则，开始你的冒险吧！",
       "finish": "教学完成！\n\n祝你在卡迪亚的世界中玩得愉快！"
     }
+  },
+  
+  "actionLog": {
+    "title": "行为日志",
+    "playCard": "打出",
+    "toSlot": "到遭遇 {{slot}}",
+    "atSlot": "在遭遇 {{slot}}",
+    "activateAbility": "激活能力",
+    "skipAbility": "跳过能力",
+    "endTurn": "回合结束",
+    "addModifier": "添加修正标记到",
+    "removeModifier": "移除修正标记从",
+    "modifierValue": "（{{value}}）",
+    "cardReplaced": "替换",
+    "with": "为",
+    "factionSelected": "选择派系",
+    "cardDrawn": "抽取 {{count}} 张卡牌",
+    "encounterResolved": "遭遇 {{slot}} 结算，获胜方：{{winner}}",
+    "signetGranted": "获得印戒（总数：{{total}}）",
+    "modifierTokenPlaced": "放置修正标记 {{value}} 到",
+    "modifierTokenRemoved": "移除修正标记从",
+    "ongoingAbilityPlaced": "放置持续能力",
+    "ongoingAbilityRemoved": "移除持续能力",
+    "cardsDiscarded": "弃掉 {{count}} 张卡牌（来源：{{from}}）",
+    "signetMoved": "印戒从",
+    "to": "移动到",
+    "signetRemoved": "移除印戒从",
+    "extraSignetPlaced": "放置额外印戒到"
   }
 }

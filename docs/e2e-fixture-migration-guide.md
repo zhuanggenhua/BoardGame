@@ -286,8 +286,8 @@ A: 可以，但不推荐。新测试应该使用 fixture，旧测试可以逐步
 ## 示例
 
 完整示例见：
-- `e2e/example-fixture-usage.e2e.ts` - Fixture 使用示例
-- `e2e/smashup-ghost-haunted-house-fixture.e2e.ts` - 实际测试迁移示例
+- `e2e/_shared/example-fixture-usage.e2e.ts` - Fixture 使用示例
+- `e2e/smashup/smashup-ghost-haunted-house-fixture.e2e.ts` - 实际测试迁移示例
 
 ## 相关文档
 

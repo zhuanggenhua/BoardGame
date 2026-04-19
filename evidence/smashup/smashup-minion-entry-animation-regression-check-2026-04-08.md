@@ -32,7 +32,7 @@ npx eslint src/games/smashup/ui/BaseZone.tsx src/games/smashup/Board.tsx src/com
 ### E2E 1：首个随从入场时分数条平滑下移
 
 ```powershell
-node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup-local-gameplay.e2e.ts --case "本地模式：首个随从进入基地时分数条应平滑下移而不是单帧跳变"
+node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup/smashup-local-gameplay.e2e.ts --case "本地模式：首个随从进入基地时分数条应平滑下移而不是单帧跳变"
 ```
 
 结果：
@@ -48,7 +48,7 @@ node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup-local-gameplay.e2e.t
 ### E2E 2：自己与对手出牌的入场轨迹对比
 
 ```powershell
-node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup-local-gameplay.e2e.ts --case "本地模式：诊断自己与对手打出随从时的入场时序差异"
+node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup/smashup-local-gameplay.e2e.ts --case "本地模式：诊断自己与对手打出随从时的入场时序差异"
 ```
 
 结果：
@@ -65,8 +65,8 @@ node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup-local-gameplay.e2e.t
 
 ## 截图证据
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-local-gameplay.e2e\本地模式：首个随从进入基地时分数条应平滑下移而不是单帧跳变\smashup-first-minion-layout-before.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-local-gameplay.e2e\本地模式：首个随从进入基地时分数条应平滑下移而不是单帧跳变\smashup-first-minion-layout-after.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-local-gameplay.e2e\本地模式：首个随从进入基地时分数条应平滑下移而不是单帧跳变\smashup-first-minion-layout-before.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-local-gameplay.e2e\本地模式：首个随从进入基地时分数条应平滑下移而不是单帧跳变\smashup-first-minion-layout-after.png`
 
 我实际看到：
 - `before` 图里该列仍是空位

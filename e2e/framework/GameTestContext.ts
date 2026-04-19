@@ -17,6 +17,7 @@ import { getCardDef as getSmashUpCardDef, getBaseDef } from '../../src/games/sma
 import { CHARACTER_DATA_MAP, initHeroState } from '../../src/games/dicethrone/domain/characters';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 import type { AbilityCard, SelectableCharacterId } from '../../src/games/dicethrone/types';
+import { createEmptyTokens } from '../../src/games/splendor/domain/rules';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath, sanitizeEvidencePathSegment } from './evidenceScreenshots';
 
 type SceneQueryValue = string | number | boolean | null | undefined;
@@ -111,6 +112,14 @@ interface DiceThronePlayerConfig {
     tokens?: Record<string, number>;
 }
 
+interface SplendorPlayerConfig {
+    tokens?: Record<string, number>;
+    reservedCardIds?: string[];
+    purchasedCardIds?: string[];
+    nobleIds?: string[];
+    points?: number;
+}
+
 /**
  * 场景配置（通用）
  */
@@ -118,9 +127,9 @@ interface SceneConfig {
     /** 游戏 ID */
     gameId: string;
     /** 玩家 0 配置 */
-    player0?: PlayerSceneConfig | DiceThronePlayerConfig;
+    player0?: PlayerSceneConfig | DiceThronePlayerConfig | SplendorPlayerConfig;
     /** 玩家 1 配置 */
-    player1?: PlayerSceneConfig | DiceThronePlayerConfig;
+    player1?: PlayerSceneConfig | DiceThronePlayerConfig | SplendorPlayerConfig;
     /** 当前回合玩家 */
     currentPlayer?: string;
     /** 回合阶段 */
@@ -552,6 +561,8 @@ export class GameTestContext {
                     '1': buildPrebuiltPlayer('1', config.player1 as DiceThronePlayerConfig | undefined),
                 },
             };
+        } else if (config.gameId === 'splendor') {
+            preparedConfig = config;
         } else {
             preparedConfig = config;
         }
@@ -692,6 +703,77 @@ export class GameTestContext {
                 }
 
                 // 应用状态
+                await harness.state.set(patch);
+            } else if (cfg.gameId === 'splendor') {
+                const buildSplendorPlayerState = (playerConfig: SplendorPlayerConfig | undefined, playerId: string) => {
+                    const existingPlayer = state.core.players?.[playerId] ?? {
+                        id: playerId,
+                        tokens: createEmptyTokens(),
+                        reservedCardIds: [],
+                        purchasedCardIds: [],
+                        nobleIds: [],
+                        points: 0,
+                    };
+                    const nextPlayer = {
+                        ...existingPlayer,
+                        ...(playerConfig ?? {}),
+                        tokens: {
+                            ...(existingPlayer.tokens ?? createEmptyTokens()),
+                            ...(playerConfig?.tokens ?? {}),
+                        },
+                        reservedCardIds: playerConfig?.reservedCardIds ?? existingPlayer.reservedCardIds ?? [],
+                        purchasedCardIds: playerConfig?.purchasedCardIds ?? existingPlayer.purchasedCardIds ?? [],
+                        nobleIds: playerConfig?.nobleIds ?? existingPlayer.nobleIds ?? [],
+                    };
+                    nextPlayer.points = playerConfig?.points ?? existingPlayer.points ?? 0;
+                    return nextPlayer;
+                };
+
+                const patch: any = {
+                    ...state,
+                    core: {
+                        ...state.core,
+                        players: {
+                            ...state.core.players,
+                        },
+                    },
+                    sys: {
+                        ...(state.sys ?? {}),
+                    },
+                };
+
+                if (cfg.player0) {
+                    patch.core.players['0'] = buildSplendorPlayerState(cfg.player0, '0');
+                }
+                if (cfg.player1) {
+                    patch.core.players['1'] = buildSplendorPlayerState(cfg.player1, '1');
+                }
+
+                if (cfg.currentPlayer !== undefined) {
+                    patch.core.currentPlayer = cfg.currentPlayer;
+                }
+
+                if (cfg.extra?.core) {
+                    patch.core = {
+                        ...patch.core,
+                        ...cfg.extra.core,
+                    };
+                }
+
+                if (cfg.extra?.sys) {
+                    patch.sys = {
+                        ...patch.sys,
+                        ...cfg.extra.sys,
+                    };
+                }
+
+                if (cfg.sys) {
+                    patch.sys = {
+                        ...patch.sys,
+                        ...cfg.sys,
+                    };
+                }
+
                 await harness.state.set(patch);
             } else {
                 const now = Date.now();

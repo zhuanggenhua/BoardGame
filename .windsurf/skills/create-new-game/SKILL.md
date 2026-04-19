@@ -21,7 +21,7 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 - 图片/音频资源接入：`docs/ai-rules/asset-pipeline.md`
 - 音频细则：`docs/audio/audio-usage.md`（新增音频资产流程：`docs/audio/add-audio.md`）
 - 工具脚本：`docs/tools.md`
-- 图片 intake 复刻案例：`docs/workflows/smashup-faction-intake.md`
+- 图片 intake 复刻案例：`docs/games/smashup/workflows/smashup-faction-intake.md`
 - 不确定该读哪份：`docs/ai-rules/doc-index.md`
 
 ## 前置 0：环境与来源确认（强制）

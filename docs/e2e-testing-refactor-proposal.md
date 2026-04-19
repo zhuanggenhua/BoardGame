@@ -281,7 +281,7 @@ export default defineConfig({
 - `docs/e2e-ui-testing-guide.md` - E2E UI 测试指南
 - `docs/ai-testing-strategy.md` - AI 测试策略
 - `docs/automated-testing.md` - 自动化测试文档
-- `e2e/smashup-debug-helpers.ts` - 现有测试辅助函数
+- `e2e/smashup/smashup-debug-helpers.ts` - 现有测试辅助函数
 
 ---
 

@@ -12,7 +12,7 @@
 ### 1. Pistol Whip 目标选择
 
 截图：
-- [18-four-player-pistol-whip-enemy-only-selection.png](D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone-simple-start.e2e/Online-4-player-Pistol-Whip-variant-upgraded-Fan-the-Hammer-only-offers-enemies-in-2v2-and-applies-knockdown-plus-undefe/18-four-player-pistol-whip-enemy-only-selection.png)
+- [18-four-player-pistol-whip-enemy-only-selection.png](D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-simple-start.e2e/Online-4-player-Pistol-Whip-variant-upgraded-Fan-the-Hammer-only-offers-enemies-in-2v2-and-applies-knockdown-plus-undefe/18-four-player-pistol-whip-enemy-only-selection.png)
 
 肉眼观察：
 - 弹窗标题为“技能结算选择”，副标题为“选择本次攻击目标”，不存在乱码。
@@ -25,7 +25,7 @@
 ### 2. Pistol Whip 结算后
 
 截图：
-- [19-four-player-pistol-whip-resolved-on-selected-enemy.png](D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone-simple-start.e2e/Online-4-player-Pistol-Whip-variant-upgraded-Fan-the-Hammer-only-offers-enemies-in-2v2-and-applies-knockdown-plus-undefe/19-four-player-pistol-whip-resolved-on-selected-enemy.png)
+- [19-four-player-pistol-whip-resolved-on-selected-enemy.png](D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-simple-start.e2e/Online-4-player-Pistol-Whip-variant-upgraded-Fan-the-Hammer-only-offers-enemies-in-2v2-and-applies-knockdown-plus-undefe/19-four-player-pistol-whip-resolved-on-selected-enemy.png)
 
 肉眼观察：
 - 右上敌方目标血量从 `50` 变为 `49`。
@@ -38,7 +38,7 @@
 ### 3. The Law 1v1 结算后
 
 截图：
-- [23-the-law-variant-1v1-after-resolve.png](D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/should-resolve-immediately-in-1v1-after-selecting-the-upgraded-variant/23-the-law-variant-1v1-after-resolve.png)
+- [23-the-law-variant-1v1-after-resolve.png](D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/should-resolve-immediately-in-1v1-after-selecting-the-upgraded-variant/23-the-law-variant-1v1-after-resolve.png)
 
 肉眼观察：
 - 敌方头像出现 `赏金` 与 `击倒` 两个标记。
@@ -51,10 +51,10 @@
 ### 4. The Law 3 人多目标已选态
 
 截图：
-- [24-the-law-variant-3p-selected-targets.png](D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/should-open-multi-target-interaction-after-selecting-the-upgraded-variant-in-3-player-scene/24-the-law-variant-3p-selected-targets.png)
+- [24-the-law-variant-3p-selected-targets.png](D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/should-open-multi-target-interaction-after-selecting-the-upgraded-variant-in-3-player-scene/24-the-law-variant-3p-selected-targets.png)
 
 肉眼观察：
-- 弹窗标题为“选择至多 2 名目标玩家”，当前只出现两名敌方，不出现己方。
+- 弹窗标题为“选择至多 2 名目标玩家”，该 3 人场景仅有 2 名“非自己”的玩家，因此面板仅显示 2 项，且两项都标记为敌方。
 - 左侧目标已被选中，确认按钮处于可点击状态，说明多目标交互链路完整。
 - 该界面是交互层目标选择，不是 `targetingRoll` 的单目标面板。
 
@@ -65,11 +65,11 @@
 
 ```powershell
 npm run i18n:check
-$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-simple-start.e2e.ts "Online 4-player The Law variant"
-$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-simple-start.e2e.ts "Online 4-player Pistol Whip variant"
-$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-simple-start.e2e.ts "Online 4-player Wanted: real hand play only offers enemies in 2v2 and grants Bounty to selected enemy"
-$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-simple-start.e2e.ts "Online 4-player Samurai Shame card: real hand play only offers enemies in 2v2 and applies Shame to selected enemy"
-$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.ts "枪手 The Law 升级变体真实触发"
+$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online 4-player The Law variant"
+$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online 4-player Pistol Whip variant"
+$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online 4-player Wanted: real hand play offers all target players in 2v2 and grants Bounty to selected target"
+$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online 4-player Samurai Shame card: real hand play only offers enemies in 2v2 and applies Shame to selected enemy"
+$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "枪手 The Law 升级变体真实触发"
 ```
 
 ## 结论

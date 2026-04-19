@@ -3,14 +3,14 @@
 ## 测试范围
 
 - 用例：`Smash Up 创建房间弹窗可直接配置 AI 人数和模组，并为游客保存偏好`
-- 命令：`node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "Smash Up 创建房间弹窗可直接配置 AI 人数和模组，并为游客保存偏好"`
+- 命令：`node scripts/infra/run-e2e-single.mjs ci e2e/_shared/lobby.e2e.ts "Smash Up 创建房间弹窗可直接配置 AI 人数和模组，并为游客保存偏好"`
 - 结果：通过
 
 ## 截图证据
 
 ### 1. 创建房间弹窗
 
-路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\Smash-Up-创建房间弹窗可直接配置-AI-人数和模组，并为游客保存偏好\lobby-smashup-create-room-ai-config-modal.png`
+路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\Smash-Up-创建房间弹窗可直接配置-AI-人数和模组，并为游客保存偏好\lobby-smashup-create-room-ai-config-modal.png`
 
 肉眼观察：
 
@@ -20,7 +20,7 @@
 
 ### 2. 进入派系选择页
 
-路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\Smash-Up-创建房间弹窗可直接配置-AI-人数和模组，并为游客保存偏好\lobby-smashup-create-room-ai-config-result.png`
+路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\Smash-Up-创建房间弹窗可直接配置-AI-人数和模组，并为游客保存偏好\lobby-smashup-create-room-ai-config-result.png`
 
 肉眼观察：
 

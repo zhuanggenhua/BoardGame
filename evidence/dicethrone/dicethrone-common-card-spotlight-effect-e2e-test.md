@@ -44,7 +44,7 @@ npm run i18n:check
 执行命令：
 
 ```bash
-npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "opponent common-card spotlight should match actual effect for samurai and gunslinger"
+npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "opponent common-card spotlight should match actual effect for samurai and gunslinger"
 ```
 
 结果：
@@ -64,8 +64,8 @@ npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "opponent 
 ### 1. 武士 `card-boss-generous` 本轮仍然对图成功
 
 - 路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\opponent-common-card-spotlight-should-match-actual-effect-for-samurai-and-gunslinger\20-samurai-boss-generous-spotlight.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\opponent-common-card-spotlight-should-match-actual-effect-for-samurai-and-gunslinger\21-samurai-boss-generous-state.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\opponent-common-card-spotlight-should-match-actual-effect-for-samurai-and-gunslinger\20-samurai-boss-generous-spotlight.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\opponent-common-card-spotlight-should-match-actual-effect-for-samurai-and-gunslinger\21-samurai-boss-generous-state.png`
 - 我实际看到什么：
   - 对手特写出现的是 `Boss Generous` 对应卡图，不是别的通用牌
   - 状态图里 `CP` 变为 `3`
@@ -74,7 +74,7 @@ npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "opponent 
 ### 2. 枪手 `card-next-time` 已不再走旧的主阶段非法路径
 
 - 路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\playwright-artifacts\dicethrone-watch-out-spotl-eea83--for-samurai-and-gunslinger-chromium\test-failed-2.png`
+  - 待补：需要重跑 `e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts` 中对应用例，产出新的稳定截图后回填（避免引用已不存在的旧 artifacts 路径）。
 - 我实际看到什么：
   - 角色已切到枪手
   - 当前处于受伤响应场景，而不是“主阶段直接点牌就结算”
@@ -84,7 +84,7 @@ npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "opponent 
 ### 3. 枪手 `card-next-time` 的卡图与响应确认入口已出现
 
 - 路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\playwright-artifacts\dicethrone-watch-out-spotl-eea83--for-samurai-and-gunslinger-chromium\test-failed-1.png`
+  - 待补：需要重跑 `e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts` 中对应用例，产出新的稳定截图后回填（避免引用已不存在的旧 artifacts 路径）。
 - 我实际看到什么：
   - 手牌弹出的就是黄色盾牌图的 `这次不算！`
   - 卡面下方出现“目标玩家抵抗 6 进攻伤害”的描述
@@ -105,7 +105,7 @@ npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "opponent 
 - 需要在仓库重任务门禁空闲后，重新运行：
 
 ```bash
-npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "opponent common-card spotlight should match actual effect for samurai and gunslinger"
+npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "opponent common-card spotlight should match actual effect for samurai and gunslinger"
 ```
 
 - 收口标准：

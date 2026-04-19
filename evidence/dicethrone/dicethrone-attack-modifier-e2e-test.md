@@ -13,12 +13,12 @@
   `node scripts/infra/vitest-cli-safe.mjs run src/components/__tests__/ToastContext-dedupe.test.tsx --configLoader native`
 - Playwright：
   在同一 shell 内临时启动 Vite，再执行
-  `npx playwright test e2e/dicethrone-watch-out-spotlight.e2e.ts --project chromium --grep "attack modifier should show the correct timing prompt after invalid play|selected attack should show visible attack-modifier ui above the dice tray"`
+  `npx playwright test e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts --project chromium --grep "attack modifier should show the correct timing prompt after invalid play|selected attack should show visible attack-modifier ui above the dice tray"`
 
 ## 截图 1：错误时机提示
 
 截图路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\attack-modifier-should-show-the-correct-timing-prompt-after-invalid-play\07-attack-modifier-timing-prompt.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\attack-modifier-should-show-the-correct-timing-prompt-after-invalid-play\07-attack-modifier-timing-prompt.png`
 
 截图结论：
 
@@ -29,7 +29,7 @@
 ## 截图 2：攻击修正 UI
 
 截图路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\selected-attack-should-show-visible-attack-modifier-ui-above-the-dice-tray\08-attack-modifier-ui-visible.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\selected-attack-should-show-visible-attack-modifier-ui-above-the-dice-tray\08-attack-modifier-ui-visible.png`
 
 截图结论：
 

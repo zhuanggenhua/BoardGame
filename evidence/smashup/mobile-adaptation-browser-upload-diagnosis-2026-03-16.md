@@ -42,7 +42,7 @@
 - 对正常网页和本地页面都只得到空白白图，不足以作为证据图。
 - 当前无效示例：
   - `D:\gongzuo\webgame\BoardGame\temp\example-window-capture.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
 
 ### 3. 页面自截图上传链路尚未闭环
 

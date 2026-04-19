@@ -9,7 +9,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { initContext } from './helpers/common';
+import { dismissViteOverlay, initContext } from './helpers/common';
 import {
     closeDebugPanel, readFullState, applyCoreStateDirect,
     gotoLocalSmashUp, waitForHandArea, completeFactionSelectionLocal,
@@ -506,6 +506,64 @@ test.describe('SmashUp 恐龙多步交互', () => {
         expect(opponentMinions.length).toBe(0);
 
         await page.screenshot({ path: testInfo.outputPath('step3-final.png'), fullPage: true });
+    });
+
+    test('dino_rampage: 单基地时仍需显式选择随从，未选择前不能默认结算', async ({ page }, testInfo) => {
+        await page.goto('/play/smashup?p0=dinosaurs,aliens&p1=pirates,ninjas&seed=24680', {
+            waitUntil: 'domcontentloaded',
+        });
+        await dismissViteOverlay(page);
+        await waitForHandArea(page);
+
+        const fullState = await readFullState(page);
+        const core = (fullState.core ?? fullState) as Record<string, unknown>;
+        const { currentPid, player } = getCurrentPlayer(core);
+        const nextUid = (core.nextUid as number) ?? 100;
+
+        const hand = player.hand as any[];
+        hand.length = 0;
+        hand.push(makeCard(`card_${nextUid}`, 'dino_rampage', 'action', currentPid));
+
+        const bases = core.bases as any[];
+        for (const base of bases) {
+            base.minions = [];
+        }
+        bases[0].minions = [
+            makeMinion(`m_${nextUid + 1}`, 'pirate_first_mate', currentPid, currentPid, 3),
+            makeMinion(`m_${nextUid + 2}`, 'pirate_sea_dog', currentPid, currentPid, 5),
+        ];
+        core.nextUid = nextUid + 3;
+        player.actionsPlayed = 0;
+        player.actionLimit = 1;
+
+        await applyCoreStateDirect(page, core);
+        await closeDebugPanel(page);
+        await page.waitForTimeout(1000);
+
+        await page.evaluate(({ playerId, cardUid }) => {
+            window.__BG_TEST_HARNESS__!.command.dispatch({
+                type: 'su:play_action',
+                playerId,
+                payload: { cardUid },
+            });
+        }, { playerId: currentPid, cardUid: `card_${nextUid}` });
+        await waitForMinionSelect(page);
+        await page.screenshot({ path: testInfo.outputPath('rampage-step1-await-choice.png'), fullPage: true });
+
+        const beforeChoiceState = await readFullState(page);
+        const beforeCore = (beforeChoiceState.core ?? beforeChoiceState) as any;
+        expect(beforeCore.tempBreakpointModifiers ?? {}).toEqual({});
+
+        await clickHighlightedMinion(page, 1);
+        await page.waitForTimeout(1000);
+
+        expect(await isPromptVisible(page)).toBe(false);
+
+        const afterState = await readFullState(page);
+        const afterCore = (afterState.core ?? afterState) as any;
+        expect(afterCore.tempBreakpointModifiers?.[0]).toBe(-5);
+
+        await page.screenshot({ path: testInfo.outputPath('rampage-step2-resolved.png'), fullPage: true });
     });
 });
 

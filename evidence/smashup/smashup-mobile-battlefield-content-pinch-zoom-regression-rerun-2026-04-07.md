@@ -12,7 +12,7 @@
 ## 执行
 
 - 单测：`npx vitest run src/components/game/framework/__tests__/MobileBoardShell.test.tsx`
-- E2E：`npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏应保持四人局布局可用，并支持手牌长按看牌与战场拖拽放大"`
+- E2E：`npm run test:e2e:ci:file -- e2e/smashup/smashup-4p-layout-test.e2e.ts "移动端横屏应保持四人局布局可用，并支持手牌长按看牌与战场拖拽放大"`
 
 ## 我实际查看的截图
 

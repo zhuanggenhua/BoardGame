@@ -1,6 +1,6 @@
 import { Type } from 'class-transformer';
 import { IsArray, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
-import { FeedbackSeverity, FeedbackStatus, FeedbackType } from './feedback.schema';
+import { FeedbackReporterType, FeedbackSeverity, FeedbackStatus, FeedbackType } from './feedback.schema';
 
 export const FEEDBACK_SORT_OPTIONS = ['newest', 'oldest'] as const;
 export type FeedbackSortOption = typeof FEEDBACK_SORT_OPTIONS[number];
@@ -129,6 +129,67 @@ export class CreateFeedbackDto {
     errorContext?: FeedbackErrorContextDto;
 }
 
+export class CreateSystemFeedbackDto {
+    @IsString()
+    @IsNotEmpty()
+    content!: string;
+
+    @IsEnum(FeedbackType)
+    @IsOptional()
+    type?: FeedbackType;
+
+    @IsEnum(FeedbackSeverity)
+    @IsOptional()
+    severity?: FeedbackSeverity;
+
+    @IsEnum(FeedbackStatus)
+    @IsOptional()
+    status?: FeedbackStatus;
+
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(64)
+    source!: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(64)
+    autoReportKind?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(128)
+    incidentKey?: string;
+
+    @IsString()
+    @IsOptional()
+    gameName?: string;
+
+    @IsString()
+    @IsOptional()
+    contactInfo?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(50000)
+    actionLog?: string;
+
+    @IsString()
+    @IsOptional()
+    @MaxLength(500000)
+    stateSnapshot?: string;
+
+    @ValidateNested()
+    @Type(() => FeedbackClientContextDto)
+    @IsOptional()
+    clientContext?: FeedbackClientContextDto;
+
+    @ValidateNested()
+    @Type(() => FeedbackErrorContextDto)
+    @IsOptional()
+    errorContext?: FeedbackErrorContextDto;
+}
+
 export class UpdateFeedbackStatusDto {
     @IsEnum(FeedbackStatus)
     status!: FeedbackStatus;
@@ -154,6 +215,15 @@ export class QueryFeedbackDto {
     severity?: FeedbackSeverity;
 
     @IsOptional()
+    @IsEnum(FeedbackReporterType)
+    reporterType?: FeedbackReporterType;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(64)
+    source?: string;
+
+    @IsOptional()
     @IsIn(FEEDBACK_SORT_OPTIONS)
     sort?: FeedbackSortOption;
 }
@@ -170,6 +240,15 @@ export class FeedbackFilterDto {
     @IsOptional()
     @IsEnum(FeedbackSeverity)
     severity?: FeedbackSeverity;
+
+    @IsOptional()
+    @IsEnum(FeedbackReporterType)
+    reporterType?: FeedbackReporterType;
+
+    @IsOptional()
+    @IsString()
+    @MaxLength(64)
+    source?: string;
 }
 
 export class BulkFeedbackIdsDto {

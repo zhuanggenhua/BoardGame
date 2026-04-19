@@ -18,7 +18,7 @@
    - 为 `MongoMemoryServer.create` 注入 loopback 默认参数。
    - 保持 `MONGO_URI` 默认指向 `mongodb://localhost:27017/boardgame_test`，避免把整套 `test:api` 突然切到当前仍不稳定的 Vitest threads + memory-server 组合。
 
-3. `e2e/smashup-gameplay.e2e.ts`
+3. `e2e/smashup/smashup-gameplay.e2e.ts`
    - 新增目标用例：`适者生存应先进入选基地流程，再按所选基地结算全场最低力量随从消灭`
 
 ## 动态验证记录
@@ -42,7 +42,7 @@ node -e "const { MongoMemoryServer } = require('mongodb-memory-server');(async()
 
 ```powershell
 $env:BG_BYPASS_GLOBAL_HEAVY_BUDGET='1'
-npm run test:e2e:ci:file -- e2e/smashup-gameplay.e2e.ts "适者生存应先进入选基地流程，再按所选基地结算全场最低力量随从消灭"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-gameplay.e2e.ts "适者生存应先进入选基地流程，再按所选基地结算全场最低力量随从消灭"
 ```
 
 结果：

@@ -35,7 +35,7 @@
 
 ### 2. 修正 `card-me-too` 的 E2E 断言方式
 
-- 文件：`e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- 文件：`e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 - 变更：
   - 不再等待 `sys.interaction.current.data.result`
   - 改为校验骰子按钮的 `data-selected="true"` 与 `data-display-value`
@@ -51,7 +51,7 @@
 执行命令：
 
 ```bash
-npm run test:e2e:dev:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts
+npm run test:e2e:dev:file -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts
 ```
 
 结果：
@@ -85,7 +85,7 @@ npm run test -- flow.test.ts -t copy
 
 截图：
 
-- `e2e/test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/俺也一样-copy-模式应允许选择已锁定骰子作为源和目标-07-me-too-locked-dice-copy.png`
+- `e2e/test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/俺也一样-copy-模式应允许选择已锁定骰子作为源和目标-07-me-too-locked-dice-copy.png`
 
 观察：
 

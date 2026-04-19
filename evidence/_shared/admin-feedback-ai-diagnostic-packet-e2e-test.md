@@ -26,9 +26,9 @@ npm run test:e2e:ci:file -- admin-feedback.e2e.ts "反馈页可展示分诊上�
 
 ## 截图证据
 
-- 绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\admin-feedback-ai-diagnostic-packet.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\admin-feedback-ai-diagnostic-packet.png`
 
-![后台反馈 AI 诊断包复制截图](../test-results/evidence-screenshots/admin-feedback-ai-diagnostic-packet.png)
+![后台反馈 AI 诊断包复制截图](../test-results/evidence-screenshots/_shared/admin-feedback-ai-diagnostic-packet.png)
 
 ## 人工观察
 

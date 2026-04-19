@@ -245,13 +245,15 @@
     "honor": {
       "name": "Honor",
       "description": [
-        "Before your attack deals damage, spend 1 Honor to increase damage by 1."
+        "Before your attack deals damage, you may spend 1 or 2 Honor:",
+        "Spend 1 to increase damage by 1; spend 2 to increase damage by 3."
       ]
     },
     "shame": {
       "name": "Shame",
       "description": [
-        "When you calculate attack damage, remove 1 Shame to reduce that attack's damage by 1."
+        "When you calculate attack damage, you may spend Shame by stacks.",
+        "Each 1 spent reduces that attack's damage by 1."
       ]
     },
     "samurai_retribution": {
@@ -267,6 +269,10 @@
     "playerLabel": "Player {{playerId}}",
     "playCard": "Play card",
     "playUpgradeCard": "Play upgrade card",
+    "sellCard": "Sell card",
+    "sellCardCp": "Gain 1 CP",
+    "discardCard": "Discard card",
+    "undoSellCard": "Undo sell",
     "advancePhase": "Advance phase: {{phase}}",
     "abilityActivated": "Activate ability: {{abilityName}}",
     "abilityActivatedDefense": "Activate defensive ability: {{abilityName}}",
@@ -500,25 +506,25 @@
       "gainCp": "Gain {{cp}} CP",
       "enlightenmentLotus": "Lotus! Gain 2 Taiji + Evasive + Purify",
       "enlightenmentOther": "Draw 1 card",
-      "thunderStrikeDie": "Thunder Strike Roll: {{value}}",
-      "thunderStrikeReroll": "Rerolled to {{value}}",
-      "thunderStrike2Die": "Thunder Strike Roll: {{value}}",
-      "thunderStrike2Reroll": "Rerolled to {{value}}",
-      "gunslingerLoadedDie": "Reload Roll: {{value}}",
-      "gunslingerLoadedReroll": "Reload Reroll: {{value}}",
-      "gunslingerHighNoonBullet": "Bullet: deal 2 damage",
-      "gunslingerHighNoonDash": "Spur: inflict Knockdown",
-      "gunslingerHighNoonBullseye": "Bullseye: inflict Bounty",
+      "thunderStrikeDie": "Thunder Strike Roll: {{value}} (3-dice total damage)",
+      "thunderStrikeReroll": "Reroll: {{value}} (counts toward total damage)",
+      "thunderStrike2Die": "Thunder Strike Roll: {{value}} (3-dice total damage; total ≥12: Knockdown)",
+      "thunderStrike2Reroll": "Reroll: {{value}} (total ≥12: Knockdown)",
+      "gunslingerLoadedDie": "Loaded Roll: {{value}} (damage +{{bonusDamage}})",
+      "gunslingerLoadedReroll": "Loaded Reroll: {{value}} (damage +{{bonusDamage}})",
+      "gunslingerHighNoonBullet": "Bullet: deal 2 undefendable damage",
+      "gunslingerHighNoonDash": "Spur: inflict Knockdown on the target",
+      "gunslingerHighNoonBullseye": "Bullseye: give the target 1 Bounty",
       "gunslingerEatMyLeadDie": "Eat My Lead! Roll: {{value}}",
       "gunslingerEatMyLead.result": "{{bulletCount}} Bullet: +{{bonusDamage}} damage this attack",
       "gunslingerEatMyLead.resultKnockdown": "{{bulletCount}} Bullet: +{{bonusDamage}} damage this attack and inflict Knockdown",
-      "barbarianSuppress": "Suppress Roll: {{value}}",
+      "barbarianSuppress": "Suppress Roll: {{value}} (3-dice total damage; if total exceeds the threshold, apply Concussion)",
       "energeticStrength": "Strength! Heal 2 and inflict Concussion",
       "energeticOther": "Draw 1 card",
       "luckyRoll": "Lucky Roll: {{value}}",
       "luckyRoll.result": "{{heartCount}} Heart: Heal {{healAmount}}",
       "morePleaseRoll": "More Please Roll: {{value}}",
-      "morePleaseRoll.result": "{{swordCount}} Sword: +{{damage}} Damage",
+      "morePleaseRoll.result": "{{swordCount}} Sword(s): Damage +{{damage}}, apply Concussion",
       "holyLight": "Holy Light",
       "holyDefense": "Holy Defense",
       "godsGrace": "God's Grace",
@@ -542,24 +548,24 @@
       "infernalEmbrace.4": "Draw 1 Card",
       "infernalEmbrace.5": "Draw 1 Card",
       "infernalEmbrace.6": "Max Fire Mastery!",
-      "pyroBlast2Die": "Pyro Blast!",
-      "pyroBlast2Reroll": "Rerolled!",
-      "pyroBlast3Die": "Pyro Blast!",
-      "pyroBlast3Reroll": "Rerolled!",
-      "shadowDamage": "Shadow Dance",
+      "pyroBlast2Die": "Pyro Blast: {{value}} (Fire=3 dmg / Magma=Burn / Fiery Soul=+2 Fire Mastery / Meteor=Knockdown)",
+      "pyroBlast2Reroll": "Reroll: {{value}} (Fire=3 dmg / Magma=Burn / Fiery Soul=+2 Fire Mastery / Meteor=Knockdown)",
+      "pyroBlast3Die": "Pyro Blast: {{value}} (Fire=3 dmg / Magma=Burn / Fiery Soul=+2 Fire Mastery / Meteor=Knockdown)",
+      "pyroBlast3Reroll": "Reroll: {{value}} (Fire=3 dmg / Magma=Burn / Fiery Soul=+2 Fire Mastery / Meteor=Knockdown)",
+      "shadowDamage": "Shadow Dance: {{value}} → deal {{damage}} damage",
       "default": "Bonus Die",
       "oneWithShadowsHit": "Shadow! Sneak Attack+2CP",
       "oneWithShadowsMiss": "Draw 1 card",
-      "sneakAttack": "Sneak Attack!",
+      "sneakAttack": "Sneak Attack: add the roll value to this attack's damage",
       "explodingArrow": "Exploding Arrow Roll: {{value}}",
       "moonShadowStrike": "Moon Shadow Strike Roll: {{value}}",
       "moonShadowStrike.moon": "Moon🌙: Inflict Blinded, Entangle, Targeted",
       "moonShadowStrike.other": "Draw 1 card",
       "volley": "Volley Roll: {{value}}",
-      "volley.result": "{{bowCount}} Bow: +{{bonusDamage}} Damage",
-      "explodingArrow.result": "{{bowCount}}Bow {{footCount}}Foot {{moonCount}}Moon: 3 + 2×{{bowCount}} + 1×{{footCount}} = {{damage}} Damage",
-      "explodingArrow2.result": "{{bowCount}}Bow {{footCount}}Foot {{moonCount}}Moon: 3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}} Damage",
-      "explodingArrow3.result": "{{bowCount}}Bow {{footCount}}Foot {{moonCount}}Moon: 3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}} Damage",
+      "volley.result": "{{bowCount}} Bow(s): Damage +{{bonusDamage}}, apply Entangle",
+      "explodingArrow.result": "{{bowCount}} Bow {{footCount}} Foot {{moonCount}} Moon: 3 + 2×{{bowCount}} + 1×{{footCount}} = {{damage}} damage; Opponent loses {{moonCount}} CP; Apply Blinded",
+      "explodingArrow2.result": "{{bowCount}} Bow {{footCount}} Foot {{moonCount}} Moon: 3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}} damage; Opponent loses {{moonCount}} CP; Apply Blinded",
+      "explodingArrow3.result": "{{bowCount}} Bow {{footCount}} Foot {{moonCount}} Moon: 3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}} damage; Opponent loses {{moonCount}} CP; Apply Blinded and Entangle",
       "watchOut": "Watch Out Roll: {{value}}",
       "watchOut.bow": "Bow🏹: +2 Damage",
       "watchOut.foot": "Foot🦶: Inflict Entangle",
@@ -589,14 +595,16 @@
       "absolution.pray": "Pray: Shield 2 + 2 CP",
       "godsGrace.pray": "Pray: Gain 4 CP",
       "infernalEmbrace.fire": "Fire: Gain 2 Fire Mastery",
-      "samuraiBackStrikeDie": "Back Strike Roll: {{value}}",
+      "samuraiBackStrikeDie": "Back Strike Roll: {{value}} (deal {{damage}} to the original attacker)",
       "samuraiRighteousnessKatana": "Katana: +2 damage",
-      "samuraiRighteousnessHelm": "Helm: inflict 2 Shame",
+      "samuraiRighteousnessHelm": "Helm: inflict 2 Shame on your opponent",
       "samuraiRighteousnessRisingSun": "Rising Sun: gain 1 Back Strike",
-      "samuraiMasamune.result": "{{katanaCount}} Katana: +{{katanaCount}} damage; {{shameCount}} Helm: inflict {{shameCount}} Shame; {{retributionCount}} Rising Sun: gain {{retributionCount}} Back Strike"
+      "samuraiMasamune.result": "{{katanaCount}} Katana: +{{katanaCount}} damage; {{shameCount}} Helm: inflict {{shameCount}} Shame; {{retributionCount}} Rising Sun: gain {{retributionCount}} Back Strike (extra gains are ignored if you are at the stack limit)",
+      "godsGrace.other": "Draw 1 card"
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "noTokenToReroll": "No {{token}} tokens available to reroll",
+    "rerollLimitReached": "Reroll limit reached",
     "diceResult": "Dice Results",
     "total": "Total Damage",
     "confirmDamage": "Confirm Damage",
@@ -634,6 +642,7 @@
     "requireOpponentTurn": "This card can only be played on opponent's turn",
     "requireHasRolled": "Must roll dice first before playing this card",
     "requireDiceExists": "Must have dice results to play this card",
+    "requireLoaded": "Must spend 1 Loaded to play this card",
     "requireOpponentDiceExists": "Opponent must have dice results to play this card",
     "requireIsRoller": "This card can only be played by the current roller",
     "requireIsNotRoller": "This card can only be played by the non-roller (responding to opponent's dice)",
@@ -735,7 +744,10 @@
       "helm": "Helm",
       "pray": "Pray",
       "katana": "Katana",
-      "rising_sun": "Rising Sun"
+      "rising_sun": "Rising Sun",
+      "bullet": "Bullet",
+      "bullseye": "Bullseye",
+      "dash": "Dash"
     },
     "trigger": {
       "generic": "variant condition",
@@ -2112,11 +2124,11 @@
     },
     "card-high-noon": {
       "name": "High Noon!",
-      "description": "Roll 1 die: Bullet deals 2 damage; Spur inflicts Knockdown; Bullseye inflicts Bounty."
+      "description": "Choose a target player (in 1v1, your only opponent). Roll 1 die: Bullet deals 2 undefendable damage to that target; Spur inflicts Knockdown; Bullseye gives the target 1 Bounty."
     },
     "card-wild-west": {
       "name": "Wild West!",
-      "description": "Increase your total attack value by 1. The card's separate reload-reroll clause is still tracked as a follow-up gap."
+      "description": "When you spend 1 Loaded and roll your Reload bonus die, you may reroll that bonus die once, then increase your total attack value by 1."
     },
     "card-eat-my-lead": {
       "name": "Eat My Lead!",
@@ -2635,6 +2647,9 @@
     "playerPlayed": "{{player}} played a card",
     "confirm": "OK"
   },
+  "compareRoll": {
+    "confirming": "Confirming..."
+  },
   "selection": {
     "title": "Select Your Hero",
     "selectHero": "Select Hero",
@@ -2655,7 +2670,9 @@
       "title": "2v2 Seating",
       "swapHint": "Click a target portrait to swap seats. AI swaps instantly; human targets receive a request.",
       "swapWaiting": "Seat swap request sent to {{player}}. Waiting for a response.",
+      "swapWaitingHint": "Seats won't change until the other player confirms. You can cancel the request here.",
       "swapIncoming": "{{player}} wants to swap seats with you.",
+      "swapReviewHint": "Confirming will immediately swap your seats; rejecting keeps the current seating.",
       "swapPendingOther": "{{requester}} is waiting for {{target}} to respond to a seat swap request.",
       "swapApprove": "Approve",
       "swapReject": "Reject",

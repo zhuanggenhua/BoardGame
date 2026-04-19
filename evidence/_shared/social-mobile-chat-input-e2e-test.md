@@ -3,12 +3,12 @@
 ## 范围
 
 - 目标问题：移动端社交聊天窗口聚焦输入框后，输入区与发送按钮不能被键盘态挤出可视区。
-- 验证文件：`e2e/social.e2e.ts`
+- 验证文件：`e2e/_shared/social.e2e.ts`
 - 验证用例：`移动端社交聊天输入聚焦后仍应保持可见`
 
 ## 本轮运行记录
 
-- 命令：`node scripts/infra/run-e2e-single.mjs ci --file e2e/social.e2e.ts --case "移动端社交聊天输入聚焦后仍应保持可见"`
+- 命令：`node scripts/infra/run-e2e-single.mjs ci --file e2e/_shared/social.e2e.ts --case "移动端社交聊天输入聚焦后仍应保持可见"`
 - 结果：`1 passed`
 - 运行时间：2026-04-08
 
@@ -16,7 +16,7 @@
 
 ### 1. 聊天输入区保持在键盘上方
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\social-chat-mobile-input-visible.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\social-chat-mobile-input-visible.png`
 - 我实际看到的现象：
   - 当前截图是好友甲的一对一聊天页，底部圆角输入条完整显示，没有被键盘态或安全区切掉。
   - 输入框内能清楚看到文本 `移动端社交聊天输入可见性校验`，说明不是“只剩输入框外壳，内容看不见”。

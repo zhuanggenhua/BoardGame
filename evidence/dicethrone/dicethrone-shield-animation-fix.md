@@ -155,8 +155,8 @@ const buildDamageStep = useCallback((
 
 ## 相关文档
 
-- `docs/bugs/dicethrone-animation-log-sync.md` — 之前的护盾动画日志同步修复（固定值护盾）
-- `docs/bugs/dicethrone-shield-final-summary.md` — 护盾 bug 修复完整总结
+- `docs/bugs/dicethrone/dicethrone-animation-log-sync.md` — 之前的护盾动画日志同步修复（固定值护盾）
+- `docs/bugs/dicethrone/dicethrone-shield-final-summary.md` — 护盾 bug 修复完整总结
 - `AGENTS.md` — 日志层与动画层必须使用相同的计算逻辑（强制规范）
 
 ## 总结

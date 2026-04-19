@@ -137,7 +137,7 @@
     - Tag: **Feature: smashup-tutorial, Property 3: Tutorial i18n completeness**
     - **Validates: Requirements 11.1, 11.2**
 
-- [x]* 9. E2E 端到端测试 (`e2e/smashup-tutorial.e2e.ts`)
+- [x]* 9. E2E 端到端测试 (`e2e/smashup/smashup-tutorial.e2e.ts`)
   - [x]* 9.1 教学初始化与 UI 介绍
     - 启动教学模式，验证自动派系选择完成
     - 验证 setup 步骤后进入游戏界面
@@ -181,7 +181,7 @@
 
 **Files Modified**:
 - `src/games/smashup/tutorial.ts` — 移除冗余 ADVANCE_PHASE
-- `e2e/smashup-tutorial.e2e.ts` — 更新 scoringPhase 交互
+- `e2e/smashup/smashup-tutorial.e2e.ts` — 更新 scoringPhase 交互
 - `src/games/smashup/__tests__/tutorialProperties.test.ts` — 更新排除列表
 - `src/games/smashup/Board.tsx` — 清理诊断属性
 
@@ -195,4 +195,4 @@
 - CheatSystem 使用 `MERGE_STATE` 设置手牌（SmashUp 的 CardInstance 使用 defId 而非 spriteIndex）
 - 参考实现：`src/games/summonerwars/tutorial.ts`（34 步完整教学）
 - 属性测试使用 fast-check，每个属性至少 100 次迭代
-- E2E 测试参考 `e2e/summonerwars-tutorial.e2e.ts` 的模式
+- E2E 测试参考 `e2e/summonerwars/summonerwars-tutorial.e2e.ts` 的模式

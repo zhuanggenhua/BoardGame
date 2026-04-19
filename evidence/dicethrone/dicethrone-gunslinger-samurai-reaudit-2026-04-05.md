@@ -128,4 +128,4 @@ npm run test -- src/games/dicethrone/__tests__/token-execution.test.ts src/games
 1. 枪手 `Bounty` 的 Wiki 补充裁定（如“伤害被完全防止时是否仍给 CP”）本轮只做代码路径核读，尚未补专门行为回归。
 2. 武士 `tip.webp` 中 `retribution` 堆叠限制数字 OCR 仍可继续优化，但它已经不是角色运行时主 blocker。
 3. 本轮补的是 `Bushido` 主规则闭环；若未来再引入“按阶段/按本回合次数结算”的新被动，仍应优先复用共享字段与 `flowHooks`，避免回到单点硬编码。
-4. 枪手 `Duel` 的“获胜后二选一”当前已走通用 `CHOICE_REQUESTED -> simple-choice -> ChoiceModal` 链路，规则闭环与领域测试已存在；但本轮复审没有把“这种对决/比较类特殊交互是否需要专属 UI 表达（例如同时展示双方骰点、对决结果与结算语义）”列入专项检查。该问题已在 `evidence/dicethrone-special-interaction-ui-reaudit-2026-04-05.md` 单列复审；它应被视为 `D5/D15/D48` UI 语义缺口，而不等同于“规则未实装”。
+4. 枪手 `Duel` 的“获胜后二选一”当前已走通用 `CHOICE_REQUESTED -> simple-choice -> ChoiceModal` 链路，规则闭环与领域测试已存在；但本轮复审没有把“这种对决/比较类特殊交互是否需要专属 UI 表达（例如同时展示双方骰点、对决结果与结算语义）”列入专项检查。该问题已在 `evidence/dicethrone/dicethrone-special-interaction-ui-reaudit-2026-04-05.md` 单列复审；它应被视为 `D5/D15/D48` UI 语义缺口，而不等同于“规则未实装”。

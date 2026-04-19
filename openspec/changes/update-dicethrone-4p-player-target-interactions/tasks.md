@@ -13,4 +13,4 @@
 ## 3. Validation
 - [x] 3.1 `openspec validate update-dicethrone-4p-player-target-interactions --strict --no-interactive` 通过。
 - [x] 3.2 相关 DiceThrone Vitest 通过，包括 `rule-consistency.test.ts` 中的 4 人玩家目标交互与无 defender 流程回归。
-- [x] 3.3 相关 DiceThrone 4 人 E2E 通过并补证据，当前 `e2e/dicethrone-simple-start.e2e.ts` 已覆盖 12 条在线用例。
+- [x] 3.3 相关 DiceThrone 4 人 E2E 通过并补证据，当前 `e2e/dicethrone/dicethrone-simple-start.e2e.ts` 已覆盖 12 条在线用例。

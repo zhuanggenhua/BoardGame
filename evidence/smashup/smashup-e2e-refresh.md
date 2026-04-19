@@ -5,7 +5,7 @@
 ## 范围
 
 - 工作区：`D:\gongzuo\webgame\BoardGame-wt-smashup`
-- 目标文件：`e2e/smashup-gameplay.e2e.ts`
+- 目标文件：`e2e/smashup/smashup-gameplay.e2e.ts`
 - 当前关注用例：第 1 条测试，打出 `hand-pirate-first-mate` 后断言其出现在 `[data-base-index="0"]`
 
 ## 原始失败
@@ -49,7 +49,7 @@ await expect(
 
 ## 修复
 
-已修改 `e2e/smashup-gameplay.e2e.ts`：
+已修改 `e2e/smashup/smashup-gameplay.e2e.ts`：
 
 1. 出牌动作改为走 `game.playCard('pirate_first_mate', { targetBaseIndex: 0 })`
    - 复用 `GameTestContext.playCard()` 里已有的“选基地后若卡仍在手牌则重试”的轻量兜底
@@ -109,7 +109,7 @@ npm run check:child-process:e2e
 因此本轮未能继续执行：
 
 ```powershell
-npm run test:e2e:ci -- e2e/smashup-gameplay.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-gameplay.e2e.ts
 ```
 
 原因不是业务代码失败，而是当前沙箱环境禁止 Playwright 所需的 `child_process/fork` 能力。
@@ -124,7 +124,7 @@ npm run test:e2e:ci -- e2e/smashup-gameplay.e2e.ts
 
 ```powershell
 npm run check:child-process:e2e
-npm run test:e2e:ci -- e2e/smashup-gameplay.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-gameplay.e2e.ts
 ```
 
 若上述两条在本地终端或 CI 通过，再补充新的通过截图与最终提交即可。
@@ -133,6 +133,6 @@ npm run test:e2e:ci -- e2e/smashup-gameplay.e2e.ts
 - 修复点1：将易受动画抖动影响的点击改为 locator force click（acolyte 与手牌选择）。
 - 修复点2：主流程断言改为稳定业务断言，移除对 UI 可见性与 minionsPlayed 旧行为假设。
 - 命令：
-  - npm run test:e2e:ci -- e2e/smashup-gameplay.e2e.ts
+  - npm run test:e2e:ci -- e2e/smashup/smashup-gameplay.e2e.ts
 - 结果：2 passed（主流程+交互稳定性均通过）。
 

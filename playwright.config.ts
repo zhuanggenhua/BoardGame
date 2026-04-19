@@ -3,7 +3,7 @@ import * as dotenv from 'dotenv';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS } from './scripts/infra/e2e-port-config.js';
-import { allocateAvailablePortSet, arePortsBindable, loadWorkerPorts, saveWorkerPorts } from './scripts/infra/port-allocator.js';
+import { loadWorkerPorts, reserveAvailablePorts, reservePorts, saveWorkerPorts } from './scripts/infra/port-allocator.js';
 import { ensureSharedTestApiToken } from './src/server/testApiToken';
 
 dotenv.config({ quiet: true });
@@ -32,15 +32,35 @@ ensureSharedTestApiToken(process.env);
 async function resolveSingleWorkerPorts() {
     const persisted = loadWorkerPorts(0);
     if (persisted) {
-        return persisted;
+        try {
+            await reservePorts(0, persisted, {
+                scope: runtimeScope,
+                ownerPid: process.pid,
+                target: process.env.PW_TEST_TARGET || '',
+            });
+            return persisted;
+        } catch (error) {
+            console.warn(`⚠️ 复用单 worker 端口失败，将重新分配: ${error instanceof Error ? error.message : String(error)}`);
+        }
     }
 
-    if (await arePortsBindable(SINGLE_WORKER_PORTS)) {
-        saveWorkerPorts(0, SINGLE_WORKER_PORTS);
-        return SINGLE_WORKER_PORTS;
+    try {
+        const reserved = await reservePorts(0, SINGLE_WORKER_PORTS, {
+            scope: runtimeScope,
+            ownerPid: process.pid,
+            target: process.env.PW_TEST_TARGET || '',
+        });
+        saveWorkerPorts(0, reserved);
+        return reserved;
+    } catch (error) {
+        console.warn(`⚠️ 默认单 worker 端口不可用，改为动态分配: ${error instanceof Error ? error.message : String(error)}`);
     }
 
-    const allocated = await allocateAvailablePortSet(SINGLE_WORKER_PORTS);
+    const allocated = await reserveAvailablePorts(0, {
+        scope: runtimeScope,
+        ownerPid: process.pid,
+        target: process.env.PW_TEST_TARGET || '',
+    });
     saveWorkerPorts(0, allocated);
     return allocated;
 }
@@ -201,7 +221,10 @@ export default defineConfig({
     projects: [
         {
             name: 'chromium',
-            use: { ...devices['Desktop Chrome'] },
+            use: {
+                ...devices['Desktop Chrome'],
+                viewport: { width: 1920, height: 1080 },
+            },
         },
     ],
 });

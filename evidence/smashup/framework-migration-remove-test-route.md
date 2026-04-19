@@ -43,12 +43,12 @@ const url = `/play/${gameId}`;
 
 迁移了以下测试文件，将 `page.goto('/play/.../test?...')` 改为 `page.goto('/play/...')`:
 
-1. `e2e/framework-pilot-ninja-infiltrate.e2e.ts` - 3 处
-2. `e2e/smashup-ninja-acolyte-extra-minion.e2e.ts` - 3 处
-3. `e2e/smashup-innsmouth-locals-reveal-simple.e2e.ts` - 1 处
-4. `e2e/smashup-innsmouth-locals-reveal-dev.e2e.ts` - 1 处
-5. `e2e/smashup-robot-hoverbot-new.e2e.ts` - 2 处
-6. `e2e/framework-pilot-simple.e2e.ts` - 1 处
+1. `e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts` - 3 处
+2. `e2e/smashup/smashup-ninja-acolyte-extra-minion.e2e.ts` - 3 处
+3. `e2e/smashup/smashup-innsmouth-locals-reveal-simple.e2e.ts` - 1 处
+4. `e2e/smashup/smashup-innsmouth-locals-reveal-dev.e2e.ts` - 1 处
+5. `e2e/smashup/smashup-robot-hoverbot-new.e2e.ts` - 2 处
+6. `e2e/smashup/framework-pilot-simple.e2e.ts` - 1 处
 
 **总计**：11 处迁移
 

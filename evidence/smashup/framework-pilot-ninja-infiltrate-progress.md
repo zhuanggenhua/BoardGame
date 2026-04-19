@@ -2,7 +2,7 @@
 
 ## 当前状态
 
-**测试文件**：`e2e/framework-pilot-ninja-infiltrate.e2e.ts`
+**测试文件**：`e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts`
 
 **状态**：✅ 代码完成，❌ 测试服务器崩溃
 
@@ -119,7 +119,7 @@ PW_USE_DEV_SERVERS=true npx playwright test framework-pilot-ninja-infiltrate.e2e
 
 ## 测试文件位置
 
-- 新测试文件：`e2e/framework-pilot-ninja-infiltrate.e2e.ts`
+- 新测试文件：`e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts`
 - 参考模板：`e2e/framework-pilot-wizard-portal.e2e.ts`
 - 测试结果：`test-results/`（只有第三个测试有截图）
 

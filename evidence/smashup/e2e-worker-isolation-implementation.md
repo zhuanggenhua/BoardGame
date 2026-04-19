@@ -77,7 +77,7 @@
 npm run test:e2e
 
 # 运行单个测试文件
-npm run test:e2e -- e2e/framework-pilot-ninja-infiltrate.e2e.ts
+npm run test:e2e -- e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts
 ```
 
 ### 多 Worker 模式（并行）

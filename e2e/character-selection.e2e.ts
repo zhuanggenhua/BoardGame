@@ -119,6 +119,39 @@ test.describe('角色选择系统', () => {
         await expect(page.locator('[data-character-id="samurai"]')).toBeVisible();
     });
 
+    test('应该为施工中的角色显示标签', async ({ page }) => {
+        const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'character-selection.e2e', '应该为施工中的角色显示标签');
+        mkdirSync(evidenceDir, { recursive: true });
+        const evidencePath = join(evidenceDir, 'under-construction-badges.png');
+
+        await setChineseLocale(page.context());
+        await page.goto('/play/dicethrone/local', { waitUntil: 'domcontentloaded' });
+        await waitForSelectionOverlay(page);
+
+        const gunslingerBadge = page.getByTestId('character-badge-gunslinger-under_construction');
+        const samuraiBadge = page.getByTestId('character-badge-samurai-under_construction');
+        const monkBadge = page.getByTestId('character-badge-monk-under_construction');
+
+        await expect(gunslingerBadge).toBeVisible();
+        await expect(gunslingerBadge).toContainText('施工中');
+        await expect(samuraiBadge).toBeVisible();
+        await expect(samuraiBadge).toContainText('施工中');
+        await expect(monkBadge).toHaveCount(0);
+
+        const [gunslingerCardBox, gunslingerBadgeBox] = await Promise.all([
+            page.locator('[data-character-id="gunslinger"]').boundingBox(),
+            gunslingerBadge.boundingBox(),
+        ]);
+        expect(gunslingerCardBox, '枪手角色卡应存在边界框').not.toBeNull();
+        expect(gunslingerBadgeBox, '枪手施工中标签应存在边界框').not.toBeNull();
+        const cardCenterY = gunslingerCardBox!.y + (gunslingerCardBox!.height / 2);
+        const badgeCenterY = gunslingerBadgeBox!.y + (gunslingerBadgeBox!.height / 2);
+        expect(Math.abs(badgeCenterY - cardCenterY), '施工中标签应位于角色卡中部而不是角落').toBeLessThan(gunslingerCardBox!.height * 0.18);
+        expect(gunslingerBadgeBox!.width, '施工中标签宽度应明显大于角标样式').toBeGreaterThan(gunslingerCardBox!.width * 0.5);
+
+        await page.screenshot({ path: evidencePath, fullPage: false });
+    });
+
     test('应该能够切换角色', async ({ page }) => {
         await prepareHostSelection(page);
         await page.click('[data-character-id="monk"]');

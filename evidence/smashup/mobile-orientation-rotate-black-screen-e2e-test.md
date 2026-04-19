@@ -2,19 +2,19 @@
 
 ## 用例
 
-- 文件：`e2e/smashup-tutorial.e2e.ts`
+- 文件：`e2e/smashup/smashup-tutorial.e2e.ts`
 - 用例：`手机从竖屏旋转到横屏后教程画布不应塌成黑屏`
 
 ## 执行命令
 
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机从竖屏旋转到横屏后教程画布不应塌成黑屏"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机从竖屏旋转到横屏后教程画布不应塌成黑屏"
 ```
 
 ## 证据截图
 
 - 截图：
-  `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\手机从竖屏旋转到横屏后教程画布不应塌成黑屏\tutorial-rotate-to-landscape.png`
+  `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-tutorial.e2e\手机从竖屏旋转到横屏后教程画布不应塌成黑屏\tutorial-rotate-to-landscape.png`
 
 ## 看图结论
 

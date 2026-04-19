@@ -94,7 +94,7 @@ for (const [playerId, player] of Object.entries(afterScoringCore.players)) {
 
 ## 测试文件
 
-- 测试文件：`e2e/smashup-complex-multi-base-scoring.e2e.ts`
+- 测试文件：`e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`
 - 失败截图：`test-results/smashup-complex-multi-base-70531-分场景-两基地计分-afterScoring-响应窗口-chromium/test-failed-1.png`
 - 错误上下文：`test-results/smashup-complex-multi-base-70531-分场景-两基地计分-afterScoring-响应窗口-chromium/error-context.md`
 

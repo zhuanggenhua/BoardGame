@@ -61,7 +61,7 @@
 | 验证层 | ✅ | `validate.ts`: PLAY_EVENT 通用验证（手牌存在、费用、阶段匹配）；`useEventCardModes.ts`: 过滤 unitClass==='common' |
 | UI层 | ✅ | `useEventCardModes.ts`: 'necro-hellfire-blade' case → 过滤友方 common 单位 → setEventTargetMode；选择目标后发送 PLAY_EVENT(targets=[position]) |
 | i18n层 | ✅ | zh-CN: statusBanners.annihilate 等条目存在；en: 对应条目存在。狱火铸剑本身无独立 UI 提示（选择目标用通用 eventTargetMode） |
-| 测试层 | ⚠️ | E2E 测试覆盖（e2e/summonerwars.e2e.ts 教程流程中使用狱火铸剑）；单元测试中无独立的狱火铸剑执行测试（附加+战力+诅咒全链路）。建议后续补充 |
+| 测试层 | ⚠️ | E2E 测试覆盖（e2e/summonerwars/summonerwars.e2e.ts 教程流程中使用狱火铸剑）；单元测试中无独立的狱火铸剑执行测试（附加+战力+诅咒全链路）。建议后续补充 |
 
 ---
 

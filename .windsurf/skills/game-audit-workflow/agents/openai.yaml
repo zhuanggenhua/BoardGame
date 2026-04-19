@@ -1,0 +1,4 @@
+interface:
+  display_name: "全游戏审计流程"
+  short_description: "按D1-D49维度执行全游戏审计并生成证据链与测试回填"
+  default_prompt: "Use -audit-workflow to 依据D1-D49维度审计指定游戏并产出证据链。"

@@ -14,7 +14,7 @@
 
 ## 涉及用例
 
-- 文件：`e2e/summonerwars.e2e.ts`
+- 文件：`e2e/summonerwars/summonerwars.e2e.ts`
 - 用例：`移动横屏：长按放大与阶段说明在手机和平板都可达`
 - 用例：`移动横屏：悬浮球展开后应整体收进视口并让出结束阶段按钮`
 
@@ -37,11 +37,11 @@ node scripts/infra/run-e2e-single.mjs ci summonerwars.e2e.ts "移动横屏：悬
 
 绝对路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：长按放大与阶段说明在手机和平板都可达\01-pc-action-log-open-from-center.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：长按放大与阶段说明在手机和平板都可达\01-pc-action-log-open-from-center.png`
 
 相对路径引用：
 
-![summonerwars-pc-action-log](../test-results/evidence-screenshots/summonerwars.e2e/移动横屏：长按放大与阶段说明在手机和平板都可达/01-pc-action-log-open-from-center.png)
+![summonerwars-pc-action-log](../test-results/evidence-screenshots/summonerwars/summonerwars.e2e/移动横屏：长按放大与阶段说明在手机和平板都可达/01-pc-action-log-open-from-center.png)
 
 肉眼观察：
 
@@ -53,11 +53,11 @@ node scripts/infra/run-e2e-single.mjs ci summonerwars.e2e.ts "移动横屏：悬
 
 绝对路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：长按放大与阶段说明在手机和平板都可达\13-phone-action-log-open.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：长按放大与阶段说明在手机和平板都可达\13-phone-action-log-open.png`
 
 相对路径引用：
 
-![summonerwars-action-log](../test-results/evidence-screenshots/summonerwars.e2e/移动横屏：长按放大与阶段说明在手机和平板都可达/13-phone-action-log-open.png)
+![summonerwars-action-log](../test-results/evidence-screenshots/summonerwars/summonerwars.e2e/移动横屏：长按放大与阶段说明在手机和平板都可达/13-phone-action-log-open.png)
 
 肉眼观察：
 
@@ -69,11 +69,11 @@ node scripts/infra/run-e2e-single.mjs ci summonerwars.e2e.ts "移动横屏：悬
 
 绝对路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：悬浮球展开后应整体收进视口并让出结束阶段按钮\30-mobile-fab-expanded-within-viewport.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：悬浮球展开后应整体收进视口并让出结束阶段按钮\30-mobile-fab-expanded-within-viewport.png`
 
 相对路径引用：
 
-![summonerwars-fab-expanded](../test-results/evidence-screenshots/summonerwars.e2e/移动横屏：悬浮球展开后应整体收进视口并让出结束阶段按钮/30-mobile-fab-expanded-within-viewport.png)
+![summonerwars-fab-expanded](../test-results/evidence-screenshots/summonerwars/summonerwars.e2e/移动横屏：悬浮球展开后应整体收进视口并让出结束阶段按钮/30-mobile-fab-expanded-within-viewport.png)
 
 肉眼观察：
 
@@ -85,11 +85,11 @@ node scripts/infra/run-e2e-single.mjs ci summonerwars.e2e.ts "移动横屏：悬
 
 绝对路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：悬浮球展开后应整体收进视口并让出结束阶段按钮\31-mobile-fab-overflow-and-end-phase-clickable.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：悬浮球展开后应整体收进视口并让出结束阶段按钮\31-mobile-fab-overflow-and-end-phase-clickable.png`
 
 相对路径引用：
 
-![summonerwars-end-phase](../test-results/evidence-screenshots/summonerwars.e2e/移动横屏：悬浮球展开后应整体收进视口并让出结束阶段按钮/31-mobile-fab-overflow-and-end-phase-clickable.png)
+![summonerwars-end-phase](../test-results/evidence-screenshots/summonerwars/summonerwars.e2e/移动横屏：悬浮球展开后应整体收进视口并让出结束阶段按钮/31-mobile-fab-overflow-and-end-phase-clickable.png)
 
 肉眼观察：
 

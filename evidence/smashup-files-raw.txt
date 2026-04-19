@@ -1,0 +1,529 @@
+
+M	src/games/
+smashup/Boar
+d.tsx
+M	src/games/
+smashup/__te
+sts__/alienA
+uditFixes.te
+st.ts
+M	src/games/
+smashup/__te
+sts__/baseAb
+ilitiesPromp
+t.test.ts
+M	src/games/
+smashup/__te
+sts__/baseAb
+ilityIntegra
+tion.test.ts
+M	src/games/
+smashup/__te
+sts__/baseAb
+ilityIntegra
+tionE2E.test
+.ts
+M	src/games/
+smashup/__te
+sts__/baseFa
+ctionOngoing
+.test.ts
+M	src/games/
+smashup/__te
+sts__/basePr
+otection.tes
+t.ts
+M	src/games/
+smashup/__te
+sts__/baseSc
+oreCheck.tes
+t.ts
+M	src/games/
+smashup/__te
+sts__/baseSc
+oredNormalFl
+ow.test.ts
+M	src/games/
+smashup/__te
+sts__/baseSc
+oredOptimist
+ic.test.ts
+M	src/games/
+smashup/__te
+sts__/baseSc
+oredRaceCond
+ition.test.t
+s
+M	src/games/
+smashup/__te
+sts__/baseSc
+oring.test.t
+s
+M	src/games/
+smashup/__te
+sts__/bigGul
+pDroneInterc
+ept.test.ts
+M	src/games/
+smashup/__te
+sts__/choice
+-audit-fixes
+.test.ts
+M	src/games/
+smashup/__te
+sts__/cthulh
+uExpansionAb
+ilities.test
+.ts
+M	src/games/
+smashup/__te
+sts__/duplic
+ateInteracti
+onRespond.te
+st.ts
+M	src/games/
+smashup/__te
+sts__/elderT
+hingAbilitie
+s.test.ts
+M	src/games/
+smashup/__te
+sts__/expans
+ionAbilities
+.test.ts
+M	src/games/
+smashup/__te
+sts__/expans
+ionBaseAbili
+ties.test.ts
+M	src/games/
+smashup/__te
+sts__/expans
+ionOngoing.t
+est.ts
+M	src/games/
+smashup/__te
+sts__/factio
+nAbilities.t
+est.ts
+M	src/games/
+smashup/__te
+sts__/ghosts
+Abilities.te
+st.ts
+M	src/games/
+smashup/__te
+sts__/helper
+s.ts
+M	src/games/
+smashup/__te
+sts__/intera
+ctionChainE2
+E.test.ts
+M	src/games/
+smashup/__te
+sts__/madnes
+sAbilities.t
+est.ts
+M	src/games/
+smashup/__te
+sts__/madnes
+sPromptAbili
+ties.test.ts
+M	src/games/
+smashup/__te
+sts__/meFirs
+t.test.ts
+M	src/games/
+smashup/__te
+sts__/newBas
+eAbilities.t
+est.ts
+M	src/games/
+smashup/__te
+sts__/newFac
+tionAbilitie
+s.test.ts
+M	src/games/
+smashup/__te
+sts__/newOng
+oingAbilitie
+s.test.ts
+M	src/games/
+smashup/__te
+sts__/ongoin
+gE2E.test.ts
+M	src/games/
+smashup/__te
+sts__/ongoin
+gEffects.tes
+t.ts
+M	src/games/
+smashup/__te
+sts__/prompt
+E2E.test.ts
+M	src/games/
+smashup/__te
+sts__/prompt
+ResponseChai
+n.test.ts
+M	src/games/
+smashup/__te
+sts__/proper
+ties/corePro
+perties.test
+.ts
+M	src/games/
+smashup/__te
+sts__/query6
+Abilities.te
+st.ts
+M	src/games/
+smashup/__te
+sts__/shoggo
+th-destroy-c
+hoice.test.t
+s
+M	src/games/
+smashup/__te
+sts__/sleep-
+spores-e2e.t
+est.ts
+M	src/games/
+smashup/__te
+sts__/specia
+lInteraction
+Chain.test.t
+s
+M	src/games/
+smashup/__te
+sts__/turnTr
+ansitionInte
+ractionBug.t
+est.ts
+M	src/games/
+smashup/__te
+sts__/ui-int
+eraction-man
+ual.test.ts
+M	src/games/
+smashup/__te
+sts__/vampir
+eBuffetE2E.t
+est.ts
+M	src/games/
+smashup/__te
+sts__/zombie
+InteractionC
+hain.test.ts
+M	src/games/
+smashup/__te
+sts__/zombie
+WizardAbilit
+ies.test.ts
+M	src/games/
+smashup/abil
+ities/aliens
+.ts
+M	src/games/
+smashup/abil
+ities/bear_c
+avalry.ts
+M	src/games/
+smashup/abil
+ities/cthulh
+u.ts
+M	src/games/
+smashup/abil
+ities/dinosa
+urs.ts
+M	src/games/
+smashup/abil
+ities/elder_
+things.ts
+M	src/games/
+smashup/abil
+ities/franke
+nstein.ts
+M	src/games/
+smashup/abil
+ities/ghosts
+.ts
+M	src/games/
+smashup/abil
+ities/giant_
+ants.ts
+M	src/games/
+smashup/abil
+ities/index.
+ts
+M	src/games/
+smashup/abil
+ities/innsmo
+uth.ts
+M	src/games/
+smashup/abil
+ities/miskat
+onic.ts
+M	src/games/
+smashup/abil
+ities/ninjas
+.ts
+M	src/games/
+smashup/abil
+ities/ongoin
+g_modifiers.
+ts
+M	src/games/
+smashup/abil
+ities/pirate
+s.ts
+M	src/games/
+smashup/abil
+ities/robots
+.ts
+M	src/games/
+smashup/abil
+ities/steamp
+unks.ts
+M	src/games/
+smashup/abil
+ities/tricks
+ters.ts
+M	src/games/
+smashup/abil
+ities/vampir
+es.ts
+M	src/games/
+smashup/abil
+ities/zombie
+s.ts
+M	src/games/
+smashup/audi
+o.config.ts
+M	src/games/
+smashup/data
+/cards.ts
+A	src/games/
+smashup/data
+/englishAtla
+sMap.json
+M	src/games/
+smashup/data
+/factions/al
+iens.ts
+A	src/games/
+smashup/data
+/factions/al
+iens_pod.ts
+A	src/games/
+smashup/data
+/factions/be
+ar_cavalry_p
+od.ts
+M	src/games/
+smashup/data
+/factions/ct
+hulhu.ts
+A	src/games/
+smashup/data
+/factions/ct
+hulhu_pod.ts
+A	src/games/
+smashup/data
+/factions/di
+nosaurs_pod.
+ts
+A	src/games/
+smashup/data
+/factions/el
+der_things_p
+od.ts
+A	src/games/
+smashup/data
+/factions/fr
+ankenstein_p
+od.ts
+A	src/games/
+smashup/data
+/factions/gh
+osts_pod.ts
+A	src/games/
+smashup/data
+/factions/gi
+ant-ants_pod
+.ts
+A	src/games/
+smashup/data
+/factions/in
+nsmouth_pod.
+ts
+A	src/games/
+smashup/data
+/factions/ki
+ller_plants_
+pod.ts
+A	src/games/
+smashup/data
+/factions/mi
+skatonic_pod
+.ts
+M	src/games/
+smashup/data
+/factions/ni
+njas.ts
+A	src/games/
+smashup/data
+/factions/ni
+njas_pod.ts
+M	src/games/
+smashup/data
+/factions/pi
+rates.ts
+A	src/games/
+smashup/data
+/factions/pi
+rates_pod.ts
+A	src/games/
+smashup/data
+/factions/ro
+bots_pod.ts
+A	src/games/
+smashup/data
+/factions/st
+eampunks_pod
+.ts
+A	src/games/
+smashup/data
+/factions/tr
+icksters_pod
+.ts
+A	src/games/
+smashup/data
+/factions/va
+mpires_pod.t
+s
+A	src/games/
+smashup/data
+/factions/we
+rewolves_pod
+.ts
+A	src/games/
+smashup/data
+/factions/wi
+zards_pod.ts
+A	src/games/
+smashup/data
+/factions/zo
+mbies_pod.ts
+M	src/games/
+smashup/doma
+in/abilityHe
+lpers.ts
+M	src/games/
+smashup/doma
+in/abilityIn
+teractionHan
+dlers.ts
+M	src/games/
+smashup/doma
+in/abilityRe
+gistry.ts
+M	src/games/
+smashup/doma
+in/baseAbili
+ties.ts
+M	src/games/
+smashup/doma
+in/baseAbili
+ties_expansi
+on.ts
+M	src/games/
+smashup/doma
+in/commands.
+ts
+M	src/games/
+smashup/doma
+in/events.ts
+M	src/games/
+smashup/doma
+in/ids.ts
+M	src/games/
+smashup/doma
+in/index.ts
+M	src/games/
+smashup/doma
+in/ongoingEf
+fects.ts
+M	src/games/
+smashup/doma
+in/ongoingMo
+difiers.ts
+M	src/games/
+smashup/doma
+in/reduce.ts
+M	src/games/
+smashup/doma
+in/reducer.t
+s
+M	src/games/
+smashup/doma
+in/systems.t
+s
+M	src/games/
+smashup/doma
+in/types.ts
+M	src/games/
+smashup/game
+.ts
+M	src/games/
+smashup/ui/B
+aseZone.tsx
+M	src/games/
+smashup/ui/C
+ardMagnifyOv
+erlay.tsx
+M	src/games/
+smashup/ui/D
+eckDiscardZo
+ne.tsx
+M	src/games/
+smashup/ui/F
+actionSelect
+ion.tsx
+M	src/games/
+smashup/ui/H
+andArea.tsx
+M	src/games/
+smashup/ui/P
+romptOverlay
+.tsx
+M	src/games/
+smashup/ui/R
+evealOverlay
+.tsx
+A	src/games/
+smashup/ui/S
+mashUpCardRe
+nderer.tsx
+A	src/games/
+smashup/ui/S
+mashUpOverla
+yContext.tsx
+M	src/games/
+smashup/ui/c
+ardAtlas.ts
+M	src/games/
+smashup/ui/c
+ardPreviewHe
+lper.ts
+M	src/games/
+smashup/ui/f
+actionMeta.t
+s
+M	src/games/
+smashup/ui/p
+layerConfig.
+ts
+
+

@@ -16,7 +16,7 @@ const newText = `## 仍需关注的架构级差距（非本轮回归缺陷）
 - ✅ **已修复（2026-03-04）**：\`承受压力\` 与 \`我们乃最强\` 文案含"计分前/计分后"时机语义，
   但当前卡牌定义缺少 \`specialTiming\` 字段：
   - 修复：为"我们乃最强"添加 \`specialTiming: 'afterScoring'\` 字段
-  - 证据：\`evidence/smashup-we-are-the-champions-timing-fix.md\`
+  - 证据：\`evidence/smashup/smashup-we-are-the-champions-timing-fix.md\`
   - @src/games/smashup/data/factions/giant-ants.ts#93-100
   - @src/games/smashup/data/factions/giant-ants.ts#125-132
 - ✅ **已实现**：现有验证层对 \`special\` 的约束支持 \`specialTiming: 'beforeScoring'\` 和 \`specialTiming: 'afterScoring'\`：

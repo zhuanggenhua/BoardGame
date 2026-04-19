@@ -7,7 +7,7 @@
 ## 最终通过命令
 
 ```powershell
-cmd /c "set PW_USE_DEV_SERVERS=true&& set PW_WORKERS=1&& set VITE_DEV_PORT=6288&& set PW_PORT=6288&& set VITE_FRONTEND_URL=http://127.0.0.1:6288&& set GAME_SERVER_PORT=20188&& set API_SERVER_PORT=21188&& set PW_GAME_SERVER_PORT=20188&& set PW_API_SERVER_PORT=21188&& npx playwright test e2e/smashup-complex-multi-base-scoring.e2e.ts --workers=1 --reporter=list"
+cmd /c "set PW_USE_DEV_SERVERS=true&& set PW_WORKERS=1&& set VITE_DEV_PORT=6288&& set PW_PORT=6288&& set VITE_FRONTEND_URL=http://127.0.0.1:6288&& set GAME_SERVER_PORT=20188&& set API_SERVER_PORT=21188&& set PW_GAME_SERVER_PORT=20188&& set PW_API_SERVER_PORT=21188&& npx playwright test e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts --workers=1 --reporter=list"
 ```
 
 ## 测试结果
@@ -41,7 +41,7 @@ cmd /c "set PW_USE_DEV_SERVERS=true&& set PW_WORKERS=1&& set VITE_DEV_PORT=6288&
 
 修复点：
 
-- `e2e/smashup-complex-multi-base-scoring.e2e.ts`
+- `e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`
 
 ### 3. Windows 截图偶发锁文件
 
@@ -58,9 +58,9 @@ Playwright 截图写入在 Windows 上偶发 `EBUSY/EPERM`。
 
 文件：
 
-- `e2e/test-results/evidence-screenshots/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-01-scene-ready.png`
+- `e2e/test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-01-scene-ready.png`
 
-![场景就绪](../e2e/test-results/evidence-screenshots/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-01-scene-ready.png)
+![场景就绪](../e2e/test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-01-scene-ready.png)
 
 观察：
 
@@ -72,9 +72,9 @@ Playwright 截图写入在 Windows 上偶发 `EBUSY/EPERM`。
 
 文件：
 
-- `e2e/test-results/evidence-screenshots/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-04-after-scoring-open.png`
+- `e2e/test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-04-after-scoring-open.png`
 
-![afterScoring 窗口打开](../e2e/test-results/evidence-screenshots/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-04-after-scoring-open.png)
+![afterScoring 窗口打开](../e2e/test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-04-after-scoring-open.png)
 
 观察：
 
@@ -87,9 +87,9 @@ Playwright 截图写入在 Windows 上偶发 `EBUSY/EPERM`。
 
 文件：
 
-- `e2e/test-results/evidence-screenshots/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-06-final-state.png`
+- `e2e/test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-06-final-state.png`
 
-![最终状态](../e2e/test-results/evidence-screenshots/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-06-final-state.png)
+![最终状态](../e2e/test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/基地计分后-afterScoring-响应窗口正常打开-06-final-state.png)
 
 观察：
 

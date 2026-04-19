@@ -1,0 +1,213 @@
+import { useMemo, useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { getGameImplementation } from '../games/registry';
+import { GameModeProvider } from '../contexts/GameModeContext';
+import { getGameById } from '../config/games.config';
+import { getGamePageDataAttributes, syncGamePageDocumentAttributes } from '../games/mobileSupport';
+import { GameHUD } from '../components/game/framework/widgets/GameHUD';
+import { LoadingScreen } from '../components/system/LoadingScreen';
+import { GameNamespaceLoadError } from '../components/system/GameNamespaceLoadError';
+import { usePerformanceMonitor } from '../hooks/ui/usePerformanceMonitor';
+import { CriticalImageGate, MobileBoardShell } from '../components/game/framework';
+import { LocalGameProvider, BoardBridge } from '../engine/transport/react';
+import type { GameBoardProps } from '../engine/transport/protocol';
+import type { ComponentType } from 'react';
+import { useToast } from '../contexts/ToastContext';
+import { playDeniedSound } from '../lib/audio/useGameAudio';
+import { isUiHintOnlyError, resolveCommandError } from '../engine/transport/errorI18n';
+import {
+    buildLocalMatchSetupData,
+    resolveLocalMatchPlayerCount,
+    resolveSetupSelectionsFromSearchParams,
+    resolveSeatControllersFromSearchParams,
+} from '../engine/ai';
+import { GameCursorProvider } from '../core/cursor';
+import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
+import { useGameImplementationReady } from '../hooks/useGameImplementationReady';
+import { createLocalMatchSeed, ensureLocalMatchSeedSearchParams } from '../engine/transport/localSession';
+import { SmashUpOverlayProvider } from '../games/smashup/ui/SmashUpOverlayContext';
+
+// 教程系统正常拦截，不弹 toast
+const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
+
+export const LocalMatchRoom = () => {
+    usePerformanceMonitor();
+    const { gameId } = useParams();
+    const [searchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const { t, i18n } = useTranslation('lobby');
+    const toast = useToast();
+    const {
+        isGameNamespaceReady,
+        gameNamespaceError,
+        retryGameNamespaceLoad,
+    } = useGameNamespaceReady(gameId, i18n);
+    const {
+        isGameImplementationReady,
+        gameImplementationError,
+        retryGameImplementationLoad,
+    } = useGameImplementationReady(gameId);
+
+    const gameConfig = gameId ? getGameById(gameId) : undefined;
+    const gamePageDataAttributes = useMemo(
+        () => getGamePageDataAttributes(gameId, gameConfig),
+        [gameConfig, gameId],
+    );
+
+    useEffect(() => syncGamePageDocumentAttributes(gamePageDataAttributes), [gamePageDataAttributes]);
+
+
+    const seedFromUrl = searchParams.get('seed');
+    const [fallbackSeed] = useState(() => seedFromUrl || createLocalMatchSeed());
+    const gameSeed = seedFromUrl || fallbackSeed;
+
+    useEffect(() => {
+        if (seedFromUrl) return;
+        const nextSearch = ensureLocalMatchSeedSearchParams(searchParams, fallbackSeed);
+        navigate(
+            {
+                pathname: gameId ? `/play/${gameId}/local` : undefined,
+                search: `?${nextSearch.toString()}`,
+            },
+            { replace: true },
+        );
+    }, [fallbackSeed, gameId, navigate, searchParams, seedFromUrl]);
+
+    const localPlayerCount = resolveLocalMatchPlayerCount(searchParams.get('players'), gameConfig?.playerOptions);
+    const seatControllers = useMemo(
+        () => resolveSeatControllersFromSearchParams({
+            numPlayers: localPlayerCount,
+            searchParams,
+            aiSupport: gameConfig?.ai,
+        }),
+        [gameConfig?.ai, localPlayerCount, searchParams],
+    );
+    const setupSelections = useMemo(
+        () => resolveSetupSelectionsFromSearchParams({
+            gameManifest: gameConfig,
+            searchParams,
+        }),
+        [gameConfig, searchParams],
+    );
+    const localSetupData = useMemo(
+        () => buildLocalMatchSetupData(setupSelections),
+        [setupSelections],
+    );
+    const hasAiSeat = useMemo(
+        () => Object.values(seatControllers).some((controller) => controller.type !== 'human'),
+        [seatControllers],
+    );
+
+    // 从游戏实现中获取引擎配置
+    const engineConfig = useMemo(() => {
+        if (!gameId || !isGameImplementationReady) return null;
+        return getGameImplementation(gameId)?.engineConfig ?? null;
+    }, [gameId, isGameImplementationReady]);
+
+    // 包装 Board 组件，注入 CriticalImageGate
+    const WrappedBoard = useMemo<ComponentType<GameBoardProps> | null>(() => {
+        if (!gameId || !isGameImplementationReady) return null;
+        const impl = getGameImplementation(gameId);
+        if (!impl) return null;
+        const Board = impl.board as unknown as ComponentType<GameBoardProps>;
+        const WrappedLocalBoard: ComponentType<GameBoardProps> = (props) => (
+            <CriticalImageGate
+                gameId={gameId}
+                gameState={props?.G}
+                locale={i18n.language}
+                playerID={props?.playerID}
+                loadingDescription={t('matchRoom.loadingResources')}
+            >
+                <Board {...props} />
+            </CriticalImageGate>
+        );
+        return WrappedLocalBoard;
+    }, [gameId, i18n.language, t, isGameImplementationReady]);
+
+    // 命令被拒绝时的统一反馈（拒绝音效 + toast 提示）
+    // tutorial_command_blocked / tutorial_step_locked 是教程系统的正常拦截，不弹 toast
+    const handleCommandRejected = useCallback((_type: string, error: string) => {
+        if (TUTORIAL_SILENT_ERRORS.has(error)) return;
+        if (isUiHintOnlyError(error, i18n, gameId)) return;
+        playDeniedSound();
+        toast.warning(resolveCommandError(i18n, error, gameId), undefined, { dedupeKey: `local.rejected.${error}` });
+    }, [toast, i18n, gameId]);
+
+    if (!gameConfig) {
+        return <div className="text-white">{t('matchRoom.noGame')}</div>;
+    }
+
+    if (gameNamespaceError) {
+        return (
+            <GameNamespaceLoadError
+                gameId={gameId}
+                error={gameNamespaceError}
+                onRetry={retryGameNamespaceLoad}
+            />
+        );
+    }
+
+    if (gameImplementationError) {
+        return (
+            <GameNamespaceLoadError
+                gameId={gameId}
+                error={gameImplementationError}
+                onRetry={retryGameImplementationLoad}
+                titleKey="matchRoom.clientLoadFailed"
+                descriptionKey="matchRoom.clientLoadFailedDesc"
+            />
+        );
+    }
+
+    if (!isGameNamespaceReady) {
+        return <LoadingScreen description={t('matchRoom.loadingResources')} />;
+    }
+
+    if (!isGameImplementationReady) {
+        return <LoadingScreen description={t('matchRoom.loadingResources')} />;
+    }
+
+    return (
+        <div className="relative w-full game-page-viewport bg-black overflow-hidden font-sans" {...gamePageDataAttributes}>
+            <SmashUpOverlayProvider>
+                <GameHUD mode="local" gameId={gameId} localModeLabel={hasAiSeat ? t('actions.playAi') : t('actions.singleDevice')} />
+                <MobileBoardShell battlefieldZoomMode={gameConfig?.mobileBattlefieldZoom}>
+                    <div
+                        className="w-full h-full"
+                        style={{
+                            '--font-game-display': gameConfig?.fontFamily?.display ? `'${gameConfig.fontFamily.display}', serif` : undefined,
+                        } as React.CSSProperties}
+                    >
+                        <GameModeProvider mode="local">
+                            <GameCursorProvider themeId={gameConfig?.cursorTheme} gameId={gameId}>
+                                {engineConfig && WrappedBoard ? (
+                                    <LocalGameProvider
+                                        key={`local:${gameId ?? 'unknown'}:${gameSeed}:${localPlayerCount}`}
+                                        config={engineConfig}
+                                        numPlayers={localPlayerCount}
+                                        seed={gameSeed}
+                                        setupData={localSetupData}
+                                        onCommandRejected={handleCommandRejected}
+                                        seatControllers={seatControllers}
+                                        followCurrentTurnPlayer
+                                        persistSession
+                                    >
+                                        <BoardBridge
+                                            board={WrappedBoard}
+                                            loading={<LoadingScreen anchor="container" title={t('matchRoom.title.local')} description={t('matchRoom.loadingResources')} />}
+                                        />
+                                    </LocalGameProvider>
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-white/50">
+                                        {t('matchRoom.noClient')}
+                                    </div>
+                                )}
+                            </GameCursorProvider>
+                        </GameModeProvider>
+                    </div>
+                </MobileBoardShell>
+            </SmashUpOverlayProvider>
+        </div>
+    );
+};

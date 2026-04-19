@@ -6,12 +6,12 @@
 
 ## 测试文件与命令
 
-- 测试文件：`e2e/smashup-complex-multi-base-scoring.e2e.ts`
+- 测试文件：`e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`
 - 新增用例：`4p afterScoring chain handles 6 interactions without duplicate score`
 - 运行命令：
 
 ```bash
-npm run test:e2e:ci -- e2e/smashup-complex-multi-base-scoring.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts
 ```
 
 - 结果：`2 passed`
@@ -20,7 +20,7 @@ npm run test:e2e:ci -- e2e/smashup-complex-multi-base-scoring.e2e.ts
 
 ### 1) 初始态（4 人 + 复杂交互前）
 
-![4p-initial](../test-results/evidence-screenshots/smashup-complex-multi-base-scoring.e2e/4p-afterScoring-chain-handles-6-interactions-without-duplicate-score/4p-01-initial.png)
+![4p-initial](../test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/4p-afterScoring-chain-handles-6-interactions-without-duplicate-score/4p-01-initial.png)
 
 观察：
 - 已进入对局态（`TURN9 / PlayCards`），非派系选择界面。
@@ -28,7 +28,7 @@ npm run test:e2e:ci -- e2e/smashup-complex-multi-base-scoring.e2e.ts
 
 ### 2) 终态（6 交互串行完成后）
 
-![4p-final](../test-results/evidence-screenshots/smashup-complex-multi-base-scoring.e2e/4p-afterScoring-chain-handles-6-interactions-without-duplicate-score/4p-02-final.png)
+![4p-final](../test-results/evidence-screenshots/smashup/smashup-complex-multi-base-scoring.e2e/4p-afterScoring-chain-handles-6-interactions-without-duplicate-score/4p-02-final.png)
 
 观察：
 - 回到 `Play` 阶段，流程未卡死。

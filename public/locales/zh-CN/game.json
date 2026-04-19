@@ -7,6 +7,7 @@
     "character_not_selected": "尚未选择角色",
     "character_selection_not_initialized": "角色选择未初始化",
     "command_failed": "命令执行失败",
+    "not_connected": "连接尚未就绪，请稍后重试",
     "internal_error": "服务器内部错误，操作已自动恢复",
     "pipeline_error": "命令执行异常，请稍后重试"
   },
@@ -171,6 +172,18 @@
     "toggle": {
       "collapse": "收起菜单",
       "expand": "展开菜单"
+    },
+    "ai": {
+      "forceEndPhase": "强制结束 AI 阶段",
+      "forceEndPhaseHint": "用于 AI 卡死时强制推进当前阶段。",
+      "forceEndPhaseConfirm": "确认强制结束",
+      "forceEndPhaseUnavailable": "当前没有可强制结束的 AI 阶段。",
+      "forceEndPhaseNotReady": "AI 控制未就绪，请稍后再试。",
+      "forceEndPhaseSeatOffline": "AI 座位未连接，无法执行。",
+      "forceEndPhaseSubmitting": "正在提交强制结束请求…",
+      "forceEndPhaseSuccess": "AI 已强制结束回合。",
+      "forceEndPhaseTitle": "AI 强制结束回合",
+      "forceEndPhaseFailed": "AI 强制结束失败（{{reason}}）"
     },
     "smashup": {
       "title": "大杀四方",

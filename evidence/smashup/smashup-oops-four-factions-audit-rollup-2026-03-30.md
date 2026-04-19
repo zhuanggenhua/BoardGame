@@ -74,12 +74,12 @@
 
 ## 统一验证
 - 领域回归：
-  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/newBaseAbilities.test.ts --config temp/vitest-smashup-node.config.ts --configLoader native`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/newBaseAbilities.test.ts --config temp/smashup/vitest-smashup-node.config.ts --configLoader native`
   - 结果：`2 passed`，`138 passed, 1 skipped`
 - 浏览器 E2E：
-  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup-phase-transition-simple.e2e.ts "Oops Ancient Egyptians 埋葬条带与翻开交互应在浏览器中可完成"`
-  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup-phase-transition-simple.e2e.ts "Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Deputy/结算"`
-  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup-phase-transition-simple.e2e.ts "Oops Samurai 额外出牌效果应在浏览器中兑现额外随从与行动额度"`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-phase-transition-simple.e2e.ts "Oops Ancient Egyptians 埋葬条带与翻开交互应在浏览器中可完成"`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-phase-transition-simple.e2e.ts "Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Deputy/结算"`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-phase-transition-simple.e2e.ts "Oops Samurai 额外出牌效果应在浏览器中兑现额外随从与行动额度"`
   - 结果：`3 passed`
 - 类型检查：
   - `npm run typecheck`

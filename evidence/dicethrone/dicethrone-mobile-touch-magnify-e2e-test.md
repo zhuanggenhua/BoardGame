@@ -11,7 +11,7 @@
 
 ## 测试文件
 
-- `e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- `e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 - 用例名：`触控窄视口下放大入口常显且可点击`
 
 ## 运行记录
@@ -19,7 +19,7 @@
 标准命令：
 
 ```bash
-npm run test:e2e:ci -- e2e/dicethrone-watch-out-spotlight.e2e.ts
+npm run test:e2e:ci -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts
 ```
 
 结果：
@@ -35,7 +35,7 @@ $env:PW_USE_DEV_SERVERS='true'
 $env:PW_WORKERS='1'
 $env:PW_HEADED='false'
 $env:PWDEBUG='0'
-$env:PW_TEST_MATCH='e2e/dicethrone-watch-out-spotlight.e2e.ts'
+$env:PW_TEST_MATCH='e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts'
 node node_modules/playwright/cli.js test --grep "触控窄视口下放大入口常显且可点击"
 ```
 
@@ -80,7 +80,7 @@ node node_modules/playwright/cli.js test --grep "触控窄视口下放大入口�
 
 ### 1. 主界面基线
 
-![主界面基线](../test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/触控窄视口下放大入口常显且可点击/10-mobile-main-board-state.png)
+![主界面基线](../../test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/触控窄视口下放大入口常显且可点击/10-mobile-main-board-state.png)
 
 观察：
 
@@ -90,7 +90,7 @@ node node_modules/playwright/cli.js test --grep "触控窄视口下放大入口�
 
 ### 2. 玩家面板放大层
 
-![玩家面板放大层](../test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/触控窄视口下放大入口常显且可点击/11-mobile-player-board-magnify-open.png)
+![玩家面板放大层](../../test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/触控窄视口下放大入口常显且可点击/11-mobile-player-board-magnify-open.png)
 
 观察：
 
@@ -100,7 +100,7 @@ node node_modules/playwright/cli.js test --grep "触控窄视口下放大入口�
 
 ### 3. 弃牌堆检视放大层
 
-![弃牌堆检视放大层](../test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/触控窄视口下放大入口常显且可点击/12-mobile-discard-pile-inspect-open.png)
+![弃牌堆检视放大层](../../test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/触控窄视口下放大入口常显且可点击/12-mobile-discard-pile-inspect-open.png)
 
 观察：
 

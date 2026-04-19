@@ -6,33 +6,33 @@
 - 账户设置与换绑邮箱弹窗：`src/components/auth/AccountSettingsModal.tsx`、`src/components/auth/EmailBindModal.tsx`
 - 反馈弹窗：`src/components/system/FeedbackModal.tsx`
 - 相关样式：`src/index.css`
-- 相关 E2E：`e2e/auth-account-login.e2e.ts`、`e2e/lobby.e2e.ts`、`e2e/dicethrone.e2e.ts`
+- 相关 E2E：`e2e/_shared/auth-account-login.e2e.ts`、`e2e/_shared/lobby.e2e.ts`、`e2e/dicethrone/dicethrone.e2e.ts`
 
 ## 本轮运行记录
 
 - `npm run typecheck`
-- `npx eslint src/components/auth/AuthModal.tsx src/components/auth/AccountSettingsModal.tsx src/components/auth/EmailBindModal.tsx src/components/system/FeedbackModal.tsx e2e/auth-account-login.e2e.ts e2e/account-settings.e2e.ts`
+- `npx eslint src/components/auth/AuthModal.tsx src/components/auth/AccountSettingsModal.tsx src/components/auth/EmailBindModal.tsx src/components/system/FeedbackModal.tsx e2e/_shared/auth-account-login.e2e.ts e2e/_shared/account-settings.e2e.ts`
 - `npm run test:e2e:ci:file -- auth-account-login.e2e.ts`
-- `npm run test:e2e:ci:file -- e2e/account-settings.e2e.ts`
+- `npm run test:e2e:ci:file -- e2e/_shared/account-settings.e2e.ts`
 - `npm run test:e2e:ci:file -- lobby.e2e.ts "移动端反馈"`
-- `npm run test:e2e:ci:file -- e2e/dicethrone.e2e.ts "Tutorial landscape feedback keeps inputs visible in game HUD"`
+- `npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone.e2e.ts "Tutorial landscape feedback keeps inputs visible in game HUD"`
 - `npm run test:e2e:ci:file -- dicethrone.e2e.ts "Tutorial landscape feedback keeps inputs visible in game HUD"`（2026-04-08 复跑，通过）
-- `npx eslint e2e/lobby.e2e.ts e2e/auth-account-login.e2e.ts src/components/auth/AuthModal.tsx src/components/auth/AccountSettingsModal.tsx src/components/auth/EmailBindModal.tsx src/components/auth/AvatarUpdateModal.tsx src/components/common/overlays/ConfirmModal.tsx src/components/common/overlays/PasswordEntryModal.tsx src/components/lobby/CreateRoomModal.tsx src/components/lobby/RoomList.tsx src/components/social/FriendsChatModal.tsx src/components/system/FeedbackModal.tsx`
+- `npx eslint e2e/_shared/lobby.e2e.ts e2e/_shared/auth-account-login.e2e.ts src/components/auth/AuthModal.tsx src/components/auth/AccountSettingsModal.tsx src/components/auth/EmailBindModal.tsx src/components/auth/AvatarUpdateModal.tsx src/components/common/overlays/ConfirmModal.tsx src/components/common/overlays/PasswordEntryModal.tsx src/components/lobby/CreateRoomModal.tsx src/components/lobby/RoomList.tsx src/components/social/FriendsChatModal.tsx src/components/system/FeedbackModal.tsx`
 - `npm run test:e2e:ci:file -- lobby.e2e.ts "移动端创建房间输入聚焦后不应把弹窗顶飞出可视区"`（2026-04-08 复跑，通过）
 - `npm run test:e2e:ci:file -- auth-account-login.e2e.ts "AuthModal register should keep mobile inputs visible and editable on narrow screens"`（2026-04-08 复跑，通过）
-- `npx eslint src/components/lobby/CreateRoomModal.tsx src/components/social/FriendList.tsx src/components/game/framework/widgets/GameHUD.tsx e2e/review.e2e.ts`
+- `npx eslint src/components/lobby/CreateRoomModal.tsx src/components/social/FriendList.tsx src/components/game/framework/widgets/GameHUD.tsx e2e/tictactoe/review.e2e.ts`
 - `npm run test:e2e:ci:file -- auth-account-login.e2e.ts "AuthModal register should keep mobile inputs visible and editable on narrow screens"`（2026-04-09 复跑，通过）
 - `npm run test:e2e:ci:file -- account-settings.e2e.ts "移动端账户设置与邮箱绑定输入应保持可见可编辑"`（2026-04-09 复跑，通过）
 - `npm run test:e2e:ci:file -- social.e2e.ts "移动端社交聊天输入聚焦后仍应保持可见"`（2026-04-09 复跑，通过）
-- `PW_SERVER_RUNTIME=tsx node scripts/infra/run-e2e-single.mjs ci --file e2e/review.e2e.ts --case "移动端评价输入聚焦后仍应保持可见"`（2026-04-09 复跑，通过；详见 `evidence/tictactoe/review-mobile-input-e2e-test.md`）
-- `PW_SERVER_RUNTIME=tsx BG_HEAVY_MEMORY_MIN_FREE_GB=1 node scripts/infra/run-e2e-single.mjs ci --file e2e/lobby.e2e.ts --case "移动端创建房间输入聚焦后不应把弹窗顶飞出可视区"`（2026-04-09 复跑，通过）
-- `PW_SERVER_RUNTIME=tsx BG_HEAVY_MEMORY_MIN_FREE_GB=1 node scripts/infra/run-e2e-single.mjs ci --file e2e/lobby.e2e.ts --case "移动端私密房间密码输入聚焦后仍应保持可见"`（2026-04-09 复跑，通过；详见 `evidence/_shared/private-room-password-mobile-e2e-test.md`）
+- `PW_SERVER_RUNTIME=tsx node scripts/infra/run-e2e-single.mjs ci --file e2e/tictactoe/review.e2e.ts --case "移动端评价输入聚焦后仍应保持可见"`（2026-04-09 复跑，通过；详见 `evidence/tictactoe/review-mobile-input-e2e-test.md`）
+- `PW_SERVER_RUNTIME=tsx BG_HEAVY_MEMORY_MIN_FREE_GB=1 node scripts/infra/run-e2e-single.mjs ci --file e2e/_shared/lobby.e2e.ts --case "移动端创建房间输入聚焦后不应把弹窗顶飞出可视区"`（2026-04-09 复跑，通过）
+- `PW_SERVER_RUNTIME=tsx BG_HEAVY_MEMORY_MIN_FREE_GB=1 node scripts/infra/run-e2e-single.mjs ci --file e2e/_shared/lobby.e2e.ts --case "移动端私密房间密码输入聚焦后仍应保持可见"`（2026-04-09 复跑，通过；详见 `evidence/_shared/private-room-password-mobile-e2e-test.md`）
 
 ## 截图核验
 
 ### 1. 桌面端登录弹窗
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\auth-modal-desktop-login-filled.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\auth-modal-desktop-login-filled.png`
 - 我实际看到的现象：
   - 桌面端登录弹窗完整居中显示，没有被移动端样式挤压成窄条或超高单列。
   - 邮箱输入框里能直接看到 `test@example.com`，密码框里有已输入的掩码点，说明输入内容没有出现“框打开了但字看不见”的问题。
@@ -42,7 +42,7 @@
 
 ### 2. 移动端注册弹窗
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\auth-modal-mobile-register-filled.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\auth-modal-mobile-register-filled.png`
 - 我实际看到的现象：
   - 当前这张快照实际拍到的是注册弹窗的下半段：能看到昵称、密码输入区和主提交按钮都还在同一个弹窗内，没有被键盘态挤掉。
   - 主提交按钮完整可见，说明短高度下弹窗底部主操作区仍留在可操作区域。
@@ -52,7 +52,7 @@
 
 ### 3. 游戏内横屏反馈弹窗
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-feedback-modal-landscape.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\dicethrone-feedback-modal-landscape.png`
 - 我实际看到的现象：
   - 这是 2026-04-08 复跑得到的整页视口截图，背景仍是游戏页而不是大厅替代页，说明证据来自游戏内 HUD 真实入口。
   - 横屏短高度下，描述输入框、`附带操作日志`、`附带状态快照`、联系方式输入框和底部提交按钮都同时留在视口内，没有再把联系方式输入区挤出底部。
@@ -63,7 +63,7 @@
 
 ### 4. 移动端账户设置弹窗
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\account-settings-mobile-password-inputs.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\account-settings-mobile-password-inputs.png`
 - 我实际看到的现象：
   - 账户设置弹窗在手机宽度下仍完整显示，密码编辑区展开后 3 个密码输入框都在弹窗内部，没有横向溢出。
   - 输入后能看到 3 行密码掩码点，说明不是“打开输入框但内容看不见”。
@@ -73,7 +73,7 @@
 
 ### 5. 移动端换绑邮箱弹窗
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\email-bind-mobile-verify-input.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\email-bind-mobile-verify-input.png`
 - 我实际看到的现象：
   - 换绑邮箱已经进入验证码校验步骤，6 位验证码输入区完整可见，输入值 `1 2 3 4 5 6` 清楚显示。
   - “确认绑定”主按钮和“60秒后可重新发送 / 取消”都还在视口内，没有被键盘区或底部安全区顶掉。
@@ -83,7 +83,7 @@
 
 ### 6. 移动端反馈弹窗
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby-feedback-modal-mobile.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby-feedback-modal-mobile.png`
 - 我实际看到的现象：
   - 反馈弹窗覆盖在页面之上，头部、游戏选择、类型、优先级、描述、联系方式和提交按钮都完整可见。
   - 类型和优先级仍保持双列信息关系，没有被我改成不必要的单列手机稿。
@@ -94,7 +94,7 @@
 
 ### 7. 移动端创建房间弹窗
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\create-room-modal-mobile-keyboard-safe.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\create-room-modal-mobile-keyboard-safe.png`
 - 我实际看到的现象：
   - 建房弹窗主体完整保留，房间名称、房间密码、房间保存和加入 AI 这几个核心输入/选择区都还在同一张弹窗里，没有被键盘态顶飞。
   - 房间名输入值和密码 `123456` 都已经落进输入框可视区，说明不是“聚焦后只有输入框壳子还在，输入内容看不见”。
@@ -105,7 +105,7 @@
 
 ### 8. 移动端社交聊天输入
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\social-chat-mobile-input-visible.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\social-chat-mobile-input-visible.png`
 - 我实际看到的现象：
   - 这次截图已经是聊天详情页，不再是旧的好友列表页；顶部能看到“返回 / 好友甲 / 在线”，中间是消息记录，底部是输入框与发送按钮。
   - 输入框里清楚能看到 `移动端社交聊天输入可见性校验`，说明不是“输入框聚焦了但内容看不见”。
@@ -117,10 +117,10 @@
 
 ### A. 创建房间 / 私密房间密码链路已补齐独立证据
 
-- 最新通过命令：`PW_SERVER_RUNTIME=tsx BG_HEAVY_MEMORY_MIN_FREE_GB=1 node scripts/infra/run-e2e-single.mjs ci --file e2e/lobby.e2e.ts --case "移动端私密房间密码输入聚焦后仍应保持可见"`
+- 最新通过命令：`PW_SERVER_RUNTIME=tsx BG_HEAVY_MEMORY_MIN_FREE_GB=1 node scripts/infra/run-e2e-single.mjs ci --file e2e/_shared/lobby.e2e.ts --case "移动端私密房间密码输入聚焦后仍应保持可见"`
 - 最新有效证据：`evidence/_shared/private-room-password-mobile-e2e-test.md`
 - 当前状态：
-  - 2026-04-09 这轮已经补到真实密码弹窗截图 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\private-room-password-modal-mobile.png`，不再是大厅页误截图。
+  - 2026-04-09 这轮已经补到真实密码弹窗截图 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\private-room-password-modal-mobile.png`，不再是大厅页误截图。
   - 弹窗标题、密码输入框、眼睛按钮、取消/确认按钮都在同一张图内可见，因此这条链路现在可以作为已验收通过的有效证据。
   - 本文档保留这里只做总表汇总；私密房密码的逐图观察和最终结论，以独立证据文档为准。
 

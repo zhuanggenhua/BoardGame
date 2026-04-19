@@ -10,7 +10,7 @@
 - `D:\gongzuo\webgame\BoardGame\src\games\smashup\ui\HandArea.tsx`
 - `D:\gongzuo\webgame\BoardGame\src\games\smashup\ui\interactionMode.ts`
 - `D:\gongzuo\webgame\BoardGame\src\components\game\framework\widgets\GameHUD.tsx`
-- `D:\gongzuo\webgame\BoardGame\e2e\smashup-local-gameplay.e2e.ts`
+- `D:\gongzuo\webgame\BoardGame\e2e\smashup\smashup-local-gameplay.e2e.ts`
 
 ## 根因分类
 
@@ -81,7 +81,7 @@
 
 ### A. hand prompt 应保持点击选择
 - 路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-local-gameplay.e2e\本地模式：手牌额外交互应保持点击选择，正常拖拽箭头曲线应可见且更平顺\smashup-drag-prompt-click-mode.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-local-gameplay.e2e\本地模式：手牌额外交互应保持点击选择，正常拖拽箭头曲线应可见且更平顺\smashup-drag-prompt-click-mode.png`
 - 我实际看到：
   1. 顶部明确显示“选择要额外打出的随从”，中部有“跳过”按钮，说明当前确实处在额外随从选择 prompt。
   2. 手牌区两张手牌仍在底部，但**没有出现任何拖拽箭头**。
@@ -91,7 +91,7 @@
 
 ### B. board prompt 期间也不能把手牌误拖出去
 - 路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-local-gameplay.e2e\本地模式：手牌额外交互应保持点击选择，正常拖拽箭头曲线应可见且更平顺\smashup-drag-board-prompt-lock-mode.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-local-gameplay.e2e\本地模式：手牌额外交互应保持点击选择，正常拖拽箭头曲线应可见且更平顺\smashup-drag-board-prompt-lock-mode.png`
 - 我实际看到：
   1. 顶部提示变成“选择一个基地”，说明现在是基地选择 prompt，不是手牌 prompt。
   2. 两个可选基地发紫光，第三个基地被压暗，符合“棋盘点击选择”的语义。
@@ -101,7 +101,7 @@
 
 ### C. 正常拖拽时箭头曲线需要自然
 - 路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-local-gameplay.e2e\本地模式：手牌额外交互应保持点击选择，正常拖拽箭头曲线应可见且更平顺\smashup-drag-arrow-curve-optimized.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-local-gameplay.e2e\本地模式：手牌额外交互应保持点击选择，正常拖拽箭头曲线应可见且更平顺\smashup-drag-arrow-curve-optimized.png`
 - 我实际看到：
   1. 橙色箭头从手牌上缘自然抬起，往左上目标基地弯过去，没有贴着卡牌乱折。
   2. 中段弧线连续，没有“前面突然鼓起、后面突然变直”的折感。
@@ -112,7 +112,7 @@
 ## 自动化验证
 
 ### 已通过
-1. `npx eslint src/games/smashup/Board.tsx src/games/smashup/ui/interactionMode.ts e2e/smashup-local-gameplay.e2e.ts`
+1. `npx eslint src/games/smashup/Board.tsx src/games/smashup/ui/interactionMode.ts e2e/smashup/smashup-local-gameplay.e2e.ts`
    - 结果：0 error
    - 备注：仅剩仓库既有 warning（`Date.now()` purity、旧 `any`），与本轮问题无关。
 
@@ -120,13 +120,13 @@
    - 结果：**1 passed / 6 skipped**
    - 说明：锁定本轮新增的 hand prompt 语义分流 helper 行为。
 
-3. `npm run test:e2e:ci:file -- e2e/smashup-local-gameplay.e2e.ts "本地模式：手牌额外交互应保持点击选择，正常拖拽箭头曲线应可见且更平顺"`
+3. `npm run test:e2e:ci:file -- e2e/smashup/smashup-local-gameplay.e2e.ts "本地模式：手牌额外交互应保持点击选择，正常拖拽箭头曲线应可见且更平顺"`
    - 结果：**1 passed**
    - 时间：2026-04-09 01:25（Asia/Shanghai）
 
 ### 本轮补充截图
 - 局部箭头截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-local-gameplay.e2e\本地模式：手牌额外交互应保持点击选择，正常拖拽箭头曲线应可见且更平顺\smashup-drag-arrow-curve-optimized-arrow.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-local-gameplay.e2e\本地模式：手牌额外交互应保持点击选择，正常拖拽箭头曲线应可见且更平顺\smashup-drag-arrow-curve-optimized-arrow.png`
 - 我实际看到：
   1. 箭头从手牌上缘起弧，整条曲线连续，没有中段折返。
   2. 提示气泡落在曲线中段偏上，方向与箭头一致。

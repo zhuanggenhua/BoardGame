@@ -6,7 +6,7 @@
 
 ## 涉及用例
 
-- 文件：`e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- 文件：`e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 - 用例：`mobile long press hand card should open magnify without playing card`
 
 ## 断言
@@ -21,7 +21,7 @@
 命令：
 
 ```bash
-node scripts/infra/run-e2e-command.mjs dev e2e/dicethrone-watch-out-spotlight.e2e.ts --grep "mobile long press hand card should open magnify without playing card"
+node scripts/infra/run-e2e-command.mjs dev e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts --grep "mobile long press hand card should open magnify without playing card"
 ```
 
 结果：
@@ -30,11 +30,11 @@ node scripts/infra/run-e2e-command.mjs dev e2e/dicethrone-watch-out-spotlight.e2
 
 截图（绝对路径）：
 
-- `F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\mobile-long-press-hand-card-should-open-magnify-without-playing-card\13-mobile-hand-long-press-magnify-open.png`
+- `F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-long-press-hand-card-should-open-magnify-without-playing-card\13-mobile-hand-long-press-magnify-open.png`
 
 相对路径引用：
 
-![long-press-magnify-open](../test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/mobile-long-press-hand-card-should-open-magnify-without-playing-card/13-mobile-hand-long-press-magnify-open.png)
+![long-press-magnify-open](../../test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/mobile-long-press-hand-card-should-open-magnify-without-playing-card/13-mobile-hand-long-press-magnify-open.png)
 
 ### 1.1) 抽取通用 Hook 后回归（通过）
 
@@ -47,7 +47,7 @@ node scripts/infra/run-e2e-command.mjs dev e2e/dicethrone-watch-out-spotlight.e2
 命令：
 
 ```bash
-node scripts/infra/run-e2e-command.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.ts --grep "mobile long press hand card should open magnify without playing card"
+node scripts/infra/run-e2e-command.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts --grep "mobile long press hand card should open magnify without playing card"
 ```
 
 结果：

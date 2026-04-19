@@ -67,13 +67,13 @@
   - `npm run i18n:check`
   - `openspec validate update-dicethrone-4p-player-target-interactions --strict --no-interactive`
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/flow.test.ts src/games/dicethrone/__tests__/boundaryEdgeCases.test.ts src/games/dicethrone/__tests__/rule-consistency.test.ts src/server/__tests__/matchOccupancy.test.ts src/games/dicethrone/ui/__tests__/InteractionOverlay.test.tsx --configLoader native`
-  - `npm run test:e2e:ci:file -- e2e/dicethrone-simple-start.e2e.ts`
+  - `npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts`
 - 验证结果：
   - `node .\node_modules\typescript\lib\tsc.js --noEmit --pretty false`：通过
   - `npm run i18n:check`：通过，仅剩仓库既有 dynamic-key / dynamic-namespace warnings
   - `openspec validate update-dicethrone-4p-player-target-interactions --strict --no-interactive`：`valid`
   - `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/flow.test.ts src/games/dicethrone/__tests__/boundaryEdgeCases.test.ts src/games/dicethrone/__tests__/rule-consistency.test.ts src/server/__tests__/matchOccupancy.test.ts src/games/dicethrone/ui/__tests__/InteractionOverlay.test.tsx --configLoader native`：`180 passed`
-  - `npm run test:e2e:ci:file -- e2e/dicethrone-simple-start.e2e.ts`：`12 passed`
+  - `npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts`：`12 passed`
 
 ## 5. 结果
 - 提交：`f188d523` `merge: 合并王权骰铸四人模式 Batch 1 专项`

@@ -2,7 +2,7 @@
 
 ## 用例
 
-- 文件：`e2e/dicethrone-tutorial-simple.e2e.ts`
+- 文件：`e2e/dicethrone/dicethrone-tutorial-simple.e2e.ts`
 - 用例：`Tutorial roll visual should not block next required action`
 - 命令：`npm run test:e2e:ci:file -- dicethrone-tutorial-simple.e2e.ts "Tutorial roll visual should not block next required action"`
 
@@ -20,14 +20,14 @@
 
 ## 截图
 
-![教程已推进到可确认步骤](../test-results/evidence-screenshots/dicethrone-tutorial-simple.e2e/tutorial-roll-visual-should-not-block-next-required-action/tutorial-roll-visual-non-blocking.png)
+![教程已推进到可确认步骤](../../test-results/evidence-screenshots/dicethrone/dicethrone-tutorial-simple.e2e/tutorial-roll-visual-should-not-block-next-required-action/tutorial-roll-visual-non-blocking.png)
 
-截图绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-tutorial-simple.e2e\tutorial-roll-visual-should-not-block-next-required-action\tutorial-roll-visual-non-blocking.png`
+截图绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-tutorial-simple.e2e\tutorial-roll-visual-should-not-block-next-required-action\tutorial-roll-visual-non-blocking.png`
 
 ## 截图分析
 
 - 该截图拍摄于 E2E 成功断言教程步骤等于 `dice-confirm` 之后，因此它对应的是“已完成选骰，可进入下一步确认”的稳定状态。
-- 截图文件由本用例固定输出到 `test-results/evidence-screenshots/`，可作为后续回归验证的对照基线。
+- 截图文件由本用例固定输出到 `test-results/evidence-screenshots/dicethrone/`，可作为后续回归验证的对照基线。
 - 结合用例中的真实交互链路，可以确认教程并没有在 `Play Six` 之后卡死在“必须选骰但点了没反应”的状态。
 
 ## 验证结果

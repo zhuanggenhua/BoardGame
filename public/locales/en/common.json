@@ -21,6 +21,9 @@
     "card_driven": "Card Driven",
     "casual": "Casual"
   },
+  "status_tags": {
+    "under_construction": "Under Construction"
+  },
   "game_details": {
     "best_players": "Best Players",
     "people": "Players",

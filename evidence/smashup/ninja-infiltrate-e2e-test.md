@@ -143,8 +143,8 @@ isMinionSelectMode={!isOngoingSelectPrompt && ((selectedCardMode === 'ongoing-mi
 - `src/games/smashup/ui/HandArea.tsx` - 添加 data-card-uid
 
 ### 测试文件
-- `e2e/smashup-ninja-infiltrate.e2e.ts` - E2E 测试（正常流程）
-- `e2e/smashup-debug-helpers.ts` - 调试辅助函数（applyCoreStateDirect）
+- `e2e/smashup/smashup-ninja-infiltrate.e2e.ts` - E2E 测试（正常流程）
+- `e2e/smashup/smashup-debug-helpers.ts` - 调试辅助函数（applyCoreStateDirect）
 - `e2e/helpers/smashup.ts` - SmashUp 测试辅助函数
 
 ### 实现文件

@@ -21,8 +21,8 @@
   - `data-structure-id`
 - 收敛 `e2e/helpers/summonerwars.ts` 中的可复用定位与联机建局辅助。
 - 重写目标用例：
-  - `e2e/summonerwars-selection.e2e.ts`
-  - `e2e/summonerwars-push-pull-direction.e2e.ts`
+  - `e2e/summonerwars/summonerwars-selection.e2e.ts`
+  - `e2e/summonerwars/summonerwars-push-pull-direction.e2e.ts`
 
 ## 目标覆盖
 
@@ -44,12 +44,12 @@
 
 - 已执行：`npm run check:encoding`
   - 结果：通过
-- 已执行：`npx eslint e2e/helpers/summonerwars.ts e2e/summonerwars-push-pull-direction.e2e.ts e2e/summonerwars-selection.e2e.ts src/games/summonerwars/ui/BoardGrid.tsx src/games/summonerwars/ui/FactionSelectionAdapter.tsx scripts/infra/e2e-port-config.js`
+- 已执行：`npx eslint e2e/helpers/summonerwars.ts e2e/summonerwars/summonerwars-push-pull-direction.e2e.ts e2e/summonerwars/summonerwars-selection.e2e.ts src/games/summonerwars/ui/BoardGrid.tsx src/games/summonerwars/ui/FactionSelectionAdapter.tsx scripts/infra/e2e-port-config.js`
   - 结果：无 error
   - 备注：仅剩仓库既有 warning，集中在 `BoardGrid.tsx` 和 `FactionSelectionAdapter.tsx` 的旧问题，不是这次重写新引入的错误
 - 已执行：`npx tsc --noEmit --pretty false`
   - 结果：通过
-- 已执行：`npm run test:e2e:ci -- e2e/summonerwars-selection.e2e.ts`
+- 已执行：`npm run test:e2e:ci -- e2e/summonerwars/summonerwars-selection.e2e.ts`
   - 结果：失败
   - 阻塞：当前环境禁止 `child_process spawn`，报错 `spawn EPERM`
 
@@ -69,5 +69,5 @@
 
 - 当前环境未生成真实截图。
 - 在允许子进程的本地终端或 CI 中重跑后，显式证据截图应落在：
-  - `test-results/evidence-screenshots/summonerwars-selection/`
-  - `test-results/evidence-screenshots/summonerwars-push-pull-direction/`
+  - `test-results/evidence-screenshots/summonerwars/summonerwars-selection/`
+  - `test-results/evidence-screenshots/summonerwars/summonerwars-push-pull-direction/`

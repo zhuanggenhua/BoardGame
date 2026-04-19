@@ -72,7 +72,7 @@ const { file, testCase, playwrightArgs } = parseArgs(rawArgs);
 
 if (!file) {
     console.error('用法: node scripts/infra/run-e2e-single.mjs <default|ci> e2e/<文件>.e2e.ts "可选用例名"');
-    console.error('示例: node scripts/infra/run-e2e-single.mjs ci e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"');
+    console.error('示例: node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"');
     process.exit(1);
 }
 

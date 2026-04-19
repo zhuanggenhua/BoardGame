@@ -54,7 +54,7 @@ const TestMatchRoom = React.lazy(() => import('./pages/TestMatchRoom').then(m =>
 - `src/App.tsx` - 路由配置
 - `src/pages/TestMatchRoom.tsx` - 测试模式组件
 - `e2e/framework/GameTestContext.ts` - 测试框架
-- `e2e/framework-pilot-ninja-infiltrate.e2e.ts` - 测试文件
+- `e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts` - 测试文件
 
 ## 教训
 

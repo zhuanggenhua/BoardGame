@@ -24,7 +24,7 @@
 执行命令：
 
 ```powershell
-npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "横屏移动端打开派系详情时应显示泰坦区，并可完整滚动查看全部卡牌"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-4p-layout-test.e2e.ts "横屏移动端打开派系详情时应显示泰坦区，并可完整滚动查看全部卡牌"
 ```
 
 结果：
@@ -33,22 +33,22 @@ npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "横屏移动端�
 
 本轮验证用例位置：
 
-- `e2e/smashup-4p-layout-test.e2e.ts`
+- `e2e/smashup/smashup-4p-layout-test.e2e.ts`
 - 用例名：`横屏移动端打开派系详情时应显示泰坦区，并可完整滚动查看全部卡牌`
 
 ## 截图证据
 
 顶部状态：
 
-![横屏移动端派系详情顶部](../test-results/evidence-screenshots/smashup-4p-layout-test.e2e/横屏移动端打开派系详情时应显示泰坦区，并可完整滚动查看全部卡牌/11-mobile-landscape-faction-detail-top.png)
+![横屏移动端派系详情顶部](../test-results/evidence-screenshots/smashup/smashup-4p-layout-test.e2e/横屏移动端打开派系详情时应显示泰坦区，并可完整滚动查看全部卡牌/11-mobile-landscape-faction-detail-top.png)
 
 滚动后状态：
 
-![横屏移动端派系详情滚动后](../test-results/evidence-screenshots/smashup-4p-layout-test.e2e/横屏移动端打开派系详情时应显示泰坦区，并可完整滚动查看全部卡牌/12-mobile-landscape-faction-detail-bottom.png)
+![横屏移动端派系详情滚动后](../test-results/evidence-screenshots/smashup/smashup-4p-layout-test.e2e/横屏移动端打开派系详情时应显示泰坦区，并可完整滚动查看全部卡牌/12-mobile-landscape-faction-detail-bottom.png)
 
 无泰坦占位状态：
 
-![横屏移动端派系详情无泰坦占位](../test-results/evidence-screenshots/smashup-4p-layout-test.e2e/横屏移动端打开派系详情时应显示泰坦区，并可完整滚动查看全部卡牌/13-mobile-landscape-faction-detail-no-titan.png)
+![横屏移动端派系详情无泰坦占位](../test-results/evidence-screenshots/smashup/smashup-4p-layout-test.e2e/横屏移动端打开派系详情时应显示泰坦区，并可完整滚动查看全部卡牌/13-mobile-landscape-faction-detail-no-titan.png)
 
 ## 观察
 
@@ -59,7 +59,7 @@ npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "横屏移动端�
 
 ## 桌面回归补充
 
-- 额外复跑并查看了桌面派系详情泰坦预览用例：`npm run test:e2e:ci:file -- e2e/smashup-faction-selection-spacing.e2e.ts "海盗派系详情中的泰坦预览应加载真实卡图"`。
+- 额外复跑并查看了桌面派系详情泰坦预览用例：`npm run test:e2e:ci:file -- e2e/smashup/smashup-faction-selection-spacing.e2e.ts "海盗派系详情中的泰坦预览应加载真实卡图"`。
 - 关键截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-faction-selection-spacing.e2e\海盗派系详情中的泰坦预览应加载真实卡图\海盗派系详情中的泰坦预览应加载真实卡图-pirates-titan-preview-loaded.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-faction-selection-spacing.e2e\海盗派系详情中的泰坦预览应加载真实卡图\海盗派系详情中的泰坦预览应加载真实卡图-pirates-titan-preview-loaded.png`
 - 肉眼可见桌面端海盗详情仍是完整的大面板布局，左栏泰坦卡和右侧卡牌网格都正常显示，没有被这次移动端修复带歪。

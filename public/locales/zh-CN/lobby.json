@@ -262,7 +262,7 @@
     "progressLabel": "下载进度",
     "progressPercent": "{{percent}}%",
     "progressPending": "准备中",
-    "progressHint": "等待原生返回下载进度。",
+    "progressHint": "正在获取下载进度，请稍候。",
     "openSettings": "打开安装权限设置",
     "continueInstall": "继续安装",
     "retryAction": "重新检查"
@@ -325,6 +325,20 @@
       "title": "召唤师战争",
       "description": "一款战术卡牌游戏，在网格战场上指挥你的阵营战士。召唤单位、施放法术，摧毁敌方召唤师即可获胜。",
       "players": "2人"
+    },
+    "splendor": {
+      "title": "璀璨宝石",
+      "description": "已完成基础版核心规则、主界面与教学引导的璀璨宝石实现。主打公开信息、宝石经营、永久折扣与贵族竞速。",
+      "players": "2-4人",
+      "setup": {
+        "startingPlayerId": {
+          "label": "先手钻石持有者",
+          "player1": "玩家 1",
+          "player2": "玩家 2",
+          "player3": "玩家 3",
+          "player4": "玩家 4"
+        }
+      }
     },
     "ugc": {
       "players": "2人"
@@ -493,7 +507,7 @@
     },
     "policyId": "策略 ID",
     "policyPlaceholder": "留空则使用默认策略",
-    "providerId": "Provider ID",
+    "providerId": "提供方 ID",
     "providerPlaceholder": "留空则使用 astrbot",
     "quickStart": "默认快速开始：1 号位为真人，2 号位在支持时自动使用该游戏的本地 AI。",
     "startLocal": "开始本地对战"

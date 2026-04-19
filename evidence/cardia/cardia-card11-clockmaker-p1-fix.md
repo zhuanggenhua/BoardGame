@@ -45,7 +45,7 @@ export const waitForPhase = async (page: Page, phase: string, timeout = 10000) =
 
 ### 2. 新增测试用例
 
-在 `e2e/cardia-deck1-card11-clockmaker.e2e.ts` 中新增测试用例：
+在 `e2e/cardia/cardia-deck1-card11-clockmaker.e2e.ts` 中新增测试用例：
 
 **测试用例：应该为上一个遭遇的牌和下一张打出的牌都添加 +3 修正标记**
 
@@ -143,7 +143,7 @@ BG_HEAVY_MEMORY_MIN_FREE_GB=0.05 npm run test:e2e:ci -- cardia-deck1-card11-cloc
 ## 修复文件
 
 - `e2e/helpers/cardia.ts`：修复 `waitForPhase` 函数支持中文
-- `e2e/cardia-deck1-card11-clockmaker.e2e.ts`：新增测试用例
+- `e2e/cardia/cardia-deck1-card11-clockmaker.e2e.ts`：新增测试用例
 
 ## 状态
 

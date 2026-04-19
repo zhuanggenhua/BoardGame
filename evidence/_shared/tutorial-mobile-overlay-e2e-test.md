@@ -13,7 +13,7 @@
   - 缩放前视觉宽度目标约为横屏视口 `36%`，缩放后最大实际宽度约 `292px`
   - 缩放前视觉高度目标约为横屏视口 `62%`，超长文案继续在卡内滚动
   - 仅在 `viewport.width <= MOBILE_MAX_VIEWPORT_WIDTH && viewport.width > viewport.height` 时生效
-- 在 `e2e/smashup-tutorial.e2e.ts` 里把原有“不能越界”断言继续收紧为：
+- 在 `e2e/smashup/smashup-tutorial.e2e.ts` 里把原有“不能越界”断言继续收紧为：
   - 浮层宽度占比 `<= 40%`
   - 浮层高度占比 `<= 64%`
 
@@ -23,7 +23,7 @@
 
 ```bash
 npm run typecheck
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
 ```
 
 结果：
@@ -34,7 +34,7 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 ### 本轮有效证据
 
 - 截图路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
 
 读图结论：
 
@@ -50,15 +50,15 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 
 ## 测试入口
 
-- 用例文件：[smashup-tutorial.e2e.ts](/D:/gongzuo/webgame/BoardGame/e2e/smashup-tutorial.e2e.ts)
+- 用例文件：[smashup-tutorial.e2e.ts](/D:/gongzuo/webgame/BoardGame/e2e/smashup/smashup-tutorial.e2e.ts)
 - 专用用例：`手机横屏下教程浮层不应跑出视口`
 - 当前代码已接入统一证据截图目录：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
 
 推荐直接执行：
 
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
 ```
 
 说明：
@@ -68,14 +68,14 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 - 如果需要绕过 `npm` 直接看最底层命令，仍可退回：
 
 ```bash
-node scripts/infra/run-e2e-command.mjs ci e2e/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口"
+node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口"
 ```
 
 ## 当前状态
 
 - 最新状态已经不是“只有代码和断言”，而是“代码、断言、专用 E2E 截图三者都已补齐”。
 - 当前仓库已经有这条专用用例生成的新版有效截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
 - 因此这轮可以把“教程浮层移动端横屏验收”视为已完成收口。
 - 下方保留的旧段落仅作为历史排查记录，不再代表当前运行结论。
 
@@ -87,7 +87,7 @@ node scripts/infra/run-e2e-command.mjs ci e2e/smashup-tutorial.e2e.ts --grep "�
 
 ```bash
 npm run typecheck
-npx eslint e2e/smashup-tutorial.e2e.ts src/components/tutorial/TutorialOverlay.tsx --max-warnings 999
+npx eslint e2e/smashup/smashup-tutorial.e2e.ts src/components/tutorial/TutorialOverlay.tsx --max-warnings 999
 ```
 
 结果：
@@ -125,7 +125,7 @@ npm run check:child-process:e2e
 
 ```bash
 npm run typecheck
-npx eslint e2e/smashup-tutorial.e2e.ts src/components/tutorial/TutorialOverlay.tsx --max-warnings 999
+npx eslint e2e/smashup/smashup-tutorial.e2e.ts src/components/tutorial/TutorialOverlay.tsx --max-warnings 999
 ```
 
 结果：
@@ -137,7 +137,7 @@ npx eslint e2e/smashup-tutorial.e2e.ts src/components/tutorial/TutorialOverlay.t
 命令：
 
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
 ```
 
 结果：
@@ -161,18 +161,18 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 - 下一步只需要在可执行 Playwright 子进程的环境中重跑：
 
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
 ```
 
 - 重跑后应优先检查：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
 
 ## 2026-03-16 补充验证
 
 这轮补做了两条和此前结论不同的核查，结果如下：
 
-1. 直接运行 `node node_modules/playwright/cli.js test e2e/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --list` 可以成功列出目标用例。
-2. 真正执行 `node node_modules/playwright/cli.js test e2e/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --workers=1` 时，不是立刻死在 Playwright 解析阶段，而是进入 `global-setup` 后，在启动单 worker E2E 服务时失败。
+1. 直接运行 `node node_modules/playwright/cli.js test e2e/smashup/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --list` 可以成功列出目标用例。
+2. 真正执行 `node node_modules/playwright/cli.js test e2e/smashup/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --workers=1` 时，不是立刻死在 Playwright 解析阶段，而是进入 `global-setup` 后，在启动单 worker E2E 服务时失败。
 
 本轮实际确认到的阻塞链路是：
 
@@ -207,7 +207,7 @@ PW_USE_DEV_SERVERS=true \
 VITE_DEV_PORT=6173 \
 GAME_SERVER_PORT=20000 \
 API_SERVER_PORT=21000 \
-node node_modules/playwright/cli.js test e2e/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --workers=1
+node node_modules/playwright/cli.js test e2e/smashup/smashup-tutorial.e2e.ts --grep "手机横屏下教程浮层不应跑出视口" --workers=1
 ```
 
 结果：
@@ -229,14 +229,14 @@ node node_modules/playwright/cli.js test e2e/smashup-tutorial.e2e.ts --grep "手
 
 ```bash
 npm run check:child-process:e2e
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
 ```
 
 结果：
 
 - `check:child-process:e2e` 仍然在 `fork` 阶段报 `spawn EPERM`。
 - `test:e2e:ci:file` 会先正确打印：
-  - 目标文件：`e2e/smashup-tutorial.e2e.ts`
+  - 目标文件：`e2e/smashup/smashup-tutorial.e2e.ts`
   - 用例名：`手机横屏下教程浮层不应跑出视口`
 - 随后同样停在同一层环境门禁：`fork -> spawn EPERM`。
 

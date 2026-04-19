@@ -22,7 +22,7 @@ npm run test:e2e:ci:file -- admin-feedback.e2e.ts "反馈页可展示分诊上�
 绝对路径：
 `D:\gongzuo\webgame\BoardGame\test-results\admin-feedback-ai-payload.png`
 
-![后台反馈一键复制包含状态 JSON](../test-results/admin-feedback-ai-payload.png)
+![后台反馈一键复制包含状态 JSON](../test-results/_shared/admin-feedback-ai-payload.png)
 
 ## 截图分析
 

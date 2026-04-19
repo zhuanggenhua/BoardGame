@@ -17,5 +17,5 @@
 ## 4. 验证
 
 - [x] 4.1 在现有 Smash Up smoke 中补 1-2 条典型用例，覆盖入口可用与出牌消耗。
-- [x] 4.2 在 `e2e/smashup-alien-terraform.e2e.ts` 中补 1 条真实浏览器用例，并看图确认。
+- [x] 4.2 在 `e2e/smashup/smashup-alien-terraform.e2e.ts` 中补 1 条真实浏览器用例，并看图确认。
 - [x] 4.3 更新 `evidence/` 与三件套，记录 proposal 落地结果。

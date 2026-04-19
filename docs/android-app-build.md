@@ -157,14 +157,10 @@ npm run mobile:android:native-update:publish -- --channel stable --skip-latest
   - 对兼容当前原生壳的 bundle，仍然按普通 OTA 处理
   - 不再在当前会话显示阻塞式下载/切换页
   - 仍然是后台下载并排队，切到后台或下次重启后生效
-- 需要更新 App
-  - manifest 声明 `forceUpdate: true`，但当前原生壳版本不满足兼容条件
-  - 不会继续下载 OTA bundle
-  - 会显示阻塞页，提示先更新 App
-- 不兼容但不强更
-  - manifest 未声明 `forceUpdate: true`，且当前原生壳版本不满足兼容条件
-  - 本次 OTA 直接跳过
-  - 不阻塞用户，也不显示强更页
+- 原生版本门禁（已废弃）
+  - 不再按 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion` 做 OTA 分流
+  - 即便 manifest 误带这些字段，运行时也会忽略并继续走 OTA
+  - 若需原生能力更新，必须另发 APK / AAB（不要靠 manifest 门禁）
 
 当前环境变量：
 
@@ -324,16 +320,17 @@ node scripts/mobile/release-android.mjs ota --channel stable --force-update --fo
 
 如果走 GitHub Actions 自动化：
 
-- `main` 分支合入影响 H5 bundle 的改动后，会自动发布到非生产 channel，默认是 `edge`
-- `stable` / `gray` 通过 Actions `Android OTA Publish` 手动触发
-- `stable` 建议绑定 `android-ota-production` Environment 审批，避免误发
+- `main` 分支合入影响 H5 bundle 的改动后，会自动发布 **stable OTA**
+- `gray` / `edge` 仍可通过 Actions `Android OTA Publish` 手动触发（`stable` 也可手动重发）
+- 如需人工审批，可在**手动** OTA workflow 上绑定 `android-ota-production` Environment
+- **原生壳更新始终手动发包**，不走 `main` 自动流程
 - 手动触发时，workflow 只保留 `force_update`、`force_update_title`、`force_update_message`；原生版本门禁参数已移除
 
 推荐发布策略：
 
-1. 日常合并到 `main`：自动发 `edge`
-2. 群友 / 测试机验证：手动发 `gray`
-3. 确认稳定：手动发 `stable`
+1. 日常合并到 `main`：自动发 **stable OTA**
+2. 灰度/测试机验证：手动发 `gray` 或 `edge`
+3. 需要原生壳更新时：手动发 native update（与 OTA 独立）
 
 可选参数：
 
@@ -419,8 +416,9 @@ Manifest 字段说明：
 
 - 预演发布先用 `--dry-run`
 - 小流量验证建议先发 `gray` 之类独立 channel，再切 `stable`
-- 当前 App 主线 OTA 语义已经调整为“启动即检查，发现新 bundle 时优先即时 OTA”，不再把正式更新口径建立在“后台下载完成、下次重启再生效”上
-- 只有原生版本不兼容且 manifest 显式声明 `forceUpdate: true` 时，才会进入 OTA 阻塞页；此时运行时会继续触发原生 APK 更新检查，要求用户安装新壳
+- 当前 App 主线 OTA 语义仍是“启动后后台检查，发现新 bundle 则后台下载并排队”
+- 如需“下载完成后立即切换”，需显式触发即时 OTA（例如通过发布参数 + 客户端即时检查入口）
+- 运行时不再按原生版本门禁阻断 OTA；若涉及原生能力变更，请按原生发布流程更新 APK / AAB
 - 若本次改动涉及原生层，仍必须重新打包安装验证，不能把 OTA 当成原生更新替代品
 
 ## 正式发版策略

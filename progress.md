@@ -123,7 +123,7 @@
   - Next: 补 workflow / evidence 文档并回填计划文件
 
 - **[12:50] Action**: 沉淀 workflow / contract / E2E evidence 文档
-  - Result: 已新增 `docs/workflows/smashup-faction-intake.md`、`evidence/smashup/smashup-oops-faction-intake-contract.md`、`evidence/smashup/smashup-oops-faction-intake-e2e-test.md`
+  - Result: 已新增 `docs/games/smashup/workflows/smashup-faction-intake.md`、`evidence/smashup/smashup-oops-faction-intake-contract.md`、`evidence/smashup/smashup-oops-faction-intake-e2e-test.md`
   - Next: 整理最终交付摘要
 
 ### Phase: gameplay proposal
@@ -218,7 +218,7 @@
   - Next: 跑浏览器层新交互 E2E，并输出证据文档。
 
 - **[17:32] Action**: 跑通三条 Oops gameplay E2E 并留存截图
-  - Result: `e2e/smashup-phase-transition-simple.e2e.ts` 已新增 `Ancient Egyptians bury/uncover`、`Cowboys duel direct click`、`Samurai extra play` 三条用例；三条命令均通过，并生成对应的 before/after 显式证据截图。
+  - Result: `e2e/smashup/smashup-phase-transition-simple.e2e.ts` 已新增 `Ancient Egyptians bury/uncover`、`Cowboys duel direct click`、`Samurai extra play` 三条用例；三条命令均通过，并生成对应的 before/after 显式证据截图。
   - Next: 写统一 evidence，并把真实覆盖边界回填到 planning 文件。
 
 - **[17:40] Action**: 汇总 gameplay E2E evidence 与残留风险
@@ -233,7 +233,7 @@
 **Status**: Complete
 
 - **[18:34] Action**: 将 Cowboys 决斗浏览器用例升级为官方链路并补关键截图点
-  - Result: `e2e/smashup-phase-transition-simple.e2e.ts` 中的 Cowboys 用例已从“选中敌方随从后直接结算”升级为完整 `Pinkerton -> 决斗牌 -> Deputy -> 结算` 链路，并新增 `pinkerton / duel-card / deputy-card / deputy-target / resolve` 五张显式证据截图。
+  - Result: `e2e/smashup/smashup-phase-transition-simple.e2e.ts` 中的 Cowboys 用例已从“选中敌方随从后直接结算”升级为完整 `Pinkerton -> 决斗牌 -> Deputy -> 结算` 链路，并新增 `pinkerton / duel-card / deputy-card / deputy-target / resolve` 五张显式证据截图。
   - Next: 运行用例并核对画面。
 
 - **[18:37] Action**: 借助 E2E 暴露并修复 Deputy 收尾的真实链路 bug

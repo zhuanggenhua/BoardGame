@@ -214,11 +214,7 @@ function parseOptionalEnvNumber(name) {
 }
 
 function resolveAdaptiveMemoryMinFreeGb() {
-    const totalMemoryGb = os.totalmem() / (1024 ** 3);
-    if (totalMemoryGb >= 8) {
-        return 1.5;
-    }
-    return 1;
+    return 1.5;
 }
 
 function resolveDefaultMemoryMinFreeGb(group) {

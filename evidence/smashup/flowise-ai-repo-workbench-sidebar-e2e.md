@@ -25,8 +25,8 @@
 
 截图路径：
 
-- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-01-sidebar-entry-visible.png`
-- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-02-chatbot-entry-visible.png`
+- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\smashup\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-01-sidebar-entry-visible.png`
+- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\smashup\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-02-chatbot-entry-visible.png`
 
 人工观察：
 
@@ -40,7 +40,7 @@
 
 截图路径：
 
-- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-03-chatbot-after-send.png`
+- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\smashup\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-03-chatbot-after-send.png`
 
 人工观察：
 
@@ -52,7 +52,7 @@
 
 截图路径：
 
-- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-04-chatbot-after-reset.png`
+- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\smashup\flowise-ai-repo-workbench\左侧页签应直达-AI-Repo-Workbench-官方聊天页并支持-projectPath-+-reset-04-chatbot-after-reset.png`
 
 人工观察：
 

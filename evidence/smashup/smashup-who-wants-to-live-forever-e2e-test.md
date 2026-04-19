@@ -24,9 +24,9 @@
 
 ### 端到端
 
-- [smashup-robot-hoverbot-chain.e2e.ts](/F:/gongzuo/webgame/BoardGame/e2e/smashup-robot-hoverbot-chain.e2e.ts#L331)
+- [smashup-robot-hoverbot-chain.e2e.ts](/F:/gongzuo/webgame/BoardGame/e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts#L331)
   - 正常完整流程：打出 `无人想要永生` -> 连续两次点选同一随从移除 2 个指示物 -> 只剩确认/取消 -> 点击确认 -> 手牌成功增加 2 张、行动进入弃牌堆。
-- [smashup-robot-hoverbot-chain.e2e.ts](/F:/gongzuo/webgame/BoardGame/e2e/smashup-robot-hoverbot-chain.e2e.ts#L417)
+- [smashup-robot-hoverbot-chain.e2e.ts](/F:/gongzuo/webgame/BoardGame/e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts#L417)
   - UI 回归流程：只有 1 个指示物时快速双击目标 -> 交互仍停留在确认步骤 -> 点击确认后正常抽牌，不会自动关闭。
 
 ## E2E 截图自审结论
@@ -47,7 +47,7 @@
 - 在当前 Codex 沙箱里，正式命令
 
 ```bash
-npm run test:e2e:ci -- e2e/smashup-robot-hoverbot-chain.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts
 ```
 
   会在启动测试基础设施前失败，不是业务断言失败：

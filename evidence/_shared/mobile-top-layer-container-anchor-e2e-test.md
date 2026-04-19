@@ -15,9 +15,9 @@ npm run test:e2e:ci:file -- smashup-image-loading.e2e.ts "进入本地对局时�
 ## 证据 1：Dice Throne 选角横屏无横向溢出
 
 截图路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\mobile-character-selection\character-selection-mobile-landscape.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\mobile-character-selection\character-selection-mobile-landscape.png`
 
-![Dice Throne 选角横屏截图](../test-results/evidence-screenshots/mobile-character-selection/character-selection-mobile-landscape.png)
+![Dice Throne 选角横屏截图](../test-results/evidence-screenshots/_shared/mobile-character-selection/character-selection-mobile-landscape.png)
 
 观察结论：
 
@@ -29,9 +29,9 @@ npm run test:e2e:ci:file -- smashup-image-loading.e2e.ts "进入本地对局时�
 ## 证据 2：SmashUp LoadingScreen 容器内显示正常
 
 截图路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\add-critical-image-preloading\critical-image-gate-loading.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\add-critical-image-preloading\critical-image-gate-loading.png`
 
-![SmashUp LoadingScreen 截图](../test-results/evidence-screenshots/add-critical-image-preloading/critical-image-gate-loading.png)
+![SmashUp LoadingScreen 截图](../test-results/evidence-screenshots/_shared/add-critical-image-preloading/critical-image-gate-loading.png)
 
 观察结论：
 

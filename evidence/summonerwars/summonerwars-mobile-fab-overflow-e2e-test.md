@@ -3,7 +3,7 @@
 ## 测试命令
 
 ```bash
-npm run test:e2e:ci:file -- e2e/summonerwars.e2e.ts "移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮"
+npm run test:e2e:ci:file -- e2e/summonerwars/summonerwars.e2e.ts "移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮"
 ```
 
 ## 本轮验收目标
@@ -16,7 +16,7 @@ npm run test:e2e:ci:file -- e2e/summonerwars.e2e.ts "移动横屏：展开后的
 
 ### 1. 顶部越界恢复后的长面板
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮\30-mobile-fab-expanded-top-overflow-recovered.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮\30-mobile-fab-expanded-top-overflow-recovered.png`
 
 人工复核：
 
@@ -26,7 +26,7 @@ npm run test:e2e:ci:file -- e2e/summonerwars.e2e.ts "移动横屏：展开后的
 
 ### 2. 底部越界恢复后的长面板
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮\31-mobile-fab-expanded-bottom-overflow-recovered.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮\31-mobile-fab-expanded-bottom-overflow-recovered.png`
 
 人工复核：
 
@@ -36,7 +36,7 @@ npm run test:e2e:ci:file -- e2e/summonerwars.e2e.ts "移动横屏：展开后的
 
 ### 3. 底部场景下短面板仍锚定当前按钮
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮\31b-mobile-fab-expanded-bottom-undo-anchor-zoom.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮\31b-mobile-fab-expanded-bottom-undo-anchor-zoom.png`
 
 人工复核：
 
@@ -46,7 +46,7 @@ npm run test:e2e:ci:file -- e2e/summonerwars.e2e.ts "移动横屏：展开后的
 
 ### 4. 展开态下结束阶段按钮仍可点击
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮\32-mobile-fab-expanded-end-phase-clickable.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：展开后的悬浮球上下拖拽时展开框仍会收回视口并让出结束阶段按钮\32-mobile-fab-expanded-end-phase-clickable.png`
 
 人工复核：
 
@@ -65,5 +65,5 @@ npm run test:e2e:ci:file -- e2e/summonerwars.e2e.ts "移动横屏：展开后的
 - `src/components/system/FabMenu.tsx`
   - 拖拽结束后不再通过 `animate left/top` 二次追位，改为把最终停靠位置与拖拽偏移在同一次布局提交里收敛。
   - 使用 `useLayoutEffect` 在位置落盘后的首个布局阶段清零 drag motion values，避免主球先回原位再追到目标位。
-- `e2e/summonerwars.e2e.ts`
+- `e2e/summonerwars/summonerwars.e2e.ts`
   - 在现有移动端 FAB 回归用例中补了释放帧采样，直接覆盖“回跳”和“展开框脱锚”这两个回归风险。

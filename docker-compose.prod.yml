@@ -48,6 +48,8 @@ services:
       MONGO_URI: mongodb://mongodb:27017/boardgame
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      FEEDBACK_API_URL: http://web/feedback
+      INTERNAL_FEEDBACK_TOKEN: ${INTERNAL_FEEDBACK_TOKEN}
     # 仅容器内部通信，不暴露到宿主机
     # 如需本地调试可临时取消注释
     # ports:
@@ -72,6 +74,7 @@ services:
       MONGO_URI: mongodb://mongodb:27017/boardgame
       REDIS_HOST: redis
       REDIS_PORT: 6379
+      INTERNAL_FEEDBACK_TOKEN: ${INTERNAL_FEEDBACK_TOKEN}
     ports:
       - "80:80"
 

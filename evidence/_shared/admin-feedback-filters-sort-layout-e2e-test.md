@@ -32,12 +32,12 @@ npm run test:api -- apps/api/test/feedback.e2e-spec.ts -t "admin 列表支持按
 
 ## 截图证据
 
-- 固定控制区截图绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\admin-feedback-controls-sticky.png`
-- 分页截图绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\admin-feedback-pagination.png`
+- 固定控制区截图绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\admin-feedback-controls-sticky.png`
+- 分页截图绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\admin-feedback-pagination.png`
 
-![后台反馈固定控制区截图](../test-results/evidence-screenshots/admin-feedback-controls-sticky.png)
+![后台反馈固定控制区截图](../test-results/evidence-screenshots/_shared/admin-feedback-controls-sticky.png)
 
-![后台反馈分页截图](../test-results/evidence-screenshots/admin-feedback-pagination.png)
+![后台反馈分页截图](../test-results/evidence-screenshots/_shared/admin-feedback-pagination.png)
 
 ## 结论
 

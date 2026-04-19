@@ -169,7 +169,9 @@
     "tap_again_to_activate": "Tap again to activate",
     "titan_ability": "Titan Ability",
     "titan_play_available": "Playable",
-    "no_valid_targets": "No valid targets"
+    "no_valid_targets": "No valid targets",
+    "faction_implementation_in_progress": "Implementation in Progress",
+    "faction_implementation_in_progress_hint": "This faction is being delivered in batches. Rules and interactions may continue to improve."
   },
   "feedback": {
     "deck_search_no_match": "No matching card found in deck. Deck reshuffled.",
@@ -448,6 +450,18 @@
     "vikings_pod": {
       "name": "Vikings",
       "description": "Force discards and burials, then turn them into extra payoff."
+    },
+    "mermaids": {
+      "name": "Mermaids",
+      "description": "Control bases with movement tricks and power suppression."
+    },
+    "skeletons": {
+      "name": "Skeletons",
+      "description": "Bury and recycle low-power minions from the discard pile."
+    },
+    "world_champs": {
+      "name": "World Champs",
+      "description": "A mixed all-star roster focused on extra actions and tempo bursts."
     }
   },
   "tutorial": {
@@ -1289,6 +1303,22 @@
       "name": "Emperor Penguin",
       "effectText": "Special: At the start of your turn, you may play this titan on a base where you have three or more minions. Ongoing: You may play minions off the top of your deck here instead of your regular minion play. Talent: Reveal a minion of power 3 or less in your hand or discard pile and shuffle it into your deck to place a +1 power counter on this titan."
     },
+    "dinosaurs_fort_titanosaurus": {
+      "name": "Fort Titanosaurus",
+      "effectText": "Special: Instead of your regular minion play, you may destroy one of your minions here to play this titan here and place +1 power counters on it equal to that minion's power. Ongoing: Once per turn after you play an action on one of your minions, you may place a +1 power counter on that minion, this titan, or both. Talent: If this titan has at least 4 +1 power counters, draw a card."
+    },
+    "ninjas_invisible_ninja": {
+      "name": "Invisible Ninja",
+      "effectText": "Special: If this titan was not in play at the start of your turn, you may discard a card to play it on a base where you have a minion. Ongoing: At the start of your turn, you may destroy this titan to play an extra minion of power 3 or less. Ongoing: After you destroy another player's minion or return one of your minions to your hand, look at the top two cards of your deck and draw one."
+    },
+    "killer_plants_killer_kudzu": {
+      "name": "Killer Kudzu",
+      "effectText": "Special: At the start of your turn, if this titan is not in play, place a +1 power counter on it. If it has 3 or more counters, you may play it instead of your regular minion. Ongoing: When this titan is removed from play, you may draw two cards or shuffle up to two minions from your discard pile into your deck. Talent: Remove this titan from play to play a minion from your discard pile with power less than or equal to its +1 power counters."
+    },
+    "frankenstein_the_bride": {
+      "name": "The Bride",
+      "effectText": "Special: At the start of your turn, if you have no titan in play, choose two different effects: box a minion from your hand or discard pile, destroy one of your minions, or remove a +1 power counter from one of your minions. Then play this titan on a base. Ongoing: The first time each turn one of your minions gains or loses a +1 power counter, draw a card. Talent: Place a +1 power counter on one of your minions here, or remove two +1 power counters from your minions to play an extra action."
+    },
     "super_spies_moon_zero_three": {
       "name": "Moon Zero Three",
       "effectText": "Special: Instead of your regular minion play, you may play this titan on a base with no other players' minions. Ongoing: After the first time each turn an ability is used to reveal, look at, or search for one or more cards from a player's deck, place a +1 power counter on this titan. Talent: Look at the top card of any deck. Place it on the top or bottom of that deck."
@@ -1302,34 +1332,44 @@
       "effectText": "Special: At the start of your turn, you may return one of your buried cards to your hand to play this titan on its base. Special: After a base scores while this titan is in play, you may return one of your buried cards there to your hand. Talent: Bury a card from your hand here."
     },
     "bear_cavalry_major_ursa": {
-      "name": "Major Ursa"
+      "name": "Major Ursa",
+      "effectText": "Special: You may play this titan on a base where you have a minion instead of playing a normal minion. Ongoing: After this titan moves to a base, you may move another player's minion of power 3 or less there to a different base. Talent: Place a +1 power counter on this titan, then move it to another base."
     },
     "ghosts_creampuff_man": {
-      "name": "Creampuff Man"
+      "name": "Creampuff Man",
+      "effectText": "Special: During your turn, if you have no cards in hand, you may play this titan. Ongoing: You have +5 power here, minus the number of cards in your hand (minimum +0). Talent: Discard a card to play an extra action from your discard pile. Place that action on the bottom of your deck instead of your discard pile."
     },
     "giant_ants_death_on_six_legs": {
-      "name": "Death on Six Legs"
+      "name": "Death on Six Legs",
+      "effectText": "Special: During your turn, if your minions have 7 or more +1 power counters, you may play this titan. Ongoing: Whenever a minion goes to the discard pile, move 1 +1 power counter from it onto this titan. Talent: Play an extra action."
     },
     "innsmouth_dagon": {
-      "name": "Dagon"
+      "name": "Dagon",
+      "effectText": "Special: During your turn, you may play this titan on a base where you have two or more minions with the same name. Ongoing: If there are minions with the same name here, each minion with that name gives you +1 power here. Talent: Play an extra minion."
     },
     "cthulhu_cthulhu_titan": {
-      "name": "Cthulhu"
+      "name": "Cthulhu",
+      "effectText": "Special: You may draw 2 Madness cards to play this titan on a base where you have a minion instead of playing a normal action. Ongoing: After you play or draw a Madness card, place a +1 power counter on this titan. Talent: Draw a Madness card, or put a Madness card from your hand into another player's hand."
     },
     "pirates_the_kraken": {
-      "name": "The Kraken"
+      "name": "The Kraken",
+      "effectText": "Special: If this titan is not in play, after a base where you have a minion scores, you may say \"Release the Kraken!\" to play it on the replacement base. Talent: Move this titan to another base. Other players' minions there each get -1 power until end of turn. Special: After this base scores, move one of your minions here to another base instead of discarding it."
     },
     "tricksters_big_funny_giant": {
-      "name": "Big Funny Giant"
+      "name": "Big Funny Giant",
+      "effectText": "Special: You may play this titan on a base with no players' minions instead of playing a normal minion. Ongoing: Other players must discard a card to play a minion here. At the end of your turn, if there are no other players' minions here, place a +1 power counter on this titan. Talent: Destroy a minion of power 2 or less on this base to move this titan to another base."
     },
     "vampires_ancient_lord": {
-      "name": "Ancient Lord"
+      "name": "Ancient Lord",
+      "effectText": "Special: After you place 2 or more +1 power counters on minions in a turn, you may play this titan. Ongoing: After you place a +1 power counter on one of your cards that doesn't already have a +1 power counter, place one additional +1 power counter on it. Talent: Place a +1 power counter on one of your minions here that already has a +1 power counter."
     },
     "werewolves_great_wolf_spirit": {
-      "name": "Great Wolf Spirit"
+      "name": "Great Wolf Spirit",
+      "effectText": "Special: During your turn, if you have the most power on two or more bases, you may play this titan on one of them. Ongoing: During your turn, your cards may use one additional talent. Talent: One of your minions gets +1 power until end of turn."
     },
     "wizards_arcane_protector": {
-      "name": "Arcane Protector"
+      "name": "Arcane Protector",
+      "effectText": "Special: After you play 5 or more cards in a turn, you may play this titan. Ongoing: For every 3 cards in your hand, you have +1 power here. Talent: Draw a card."
     },
     "base_the_homeworld": {
       "name": "The Homeworld",
@@ -2778,64 +2818,83 @@
       "abilityText": "(20, VP 4-2-1) 每当有一名玩家将战术打出到该基地时，该玩家可以额外打出一个战术。"
     },
     "base_the_homeworld_pod": {
-      "name": "The Homeworld"
+      "name": "The Homeworld",
+      "abilityText": "After each time a minion is played here, its owner may play an extra minion of power 2 or less."
     },
     "base_the_mothership_pod": {
-      "name": "The Mothership"
+      "name": "The Mothership",
+      "abilityText": "After this base scores, the winner may return one of their minions of power 3 or less here to their hand."
     },
     "base_the_jungle_pod": {
       "name": "The Jungle"
     },
     "base_tar_pits_pod": {
-      "name": "Tar Pits"
+      "name": "Tar Pits",
+      "abilityText": "After each time a minion is destroyed here, place it on the bottom of its owner's deck."
     },
     "base_pirate_cove_pod": {
-      "name": "Pirate Cove"
+      "name": "Pirate Cove",
+      "abilityText": "After this base scores, all players other than the winner may move one of their minions from here to another base instead of placing it in the discard pile."
     },
     "base_dread_lookout_pod": {
-      "name": "Dread Lookout"
+      "name": "Dread Lookout",
+      "abilityText": "Actions cannot be played on this base."
     },
     "base_haunted_house_al9000_pod": {
-      "name": "Haunted House"
+      "name": "Haunted House",
+      "abilityText": "After each time a player plays a minion here, they must discard a card."
     },
     "base_the_field_of_honor_pod": {
-      "name": "The Field of Honor"
+      "name": "The Field of Honor",
+      "abilityText": "After each time one or more minions are destroyed here, the player who destroyed them gains 1 VP."
     },
     "base_tsars_palace_pod": {
-      "name": "Tsar's Palace"
+      "name": "Tsar's Palace",
+      "abilityText": "Minions of power 2 or less cannot be played here."
     },
     "base_greenhouse_pod": {
-      "name": "Greenhouse"
+      "name": "Greenhouse",
+      "abilityText": "After this base scores, the winner may search their deck for a minion and play it on the replacement base."
     },
     "base_secret_garden_pod": {
-      "name": "Secret Garden"
+      "name": "Secret Garden",
+      "abilityText": "On your turn, you may play one extra minion of power 2 or less here."
     },
     "base_cat_fanciers_alley_pod": {
-      "name": "Cat Fancier's Alley"
+      "name": "Cat Fancier's Alley",
+      "abilityText": "Once per turn, you may destroy one of your minions here to draw a card."
     },
     "base_house_of_nine_lives_pod": {
-      "name": "House of Nine Lives"
+      "name": "House of Nine Lives",
+      "abilityText": "If a minion would be destroyed at another base, its owner may move it here instead."
     },
     "base_enchanted_glade_pod": {
-      "name": "Enchanted Glade"
+      "name": "Enchanted Glade",
+      "abilityText": "After you play an action on a minion here, draw a card."
     },
     "base_fairy_ring_pod": {
-      "name": "Fairy Ring"
+      "name": "Fairy Ring",
+      "abilityText": "The first time you play a minion here on each turn, you may play an extra minion here or an extra action."
     },
     "base_beautiful_castle_pod": {
-      "name": "Beautiful Castle"
+      "name": "Beautiful Castle",
+      "abilityText": "Minions here of power 5 or more are unaffected by other players' cards."
     },
     "base_castle_of_ice_pod": {
-      "name": "Castle of Ice"
+      "name": "Castle of Ice",
+      "abilityText": "Minions cannot be played here."
     },
     "base_land_of_balance_pod": {
-      "name": "Land of Balance"
+      "name": "Land of Balance",
+      "abilityText": "After you play a minion here, you may move one of your minions from another base to here."
     },
     "base_pony_paradise_pod": {
-      "name": "Pony Paradise"
+      "name": "Pony Paradise",
+      "abilityText": "If you have two or more minions here, your minions here cannot be destroyed."
     },
     "base_north_pole_pod": {
-      "name": "North Pole"
+      "name": "North Pole",
+      "abilityText": "Each player may play only one minion at this base each turn."
     },
     "base_antarctic_base_pod": {
       "name": "Antarctic Base",
@@ -2862,34 +2921,44 @@
       "abilityText": "The first time a player plays a minion here from their hand each turn, they may play an extra minion of the same name here."
     },
     "base_the_pasture_pod": {
-      "name": "The Pasture"
+      "name": "The Pasture",
+      "abilityText": "The first time a player moves a minion here each turn, they move a minion from another base to here."
     },
     "base_sheep_shrine_pod": {
-      "name": "Sheep Shrine"
+      "name": "Sheep Shrine",
+      "abilityText": "After this base enters play, each player may move one of their minions to here."
     },
     "base_castle_blood_pod": {
-      "name": "Castle Blood"
+      "name": "Castle Blood",
+      "abilityText": "After you play a minion here, if another player has more power here than you do, you may place a +1 power counter on that minion."
     },
     "base_crypt_pod": {
-      "name": "Crypt"
+      "name": "Crypt",
+      "abilityText": "When one or more minions here are destroyed, the player who destroyed them may place a +1 power counter on one of his or her minions here."
     },
     "base_laboratorium_pod": {
-      "name": "Laboratorium"
+      "name": "Laboratorium",
+      "abilityText": "After the first time each turn a minion is played here, its controller places a +1 power counter on it."
     },
     "base_golem_schloss_pod": {
-      "name": "Golem Schloss"
+      "name": "Golem Schloss",
+      "abilityText": "After this base scores, the winner places a +1 power counter on each of their minions."
     },
     "base_moot_site_pod": {
-      "name": "Moot Site"
+      "name": "Moot Site",
+      "abilityText": "After the first time each turn a minion is played here, it gains +2 power until the end of the turn."
     },
     "base_standing_stones_pod": {
-      "name": "Standing Stones"
+      "name": "Standing Stones",
+      "abilityText": "During your turn, one of your minions here can use its Talent twice."
     },
     "base_egg_chamber_pod": {
-      "name": "Egg Chamber"
+      "name": "Egg Chamber",
+      "abilityText": "Minions here with +1 power counters cannot be destroyed."
     },
     "base_the_hill_pod": {
-      "name": "The Hill"
+      "name": "The Hill",
+      "abilityText": "At the start of each player's turn, that player may move one of his or her minions from any base to here."
     },
     "pirate_cut_lass": {
       "name": "Cut Lass"
@@ -3348,6 +3417,206 @@
     },
     "*": {
       "type": "cards.*.type"
+    },
+    "mermaids_ultimate_song": {
+      "name": "Ultimate Song",
+      "effectText": "Move one of your minions here to another base. Then play an extra action there."
+    },
+    "mermaids_captive_audience": {
+      "name": "Captive Audience",
+      "effectText": "Move another player’s minion here to another base of your choice."
+    },
+    "mermaids_becalmed_shores": {
+      "name": "Becalmed Shores",
+      "effectText": "Play on a base. Ongoing: During your turn, other players’ minions here have -1 power. Talent: Move one of your minions here to another base."
+    },
+    "mermaids_siren_song": {
+      "name": "Siren Song",
+      "effectText": "Choose a base. Move a minion there to another base."
+    },
+    "mermaids_toll_bay": {
+      "name": "Toll Bay",
+      "effectText": "This turn, whenever another player moves a minion to a base where you have a minion, you may draw a card."
+    },
+    "mermaids_shipwreck_cove": {
+      "name": "Shipwreck Cove",
+      "effectText": "Play on a base. Special: After this base scores, you may play an extra minion on the replacement base."
+    },
+    "mermaids_charmed": {
+      "name": "Charmed",
+      "effectText": "Play on a minion. This turn, it contributes no power to its controller’s total."
+    },
+    "mermaids_desert_island": {
+      "name": "Desert Island",
+      "effectText": "Play on a base. Ongoing: Each player keeps at most one minion here; the rest return to owners’ hands."
+    },
+    "mermaids_siren": {
+      "name": "Siren",
+      "abilityText": "Ongoing: During your turn, other players’ minions here have -1 power."
+    },
+    "mermaids_charmer": {
+      "name": "Charmer",
+      "abilityText": "Talent: Move another player’s minion here to another base."
+    },
+    "mermaids_temptress": {
+      "name": "Temptress",
+      "abilityText": "Ongoing: This minion has +1 power for each of your other minions here."
+    },
+    "mermaids_mermaid_queen": {
+      "name": "Mermaid Queen",
+      "abilityText": "You may move an opponent’s minion here to another base."
+    },
+    "skeletons_gravestones": {
+      "name": "Gravestones",
+      "effectText": "Play on a base. Special: After this base scores, you may bury a power 3 or less minion from your discard pile on the replacement base."
+    },
+    "skeletons_burst_forth": {
+      "name": "Burst Forth",
+      "effectText": "Special: Before a base scores, you may uncover and play one of your buried minions there."
+    },
+    "skeletons_dig_em_up": {
+      "name": "Dig ’em Up",
+      "effectText": "Uncover and play one of your buried cards from any base."
+    },
+    "skeletons_place_em_down": {
+      "name": "Place ‘em Down",
+      "effectText": "Bury a power 3 or less minion from your hand on a base."
+    },
+    "skeletons_graveyard": {
+      "name": "Graveyard",
+      "effectText": "Play on a base. Talent: Bury a power 3 or less minion from your discard pile here."
+    },
+    "skeletons_hearse_fleet": {
+      "name": "Hearse Fleet",
+      "effectText": "At a base where you have a minion, bury up to two power 3 or less minions from your discard pile."
+    },
+    "skeletons_spooky_scary": {
+      "name": "Spooky, Scary...",
+      "effectText": "Put another player’s power 3 or less minion on a base into the discard pile."
+    },
+    "skeletons_grave_goods": {
+      "name": "Grave Goods",
+      "effectText": "Return a power 3 or less minion from your discard pile to your hand."
+    },
+    "skeletons_returned_one": {
+      "name": "Returned One",
+      "abilityText": "You may bury a power 3 or less minion from your hand here."
+    },
+    "skeletons_revenant": {
+      "name": "Revenant",
+      "abilityText": "Special: Once per turn, when your power 3 or less minion goes to the discard pile from another base, you may bury it on any base."
+    },
+    "skeletons_gravetender": {
+      "name": "Gravetender",
+      "abilityText": "Ongoing: This minion has +1 power for each buried card you have here."
+    },
+    "skeletons_lord_of_bones": {
+      "name": "Lord of Bones",
+      "abilityText": "Ongoing: This minion has +1 power for each power 3 or less minion you have here. Talent: Bury a power 3 or less minion from your discard pile here."
+    },
+    "world_champs_sheriff": {
+      "name": "Sheriff",
+      "abilityText": "Special: Before this base scores, this minion may duel another player’s minion here. Destroy the losing minion."
+    },
+    "world_champs_aramis": {
+      "name": "Aramis",
+      "abilityText": "Ongoing: Once during your turn, after you play an action that directly affects this minion, you may play another such action as an extra action."
+    },
+    "world_champs_stoneford": {
+      "name": "Stoneford",
+      "abilityText": "Search your deck for an action card, put it into your hand, then shuffle."
+    },
+    "world_champs_akye_the_turtle": {
+      "name": "Akye the Turtle",
+      "abilityText": "You may put a card from your hand into another player’s hand to draw two cards."
+    },
+    "world_champs_diva": {
+      "name": "Diva",
+      "abilityText": "Ongoing: Once each turn, when a standard action directly affects one or more of your other minions here, you may choose this minion to be affected the same way."
+    },
+    "world_champs_shield_maiden": {
+      "name": "Shield Maiden",
+      "abilityText": "Reveal the top card of another player’s deck. If it is an action or a minion of power 3 or less, put it into your hand. Otherwise, return it."
+    },
+    "world_champs_calicoin": {
+      "name": "Calicoin",
+      "abilityText": "You may place a +1 power counter on another minion here."
+    },
+    "world_champs_mummy": {
+      "name": "Mummy",
+      "abilityText": "Ongoing: After this base scores, you may bury this minion on another base."
+    },
+    "world_champs_rainbow_girl": {
+      "name": "Rainbow Girl",
+      "abilityText": "Your other minions here gain +1 power until end of turn."
+    },
+    "world_champs_samurai_chan": {
+      "name": "Samurai-Chan",
+      "abilityText": "Ongoing: After this minion goes to the discard pile from play, draw a card."
+    },
+    "world_champs_bewitched": {
+      "name": "Bewitched",
+      "effectText": "Play on a minion. Ongoing: This minion has +2 power. If it leaves play, transfer this action to another minion."
+    },
+    "world_champs_eh": {
+      "name": "Eh?",
+      "effectText": "Special: After you play your first action in a turn, you may play this card as an extra action. One of your minions gains +1 power until end of turn, and you may return this card to your hand instead of discarding it."
+    },
+    "world_champs_fast_as_lightning": {
+      "name": "Fast as Lightning",
+      "effectText": "Choose a minion. Until end of turn, it gains +2 power, and if it would go to the discard pile, return it to its owner’s hand instead."
+    },
+    "world_champs_fighting_spirit_prize": {
+      "name": "Fighting Spirit Prize",
+      "effectText": "Draw two cards and place two +1 power counters total on your minions."
+    },
+    "world_champs_high_speed_chase": {
+      "name": "High-Speed Chase",
+      "effectText": "Play on a base. Talent: Transfer this action to another base to move one of your minions from here to there. That minion gains +3 power until end of turn."
+    },
+    "world_champs_its_blitzin_time": {
+      "name": "It’s Blitzin’ Time!",
+      "effectText": "One of your minions gains +3 power until end of turn."
+    },
+    "world_champs_kaiju_conflict": {
+      "name": "Kaiju Conflict",
+      "effectText": "Play two extra actions."
+    },
+    "world_champs_mouse_bird_and_sausage": {
+      "name": "Mouse, Bird and Sausage",
+      "effectText": "Choose up to two minions of the same faction at a base to each gain +2 power until end of turn."
+    },
+    "world_champs_shark_tattoo": {
+      "name": "Shark Tattoo",
+      "effectText": "Play on one of your minions. Place a +1 power counter on it. Ongoing: At the start of your turn, if this is your only minion here, place a +1 power counter on it."
+    },
+    "world_champs_smart_set_up": {
+      "name": "Smart Set-Up",
+      "effectText": "Play on another player’s minion. Ongoing: After the first time each turn a minion is played here, draw a card."
+    },
+    "base_mermaid_pool": {
+      "name": "Mermaid Pool",
+      "abilityText": "On your turn, if you have a minion here, you may move another player’s minion here."
+    },
+    "base_mermaid_reef": {
+      "name": "Mermaid Reef",
+      "abilityText": "During your turn, other players’ minions here contribute 1 less power to their controller’s total."
+    },
+    "base_boneyard": {
+      "name": "Boneyard",
+      "abilityText": "Once during your turn, after one of your power 3 or less minions goes to the discard pile from another base, you may bury it here."
+    },
+    "base_ossuary": {
+      "name": "Ossuary",
+      "abilityText": "On your turn, you may bury a power 3 or less minion from your discard pile here."
+    },
+    "base_arena": {
+      "name": "Arena",
+      "abilityText": "After the first time you play a minion here during your turn, you may play an extra action or draw a card."
+    },
+    "base_hall_of_fame": {
+      "name": "Hall of Fame",
+      "abilityText": "The first minion you play here during your turn gains +2 power until end of turn."
     }
   },
   "endgame": {

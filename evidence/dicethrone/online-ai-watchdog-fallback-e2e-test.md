@@ -15,14 +15,14 @@
   - `openspec validate add-online-ai-watchdog-fallback --strict --no-interactive`
   - 结果：通过
 - E2E：
-  - `npm run test:e2e:ci:file -- e2e/dicethrone-simple-start.e2e.ts "Online AI 在 DiceThrone main2 阶段持续卡死时，服务端 watchdog 应自动多步收口到我方回合且不再弹失败提示"`
+  - `npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online AI 在 DiceThrone main2 阶段持续卡死时，服务端 watchdog 应自动多步收口到我方回合且不再弹失败提示"`
   - 结果：`1 passed`
 
 ## 关键截图
 
 ### 1. 卡死前（AI 停在 main2）
 
-- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Online-AI-在-DiceThrone-main2-阶段持续卡死时，服务端-watchdog-应自动多步收口到我方回合且不再弹失败提示\19-online-ai-main2-stalled-before-watchdog.png`
+- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-AI-在-DiceThrone-main2-阶段持续卡死时，服务端-watchdog-应自动多步收口到我方回合且不再弹失败提示\19-online-ai-main2-stalled-before-watchdog.png`
 - 我实际看到：
   1. 左侧回合顺序高亮停在 `6. 主阶段(2)`，说明场景确实卡在 AI 的 `main2`。
   2. 画面中央有明显的 `AI 2 号位 / 正在思考中` 覆层，说明当前仍处于 AI 卡住前的等待态。
@@ -32,7 +32,7 @@
 
 ### 2. watchdog 收口后（回到真人 main1）
 
-- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Online-AI-在-DiceThrone-main2-阶段持续卡死时，服务端-watchdog-应自动多步收口到我方回合且不再弹失败提示\20-online-ai-main2-stalled-after-watchdog.png`
+- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-AI-在-DiceThrone-main2-阶段持续卡死时，服务端-watchdog-应自动多步收口到我方回合且不再弹失败提示\20-online-ai-main2-stalled-after-watchdog.png`
 - 我实际看到：
   1. 左侧回合顺序高亮已经切到 `3. 主阶段(1)`，不再停在 AI 的 `main2 / discard`。
   2. 左下角真人资源区显示 `生命 50 / CP 2`，下方手牌已经展开，说明已经回到真人可继续操作的正常主阶段链路。

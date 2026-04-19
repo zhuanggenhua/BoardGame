@@ -19,7 +19,23 @@ ENV/
 # 构建输出
 dist
 dist-ssr
+*.tgz
 *.local
+*.tgz
+
+# 压缩包/归档文件
+*.zip
+*.7z
+*.rar
+*.tar
+*.tar.gz
+*.tar.bz2
+*.tar.xz
+*.gz
+*.bz2
+*.xz
+*.zst
+*.lz4
 
 # 编辑器目录和文件
 .vscode/*
@@ -68,7 +84,9 @@ nul
 # - public/assets/i18n/zh-CN/* 为符号链接（本地构建产物），不提交
 public/assets/**
 **/*.png
-!evidence/assets/**/*.png
+!evidence/**/assets/**/*.png
+!evidence/**/screenshots/**/*.png
+!evidence/**/_captured/**/*.png
 public/**/*.jpg
 public/**/*.jpeg
 public/**/*.gif
@@ -84,6 +102,10 @@ public/**/*.flac
 public/**/*.m4a
 public/**/*.mp4
 public/**/*.webm
+
+# Home V2 书本壳素材需要跟仓，不能继续被资源忽略规则吞掉
+!public/assets/common/images/home-v2/
+!public/assets/common/images/home-v2/**
 
 # 资源清单与 demo 例外
 !public/assets/
@@ -154,6 +176,8 @@ fix-*.md
 test-*.md
 *-summary.md
 *-analysis.md
+!docs/bugs/*/*.md
+!docs/bugs/*/*.txt
 *-report.md
 *-status.md
 
@@ -196,3 +220,7 @@ android/build/
 android/captures/
 android/keystore.properties
 android/keystores/
+
+# Python/cache/temp artifacts
+**/__pycache__/
+.merge_file_*

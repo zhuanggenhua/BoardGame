@@ -174,7 +174,7 @@
   - `src/engine/transport/react.tsx`
   - `src/games/smashup/domain/index.ts`
 - E2E：
-  - `e2e/smashup-robot-hoverbot-chain.e2e.ts`
+  - `e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts`
   - `e2e/test-mode-basic.e2e.ts`
   - `e2e/smashup-afterscoring-card-play.e2e.ts`
 
@@ -184,8 +184,8 @@
 - `src/engine/systems/__tests__/InteractionSystem-auto-injection.test.ts` 是对通用刷新、live 校验与兼容字段映射的有效覆盖补强，保留。
 - `src/engine/transport/react.tsx` 把最小化空白状态初始化从历史遗留的 `sys.flow.phase` 改为现行的 `sys.phase`，属于有效修复，保留。
 - `src/games/smashup/domain/index.ts` 当前真实 diff 中保留的是 afterScoring 响应窗口打开事件透传修复，判断为有效。
-- `e2e/smashup-robot-hoverbot-chain.e2e.ts` 与 `e2e/test-mode-basic.e2e.ts` 当前判断是有效测试；其中 `test-mode-basic` 走的是仓库当前真实可用的 `/play/<gameId>/test` TestHarness 流程，不按“旧 fixture”判残留。
-- 旧 `e2e/smashup-afterscoring-card-play.e2e.ts` 的删除属于淘汰旧 `fixtures + harness.state.patch()` 模式；其新框架替代稿为 `e2e/smashup-afterscoring-simple-complete.e2e.ts`，当前保留为未跟踪有效文件。
+- `e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts` 与 `e2e/test-mode-basic.e2e.ts` 当前判断是有效测试；其中 `test-mode-basic` 走的是仓库当前真实可用的 `/play/<gameId>/test` TestHarness 流程，不按“旧 fixture”判残留。
+- 旧 `e2e/smashup-afterscoring-card-play.e2e.ts` 的删除属于淘汰旧 `fixtures + harness.state.patch()` 模式；其新框架替代稿为 `e2e/smashup/smashup-afterscoring-simple-complete.e2e.ts`，当前保留为未跟踪有效文件。
 
 ## 4. 已修掉的真实逻辑问题
 
@@ -259,7 +259,7 @@
 
 ### 仍保留的未跟踪有效文件
 
-- `e2e/smashup-afterscoring-simple-complete.e2e.ts`
+- `e2e/smashup/smashup-afterscoring-simple-complete.e2e.ts`
 - `src/games/dicethrone/ui/abilityChoiceText.ts`
 - `src/games/dicethrone/ui/abilitySlotMapping.ts`
 - `src/games/smashup/__tests__/helpers/simpleChoiceAst.ts`
@@ -268,7 +268,7 @@
 
 本轮新增清理：
 
-- `e2e/framework-pilot-ninja-infiltrate.e2e.ts`
+- `e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts`
 - `evidence/framework-pilot-ninja-infiltrate-fix.md`
 - `src/games/smashup/__tests__/ninja-infiltrate-unit.test.ts`
 - `src/games/smashup/__tests__/ninjaInfiltrateUnit.test.ts`

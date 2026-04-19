@@ -26,8 +26,8 @@ Android 统一发布入口
   node scripts/mobile/release-android.mjs full [选项]
 
 子命令:
-  ota       先 doctor + sync, 再发布 OTA
-  native    可选 bump 版本, 再 build release + 发布原生 APK 更新
+  ota       先 doctor + typecheck + sync, 再发布 OTA
+  native    可选 bump 版本, 再 typecheck + build release + 发布原生 APK 更新
   packages  发布 Android 游戏包
   full      依次执行 OTA -> 可选 packages -> native
 
@@ -124,6 +124,21 @@ const logStep = (message) => {
     console.log(`\n[android-release] ${message}`);
 };
 
+let didTypecheck = false;
+const runTypecheck = async () => {
+    if (didTypecheck) {
+        return;
+    }
+    didTypecheck = true;
+
+    logStep('执行 TypeScript typecheck');
+    const tscPath = path.join(rootDir, 'node_modules', 'typescript', 'bin', 'tsc');
+    if (!existsSync(tscPath)) {
+        throw new Error('未找到 TypeScript 编译器（node_modules/typescript/bin/tsc）。请先安装依赖后再发布。');
+    }
+    await runCommand(process.execPath, [tscPath, '--noEmit']);
+};
+
 const ensureNoNativeVersionOverride = () => {
     if (readArgValue('version', '', args)) {
         throw new Error('native / full 不支持 --version。若要改原生版本，请使用 --bump，并让 package.json 作为单一真实来源。');
@@ -179,6 +194,26 @@ const applyReleaseShellDefaults = () => {
     logStep(`release 壳配置: appId=${process.env.CAPACITOR_APP_ID}, appName=${process.env.CAPACITOR_APP_NAME}`);
 };
 
+const forbiddenOtaCompatibilityArgs = [
+    'target-native-version',
+    'min-native-version',
+    'max-native-version',
+    'allow-legacy-shells',
+];
+
+const ensureNoForbiddenOtaCompatibilityArgs = (sourceArgs = args) => {
+    const matched = forbiddenOtaCompatibilityArgs.filter(
+        (name) => hasFlag(name, sourceArgs) || readArgValue(name, '', sourceArgs) !== '',
+    );
+    if (matched.length === 0) {
+        return;
+    }
+    throw new Error(
+        `已禁止按原生版本做 OTA 门禁：${matched.map((name) => `--${name}`).join(', ')}。`
+        + ' 当前项目规则是“所有版本都必须更新”，OTA manifest 不得再写 targetNativeVersion/minNativeVersion/maxNativeVersion。',
+    );
+};
+
 const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
     new Set([
         'channel',
@@ -189,7 +224,7 @@ const buildOtaArgs = (sourceArgs = args) => collectPassthroughArgs(
         'force-update-message',
         'notes',
     ]),
-    new Set(['dry-run', 'skip-latest', 'force-update', 'no-force-update', 'allow-legacy-shells']),
+    new Set(['dry-run', 'skip-latest', 'force-update', 'no-force-update']),
     sourceArgs,
 );
 
@@ -263,7 +298,9 @@ const buildOtaArgsWithExpectedVersion = (releaseVersion, sourceArgs = args) => [
 
 const runOtaRelease = async () => {
     const releaseInfo = prepareReleaseVersion();
+    ensureNoForbiddenOtaCompatibilityArgs();
     await runDoctor();
+    await runTypecheck();
     await runSync();
     logStep(`发布 Android OTA (expectedBaseVersion=${releaseInfo.version})`);
     await runNodeScript('scripts/mobile/publish-android-ota.mjs', buildOtaArgsWithExpectedVersion(releaseInfo.version));
@@ -285,6 +322,7 @@ const prepareNativeVersion = () => {
 const runNativeRelease = async () => {
     const nativeInfo = prepareNativeVersion();
     await runDoctor();
+    await runTypecheck();
     if (!hasFlag('skip-build', args)) {
         await runBuildRelease();
     } else {
@@ -298,6 +336,7 @@ const shouldRunPackagesInFull = () => hasFlag('with-packages', args) || Boolean(
 
 const runFullRelease = async () => {
     const nativeInfo = prepareNativeVersion();
+    ensureNoForbiddenOtaCompatibilityArgs();
     await runDoctor();
     await runSync();
     logStep(`发布 Android OTA (expectedBaseVersion=${nativeInfo.version})`);

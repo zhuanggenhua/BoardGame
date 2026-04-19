@@ -13,7 +13,7 @@
 - 显式交互元数据保留在 `src/games/smashup/abilities/killer_plants.ts`
 - `responseValidationMode: 'live'` 保留在 `src/games/smashup/abilities/killer_plants.ts`
 - 审计断言保留在 `src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts`
-- 代表性 E2E 保留并补充在 `e2e/smashup-robot-hoverbot-new.e2e.ts`
+- 代表性 E2E 保留并补充在 `e2e/smashup/smashup-robot-hoverbot-new.e2e.ts`
 
 ## 验证命令
 
@@ -21,7 +21,7 @@
 
 ```bash
 npx tsc --noEmit
-npx eslint vite.config.ts playwright.config.ts e2e/smashup-robot-hoverbot-new.e2e.ts src/games/smashup/abilities/killer_plants.ts src/games/smashup/abilities/wizards.ts src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts
+npx eslint vite.config.ts playwright.config.ts e2e/smashup/smashup-robot-hoverbot-new.e2e.ts src/games/smashup/abilities/killer_plants.ts src/games/smashup/abilities/wizards.ts src/games/smashup/domain/baseAbilities_expansion.ts src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts
 ```
 
 说明：
@@ -32,7 +32,7 @@ npx eslint vite.config.ts playwright.config.ts e2e/smashup-robot-hoverbot-new.e2
 ### 目标 E2E
 
 ```bash
-npx cross-env PW_USE_DEV_SERVERS=true PW_PORT=5173 VITE_FRONTEND_URL=http://localhost:5173 GAME_SERVER_PORT=18000 API_SERVER_PORT=18001 PW_GAME_SERVER_PORT=18000 PW_API_SERVER_PORT=18001 npx playwright test e2e/smashup-robot-hoverbot-new.e2e.ts --grep "嫩芽牌库检索交互应显示卡牌选项并允许跳过"
+npx cross-env PW_USE_DEV_SERVERS=true PW_PORT=5173 VITE_FRONTEND_URL=http://localhost:5173 GAME_SERVER_PORT=18000 API_SERVER_PORT=18001 PW_GAME_SERVER_PORT=18000 PW_API_SERVER_PORT=18001 npx playwright test e2e/smashup/smashup-robot-hoverbot-new.e2e.ts --grep "嫩芽牌库检索交互应显示卡牌选项并允许跳过"
 ```
 
 结果：
@@ -43,7 +43,7 @@ npx cross-env PW_USE_DEV_SERVERS=true PW_PORT=5173 VITE_FRONTEND_URL=http://loca
 
 ### 1. 交互已显示可选项
 
-![嫩芽交互可见](./screenshots/sprout-prompt-visible.png)
+![嫩芽交互可见](../_shared/screenshots/sprout-prompt-visible.png)
 
 观察结果：
 
@@ -59,7 +59,7 @@ npx cross-env PW_USE_DEV_SERVERS=true PW_PORT=5173 VITE_FRONTEND_URL=http://loca
 
 ### 2. 跳过后交互正常结束
 
-![嫩芽交互跳过后状态](./screenshots/sprout-prompt-skipped.png)
+![嫩芽交互跳过后状态](../_shared/screenshots/sprout-prompt-skipped.png)
 
 观察结果：
 

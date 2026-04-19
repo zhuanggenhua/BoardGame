@@ -3,7 +3,7 @@
 ## 问题描述
 
 **日期**: 2026-03-09  
-**测试**: `e2e/smashup-complex-multi-base-scoring.e2e.ts`  
+**测试**: `e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`
 **症状**: afterScoring 响应窗口陷入无限循环，RESPONSE_PASS 命令无法推进响应者
 
 ## 根本原因
@@ -117,7 +117,7 @@ npm run test:e2e:ci -- smashup-complex-multi-base-scoring.e2e.ts
 
 ## 相关文档
 
-- `evidence/smashup-complex-multi-base-scoring-framework-migration.md` - 测试框架迁移文档
+- `evidence/smashup/smashup-complex-multi-base-scoring-framework-migration.md` - 测试框架迁移文档
 - `evidence/smashup/response-window-interaction-failure-fix.md` - 之前修复的类似问题
 - `src/engine/systems/ResponseWindowSystem.ts` - 响应窗口系统源码
 

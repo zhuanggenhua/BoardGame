@@ -60,8 +60,8 @@
 
 ## 测试文件
 
-- 测试文件：`e2e/smashup-response-window-pass-test.e2e.ts`
-- 测试截图：历史截图已清理；如需重新取证，请重跑对应 E2E，统一输出目录为 `test-results/evidence-screenshots/`
+- 测试文件：`e2e/smashup/smashup-response-window-pass-test.e2e.ts`
+- 测试截图：历史截图已清理；如需重新取证，请重跑对应 E2E，统一输出目录为 `test-results/evidence-screenshots/smashup/`
 
 ## 结论
 

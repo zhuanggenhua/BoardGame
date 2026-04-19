@@ -59,8 +59,8 @@ adb -s emulator-5560 install -r D:\gongzuo\webgame\BoardGame\android\app\build\o
 
 ### 验证结果
 产物：
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\android-smashup-asset-fallback-fix\screen.png`
-- DOM 检查：`D:\gongzuo\webgame\BoardGame\test-results\android-smashup-asset-fallback-fix\inspect.json`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\smashup\android-smashup-asset-fallback-fix\screen.png`
+- DOM 检查：`D:\gongzuo\webgame\BoardGame\test-results\smashup\android-smashup-asset-fallback-fix\inspect.json`
 
 关键结论：
 - 共检查 24 个派系列表项。

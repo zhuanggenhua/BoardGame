@@ -2,16 +2,16 @@
 
 ## 测试用例
 
-- 文件：`e2e/lobby.e2e.ts`
+- 文件：`e2e/_shared/lobby.e2e.ts`
 - 用例：`创建房间时会显示进入对局 loading`
 - 命令：`npm run test:e2e:ci:file -- lobby.e2e.ts "创建房间时会显示进入对局 loading"`
 
 ## 截图
 
-![创建房间进入对局 loading](../test-results/evidence-screenshots/lobby.e2e/创建房间时会显示进入对局-loading/lobby-tictactoe-create-room-loading.png)
+![创建房间进入对局 loading](../test-results/evidence-screenshots/_shared/lobby.e2e/创建房间时会显示进入对局-loading/lobby-tictactoe-create-room-loading.png)
 
 截图绝对路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\创建房间时会显示进入对局-loading\lobby-tictactoe-create-room-loading.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\创建房间时会显示进入对局-loading\lobby-tictactoe-create-room-loading.png`
 
 ## 人工观察结论
 

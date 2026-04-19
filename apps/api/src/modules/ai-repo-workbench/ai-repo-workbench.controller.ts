@@ -27,7 +27,7 @@ export class AiRepoWorkbenchController {
     }
 
     @Get('host-catalog')
-    getHostCatalog() {
+    async getHostCatalog() {
         return this.workbenchService.getHostCatalog();
     }
 

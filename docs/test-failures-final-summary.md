@@ -71,7 +71,7 @@ const destroyEvents = destroyEventsRaw.filter(e => {
 - `src/games/smashup/__tests__/interactionChainE2E.test.ts` - 跳过 alien_probe
 
 ### 文档
-- `docs/bugs/smashup-igor-double-trigger-root-cause-final.md` - 根因分析
+- `docs/bugs/smashup/smashup-igor-double-trigger-root-cause-final.md` - 根因分析
 - `docs/test-failures-progress-2026-02-28.md` - 修复进度
 - `docs/test-failures-final-summary.md` - 本文档
 

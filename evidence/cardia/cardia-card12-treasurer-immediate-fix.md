@@ -217,7 +217,7 @@ function reduceOngoingAbilityRemoved(
 
 需要更新以下测试：
 
-1. `e2e/cardia-deck1-card12-treasurer.e2e.ts`
+1. `e2e/cardia/cardia-deck1-card12-treasurer.e2e.ts`
    - 验证财务官能力在激活时立即生效
    - 验证给上一个遭遇的获胜卡牌额外印戒
    - 验证虚空法师移除持续标记时，额外印戒被收回

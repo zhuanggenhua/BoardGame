@@ -151,4 +151,4 @@ if (state.sys.flowHalted && !state.sys.interaction.current && !state.sys.respons
 - `src/engine/systems/ResponseWindowSystem.ts` - 响应窗口系统实现
 - `src/games/smashup/domain/index.ts` - onPhaseExit 和 onAutoContinueCheck
 - `src/games/smashup/__tests__/afterScoring-rescoring.test.ts` - 测试文件
-- `evidence/smashup-after-scoring-rescoring-analysis.md` - 之前的分析文档
+- `evidence/smashup/smashup-after-scoring-rescoring-analysis.md` - 之前的分析文档

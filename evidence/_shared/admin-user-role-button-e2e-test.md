@@ -6,7 +6,7 @@
 
 ## 测试文件
 
-- `e2e/admin-ugc.e2e.ts`
+- `e2e/_shared/admin-ugc.e2e.ts`
 
 对应新增用例：
 
@@ -15,12 +15,13 @@
 ## 执行命令
 
 ```bash
-npm run test:e2e:ci -- e2e/admin-ugc.e2e.ts
+npm run test:e2e:ci -- e2e/_shared/admin-ugc.e2e.ts
 ```
 
 ## 截图
 
-![后台用户详情页提升管理员通过截图](screenshots/admin-user-role-button-e2e.png)
+- 当前仓库未保留该用例的稳定截图文件（原引用：`screenshots/admin-user-role-button-e2e.png`）。
+- 本文档暂保留当时人工审阅结论；如后续再次回归该链路，需补档到 `evidence/_shared/screenshots/` 或引用新的 `test-results/evidence-screenshots/_shared/` 绝对路径。
 
 ## 截图分析
 

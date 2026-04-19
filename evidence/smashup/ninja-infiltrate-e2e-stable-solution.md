@@ -82,7 +82,7 @@ test('test name', async ({ page }, testInfo) => {
 - 直接进入游戏状态
 - 状态注入稳定可靠
 - 测试速度快
-- 参考示例：`e2e/smashup-ninja-acolyte-extra-minion.e2e.ts`
+- 参考示例：`e2e/smashup/smashup-ninja-acolyte-extra-minion.e2e.ts`
 
 ## 最终方案
 
@@ -97,7 +97,7 @@ test('test name', async ({ page }, testInfo) => {
 3. **长期**：所有新测试统一使用 GameTestContext API
 
 ### 测试文件状态
-- 文件：`e2e/smashup-ninja-infiltrate.e2e.ts`
+- 文件：`e2e/smashup/smashup-ninja-infiltrate.e2e.ts`
 - 状态：已编写，使用 `smashupMatch` fixture
 - 问题：派系选择流程不稳定
 - 下一步：改用 GameTestContext API（方案 3）
@@ -123,6 +123,6 @@ test('test name', async ({ page }, testInfo) => {
 
 ## 参考文档
 - `AGENTS.md` 第 780-820 行：E2E 测试规范
-- `e2e/smashup-ninja-acolyte-extra-minion.e2e.ts`：GameTestContext 使用示例
+- `e2e/smashup/smashup-ninja-acolyte-extra-minion.e2e.ts`：GameTestContext 使用示例
 - `e2e/framework/GameTestContext.ts`：GameTestContext API 文档
 - `evidence/smashup/ninja-infiltrate-test-mode-issue.md`：测试模式问题总结

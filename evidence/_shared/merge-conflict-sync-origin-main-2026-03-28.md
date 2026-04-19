@@ -49,7 +49,7 @@
 ## 4. 风险评估
 - 风险点 1：`task_plan.md / findings.md / progress.md` 选择保留当前 worktree 主线，后续若有人误以为这些文件应同时承载多条 worktree 任务，可能再次引发冲突。
 - 风险点 2：`core-types.ts` 同时保留 `resolveCustomActionId` 与 `diceOwnerId` 后，若后续还有新的 `selectPlayer` 元数据扩展，仍需继续按“显式并存”原则处理，不能回退成单边覆盖。
-- 风险点 3：`e2e/dicethrone-simple-start.e2e.ts` 虽未形成文本冲突，但主分支与本分支都改了该文件；需要用回归确认自动合并没有破坏四人目标牌用例。
+- 风险点 3：`e2e/dicethrone/dicethrone-simple-start.e2e.ts` 虽未形成文本冲突，但主分支与本分支都改了该文件；需要用回归确认自动合并没有破坏四人目标牌用例。
 
 ## 5. 回归与行为变化登记
 

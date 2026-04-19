@@ -37,20 +37,20 @@ npm run typecheck
 $env:PW_PORT='6281'
 $env:PW_GAME_SERVER_PORT='20207'
 $env:PW_API_SERVER_PORT='21207'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "奶油泡芙美人天赋可在 UI 中先弃手牌，再额外打出弃牌堆标准战术并将其放到牌库底"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "奶油泡芙美人天赋可在 UI 中先弃手牌，再额外打出弃牌堆标准战术并将其放到牌库底"
 ```
 
 ### 本轮执行结果
 
 - `npm run typecheck` 通过
 - `奶油泡芙美人` 单条浏览器链：
-  - `$env:PW_PORT='6281'; ...; npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "奶油泡芙美人天赋可在 UI 中先弃手牌，再额外打出弃牌堆标准战术并将其放到牌库底"`：`1 passed`
+  - `$env:PW_PORT='6281'; ...; npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "奶油泡芙美人天赋可在 UI 中先弃手牌，再额外打出弃牌堆标准战术并将其放到牌库底"`：`1 passed`
 
 ### 本轮产出的截图
 
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\奶油泡芙美人天赋可在-UI-中先弃手牌，再额外打出弃牌堆标准战术并将其放到牌库底\creampuff-talent-discard-choice.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\奶油泡芙美人天赋可在-UI-中先弃手牌，再额外打出弃牌堆标准战术并将其放到牌库底\creampuff-talent-play-choice.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\奶油泡芙美人天赋可在-UI-中先弃手牌，再额外打出弃牌堆标准战术并将其放到牌库底\creampuff-talent-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\奶油泡芙美人天赋可在-UI-中先弃手牌，再额外打出弃牌堆标准战术并将其放到牌库底\creampuff-talent-discard-choice.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\奶油泡芙美人天赋可在-UI-中先弃手牌，再额外打出弃牌堆标准战术并将其放到牌库底\creampuff-talent-play-choice.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\奶油泡芙美人天赋可在-UI-中先弃手牌，再额外打出弃牌堆标准战术并将其放到牌库底\creampuff-talent-resolved.png`
 
 ## 2026-03-28 Update: Time Box / 时间盒子 运行时闭环
 
@@ -63,8 +63,8 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6279'
 $env:PW_GAME_SERVER_PORT='20205'
 $env:PW_API_SERVER_PORT='21205'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "时间盒子可在达到第 5 枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度"
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "时间盒子可在达到第 5 枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 本轮执行结果
@@ -73,16 +73,16 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native -t "时间盒子"`：`3 passed`
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native`：`78 passed`
 - 单条 `Time Box` 浏览器链：
-  - `$env:PW_PORT='6279'; ...; npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "时间盒子可在达到第 5 枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度"`：`1 passed`
-- 独立端口整份 `e2e/smashup-alien-terraform.e2e.ts`：`32 passed`
+  - `$env:PW_PORT='6279'; ...; npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "时间盒子可在达到第 5 枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度"`：`1 passed`
+- 独立端口整份 `e2e/smashup/smashup-alien-terraform.e2e.ts`：`32 passed`
 - 中途确实清掉了并发残留的重复 `openTimeBoxSpecialScene / openTimeBoxTalentScene`，但最终整份复跑已经恢复稳定，不再把之前的掉线尝试视为当前结论。
 
 ### 本轮实际复看的截图
 
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\时间盒子可在达到第-5-枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度\time-box-play-choice.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\时间盒子可在达到第-5-枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度\time-box-play-resolved.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\时间盒子可在达到第-5-枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度\time-box-talent-ready.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\时间盒子可在达到第-5-枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度\time-box-talent-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\时间盒子可在达到第-5-枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度\time-box-play-choice.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\时间盒子可在达到第-5-枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度\time-box-play-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\时间盒子可在达到第-5-枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度\time-box-talent-ready.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\时间盒子可在达到第-5-枚计数后进场，并通过天赋提供此基地额外低战力随从与额外战术额度\time-box-talent-resolved.png`
 
 ### 人工观察结论
 
@@ -108,7 +108,7 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "移动城堡天赋会先选目标基地，再通过多选交互把至多三个己方随从与泰坦一起移动过去"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "移动城堡天赋会先选目标基地，再通过多选交互把至多三个己方随从与泰坦一起移动过去"
 ```
 
 ### 本轮执行结果
@@ -121,9 +121,9 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "移动城堡天�
 
 ### 本轮实际复看的截图
 
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\移动城堡天赋会先选目标基地，再通过多选交互把至多三个己方随从与泰坦一起移动过去\walking-castle-talent-choose-base.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\移动城堡天赋会先选目标基地，再通过多选交互把至多三个己方随从与泰坦一起移动过去\walking-castle-talent-choose-minions.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\移动城堡天赋会先选目标基地，再通过多选交互把至多三个己方随从与泰坦一起移动过去\walking-castle-talent-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\移动城堡天赋会先选目标基地，再通过多选交互把至多三个己方随从与泰坦一起移动过去\walking-castle-talent-choose-base.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\移动城堡天赋会先选目标基地，再通过多选交互把至多三个己方随从与泰坦一起移动过去\walking-castle-talent-choose-minions.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\移动城堡天赋会先选目标基地，再通过多选交互把至多三个己方随从与泰坦一起移动过去\walking-castle-talent-resolved.png`
 
 ### 人工观察结论
 
@@ -148,19 +148,19 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6275'
 $env:PW_GAME_SERVER_PORT='20201'
 $env:PW_API_SERVER_PORT='21201'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "硕大圆石可在随从移离后移动到目标基地并消灭低于其标记数的随从"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "硕大圆石可在随从移离后移动到目标基地并消灭低于其标记数的随从"
 $env:PW_PORT='6276'
 $env:PW_GAME_SERVER_PORT='20202'
 $env:PW_API_SERVER_PORT='21202'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "哥佐拉在本基地打出战术后会加 1 标记并可通过交互抽 1 张牌"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "哥佐拉在本基地打出战术后会加 1 标记并可通过交互抽 1 张牌"
 $env:PW_PORT='6277'
 $env:PW_GAME_SERVER_PORT='20203'
 $env:PW_API_SERVER_PORT='21203'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "企鹅帝皇在同回合同时具备持续与天赋入口时可通过持续按钮打出牌库顶随从"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "企鹅帝皇在同回合同时具备持续与天赋入口时可通过持续按钮打出牌库顶随从"
 $env:PW_PORT='6278'
 $env:PW_GAME_SERVER_PORT='20204'
 $env:PW_API_SERVER_PORT='21204'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 本轮执行结果
@@ -172,14 +172,14 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
   - `硕大圆石`：`1 passed`
   - `哥佐拉`：`1 passed`
   - `企鹅帝皇`：`1 passed`
-- 最终用新端口整份复跑 `e2e/smashup-alien-terraform.e2e.ts`：`31 passed`
+- 最终用新端口整份复跑 `e2e/smashup/smashup-alien-terraform.e2e.ts`：`31 passed`
 - 结论是：此前整文件里出现的 4 条失败不是 `Hill` 业务回归，而是测试服务端口/启动冲突导致的偶发环境失败；改成独立端口串行复跑后已全部消失。
 
 ### 本轮实际复看的截图
 
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\漫游山岭巨人交出己方随从控制权并抽牌后，会通过真实交互给该随从放置-1-枚力量标记\hill-that-strolls-counter-choice.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\漫游山岭巨人交出己方随从控制权并抽牌后，会通过真实交互给该随从放置-1-枚力量标记\hill-that-strolls-give-choice.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\漫游山岭巨人交出己方随从控制权并抽牌后，会通过真实交互给该随从放置-1-枚力量标记\hill-that-strolls-give-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\漫游山岭巨人交出己方随从控制权并抽牌后，会通过真实交互给该随从放置-1-枚力量标记\hill-that-strolls-counter-choice.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\漫游山岭巨人交出己方随从控制权并抽牌后，会通过真实交互给该随从放置-1-枚力量标记\hill-that-strolls-give-choice.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\漫游山岭巨人交出己方随从控制权并抽牌后，会通过真实交互给该随从放置-1-枚力量标记\hill-that-strolls-give-resolved.png`
 
 ### 人工观察结论
 
@@ -214,14 +214,14 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 本轮执行结果
 
 - `npm run typecheck` 通过
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native`：`72 passed`
-- `npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts`：`29 passed`
+- `npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts`：`29 passed`
 - 这轮新增的浏览器证据聚焦 `penguins_emperor_penguin` 的三条链：
   - 回合开始时通过交互进场到满足条件的基地
   - 在同一张泰坦上同时露出 `持续 / 天赋` 双主动入口
@@ -229,11 +229,11 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 
 ### 本轮实际复看的截图
 
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\企鹅帝皇可在回合开始交互中打到满足条件的基地\emperor-penguin-play-choice.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\企鹅帝皇可在回合开始交互中打到满足条件的基地\emperor-penguin-play-resolved.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\企鹅帝皇在同回合同时具备持续与天赋入口时可通过持续按钮打出牌库顶随从\emperor-penguin-activation-menu.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\企鹅帝皇在同回合同时具备持续与天赋入口时可通过持续按钮打出牌库顶随从\emperor-penguin-ongoing-resolved.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\企鹅帝皇在同回合同时具备持续与天赋入口时可通过天赋按钮洗回低战力随从并获得标记\emperor-penguin-talent-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\企鹅帝皇可在回合开始交互中打到满足条件的基地\emperor-penguin-play-choice.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\企鹅帝皇可在回合开始交互中打到满足条件的基地\emperor-penguin-play-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\企鹅帝皇在同回合同时具备持续与天赋入口时可通过持续按钮打出牌库顶随从\emperor-penguin-activation-menu.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\企鹅帝皇在同回合同时具备持续与天赋入口时可通过持续按钮打出牌库顶随从\emperor-penguin-ongoing-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\企鹅帝皇在同回合同时具备持续与天赋入口时可通过天赋按钮洗回低战力随从并获得标记\emperor-penguin-talent-resolved.png`
 
 ### 人工观察结论
 
@@ -273,24 +273,24 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 本轮执行结果
 
 - `npm run typecheck` 通过
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native`：`69 passed`
-- `npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts`：`26 passed`
+- `npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts`：`26 passed`
 - 这轮新增的浏览器证据聚焦 `explorers_very_large_boulder` 的两条链：
   - 通过右侧泰坦栏按通常随从额进场到空基地
   - 在有随从移离后通过交互移动到目标基地，并消灭低于其标记数的随从
 
 ### 本轮实际复看的截图
 
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\硕大圆石可通过牌库右侧泰坦栏按通常随从额打到没有玩家随从的基地\very-large-boulder-rail-ready.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\硕大圆石可通过牌库右侧泰坦栏按通常随从额打到没有玩家随从的基地\very-large-boulder-rail-resolved.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\硕大圆石可在随从移离后移动到目标基地并消灭低于其标记数的随从\very-large-boulder-move-choice.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\硕大圆石可在随从移离后移动到目标基地并消灭低于其标记数的随从\very-large-boulder-move-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\硕大圆石可通过牌库右侧泰坦栏按通常随从额打到没有玩家随从的基地\very-large-boulder-rail-ready.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\硕大圆石可通过牌库右侧泰坦栏按通常随从额打到没有玩家随从的基地\very-large-boulder-rail-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\硕大圆石可在随从移离后移动到目标基地并消灭低于其标记数的随从\very-large-boulder-move-choice.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\硕大圆石可在随从移离后移动到目标基地并消灭低于其标记数的随从\very-large-boulder-move-resolved.png`
 
 ### 人工观察结论
 
@@ -329,24 +329,24 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 本轮执行结果
 
 - `npm run typecheck` 通过
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native`：`63 passed`
-- `npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts`：`22 passed`
+- `npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts`：`22 passed`
 - 这轮新增的浏览器证据聚焦 `mega_troopers_megabot` 的两条链：
   - 通过右侧泰坦栏按通常随从额进场
   - 在另一基地计分前通过交互移动到该基地
 
 ### 本轮实际复看的截图
 
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\超级佐德可通过牌库右侧泰坦栏按通常随从额打到有你至少三个随从的基地\megabot-rail-ready.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\超级佐德可通过牌库右侧泰坦栏按通常随从额打到有你至少三个随从的基地\megabot-rail-resolved.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\超级佐德可在另一基地计分前通过交互移动到该基地\megabot-before-scoring-choice.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\超级佐德可在另一基地计分前通过交互移动到该基地\megabot-before-scoring-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\超级佐德可通过牌库右侧泰坦栏按通常随从额打到有你至少三个随从的基地\megabot-rail-ready.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\超级佐德可通过牌库右侧泰坦栏按通常随从额打到有你至少三个随从的基地\megabot-rail-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\超级佐德可在另一基地计分前通过交互移动到该基地\megabot-before-scoring-choice.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\超级佐德可在另一基地计分前通过交互移动到该基地\megabot-before-scoring-resolved.png`
 
 ### 人工观察结论
 
@@ -379,24 +379,24 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 本轮执行结果
 
 - `npm run typecheck` 通过
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native`：`60 passed`
-- `npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts`：`20 passed`
+- `npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts`：`20 passed`
 - 这轮新增的浏览器证据只聚焦 `kaiju_gorgodzolla` 的两条链：
   - 通过右侧泰坦栏按通常随从额进场
   - 在本基地打出战术后加 1 标记，并经交互选择后抽 1 张牌
 
 ### 本轮实际复看的截图
 
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\哥佐拉可通过牌库右侧泰坦栏按通常随从额打到有你至少两个战术的基地\gorgodzolla-rail-ready.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\哥佐拉可通过牌库右侧泰坦栏按通常随从额打到有你至少两个战术的基地\gorgodzolla-rail-resolved.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\哥佐拉在本基地打出战术后会加-1-标记并可通过交互抽-1-张牌\gorgodzolla-draw-choice.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\哥佐拉在本基地打出战术后会加-1-标记并可通过交互抽-1-张牌\gorgodzolla-draw-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\哥佐拉可通过牌库右侧泰坦栏按通常随从额打到有你至少两个战术的基地\gorgodzolla-rail-ready.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\哥佐拉可通过牌库右侧泰坦栏按通常随从额打到有你至少两个战术的基地\gorgodzolla-rail-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\哥佐拉在本基地打出战术后会加-1-标记并可通过交互抽-1-张牌\gorgodzolla-draw-choice.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\哥佐拉在本基地打出战术后会加-1-标记并可通过交互抽-1-张牌\gorgodzolla-draw-resolved.png`
 
 ### 人工观察结论
 
@@ -429,7 +429,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 补充：
@@ -440,9 +440,9 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 
 - 结果：`6 passed`
 - 工作目录：`D:\gongzuo\webgame\BoardGame-smashup-titans`
-- 截图根目录：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e`
+- 截图根目录：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e`
 - 本次“泰坦与持续行动布局”统一收口到同一个业务目录：
-  `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定`
+  `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定`
 
 ## 2026-03-26 Update: 泰坦纵向锚点再收敛
 
@@ -452,7 +452,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 本轮执行结果
@@ -463,9 +463,9 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 
 ### 本轮实际复看的截图
 
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\01-2p-five-ongoings-with-titan.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\03-4p-five-bases-with-titan.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\Major-Ursa-天赋应在移动泰坦后把-3-战力敌方随从挪到新基地\major-ursa-04-after-resolution.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\01-2p-five-ongoings-with-titan.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\03-4p-five-bases-with-titan.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\Major-Ursa-天赋应在移动泰坦后把-3-战力敌方随从挪到新基地\major-ursa-04-after-resolution.png`
 
 ### 人工观察结论
 
@@ -498,10 +498,10 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 
 ### 本轮实际复看的截图
 
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\克苏鲁泰坦天赋可在分支选择后抽-1-张疯狂卡\cthulhu-titan-talent-draw-choice.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\克苏鲁泰坦天赋可在分支选择后抽-1-张疯狂卡\cthulhu-titan-talent-draw-resolved.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\克苏鲁泰坦天赋可把手中的疯狂卡交给另一位玩家\cthulhu-titan-talent-give-target.png`
-- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\克苏鲁泰坦天赋可把手中的疯狂卡交给另一位玩家\cthulhu-titan-talent-give-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\克苏鲁泰坦天赋可在分支选择后抽-1-张疯狂卡\cthulhu-titan-talent-draw-choice.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\克苏鲁泰坦天赋可在分支选择后抽-1-张疯狂卡\cthulhu-titan-talent-draw-resolved.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\克苏鲁泰坦天赋可把手中的疯狂卡交给另一位玩家\cthulhu-titan-talent-give-target.png`
+- `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\克苏鲁泰坦天赋可把手中的疯狂卡交给另一位玩家\cthulhu-titan-talent-give-resolved.png`
 
 ### 人工观察结论
 
@@ -543,7 +543,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 
 ### 1. 二人局：基地有泰坦且有 5 张持续行动
 
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\01-2p-five-ongoings-with-titan.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\01-2p-five-ongoings-with-titan.png`
 
 结论：
 
@@ -555,7 +555,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 
 ### 2. 二人局对照：基地无泰坦但有 5 张持续行动
 
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\02-2p-five-ongoings-no-titan.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\02-2p-five-ongoings-no-titan.png`
 
 结论：
 
@@ -565,7 +565,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 
 ### 3. 四人局：5 个基地且首个基地有泰坦与 5 张持续行动
 
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\03-4p-five-bases-with-titan.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\03-4p-five-bases-with-titan.png`
 
 结论：
 
@@ -600,7 +600,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 执行结果
@@ -611,28 +611,28 @@ npm run test:e2e:ci -- e2e/smashup-alien-terraform.e2e.ts
 ### Major Ursa 关键截图
 
 #### 1. 选择目标基地
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\Major-Ursa-天赋应在移动泰坦后把-3-战力敌方随从挪到新基地\major-ursa-01-choose-destination.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\Major-Ursa-天赋应在移动泰坦后把-3-战力敌方随从挪到新基地\major-ursa-01-choose-destination.png`
 
 人工观察：
 - 左侧基地上方的 `Major Ursa` 已处于可点击高亮态，说明泰坦天赋入口可见。
 - 棋盘上同时存在 3 个基地，可继续进行“选目标基地”的第一步。
 
 #### 2. 选择敌方随从
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\Major-Ursa-天赋应在移动泰坦后把-3-战力敌方随从挪到新基地\major-ursa-02-choose-minion.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\Major-Ursa-天赋应在移动泰坦后把-3-战力敌方随从挪到新基地\major-ursa-02-choose-minion.png`
 
 人工观察：
 - `Major Ursa` 已经从左侧基地移动到中间基地上方，说明第一步移动已生效。
 - 中间基地下方的敌方随从被紫色边框高亮，第二步“选敌方 3 力随从”入口可见。
 
 #### 3. 选择新基地
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\Major-Ursa-天赋应在移动泰坦后把-3-战力敌方随从挪到新基地\major-ursa-03-choose-base.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\Major-Ursa-天赋应在移动泰坦后把-3-战力敌方随从挪到新基地\major-ursa-03-choose-base.png`
 
 人工观察：
 - 被选中的敌方随从仍停留在中间基地下方，说明第二步只是锁定目标，没有提前误移动。
 - 右侧基地仍为空，保留了第三步“把该随从挪去别的基地”的目标位置。
 
 #### 4. 结算完成
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\Major-Ursa-天赋应在移动泰坦后把-3-战力敌方随从挪到新基地\major-ursa-04-after-resolution.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\Major-Ursa-天赋应在移动泰坦后把-3-战力敌方随从挪到新基地\major-ursa-04-after-resolution.png`
 
 人工观察：
 - `Major Ursa` 最终停在中间基地上方，没有回弹回原基地。
@@ -652,9 +652,9 @@ npm run test:e2e:ci -- e2e/smashup-alien-terraform.e2e.ts
 # 2026-03-25 Update
 
 - 本轮不是只看 `6 passed` 就下结论，而是再次实际打开以下 3 张图复核：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\01-2p-five-ongoings-with-titan.png`
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\02-2p-five-ongoings-no-titan.png`
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\03-4p-five-bases-with-titan.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\01-2p-five-ongoings-with-titan.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\02-2p-five-ongoings-no-titan.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\03-4p-five-bases-with-titan.png`
 - 二人局有泰坦时，泰坦顶部现在明显高于持续行动一排，不再是只往下多露一截。
 - 泰坦尺寸已经恢复为和其他场景一致，本轮结论不是“放大后更顺眼”，而是“大小保持一致，只把位置上抬”。
 - 二人局无泰坦的 5 张持续行动对照图未回归，说明这轮微调只改变了“有泰坦时”的纵向关系。
@@ -670,14 +670,14 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 执行结果
 
 - `npm run typecheck` 通过
 - `smashup.smoke.test.ts` 结果：`43 passed`
-- `e2e/smashup-alien-terraform.e2e.ts` 结果：`13 passed`
+- `e2e/smashup/smashup-alien-terraform.e2e.ts` 结果：`13 passed`
 
 ### 海怪克拉肯：天赋移动并减力
 
@@ -691,19 +691,19 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 执行结果
 
 - `npm run typecheck` 通过
 - `smashup.smoke.test.ts` 结果：`57 passed`
-- `e2e/smashup-alien-terraform.e2e.ts` 结果：`18 passed`
+- `e2e/smashup/smashup-alien-terraform.e2e.ts` 结果：`18 passed`
 
 ### 彩虹鸟关键截图
 
 #### 1. 计分后替换基地进场选择
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\彩虹鸟可在基地计分后的替换基地交互中进场\rainboroc-play-replacement-choice.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\彩虹鸟可在基地计分后的替换基地交互中进场\rainboroc-play-replacement-choice.png`
 
 人工观察：
 - 画面中央已经出现“彩虹鸟：是否将其打出到替换的基地？”提示，下面同时有“打出彩虹鸟”和“跳过”两个按钮，说明 afterScoring 的 special 交互已真实起出。
@@ -711,7 +711,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 - 牌面资源仍有未稳定渲染的白卡现象，但不影响确认提示条、按钮和基地相对位置。
 
 #### 2. 计分后替换基地进场结算完成
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\彩虹鸟可在基地计分后的替换基地交互中进场\rainboroc-play-replacement-resolved.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\彩虹鸟可在基地计分后的替换基地交互中进场\rainboroc-play-replacement-resolved.png`
 
 人工观察：
 - 中央提示条已经消失，说明“是否进场”的交互没有卡在半路。
@@ -719,7 +719,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 - 左侧基地上方仍保留一张泰坦卡面占位，没有回到牌库旁，说明这条链的最终结果是“留在场上”而不是被后续计分事件冲掉。
 
 #### 3. 天赋第一步：选择弃牌堆低战力随从
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\彩虹鸟天赋可通过真实交互把低战力随从洗回牌库并移动到其他基地\rainboroc-talent-choose-discard.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\彩虹鸟天赋可通过真实交互把低战力随从洗回牌库并移动到其他基地\rainboroc-talent-choose-discard.png`
 
 人工观察：
 - 画面中央出现“彩虹鸟：选择弃牌堆中一个战力 2 或更低的随从洗回牌库”的大字提示，第一段交互语义清晰。
@@ -727,7 +727,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 - 左侧基地上方的彩虹鸟仍留在场上，说明点天赋后没有把泰坦本体隐藏掉。
 
 #### 4. 天赋第二步：选择是否移动到其他基地
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\彩虹鸟天赋可通过真实交互把低战力随从洗回牌库并移动到其他基地\rainboroc-talent-choose-base.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\彩虹鸟天赋可通过真实交互把低战力随从洗回牌库并移动到其他基地\rainboroc-talent-choose-base.png`
 
 人工观察：
 - 提示条已切换成“彩虹鸟：你可以将其移动到另一个基地”，说明第一步洗回牌库后，交互确实推进到了第二段。
@@ -735,7 +735,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 - 中间和右侧基地都带黄色高亮边框，且底部有“留在原基地”按钮，说明“移动”和“跳过移动”两个分支都在 UI 上可见。
 
 #### 5. 天赋结算完成
-- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\彩虹鸟天赋可通过真实交互把低战力随从洗回牌库并移动到其他基地\rainboroc-talent-resolved.png`
+- 绝对路径：`D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\彩虹鸟天赋可通过真实交互把低战力随从洗回牌库并移动到其他基地\rainboroc-talent-resolved.png`
 
 人工观察：
 - 中央提示条已经消失，说明双段天赋链完整结束，没有残留交互。
@@ -749,9 +749,9 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 - 本轮截图里仍偶尔有泰坦或选牌白卡面，但交互提示、按钮、牌库/弃牌计数和泰坦位置变化都清晰可见，足以支撑功能验收。
 
 - 选择目标基地：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\海怪克拉肯天赋可移动并让目标基地敌方随从-1-战力直到你的下回合开始\kraken-talent-choose-base.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\海怪克拉肯天赋可移动并让目标基地敌方随从-1-战力直到你的下回合开始\kraken-talent-choose-base.png`
 - 结算完成：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\海怪克拉肯天赋可移动并让目标基地敌方随从-1-战力直到你的下回合开始\kraken-talent-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\海怪克拉肯天赋可移动并让目标基地敌方随从-1-战力直到你的下回合开始\kraken-talent-resolved.png`
 
 人工观察：
 
@@ -762,9 +762,9 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 ### 海怪克拉肯：计分后进替换基地
 
 - 选择是否进场：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\海怪克拉肯计分后可通过交互打到替换基地\kraken-play-replacement-choice.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\海怪克拉肯计分后可通过交互打到替换基地\kraken-play-replacement-choice.png`
 - 结算完成：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\海怪克拉肯计分后可通过交互打到替换基地\kraken-play-replacement-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\海怪克拉肯计分后可通过交互打到替换基地\kraken-play-replacement-resolved.png`
 
 人工观察：
 
@@ -774,11 +774,11 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 ### 海怪克拉肯：计分后救出己方随从
 
 - 选择随从：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\海怪克拉肯计分后可把此处己方随从移到其他基地而不进入弃牌堆\kraken-rescue-choose-minion.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\海怪克拉肯计分后可把此处己方随从移到其他基地而不进入弃牌堆\kraken-rescue-choose-minion.png`
 - 选择基地：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\海怪克拉肯计分后可把此处己方随从移到其他基地而不进入弃牌堆\kraken-rescue-choose-base.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\海怪克拉肯计分后可把此处己方随从移到其他基地而不进入弃牌堆\kraken-rescue-choose-base.png`
 - 结算完成：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\海怪克拉肯计分后可把此处己方随从移到其他基地而不进入弃牌堆\kraken-rescue-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\海怪克拉肯计分后可把此处己方随从移到其他基地而不进入弃牌堆\kraken-rescue-resolved.png`
 
 人工观察：
 
@@ -789,9 +789,9 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 ### Great Wolf Spirit：天赋真实交互
 
 - 选择目标随从：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\Great-Wolf-Spirit-天赋可通过真实交互让己方随从直到回合结束获得-+1-战力\great-wolf-spirit-choose-minion.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\Great-Wolf-Spirit-天赋可通过真实交互让己方随从直到回合结束获得-+1-战力\great-wolf-spirit-choose-minion.png`
 - 结算完成：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\Great-Wolf-Spirit-天赋可通过真实交互让己方随从直到回合结束获得-+1-战力\great-wolf-spirit-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\Great-Wolf-Spirit-天赋可通过真实交互让己方随从直到回合结束获得-+1-战力\great-wolf-spirit-resolved.png`
 
 人工观察：
 
@@ -814,21 +814,21 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 执行结果
 
 - `npm run typecheck` 通过
 - `smashup.smoke.test.ts` 结果：`48 passed`
-- `e2e/smashup-alien-terraform.e2e.ts` 结果：`14 passed`
+- `e2e/smashup/smashup-alien-terraform.e2e.ts` 结果：`14 passed`
 
 ### 滑稽巨人：弃牌交互
 
 - 选择手牌弃置：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\滑稽巨人的弃牌交互可在-UI-中选择手牌并完成弃置\big-funny-giant-discard-choice.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\滑稽巨人的弃牌交互可在-UI-中选择手牌并完成弃置\big-funny-giant-discard-choice.png`
 - 结算完成：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\滑稽巨人的弃牌交互可在-UI-中选择手牌并完成弃置\big-funny-giant-discard-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\滑稽巨人的弃牌交互可在-UI-中选择手牌并完成弃置\big-funny-giant-discard-resolved.png`
 
 人工观察：
 
@@ -856,21 +856,21 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6274'
 $env:PW_GAME_SERVER_PORT='20200'
 $env:PW_API_SERVER_PORT='21200'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 执行结果
 
 - `npm run typecheck` 通过
 - `smashup.smoke.test.ts` 结果：`54 passed`
-- `e2e/smashup-alien-terraform.e2e.ts` 结果：`16 passed`
+- `e2e/smashup/smashup-alien-terraform.e2e.ts` 结果：`16 passed`
 
 ### 合体机器人：回合开始进场
 
 - 选择进场基地：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\合体机器人可通过回合开始交互进场到满足条件的基地\mergacon-play-choice.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\合体机器人可通过回合开始交互进场到满足条件的基地\mergacon-play-choice.png`
 - 结算完成：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\合体机器人可通过回合开始交互进场到满足条件的基地\mergacon-play-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\合体机器人可通过回合开始交互进场到满足条件的基地\mergacon-play-resolved.png`
 
 人工观察：
 
@@ -881,9 +881,9 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts
 ### 合体机器人：天赋移动并压制持续能力
 
 - 选择目标基地：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\合体机器人天赋可移动泰坦并写入本回合持续能力压制标记\mergacon-talent-choose-base.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\合体机器人天赋可移动泰坦并写入本回合持续能力压制标记\mergacon-talent-choose-base.png`
 - 结算完成：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\合体机器人天赋可移动泰坦并写入本回合持续能力压制标记\mergacon-talent-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\合体机器人天赋可移动泰坦并写入本回合持续能力压制标记\mergacon-talent-resolved.png`
 
 人工观察：
 
@@ -909,12 +909,12 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.s
 $env:PW_PORT='6280'
 $env:PW_GAME_SERVER_PORT='20206'
 $env:PW_API_SERVER_PORT='21206'
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "三号空间站"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "三号空间站"
 node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/smashup.smoke.test.ts --configLoader native
 $env:PW_PORT='6280'
 $env:PW_GAME_SERVER_PORT='20206'
 $env:PW_API_SERVER_PORT='21206'
-npm run test:e2e:ci -- e2e/smashup-alien-terraform.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-alien-terraform.e2e.ts
 ```
 
 ### 执行结果
@@ -922,15 +922,15 @@ npm run test:e2e:ci -- e2e/smashup-alien-terraform.e2e.ts
 - `npm run typecheck` 通过
 - `smashup.smoke.test.ts -t "三号空间站"` 结果：`3 passed`
 - `smashup.smoke.test.ts` 整文件结果：`81 passed`
-- `e2e/smashup-alien-terraform.e2e.ts "三号空间站"` 结果：`2 passed`
-- `e2e/smashup-alien-terraform.e2e.ts` 整文件结果：`34 passed`
+- `e2e/smashup/smashup-alien-terraform.e2e.ts "三号空间站"` 结果：`2 passed`
+- `e2e/smashup/smashup-alien-terraform.e2e.ts` 整文件结果：`34 passed`
 
 ### 三号空间站：牌库右侧 rail 进场
 
 - 进场前：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\三号空间站可通过牌库右侧泰坦栏按通常随从额打到没有其他玩家随从的基地\moon-zero-rail-ready.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\三号空间站可通过牌库右侧泰坦栏按通常随从额打到没有其他玩家随从的基地\moon-zero-rail-ready.png`
 - 进场后：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\三号空间站可通过牌库右侧泰坦栏按通常随从额打到没有其他玩家随从的基地\moon-zero-rail-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\三号空间站可通过牌库右侧泰坦栏按通常随从额打到没有其他玩家随从的基地\moon-zero-rail-resolved.png`
 
 人工观察：
 
@@ -941,11 +941,11 @@ npm run test:e2e:ci -- e2e/smashup-alien-terraform.e2e.ts
 ### 三号空间站：天赋查看牌库顶并放顶/放底
 
 - 选择牌库：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\三号空间站天赋可查看任一牌库顶并将其放到牌库底\moon-zero-talent-choose-player.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\三号空间站天赋可查看任一牌库顶并将其放到牌库底\moon-zero-talent-choose-player.png`
 - 选择放回位置：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\三号空间站天赋可查看任一牌库顶并将其放到牌库底\moon-zero-talent-resolve-choice.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\三号空间站天赋可查看任一牌库顶并将其放到牌库底\moon-zero-talent-resolve-choice.png`
 - 结算完成：
-  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup-alien-terraform.e2e\三号空间站天赋可查看任一牌库顶并将其放到牌库底\moon-zero-talent-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame-smashup-titans\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\三号空间站天赋可查看任一牌库顶并将其放到牌库底\moon-zero-talent-resolved.png`
 
 人工观察：
 

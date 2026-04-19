@@ -124,6 +124,7 @@ const gameServer = useTsxRuntime
 
 const apiServerEnv = {
   ...process.env,
+  NODE_ENV: 'test',
   API_SERVER_PORT: String(ports.apiServer),
 };
 

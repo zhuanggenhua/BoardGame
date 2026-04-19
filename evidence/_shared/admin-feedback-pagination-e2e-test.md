@@ -27,9 +27,9 @@ npm run test:e2e:ci:file -- admin-feedback.e2e.ts "反馈列表按页请求并�
 
 截图路径：
 
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\admin-feedback-pagination.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\admin-feedback-pagination.png`
 
-![后台反馈分页截图](../test-results/evidence-screenshots/admin-feedback-pagination.png)
+![后台反馈分页截图](../test-results/evidence-screenshots/_shared/admin-feedback-pagination.png)
 
 ## 截图分析
 

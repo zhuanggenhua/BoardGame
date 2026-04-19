@@ -10,7 +10,7 @@
 - `AGENTS.md`
 - `docs/deploy.md`
 - `docs/mobile-release.md`
-- `e2e/smashup-gameplay.e2e.ts`
+- `e2e/smashup/smashup-gameplay.e2e.ts`
 - `scripts/mobile/publish-android-ota.mjs`
 - `scripts/mobile/release-android.mjs`
 - `src/games/dicethrone/__tests__/paladin-abilities.test.ts`
@@ -29,7 +29,7 @@
 - 原因：`main` 侧在 OTA 门禁、发布口径、圣骑士断言、Cthulhu 选项构造上都更接近当前主线规则，`sync/pr62` 的冲突片段多为旧逻辑或等价写法。
 
 ### 保留 sync/pr62 侧实现
-- `e2e/smashup-gameplay.e2e.ts`
+- `e2e/smashup/smashup-gameplay.e2e.ts`
 - 原因：分支侧把“适者生存”补成了更完整的平局选择链路断言，属于真实测试增强，且 `main..sync/pr62` 仅在该段存在差异。
 
 ## 4. 风险与验证

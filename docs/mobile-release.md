@@ -62,6 +62,7 @@ node scripts/mobile/release-android.mjs full --channel stable --with-packages --
 `ota`
 
 - 先跑 `doctor`
+- 再跑 `typecheck`（防止移动端专用分支漏 import / 漏导出在构建期被放过）
 - 再跑 `sync`
 - 最后直接调用 `publish-android-ota.mjs`
 
@@ -69,6 +70,7 @@ node scripts/mobile/release-android.mjs full --channel stable --with-packages --
 
 - 可选先 bump `package.json` / `package-lock.json`
 - 跑 `doctor`
+- 跑 `typecheck`
 - 跑 `build:release`
 - 最后直接调用 `publish-android-native-update.mjs`
 

@@ -48,6 +48,9 @@ bash deploy-image.sh update
 bash deploy-image.sh update v1.2.3  # 部署指定 tag
 ```
 
+**强制规则**：生产环境更新必须**等待 CI 镜像构建完成**后再执行（对应 commit/tag 的镜像已推送到仓库）。  
+未确认 CI 构建完成时禁止执行 `update`，避免拉取到旧镜像或半成品镜像。
+
 ### 回滚 / 状态 / 日志
 
 ```bash
@@ -242,10 +245,10 @@ GitHub Actions 自动化：
 
 - 自动正式发版 workflow：`.github/workflows/android-push-release.yml`
 - 手动 OTA workflow：`.github/workflows/android-ota-publish.yml`
-- `main` 自动发版：命中 Android H5 / 原生壳相关路径后，自动发布 **stable OTA + stable native update**
-- 自动版本管理：自动发版成功后，workflow 会把 `package.json` / `package-lock.json` 自动递增到下一个 patch 版本，并回推一个带 `[skip android release]` 的 bot commit，避免发版循环
+- `main` 自动发版：命中 Android H5 相关路径后，自动发布 **stable OTA**；**原生壳仍需手动发包**
+- 自动版本管理：默认会在自动发版成功后把 `package.json` / `package-lock.json` 自动递增到下一个 patch 版本，并回推一个带 `[skip android release]` 的 bot commit，避免发版循环；如需临时关闭，可把仓库变量 `ANDROID_AUTO_BUMP_VERSION` 设为 `false`
 - 手动触发：仍可手动选择 `stable` / `gray` / `edge` 单独发布 OTA，并支持 `dry_run`、`skip_latest`、`force_update`
-- 正式门禁：`stable` 发布应绑定 `android-ota-production` Environment 审批
+- 正式门禁：如需人工审批，可在**手动** OTA workflow 上绑定 `android-ota-production` Environment
 - 项目强制规则：OTA manifest 不得再写 `targetNativeVersion` / `minNativeVersion` / `maxNativeVersion`；所有已安装版本默认都必须收到 OTA。若误传这些参数，发布脚本必须直接失败。
 
 约束：
@@ -332,7 +335,7 @@ GitHub Actions 自动化：
 
 Android OTA 产物也走同一个对象存储桶，但前缀独立：
 
-1. 日常主线：直接 `push main`，GitHub Actions 自动发布 **stable OTA + stable native update**
+1. 日常主线：直接 `push main`，GitHub Actions **自动发布 stable OTA（原生壳手动）**
 2. 自动发版成功后，bot 会把仓库版本号自动 bump 到下一个 patch，作为下一次发版基线
 3. 若只想单独操作 OTA 灰度/预演，继续手动执行：
    - `node scripts/mobile/release-android.mjs ota --channel gray --dry-run`

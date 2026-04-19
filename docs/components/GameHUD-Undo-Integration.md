@@ -196,6 +196,15 @@ import { UndoProvider } from '../../contexts/UndoContext';
    - Context 模式解耦组件
    - 新游戏只需包裹 Provider
 
+## FAB 面板对齐约束（防回归）
+
+- `undo` 属于**短面板**：移动端弹出时，垂直锚点应跟随当前 `undo` 按钮自身，避免面板掉到下方 `settings` 那层。
+- `action-log` 属于**长滚动面板**：移动端弹出时，垂直锚点应跟随展开按钮列的整体 referenceRect，而不是强行贴某一颗按钮的上边缘。
+- **禁止**把 `undo` 和 `action-log` 这两类面板共用同一套垂直对齐策略。前者需要“按钮锚点”，后者需要“列锚点”。
+- 只要修改 `FabMenu` / `GameHUD` 的共享对齐逻辑，验收时必须同时核对：
+  - `undo` 展开图：确认没有掉到 `settings` 层。
+  - `action-log` 展开图：确认长面板仍保持列对齐且完整留在视口内。
+
 ## 注意事项
 
 1. **必须包裹 UndoProvider**

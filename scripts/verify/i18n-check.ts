@@ -17,7 +17,7 @@ type I18nReference = {
 };
 
 type I18nWarning = {
-    type: 'dynamic-namespace' | 'ambiguous-namespace' | 'unknown-namespace' | 'dynamic-key' | 'raw-validation-error';
+    type: 'dynamic-namespace' | 'ambiguous-namespace' | 'unknown-namespace' | 'dynamic-key' | 'exists-namespace-mismatch' | 'raw-validation-error';
     key: string;
     file: string;
     line: number;
@@ -180,6 +180,10 @@ const findNsOverride = (snippet: string): string[] => {
     if (!match) return [];
     return parseNamespaceLiteral(match[1]);
 };
+
+const escapeRegExp = (value: string): string => (
+    value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+);
 
 const parseI18nKey = (rawKey: string, knownNamespaces: Set<string>): { namespace?: string; key: string } => {
     const delimiterIndex = rawKey.indexOf(':');
@@ -531,6 +535,44 @@ export const collectReferencesFromContent = (
         return namespaces.length ? namespaces : [defaultNamespace];
     };
 
+    const evaluateExistsGuard = (
+        context: string,
+        identifier: string,
+        expectedNamespaces: string[],
+    ): { hasGuard: boolean; compatible: boolean; detail?: string } => {
+        const escapedIdentifier = escapeRegExp(identifier);
+        const guardRegex = new RegExp(`i18n\\.exists\\s*\\(\\s*${escapedIdentifier}\\b[\\s\\S]{0,220}?\\)`, 'g');
+        const matches = Array.from(context.matchAll(guardRegex)).map((item) => item[0]);
+        if (matches.length === 0) {
+            return { hasGuard: false, compatible: false };
+        }
+
+        const parsedNamespaces: string[] = [];
+        let hasDynamicNamespace = false;
+        for (const guardCall of matches) {
+            const overrideNamespaces = findNsOverride(guardCall);
+            const hasNsProp = /\bns\s*:/.test(guardCall);
+            if (hasNsProp && overrideNamespaces.length === 0) {
+                hasDynamicNamespace = true;
+            }
+            const namespaces = overrideNamespaces.length > 0 ? overrideNamespaces : [defaultNamespace];
+            parsedNamespaces.push(...namespaces);
+            if (expectedNamespaces.some((namespace) => namespaces.includes(namespace))) {
+                return { hasGuard: true, compatible: true };
+            }
+        }
+
+        const uniqueParsedNamespaces = Array.from(new Set(parsedNamespaces));
+        const expectedText = expectedNamespaces.length > 0 ? expectedNamespaces.join(', ') : '(unknown)';
+        const actualText = uniqueParsedNamespaces.length > 0 ? uniqueParsedNamespaces.join(', ') : '(none)';
+        const dynamicText = hasDynamicNamespace ? '；exists 的 ns 为动态值' : '';
+        return {
+            hasGuard: true,
+            compatible: false,
+            detail: `i18n.exists 命名空间与 t() 不一致：expected=${expectedText}，actual=${actualText}${dynamicText}`,
+        };
+    };
+
     for (const aliasName of aliasMap.keys()) {
         const regex = new RegExp("\\b" + aliasName + "\\s*\\(\\s*(['\"`])((?:\\\\.|(?!\\1).)*)\\1", 'g');
         let match: RegExpExecArray | null;
@@ -584,13 +626,23 @@ export const collectReferencesFromContent = (
             const identifier = match[1];
             const line = getLineNumber(content, match.index);
             const source = `${aliasName}(${identifier})`;
-            
-            // 检查是否有 i18n.exists() 保护
+
             const contextStart = Math.max(0, match.index - 300);
             const context = content.slice(contextStart, match.index + 300);
-            const hasI18nExistsCheck = new RegExp(`i18n\\.exists\\s*\\(\\s*${identifier}\\b`).test(context);
-            if (hasI18nExistsCheck) {
+            const expectedNamespaces = resolveAliasNamespaces(aliasName, line, source);
+            const existsGuard = evaluateExistsGuard(context, identifier, expectedNamespaces);
+            if (existsGuard.hasGuard && existsGuard.compatible) {
                 continue;
+            }
+            if (existsGuard.hasGuard && expectedNamespaces.length > 0) {
+                addWarning({
+                    type: 'exists-namespace-mismatch',
+                    key: identifier,
+                    file: filePath,
+                    line,
+                    source,
+                    detail: existsGuard.detail,
+                });
             }
             
             // 尝试解析变量值
@@ -690,9 +742,21 @@ export const collectReferencesFromContent = (
         const keyIdentifierMatch = snippet.match(/\bkey\s*:\s*([A-Za-z_$][\w$]*)/);
         const keyShorthandMatch = snippet.match(/\bkey\b\s*(?=[,}])/);
         const keyIdentifierName = keyIdentifierMatch?.[1] ?? (keyShorthandMatch ? 'key' : null);
-        const hasI18nExistsCheck = keyIdentifierName
-            ? new RegExp(`i18n\\.exists\\s*\\(\\s*${keyIdentifierName}\\b`).test(context)
-            : false;
+        const overrideNamespaces = findNsOverride(snippet);
+        const expectedNamespaces = overrideNamespaces.length > 0 ? overrideNamespaces : [defaultNamespace];
+        const existsGuard = keyIdentifierName
+            ? evaluateExistsGuard(context, keyIdentifierName, expectedNamespaces)
+            : { hasGuard: false, compatible: false, detail: undefined };
+        if (existsGuard.hasGuard && !existsGuard.compatible) {
+            addWarning({
+                type: 'exists-namespace-mismatch',
+                key: keyIdentifierName ?? '',
+                file: filePath,
+                line,
+                source,
+                detail: existsGuard.detail,
+            });
+        }
         let keyValues: string[] = [];
         let keyDynamic = false;
         if (keyMatch) {
@@ -720,16 +784,15 @@ export const collectReferencesFromContent = (
         }
 
         if (keyDynamic || keyValues.length === 0) {
-            if (hasI18nExistsCheck) {
+            if (existsGuard.hasGuard && existsGuard.compatible) {
                 continue;
             }
             addWarning({ type: 'dynamic-key', key: keyValues[0] ?? '', file: filePath, line, source, detail: 'Toast i18n key 不是字符串字面量' });
             continue;
         }
 
-        const overrideNamespaces = findNsOverride(snippet);
         if (overrideNamespaces.length === 0 && /\bns\s*:\s*/.test(snippet)) {
-            if (hasI18nExistsCheck) {
+            if (existsGuard.hasGuard && existsGuard.compatible) {
                 continue;
             }
             addWarning({ type: 'dynamic-namespace', key: keyValues[0], file: filePath, line, source, detail: 'Toast i18n ns 不是字符串字面量' });
@@ -807,6 +870,12 @@ const normalizeFilePath = (filePath: string): string => filePath.replace(/\\/g, 
 const getManifestGameId = (filePath: string): string | null => {
     const normalized = normalizeFilePath(filePath);
     const match = normalized.match(/\/src\/games\/([^/]+)\/manifest\.[jt]sx?$/);
+    return match?.[1] ?? null;
+};
+
+const getTutorialGameId = (filePath: string): string | null => {
+    const normalized = normalizeFilePath(filePath);
+    const match = normalized.match(/\/src\/games\/([^/]+)\/tutorial\.[jt]sx?$/);
     return match?.[1] ?? null;
 };
 
@@ -924,6 +993,37 @@ export const collectManifestReferencesFromContent = (
     return references;
 };
 
+export const collectTutorialReferencesFromContent = (
+    content: string,
+    filePath: string,
+    knownNamespaces: Set<string>,
+): I18nReference[] => {
+    const gameId = getTutorialGameId(filePath);
+    if (!gameId) return [];
+
+    const references: I18nReference[] = [];
+    const defaultNamespace = `game-${gameId}`;
+    const contentKeyRegex = /\bcontent\s*:\s*['"]([^'"]+)['"]/g;
+    let match: RegExpExecArray | null;
+
+    while ((match = contentKeyRegex.exec(content)) !== null) {
+        const rawKey = match[1];
+        const parsed = parseI18nKey(rawKey, knownNamespaces);
+        const namespace = parsed.namespace ?? defaultNamespace;
+        if (!knownNamespaces.has(namespace)) continue;
+        if (!parsed.key) continue;
+        references.push(createManifestReference(
+            filePath,
+            getLineNumber(content, match.index),
+            'tutorial.content',
+            parsed.key,
+            namespace,
+        ));
+    }
+
+    return references;
+};
+
 export const collectStaticKeyReferencesFromContent = (
     content: string,
     filePath: string,
@@ -1012,7 +1112,8 @@ const getReferenceConcreteKeys = (
     locales: LocalesByLanguage,
     language: string,
 ): string[] => {
-    if (!ref.patternSegments) {
+    const patternSegments = ref.patternSegments;
+    if (!patternSegments) {
         return ref.namespaces
             .filter((namespace) => {
                 const localeData = locales[language]?.[namespace];
@@ -1026,7 +1127,7 @@ const getReferenceConcreteKeys = (
         if (!localeData) {
             return [];
         }
-        return collectPatternMatches(localeData, ref.patternSegments).map((key) => `${namespace}:${key}`);
+        return collectPatternMatches(localeData, patternSegments).map((key) => `${namespace}:${key}`);
     });
 };
 
@@ -1043,6 +1144,7 @@ const main = () => {
         const result = collectReferencesFromContent(content, file, { defaultNamespace: DEFAULT_NAMESPACE, knownNamespaces });
         references.push(...result.references);
         references.push(...collectManifestReferencesFromContent(content, file, knownNamespaces));
+        references.push(...collectTutorialReferencesFromContent(content, file, knownNamespaces));
         references.push(...collectStaticKeyReferencesFromContent(content, file, knownNamespaces));
         warnings.push(...result.warnings);
     }
@@ -1128,7 +1230,10 @@ const main = () => {
     }
 
     const missing = Array.from(missingMap.values());
-    const blockingWarnings = warnings.filter((warning) => warning.type === 'raw-validation-error');
+    const blockingWarningTypes = new Set<I18nWarning['type']>([
+        'raw-validation-error',
+    ]);
+    const blockingWarnings = warnings.filter((warning) => blockingWarningTypes.has(warning.type));
 
     if (missing.length === 0 && warnings.length === 0) {
         console.log('i18n-check: no missing keys detected.');

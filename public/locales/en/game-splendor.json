@@ -1,0 +1,137 @@
+{
+  "title": "Splendor",
+  "common": {
+    "expand": "Expand",
+    "collapse": "Collapse"
+  },
+  "colors": {
+    "white": "White",
+    "blue": "Blue",
+    "green": "Green",
+    "red": "Red",
+    "black": "Black",
+    "gold": "Gold"
+  },
+  "player": {
+    "guest": "Guest {{number}}"
+  },
+  "setup": {
+    "startingPlayerId": {
+      "label": "Starting player",
+      "player1": "Player 1",
+      "player2": "Player 2",
+      "player3": "Player 3",
+      "player4": "Player 4"
+    }
+  },
+  "sections": {
+    "nobles": "Nobles",
+    "actions": "Actions",
+    "bank": "Gem Supply",
+    "playerStatus": "Player Status",
+    "actionLog": "Action Log"
+  },
+  "status": {
+    "currentTurn": "Current turn: {{player}} · Round {{round}}",
+    "gameOver": "Game over: {{winners}}",
+    "discardPending": "Discard pending: {{excess}} left",
+    "waitPlayers": "Waiting for other players to join",
+    "waitHostStart": "Waiting for the host to start the game",
+    "waitChooseNoble": "Choose a noble",
+    "yourTurn": "Your turn",
+    "waitOpponent": "Waiting for opponent"
+  },
+  "pregame": {
+    "readyTitle": "Ready to start",
+    "waitPlayersTitle": "Waiting for players",
+    "hostCanStart": "All seats are ready. The host can start the game now.",
+    "waitHostStart": "All players have joined. Waiting for the host to start the game.",
+    "waitPlayersBody": "{{seated}} / {{total}} players have joined. The game starts only after the room is full.",
+    "startGame": "Start Game",
+    "startingPlayer": "Diamond holder: {{player}}",
+    "startingPlayerHint": "Online play cannot infer the youngest player automatically, so room setup decides who starts with the diamond token."
+  },
+  "banner": {
+    "chooseNoble": "You qualify for multiple nobles. Choose one first.",
+    "endgameTriggered": "Endgame has been triggered. Finish the round, then score immediately."
+  },
+  "actions": {
+    "choose": "Choose",
+    "reserve": "Reserve",
+    "notYourTurn": "It is not your turn.",
+    "waitPlayers": "Actions stay disabled until the game has been started.",
+    "discardHint": "Click a gem icon in the bank below to discard excess gems one by one.",
+    "chooseNobleHint": "Choose one qualifying noble from the nobles panel on the left.",
+    "reserveStatus": "Reserve slots left: {{remain}} · Gold left: {{gold}}",
+    "reserveDeckHint": "Hover the deck back on the left side of the market to reveal the reserve button."
+  },
+  "bank": {
+    "confirmTitle": "Take Confirmation",
+    "discardPending": "{{excess}} discard left. Click a gem icon in the bank to discard.",
+    "takeTwoSame": "Take Two",
+    "takeDifferent": "Take Different",
+    "clear": "Clear",
+    "pickHint": "Click a gem icon between the market and status areas",
+    "discardHint": "Click gem icons directly when discarding.",
+    "overLimitHint": "Discard down to 10 first.",
+    "selectHint": "Pick gems by icon, then confirm."
+  },
+  "market": {
+    "cannotAfford": "Not enough resources",
+    "freePurchase": "Can be bought for free",
+    "paymentText": "Can buy, pay: {{payment}}",
+    "deckTier": "Tier {{tier}} deck",
+    "deckCount": "{{count}} cards"
+  },
+  "playerStatus": {
+    "tokenTotal": "Total Gems",
+    "reserved": "Reserved",
+    "purchased": "Purchased",
+    "nobles": "Nobles",
+    "selfSuffix": " (You)",
+    "pointsSuffix": "pts",
+    "overLimit": "Gem limit exceeded. Discard down to 10.",
+    "discount": "Discount",
+    "myReserved": "My Reserved Cards",
+    "myPurchased": "My Purchased Cards",
+    "noReserved": "No reserved cards right now",
+    "noPurchased": "No purchased development cards yet"
+  },
+  "card": {
+    "hiddenReserved": "Hidden reserved card",
+    "buy": "Buy",
+    "detail": "Details",
+    "closeDetail": "Close details"
+  },
+  "tutorial": {
+    "steps": {
+      "intro": "Welcome to the Splendor tutorial. This guide will quickly teach you the goal, market, gems, reserving, buying, nobles, and endgame.",
+      "goal": "Your goal is to gain prestige by buying development cards and earning nobles. Endgame triggers when a player ends their turn with at least 15 points.",
+      "nobles": "This is the nobles panel. At end of turn, if your purchased card discounts satisfy a noble, you gain it automatically. If multiple qualify, you choose one.",
+      "actions": "This is the action panel. It reminds you what to do now and explains extra interaction entry points such as reserving from the deck top.",
+      "market": "This is the central market. Each tier has a deck and open cards. You can buy open cards directly or reserve the top card of a deck.",
+      "bank": "This is the gem supply. Click gem icons to pick gems. Normally you must take 3 different colors; if a pile has at least 4 gems, you may take 2 of that color instead.",
+      "bankConfirm": "This is the gem confirmation area. Selected colors, taking two of the same color, taking different colors, and clearing the selection are all confirmed here.",
+      "takeGemsAction": "Now try it yourself: complete one legal gem-taking action in the bank. The tutorial will advance automatically after success.",
+      "playerStatus": "This is the player status panel. It shows each player's total gems, gem colors, discounts, and nobles. Your own reserved and purchased cards can also be expanded here.",
+      "reserveAction": "Next, note how reserving works: you may reserve an open card or take the top card of a deck; if gold is still available, reserving also gives you 1 gold token.",
+      "buyAction": "When you buy a development card, the game first applies your permanent discounts, then automatically calculates the gems and gold you still need to pay. The payment hint in the market tells you whether you can afford the card right now.",
+      "nobleTiming": "Nobles are not gained by clicking them. The game checks noble requirements only at the end of your turn using your purchased-card discounts; if you qualify for multiple nobles, only then do you choose one.",
+      "tokenLimit": "Remember the gem limit: you may temporarily go above 10 gems during your action, but you must discard down to 10 before the turn can finish.",
+      "endgameDetail": "Endgame starts when a player finishes a turn with at least 15 points, but the game does not stop immediately; every player must finish the same number of turns. If players tie on points, the one with fewer purchased development cards wins; if still tied, they share victory.",
+      "finish": "You now know the full base-game loop: take gems, reserve cards, buy cards, gain nobles at turn end, and resolve endgame after someone reaches 15 points. You are ready to start a real game of Splendor."
+    }
+  },
+  "actionLog": {
+    "empty": "No confirmed actions have been recorded in this match yet.",
+    "takeThree": "takes gems: ",
+    "takeTwoSame": "takes two gems of the same color: ",
+    "reserveOpen": "reserves an open card: ",
+    "reserveOpenCost": "purchase cost: ",
+    "reserveDeckTop": "reserves the top card of tier {{tier}} deck",
+    "buyCard": "spends ",
+    "freePurchase": "nothing",
+    "discardGem": "discards a gem: ",
+    "chooseNoble": "chooses noble tile: {{noble}}"
+  }
+}

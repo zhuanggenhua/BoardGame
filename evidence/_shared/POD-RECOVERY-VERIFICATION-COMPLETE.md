@@ -40,7 +40,7 @@
 2. ✅ `src/games/dicethrone/__tests__/shield-cleanup.test.ts` - 已存在
 3. ✅ `src/games/dicethrone/__tests__/viewMode.test.ts` - 已存在
 4. ✅ `src/games/dicethrone/__tests__/tutorial-e2e.test.ts` - 需确认（可能已重命名）
-5. ✅ `e2e/dicethrone-shield-cleanup.e2e.ts` - E2E 测试已存在
+5. ✅ `e2e/dicethrone/dicethrone-shield-cleanup.e2e.ts` - E2E 测试已存在
 
 #### SmashUp 测试（1 个）
 6. ✅ `src/games/smashup/__tests__/sleep-spores-e2e.test.ts` - 需确认（可能已重命名）
@@ -94,7 +94,7 @@ ls src/games/dicethrone/__tests__/monk-coverage.test.ts
 ls src/games/dicethrone/__tests__/shield-cleanup.test.ts
 ls src/games/dicethrone/__tests__/viewMode.test.ts
 ls src/components/__tests__/actionLogFormat.test.ts
-ls e2e/dicethrone-shield-cleanup.e2e.ts
+ls e2e/dicethrone/dicethrone-shield-cleanup.e2e.ts
 ```
 
 ### Git 历史检查

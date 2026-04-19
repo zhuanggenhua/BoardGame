@@ -6,7 +6,7 @@
 ## 调查过程
 
 ### 1. 测试文件检查
-- 文件路径：`e2e/smashup-complex-multi-base-scoring.e2e.ts`
+- 文件路径：`e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`
 - 导入语句：`import { test, expect } from './framework';` ✅ 正确
 - 文件名后缀：`.e2e.ts` ✅ 符合 Playwright 配置
 

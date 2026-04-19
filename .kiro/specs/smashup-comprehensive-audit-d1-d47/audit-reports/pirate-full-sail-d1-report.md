@@ -158,7 +158,7 @@ for (let i = 0; i < state.bases.length; i++) {
 2. **`interactionChainE2E.test.ts`**
    - ✅ 测试循环链：选随从 → 选基地 → 循环选下一个 → 完成
 
-3. **`e2e/smashup-multistep-pirates.e2e.ts`**
+3. **`e2e/smashup/smashup-multistep-pirates.e2e.ts`**
    - ✅ E2E 测试：选随从 → 选基地 → 循环或完成
 
 ### 建议补充测试
@@ -217,7 +217,7 @@ for (let i = 0; i < state.bases.length; i++) {
 - `src/games/smashup/abilities/pirates.ts` - 能力实现
 - `src/games/smashup/__tests__/newOngoingAbilities.test.ts` - 单元测试
 - `src/games/smashup/__tests__/interactionChainE2E.test.ts` - 交互链测试
-- `e2e/smashup-multistep-pirates.e2e.ts` - E2E 测试
+- `e2e/smashup/smashup-multistep-pirates.e2e.ts` - E2E 测试
 - `src/games/smashup/__tests__/fixtures/wikiSnapshots.ts` - Wiki 快照
 
 ## 审计人员

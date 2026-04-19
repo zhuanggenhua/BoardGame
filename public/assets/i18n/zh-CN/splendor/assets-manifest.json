@@ -1,0 +1,314 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "splendor",
+  "basePrefix": "official/splendor/",
+  "files": {
+    "black": {
+      "variants": {
+        "png": {
+          "sha256": "60cd5ec5171e168edf70507122bbf1901af4aa5d078f564971d07bbf2c480968",
+          "bytes": 335696,
+          "mime": "image/png"
+        }
+      }
+    },
+    "blue": {
+      "variants": {
+        "png": {
+          "sha256": "cb389fb8a6a39d6bbce199dca408a3d5970a13b95c3287b20ee2c4814c247ebf",
+          "bytes": 471441,
+          "mime": "image/png"
+        }
+      }
+    },
+    "board-desk": {
+      "variants": {
+        "jpg": {
+          "sha256": "c27033f853d6cc50b5abd24250e3c52385c2a5120cdff25e56cfc20ca250ce7d",
+          "bytes": 2967248,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "compressed/black": {
+      "variants": {
+        "webp": {
+          "sha256": "ae79945bcb7b45291ff38c338f9e7dafe71db4f0874f48e52f05711165385588",
+          "bytes": 39924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/blue": {
+      "variants": {
+        "webp": {
+          "sha256": "d1acd06d6bfdb2e40bfb567c823cde8c7a539d5dbf6b3017d0527f0662133c44",
+          "bytes": 47240,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/board-desk": {
+      "variants": {
+        "webp": {
+          "sha256": "f3a2a64fef3a764d5c63b94f8b545441c2150069a6507bfb56a66d1ec9d21373",
+          "bytes": 807626,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/gold": {
+      "variants": {
+        "webp": {
+          "sha256": "654fa8399a394d83b3762d7bd60ceb73dd104dfdcf20ced210422aae1532bbd7",
+          "bytes": 62864,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/green": {
+      "variants": {
+        "webp": {
+          "sha256": "80deecb664c9bb7468953b67248078954c199ce6a1d7bb8a1902c96626e974a9",
+          "bytes": 52934,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/l1": {
+      "variants": {
+        "webp": {
+          "sha256": "f2732467ceb8ef4d996cbf2fa720708f9683c6b082d7149ced581f560310a7a9",
+          "bytes": 24990,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/l2": {
+      "variants": {
+        "webp": {
+          "sha256": "fb61727da2809c4f8d3b9e128880f3dd4e92913890db1f3267374ea955dc8010",
+          "bytes": 32534,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/l3": {
+      "variants": {
+        "webp": {
+          "sha256": "5759fb321949a5e6f8c2c4267c124d81064faef6befe12961eb2516190db2309",
+          "bytes": 20692,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/level-1-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "d848b8f893db4f8c038b37120033ecc07033ae8e032b5563706c3c350792d97f",
+          "bytes": 742778,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/level-2-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "f9ab63ac304878ce4da57fc1fb584d6be6f91c415e41e7ddcf75472a76e47f0a",
+          "bytes": 594638,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/level-3-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "df3dd3fafc197267469f1341f321c6743ca3d39ac81cdf41fcd62bc9acc794ed",
+          "bytes": 510124,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/nobles": {
+      "variants": {
+        "webp": {
+          "sha256": "bebc30f626a542a72f3e9ff8e8141a38618a1909ee8a75ab561cdd9b03927ed2",
+          "bytes": 357512,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/picture": {
+      "variants": {
+        "webp": {
+          "sha256": "c5900fb16508b77d87c3faf96ce67f669c538f67eb57d7fdbd0d7f0a6217032d",
+          "bytes": 304122,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/red": {
+      "variants": {
+        "webp": {
+          "sha256": "304879a6f7d5d83ecf6877ea1735669ac37b432d9b6cf3fbe0f7667f369759cf",
+          "bytes": 49780,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/tmp": {
+      "variants": {
+        "webp": {
+          "sha256": "d7093675d3d4832a540da7176452cac8f970e8169d5611b6ad195a4a88db898b",
+          "bytes": 581492,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "compressed/white": {
+      "variants": {
+        "webp": {
+          "sha256": "390ca4b37b0158bb215137df912f30e14e41fd15555a3174bb7f32f33fcb390d",
+          "bytes": 61776,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "gold": {
+      "variants": {
+        "png": {
+          "sha256": "9f4f0d67009634c16aaa40c83c10bfb811857952486f6cbc6fa7e3c6637d875b",
+          "bytes": 547375,
+          "mime": "image/png"
+        }
+      }
+    },
+    "green": {
+      "variants": {
+        "png": {
+          "sha256": "1941ad99b7b021db4dfdd68a6e2e08b224c6baa4850f229493ef7040653d9738",
+          "bytes": 510617,
+          "mime": "image/png"
+        }
+      }
+    },
+    "l1": {
+      "variants": {
+        "jpg": {
+          "sha256": "84198cef9486780cbb71cc9e569256bfa206a48b581b6b1cdc309a7e820a4b82",
+          "bytes": 65870,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "l2": {
+      "variants": {
+        "jpg": {
+          "sha256": "91f66e3e90ec729efa4e72355b59df4981674f2329a0f439fee0731a562d998d",
+          "bytes": 78712,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "l3": {
+      "variants": {
+        "jpg": {
+          "sha256": "18c10195457db489cd73fa814d2232530e34779a5ec6f78c7eed95cb1f10f7da",
+          "bytes": 70166,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "level-1-cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "568c67719eee2c88d7aaff1cd4b8cd1ef52f1f9043db87b13e0cb660439baf09",
+          "bytes": 1493157,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "level-2-cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "3517e42f03aaeba644fd23ffda78cda01125ba5bb96744c44113526bc29bc5df",
+          "bytes": 1277244,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "level-3-cards": {
+      "variants": {
+        "jpg": {
+          "sha256": "66e54acf6652fd093043205423bc8330d1c22736d4583b41ac0b80bd0176f9f6",
+          "bytes": 1330666,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "nobles": {
+      "variants": {
+        "jpg": {
+          "sha256": "e2854b00112e36b7e48e952374e758bc6df40b17a0c9a0725eaae4121e19525d",
+          "bytes": 913113,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "picture": {
+      "variants": {
+        "png": {
+          "sha256": "edd2a5fcec77104c8edd743d8c664cc00176db7ffaeddc9f65f6e85a197ee351",
+          "bytes": 1644194,
+          "mime": "image/png"
+        }
+      }
+    },
+    "README": {
+      "variants": {
+        "md": {
+          "sha256": "9ed97d4b6faa1d67c15ca4e8aa70caada860c15255f8c25ebeda003ce2b9829a",
+          "bytes": 3027,
+          "mime": "application/octet-stream"
+        }
+      }
+    },
+    "red": {
+      "variants": {
+        "png": {
+          "sha256": "ac6f14b7d813a642ae91d787710aea6d2c4780c3cd2eb233bed96a5ad8978630",
+          "bytes": 476701,
+          "mime": "image/png"
+        }
+      }
+    },
+    "sprite-mapping": {
+      "variants": {
+        "md": {
+          "sha256": "9073a371dd2bff40cc64833454965ac866385960b3585c80fd80592e05196f11",
+          "bytes": 3779,
+          "mime": "application/octet-stream"
+        }
+      }
+    },
+    "tmp": {
+      "variants": {
+        "jpg": {
+          "sha256": "80f61de5a30f89ea1e96a9daac95e3528a7a343a2a75943ecaa8cdba769a2dfd",
+          "bytes": 519203,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "white": {
+      "variants": {
+        "png": {
+          "sha256": "081d48e153baabac155af598314c448feeace4f218ac3933d471443e85bdeea0",
+          "bytes": 521818,
+          "mime": "image/png"
+        }
+      }
+    }
+  }
+}

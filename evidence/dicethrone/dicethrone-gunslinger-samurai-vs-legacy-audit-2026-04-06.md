@@ -31,7 +31,7 @@
 - 既有审计文档：
   - `evidence/dicethrone/dicethrone-gunslinger-samurai-reaudit-2026-04-05.md`
   - `evidence/dicethrone/dicethrone-gunslinger-samurai-card-preview-audit-2026-04-04.md`
-  - `evidence/dicethrone-full-capability-audit-2026-04-05.md`
+  - `evidence/dicethrone/dicethrone-full-capability-audit-2026-04-05.md`
   - `evidence/dicethrone/dicethrone-new-passives-e2e-test-2026-04-06.md`
   - `evidence/dicethrone/dicethrone-fan-the-hammer-upgrade-e2e-test-2026-04-06.md`
 
@@ -170,8 +170,8 @@
 ```powershell
 node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/cross-hero.test.ts --configLoader native --maxWorkers 1
 npm run typecheck
-node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-hero-mechanics.e2e.ts "Quick Draw：枪手首回合真实 upkeep 后应获得 1 个装填"
-node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-hero-mechanics.e2e.ts "Bushido：武士首回合 upkeep 与回合末少于 3 次进攻掷骰时都应获得荣誉"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-hero-mechanics.e2e.ts "Quick Draw：枪手首回合真实 upkeep 后应获得 1 个装填"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-hero-mechanics.e2e.ts "Bushido：武士首回合 upkeep 与回合末少于 3 次进攻掷骰时都应获得荣誉"
 ```
 
 说明：

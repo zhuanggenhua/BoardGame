@@ -6,7 +6,7 @@
 - 触发命令: `git merge origin/main --no-commit --no-ff`
 
 ## 2. 冲突文件
-- `e2e/lobby.e2e.ts`
+- `e2e/_shared/lobby.e2e.ts`
 - `openspec/changes/add-ai-repo-workbench/design.md`
 - `openspec/changes/add-ai-repo-workbench/proposal.md`
 - `openspec/changes/add-ai-repo-workbench/specs/ai-repo-workbench/spec.md`
@@ -17,7 +17,7 @@
 - `src/pages/Home.tsx`
 
 ## 3. 解决策略
-### `e2e/lobby.e2e.ts`
+### `e2e/_shared/lobby.e2e.ts`
 - 策略：合并两侧断言。
 - 合并要点：保留当前分支对“加入 AI”按钮文案状态的断言，同时带入主分支新增的默认难度断言、截图留证和切换到“困难”难度的操作。
 - 原因：两边覆盖的是同一条房间创建链路，但验证点不同，合并后覆盖更完整。

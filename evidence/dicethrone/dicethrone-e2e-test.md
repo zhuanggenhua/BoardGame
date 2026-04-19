@@ -2,8 +2,8 @@
 
 ## 结论
 
-- `e2e/dicethrone.e2e.ts` 已收敛为 3 个基于 `GameTestContext + setupScene + TestHarness` 的核心用例。
-- 2026-03-28 本地复跑通过：`e2e/dicethrone.e2e.ts` **3/3 passed**。
+- `e2e/dicethrone/dicethrone.e2e.ts` 已收敛为 3 个基于 `GameTestContext + setupScene + TestHarness` 的核心用例。
+- 2026-03-28 本地复跑通过：`e2e/dicethrone/dicethrone.e2e.ts` **3/3 passed**。
 - 本轮没有再走旧的在线房间/教学长链路，而是改成可控的本地测试场景，避免之前的随机性和无关流程噪音。
 
 ## 当前用例
@@ -39,25 +39,25 @@ $env:VITE_DEV_PORT='6173'
 $env:PW_GAME_SERVER_PORT='20000'
 $env:GAME_SERVER_PORT='20000'
 $env:API_SERVER_PORT='21000'
-npx playwright test e2e/dicethrone.e2e.ts --workers=1
+npx playwright test e2e/dicethrone/dicethrone.e2e.ts --workers=1
 ```
 
 ## 验证结果
 
 ```text
 Running 3 tests using 1 worker
-  ok 1 [chromium] › e2e\dicethrone.e2e.ts › main flow: moon elf reaches defensive roll
-  ok 2 [chromium] › e2e\dicethrone.e2e.ts › regression: targeted adds 2 damage and persists
-  ok 3 [chromium] › e2e\dicethrone.e2e.ts › ui stability: die lock toggle syncs state
+  ok 1 [chromium] › e2e\dicethrone\dicethrone.e2e.ts › main flow: moon elf reaches defensive roll
+  ok 2 [chromium] › e2e\dicethrone\dicethrone.e2e.ts › regression: targeted adds 2 damage and persists
+  ok 3 [chromium] › e2e\dicethrone\dicethrone.e2e.ts › ui stability: die lock toggle syncs state
 
   3 passed
 ```
 
 ## 截图证据
 
-- `test-results/evidence-screenshots/dicethrone.e2e/main-flow-moon-elf-reaches-defensive-roll/`
-- `test-results/evidence-screenshots/dicethrone.e2e/regression-targeted-adds-2-damage-and-persists/`
-- `test-results/evidence-screenshots/dicethrone.e2e/ui-stability-die-lock-toggle-syncs-state/`
+- `test-results/evidence-screenshots/dicethrone/dicethrone.e2e/main-flow-moon-elf-reaches-defensive-roll/`
+- `test-results/evidence-screenshots/dicethrone/dicethrone.e2e/regression-targeted-adds-2-damage-and-persists/`
+- `test-results/evidence-screenshots/dicethrone/dicethrone.e2e/ui-stability-die-lock-toggle-syncs-state/`
 
 ## 备注
 

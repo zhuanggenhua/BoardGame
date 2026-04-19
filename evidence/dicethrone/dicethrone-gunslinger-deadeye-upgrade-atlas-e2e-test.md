@@ -2,7 +2,7 @@
 
 ## 范围
 
-- 用例：`e2e/temp-dicethrone-ability-atlas-regression.e2e.ts`
+- 用例：`e2e/dicethrone/temp-dicethrone-ability-atlas-regression.e2e.ts`
 - 场景：枪手在正常 `main1` 主阶段，手牌只有 `upgrade-deadeye-2`
 - 验收目标：
   - 手牌里的 `死亡之眼 II` 仍使用 `ability-cards.webp` 图集渲染，不是空白卡或 shimmer 占位
@@ -12,7 +12,7 @@
 ## 运行命令
 
 ```bash
-node scripts/infra/run-e2e-single.mjs ci e2e/temp-dicethrone-ability-atlas-regression.e2e.ts "gunslinger deadeye upgrade should resolve without wrong spotlight in normal play"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/temp-dicethrone-ability-atlas-regression.e2e.ts "gunslinger deadeye upgrade should resolve without wrong spotlight in normal play"
 ```
 
 ## 截图证据
@@ -20,7 +20,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/temp-dicethrone-ability-atlas-regre
 ### 1. 出牌前手牌图
 
 截图：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\temp-dicethrone-ability-atlas-regression.e2e\gunslinger-deadeye-upgrade-should-resolve-without-wrong-spotlight-in-normal-play\gunslinger-deadeye-upgrade-hand-before-play.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\temp-dicethrone-ability-atlas-regression.e2e\gunslinger-deadeye-upgrade-should-resolve-without-wrong-spotlight-in-normal-play\gunslinger-deadeye-upgrade-hand-before-play.png`
 
 我实际看到：
 
@@ -31,7 +31,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/temp-dicethrone-ability-atlas-regre
 ### 2. 点击后的正常升级状态
 
 截图：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\temp-dicethrone-ability-atlas-regression.e2e\gunslinger-deadeye-upgrade-should-resolve-without-wrong-spotlight-in-normal-play\gunslinger-deadeye-upgrade-after-play.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\temp-dicethrone-ability-atlas-regression.e2e\gunslinger-deadeye-upgrade-should-resolve-without-wrong-spotlight-in-normal-play\gunslinger-deadeye-upgrade-after-play.png`
 
 我实际看到：
 

@@ -12,8 +12,8 @@
 ## 验证命令
 
 ```powershell
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "同一玩家有两张 set-aside 泰坦时，牌库右侧泰坦栏应纵向单列显示并兼容横屏移动端"
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "alien_terraform 第三步可通过牌库右侧泰坦栏选择可视作随从打出的 set-aside 泰坦"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "同一玩家有两张 set-aside 泰坦时，牌库右侧泰坦栏应纵向单列显示并兼容横屏移动端"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "alien_terraform 第三步可通过牌库右侧泰坦栏选择可视作随从打出的 set-aside 泰坦"
 ```
 
 结果：两条用例均 `1 passed`
@@ -22,15 +22,15 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "alien_terraform 
 
 双泰坦横屏移动端局内截图：
 
-![双泰坦局内纵向单列](../test-results/evidence-screenshots/smashup-alien-terraform.e2e/同一玩家有两张-set-aside-泰坦时，牌库右侧泰坦栏应纵向单列显示并兼容横屏移动端/dual-setaside-titans-mobile-rail.png)
+![双泰坦局内纵向单列](../test-results/evidence-screenshots/smashup/smashup-alien-terraform.e2e/同一玩家有两张-set-aside-泰坦时，牌库右侧泰坦栏应纵向单列显示并兼容横屏移动端/dual-setaside-titans-mobile-rail.png)
 
 单泰坦 rail 交互中间态：
 
-![单泰坦 rail 提示态](../test-results/evidence-screenshots/smashup-alien-terraform.e2e/alien_terraform-第三步可通过牌库右侧泰坦栏选择可视作随从打出的-set-aside-泰坦/terraform-titan-rail-prompt.png)
+![单泰坦 rail 提示态](../test-results/evidence-screenshots/smashup/smashup-alien-terraform.e2e/alien_terraform-第三步可通过牌库右侧泰坦栏选择可视作随从打出的-set-aside-泰坦/terraform-titan-rail-prompt.png)
 
 单泰坦 rail 进场后状态：
 
-![单泰坦 rail 进场后](../test-results/evidence-screenshots/smashup-alien-terraform.e2e/alien_terraform-第三步可通过牌库右侧泰坦栏选择可视作随从打出的-set-aside-泰坦/terraform-after-titan-from-rail.png)
+![单泰坦 rail 进场后](../test-results/evidence-screenshots/smashup/smashup-alien-terraform.e2e/alien_terraform-第三步可通过牌库右侧泰坦栏选择可视作随从打出的-set-aside-泰坦/terraform-after-titan-from-rail.png)
 
 ## 实看结论
 

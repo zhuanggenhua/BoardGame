@@ -2,19 +2,19 @@
 
 > 说明：本文件保留的是 `/dev/ai-repo-workbench` 旧入口在下线前的最后一轮页面证据。
 > 当前正式入口已改为 Flowise 官方聊天页，主验收文档改看 `evidence/smashup/flowise-ai-repo-workbench-sidebar-e2e.md`。
-> 首页工具入口下线后的当前回归，改由 `e2e/lobby.e2e.ts` 中“AI 仓库工作台已从首页工具入口下线，避免继续走旧主壳”这条用例覆盖。
+> 首页工具入口下线后的当前回归，改由 `e2e/_shared/lobby.e2e.ts` 中“AI 仓库工作台已从首页工具入口下线，避免继续走旧主壳”这条用例覆盖。
 
 ## 2026-04-09 首页工具入口下线回归
 
 ### 执行命令
 
 ```powershell
-npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "AI 仓库工作台已从首页工具入口下线，避免继续走旧主壳"
+npm run test:e2e:ci:file -- e2e/_shared/lobby.e2e.ts "AI 仓库工作台已从首页工具入口下线，避免继续走旧主壳"
 ```
 
 ### 截图路径
 
-- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\lobby.e2e\AI-仓库工作台已从首页工具入口下线，避免继续走旧主壳\ai-repo-workbench-home-entry-retired.png`
+- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\_shared\lobby.e2e\AI-仓库工作台已从首页工具入口下线，避免继续走旧主壳\ai-repo-workbench-home-entry-retired.png`
 
 ### 人工观察
 
@@ -48,13 +48,13 @@ npm run test:e2e:ci:file -- lobby.e2e.ts "AI 仓库工作台可从工具入口�
 ## 截图路径
 
 - 等待决策态原始截图：
-  `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\lobby.e2e\AI-仓库工作台可从工具入口进入并完成-new-faction-纵切片\ai-repo-workbench-node-graph-waiting-decision.png`
+  `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\_shared\lobby.e2e\AI-仓库工作台可从工具入口进入并完成-new-faction-纵切片\ai-repo-workbench-node-graph-waiting-decision.png`
 - 完成态原始截图：
-  `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\lobby.e2e\AI-仓库工作台可从工具入口进入并完成-new-faction-纵切片\ai-repo-workbench-node-graph-complete.png`
+  `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\_shared\lobby.e2e\AI-仓库工作台可从工具入口进入并完成-new-faction-纵切片\ai-repo-workbench-node-graph-complete.png`
 - 等待决策态固化副本：
-  `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\evidence\assets\ai-repo-workbench-e2e\node-graph-waiting-decision.png`
+  `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\evidence\_shared\assets\ai-repo-workbench-e2e\node-graph-waiting-decision.png`
 - 完成态固化副本：
-  `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\evidence\assets\ai-repo-workbench-e2e\node-graph-complete.png`
+  `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\evidence\_shared\assets\ai-repo-workbench-e2e\node-graph-complete.png`
 
 ## 截图 1：等待决策态
 

@@ -16,7 +16,7 @@
 结果：
 
 - `src/ugc/__tests__/runtime.test.ts` 14/14 通过
-- `e2e/lobby.e2e.ts` 指定用例通过，包含：
+- `e2e/_shared/lobby.e2e.ts` 指定用例通过，包含：
   - 首次进入首页 V2 后等待打开动画结束
   - `page.reload()` 后再次确认打开动画重播
   - 从目录进入 `smashup` 详情页

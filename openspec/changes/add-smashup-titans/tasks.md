@@ -40,4 +40,4 @@
 
 - [ ] 7.1 在现有 Smash Up 测试文件中补领域测试，覆盖泰坦初始化、打出、移动、clash、离场、计分清场。
 - [ ] 7.2 为至少 1 个典型泰坦交互补 E2E，用 TestHarness 构造场景、运行通过并检查截图。
-- [ ] 7.3 创建 `evidence/smashup-titans-e2e-test.md`，附截图分析与验证结论。
+- [ ] 7.3 创建 `evidence/smashup/smashup-titans-e2e-test.md`，附截图分析与验证结论。

@@ -8,7 +8,9 @@ import type { CriticalImageResolver } from '../core/types';
 /** 游戏运行时实现（Board/engineConfig/tutorial/latencyConfig），按需懒加载 */
 export interface GameClientRuntimeModule {
     engineConfig: GameEngineConfig;
-    board: React.ComponentType<Record<string, unknown>>;
+    // 各游戏 Board 组件的 props 都是具体的 GameBoardProps<...>，
+    // 在统一 runtime 合同里使用宽类型避免被 Record<string, unknown> 误收窄。
+    board: React.ComponentType<any>;
     tutorial?: TutorialManifest;
     tutorialCatalog?: TutorialCollection;
     latencyConfig?: LatencyOptimizationConfig;
@@ -28,7 +30,7 @@ export interface GameClientManifestEntry {
     /** @deprecated 使用 loadRuntime() 替代 */
     engineConfig?: GameEngineConfig;
     /** @deprecated 使用 loadRuntime() 替代 */
-    board?: React.ComponentType<Record<string, unknown>>;
+    board?: React.ComponentType<any>;
     /** @deprecated 使用 loadRuntime() 替代 */
     tutorial?: TutorialManifest;
     /** @deprecated 使用 loadRuntime() 替代 */

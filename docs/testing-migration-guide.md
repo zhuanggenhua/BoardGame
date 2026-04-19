@@ -477,8 +477,8 @@ console.log('测试环境:', isTest);
 - 完整设计文档：`docs/testing-infrastructure.md`
 - 快速参考：`docs/testing-tools-quick-reference.md`
 - 自动化测试指南：`docs/automated-testing.md`
-- 示例测试：`e2e/example-test-harness-usage.e2e.ts`
-- 实际案例：`e2e/dicethrone-thunder-strike.e2e.ts`
+- 示例测试：`e2e/dicethrone/example-test-harness-usage.e2e.ts`
+- 实际案例：`e2e/dicethrone/dicethrone-thunder-strike.e2e.ts`
 
 ## 🆘 故障排除
 

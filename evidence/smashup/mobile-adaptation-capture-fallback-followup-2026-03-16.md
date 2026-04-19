@@ -76,7 +76,7 @@ powershell -ExecutionPolicy Bypass -File scripts/infra/capture-mobile-evidence.p
 - Edge 能被拉起
 - Vite 已 ready
 - 目标输出文件仍未生成：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
 - 当前能观察到的窗口标题始终停留在：
   - `127.0.0.1_/play/smashup`
 

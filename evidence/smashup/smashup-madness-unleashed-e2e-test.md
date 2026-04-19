@@ -26,7 +26,7 @@
 
 ```bash
 npx vitest run src/games/smashup/__tests__/madnessPromptAbilities.test.ts
-npm run test:e2e:ci -- e2e/smashup-response-window-pass-test.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-response-window-pass-test.e2e.ts
 ```
 
 ## 测试结果
@@ -43,7 +43,7 @@ npm run test:e2e:ci -- e2e/smashup-response-window-pass-test.e2e.ts
 
 ### 2. E2E
 
-- `e2e/smashup-response-window-pass-test.e2e.ts`
+- `e2e/smashup/smashup-response-window-pass-test.e2e.ts`
 - 结果：`2 passed`
 
 E2E 场景：
@@ -63,11 +63,11 @@ E2E 场景：
 
 ### 1. 选择两张疯狂卡后的交互阶段
 
-![疯狂解放交互](/D:/GA/BoardGame-main-clean/test-results/evidence-screenshots/smashup-response-window-pass-test.e2e/疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡/01-madness-unleashed-prompt.png)
+![疯狂解放交互](/D:/GA/BoardGame-main-clean/test-results/evidence-screenshots/smashup/smashup-response-window-pass-test.e2e/疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡/01-madness-unleashed-prompt.png)
 
 截图路径：
 
-- `D:\GA\BoardGame-main-clean\test-results\evidence-screenshots\smashup-response-window-pass-test.e2e\疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡\01-madness-unleashed-prompt.png`
+- `D:\GA\BoardGame-main-clean\test-results\evidence-screenshots\smashup\smashup-response-window-pass-test.e2e\疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡\01-madness-unleashed-prompt.png`
 
 分析：
 
@@ -76,11 +76,11 @@ E2E 场景：
 
 ### 2. 结算后立即显示 2 个额外战术额度
 
-![疯狂解放结算后额度](/D:/GA/BoardGame-main-clean/test-results/evidence-screenshots/smashup-response-window-pass-test.e2e/疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡/02-after-madness-unleashed-quota.png)
+![疯狂解放结算后额度](/D:/GA/BoardGame-main-clean/test-results/evidence-screenshots/smashup/smashup-response-window-pass-test.e2e/疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡/02-after-madness-unleashed-quota.png)
 
 截图路径：
 
-- `D:\GA\BoardGame-main-clean\test-results\evidence-screenshots\smashup-response-window-pass-test.e2e\疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡\02-after-madness-unleashed-quota.png`
+- `D:\GA\BoardGame-main-clean\test-results\evidence-screenshots\smashup\smashup-response-window-pass-test.e2e\疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡\02-after-madness-unleashed-quota.png`
 
 分析：
 
@@ -90,11 +90,11 @@ E2E 场景：
 
 ### 3. 两次额外战术额度被实际消费
 
-![消费两次额外战术后](/D:/GA/BoardGame-main-clean/test-results/evidence-screenshots/smashup-response-window-pass-test.e2e/疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡/03-after-two-extra-actions.png)
+![消费两次额外战术后](/D:/GA/BoardGame-main-clean/test-results/evidence-screenshots/smashup/smashup-response-window-pass-test.e2e/疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡/03-after-two-extra-actions.png)
 
 截图路径：
 
-- `D:\GA\BoardGame-main-clean\test-results\evidence-screenshots\smashup-response-window-pass-test.e2e\疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡\03-after-two-extra-actions.png`
+- `D:\GA\BoardGame-main-clean\test-results\evidence-screenshots\smashup\smashup-response-window-pass-test.e2e\疯狂解放：弃两张疯狂卡后应立即获得两个额外战术额度，并能继续打出两张行动卡\03-after-two-extra-actions.png`
 
 分析：
 

@@ -27,7 +27,7 @@
 
 - `src/games/dicethrone/__tests__/BonusDieOverlay.test.tsx`
 - `src/games/dicethrone/__tests__/moon_elf-behavior.test.ts`
-- `e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- `e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 
 以上已通过。
 
@@ -184,7 +184,7 @@ npm run test:games:audit
 ```bash
 npm run typecheck
 npx vitest run src/games/dicethrone/__tests__/BonusDieOverlay.test.tsx src/games/dicethrone/__tests__/moon_elf-behavior.test.ts
-PW_USE_DEV_SERVERS=true npx playwright test e2e/dicethrone-watch-out-spotlight.e2e.ts
+PW_USE_DEV_SERVERS=true npx playwright test e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts
 npx vitest run src/games/dicethrone/__tests__/customaction-category-consistency.test.ts
 npx vitest run --config vitest.config.audit.ts src/games/dicethrone/__tests__/ability-customaction-audit.test.ts
 npx vitest run --config vitest.config.audit.ts src/games/dicethrone/__tests__/audit-effect-description.property.test.ts

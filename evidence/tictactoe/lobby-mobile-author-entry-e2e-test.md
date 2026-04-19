@@ -14,7 +14,7 @@
   - 将移动端作者入口改为侧栏根容器右上角绝对定位
   - 显式设置透明背景、无边框、无阴影的移动端样式
   - 保留标题右侧留白，避免入口遮挡标题
-- `e2e/lobby.e2e.ts`
+- `e2e/_shared/lobby.e2e.ts`
   - 为该移动端用例改成直接打开 `/?game=tictactoe`
   - 校验入口位于侧栏右上角
   - 校验入口没有可见背景、边框和阴影包围盒
@@ -25,8 +25,8 @@
 ```powershell
 $env:PW_USE_DEV_SERVERS='true'
 $env:PW_HAS_EXPLICIT_TARGET='true'
-$env:PW_TEST_MATCH='e2e/lobby.e2e.ts'
-node node_modules/playwright/cli.js test e2e/lobby.e2e.ts --grep "移动端游戏详情隐藏描述和推荐人数" --workers=1 --reporter=line
+$env:PW_TEST_MATCH='e2e/_shared/lobby.e2e.ts'
+node node_modules/playwright/cli.js test e2e/_shared/lobby.e2e.ts --grep "移动端游戏详情隐藏描述和推荐人数" --workers=1 --reporter=line
 ```
 
 结果：
@@ -35,8 +35,8 @@ node node_modules/playwright/cli.js test e2e/lobby.e2e.ts --grep "移动端游�
 
 ## 证据截图
 
-- 入口截图：`F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围盒\lobby-mobile-author-entry-right-top.png`
-- 弹窗截图：`F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围盒\lobby-mobile-author-modal-open.png`
+- 入口截图：`F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围盒\lobby-mobile-author-entry-right-top.png`
+- 弹窗截图：`F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围盒\lobby-mobile-author-modal-open.png`
 
 ## 截图结论
 

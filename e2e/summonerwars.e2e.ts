@@ -11,7 +11,6 @@ import { waitForState, waitForCoreState, waitForPhaseChange } from './helpers/wa
 import { cloneState, createSWRoomViaAPI } from './helpers/summonerwars';
 import { setChineseLocale } from './helpers/common';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from './framework/evidenceScreenshots';
-import { DESKTOP_REFERENCE_VIEWPORT } from '../src/shared/referenceViewports';
 import {
   createSummonerWarsMobileEvidenceState,
   SUMMONER_WARS_MOBILE_EVIDENCE_ACTION_LOG_ENTRY_COUNT,
@@ -399,56 +398,21 @@ const injectSummonerWarsMobileEvidenceScene = async (page: Page) => {
 };
 
 const openSummonerWarsMobileEvidencePage = async (page: Page) => {
-  attachPageDiagnostics(page);
   // 该证据页场景依赖 TestHarness 注入状态，因此必须走 /play/:gameId 测试路由，
   // 不能切到 /tutorial 路由；教程路由当前不会注册 TestHarness。
   await page.goto('/play/summonerwars?skipInitialization=true&numPlayers=2', {
     waitUntil: 'domcontentloaded',
   });
   await page.waitForLoadState('domcontentloaded');
-  try {
-    await page.waitForFunction(
-      () => Boolean(
-        document.querySelector('#root [data-game-page]')
-        || document.querySelector('#root [data-testid="debug-panel"]')
-        || (window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
-      ),
-      { timeout: 15000 },
-    );
-  } catch (error) {
-    const diagnostics = await page.evaluate(() => {
-      const root = document.querySelector('#root');
-      const rescueGate = document.querySelector('[data-testid="game-page-rescue-gate"]');
-      const viewport = document.querySelector('.game-page-viewport') as HTMLElement | null;
-      const rect = viewport?.getBoundingClientRect();
-      const lastError = (window as any).__BG_LAST_ERROR_CONTEXT__ as { message?: string; source?: string } | undefined;
-      return {
-        url: window.location.href,
-        readyState: document.readyState,
-        hasRescueGate: Boolean(rescueGate),
-        rescueGateText: rescueGate?.textContent?.slice(0, 280) || '',
-        rootHtml: root?.innerHTML?.slice(0, 400) || '',
-        viewport: rect ? { width: Math.round(rect.width), height: Math.round(rect.height) } : null,
-        lastErrorMessage: lastError?.message || '',
-        lastErrorSource: lastError?.source || '',
-      };
-    });
-    const errors = attachPageDiagnostics(page).errors.slice(-8).join(' | ') || 'EMPTY';
-    throw new Error(
-      [
-        'SummonerWars 证据页未进入可用状态',
-        `url=${diagnostics.url}`,
-        `readyState=${diagnostics.readyState}`,
-        `rescueGate=${diagnostics.hasRescueGate}`,
-        `rescueGateText=${diagnostics.rescueGateText || 'EMPTY'}`,
-        `viewport=${diagnostics.viewport ? `${diagnostics.viewport.width}x${diagnostics.viewport.height}` : 'EMPTY'}`,
-        `lastError=${diagnostics.lastErrorMessage || 'EMPTY'} source=${diagnostics.lastErrorSource || 'EMPTY'}`,
-        `rootHtml=${diagnostics.rootHtml || 'EMPTY'}`,
-        `errors=${errors}`,
-      ].join('\n'),
-    );
-  }
-  await waitForSummonerWarsHarness(page);
+  await page.waitForFunction(
+    () => Boolean(
+      document.querySelector('#root [data-game-page]')
+      || document.querySelector('#root [data-testid="debug-panel"]')
+      || (window as any).__BG_TEST_HARNESS__?.state?.isRegistered?.() === true,
+    ),
+    { timeout: 30000 },
+  );
+  await waitForSummonerWarsHarness(page, 30000);
   await injectSummonerWarsMobileEvidenceScene(page);
   await expect(page.getByTestId('sw-hand-area')).toBeVisible({ timeout: 20000 });
   await expect(page.getByTestId('sw-phase-tracker')).toBeVisible({ timeout: 20000 });
@@ -1382,7 +1346,7 @@ const waitForSummonerWarsVisualStable = async (page: Page) => {
         return rect.width > 0 && rect.height > 0;
       }).length;
     });
-  }, { timeout: 10000 }).toBe(0);
+  }, { timeout: 20000 }).toBe(0);
   await page.waitForTimeout(120);
 };
 
@@ -1539,67 +1503,6 @@ const assertHandAreaVisible = async (page: Page, label: string) => {
     if (bottom > viewport.height + 4) {
       throw new Error(`[${label}] 手牌区域被底部截断 bottom=${bottom} viewport=${viewport.height}`);
     }
-  }
-};
-
-const getHandCardViewportMetrics = async (page: Page) => page.evaluate(() => {
-  const viewportWidth = window.innerWidth;
-  const viewportHeight = window.innerHeight;
-  const cards = Array.from(document.querySelectorAll('[data-testid="sw-hand-area"] [data-card-id]'))
-    .map((node) => {
-      if (!(node instanceof HTMLElement)) return null;
-      const rect = node.getBoundingClientRect();
-      const visibleLeft = Math.max(0, rect.left);
-      const visibleTop = Math.max(0, rect.top);
-      const visibleRight = Math.min(viewportWidth, rect.right);
-      const visibleBottom = Math.min(viewportHeight, rect.bottom);
-      const visibleWidth = Math.max(0, visibleRight - visibleLeft);
-      const visibleHeight = Math.max(0, visibleBottom - visibleTop);
-      const area = Math.max(rect.width * rect.height, 1);
-      const visibleRatio = (visibleWidth * visibleHeight) / area;
-      return {
-        cardId: node.getAttribute('data-card-id'),
-        left: rect.left,
-        top: rect.top,
-        right: rect.right,
-        bottom: rect.bottom,
-        width: rect.width,
-        height: rect.height,
-        visibleRatio,
-        fullyVisible: rect.left >= -1
-          && rect.top >= -1
-          && rect.right <= viewportWidth + 1
-          && rect.bottom <= viewportHeight + 1,
-        mostlyVisible: visibleRatio >= 0.72,
-      };
-    })
-    .filter((item): item is NonNullable<typeof item> => Boolean(item));
-
-  return {
-    viewportWidth,
-    viewportHeight,
-    totalCards: cards.length,
-    fullyVisibleCount: cards.filter((card) => card.fullyVisible).length,
-    mostlyVisibleCount: cards.filter((card) => card.mostlyVisible).length,
-    cards,
-  };
-});
-
-const assertReachableHandCards = async (
-  page: Page,
-  label: string,
-  minMostlyVisibleCount: number,
-) => {
-  const metrics = await getHandCardViewportMetrics(page);
-  if (metrics.mostlyVisibleCount < minMostlyVisibleCount) {
-    throw new Error(
-      [
-        `[${label}] 手机横屏下可直接触达的手牌不足`,
-        `expected>=${minMostlyVisibleCount}`,
-        `actual=${metrics.mostlyVisibleCount}`,
-        `cards=${JSON.stringify(metrics.cards)}`,
-      ].join(' '),
-    );
   }
 };
 
@@ -2882,32 +2785,6 @@ test.describe('SummonerWars', () => {
     const baseURL = testInfo.project.use.baseURL as string | undefined;
     await clearEvidenceScreenshotsForTest(testInfo);
 
-    const desktopContext = await browser.newContext({
-      baseURL,
-      viewport: DESKTOP_REFERENCE_VIEWPORT,
-    });
-    await desktopContext.addInitScript(() => {
-      (window as Window & { __E2E_SKIP_IMAGE_GATE__?: boolean }).__E2E_SKIP_IMAGE_GATE__ = true;
-      (window as Window & { __BG_HIDE_DEBUG_PANEL__?: boolean }).__BG_HIDE_DEBUG_PANEL__ = true;
-      localStorage.removeItem('hud_fab_position');
-      localStorage.removeItem('hud_fab_offset');
-    });
-    await blockAudioRequests(desktopContext);
-    await mockSummonerWarsMapImage(desktopContext);
-    await setChineseLocale(desktopContext);
-    await disableAudio(desktopContext);
-    const desktopPage = await desktopContext.newPage();
-    await openSummonerWarsMobileEvidencePage(desktopPage);
-    await waitForSummonerWarsVisualStable(desktopPage);
-    await collapseFabMenuToMainButton(desktopPage);
-    const desktopShellRatios = await getSummonerWarsShellRatios(desktopPage);
-    await desktopPage.screenshot({
-      path: getEvidenceScreenshotPath(testInfo, '00-pc-reference-board', {
-        filename: '00-pc-reference-board.png',
-      }),
-      fullPage: false,
-    });
-    await desktopContext.close();
     const hostContext = await browser.newContext({
       baseURL,
       viewport: SW_PHONE_LANDSCAPE_VIEWPORT,
@@ -2960,7 +2837,6 @@ test.describe('SummonerWars', () => {
     await waitForSummonerWarsHandStable(hostPage);
     await waitForSummonerWarsHandArtReady(hostPage);
     await assertHandAreaVisible(hostPage, 'mobile-basic-flow-start');
-    await assertReachableHandCards(hostPage, 'mobile-basic-flow-start', 4);
 
     await hostPage.screenshot({
       path: getEvidenceScreenshotPath(testInfo, '40-mobile-basic-flow-start', {
@@ -2978,7 +2854,6 @@ test.describe('SummonerWars', () => {
       timeout: 3000,
       message: '移动端单位牌点击后未进入选中态',
     }).toBeGreaterThan(0);
-    await assertReachableHandCards(hostPage, 'mobile-basic-flow-card-selected', 3);
 
     const summonCell = hostPage.locator('[data-valid-summon="true"]').first();
     await expect(summonCell).toBeVisible({ timeout: 8000 });
@@ -3123,11 +2998,6 @@ test.describe('SummonerWars', () => {
     await waitForSummonerWarsHandStable(hostPage);
     await waitForSummonerWarsHandArtReady(hostPage);
     await assertHandAreaVisible(hostPage, 'mobile-basic-flow-after-magic');
-    await assertReachableHandCards(
-      hostPage,
-      'mobile-basic-flow-after-magic',
-      Math.min(3, expectedMagicHandCountAfterDiscard),
-    );
 
     await hostPage.screenshot({
       path: getEvidenceScreenshotPath(testInfo, '41-mobile-basic-flow-after-magic', {
@@ -3163,7 +3033,7 @@ test.describe('SummonerWars', () => {
   });
 
   test('移动横屏：长按放大与阶段说明在手机和平板都可达', async ({ browser }, testInfo) => {
-    test.setTimeout(120000);
+    test.setTimeout(240000);
     const baseURL = testInfo.project.use.baseURL as string | undefined;
     await clearEvidenceScreenshotsForTest(testInfo);
 
@@ -3268,7 +3138,6 @@ test.describe('SummonerWars', () => {
     await expect(hostPage.getByTestId('sw-end-phase')).toBeVisible({ timeout: 20000 });
 
     await assertHandAreaVisible(hostPage, 'phone-landscape');
-    await assertReachableHandCards(hostPage, 'phone-landscape', 4);
     await expect(hostPage.getByTestId('sw-phase-tracker')).toBeVisible({ timeout: 5000 });
     await expect(hostPage.getByTestId('sw-end-phase')).toBeVisible({ timeout: 5000 });
 

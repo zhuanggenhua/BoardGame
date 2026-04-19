@@ -33,7 +33,7 @@ const { match, playwrightArgs } = parseArgs(process.argv.slice(2));
 
 if (!match) {
     console.error('用法: npm run test:e2e:dev:file -- <e2e文件路径>');
-    console.error('示例: npm run test:e2e:dev:file -- e2e/smashup-4p-layout-test.e2e.ts');
+    console.error('示例: npm run test:e2e:dev:file -- e2e/smashup/smashup-4p-layout-test.e2e.ts');
     process.exit(1);
 }
 

@@ -659,10 +659,10 @@ test: {
 3. **同步等待优先**：UI 操作后先 `waitForTimeout(300)`，再按需异步等待
 4. **服务器就绪检查**：Playwright 配置使用 `/__ready` 端点
 5. **文件编码检查**：测试命令前运行 `npm run check:encoding`；发现 BOM 时执行 `npm run check:encoding:fix`；如果要把可疑乱码也视为失败，使用 `npm run check:encoding:strict`
-6. **截图目录单一真实来源**：失败自动产物只看 `test-results/playwright-artifacts/`；显式证据截图只写 `test-results/evidence-screenshots/`
+6. **截图目录单一真实来源**：失败自动产物只看 `test-results/playwright-artifacts/`；显式证据截图只写 `test-results/evidence-screenshots/_shared/`
 7. **按用例分目录**：`game.screenshot()` 默认按“测试文件/测试用例”建子目录，并在该用例首次截图前自动清理旧图
 8. **禁止一图多存**：不要把同一张截图同时复制到多个稳定目录
-9. **`evidence/` 放文档，不放自动截图池**：证据文档可以引用 `../test-results/evidence-screenshots/...`，但不要默认把自动化截图写进 `evidence/screenshots/`
+9. **`evidence/` 放文档，不放自动截图池**：证据文档可以引用 `../test-results/evidence-screenshots/_shared/...`，但不要默认把自动化截图写进 `evidence/_shared/screenshots/`
 10. **UI 结果必须人工看图并对照需求验收**：UI 改动交付前，必须实际打开至少一张显式证据截图核对结果，并逐项确认截图里的结果已经满足本轮需求/用户反馈；禁止只依据断言、日志或文档文字判定“已修复”
 11. **必须先看图并确认符合需求，再写结论**：证据文档、PR 说明、对用户的汇报都必须在人工看图且完成需求对照之后再写；禁止先写“正常/已修复”再回头补看图，也禁止只因“肉眼看着还行”就跳过需求核对
 12. **区分环境截图**：如果用户反馈的是线上/预发问题，必须补一张对应环境的现状截图，并明确区分“本地修复截图”和“线上现状截图”

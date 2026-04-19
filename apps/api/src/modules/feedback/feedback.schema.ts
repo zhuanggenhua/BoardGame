@@ -23,6 +23,11 @@ export enum FeedbackStatus {
     CLOSED = 'closed'
 }
 
+export enum FeedbackReporterType {
+    USER = 'user',
+    SYSTEM = 'system',
+}
+
 export interface FeedbackClientContext {
     route?: string;
     mode?: string;
@@ -63,6 +68,33 @@ export class Feedback {
     @Prop({ type: String, enum: FeedbackStatus, default: FeedbackStatus.OPEN })
     status!: FeedbackStatus;
 
+    @Prop({ type: String, enum: FeedbackReporterType, default: FeedbackReporterType.USER })
+    reporterType!: FeedbackReporterType;
+
+    @Prop({ type: String, trim: true, lowercase: true, default: 'feedback-modal' })
+    source!: string;
+
+    @Prop({ type: String })
+    autoReportKind?: string;
+
+    @Prop({ type: String })
+    incidentKey?: string;
+
+    @Prop({ type: String })
+    aggregationKey?: string;
+
+    @Prop({ type: Number, default: 1 })
+    occurrenceCount!: number;
+
+    @Prop({ type: Date })
+    firstOccurredAt?: Date;
+
+    @Prop({ type: Date })
+    lastOccurredAt?: Date;
+
+    @Prop({ type: String })
+    latestIncidentKey?: string;
+
     @Prop({ type: String })
     gameName?: string;
 
@@ -86,4 +118,10 @@ export class Feedback {
 }
 
 export const FeedbackSchema = SchemaFactory.createForClass(Feedback);
+
+FeedbackSchema.index({ reporterType: 1, source: 1, createdAt: -1 });
+FeedbackSchema.index({ gameId: 1, createdAt: -1 });
+FeedbackSchema.index({ status: 1, createdAt: -1 });
+FeedbackSchema.index({ incidentKey: 1 }, { sparse: true });
+FeedbackSchema.index({ aggregationKey: 1 }, { sparse: true });
 

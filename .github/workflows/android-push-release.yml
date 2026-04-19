@@ -34,6 +34,8 @@ jobs:
   release-on-main-push:
     if: github.actor != 'github-actions[bot]' && !contains(github.event.head_commit.message, '[skip android release]')
     runs-on: ubuntu-latest
+    env:
+      AUTO_BUMP_VERSION: ${{ vars.ANDROID_AUTO_BUMP_VERSION || 'true' }}
 
     steps:
       - name: Checkout repository
@@ -75,9 +77,6 @@ jobs:
           CAPACITOR_APP_ID=${{ vars.CAPACITOR_APP_ID || 'top.easyboardgame.app' }}
           CAPACITOR_APP_NAME=${{ vars.CAPACITOR_APP_NAME || '易桌游' }}
           ANDROID_WEBVIEW_MODE=embedded
-          VITE_ANDROID_NATIVE_UPDATE_ENABLED=true
-          VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}/native-app-updates/android/stable/latest.json
-          VITE_ANDROID_NATIVE_UPDATE_CHANNEL=stable
           VITE_ANDROID_OTA_ENABLED=true
           VITE_ANDROID_OTA_MANIFEST_URL=${{ vars.VITE_ASSETS_BASE_URL || 'https://assets.easyboardgame.top/official' }}/app-updates/android/stable/latest.json
           VITE_ANDROID_OTA_CHANNEL=stable
@@ -86,22 +85,19 @@ jobs:
           ANDROID_SPLASH_SOURCE=${{ vars.ANDROID_SPLASH_SOURCE || 'public/logos/logo_1_grid.png' }}
           ANDROID_ICON_BACKGROUND=${{ vars.ANDROID_ICON_BACKGROUND || '#FFFFFF' }}
           ANDROID_SPLASH_BACKGROUND=${{ vars.ANDROID_SPLASH_BACKGROUND || '#FFFFFF' }}
-          ANDROID_KEYSTORE_BASE64=${{ secrets.ANDROID_KEYSTORE_BASE64 }}
-          ANDROID_KEYSTORE_PASSWORD=${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          ANDROID_KEY_ALIAS=${{ secrets.ANDROID_KEY_ALIAS }}
-          ANDROID_KEY_PASSWORD=${{ secrets.ANDROID_KEY_PASSWORD }}
           EOF
 
-      - name: Release Android stable bundle + native package
+      - name: Release Android stable OTA bundle
         env:
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
-        run: node scripts/mobile/release-android.mjs full --channel stable --allow-legacy-shells
+        run: node scripts/mobile/release-android.mjs ota --channel stable
 
       - name: Bump next patch version
         id: next_version
+        if: env.AUTO_BUMP_VERSION == 'true'
         shell: bash
         run: |
           bump_output="$(node scripts/mobile/bump-project-version.mjs --bump patch)"
@@ -110,6 +106,7 @@ jobs:
           echo "next_version=${next_version}" >> "${GITHUB_OUTPUT}"
 
       - name: Commit next development version
+        if: env.AUTO_BUMP_VERSION == 'true'
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
@@ -119,7 +116,7 @@ jobs:
             echo "No version files changed; skip commit."
             exit 0
           fi
-          git commit -m "chore(release): bump android version to ${{ steps.next_version.outputs.next_version }} [skip android release]"
+          git commit -m "chore：回写 Android 版本到 ${{ steps.next_version.outputs.next_version }} [skip android release]"
           git push
 
       - name: Write workflow summary
@@ -131,8 +128,13 @@ jobs:
             echo "| 字段 | 值 |"
             echo "|---|---|"
             echo "| 发布版本 | ${{ steps.current_version.outputs.current_version }} |"
-            echo "| 下一开发版本 | ${{ steps.next_version.outputs.next_version }} |"
-            echo "| 发布内容 | stable OTA + stable native update |"
+            echo "| 发布内容 | stable OTA |"
             echo "| 触发方式 | push main |"
-            echo "| 版本回写 | 已提交到 main（带 [skip android release]） |"
+            if [[ "${AUTO_BUMP_VERSION}" == "true" ]]; then
+              echo "| 下一开发版本 | ${{ steps.next_version.outputs.next_version }} |"
+              echo "| 版本回写 | 已提交到 main（带 [skip android release]） |"
+            else
+              echo "| 下一开发版本 | 未回写（手动维护） |"
+              echo "| 版本回写 | 已关闭 |"
+            fi
           } >> "${GITHUB_STEP_SUMMARY}"

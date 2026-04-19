@@ -21,9 +21,9 @@ npm run test:e2e:ci:file -- smashup-image-loading.e2e.ts "进入本地对局时�
 ### 1. 关键图片门禁加载态
 
 绝对路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\add-critical-image-preloading\critical-image-gate-loading.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\add-critical-image-preloading\critical-image-gate-loading.png`
 
-![critical-image-gate-loading](../test-results/evidence-screenshots/add-critical-image-preloading/critical-image-gate-loading.png)
+![critical-image-gate-loading](../test-results/evidence-screenshots/smashup/add-critical-image-preloading/critical-image-gate-loading.png)
 
 分析：
 
@@ -34,9 +34,9 @@ npm run test:e2e:ci:file -- smashup-image-loading.e2e.ts "进入本地对局时�
 ### 2. 加载完成后的派系选择界面
 
 绝对路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\add-critical-image-preloading\critical-image-gate-faction-selection.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\add-critical-image-preloading\critical-image-gate-faction-selection.png`
 
-![critical-image-gate-faction-selection](../test-results/evidence-screenshots/add-critical-image-preloading/critical-image-gate-faction-selection.png)
+![critical-image-gate-faction-selection](../test-results/evidence-screenshots/smashup/add-critical-image-preloading/critical-image-gate-faction-selection.png)
 
 分析：
 

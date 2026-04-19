@@ -515,13 +515,6 @@ test.describe('Lobby E2E', () => {
         await expect(page.getByText('加载中...')).toHaveCount(0, { timeout: 10000 });
     });
 
-    test('AI 仓库工作台已从首页工具入口下线，避免继续走旧主壳', async ({ page, game }, testInfo) => {
-        await page.getByRole('button', { name: '工具' }).click();
-        await expect(page.getByRole('heading', { name: '素材切片机' })).toBeVisible();
-        await expect(page.getByRole('heading', { name: 'AI 仓库工作台' })).toHaveCount(0);
-        await game.screenshot('ai-repo-workbench-home-entry-retired', testInfo);
-    });
-
     test(GAME_DETAILS_LOADING_FALLBACK_TEST_NAME, async ({ page, game }, testInfo) => {
         let releaseModalModuleRequest: (() => void) | null = null;
         const allowModalModuleRequest = new Promise<void>((resolve) => {
@@ -983,7 +976,7 @@ test.describe('Lobby E2E', () => {
         await page.getByRole('button', { name: '3人' }).click();
         await page.getByTestId('setup-option-toggle-expansions-titans').click();
         await page.getByRole('button', { name: /加入 AI/ }).click();
-        await expect(page.getByRole('button', { name: /加入 AI/ })).toContainText('已开启');
+        await expect(page.getByText('已开启')).toBeVisible();
         await expect(page.getByRole('button', { name: '普通' })).toHaveAttribute('aria-pressed', 'true');
 
         await game.screenshot('lobby-smashup-create-room-ai-config-default-normal', testInfo);

@@ -23,9 +23,9 @@ npm run test:e2e:ci:file -- smashup-robot-hoverbot-new.e2e.ts "疯狂牌供给�
 
 绝对路径：
 
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-robot-hoverbot-new.e2e\疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补\madness-supply-hidden.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-robot-hoverbot-new.e2e\疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补\madness-supply-hidden.png`
 
-![无疯狂派系时不显示](../test-results/evidence-screenshots/smashup-robot-hoverbot-new.e2e/疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补/madness-supply-hidden.png)
+![无疯狂派系时不显示](../test-results/evidence-screenshots/smashup/smashup-robot-hoverbot-new.e2e/疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补/madness-supply-hidden.png)
 
 观察结果：
 
@@ -36,9 +36,9 @@ npm run test:e2e:ci:file -- smashup-robot-hoverbot-new.e2e.ts "疯狂牌供给�
 
 绝对路径：
 
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-robot-hoverbot-new.e2e\疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补\madness-supply-initial.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-robot-hoverbot-new.e2e\疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补\madness-supply-initial.png`
 
-![初始 x 30](../test-results/evidence-screenshots/smashup-robot-hoverbot-new.e2e/疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补/madness-supply-initial.png)
+![初始 x 30](../test-results/evidence-screenshots/smashup/smashup-robot-hoverbot-new.e2e/疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补/madness-supply-initial.png)
 
 观察结果：
 
@@ -50,9 +50,9 @@ npm run test:e2e:ci:file -- smashup-robot-hoverbot-new.e2e.ts "疯狂牌供给�
 
 绝对路径：
 
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-robot-hoverbot-new.e2e\疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补\madness-supply-after-draw.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-robot-hoverbot-new.e2e\疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补\madness-supply-after-draw.png`
 
-![抽取后 x 29](../test-results/evidence-screenshots/smashup-robot-hoverbot-new.e2e/疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补/madness-supply-after-draw.png)
+![抽取后 x 29](../test-results/evidence-screenshots/smashup/smashup-robot-hoverbot-new.e2e/疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补/madness-supply-after-draw.png)
 
 观察结果：
 
@@ -64,9 +64,9 @@ npm run test:e2e:ci:file -- smashup-robot-hoverbot-new.e2e.ts "疯狂牌供给�
 
 绝对路径：
 
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-robot-hoverbot-new.e2e\疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补\madness-supply-after-consume.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-robot-hoverbot-new.e2e\疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补\madness-supply-after-consume.png`
 
-![消耗后仍为 x 29](../test-results/evidence-screenshots/smashup-robot-hoverbot-new.e2e/疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补/madness-supply-after-consume.png)
+![消耗后仍为 x 29](../test-results/evidence-screenshots/smashup/smashup-robot-hoverbot-new.e2e/疯狂牌供给角标只在有疯狂派系时显示，并且抽取后会减少且不会回补/madness-supply-after-consume.png)
 
 观察结果：
 

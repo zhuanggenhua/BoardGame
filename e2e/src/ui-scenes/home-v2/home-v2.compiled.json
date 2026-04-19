@@ -1,0 +1,250 @@
+{
+  "id": "home_v2_content",
+  "artboard": {
+    "width": 896,
+    "height": 720,
+    "zones": {
+      "left_page": {
+        "x": 149,
+        "y": 202,
+        "width": 280,
+        "height": 355
+      },
+      "right_page": {
+        "x": 468,
+        "y": 202,
+        "width": 280,
+        "height": 355
+      },
+      "overview_left_page": {
+        "x": 158,
+        "y": 216,
+        "width": 248,
+        "height": 312
+      },
+      "overview_right_page": {
+        "x": 487,
+        "y": 216,
+        "width": 248,
+        "height": 312
+      },
+      "detail_left_inner": {
+        "x": 160,
+        "y": 218,
+        "width": 244,
+        "height": 318
+      },
+      "detail_right_inner": {
+        "x": 489,
+        "y": 218,
+        "width": 244,
+        "height": 318
+      },
+      "tab_lobby": {
+        "x": 806.4,
+        "y": 108,
+        "width": 53.76,
+        "height": 72
+      },
+      "tab_rooms": {
+        "x": 806.4,
+        "y": 187.2,
+        "width": 53.76,
+        "height": 72
+      },
+      "tab_leaderboard": {
+        "x": 806.4,
+        "y": 266.4,
+        "width": 53.76,
+        "height": 72
+      },
+      "tab_changelog": {
+        "x": 806.4,
+        "y": 345.6,
+        "width": 53.76,
+        "height": 72
+      },
+      "tab_about": {
+        "x": 806.4,
+        "y": 424.8,
+        "width": 53.76,
+        "height": 72
+      },
+      "spread_body": {
+        "x": 94,
+        "y": 144,
+        "width": 620,
+        "height": 405
+      }
+    }
+  },
+  "skins": {},
+  "root": {
+    "id": "root",
+    "type": "stack",
+    "visible": true,
+    "children": [
+      {
+        "id": "overview_left_page",
+        "type": "slot",
+        "visible": true,
+        "visibleIn": [
+          "overview"
+        ],
+        "zoneRef": "overview_left_page",
+        "rect": {
+          "x": 158,
+          "y": 216,
+          "width": 248,
+          "height": 312
+        },
+        "slotId": "overview_left_page",
+        "children": []
+      },
+      {
+        "id": "overview_right_page",
+        "type": "slot",
+        "visible": true,
+        "visibleIn": [
+          "overview"
+        ],
+        "zoneRef": "overview_right_page",
+        "rect": {
+          "x": 487,
+          "y": 216,
+          "width": 248,
+          "height": 312
+        },
+        "slotId": "overview_right_page",
+        "children": []
+      },
+      {
+        "id": "detail_left_page",
+        "type": "slot",
+        "visible": true,
+        "visibleIn": [
+          "detail"
+        ],
+        "zoneRef": "detail_left_inner",
+        "rect": {
+          "x": 160,
+          "y": 218,
+          "width": 244,
+          "height": 318
+        },
+        "slotId": "detail_left_page",
+        "children": []
+      },
+      {
+        "id": "detail_right_page",
+        "type": "slot",
+        "visible": true,
+        "visibleIn": [
+          "detail"
+        ],
+        "zoneRef": "detail_right_inner",
+        "rect": {
+          "x": 489,
+          "y": 218,
+          "width": 244,
+          "height": 318
+        },
+        "slotId": "detail_right_page",
+        "children": []
+      },
+      {
+        "id": "tab_button_lobby",
+        "type": "button",
+        "visible": true,
+        "visibleIn": [
+          "overview",
+          "detail"
+        ],
+        "zoneRef": "tab_lobby",
+        "rect": {
+          "x": 806.4,
+          "y": 108,
+          "width": 53.76,
+          "height": 72
+        },
+        "actionId": "openLobbyTab",
+        "children": []
+      },
+      {
+        "id": "tab_button_rooms",
+        "type": "button",
+        "visible": true,
+        "visibleIn": [
+          "overview",
+          "detail"
+        ],
+        "zoneRef": "tab_rooms",
+        "rect": {
+          "x": 806.4,
+          "y": 187.2,
+          "width": 53.76,
+          "height": 72
+        },
+        "actionId": "openRoomsTab",
+        "children": []
+      },
+      {
+        "id": "tab_button_leaderboard",
+        "type": "button",
+        "visible": true,
+        "visibleIn": [
+          "overview",
+          "detail"
+        ],
+        "zoneRef": "tab_leaderboard",
+        "rect": {
+          "x": 806.4,
+          "y": 266.4,
+          "width": 53.76,
+          "height": 72
+        },
+        "actionId": "openLeaderboardTab",
+        "children": []
+      },
+      {
+        "id": "tab_button_changelog",
+        "type": "button",
+        "visible": true,
+        "visibleIn": [
+          "overview",
+          "detail"
+        ],
+        "zoneRef": "tab_changelog",
+        "rect": {
+          "x": 806.4,
+          "y": 345.6,
+          "width": 53.76,
+          "height": 72
+        },
+        "actionId": "openChangelogTab",
+        "children": []
+      },
+      {
+        "id": "tab_button_about",
+        "type": "button",
+        "visible": true,
+        "visibleIn": [
+          "overview",
+          "detail"
+        ],
+        "zoneRef": "tab_about",
+        "rect": {
+          "x": 806.4,
+          "y": 424.8,
+          "width": 53.76,
+          "height": 72
+        },
+        "actionId": "openAboutTab",
+        "children": []
+      }
+    ],
+    "direction": "absolute",
+    "gap": 0
+  },
+  "assetDependencies": []
+}

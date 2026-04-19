@@ -17,7 +17,7 @@
 
 ### 2. 前端界面
 
-- 文件：`e2e/admin-feedback.e2e.ts`
+- 文件：`e2e/smashup/admin-feedback.e2e.ts`
 - 已验证的界面要点：
   - 开发者侧边栏出现“反馈管理”入口
   - 反馈页标题旁显示“只读”标记
@@ -31,7 +31,7 @@
 
 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\admin-feedback-ai-payload.png`
 
-![管理员反馈页](../test-results/admin-feedback-ai-payload.png)
+![管理员反馈页](../test-results/_shared/admin-feedback-ai-payload.png)
 
 截图分析：
 
@@ -43,7 +43,7 @@
 
 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\admin-feedback-developer-readonly.png`
 
-![开发者反馈页只读视角](../test-results/admin-feedback-developer-readonly.png)
+![开发者反馈页只读视角](../test-results/_shared/admin-feedback-developer-readonly.png)
 
 截图分析：
 

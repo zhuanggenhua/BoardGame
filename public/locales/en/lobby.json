@@ -262,7 +262,7 @@
     "progressLabel": "Download progress",
     "progressPercent": "{{percent}}%",
     "progressPending": "Preparing",
-    "progressHint": "Waiting for native progress.",
+    "progressHint": "Fetching download progress. Please wait.",
     "openSettings": "Open install settings",
     "continueInstall": "Continue install",
     "retryAction": "Check again"
@@ -325,6 +325,20 @@
       "title": "Summoner Wars",
       "description": "A tactical card game where you command a faction of warriors on a battlefield grid. Summon units, cast spells, and destroy the enemy Summoner to win.",
       "players": "2 Players"
+    },
+    "splendor": {
+      "title": "Splendor",
+      "description": "Playable base-rules implementation of Splendor with core rules, main board UI, and tutorial support.",
+      "players": "2-4 Players",
+      "setup": {
+        "startingPlayerId": {
+          "label": "Diamond holder",
+          "player1": "Player 1",
+          "player2": "Player 2",
+          "player3": "Player 3",
+          "player4": "Player 4"
+        }
+      }
     },
     "ugc": {
       "players": "2 Players"

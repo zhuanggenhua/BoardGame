@@ -8,19 +8,19 @@
 
 ## 本轮实际执行
 ### E2E
-1. `npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下主教程关键交互不应被提示挡住"`
+1. `npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下主教程关键交互不应被提示挡住"`
    - 结果：`1 passed`
-2. `npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "牛仔决斗子教程在手机横屏下提示不应遮挡基地且副警长可正常弃置"`
+2. `npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "牛仔决斗子教程在手机横屏下提示不应遮挡基地且副警长可正常弃置"`
    - 结果：`1 passed`
 
 ### ESLint
-- `npx eslint src/components/tutorial/TutorialOverlay.tsx src/games/smashup/tutorial.ts src/games/smashup/ui/BaseZone.tsx e2e/smashup-tutorial.e2e.ts`
+- `npx eslint src/components/tutorial/TutorialOverlay.tsx src/games/smashup/tutorial.ts src/games/smashup/ui/BaseZone.tsx e2e/smashup/smashup-tutorial.e2e.ts`
 - 结果：0 errors
 
 ## 关键截图与肉眼结论
 
 ### 1. playMinion：教程卡贴边，让出棋盘中央与基地点击区
-截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup-tutorial.e2e/手机横屏下主教程关键交互不应被提示挡住/main-tutorial-mobile-play-minion-clear.png`
+截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/手机横屏下主教程关键交互不应被提示挡住/main-tutorial-mobile-play-minion-clear.png`
 
 我实际看到：
 - 教程卡固定在画面左侧，不再横跨棋盘中央。
@@ -30,7 +30,7 @@
 是否达到验收标准：达到。`playMinion` 这一步已经证明主教程不再用居中提示卡压住中央基地操作区。
 
 ### 2. playAction：行动牌步骤改成右侧贴边，中央操作链路保持通畅
-截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup-tutorial.e2e/手机横屏下主教程关键交互不应被提示挡住/main-tutorial-mobile-play-action-clear.png`
+截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/手机横屏下主教程关键交互不应被提示挡住/main-tutorial-mobile-play-action-clear.png`
 
 我实际看到：
 - 教程卡在右侧贴边，不再像之前那样居中悬在基地上方。
@@ -40,7 +40,7 @@
 是否达到验收标准：达到。用户之前反馈的“主教程挡住操作界面”在 `playAction` 这一关键步已被直接修复。
 
 ### 3. useTalent：高亮改到具体图书管理员，教程卡不再压住要点的随从
-截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup-tutorial.e2e/手机横屏下主教程关键交互不应被提示挡住/main-tutorial-mobile-use-talent-clear.png`
+截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/手机横屏下主教程关键交互不应被提示挡住/main-tutorial-mobile-use-talent-clear.png`
 
 我实际看到：
 - 蓝色高亮圈直接落在左侧基地的图书管理员本体，而不是笼统框整片基地区域。
@@ -50,7 +50,7 @@
 是否达到验收标准：达到。`useTalent` 这一步已经证明提示卡与实际点击目标脱开，不再造成“看得到教程、点不到随从”的遮挡。
 
 ### 4. endPlayCards：结束回合按钮完整可见且未被提示卡覆盖
-截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup-tutorial.e2e/手机横屏下主教程关键交互不应被提示挡住/main-tutorial-mobile-end-turn-clear.png`
+截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/手机横屏下主教程关键交互不应被提示挡住/main-tutorial-mobile-end-turn-clear.png`
 
 我实际看到：
 - 教程卡位于左上区域，结束回合按钮位于右侧，二者完全分离。
@@ -60,7 +60,7 @@
 是否达到验收标准：达到。结束回合步骤的操作控件没有再被主教程遮挡。
 
 ### 5. 子教程回归：牛仔决斗仍然左侧贴边，不挡基地
-截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup-tutorial.e2e/牛仔决斗子教程在手机横屏下提示不应遮挡基地且副警长可正常弃置/cowboys-duel-mobile-no-base-occlusion.png`
+截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/牛仔决斗子教程在手机横屏下提示不应遮挡基地且副警长可正常弃置/cowboys-duel-mobile-no-base-occlusion.png`
 
 我实际看到：
 - 子教程提示卡仍贴在左侧，中央基地与下方两张随从完整可见。

@@ -3,10 +3,10 @@
 ## 2026-03-16 当前复核
 
 - 本轮直接复核了以下现存截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\07-mobile-minion-long-press-magnify.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\11-mobile-hand-long-press-magnify.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\07-mobile-minion-long-press-magnify.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\11-mobile-hand-long-press-magnify.png`
 - 复核结论：
   - `04-mobile-landscape-layout.png` 仍可作为有效主状态图。
   - `04a-mobile-exit-fab-panel.png` 仍可作为有效局部图。
@@ -15,7 +15,7 @@
 - 本轮再次执行 `npm run check:child-process:e2e`，结果仍为 `fork -> spawn EPERM`，所以当前沙箱依旧无法补跑 Playwright。
 - 本轮静态验证结果：
   - `npm run typecheck` 通过。
-  - `npx eslint e2e/smashup-4p-layout-test.e2e.ts src/games/smashup/Board.tsx src/games/summonerwars/Board.tsx src/games/mobileSupport.ts src/games/__tests__/mobileSupport.test.ts src/games/smashup/manifest.ts src/games/summonerwars/manifest.ts --max-warnings 999` 无 error，仅有仓库既有 warnings。
+  - `npx eslint e2e/smashup/smashup-4p-layout-test.e2e.ts src/games/smashup/Board.tsx src/games/summonerwars/Board.tsx src/games/mobileSupport.ts src/games/__tests__/mobileSupport.test.ts src/games/smashup/manifest.ts src/games/summonerwars/manifest.ts --max-warnings 999` 无 error，仅有仓库既有 warnings。
 
 ## 本轮变更
 
@@ -24,7 +24,7 @@
 - `src/components/system/FabMenu.tsx`
   - 移动端 FAB 视觉圆球缩小，但保留 `44px` 命中区。
   - 面板宽高按当前位置和安全区动态限宽限高，避免退出面板溢出视口。
-- `e2e/smashup-4p-layout-test.e2e.ts`
+- `e2e/smashup/smashup-4p-layout-test.e2e.ts`
   - `04a` 截图后立即关闭退出面板，避免污染后续截图。
   - 为 `exit` FAB tooltip 增加稳定 `data-testid`，并在 `04a -> 05` 之间显式断言 tooltip 不存在，避免旧版 hover 残影再次污染 `05`。
   - 长按放大相关截图现在会先等待 overlay 内部不再存在 `.atlas-shimmer`，确认卡牌预览已真正渲染，再截图。
@@ -36,7 +36,7 @@
 
 ```bash
 npm run typecheck
-npx eslint e2e/smashup-4p-layout-test.e2e.ts src/components/system/FabMenu.tsx src/games/smashup/Board.tsx --max-warnings 999
+npx eslint e2e/smashup/smashup-4p-layout-test.e2e.ts src/components/system/FabMenu.tsx src/games/smashup/Board.tsx --max-warnings 999
 ```
 
 结果：
@@ -68,11 +68,11 @@ npm run check:child-process:e2e
 
 截图：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
 
 嵌入：
 
-![04-mobile-landscape-layout](../test-results/evidence-screenshots/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04-mobile-landscape-layout.png)
+![04-mobile-landscape-layout](../test-results/evidence-screenshots/smashup/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04-mobile-landscape-layout.png)
 
 我从图里确认到：
 
@@ -88,11 +88,11 @@ npm run check:child-process:e2e
 
 截图：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
 
 嵌入：
 
-![04a-mobile-exit-fab-panel](../test-results/evidence-screenshots/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04a-mobile-exit-fab-panel.png)
+![04a-mobile-exit-fab-panel](../test-results/evidence-screenshots/smashup/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04a-mobile-exit-fab-panel.png)
 
 我从图里确认到：
 
@@ -107,11 +107,11 @@ npm run check:child-process:e2e
 
 截图：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
 
 嵌入：
 
-![05-mobile-single-tap-expands-attached-actions](../test-results/evidence-screenshots/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/05-mobile-single-tap-expands-attached-actions.png)
+![05-mobile-single-tap-expands-attached-actions](../test-results/evidence-screenshots/smashup/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/05-mobile-single-tap-expands-attached-actions.png)
 
 我从图里确认到：
 
@@ -125,11 +125,11 @@ npm run check:child-process:e2e
 
 已查看截图：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\07-mobile-minion-long-press-magnify.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\08-mobile-base-long-press-magnify.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\09-mobile-base-ongoing-long-press-magnify.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\10-mobile-attached-action-long-press-magnify.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\11-mobile-hand-long-press-magnify.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\07-mobile-minion-long-press-magnify.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\08-mobile-base-long-press-magnify.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\09-mobile-base-ongoing-long-press-magnify.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\10-mobile-attached-action-long-press-magnify.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\11-mobile-hand-long-press-magnify.png`
 
 共同问题：
 
@@ -144,7 +144,7 @@ npm run check:child-process:e2e
 
 - 代码层面，`smashup` 横屏主布局和 FAB 退出面板这一轮已经收敛，`04` 和 `04a` 可以继续作为有效截图。
 - 放大预览的旧截图链路不成立，不是功能必然错误，而是截图时机过早，截到了 `atlas-shimmer`。
-- 本轮已把等待条件补进 [e2e/smashup-4p-layout-test.e2e.ts](/D:/gongzuo/webgame/BoardGame/e2e/smashup-4p-layout-test.e2e.ts)：后续重跑必须先等 `.atlas-shimmer` 消失，再生成 `07-11` 新图。
+- 本轮已把等待条件补进 [e2e/smashup/smashup-4p-layout-test.e2e.ts](/D:/gongzuo/webgame/BoardGame/e2e/smashup/smashup-4p-layout-test.e2e.ts)：后续重跑必须先等 `.atlas-shimmer` 消失，再生成 `07-11` 新图。
 - 当前沙箱仍被 `spawn EPERM` 阻塞，无法在这里补跑新图。
 
 ## 下一步
@@ -152,17 +152,17 @@ npm run check:child-process:e2e
 在允许 `child_process` 的环境中执行：
 
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏应保持四人局布局可用，并支持手牌长按看牌"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-4p-layout-test.e2e.ts "移动端横屏应保持四人局布局可用，并支持手牌长按看牌"
 ```
 
 重跑后优先人工核对：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\07-mobile-minion-long-press-magnify.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\08-mobile-base-long-press-magnify.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\09-mobile-base-ongoing-long-press-magnify.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\10-mobile-attached-action-long-press-magnify.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\11-mobile-hand-long-press-magnify.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\12-tablet-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\07-mobile-minion-long-press-magnify.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\08-mobile-base-long-press-magnify.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\09-mobile-base-ongoing-long-press-magnify.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\10-mobile-attached-action-long-press-magnify.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\11-mobile-hand-long-press-magnify.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\12-tablet-landscape-layout.png`
 
 ## 2026-03-18 结束回合右侧提示复核
 
@@ -172,7 +172,7 @@ npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏�
 
 ```bash
 npm run typecheck
-npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏应保持四人局布局可用，并支持手牌长按看牌"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-4p-layout-test.e2e.ts "移动端横屏应保持四人局布局可用，并支持手牌长按看牌"
 ```
 
 结果：
@@ -182,8 +182,8 @@ npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏�
 
 ### 本轮实际查看的截图
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\12-tablet-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\12-tablet-landscape-layout.png`
 
 ### 读图结论
 
@@ -203,7 +203,7 @@ npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏�
 - `D:\gongzuo\webgame\BoardGame\src\games\smashup\Board.tsx`
   - 只在移动端增加结束回合主操作区的右侧安全留白。
   - 同时把右侧额度提示块做成更紧凑的移动端尺寸，避免提示本身再次撑出屏幕。
-- `D:\gongzuo\webgame\BoardGame\e2e\smashup-4p-layout-test.e2e.ts`
+- `D:\gongzuo\webgame\BoardGame\e2e\smashup\smashup-4p-layout-test.e2e.ts`
   - 为 `su-end-turn-hints`、`su-end-turn-minion-quota`、`su-end-turn-action-quota` 增加显式可见性和视口内断言。
 
 ### 当前裁定
@@ -221,9 +221,9 @@ npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏�
 
 ### 本轮实际查看的截图
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04b-mobile-end-turn-hidden.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04c-mobile-end-turn-restored.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\13-desktop-end-turn-restored.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04b-mobile-end-turn-hidden.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04c-mobile-end-turn-restored.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\13-desktop-end-turn-restored.png`
 
 ### 读图结论
 
@@ -260,7 +260,7 @@ npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏�
 - `D:\gongzuo\webgame\BoardGame\src\games\smashup\Board.tsx`
   - 顶部回合便签、计分版和结束回合区都改为读取同一组 HUD 比例参数。
   - 移动端结束回合区右侧预留空间也改为随 `endTurnHudScale` 同步缩放，不再用固定 `92px`。
-- `D:\gongzuo\webgame\BoardGame\e2e\smashup-4p-layout-test.e2e.ts`
+- `D:\gongzuo\webgame\BoardGame\e2e\smashup\smashup-4p-layout-test.e2e.ts`
   - 手机横屏基线改为固定 `800x450`（16:9）。
   - 桌面对照基线改为固定 `1920x1080`。
   - 本轮按用户要求移除平板段，不再单独把 `1024x768` 作为强制验收档。
@@ -269,7 +269,7 @@ npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏�
 
 ```bash
 npm run typecheck
-npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏应保持四人局布局可用，并支持手牌长按看牌"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-4p-layout-test.e2e.ts "移动端横屏应保持四人局布局可用，并支持手牌长按看牌"
 ```
 
 结果：
@@ -279,9 +279,9 @@ npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏�
 
 ### 本轮实际查看的截图
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04b-mobile-end-turn-hidden.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\13-desktop-end-turn-restored.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04b-mobile-end-turn-hidden.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\13-desktop-end-turn-restored.png`
 
 ### 读图结论
 

@@ -32,7 +32,7 @@
 - **仅新增 uid** 时，只给新增随从播放入场动画，旧 uid 不重播
 
 ### 3. 补真实教程 E2E
-- 文件：`e2e/smashup-tutorial.e2e.ts`
+- 文件：`e2e/smashup/smashup-tutorial.e2e.ts`
 - 用例：`主教程首个已入场随从在后续步骤切换时不应重复播放入场动画`
 
 验证方式不是只看一张截图，而是：
@@ -47,7 +47,7 @@
 
 ### ESLint
 ```powershell
-npx eslint src/games/smashup/ui/BaseZone.tsx src/games/smashup/ui/baseZoneEntryAnimation.ts src/games/smashup/__tests__/ui-interaction-manual.test.ts e2e/smashup-tutorial.e2e.ts src/games/smashup/Board.tsx src/components/tutorial/TutorialOverlay.tsx src/games/smashup/tutorial.ts
+npx eslint src/games/smashup/ui/BaseZone.tsx src/games/smashup/ui/baseZoneEntryAnimation.ts src/games/smashup/__tests__/ui-interaction-manual.test.ts e2e/smashup/smashup-tutorial.e2e.ts src/games/smashup/Board.tsx src/components/tutorial/TutorialOverlay.tsx src/games/smashup/tutorial.ts
 ```
 
 结果：**0 errors**（`Board.tsx` 有仓库现存 `Date.now()` purity warning，非本轮新增阻断项）
@@ -61,14 +61,14 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/ui-intera
 
 ### E2E
 ```powershell
-node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup-tutorial.e2e.ts --case "主教程首个已入场随从在后续步骤切换时不应重复播放入场动画"
+node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup/smashup-tutorial.e2e.ts --case "主教程首个已入场随从在后续步骤切换时不应重复播放入场动画"
 ```
 
 结果：**1 passed**
 
 ## 截图证据
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\主教程首个已入场随从在后续步骤切换时不应重复播放入场动画\main-tutorial-minion-no-reentry-animation.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-tutorial.e2e\主教程首个已入场随从在后续步骤切换时不应重复播放入场动画\main-tutorial-minion-no-reentry-animation.png`
 
 ## 验收结论
 

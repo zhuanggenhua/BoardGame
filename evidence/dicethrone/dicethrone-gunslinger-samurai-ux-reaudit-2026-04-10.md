@@ -123,7 +123,7 @@
 
 ```powershell
 npx eslint src/games/dicethrone/domain/customActions/gunslinger.ts src/games/dicethrone/ui/ChoiceModal.tsx src/games/dicethrone/__tests__/cross-hero.test.ts
-npx eslint e2e/dicethrone-watch-out-spotlight.e2e.ts
+npx eslint e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts
 ```
 
 结果：
@@ -165,9 +165,9 @@ $env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'
 三条目标用例 **全部通过**：
 
 ```powershell
-node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.ts "gunslinger loaded token should open single-die spotlight after real choice click"
-node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.ts "samurai retribution token should retaliate through real click flow"
-node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.ts "samurai zanshin should settle 5 bonus dice and synchronize effects against paladin"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "gunslinger loaded token should open single-die spotlight after real choice click"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "samurai retribution token should retaliate through real click flow"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "samurai zanshin should settle 5 bonus dice and synchronize effects against paladin"
 ```
 
 ## 截图证据与肉眼观察
@@ -179,7 +179,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.
 #### A1. 枪手 Loaded 选择弹窗（skip 已翻译）
 
 路径：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\gunslinger-loaded-token-should-open-single-die-spotlight-after-real-choice-click\20-gunslinger-loaded-choice-before-use.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-loaded-token-should-open-single-die-spotlight-after-real-choice-click\20-gunslinger-loaded-choice-before-use.png`
 
 我实际看到：
 - 弹窗标题为「技能结算选择」
@@ -191,7 +191,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.
 #### A2. 枪手 Loaded 单骰特写（中文文案）
 
 路径：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\gunslinger-loaded-token-should-open-single-die-spotlight-after-real-choice-click\22-gunslinger-loaded-single-die-spotlight.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-loaded-token-should-open-single-die-spotlight-after-real-choice-click\22-gunslinger-loaded-single-die-spotlight.png`
 
 我实际看到：
 - 中央单骰特写正常弹出
@@ -203,7 +203,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.
 #### A3. 武士 Retribution 响应窗口
 
 路径：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\samurai-retribution-token-should-retaliate-through-real-click-flow\20-samurai-retribution-before-use.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-retribution-token-should-retaliate-through-real-click-flow\20-samurai-retribution-before-use.png`
 
 我实际看到：
 - 弹窗显示「响应（防御方）」
@@ -214,11 +214,11 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.
 #### A4. 武士 Zanshin 五骰汇总
 
 路径：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-vs-paladin.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-vs-paladin.png`
 
 我实际看到：
 - 5 颗骰子统一出现在结算层
-- 汇总文案为中文：「2 个武士刀：+2 伤害；1 个头盔：施加 1 层耻辱；2 个旭日：获得 2 个反击」
+- 汇总文案为中文：「2 个武士刀：+2 伤害；1 个头盔：施加 1 层耻辱；2 个旭日：获得 2 个反击（若已达堆叠上限则多余部分无效）」
 - 右上角仍能看到「攻击修正 +2」
 
 是否达标：**达标**
@@ -226,7 +226,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.
 ### 1. 枪手 Loaded 选择前
 
 路径：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\gunslinger-loaded-token-should-open-single-die-spotlight-after-real-choice-click\20-gunslinger-loaded-choice-before-use.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-loaded-token-should-open-single-die-spotlight-after-real-choice-click\20-gunslinger-loaded-choice-before-use.png`
 
 我实际看到：
 - 画面中央是 `技能结算选择` 弹窗
@@ -240,7 +240,8 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.
 ### 2. 枪手 Loaded 单骰特写
 
 路径：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\gunslinger-loaded-token-should-open-single-die-spotlight-after-real-choice-click\21-gunslinger-loaded-single-die-spotlight.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-loaded-token-should-open-single-die-spotlight-after-real-choice-click\21-gunslinger-loaded-after-choice-click.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-loaded-token-should-open-single-die-spotlight-after-real-choice-click\22-gunslinger-loaded-single-die-spotlight.png`
 
 我实际看到：
 - 画面中央出现 bonus die 特写，不再停留在普通 choice 弹窗
@@ -256,7 +257,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.
 ### 3. 武士 Retribution 真实反打后
 
 路径：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\samurai-retribution-token-should-retaliate-through-real-click-flow\21-samurai-retribution-after-retaliation.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-retribution-token-should-retaliate-through-real-click-flow\21-samurai-retribution-after-retaliation.png`
 
 我实际看到：
 - 中央有单骰特写
@@ -270,11 +271,11 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.
 ### 4. 武士 Zanshin 五骰汇总
 
 路径：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-vs-paladin.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-vs-paladin.png`
 
 我实际看到：
 - 中央出现 5 颗骰子的统一结算层
-- 底部不是 5 条分散小文案，而是一条汇总描述：`2 个武士刀：+2 伤害；1 个头盔：施加 1 层耻辱；2 个旭日：获得 2 个反击`
+- 底部不是 5 条分散小文案，而是一条汇总描述：`2 个武士刀：+2 伤害；1 个头盔：施加 1 层耻辱；2 个旭日：获得 2 个反击（若已达堆叠上限则多余部分无效）`
 - 右上角同时有 `攻击修正 +2` 橙色 badge，可直接看到修正量
 
 是否达标：
@@ -286,7 +287,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.
 ### 5. 武士 Honor 图标与中文
 
 路径：
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\samurai-honor-token-should-accumulate-to-+3-after-two-real-clicks\19-samurai-honor-finalized-after-second-use.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-honor-token-should-accumulate-to-+3-after-two-real-clicks\19-samurai-honor-finalized-after-second-use.png`
 
 我实际看到：
 - 左侧战斗区能看到一个青绿色圆形 token 图标

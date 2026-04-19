@@ -16,7 +16,7 @@ E2E 测试框架现在支持两种模式：
 npm run test:e2e
 
 # 运行单个测试文件
-npm run test:e2e -- e2e/framework-pilot-ninja-infiltrate.e2e.ts
+npm run test:e2e -- e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts
 ```
 
 **特点**：

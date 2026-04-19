@@ -17,19 +17,19 @@
 
 ### ESLint
 ```powershell
-npx eslint src/games/smashup/ui/BaseZone.tsx src/games/smashup/Board.tsx e2e/smashup-local-gameplay.e2e.ts
+npx eslint src/games/smashup/ui/BaseZone.tsx src/games/smashup/Board.tsx e2e/smashup/smashup-local-gameplay.e2e.ts
 ```
 
 结果：
 - 0 error
 - 历史 warning：
   - `src/games/smashup/Board.tsx` 仍有 1 条既有 `react-hooks/purity` warning（`Date.now()`），不是本轮新增
-  - `e2e/smashup-local-gameplay.e2e.ts` 仍有 1 条既有 `any` warning，不阻断
+  - `e2e/smashup/smashup-local-gameplay.e2e.ts` 仍有 1 条既有 `any` warning，不阻断
 
 ### E2E
 ```powershell
-node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup-local-gameplay.e2e.ts --case "本地模式：自己与对手打出随从时都只应出现一次入场动画，不应像开头那样反复播放"
-node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup-local-gameplay.e2e.ts --case "本地模式：出牌 → 结束回合 → 回合切换"
+node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup/smashup-local-gameplay.e2e.ts --case "本地模式：自己与对手打出随从时都只应出现一次入场动画，不应像开头那样反复播放"
+node scripts/infra/run-e2e-single.mjs ci --file e2e/smashup/smashup-local-gameplay.e2e.ts --case "本地模式：出牌 → 结束回合 → 回合切换"
 ```
 
 结果：
@@ -58,7 +58,7 @@ opponent.directionChanges = 1
 
 ### 1. 自己打出的随从稳定态
 
-- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-local-gameplay.e2e\本地模式：自己与对手打出随从时都只应出现一次入场动画，不应像开头那样反复播放\smashup-self-minion-entry-stable.png`
+- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-local-gameplay.e2e\本地模式：自己与对手打出随从时都只应出现一次入场动画，不应像开头那样反复播放\smashup-self-minion-entry-stable.png`
 - 我实际看到什么：
   - 海盗大副已经稳定落在己方列位里，不是半透明、不在飞入中、也没有被第二层入场姿态重新覆盖。
   - 卡面文字和力量值都已清晰落稳，没有 shimmer 或空白卡面。
@@ -68,7 +68,7 @@ opponent.directionChanges = 1
 
 ### 2. 对手位打出的随从稳定态
 
-- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-local-gameplay.e2e\本地模式：自己与对手打出随从时都只应出现一次入场动画，不应像开头那样反复播放\smashup-opponent-minion-entry-stable.png`
+- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-local-gameplay.e2e\本地模式：自己与对手打出随从时都只应出现一次入场动画，不应像开头那样反复播放\smashup-opponent-minion-entry-stable.png`
 - 我实际看到什么：
   - 机器小兵 Alpha 已稳定落在对手列位里，不是二次飞入状态，也没有被重新缩放/旋转成“刚进场”的姿态。
   - 卡面已完整显示，没有 shimmer、没有残留卡背。

@@ -11,15 +11,15 @@
 ## 执行命令
 
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "PC 派系详情中可切换原版与 POD 版本预览"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-4p-layout-test.e2e.ts "PC 派系详情中可切换原版与 POD 版本预览"
 ```
 
 ## 截图
 
 - 基础版截图：
-  `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\PC-派系详情中可切换原版与-POD-版本预览\16-desktop-faction-variant-base.png`
+  `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\PC-派系详情中可切换原版与-POD-版本预览\16-desktop-faction-variant-base.png`
 - POD 版截图：
-  `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\PC-派系详情中可切换原版与-POD-版本预览\17-desktop-faction-variant-pod.png`
+  `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\PC-派系详情中可切换原版与-POD-版本预览\17-desktop-faction-variant-pod.png`
 
 ## 人工观察结论
 

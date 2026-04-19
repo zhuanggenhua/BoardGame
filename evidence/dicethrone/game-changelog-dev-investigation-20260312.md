@@ -6,7 +6,7 @@
 
 ## 已补测试
 
-文件：[e2e/lobby.e2e.ts](F:/gongzuo/webgame/BoardGame/e2e/lobby.e2e.ts)
+文件：[e2e/_shared/lobby.e2e.ts](F:/gongzuo/webgame/BoardGame/e2e/_shared/lobby.e2e.ts)
 
 - 新增 1 条真实链路断言：打开 `Dice Throne` 详情后切到 `Changelog` tab，等待 `/game-changelogs/dicethrone` 响应，确认状态码为 `200`，并确认页面脱离 loading。
 - 新增 1 条渲染断言：拦截 `/game-changelogs/dicethrone` 返回一条已发布日志，确认标题、版本、置顶标签、正文会被渲染。
@@ -16,7 +16,7 @@
 执行命令：
 
 ```bash
-npm run test:e2e:ci -- e2e/lobby.e2e.ts
+npm run test:e2e:ci -- e2e/_shared/lobby.e2e.ts
 ```
 
 结果：

@@ -15,8 +15,8 @@
 
 ```powershell
 $env:PW_USE_DEV_SERVERS='true'
-$env:PW_TEST_MATCH='e2e/smashup-4p-layout-test.e2e.ts'
-npx playwright test e2e/smashup-4p-layout-test.e2e.ts --grep "移动端横屏点击对手分数应能进入并退出对手视角"
+$env:PW_TEST_MATCH='e2e/smashup/smashup-4p-layout-test.e2e.ts'
+npx playwright test e2e/smashup/smashup-4p-layout-test.e2e.ts --grep "移动端横屏点击对手分数应能进入并退出对手视角"
 ```
 
 - 本轮最终通过的是“真实 touch tap”链路，不是单纯 Playwright 鼠标 click。
@@ -26,7 +26,7 @@ npx playwright test e2e/smashup-4p-layout-test.e2e.ts --grep "移动端横屏点
 
 ### 1. 进入对手视角后的移动端横屏界面
 
-- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏点击对手分数应能进入并退出对手视角\03a-mobile-opponent-view-entry.png`
+- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏点击对手分数应能进入并退出对手视角\03a-mobile-opponent-view-entry.png`
 - 我实际看到什么：
   - 画面中央上方出现了“对手视角”横幅，并带有“返回”按钮。
   - 右上角记分板仍然可见，说明点击对手分数后 UI 没有被遮挡或跳到异常页面。

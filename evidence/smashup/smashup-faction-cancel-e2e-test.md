@@ -9,7 +9,7 @@
 ## 执行命令
 
 ```powershell
-node scripts/infra/run-e2e-single.mjs ci e2e/smashup-4p-layout-test.e2e.ts "PC 已选派系可取消并重新选择"
+node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-4p-layout-test.e2e.ts "PC 已选派系可取消并重新选择"
 ```
 
 ## 结果
@@ -23,7 +23,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/smashup-4p-layout-test.e2e.ts "PC �
 
 ### 取消前
 
-图片：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\PC-已选派系可取消并重新选择\18-desktop-faction-cancel-before.png`
+图片：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\PC-已选派系可取消并重新选择\18-desktop-faction-cancel-before.png`
 
 肉眼观察：
 
@@ -33,7 +33,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/smashup-4p-layout-test.e2e.ts "PC �
 
 ### 重选后
 
-图片：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\PC-已选派系可取消并重新选择\19-desktop-faction-cancel-after.png`
+图片：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\PC-已选派系可取消并重新选择\19-desktop-faction-cancel-after.png`
 
 肉眼观察：
 

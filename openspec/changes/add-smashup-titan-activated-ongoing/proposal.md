@@ -39,7 +39,7 @@
   - `src/games/smashup/Board.tsx`
   - `src/games/smashup/abilities/titans.ts`
   - `src/games/smashup/__tests__/smashup.smoke.test.ts`
-  - `e2e/smashup-alien-terraform.e2e.ts`
+  - `e2e/smashup/smashup-alien-terraform.e2e.ts`
 - Risks:
   - 需要避免把被动 `ongoing` 错误地全部变成可点击能力。
   - 需要保证新入口不会误用 `talentUsed` 或 `ACTIVATE_SPECIAL` 的现有门禁。

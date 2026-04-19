@@ -113,13 +113,13 @@ if (removedAbility && abilityId === ABILITY_IDS.MEDIATOR) {
 
 ### E2E 测试
 
-创建了 `e2e/cardia-mediator-removal-signet-fix.e2e.ts`，验证完整的游戏流程。
+创建了 `e2e/cardia/cardia-mediator-removal-signet-fix.e2e.ts`，验证完整的游戏流程。
 
 ## 修复文件
 
 - `src/games/cardia/domain/reduce.ts`：添加调停者移除后的特殊处理逻辑
 - `src/games/cardia/__tests__/mediator-removal-fix.test.ts`：单元测试
-- `e2e/cardia-mediator-removal-signet-fix.e2e.ts`：E2E 测试
+- `e2e/cardia/cardia-mediator-removal-signet-fix.e2e.ts`：E2E 测试
 
 ## 影响范围
 

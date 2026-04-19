@@ -1,0 +1,24 @@
+commit 6ea1f9f069d2cbec322636f9cc0455bc21437ad8
+Author: EasyBoardGame Developer <developer@easyboardgame.top>
+Date:   Sat Feb 28 14:11:43 2026 +0800
+
+    feat: add Smash Up POD faction support with full UI and ability system
+
+M	src/games/summonerwars/Board.tsx
+M	src/games/summonerwars/__tests__/abilities-barbaric.test.ts
+M	src/games/summonerwars/__tests__/interaction-flow-e2e.test.ts
+M	src/games/summonerwars/config/factions/barbaric.ts
+M	src/games/summonerwars/domain/events.ts
+M	src/games/summonerwars/domain/execute.ts
+M	src/games/summonerwars/domain/index.ts
+M	src/games/summonerwars/domain/reduce.ts
+M	src/games/summonerwars/domain/types.ts
+M	src/games/summonerwars/domain/validate.ts
+M	src/games/summonerwars/game.ts
+M	src/games/summonerwars/ui/BoardGrid.tsx
+M	src/games/summonerwars/ui/EnergyBar.tsx
+M	src/games/summonerwars/ui/FactionSelectionAdapter.tsx
+M	src/games/summonerwars/ui/StatusBanners.tsx
+M	src/games/summonerwars/ui/modeTypes.ts
+M	src/games/summonerwars/ui/useCellInteraction.ts
+M	src/games/summonerwars/ui/useGameEvents.ts

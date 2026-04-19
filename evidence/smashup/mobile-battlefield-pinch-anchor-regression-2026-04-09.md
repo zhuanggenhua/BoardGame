@@ -4,7 +4,7 @@
   - `src/games/smashup/Board.tsx`
   - `src/components/game/framework/__tests__/MobileBoardShell.test.tsx`
 - 目标：修正 SmashUp 在 content 模式下把 zoom target 挂到内层 `min-w-max` 后，首次双指 pinch 更容易固定左偏的问题；这轮把 target 收回到外层 scroll 容器，并补对应单测。
-- 相关截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏-Chromium-真实多触点-pinch-pan-事件链路应正常驱动战场缩放\04g-mobile-battlefield-real-touch-pinch-pan.png`
+- 相关截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏-Chromium-真实多触点-pinch-pan-事件链路应正常驱动战场缩放\04g-mobile-battlefield-real-touch-pinch-pan.png`
 
 ## 我实际看到什么
 

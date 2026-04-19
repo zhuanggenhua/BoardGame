@@ -1,6 +1,6 @@
 # E2E 测试示例：雷霆万钧技能（可视化）
 
-> **文件位置**：`e2e/dicethrone-thunder-strike.e2e.ts`  
+> **文件位置**：`e2e/dicethrone/dicethrone-thunder-strike.e2e.ts`
 > **测试框架**：Playwright  
 > **测试对象**：DiceThrone 游戏中武僧的"雷霆万钧"技能
 

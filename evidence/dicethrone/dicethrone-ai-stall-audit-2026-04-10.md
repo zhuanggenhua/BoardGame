@@ -26,6 +26,11 @@
 
 ✅ **补救修复**：在 `DiceThroneEventSystem` 的 `SYS_INTERACTION_CANCELLED` 分支增加 emergency skip 专用兜底，确保无解选择可清理 pending 状态并恢复流程推进。
 
+### D9 幂等与重入
+❌ **响应窗口重复触发**：afterAttackResolved 响应窗口在 `RESPONSE_PASS` 关闭后，autoContinue 重入 `onPhaseExit`，再次生成 `RESPONSE_WINDOW_OPENED`，导致“跳过后立刻又弹”循环。
+
+✅ **补救修复**：新增攻击结算序号与响应窗口处理序号，确保每次攻击仅触发一次 afterAttackResolved 响应窗口。
+
 ### D3 数据流闭环
 ✅ **反馈链路已闭环**：无解交互会在服务器侧自动上报，并携带交互快照（含可选项与可选性诊断），用于定位“为什么无法选择”。
 
@@ -45,17 +50,36 @@
 - **原因**：理论上不会无解，但若出现“全 disabled”异常状态，流程会重复进入该交互。
 - **修复**：emergency skip 时若识别为“Token 选择”（选项含 `use-*` + `skip`），则 **标记 `offensiveRollEndTokenResolved = true`**，防止重复弹窗。
 
+### 发现 3：dt:card-interaction 无可选目标时，AI 监护会因交互锁定而误判失败
+- **原因**：在线 AI 监护仅识别 simple-choice 的无解状态，遇到 `dt:card-interaction`（状态选择类）时，只会尝试 `RESPONSE_PASS`，但响应窗口被交互锁定，导致 `RESPONSE_PASS` 被拒绝 → “强制结束失败”。
+- **修复**：
+  - 在线 AI 监护扩展识别 `dt:card-interaction` 的 **无可选目标** 情况（如 `selectStatus` 且目标玩家均无状态/Token）。
+  - 无可选时自动下发 `SYS_INTERACTION_CANCEL`，并携带 `reason=empty-options`，保证交互被取消并触发解锁推进。
+
+### 发现 4：afterAttackResolved 响应窗口跳过后重复弹出
+- **原因**：攻击结算后的响应窗口由 `flowHooks.checkAfterAttackResponseWindow` 生成，但核心状态没有“已处理”标记；`RESPONSE_PASS` 关闭后 autoContinue 重入 `onPhaseExit`，再次生成同类窗口。
+- **后果**：真人响应“跳过”后立即再次触发响应窗口，形成循环卡死。
+- **修复**：
+  - 引入 `attackResolvedSequence`（ATTACK_RESOLVED 自增）与 `afterAttackResponseWindowSequence`（记录已处理序号）。
+  - `checkAfterAttackResponseWindow` 在序号一致时直接跳过，避免重复弹窗。
+  - `RESPONSE_WINDOW_OPENED(windowType=afterAttackResolved)` 时记录序号。
+
 ## 5. 验证证据
 - **单测（定向）**
   - `node scripts/infra/vitest-cli-safe.mjs run --configLoader native src/games/dicethrone/__tests__/flow.test.ts --testNamePattern "targetingRoll 无可选目标时 emergency skip 会清理 pendingAttack"`
+  - 结果：✅ 通过（仅跑此用例）
+  - `node scripts/infra/vitest-cli-safe.mjs run --configLoader native src/engine/transport/__tests__/server.test.ts --testNamePattern "online AI watchdog 应能识别 dt:card-interaction 无可选目标并携带 reason 取消交互"`
   - 结果：✅ 通过（仅跑此用例）
 
 ## 6. 未覆盖风险
 - 其他 `CHOICE_REQUESTED` 来源若出现“空选项/全 disabled”，仍可能需要 **领域级兜底逻辑**（目前仅覆盖 targetingRoll + offensiveRollEnd）。
 - 若未来新增“必须选择”的交互类型，需要同步补充 emergency skip 的 **语义回填**（例如自动选择默认目标或强制终止该动作）。
+- `dt:card-interaction` 的“无解”判定仍是基于当前 core 状态的轻量检查；若交互语义更复杂（需要多条件组合），可能仍需补充更精细的判定逻辑。
 
 ## 7. 修订记录
 - 2026-04-10：新增 emergency skip 领域兜底，避免 targetingRoll 无解卡死；新增对应单测。
+- 2026-04-11：在线 AI 监护识别 `dt:card-interaction` 无可选目标并自动取消，避免交互锁定导致“强制结束失败”。
+- 2026-04-11：afterAttackResolved 响应窗口去重（攻击序号标记 + 新增单测），修复“跳过后重复弹窗”。
 
 ## 8. CHOICE_REQUESTED 生成点审计（补充）
 **结论**：除 targetingRoll 边缘场景外，其余生成点均显式保证 options 非空，且多数包含 skip 选项，不会产生“无解交互”。  

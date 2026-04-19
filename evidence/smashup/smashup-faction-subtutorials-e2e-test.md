@@ -16,27 +16,27 @@
 - 被加成随从仅获得 `+2`，没有重复叠加成 `+4`
 
 ### E2E 验证
-- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup-tutorial.e2e.ts --grep '派系(没有机制教程时不显示详情入口占位|详情标题右侧机制教程入口可进入牛仔决斗子教程并完成主流程)'`
+- `node scripts/infra/run-e2e-command.mjs ci e2e/smashup/smashup-tutorial.e2e.ts --grep '派系(没有机制教程时不显示详情入口占位|详情标题右侧机制教程入口可进入牛仔决斗子教程并完成主流程)'`
 
 结果：`2 passed`
 
-- `npx playwright test e2e/smashup-tutorial.e2e.ts --project=chromium --grep '牛仔决斗子教程在手机横屏下提示不应遮挡基地且副警长可正常弃置'`
+- `npx playwright test e2e/smashup/smashup-tutorial.e2e.ts --project=chromium --grep '牛仔决斗子教程在手机横屏下提示不应遮挡基地且副警长可正常弃置'`
   - 环境：`PW_USE_DEV_SERVERS=true`、`PW_PORT=4273`、`PW_GAME_SERVER_PORT=18000`、`PW_API_SERVER_PORT=18001`
   - 结果：`1 passed`
 
-- `npx playwright test e2e/smashup-tutorial.e2e.ts --project=chromium --grep '派系详情标题右侧机制教程入口可进入牛仔决斗子教程并完成主流程'`
+- `npx playwright test e2e/smashup/smashup-tutorial.e2e.ts --project=chromium --grep '派系详情标题右侧机制教程入口可进入牛仔决斗子教程并完成主流程'`
   - 环境：`PW_USE_DEV_SERVERS=true`、`PW_PORT=4273`、`PW_GAME_SERVER_PORT=18000`、`PW_API_SERVER_PORT=18001`
   - 结果：`1 passed`
 
 ### ESLint
-- `npx eslint e2e/smashup-tutorial.e2e.ts src/games/smashup/domain/duel.ts src/games/smashup/__tests__/newFactionAbilities.test.ts`
+- `npx eslint e2e/smashup/smashup-tutorial.e2e.ts src/games/smashup/domain/duel.ts src/games/smashup/__tests__/newFactionAbilities.test.ts`
 
 结果：0 errors（仅仓库已有 warning，未阻断）
 
 ## 关键截图与肉眼结论
 
 ### 1. 无教程派系不显示入口
-截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup-tutorial.e2e/派系没有机制教程时不显示详情入口占位/robots-detail-no-entry.png`
+截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/派系没有机制教程时不显示详情入口占位/robots-detail-no-entry.png`
 
 我实际看到：
 - 机器人派系详情头部只有标题区本体，没有额外的教程按钮/芯片出现在标题右侧。
@@ -46,7 +46,7 @@
 是否达到验收标准：达到。说明“没有教程时不留占位”这一点在真实页面里成立。
 
 ### 2. 牛仔派系教程入口位于标题右侧
-截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup-tutorial.e2e/派系详情标题右侧机制教程入口可进入牛仔决斗子教程并完成主流程/cowboys-detail-entry.png`
+截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/派系详情标题右侧机制教程入口可进入牛仔决斗子教程并完成主流程/cowboys-detail-entry.png`
 
 我实际看到：
 - 牛仔派系详情头部出现了单独的机制教程入口，位置贴在标题右侧，同一行内，没有被挪到标题下方。
@@ -56,7 +56,7 @@
 是否达到验收标准：达到。入口位置符合“直接放标题右侧”的要求。
 
 ### 3. 牛仔决斗子教程进入后能到达完成态，页面稳定
-截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup-tutorial.e2e/派系详情标题右侧机制教程入口可进入牛仔决斗子教程并完成主流程/cowboys-duel-resolved.png`
+截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/派系详情标题右侧机制教程入口可进入牛仔决斗子教程并完成主流程/cowboys-duel-resolved.png`
 
 我实际看到：
 - 子教程完成态浮层已经出现在棋盘上，说明从派系详情进入的 `cowboys-duel` 教程链路确实走到了 finish 步骤。
@@ -66,7 +66,7 @@
 是否达到验收标准：达到。子教程入口、子教程路由和最终完成态都已在真实页面链路里走通。
 
 ### 4. 完成态截图复核
-截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup-tutorial.e2e/派系详情标题右侧机制教程入口可进入牛仔决斗子教程并完成主流程/cowboys-duel-finish.png`
+截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/派系详情标题右侧机制教程入口可进入牛仔决斗子教程并完成主流程/cowboys-duel-finish.png`
 
 我实际看到：
 - 完成态视图与上一张一致，仍是稳定的教程结束画面。
@@ -75,7 +75,7 @@
 是否达到验收标准：达到。作为 finish 前的第二张复核图，没有发现新的视觉异常。
 
 ### 5. 手机横屏下教程提示不遮挡基地
-截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup-tutorial.e2e/牛仔决斗子教程在手机横屏下提示不应遮挡基地且副警长可正常弃置/cowboys-duel-mobile-no-base-occlusion.png`
+截图：`D:/gongzuo/webgame/BoardGame/test-results/evidence-screenshots/smashup/smashup-tutorial.e2e/牛仔决斗子教程在手机横屏下提示不应遮挡基地且副警长可正常弃置/cowboys-duel-mobile-no-base-occlusion.png`
 
 我实际看到：
 - 教程卡片已经贴到棋盘左侧，不再像之前那样压在基地中央区域上。

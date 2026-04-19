@@ -99,7 +99,7 @@ Received: false
 - `src/App.tsx` - 路由配置（已修复）
 - `src/pages/TestMatchRoom.tsx` - 测试模式组件
 - `src/engine/transport/react.tsx` - LocalGameProvider（TestHarness 注册）
-- `e2e/framework-pilot-ninja-infiltrate.e2e.ts` - 测试文件
+- `e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts` - 测试文件
 
 ## 教训
 

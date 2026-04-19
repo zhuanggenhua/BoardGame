@@ -11,7 +11,7 @@
 
 ## 测试方式
 
-- 用例文件：`e2e/smashup-phase-transition-simple.e2e.ts`
+- 用例文件：`e2e/smashup/smashup-phase-transition-simple.e2e.ts`
 - 用例名称：`在线模式对手打出行动卡时应显示特写`
 - 场景搭建：在线房间 + 服务端权威状态注入
 - 核心断言：
@@ -24,7 +24,7 @@
 ```powershell
 $env:PW_USE_DEV_SERVERS='true'
 $env:PW_WORKERS='1'
-$env:PW_TEST_MATCH='e2e/smashup-phase-transition-simple.e2e.ts'
+$env:PW_TEST_MATCH='e2e/smashup/smashup-phase-transition-simple.e2e.ts'
 node node_modules/playwright/cli.js test -g '在线模式对手打出行动卡时应显示特写' --reporter=line
 ```
 

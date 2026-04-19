@@ -11,9 +11,9 @@
 ## 执行命令
 
 ```bash
-$env:BG_HEAVY_MEMORY_MIN_FREE_GB='1'; node scripts/infra/run-e2e-single.mjs ci e2e/smashup-phase-transition-simple.e2e.ts "Oops Ancient Egyptians 埋葬条带与翻开交互应在浏览器中可完成"
-$env:BG_HEAVY_MEMORY_MIN_FREE_GB='1'; node scripts/infra/run-e2e-single.mjs ci e2e/smashup-phase-transition-simple.e2e.ts "Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Deputy/结算"
-$env:BG_HEAVY_MEMORY_MIN_FREE_GB='1'; node scripts/infra/run-e2e-single.mjs ci e2e/smashup-phase-transition-simple.e2e.ts "Oops Samurai 额外出牌效果应在浏览器中兑现额外随从与行动额度"
+$env:BG_HEAVY_MEMORY_MIN_FREE_GB='1'; node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-phase-transition-simple.e2e.ts "Oops Ancient Egyptians 埋葬条带与翻开交互应在浏览器中可完成"
+$env:BG_HEAVY_MEMORY_MIN_FREE_GB='1'; node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-phase-transition-simple.e2e.ts "Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Deputy/结算"
+$env:BG_HEAVY_MEMORY_MIN_FREE_GB='1'; node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-phase-transition-simple.e2e.ts "Oops Samurai 额外出牌效果应在浏览器中兑现额外随从与行动额度"
 ```
 
 ## 结果
@@ -38,14 +38,14 @@ npm install @alloc/quick-lru@5.2.0 --no-save
 
 截图路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成\Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成-oops-bury-strip-before-uncover.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成\Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成-oops-bury-strip-after-uncover.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成\Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成-oops-bury-strip-before-uncover.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成\Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成-oops-bury-strip-after-uncover.png`
 
 嵌入预览：
 
-![Ancient Egyptians 翻开前](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成/Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成-oops-bury-strip-before-uncover.png)
+![Ancient Egyptians 翻开前](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成/Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成-oops-bury-strip-before-uncover.png)
 
-![Ancient Egyptians 翻开后](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成/Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成-oops-bury-strip-after-uncover.png)
+![Ancient Egyptians 翻开后](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成/Oops-Ancient-Egyptians-埋葬条带与翻开交互应在浏览器中可完成-oops-bury-strip-after-uncover.png)
 
 观察结论：
 
@@ -57,23 +57,23 @@ npm install @alloc/quick-lru@5.2.0 --no-save
 
 截图路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-pinkerton-prompt.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-card-prompt.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-deputy-card-prompt.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-deputy-target-prompt.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-after-resolve.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-pinkerton-prompt.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-card-prompt.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-deputy-card-prompt.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-deputy-target-prompt.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算\Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-after-resolve.png`
 
 嵌入预览：
 
-![Cowboys Pinkerton](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-pinkerton-prompt.png)
+![Cowboys Pinkerton](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-pinkerton-prompt.png)
 
-![Cowboys 决斗牌](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-card-prompt.png)
+![Cowboys 决斗牌](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-card-prompt.png)
 
-![Cowboys Deputy 选牌](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-deputy-card-prompt.png)
+![Cowboys Deputy 选牌](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-deputy-card-prompt.png)
 
-![Cowboys Deputy 选目标](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-deputy-target-prompt.png)
+![Cowboys Deputy 选目标](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-deputy-target-prompt.png)
 
-![Cowboys 决斗结算后](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-after-resolve.png)
+![Cowboys 决斗结算后](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算/Oops-Cowboys-决斗交互应按官方链路完成-Pinkerton-决斗牌-Deputy-结算-oops-duel-after-resolve.png)
 
 观察结论：
 
@@ -86,14 +86,14 @@ npm install @alloc/quick-lru@5.2.0 --no-save
 
 截图路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度\Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度-oops-extra-play-before-select.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度\Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度-oops-extra-play-after-resolve.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度\Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度-oops-extra-play-before-select.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度\Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度-oops-extra-play-after-resolve.png`
 
 嵌入预览：
 
-![Samurai 额外出牌前](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度/Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度-oops-extra-play-before-select.png)
+![Samurai 额外出牌前](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度/Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度-oops-extra-play-before-select.png)
 
-![Samurai 额外出牌后](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度/Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度-oops-extra-play-after-resolve.png)
+![Samurai 额外出牌后](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度/Oops-Samurai-额外出牌效果应在浏览器中兑现额外随从与行动额度-oops-extra-play-after-resolve.png)
 
 观察结论：
 

@@ -399,5 +399,33 @@
       "summary": "Tutorial Summary:\n\n• Both players play simultaneously in the Play Phase\n• The loser can activate abilities\n• Win encounters to earn signets\n• First to 5 signets wins\n\nYou've now mastered the basic rules. Begin your adventure!",
       "finish": "Tutorial Complete!\n\nEnjoy your time in the world of Cardia!"
     }
+  },
+  
+  "actionLog": {
+    "title": "Action Log",
+    "playCard": "Played",
+    "toSlot": "to Encounter {{slot}}",
+    "atSlot": "at Encounter {{slot}}",
+    "activateAbility": "Activated ability",
+    "skipAbility": "Skipped ability",
+    "endTurn": "End turn",
+    "addModifier": "Added modifier token to",
+    "removeModifier": "Removed modifier token from",
+    "modifierValue": "({{value}})",
+    "cardReplaced": "Replaced",
+    "with": "with",
+    "factionSelected": "Selected faction",
+    "cardDrawn": "Drew {{count}} card(s)",
+    "encounterResolved": "Encounter {{slot}} resolved, winner: {{winner}}",
+    "signetGranted": "Gained signet (total: {{total}})",
+    "modifierTokenPlaced": "Placed modifier token {{value}} on",
+    "modifierTokenRemoved": "Removed modifier token from",
+    "ongoingAbilityPlaced": "Placed ongoing ability",
+    "ongoingAbilityRemoved": "Removed ongoing ability",
+    "cardsDiscarded": "Discarded {{count}} card(s) (from: {{from}})",
+    "signetMoved": "Signet moved from",
+    "to": "to",
+    "signetRemoved": "Removed signet from",
+    "extraSignetPlaced": "Placed extra signet on"
   }
 }

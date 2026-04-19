@@ -66,6 +66,50 @@
 
 > ⚠️ 裁剪只动 `sys` 层，不碰 `core`（游戏领域状态）。卡牌预览（`previewRef`）、弃牌堆等展示数据不受影响。对手手牌隐藏是 `playerView` 的职责，不是传输裁剪。
 
+#### 在线 AI 决策视图（强制）
+
+在线 AI 不能再在“整份 `sharedState`”与“整份 seat `latestState`”之间粗暴二选一。当前统一口径是：
+
+- **authoritative shared**：`phase`、`turnNumber`、`currentPlayer`、公共棋盘、公共资源、公开 setup 状态，永远以当前权威 shared 为准。
+- **private overlay**：hidden interaction、seat 专属 options、私有手牌、seat 私有候选，只从该 seat 的私有 overlay 读取。
+
+##### 默认决策语义
+
+- `shared`
+  - 公开 setup / 公开决策。
+  - 即使 seat overlay 缺失或 stale，AI 也可以继续基于 authoritative shared 决策。
+- `private-required`
+  - hidden interaction、response window、seat 专属 option 列表或其它私有候选。
+  - seat overlay 缺失或 stale 时，必须阻止 AI 出手，不能回退到共享视角乱决策。
+
+##### 默认推断规则
+
+- 看到 `sharedState.sys.responseWindow.current`，默认视为 `private-required`。
+- 看到 shared 侧 `interaction.current.playerId === 当前 AI`，默认视为 `private-required`。
+- 看到 shared 侧 `interaction.isBlocked === true` 且当前交互未公开暴露给当前 AI，默认视为 `private-required`。
+- 看到 private overlay 内当前 AI 专属 interaction / responder queue，默认视为 `private-required`。
+- 其余默认按 `shared` 处理。
+
+##### 运行时扩展点
+
+- 游戏 runtime 可通过 `resolveOnlineDecisionVisibility()` 做少量 override。
+- 只有当框架无法从结构稳定推断时才允许 override，禁止把所有 phase / 所有情况做成游戏白名单表。
+
+##### 实现要求
+
+- `MatchRoom`、`resolveNextAiAction`、服务端 watchdog / legal-action recovery 必须复用同一套决策视图 helper。
+- 私有决策的 freshness gate 只允许拦 `private-required`，不得再一刀切阻断整个在线 AI。
+- 新增在线 AI 决策点时，先判断它依赖公共真相还是私有 overlay，再决定是否允许 shared fallback。
+- **响应窗口特例（强制）**：`responseWindow` 场景下，freshness 校验不得把 `currentPlayer === responder` 当成硬条件。必须按窗口语义对齐（`windowType/sourceId/currentResponder`），因为响应者本来就可能不是当前行动玩家（如 DiceThrone 防御/干扰响应）。
+
+##### 回归门禁（强制）
+
+- 任何触碰在线 AI 决策视图、seat freshness、watchdog legal-action recovery 的改动，至少补并通过以下三类测试：
+- `shared` 决策：seat stale 下仍可继续（例如 faction/setup）。
+- `private-required` 决策：seat stale 下必须阻断。
+- `responseWindow` 决策：responder 不是 activePlayer 时仍可决策（并验证 watchdog 能执行 `RESPONSE_PASS`/等价动作）。
+- 推荐统一门禁命令：`npm run test:ai:decision-view`（合并执行上述四类回归）。
+
 #### GameBoardProps 契约（强制）
 
 ```typescript
@@ -1076,7 +1120,7 @@ const sourceSegs = buildDamageSourceAnnotation({ sourceEntityId, sourceAbilityId
 
 ## afterEventsRound 限制（强制）
 
-`FlowSystem.afterEvents` 在 `afterEventsRound > 0` 时传空 events 给 `onAutoContinueCheck`，基于事件的自动推进链单次 `executePipeline` 最多跨一个阶段。测试中 `createInitializedState` 返回 upkeep（非 main1），仍需手动 `cmd('ADVANCE_PHASE')` 推进。详见 `docs/refactor/dicethrone-auto-advance-upkeep-income.md`。
+`FlowSystem.afterEvents` 在 `afterEventsRound > 0` 时传空 events 给 `onAutoContinueCheck`，基于事件的自动推进链单次 `executePipeline` 最多跨一个阶段。测试中 `createInitializedState` 返回 upkeep（非 main1），仍需手动 `cmd('ADVANCE_PHASE')` 推进。详见 `docs/games/dicethrone/refactor/dicethrone-auto-advance-upkeep-income.md`。
 
 ---
 

@@ -7,17 +7,17 @@
 ## 本轮改动
 - `src/components/game/framework/MobileBoardShell.tsx`
 - `src/components/game/framework/__tests__/MobileBoardShell.test.tsx`
-- `e2e/smashup-4p-layout-test.e2e.ts`
+- `e2e/smashup/smashup-4p-layout-test.e2e.ts`
 
 ## 验证
-1. `npx eslint src/components/game/framework/MobileBoardShell.tsx src/components/game/framework/__tests__/MobileBoardShell.test.tsx e2e/smashup-4p-layout-test.e2e.ts --quiet`
+1. `npx eslint src/components/game/framework/MobileBoardShell.tsx src/components/game/framework/__tests__/MobileBoardShell.test.tsx e2e/smashup/smashup-4p-layout-test.e2e.ts --quiet`
 2. `node scripts/infra/vitest-cli-safe.mjs run src/components/game/framework/__tests__/MobileBoardShell.test.tsx --configLoader native -t "clamps centered content-target panning to the actual child bounds instead of exposing empty black margins"`
 3. `npm run test:e2e:ci:file -- smashup-4p-layout-test.e2e.ts "移动端横屏 pinch 后仍可拖拽战场，避免 pan 锁死回归"`
 
 ## 关键截图
 
 ### 1. pinch 后继续拖拽战场
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏-pinch-后仍可拖拽战场，避免-pan-锁死回归\04f-mobile-battlefield-pan-still-works-after-pinch.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏-pinch-后仍可拖拽战场，避免-pan-锁死回归\04f-mobile-battlefield-pan-still-works-after-pinch.png`
 - 我实际看到：
   - 战场主内容仍停留在棋盘区域内，画面里没有用户反馈中的黑色空洞/黑屏块。
   - 右侧“结束回合”按钮仍固定在外层 HUD，没有随着战场拖拽一起飘走。

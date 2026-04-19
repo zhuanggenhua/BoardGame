@@ -19,7 +19,7 @@
 - [`TestMatchRoom.tsx`](/F:/gongzuo/webgame/BoardGame/src/pages/TestMatchRoom.tsx)
 - [`UGCSandbox.tsx`](/F:/gongzuo/webgame/BoardGame/src/ugc/builder/pages/UGCSandbox.tsx)
   - 本地页、测试页、UGC 沙盒都开启了 `followCurrentTurnPlayer`
-- [`framework-pilot-simple.e2e.ts`](/F:/gongzuo/webgame/BoardGame/e2e/framework-pilot-simple.e2e.ts)
+- [`framework-pilot-simple.e2e.ts`](/F:/gongzuo/webgame/BoardGame/e2e/smashup/framework-pilot-simple.e2e.ts)
   - 不再硬编码 `p1-action-1`
   - 改为从当前状态读取真实 UID，再校验对应手牌 DOM 可见
 
@@ -28,7 +28,7 @@
 ```powershell
 $env:PW_START_SERVERS='true'
 $env:NODE_OPTIONS='--max-old-space-size=4096'
-npx playwright test e2e/framework-pilot-simple.e2e.ts --workers=1 --reporter=dot -g "本地模式双方打出行动卡都应显示特写"
+npx playwright test e2e/smashup/framework-pilot-simple.e2e.ts --workers=1 --reporter=dot -g "本地模式双方打出行动卡都应显示特写"
 ```
 
 ## 结果
@@ -45,7 +45,7 @@ npx playwright test e2e/framework-pilot-simple.e2e.ts --workers=1 --reporter=dot
 
 ### P0 出牌特写
 
-> 历史截图已清理。如需重新取证，请重跑 `e2e/framework-pilot-simple.e2e.ts`，新统一目录为 `test-results/evidence-screenshots/`。
+> 历史截图已清理。如需重新取证，请重跑 `e2e/smashup/framework-pilot-simple.e2e.ts`，新统一目录为 `test-results/evidence-screenshots/smashup/`。
 
 审查结论：
 
@@ -56,7 +56,7 @@ npx playwright test e2e/framework-pilot-simple.e2e.ts --workers=1 --reporter=dot
 
 ### P1 出牌特写
 
-> 历史截图已清理。如需重新取证，请重跑 `e2e/framework-pilot-simple.e2e.ts`，新统一目录为 `test-results/evidence-screenshots/`。
+> 历史截图已清理。如需重新取证，请重跑 `e2e/smashup/framework-pilot-simple.e2e.ts`，新统一目录为 `test-results/evidence-screenshots/smashup/`。
 
 审查结论：
 

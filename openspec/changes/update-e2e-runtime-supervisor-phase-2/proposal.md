@@ -18,4 +18,4 @@ Phase 1 已经堵住了 `global-setup` 旁路起服，但标准入口下的 `e2e
   - `scripts/infra/start-single-worker-servers.js`
   - `scripts/infra/e2e-server-launcher.js`
   - `scripts/infra/run-e2e-command.mjs`
-  - `e2e/test-port-isolation.e2e.ts`
+  - `e2e/smashup/test-port-isolation.e2e.ts`

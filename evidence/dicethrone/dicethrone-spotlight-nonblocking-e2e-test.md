@@ -2,7 +2,7 @@
 
 ## 用例
 
-- 文件：`e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- 文件：`e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 - 用例：`bonus die spotlight should not block confirm button interaction`
 - 命令：`npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "bonus die spotlight should not block confirm button interaction"`
 
@@ -13,10 +13,10 @@
 
 ## 截图
 
-![特写不再阻塞后续操作](../test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/bonus-die-spotlight-should-not-block-confirm-button-interaction/04-bonus-die-spotlight-non-blocking.png)
+![特写不再阻塞后续操作](../../test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/bonus-die-spotlight-should-not-block-confirm-button-interaction/04-bonus-die-spotlight-non-blocking.png)
 
 截图绝对路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\bonus-die-spotlight-should-not-block-confirm-button-interaction\04-bonus-die-spotlight-non-blocking.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\bonus-die-spotlight-should-not-block-confirm-button-interaction\04-bonus-die-spotlight-non-blocking.png`
 
 ## 截图分析
 
@@ -26,5 +26,5 @@
 
 ## 备注
 
-- 补充验证：`e2e/dicethrone-tutorial-simple.e2e.ts` 已调整为教程专用等待条件，并整文件通过，说明教程场景里的同类特写也没有再阻塞后续步骤。
-- 教程非阻塞截图绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-tutorial-simple.e2e\tutorial-roll-visual-should-not-block-next-required-action\tutorial-roll-visual-non-blocking.png`
+- 补充验证：`e2e/dicethrone/dicethrone-tutorial-simple.e2e.ts` 已调整为教程专用等待条件，并整文件通过，说明教程场景里的同类特写也没有再阻塞后续步骤。
+- 教程非阻塞截图绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-tutorial-simple.e2e\tutorial-roll-visual-should-not-block-next-required-action\tutorial-roll-visual-non-blocking.png`

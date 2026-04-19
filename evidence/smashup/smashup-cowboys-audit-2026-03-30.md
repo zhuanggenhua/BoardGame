@@ -17,7 +17,7 @@
 - 相关回归：
   - `src/games/smashup/__tests__/newFactionAbilities.test.ts`
   - `src/games/smashup/__tests__/newBaseAbilities.test.ts`
-  - `e2e/smashup-phase-transition-simple.e2e.ts`
+  - `e2e/smashup/smashup-phase-transition-simple.e2e.ts`
 
 ## 规则依据
 - `https://smashup.fandom.com/wiki/Cowboys`
@@ -120,15 +120,15 @@
 - `src/games/smashup/__tests__/newBaseAbilities.test.ts`
   - `base_so_so_corral 在打出随从后给出决斗提示并按结果消灭失败者`
 - 浏览器链路：
-  - `e2e/smashup-phase-transition-simple.e2e.ts`
+  - `e2e/smashup/smashup-phase-transition-simple.e2e.ts`
   - `Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Deputy/结算`
 
 ## 本轮验证
 - 领域回归：
-  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/newBaseAbilities.test.ts --config temp/vitest-smashup-node.config.ts --configLoader native`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/newBaseAbilities.test.ts --config temp/smashup/vitest-smashup-node.config.ts --configLoader native`
   - 结果：`2 passed`，`138 passed, 1 skipped`
 - 浏览器 E2E：
-  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup-phase-transition-simple.e2e.ts "Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Deputy/结算"`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-phase-transition-simple.e2e.ts "Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Deputy/结算"`
   - 结果：`1 passed`
 
 ## 审计收口结论

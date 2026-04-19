@@ -489,7 +489,7 @@ export const waitForTestHarness = async (page: Page, timeout = 5000) => {
 ### 5.2 骰子注入示例
 
 ```typescript
-// e2e/dicethrone-thunder-strike.e2e.ts (修改后)
+// e2e/dicethrone/dicethrone-thunder-strike.e2e.ts (修改后)
 
 test('雷霆万钧技能测试', async ({ browser }, testInfo) => {
     const context = await browser.newContext();

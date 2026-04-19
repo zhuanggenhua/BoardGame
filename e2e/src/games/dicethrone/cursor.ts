@@ -1,0 +1,106 @@
+/**
+ * 王权骰铸 (Dice Throne) 光标主题
+ *
+ * 变体 1: 琥珀金 — 王冠权杖风，金色渐变，皇家气质
+ * 变体 2: 烈焰战魂 — 火焰形状，红橙渐变
+ * 变体 3: 骰面之王 — 骰子形状箭头，骰点装饰
+ */
+
+import type { CursorTheme } from '../../core/cursor/types';
+import { buildCursors, registerCursorThemes } from '../../core/cursor/themes';
+
+// --- 琥珀金（王冠权杖风，金色渐变，皇家气质） ---
+// default: 标准箭头轮廓，金色渐变填充，顶部加王冠锯齿装饰
+const goldSvgs = {
+    default: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="dg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fef3c7"/><stop offset="50%" stop-color="#fcd34d"/><stop offset="100%" stop-color="#b45309"/></linearGradient></defs><path d="M4 2 L4 26 L10 20 L16 28 L20 26 L14 18 L22 18 Z" fill="url(#dg)" stroke="#78350f" stroke-width="1.5" stroke-linejoin="round"/><path d="M4 2 L2 6 L5 5 L4 2" fill="#fcd34d" stroke="#78350f" stroke-width="0.8"/><path d="M4 2 L6 6 L4 2" fill="#fef3c7" stroke="none"/></svg>`,
+    pointer: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="dp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef3c7"/><stop offset="50%" stop-color="#fcd34d"/><stop offset="100%" stop-color="#b45309"/></linearGradient></defs><path d="M14 3 C14 3 14 14 14 14 L10 12 C9 11.5 7.5 12 8 13.5 L12 20 L12 27 L22 27 L24 20 C24 20 26 14 26 13 C26 11.5 24 11 23 12 L22 13 C22 12 21 10.5 19.5 11 L19 12 C19 11 17.5 9.5 16.5 10.5 L16 12 L16 3 C16 1.5 14 1.5 14 3 Z" fill="url(#dp)" stroke="#78350f" stroke-width="1.3" stroke-linejoin="round"/><path d="M12 27 L13 29 L15 28 L17 29 L19 28 L21 29 L22 27" fill="none" stroke="#78350f" stroke-width="1" stroke-linejoin="round"/></svg>`,
+    grabbing: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="dgr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef3c7"/><stop offset="50%" stop-color="#fcd34d"/><stop offset="100%" stop-color="#b45309"/></linearGradient></defs><path d="M8 15 C8 13 10 12 11 13 L11 16 M11 13 C11 11 13 10 14 11 L14 16 M14 11 C14 9 16 9 17 10 L17 16 M17 10 C17 9 19 8.5 20 10 L20 16 L20 22 C20 25 17 28 13 28 C9 28 7 25 7 22 L7 18 C7 16 8 15 8 15 Z" fill="url(#dgr)" stroke="#78350f" stroke-width="1.3" stroke-linejoin="round"/></svg>`,
+    zoomIn: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="dz" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fef3c7"/><stop offset="100%" stop-color="#d97706"/></linearGradient></defs><circle cx="13" cy="13" r="9" fill="url(#dz)" stroke="#78350f" stroke-width="2"/><line x1="20" y1="20" x2="28" y2="28" stroke="#78350f" stroke-width="3" stroke-linecap="round"/><line x1="9" y1="13" x2="17" y2="13" stroke="#78350f" stroke-width="2" stroke-linecap="round"/><line x1="13" y1="9" x2="13" y2="17" stroke="#78350f" stroke-width="2" stroke-linecap="round"/></svg>`,
+    notAllowed: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="dn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fcd34d"/><stop offset="100%" stop-color="#92400e"/></linearGradient></defs><path d="M16 3 L4 9 L4 18 C4 24 9 29 16 30 C23 29 28 24 28 18 L28 9 Z" fill="url(#dn)" stroke="#78350f" stroke-width="1.5" stroke-linejoin="round"/><line x1="10" y1="16" x2="22" y2="16" stroke="#78350f" stroke-width="3" stroke-linecap="round"/></svg>`,
+    help: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="dh" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef3c7"/><stop offset="100%" stop-color="#d97706"/></linearGradient></defs><circle cx="16" cy="16" r="12" fill="url(#dh)" stroke="#78350f" stroke-width="1.5"/><text x="16" y="22" text-anchor="middle" font-size="17" font-weight="bold" font-family="Arial,sans-serif" fill="#78350f">?</text></svg>`,
+};
+const gold: CursorTheme = {
+    id: 'dicethrone', gameId: 'dicethrone', label: '王权骰铸', variantLabel: '琥珀金',
+    previewSvgs: goldSvgs, ...buildCursors(goldSvgs, { zoomIn: [13, 13], notAllowed: [16, 16] }),
+};
+
+// --- 烈焰战魂（火焰形状箭头，红橙渐变） ---
+const flameSvgs = {
+    default: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="fg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="40%" stop-color="#f97316"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><path d="M8 2 L6 14 L4 16 L8 18 L6 24 L10 20 L12 26 L14 18 L18 22 L16 14 L22 16 L12 8 Z" fill="url(#fg)" stroke="#7c2d12" stroke-width="1.5" stroke-linejoin="round"/></svg>`,
+    pointer: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="fp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="40%" stop-color="#f97316"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><path d="M14 2 L12 8 L10 6 L12 14 L8 16 L14 18 L12 24 L16 20 L18 28 L20 20 L24 22 L20 16 L26 14 L18 12 L20 6 L16 10 Z" fill="url(#fp)" stroke="#7c2d12" stroke-width="1.3" stroke-linejoin="round"/></svg>`,
+    grabbing: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="fgr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="40%" stop-color="#f97316"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><path d="M8 15 C8 13 10 12 11 13 L11 16 M11 13 C11 11 13 10 14 11 L14 16 M14 11 C14 9 16 9 17 10 L17 16 M17 10 C17 9 19 8.5 20 10 L20 16 L20 22 C20 25 17 28 13 28 C9 28 7 25 7 22 L7 18 C7 16 8 15 8 15 Z" fill="url(#fgr)" stroke="#7c2d12" stroke-width="1.5" stroke-linejoin="round"/><line x1="4" y1="10" x2="7" y2="14" stroke="#fbbf24" stroke-width="1.2" stroke-linecap="round" opacity="0.8"/><line x1="2" y1="15" x2="6" y2="17" stroke="#f97316" stroke-width="1" stroke-linecap="round" opacity="0.7"/><line x1="5" y1="7" x2="8" y2="11" stroke="#fbbf24" stroke-width="1" stroke-linecap="round" opacity="0.6"/></svg>`,
+    zoomIn: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="fz" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><circle cx="13" cy="13" r="9" fill="url(#fz)" stroke="#7c2d12" stroke-width="2"/><line x1="20" y1="20" x2="28" y2="28" stroke="#7c2d12" stroke-width="3" stroke-linecap="round"/><line x1="9" y1="13" x2="17" y2="13" stroke="#7c2d12" stroke-width="2" stroke-linecap="round"/><line x1="13" y1="9" x2="13" y2="17" stroke="#7c2d12" stroke-width="2" stroke-linecap="round"/></svg>`,
+    notAllowed: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="fn" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f97316"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><circle cx="16" cy="16" r="12" fill="url(#fn)" stroke="#7c2d12" stroke-width="2"/><line x1="8" y1="16" x2="24" y2="16" stroke="#7c2d12" stroke-width="3" stroke-linecap="round"/></svg>`,
+    help: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="fh" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#dc2626"/></linearGradient></defs><circle cx="16" cy="16" r="12" fill="url(#fh)" stroke="#7c2d12" stroke-width="2"/><text x="16" y="22" text-anchor="middle" font-size="17" font-weight="bold" font-family="Arial,sans-serif" fill="#7c2d12">?</text></svg>`,
+};
+const flame: CursorTheme = {
+    id: 'dicethrone-flame', gameId: 'dicethrone', label: '王权骰铸', variantLabel: '烈焰战魂',
+    previewSvgs: flameSvgs, ...buildCursors(flameSvgs, { zoomIn: [13, 13] }),
+};
+
+// --- 骰面之王（骰子形状箭头 + 骰点装饰） ---
+const diceSvgs = {
+    default: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="dcg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#fef3c7"/><stop offset="100%" stop-color="#d97706"/></linearGradient></defs><path d="M4 2 L4 20 L8 16 L12 24 L16 22 L12 14 L20 14 Z" fill="url(#dcg)" stroke="#78350f" stroke-width="1.5" stroke-linejoin="round"/><rect x="18" y="16" width="12" height="12" rx="2.5" fill="#1c1917" stroke="#d97706" stroke-width="1.2"/><circle cx="21" cy="19" r="1.3" fill="#fcd34d"/><circle cx="24" cy="22" r="1.3" fill="#fcd34d"/><circle cx="27" cy="25" r="1.3" fill="#fcd34d"/></svg>`,
+    pointer: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="dcp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef3c7"/><stop offset="100%" stop-color="#d97706"/></linearGradient></defs><path d="M14 3 C14 3 14 14 14 14 L10 12 C9 11.5 7.5 12 8 13.5 L12 20 L12 27 L22 27 L24 20 C24 20 26 14 26 13 C26 11.5 24 11 23 12 L22 13 C22 12 21 10.5 19.5 11 L19 12 C19 11 17.5 9.5 16.5 10.5 L16 12 L16 3 C16 1.5 14 1.5 14 3 Z" fill="url(#dcp)" stroke="#78350f" stroke-width="1.3" stroke-linejoin="round"/><rect x="3" y="3" width="8" height="8" rx="1.5" fill="#1c1917" stroke="#d97706" stroke-width="1"/><circle cx="5.5" cy="5.5" r="1" fill="#fcd34d"/><circle cx="8.5" cy="5.5" r="1" fill="#fcd34d"/><circle cx="5.5" cy="8.5" r="1" fill="#fcd34d"/><circle cx="8.5" cy="8.5" r="1" fill="#fcd34d"/></svg>`,
+    grabbing: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><defs><linearGradient id="dcgr" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef3c7"/><stop offset="100%" stop-color="#d97706"/></linearGradient></defs><path d="M8 15 C8 13 10 12 11 13 L11 16 M11 13 C11 11 13 10 14 11 L14 16 M14 11 C14 9 16 9 17 10 L17 16 M17 10 C17 9 19 8.5 20 10 L20 16 L20 22 C20 25 17 28 13 28 C9 28 7 25 7 22 L7 18 C7 16 8 15 8 15 Z" fill="url(#dcgr)" stroke="#78350f" stroke-width="1.3" stroke-linejoin="round"/><rect x="21" y="8" width="9" height="9" rx="2" fill="#1c1917" stroke="#d97706" stroke-width="1"/><circle cx="23.5" cy="10.5" r="1" fill="#fcd34d"/><circle cx="25.5" cy="12.5" r="1" fill="#fcd34d"/><circle cx="27.5" cy="14.5" r="1" fill="#fcd34d"/></svg>`,
+    zoomIn: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="13" cy="13" r="9" fill="#1c1917" stroke="#d97706" stroke-width="2"/><line x1="20" y1="20" x2="28" y2="28" stroke="#d97706" stroke-width="3" stroke-linecap="round"/><circle cx="9" cy="10" r="1.3" fill="#fcd34d"/><circle cx="13" cy="13" r="1.3" fill="#fcd34d"/><circle cx="17" cy="16" r="1.3" fill="#fcd34d"/></svg>`,
+    notAllowed: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="5" fill="#1c1917" stroke="#d97706" stroke-width="2"/><circle cx="10" cy="10" r="2" fill="#fcd34d"/><circle cx="22" cy="10" r="2" fill="#fcd34d"/><circle cx="16" cy="16" r="2" fill="#fcd34d"/><circle cx="10" cy="22" r="2" fill="#fcd34d"/><circle cx="22" cy="22" r="2" fill="#fcd34d"/><line x1="6" y1="6" x2="26" y2="26" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/></svg>`,
+    help: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect x="4" y="4" width="24" height="24" rx="5" fill="#1c1917" stroke="#d97706" stroke-width="2"/><text x="16" y="22" text-anchor="middle" font-size="18" font-weight="bold" font-family="Arial,sans-serif" fill="#fcd34d">?</text></svg>`,
+};
+const dice: CursorTheme = {
+    id: 'dicethrone-dice', gameId: 'dicethrone', label: '王权骰铸', variantLabel: '骰面之王',
+    previewSvgs: diceSvgs, ...buildCursors(diceSvgs, { zoomIn: [13, 13], notAllowed: [16, 16] }),
+};
+
+// --- 暴击时刻（Critical Hit） ---
+const criticalSvgs = {
+    // 破空剑锋
+    default: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <filter id="fire" x="-20%" y="-20%" width="140%" height="140%">
+            <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="2" result="turb"/>
+            <feDisplacementMap in="SourceGraphic" in2="turb" scale="2"/>
+        </filter>
+        <path d="M6 6 L12 24 L16 20 L24 18 L6 6 Z" fill="#f97316" stroke="#7c2d12" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M8 8 L11 18 L14 16 L18 15 L8 8 Z" fill="#facc15"/>
+        <path d="M4 2 L8 4 M2 6 L6 8" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+
+    // 战术指引
+    pointer: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <path d="M12 2 L8 8 L6 8 L8 16 L6 22 L10 20 L12 28 L14 20 L18 18 L14 14 L20 12 L16 6 L14 6 L12 2 Z" fill="#334155" stroke="#f97316" stroke-width="1.5" stroke-linejoin="round"/>
+        <circle cx="12" cy="2" r="1.5" fill="#facc15"/>
+    </svg>`,
+
+    // 燃烧铁拳
+    grabbing: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <path d="M8 14 C8 12 10 11 11 12 L11 15 M11 12 C11 10 13 9 14 10 L14 15 M14 10 C14 8 16 8 17 9 L17 15 M17 9 C17 8 19 7.5 20 9 L20 15 L20 21 C20 24 17 27 13 27 C9 27 7 24 7 21 L7 17 C7 15 8 14 8 14 Z" fill="#334155" stroke="#f97316" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M6 18 L4 16 M22 18 L24 16 M8 24 L6 26" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+
+    // 弱点洞察
+    zoomIn: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <circle cx="13" cy="13" r="8" fill="none" stroke="#f97316" stroke-width="2.5"/>
+        <path d="M13 8 L13 18 M8 13 L18 13" stroke="#facc15" stroke-width="1.5"/>
+        <line x1="19" y1="19" x2="26" y2="26" stroke="#334155" stroke-width="4" stroke-linecap="round"/>
+        <line x1="19" y1="19" x2="26" y2="26" stroke="#f97316" stroke-width="1.5" stroke-linecap="round"/>
+    </svg>`,
+
+    // 绝对防御
+    notAllowed: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <path d="M16 4 L6 9 L6 18 C6 24 10 28 16 30 C22 28 26 24 26 18 L26 9 L16 4 Z" fill="#334155" stroke="#94a3b8" stroke-width="1.5" stroke-linejoin="round"/>
+        <path d="M11 11 L21 21 M21 11 L11 21" stroke="#ef4444" stroke-width="3" stroke-linecap="round"/>
+    </svg>`,
+
+    // 战术情报
+    help: `<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+        <circle cx="16" cy="16" r="12" fill="#334155" stroke="#f97316" stroke-width="2"/>
+        <text x="16" y="22" text-anchor="middle" font-size="17" font-weight="bold" font-family="Arial,sans-serif" fill="#facc15">?</text>
+    </svg>`,
+};
+
+const critical: CursorTheme = {
+    id: 'dicethrone-critical', gameId: 'dicethrone', label: '王权骰铸', variantLabel: '暴击时刻',
+    previewSvgs: criticalSvgs, ...buildCursors(criticalSvgs, { zoomIn: [13, 13] }),
+};
+
+registerCursorThemes([critical, gold, flame, dice]);

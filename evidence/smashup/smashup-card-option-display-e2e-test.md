@@ -14,7 +14,7 @@
   - 埋葬牌选项继续使用埋葬牌 uid 派生 id，和场景内直选展示保持一致。
 - `src/games/smashup/Board.tsx`
   - 为测试页启动早期的 `core.players` / `core.bases` / `core.turnOrder` / `core.titans` 访问补空值兜底，避免 harness 注册前整页崩溃。
-- `e2e/smashup-robot-hoverbot-new.e2e.ts`
+- `e2e/smashup/smashup-robot-hoverbot-new.e2e.ts`
   - 悬浮机器人：对齐当前中文按钮语义“放回牌库顶”，并兼容“唯一基地直接自动落位”。
   - 企鹅帝皇：定位器改为当前稳定节点 `data-option-id`，不再依赖旧的 `prompt-card-*` 假设。
 
@@ -22,21 +22,21 @@
 
 ```bash
 npm run test -- src/games/smashup/__tests__/smashup.smoke.test.ts
-npm run test:e2e:ci:file -- e2e/smashup-robot-hoverbot-new.e2e.ts "悬浮机器人应显示可选卡牌并允许打出"
-BG_HEAVY_MEMORY_MIN_FREE_GB=1.0 npm run test:e2e:ci:file -- e2e/smashup-robot-hoverbot-new.e2e.ts "企鹅帝皇天赋交互应显示卡牌选项而不是文字按钮"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-robot-hoverbot-new.e2e.ts "悬浮机器人应显示可选卡牌并允许打出"
+BG_HEAVY_MEMORY_MIN_FREE_GB=1.0 npm run test:e2e:ci:file -- e2e/smashup/smashup-robot-hoverbot-new.e2e.ts "企鹅帝皇天赋交互应显示卡牌选项而不是文字按钮"
 ```
 
 ## 结果
 
 - `src/games/smashup/__tests__/smashup.smoke.test.ts`：`95 passed`
-- `e2e/smashup-robot-hoverbot-new.e2e.ts` `悬浮机器人应显示可选卡牌并允许打出`：`1 passed`
-- `e2e/smashup-robot-hoverbot-new.e2e.ts` `企鹅帝皇天赋交互应显示卡牌选项而不是文字按钮`：`1 passed`
+- `e2e/smashup/smashup-robot-hoverbot-new.e2e.ts` `悬浮机器人应显示可选卡牌并允许打出`：`1 passed`
+- `e2e/smashup/smashup-robot-hoverbot-new.e2e.ts` `企鹅帝皇天赋交互应显示卡牌选项而不是文字按钮`：`1 passed`
 
 ## 截图
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-robot-hoverbot-new.e2e\企鹅帝皇天赋交互应显示卡牌选项而不是文字按钮\emperor-penguin-talent-card-prompt.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-robot-hoverbot-new.e2e\悬浮机器人应显示可选卡牌并允许打出\hoverbot-interaction-visible.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-robot-hoverbot-new.e2e\悬浮机器人应显示可选卡牌并允许打出\hoverbot-played-pirate.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-robot-hoverbot-new.e2e\企鹅帝皇天赋交互应显示卡牌选项而不是文字按钮\emperor-penguin-talent-card-prompt.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-robot-hoverbot-new.e2e\悬浮机器人应显示可选卡牌并允许打出\hoverbot-interaction-visible.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-robot-hoverbot-new.e2e\悬浮机器人应显示可选卡牌并允许打出\hoverbot-played-pirate.png`
 
 ## 肉眼观察
 

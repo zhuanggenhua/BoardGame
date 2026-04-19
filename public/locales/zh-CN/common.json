@@ -21,6 +21,9 @@
     "card_driven": "卡牌",
     "casual": "休闲"
   },
+  "status_tags": {
+    "under_construction": "实施中"
+  },
   "game_details": {
     "best_players": "最佳人数",
     "people": "人",

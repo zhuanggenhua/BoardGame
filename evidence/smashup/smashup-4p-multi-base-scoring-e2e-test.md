@@ -2,7 +2,7 @@
 
 ## 本次目标
 
-验证 `e2e/smashup-4p-layout-test.e2e.ts` 已经从“布局页占位测试”升级为真正的 4P 复杂场景 E2E，并覆盖：
+验证 `e2e/smashup/smashup-4p-layout-test.e2e.ts` 已经从“布局页占位测试”升级为真正的 4P 复杂场景 E2E，并覆盖：
 
 1. 四人局中 3 个基地同时达标时，正确弹出 `multi_base_scoring` 选择交互
 2. 选择第 1、2 个基地后，最后 1 个基地会自动完成收尾
@@ -10,7 +10,7 @@
 
 ## 执行命令
 
-- `PW_USE_DEV_SERVERS=true PW_WORKERS=1 PW_TEST_MATCH=e2e/smashup-4p-layout-test.e2e.ts npx playwright test --reporter=list`
+- `PW_USE_DEV_SERVERS=true PW_WORKERS=1 PW_TEST_MATCH=e2e/smashup/smashup-4p-layout-test.e2e.ts npx playwright test --reporter=list`
 - `npx vitest run src/games/smashup/__tests__/multi-base-afterscoring-bug.test.ts`
 - `node .\node_modules\typescript\bin\tsc --noEmit --pretty false`
 
@@ -18,7 +18,7 @@
 
 - `src/games/smashup/domain/index.ts` 已修复 `multi_base_scoring` 的“剩 1 个基地自动计分”分支：现在也会立即写入 `sys.scoredBaseIndices`。
 - 这次修的是根因，不是只改 E2E 断言：如果不标记最后 1 个基地，`onPhaseExit('scoreBases')` 会在交互关闭后的自动推进里把它再记一遍。
-- `e2e/smashup-4p-layout-test.e2e.ts` 已对齐真实产品语义：前两次由玩家决定顺序，最后 1 个基地自动收尾，不再错误等待一个额外的“最后基地”选择 Prompt。
+- `e2e/smashup/smashup-4p-layout-test.e2e.ts` 已对齐真实产品语义：前两次由玩家决定顺序，最后 1 个基地自动收尾，不再错误等待一个额外的“最后基地”选择 Prompt。
 - 本地验证已改为复用已开启开发服务（`5173/18000/18001`）+ 单 worker + 无头，不再额外拉起隔离服务，能明显降低本机卡顿。
 
 ## 截图审查
@@ -56,6 +56,6 @@
 
 ## 最终结果
 
-- `e2e/smashup-4p-layout-test.e2e.ts`：2/2 通过
+- `e2e/smashup/smashup-4p-layout-test.e2e.ts`：2/2 通过
 - `src/games/smashup/__tests__/multi-base-afterscoring-bug.test.ts`：3/3 通过
 - `tsc --noEmit`：通过

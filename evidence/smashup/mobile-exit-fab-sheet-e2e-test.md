@@ -16,9 +16,9 @@ npm run test:e2e:ci:file -- smashup-4p-layout-test.e2e.ts "移动端横屏应保
 
 ### 1. 移动端横屏主界面
 
-绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
 
-![04-mobile-landscape-layout](../test-results/evidence-screenshots/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04-mobile-landscape-layout.png)
+![04-mobile-landscape-layout](../test-results/evidence-screenshots/smashup/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04-mobile-landscape-layout.png)
 
 分析：
 - 主棋盘、记分板、结束回合区域都在首屏内，没有被退出入口挤压。
@@ -26,9 +26,9 @@ npm run test:e2e:ci:file -- smashup-4p-layout-test.e2e.ts "移动端横屏应保
 
 ### 2. 退出 Sheet 展开态
 
-绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
+绝对路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
 
-![04a-mobile-exit-fab-panel](../test-results/evidence-screenshots/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04a-mobile-exit-fab-panel.png)
+![04a-mobile-exit-fab-panel](../test-results/evidence-screenshots/smashup/smashup-4p-layout-test.e2e/移动端横屏应保持四人局布局可用，并支持手牌长按看牌/04a-mobile-exit-fab-panel.png)
 
 分析：
 - 退出面板已经改成底部 sheet，而不是从悬浮球旁边横向/纵向贴边展开。

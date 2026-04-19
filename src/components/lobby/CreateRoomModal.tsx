@@ -11,7 +11,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
-import type { GameManifestEntry } from '../../games/manifest.types';
+import type { GameManifestEntry, GameSetupField, GameSetupSelectOption } from '../../games/manifest.types';
 import { UI_Z_INDEX } from '../../core';
 import type { AiDifficultyLevel, AiSeatController } from '../../engine/ai';
 import {
@@ -111,6 +111,63 @@ function applyLocalAiDifficulty(
     return nextControllers;
 }
 
+export const resolveSetupFieldOptions = (
+    field: GameSetupField,
+    numPlayers: number,
+): GameSetupSelectOption[] => {
+    if (field.type !== 'select') {
+        return [];
+    }
+    return field.optionsByPlayerCount?.[numPlayers] ?? field.options ?? [];
+};
+
+export const normalizeSetupValuesForFields = (
+    setupFields: ReadonlyArray<readonly [string, GameSetupField]>,
+    numPlayers: number,
+    currentValues: Record<string, string> = {},
+): Record<string, string> => {
+    const normalized: Record<string, string> = {};
+    for (const [key, field] of setupFields) {
+        if (field.type !== 'select') {
+            continue;
+        }
+        const options = resolveSetupFieldOptions(field, numPlayers);
+        const currentValue = currentValues[key];
+        const fallbackValue = (
+            field.default && options.some((option) => option.value === field.default)
+                ? field.default
+                : options[0]?.value
+        ) ?? '';
+        const nextValue = typeof currentValue === 'string' && options.some((option) => option.value === currentValue)
+            ? currentValue
+            : fallbackValue;
+        normalized[key] = nextValue;
+    }
+    return normalized;
+};
+
+const isSameSetupValues = (
+    left: Record<string, string>,
+    right: Record<string, string>,
+) => {
+    const leftKeys = Object.keys(left);
+    const rightKeys = Object.keys(right);
+    if (leftKeys.length !== rightKeys.length) {
+        return false;
+    }
+    return leftKeys.every((key) => left[key] === right[key]);
+};
+
+const toSelectValueRecord = (selections: GameSetupSelections): Record<string, string> => {
+    const selectValues: Record<string, string> = {};
+    for (const [key, value] of Object.entries(selections)) {
+        if (typeof value === 'string') {
+            selectValues[key] = value;
+        }
+    }
+    return selectValues;
+};
+
 export const CreateRoomModal = ({
     isOpen,
     onClose,
@@ -123,6 +180,10 @@ export const CreateRoomModal = ({
     const gameNamespace = `game-${gameManifest.id}`;
     const { t } = useTranslation(['lobby', gameNamespace]);
     const playerOptions = useMemo(() => gameManifest.playerOptions ?? [2], [gameManifest.playerOptions]);
+    const setupFields = useMemo(
+        () => Object.entries(gameManifest.setupOptions ?? {}),
+        [gameManifest.setupOptions],
+    );
     const hasPlayerOptions = playerOptions.length > 1;
     const isHomeV2Style = visualStyle === 'home-v2';
 
@@ -133,29 +194,72 @@ export const CreateRoomModal = ({
     const [enableAi, setEnableAi] = useState(false);
     const [aiDifficulty, setAiDifficulty] = useState<AiDifficultyLevel>(DEFAULT_LOCAL_AI_DIFFICULTY);
     const [seatControllers, setSeatControllers] = useState<Record<string, AiSeatController>>({});
-    const [setupSelections, setSetupSelections] = useState<GameSetupSelections>(() => getDefaultSetupSelections(gameManifest));
+    const [setupSelections, setSetupSelections] = useState<GameSetupSelections>(() => {
+        const defaults = getDefaultSetupSelections(gameManifest);
+        return {
+            ...defaults,
+            ...normalizeSetupValuesForFields(setupFields, playerOptions[0], toSelectValueRecord(defaults)),
+        };
+    });
 
     useEffect(() => {
         if (!isOpen) return;
-        const nextPreferences = normalizeLocalMatchPreferences(
-            gameManifest,
-            (initialPreferences ?? createDefaultLocalMatchPreferences(gameManifest)) as unknown as Record<string, unknown>,
-        );
-        const nextSeatControllers = forceHumanOwnerSeat(
-            Object.fromEntries(
-                Array.from({ length: nextPreferences.numPlayers }, (_, index) => [String(index), { type: 'human' } as AiSeatController]),
+        const nextPreferences = initialPreferences
+            ? normalizeLocalMatchPreferences(
+                gameManifest,
+                initialPreferences as unknown as Record<string, unknown>,
+            )
+            : createDefaultLocalMatchPreferences(gameManifest);
+        const nextSeatControllers = initialPreferences
+            ? forceHumanOwnerSeat({ ...nextPreferences.seatControllers })
+            : forceHumanOwnerSeat(
+                Object.fromEntries(
+                    Array.from({ length: nextPreferences.numPlayers }, (_, index) => [String(index), { type: 'human' } as AiSeatController]),
+                ),
+            );
+        const inferredDifficulty = Object.values(nextSeatControllers).find(
+            (controller): controller is Extract<AiSeatController, { type: 'local-ai' }> => (
+                controller.type === 'local-ai' && typeof controller.difficulty === 'string'
             ),
-        );
+        )?.difficulty ?? DEFAULT_LOCAL_AI_DIFFICULTY;
+        const shouldEnableAi = initialPreferences
+            ? countAiSeats(nextSeatControllers, nextPreferences.numPlayers) > 0
+            : false;
 
         setRoomName('');
         setNumPlayers(nextPreferences.numPlayers);
         setTtlSeconds(0);
         setPassword('');
-        setEnableAi(false);
-        setAiDifficulty(DEFAULT_LOCAL_AI_DIFFICULTY);
+        setEnableAi(shouldEnableAi);
+        setAiDifficulty(inferredDifficulty);
         setSeatControllers(nextSeatControllers);
-        setSetupSelections(nextPreferences.setupSelections);
-    }, [gameManifest, initialPreferences, isOpen, playerOptions]);
+        setSetupSelections({
+            ...nextPreferences.setupSelections,
+            ...normalizeSetupValuesForFields(
+                setupFields,
+                nextPreferences.numPlayers,
+                toSelectValueRecord(nextPreferences.setupSelections),
+            ),
+        });
+    }, [gameManifest, initialPreferences, isOpen, playerOptions, setupFields]);
+
+    useEffect(() => {
+        setSetupSelections((current) => {
+            const currentSelectValues = toSelectValueRecord(current);
+            const normalizedSelectValues = normalizeSetupValuesForFields(
+                setupFields,
+                numPlayers,
+                currentSelectValues,
+            );
+            if (isSameSetupValues(currentSelectValues, normalizedSelectValues)) {
+                return current;
+            }
+            return {
+                ...current,
+                ...normalizedSelectValues,
+            };
+        });
+    }, [numPlayers, setupFields]);
 
     useEffect(() => {
         setSeatControllers((current) => {
@@ -414,6 +518,7 @@ export const CreateRoomModal = ({
                                     onSelectionsChange={setSetupSelections}
                                     t={t}
                                     gameNamespace={gameNamespace}
+                                    numPlayers={numPlayers}
                                 />
 
                                 {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (

@@ -369,7 +369,7 @@ export function getMyGameUIHints(core, filter): UIHint[] {
 - 引擎层：`src/engine/primitives/uiHints.ts`
 - 召唤师战争：`src/games/summonerwars/domain/uiHints.ts`
 - UI 层使用：`src/games/summonerwars/ui/useCellInteraction.ts`
-- E2E 测试：`e2e/summonerwars-ability-indicators.e2e.ts`
+- E2E 测试：`e2e/summonerwars/summonerwars-ability-indicators.e2e.ts`
 
 ## 未来扩展
 

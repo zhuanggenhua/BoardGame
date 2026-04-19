@@ -13,7 +13,7 @@
 
 ```bash
 npm run test -- src/components/lobby/__tests__/CreateRoomModal.test.tsx
-npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "大杀四方创建房间弹窗可直接配置 AI 人数和模组，并为游客保存偏好"
+npm run test:e2e:ci:file -- e2e/_shared/lobby.e2e.ts "大杀四方创建房间弹窗可直接配置 AI 人数和模组，并为游客保存偏好"
 ```
 
 结果：
@@ -27,7 +27,7 @@ npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "大杀四方创建房间弹窗可�
 
 截图路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\大杀四方创建房间弹窗可直接配置-AI-人数和模组，并为游客保存偏好\lobby-smashup-create-room-ai-config-default-normal.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\大杀四方创建房间弹窗可直接配置-AI-人数和模组，并为游客保存偏好\lobby-smashup-create-room-ai-config-default-normal.png`
 
 读图结论：
 
@@ -39,7 +39,7 @@ npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "大杀四方创建房间弹窗可�
 
 截图路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\大杀四方创建房间弹窗可直接配置-AI-人数和模组，并为游客保存偏好\lobby-smashup-create-room-ai-config-hard-and-seats.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\大杀四方创建房间弹窗可直接配置-AI-人数和模组，并为游客保存偏好\lobby-smashup-create-room-ai-config-hard-and-seats.png`
 
 读图结论：
 
@@ -51,7 +51,7 @@ npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "大杀四方创建房间弹窗可�
 
 - UI 实现：`src/components/lobby/CreateRoomModal.tsx`
 - 单测：`src/components/lobby/__tests__/CreateRoomModal.test.tsx`
-- E2E：`e2e/lobby.e2e.ts`
+- E2E：`e2e/_shared/lobby.e2e.ts`
 
 ## 结论
 

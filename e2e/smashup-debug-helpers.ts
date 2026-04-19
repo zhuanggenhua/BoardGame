@@ -270,9 +270,9 @@ export const clickPromptOptionByText = async (page: Page, text: string | RegExp)
 /** 点击手牌中的第 N 张卡 */
 export const clickHandCard = async (page: Page, index = 0) => {
     const handArea = page.getByTestId('su-hand-area');
-    const handCards = handArea.locator('> div > div');
-    await expect(handCards.nth(index)).toBeVisible({ timeout: 5000 });
-    await handCards.nth(index).click();
+    const card = handArea.locator('> div > div').nth(index);
+    await expect(card).toBeVisible({ timeout: 5000 });
+    await card.click({ force: true });
     await page.waitForTimeout(300);
 };
 
@@ -289,15 +289,15 @@ export const clickBaseByIndex = async (page: Page, index = 0) => {
     await page.waitForTimeout(500);
 };
 
-/** 点击高亮的基地（ring-amber-400） — 基地选择交互模式下基地直接高亮在棋盘上 */
+/** 点击高亮的基地（ring-purple-400） — 基地选择交互模式下基地直接高亮在棋盘上 */
 export const clickHighlightedBase = async (page: Page, index = 0) => {
     const result = await page.evaluate((idx) => {
-        // 基地选择模式下，可选基地的卡片 div（w-[14vw]）上有 ring-amber-400 class
+        // 基地选择模式下，可选基地的卡片 div（w-[14vw]）上有 ring-purple-400 class
         // onClick 绑定在这个 div 上，必须直接点击它
         const allBases = document.querySelectorAll('.group\\/base');
         const selectableCards: HTMLElement[] = [];
         for (const base of allBases) {
-            const baseCard = base.querySelector('[class*="ring-amber-400"]') as HTMLElement;
+            const baseCard = base.querySelector('[class*="ring-purple-400"]') as HTMLElement;
             if (baseCard) selectableCards.push(baseCard);
         }
         if (selectableCards[idx]) {
@@ -331,10 +331,10 @@ export const clickHighlightedMinion = async (page: Page, index = 0) => {
     return result;
 };
 
-/** 等待基地选择模式出现（基地高亮 ring-amber-400） */
+/** 等待基地选择模式出现（基地高亮 ring-purple-400） */
 export const waitForBaseSelect = async (page: Page, timeout = 10000) => {
     await page.waitForFunction(
-        () => document.querySelectorAll('[class*="ring-amber-400"]').length > 0,
+        () => document.querySelectorAll('[class*="ring-purple-400"]').length > 0,
         { timeout },
     );
 };
@@ -364,7 +364,7 @@ export const clickHighlightedMinionByIndex = async (page: Page, index = 0) => {
 
 /** 检查是否处于基地选择模式 */
 export const isBaseSelectMode = async (page: Page) => {
-    return page.evaluate(() => document.querySelectorAll('[class*="ring-amber-400"]').length > 0).catch(() => false);
+    return page.evaluate(() => document.querySelectorAll('[class*="ring-purple-400"]').length > 0).catch(() => false);
 };
 
 /** 检查是否处于随从选择模式 */

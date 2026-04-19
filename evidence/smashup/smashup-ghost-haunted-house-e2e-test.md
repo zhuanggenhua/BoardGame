@@ -2,7 +2,7 @@
 
 ## 本次目标
 
-将 `e2e/smashup-ghost-haunted-house-discard.e2e.ts` 从错误的旧前提重写为当前规则下真实有效的 E2E，并验证两条链式弃牌路径：
+将 `e2e/smashup/smashup-ghost-haunted-house-discard.e2e.ts` 从错误的旧前提重写为当前规则下真实有效的 E2E，并验证两条链式弃牌路径：
 
 1. `ghost_ghost` 第一段弃牌后，鬼屋第二段只显示最后 1 张最新手牌
 2. 当第二段仍需选择时，鬼屋交互只显示最新剩余手牌，不包含已经被第一段弃掉的卡
@@ -18,7 +18,7 @@
 ## 执行命令
 
 - `node .\node_modules\typescript\bin\tsc --noEmit --pretty false`
-- `PW_USE_DEV_SERVERS=true npx playwright test e2e/smashup-ghost-haunted-house-discard.e2e.ts --reporter=list`
+- `PW_USE_DEV_SERVERS=true npx playwright test e2e/smashup/smashup-ghost-haunted-house-discard.e2e.ts --reporter=list`
 
 ## 关键结论
 
@@ -98,6 +98,6 @@
 
 ## 最终结果
 
-- `e2e/smashup-ghost-haunted-house-discard.e2e.ts`：2/2 通过
-- 5 张截图已人工审查并备份到 `evidence/assets/ghost-haunted-house-e2e/`
+- `e2e/smashup/smashup-ghost-haunted-house-discard.e2e.ts`：2/2 通过
+- 5 张截图已人工审查并备份到 `evidence/smashup/assets/ghost-haunted-house-e2e/`
 - 该文件已恢复到 Playwright 正常 discovery 集合

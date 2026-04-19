@@ -49,6 +49,9 @@ export class User {
     @Prop({ type: String, default: null, trim: true })
     avatar?: string | null;
 
+    @Prop({ type: Date, default: null })
+    notificationLastSeenAt?: Date | null;
+
     @Prop({
         type: String,
         enum: USER_ROLES,

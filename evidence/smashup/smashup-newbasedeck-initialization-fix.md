@@ -183,7 +183,7 @@ npm run test -- afterScoring-rescoring.test.ts
 
 ## 相关文档
 
-- `evidence/smashup-after-scoring-rescoring-analysis.md` - 详细分析文档
+- `evidence/smashup/smashup-after-scoring-rescoring-analysis.md` - 详细分析文档
 - `evidence/smashup/smashup-after-scoring-rescoring-test-status.md` - 测试状态文档
 - `src/games/smashup/__tests__/afterScoring-rescoring.test.ts` - 测试文件
 

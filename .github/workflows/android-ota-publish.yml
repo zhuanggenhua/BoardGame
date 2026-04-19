@@ -31,9 +31,9 @@ on:
         default: false
         type: boolean
       force_update:
-        description: '是否强制 OTA（默认开启，下载完成后立即切换）'
+        description: '是否强制 OTA（默认关闭；如需下载完成后立即切换请显式开启）'
         required: true
-        default: true
+        default: false
         type: boolean
       force_update_title:
         description: '强更页标题（可选）'

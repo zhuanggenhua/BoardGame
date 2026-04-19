@@ -33,8 +33,8 @@
 
 ## 验证
 1. `npx eslint src/games/smashup/abilities/samurai.ts src/games/smashup/domain/ongoingEffects.ts src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/newBaseAbilities.test.ts src/games/smashup/__tests__/newOngoingAbilities.test.ts`
-2. `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --config temp/vitest-smashup-node.config.ts --configLoader native`
-3. `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newBaseAbilities.test.ts -t "base_sakura_garden_pod reuses the first discard draw trigger" --config temp/vitest-smashup-node.config.ts --configLoader native`
+2. `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts --config temp/smashup/vitest-smashup-node.config.ts --configLoader native`
+3. `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newBaseAbilities.test.ts -t "base_sakura_garden_pod reuses the first discard draw trigger" --config temp/smashup/vitest-smashup-node.config.ts --configLoader native`
 4. `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newOngoingAbilities.test.ts --configLoader native`
 5. `node --import tsx -`（内联脚本，复核：
    - `samurai_ronin_pod` 最终 `powerCounters = 2`

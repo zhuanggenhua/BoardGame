@@ -2,7 +2,7 @@
 
 ## 问题描述
 
-测试文件 `e2e/framework-pilot-ninja-infiltrate.e2e.ts` 中的三个测试全部失败：
+测试文件 `e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts` 中的三个测试全部失败：
 
 1. **测试 1**："应该能选择并消灭基地上的战术卡（完整流程）" - 等待交互超时（60秒）
 2. **测试 2**："应该能跳过渗透交互（没有战术卡时）" - `ninja_infiltrate` 没有出现在基地上
@@ -61,6 +61,6 @@ await page.goto('/play/smashup');  // 不带 /test 和查询参数
 
 ## 相关文件
 
-- `e2e/framework-pilot-ninja-infiltrate.e2e.ts` - 修复的测试文件
+- `e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts` - 修复的测试文件
 - `e2e/framework/GameTestContext.ts` - setupScene 实现
 - `docs/automated-testing.md` - E2E 测试框架文档

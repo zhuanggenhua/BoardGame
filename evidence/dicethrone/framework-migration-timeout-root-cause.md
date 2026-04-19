@@ -47,7 +47,7 @@ npm run dev
 # 等待服务器完全启动（看到 "✅ Vite 服务器已就绪" 消息）
 
 # 终端 2：运行测试
-npm run test:e2e -- e2e/framework-pilot-ninja-infiltrate.e2e.ts
+npm run test:e2e -- e2e/smashup/framework-pilot-ninja-infiltrate.e2e.ts
 ```
 
 这样可以：

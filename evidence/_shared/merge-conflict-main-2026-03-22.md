@@ -50,15 +50,15 @@
 ### 已通过
 - `npx tsc --noEmit`
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/__tests__/mobileSupport.test.ts src/games/cardia/ui/__tests__/encounterFlipState.test.ts src/games/smashup/__tests__/baseFactionOngoing.test.ts src/games/smashup/__tests__/elderThingsPod.test.ts src/games/smashup/__tests__/madnessAbilities.test.ts src/games/smashup/__tests__/vampiresPod.test.ts --configLoader native`
-- `npm run test:e2e:ci:file -- e2e/cardia-smoke-test.e2e.ts`
-- `npm run test:e2e:ci:file -- e2e/mobile-orientation.e2e.ts`
+- `npm run test:e2e:ci:file -- e2e/cardia/cardia-smoke-test.e2e.ts`
+- `npm run test:e2e:ci:file -- e2e/cardia/mobile-orientation.e2e.ts`
 
 ### 补充说明
 - `npm run test:changed` 未作为最终门禁结果使用：该命令在当前仓库日志输出量下超时并触发 `EPIPE`，未收敛到有效失败结论，因此改为更小粒度的定向回归。
 - 已自审截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\cardia-smoke-test.e2e\手机横屏布局应完整展示战场与手牌\cardia-mobile-landscape-layout.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\cardia-smoke-test.e2e\手机竖屏布局应完整展示战场与手牌\cardia-mobile-portrait-layout.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\cardia-smoke-test.e2e\平板横屏布局应完整展示战场与手牌\cardia-tablet-landscape-layout.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\cardia\cardia-smoke-test.e2e\手机横屏布局应完整展示战场与手牌\cardia-mobile-landscape-layout.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\cardia\cardia-smoke-test.e2e\手机竖屏布局应完整展示战场与手牌\cardia-mobile-portrait-layout.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\cardia\cardia-smoke-test.e2e\平板横屏布局应完整展示战场与手牌\cardia-tablet-landscape-layout.png`
 - 自审结论：桌面与平板卡牌尺寸未被整体缩小；手机横竖屏均能同时看到战场和手牌区域，未出现整页缩放或主区域被弃牌堆挤压。
 
 ## 6. 提交信息

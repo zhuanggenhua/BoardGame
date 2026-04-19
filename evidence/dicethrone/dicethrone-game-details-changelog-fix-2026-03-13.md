@@ -24,7 +24,7 @@
 - `public/locales/zh-CN/lobby.json`
 - `public/locales/en/lobby.json`
   - 补充更新日志 loading / error / pinned 文案
-- `e2e/lobby.e2e.ts`
+- `e2e/_shared/lobby.e2e.ts`
   - 调整“结束 loading”用例，允许接口成功后进入内容态
 
 ## 验证记录
@@ -52,8 +52,8 @@ npx vitest run src/components/lobby/__tests__/gameDetailsContent.test.ts --pool 
 命令：
 
 ```powershell
-$env:PW_USE_DEV_SERVERS='true'; $env:PW_HAS_EXPLICIT_TARGET='true'; npx playwright test e2e/lobby.e2e.ts -g "Dice Throne 更新日志 tab 会渲染接口返回的已发布内容"
-$env:PW_USE_DEV_SERVERS='true'; $env:PW_HAS_EXPLICIT_TARGET='true'; npx playwright test e2e/lobby.e2e.ts -g "Dice Throne 更新日志 tab 会请求公开接口并结束 loading"
+$env:PW_USE_DEV_SERVERS='true'; $env:PW_HAS_EXPLICIT_TARGET='true'; npx playwright test e2e/_shared/lobby.e2e.ts -g "Dice Throne 更新日志 tab 会渲染接口返回的已发布内容"
+$env:PW_USE_DEV_SERVERS='true'; $env:PW_HAS_EXPLICIT_TARGET='true'; npx playwright test e2e/_shared/lobby.e2e.ts -g "Dice Throne 更新日志 tab 会请求公开接口并结束 loading"
 ```
 
 结果：
@@ -63,7 +63,7 @@ $env:PW_USE_DEV_SERVERS='true'; $env:PW_HAS_EXPLICIT_TARGET='true'; npx playwrig
 
 通过截图：
 
-- `F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\Dice-Throne-更新日志-tab-会渲染接口返回的已发布内容\lobby-dicethrone-changelog-renders-published-entry.png`
+- `F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\Dice-Throne-更新日志-tab-会渲染接口返回的已发布内容\lobby-dicethrone-changelog-renders-published-entry.png`
 
 截图人工核对结果：
 
@@ -86,7 +86,7 @@ $env:PW_USE_DEV_SERVERS='true'; $env:PW_HAS_EXPLICIT_TARGET='true'; npx playwrig
 
 截图：
 
-- `F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\manual\production-dicethrone-modal.png`
+- `F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\manual\production-dicethrone-modal.png`
 
 人工核对结果：
 

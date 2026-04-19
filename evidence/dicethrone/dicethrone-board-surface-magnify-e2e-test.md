@@ -11,7 +11,7 @@
 
 ## 涉及用例
 
-- 文件：`e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- 文件：`e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 - 用例：`mobile narrow viewport should keep magnify entries visible and clickable`
 
 ## 执行记录
@@ -32,11 +32,11 @@ npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "mobile narrow
 
 绝对路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\10-mobile-main-board-state.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\10-mobile-main-board-state.png`
 
 相对路径引用：
 
-![main-board](../test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable/10-mobile-main-board-state.png)
+![main-board](../../test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable/10-mobile-main-board-state.png)
 
 肉眼观察：
 
@@ -48,11 +48,11 @@ npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "mobile narrow
 
 绝对路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\11-mobile-player-board-surface-magnify-open.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\11-mobile-player-board-surface-magnify-open.png`
 
 相对路径引用：
 
-![player-board-surface-magnify](../test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable/11-mobile-player-board-surface-magnify-open.png)
+![player-board-surface-magnify](../../test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable/11-mobile-player-board-surface-magnify-open.png)
 
 肉眼观察：
 
@@ -64,11 +64,11 @@ npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "mobile narrow
 
 绝对路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\12-mobile-tip-board-surface-magnify-open.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\12-mobile-tip-board-surface-magnify-open.png`
 
 相对路径引用：
 
-![tip-board-surface-magnify](../test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable/12-mobile-tip-board-surface-magnify-open.png)
+![tip-board-surface-magnify](../../test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable/12-mobile-tip-board-surface-magnify-open.png)
 
 肉眼观察：
 
@@ -80,11 +80,11 @@ npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "mobile narrow
 
 绝对路径：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\13-mobile-player-board-button-magnify-open.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\13-mobile-player-board-button-magnify-open.png`
 
 相对路径引用：
 
-![player-board-button-magnify](../test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable/13-mobile-player-board-button-magnify-open.png)
+![player-board-button-magnify](../../test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable/13-mobile-player-board-button-magnify-open.png)
 
 肉眼观察：
 

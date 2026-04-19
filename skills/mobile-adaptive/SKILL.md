@@ -93,7 +93,7 @@
 
 优先参考与复用：
 
-- `e2e/cardia-smoke-test.e2e.ts`
+- `e2e/cardia/cardia-smoke-test.e2e.ts`
 - `src/games/cardia/Board.tsx`
 
 Cardia 的适配结果将作为其它游戏迁移时的模板。

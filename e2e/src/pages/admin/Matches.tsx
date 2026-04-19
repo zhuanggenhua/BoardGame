@@ -1,0 +1,585 @@
+import { useEffect, useState, useCallback } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
+import DataTable, { type Column } from './components/DataTable';
+import { ADMIN_API_URL } from '../../config/server';
+import { useToast } from '../../contexts/ToastContext';
+import { Filter, Calendar, Gamepad2, X, ScrollText } from 'lucide-react';
+import { cn } from '../../lib/utils';
+import Skeleton from '../../components/common/feedback/Skeleton';
+import CustomSelect, { type Option } from './components/ui/CustomSelect';
+import SearchInput from './components/ui/SearchInput';
+
+interface MatchPlayer {
+    id: string;
+    name: string;
+    avatar?: string;
+}
+
+interface Match {
+    id: string;
+    matchID: string;
+    gameName: string;
+    players: MatchPlayer[];
+    winnerID?: string;
+    createdAt: string;
+    endedAt: string;
+    updatedAt: string;
+}
+
+/** ActionLog segment（与引擎 ActionLogSegment 对齐） */
+interface ActionLogSegment {
+    type: 'text' | 'i18n' | 'breakdown';
+    text?: string;
+    key?: string;
+    ns?: string;
+    params?: Record<string, unknown>;
+    label?: string;
+    value?: number;
+    unit?: string;
+}
+
+interface ActionLogEntry {
+    id: string;
+    timestamp: number;
+    actorId: string;
+    kind: string;
+    segments: ActionLogSegment[];
+}
+
+interface MatchDetail {
+    matchID: string;
+    gameName: string;
+    players: Array<MatchPlayer & { result?: string; userId?: string | null }>;
+    winnerID?: string;
+    actionLog?: ActionLogEntry[];
+    createdAt: string;
+    endedAt: string;
+    duration: number;
+}
+
+const GAME_OPTIONS: Option[] = [
+    { label: 'Dice Throne', value: 'dicethrone', icon: <Gamepad2 size={14} /> },
+    { label: 'Tic Tac Toe', value: 'tictactoe', icon: <Gamepad2 size={14} /> },
+    { label: 'Smash Up', value: 'smashup', icon: <Gamepad2 size={14} /> },
+    { label: 'Summoner Wars', value: 'summonerwars', icon: <Gamepad2 size={14} /> },
+];
+
+export default function MatchesPage() {
+    const { token } = useAuth();
+    const { error: toastError, success } = useToast();
+    const [matches, setMatches] = useState<Match[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [gameFilter, setGameFilter] = useState('');
+    const [search, setSearch] = useState('');
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalItems, setTotalItems] = useState(0);
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [detailMatch, setDetailMatch] = useState<MatchDetail | null>(null);
+    const [detailLoading, setDetailLoading] = useState(false);
+
+    const fetchMatchDetail = useCallback(async (matchID: string) => {
+        if (!token) return;
+        setDetailLoading(true);
+        try {
+            const res = await fetch(`${ADMIN_API_URL}/matches/${matchID}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('获取详情失败');
+            const data = await res.json();
+            setDetailMatch(data);
+        } catch (err) {
+            console.error(err);
+            toastError('获取对局详情失败');
+        } finally {
+            setDetailLoading(false);
+        }
+    }, [token, toastError]);
+
+    const fetchMatches = async () => {
+        if (!token) {
+            setMatches([]);
+            setTotalPages(1);
+            setTotalItems(0);
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
+        try {
+            const query = new URLSearchParams({
+                page: page.toString(),
+                limit: '10',
+                gameName: gameFilter,
+                search
+            });
+            const res = await fetch(`${ADMIN_API_URL}/matches?${query}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) throw new Error('Failed to fetch matches');
+            const data = await res.json();
+            const items = data.items.map((m: Match) => ({ ...m, id: m.matchID }));
+            setMatches(items);
+            setTotalPages(Math.ceil(data.total / data.limit));
+            setTotalItems(data.total);
+        } catch (err) {
+            console.error(err);
+            toastError('获取对局列表失败');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const resolveResultLabel = (match: Match) => {
+        if (!match.winnerID) return '平局';
+        const winner = match.players.find((player) => player.id === match.winnerID);
+        return `${winner?.name || `玩家${match.winnerID}`} 胜`;
+    };
+
+    const formatDuration = (start: string, end: string) => {
+        const startTime = new Date(start).getTime();
+        const endTime = new Date(end).getTime();
+        if (Number.isNaN(startTime) || Number.isNaN(endTime)) return '耗时未知';
+        const diffSeconds = Math.max(0, Math.round((endTime - startTime) / 1000));
+        const hours = Math.floor(diffSeconds / 3600);
+        const minutes = Math.floor((diffSeconds % 3600) / 60);
+        const seconds = diffSeconds % 60;
+        if (hours > 0) return `耗时 ${hours}小时${minutes}分`;
+        if (minutes > 0) return `耗时 ${minutes}分${seconds}秒`;
+        return `耗时 ${seconds}秒`;
+    };
+
+    useEffect(() => {
+        fetchMatches();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [page, token, gameFilter, search]);
+
+    useEffect(() => {
+        setSelectedIds((prev) => prev.filter((id) => matches.some((m) => m.matchID === id)));
+    }, [matches]);
+
+    const allSelected = matches.length > 0 && matches.every((m) => selectedIds.includes(m.matchID));
+
+    const toggleSelectAll = () => {
+        setSelectedIds(allSelected ? [] : matches.map((m) => m.matchID));
+    };
+
+    const toggleSelectOne = (matchID: string) => {
+        setSelectedIds((prev) => (
+            prev.includes(matchID) ? prev.filter((id) => id !== matchID) : [...prev, matchID]
+        ));
+    };
+
+    const handleDelete = async (matchID: string) => {
+        if (!confirm('确定要删除该对局记录吗？')) return;
+        try {
+            const res = await fetch(`${ADMIN_API_URL}/matches/${matchID}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!res.ok) {
+                const payload = await res.json().catch(() => null);
+                throw new Error(payload?.error || '删除失败');
+            }
+            success('对局记录已删除');
+            fetchMatches();
+        } catch (err) {
+            console.error(err);
+            toastError(err instanceof Error ? err.message : '删除失败');
+        }
+    };
+
+    const handleBulkDelete = async () => {
+        if (selectedIds.length === 0) return;
+        if (!confirm(`确定要删除选中的 ${selectedIds.length} 条对局记录吗？`)) return;
+        try {
+            const res = await fetch(`${ADMIN_API_URL}/matches/bulk-delete`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ ids: selectedIds })
+            });
+            if (!res.ok) {
+                const payload = await res.json().catch(() => null);
+                throw new Error(payload?.error || '批量删除失败');
+            }
+            success(`已删除 ${selectedIds.length} 条对局记录`);
+            setSelectedIds([]);
+            fetchMatches();
+        } catch (err) {
+            console.error(err);
+            toastError(err instanceof Error ? err.message : '批量删除失败');
+        }
+    };
+
+    const columns: Column<Match>[] = [
+        {
+            header: (
+                <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    aria-label="选择全部对局"
+                />
+            ),
+            width: '48px',
+            align: 'center',
+            cell: (m) => (
+                <div className="flex items-center justify-center">
+                    <input
+                        type="checkbox"
+                        checked={selectedIds.includes(m.matchID)}
+                        onChange={() => toggleSelectOne(m.matchID)}
+                        aria-label={`选择对局 ${m.matchID}`}
+                    />
+                </div>
+            )
+        },
+        {
+            header: 'ID',
+            accessorKey: 'matchID',
+            cell: (m) => <span className="font-mono text-xs text-zinc-500 bg-zinc-100 px-1.5 py-0.5 rounded border border-zinc-200">{m.matchID.substring(0, 8)}</span>
+        },
+        {
+            header: '游戏',
+            accessorKey: 'gameName',
+            cell: (m) => (
+                <div className="flex items-center gap-2">
+                    <span className={cn(
+                        "w-2 h-2 rounded-full",
+                        m.gameName === 'dicethrone' ? "bg-orange-500 shadow-[0_0_8px_rgba(249,115,22,0.4)]" :
+                            m.gameName === 'smashup' ? "bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.4)]" :
+                                "bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.4)]"
+                    )} />
+                    <span className="font-medium text-zinc-700 capitalize">
+                        {m.gameName}
+                    </span>
+                </div>
+            )
+        },
+        {
+            header: '玩家',
+            cell: (m) => (
+                <div className="flex items-center gap-3">
+                    {/* Fixed: Removed hover:space-x-1 to prevent layout jitter */}
+                    <div className="flex -space-x-3">
+                        {m.players.map((p, i) => (
+                            // Fixed: Removed hover:scale-110 and hover:z-10
+                            <div key={i} className="w-8 h-8 rounded-full bg-zinc-200 border-2 border-white overflow-hidden shadow-sm relative z-0" title={p.name || p.id}>
+                                {p.avatar ? (
+                                    <img src={p.avatar} alt={p.name} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center bg-zinc-100 text-xs font-bold text-zinc-400">
+                                        {(p.name || '?')[0]?.toUpperCase()}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )
+        },
+        {
+            header: '结果',
+            align: 'center',
+            cell: (m) => (
+                <div className="flex justify-center">
+                    <span className={cn(
+                        "px-2.5 py-1 text-xs rounded-full font-semibold border flex w-fit items-center gap-1.5",
+                        m.winnerID ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-zinc-100 text-zinc-500 border-zinc-200"
+                    )}>
+                        <span className={cn("w-1.5 h-1.5 rounded-full", m.winnerID ? "bg-emerald-400" : "bg-zinc-400")} />
+                        {resolveResultLabel(m)}
+                    </span>
+                </div>
+            )
+        },
+        {
+            header: '结束时间',
+            accessorKey: 'endedAt',
+            align: 'right', // New alignment
+            className: 'custom-date-col',
+            cell: (m) => (
+                <div className="flex flex-col gap-1 text-zinc-500 text-xs font-mono">
+                    <div className="flex items-center justify-end gap-1.5">
+                        <Calendar size={12} className="opacity-70" />
+                        {new Date(m.endedAt).toLocaleString(undefined, {
+                            year: 'numeric', month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute: '2-digit'
+                        })}
+                    </div>
+                    <span className="text-[10px] text-zinc-400 font-sans">
+                        {formatDuration(m.createdAt, m.endedAt)}
+                    </span>
+                </div>
+            )
+        },
+        {
+            header: '操作',
+            align: 'right', // New alignment
+            cell: (m) => (
+                <div className="flex justify-end gap-3">
+                    <button
+                        onClick={() => handleDelete(m.matchID)}
+                        className="text-xs font-medium text-red-500 hover:text-red-600 transition-colors"
+                    >
+                        删除
+                    </button>
+                    <button
+                        onClick={() => fetchMatchDetail(m.matchID)}
+                        className="text-xs font-medium text-zinc-500 hover:text-indigo-600 transition-colors"
+                    >
+                        详情
+                    </button>
+                </div>
+            )
+        }
+    ];
+
+    return (
+        <div className="h-full flex flex-col p-8 w-full max-w-[1600px] mx-auto min-h-0 bg-zinc-50/50">
+            <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 flex-none mb-8">
+                <div>
+                    <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">对局记录</h1>
+                    <p className="text-sm text-zinc-500 mt-1">查看平台所有对局历史与状态</p>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center gap-3">
+                    <SearchInput
+                        placeholder="搜索对局ID或玩家..."
+                        onSearch={(val) => { setSearch(val); setPage(1); }}
+                        className="w-full sm:w-64"
+                    />
+                    <CustomSelect
+                        value={gameFilter}
+                        onChange={(val) => { setGameFilter(val); setPage(1); }}
+                        options={GAME_OPTIONS}
+                        placeholder="所有游戏"
+                        allOptionLabel="所有游戏"
+                        prefixIcon={<Filter size={14} />}
+                        className="w-full sm:w-48"
+                    />
+                    <button
+                        onClick={handleBulkDelete}
+                        disabled={selectedIds.length === 0}
+                        className="px-4 py-2 text-xs font-semibold rounded-lg border border-red-200 text-red-500 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                        删除选中 {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}
+                    </button>
+                </div>
+            </div>
+
+            <div className="flex-1 min-h-0 bg-white rounded-2xl border border-zinc-200/60 shadow-sm overflow-hidden flex flex-col">
+                <DataTable
+                    className="h-full border-none"
+                    columns={columns}
+                    data={matches}
+                    loading={loading}
+                    pagination={{
+                        currentPage: page,
+                        totalPages,
+                        onPageChange: setPage,
+                        totalItems
+                    }}
+                />
+            </div>
+
+            {/* 对局详情弹窗 */}
+            {detailMatch && (
+                <MatchDetailModal
+                    detail={detailMatch}
+                    loading={detailLoading}
+                    onClose={() => setDetailMatch(null)}
+                />
+            )}
+        </div>
+    );
+}
+
+
+// ── 操作日志 segment 渲染 ──
+
+function renderSegment(seg: ActionLogSegment, idx: number): React.ReactNode {
+    switch (seg.type) {
+        case 'text':
+            return <span key={idx}>{seg.text}</span>;
+        case 'i18n':
+            // 后台不加载游戏 i18n namespace，直接显示 key + params
+            return (
+                <span key={idx} className="text-indigo-600" title={`${seg.ns}:${seg.key}`}>
+                    {seg.key}{seg.params ? `(${JSON.stringify(seg.params)})` : ''}
+                </span>
+            );
+        case 'breakdown':
+            return (
+                <span key={idx} className="font-semibold text-amber-700">
+                    {seg.label}: {seg.value}{seg.unit ?? ''}
+                </span>
+            );
+        default:
+            return <span key={idx}>{JSON.stringify(seg)}</span>;
+    }
+}
+
+function formatDurationText(seconds: number): string {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) return `${h}小时${m}分`;
+    if (m > 0) return `${m}分${s}秒`;
+    return `${s}秒`;
+}
+
+// ── 对局详情弹窗 ──
+
+function MatchDetailModal({
+    detail,
+    loading,
+    onClose,
+}: {
+    detail: MatchDetail;
+    loading: boolean;
+    onClose: () => void;
+}) {
+    const resolveResult = (playerId: string) => {
+        if (!detail.winnerID) return '平局';
+        return playerId === detail.winnerID ? '胜利' : '失败';
+    };
+
+    return (
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+            onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        >
+            <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden border border-zinc-200">
+                {/* Header */}
+                <div className="px-6 py-4 border-b border-zinc-100 flex items-center justify-between shrink-0">
+                    <div>
+                        <h3 className="text-lg font-bold text-zinc-900">对局详情</h3>
+                        <p className="text-xs text-zinc-400 font-mono mt-0.5">{detail.matchID}</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100 rounded-lg transition-colors">
+                        <X size={18} />
+                    </button>
+                </div>
+
+                {loading ? (
+                    <div className="flex-1 space-y-6 overflow-y-auto p-6">
+                        <div className="grid grid-cols-3 gap-4">
+                            {Array.from({ length: 3 }, (_, index) => (
+                                <div key={`match-detail-meta-${index}`} className="space-y-2">
+                                    <Skeleton className="h-3 w-14 rounded-lg" />
+                                    <Skeleton className="h-5 w-full rounded-lg" />
+                                </div>
+                            ))}
+                        </div>
+                        <div className="space-y-3">
+                            <Skeleton className="h-4 w-16 rounded-lg" />
+                            <div className="grid grid-cols-2 gap-3">
+                                {Array.from({ length: 2 }, (_, index) => (
+                                    <div key={`match-detail-player-${index}`} className="rounded-xl border border-zinc-200 bg-zinc-50 p-3 space-y-2">
+                                        <Skeleton className="h-4 w-24 rounded-lg" />
+                                        <Skeleton className="h-3 w-20 rounded-lg" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="space-y-3">
+                            <Skeleton className="h-4 w-20 rounded-lg" />
+                            <div className="space-y-2">
+                                {Array.from({ length: 4 }, (_, index) => (
+                                    <div key={`match-detail-log-${index}`} className="grid grid-cols-[88px_minmax(0,1fr)] gap-3">
+                                        <Skeleton className="h-4 w-20 rounded-lg" />
+                                        <Skeleton className="h-4 w-full rounded-lg" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                        {/* 基础信息 */}
+                        <div className="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span className="text-zinc-400 text-xs">游戏</span>
+                                <p className="font-medium text-zinc-700 capitalize mt-0.5">{detail.gameName}</p>
+                            </div>
+                            <div>
+                                <span className="text-zinc-400 text-xs">耗时</span>
+                                <p className="font-medium text-zinc-700 mt-0.5">{formatDurationText(detail.duration)}</p>
+                            </div>
+                            <div>
+                                <span className="text-zinc-400 text-xs">结束时间</span>
+                                <p className="font-medium text-zinc-700 mt-0.5">
+                                    {new Date(detail.endedAt).toLocaleString(undefined, {
+                                        year: 'numeric', month: '2-digit', day: '2-digit',
+                                        hour: '2-digit', minute: '2-digit'
+                                    })}
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* 玩家 */}
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider">玩家</h4>
+                            <div className="grid grid-cols-2 gap-3">
+                                {detail.players.map((p, i) => (
+                                    <div key={i} className={cn(
+                                        "flex items-center gap-3 p-3 rounded-xl border",
+                                        p.id === detail.winnerID
+                                            ? "bg-emerald-50 border-emerald-200"
+                                            : "bg-zinc-50 border-zinc-200"
+                                    )}>
+                                        <div className="w-8 h-8 rounded-full bg-zinc-200 flex items-center justify-center text-xs font-bold text-zinc-500">
+                                            {(p.name || '?')[0]?.toUpperCase()}
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-zinc-700 truncate">{p.name || `玩家${p.id}`}</p>
+                                            <p className={cn(
+                                                "text-xs font-semibold",
+                                                p.id === detail.winnerID ? "text-emerald-600" : "text-zinc-400"
+                                            )}>
+                                                {resolveResult(p.id)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* 操作日志 */}
+                        <div className="space-y-2">
+                            <h4 className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                                <ScrollText size={12} />
+                                操作日志
+                                {detail.actionLog && (
+                                    <span className="text-zinc-300 font-normal">({detail.actionLog.length})</span>
+                                )}
+                            </h4>
+                            {detail.actionLog && detail.actionLog.length > 0 ? (
+                                <div className="bg-zinc-50 rounded-xl border border-zinc-200 divide-y divide-zinc-100 max-h-80 overflow-y-auto">
+                                    {detail.actionLog.map((entry, i) => (
+                                        <div key={entry.id || i} className="px-4 py-2.5 flex items-start gap-3 text-sm">
+                                            <span className="text-[10px] text-zinc-300 font-mono shrink-0 mt-0.5 w-6 text-right">{i + 1}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    {entry.segments.map((seg, si) => renderSegment(seg, si))}
+                                                </div>
+                                            </div>
+                                            <span className="text-[10px] text-zinc-300 font-mono shrink-0 mt-0.5">
+                                                P{entry.actorId}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-zinc-400 italic">暂无操作日志</p>
+                            )}
+                        </div>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+}

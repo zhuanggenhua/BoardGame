@@ -22,7 +22,7 @@
 
 ### 使用方法
 
-项目中已有完整的辅助函数：`e2e/smashup-debug-helpers.ts`
+项目中已有完整的辅助函数：`e2e/smashup/smashup-debug-helpers.ts`
 
 #### 1. 基本流程
 

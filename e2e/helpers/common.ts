@@ -107,6 +107,7 @@ export const resetMatchStorage = async (
         localStorage.removeItem('owner_active_match');
         Object.keys(localStorage).forEach((k) => {
             if (k.startsWith('match_creds_')) localStorage.removeItem(k);
+            if (k.startsWith('match_ai_creds_')) localStorage.removeItem(k);
         });
         localStorage.setItem('guest_id', newGuestId);
         try {
@@ -136,6 +137,15 @@ export const getGameServerBaseURL = () => {
     const port =
         process.env.PW_GAME_SERVER_PORT || process.env.GAME_SERVER_PORT || '18000';
     // 使用 127.0.0.1 而不是 localhost，避免 Windows 上 Playwright 优先尝试 IPv6 (::1) 导致 ECONNREFUSED
+    return `http://127.0.0.1:${port}`;
+};
+
+/** 获取 API 服务器 baseURL（优先环境变量） */
+export const getApiServerBaseURL = () => {
+    const envUrl = process.env.PW_API_SERVER_URL || process.env.VITE_API_SERVER_URL;
+    if (envUrl) return normalizeUrl(envUrl);
+    const port =
+        process.env.PW_API_SERVER_PORT || process.env.API_SERVER_PORT || '18001';
     return `http://127.0.0.1:${port}`;
 };
 
@@ -360,6 +370,20 @@ export const injectDirectGameServerUrl = async (
 };
 
 /**
+ * 注入 __FORCE_API_SERVER_URL__，让客户端请求指向指定 API 服务器。
+ * 避免在独立 E2E runtime 中误连开发环境 API。
+ */
+export const injectDirectApiServerUrl = async (
+    context: BrowserContext,
+    apiServerBaseURLOverride?: string,
+) => {
+    const apiServerUrl = apiServerBaseURLOverride ?? getApiServerBaseURL();
+    await context.addInitScript((url) => {
+        (window as Window & { __FORCE_API_SERVER_URL__?: string }).__FORCE_API_SERVER_URL__ = url;
+    }, apiServerUrl);
+};
+
+/**
  * 注入 __E2E_SKIP_IMAGE_GATE__，跳过 CriticalImageGate 图片预加载门禁。
  * E2E 测试不需要等待图片预加载完成。
  */
@@ -396,6 +420,7 @@ type InitContextOptions = {
     skipTutorial?: boolean;
     skipImageGate?: boolean;
     gameServerBaseURL?: string;
+    apiServerBaseURL?: string;
     locale?: E2ETestLocale;
     blockCdnAssets?: boolean;
 };
@@ -419,6 +444,7 @@ export const initContext = async (
     await blockAudioRequests(context);
     await blockLobbySocket(context);
     await injectDirectGameServerUrl(context, resolved.gameServerBaseURL);
+    await injectDirectApiServerUrl(context, resolved.apiServerBaseURL);
     if (resolved.blockCdnAssets === true) {
         await blockCdnRequests(context);
     }

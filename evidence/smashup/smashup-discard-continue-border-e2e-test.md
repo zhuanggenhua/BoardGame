@@ -20,7 +20,7 @@
 
 ## 验证
 
-- 用例文件：`e2e/smashup-4p-layout-test.e2e.ts`
+- 用例文件：`e2e/smashup/smashup-4p-layout-test.e2e.ts`
 - 用例名：`手牌超限时继续按钮应保持与结束回合同款白色描边`
 - 命令：
 
@@ -32,7 +32,7 @@ npm run test:e2e:ci:file -- smashup-4p-layout-test.e2e.ts "手牌超限时继续
 
 ## 截图
 
-- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\手牌超限时继续按钮应保持与结束回合同款白色描边\14-discard-continue-border-restored.png`
+- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\手牌超限时继续按钮应保持与结束回合同款白色描边\14-discard-continue-border-restored.png`
 
 ## 肉眼观察
 

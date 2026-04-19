@@ -2,9 +2,9 @@
 
 ## 用例
 
-- 测试文件：`e2e/smashup-robot-hoverbot-new.e2e.ts`
+- 测试文件：`e2e/smashup/smashup-robot-hoverbot-new.e2e.ts`
 - 用例名：`狮身人面像埋葬牌交互应直接在场景内翻正面并高亮可选牌`
-- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-robot-hoverbot-new.e2e\狮身人面像埋葬牌交互应直接在场景内翻正面并高亮可选牌\sphinx-bury-board-select.png`
+- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-robot-hoverbot-new.e2e\狮身人面像埋葬牌交互应直接在场景内翻正面并高亮可选牌\sphinx-bury-board-select.png`
 
 ## 肉眼观察
 

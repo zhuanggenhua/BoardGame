@@ -11,9 +11,9 @@
 ## 已验证
 
 - `npm run typecheck`：通过
-- `npx eslint e2e/lobby.e2e.ts e2e/navbar.e2e.ts`：0 error
+- `npx eslint e2e/_shared/lobby.e2e.ts e2e/smashup/navbar.e2e.ts`：0 error
 - `npx eslint ..\flowise-fork\packages\server\src\enterprise\dev\aiRepoWorkbenchSeed.ts`：0 error（仅保留文件既有 warnings）
-- `npm run test:e2e:ci:file -- e2e/navbar.e2e.ts`：2 passed
+- `npm run test:e2e:ci:file -- e2e/smashup/navbar.e2e.ts`：2 passed
   - 已验证官方聊天页存在 `目标项目目录` 输入框
   - 已验证发送时真实注入 `项目目录: D:\gongzuo\webgame\BoardGame`
   - 已验证 reset 后会话清空，但 `projectPath` 输入仍保留

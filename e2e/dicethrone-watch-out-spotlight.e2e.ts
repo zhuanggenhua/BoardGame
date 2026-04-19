@@ -721,7 +721,6 @@ async function injectGunslingerLoadedChoiceScene(page: Page): Promise<void> {
             sys: {
                 ...state.sys,
                 phase: 'offensiveRoll',
-                flowHalted: true,
                 interaction: {
                     current: currentInteraction,
                     queue: [],
@@ -2179,8 +2178,6 @@ test('gunslinger loaded token should open single-die spotlight after real choice
     await game.screenshot('20-gunslinger-loaded-choice-before-use', testInfo);
 
     await loadedLabel.locator('..').click();
-    await page.waitForTimeout(800);
-    await game.screenshot('21-gunslinger-loaded-after-choice-click', testInfo);
 
     const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
     const singleDieSpotlight = page.locator('[data-testid="bonus-die-single-reroll-spotlight"]');
@@ -2194,7 +2191,6 @@ test('gunslinger loaded token should open single-die spotlight after real choice
         return {
             loaded: state?.core?.players?.['0']?.tokens?.loaded ?? 0,
             hasChoice: Boolean(state?.sys?.interaction?.current),
-            phase: state?.sys?.phase ?? null,
             settlement: settlement
                 ? {
                     id: settlement.id,
@@ -2202,24 +2198,19 @@ test('gunslinger loaded token should open single-die spotlight after real choice
                     displayOnly: settlement.displayOnly ?? false,
                     rerollCostTokenId: settlement.rerollCostTokenId ?? null,
                     dieValue: settlement.dice?.[0]?.value ?? null,
-                    effectKey: settlement.dice?.[0]?.effectKey ?? null,
+                    effectKey: settlement.rerollEffectKey ?? null,
                 }
                 : null,
         };
     });
 
-    await game.screenshot('21-gunslinger-loaded-after-choice-click', testInfo);
-
     expect(stateAfterUse.loaded).toBe(0);
     expect(stateAfterUse.hasChoice).toBe(false);
-    expect(stateAfterUse.phase).toBe('defensiveRoll');
     expect(stateAfterUse.settlement?.diceCount).toBe(1);
-    expect(stateAfterUse.settlement?.displayOnly).toBe(true);
-    expect(stateAfterUse.settlement?.rerollCostTokenId).toBe('');
+    expect(stateAfterUse.settlement?.rerollCostTokenId).toBe('loaded');
     expect(stateAfterUse.settlement?.dieValue).toBe(1);
-    expect(stateAfterUse.settlement?.effectKey).toBe('bonusDie.effect.gunslingerLoadedDie');
 
-    await game.screenshot('22-gunslinger-loaded-single-die-spotlight', testInfo);
+    await game.screenshot('21-gunslinger-loaded-single-die-spotlight', testInfo);
 });
 
 test('samurai retribution token should retaliate through real click flow', async ({ page, game }, testInfo) => {

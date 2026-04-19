@@ -11,7 +11,7 @@
 - 手牌同时有 beforeScoring 和 afterScoring 卡牌
 
 ## 测试文件
-`e2e/smashup-complex-multi-base-scoring.e2e.ts`
+`e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`
 
 ## 测试场景设计
 

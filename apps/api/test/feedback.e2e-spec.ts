@@ -17,14 +17,18 @@ import { User, type UserDocument } from '../src/modules/auth/schemas/user.schema
 import { GlobalHttpExceptionFilter } from '../src/shared/filters/http-exception.filter';
 
 describe('Feedback Module (e2e)', () => {
+    const INTERNAL_FEEDBACK_TOKEN = 'test-internal-feedback-token';
     let mongo: MongoMemoryServer | null;
     let app: import('@nestjs/common').INestApplication;
     let userModel: Model<UserDocument>;
     let feedbackModel: Model<FeedbackDocument>;
     let cacheManager: Cache;
     let authService: AuthService;
+    let previousInternalFeedbackToken: string | undefined;
 
     beforeAll(async () => {
+        previousInternalFeedbackToken = process.env.INTERNAL_FEEDBACK_TOKEN;
+        process.env.INTERNAL_FEEDBACK_TOKEN = INTERNAL_FEEDBACK_TOKEN;
         const externalMongoUri = process.env.MONGO_URI;
         mongo = externalMongoUri ? null : await MongoMemoryServer.create();
         const mongoUri = externalMongoUri ?? mongo?.getUri();
@@ -70,6 +74,11 @@ describe('Feedback Module (e2e)', () => {
         }
         if (mongo) {
             await mongo.stop();
+        }
+        if (previousInternalFeedbackToken === undefined) {
+            delete process.env.INTERNAL_FEEDBACK_TOKEN;
+        } else {
+            process.env.INTERNAL_FEEDBACK_TOKEN = previousInternalFeedbackToken;
         }
     });
 
@@ -140,6 +149,143 @@ describe('Feedback Module (e2e)', () => {
 
         expect(res.body.content).toBe('匿名反馈内容');
         expect(res.body.userId).toBeUndefined();
+    });
+
+    it('internal feedback 需要 token 且可创建系统反馈', async () => {
+        const payload = {
+            content: 'system feedback',
+            source: 'online-ai-watchdog',
+            type: 'bug',
+            severity: 'high',
+            status: 'resolved',
+        };
+
+        await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .send(payload)
+            .expect(401);
+
+        await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', 'wrong-token')
+            .send(payload)
+            .expect(403);
+
+        const okRes = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send(payload)
+            .expect(201);
+
+        expect(okRes.body.reporterType).toBe('system');
+        expect(okRes.body.source).toBe('online-ai-watchdog');
+        expect(okRes.body.status).toBe('resolved');
+    });
+
+    it('online-ai-watchdog 相同根因的系统反馈应聚合到同一条记录并累计次数', async () => {
+        const payloadA = {
+            content: '[system][online-ai-watchdog] force-end-turn-success active-turn:follow-up-advance:steps=1',
+            source: 'online-ai-watchdog',
+            type: 'bug',
+            severity: 'medium',
+            status: 'resolved',
+            autoReportKind: 'force-end-turn-success',
+            incidentKey: 'tracker-a',
+            gameName: 'dicethrone',
+            clientContext: {
+                gameId: 'dicethrone',
+                route: 'server-watchdog',
+                mode: 'online',
+            },
+            errorContext: {
+                source: 'online-ai-watchdog',
+                name: 'force-end-turn-success',
+                message: 'active-turn:follow-up-advance:steps=1',
+            },
+        };
+        const payloadB = {
+            ...payloadA,
+            content: '[system][online-ai-watchdog] force-end-turn-success active-turn:follow-up-advance:steps=3',
+            incidentKey: 'tracker-b',
+            errorContext: {
+                ...payloadA.errorContext,
+                message: 'active-turn:follow-up-advance:steps=3',
+            },
+        };
+
+        const first = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send(payloadA)
+            .expect(201);
+
+        const second = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send(payloadB)
+            .expect(201);
+
+        expect(second.body._id).toBe(first.body._id);
+        expect(second.body.incidentKey).toContain('system-feedback:online-ai-watchdog:dicethrone:force-end-turn:active-turn:follow-up-advance');
+        expect(second.body.latestIncidentKey).toBe('tracker-b');
+        expect(second.body.occurrenceCount).toBe(2);
+        expect(second.body.status).toBe('resolved');
+
+        const docs = await feedbackModel.find({ source: 'online-ai-watchdog' }).lean();
+        expect(docs).toHaveLength(1);
+        expect(docs[0].occurrenceCount).toBe(2);
+        expect(docs[0].latestIncidentKey).toBe('tracker-b');
+    });
+
+    it('online-ai-watchdog 已打开的失败聚合项，不应被后续一次成功恢复自动改成 resolved', async () => {
+        const failed = {
+            content: '[system][online-ai-watchdog] force-end-turn-failed active-turn:follow-up-advance:command_failed',
+            source: 'online-ai-watchdog',
+            type: 'bug',
+            severity: 'high',
+            autoReportKind: 'force-end-turn-failed',
+            incidentKey: 'failure-tracker',
+            gameName: 'smashup',
+            clientContext: {
+                gameId: 'smashup',
+                route: 'server-watchdog',
+                mode: 'online',
+            },
+            errorContext: {
+                source: 'online-ai-watchdog',
+                name: 'force-end-turn-failed',
+                message: 'active-turn:follow-up-advance:command_failed',
+            },
+        };
+        const recovered = {
+            ...failed,
+            content: '[system][online-ai-watchdog] force-end-turn-success active-turn:follow-up-advance:steps=1',
+            severity: 'medium',
+            status: 'resolved',
+            autoReportKind: 'force-end-turn-success',
+            incidentKey: 'failure-tracker-2',
+            errorContext: {
+                ...failed.errorContext,
+                name: 'force-end-turn-success',
+                message: 'active-turn:follow-up-advance:steps=1',
+            },
+        };
+
+        const first = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send(failed)
+            .expect(201);
+
+        const second = await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send(recovered)
+            .expect(201);
+
+        expect(second.body._id).toBe(first.body._id);
+        expect(second.body.status).toBe('open');
+        expect(second.body.occurrenceCount).toBe(2);
     });
 
     it('登录用户反馈会绑定 userId 且管理员可更新状态', async () => {
@@ -309,6 +455,44 @@ describe('Feedback Module (e2e)', () => {
         expect(listRes.body.items[0].content).toBe('第一个严重问题');
         expect(listRes.body.items[0].clientContext?.matchId).toBe('abc');
         expect(listRes.body.items[0].errorContext?.name).toBe('TypeError');
+    });
+
+    it('admin 列表支持 reporterType/source 过滤并兼容 legacy watchdog', async () => {
+        const { adminToken } = await seedUsers();
+
+        await request(app.getHttpServer())
+            .post('/internal/feedback/system')
+            .set('X-Internal-Feedback-Token', INTERNAL_FEEDBACK_TOKEN)
+            .send({
+                content: 'system watchdog',
+                source: 'online-ai-watchdog',
+                type: 'bug',
+                severity: 'high',
+            })
+            .expect(201);
+
+        await feedbackModel.collection.insertOne({
+            content: '[system][online-ai-watchdog] legacy',
+            type: 'bug',
+            severity: 'high',
+            contactInfo: 'system:online-ai-watchdog',
+            errorContext: {
+                source: 'online-ai-watchdog',
+                name: 'unsatisfiable-interaction-auto-skipped',
+            },
+            createdAt: new Date(),
+            updatedAt: new Date(),
+        });
+
+        const listRes = await request(app.getHttpServer())
+            .get('/admin/feedback?reporterType=system&source=online-ai-watchdog&limit=20')
+            .set('Authorization', `Bearer ${adminToken}`)
+            .expect(200);
+
+        expect(listRes.body.items).toHaveLength(2);
+        const legacyItem = listRes.body.items.find((item: { content: string }) => item.content.includes('legacy'));
+        expect(legacyItem?.reporterType).toBe('system');
+        expect(legacyItem?.source).toBe('online-ai-watchdog');
     });
 
     it('admin 列表支持按时间正序排序', async () => {

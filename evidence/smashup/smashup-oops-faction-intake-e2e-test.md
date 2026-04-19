@@ -25,11 +25,11 @@ npm run test:e2e:ci:file -- smashup-phase-transition-simple.e2e.ts "Oops 四派�
 
 截图路径：
 
-- `test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-四派系在派系选择与注入场景中都能显示资源/oops-faction-selection-visible.png`
+- `test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-四派系在派系选择与注入场景中都能显示资源/oops-faction-selection-visible.png`
 
 嵌入预览：
 
-![Oops 派系选择截图](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-四派系在派系选择与注入场景中都能显示资源/oops-faction-selection-visible.png)
+![Oops 派系选择截图](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-四派系在派系选择与注入场景中都能显示资源/oops-faction-selection-visible.png)
 
 观察结论：
 
@@ -44,11 +44,11 @@ npm run test:e2e:ci:file -- smashup-phase-transition-simple.e2e.ts "Oops 四派�
 
 截图路径：
 
-- `test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-四派系在派系选择与注入场景中都能显示资源/oops-faction-intake-board.png`
+- `test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-四派系在派系选择与注入场景中都能显示资源/oops-faction-intake-board.png`
 
 嵌入预览：
 
-![Oops 棋盘注入截图](../test-results/evidence-screenshots/smashup-phase-transition-simple.e2e/Oops-四派系在派系选择与注入场景中都能显示资源/oops-faction-intake-board.png)
+![Oops 棋盘注入截图](../test-results/evidence-screenshots/smashup/smashup-phase-transition-simple.e2e/Oops-四派系在派系选择与注入场景中都能显示资源/oops-faction-intake-board.png)
 
 观察结论：
 

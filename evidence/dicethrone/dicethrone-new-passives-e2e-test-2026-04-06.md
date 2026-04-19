@@ -12,8 +12,8 @@
 ## 运行命令
 
 ```powershell
-node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-hero-mechanics.e2e.ts "Quick Draw：枪手首回合真实 upkeep 后应获得 1 个装填"
-node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-hero-mechanics.e2e.ts "Bushido：武士首回合 upkeep 与回合末少于 3 次进攻掷骰时都应获得荣誉"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-hero-mechanics.e2e.ts "Quick Draw：枪手首回合真实 upkeep 后应获得 1 个装填"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-hero-mechanics.e2e.ts "Bushido：武士首回合 upkeep 与回合末少于 3 次进攻掷骰时都应获得荣誉"
 ```
 
 ## 截图与肉眼结论
@@ -21,7 +21,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-hero-mechanics.e2e.ts "B
 ### 1. 枪手 `Quick Draw`：首回合 upkeep 后获得 `loaded`
 
 - 截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-new-passives\gunslinger-quick-draw-opening-loaded.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-new-passives\gunslinger-quick-draw-opening-loaded.png`
 - 我实际看到的内容：
   - 左侧自己的状态 / token 条里出现了 1 个枪手装填图标，不是空栏。
   - 图标右下角显示 `1/2`，说明当前层数为 `1`，并且使用的是枪手 `loaded` 的真实 UI 徽标，不是调试文本。
@@ -31,7 +31,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-hero-mechanics.e2e.ts "B
 ### 2. 武士 `Bushido`：首回合 upkeep 后获得第 1 个 `honor`
 
 - 截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-new-passives\samurai-bushido-opening-honor.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-new-passives\samurai-bushido-opening-honor.png`
 - 我实际看到的内容：
   - 左侧自己的状态 / token 条里出现了武士荣誉图标。
   - 初始截图没有叠层数字，符合“当前只有 1 层 honor”的 UI 表现。
@@ -41,7 +41,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-hero-mechanics.e2e.ts "B
 ### 3. 武士 `Bushido`：回合末少于 3 次进攻掷骰后获得第 2 个 `honor`
 
 - 截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-new-passives\samurai-bushido-end-turn-honor.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-new-passives\samurai-bushido-end-turn-honor.png`
 - 我实际看到的内容：
   - 同一个武士荣誉图标仍在左侧 token 条里。
   - 图标右下角出现了 `2` 的叠层数字，和前一张“只有 1 层、无叠层数字”的状态明确不同。

@@ -13,7 +13,7 @@
 
 测试文件：
 
-- `e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- `e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 
 关键交互：
 
@@ -70,11 +70,11 @@
 
 执行命令：
 
-- `npm run test:e2e:ci -- e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- `npm run test:e2e:ci -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 
 已于 2026-03-11 重新跑通：
 
-- `npm run test:e2e:ci -- e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- `npm run test:e2e:ci -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 
 关键断言全部通过：
 

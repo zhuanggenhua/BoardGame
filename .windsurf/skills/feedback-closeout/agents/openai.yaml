@@ -1,0 +1,4 @@
+interface:
+  display_name: "反馈收口"
+  short_description: "默认面向线上真实反馈做排重分诊、并行修复与正式状态回写"
+  default_prompt: "Use $feedback-closeout to 先确认目标是线上真实反馈源，再拉取未关闭反馈，去重分类后并行处理真实 bug，并把状态正式回写为 resolved 或 closed。"

@@ -21,7 +21,7 @@
   - 若单边取舍，会丢掉已有 Batch 3 审计结论或这轮 `The Law` 四人适配证据。
 
 ## 4. 自动合并但需关注的文件
-- `e2e/dicethrone-simple-start.e2e.ts`
+- `e2e/dicethrone/dicethrone-simple-start.e2e.ts`
   - 自动合并结果保留了 `main` 现有四人交互用例，并带入 `The Law` 四人联机真实点击回归。
 - `progress.md`
   - 自动合并结果同时保留了 `main` 的 Batch 3 进度和这轮 `The Law` 四人适配进度。

@@ -113,6 +113,10 @@ async function isUrlReady(url: string): Promise<boolean> {
     }
 }
 
+async function sleep(ms: number): Promise<void> {
+    await new Promise(resolve => setTimeout(resolve, ms));
+}
+
 async function waitForUrl(runtime: RuntimeRecord, url: string, timeoutMs = SERVICE_READY_TIMEOUT_MS): Promise<void> {
     const startedAt = Date.now();
 
@@ -133,7 +137,7 @@ async function waitForUrl(runtime: RuntimeRecord, url: string, timeoutMs = SERVI
             return;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await sleep(1000);
     }
 
     throw new Error(
@@ -145,6 +149,24 @@ async function waitForUrl(runtime: RuntimeRecord, url: string, timeoutMs = SERVI
             getLogTail(runtime.logFile),
         ].join('\n'),
     );
+}
+
+async function waitForManagedRuntimeReady(managedRuntimeId: string, scope: string, timeoutMs = 30000) {
+    const startedAt = Date.now();
+    let lastRuntime = null as Awaited<ReturnType<typeof inspectManagedRuntime>> | null;
+
+    while (Date.now() - startedAt < timeoutMs) {
+        lastRuntime = await inspectManagedRuntime({
+            runtimeId: managedRuntimeId,
+            scope,
+        });
+        if (lastRuntime?.health?.ready) {
+            return lastRuntime;
+        }
+        await sleep(1000);
+    }
+
+    return lastRuntime;
 }
 
 async function cleanupSingleWorkerPorts(): Promise<void> {
@@ -276,10 +298,11 @@ export default async function globalSetup() {
     }
 
     if (workers <= 1 && shouldSkipBootstrap && managedRuntimeId) {
-        const runtime = await inspectManagedRuntime({
-            runtimeId: managedRuntimeId,
-            scope: getRuntimeScope(),
-        });
+        const runtime = await waitForManagedRuntimeReady(
+            managedRuntimeId,
+            getRuntimeScope(),
+            Number.parseInt(process.env.PW_MANAGED_RUNTIME_ATTACH_TIMEOUT_MS || '30000', 10),
+        );
         if (!runtime?.health?.ready) {
             throw new Error(
                 [

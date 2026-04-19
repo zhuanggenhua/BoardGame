@@ -1,0 +1,5 @@
+assets:
+  home_v2.holder.paper_frame_1:
+    type: image
+    path: common/images/home-v2/holders/1.png
+    preload: warm

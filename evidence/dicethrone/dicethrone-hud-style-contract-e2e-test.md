@@ -14,15 +14,15 @@
 ```bash
 npm run build
 npm run verify:dicethrone:style-contract
-npm run test:e2e:ci:file -- e2e/dicethrone-simple-start.e2e.ts "样式合同应保留生命条渐变与下一阶段按钮实体外观"
+npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts "样式合同应保留生命条渐变与下一阶段按钮实体外观"
 ```
 
 ## 证据截图
 
 截图路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Local-match-HUD-样式合同应保留生命条渐变与下一阶段按钮实体外观\02-hud-style-contract.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Local-match-HUD-样式合同应保留生命条渐变与下一阶段按钮实体外观\02-hud-style-contract.png`
 
-![DiceThrone HUD 样式合同截图](../test-results/evidence-screenshots/dicethrone-simple-start.e2e/Local-match-HUD-样式合同应保留生命条渐变与下一阶段按钮实体外观/02-hud-style-contract.png)
+![DiceThrone HUD 样式合同截图](../../test-results/evidence-screenshots/dicethrone/dicethrone-simple-start.e2e/Local-match-HUD-样式合同应保留生命条渐变与下一阶段按钮实体外观/02-hud-style-contract.png)
 
 ## 肉眼观察结论
 

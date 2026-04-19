@@ -14,8 +14,8 @@ param(
     [string]$UserDataDir = '',
     [int]$ReadyTimeoutSec = 30,
     [int]$CaptureTimeoutSec = 90,
-    [int]$WindowWidth = 812,
-    [int]$WindowHeight = 375,
+    [int]$WindowWidth = 936,
+    [int]$WindowHeight = 432,
     [int]$RemoteDebuggingPort = 9223,
     [switch]$ForceCoarsePointer
 )
@@ -225,7 +225,6 @@ if (Test-Path $OutputPath) {
 $viteJob = Start-Job -ScriptBlock {
     param($rootPath, $portNumber, $logFile)
     Set-Location $rootPath
-    $env:BG_VITE_FORCE_INLINE = '1'
     $env:BG_ENABLE_CAPTURE_SAVE = '1'
     $env:BG_CAPTURE_TRACE_REQUESTS = '1'
     node scripts/infra/vite-with-logging.js --host 127.0.0.1 --port $portNumber --configLoader native *> $logFile

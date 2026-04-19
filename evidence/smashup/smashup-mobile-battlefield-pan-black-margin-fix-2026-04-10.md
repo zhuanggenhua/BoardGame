@@ -30,7 +30,7 @@ $env:PW_WORKERS='2'; $env:PW_RUNTIME_SCOPE='manual-mobile-blackedge-multi'; npm 
 
 关键截图：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏-pinch-后仍可拖拽战场，避免-pan-锁死回归\04f-mobile-battlefield-pan-still-works-after-pinch.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏-pinch-后仍可拖拽战场，避免-pan-锁死回归\04f-mobile-battlefield-pan-still-works-after-pinch.png`
 
 ## 肉眼验收结论
 

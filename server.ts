@@ -188,6 +188,16 @@ const SOCKET_IO_SERVER_TRANSPORTS =
             : process.env.NODE_ENV === 'production'
                 ? ['websocket']
                 : ['websocket', 'polling'];
+const DEFAULT_TRAINING_DATA_MIN_MATCH_DURATION_MS = 10 * 60 * 1000;
+const TRAINING_DATA_MIN_MATCH_DURATION_MS = (() => {
+    const raw = process.env.TRAINING_DATA_MIN_MATCH_DURATION_MS;
+    if (!raw) return DEFAULT_TRAINING_DATA_MIN_MATCH_DURATION_MS;
+    const parsed = Number.parseInt(raw, 10);
+    if (!Number.isFinite(parsed)) {
+        return DEFAULT_TRAINING_DATA_MIN_MATCH_DURATION_MS;
+    }
+    return Math.max(0, parsed);
+})();
 
 // ============================================================================
 // 归档逻辑
@@ -358,6 +368,7 @@ const gameTransport = new GameTransportServer({
     storage,
     games: SERVER_ENGINES,
     trainingDataRecorder,
+    trainingDataMinMatchDurationMs: TRAINING_DATA_MIN_MATCH_DURATION_MS,
     rulesVersion: process.env.npm_package_version ?? null,
     offlineGraceMs: 300000, // 5 分钟：给断线玩家充足的重连时间
     authenticate: async (matchID, playerID, credentials, metadata) => {

@@ -44,7 +44,7 @@
 
 已通过：
 
-- `npm run test:e2e:ci -- e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- `npm run test:e2e:ci -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 
 其中新增定向用例：
 
@@ -54,7 +54,7 @@
 
 关键截图：
 
-- 历史截图已按新规则清理；如需复查，请重跑 `e2e/dicethrone-watch-out-spotlight.e2e.ts`，新统一目录为 `test-results/evidence-screenshots/`
+- 历史截图已按新规则清理；如需复查，请重跑 `e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`，新统一目录为 `test-results/evidence-screenshots/dicethrone/`
 
 观察结果：
 

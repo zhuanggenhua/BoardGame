@@ -6,7 +6,7 @@
 
 ## 执行命令
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-local-gameplay.e2e.ts "本地模式：悬浮球设置面板显示 Smash Up 偏好设置"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-local-gameplay.e2e.ts "本地模式：悬浮球设置面板显示 Smash Up 偏好设置"
 ```
 
 ## 环境说明
@@ -18,14 +18,14 @@ npm run test:e2e:ci:file -- e2e/smashup-local-gameplay.e2e.ts "本地模式：�
 ## 截图与观察
 
 ### 1. 悬浮球设置弹层已打开
-- 截图：`D:\gongzuo\webgame\BoardGame\.claude\worktrees\smashup-input-mode-preferences\test-results\evidence-screenshots\smashup-local-gameplay.e2e\本地模式：悬浮球设置面板显示-Smash-Up-偏好设置\smashup-settings-panel-open.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\.claude\worktrees\smashup-input-mode-preferences\test-results\evidence-screenshots\smashup\smashup-local-gameplay.e2e\本地模式：悬浮球设置面板显示-Smash-Up-偏好设置\smashup-settings-panel-open.png`
 - 人工观察：
   - 右侧悬浮球菜单已经展开，`settings` 卫星按钮处于选中状态，说明偏好入口确实挂在悬浮球设置里。
   - 设置面板已经真实打开，不是只显示一个按钮；面板与棋盘同屏出现，能直接看出入口和弹层的关系。
   - `SMASH UP` 偏好区位于设置面板顶部，音量控制位于其下方，层级清楚，没有被埋进别的面板里。
 
 ### 2. 输入模式偏好区本身
-- 截图：`D:\gongzuo\webgame\BoardGame\.claude\worktrees\smashup-input-mode-preferences\test-results\evidence-screenshots\smashup-local-gameplay.e2e\本地模式：悬浮球设置面板显示-Smash-Up-偏好设置\smashup-settings-preference-detail.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\.claude\worktrees\smashup-input-mode-preferences\test-results\evidence-screenshots\smashup\smashup-local-gameplay.e2e\本地模式：悬浮球设置面板显示-Smash-Up-偏好设置\smashup-settings-preference-detail.png`
 - 人工观察：
   - `Click` / `Drag` 两个模式按钮都在同一区块内，`Drag` 按钮带高亮描边，当前选中态清晰可见。
   - `Chinese overlay` 单独作为一个开关卡片出现，右侧状态徽章显示 `On`，说明覆盖层偏好也在同一设置区里。

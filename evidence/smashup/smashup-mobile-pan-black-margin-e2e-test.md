@@ -16,7 +16,7 @@
 - `npm run test:e2e:ci:file -- smashup-4p-layout-test.e2e.ts "移动端横屏 pinch 后仍可拖拽战场，避免 pan 锁死回归"`
 
 ## 关键截图
-1. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏-pinch-后仍可拖拽战场，避免-pan-锁死回归\04f-mobile-battlefield-pan-still-works-after-pinch.png`
+1. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏-pinch-后仍可拖拽战场，避免-pan-锁死回归\04f-mobile-battlefield-pan-still-works-after-pinch.png`
    - 我实际看到：三块基地和中间战场条带铺满主要视区，左侧不再出现“被拖出一大片空黑边/空背景”的异常空洞。
    - 我实际看到：结束回合按钮、右上记分板仍固定在外层 HUD 位置，没有随着战场一起横向漂移。
    - 验收判断：达到本轮验收标准，已证明 pinch 后继续拖拽时战场内容会被夹在真实内容范围内，而不是把整块外层空白拖出来。

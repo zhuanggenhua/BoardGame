@@ -78,7 +78,7 @@
 
 ### E2E 测试（❌ 未完成）
 
-**测试文件**：`e2e/smashup-multi-base-scoring-simple.e2e.ts`
+**测试文件**：`e2e/smashup/smashup-multi-base-scoring-simple.e2e.ts`
 
 **状态**：测试代码已编写，但派系选择流程超时
 
@@ -144,7 +144,7 @@
 - `src/games/smashup/domain/baseAbilities.ts` (忍者道场 handler)
 - `src/engine/systems/InteractionSystem.ts` (延迟事件传递逻辑)
 - `src/games/smashup/__tests__/multi-base-afterscoring-bug.test.ts` (单元测试，已通过)
-- `e2e/smashup-multi-base-scoring-simple.e2e.ts` (E2E 测试，未完成)
+- `e2e/smashup/smashup-multi-base-scoring-simple.e2e.ts` (E2E 测试，未完成)
 - `AGENTS.md` (已更新 E2E 测试示例)
 
 ## 结论

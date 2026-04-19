@@ -2,12 +2,12 @@
 
 ## 用例
 
-- `node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "Dice Throne 直达链接会直接打开详情弹窗"`
-- `node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围框"`
+- `node scripts/infra/run-e2e-single.mjs ci e2e/_shared/lobby.e2e.ts "Dice Throne 直达链接会直接打开详情弹窗"`
+- `node scripts/infra/run-e2e-single.mjs ci e2e/_shared/lobby.e2e.ts "移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围框"`
 
 ## 截图
 
-- 修复后直达链接截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby-dicethrone-direct-modal-fixed.png`
+- 修复后直达链接截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\lobby-dicethrone-direct-modal-fixed.png`
 
 ## 肉眼观察
 

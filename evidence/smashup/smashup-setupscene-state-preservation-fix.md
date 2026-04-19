@@ -47,7 +47,7 @@ const patch: any = {
 ## 相关文件
 
 - `e2e/framework/GameTestContext.ts` - 修复位置
-- `e2e/smashup-complex-multi-base-scoring.e2e.ts` - 受影响的测试
+- `e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts` - 受影响的测试
 - `src/games/smashup/Board.tsx` - UI 加载检查逻辑
 - `evidence/smashup/smashup-complex-multi-base-scoring-test-failure.md` - 原始失败报告
 
@@ -57,7 +57,7 @@ const patch: any = {
 
 **下一步**：
 1. 手动验证端口 6173 已释放
-2. 运行测试：`npm run test:e2e:ci -- e2e/smashup-complex-multi-base-scoring.e2e.ts`
+2. 运行测试：`npm run test:e2e:ci -- e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`
 3. 验证测试通过且游戏正常加载
 4. 查看测试截图确认功能正确
 
@@ -104,7 +104,7 @@ const patch: any = {
 
 ```bash
 npx vitest run src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts
-npm run test:e2e:ci -- e2e/smashup-complex-multi-base-scoring.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts
 ```
 
 其中目标 E2E 最终结果为：

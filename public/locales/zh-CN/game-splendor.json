@@ -1,0 +1,137 @@
+{
+  "title": "璀璨宝石",
+  "common": {
+    "expand": "展开",
+    "collapse": "收起"
+  },
+  "colors": {
+    "white": "白",
+    "blue": "蓝",
+    "green": "绿",
+    "red": "红",
+    "black": "黑",
+    "gold": "金"
+  },
+  "player": {
+    "guest": "游客{{number}}"
+  },
+  "setup": {
+    "startingPlayerId": {
+      "label": "先手玩家",
+      "player1": "玩家 1",
+      "player2": "玩家 2",
+      "player3": "玩家 3",
+      "player4": "玩家 4"
+    }
+  },
+  "sections": {
+    "nobles": "贵族板块",
+    "actions": "操作区",
+    "bank": "宝石供应",
+    "playerStatus": "玩家状态",
+    "actionLog": "操作记录"
+  },
+  "status": {
+    "currentTurn": "当前回合：{{player}} · 第 {{round}} 轮",
+    "gameOver": "游戏结束：{{winners}}",
+    "discardPending": "待弃标记：还需弃 {{excess}}",
+    "waitPlayers": "等待其他玩家加入",
+    "waitHostStart": "等待房主开始游戏",
+    "waitChooseNoble": "等待选择贵族",
+    "yourTurn": "轮到你行动",
+    "waitOpponent": "等待对手操作"
+  },
+  "pregame": {
+    "readyTitle": "可以开始游戏了",
+    "waitPlayersTitle": "等待玩家加入",
+    "hostCanStart": "所有座位都已就绪，请由房主点击开始游戏进入正式对局。",
+    "waitHostStart": "所有玩家都已到齐，等待房主点击开始游戏。",
+    "waitPlayersBody": "当前已加入 {{seated}} / {{total}} 名玩家，满员后才能开始。",
+    "startGame": "开始游戏",
+    "startingPlayer": "先手钻石：{{player}}",
+    "startingPlayerHint": "线上不会自动判断最年轻玩家，建房时选定的玩家会持有钻石标记并成为首位行动者。"
+  },
+  "banner": {
+    "chooseNoble": "你已满足多个贵族条件，请先选择一个贵族。",
+    "endgameTriggered": "终局已触发：本轮所有玩家完成相同回合数后将立即结算。"
+  },
+  "actions": {
+    "choose": "选择",
+    "reserve": "保留",
+    "notYourTurn": "当前不是你的回合",
+    "waitPlayers": "开始游戏前暂时不能操作。",
+    "discardHint": "请直接点击下方宝石供应区中的颜色图标，逐个弃掉超上限的宝石。",
+    "chooseNobleHint": "请在左侧贵族板块中选择一个满足条件的贵族。",
+    "reserveStatus": "当前可保留牌数：{{remain}} · 黄金剩余：{{gold}}",
+    "reserveDeckHint": "将鼠标悬浮到市场区左侧的牌库卡背上，可直接显示“保留”按钮。"
+  },
+  "bank": {
+    "confirmTitle": "拿取确认",
+    "discardPending": "还需弃 {{excess}}，请直接点击宝石供应区中的颜色图标完成弃牌。",
+    "takeTwoSame": "拿两枚",
+    "takeDifferent": "拿不同色",
+    "clear": "清空",
+    "pickHint": "点击左右卡区之间的宝石图标选择颜色",
+    "discardHint": "弃牌时直接点颜色图标。",
+    "overLimitHint": "先弃到 10 枚以下。",
+    "selectHint": "点图标选色，确认后拿取。"
+  },
+  "market": {
+    "cannotAfford": "当前资源不足",
+    "freePurchase": "可免费购买",
+    "paymentText": "可购买，支付：{{payment}}",
+    "deckTier": "等级 {{tier}} 牌库",
+    "deckCount": "{{count}} 张"
+  },
+  "playerStatus": {
+    "tokenTotal": "宝石总数",
+    "reserved": "保留",
+    "purchased": "已购",
+    "nobles": "贵族",
+    "selfSuffix": "（你）",
+    "pointsSuffix": "分",
+    "overLimit": "宝石超出上限，需先弃到 10 个以下。",
+    "discount": "折扣",
+    "myReserved": "我的保留牌",
+    "myPurchased": "我的购买牌",
+    "noReserved": "当前没有保留牌",
+    "noPurchased": "当前还没有已购买的发展卡"
+  },
+  "card": {
+    "hiddenReserved": "隐藏保留牌",
+    "buy": "购买",
+    "detail": "详情",
+    "closeDetail": "关闭详情"
+  },
+  "tutorial": {
+    "steps": {
+      "intro": "欢迎来到《璀璨宝石》教程。本教学会带你快速理解目标、市场、宝石、保留、购买、贵族与终局规则。",
+      "goal": "游戏目标很简单：通过购买发展卡和获得贵族来累计声望。任意玩家在回合结束时达到至少 15 分后触发终局。",
+      "nobles": "这里是贵族板块。回合结束时，如果你的已购发展卡折扣满足某位贵族要求，就会自动获得该贵族；若同时满足多个，只能选其中一个。",
+      "actions": "这里是操作区。它会提醒你当前该做什么，也会告诉你保留牌库顶牌等补充操作从哪里触发。",
+      "market": "这里是中央市场。每一级都有牌库和公开牌。你可以直接购买公开牌，也可以从牌库顶保留一张未知牌。",
+      "bank": "这里是宝石供应区。点击宝石图标来选择拿取；正常情况下必须拿 3 种不同色，若某色库存至少 4，也可以拿 2 个同色。",
+      "bankConfirm": "这里是宝石拿取确认区。选中的颜色、拿两枚同色、拿不同色以及清空选择，都会在这里确认。",
+      "takeGemsAction": "现在实际试一次：请在宝石供应区完成一次合法的拿宝石动作。成功后，教程会自动进入下一步。",
+      "playerStatus": "这里是玩家状态区。你可以查看每位玩家的宝石总数、各色宝石、折扣与贵族；你自己的保留牌和购买牌也在这里展开查看。",
+      "reserveAction": "接下来留意保留动作：你可以保留公开牌，也可以从牌库顶保留一张未知牌；如果黄金还有剩余，保留时还会顺手拿到 1 个黄金。",
+      "buyAction": "购买发展卡时，系统会先用你的永久折扣抵扣同色费用，再自动计算还需要支付的宝石和黄金。市场区卡牌下方的支付提示会直接告诉你当前是否买得起。",
+      "nobleTiming": "贵族不是主动点击获得的。只有在你的回合收尾时，系统才会检查你的已购发展卡折扣是否满足贵族要求；若同时满足多个，才会弹出选择。",
+      "tokenLimit": "注意宝石上限：你在行动过程中可以暂时超过 10 个宝石，但回合结束前必须弃到 10 个以下，否则不能继续推进。",
+      "endgameDetail": "终局在有人回合结束时达到至少 15 分后触发，但不会立刻停止；所有玩家都要完成相同回合数。若最后平分，则由已购发展卡更少的玩家获胜；若仍相同，则共享胜利。",
+      "finish": "现在你已经掌握了完整基础流程：拿宝石、保留牌、购买牌、回合结束拿贵族，并在 15 分后进入终局结算。接下来就可以开始一局真正的《璀璨宝石》了。"
+    }
+  },
+  "actionLog": {
+    "empty": "本局还没有已确认的操作记录。",
+    "takeThree": "拿取宝石：",
+    "takeTwoSame": "拿取两枚同色宝石：",
+    "reserveOpen": "保留公开牌：",
+    "reserveOpenCost": "购买需求：",
+    "reserveDeckTop": "保留{{tier}}级牌库顶牌",
+    "buyCard": "支付",
+    "freePurchase": "免费",
+    "discardGem": "弃回标记：",
+    "chooseNoble": "选择贵族板块：{{noble}}"
+  }
+}

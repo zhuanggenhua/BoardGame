@@ -111,7 +111,7 @@ if (existingEmail) {
 
 ## 测试覆盖
 
-E2E 测试文件：`e2e/auth-user-friendly-flow.e2e.ts`
+E2E 测试文件：`e2e/_shared/auth-user-friendly-flow.e2e.ts`
 
 测试场景：
 1. ✅ 登录时邮箱未注册 → 提示并引导注册

@@ -1,0 +1,512 @@
+
+Author: EasyBoardGame Developer <developer@e
+asyboardgame.top>
+Date:   Sat Feb 28 14:11:43 2026 +0800
+M	public/locales/en/admin.json
+M	public/locales/en/common.json
+M	public/locales/en/game-dicethrone.json
+M	public/locales/en/game-smashup.json
+M	public/locales/en/game-summonerwars.json
+M	public/locales/en/game.json
+M	public/locales/en/lobby.json
+M	public/locales/en/social.json
+M	public/locales/zh-CN/admin.json
+M	public/locales/zh-CN/common.json
+M	public/locales/zh-CN/game-dicethrone.json
+M	public/locales/zh-CN/game-smashup.json
+M	public/locales/zh-CN/game-summonerwars.jso
+n
+M	public/locales/zh-CN/game.json
+M	public/locales/zh-CN/lobby.json
+M	public/locales/zh-CN/social.json
+M	src/App.tsx
+M	src/assets/audio/registry-slim.json
+M	src/components/common/animations/FlyingEff
+ect.tsx
+M	src/components/common/media/CardPreview.ts
+x
+M	src/components/common/overlays/BreakdownTo
+oltip.tsx
+M	src/components/game/framework/CharacterSel
+ectionSkeleton.tsx
+M	src/components/game/framework/hooks/useAut
+oSkipPhase.ts
+M	src/components/game/framework/widgets/Game
+DebugPanel.tsx
+M	src/components/game/framework/widgets/Game
+HUD.tsx
+M	src/components/game/framework/widgets/Rema
+tchActions.tsx
+M	src/components/lobby/GameDetailsModal.tsx
+M	src/components/lobby/LeaderboardTab.tsx
+M	src/components/lobby/RoomList.tsx
+M	src/components/lobby/roomActions.ts
+M	src/components/social/FriendList.tsx
+M	src/components/social/MatchHistoryModal.ts
+x
+M	src/components/social/SystemNotificationVi
+ew.tsx
+M	src/components/social/UserMenu.tsx
+M	src/components/system/AboutModal.tsx
+M	src/components/system/FabMenu.tsx
+M	src/components/system/FeedbackModal.tsx
+M	src/contexts/RematchContext.tsx
+M	src/contexts/SocialContext.tsx
+M	src/contexts/ToastContext.tsx
+M	src/core/AssetLoader.ts
+M	src/engine/adapter.ts
+M	src/engine/fx/useFxBus.ts
+M	src/engine/hooks/index.ts
+M	src/engine/hooks/useEventStreamCursor.ts
+M	src/engine/pipeline.ts
+M	src/engine/primitives/__tests__/damageCalc
+ulation.test.ts
+M	src/engine/primitives/actionLogHelpers.ts
+M	src/engine/primitives/damageCalculation.ts
+M	src/engine/systems/FlowSystem.ts
+M	src/engine/systems/InteractionSystem.ts
+M	src/engine/systems/SimpleChoiceSystem.ts
+M	src/engine/systems/UndoSystem.ts
+M	src/engine/transport/__tests__/errorI18n.t
+est.ts
+M	src/engine/transport/client.ts
+M	src/engine/transport/latency/optimisticEng
+ine.ts
+M	src/engine/transport/protocol.ts
+M	src/engine/transport/react.tsx
+M	src/engine/transport/server.ts
+M	src/engine/transport/storage.ts
+M	src/engine/types.ts
+M	src/games/dicethrone/Board.tsx
+M	src/games/dicethrone/__tests__/actionLogFo
+rmat.test.ts
+M	src/games/dicethrone/__tests__/audio.confi
+g.test.ts
+M	src/games/dicethrone/__tests__/barbarian-a
+bilities.test.ts
+M	src/games/dicethrone/__tests__/barbarian-c
+overage.test.ts
+M	src/games/dicethrone/__tests__/boundaryEdg
+eCases.test.ts
+M	src/games/dicethrone/__tests__/card-system
+.test.ts
+M	src/games/dicethrone/__tests__/cross-hero.
+test.ts
+M	src/games/dicethrone/__tests__/defense-tri
+gger-audit.test.ts
+M	src/games/dicethrone/__tests__/entity-chai
+n-integrity.test.ts
+M	src/games/dicethrone/__tests__/flow.test.t
+s
+M	src/games/dicethrone/__tests__/interaction
+-chain-conditional.test.ts
+M	src/games/dicethrone/__tests__/monk-covera
+ge.test.ts
+M	src/games/dicethrone/__tests__/moon_elf-be
+havior.test.ts
+M	src/games/dicethrone/__tests__/paladin-abi
+lities.test.ts
+M	src/games/dicethrone/__tests__/paladin-cov
+erage.test.ts
+M	src/games/dicethrone/__tests__/passive-rer
+oll-validation.test.ts
+M	src/games/dicethrone/__tests__/pyromancer-
+behavior.test.ts
+M	src/games/dicethrone/__tests__/pyromancer-
+damage.property.test.ts
+M	src/games/dicethrone/__tests__/pyromancer-
+tokens.test.ts
+M	src/games/dicethrone/__tests__/shadow-thie
+f-abilities.test.ts
+M	src/games/dicethrone/__tests__/shadow_thie
+f-behavior.test.ts
+M	src/games/dicethrone/__tests__/shared-stat
+e-consistency.test.ts
+M	src/games/dicethrone/__tests__/shield-clea
+nup.test.ts
+M	src/games/dicethrone/__tests__/steal-cp.te
+st.ts
+M	src/games/dicethrone/__tests__/targeted-de
+fense-damage.test.ts
+M	src/games/dicethrone/__tests__/thunder-str
+ike.test.ts
+M	src/games/dicethrone/__tests__/token-execu
+tion.test.ts
+M	src/games/dicethrone/__tests__/token-fix-c
+overage.test.ts
+M	src/games/dicethrone/__tests__/tutorial-e2
+e.test.ts
+M	src/games/dicethrone/__tests__/viewMode.te
+st.ts
+M	src/games/dicethrone/audio.config.ts
+M	src/games/dicethrone/criticalImageResolver
+.ts
+M	src/games/dicethrone/debug-config.tsx
+M	src/games/dicethrone/domain/abilityLookup.
+ts
+M	src/games/dicethrone/domain/attack.ts
+M	src/games/dicethrone/domain/characters.ts
+M	src/games/dicethrone/domain/combat/CombatA
+bilityManager.ts
+M	src/games/dicethrone/domain/combat/types.t
+s
+M	src/games/dicethrone/domain/commandCategor
+ies.ts
+M	src/games/dicethrone/domain/commandValidat
+ion.ts
+M	src/games/dicethrone/domain/commands.ts
+M	src/games/dicethrone/domain/commonCards.ts
+M	src/games/dicethrone/domain/core-types.ts
+M	src/games/dicethrone/domain/customActions/
+barbarian.ts
+M	src/games/dicethrone/domain/customActions/
+monk.ts
+M	src/games/dicethrone/domain/customActions/
+moon_elf.ts
+M	src/games/dicethrone/domain/customActions/
+paladin.ts
+M	src/games/dicethrone/domain/customActions/
+pyromancer.ts
+M	src/games/dicethrone/domain/customActions/
+shadow_thief.ts
+M	src/games/dicethrone/domain/effects.ts
+M	src/games/dicethrone/domain/events.ts
+M	src/games/dicethrone/domain/execute.ts
+M	src/games/dicethrone/domain/executeCards.t
+s
+M	src/games/dicethrone/domain/flowHooks.ts
+M	src/games/dicethrone/domain/ids.ts
+M	src/games/dicethrone/domain/index.ts
+M	src/games/dicethrone/domain/passiveAbility
+.ts
+M	src/games/dicethrone/domain/reduceCombat.t
+s
+M	src/games/dicethrone/domain/reducer.ts
+M	src/games/dicethrone/domain/rules.ts
+M	src/games/dicethrone/domain/systems.ts
+M	src/games/dicethrone/domain/tokenResponse.
+ts
+M	src/games/dicethrone/domain/tokenTypes.ts
+M	src/games/dicethrone/domain/utils.ts
+M	src/games/dicethrone/domain/view.ts
+M	src/games/dicethrone/game.ts
+M	src/games/dicethrone/heroes/barbarian/abil
+ities.ts
+M	src/games/dicethrone/heroes/barbarian/card
+s.ts
+M	src/games/dicethrone/heroes/monk/abilities
+.ts
+M	src/games/dicethrone/heroes/monk/cards.ts
+M	src/games/dicethrone/heroes/moon_elf/abili
+ties.ts
+M	src/games/dicethrone/heroes/moon_elf/cards
+.ts
+M	src/games/dicethrone/heroes/moon_elf/token
+s.ts
+M	src/games/dicethrone/heroes/paladin/abilit
+ies.ts
+M	src/games/dicethrone/heroes/pyromancer/abi
+lities.ts
+M	src/games/dicethrone/heroes/pyromancer/car
+ds.ts
+M	src/games/dicethrone/heroes/pyromancer/tok
+ens.ts
+M	src/games/dicethrone/heroes/shadow_thief/a
+bilities.ts
+M	src/games/dicethrone/heroes/shadow_thief/c
+ards.ts
+M	src/games/dicethrone/heroes/shadow_thief/t
+okens.ts
+M	src/games/dicethrone/hooks/useAnimationEff
+ects.ts
+M	src/games/dicethrone/hooks/useAttackShowca
+se.ts
+M	src/games/dicethrone/hooks/useCardSpotligh
+t.ts
+M	src/games/dicethrone/latencyConfig.ts
+M	src/games/dicethrone/manifest.ts
+M	"src/games/dicethrone/rule/\347\216\213\34
+6\235\203\351\252\260\351\223\270\350\247\20
+4\345\210\231.md"
+M	src/games/dicethrone/tutorial.ts
+M	src/games/dicethrone/ui/AbilityOverlays.ts
+x
+M	src/games/dicethrone/ui/BoardOverlays.tsx
+M	src/games/dicethrone/ui/CardSpotlightOverl
+ay.tsx
+M	src/games/dicethrone/ui/CenterBoard.tsx
+M	src/games/dicethrone/ui/CharacterSelection
+Adapter.tsx
+M	src/games/dicethrone/ui/DiceThroneHeroSele
+ction.tsx
+M	src/games/dicethrone/ui/DiceTray.tsx
+M	src/games/dicethrone/ui/GameHints.tsx
+M	src/games/dicethrone/ui/HandArea.tsx
+M	src/games/dicethrone/ui/HeroSelectionOverl
+ay.tsx
+M	src/games/dicethrone/ui/LeftSidebar.tsx
+M	src/games/dicethrone/ui/OpponentHeader.tsx
+M	src/games/dicethrone/ui/PlayerStats.tsx
+M	src/games/dicethrone/ui/RightSidebar.tsx
+M	src/games/dicethrone/ui/TokenResponseModal
+.tsx
+M	src/games/dicethrone/ui/fxSetup.ts
+M	src/games/dicethrone/ui/resolveMoves.ts
+M	src/games/dicethrone/ui/viewMode.ts
+M	src/games/smashup/Board.tsx
+M	src/games/smashup/__tests__/alienAuditFixe
+s.test.ts
+M	src/games/smashup/__tests__/baseAbilitiesP
+rompt.test.ts
+M	src/games/smashup/__tests__/baseAbilityInt
+egration.test.ts
+M	src/games/smashup/__tests__/baseAbilityInt
+egrationE2E.test.ts
+M	src/games/smashup/__tests__/baseFactionOng
+oing.test.ts
+M	src/games/smashup/__tests__/baseProtection
+.test.ts
+M	src/games/smashup/__tests__/baseScoreCheck
+.test.ts
+M	src/games/smashup/__tests__/baseScoredNorm
+alFlow.test.ts
+M	src/games/smashup/__tests__/baseScoredOpti
+mistic.test.ts
+M	src/games/smashup/__tests__/baseScoredRace
+Condition.test.ts
+M	src/games/smashup/__tests__/baseScoring.te
+st.ts
+M	src/games/smashup/__tests__/bigGulpDroneIn
+tercept.test.ts
+M	src/games/smashup/__tests__/choice-audit-f
+ixes.test.ts
+M	src/games/smashup/__tests__/cthulhuExpansi
+onAbilities.test.ts
+M	src/games/smashup/__tests__/duplicateInter
+actionRespond.test.ts
+M	src/games/smashup/__tests__/elderThingAbil
+ities.test.ts
+M	src/games/smashup/__tests__/expansionAbili
+ties.test.ts
+M	src/games/smashup/__tests__/expansionBaseA
+bilities.test.ts
+M	src/games/smashup/__tests__/expansionOngoi
+ng.test.ts
+M	src/games/smashup/__tests__/factionAbiliti
+es.test.ts
+M	src/games/smashup/__tests__/ghostsAbilitie
+s.test.ts
+M	src/games/smashup/__tests__/helpers.ts
+M	src/games/smashup/__tests__/interactionCha
+inE2E.test.ts
+M	src/games/smashup/__tests__/madnessAbiliti
+es.test.ts
+M	src/games/smashup/__tests__/madnessPromptA
+bilities.test.ts
+M	src/games/smashup/__tests__/meFirst.test.t
+s
+M	src/games/smashup/__tests__/newBaseAbiliti
+es.test.ts
+M	src/games/smashup/__tests__/newFactionAbil
+ities.test.ts
+M	src/games/smashup/__tests__/newOngoingAbil
+ities.test.ts
+M	src/games/smashup/__tests__/ongoingE2E.tes
+t.ts
+M	src/games/smashup/__tests__/ongoingEffects
+.test.ts
+M	src/games/smashup/__tests__/promptE2E.test
+.ts
+M	src/games/smashup/__tests__/promptResponse
+Chain.test.ts
+M	src/games/smashup/__tests__/properties/cor
+eProperties.test.ts
+M	src/games/smashup/__tests__/query6Abilitie
+s.test.ts
+M	src/games/smashup/__tests__/shoggoth-destr
+oy-choice.test.ts
+M	src/games/smashup/__tests__/sleep-spores-e
+2e.test.ts
+M	src/games/smashup/__tests__/specialInterac
+tionChain.test.ts
+M	src/games/smashup/__tests__/turnTransition
+InteractionBug.test.ts
+M	src/games/smashup/__tests__/ui-interaction
+-manual.test.ts
+M	src/games/smashup/__tests__/vampireBuffetE
+2E.test.ts
+M	src/games/smashup/__tests__/zombieInteract
+ionChain.test.ts
+M	src/games/smashup/__tests__/zombieWizardAb
+ilities.test.ts
+M	src/games/smashup/abilities/aliens.ts
+M	src/games/smashup/abilities/bear_cavalry.t
+s
+M	src/games/smashup/abilities/cthulhu.ts
+M	src/games/smashup/abilities/dinosaurs.ts
+M	src/games/smashup/abilities/elder_things.t
+s
+M	src/games/smashup/abilities/frankenstein.t
+s
+M	src/games/smashup/abilities/ghosts.ts
+M	src/games/smashup/abilities/giant_ants.ts
+M	src/games/smashup/abilities/index.ts
+M	src/games/smashup/abilities/innsmouth.ts
+M	src/games/smashup/abilities/miskatonic.ts
+M	src/games/smashup/abilities/ninjas.ts
+M	src/games/smashup/abilities/ongoing_modifi
+ers.ts
+M	src/games/smashup/abilities/pirates.ts
+M	src/games/smashup/abilities/robots.ts
+M	src/games/smashup/abilities/steampunks.ts
+M	src/games/smashup/abilities/tricksters.ts
+M	src/games/smashup/abilities/vampires.ts
+M	src/games/smashup/abilities/zombies.ts
+M	src/games/smashup/audio.config.ts
+M	src/games/smashup/data/cards.ts
+A	src/games/smashup/data/englishAtlasMap.jso
+n
+M	src/games/smashup/data/factions/aliens.ts
+A	src/games/smashup/data/factions/aliens_pod
+.ts
+A	src/games/smashup/data/factions/bear_caval
+ry_pod.ts
+M	src/games/smashup/data/factions/cthulhu.ts
+A	src/games/smashup/data/factions/cthulhu_po
+d.ts
+A	src/games/smashup/data/factions/dinosaurs_
+pod.ts
+A	src/games/smashup/data/factions/elder_thin
+gs_pod.ts
+A	src/games/smashup/data/factions/frankenste
+in_pod.ts
+A	src/games/smashup/data/factions/ghosts_pod
+.ts
+A	src/games/smashup/data/factions/giant-ants
+_pod.ts
+A	src/games/smashup/data/factions/innsmouth_
+pod.ts
+A	src/games/smashup/data/factions/killer_pla
+nts_pod.ts
+A	src/games/smashup/data/factions/miskatonic
+_pod.ts
+M	src/games/smashup/data/factions/ninjas.ts
+A	src/games/smashup/data/factions/ninjas_pod
+.ts
+M	src/games/smashup/data/factions/pirates.ts
+A	src/games/smashup/data/factions/pirates_po
+d.ts
+A	src/games/smashup/data/factions/robots_pod
+.ts
+A	src/games/smashup/data/factions/steampunks
+_pod.ts
+A	src/games/smashup/data/factions/tricksters
+_pod.ts
+A	src/games/smashup/data/factions/vampires_p
+od.ts
+A	src/games/smashup/data/factions/werewolves
+_pod.ts
+A	src/games/smashup/data/factions/wizards_po
+d.ts
+A	src/games/smashup/data/factions/zombies_po
+d.ts
+M	src/games/smashup/domain/abilityHelpers.ts
+M	src/games/smashup/domain/abilityInteractio
+nHandlers.ts
+M	src/games/smashup/domain/abilityRegistry.t
+s
+M	src/games/smashup/domain/baseAbilities.ts
+M	src/games/smashup/domain/baseAbilities_exp
+ansion.ts
+M	src/games/smashup/domain/commands.ts
+M	src/games/smashup/domain/events.ts
+M	src/games/smashup/domain/ids.ts
+M	src/games/smashup/domain/index.ts
+M	src/games/smashup/domain/ongoingEffects.ts
+M	src/games/smashup/domain/ongoingModifiers.
+ts
+M	src/games/smashup/domain/reduce.ts
+M	src/games/smashup/domain/reducer.ts
+M	src/games/smashup/domain/systems.ts
+M	src/games/smashup/domain/types.ts
+M	src/games/smashup/game.ts
+M	src/games/smashup/ui/BaseZone.tsx
+M	src/games/smashup/ui/CardMagnifyOverlay.ts
+x
+M	src/games/smashup/ui/DeckDiscardZone.tsx
+M	src/games/smashup/ui/FactionSelection.tsx
+M	src/games/smashup/ui/HandArea.tsx
+M	src/games/smashup/ui/PromptOverlay.tsx
+M	src/games/smashup/ui/RevealOverlay.tsx
+A	src/games/smashup/ui/SmashUpCardRenderer.t
+sx
+A	src/games/smashup/ui/SmashUpOverlayContext
+.tsx
+M	src/games/smashup/ui/cardAtlas.ts
+M	src/games/smashup/ui/cardPreviewHelper.ts
+M	src/games/smashup/ui/factionMeta.ts
+M	src/games/smashup/ui/playerConfig.ts
+M	src/games/summonerwars/Board.tsx
+M	src/games/summonerwars/__tests__/abilities
+-barbaric.test.ts
+M	src/games/summonerwars/__tests__/interacti
+on-flow-e2e.test.ts
+M	src/games/summonerwars/config/factions/bar
+baric.ts
+M	src/games/summonerwars/domain/events.ts
+M	src/games/summonerwars/domain/execute.ts
+M	src/games/summonerwars/domain/index.ts
+M	src/games/summonerwars/domain/reduce.ts
+M	src/games/summonerwars/domain/types.ts
+M	src/games/summonerwars/domain/validate.ts
+M	src/games/summonerwars/game.ts
+M	src/games/summonerwars/ui/BoardGrid.tsx
+M	src/games/summonerwars/ui/EnergyBar.tsx
+M	src/games/summonerwars/ui/FactionSelection
+Adapter.tsx
+M	src/games/summonerwars/ui/StatusBanners.ts
+x
+M	src/games/summonerwars/ui/modeTypes.ts
+M	src/games/summonerwars/ui/useCellInteracti
+on.ts
+M	src/games/summonerwars/ui/useGameEvents.ts
+M	src/games/tictactoe/domain/index.ts
+M	src/games/tictactoe/domain/types.ts
+M	src/games/ugc-wrapper/game.ts
+M	src/hooks/match/useMatchStatus.ts
+M	src/index.css
+M	src/lib/audio/AudioManager.ts
+M	src/lib/audio/useGameAudio.ts
+M	src/lib/i18n/zh-CN-bundled.ts
+M	src/lib/utils.ts
+M	src/main.tsx
+M	src/pages/Home.tsx
+M	src/pages/MatchRoom.tsx
+M	src/pages/admin/Feedback.tsx
+M	src/pages/admin/Matches.tsx
+M	src/pages/admin/Notifications.tsx
+M	src/pages/admin/index.tsx
+M	src/pages/devtools/AudioBrowser.tsx
+M	src/server/claimSeat.ts
+M	src/server/models/MatchRecord.ts
+M	src/server/storage/HybridStorage.ts
+M	src/server/storage/MongoStorage.ts
+M	src/server/storage/__tests__/hybridStorage
+.test.ts
+M	src/server/storage/__tests__/mongoStorage.
+test.ts
+M	src/services/lobbySocket.ts
+M	src/services/matchApi.ts
+M	src/services/matchSocket.ts
+M	src/services/socialSocket.ts
+M	src/shared/chat.ts
+M	src/ugc/builder/pages/components/HookField
+.tsx
+M	src/ugc/builder/pages/components/RenderCom
+ponentManager.tsx
+M	src/ugc/builder/pages/panels/BuilderModals
+.tsx
+M	src/ugc/builder/pages/panels/PropertyPanel
+.tsx
+
+

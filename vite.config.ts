@@ -196,6 +196,9 @@ export default defineConfig(({ mode }) => {
     ],
     esbuild: forceInlineVite ? false : undefined,
     build: {
+      // Vite 默认会为产物计算 gzip/brotli 体积，在 Windows + 大 bundle 场景下可能触发 zlib “insufficient memory”。
+      // 这只影响日志展示，不影响产物本身；为稳定本地/门禁构建，这里禁用压缩体积报告。
+      reportCompressedSize: false,
       // 生产构建向下兼容到 Chrome 88+ 这档现代浏览器，确保旧一点的 WebView 也能正常进入并游玩。
       target: LEGACY_GAMEPLAY_BUILD_TARGETS,
       cssTarget: LEGACY_GAMEPLAY_BUILD_TARGETS,

@@ -2,7 +2,7 @@
 
 ## 本次目标
 
-清理老旧 E2E 污染后，验证 `e2e/smashup-robot-hoverbot-chain.e2e.ts` 在当前新框架下可稳定运行，并覆盖盘旋机器人（`robot_hoverbot`）的 5 条关键链路：
+清理老旧 E2E 污染后，验证 `e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts` 在当前新框架下可稳定运行，并覆盖盘旋机器人（`robot_hoverbot`）的 5 条关键链路：
 
 1. 连续打出两个盘旋机器人
 2. 第二个盘旋读取到新的牌库顶
@@ -14,13 +14,13 @@
 
 - `node .\node_modules\typescript\bin\tsc --noEmit --pretty false`
 - `npx playwright test --list`
-- `npx playwright test e2e/smashup-robot-hoverbot-chain.e2e.ts --reporter=list`
+- `npx playwright test e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts --reporter=list`
 - 为了稳定保留每张截图，又分别执行了 5 条单测级命令：
-  - `npx playwright test e2e/smashup-robot-hoverbot-chain.e2e.ts --grep '连续打出两个盘旋机器人' --reporter=list`
-  - `npx playwright test e2e/smashup-robot-hoverbot-chain.e2e.ts --grep '第二个盘旋应该看到新的牌库顶' --reporter=list`
-  - `npx playwright test e2e/smashup-robot-hoverbot-chain.e2e.ts --grep '交互不应该一闪而过' --reporter=list`
-  - `npx playwright test e2e/smashup-robot-hoverbot-chain.e2e.ts --grep '跳过' --reporter=list`
-  - `npx playwright test e2e/smashup-robot-hoverbot-chain.e2e.ts --grep '行动卡' --reporter=list`
+  - `npx playwright test e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts --grep '连续打出两个盘旋机器人' --reporter=list`
+  - `npx playwright test e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts --grep '第二个盘旋应该看到新的牌库顶' --reporter=list`
+  - `npx playwright test e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts --grep '交互不应该一闪而过' --reporter=list`
+  - `npx playwright test e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts --grep '跳过' --reporter=list`
+  - `npx playwright test e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts --grep '行动卡' --reporter=list`
 
 ## 关键结论
 
@@ -102,6 +102,6 @@
 
 ## 最终结果
 
-- `e2e/smashup-robot-hoverbot-chain.e2e.ts`：5/5 通过
+- `e2e/smashup/smashup-robot-hoverbot-chain.e2e.ts`：5/5 通过
 - Playwright discovery：恢复正常
 - Hoverbot 关键链路：浏览器实跑通过，截图已人工审查

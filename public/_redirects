@@ -1,0 +1,10 @@
+# Cloudflare Pages / static hosting SPA rewrite rules.
+# Order matters: static asset passthrough must come before the SPA catch-all.
+
+/assets/* /assets/:splat 200
+/fonts/* /fonts/:splat 200
+/logos/* /logos/:splat 200
+/game-data/* /game-data/:splat 200
+/locales/* /locales/:splat 200
+
+/* /index.html 200

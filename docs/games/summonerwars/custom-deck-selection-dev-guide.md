@@ -464,7 +464,7 @@ describe('FactionSelection', () => {
 
 ### E2E 测试
 
-**文件**: `e2e/summonerwars-custom-deck-selection.e2e.ts`
+**文件**: `e2e/summonerwars/summonerwars-custom-deck-selection.e2e.ts`
 
 参考手动测试指南：`.tmp/custom-deck-selection-e2e-manual-test-guide.md`
 

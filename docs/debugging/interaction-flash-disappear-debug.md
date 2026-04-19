@@ -395,7 +395,7 @@ if (current && current.id === interaction.id) {
 - `src/engine/pipeline.ts` - 管线执行流程
 - `src/games/smashup/domain/index.ts` - `postProcessSystemEvents` 实现
 - `src/engine/systems/InteractionSystem.ts` - 交互系统
-- `docs/bugs/smashup-robot-hoverbot-interaction-double-trigger.md` - Bug 报告
+- `docs/bugs/smashup/smashup-robot-hoverbot-interaction-double-trigger.md` - Bug 报告
 
 ## 临时解决方案
 
@@ -418,4 +418,4 @@ if (current && current.id === interaction.id) {
 - `src/engine/systems/InteractionSystem.ts` - 交互系统（已添加日志）
 - `src/games/smashup/abilities/robots.ts` - 盘旋机器人能力（已修复闭包问题）
 - `src/games/smashup/ui/PromptOverlay.tsx` - UI 层交互渲染
-- `docs/bugs/smashup-robot-hoverbot-button-unclickable.md` - Bug 报告
+- `docs/bugs/smashup/smashup-robot-hoverbot-button-unclickable.md` - Bug 报告

@@ -12,12 +12,12 @@
 
 ```bash
 npm run test:e2e:cleanup
-npm run test:e2e:ci -- e2e/smashup-zombie-lord.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-zombie-lord.e2e.ts
 ```
 
 ## 结果
 
-- `e2e/smashup-zombie-lord.e2e.ts`：2/2 通过
+- `e2e/smashup/smashup-zombie-lord.e2e.ts`：2/2 通过
 - `npx tsc --noEmit`：通过
 - `npx vitest run src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts --config vitest.config.audit.ts --pool threads --maxWorkers 1`：通过
 
@@ -25,7 +25,7 @@ npm run test:e2e:ci -- e2e/smashup-zombie-lord.e2e.ts
 
 ### 1. 弃牌横排已打开，进入直点模式
 
-![僵尸领主弃牌横排](../e2e/test-results/evidence-screenshots/smashup-zombie-lord/01-discard-panel.png)
+![僵尸领主弃牌横排](../e2e/test-results/evidence-screenshots/smashup/smashup-zombie-lord/01-discard-panel.png)
 
 分析：
 
@@ -35,7 +35,7 @@ npm run test:e2e:ci -- e2e/smashup-zombie-lord.e2e.ts
 
 ### 2. 选中弃牌随从后，基地直接高亮等待点击
 
-![选中弃牌随从后高亮基地](../e2e/test-results/evidence-screenshots/smashup-zombie-lord/02-card-selected.png)
+![选中弃牌随从后高亮基地](../e2e/test-results/evidence-screenshots/smashup/smashup-zombie-lord/02-card-selected.png)
 
 分析：
 
@@ -45,7 +45,7 @@ npm run test:e2e:ci -- e2e/smashup-zombie-lord.e2e.ts
 
 ### 3. 点击基地后部署完成
 
-![点击基地后完成部署](../e2e/test-results/evidence-screenshots/smashup-zombie-lord/03-after-deploy.png)
+![点击基地后完成部署](../e2e/test-results/evidence-screenshots/smashup/smashup-zombie-lord/03-after-deploy.png)
 
 分析：
 
@@ -55,7 +55,7 @@ npm run test:e2e:ci -- e2e/smashup-zombie-lord.e2e.ts
 
 ### 4. 没有合格随从时不打开横排
 
-![无合格随从时不给横排](../e2e/test-results/evidence-screenshots/smashup-zombie-lord/04-no-eligible-discard.png)
+![无合格随从时不给横排](../e2e/test-results/evidence-screenshots/smashup/smashup-zombie-lord/04-no-eligible-discard.png)
 
 分析：
 

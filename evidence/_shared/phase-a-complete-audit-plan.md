@@ -344,7 +344,7 @@
 
 ### 待生成
 
-- ⏳ `evidence/dicethrone-files-detailed.md` - DiceThrone 详细分析
+- ⏳ `evidence/dicethrone/dicethrone-files-detailed.md` - DiceThrone 详细分析
 - ⏳ `evidence/smashup/smashup-files.txt` - SmashUp 119 个文件
 - ⏳ `evidence/summonerwars/summonerwars-files.txt` - SummonerWars 18 个文件
 - ⏳ `evidence/engine-files.txt` - 引擎层 20 个文件

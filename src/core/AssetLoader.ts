@@ -433,11 +433,20 @@ export async function preloadCriticalImages(
 
     onProgress?.(0, total);
 
+    const preloadCriticalImageCandidates = async (path: string): Promise<void> => {
+        const candidates = getLocalizedImageCandidateUrls(path, effectiveLocale);
+        if (candidates.length === 0) return;
+        for (const candidate of candidates) {
+            if (isImagePreloaded(candidate)) return;
+            await preloadOptimizedImage(candidate);
+            if (isImagePreloaded(candidate)) return;
+        }
+    };
+
     const runWorker = async (): Promise<void> => {
         while (cursor < filtered.length) {
             const p = filtered[cursor++];
-            const localizedPath = getLocalizedAssetPath(p, effectiveLocale);
-            await preloadOptimizedImage(localizedPath);
+            await preloadCriticalImageCandidates(p);
             loaded++;
             onProgress?.(loaded, total);
         }
@@ -487,12 +496,15 @@ export function areAllCriticalImagesCached(
     const effectiveLocale = locale || 'zh-CN';
     for (const p of criticalPaths) {
         if (!p) continue;
-        const localizedPath = getLocalizedAssetPath(p, effectiveLocale);
-        const { webp } = getOptimizedImageUrls(localizedPath);
-        if (!webp) return false;
-        const el = preloadedImages.get(webp);
-        // 必须真正加载成功（naturalWidth > 0），超时占位的空 Image 不算
-        if (!el || el.naturalWidth === 0) return false;
+        const candidates = getLocalizedImageCandidateUrls(p, effectiveLocale);
+        if (candidates.length === 0) return false;
+        const hasLoadedCandidate = candidates.some(candidate => {
+            const { webp } = getOptimizedImageUrls(candidate);
+            if (!webp) return false;
+            const el = preloadedImages.get(webp);
+            return !!el && el.naturalWidth > 0;
+        });
+        if (!hasLoadedCandidate) return false;
     }
     return true;
 }

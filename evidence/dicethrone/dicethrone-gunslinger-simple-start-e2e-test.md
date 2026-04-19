@@ -12,7 +12,7 @@
 ## 执行命令
 
 ```bash
-npm run test:e2e:ci:file -- e2e/dicethrone-simple-start.e2e.ts "Online match: Gunslinger can be selected and start a game successfully"
+npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online match: Gunslinger can be selected and start a game successfully"
 ```
 
 执行结果：通过
@@ -23,7 +23,7 @@ npm run test:e2e:ci:file -- e2e/dicethrone-simple-start.e2e.ts "Online match: Gu
 
 绝对路径：
 
-`D:\gongzuo\webgame\BoardGame-wt-dicethrone-gunslinger-samurai\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Online-match-Gunslinger-can-be-selected-and-start-a-game-successfully\Online-match-Gunslinger-can-be-selected-and-start-a-game-successfully-gunslinger-selection.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-match-Gunslinger-can-be-selected-and-start-a-game-successfully\01-gunslinger-selection.png`
 
 截图分析：
 
@@ -36,7 +36,7 @@ npm run test:e2e:ci:file -- e2e/dicethrone-simple-start.e2e.ts "Online match: Gu
 
 绝对路径：
 
-`D:\gongzuo\webgame\BoardGame-wt-dicethrone-gunslinger-samurai\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Online-match-Gunslinger-can-be-selected-and-start-a-game-successfully\Online-match-Gunslinger-can-be-selected-and-start-a-game-successfully-gunslinger-game-started.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-match-Gunslinger-can-be-selected-and-start-a-game-successfully\02-gunslinger-game-started.png`
 
 截图分析：
 

@@ -2,11 +2,11 @@
 
 ## 测试命令
 
-- `node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "井字棋详情弹窗会显示当前动作入口"`
-- `node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "井字棋详情页不会再渲染对战AI按钮"`
-- `node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "大杀四方 创建房间弹窗可直接配置 AI 人数和模组，并为游客保存偏好"`
-- `node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "移动端包管理游戏详情在左下角显示包管理入口"`
-- `node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "王权骰铸 更新日志 tab 会渲染接口返回的已发布内容"`
+- `node scripts/infra/run-e2e-single.mjs ci e2e/_shared/lobby.e2e.ts "井字棋详情弹窗会显示当前动作入口"`
+- `node scripts/infra/run-e2e-single.mjs ci e2e/_shared/lobby.e2e.ts "井字棋详情页不会再渲染对战AI按钮"`
+- `node scripts/infra/run-e2e-single.mjs ci e2e/_shared/lobby.e2e.ts "大杀四方 创建房间弹窗可直接配置 AI 人数和模组，并为游客保存偏好"`
+- `node scripts/infra/run-e2e-single.mjs ci e2e/_shared/lobby.e2e.ts "移动端包管理游戏详情在左下角显示包管理入口"`
+- `node scripts/infra/run-e2e-single.mjs ci e2e/_shared/lobby.e2e.ts "王权骰铸 更新日志 tab 会渲染接口返回的已发布内容"`
 
 结果：全部通过。
 
@@ -14,7 +14,7 @@
 
 ### 1. 井字棋详情页不再显示英文 AI 入口
 
-路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\井字棋详情页不会再渲染对战AI按钮\lobby-tictactoe-no-play-ai-entry.png`
+路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\井字棋详情页不会再渲染对战AI按钮\lobby-tictactoe-no-play-ai-entry.png`
 
 肉眼观察：
 
@@ -24,7 +24,7 @@
 
 ### 2. 移动端包管理确认弹窗为中文
 
-路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\移动端包管理游戏详情在左下角显示包管理入口\lobby-mobile-package-entry-confirm-modal.png`
+路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\移动端包管理游戏详情在左下角显示包管理入口\lobby-mobile-package-entry-confirm-modal.png`
 
 肉眼观察：
 
@@ -34,7 +34,7 @@
 
 ### 3. 移动端包管理失败态为中文
 
-路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\移动端包管理游戏详情在左下角显示包管理入口\lobby-mobile-package-entry-failed-retry.png`
+路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\移动端包管理游戏详情在左下角显示包管理入口\lobby-mobile-package-entry-failed-retry.png`
 
 肉眼观察：
 
@@ -44,7 +44,7 @@
 
 ### 4. 王权骰铸更新日志页为中文
 
-路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\王权骰铸-更新日志-tab-会渲染接口返回的已发布内容\lobby-dicethrone-changelog-renders-published-entry.png`
+路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\王权骰铸-更新日志-tab-会渲染接口返回的已发布内容\lobby-dicethrone-changelog-renders-published-entry.png`
 
 肉眼观察：
 
@@ -54,7 +54,7 @@
 
 ### 5. 大杀四方创建房间链路仍保持中文
 
-路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\大杀四方-创建房间弹窗可直接配置-AI-人数和模组，并为游客保存偏好\lobby-smashup-create-room-ai-config-modal.png`
+路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\大杀四方-创建房间弹窗可直接配置-AI-人数和模组，并为游客保存偏好\lobby-smashup-create-room-ai-config-modal.png`
 
 肉眼观察：
 

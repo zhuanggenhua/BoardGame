@@ -9,6 +9,8 @@
       "status": "状态",
       "type": "类型",
       "severity": "严重度",
+      "reporterType": "提交来源",
+      "source": "系统来源",
       "sort": "时间排序",
       "newest": "最新优先",
       "oldest": "最早优先",
@@ -29,6 +31,17 @@
       "suggestion": "建议",
       "other": "其他"
     },
+    "reporterType": {
+      "user": "用户",
+      "system": "系统"
+    },
+    "source": {
+      "feedbackModal": "反馈弹窗",
+      "onlineAiWatchdog": "在线 AI Watchdog",
+      "globalErrorCapture": "全局错误捕获",
+      "unsatAutoSkip": "系统自动跳过（无解交互）",
+      "unknown": "未知"
+    },
     "severity": {
       "critical": "严重",
       "high": "高",
@@ -43,6 +56,7 @@
       "severity": "严重度",
       "status": "状态",
       "submitter": "提交者",
+      "origin": "来源",
       "time": "时间",
       "selectItem": "选择反馈 {{id}}",
       "id": "ID: {{id}}"
@@ -79,6 +93,11 @@
       "emptyDescription": "左侧列表用于高密度浏览，右侧显示完整内容、日志和状态快照。",
       "game": "游戏",
       "contact": "联系方式",
+      "origin": "来源信息",
+      "reporterType": "提交来源",
+      "source": "系统来源",
+      "autoReportKind": "自动上报类型",
+      "incidentKey": "事件键",
       "expand": "展开",
       "collapse": "收起"
     },

@@ -374,7 +374,7 @@
 - Tasks 1-13 全部完成：30 个测试文件、489 个 Vitest 测试全部通过（含 32 个属性测试）
 - Task 14 E2E 基础流程：7 个用例（5 passed, 2 skipped），约 3 分钟
 - Task 15 克苏鲁扩展 E2E：5 个用例全部通过，约 2.7 分钟
-- E2E 测试文件：`e2e/smashup-gameplay.e2e.ts`（基础流程）、`e2e/smashup-cthulhu.e2e.ts`（克苏鲁扩展）
+- E2E 测试文件：`e2e/smashup/smashup-gameplay.e2e.ts`（基础流程）、`e2e/smashup/smashup-cthulhu.e2e.ts`（克苏鲁扩展）
 - 弃牌/Me First/Prompt/天赋/疯狂牌测试为 best-effort（依赖游戏状态自然触发）
 - 已知游戏 bug：多回合克苏鲁派系组合可能触发 "Rendered more hooks than during the previous render"（Board.tsx 渲染问题，非测试问题）
 - Tasks marked with `*` are optional and can be skipped for faster MVP

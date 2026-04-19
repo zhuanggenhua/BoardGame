@@ -66,12 +66,12 @@
 
 已在现有文件中补回归用例：
 
-- [e2e/dicethrone-watch-out-spotlight.e2e.ts](../e2e/dicethrone-watch-out-spotlight.e2e.ts)
+- [e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts](../e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts)
   - `俺也一样 copy 模式应允许选择已锁定骰子作为源和目标`
 
 已通过：
 
-- `npm run test:e2e:ci -- e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- `npm run test:e2e:ci -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 
 ### 用例覆盖内容
 
@@ -96,7 +96,7 @@
 
 关键截图：
 
-- 历史截图已按新规则清理；如需复查，请重跑 `e2e/dicethrone-watch-out-spotlight.e2e.ts`，新统一目录为 `test-results/evidence-screenshots/`
+- 历史截图已按新规则清理；如需复查，请重跑 `e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`，新统一目录为 `test-results/evidence-screenshots/dicethrone/`
 
 可见信息：
 

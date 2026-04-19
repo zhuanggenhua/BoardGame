@@ -15,14 +15,34 @@ const GAME_NAME = 'dicethrone';
 // API 交互
 // ============================================================================
 
-export const createDTRoomViaAPI = async (page: Page, guestId?: string): Promise<string | null> => {
+type CreateDTRoomOptions = {
+    guestId?: string;
+    numPlayers?: number;
+    setupData?: Record<string, unknown>;
+    gameServerBaseURL?: string;
+};
+
+export const createDTRoomViaAPI = async (
+    page: Page,
+    guestIdOrOptions?: string | CreateDTRoomOptions,
+): Promise<string | null> => {
     try {
-        const actualGuestId = guestId ?? `dt_e2e_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
-        const gameServerBaseURL = getGameServerBaseURL();
+        const options = typeof guestIdOrOptions === 'string' || !guestIdOrOptions
+            ? { guestId: guestIdOrOptions }
+            : guestIdOrOptions;
+        const actualGuestId = options.guestId ?? `dt_e2e_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        const gameServerBaseURL = options.gameServerBaseURL ?? getGameServerBaseURL();
+        const numPlayers = options.numPlayers ?? 2;
         const url = `${gameServerBaseURL}/games/${GAME_NAME}/create`;
         
         const response = await page.request.post(url, {
-            data: { numPlayers: 2, setupData: { guestId: actualGuestId } },
+            data: {
+                numPlayers,
+                setupData: {
+                    ...(options.setupData ?? {}),
+                    guestId: actualGuestId,
+                },
+            },
         });
         
         if (!response.ok()) return null;
@@ -56,6 +76,32 @@ export const joinDTMatchViaAPI = async (
     return data?.playerCredentials ?? null;
 };
 
+export const claimDTSeatViaAPI = async (
+    page: Page,
+    matchId: string,
+    playerId: string,
+    options: {
+        guestId?: string;
+        playerName?: string;
+        gameServerBaseURL?: string;
+    } = {},
+): Promise<string | null> => {
+    const gameServerBaseURL = options.gameServerBaseURL ?? getGameServerBaseURL();
+    const url = `${gameServerBaseURL}/games/${GAME_NAME}/${matchId}/claim-seat`;
+
+    const response = await page.request.post(url, {
+        data: {
+            playerID: playerId,
+            playerName: options.playerName ?? `Player-${playerId}`,
+            ...(options.guestId ? { guestId: options.guestId } : {}),
+        },
+    });
+
+    if (!response.ok()) return null;
+    const data = (await response.json().catch(() => null)) as { playerCredentials?: string } | null;
+    return data?.playerCredentials ?? null;
+};
+
 export const seedDTMatchCredentials = async (
     context: BrowserContext,
     matchId: string,
@@ -83,12 +129,28 @@ export const seedDTMatchCredentials = async (
 // ============================================================================
 
 export const waitForCharacterSelection = async (page: Page, timeout = 60000) => {
-    await expect(page.locator('h2').filter({ hasText: /选择你的英雄|Select Your Hero/i })).toBeVisible({ timeout });
+    // NOTE: 角色选择页标题在部分环境下可能出现偶发定位失败（疑似与文本/渲染时序有关）。
+    // 这里改用更稳定的结构锚点：角色卡片的 data-character-id。
+    await expect(page.locator('[data-character-id]').first()).toBeVisible({ timeout });
 };
 
 export const selectCharacter = async (page: Page, characterId: string) => {
-    const characterCard = page.locator(`[data-character-id="${characterId}"]`);
-    await expect(characterCard).toBeVisible({ timeout: 8000 });
+    let characterCard = page.locator(`[data-character-id="${characterId}"]`);
+    if ((await characterCard.count()) === 0) {
+        // 兼容：部分角色卡在某些构建/渲染路径下可能没有挂 `data-character-id`（例如列表虚拟化/禁用态包装）。
+        // 这里提供最小 fallback：按可见名称文字点击，以避免 E2E 因 DOM 标识缺失而假失败。
+        const fallbackName =
+            characterId === 'samurai'
+                ? /武士|Samurai/i
+                : characterId === 'gunslinger'
+                    ? /枪手|Gunslinger/i
+                    : null;
+        if (fallbackName) {
+            characterCard = page.getByText(fallbackName).first();
+        }
+    }
+
+    await expect(characterCard).toBeVisible({ timeout: 12000 });
     await characterCard.click();
     
     // DiceThrone 的角色选择不需要确认按钮，点击后直接选中
@@ -117,6 +179,24 @@ export const readyAndStartGame = async (hostPage: Page, guestPage: Page) => {
     await hostPage.waitForTimeout(500);
 };
 
+export const readyMultiplePlayersAndStartGame = async (
+    hostPage: Page,
+    guestPages: Page[],
+) => {
+    for (const page of guestPages) {
+        const readyButton = page.getByRole('button', { name: /Ready|准备/i });
+        await expect(readyButton).toBeVisible({ timeout: 5000 });
+        await readyButton.click();
+        await page.waitForTimeout(300);
+    }
+
+    const hostStartButton = hostPage.getByRole('button', { name: /Start Game|开始游戏|Press.*Start|按.*开始/i });
+    await expect(hostStartButton).toBeVisible({ timeout: 10000 });
+    await expect(hostStartButton).toBeEnabled({ timeout: 5000 });
+    await hostStartButton.click();
+    await hostPage.waitForTimeout(500);
+};
+
 export const waitForGameBoard = async (page: Page, timeout = 30000) => {
     // 等待游戏棋盘的关键元素出现（使用 tutorial-id 定位骰子投掷按钮）
     await expect(page.locator('[data-tutorial-id="dice-roll-button"]')).toBeVisible({ timeout });
@@ -132,6 +212,22 @@ export interface DTMatchSetup {
     hostPage: Page;
     guestPage: Page;
     matchId: string;
+}
+
+export type DTPlayerSetup = {
+    id: string;
+    page: Page;
+    context: BrowserContext;
+};
+
+export interface DTMultiMatchSetup {
+    hostContext: BrowserContext;
+    hostPage: Page;
+    matchId: string;
+    players: DTPlayerSetup[];
+    guestPage?: Page;
+    guestContext?: BrowserContext;
+    extraPlayers?: DTPlayerSetup[];
 }
 
 export const setupDTOnlineMatch = async (
@@ -177,9 +273,139 @@ export const setupDTOnlineMatch = async (
     return { hostContext, guestContext, hostPage, guestPage, matchId };
 };
 
-export const cleanupDTMatch = async (setup: DTMatchSetup) => {
-    await setup.guestContext.close();
-    await setup.hostContext.close();
+export const setupDTOnlineMatchWithPlayers = async (
+    browser: Browser,
+    baseURL: string | undefined,
+    options: {
+        numPlayers: number;
+        gameServerBaseURL?: string;
+        joinPlayerIds?: string[];
+        setupData?: Record<string, unknown>;
+    },
+): Promise<DTMultiMatchSetup | null> => {
+    const numPlayers = options.numPlayers;
+    const gameServerBaseURL = options.gameServerBaseURL ?? getGameServerBaseURL();
+    const joinPlayerIds = options.joinPlayerIds?.length
+        ? options.joinPlayerIds
+        : Array.from({ length: numPlayers - 1 }, (_, index) => String(index + 1));
+
+    const hostContext = await browser.newContext({ baseURL });
+    await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
+    const hostPage = await hostContext.newPage();
+
+    await hostPage.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+    if (!(await ensureGameServerAvailable(hostPage, gameServerBaseURL))) {
+        await hostContext.close();
+        return null;
+    }
+
+    const hostGuestId = `dt_e2e_host_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+    const matchId = await createDTRoomViaAPI(hostPage, {
+        guestId: hostGuestId,
+        numPlayers,
+        gameServerBaseURL,
+        setupData: options.setupData,
+    });
+    if (!matchId) {
+        await hostContext.close();
+        return null;
+    }
+
+    const hostCredentials = await claimDTSeatViaAPI(hostPage, matchId, '0', {
+        guestId: hostGuestId,
+        playerName: `Host-${Date.now()}`,
+        gameServerBaseURL,
+    });
+    if (!hostCredentials) {
+        await hostContext.close();
+        return null;
+    }
+
+    await seedDTMatchCredentials(hostContext, matchId, '0', hostCredentials);
+    await hostPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=0`, { waitUntil: 'domcontentloaded' });
+    await waitForCharacterSelection(hostPage);
+
+    const playersById = new Map<string, DTPlayerSetup>([
+        ['0', { id: '0', page: hostPage, context: hostContext }],
+    ]);
+    const extraPlayers: DTPlayerSetup[] = [];
+
+    for (const playerId of joinPlayerIds) {
+        const guestContext = await browser.newContext({ baseURL });
+        await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
+        const guestPage = await guestContext.newPage();
+
+        await guestPage.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
+        await guestPage.waitForTimeout(300);
+
+        const guestGuestId = `dt_e2e_guest_${playerId}_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+        const guestCredentials = await joinDTMatchViaAPI(
+            guestPage,
+            matchId,
+            playerId,
+            `Guest-${playerId}-${Date.now()}`,
+            guestGuestId,
+        );
+        if (!guestCredentials) {
+            await guestContext.close();
+            continue;
+        }
+
+        await seedDTMatchCredentials(guestContext, matchId, playerId, guestCredentials);
+        await guestPage.goto(`/play/${GAME_NAME}/match/${matchId}?playerID=${playerId}`, { waitUntil: 'domcontentloaded' });
+        await waitForCharacterSelection(guestPage);
+
+        const playerSetup: DTPlayerSetup = { id: playerId, page: guestPage, context: guestContext };
+        playersById.set(playerId, playerSetup);
+        extraPlayers.push(playerSetup);
+    }
+
+    const players = options.joinPlayerIds?.length
+        ? [playersById.get('0'), ...joinPlayerIds.map((id) => playersById.get(id))]
+            .filter((player): player is DTPlayerSetup => Boolean(player))
+        : Array.from({ length: numPlayers }, (_, index) => String(index))
+            .map((id) => playersById.get(id))
+            .filter((player): player is DTPlayerSetup => Boolean(player));
+
+    const guestPlayer = extraPlayers[0];
+
+    return {
+        hostContext,
+        hostPage,
+        matchId,
+        players,
+        guestPage: guestPlayer?.page,
+        guestContext: guestPlayer?.context,
+        extraPlayers: extraPlayers.slice(1),
+    };
+};
+
+export const cleanupDTMatch = async (setup: DTMatchSetup | DTMultiMatchSetup) => {
+    const contexts = new Set<BrowserContext>();
+    if ('hostContext' in setup && setup.hostContext) {
+        contexts.add(setup.hostContext);
+    }
+    if ('guestContext' in setup && setup.guestContext) {
+        contexts.add(setup.guestContext);
+    }
+    if ('players' in setup && Array.isArray(setup.players)) {
+        for (const player of setup.players) {
+            if (player?.context) {
+                contexts.add(player.context);
+            }
+        }
+    }
+    if ('extraPlayers' in setup && Array.isArray(setup.extraPlayers)) {
+        for (const player of setup.extraPlayers) {
+            if (player?.context) {
+                contexts.add(player.context);
+            }
+        }
+    }
+
+    for (const context of contexts) {
+        await context.close();
+    }
 };
 
 
@@ -337,6 +563,13 @@ export const waitForMainPhase = async (page: Page, timeout = 20000) => {
  */
 export const waitForBoardReady = async (page: Page, timeout = 30000) => {
     await waitForGameBoard(page, timeout);
+};
+
+/**
+ * 等待教程棋盘准备就绪（兼容旧测试名称）
+ */
+export const waitForTutorialBoardReady = async (page: Page, timeout = 30000) => {
+    await waitForBoardReady(page, timeout);
 };
 
 /**

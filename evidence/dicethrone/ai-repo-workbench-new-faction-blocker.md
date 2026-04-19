@@ -54,7 +54,7 @@ npm run typecheck
 命令：
 
 ```powershell
-$env:CODEX_MANAGED_BY_NPM='0'; node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "AI 仓库工作台可从工具入口进入并完成 new-faction 纵切片"
+$env:CODEX_MANAGED_BY_NPM='0'; node scripts/infra/run-e2e-single.mjs ci e2e/_shared/lobby.e2e.ts "AI 仓库工作台可从工具入口进入并完成 new-faction 纵切片"
 ```
 
 关键报错：
@@ -124,7 +124,7 @@ npm run build
 命令：
 
 ```powershell
-node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "AI 仓库工作台可从工具入口进入并完成 new-faction 纵切片"
+node scripts/infra/run-e2e-single.mjs ci e2e/_shared/lobby.e2e.ts "AI 仓库工作台可从工具入口进入并完成 new-faction 纵切片"
 ```
 
 结果：

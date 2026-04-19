@@ -363,7 +363,7 @@ if (window.__BG_TEST_HARNESS__) {
 ## 📖 更多资源
 
 - [完整设计文档](./testing-infrastructure.md)
-- [示例测试](../e2e/example-test-harness-usage.e2e.ts)
+- [示例测试](../e2e/dicethrone/example-test-harness-usage.e2e.ts)
 - [自动化测试指南](./automated-testing.md)
 
 ## 🆘 故障排除

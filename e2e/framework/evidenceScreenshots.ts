@@ -2,9 +2,24 @@ import { readdir, rm, unlink } from 'node:fs/promises';
 import { join, parse } from 'node:path';
 import type { TestInfo } from '@playwright/test';
 
+const EVIDENCE_GAME_IDS = new Set(['smashup', 'dicethrone', 'summonerwars', 'tictactoe', 'cardia', '_shared']);
+
 export interface EvidenceScreenshotOptions {
     subdir?: string;
     filename?: string;
+}
+
+function getEvidenceScreenshotGameId(testInfo: TestInfo): string {
+    const normalizedPath = testInfo.file.replace(/\\/g, '/');
+    const segments = normalizedPath.split('/');
+    const e2eIndex = segments.lastIndexOf('e2e');
+    if (e2eIndex >= 0) {
+        const candidate = segments[e2eIndex + 1];
+        if (candidate && EVIDENCE_GAME_IDS.has(candidate)) {
+            return candidate;
+        }
+    }
+    return '_shared';
 }
 
 export function sanitizeEvidencePathSegment(value: string): string {
@@ -33,7 +48,9 @@ function sanitizeEvidenceSubdir(value: string): string {
 }
 
 export function getEvidenceScreenshotFileSubdir(testInfo: TestInfo): string {
-    return sanitizeEvidencePathSegment(parse(testInfo.file).name || 'unknown-test') || 'unknown-test';
+    const fileSubdir = sanitizeEvidencePathSegment(parse(testInfo.file).name || 'unknown-test') || 'unknown-test';
+    const gameId = getEvidenceScreenshotGameId(testInfo);
+    return `${gameId}/${fileSubdir}`;
 }
 
 export function getEvidenceScreenshotCaseSubdir(testInfo: TestInfo): string {
@@ -69,11 +86,13 @@ export async function clearEvidenceScreenshotsForTest(testInfo: TestInfo): Promi
     await rm(caseDir, { recursive: true, force: true });
 
     // 兼容旧的平铺目录，首次截图前清掉当前用例的历史遗留文件。
+    const legacyFileSubdir =
+        sanitizeEvidencePathSegment(parse(testInfo.file).name || 'unknown-test') || 'unknown-test';
     const legacyDir = join(
         process.cwd(),
         'test-results',
         'evidence-screenshots',
-        getEvidenceScreenshotFileSubdir(testInfo),
+        legacyFileSubdir,
     );
     const legacyPrefix = `${sanitizeEvidencePathSegment(testInfo.title || 'unnamed')}-`;
 

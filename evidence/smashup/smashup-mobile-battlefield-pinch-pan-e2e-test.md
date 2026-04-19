@@ -9,7 +9,7 @@
 - 执行命令：
 
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏应保持四人局布局可用，并支持手牌长按看牌与战场拖拽放大"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-4p-layout-test.e2e.ts "移动端横屏应保持四人局布局可用，并支持手牌长按看牌与战场拖拽放大"
 ```
 
 ## 我实际查看的截图
@@ -54,7 +54,7 @@ npm run test:e2e:ci:file -- e2e/smashup-4p-layout-test.e2e.ts "移动端横屏�
 - 执行命令：
 
 ```bash
-PW_E2E_SERVICE_REUSE=shared-single node scripts/infra/run-e2e-single.mjs ci e2e/smashup-4p-layout-test.e2e.ts "移动端横屏 Chromium 真实多触点 pinch/pan 事件链路应正常驱动战场缩放"
+PW_E2E_SERVICE_REUSE=shared-single node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-4p-layout-test.e2e.ts "移动端横屏 Chromium 真实多触点 pinch/pan 事件链路应正常驱动战场缩放"
 ```
 
 ### 6. `04g-mobile-battlefield-real-touch-pinch-pan.png`

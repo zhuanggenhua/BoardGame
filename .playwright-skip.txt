@@ -1,4 +1,4 @@
 # 跳过有导入错误的测试文件
-e2e/summonerwars-boundary.e2e.ts
-e2e/summonerwars-ability-indicators.e2e.ts
-e2e/smashup-state-injection-debug.e2e.ts
+e2e/summonerwars/summonerwars-boundary.e2e.ts
+e2e/summonerwars/summonerwars-ability-indicators.e2e.ts
+e2e/smashup/smashup-state-injection-debug.e2e.ts

@@ -45,6 +45,7 @@
     "confirmMove": "Confirm Move",
     "withdrawCharge": "Spend Charge",
     "withdrawMagic": "Spend 1 Magic",
+    "payMagic": "Spend 1 Magic",
     "confirmControl": "Control",
     "continue": "Continue",
     "finish": "Finish",
@@ -371,6 +372,7 @@
   "eventCard": {
     "noSummoner": "Your summoner is not on the board",
     "noValidTarget": "No valid targets available",
+    "chantPowerNeedFriendlyInRange": "Chant of Power requires at least 1 friendly common/champion within 3 spaces of your summoner",
     "entanglementNeedTwoCommons": "Chant of Entanglement requires at least 2 friendly commons within 3 spaces of your summoner"
   },
   "destroyEffect": {
@@ -379,6 +381,9 @@
   "statusBanners": {
     "insufficientMagic": "Insufficient magic",
     "insufficientCharge": "Requires at least 1 charge",
+    "eventTarget": {
+      "message": "Choose an event target"
+    },
     "magicEventChoice": {
       "message": "Choose: Play event card or discard for magic"
     },
@@ -525,6 +530,32 @@
     "summonerDefeated": "Summoner Defeated"
   },
   "interaction": {
+    "sw": {
+      "eventTarget": "Choose an event target",
+      "magicEventChoice": "Magic phase: choose to play or discard",
+      "funeralPyre": "Funeral Pyre: choose a unit to heal",
+      "bloodSummonTarget": "Blood Summon: choose the ally that takes damage",
+      "bloodSummonCard": "Blood Summon: choose a unit card to summon",
+      "bloodSummonPosition": "Blood Summon: choose a summon position",
+      "bloodSummonConfirm": "Blood Summon: continue or finish",
+      "annihilateTargets": "Annihilate: choose friendly units to sacrifice",
+      "annihilateDamage": "Annihilate: choose who takes the damage",
+      "mindControl": "Mind Control: choose enemy targets",
+      "stunTarget": "Stun: choose a target",
+      "stunDestination": "Stun: choose a push/pull destination",
+      "hypnoticLure": "Hypnotic Lure: choose a target",
+      "chantEntanglement": "Chant of Entanglement: choose two friendly commons",
+      "sneakUnit": "Sneak: choose a friendly unit to move",
+      "sneakDirection": "Sneak: choose a movement direction",
+      "glacialShiftBuilding": "Glacial Shift: choose a friendly building",
+      "glacialShiftDestination": "Glacial Shift: choose a destination",
+      "infection": "Infection: choose a plague zombie to revive",
+      "grabFollow": "Grab: choose a follow-up position",
+      "soulTransfer": "Soul Transfer: confirm movement",
+      "mindCapture": "Mind Capture: choose control or damage",
+      "iceShards": "Ice Shards: confirm charge spending",
+      "feedBeast": "Feed Beast: choose a victim or self-destruct"
+    },
     "fireSacrifice": {
       "mustSelectAlly": "Please select an ally unit to sacrifice"
     },

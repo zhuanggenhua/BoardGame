@@ -18,12 +18,12 @@
 ## 尝试的方案
 
 ### 方案 1：使用测试模式（已废弃）
-- **文件**：`e2e/dicethrone-volley-5-dice-new.e2e.ts`（旧版本）
+- **文件**：`e2e/dicethrone/dicethrone-volley-5-dice-new.e2e.ts`（旧版本）
 - **问题**：测试模式显示 "加载 UNDEFINED..."，无法正常工作
 - **结论**：测试模式已过时，不应使用
 
 ### 方案 2：使用在线对局 + 状态注入
-- **文件**：`e2e/dicethrone-volley-5-dice-new.e2e.ts`（当前版本）
+- **文件**：`e2e/dicethrone/dicethrone-volley-5-dice-new.e2e.ts`（当前版本）
 - **问题**：状态注入后卡牌不可见（`[data-card-id="volley"]` 未找到）
 - **原因**：
   - DiceThrone 的卡牌渲染依赖特定的阶段和状态
@@ -78,7 +78,7 @@
 - 审计缺口分析：`evidence/_shared/bonus-die-display-audit-gap-analysis.md`
 - 多骰显示模式总结：`evidence/_shared/multi-dice-display-pattern-summary.md`
 - 单元测试：`src/games/dicethrone/__tests__/volley-5-dice-display.test.ts`
-- E2E 测试（未通过）：`e2e/dicethrone-volley-5-dice-new.e2e.ts`
+- E2E 测试（未通过）：`e2e/dicethrone/dicethrone-volley-5-dice-new.e2e.ts`
 
 ## 下一步工作（可选）
 

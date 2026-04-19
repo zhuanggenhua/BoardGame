@@ -1,7 +1,7 @@
 {
   "name": "boardgame-platform",
   "private": true,
-  "version": "0.5.33",
+  "version": "0.5.59",
   "type": "module",
   "engines": {
     "node": "24.1.0"
@@ -48,11 +48,13 @@
     "i18n:check": "npx tsx scripts/verify/i18n-check.ts",
     "check:all": "npm run typecheck && npm run lint",
     "quality:changed": "node scripts/infra/run-changed-quality-gate.mjs",
-    "quality:changed:pre-push": "node scripts/infra/run-changed-quality-gate.mjs pre-push",
+    "quality:changed:pre-commit": "cross-env NODE_OPTIONS=--max-old-space-size=8192 node scripts/infra/run-changed-quality-gate.mjs pre-commit",
+    "quality:changed:pre-push": "cross-env NODE_OPTIONS=--max-old-space-size=8192 node scripts/infra/run-changed-quality-gate.mjs pre-push",
     "check:full": "npm run check:all && npm run test:games:core:full",
     "test": "node scripts/infra/vitest-cli-safe.mjs run --configLoader native",
     "test:watch": "node scripts/infra/vitest-cli-safe.mjs --configLoader native",
     "test:core": "node scripts/infra/vitest-cli-safe.mjs run src/core src/components src/hooks src/lib src/shared src/engine src/pages --configLoader native",
+    "test:ai:decision-view": "node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts src/engine/transport/__tests__/server.test.ts src/games/dicethrone/__tests__/response-window-interaction-lock.test.ts src/games/smashup/__tests__/response-window-skip.test.ts --configLoader native",
     "test:smashup": "node scripts/infra/vitest-cli-safe.mjs run src/games/smashup --configLoader native",
     "test:summonerwars": "node scripts/infra/vitest-cli-safe.mjs run src/games/summonerwars --configLoader native",
     "test:dicethrone": "node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone --configLoader native",
@@ -91,7 +93,7 @@
     "infra:budget:status": "node scripts/infra/global-heavy-budget.mjs status",
     "init:admin": "npx tsx --tsconfig tsconfig.api.json scripts/db/init_admin.ts",
     "check:arch": "node scripts/infra/check-architecture.cjs",
-    "verify:dicethrone:style-contract": "node scripts/verify/dicethrone-style-contract.mjs",
+    "verify:dicethrone:style-contract": "node scripts/games/dicethrone/verify/dicethrone-style-contract.mjs",
     "check:prod-deps": "bash scripts/deploy/verify-prod-deps.sh",
     "merge:audit": "node scripts/verify/merge-conflict-audit.mjs",
     "merge:audit:strict": "node scripts/verify/merge-conflict-audit.mjs --fail-on-single-side",
@@ -129,8 +131,7 @@
     "dev:game:lite": "cross-env NODE_ENV=development USE_PERSISTENT_STORAGE=false node scripts/infra/dev-bundle-runner.mjs --label game-lite --entry server.ts --outfile temp/dev-bundles/game-lite/server.mjs --tsconfig tsconfig.server.json"
   },
   "simple-git-hooks": {
-    "pre-commit": "npx lint-staged --concurrent 1 --no-stash",
-    "pre-push": "npm run quality:changed:pre-push"
+    "pre-commit": "npx lint-staged --concurrent 1 --no-stash && npm run quality:changed:pre-commit"
   },
   "lint-staged": {
     "*.{ts,tsx}": [
@@ -228,7 +229,8 @@
     "three": "^0.182.0",
     "uuid": "^10.0.0",
     "winston": "^3.19.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "yaml": "^2.8.3"
   },
   "overrides": {
     "is-generator-function": "1.0.10",
@@ -236,6 +238,7 @@
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@babel/core": "^7.29.0",
     "@capacitor/android": "^8.2.0",
     "@capacitor/cli": "^8.2.0",
     "@eslint/js": "^9.39.1",

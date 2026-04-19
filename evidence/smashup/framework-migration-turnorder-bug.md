@@ -2,7 +2,7 @@
 
 ## 问题描述
 
-E2E 测试 `e2e/smashup-phase-transition-simple.e2e.ts` 和 `e2e/smashup-complex-multi-base-scoring.e2e.ts` 失败，阶段转换没有发生。
+E2E 测试 `e2e/smashup/smashup-phase-transition-simple.e2e.ts` 和 `e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts` 失败，阶段转换没有发生。
 
 ## 根本原因
 
@@ -35,7 +35,7 @@ if (cfg.currentPlayer !== undefined) {
 
 ### 简化测试（通过 ✅）
 
-运行 `npm run test:e2e:ci -- e2e/smashup-phase-transition-simple.e2e.ts`
+运行 `npm run test:e2e:ci -- e2e/smashup/smashup-phase-transition-simple.e2e.ts`
 
 **测试结果**：通过 ✅
 
@@ -45,7 +45,7 @@ if (cfg.currentPlayer !== undefined) {
 
 ### 复杂测试（失败 ❌）
 
-运行 `npm run test:e2e:ci -- e2e/smashup-complex-multi-base-scoring.e2e.ts`
+运行 `npm run test:e2e:ci -- e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`
 
 **测试结果**：失败 ❌
 

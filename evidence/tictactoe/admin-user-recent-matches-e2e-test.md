@@ -6,7 +6,7 @@
 
 ## 测试文件
 
-- `e2e/admin-ugc.e2e.ts`
+- `e2e/_shared/admin-ugc.e2e.ts`
 
 对应新增用例：
 
@@ -32,7 +32,7 @@
 ## 执行命令
 
 ```bash
-npm run test:e2e:ci -- e2e/admin-ugc.e2e.ts
+npm run test:e2e:ci -- e2e/_shared/admin-ugc.e2e.ts
 ```
 
 说明：
@@ -42,7 +42,7 @@ npm run test:e2e:ci -- e2e/admin-ugc.e2e.ts
 
 ## 截图
 
-![后台用户详情页近期对局记录通过截图](screenshots/admin-user-recent-matches-e2e.png)
+![后台用户详情页近期对局记录通过截图](../_shared/screenshots/admin-user-recent-matches-e2e.png)
 
 ## 截图分析
 

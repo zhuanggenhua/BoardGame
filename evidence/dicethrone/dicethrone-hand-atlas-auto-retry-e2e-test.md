@@ -18,13 +18,13 @@
   - 为 3D 翻面链路补上 `WebkitTransformStyle / WebkitBackfaceVisibility`
   - 前后面增加轻微 `translateZ(0.1px)`，避免同平面合成时部分卡面被 WebView/浏览器偶发吞掉
 - 补充单测：`src/components/common/media/__tests__/CardPreview.i18n.test.tsx`
-- 补充真实浏览器 E2E：`e2e/dicethrone-watch-out-spotlight.e2e.ts`
+- 补充真实浏览器 E2E：`e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 
 ## 执行命令
 
 ### ESLint
 ```powershell
-npx eslint src/components/common/media/CardPreview.tsx src/components/common/media/__tests__/CardPreview.i18n.test.tsx e2e/dicethrone-watch-out-spotlight.e2e.ts
+npx eslint src/components/common/media/CardPreview.tsx src/components/common/media/__tests__/CardPreview.i18n.test.tsx e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts
 ```
 
 ### 单测
@@ -36,8 +36,8 @@ node scripts/infra/vitest-cli-safe.mjs run src/components/common/media/__tests__
 ```powershell
 $env:BG_BYPASS_GLOBAL_HEAVY_BUDGET='1'
 $env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'
-node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.ts "samurai and gunslinger hand area should show corrected hand card images"
-node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.ts "gunslinger hand area should recover after first atlas load failure without manual refresh"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "samurai and gunslinger hand area should show corrected hand card images"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "gunslinger hand area should recover after first atlas load failure without manual refresh"
 ```
 
 ## 结果
@@ -50,10 +50,10 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.
 
 ## 截图证据
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\samurai-and-gunslinger-hand-area-should-show-corrected-hand-card-images\10-samurai-hand-area.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\samurai-and-gunslinger-hand-area-should-show-corrected-hand-card-images\11-gunslinger-hand-area.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\samurai-and-gunslinger-hand-area-should-show-corrected-hand-card-images\12-monk-hand-area-reference.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\gunslinger-hand-area-should-recover-after-first-atlas-load-failure-without-manual-refresh\13-gunslinger-hand-area-auto-retry-after-fail.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-and-gunslinger-hand-area-should-show-corrected-hand-card-images\10-samurai-hand-area.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-and-gunslinger-hand-area-should-show-corrected-hand-card-images\11-gunslinger-hand-area.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-and-gunslinger-hand-area-should-show-corrected-hand-card-images\12-monk-hand-area-reference.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-hand-area-should-recover-after-first-atlas-load-failure-without-manual-refresh\13-gunslinger-hand-area-auto-retry-after-fail.png`
 
 ## 肉眼观察结论
 

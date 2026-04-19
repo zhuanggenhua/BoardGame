@@ -244,13 +244,15 @@
     "honor": {
       "name": "荣誉",
       "description": [
-        "在你的攻击造成伤害前，可消耗 1 个荣誉，使本次攻击伤害 +1。"
+        "在你的攻击造成伤害前，可消耗 1 或 2 个荣誉：",
+        "消耗 1 个使本次攻击伤害 +1；消耗 2 个使本次攻击伤害 +3。"
       ]
     },
     "shame": {
       "name": "耻辱",
       "description": [
-        "在计算攻击伤害时，移除 1 个耻辱，使该次攻击伤害 -1。"
+        "在计算攻击伤害时，可按层数消耗耻辱。",
+        "每消耗 1 个，使该次攻击伤害 -1。"
       ]
     },
     "samurai_retribution": {
@@ -266,6 +268,10 @@
     "playerLabel": "玩家{{playerId}}",
     "playCard": "打出卡牌",
     "playUpgradeCard": "打出升级卡",
+    "sellCard": "卖出卡牌",
+    "sellCardCp": "获得 1 CP",
+    "discardCard": "弃置卡牌",
+    "undoSellCard": "撤回卖牌",
     "advancePhase": "推进阶段：{{phase}}",
     "abilityActivated": "发动技能：{{abilityName}}",
     "abilityActivatedDefense": "发动防御技能：{{abilityName}}",
@@ -417,7 +423,9 @@
       "title": "2v2 站位",
       "swapHint": "点目标头像换位：点到 AI 直接换，点到真人会先发申请。",
       "swapWaiting": "已向 {{player}} 发起换位申请，等待对方处理。",
+      "swapWaitingHint": "对方确认前不会调整座位，你也可以在这里撤回这次申请。",
       "swapIncoming": "{{player}} 想和你换位。",
+      "swapReviewHint": "确认后会立即交换你们两人的座位；拒绝则保持当前站位。",
       "swapPendingOther": "{{requester}} 正在等待 {{target}} 处理换位申请。",
       "swapApprove": "同意换位",
       "swapReject": "拒绝",
@@ -531,25 +539,25 @@
       "gainCp": "获得 {{cp}} CP",
       "enlightenmentLotus": "莲花！获得 2太极 + 闪避 + 净化",
       "enlightenmentOther": "抽 1 张牌",
-      "thunderStrikeDie": "雷击投掷：{{value}}",
-      "thunderStrikeReroll": "重掷得 {{value}}",
-      "thunderStrike2Die": "雷击投掷：{{value}}",
-      "thunderStrike2Reroll": "重掷得 {{value}}",
-      "gunslingerLoadedDie": "装填投掷：{{value}}",
-      "gunslingerLoadedReroll": "装填重掷：{{value}}",
-      "gunslingerHighNoonBullet": "子弹：造成 2 点伤害",
-      "gunslingerHighNoonDash": "靴刺：施加击倒",
-      "gunslingerHighNoonBullseye": "准心：施加赏金",
+      "thunderStrikeDie": "雷击投掷：{{value}}（总和伤害）",
+      "thunderStrikeReroll": "重掷：{{value}}（计入总和伤害）",
+      "thunderStrike2Die": "雷击投掷：{{value}}（总和伤害；总和≥12 施加倒地）",
+      "thunderStrike2Reroll": "重掷：{{value}}（总和≥12 施加倒地）",
+      "gunslingerLoadedDie": "装填投掷：{{value}}（本次伤害 +{{bonusDamage}}）",
+      "gunslingerLoadedReroll": "装填重掷：{{value}}（本次伤害 +{{bonusDamage}}）",
+      "gunslingerHighNoonBullet": "子弹：造成 2 点不可防御伤害",
+      "gunslingerHighNoonDash": "靴刺：使目标获得击倒",
+      "gunslingerHighNoonBullseye": "准心：使目标获得 1 个赏金",
       "gunslingerEatMyLeadDie": "吃我的铅弹！投掷：{{value}}",
       "gunslingerEatMyLead.result": "{{bulletCount}} 个子弹面：本次攻击伤害 +{{bonusDamage}}",
       "gunslingerEatMyLead.resultKnockdown": "{{bulletCount}} 个子弹面：本次攻击伤害 +{{bonusDamage}}，并施加击倒",
-      "barbarianSuppress": "压制投掷：{{value}}",
+      "barbarianSuppress": "压制投掷：{{value}}（3骰总和伤害；总和超阈值施加脑震荡）",
       "energeticStrength": "星！治疗 2 并施加脑震荡",
       "energeticOther": "抽 1 张牌",
       "luckyRoll": "幸运投掷：{{value}}",
       "luckyRoll.result": "{{heartCount}}个心面：治疗{{healAmount}}",
       "morePleaseRoll": "再来投掷：{{value}}",
-      "morePleaseRoll.result": "{{swordCount}}个剑面：伤害+{{damage}}",
+      "morePleaseRoll.result": "{{swordCount}}个剑面：伤害+{{damage}}，并施加脑震荡",
       "holyLight": "圣光术",
       "holyDefense": "神圣防御",
       "godsGrace": "神佑",
@@ -573,24 +581,24 @@
       "infernalEmbrace.4": "抽 1 张牌",
       "infernalEmbrace.5": "抽 1 张牌",
       "infernalEmbrace.6": "烈焰精通满额!",
-      "pyroBlast2Die": "炎爆术!",
-      "pyroBlast2Reroll": "重投!",
-      "pyroBlast3Die": "炎爆术!",
-      "pyroBlast3Reroll": "重投!",
-      "shadowDamage": "暗影之舞",
+      "pyroBlast2Die": "炎爆术：{{value}}（烈焰=3伤害 / 熔岩=灼烧 / 焚魂=+2烈焰精通 / 流星=击倒）",
+      "pyroBlast2Reroll": "重投：{{value}}（烈焰=3伤害 / 熔岩=灼烧 / 焚魂=+2烈焰精通 / 流星=击倒）",
+      "pyroBlast3Die": "炎爆术：{{value}}（烈焰=3伤害 / 熔岩=灼烧 / 焚魂=+2烈焰精通 / 流星=击倒）",
+      "pyroBlast3Reroll": "重投：{{value}}（烈焰=3伤害 / 熔岩=灼烧 / 焚魂=+2烈焰精通 / 流星=击倒）",
+      "shadowDamage": "暗影之舞：{{value}} → 造成{{damage}}伤害",
       "default": "额外投掷",
       "oneWithShadowsHit": "暗影! 伏击+2CP",
       "oneWithShadowsMiss": "抽 1 张牌",
-      "sneakAttack": "偷袭!",
+      "sneakAttack": "偷袭：掷骰值加入本次伤害",
       "explodingArrow": "爆裂箭投掷：{{value}}",
       "moonShadowStrike": "月影袭人投掷：{{value}}",
       "moonShadowStrike.moon": "月🌙：施加致盲、缠绕、锁定",
       "moonShadowStrike.other": "抽1张牌",
       "volley": "万箭齐发投掷：{{value}}",
-      "volley.result": "{{bowCount}}个弓面：伤害+{{bonusDamage}}",
-      "explodingArrow.result": "{{bowCount}}弓 {{footCount}}足 {{moonCount}}月：3 + 2×{{bowCount}} + 1×{{footCount}} = {{damage}}伤害",
-      "explodingArrow2.result": "{{bowCount}}弓 {{footCount}}足 {{moonCount}}月：3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}}伤害",
-      "explodingArrow3.result": "{{bowCount}}弓 {{footCount}}足 {{moonCount}}月：3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}}伤害",
+      "volley.result": "{{bowCount}}个弓面：伤害+{{bonusDamage}}，并施加缠绕",
+      "explodingArrow.result": "{{bowCount}}弓 {{footCount}}足 {{moonCount}}月：3 + 2×{{bowCount}} + 1×{{footCount}} = {{damage}}伤害；对手失去{{moonCount}}CP；施加致盲",
+      "explodingArrow2.result": "{{bowCount}}弓 {{footCount}}足 {{moonCount}}月：3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}}伤害；对手失去{{moonCount}}CP；施加致盲",
+      "explodingArrow3.result": "{{bowCount}}弓 {{footCount}}足 {{moonCount}}月：3 + 1×{{bowCount}} + 2×{{footCount}} = {{damage}}伤害；对手失去{{moonCount}}CP；施加致盲与缠绕",
       "watchOut": "看箭投掷：{{value}}",
       "watchOut.bow": "弓🏹：伤害+2",
       "watchOut.foot": "足🦶：施加缠绕",
@@ -620,14 +628,16 @@
       "absolution.pray": "祈祷: 护盾 2 + 2 CP",
       "godsGrace.pray": "祈祷: 获得 4 CP",
       "infernalEmbrace.fire": "烈焰: 获得 2 烈焰精通",
-      "samuraiBackStrikeDie": "反击投掷：{{value}}",
+      "samuraiBackStrikeDie": "反击投掷：{{value}}（对原攻击者造成{{damage}}伤害）",
       "samuraiRighteousnessKatana": "武士刀：+2 伤害",
-      "samuraiRighteousnessHelm": "头盔：施加 2 层耻辱",
+      "samuraiRighteousnessHelm": "头盔：使对手获得 2 层耻辱",
       "samuraiRighteousnessRisingSun": "旭日：获得 1 个反击指示物",
-      "samuraiMasamune.result": "{{katanaCount}} 个武士刀：+{{katanaCount}} 伤害；{{shameCount}} 个头盔：施加 {{shameCount}} 层耻辱；{{retributionCount}} 个旭日：获得 {{retributionCount}} 个反击"
+      "samuraiMasamune.result": "{{katanaCount}} 个武士刀：+{{katanaCount}} 伤害；{{shameCount}} 个头盔：施加 {{shameCount}} 层耻辱；{{retributionCount}} 个旭日：获得 {{retributionCount}} 个反击（若已达堆叠上限则多余部分无效）",
+      "godsGrace.other": "抽 1 张牌"
     },
     "selectToReroll": "点击骰子花费{{cost}}{{token}}重掷",
     "noTokenToReroll": "没有{{token}}标记可用于重掷",
+    "rerollLimitReached": "已达到本次重掷上限",
     "diceResult": "投掷结果",
     "total": "总伤害",
     "confirmDamage": "确认伤害",
@@ -665,6 +675,7 @@
     "requireOpponentTurn": "此卡只能在对手回合打出",
     "requireHasRolled": "需要先投掷骰子才能打出此卡",
     "requireDiceExists": "需要有骰子结果才能打出此卡",
+    "requireLoaded": "需要消耗 1 个装填才能打出此卡",
     "requireOpponentDiceExists": "需要对手有骰子结果才能打出此卡",
     "requireIsRoller": "此卡只能由当前投掷方使用",
     "requireIsNotRoller": "此卡只能由非投掷方使用（响应对手骰面）",
@@ -742,9 +753,52 @@
     "title": "选择发动变体",
     "description": "该技能有多个变体同时满足条件，请选择要发动的变体：",
     "skip": "不发动技能",
+    "variantFallbackName": "{{abilityName}}（{{trigger}}）",
+    "effectSeparator": "；",
     "faceLabel": {
+      "fist": "拳",
+      "palm": "掌",
+      "taiji": "太极",
+      "lotus": "莲花",
+      "sword": "剑",
+      "heart": "心",
+      "strength": "力量",
+      "fire": "火",
+      "magma": "岩浆",
+      "fiery_soul": "火魂",
+      "meteor": "陨石",
+      "bow": "弓",
+      "foot": "脚",
+      "moon": "月",
+      "dagger": "匕首",
+      "bag": "背包",
+      "card": "卡牌",
+      "shadow": "暗影",
+      "helm": "头盔",
+      "pray": "祈祷",
       "katana": "武士刀",
-      "rising_sun": "旭日"
+      "rising_sun": "旭日",
+      "bullet": "子弹",
+      "bullseye": "靶心",
+      "dash": "冲刺"
+    },
+    "trigger": {
+      "generic": "变体条件",
+      "diceSetSeparator": " + ",
+      "faceSeparator": "、",
+      "countFace": "{{count}}个{{face}}",
+      "allSymbolsPresent": "包含{{faces}}",
+      "smallStraight": "小顺子",
+      "largeStraight": "大顺子",
+      "phase": {
+        "setup": "准备阶段",
+        "income": "收入阶段",
+        "main1": "主要阶段 1",
+        "offensiveRoll": "进攻掷骰",
+        "defensiveRoll": "防守掷骰",
+        "main2": "主要阶段 2",
+        "discard": "弃牌阶段"
+      }
     }
   },
   "choices": {
@@ -2146,11 +2200,11 @@
     },
     "card-high-noon": {
       "name": "正午时分！",
-      "description": "掷 1 颗骰子：子弹造成 2 点伤害；靴刺施加击倒；准心施加赏金。"
+      "description": "选择 1 位目标玩家（1v1 自动为唯一对手）。掷 1 颗骰子：子弹对该目标造成 2 点不可防御伤害；靴刺使其获得击倒；准心使其获得 1 个赏金。"
     },
     "card-wild-west": {
       "name": "荒野西部！",
-      "description": "本次攻击总伤害值 +1。卡面中的“掷 1 骰并可支付装填重掷”条款暂未单独建成交互。"
+      "description": "当你花费 1 个装填指示物并掷装填奖励骰时，你可以将该奖励骰重掷 1 次，然后本次攻击总伤害值 +1。"
     },
     "card-eat-my-lead": {
       "name": "吃我的铅弹！",
@@ -2648,6 +2702,9 @@
   "cardSpotlight": {
     "playerPlayed": "{{player}} 打出了卡牌",
     "confirm": "确认"
+  },
+  "compareRoll": {
+    "confirming": "确认中..."
   },
   "endgame": {
     "ariaHero": "英雄：{{hero}}",

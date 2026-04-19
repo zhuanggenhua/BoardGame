@@ -300,7 +300,7 @@ npm run test:e2e -- character-selection.e2e.ts
 - `src/engine/systems/__tests__/CharacterSelectionSystem.test.ts` - 系统逻辑测试（11 个测试）
 
 **E2E 测试**：
-- `e2e/character-selection.e2e.ts` - 完整功能测试（17 个测试，需要服务器运行）
+- `e2e/dicethrone/character-selection.e2e.ts` - 完整功能测试（17 个测试，需要服务器运行）
 - `e2e/character-selection-smoke.e2e.ts` - 冒烟测试（13 个测试，快速验证）
 
 ### 运行测试

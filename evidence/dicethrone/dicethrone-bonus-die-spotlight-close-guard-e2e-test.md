@@ -8,8 +8,8 @@
 ## 执行命令
 
 ```bash
-npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "self watch out should show bonus die spotlight"
-npm run test:e2e:ci:file -- e2e/dicethrone-tutorial-simple.e2e.ts "顿悟后的奖励骰特写不应卡死手牌区"
+npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "self watch out should show bonus die spotlight"
+npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-tutorial-simple.e2e.ts "顿悟后的奖励骰特写不应卡死手牌区"
 ```
 
 ## 截图与观察
@@ -17,7 +17,7 @@ npm run test:e2e:ci:file -- e2e/dicethrone-tutorial-simple.e2e.ts "顿悟后的�
 ### 1. 正常对局特写保持可见
 
 截图路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\self-watch-out-should-show-bonus-die-spotlight\02-after-play-card.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\self-watch-out-should-show-bonus-die-spotlight\02-after-play-card.png`
 
 肉眼观察：
 - 画面中央仍能看到奖励骰特写，骰面为月亮，文案为“月🌙：施加致盲”，说明特写没有在触发后立刻被吃掉。
@@ -27,7 +27,7 @@ npm run test:e2e:ci:file -- e2e/dicethrone-tutorial-simple.e2e.ts "顿悟后的�
 ### 2. 教程链路仍可继续点击手牌
 
 截图路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-tutorial-simple.e2e\tutorial-enlightenment-hand-area\tutorial-enlightenment-hand-area-after-close.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-tutorial-simple.e2e\tutorial-enlightenment-hand-area\tutorial-enlightenment-hand-area-after-close.png`
 
 肉眼观察：
 - 奖励骰特写已经关闭，右下角只剩卡牌特写区，不再有中央奖励骰遮挡层。

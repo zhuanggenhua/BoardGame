@@ -7,14 +7,14 @@
 
 ## 运行结果
 
-- E2E：`npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "触发式 special 不应在泰坦栏或基地上被错误高亮为可手动激活"`
+- E2E：`npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "触发式 special 不应在泰坦栏或基地上被错误高亮为可手动激活"`
 - 结果：通过
 
 ## 关键截图与肉眼观察
 
 ### 1. 全景截图
 
-- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-alien-terraform.e2e\触发式-special-不应在泰坦栏或基地上被错误高亮为可手动激活\pecos-and-deputy-no-false-special-highlight.png`
+- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\触发式-special-不应在泰坦栏或基地上被错误高亮为可手动激活\pecos-and-deputy-no-false-special-highlight.png`
 - 我实际看到什么：
   - 左下泰坦栏里的 `Pecos Bill` 只有普通卡框，没有 `可打出` 黄条徽记。
   - 左侧基地上的 `副警长` 只有普通卡框，没有绿色描边、绿色 ring，也没有激活光晕。
@@ -22,7 +22,7 @@
 
 ### 2. Pecos Bill 局部图
 
-- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-titan-rail\pecos-titan-rail-not-activatable.png`
+- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-titan-rail\pecos-titan-rail-not-activatable.png`
 - 我实际看到什么：
   - `Pecos Bill` 卡面下方只有名称标签“泰坦”。
   - 卡面上没有 `可打出` 黄条，也没有激活态视觉强调。
@@ -30,7 +30,7 @@
 
 ### 3. 副警长局部图
 
-- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-titan-rail\cowboys-deputy-no-false-activation-glow.png`
+- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-titan-rail\cowboys-deputy-no-false-activation-glow.png`
 - 我实际看到什么：
   - `副警长` 只有默认白色卡框。
   - 卡牌周围没有绿色边框、绿色 ring，也没有代表可激活的黄光叠层。

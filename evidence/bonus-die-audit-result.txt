@@ -1,0 +1,403 @@
+
+鎵惧埌 16 涓?BONUS_DIE_ROLLED 浜嬩欢
+
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\barbarian.ts
+鍑芥暟: handleBarbarianSuppressRoll
+琛屽彿: 43
+effectKey: bonusDie.effect.barbarianSuppress
+鉁?i18n 瀛樺湪
+   涓枃: 鍘嬪埗鎶曟幏锛歿{value}}
+   鑻辨枃: Suppress Roll: {{value}}
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\barbarian.ts
+鍑芥暟: handleBarbarianSuppress2Roll
+琛屽彿: 107
+effectKey: bonusDie.effect.barbarianSuppress
+鉁?i18n 瀛樺湪
+   涓枃: 鍘嬪埗鎶曟幏锛歿{value}}
+   鑻辨枃: Suppress Roll: {{value}}
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\barbarian.ts
+鍑芥暟: handleLuckyRollHeal
+琛屽彿: 228
+effectKey: bonusDie.effect.luckyRoll
+鉁?i18n 瀛樺湪
+   涓枃: 骞歌繍鎶曟幏锛歿{value}}
+   鑻辨枃: Lucky Roll: {{value}}
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\barbarian.ts
+鍑芥暟: handleMorePleaseRollDamage
+琛屽彿: 279
+effectKey: bonusDie.effect.morePleaseRoll
+鉁?i18n 瀛樺湪
+   涓枃: 鍐嶆潵鎶曟幏锛歿{value}}
+   鑻辨枃: More Please Roll: {{value}}
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\monk.ts
+鍑芥暟: handleOneThrowFortuneCp
+琛屽彿: 100
+effectKey: bonusDie.effect.gainCp
+鉁?i18n 瀛樺湪
+   涓枃: 鑾峰緱 {{cp}} CP
+   鑻辨枃: Gain {{cp}} CP
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\moon_elf.ts
+鍑芥暟: handleExplodingArrowResolve1
+琛屽彿: 165
+effectKey: bonusDie.effect.explodingArrow
+鉁?i18n 瀛樺湪
+   涓枃: 鐖嗚绠姇鎺凤細{{value}}
+   鑻辨枃: Exploding Arrow Roll: {{value}}
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\moon_elf.ts
+鍑芥暟: handleExplodingArrowResolve2
+琛屽彿: 240
+effectKey: bonusDie.effect.explodingArrow2
+鉂?i18n 缂哄け: explodingArrow2
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\moon_elf.ts
+鍑芥暟: handleExplodingArrowResolve3
+琛屽彿: 315
+effectKey: bonusDie.effect.explodingArrow3
+鉂?i18n 缂哄け: explodingArrow3
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\moon_elf.ts
+鍑芥暟: handleMoonShadowStrike
+琛屽彿: 470
+effectKey: <dynamic>
+鉁?浣跨敤鍔ㄦ€?effectKey锛堟牴鎹姇鎺风粨鏋滃彉鍖栵級
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\moon_elf.ts
+鍑芥暟: handleVolley
+琛屽彿: 516
+effectKey: bonusDie.effect.volley
+鉁?i18n 瀛樺湪
+   涓枃: 涓囩榻愬彂鎶曟幏锛歿{value}}
+   鑻辨枃: Volley Roll: {{value}}
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\moon_elf.ts
+鍑芥暟: handleWatchOut
+琛屽彿: 570
+effectKey: bonusDie.effect.watchOut.moon
+鉁?i18n 瀛樺湪
+   涓枃: 鏈堭煂欙細鏂藉姞鑷寸洸
+   鑻辨枃: Moon馃寵: Inflict Blinded
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\moon_elf.ts
+鍑芥暟: handleBlindedCheck
+琛屽彿: 617
+effectKey: null
+鉂?缂哄皯 effectKey
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\pyromancer.ts
+鍑芥暟: null
+琛屽彿: 561
+effectKey: null
+鉂?缂哄皯 effectKey
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\shadow_thief.ts
+鍑芥暟: handleShadowDanceRoll
+琛屽彿: 224
+effectKey: bonusDie.effect.shadowDamage
+鉁?i18n 瀛樺湪
+   涓枃: 鏆楀奖涔嬭垶
+   鑻辨枃: Shadow Dance
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\shadow_thief.ts
+鍑芥暟: handleShadowDanceRoll2
+琛屽彿: 473
+effectKey: bonusDie.effect.shadowDamage
+鉁?i18n 瀛樺湪
+   涓枃: 鏆楀奖涔嬭垶
+   鑻辨枃: Shadow Dance
+
+================================================================================
+鏂囦欢: src\games\dicethrone\domain\customActions\shadow_thief.ts
+鍑芥暟: handleSneakAttackUse
+琛屽彿: 712
+effectKey: bonusDie.effect.sneakAttack
+鉁?i18n 瀛樺湪
+   涓枃: 鍋疯!
+   鑻辨枃: Sneak Attack!
+
+================================================================================
+
+闂姹囨€?(4 涓?:
+
+src\games\dicethrone\domain\customActions\moon_elf.ts - handleExplodingArrowResolve2
+  鉂?i18n 缂哄け: explodingArrow2
+
+src\games\dicethrone\domain\customActions\moon_elf.ts - handleExplodingArrowResolve3
+  鉂?i18n 缂哄け: explodingArrow3
+
+src\games\dicethrone\domain\customActions\moon_elf.ts - handleBlindedCheck
+  鉂?缂哄皯 effectKey
+
+src\games\dicethrone\domain\customActions\pyromancer.ts - null
+  鉂?缂哄皯 effectKey
+
+
+================================================================================
+
+鎵€鏈?bonusDie.effect i18n keys:
+
+absolution:
+  涓枃: 璧﹀厤
+  鑻辨枃: Absolution
+absolution.heart:
+  涓枃: 蹇? 鎶ょ浘 5
+  鑻辨枃: Heart: Shield 5
+absolution.helm:
+  涓枃: 澶寸洈: 鎶ょ浘 3
+  鑻辨枃: Helm: Shield 3
+absolution.pray:
+  涓枃: 绁堢シ: 鎶ょ浘 2 + 2 CP
+  鑻辨枃: Pray: Shield 2 + 2 CP
+absolution.sword:
+  涓枃: 鍓? 浼ゅ +3
+  鑻辨枃: Sword: +3 Damage
+barbarianSuppress:
+  涓枃: 鍘嬪埗鎶曟幏锛歿{value}}
+  鑻辨枃: Suppress Roll: {{value}}
+blinded:
+  涓枃: 鑷寸洸鍒ゅ畾
+  鑻辨枃: Blinded Check
+blinded.hit:
+  涓枃: 鏀诲嚮鎴愬姛
+  鑻辨枃: Attack Success
+blinded.miss:
+  涓枃: 鏀诲嚮澶辫触锛?  鑻辨枃: Attack Failed!
+default:
+  涓枃: 棰濆鎶曟幏
+  鑻辨枃: Bonus Die
+divineFavor:
+  涓枃: 绁炴仼
+  鑻辨枃: Divine Favor
+divineFavor.heart:
+  涓枃: 蹇? 娌荤枟 4
+  鑻辨枃: Heart: Heal 4
+divineFavor.helm:
+  涓枃: 澶寸洈: 娌荤枟 3
+  鑻辨枃: Helm: Heal 3
+divineFavor.pray:
+  涓枃: 绁堢シ: 鑾峰緱 3 CP
+  鑻辨枃: Pray: Gain 3 CP
+divineFavor.sword:
+  涓枃: 鍓? 鎶?2 寮犵墝
+  鑻辨枃: Sword: Draw 2 Cards
+energeticOther:
+  涓枃: 鎶?1 寮犵墝
+  鑻辨枃: Draw 1 card
+energeticStrength:
+  涓枃: 鏄燂紒娌荤枟 2 骞舵柦鍔犺剳闇囪崱
+  鑻辨枃: Strength! Heal 2 and inflict Concussion
+enlightenmentLotus:
+  涓枃: 鑾茶姳锛佽幏寰?2澶瀬 + 闂伩 + 鍑€鍖?  鑻辨枃: Lotus! Gain 2 Taiji + Evasive + Purify
+enlightenmentOther:
+  涓枃: 鎶?1 寮犵墝
+  鑻辨枃: Draw 1 card
+explodingArrow:
+  涓枃: 鐖嗚绠姇鎺凤細{{value}}
+  鑻辨枃: Exploding Arrow Roll: {{value}}
+explodingArrow.result:
+  涓枃: {{bowCount}}寮?{{footCount}}瓒?{{moonCount}}鏈堬細3 + 2脳{{bowCount}} + 1脳{{footCount}} = {{damage}}浼ゅ
+  鑻辨枃: {{bowCount}}Bow {{footCount}}Foot {{moonCount}}Moon: 3 + 2脳{{bowCount}} + 1脳{{footCount}} = {{damage}} Damage
+explodingArrow2.result:
+  涓枃: {{bowCount}}寮?{{footCount}}瓒?{{moonCount}}鏈堬細3 + 1脳{{bowCount}} + 2脳{{footCount}} = {{damage}}浼ゅ
+  鑻辨枃: {{bowCount}}Bow {{footCount}}Foot {{moonCount}}Moon: 3 + 1脳{{bowCount}} + 2脳{{footCount}} = {{damage}} Damage
+explodingArrow3.result:
+  涓枃: {{bowCount}}寮?{{footCount}}瓒?{{moonCount}}鏈堬細3 + 1脳{{bowCount}} + 2脳{{footCount}} = {{damage}}浼ゅ
+  鑻辨枃: {{bowCount}}Bow {{footCount}}Foot {{moonCount}}Moon: 3 + 1脳{{bowCount}} + 2脳{{footCount}} = {{damage}} Damage
+fiery_soul:
+  涓枃: 鐒氶瓊: 鑾峰緱 2 鐑堢劙绮鹃€?  鑻辨枃: Fiery Soul: Gain 2 Fire Mastery
+fire:
+  涓枃: 鐑堢劙: 浼ゅ +3
+  鑻辨枃: Fire: +3 Damage
+fist:
+  涓枃: 鎷? 浼ゅ +2
+  鑻辨枃: Fist: +2 Damage
+gainCp:
+  涓枃: 鑾峰緱 {{cp}} CP
+  鑻辨枃: Gain {{cp}} CP
+godsGrace:
+  涓枃: 绁炰綉
+  鑻辨枃: God's Grace
+godsGrace.pray:
+  涓枃: 绁堢シ: 鑾峰緱 4 CP
+  鑻辨枃: Pray: Gain 4 CP
+heart:
+  涓枃: 蹇? 娌荤枟 2
+  鑻辨枃: Heart: Heal 2
+helm:
+  涓枃: 澶寸洈: 浼ゅ +1
+  鑻辨枃: Helm: +1 Damage
+holyDefense:
+  涓枃: 绁炲湥闃插尽
+  鑻辨枃: Holy Defense
+holyLight:
+  涓枃: 鍦ｅ厜鏈?  鑻辨枃: Holy Light
+holyLight2.heart:
+  涓枃: 蹇? 鎶?1 寮犵墝
+  鑻辨枃: Heart: Draw 1 Card
+holyLight2.helm:
+  涓枃: 澶寸洈: 鑾峰緱 1 瀹堟姢
+  鑻辨枃: Helm: Gain 1 Protect
+holyLight2.pray:
+  涓枃: 绁堢シ: 鑾峰緱 2 CP
+  鑻辨枃: Pray: Gain 2 CP
+holyLight2.sword:
+  涓枃: 鍓? 鑾峰緱 1 鏆村嚮
+  鑻辨枃: Sword: Gain 1 Crit
+infernalEmbrace.1:
+  涓枃: 鎶?1 寮犵墝
+  鑻辨枃: Draw 1 Card
+infernalEmbrace.2:
+  涓枃: 鎶?1 寮犵墝
+  鑻辨枃: Draw 1 Card
+infernalEmbrace.3:
+  涓枃: 鎶?1 寮犵墝
+  鑻辨枃: Draw 1 Card
+infernalEmbrace.4:
+  涓枃: 鎶?1 寮犵墝
+  鑻辨枃: Draw 1 Card
+infernalEmbrace.5:
+  涓枃: 鎶?1 寮犵墝
+  鑻辨枃: Draw 1 Card
+infernalEmbrace.6:
+  涓枃: 鐑堢劙绮鹃€氭弧棰?
+  鑻辨枃: Max Fire Mastery!
+infernalEmbrace.fire:
+  涓枃: 鐑堢劙: 鑾峰緱 2 鐑堢劙绮鹃€?  鑻辨枃: Fire: Gain 2 Fire Mastery
+lotus:
+  涓枃: 鑾茶姳: 閫夋嫨鑾峰緱闂伩鎴栧噣鍖?  鑻辨枃: Lotus: Choose Evasive or Purify
+luckyRoll:
+  涓枃: 骞歌繍鎶曟幏锛歿{value}}
+  鑻辨枃: Lucky Roll: {{value}}
+magma:
+  涓枃: 鐔斿博: 鏂藉姞鐏肩儳
+  鑻辨枃: Magma: Inflict Burn
+magmaArmor.1:
+  涓枃: 鐑堢劙!
+  鑻辨枃: Fire!
+magmaArmor.2:
+  涓枃: 鐑堢劙!
+  鑻辨枃: Fire!
+magmaArmor.3:
+  涓枃: 鐑堢劙!
+  鑻辨枃: Fire!
+magmaArmor.4:
+  涓枃: 鐔斿博
+  鑻辨枃: Magma
+magmaArmor.5:
+  涓枃: 鐒氶瓊!
+  鑻辨枃: Fiery Soul!
+magmaArmor.6:
+  涓枃: 闄ㄧ煶!
+  鑻辨枃: Meteor!
+meteor:
+  涓枃: 闄ㄧ煶: 鏂藉姞鍑诲€?  鑻辨枃: Meteor: Inflict Knockdown
+moonShadowStrike:
+  涓枃: 鏈堝奖琚汉鎶曟幏锛歿{value}}
+  鑻辨枃: Moon Shadow Strike Roll: {{value}}
+moonShadowStrike.moon:
+  涓枃: 鏈堭煂欙細鏂藉姞鑷寸洸銆佺紶缁曘€侀攣瀹?  鑻辨枃: Moon馃寵: Inflict Blinded, Entangle, Targeted
+moonShadowStrike.other:
+  涓枃: 鎶?寮犵墝
+  鑻辨枃: Draw 1 card
+morePleaseRoll:
+  涓枃: 鍐嶆潵鎶曟幏锛歿{value}}
+  鑻辨枃: More Please Roll: {{value}}
+oneWithShadowsHit:
+  涓枃: 鏆楀奖! 浼忓嚮+2CP
+  鑻辨枃: Shadow! Sneak Attack+2CP
+oneWithShadowsMiss:
+  涓枃: 鎶?1 寮犵墝
+  鑻辨枃: Draw 1 card
+palm:
+  涓枃: 鎺? 浼ゅ +3
+  鑻辨枃: Palm: +3 Damage
+pray:
+  涓枃: 绁堢シ: 鑾峰緱 1 CP
+  鑻辨枃: Pray: Gain 1 CP
+pyroBlast2Die:
+  涓枃: 鐐庣垎鏈?
+  鑻辨枃: Pyro Blast!
+pyroBlast2Reroll:
+  涓枃: 閲嶆姇!
+  鑻辨枃: Rerolled!
+pyroBlast3Die:
+  涓枃: 鐐庣垎鏈?
+  鑻辨枃: Pyro Blast!
+pyroBlast3Reroll:
+  涓枃: 閲嶆姇!
+  鑻辨枃: Rerolled!
+pyrohotstreak2.1:
+  涓枃: 2鐐逛激瀹?  鑻辨枃: 2 Damage
+pyrohotstreak2.2:
+  涓枃: 2鐐逛激瀹?  鑻辨枃: 2 Damage
+pyrohotstreak2.3:
+  涓枃: 2鐐逛激瀹?  鑻辨枃: 2 Damage
+pyrohotstreak2.4:
+  涓枃: 3鐐逛激瀹?  鑻辨枃: 3 Damage
+pyrohotstreak2.5:
+  涓枃: 4鐐逛激瀹?  鑻辨枃: 4 Damage
+pyrohotstreak2.6:
+  涓枃: 5鐐逛激瀹?鐏肩儳!
+  鑻辨枃: 5 Damage + Burn!
+shadowDamage:
+  涓枃: 鏆楀奖涔嬭垶
+  鑻辨枃: Shadow Dance
+sneakAttack:
+  涓枃: 鍋疯!
+  鑻辨枃: Sneak Attack!
+sword:
+  涓枃: 鍓? 浼ゅ +2
+  鑻辨枃: Sword: +2 Damage
+taiji:
+  涓枃: 澶瀬: 鑾峰緱 2 涓お鏋佹爣璁?  鑻辨枃: Taiji: Gain 2 Taiji Tokens
+thunderStrike2Die:
+  涓枃: 闆峰嚮鎶曟幏锛歿{value}}
+  鑻辨枃: Thunder Strike Roll: {{value}}
+thunderStrike2Reroll:
+  涓枃: 閲嶆幏寰?{{value}}
+  鑻辨枃: Rerolled to {{value}}
+thunderStrikeDie:
+  涓枃: 闆峰嚮鎶曟幏锛歿{value}}
+  鑻辨枃: Thunder Strike Roll: {{value}}
+thunderStrikeReroll:
+  涓枃: 閲嶆幏寰?{{value}}
+  鑻辨枃: Rerolled to {{value}}
+volley:
+  涓枃: 涓囩榻愬彂鎶曟幏锛歿{value}}
+  鑻辨枃: Volley Roll: {{value}}
+volley.result:
+  涓枃: {{bowCount}}涓紦闈細浼ゅ+{{bonusDamage}}
+  鑻辨枃: {{bowCount}} Bow: +{{bonusDamage}} Damage
+watchOut:
+  涓枃: 鐪嬬鎶曟幏锛歿{value}}
+  鑻辨枃: Watch Out Roll: {{value}}
+watchOut.bow:
+  涓枃: 寮擆煆癸細浼ゅ+2
+  鑻辨枃: Bow馃徆: +2 Damage
+watchOut.foot:
+  涓枃: 瓒仇煢讹細鏂藉姞缂犵粫
+  鑻辨枃: Foot馃Χ: Inflict Entangle
+watchOut.moon:
+  涓枃: 鏈堭煂欙細鏂藉姞鑷寸洸
+  鑻辨枃: Moon馃寵: Inflict Blinded

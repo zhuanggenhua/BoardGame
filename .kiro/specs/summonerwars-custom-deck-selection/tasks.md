@@ -156,7 +156,7 @@
   - 测试: 选择自定义牌组后状态更新
 
 - [x] 8.3 E2E 测试 - 显示已保存的自定义牌组
-  - 文件: `e2e/summonerwars-custom-deck-selection.e2e.ts`
+  - 文件: `e2e/summonerwars/summonerwars-custom-deck-selection.e2e.ts`
   - 场景: 用户已有 2 个已保存牌组
   - 验证: 界面显示 6 个默认阵营 + 2 个自定义牌组 + 1 个"+"按钮
   - 验证: 自定义牌组卡片显示正确信息（名称、DIY 徽章）

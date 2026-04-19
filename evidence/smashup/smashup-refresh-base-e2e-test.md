@@ -2,7 +2,7 @@
 
 ## 本次目标
 
-将 `e2e/smashup-refresh-base.e2e.ts` 从旧的 `setupOnlineMatch` 注入模式迁移到当前新框架，并验证两条真实链路：
+将 `e2e/smashup/smashup-refresh-base.e2e.ts` 从旧的 `setupOnlineMatch` 注入模式迁移到当前新框架，并验证两条真实链路：
 
 1. 调试面板可以刷新所有基地
 2. 当基地牌堆不足时，会只刷新可用数量的基地
@@ -10,7 +10,7 @@
 ## 执行命令
 
 - `node .\node_modules\typescript\bin\tsc --noEmit --pretty false`
-- `npm run test:e2e:ci -- e2e/smashup-refresh-base.e2e.ts`
+- `npm run test:e2e:ci -- e2e/smashup/smashup-refresh-base.e2e.ts`
 
 ## 关键结论
 
@@ -52,5 +52,5 @@
 
 ## 最终结果
 
-- `e2e/smashup-refresh-base.e2e.ts`：2/2 通过
+- `e2e/smashup/smashup-refresh-base.e2e.ts`：2/2 通过
 - `playwright --list`：通过，且该文件已从 ignore 名单移除

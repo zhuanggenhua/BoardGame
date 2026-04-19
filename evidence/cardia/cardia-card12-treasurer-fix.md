@@ -149,7 +149,7 @@ for (const ability of extraSignetAbilities) {
 
 ### E2E 测试
 
-文件：`e2e/cardia-deck1-card12-treasurer.e2e.ts`
+文件：`e2e/cardia/cardia-deck1-card12-treasurer.e2e.ts`
 
 **测试场景**：
 1. 初始状态：

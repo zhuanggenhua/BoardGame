@@ -14,9 +14,9 @@
 
 - `node scripts/infra/vitest-cli-safe.mjs run apps/api/test/layout.service.test.ts --config vitest.config.api.ts --configLoader native --pool threads --no-file-parallelism --maxWorkers 1`
   - 结果：通过。
-- `$env:CODEX_MANAGED_BY_NPM='0'; node scripts/infra/run-e2e-single.mjs ci e2e/character-selection.e2e.ts "应该能够放大预览第二版角色面板且不被裁剪"`
+- `$env:CODEX_MANAGED_BY_NPM='0'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/character-selection.e2e.ts "应该能够放大预览第二版角色面板且不被裁剪"`
   - 结果：通过。
-- `$env:CODEX_MANAGED_BY_NPM='0'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone-watch-out-spotlight.e2e.ts "mobile narrow viewport should keep magnify entries visible and clickable"`
+- `$env:CODEX_MANAGED_BY_NPM='0'; node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "mobile narrow viewport should keep magnify entries visible and clickable"`
   - 结果：通过。
 - 说明：
   - 这两条 E2E 在当前 Windows / Codex 环境下需要绕开 `CODEX_MANAGED_BY_NPM=1` 触发的共享 runtime 隐藏启动分支，否则会卡在脚本层，不会真正进入用例。
@@ -26,7 +26,7 @@
 ### 1. 选角页第二版玩家板放大成功截图
 
 - 路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\character-selection.e2e\应该能够放大预览第二版角色面板且不被裁剪\samurai-v2-player-board-magnify-open.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\character-selection.e2e\应该能够放大预览第二版角色面板且不被裁剪\samurai-v2-player-board-magnify-open.png`
 - 人工观察：
   - 截图左上角文案已经是中文 `选择你的英雄`，右上角按钮为 `关闭预览`，说明这轮用例确实跑在中文环境下。
   - 武士第二版玩家板大图完整铺开在中间，左右边缘都还在视口内，没有出现旧版高图比例套用后常见的上下裁切。
@@ -35,7 +35,7 @@
 ### 2. 局内窄屏主界面基线截图
 
 - 路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\10-mobile-main-board-state.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\10-mobile-main-board-state.png`
 - 人工观察：
   - 左上是中文 `回合顺序`，右侧主操作按钮为 `确认`，说明局内链路也在中文 locale 下运行。
   - 在 `812x375` 的窄横屏里，左侧顺序栏、中央玩家板、右侧骰子列和弃牌堆区域同时可见，没有顶层横向溢出。
@@ -44,7 +44,7 @@
 ### 3. 局内窄屏第二版玩家板放大成功截图
 
 - 路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\11-mobile-player-board-magnify-open.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\11-mobile-player-board-surface-magnify-open.png`
 - 人工观察：
   - 武士第二版玩家板在局内放大后仍然完整显示，顶部缺口、左右技能卡列和底部终极技区域都在框内，没有被裁出屏幕。
   - 放大层打开后，左侧 `回合顺序`、右侧骰子列和确认按钮仍在后景可见，但没有遮住放大内容，说明 overlay 层级正确。
@@ -53,7 +53,7 @@
 ### 4. 局内窄屏弃牌堆预览成功截图
 
 - 路径：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\12-mobile-discard-pile-inspect-open.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\14-mobile-discard-pile-inspect-open.png`
 - 人工观察：
   - 右侧弃牌堆卡牌 `666!` 已经正常放大到前景中央，证明在第二版玩家板改宽之后，其他放大入口没有被兼容性改坏。
   - 中央大图和底部缩略卡能同时看到，对应的关闭返回链路仍然保留，说明预览层布局没有因为第二版玩家板调宽而发生错位。
@@ -91,5 +91,5 @@
   - 局内窄屏玩家板放大 / 弃牌堆预览入口 E2E 通过。
 - 本轮最终成功截图里，玩家板与卡牌资源都已实际渲染，不再是黑图或 `Preview` 占位，因此可以直接用肉眼验证中文文案、第二版宽图比例和实际未裁切状态。
 - 本轮同时补了两类测试稳定性修正：
-  - `e2e/character-selection.e2e.ts` 先重置残留对局存储，避免首页被“返回当前对局”弹窗劫持；同时把选角放大层改成按 overlay 开关态断言，而不是错误地期待 DOM 卸载。
-  - `e2e/dicethrone-watch-out-spotlight.e2e.ts` 改成中文 locale，并把放大断言从脆弱的 `img[alt="Preview"]` 依赖切到真实放大内容容器，避免图片节点瞬态导致误报。
+  - `e2e/dicethrone/character-selection.e2e.ts` 先重置残留对局存储，避免首页被“返回当前对局”弹窗劫持；同时把选角放大层改成按 overlay 开关态断言，而不是错误地期待 DOM 卸载。
+  - `e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts` 改成中文 locale，并把放大断言从脆弱的 `img[alt="Preview"]` 依赖切到真实放大内容容器，避免图片节点瞬态导致误报。

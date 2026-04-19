@@ -10,7 +10,7 @@ npm run test:e2e:ci:file -- lobby.e2e.ts "首页活跃房间浮层在桌面端�
 
 ### 桌面端
 
-- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\首页活跃房间浮层在桌面端居中且移动端不溢出\lobby-home-active-match-desktop-centered.png`
+- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\首页活跃房间浮层在桌面端居中且移动端不溢出\lobby-home-active-match-desktop-centered.png`
 - 观察结论：
   - 悬浮房间卡片位于首页底部正中，左右留白对称，没有再向一侧偏斜。
   - 卡片宽度已经按内容收缩，不再像之前那样横向铺出一大条空白。
@@ -19,7 +19,7 @@ npm run test:e2e:ci:file -- lobby.e2e.ts "首页活跃房间浮层在桌面端�
 
 ### 手机端
 
-- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\首页活跃房间浮层在桌面端居中且移动端不溢出\lobby-home-active-match-mobile-safe.png`
+- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\首页活跃房间浮层在桌面端居中且移动端不溢出\lobby-home-active-match-mobile-safe.png`
 - 观察结论：
   - 浮层完整落在底部安全区内，左右两边都没有出屏或被切边。
   - 悬浮窗宽度会跟着文案和按钮一起收缩，已经不是一整块固定宽条。

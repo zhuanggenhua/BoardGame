@@ -47,7 +47,7 @@ await game.setupScene({
 
 ## 测试文件
 
-- `e2e/smashup-phase-transition-simple.e2e.ts`
+- `e2e/smashup/smashup-phase-transition-simple.e2e.ts`
 
 ## 截图
 

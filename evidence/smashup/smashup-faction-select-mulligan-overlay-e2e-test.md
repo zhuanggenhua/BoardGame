@@ -22,7 +22,7 @@ npm run test:e2e:ci:file -- smashup-phase-transition-simple.e2e.ts "阵营选择
 ## 证据截图
 
 截图路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\阵营选择已清空但-phase-残留时，仍应显示起手重抽交互\阵营选择已清空但-phase-残留时，仍应显示起手重抽交互-stuck-faction-select-mulligan-visible.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\阵营选择已清空但-phase-残留时，仍应显示起手重抽交互\阵营选择已清空但-phase-残留时，仍应显示起手重抽交互-stuck-faction-select-mulligan-visible.png`
 
 截图说明：
 - 左上角仍显示 `Draft`，说明这是 phase 残留场景

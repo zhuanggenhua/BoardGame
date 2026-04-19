@@ -11,6 +11,7 @@ export default defineConfig([
     '.tmp',
     '.temp',
     'temp',
+    '.worktrees',
     '*.tmp',
     'test-results',
     '.npm-cache',

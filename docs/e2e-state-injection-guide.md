@@ -409,7 +409,7 @@ expect(card.defId).toBe('wizard_portal');
 
 - [TestHarness 快速参考](./testing-tools-quick-reference.md)
 - [自动化测试指南](./automated-testing.md)
-- [示例测试](../e2e/smashup-wizard-portal.e2e.ts)
+- [示例测试](../e2e/smashup/smashup-wizard-portal.e2e.ts)
 
 ---
 

@@ -219,7 +219,7 @@ const tasksContent = `# Implementation Plan: Smash Up E2E 测试框架迁移
     - _Requirements: 8.2_
 
 - [ ] 10. 进度追踪和问题记录
-  - 在 \`evidence/smashup-e2e-migration-progress.md\` 中追踪进度
+  - 在 \`evidence/smashup/smashup-e2e-migration-progress.md\` 中追踪进度
   - _Requirements: 9.1-9.5_
 
   - [ ] 10.1 记录总体进度
@@ -263,7 +263,7 @@ const tasksContent = `# Implementation Plan: Smash Up E2E 测试框架迁移
 
   - [ ] 11.4 更新文档
     - 更新 \`docs/automated-testing.md\`
-    - 更新 \`evidence/smashup-e2e-migration-progress.md\`
+    - 更新 \`evidence/smashup/smashup-e2e-migration-progress.md\`
     - 创建迁移总结文档
     - _Requirements: 6.3, 6.4_
 

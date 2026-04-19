@@ -3,7 +3,6 @@ import { dirname } from 'node:path';
 import { test, expect } from './framework';
 import { getEvidenceScreenshotPath } from './framework/evidenceScreenshots';
 import { setChineseLocale } from './helpers/common';
-import { DESKTOP_REFERENCE_VIEWPORT } from '../src/shared/referenceViewports';
 
 async function saveEvidenceLocatorScreenshot(page: any, locator: any, testInfo: any, subdir: string, filename: string) {
     const path = getEvidenceScreenshotPath(testInfo, filename, { subdir, filename });
@@ -419,6 +418,7 @@ const EXPECTED_FINAL_VP = {
     '3': 10,
 } as const;
 const MOBILE_LANDSCAPE_VIEWPORT = { width: 800, height: 450 } as const;
+const DESKTOP_REFERENCE_VIEWPORT = { width: 1920, height: 1080 } as const;
 
 function createPlayerState(
     playerId: string,

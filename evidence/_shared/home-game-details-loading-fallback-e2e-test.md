@@ -3,21 +3,21 @@
 ## 范围
 
 - 目标问题：开发服务器刚启动或详情模块冷加载时，点击游戏详情会先发生 URL 跳转感知，但弹窗长时间不出现。
-- 验证文件：`e2e/lobby.e2e.ts`
+- 验证文件：`e2e/_shared/lobby.e2e.ts`
 - 验证日期：2026-04-06
 
 ## 执行命令
 
 ```bash
-npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "游戏详情弹窗会显示当前中文动作入口"
-npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "首次打开游戏详情时会先显示加载骨架，避免只剩路由跳转"
+npm run test:e2e:ci:file -- e2e/_shared/lobby.e2e.ts "游戏详情弹窗会显示当前中文动作入口"
+npm run test:e2e:ci:file -- e2e/_shared/lobby.e2e.ts "首次打开游戏详情时会先显示加载骨架，避免只剩路由跳转"
 ```
 
 ## 截图证据
 
 ### 1. 冷加载占位弹窗已先出现
 
-- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\首次打开游戏详情时会先显示加载骨架，避免只剩路由跳转\lobby-game-details-loading-fallback-visible.png`
+- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\首次打开游戏详情时会先显示加载骨架，避免只剩路由跳转\lobby-game-details-loading-fallback-visible.png`
 - 我实际看到什么：
   - 首页背景已经被统一遮罩压暗，说明点击游戏卡片后不是只改了 URL，模态层已经立刻接管视图。
   - 视口中央出现的是与当前游戏详情弹窗同尺寸、同分栏、同边角装饰的骨架，而不是另一套独立样式。

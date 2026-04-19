@@ -97,7 +97,7 @@ npm run dev
 
 ### 步骤 5：记录结果
 
-将控制台日志复制到 `evidence/dicethrone-attack-sound-debug-logs.txt`
+将控制台日志复制到 `evidence/dicethrone/dicethrone-attack-sound-debug-logs.txt`
 
 ## 预期结果
 

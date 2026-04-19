@@ -4,19 +4,19 @@
 
 - 页面：网页端大厅首页
 - 目标：`下载 App` 入口不再依赖旧的百度网盘环境变量文案，而是优先读取 `VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL` 指向的 `latest.json`，再打开其中的 APK 地址
-- 用例：`e2e/lobby.e2e.ts` `网页端下载 App 入口会读取 native update latest.json 并打开其中 APK 地址`
+- 用例：`e2e/_shared/lobby.e2e.ts` `网页端下载 App 入口会读取 native update latest.json 并打开其中 APK 地址`
 
 ## 执行命令
 
 ```bash
-npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "网页端下载 App 入口会读取 native update latest.json 并打开其中 APK 地址"
+npm run test:e2e:ci:file -- e2e/_shared/lobby.e2e.ts "网页端下载 App 入口会读取 native update latest.json 并打开其中 APK 地址"
 ```
 
 ## 截图证据
 
 ### 1. 大厅右侧悬浮菜单可见下载入口
 
-- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\lobby.e2e\网页端下载-App-入口会读取-native-update-latest.json-并打开其中-APK-地址\lobby-download-app-entry-visible.png`
+- 截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\网页端下载-App-入口会读取-native-update-latest.json-并打开其中-APK-地址\lobby-download-app-entry-visible.png`
 - 我实际看到什么：桌面端大厅右侧悬浮菜单已展开，设置主入口右侧同列可见下载箭头图标，说明网页端确实渲染了 `下载 App` 动作入口，而不是原生端的“检查更新”入口。
 - 我实际看到什么：截图中没有出现“下载链接待配置，先把百度网盘地址填到环境变量里”这类旧提示 toast。
 - 是否达到验收标准：达到。入口位置和网页端分支都正确显示，问题位点已经不再停留在旧的网盘占位语义。

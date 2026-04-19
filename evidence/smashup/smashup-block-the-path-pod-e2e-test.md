@@ -11,16 +11,16 @@
 ## 执行命令
 
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/interactionChainE2E.test.ts -t "trickster_block_the_path_pod" --configLoader native`
-- `npm run test:e2e:ci:file -- e2e/smashup-crop-circles.e2e.ts "打到基地后应弹出派系封锁选项，并把选择写入基地持续战术"`
+- `npm run test:e2e:ci:file -- e2e/smashup/smashup-crop-circles.e2e.ts "打到基地后应弹出派系封锁选项，并把选择写入基地持续战术"`
 
 ## 截图审查
 
 ### 1. 交互弹出
 
 绝对路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-crop-circles.e2e\打到基地后应弹出派系封锁选项，并把选择写入基地持续战术\block-the-path-prompt.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-crop-circles.e2e\打到基地后应弹出派系封锁选项，并把选择写入基地持续战术\block-the-path-prompt.png`
 
-![通路禁止-交互弹出](../test-results/evidence-screenshots/smashup-crop-circles.e2e/打到基地后应弹出派系封锁选项，并把选择写入基地持续战术/block-the-path-prompt.png)
+![通路禁止-交互弹出](../test-results/evidence-screenshots/smashup/smashup-crop-circles.e2e/打到基地后应弹出派系封锁选项，并把选择写入基地持续战术/block-the-path-prompt.png)
 
 审查结论：
 
@@ -31,9 +31,9 @@
 ### 2. 交互完成后
 
 绝对路径：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-crop-circles.e2e\打到基地后应弹出派系封锁选项，并把选择写入基地持续战术\block-the-path-resolved.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-crop-circles.e2e\打到基地后应弹出派系封锁选项，并把选择写入基地持续战术\block-the-path-resolved.png`
 
-![通路禁止-交互完成](../test-results/evidence-screenshots/smashup-crop-circles.e2e/打到基地后应弹出派系封锁选项，并把选择写入基地持续战术/block-the-path-resolved.png)
+![通路禁止-交互完成](../test-results/evidence-screenshots/smashup/smashup-crop-circles.e2e/打到基地后应弹出派系封锁选项，并把选择写入基地持续战术/block-the-path-resolved.png)
 
 审查结论：
 

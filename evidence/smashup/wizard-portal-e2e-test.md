@@ -2,7 +2,7 @@
 
 ## 本次目标
 
-将 `e2e/smashup-wizard-portal.e2e.ts` 收敛为稳定的新框架 E2E，并验证 `wizard_portal` 的 3 条关键链路：
+将 `e2e/smashup/smashup-wizard-portal.e2e.ts` 收敛为稳定的新框架 E2E，并验证 `wizard_portal` 的 3 条关键链路：
 
 1. 单选 1 张随从加入手牌，并按选择顺序重排剩余牌库顶
 2. 0 选随从后，仅重排剩余牌库顶
@@ -97,7 +97,7 @@
 
 ## 2026-03-25 现状回放备注
 
-- 在本次文件治理后，使用当前仓库现状重新执行 `npm run test:e2e:file -- e2e/smashup-wizard-portal.e2e.ts`，3 条用例均未通过。
+- 在本次文件治理后，使用当前仓库现状重新执行 `npm run test:e2e:file -- e2e/smashup/smashup-wizard-portal.e2e.ts`，3 条用例均未通过。
 - 失败点一致出现在从 `wizard_portal_pick` 进入 `wizard_portal_order` 的过渡阶段；失败截图显示 `wizard_portal_pick` 交互本身已出现，因此更像当前仓库行为 / 交互推进回归，而不是文件重命名引入的问题。
 - 由于本次 canonical 文件内容与原 `framework-pilot-wizard-portal.e2e.ts` 等价，这次失败应视为“当前主线回放失败”，不是“pilot 升名后才新增的专属失败”。
 
@@ -105,4 +105,4 @@
 
 - `e2e/framework-pilot-wizard-portal.e2e.ts`：3/3 通过
 - `wizard_portal` 单选 / 空选 / 多选链路：浏览器实跑通过
-- 6 张截图已人工审查并备份到 `evidence/assets/wizard-portal-e2e/`
+- 6 张截图已人工审查并备份到 `evidence/smashup/assets/wizard-portal-e2e/`

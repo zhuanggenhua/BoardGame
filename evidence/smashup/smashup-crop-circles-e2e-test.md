@@ -2,7 +2,7 @@
 
 ## 本次目标
 
-将 `e2e/smashup-crop-circles.e2e.ts` 迁移为当前新框架写法，并验证 `alien_crop_circles` 的 3 条真实链路：
+将 `e2e/smashup/smashup-crop-circles.e2e.ts` 迁移为当前新框架写法，并验证 `alien_crop_circles` 的 3 条真实链路：
 
 1. 选择基地后，返回该基地上的全部随从
 2. 只影响被选中的基地，不误伤其他基地
@@ -11,16 +11,16 @@
 ## 执行命令
 
 - `node .\node_modules\typescript\bin\tsc --noEmit --pretty false`
-- `PW_USE_DEV_SERVERS=true npx playwright test e2e/smashup-crop-circles.e2e.ts --reporter=list`
+- `PW_USE_DEV_SERVERS=true npx playwright test e2e/smashup/smashup-crop-circles.e2e.ts --reporter=list`
 
 ## 关键结论
 
-- `e2e/smashup-crop-circles.e2e.ts` 已使用 `import { test, expect } from './framework'`，并通过 `game.setupScene()` 构造场景。
+- `e2e/smashup/smashup-crop-circles.e2e.ts` 已使用 `import { test, expect } from './framework'`，并通过 `game.setupScene()` 构造场景。
 - `alien_crop_circles` 当前真实语义是单段交互：先选基地，再直接把该基地全部随从返回手牌，不存在第二段连锁选择。
 - 这份用例已浏览器实跑通过，结果为 `3 passed`。
 - 本轮顺手修了 2 个会影响老 E2E 稳定性的框架问题：
   - `e2e/framework/fixtures.ts` 的 `workerPorts` fixture 首参改为合法解构，避免 Playwright 参数校验直接报错。
-  - `e2e/framework/GameTestContext.ts` 的 `game.screenshot()` 现在额外保存一份到稳定的 `e2e/test-results/evidence-screenshots/`，避免截图只落在会被清理的目录里。
+  - `e2e/framework/GameTestContext.ts` 的 `game.screenshot()` 现在额外保存一份到稳定的 `e2e/test-results/evidence-screenshots/smashup/`，避免截图只落在会被清理的目录里。
 
 ## 截图审查
 
@@ -76,6 +76,6 @@
 
 ## 最终结果
 
-- `e2e/smashup-crop-circles.e2e.ts`：`3/3` 通过
-- 5 张截图已人工审查，并备份到 `evidence/assets/crop-circles-e2e/`
+- `e2e/smashup/smashup-crop-circles.e2e.ts`：`3/3` 通过
+- 5 张截图已人工审查，并备份到 `evidence/smashup/assets/crop-circles-e2e/`
 - `alien_crop_circles` 这份老 E2E 已完成重写并具备稳定证据链

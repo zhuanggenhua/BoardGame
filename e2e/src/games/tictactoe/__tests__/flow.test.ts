@@ -1,0 +1,379 @@
+/**
+ * 井字棋流程测试
+ */
+
+import { describe, it, expect } from 'vitest';
+import { buildTicTacToeAiLegalActions } from '../ai';
+import { engineConfig } from '../game';
+import { createInitialSystemState } from '../../../engine/pipeline';
+import {
+    registerRemoteAiProvider,
+    resolveNextLocalAiAction,
+} from '../../../engine/ai';
+import { TicTacToeDomain } from '../domain';
+import type { TicTacToeCore } from '../domain/types';
+import { GameTestRunner, type TestCase, type StateExpectation } from '../../../engine/testing';
+import type { MatchState } from '../../../engine/types';
+
+// ============================================================================
+// 井字棋专用断言
+// ============================================================================
+
+interface TicTacToeExpectation extends StateExpectation {
+    /** 预期的棋盘状态 */
+    cells?: (string | null)[];
+    /** 预期的当前玩家 */
+    currentPlayer?: string;
+    /** 预期的获胜者 */
+    winner?: string;
+    /** 预期平局 */
+    draw?: boolean;
+}
+
+function assertTicTacToe(state: TicTacToeCore, expect: TicTacToeExpectation): string[] {
+    const errors: string[] = [];
+
+    if (expect.cells) {
+        const cellsMatch = JSON.stringify(state.cells) === JSON.stringify(expect.cells);
+        if (!cellsMatch) {
+            errors.push(`棋盘状态不匹配:\n  预期: ${JSON.stringify(expect.cells)}\n  实际: ${JSON.stringify(state.cells)}`);
+        }
+    }
+
+    if (expect.currentPlayer !== undefined) {
+        if (state.currentPlayer !== expect.currentPlayer) {
+            errors.push(`当前玩家不匹配: 预期 ${expect.currentPlayer}, 实际 ${state.currentPlayer}`);
+        }
+    }
+
+    if (expect.winner !== undefined) {
+        if (state.gameResult?.winner !== expect.winner) {
+            errors.push(`获胜者不匹配: 预期 ${expect.winner}, 实际 ${state.gameResult?.winner}`);
+        }
+    }
+
+    if (expect.draw !== undefined) {
+        if (state.gameResult?.draw !== expect.draw) {
+            errors.push(`平局状态不匹配: 预期 ${expect.draw}, 实际 ${state.gameResult?.draw}`);
+        }
+    }
+
+    return errors;
+}
+
+// ============================================================================
+// 棋盘可视化
+// ============================================================================
+
+function printBoard(cells: (string | null)[]) {
+    console.log('\n  棋盘状态:');
+    console.log('  ┌───┬───┬───┐');
+    for (let row = 0; row < 3; row++) {
+        const rowCells = cells.slice(row * 3, row * 3 + 3).map((c, i) => {
+            const idx = row * 3 + i;
+            if (c === '0') return ' X ';
+            if (c === '1') return ' O ';
+            return ` ${idx} `;
+        });
+        console.log(`  │${rowCells.join('│')}│`);
+        if (row < 2) console.log('  ├───┼───┼───┤');
+    }
+    console.log('  └───┴───┴───┘');
+}
+
+// ============================================================================
+// 测试用例
+// ============================================================================
+
+const testCases: TestCase<TicTacToeExpectation>[] = [
+    {
+        name: '正常流程 - 玩家0对角线获胜',
+        commands: [
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 0 } },
+            { type: 'CLICK_CELL', playerId: '1', payload: { cellId: 1 } },
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 4 } },
+            { type: 'CLICK_CELL', playerId: '1', payload: { cellId: 2 } },
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 8 } },
+        ],
+        expect: {
+            winner: '0',
+            cells: ['0', '1', '1', null, '0', null, null, null, '0'],
+        },
+    },
+    {
+        name: '正常流程 - 平局',
+        commands: [
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 0 } },
+            { type: 'CLICK_CELL', playerId: '1', payload: { cellId: 4 } },
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 2 } },
+            { type: 'CLICK_CELL', playerId: '1', payload: { cellId: 1 } },
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 7 } },
+            { type: 'CLICK_CELL', playerId: '1', payload: { cellId: 3 } },
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 5 } },
+            { type: 'CLICK_CELL', playerId: '1', payload: { cellId: 8 } },
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 6 } },
+        ],
+        expect: {
+            draw: true,
+            cells: ['0', '1', '0', '1', '1', '0', '0', '0', '1'],
+        },
+    },
+    {
+        name: '错误测试 - 玩家抢先下棋',
+        commands: [
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 0 } },
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 1 } },
+        ],
+        expect: {
+            errorAtStep: { step: 2, error: 'notYourTurn' },
+            cells: ['0', null, null, null, null, null, null, null, null],
+        },
+    },
+    {
+        name: '错误测试 - 格子已被占用',
+        commands: [
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 0 } },
+            { type: 'CLICK_CELL', playerId: '1', payload: { cellId: 0 } },
+        ],
+        expect: {
+            errorAtStep: { step: 2, error: 'cellOccupied' },
+        },
+    },
+    {
+        name: '错误测试 - 无效格子索引',
+        commands: [
+            { type: 'CLICK_CELL', playerId: '0', payload: { cellId: 9 } },
+        ],
+        expect: {
+            errorAtStep: { step: 1, error: 'invalidCell' },
+        },
+    },
+    {
+        name: '错误测试 - 游戏已结束',
+        setup: (playerIds, random) => {
+            const core = TicTacToeDomain.setup(playerIds, random);
+            core.gameResult = { winner: '0' };
+            const sys = createInitialSystemState(playerIds, []);
+            return { core, sys };
+        },
+        commands: [
+            { type: 'CLICK_CELL', playerId: '1', payload: { cellId: 1 } },
+        ],
+        expect: {
+            errorAtStep: { step: 1, error: 'gameOver' },
+        },
+    },
+    {
+        name: '错误测试 - 未知命令',
+        commands: [
+            { type: 'UNKNOWN_COMMAND', playerId: '0', payload: {} },
+        ],
+        expect: {
+            errorAtStep: { step: 1, error: 'unknownCommand' },
+        },
+    },
+];
+
+// ============================================================================
+// 运行测试
+// ============================================================================
+
+const runner = new GameTestRunner({
+    domain: TicTacToeDomain,
+    playerIds: ['0', '1'],
+    assertFn: (state, expect: TicTacToeExpectation) => assertTicTacToe(state.core, expect),
+    visualizeFn: (state) => printBoard(state.core.cells),
+    silent: true,
+});
+
+describe('井字棋流程测试', () => {
+    it.each(testCases)('$name', (testCase) => {
+        const result = runner.run(testCase);
+        expect(result.assertionErrors).toEqual([]);
+    });
+});
+
+const createAiTestState = (
+    core: TicTacToeCore,
+): MatchState<TicTacToeCore> => ({
+    core,
+    sys: {
+        ...createInitialSystemState(core.playerIds, []),
+        phase: 'main',
+        interaction: {
+            current: null,
+            queue: [],
+        },
+        responseWindow: {
+            current: null,
+        },
+    },
+});
+
+describe('井字棋 AI', () => {
+    it('应只为当前玩家生成可落子动作', () => {
+        const state = createAiTestState({
+            cells: ['0', '1', null, null, '0', null, null, null, '1'],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const actions = buildTicTacToeAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions.map((action) => action.metadata?.cellId)).toEqual([2, 3, 5, 6, 7]);
+        expect(buildTicTacToeAiLegalActions({
+            playerId: '1',
+            state,
+        })).toEqual([]);
+    });
+
+    it('本地 AI runner 应优先选择制胜格子', async () => {
+        const state = createAiTestState({
+            cells: ['0', '0', null, '1', '1', null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:tictactoe-win',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'CLICK_CELL',
+            payload: { cellId: 2 },
+        });
+        expect(resolution?.source).toBe('local-ai');
+    });
+
+    it('远程 AI 返回非法动作时应回退到本地策略', async () => {
+        registerRemoteAiProvider({
+            id: 'test-invalid',
+            decide: async () => ({ actionId: 'invalid:cell:9' }),
+        });
+
+        const state = createAiTestState({
+            cells: ['0', '0', null, '1', '1', null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:tictactoe-remote-invalid',
+            seatControllers: {
+                '0': { type: 'remote-ai', providerId: 'test-invalid', fallbackPolicyId: 'baseline' },
+            },
+        });
+
+        expect(resolution?.source).toBe('remote-ai-fallback');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'CLICK_CELL',
+            payload: { cellId: 2 },
+        });
+    });
+
+    it('远程 AI 抛错时应回退到本地策略', async () => {
+        registerRemoteAiProvider({
+            id: 'test-throws',
+            decide: async () => {
+                throw new Error('provider_failed');
+            },
+        });
+
+        const state = createAiTestState({
+            cells: ['1', '1', null, null, '0', null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:tictactoe-remote-error',
+            seatControllers: {
+                '0': { type: 'remote-ai', providerId: 'test-throws', fallbackPolicyId: 'baseline', retryCount: 1 },
+            },
+        });
+
+        expect(resolution?.source).toBe('remote-ai-fallback');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'CLICK_CELL',
+            payload: { cellId: 2 },
+        });
+    });
+
+    it('远程 AI 重试后返回合法动作时应直接采用远程结果', async () => {
+        let attemptCount = 0;
+
+        registerRemoteAiProvider({
+            id: 'test-retry-success',
+            decide: async () => {
+                attemptCount += 1;
+                if (attemptCount === 1) {
+                    throw new Error('provider_failed_once');
+                }
+                return { actionId: 'click-cell:2' };
+            },
+        });
+
+        const state = createAiTestState({
+            cells: ['0', '0', null, '1', '1', null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:tictactoe-remote-retry-success',
+            seatControllers: {
+                '0': { type: 'remote-ai', providerId: 'test-retry-success', fallbackPolicyId: 'baseline', retryCount: 1 },
+            },
+        });
+
+        expect(attemptCount).toBe(2);
+        expect(resolution?.source).toBe('remote-ai');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'CLICK_CELL',
+            payload: { cellId: 2 },
+        });
+    });
+
+    it('远程 AI 超时时应回退到本地策略', async () => {
+        registerRemoteAiProvider({
+            id: 'test-timeout',
+            decide: async () => new Promise(() => undefined),
+        });
+
+        const state = createAiTestState({
+            cells: ['1', '1', null, null, '0', null, null, null, null],
+            currentPlayer: '0',
+            playerIds: ['0', '1'],
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:tictactoe-remote-timeout',
+            seatControllers: {
+                '0': { type: 'remote-ai', providerId: 'test-timeout', fallbackPolicyId: 'baseline', timeoutMs: 10 },
+            },
+        });
+
+        expect(resolution?.source).toBe('remote-ai-fallback');
+        expect(resolution?.action.commands[0]).toMatchObject({
+            type: 'CLICK_CELL',
+            payload: { cellId: 2 },
+        });
+    });
+});

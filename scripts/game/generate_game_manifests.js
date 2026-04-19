@@ -114,20 +114,28 @@ const collectGameEntries = async () => {
         const gamePath = path.join(dirPath, 'game.ts');
         const boardPath = path.join(dirPath, 'Board.tsx');
         const tutorialPath = path.join(dirPath, 'tutorial.ts');
+        const criticalImageResolverPath = path.join(dirPath, 'criticalImageResolver.ts');
         const thumbnailPath = path.join(dirPath, 'thumbnail.tsx');
         const latencyConfigPath = path.join(dirPath, 'latencyConfig.ts');
 
         const hasGame = await fileExists(gamePath);
         const hasBoard = await fileExists(boardPath);
         const hasTutorial = await fileExists(tutorialPath);
+        const hasCriticalImageResolver = await fileExists(criticalImageResolverPath);
         const hasThumbnail = await fileExists(thumbnailPath);
         const hasLatencyConfig = await fileExists(latencyConfigPath);
 
         let latencyConfigExportName = null;
+        let criticalImageResolverExportName = null;
         if (hasLatencyConfig) {
             const content = await fs.readFile(latencyConfigPath, 'utf8');
             const match = content.match(/export\s+const\s+(\w+LatencyConfig)\b/);
             latencyConfigExportName = match ? match[1] : null;
+        }
+        if (hasCriticalImageResolver) {
+            const content = await fs.readFile(criticalImageResolverPath, 'utf8');
+            const match = content.match(/export\s+(?:const|function)\s+(\w+CriticalImageResolver)\b/);
+            criticalImageResolverExportName = match ? match[1] : null;
         }
 
         if (meta.type === 'game' && (!hasGame || !hasBoard)) {
@@ -144,6 +152,10 @@ const collectGameEntries = async () => {
             gameImport: hasGame ? toImportPath(path.relative(gamesRoot, gamePath)) : null,
             boardImport: hasBoard ? toImportPath(path.relative(gamesRoot, boardPath)) : null,
             tutorialImport: hasTutorial ? toImportPath(path.relative(gamesRoot, tutorialPath)) : null,
+            criticalImageResolverImport: hasCriticalImageResolver
+                ? toImportPath(path.relative(gamesRoot, criticalImageResolverPath))
+                : null,
+            criticalImageResolverExportName,
             thumbnailImport: hasThumbnail ? toImportPath(path.relative(gamesRoot, thumbnailPath)) : null,
             latencyConfigImport: hasLatencyConfig && latencyConfigExportName ? toImportPath(path.relative(gamesRoot, latencyConfigPath)) : null,
             latencyConfigExportName,
@@ -196,12 +208,9 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
     entries.forEach((entry, index) => {
         if (entry.gameImport && entry.boardImport) {
             lines.push(`const loadRuntime${index} = async (): Promise<GameClientRuntimeModule> => {`);
-            lines.push(`    const [gameModule, boardModule${entry.tutorialImport ? ', tutorialModule' : ''}${entry.latencyConfigImport ? ', latencyModule' : ''}] = await Promise.all([`);
+            lines.push(`    const [gameModule, boardModule${entry.latencyConfigImport ? ', latencyModule' : ''}] = await Promise.all([`);
             lines.push(`        import('${entry.gameImport}'),`);
             lines.push(`        import('${entry.boardImport}'),`);
-            if (entry.tutorialImport) {
-                lines.push(`        import('${entry.tutorialImport}'),`);
-            }
             if (entry.latencyConfigImport) {
                 lines.push(`        import('${entry.latencyConfigImport}'),`);
             }
@@ -209,13 +218,28 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
             lines.push(`    return {`);
             lines.push(`        engineConfig: gameModule.engineConfig,`);
             lines.push(`        board: boardModule.default,`);
-            if (entry.tutorialImport) {
-                lines.push(`        tutorial: tutorialModule.default,`);
-            }
             if (entry.latencyConfigImport) {
                 lines.push(`        latencyConfig: latencyModule.${entry.latencyConfigExportName},`);
             }
             lines.push(`    };`);
+            lines.push(`};`);
+            lines.push('');
+        }
+        if (entry.tutorialImport) {
+            lines.push(`const loadTutorial${index} = async () => {`);
+            lines.push(`    const tutorialModule = await import('${entry.tutorialImport}');`);
+            lines.push(`    return tutorialModule.default;`);
+            lines.push(`};`);
+            lines.push('');
+        }
+        if (entry.criticalImageResolverImport) {
+            lines.push(`const loadCriticalImageResolver${index} = async () => {`);
+            lines.push(`    const resolverModule = await import('${entry.criticalImageResolverImport}');`);
+            if (entry.criticalImageResolverExportName) {
+                lines.push(`    return resolverModule.default ?? resolverModule.${entry.criticalImageResolverExportName};`);
+            } else {
+                lines.push(`    return resolverModule.default;`);
+            }
             lines.push(`};`);
             lines.push('');
         }
@@ -231,6 +255,12 @@ const buildClientManifestFile = ({ entries, outputPath }) => {
         }
         if (entry.gameImport && entry.boardImport) {
             lines.push(`    loadRuntime: loadRuntime${index},`);
+        }
+        if (entry.tutorialImport) {
+            lines.push(`    loadTutorial: loadTutorial${index},`);
+        }
+        if (entry.criticalImageResolverImport) {
+            lines.push(`    loadCriticalImageResolver: loadCriticalImageResolver${index},`);
         }
         lines.push('};');
         lines.push('');
@@ -296,12 +326,14 @@ const buildAndroidOrientationMapFile = ({ entries, outputPath }) => {
 
 const run = async () => {
     const entries = await collectGameEntries();
+    const clientEntries = entries;
     const serverEntries = entries.filter((entry) => entry.type === 'game' && entry.gameImport);
+    const androidEntries = entries.filter((entry) => entry.type === 'game');
 
-    const dataUpdated = await buildDataManifestFile({ entries, outputPath: outputFiles.data });
-    const clientUpdated = await buildClientManifestFile({ entries, outputPath: outputFiles.client });
+    const dataUpdated = await buildDataManifestFile({ entries: clientEntries, outputPath: outputFiles.data });
+    const clientUpdated = await buildClientManifestFile({ entries: clientEntries, outputPath: outputFiles.client });
     const serverUpdated = await buildServerManifestFile({ entries: serverEntries, outputPath: outputFiles.server });
-    const androidOrientationMapUpdated = await buildAndroidOrientationMapFile({ entries, outputPath: outputFiles.androidOrientationMap });
+    const androidOrientationMapUpdated = await buildAndroidOrientationMapFile({ entries: androidEntries, outputPath: outputFiles.androidOrientationMap });
 
     console.log('[Manifest] Generated manifests:');
     console.log(`- ${path.relative(process.cwd(), outputFiles.data)} ${dataUpdated ? '(updated)' : '(unchanged)'}`);

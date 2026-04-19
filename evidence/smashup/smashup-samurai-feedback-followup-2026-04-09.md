@@ -39,7 +39,7 @@
 
 ## 验证
 1. `npx eslint src/games/smashup/__tests__/newBaseAbilities.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts`
-2. `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newBaseAbilities.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts --config temp/vitest-smashup-node.config.ts --configLoader native`
+2. `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newBaseAbilities.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts --config temp/smashup/vitest-smashup-node.config.ts --configLoader native`
 
 ## 验证结果
 - ESLint：0 errors（存在历史 warnings，无新增 errors）

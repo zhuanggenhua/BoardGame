@@ -1,0 +1,44 @@
+scene:
+  名称: 首页 V2 内容层
+  说明: 书本内容区、页签和详情区的作者配置
+
+nodes:
+  root:
+    名称: 内容根节点
+    说明: 承载整张书页内容层
+  overview_left_page:
+    名称: 左页概览区
+    说明: 大厅页签下显示游戏目录
+  detail_left_page:
+    名称: 左页详情区
+    说明: 详情态左页内容
+  detail_right_page:
+    名称: 右页详情区
+    说明: 详情态右页内容
+  tab_button_lobby:
+    名称: 大厅页签按钮
+    说明: 切换到大厅页签
+  tab_button_rooms:
+    名称: 房间页签按钮
+    说明: 切换到房间页签
+  tab_button_leaderboard:
+    名称: 排行榜页签按钮
+    说明: 切换到排行榜页签
+  tab_button_changelog:
+    名称: 更新日志页签按钮
+    说明: 切换到更新日志页签
+  tab_button_about:
+    名称: 关于页签按钮
+    说明: 切换到关于页签
+
+actions:
+  openLobbyTab: 切换到大厅
+  openRoomsTab: 切换到房间
+  openLeaderboardTab: 切换到排行榜
+  openChangelogTab: 切换到更新日志
+  openAboutTab: 切换到关于
+
+slots:
+  overview_left_page: 左页概览插槽
+  detail_left_page: 左页详情插槽
+  detail_right_page: 右页详情插槽

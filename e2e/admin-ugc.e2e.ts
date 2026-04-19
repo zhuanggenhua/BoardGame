@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from './framework/evidenceScreenshots';
 
 type StoredUser = {
     id: string;
@@ -16,6 +17,7 @@ const HTML_NAVIGATION_HEADERS = {
 };
 const setStoredAuth = async (page: Page, user: StoredUser) => {
     await page.addInitScript((storedUser) => {
+        localStorage.setItem('bg_locale_preference', 'zh-CN');
         localStorage.setItem('i18nextLng', 'zh-CN');
         localStorage.setItem('auth_token', 'fake_admin_token');
         localStorage.setItem('auth_user', JSON.stringify(storedUser));
@@ -475,5 +477,126 @@ test.describe('后台管理 E2E', () => {
             path: 'test-results/evidence-screenshots/admin-rooms-status-duration.png',
             fullPage: true,
         });
+    });
+
+    test('系统健康页可配置后台测试延迟', async ({ page }, testInfo) => {
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await setStoredAuth(page, {
+            id: 'admin_1',
+            username: 'Admin',
+            role: 'admin',
+            banned: false,
+        });
+
+        let latencyState = {
+            available: true,
+            enabled: false,
+            delayMs: 0,
+            maxDelayMs: 5000,
+            scope: 'admin-api' as const,
+        };
+
+        await page.route('**/auth/me', async (route) => {
+            await route.fulfill({
+                status: 200,
+                json: {
+                    user: {
+                        id: 'admin_1',
+                        username: 'Admin',
+                        role: 'admin',
+                        banned: false,
+                    },
+                },
+            });
+        });
+
+        await page.route('**/admin/**', async (route) => {
+            const request = route.request();
+            if (request.resourceType() === 'document') {
+                return route.continue();
+            }
+
+            const url = new URL(request.url());
+            const pathname = url.pathname;
+            if (!pathname.startsWith('/admin/')) {
+                return route.fallback();
+            }
+
+            if (pathname === '/admin/test-latency' && request.method() === 'GET') {
+                return route.fulfill({ status: 200, json: latencyState });
+            }
+
+            if (pathname === '/admin/test-latency' && request.method() === 'PATCH') {
+                const body = request.postDataJSON() as { enabled?: boolean; delayMs?: number };
+                const normalizedDelay = Math.max(0, Math.min(5000, Math.round(Number(body.delayMs ?? 0))));
+                latencyState = {
+                    ...latencyState,
+                    enabled: body.enabled === true && normalizedDelay > 0,
+                    delayMs: body.enabled === true ? normalizedDelay : 0,
+                };
+                return route.fulfill({ status: 200, json: latencyState });
+            }
+
+            if (latencyState.enabled && latencyState.delayMs > 0) {
+                await new Promise((resolve) => setTimeout(resolve, latencyState.delayMs));
+            }
+
+            if (pathname === '/admin/stats') {
+                return route.fulfill({
+                    status: 200,
+                    json: {
+                        totalUsers: 12,
+                        totalMatches: 34,
+                        todayMatches: 5,
+                        bannedUsers: 1,
+                    },
+                });
+            }
+
+            if (pathname === '/admin/rooms') {
+                return route.fulfill({
+                    status: 200,
+                    json: {
+                        items: [],
+                        page: 1,
+                        limit: 1,
+                        total: 0,
+                    },
+                });
+            }
+
+            return route.fulfill({ status: 404, json: { error: 'unknown admin route' } });
+        });
+
+        await gotoFrontendRoute(page, '/admin/health');
+        await expect(page.getByRole('heading', { name: '系统健康监控' })).toBeVisible({ timeout: ADMIN_PAGE_READY_TIMEOUT_MS });
+        await expect(page.getByText('后台测试延迟')).toBeVisible();
+        await expect(page.getByText('未启用')).toBeVisible();
+
+        const delayInput = page.getByLabel('延迟毫秒数');
+        await delayInput.fill('750');
+
+        await Promise.all([
+            page.waitForResponse((response) => response.url().includes('/admin/test-latency') && response.request().method() === 'PATCH'),
+            page.getByRole('button', { name: '启用延迟' }).click(),
+        ]);
+
+        await expect(page.getByText('已启用 750ms 后台延迟')).toBeVisible();
+        await expect(page.getByText('当前生效延迟')).toBeVisible();
+        await expect(page.getByText('750 ms')).toBeVisible();
+        await expect(page.getByText('已启用', { exact: true })).toBeVisible();
+
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'admin-health-latency-enabled'),
+            fullPage: true,
+        });
+
+        await Promise.all([
+            page.waitForResponse((response) => response.url().includes('/admin/test-latency') && response.request().method() === 'PATCH'),
+            page.getByRole('button', { name: '关闭延迟' }).click(),
+        ]);
+
+        await expect(page.getByText('已关闭后台延迟')).toBeVisible();
+        await expect(page.getByText('0 ms')).toBeVisible();
     });
 });

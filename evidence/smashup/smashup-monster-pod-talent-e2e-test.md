@@ -38,7 +38,7 @@ npx vitest run src/games/smashup/__tests__/ui-interaction-manual.test.ts src/gam
 尝试执行：
 
 ```bash
-npm run test:e2e:ci -- e2e/smashup-4p-layout-test.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-4p-layout-test.e2e.ts
 ```
 
 阻塞原因不是本次修复，而是测试环境在应用初始化阶段就失败，导致 `__BG_TEST_HARNESS__` 无法注册。

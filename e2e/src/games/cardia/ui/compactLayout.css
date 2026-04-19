@@ -1,0 +1,150 @@
+.cardia-board-shell {
+    --cardia-card-width: 106px;
+    --cardia-card-height: 160px;
+    --cardia-discard-card-width: 100px;
+    --cardia-discard-card-height: 151px;
+    --cardia-discard-offset-step: 36px;
+}
+
+@media (max-height: 700px) {
+    .cardia-board-shell {
+        --cardia-card-width: 94px;
+        --cardia-card-height: 142px;
+        --cardia-discard-card-width: 88px;
+        --cardia-discard-card-height: 133px;
+        --cardia-discard-offset-step: 30px;
+    }
+
+    .cardia-board-shell.cardia-main-stack,
+    .cardia-board-shell .cardia-main-stack {
+        padding: 0.75rem;
+        gap: 0.75rem;
+    }
+
+    .cardia-board-shell .cardia-top-row,
+    .cardia-board-shell .cardia-bottom-row,
+    .cardia-board-shell .cardia-player-header,
+    .cardia-board-shell .cardia-player-meta,
+    .cardia-board-shell .cardia-info-row,
+    .cardia-board-shell .cardia-info-meta {
+        gap: 0.75rem;
+    }
+
+    .cardia-board-shell .cardia-phase-stack {
+        gap: 0.5rem;
+    }
+
+    .cardia-board-shell .cardia-info-bar,
+    .cardia-board-shell .cardia-player-area,
+    .cardia-board-shell .cardia-phase-box {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .cardia-board-shell .cardia-battlefield {
+        padding: 0.5rem;
+    }
+
+    .cardia-board-shell .cardia-encounter-sequence {
+        gap: 0.75rem;
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+
+    .cardia-board-shell .cardia-encounter-pair {
+        gap: 0.375rem;
+    }
+
+    .cardia-board-shell .cardia-phase-value {
+        font-size: 1rem;
+        line-height: 1.5rem;
+    }
+}
+
+@media (max-height: 640px) {
+    .cardia-board-shell {
+        --cardia-card-width: 84px;
+        --cardia-card-height: 127px;
+        --cardia-discard-card-width: 78px;
+        --cardia-discard-card-height: 118px;
+        --cardia-discard-offset-step: 24px;
+    }
+
+    .cardia-board-shell.cardia-main-stack,
+    .cardia-board-shell .cardia-main-stack {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+
+    .cardia-board-shell .cardia-top-row,
+    .cardia-board-shell .cardia-bottom-row,
+    .cardia-board-shell .cardia-player-header,
+    .cardia-board-shell .cardia-player-meta,
+    .cardia-board-shell .cardia-info-row,
+    .cardia-board-shell .cardia-info-meta {
+        gap: 0.5rem;
+    }
+
+    .cardia-board-shell .cardia-info-bar,
+    .cardia-board-shell .cardia-player-area,
+    .cardia-board-shell .cardia-phase-box {
+        padding-top: 0.375rem;
+        padding-bottom: 0.375rem;
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    .cardia-board-shell .cardia-phase-stack {
+        gap: 0.375rem;
+    }
+
+    .cardia-board-shell .cardia-phase-value {
+        font-size: 0.875rem;
+        line-height: 1.25rem;
+    }
+
+    .cardia-board-shell .cardia-battlefield {
+        padding-top: 0.25rem;
+        padding-bottom: 0.25rem;
+    }
+
+    .cardia-board-shell .cardia-encounter-sequence {
+        gap: 0.5rem;
+        padding-top: 0;
+        padding-bottom: 0;
+    }
+
+    .cardia-board-shell .cardia-encounter-pair {
+        gap: 0.25rem;
+    }
+
+    .cardia-board-shell .cardia-card-badge,
+    .cardia-board-shell .cardia-magnify-button {
+        width: 1.75rem;
+        height: 1.75rem;
+    }
+
+    .cardia-board-shell .cardia-card-badge-text {
+        font-size: 0.75rem;
+        line-height: 1rem;
+    }
+
+    .cardia-board-shell .cardia-magnify-icon {
+        width: 0.875rem;
+        height: 0.875rem;
+    }
+
+    .cardia-board-shell .cardia-modifier-badge,
+    .cardia-board-shell .cardia-ongoing-badge--offset {
+        top: 2rem;
+    }
+
+    .cardia-board-shell .cardia-ongoing-badge--stacked {
+        top: 3.375rem;
+    }
+
+    .cardia-board-shell .cardia-signet-dot {
+        width: 0.75rem;
+        height: 0.75rem;
+    }
+}

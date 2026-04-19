@@ -463,7 +463,7 @@ test('Alien Probe 展示对手手牌', async ({ browser }) => {
 ```
 
 **参考文件**: 
-- `e2e/smashup-helpers.ts` - 双人对局设置
+- `e2e/smashup/smashup-helpers.ts` - 双人对局设置
 - `src/games/smashup/tutorial.ts` - CHEAT_COMMANDS 使用示例
 
 ---

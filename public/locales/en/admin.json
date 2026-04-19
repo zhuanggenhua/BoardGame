@@ -9,6 +9,8 @@
       "status": "Status",
       "type": "Type",
       "severity": "Severity",
+      "reporterType": "Reporter",
+      "source": "System source",
       "sort": "Sort",
       "newest": "Newest first",
       "oldest": "Oldest first",
@@ -29,6 +31,17 @@
       "suggestion": "Suggestion",
       "other": "Other"
     },
+    "reporterType": {
+      "user": "User",
+      "system": "System"
+    },
+    "source": {
+      "feedbackModal": "Feedback modal",
+      "onlineAiWatchdog": "Online AI watchdog",
+      "globalErrorCapture": "Global error capture",
+      "unsatAutoSkip": "System auto-skip (unsatisfiable interaction)",
+      "unknown": "Unknown"
+    },
     "severity": {
       "critical": "Critical",
       "high": "High",
@@ -43,6 +56,7 @@
       "severity": "Severity",
       "status": "Status",
       "submitter": "Submitted by",
+      "origin": "Origin",
       "time": "Time",
       "selectItem": "Select feedback {{id}}",
       "id": "ID: {{id}}"
@@ -79,6 +93,11 @@
       "emptyDescription": "Use the dense list on the left for scanning and the right panel for full content, logs, and snapshots.",
       "game": "Game",
       "contact": "Contact",
+      "origin": "Origin",
+      "reporterType": "Reporter",
+      "source": "System source",
+      "autoReportKind": "Auto report kind",
+      "incidentKey": "Incident key",
       "expand": "Expand",
       "collapse": "Collapse"
     },

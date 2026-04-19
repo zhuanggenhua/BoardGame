@@ -151,5 +151,5 @@ node scripts/infra/port-allocator.js 0
 ## 下一步
 
 - 阅读完整的 [E2E 测试指南](./e2e-testing-guide.md)
-- 查看 [示例测试](../e2e/example-parallel.e2e.ts)
+- 查看 [示例测试](../e2e/_shared/example-parallel.e2e.ts)
 - 了解 [端口分配器](../scripts/infra/port-allocator.js) 的实现

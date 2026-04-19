@@ -39,7 +39,7 @@
 
 ```bash
 npm run typecheck
-npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "Home v2 草稿在移动横屏下显示全屏背景与逐帧书本壳"
+npm run test:e2e:ci:file -- e2e/_shared/lobby.e2e.ts "Home v2 草稿在移动横屏下显示全屏背景与逐帧书本壳"
 ```
 
 ## 截图证据

@@ -8,7 +8,7 @@
 
 1. **页面卡在加载状态**：导航到测试模式后，页面一直显示"加载 UNDEFINED..."，无法进入游戏
 2. **状态注入失败**：使用 `TestHarness.state.patch()` 注入状态后，页面重新加载或状态被重置
-3. **参考测试也失败**：`e2e/smashup-innsmouth-locals-reveal-simple.e2e.ts` 使用相同的测试模式，也无法通过
+3. **参考测试也失败**：`e2e/smashup/smashup-innsmouth-locals-reveal-simple.e2e.ts` 使用相同的测试模式，也无法通过
 
 ## 根本原因
 
@@ -55,11 +55,11 @@ await page.evaluate(() => {
 已更新 `AGENTS.md` 文档（第 780-820 行），明确：
 1. **禁止使用测试模式**：`/play/<gameId>/test?skipFactionSelect=true` 已过时
 2. **强制使用 GameTestContext API**：所有新测试必须使用 `GameTestContext`
-3. **参考示例**：`e2e/smashup-ninja-acolyte-extra-minion.e2e.ts`
+3. **参考示例**：`e2e/smashup/smashup-ninja-acolyte-extra-minion.e2e.ts`
 
 ## 下一步工作
 
-1. 使用 GameTestContext API 重写 `e2e/smashup-ninja-infiltrate.e2e.ts`
+1. 使用 GameTestContext API 重写 `e2e/smashup/smashup-ninja-infiltrate.e2e.ts`
 2. 运行测试验证功能正确性
 3. 创建证据文档（包含截图和测试结果）
 

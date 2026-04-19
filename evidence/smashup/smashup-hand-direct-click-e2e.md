@@ -12,14 +12,14 @@
 
 ```bash
 npm run test:e2e:cleanup
-npm run test:e2e:ci -- e2e/smashup-zombie-lord.e2e.ts
+npm run test:e2e:ci -- e2e/smashup/smashup-zombie-lord.e2e.ts
 npx tsc --noEmit
 npx vitest run src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts --config vitest.config.audit.ts --pool threads --maxWorkers 1
 ```
 
 ## 结果
 
-- `e2e/smashup-zombie-lord.e2e.ts`：3/3 通过（含 `ninja_acolyte_play` 手牌直点回归）
+- `e2e/smashup/smashup-zombie-lord.e2e.ts`：3/3 通过（含 `ninja_acolyte_play` 手牌直点回归）
 - `npx tsc --noEmit`：通过
 - `interactionTargetTypeAudit.test.ts`：3/3 通过
 
@@ -27,7 +27,7 @@ npx vitest run src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts --
 
 ### 1. 进入手牌直点模式
 
-![进入手牌直点模式](../e2e/test-results/evidence-screenshots/smashup-hand-direct-click/01-hand-direct-prompt.png)
+![进入手牌直点模式](../e2e/test-results/evidence-screenshots/smashup/smashup-hand-direct-click/01-hand-direct-prompt.png)
 
 分析：
 
@@ -37,7 +37,7 @@ npx vitest run src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts --
 
 ### 2. 点击手牌后完成额外随从打出
 
-![点击手牌后完成打出](../e2e/test-results/evidence-screenshots/smashup-hand-direct-click/02-hand-direct-after.png)
+![点击手牌后完成打出](../e2e/test-results/evidence-screenshots/smashup/smashup-hand-direct-click/02-hand-direct-after.png)
 
 分析：
 

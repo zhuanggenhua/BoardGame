@@ -77,9 +77,9 @@ node scripts/audio/generate_ai_audio_registry.js
 
 **DiceThrone 专用精简版（仅扫描该游戏源码）**
 ```bash
-node scripts/audio/generate_ai_audio_registry_dicethrone.js
+node scripts/games/dicethrone/audio/generate_ai_audio_registry_dicethrone.js
 ```
-- 产出：`docs/audio/registry.ai.dicethrone.json`
+- 产出：`docs/games/dicethrone/audio/registry.ai.dicethrone.json`
 - 内容：仅包含 `src/games/dicethrone` 中实际使用的 key
 
 ### 2.5 AI 查找/筛选音效（推荐流程）
@@ -105,7 +105,7 @@ node scripts/audio/generate_audio_catalog.js
 
 **备选方法（精简 registry）：**
 - `docs/audio/registry.ai.json`（全量精简，仅保留 key/type/category）
-- `docs/audio/registry.ai.dicethrone.json`（DiceThrone 专用，最小）
+- `docs/games/dicethrone/audio/registry.ai.dicethrone.json`（DiceThrone 专用，最小）
 
 **AI 查询示例（grep_search）：**
 ```json

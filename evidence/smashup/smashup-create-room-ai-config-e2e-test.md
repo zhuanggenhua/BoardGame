@@ -3,14 +3,14 @@
 ## 测试命令
 
 ```bash
-npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "Smash Up 创建房间弹窗可直接配置 AI 人数和模组，并为游客保存偏好"
+npm run test:e2e:ci:file -- e2e/_shared/lobby.e2e.ts "Smash Up 创建房间弹窗可直接配置 AI 人数和模组，并为游客保存偏好"
 ```
 
 结果：通过
 
 ## 截图 1：创建房间弹窗内直接配置 AI
 
-![Smash Up 创建房间 AI 配置弹窗](../test-results/evidence-screenshots/lobby.e2e/Smash-Up-%E5%88%9B%E5%BB%BA%E6%88%BF%E9%97%B4%E5%BC%B9%E7%AA%97%E5%8F%AF%E7%9B%B4%E6%8E%A5%E9%85%8D%E7%BD%AE-AI-%E4%BA%BA%E6%95%B0%E5%92%8C%E6%A8%A1%E7%BB%84%EF%BC%8C%E5%B9%B6%E4%B8%BA%E6%B8%B8%E5%AE%A2%E4%BF%9D%E5%AD%98%E5%81%8F%E5%A5%BD/lobby-smashup-create-room-ai-config-modal.png)
+![Smash Up 创建房间 AI 配置弹窗](../test-results/evidence-screenshots/_shared/lobby.e2e/Smash-Up-%E5%88%9B%E5%BB%BA%E6%88%BF%E9%97%B4%E5%BC%B9%E7%AA%97%E5%8F%AF%E7%9B%B4%E6%8E%A5%E9%85%8D%E7%BD%AE-AI-%E4%BA%BA%E6%95%B0%E5%92%8C%E6%A8%A1%E7%BB%84%EF%BC%8C%E5%B9%B6%E4%B8%BA%E6%B8%B8%E5%AE%A2%E4%BF%9D%E5%AD%98%E5%81%8F%E5%A5%BD/lobby-smashup-create-room-ai-config-modal.png)
 
 观察结论：
 
@@ -23,7 +23,7 @@ npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "Smash Up 创建房间弹窗可直�
 
 ## 截图 2：创建房间后进入联机房间
 
-![Smash Up 创建房间 AI 配置结果](../test-results/evidence-screenshots/lobby.e2e/Smash-Up-%E5%88%9B%E5%BB%BA%E6%88%BF%E9%97%B4%E5%BC%B9%E7%AA%97%E5%8F%AF%E7%9B%B4%E6%8E%A5%E9%85%8D%E7%BD%AE-AI-%E4%BA%BA%E6%95%B0%E5%92%8C%E6%A8%A1%E7%BB%84%EF%BC%8C%E5%B9%B6%E4%B8%BA%E6%B8%B8%E5%AE%A2%E4%BF%9D%E5%AD%98%E5%81%8F%E5%A5%BD/lobby-smashup-create-room-ai-config-result.png)
+![Smash Up 创建房间 AI 配置结果](../test-results/evidence-screenshots/_shared/lobby.e2e/Smash-Up-%E5%88%9B%E5%BB%BA%E6%88%BF%E9%97%B4%E5%BC%B9%E7%AA%97%E5%8F%AF%E7%9B%B4%E6%8E%A5%E9%85%8D%E7%BD%AE-AI-%E4%BA%BA%E6%95%B0%E5%92%8C%E6%A8%A1%E7%BB%84%EF%BC%8C%E5%B9%B6%E4%B8%BA%E6%B8%B8%E5%AE%A2%E4%BF%9D%E5%AD%98%E5%81%8F%E5%A5%BD/lobby-smashup-create-room-ai-config-result.png)
 
 观察结论：
 

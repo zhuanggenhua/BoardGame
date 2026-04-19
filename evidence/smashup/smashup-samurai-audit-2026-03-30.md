@@ -10,7 +10,7 @@
 - 相关回归：
   - `src/games/smashup/__tests__/newFactionAbilities.test.ts`
   - `src/games/smashup/__tests__/newBaseAbilities.test.ts`
-  - `e2e/smashup-phase-transition-simple.e2e.ts`
+  - `e2e/smashup/smashup-phase-transition-simple.e2e.ts`
 
 ## 规则依据
 - `https://smashup.fandom.com/wiki/Samurai`
@@ -82,15 +82,15 @@
   - `base_shoguns_palace 在本回合首次打出随从到这里后给出决斗提示并让胜者抓两张`
   - `base_shoguns_palace 平局时双方各抓两张牌`
 - 浏览器链路：
-  - `e2e/smashup-phase-transition-simple.e2e.ts`
+  - `e2e/smashup/smashup-phase-transition-simple.e2e.ts`
   - `Oops Samurai 额外出牌效果应在浏览器中兑现额外随从与行动额度`
 
 ## 本轮验证
 - 领域回归：
-  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/newBaseAbilities.test.ts --config temp/vitest-smashup-node.config.ts --configLoader native`
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/newBaseAbilities.test.ts --config temp/smashup/vitest-smashup-node.config.ts --configLoader native`
   - 结果：`2 passed`，`138 passed, 1 skipped`
 - 浏览器 E2E：
-  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup-phase-transition-simple.e2e.ts "Oops Samurai 额外出牌效果应在浏览器中兑现额外随从与行动额度"`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-phase-transition-simple.e2e.ts "Oops Samurai 额外出牌效果应在浏览器中兑现额外随从与行动额度"`
   - 结果：`1 passed`
 
 ## 审计收口结论

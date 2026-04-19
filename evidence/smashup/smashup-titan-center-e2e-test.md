@@ -7,7 +7,7 @@
 ## 验证命令
 
 ```bash
-npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "泰坦与持续行动布局在二人局和四人局下都应稳定"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-alien-terraform.e2e.ts "泰坦与持续行动布局在二人局和四人局下都应稳定"
 ```
 
 ## 截图证据
@@ -15,7 +15,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "泰坦与持续�
 ### 1. 二人局：5 张持续行动 + 1 张泰坦
 
 截图：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\01-2p-five-ongoings-with-titan.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\01-2p-five-ongoings-with-titan.png`
 
 人工观察：
 - 泰坦卡位于左侧基地正上方，左右边距接近对称，没有再向整行布局中心偏移。
@@ -25,7 +25,7 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "泰坦与持续�
 ### 2. 四人局：5 个基地 + 1 张泰坦
 
 截图：
-`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\03-4p-five-bases-with-titan.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-alien-terraform.e2e\泰坦与持续行动布局在二人局和四人局下都应稳定\03-4p-five-bases-with-titan.png`
 
 人工观察：
 - 左一基地上方的泰坦仍然对准该基地本体，没有被四人局整排槽位的总宽度拖向右侧。
@@ -34,4 +34,4 @@ npm run test:e2e:ci:file -- e2e/smashup-alien-terraform.e2e.ts "泰坦与持续�
 
 ## 自动断言
 
-在 `e2e/smashup-alien-terraform.e2e.ts` 中新增 `expectTitanCenteredOnBase`，直接比较基地容器与泰坦实际卡面容器的水平中心点，当前容差为 `6px`。该断言已覆盖二人局与四人局各一组真实场景。
+在 `e2e/smashup/smashup-alien-terraform.e2e.ts` 中新增 `expectTitanCenteredOnBase`，直接比较基地容器与泰坦实际卡面容器的水平中心点，当前容差为 `6px`。该断言已覆盖二人局与四人局各一组真实场景。

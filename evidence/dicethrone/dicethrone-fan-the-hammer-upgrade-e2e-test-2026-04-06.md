@@ -13,13 +13,13 @@
 
 ```powershell
 node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/cross-hero.test.ts --configLoader native --maxWorkers 1 -t "upgrade-fan-the-hammer-2 升级后，实际选择左轮速射应造成 8 点伤害"
-node scripts/infra/run-e2e-single.mjs ci e2e/temp-dicethrone-ability-atlas-regression.e2e.ts "gunslinger fan-the-hammer upgraded slot should still deal 8 damage when selected in UI"
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/temp-dicethrone-ability-atlas-regression.e2e.ts "gunslinger fan-the-hammer upgraded slot should still deal 8 damage when selected in UI"
 ```
 
 ## 截图
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\temp-dicethrone-ability-atlas-regression.e2e\gunslinger-fan-the-hammer-upgraded-slot-should-still-deal-8-damage-when-selected-in-UI\gunslinger-fan-the-hammer-upgraded-slot-before-select.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\temp-dicethrone-ability-atlas-regression.e2e\gunslinger-fan-the-hammer-upgraded-slot-should-still-deal-8-damage-when-selected-in-UI\gunslinger-fan-the-hammer-upgraded-slot-after-select.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\temp-dicethrone-ability-atlas-regression.e2e\gunslinger-fan-the-hammer-upgraded-slot-should-still-deal-8-damage-when-selected-in-UI\gunslinger-fan-the-hammer-upgraded-slot-before-select.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\temp-dicethrone-ability-atlas-regression.e2e\gunslinger-fan-the-hammer-upgraded-slot-should-still-deal-8-damage-when-selected-in-UI\gunslinger-fan-the-hammer-upgraded-slot-after-select.png`
 
 ## 看图结论
 

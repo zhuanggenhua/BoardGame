@@ -418,7 +418,8 @@ function buildArtifactBundle(state: WorkflowState, now: string): ArtifactBundleO
     const sourceId = state.selectedRuleSource ?? 'wiki';
     const opt = getRuleSourceOption(sourceId);
     const e2eEnabled = state.enabledNodeIds.includes('run-e2e-validation');
-    const screenshotBasePath = 'D:\\gongzuo\\webgame\\BoardGame-wt-ai-repo-workbench\\evidence\\assets\\ai-repo-workbench-e2e';
+    const screenshotBasePath =
+        'D:\\gongzuo\\webgame\\BoardGame-wt-ai-repo-workbench\\evidence\\_shared\\assets\\ai-repo-workbench-e2e';
     const screenshotRoute = '/devtools/ai-repo-workbench/assets/e2e';
 
     return {

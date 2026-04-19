@@ -20,6 +20,12 @@ export class CreateNotificationDto {
     pinned?: boolean;
 }
 
+export class UpdateNotificationReadStateDto {
+    @IsOptional()
+    @IsDateString()
+    seenAt?: string;
+}
+
 export class UpdateNotificationDto {
     @IsOptional()
     @IsString()

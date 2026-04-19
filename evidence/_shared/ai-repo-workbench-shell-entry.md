@@ -132,11 +132,11 @@ Playwright 实测摘要：
 
 截图路径：
 
-- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\ai-repo-workbench-conversation-shell.png`
-- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\ai-repo-workbench-conversation-started.png`
-- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\ai-repo-workbench-e2e-waiting-decision.png`
-- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\ai-repo-workbench-e2e-artifact.png`
-- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\flowise-ai-repo-workbench\ai-repo-workbench-e2e-cleared.png`
+- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\_shared\flowise-ai-repo-workbench\ai-repo-workbench-conversation-shell.png`
+- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\_shared\flowise-ai-repo-workbench\ai-repo-workbench-conversation-started.png`
+- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\_shared\flowise-ai-repo-workbench\ai-repo-workbench-e2e-waiting-decision.png`
+- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\_shared\flowise-ai-repo-workbench\ai-repo-workbench-e2e-artifact.png`
+- `D:\gongzuo\webgame\BoardGame-wt-ai-repo-workbench\test-results\evidence-screenshots\_shared\flowise-ai-repo-workbench\ai-repo-workbench-e2e-cleared.png`
 
 人工观察：
 

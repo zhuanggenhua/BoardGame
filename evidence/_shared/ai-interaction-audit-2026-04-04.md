@@ -141,10 +141,10 @@
 - 旧结论：`未修复`
 - 新结论：`已修复`
 - 回归：
-  - `e2e/smashup-phase-transition-simple.e2e.ts:1589`
+  - `e2e/smashup/smashup-phase-transition-simple.e2e.ts:1589`
 - 证据截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\在线-AI-持有隐藏交互时应自动-batch-响应并推进状态\在线-AI-持有隐藏交互时应自动-batch-响应并推进状态-online-ai-hidden-choice-before-resolve.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\在线-AI-持有隐藏交互时应自动-batch-响应并推进状态\在线-AI-持有隐藏交互时应自动-batch-响应并推进状态-online-ai-hidden-choice-after-resolve.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\在线-AI-持有隐藏交互时应自动-batch-响应并推进状态\在线-AI-持有隐藏交互时应自动-batch-响应并推进状态-online-ai-hidden-choice-before-resolve.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\在线-AI-持有隐藏交互时应自动-batch-响应并推进状态\在线-AI-持有隐藏交互时应自动-batch-响应并推进状态-online-ai-hidden-choice-after-resolve.png`
 - 人工观察：
   - `before-resolve` 图里左上角明确显示“对手 / 出牌阶段”，基地上仍能看到 AI 的 `影舞者`，但人类视角没有出现“选择要牺牲的随从”提示框，符合“隐藏交互只属于 AI seat”的预期。
   - `after-resolve` 图里同一基地的 AI 随从已经消失，只剩空槽；人类界面仍没有弹出错误提示或遗留交互，说明 AI 已在真实在线房间里自动消费该 hidden interaction。
@@ -171,12 +171,12 @@
 - 旧结论：`未修复`
 - 新结论：`已修复`
 - 回归：
-  - `e2e/dicethrone-simple-start.e2e.ts:1465`
+  - `e2e/dicethrone/dicethrone-simple-start.e2e.ts:1465`
 - 证据文档：
-  - `evidence/dicethrone-online-ai-hidden-multistep-e2e-test.md`
+  - `evidence/dicethrone/dicethrone-online-ai-hidden-multistep-e2e-test.md`
 - 证据截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Online-AI-持有隐藏-multistep-choice-时应-batch-提交多条-MODIFY_DIE-并完成私有结算\13-online-ai-hidden-multistep-before-resolve.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Online-AI-持有隐藏-multistep-choice-时应-batch-提交多条-MODIFY_DIE-并完成私有结算\14-online-ai-hidden-after.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-AI-持有隐藏-multistep-choice-时应-batch-提交多条-MODIFY_DIE-并完成私有结算\13-online-ai-hidden-multistep-before-resolve.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-AI-持有隐藏-multistep-choice-时应-batch-提交多条-MODIFY_DIE-并完成私有结算\14-online-ai-hidden-after.png`
 - 人工观察：
   - `before-resolve` 图里房主视角已经进入 `强掷攻击阶段`，右侧骰列是混合结果，但界面上没有任何属于房主的选择面板或确认层，符合“隐藏交互只属于 AI seat”。
   - `after` 图里房主界面仍没有被弹出交互，但右侧骰列已经整体切换为统一结果，说明 AI 的多条 `MODIFY_DIE` 已通过在线 batch 实际落到权威状态。
@@ -187,12 +187,12 @@
 - 旧结论：`未修复`
 - 新结论：`已修复`
 - 回归：
-  - `e2e/dicethrone-simple-start.e2e.ts:1572`
+  - `e2e/dicethrone/dicethrone-simple-start.e2e.ts:1572`
 - 证据文档：
-  - `evidence/dicethrone-online-ai-batch-retry-e2e-test.md`
+  - `evidence/dicethrone/dicethrone-online-ai-batch-retry-e2e-test.md`
 - 证据截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Online-AI-首轮-batch-被拒后应自动重试并完成隐藏-multistep-choice\15-online-ai-hidden-multistep-rejected-before-retry.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Online-AI-首轮-batch-被拒后应自动重试并完成隐藏-multistep-choice\16-online-ai-hidden-multistep-after-retry.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-AI-首轮-batch-被拒后应自动重试并完成隐藏-multistep-choice\15-online-ai-hidden-multistep-rejected-before-retry.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-AI-首轮-batch-被拒后应自动重试并完成隐藏-multistep-choice\16-online-ai-hidden-multistep-after-retry.png`
 - 人工观察：
   - `before-retry` 图里房主界面仍停在 `4. 强掷攻击阶段`，右侧前两颗骰子还是 `1 / 2`，同时没有弹出任何属于房主的选择层，说明“首轮 batch 被拒”后权威状态没有半提交，隐藏交互仍由 AI seat 持有。
   - `after-retry` 图里界面依旧没有把交互泄漏给房主，但右侧前两颗骰子已经明显不再是重试前的旧结果，说明第二轮 retry 已把改骰动作真正落到了权威状态，而且不是靠人类补点确认。
@@ -203,12 +203,12 @@
 - 旧结论：`未修复`
 - 新结论：`已修复`
 - 回归：
-  - `e2e/dicethrone-simple-start.e2e.ts:1699`
+  - `e2e/dicethrone/dicethrone-simple-start.e2e.ts:1699`
 - 证据文档：
-  - `evidence/dicethrone-online-ai-double-batch-retry-e2e-test.md`
+  - `evidence/dicethrone/dicethrone-online-ai-double-batch-retry-e2e-test.md`
 - 证据截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Online-AI-连续两轮-batch-被拒后仍应自动重试并完成隐藏-multistep-choice\17-online-ai-hidden-multistep-rejected-twice-before-retry.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone-simple-start.e2e\Online-AI-连续两轮-batch-被拒后仍应自动重试并完成隐藏-multistep-choice\18-online-ai-hidden-multistep-after-third-attempt.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-AI-连续两轮-batch-被拒后仍应自动重试并完成隐藏-multistep-choice\17-online-ai-hidden-multistep-rejected-twice-before-retry.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-AI-连续两轮-batch-被拒后仍应自动重试并完成隐藏-multistep-choice\18-online-ai-hidden-multistep-after-third-attempt.png`
 - 人工观察：
   - `before-third-attempt` 图里房主视角仍停在同一阶段，右侧骰列还保持旧结果，没有出现“两轮拒绝后只落下一半”的残留态。
   - `after-third-attempt` 图里房主界面仍没有出现 AI 私有交互 UI，但右侧骰列已明显变化，说明第三次尝试已实际推进权威状态，而不是单纯把阻塞标记清空。
@@ -222,15 +222,15 @@
   - `SmashUp`
   - `MatchRoom` 在线 AI 桥接层
 - 回归：
-  - `e2e/smashup-phase-transition-simple.e2e.ts:1644`
-  - `e2e/smashup-phase-transition-simple.e2e.ts:1751`
+  - `e2e/smashup/smashup-phase-transition-simple.e2e.ts:1644`
+  - `e2e/smashup/smashup-phase-transition-simple.e2e.ts:1751`
 - 证据文档：
   - `evidence/smashup/smashup-online-ai-timeout-recovery-e2e-test.md`
 - 证据截图：
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\在线-AI-的盘旋机器人隐藏交互卡住时，应在-4-秒后自动跳过并恢复对局\在线-AI-的盘旋机器人隐藏交互卡住时，应在-4-秒后自动跳过并恢复对局-online-ai-hoverbot-force-skip-toast.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\在线-AI-的盘旋机器人隐藏交互卡住时，应在-4-秒后自动跳过并恢复对局\在线-AI-的盘旋机器人隐藏交互卡住时，应在-4-秒后自动跳过并恢复对局-online-ai-hoverbot-force-skip-after-resolve.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\在线-AI-连续-8-秒没有任何实际进展时，应自动强制结束当前回合\在线-AI-连续-8-秒没有任何实际进展时，应自动强制结束当前回合-online-ai-force-end-turn-before-timeout.png`
-  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-phase-transition-simple.e2e\在线-AI-连续-8-秒没有任何实际进展时，应自动强制结束当前回合\在线-AI-连续-8-秒没有任何实际进展时，应自动强制结束当前回合-online-ai-force-end-turn-after-resolve.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\在线-AI-的盘旋机器人隐藏交互卡住时，应在-4-秒后自动跳过并恢复对局\在线-AI-的盘旋机器人隐藏交互卡住时，应在-4-秒后自动跳过并恢复对局-online-ai-hoverbot-force-skip-toast.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\在线-AI-的盘旋机器人隐藏交互卡住时，应在-4-秒后自动跳过并恢复对局\在线-AI-的盘旋机器人隐藏交互卡住时，应在-4-秒后自动跳过并恢复对局-online-ai-hoverbot-force-skip-after-resolve.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\在线-AI-连续-8-秒没有任何实际进展时，应自动强制结束当前回合\在线-AI-连续-8-秒没有任何实际进展时，应自动强制结束当前回合-online-ai-force-end-turn-before-timeout.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\在线-AI-连续-8-秒没有任何实际进展时，应自动强制结束当前回合\在线-AI-连续-8-秒没有任何实际进展时，应自动强制结束当前回合-online-ai-force-end-turn-after-resolve.png`
 - 人工观察：
   - `4 秒自动跳过` 的真实房间截图里，房主依然看不到 AI 私有 prompt，但右上角只出现提示性 toast，没有“继续等待 / 强制跳过”按钮残留，说明收口已经从“人点按钮”升级成系统自动提交。
   - `4 秒自动跳过完成后`，基地上的 `盘旋机器人` 保留在场、牌库顶仍是 `robot_zapbot`，说明系统只是跳过当前隐藏可选效果，没有错误结束 AI 整个回合。
@@ -241,10 +241,10 @@
 ### 风险 1
 
 - 旧表述失效：
-  - `SmashUp` 的“AI seat 持有隐藏 simple-choice 后自动 batch 响应并推进状态”现已由 `e2e/smashup-phase-transition-simple.e2e.ts:998` 覆盖。
-  - `DiceThrone` 的“AI seat 持有隐藏 multistep-choice 后 batch 提交多条命令”现已由 `e2e/dicethrone-simple-start.e2e.ts:1465` 覆盖。
-  - `DiceThrone` 的“第一轮 batch 被拒后，AI 自动解锁并在第二轮 retry 成功”现已由 `e2e/dicethrone-simple-start.e2e.ts:1572` 覆盖。
-  - `DiceThrone` 的“连续两轮 batch 被拒后，AI 仍能在第三轮 retry 成功”现已由 `e2e/dicethrone-simple-start.e2e.ts:1699` 覆盖。
+  - `SmashUp` 的“AI seat 持有隐藏 simple-choice 后自动 batch 响应并推进状态”现已由 `e2e/smashup/smashup-phase-transition-simple.e2e.ts:998` 覆盖。
+  - `DiceThrone` 的“AI seat 持有隐藏 multistep-choice 后 batch 提交多条命令”现已由 `e2e/dicethrone/dicethrone-simple-start.e2e.ts:1465` 覆盖。
+  - `DiceThrone` 的“第一轮 batch 被拒后，AI 自动解锁并在第二轮 retry 成功”现已由 `e2e/dicethrone/dicethrone-simple-start.e2e.ts:1572` 覆盖。
+  - `DiceThrone` 的“连续两轮 batch 被拒后，AI 仍能在第三轮 retry 成功”现已由 `e2e/dicethrone/dicethrone-simple-start.e2e.ts:1699` 覆盖。
 - 新风险：
   - 目前仍缺“连续三次及以上 `batch:rejected` / 网络抖动伴随 socket 断连重连 / runtime attach-detach 期间 retry 连续触发”的真实联机证据。
   - 现有覆盖已经能证明“单次和双次拒绝都不会永久卡死”，但还没有把更长时间抖动下的退避与收口稳定性锁死。
@@ -281,17 +281,17 @@
   - 结果：`30 passed`
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/scoreBases-auto-continue.test.ts --configLoader native`
   - 结果：`15 passed`
-- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 npm run test:e2e:ci:file -- e2e/smashup-phase-transition-simple.e2e.ts "在线 AI 持有隐藏交互时应自动 batch 响应并推进状态"`
+- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 npm run test:e2e:ci:file -- e2e/smashup/smashup-phase-transition-simple.e2e.ts "在线 AI 持有隐藏交互时应自动 batch 响应并推进状态"`
   - 结果：`1 passed`
-- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 npm run test:e2e:ci:file -- e2e/dicethrone-simple-start.e2e.ts "Online AI 持有隐藏 multistep-choice 时应 batch 提交多条 MODIFY_DIE 并完成私有结算"`
+- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online AI 持有隐藏 multistep-choice 时应 batch 提交多条 MODIFY_DIE 并完成私有结算"`
   - 结果：`1 passed`
-- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 npm run test:e2e:ci:file -- e2e/dicethrone-simple-start.e2e.ts "Online AI 首轮 batch 被拒后应自动重试并完成隐藏 multistep-choice"`
+- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online AI 首轮 batch 被拒后应自动重试并完成隐藏 multistep-choice"`
   - 结果：`1 passed`
-- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 npm run test:e2e:ci:file -- e2e/dicethrone-simple-start.e2e.ts "Online AI 连续两轮 batch 被拒后仍应自动重试并完成隐藏 multistep-choice"`
+- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online AI 连续两轮 batch 被拒后仍应自动重试并完成隐藏 multistep-choice"`
   - 结果：`1 passed`
-- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 npm run test:e2e:ci:file -- e2e/smashup-phase-transition-simple.e2e.ts "在线 AI 的盘旋机器人隐藏交互卡住时，应在 4 秒后自动跳过并恢复对局"`
+- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 npm run test:e2e:ci:file -- e2e/smashup/smashup-phase-transition-simple.e2e.ts "在线 AI 的盘旋机器人隐藏交互卡住时，应在 4 秒后自动跳过并恢复对局"`
   - 结果：`1 passed`
-- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 npm run test:e2e:ci:file -- e2e/smashup-phase-transition-simple.e2e.ts "在线 AI 连续 8 秒没有任何实际进展时，应自动强制结束当前回合"`
+- `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 npm run test:e2e:ci:file -- e2e/smashup/smashup-phase-transition-simple.e2e.ts "在线 AI 连续 8 秒没有任何实际进展时，应自动强制结束当前回合"`
   - 结果：`1 passed`
 - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionBaseAbilities.test.ts --configLoader native`
   - 结果：`40 passed`

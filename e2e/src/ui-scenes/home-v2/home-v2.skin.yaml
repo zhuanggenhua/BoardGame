@@ -1,0 +1,18 @@
+skins:
+  home_v2.paper_panel:
+    kind: nineSlice
+    assetRef: home_v2.holder.paper_frame_1
+    image:
+      width: 224
+      height: 224
+    slice:
+      top: 38
+      right: 38
+      bottom: 38
+      left: 38
+    contentPadding:
+      top: 28
+      right: 28
+      bottom: 28
+      left: 28
+    scaleMode: stretch

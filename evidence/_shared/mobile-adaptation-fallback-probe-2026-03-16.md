@@ -33,8 +33,8 @@ python -c "import subprocess,json; r=subprocess.run(['node','-e','console.log(78
 命令：
 
 ```bash
-python -c "import subprocess,json; r=subprocess.run(['node','node_modules/playwright/cli.js','test','e2e/smashup-tutorial.e2e.ts','--grep','手机横屏下教程浮层不应跑出视口','--list'],capture_output=True,timeout=30); print(json.dumps({'returncode':r.returncode,'stdout':r.stdout.decode('utf-8','replace')[-1200:],'stderr':r.stderr.decode('utf-8','replace')[-1200:]}))"
-python -c "import subprocess,json; r=subprocess.run(['node','node_modules/playwright/cli.js','test','e2e/smashup-tutorial.e2e.ts','--grep','手机横屏下教程浮层不应跑出视口','--workers=1'],capture_output=True,timeout=60); print(json.dumps({'returncode':r.returncode,'stdout':r.stdout.decode('utf-8','replace')[-2000:],'stderr':r.stderr.decode('utf-8','replace')[-2000:]}))"
+python -c "import subprocess,json; r=subprocess.run(['node','node_modules/playwright/cli.js','test','e2e/smashup/smashup-tutorial.e2e.ts','--grep','手机横屏下教程浮层不应跑出视口','--list'],capture_output=True,timeout=30); print(json.dumps({'returncode':r.returncode,'stdout':r.stdout.decode('utf-8','replace')[-1200:],'stderr':r.stderr.decode('utf-8','replace')[-1200:]}))"
+python -c "import subprocess,json; r=subprocess.run(['node','node_modules/playwright/cli.js','test','e2e/smashup/smashup-tutorial.e2e.ts','--grep','手机横屏下教程浮层不应跑出视口','--workers=1'],capture_output=True,timeout=60); print(json.dumps({'returncode':r.returncode,'stdout':r.stdout.decode('utf-8','replace')[-2000:],'stderr':r.stderr.decode('utf-8','replace')[-2000:]}))"
 ```
 
 结论：
@@ -90,10 +90,10 @@ python -c "import subprocess,json; args=[r'C:\\Users\\zhuagenbao\\AppData\\Local
 
 目前仓库里仍有以下旧截图可用于人工复核：
 
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
-- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04-mobile-landscape-layout.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\04a-mobile-exit-fab-panel.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-4p-layout-test.e2e\移动端横屏应保持四人局布局可用，并支持手牌长按看牌\05-mobile-single-tap-expands-attached-actions.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\summonerwars\summonerwars.e2e\移动横屏：触屏放大入口与阶段说明在手机和平板都可达\10-phone-landscape-board.png`
 
 人工复核结论保持不变：
 

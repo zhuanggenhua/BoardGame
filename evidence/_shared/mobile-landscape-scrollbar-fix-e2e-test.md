@@ -3,16 +3,16 @@
 ## 执行命令
 
 ```bash
-npm run test:e2e:ci:file -- e2e/cardia-smoke-test.e2e.ts "真实对局页在 iPhone XR 横屏下不应触发整页缩放"
-npm run test:e2e:ci:file -- e2e/cardia-smoke-test.e2e.ts "手机横屏布局应完整展示战场与手牌"
-npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
+npm run test:e2e:ci:file -- e2e/cardia/cardia-smoke-test.e2e.ts "真实对局页在 iPhone XR 横屏下不应触发整页缩放"
+npm run test:e2e:ci:file -- e2e/cardia/cardia-smoke-test.e2e.ts "手机横屏布局应完整展示战场与手牌"
+npm run test:e2e:ci:file -- e2e/smashup/smashup-tutorial.e2e.ts "手机横屏下教程浮层不应跑出视口"
 ```
 
 ## 有效截图
 
 ### 1. Cardia 手机横屏主态图
 
-- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\cardia-smoke-test.e2e\手机横屏布局应完整展示战场与手牌\cardia-mobile-landscape-layout.png`
+- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\cardia\cardia-smoke-test.e2e\手机横屏布局应完整展示战场与手牌\cardia-mobile-landscape-layout.png`
 - 判定：有效
 - 看图结论：
   - 画面左右边界都完整落在视口内，没有出现浏览器整页横向滚动条对应的“内容被撑出一截”现象。
@@ -21,7 +21,7 @@ npm run test:e2e:ci:file -- e2e/smashup-tutorial.e2e.ts "手机横屏下教程�
 
 ### 2. Smash Up 教程手机横屏图
 
-- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
+- 截图路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-tutorial.e2e\手机横屏下教程浮层不应跑出视口\tutorial-mobile-landscape.png`
 - 判定：有效
 - 看图结论：
   - 教程弹层完整处于视口内，右侧结束回合按钮、日志按钮、记分板也都没有跑出边界。

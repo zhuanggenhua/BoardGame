@@ -42,6 +42,7 @@ WEB_CONTAINER_NAME="boardgame-web"
 GAME_CONTAINER_NAME="boardgame-game-server"
 MONGODB_CONTAINER_NAME="boardgame-mongodb"
 REDIS_CONTAINER_NAME="boardgame-redis"
+COMPOSE_PROJECT_NAME_EFFECTIVE="${COMPOSE_PROJECT_NAME:-$(basename "$(pwd)" | tr '[:upper:]' '[:lower:]')}"
 
 PREVIOUS_WEB_IMAGE_REF=""
 PREVIOUS_GAME_IMAGE_REF=""
@@ -268,6 +269,30 @@ get_container_restart_count() {
   docker inspect --format '{{.RestartCount}}' "$1" 2>/dev/null || echo "0"
 }
 
+get_container_project_label() {
+  docker inspect --format '{{index .Config.Labels "com.docker.compose.project"}}' "$1" 2>/dev/null || true
+}
+
+cleanup_residual_container() {
+  local container_name="${1:-}"
+  if [ -z "$container_name" ]; then
+    return
+  fi
+
+  if container_exists "$container_name"; then
+    local project_label
+    project_label=$(get_container_project_label "$container_name")
+    if [ -z "$project_label" ]; then
+      die "检测到残留容器 ${container_name} 但缺少 compose 标签，无法安全自动清理，请手动处理后再部署"
+    fi
+    if [ "$project_label" != "$COMPOSE_PROJECT_NAME_EFFECTIVE" ]; then
+      die "检测到残留容器 ${container_name} 属于其他项目(${project_label})，无法自动清理，请手动处理后再部署"
+    fi
+    log "检测到残留容器 ${container_name}，执行清理"
+    docker rm -f "$container_name" >/dev/null 2>&1 || true
+  fi
+}
+
 wait_for_container_running() {
   local container_name="${1:-}"
   local timeout_seconds="${2:-120}"
@@ -315,39 +340,42 @@ check_http_response() {
   local body_expectation="${4:-}"
   local label="${5:-$url}"
   local tmp_body tmp_headers status_code content_type
+  local max_retries="${SMOKE_HTTP_RETRY:-6}"
+  local retry_delay="${SMOKE_HTTP_RETRY_DELAY:-3}"
+  local attempt=1
 
-  tmp_body=$(mktemp)
-  tmp_headers=$(mktemp)
+  while [ "$attempt" -le "$max_retries" ]; do
+    tmp_body=$(mktemp)
+    tmp_headers=$(mktemp)
 
-  if ! curl -fsS --max-time 10 -D "$tmp_headers" -o "$tmp_body" "$url" >/dev/null 2>&1; then
+    if curl -fsS --max-time 10 -D "$tmp_headers" -o "$tmp_body" "$url" >/dev/null 2>&1; then
+      status_code=$(awk 'toupper($1) ~ /^HTTP/ { code=$2 } END { print code }' "$tmp_headers")
+      content_type=$(awk -F': ' 'tolower($1)=="content-type" {print tolower($2)}' "$tmp_headers" | tail -1 | tr -d '\r')
+
+      if [ "$status_code" != "$expect_status" ]; then
+        log "❌ ${label} 状态码异常: expected=${expect_status}, actual=${status_code:-unknown}"
+      elif [ -n "$expect_content_type" ] && [[ "$content_type" != *"$expect_content_type"* ]]; then
+        log "❌ ${label} content-type 异常: expected~=${expect_content_type}, actual=${content_type:-empty}"
+      elif [ -n "$body_expectation" ] && ! grep -q "$body_expectation" "$tmp_body"; then
+        log "❌ ${label} body 未命中预期片段: ${body_expectation}"
+      else
+        rm -f "$tmp_body" "$tmp_headers"
+        return 0
+      fi
+    else
+      log "⚠️  ${label} 请求失败: ${url}"
+    fi
+
     rm -f "$tmp_body" "$tmp_headers"
-    log "❌ ${label} 请求失败: ${url}"
-    return 1
-  fi
+    if [ "$attempt" -lt "$max_retries" ]; then
+      log "⏳ ${label} 重试中 (${attempt}/${max_retries})，等待 ${retry_delay}s"
+      sleep "$retry_delay"
+    fi
+    attempt=$((attempt + 1))
+  done
 
-  status_code=$(awk 'toupper($1) ~ /^HTTP/ { code=$2 } END { print code }' "$tmp_headers")
-  content_type=$(awk -F': ' 'tolower($1)=="content-type" {print tolower($2)}' "$tmp_headers" | tail -1 | tr -d '\r')
-
-  if [ "$status_code" != "$expect_status" ]; then
-    log "❌ ${label} 状态码异常: expected=${expect_status}, actual=${status_code:-unknown}"
-    rm -f "$tmp_body" "$tmp_headers"
-    return 1
-  fi
-
-  if [ -n "$expect_content_type" ] && [[ "$content_type" != *"$expect_content_type"* ]]; then
-    log "❌ ${label} content-type 异常: expected~=${expect_content_type}, actual=${content_type:-empty}"
-    rm -f "$tmp_body" "$tmp_headers"
-    return 1
-  fi
-
-  if [ -n "$body_expectation" ] && ! grep -q "$body_expectation" "$tmp_body"; then
-    log "❌ ${label} body 未命中预期片段: ${body_expectation}"
-    rm -f "$tmp_body" "$tmp_headers"
-    return 1
-  fi
-
-  rm -f "$tmp_body" "$tmp_headers"
-  return 0
+  log "❌ ${label} 请求失败（已重试 ${max_retries} 次）: ${url}"
+  return 1
 }
 
 run_post_deploy_smoke() {
@@ -717,7 +745,14 @@ deploy() {
   docker compose -f "$COMPOSE_FILE" pull
 
   log "停止旧服务"
-  docker compose -f "$COMPOSE_FILE" down --remove-orphans 2>/dev/null || true
+  if ! docker compose -f "$COMPOSE_FILE" down --remove-orphans; then
+    log "⚠️  docker compose down 执行失败，继续尝试清理残留容器"
+  fi
+
+  cleanup_residual_container "$MONGODB_CONTAINER_NAME"
+  cleanup_residual_container "$REDIS_CONTAINER_NAME"
+  cleanup_residual_container "$GAME_CONTAINER_NAME"
+  cleanup_residual_container "$WEB_CONTAINER_NAME"
 
   log "启动服务"
   if ! docker compose -f "$COMPOSE_FILE" up -d; then

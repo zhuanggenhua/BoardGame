@@ -1,9 +1,10 @@
-import { Body, Controller, Delete, Get, HttpCode, Inject, NotFoundException, Param, Post, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Inject, NotFoundException, Param, Post, Put, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { CurrentUser } from '../../shared/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../../shared/guards/jwt-auth.guard';
 import { AdminGuard } from '../admin/guards/admin.guard';
 import { Roles } from '../admin/guards/roles.decorator';
 import { NotificationService } from './notification.service';
-import { CreateNotificationDto, UpdateNotificationDto } from './dto';
+import { CreateNotificationDto, UpdateNotificationDto, UpdateNotificationReadStateDto } from './dto';
 
 /** 管理端：通知 CRUD */
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -49,5 +50,30 @@ export class NotificationPublicController {
     async findActive() {
         const list = await this.notificationService.findActive();
         return { notifications: list };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Get('read-state')
+    async getReadState(@CurrentUser() currentUser: { userId: string } | null) {
+        if (!currentUser?.userId) {
+            throw new UnauthorizedException('登录凭证无效');
+        }
+        const lastSeenAt = await this.notificationService.getUserLastSeenAt(currentUser.userId);
+        return { lastSeenAt: lastSeenAt?.toISOString() ?? null };
+    }
+
+    @UseGuards(JwtAuthGuard)
+    @Post('read-state')
+    @HttpCode(200)
+    async updateReadState(
+        @CurrentUser() currentUser: { userId: string } | null,
+        @Body() body: UpdateNotificationReadStateDto,
+    ) {
+        if (!currentUser?.userId) {
+            throw new UnauthorizedException('登录凭证无效');
+        }
+        const seenAt = body.seenAt ? new Date(body.seenAt) : new Date();
+        const updatedSeenAt = await this.notificationService.markUserSeenAt(currentUser.userId, seenAt);
+        return { lastSeenAt: updatedSeenAt?.toISOString() ?? null };
     }
 }

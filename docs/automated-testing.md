@@ -836,10 +836,10 @@ const cancelButton = banner.locator('button').filter({
 - 不要再假设“E2E 默认英文”；需要多语言兼容时，用正则同时覆盖中英文。
 
 **教训案例**：
-- 问题：`e2e/summonerwars-magic-event-choice.e2e.ts` 测试失败，横幅文本未找到
+- 问题：`e2e/summonerwars/summonerwars-magic-event-choice.e2e.ts` 测试失败，横幅文本未找到
 - 原因：代码渲染了英文横幅 "Choose: Play event card or discard for magic"，但测试查找中文 "选择：打出事件卡或弃牌换魔力"
 - 解决：使用正则表达式 `/Choose|选择/` 同时匹配中英文
-- 参考：`e2e/summonerwars-magic-event-choice.e2e.ts`
+- 参考：`e2e/summonerwars/summonerwars-magic-event-choice.e2e.ts`
 
 ### TestHarness 测试工具（推荐）
 
@@ -1103,8 +1103,8 @@ await page.evaluate(() => {
 
 - 完整设计文档：`docs/testing-infrastructure.md`
 - 快速参考：`docs/testing-tools-quick-reference.md`
-- 示例测试：`e2e/example-test-harness-usage.e2e.ts`
-- 实际案例：`e2e/dicethrone-thunder-strike.e2e.ts`
+- 示例测试：`e2e/dicethrone/example-test-harness-usage.e2e.ts`
+- 实际案例：`e2e/dicethrone/dicethrone-thunder-strike.e2e.ts`
 
 ### 运行方式
 
@@ -1244,7 +1244,7 @@ npm run clean:ports
 
 1. **完整流程基线（Happy Path）**：入口 → 创建房间 → 阵营选择 → 开始对局 → 回合推进 → 结束/结算
 2. **核心交互面**：关键 UI 面板（阶段、手牌、地图、行动按钮）、地图缩放/拖拽、阶段推进
-3. **特殊交互面**：攻击后技能选择、事件卡多目标/多步骤选择、弃牌堆选择
+3. **特殊交互面**：攻击后技能选择、事件卡多目标/多步骤选择、弃牌堆选择、奖励骰结算/重掷交互（如 `Loaded` / `Wild West` / 额外掷骰）
 4. **负面与边界**：非当前玩家操作被拒绝、阶段自动跳过边界
 
 ### 在线对局测试
@@ -1258,13 +1258,13 @@ npm run clean:ports
 ### 截图与附件管理（强制）
 
 1. Playwright 自动产物目录固定为 `test-results/playwright-artifacts/`，仅保留失败用例附件（`preserveOutput: 'failures-only'`）
-2. 显式证据截图统一通过 `game.screenshot()` 或共享工具写入 `test-results/evidence-screenshots/`
-3. `game.screenshot()` 默认按“测试文件/测试用例”分目录，例如 `test-results/evidence-screenshots/dicethrone-watch-out-spotlight.e2e/触控窄视口下放大入口常显且可点击/10-mobile-main-board-state.png`
+2. 显式证据截图统一通过 `game.screenshot()` 或共享工具写入 `test-results/evidence-screenshots/_shared/`
+3. `game.screenshot()` 默认按“测试文件/测试用例”分目录，例如 `test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/触控窄视口下放大入口常显且可点击/10-mobile-main-board-state.png`
 4. 同一用例首次截图前会自动清理该用例旧截图，并顺带清理旧的平铺遗留文件，避免新旧图混在一起
 5. `testInfo.outputPath()` 只用于临时附件路径，不是长期证据目录
-6. 禁止把同一张图复制到多个稳定目录；禁止默认自动写入 `evidence/screenshots/`
+6. 禁止把同一张图复制到多个稳定目录；禁止默认自动写入 `evidence/_shared/screenshots/`
 7. `test-results/` 目录已被 git 忽略，测试产物不应提交
-8. 在对话、证据说明或交接里汇报截图位置时，必须直接给可复制的工作区绝对路径，例如 `F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\...`，禁止只写相对目录、文件名或“看 test-results 下面”
+8. 在对话、证据说明或交接里汇报截图位置时，必须直接给可复制的工作区绝对路径，例如 `F:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\...`，禁止只写相对目录、文件名或“看 test-results 下面”
 9. 证据文档如果引用了 3 张截图，就必须逐张列出 3 条绝对路径；不能只在文档里放图片、相对链接，或只给目录级路径
 
 ```typescript
@@ -1313,7 +1313,7 @@ test('多玩家游戏流程', async ({ browser }, testInfo) => {
 3. 根据游戏状态动态选择对应的客户端发送命令
 4. 测试结束后必须关闭所有上下文
 
-参考：`e2e/helpers/multiPlayer.ts`、`e2e/ugc-preview.e2e.ts`
+参考：`e2e/helpers/multiPlayer.ts`、`e2e/_shared/ugc-preview.e2e.ts`
 
 ### Mock API 响应
 
@@ -1329,10 +1329,10 @@ test.beforeEach(async ({ page }) => {
 
 - `e2e/social.test.ts` - Global HUD 入口、模态框、标签页、好友列表
 - `e2e/navbar.test.ts` - 顶部导航、登录状态、游戏分类
-- `e2e/tictactoe-tutorial.e2e.ts` - 井字棋教程完整流程
-- `e2e/dicethrone.e2e.ts` - 线上房间手牌校验 + 教程完整流程 + 僧侣莲花掌选择 + 雷霆万钧奖励骰重掷
-- `e2e/dicethrone-moon-elf.e2e.ts` - 月精灵基础攻击 + Targeted 伤害结算
-- `e2e/dicethrone-shadow-thief.e2e.ts` - 暗影刺客基础攻击 + Sneak 免伤 + 双防御技能选择
+- `e2e/tictactoe/tictactoe-tutorial.e2e.ts` - 井字棋教程完整流程
+- `e2e/dicethrone/dicethrone.e2e.ts` - 线上房间手牌校验 + 教程完整流程 + 僧侣莲花掌选择 + 雷霆万钧奖励骰重掷
+- `e2e/dicethrone/dicethrone-moon-elf.e2e.ts` - 月精灵基础攻击 + Targeted 伤害结算
+- `e2e/dicethrone/dicethrone-shadow-thief.e2e.ts` - 暗影刺客基础攻击 + Sneak 免伤 + 双防御技能选择
 
 ---
 
@@ -1360,14 +1360,22 @@ npm run test:api
 6. 黑图、纯加载页、纯空白页、只有遮罩或只有单个噪点而看不出业务界面的截图，一律视为“无有效截图”，不得拿来充当 UI 验收证据。
 7. 只要首张截图已经表现为“无有效截图”，就必须立刻在结论里写明“本轮没有拿到有效业务截图”，不能继续用这轮产物宣称“已看图确认正常”。
 8. 未亲自打开过的截图路径不得汇报给用户作为验收依据；如果只是文件存在、尚未看图，只能表述为“产物路径”，不能表述为“已核对截图”。
-9. UI / 移动端适配 / 布局 / 动画 / 触屏交互类 E2E，必须额外逐项核对这些视觉项：
+9. **流程截图必须通链路**：凡是涉及“改投/重掷/分步确认/阶段推进”的交互，必须提供至少 **2 张**连续截图（触发前/触发后或改投前/改投后），证据文档里逐张写观察结论；**没有完整证据链不得宣告完成**。
+10. **奖励骰/骰子特写必须给成功路径证据链（强制）**：
+   - 必须包含：**特写出现截图 + 执行关键操作后特写更新截图**（例如重掷后骰面/提示发生变化）。
+   - 若交互需要关闭/确认/收口，还必须补 1 张**收口后**截图证明流程可继续推进（特写已关闭、pending 状态清空、阶段可继续）。
+   - **禁止**只提供“失败提示/门禁 toast/不可用提示”的截图就宣告完成；失败截图只能作为否定路径补充证据。
+11. **攻击修正徽章属于“效果提示”，不是“结果证明”（强制）**：
+   - 徽章出现只表示攻击修正已激活；伤害/加伤数值只能在实际生效时写入权威状态。
+   - 若卡牌效果为“延迟结算/分段生效”，证据链必须同时证明：徽章可提前出现 + 数值不会在特写阶段提前变化。
+12. UI / 移动端适配 / 布局 / 动画 / 触屏交互类 E2E，必须额外逐项核对这些视觉项：
    - 主棋盘或主内容区的纵向锚点是否正确，是否明显偏上/偏下。
    - 浮动按钮、结束回合区、顶部横幅、HUD 是否和主棋盘处于同一缩放体系，而不是肉眼看起来大小脱节。
    - 预留空间是否和真实控件高度一致，是否出现大块空带、挤压或控件悬空。
    - 移动端是否错误保留桌面 hover 入口、常驻放大按钮或其他假 hover 设计。
    - 关键区域是否被遮挡、裁切、出屏或互相覆盖。
-10. 上述视觉结论必须来自实际看图，不得用“locator 可见”“元素在视口内”“断言通过”替代。
-11. 若首张主状态截图已经能肉眼看出明显问题，禁止继续把该轮结果汇报为“已通过”；必须先按失败处理并回到修复。
+13. 上述视觉结论必须来自实际看图，不得用“locator 可见”“元素在视口内”“断言通过”替代。
+14. 若首张主状态截图已经能肉眼看出明显问题，禁止继续把该轮结果汇报为“已通过”；必须先按失败处理并回到修复。
 
 ### 外部 R2/CDN 资源缺失时的看图规则（补充）
 
@@ -1500,7 +1508,7 @@ await waitForStateApplied(page, (core) => core.currentPlayer === '1');
 - ✅ 清晰的错误信息（超时时显示当前状态和预期状态）
 - ✅ 提升测试速度（平均节省 50% 等待时间）
 
-**完整示例**: 见 `e2e/example-wait-for-state.e2e.ts`
+**完整示例**: 见 `e2e/_shared/example-wait-for-state.e2e.ts`
 
 #### waitForState 详细使用指南
 

@@ -36,7 +36,7 @@
     "select_minion_hint": "请选择一个随从来附着此卡",
     "your_turn": "轮到你了！",
     "me_first_your_turn": "轮到你响应 — 打出特殊牌或让过",
-    "me_first_waiting": "等待 P{{player}} 响应...",
+    "me_first_waiting": "等待 玩家{{player}} 响应...",
     "me_first_pass": "让过",
     "me_first_no_special": "你没有可打出的特殊战术卡",
     "me_first_select_base": "点击一个达标基地来打出特殊牌",
@@ -78,7 +78,7 @@
     "after_scoring_title": "计分后响应",
     "reaction_timing": {
       "onMinionPlayed": "随从打出后",
-      "onActionPlayed": "战术打出后",
+      "onActionPlayed": "行动打出后",
       "onCardBuried": "埋葬后",
       "onBuriedCardUncovered": "揭开埋藏卡后",
       "onBaseRevealed": "基地揭示后",
@@ -95,8 +95,8 @@
     },
     "thinking": "思考中...",
     "loading": "加载中...",
-    "reveal_hand_title": "P{{player}} 的手牌",
-    "reveal_deck_top_title": "P{{player}} 的牌库顶",
+    "reveal_hand_title": "玩家{{player}} 的手牌",
+    "reveal_deck_top_title": "玩家{{player}} 的牌库顶",
     "reveal_no_cards": "没有可展示的卡牌",
     "confirm": "确认",
     "prompt_no_options": "暂无可选项",
@@ -129,22 +129,24 @@
     "fusion_choose_playas_desc": "融合卡可以作为随从或战术打出。请选择本次打出的类型。",
     "play_as_minion": "作为随从",
     "play_as_action": "作为战术",
-    "duel_in_progress": "Duel in progress: resolve Pinkerton / duel cards / Deputy before deciding the winner",
-    "no_valid_targets": "No valid targets",
-    "drag_no_target": "Drag onto a highlighted target",
-    "duel_option_skip_duel_card": "Skip (play no duel card)",
-    "duel_option_skip_deputy": "Skip (discard no Deputy)",
-    "tap_again_to_activate": "Tap again to activate",
-    "titan_play_available": "Playable",
-    "titan": "Titan",
-    "click_to_cancel_selection": "Tap to cancel selection",
-    "close_faction_details": "Close faction details",
-    "mechanic_tutorial": "Mechanic Tutorial",
-    "faction_variant_pod": "POD",
-    "faction_variant_base": "Base",
-    "faction_titan_preview": "Titan Preview",
-    "faction_titan_missing": "This faction's titan is not available yet",
-    "cancel_selection": "Cancel Selection"
+    "duel_in_progress": "决斗进行中：先结算平克顿 / 决斗牌 / 副警长，再决定胜负",
+    "no_valid_targets": "没有可用目标",
+    "drag_no_target": "拖到高亮目标上",
+    "duel_option_skip_duel_card": "跳过（不出决斗牌）",
+    "duel_option_skip_deputy": "跳过（不弃副警长）",
+    "tap_again_to_activate": "再次点击以激活",
+    "titan_play_available": "可打出",
+    "titan": "泰坦",
+    "click_to_cancel_selection": "点按取消选择",
+    "close_faction_details": "关闭派系详情",
+    "mechanic_tutorial": "机制教程",
+    "faction_variant_pod": "POD版",
+    "faction_variant_base": "基础版",
+    "faction_titan_preview": "泰坦预览",
+    "faction_titan_missing": "该种族泰坦暂未接入",
+    "cancel_selection": "取消选择",
+    "faction_implementation_in_progress": "实施中",
+    "faction_implementation_in_progress_hint": "该派系正在分批实施，规则与交互会持续完善。"
   },
   "feedback": {
     "deck_search_no_match": "牌库中未找到符合条件的卡牌，已重洗牌库",
@@ -163,7 +165,7 @@
     "no_minion_cards_in_hand": "手牌中没有随从卡"
   },
   "actionLog": {
-    "playerLabel": "P{{playerId}}",
+    "playerLabel": "玩家{{playerId}}",
     "baseIndex": "基地{{index}}",
     "baseUnknown": "未知基地",
     "limitType": {
@@ -313,116 +315,128 @@
       "description": "灵活分配和转移力量指示物，团队协作。"
     },
     "pirates_pod": {
-      "name": "海盗 (POD版)",
+      "name": "海盗",
       "description": "高机动性，可以在基地间移动随从。"
     },
     "ninjas_pod": {
-      "name": "忍者 (POD版)",
+      "name": "忍者",
       "description": "出其不意，隐蔽行动，暗杀随从。"
     },
     "dinosaurs_pod": {
-      "name": "恐龙 (POD版)",
+      "name": "恐龙",
       "description": "巨大的力量，无坚不摧。"
     },
     "aliens_pod": {
-      "name": "外星人 (POD版)",
+      "name": "外星人",
       "description": "干扰对手，将随从送回手牌，控制基地。"
     },
     "robots_pod": {
-      "name": "机器人 (POD版)",
+      "name": "机器人",
       "description": "微型机器人大军，快速铺场。"
     },
     "zombies_pod": {
-      "name": "丧尸 (POD版)",
+      "name": "丧尸",
       "description": "从弃牌堆复活，永不消逝。"
     },
     "wizards_pod": {
-      "name": "巫师 (POD版)",
+      "name": "巫师",
       "description": "额外的行动，操控牌库，法术轰炸。"
     },
     "tricksters_pod": {
-      "name": "捣蛋鬼 (POD版)",
+      "name": "捣蛋鬼",
       "description": "设置陷阱，弃置对手手牌，制造混乱。"
     },
     "steampunks_pod": {
-      "name": "蒸汽朋克 (POD版)",
+      "name": "蒸汽朋克",
       "description": "利用基地行动卡，升级与回收。"
     },
     "ghosts_pod": {
-      "name": "幽灵 (POD版)",
+      "name": "幽灵",
       "description": "手牌越少越强，穿过物质。"
     },
     "killer_plants_pod": {
-      "name": "食人花 (POD版)",
+      "name": "食人花",
       "description": "快速生长，控制随从。"
     },
     "bear_cavalry_pod": {
-      "name": "熊骑兵 (POD版)",
+      "name": "熊骑兵",
       "description": "强迫移动对手，无情碾压。"
     },
     "minions_of_cthulhu_pod": {
-      "name": "克苏鲁仆从 (POD版)",
+      "name": "克苏鲁仆从",
       "description": "利用疯狂牌，献祭随从。注意：每2张疯狂牌终局扣1VP。"
     },
     "elder_things_pod": {
-      "name": "远古物种 (POD版)",
+      "name": "远古物种",
       "description": "给予疯狂牌，控制人心。注意：每2张疯狂牌终局扣1VP。"
     },
     "innsmouth_pod": {
-      "name": "印斯茅斯 (POD版)",
+      "name": "印斯茅斯",
       "description": "人海战术，同样的随从集结。注意：每2张疯狂牌终局扣1VP。"
     },
     "miskatonic_university_pod": {
-      "name": "米斯卡塔尼克 (POD版)",
+      "name": "米斯卡塔尼克",
       "description": "利用疯狂牌获得优势，研究知识。注意：每2张疯狂牌终局扣1VP。"
     },
     "frankenstein_pod": {
-      "name": "科学怪人 (POD版)",
+      "name": "科学怪人",
       "description": "利用+1力量指示物增强随从，通过牺牲和转移指示物获得优势。"
     },
     "werewolves_pod": {
-      "name": "狼人 (POD版)",
+      "name": "狼人",
       "description": "高力量随从，在回合结束时爆发，控制基地爆破点。"
     },
     "vampires_pod": {
-      "name": "吸血鬼 (POD版)",
+      "name": "吸血鬼",
       "description": "通过消灭随从获得力量指示物，积累优势。"
     },
     "giant_ants_pod": {
-      "name": "巨蚁 (POD版)",
+      "name": "巨蚁",
       "description": "灵活分配和转移力量指示物，团队协作。"
     },
     "ancient_egyptians": {
-      "name": "Ancient Egyptians",
-      "description": "Bury cards, recycle them, and convert hidden value into tempo."
+      "name": "古埃及人",
+      "description": "埋葬卡牌、循环利用，并把隐藏价值转化为节奏优势。"
     },
     "ancient_egyptians_pod": {
-      "name": "Ancient Egyptians",
-      "description": "Bury cards, recycle them, and convert hidden value into tempo."
+      "name": "古埃及人",
+      "description": "埋葬卡牌、循环利用，并把隐藏价值转化为节奏优势。"
     },
     "cowboys": {
-      "name": "Cowboys",
-      "description": "Duel enemies, play from low hand, and cash in buried cards."
+      "name": "牛仔",
+      "description": "通过决斗压制对手，低手牌出牌，并把埋葬的牌兑现成收益。"
     },
     "cowboys_pod": {
-      "name": "Cowboys",
-      "description": "Duel enemies, play from low hand, and cash in buried cards."
+      "name": "牛仔",
+      "description": "通过决斗压制对手，低手牌出牌，并把埋葬的牌兑现成收益。"
     },
     "samurai": {
-      "name": "Samurai",
-      "description": "Honor, duels, and sacrifice-driven tempo around destruction."
+      "name": "武士",
+      "description": "以荣誉与决斗为核心，通过牺牲与消灭来制造节奏。"
     },
     "samurai_pod": {
-      "name": "Samurai",
-      "description": "Honor, duels, and sacrifice-driven tempo around destruction."
+      "name": "武士",
+      "description": "以荣誉与决斗为核心，通过牺牲与消灭来制造节奏。"
     },
     "vikings": {
-      "name": "Vikings",
-      "description": "Force discards and burials, then turn them into extra payoff."
+      "name": "维京人",
+      "description": "逼迫弃牌与埋葬，并把它们转化为额外收益。"
     },
     "vikings_pod": {
-      "name": "Vikings",
-      "description": "Force discards and burials, then turn them into extra payoff."
+      "name": "维京人",
+      "description": "逼迫弃牌与埋葬，并把它们转化为额外收益。"
+    },
+    "mermaids": {
+      "name": "美人鱼",
+      "description": "通过移动与力量压制掌控基地，并在关键时机削弱对手贡献。"
+    },
+    "skeletons": {
+      "name": "骷髅",
+      "description": "围绕埋葬与复苏运作，从弃牌堆持续回收低力量随从。"
+    },
+    "world_champs": {
+      "name": "世界冠军",
+      "description": "由冠军卡牌混编，擅长额外行动、指示物与高机动爆发。"
     }
   },
   "tutorial": {
@@ -456,8 +470,19 @@
     },
     "subTutorials": {
       "cowboysDuel": {
-        "title": "Cowboys: Duel Tutorial",
-        "description": "Walk through a fixed duel sequence featuring Pinkerton, duel-card timing, and Deputy resolution."
+        "title": "牛仔：决斗教程",
+        "description": "通过固定决斗流程讲解平克顿、决斗牌时机与副警长结算。",
+        "steps": {
+          "setup": "正在准备牛仔决斗教学场景……",
+          "duelIntro": "本教学只聚焦牛仔“决斗”机制。你将依次看到挑战发起、平克顿加成时机、决斗牌窗口，以及副警长加成后决斗结算。",
+          "playGunfighter": "先打出枪手，然后以沙龙基地的敌方微型机器人为目标，发起决斗。",
+          "pecosBillWindow": "决斗开始后，牛仔泰坦“佩科斯·比尔”会询问你是否弃牌加入本次决斗。这里先选择跳过，保持教学聚焦主流程。",
+          "pinkertonCounter": "在决斗牌结算前会触发平克顿。给你的决斗随从放置1个 +1 力量指示物。",
+          "duelCard": "现在进入你的决斗牌响应窗口。此教学中请选择跳过，以专注牛仔决斗核心流程。",
+          "opponentDuelCard": "对手此处没有额外响应，教学会自动替对手跳过决斗牌窗口。",
+          "deputyBoost": "现在弃掉副警长，使枪手在回合结束前获得 +2 力量，确保赢下本次决斗。",
+          "finish": "决斗已结算：敌方随从被移除，副警长进入弃牌堆，且当前没有进行中的决斗。你已完成牛仔决斗核心流程。"
+        }
       }
     }
   },
@@ -1849,7 +1874,7 @@
     },
     "elder_thing_the_price_of_power_pod": {
       "name": "力量的代价",
-      "effectText": "每位其他玩家展示其手牌。每展示出一张疯狂卡，在你的一个随从上放置一个+1战斗力指示物。特殊：在一个基地计分前打出。改为展示所有在那里的有随从的其他玩家的手牌。"
+      "effectText": "每位其他玩家展示其手牌。每展示出一张疯狂卡，在你的一个随从上放置一个+1战斗力指示物。特殊：你可以在基地计分前打出此牌。改为展示所有在那里的有随从的其他玩家的手牌。"
     },
     "elder_thing_unfathomable_goals_pod": {
       "name": "深不可测的目的",
@@ -2596,19 +2621,19 @@
     },
     "base_miskatonic_university_base_pod": {
       "name": "米斯卡塔尼克大学",
-      "abilityText": "(24, VP 4-3-2) 每回合一次，在你在这里打出一个随从后，你可以抓两张疯狂卡，或者从手牌弃置一张疯狂卡来额外打出一张战术。"
+      "abilityText": "每回合一次，在你于此打出一个随从后，你可以抽两张疯狂卡，或从你的手牌弃置一张疯狂卡来额外打出一张战术。"
     },
     "base_the_asylum_pod": {
       "name": "庇护所",
-      "abilityText": "(16, VP 3-1-1) 在你在这里打出一个随从后，你可以将一张手牌移出游戏（放入盒子），在一个随从上放置一个+1战斗力标记。"
+      "abilityText": "在你于此打出一个随从后，你可以将一张手牌放回盒中，以在一个随从上放置一枚+1战斗力指示物。"
     },
     "base_ninja_dojo_pod": {
       "name": "忍者道场",
-      "abilityText": "(18, VP 2-3-2) 无特殊能力。"
+      "abilityText": "在这个基地计分后，冠军可以消灭任意一个随从。"
     },
     "base_temple_of_goju_pod": {
       "name": "刚柔流寺庙",
-      "abilityText": "(16, VP 4-3-2) 每当这里有一个随从被消灭时，将其置于其持有者的牌库底。"
+      "abilityText": "在这个基地计分后，将每位玩家在这里力量最高的一张随从放入他们拥有者的牌库底。"
     },
     "base_the_grey_opal_pod": {
       "name": "灰色猫眼石",
@@ -2616,7 +2641,7 @@
     },
     "base_tortuga_pod": {
       "name": "托尔图加",
-      "abilityText": "(21, VP 4-3-2) 在本基地计分并被取代后，亚军可以将另一个基地上的一个随从移动到新替换的基地上。"
+      "abilityText": "在这个基地计分并被替换后，亚军可以移动他在其他基地上的一个随从到替换基地。"
     },
     "base_factory_436_1337_pod": {
       "name": "436-1337工厂",
@@ -2628,690 +2653,945 @@
     },
     "base_inventors_salon_pod": {
       "name": "发明家沙龙",
-      "abilityText": "(22, VP 4-2-1) 在该基地计分后，获胜者可以从弃牌堆拿回一张战术。"
+      "abilityText": "冠军可以从他的弃牌堆中选取一张战术卡将其置入他的手牌。"
     },
     "base_the_workshop_pod": {
       "name": "工坊",
-      "abilityText": "(20, VP 4-2-1) 每当有一名玩家将战术打出到该基地时，该玩家可以额外打出一个战术。"
+      "abilityText": "当一个玩家打出一个战术到这个基地时，该玩家可以额外打出一张战术。"
     },
     "changerbots_mergacon": {
-      "name": "Mergacon",
-      "effectText": "Special: At the start of your turn, if you have two or more minions on a base, you may play this titan there. Ongoing: You have +3 power here. Talent: Move this titan to another base. It loses its ongoing ability until the end of the turn."
+      "name": "合体机器人",
+      "effectText": "特殊：你的回合开始时，若你有2个或更多随从在一个基地中，可以打出此泰坦至该处。持续：你在此+3战力。天赋：移动此泰坦至另一个基地。其失去持续能力直至回合结束。"
     },
     "explorers_very_large_boulder": {
-      "name": "Very Large Boulder",
-      "effectText": "Special: Instead of your regular minion play, you may play this titan on a base that has no player's minions. Ongoing: Once per turn, after a minion moves from here, you may move this titan to the same base. Then destroy a minion at that base with less power than the number of +1 power counters on this titan. Ongoing: At the end of your turn, if this titan didn't move, place a +1 power counter on it."
+      "name": "硕大圆石",
+      "effectText": "特殊：你可以打出此泰坦至没有玩家随从的基地中，以代替打出通常随从。持续：每回合1次，在有随从移动离开本基地后，你可以移动此泰坦至相同基地。然后消灭该处一个战力值低于此泰坦+1战力标记数量的随从。持续：你的回合结束时，若此泰坦未移动过，为其放置+1战力标记。"
     },
     "fairies_spirit_of_the_forest": {
-      "name": "Spirit of the Forest",
-      "effectText": "Special: Instead of your regular minion and action play, you may play this titan. Ongoing: Once per turn, when you use an ability that says OR, you may use both parts in any order. Ongoing: If this titan would be removed when it loses a clash of titans, you may move it to another base instead."
+      "name": "丛林之灵",
+      "effectText": "特殊：你可以打出此泰坦以代替打出通常随从以及通常战术。持续：每回合1次，当你使用有或者的效果时，可以按任意顺序将2项全部使用。持续：若此泰坦由于泰坦交锋失败即将被移除，你可以改为将其移动至另一 个基地。"
     },
     "ignobles_the_hill_that_strolls": {
-      "name": "The Hill that Strolls",
-      "effectText": "Special: On your turn, you may play this titan if two or more minions you own are controlled by other players. Ongoing: After you give control of one of your minions to another player, you may place a +1 power counter on it. Talent: Give control of one of your minions to another player to draw a card, or take control of a minion here you own."
+      "name": "漫游山岭巨人",
+      "effectText": "特殊：在你的回合中，若你拥有的至少2个随从正被其他玩家控制，你可以打出此泰坦。持续：在你将你的一个随从的控制权交给另一位玩家后，你可以为该随从放置1枚+1战力标记。天赋：将你的一个随从的控制权交给另一位玩家来抽1张牌，或者夺回你拥有的一个这里的随从的控制权。"
     },
     "itty_critters_rainboroc": {
-      "name": "Rainboroc",
-      "effectText": "Special: After you win a base while this titan is not in play, you may play it on the base that replaces it. Ongoing: After the first time each turn you play a minion of power 2 or less here, place a +1 power counter on this titan. Talent: Shuffle a minion of power 2 or less from your discard pile into your deck. If you do, you may move this titan to another base."
+      "name": "彩虹鸟",
+      "effectText": "特殊：当你在此泰坦不在场时赢得一个基地后，你可以将它打出到替换该基地的新基地上。持续：每回合第一次你在这里打出战力2或更低的随从后，为此泰坦放置1枚+1战力标记。天赋：将你弃牌堆中的一个战力2或更低的随从洗回你的牌库。若你如此做，你可以将此泰坦移动至另一个基地。"
     },
     "kaiju_gorgodzolla": {
-      "name": "Gorgodzolla",
-      "effectText": "Special: Instead of your regular minion play, you may play this titan on a base where you have two or more actions. Ongoing: After you play an action or a minion on this base, place a +1 power counter on this titan. Ongoing: After you play an action on this base, you may draw a card."
+      "name": "哥佐拉",
+      "effectText": "特殊：你可以在有你两个或更多战术的基地中，以代替打出通常随从来打出此泰坦。持续：在你于本基地打出一个战术或随从后，为此泰坦放置1枚+1战力标记。持续：在你于本基地打出一个战术后，你可以抽1张牌。"
     },
     "magical_girls_walking_castle": {
-      "name": "Walking Castle",
-      "effectText": "Special: Instead of your regular minion play, you may play this titan on a base where you have at least two minions. Ongoing: Your minions here cannot be destroyed by other players' card effects. Talent: Move this titan and up to three of your minions from here to another base."
+      "name": "移动城堡",
+      "effectText": "特殊：你可以打出此卡到一个你至少拥有2个随从的基地上，而非打出基本随从。持续：你在此基地的随从不能被其他玩家卡牌效果所消灭。天赋：移动此泰坦和此基地至多3个你的随从到另一个基地。"
     },
     "mega_troopers_megabot": {
-      "name": "Megabot",
-      "effectText": "Special: Instead of your regular minion play, you may play this titan on a base where you have at least three minions. Ongoing: You have +1 power here for each of your minions here. Special: Before another base scores, you may move this titan there."
+      "name": "超级佐德",
+      "effectText": "特殊：将此泰坦打出到你至少拥有3张随从的基地上，而非打出基本随从。持续：每有一个你的随从在此基地，你拥有+1力量在此基地。特殊：在另一个基地计分前，你可以移动此卡到那个基地。"
     },
     "penguins_emperor_penguin": {
-      "name": "Emperor Penguin",
-      "effectText": "Special: At the start of your turn, you may play this titan on a base where you have three or more minions. Ongoing: You may play minions off the top of your deck here instead of your regular minion play. Talent: Reveal a minion of power 3 or less in your hand or discard pile and shuffle it into your deck to place a +1 power counter on this titan."
+      "name": "企鹅帝皇",
+      "effectText": "特殊：你的回合开始时，你可以打出此泰坦至有你3个或更多随从的基地中。持续：你可以从牌库顶打出随从至本基地中以代替打出通常随从。天赋：展示你手牌或弃牌堆中一个战力3或更低的随从并将其洗回你的牌库，来为此牌放置+1战力标记。"
+    },
+    "dinosaurs_fort_titanosaurus": {
+      "name": "泰坦暴龙要塞",
+      "effectText": "特殊：以代替打出通常随从，你可以消灭该基地你的一名随从来将此泰坦打出到该基地，并为其放置等同于该随从战力的 +1 战力标记。持续：每回合第一次你对你的随从打出战术后，你可以为该随从放置 1 枚 +1 战力标记、或为此泰坦放置 1 枚、或两者都放置。天赋：若此泰坦拥有至少 4 枚 +1 战力标记，抽 1 张牌。"
+    },
+    "ninjas_invisible_ninja": {
+      "name": "隐形忍者",
+      "effectText": "特殊：你的回合中，若此泰坦在回合开始时不在场，你可以弃 1 张牌，将其打出到有你随从的基地。持续：你的回合开始时，你可以消灭此泰坦来额外打出 1 张战力 3 或更低的随从。持续：当你消灭对手随从或将你的一名随从返回手牌后，检视牌库顶 2 张牌并抽 1 张。"
+    },
+    "killer_plants_killer_kudzu": {
+      "name": "致命葛藤",
+      "effectText": "特殊：你的回合开始时，若此泰坦不在场，为其放置 1 枚 +1 战力标记。若其拥有至少 3 枚标记，你可以以代替打出通常随从的方式将其打出到一个基地（多于 6 枚时保留至 6 枚）。持续：当此泰坦离场时，你可以抽 2 张牌，或将至多 2 张随从从弃牌堆洗回牌库。天赋：移除此泰坦，并从弃牌堆打出一张战力不高于其 +1 战力标记数的随从。"
+    },
+    "frankenstein_the_bride": {
+      "name": "新娘",
+      "effectText": "特殊：你的回合开始时，若你场上没有泰坦，你可以依次选择两种不同效果：将你手牌或弃牌堆中的一个随从放入盒中、消灭你的一名随从、或从你的一名随从上移除 1 枚 +1 战力标记。然后将此泰坦打出到一个基地。持续：每回合第一次你的随从获得或失去 +1 战力标记时，抽 1 张牌。天赋：为此基地你的一名随从放置 1 枚 +1 战力标记，或移除你场上任意随从的 2 枚 +1 战力标记以额外打出 1 张战术。"
     },
     "super_spies_moon_zero_three": {
-      "name": "Moon Zero Three",
-      "effectText": "Special: Instead of your regular minion play, you may play this titan on a base with no other players' minions. Ongoing: After the first time each turn an ability is used to reveal, look at, or search for one or more cards from a player's deck, place a +1 power counter on this titan. Talent: Look at the top card of any deck. Place it on the top or bottom of that deck."
+      "name": "三号空间站",
+      "effectText": "特殊：可以不打出基本随从，将此泰坦打出到没有其他玩家随从的基地上。持续：每回合第一次因效果而展示、查看、检索一位玩家牌库中的一张或更多的卡时，放置一个+1力量标记到这个泰坦上。天赋：查看任一牌库的第一张牌。将其放回该牌库顶或牌库底。"
     },
     "time_travelers_time_box": {
-      "name": "Time Box",
-      "effectText": "Special: At the start of your turn or when a card goes to your hand from play or the discard pile, place a counter on this titan if it is not in play. After you place the fifth or higher counter on it, you may remove all the counters and play this titan. Talent: Play an extra minion here of power 2 or less, and/or play an extra action."
+      "name": "时间盒子",
+      "effectText": "特殊：若此泰坦不在场，你的回合开始时，或有牌从场上或弃牌堆进入你的手牌时，为其放置1枚标记。在放置第5枚或更多标记后，可以移除所有标记来打出此泰坦。天赋：额外打出一个战力2或更低的随从至此基地和/或额外打出一个战术。"
     },
     "sphinx": {
-      "name": "Sphinx",
-      "effectText": "Special: At the start of your turn, you may return one of your buried cards to your hand to play this titan on its base. Special: After a base scores while this titan is in play, you may return one of your buried cards there to your hand. Talent: Bury a card from your hand here."
+      "name": "狮身人面像",
+      "effectText": "特殊：你的回合开始时，你可以将你埋葬的一张牌返回手牌，然后将此泰坦打出到该牌所在的基地。特殊：当此泰坦在场时有基地计分后，你可以将你埋葬在那里的其中一张牌返回手牌。天赋：在此处埋葬你的一张手牌。"
     },
     "bear_cavalry_major_ursa": {
-      "name": "Major Ursa"
+      "name": "大熊座",
+      "effectText": "特殊：你可以打出此泰坦至有你随从的基地中，以代替打出通常随从。持续：此泰坦移动至一个基地后，你可以移动该处一个其他玩家的战力 3 或更低的随从至其他基地。天赋：为此泰坦放置 +1 战力标记，然后将其移动至另一个基地。"
     },
     "ghosts_creampuff_man": {
-      "name": "Creampuff Man"
+      "name": "奶油泡芙美人",
+      "effectText": "特殊：你的回合中，若你没有手牌，可以打出此泰坦。持续：你在本基地战力 +5，再减去你的手牌数（最低为 +0）。天赋：弃置一张牌来从你的弃牌堆额外打出一张战术。将该战术置于你的牌库底而不是弃牌堆。"
     },
     "giant_ants_death_on_six_legs": {
-      "name": "Death on Six Legs"
+      "name": "六足死神",
+      "effectText": "特殊：你的回合内，若你的随从上有 7 枚或更多的 +1 战力标记，可以打出此泰坦。持续：当有随从进入弃牌堆时，将其上 1 枚 +1 战力标记转移给此泰坦。天赋：打出一张额外战术。"
     },
     "innsmouth_dagon": {
-      "name": "Dagon"
+      "name": "大衮",
+      "effectText": "特殊：你的回合中，你可以打出此泰坦至有你 2 个或更多同名随从的基地中。持续：本基地中若有同名随从，每个该名称的随从使你在此处 +1 战力。天赋：额外打出一个随从。"
     },
     "cthulhu_cthulhu_titan": {
-      "name": "Cthulhu"
+      "name": "克苏鲁",
+      "effectText": "特殊：你可以抓 2 张疯魔牌来打出此泰坦至有你随从的基地中，以代替打出通常战术。持续：在你打出或抓疯魔牌后，为此泰坦放置 +1 战力标记。天赋：抓一张疯魔牌，或者将你手中的一张疯魔牌置于另一位玩家的手牌。"
     },
     "pirates_the_kraken": {
-      "name": "The Kraken"
+      "name": "海怪克拉肯",
+      "effectText": "特殊：若此泰坦不在场，有你随从的基地计分后，你可以说出“海妖出发！”来将其打出至替换的基地中。天赋：移动此泰坦至另一个基地。该处其他玩家的随从各 -1 战力直到回合结束。特殊：本基地计分后，移动此处你的一个随从至另一个基地而不进入弃牌堆。"
     },
     "tricksters_big_funny_giant": {
-      "name": "Big Funny Giant"
+      "name": "滑稽巨人",
+      "effectText": "特殊：你可以打出此泰坦至没有玩家随从的基地中，以代替打出通常随从。持续：其他玩家必须弃置一张牌才能打出随从至本基地。你的回合结束时，若此处没有其他玩家的随从，为此泰坦放置 +1 战力标记。天赋：消灭本基地一个战力 2 或更低的随从来移动此泰坦至另一个基地。"
     },
     "vampires_ancient_lord": {
-      "name": "Ancient Lord"
+      "name": "鲜血领主",
+      "effectText": "特殊：当你于一回合内为随从放置 2 枚或更多 +1 战力标记后，可以打出此泰坦。持续：在你为你的没有 +1 战力标记的卡牌放置 +1 战力标记后，额外放置 1 枚。天赋：为本基地中你的一个已有 +1 战力标记的随从放置 +1 战力标记。"
     },
     "werewolves_great_wolf_spirit": {
-      "name": "Great Wolf Spirit"
+      "name": "巨狼之灵",
+      "effectText": "特殊：你的回合中，若你在 2 个或更多的基地中拥有最高战力，可以打出此泰坦至其中一个基地。持续：你的回合中，你的卡牌可以额外使用一次天赋。天赋：你的一个随从战力 +1 直至回合结束。"
     },
     "wizards_arcane_protector": {
-      "name": "Arcane Protector"
+      "name": "奥术守护者",
+      "effectText": "特殊：当你于一回合中打出 5 张或更多牌，你可以打出此泰坦。持续：每有 3 张手牌你在此基地获得 +1 战力。天赋：抽一张牌。"
     },
     "base_central_brain_pod": {
-      "name": "The Central Brain",
-      "abilityText": "Each minion here has +1 power."
+      "name": "中央大脑",
+      "abilityText": "每个在这里的随从获得+1力量。"
     },
     "base_the_factory_pod": {
-      "name": "Factory 436-1337",
-      "abilityText": "When this base scores, the winner gains 1 VP for every 5 power they have here."
+      "name": "436-1337工厂",
+      "abilityText": "当这个基地计分时，冠军在这里每有5力量就获得1VP。"
     },
     "base_cave_of_shinies_pod": {
-      "name": "Cave of Shinies",
-      "abilityText": "Once per turn, after a minion here you own is destroyed, gain 1 VP."
+      "name": "闪光洞穴",
+      "abilityText": "每当这里的一个随从被消灭后，它的拥有者获得1VP。"
     },
     "base_mushroom_kingdom_pod": {
-      "name": "Mushroom Kingdom",
-      "abilityText": "At the start of your turn, if you have more cards in your hand than any other player, you may move a minion to or from this base."
+      "name": "蘑菇王国",
+      "abilityText": "在每位玩家回合开始时，该玩家可以从任意基地移动一个其他玩家的随从到这。"
     },
     "base_wizard_academy_pod": {
-      "name": "School of Wizardry",
-      "abilityText": "After this base scores, the winner looks at the top three cards of the base deck, chooses one to replace this base, and returns the others in any order."
+      "name": "巫师学院",
+      "abilityText": "在这个基地计分后，冠军查看基地牌库顶的3张牌。选择一张替换这个基地，然后以任意顺序将其余的放回。"
     },
     "base_great_library_pod": {
-      "name": "The Great Library",
-      "abilityText": "After this base scores, all players with minions here may draw one card."
+      "name": "大图书馆",
+      "abilityText": "在这个基地计分后，所有在这里有随从的玩家可以抽一张卡牌。"
     },
     "base_haunted_house_pod": {
-      "name": "Evans City Cemetery",
-      "abilityText": "After this base scores, the winner discards their hand and draws five cards."
+      "name": "伊万斯堡城镇公墓",
+      "abilityText": "在这个基地计分后，冠军弃掉他的手牌并抽取5张牌。"
     },
     "base_rhodes_plaza_pod": {
-      "name": "Rhodes Plaza Mall",
-      "abilityText": "When this base scores, each player gains 1 VP for each minion that player has here."
+      "name": "罗德百货商场",
+      "abilityText": "在这个基地计分时，每位玩家在这里每有一个随从就获得1VP。"
     },
     "base_the_homeworld_pod": {
-      "name": "The Homeworld"
+      "name": "家园",
+      "abilityText": "每当有一个随从打出到这里后，它的拥有者可以额外打出一个力量为2或以下的随从。"
     },
     "base_the_mothership_pod": {
-      "name": "The Mothership"
+      "name": "母舰",
+      "abilityText": "在这个基地计分后，冠军可以返回他在这里的一张力量为3或以下的随从到手牌。"
     },
     "base_the_jungle_pod": {
-      "name": "The Jungle"
+      "name": "绿洲丛林"
     },
     "base_tar_pits_pod": {
-      "name": "Tar Pits"
+      "name": "焦油坑",
+      "abilityText": "每当有一个随从在这里被消灭后，将它放到其拥有者的牌库底。"
     },
     "base_pirate_cove_pod": {
-      "name": "Pirate Cove"
+      "name": "灰色猫眼石/海盗湾",
+      "abilityText": "在这个基地计分后，除了冠军的所有玩家可以从这里移动一个随从到其他基地而不是进入弃牌堆。"
     },
     "base_dread_lookout_pod": {
-      "name": "Dread Lookout"
+      "name": "恐怖眺望台",
+      "abilityText": "玩家不能打出战术到这个基地上。"
     },
     "base_haunted_house_al9000_pod": {
-      "name": "Haunted House"
+      "name": "鬼屋",
+      "abilityText": "在一个玩家打出一个随从到这后，这个玩家必须弃掉一张卡牌。"
     },
     "base_the_field_of_honor_pod": {
-      "name": "The Field of Honor"
+      "name": "荣誉之地",
+      "abilityText": "当一个或多个随从在这里被消灭，那个将它们消灭的玩家获得1VP。"
     },
     "base_tsars_palace_pod": {
-      "name": "Tsar's Palace"
+      "name": "沙皇宫殿",
+      "abilityText": "力量为2或以下的随从不能被打出到这里。"
     },
     "base_greenhouse_pod": {
-      "name": "Greenhouse"
+      "name": "温室",
+      "abilityText": "冠军可以从他的牌库中搜寻一张随从并将它打出到将替换本基地的基地上。"
     },
     "base_secret_garden_pod": {
-      "name": "Secret Garden"
+      "name": "神秘花园",
+      "abilityText": "在你的回合，你可以额外打出一个力量为2或以下的随从到这里。"
     },
     "base_cat_fanciers_alley_pod": {
-      "name": "Cat Fancier's Alley"
+      "name": "诡猫巷",
+      "abilityText": "每回合一次，你可以消灭一个你在这里的随从以抽取一张卡牌。"
     },
     "base_house_of_nine_lives_pod": {
-      "name": "House of Nine Lives"
+      "name": "九命之家",
+      "abilityText": "如果一个随从在另一个基地被消灭，它的拥有者可以将它移动到这以代替。"
     },
     "base_enchanted_glade_pod": {
-      "name": "Enchanted Glade"
+      "name": "迷人峡谷",
+      "abilityText": "在你打出一张战术到这里的一个随从上后，抽取一张卡牌。"
     },
     "base_fairy_ring_pod": {
-      "name": "Fairy Ring"
+      "name": "仙灵圈",
+      "abilityText": "每回合你第一次打出一个随从到这后，你可以打出一张额外的随从到这，或打出一张额外的战术。"
     },
     "base_beautiful_castle_pod": {
-      "name": "Beautiful Castle"
+      "name": "美丽城堡",
+      "abilityText": "这里的力量为5或以上的随从不受对手牌的影响。"
     },
     "base_castle_of_ice_pod": {
-      "name": "Castle of Ice"
+      "name": "冰之城堡",
+      "abilityText": "随从不能被打出到这。"
     },
     "base_land_of_balance_pod": {
-      "name": "Land of Balance"
+      "name": "平衡之地",
+      "abilityText": "在你打出一个随从到这后，你可以从另一个基地移动一个你的随从到这里。"
     },
     "base_pony_paradise_pod": {
-      "name": "Pony Paradise"
+      "name": "小马乐园",
+      "abilityText": "如果你有两个或以上的随从在这，你在这一随从无法被消灭。"
     },
     "base_north_pole_pod": {
-      "name": "North Pole"
+      "name": "北极基地",
+      "abilityText": "玩家每回合只能打出一个随从到这个基地。"
     },
     "base_antarctic_base_pod": {
-      "name": "Antarctic Base",
-      "abilityText": "Each player may play only one minion at this base each turn."
+      "name": "南极基地",
+      "abilityText": "玩家每回合在这个基地只能打出一个随从。"
     },
     "base_ritual_site_pod": {
-      "name": "Ritual Site",
-      "abilityText": "After this base scores, shuffle all minions here into their owners' decks instead of placing them in the discard pile."
+      "name": "仪式场所",
+      "abilityText": "在这个基地计分后。在它上面的所有随从洗回他们的拥有者牌库，而不是进入弃牌堆。"
     },
     "base_rlyeh_pod": {
-      "name": "R'lyeh",
-      "abilityText": "At the start of each player's turn, that player may destroy one of their minions here to gain 1 VP."
+      "name": "拉莱耶",
+      "abilityText": "在每位玩家回合开始时，该玩家可以消灭他在本地的一个随从，如果他这样做，获得1VP。"
     },
     "base_innsmouth_base_pod": {
-      "name": "Innsmouth",
-      "abilityText": "After each time a minion is played here, its owner may place a card from any player's discard pile on the bottom of its owner's deck."
+      "name": "印斯茅斯",
+      "abilityText": "每当有一个随从被打出到这后，它的拥有者可以将任意玩家弃牌堆中的一张卡置入他们牌库底。"
     },
     "base_mountains_of_madness_pod": {
-      "name": "Mountains of Madness",
-      "abilityText": "After each time a minion is played here, its owner draws a Madness card."
+      "name": "疯狂山脉",
+      "abilityText": "每当一个随从被打出到这后，它的拥有者抽取一张疯狂卡。"
     },
     "base_plateau_of_leng_pod": {
-      "name": "Plateau of Leng",
-      "abilityText": "The first time a player plays a minion here from their hand each turn, they may play an extra minion of the same name here."
+      "name": "伦格高原",
+      "abilityText": "每回合玩家第一次打出一个随从从手牌到这以后，他们可以额外打出一张与其同名的随从到这里。"
     },
     "base_the_pasture_pod": {
-      "name": "The Pasture"
+      "name": "牧场",
+      "abilityText": "每回合玩家第一次移动一个随从到这里后，移动另一基地的一个随从到这。"
     },
     "base_sheep_shrine_pod": {
-      "name": "Sheep Shrine"
+      "name": "绵羊神社",
+      "abilityText": "这张基地入场后，每位玩家可以移动一个他们的随从到这。"
     },
     "base_castle_blood_pod": {
-      "name": "Castle Blood"
+      "name": "血堡",
+      "abilityText": "在你打出一个随从到这后，如果对手在这里的力量比你大，你可以在该随从上放置一个+1力量指示物。"
     },
     "base_crypt_pod": {
-      "name": "Crypt"
+      "name": "地窖",
+      "abilityText": "当一个或多个随从在这被消灭时，消灭它们的玩家可以在自己在这的一个随从上放置一个+1力量指示物。"
     },
     "base_laboratorium_pod": {
-      "name": "Laboratorium"
+      "name": "实验工坊",
+      "abilityText": "每回合第一个被打出到这里的随从，其控制者在上面放置一个+1力量指示物。"
     },
     "base_golem_schloss_pod": {
-      "name": "Golem Schloss"
+      "name": "魔像城堡",
+      "abilityText": "基地计分后，冠军在其每个随从上放置一个+1力量指示物。"
     },
     "base_moot_site_pod": {
-      "name": "Moot Site"
+      "name": "集会场",
+      "abilityText": "每回合第一个打出到这的随从获得+2力量直到回合结束。"
     },
     "base_standing_stones_pod": {
-      "name": "Standing Stones"
+      "name": "巨石阵",
+      "abilityText": "你的回合中，你在这的一个随从可以使用其才能两次。"
     },
     "base_egg_chamber_pod": {
-      "name": "Egg Chamber"
+      "name": "卵室",
+      "abilityText": "这里有+1力量指示物的随从不能被消灭。"
     },
     "base_the_hill_pod": {
-      "name": "The Hill"
+      "name": "蚁丘",
+      "abilityText": "每位玩家回合开始时，可以将一个自己的随从从任意基地移到这里。"
     },
     "ancient_egyptians_mummy": {
-      "name": "Mummy",
-      "abilityText": "Special: After this base scores, bury this card on another base instead of discarding it."
+      "name": "木乃伊",
+      "abilityText": "持续： 本基迦计；， 你可以将此随从埋葬 另-个基地。"
     },
     "ancient_egyptians_pyramid_engineer": {
-      "name": "Pyramid Engineer",
-      "abilityText": "You may uncover a buried card here. Talent: Bury a card from your hand here."
+      "name": "金字塔工程师",
+      "abilityText": "发掘本基地一张 你埋葬的牌。 天赋：埋葬你-张手牌至此。"
     },
     "ancient_egyptians_priest_of_anubis": {
-      "name": "Priest of Anubis",
-      "abilityText": "Ongoing: This minion has +2 power if there is a buried card here."
+      "name": "阿努比斯祭司",
+      "abilityText": "持续： 若此处有你埋葬的牌； 此随从+2战力。"
     },
     "ancient_egyptians_pharaoh": {
-      "name": "Pharaoh",
-      "abilityText": "Ongoing: After another buried card is uncovered, draw a card. Special: Before this base scores, you may uncover one of your buried cards here."
+      "name": "法老",
+      "abilityText": "持续： 另-张埋葬中的牌被 发掘后。抓-张牌。 特殊： 市基坳计笳；侧以 发掘此处 ~张你埋葬的牌。"
     },
     "ancient_egyptians_you_can_take_it_with_you": {
-      "name": "You Can Take It With You",
-      "effectText": "Bury this card. Special: When this card is uncovered, draw three cards."
+      "name": "随身带走",
+      "effectText": "埋葬此牌。 特殊： 当此牌被发掘时 抓3张牌。"
     },
     "ancient_egyptians_tomb_trap": {
-      "name": "Tomb Trap",
-      "effectText": "Bury this card. Special: When this card is uncovered, you may destroy a minion of power 4 or less here."
+      "name": "墓穴陷阱",
+      "effectText": "埋葬此牌。特殊：此牌被发掘时，你可以消灭此处一个战力 4 或更低的随从。"
     },
     "ancient_egyptians_seal_the_tomb": {
-      "name": "Seal the Tomb",
-      "effectText": "Bury up to two cards from your hand on the same base OR uncover up to two of your buried cards on the same base."
+      "name": "封印墓穴",
+      "effectText": "埋葬你>至多2张手}至 一个基地 或 发 同-个基 地至多2张你埋葬的牌。"
     },
     "ancient_egyptians_plague_of_locusts": {
-      "name": "Plague of Locusts",
-      "effectText": "特殊：在一个基地计分前，你可以打出本卡。选择一个基地。该基地上所有其他玩家的随从本回合力量-1。"
+      "name": "蝗灾",
+      "effectText": "选择一个基地。该处所有其他玩家的随从-1战力，直到回合结束。特殊：你可以在一个基地计分前打出此牌。"
     },
     "ancient_egyptians_mummy_strength": {
-      "name": "Mummy Strength",
-      "effectText": "Choose one of your minions on a base where there is a buried card. Give that minion +4 power until the end of the turn. Or give one of your minions +2 power until the end of the turn."
+      "name": "木乃伊之力",
+      "effectText": "选择你的一个随从。 若其基地中有埋葬的牌，其 +3战力至回合结束，否则 其+2战力直至回合结束。"
     },
     "ancient_egyptians_lost_knowledge": {
-      "name": "Lost Knowledge",
-      "effectText": "特殊：在一个基地计分前，你可以打出本卡。埋葬你手牌中的一张卡牌，或揭开你已埋藏的一张卡牌。"
+      "name": "失落知识",
+      "effectText": "埋葬你的一张手牌或发掘你埋葬的一张牌。特殊：你可以在一个基地计分前打出此牌。"
     },
     "ancient_egyptians_blessing_of_anubis": {
-      "name": "Blessing of Anubis",
-      "effectText": "Bury this card. Special: When this card is uncovered, your minions here have +2 power until the end of the turn."
+      "name": "阿努比斯的祝福",
+      "effectText": "埋葬这张牌。 特殊： 此牌被发掘时 本基地 中你的每个随从各 +2战馗 至回合结束。"
     },
     "ancient_egyptians_ancient_curse": {
-      "name": "Ancient Curse",
-      "effectText": "Play on a minion. You may remove a +1 power counter from it. Ongoing: This minion has -2 power."
+      "name": "远古诅咒",
+      "effectText": "对随从 出。伽可以移)其 1个+1战力棘记。 持续 此随从-2战力。"
     },
     "ancient_egyptians_mummy_pod": {
-      "name": "Mummy",
-      "abilityText": "Special: After this base scores, you may bury this minion on another base."
+      "name": "木乃伊",
+      "abilityText": "特殊：本基地计分后，你可以将此随从埋葬到另一个基地。"
     },
     "ancient_egyptians_pyramid_engineer_pod": {
-      "name": "Pyramid Engineer",
-      "abilityText": "You may uncover one of your buried cards here. Talent: Bury a card from your hand here."
+      "name": "金字塔工程师",
+      "abilityText": "你可以发掘此处你埋葬的一张牌。天赋：将一张手牌埋葬于此。"
     },
     "ancient_egyptians_priest_of_anubis_pod": {
-      "name": "Priest of Anubis",
-      "abilityText": "Ongoing: This minion has +2 power if you have a card buried here."
+      "name": "阿努比斯祭司",
+      "abilityText": "持续：如果此处有你埋葬的牌，此随从获得 +2 战力。"
     },
     "ancient_egyptians_pharaoh_pod": {
-      "name": "Pharaoh",
-      "abilityText": "Ongoing: After another buried card is uncovered, draw a card. Special: Before this base scores, you may uncover one of your buried cards here."
+      "name": "法老",
+      "abilityText": "持续：另一张埋葬的牌被发掘后，抓 1 张牌。特殊：本基地计分前，你可以发掘此处你埋葬的一张牌。"
     },
     "ancient_egyptians_lost_knowledge_pod": {
-      "name": "Lost Knowledge",
-      "effectText": "Bury a card from your hand OR uncover one of your buried cards. Special: You may play this card before a base scores."
+      "name": "失落知识",
+      "effectText": "埋葬你的一张手牌，或发掘你埋葬的一张牌。特殊：你可以在一个基地计分前打出此牌。"
     },
     "ancient_egyptians_you_can_take_it_with_you_pod": {
-      "name": "You Can Take It With You",
-      "effectText": "Bury this card. Special: When this card is uncovered, draw three cards."
+      "name": "随身带走",
+      "effectText": "埋葬此牌。特殊：当此牌被发掘时，抓 3 张牌。"
     },
     "ancient_egyptians_plague_of_locusts_pod": {
-      "name": "Plague of Locusts",
-      "effectText": "Choose a base. All other players’ minions there get -1 power until the end of the turn. Special: You may play this before a base scores."
+      "name": "蝗灾",
+      "effectText": "选择一个基地。该处所有其他玩家的随从直到回合结束 -1 战力。特殊：你可以在一个基地计分前打出此牌。"
     },
     "ancient_egyptians_mummy_strength_pod": {
-      "name": "Mummy Strength",
-      "effectText": "Choose one of your minions. If there is a card buried on its base, it gains +4 power until the end of the turn, otherwise it gains +2 power until the end of the turn."
+      "name": "木乃伊之力",
+      "effectText": "选择你的一个随从。若其所在基地有埋葬的牌，则其直到回合结束 +4 战力；否则其直到回合结束 +2 战力。"
     },
     "ancient_egyptians_tomb_trap_pod": {
-      "name": "Tomb Trap",
-      "effectText": "Bury this card. Special: When this card is uncovered, you may destroy a minion of power 4 or less here."
+      "name": "墓穴陷阱",
+      "effectText": "埋葬此牌。特殊：当此牌被发掘时，你可以消灭此处一个战力 4 或以下的随从。"
     },
     "ancient_egyptians_ancient_curse_pod": {
-      "name": "Ancient Curse",
-      "effectText": "Play on a minion. You may remove a +1 power counter from it. Ongoing: This minion has -2 power."
+      "name": "远古诅咒",
+      "effectText": "对一个随从打出。你可以移除其上的 1 枚 +1 战力指示物。持续：此随从 -2 战力。"
     },
     "ancient_egyptians_blessing_of_anubis_pod": {
-      "name": "Blessing of Anubis",
-      "effectText": "Bury this card. Special: When this card is uncovered, your minions here each gain +2 power until the end of the turn."
+      "name": "阿努比斯的祝福",
+      "effectText": "埋葬此牌。特殊：当此牌被发掘时，你在此处的每个随从直到回合结束各 +2 战力。"
     },
     "ancient_egyptians_seal_the_tomb_pod": {
-      "name": "Seal the Tomb",
-      "effectText": "Bury up to two cards from your hand on the same base OR uncover up to two of your buried cards on the same base."
+      "name": "封印墓穴",
+      "effectText": "将你手中的至多 2 张牌埋葬在同一个基地，或发掘同一个基地中你埋葬的至多 2 张牌。"
     },
     "cowboys_deputy": {
-      "name": "Deputy",
-      "abilityText": "Special: On your turn or during a duel involving your minion, you may discard this card from your hand to give a minion +2 power until the end of the turn."
+      "name": "副警长",
+      "abilityText": "特殊：你的回合内或你的随从参与决斗时，你可以从手中弃置此牌来使一个随从 +2 战力直到回合结束。"
     },
     "cowboys_gunfighter": {
-      "name": "Gunfighter",
-      "abilityText": "This minion may duel another player's minion here. Destroy the losing minion."
+      "name": "枪手",
+      "abilityText": "随从-3断力 榧手 此随1以与本坳；其她 玩家的 个随从料。瀚灭 失败的随从。"
     },
     "cowboys_pinkerton": {
-      "name": "Pinkerton",
-      "abilityText": "Ongoing: Once per duel, when one of your minions is in a duel, you may place a +1 power counter on it."
+      "name": "平克顿",
+      "abilityText": "持续： 当此处你的随从参 斗时向上添加1赦+1战力 棘记。"
     },
     "cowboys_sheriff": {
-      "name": "Sheriff",
-      "abilityText": "Special: Before this base scores, this minion may duel another player's minion here. Destroy the losing minion."
+      "name": "警长",
+      "abilityText": "特殊： 本基地计分前。此随从 可与处其他玩家的一个随 从决斗。消灭失败的随从。"
     },
     "cowboys_stagecoach": {
-      "name": "Stagecoach",
-      "effectText": "Move or transfer up to 2 of your cards on the same base to another base."
+      "name": "驿站马车",
+      "effectText": "移动或转移同一基地上至多 2 张你的牌至另一个基地。"
     },
     "cowboys_run_em_off": {
-      "name": "Run 'Em Off",
-      "effectText": "One of your minions duels another player's minion on the same base. The winning minion gets +3 power until the end of the turn, and its controller moves the loser's minion to another base."
+      "name": "赶走他们",
+      "effectText": "你的一个随从峒基另 位玩 家的随从料。胜利的随从 +3战 力至合结束。且其控制者移 动失败的随从至其他基地。"
     },
     "cowboys_quick_draw": {
-      "name": "Quick Draw",
-      "effectText": "Choose one of your minions. If it is in a duel, it gets +4 power until the end of the turn. Otherwise, it gets +2 power until the end of the turn."
+      "name": "快拔枪",
+      "effectText": "选择你的- 个随从。 若-正在\"，其 +4战力直至 回结束 ，否则其 +2战力直至 回结束。"
     },
     "cowboys_high_noon": {
-      "name": "High Noon",
-      "effectText": "One of your minions duels another player's minion on the same base. Destroy the loser's minion. If your minion wins, you may play an extra minion there."
+      "name": "正午决斗",
+      "effectText": "你的一个随从与基另-位 玩家的随从决斗。消灭失贩的 随从。若你的随从.利孓/ 以该处额外打出 个随从。"
     },
     "cowboys_gold_strike": {
-      "name": "Gold Strike",
-      "effectText": "Play on a base. Ongoing: After you play a minion here, draw a card."
+      "name": "淘到金了",
+      "effectText": "对基地打出。 持续： 在你向市基地打出 随从后，抓1张牌。"
     },
     "cowboys_gold_in_them_thar_hills": {
-      "name": "Gold in Them Thar Hills",
-      "effectText": "Look at the top three cards of your deck. Reveal and draw one of them; you may play it as an extra card. Return the rest in any order."
+      "name": "那山里有金子",
+      "effectText": "抓取欺1张；伽可以将其额外 打出。其呆按任意顺序返回。"
     },
     "cowboys_form_a_posse": {
-      "name": "Form a Posse",
-      "effectText": "Each of your minions gains +1 power and cannot be destroyed, moved, or returned to the hand until the end of the turn."
+      "name": "召集帮手",
+      "effectText": "你的每个随从+1 战力且无法 被消灭移动或返回手牌直至 回结束。"
     },
     "cowboys_dynamite_surprise": {
-      "name": "Dynamite Surprise",
-      "effectText": "Special: Before a base scores where you have a minion and are not winning, destroy a minion of power 4 or less there. Special: If another player's card reveals or looks at a card in your hand or deck, destroy one of their minions of power 4 or less."
+      "name": "炸药惊喜",
+      "effectText": "特殊： 在你有`从@战力不最高的 止地计分时。消灭该处 个汩力4 或低的随从。 特殊： 若其他玩家的卡牌 示鲢 看你手牌或牌库中的牌，鞘灭其 个力49低的随从。"
     },
     "samurai_samurai_chan": {
-      "name": "Samurai-Chan",
-      "abilityText": "After this minion goes to the discard pile from play, draw a card."
+      "name": "武士酱",
+      "abilityText": "持续：此随从自场上进入 弃牌堆后。抓1张牌。"
     },
     "samurai_ronin": {
-      "name": "Ronin",
-      "abilityText": "If this is your only minion on this base, you may place two +1 power counters on it."
+      "name": "浪人",
+      "abilityText": "随从-3战力-浪人 若此随从是本基坳中你唯 的随从，放置1赦+1战 力林记于其上。"
     },
     "samurai_bushi": {
-      "name": "Bushi",
-      "abilityText": "After this minion goes to the discard pile from play, if it had power 5 or more, gain 1 VP."
+      "name": "武士",
+      "abilityText": "持续：此随从自场上进入 奔牌堆后，若其战力为5 或高，获得 1VP。"
     },
     "samurai_shogun": {
-      "name": "Shogun",
-      "abilityText": "After another of your minions goes to the discard pile from play, place a +1 power counter on this minion."
+      "name": "将军",
+      "abilityText": "将军 持续：你的其他随州自上 进入奔牌堆后，放置1枚+1 战力棘记于其上。"
     },
     "samurai_yokai_attack": {
-      "name": "Yokai Attack!",
-      "effectText": "Destroy one of your minions to play an extra minion and an extra action."
+      "name": "妖怪来袭！",
+      "effectText": "你的一个随从来打 出一个额外随从和-个 额外战术。"
     },
     "samurai_way_of_the_warrior": {
-      "name": "Way of the Warrior",
-      "effectText": "Until the end of the turn, one of your minions gains +3 power, and if it goes to the discard pile from play, draw a card."
+      "name": "武者之道",
+      "effectText": "你的一个随 从+3胡租且如果其自场 上进入弃牌堆。抓1张牌。"
     },
     "samurai_honorable_combat": {
-      "name": "Honorable Combat",
-      "effectText": "Choose a base where another player has more power than you. One of your minions there duels one of that player's minions there. The controller of the winning minion gains 1 VP."
+      "name": "荣耀决斗",
+      "effectText": "选择一个有其他玩家总战力高于你的基地。该处你的一个随从与该玩家的随从决斗。胜利随从的控制者获得 1VP。"
     },
     "samurai_honor_the_fallen": {
-      "name": "Honor the Fallen",
-      "effectText": "Play on a base. Ongoing: After one of your minions here goes to the discard pile, draw a card."
+      "name": "致敬阵亡者",
+      "effectText": "对基地打出。 持续：每当本基地你的随从 进入弃牌堆后，抓1张牌。"
     },
     "samurai_honor_the_ancestors": {
-      "name": "Honor the Ancestors",
-      "effectText": "Place a +1 power counter on one of your minions. For each other player in the game, you may shuffle a minion from your discard pile back into your deck."
+      "name": "致敬先祖",
+      "effectText": "你的 一^随从上。漪戏中每有1位 其他玩家，你便可}你弃牌堆 中的1个随队洗回牌库。"
     },
     "samurai_heart_of_the_battle": {
-      "name": "Heart of the Battle",
-      "effectText": "特殊：在一个基地计分前，你可以打出本卡。你在该基地上的一个随从与另一位玩家在该基地的一个随从决斗，消灭输者随从。"
+      "name": "战斗之心",
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。该处你的一个随从与该处另一位玩家的随从对斗。消灭失败的随从。"
     },
     "samurai_final_haiku": {
-      "name": "Final Haiku",
-      "effectText": "Play on one of your minions. Ongoing: After this minion goes to the discard pile from play, your minions each gain +2 power until the end of the turn."
+      "name": "终曲俳句",
+      "effectText": "对你酌随从打出。 持续：此 端正进入弃 牌#后；你.个随胳 +2 战力荃回合缮弟。"
     },
     "samurai_code_of_bushido": {
-      "name": "Code of Bushido",
-      "effectText": "Place three total +1 power counters on your minions."
+      "name": "武士道",
+      "effectText": "你的至多3个随从上各 放置1枚+1 战力棘记。"
     },
     "samurai_samurai_chan_pod": {
-      "name": "Samurai-Chan",
-      "abilityText": "Ongoing: After this minion goes to the discard pile from play, draw a card."
+      "name": "武士酱",
+      "abilityText": "持续：此随从从场上进入弃牌堆后，抓 1 张牌。"
     },
     "samurai_ronin_pod": {
-      "name": "Ronin",
-      "abilityText": "If this is your only minion on this base, you may place two +1 power counters on it."
+      "name": "浪人",
+      "abilityText": "若此随从是本基地中你唯一的随从，你可以在其上放置 2 枚 +1 战力指示物。"
     },
     "samurai_bushi_pod": {
-      "name": "Bushi",
-      "abilityText": "Ongoing: After this minion goes to the discard pile from play while it has 5 or more power, gain 1 VP."
+      "name": "武士",
+      "abilityText": "持续：当此随从从场上进入弃牌堆且其战力为 5 或更高时，获得 1 VP。"
     },
     "samurai_shogun_pod": {
-      "name": "Shogun",
-      "abilityText": "Ongoing: After another of your minions goes to the discard pile from play, place a +1 power counter on this minion."
+      "name": "将军",
+      "abilityText": "持续：当你的另一个随从从场上进入弃牌堆后，在此随从上放置 1 枚 +1 战力指示物。"
     },
     "samurai_yokai_attack_pod": {
-      "name": "Yokai Attack!",
-      "effectText": "Destroy one of your minions to play an extra minion and an extra action."
+      "name": "妖怪来袭！",
+      "effectText": "消灭你的一个随从，以额外打出 1 个随从和 1 个战术。"
     },
     "samurai_way_of_the_warrior_pod": {
-      "name": "Way of the Warrior",
-      "effectText": "Until the end of the turn, one of your minions gains +3 power, and if it goes to the discard pile from play, draw a card."
+      "name": "武者之道",
+      "effectText": "直到回合结束，你的一个随从 +3 战力；若其从场上进入弃牌堆，抓 1 张牌。"
     },
     "samurai_honorable_combat_pod": {
-      "name": "Honorable Combat",
-      "effectText": "Choose a base where another player has more power than you. One of your minions there duels one of that player's minions there. The controller of the winning minion gains 1 VP."
+      "name": "荣耀决斗",
+      "effectText": "选择一个有其他玩家总战力高于你的基地。你在那里的一个随从与该玩家在那里的一个随从决斗。胜利随从的控制者获得 1 VP。"
     },
     "samurai_honor_the_fallen_pod": {
-      "name": "Honor the Fallen",
-      "effectText": "Play on a base. Ongoing: After one of your minions here goes to the discard pile, draw a card."
+      "name": "致敬阵亡者",
+      "effectText": "对一个基地打出。持续：当你在此处的一个随从进入弃牌堆后，抓 1 张牌。"
     },
     "samurai_honor_the_ancestors_pod": {
-      "name": "Honor the Ancestors",
-      "effectText": "Place a +1 power counter on one of your minions. For each other player in the game, you may shuffle a minion from your discard pile back into your deck."
+      "name": "致敬先祖",
+      "effectText": "在你的一个随从上放置 1 枚 +1 战力指示物。游戏中每有 1 位其他玩家，你便可以将你弃牌堆中的 1 个随从洗回牌库。"
     },
     "samurai_heart_of_the_battle_pod": {
-      "name": "Heart of the Battle",
-      "effectText": "特殊：在一个基地计分前，你可以打出本卡。你在该基地上的一个随从与另一位玩家在该基地的一个随从决斗，消灭输者随从。"
+      "name": "战斗之心",
+      "effectText": "特殊：你可以在一个基地计分前打出此牌。你在该处的一个随从与该处另一位玩家的一个随从决斗。消灭失败的随从。"
     },
     "samurai_final_haiku_pod": {
-      "name": "Final Haiku",
-      "effectText": "Play on one of your minions. Ongoing: After this minion goes to the discard pile from play, your minions each gain +2 power until the end of the turn."
+      "name": "终曲俳句",
+      "effectText": "对你的一个随从打出。持续：当此随从从场上进入弃牌堆后，你的每个随从直到回合结束各 +2 战力。"
     },
     "samurai_code_of_bushido_pod": {
-      "name": "Code of Bushido",
-      "effectText": "Place three total +1 power counters on your minions."
+      "name": "武士道",
+      "effectText": "在你的随从上总共放置 3 枚 +1 战力指示物。"
     },
     "vikings_huscarl": {
-      "name": "Huscarl",
-      "abilityText": "Talent: Place a card from your hand on top of your deck to give this minion +2 power until the end of the turn."
+      "name": "侍卫",
+      "abilityText": "天赋： 将-张手牌罾于你 昀牌库顶来使此随从+2 战力直至回合结束。"
     },
     "vikings_shield_maiden": {
-      "name": "Shield Maiden",
-      "abilityText": "Reveal the top card of another player's deck. If it is an action, or a minion of power 3 or less, place it into your hand. Otherwise, return it."
+      "name": "盾女",
+      "abilityText": "展示另一位玩家牌库顶的 牌。若是战 或战力3或 更低的随从。将其置于你 的手牌。否则放回。"
     },
     "vikings_raider": {
-      "name": "Raider",
-      "abilityText": "Talent: Place up to three cards from your hand on top of your deck. This minion gains +1 power for each one until the end of the turn."
+      "name": "袭击者",
+      "abilityText": "天赋 将你至多3张手牌 置于你的牌库顶。每张使此 随从+1 战力直至回合结束。"
     },
     "vikings_valkyrie": {
-      "name": "Valkyrie",
-      "abilityText": "Place a minion from another player's discard pile into your hand."
+      "name": "女武神",
+      "abilityText": "将其他玩家弃牌堆中的一 张随从置于你的手牌。"
     },
     "vikings_viking_funeral": {
-      "name": "Viking Funeral",
-      "effectText": "Play on a minion of power 5 or more. Ongoing: After this minion goes to the discard pile, gain 1 VP. If you own it, place it into the box."
+      "name": "维京葬礼",
+      "effectText": "对你战力 5 或更高的随从打出。持续：此随从进入弃牌堆后，获得 1VP。如果你拥有该随从，将其放回游戏盒。"
     },
     "vikings_tribute": {
-      "name": "Tribute",
-      "effectText": "Draw 3 cards."
+      "name": "贡品",
+      "effectText": "抓3张牌。"
     },
     "vikings_ransack": {
-      "name": "Ransack",
-      "effectText": "Place an action on a minion, an action on a base, or a buried card into your hand."
+      "name": "洗劫",
+      "effectText": "将1张打出在基地上或随从上的的战术，或被埋葬的牌置于你的手牌。"
     },
     "vikings_raiding_party": {
-      "name": "Raiding Party",
-      "effectText": "Reveal the top three cards of another player's deck. You may play a revealed action, or minion of power 4 or less, as an extra card. Return the rest in any order."
+      "name": "突袭队",
+      "effectText": "对 展示另一玩家牌库顶的3张 牌。你可以额外打出展示出的 1张醚术；或战力4「佃的 随从。 骡以意顺序回。乓；"
     },
     "vikings_pillage": {
-      "name": "Pillage",
-      "effectText": "Take a random card from another player's hand and place it into your hand."
+      "name": "掠夺",
+      "effectText": "随机抽取另一位玩家的一 张手牌置于你的手牌。"
     },
     "vikings_combat_training": {
-      "name": "Combat Training",
-      "effectText": "Your minions gain +1 power until the end of the turn."
+      "name": "战斗训练",
+      "effectText": "你的每个随从各 +1汩力 直至回合结束。"
     },
     "vikings_cast_the_runes": {
-      "name": "Cast the Runes",
-      "effectText": "Look at another player's hand. Look at the top 2 cards of their deck and replace them in any order. Play an extra action."
+      "name": "掷符文",
+      "effectText": "查看另-位玩家的手牌。查 看其牌库顶的2张}并挺任 意放回。额外打出1个战术。"
     },
     "vikings_berserk": {
-      "name": "Berserk",
-      "effectText": "Place a card from your hand on top of your deck to give one of your minions +4 power until the end of the turn."
+      "name": "狂战",
+      "effectText": "将一张手牌置于你的牌库顶 来使你的一个随从+3战力 直至回合结束。"
     },
     "base_saloon": {
-      "name": "Saloon",
-      "abilityText": "After a minion is destroyed here, each player with a minion here draws a card."
+      "name": "酒馆",
+      "abilityText": "每当此基地中有随从被消灭时，每位有随从的玩家都可以抓 1 张牌。"
     },
     "base_so_so_corral": {
-      "name": "So-So Corral",
-      "abilityText": "After you play a minion here, it may duel another player's minion here. Destroy the losing minion."
+      "name": "小镇",
+      "abilityText": "当你打出随从至本基地后，其可以与此处另一位玩家的随从决斗。消灭失败的随从。"
     },
     "base_pyramids": {
-      "name": "Pyramids",
-      "abilityText": "On your turn, you may bury a card from your hand here."
+      "name": "金字塔",
+      "abilityText": "你的回合内，你可以埋葬一张手牌至此。"
     },
     "base_star_portal": {
-      "name": "Star Portal",
-      "abilityText": "After a card is buried here or an action is played on this base, its controller draws a card."
+      "name": "星界之门",
+      "abilityText": "每当一张牌被埋葬于本基地或对本基地打出一张战术，其控制者抓 1 张牌。"
     },
     "base_pyramids_pod": {
-      "name": "Pyramids",
-      "abilityText": "On your turn, you may bury a card from your hand here."
+      "name": "金字塔",
+      "abilityText": "你的回合内，你可以埋葬一张手牌至此。"
     },
     "base_star_portal_pod": {
-      "name": "Star Portal",
-      "abilityText": "After a card is buried here or an action is played on this base, its controller draws a card."
+      "name": "星界之门",
+      "abilityText": "每当一张牌被埋葬于本基地或对本基地打出一张战术，其控制者抓 1 张牌。"
     },
     "base_shoguns_palace": {
-      "name": "Shogun's Palace",
-      "abilityText": "Once per turn, after you play a minion here, it may duel another player's minion here. The controller of the winning minion draws two cards."
+      "name": "天守阁",
+      "abilityText": "每回合一次，你打出随从至本基地后，可与此处另一位玩家的随从决斗，胜者控制者抓两张牌。"
     },
     "base_sakura_garden": {
-      "name": "Sakura Garden",
-      "abilityText": "Each turn, the first time one of your minions here goes to the discard pile, draw a card."
+      "name": "樱花花园",
+      "abilityText": "每回合首次你的随从进入弃牌堆时，抓 1 张牌。"
     },
     "base_shoguns_palace_pod": {
-      "name": "Shogun's Palace",
-      "abilityText": "Once per turn, after you play a minion here, it may duel another player's minion here. The controller of the winning minion draws two cards."
+      "name": "天守阁",
+      "abilityText": "每回合一次，你打出随从至本基地后，可与此处另一位玩家的随从决斗，胜者控制者抓两张牌。"
     },
     "base_sakura_garden_pod": {
-      "name": "Sakura Garden",
-      "abilityText": "Each turn, the first time one of your minions here goes to the discard pile, draw a card."
+      "name": "樱花花园",
+      "abilityText": "每回合首次你的随从进入弃牌堆时，抓 1 张牌。"
     },
     "base_drakkar": {
-      "name": "Drakkar",
-      "abilityText": "After the first time you play a minion here each turn, you may reveal the top card of another player's deck. If it is an action or a minion of power 3 or less, you may draw it. Otherwise, return it."
+      "name": "德拉卡尔号",
+      "abilityText": "玩家每回合首次打出随从至此后，可以展示另一位玩家牌库顶的牌。若是战术或战力 ≤3 的随从，可以置于自己手中，否则放回。"
     },
     "base_longhouse": {
-      "name": "Longhouse",
-      "abilityText": "On your turn, you may place a card from your hand on top of your deck to give one of your minions here +2 power until the end of the turn."
+      "name": "长屋",
+      "abilityText": "你的回合内，你可将一张手牌置于牌库顶来使本基地你的一个随从 +2 战力直到回合结束。"
     },
     "cowboys_deputy_pod": {
-      "name": "Deputy",
-      "abilityText": "Special: On your turn or during a duel involving your minion, you may discard this card from your hand to give a minion +2 power until the end of the turn."
+      "name": "副警长",
+      "abilityText": "特殊：在你的回合内，或你的随从参与决斗时，你可以从手中弃置此牌，使一个随从直到回合结束 +2 战力。"
     },
     "cowboys_gunfighter_pod": {
-      "name": "Gunfighter",
-      "abilityText": "This minion may duel another player's minion here. Destroy the losing minion."
+      "name": "枪手",
+      "abilityText": "此随从可以与此处另一位玩家的一个随从决斗。消灭失败的随从。"
     },
     "cowboys_pinkerton_pod": {
-      "name": "Pinkerton",
-      "abilityText": "Ongoing: Once per duel, when one of your minions is in a duel, you may place a +1 power counter on it."
+      "name": "平克顿",
+      "abilityText": "持续：每场决斗一次，当你的一个随从参与决斗时，你可以在其上放置 1 枚 +1 战力指示物。"
     },
     "cowboys_sheriff_pod": {
-      "name": "Sheriff",
-      "abilityText": "Special: Before this base scores, this minion may duel another player's minion here. Destroy the losing minion."
+      "name": "警长",
+      "abilityText": "特殊：本基地计分前，此随从可以与此处另一位玩家的一个随从决斗。消灭失败的随从。"
     },
     "cowboys_form_a_posse_pod": {
-      "name": "Form a Posse",
-      "effectText": "Each of your minions gains +1 power and cannot be destroyed, moved, or returned to the hand until the end of the turn."
+      "name": "召集帮手",
+      "effectText": "你的每个随从直到回合结束 +1 战力，且不能被消灭、移动或返回手牌。"
     },
     "cowboys_quick_draw_pod": {
-      "name": "Quick Draw",
-      "effectText": "Choose one of your minions. If it is in a duel, it gains +4 power until the end of the turn, otherwise it gains +2 power until the end of the turn."
+      "name": "快拔枪",
+      "effectText": "选择你的一个随从。若其正在决斗中，则其直到回合结束 +4 战力；否则其直到回合结束 +2 战力。"
     },
     "cowboys_gold_in_them_thar_hills_pod": {
-      "name": "Gold in Them Thar Hills",
-      "effectText": "Look at the top three cards of your deck. Reveal and draw one of them; you may play it as an extra card. Return the rest in any order."
+      "name": "那山里有金子",
+      "effectText": "查看你牌库顶的 3 张牌。展示并抓取其中 1 张；你可以将其额外打出。其余牌以任意顺序放回。"
     },
     "cowboys_stagecoach_pod": {
-      "name": "Stagecoach",
-      "effectText": "Move or transfer up to two of your cards on the same base to another base."
+      "name": "驿站马车",
+      "effectText": "移动或转移同一基地上至多 2 张你的牌到另一个基地。"
     },
     "cowboys_run_em_off_pod": {
-      "name": "Run 'Em Off",
-      "effectText": "One of your minions duels another player's minion at the same base. The winning minion gains +3 power until the end of the turn, and its controller moves the losing minion to another base."
+      "name": "赶走他们",
+      "effectText": "你的一个随从与同一基地中另一位玩家的一个随从决斗。胜利的随从直到回合结束 +3 战力，且其控制者将失败的随从移动到另一个基地。"
     },
     "cowboys_high_noon_pod": {
-      "name": "High Noon",
-      "effectText": "One of your minions duels another player's minion at the same base. Destroy the losing minion. If your minion wins, you may play an extra minion there."
+      "name": "正午决斗",
+      "effectText": "你的一个随从与同一基地中另一位玩家的一个随从决斗。消灭失败的随从。若你的随从获胜，你可以在该处额外打出 1 个随从。"
     },
     "cowboys_dynamite_surprise_pod": {
-      "name": "Dynamite Surprise",
-      "effectText": "Special: Before a base scores where you have a minion and are not winning, destroy a minion of power 4 or less there. Special: If another player's card reveals or looks at a card in your hand or deck, destroy one of their minions of power 4 or less."
+      "name": "炸药惊喜",
+      "effectText": "特殊：在一个你有随从且你并非领先的基地计分前，消灭该处一个战力 4 或以下的随从。特殊：若另一位玩家的卡牌展示或查看了你手牌或牌库中的牌，消灭其一个战力 4 或以下的随从。"
     },
     "cowboys_gold_strike_pod": {
-      "name": "Gold Strike",
-      "effectText": "Play on a base. Ongoing: After you play a minion here, draw a card."
+      "name": "淘到金了",
+      "effectText": "对一个基地打出。持续：在你于此处打出随从后，抓 1 张牌。"
     },
     "base_saloon_pod": {
-      "name": "Saloon",
-      "abilityText": "After a minion here is destroyed, each player with a minion here may draw a card."
+      "name": "酒馆",
+      "abilityText": "每当此基地中有随从被消灭时，每位有随从的玩家都可以抓 1 张牌。"
     },
     "base_so_so_corral_pod": {
-      "name": "So-So Corral",
-      "abilityText": "After you play a minion here, it may duel another player's minion here. Destroy the losing minion."
+      "name": "小镇",
+      "abilityText": "当你打出随从至本基地后，其可以与此处另一位玩家的随从决斗。消灭失败的随从。"
     },
     "vikings_huscarl_pod": {
-      "name": "Huscarl",
-      "abilityText": "Talent: Place a card from your hand on top of your deck to give this minion +2 power until the end of the turn."
+      "name": "侍卫",
+      "abilityText": "天赋：将一张手牌置于你的牌库顶，使此随从直到回合结束 +2 战力。"
     },
     "vikings_shield_maiden_pod": {
-      "name": "Shield Maiden",
-      "abilityText": "Reveal the top card of another player's deck. If it is an action, or a minion of power 3 or less, place it into your hand. Otherwise, return it."
+      "name": "盾女",
+      "abilityText": "展示另一位玩家牌库顶的牌。若其是战术，或战力 3 或以下的随从，则将其置入你的手牌；否则将其放回。"
     },
     "vikings_raider_pod": {
-      "name": "Raider",
-      "abilityText": "Talent: Place up to three cards from your hand on top of your deck. This minion gains +1 power for each one until the end of the turn."
+      "name": "袭击者",
+      "abilityText": "天赋：将你至多 3 张手牌置于牌库顶。每放 1 张，此随从直到回合结束 +1 战力。"
     },
     "vikings_valkyrie_pod": {
-      "name": "Valkyrie",
-      "abilityText": "Place a minion from another player's discard pile into your hand."
+      "name": "女武神",
+      "abilityText": "将另一位玩家弃牌堆中的 1 个随从置入你的手牌。"
     },
     "vikings_berserk_pod": {
-      "name": "Berserk",
-      "effectText": "Place a card from your hand on top of your deck to give one of your minions +4 power until the end of the turn."
+      "name": "狂战",
+      "effectText": "将一张手牌置于你的牌库顶，使你的一个随从直到回合结束 +4 战力。"
     },
     "vikings_cast_the_runes_pod": {
-      "name": "Cast the Runes",
-      "effectText": "Look at another player's hand. Look at the top two cards of their deck and return them in any order. Play an extra action."
+      "name": "掷符文",
+      "effectText": "查看另一位玩家的手牌。查看其牌库顶的 2 张牌，并以任意顺序放回。额外打出 1 个战术。"
     },
     "vikings_combat_training_pod": {
-      "name": "Combat Training",
-      "effectText": "Each of your minions gains +1 power until the end of the turn."
+      "name": "战斗训练",
+      "effectText": "你的每个随从直到回合结束各 +1 战力。"
     },
     "vikings_pillage_pod": {
-      "name": "Pillage",
-      "effectText": "Take a random card from another player's hand and place it in yours."
+      "name": "掠夺",
+      "effectText": "从另一位玩家手牌中随机抽取 1 张牌，置入你的手牌。"
     },
     "vikings_raiding_party_pod": {
-      "name": "Raiding Party",
-      "effectText": "Reveal the top three cards of another player's deck. You may play a revealed action, or minion of power 4 or less, as an extra card. Return the rest in any order."
+      "name": "突袭队",
+      "effectText": "展示另一位玩家牌库顶的 3 张牌。你可以将其中展示出的一张战术，或一张战力 4 或以下的随从，作为额外牌打出。其余牌以任意顺序放回。"
     },
     "vikings_ransack_pod": {
-      "name": "Ransack",
-      "effectText": "Place an action on a minion, an action on a base, or a buried card into your hand."
+      "name": "洗劫",
+      "effectText": "将一张打出在随从上的战术、一张打出在基地上的战术，或一张埋葬的牌置入你的手牌。"
     },
     "vikings_tribute_pod": {
-      "name": "Tribute",
-      "effectText": "Draw three cards."
+      "name": "贡品",
+      "effectText": "抓 3 张牌。"
     },
     "vikings_viking_funeral_pod": {
-      "name": "Viking Funeral",
-      "effectText": "Play on one of your minions of power 5 or more. Ongoing: After this minion goes to the discard pile, gain 1 VP. If you own it, put it back in the box."
+      "name": "维京葬礼",
+      "effectText": "对你一个战力 5 或更高的随从打出。持续：当此随从进入弃牌堆后，获得 1 VP。若你拥有它，则将其放回盒中。"
     },
     "base_drakkar_pod": {
-      "name": "Drakkar",
-      "abilityText": "After the first time you play a minion here each turn, you may reveal the top card of another player's deck. If it is an action or a minion of power 3 or less, you may draw it. Otherwise, return it."
+      "name": "德拉卡尔号",
+      "abilityText": "玩家每回合首次打出随从至此后，可以展示另一位玩家牌库顶的牌。若是战术或战力 ≤3 的随从，可以置于自己手中，否则放回。"
     },
     "base_longhouse_pod": {
-      "name": "Longhouse",
-      "abilityText": "On your turn, you may place a card from your hand on top of your deck to give one of your minions here +2 power until the end of the turn."
+      "name": "长屋",
+      "abilityText": "你的回合内，你可将一张手牌置于牌库顶来使本基地你的一个随从 +2 战力直到回合结束。"
     },
     "pecos_bill": {
-      "name": "Pecos Bill",
-      "effectText": "Special: When you become the challenger in a duel, you may discard a card to play this titan there. Do not resolve any titan clashes until after the end of the duel. Ongoing: During duels here, other players may not move minions from here or return them to a player's hand. Ongoing: After you win a duel, draw a card."
+      "name": "佩科斯·比尔",
+      "effectText": "特殊：当你在一次决斗中成为挑战者时，你可以弃置一张牌，将此泰坦打出到该处。本次决斗结束后才结算任何泰坦交锋。持续：在此处的决斗期间，其他玩家不能将此处的随从移动离开或返回手牌。持续：当你赢得一次决斗后，抓 1 张牌。"
     },
     "*": {
       "type": "cards.*.type"
+    },
+    "mermaids_ultimate_song": {
+      "name": "终极歌声",
+      "effectText": "将你此基地的一个随从移动到另一个基地。然后在该基地打出一张额外行动卡。"
+    },
+    "mermaids_captive_audience": {
+      "name": "俘虏观众",
+      "effectText": "将另一位玩家在此基地的一个随从移动到你选择的另一个基地。"
+    },
+    "mermaids_becalmed_shores": {
+      "name": "静风海岸",
+      "effectText": "打出到基地上。持续：此基地上其他玩家的随从在你的回合中力量 -1。天赋：将你在此基地的一个随从移动到另一个基地。"
+    },
+    "mermaids_siren_song": {
+      "name": "海妖之歌",
+      "effectText": "选择一个基地。将该基地的一张随从移动到另一个基地。"
+    },
+    "mermaids_toll_bay": {
+      "name": "过路湾",
+      "effectText": "本回合内，每当另一位玩家将随从移动到你拥有随从的基地，你可抽一张牌。"
+    },
+    "mermaids_shipwreck_cove": {
+      "name": "沉船湾",
+      "effectText": "打出到基地上。特殊：在此基地计分后，你可以在替换基地上额外打出一个随从。"
+    },
+    "mermaids_charmed": {
+      "name": "蛊惑",
+      "effectText": "打出到一个随从上。本回合内它不为其控制者提供力量。"
+    },
+    "mermaids_desert_island": {
+      "name": "荒岛",
+      "effectText": "打出到基地上。持续：每位玩家在此基地至多保留一个随从，其余被移回拥有者手牌。"
+    },
+    "mermaids_siren": {
+      "name": "海妖",
+      "abilityText": "持续：在你的回合中，此基地其他玩家的随从力量 -1。"
+    },
+    "mermaids_charmer": {
+      "name": "魅惑者",
+      "abilityText": "天赋：将另一位玩家在此基地的一个随从移动到另一个基地。"
+    },
+    "mermaids_temptress": {
+      "name": "诱惑者",
+      "abilityText": "持续：你在此基地每有一个其他随从，本随从力量 +1。"
+    },
+    "mermaids_mermaid_queen": {
+      "name": "美人鱼女王",
+      "abilityText": "你可以将此基地的一张对手随从移动到另一个基地。"
+    },
+    "skeletons_gravestones": {
+      "name": "墓碑群",
+      "effectText": "打出到基地上。特殊：此基地计分后，你可以在替换基地埋葬一张你弃牌堆中的力量3或以下随从。"
+    },
+    "skeletons_burst_forth": {
+      "name": "破土而出",
+      "effectText": "特殊：在基地计分前，你可以揭示并打出你埋葬在该基地的一张随从。"
+    },
+    "skeletons_dig_em_up": {
+      "name": "挖出来",
+      "effectText": "从你任意基地揭示一张埋葬牌并将其打出。"
+    },
+    "skeletons_place_em_down": {
+      "name": "埋下去",
+      "effectText": "从你手牌选择一张力量3或以下随从并埋葬到一个基地。"
+    },
+    "skeletons_graveyard": {
+      "name": "墓园",
+      "effectText": "打出到基地上。天赋：将你弃牌堆的一张力量3或以下随从埋葬到此基地。"
+    },
+    "skeletons_hearse_fleet": {
+      "name": "灵车舰队",
+      "effectText": "在你有随从的一个基地，埋葬你弃牌堆中至多两张力量3或以下随从。"
+    },
+    "skeletons_spooky_scary": {
+      "name": "阴森可怖……",
+      "effectText": "将另一位玩家在一个基地的一张力量3或以下随从移入弃牌堆。"
+    },
+    "skeletons_grave_goods": {
+      "name": "陪葬品",
+      "effectText": "将一张力量3或以下随从从你的弃牌堆加入手牌。"
+    },
+    "skeletons_returned_one": {
+      "name": "归来者",
+      "abilityText": "你可以将一张力量3或以下随从从手牌埋葬到此基地。"
+    },
+    "skeletons_revenant": {
+      "name": "亡灵",
+      "abilityText": "特殊：每回合一次，当你力量3或以下的随从从另一基地进入弃牌堆时，你可将其埋葬到任意基地。"
+    },
+    "skeletons_gravetender": {
+      "name": "守墓人",
+      "abilityText": "持续：你在此基地每有一张埋葬牌，本随从力量 +1。"
+    },
+    "skeletons_lord_of_bones": {
+      "name": "白骨领主",
+      "abilityText": "持续：你在此基地每有一个力量3或以下随从，本随从力量 +1。天赋：将一张力量3或以下随从从弃牌堆埋葬到此基地。"
+    },
+    "world_champs_sheriff": {
+      "name": "治安官",
+      "abilityText": "特殊：此基地计分前，你可与此处另一位玩家的一张随从决斗。落败随从被消灭。"
+    },
+    "world_champs_aramis": {
+      "name": "阿拉米斯",
+      "abilityText": "持续：每回合一次，当你打出直接影响此随从的行动后，你可额外打出另一张同样直接影响它的行动。"
+    },
+    "world_champs_stoneford": {
+      "name": "斯通福德",
+      "abilityText": "从牌库搜寻一张行动卡加入手牌，然后洗牌。"
+    },
+    "world_champs_akye_the_turtle": {
+      "name": "海龟阿凯",
+      "abilityText": "你可以将一张手牌交给另一位玩家以抽两张牌。"
+    },
+    "world_champs_diva": {
+      "name": "迪娃",
+      "abilityText": "持续：每回合一次，当标准行动直接影响你在此处的其他随从时，你可令此随从受到同样影响。"
+    },
+    "world_champs_shield_maiden": {
+      "name": "盾女",
+      "abilityText": "展示另一位玩家牌库顶。若为行动卡或力量3及以下随从，则加入你手牌，否则放回。"
+    },
+    "world_champs_calicoin": {
+      "name": "卡利科因",
+      "abilityText": "你可在此处另一张随从上放置1个+1力量指示物。"
+    },
+    "world_champs_mummy": {
+      "name": "木乃伊",
+      "abilityText": "持续：此基地计分后，你可将本随从埋葬到另一基地。"
+    },
+    "world_champs_rainbow_girl": {
+      "name": "彩虹女孩",
+      "abilityText": "你在此基地的其他随从在本回合结束前力量 +1。"
+    },
+    "world_champs_samurai_chan": {
+      "name": "武士酱",
+      "abilityText": "持续：当本随从从场上进入弃牌堆后，抽一张牌。"
+    },
+    "world_champs_bewitched": {
+      "name": "蛊惑附体",
+      "effectText": "打出到一个随从上。持续：该随从力量 +2。若其离场，将本行动转移到另一随从。"
+    },
+    "world_champs_eh": {
+      "name": "嗯？",
+      "effectText": "特殊：在你本回合首次打出行动后，可额外打出此卡。令你的一个随从本回合力量 +1，并可将此卡返回手牌而非弃牌堆。"
+    },
+    "world_champs_fast_as_lightning": {
+      "name": "快如闪电",
+      "effectText": "选择一个随从。本回合其力量 +2，且若将进入弃牌堆则改为回到其拥有者手牌。"
+    },
+    "world_champs_fighting_spirit_prize": {
+      "name": "斗志奖杯",
+      "effectText": "抽两张牌，并将总计2个+1力量指示物分配到你的随从上。"
+    },
+    "world_champs_high_speed_chase": {
+      "name": "高速追逐",
+      "effectText": "打出到基地上。天赋：将此行动转移到另一基地，把你一个随从从这里移到那里，并使其本回合力量 +3。"
+    },
+    "world_champs_its_blitzin_time": {
+      "name": "冲锋时刻！",
+      "effectText": "令你的一个随从本回合力量 +3。"
+    },
+    "world_champs_kaiju_conflict": {
+      "name": "怪兽冲突",
+      "effectText": "额外打出两张行动卡。"
+    },
+    "world_champs_mouse_bird_and_sausage": {
+      "name": "鼠、鸟与香肠",
+      "effectText": "选择同一基地至多两张同派系随从，使其各在本回合获得 +2 力量。"
+    },
+    "world_champs_shark_tattoo": {
+      "name": "鲨鱼纹身",
+      "effectText": "打出到你的一个随从上。先放置1个+1力量指示物。持续：在你回合开始时，若它是你在此唯一随从，再放置1个+1力量指示物。"
+    },
+    "world_champs_smart_set_up": {
+      "name": "聪明布局",
+      "effectText": "打出到另一位玩家的随从上。持续：每回合首次有随从打到此基地后，抽一张牌。"
+    },
+    "base_mermaid_pool": {
+      "name": "美人鱼池",
+      "abilityText": "在你的回合中，若你在此有随从，你可将另一位玩家的一张随从移动到这里。"
+    },
+    "base_mermaid_reef": {
+      "name": "美人鱼礁",
+      "abilityText": "在你的回合中，此基地其他玩家随从对其控制者贡献力量 -1。"
+    },
+    "base_boneyard": {
+      "name": "白骨场",
+      "abilityText": "每回合一次，当你力量3或以下随从从另一基地进入弃牌堆后，你可将其埋葬到这里。"
+    },
+    "base_ossuary": {
+      "name": "藏骨堂",
+      "abilityText": "在你的回合中，你可将弃牌堆中一张力量3或以下随从埋葬到这里。"
+    },
+    "base_arena": {
+      "name": "竞技场",
+      "abilityText": "你每回合首次在此打出随从后，可额外打出一张行动或抽一张牌。"
+    },
+    "base_hall_of_fame": {
+      "name": "名人堂",
+      "abilityText": "你每回合首次在此打出的随从在本回合结束前力量 +2。"
     }
   },
   "endgame": {
@@ -3324,9 +3604,8 @@
   },
   "setup": {
     "expansions": {
-      "label": "Expansion Rules",
-      "titans": "Titans"
+      "label": "扩展规则",
+      "titans": "泰坦"
     }
   }
 }
-
