@@ -81,15 +81,30 @@ function writeRememberedFields(fields: AuthRememberedFields): void {
     }
 }
 
+type AuthMode = 'login' | 'register' | 'reset';
+
 interface AuthModalProps {
     isOpen: boolean;
     onClose: () => void;
-    initialMode?: 'login' | 'register' | 'reset';
+    initialMode?: AuthMode;
     closeOnBackdrop?: boolean;
+    placement?: 'center' | 'right';
+    embedded?: boolean;
+    showModeSwitchFooter?: boolean;
+    onModeChange?: (mode: AuthMode) => void;
 }
 
-export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackdrop }: AuthModalProps) => {
-    const [mode, setMode] = useState<'login' | 'register' | 'reset'>(initialMode);
+export const AuthModal = ({
+    isOpen,
+    onClose,
+    initialMode = 'login',
+    closeOnBackdrop,
+    placement = 'center',
+    embedded = false,
+    showModeSwitchFooter = true,
+    onModeChange,
+}: AuthModalProps) => {
+    const [mode, setMode] = useState<AuthMode>(initialMode);
     const [account, setAccount] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
@@ -119,6 +134,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
     const textInputClassName = 'auth-form-input w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] caret-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-base sm:text-lg';
     const codeActionButtonClassName = 'px-3 py-1.5 bg-[#8c7b64] hover:bg-[#6b5d4a] text-white text-xs uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer';
     const secondaryTextButtonClassName = 'text-xs text-[#8c7b64] hover:text-[#433422] transition-colors';
+    const isRightPlacement = placement === 'right';
     const persistRememberedField = useCallback((key: keyof AuthRememberedFields, value: string) => {
         rememberedFieldsRef.current = {
             ...rememberedFieldsRef.current,
@@ -171,6 +187,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
             rememberedFieldsRef.current = remembered;
             draftHydratedRef.current = false;
             setMode(initialMode);
+            onModeChange?.(initialMode);
             setAccount(remembered.account);
             setUsername(remembered.username);
             setEmail(remembered.email);
@@ -178,7 +195,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
             clearSensitiveFields();
             draftHydratedRef.current = true;
         }
-    }, [clearSensitiveFields, isOpen, initialMode]);
+    }, [clearSensitiveFields, isOpen, initialMode, onModeChange]);
 
     useEffect(() => {
         if (!draftHydratedRef.current) return;
@@ -355,7 +372,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
         }
     };
 
-    const switchMode = (nextMode: 'login' | 'register' | 'reset') => {
+    const switchMode = (nextMode: AuthMode) => {
         const remembered = rememberedFieldsRef.current;
         const preferredEmail = email.trim() || account.trim() || resetEmail.trim() || remembered.email || remembered.account || remembered.resetEmail;
         const preferredAccount = account.trim() || email.trim() || resetEmail.trim() || remembered.account || remembered.email || remembered.resetEmail;
@@ -368,6 +385,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
         };
 
         setMode(nextMode);
+        onModeChange?.(nextMode);
         setAccount(nextRememberedFields.account);
         setEmail(nextRememberedFields.email);
         setResetEmail(nextRememberedFields.resetEmail);
@@ -377,23 +395,17 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
         clearSensitiveFields();
     };
 
-    return (
-        <ModalBase
-            onClose={onClose}
-            closeOnBackdrop={closeOnBackdrop}
-            // 让弹窗容器跟随 --runtime-viewport-height，移动端键盘弹出时保持可滚动可见。
-            containerClassName="modal-base-container p-0"
-            containerStyle={{
-                paddingTop: 'max(1rem, var(--safe-area-top))',
-                paddingRight: 'max(1rem, var(--safe-area-right))',
-                paddingBottom: 'max(1rem, var(--runtime-modal-bottom-inset))',
-                paddingLeft: 'max(1rem, var(--safe-area-left))',
-            }}
+    const authSurface = (
+        <div
+            className={clsx(
+                'bg-[#fcfbf9] pointer-events-auto relative flex flex-col overflow-hidden border border-[#e5e0d0] shadow-[0_10px_40px_rgba(67,52,34,0.1)]',
+                embedded
+                    ? 'h-full w-full max-h-full max-w-full rounded-[18px] border-[#d8b894]/70 bg-[linear-gradient(180deg,_rgba(252,251,249,0.98)_0%,_rgba(247,240,230,0.96)_100%)] shadow-[0_12px_30px_rgba(67,52,34,0.12)]'
+                    : 'w-[calc(100vw-2rem)] max-w-[400px] max-h-[var(--runtime-modal-max-height)] rounded-sm',
+                !embedded && (isRightPlacement ? 'ml-4 mr-2 md:mr-4' : 'mx-4'),
+            )}
+            data-testid={embedded ? 'auth-embedded-panel' : 'auth-modal'}
         >
-            <div
-                className="bg-[#fcfbf9] pointer-events-auto relative mx-4 flex w-[calc(100vw-2rem)] max-w-[400px] max-h-[var(--runtime-modal-max-height)] flex-col overflow-hidden rounded-sm border border-[#e5e0d0] shadow-[0_10px_40px_rgba(67,52,34,0.1)]"
-                data-testid="auth-modal"
-            >
                 {/* 装饰边角 */}
                 <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-[#c0a080]" />
                 <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-[#c0a080]" />
@@ -431,7 +443,7 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                 </div>
 
                 <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col font-serif">
-                    <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4 sm:px-10 sm:pb-6">
+                    <div className="scrollbar-thin scrollbar-thumb-[#b48a63]/45 scrollbar-track-transparent min-h-0 flex-1 overflow-y-auto px-6 pb-4 sm:px-10 sm:pb-6">
                         {error && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
@@ -729,7 +741,8 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                                 : t(mode === 'login' ? 'login.submit' : mode === 'register' ? 'register.submit' : 'reset.submit')}
                         </button>
 
-                        <div className="mt-4 flex items-center justify-center gap-4 text-sm font-serif italic">
+                        {showModeSwitchFooter ? (
+                            <div className="mt-4 flex items-center justify-center gap-4 text-sm font-serif italic">
                             <button
                                 type="button"
                                 onClick={() => mode !== 'login' && switchMode('login')}
@@ -755,10 +768,32 @@ export const AuthModal = ({ isOpen, onClose, initialMode = 'login', closeOnBackd
                                 <span className="relative z-10">{t('menu.register')}</span>
                                 <span className="underline-center h-[1px] opacity-60" />
                             </button>
-                        </div>
+                            </div>
+                        ) : null}
                     </div>
                 </form>
             </div>
+    );
+
+    if (embedded) {
+        return authSurface;
+    }
+
+    return (
+        <ModalBase
+            onClose={onClose}
+            closeOnBackdrop={closeOnBackdrop}
+            // 让弹窗容器跟随 --runtime-viewport-height，移动端键盘弹出时保持可滚动可见。
+            containerClassName="modal-base-container p-0"
+            containerStyle={{
+                paddingTop: 'max(1rem, var(--safe-area-top))',
+                paddingRight: 'max(1rem, var(--safe-area-right))',
+                paddingBottom: 'max(1rem, var(--runtime-modal-bottom-inset))',
+                paddingLeft: 'max(1rem, var(--safe-area-left))',
+            }}
+            contentWrapperClassName={isRightPlacement ? 'justify-end' : undefined}
+        >
+            {authSurface}
         </ModalBase>
     );
 };

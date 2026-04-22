@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import type { GameConfig } from '../../config/games.config';
 import { GAME_CHANGELOG_API_URL } from '../../config/server';
 import { useAuth } from '../../contexts/AuthContext';
-import { useModalStack } from '../../contexts/ModalStackContext';
 import { useLobbyStats } from '../../hooks/useLobbyStats';
 import { logger } from '../../lib/logger';
 import { AuthModal } from '../auth/AuthModal';
@@ -32,31 +31,6 @@ const cardSurfaceStyle = {
     backgroundRepeat: 'no-repeat',
 } satisfies React.CSSProperties;
 
-function HolderActionButton({
-    onClick,
-    children,
-}: {
-    onClick: () => void;
-    children: React.ReactNode;
-}) {
-    return (
-        <button
-            type="button"
-            onClick={onClick}
-            className="inline-flex min-h-[34px] min-w-[120px] items-center justify-center bg-transparent px-[16px] py-[8px] text-[clamp(10px,0.78vw,11px)] font-bold text-[#5d3923] transition-transform duration-200 hover:-translate-y-[1px]"
-            style={{
-                borderStyle: 'solid',
-                borderWidth: '10px 14px',
-                borderImageSource: `url("${HOME_V2_HOLDER_BG}")`,
-                borderImageSlice: '38 38 38 38 fill',
-                borderImageRepeat: 'round',
-            }}
-        >
-            {children}
-        </button>
-    );
-}
-
 function PanelHeader({
     eyebrow,
     title,
@@ -68,11 +42,13 @@ function PanelHeader({
 }) {
     return (
         <header className="space-y-[0.8%]">
-            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9b7453]">
-                {eyebrow}
-            </div>
+            {eyebrow ? (
+                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-[#9b7453]">
+                    {eyebrow}
+                </div>
+            ) : null}
             <div className="space-y-[0.6%]">
-                <h3 className="text-[clamp(18px,2vw,30px)] font-bold leading-none text-[#5a3822]">
+                <h3 className="text-[clamp(22px,2.2vw,32px)] font-bold leading-none text-[#5a3822]">
                     {title}
                 </h3>
                 {subtitle ? (
@@ -303,68 +279,119 @@ export function HomeV2ChangelogPanel({
     );
 }
 
-export function HomeV2LoginPanel() {
+type HomeV2AuthMode = 'login' | 'register' | 'reset';
+
+export function HomeV2LoginPanel({
+    mode,
+    onModeChange,
+}: {
+    mode: HomeV2AuthMode;
+    onModeChange: (mode: HomeV2AuthMode) => void;
+}) {
     const { t } = useTranslation(['lobby', 'auth']);
     const { user } = useAuth();
-    const { openModal, closeModal } = useModalStack();
-    const authModalIdRef = React.useRef<string | null>(null);
 
-    const openAuth = React.useCallback((mode: 'login' | 'register') => {
-        if (authModalIdRef.current) {
-            closeModal(authModalIdRef.current);
-            authModalIdRef.current = null;
-        }
-        authModalIdRef.current = openModal({
-            closeOnBackdrop: true,
-            closeOnEsc: true,
-            lockScroll: true,
-            onClose: () => {
-                authModalIdRef.current = null;
-            },
-            render: ({ close, closeOnBackdrop }) => (
-                <AuthModal
-                    isOpen
-                    onClose={close}
-                    initialMode={mode}
-                    closeOnBackdrop={closeOnBackdrop}
-                />
-            ),
-        });
-    }, [closeModal, openModal]);
-
-    React.useEffect(() => () => {
-        if (authModalIdRef.current) {
-            closeModal(authModalIdRef.current);
-            authModalIdRef.current = null;
-        }
-    }, [closeModal]);
+    const modeButtonClassName = `${cardSurfaceClassName} flex items-center justify-between gap-3 text-left transition-transform duration-200 hover:-translate-y-[1px]`;
 
     return (
         <div className="pointer-events-auto flex h-full w-full flex-col gap-[2.8%] px-[5%] py-[4.5%] text-[#5c3a24]">
             <PanelHeader
                 eyebrow={t('lobby:homeV2.tabs.rooms.eyebrow')}
-                title={user ? user.username : t('lobby:homeV2.tabs.rooms.title')}
+                title={user ? user.username : t('auth:menu.login', '登录')}
+                subtitle={user ? t('lobby:homeV2.tabs.rooms.loggedInHint') : t('lobby:homeV2.tabs.rooms.loading')}
             />
-            <div className={`${cardSurfaceClassName} flex-1 min-h-0 overflow-hidden`} style={cardSurfaceStyle}>
+            <div className="flex-1 min-h-0 overflow-hidden">
                 {user ? (
-                    <div className="flex h-full min-h-0 flex-col items-center justify-center text-center">
-                        <div className="max-w-[92%] text-[clamp(10px,0.9vw,12px)] leading-[1.5] text-[#7a5d46]">
-                            {t('lobby:homeV2.tabs.rooms.loggedInHint')}
+                    <div className="flex h-full min-h-0 flex-col justify-center gap-3 text-center">
+                        <div className={`${cardSurfaceClassName} flex min-h-[160px] flex-col items-center justify-center gap-3 px-[8%]`} style={cardSurfaceStyle}>
+                            <div className="text-[clamp(18px,1.7vw,24px)] font-semibold text-[#634128]">{user.username}</div>
+                            <div className="max-w-[92%] text-[clamp(12px,1vw,14px)] leading-[1.5] text-[#7a5d46]">
+                                {t('lobby:homeV2.tabs.rooms.loggedInHint')}
+                            </div>
                         </div>
                     </div>
                 ) : (
-                    <div className="flex h-full min-h-0 flex-col items-center justify-center gap-4 text-center">
-                        <div className="flex flex-wrap items-center justify-center gap-3">
-                            <HolderActionButton onClick={() => openAuth('login')}>
-                                {t('auth:menu.login', '登录')}
-                            </HolderActionButton>
-                            <HolderActionButton onClick={() => openAuth('register')}>
-                                {t('auth:menu.register', '注册')}
-                            </HolderActionButton>
+                    <div className="flex h-full min-h-0 flex-col gap-3">
+                        <div className={`${cardSurfaceClassName} flex-1 min-h-0`} style={cardSurfaceStyle}>
+                            <div className="flex h-full min-h-0 flex-col justify-between gap-4">
+                                <div className="space-y-2">
+                                    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#9b7453]">
+                                        {t('auth:menu.login', '登录')} / {t('auth:menu.register', '注册')}
+                                    </div>
+                                    <div className="text-[13px] leading-[1.55] text-[#6f523c]">
+                                        选择左侧入口，右页表单会直接切换；默认展示登录。
+                                    </div>
+                                </div>
+                                <div className="flex flex-col gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => onModeChange('login')}
+                                        className={modeButtonClassName}
+                                        style={{
+                                            ...cardSurfaceStyle,
+                                            boxShadow: mode === 'login' || mode === 'reset' ? '0 10px 22px rgba(120, 80, 36, 0.16)' : undefined,
+                                            transform: mode === 'login' || mode === 'reset' ? 'translateY(-1px)' : undefined,
+                                        }}
+                                        data-testid="home-v2-auth-mode-login"
+                                    >
+                                        <span>
+                                            <span className="block text-[13px] font-semibold text-[#5b3822]">{t('auth:menu.login', '登录')}</span>
+                                            <span className="mt-0.5 block text-[11px] text-[#8b6b4e]">账号密码直接填写</span>
+                                        </span>
+                                        <span className="text-[11px] font-semibold text-[#9a6a3c]">{mode === 'login' || mode === 'reset' ? '●' : '○'}</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => onModeChange('register')}
+                                        className={modeButtonClassName}
+                                        style={{
+                                            ...cardSurfaceStyle,
+                                            boxShadow: mode === 'register' ? '0 10px 22px rgba(120, 80, 36, 0.16)' : undefined,
+                                            transform: mode === 'register' ? 'translateY(-1px)' : undefined,
+                                        }}
+                                        data-testid="home-v2-auth-mode-register"
+                                    >
+                                        <span>
+                                            <span className="block text-[13px] font-semibold text-[#5b3822]">{t('auth:menu.register', '注册')}</span>
+                                            <span className="mt-0.5 block text-[11px] text-[#8b6b4e]">验证码 + 用户名 + 密码</span>
+                                        </span>
+                                        <span className="text-[11px] font-semibold text-[#9a6a3c]">{mode === 'register' ? '●' : '○'}</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 )}
             </div>
+        </div>
+    );
+}
+
+export function HomeV2AuthFormPanel({
+    mode,
+    onModeChange,
+}: {
+    mode: HomeV2AuthMode;
+    onModeChange: (mode: HomeV2AuthMode) => void;
+}) {
+    const { user } = useAuth();
+
+    return (
+        <div className="pointer-events-auto h-full w-full px-[5%] py-[4.5%] text-[#5c3a24]">
+            {user ? (
+                <div className={`${cardSurfaceClassName} flex h-full min-h-0 flex-col items-center justify-center px-[8%] text-center`} style={cardSurfaceStyle}>
+                    <div className="text-[clamp(18px,1.7vw,24px)] font-semibold text-[#634128]">{user.username}</div>
+                </div>
+            ) : (
+                <AuthModal
+                    embedded
+                    isOpen
+                    onClose={() => undefined}
+                    initialMode={mode}
+                    onModeChange={onModeChange}
+                    showModeSwitchFooter={false}
+                />
+            )}
         </div>
     );
 }

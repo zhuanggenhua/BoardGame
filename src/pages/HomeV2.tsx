@@ -3,8 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router-dom';
 import { getAllGames, getGameById } from '../config/games.config';
 import {
-    HomeV2ChangelogPanel,
-    HomeV2RoomsPanel,
+    HomeV2AuthFormPanel,
     HomeV2LoginPanel,
 } from '../components/home-v2/HomeTabPanels';
 import { LobbyDirectory } from '../components/home-v2/LobbyDirectory';
@@ -16,10 +15,12 @@ import type { UISceneCompiledArtifact } from '../ui-scene/types';
 const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
 const HOME_V2_BOOK_DESK = `${HOME_V2_ASSET_ROOT}/book-desk/compressed/1.webp`;
 const HOME_V2_COMPILED_SCENE = compiledHomeV2Scene as UISceneCompiledArtifact;
-const HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY = 9;
+const HOME_V2_MOBILE_LANDSCAPE_MAX_HEIGHT = 520;
+const HOME_V2_MOBILE_LANDSCAPE_MAX_WIDTH = 1100;
+const HOME_V2_PHONE_PRESENTATION_SCALE = 1.28;
 
-type HomeV2TabId = 'lobby' | 'rooms' | 'changelog';
-const HOME_V2_TAB_ORDER: HomeV2TabId[] = ['lobby', 'rooms', 'changelog'];
+type HomeV2TabId = 'lobby' | 'rooms';
+const HOME_V2_TAB_ORDER: HomeV2TabId[] = ['lobby', 'rooms'];
 
 function resolveTabFlipDirection(from: HomeV2TabId, to: HomeV2TabId): 'flippingTabForward' | 'flippingTabBackward' {
     const fromIndex = HOME_V2_TAB_ORDER.indexOf(from);
@@ -33,10 +34,37 @@ export const HomeV2 = () => {
     const [sceneState, setSceneState] = React.useState<HomeV2SceneState>('open');
     const [activeTab, setActiveTab] = React.useState<HomeV2TabId>('lobby');
     const [selectedGameId, setSelectedGameId] = React.useState<string | null>(null);
+    const [authMode, setAuthMode] = React.useState<'login' | 'register' | 'reset'>('login');
     const pendingGameIdRef = React.useRef<string | null>(null);
     const pendingTabIdRef = React.useRef<HomeV2TabId | null>(null);
     const queuedTabAfterOverviewRef = React.useRef<HomeV2TabId | null>(null);
     const debugRegions = searchParams.get('homeV2Debug') === '1';
+    const [viewportSize, setViewportSize] = React.useState(() => ({
+        width: typeof window === 'undefined' ? 0 : window.innerWidth,
+        height: typeof window === 'undefined' ? 0 : window.innerHeight,
+    }));
+
+    React.useEffect(() => {
+        const syncViewport = () => {
+            setViewportSize({
+                width: window.innerWidth,
+                height: window.innerHeight,
+            });
+        };
+        syncViewport();
+        window.addEventListener('resize', syncViewport);
+        return () => window.removeEventListener('resize', syncViewport);
+    }, []);
+
+    const isPhoneLandscapeViewport = viewportSize.width > viewportSize.height
+        && viewportSize.height <= HOME_V2_MOBILE_LANDSCAPE_MAX_HEIGHT
+        && viewportSize.width <= HOME_V2_MOBILE_LANDSCAPE_MAX_WIDTH;
+    const viewportAspectRatio = viewportSize.height > 0 ? viewportSize.width / viewportSize.height : 0;
+    const wideLandscapeShellScale = viewportAspectRatio >= 2 ? 1.14 : 1;
+    const presentationOverride = React.useMemo(
+        () => (isPhoneLandscapeViewport ? { scaleMultiplier: HOME_V2_PHONE_PRESENTATION_SCALE } : undefined),
+        [isPhoneLandscapeViewport],
+    );
     const overviewGames = React.useMemo(
         () => getAllGames().filter((game) => game.enabled && game.type === 'game'),
         [],
@@ -56,12 +84,6 @@ export const HomeV2 = () => {
         setSceneState('flippingToDetail');
     }, [isPageFlipping, sceneState]);
 
-    const handleDirectGameDetailOpen = React.useCallback((gameId: string) => {
-        pendingGameIdRef.current = null;
-        setSelectedGameId(gameId);
-        setSceneState('detail');
-    }, []);
-
     const handleBackToOverview = React.useCallback(() => {
         if (sceneState !== 'detail' || isPageFlipping || !selectedGameId) {
             return;
@@ -74,6 +96,10 @@ export const HomeV2 = () => {
     const handleTabChange = React.useCallback((tabId: HomeV2TabId) => {
         if (tabId === activeTab || isPageFlipping) {
             return;
+        }
+
+        if (tabId === 'rooms') {
+            setAuthMode('login');
         }
 
         if (sceneState === 'detail') {
@@ -126,14 +152,12 @@ export const HomeV2 = () => {
         tabLabels: {
             lobby: t('homeV2.sceneTabs.lobby'),
             rooms: t('homeV2.sceneTabs.rooms'),
-            changelog: t('homeV2.sceneTabs.changelog'),
         },
     }), [activeTab, t]);
 
     const actionHandlers = React.useMemo<Record<string, () => void>>(() => ({
         openLobbyTab: () => handleTabChange('lobby'),
         openRoomsTab: () => handleTabChange('rooms'),
-        openChangelogTab: () => handleTabChange('changelog'),
     }), [handleTabChange]);
 
     const sceneSlots = React.useMemo(() => {
@@ -142,32 +166,23 @@ export const HomeV2 = () => {
         if (activeTab === 'lobby') {
             slots.overview_left_page = (
                 <LobbyDirectory.Left
-                    games={overviewGames.slice(0, HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY)}
-                    onGameClick={handleGameOpen}
-                />
-            );
-            slots.overview_right_page = (
-                <LobbyDirectory.Right
-                    games={overviewGames.slice(HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY)}
+                    games={overviewGames}
                     onGameClick={handleGameOpen}
                 />
             );
         } else if (activeTab === 'rooms') {
-            slots.overview_left_page = <HomeV2LoginPanel />;
-            slots.overview_right_page = (
-                <HomeV2RoomsPanel
-                    games={overviewGames}
-                    onOpenGame={handleDirectGameDetailOpen}
-                />
-            );
-        } else if (activeTab === 'changelog') {
             slots.overview_left_page = (
-                <HomeV2ChangelogPanel
-                    games={overviewGames}
-                    onOpenGame={handleDirectGameDetailOpen}
+                <HomeV2LoginPanel
+                    mode={authMode}
+                    onModeChange={setAuthMode}
                 />
             );
-            slots.overview_right_page = <HomeV2LoginPanel />;
+            slots.overview_right_page = (
+                <HomeV2AuthFormPanel
+                    mode={authMode}
+                    onModeChange={setAuthMode}
+                />
+            );
         }
 
         if (sceneState === 'detail') {
@@ -181,7 +196,7 @@ export const HomeV2 = () => {
         }
 
         return slots;
-    }, [activeTab, handleBackToOverview, handleDirectGameDetailOpen, handleGameOpen, overviewGames, sceneState, selectedGame]);
+    }, [activeTab, authMode, handleBackToOverview, handleGameOpen, overviewGames, sceneState, selectedGame]);
 
     return (
         <main
@@ -200,11 +215,16 @@ export const HomeV2 = () => {
                     <div
                         data-testid="home-v2-shell-ready"
                         className="relative h-[100%] max-w-full aspect-[896/720] overflow-visible"
+                        style={{
+                            transform: `scale(${wideLandscapeShellScale})`,
+                            transformOrigin: 'center center',
+                        }}
                     >
                         <HomeSceneRenderer
                             testId="home-v2-book-stage"
                             debugRegions={debugRegions}
                             sceneState={sceneState}
+                            presentationOverride={presentationOverride}
                             sceneContext={sceneContext}
                             onIntroOpenComplete={() => setSceneState('tabs')}
                             onIntroTabsComplete={() => setSceneState('overview')}
