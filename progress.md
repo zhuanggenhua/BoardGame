@@ -1,3 +1,49 @@
+## Session: 2026-04-28 Home V2 详情页 + 翻页效果完全重构（起步）
+- **Status:** in_progress
+- Actions taken:
+  - 继续在 `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2` / `feat/homepage-v2` 内推进，不切新 worktree。
+  - 已重新锁定 `D:\gongzuo\webgame\gameasset\v2首页参考` 下的参考素材，并转存到当前 agent 工作区 `out/homev2-reference/ref-01..07.png` 便于后续直接比对。
+  - 已复读 `docs/mobile-adaptation.md` 与 `docs/ai-rules/ui-ux.md`，确认这轮详情页/翻页重构必须保持“移动端只条件化收敛，不影响桌面端默认视觉基线”。
+  - 已复核当前 Home V2 实现差距：首页 `overview` 已切到独立 spread 渲染；但 `detail` 与翻页仍主要依赖旧 `book-idle` 壳和通用左右翻页序列，属于“首页新稿 + 后续旧稿”混合态。
+  - 已把“详情页 + 翻页效果完全重构（参考图一致）”追加到 `task_plan.md / findings.md`，作为当前主任务新阶段。
+  - 已在 `src/pages/HomeV2.tsx` 落第一版结构性修复：把 `detail` 状态从旧场景壳里拆出来，改成与首页同类的 **exact spread** 渲染路径；现在首页 `overview` 与详情 `detail` 都是独立按比例 fit 的固定构图舞台，只有中间态继续走翻页动画壳。
+  - 详情页现已直接使用 `book-idle/1.png` 作为 detail spread 背景，并把左右页内容和书签点击热点按 artboard 百分比重新定位，避免详情态继续完全依赖旧 scene slot 壳层。
+  - 已跑门禁：`npx eslint src/pages/HomeV2.tsx src/components/home-v2/GameDetails.tsx src/components/home-v2/LobbyDirectory.tsx` 通过（仅保留 `LobbyDirectory.tsx` 既有 fast-refresh warning）；`npm run typecheck` 通过；首页→详情 E2E `homeV2Draft 查询参数会切到 V2 首页并可进入详情页` 通过。
+### Next
+- 继续收 detail 左右页视觉层级，让它更贴近参考稿，而不是只完成“独立 spread 化”。
+- 再补翻页中间态与详情态之间的统一感，必要时追加 detail 专用背景资源，而不是长期停在 `book-idle` 过渡资产。
+
+## Session: 2026-04-28 Home V2 首页缩略图退步修复（2388x1080）
+- **Status:** completed
+- Actions taken:
+  - 继续在 `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2` / `feat/homepage-v2` 内处理首页，不切分支、不换 worktree。
+  - 定位当前首页退步：`LobbyDirectory` 只按 `thumbnailPath` 渲染，导致 `tictactoe` 没复用注册缩略图；`splendor/picture` 真实压缩资源缺失，导致条目变白块。
+  - 修改 `src/components/home-v2/LobbyDirectory.tsx`：无 `thumbnailPath` 或图片加载失败时，优先回退到项目注册表里的 `game.thumbnail`。
+  - 补齐 `public/assets/i18n/zh-CN/splendor/compressed/picture.webp`，恢复 `splendor` manifest 缩略图路径的实际资源。
+  - 复跑首页 E2E，并重新查看 `homepage-catalog.png` / `detail-entry.png`，确认首页右页两张回归缩略图都已恢复显示，且首页进详情链路未断。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint | `npx eslint src/components/home-v2/LobbyDirectory.tsx` | 0 error | 0 error，1 warning（既有 fast-refresh warning） | ✅ |
+| E2E-首页目录链路 | `PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 2388x1080 真横屏下目录缩略图恢复显示，首页仍可进入详情页 | 通过；日志 `width=2388 height=1080`、`center=(0.500,0.500)`、`rowDelta=(0.00,0.00,0.00)` | ✅ |
+
+## Session: 2026-04-28 Home V2 首页参考图终态收口（2388x1080）
+- **Status:** completed
+- Actions taken:
+  - 继续在 `D:\\gongzuo\\webgame\\BoardGame\\.worktrees\\homepage-v2` / `feat/homepage-v2` 内推进首页，不切分支、不换 worktree。
+  - `src/components/home-v2/LobbyDirectory.tsx` 再次收首页目录页布局：上移并放大首页 6 条目录项，继续把标题、摘要、badge、人数字号与参考图对齐。
+  - 补齐首页 badge 的参考稿风格：用手工 curated badge 组合替代重复标签，`cardia / splendor / summonerwars` 等条目不再出现“同义重复 badge”。
+  - 继续微调右上角账号 / 概述入口的 rect、图标尺寸、字重与底色，使其更接近参考稿位置和视觉权重。
+  - 继续放大 `splendor / summonerwars` 缩略图裁切，进一步吃掉底部浅色边和偏移感。
+  - 复跑首页专用 E2E，并重新查看 `homepage-catalog.png`，确认首页仍是前端真实 DOM，且目录内容完整落在书页内。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint | `npx eslint src/components/home-v2/LobbyDirectory.tsx` | 0 error | 0 error，1 warning（既有 fast-refresh warning） | ✅ |
+| E2E-首页目录链路 | `PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 2388x1080 真横屏下首页目录、账号入口切 rooms、返回 lobby、进入井字棋详情全部通过 | 通过；日志 `width=2388 height=1080`、`center=(0.500,0.500)`、`rowDelta=(0.00,0.00,0.00)` | ✅ |
+
 ## Session: 2026-04-07 Android 本地素材包图片加载故障
 - **Status:** in_progress
 - Actions taken:
@@ -8,6 +54,146 @@
   - 补回归测试：`src/components/common/media/__tests__/CardPreview.i18n.test.tsx` 与 `src/components/lobby/__tests__/GameDetailsModalJoinConfirm.test.ts`。
   - 将包含修复的 `dist/` 覆盖到真机 `top.easyboardgame.app.debug` 当前 OTA 目录 `/data/user/0/top.easyboardgame.app.debug/files/versions/mhvPgIYOyN`，重启后确认加载新 bundle `index-wN3ZSRu0.js`。
   - 真机打开 `王权骰铸` 详情弹窗后，`安装游戏包` 按钮已恢复为可点击态；截图路径：`D:\\gongzuo\\webgame\\BoardGame\\temp\\mobile-debug\\dicethrone-modal-after-open.png`。
+
+## Session: 2026-04-26 Home V2 首页参考图重构（首页起步）
+- **Status:** completed
+- Actions taken:
+  - 在 `D:\\gongzuo\\webgame\\BoardGame\\.worktrees\\homepage-v2` 确认当前分支仍为 `feat/homepage-v2`，继续在该工作树推进。
+  - 先同步版本号：`package.json` / `package-lock.json` 已更新到 `0.5.61`。
+  - 对照 `D:\\gongzuo\\webgame\\gameasset\\v2首页参考\\首页.png`、`总览首页.png`、`background.png` 与当前 HomeV2 截图，确认首页应从“九宫格卡片目录”切到“顶部分类导航 + 双页信息流列表”。
+  - `src/components/home-v2/LobbyDirectory.tsx` 已改为“顶部分类导航 + 右上角账号入口 + 双列目录列表”，并为 `splendor` 缺失缩略图补了钻石 icon fallback。
+  - `src/pages/HomeV2.tsx` 继续复用原翻页状态机，但首页只走 `overview_spread_body`；`src/components/system/GlobalHUD.tsx` 对 `/?homeV2Draft=1` 与预览路由隐藏全局悬浮齿轮，避免参考图首页被额外浮层污染。
+  - `e2e/lobby.e2e.ts` 收束为“首页目录验收 + 账号入口切到 rooms + 返回 lobby 后进入井字棋详情”的最小链路，移除与本轮首页无关的 rooms 表单模式切换断言。
+  - 第二轮视觉压缩继续把首页往参考图收口：放大顶部分类/标题/摘要/人数字号，收紧 badge 样式，首页舞台放大到更贴近 `936x432` 横屏满高展示。
+  - 新增 `public/assets/common/images/home-v2/catalog-thumbnails/`，从用户提供的 `首页.png` 裁出 `splendor` / `summonerwars` 局部缩略图并压成 WebP，只作为条目缩略图素材使用，不把整页截图重新塞回首页。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint | `npx eslint src/components/system/GlobalHUD.tsx e2e/lobby.e2e.ts` | 0 error | 0 error | ✅ |
+| Typecheck | `npm run typecheck` | 通过 | 通过 | ✅ |
+| i18n 校验 | `npm run i18n:check` | 无缺失 key | `no missing keys detected` | ✅ |
+| E2E-首页链路 | `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 首页目录、rooms 切换、返回 lobby、进入井字棋详情全部通过 | 通过；首页量测 `columns=292.45,640.52`、`rowDelta=(0.00,0.00,0.00)`、`widthRatio=0.805`、`heightRatio=0.981` | ✅ |
+
+## Session: 2026-04-23 Home V2 认证区彻底重构（无真机）
+- **Status:** completed
+- Actions taken:
+  - `src/components/home-v2/HomeTabPanels.tsx` 移除 `AuthModal` 依赖，重写 `HomeV2AuthFormPanel` 为页面原生认证块（登录/注册/重置三态）。
+  - 认证区改为统一九宫格 frame（`border-image`），不再使用 modal 外壳视觉。
+  - 保留并兼容现有 E2E 选择器（`auth-embedded-panel`、`auth-login-account-input`、`auth-register-send-code` 等），避免流程断言失效。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint | `npx eslint src/components/home-v2/HomeTabPanels.tsx` | 0 error | 0 error | ✅ |
+| Typecheck | `npm run typecheck` | 通过 | 通过 | ✅ |
+| i18n 校验 | `npm run i18n:check` | 无缺失 key | `no missing keys detected` | ✅ |
+| E2E-建房主链路 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 通过 | 通过 | ✅ |
+| E2E-密码入房 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 详情页输入房间密码后可加入加密房间"` | 通过 | 通过 | ✅ |
+
+## Session: 2026-04-23 Home V2 黑边回归修复
+- **Status:** completed
+- Actions taken:
+  - 定位到底边突兀感来自两部分叠加：书本素材黑底留边 + HomeV2 背景暗部过重。
+  - `src/pages/HomeV2.tsx` / `src/pages/HomeV2Draft.tsx`：背景桌面图固定 `object-cover object-top`，并降低全屏暗化层强度；手机横屏展示比例调整为 `scale=1.62`、`offsetYPct=14`。
+  - `src/ugc/runtime/ui-scene/scenes/homeV2BookScene.ts`：书本主序列节点统一 `fit: 'cover'`（裁掉黑底留边，避免黑框进入可视区）。
+  - `e2e/lobby.e2e.ts`：增加 Home V2 桌面背景 `objectFit/objectPosition` 校验，防止样式回退。
+  - `evidence/_shared/home-v2-query-entry-e2e-test.md`：补充“禁止纯黑底边带、允许低对比桌面暗部”的验收条款。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| E2E-建房主链路 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 通过 | 通过 | ✅ |
+
+## Session: 2026-04-22 Home V2 终态收口（三次）
+- **Status:** in_progress
+- Actions taken:
+  - 目录两排对齐修复复核：`LobbyDirectory` 改为按列统一变换，`GameList` 标题高度收敛，消除第六张卡下沉。
+  - 登录页改为右页内联认证（不再弹窗）：`HomeV2/HomeV2Draft/HomeTabPanels/AuthModal` 已同步。
+  - 重跑两条核心 E2E 并复看关键截图，确认“建房进局 + 密码入房”链路仍可用。
+  - 回写证据文档：`evidence/_shared/home-v2-query-entry-e2e-test.md` 已改成“右页内联认证 + 网格基线量测”口径。
+  - 重新打包 Android debug APK：`android/app/build/outputs/apk/debug/easyboardgame-debug.apk`。
+  - 安装阻塞确认：`adb -s 10ADAU063C0010U install -r ...` 返回 `device not found`，当前未完成用户手机安装。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint | `npx eslint src/components/home-v2/LobbyDirectory.tsx src/components/lobby/GameList.tsx src/components/home-v2/HomeTabPanels.tsx src/components/auth/AuthModal.tsx src/pages/HomeV2.tsx src/pages/HomeV2Draft.tsx src/ugc/runtime/ui-scene/prefabs.tsx e2e/lobby.e2e.ts` | 0 error | 0 error，3 warning（既有） | ✅ |
+| Typecheck | `npm run typecheck` | 通过 | 通过 | ✅ |
+| i18n 校验 | `npm run i18n:check` | 无缺失 key | `no missing keys detected` | ✅ |
+| E2E-建房进局 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 通过 | 通过，网格量测 `rowDelta=(0.51,0.51)`、`colGapDelta=0.00` | ✅ |
+| E2E-密码入房 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 详情页输入房间密码后可加入加密房间"` | 通过 | 通过 | ✅ |
+| Android 打包 | `npm run mobile:android:build:debug` | 成功产出 APK | 成功 | ✅ |
+| Android 安装 | `adb -s 10ADAU063C0010U install -r ...easyboardgame-debug.apk` | 成功 | `device not found` | ⚠️ |
+
+### 当前阻塞
+| Timestamp | Blocker | Impact | Next Step |
+|-----------|---------|--------|-----------|
+| 2026-04-22 22:47 | 用户手机序列号 `10ADAU063C0010U` 不在线 | APK 无法安装到目标手机，真机复核暂停 | 待设备重新连接后立刻重跑 `adb install -r` 并补最新真机截图 |
+
+## Session: 2026-04-22 Home V2 细节二次收口（字/对齐/弹窗）
+- **Status:** completed
+- Actions taken:
+  - 书签字下调：`src/ugc/runtime/ui-scene/prefabs.tsx` 从 `12px` 调整为 `11px`。
+  - 书本整体上移：`src/ugc/runtime/ui-scene/scenes/homeV2BookScene.ts` 中 `offsetYPct` 从 `1` 调整到 `-0.8`。
+  - 手机横屏缩放收敛：`HomeV2/HomeV2Draft` 中 `HOME_V2_PHONE_PRESENTATION_SCALE 1.42 -> 1.28`，`wideLandscapeShellScale 1.18 -> 1.14`。
+  - 详情页按钮与 tag 收敛：`src/components/home-v2/GameDetails.tsx` 缩小 `tiny/compact` 按钮尺寸、缩小 meta/操作 tag，并降低“创建房间”按钮最大宽度。
+  - 修复建房弹窗超视口：`src/components/lobby/CreateRoomModal.tsx` 改为 `createPortal(..., document.body)`，并加可视区高度约束与安全区内边距。
+  - `e2e/lobby.e2e.ts` 增加建房弹窗可视区断言（`top >= 4` 且 `bottom <= viewportHeight - 4`）。
+  - 重新打包并安装 Android debug 到用户设备 `10ADAU063C0010U`。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint | `npx eslint src/ugc/runtime/ui-scene/prefabs.tsx src/ugc/runtime/ui-scene/scenes/homeV2BookScene.ts src/pages/HomeV2.tsx src/pages/HomeV2Draft.tsx src/components/home-v2/GameDetails.tsx src/components/lobby/CreateRoomModal.tsx e2e/lobby.e2e.ts` | 0 error | 0 error（CreateRoomModal 既有 warning） | ✅ |
+| Typecheck | `npm run typecheck` | 通过 | 通过 | ✅ |
+| i18n 校验 | `npm run i18n:check` | 无缺失 key | `no missing keys detected` | ✅ |
+| E2E-首页到详情到建房 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 通过 | 通过；弹窗量测 `top=25.25/bottom=419.83/viewport=432` | ✅ |
+| E2E-密码入房 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 详情页输入房间密码后可加入加密房间"` | 通过 | 通过 | ✅ |
+| Android 打包 | `npm run mobile:android:build:debug` | 成功产出 APK | 成功 | ✅ |
+| Android 安装 | `adb -s 10ADAU063C0010U install -r ...easyboardgame-debug.apk` | 成功 | `Success` | ✅ |
+
+## Session: 2026-04-22 Home V2 登录/详情 UI 收敛
+- **Status:** completed
+- Actions taken:
+  - `AuthModal` 增加 `placement`，HomeV2 登录入口改为右侧弹窗（不再居中压书页）。
+  - 详情页左侧类型/人数 tag 改为单行小标签；右侧房间操作 tag 与座位信息同行右对齐。
+  - `e2e/lobby.e2e.ts` 新增回归断言：登录弹窗中心点在右半屏、详情 tag 单行且尺寸收敛。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint | `npx eslint src/components/common/overlays/ModalBase.tsx src/components/auth/AuthModal.tsx src/components/home-v2/HomeTabPanels.tsx src/components/home-v2/GameDetails.tsx e2e/lobby.e2e.ts` | 0 error | 0 error | ✅ |
+| Typecheck | `npm run typecheck` | 通过 | 通过 | ✅ |
+| i18n 校验 | `npm run i18n:check` | 无缺失 key | `no missing keys detected` | ✅ |
+| E2E-查询入口链路 | `BG_HOME_V2_VIEWPORT=2388x1080 ... npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 通过 | 通过 | ✅ |
+| E2E-加密房加入 | `BG_HOME_V2_VIEWPORT=2388x1080 ... npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 详情页输入房间密码后可加入加密房间"` | 通过 | 通过 | ✅ |
+
+## Session: 2026-04-21 Home V2 手机端端到端修复
+- **Status:** completed
+- Actions taken:
+  - 已完成 Home V2 手机横屏固定口径缩放修正：`HomeV2/HomeV2Draft` 在 `<=1100x520` 视口下使用 `presentationOverride.scaleMultiplier=1.2`，避免页面过小。
+  - 已修复登录页重复信息与重复背景：标题保留“登录”，去掉外层额外背景框，登录/注册按钮保留素材边框。
+  - 已修复详情页“房间显示不全”与“tag风格不一致”：房间卡改为纵向信息流，返回目录与 tag 全部切为素材边框。
+  - 已修复密码输入“显示不全”：输入框字号/内边距收敛，占位文案改为 `输入密码`（英文 `Password`）。
+  - 已打包并安装 Android debug 包：`android/app/build/outputs/apk/debug/easyboardgame-debug.apk`。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint | `npx eslint src/pages/HomeV2.tsx src/pages/HomeV2Draft.tsx src/components/home-v2/GameDetails.tsx src/components/lobby/CreateRoomModal.tsx src/lib/homeV2Routing.ts src/components/home-v2/HomeTabPanels.tsx src/ugc/runtime/ui-scene/UISceneRenderer.tsx src/ugc/runtime/ui-scene/HomeSceneRenderer.tsx e2e/lobby.e2e.ts` | 0 error | 0 error（CreateRoomModal 既有 5 warning） | ✅ |
+| Typecheck | `npm run typecheck` | 通过 | 通过 | ✅ |
+| i18n 校验 | `npm run i18n:check` | 无缺失 | `no missing keys detected` | ✅ |
+| E2E-建房链路 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 通过 | 通过 | ✅ |
+| E2E-密码入房 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 详情页输入房间密码后可加入加密房间"` | 通过 | 通过 | ✅ |
+| Android 打包 | `npm run mobile:android:build:debug` | 成功产出 APK | 成功 | ✅ |
+| Android 安装 | `adb -s 10ADAU063C0010U install -r ...easyboardgame-debug.apk` | 成功 | 通过（Success） | ✅ |
+| 真机复核截图 | `adb screencap + adb pull` | 首页/详情/建房弹窗整图齐全 | 已补齐（3 张） | ✅ |
+
+### 当前阻塞
+| Timestamp | Blocker | Impact | Next Step |
+|-----------|---------|--------|-----------|
+| 2026-04-21 23:35（已解除） | 初次安装曾被设备侧权限拦截（`INSTALL_FAILED_ABORTED`） | 一度阻塞真机闭环 | 已重试安装成功并补齐真机截图，当前无阻塞 |
 
 ### Test Results
 | Test | Input | Expected | Actual | Status |
@@ -247,3 +433,57 @@
 - **[21:10] Action**: 收口 Cowboys 决斗链 i18n 混用
   - Result: 已确认根因是 `src/games/smashup/domain/duel.ts` 的阶段标题/跳过按钮仍是硬编码中文，而 `Board.tsx` 决斗横幅已走 locale；现已给交互选项补 `labelKey/labelParams` 渲染入口，补齐 `duel.ts` 的 locale key，并让 `PromptOverlay.tsx` 与 `Board.tsx` 的快捷按钮统一解析这些 key。`npm run typecheck` 通过，`newFactionAbilities + newBaseAbilities` 共 `123 passed, 1 skipped`，`npm run test:e2e:ci:file -- smashup-phase-transition-simple.e2e.ts "Oops Cowboys 决斗交互应按官方链路完成 Pinkerton/决斗牌/Deputy/结算"` 再次通过。
   - Next: 提交、推送并为这轮 i18n 收尾补开新 PR。
+
+## Session: 2026-04-23 Home V2 视觉统一二次收口
+- **Status:** in_progress
+- Actions taken:
+  - 将 `HomeV2/HomeV2Draft` 手机横屏展示参数收敛为 `scale=1.36`、`offsetYPct=1.5`，并同步背景暗化强度，避免底部硬黑边。
+  - 移除 `homeV2BookScene` 的 `bookClip` 裁切链路，恢复书本壳与翻页素材原始边界，减少矩形裁切感。
+  - `homeV2Compact` 游戏卡从 `background-image` 改为统一 `border-image` 九宫格；并恢复 `object-contain`，避免缩略图裁切不一致。
+  - 左页目录改成固定 `6` 槽位双排骨架，保持第二排与第一排同节奏，避免第六张下沉。
+  - 登录右页改为同材质九宫格容器，且 embedded Auth 取消 `autoFocus`，解决“右页顶端被吃/像弹窗漂移”。
+  - 创建房间弹窗改用 `--runtime-viewport-height` 计算最大高度，并收紧间距，确保移动横屏下首屏可见底部动作按钮。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint | `npx eslint src/components/auth/AuthModal.tsx src/pages/HomeV2.tsx src/pages/HomeV2Draft.tsx src/ugc/runtime/ui-scene/scenes/homeV2BookScene.ts src/components/lobby/GameList.tsx src/components/home-v2/LobbyDirectory.tsx src/components/home-v2/HomeTabPanels.tsx src/components/home-v2/GameDetails.tsx src/components/lobby/CreateRoomModal.tsx e2e/lobby.e2e.ts` | 0 error | 0 error（6 warning，均既有规则告警） | ✅ |
+| Typecheck | `npm run typecheck` | 通过 | 通过 | ✅ |
+| i18n 校验 | `npm run i18n:check` | 无缺失 | `no missing keys detected` | ✅ |
+| E2E-查询入口链路 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 通过 | 通过（重跑后稳定通过） | ✅ |
+| E2E-密码入房链路 | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 详情页输入房间密码后可加入加密房间"` | 通过 | 通过 | ✅ |
+
+## Session: 2026-04-26 Home V2 首页参考稿重构（首页先行）
+- **Status:** in_progress
+- Actions taken:
+  - 在 `.worktrees\homepage-v2\` 中先执行版本更新；当前工作树版本已到 `0.5.61`。
+  - 对照参考图确认首页当前主要差距：现状仍偏“书页上的卡片宫格 + 右侧书签”，目标是“顶部分类导航 + 双页目录列表 + 右上角身份/帮助入口”。
+  - 首轮已把首页目录结构改成单个 spread 区内的前端排版版本：顶部分类按钮、右上角账号入口、左右两列目录条目、每条目缩略图/标题/简介/tag/人数信息。
+  - 这一轮先保持旧书页舞台与右侧书签链路不动，目的是先把首页目录信息架构切到参考稿方向，下一轮再接 `background.png` 与更强的翻页/舞台背景收敛。
+  - 用户进一步明确“要前端可用、移动端横屏 UI”，因此已放弃“整张首页截图直出”的误路线；现在首页回到真实 DOM 方案：`background.png` 作为书页底图，分类导航/账号入口/六个游戏条目全部由前端渲染。
+  - `HomeV2.tsx` 现已在 `sceneState === overview && activeTab === lobby` 时走独立横屏舞台：按 `1672x941` 书页底图等比适配到手机横屏，不再复用旧 896x720 overview shell，也不再直接展示 `首页.png`。
+  - `LobbyDirectory.tsx` 已重写为可交互目录页：顶部分类按钮为真实按钮；右上角账号入口真实可点；六个游戏条目为真实 DOM 卡片；点击仍能进入旧详情链路。
+  - 为避免首页白块，`splendor` 与 `tictactoe` 缩略图改为前端绘制 fallback，而不是依赖缺失资源路径。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint | `npx eslint src/components/home-v2/LobbyDirectory.tsx src/pages/HomeV2.tsx public/locales/zh-CN/lobby.json public/locales/en/lobby.json` | 0 error | 0 error，3 warning（JSON 文件未纳入 eslint + 组件文件既有 fast-refresh warning） | ✅ |
+| Typecheck | `npm run typecheck` | 通过 | 通过 | ✅ |
+| ESLint（exact homepage 收口） | `npx eslint src/pages/HomeV2.tsx e2e/lobby.e2e.ts` | 0 error | 0 error | ✅ |
+| E2E-查询入口链路（前端可用横屏首页） | `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 通过 | 通过；首页目录、右上角账号入口、返回 lobby、进入井字棋详情链路都通过 | ✅ |
+
+
+## Session: 2026-04-27 Home V2 首页参考稿重构（2388x1080 真移动端继续收口）
+- **Status:** in_progress
+- Actions taken:
+  - 将 `e2e/lobby.e2e.ts` 中 Home V2 首页查询入口的默认横屏视口从 `936x432` 切换到 `2388x1080`，防止后续会话回退到代理口径。
+  - 按 `2388x1080` 真移动端分辨率重排 `LobbyDirectory.tsx`：放大顶部导航占位、放大六个目录条目、重新收右上角账号/工具入口，并继续收缩略图裁图脏边。
+  - 初次复跑 E2E 遇到共享 single-worker 端口 `6273/20100/21100` 冲突；随后改用 `PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181` 成功跑通首页查询入口。
+
+### Test Results
+| Test | Input | Expected | Actual | Status |
+|------|-------|----------|--------|--------|
+| ESLint（2388x1080 口径） | `npx eslint src/components/home-v2/LobbyDirectory.tsx e2e/lobby.e2e.ts` | 0 error | 0 error，1 warning（既有 `react-refresh/only-export-components`） | ✅ |
+| E2E-查询入口链路（真移动端默认口径） | `npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` | 通过 | 首次因共享端口被占用失败；改用 `PW_E2E_SERVICE_REUSE=shared-single + 37974/30180/30181` 后通过 | ✅ |
+| E2E-真分辨率量测 | 同上 | `home-v2-viewport=2388x1080` 且书页居中 | `width=2388 height=1080`；`widthRatio=0.798 heightRatio=0.993 center=(0.500,0.500)` | ✅ |

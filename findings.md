@@ -1,4 +1,96 @@
+## Addendum（2026-04-28）：Home V2 详情页 + 翻页效果完全重构（起步分析）
+- 参考稿目录已复核，当前至少可以明确分成 4 组：
+  - `background.png`：封面/底图基底；
+  - 首页目录 spread：已基本收口，可作为后续重构基线；
+  - 详情/登录注册/建房密码相关稿：说明后续不该继续沿用首页那套简化壳；
+  - 总览流程稿：明确目标不是单页修补，而是“封面 -> 目录 -> 详情 -> 规则/进入游戏”的统一书本路径。
+- 当前实现状态的关键差距：
+  - 首页 `overview` 已切成独立 spread（`HomeV2.tsx` 直接渲染 `overview-spread/1.png` + `LobbyDirectory.OverviewSpread`），这部分方向对了；
+  - 但 `detail` 与翻页仍主要依赖 `src/ugc/runtime/ui-scene/scenes/homeV2BookScene.ts` 里的旧 `book-idle` 壳 + 通用 `page-flip-left/right` 序列，说明“首页新稿”和“详情/翻页旧稿”目前还是两套混合态；
+  - `GameDetails.tsx` 现在只是把标题、meta tag、房间列表、密码区做了局部收敛，还没有进入“按参考图整页重构”的阶段。
+- 已落的结构修复：
+  - `detail` 状态已从旧 scene renderer 常驻壳层中拆出，和首页一样走独立 fixed-composition 舞台，符合“固定构图类优先 scale-to-fit，而不是局部 vw/reflow”的移动端约束；
+  - 详情左右页内容与书签点击区现已按 artboard 百分比直挂到 detail spread 上，避免继续被旧场景壳的 slot/clip 逻辑牵着走。
+- 现阶段仍然保留的差距：
+  - detail spread 目前先复用 `book-idle/1.png` 作为专用背景，结构已经拆开，但视觉尚未完全到参考稿终态；
+  - 翻页中间帧仍沿用现有 `page-flip-left/right` 资源，所以当前是“结构已解耦、动画资产未完全换代”的中间态。
+- 这意味着下一轮重点不再是“能不能拆出来”，而是：**给 detail spread 补齐更像参考稿的视觉基底，并让翻页中间帧和 detail 落地态的观感统一起来**。
+
+## Addendum（2026-04-28）：Home V2 首页缩略图退步修复（2388x1080）
+- 本轮首页退步的直接根因有两条：
+  - `src/components/home-v2/LobbyDirectory.tsx` 只认 `game.thumbnailPath`，没有复用项目注册表里已经存在的 `game.thumbnail`，所以 `tictactoe` 从 v1 的霓虹缩略图退化成了纯字符占位。
+  - `splendor` manifest 挂的是 `splendor/picture`，但 `public/assets/i18n/zh-CN/splendor/compressed/picture.webp` 当时并不存在，所以目录页右上条目直接显示成空白块。
+- 修法保持最小风险：
+  - `tictactoe` 不再手绘新假图，直接回退到项目已注册的真实缩略图组件（即当前系统里本来就在用的井字棋霓虹缩略图）。
+  - `splendor` 不再让首页吃空白，占用当前首页定稿使用的缩略图资源，补齐到 canonical 路径 `splendor/picture`，让所有消费该 manifest 路径的地方都能拿到图。
+- 最新目录截图已恢复两个问题位点：
+  - `splendor` 卡位不再是白块，缩略图主体可见；
+  - `tictactoe` 不再是 `#` 占位，而是实际缩略图内容；
+  - 右页两条目录项都保持在书页内容区内，没有出现新的黄边/白边露出。
+- 本轮关键截图：
+  - 目录页：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+  - 详情入口：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 结论：这次修复只处理“首页缩略图显示回归”，没有再把首页改回假缩略图占位，也没有扩大到详情页重构。
+
 # Findings & Resources
+
+## Addendum（2026-04-28）：Home V2 首页参考图终态收口（2388x1080）
+- 真分辨率口径已经固定到 `2388x1080`；首页 E2E 日志持续打印 `home-v2-viewport width=2388 height=1080`，不再回退到 `936x432` 代理口径。
+- 书页主体在当前口径下保持 `widthRatio=0.798 / heightRatio=0.993 / center=(0.500,0.500)`，说明首页没有缩到左上角，也没有脱离同一视觉坐标系。
+- 首页目录最终采用“静态书页底图 + DOM 导航 + DOM 列表”的做法是可行的：即便 `tictactoe` 缩略图仍为前端绘制态，首页依然证明这不是一张整页截图，而是真实前端页面。
+- 当前最终版比上一轮继续收口了三件事：
+  - 条目 rect、缩略图尺寸、标题/摘要/人数字号都继续往参考图靠拢；
+  - `splendor` / `summonerwars` 参考缩略图继续上移放大，压掉了底部偏色边；
+  - badge 改为更接近参考稿的双标签组合（如 `卡牌 + 策略`、`收集 + 策略`、`战棋 + 卡牌`），不再出现重复标签。
+- 右上角账号/概述入口也继续缩放和提权，当前截图里已能稳定落在参考图同一区域内，且点击账号入口仍能切到 rooms 页。
+- 本轮判断：在用户要求的“只做首页 + 真移动端横屏 + 内容在书页里 + 前端真实可用”范围内，当前首页目录页已经达到可收口状态；后续若再迭代，应属于新一轮“详情/登录/翻页深化”，不再属于这次首页收口范围。
+
+## Addendum（2026-04-26）：Home V2 首页参考图重构（起步分析）
+- 版本基线：`homepage-v2` 工作树原先仍停在 `0.5.59`，已先同步到当前主工作区同口径 `0.5.61`，避免后续首页重构落在过旧版本号上。
+- 参考图判断：
+  - `首页.png` 不是“六宫格卡面目录”，而是**双页书本上的信息流列表**：顶部跨页分类导航 + 每页 3 条游戏行，每条包含缩略图、标题、描述、tag、人数。
+  - `总览首页.png` 说明首页最终是“封面 -> 打开动画 -> 目录页 -> 详情页”的统一书本体验；当前首页只覆盖了“打开后目录页”的简化版。
+- 当前实现差距：
+  - `src/pages/HomeV2.tsx` 仍以 `activeTab=lobby|rooms` 驱动；首页主内容是 `LobbyDirectory.Left` 的 3x2 九宫格卡片，不是跨页分类导航 + 双列列表。
+  - `src/ui-scenes/home-v2/home-v2.ui.yaml` / `homeV2BookScene.ts` 仍保留右侧书签区（`tab_lobby/tab_rooms`），与参考图顶部导航不一致。
+  - `src/components/lobby/GameList.tsx` 的 `homeV2Compact` 变体只适合“缩略图+标题”卡片，不适合参考图这种“行项目录”。
+- 资源判断：
+  - 用户提供的 `background.png` 已经是完整打开书本底图，**首页第一阶段不需要抠图也能落地**；顶部导航、分类高亮、列表分隔线、tag、人数都可纯前端实现。
+  - 真正更适合后续新增素材/抠图的部分，主要是：更精致的分类高亮底托、右上角头像/设置徽章、详情页专用按钮底板、若要完全替换旧翻页序列时所需的新中间帧。
+- 第一阶段最小切入点：
+  - 保留现有 `HomeV2` 状态机与点击进详情逻辑；
+  - 先把 `overview` 态改成“静态书本底图 + 前端跨页导航 + 左右页行项目录”；
+  - 旧 `rooms` / `detail` / `create-room` 先不一起重做，避免一次性改坏整个工作树里的既有 E2E。
+- 本轮首页收口补充：
+  - `background.png` 已作为首页打开书本底图接入 `public/assets/common/images/home-v2/book-idle/1.png`，并压缩生成 `compressed/1.webp`；当前首页目录与参考图一样直接建立在完整打开书页背景上。
+  - 首页目录最终采用“顶部分类导航 + 双列信息流”而非旧九宫格卡片；`overview_spread_body` 现在统一承载 6 个游戏条目，E2E 量测结果为两列、三行严格对齐（`leftColumnDelta=0.00`、`rightColumnDelta=0.00`、`rowDelta=(0.00,0.00,0.00)`）。
+  - 仅靠“缩略图 fallback + 默认字号”会让首页看起来像可用 UI，但不够接近参考图；需要继续把首页舞台放大，并把顶部分类、标题、摘要、人数标签按参考图比例整体放大。
+  - `splendor` 原缩略图缺失会形成白块；继续往参考图压时，最稳妥的做法是只裁切**局部缩略图素材**（而不是把整页截图重新当 UI）。本轮已从用户提供的 `首页.png` 裁出 `splendor` / `summonerwars` 局部图并压成 WebP，作为条目 thumbnail 使用。
+  - 参考图首页不应带全局悬浮控件；原右下角白色齿轮来自 `GlobalHUD`，现已在 `/?homeV2Draft=1` 与 Home V2 预览路由直接隐藏，首页证据截图里已不再出现该浮层。
+  - 首页 E2E 的 rooms 中转只保留“右上角账号入口可切到 rooms，且 rooms 页内联登录输入框出现”这条最小链路；注册/重置切换属于后续登录页重构范围，不再作为首页验收阻塞项。
+
+## Addendum（2026-04-22）：Home V2 细节二次收口
+- 根因 1（字过大）：手机横屏下 HomeV2 叠加缩放偏高（`wideLandscapeShellScale` + `presentationOverride`），导致书签字与页内标题观感偏大。修复为：`HOME_V2_PHONE_PRESENTATION_SCALE 1.42 -> 1.28`、`wideLandscapeShellScale 1.18 -> 1.14`，并下调书签字 `12px -> 11px`。
+- 根因 2（书本偏下）：场景 presentation 纵向偏移量过大。修复为：`HOME_V2_BOOK_SCENE.presentation.offsetYPct 1 -> -0.8`，将书本整体上移一档。
+- 根因 3（详情页按钮/tag 抢空间）：`返回目录/创建房间` 和房间操作 tag 视觉权重偏高。修复为按钮尺寸分级整体收缩（`tiny/compact`）、详情左页 meta tag 保持单行小标签、右页操作 tag 改为更小的同排右对齐样式。
+- 根因 4（建房弹窗超出视口）：`CreateRoomModal` 在 HomeV2 里挂在被 transform 的书本容器中渲染，`position: fixed` 实际被父级变换放大，出现 `top<0 / bottom>viewport`。修复为 `createPortal(..., document.body)`，并补 `maxHeight` 与安全区边距约束。
+- 量化验证（E2E 日志）：`[home-v2-create-room-modal] top=25.25, bottom=419.83, viewportHeight=432`，确认弹窗完整位于可视区内。
+
+## Addendum（2026-04-22）：Home V2 登录/详情 UI
+- 登录页问题根因：原 `AuthModal` 始终居中（`ModalBase` 内部固定 `justify-center`），导致登录入口和弹窗视觉挤压在同一区域。修复为 `AuthModal placement="right"`，并在 `ModalBase` 增加 `contentWrapperClassName` 支持右侧布局。
+- 详情页问题根因：类型/人数 tag 与房间操作 tag 尺寸偏大，且房间操作 tag 独立占一行，压缩描述信息空间。修复为单行小 tag（左页）+ 同行右对齐小 tag（右页）。
+- 验证口径：统一使用 `BG_HOME_V2_VIEWPORT=2388x1080` 跑 HomeV2 两条核心 E2E，确保和用户当前验收分辨率一致。
+
+## Addendum（2026-04-21）：Home V2 手机端适配（固定横屏口径）
+- 根因 1（过小）：此前为避免遮挡把 Home V2 手机横屏 presentation scale 压到 `1.0`，导致书本在真机上过小。已改为“手机横屏固定口径”使用 `1.2`（仅 `<=1100x520` 生效）。
+- 根因 2（信息显示不全）：详情页房间卡原“同一行正文 + 标签”在窄高度下挤压严重。已改为“标题/座位信息/标签”纵向排列，降低字号并允许换行。
+- 根因 3（密码文案截断）：`请输入密码...` 在当前密度下易被裁切，已改为短文案 `输入密码`（英文 `Password`），并下调输入框字号与 padding。
+- 根因 4（视觉风格不一致）：用户要求“返回目录、tag 用素材而不是自定义底色”，已统一采用 `holders/compressed/1.webp` 边框素材。
+- 真机发布状态：
+  - `npm run mobile:android:build:debug` 成功；
+  - `adb -s 10ADAU063C0010U install -r ...easyboardgame-debug.apk` 成功；
+  - 真机复核截图已补齐：`homev2-deeplink-20260421-233448.png`、`homev2-detail2-20260421-233536.png`、`homev2-create-modal-20260421-233551.png`；
+  - 结论：Home V2 手机端“安装 -> 启动 -> 首页/详情/建房弹窗”闭环已完成。
 
 ## Addendum（2026-04-07）：Android 本地素材包图片加载故障
 - 原生安装链路本身正常：`GamePackageForegroundRuntime`/`GamePackagePlugin` 会把游戏包解压到 `.../files/game-packages/<gameId>/current/assets`，并通过 `assetRootPath` 回传前端。
@@ -361,3 +453,29 @@
 - `3dd374b2` fix(smashup): cover drakkar reshuffle handoff
 - `05db8831` fix(smashup): close ancient egyptians feedback regressions
 - `d8ec6aad` fix(smashup): resolve open feedback regressions
+
+## Addendum（2026-04-23）：Home V2 视觉统一二次收口
+- 底部黑边根因并非单一背景图，而是“书本舞台 + 认证区输入自动聚焦”叠加引发的视觉漂移：进入登录页签后自动焦点会触发视口滚动感，截图呈现出上沿被吃与底部暗带放大。
+- 目录卡“变平”的根因是 `homeV2Compact` 仍混用 `background-image: 100% 100%`，与九宫格实现不一致；改为统一 `border-image` 后，边框细节恢复且与书页材质一致。
+- 左页网格“第六张偏低”风险通过固定 `6` 槽位骨架 + 双排布局约束收敛，E2E 量测 `rowDelta=3.99`（阈值 < 10）通过。
+- 登录右页改为同材质框体（九宫格）并取消 embedded 自动聚焦，避免“外来弹窗感”和顶端被裁切。
+- 创建房间弹窗改为按 `--runtime-viewport-height` 计算最大高度，叠加 `overscroll-contain`，在 `936x432` 下保持按钮首屏可见。
+
+## Addendum（2026-04-26）：Home V2 首页参考稿重构（首页先行）
+- 参考稿首页的核心变化不是“把 6 张卡摆得更好看”，而是信息架构从“单页宫格”切成“顶部分类 + 双页目录列表”；这决定了首页应优先重做目录排版，而不是先微调旧宫格间距。
+- 当前工作树里的 `HomeV2.tsx` 已经改成优先消费 `overview_spread_body` 槽位，这意味着首页目录最正确的切入点是 spread 级内容组件，而不是继续在 `overview_left_page` / `overview_right_page` 上拼补丁。
+- 用户给的 `background.png` 是整张书页底图（含桌面/书壳），更适合在下一阶段作为首页 overview 背景统一接管；若直接塞进当前 896x720 书本壳而不调整舞台比例，容易出现裁切或留黑边。
+- 因此本轮先保留旧舞台素材与书签链路，把目录结构先切到参考稿方向；等首页目录稳定后，再处理背景底图与翻页表现，风险更可控。
+- 后续实测证明“参考图减背景图”的差分抠图路线不可用：即使静态查看 `overview-homepage/1.png` 看似正常，浏览器里仍会透出大量透明孔洞，Playwright 截图会出现成片斑驳。
+- 根因不是热点层，也不是 WebP 单独压缩问题，而是差分产物本身仍残留大量透明区域；因此要达成“和参考图一模一样”，首页正确方案不是继续抠图，而是直接把 `首页.png` 当成成品图渲染。
+- `936x432` 横屏视口比参考图 `1152x768` 更宽；若强行 cover 会裁掉上下导航与页边，因此最终采用“参考图原图直出 + 两侧暗场留边”的策略，保证书页主体一像素不裁切。
+- 但用户随后明确指出“要前端可用的移动端横屏 UI”，这意味着“整张截图直出 + 透明热点”仍然不符合需求：视觉虽像，但不是实际前端界面。
+- 因此首页最终正确路线被再次收敛为：`background.png` 只做书页底图；顶部分类、右上角账号入口、六个游戏条目全部重新用 DOM 排版。这样既保留参考稿结构，也保留真实交互与后续可演进空间。
+
+
+## Addendum（2026-04-27）：Home V2 真实移动端分辨率口径
+- 用户已明确指出“不要偷懒，要真实移动端分辨率”，因此首页主验收口径不能继续停留在 `936x432` 代理视口；后续首页默认验收应切到 `2388x1080`。
+- `e2e/lobby.e2e.ts` 中 Home V2 查询入口用例已把默认横屏视口改成 `2388x1080`，避免新会话误回到代理口径。
+- 切到 `2388x1080` 后，书页舞台量测为 `widthRatio=0.798 / heightRatio=0.993 / center=(0.500,0.500)`，说明书页主体已经按真分辨率稳定居中，不存在“缩在左上角”。
+- 真分辨率下比小视口更容易暴露的问题是：顶部导航节奏、右上角入口太小、条目纵向节奏偏散；因此后续精修应优先看 `2388x1080` 图，而不是再盯 `936x432`。
+- 由于共享 single-worker 固定端口 `6273/20100/21100` 被其他任务占用，本轮首页 E2E 最终改用 `PW_E2E_SERVICE_REUSE=shared-single + 37974/30180/30181` 完成验证；下个会话若再次遇到端口冲突，可直接沿用这组共享端口方案。

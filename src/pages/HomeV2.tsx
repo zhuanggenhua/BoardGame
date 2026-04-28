@@ -14,10 +14,21 @@ import type { UISceneCompiledArtifact } from '../ui-scene/types';
 
 const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
 const HOME_V2_BOOK_DESK = `${HOME_V2_ASSET_ROOT}/book-desk/compressed/1.webp`;
+const HOME_V2_BOOK_IDLE_BACKGROUND = `${HOME_V2_ASSET_ROOT}/book-idle/1.png`;
+const HOME_V2_OVERVIEW_BACKGROUND = `${HOME_V2_ASSET_ROOT}/overview-spread/1.png`;
 const HOME_V2_COMPILED_SCENE = compiledHomeV2Scene as UISceneCompiledArtifact;
 const HOME_V2_MOBILE_LANDSCAPE_MAX_HEIGHT = 520;
 const HOME_V2_MOBILE_LANDSCAPE_MAX_WIDTH = 1100;
-const HOME_V2_PHONE_PRESENTATION_SCALE = 1.28;
+const HOME_V2_PHONE_PRESENTATION_SCALE = 1.36;
+const HOME_V2_PHONE_PRESENTATION_OFFSET_Y_PCT = 1.5;
+const HOME_V2_OVERVIEW_ASPECT_RATIO = 1672 / 941;
+const HOME_V2_BOOK_ARTBOARD_WIDTH = 896;
+const HOME_V2_BOOK_ARTBOARD_HEIGHT = 720;
+const HOME_V2_BOOK_ASPECT_RATIO = HOME_V2_BOOK_ARTBOARD_WIDTH / HOME_V2_BOOK_ARTBOARD_HEIGHT;
+const HOME_V2_DETAIL_LEFT_RECT = { left: '17.86%', top: '30.28%', width: '27.23%', height: '44.17%' };
+const HOME_V2_DETAIL_RIGHT_RECT = { left: '54.58%', top: '30.28%', width: '27.23%', height: '44.17%' };
+const HOME_V2_TAB_LOBBY_RECT = { left: '85.49%', top: '33.82%', width: '6.00%', height: '4.45%' };
+const HOME_V2_TAB_ROOMS_RECT = { left: '85.49%', top: '39.10%', width: '6.00%', height: '4.45%' };
 
 type HomeV2TabId = 'lobby' | 'rooms';
 const HOME_V2_TAB_ORDER: HomeV2TabId[] = ['lobby', 'rooms'];
@@ -26,6 +37,16 @@ function resolveTabFlipDirection(from: HomeV2TabId, to: HomeV2TabId): 'flippingT
     const fromIndex = HOME_V2_TAB_ORDER.indexOf(from);
     const toIndex = HOME_V2_TAB_ORDER.indexOf(to);
     return toIndex >= fromIndex ? 'flippingTabForward' : 'flippingTabBackward';
+}
+
+function renderAbsoluteRect(rect: { left: string; top: string; width: string; height: string }): React.CSSProperties {
+    return {
+        position: 'absolute',
+        left: rect.left,
+        top: rect.top,
+        width: rect.width,
+        height: rect.height,
+    };
 }
 
 export const HomeV2 = () => {
@@ -62,14 +83,68 @@ export const HomeV2 = () => {
     const viewportAspectRatio = viewportSize.height > 0 ? viewportSize.width / viewportSize.height : 0;
     const wideLandscapeShellScale = viewportAspectRatio >= 2 ? 1.14 : 1;
     const presentationOverride = React.useMemo(
-        () => (isPhoneLandscapeViewport ? { scaleMultiplier: HOME_V2_PHONE_PRESENTATION_SCALE } : undefined),
+        () => (isPhoneLandscapeViewport
+            ? {
+                scaleMultiplier: HOME_V2_PHONE_PRESENTATION_SCALE,
+                offsetYPct: HOME_V2_PHONE_PRESENTATION_OFFSET_Y_PCT,
+            }
+            : undefined),
         [isPhoneLandscapeViewport],
     );
     const overviewGames = React.useMemo(
         () => getAllGames().filter((game) => game.enabled && game.type === 'game'),
         [],
     );
+    const isExactHomepageOverview = sceneState === 'overview' && activeTab === 'lobby';
+    const overviewStageLayout = React.useMemo(() => {
+        const viewportWidth = Math.max(0, viewportSize.width);
+        const viewportHeight = Math.max(0, viewportSize.height);
+        if (isPhoneLandscapeViewport && viewportWidth > 0) {
+            const width = viewportWidth * 0.94;
+            const height = width / HOME_V2_OVERVIEW_ASPECT_RATIO;
+            return {
+                width,
+                height,
+                scale: width > 0 ? width / 1672 : 1,
+            };
+        }
+        const maxWidth = Math.max(0, viewportWidth - 16);
+        const maxHeight = Math.max(0, viewportHeight - 8);
+        let width = maxWidth;
+        let height = width / HOME_V2_OVERVIEW_ASPECT_RATIO;
+
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * HOME_V2_OVERVIEW_ASPECT_RATIO;
+        }
+
+        return {
+            width,
+            height,
+            scale: width > 0 ? width / 1672 : 1,
+        };
+    }, [isPhoneLandscapeViewport, viewportSize.height, viewportSize.width]);
+    const detailStageLayout = React.useMemo(() => {
+        const viewportWidth = Math.max(0, viewportSize.width);
+        const viewportHeight = Math.max(0, viewportSize.height);
+        const maxWidth = Math.max(0, viewportWidth - (isPhoneLandscapeViewport ? 10 : 24));
+        const maxHeight = Math.max(0, viewportHeight - (isPhoneLandscapeViewport ? 10 : 16));
+        let width = maxWidth;
+        let height = width / HOME_V2_BOOK_ASPECT_RATIO;
+
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * HOME_V2_BOOK_ASPECT_RATIO;
+        }
+
+        return {
+            width,
+            height,
+            scale: width > 0 ? width / HOME_V2_BOOK_ARTBOARD_WIDTH : 1,
+        };
+    }, [isPhoneLandscapeViewport, viewportSize.height, viewportSize.width]);
     const selectedGame = selectedGameId ? getGameById(selectedGameId) ?? null : null;
+    const isExactDetailView = sceneState === 'detail';
     const isPageFlipping = sceneState === 'flippingToDetail'
         || sceneState === 'flippingToOverview'
         || sceneState === 'flippingTabForward'
@@ -149,11 +224,12 @@ export const HomeV2 = () => {
 
     const sceneContext = React.useMemo(() => ({
         activeTab,
+        showLegacyTabs: !(sceneState === 'overview' && activeTab === 'lobby'),
         tabLabels: {
             lobby: t('homeV2.sceneTabs.lobby'),
             rooms: t('homeV2.sceneTabs.rooms'),
         },
-    }), [activeTab, t]);
+    }), [activeTab, sceneState, t]);
 
     const actionHandlers = React.useMemo<Record<string, () => void>>(() => ({
         openLobbyTab: () => handleTabChange('lobby'),
@@ -163,14 +239,7 @@ export const HomeV2 = () => {
     const sceneSlots = React.useMemo(() => {
         const slots: Record<string, React.ReactNode> = {};
 
-        if (activeTab === 'lobby') {
-            slots.overview_left_page = (
-                <LobbyDirectory.Left
-                    games={overviewGames}
-                    onGameClick={handleGameOpen}
-                />
-            );
-        } else if (activeTab === 'rooms') {
+        if (activeTab === 'rooms') {
             slots.overview_left_page = (
                 <HomeV2LoginPanel
                     mode={authMode}
@@ -185,59 +254,121 @@ export const HomeV2 = () => {
             );
         }
 
-        if (sceneState === 'detail') {
-            slots.detail_left_page = (
-                <GameDetailsLeft
-                    game={selectedGame}
-                    onBack={handleBackToOverview}
-                />
-            );
-            slots.detail_right_page = <GameDetailsRight game={selectedGame} />;
-        }
-
         return slots;
-    }, [activeTab, authMode, handleBackToOverview, handleGameOpen, overviewGames, sceneState, selectedGame]);
+    }, [activeTab, authMode]);
 
     return (
         <main
             data-testid="home-v2-root"
             data-bg-friendly-screen="true"
-            className="h-screen overflow-hidden bg-[linear-gradient(180deg,_#1f130d_0%,_#120b07_100%)]"
+            className="h-screen overflow-hidden bg-[linear-gradient(180deg,_#3a2b1f_0%,_#30241b_100%)]"
         >
             <div className="relative flex h-full items-center justify-center overflow-hidden">
-                <img
-                    src={HOME_V2_BOOK_DESK}
-                    alt=""
-                    className="absolute inset-0 h-full w-full object-cover opacity-90"
-                />
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,216,160,0.16)_0%,_rgba(0,0,0,0)_40%),linear-gradient(180deg,_rgba(20,11,7,0.2)_0%,_rgba(9,5,4,0.46)_100%)]" />
+                {isExactHomepageOverview ? (
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(92,70,48,0.28)_0%,_rgba(13,10,8,0.92)_68%,_rgba(10,8,7,1)_100%)]" />
+                ) : (
+                    <>
+                        <img
+                            src={HOME_V2_BOOK_DESK}
+                            alt=""
+                            className="absolute inset-0 h-full w-full object-cover object-top opacity-90"
+                        />
+                        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,216,160,0.16)_0%,_rgba(0,0,0,0)_42%),linear-gradient(180deg,_rgba(30,20,14,0.05)_0%,_rgba(24,16,11,0.16)_100%)]" />
+                    </>
+                )}
                 <div className="relative flex h-full w-full items-center justify-center">
-                    <div
-                        data-testid="home-v2-shell-ready"
-                        className="relative h-[100%] max-w-full aspect-[896/720] overflow-visible"
-                        style={{
-                            transform: `scale(${wideLandscapeShellScale})`,
-                            transformOrigin: 'center center',
-                        }}
-                    >
-                        <HomeSceneRenderer
-                            testId="home-v2-book-stage"
-                            debugRegions={debugRegions}
-                            sceneState={sceneState}
-                            presentationOverride={presentationOverride}
-                            sceneContext={sceneContext}
-                            onIntroOpenComplete={() => setSceneState('tabs')}
-                            onIntroTabsComplete={() => setSceneState('overview')}
-                            onSceneEvent={handleSceneEvent}
+                    {isExactHomepageOverview ? (
+                        <div
+                            data-testid="home-v2-book-stage"
+                            className="relative overflow-visible"
+                            style={{
+                                width: overviewStageLayout.width,
+                                height: overviewStageLayout.height,
+                                ['--home-v2-stage-scale' as const]: overviewStageLayout.scale,
+                            }}
                         >
-                            <CompiledSceneRenderer
-                                scene={HOME_V2_COMPILED_SCENE}
-                                activeState={sceneState}
-                                slots={sceneSlots}
-                                actionHandlers={actionHandlers}
+                            <img
+                                src={HOME_V2_OVERVIEW_BACKGROUND}
+                                alt=""
+                                className="absolute inset-0 h-full w-full object-contain"
                             />
-                        </HomeSceneRenderer>
-                    </div>
+                            <div className="absolute inset-0 z-10" data-scene-slot="overview_spread_body">
+                                <LobbyDirectory.OverviewSpread
+                                    games={overviewGames}
+                                    onGameClick={handleGameOpen}
+                                    onAccountClick={() => handleTabChange('rooms')}
+                                />
+                            </div>
+                        </div>
+                    ) : isExactDetailView ? (
+                        <div
+                            data-testid="home-v2-book-stage"
+                            className="relative overflow-visible"
+                            style={{
+                                width: detailStageLayout.width,
+                                height: detailStageLayout.height,
+                                ['--home-v2-stage-scale' as const]: detailStageLayout.scale,
+                            }}
+                        >
+                            <img
+                                src={HOME_V2_BOOK_IDLE_BACKGROUND}
+                                alt=""
+                                className="absolute inset-0 h-full w-full object-contain"
+                            />
+                            <div className="absolute inset-0 z-10">
+                                <div style={renderAbsoluteRect(HOME_V2_DETAIL_LEFT_RECT)}>
+                                    <GameDetailsLeft
+                                        game={selectedGame}
+                                        onBack={handleBackToOverview}
+                                    />
+                                </div>
+                                <div style={renderAbsoluteRect(HOME_V2_DETAIL_RIGHT_RECT)}>
+                                    <GameDetailsRight game={selectedGame} />
+                                </div>
+                                <button
+                                    type="button"
+                                    aria-label={t('homeV2.sceneTabs.lobby')}
+                                    style={renderAbsoluteRect(HOME_V2_TAB_LOBBY_RECT)}
+                                    className="absolute z-20 bg-transparent"
+                                    onClick={() => handleTabChange('lobby')}
+                                />
+                                <button
+                                    type="button"
+                                    aria-label={t('homeV2.sceneTabs.rooms')}
+                                    style={renderAbsoluteRect(HOME_V2_TAB_ROOMS_RECT)}
+                                    className="absolute z-20 bg-transparent"
+                                    onClick={() => handleTabChange('rooms')}
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <div
+                            data-testid="home-v2-shell-ready"
+                            className="relative h-[100%] max-w-full aspect-[896/720] overflow-visible"
+                            style={{
+                                transform: `scale(${wideLandscapeShellScale})`,
+                                transformOrigin: 'center center',
+                            }}
+                        >
+                            <HomeSceneRenderer
+                                testId="home-v2-book-stage"
+                                debugRegions={debugRegions}
+                                sceneState={sceneState}
+                                presentationOverride={presentationOverride}
+                                sceneContext={sceneContext}
+                                onIntroOpenComplete={() => setSceneState('tabs')}
+                                onIntroTabsComplete={() => setSceneState('overview')}
+                                onSceneEvent={handleSceneEvent}
+                            >
+                                <CompiledSceneRenderer
+                                    scene={HOME_V2_COMPILED_SCENE}
+                                    activeState={sceneState}
+                                    slots={sceneSlots}
+                                    actionHandlers={actionHandlers}
+                                />
+                            </HomeSceneRenderer>
+                        </div>
+                    )}
                 </div>
             </div>
         </main>
