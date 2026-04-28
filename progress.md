@@ -10,8 +10,18 @@
   - 详情页现已直接使用 `book-idle/1.png` 作为 detail spread 背景，并把左右页内容和书签点击热点按 artboard 百分比重新定位，避免详情态继续完全依赖旧 scene slot 壳层。
   - 已跑门禁：`npx eslint src/pages/HomeV2.tsx src/components/home-v2/GameDetails.tsx src/components/home-v2/LobbyDirectory.tsx` 通过（仅保留 `LobbyDirectory.tsx` 既有 fast-refresh warning）；`npm run typecheck` 通过；首页→详情 E2E `homeV2Draft 查询参数会切到 V2 首页并可进入详情页` 通过。
 ### Next
-- 继续收 detail 左右页视觉层级，让它更贴近参考稿，而不是只完成“独立 spread 化”。
 - 再补翻页中间态与详情态之间的统一感，必要时追加 detail 专用背景资源，而不是长期停在 `book-idle` 过渡资产。
+- 继续收右页房间账本的版式细节，向参考稿的“表册/账页感”推进，而不只是可用列表。
+
+## Session: 2026-04-28 Home V2 detail 左页视觉收敛
+- **Status:** in_progress
+- Actions taken:
+  - 已将 `src/components/home-v2/GameDetails.tsx` 左页从“轻量标题 + 两个小 tag + 一段摘要”改成更接近参考稿的编辑式书页：上方小号类别眉题、大号标题、密集 badge 带、正文段落与信息卡分层。
+  - 同步把右页标题区收成“上小下大”的书页标题结构，避免右页继续像普通卡片列表标题。
+  - 已复跑 `npm run typecheck` 通过；首页→详情 E2E `homeV2Draft 查询参数会切到 V2 首页并可进入详情页` 再次通过，首页居中与网格基线未回归。
+- Next:
+  - 继续把右页房间列表本体向“账本页”质感推进。
+  - 如有必要，补 detail 专用背景资源，减少当前对 `book-idle` 的过渡依赖。
 
 ## Session: 2026-04-28 Home V2 首页缩略图退步修复（2388x1080）
 - **Status:** completed

@@ -37,6 +37,33 @@ const getDisplayName = (game: GameConfig, t: HomeV2Translate) => {
     return resolveGameDisplayName(game, t);
 };
 
+function getCategoryLabel(game: GameConfig, t: HomeV2Translate) {
+    return game.category ? t(`common:category.${game.category}`) : t('lobby:homeV2.details.defaultCategory');
+}
+
+function getPlayerLabel(game: GameConfig, t: HomeV2Translate) {
+    return game.type === 'game' && game.playerOptions && game.playerOptions.length > 1
+        ? `${Math.min(...game.playerOptions)}-${Math.max(...game.playerOptions)} ${t('common:game_details.people')}`
+        : t(game.playersKey);
+}
+
+function getDetailBadgeLabels(game: GameConfig, t: HomeV2Translate) {
+    const badgeLabels = [getCategoryLabel(game, t), getPlayerLabel(game, t)];
+    const tagKeys = game.tags ?? [];
+    const supportedTagKeys = ['card_driven', 'dice_driven', 'combat', 'tactical', 'casual', 'ugc'];
+
+    for (const tagKey of supportedTagKeys) {
+        if (tagKeys.includes(tagKey)) {
+            badgeLabels.push(t(`common:game_tags.${tagKey}`));
+        }
+        if (badgeLabels.length >= 4) {
+            break;
+        }
+    }
+
+    return badgeLabels.filter(Boolean);
+}
+
 const getDescription = (game: GameConfig, t: HomeV2Translate) => {
     const draftMeta = game as GameConfigWithDraftMeta;
     if (game.isUgc && draftMeta.description) {
@@ -134,12 +161,12 @@ function BookFrameButton({
     const sizeClassName = size === 'regular'
         ? 'min-h-[38px] min-w-[116px] px-[20px] py-[10px] text-[clamp(11px,0.82vw,12px)]'
         : size === 'compact'
-            ? 'min-h-[34px] min-w-[104px] px-[16px] py-[8px] text-[clamp(10px,0.78vw,11px)]'
-            : 'min-h-[28px] min-w-[70px] px-[10px] py-[5px] text-[clamp(9px,0.7vw,10px)]';
+            ? 'min-h-[30px] min-w-[92px] px-[13px] py-[6px] text-[clamp(9px,0.72vw,10px)]'
+            : 'min-h-[28px] min-w-[76px] px-[10px] py-[5px] text-[clamp(9px,0.7vw,10px)]';
     const frameBorderWidth = size === 'tiny'
-        ? '7px 10px'
+        ? '7px 9px'
         : size === 'compact'
-            ? '10px 14px'
+            ? '9px 12px'
             : '11px 16px';
 
     return (
@@ -176,15 +203,23 @@ export const Left = ({ game, onBack }: LeftProps) => {
 
     if (!game) return null;
 
-    const playerLabel = game.type === 'game' && game.playerOptions && game.playerOptions.length > 1
-        ? `${Math.min(...game.playerOptions)}-${Math.max(...game.playerOptions)} ${t('common:game_details.people')}`
-        : t(game.playersKey);
-    const categoryLabel = game.category ? t(`common:category.${game.category}`) : null;
-    const descriptionExcerpt = getDedupedDescriptionExcerpt(getDescription(game, t), [
-        getDisplayName(game, t),
-        categoryLabel ?? '',
+    const displayName = getDisplayName(game, t);
+    const categoryLabel = getCategoryLabel(game, t);
+    const playerLabel = getPlayerLabel(game, t);
+    const detailBadges = getDetailBadgeLabels(game, t);
+    const description = getDescription(game, t).trim();
+    const descriptionExcerpt = getDedupedDescriptionExcerpt(description, [
+        displayName,
+        categoryLabel,
         playerLabel,
     ]);
+    const editorialParagraphs = description
+        .split(/\n+/)
+        .map((paragraph) => paragraph.trim())
+        .filter(Boolean)
+        .slice(0, 2);
+    const leadParagraph = editorialParagraphs[0] || descriptionExcerpt;
+    const secondaryParagraph = editorialParagraphs[1] || '';
 
     return (
         <div className="pointer-events-auto flex h-full w-full min-h-0 flex-col gap-[4.2%] text-[#5b3822]">
@@ -194,34 +229,55 @@ export const Left = ({ game, onBack }: LeftProps) => {
                 </BookFrameButton>
             </div>
 
-            <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto pr-[1.5%]">
-                <h2 className="mb-[2.4%] text-[clamp(21px,2.02vw,27px)] font-bold leading-[1.02] text-[#5b3822]">
-                    {getDisplayName(game, t)}
-                </h2>
-
-                <div className="mb-[3.2%] flex max-w-[92%] items-stretch gap-[12px] border-y border-[#d8b18a]/42 py-[3.6%] text-[clamp(10px,0.8vw,11px)] text-[#77563a]">
-                    <div className="flex-1">
-                        <div className="mb-[3px] text-[clamp(8px,0.68vw,9px)] font-semibold tracking-[0.14em] text-[#8d6747]">
-                            {t('lobby:homeV2.details.typeLabel')}
-                        </div>
-                        <div className="font-medium text-[#6e4a32]">{categoryLabel ?? t('lobby:homeV2.details.defaultCategory')}</div>
+            <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto pr-[2.2%]">
+                <div className="max-w-[94%] border-b border-[rgba(138,100,68,0.24)] pb-[3.6%]">
+                    <div className="mb-[1.6%] text-[clamp(9px,0.74vw,11px)] font-semibold uppercase tracking-[0.24em] text-[#8b694b]">
+                        {categoryLabel}
                     </div>
-                    <div className="w-px shrink-0 bg-[rgba(163,105,63,0.24)]" />
-                    <div className="flex-1">
-                        <div className="mb-[3px] text-[clamp(8px,0.68vw,9px)] font-semibold tracking-[0.14em] text-[#8d6747]">
-                            {t('lobby:homeV2.details.playerCountLabel')}
-                        </div>
-                        <div className="font-medium text-[#6e4a32]">{playerLabel}</div>
+                    <h2 className="text-[clamp(24px,2.1vw,30px)] font-bold leading-[1.02] tracking-[0.01em] text-[#56321f] [text-wrap:balance]">
+                        {displayName}
+                    </h2>
+                    <div className="mt-[2.8%] flex flex-wrap gap-[5px] text-[#6e4a32]">
+                        {detailBadges.map((badgeLabel, index) => (
+                            <span
+                                key={`${badgeLabel}-${index}`}
+                                data-testid="home-v2-detail-meta-tag"
+                                className="inline-flex items-center whitespace-nowrap rounded-full border border-[#c3a07a]/46 bg-[rgba(244,230,206,0.36)] px-[7px] py-[2px] text-[clamp(7px,0.56vw,8px)] font-semibold leading-none"
+                            >
+                                {badgeLabel}
+                            </span>
+                        ))}
                     </div>
                 </div>
 
-                <div className="mb-[3.4%] h-px w-full bg-[rgba(163,105,63,0.28)]" />
-
-                {descriptionExcerpt ? (
-                    <p className="max-w-[92%] text-[clamp(10px,0.8vw,11px)] leading-[1.62] text-[#75573f]">
-                        {descriptionExcerpt}
-                    </p>
+                {leadParagraph ? (
+                    <div className="max-w-[94%] pt-[4.1%] text-[#6d4b33]">
+                        <p className="text-[clamp(11px,0.94vw,13px)] leading-[1.88] indent-[1.8em]">
+                            {leadParagraph}
+                        </p>
+                        {secondaryParagraph ? (
+                            <p className="mt-[3.4%] text-[clamp(10px,0.88vw,12px)] leading-[1.8] text-[#7a5a41] indent-[1.8em]">
+                                {secondaryParagraph}
+                            </p>
+                        ) : null}
+                    </div>
                 ) : null}
+
+                <div className="mt-[5.2%] max-w-[94%] rounded-[12px] border border-[rgba(146,103,67,0.2)] bg-[rgba(247,238,220,0.28)] px-[4.6%] py-[4.2%]">
+                    <div className="text-[clamp(9px,0.72vw,10px)] font-semibold uppercase tracking-[0.18em] text-[#8b694b]">
+                        {t('lobby:homeV2.roomLedgerTitle')}
+                    </div>
+                    <div className="mt-[2.2%] grid grid-cols-2 gap-x-[8px] gap-y-[5px] text-[clamp(10px,0.8vw,11px)] leading-[1.45] text-[#6b4831]">
+                        <div>
+                            <span className="text-[#8b694b]">{t('lobby:homeV2.details.defaultCategory')}：</span>
+                            <span>{categoryLabel}</span>
+                        </div>
+                        <div>
+                            <span className="text-[#8b694b]">{t('common:game_details.people')}：</span>
+                            <span>{playerLabel}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
@@ -266,8 +322,7 @@ export const Right = ({ game }: RightProps) => {
             }
 
             return (right.updatedAt ?? 0) - (left.updatedAt ?? 0);
-        })
-        .slice(0, 3);
+        });
 
     const guestId = user?.id ? undefined : getOrCreateGuestId();
     const ownerKey = getOwnerKey(user?.id, guestId);
@@ -445,18 +500,23 @@ export const Right = ({ game }: RightProps) => {
 
     return (
         <div className="pointer-events-auto flex h-full w-full min-h-0 flex-col text-[#5b3822]">
-            <div className="mb-[2%] flex items-end justify-between gap-[10px]">
-                <div className="text-[clamp(19px,1.84vw,24px)] font-bold leading-[1.04] text-[#5b3822]">
-                    {t('lobby:homeV2.roomLedgerTitle')}
+            <div className="mb-[2.4%] flex items-end justify-between gap-[10px]">
+                <div>
+                    <div className="text-[clamp(9px,0.72vw,10px)] font-semibold uppercase tracking-[0.22em] text-[#8b694b]">
+                        {t('lobby:homeV2.details.defaultCategory')}
+                    </div>
+                    <div className="mt-[1.2%] text-[clamp(20px,1.92vw,25px)] font-bold leading-[1.04] text-[#5b3822]">
+                        {t('lobby:homeV2.roomLedgerTitle')}
+                    </div>
                 </div>
                 {hasSnapshot ? (
-                    <div className="shrink-0 text-[clamp(9px,0.74vw,10px)] font-medium text-[#8a6444]">
+                    <div className="shrink-0 text-[clamp(11px,0.86vw,13px)] font-medium text-[#8a6444]">
                         {t('lobby:homeV2.roomCount', { count: matches.length })}
                     </div>
                 ) : null}
             </div>
 
-            <div className="mb-[2.2%] h-px w-full bg-[rgba(163,105,63,0.28)]" />
+            <div className="mb-[2.4%] h-px w-full bg-[rgba(163,105,63,0.28)]" />
 
             <div className="min-h-0 flex-1 px-[2.2%] py-[1.2%]">
                 <div className="flex h-full min-h-0 flex-col">
@@ -490,7 +550,7 @@ export const Right = ({ game }: RightProps) => {
                                             >
                                                 <button
                                                     type="button"
-                                                    className="relative block w-full rounded-[10px] px-[4.5%] py-[3.6%] pr-[18%] text-left transition-transform duration-200 hover:-translate-y-[1px]"
+                                                    className="relative block w-full rounded-[10px] px-[4.6%] py-[3.6%] text-left transition-transform duration-200 hover:-translate-y-[1px]"
                                                     disabled={isLoading}
                                                     onClick={() => void handleJoinRoom(room.matchID)}
                                                     style={{
@@ -501,14 +561,18 @@ export const Right = ({ game }: RightProps) => {
                                                         borderImageRepeat: 'round',
                                                     }}
                                                 >
-                                                    <div className="mb-[4px] min-w-0 pr-[4px] text-[clamp(12px,0.96vw,13px)] font-semibold leading-[1.28] text-[#603d27] [word-break:break-word]">
-                                                        {getRoomTitle(room.matchID, t, room.roomName)}
-                                                    </div>
-                                                    <div className="absolute right-[4.8%] top-1/2 -translate-y-1/2 text-[clamp(8px,0.66vw,9px)] font-semibold tracking-[0.14em] text-[#8a6647]">
-                                                        {actionLabel}
-                                                    </div>
-                                                    <div className="min-w-0 text-[clamp(10px,0.8vw,11px)] leading-[1.55] text-[#7a5a41]">
-                                                        {getRoomSeatLine(room, t)}
+                                                    <div className="flex min-w-0 flex-col gap-[4px]">
+                                                        <div className="min-w-0 text-[clamp(11px,0.9vw,12px)] font-semibold leading-[1.28] text-[#603d27] [word-break:break-word]">
+                                                            {getRoomTitle(room.matchID, t, room.roomName)}
+                                                        </div>
+                                                        <div className="flex min-w-0 items-center justify-between gap-[8px]">
+                                                            <div className="min-w-0 flex-1 truncate text-[clamp(10px,0.78vw,11px)] leading-[1.4] text-[#7a5a41]">
+                                                                {getRoomSeatLine(room, t)}
+                                                            </div>
+                                                            <div data-testid="home-v2-room-action-tag" className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-[#b18359]/32 bg-transparent px-[4px] py-[1px] text-[7px] font-semibold tracking-[0.01em] text-[#6a442a]">
+                                                                {actionLabel}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </button>
                                             </article>
@@ -523,9 +587,9 @@ export const Right = ({ game }: RightProps) => {
                         {pendingPasswordRoom ? (
                             <div
                                 data-testid="home-v2-room-password-panel"
-                                className="mb-[4.2%] rounded-[10px] border border-[#9d724f]/30 px-[4.4%] py-[4%]"
+                                className="mb-[4%] rounded-[10px] border border-[#9d724f]/28 px-[4.4%] py-[3.8%]"
                             >
-                                <div className="text-[clamp(11px,0.86vw,12px)] font-semibold text-[#6e4a32]">
+                                <div className="text-[clamp(10px,0.76vw,11px)] font-semibold text-[#6e4a32]">
                                     {t('lobby:password.modalTitle')}
                                 </div>
                                 <div className="mt-[2.4%]">
@@ -536,7 +600,7 @@ export const Right = ({ game }: RightProps) => {
                                         onChange={(event) => setRoomPasswordDraft(event.target.value)}
                                         placeholder={t('lobby:password.placeholder')}
                                         autoComplete="new-password"
-                                        className="w-full rounded-[6px] border border-[#9d724f]/35 bg-[#f9e5c9]/70 px-[10px] py-[8px] text-[clamp(11px,0.84vw,12px)] text-[#5f3b25] outline-none focus:border-[#8a6444]"
+                                        className="w-full rounded-[6px] border border-[#9d724f]/32 bg-transparent px-[10px] py-[8px] pr-[38px] text-[clamp(11px,0.9vw,13px)] text-[#5f3b25] placeholder:text-[clamp(10px,0.78vw,12px)] outline-none focus:border-[#8a6444]"
                                         toggleButtonTestId="home-v2-room-password-toggle"
                                         toggleButtonClassName="text-[#8a6444] hover:text-[#5f3b25]"
                                     />
@@ -564,10 +628,11 @@ export const Right = ({ game }: RightProps) => {
                             </div>
                         ) : null}
                         <BookFrameButton
-                            className="mx-auto w-full max-w-[240px] justify-center"
+                            className="mx-auto w-full max-w-[178px] justify-center"
                             size="compact"
                             disabled={isLoading || isPreparingCreateRoom}
                             onClick={() => void openCreateRoom()}
+                            testId="home-v2-create-room-button"
                         >
                             {t('lobby:actions.createRoom', '创建房间')}
                         </BookFrameButton>
