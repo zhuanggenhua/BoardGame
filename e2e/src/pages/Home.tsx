@@ -54,7 +54,7 @@ import { isNativeAndroidRuntime } from '../lib/mobile/androidRuntime';
 import { RefreshCw } from 'lucide-react';
 import { AudioManager } from '../lib/audio/AudioManager';
 import { prefetchOnlineMatchRoute } from '../lib/prefetchPlayRoute';
-import { resolveExitMatchErrorMessageKey } from '../components/lobby/roomActions';
+import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 
 const MISSING_MATCH_CONFIRM_RETRY_DELAY_MS = 1500;
 const HOME_GAME_DETAILS_MODAL_IDLE_TIMEOUT_MS = 1500;
@@ -976,8 +976,7 @@ export const Home = () => {
             pendingAction.isHost
         );
         if (!result.success) {
-            const errorKey = resolveExitMatchErrorMessageKey(result.error, pendingAction.isHost);
-            toastError({ kind: 'i18n', key: errorKey, ns: 'lobby' });
+            notifyExitMatchErrorToast(toastError, result.error, pendingAction.isHost);
             return;
         }
 

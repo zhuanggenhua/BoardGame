@@ -68,7 +68,7 @@ import { GameCursorProvider } from '../core/cursor';
 import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
 import { useGameImplementationReady } from '../hooks/useGameImplementationReady';
 import { SmashUpOverlayProvider } from '../games/smashup/ui/SmashUpOverlayContext';
-import { resolveExitMatchErrorMessageKey } from '../components/lobby/roomActions';
+import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { resolveGameDisplayName } from '../components/lobby/gameDetailsContent';
 import { resolveOnlineHudPresence } from './matchHudPresence';
 import { haveAiSeatCredentialsChanged, loadOnlineAiSeatState } from './onlineAiSeats';
@@ -2814,7 +2814,7 @@ export const MatchRoom = () => {
         const result = await leaveMatch(gameId || 'tictactoe', matchId, statusPlayerID, credentials);
         setIsLeaving(false);
         if (!result.success) {
-            toast.error({ kind: 'i18n', key: resolveExitMatchErrorMessageKey(result.error, false), ns: 'lobby' });
+            notifyExitMatchErrorToast(toast.error, result.error, false);
             return;
         }
         navigateBackToLobby();

@@ -18,7 +18,7 @@ import { getGameById } from '../../config/games.config';
 import { CreateRoomModal, type RoomConfig } from './CreateRoomModal';
 import { GameReviews } from '../review/GameReviewSection';
 import { PasswordEntryModal } from '../common/overlays/PasswordEntryModal';
-import { normalizeGameName, shouldPromptExitActiveMatch, resolveActiveMatchExitPayload, resolveExitMatchErrorMessageKey, buildCreateRoomErrorTip, resolveCreateRoomErrorCode, resolveCreateRoomErrorStatus, type Room } from './roomActions';
+import { normalizeGameName, shouldPromptExitActiveMatch, resolveActiveMatchExitPayload, notifyExitMatchErrorToast, buildCreateRoomErrorTip, resolveCreateRoomErrorCode, resolveCreateRoomErrorStatus, type Room } from './roomActions';
 import { RoomList } from './RoomList';
 import { LeaderboardTab } from './LeaderboardTab';
 import { GameDetailsChangelogSection } from './GameDetailsChangelogSection';
@@ -1370,8 +1370,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         const isHost = exitPayload.playerID === '0';
         const result = await exitMatch(exitPayload.gameName, activeMatchID, exitPayload.playerID, exitPayload.credentials, isHost);
         if (!result.success) {
-            const errorKey = resolveExitMatchErrorMessageKey(result.error, isHost);
-            toast.error({ kind: 'i18n', key: errorKey, ns: 'lobby' });
+            notifyExitMatchErrorToast(toast.error, result.error, isHost);
             setPendingJoin(null);
             return;
         }
@@ -1493,8 +1492,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             }
 
             if (!result.success) {
-                const errorKey = resolveExitMatchErrorMessageKey(result.error, isHost);
-                toast.error({ kind: 'i18n', key: errorKey, ns: 'lobby' });
+                notifyExitMatchErrorToast(toast.error, result.error, isHost);
                 return;
             }
 
@@ -1784,8 +1782,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
 
         const exitResult = await exitMatch(gameName, matchID, playerID, credentials, isHost);
         if (!exitResult.success) {
-            const errorKey = resolveExitMatchErrorMessageKey(exitResult.error, isHost);
-            toast.error({ kind: 'i18n', key: errorKey, ns: 'lobby' });
+            notifyExitMatchErrorToast(toast.error, exitResult.error, isHost);
             return false;
         }
 

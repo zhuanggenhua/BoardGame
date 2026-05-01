@@ -92,6 +92,32 @@ export const resolveExitMatchErrorMessageKey = (
     return 'error.actionFailed';
 };
 
+type ExitMatchToastError = (payload: { kind: 'i18n'; key: string; ns: 'lobby' }) => void;
+
+export const notifyExitMatchErrorToast = (
+    toastError: ExitMatchToastError,
+    error: ExitMatchResult['error'],
+    isHost: boolean
+): void => {
+    if (error === 'forbidden') {
+        if (isHost) {
+            toastError({ kind: 'i18n', key: 'error.destroyForbidden', ns: 'lobby' });
+        } else {
+            toastError({ kind: 'i18n', key: 'error.leaveForbidden', ns: 'lobby' });
+        }
+        return;
+    }
+    if (error === 'network' || error === 'server_error') {
+        if (isHost) {
+            toastError({ kind: 'i18n', key: 'error.destroyNetwork', ns: 'lobby' });
+        } else {
+            toastError({ kind: 'i18n', key: 'error.leaveNetwork', ns: 'lobby' });
+        }
+        return;
+    }
+    toastError({ kind: 'i18n', key: 'error.actionFailed', ns: 'lobby' });
+};
+
 type CreateRoomErrorLike = {
     message?: unknown;
     details?: unknown;
