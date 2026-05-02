@@ -424,8 +424,8 @@ describe('scoreBases 阶段自动推进', () => {
             state: state as any,
         });
 
-        expect(legalActions.some(action => action.kind === 'activate-special')).toBe(true);
-        expect(legalActions.some(action => action.kind === 'advance-phase')).toBe(false);
+        expect(legalActions.some(action => action.kind === 'activate-special')).toBe(false);
+        expect(legalActions.some(action => action.kind === 'advance-phase')).toBe(true);
     });
 
     it('AI 在 optional multi 交互中应保留空选动作，避免 special 链卡死', () => {
@@ -517,6 +517,45 @@ describe('scoreBases 阶段自动推进', () => {
         expect(hybridSkipCombos).toHaveLength(0);
         expect(legalActions.some(action => (action.commands[0] as any)?.payload?.optionId === 'skip')).toBe(true);
         expect(legalActions.some(action => (action.commands[0] as any)?.payload?.optionId === 'card-1')).toBe(true);
+    });
+
+    it('ordered multi 交互应把不同顺序视为不同 AI 合法动作', () => {
+        const state: MatchState<SmashUpCore> = {
+            core: makeMinimalCore(),
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: {
+                    current: {
+                        id: 'ordered-multi-test',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'fairies_titania',
+                            options: [
+                                { id: 'branch-a', label: '先做 A', value: { branchId: 'a' } },
+                                { id: 'branch-b', label: '先做 B', value: { branchId: 'b' } },
+                            ],
+                            multi: { min: 2, max: 2, ordered: true },
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        };
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: state as any,
+        });
+
+        const orderedPayloads = legalActions
+            .filter(action => action.kind === 'interaction-choice')
+            .map(action => ((action.commands[0] as any)?.payload?.optionIds ?? []).join(','))
+            .sort();
+
+        expect(orderedPayloads).toEqual(['branch-a,branch-b', 'branch-b,branch-a']);
     });
 
     it('required 动态交互在刷新后无合法选项时，AI 仍应拿到紧急跳过动作', () => {

@@ -810,33 +810,44 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             {/* 文本选项 + 多选按钮 */}
                             {(textOptions.length > 0 || isMulti) && (
                                 <div className="flex gap-3">
-                                    {textOptions.map((opt, idx) => (
-                                        <GameButton
-                                            key={`text-${idx}`}
-                                            variant="secondary"
-                                            size="sm"
-                                            onClick={() => handleAction(opt.id, opt.disabled)}
-                                            disabled={opt.disabled}
-                                        >
-                                            {opt.label}
-                                        </GameButton>
-                                    ))}
-                                    {isMulti && !isOrderedMulti && (
-                                        <>
+                                    {textOptions.map((opt, idx) => {
+                                        const isSelected = selectedIds.includes(opt.id);
+                                        return (
                                             <GameButton
-                                                variant="secondary"
+                                                key={`text-${idx}`}
+                                                variant={isSelected ? 'primary' : 'secondary'}
                                                 size="sm"
-                                                onClick={() => {
-                                                    const allIds = cardOptions.map(o => o.id);
-                                                    setSelectedIds(prev =>
-                                                        prev.length === allIds.length ? [] : (maxSelections !== undefined ? allIds.slice(0, maxSelections) : allIds),
-                                                    );
-                                                }}
+                                                onClick={() => handleAction(opt.id, opt.disabled)}
+                                                disabled={opt.disabled}
+                                                className={isMulti && isSelected ? 'ring-2 ring-amber-400' : ''}
                                             >
-                                                {selectedIds.length === cardOptions.length
-                                                    ? t('ui.deselect_all', { defaultValue: '取消全选' })
-                                                    : t('ui.select_all', { defaultValue: '全选' })}
+                                                {isMulti && isSelected && (
+                                                    <span className={`w-4 h-4 rounded border-2 flex items-center justify-center text-[10px] mr-1 ${isSelected ? 'bg-amber-400 border-amber-400 text-black' : 'border-slate-500'}`}>
+                                                        {isOrderedMulti ? selectedIds.indexOf(opt.id) + 1 : <Check size={10} strokeWidth={3} />}
+                                                    </span>
+                                                )}
+                                                {opt.label}
                                             </GameButton>
+                                        );
+                                    })}
+                                    {isMulti && (
+                                        <>
+                                            {!isOrderedMulti && (
+                                                <GameButton
+                                                    variant="secondary"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        const allIds = cardOptions.map(o => o.id);
+                                                        setSelectedIds(prev =>
+                                                            prev.length === allIds.length ? [] : (maxSelections !== undefined ? allIds.slice(0, maxSelections) : allIds),
+                                                        );
+                                                    }}
+                                                >
+                                                    {selectedIds.length === cardOptions.length
+                                                        ? t('ui.deselect_all', { defaultValue: '取消全选' })
+                                                        : t('ui.select_all', { defaultValue: '全选' })}
+                                                </GameButton>
+                                            )}
                                             <GameButton
                                                 variant="primary"
                                                 size="sm"

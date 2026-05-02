@@ -20,6 +20,7 @@ import type {
     TriggerInstance,
     TriggerQueuedEvent,
     PlayerTurnRestrictionType,
+    ReactionOrderingFootprint,
 } from './types';
 import { SU_EVENTS } from './types';
 import { registerTriggerExecutor } from './triggerExecutors';
@@ -256,6 +257,7 @@ interface TriggerEntry {
     global?: boolean;
     /** global 闁荤喐鐟辩粻鎴ｃ亹閸岀偛闂柕濞垮劚鐢帡鎮规担鍦憙妞ゎ偄妫涢幏鐘虫媴閻戞鏆犻梺鍝勵槶閸庤尙鑺遍鈧畷鐘诲传閸曨厼骞嶉梺鎸庣⊕閻╊垳鍒掗婊勫?hand + discard */
     globalZones?: Array<'hand' | 'discard' | 'deck'>;
+    orderingFootprint?: ReactionOrderingFootprint;
 }
 
 interface TriggerSourceLocation {
@@ -317,6 +319,7 @@ export function registerTrigger(
         baseScoped?: boolean;
         perInstance?: boolean;
         sourceScope?: 'any' | 'triggerBase';
+        orderingFootprint?: ReactionOrderingFootprint;
     }
 ): void {
     // 闂佸憡锚椤兘宕抽崨濠勨攳婵犻潧娲よ闂佹寧绋掗懝楣冨箖閹惧鈻旈柍?sourceDefId + timing 闂佸憡鐟禍婵嬪极閻愬搫绀冮悘鐐跺亹椤忚鲸绻涢崱蹇旑潐缂佽鲸鐟╁濂稿矗婢舵ê澹?HMR 闂備焦褰冪粔鎾囬幓鎺嗘灃闁靛鍎遍弬鈧梺?
@@ -334,6 +337,7 @@ export function registerTrigger(
         globalZones: options?.globalZones,
         playerContext: options?.playerContext ?? 'eventPlayer',
         baseScoped: options?.baseScoped ?? true,
+        orderingFootprint: options?.orderingFootprint,
     });
     registerTriggerExecutor(sourceDefId, timing, callback);
 }
@@ -469,6 +473,7 @@ function createTriggerInstance(
         inspectionZone: ctx.inspectionZone,
         inspectionTargetPlayerIds: ctx.inspectionTargetPlayerIds,
         inspectionCausePlayerId: ctx.inspectionCausePlayerId,
+        orderingFootprint: entry.orderingFootprint,
         lkiMinion: ctx.triggerMinion
             ? {
                 uid: ctx.triggerMinion.uid,
@@ -519,6 +524,33 @@ function shouldSkipTriggerInstance(
             return true;
         }
         if (ctx.triggerMinionUid !== firstOtherFriendlyTargetUid) {
+            return true;
+        }
+    }
+
+    if (
+        entry.sourceDefId === 'skeletons_returned_one'
+        && timing === 'onMinionPlayed'
+    ) {
+        if (!located.uid || ctx.triggerMinionUid !== located.uid) {
+            return true;
+        }
+
+        const baseIndex = located.baseIndex ?? ctx.baseIndex;
+        if (baseIndex === undefined) {
+            return true;
+        }
+
+        const returnedOne = state.bases[baseIndex]?.minions.find(minion => minion.uid === located.uid);
+        if (!returnedOne || returnedOne.metadata?.playedFrom !== 'buried') {
+            return true;
+        }
+
+        const hasAnotherOwnedBuriedCard = (state.bases[baseIndex]?.buriedCards ?? []).some(card =>
+            card.controllerId === returnedOne.controller
+            && card.uid !== located.uid
+        );
+        if (!hasAnotherOwnedBuriedCard) {
             return true;
         }
     }

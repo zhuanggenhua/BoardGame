@@ -37,8 +37,8 @@ import {
     getActiveDice,
     getAvailableAbilityIds,
     getDefensiveAbilityIds,
+    getPlayableCardsInResponseWindow,
     getNextPhase,
-    isCardPlayableInResponseWindow,
 } from './domain';
 import { DICETHRONE_COMMANDS } from './domain/ids';
 import { DICETHRONE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
@@ -1488,10 +1488,7 @@ const buildResponseActions = (state: DiceThroneState, playerId: PlayerId, phase:
     }
 
     if (responseWindow && (isCurrentResponder || canDirectInterfere)) {
-        for (const card of player.hand) {
-            if (!isCardPlayableInResponseWindow(state.core, playerId, card, windowType ?? 'afterCardPlayed', phase)) {
-                continue;
-            }
+        for (const card of getPlayableCardsInResponseWindow(state.core, playerId, windowType ?? 'afterCardPlayed', phase)) {
             appendAction(actions, state, playerId, {
                 actionId: createAiLegalActionId('response', 'play-card', card.id),
                 kind: 'response-play-card',

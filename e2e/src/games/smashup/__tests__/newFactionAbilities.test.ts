@@ -7640,6 +7640,37 @@ describe('Skeletons abilities', () => {
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'buried-a')).toBe(true);
     });
 
+    it('skeletons_returned_one 被挖掘后若同基地没有其他己方埋葬牌，不应进入反应队列', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [] }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('returned-one', 'skeletons_returned_one', '0', 2, { powerModifier: 0, metadata: { playedFrom: 'buried' } }),
+                ],
+                ongoingActions: [],
+                buriedCards: [],
+            }],
+        });
+
+        const queued = collectTriggers(core, 'onMinionPlayed', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'returned-one',
+            triggerMinionDefId: 'skeletons_returned_one',
+            triggerMinion: core.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 3200,
+        });
+
+        expect(queued).toBeUndefined();
+    });
+
     it('skeletons_place_em_down 从弃牌堆埋葬最多三张且先选基地', () => {
         const core = makeState({
             players: {
@@ -8433,7 +8464,7 @@ describe('Skeletons abilities', () => {
 });
 
 describe('Fairies abilities', () => {
-    it('fairies_titania 可以把一个随从移回其拥有者手牌', () => {
+    it('fairies_titania 可以先选择回手分支，再选择具体随从移回其拥有者手牌', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -8456,12 +8487,23 @@ describe('Fairies abilities', () => {
 
         const prompt = getInteractionsFromMS(played.finalState)[0] as any;
         expect(prompt?.data?.sourceId).toBe('fairies_titania');
-        const returnOption = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
-        expect(returnOption).toBeDefined();
+        const returnBranchOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'return_minion');
+        expect(returnBranchOption).toBeDefined();
+
+        const choseReturnBranch = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: returnBranchOption.id } } as any,
+            defaultTestRandom,
+        );
+        const targetPrompt = getInteractionsFromMS(choseReturnBranch.finalState)[0] as any;
+        expect(targetPrompt?.data?.sourceId).toBe('fairies_titania_return_minion');
+        expect(targetPrompt?.data?.targetType).toBe('minion');
+        const returnTargetOption = targetPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
+        expect(returnTargetOption).toBeDefined();
 
         const resolved = runCommand(
-            played.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: returnOption.id } } as any,
+            choseReturnBranch.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: returnTargetOption.id } } as any,
             defaultTestRandom,
         );
 
@@ -8469,7 +8511,7 @@ describe('Fairies abilities', () => {
         expect(resolved.finalState.core.players['1'].hand.some(card => card.uid === 'enemy-1')).toBe(true);
     });
 
-    it('fairies_titania 在丛林之灵在场时选择额外随从后会再结算回手分支', () => {
+    it('fairies_titania 在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过', () => {
         const core = makeState({
             turnNumber: 1,
             players: {
@@ -8501,31 +8543,48 @@ describe('Fairies abilities', () => {
             defaultTestRandom,
         );
         const prompt = getInteractionsFromMS(played.finalState)[0] as any;
-        const extraMinionOption = prompt.data.options.find((entry: any) => entry.value?.choice === 'extra_minion');
+        expect(prompt?.data?.sourceId).toBe('fairies_titania');
+        const extraMinionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
+        const returnOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'return_minion');
         expect(extraMinionOption).toBeDefined();
-
-        const firstResolved = runCommand(
-            played.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: extraMinionOption.id } } as any,
-            defaultTestRandom,
-        );
-
-        const followup = getInteractionsFromMS(firstResolved.finalState)[0] as any;
-        expect(followup?.data?.sourceId).toBe('fairies_titania_spirit_return');
-        expect(firstResolved.finalState.core.players['0'].minionLimit).toBe(2);
-        expect(firstResolved.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBe(1);
-
-        const returnOption = followup.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
         expect(returnOption).toBeDefined();
 
-        const finalResolved = runCommand(
-            firstResolved.finalState,
+        const choseReturnBranch = runCommand(
+            played.finalState,
             { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: returnOption.id } } as any,
             defaultTestRandom,
         );
+        const targetPrompt = getInteractionsFromMS(choseReturnBranch.finalState)[0] as any;
+        expect(targetPrompt?.data?.sourceId).toBe('fairies_titania_return_minion');
+        expect(targetPrompt?.data?.targetType).toBe('minion');
+        const targetOption = targetPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
+        expect(targetOption).toBeDefined();
 
-        expect(finalResolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy-1')).toBe(false);
-        expect(finalResolved.finalState.core.players['1'].hand.some(card => card.uid === 'enemy-1')).toBe(true);
+        const choseTarget = runCommand(
+            choseReturnBranch.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
+            defaultTestRandom,
+        );
+        const followUpPrompt = getInteractionsFromMS(choseTarget.finalState)[0] as any;
+        expect(followUpPrompt?.data?.sourceId).toBe('fairies_titania');
+        const followUpExtraMinion = followUpPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
+        const skipOption = followUpPrompt.data.options.find((entry: any) => entry.value?.skip === true);
+        expect(followUpExtraMinion).toBeDefined();
+        expect(skipOption).toBeDefined();
+        expect(followUpPrompt.data.options.find((entry: any) => entry.value?.branchId === 'return_minion')).toBeUndefined();
+        expect(choseTarget.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBeUndefined();
+
+        const resolved = runCommand(
+            choseTarget.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: followUpExtraMinion.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(getInteractionsFromMS(resolved.finalState)).toHaveLength(0);
+        expect(resolved.finalState.core.players['0'].minionLimit).toBe(2);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'enemy-1')).toBe(false);
+        expect(resolved.finalState.core.players['1'].hand.some(card => card.uid === 'enemy-1')).toBe(true);
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBe(1);
     });
 
     it('fairies_glymmer 对其他随从的 -4 力量会在你的下回合开始时结束', () => {
@@ -8634,7 +8693,7 @@ describe('Fairies abilities', () => {
         expect(getEffectivePower(resolved.finalState.core, targetMinion!, 0)).toBe(2);
     });
 
-    it('fairies_puck 在丛林之灵在场时允许按顺序同时选择抽牌和额外行动', () => {
+    it('fairies_puck 在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过', () => {
         const core = makeState({
             turnNumber: 1,
             players: {
@@ -8669,19 +8728,35 @@ describe('Fairies abilities', () => {
 
         const prompt = getInteractionsFromMS(played.finalState)[0] as any;
         expect(prompt?.data?.sourceId).toBe('fairies_puck');
-        expect(prompt?.data?.multi?.ordered).toBe(true);
         const drawOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'draw_card');
         const actionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
         expect(drawOption).toBeDefined();
         expect(actionOption).toBeDefined();
 
-        const resolved = runCommand(
+        const drewCard = runCommand(
             played.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionIds: [drawOption.id, actionOption.id] } } as any,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: drawOption.id } } as any,
+            defaultTestRandom,
+        );
+        expect(drewCard.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+        expect(drewCard.finalState.core.players['0'].hand.length).toBe(1);
+        expect(drewCard.finalState.core.players['0'].actionLimit).toBe(1);
+        expect(drewCard.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBeUndefined();
+
+        const followUpPrompt = getInteractionsFromMS(drewCard.finalState)[0] as any;
+        expect(followUpPrompt?.data?.sourceId).toBe('fairies_puck');
+        const followUpAction = followUpPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
+        const skipOption = followUpPrompt.data.options.find((entry: any) => entry.value?.skip === true);
+        expect(followUpAction).toBeDefined();
+        expect(skipOption).toBeDefined();
+        expect(followUpPrompt.data.options.find((entry: any) => entry.value?.branchId === 'draw_card')).toBeUndefined();
+
+        const resolved = runCommand(
+            drewCard.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: followUpAction.id } } as any,
             defaultTestRandom,
         );
 
-        expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
         expect(resolved.finalState.core.players['0'].hand.length).toBe(1);
         expect(resolved.finalState.core.players['0'].actionLimit).toBe(2);
         expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBe(1);
@@ -8745,7 +8820,7 @@ describe('Fairies abilities', () => {
         expect(summoned.finalState.core.players['0'].minionsPlayed).toBe(0);
     });
 
-    it('fairies_enchantment 在丛林之灵在场时可选双执行并记录 both 模式', () => {
+    it('fairies_enchantment 在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过并记录 both 模式', () => {
         const core = makeState({
             turnNumber: 1,
             players: {
@@ -8777,15 +8852,24 @@ describe('Fairies abilities', () => {
             defaultTestRandom,
         );
         const prompt = getInteractionsFromMS(played.finalState)[0] as any;
-        expect(prompt?.data?.multi?.ordered).toBe(true);
         const plusOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'plus');
-        const minusOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'minus');
         expect(plusOption).toBeDefined();
+        const chosePlus = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: plusOption.id } } as any,
+            defaultTestRandom,
+        );
+        const followUpPrompt = getInteractionsFromMS(chosePlus.finalState)[0] as any;
+        expect(followUpPrompt?.data?.sourceId).toBe('fairies_enchantment');
+        const minusOption = followUpPrompt.data.options.find((entry: any) => entry.value?.branchId === 'minus');
+        const skipOption = followUpPrompt.data.options.find((entry: any) => entry.value?.skip === true);
         expect(minusOption).toBeDefined();
+        expect(skipOption).toBeDefined();
+        expect(chosePlus.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBeUndefined();
 
         const resolved = runCommand(
-            played.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionIds: [plusOption.id, minusOption.id] } } as any,
+            chosePlus.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minusOption.id } } as any,
             defaultTestRandom,
         );
 
@@ -8819,7 +8903,7 @@ describe('Fairies abilities', () => {
 
         const prompt = getInteractionsFromMS(played.finalState)[0] as any;
         expect(prompt?.data?.sourceId).toBe('base_fairy_ring');
-        const actionOption = prompt.data.options.find((entry: any) => entry.value?.choice === 'extra_action');
+        const actionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
         expect(actionOption).toBeDefined();
 
         const resolved = runCommand(
@@ -8833,7 +8917,7 @@ describe('Fairies abilities', () => {
         expect(resolved.finalState.core.players['0'].minionLimit).toBe(1);
     });
 
-    it('base_fairy_ring 在丛林之灵在场时会同时授予额外随从到该基地与额外行动', () => {
+    it('base_fairy_ring 在丛林之灵在场时只选单分支时，会先执行该分支并允许跳过剩余分支', () => {
         const core = makeState({
             turnNumber: 1,
             players: {
@@ -8865,12 +8949,89 @@ describe('Fairies abilities', () => {
             defaultTestRandom,
         );
         const prompt = getInteractionsFromMS(played.finalState)[0] as any;
-        const actionOption = prompt.data.options.find((entry: any) => entry.value?.choice === 'extra_action');
+        const actionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
+        const initialSkipOption = prompt.data.options.find((entry: any) => entry.value?.skip === true);
         expect(actionOption).toBeDefined();
+        expect(initialSkipOption).toBeDefined();
 
-        const resolved = runCommand(
+        const choseAction = runCommand(
             played.finalState,
             { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: actionOption.id } } as any,
+            defaultTestRandom,
+        );
+        expect(choseAction.finalState.core.players['0'].actionLimit).toBe(2);
+        const followUpPrompt = getInteractionsFromMS(choseAction.finalState)[0] as any;
+        expect(followUpPrompt?.data?.sourceId).toBe('base_fairy_ring');
+        const followUpMinion = followUpPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
+        const followUpSkip = followUpPrompt.data.options.find((entry: any) => entry.value?.skip === true);
+        expect(followUpMinion).toBeDefined();
+        expect(followUpSkip).toBeDefined();
+        expect(followUpPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action')).toBeUndefined();
+
+        const resolved = runCommand(
+            choseAction.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: followUpSkip.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.players['0'].actionLimit).toBe(2);
+        expect(resolved.finalState.core.players['0'].minionLimit).toBe(1);
+        expect(resolved.finalState.core.players['0'].baseLimitedMinionQuota).toBeUndefined();
+        expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBeUndefined();
+    });
+
+    it('base_fairy_ring 在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过', () => {
+        const core = makeState({
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('minion-1', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            titans: [{
+                uid: 'spirit-1',
+                defId: 'fairies_spirit_of_the_forest',
+                faction: 'fairies',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            }],
+            bases: [{
+                defId: 'base_fairy_ring',
+                minions: [],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'minion-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(played.finalState)[0] as any;
+        const actionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
+        expect(actionOption).toBeDefined();
+
+        const choseAction = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: actionOption.id } } as any,
+            defaultTestRandom,
+        );
+        const followUpPrompt = getInteractionsFromMS(choseAction.finalState)[0] as any;
+        expect(followUpPrompt?.data?.sourceId).toBe('base_fairy_ring');
+        const minionOption = followUpPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
+        const skipOption = followUpPrompt.data.options.find((entry: any) => entry.value?.skip === true);
+        expect(minionOption).toBeDefined();
+        expect(skipOption).toBeDefined();
+        expect(choseAction.finalState.core.players['0'].actionLimit).toBe(2);
+        expect(choseAction.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBeUndefined();
+
+        const resolved = runCommand(
+            choseAction.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minionOption.id } } as any,
             defaultTestRandom,
         );
 

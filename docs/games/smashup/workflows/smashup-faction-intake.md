@@ -169,6 +169,8 @@ npm run compress:images -- public/assets/i18n/zh-CN/smashup
 - `type`
 
 不要伪造未实现的 `abilityTags` 或 handler 绑定。
+`talent` / `special` 只在牌面明确写了可主动发动时才允许录入；截图/牌面没有写天赋、特技或等价主动发动语义，默认不得录成可点击能力。
+`onPlay + special` 属于高风险少数组合，录入时必须逐张回看牌面；如果只是“打出时效果 + 后续触发器/翻开后触发”，不得伪造为可手动 `special`。
 
 如果用户本轮后续还要继续实现玩法，则这里还应额外整理：
 

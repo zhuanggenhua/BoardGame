@@ -46,6 +46,10 @@ export const NINJA_MINIONS: MinionCardDef[] = [
         faction: 'ninjas',
         power: 2,
         abilityTags: ['special'],
+        activatableAbilities: [
+            // 原版为场上手动发动的 special，不是计分前/后响应窗能力。
+            { kind: 'special', zone: 'board', window: 'playCards' },
+        ],
         specialLimitGroup: 'ninja_acolyte',
         count: 4,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 15 },

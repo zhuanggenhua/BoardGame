@@ -88,6 +88,97 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(evts.some(e => e.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
   });
 
+  it('显式标注为互不冲突的 mandatory triggers 应自动收口，不再弹排序交互', () => {
+    registerTrigger('test_auto_a', 'onMinionMoved', (_ctx: any) => [{
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: { playerId: '0', messageKey: 'auto_a', tone: 'info' },
+      timestamp: 1,
+    }] as any, {
+      orderingFootprint: { writes: ['triggerMinionPower'] },
+    });
+    registerTrigger('test_auto_b', 'onMinionMoved', (_ctx: any) => [{
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: { playerId: '0', messageKey: 'auto_b', tone: 'info' },
+      timestamp: 1,
+    }] as any, {
+      orderingFootprint: { writes: ['playLimits'] },
+    });
+
+    const core = baseCore({
+      bases: [
+        makeBase('test_base_1'),
+        makeBase('test_base_2', [
+          makeMinion('a1', 'test_auto_a', '0', 3),
+          makeMinion('b1', 'test_auto_b', '0', 3),
+        ]),
+      ],
+    });
+
+    const queued = collectTriggers(core, 'onMinionMoved', {
+      state: core,
+      matchState: makeMatchState(core),
+      playerId: '0',
+      baseIndex: 1,
+      triggerMinionUid: 'moved1',
+      triggerMinionDefId: 'any_minion',
+      random: { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      now: 1,
+    });
+    expect(queued).toBeDefined();
+
+    const ms0 = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
+    const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
+    expect(rq).toBeDefined();
+    expect(rq!.state.sys.interaction.current).toBeUndefined();
+    expect(rq!.state.core.triggerQueue ?? []).toHaveLength(0);
+    expect(rq!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
+    expect(rq!.events.filter(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toHaveLength(2);
+  });
+
+  it('存在读写冲突的 mandatory triggers 仍应保留排序交互', () => {
+    registerTrigger('test_conflict_writer', 'onMinionMoved', (_ctx: any) => [{
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: { playerId: '0', messageKey: 'writer', tone: 'info' },
+      timestamp: 1,
+    }] as any, {
+      orderingFootprint: { writes: ['triggerMinionPower'] },
+    });
+    registerTrigger('test_conflict_reader', 'onMinionMoved', (_ctx: any) => [{
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: { playerId: '0', messageKey: 'reader', tone: 'info' },
+      timestamp: 1,
+    }] as any, {
+      orderingFootprint: { reads: ['triggerMinionPower'] },
+    });
+
+    const core = baseCore({
+      bases: [
+        makeBase('test_base_1'),
+        makeBase('test_base_2', [
+          makeMinion('a1', 'test_conflict_writer', '0', 3),
+          makeMinion('b1', 'test_conflict_reader', '0', 3),
+        ]),
+      ],
+    });
+
+    const queued = collectTriggers(core, 'onMinionMoved', {
+      state: core,
+      matchState: makeMatchState(core),
+      playerId: '0',
+      baseIndex: 1,
+      triggerMinionUid: 'moved1',
+      triggerMinionDefId: 'any_minion',
+      random: { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      now: 1,
+    });
+    expect(queued).toBeDefined();
+
+    const ms0 = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
+    const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
+    expect(rq).toBeDefined();
+    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).toBe('smashup_reaction_choose');
+  });
+
   it('witness: onMinionMoved triggers only if source is on destination base at trigger time', () => {
     registerTrigger('test_source_a', 'onMinionMoved', () => []);
     const core = baseCore({

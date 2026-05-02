@@ -47,6 +47,13 @@ import {
     getDeferredReplacementBaseDefId,
     mergeDeferredPostScoringCompatibility,
 } from './scoringSession';
+import {
+    queueBranchingChoice,
+    resolveBranchingChoiceSelection,
+    type BranchExecutor,
+    type BranchingChoiceOption,
+    type BranchingChoiceUpgrade,
+} from './branchingChoice';
 
 function getContinuationContext<T>(interactionData: Record<string, unknown> | undefined): T | undefined {
     return interactionData?.continuationContext as T | undefined;
@@ -57,6 +64,34 @@ function getDeferredPostScoringEvents(
     interactionData: Record<string, unknown> | undefined,
 ): SmashUpEvent[] | undefined {
     return readDeferredPostScoringEvents(state, interactionData) as SmashUpEvent[] | undefined;
+}
+
+function getSpiritOptionalBothUpgradeForBase(
+    state: SmashUpCore,
+    playerId: string,
+    now: number,
+): BranchingChoiceUpgrade | undefined {
+    const spirit = getAvailableSpiritOfTheForestOrTitan(state, playerId);
+    if (!spirit) return undefined;
+    return {
+        mode: 'optional-both',
+        consumeEvents: [markSpiritOfTheForestOrUsed(spirit.uid, state.turnNumber, now)],
+    };
+}
+
+function createBaseFairyRingBranchOption(
+    id: string,
+    label: string,
+    branchId: string,
+    value?: Record<string, unknown>,
+): BranchingChoiceOption {
+    return {
+        id,
+        label,
+        branchId,
+        ...(value ? { value } : {}),
+        displayMode: 'button',
+    };
 }
 
 // ============================================================================
@@ -187,6 +222,10 @@ export function registerExpansionBaseAbilities(): void {
         return {
             events: [addTempPower(ctx.minionUid, ctx.baseIndex, 2, 'base_hall_of_fame', ctx.now)],
         };
+    }, {
+        orderingFootprint: {
+            writes: ['triggerMinionPower'],
+        },
     });
 
     // ── 疯人院（The Asylum）──────────────────────────────────────
@@ -379,15 +418,9 @@ export function registerExpansionBaseAbilities(): void {
     }, { mandatory: false });
 
     // ── 神秘花园（Secret Garden）──────────────────────────────
-    // "在你的回合，你可以额外打出一个力量为2或以下的随从到这里）?
-    // 这是整回合持续许可，不是回合开始立刻结算的一次性额外打出。
-    // 因此这里固定授予本回合可暂存的基地限定额度，避免被 startTurn 误判为 immediate prompt。
-    // 力量限制通过 BaseCardDef.restrictions.extraPlayMinionPowerMax 数据驱动实现。
-    registerBaseAbility('base_secret_garden', 'onTurnStart', (ctx) => {
-        return {
-            events: [grantExtraMinion(ctx.playerId, '神秘花园：额外打出力量≤2的随从', ctx.now, ctx.baseIndex, { playTiming: 'banked' })],
-        };
-    });
+    // "On your turn" 语义统一在进入 playCards 时发放额度，
+    // 避免把 phase 2 持续许可错误建模为 startTurn 事件。
+    // 发放逻辑见 domain/index.ts 的 collectPhaseTwoOngoingExtraEvents。
 
     // ── 发明家沙龙（Inventor's Salon）──────────────────────────
     // "在这个基地计分后，冠军可以从他的弃牌堆中选取一张战术卡将其置入他的手牌堆?
@@ -491,24 +524,22 @@ export function registerExpansionBaseAbilities(): void {
         const playedAtBase = player.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0;
         if (playedAtBase !== 1) return { events: [] };
 
-        const options: PromptOption<Record<string, unknown>>[] = [
-            { id: 'extra-minion', label: '额外打出一个随从到这里', value: { choice: 'extra_minion' }, displayMode: 'button' as const },
-            { id: 'extra-action', label: '额外打出一张行动卡', value: { choice: 'extra_action' }, displayMode: 'button' as const },
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
-        ];
-        const interaction = createSimpleChoice(
-            `base_fairy_ring_${ctx.playerId}_${ctx.now}`,
-            ctx.playerId,
-            '精灵之环：选择额外打出一个随从到这里，或额外打出一张行动卡',
-            options,
-            { sourceId: 'base_fairy_ring', targetType: 'button' },
-        );
-
         return {
             events: [],
-            matchState: queueInteraction(ctx.matchState, {
-                ...interaction,
-                data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } },
+            matchState: queueBranchingChoice({
+                matchState: ctx.matchState,
+                playerId: ctx.playerId,
+                now: ctx.now,
+                sourceId: 'base_fairy_ring',
+                title: '精灵之环：选择额外打出一个随从到这里，或额外打出一张行动卡',
+                targetType: 'button',
+                continuationContext: { baseIndex: ctx.baseIndex },
+                upgrade: getSpiritOptionalBothUpgradeForBase(ctx.state, ctx.playerId, ctx.now),
+                options: [
+                    createBaseFairyRingBranchOption('extra-minion', '额外打出一个随从到这里', 'extra_minion'),
+                    createBaseFairyRingBranchOption('extra-action', '额外打出一张行动卡', 'extra_action'),
+                    createBaseFairyRingBranchOption('skip', '跳过', 'skip', { skip: true }),
+                ],
             }),
         };
     });
@@ -869,33 +900,14 @@ export function registerExpansionBaseInteractionHandlers(): void {
 
         return { state, events: [] };
     });
-    registerInteractionHandler('base_fairy_ring', (state, playerId, value, iData, _random, timestamp) => {
-        const selected = value as { skip?: boolean; choice?: 'extra_minion' | 'extra_action' };
-        const continuation = getContinuationContext<{ baseIndex: number }>(iData);
-        if (selected.skip) return { state, events: [] };
-        const spirit = getAvailableSpiritOfTheForestOrTitan(state.core, playerId);
-
-        if (spirit) {
-            if (!continuation) return { state, events: [] };
-            return {
-                state,
-                events: [
-                    grantContextualExtraMinion(
-                        { playerId, now: timestamp, matchState: state },
-                        'base_fairy_ring',
-                        continuation.baseIndex,
-                    ),
-                    grantContextualExtraAction(
-                        { playerId, now: timestamp, matchState: state },
-                        'base_fairy_ring',
-                    ),
-                    markSpiritOfTheForestOrUsed(spirit.uid, state.core.turnNumber, timestamp),
-                ],
-            };
+    const runBaseFairyRingBranch: BranchExecutor = ({ state, playerId, selection, planContext, timestamp }) => {
+        const branchId = selection.branchId;
+        if (branchId === 'skip') {
+            return { state, events: [] };
         }
-
-        if (selected.choice === 'extra_minion') {
-            if (!continuation) return { state, events: [] };
+        if (branchId === 'extra_minion') {
+            const continuation = planContext as { baseIndex?: number } | undefined;
+            if (continuation?.baseIndex === undefined) return { state, events: [] };
             return {
                 state,
                 events: [grantContextualExtraMinion(
@@ -905,8 +917,7 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 )],
             };
         }
-
-        if (selected.choice === 'extra_action') {
+        if (branchId === 'extra_action') {
             return {
                 state,
                 events: [grantContextualExtraAction(
@@ -915,8 +926,19 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 )],
             };
         }
-
         return { state, events: [] };
+    };
+
+    registerInteractionHandler('base_fairy_ring', (state, playerId, value, iData, random, timestamp) => {
+        return resolveBranchingChoiceSelection({
+            state,
+            playerId,
+            value,
+            interactionData: iData,
+            random,
+            timestamp,
+            executeBranch: runBaseFairyRingBranch,
+        }) ?? { state, events: [] };
     });
 
     // 疯人院：先选手牌，再选择一个自己的随从放置 +1 力量指示物

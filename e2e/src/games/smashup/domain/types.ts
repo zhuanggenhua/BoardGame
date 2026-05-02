@@ -53,6 +53,16 @@ export type FactionId = string;
 /** 能力标签 */
 export type AbilityTag = 'onPlay' | 'ongoing' | 'special' | 'talent' | 'extra' | 'onDestroy' | 'onUncover' | 'ongoingActivation';
 
+export type SmashUpActivationKind = 'special' | 'talent' | 'ongoing';
+export type SmashUpActivationZone = 'board' | 'discard' | 'setaside';
+export type SmashUpActivationWindow = 'playCards' | 'beforeScoring' | 'afterScoring';
+
+export interface SmashUpActivatableAbility {
+    kind: SmashUpActivationKind;
+    zone: SmashUpActivationZone;
+    window?: SmashUpActivationWindow;
+}
+
 /**
  * 卡牌打出约束（数据驱动）。
  * - 'requireOwnMinion'：目标基地上必须有自己的至少一个随从
@@ -84,6 +94,8 @@ export interface MinionCardDef {
      * 例如忍者派系所有 special 随从共享 'ninja_special' 组。
      */
     specialLimitGroup?: string;
+    /** 显式声明可手动发动的能力入口。 */
+    activatableAbilities?: SmashUpActivatableAbility[];
     /**
      * 是否可在 Me First! 窗口中从手牌打出到即将计分的基地。
      * 如影舞者：基地计分前可从手牌打出到该基地。
@@ -116,6 +128,7 @@ export interface FusionCardDef {
     minionAbilityTags?: AbilityTag[];
     minionPlayConstraint?: PlayConstraint;
     minionSpecialLimitGroup?: string;
+    minionActivatableAbilities?: SmashUpActivatableAbility[];
     minionBeforeScoringPlayable?: boolean;
 
     // --- 作为战术打出 ---
@@ -123,6 +136,7 @@ export interface FusionCardDef {
     actionAbilityTags?: AbilityTag[];
     actionOngoingTarget?: 'base' | 'minion';
     actionPlayConstraint?: PlayConstraint;
+    actionActivatableAbilities?: SmashUpActivatableAbility[];
     /** action 面在正常打出时是否需要显式选择目标基地 */
     actionPlayNeedsBase?: boolean;
     /** action 面在正常打出时是否需要显式选择目标随从（并隐含需要目标基地） */
@@ -147,7 +161,6 @@ export type TitanSummonMode =
     | 'insteadOfRegularAction'
     | 'insteadOfRegularMinionAndAction';
 export type TitanPlayAsKind = 'minion' | 'action';
-export type TitanActivatableAbilityKind = 'special' | 'talent' | 'ongoing';
 
 export interface CardOrTitanChoiceValue {
     cardUid?: string;
@@ -164,8 +177,10 @@ export interface TitanCardDef {
     name: string;
     faction: FactionId;
     abilityTags?: AbilityTag[];
-    /** 显式声明哪些能力会作为玩家可点击入口暴露在 UI 上 */
-    activatableAbilityKinds?: TitanActivatableAbilityKind[];
+    /** 显式声明哪些能力会作为玩家可点击入口暴露在 UI 上。 */
+    activatableAbilities?: SmashUpActivatableAbility[];
+    /** @deprecated 使用 activatableAbilities 代替 */
+    activatableAbilityKinds?: SmashUpActivationKind[];
     previewRef?: CardPreviewRef;
     summonMode: TitanSummonMode;
     /** 仅影响“作为哪种牌被打出/选择”的语义，不改变真实牌种 */
@@ -205,6 +220,8 @@ export interface ActionCardDef {
      * 仅对 subtype='special' 的行动卡有效。
      */
     specialLimitGroup?: string;
+    /** 显式声明可手动发动的能力入口。 */
+    activatableAbilities?: SmashUpActivatableAbility[];
     /**
      * special 技能的触发时机（仅对 subtype='special' 有效）：
      * - 'beforeScoring': 在 Me First! 窗口打出时立即执行（默认）
@@ -521,6 +538,34 @@ export interface BaseLkiSnapshot {
     defId: string;
 }
 
+export type ReactionOrderingAtom =
+    | 'playLimits'
+    | 'triggerMinionPower'
+    | 'triggerMinionState'
+    | 'sourceState'
+    | 'baseState'
+    | 'controllerState'
+    | 'scoringState'
+    | 'targetAvailability'
+    | 'turnFlags';
+
+export interface ReactionOrderingFootprint {
+    /**
+     * 触发结算期间会读取的状态标签。
+     * 若另一个触发会写入这些标签，则顺序可能影响结果。
+     */
+    reads?: ReactionOrderingAtom[];
+    /**
+     * 触发结算期间会写入的状态标签。
+     * 与其他触发的 reads/writes 冲突时，必须保留玩家排序权。
+     */
+    writes?: ReactionOrderingAtom[];
+    /**
+     * 若会打开新交互链，则默认认为顺序有价值，不自动收口。
+     */
+    opensInteraction?: boolean;
+}
+
 export interface TriggerInstance {
     /** stable id for interaction selection */
     id: string;
@@ -573,6 +618,7 @@ export interface TriggerInstance {
     inspectionZone?: 'deck' | 'hand';
     inspectionTargetPlayerIds?: PlayerId[];
     inspectionCausePlayerId?: PlayerId;
+    orderingFootprint?: ReactionOrderingFootprint;
 
     /** LKI snapshots captured at queue time */
     lkiMinion?: MinionLkiSnapshot;

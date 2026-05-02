@@ -89,26 +89,8 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'shadow_thief', nameKey: 'characters.shadow_thief' },
     { id: 'moon_elf', nameKey: 'characters.moon_elf' },
     { id: 'paladin', nameKey: 'characters.paladin' },
-    {
-        id: 'gunslinger',
-        nameKey: 'characters.gunslinger',
-        badges: [{
-            id: 'under_construction',
-            labelKey: 'common:status_tags.under_construction',
-            tone: 'warning',
-            variant: 'disabled-overlay',
-        }],
-    },
-    {
-        id: 'samurai',
-        nameKey: 'characters.samurai',
-        badges: [{
-            id: 'under_construction',
-            labelKey: 'common:status_tags.under_construction',
-            tone: 'warning',
-            variant: 'disabled-overlay',
-        }],
-    },
+    { id: 'gunslinger', nameKey: 'characters.gunslinger' },
+    { id: 'samurai', nameKey: 'characters.samurai' },
 ];
 
 /**

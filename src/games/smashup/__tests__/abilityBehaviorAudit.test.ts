@@ -30,6 +30,7 @@ import { getRegisteredModifierIds } from '../domain/ongoingModifiers';
 import type { CardDef, ActionCardDef, MinionCardDef } from '../domain/types';
 import { FACTION_METADATA, getVisibleFactionMetadata } from '../ui/factionMeta';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { hasSpecialSemanticsRegistration } from './helpers/auditUtils';
 
 // ============================================================================
 // i18n 数据
@@ -231,16 +232,13 @@ describe('SmashUp 能力行为审计', () => {
             expect(violations).toEqual([]);
         });
 
-        it('描述含"基地计分后/计分后"的卡牌必须声明 special 或注册 afterScoring 触发器', () => {
+        it('描述含"基地计分后/计分后"的卡牌必须声明可执行的 special 语义或 afterScoring 触发器', () => {
             const entities = buildEntities();
-            const { triggerIds } = getRegisteredOngoingEffectIds();
             const violations: string[] = [];
             for (const e of entities) {
                 if (!/基地计分后|在这个基地计分后|在一个基地计分后|计分后/.test(e.descriptionText)) continue;
-                const hasSpecialTag = Array.isArray(e.abilityTags) && e.abilityTags.includes('special');
-                const hasAfterScoringTrigger = triggerIds.get(e.id)?.includes('afterScoring') ?? false;
-                if (!hasSpecialTag && !hasAfterScoringTrigger) {
-                    violations.push(`[${e.id}]（${e.name}）描述含"计分后"但既无 special 标签也无 afterScoring 触发器`);
+                if (!hasSpecialSemanticsRegistration(e.id, e.descriptionText)) {
+                    violations.push(`[${e.id}]（${e.name}）描述含"计分后"但缺少可执行的 special/afterScoring 语义声明`);
                 }
             }
             expect(violations).toEqual([]);

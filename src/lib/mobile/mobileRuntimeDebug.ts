@@ -1,4 +1,5 @@
 import { registerPlugin } from '@capacitor/core';
+import { isNativeAndroidRuntime } from './androidRuntime';
 
 type MobileRuntimeLogLevel = 'info' | 'warn' | 'error';
 
@@ -21,7 +22,26 @@ declare global {
 }
 
 const MAX_RUNTIME_LOG_COUNT = 200;
-const nativeDiagnosticPlugin = registerPlugin<NativeDiagnosticPlugin>('GamePackage');
+let nativeDiagnosticPlugin: NativeDiagnosticPlugin | null | undefined;
+
+const getNativeDiagnosticPlugin = (): NativeDiagnosticPlugin | null => {
+    if (nativeDiagnosticPlugin !== undefined) {
+        return nativeDiagnosticPlugin;
+    }
+
+    if (!isNativeAndroidRuntime()) {
+        nativeDiagnosticPlugin = null;
+        return nativeDiagnosticPlugin;
+    }
+
+    try {
+        nativeDiagnosticPlugin = registerPlugin<NativeDiagnosticPlugin>('GamePackage');
+    } catch {
+        nativeDiagnosticPlugin = null;
+    }
+
+    return nativeDiagnosticPlugin;
+};
 
 const shouldEmitMobileRuntimeLog = () => {
     if (typeof import.meta !== 'undefined' && import.meta.env?.DEV) {
@@ -128,8 +148,13 @@ export const logMobileRuntime = (
 };
 
 const tryNativeLog = (message: string) => {
+    const plugin = getNativeDiagnosticPlugin();
+    if (!plugin) {
+        return;
+    }
+
     try {
-        void nativeDiagnosticPlugin.logDiagnostic({ message }).catch(() => {});
+        void plugin.logDiagnostic({ message }).catch(() => {});
     } catch {
         // best-effort
     }

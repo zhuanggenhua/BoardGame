@@ -6782,7 +6782,7 @@ describe('smashup', () => {
             playerId: '0',
             payload: { minionUid: 'deputy-1', baseIndex: 0 },
         })).toMatchObject({
-            valid: true,
+            valid: false,
         });
 
         expect(SmashUpDomain.validate(state, {
@@ -6790,7 +6790,7 @@ describe('smashup', () => {
             playerId: '0',
             payload: { minionUid: 'sheriff-1', baseIndex: 0 },
         })).toMatchObject({
-            valid: true,
+            valid: false,
         });
     });
 

@@ -23,6 +23,7 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 describe('FeedbackModal', () => {
     beforeEach(() => {
         vi.clearAllMocks();
+        window.localStorage.clear();
         (global.fetch as any).mockResolvedValue({
             ok: true,
             json: async () => ({ success: true })
@@ -270,5 +271,65 @@ describe('FeedbackModal', () => {
             expect(body.actionLog).toBeUndefined();
             expect(body.stateSnapshot).toBeUndefined();
         });
+    });
+
+    it('关闭后重新打开应保留未提交的反馈草稿', () => {
+        const actionLog = '玩家 0 打出了卡牌';
+        const snapshot = JSON.stringify({ gameId: 'test', core: {} });
+        const firstRender = render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    actionLogText={actionLog}
+                    stateSnapshot={snapshot}
+                />
+            </TestWrapper>
+        );
+
+        fireEvent.change(screen.getByPlaceholderText(/描述/i), { target: { value: '误关前的草稿内容' } });
+        fireEvent.change(screen.getByPlaceholderText(/邮箱或 QQ/i), { target: { value: 'draft@example.com' } });
+        fireEvent.click(screen.getByLabelText(/附带操作日志/i));
+
+        firstRender.unmount();
+
+        render(
+            <TestWrapper>
+                <FeedbackModal
+                    onClose={mockOnClose}
+                    actionLogText={actionLog}
+                    stateSnapshot={snapshot}
+                />
+            </TestWrapper>
+        );
+
+        expect(screen.getByPlaceholderText(/描述/i)).toHaveValue('误关前的草稿内容');
+        expect(screen.getByPlaceholderText(/邮箱或 QQ/i)).toHaveValue('draft@example.com');
+        expect((screen.getByLabelText(/附带操作日志/i) as HTMLInputElement).checked).toBe(false);
+        expect((screen.getByLabelText(/附带状态快照/i) as HTMLInputElement).checked).toBe(true);
+    });
+
+    it('提交成功后应清空已保存的反馈草稿', async () => {
+        const firstRender = render(
+            <TestWrapper>
+                <FeedbackModal onClose={mockOnClose} />
+            </TestWrapper>
+        );
+
+        fireEvent.change(screen.getByPlaceholderText(/描述/i), { target: { value: '提交后应被清空的草稿' } });
+        fireEvent.click(screen.getByRole('button', { name: /提交/i }));
+
+        await waitFor(() => {
+            expect(global.fetch).toHaveBeenCalledTimes(1);
+        });
+
+        firstRender.unmount();
+
+        render(
+            <TestWrapper>
+                <FeedbackModal onClose={mockOnClose} />
+            </TestWrapper>
+        );
+
+        expect(screen.getByPlaceholderText(/描述/i)).toHaveValue('');
     });
 });

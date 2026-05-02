@@ -31,6 +31,7 @@ import {
 } from './domain/types';
 import { SMASHUP_FACTION_IDS } from './domain/ids';
 import { validate } from './domain/commands';
+import { hasCardActivatableAbility } from './domain/activationMetadata';
 import {
     actionLikeNeedsResponseWindowBase,
     getActionLikeResponseWindowTiming,
@@ -183,10 +184,12 @@ const getSmashUpActionStrategyTags = (action: AiLegalAction): string[] => {
 const buildCardAiMetrics = (cardDef: SmashUpResolvedCardDef, count = 1): Partial<SmashUpCardAiMetrics> => {
     if (cardDef.type === 'minion') {
         const tags = normalizeAbilityTags(cardDef.abilityTags);
+        const hasScoringWindowSpecial = hasCardActivatableAbility(cardDef.id, { kind: 'special', zone: 'board', window: 'beforeScoring' })
+            || hasCardActivatableAbility(cardDef.id, { kind: 'special', zone: 'board', window: 'afterScoring' });
         return {
             extraMinion: tags.has('extra') ? count * 2.2 : 0,
             ongoing: tags.has('ongoing') ? count * 1.6 : 0,
-            reactive: cardDef.beforeScoringPlayable ? count * 2.5 : (tags.has('special') ? count * 1.2 : 0),
+            reactive: cardDef.beforeScoringPlayable ? count * 2.5 : (hasScoringWindowSpecial ? count * 1.2 : 0),
             burst: cardDef.power >= 4 ? count * 1.4 : 0,
         };
     }
@@ -208,6 +211,15 @@ const buildCardAiMetrics = (cardDef: SmashUpResolvedCardDef, count = 1): Partial
     if (cardDef.type === 'fusion') {
         const minionTags = normalizeAbilityTags(cardDef.minionAbilityTags);
         const actionTags = normalizeAbilityTags(cardDef.actionAbilityTags);
+        const hasScoringWindowFusionSpecial = hasCardActivatableAbility(
+            cardDef.id,
+            { kind: 'special', zone: 'board', window: 'beforeScoring' },
+            { face: 'minion' },
+        ) || hasCardActivatableAbility(
+            cardDef.id,
+            { kind: 'special', zone: 'board', window: 'afterScoring' },
+            { face: 'minion' },
+        );
         return {
             extraMinion: minionTags.has('extra') ? count * 1.5 : 0,
             extraAction: actionTags.has('extra') ? count * 1.6 : 0,
@@ -218,6 +230,7 @@ const buildCardAiMetrics = (cardDef: SmashUpResolvedCardDef, count = 1): Partial
             ) ? count * 1.8 : 0,
             reactive: (
                 cardDef.minionBeforeScoringPlayable
+                || hasScoringWindowFusionSpecial
                 || cardDef.actionSpecialTiming === 'beforeScoring'
                 || cardDef.actionResponseWindowTiming === 'beforeScoring'
             ) ? count * 2 : 0,

@@ -60,6 +60,7 @@ export const NINJA_POD_MINIONS: MinionCardDef[] = [
         // to your hand and play an extra minion here immediately.
         // POD版：天赋能力（与原版 special 不同，属于主动激活的 talent）
         abilityTags: ['talent'],
+        activatableAbilities: [{ kind: 'talent', zone: 'board', window: 'playCards' }],
         count: 4,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 15 },
     },

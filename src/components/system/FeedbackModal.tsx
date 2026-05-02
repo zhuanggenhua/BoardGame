@@ -14,6 +14,7 @@ import { getLastErrorContext } from '../../lib/feedback/errorContext';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 
 const FEEDBACK_MODAL_DEBUG = true;
+const FEEDBACK_DRAFT_STORAGE_PREFIX = 'feedback-modal:draft:v1';
 
 const readRectSnapshot = (element: Element | null) => {
     if (!(element instanceof HTMLElement)) {
@@ -47,6 +48,7 @@ interface FeedbackRuntimeContext {
     playerId?: string | null;
     gameId?: string;
 }
+
 interface FeedbackModalProps {
     onClose: () => void;
     /** 游戏内操作日志（纯文本，由 GameHUD 传入） */
@@ -73,6 +75,17 @@ const FeedbackSeverity = {
 
 type FeedbackSeverity = typeof FeedbackSeverity[keyof typeof FeedbackSeverity];
 
+interface FeedbackDraft {
+    content: string;
+    type: FeedbackType;
+    severity: FeedbackSeverity;
+    contactInfo: string;
+    pastedImage: string | null;
+    attachLog: boolean;
+    attachState: boolean;
+    gameName: string;
+}
+
 const FEEDBACK_TYPE_LABEL_KEYS: Record<FeedbackType, string> = {
     [FeedbackType.BUG]: 'hud.feedback.type.bug',
     [FeedbackType.SUGGESTION]: 'hud.feedback.type.suggestion',
@@ -84,6 +97,75 @@ const FEEDBACK_SEVERITY_LABEL_KEYS: Record<FeedbackSeverity, string> = {
     [FeedbackSeverity.MEDIUM]: 'hud.feedback.severity.medium',
     [FeedbackSeverity.HIGH]: 'hud.feedback.severity.high',
     [FeedbackSeverity.CRITICAL]: 'hud.feedback.severity.critical',
+};
+
+const isFeedbackType = (value: unknown): value is FeedbackType => (
+    value === FeedbackType.BUG || value === FeedbackType.SUGGESTION || value === FeedbackType.OTHER
+);
+
+const isFeedbackSeverity = (value: unknown): value is FeedbackSeverity => (
+    value === FeedbackSeverity.LOW
+    || value === FeedbackSeverity.MEDIUM
+    || value === FeedbackSeverity.HIGH
+    || value === FeedbackSeverity.CRITICAL
+);
+
+const buildFeedbackDraftStorageKey = (params: {
+    gameId?: string;
+    matchId?: string;
+    mode?: FeedbackRuntimeContext['mode'];
+}) => {
+    if (!params.gameId) {
+        return `${FEEDBACK_DRAFT_STORAGE_PREFIX}:outside`;
+    }
+
+    const scope = params.matchId || params.mode || 'game';
+    return `${FEEDBACK_DRAFT_STORAGE_PREFIX}:game:${params.gameId}:${scope}`;
+};
+
+const readFeedbackDraft = (storageKey: string): FeedbackDraft | null => {
+    if (typeof window === 'undefined') return null;
+
+    try {
+        const raw = window.localStorage.getItem(storageKey);
+        if (!raw) return null;
+
+        const parsed = JSON.parse(raw) as Partial<FeedbackDraft> | null;
+        if (!parsed || typeof parsed !== 'object') return null;
+
+        return {
+            content: typeof parsed.content === 'string' ? parsed.content : '',
+            type: isFeedbackType(parsed.type) ? parsed.type : FeedbackType.BUG,
+            severity: isFeedbackSeverity(parsed.severity) ? parsed.severity : FeedbackSeverity.LOW,
+            contactInfo: typeof parsed.contactInfo === 'string' ? parsed.contactInfo : '',
+            pastedImage: typeof parsed.pastedImage === 'string' ? parsed.pastedImage : null,
+            attachLog: typeof parsed.attachLog === 'boolean' ? parsed.attachLog : false,
+            attachState: typeof parsed.attachState === 'boolean' ? parsed.attachState : false,
+            gameName: typeof parsed.gameName === 'string' ? parsed.gameName : '',
+        };
+    } catch {
+        return null;
+    }
+};
+
+const writeFeedbackDraft = (storageKey: string, draft: FeedbackDraft) => {
+    if (typeof window === 'undefined') return;
+
+    try {
+        window.localStorage.setItem(storageKey, JSON.stringify(draft));
+    } catch {
+        // ignore storage failures
+    }
+};
+
+const clearFeedbackDraft = (storageKey: string) => {
+    if (typeof window === 'undefined') return;
+
+    try {
+        window.localStorage.removeItem(storageKey);
+    } catch {
+        // ignore storage failures
+    }
 };
 
 export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeContext }: FeedbackModalProps) => {
@@ -99,15 +181,25 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
         return document.getElementById('modal-root') ?? document.body;
     }, []);
 
-    const [content, setContent] = useState('');
-    const [type, setType] = useState<FeedbackType>(FeedbackType.BUG);
-    const [severity, setSeverity] = useState<FeedbackSeverity>(FeedbackSeverity.LOW);
-    const [contactInfo, setContactInfo] = useState('');
+    const isInGame = location.pathname.startsWith('/play/');
+    const autoGameId = isInGame ? (location.pathname.split('/')[2] || '') : '';
+    const draftStorageKey = useMemo(() => buildFeedbackDraftStorageKey({
+        gameId: (runtimeContext?.gameId ?? autoGameId) || undefined,
+        matchId: runtimeContext?.matchId,
+        mode: runtimeContext?.mode,
+    }), [autoGameId, runtimeContext?.gameId, runtimeContext?.matchId, runtimeContext?.mode]);
+    const initialDraft = useMemo(() => readFeedbackDraft(draftStorageKey), [draftStorageKey]);
+
+    const [content, setContent] = useState(() => initialDraft?.content ?? '');
+    const [type, setType] = useState<FeedbackType>(() => initialDraft?.type ?? FeedbackType.BUG);
+    const [severity, setSeverity] = useState<FeedbackSeverity>(() => initialDraft?.severity ?? FeedbackSeverity.LOW);
+    const [contactInfo, setContactInfo] = useState(() => initialDraft?.contactInfo ?? '');
     const [submitting, setSubmitting] = useState(false);
-    const [pastedImage, setPastedImage] = useState<string | null>(null);
-    const [attachLog, setAttachLog] = useState(!!actionLogText);
-    const [attachState, setAttachState] = useState(!!stateSnapshot);
+    const [pastedImage, setPastedImage] = useState<string | null>(() => initialDraft?.pastedImage ?? null);
+    const [attachLog, setAttachLog] = useState(() => initialDraft?.attachLog ?? !!actionLogText);
+    const [attachState, setAttachState] = useState(() => initialDraft?.attachState ?? !!stateSnapshot);
     const [isCompactLandscape, setIsCompactLandscape] = useState(false);
+    const [gameName, setGameName] = useState(() => initialDraft?.gameName ?? autoGameId);
     const shouldShowGameSelector = !runtimeContext?.gameId;
     const fieldLabelClassName = cn(
         'font-bold text-parchment-light-text uppercase tracking-wider',
@@ -190,10 +282,18 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
         };
     }, [isCompactLandscape]);
 
-    // 游戏内自动注入 gameId，非游戏页面允许手动选择
-    const isInGame = location.pathname.startsWith('/play/');
-    const autoGameId = isInGame ? (location.pathname.split('/')[2] || '') : '';
-    const [gameName, setGameName] = useState(autoGameId);
+    useEffect(() => {
+        writeFeedbackDraft(draftStorageKey, {
+            content,
+            type,
+            severity,
+            contactInfo,
+            pastedImage,
+            attachLog,
+            attachState,
+            gameName,
+        });
+    }, [attachLog, attachState, contactInfo, content, draftStorageKey, gameName, pastedImage, severity, type]);
 
     const handleBackdropClick = (e: React.MouseEvent) => {
         if (backdropRef.current === e.target) {
@@ -294,6 +394,7 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                 );
             }
 
+            clearFeedbackDraft(draftStorageKey);
             success(t('hud.feedback.success'));
             onClose();
         } catch (err) {

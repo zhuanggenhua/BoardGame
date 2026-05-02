@@ -2,7 +2,10 @@
  * Smash Up - Alien Terraform E2E 测试
  */
 
+import { mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 import { test, expect } from '../framework';
+import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 
 const SMASHUP_TERRAFORM_QUERY = {
     p0: 'aliens,pirates',
@@ -11,6 +14,26 @@ const SMASHUP_TERRAFORM_QUERY = {
     skipInitialization: false,
     seed: 12345,
 };
+
+async function saveEvidenceLocatorScreenshot(page: any, locator: any, testInfo: any, subdir: string, filename: string) {
+    const path = getEvidenceScreenshotPath(testInfo, filename, { subdir, filename });
+    mkdirSync(dirname(path), { recursive: true });
+    await expect(locator).toBeVisible({ timeout: 15000 });
+    const box = await locator.boundingBox();
+    expect(box, `未获取到截图目标 ${filename} 的边界`).not.toBeNull();
+    const padding = 10;
+    await page.screenshot({
+        path,
+        animations: 'disabled',
+        scale: 'device',
+        clip: {
+            x: Math.max((box?.x ?? 0) - padding, 0),
+            y: Math.max((box?.y ?? 0) - padding, 0),
+            width: (box?.width ?? 0) + padding * 2,
+            height: (box?.height ?? 0) + padding * 2,
+        },
+    });
+}
 
 async function openTerraformScene(
     game: any,
@@ -2135,6 +2158,13 @@ test.describe('Smash Up - Alien Terraform', () => {
                             attachedActions: [],
                         },
                     ],
+                    ongoingActions: [
+                        {
+                            uid: 'gravestones-live',
+                            defId: 'skeletons_gravestones',
+                            ownerId: '0',
+                        },
+                    ],
                 },
             ],
             extraCore: {
@@ -2154,10 +2184,16 @@ test.describe('Smash Up - Alien Terraform', () => {
         });
 
         const titanRail = page.getByTestId('su-titan-rail');
+        const gravestonesCard = page.locator('[data-ongoing-uid="gravestones-live"]').first();
         await expect(titanRail).toBeVisible();
+        await expect(gravestonesCard).toBeVisible();
         await expect(page.getByTestId('su-rail-titan-badge-titan-pecos-ui')).toHaveCount(0);
         await expect(page.locator('[data-minion-uid="deputy-ui-1"] .ring-green-400')).toHaveCount(0);
         await expect(page.locator('[data-minion-uid="deputy-ui-1"] .border-green-400')).toHaveCount(0);
+        await expect(page.locator('[data-ongoing-uid="gravestones-live"] .ring-green-400')).toHaveCount(0);
+        await expect(page.locator('[data-ongoing-uid="gravestones-live"] .border-green-400')).toHaveCount(0);
+        await expect(page.locator('[data-ongoing-uid="gravestones-live"] .ring-amber-400')).toHaveCount(0);
+        await expect(page.locator('[data-ongoing-uid="gravestones-live"] .border-amber-400')).toHaveCount(0);
 
         await saveEvidenceLocatorScreenshot(page, titanRail, testInfo, 'smashup-titan-rail', 'pecos-titan-rail-not-activatable');
         await saveEvidenceLocatorScreenshot(
@@ -2167,6 +2203,19 @@ test.describe('Smash Up - Alien Terraform', () => {
             'smashup-titan-rail',
             'cowboys-deputy-no-false-activation-glow',
         );
+        await saveEvidenceLocatorScreenshot(
+            page,
+            gravestonesCard,
+            testInfo,
+            'smashup-titan-rail',
+            'skeletons-gravestones-no-false-activation-glow',
+        );
+
+        await gravestonesCard.click({ force: true });
+        await page.waitForTimeout(300);
+        const postClickState = await game.getState();
+        expect(postClickState.sys.interaction?.current).toBeUndefined();
+
         await game.screenshot('pecos-and-deputy-no-false-special-highlight', testInfo);
     });
 

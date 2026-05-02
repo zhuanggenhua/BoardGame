@@ -25,7 +25,6 @@ import {
 import { registerProtection, registerRestriction } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, RestrictionCheckContext } from '../domain/ongoingEffects';
 import {
-    getSelectedBranchIds,
     hasBranchingChoiceSelection,
     queueBranchingChoice,
     resolveBranchingChoiceSelection,
@@ -74,6 +73,12 @@ type AttachedActionState = {
     baseIndex: number;
     minionUid: string;
     snapshot?: AttachedActionSnapshot;
+};
+
+type FairiesEnchantmentContinuation = {
+    baseIndex: number;
+    selectedBranchIds?: Array<'plus' | 'minus'>;
+    allowBoth?: boolean;
 };
 
 function appendTimedPowerModifier(
@@ -269,23 +274,103 @@ function buildGlymmerTargetOptions(state: SmashUpCore, sourceCardUid: string, so
     }));
 }
 
-function buildTitaniaReturnOptions(state: SmashUpCore) {
-    const options = [];
+function buildTitaniaReturnOptions(state: SmashUpCore, playerId: PlayerId) {
+    const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
     for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex++) {
         const base = state.bases[baseIndex];
         const baseName = getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`;
         for (const minion of base.minions) {
             const minionName = getCardDef(minion.defId)?.name ?? minion.defId;
-            options.push({
-                id: `return-${minion.uid}`,
+            candidates.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
                 label: `${minionName} @ ${baseName}`,
-                value: { choice: 'return_minion' as const, minionUid: minion.uid, baseIndex, defId: minion.defId },
-                _source: 'field' as const,
-                displayMode: 'card' as const,
             });
         }
     }
-    return options;
+    return buildMinionTargetOptions(candidates, {
+        state,
+        sourcePlayerId: playerId,
+        effectType: 'affect',
+    });
+}
+
+function buildFairiesEnchantmentPromptOptions(
+    selectedBranchIds: Array<'plus' | 'minus'>,
+    includeSkip: boolean,
+) {
+    const options = (['plus', 'minus'] as const)
+        .filter(branchId => !selectedBranchIds.includes(branchId))
+        .map(branchId => ({
+            id: branchId,
+            label: branchId === 'plus' ? '所有随从 +1 力量' : '所有随从 -1 力量',
+            value: { branchId },
+            displayMode: 'button' as const,
+        }));
+    return includeSkip ? [...options, createSkipOption()] : options;
+}
+
+function queueFairiesEnchantmentPrompt(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    continuation: FairiesEnchantmentContinuation,
+): MatchState<SmashUpCore> {
+    const selectedBranchIds = continuation.selectedBranchIds ?? [];
+    const includeSkip = selectedBranchIds.length > 0;
+    const options = buildFairiesEnchantmentPromptOptions(selectedBranchIds, includeSkip);
+    const interaction = createSimpleChoice(
+        `fairies_enchantment_${now}`,
+        playerId,
+        includeSkip
+            ? '结果：你可以继续执行剩余效果，或跳过'
+            : '结果：选择让此基地所有随从 +1 力量，或所有随从 -1 力量',
+        options,
+        {
+            sourceId: 'fairies_enchantment',
+            targetType: 'button',
+            autoResolveIfSingle: false,
+        },
+    );
+
+    return queueInteraction(matchState, {
+        ...interaction,
+        data: {
+            ...interaction.data,
+            continuationContext: continuation,
+        },
+    });
+}
+
+function queueTitaniaReturnPrompt(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    continuationContext?: Record<string, unknown>,
+): MatchState<SmashUpCore> {
+    const options = buildTitaniaReturnOptions(matchState.core, playerId);
+    const interaction = createSimpleChoice(
+        `fairies_titania_return_minion_${now}`,
+        playerId,
+        'Titania：选择一个要移回其拥有者手牌的随从',
+        options,
+        {
+            sourceId: 'fairies_titania_return_minion',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    );
+
+    return queueInteraction(matchState, continuationContext
+        ? {
+            ...interaction,
+            data: {
+                ...interaction.data,
+                continuationContext,
+            },
+        }
+        : interaction);
 }
 
 function buildPlayfulTricksActionOptions(state: SmashUpCore) {
@@ -440,25 +525,24 @@ export function registerFairiesAbilities(): void {
 }
 
 function fairiesTitania(ctx: AbilityContext): AbilityResult {
-    const options = [
-        {
-            id: 'extra-minion',
-            label: '额外打出一个随从',
-            value: { choice: 'extra_minion' },
-            displayMode: 'button' as const,
-        },
+    const options: BranchingChoiceOption[] = [
+        createButtonBranchOption('extra-minion', '额外打出一个随从', 'extra_minion'),
+        createButtonBranchOption('return-minion', '将一个随从移回其拥有者手牌', 'return_minion'),
     ];
-    options.push(...buildTitaniaReturnOptions(ctx.state));
 
-    const interaction = createSimpleChoice(
-        `fairies_titania_${ctx.now}`,
-        ctx.playerId,
-        'Titania：将一个随从移回其拥有者手牌，或额外打出一个随从',
-        options,
-        { sourceId: 'fairies_titania', targetType: 'generic', autoResolveIfSingle: false },
-    );
-
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return {
+        events: [],
+        matchState: queueBranchingChoice({
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            sourceId: 'fairies_titania',
+            title: 'Titania：将一个随从移回其拥有者手牌，或额外打出一个随从',
+            targetType: 'generic',
+            upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
+            options,
+        }),
+    };
 }
 
 function fairiesGlymmer(ctx: AbilityContext): AbilityResult {
@@ -588,21 +672,12 @@ function fairiesPlayfulTricks(ctx: AbilityContext): AbilityResult {
 }
 
 function fairiesEnchantment(ctx: AbilityContext): AbilityResult {
+    const upgrade = getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now);
     return {
         events: [],
-        matchState: queueBranchingChoice({
-            matchState: ctx.matchState,
-            playerId: ctx.playerId,
-            now: ctx.now,
-            sourceId: 'fairies_enchantment',
-            title: '结果：选择让此基地所有随从 +1 力量，或所有随从 -1 力量',
-            targetType: 'button',
-            continuationContext: { baseIndex: ctx.baseIndex },
-            upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
-            options: [
-                createButtonBranchOption('plus', '所有随从 +1 力量', 'plus'),
-                createButtonBranchOption('minus', '所有随从 -1 力量', 'minus'),
-            ],
+        matchState: queueFairiesEnchantmentPrompt(ctx.matchState, ctx.playerId, ctx.now, {
+            baseIndex: ctx.baseIndex,
+            allowBoth: !!upgrade,
         }),
     };
 }
@@ -637,84 +712,60 @@ function fairiesMagicWardRestrictionChecker(ctx: RestrictionCheckContext): boole
     ) ?? false;
 }
 
-const handleFairiesTitania: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice & ButtonChoice;
-    const spirit = getAvailableSpiritOfTheForestOrTitan(state.core, playerId);
-
-    if (selected.choice === 'extra_minion') {
-        const extraMinionEvent = grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'fairies_titania');
-        if (!spirit) {
-            return {
-                state,
-                events: [extraMinionEvent],
-            };
-        }
-
-        const returnOptions = buildTitaniaReturnOptions(state.core);
-        if (returnOptions.length === 0) {
-            return {
-                state,
-                events: [
-                    extraMinionEvent,
-                    markSpiritOfTheForestOrUsed(spirit.uid, state.core.turnNumber, timestamp),
-                ],
-            };
-        }
-
-        const interaction = createSimpleChoice(
-            `fairies_titania_spirit_return_${timestamp}`,
-            playerId,
-            '丛林之灵：再将一个随从移回其拥有者手牌',
-            returnOptions,
-            { sourceId: 'fairies_titania_spirit_return', targetType: 'generic', autoResolveIfSingle: false },
-        );
-        return {
-            state: queueInteraction(state, interaction),
-            events: [
-                extraMinionEvent,
-                markSpiritOfTheForestOrUsed(spirit.uid, state.core.turnNumber, timestamp),
-            ],
-        };
-    }
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const returnEvents = buildValidatedReturnEvents(state, {
-        minionUid: selected.minionUid,
-        minionDefId: selected.defId ?? '',
-        fromBaseIndex: selected.baseIndex,
-        reason: 'fairies_titania',
-        now: timestamp,
-        sourcePlayerId: playerId,
-    });
-    if (spirit) {
+const runFairiesTitaniaBranch: BranchExecutor = ({ state, playerId, selection, timestamp }) => {
+    const branchId = selection.branchId;
+    if (branchId === 'extra_minion') {
         return {
             state,
-            events: [
-                ...returnEvents,
-                grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'fairies_titania'),
-                markSpiritOfTheForestOrUsed(spirit.uid, state.core.turnNumber, timestamp),
-            ],
+            events: [grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'fairies_titania')],
         };
     }
-    return {
-        state,
-        events: returnEvents,
-    };
+    if (branchId === 'return_minion') {
+        return {
+            state: queueTitaniaReturnPrompt(state, playerId, timestamp),
+            events: [],
+        };
+    }
+    return { state, events: [] };
 };
 
-const handleFairiesTitaniaSpiritReturn: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
+const handleFairiesTitaniaReturnMinion: InteractionHandler = (state, playerId, value, data, random, timestamp) => {
     const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    return {
+    if (!selected.minionUid || selected.baseIndex === undefined) {
+        return { state, events: [] };
+    }
+    const result: BranchExecutionResult = {
         state,
         events: buildValidatedReturnEvents(state, {
             minionUid: selected.minionUid,
             minionDefId: selected.defId ?? '',
             fromBaseIndex: selected.baseIndex,
-            reason: 'fairies_titania_spirit',
+            reason: 'fairies_titania',
             now: timestamp,
             sourcePlayerId: playerId,
         }),
     };
+    return resumeBranchingChoicePlan({
+        state: result.state,
+        playerId,
+        interactionData: data,
+        random,
+        timestamp,
+        executeBranch: runFairiesTitaniaBranch,
+        prefixEvents: result.events,
+    }) ?? result;
+};
+
+const handleFairiesTitania: InteractionHandler = (state, playerId, value, data, random, timestamp) => {
+    return resolveBranchingChoiceSelection({
+        state,
+        playerId,
+        value,
+        interactionData: data,
+        random,
+        timestamp,
+        executeBranch: runFairiesTitaniaBranch,
+    }) ?? { state, events: [] };
 };
 
 const handleFairiesGlymmer: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
@@ -968,11 +1019,29 @@ const handleFairiesPlayfulTricksSpiritBase: InteractionHandler = (state, playerI
 };
 
 const handleFairiesEnchantment: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const continuation = data?.continuationContext as { baseIndex?: number } | undefined;
+    const continuation = data?.continuationContext as FairiesEnchantmentContinuation | undefined;
     if (!continuation || continuation.baseIndex === undefined) return { state, events: [] };
-    const branchIds = getSelectedBranchIds(value);
+    const selectedValue = value as { branchId?: string; skip?: boolean };
+    const previousBranchIds = continuation.selectedBranchIds ?? [];
+
+    if (
+        (selectedValue.branchId === 'plus' || selectedValue.branchId === 'minus')
+        && continuation.allowBoth
+        && previousBranchIds.length === 0
+    ) {
+        return {
+            state: queueFairiesEnchantmentPrompt(state, playerId, timestamp, {
+                ...continuation,
+                selectedBranchIds: [selectedValue.branchId],
+            }),
+            events: [],
+        };
+    }
+
+    const branchIds = selectedValue.branchId === 'plus' || selectedValue.branchId === 'minus'
+        ? [...previousBranchIds, selectedValue.branchId]
+        : previousBranchIds;
     if (branchIds.length === 0) return { state, events: [] };
-    if (!branchIds.every((branchId) => branchId === 'plus' || branchId === 'minus')) return { state, events: [] };
 
     const attached = state.core.bases[continuation.baseIndex]?.ongoingActions.find(action =>
         action.ownerId === playerId && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
@@ -1042,7 +1111,7 @@ const handleFairiesFairyBallet: InteractionHandler = (state, playerId, value, _d
 
 export function registerFairiesInteractionHandlers(): void {
     registerInteractionHandler('fairies_titania', handleFairiesTitania);
-    registerInteractionHandler('fairies_titania_spirit_return', handleFairiesTitaniaSpiritReturn);
+    registerInteractionHandler('fairies_titania_return_minion', handleFairiesTitaniaReturnMinion);
     registerInteractionHandler('fairies_glymmer', handleFairiesGlymmer);
     registerInteractionHandler('fairies_puck', handleFairiesPuck);
     registerInteractionHandler('fairies_tinx', handleFairiesTinx);

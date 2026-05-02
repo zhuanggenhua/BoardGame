@@ -1,19 +1,24 @@
 ## Context
 
-- Smash Up 已存在 `simple-choice`、`multi`、`continuationContext` 等交互原语，能够承载基础单选和多选。
+- Smash Up 已存在 `simple-choice`、`continuationContext`、链式 interaction resume 等交互原语，能够承载“先选分支，再进入子目标选择”的链路。
 - Fairies 的 `Spirit of the Forest` 规则要求：当玩家使用写有 `OR` 的能力时，可以改为使用两边效果，且顺序由玩家决定。
-- 当前项目里这类能力主要通过单卡 handler 链式手写实现，缺少统一的分支能力抽象。
+- 这类规则在真实 UX 上并不等价于“一次性把两个分支都编号选完”：
+  - 有些分支本身还会继续开目标选择（例如 Titania 的“回手哪个随从”）
+  - 玩家需要先看到第一边已经执行，再决定要不要继续剩余分支
+  - `Spirit of the Forest` 只应在玩家真的拿第二边时才消费
+- 当前项目里这类能力主要通过单卡 handler 链式手写实现，缺少统一的分支能力抽象和统一的 follow-up 恢复点。
 
 ## Goals / Non-Goals
 
 - Goals:
   - 用统一 builder 显式表达“这是一条 OR 分支能力”
   - 让 Titan/持续效果能通过统一入口升级分支能力，而不是卡牌内散落 `if (spirit)`
-  - 保留多分支执行顺序，使“both in any order”可被正确表达
-  - 让 UI / AI / handler 共用同一份分支选择契约
+  - 让“both in any order”落成 **先执行第一边，再补一次剩余分支选择** 的串行语义
+  - 让分支选择、分支内部目标选择、升级消费时机都收敛到统一契约
 - Non-Goals:
-  - 不把引擎层 `simple-choice` 全部替换成新 interaction kind
+  - 不新增 engine-level interaction kind
   - 不尝试从任意普通按钮 prompt 自动推断规则级 `OR` 语义
+  - 不把 Smash Up OR 语义实现成“一次性 ordered multi 编号多选”
   - 不在第一轮迁移全部 Smash Up 派系
 
 ## Decisions
@@ -22,13 +27,16 @@
   - Why: 规则级 OR 与实现细节按钮列表不是一回事；纯推断容易误判。
 
 - Decision: 继续复用 `simple-choice` 作为交互载体，而不是新增 engine-level interaction kind。
-  - Why: 现有 `simple-choice` 已支持 `multi`、`optionsGenerator`、`continuationContext`，改造面更小。
+  - Why: 现有 `simple-choice` + `continuationContext` + queue/resume 已足够表达串行 OR 链路，改造面更小。
 
-- Decision: 通过新的 ordered multi-selection 契约保留选中顺序。
-  - Why: `both parts in any order` 不是无序集合；AI 和 UI 都必须区分 `A -> B` 与 `B -> A`。
+- Decision: `Spirit of the Forest` 的 optional-both 语义采用“串行补选”，不是一次性 ordered multi。
+  - Why: 真实体验要求“先选并执行第一边，再决定要不要剩余边”；Titania 这类带子目标的能力更必须拆开。
 
 - Decision: upgrade provider 只介入 branching builder 产物，不碰普通 simple-choice。
   - Why: 这样可以让“自动识别”建立在统一 DSL 上，而不是靠脆弱的运行时推断。
+
+- Decision: 升级消费只在玩家真的执行第二个剩余分支时发生。
+  - Why: 升级可用 ≠ 升级已消耗；如果 follow-up 选择 `跳过`，规则语义仍然是只执行了一边。
 
 ## Architecture
 
@@ -39,48 +47,54 @@
   - `branches`
   - `upgradeKey` / `upgradeProvider`
   - `allowBoth`
-  - `allowOrderedSelection`
-- builder 负责生成首个 branch 选择 prompt，并把 branch plan 写入 `continuationContext`。
+- builder 负责生成**首个 branch 选择 prompt**，并把 branch plan 写入 `continuationContext`。
 
 ### 2. Branch plan 作为链式执行状态
 
-- branch 选择后不直接把所有效果一次性执行完，而是生成 plan：
-  - `selectedBranchIds`
-  - `remainingBranchIds`
-  - `ordered`
-  - `upgradeSource`
-  - `upgradeConsumed`
-- 每个 branch 的 handler 在完成自己的效果或后续子交互后，回到统一 resume helper 继续执行下一 branch。
+- 玩家第一次选择分支后，不是立即把两边都选完，而是生成可恢复的 pending plan：
+  - `planContext`
+  - `remainingOptions`
+  - `upgrade`
+- branch executor 先执行当前分支。
+- 如果当前分支又打开了子交互（例如 Titania 回手目标、Playful Tricks 选行动卡），pending plan 会挂到后续交互上，等子交互收口后再恢复。
+- 如果当前分支执行完且仍有剩余分支可选，则统一弹出 **“剩余分支 + 跳过”** follow-up prompt。
 
-### 3. InteractionSystem 增加 ordered multi-selection 契约
+### 3. Follow-up prompt 负责“剩余分支 + 跳过”
 
-- 在 `simple-choice` 的 `multi` 基础上增加顺序语义字段。
-- 响应 payload 中的 `optionIds` 必须按玩家点击顺序保留。
-- 刷新选项时只允许过滤失效候选，不得重排已选顺序语义。
+- follow-up prompt 只显示还没执行过的分支，加一个统一 `跳过` 选项。
+- 如果玩家选 `跳过`，branch plan 直接收口，不消费升级。
+- 如果玩家选剩余分支，系统先追加升级消费事件，再执行该分支。
 
-### 4. UI 与 AI 同步支持顺序化多选
+### 4. 分支选择与子目标选择严格分层
 
-- UI:
-  - generic multi-select 需要显示顺序编号
-  - 提交时按选择顺序发送 `optionIds`
-- AI:
-  - 无序多选继续枚举组合
-  - ordered multi-select 需要枚举排列
+- 第一层 prompt 只负责“你这次要做哪边”。
+- 第二层及后续 prompt 由分支自身决定，例如：
+  - Titania 选了 `return_minion` 后，才打开“选哪个随从回手”
+  - 这时 UI 不应再把“额外打出一个随从”与具体目标卡放在同一个 prompt 里
+- 分支子交互结束后，统一回到 branch plan 恢复 helper。
+
+### 5. Fairies Enchantment 走同语义的专用 continuation
+
+- `Enchantment` 的最终结果不是“执行两个独立事件”，而是落成一个 `fairiesEnchantmentMode = plus | minus | both`。
+- 因此它不直接复用“branch executor 立即执行事件”的默认分支逻辑，而是保留专用 continuation：
+  - 第一次只给 `plus / minus`
+  - 若升级可用，再给一次“剩余分支 + 跳过”
+  - 两次都选完才写成 `both`
 
 ## Migration Plan
 
-1. 先为 InteractionSystem / AI / Smash Up 域层补齐 ordered multi + branching builder 契约。
+1. 先落地 Smash Up 域层 branching builder / pending plan / resume helper。
 2. 先迁移 Fairies 中最典型的 OR 能力作为首批验证对象。
 3. 用新增抽象替换 `Spirit of the Forest` 的散落特判。
-4. 保留旧 helper 一轮兼容，仅在首批迁移稳定后再继续清理。
+4. 用 Titania 和 Fairy Ring 两条真实链路验证“先执行、再补选、可跳过”的最终 UX。
 
 ## Risks / Trade-offs
 
-- Risk: UI 当前对 generic multi-select 的顺序支持不足。
-  - Mitigation: 第一轮明确补齐顺序可视化和提交契约。
+- Risk: 分支执行后若进入子交互，pending plan 容易在队列里丢失。
+  - Mitigation: 把 pending plan 挂到当前/下一条 interaction 的 continuationContext，由 resume helper 统一恢复。
 
-- Risk: AI 对 ordered multi 的排列枚举可能带来候选爆炸。
-  - Mitigation: 第一轮仅用于低分支数 OR 能力，保持候选规模受控。
+- Risk: 某些能力的最终效果不是“两个分支各自立即执行一次事件”。
+  - Mitigation: 允许像 `Enchantment` 一样走专用 continuation，但仍遵守相同的串行补选语义。
 
-- Risk: 某些现有 Fairies 能力并不完全等价于“先选 branch 再顺序执行”。
-  - Mitigation: 首批迁移只覆盖语义最清晰的一组卡，逐步扩展。
+- Risk: 玩家可能误以为“能补第二边”就代表已经消费升级。
+  - Mitigation: 只在 follow-up 真选剩余分支时追加升级消费事件，跳过则不消费。

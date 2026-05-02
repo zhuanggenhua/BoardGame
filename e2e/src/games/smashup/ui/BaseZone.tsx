@@ -259,83 +259,138 @@ export const BaseZone: React.FC<{
         const isSelectableOngoing = !!selectableOngoingUids?.has(oa.uid);
         const isDimmedOngoing = !!selectableOngoingUids && !selectableOngoingUids.has(oa.uid);
         const showUsedOngoingState = hasOngoingTalent && oa.talentUsed && !canUseOngoingTalent;
+        const showOngoingInspectButton = showDesktopInspectButton || isCoarsePointer;
+        const ongoingPowerContribution = getOngoingCardPowerContribution({
+            ...base,
+            ongoingActions: [oa],
+        }, oa.ownerId);
+        const ongoingPowerCounters = ((oa.metadata?.powerCounters as number) ?? 0);
 
         return (
-            <motion.div
+            <div
                 key={oa.uid}
-                data-ongoing-uid={oa.uid}
-                {...getOngoingTouchInspectProps(`ongoing-${oa.uid}`, { defId: oa.defId })}
-                onClick={(e) => {
-                    e.stopPropagation();
-                    if (shouldBlockOngoingClick(`ongoing-${oa.uid}`)) return;
-                    if (isSelectableOngoing && onOngoingSelect) {
-                        clearArmedActivation();
-                        onOngoingSelect(oa.uid);
-                    } else if (canUseOngoingTalent) {
-                        armOrActivate(ongoingActivationKey, {
-                            onActivate: () => {
-                                dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: oa.uid, baseIndex });
-                            },
-                        });
-                    } else {
-                        clearArmedActivation();
-                        onViewAction(oa.defId);
-                    }
-                }}
-                className={`relative aspect-[0.714] bg-white rounded-[0.15vw] shadow-lg cursor-pointer
-                    hover:z-50 hover:scale-125 hover:-translate-y-[0.3vw] transition-all
-                    border-[0.12vw] ${isDimmedOngoing
-                        ? 'opacity-40 grayscale cursor-not-allowed'
-                        : isSelectableOngoing
-                        ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_15px_rgba(74,222,128,0.52)]'
-                        : isOngoingActivationArmed
-                        ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.75)]'
-                        : canUseOngoingTalent
-                        ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
-                        : showUsedOngoingState
-                        ? USED_STATE_CLASS
-                        : `${pConf.border} ${pConf.shadow}`}`}
+                className="group relative"
                 style={{
                     width: `${layout.ongoingCardWidth}vw`,
                     marginLeft: isFirstInGroup ? '0vw' : `-${ongoingCardOverlap}vw`,
                 }}
-                initial={{ y: 20, opacity: 0, scale: 0.6 }}
-                animate={isSelectableOngoing
-                    ? { y: 0, opacity: 1, scale: 1, rotate: [-1, 1, -1], transition: { rotate: { repeat: Infinity, duration: 1.2, ease: 'easeInOut' } } }
-                    : canUseOngoingTalent
-                    ? { y: 0, opacity: 1, scale: 1, rotate: [-1, 1, -1], transition: { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } } }
-                    : { y: 0, opacity: 1, scale: 1 }}
-                transition={{ type: 'spring', stiffness: 350, damping: 20, delay: idx * 0.06 }}
             >
-                <div className="w-full h-full overflow-hidden rounded-[0.1vw]">
-                    <CardPreview
-                        previewRef={actionDef?.previewRef
-                            ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: oa.defId, cardUid: oa.uid } }
-                            : undefined}
-                        className="w-full h-full"
-                        title={actionTitle}
-                    />
-                </div>
-                {canUseOngoingTalent && (
-                    <motion.div
-                        className="absolute inset-0 pointer-events-none z-20 rounded-[0.1vw]"
-                        animate={{ opacity: [0.3, 0.7, 0.3] }}
-                        transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
-                        style={{ background: 'radial-gradient(ellipse at center, rgba(251,191,36,0.4) 0%, transparent 70%)' }}
-                    />
-                )}
-                {hasOngoingTalent && oa.talentUsed && (
-                    <UsedStateBadge label={t('ui.talent_used')} compact insetClassName="left-[0.12vw] right-[0.12vw]" />
-                )}
-                {((oa.metadata?.powerCounters as number) ?? 0) > 0 && (
+                <motion.div
+                    data-ongoing-uid={oa.uid}
+                    {...getOngoingTouchInspectProps(`ongoing-${oa.uid}`, { defId: oa.defId })}
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        if (shouldBlockOngoingClick(`ongoing-${oa.uid}`)) return;
+                        if (isSelectableOngoing && onOngoingSelect) {
+                            clearArmedActivation();
+                            onOngoingSelect(oa.uid);
+                        } else if (canUseOngoingTalent) {
+                            armOrActivate(ongoingActivationKey, {
+                                onActivate: () => {
+                                    dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: oa.uid, baseIndex });
+                                },
+                            });
+                        } else {
+                            clearArmedActivation();
+                            onViewAction(oa.defId);
+                        }
+                    }}
+                    className={`relative aspect-[0.714] w-full cursor-pointer
+                        hover:z-50 hover:scale-125 hover:-translate-y-[0.3vw] transition-[transform,opacity,filter]
+                        ${isDimmedOngoing ? 'opacity-40 grayscale cursor-not-allowed' : ''}`}
+                    initial={{ y: 20, opacity: 0, scale: 0.6 }}
+                    animate={isSelectableOngoing
+                        ? { y: 0, opacity: 1, scale: 1, rotate: [-1, 1, -1], transition: { rotate: { repeat: Infinity, duration: 1.2, ease: 'easeInOut' } } }
+                        : canUseOngoingTalent
+                        ? { y: 0, opacity: 1, scale: 1, rotate: [-1, 1, -1], transition: { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } } }
+                        : { y: 0, opacity: 1, scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 350, damping: 20, delay: idx * 0.06 }}
+                >
                     <div
-                        className="absolute -top-[0.3vw] -right-[0.3vw] min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.5vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white z-40 px-[0.08vw]"
-                        title={`+1${t('ui.power_counter', '力量指示物')} x${oa.metadata?.powerCounters}`}
+                        className={`relative h-full w-full bg-white rounded-[0.15vw] shadow-lg border-[0.12vw] ${
+                            isDimmedOngoing
+                                ? 'cursor-not-allowed'
+                                : isSelectableOngoing
+                                ? 'border-green-400 ring-2 ring-green-400 shadow-[0_0_15px_rgba(74,222,128,0.52)]'
+                                : isOngoingActivationArmed
+                                ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.75)]'
+                                : canUseOngoingTalent
+                                ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
+                                : showUsedOngoingState
+                                ? USED_STATE_CLASS
+                                : `${pConf.border} ${pConf.shadow}`
+                        }`}
                     >
-                        +{oa.metadata?.powerCounters as number}
+                        <div className="w-full h-full overflow-hidden rounded-[0.1vw]">
+                            <CardPreview
+                                previewRef={actionDef?.previewRef
+                                    ? { type: 'renderer', rendererId: 'smashup-card-renderer', payload: { defId: oa.defId, cardUid: oa.uid } }
+                                    : undefined}
+                                className="w-full h-full"
+                                title={actionTitle}
+                            />
+                        </div>
+                        {canUseOngoingTalent && (
+                            <motion.div
+                                className="absolute inset-0 pointer-events-none z-20 rounded-[0.1vw]"
+                                animate={{ opacity: [0.3, 0.7, 0.3] }}
+                                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+                                style={{ background: 'radial-gradient(ellipse at center, rgba(251,191,36,0.4) 0%, transparent 70%)' }}
+                            />
+                        )}
+                    </div>
+                    {ongoingPowerContribution > 0 && (
+                        <div
+                            data-testid={`su-base-ongoing-power-badge-${oa.uid}`}
+                            className="absolute -top-[0.3vw] -left-[0.3vw] min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.55vw] font-black text-white bg-green-600 shadow-md border-[0.1vw] border-white z-40 px-[0.08vw]"
+                            title={`力量增加 +${ongoingPowerContribution}`}
+                        >
+                            +{ongoingPowerContribution}
+                        </div>
+                    )}
+                    {ongoingPowerCounters > 0 && (
+                        <div
+                            data-testid={`su-base-ongoing-power-counter-${oa.uid}`}
+                            className={`absolute min-w-[1.1vw] h-[1.1vw] rounded-full flex items-center justify-center text-[0.5vw] font-black text-amber-900 bg-gradient-to-br from-amber-300 to-amber-500 shadow-md border-[0.1vw] border-white z-40 px-[0.08vw] ${
+                                ongoingPowerContribution > 0 ? 'top-[0.92vw] -left-[0.3vw]' : '-top-[0.3vw] -right-[0.3vw]'
+                            }`}
+                            title={`+1${t('ui.power_counter', '力量指示物')} x${ongoingPowerCounters}`}
+                        >
+                            +{ongoingPowerCounters}
+                        </div>
+                    )}
+                    {hasOngoingTalent && oa.talentUsed && (
+                        <UsedStateBadge label={t('ui.talent_used')} compact insetClassName="left-[0.12vw] right-[0.12vw]" />
+                    )}
+                </motion.div>
+                {showOngoingInspectButton && (
+                    <div
+                        className={isCoarsePointer
+                            ? 'absolute inset-0 z-60'
+                            : 'absolute inset-0 z-60 transition-transform duration-200 group-hover:scale-125 group-hover:-translate-y-[0.3vw]'}
+                    >
+                        <button
+                            type="button"
+                            data-testid={`su-base-ongoing-magnify-${oa.uid}`}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                clearArmedActivation();
+                                onViewAction(oa.defId);
+                            }}
+                            className={isCoarsePointer
+                                ? 'absolute top-1 right-1 flex h-7 w-7 items-center justify-center rounded-full bg-black/70 text-white opacity-100 pointer-events-auto shadow-lg hover:bg-amber-500/80 cursor-zoom-in'
+                                : 'absolute top-[0.15vw] right-[0.15vw] flex h-[1.4vw] w-[1.4vw] items-center justify-center rounded-full bg-black/60 text-white opacity-0 shadow-lg transition-[opacity,background-color] duration-200 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto hover:bg-amber-500/80 cursor-zoom-in'}
+                        >
+                            <svg
+                                className={isCoarsePointer ? 'h-4 w-4 fill-current' : 'h-[0.8vw] w-[0.8vw] fill-current'}
+                                viewBox="0 0 20 20"
+                            >
+                                <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                            </svg>
+                        </button>
                     </div>
                 )}
-            </motion.div>
+            </div>
         );
     };
 

@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { validate } from '../domain/commands';
 import { registerAbility } from '../domain/abilityRegistry';
+import { hasCardActivatableAbility } from '../domain/activationMetadata';
 import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
 import { SU_COMMANDS } from '../domain/types';
 import type { SmashUpReactionSession, TitanState } from '../domain/types';
@@ -282,15 +283,24 @@ describe('SmashUp command validation', () => {
     });
 
     it('uses smashupReactionSession as the truth source for scoreBases special activation order', () => {
+        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
                 '1': makePlayer('1'),
             },
+            titans: [
+                makeTitan({
+                    uid: 'titan-ghost-1',
+                    defId: 'ghosts_creampuff_man',
+                    faction: 'ghosts',
+                    ownerId: '1',
+                    controllerId: '1',
+                }),
+            ],
             bases: [
                 makeBase({
                     defId: 'test_base',
-                    minions: [makeMinion('acolyte-1', 'ninja_acolyte', '1', 2)],
                 }),
             ],
             scoringEligibleBaseIndices: [0],
@@ -310,27 +320,31 @@ describe('SmashUp command validation', () => {
         const result = validate(ms, {
             type: SU_COMMANDS.ACTIVATE_SPECIAL,
             playerId: '1',
-            payload: { minionUid: 'acolyte-1', baseIndex: 0 },
+            payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
         } as any);
 
         expect(result.valid).toBe(true);
     });
 
     it('afterScoring 响应窗口中的 special 只能指向当前正在结算的基地', () => {
+        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
                 '1': makePlayer('1'),
             },
+            titans: [
+                makeTitan({
+                    uid: 'titan-ghost-1',
+                    defId: 'ghosts_creampuff_man',
+                    faction: 'ghosts',
+                    ownerId: '1',
+                    controllerId: '1',
+                }),
+            ],
             bases: [
-                makeBase({
-                    defId: 'base_a',
-                    minions: [makeMinion('acolyte-0', 'ninja_acolyte', '1', 2)],
-                }),
-                makeBase({
-                    defId: 'base_b',
-                    minions: [makeMinion('acolyte-1', 'ninja_acolyte', '1', 2)],
-                }),
+                makeBase({ defId: 'base_a' }),
+                makeBase({ defId: 'base_b' }),
             ],
             scoringEligibleBaseIndices: [0, 1],
             currentPlayerIndex: 0,
@@ -349,7 +363,7 @@ describe('SmashUp command validation', () => {
         const wrongBaseResult = validate(ms, {
             type: SU_COMMANDS.ACTIVATE_SPECIAL,
             playerId: '1',
-            payload: { minionUid: 'acolyte-1', baseIndex: 1 },
+            payload: { titanUid: 'titan-ghost-1', baseIndex: 1 },
         } as any);
         expect(wrongBaseResult).toEqual({
             valid: false,
@@ -359,7 +373,7 @@ describe('SmashUp command validation', () => {
         const correctBaseResult = validate(ms, {
             type: SU_COMMANDS.ACTIVATE_SPECIAL,
             playerId: '1',
-            payload: { minionUid: 'acolyte-0', baseIndex: 0 },
+            payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
         } as any);
         expect(correctBaseResult.valid).toBe(true);
     });
@@ -396,6 +410,81 @@ describe('SmashUp command validation', () => {
         } as any);
 
         expect(result.valid).toBe(false);
+    });
+
+    it('rejects deputy special activation because its effect is not a manual on-board special', () => {
+        const core = makeState({
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                    minions: [makeMinion('deputy-1', 'cowboys_deputy', '0', 3)],
+                }),
+            ],
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'deputy-1', baseIndex: 0 },
+        } as any);
+
+        expect(result).toEqual({
+            valid: false,
+            error: '该随从没有特殊能力',
+        });
+    });
+
+    it('rejects sheriff special activation because its scoring-window effect is trigger-driven, not manual activation', () => {
+        const core = makeState({
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                    minions: [makeMinion('sheriff-1', 'cowboys_sheriff', '0', 5)],
+                }),
+            ],
+        });
+
+        const result = validate(makeMatchState(core), {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'sheriff-1', baseIndex: 0 },
+        } as any);
+
+        expect(result).toEqual({
+            valid: false,
+            error: '该随从没有特殊能力',
+        });
+    });
+
+    it('does not expose skeletons_gravestones as a manual activatable special entry', () => {
+        expect(hasCardActivatableAbility('skeletons_gravestones', {
+            kind: 'special',
+            zone: 'board',
+            window: 'playCards',
+        })).toBe(false);
+        expect(hasCardActivatableAbility('skeletons_gravestones', {
+            kind: 'special',
+            zone: 'board',
+            window: 'afterScoring',
+        })).toBe(false);
+    });
+
+    it('exposes ninja_acolyte as a manual board special only during playCards', () => {
+        expect(hasCardActivatableAbility('ninja_acolyte', {
+            kind: 'special',
+            zone: 'board',
+            window: 'playCards',
+        })).toBe(true);
+        expect(hasCardActivatableAbility('ninja_acolyte', {
+            kind: 'special',
+            zone: 'board',
+            window: 'beforeScoring',
+        })).toBe(false);
+        expect(hasCardActivatableAbility('ninja_acolyte', {
+            kind: 'special',
+            zone: 'board',
+            window: 'afterScoring',
+        })).toBe(false);
     });
 
     it('rejects ninja_acolyte_pod talent on the same turn it was played', () => {

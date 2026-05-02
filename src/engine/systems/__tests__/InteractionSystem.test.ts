@@ -284,6 +284,56 @@ describe('InteractionSystem', () => {
         expect(result?.error).toBe('非法的选择值');
     });
 
+    it('ordered multi simple-choice 应保留玩家提交的 optionIds 顺序', () => {
+        const system = createSimpleChoiceSystem<TestCore>();
+        const current = createSimpleChoice(
+            'interaction-ordered-multi',
+            '0',
+            '按顺序选择分支',
+            [
+                { id: 'a', label: '先 A', value: { branchId: 'A' } },
+                { id: 'b', label: '先 B', value: { branchId: 'B' } },
+            ],
+            {
+                multi: { min: 2, max: 2, ordered: true },
+            },
+        );
+        const state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    current,
+                    queue: [],
+                },
+            },
+        } as unknown as MatchState<TestCore>;
+        const command: Command = {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: {
+                optionIds: ['b', 'a'],
+            },
+            timestamp: 100,
+        };
+
+        const result = system.beforeCommand?.({
+            state,
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0'],
+        });
+
+        expect(result?.halt).toBe(false);
+        expect(result?.events?.[0]).toMatchObject({
+            type: 'SYS_INTERACTION_RESOLVED',
+            payload: {
+                optionIds: ['b', 'a'],
+                value: [{ branchId: 'B' }, { branchId: 'A' }],
+            },
+        });
+    });
+
     it('slider simple-choice 只允许覆盖数值字段，保留原选项元数据', () => {
         const system = createSimpleChoiceSystem<TestCore>();
         const current = createSimpleChoice(

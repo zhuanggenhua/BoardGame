@@ -631,6 +631,57 @@ function buildFourPlayerMobileScene() {
     };
 }
 
+function buildDesktopBaseOngoingTalentScene() {
+    const scene = buildFourPlayerMobileScene();
+
+    return {
+        ...scene,
+        bases: [
+            {
+                ...scene.bases[0],
+                minions: [
+                    {
+                        uid: 'p0-b0-locals',
+                        defId: 'innsmouth_the_locals',
+                        owner: '0',
+                        controller: '0',
+                        talentUsed: false,
+                        attachedActions: [],
+                    },
+                    ...scene.bases[0].minions,
+                ],
+                ongoingActions: [
+                    ...scene.bases[0].ongoingActions,
+                    {
+                        uid: 'p0-b0-base-ongoing-talent',
+                        defId: 'innsmouth_sacred_circle',
+                        ownerId: '0',
+                        talentUsed: false,
+                        metadata: { powerCounters: 2 },
+                    },
+                ],
+            },
+            ...scene.bases.slice(1),
+        ],
+        extra: {
+            ...scene.extra,
+            core: {
+                ...scene.extra.core,
+                players: {
+                    ...scene.extra.core.players,
+                    '0': {
+                        ...scene.extra.core.players['0'],
+                        hand: [
+                            ...scene.extra.core.players['0'].hand,
+                            { uid: 'p0-mobile-hand-locals', defId: 'innsmouth_the_locals', type: 'minion', owner: '0' },
+                        ],
+                    },
+                },
+            },
+        },
+    };
+}
+
 function buildDiscardOverflowScene() {
     return {
         gameId: 'smashup',
@@ -1339,6 +1390,89 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         await expect(endTurnActionButton).toBeVisible({ timeout: 5000 });
         await expect(endTurnHints).toBeVisible({ timeout: 5000 });
         await game.screenshot('13-desktop-end-turn-restored', testInfo);
+    });
+
+    test('PC 基地 ongoing 天赋高亮时显示放大镜且力量徽章同层摇晃', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await page.setViewportSize(DESKTOP_REFERENCE_VIEWPORT);
+        await game.openTestGame('smashup', {
+            numPlayers: 4,
+            skipInitialization: true,
+        });
+        await game.setupScene(buildDesktopBaseOngoingTalentScene());
+
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return window.innerWidth === 1920
+                && window.innerHeight === 1080
+                && state?.sys?.phase === 'playCards'
+                && (state?.core?.players?.['0']?.hand?.some((card: any) => card.uid === 'p0-mobile-hand-locals') ?? false)
+                && (state?.core?.bases?.[0]?.ongoingActions?.some((card: any) => card.uid === 'p0-b0-base-ongoing-talent') ?? false);
+        }, { timeout: 10000, polling: 200 });
+
+        await waitForSmashUpMainUiReady(page);
+
+        const ongoingCard = page.locator('[data-ongoing-uid="p0-b0-base-ongoing-talent"]');
+        const ongoingCardShell = ongoingCard.locator('xpath=..');
+        const magnifyButton = page.getByTestId('su-base-ongoing-magnify-p0-b0-base-ongoing-talent');
+        const powerBadge = page.getByTestId('su-base-ongoing-power-badge-p0-b0-base-ongoing-talent');
+        const counterBadge = page.getByTestId('su-base-ongoing-power-counter-p0-b0-base-ongoing-talent');
+
+        await expect(ongoingCard).toBeVisible({ timeout: 15000 });
+        await expect(powerBadge).toBeVisible({ timeout: 15000 });
+        await expect(counterBadge).toBeVisible({ timeout: 15000 });
+        await expect(magnifyButton).toHaveCSS('opacity', '0');
+
+        const ongoingCardBox = await ongoingCard.boundingBox();
+        expect(ongoingCardBox, '基地 ongoing 卡应提供悬停坐标').not.toBeNull();
+        await page.mouse.move(
+            (ongoingCardBox?.x ?? 0) + (ongoingCardBox?.width ?? 0) / 2,
+            (ongoingCardBox?.y ?? 0) + (ongoingCardBox?.height ?? 0) / 2,
+        );
+        await expect(magnifyButton).toHaveCSS('opacity', '1');
+        await saveEvidenceLocatorScreenshot(
+            page,
+            ongoingCardShell,
+            testInfo,
+            'smashup',
+            'smashup-desktop-base-ongoing-talent-hover.png',
+        );
+
+        const getBadgeOffset = async () => {
+            const [powerBox, counterBox] = await Promise.all([powerBadge.boundingBox(), counterBadge.boundingBox()]);
+            expect(powerBox, '力量增加徽章应提供尺寸').not.toBeNull();
+            expect(counterBox, '力量指示物徽章应提供尺寸').not.toBeNull();
+            return {
+                dx: ((counterBox?.x ?? 0) + (counterBox?.width ?? 0) / 2) - ((powerBox?.x ?? 0) + (powerBox?.width ?? 0) / 2),
+                dy: ((counterBox?.y ?? 0) + (counterBox?.height ?? 0) / 2) - ((powerBox?.y ?? 0) + (powerBox?.height ?? 0) / 2),
+            };
+        };
+
+        const firstOffset = await getBadgeOffset();
+        await page.waitForTimeout(260);
+        const secondOffset = await getBadgeOffset();
+
+        expect(
+            Math.abs(secondOffset.dx - firstOffset.dx),
+            `两个徽章横向相对位移不应在摇晃时脱层（before=${firstOffset.dx}, after=${secondOffset.dx}）`,
+        ).toBeLessThan(3);
+        expect(
+            Math.abs(secondOffset.dy - firstOffset.dy),
+            `两个徽章纵向相对位移不应在摇晃时脱层（before=${firstOffset.dy}, after=${secondOffset.dy}）`,
+        ).toBeLessThan(3);
+
+        await magnifyButton.click();
+        await waitForMagnifyPreviewReady(page);
+        await game.screenshot('13a-desktop-base-ongoing-talent-magnify-open', testInfo);
+        await saveEvidenceLocatorScreenshot(
+            page,
+            ongoingCardShell,
+            testInfo,
+            'smashup',
+            'smashup-desktop-base-ongoing-talent-highlight.png',
+        );
+        await closeMagnifyOverlay(page);
     });
 
     test('移动端横屏 pinch 后仍可拖拽战场，避免 pan 锁死回归', async ({ page, game }, testInfo) => {

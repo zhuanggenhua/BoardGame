@@ -20,6 +20,7 @@ import type {
     MinionOnBase,
     BaseDeckReorderedEvent,
     PendingPostScoringAction,
+    ReactionOrderingFootprint,
 } from './types';
 import { SU_EVENTS } from './types';
 import { getEffectivePower } from './ongoingModifiers';
@@ -122,6 +123,8 @@ export type BaseAbilityExecutor = (ctx: BaseAbilityContext) => BaseAbilityResult
 export type BaseAbilityRegistrationOptions = {
     /** Whether this trigger is mandatory for reaction ordering rules */
     mandatory?: boolean;
+    /** 仅用于 reaction queue 自动收口判定；未标注时保持保守排序。 */
+    orderingFootprint?: ReactionOrderingFootprint;
 };
 
 export type ActiveBaseAbilityRegistrationOptions = {
@@ -211,7 +214,13 @@ export function registerBaseAbility(
         timingMap = new Map();
         baseAbilityRegistry.set(baseDefId, timingMap);
     }
-    timingMap.set(timing, { executor, options: { mandatory: options.mandatory ?? true } });
+    timingMap.set(timing, {
+        executor,
+        options: {
+            mandatory: options.mandatory ?? true,
+            orderingFootprint: options.orderingFootprint,
+        },
+    });
     // Make this base ability runnable by the global reaction queue.
     registerBaseAbilityAsQueuedTrigger(baseDefId, timing);
 }
@@ -346,6 +355,7 @@ export type ExtendedBaseTrigger = BaseTriggerTiming | 'onMinionDestroyed';
 /** 扩展注册表：支持 onMinionDestroyed */
 type ExtendedBaseAbilityRegistrationOptions = {
     mandatory?: boolean;
+    orderingFootprint?: ReactionOrderingFootprint;
 };
 
 type ExtendedBaseAbilityEntry = { executor: BaseAbilityExecutor; options: Required<ExtendedBaseAbilityRegistrationOptions> };
@@ -363,7 +373,13 @@ export function registerExtended(
         timingMap = new Map();
         extendedRegistry.set(baseDefId, timingMap);
     }
-    timingMap.set(timing, { executor, options: { mandatory: options.mandatory ?? true } });
+    timingMap.set(timing, {
+        executor,
+        options: {
+            mandatory: options.mandatory ?? true,
+            orderingFootprint: options.orderingFootprint,
+        },
+    });
 }
 
 /** 触发扩展时机（如 onMinionDestroyed） */

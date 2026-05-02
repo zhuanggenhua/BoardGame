@@ -7,7 +7,7 @@ import { STATUS_IDS, TOKEN_IDS } from './domain/ids';
 import type { DiceThroneCore } from './domain';
 import type { InteractionDescriptor } from './domain/types';
 import { getUsableTokenAmountForTiming, getUsableTokensForTiming } from './domain/tokenResponse';
-import { isCardPlayableInResponseWindow, getAvailableAbilityIds, getSeatingOrder, getOpponents, areTeammates, getUpgradeTargetAbilityId } from './domain/rules';
+import { getPlayableCardsInResponseWindow, getAvailableAbilityIds, getSeatingOrder, getOpponents, areTeammates, getUpgradeTargetAbilityId } from './domain/rules';
 import { useTranslation } from 'react-i18next';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
@@ -683,15 +683,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         // 如果本地玩家是响应者，高亮本地玩家的可响应卡牌（无论当前视角是谁）
         // 修复：使用 rootPid 而不是 viewPid，因为响应时视角会自动切换到对手
         if (currentResponderId && (rootPid === currentResponderId || isDirectDiceActor)) {
-            const responder = G.players[rootPid];
-            if (!responder) return undefined;
-            
-            const cardIds = new Set<string>();
-            for (const card of responder.hand) {
-                if (isCardPlayableInResponseWindow(G, rootPid, card, responseWindow.windowType, currentPhase)) {
-                    cardIds.add(card.id);
-                }
-            }
+            const cardIds = new Set(
+                getPlayableCardsInResponseWindow(G, rootPid, responseWindow.windowType, currentPhase)
+                    .map((card) => card.id),
+            );
             return cardIds.size > 0 ? cardIds : undefined;
         }
         

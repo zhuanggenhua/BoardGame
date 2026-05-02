@@ -96,6 +96,7 @@ export function collectBaseAbilityTriggers(params: {
     ownerPlayerId,
     witnessRequirement: 'inPlayAtTriggerTime',
     witnessed: true,
+    orderingFootprint: options?.orderingFootprint,
     baseIndex,
     triggerMinionUid,
     triggerMinionDefId,
@@ -173,6 +174,7 @@ export function collectExtendedBaseAbilityTriggers(params: {
     ownerPlayerId,
     witnessRequirement: 'inPlayAtTriggerTime',
     witnessed: true,
+    orderingFootprint: opts.orderingFootprint,
     baseIndex,
     lkiBase: { baseIndex, defId: base.defId },
   };

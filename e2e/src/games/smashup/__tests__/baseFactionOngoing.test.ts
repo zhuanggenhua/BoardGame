@@ -1166,8 +1166,8 @@ describe('巫师 ongoing 能力', () => {
         registerPodOngoingAliases();
     });
 
-    describe('wizard_archmage: 大法师回合开始额外行动', () => {
-        test('控制者回合开始时获得额外行动额度', () => {
+    describe('wizard_archmage: 大法师 ongoing 时机', () => {
+        test('onTurnStart 不再直接发额外行动事件', () => {
             const archmage = makeMinion({ defId: 'wizard_archmage', uid: 'am-1', controller: '0' });
             const base = makeBase({ minions: [archmage] });
             const state = makeState([base]);
@@ -1179,12 +1179,7 @@ describe('巫师 ongoing 能力', () => {
                 now: 1000,
             });
 
-            expect(events).toHaveLength(1);
-            expect(events[0].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
-            expect((events[0] as any).payload.playerId).toBe('0');
-            expect((events[0] as any).payload.limitType).toBe('action');
-            expect((events[0] as any).payload.delta).toBe(1);
-            expect((events[0] as any).payload.playTiming).toBe('immediate');
+            expect(events).toHaveLength(0);
         });
 
         test('POD 版不在 onTurnStart 触发（POD 为 talent）', () => {
@@ -1202,7 +1197,7 @@ describe('巫师 ongoing 能力', () => {
             expect(events).toHaveLength(0);
         });
 
-        test('非控制者回合不触发', () => {
+        test('非控制者回合同样不触发 onTurnStart 事件', () => {
             const archmage = makeMinion({ defId: 'wizard_archmage', uid: 'am-1', controller: '0' });
             const base = makeBase({ minions: [archmage] });
             const state = makeState([base]);
@@ -1693,7 +1688,7 @@ describe('诡术师 ongoing 能力', () => {
     });
 
     describe('trickster_enshrouding_mist: 迷雾笼罩', () => {
-        test('拥有者回合开始时获得额外随从额度', () => {
+        test('onTurnStart 不再直接发额外随从事件', () => {
             const base = makeBase({
                 ongoingActions: [{ uid: 'em-1', defId: 'trickster_enshrouding_mist', ownerId: '0' }],
             });
@@ -1706,14 +1701,10 @@ describe('诡术师 ongoing 能力', () => {
                 now: 1000,
             });
 
-            expect(events).toHaveLength(1);
-            expect(events[0].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
-            expect((events[0] as any).payload.limitType).toBe('minion');
-            expect((events[0] as any).payload.playTiming).toBe('immediate');
-            expect((events[0] as any).payload.restrictToBase).toBe(0);
+            expect(events).toHaveLength(0);
         });
 
-        test('非拥有者回合不触发', () => {
+        test('非拥有者回合同样不触发 onTurnStart 事件', () => {
             const base = makeBase({
                 ongoingActions: [{ uid: 'em-1', defId: 'trickster_enshrouding_mist', ownerId: '0' }],
             });

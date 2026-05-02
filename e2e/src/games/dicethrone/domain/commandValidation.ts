@@ -53,7 +53,6 @@ import {
     checkPlayCard,
     checkPlayUpgradeCard,
     getAvailableAbilityIds,
-    isCardPlayableInResponseWindow,
     getActiveDice,
     getSeatingOrder,
 } from './rules';
@@ -800,7 +799,7 @@ const validatePlayCard = (
     }
 
     // 使用 checkPlayCard 获取详细原因（阶段/CP 校验等）
-    const checkResult = checkPlayCard(state, actingPlayerId, card, phase);
+    const checkResult = checkPlayCard(state, actingPlayerId, card, phase, responseWindowType);
     if (!checkResult.ok) {
         console.warn('[validatePlayCard] 验证失败 - checkPlayCard 返回错误:', {
             playerId: actingPlayerId,
@@ -817,16 +816,6 @@ const validatePlayCard = (
             reason: checkResult.reason,
         });
         return fail(checkResult.reason);
-    }
-
-    if (responseWindowType && !isCardPlayableInResponseWindow(state, actingPlayerId, card, responseWindowType, phase)) {
-        console.warn('[validatePlayCard] 验证失败 - 卡牌不允许在当前响应窗口中打出:', {
-            playerId: actingPlayerId,
-            cardId: card.id,
-            responseWindowType,
-            currentPhase: phase,
-        });
-        return fail('wrongPhaseForCard');
     }
     
     return ok();

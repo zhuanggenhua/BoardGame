@@ -32,6 +32,14 @@ const INNSMOUTH_DAGON_QUERY = {
     seed: 13579,
 };
 
+const FAIRIES_OR_QUERY = {
+    p0: 'fairies,robots',
+    p1: 'pirates,aliens',
+    skipFactionSelect: true,
+    skipInitialization: false,
+    seed: 424242,
+};
+
 test.describe('SmashUp - 核心流程与交互稳定性', () => {
     test('主流程：打出随从到基地后结束回合，应切到对手的出牌阶段', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
@@ -611,5 +619,257 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         await expect(page.locator('[data-minion-uid="b0-weak"]')).toBeVisible();
         await expect(page.locator('[data-minion-uid="b0-enemy"]')).toBeVisible();
         await game.screenshot('sotf-tiebreak-candidates-visible', testInfo);
+    });
+
+    test('Fairies OR 分支：Titania 会先执行已选分支，再给剩余分支与跳过', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await game.openTestGame('smashup', FAIRIES_OR_QUERY, 45000);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [
+                    { uid: 'hand-titania', defId: 'fairies_titania', type: 'minion' },
+                ],
+                factions: ['fairies', 'robots'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            player1: {
+                hand: [],
+                factions: ['pirates', 'aliens'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            bases: [
+                {
+                    defId: 'base_the_mothership',
+                    minions: [
+                        { uid: 'enemy-first-mate', defId: 'pirate_first_mate', owner: '1', controller: '1', basePower: 2 },
+                    ],
+                },
+                { defId: 'base_tortuga' },
+            ],
+            currentPlayer: '0',
+            phase: 'playCards',
+            extra: {
+                core: {
+                    enabledExpansions: ['titans'],
+                    titans: [
+                        {
+                            uid: 'spirit-1',
+                            defId: 'fairies_spirit_of_the_forest',
+                            faction: 'fairies',
+                            ownerId: '0',
+                            controllerId: '0',
+                            powerCounters: 0,
+                            talentUsed: false,
+                            location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                        },
+                    ],
+                },
+            },
+        });
+
+        await game.waitForPhase('playCards');
+        await game.waitForCurrentPlayer('0');
+        const initialState = await game.getState();
+
+        await game.playCard('fairies_titania', { targetBaseIndex: 0 });
+        await game.waitForInteraction('fairies_titania', 10000);
+
+        const promptMeta = await page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const current = harness?.state?.get?.()?.sys?.interaction?.current;
+            return {
+                sourceId: current?.data?.sourceId ?? null,
+                optionCount: current?.data?.options?.length ?? 0,
+                optionLabels: (current?.data?.options ?? []).map((option: any) => option?.label ?? null),
+                returnBranchOptionId: (current?.data?.options ?? []).find((option: any) => option?.value?.branchId === 'return_minion')?.id ?? null,
+                extraMinionOptionId: (current?.data?.options ?? []).find((option: any) => option?.value?.branchId === 'extra_minion')?.id ?? null,
+            };
+        });
+        expect(promptMeta.sourceId).toBe('fairies_titania');
+        expect(promptMeta.optionCount).toBeGreaterThanOrEqual(2);
+        expect(promptMeta.optionLabels).toEqual(expect.arrayContaining([
+            '额外打出一个随从',
+            '将一个随从移回其拥有者手牌',
+        ]));
+        expect(promptMeta.returnBranchOptionId).toBeTruthy();
+        expect(promptMeta.extraMinionOptionId).toBeTruthy();
+        expect(promptMeta.optionLabels).not.toEqual(expect.arrayContaining(['First Mate @ The Mothership']));
+
+        const returnBranchButton = page.getByRole('button', { name: /将一个随从移回其拥有者手牌/i });
+        const extraMinionButton = page.getByRole('button', { name: /额外打出一个随从/i });
+        await expect(returnBranchButton).toBeVisible();
+        await expect(extraMinionButton).toBeVisible();
+        await game.screenshot('fairies-titania-branch-prompt-visible', testInfo);
+
+        await returnBranchButton.click();
+        await game.waitForInteraction('fairies_titania_return_minion', 10000);
+
+        const targetPromptMeta = await page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const current = harness?.state?.get?.()?.sys?.interaction?.current;
+            return {
+                sourceId: current?.data?.sourceId ?? null,
+                targetType: current?.data?.targetType ?? null,
+                optionLabels: (current?.data?.options ?? []).map((option: any) => option?.label ?? null),
+            };
+        });
+        expect(targetPromptMeta.sourceId).toBe('fairies_titania_return_minion');
+        expect(targetPromptMeta.targetType).toBe('minion');
+        expect(targetPromptMeta.optionLabels).toEqual(expect.arrayContaining(['大副 @ 母舰']));
+        await expect(page.getByTestId('prompt-overlay')).toHaveCount(0);
+        const returnTargetCard = page.locator('[data-minion-uid="enemy-first-mate"]');
+        await expect(returnTargetCard).toBeVisible();
+        await game.screenshot('fairies-titania-target-prompt-visible', testInfo);
+
+        await returnTargetCard.click();
+        await game.waitForInteraction('fairies_titania', 10000);
+        await page.waitForTimeout(1200);
+
+        const followUpMeta = await page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const current = harness?.state?.get?.()?.sys?.interaction?.current;
+            const state = harness?.state?.get?.();
+            return {
+                sourceId: current?.data?.sourceId ?? null,
+                optionLabels: (current?.data?.options ?? []).map((option: any) => option?.label ?? null),
+                extraMinionOptionId: (current?.data?.options ?? []).find((option: any) => option?.value?.branchId === 'extra_minion')?.id ?? null,
+                skipOptionId: (current?.data?.options ?? []).find((option: any) => option?.value?.skip === true)?.id ?? null,
+                spiritUsedTurn: state?.core?.titans?.find((titan: any) => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn ?? null,
+            };
+        });
+        expect(followUpMeta.sourceId).toBe('fairies_titania');
+        expect(followUpMeta.optionLabels).toEqual(expect.arrayContaining(['额外打出一个随从', '跳过']));
+        expect(followUpMeta.optionLabels).not.toEqual(expect.arrayContaining(['将一个随从移回其拥有者手牌']));
+        expect(followUpMeta.extraMinionOptionId).toBeTruthy();
+        expect(followUpMeta.skipOptionId).toBeTruthy();
+        expect(followUpMeta.spiritUsedTurn).toBeNull();
+        await game.screenshot('fairies-titania-follow-up-prompt-visible', testInfo);
+
+        await page.getByRole('button', { name: /额外打出一个随从/i }).click();
+        await game.waitForNoInteraction(10000);
+
+        const finalState = await game.getState();
+        expect(finalState.core.bases[0].minions.some((minion: any) => minion.uid === 'hand-titania')).toBe(true);
+        expect(finalState.core.bases[0].minions.some((minion: any) => minion.uid === 'enemy-first-mate')).toBe(false);
+        expect(finalState.core.players['1'].hand.some((card: any) => card.uid === 'enemy-first-mate')).toBe(true);
+        expect(finalState.core.players['0'].minionLimit).toBe(initialState.core.players['0'].minionLimit + 1);
+        expect(finalState.core.titans?.find((titan: any) => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBe(1);
+        await game.screenshot('fairies-titania-sequential-resolved', testInfo);
+    });
+
+    test('Fairies OR 分支：Fairy Ring 单分支确认会先执行该分支，再允许跳过剩余分支', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await game.openTestGame('smashup', FAIRIES_OR_QUERY, 45000);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [
+                    { uid: 'hand-alpha', defId: 'robot_microbot_alpha', type: 'minion' },
+                ],
+                factions: ['fairies', 'robots'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            player1: {
+                hand: [],
+                factions: ['pirates', 'aliens'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            bases: [
+                {
+                    defId: 'base_fairy_ring',
+                    minions: [],
+                    ongoingActions: [],
+                },
+                { defId: 'base_the_mothership' },
+            ],
+            currentPlayer: '0',
+            phase: 'playCards',
+            extra: {
+                core: {
+                    enabledExpansions: ['titans'],
+                    titans: [
+                        {
+                            uid: 'spirit-1',
+                            defId: 'fairies_spirit_of_the_forest',
+                            faction: 'fairies',
+                            ownerId: '0',
+                            controllerId: '0',
+                            powerCounters: 0,
+                            talentUsed: false,
+                            location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                        },
+                    ],
+                },
+            },
+        });
+
+        await game.waitForPhase('playCards');
+        await game.waitForCurrentPlayer('0');
+
+        await game.playCard('robot_microbot_alpha', { targetBaseIndex: 0 });
+        await game.waitForInteraction('base_fairy_ring', 10000);
+
+        const promptMeta = await page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const current = harness?.state?.get?.()?.sys?.interaction?.current;
+            return {
+                sourceId: current?.data?.sourceId ?? null,
+                optionLabels: (current?.data?.options ?? []).map((option: any) => option?.label ?? null),
+            };
+        });
+        expect(promptMeta.sourceId).toBe('base_fairy_ring');
+        expect(promptMeta.optionLabels).toEqual(expect.arrayContaining(['额外打出一个随从到这里', '额外打出一张行动卡', '跳过']));
+
+        const extraActionButton = page.getByRole('button', { name: /额外打出一张行动卡/i });
+        await expect(extraActionButton).toBeVisible();
+        await game.screenshot('fairy-ring-branch-prompt-visible', testInfo);
+
+        await extraActionButton.click();
+        await game.waitForInteraction('base_fairy_ring', 10000);
+
+        const followUpMeta = await page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const current = harness?.state?.get?.()?.sys?.interaction?.current;
+            const state = harness?.state?.get?.();
+            return {
+                sourceId: current?.data?.sourceId ?? null,
+                optionLabels: (current?.data?.options ?? []).map((option: any) => option?.label ?? null),
+                spiritUsedTurn: state?.core?.titans?.find((titan: any) => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn ?? null,
+                actionLimit: state?.core?.players?.['0']?.actionLimit ?? null,
+            };
+        });
+        expect(followUpMeta.sourceId).toBe('base_fairy_ring');
+        expect(followUpMeta.optionLabels).toEqual(expect.arrayContaining(['额外打出一个随从到这里', '跳过']));
+        expect(followUpMeta.optionLabels).not.toEqual(expect.arrayContaining(['额外打出一张行动卡']));
+        expect(followUpMeta.actionLimit).toBe(2);
+        expect(followUpMeta.spiritUsedTurn).toBeNull();
+        await game.screenshot('fairy-ring-follow-up-prompt-visible', testInfo);
+
+        await page.getByRole('button', { name: /跳过/i }).click();
+        await game.waitForNoInteraction(10000);
+
+        const finalState = await game.getState();
+        expect(finalState.core.players['0'].actionLimit).toBe(2);
+        expect(finalState.core.players['0'].minionLimit).toBe(1);
+        expect(finalState.core.players['0'].baseLimitedMinionQuota).toBeUndefined();
+        expect(finalState.core.titans?.find((titan: any) => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBeUndefined();
+        await game.screenshot('fairy-ring-sequential-resolved', testInfo);
     });
 });

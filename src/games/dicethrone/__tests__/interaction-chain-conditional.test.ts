@@ -19,6 +19,7 @@ import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { INITIAL_HEALTH } from '../domain/types';
 import { RESOURCE_IDS } from '../domain/resources';
 import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
+import { checkPlayCard, getPlayableCardsInResponseWindow, isCardPlayableInResponseWindow } from '../domain/rules';
 
 beforeAll(() => {
     registerDiceThroneConditions();
@@ -368,6 +369,23 @@ describe('压制奖励骰链', () => {
 
 describe('card-dizzy afterAttackResolved 响应窗口链', () => {
     const cardDizzy = BARBARIAN_CARDS.find(c => c.id === 'card-dizzy')!;
+    const cardHeadBlow = BARBARIAN_CARDS.find(c => c.id === 'card-head-blow')!;
+
+    it('afterAttackResolved 响应窗口进入 main2 后，card-dizzy 仍应可打出', () => {
+        const state = createHeroMatchup('barbarian', 'barbarian', (draft) => {
+            draft.players['0'].hand = [{ ...cardDizzy }, { ...cardHeadBlow }];
+            draft.lastResolvedAttackDamage = 13;
+        })(['0', '1'], fixedRandom);
+        const core = state.core;
+        const playableCardIds = getPlayableCardsInResponseWindow(core, '0', 'afterAttackResolved', 'main2')
+            .map((card) => card.id);
+
+        expect(checkPlayCard(core, '0', cardDizzy, 'main2').ok).toBe(false);
+        expect(checkPlayCard(core, '0', cardDizzy, 'main2', 'afterAttackResolved').ok).toBe(true);
+        expect(checkPlayCard(core, '0', cardHeadBlow, 'main2', 'afterAttackResolved').ok).toBe(false);
+        expect(isCardPlayableInResponseWindow(core, '0', cardDizzy, 'afterAttackResolved', 'main2')).toBe(true);
+        expect(playableCardIds).toEqual(['card-dizzy']);
+    });
 
     it('伤害>=8 + 手牌有 card-dizzy  打出  施加脑震荡', () => {
         const runner = createRunner(fixedRandom);
@@ -496,6 +514,39 @@ describe('card-dizzy afterAttackResolved 响应窗口链', () => {
                 },
             },
         });
+        expect(result.passed).toBe(true);
+    });
+
+    it('rage 触发额外攻击后退出空 offensiveRoll 时，应补开 afterAttackResolved 响应窗口', () => {
+        const runner = createRunner(createQueuedRandom([6, 6, 6, 6, 6]));
+        const result = runner.run({
+            name: 'rage deferred card-dizzy window',
+            setup: createHeroMatchup('barbarian', 'monk', (core) => {
+                core.players['0'].hand = [{ ...cardDizzy }];
+            }),
+            commands: [
+                cmd('ADVANCE_PHASE', '0'),
+                cmd('ROLL_DICE', '0'),
+                cmd('CONFIRM_ROLL', '0'),
+                cmd('SELECT_ABILITY', '0', { abilityId: 'rage' }),
+                cmd('ADVANCE_PHASE', '0'), // 第一次攻击结算 → daze 额外攻击 → offensiveRoll
+                cmd('ADVANCE_PHASE', '0'), // 空壳 offensiveRoll 收口 → 应补开 afterAttackResolved
+            ],
+            expect: {
+                activePlayerId: '0',
+                players: {
+                    '1': {
+                        hp: INITIAL_HEALTH - 15,
+                        statusEffects: { [STATUS_IDS.DAZE]: 0 },
+                    },
+                },
+            },
+        });
+
+        expect(result.finalState.sys.responseWindow?.current?.windowType).toBe('afterAttackResolved');
+        expect(result.finalState.sys.responseWindow?.current?.responderQueue).toEqual(['0']);
+        expect(result.finalState.core.players['0'].hand.map((card) => card.id)).toContain(cardDizzy.id);
+        expect(result.finalState.core.afterAttackResponseWindowSequence).toBe(result.finalState.core.attackResolvedSequence);
         expect(result.passed).toBe(true);
     });
 });

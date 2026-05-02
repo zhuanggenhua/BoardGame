@@ -393,6 +393,14 @@ test.describe('Lobby E2E', () => {
             await feedbackTextarea.fill('移动端反馈输入可见性校验');
             await expect(feedbackTextarea).toHaveValue('移动端反馈输入可见性校验');
 
+            await feedbackModal.locator('button').first().click();
+            await expect(feedbackModal).toBeHidden({ timeout: 10000 });
+
+            await expect(page.locator('[data-fab-id="feedback"]')).toBeVisible({ timeout: 10000 });
+            await page.locator('[data-fab-id="feedback"]').click();
+            await expect(feedbackModal).toBeVisible({ timeout: 10000 });
+            await expect(feedbackTextarea).toHaveValue('移动端反馈输入可见性校验');
+
             await page.screenshot({
                 path: 'test-results/evidence-screenshots/_shared/lobby-feedback-modal-mobile.png',
                 fullPage: false,

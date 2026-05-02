@@ -15,27 +15,25 @@ test.describe('忍者侍从 - 额外随从', () => {
             gameId: 'smashup',
             player0: {
                 hand: ['ninja_shinobi', 'pirate_first_mate'],
+                field: [
+                    { uid: 'acolyte-test', defId: 'ninja_acolyte', baseIndex: 0, owner: '0', controller: '0', power: 2 },
+                ],
             },
             player1: { hand: [], deck: [] },
             currentPlayer: '0',
             phase: 'playCards',
             bases: [
-                {
-                    defId: 'base_the_homeworld',
-                    minions: [
-                        { uid: 'acolyte-test', defId: 'ninja_acolyte', owner: '0', controller: '0', baseIndex: 0 },
-                    ],
-                },
+                { defId: 'base_the_homeworld' },
             ],
         });
 
-        await page.click('[data-minion-uid="acolyte-test"]');
+        await expect(page.locator('[data-minion-uid="acolyte-test"]')).toBeVisible();
+        await page.locator('[data-minion-uid="acolyte-test"]').click({ force: true });
         await game.waitForInteraction('ninja_acolyte_play');
         await game.selectInteractionOptionBy(
             (option: any) => option.value?.defId === 'ninja_shinobi',
             '选择影舞者',
         );
-        await game.confirm();
         await game.waitForNoInteraction();
         await game.screenshot('ninja-acolyte-play-extra-minion', testInfo);
 
@@ -52,24 +50,22 @@ test.describe('忍者侍从 - 额外随从', () => {
             gameId: 'smashup',
             player0: {
                 hand: ['ninja_shinobi'],
+                field: [
+                    { uid: 'acolyte-test', defId: 'ninja_acolyte', baseIndex: 0, owner: '0', controller: '0', power: 2 },
+                ],
             },
             player1: { hand: [], deck: [] },
             currentPlayer: '0',
             phase: 'playCards',
             bases: [
-                {
-                    defId: 'base_the_homeworld',
-                    minions: [
-                        { uid: 'acolyte-test', defId: 'ninja_acolyte', owner: '0', controller: '0', baseIndex: 0 },
-                    ],
-                },
+                { defId: 'base_the_homeworld' },
             ],
         });
 
-        await page.click('[data-minion-uid="acolyte-test"]');
+        await expect(page.locator('[data-minion-uid="acolyte-test"]')).toBeVisible();
+        await page.locator('[data-minion-uid="acolyte-test"]').click({ force: true });
         await game.waitForInteraction('ninja_acolyte_play');
         await game.selectOption('skip');
-        await game.confirm();
         await game.waitForNoInteraction();
         await game.screenshot('ninja-acolyte-skip', testInfo);
 
@@ -86,22 +82,21 @@ test.describe('忍者侍从 - 额外随从', () => {
             player0: {
                 hand: ['ninja_shinobi'],
                 minionsPlayed: 1,
+                field: [
+                    { uid: 'acolyte-test', defId: 'ninja_acolyte', baseIndex: 0, owner: '0', controller: '0', power: 2 },
+                    { uid: 'mate-test', defId: 'pirate_first_mate', baseIndex: 0, owner: '0', controller: '0', power: 3 },
+                ],
             },
             player1: { hand: [], deck: [] },
             currentPlayer: '0',
             phase: 'playCards',
             bases: [
-                {
-                    defId: 'base_the_homeworld',
-                    minions: [
-                        { uid: 'acolyte-test', defId: 'ninja_acolyte', owner: '0', controller: '0', baseIndex: 0 },
-                        { uid: 'mate-test', defId: 'pirate_first_mate', owner: '0', controller: '0', baseIndex: 0 },
-                    ],
-                },
+                { defId: 'base_the_homeworld' },
             ],
         });
 
-        await page.click('[data-minion-uid="acolyte-test"]');
+        await expect(page.locator('[data-minion-uid="acolyte-test"]')).toBeVisible();
+        await page.locator('[data-minion-uid="acolyte-test"]').click({ force: true });
         await page.waitForTimeout(500);
         const state = await game.getState();
         expect(state.sys.interaction?.current).toBeUndefined();
@@ -114,31 +109,31 @@ test.describe('忍者侍从 - 额外随从', () => {
             gameId: 'smashup',
             player0: {
                 hand: ['ninja_shinobi', 'pirate_first_mate'],
+                field: [
+                    { uid: 'acolyte-1', defId: 'ninja_acolyte', baseIndex: 0, owner: '0', controller: '0', power: 2 },
+                    { uid: 'acolyte-2', defId: 'ninja_acolyte', baseIndex: 0, owner: '0', controller: '0', power: 2 },
+                ],
             },
             player1: { hand: [], deck: [] },
             currentPlayer: '0',
             phase: 'playCards',
             bases: [
-                {
-                    defId: 'base_the_homeworld',
-                    minions: [
-                        { uid: 'acolyte-1', defId: 'ninja_acolyte', owner: '0', controller: '0', baseIndex: 0 },
-                        { uid: 'acolyte-2', defId: 'ninja_acolyte', owner: '0', controller: '0', baseIndex: 0 },
-                    ],
-                },
+                { defId: 'base_the_homeworld' },
             ],
         });
 
-        await page.click('[data-minion-uid="acolyte-1"]');
+        await expect(page.locator('[data-minion-uid="acolyte-1"]')).toBeVisible();
+        await page.locator('[data-minion-uid="acolyte-1"]').click({ force: true });
         await game.waitForInteraction('ninja_acolyte_play');
         await game.selectInteractionOptionBy(
             (option: any) => option.value?.defId === 'ninja_shinobi',
             '选择影舞者',
         );
-        await game.confirm();
         await game.waitForNoInteraction();
 
-        await page.click('[data-minion-uid="acolyte-2"]');
+        const remainingAcolyte = page.locator('[data-minion-def-id="ninja_acolyte"]').first();
+        await expect(remainingAcolyte).toBeVisible();
+        await remainingAcolyte.click({ force: true });
         await page.waitForTimeout(500);
         const state = await game.getState();
         expect(state.sys.interaction?.current).toBeUndefined();

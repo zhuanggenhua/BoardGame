@@ -11,6 +11,7 @@ import type {
     SmashUpEvent,
     SmashUpReactionPhase,
     SmashUpReactionSession,
+    ReactionOrderingFootprint,
     TriggerConsumedEvent,
     TriggerInstance,
 } from './types';
@@ -278,6 +279,45 @@ function getOptionalFrameTriggers(
     return getSessionFrameTriggers(state, frameId).filter(
         trigger => getTriggerResolutionClass(trigger) === 'optional' && trigger.ownerPlayerId === playerId,
     );
+}
+
+function hasOrderingOverlap(left: string[], right: string[]): boolean {
+    return left.some(tag => right.includes(tag));
+}
+
+function isOrderingFootprintConflicting(
+    left: ReactionOrderingFootprint | undefined,
+    right: ReactionOrderingFootprint | undefined,
+): boolean {
+    if (!left || !right) return true;
+    if (left.opensInteraction || right.opensInteraction) return true;
+
+    const leftReads = left.reads ?? [];
+    const leftWrites = left.writes ?? [];
+    const rightReads = right.reads ?? [];
+    const rightWrites = right.writes ?? [];
+
+    return hasOrderingOverlap(leftWrites, [...rightReads, ...rightWrites])
+        || hasOrderingOverlap(rightWrites, [...leftReads, ...leftWrites]);
+}
+
+function canAutoCollapseMandatoryFrame(
+    state: MatchState<SmashUpCore>,
+    session: SmashUpReactionSession,
+): boolean {
+    const triggers = getMandatoryFrameTriggers(state, session.frameId);
+    if (triggers.length <= 1) return false;
+    if (triggers.some(trigger => !trigger.orderingFootprint)) return false;
+
+    for (let i = 0; i < triggers.length; i++) {
+        for (let j = i + 1; j < triggers.length; j++) {
+            if (isOrderingFootprintConflicting(triggers[i].orderingFootprint, triggers[j].orderingFootprint)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
 }
 
 function nextClockwisePlayer(core: SmashUpCore, playerId: PlayerId): PlayerId {
@@ -885,6 +925,19 @@ export function advanceSmashUpReactionSession(
             state: resolved.state,
             events: [...emittedEvents, ...resolved.events],
         };
+    }
+    if (session.phase === 'mandatory' && canAutoCollapseMandatoryFrame(currentState, session)) {
+        const firstTrigger = getMandatoryFrameTriggers(currentState, session.frameId)[0];
+        if (firstTrigger) {
+            const resolved = resolveSmashUpReactionChoice(currentState, random, now, {
+                kind: 'trigger',
+                triggerId: firstTrigger.id,
+            });
+            return {
+                state: resolved.state,
+                events: [...emittedEvents, ...resolved.events],
+            };
+        }
     }
 
     const interaction = buildReactionInteraction(currentState, session, now);

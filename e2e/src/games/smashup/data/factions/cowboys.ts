@@ -9,7 +9,7 @@ export const COWBOYS_MINIONS: MinionCardDef[] = [
         nameEn: 'Deputy',
         faction: SMASHUP_FACTION_IDS.COWBOYS,
         power: 2,
-        abilityTags: ['special'],
+        // 注意：副警长是从手牌弃置触发的决斗插入效果，不是点击场上随从激活
         count: 4,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS6, index: 44 },
     },
@@ -43,7 +43,7 @@ export const COWBOYS_MINIONS: MinionCardDef[] = [
         nameEn: 'Sheriff',
         faction: SMASHUP_FACTION_IDS.COWBOYS,
         power: 5,
-        abilityTags: ['special'],
+        // 注意：警长是 beforeScoring trigger（自动创建交互），不是点击场上随从激活
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS6, index: 47 },
     },

@@ -106,15 +106,23 @@ export function resolveTalent(defId: string): AbilityExecutor | undefined {
     return resolveAbility(defId, 'talent');
 }
 
-export function validateTalentUse(ctx: AbilityContext): ValidationResult {
-    const validator = resolveAbilityDefinition(ctx.defId, 'talent')?.validateUse;
+function validateAbilityUseByTag(ctx: AbilityContext, tag: AbilityTag): ValidationResult {
+    const validator = resolveAbilityDefinition(ctx.defId, tag)?.validateUse;
     const error = validator?.(ctx) ?? null;
     return error ? { valid: false, error } : { valid: true };
+}
+
+export function validateTalentUse(ctx: AbilityContext): ValidationResult {
+    return validateAbilityUseByTag(ctx, 'talent');
 }
 
 /** 快捷：解析 special 能力 */
 export function resolveSpecial(defId: string): AbilityExecutor | undefined {
     return resolveAbility(defId, 'special');
+}
+
+export function validateSpecialUse(ctx: AbilityContext): ValidationResult {
+    return validateAbilityUseByTag(ctx, 'special');
 }
 
 /** 快捷：解析 onDestroy 能力 */

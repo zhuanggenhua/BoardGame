@@ -2136,6 +2136,54 @@ describe('AI legal actions', () => {
         expect(state.core.players['0'].discard.map((card) => card.id)).toContain('card-next-time');
     });
 
+    it('本地 AI 在 afterAttackResolved 窗口只应把 card-dizzy 作为 response-play-card', async () => {
+        const state = createHeroMatchup('barbarian', 'barbarian')(['0', '1'], fixedRandom);
+        state.core.players['0'].hand = [
+            getCardById('card-head-blow'),
+            getCardById('card-dizzy'),
+        ];
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 1;
+        state.core.lastResolvedAttackDamage = 13;
+        state.sys.responseWindow = {
+            current: {
+                id: 'rw-ai-card-dizzy-response',
+                windowType: 'afterAttackResolved',
+                responderQueue: ['0'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        };
+
+        const legalActions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(legalActions.some((action) =>
+            action.kind === 'response-play-card'
+            && action.metadata?.cardId === 'card-dizzy'
+        )).toBe(true);
+        expect(legalActions.some((action) =>
+            action.kind === 'response-play-card'
+            && action.metadata?.cardId === 'card-head-blow'
+        )).toBe(false);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.kind).toBe('response-play-card');
+        expect(resolution?.action.metadata).toMatchObject({
+            cardId: 'card-dizzy',
+        });
+    });
+
     it('本地 AI 在响应窗口但不是当前响应者时不应生成响应动作', async () => {
         const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
         state.sys.phase = 'offensiveRoll';

@@ -6,6 +6,7 @@ import type {
     MinionCardDef,
     SmashUpCore,
 } from './domain/types';
+import { getCardDefActivatableAbilities } from './domain/activationMetadata';
 import { getCardDef, getCardDefsByFaction } from './data/cards';
 
 type SmashUpState = MatchState<SmashUpCore>;
@@ -66,13 +67,29 @@ function collectFeatureCountsFromCardDef(def: CardDef, playKind?: SmashUpPlayKin
         highPower: 0,
     };
 
-    const applyMinionFace = (minionDef: Pick<MinionCardDef, 'power' | 'abilityTags' | 'beforeScoringPlayable'>) => {
-        if (hasTag(minionDef.abilityTags, 'extra')) counts.extraMinion += 1;
-        if (hasTag(minionDef.abilityTags, 'ongoing')) counts.ongoing += 1;
-        if (hasTag(minionDef.abilityTags, 'onPlay')) counts.onPlay += 1;
-        if (minionDef.beforeScoringPlayable) counts.scoringWindow += 1;
-        if (minionDef.power <= 2) counts.lowCurve += 1;
-        if (minionDef.power >= 4) counts.highPower += 1;
+    const applyMinionFace = (minionDef: MinionCardDef | Pick<FusionCardDef, 'id' | 'minionPower' | 'minionAbilityTags' | 'minionBeforeScoringPlayable' | 'minionActivatableAbilities'>) => {
+        const isFusionMinionFace = 'minionPower' in minionDef;
+        const power = isFusionMinionFace ? minionDef.minionPower : minionDef.power;
+        const abilityTags = isFusionMinionFace ? minionDef.minionAbilityTags : minionDef.abilityTags;
+        const beforeScoringPlayable = isFusionMinionFace ? minionDef.minionBeforeScoringPlayable : minionDef.beforeScoringPlayable;
+        const activations = isFusionMinionFace
+            ? getCardDefActivatableAbilities(def, { face: 'minion' })
+            : getCardDefActivatableAbilities(def);
+        if (hasTag(abilityTags, 'extra')) counts.extraMinion += 1;
+        if (hasTag(abilityTags, 'ongoing')) counts.ongoing += 1;
+        if (hasTag(abilityTags, 'onPlay')) counts.onPlay += 1;
+        if (
+            beforeScoringPlayable
+            || activations.some(activation =>
+                activation.kind === 'special'
+                && activation.zone === 'board'
+                && (activation.window === 'beforeScoring' || activation.window === 'afterScoring'),
+            )
+        ) {
+            counts.scoringWindow += 1;
+        }
+        if (power <= 2) counts.lowCurve += 1;
+        if (power >= 4) counts.highPower += 1;
     };
 
     const applyActionFace = (
@@ -80,7 +97,7 @@ function collectFeatureCountsFromCardDef(def: CardDef, playKind?: SmashUpPlayKin
     ) => {
         if (hasTag(actionDef.abilityTags, 'extra')) counts.extraAction += 1;
         if (actionDef.subtype === 'ongoing' || hasTag(actionDef.abilityTags, 'ongoing')) counts.ongoing += 1;
-        if (actionDef.subtype === 'special' || hasTag(actionDef.abilityTags, 'special')) counts.scoringWindow += 1;
+        if (actionDef.subtype === 'special') counts.scoringWindow += 1;
         if (actionDef.specialTiming || actionDef.responseWindowTiming) counts.scoringWindow += 1;
     };
 
@@ -96,11 +113,7 @@ function collectFeatureCountsFromCardDef(def: CardDef, playKind?: SmashUpPlayKin
 
     if (def.type === 'fusion') {
         if (!playKind || playKind === 'minion') {
-            applyMinionFace({
-                power: def.minionPower,
-                abilityTags: def.minionAbilityTags,
-                beforeScoringPlayable: def.minionBeforeScoringPlayable,
-            });
+            applyMinionFace(def);
         }
         if (!playKind || playKind === 'action') {
             applyActionFace({

@@ -135,6 +135,15 @@ test.describe('DiceThrone E2E', () => {
             await expect(feedbackTextarea).toHaveValue('游戏内横屏反馈输入可见性校验');
             await expect(contactInput).toHaveValue('tester@example.com');
 
+            await feedbackModal.locator('button').first().click();
+            await expect(feedbackModal).toBeHidden({ timeout: 10000 });
+
+            await expect(page.locator('[data-fab-id="feedback"]')).toBeVisible({ timeout: 10000 });
+            await page.locator('[data-fab-id="feedback"]').click();
+            await expect(feedbackModal).toBeVisible({ timeout: 10000 });
+            await expect(feedbackTextarea).toHaveValue('游戏内横屏反馈输入可见性校验');
+            await expect(contactInput).toHaveValue('tester@example.com');
+
             await page.screenshot({
                 path: 'test-results/evidence-screenshots/dicethrone-feedback-modal-landscape.png',
                 fullPage: false,

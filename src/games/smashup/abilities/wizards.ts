@@ -609,60 +609,6 @@ function wizardSacrifice(ctx: AbilityContext): AbilityResult {
 
 /** 注册巫师派系?ongoing 拦截?*/
 function registerWizardOngoingEffects(): void {
-    // 大法师：回合开始时，控制者额外打出一个行动
-    // 注意：根据官方 FAQ，打出当回合也能获得额外行动
-    registerTrigger('wizard_archmage', 'onTurnStart', (trigCtx) => {
-        if (trigCtx.triggerMinionUid) {
-            for (const base of trigCtx.state.bases) {
-                const triggeredArchmage = base.minions.find(minion =>
-                    minion.uid === trigCtx.triggerMinionUid && minion.defId === 'wizard_archmage',
-                );
-                if (!triggeredArchmage) continue;
-                if (triggeredArchmage.controller !== trigCtx.playerId) return [];
-
-                return [{
-                    type: SU_EVENTS.LIMIT_MODIFIED,
-                    payload: {
-                        playerId: triggeredArchmage.controller,
-                        limitType: 'action' as const,
-                        delta: 1,
-                        reason: triggeredArchmage.defId,
-                        playTiming: 'immediate',
-                    },
-                    timestamp: trigCtx.now,
-                }];
-            }
-            return [];
-        }
-
-        // 找到 archmage 的控制者?
-        let archmageController: string | undefined;
-        let archmageDefId: string | undefined;
-        for (const base of trigCtx.state.bases) {
-            const archmage = base.minions.find(m => m.defId === 'wizard_archmage');
-            if (archmage) {
-                archmageController = archmage.controller;
-                archmageDefId = archmage.defId;
-                break;
-            }
-        }
-        if (!archmageController) return [];
-        // 只在控制者的回合触发
-        if (archmageController !== trigCtx.playerId) return [];
-
-        return [{
-            type: SU_EVENTS.LIMIT_MODIFIED,
-            payload: {
-                playerId: archmageController,
-                limitType: 'action' as const,
-                delta: 1,
-                reason: archmageDefId ?? 'wizard_archmage',
-                playTiming: 'immediate',
-            },
-            timestamp: trigCtx.now,
-        }];
-    });
-
     // 大法师：打出当回合也给予额外行动（官方 FAQ 明确说明）
     // "You get the extra action on each of your turns, including the one when Archmage is played."
     registerTrigger('wizard_archmage', 'onMinionPlayed', (trigCtx) => {
@@ -680,6 +626,10 @@ function registerWizardOngoingEffects(): void {
             },
             timestamp: trigCtx.now,
         }];
+    }, {
+        orderingFootprint: {
+            writes: ['playLimits'],
+        },
     });
 }
 

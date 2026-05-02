@@ -26,6 +26,7 @@ import {
     canAdvancePhase,
     getActiveDice,
     getFaceCounts,
+    hasRespondableContent,
     getNextPhase,
     getNextPlayerId,
     getPlayerDieFace,
@@ -254,17 +255,39 @@ function checkAfterAttackResponseWindow(
         return null;
     }
 
+    const responsePhase: TurnPhase = 'main2';
+
     // 找到攻击方 ID
     const attackResolved = allEvents.find(e => e.type === 'ATTACK_RESOLVED') as
         Extract<DiceThroneEvent, { type: 'ATTACK_RESOLVED' }> | undefined;
-    if (!attackResolved) return null;
+    if (!attackResolved) {
+        // 兼容“攻击已结算但 ATTACK_RESOLVED 不在当前批次事件里”的真实链路。
+        // 这类路径下 activePlayerId 仍是攻击方，而 afterAttackResolved 本就只允许攻击方响应。
+        const attackerId = stateAfterAttack.activePlayerId;
+        if (!attackerId) return null;
+
+        if (!hasRespondableContent(stateAfterAttack, attackerId, 'afterAttackResolved', undefined, responsePhase)) {
+            return null;
+        }
+
+        return {
+            type: 'RESPONSE_WINDOW_OPENED',
+            payload: {
+                windowId: `afterAttackResolved-${timestamp}`,
+                responderQueue: [attackerId],
+                windowType: 'afterAttackResolved',
+            },
+            sourceCommandType: commandType,
+            timestamp,
+        } as ResponseWindowOpenedEvent;
+    }
 
     const { attackerId, defenderId } = attackResolved.payload;
     if (!defenderId) return null;
 
     // 只允许进攻方响应（card-dizzy："如果你对对手造成至少8伤害"，只有进攻方才能触发）
     // excludeId = defenderId，防止防御方也进入响应队列
-    const responderQueue = getResponderQueue(stateAfterAttack, 'afterAttackResolved', attackerId, undefined, defenderId, phase);
+    const responderQueue = getResponderQueue(stateAfterAttack, 'afterAttackResolved', attackerId, undefined, defenderId, responsePhase);
     if (responderQueue.length === 0) return null;
 
     return {
@@ -277,6 +300,28 @@ function checkAfterAttackResponseWindow(
         sourceCommandType: commandType,
         timestamp,
     } as ResponseWindowOpenedEvent;
+}
+
+function resolvePostAttackFollowUp(
+    core: DiceThroneCore,
+    events: GameEvent[],
+    commandType: string,
+    timestamp: number,
+    phase: TurnPhase
+): PhaseExitResult {
+    const { dazeEvents, triggered } = checkDazeExtraAttack(core, events, commandType, timestamp);
+    if (triggered) {
+        events.push(...dazeEvents);
+        return { events, overrideNextPhase: 'offensiveRoll' };
+    }
+
+    const afterAttackWindow = checkAfterAttackResponseWindow(core, events, commandType, timestamp, phase);
+    if (afterAttackWindow) {
+        events.push(afterAttackWindow);
+        return { events, halt: true };
+    }
+
+    return { events, overrideNextPhase: 'main2' };
 }
 
 export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
@@ -477,23 +522,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         return { events, halt: true };
                     }
 
-                    // 检查晕眩（daze）额外攻击（强制效果，优先于响应窗口）
-                    const { dazeEvents, triggered } = checkDazeExtraAttack(
-                        core, events, command.type, timestamp
-                    );
-                    if (triggered) {
-                        events.push(...dazeEvents);
-                        return { events, overrideNextPhase: 'offensiveRoll' };
-                    }
-
-                    // 攻击结算后响应窗口（如 card-dizzy：造成 ≥8 伤害后打出）
-                    const afterAttackWindowOffDR = checkAfterAttackResponseWindow(core, events, command.type, timestamp, from as TurnPhase);
-                    if (afterAttackWindowOffDR) {
-                        events.push(afterAttackWindowOffDR);
-                        return { events, halt: true };
-                    }
-
-                    return { events, overrideNextPhase: 'main2' };
+                    return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
 
                 // 奖励骰已通过 BONUS_DICE_SETTLED 结算（autoContinue 重入），
@@ -512,21 +541,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         timestamp,
                     } as AttackResolvedEvent);
 
-                    const { dazeEvents, triggered } = checkDazeExtraAttack(
-                        core, events, command.type, timestamp
-                    );
-                    if (triggered) {
-                        events.push(...dazeEvents);
-                        return { events, overrideNextPhase: 'offensiveRoll' };
-                    }
-
-                    const afterAttackWindowBD = checkAfterAttackResponseWindow(core, events, command.type, timestamp, from as TurnPhase);
-                    if (afterAttackWindowBD) {
-                        events.push(afterAttackWindowBD);
-                        return { events, halt: true };
-                    }
-
-                    return { events, overrideNextPhase: 'main2' };
+                    return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
 
                 // ========== 致盲判定：攻击方有致盲时投掷1骰 ==========
@@ -607,23 +622,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         return { events, halt: true };
                     }
 
-                    // 检查晕眩（daze）额外攻击
-                    const { dazeEvents: dazeEventsSneak, triggered: dazeTriggeredSneak } = checkDazeExtraAttack(
-                        core, events, command.type, timestamp
-                    );
-                    if (dazeTriggeredSneak) {
-                        events.push(...dazeEventsSneak);
-                        return { events, overrideNextPhase: 'offensiveRoll' };
-                    }
-
-                    // 攻击结算后响应窗口（如 card-dizzy：造成 ≥8 伤害后打出）
-                    const afterAttackWindowSneak = checkAfterAttackResponseWindow(core, events, command.type, timestamp, from as TurnPhase);
-                    if (afterAttackWindowSneak) {
-                        events.push(afterAttackWindowSneak);
-                        return { events, halt: true };
-                    }
-
-                    return { events, overrideNextPhase: 'main2' };
+                    return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
 
                 // 处理进攻方的 preDefense 效果
@@ -709,27 +708,10 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return { events, halt: true };
                 }
 
-                // 检查晕眩（daze）额外攻击（强制效果，优先于响应窗口）
-                const { dazeEvents: dazeEventsOff, triggered: dazeTriggeredOff } = checkDazeExtraAttack(
-                    core, events, command.type, timestamp
-                );
-                if (dazeTriggeredOff) {
-                    events.push(...dazeEventsOff);
-                    return { events, overrideNextPhase: 'offensiveRoll' };
-                }
-
-                // 攻击结算后响应窗口（如 card-dizzy：造成 ≥8 伤害后打出）
-                const afterAttackWindowOff = checkAfterAttackResponseWindow(core, events, command.type, timestamp, from as TurnPhase);
-                if (afterAttackWindowOff) {
-                    events.push(afterAttackWindowOff);
-                    return { events, halt: true };
-                }
-
-                // 无待处理内容，直接进入 main2
-                return { events, overrideNextPhase: 'main2' };
+                return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
             }
-            // 无 pendingAttack，直接进入 main2
-            return { events, overrideNextPhase: 'main2' };
+            // 额外攻击可能先把首次攻击的 afterAttackResolved 窗口延后到空壳 offensiveRoll 之后。
+            return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
         }
 
         // ========== targetingRoll 阶段退出：确定防御方后继续攻击流程 ==========
@@ -874,21 +856,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return { events, halt: true };
                 }
 
-                const { dazeEvents, triggered } = checkDazeExtraAttack(
-                    targetingCore, events, command.type, timestamp
-                );
-                if (triggered) {
-                    events.push(...dazeEvents);
-                    return { events, overrideNextPhase: 'offensiveRoll' };
-                }
-
-                const afterAttackWindow = checkAfterAttackResponseWindow(targetingCore, events, command.type, timestamp, from as TurnPhase);
-                if (afterAttackWindow) {
-                    events.push(afterAttackWindow);
-                    return { events, halt: true };
-                }
-
-                return { events, overrideNextPhase: 'main2' };
+                return resolvePostAttackFollowUp(targetingCore, events, command.type, timestamp, from as TurnPhase);
             }
 
             if (pendingAttack.bonusDiceResolved) {
@@ -901,21 +869,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     timestamp,
                 } as AttackResolvedEvent);
 
-                const { dazeEvents, triggered } = checkDazeExtraAttack(
-                    targetingCore, events, command.type, timestamp
-                );
-                if (triggered) {
-                    events.push(...dazeEvents);
-                    return { events, overrideNextPhase: 'offensiveRoll' };
-                }
-
-                const afterAttackWindow = checkAfterAttackResponseWindow(targetingCore, events, command.type, timestamp, from as TurnPhase);
-                if (afterAttackWindow) {
-                    events.push(afterAttackWindow);
-                    return { events, halt: true };
-                }
-
-                return { events, overrideNextPhase: 'main2' };
+                return resolvePostAttackFollowUp(targetingCore, events, command.type, timestamp, from as TurnPhase);
             }
 
             const attacker = targetingCore.players[pendingAttack.attackerId];
@@ -982,21 +936,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return { events, halt: true };
                 }
 
-                const { dazeEvents: dazeEventsSneak, triggered: dazeTriggeredSneak } = checkDazeExtraAttack(
-                    targetingCore, events, command.type, timestamp
-                );
-                if (dazeTriggeredSneak) {
-                    events.push(...dazeEventsSneak);
-                    return { events, overrideNextPhase: 'offensiveRoll' };
-                }
-
-                const afterAttackWindowSneak = checkAfterAttackResponseWindow(targetingCore, events, command.type, timestamp, from as TurnPhase);
-                if (afterAttackWindowSneak) {
-                    events.push(afterAttackWindowSneak);
-                    return { events, halt: true };
-                }
-
-                return { events, overrideNextPhase: 'main2' };
+                return resolvePostAttackFollowUp(targetingCore, events, command.type, timestamp, from as TurnPhase);
             }
 
             const preDefenseEvents = resolveOffensivePreDefenseEffects(targetingCore, random, timestamp);
@@ -1067,21 +1007,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 return { events, halt: true };
             }
 
-            const { dazeEvents: dazeEventsOff, triggered: dazeTriggeredOff } = checkDazeExtraAttack(
-                coreAfterPreDefense, events, command.type, timestamp
-            );
-            if (dazeTriggeredOff) {
-                events.push(...dazeEventsOff);
-                return { events, overrideNextPhase: 'offensiveRoll' };
-            }
-
-            const afterAttackWindowOff = checkAfterAttackResponseWindow(coreAfterPreDefense, events, command.type, timestamp, from as TurnPhase);
-            if (afterAttackWindowOff) {
-                events.push(afterAttackWindowOff);
-                return { events, halt: true };
-            }
-
-            return { events, overrideNextPhase: 'main2' };
+            return resolvePostAttackFollowUp(coreAfterPreDefense, events, command.type, timestamp, from as TurnPhase);
         }
 
         // ========== defensiveRoll 阶段退出 ==========
@@ -1110,24 +1036,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         return { events, halt: true };
                     }
 
-                    // 检查晕眩（daze）额外攻击（强制效果，优先于响应窗口）
-                    const { dazeEvents: dazeEventsPost, triggered: dazeTriggeredPost } = checkDazeExtraAttack(
-                        core, events, command.type, timestamp
-                    );
-                    if (dazeTriggeredPost) {
-                        events.push(...dazeEventsPost);
-                        return { events, overrideNextPhase: 'offensiveRoll' };
-                    }
-
-                    // 攻击结算后响应窗口（如 card-dizzy：造成 ≥8 伤害后打出）
-                    const afterAttackWindow1 = checkAfterAttackResponseWindow(core, events, command.type, timestamp, from as TurnPhase);
-                    if (afterAttackWindow1) {
-                        events.push(afterAttackWindow1);
-                        return { events, halt: true };
-                    }
-
-                    // 所有处理完成，推进到 main2
-                    return { events, overrideNextPhase: 'main2' };
+                    return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
 
                 // 奖励骰已通过 BONUS_DICE_SETTLED 结算（autoContinue 重入），
@@ -1146,21 +1055,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         timestamp,
                     } as AttackResolvedEvent);
 
-                    const { dazeEvents: dazeEventsPost, triggered: dazeTriggeredPost } = checkDazeExtraAttack(
-                        core, events, command.type, timestamp
-                    );
-                    if (dazeTriggeredPost) {
-                        events.push(...dazeEventsPost);
-                        return { events, overrideNextPhase: 'offensiveRoll' };
-                    }
-
-                    const afterAttackWindowBD = checkAfterAttackResponseWindow(core, events, command.type, timestamp, from as TurnPhase);
-                    if (afterAttackWindowBD) {
-                        events.push(afterAttackWindowBD);
-                        return { events, halt: true };
-                    }
-
-                    return { events, overrideNextPhase: 'main2' };
+                    return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
                 }
                 
                 // 直接结算攻击
@@ -1185,21 +1080,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     return { events, halt: true };
                 }
 
-                // 检查晕眩（daze）额外攻击（强制效果，优先于响应窗口）
-                const { dazeEvents: dazeEventsDef, triggered: dazeTriggeredDef } = checkDazeExtraAttack(
-                    core, events, command.type, timestamp
-                );
-                if (dazeTriggeredDef) {
-                    events.push(...dazeEventsDef);
-                    return { events, overrideNextPhase: 'offensiveRoll' };
-                }
-
-                // 攻击结算后响应窗口（如 card-dizzy：造成 ≥8 伤害后打出）
-                const afterAttackWindow2 = checkAfterAttackResponseWindow(core, events, command.type, timestamp, from as TurnPhase);
-                if (afterAttackWindow2) {
-                    events.push(afterAttackWindow2);
-                    return { events, halt: true };
-                }
+                return resolvePostAttackFollowUp(core, events, command.type, timestamp, from as TurnPhase);
             }
             // 显式指定下一阶段为 main2（无论是否有 pendingAttack）
             return { events, overrideNextPhase: 'main2' };

@@ -56,6 +56,8 @@ import { drawCards } from './utils';
 import {
     countMadnessCards,
     countMadnessCardsForPlayer,
+    grantExtraAction,
+    grantExtraMinion,
     madnessVpPenalty,
     fireMinionPlayedTriggers,
     getTitanByUid,
@@ -95,6 +97,40 @@ import {
 // ============================================================================
 
 // ============================================================================
+
+function collectPhaseTwoOngoingExtraEvents(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    now: number,
+): SmashUpEvent[] {
+    const events: SmashUpEvent[] = [];
+
+    for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex += 1) {
+        const base = core.bases[baseIndex];
+
+        for (const minion of base.minions) {
+            if (minion.defId === 'wizard_archmage' && minion.controller === playerId) {
+                events.push(grantExtraAction(playerId, 'wizard_archmage', now, { playTiming: 'banked' }));
+            }
+        }
+
+        for (const ongoing of base.ongoingActions) {
+            if (ongoing.defId === 'trickster_enshrouding_mist' && ongoing.ownerId === playerId) {
+                events.push(grantExtraMinion(playerId, 'trickster_enshrouding_mist', now, baseIndex, { playTiming: 'banked' }));
+            }
+        }
+
+        if (
+            (base.defId === 'base_secret_garden' || base.defId === 'base_secret_garden_pod')
+            && base.minions.some(minion => minion.controller === playerId)
+        ) {
+            // "On your turn" base extras also begin in phase 2, not at startTurn.
+            events.push(grantExtraMinion(playerId, '神秘花园：额外打出力量≤2的随从', now, baseIndex, { playTiming: 'banked' }));
+        }
+    }
+
+    return events;
+}
 
 function collectQualifiedPlayerPowers(
     core: SmashUpCore,
@@ -1548,7 +1584,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 
         if (to === 'playCards' && from === 'startTurn' && (state.sys as any)._smashupStartTurnWindowActive) {
             return {
-                events,
+                events: [
+                    ...events,
+                    ...collectPhaseTwoOngoingExtraEvents(state.core, getCurrentPlayerId(state.core), now),
+                ],
                 updatedState: {
                     ...state,
                     sys: {
@@ -1557,6 +1596,10 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     } as any,
                 },
             } as PhaseEnterResult;
+        }
+
+        if (to === 'playCards') {
+            events.push(...collectPhaseTwoOngoingExtraEvents(state.core, getCurrentPlayerId(state.core), now));
         }
 
         return events;

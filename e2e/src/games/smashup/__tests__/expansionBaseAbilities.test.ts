@@ -12,7 +12,7 @@
  *
  * AL9000：
  * - base_greenhouse: afterScoring → Prompt（牌库搜索随从打出）
- * - base_secret_garden: onTurnStart → 额外随从额度
+ * - base_secret_garden: playCards → 额外随从额度
  * - base_inventors_salon: afterScoring → Prompt（弃牌堆取回行动卡）
  *
  * Pretty Pretty：
@@ -105,8 +105,8 @@ describe('expansion base extra timing regression coverage', () => {
         const handler = getInteractionHandler('base_fairy_ring');
         expect(handler).toBeDefined();
 
-        const minionOption = prompt.data.options.find((entry: any) => entry.value?.choice === 'extra_minion');
-        const actionOption = prompt.data.options.find((entry: any) => entry.value?.choice === 'extra_action');
+        const minionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
+        const actionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
         expect(minionOption).toBeDefined();
         expect(actionOption).toBeDefined();
 
@@ -1326,20 +1326,14 @@ describe('base_greenhouse: 温室 - 计分后从牌库打随从', () => {
     });
 });
 
-describe('base_secret_garden: 神秘花园 - 回合开始额外随从', () => {
-    it('回合开始时获得额外随从额度', () => {
+describe('base_secret_garden: 神秘花园 - phase 2 额外随从', () => {
+    it('onTurnStart 不再直接发额外随从额度', () => {
         const { events } = triggerBaseAbility('base_secret_garden', 'onTurnStart', makeCtx({
             state: makeState({ bases: [makeBase('base_secret_garden')] }),
             baseDefId: 'base_secret_garden',
         }));
 
-        expect(events).toHaveLength(1);
-        expect(events[0].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
-        const payload = (events[0] as any).payload;
-        expect(payload.limitType).toBe('minion');
-        expect(payload.delta).toBe(1);
-        expect(payload.playTiming).toBe('banked');
-        expect(payload.restrictToBase).toBe(0);
+        expect(events).toHaveLength(0);
     });
 });
 
@@ -1505,8 +1499,8 @@ describe('base_fairy_ring: 仙灵圈 - 首次打随从额外额度', () => {
         const handler = getInteractionHandler('base_fairy_ring');
         expect(handler).toBeDefined();
 
-        const minionOption = prompt.data.options.find((entry: any) => entry.value?.choice === 'extra_minion');
-        const actionOption = prompt.data.options.find((entry: any) => entry.value?.choice === 'extra_action');
+        const minionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
+        const actionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
         expect(minionOption).toBeDefined();
         expect(actionOption).toBeDefined();
 

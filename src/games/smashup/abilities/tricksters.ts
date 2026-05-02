@@ -877,30 +877,6 @@ function registerTricksterOngoingEffects(): void {
         }];
     });
 
-    // 迷雾笼罩：此基地上可额外打出一个随从到此基地（回合开始时给基地限定额度）
-    registerTrigger('trickster_enshrouding_mist', 'onTurnStart', (trigCtx) => {
-        for (let bi = 0; bi < trigCtx.state.bases.length; bi++) {
-            const base = trigCtx.state.bases[bi];
-            const mist = base.ongoingActions.find(o => matchesDefId(o.defId, 'trickster_enshrouding_mist'));
-            if (!mist) continue;
-            // 只在拥有者的回合触发
-            if (mist.ownerId !== trigCtx.playerId) continue;
-            return [{
-                type: SU_EVENTS.LIMIT_MODIFIED,
-                payload: {
-                    playerId: mist.ownerId,
-                    limitType: 'minion' as const,
-                    delta: 1,
-                    reason: 'trickster_enshrouding_mist',
-                    restrictToBase: bi,
-                    playTiming: 'immediate',
-                },
-                timestamp: trigCtx.now,
-            }];
-        }
-        return [];
-    });
-
     // 藏身处：保护同基地己方随从不受对手行动卡影响（消耗型：触发后自毁）
     registerProtection('trickster_hideout', 'action', (ctx) => {
         // 检查目标随从是否附着了 hideout（附着在随从上的情况）

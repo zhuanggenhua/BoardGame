@@ -13,13 +13,14 @@ import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { createCharacterDice } from '../../src/games/dicethrone/domain/characters';
 import { CHARACTER_DATA_MAP } from '../../src/games/dicethrone/domain/characters';
 import { COMMON_CARDS } from '../../src/games/dicethrone/domain/commonCards';
-import { GUNSLINGER_DICE_FACE_IDS, PALADIN_DICE_FACE_IDS, TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
+import { BARBARIAN_DICE_FACE_IDS, GUNSLINGER_DICE_FACE_IDS, PALADIN_DICE_FACE_IDS, STATUS_IDS, TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
-import { getAvailableAbilityIds, getDefensiveAbilityIds } from '../../src/games/dicethrone/domain/rules';
+import { getAvailableAbilityIds, getDefensiveAbilityIds, getHeroDieFace } from '../../src/games/dicethrone/domain/rules';
 import { HAND_LIMIT } from '../../src/games/dicethrone/domain/types';
 import { registerDiceThroneConditions } from '../../src/games/dicethrone/conditions';
 // 确保 Node 侧构造场景时，骰子定义已注册（否则 createCharacterDice/initHeroState 会报“未注册骰子定义”）
 import '../../src/games/dicethrone/domain';
+import { BARBARIAN_CARDS } from '../../src/games/dicethrone/heroes/barbarian/cards';
 import { DEADEYE_2, FAN_THE_HAMMER_2 } from '../../src/games/dicethrone/heroes/gunslinger/abilities';
 import { GUNSLINGER_CARDS } from '../../src/games/dicethrone/heroes/gunslinger/cards';
 import { VENGEANCE_2 } from '../../src/games/dicethrone/heroes/paladin/abilities';
@@ -38,9 +39,13 @@ const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
 void __ensureThreeAxesMarker;
 
 import {
+    advanceToOffensiveRoll,
+    applyDiceValues,
+    closeDebugPanelIfOpen,
     claimDTSeatViaAPI,
     cleanupDTMatch,
     createDTRoomViaAPI,
+    maybePassResponse,
     readyAndStartGame,
     readyMultiplePlayersAndStartGame,
     seedDTMatchCredentials,
@@ -86,6 +91,10 @@ const PALADIN_VENGEANCE_2_CARD_ID = 'card-vengeance-2';
 const PALADIN_VENGEANCE_2_CARD = PALADIN_CARDS.find((card) => card.id === PALADIN_VENGEANCE_2_CARD_ID);
 const SAMURAI_ASHAMED_CARD_ID = 'card-you-should-be-ashamed';
 const SAMURAI_ASHAMED_CARD = SAMURAI_CARDS.find((card) => card.id === SAMURAI_ASHAMED_CARD_ID);
+const CARD_DIZZY_ID = 'card-dizzy';
+const CARD_DIZZY = BARBARIAN_CARDS.find((card) => card.id === CARD_DIZZY_ID);
+const DIZZY_ATTACK_ABILITY_ID = 'reckless-strike';
+const DIZZY_ATTACK_DICE_VALUES = [2, 3, 4, 5, 6] as const;
 
 const saveEvidenceScreenshot = async (
     page: Page,
@@ -97,6 +106,19 @@ const saveEvidenceScreenshot = async (
     });
     await mkdir(dirname(path), { recursive: true });
     await page.screenshot({ path, fullPage: true });
+    return path;
+};
+
+const saveLocatorEvidenceScreenshot = async (
+    locator: ReturnType<Page['locator']>,
+    testInfo: TestInfo,
+    name: string,
+) => {
+    const path = getEvidenceScreenshotPath(testInfo, name, {
+        filename: `${name}.png`,
+    });
+    await mkdir(dirname(path), { recursive: true });
+    await locator.screenshot({ path });
     return path;
 };
 
@@ -127,6 +149,170 @@ const waitForHarnessPages = async (pages: Page[]) => {
     for (const page of pages) {
         await waitForTestHarness(page, 15000);
     }
+};
+
+const waitForHandCardVisualReady = async (page: Page, cardId: string) => {
+    await page.waitForFunction((expectedCardId) => {
+        const handArea = document.querySelector('[data-testid="hand-area"]');
+        if (!handArea) return false;
+        const card = handArea.querySelector(`[data-card-id="${expectedCardId}"]`);
+        if (!card) return false;
+        return card.getAttribute('data-is-flipped') === 'true'
+            && handArea.querySelectorAll('.atlas-shimmer').length === 0;
+    }, cardId, { timeout: 15000, polling: 100 });
+    await page.waitForTimeout(900);
+};
+
+const readAfterAttackResolvedProbeState = async (page: Page) => {
+    const state = await readHarnessState<any>(page);
+    const responseWindow = state?.sys?.responseWindow?.current;
+    const handIds = state?.core?.players?.['0']?.hand?.map((card: any) => card?.id) ?? [];
+    return {
+        phase: state?.sys?.phase ?? null,
+        activePlayerId: state?.core?.activePlayerId ?? null,
+        responseWindowType: responseWindow?.windowType ?? null,
+        responseWindowResponders: responseWindow?.responderQueue ?? [],
+        pendingAttack: Boolean(state?.core?.pendingAttack),
+        lastResolvedAttackDamage: Number(state?.core?.lastResolvedAttackDamage ?? 0),
+        attackResolvedSequence: Number(state?.core?.attackResolvedSequence ?? 0),
+        afterAttackResponseWindowSequence: Number(state?.core?.afterAttackResponseWindowSequence ?? 0),
+        extraAttackInProgress: state?.core?.extraAttackInProgress
+            ? {
+                attackerId: state.core.extraAttackInProgress.attackerId ?? null,
+                originalActivePlayerId: state.core.extraAttackInProgress.originalActivePlayerId ?? null,
+            }
+            : null,
+        handIds,
+    };
+};
+
+const waitForRealAfterAttackResolvedWindow = async (
+    page: Page,
+    expectedCardId: string,
+    timeoutMs = 15000,
+) => {
+    const deadline = Date.now() + timeoutMs;
+    let lastState = await readAfterAttackResolvedProbeState(page);
+
+    while (Date.now() < deadline) {
+        if (
+            lastState.responseWindowType === 'afterAttackResolved'
+            && !lastState.pendingAttack
+            && lastState.handIds.includes(expectedCardId)
+        ) {
+            return lastState;
+        }
+        await page.waitForTimeout(250);
+        lastState = await readAfterAttackResolvedProbeState(page);
+    }
+
+    throw new Error(
+        `等待真实攻击链打开 afterAttackResolved 响应窗口并保留 ${expectedCardId} 失败。\n最后状态:\n${JSON.stringify(lastState, null, 2)}`
+    );
+};
+
+const injectTwoPlayerDizzyAttackSetup = async (
+    matchId: string,
+    page: Page,
+) => {
+    if (!CARD_DIZZY) {
+        throw new Error(`未找到 ${CARD_DIZZY_ID}，无法构造真实头晕目眩响应链路`);
+    }
+
+    await applyOnlineMatchState(matchId, page, (state) => {
+        const next = structuredClone(state);
+        const root = next?.G && typeof next.G === 'object' ? next.G : next;
+        const core = root?.core ?? {};
+        const sys = root?.sys ?? {};
+        const players = core?.players ?? {};
+        const currentDice = Array.isArray(core?.dice) && core.dice.length > 0
+            ? core.dice
+            : createCharacterDice('barbarian');
+
+        root.core = {
+            ...core,
+            activePlayerId: '0',
+            phase: 'offensiveRoll',
+            rollConfirmed: false,
+            rollCount: Math.max(1, Number(core?.rollCount ?? 0)),
+            rollLimit: Math.max(2, Number(core?.rollLimit ?? 2)),
+            rollDiceCount: 5,
+            pendingAttack: null,
+            pendingDamage: null,
+            selectedAbilityId: undefined,
+            activatingAbilityId: undefined,
+            attackResolvedSequence: Number(core?.attackResolvedSequence ?? 0),
+            afterAttackResponseWindowSequence: Number(core?.afterAttackResponseWindowSequence ?? 0),
+            lastResolvedAttackDamage: 0,
+            players: {
+                ...players,
+                '0': {
+                    ...players['0'],
+                    hand: [{ ...structuredClone(CARD_DIZZY) }],
+                    discard: [],
+                    resources: {
+                        ...((players['0']?.resources as Record<string, number>) ?? {}),
+                        cp: Math.max(Number(players['0']?.resources?.cp ?? 0), 0),
+                    },
+                },
+                '1': {
+                    ...players['1'],
+                    hand: [],
+                    discard: [],
+                    statusEffects: {
+                        ...((players['1']?.statusEffects as Record<string, number>) ?? {}),
+                        [STATUS_IDS.CONCUSSION]: 0,
+                    },
+                },
+            },
+            dice: currentDice.map((die: Record<string, unknown>, index: number) => {
+                if (index >= 5) return die;
+                const value = DIZZY_ATTACK_DICE_VALUES[index] ?? 1;
+                const symbol = getHeroDieFace('barbarian', value) ?? '';
+                return {
+                    ...die,
+                    value,
+                    symbol,
+                    symbols: symbol ? [symbol] : [],
+                    isKept: false,
+                };
+            }),
+        };
+        root.sys = {
+            ...sys,
+            phase: 'offensiveRoll',
+            flowHalted: false,
+            responseWindow: {
+                ...(sys?.responseWindow ?? {}),
+                current: undefined,
+            },
+        };
+
+        return next;
+    });
+};
+
+const selectRecklessStrikeAbilityForDizzyFlow = async (page: Page) => {
+    const highlightedRecklessStrikeSlot = page
+        .locator('[data-ability-slot]')
+        .filter({ has: page.locator('div.animate-pulse[class*="border-"]') })
+        .filter({ hasText: /鲁莽一击|reckless strike/i })
+        .first();
+    const recklessStrikeSlotById = page
+        .locator('[data-ability-slot="reckless-strike"], [data-ability-slot*="reckless-strike"], [data-ability-id="reckless-strike"]')
+        .first();
+
+    if (await highlightedRecklessStrikeSlot.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await highlightedRecklessStrikeSlot.click();
+        return;
+    }
+
+    if (await recklessStrikeSlotById.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await recklessStrikeSlotById.click();
+        return;
+    }
+
+    await dispatchHarnessCommand(page, 'SELECT_ABILITY', '0', { abilityId: DIZZY_ATTACK_ABILITY_ID });
 };
 
 async function waitForAiSeatCredential(
@@ -2654,6 +2840,157 @@ test.describe('DiceThrone Simple Start', () => {
         }).toBe(false);
 
         await saveEvidenceScreenshot(hostPage, testInfo, '07-two-player-after-attack-response-closed');
+
+        await cleanupDTMatch(setup);
+    });
+
+    test('Online 2-player afterAttackResolved: card-dizzy should be playable and inflict Concussion', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+        const setup = await setupDTOnlineMatch(browser, baseURL, { gameServerBaseURL: getGameServerBaseURL() });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = setup;
+
+        await selectCharacter(hostPage, 'barbarian');
+        await selectCharacter(guestPage, 'monk');
+        await readyAndStartGame(hostPage, guestPage);
+
+        await waitForGameBoard(hostPage);
+        await waitForGameBoard(guestPage);
+        await waitForHarnessPages([hostPage, guestPage]);
+
+        await advanceToOffensiveRoll(hostPage);
+
+        const rollButton = hostPage.locator('[data-tutorial-id="dice-roll-button"]');
+        await expect(rollButton).toBeEnabled({ timeout: 10000 });
+        await rollButton.click();
+        await hostPage.waitForTimeout(300);
+
+        await injectTwoPlayerDizzyAttackSetup(matchId, hostPage);
+        await closeDebugPanelIfOpen(hostPage);
+
+        const confirmButton = hostPage.locator('[data-tutorial-id="dice-confirm-button"]');
+        await expect(confirmButton).toBeEnabled({ timeout: 10000 });
+        await confirmButton.click();
+        await hostPage.waitForTimeout(800);
+
+        await selectRecklessStrikeAbilityForDizzyFlow(hostPage);
+        await hostPage.waitForTimeout(500);
+
+        const attackReadyState = await readHarnessState<any>(hostPage);
+        expect(String(attackReadyState?.core?.activatingAbilityId ?? ''), '应已选择 Reckless Strike 进入真实攻击链').toContain(DIZZY_ATTACK_ABILITY_ID);
+
+        const resolveAttackButton = hostPage.getByRole('button', { name: /^(Resolve Attack|结算攻击)$/i }).first();
+        await expect(resolveAttackButton).toBeEnabled({ timeout: 10000 });
+        await resolveAttackButton.click();
+
+        const defendEntryButton = guestPage.getByRole('button', { name: /^(DEFEND|Defend|防御|开始防御)$/i }).first();
+        if (await defendEntryButton.isVisible({ timeout: 3000 }).catch(() => false)) {
+            await defendEntryButton.click();
+
+            const defenseRollButton = guestPage.locator('[data-tutorial-id="dice-roll-button"]');
+            await expect(defenseRollButton).toBeEnabled({ timeout: 10000 });
+            await defenseRollButton.click();
+            await guestPage.waitForTimeout(300);
+            await applyDiceValues(guestPage, [1, 1, 1]);
+            await closeDebugPanelIfOpen(guestPage);
+
+            const defenseConfirmButton = guestPage.locator('[data-tutorial-id="dice-confirm-button"]');
+            await expect(defenseConfirmButton).toBeEnabled({ timeout: 10000 });
+            await defenseConfirmButton.click();
+            await guestPage.waitForTimeout(300);
+
+            for (let attempt = 0; attempt < 3; attempt += 1) {
+                const defenseAdvanceButton = guestPage.locator('[data-tutorial-id="advance-phase-button"]');
+                if (await defenseAdvanceButton.isEnabled().catch(() => false)) {
+                    await defenseAdvanceButton.click();
+                    break;
+                }
+                await maybePassResponse(guestPage);
+                await guestPage.waitForTimeout(400);
+            }
+        }
+
+        await hostPage.waitForTimeout(1200);
+        await waitForRealAfterAttackResolvedWindow(hostPage, CARD_DIZZY_ID);
+
+        await waitForHandCardVisualReady(hostPage, CARD_DIZZY_ID);
+
+        const dizzyCard = hostPage.locator(`[data-testid="hand-area"] [data-card-id="${CARD_DIZZY_ID}"]`).first();
+        const opponentHeader = hostPage.locator('[data-testid="dt-top-header-1"]').first();
+
+        await expect(dizzyCard).toBeVisible({ timeout: 10000 });
+
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await saveEvidenceScreenshot(hostPage, testInfo, '06a-two-player-after-attack-dizzy-open');
+
+        await hostPage.evaluate(() => {
+            (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+        });
+
+        await dizzyCard.hover();
+        await hostPage.waitForTimeout(150);
+        await dizzyCard.click({ force: true });
+
+        const firstClickState = await hostPage.evaluate(({ cardId }) => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const entries = state?.sys?.eventStream?.entries ?? [];
+            const handIds = state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [];
+            return {
+                reject: (window as any).__BG_LAST_COMMAND_REJECTED__ ?? null,
+                played: entries.some((entry: any) => entry.event?.type === 'CARD_PLAYED' && entry.event?.payload?.cardId === cardId),
+                stillInHand: handIds.includes(cardId),
+            };
+        }, { cardId: CARD_DIZZY_ID });
+
+        if (!firstClickState.played && !firstClickState.reject && firstClickState.stillInHand) {
+            await hostPage.waitForTimeout(200);
+            await dizzyCard.click({ force: true });
+        }
+
+        await hostPage.waitForFunction(({ cardId }) => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const reject = (window as any).__BG_LAST_COMMAND_REJECTED__ ?? null;
+            const entries = state?.sys?.eventStream?.entries ?? [];
+            const handIds = state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [];
+            return (reject?.commandType === 'PLAY_CARD')
+                || (!handIds.includes(cardId)
+                    && entries.some((entry: any) => entry.event?.type === 'CARD_PLAYED' && entry.event?.payload?.cardId === cardId));
+        }, { cardId: CARD_DIZZY_ID }, { timeout: 10000, polling: 200 });
+
+        const rejected = await hostPage.evaluate(() => (window as any).__BG_LAST_COMMAND_REJECTED__ ?? null);
+        expect(rejected).toBeNull();
+        await saveEvidenceScreenshot(hostPage, testInfo, '06b-two-player-after-attack-dizzy-played');
+
+        await expect.poll(async () => {
+            const state = await readHarnessState<any>(hostPage);
+            return {
+                responseWindowOpen: Boolean(state?.sys?.responseWindow?.current),
+                lastResolvedAttackDamage: Number(state?.core?.lastResolvedAttackDamage ?? 0),
+                pendingAttack: Boolean(state?.core?.pendingAttack),
+                hostHandIds: state?.core?.players?.['0']?.hand?.map((card: any) => card.id) ?? [],
+                hostDiscardIds: state?.core?.players?.['0']?.discard?.map((card: any) => card.id) ?? [],
+                targetConcussion: state?.core?.players?.['1']?.statusEffects?.[STATUS_IDS.CONCUSSION] ?? 0,
+            };
+        }, {
+            timeout: 15000,
+            message: '等待 card-dizzy 结算后落地脑震荡并关闭 afterAttackResolved 响应窗口',
+        }).toMatchObject({
+            responseWindowOpen: false,
+            pendingAttack: false,
+            targetConcussion: 1,
+        });
+
+        const finalState = await readHarnessState<any>(hostPage);
+        expect(Number(finalState?.core?.lastResolvedAttackDamage ?? 0), '真实攻击结算后的已结算伤害应仍 >= 8').toBeGreaterThanOrEqual(8);
+
+        await saveEvidenceScreenshot(hostPage, testInfo, '06c-two-player-after-attack-dizzy-resolved');
+        await saveLocatorEvidenceScreenshot(opponentHeader, testInfo, '06d-two-player-after-attack-dizzy-opponent-header');
 
         await cleanupDTMatch(setup);
     });

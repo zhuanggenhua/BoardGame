@@ -10,7 +10,7 @@
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 import type { CardDef, BaseCardDef, ActionCardDef, FactionId } from '../../domain/types';
-import { getFactionCards, getAllCardDefs as _getAllCardDefs, getAllBaseDefs as _getAllBaseDefs } from '../../data/cards';
+import { getCardDef, getFactionCards, getAllCardDefs as _getAllCardDefs, getAllBaseDefs as _getAllBaseDefs } from '../../data/cards';
 import { hasAbility, getRegisteredAbilityKeys } from '../../domain/abilityRegistry';
 import { getRegisteredOngoingEffectIds } from '../../domain/ongoingEffects';
 import type { TriggerTiming } from '../../domain/ongoingEffects';
@@ -18,6 +18,7 @@ import { getRegisteredModifierIds } from '../../domain/ongoingModifiers';
 import { hasBaseAbility } from '../../domain/baseAbilities';
 import type { RegisteredBaseTriggerTiming } from '../../domain/baseAbilities';
 import { getRegisteredInteractionHandlerIds } from '../../domain/abilityInteractionHandlers';
+import { getCardDefActivatableAbilities } from '../../domain/activationMetadata';
 
 // ============================================================================
 // 重新导出测试辅助函数
@@ -302,8 +303,7 @@ export const KEYWORD_BEHAVIOR_MAP: Record<string, KeywordBehaviorEntry> = {
     },
     special: {
         keywords: ['特殊', '基地计分前', '基地计分后'],
-        expectedRegistry: 'abilityRegistry',
-        expectedTag: 'special',
+        expectedRegistry: 'specialSemantics',
     },
 
     // ── 持续效果相关 ──
@@ -397,6 +397,62 @@ export function matchKeywordsInDescription(descriptionText: string): KeywordMatc
     return results;
 }
 
+type ScoringWindow = 'beforeScoring' | 'afterScoring';
+
+function inferSpecialWindowFromDescription(descriptionText: string): ScoringWindow | null {
+    if (/基地计分后|在这个基地计分后|在一个基地计分后|计分后/.test(descriptionText)) {
+        return 'afterScoring';
+    }
+    if (/基地计分前|在这个基地计分前|在一个基地计分前|计分前/.test(descriptionText)) {
+        return 'beforeScoring';
+    }
+    return null;
+}
+
+function hasSpecialActivationForWindow(def: CardDef | undefined, window: ScoringWindow | null): boolean {
+    if (!def) return false;
+    const activations = getCardDefActivatableAbilities(def).filter(ability => ability.kind === 'special');
+    if (!window) return activations.length > 0;
+    return activations.some(ability => ability.window === undefined || ability.window === window);
+}
+
+function hasScoringWindowCardMetadata(def: CardDef | undefined, window: ScoringWindow | null): boolean {
+    if (!def) return false;
+    if (def.type === 'minion') {
+        return window === 'beforeScoring' && def.beforeScoringPlayable === true;
+    }
+    if (def.type !== 'action') return false;
+
+    const actionDef = def as ActionCardDef;
+    if (!window) {
+        return actionDef.subtype === 'special'
+            || actionDef.specialTiming === 'beforeScoring'
+            || actionDef.specialTiming === 'afterScoring'
+            || actionDef.responseWindowTiming === 'beforeScoring'
+            || actionDef.responseWindowTiming === 'afterScoring';
+    }
+
+    return actionDef.specialTiming === window || actionDef.responseWindowTiming === window;
+}
+
+export function hasSpecialSemanticsRegistration(
+    defId: string,
+    descriptionText: string,
+): boolean {
+    const def = getCardDef(defId);
+    const ongoing = checkOngoingRegistration(defId);
+    const window = inferSpecialWindowFromDescription(descriptionText);
+    const hasSpecialExecutor = checkAbilityRegistration(defId, 'special').registered;
+    const hasWindowTrigger = window
+        ? ongoing.registries.triggerTimings.includes(window)
+        : ongoing.registries.triggerTimings.includes('beforeScoring') || ongoing.registries.triggerTimings.includes('afterScoring');
+
+    return hasSpecialExecutor
+        || hasSpecialActivationForWindow(def, window)
+        || hasScoringWindowCardMetadata(def, window)
+        || hasWindowTrigger;
+}
+
 /**
  * 验证描述中匹配到的关键词是否在对应注册表中有注册。
  * 返回未注册的匹配项列表（即"描述有但实现缺失"的偏差）。
@@ -416,6 +472,10 @@ export function validateKeywordRegistration(
                 if (match.expectedTag) {
                     registered = checkAbilityRegistration(defId, match.expectedTag).registered;
                 }
+                break;
+            }
+            case 'specialSemantics': {
+                registered = hasSpecialSemanticsRegistration(defId, descriptionText);
                 break;
             }
             case 'ongoingEffects.protection': {
