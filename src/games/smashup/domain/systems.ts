@@ -34,6 +34,7 @@ import {
     getScoringSession,
     mergeDeferredPostScoringCompatibility,
     mirrorDeferredPostScoringToFirstInteraction,
+    updateScoringSession,
 } from './scoringSession';
 import { getCardDef } from '../data/cards';
 
@@ -387,19 +388,18 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
             // 上一轮如果刚补发了 BASE_CLEARED / BASE_REPLACED，需要先等 pipeline 在轮末完成 reduce，
             // 本轮开始时再清掉阻塞标记，允许 FlowSystem 继续自动推进。
             if ((newState.sys as any)[pendingReduceFlag]) {
-                const scoringSession = (newState.sys as any).smashupScoring;
+                newState = updateScoringSession(newState, (scoringSession) => (
+                    scoringSession?.currentStep === 'awaiting-post-reduce'
+                        ? {
+                            ...scoringSession,
+                            currentStep: 'idle',
+                        }
+                        : scoringSession
+                ));
                 newState = {
                     ...newState,
                     sys: {
                         ...newState.sys,
-                        ...(scoringSession?.currentStep === 'awaiting-post-reduce'
-                            ? {
-                                smashupScoring: {
-                                    ...scoringSession,
-                                    currentStep: 'idle',
-                                },
-                            }
-                            : {}),
                         [pendingReduceFlag]: undefined,
                     } as typeof newState.sys,
                 };
@@ -544,9 +544,7 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 // 确保 targetType: 'minion' 的场上点选交互能看到随从
                                 const ctx = payload.interactionData?.continuationContext as Record<string, unknown> | undefined;
                                 const deferred = ctx?._deferredPostScoringEvents as { type: string; payload: unknown; timestamp: number }[] | undefined;
-                                const scoringSession = (newState.sys as typeof newState.sys & {
-                                    smashupScoring?: { currentBaseRef?: unknown; currentStep?: string };
-                                }).smashupScoring;
+                                const scoringSession = getScoringSession(newState);
                                 const scoringSessionOwnsDeferredFlush =
                                     !!scoringSession?.currentBaseRef
                                     && (scoringSession.currentStep === 'awaiting-interactions'

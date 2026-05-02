@@ -1,9 +1,29 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import type { SmashUpCore, SmashUpReactionSession } from './types';
 
-type ReactionSysState = MatchState<SmashUpCore>['sys'] & {
-    smashupReactionSession?: SmashUpReactionSession;
-};
+function getReactionSessionFromResolution(
+    state: MatchState<SmashUpCore>,
+): SmashUpReactionSession | undefined {
+    const resolutionFrames = state.sys.resolution?.frames ?? [];
+    const frameIds = [
+        state.sys.responseWindow?.current?.resolutionFrameId,
+        state.sys.resolution?.activeFrameId,
+        ...resolutionFrames.map((frame) => frame.id).reverse(),
+    ].filter((frameId): frameId is string => !!frameId);
+
+    for (const frameId of frameIds) {
+        const frame = resolutionFrames.find((candidate) => candidate.id === frameId);
+        const session = frame?.metadata?.smashupReactionSession as SmashUpReactionSession | undefined;
+        if (session) {
+            return {
+                ...session,
+                phase: (frame?.step as SmashUpReactionSession['phase'] | undefined) ?? session.phase,
+            };
+        }
+    }
+
+    return undefined;
+}
 
 export interface SmashUpReactionWindowContext {
     windowType: 'meFirst' | 'afterScoring';
@@ -27,7 +47,7 @@ function getClockwiseOrder(turnOrder: PlayerId[], startingPlayerId: PlayerId): P
 export function getSmashUpReactionWindowContext(
     state: MatchState<SmashUpCore>,
 ): SmashUpReactionWindowContext | undefined {
-    const session = (state.sys as ReactionSysState).smashupReactionSession;
+    const session = getReactionSessionFromResolution(state);
     if (session?.responseWindowType) {
         return {
             windowType: session.responseWindowType,
@@ -37,32 +57,13 @@ export function getSmashUpReactionWindowContext(
         };
     }
 
-    const responseWindow = state.sys.responseWindow?.current;
-    if (
-        responseWindow
-        && (responseWindow.windowType === 'meFirst' || responseWindow.windowType === 'afterScoring')
-        && responseWindow.responderQueue?.length
-    ) {
-        const activePlayerId = responseWindow.responderQueue[responseWindow.currentResponderIndex]
-            ?? responseWindow.responderQueue[0];
-        const currentPlayerId = responseWindow.responderQueue[0] ?? activePlayerId;
-        if (!activePlayerId || !currentPlayerId) {
-            return undefined;
-        }
-        return {
-            windowType: responseWindow.windowType,
-            activePlayerId,
-            currentPlayerId,
-        };
-    }
-
     return undefined;
 }
 
 export function getSmashUpReactionWindowPresentation(
     state: MatchState<SmashUpCore>,
 ): SmashUpReactionWindowPresentation | undefined {
-    const session = (state.sys as ReactionSysState).smashupReactionSession;
+    const session = getReactionSessionFromResolution(state);
     const responseWindow = state.sys.responseWindow?.current;
 
     if (session?.responseWindowType) {
@@ -94,9 +95,4 @@ export function getSmashUpReactionWindowPresentation(
         currentResponderIndex: responseWindow.currentResponderIndex,
         passedPlayers: responseWindow.passedPlayers ?? [],
     };
-}
-
-export function hasBlockingLegacyResponseWindow(state: MatchState<SmashUpCore>): boolean {
-    const responseWindow = state.sys.responseWindow?.current;
-    return !!responseWindow && responseWindow.sourceId !== 'smashup_reaction_choose';
 }

@@ -18,6 +18,7 @@ import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { FACTION_DISPLAY_NAMES } from '../domain/ids';
 import { getOpponentLabel } from '../domain/utils';
 import { mergeDeferredPostScoringCompatibility } from '../domain/scoringSession';
+import { getSmashUpReactionSession } from '../domain/reactionSession';
 
 /** 注册海盗派系所有能力*/
 export function registerPirateAbilities(): void {
@@ -1056,11 +1057,9 @@ export function registerPirateInteractionHandlers(): void {
         const hasNextInteraction =
             !!state.sys.interaction?.current
             || (state.sys.interaction?.queue?.length ?? 0) > 0;
-        const reactionSys = state.sys as any;
         const hasPendingReactionWork =
             (state.core.triggerQueue?.length ?? 0) > 0
-            || Boolean(reactionSys?.smashupReactionSession)
-            || (reactionSys?.smashupReactionStack?.length ?? 0) > 0;
+            || Boolean(getSmashUpReactionSession(state));
         const legacyPendingActions = state.core.pendingPostScoringActions ?? [];
         const shouldFlushDeferred = !!(
             deferredEvents

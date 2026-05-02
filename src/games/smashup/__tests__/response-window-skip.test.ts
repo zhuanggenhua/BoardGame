@@ -11,18 +11,14 @@ import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
 import { smashUpSystemsForTest } from '../game';
 import type { MinionOnBase, SmashUpCore } from '../domain/types';
-import { advanceSmashUpReactionSession, startSmashUpReactionSession } from '../domain/reactionSession';
-
-interface ReactionSessionView {
-    responseWindowType?: 'meFirst' | 'afterScoring';
-    activePlayerId: string;
-    currentPlayerId: string;
-}
+import {
+    advanceSmashUpReactionSession,
+    getSmashUpReactionSession,
+    startSmashUpReactionSession,
+} from '../domain/reactionSession';
 
 function getReactionSession(state: MatchState<SmashUpCore>) {
-    return (state.sys as MatchState<SmashUpCore>['sys'] & {
-        smashupReactionSession?: ReactionSessionView;
-    }).smashupReactionSession;
+    return getSmashUpReactionSession(state);
 }
 
 function getCurrentChoice(state: MatchState<SmashUpCore>) {

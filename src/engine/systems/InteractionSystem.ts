@@ -19,7 +19,7 @@ import type { AiHint } from '../ai/types';
 import { resolveCommandTimestamp } from '../utils';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
-import { syncActiveResolutionWithInteraction } from './resolutionStack';
+import { getActiveResolutionFrame, syncActiveResolutionWithInteraction } from './resolutionStack';
 
 function isSamePlayerId(a: unknown, b: unknown): boolean {
     if (a === undefined || a === null || b === undefined || b === null) return false;
@@ -90,6 +90,23 @@ function writeInteractionState<TCore>(
         },
     };
     return decisionChanged ? bumpDecisionEpoch(nextState) : nextState;
+}
+
+function bindInteractionToResolutionFrame<TCore>(
+    state: MatchState<TCore>,
+    interaction: InteractionDescriptor,
+): InteractionDescriptor {
+    if (interaction.resolutionFrameId) {
+        return interaction;
+    }
+    const activeFrameId = getActiveResolutionFrame(state)?.id;
+    if (!activeFrameId) {
+        return interaction;
+    }
+    return {
+        ...interaction,
+        resolutionFrameId: activeFrameId,
+    };
 }
 
 // ============================================================================
@@ -193,6 +210,8 @@ export interface InteractionDescriptor<TData = unknown> {
     id: string;
     kind: string;
     playerId: PlayerId;
+    /** 所属 resolution frame（可选；未提供时由 queueInteraction 绑定当前 active frame） */
+    resolutionFrameId?: string;
     data: TData;
 }
 
@@ -736,6 +755,7 @@ export function queueInteraction<TCore>(
     options?: { urgent?: boolean }, // 新增：urgent 标志
 ): MatchState<TCore> {
     if (!interaction) return state;
+    interaction = bindInteractionToResolutionFrame(state, interaction);
 
     const { current, queue } = state.sys.interaction;
 

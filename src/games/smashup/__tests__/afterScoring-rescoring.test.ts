@@ -9,16 +9,10 @@ import { asSimpleChoice, createSimpleChoice } from '../../../engine/systems/Inte
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
+import { getSmashUpReactionSession, startSmashUpReactionSession } from '../domain/reactionSession';
 import { smashUpSystemsForTest } from '../game';
 import type { MinionOnBase, SmashUpCommand, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-
-interface ReactionSessionView {
-    responseWindowType?: 'meFirst' | 'afterScoring';
-    activePlayerId: string;
-    currentPlayerId: string;
-    sourceBaseIndex?: number;
-}
 
 const PLAYER_IDS: PlayerId[] = ['0', '1'];
 
@@ -56,9 +50,7 @@ function createRunner(
 }
 
 function getReactionSession(state: MatchState<SmashUpCore>) {
-    return (state.sys as MatchState<SmashUpCore>['sys'] & {
-        smashupReactionSession?: ReactionSessionView;
-    }).smashupReactionSession;
+    return getSmashUpReactionSession(state);
 }
 
 function getCurrentChoice(state: MatchState<SmashUpCore>) {
@@ -404,19 +396,26 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
                 [{ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' }],
                 { sourceId: 'existing-base-choice', targetType: 'button' },
             );
-            (sys as typeof sys & { smashupReactionSession?: ReactionSessionView }).smashupReactionSession = {
+            const started = startSmashUpReactionSession({ sys, core }, {
                 frameId: 'score-after:0:test',
-                responseWindowType: 'afterScoring',
+                frameKind: 'score-after',
+                phase: 'optional',
                 activePlayerId: '0',
                 currentPlayerId: '0',
+                consecutivePasses: 0,
                 sourceBaseIndex: 0,
+                responseWindowType: 'afterScoring',
+            });
+            return {
+                ...started,
+                sys: {
+                    ...started.sys,
+                    responseWindow: {
+                        ...(started.sys.responseWindow ?? {}),
+                        current: undefined,
+                    },
+                },
             };
-            sys.responseWindow = {
-                ...(sys.responseWindow ?? {}),
-                current: undefined,
-            };
-
-            return { sys, core };
         });
 
         const directPlay = runner.dispatch(SU_COMMANDS.PLAY_ACTION, {

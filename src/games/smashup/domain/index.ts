@@ -48,7 +48,6 @@ import {
     registerSmashUpReactionPostProcessor,
     startSmashUpReactionSession,
 } from './reactionSession';
-import { hasBlockingLegacyResponseWindow } from './reactionWindowState';
 import { validate } from './commands';
 import { execute, reduce } from './reducer';
 import { getAllBaseDefIds, getBaseDef, getCardDef } from '../data/cards';
@@ -78,13 +77,16 @@ import { createSimpleChoice, queueInteraction } from '../../../engine/systems/In
 import type { SpecialAfterScoringConsumedEvent } from './types';
 import { queueImmediateExtraPlayInteractions } from './extraPlay';
 import {
+    appendScoringFrameDeferredPayload,
     buildPendingPostScoringActionEvents,
     clearScoringSession,
+    consumeScoringFrameDeferredPayload,
     createScoringBaseRef,
     createScoringSession,
     getRemainingScoringBaseRefs,
     getScoringSession,
     markScoringBaseCompleted,
+    mirrorDeferredPostScoringToFirstInteraction,
     resolveScoringBaseRefSlotIndex,
     serializePostScoringEvents,
     setScoringSession,
@@ -260,15 +262,20 @@ function finalizeCurrentScoringBase(
     state: MatchState<SmashUpCore>,
     now: number,
 ): { updatedState: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const session = getScoringSession(state);
+    const consumedDeferred = consumeScoringFrameDeferredPayload(state);
+    const workingState = consumedDeferred.state;
+    const session = getScoringSession(workingState);
     const currentBaseRef = session?.currentBaseRef;
     if (!session || !currentBaseRef) {
-        return { updatedState: state, events: [] };
+        return { updatedState: workingState, events: [] };
     }
     const events: SmashUpEvent[] = [];
 
-    if (session.deferredPostScoringEvents?.length) {
-        events.push(...session.deferredPostScoringEvents.map((event) => ({
+    const deferredEvents = consumedDeferred.deferredEvents.length > 0
+        ? consumedDeferred.deferredEvents
+        : (session.deferredPostScoringEvents ?? []);
+    if (deferredEvents.length > 0) {
+        events.push(...deferredEvents.map((event) => ({
             type: event.type,
             payload: event.payload,
             timestamp: event.timestamp,
@@ -276,19 +283,22 @@ function finalizeCurrentScoringBase(
     }
     const postDeferredCore = events.reduce(
         (core, event) => reduce(core, event),
-        state.core,
+        workingState.core,
     );
 
+    const deferredActions = consumedDeferred.deferredActions.length > 0
+        ? consumedDeferred.deferredActions
+        : (session.pendingPostScoringActions ?? workingState.core.pendingPostScoringActions);
     events.push(
         ...buildPendingPostScoringActionEvents(
             { core: postDeferredCore },
-            session.pendingPostScoringActions ?? state.core.pendingPostScoringActions,
+            deferredActions,
             now,
         ),
     );
 
     const completedState = updateScoringSession(
-        markScoringBaseCompleted(state, currentBaseRef),
+        markScoringBaseCompleted(workingState, currentBaseRef),
         (currentSession) => currentSession
             ? {
                 ...currentSession,
@@ -776,6 +786,20 @@ export function scoreOneBase(
                 }
                 : session,
             );
+            ms = appendScoringFrameDeferredPayload(ms, {
+                deferredEvents: serializedDeferredEvents,
+                deferredActions: ms.core.pendingPostScoringActions ?? [],
+            });
+            if (ms.core.pendingPostScoringActions?.length) {
+                ms = {
+                    ...ms,
+                    core: {
+                        ...ms.core,
+                        pendingPostScoringActions: undefined,
+                    },
+                };
+            }
+            ms = mirrorDeferredPostScoringToFirstInteraction(ms, serializedDeferredEvents);
             const firstInteraction = ms.sys.interaction?.current ?? ms.sys.interaction?.queue?.[0];
             if (firstInteraction?.data) {
                 const data = firstInteraction.data as Record<string, unknown>;
@@ -1592,9 +1616,6 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         }
 
         if (phase === 'scoreBases') {
-            if (hasBlockingLegacyResponseWindow(state)) {
-                return undefined;
-            }
             if (getSmashUpReactionSession(state)) {
                 return undefined;
             }

@@ -10,7 +10,7 @@
 ```bash
 openspec validate dicethrone-token-response --strict --no-interactive
 npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "samurai (honor token|retribution token)"
-npm run test:e2e:ci:file -- dicethrone-token-response-window.e2e.ts "Token 响应窗口真实入口"
+npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-token-response-window.e2e.ts "Token 响应窗口真实入口"
 npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "samurai|枪手 The Law 多目标交互"
 ```
 
@@ -55,13 +55,13 @@ npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "samurai|枪�
 
 ## 2026-03-28 补充结论：真实整局入口已闭环
 
-- `dicethrone-token-response-window.e2e.ts` 不再是“直接注入 token 响应窗口”：
+- `e2e/dicethrone/dicethrone-token-response-window.e2e.ts` 不再是“直接注入 token 响应窗口”：
   - `Honor` 从选角、开局、进攻掷骰、选技、`Defend`、防御掷骰一路推进到 token 响应窗口，再真实点击两次。
   - `Back Strike` 同样从整局真实攻击链推进到防御方响应窗口，再真实点击完成反打。
 - 这轮收口还补了一条测试层稳定性修正：
   - `e2e/helpers/dicethrone.ts` 中 `maybePassResponse` 改为按宽松文本匹配 `PASS` 按钮，不再依赖过严的可访问名称完全匹配。
   - `applyDiceValues` 继续沿用 `diceRegistry` 还原真实 `symbol/symbols`，确保武士技能识别的是实际骰面而不是裸数字。
-- 当前持久化截图证据仍以 `dicethrone-watch-out-spotlight.e2e.ts` 产物为准；`dicethrone-token-response-window.e2e.ts` 这轮主要提供“真实整局入口已跑通”的命令与断言证据。
+- 当前持久化截图证据仍以 `dicethrone-watch-out-spotlight.e2e.ts` 产物为准；`e2e/dicethrone/dicethrone-token-response-window.e2e.ts` 这轮主要提供“真实整局入口已跑通”的命令与断言证据。
 
 ## 截图证据
 

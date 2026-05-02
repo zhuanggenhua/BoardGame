@@ -11,12 +11,12 @@
  * 
  * 根因：
  * - remainingBaseIndices 是 onPhaseExit 的局部变量，每次调用都会重置
- * - halt 后，已记分的基地索引没有被持久化到 sys 状态
+ * - halt 后，“当前计分到哪一步 / 哪些基地已完成 / deferred follow-up 何时继续”没有统一挂在可恢复的结算 frame 上
  * 
  * 修复：
- * - 使用 sys.scoredBaseIndices 跟踪已记分的基地
- * - 每次 onPhaseExit 调用时，过滤掉已记分的基地
- * - 所有基地记分完成后，清理 sys.scoredBaseIndices
+ * - 使用 scoreBases resolution frame 持有 currentBase / completedBases / deferred payload
+ * - 每次恢复计分阶段时都从同一 frame 继续，而不是重新猜测 remainingBaseIndices
+ * - 所有基地计分完成后统一完成该 frame，避免同一基地被再次计分
  */
 
 import { describe, it, expect } from 'vitest';
@@ -123,7 +123,7 @@ describe('Alien Scout - No Duplicate Scoring', () => {
         // 验证：基地上的随从应该为 0
         expect(result.finalState.core.bases[0].minions.length).toBe(0);
         
-        // 注意：scoredBaseIndices 是内部实现细节，在阶段推进完成后才会清理
+        // 注意：当前实现使用 frame-backed scoring session，而不是旧的 scoredBaseIndices 镜像
         // 测试只关心最终结果：不会重复触发交互
         
         // 验证：手牌中只有 1 张侦察兵（不会重复返回）
@@ -164,7 +164,7 @@ describe('Alien Scout - No Duplicate Scoring', () => {
         const scoutCount = result.finalState.core.players['0'].hand.filter(c => c.defId === 'alien_scout').length;
         expect(scoutCount).toBeGreaterThanOrEqual(2);
         
-        // 注意：scoredBaseIndices 是内部实现细节，在阶段推进完成后才会清理
+        // 注意：当前实现使用 frame-backed scoring session，而不是旧的 scoredBaseIndices 镜像
         // 测试只关心最终结果：不会重复触发交互
     });
 });
