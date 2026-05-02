@@ -941,7 +941,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
 
     // 响应窗口状态判断（meFirst 或 afterScoring）
-    const legacyResponseWindow = G.sys.responseWindow?.current;
     const reactionWindow = useMemo(() => getSmashUpReactionWindowPresentation(G), [G]);
     const isMeFirstResponse = useMemo(() => {
         return reactionWindow?.windowType === 'meFirst' && playerID === reactionWindow.activePlayerId;
@@ -2656,7 +2655,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     data-tutorial-id="su-end-turn-btn"
                 >
                     <AnimatePresence>
-                        {isMyTurn && (phase === 'playCards' || (phase === 'scoreBases' && !reactionWindow && !legacyResponseWindow && !G.sys.interaction?.current)) && (
+                        {isMyTurn && (phase === 'playCards' || (phase === 'scoreBases' && !reactionWindow && !G.sys.interaction?.current)) && (
                             <motion.div
                                 initial={{ y: 100, opacity: 0, scale: 0.5 }}
                                 animate={{ y: 0, opacity: 1, scale: 1 }}

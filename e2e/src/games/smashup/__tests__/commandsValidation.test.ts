@@ -6,6 +6,7 @@ import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState }
 import { SU_COMMANDS } from '../domain/types';
 import type { SmashUpReactionSession, TitanState } from '../domain/types';
 import { initAllAbilities } from '../abilities';
+import { startSmashUpReactionSession } from '../domain/reactionSession';
 
 function makeTitan(overrides: Partial<TitanState> & Pick<TitanState, 'uid' | 'defId' | 'faction' | 'ownerId' | 'controllerId'>): TitanState {
     return {
@@ -27,12 +28,7 @@ function attachReactionSession(
     phase: 'playCards' | 'scoreBases' = 'scoreBases',
 ) {
     session.sys.phase = phase;
-    (session.sys as any).smashupReactionSession = reactionSession;
-    session.sys.responseWindow = {
-        ...(session.sys.responseWindow ?? {}),
-        current: undefined,
-    };
-    return session;
+    return startSmashUpReactionSession(session, reactionSession);
 }
 
 beforeAll(() => {
@@ -218,7 +214,7 @@ describe('SmashUp command validation', () => {
         expect(suppressedResult.valid).toBe(false);
     });
 
-    it('uses smashupReactionSession as the truth source for meFirst minion plays', () => {
+    it('uses frame-backed reaction session as the truth source for meFirst minion plays', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -250,7 +246,7 @@ describe('SmashUp command validation', () => {
         expect(result.valid).toBe(true);
     });
 
-    it('uses smashupReactionSession as the truth source for afterScoring action plays', () => {
+    it('uses frame-backed reaction session as the truth source for afterScoring action plays', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -326,6 +322,41 @@ describe('SmashUp command validation', () => {
         expect(result.valid).toBe(true);
     });
 
+    it('uses smashupReactionSession as the truth source for scoreBases minion special activation order', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'test_base',
+                    minions: [makeMinion('acolyte-1', 'ninja_acolyte', '1', 2)],
+                }),
+            ],
+            scoringEligibleBaseIndices: [0],
+            currentPlayerIndex: 0,
+        });
+        const ms = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-before:0:test',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: '1',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'meFirst',
+        });
+
+        const result = validate(ms, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '1',
+            payload: { minionUid: 'acolyte-1', baseIndex: 0 },
+        } as any);
+
+        expect(result.valid).toBe(true);
+    });
+
     it('afterScoring 响应窗口中的 special 只能指向当前正在结算的基地', () => {
         registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
         const core = makeState({
@@ -378,7 +409,7 @@ describe('SmashUp command validation', () => {
         expect(correctBaseResult.valid).toBe(true);
     });
 
-    it('still blocks scoreBases special activation behind a legacy response window', () => {
+    it('ignores orphaned responseWindow state without a frame-backed reaction session', () => {
         const core = makeState({
             bases: [
                 makeBase({
@@ -409,7 +440,7 @@ describe('SmashUp command validation', () => {
             payload: { minionUid: 'acolyte-1', baseIndex: 0 },
         } as any);
 
-        expect(result.valid).toBe(false);
+        expect(result.valid).toBe(true);
     });
 
     it('rejects deputy special activation because its effect is not a manual on-board special', () => {

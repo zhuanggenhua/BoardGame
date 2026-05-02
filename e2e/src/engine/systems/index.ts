@@ -19,7 +19,33 @@ export { createEventStreamSystem, getEventStreamEntries } from './EventStreamSys
 export { createActionLogSystem, type ActionLogSystemConfig } from './ActionLogSystem';
 export { createRematchSystem, resetRematchState, getPlayerVote, isRematchReady, getVotedPlayers, REMATCH_COMMANDS } from './RematchSystem';
 export { createResponseWindowSystem, createResponseWindow, openResponseWindow, closeResponseWindow, hasActiveResponseWindow, getResponseWindowResponderId, RESPONSE_WINDOW_COMMANDS, RESPONSE_WINDOW_EVENTS } from './ResponseWindowSystem';
-export { getResolutionState, getActiveResolutionFrame, upsertActiveResolutionFrame, updateActiveResolutionFrame, clearResolutionFrame, setActiveResolutionBlock, clearActiveResolutionBlock, syncActiveResolutionWithInteraction, syncActiveResolutionWithResponseWindow, hasBlockingResolutionFrame } from './resolutionStack';
+export {
+    getResolutionState,
+    getResolutionFrames,
+    getResolutionFrameById,
+    getActiveResolutionFrame,
+    getActiveResolutionOwner,
+    getResolutionOwnerToken,
+    upsertResolutionFrame,
+    upsertActiveResolutionFrame,
+    pushResolutionFrame,
+    updateResolutionFrame,
+    updateActiveResolutionFrame,
+    setResolutionFrameDeferredPayload,
+    appendResolutionFrameDeferredPayload,
+    consumeResolutionFrameDeferredPayload,
+    setResolutionFrameOwner,
+    setActiveResolutionOwner,
+    completeResolutionFrame,
+    clearResolutionFrame,
+    setResolutionFrameBlock,
+    setActiveResolutionBlock,
+    clearResolutionFrameBlock,
+    clearActiveResolutionBlock,
+    syncActiveResolutionWithInteraction,
+    syncActiveResolutionWithResponseWindow,
+    hasBlockingResolutionFrame,
+} from './resolutionStack';
 export { createCheatSystem, CHEAT_COMMANDS, type CheatResourceModifier, type AddResourcePayload, type SetResourcePayload, type SetPhasePayload, type SetDicePayload } from './CheatSystem';
 export { createTutorialSystem, TUTORIAL_COMMANDS, TUTORIAL_EVENTS, TUTORIAL_ERRORS } from './TutorialSystem';
 export { CharacterSelectionSystem, CHARACTER_SELECTION_COMMANDS, type CharacterSelectionSystemConfig, type SelectCharacterCommand, type PlayerReadyCommand, type PlayerUnreadyCommand, type HostStartGameCommand, type CharacterSelectedEvent, type PlayerReadyEvent, type PlayerUnreadyEvent, type HostStartedEvent } from './CharacterSelectionSystem';

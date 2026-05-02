@@ -232,6 +232,8 @@ export interface ResponseWindowState {
         responderQueue: PlayerId[];
         /** 当前响应者索引 */
         currentResponderIndex: number;
+        /** 所属 resolution frame（可选；未提供时由系统回退到当前 active frame） */
+        resolutionFrameId?: string;
         /** 已跳过的玩家 */
         passedPlayers: PlayerId[];
         /** 交互锁：阻止推进直到交互完成（存储交互 ID） */
@@ -247,9 +249,33 @@ export interface ResponseWindowState {
  * 连续结算阻塞来源
  */
 export interface ResolutionBlocker {
-    type: 'interaction' | 'response-window' | 'post-reduce' | 'external';
+    type: 'interaction' | 'response-window' | 'post-reduce' | 'external' | 'child-frame';
     id?: string;
     reason?: string;
+}
+
+export type ResolutionOrdering =
+    | 'stack'
+    | 'queue'
+    | 'explicit'
+    | 'nested-body'
+    | 'explicit-order'
+    | 'responder-round';
+
+export type ResolutionStatus =
+    | 'running'
+    | 'blocked'
+    | 'suspended'
+    | 'completed';
+
+export interface ResolutionOwnerRef {
+    system: 'interaction' | 'response-window' | 'modal' | 'game' | 'external';
+    id: string;
+    kind?: string;
+    gameId?: string;
+    namespace?: string;
+    resolutionFrameId?: string;
+    blocksProgress?: boolean;
 }
 
 /**
@@ -263,8 +289,16 @@ export interface ResolutionFrame {
     kind: string;
     ownerGame?: string;
     ownerSystem?: string;
-    ordering: 'stack' | 'queue' | 'explicit';
-    status: 'running' | 'blocked' | 'completed';
+    /** 供 UI / Interaction / ResponseWindow 对齐 owner 时使用的稳定 token */
+    ownerToken?: string;
+    /** 当前前台阻塞 owner；仅表达前台 ownership，不表达业务完成 */
+    foregroundOwner?: ResolutionOwnerRef;
+    /** 父 frame；child 完成后优先恢复该父 frame */
+    parentFrameId?: string;
+    /** 当当前 frame 让父 frame 挂起时，记录被当前 frame 挂起的来源 */
+    suspendedByFrameId?: string;
+    ordering: ResolutionOrdering;
+    status: ResolutionStatus;
     step?: string;
     phase?: string;
     phaseGate?: 'none' | 'block-advance-when-blocked';
@@ -443,20 +477,6 @@ export interface SystemState {
     flowHalted?: boolean;
     /** 游戏结束结果（由管线在每次命令执行后自动检测并写入） */
     gameover?: GameOverResult;
-    /** SmashUp: scoreBases 结算会话（当前为通用 resolution frame 的游戏专属镜像） */
-    smashupScoring?: {
-        lockedBaseRefs: Array<{ slotIndex: number; baseDefId: string }>;
-        completedBaseRefs: Array<{ slotIndex: number; baseDefId: string }>;
-        currentBaseRef?: { slotIndex: number; baseDefId: string };
-        currentStep: string;
-        deferredPostScoringEvents?: Array<{ type: string; payload: unknown; timestamp: number }>;
-        afterScoringInitialPowers?: {
-            baseRef: { slotIndex: number; baseDefId: string };
-            powers: Record<string, number>;
-        };
-    };
-    /** SmashUp: 记分阶段已记分的基地索引（防止 halt 后重复记分） */
-    scoredBaseIndices?: number[];
     /** SmashUp: postProcessSystemEvents 去重标记（防止 MINION_PLAYED/ACTION_PLAYED 被处理两次） */
     _processedPlayedEvents?: Set<string>;
     /** SmashUp: postProcessSystemEvents 去重标记（防止 MINION_DESTROYED 被处理两次） */

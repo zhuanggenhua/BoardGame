@@ -20,6 +20,7 @@ import { asSimpleChoice, INTERACTION_COMMANDS } from '../../../engine/systems/In
 import { makeMinion, makeBase, makePlayer, makeCard } from './helpers';
 import { smashUpSystemsForTest } from '../game';
 import { createInitialSystemState, executePipeline } from '../../../engine/pipeline';
+import { getSmashUpReactionSession } from '../domain/reactionSession';
 import { defaultTestRandom, runCommand } from './testRunner';
 
 function findOption(choice: any, predicate: (opt: any) => boolean): string {
@@ -712,7 +713,7 @@ describe('多基地同时计分 afterScoring 触发问题', () => {
         const finalState = chain.finalState;
         expect(finalState.sys.phase).toBe('playCards');
         expect(finalState.sys.responseWindow?.current).toBeUndefined();
-        expect((finalState.sys as any).smashupReactionSession).toBeUndefined();
+        expect(getSmashUpReactionSession(finalState)).toBeUndefined();
         expect(finalState.sys.interaction?.current).toBeUndefined();
         expect(finalState.sys.interaction?.queue ?? []).toHaveLength(0);
         expect(finalState.core.bases[0].defId).toBe('base_central_brain');

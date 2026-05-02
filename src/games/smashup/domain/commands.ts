@@ -23,7 +23,7 @@ import { canPlayFromDiscard } from './discardPlayability';
 import { canActivateSpecialFromDiscard } from './discardSpecialAbilities';
 import { getTitanByUid, isSpecialLimitBlocked } from './abilityHelpers';
 import { canUseActiveBaseAbility, getActiveBaseAbilityOptions, hasActiveBaseAbility } from './baseAbilities';
-import { getActionPlayRestrictionError, getMinionPlayRestrictionError, validateActionPlaySemantics } from './playLegality';
+import { getActionPlayRestrictionError, validateActionPlaySemantics } from './playLegality';
 import { resolveOngoingActivation, resolveSpecial, resolveTalent, validateSpecialUse, validateTalentUse } from './abilityRegistry';
 import { validateTitanOngoingActivation, validateTitanSpecialActivation, validateTitanTalentUse } from './titanAbilityValidators';
 import { hasCardActivatableAbility } from './activationMetadata';
@@ -70,11 +70,9 @@ function getManualSpecialAvailability(
 }
 
 function getAfterScoringSourceBaseIndex(state: MatchState<SmashUpCore>): number | undefined {
-    const session = (state.sys as MatchState<SmashUpCore>['sys'] & {
-        smashupReactionSession?: { responseWindowType?: 'meFirst' | 'afterScoring'; sourceBaseIndex?: number };
-    }).smashupReactionSession;
-    if (session?.responseWindowType !== 'afterScoring') return undefined;
-    return typeof session.sourceBaseIndex === 'number' ? session.sourceBaseIndex : undefined;
+    const reactionWindow = getSmashUpReactionWindowContext(state);
+    if (reactionWindow?.windowType !== 'afterScoring') return undefined;
+    return typeof reactionWindow.sourceBaseIndex === 'number' ? reactionWindow.sourceBaseIndex : undefined;
 }
 
 function resolveTitanAbilityLabel(kind: TitanAbilityKind): string {
@@ -971,9 +969,6 @@ export function validate(
                     const eligibleIndices = getScoringEligibleBaseIndices(core);
                     if (!eligibleIndices.includes(spBaseIndex)) {
                         return { valid: false, error: '鍙兘鍦ㄨ揪鍒颁复鐣岀偣鐨勫熀鍦颁笂婵€娲昏鍒嗗墠鐗规畩鑳藉姏' };
-                    }
-                    if (hasBlockingLegacyResponseWindow(state)) {
-                        return { valid: false, error: 'Me First! 鍝嶅簲绐楀彛浠嶅湪杩涜涓?' };
                     }
                 }
                 return { valid: true };

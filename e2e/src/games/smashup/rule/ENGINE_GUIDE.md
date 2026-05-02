@@ -73,10 +73,10 @@
 - **当前架构落点**：
   - 交互处理器在 `systems.ts` 中消费 `SYS_INTERACTION_RESOLVED` 后继续产出领域事件；
   - `resolveInteraction()` 负责弹出旧交互并推进后续交互；
-  - 计分链额外用 `smashupScoring.currentStep + deferredPostScoringEvents` 挂住被打断的外层流程。
+  - 计分链额外用 `scoreBases` resolution frame 的 `step + deferredEvents/deferredActions` 挂住被打断的外层流程。
 - **当前状态**：
   - **部分已实现**：像“本体里额外打牌/选牌/移动后继续原本体”的链路大多能跑通；
-  - **仍有系统性风险**：这个“嵌套本体优先”目前主要靠交互链 + 局部 session 挂起恢复，不是一个独立的通用 resolution stack 规则层；复杂插队时容易出现“旧窗口未清 / 新窗口已入队 / 继续点却无效”。
+  - **当前收敛口径**：复杂插队的恢复位点已经优先挂到通用 resolution frame；`reactionSession.ts` / `scoringSession.ts` 现在主要承担 SmashUp 视图投影与 helper，而不是第二套 sys 主链。
 
 #### 第 3 步：处理被本体触发的在场强制能力，多个时由当前玩家决定顺序
 

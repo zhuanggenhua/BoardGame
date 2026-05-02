@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
+import type { ResolutionOwnerRef } from '../engine/types';
 
 // 渲染函数由调用方提供，close 与遮罩策略由栈统一注入
 type ModalRender = (api: { close: () => void; closeOnBackdrop: boolean }) => ReactNode;
@@ -7,6 +8,8 @@ type ModalRender = (api: { close: () => void; closeOnBackdrop: boolean }) => Rea
 export interface ModalEntry {
     id: string;
     render: ModalRender;
+    /** 当前前台 UI 对应的业务 owner；仅表达 ownership，不表达业务完成 */
+    owner?: ResolutionOwnerRef;
     // 默认行为：不配置则启用 ESC / 遮罩关闭 / 滚动锁
     closeOnEsc?: boolean;
     closeOnBackdrop?: boolean;
@@ -20,6 +23,7 @@ export interface ModalEntry {
 
 interface ModalStackContextValue {
     stack: ModalEntry[];
+    topOwner?: ResolutionOwnerRef;
     openModal: (entry: Omit<ModalEntry, 'id'> & { id?: string }) => string;
     updateModal: (id: string, entry: Omit<ModalEntry, 'id'>) => void;
     closeModal: (id: string) => void;
@@ -132,7 +136,17 @@ export const ModalStackProvider = ({ children }: { children: ReactNode }) => {
     }, [enqueueOnClose, logModalAction]);
 
     const value = useMemo(
-        () => ({ stack, openModal, updateModal, closeModal, closeTop, replaceTop, closeAll, closeByNamespace }),
+        () => ({
+            stack,
+            topOwner: stack[stack.length - 1]?.owner,
+            openModal,
+            updateModal,
+            closeModal,
+            closeTop,
+            replaceTop,
+            closeAll,
+            closeByNamespace,
+        }),
         [stack, openModal, updateModal, closeModal, closeTop, replaceTop, closeAll, closeByNamespace]
     );
 

@@ -12,6 +12,26 @@ import { SmashUpDomain, smashUpSystemsForTest } from '../game';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent, MinionOnBase } from '../domain/types';
 import { SU_EVENT_TYPES } from '../domain/events';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import { startSmashUpReactionSession } from '../domain/reactionSession';
+
+function attachFrameBackedAfterScoringSession(
+    state: { core: SmashUpCore; sys: ReturnType<typeof createInitialSystemState> },
+) {
+    const nextState = startSmashUpReactionSession(state, {
+        frameId: 'score-after:0:test',
+        frameKind: 'score-after',
+        phase: 'optional',
+        activePlayerId: '0',
+        currentPlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex: 0,
+        responseWindowType: 'afterScoring',
+    });
+    return {
+        core: nextState.core,
+        sys: nextState.sys,
+    };
+}
 
 describe('afterScoring 响应窗口中打出卡牌的执行', () => {
     it('afterScoring 响应窗口中的重返深海不能指向其他达标基地', () => {
@@ -69,22 +89,7 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
                 ];
                 core.players['1'].hand = [];
 
-                (sys as any).smashupReactionSession = {
-                    frameId: 'score-after:0:test',
-                    frameKind: 'score-after',
-                    phase: 'optional',
-                    activePlayerId: '0',
-                    currentPlayerId: '0',
-                    consecutivePasses: 0,
-                    sourceBaseIndex: 0,
-                    responseWindowType: 'afterScoring',
-                };
-                sys.responseWindow = {
-                    ...(sys.responseWindow ?? {}),
-                    current: undefined,
-                };
-
-                return { core, sys };
+                return attachFrameBackedAfterScoringSession({ core, sys });
             },
         });
 
@@ -156,22 +161,7 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
                 ];
                 core.players['1'].hand = [];
                 
-                (sys as any).smashupReactionSession = {
-                    frameId: 'score-after:0:test',
-                    frameKind: 'score-after',
-                    phase: 'optional',
-                    activePlayerId: '0',
-                    currentPlayerId: '0',
-                    consecutivePasses: 0,
-                    sourceBaseIndex: 0,
-                    responseWindowType: 'afterScoring',
-                };
-                sys.responseWindow = {
-                    ...(sys.responseWindow ?? {}),
-                    current: undefined,
-                };
-                
-                return { core, sys };
+                return attachFrameBackedAfterScoringSession({ core, sys });
             },
         });
 
@@ -262,22 +252,7 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
                 ];
                 core.players['1'].hand = [];
                 
-                (sys as any).smashupReactionSession = {
-                    frameId: 'score-after:0:test',
-                    frameKind: 'score-after',
-                    phase: 'optional',
-                    activePlayerId: '0',
-                    currentPlayerId: '0',
-                    consecutivePasses: 0,
-                    sourceBaseIndex: 0,
-                    responseWindowType: 'afterScoring',
-                };
-                sys.responseWindow = {
-                    ...(sys.responseWindow ?? {}),
-                    current: undefined,
-                };
-                
-                return { core, sys };
+                return attachFrameBackedAfterScoringSession({ core, sys });
             },
         });
 
@@ -304,7 +279,7 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
         expect(hasInteraction).toBe(true);
     });
 
-    it('只有 smashupReactionSession 时打出"我们乃最强"也应立即执行能力', () => {
+    it('只有 frame-backed reaction frame 时打出"我们乃最强"也应立即执行能力', () => {
         const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain,
             systems: smashUpSystemsForTest,
@@ -364,22 +339,7 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
                 ];
                 core.players['1'].hand = [];
 
-                (sys as any).smashupReactionSession = {
-                    frameId: 'score-after:0:test',
-                    frameKind: 'score-after',
-                    phase: 'optional',
-                    activePlayerId: '0',
-                    currentPlayerId: '0',
-                    consecutivePasses: 0,
-                    sourceBaseIndex: 0,
-                    responseWindowType: 'afterScoring',
-                };
-                sys.responseWindow = {
-                    ...(sys.responseWindow ?? {}),
-                    current: undefined,
-                };
-
-                return { core, sys };
+                return attachFrameBackedAfterScoringSession({ core, sys });
             },
         });
 

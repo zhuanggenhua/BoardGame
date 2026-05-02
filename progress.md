@@ -865,3 +865,30 @@
   - `temp/feedback-cleanup-audit-2026-04-24.md` 更新最终结论
   - `findings.md` 更新收口复核结论
 - 最终结论：`Feedback cleanup audit` 已完成收口。
+
+## Addendum（2026-05-02）：游戏控制流栈化重构收口
+- 已完成 `refactor-game-control-flow-stack-system` 变更下 SmashUp / DiceThrone / SummonerWars 的目标收口：
+  - SmashUp：`afterScoring`、多基地计分、reaction choose、auto-finish 链路已按新 frame 语义通过 E2E；
+  - DiceThrone：blocking modal foreground ownership 已对齐到 resolution owner；
+  - SummonerWars：仅在 spec/design 中登记为历史反模式与 deferred migration，不改实现。
+- 已补齐并通过的 SmashUp E2E：
+  - `e2e/smashup/smashup-complex-multi-base-scoring.e2e.ts`
+  - `e2e/smashup/smashup-afterscoring-simple-complete.e2e.ts`
+  - `e2e/smashup/smashup-multi-base-scoring-complete.e2e.ts`
+- 已创建证据文档：
+  - `evidence/smashup/smashup-control-flow-stack-e2e-2026-05-02.md`
+- 已删除根目录重复旧 E2E 副本，避免 canonical 测试文件继续分叉。
+- 2026-05-02 进一步补齐 DiceThrone 复杂链路回归：
+  - `e2e/dicethrone/dicethrone-simple-start.e2e.ts` — `Online 4-player The Law variant: upgraded Deadeye offers all target players in 2v2 and resolves on two selected targets` → `passed`
+  - `e2e/dicethrone-status-interaction-complete.e2e.ts` — `simple-choice 关闭后，应恢复排队的 token 响应窗口并允许继续收口` → `passed`
+  - `e2e/dicethrone/dicethrone-token-response-window.e2e.ts` — `samurai honor pass should close response window without reopen` → `passed`
+- 已新增 DiceThrone 栈化回归证据：
+  - `evidence/dicethrone/dicethrone-control-flow-stack-e2e-2026-05-02.md`
+- 本轮额外探测过根目录旧副本 `e2e/dicethrone-token-response-window.e2e.ts` 中 `samurai honor should open from real attack flow and resolve by two clicks`：
+  - 失败现象显示它仍带着旧链路假设（会把不可防御攻击 / 旧 UI 响应入口当成当前契约）；
+  - 本轮未保留任何针对该旧副本的实现性修补，避免把未验证的测试试探混入正式收口范围；
+  - 当前 DiceThrone 收口仍以 **canonical 子目录 E2E + 已落证据的 3 条复杂链路** 为准。
+- 后续清理：
+  - 已删除根目录历史重复旧副本 `e2e/dicethrone-token-response-window.e2e.ts`
+  - 已把相关证据文档中的命令/路径统一回写到 `e2e/dicethrone/dicethrone-token-response-window.e2e.ts`
+  - `e2e/dicethrone-simple-start.e2e.ts` 与 `e2e/dicethrone-status-interaction-complete.e2e.ts` 目前仍承载独立覆盖面，**本轮未误删**

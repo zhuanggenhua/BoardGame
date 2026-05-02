@@ -13,31 +13,37 @@
    - `ResponseWindowSystem` 有 responder loop / interaction lock
    - `FlowSystem` 已经用 `hasBlockingResolutionFrame()` 阻止错误 auto-advance
 
-3. **resolutionStack 仍然只是骨架，不是完整 driver**
-   - `src/engine/systems/resolutionStack.ts` 目前只有 active frame / block / unblock / phase gate
-   - 还没有 parent/child 嵌套恢复、顺序策略驱动、deferred follow-up 单一所有权
+3. **resolutionStack 原先只是 block gate 骨架，需要升级为真正 driver**
+   - 旧实现只有 active frame / block / unblock / phase gate
+   - 本轮要补 parent/child 嵌套恢复、顺序策略驱动、deferred follow-up 单一所有权、foreground owner 对齐
 
-4. **大杀四方的主结算链仍是游戏私有**
-   - `reactionSession.ts` 仍维护 `smashupReactionSession / smashupReactionStack`
-   - `scoringSession.ts` 仍维护 `currentStep / deferredPostScoringEvents / pendingPostScoringActions`
-   - `ENGINE_GUIDE.md` 已明确：Card Resolution Order 第 4 步目前只有 score 相关窗口，缺少通用建模
+4. **大杀四方必须把主恢复权收束进通用 frame**
+   - `reactionSession.ts` / `scoringSession.ts` 可以保留游戏专属 helper / view model
+   - 但“当前结算到哪一步 / 被谁打断 / deferred follow-up 何时恢复”必须落到 resolution frame，而不是 sys 私有镜像
 
-5. **召唤师战争已经证明：本地 UI route 不能再当唯一真相源**
-   - `systemInteractionAdapter.ts` 现在就是“把系统交互还原成 UI 路由”的桥
-   - 这说明未来方向应该是继续强化统一交互系统，而不是再造每游戏私有 mode stack
+5. **王权骰铸已经证明“前台栈”与“业务主链”是两个层面**
+   - modal stack 已经能解决 blocking UI 前台切换
+   - 但它还不是业务恢复权威；如果直接把 UI 栈当主链，会把“视觉关闭”误当成“业务完成”
+
+6. **SummonerWars 现状只能当历史兼容事实，不能当新范式**
+   - 某些 adapter / route 还带着旧式桥接痕迹
+   - 但用户明确说明它现在没有 bug，本轮不应该为了架构洁癖把它拖进实现
+   - 正确做法是：在 spec 中把这类桥接写成历史反模式与 deferred migration，而不是继续复制到新游戏
 
 ## Goals / Non-Goals
 - Goals:
   - 建立唯一业务主链：resolution frame stack
   - 保留并升级现有 Modal / Interaction / ResponseWindow / Flow，而不是平行重造
-  - 明确三种顺序语义：嵌套本体优先、显式顺序、顺时针响应轮
+  - 明确三种顺序语义：嵌套本体优先、显式顺序链、顺时针响应轮
   - 让候选有效性、deferred follow-up、恢复位点进入统一权威
-  - 用王权骰铸 / 大杀四方 / 召唤师战争三个真实样本验收
+  - 用 **SmashUp + DiceThrone** 两个真实问题样本验证最小可扩展原语
+  - 把 SummonerWars 明确登记为历史桥接反模式 / deferred migration，避免它继续污染未来 100 游戏范式
 - Non-Goals:
   - 不把所有系统硬塞进“一个栈结构”
   - 不要求所有游戏本轮全部迁完
   - 不在 spec 阶段设计新的平行 UI 框架
-  - 不把“通用可选响应窗口”写成抽象黑盒而回避具体规则时机
+  - 不把没有现实 bug 的 SummonerWars 拉进本轮强制实现与验收
+  - 不为了“看起来统一”而写 SmashUp / DiceThrone 特判式框架
 
 ## Decision 1: 不是一个栈吃掉一切，而是四层系统围绕同一主链协作
 
@@ -62,7 +68,7 @@
 - 替游戏保存第二套 continuation 主链；
 - 决定 deferred follow-up 补发。
 
-### 3. Response Window System
+### 3. ResponseWindow System
 只负责：
 - 某个 frame 当前是否进入响应轮；
 - 当前响应者是谁；
@@ -154,7 +160,7 @@
 1. 只有 UI 栈，没有业务链 → 关掉后业务不知道该恢复哪里；
 2. 让 UI 栈直接当业务链 → 视觉关闭就被误判为业务已完成。
 
-## Decision 6: 三个游戏的职责分工
+## Decision 6: 本轮只用两个真实问题游戏做强制验收，第三类历史模式只做登记
 
 ### 王权骰铸：验证“多阻塞前台 + 恢复顺序”
 必须验证：
@@ -171,24 +177,25 @@
 - 当前玩家起顺时针的可选响应轮；
 - stale 候选不能继续显示或执行。
 
-### 召唤师战争：验证“统一交互系统回归”
-必须验证：
-- 多步 interaction 仍由 `sys.interaction` 驱动；
-- UI route / local mode 只做视图适配，不再成为唯一真相源；
-- 代表性 E2E 重跑后不回归。
+### 召唤师战争：本轮只登记为 deferred migration / anti-pattern
+本轮要求：
+- 不改实现；
+- 不纳入强制验收矩阵；
+- 在 spec / design 中明确：现有 route / adapter 式桥接只能作为历史兼容事实，不能继续作为新游戏或新重构的参考范式。
 
 ## Risks / Trade-offs
 - 若把 resolution stack 继续做成“只有 blocked gate”，会再次回到每游戏私有续链。
 - 若把 Modal / Interaction / ResponseWindow 全塞进同一状态对象，会丢失现有系统的清晰边界。
 - 若不把 stale candidate 规则上升到框架层，只修 SmashUp 单点，其他游戏会重复踩坑。
+- 若把 SummonerWars 也强行纳入本轮实现，会显著放大改动面与验证成本，反而损害“只做必要部分”的目标。
 
 ## Migration Plan
-1. 先通过 spec 固化边界与验收矩阵；
+1. 先通过 spec 固化边界、最小原语与两游戏验收矩阵；
 2. 在引擎层把 `resolutionStack` 升级为真正的 frame driver；
 3. 先迁移大杀四方的计分链、reaction session、response round；
 4. 对齐王权骰铸前台阻塞 ownership；
-5. 复核召唤师战争 adapter 与 interaction route；
-6. 完成三游戏 E2E 与大部分回归重跑后，再扩到其他复杂游戏。
+5. 把 SummonerWars 登记为历史桥接反模式 / deferred migration；
+6. 完成 Engine + SmashUp + DiceThrone 验证后，再决定是否扩到其他复杂游戏。
 
 ## Open Questions
 - `resolution frame` 的 ordering 枚举最终命名采用 `nested-body / explicit-order / responder-round`，还是保留更底层的 `stack / explicit / loop`？

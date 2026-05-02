@@ -25,6 +25,8 @@ import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { SmashUpDomain, smashUpSystemsForTest } from '../game';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
+import { startSmashUpReactionSession } from '../domain/reactionSession';
+import { getScoringSession } from '../domain/scoringSession';
 import { defaultTestRandom } from './testRunner';
 
 beforeAll(() => {
@@ -762,7 +764,7 @@ describe('afterScoring 延迟清场回归', () => {
         expect(finalCore?.players['0'].discard.some(card => card.uid === 'archmage')).toBe(false);
     });
 
-    it('scoreBases 因 afterScoring 响应窗口 halt 时应保留 scoredBaseIndices', () => {
+    it('scoreBases 因 afterScoring 响应窗口 halt 时应保留当前 scoring frame', () => {
         const state = wrapState(makeCore({
             players: {
                 '0': makePlayer('0', {
@@ -800,8 +802,8 @@ describe('afterScoring 延迟清场回归', () => {
         const reactionChoice = asSimpleChoice(result.updatedState?.sys.interaction?.current)!;
         expect(reactionChoice).toBeTruthy();
         expect(reactionChoice.sourceId).toBe('smashup_reaction_choose');
-        expect((result.updatedState?.sys as any).smashupScoring?.currentBaseRef?.slotIndex).toBe(0);
-        expect(result.updatedState?.sys.scoredBaseIndices).toEqual([0]);
+        expect(getScoringSession(result.updatedState!)?.currentBaseRef?.slotIndex).toBe(0);
+        expect(getScoringSession(result.updatedState!)?.completedBaseRefs.map((ref) => ref.slotIndex)).toEqual([]);
     });
 
     it('scoreBases 在 afterScoring 响应窗口打开时，不应因 eligibleIndices 为空而自动推进', () => {
@@ -819,7 +821,7 @@ describe('afterScoring 延迟清场回归', () => {
         }));
 
         state.sys.flowHalted = true;
-        (state.sys as any).smashupReactionSession = {
+        const started = startSmashUpReactionSession(state, {
             frameId: 'test-after-scoring',
             frameKind: 'score-after',
             phase: 'optional',
@@ -828,10 +830,10 @@ describe('afterScoring 延迟清场回归', () => {
             consecutivePasses: 0,
             sourceBaseIndex: 0,
             responseWindowType: 'afterScoring',
-        };
+        });
 
         const result = smashUpFlowHooks.onAutoContinueCheck?.({
-            state,
+            state: started,
             events: [],
             random: (() => 0.5) as any,
         });

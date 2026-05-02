@@ -18,6 +18,7 @@ import { describe, it, expect } from 'vitest';
 import { smashUpFlowHooks } from '../domain';
 import type { MatchState } from '../../../engine/types';
 import type { SmashUpCore } from '../domain/types';
+import { getScoringSession } from '../domain/scoringSession';
 
 describe('托尔图加计分 - 海盗王移动后 flowHalted 清除', () => {
     it('flowHalted=true 且交互已解决时,应该清除 flowHalted 并进入 awaiting-post-reduce', () => {
@@ -104,7 +105,7 @@ describe('托尔图加计分 - 海盗王移动后 flowHalted 清除', () => {
             expect(result.updatedState.sys.flowHalted).toBe(false);
             expect(result.updatedState.sys.interaction?.current).toBeUndefined();
             expect(result.updatedState.sys.responseWindow?.current).toBeUndefined();
-            expect((result.updatedState.sys as any).smashupScoring).toMatchObject({
+            expect(getScoringSession(result.updatedState)).toMatchObject({
                 currentStep: 'awaiting-post-reduce',
                 lockedBaseRefs: [{ slotIndex: 0, baseDefId: 'base_tortuga' }],
                 completedBaseRefs: [{ slotIndex: 0, baseDefId: 'base_tortuga' }],
@@ -172,7 +173,7 @@ describe('托尔图加计分 - 海盗王移动后 flowHalted 清除', () => {
                 expect(result.updatedState.sys.phase).toBe('scoreBases');
                 expect(result.updatedState.sys.flowHalted).toBe(true);
                 expect(result.updatedState.sys.interaction?.current).toBeTruthy();
-                expect((result.updatedState.sys as any).smashupScoring).toMatchObject({
+                expect(getScoringSession(result.updatedState)).toMatchObject({
                     currentStep: 'idle',
                     lockedBaseRefs: [{ slotIndex: 0, baseDefId: 'base_tortuga' }],
                     completedBaseRefs: [],

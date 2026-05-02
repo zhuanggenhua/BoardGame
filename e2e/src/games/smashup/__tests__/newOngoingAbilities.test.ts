@@ -33,6 +33,7 @@ import type { AbilityContext } from '../domain/abilityRegistry';
 import { validate } from '../domain/commands';
 import { SU_COMMANDS } from '../domain/types';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
 
@@ -761,24 +762,24 @@ describe('pirate_first_mate afterScoring', () => {
             timestamp: 101,
         } as any);
 
-        const ms = {
+        const ms = startSmashUpReactionSession({
             core: { ...movedCore, triggerQueue: [trigger!] },
             sys: {
                 phase: 'scoreBases',
                 interaction: { current: undefined, queue: [] },
                 responseWindow: { current: undefined },
-                smashupReactionSession: {
-                    frameId: trigger!.frameId ?? trigger!.id,
-                    frameKind: 'score-after',
-                    phase: 'optional',
-                    activePlayerId: '0',
-                    currentPlayerId: '0',
-                    consecutivePasses: 0,
-                    sourceBaseIndex: 0,
-                    responseWindowType: 'afterScoring',
-                },
             },
-        } as any;
+        } as any, {
+            frameId: trigger!.frameId ?? trigger!.id,
+            frameKind: 'score-after',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'afterScoring',
+        });
+        ms.sys.responseWindow = { ...(ms.sys.responseWindow ?? {}), current: undefined } as any;
 
         const reactionHandler = getInteractionHandler('smashup_reaction_choose');
         expect(reactionHandler).toBeDefined();

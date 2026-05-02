@@ -14,11 +14,12 @@ InteractionSystem SHALL 把每个阻塞式交互绑定到其所属的 resolution
 - **THEN** 它 MAY 刷新候选与更新通用元数据
 - **BUT** 它 MUST NOT 代表游戏拼接第二套私有主续链或决定 deferred follow-up 的补发时机
 
-### Requirement: 多步交互进度 SHALL 以系统交互状态为真相源
-InteractionSystem SHALL 要求多步交互的当前步骤与中间结果以系统交互状态为真相源。游戏本地 UI route、局部 Hook state 或 modal 草稿态 MAY 作为派生视图，但 MUST NOT 成为唯一进度来源。
+### Requirement: 历史桥接式交互适配 SHALL 被标记为 deferred anti-pattern
+系统 MAY 暂时保留少量历史桥接式交互适配器以兼容既有游戏，但这些适配器 MUST 被明确标记为 deferred migration / anti-pattern，且 MUST NOT 作为新游戏或新重构的参考范式。
 
-#### Scenario: 召唤师战争本地 route 只是系统交互的视图
-- **GIVEN** 召唤师战争某个能力需要多步选择
-- **WHEN** UI 通过 adapter 把系统交互映射为本地 route 或 mode
-- **THEN** 当前步骤与候选集合 MUST 仍来自 `sys.interaction`
-- **AND** 刷新页面或 AI 接管后系统 MUST 能重建相同步骤
+#### Scenario: SummonerWars route adapter 只保留为历史兼容事实
+- **GIVEN** 某个既有游戏仍通过 route / adapter 把系统交互投影到本地 UI 模式
+- **WHEN** 本轮任务并未修复该游戏的现实 bug
+- **THEN** 该桥接 MAY 暂时保留而不立即重写
+- **AND** spec / design MUST 明确它是 deferred migration
+- **AND** 新游戏或新重构 MUST NOT 继续复制这种桥接主链

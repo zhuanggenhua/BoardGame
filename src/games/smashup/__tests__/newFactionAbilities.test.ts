@@ -28,6 +28,7 @@ import { startDuel } from '../domain/duel';
 import { clearOngoingEffectRegistry, collectTriggers, fireTriggers, interceptEvent, isMinionProtected } from '../domain/ongoingEffects';
 import { getEffectivePower, getPlayerEffectivePowerOnBase, getTotalEffectivePowerOnBase } from '../domain/ongoingModifiers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
+import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { reduce } from '../domain/reduce';
 import { execute, processDestroyTriggers } from '../domain/reducer';
 import { validate } from '../domain/commands';
@@ -3855,9 +3856,7 @@ describe('巨蚁派系能力', () => {
             ],
         });
 
-        const ms = makeMatchState(core);
-        ms.sys.phase = 'scoreBases';
-        (ms.sys as any).smashupReactionSession = {
+        const ms = startSmashUpReactionSession(makeMatchState(core), {
             frameId: 'score-before:0:test',
             frameKind: 'score-before',
             phase: 'optional',
@@ -3866,7 +3865,8 @@ describe('巨蚁派系能力', () => {
             consecutivePasses: 0,
             sourceBaseIndex: 0,
             responseWindowType: 'meFirst',
-        };
+        });
+        ms.sys.phase = 'scoreBases';
         ms.sys.responseWindow = { ...(ms.sys.responseWindow ?? {}), current: undefined } as any;
 
         const playResult = runCommand(

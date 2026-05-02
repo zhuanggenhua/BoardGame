@@ -51,8 +51,8 @@
 - **THEN** 系统 MUST 只补发一次这些 follow-up
 - **AND** 补发后 MUST 清空该 frame 的 deferred follow-up
 
-### Requirement: 统一控制流重构 SHALL 通过跨游戏验收矩阵
-系统 SHALL 通过跨游戏验收矩阵证明统一控制流设计可复用，而不是只服务于单一游戏。
+### Requirement: 统一控制流重构 SHALL 通过两游戏强制验收矩阵
+系统 SHALL 通过至少两个真实复杂游戏的强制验收矩阵证明统一控制流设计可复用，而不是只服务于单一游戏。
 
 #### Scenario: 王权骰铸同时存在 token response 与目标选择时依次收口
 - **GIVEN** 4 人王权骰铸对局中同时出现枪手的目标选择与 token response 前台链路
@@ -65,9 +65,3 @@
 - **WHEN** 子本体、交互、响应轮与 deferred follow-up 依次发生
 - **THEN** 系统 MUST 先完整收口子链再恢复父链
 - **AND** 当前“选择结算顺序”界面中不得保留已失效候选
-
-#### Scenario: 召唤师战争多步交互在刷新与 AI 接管后仍可恢复
-- **GIVEN** 召唤师战争某个多步能力已进入等待玩家输入的中间步骤
-- **WHEN** UI 刷新、观察者切换或 AI 接管该步骤
-- **THEN** 系统 MUST 仍能从统一交互状态恢复当前步骤
-- **AND** 不得依赖只存在于本地 React state 的唯一进度

@@ -19,7 +19,15 @@ import {
     resolveInteraction,
     refreshInteractionOptions,
 } from '../InteractionSystem';
-import { getActiveResolutionFrame, upsertActiveResolutionFrame } from '../resolutionStack';
+import {
+    completeResolutionFrame,
+    getActiveResolutionFrame,
+    getActiveResolutionOwner,
+    getResolutionFrameById,
+    pushResolutionFrame,
+    setResolutionFrameDeferredPayload,
+    upsertActiveResolutionFrame,
+} from '../resolutionStack';
 import { createSimpleChoiceSystem } from '../SimpleChoiceSystem';
 import type { MatchState } from '../../types';
 
@@ -159,6 +167,144 @@ describe('InteractionSystem - 通用刷新', () => {
             status: 'running',
             blockedBy: undefined,
         });
+    });
+
+    it('pushResolutionFrame / completeResolutionFrame 应在子 frame 完成后恢复父 frame', () => {
+        let state: MatchState<TestCore> = {
+            core: {
+                players: {
+                    p1: { hand: [] },
+                },
+            },
+            sys: {
+                interaction: { queue: [] },
+            },
+        } as any;
+
+        state = upsertActiveResolutionFrame(state, {
+            id: 'parent-frame',
+            kind: 'smashup:score-bases',
+            ordering: 'explicit-order',
+            status: 'running',
+            phase: 'scoreBases',
+            phaseGate: 'block-advance-when-blocked',
+        });
+
+        state = pushResolutionFrame(state, {
+            id: 'child-frame',
+            kind: 'smashup:after-scoring',
+            ordering: 'nested-body',
+            status: 'running',
+            phase: 'scoreBases',
+            phaseGate: 'block-advance-when-blocked',
+        });
+
+        expect(getActiveResolutionFrame(state)).toMatchObject({
+            id: 'child-frame',
+            parentFrameId: 'parent-frame',
+        });
+        expect(getResolutionFrameById(state, 'parent-frame')).toMatchObject({
+            status: 'suspended',
+            blockedBy: {
+                type: 'child-frame',
+                id: 'child-frame',
+            },
+        });
+
+        state = completeResolutionFrame(state, 'child-frame');
+
+        expect(getActiveResolutionFrame(state)).toMatchObject({
+            id: 'parent-frame',
+            status: 'running',
+            blockedBy: undefined,
+            suspendedByFrameId: undefined,
+        });
+        expect(getResolutionFrameById(state, 'child-frame')).toBeUndefined();
+    });
+
+    it('resolution frame 应持有 deferred payload，且子 frame 完成不应丢失父 frame payload', () => {
+        let state: MatchState<TestCore> = {
+            core: {
+                players: {
+                    p1: { hand: [] },
+                },
+            },
+            sys: {
+                interaction: { queue: [] },
+            },
+        } as any;
+
+        state = upsertActiveResolutionFrame(state, {
+            id: 'parent-frame',
+            kind: 'smashup:score-bases',
+            ordering: 'explicit-order',
+            status: 'running',
+            phase: 'scoreBases',
+            phaseGate: 'block-advance-when-blocked',
+        });
+        state = setResolutionFrameDeferredPayload(state, 'parent-frame', {
+            deferredEvents: [{ type: 'A', payload: { ok: true }, timestamp: 1 }],
+            deferredActions: [{ kind: 'follow-up' }],
+        });
+        state = pushResolutionFrame(state, {
+            id: 'child-frame',
+            kind: 'smashup:reaction',
+            ordering: 'nested-body',
+            status: 'running',
+            phase: 'scoreBases',
+            phaseGate: 'block-advance-when-blocked',
+        });
+
+        state = completeResolutionFrame(state, 'child-frame');
+
+        expect(getResolutionFrameById(state, 'parent-frame')).toMatchObject({
+            deferredEvents: [{ type: 'A', payload: { ok: true }, timestamp: 1 }],
+            deferredActions: [{ kind: 'follow-up' }],
+        });
+    });
+
+    it('交互阻塞 active resolution frame 时应同步 foreground owner，并在交互结束后清空', () => {
+        let state: MatchState<TestCore> = {
+            core: {
+                players: {
+                    p1: { hand: [] },
+                },
+            },
+            sys: {
+                interaction: { queue: [] },
+            },
+        } as any;
+
+        state = upsertActiveResolutionFrame(state, {
+            id: 'frame-owner-test',
+            kind: 'dicethrone:choice',
+            ordering: 'explicit-order',
+            status: 'running',
+            ownerGame: 'dicethrone',
+            phase: 'main',
+            phaseGate: 'block-advance-when-blocked',
+        });
+
+        state = queueInteraction(state, createSimpleChoice(
+            'interaction-owner-test',
+            'p1',
+            '选择',
+            [{ id: 'ok', label: '确定', value: { ok: true } }],
+            { sourceId: 'owner-test' },
+        ));
+
+        expect(getActiveResolutionOwner(state)).toEqual({
+            system: 'interaction',
+            id: 'interaction-owner-test',
+            kind: 'simple-choice',
+            gameId: 'dicethrone',
+            resolutionFrameId: 'frame-owner-test',
+            blocksProgress: true,
+        });
+
+        state = resolveInteraction(state);
+
+        expect(getActiveResolutionOwner(state)).toBeUndefined();
     });
 
     it('getCurrentTrackedCardTopSnapshot 只应保留当前仍连续位于顶部的揭示牌', () => {
@@ -1159,7 +1305,7 @@ describe('InteractionSystem - 通用刷新', () => {
     });
 
     it('紧急跳过选项被响应时，应取消交互而不是报无效选择', () => {
-        let state: MatchState<TestCore> = {
+        const state: MatchState<TestCore> = {
             core: {
                 players: {
                     p1: {

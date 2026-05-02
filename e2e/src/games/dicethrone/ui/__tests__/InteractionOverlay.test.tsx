@@ -674,13 +674,24 @@ describe('useSyncedModalStackEntry', () => {
     const SyncedModalHarness = ({
         enabled,
         label,
+        entryId = 'test-synced-modal',
+        ownerId,
         onClosed,
     }: {
         enabled: boolean;
         label: string;
+        entryId?: string;
+        ownerId?: string;
         onClosed?: () => void;
     }) => {
         const entry = React.useMemo(() => ({
+            owner: ownerId ? {
+                system: 'interaction' as const,
+                id: ownerId,
+                gameId: 'dicethrone',
+                namespace: 'dicethrone',
+                blocksProgress: true,
+            } : undefined,
             onClose: onClosed,
             render: ({ close }: { close: () => void; closeOnBackdrop: boolean }) => (
                 <div>
@@ -688,11 +699,11 @@ describe('useSyncedModalStackEntry', () => {
                     <button type="button" onClick={close}>close-synced-modal</button>
                 </div>
             ),
-        }), [label, onClosed]);
+        }), [label, onClosed, ownerId]);
 
         useSyncedModalStackEntry({
             enabled,
-            entryId: 'test-synced-modal',
+            entryId,
             entry,
         });
 
@@ -705,6 +716,15 @@ describe('useSyncedModalStackEntry', () => {
             <button type="button" onClick={() => closeTop()}>
                 close-top-entry
             </button>
+        );
+    };
+
+    const TopOwnerLabel = () => {
+        const { topOwner } = useModalStack();
+        return (
+            <div data-testid="top-owner-label">
+                {topOwner ? `${topOwner.system}:${topOwner.id}` : 'none'}
+            </div>
         );
     };
 
@@ -762,5 +782,42 @@ describe('useSyncedModalStackEntry', () => {
 
         expect(screen.queryByTestId('synced-modal-label')).not.toBeInTheDocument();
         expect(screen.getByTestId('sync-enabled-state')).toHaveTextContent('closed');
+    });
+
+    it('应暴露稳定的顶层 owner，并在关闭栈顶后恢复下层 owner', async () => {
+        const App = () => {
+            const [childEnabled, setChildEnabled] = React.useState(true);
+            return (
+                <MemoryRouter>
+                    <ModalStackProvider>
+                        <SyncedModalHarness enabled label="底层弹窗" entryId="parent-modal" ownerId="interaction-parent" />
+                        <SyncedModalHarness
+                            enabled={childEnabled}
+                            label="顶层弹窗"
+                            entryId="child-modal"
+                            ownerId="interaction-child"
+                            onClosed={() => setChildEnabled(false)}
+                        />
+                        <CloseTopButton />
+                        <TopOwnerLabel />
+                        <ModalStackRoot />
+                    </ModalStackProvider>
+                </MemoryRouter>
+            );
+        };
+
+        render(<App />);
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        expect(screen.getByTestId('top-owner-label')).toHaveTextContent('interaction:interaction-child');
+
+        await act(async () => {
+            fireEvent.click(screen.getByText('close-top-entry'));
+            await Promise.resolve();
+        });
+
+        expect(screen.getByTestId('top-owner-label')).toHaveTextContent('interaction:interaction-parent');
     });
 });

@@ -961,3 +961,28 @@
 - 同次返回的远端文档字段：`status=resolved`，`updatedAt=2026-04-25T16:24:42.444Z`。
 - 由此可确认：此前“只剩 699f0a 未闭环”的结论已经失效；真实问题是本地状态板与审计文档漏登记，而不是线上未回写。
 - 现已补齐 `temp/feedback-closeout/status-board.json` 与相关规划文档，`Feedback cleanup audit` 可以按完成处理。
+
+## 2026-05-02 控制流栈化收口补记
+- `smashup-complex-multi-base-scoring.e2e.ts` 的失败根因不是新的业务缺陷，而是测试仍按旧 UI / 旧 sourceId 假设写：
+  - PASS 按钮仅匹配 `跳过|Pass|Skip`，没有覆盖真实文案 `让过`；
+  - 4p 复杂链路里把固定 sourceId 顺序当成契约，没有接受 `smashup_reaction_choose -> 具体触发` 的新主链。
+- 这轮修复后，SmashUp 浏览器级证据口径统一为：
+  1. 先证明反应入口确实打开；
+  2. 再证明 PASS / 触发选择后窗口能真实收口；
+  3. 对多基地场景，用最终 VP / 基地替换结果证明“最后一个锁定基地只自动结算一次”。
+- 额外清理：根目录重复旧 E2E `e2e/smashup-afterscoring-simple-complete.e2e.ts` 与 `e2e/smashup-multi-base-scoring-complete.e2e.ts` 已删除，避免旧副本继续漂移成遗留。
+
+## 2026-05-02 DiceThrone 栈化回归补记
+- 这轮真正需要证明的不是“所有武士 token 全链都重写通过”，而是 **control-flow 栈化后前台 owner / 队列恢复 / 多目标弹窗没有被打坏**。
+- 当前已跑通且已看图的 3 条复杂链路，分别覆盖了 3 类高风险点：
+  1. `The Law` 4 人 2v2 多目标：证明多人 targeting modal 仍按前台 owner 正常工作；
+  2. `simple-choice` 收口后恢复 token 响应：证明队列恢复链没有丢失前台弹窗；
+  3. `samurai honor pass`：证明 token 响应窗口关闭后不会错误 reopen。
+- 根目录旧副本 `e2e/dicethrone-token-response-window.e2e.ts` 的 `samurai honor should open from real attack flow and resolve by two clicks` 当前失败，不宜直接拿来否定本轮框架重构：
+  - 失败截图里 guest 端停在 `4. 那啥攻击阶段`，host 端是 `可以响应 / 跳过` + `结算攻击` 并存，说明它混用了旧入口假设与当前 UI 语义；
+  - 进一步轮询后，host 侧状态会直接回到 `main2` / `defenderId=null`，更像旧测试选中的武士技能链本身不再产生“可防御”真实入口，而不是 modal owner 栈逻辑把窗口吞掉；
+  - 因此它当前更应被视为 **历史重复旧测试副本**，不是本轮已经确认的产品回归。
+- 本轮没有保留对这条旧副本失败 case 的试探性测试补丁，避免把“为了追旧假设而改测试”的噪音混进正式收口。
+- 进一步排查后确认：
+  - `e2e/dicethrone-token-response-window.e2e.ts` 可以安全删除，因为它的 6 条测试标题都已被 `e2e/dicethrone/dicethrone-token-response-window.e2e.ts` 覆盖，后者还是超集（额外包含 `月精灵闪避成功后自动收口` 与 `samurai honor pass`）。
+  - 但 `e2e/dicethrone-simple-start.e2e.ts` 与 `e2e/dicethrone/dicethrone-simple-start.e2e.ts` 目前只是 **部分重叠**，彼此仍有独立用例；`e2e/dicethrone-status-interaction-complete.e2e.ts` 也仍是当前唯一正式文件，不可按“重复旧副本”删除。

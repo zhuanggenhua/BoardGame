@@ -30,7 +30,7 @@ import { clearBaseAbilityRegistry, triggerBaseAbility, triggerExtendedBaseAbilit
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-import { createScoringSession, setScoringSession } from '../domain/scoringSession';
+import { appendScoringFrameDeferredPayload, createScoringSession, getScoringSession, setScoringSession } from '../domain/scoringSession';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, CardInstance } from '../domain/types';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
@@ -821,12 +821,12 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
         });
 
         const scoredState = makeMatchState(staleCore);
-        const resolved = handler!(
-            setScoringSession(scoredState, {
+        const scoredSessionState = appendScoringFrameDeferredPayload(setScoringSession(scoredState, {
                 ...createScoringSession(scoredState.core, [0]),
                 currentBaseRef: { slotIndex: 0, baseDefId: 'base_greenhouse' },
                 currentStep: 'awaiting-interactions',
-                deferredPostScoringEvents: [
+            }), {
+                deferredEvents: [
                     {
                         type: SU_EVENTS.BASE_CLEARED,
                         payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
@@ -842,7 +842,10 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
                         timestamp: 1852,
                     },
                 ],
-            }),
+            });
+
+        const resolved = handler!(
+            scoredSessionState,
             '0',
             option.value,
             interaction.data,
@@ -850,7 +853,7 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             1853,
         );
         expect(resolved?.events ?? []).toHaveLength(0);
-        expect(((resolved?.state.sys as any).smashupScoring?.pendingPostScoringActions) ?? []).toEqual([]);
+        expect(getScoringSession(resolved!.state)?.pendingPostScoringActions ?? []).toEqual([]);
     });
 
     it('base_greenhouse: replacement follow-up 应写入 scoring session，不写 core', () => {
@@ -884,36 +887,46 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
         }));
 
         const resolved = handler!(
-            setScoringSession(scoredState, {
-                ...createScoringSession(scoredState.core, [0]),
-                currentBaseRef: { slotIndex: 0, baseDefId: 'base_greenhouse' },
-                currentStep: 'awaiting-interactions',
-                deferredPostScoringEvents: [
-                    {
-                        type: SU_EVENTS.BASE_CLEARED,
-                        payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
-                        timestamp: 1852,
-                    },
-                    {
-                        type: SU_EVENTS.BASE_REPLACED,
-                        payload: {
-                            baseIndex: 0,
-                            oldBaseDefId: 'base_greenhouse',
-                            newBaseDefId: 'base_secret_garden',
+            appendScoringFrameDeferredPayload(
+                setScoringSession(scoredState, {
+                    ...createScoringSession(scoredState.core, [0]),
+                    currentBaseRef: { slotIndex: 0, baseDefId: 'base_greenhouse' },
+                    currentStep: 'awaiting-interactions',
+                }),
+                {
+                    deferredEvents: [
+                        {
+                            type: SU_EVENTS.BASE_CLEARED,
+                            payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
+                            timestamp: 1852,
                         },
-                        timestamp: 1852,
-                    },
-                ],
-            }),
+                        {
+                            type: SU_EVENTS.BASE_REPLACED,
+                            payload: {
+                                baseIndex: 0,
+                                oldBaseDefId: 'base_greenhouse',
+                                newBaseDefId: 'base_secret_garden',
+                            },
+                            timestamp: 1852,
+                        },
+                    ],
+                },
+            ),
             '0',
             option.value,
-            interaction.data,
+            {
+                ...interaction.data,
+                continuationContext: {
+                    ...interaction.data.continuationContext,
+                    baseIndex: 0,
+                },
+            },
             dummyRandom,
             1853,
         );
 
         expect(resolved?.events ?? []).toHaveLength(0);
-        expect(((resolved?.state.sys as any).smashupScoring?.pendingPostScoringActions) ?? []).toEqual([
+        expect(getScoringSession(resolved!.state)?.pendingPostScoringActions ?? []).toEqual([
             {
                 kind: 'playMinionOnReplacementBase',
                 playerId: '0',

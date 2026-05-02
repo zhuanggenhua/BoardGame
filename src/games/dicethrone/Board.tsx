@@ -430,6 +430,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
     // 使用 useInteractionState Hook 管理交互状态（从 sys.interaction 读取）
     const sysInteraction = rawG.sys.interaction?.current;
+    const activeResolutionFrameId = rawG.sys.resolution?.activeFrameId;
     const compareRollInteraction = asCompareRollChoice(sysInteraction);
     const pendingInteraction: InteractionDescriptor | undefined = sysInteraction?.kind === 'dt:card-interaction'
         ? sysInteraction.data as InteractionDescriptor
@@ -1046,6 +1047,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     ]);
 
     const tokenResponseModalEntry = React.useMemo(() => ({
+        owner: {
+            system: currentResponseWindow?.id ? 'response-window' : 'interaction',
+            id: currentResponseWindow?.id ?? sysInteraction?.id ?? 'dicethrone_token_response',
+            kind: currentResponseWindow?.windowType ?? sysInteraction?.kind,
+            gameId: 'dicethrone',
+            namespace: 'dicethrone',
+            resolutionFrameId: currentResponseWindow?.resolutionFrameId ?? sysInteraction?.resolutionFrameId ?? activeResolutionFrameId,
+            blocksProgress: true,
+        },
         closeOnBackdrop: false,
         closeOnEsc: false,
         onClose: () => undefined,
@@ -1063,9 +1073,18 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 statusIconAtlas={statusIconAtlas}
             />
         ),
-    }), [G.players, engineMoves, locale, pendingDamage, statusIconAtlas, tokenResponsePhase, tokenUsableOverrides, usableTokens]);
+    }), [G.players, activeResolutionFrameId, currentResponseWindow?.id, currentResponseWindow?.resolutionFrameId, currentResponseWindow?.windowType, engineMoves, locale, pendingDamage, statusIconAtlas, sysInteraction?.id, sysInteraction?.kind, sysInteraction?.resolutionFrameId, tokenResponsePhase, tokenUsableOverrides, usableTokens]);
 
     const statusInteractionModalEntry = React.useMemo(() => ({
+        owner: statusInteraction ? {
+            system: 'interaction',
+            id: sysInteraction?.id ?? 'dicethrone_status_interaction',
+            kind: statusInteraction.type,
+            gameId: 'dicethrone',
+            namespace: 'dicethrone',
+            resolutionFrameId: sysInteraction?.resolutionFrameId ?? activeResolutionFrameId,
+            blocksProgress: true,
+        } : undefined,
         closeOnBackdrop: false,
         closeOnEsc: false,
         onClose: () => undefined,
@@ -1097,10 +1116,24 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         playerNames,
         rootPid,
         statusIconAtlas,
+        sysInteraction?.id,
+        sysInteraction?.resolutionFrameId,
         statusInteraction,
+        activeResolutionFrameId,
     ]);
 
     const choiceModalEntry = React.useMemo(() => ({
+        owner: choice.hasChoice ? {
+            system: 'interaction',
+            id: sysInteraction?.kind === 'simple-choice' ? sysInteraction.id : 'dicethrone_choice',
+            kind: sysInteraction?.kind === 'simple-choice' ? sysInteraction.kind : 'simple-choice',
+            gameId: 'dicethrone',
+            namespace: 'dicethrone',
+            resolutionFrameId: sysInteraction?.kind === 'simple-choice'
+                ? (sysInteraction.resolutionFrameId ?? activeResolutionFrameId)
+                : activeResolutionFrameId,
+            blocksProgress: true,
+        } : undefined,
         closeOnBackdrop: false,
         closeOnEsc: false,
         onClose: () => undefined,
@@ -1129,7 +1162,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 teamIdByPlayerId={G.teamIdByPlayerId}
             />
         ),
-    }), [G.players, G.teamIdByPlayerId, canResolveChoice, choice, dispatch, locale, playerNames, rootPid, statusIconAtlas]);
+    }), [G.players, G.teamIdByPlayerId, activeResolutionFrameId, canResolveChoice, choice, dispatch, locale, playerNames, rootPid, statusIconAtlas, sysInteraction]);
 
     useSyncedModalStackEntry({
         enabled: Boolean(

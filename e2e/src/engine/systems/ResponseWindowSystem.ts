@@ -14,7 +14,7 @@ import { resolveCommandTimestamp, resolveEventTimestamp } from '../utils';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
 import { INTERACTION_EVENTS } from './InteractionSystem';
-import { syncActiveResolutionWithInteraction, syncActiveResolutionWithResponseWindow } from './resolutionStack';
+import { getActiveResolutionFrame, syncActiveResolutionWithInteraction, syncActiveResolutionWithResponseWindow } from './resolutionStack';
 
 // ============================================================================
 // 响应窗口系统配置
@@ -238,6 +238,16 @@ export function openResponseWindow<TCore>(
     window: ResponseWindowState['current']
 ): MatchState<TCore> {
     if (!window) return state;
+
+    if (!window.resolutionFrameId) {
+        const activeFrameId = getActiveResolutionFrame(state)?.id;
+        if (activeFrameId) {
+            window = {
+                ...window,
+                resolutionFrameId: activeFrameId,
+            };
+        }
+    }
 
     return syncActiveResolutionWithResponseWindow(writeResponseWindowCurrent(state, window));
 }

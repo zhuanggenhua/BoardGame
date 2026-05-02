@@ -4,6 +4,7 @@ import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { smashUpFlowHooks } from '../domain/index';
+import { getSmashUpReactionSession } from '../domain/reactionSession';
 import { makeMatchState, makeState, makeBase, makeMinion } from './helpers';
 
 beforeEach(() => {
@@ -78,7 +79,7 @@ describe('reaction queue: onTurnStart ordering', () => {
     expect(exitResult.halt).toBe(true);
     const current = exitResult.updatedState?.sys.interaction.current as any;
     expect(current?.data?.sourceId).toBe('smashup_reaction_choose');
-    expect(exitResult.updatedState?.sys.smashupReactionSession?.frameKind).toBe('turn-end');
+    expect(getSmashUpReactionSession(exitResult.updatedState)?.frameKind).toBe('turn-end');
   });
 });
 
