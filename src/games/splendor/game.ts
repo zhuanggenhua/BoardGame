@@ -4,6 +4,8 @@ import { SplendorDomain } from './domain';
 import type { SplendorCommand, SplendorCore, SplendorEvent, TokenColor } from './domain';
 import { CARD_DEFS_BY_ID, NOBLE_DEFS_BY_ID, getPaymentTokens } from './domain/rules';
 import './cardPreview';
+import { registerGameAiRuntime } from '../../engine/ai';
+import { splendorAiRuntime } from './ai';
 
 const ACTION_ALLOWLIST = [
     'HOST_START_GAME',
@@ -51,6 +53,30 @@ const cardSegment = (cardId: string): ActionLogEntry['segments'][number] => ({
 
 const textSeg = (text: string): ActionLogSegment => ({ type: 'text', text });
 
+const TOKEN_COLOR_SET = new Set<TokenColor>(['white', 'blue', 'green', 'red', 'black', 'gold']);
+
+const extractTokensSpentFromEvents = (
+    events: GameEvent[],
+    playerId: string,
+): Partial<Record<TokenColor, number>> | null => {
+    for (const event of events) {
+        if (event.type !== 'TOKENS_SPENT') continue;
+        const payload = event.payload as {
+            playerId?: string;
+            tokens?: Partial<Record<string, number>>;
+        };
+        if (payload.playerId !== playerId || !payload.tokens) continue;
+        const spent: Partial<Record<TokenColor, number>> = {};
+        for (const [color, count] of Object.entries(payload.tokens)) {
+            if (!TOKEN_COLOR_SET.has(color as TokenColor)) continue;
+            if (typeof count !== 'number' || count <= 0) continue;
+            spent[color as TokenColor] = count;
+        }
+        return spent;
+    }
+    return null;
+};
+
 const tokenListSegments = (tokens: Partial<Record<TokenColor, number>>): ActionLogSegment[] => {
     const entries = Object.entries(tokens).filter(([, count]) => Number(count) > 0);
     return entries.flatMap(([color, count], index) => {
@@ -71,6 +97,7 @@ const cardCostSegments = (cardId: string): ActionLogSegment[] => {
 export function formatSplendorActionEntry({
     command,
     state,
+    events,
 }: {
     command: Command;
     state: MatchState<unknown>;
@@ -138,7 +165,8 @@ export function formatSplendorActionEntry({
             const payload = command.payload as { cardId: string };
             const player = splendorState.players[command.playerId];
             const card = CARD_DEFS_BY_ID[payload.cardId];
-            const payment = card ? getPaymentTokens(player, card) : {};
+            const payment = extractTokensSpentFromEvents(events, command.playerId)
+                ?? (card ? getPaymentTokens(player, card) : {});
             return {
                 id: `${command.type}-${command.playerId}-${timestamp}`,
                 timestamp,
@@ -206,3 +234,5 @@ export const engineConfig = createGameEngine<SplendorCore, SplendorCommand, Sple
 });
 
 export default engineConfig;
+
+registerGameAiRuntime(splendorAiRuntime);
