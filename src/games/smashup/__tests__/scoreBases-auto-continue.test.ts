@@ -8,7 +8,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { registerGameAiRuntime, resolveNextLocalAiAction } from '../../../engine/ai';
-import { asSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import { asSimpleChoice, createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { resolveForceEndTurnForStalledAi } from '../../../engine/transport/onlineAiRecovery';
 import { smashUpFlowHooks } from '../domain/index';
 import { buildSmashUpAiLegalActions, smashUpAiRuntime } from '../ai';
@@ -19,6 +19,9 @@ import { SU_COMMANDS } from '../domain/types';
 import { SU_EVENT_TYPES } from '../domain/events';
 import { initAllAbilities } from '../abilities';
 import { buildMinionTargetOptions, buildPlayerTargetOptions } from '../domain/abilityHelpers';
+import { registerAbility } from '../domain/abilityRegistry';
+import { buildReactionOptions, getSmashUpReactionSession, resolveSmashUpReactionChoice, startSmashUpReactionSession } from '../domain/reactionSession';
+import { registerTitanSpecialValidator } from '../domain/titanAbilityValidators';
 
 /** 构造最小 SmashUpCore 用于测试 */
 function makeMinimalCore(overrides: Partial<SmashUpCore> = {}): SmashUpCore {
@@ -92,6 +95,88 @@ function buildTriggerChoiceOptions(triggerIds: string[]) {
         displayMode: 'button',
         value: { triggerId },
     }));
+}
+
+function registerArcaneProtectorSpecialForTests() {
+    registerAbility('wizards_arcane_protector', 'special', () => ({ events: [] }));
+    registerTitanSpecialValidator('wizards_arcane_protector', ({ state }) =>
+        (state.cardsPlayedThisTurn ?? 0) >= 5 ? null : '你本回合还没有打出 5 张牌');
+}
+
+function createPersistedStaleReactionChoiceState(): MatchState<SmashUpCore> {
+    const baseState = startSmashUpReactionSession({
+        core: makeMinimalCore({
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_wizard_academy', [
+                makeMinion('0', 'robot_hoverbot', 4),
+            ])],
+            scoringEligibleBaseIndices: [0],
+        }),
+        sys: {
+            phase: 'scoreBases',
+            interaction: { current: undefined, queue: [] },
+            responseWindow: {
+                current: {
+                    id: 'reaction-window-stale',
+                    windowType: 'afterScoring',
+                    sourceId: 'smashup_reaction_choose',
+                    responderQueue: ['0', '1'],
+                    currentResponderIndex: 1,
+                    passedPlayers: [],
+                },
+                history: [],
+            },
+            eventStream: { nextId: 1 },
+        } as any,
+    } as MatchState<SmashUpCore>, {
+        frameId: 'persisted-stale-reaction',
+        frameKind: 'score-after',
+        phase: 'optional',
+        activePlayerId: '1',
+        currentPlayerId: '0',
+        consecutivePasses: 0,
+        sourceBaseIndex: 0,
+        responseWindowType: 'afterScoring',
+    });
+
+    return {
+        ...baseState,
+        sys: {
+            ...baseState.sys,
+            interaction: {
+                current: createSimpleChoice(
+                    'persisted-stale-reaction-choice',
+                    '1',
+                    '选择一个反应动作',
+                    [
+                        {
+                            id: 'activate_special:titan:titan_1_wizards_arcane_protector:0',
+                            label: '奥术守护者 特殊能力',
+                            displayMode: 'button',
+                            value: {
+                                kind: 'activate_special',
+                                playerId: '1',
+                                titanUid: 'titan_1_wizards_arcane_protector',
+                                baseIndex: 0,
+                            },
+                        },
+                        {
+                            id: 'pass',
+                            label: 'Pass',
+                            displayMode: 'button',
+                            value: { kind: 'pass' },
+                        },
+                    ],
+                    {
+                        sourceId: 'smashup_reaction_choose',
+                        targetType: 'button',
+                        responseValidationMode: 'live',
+                    },
+                ),
+                queue: [],
+            },
+        } as any,
+    };
 }
 
 const smashUpAiEngineConfig = {
@@ -1372,6 +1457,282 @@ describe('scoreBases 阶段自动推进', () => {
         expect(resolution?.action.kind).toBe('interaction-choice');
         expect((resolution?.action.commands[0]?.payload as { optionId?: string } | undefined)?.optionId)
             .toBe('play_action:c1:0');
+    });
+
+    it('smashup_reaction_choose 存在多个 trigger 时，AI 应按 live trigger 对当前计分的真实影响排序，而不是只看按钮顺序', async () => {
+        registerGameAiRuntime(smashUpAiRuntime);
+
+        const state: MatchState<SmashUpCore> = {
+            core: makeMinimalCore({
+                players: {
+                    '0': {
+                        ...makeMinimalCore().players['0'],
+                        factionIds: ['pirate', 'wizard'] as any,
+                    } as any,
+                    '1': {
+                        ...makeMinimalCore().players['1'],
+                        factionIds: ['robot', 'zombie'] as any,
+                    } as any,
+                } as any,
+                bases: [
+                    makeBase('base_wizard_academy', [
+                        {
+                            ...makeMinion('0', 'wizard_apprentice', 2),
+                            uid: 'quiet-base-minion',
+                        },
+                    ]),
+                    makeBase('base_tortuga', [
+                        {
+                            ...makeMinion('0', 'pirate_first_mate', 3),
+                            uid: 'scoring-base-ai-minion',
+                            powerCounters: 4,
+                        },
+                        {
+                            ...makeMinion('1', 'robot_hoverbot', 4),
+                            uid: 'scoring-base-enemy-minion',
+                        },
+                    ]),
+                ],
+                scoringEligibleBaseIndices: [1],
+                triggerQueue: [
+                    {
+                        id: 'afterScoring:quiet-base',
+                        timing: 'afterScoring',
+                        sourceDefId: 'wizard_apprentice',
+                        sourceControllerId: '0',
+                        sourceBaseIndex: 0,
+                        mandatory: false,
+                        resolutionClass: 'optional',
+                        ownerPlayerId: '0',
+                        witnessRequirement: 'inPlayAtTriggerTime',
+                        witnessed: true,
+                        baseIndex: 0,
+                    },
+                    {
+                        id: 'afterScoring:scoring-base',
+                        timing: 'afterScoring',
+                        sourceDefId: 'pirate_first_mate',
+                        sourceControllerId: '0',
+                        sourceBaseIndex: 1,
+                        mandatory: false,
+                        resolutionClass: 'optional',
+                        ownerPlayerId: '0',
+                        witnessRequirement: 'inPlayAtTriggerTime',
+                        witnessed: true,
+                        baseIndex: 1,
+                    },
+                ] as any,
+            }),
+            sys: {
+                phase: 'scoreBases',
+                turnNumber: 1,
+                interaction: {
+                    current: {
+                        id: 'reaction-choice-trigger-priority',
+                        playerId: '0',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            options: [
+                                {
+                                    id: 'trigger-quiet-base',
+                                    label: '先结算普通基地触发',
+                                    displayMode: 'button',
+                                    value: { kind: 'trigger', triggerId: 'afterScoring:quiet-base' },
+                                },
+                                {
+                                    id: 'trigger-scoring-base',
+                                    label: '先结算当前计分基地触发',
+                                    displayMode: 'button',
+                                    value: { kind: 'trigger', triggerId: 'afterScoring:scoring-base' },
+                                },
+                                {
+                                    id: 'pass',
+                                    label: 'Pass',
+                                    displayMode: 'button',
+                                    value: { kind: 'pass' },
+                                },
+                            ],
+                        },
+                    },
+                    queue: [],
+                },
+                responseWindow: {
+                    current: {
+                        id: 'afterscoring-window-trigger-priority',
+                        windowType: 'afterScoring',
+                        sourceId: 'smashup_reaction_choose',
+                        responderQueue: ['0', '1'],
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                    },
+                    history: [],
+                },
+                eventStream: { nextId: 1 },
+            } as any,
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig: smashUpAiEngineConfig,
+            state,
+            matchId: 'smashup-reaction-choose-prefers-live-scoring-trigger',
+            seatControllers: { '0': { type: 'local-ai' } },
+        });
+
+        expect(resolution?.playerId).toBe('0');
+        expect(resolution?.action.kind).toBe('interaction-choice');
+        expect((resolution?.action.commands[0]?.payload as { optionId?: string } | undefined)?.optionId)
+            .toBe('trigger-scoring-base');
+    });
+
+    it('smashup_reaction_choose 从持久化恢复后只剩失效 special 快照时，AI 应按 live session 直接选择 pass', async () => {
+        registerGameAiRuntime(smashUpAiRuntime);
+        registerArcaneProtectorSpecialForTests();
+
+        const state = createPersistedStaleReactionChoiceState();
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '1',
+            state: state as any,
+        });
+
+        expect(legalActions).toHaveLength(1);
+        expect(legalActions[0]?.kind).toBe('interaction-choice');
+        expect((legalActions[0]?.commands[0]?.payload as { optionId?: string } | undefined)?.optionId).toBe('pass');
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig: smashUpAiEngineConfig,
+            state,
+            matchId: 'smashup-persisted-stale-reaction-choice',
+            seatControllers: { '1': { type: 'local-ai' } },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('interaction-choice');
+        expect((resolution?.action.commands[0]?.payload as { optionId?: string } | undefined)?.optionId).toBe('pass');
+    });
+
+    it('smashup_reaction_choose 响应持久化后的失效 special 快照时，应按当前 live 语义正规化并直接收口', () => {
+        registerArcaneProtectorSpecialForTests();
+        const state = createPersistedStaleReactionChoiceState();
+        const runtimeState: MatchState<SmashUpCore> = {
+            ...state,
+            sys: {
+                ...state.sys,
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                },
+            } as any,
+        };
+
+        const resolved = resolveSmashUpReactionChoice(runtimeState, defaultTestRandom, 7, {
+            kind: 'activate_special',
+            playerId: '1',
+            titanUid: 'titan_1_wizards_arcane_protector',
+            baseIndex: 0,
+        });
+
+        expect(getSmashUpReactionSession(resolved.state)).toBeUndefined();
+        expect(resolved.state.sys.interaction?.current).toBeUndefined();
+        expect(resolved.events).toHaveLength(0);
+    });
+
+    it('smashup_reaction_choose 构建反应选项时，应去重重复的泰坦 special 候选', () => {
+        registerArcaneProtectorSpecialForTests();
+        const state = startSmashUpReactionSession({
+            core: makeMinimalCore({
+                players: {
+                    '0': {
+                        id: '0',
+                        factionIds: ['robot'],
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                    },
+                    '1': {
+                        id: '1',
+                        factionIds: ['wizard'],
+                        hand: [],
+                        deck: [],
+                        discard: [],
+                        vp: 0,
+                        minionsPlayed: 0,
+                        minionLimit: 1,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                    },
+                },
+                bases: [makeBase('base_wizard_academy', [
+                    makeMinion('1', 'wizard_apprentice', 2),
+                ])],
+                cardsPlayedThisTurn: 5,
+                scoringEligibleBaseIndices: [0],
+                titans: [
+                    {
+                        uid: 'titan_1_wizards_arcane_protector',
+                        defId: 'wizards_arcane_protector',
+                        faction: 'wizard',
+                        ownerId: '1',
+                        controllerId: '1',
+                        powerCounters: 0,
+                        talentUsed: false,
+                        location: { zone: 'setaside' },
+                    },
+                    {
+                        uid: 'titan_1_wizards_arcane_protector',
+                        defId: 'wizards_arcane_protector',
+                        faction: 'wizard',
+                        ownerId: '1',
+                        controllerId: '1',
+                        powerCounters: 0,
+                        talentUsed: false,
+                        location: { zone: 'setaside' },
+                    },
+                ] as any,
+            }),
+            sys: {
+                phase: 'scoreBases',
+                interaction: { current: undefined, queue: [] },
+                responseWindow: {
+                    current: {
+                        id: 'reaction-window-duplicate-titan',
+                        windowType: 'afterScoring',
+                        sourceId: 'smashup_reaction_choose',
+                        responderQueue: ['0', '1'],
+                        currentResponderIndex: 1,
+                        passedPlayers: [],
+                    },
+                    history: [],
+                },
+                eventStream: { nextId: 1 },
+            } as any,
+        } as MatchState<SmashUpCore>, {
+            frameId: 'duplicate-titan-reaction',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: '1',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'afterScoring',
+        });
+
+        const session = getSmashUpReactionSession(state);
+        expect(session).toBeDefined();
+
+        const options = buildReactionOptions(state, session!, 7);
+        const specialOptions = options.filter((option) =>
+            option.value.kind === 'activate_special'
+            && option.value.titanUid === 'titan_1_wizards_arcane_protector',
+        );
+
+        expect(specialOptions).toHaveLength(1);
+        expect(options.filter((option) => option.value.kind === 'pass')).toHaveLength(1);
     });
 
     it('AI 在计分阶段仅存在可激活的泰坦 special 时也不应暴露 advance-phase', () => {
