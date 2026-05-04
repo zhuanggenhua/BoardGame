@@ -1978,6 +1978,526 @@ describe('召唤师战争本地 AI', () => {
         });
     });
 
+    it('mind_capture 在选项顺序颠倒时，仍应按真实收益优先选择 control', async () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'trickster',
+            faction1: 'paladin',
+        });
+        core.phase = 'attack';
+        core.currentPlayer = '0';
+        core.board[4][2].unit = undefined;
+        core.board[5][2].unit = undefined;
+
+        placeTestUnit(core, { row: 5, col: 2 }, {
+            card: {
+                id: 'test-trickster-source',
+                cardType: 'unit',
+                name: '测试施术者',
+                unitClass: 'common',
+                faction: 'trickster',
+                strength: 2,
+                life: 3,
+                cost: 1,
+                attackType: 'ranged',
+                attackRange: 3,
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+        const capturedChampion = placeTestUnit(core, { row: 4, col: 2 }, {
+            card: {
+                id: 'test-captured-champion',
+                cardType: 'unit',
+                name: '测试冠军目标',
+                unitClass: 'champion',
+                faction: 'paladin',
+                strength: 4,
+                life: 6,
+                cost: 5,
+                attackType: 'melee',
+                attackRange: 1,
+                deckSymbols: [],
+            },
+            owner: '1',
+        });
+
+        const sys = createInitialSystemState(['0', '1'], []);
+        const interaction = createSimpleChoice(
+            'sw-ai-mind-capture-priority',
+            '0',
+            'interaction.sw.mindCapture',
+            [
+                {
+                    id: 'damage',
+                    label: '伤害',
+                    value: {
+                        action: 'mind_capture',
+                        sourceUnitId: 'test-trickster-source',
+                        targetPosition: { row: 4, col: 2 },
+                        hits: 4,
+                        choice: 'damage',
+                    },
+                },
+                {
+                    id: 'control',
+                    label: '控制',
+                    value: {
+                        action: 'mind_capture',
+                        sourceUnitId: 'test-trickster-source',
+                        targetPosition: { row: 4, col: 2 },
+                        hits: 4,
+                        choice: 'control',
+                    },
+                },
+            ],
+            { sourceId: 'mind_capture_resolve' },
+        );
+        (interaction.data as { sw?: unknown }).sw = {
+            type: 'mind_capture',
+            sourceUnitId: 'test-trickster-source',
+            targetPosition: { row: 4, col: 2 },
+            targetUnitId: capturedChampion.instanceId,
+            hits: 4,
+        };
+        sys.interaction = { ...sys.interaction, current: interaction };
+
+        const context = buildAiDecisionContext({
+            gameId: 'summonerwars',
+            matchId: 'local:summonerwars-mind-capture-priority',
+            playerId: '0',
+            visibleState: { core, sys },
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai', difficulty: 'hard' },
+        });
+
+        const decision = await summonerWarsAiRuntime.localPolicies?.baseline.decide(context);
+        const evaluations = (decision?.providerMetadata?.evaluations ?? []) as Array<{
+            actionId: string;
+            contributions: Array<{ scorerId: string; score: number }>;
+        }>;
+        const controlAction = context.legalActions.find((action) => action.metadata?.optionId === 'control');
+        const damageAction = context.legalActions.find((action) => action.metadata?.optionId === 'damage');
+        const controlEval = evaluations.find((item) => item.actionId === controlAction?.actionId);
+        const damageEval = evaluations.find((item) => item.actionId === damageAction?.actionId);
+        const controlSemanticScore = controlEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+        const damageSemanticScore = damageEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+
+        expect(controlAction).toBeTruthy();
+        expect(damageAction).toBeTruthy();
+        expect(controlSemanticScore).toBeGreaterThan(damageSemanticScore);
+        expect(decision?.actionId).toBe(controlAction?.actionId);
+    });
+
+    it('feed_beast 在多个坏选项里应牺牲最低价值友军，而不是按顺序自毁或吃掉更贵单位', async () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'goblin',
+            faction1: 'paladin',
+        });
+        core.phase = 'attack';
+        core.currentPlayer = '0';
+        core.board[4][2].unit = undefined;
+        core.board[4][3].unit = undefined;
+        core.board[4][4].unit = undefined;
+
+        const sourceBeast = placeTestUnit(core, { row: 4, col: 3 }, {
+            card: {
+                id: 'test-hungry-beast',
+                cardType: 'unit',
+                name: '测试巨食兽',
+                unitClass: 'champion',
+                faction: 'goblin',
+                strength: 4,
+                life: 6,
+                cost: 5,
+                attackType: 'melee',
+                attackRange: 1,
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+        placeTestUnit(core, { row: 4, col: 2 }, {
+            card: {
+                id: 'test-expensive-ally',
+                cardType: 'unit',
+                name: '测试高价友军',
+                unitClass: 'champion',
+                faction: 'goblin',
+                strength: 3,
+                life: 5,
+                cost: 4,
+                attackType: 'melee',
+                attackRange: 1,
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+        placeTestUnit(core, { row: 4, col: 4 }, {
+            card: {
+                id: 'test-cheap-ally',
+                cardType: 'unit',
+                name: '测试低价友军',
+                unitClass: 'common',
+                faction: 'goblin',
+                strength: 1,
+                life: 2,
+                cost: 0,
+                attackType: 'melee',
+                attackRange: 1,
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+
+        const sys = createInitialSystemState(['0', '1'], []);
+        const interaction = createSimpleChoice(
+            'sw-ai-feed-beast-priority',
+            '0',
+            'interaction.sw.feedBeast',
+            [
+                {
+                    id: 'self_destroy',
+                    label: '自毁',
+                    value: { action: 'feed_beast', sourceUnitId: sourceBeast.instanceId, choice: 'self_destroy' },
+                },
+                {
+                    id: 'consume-expensive',
+                    label: '吞掉高价友军',
+                    value: {
+                        action: 'feed_beast',
+                        sourceUnitId: sourceBeast.instanceId,
+                        choice: 'destroy_adjacent',
+                        targetPosition: { row: 4, col: 2 },
+                    },
+                },
+                {
+                    id: 'consume-cheap',
+                    label: '吞掉低价友军',
+                    value: {
+                        action: 'feed_beast',
+                        sourceUnitId: sourceBeast.instanceId,
+                        choice: 'destroy_adjacent',
+                        targetPosition: { row: 4, col: 4 },
+                    },
+                },
+            ],
+            { sourceId: 'feed_beast' },
+        );
+        (interaction.data as { sw?: unknown }).sw = {
+            type: 'feed_beast',
+            sourceUnitId: sourceBeast.instanceId,
+        };
+        sys.interaction = { ...sys.interaction, current: interaction };
+
+        const context = buildAiDecisionContext({
+            gameId: 'summonerwars',
+            matchId: 'local:summonerwars-feed-beast-priority',
+            playerId: '0',
+            visibleState: { core, sys },
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai', difficulty: 'hard' },
+        });
+
+        const decision = await summonerWarsAiRuntime.localPolicies?.baseline.decide(context);
+        const evaluations = (decision?.providerMetadata?.evaluations ?? []) as Array<{
+            actionId: string;
+            contributions: Array<{ scorerId: string; score: number }>;
+        }>;
+        const selfDestroyAction = context.legalActions.find((action) => action.metadata?.optionId === 'self_destroy');
+        const expensiveAction = context.legalActions.find((action) => action.metadata?.optionId === 'consume-expensive');
+        const cheapAction = context.legalActions.find((action) => action.metadata?.optionId === 'consume-cheap');
+        const selfDestroyEval = evaluations.find((item) => item.actionId === selfDestroyAction?.actionId);
+        const expensiveEval = evaluations.find((item) => item.actionId === expensiveAction?.actionId);
+        const cheapEval = evaluations.find((item) => item.actionId === cheapAction?.actionId);
+        const selfDestroySemanticScore = selfDestroyEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+        const expensiveSemanticScore = expensiveEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+        const cheapSemanticScore = cheapEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+
+        expect(cheapSemanticScore).toBeGreaterThan(expensiveSemanticScore);
+        expect(cheapSemanticScore).toBeGreaterThan(selfDestroySemanticScore);
+        expect(decision?.actionId).toBe(cheapAction?.actionId);
+    });
+
+    it('revive_undead 选弃牌堆单位时，应优先选择更高价值的亡灵而不是列表第一张', async () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'necromancer',
+            faction1: 'paladin',
+        });
+        core.phase = 'summon';
+        core.currentPlayer = '0';
+        core.players['0'].discard = [
+            {
+                id: 'discard-cheap-undead',
+                cardType: 'unit',
+                name: '测试低价值亡灵',
+                unitClass: 'common',
+                faction: 'necromancer',
+                strength: 1,
+                life: 2,
+                cost: 0,
+                attackType: 'melee',
+                attackRange: 1,
+                abilities: [],
+                deckSymbols: [],
+            },
+            {
+                id: 'discard-elite-undead',
+                cardType: 'unit',
+                name: '测试高价值亡灵',
+                unitClass: 'champion',
+                faction: 'necromancer',
+                strength: 3,
+                life: 6,
+                cost: 5,
+                attackType: 'melee',
+                attackRange: 1,
+                abilities: [],
+                deckSymbols: [],
+            },
+        ];
+
+        const sys = createInitialSystemState(['0', '1'], []);
+        const interaction = createSimpleChoice(
+            'sw-ai-revive-undead-card-priority',
+            '0',
+            'interaction.sw.reviveUndead',
+            [
+                {
+                    id: 'discard-cheap-undead',
+                    label: '测试低价值亡灵',
+                    value: {
+                        action: 'activated_ability_target',
+                        abilityId: 'revive_undead',
+                        targetCardId: 'discard-cheap-undead',
+                    },
+                },
+                {
+                    id: 'discard-elite-undead',
+                    label: '测试高价值亡灵',
+                    value: {
+                        action: 'activated_ability_target',
+                        abilityId: 'revive_undead',
+                        targetCardId: 'discard-elite-undead',
+                    },
+                },
+            ],
+            { sourceId: 'revive_undead' },
+        );
+        sys.interaction = { ...sys.interaction, current: interaction };
+
+        const context = buildAiDecisionContext({
+            gameId: 'summonerwars',
+            matchId: 'local:summonerwars-revive-undead-card-priority',
+            playerId: '0',
+            visibleState: { core, sys },
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai', difficulty: 'hard' },
+        });
+
+        const decision = await summonerWarsAiRuntime.localPolicies?.baseline.decide(context);
+        const evaluations = (decision?.providerMetadata?.evaluations ?? []) as Array<{
+            actionId: string;
+            contributions: Array<{ scorerId: string; score: number }>;
+        }>;
+        const cheapAction = context.legalActions.find((action) => action.metadata?.optionId === 'discard-cheap-undead');
+        const eliteAction = context.legalActions.find((action) => action.metadata?.optionId === 'discard-elite-undead');
+        const cheapEval = evaluations.find((item) => item.actionId === cheapAction?.actionId);
+        const eliteEval = evaluations.find((item) => item.actionId === eliteAction?.actionId);
+        const cheapSemanticScore = cheapEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+        const eliteSemanticScore = eliteEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+
+        expect(eliteSemanticScore).toBeGreaterThan(cheapSemanticScore);
+        expect(decision?.actionId).toBe(eliteAction?.actionId);
+    });
+
+    it('fire_sacrifice_summon 选祭品时，应优先牺牲最低价值友军而不是第一个候选', async () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'necromancer',
+            faction1: 'paladin',
+        });
+        core.phase = 'summon';
+        core.currentPlayer = '0';
+        core.board[6][2].unit = undefined;
+        core.board[6][3].unit = undefined;
+
+        const fragileAlly = placeTestUnit(core, { row: 6, col: 2 }, {
+            card: {
+                id: 'test-fragile-ally',
+                cardType: 'unit',
+                name: '测试低价值祭品',
+                unitClass: 'common',
+                faction: 'necromancer',
+                strength: 1,
+                life: 2,
+                cost: 0,
+                attackType: 'melee',
+                attackRange: 1,
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+        const eliteAlly = placeTestUnit(core, { row: 6, col: 3 }, {
+            card: {
+                id: 'test-elite-ally',
+                cardType: 'unit',
+                name: '测试高价值祭品',
+                unitClass: 'champion',
+                faction: 'necromancer',
+                strength: 4,
+                life: 5,
+                cost: 4,
+                attackType: 'melee',
+                attackRange: 1,
+                deckSymbols: [],
+            },
+            owner: '0',
+        });
+
+        const sys = createInitialSystemState(['0', '1'], []);
+        const interaction = createSimpleChoice(
+            'sw-ai-fire-sacrifice-priority',
+            '0',
+            'interaction.sw.fireSacrificeSummon',
+            [
+                {
+                    id: `unit:${eliteAlly.instanceId}`,
+                    label: '测试高价值祭品',
+                    value: {
+                        action: 'fire_sacrifice_summon',
+                        sacrificeUnitId: eliteAlly.instanceId,
+                    },
+                },
+                {
+                    id: `unit:${fragileAlly.instanceId}`,
+                    label: '测试低价值祭品',
+                    value: {
+                        action: 'fire_sacrifice_summon',
+                        sacrificeUnitId: fragileAlly.instanceId,
+                    },
+                },
+            ],
+            { sourceId: 'fire_sacrifice_summon' },
+        );
+        sys.interaction = { ...sys.interaction, current: interaction };
+
+        const context = buildAiDecisionContext({
+            gameId: 'summonerwars',
+            matchId: 'local:summonerwars-fire-sacrifice-priority',
+            playerId: '0',
+            visibleState: { core, sys },
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai', difficulty: 'hard' },
+        });
+
+        const decision = await summonerWarsAiRuntime.localPolicies?.baseline.decide(context);
+        const evaluations = (decision?.providerMetadata?.evaluations ?? []) as Array<{
+            actionId: string;
+            contributions: Array<{ scorerId: string; score: number }>;
+        }>;
+        const eliteAction = context.legalActions.find((action) => action.metadata?.optionId === `unit:${eliteAlly.instanceId}`);
+        const fragileAction = context.legalActions.find((action) => action.metadata?.optionId === `unit:${fragileAlly.instanceId}`);
+        const eliteEval = evaluations.find((item) => item.actionId === eliteAction?.actionId);
+        const fragileEval = evaluations.find((item) => item.actionId === fragileAction?.actionId);
+        const eliteSemanticScore = eliteEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+        const fragileSemanticScore = fragileEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+
+        expect(fragileSemanticScore).toBeGreaterThan(eliteSemanticScore);
+        expect(decision?.actionId).toBe(fragileAction?.actionId);
+    });
+
+    it('blood_summon 选召唤卡时，应优先选择收益更高的低费单位而不是手牌第一张', async () => {
+        const core = createInitializedCore(['0', '1'], aiTestRandom, {
+            faction0: 'necromancer',
+            faction1: 'paladin',
+        });
+        core.phase = 'event';
+        core.currentPlayer = '0';
+        core.players['0'].hand = [
+            {
+                id: 'blood-summon-cheap',
+                cardType: 'unit',
+                name: '测试低收益单位',
+                unitClass: 'common',
+                faction: 'necromancer',
+                strength: 1,
+                life: 2,
+                cost: 0,
+                attackType: 'melee',
+                attackRange: 1,
+                abilities: [],
+                deckSymbols: [],
+            },
+            {
+                id: 'blood-summon-elite',
+                cardType: 'unit',
+                name: '测试高收益单位',
+                unitClass: 'common',
+                faction: 'necromancer',
+                strength: 2,
+                life: 5,
+                cost: 2,
+                attackType: 'ranged',
+                attackRange: 3,
+                abilities: [],
+                deckSymbols: [],
+            },
+        ];
+
+        const sys = createInitialSystemState(['0', '1'], []);
+        const interaction = createSimpleChoice(
+            'sw-ai-blood-summon-card-priority',
+            '0',
+            'interaction.sw.bloodSummonCard',
+            [
+                {
+                    id: 'blood-summon-cheap',
+                    label: '测试低收益单位',
+                    value: { action: 'blood_summon_card', summonCardId: 'blood-summon-cheap' },
+                },
+                {
+                    id: 'blood-summon-elite',
+                    label: '测试高收益单位',
+                    value: { action: 'blood_summon_card', summonCardId: 'blood-summon-elite' },
+                },
+            ],
+            { sourceId: 'blood_summon' },
+        );
+        sys.interaction = { ...sys.interaction, current: interaction };
+
+        const context = buildAiDecisionContext({
+            gameId: 'summonerwars',
+            matchId: 'local:summonerwars-blood-summon-card-priority',
+            playerId: '0',
+            visibleState: { core, sys },
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai', difficulty: 'hard' },
+        });
+
+        const decision = await summonerWarsAiRuntime.localPolicies?.baseline.decide(context);
+        const evaluations = (decision?.providerMetadata?.evaluations ?? []) as Array<{
+            actionId: string;
+            contributions: Array<{ scorerId: string; score: number }>;
+        }>;
+        const cheapAction = context.legalActions.find((action) => action.metadata?.optionId === 'blood-summon-cheap');
+        const eliteAction = context.legalActions.find((action) => action.metadata?.optionId === 'blood-summon-elite');
+        const cheapEval = evaluations.find((item) => item.actionId === cheapAction?.actionId);
+        const eliteEval = evaluations.find((item) => item.actionId === eliteAction?.actionId);
+        const cheapSemanticScore = cheapEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+        const eliteSemanticScore = eliteEval?.contributions.find((item) => item.scorerId === 'interaction-semantic')?.score ?? -Infinity;
+
+        expect(eliteSemanticScore).toBeGreaterThan(cheapSemanticScore);
+        expect(decision?.actionId).toBe(eliteAction?.actionId);
+    });
+
     it('殉葬火堆有受伤友军时，AI 应优先生成并选择 FUNERAL_PYRE_HEAL，而不是回落普通阶段动作', async () => {
         const core = createInitializedCore(['0', '1'], aiTestRandom, {
             faction0: 'necromancer',

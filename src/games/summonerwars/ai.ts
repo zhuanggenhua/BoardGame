@@ -659,6 +659,26 @@ const readActionMetadataString = (action: AiLegalAction, key: string): string | 
     return typeof value === 'string' ? value : null;
 };
 
+const asOptionValueRecord = (value: unknown): Record<string, unknown> | null => {
+    return value && typeof value === 'object'
+        ? value as Record<string, unknown>
+        : null;
+};
+
+const readOptionValueString = (value: Record<string, unknown>, key: string): string | null => {
+    const field = value[key];
+    return typeof field === 'string' ? field : null;
+};
+
+const readOptionValuePosition = (value: Record<string, unknown>, key: string): CellCoord | null => {
+    const field = value[key];
+    if (!field || typeof field !== 'object') return null;
+    const candidate = field as { row?: unknown; col?: unknown };
+    return typeof candidate.row === 'number' && typeof candidate.col === 'number'
+        ? { row: candidate.row, col: candidate.col }
+        : null;
+};
+
 const buildSummonerWarsFeatureSnapshot = (args: {
     playerId: PlayerId;
     state: SummonerWarsState;
@@ -2463,6 +2483,146 @@ const interactionPositionScorer: LocalAiActionScorer = {
     },
 };
 
+const interactionSemanticScorer: LocalAiActionScorer = {
+    id: 'interaction-semantic',
+    score(context, action) {
+        if (action.kind !== 'interaction-choice') return null;
+        const optionValue = asOptionValueRecord(action.metadata?.optionValue);
+        if (!optionValue) return null;
+
+        const state = context.visibleState as SummonerWarsState;
+        const playerId = asSummonerWarsPlayerId(context.playerId);
+        if (!playerId) return null;
+
+        const interactionAction = readOptionValueString(optionValue, 'action');
+        if (interactionAction === 'mind_capture') {
+            const targetPosition = readOptionValuePosition(optionValue, 'targetPosition');
+            const choice = readOptionValueString(optionValue, 'choice');
+            if (!targetPosition || !choice) return null;
+
+            const targetUnit = getUnitAt(state.core, targetPosition);
+            if (!targetUnit || targetUnit.owner === playerId) return null;
+
+            const targetValue = getCardKeepValue(targetUnit.card);
+            const enemySummoner = getSummoner(state.core, getEnemyPlayerId(playerId));
+            const pressureBonus = enemySummoner
+                ? Math.max(0, 8 - manhattanDistance(targetPosition, enemySummoner.position)) * 4
+                : 0;
+
+            if (choice === 'control') {
+                const classBonus = targetUnit.card.unitClass === 'champion'
+                    ? 24
+                    : targetUnit.card.unitClass === 'summoner'
+                        ? 12
+                        : 0;
+                return {
+                    score: 48 + Math.min(96, targetValue * 0.22) + pressureBonus + classBonus,
+                    reason: targetUnit.card.unitClass === 'champion'
+                        ? '优先夺取高价值冠军，而不是只做一次性伤害'
+                        : '优先夺取敌方单位，长期收益高于直接消灭',
+                };
+            }
+
+            if (choice === 'damage') {
+                return {
+                    score: 14 + Math.min(44, targetValue * 0.08) + Math.floor(pressureBonus / 3),
+                    reason: '直接伤害仅兑现当前收益，通常低于夺取该单位',
+                };
+            }
+        }
+
+        if (interactionAction === 'feed_beast') {
+            const sourceUnitId = readOptionValueString(optionValue, 'sourceUnitId');
+            const choice = readOptionValueString(optionValue, 'choice');
+            if (!sourceUnitId || !choice) return null;
+
+            const sourcePosition = findUnitPositionByInstanceId(state.core, sourceUnitId);
+            const sourceUnit = sourcePosition ? getUnitAt(state.core, sourcePosition) : null;
+            if (!sourceUnit || sourceUnit.owner !== playerId) return null;
+
+            const sourceValue = Math.max(0, getCardKeepValue(sourceUnit.card) - sourceUnit.damage * 8);
+            const preserveSourceBonus = Math.min(140, sourceValue * 0.18);
+
+            if (choice === 'self_destroy') {
+                return {
+                    score: -preserveSourceBonus,
+                    reason: '喂养巨食兽时应尽量避免直接自毁主体',
+                };
+            }
+
+            if (choice === 'destroy_adjacent') {
+                const targetPosition = readOptionValuePosition(optionValue, 'targetPosition');
+                if (!targetPosition) return null;
+
+                const targetUnit = getUnitAt(state.core, targetPosition);
+                if (!targetUnit || targetUnit.owner !== playerId) return null;
+
+                const targetValue = Math.max(0, getCardKeepValue(targetUnit.card) - targetUnit.damage * 8);
+                return {
+                    score: preserveSourceBonus - Math.min(120, targetValue * 0.2),
+                    reason: targetValue <= sourceValue
+                        ? '优先牺牲较低价值友军，保留更值钱的巨食兽'
+                        : '只有当相邻友军更值钱时，才考虑保留其余单位',
+                };
+            }
+        }
+
+        if (interactionAction === 'activated_ability_target') {
+            const abilityId = readOptionValueString(optionValue, 'abilityId');
+            const targetCardId = readOptionValueString(optionValue, 'targetCardId');
+            if (!abilityId || !targetCardId) return null;
+
+            const targetCard = state.core.players[playerId].discard.find((card) => card.id === targetCardId);
+            if (!targetCard) return null;
+
+            const keepValue = getCardKeepValue(targetCard);
+            if (abilityId === 'revive_undead') {
+                return {
+                    score: 26 + Math.min(120, keepValue * 0.18),
+                    reason: '复活死灵时优先挑选更高价值的亡灵单位',
+                };
+            }
+
+            if (abilityId === 'fortress_power') {
+                return {
+                    score: 12 + Math.min(84, keepValue * 0.12),
+                    reason: '城塞之力优先拿回保留价值更高的单位牌',
+                };
+            }
+        }
+
+        if (interactionAction === 'fire_sacrifice_summon') {
+            const sacrificeUnitId = readOptionValueString(optionValue, 'sacrificeUnitId');
+            if (!sacrificeUnitId) return null;
+
+            const sacrificePosition = findUnitPositionByInstanceId(state.core, sacrificeUnitId);
+            const sacrificeUnit = sacrificePosition ? getUnitAt(state.core, sacrificePosition) : null;
+            if (!sacrificeUnit || sacrificeUnit.owner !== playerId) return null;
+
+            const adjustedValue = Math.max(0, getCardKeepValue(sacrificeUnit.card) - sacrificeUnit.damage * 8);
+            return {
+                score: -Math.min(160, adjustedValue * 0.22),
+                reason: '火祀召唤优先牺牲保留价值最低的友军',
+            };
+        }
+
+        if (interactionAction === 'blood_summon_card') {
+            const summonCardId = readOptionValueString(optionValue, 'summonCardId');
+            if (!summonCardId) return null;
+
+            const summonCard = state.core.players[playerId].hand.find((card) => card.id === summonCardId);
+            if (!summonCard) return null;
+
+            return {
+                score: 18 + Math.min(96, getCardKeepValue(summonCard) * 0.14),
+                reason: '血召唤优先选择当前收益更高的低费单位',
+            };
+        }
+
+        return null;
+    },
+};
+
 const setupScorer: LocalAiActionScorer = {
     id: 'setup-priority',
     score(_context, action) {
@@ -3226,6 +3386,7 @@ const baselineLocalPolicy = createLookaheadLocalAiPolicy({
         interactionHintScorer,
         interactionScorer,
         interactionPositionScorer,
+        interactionSemanticScorer,
         setupScorer,
         setupRandomScorer,
         summonScorer,
