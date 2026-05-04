@@ -42,13 +42,15 @@ import {
 } from './domain';
 import { DICETHRONE_COMMANDS } from './domain/ids';
 import { DICETHRONE_CHARACTER_CATALOG, type SelectableCharacterId } from './domain/types';
-import { findPlayerAbility, getPlayerAbilityBaseDamage } from './domain/abilityLookup';
+import { findPlayerAbility, getPlayerAbilityBaseDamage, getPlayerAbilityEffects } from './domain/abilityLookup';
 import { getPlayerPassiveAbilities, isPassiveActionUsable } from './domain/passiveAbility';
-import { areTeammates, getOpponents } from './domain/rules';
+import { areTeammates, getOpponents, getRollerId } from './domain/rules';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { hasDebuffs, hasPurifyToken, getUsableTokensForTiming } from './domain/tokenResponse';
-import { getTokenEffectValue } from './domain/tokenTypes';
-import type { TriggerCondition } from './domain/combat';
+import { getTokenEffectValue, type EffectAction, type RollDieConditionalEffect, type RollDieDefaultEffect } from './domain/tokenTypes';
+import { getDieFaceByValue } from './domain/diceRegistry';
+import { getCustomActionMeta } from './domain/effects';
+import type { AbilityEffect, TriggerCondition } from './domain/combat';
 import type {
     AbilityCard,
     DiceThroneCore,
@@ -241,6 +243,35 @@ const enumerateArrayCombinations = <T>(
     return results;
 };
 
+const enumeratePerItemValueAssignments = <T>(
+    items: T[],
+    resolveValues: (item: T, index: number) => number[],
+): number[][] => {
+    const results: number[][] = [];
+    const path: number[] = [];
+
+    const dfs = (index: number) => {
+        if (index >= items.length) {
+            results.push([...path]);
+            return;
+        }
+
+        const values = Array.from(new Set(resolveValues(items[index], index)));
+        if (values.length === 0) {
+            return;
+        }
+
+        for (const value of values) {
+            path.push(value);
+            dfs(index + 1);
+            path.pop();
+        }
+    };
+
+    dfs(0);
+    return results;
+};
+
 const enumerateOrderedSelections = <T>(
     items: T[],
     count: number,
@@ -419,13 +450,14 @@ const buildDiceTargetPlans = (
     state: DiceThroneState,
     playerId: PlayerId,
     phase: TurnPhase,
+    diceOverride?: DiceThroneCore['dice'],
 ): DiceTargetPlan[] => {
     const player = state.core.players[playerId];
     if (!player) return [];
 
     const availableIds = new Set(getAvailableAbilityIds(state.core, playerId, phase));
     const expectedType = phase === 'defensiveRoll' ? 'defensive' : phase === 'offensiveRoll' ? 'offensive' : undefined;
-    const dice = getActiveDice(state.core);
+    const dice = diceOverride ?? getActiveDice(state.core);
     const plans: DiceTargetPlan[] = [];
 
     const pushPlan = (abilityId: string, trigger: TriggerCondition | undefined) => {
@@ -450,7 +482,7 @@ const buildDiceTargetPlans = (
             plans.push({
                 abilityId,
                 ...evaluation,
-                available: availableIds.has(abilityId),
+                available: diceOverride ? evaluation.missingCount === 0 : availableIds.has(abilityId),
                 strategicScore,
             });
         }
@@ -472,17 +504,41 @@ const buildDiceTargetPlans = (
     return plans;
 };
 
+const scoreDiceTargetPlan = (
+    state: DiceThroneState,
+    phase: TurnPhase,
+    plan: DiceTargetPlan,
+): number => {
+    const isRollPhase = phase === 'offensiveRoll' || phase === 'defensiveRoll';
+    const remainingRolls = isRollPhase
+        ? Math.max(0, state.core.rollLimit - state.core.rollCount)
+        : 0;
+    const missingPenalty = !isRollPhase
+        ? 36
+        : state.core.rollConfirmed
+            ? 120
+            : (remainingRolls <= 0 ? 120 : (remainingRolls === 1 ? 60 : 36));
+    const availableBonus = !isRollPhase
+        ? 60
+        : state.core.rollConfirmed || remainingRolls <= 0
+            ? 100
+            : 60;
+
+    return plan.strategicScore + plan.matchedCount * 18 - plan.missingCount * missingPenalty + (plan.available ? availableBonus : 0);
+};
+
 const getBestDiceTargetPlan = (
     state: DiceThroneState,
     playerId: PlayerId,
     phase: TurnPhase,
+    diceOverride?: DiceThroneCore['dice'],
 ): DiceTargetPlan | null => {
-    const plans = buildDiceTargetPlans(state, playerId, phase);
+    const plans = buildDiceTargetPlans(state, playerId, phase, diceOverride);
     if (plans.length === 0) return null;
 
     return [...plans].sort((left, right) => {
-        const leftScore = left.strategicScore + left.matchedCount * 18 - left.missingCount * 36 + (left.available ? 60 : 0);
-        const rightScore = right.strategicScore + right.matchedCount * 18 - right.missingCount * 36 + (right.available ? 60 : 0);
+        const leftScore = scoreDiceTargetPlan(state, phase, left);
+        const rightScore = scoreDiceTargetPlan(state, phase, right);
         if (rightScore !== leftScore) return rightScore - leftScore;
         if (left.missingCount !== right.missingCount) return left.missingCount - right.missingCount;
         return right.strategicScore - left.strategicScore;
@@ -1299,40 +1355,49 @@ const buildInteractionActions = (
         }
 
         const selections = enumerateArrayCombinations(selectableDice, 1, selectCount);
-        return selections.map((selection) => {
-            const newValues = selection.map((die) => {
-                if (mode === 'adjust') {
-                    return Math.min(6, Math.max(1, die.value + 1));
-                }
-                return targetValue;
-            });
+        const actions = selections.flatMap((selection) => {
+            const valueAssignments = mode === 'any'
+                ? enumeratePerItemValueAssignments(selection, (die) =>
+                    [1, 2, 3, 4, 5, 6].filter((value) => value !== die.value))
+                : mode === 'adjust'
+                    ? enumeratePerItemValueAssignments(selection, (die) =>
+                        [die.value - 1, die.value + 1].filter((value) => value >= 1 && value <= 6))
+                : [selection.map((die) => {
+                    return targetValue;
+                })];
 
-            return {
-                actionId: createAiLegalActionId(
-                    'interaction',
-                    interactionId,
-                    'modify',
-                    ...selection.flatMap((die, index) => [die.id, newValues[index]]),
-                ),
-                kind: 'interaction-multistep',
-                label: `修改骰子 ${selection.map((die) => die.id).join(', ')}`,
-                commands: [
-                    ...selection.map((die, index) => ({
-                        type: 'MODIFY_DIE',
-                        payload: { dieId: die.id, newValue: newValues[index] },
-                    })),
-                    { type: 'SYS_INTERACTION_CONFIRM', payload: { interactionId } },
-                ],
-                metadata: withVisibleStepDelayPolicy(withAiActionStrategyTags({
-                    interactionId,
-                    dieId: selection[0]?.id,
-                    dieIds: selection.map((die) => die.id),
-                    newValue: newValues[0],
-                    newValues,
-                    mode,
-                }, ['dice-setup']), 'hidden'),
-            };
+            return valueAssignments
+                .filter((newValues) => newValues.some((value, index) => value !== selection[index]?.value))
+                .map((newValues) => ({
+                    actionId: createAiLegalActionId(
+                        'interaction',
+                        interactionId,
+                        'modify',
+                        ...selection.flatMap((die, index) => [die.id, newValues[index]]),
+                    ),
+                    kind: 'interaction-multistep' as const,
+                    label: `修改骰子 ${selection.map((die) => die.id).join(', ')}`,
+                    commands: [
+                        ...selection.map((die, index) => ({
+                            type: 'MODIFY_DIE',
+                            payload: { dieId: die.id, newValue: newValues[index] },
+                        })),
+                        { type: 'SYS_INTERACTION_CONFIRM', payload: { interactionId } },
+                    ],
+                    metadata: withVisibleStepDelayPolicy(withAiActionStrategyTags({
+                        interactionId,
+                        dieId: selection[0]?.id,
+                        dieIds: selection.map((die) => die.id),
+                        newValue: newValues[0],
+                        newValues,
+                        mode,
+                    }, ['dice-setup']), 'hidden'),
+                }));
         });
+
+        return actions.length > 0
+            ? actions
+            : [buildEmergencyInteractionCancelAction(interactionId, 'no-legal-actions')];
     }
 
     return null;
@@ -2202,7 +2267,12 @@ const abilityValueScorer: LocalAiActionScorer = {
 
         const phase = getContextPhase(context);
         const baseDamage = getPlayerAbilityBaseDamage(state.core, context.playerId, abilityId);
-        let score = baseDamage * 25;
+        const effectValue = estimateEffectsStrategicValue(
+            state,
+            context.playerId,
+            getPlayerAbilityEffects(state.core, context.playerId, abilityId),
+        );
+        let score = Math.max(baseDamage * 25, effectValue);
 
         if (match.ability.type === 'offensive' && phase === 'offensiveRoll') {
             score += 90;
@@ -2216,7 +2286,9 @@ const abilityValueScorer: LocalAiActionScorer = {
 
         return {
             score,
-            reason: `能力 ${abilityId} 的基础收益更高`,
+            reason: effectValue > baseDamage * 25
+                ? `能力 ${abilityId} 的动态效果收益更高`
+                : `能力 ${abilityId} 的基础收益更高`,
         };
     },
 };
@@ -2244,12 +2316,20 @@ const cardValueScorer: LocalAiActionScorer = {
             if (effect.action?.type !== 'drawCard') return sum;
             return sum + (effect.action.drawCount ?? effect.action.value ?? 0);
         }, 0) ?? 0;
+        const phase = getContextPhase(context);
 
         if (action.kind === 'play-card' || action.kind === 'response-play-card') {
-            let score = 35 + card.cpCost * 10 + (card.isAttackModifier ? 30 : 0);
+            let score = estimateCardStrategicValue(state, context.playerId, card, action.kind)
+                + (card.isAttackModifier ? 8 : 0);
             let reason = card.isAttackModifier
                 ? `攻击修正牌 ${cardId} 具有即时收益`
                 : `行动牌 ${cardId} 可带来额外收益`;
+
+            const diceInteractionValue = estimateDiceInterferenceCardValue(state, context.playerId, card, phase);
+            if (diceInteractionValue) {
+                score += diceInteractionValue.score;
+                reason = diceInteractionValue.reason;
+            }
 
             if (drawCount > 0) {
                 const handSize = state.core.players[context.playerId]?.hand.length ?? 0;
@@ -2273,8 +2353,8 @@ const cardValueScorer: LocalAiActionScorer = {
             if (phase === 'discard') {
                 // 弃牌阶段卖牌策略：卖掉最不值得保留的牌（低费、无特殊效果的牌得分更高）
                 // 每张牌卖价固定 1 CP，所以卖高费牌是亏的（失去高费牌只换 1 CP）
-                const keepValue = card.cpCost * 12 + (card.isAttackModifier ? 18 : 0)
-                    + (card.type === 'upgrade' ? 25 : 0) + getCardDrawCount(card) * 14;
+                const keepValue = estimateCardStrategicValue(state, context.playerId, card, 'discard-card')
+                    + (card.type === 'upgrade' ? 25 : 0);
                 return {
                     score: -keepValue,
                     reason: `弃牌阶段卖 ${cardId}：保留价值越低的牌越适合卖`,
@@ -2282,7 +2362,7 @@ const cardValueScorer: LocalAiActionScorer = {
             }
             // 主阶段卖牌：卖高费牌可解锁更多操作空间
             return {
-                score: 10 + card.cpCost * 8,
+                score: 10 + card.cpCost * 8 - estimateCardStrategicValue(state, context.playerId, card, 'sell-card') * 0.2,
                 reason: `卖牌 ${cardId} 可换取 CP`,
             };
         }
@@ -2292,7 +2372,7 @@ const cardValueScorer: LocalAiActionScorer = {
                 // 弃牌评分应为负值：目的是在多张可弃牌中选最该弃的那张（相对排序），
                 // 而非让弃牌动作总分超过 advance-phase 导致 AI 在手牌未超限时也优先弃牌。
                 // cpCost 越高越该保留，所以弃高费牌应更不被偏好（更负）。
-                score: -(card.cpCost * 15 + (card.type === 'action' ? 8 : 0) + (card.isAttackModifier ? 12 : 0) + getCardDrawCount(card) * 10),
+                score: -estimateCardStrategicValue(state, context.playerId, card, 'discard-card'),
                 reason: `弃牌 ${cardId}：费用/收益越高的牌越不舍得弃`,
             };
         }
@@ -2308,10 +2388,14 @@ const interactionValueScorer: LocalAiActionScorer = {
         const interactionId = typeof action.metadata?.interactionId === 'string'
             ? action.metadata.interactionId
             : null;
+        const phase = getContextPhase(context);
         const currentInteraction = state.sys.interaction?.current as EngineInteractionDescriptor | undefined;
+        const currentInteractionData = currentInteraction?.kind === 'multistep-choice'
+            ? currentInteraction.data as DiceInteractionData | undefined
+            : undefined;
         const targetOpponentDice = currentInteraction?.kind === 'multistep-choice'
             && (!interactionId || currentInteraction.id === interactionId)
-            && (currentInteraction.data as DiceInteractionData | undefined)?.meta?.targetOpponentDice === true;
+            && currentInteractionData?.meta?.targetOpponentDice === true;
         const scoreForTargetValue = (value: number) => (targetOpponentDice ? (7 - value) : value);
         const scoreForDieValue = (value: number) => (targetOpponentDice ? value : (7 - value));
 
@@ -2324,6 +2408,9 @@ const interactionValueScorer: LocalAiActionScorer = {
                 : [];
             const newValue = typeof action.metadata?.newValue === 'number'
                 ? action.metadata.newValue
+                : null;
+            const dieId = typeof action.metadata?.dieId === 'number'
+                ? action.metadata.dieId
                 : null;
             const getDeltaScore = (values: number[], ids: number[]) => {
                 return values.reduce((sum, value, index) => {
@@ -2339,38 +2426,85 @@ const interactionValueScorer: LocalAiActionScorer = {
             };
             if (newValues.length > 0) {
                 const deltaScore = getDeltaScore(newValues, dieIds);
+                const projection = dieIds.length === newValues.length
+                    ? evaluateDiceProjection(
+                        state,
+                        context.playerId,
+                        phase,
+                        targetOpponentDice,
+                        buildProjectedDice(
+                            getActiveDice(state.core),
+                            dieIds.map((currentDieId, index) => ({ dieId: currentDieId, newValue: newValues[index] })),
+                        ),
+                    )
+                    : null;
+                const projectionDriven = currentInteractionData?.meta?.dtType === 'modifyDie' && !!projection;
                 return {
-                    score: newValues.reduce((sum, value) => sum + scoreForTargetValue(value) * 18, 0)
-                        + newValues.length * 16
-                        + deltaScore,
-                    reason: targetOpponentDice
-                        ? `优先让对手骰面更低，目标点数 ${newValues.join(', ')}`
-                        : `优先完成更多骰子调整，累计目标点数 ${newValues.join(', ')}`,
+                    score: projectionDriven
+                        ? (projection?.score ?? 0) + newValues.length * 14
+                        : newValues.reduce((sum, value) => sum + scoreForTargetValue(value) * 18, 0)
+                            + newValues.length * 16
+                            + deltaScore
+                            + (projection?.score ?? 0),
+                    reason: projection && projection.planDelta > 0
+                        ? (targetOpponentDice
+                            ? `优先把对手从 ${projection.currentPlanId ?? '当前技能线'} 拉离，目标点数 ${newValues.join(', ')}`
+                            : `优先把骰面调整到更接近 ${projection.projectedPlanId ?? '目标技能'} 的路线`)
+                        : (targetOpponentDice
+                            ? `优先让对手骰面更低，目标点数 ${newValues.join(', ')}`
+                            : `优先完成更多骰子调整，累计目标点数 ${newValues.join(', ')}`),
                 };
             }
             if (newValue !== null) {
                 const deltaScore = getDeltaScore([newValue], dieId !== null ? [dieId] : []);
+                const projection = dieId !== null
+                    ? evaluateDiceProjection(
+                        state,
+                        context.playerId,
+                        phase,
+                        targetOpponentDice,
+                        buildProjectedDice(getActiveDice(state.core), [{ dieId, newValue }]),
+                    )
+                    : null;
+                const projectionDriven = currentInteractionData?.meta?.dtType === 'modifyDie' && !!projection;
                 return {
-                    score: scoreForTargetValue(newValue) * 18 + deltaScore,
-                    reason: targetOpponentDice
-                        ? `优先把对手骰面压到更低点数 ${newValue}`
-                        : `优先把骰子调整到更高点数 ${newValue}`,
+                    score: projectionDriven
+                        ? (projection?.score ?? 0) + 14
+                        : scoreForTargetValue(newValue) * 18 + deltaScore + (projection?.score ?? 0),
+                    reason: projection && projection.planDelta > 0
+                        ? (targetOpponentDice
+                            ? `优先把对手从 ${projection.currentPlanId ?? '当前技能线'} 拉开`
+                            : `优先把骰子改到更接近 ${projection.projectedPlanId ?? '目标技能'} 的值`)
+                        : (targetOpponentDice
+                            ? `优先把对手骰面压到更低点数 ${newValue}`
+                            : `优先把骰子调整到更高点数 ${newValue}`),
                 };
             }
 
-            const dieId = typeof action.metadata?.dieId === 'number'
-                ? action.metadata.dieId
-                : null;
             if (dieIds.length > 0) {
                 const totalScore = dieIds.reduce((sum, currentDieId) => {
                     const die = state.core.dice.find((item) => item.id === currentDieId);
                     return sum + (die ? scoreForDieValue(die.value) * 12 : 0);
                 }, 0);
                 return {
-                    score: totalScore + dieIds.length * 18,
-                    reason: targetOpponentDice
-                        ? `优先处理对手高点骰子 ${dieIds.join(', ')}`
-                        : `优先一次处理更多低点骰子 ${dieIds.join(', ')}`,
+                    score: totalScore + dieIds.length * 18 + (
+                        currentInteractionData?.meta?.dtType === 'selectDie'
+                            ? (evaluateExpectedRerollSelection(
+                                state,
+                                context.playerId,
+                                phase,
+                                targetOpponentDice,
+                                getActiveDice(state.core).filter((die) => dieIds.includes(die.id)),
+                            )?.score ?? 0)
+                            : 0
+                    ),
+                    reason: currentInteractionData?.meta?.dtType === 'selectDie'
+                        ? (targetOpponentDice
+                            ? `优先重掷最能打断对手技能线的骰子 ${dieIds.join(', ')}`
+                            : `优先重掷最能改善当前技能线的骰子 ${dieIds.join(', ')}`)
+                        : (targetOpponentDice
+                            ? `优先处理对手高点骰子 ${dieIds.join(', ')}`
+                            : `优先一次处理更多低点骰子 ${dieIds.join(', ')}`),
                 };
             }
             if (dieId !== null) {
@@ -2542,6 +2676,12 @@ const bonusDieScorer: LocalAiActionScorer = {
         const state = context.visibleState as DiceThroneState;
         const settlement = state.core.pendingBonusDiceSettlement as PendingBonusDiceSettlement | undefined;
         if (!settlement) return null;
+        const currentValue = evaluateBonusDiceSettlementValue(state, settlement);
+        const bestRerollDelta = settlement.dice.reduce((best, die) => {
+            const expectedValue = evaluateExpectedBonusDieRerollValue(state, settlement, die.index);
+            if (expectedValue === null) return best;
+            return Math.max(best, expectedValue - currentValue);
+        }, Number.NEGATIVE_INFINITY);
 
         if (action.kind === 'bonus-die-reroll') {
             const dieIndex = typeof action.metadata?.dieIndex === 'number'
@@ -2551,16 +2691,27 @@ const bonusDieScorer: LocalAiActionScorer = {
                 ? settlement.dice.find((item) => item.index === dieIndex)
                 : null;
             if (!die) return null;
+            const expectedValue = evaluateExpectedBonusDieRerollValue(state, settlement, die.index);
+            if (expectedValue === null) return null;
+            const delta = expectedValue - currentValue;
             return {
-                score: (4 - die.value) * 35,
-                reason: `优先重掷较低的奖励骰 ${die.value}`,
+                score: delta > 0
+                    ? 120 + delta
+                    : -220 + delta,
+                reason: delta > 0
+                    ? `这颗奖励骰重掷后有更高结算期望，当前 ${die.value} 点值得搏一下`
+                    : `这颗奖励骰重掷期望反而更差，当前 ${die.value} 点更适合保留`,
             };
         }
 
         if (action.kind === 'skip-bonus-dice-reroll') {
             return {
-                score: 15,
-                reason: '当前奖励骰已足够，直接确认',
+                score: bestRerollDelta > 0
+                    ? -140 + currentValue * 0.05
+                    : 80 + currentValue * 0.05,
+                reason: bestRerollDelta > 0
+                    ? '仍有更优的奖励骰重掷线，暂时不该直接确认'
+                    : '当前奖励骰已经接近最优，直接确认收益更稳',
             };
         }
 
@@ -2682,13 +2833,41 @@ const passiveValueScorer: LocalAiActionScorer = {
                 ? action.metadata.targetDieId
                 : null;
             const die = targetDieId !== null
-                ? state.core.dice.find((item) => item.id === targetDieId)
+                ? getActiveDice(state.core).find((item) => item.id === targetDieId)
                 : null;
             if (!die) return null;
+            const phase = getContextPhase(context);
+            const currentPlan = (phase === 'offensiveRoll' || phase === 'defensiveRoll')
+                ? getBestDiceTargetPlan(state, context.playerId, phase)
+                : null;
+            if (currentPlan?.keepDieIds.includes(die.id)) {
+                return {
+                    score: currentPlan.available ? -220 : -140,
+                    reason: currentPlan.available
+                        ? `这颗骰子已经是当前成型 ${currentPlan.abilityId} 的关键符号，不该再重掷`
+                        : `这颗骰子正是追当前技能线要保留的关键符号，不该只看点数就重掷`,
+                };
+            }
+            const projection = (phase === 'offensiveRoll' || phase === 'defensiveRoll')
+                ? evaluateExpectedRerollSelection(
+                    state,
+                    context.playerId,
+                    phase,
+                    false,
+                    [die],
+                )
+                : null;
+            const projectionScore = projection?.score ?? 0;
 
             return {
-                score: (4 - die.value) * 30,
-                reason: `优先重掷较低点数的骰子 ${die.value}`,
+                score: projectionScore > 0
+                    ? 70 + projectionScore
+                    : -120 + projectionScore,
+                reason: projection && projection.planDelta > 0
+                    ? `这颗骰子重掷后更有机会把技能线推进到 ${projection.projectedPlanId ?? '更优结果'}`
+                    : (projectionScore > 0
+                        ? `这颗骰子重掷后有正期望收益，不该只按当前点数判断`
+                        : `这颗骰子当前更适合保留，重掷期望并不划算`),
             };
         }
 
@@ -2872,6 +3051,21 @@ const countTokenStacks = (player: DiceThroneState['core']['players'][PlayerId]):
     return Object.values(player.tokens ?? {}).reduce((sum, value) => sum + value, 0);
 };
 
+const getPreferredOpponentTargetId = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+): PlayerId | null => {
+    const opponents = getOpponentIds(state, playerId);
+    if (opponents.length === 0) return null;
+
+    return opponents.reduce((best, candidate) => {
+        if (!best) return candidate;
+        const bestHp = state.core.players[best]?.resources[RESOURCE_IDS.HP] ?? 999;
+        const candidateHp = state.core.players[candidate]?.resources[RESOURCE_IDS.HP] ?? 999;
+        return candidateHp < bestHp ? candidate : best;
+    }, opponents[0] ?? null);
+};
+
 const getCardDrawCount = (card: AbilityCard): number => {
     return card.effects?.reduce((sum, effect) => {
         if (effect.action?.type !== 'drawCard') return sum;
@@ -2879,7 +3073,359 @@ const getCardDrawCount = (card: AbilityCard): number => {
     }, 0) ?? 0;
 };
 
+const getDrawStrategicValue = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    drawCount: number,
+): number => {
+    if (drawCount <= 0) return 0;
+    const handSize = state.core.players[playerId]?.hand.length ?? 0;
+    return Math.max(0, drawCount * 18 - handSize * 4);
+};
+
+const getCpStrategicValue = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    amount: number,
+): number => {
+    if (amount <= 0) return 0;
+    const cp = state.core.players[playerId]?.resources[RESOURCE_IDS.CP] ?? 0;
+    const shortageBonus = cp <= 1 ? 6 : (cp <= 3 ? 2 : 0);
+    return amount * 14 + shortageBonus;
+};
+
+const getHealStrategicValue = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    amount: number,
+): number => {
+    if (amount <= 0) return 0;
+    const hp = state.core.players[playerId]?.resources[RESOURCE_IDS.HP] ?? 50;
+    const missingHp = Math.max(0, 50 - hp);
+    return Math.min(amount, missingHp) * 22 + (hp <= 10 ? amount * 6 : 0);
+};
+
+const getShieldStrategicValue = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    shieldValue: number,
+): number => {
+    if (shieldValue <= 0) return 0;
+    const pendingDamage = state.core.pendingDamage as PendingDamage | undefined;
+    if (pendingDamage?.targetPlayerId === playerId) {
+        const prevented = Math.min(shieldValue, pendingDamage.currentDamage ?? 0);
+        return prevented * 60;
+    }
+    return shieldValue * 18;
+};
+
+const resolveSupportEffectTargetId = (
+    state: DiceThroneState,
+    actingPlayerId: PlayerId,
+    effectId: string,
+    explicitTarget: 'self' | 'opponent' | undefined,
+): PlayerId | null => {
+    if (explicitTarget === 'self') return actingPlayerId;
+    if (explicitTarget === 'opponent') return getPreferredOpponentTargetId(state, actingPlayerId);
+
+    const category = getEffectCategory(state, effectId);
+    if (category === 'debuff') {
+        return getPreferredOpponentTargetId(state, actingPlayerId);
+    }
+    return actingPlayerId;
+};
+
+const estimateChoiceOptionStrategicValue = (
+    state: DiceThroneState,
+    actingPlayerId: PlayerId,
+    option: { statusId?: string; tokenId?: string; value?: number },
+): number => {
+    const amount = typeof option.value === 'number' ? option.value : 0;
+    if (option.statusId) {
+        const targetPlayerId = resolveSupportEffectTargetId(state, actingPlayerId, option.statusId, undefined);
+        return targetPlayerId ? getGrantedEffectValue(state, actingPlayerId, targetPlayerId, option.statusId, amount) : 0;
+    }
+    if (option.tokenId) {
+        const targetPlayerId = resolveSupportEffectTargetId(state, actingPlayerId, option.tokenId, undefined);
+        return targetPlayerId ? getGrantedEffectValue(state, actingPlayerId, targetPlayerId, option.tokenId, amount) : 0;
+    }
+    return 0;
+};
+
+const estimateRollOutcomeStrategicValue = (
+    state: DiceThroneState,
+    actingPlayerId: PlayerId,
+    effect: RollDieConditionalEffect | RollDieDefaultEffect,
+): number => {
+    const conditionalEffect = effect as Partial<RollDieConditionalEffect>;
+    let score = 0;
+    score += (conditionalEffect.bonusDamage ?? 0) * 24;
+    score += getHealStrategicValue(state, actingPlayerId, effect.heal ?? 0);
+    score += getCpStrategicValue(state, actingPlayerId, effect.cp ?? 0);
+    score += getDrawStrategicValue(state, actingPlayerId, effect.drawCard ?? 0);
+    score += getShieldStrategicValue(state, actingPlayerId, conditionalEffect.grantDamageShield?.value ?? 0);
+
+    if (effect.grantStatus) {
+        const targetPlayerId = resolveSupportEffectTargetId(
+            state,
+            actingPlayerId,
+            effect.grantStatus.statusId,
+            effect.grantStatus.target,
+        );
+        if (targetPlayerId) {
+            score += getGrantedEffectValue(
+                state,
+                actingPlayerId,
+                targetPlayerId,
+                effect.grantStatus.statusId,
+                effect.grantStatus.value,
+            );
+        }
+    }
+
+    if (effect.grantToken) {
+        const targetPlayerId = resolveSupportEffectTargetId(
+            state,
+            actingPlayerId,
+            effect.grantToken.tokenId,
+            effect.grantToken.target,
+        );
+        if (targetPlayerId) {
+            score += getGrantedEffectValue(
+                state,
+                actingPlayerId,
+                targetPlayerId,
+                effect.grantToken.tokenId,
+                effect.grantToken.value,
+            );
+        }
+    }
+
+    for (const grantToken of conditionalEffect.grantTokens ?? []) {
+        const targetPlayerId = resolveSupportEffectTargetId(
+            state,
+            actingPlayerId,
+            grantToken.tokenId,
+            grantToken.target,
+        );
+        if (!targetPlayerId) continue;
+        score += getGrantedEffectValue(
+            state,
+            actingPlayerId,
+            targetPlayerId,
+            grantToken.tokenId,
+            grantToken.value,
+        );
+    }
+
+    if (conditionalEffect.triggerChoice?.options?.length) {
+        const bestChoice = conditionalEffect.triggerChoice.options.reduce((best, option) => {
+            return Math.max(best, estimateChoiceOptionStrategicValue(state, actingPlayerId, option));
+        }, 0);
+        score += bestChoice;
+    }
+
+    return score;
+};
+
+const estimateCustomActionStrategicValue = (args: {
+    state: DiceThroneState;
+    playerId: PlayerId;
+    action: EffectAction;
+}): number => {
+    const customActionId = args.action.customActionId;
+    if (!customActionId) return 0;
+
+    const meta = getCustomActionMeta(customActionId);
+    if (!meta) return 0;
+
+    let score = 0;
+    const estimatedDamage = meta.estimateDamage?.(args.state.core as unknown as Record<string, unknown>, args.playerId) ?? 0;
+    if (estimatedDamage > 0) {
+        score += estimatedDamage * 24;
+    } else if (meta.categories.includes('damage')) {
+        score += 45;
+    }
+
+    if (meta.categories.includes('resource')) {
+        const cpMatch = customActionId.match(/(?:grant|gain)-cp(?:-(\d+))?$/);
+        const cpAmount = cpMatch ? Number(cpMatch[1] ?? 1) : 0;
+        score += cpAmount > 0 ? getCpStrategicValue(args.state, args.playerId, cpAmount) : 24;
+    }
+    if (meta.categories.includes('card')) {
+        score += 20;
+    }
+    if (meta.categories.includes('status')) {
+        score += 22;
+    }
+    if (meta.categories.includes('defense')) {
+        score += (args.state.core.pendingDamage?.targetPlayerId === args.playerId ? 34 : 18);
+    }
+    if (meta.categories.includes('token')) {
+        score += 18;
+    }
+    if (meta.categories.includes('choice')) {
+        score += 8;
+    }
+    if (meta.categories.includes('other')) {
+        score += 6;
+    }
+
+    return score;
+};
+
+const estimateEffectActionStrategicValue = (args: {
+    state: DiceThroneState;
+    playerId: PlayerId;
+    action: EffectAction;
+}): number => {
+    const { state, playerId, action } = args;
+    const preferredOpponentId = getPreferredOpponentTargetId(state, playerId);
+
+    switch (action.type) {
+        case 'damage': {
+            const amount = Number(action.value ?? 0);
+            if (amount <= 0) return 0;
+            const multiplier = action.target === 'allOpponents'
+                ? Math.max(1, getOpponentIds(state, playerId).length)
+                : 1;
+            return amount * 24 * multiplier + (action.unblockable ? 8 : 0);
+        }
+        case 'heal':
+            return getHealStrategicValue(state, playerId, Number(action.value ?? 0));
+        case 'drawCard':
+            return getDrawStrategicValue(state, playerId, action.drawCount ?? action.value ?? 0);
+        case 'grantDamageShield':
+            return getShieldStrategicValue(state, playerId, Number(action.shieldValue ?? action.value ?? 0));
+        case 'grantStatus': {
+            if (!action.statusId) return 0;
+            const targetPlayerId = resolveSupportEffectTargetId(state, playerId, action.statusId, action.target === 'self' || action.target === 'opponent' ? action.target : undefined);
+            return targetPlayerId
+                ? getGrantedEffectValue(state, playerId, targetPlayerId, action.statusId, Number(action.value ?? 1))
+                : 0;
+        }
+        case 'grantToken': {
+            if (!action.tokenId) return 0;
+            const targetPlayerId = resolveSupportEffectTargetId(state, playerId, action.tokenId, action.target === 'self' || action.target === 'opponent' ? action.target : undefined);
+            return targetPlayerId
+                ? getGrantedEffectValue(state, playerId, targetPlayerId, action.tokenId, Number(action.value ?? 1))
+                : 0;
+        }
+        case 'removeStatus': {
+            if (!action.statusId) return 0;
+            const targetPlayerId = action.target === 'opponent'
+                ? preferredOpponentId
+                : playerId;
+            return targetPlayerId
+                ? scoreRemoveSingleStatusTarget(state, playerId, targetPlayerId, action.statusId)
+                : 0;
+        }
+        case 'removeAllStatus': {
+            const targetPlayerId = action.target === 'opponent'
+                ? preferredOpponentId
+                : playerId;
+            return targetPlayerId ? scoreRemoveAllStatusesTarget(state, playerId, targetPlayerId) : 0;
+        }
+        case 'transferStatus':
+            return action.statusId && preferredOpponentId
+                ? scoreTransferStatusTarget(state, playerId, playerId, preferredOpponentId, action.statusId)
+                : 28;
+        case 'rollDie': {
+            const diceCount = Math.max(1, Number(action.diceCount ?? 1));
+            const conditionalEffects = action.conditionalEffects ?? [];
+            const conditionalTotal = conditionalEffects.reduce((sum, effect) => {
+                return sum + estimateRollOutcomeStrategicValue(state, playerId, effect);
+            }, 0);
+            const defaultValue = action.defaultEffect
+                ? estimateRollOutcomeStrategicValue(state, playerId, action.defaultEffect)
+                : 0;
+            const unresolvedFaces = Math.max(0, 6 - conditionalEffects.length);
+            const expectedSingleRollValue = conditionalEffects.length > 0 || action.defaultEffect
+                ? (conditionalTotal + unresolvedFaces * defaultValue) / 6
+                : 0;
+            const sumDamageValue = action.damageMode === 'sumValues'
+                ? diceCount * 3.5 * 18
+                : 0;
+            return Number((expectedSingleRollValue * diceCount + sumDamageValue).toFixed(3));
+        }
+        case 'custom':
+            return estimateCustomActionStrategicValue({ state, playerId, action });
+        default:
+            return 0;
+    }
+};
+
+const estimateEffectsStrategicValue = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    effects: AbilityEffect[] | undefined,
+): number => {
+    return effects?.reduce((sum, effect) => {
+        if (!effect.action) return sum;
+        return sum + estimateEffectActionStrategicValue({
+            state,
+            playerId,
+            action: effect.action,
+        });
+    }, 0) ?? 0;
+};
+
+const evaluateBonusDiceSettlementValue = (
+    state: DiceThroneState,
+    settlement: PendingBonusDiceSettlement,
+    diceOverride?: PendingBonusDiceSettlement['dice'],
+): number => {
+    const dice = diceOverride ?? settlement.dice;
+    const total = dice.reduce((sum, die) => sum + die.value, 0);
+    const thresholdTriggered = settlement.threshold ? total >= settlement.threshold : false;
+
+    const convertedDamage = (() => {
+        if (settlement.resolutionMode === 'none') return 0;
+        if (settlement.resolutionMode === 'attackBonus') {
+            return settlement.attackBonusScale === 'halfUp'
+                ? Math.ceil(total / 2)
+                : total;
+        }
+        return total;
+    })();
+
+    let score = convertedDamage * 24;
+    score += (settlement.postSettleBonusDamageAdds ?? []).reduce((sum, item) => sum + item.amount * 24, 0);
+
+    if (thresholdTriggered && settlement.thresholdEffect === 'knockdown') {
+        score += getGrantedEffectValue(
+            state,
+            settlement.attackerId,
+            settlement.targetId,
+            STATUS_IDS.KNOCKDOWN,
+            1,
+        );
+    }
+
+    return Number(score.toFixed(3));
+};
+
+const evaluateExpectedBonusDieRerollValue = (
+    state: DiceThroneState,
+    settlement: PendingBonusDiceSettlement,
+    dieIndex: number,
+): number | null => {
+    const die = settlement.dice.find((item) => item.index === dieIndex);
+    if (!die) return null;
+
+    const outcomes = [1, 2, 3, 4, 5, 6].map((value) => {
+        const projectedDice = settlement.dice.map((item) => (
+            item.index === dieIndex ? { ...item, value } : item
+        ));
+        return evaluateBonusDiceSettlementValue(state, settlement, projectedDice);
+    });
+
+    return Number((outcomes.reduce((sum, value) => sum + value, 0) / outcomes.length).toFixed(3));
+};
+
 const estimateCardStrategicValue = (
+    state: DiceThroneState,
+    playerId: PlayerId,
     card: AbilityCard,
     actionKind: AiLegalAction['kind'],
 ): number => {
@@ -2888,18 +3434,412 @@ const estimateCardStrategicValue = (
     }
 
     if (actionKind === 'play-card' || actionKind === 'response-play-card') {
-        return 35 + card.cpCost * 10 + (card.isAttackModifier ? 22 : 0) + getCardDrawCount(card) * 14;
+        return 35
+            + card.cpCost * 10
+            + (card.isAttackModifier ? 22 : 0)
+            + estimateEffectsStrategicValue(state, playerId, card.effects);
     }
 
     if (actionKind === 'sell-card') {
-        return 10 + card.cpCost * 8;
+        return 10 + card.cpCost * 8 + estimateEffectsStrategicValue(state, playerId, card.effects) * 0.55;
     }
 
     if (actionKind === 'discard-card') {
-        return card.cpCost * 18 + (card.type === 'action' ? 8 : 0);
+        return card.cpCost * 18 + (card.type === 'action' ? 8 : 0) + estimateEffectsStrategicValue(state, playerId, card.effects) * 0.7;
     }
 
     return 0;
+};
+
+type DiceProjectionSummary = {
+    score: number;
+    rawDelta: number;
+    planDelta: number;
+    currentPlanId: string | null;
+    projectedPlanId: string | null;
+};
+
+const buildProjectedDice = (
+    dice: DiceThroneCore['dice'],
+    updates: Array<{ dieId: number; newValue: number }>,
+): DiceThroneCore['dice'] => {
+    if (updates.length === 0) return dice;
+
+    const updateMap = new Map<number, number>();
+    for (const update of updates) {
+        updateMap.set(update.dieId, update.newValue);
+    }
+
+    return dice.map((die) => {
+        const nextValue = updateMap.get(die.id);
+        if (nextValue === undefined || nextValue === die.value) {
+            return die;
+        }
+        const face = getDieFaceByValue(die.definitionId, nextValue);
+        return {
+            ...die,
+            value: nextValue,
+            symbol: face?.symbols[0] ?? die.symbol,
+        };
+    });
+};
+
+const getDiceProjectionRawDelta = (
+    currentDice: DiceThroneCore['dice'],
+    projectedDice: DiceThroneCore['dice'],
+    targetOpponentDice: boolean,
+): number => {
+    const currentById = new Map(currentDice.map((die) => [die.id, die]));
+    return projectedDice.reduce((sum, die) => {
+        const current = currentById.get(die.id);
+        if (!current) return sum;
+        const delta = die.value - current.value;
+        return sum + (targetOpponentDice ? -delta : delta);
+    }, 0);
+};
+
+const getDicePlanAnchorPlayerId = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+    targetOpponentDice: boolean,
+): PlayerId => {
+    return targetOpponentDice ? getRollerId(state.core, phase) : playerId;
+};
+
+const evaluateDiceProjection = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+    targetOpponentDice: boolean,
+    projectedDice: DiceThroneCore['dice'],
+): DiceProjectionSummary => {
+    const currentDice = getActiveDice(state.core);
+    const anchorPlayerId = getDicePlanAnchorPlayerId(state, playerId, phase, targetOpponentDice);
+    const currentPlan = getBestDiceTargetPlan(state, anchorPlayerId, phase);
+    const projectedPlan = getBestDiceTargetPlan(state, anchorPlayerId, phase, projectedDice);
+    const currentPlanScore = currentPlan ? scoreDiceTargetPlan(state, phase, currentPlan) : 0;
+    const projectedPlanScore = projectedPlan ? scoreDiceTargetPlan(state, phase, projectedPlan) : 0;
+    const rawDelta = getDiceProjectionRawDelta(currentDice, projectedDice, targetOpponentDice);
+    const planDelta = targetOpponentDice
+        ? currentPlanScore - projectedPlanScore
+        : projectedPlanScore - currentPlanScore;
+
+    return {
+        score: Number((rawDelta * 28 + planDelta * 2.4).toFixed(3)),
+        rawDelta,
+        planDelta,
+        currentPlanId: currentPlan?.abilityId ?? null,
+        projectedPlanId: projectedPlan?.abilityId ?? null,
+    };
+};
+
+const evaluateBestProjectedDice = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+    targetOpponentDice: boolean,
+    projectedDiceList: DiceThroneCore['dice'][],
+): DiceProjectionSummary | null => {
+    let best: DiceProjectionSummary | null = null;
+    for (const projectedDice of projectedDiceList) {
+        const candidate = evaluateDiceProjection(state, playerId, phase, targetOpponentDice, projectedDice);
+        if (!best || candidate.score > best.score) {
+            best = candidate;
+        }
+    }
+    return best;
+};
+
+const enumerateModifyProjectedDice = (
+    dice: DiceThroneCore['dice'],
+    customActionId: string,
+): DiceThroneCore['dice'][] => {
+    if (dice.length === 0) return [];
+
+    switch (customActionId) {
+        case 'modify-die-to-6':
+            return dice
+                .filter((die) => die.value !== 6)
+                .map((die) => buildProjectedDice(dice, [{ dieId: die.id, newValue: 6 }]));
+        case 'modify-die-copy':
+            return enumerateOrderedSelections(dice, 2)
+                .filter(([sourceDie, targetDie]) => !!sourceDie && !!targetDie && sourceDie.value !== targetDie.value)
+                .map(([sourceDie, targetDie]) => {
+                    return buildProjectedDice(dice, [{ dieId: targetDie.id, newValue: sourceDie.value }]);
+                });
+        case 'modify-die-any-1':
+            return enumerateArrayCombinations(dice, 1, 1).flatMap((selection) => {
+                return enumeratePerItemValueAssignments(selection, (die) =>
+                    [1, 2, 3, 4, 5, 6].filter((value) => value !== die.value))
+                    .map((newValues) => buildProjectedDice(dice, [{
+                        dieId: selection[0].id,
+                        newValue: newValues[0],
+                    }]));
+            });
+        case 'modify-die-any-2':
+            return enumerateArrayCombinations(dice, 1, Math.min(2, dice.length)).flatMap((selection) => {
+                return enumeratePerItemValueAssignments(selection, (die) =>
+                    [1, 2, 3, 4, 5, 6].filter((value) => value !== die.value))
+                    .map((newValues) => {
+                        return buildProjectedDice(dice, selection.map((die, index) => ({
+                            dieId: die.id,
+                            newValue: newValues[index],
+                        })));
+                    });
+            });
+        case 'modify-die-adjust-1':
+            return enumerateArrayCombinations(dice, 1, 1).flatMap((selection) => {
+                return enumeratePerItemValueAssignments(selection, (die) =>
+                    [die.value - 1, die.value + 1].filter((value) => value >= 1 && value <= 6))
+                    .map((newValues) => buildProjectedDice(dice, [{
+                        dieId: selection[0].id,
+                        newValue: newValues[0],
+                    }]));
+            });
+        default:
+            return [];
+    }
+};
+
+const enumerateRerollSelectionsForAction = (
+    dice: DiceThroneCore['dice'],
+    customActionId: string,
+): DiceThroneCore['dice'][][] => {
+    if (dice.length === 0) return [];
+
+    switch (customActionId) {
+        case 'reroll-opponent-die-1':
+            return enumerateArrayCombinations(dice, 1, 1);
+        case 'reroll-die-2':
+            return enumerateArrayCombinations(dice, 1, Math.min(2, dice.length));
+        case 'reroll-die-5':
+            return enumerateArrayCombinations(dice, 1, Math.min(5, dice.length));
+        default:
+            return [];
+    }
+};
+
+const evaluateExpectedRerollSelection = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+    targetOpponentDice: boolean,
+    selectedDice: DiceThroneCore['dice'],
+): DiceProjectionSummary | null => {
+    if (selectedDice.length === 0) return null;
+    const outcomeCount = 6 ** selectedDice.length;
+    if (outcomeCount > 216) {
+        return null;
+    }
+
+    const baseDice = getActiveDice(state.core);
+    const totals = {
+        score: 0,
+        rawDelta: 0,
+        planDelta: 0,
+    };
+    const projectedPlanScores = new Map<string, number>();
+    const currentPlanScores = new Map<string, number>();
+
+    const outcomes = enumeratePerItemValueAssignments(selectedDice, () => [1, 2, 3, 4, 5, 6]);
+    for (const outcomeValues of outcomes) {
+        const projectedDice = buildProjectedDice(baseDice, selectedDice.map((die, index) => ({
+            dieId: die.id,
+            newValue: outcomeValues[index],
+        })));
+        const summary = evaluateDiceProjection(state, playerId, phase, targetOpponentDice, projectedDice);
+        totals.score += summary.score;
+        totals.rawDelta += summary.rawDelta;
+        totals.planDelta += summary.planDelta;
+        if (summary.projectedPlanId) {
+            projectedPlanScores.set(summary.projectedPlanId, (projectedPlanScores.get(summary.projectedPlanId) ?? 0) + 1);
+        }
+        if (summary.currentPlanId) {
+            currentPlanScores.set(summary.currentPlanId, (currentPlanScores.get(summary.currentPlanId) ?? 0) + 1);
+        }
+    }
+
+    const pickMostCommonPlan = (plans: Map<string, number>): string | null => {
+        let bestPlanId: string | null = null;
+        let bestCount = -1;
+        for (const [planId, count] of plans.entries()) {
+            if (count > bestCount) {
+                bestPlanId = planId;
+                bestCount = count;
+            }
+        }
+        return bestPlanId;
+    };
+
+    return {
+        score: Number((totals.score / outcomes.length).toFixed(3)),
+        rawDelta: Number((totals.rawDelta / outcomes.length).toFixed(3)),
+        planDelta: Number((totals.planDelta / outcomes.length).toFixed(3)),
+        currentPlanId: pickMostCommonPlan(currentPlanScores),
+        projectedPlanId: pickMostCommonPlan(projectedPlanScores),
+    };
+};
+
+const evaluateBestRerollProjection = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    phase: TurnPhase,
+    targetOpponentDice: boolean,
+    customActionId: string,
+): DiceProjectionSummary | null => {
+    const currentDice = getActiveDice(state.core);
+    const selections = enumerateRerollSelectionsForAction(currentDice, customActionId);
+    let best: DiceProjectionSummary | null = null;
+
+    for (const selection of selections) {
+        const candidate = evaluateExpectedRerollSelection(state, playerId, phase, targetOpponentDice, selection);
+        if (!candidate) continue;
+        if (!best || candidate.score > best.score) {
+            best = candidate;
+        }
+    }
+
+    return best;
+};
+
+const estimateDiceModificationDelta = (
+    values: number[],
+    customActionId: string,
+    targetOpponentDice: boolean,
+): number => {
+    if (values.length === 0) return 0;
+    const asc = [...values].sort((a, b) => a - b);
+    const desc = [...values].sort((a, b) => b - a);
+
+    if (customActionId === 'modify-die-to-6') {
+        return Math.max(0, 6 - asc[0]);
+    }
+    if (customActionId === 'modify-die-copy') {
+        return Math.max(0, desc[0] - asc[0]);
+    }
+    if (customActionId === 'modify-die-any-1') {
+        return targetOpponentDice
+            ? Math.max(0, desc[0] - 1)
+            : Math.max(0, 6 - asc[0]);
+    }
+    if (customActionId === 'modify-die-any-2') {
+        if (targetOpponentDice) {
+            return desc.slice(0, 2).reduce((sum, value) => sum + Math.max(0, value - 1), 0);
+        }
+        return asc.slice(0, 2).reduce((sum, value) => sum + Math.max(0, 6 - value), 0);
+    }
+    if (customActionId === 'modify-die-adjust-1') {
+        return targetOpponentDice
+            ? (desc[0] > 1 ? 1 : 0)
+            : (asc[0] < 6 ? 1 : 0);
+    }
+
+    return 0;
+};
+
+const estimateDiceRerollDelta = (
+    values: number[],
+    customActionId: string,
+    targetOpponentDice: boolean,
+): number => {
+    if (values.length === 0) return 0;
+
+    const rerollCount = customActionId === 'reroll-opponent-die-1'
+        ? 1
+        : (customActionId === 'reroll-die-2' ? 2 : 5);
+    const orderedValues = [...values].sort((a, b) => targetOpponentDice ? b - a : a - b);
+    const selectedValues = orderedValues.slice(0, Math.min(rerollCount, orderedValues.length));
+    const expectedTarget = 3.5;
+
+    return selectedValues.reduce((sum, value) => {
+        const improvement = targetOpponentDice
+            ? value - expectedTarget
+            : expectedTarget - value;
+        return sum + Math.max(0, improvement);
+    }, 0);
+};
+
+const estimateDiceInterferenceCardValue = (
+    state: DiceThroneState,
+    playerId: PlayerId,
+    card: AbilityCard,
+    phase: TurnPhase,
+): { score: number; reason: string } | null => {
+    const diceValues = getActiveDice(state.core).map((die) => die.value);
+    if (diceValues.length === 0) return null;
+
+    for (const effect of card.effects ?? []) {
+        if (effect.action?.type !== 'custom' || !effect.action.customActionId) {
+            continue;
+        }
+
+        const targetOpponentDice = effect.action.target === 'opponent'
+            || (effect.action.target === 'select' && playerId !== getRollerId(state.core, phase));
+        const modifyProjection = evaluateBestProjectedDice(
+            state,
+            playerId,
+            phase,
+            targetOpponentDice,
+            enumerateModifyProjectedDice(getActiveDice(state.core), effect.action.customActionId),
+        );
+        const rerollProjection = evaluateBestRerollProjection(
+            state,
+            playerId,
+            phase,
+            targetOpponentDice,
+            effect.action.customActionId,
+        );
+        const delta = estimateDiceModificationDelta(diceValues, effect.action.customActionId, targetOpponentDice);
+        const rerollDelta = estimateDiceRerollDelta(diceValues, effect.action.customActionId, targetOpponentDice);
+
+        switch (effect.action.customActionId) {
+            case 'modify-die-to-6':
+            case 'modify-die-copy':
+            case 'modify-die-any-1':
+            case 'modify-die-any-2':
+            case 'modify-die-adjust-1':
+                if ((modifyProjection?.score ?? Number.NEGATIVE_INFINITY) <= 0 && delta <= 0) {
+                    return {
+                        score: -260,
+                        reason: '当前没有可产生实际变化的改骰收益，不该白白浪费这张牌',
+                    };
+                }
+                return {
+                    score: Math.round(Math.max(delta * 32 + (targetOpponentDice ? 24 : 18), modifyProjection?.score ?? 0)),
+                    reason: modifyProjection && modifyProjection.planDelta > 0
+                        ? (targetOpponentDice
+                            ? `这张改骰牌能把对手从 ${modifyProjection.currentPlanId ?? '当前技能线'} 拉开`
+                            : `这张改骰牌能把己方骰面推向 ${modifyProjection.projectedPlanId ?? '更优技能线'}`)
+                        : (targetOpponentDice
+                            ? `这张改骰牌当前能实际压低对手骰面 ${delta} 点`
+                            : `这张改骰牌当前能实际提升己方骰面 ${delta} 点`),
+                };
+            case 'reroll-opponent-die-1':
+            case 'reroll-die-2':
+            case 'reroll-die-5':
+                if ((rerollProjection?.score ?? Number.NEGATIVE_INFINITY) <= 0 && rerollDelta <= 0) {
+                    return {
+                        score: -220,
+                        reason: '当前重掷预期没有正收益，不该为了出牌而出牌',
+                    };
+                }
+                return {
+                    score: Math.round(Math.max(rerollDelta * 28 + (targetOpponentDice ? 20 : 12), rerollProjection?.score ?? 0)),
+                    reason: rerollProjection && rerollProjection.planDelta > 0
+                        ? (targetOpponentDice
+                            ? `这张重掷牌有机会打断对手的 ${rerollProjection.currentPlanId ?? '当前技能线'}`
+                            : `这张重掷牌更有机会把己方骰面转进 ${rerollProjection.projectedPlanId ?? '更优技能线'}`)
+                        : (targetOpponentDice
+                            ? `这张重掷牌当前能实际逼对手重掷高点骰，预期收益 ${rerollDelta.toFixed(1)}`
+                            : `这张重掷牌当前能实际优化己方低点骰，预期收益 ${rerollDelta.toFixed(1)}`),
+                };
+            default:
+                break;
+        }
+    }
+
+    return null;
 };
 
 const estimateBestUnlockedCardValue = (
@@ -2922,6 +3862,8 @@ const estimateBestUnlockedCardValue = (
         best = Math.max(
             best,
             estimateCardStrategicValue(
+                state,
+                playerId,
                 card,
                 card.type === 'upgrade' ? 'play-upgrade-card' : 'play-card',
             ),
@@ -2995,16 +3937,20 @@ const projectDiceThroneAction = (args: {
         if (!card) return null;
 
         const projectedPosition = evaluateDiceThronePosition(state, args.context.playerId);
-        const strategicValue = estimateCardStrategicValue(card, args.action.kind);
+        const strategicValue = estimateCardStrategicValue(state, args.context.playerId, card, args.action.kind);
+        const tacticalDiceValue = args.action.kind === 'play-card'
+            ? estimateDiceInterferenceCardValue(state, args.context.playerId, card, phase)?.score ?? 0
+            : 0;
         const phaseBonus = phase === 'main1' ? 12 : 0;
         return {
-            score: Number(((strategicValue * 0.3 + projectedPosition * 0.04 + phaseBonus) * scale).toFixed(3)),
+            score: Number(((strategicValue * 0.24 + tacticalDiceValue * 0.7 + projectedPosition * 0.04 + phaseBonus) * scale).toFixed(3)),
             reason: args.action.kind === 'play-upgrade-card'
                 ? '高难度会额外考虑长期成长与后续回合收益'
-                : '高难度会额外考虑当前出牌后的持续收益',
+                : '高难度会额外考虑当前出牌后的即时收益与持续收益',
             metadata: {
                 projectedPosition,
                 strategicValue,
+                tacticalDiceValue,
             },
         };
     }
@@ -3045,7 +3991,7 @@ const projectDiceThroneAction = (args: {
 
         // 弃牌后的局势投影：弃牌本身是负收益（失去手牌资源），
         // 只有在手牌超限时才是必须动作。
-        const cardValue = estimateCardStrategicValue(card, 'play-card');
+        const cardValue = estimateCardStrategicValue(state, args.context.playerId, card, 'play-card');
         const penalty = needsDiscard
             ? Number((-cardValue * 0.15 * scale).toFixed(3))
             : Number((-cardValue * 0.6 * scale).toFixed(3));
