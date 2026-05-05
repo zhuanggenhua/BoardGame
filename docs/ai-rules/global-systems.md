@@ -15,6 +15,9 @@
 - **弹窗栈系统 (`useModalStack`)**：
     - 采用类似路由的栈管理：`openModal`, `closeTop`, `replaceTop`, `closeAll`。
     - **规范**：所有业务弹窗必须通过 `openModal` 唤起，禁止自行在组件内维护独立的 `isVisible` 状态。
+    - **阻塞前台默认入栈（强制）**：凡是拥有当前业务确认权、会阻塞 `sys.interaction` / `responseWindow` / 阶段推进的前台 UI，默认必须挂到 modal stack，禁止绕开栈单独开 overlay 与其它阻塞前台抢 ownership。
+    - **overlay 例外口径（强制）**：只有纯展示、无确认权、不会阻塞业务推进的 spotlight / magnify / 展示态特写，才允许留在 overlay 通道；一旦承担确认、选择、继续、关闭后推进流程等职责，就不再是“纯展示”。
+    - **入栈前台禁止二次 portal（强制）**：某个阻塞前台一旦已经作为 modal stack entry 承载，其实际可点击内容必须留在这条 entry 的 DOM 子树内；禁止 render 过程中再 portal 到 `hud-root` / 其它根节点。否则 ownership 在栈里、命中层却在栈外，会出现“看得见但点不到 / 空壳层盖住真实内容 / 栈顺序失真”。
 - **音频系统 (`useAudio` & `AudioManager`)**：
     - 统一管理 BGM 与 SFX。
     - **规范**：切换游戏时，必须通过 `stopBgm` 及 `playBgm` 重置音乐流。声音资源需经过 `compress_audio.js` 压缩。

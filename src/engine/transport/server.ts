@@ -44,6 +44,7 @@ import {
     resolveCurrentPlayerId,
     resolveUnsatisfiableReasonFromInteraction,
     resolveForceEndTurnForStalledAi,
+    shouldInspectSeatStatesForHiddenAiInteraction,
     shouldUseOnlineAiEmergencyOverlayFallback,
     type AiAutoRecoveryAttemptTracker,
     type HiddenInteractionDescriptor,
@@ -98,6 +99,20 @@ const shouldTrustOnlineAiSeatControllersForWatchdog = (setupData: unknown): bool
     return Object.values(rawSeatControllers as Record<string, { type?: unknown } | undefined>).some(
         (controller) => controller?.type === 'local-ai' || controller?.type === 'remote-ai',
     );
+};
+
+const normalizeOnlineAiWatchdogSeatControllerType = (
+    gameId: string,
+    controller: { type?: unknown } | undefined,
+): 'human' | 'local-ai' | 'remote-ai' => {
+    const manifestAi = GAME_MANIFEST_BY_ID[gameId]?.ai;
+    if (controller?.type === 'local-ai') {
+        return manifestAi?.localAi === false ? 'human' : 'local-ai';
+    }
+    if (controller?.type === 'remote-ai') {
+        return manifestAi?.remoteAi === false ? 'human' : 'remote-ai';
+    }
+    return 'human';
 };
 
 const DEFAULT_TRAINING_CAPTURE_POLICY = 'human-only' as const;
@@ -437,6 +452,13 @@ const ONLINE_AI_FEEDBACK_PERSISTENCE_SUPPRESSED_KINDS = new Set<OnlineAiRecovery
     'force-end-turn-success',
     'legal-action-recovered',
 ]);
+
+function emitOnlineAiBatchTrace(stage: string, payload: Record<string, unknown>): void {
+    if (process.env.NODE_ENV === 'production') {
+        return;
+    }
+    console.log('[ONLINE_AI_BATCH_TRACE]', { stage, ...payload });
+}
 
 // ============================================================================
 // 游戏引擎定义
@@ -1090,8 +1112,7 @@ export class GameTransportServer {
         match: ActiveMatch,
         seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
     ): Promise<ForceEndTurnStalledAiResolution | null> {
-        const interactionState = match.state.sys?.interaction as { current?: unknown; isBlocked?: unknown } | undefined;
-        const needsSeatStates = interactionState?.current == null && interactionState?.isBlocked === true;
+        const needsSeatStates = shouldInspectSeatStatesForHiddenAiInteraction(match.state);
         const seatStates: Record<string, MatchState<unknown> | null | undefined> = needsSeatStates
             ? Object.fromEntries(
                 Object.entries(seatControllers)
@@ -1104,6 +1125,7 @@ export class GameTransportServer {
             sharedState: match.state,
             seatControllers,
             seatStates,
+            gameId: match.gameId,
         }) ?? await this.resolveOnlineAiLegalActionOnlyCandidate(match, seatControllers);
 
         if (!candidate) {
@@ -1214,11 +1236,15 @@ export class GameTransportServer {
             const seatControllers = Object.fromEntries(
                 Object.keys(match.metadata.players).map((playerId) => {
                     const controller = rawSeatControllers?.[playerId];
+                    const normalizedType = normalizeOnlineAiWatchdogSeatControllerType(match.gameId, controller);
                     return [
                         playerId,
-                        controller?.type === 'local-ai' || controller?.type === 'remote-ai'
-                            ? controller as { type: 'local-ai' | 'remote-ai' }
-                            : { type: 'human' },
+                        normalizedType === 'human'
+                            ? { type: 'human' as const }
+                            : {
+                                ...(controller as { policyId?: string; fallbackPolicyId?: string }),
+                                type: normalizedType,
+                            },
                     ];
                 }),
             ) as Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>;
@@ -1494,7 +1520,7 @@ export class GameTransportServer {
                     && !hasHumanResponderInCurrentWindow()
                     && (
                         (match.gameId === 'dicethrone' && currentPhase === 'defensiveRoll')
-                        || (match.gameId === 'smashup' && currentPhase === 'scoreBases')
+                        || (match.gameId === 'smashup' && (currentPhase === 'scoreBases' || currentPhase === 'endTurn'))
                     );
                 const normalizedNextCandidate = shouldRestrictFollowUpToLegalActions
                     ? {
@@ -2675,14 +2701,28 @@ export class GameTransportServer {
         commands: Array<{ type: string; payload: unknown }>,
         meta?: BatchDispatchMeta,
     ): Promise<void> {
+        emitOnlineAiBatchTrace('handle-batch-enter', {
+            matchID,
+            playerID,
+            batchId,
+            commandTypes: commands.map((command) => command.type),
+            expectedStateID: meta?.expectedStateID ?? null,
+        });
         const match = this.activeMatches.get(matchID);
         if (!match) {
+            emitOnlineAiBatchTrace('handle-batch-match-missing', { matchID, playerID, batchId });
             socket.emit('batch:rejected', matchID, batchId, 'match_not_found');
             return;
         }
 
         // 串行执行：如果正在执行，将整个 batch 任务排入队列（与 handleCommand 保持一致）
         if (match.executing) {
+            emitOnlineAiBatchTrace('handle-batch-queued', {
+                matchID,
+                playerID,
+                batchId,
+                queuedLength: match.commandQueue.length,
+            });
             await new Promise<void>((resolve) => {
                 match.commandQueue.push({
                     _batch: true,
@@ -2701,12 +2741,25 @@ export class GameTransportServer {
 
         try {
             if (this.rejectBatchWhenStatePreconditionFails(socket, matchID, batchId, match, meta)) {
+                emitOnlineAiBatchTrace('handle-batch-stale-rejected', {
+                    matchID,
+                    playerID,
+                    batchId,
+                    expectedStateID: meta?.expectedStateID ?? null,
+                    actualStateID: match.stateID,
+                });
                 return;
             }
             // 批次内命令串行执行（抑制中间广播，避免客户端收到中间状态导致动画重播）
             for (const cmd of commands) {
                 const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, { suppressBroadcast: true });
                 if (!success) {
+                    emitOnlineAiBatchTrace('handle-batch-command-failed', {
+                        matchID,
+                        playerID,
+                        batchId,
+                        commandType: cmd.type,
+                    });
                     // 命令失败 - 从内存快照恢复到批次开始前的状态
                     match.state = snapshotState;
                     match.stateID = snapshotStateID;
@@ -2728,6 +2781,12 @@ export class GameTransportServer {
             this.broadcastState(match);
             // batch:confirmed 是乐观更新的确认响应，客户端已通过本地预测消费了事件
             const authoritative = this.stripStateForTransport(match.state, { stripEventStream: true });
+            emitOnlineAiBatchTrace('handle-batch-confirmed', {
+                matchID,
+                playerID,
+                batchId,
+                stateID: match.stateID,
+            });
             socket.emit('batch:confirmed', matchID, batchId, authoritative);
         } finally {
             await this.drainCommandQueue(match);
@@ -2752,6 +2811,13 @@ export class GameTransportServer {
         const snapshotStateID = match.stateID;
 
         if (this.rejectBatchWhenStatePreconditionFails(socket, matchID, batchId, match, meta)) {
+            emitOnlineAiBatchTrace('execute-batch-stale-rejected', {
+                matchID,
+                playerID,
+                batchId,
+                expectedStateID: meta?.expectedStateID ?? null,
+                actualStateID: match.stateID,
+            });
             return;
         }
 
@@ -2759,6 +2825,12 @@ export class GameTransportServer {
         for (const cmd of commands) {
             const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, { suppressBroadcast: true });
             if (!success) {
+                emitOnlineAiBatchTrace('execute-batch-command-failed', {
+                    matchID,
+                    playerID,
+                    batchId,
+                    commandType: cmd.type,
+                });
                 match.state = snapshotState;
                 match.stateID = snapshotStateID;
                 const rollbackStored = {
@@ -2777,6 +2849,12 @@ export class GameTransportServer {
         // 批次成功 - 广播最终状态给所有玩家，然后发送确认给发送者
         this.broadcastState(match);
         const authoritative = this.stripStateForTransport(match.state, { stripEventStream: true });
+        emitOnlineAiBatchTrace('execute-batch-confirmed', {
+            matchID,
+            playerID,
+            batchId,
+            stateID: match.stateID,
+        });
         socket.emit('batch:confirmed', matchID, batchId, authoritative);
     }
 

@@ -1,5 +1,613 @@
 # Findings & Resources
 
+## Addendum（2026-05-04）：Splendor watchdog `69f6c4bc...` 已按本地热补止血结果回写 resolved
+
+- `69f6c4bc9ec13b96d710e10d` 的系统文案是：
+  - `[system][online-ai-watchdog] force-end-turn-failed active-turn:follow-up-advance:command_failed`
+- 本轮最终回写前，线上只剩 watchdog 聚合摘要：
+  - `route = server-watchdog`
+  - `mode = online`
+  - `occurrenceCount = 686`
+  - `lastOccurredAt = 2026-05-03T23:49:50.740Z`
+- 这条并不是“当前还在继续刷的新现场”，而是本轮 Splendor transport 热补止血后，状态尚未人工回写的旧聚合项：
+  - `src/engine/transport/onlineAiRecovery.ts` 已禁止 Splendor 生成裸 `ADVANCE_PHASE` fallback
+  - `src/engine/transport/server.ts` 已按 manifest 过滤 `localAi=false`，不会再因残留 seat metadata 把 Splendor 当成 AI 房间
+- 本轮 fresh 复核再次通过：
+  - `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts`
+    - `Splendor 即使残留了 AI seat metadata，也不得生成裸 ADVANCE_PHASE fallback`
+  - `src/engine/transport/__tests__/server.test.ts`
+    - `online AI watchdog 对 manifest 明确禁用 AI 的 splendor 应忽略残留 seatControllers`
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T05:55:00.000Z`
+
+## Addendum（2026-05-04）：DiceThrone watchdog `69f471da...` / `69f73be4...` 已按已修簇残留回写 resolved
+
+- 这两条系统单文案完全一致：
+  - `[system][online-ai-watchdog] force-end-turn-failed active-turn-legal-only:follow-up-advance:legal_action_unavailable`
+- 本轮最终回写前，线上只剩 watchdog 聚合摘要，没有还能继续复核的真实残局：
+  - `69f471da9ec13b96d7109902`：`occurrenceCount = 2563`
+  - `69f73be49ec13b96d710f1c2`：`occurrenceCount = 2`
+  - 两条都已没有 phase / pendingInteraction / pendingAttack 级现场信息
+- 当前本地 transport 修复链已经覆盖这类残留原因：
+  - `evidence/transport/online-ai-watchdog-targetingroll-legal-only-fix-2026-04-30.md`
+  - `evidence/dicethrone/dicethrone-online-ai-watchdog-human-response-window-fix-2026-05-02.md`
+  - `evidence/dicethrone/dicethrone-online-ai-orphan-displayonly-bonus-settlement-fix-2026-05-02.md`
+  - `evidence/dicethrone/dicethrone-feedback-69f21b05-ai-stall-targetingroll-loaded-local-closeout-2026-05-04.md`
+- 本轮 fresh 复核再次通过：
+  - `src/engine/transport/__tests__/server.test.ts`
+    - `DiceThrone 非战斗阶段遗留 displayOnly 奖励骰时，应直接代 AI 收口而不是放任残留`
+    - `dicethrone: human main1 遗留 AI displayOnly pendingBonusDiceSettlement 时，watchdog 应直接替 AI 确认收口`
+    - `online AI watchdog 在 pendingInteractionId 锁住 response window 时，应优先执行 hidden interaction 收口`
+- 2026-05-04 已通过生产 Mongo 批量回写：
+  - `matched=2`
+  - `modified=2`
+  - `updatedAt=2026-05-04T05:50:00.000Z`
+
+## Addendum（2026-05-04）：当前线上 open 反馈已清零
+
+- 最终生产盘面：
+  - `openTotal = 0`
+  - `inProgressTotal = 0`
+  - `groups = {}`
+- 最终摘要文件：
+  - `temp/feedback-online/post-20260504-resolved-batch-17-summary.json`
+- 本轮收口语义仍然遵守用户指定口径：
+  - `resolved = 本地已经修好并完成本地验收`
+  - 不代表已上传、已发布、已做正式镜像发版
+
+## Addendum（2026-05-04）：SmashUp `69f5469a...` 《着魔》并非未附着，已回写 resolved
+
+- `69f5469a9ec13b96d710ae26` 的反馈原文是：
+  - `着魔没效果，目标随从没有附加行动卡`
+- 线上当前权威态不是“系统根本没附着成功”，而是已经推进到了更后拍：
+  - `sys.phase = playCards`
+  - `sys.flowHalted = false`
+  - `sys.interaction.queue = []`
+- 同一份线上 action log 已经直接记录到《着魔》的真实附着：
+  - `[08:31:10] 测试员: 战术卡施放： 着魔`
+  - `[08:31:10] 测试员: 附加持续战术： 着魔  →  c24`
+  - `[08:31:45] 测试员: 附加持续战术： 着魔  →  c6`
+  - `[08:32:19] 测试员: 附加持续战术： 着魔  →  c24`
+  - `[08:32:42] 测试员: 附加持续战术： 着魔  →  c24`
+- 当前保存下来的终态里虽然看不到宿主身上仍挂着《着魔》，但这是因为：
+  - `world_champs_bewitched (c11)` 已在 `players['0'].discard`
+  - 当时被附着过的 `skeletons_returned_one (c24)` 也已经进入弃牌堆
+  - 结论是链路已经继续推进到宿主与《着魔》都离场后的更后拍，而不是“前面从没附着上”
+- 仓库当前权威文案与既有回归也完全支持这一结论：
+  - `public/locales/zh-CN/game-smashup.json`
+    - `打出到一个仆从身上。持续：这个仆从获得+2力量。如果这个仆从离开游戏，转移这张行动到另一个仆从身上。`
+  - `src/games/smashup/__tests__/newFactionAbilities.test.ts`
+    - `world_champs_bewitched 离场转移交互可把持续行动从弃牌堆重新附着`
+  - `evidence/smashup/smashup-world-champs-bewitched-eh-e2e-2026-04-28.md`
+    - 已证明《着魔》会真实附着、宿主离场后会真实弹转移 prompt，并能重新附着到新宿主
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T05:35:00.000Z`
+- 回写后最新生产 open 盘面：
+  - `openTotal = 3`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `splendor|online-ai-watchdog = 1`
+  - `smashup|feedback-modal = 0`
+
+## Addendum（2026-05-04）：SmashUp `69f01fd4...` 《斯芬克斯》真实选择位点不是单独按钮，已回写 resolved
+
+- `69f01fd49b68d90ee983669d` 的反馈原文是：
+  - `没法选择打出斯芬克斯`
+- 线上当前权威态已经说明现场不是“系统没给可选目标”，而是已经进入 `Sphinx` 的真实起始回合交互：
+  - `sys.phase = startTurn`
+  - `sys.flowHalted = false`
+  - `current.id = titan_sphinx_start_turn_0`
+  - `current.data.sourceId = titan_sphinx_start_turn`
+- 这份交互当前给出的真实候选不是“点一张 Sphinx 卡面”，而是：
+  - 选择一张自己的埋葬牌 `buried-c17 = 远古诅咒 @ 金字塔`
+  - 或 `skip`
+- 场上上下文也与这份交互完全对得上：
+  - `base_pyramids_pod` 下方确实存在 1 张己方埋葬牌
+  - `titan_0_sphinx` 仍在 `setaside`
+- 当前仓库权威文案与实现都明确说明 `Sphinx` 的入口就是“先选埋葬牌，再把泰坦打到该牌所在基地”：
+  - `public/locales/zh-CN/game-smashup.json`
+    - `特殊：你的回合开始时，你可以将你埋葬的一张牌返回手牌，然后将此泰坦打出到该牌所在的基地。`
+  - `src/games/smashup/abilities/titans.ts`
+    - `sphinxOnTurnStart(...)` 会先收集“你的埋葬牌”作为候选
+    - `titan_sphinx_start_turn` handler 在选中埋葬牌后，才会把该埋葬牌回手并把 `Sphinx` 打到对应基地
+- 本轮复核也再次证明当前代码基线无回归：
+  - `src/games/smashup/__tests__/smashup.smoke.test.ts`
+    - `狮身人面像会在你的回合开始时创建回收埋葬牌并进场的交互`
+    - `狮身人面像在其所在基地计分后会创建回收该基地埋葬牌的交互`
+  - 浏览器级既有证据：
+    - `evidence/smashup-sphinx-start-turn-buried-refresh-e2e-test.md`
+    - `evidence/smashup-sphinx-stale-buried-options-e2e.md`
+- 因此这条反馈不是“系统不能打出 Sphinx”，而是用户把真实交互位点理解成了“应该额外弹出一个单独的 Sphinx 按钮”。
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T05:25:00.000Z`
+- 回写后最新生产 open 盘面：
+  - `openTotal = 4`
+  - `smashup|feedback-modal = 1`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `splendor|online-ai-watchdog = 1`
+
+## Addendum（2026-05-04）：SmashUp `69f387a3...` 《雏菊花环》正负号并未写反，已回写 resolved
+
+- `69f387a35cacc4e6b5cdbd4c` 的反馈原文是：
+  - `按效果我应该加2战力  而不是减2`
+- 线上当前权威态已经说明这不是“自己给自己贴了《雏菊花环》却被扣 2”的场景：
+  - `base_secret_garden` 上的 `c10 = fairies_tinx`
+  - `c10.controller = "0"`
+  - `c10.attachedActions` 中存在 `c17 = fairies_daisy_chain`
+  - `c17.ownerId = "2"`
+- 同一份 action log 末尾还能看到真实链路：
+  - `tinx -> 神秘花园`
+  - `ongoing_detached 雏菊花环 ... （原因：tinx）`
+  - `ongoing_attached 雏菊花环 -> c10`
+- 当前仓库权威文案与实现完全一致：
+  - `public/locales/zh-CN/game-smashup.json`
+    - `打在一个随从上。持续：如果你控制该随从，它具有 +2 力量；否则它具有 -2 力量。`
+  - `public/locales/en/game-smashup.json`
+    - `Play on a minion. Ongoing: This minion has +2 power if you control it, or -2 power if you do not.`
+  - `src/games/smashup/abilities/ongoing_modifiers.ts`
+    - `fairies_daisy_chain` 当前逻辑是 `action.ownerId === ctx.minion.controller ? +2 : -2`
+- 因此这条反馈对应的现场里：
+  - 随从控制者是 `0`
+  - 附着的《雏菊花环》拥有者是 `2`
+  - 根据当前规则语义，结论就应该是 **-2**，不是 `+2`
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T05:02:42.133Z`
+- 回写后最新生产 open 盘面：
+  - `openTotal = 5`
+  - `smashup|feedback-modal = 2`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `splendor|online-ai-watchdog = 1`
+
+## Addendum（2026-05-04）：SmashUp `69f544f9...` 《轮回者》reaction 语义误判已回写 resolved
+
+- `69f544f99ec13b96d710ae00` 混在一起描述了两个现象：
+  - 《轮回者》打出后为什么还会出现 `选择反应`
+  - 《名人堂 + 大法师》为什么之前还会出现结算顺序选择
+- 线上当前保存下来的权威态已经说明它不是“最终没生效”的坏终态：
+  - `base_hall_of_fame.buriedCards` 中已经存在 `skeletons_returned_one`
+  - `base_hall_of_fame.minions` 中已不存在《轮回者》本体
+  - `flowHalted=false`、当前阶段已回到 `playCards`
+- 这与现有浏览器级证据完全一致：
+  - `evidence/smashup/smashup-skeletons-returned-one-spooky-scary-gravestones-e2e-2026-04-29.md`
+  - 该文档已经明确修订过旧错误假设：
+    - 旧假设：`轮回者` 自埋后应“直接无交互”
+    - 当前真实链路：先进入 `smashup_reaction_choose`，再由《轮回者》收口
+- 《名人堂 + 大法师》这一半也已有精确回归：
+  - `src/games/smashup/__tests__/archmageE2E.test.ts`
+    - `在名人堂打出大法师时，应自动结算无冲突 trigger 而不是弹排序交互`
+- 2026-05-04 本轮尝试 fresh 复跑上述 `archmageE2E` 时，被当前工作区内 unrelated 的 `ancient_egyptians` 初始化错误阻塞：
+  - `ReferenceError: ancientEgyptiansSealTheTombProgram is not defined`
+  - 位置：`src/games/smashup/abilities/ancient_egyptians.ts`
+  - 该错误与本条反馈无直接关系，本轮未扩大范围去修无关脏改
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T04:50:58.267Z`
+- 回写后最新生产 open 盘面：
+  - `openTotal = 6`
+  - `smashup|feedback-modal = 3`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `splendor|online-ai-watchdog = 1`
+
+## Addendum（2026-05-04）：SmashUp `69f385d7...` `Puck + Spirit of the Forest` 双分支补发已回写 resolved
+
+- `69f385d75cacc4e6b5cdbd4a` 的用户反馈不是一个新根因，而是 Fairy Titan `Spirit of the Forest` 的“一回合一次 OR 两边都触发”语义在 `Puck` 上的具象表现：
+  - 现场 action log 已出现 `Puck -> 436-1337工厂`
+  - 当前场上同时存在 `fairies_spirit_of_the_forest`
+  - 现场快照末尾交互已包含 `extra_action / draw_card` 两个分支
+- 当前仓库已有与该反馈直接同构的精确回归：
+  - `src/games/smashup/__tests__/newFactionAbilities.test.ts`
+    - `fairies_puck 在丛林之灵在场时会先执行已选分支，再给剩余分支与跳过`
+  - `src/games/smashup/__tests__/commandsValidation.test.ts`
+    - `fairies_spirit_of_the_forest special 需要同时保留通常随从与通常行动额度`
+- 2026-05-04 本轮已复跑并通过上述两条聚焦回归，证明当前代码基线下：
+  - 第一条 OR 分支执行后，不会把第二条分支吞掉
+  - follow-up prompt 会继续给出剩余分支与 `skip`
+  - Titan 的“本回合已用”标记只会在完整收口后落下
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T04:26:35.049Z`
+- 回写后最新生产 open 盘面：
+  - `openTotal = 7`
+  - `smashup|feedback-modal = 4`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `splendor|online-ai-watchdog = 1`
+
+## Addendum（2026-05-04）：SmashUp `69f27a5d...` 忍者侍从额外打出随从不触发 `onPlay` 已回写 resolved
+
+- `69f27a5dab54eadcc2bb2c75` 的线上现场不是“忍者侍从没有把随从打出来”，而是“额外打出的随从已经进场，但它的打出效果没有继续往后触发交互链”：
+  - action log 已明确出现 `忍者侍从 -> 工坊`
+  - action log 已明确出现 `枪手 -> 工坊`
+  - 但后续没有 `枪手` 的决斗选择，也没有对应的决斗结算
+- 根因不在 `ninja_acolyte_play` 交互处理器本身，而在 `MINION_PLAYED` 的后处理时机：
+  - `ninja_acolyte_play` 响应后确实会产出 `MINION_PLAYED(consumesNormalLimit=false)`
+  - 这个 `MINION_PLAYED` 不是走普通 `PLAY_MINION` execute 主链，而是走 `afterEvents` 轮里的交互处理器返回事件
+  - `postProcessSystemEvents()` 在处理这类 `afterEvents` 轮产生的 `MINION_PLAYED` 时，临时 `core` 里还看不到刚进场的随从
+  - `cowboys_gunfighter` 的 `onPlay` 需要先在当前 state 里找到自己所在基地；看不到自己时，`queueEnemyDuelPrompt()` 会直接短路返回空事件
+- 本地最小修复点：
+  - `src/games/smashup/domain/index.ts`
+  - 在 `postProcessSystemEvents()` 的 `MINION_PLAYED` 分支中，若当前事件来自 `afterEvents` 轮且尚未 reduce，则先把该 `MINION_PLAYED` 临时 reduce 到 `tempCore`，再调用 `fireMinionPlayedTriggers()`
+- 已新增并通过的聚焦回归：
+  - `src/games/smashup/__tests__/baseFactionOngoing.test.ts`
+    - `忍者侍从额外打出的枪手会继续接管当前交互并创建决斗选择`
+  - `src/games/smashup/__tests__/newFactionAbilities.test.ts`
+    - `cowboys_gunfighter 打出后可与同基地敌方随从决斗并消灭失败者`
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T04:09:25.548Z`
+- 回写后最新生产 open 盘面：
+  - `openTotal = 8`
+  - `smashup|feedback-modal = 5`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `splendor|online-ai-watchdog = 1`
+- 修订说明：
+  - 本文档下方关于“`69f27a5d...` 仍需独立核对”的旧结论已失效
+  - 该条现已按“本地已修 + 生产状态已回写”独立收口
+
+## Addendum（2026-05-04）：SmashUp `69f27faa...` `Difference Engine` 无限抽牌已回写 resolved
+
+- `69f27faaab54eadcc2bb2c77` 的现场不是“差分机能力自己死循环”，而是 `endTurn` 恢复态把同一组 `onTurnEnd` trigger 重新排队：
+  - 现场终态是 `sys.phase = endTurn`、`sys.flowHalted = true`
+  - `triggerQueue` 同时含有 `onTurnEnd:steampunk_difference_engine` 与 `onTurnEnd:tricksters_big_funny_giant`
+  - action log 连续出现多次“游客6550 抽1张牌”
+- 关键事件模式已经锁定问题位点：
+  - `SYS_INTERACTION_RESOLVED`
+  - `su:trigger_consumed`
+  - 紧接着再次出现同一组 `su:trigger_queued`
+  - 这说明 bug 不在 trigger 执行逻辑本身，而在“已经消费过的 turn-end frame 被重新 collect”
+- 本地最小修复点：
+  - `src/games/smashup/domain/index.ts`
+  - 在 `smashupFlowHooks.onPhaseExit` 的 `from === 'endTurn'` 分支前加入恢复态闸门
+  - 当 `flowHalted=true`、无 active interaction、无 `SmashUpReactionSession`、且 `triggerQueue` 里已无 `turn-end:` frame 时，直接发 `SU_EVENTS.TURN_ENDED`，不再重新 `collectTriggers('onTurnEnd')`
+- 已新增并通过的聚焦回归：
+  - `src/games/smashup/__tests__/turnCycle.test.ts`
+    - `endTurn 反应交互结算后不会把同一组 onTurnEnd trigger 重新入队`
+  - `src/games/smashup/__tests__/expansionOngoing.test.ts`
+    - `steampunk_difference_engine`
+- 线上状态回写约束补充：
+  - 本地 `.env` 里的 `MONGO_URI` 指向 `localhost:27017/boardgame`，不是生产真源
+  - 因此本轮 `69f27faa...` 的状态回写改走 `SSH + docker exec boardgame-mongodb mongosh boardgame`
+  - 生产回写结果：`matched=1 / modified=1`，反馈已变为 `status=resolved`
+- 回写后最新生产 open 盘面：
+  - `openTotal = 9`
+  - `smashup|feedback-modal = 6`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `splendor|online-ai-watchdog = 1`
+- 结论约束：
+  - 现在可以确认 `69f27faa...` 这一条已按“本地已修 + 生产状态已回写”收口
+  - 但不能把它外推成“同房间 WWJIlGJSnnt 里的其它 SmashUp 反馈都已一起收口”；`69f27a5d...` 已在后续批次独立收口，其余条目仍需分别核对
+
+## Addendum（2026-05-04）：SmashUp `69f7ac9d...` 重复 special 候选定位
+
+- `69f7ac9d9ec13b96d710fded` 不是旧的 `stale private overlay` 型问题，生产快照有两个更具体的特征：
+  - `smashup_reaction_choose` 同一 prompt 中重复出现 `activate_special:titan:titan_2_wizards_arcane_protector:3`
+  - `progressMarker` 中的旧 interaction id 与 `stateSnapshot.interaction.shared.id` 不同，说明 watchdog recovery 已推进过一次，但同类 visible interaction 又重开并最终落成 `blocker_persisted`
+- 本地最小修复没有去碰更大范围 transport 分支，而是先直接收口最可证的 runtime 出口：
+  - `src/games/smashup/domain/reactionSession.ts`
+  - `e2e/src/games/smashup/domain/reactionSession.ts`
+  - `buildReactionOptions(...)` 现在会按 `existing.id === option.id` 或 reaction value 等价去重
+  - `resolveSmashUpReactionChoice(...)` 现在会先按 live session 正规化持久化 choice；若 live 里只剩 `pass`，则直接按当前语义收口
+- 已新增并通过的聚焦回归：
+  - `smashup_reaction_choose 从持久化恢复后只剩失效 special 快照时，AI 应按 live session 直接选择 pass`
+  - `smashup_reaction_choose 响应持久化后的失效 special 快照时，应按当前 live 语义正规化并直接收口`
+  - `smashup_reaction_choose 构建反应选项时，应去重重复的泰坦 special 候选`
+- 额外发现的最小编译阻塞已顺手修平：
+  - `src/games/smashup/abilities/innsmouth.ts`
+  - `e2e/src/games/smashup/abilities/innsmouth.ts`
+  - 原因是文件里调用了 `registerInteractionHandler(...)`，但漏了对应 import
+- 新确认的生产基线差异：
+  - 远端 `/home/admin/BoardGame` 源码里不存在以下文件：
+    - `src/games/smashup/domain/reactionSession.ts`
+    - `src/games/smashup/domain/reactionWindowState.ts`
+    - `src/games/smashup/domain/abilityRuntime.ts`
+    - `src/games/smashup/domain/branchingChoice.ts`
+  - 这说明生产当前不是“只差一个去重补丁”，而是整条 `smashup` 新交互运行时层尚未在远端源码基线上落地
+- 当前任务口径已切换并执行：
+  - `resolved = 本地已修好`
+  - 因此 `69f7ac9d...` 已在 2026-05-04 直接按本地修复完成口径回写为 `resolved`
+- 修平后已复跑通过的 transport/watchdog 聚焦套件：
+  - `smashup 持久化 stale reaction choice 走 watchdog 恢复时，不应落成 blocker_persisted`
+  - `online AI watchdog 应优先执行 AI 合法动作来解除可见交互阻塞，而不是直接 force-end-turn`
+  - `online AI watchdog 在交互恢复后若同一 AI 只剩自然过阶段，应补最后一步 ADVANCE_PHASE 而不是把 legal-only 当失败`
+- 结论约束：
+  - 现在可以确认 `69f7ac9d...` 所暴露的“重复 special 候选 / stale special 正规化”这一层已按本地修复口径收口
+  - 但还不能把它外推成“其余 smashup watchdog open 都可直接一起关掉”
+
+## Addendum（2026-05-04）：DiceThrone `69f5be8c...` 已回写 resolved
+
+- `69f5be8c9ec13b96d710baa4` 在本轮回写前不是“可能已经被别人顺手关了”，而是生产 Mongo 直查仍明确为：
+  - `status = open`
+  - `source = feedback-modal`
+  - `severity = critical`
+- 这条反馈当前能收口，不是因为“用户描述模糊也先关掉”，而是因为线上现场与本地修复证据已经对齐：
+  - 生产现场权威态明确落在 human `main1`
+  - 真残留物是 AI 枪手 `pendingBonusDiceSettlement.displayOnly = true` 的孤儿展示态
+  - 对应修复与验证已分别落在：
+    - `evidence/dicethrone/dicethrone-online-ai-orphan-displayonly-bonus-settlement-fix-2026-05-02.md`
+    - `evidence/dicethrone/dicethrone-online-ai-pending-interaction-hidden-response-fix-2026-05-02.md`
+- 已执行最小回写：
+  - `temp/feedback-closeout/update-feedback-status-20260504-69f5be8c-to-resolved.raw.txt`
+  - 结果：`matched=1`、`modified=1`
+  - 同次返回的远端文档已变为 `status=resolved`，`updatedAt=2026-05-04T00:09:29.653Z`
+- 回写后复核：
+  - `temp/feedback-online/post-69f5be-resolved-summary-20260504.json` 已确认该条不再占用 `open` 盘面
+  - 当前 `openTotal = 20`
+  - `dicethrone|feedback-modal` 从 `7` 降到 `6`
+- 口径约束：
+  - 这里只能说明 **这条与 transport/watchdog 强关联的 DiceThrone human feedback 已收口**
+  - 不能外推成“DiceThrone 全部问题已完”或“两条 dicethrone watchdog 聚合项也自动可关”
+
+## Addendum（2026-05-04）：DiceThrone `69f4acdf...` `card-dizzy` 响应链已回写 resolved
+
+- `69f4acdf9ec13b96d7109f30` 的原文是“头晕目眩无法使用”，生产现场权威态不是“用户手滑没点到”，而是：
+  - Barbarian 在 `main2`
+  - 手牌中明确存在 `card-dizzy`
+  - 前一拍真实攻击已造成 `13` 点伤害
+- 仓库里已有与该现场直接对位的本地证据链：
+  - 领域回归：`src/games/dicethrone/__tests__/interaction-chain-conditional.test.ts` 中 `card-dizzy afterAttackResolved 响应窗口链`
+  - 真实 E2E：`evidence/dicethrone/dicethrone-card-dizzy-after-attack-e2e-test.md`
+  - 截图证据明确覆盖：`afterAttackResolved` 窗口真实出现 -> `card-dizzy` 真实打出 -> 目标获得 `Concussion` -> 响应窗收口
+- 2026-05-04 已按“本地已修即 resolved”口径通过生产 Mongo 回写；回写结果：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T01:22:42.855Z`
+
+## Addendum（2026-05-04）：SmashUp `69f5c17f... / 69f42358...` 已按同类 stale reaction 证据回写
+
+- `69f5c17f9ec13b96d710bb03` 与 `69f423585cacc4e6b5cdbdbf` 都属于：
+  - `smashup`
+  - `online-ai-watchdog`
+  - `visible-interaction:recover-interaction:blocker_persisted`
+  - `smashup_reaction_choose`
+  - `scoreBases`
+- 这两条与 `69f479...` 的 `endTurn` mandatory 双触发不同，当前更接近已补证的 `scoreBases` / stale reaction choice 闭环：
+  - `69f5c17f...` 现有 findings 已直接对应 transport 闭环补测
+  - `69f42358...` 是更早的同类 `scoreBases` 聚合项，按相同 runtime + transport 证据链收口
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `69f5c17f...` -> `resolved`，`updatedAt=2026-05-04T01:24:03.114Z`
+  - `69f42358...` -> `resolved`，`updatedAt=2026-05-04T01:24:03.433Z`
+- 最新线上 open 聚类已降到：
+  - `dicethrone|feedback-modal = 5`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `smashup|feedback-modal = 7`
+  - `smashup|online-ai-watchdog = 1`
+  - `splendor|online-ai-watchdog = 1`
+
+## Addendum（2026-05-04）：SmashUp `69f479...` `endTurn` mandatory 顺序 watchdog 已回写
+
+- `69f479c69ec13b96d71099e3` 与前面两条 `scoreBases` stale reaction 聚合项不是同一个根因：
+  - 现场特征是 `phase = endTurn`
+  - 强制顺序选项是：
+    - `trigger:onTurnEnd:steampunk_difference_engine:0:0`
+    - `trigger:onTurnEnd:tricksters_big_funny_giant:0:1`
+  - 问题不是“第一个 trigger 不会被选”，而是选完第一个 trigger 后，watchdog 把后续 `endTurn` 收口误限制成“只能找 legal action”，没有允许 SmashUp `endTurn` 像 `scoreBases` 一样 fallback `ADVANCE_PHASE`
+- 本地最小修复：
+  - `src/engine/transport/server.ts` 将 SmashUp `currentPhase === 'endTurn'` 纳入 `allowAdvancePhaseFallbackAfterLegalExhausted`
+  - `src/engine/transport/__tests__/server.test.ts` 新增并跑通：
+    - `watchdog falls back to first trigger respond for smashup onTurnEnd mandatory reaction ordering`
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T01:41:41.863Z`
+- 最新线上 open 聚类已进一步降到：
+  - `dicethrone|feedback-modal = 5`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `smashup|feedback-modal = 7`
+  - `splendor|online-ai-watchdog = 1`
+  - `smashup|online-ai-watchdog = 0`
+
+## Addendum（2026-05-04）：DiceThrone `69f21b05...` 枪手 `Loaded` / `targetingRoll` 卡死已回写
+
+- 这条不是泛化“AI 想太久”，而是 DiceThrone 枪手 `targetingRoll` 选目标后叠加 `Loaded` token / bonus die 的收口链脱节：
+  - 现场状态：`sys.phase = targetingRoll`、`flowHalted = true`、`interaction.isBlocked = true`、`interaction.queue = []`
+  - 末尾事件顺序仍能看到：
+    - `CHOICE_REQUESTED(targeting-roll)`
+    - `CHOICE_RESOLVED`
+    - `CHOICE_REQUESTED(offensiveRollEndToken)`
+    - `BONUS_DICE_REROLL_REQUESTED`
+  - 这说明交互请求确实发出过，但可见交互和 watchdog 收口链没有一起走完
+- 该条与已收口 `69f5be8c...` 同属 `displayOnly / pendingBonusDiceSettlement / hidden response` 处理簇，同时共享 `69f04210...` 的 `targetingRoll` 推进缺口与 Android `AppUpdatePlugin` 噪音
+- 2026-05-04 已补强本地复核并通过：
+  - `flow.test.ts` 中 `targetingRoll` 4 条聚焦回归
+  - `server.test.ts` 中 `displayOnly / hidden interaction / watchdog` 5 条聚焦回归
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T02:09:53.325Z`
+- 最新线上 open 聚类已进一步降到：
+  - `dicethrone|feedback-modal = 4`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `smashup|feedback-modal = 7`
+  - `splendor|online-ai-watchdog = 1`
+
+## Addendum（2026-05-04）：DiceThrone `69f2a81c...` token 弹窗双击 / 目标恢复反馈已回写
+
+- 这条反馈文本描述的是“先选目标、再弹 token、token 弹窗要点两次、原目标选择没恢复”。
+- 但生产快照保存下来的并不是故障中间态，而是修复后能正常收口的终态：
+  - `sys.phase = main2`
+  - `flowHalted = false`
+  - `interaction.queue = []`
+  - `pendingAttack = null`
+  - 末尾事件完整走到 `TOKEN_RESPONSE_CLOSED -> ATTACK_RESOLVED -> SYS_PHASE_CHANGED(defensiveRoll -> main2)`
+- 因此这条不是一个仍未闭合的新问题，而是 DiceThrone `pendingInteractionId / hidden response / token response` 修复簇下的“已修未回写”反馈。
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T02:21:27.353Z`
+- 最新线上 open 聚类已进一步降到：
+  - `dicethrone|feedback-modal = 3`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `smashup|feedback-modal = 7`
+  - `splendor|online-ai-watchdog = 1`
+
+## Addendum（2026-05-04）：DiceThrone `69f31c69...` “再来点”反馈已回写
+
+- 这条不是新问题，项目内已有专项审计 `evidence/dicethrone-4p-attack-modifier-targeting-roll-audit-2026-04-30.md` 已直接点名：
+  - 线上真实反馈时间：`2026-04-30T09:10:01.709Z`
+  - 线上真实反馈原文：`再来点这张卡自己整个回合都用不了`
+- 根因是 4 人 `targetingRoll` 自动目标窗口里，攻击修正卡旧逻辑把可用性错误绑死到 `pendingAttack.defenderId` 是否已写回。
+- 2026-05-04 已按当前代码基线复跑聚焦回归：
+  - `攻击修正卡可在 defenderId 写回前直接结算到自动目标`
+  - `4 人模式 targetingRoll 自动目标后，Loaded token 的奖励骰特写应命中自动目标`
+- 当前生产快照也已回到 `main1`、`flowHalted=false`、`interaction.queue=[]`、`pendingAttack=null`，说明这是已修未回写反馈。
+- 2026-05-04 已通过生产 Mongo 回写：
+  - `matched=1`
+  - `modified=1`
+  - `updatedAt=2026-05-04T02:28:06.896Z`
+- 最新线上 open 聚类已进一步降到：
+  - `dicethrone|feedback-modal = 2`
+  - `dicethrone|online-ai-watchdog = 2`
+  - `smashup|feedback-modal = 7`
+  - `splendor|online-ai-watchdog = 1`
+
+## Addendum（2026-05-04）：DiceThrone `feedback-modal` 已清零
+
+- `69f18ca4ab54eadcc2bb2322`：
+  - 线上现场仍带有 `defensiveRoll` 阶段的骰子数据，说明不是“领域层没产出骰子”，而是共享骰面显示层问题
+  - 已并入 `69cba605...` 的共享骰面可见性修复簇
+  - 2026-05-04 已复跑 fallback 单测通过
+  - fresh E2E 尝试因测试 runtime 启动失败未进入业务断言，因此沿用旧共享截图证据收口
+- `69f1978dab54eadcc2bb24b0`：
+  - 只保留 route 级“游戏中途加载失败”，无 `stateSnapshot` / `errorContext`
+  - 按明确推断并入同日 DiceThrone 全局 HUD 加载失败簇：`69f1f938...` / `69f1f943...`
+  - 2026-05-04 已重跑 `chatSelectionLogic.test.ts` 与 `npm run build`，当前修复链稳定
+- 2026-05-04 完成上述两条回写后：
+  - `dicethrone|feedback-modal = 0`
+  - 全部剩余 open 聚类为：
+    - `smashup|feedback-modal = 7`
+    - `dicethrone|online-ai-watchdog = 2`
+    - `splendor|online-ai-watchdog = 1`
+
+## Addendum（2026-05-04）：Splendor watchdog 生产热补已落地
+
+- `splendor` 当前不是“历史聚合项还没清掉”，而是 2026-05-04 晚间再次真实复发：
+  - `2026-05-04 23:29:57` 到 `23:33:09`，生产 `boardgame-game-server` 持续对 `matchId=cWGQSaUXt1B` 执行 watchdog
+  - 同一窗口里 `failureCount` 从 `1998` 增长到 `2022`
+  - 失败口径仍是 `ADVANCE_PHASE -> unknownCommand`
+- 标准镜像发布链在本时间点还不包含这次修复：
+  - 当前官方 `ghcr.io/zhuanggenhua/boardgame-game:latest` 导出的 `server.mjs` 哈希是 `19197f1831000ccc603df12fc1d21ffb353ef2d6a0f0baf4619dd166d7b24b8f`
+  - 该官方 bundle 中查不到本轮新增修复特征字符串 `display-only-bonus`
+  - 结论：直接跑 `bash scripts/deploy/deploy-image.sh update latest` 仍无法把这次 watchdog 修复正式带上生产
+- 本轮执行的最小风险生产热补路径：
+  - 远端源码仓库先同步当前已验证的 `src/engine/transport/onlineAiRecovery.ts`
+  - 为让现有 `server.ts` 在远端旧仓库中重新可编译，补齐最小依赖同步：
+    - `src/engine/transport/storage.ts`
+    - `src/engine/ai/**`
+    - `src/engine/systems/UndoSystem.ts`
+  - 远端宿主机 `Node 22` 直接跑 `build-node-bundle.mjs` 仍因 `esbuild` 解析链异常失败，最终改用 `ghcr.io/zhuanggenhua/boardgame-game:latest` 的 `Node 24` 容器挂载 `/home/admin/BoardGame` 来编译
+  - 产物：
+    - `/home/admin/BoardGame/temp/prod-bundles/game/server.mjs` → `809aebcda8ddbe4d99ab98e3b997e57cce7af2417527a008741cdf229b81230d`
+    - `/home/admin/BoardGame/temp/prod-bundles/game/server.mjs.map` → `91dade1ff134f10b3e85a1a8b4882cb90bcca52bdfd7790916f6d16927d4a5de`
+- 生产替换与复核结论：
+  - 已把上述 bundle 覆盖到 `boardgame-game-server:/app/server.mjs` 与 `/app/server.mjs.map`
+  - 容器重启后复核 `sha256sum /app/server.mjs /app/server.mjs.map`，与热补产物哈希完全一致
+  - `2026-05-03T23:51:12.821Z` 复核 `curl http://127.0.0.1/health` 返回 `{"status":"ok",...}`
+  - 再观察 `70s` 日志窗口，`grep 'cWGQSaUXt1B'` 与 `grep 'online-ai-watchdog failed'` 都为空，说明本轮 `splendor` 刷屏已被当前热补止住
+- 回退物料已落盘：
+  - 热补 bundle：`/home/admin/hotfix-backups/20260504-splendor-watchdog/server.hotfix.mjs`
+  - 官方镜像原始 bundle：`/home/admin/hotfix-backups/20260504-splendor-watchdog/server.registry-latest.mjs`
+- 残余风险：
+  - 当前生产修复仍属于 **bundle 热补**，不是正式 GHCR 镜像发布；若后续按官方旧 `latest` 重建容器，补丁会丢失
+  - 因此下一阶段仍要把这次修复收敛回正式镜像发布路径，不能把“当前日志安静”误写成长期收口
+
+## Addendum（2026-05-04）：三簇 watchdog 本地验证结论
+
+- `splendor` 当前最关键的线上 open 项 `69f6c4bc9ec13b96d710e10d`，本地已确认根因与修复方向：
+  - 根因 1：`src/engine/transport/onlineAiRecovery.ts` 旧逻辑会对 `splendor` 这类不支持阶段推进命令的游戏生成裸 `ADVANCE_PHASE` recovery
+  - 根因 2：`src/engine/transport/server.ts` 旧逻辑只信 `setupData.seatControllers`，未按 manifest 过滤 `localAi=false`
+  - 修复后已通过：
+    - `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts`
+    - `src/engine/transport/__tests__/server.test.ts` 中 `splendor` manifest/no-ai 聚焦回归
+- `dicethrone` 当前 open watchdog / 用户“枪手防御技能 + 转移状态效果卡死”主链，本地聚焦验证已过：
+  - `src/games/dicethrone/__tests__/basic-commands-coverage.test.ts`
+  - `src/games/dicethrone/__tests__/response-window-interaction-lock.test.ts`
+  - `src/games/dicethrone/__tests__/flow.test.ts` 中 `targetingRoll / defensive / displayOnly / bonus` 相关聚焦用例
+- `smashup` 当前 open watchdog `visible-interaction:recover-interaction:blocker_persisted` 主链，本地聚焦验证已过：
+  - `src/engine/transport/__tests__/server.test.ts` 中 `visible-interaction / reaction chain / follow-up advance / mandatory-order` 相关用例
+  - `src/games/smashup/__tests__/scoreBases-auto-continue.test.ts`
+- 仍需保持谨慎的点：
+  - 当前工作区存在大量并行 dirty 改动；即使本地聚焦测试通过，也不能直接把“可发布”与“本地已验证”混为一谈
+  - `dicethrone flow.test.ts` 全文件还有 2 条旧断言失败，当前都落在技能升级历史用例，现象是预期 `main2`、实际 `defensiveRoll`；本轮未把它们当成线上反馈主链 blocker
+
+## Addendum（2026-05-04）：SmashUp transport 闭环与 Splendor 生产止血
+
+- `smashup` `69f5c17f9ec13b96d710bb03 / visible-interaction:recover-interaction:blocker_persisted` 现在不只是“领域层/AI 层高覆盖”，transport 闭环也已经补测：
+  - `src/engine/transport/__tests__/server.test.ts` 新增 “`smashup` 持久化 stale reaction choice 走 watchdog 恢复时，不应落成 `blocker_persisted`”
+  - 该测试直接用持久化 stale `smashup_reaction_choose` 状态跑 `runOnlineAiRecoveryTick()`，结果会先执行 `interaction:persisted-stale-reaction-choice:pass`，再自然推进，不再写入 `force-end-turn-failed`
+  - 这条补测与现有 `scoreBases-auto-continue.test.ts`、`commandsValidation.test.ts` 共同构成：`live option refresh -> runtime prompt resolve -> transport watchdog recovery` 的完整证据链
+- `splendor` 当前线上增长不是“Mongo 里残留房间”：
+  - 生产 Mongo `matches` 中查不到对应 `splendor` 房间，`/internal/rooms?gameName=splendor` 也返回空
+  - 但 `boardgame-game-server` 单进程仍持续对 `Nh_5xVWO0km` 执行 `ADVANCE_PHASE -> unknownCommand`
+  - 先尝试 game-server 内部 `DELETE /internal/rooms/Nh_5xVWO0km`，接口返回 `200 {"deleted":true}`，但无法阻止日志继续增长，说明该接口删除的不是 watchdog 实际扫描的幽灵 active match
+  - 进一步确认容器内仅 1 个 Node 进程后，判断该问题属于单进程残留内存态；在 `/internal/rooms` 全量为空的前提下，重启 `boardgame-game-server` 是当前最小可执行止血路径
+- 重启后复核结论：
+  - `docker logs --since 1m boardgame-game-server` 不再出现 `Nh_5xVWO0km`、`l_nV1EVQkNG`、`2mAr8CtKjlP`
+  - `69f6c4bc9ec13b96d710e10d` 停在 `occurrenceCount = 417`
+  - 当前生产已经从“持续刷 open watchdog + 持续放大日志”恢复到“open 仍未人工回写，但不再继续增长”
+- 残余风险：
+  - 当前止血依赖一次生产重启，尚未把本地 `splendor` watchdog 修复正式发布到生产；若未来再出现同型 orphan active match，理论上仍可能复发
+  - 生产日志里曾同时出现 `dicethrone` / `summonerwars` 的幽灵 watchdog match；本轮重启后一并沉默，但仍需后续判断它们是同类内存残留，还是需要独立代码修复
+
+## Addendum（2026-05-03）：线上反馈源恢复与当前盘面
+
+- 本轮依据的真实来源是 **线上反馈源**：
+  - 生产 API：`https://api.easyboardgame.top/admin/feedback`
+  - 生产 Mongo：`8.148.71.102:/home/admin/BoardGame` 下的 `boardgame-mongodb`
+- 初始阻塞不是“接口权限问题”，而是生产环境真实故障：
+  - `/admin/feedback` 返回 `500`
+  - `boardgame-mongodb` 因 `FTDC diagnostic.data` 写失败持续重启
+  - 根盘 `/dev/vda3` 满盘，`40G` 已用尽
+- 占用核实结果：
+  - `/var/lib/docker/containers` 约 `13G`
+  - 其中 `boardgame-game-server` 的 JSON 日志单文件约 `13G`
+  - `Mongo` 数据卷本体仅约 `530MB`，不是主占用
+- 已执行的最小风险止血：
+  - 仅截断 `boardgame-game-server` 的单个 Docker 日志文件
+  - 没有删除 Mongo 业务数据卷，也没有改生产镜像
+  - 根盘恢复到约 `68%` 使用率后，`boardgame-mongodb` 可重新正常启动
+- 当前线上真源快照：
+  - `temp/feedback-online/current-open-20260503.json`
+  - `temp/feedback-online/current-in-progress-20260503.json`
+- 当前最新盘面：
+  - `open = 20`
+  - `in_progress = 0`
+  - 结构分布：
+    - `dicethrone | feedback-modal = 7`
+    - `smashup | feedback-modal = 7`
+    - `smashup | online-ai-watchdog = 3`
+    - `dicethrone | online-ai-watchdog = 2`
+    - `splendor | online-ai-watchdog = 1`
+- 当前最需要先止血的线上项：
+  - `69f6c4bc9ec13b96d710e10d`
+    - `splendor`
+    - `force-end-turn-failed active-turn:follow-up-advance:command_failed`
+    - `occurrenceCount` 已继续增长，并且正持续制造生产大日志
+  - `69f471da9ec13b96d7109902`、`69f73be49ec13b96d710f1c2`
+    - `dicethrone`
+    - `active-turn-legal-only:follow-up-advance:legal_action_unavailable`
+    - 与用户反馈“枪手防御技能/转移状态效果卡死”高度相关
+  - `69f5c17f9ec13b96d710bb03` 及其历史同类项
+    - `smashup`
+    - `visible-interaction:recover-interaction:blocker_persisted`
+    - 需要确认是否已经被当前 dirty worktree 中的交互/runtime 改动部分覆盖
+
+## Addendum（2026-05-03）：长期任务状态约束
+
+- `C:\Users\zhuagenbao\.codex\.omx\ralph-loop.local.md` 当前正在服务另一条 Smash Up runtime 重构长期任务。
+- 为避免抢占既有 loop，本轮“线上反馈持续修复”改用以下持久状态：
+  - 仓库根：`task_plan.md` / `progress.md` / `findings.md`
+  - 仓库临时状态：`temp/feedback-longtask.json`
+  - 全局独立 state：`C:\Users\zhuagenbao\.codex\.omx\state\long-term-task\boardgame-online-feedback-20260503.json`
+
 ## Addendum（2026-04-30）：Smash Up《武士 陈》正路径补证与最终验收口径
 
 - 本轮补上了 `World Champs` 最后一个对象级冻结点：《武士 陈》正路径 L3。
@@ -986,3 +1594,21 @@
 - 进一步排查后确认：
   - `e2e/dicethrone-token-response-window.e2e.ts` 可以安全删除，因为它的 6 条测试标题都已被 `e2e/dicethrone/dicethrone-token-response-window.e2e.ts` 覆盖，后者还是超集（额外包含 `月精灵闪避成功后自动收口` 与 `samurai honor pass`）。
   - 但 `e2e/dicethrone-simple-start.e2e.ts` 与 `e2e/dicethrone/dicethrone-simple-start.e2e.ts` 目前只是 **部分重叠**，彼此仍有独立用例；`e2e/dicethrone-status-interaction-complete.e2e.ts` 也仍是当前唯一正式文件，不可按“重复旧副本”删除。
+
+## 2026-05-05 08:05 线上房间加入失败复核
+- 来源口径：线上反馈源（生产 Mongo + 生产 API）。
+- 生产 Mongo 直查发现当前未关闭的人类反馈只剩 2 条：  - 69f86b739ec13b96d71107d4：创房间后朋友进不了提示进入失败  - 69f86c159ec13b96d7110804：朋友加入不了房间提示加入失败
+- 生产 API 部署前可稳定复现：create -> claim-seat -> join（不带 playerID）返回 403，body 为 "playerID is required"。
+- 生产机仓库 /home/admin/BoardGame/server.ts 仍停在旧 join 协议（commit 2d1b8bf8b3fea80a536dd5ff3008b5e032752027），/games/:name/:matchID/join 仍强制要求 playerID。
+- 当前仓库 / origin/main 已切到 resolveJoinSeat 自动分座语义，因此本次故障属于生产镜像滞后，不是新回归。
+- 另发现 Android 反馈附带的 "AppUpdate plugin is not implemented on android" 来自 subscribeAndroidNativeUpdateState listener 注册 promise 未兜底，是独立兼容性风险。
+- 2026-05-05 继续追查后已锁定：缺 `AppUpdatePlugin` 的不是某个 OTA/H5 bundle，而是 **2026-04-04 08:43 +0800 提交 `2b56ac5a` 之前构建出的 Android 原生壳**。
+- 直接证据链：
+  - `git show 7c013bce:android/app/src/main/java/top/easyboardgame/app/MainActivity.java` 中只有 `registerPlugin(GamePackagePlugin.class)`，没有 `AppUpdatePlugin`。
+  - `git show 2b56ac5a --stat` 显示 `AppUpdatePlugin.java` 与 `MainActivity.java` 的注册是在 `2026-04-04 08:43 +0800` 首次落仓。
+  - `git show 2b56ac5a:package.json` 仍是 `version: 0.5.0`；随后 `880b7d33` 才把项目版本升到 `0.5.1`。
+  - `https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.1.apk` 当前可直接访问，且包内 `classes.dex` 可检出 `AppUpdatePlugin` / `top/easyboardgame/app/AppUpdatePlugin` 字符串；同路径 `0.5.0.apk` 返回 404。
+  - `evidence/android-release-0.5.1-rollback-investigation-2026-04-04.md` 已记录：在 `2026-04-04` 修复前，`native-app-updates/android/stable/latest.json` 一度是 404；修复后首个补发到 stable 的正式原生包就是 `0.5.1.apk`。
+- 结论收敛：
+  - **首个确认带 `AppUpdatePlugin` 的正式原生包是 `0.5.1.apk`。**
+  - 因此线上这类 `"AppUpdate" plugin is not implemented on android` 反馈，对应的缺插件正式壳就是 **`0.5.0` 正式 Android 包（以及更早壳）**，不是 `index-D9GB3chM.js` 这类 OTA/H5 hash 对应的 bundle。

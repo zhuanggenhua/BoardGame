@@ -41,6 +41,8 @@ interface SpotlightContainerProps {
     allowContentPointerEvents?: boolean;
     /** 首次挂载后的点击关闭保护时长，避免触发它的同一次点击立刻把特写关掉 */
     closeClickGuardMs?: number;
+    /** 已由上层 modal stack 接管层级/遮罩时，禁止再次 portal 到 hud-root */
+    usePortal?: boolean;
 }
 
 const DEFAULT_CONTENT_MOTION: SpotlightMotion = {
@@ -69,6 +71,7 @@ export const SpotlightContainer: React.FC<SpotlightContainerProps> = ({
     blockPointerEvents = false,
     allowContentPointerEvents = true,
     closeClickGuardMs = 180,
+    usePortal = true,
 }) => {
     const visibleSinceRef = React.useRef<number>(0);
     const onCloseRef = React.useRef(onClose);
@@ -279,7 +282,7 @@ export const SpotlightContainer: React.FC<SpotlightContainerProps> = ({
 
     const canUsePortal = portalReady && typeof document !== 'undefined';
 
-    return canUsePortal ? (
+    return canUsePortal && usePortal ? (
         <HudPortal>
             {content}
         </HudPortal>

@@ -12,8 +12,10 @@
       "reporterType": "提交来源",
       "source": "系统来源",
       "sort": "时间排序",
+      "priority": "排序优先级",
       "newest": "最新优先",
       "oldest": "最早优先",
+      "preferMine": "我的优先",
       "all": "全部"
     },
     "pagination": {

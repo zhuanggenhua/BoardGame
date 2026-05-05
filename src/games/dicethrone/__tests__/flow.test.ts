@@ -120,6 +120,33 @@ function createInitializedStateWithCharacters(
     return state;
 }
 
+function createDefenderChoiceInteraction(args: {
+    id: string;
+    playerId: PlayerId;
+    attackerId?: PlayerId;
+    sourceAbilityId?: string;
+    targetRollValue?: number;
+    titleKey?: string;
+    options: Array<{ playerId: PlayerId; customId: string; disabled?: boolean }>;
+    allowedCommands?: string[];
+}) {
+    return {
+        id: args.id,
+        kind: 'dt:defender-choice',
+        playerId: args.playerId,
+        data: {
+            attackerId: args.attackerId ?? '0',
+            chooserPlayerId: args.playerId,
+            sourceAbilityId: args.sourceAbilityId ?? 'targeting-roll',
+            sourceId: args.sourceAbilityId ?? 'targeting-roll',
+            titleKey: args.titleKey ?? '选择本次攻击目标',
+            targetRollValue: args.targetRollValue ?? 6,
+            options: args.options,
+            allowedCommands: args.allowedCommands,
+        },
+    } as any;
+}
+
 const MONK_MIRROR_CHARACTERS = {
     '0': 'monk',
     '1': 'monk',
@@ -1135,13 +1162,15 @@ describe('王权骰铸流程测试', () => {
             expect(state.core.players['2'].discard.some((card) => card.id === 'card-flick')).toBe(true);
             expect(state.sys.responseWindow?.current?.responderQueue).toEqual(['0']);
             expect(state.sys.interaction.current?.playerId).toBe('2');
-            expect(state.sys.interaction.current?.kind).toBe('dt:card-interaction');
-            expect((state.sys.interaction.current?.data as { type?: string; targetPlayerIds?: PlayerId[]; resolveCustomActionId?: string } | undefined)?.type).toBe('selectPlayer');
-            expect((state.sys.interaction.current?.data as { type?: string; targetPlayerIds?: PlayerId[]; resolveCustomActionId?: string } | undefined)?.targetPlayerIds).toEqual(['1', '3']);
-            expect((state.sys.interaction.current?.data as { type?: string; targetPlayerIds?: PlayerId[]; resolveCustomActionId?: string } | undefined)?.resolveCustomActionId).toBe('resolve-card-effects-on-selected-opponent');
+            expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
+            expect((state.sys.interaction.current?.data as { meta?: { dtType?: string; targetOpponentDice?: boolean; diceOwnerId?: PlayerId } } | undefined)?.meta).toMatchObject({
+                dtType: 'modifyDie',
+                targetOpponentDice: true,
+                diceOwnerId: '3',
+            });
         });
 
-        it('4 人模式下非当前 responder 队友打出 card-flick 后，应能继续完成选目标与改骰交互', () => {
+        it('4 人模式下非当前 responder 队友打出 card-flick 后，应直接进入改骰交互并保留响应窗口锁', () => {
             const playerIds: PlayerId[] = ['0', '1', '2', '3'];
             const pipelineConfig = {
                 domain: DiceThroneDomain,
@@ -1199,25 +1228,12 @@ describe('王权骰铸流程测试', () => {
             state = playCardResult.state as MatchState<DiceThroneCore>;
 
             expect(state.sys.interaction.current?.playerId).toBe('3');
-            expect(state.sys.interaction.current?.kind).toBe('dt:card-interaction');
-
-            const resolveTargetResult = executePipeline(
-                pipelineConfig,
-                state,
-                {
-                    type: 'RESOLVE_INTERACTION',
-                    playerId: '3',
-                    payload: { selectedPlayerIds: ['0'] },
-                    timestamp: Date.now(),
-                } as DiceThroneCommand,
-                fixedRandom,
-                playerIds,
-            );
-            expect(resolveTargetResult.success).toBe(true);
-            state = resolveTargetResult.state as MatchState<DiceThroneCore>;
-
-            expect(state.sys.interaction.current?.playerId).toBe('3');
             expect(state.sys.interaction.current?.kind).toBe('multistep-choice');
+            expect((state.sys.interaction.current?.data as { meta?: { dtType?: string; targetOpponentDice?: boolean; diceOwnerId?: PlayerId } } | undefined)?.meta).toMatchObject({
+                dtType: 'modifyDie',
+                targetOpponentDice: true,
+                diceOwnerId: '0',
+            });
 
             const targetDie = state.core.dice[0];
             expect(targetDie).toBeDefined();
@@ -1257,6 +1273,46 @@ describe('王权骰铸流程测试', () => {
             expect(state.sys.interaction.current).toBeUndefined();
             expect(state.core.players['3'].hand.some((card) => card.id === 'card-flick')).toBe(false);
             expect(state.core.players['3'].discard.some((card) => card.id === 'card-flick')).toBe(true);
+        });
+
+        it('4 人模式主阶段打出 card-get-away 时，不应先误弹 defender 选择，而应直接进入选状态交互', () => {
+            const playerIds: PlayerId[] = ['0', '1', '2', '3'];
+            let state = createInitializedStateWithCharacters(playerIds, fixedRandom, {
+                '0': 'monk',
+                '1': 'barbarian',
+                '2': 'samurai',
+                '3': 'gunslinger',
+            });
+
+            for (const pid of playerIds) {
+                state.core.players[pid].hand = [];
+                state.core.players[pid].deck = [];
+            }
+
+            state.core.players['0'].hand = [getCardById('card-get-away')];
+            state.core.players['1'].statusEffects[STATUS_IDS.CONCUSSION] = 1;
+            state.core.players['3'].tokens[TOKEN_IDS.BOUNTY] = 1;
+
+            const events = executeCardCommand(
+                state,
+                {
+                    type: 'PLAY_CARD',
+                    playerId: '0',
+                    payload: { cardId: 'card-get-away' },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                fixedRandom,
+                state.sys.phase as TurnPhase,
+                Date.now(),
+            );
+
+            const interactionEvent = events.find((event) => event.type === 'INTERACTION_REQUESTED') as
+                | Extract<DiceThroneEvent, { type: 'INTERACTION_REQUESTED' }>
+                | undefined;
+            expect(interactionEvent).toBeDefined();
+            expect(interactionEvent?.payload.interaction.type).toBe('selectStatus');
+            expect(interactionEvent?.payload.interaction.targetPlayerIds).toEqual(['0', '1', '2', '3']);
+            expect(interactionEvent?.payload.interaction.resolveCustomActionId).toBeUndefined();
         });
 
         it('4 人模式在进攻阶段结算后会先进入 targetingRoll', () => {
@@ -1467,6 +1523,165 @@ describe('王权骰铸流程测试', () => {
             expect(finalState.core.pendingBonusDiceSettlement?.targetId).toBe('3');
             expect(finalState.core.pendingBonusDiceSettlement?.attackerId).toBe('0');
             expect(finalState.core.pendingBonusDiceSettlement?.dice[0]?.effectKey).toBe('bonusDie.effect.gunslingerLoadedDie');
+        });
+
+        it('4 人模式 targetingRoll 手选目标后的 Loaded reroll 不应再次 reopen 同一 token 选择', () => {
+            const playerIds: PlayerId[] = ['0', '1', '2', '3'];
+            const pipelineConfig = {
+                domain: DiceThroneDomain,
+                systems: testSystems,
+            };
+            const random = createQueuedRandom([3, 2]);
+            let state = createInitializedStateWithCharacters(playerIds, random, {
+                '0': 'gunslinger',
+                '1': 'monk',
+                '2': 'samurai',
+                '3': 'shadow_thief',
+            });
+
+            for (const pid of playerIds) {
+                state.core.players[pid].hand = [];
+                state.core.players[pid].deck = [];
+                state.core.players[pid].discard = [];
+                state.core.players[pid].statusEffects = {};
+            }
+
+            state.core.players['0'].tokens.loaded = 1;
+            state.core.activePlayerId = '0';
+            state.core.turnPhase = 'targetingRoll';
+            state.core.dice = [{ id: 0, value: 5, locked: true, ownerId: '0' }] as any;
+            state.core.rollCount = 1;
+            state.core.rollConfirmed = true;
+            state.core.rollsRemaining = 0;
+            state.core.pendingAttack = {
+                attackerId: '0',
+                defenderId: undefined,
+                isDefendable: true,
+                sourceAbilityId: 'revolver-3',
+                damageResolved: false,
+                resolvedDamage: 0,
+                attackDiceFaceCounts: {},
+                loadedBonusDieBoost: {
+                    allowReroll: true,
+                    postSettleBonusDamageAdds: [
+                        {
+                            amount: 1,
+                            sourceCardId: 'card-wild-west',
+                        },
+                    ],
+                },
+            } as any;
+            state.sys.phase = 'targetingRoll';
+
+            const openTargetChoiceResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'ADVANCE_PHASE',
+                    playerId: '0',
+                    payload: {},
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+
+            expect(openTargetChoiceResult.success).toBe(true);
+            const targetChoiceState = openTargetChoiceResult.state as MatchState<DiceThroneCore>;
+            expect(targetChoiceState.sys.interaction.current?.playerId).toBe('3');
+            const targetOptions = (
+                targetChoiceState.sys.interaction.current?.data as { options?: Array<{ playerId: string; customId?: string }> } | undefined
+            )?.options ?? [];
+            const chooseTargetOption = targetOptions.find((option) => option.customId === 'select-target:1');
+            expect(chooseTargetOption).toBeDefined();
+
+            const chooseTargetResult = executePipeline(
+                pipelineConfig,
+                targetChoiceState,
+                {
+                    type: 'SELECT_DEFENDER_TARGET',
+                    playerId: '3',
+                    payload: { defenderId: chooseTargetOption!.playerId },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+
+            expect(chooseTargetResult.success).toBe(true);
+            const loadedChoiceState = chooseTargetResult.state as MatchState<DiceThroneCore>;
+            expect(loadedChoiceState.core.pendingAttack?.defenderId).toBe('1');
+            expect((loadedChoiceState.sys.interaction.current?.data as { sourceId?: string } | undefined)?.sourceId).toBe('revolver-3');
+
+            const useLoadedResult = executePipeline(
+                pipelineConfig,
+                loadedChoiceState,
+                {
+                    type: 'SYS_INTERACTION_RESPOND',
+                    playerId: '0',
+                    payload: { optionId: 'option-0' },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+
+            expect(useLoadedResult.success).toBe(true);
+            const afterUseLoadedState = useLoadedResult.state as MatchState<DiceThroneCore>;
+            expect(afterUseLoadedState.sys.interaction.current?.kind).toBe('dt:bonus-dice');
+            expect(
+                (afterUseLoadedState.sys.interaction.queue ?? []).some((interaction) =>
+                    interaction.kind === 'simple-choice'
+                    && ((interaction.data as { sourceId?: string } | undefined)?.sourceId === 'revolver-3')
+                )
+            ).toBe(false);
+
+            const rerollBonusDieResult = executePipeline(
+                pipelineConfig,
+                afterUseLoadedState,
+                {
+                    type: 'REROLL_BONUS_DIE',
+                    playerId: '0',
+                    payload: { dieIndex: 0 },
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+
+            expect(rerollBonusDieResult.success).toBe(true);
+
+            const settleBonusDieResult = executePipeline(
+                pipelineConfig,
+                rerollBonusDieResult.state as MatchState<DiceThroneCore>,
+                {
+                    type: 'SKIP_BONUS_DICE_REROLL',
+                    playerId: '0',
+                    payload: {},
+                    timestamp: Date.now(),
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+
+            expect(settleBonusDieResult.success).toBe(true);
+            const finalState = settleBonusDieResult.state as MatchState<DiceThroneCore>;
+            const loadedTokenLogs = (finalState.sys.actionLog?.entries ?? []).filter((entry) =>
+                entry.kind === 'TOKEN_USED'
+                && entry.segments.some((segment) =>
+                    segment.type === 'i18n'
+                    && (segment as { key?: string }).key === 'actionLog.offensiveRollEndTokenUsed'
+                )
+            );
+
+            expect(finalState.sys.phase).toBe('defensiveRoll');
+            expect(finalState.core.players['0'].tokens.loaded).toBe(0);
+            expect(finalState.core.pendingBonusDiceSettlement).toBeUndefined();
+            expect(finalState.core.pendingAttack?.defenderId).toBe('1');
+            expect(finalState.core.pendingAttack?.bonusDamage).toBe(2);
+            expect(finalState.core.pendingAttack?.attackModifierBonusDamage).toBe(1);
+            expect(finalState.sys.interaction.current).toBeUndefined();
+            expect(loadedTokenLogs).toHaveLength(1);
         });
 
         it('4 人模式 targetingRoll 掷出 3/4 时自动锁定右侧对手', () => {
@@ -1683,21 +1898,22 @@ describe('王权骰铸流程测试', () => {
             }
 
             expect(state.sys.phase).toBe('targetingRoll');
+            expect(state.sys.interaction.current?.kind).toBe('dt:defender-choice');
             expect(state.sys.interaction.current?.playerId).toBe('3');
-            const choiceOptions = ((state.sys.interaction.current as any)?.data?.options ?? []) as Array<{ id: string; value?: { customId?: string }; disabled?: boolean }>;
+            const choiceOptions = ((state.sys.interaction.current as any)?.data?.options ?? []) as Array<{ playerId: string; customId?: string; disabled?: boolean }>;
             expect(choiceOptions).toHaveLength(2);
-            expect(choiceOptions.some((option) => option.value?.customId === 'select-target:2')).toBe(false);
+            expect(choiceOptions.some((option) => option.customId === 'select-target:2')).toBe(false);
 
-            const chooseRightOpponent = choiceOptions.find((option) => option.value?.customId === 'select-target:1');
+            const chooseRightOpponent = choiceOptions.find((option) => option.customId === 'select-target:1');
             expect(chooseRightOpponent).toBeDefined();
 
             const resolveResult = executePipeline(
                 pipelineConfig,
                 state,
                 {
-                    type: 'SYS_INTERACTION_RESPOND',
+                    type: 'SELECT_DEFENDER_TARGET',
                     playerId: '3',
-                    payload: { optionId: chooseRightOpponent!.id },
+                    payload: { defenderId: chooseRightOpponent!.playerId },
                     timestamp: Date.now(),
                 } as DiceThroneCommand,
                 random,
@@ -1744,20 +1960,21 @@ describe('王权骰铸流程测试', () => {
             }
 
             expect(state.sys.phase).toBe('targetingRoll');
+            expect(state.sys.interaction.current?.kind).toBe('dt:defender-choice');
             expect(state.sys.interaction.current?.playerId).toBe('0');
-            const choiceOptions = ((state.sys.interaction.current as any)?.data?.options ?? []) as Array<{ id: string; value?: { customId?: string } }>;
+            const choiceOptions = ((state.sys.interaction.current as any)?.data?.options ?? []) as Array<{ playerId: string; customId?: string }>;
             expect(choiceOptions).toHaveLength(2);
-            expect(choiceOptions.some((option) => option.value?.customId === 'select-target:2')).toBe(false);
-            const chooseRightOpponent = choiceOptions.find((option) => option.value?.customId === 'select-target:1');
+            expect(choiceOptions.some((option) => option.customId === 'select-target:2')).toBe(false);
+            const chooseRightOpponent = choiceOptions.find((option) => option.customId === 'select-target:1');
             expect(chooseRightOpponent).toBeDefined();
 
             const resolveResult = executePipeline(
                 pipelineConfig,
                 state,
                 {
-                    type: 'SYS_INTERACTION_RESPOND',
+                    type: 'SELECT_DEFENDER_TARGET',
                     playerId: '0',
-                    payload: { optionId: chooseRightOpponent!.id },
+                    payload: { defenderId: chooseRightOpponent!.playerId },
                     timestamp: Date.now(),
                 } as DiceThroneCommand,
                 random,
@@ -1817,19 +2034,15 @@ describe('王权骰铸流程测试', () => {
                 bonusDiceResolved: false,
             } as any;
             state.sys.phase = 'targetingRoll';
-            state.sys.interaction.current = createSimpleChoice(
-                'targeting-roll-test',
-                '0',
-                '选择本次攻击目标',
-                [
-                    { id: 'target-right', label: '玩家 2', value: { customId: 'select-target:1' } },
-                    { id: 'target-left', label: '玩家 4', value: { customId: 'select-target:3' } },
+            state.sys.interaction.current = createDefenderChoiceInteraction({
+                id: 'targeting-roll-test',
+                playerId: '0',
+                options: [
+                    { playerId: '1', customId: 'select-target:1' },
+                    { playerId: '3', customId: 'select-target:3' },
                 ],
-                {
-                    sourceId: 'targeting-roll',
-                    allowedCommands: ['PLAY_CARD'],
-                },
-            ) as any;
+                allowedCommands: ['PLAY_CARD'],
+            });
 
             const playResult = executePipeline(
                 pipelineConfig,
@@ -1850,22 +2063,22 @@ describe('王权骰铸流程测试', () => {
 
             const interaction = state.sys.interaction.current as {
                 data?: {
-                    options?: Array<{ id: string; value?: { customId?: string } }>;
+                    options?: Array<{ playerId: string; customId?: string }>;
                     resolveCustomActionId?: string;
                 };
             } | undefined;
             expect(interaction).toBeDefined();
             expect(interaction?.data?.resolveCustomActionId).not.toBe('resolve-card-effects-on-selected-opponent');
 
-            const chooseTargetOption = interaction?.data?.options?.find((option) => option.value?.customId === 'select-target:1');
+            const chooseTargetOption = interaction?.data?.options?.find((option) => option.customId === 'select-target:1');
             expect(chooseTargetOption).toBeDefined();
             const targetResolveResult = executePipeline(
                 pipelineConfig,
                 state,
                 {
-                    type: 'SYS_INTERACTION_RESPOND',
+                    type: 'SELECT_DEFENDER_TARGET',
                     playerId: '0',
-                    payload: { optionId: chooseTargetOption!.id },
+                    payload: { defenderId: chooseTargetOption!.playerId },
                     timestamp: Date.now(),
                 } as DiceThroneCommand,
                 random,
@@ -1929,19 +2142,15 @@ describe('王权骰铸流程测试', () => {
                 bonusDiceResolved: false,
             } as any;
             state.sys.phase = 'targetingRoll';
-            state.sys.interaction.current = createSimpleChoice(
-                'targeting-roll-test',
-                '0',
-                '选择本次攻击目标',
-                [
-                    { id: 'target-right', label: '玩家 2', value: { customId: 'select-target:1' } },
-                    { id: 'target-left', label: '玩家 4', value: { customId: 'select-target:3' } },
+            state.sys.interaction.current = createDefenderChoiceInteraction({
+                id: 'targeting-roll-test',
+                playerId: '0',
+                options: [
+                    { playerId: '1', customId: 'select-target:1' },
+                    { playerId: '3', customId: 'select-target:3' },
                 ],
-                {
-                    sourceId: 'targeting-roll',
-                    allowedCommands: ['PLAY_CARD'],
-                },
-            ) as any;
+                allowedCommands: ['PLAY_CARD'],
+            });
 
             const playResult = executePipeline(
                 pipelineConfig,
@@ -1964,22 +2173,22 @@ describe('王权骰铸流程测试', () => {
 
             const interaction = state.sys.interaction.current as {
                 data?: {
-                    options?: Array<{ id: string; value?: { customId?: string } }>;
+                    options?: Array<{ playerId: string; customId?: string }>;
                     resolveCustomActionId?: string;
                 };
             } | undefined;
             expect(interaction).toBeDefined();
             expect(interaction?.data?.resolveCustomActionId).not.toBe('resolve-card-effects-on-selected-opponent');
 
-            const chooseTargetOption = interaction?.data?.options?.find((option) => option.value?.customId === 'select-target:1');
+            const chooseTargetOption = interaction?.data?.options?.find((option) => option.customId === 'select-target:1');
             expect(chooseTargetOption).toBeDefined();
             const targetResolveResult = executePipeline(
                 pipelineConfig,
                 state,
                 {
-                    type: 'SYS_INTERACTION_RESPOND',
+                    type: 'SELECT_DEFENDER_TARGET',
                     playerId: '0',
-                    payload: { optionId: chooseTargetOption!.id },
+                    payload: { defenderId: chooseTargetOption!.playerId },
                     timestamp: Date.now(),
                 } as DiceThroneCommand,
                 random,
@@ -2087,13 +2296,12 @@ describe('王权骰铸流程测试', () => {
                     flowHalted: true,
                     interaction: {
                         ...state.sys.interaction,
-                        current: createSimpleChoice(
-                            'targeting-roll-emergency',
-                            '0',
-                            'targeting-roll',
-                            [],
-                            'targeting-roll',
-                        ),
+                        current: createDefenderChoiceInteraction({
+                            id: 'targeting-roll-emergency',
+                            playerId: '0',
+                            titleKey: 'targeting-roll',
+                            options: [],
+                        }),
                     },
                 },
                 core: {
@@ -2113,9 +2321,9 @@ describe('王权骰铸流程测试', () => {
                 pipelineConfig,
                 state,
                 {
-                    type: 'SYS_INTERACTION_RESPOND',
+                    type: 'SYS_INTERACTION_CANCEL',
                     playerId: '0',
-                    payload: { optionId: '__emergency_skip__' },
+                    payload: {},
                     timestamp: Date.now(),
                 } as DiceThroneCommand,
                 random,
@@ -2210,7 +2418,7 @@ describe('王权骰铸流程测试', () => {
             expect(afterSkip.core.pendingAttack?.offensiveRollEndTokenResolved).toBe(true);
         });
 
-        it('4 人模式 targetingRoll 不允许通过 mergedValue 伪造队友为目标', () => {
+        it('4 人模式 targetingRoll 不允许伪造队友为目标', () => {
             const playerIds: PlayerId[] = ['0', '1', '2', '3'];
             const pipelineConfig = {
                 domain: DiceThroneDomain,
@@ -2243,21 +2451,16 @@ describe('王权骰铸流程测试', () => {
             }
 
             expect(state.sys.phase).toBe('targetingRoll');
+            expect(state.sys.interaction.current?.kind).toBe('dt:defender-choice');
             expect(state.sys.interaction.current?.playerId).toBe('0');
 
             const spoofResult = executePipeline(
                 pipelineConfig,
                 state,
                 {
-                    type: 'SYS_INTERACTION_RESPOND',
+                    type: 'SELECT_DEFENDER_TARGET',
                     playerId: '0',
-                    payload: {
-                        optionId: 'option-0',
-                        mergedValue: {
-                            customId: 'select-target:2',
-                            value: 1,
-                        },
-                    },
+                    payload: { defenderId: '2' },
                     timestamp: Date.now(),
                 } as DiceThroneCommand,
                 random,
@@ -2265,7 +2468,7 @@ describe('王权骰铸流程测试', () => {
             );
 
             expect(spoofResult.success).toBe(false);
-            expect(spoofResult.error).toBe('非法的选择值');
+            expect(spoofResult.error).toBe('invalid_defender_target');
             expect(spoofResult.state.core.pendingAttack?.defenderId).toBeUndefined();
             expect(spoofResult.state.core.pendingAttack?.targetingSelectionPending).toBe(true);
         });
@@ -2785,7 +2988,7 @@ describe('王权骰铸流程测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: createNoResponseSetup(),
+                setup: createMonkMirrorNoResponseSetup(),
                 assertFn: assertState,
                 silent: true,
             });
@@ -2822,7 +3025,7 @@ describe('王权骰铸流程测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: createNoResponseSetup(),
+                setup: createMonkMirrorNoResponseSetup(),
                 assertFn: assertState,
                 silent: true,
             });
@@ -2858,7 +3061,7 @@ describe('王权骰铸流程测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: createNoResponseSetup(),
+                setup: createMonkMirrorNoResponseSetup(),
                 assertFn: assertState,
                 silent: true,
             });
@@ -3303,23 +3506,29 @@ describe('王权骰铸流程测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: createNoResponseSetup(),
+                setup: createMonkMirrorSetupWithHand(['card-thrust-punch-2'], {
+                    cp: 2,
+                    mutate: (core) => {
+                        const defender = core.players['1'];
+                        if (!defender) return;
+                        const handRespondable = defender.hand.filter((card) => card.timing === 'instant' || card.timing === 'roll');
+                        const handNonRespondable = defender.hand.filter((card) => card.timing !== 'instant' && card.timing !== 'roll');
+                        const deckRespondable = defender.deck.filter((card) => card.timing === 'instant' || card.timing === 'roll');
+                        const deckNonRespondable = defender.deck.filter((card) => card.timing !== 'instant' && card.timing !== 'roll');
+                        defender.deck = [...deckNonRespondable, ...handRespondable, ...deckRespondable];
+                        defender.hand = handNonRespondable;
+                        while (defender.hand.length < 4 && defender.deck.length > 0) {
+                            const card = defender.deck.shift();
+                            if (card) defender.hand.push(card);
+                        }
+                    },
+                }),
                 assertFn: assertState,
                 silent: true,
             });
             const result = runner.run({
                 name: '升级后拳法 II 级伤害提升',
                 commands: [
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
                     cmd('PLAY_UPGRADE_CARD', '0', { cardId: 'card-thrust-punch-2', targetAbilityId: 'fist-technique' }),
                     ...advanceTo('offensiveRoll'),
                     cmd('ROLL_DICE', '0'),
@@ -3351,22 +3560,29 @@ describe('王权骰铸流程测试', () => {
                 systems: testSystems,
                 playerIds: ['0', '1'],
                 random,
-                setup: createNoResponseSetup(),
+                setup: createMonkMirrorSetupWithHand(['card-mahayana-2'], {
+                    cp: 1,
+                    mutate: (core) => {
+                        const defender = core.players['1'];
+                        if (!defender) return;
+                        const handRespondable = defender.hand.filter((card) => card.timing === 'instant' || card.timing === 'roll');
+                        const handNonRespondable = defender.hand.filter((card) => card.timing !== 'instant' && card.timing !== 'roll');
+                        const deckRespondable = defender.deck.filter((card) => card.timing === 'instant' || card.timing === 'roll');
+                        const deckNonRespondable = defender.deck.filter((card) => card.timing !== 'instant' && card.timing !== 'roll');
+                        defender.deck = [...deckNonRespondable, ...handRespondable, ...deckRespondable];
+                        defender.hand = handNonRespondable;
+                        while (defender.hand.length < 4 && defender.deck.length > 0) {
+                            const card = defender.deck.shift();
+                            if (card) defender.hand.push(card);
+                        }
+                    },
+                }),
                 assertFn: assertState,
                 silent: true,
             });
             const result = runner.run({
                 name: '升级后和谐 II 级伤害提升',
                 commands: [
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
-                    cmd('DRAW_CARD', '0'),
                     cmd('PLAY_UPGRADE_CARD', '0', { cardId: 'card-mahayana-2', targetAbilityId: 'harmony' }),
                     ...advanceTo('offensiveRoll'),
                     cmd('ROLL_DICE', '0'),

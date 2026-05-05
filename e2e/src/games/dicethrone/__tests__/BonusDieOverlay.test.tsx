@@ -7,6 +7,7 @@ import type { EventStreamEntry } from '../../../engine/types';
 import type { BonusDieInfo } from '../domain/types';
 import { useCardSpotlight } from '../hooks/useCardSpotlight';
 import { BonusDieOverlay } from '../ui/BonusDieOverlay';
+import { BoardOverlays } from '../ui/BoardOverlays';
 import { SpotlightContainer } from '../ui/SpotlightContainer';
 import { shouldSuppressPendingDisplayOnlyBonusOverlay } from '../ui/bonusDiceOverlayVisibility';
 import { shouldHighlightOpponentViewAbilities } from '../ui/abilityHighlightVisibility';
@@ -103,6 +104,62 @@ afterEach(() => {
 });
 
 describe('BonusDieOverlay', () => {
+    it('前景交互存在时应压住奖励骰覆盖层', () => {
+        render(
+            <BoardOverlays
+                isMagnifyOpen={false}
+                magnifiedImage={null}
+                magnifiedCard={null}
+                magnifiedCards={[]}
+                onCloseMagnify={vi.fn()}
+                players={{
+                    '0': {
+                        characterId: 'gunslinger',
+                        resources: { hp: 40, cp: 2 },
+                        statusEffects: {},
+                        tokens: { loaded: 1 },
+                        hand: [],
+                        discard: [],
+                        deck: [],
+                        abilityLevels: {},
+                    } as any,
+                }}
+                currentPlayerId="0"
+                playerNames={{ '0': 'P0' }}
+                cardSpotlightQueue={[]}
+                onCardSpotlightClose={vi.fn()}
+                opponentHeaderRef={{ current: null }}
+                bonusDie={{ show: false }}
+                onBonusDieClose={vi.fn()}
+                suppressBonusDieOverlay
+                pendingBonusDiceSettlement={{
+                    id: 'loaded-display-1',
+                    sourceAbilityId: 'revolver-3',
+                    attackerId: '0',
+                    targetId: '1',
+                    dice: [{ index: 0, value: 4, face: 'bullet' as any }],
+                    rerollCostTokenId: '',
+                    rerollCostAmount: 0,
+                    rerollCount: 0,
+                    maxRerollCount: 0,
+                    readyToSettle: false,
+                    displayOnly: true,
+                }}
+                canRerollBonusDie={false}
+                isGameOver={false}
+                gameoverResult={null}
+                rematchState={null}
+                onRematchVote={vi.fn()}
+                locale="zh-CN"
+                currentPhase={'offensiveRoll' as any}
+                selectedCharacters={{ '0': 'gunslinger' as any }}
+                hostPlayerId="0"
+            />
+        );
+
+        expect(screen.queryByTestId('bonus-die-overlay')).toBeNull();
+    });
+
     it('有太极时显示重掷提示与确认伤害按钮', () => {
         const html = renderToStaticMarkup(
             <BonusDieOverlay
@@ -126,7 +183,7 @@ describe('BonusDieOverlay', () => {
         expect(html).toContain('(bonusDie.knockdownTrigger)');
     });
 
-    it('无太极时显示无法重掷提示且不显示操作按钮', () => {
+    it('无太极时显示无法重掷提示但仍保留确认伤害按钮', () => {
         const html = renderToStaticMarkup(
             <BonusDieOverlay
                 isVisible
@@ -143,7 +200,7 @@ describe('BonusDieOverlay', () => {
 
         expect(html).toContain('bonusDie.noTokenToReroll:token=tokens.taiji.name');
         expect(html).not.toContain('bonusDie.continue');
-        expect(html).not.toContain('bonusDie.confirmDamage');
+        expect(html).toContain('bonusDie.confirmDamage');
         expect(html).not.toContain('cursor-pointer');
         expect(html).not.toContain('bg-amber-600/80');
     });
@@ -189,6 +246,7 @@ describe('BonusDieOverlay', () => {
 
     it('单骰重掷模式应使用特写布局并保留效果文案', async () => {
         vi.useFakeTimers();
+        const onReroll = vi.fn();
 
         render(
             <BonusDieOverlay
@@ -198,7 +256,7 @@ describe('BonusDieOverlay', () => {
                     { index: 0, value: 1, face: 'fist', effectKey: 'bonusDie.effect.watchOut.bow', effectParams: { value: 1 } },
                 ]}
                 canReroll
-                onReroll={vi.fn()}
+                onReroll={onReroll}
             />
         );
 
@@ -207,8 +265,12 @@ describe('BonusDieOverlay', () => {
         });
 
         expect(screen.getByTestId('bonus-die-single-reroll-spotlight')).toBeInTheDocument();
+        expect(screen.getByTestId('bonus-die-reroll-option-0')).toBeInTheDocument();
         expect(screen.getByText('弓🏹：伤害+2')).toBeInTheDocument();
         expect(screen.queryByTestId('bonus-die-multi-reroll-spotlight')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('bonus-die-reroll-option-0'));
+        expect(onReroll).toHaveBeenCalledWith(0);
     });
 
     it('奖励骰展示态特写应保留首次点击保护，0.3 秒后才允许关闭', () => {
@@ -1384,6 +1446,60 @@ describe('BonusDieOverlay', () => {
             expect(state.cardSpotlightQueue[0].bonusDice[0].value).toBe(4);
             expect(state.cardSpotlightQueue[0].bonusDice[1].value).toBe(6);
             expect(state.cardSpotlightQueue[0].bonusDice[1].index).toBe(1);
+        });
+    });
+
+    it('suppresses standalone bonus die spotlight while blocking bonus settlement is active', async () => {
+        const entries: EventStreamEntry[] = [
+            {
+                id: 1,
+                event: {
+                    type: 'BONUS_DIE_REROLLED',
+                    payload: {
+                        dieIndex: 0,
+                        playerId: '0',
+                        targetPlayerId: '1',
+                        newValue: 6,
+                        newFace: 'bullet',
+                        effectKey: 'bonusDie.effect.gunslingerLoadedDie',
+                        effectParams: { index: 0 },
+                    },
+                    timestamp: 1500,
+                },
+            },
+        ];
+
+        function HookProbe({ streamEntries, suppress }: { streamEntries: EventStreamEntry[]; suppress: boolean }) {
+            const state = useCardSpotlight({
+                eventStreamEntries: streamEntries,
+                currentPlayerId: '0',
+                opponentName: 'opponent',
+                selectedCharacters: {
+                    '0': 'gunslinger',
+                    '1': 'monk',
+                },
+                suppressStandaloneBonusDie: suppress,
+            });
+
+            return (
+                <pre data-testid="suppressed-bonus-die-state">
+                    {JSON.stringify({
+                        show: state.bonusDie.show,
+                        bonusDice: state.bonusDie.bonusDice,
+                        effectKey: state.bonusDie.effectKey,
+                    })}
+                </pre>
+            );
+        }
+
+        const { rerender } = render(<HookProbe streamEntries={[]} suppress={false} />);
+        rerender(<HookProbe streamEntries={entries} suppress={true} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('suppressed-bonus-die-state').textContent ?? '{}');
+            expect(state.show).toBe(false);
+            expect(state.bonusDice).toBeUndefined();
+            expect(state.effectKey).toBeUndefined();
         });
     });
 });

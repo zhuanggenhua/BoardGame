@@ -1,4 +1,5 @@
 import { test, expect } from '../framework';
+import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 
 const SMASHUP_GAMEPLAY_QUERY = {
     p0: 'aliens,pirates',
@@ -38,6 +39,30 @@ const FAIRIES_OR_QUERY = {
     skipFactionSelect: true,
     skipInitialization: false,
     seed: 424242,
+};
+
+const WIZARDS_OR_QUERY = {
+    p0: 'wizards,pirates',
+    p1: 'aliens,robots',
+    skipFactionSelect: true,
+    skipInitialization: false,
+    seed: 515151,
+};
+
+const ZOMBIES_OR_QUERY = {
+    p0: 'zombies,pirates',
+    p1: 'aliens,robots',
+    skipFactionSelect: true,
+    skipInitialization: false,
+    seed: 616161,
+};
+
+const ALIENS_OR_QUERY = {
+    p0: 'aliens,wizards',
+    p1: 'wizards,robots',
+    skipFactionSelect: true,
+    skipInitialization: false,
+    seed: 717171,
 };
 
 test.describe('SmashUp - 核心流程与交互稳定性', () => {
@@ -115,6 +140,203 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         expect(player0.hand.some((card: any) => card.uid === 'hand-alien-scout')).toBe(true);
 
         await game.screenshot('main-flow-next-player-turn', testInfo);
+    });
+
+    test('老派系 OR：Wizard Neophyte 可选放入手牌或作为额外行动打出，并能走完整额外行动链路', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await game.openTestGame('smashup', WIZARDS_OR_QUERY, 45000);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [
+                    { uid: 'hand-neophyte', defId: 'wizard_neophyte', type: 'minion' },
+                ],
+                deck: [
+                    { uid: 'deck-mystic', defId: 'wizard_mystic_studies', type: 'action' },
+                    { uid: 'deck-first-mate', defId: 'pirate_first_mate', type: 'minion' },
+                    { uid: 'deck-invader', defId: 'alien_invader', type: 'minion' },
+                ],
+                factions: ['wizards', 'pirates'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            player1: {
+                factions: ['aliens', 'robots'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            bases: [
+                { defId: 'base_the_homeworld' },
+                { defId: 'base_tortuga' },
+            ],
+            currentPlayer: '0',
+            phase: 'playCards',
+        });
+
+        await game.waitForPhase('playCards');
+        await game.waitForCurrentPlayer('0');
+
+        await game.playCard('wizard_neophyte', { targetBaseIndex: 0 });
+        await game.waitForInteraction('wizard_neophyte', 10000);
+
+        await expect(page.getByRole('button', { name: /放入手牌/i })).toBeVisible();
+        await expect(page.getByRole('button', { name: /作为额外行动打出/i })).toBeVisible();
+        await game.screenshot('legacy-or-wizard-neophyte-prompt-visible', testInfo);
+
+        await page.getByRole('button', { name: /作为额外行动打出/i }).click();
+        await game.waitForNoInteraction(10000);
+
+        const finalState = await game.getState();
+        expect(finalState.core.players['0'].hand.map((card: any) => card.uid)).toEqual(
+            expect.arrayContaining(['deck-first-mate', 'deck-invader']),
+        );
+        expect(finalState.core.players['0'].hand.some((card: any) => card.uid === 'deck-mystic')).toBe(false);
+        expect(finalState.core.players['0'].deck).toHaveLength(0);
+        await game.screenshot('legacy-or-wizard-neophyte-play-extra-resolved', testInfo);
+    });
+
+    test('老派系 OR：Zombie Walker 可选弃掉或放回牌库顶，并能走完整弃牌分支', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await game.openTestGame('smashup', ZOMBIES_OR_QUERY, 45000);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [
+                    { uid: 'hand-walker', defId: 'zombie_walker', type: 'minion' },
+                ],
+                deck: [
+                    { uid: 'deck-first-mate', defId: 'pirate_first_mate', type: 'minion' },
+                    { uid: 'deck-invader', defId: 'alien_invader', type: 'minion' },
+                ],
+                factions: ['zombies', 'pirates'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            player1: {
+                factions: ['aliens', 'robots'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            bases: [
+                { defId: 'base_the_mothership' },
+                { defId: 'base_tortuga' },
+            ],
+            currentPlayer: '0',
+            phase: 'playCards',
+        });
+
+        await game.waitForPhase('playCards');
+        await game.waitForCurrentPlayer('0');
+
+        await game.playCard('zombie_walker', { targetBaseIndex: 0 });
+        await game.waitForInteraction('zombie_walker', 10000);
+
+        await expect(page.getByRole('button', { name: /^弃掉$/ })).toBeVisible();
+        await expect(page.getByRole('button', { name: /放回牌库顶/i })).toBeVisible();
+        await game.screenshot('legacy-or-zombie-walker-prompt-visible', testInfo);
+
+        await page.getByRole('button', { name: /^弃掉$/ }).click();
+        await game.waitForNoInteraction(10000);
+
+        const finalState = await game.getState();
+        expect(finalState.core.players['0'].discard.some((card: any) => card.uid === 'deck-first-mate')).toBe(true);
+        expect(finalState.core.players['0'].deck.some((card: any) => card.uid === 'deck-first-mate')).toBe(false);
+        await game.screenshot('legacy-or-zombie-walker-discard-resolved', testInfo);
+    });
+
+    test('老派系 OR：Alien Scout 计分后可选返回手牌或留在基地，并能走完整返回手牌链路', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await game.openTestGame('smashup', ALIENS_OR_QUERY, 45000);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [],
+                deck: [],
+                discard: [],
+                factions: ['aliens', 'wizards'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            player1: {
+                hand: [],
+                deck: [],
+                discard: [],
+                factions: ['wizards', 'robots'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            bases: [
+                {
+                    defId: 'base_the_homeworld',
+                    minions: [
+                        { uid: 'score-scout', defId: 'alien_scout', owner: '0', controller: '0', basePower: 2 },
+                        { uid: 'score-scout-b', defId: 'alien_scout', owner: '0', controller: '0', basePower: 2 },
+                        { uid: 'score-archmage', defId: 'wizard_archmage', owner: '1', controller: '1', basePower: 20 },
+                    ],
+                },
+                { defId: 'base_tortuga' },
+            ],
+            currentPlayer: '0',
+            phase: 'playCards',
+        });
+
+        await game.waitForPhase('playCards');
+        await game.waitForCurrentPlayer('0');
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const base = state?.core?.bases?.[0];
+            const totalPower = (base?.minions ?? []).reduce((sum: number, minion: any) => sum + (minion?.basePower ?? 0), 0);
+            return totalPower >= 24
+                && (state?.core?.players?.['0']?.hand?.length ?? 99) === 0
+                && (state?.core?.players?.['1']?.hand?.length ?? 99) === 0;
+        }, { timeout: 10000 });
+
+        await game.advancePhase();
+        await expect(page.getByRole('heading', { name: /选择先结算的强制效果/i })).toBeVisible({ timeout: 20000 });
+        await page.getByRole('button', { name: /^侦察兵$/ }).first().click();
+        await game.waitForInteraction('alien_scout_return', 20000);
+
+        await expect(page.getByText(/侦察兵：基地记分后，是否将此侦察兵返回手牌/i)).toBeVisible();
+        await expect(page.getByRole('button', { name: /留在基地/i })).toBeVisible();
+        await game.screenshot('legacy-or-alien-scout-prompt-visible', testInfo);
+
+        await page.locator('[data-minion-uid="score-scout"]').click();
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return state?.core?.players?.['0']?.hand?.some((card: any) => card.uid === 'score-scout') === true;
+        }, { timeout: 5000 });
+        await expect(page.locator('[data-card-uid="score-scout"]')).toBeVisible({ timeout: 5000 });
+        await page.locator('[data-card-uid="score-scout"]').screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'legacy-or-alien-scout-return-in-hand', {
+                filename: 'legacy-or-alien-scout-return-in-hand.png',
+            }),
+        });
+        await expect(page.getByText(/侦察兵：基地记分后，是否将此侦察兵返回手牌/i)).toBeVisible();
+        await page.getByRole('button', { name: /留在基地/i }).click();
+        await game.waitForNoInteraction(20000);
+
+        const finalState = await game.getState();
+        expect(finalState.core.players['0'].hand.some((card: any) => card.uid === 'score-scout')).toBe(true);
+        expect(finalState.core.bases.every((base: any) => !(base.minions ?? []).some((minion: any) => minion.uid === 'score-scout'))).toBe(true);
+        await game.screenshot('legacy-or-alien-scout-return-resolved', testInfo);
     });
 
     test('交互稳定性：ninja_acolyte_play 应直点手牌，不应退化成 PromptOverlay 卡牌面板', async ({ page, game }, testInfo) => {
@@ -764,6 +986,138 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         expect(finalState.core.players['0'].minionLimit).toBe(initialState.core.players['0'].minionLimit + 1);
         expect(finalState.core.titans?.find((titan: any) => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBe(1);
         await game.screenshot('fairies-titania-sequential-resolved', testInfo);
+    });
+
+    test('Fairies OR 分支：同 frame 插队交互会先于剩余分支收口', async ({ page, game }, testInfo) => {
+        test.setTimeout(90000);
+
+        await game.openTestGame('smashup', FAIRIES_OR_QUERY, 45000);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [
+                    { uid: 'hand-titania', defId: 'fairies_titania', type: 'minion' },
+                ],
+                factions: ['fairies', 'robots'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            player1: {
+                hand: [],
+                factions: ['pirates', 'aliens'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+                actionsPlayed: 0,
+                actionLimit: 1,
+            },
+            bases: [
+                {
+                    defId: 'base_the_mothership',
+                    minions: [
+                        { uid: 'enemy-first-mate', defId: 'pirate_first_mate', owner: '1', controller: '1', basePower: 2 },
+                    ],
+                },
+                { defId: 'base_tortuga' },
+            ],
+            currentPlayer: '0',
+            phase: 'playCards',
+            extra: {
+                core: {
+                    enabledExpansions: ['titans'],
+                    titans: [
+                        {
+                            uid: 'spirit-1',
+                            defId: 'fairies_spirit_of_the_forest',
+                            faction: 'fairies',
+                            ownerId: '0',
+                            controllerId: '0',
+                            powerCounters: 0,
+                            talentUsed: false,
+                            location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+                        },
+                    ],
+                },
+            },
+        });
+
+        await game.waitForPhase('playCards');
+        await game.waitForCurrentPlayer('0');
+
+        await game.playCard('fairies_titania', { targetBaseIndex: 0 });
+        await game.waitForInteraction('fairies_titania', 10000);
+        await page.getByRole('button', { name: /将一个随从移回其拥有者手牌/i }).click();
+        await game.waitForInteraction('fairies_titania_return_minion', 10000);
+
+        await page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const state = harness?.state?.get?.();
+            const frameId = state?.sys?.interaction?.current?.resolutionFrameId;
+            if (!state || !frameId) {
+                throw new Error('未找到 Titania 分支 frameId');
+            }
+
+            const nextState = JSON.parse(JSON.stringify(state));
+            nextState.sys.interaction.current = {
+                id: 'synthetic_inserted',
+                kind: 'simple-choice',
+                playerId: '0',
+                resolutionFrameId: frameId,
+                data: {
+                    title: '模拟返回时插队交互',
+                    sourceId: 'synthetic_inserted',
+                    targetType: 'button',
+                    autoResolveIfSingle: false,
+                    options: [
+                        { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' },
+                    ],
+                },
+            };
+            nextState.sys.interaction.queue = [];
+            harness.state.set(nextState);
+        });
+
+        await game.waitForInteraction('synthetic_inserted', 10000);
+        await expect(page.getByText('模拟返回时插队交互')).toBeVisible();
+        await expect(page.getByRole('button', { name: /^跳过$/ })).toBeVisible();
+
+        const insertedMeta = await page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const current = harness?.state?.get?.()?.sys?.interaction?.current;
+            return {
+                sourceId: current?.data?.sourceId ?? null,
+                optionLabels: (current?.data?.options ?? []).map((option: any) => option?.label ?? null),
+            };
+        });
+        expect(insertedMeta.sourceId).toBe('synthetic_inserted');
+        expect(insertedMeta.optionLabels).toEqual(['跳过']);
+        await game.screenshot('fairies-titania-inserted-interaction-visible', testInfo);
+
+        await page.getByRole('button', { name: /^跳过$/ }).click();
+        await game.waitForInteraction('fairies_titania', 10000);
+
+        const followUpMeta = await page.evaluate(() => {
+            const harness = (window as any).__BG_TEST_HARNESS__;
+            const current = harness?.state?.get?.()?.sys?.interaction?.current;
+            return {
+                sourceId: current?.data?.sourceId ?? null,
+                optionLabels: (current?.data?.options ?? []).map((option: any) => option?.label ?? null),
+            };
+        });
+        expect(followUpMeta.sourceId).toBe('fairies_titania');
+        expect(followUpMeta.optionLabels).toEqual(expect.arrayContaining(['额外打出一个随从', '跳过']));
+        expect(followUpMeta.optionLabels).not.toEqual(expect.arrayContaining(['将一个随从移回其拥有者手牌']));
+        await game.screenshot('fairies-titania-follow-up-after-inserted-visible', testInfo);
+
+        await page.getByRole('button', { name: /额外打出一个随从/i }).click();
+        await game.waitForNoInteraction(10000);
+
+        const finalState = await game.getState();
+        expect(finalState.core.players['0'].minionLimit).toBe(2);
+        expect(finalState.core.titans?.find((titan: any) => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBe(1);
+        await game.screenshot('fairies-titania-inserted-interaction-resolved', testInfo);
     });
 
     test('Fairies OR 分支：Fairy Ring 单分支确认会先执行该分支，再允许跳过剩余分支', async ({ page, game }, testInfo) => {

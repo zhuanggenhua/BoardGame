@@ -336,6 +336,73 @@ describe('AI legal actions', () => {
         )).toBe(false);
     });
 
+    it('本地 AI 在奖励骰未达阈值且重掷低骰有正期望时，应优先重掷该骰', async () => {
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.TAIJI] = 1;
+        (state.core as any).pendingBonusDiceSettlement = {
+            id: 'bonus-reroll-threshold-push',
+            sourceAbilityId: 'test-bonus',
+            attackerId: '0',
+            targetId: '1',
+            dice: [
+                { index: 0, value: 1, face: 'fist' },
+                { index: 1, value: 6, face: 'lotus' },
+            ],
+            rerollCostTokenId: TOKEN_IDS.TAIJI,
+            rerollCostAmount: 1,
+            rerollCount: 0,
+            threshold: 10,
+            thresholdEffect: 'knockdown',
+            readyToSettle: false,
+            resolutionMode: 'damage',
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'dicethrone-ai-bonus-reroll-threshold-push',
+            seatControllers: {
+                '0': { type: 'local-ai', difficulty: 'expert' },
+            },
+        });
+
+        expect(resolution?.action.kind).toBe('bonus-die-reroll');
+        expect(resolution?.action.metadata).toMatchObject({ dieIndex: 0 });
+    });
+
+    it('本地 AI 在奖励骰已接近最优时应直接确认，而不是为了重掷而重掷', async () => {
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.core.players['0'].tokens[TOKEN_IDS.TAIJI] = 1;
+        (state.core as any).pendingBonusDiceSettlement = {
+            id: 'bonus-reroll-already-good',
+            sourceAbilityId: 'test-bonus',
+            attackerId: '0',
+            targetId: '1',
+            dice: [
+                { index: 0, value: 6, face: 'lotus' },
+                { index: 1, value: 6, face: 'lotus' },
+            ],
+            rerollCostTokenId: TOKEN_IDS.TAIJI,
+            rerollCostAmount: 1,
+            rerollCount: 0,
+            threshold: 10,
+            thresholdEffect: 'knockdown',
+            readyToSettle: false,
+            resolutionMode: 'damage',
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'dicethrone-ai-bonus-reroll-already-good',
+            seatControllers: {
+                '0': { type: 'local-ai', difficulty: 'expert' },
+            },
+        });
+
+        expect(resolution?.action.kind).toBe('skip-bonus-dice-reroll');
+    });
+
     it('dt:card-interaction 的 selectPlayer 交互应生成 RESOLVE_INTERACTION 动作', () => {
         const state = createInitializedState(['0', '1', '2', '3'], fixedRandom);
         const interaction: InteractionDescriptor = {
@@ -1092,11 +1159,14 @@ describe('AI legal actions', () => {
     });
 
     it('targetOpponentDice 的 copy 交互应优先复制低点数压制对手骰面', async () => {
-        const state = createInitializedState(['0', '1'], fixedRandom);
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
         state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
             ...die,
             id: index,
             value: [6, 1, 4][index],
+            symbol: ['lotus', 'fist', 'taiji'][index],
+            symbols: [['lotus'], ['fist'], ['taiji']][index],
         }));
 
         const interaction: InteractionDescriptor = {
@@ -1129,6 +1199,53 @@ describe('AI legal actions', () => {
         expect(modifyCommands.length).toBeGreaterThan(0);
         expect(modifyCommands.every((command) => command.newValue === 1)).toBe(true);
         expect(modifyCommands.some((command) => command.dieId === 1)).toBe(true);
+    });
+
+    it('copy 交互在 offensiveRoll 应优先复制到更接近技能线的值，而不是一味抬高点数', async () => {
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 1;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = false;
+        state.core.dice = state.core.dice.slice(0, 5).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 1, 3, 6, 6][index],
+            symbol: ['fist', 'fist', 'palm', 'lotus', 'lotus'][index],
+            symbols: [['fist'], ['fist'], ['palm'], ['lotus'], ['lotus']][index],
+        }));
+
+        const interaction: InteractionDescriptor = {
+            id: 'ai-copy-self-plan-aware',
+            playerId: '0',
+            sourceCardId: 'copy-self-plan-test',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDieToCopy',
+            selectCount: 2,
+            selected: [],
+            dieModifyConfig: { mode: 'copy' },
+            diceOwnerId: '0',
+            targetOpponentDice: false,
+        };
+        injectPendingInteraction(state, interaction);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        const modifyCommands = resolution?.action.commands
+            .filter((command) => command.type === 'MODIFY_DIE')
+            .map((command) => command.payload as { dieId: number; newValue: number }) ?? [];
+
+        expect(modifyCommands.some((command) => command.dieId >= 2 && command.newValue === 1)).toBe(true);
+        expect(modifyCommands.some((command) => command.dieId === 0 || command.dieId === 1)).toBe(true);
     });
 
     it('targetOpponentDice 的 set 交互应优先压低高点骰子', async () => {
@@ -1166,7 +1283,79 @@ describe('AI legal actions', () => {
         expect(modifyCommand?.payload).toEqual({ dieId: 0, newValue: 1 });
     });
 
-    it('targetOpponentDice 的 adjust 交互应优先处理低点骰子减少负收益', async () => {
+    it('any 模式交互不应选择对当前骰面无变化的空操作', async () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [6, 2, 3][index],
+        }));
+
+        const interaction: InteractionDescriptor = {
+            id: 'ai-any-self-no-noop',
+            playerId: '0',
+            sourceCardId: 'modify-any-self-test',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDieToChange',
+            selectCount: 1,
+            selected: [],
+            dieModifyConfig: { mode: 'any' },
+            diceOwnerId: '0',
+            targetOpponentDice: false,
+        };
+        injectPendingInteraction(state, interaction);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        const modifyCommand = resolution?.action.commands.find((command) => command.type === 'MODIFY_DIE');
+        expect(modifyCommand?.payload).toEqual({ dieId: 1, newValue: 6 });
+    });
+
+    it('targetOpponentDice 的 any 交互应实际改变对手关键骰面，而不是保留 6 点不变', async () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [6, 2, 3][index],
+        }));
+
+        const interaction: InteractionDescriptor = {
+            id: 'ai-any-opponent-lower',
+            playerId: '0',
+            sourceCardId: 'modify-any-opponent-test',
+            type: 'modifyDie',
+            titleKey: 'interaction.selectDieToChange',
+            selectCount: 1,
+            selected: [],
+            dieModifyConfig: { mode: 'any' },
+            diceOwnerId: '1',
+            targetOpponentDice: true,
+        };
+        injectPendingInteraction(state, interaction);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '0': { type: 'local-ai' },
+            },
+        });
+
+        const modifyCommand = resolution?.action.commands.find((command) => command.type === 'MODIFY_DIE');
+        expect(modifyCommand).toBeDefined();
+        expect((modifyCommand?.payload as { dieId: number; newValue: number }).dieId).toBe(0);
+        expect((modifyCommand?.payload as { dieId: number; newValue: number }).newValue).not.toBe(6);
+    });
+
+    it('targetOpponentDice 的 adjust 交互应生成向下调整方案，而不是只能 +1', async () => {
         const state = createInitializedState(['0', '1'], fixedRandom);
         state.core.dice = state.core.dice.slice(0, 3).map((die, index) => ({
             ...die,
@@ -1198,7 +1387,10 @@ describe('AI legal actions', () => {
         });
 
         const modifyCommand = resolution?.action.commands.find((command) => command.type === 'MODIFY_DIE');
-        expect(modifyCommand?.payload).toEqual({ dieId: 0, newValue: 2 });
+        expect(modifyCommand).toBeDefined();
+        const payload = modifyCommand?.payload as { dieId: number; newValue: number };
+        const originalValue = state.core.dice.find((die) => die.id === payload.dieId)?.value ?? 0;
+        expect(payload.newValue).toBeLessThan(originalValue);
     });
 
     it('simple-choice exact-multi 交互应枚举所有合法组合，而不是固定前两个选项', () => {
@@ -2221,6 +2413,208 @@ describe('AI legal actions', () => {
         expect(resolution).toBeNull();
     });
 
+    it('本地 AI 在 afterRollConfirmed 面对高点对手骰子时，应主动打出改骰牌而不是直接 pass', async () => {
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['1'].hand = [getCardById('card-surprise')];
+        state.core.players['0'].hand = [];
+        state.core.dice = state.core.dice.slice(0, 5).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [6, 2, 3, 4, 5][index],
+        }));
+        state.sys.responseWindow = {
+            current: {
+                id: 'rw-surprise-beneficial',
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('response-play-card');
+        expect(resolution?.action.metadata).toMatchObject({ cardId: 'card-surprise' });
+    });
+
+    it('本地 AI 在 afterRollConfirmed 遇到已成型的对手技能线时，应主动打出改骰牌破坏技能而不是 pass', async () => {
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['1'].hand = [getCardById('card-surprise')];
+        state.core.players['0'].hand = [];
+        state.core.dice = state.core.dice.slice(0, 5).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 1, 1, 1, 1][index],
+        }));
+        state.sys.responseWindow = {
+            current: {
+                id: 'rw-surprise-noop',
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('response-play-card');
+        expect(resolution?.action.metadata).toMatchObject({ cardId: 'card-surprise' });
+    });
+
+    it('本地 AI 在 afterRollConfirmed 面对高点对手骰子时，应主动打出重掷牌而不是直接 pass', async () => {
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['1'].hand = [getCardById('card-give-hand')];
+        state.core.players['0'].hand = [];
+        state.core.dice = state.core.dice.slice(0, 5).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [6, 5, 4, 2, 1][index],
+        }));
+        state.sys.responseWindow = {
+            current: {
+                id: 'rw-reroll-beneficial',
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('response-play-card');
+        expect(resolution?.action.metadata).toMatchObject({ cardId: 'card-give-hand' });
+    });
+
+    it('本地 AI 在 afterRollConfirmed 遇到已成型的对手技能线时，应主动打出重掷牌干扰而不是 pass', async () => {
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['1'].hand = [getCardById('card-give-hand')];
+        state.core.players['0'].hand = [];
+        state.core.dice = state.core.dice.slice(0, 5).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 1, 1, 1, 1][index],
+        }));
+        state.sys.responseWindow = {
+            current: {
+                id: 'rw-reroll-noop',
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('response-play-card');
+        expect(resolution?.action.metadata).toMatchObject({ cardId: 'card-give-hand' });
+    });
+
+    it('本地 AI 在 afterRollConfirmed 两张响应骰牌都可打时，应优先选择更能破坏技能线的那张', async () => {
+        const state = createHeroMatchup('monk', 'paladin')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = true;
+        state.core.players['1'].resources[RESOURCE_IDS.CP] = 10;
+        state.core.players['1'].hand = [getCardById('card-surprise'), getCardById('card-flick')];
+        state.core.players['0'].hand = [];
+        state.core.dice = state.core.dice.slice(0, 5).map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 1, 1, 1, 1][index],
+            symbol: ['fist', 'fist', 'fist', 'fist', 'fist'][index],
+            symbols: [['fist'], ['fist'], ['fist'], ['fist'], ['fist']][index],
+        }));
+        state.sys.responseWindow = {
+            current: {
+                id: 'rw-plan-aware-card-choice',
+                windowType: 'afterRollConfirmed',
+                responderQueue: ['1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+        };
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:test',
+            seatControllers: {
+                '1': { type: 'local-ai', difficulty: 'expert' },
+            },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('response-play-card');
+        expect(resolution?.action.metadata).toMatchObject({ cardId: 'card-surprise' });
+    });
+
     it('本地 AI 在 offensiveRoll 应先锁住高价值技能关键骰，再继续后续重投决策', async () => {
         const random = createQueuedRandom([6]);
         let state = createHeroMatchup('paladin', 'monk')(['0', '1'], random);
@@ -2444,6 +2838,57 @@ describe('AI legal actions', () => {
         ))).toBe(true);
     });
 
+    it('本地 AI 用教皇税重掷时应按技能线选废面，而不是只盯低点数', async () => {
+        const state = createHeroMatchup('paladin', 'monk')(['0', '1'], fixedRandom);
+        state.sys.phase = 'offensiveRoll';
+        state.core.activePlayerId = '0';
+        state.core.rollCount = 1;
+        state.core.rollLimit = 3;
+        state.core.rollDiceCount = 5;
+        state.core.rollConfirmed = false;
+        state.core.players['0'].resources[RESOURCE_IDS.CP] = 3;
+        state.core.dice = state.core.dice.map((die, index) => ({
+            ...die,
+            id: index,
+            value: [1, 2, 2, 6, 5][index],
+            symbol: ['sword', 'sword', 'sword', 'pray', 'heart'][index],
+            isKept: false,
+        }));
+
+        const context = buildAiDecisionContext({
+            gameId: 'dicethrone',
+            matchId: 'dicethrone-ai-tithes-plan-aware-reroll',
+            playerId: '0',
+            visibleState: state,
+            rulesVersion: null,
+            decisionBudgetMs: 250,
+            source: 'local',
+            seatController: { type: 'local-ai', difficulty: 'expert' },
+        });
+        const passiveOnlyContext = {
+            ...context,
+            legalActions: context.legalActions.filter((action) => (
+                action.kind === 'use-passive-ability'
+                && action.commands.some((cmd) => {
+                    if (cmd.type !== 'USE_PASSIVE_ABILITY') return false;
+                    const payload = cmd.payload as { passiveId?: string; actionIndex?: number } | undefined;
+                    return payload?.passiveId === 'tithes' && payload?.actionIndex === 0;
+                })
+            )),
+        };
+
+        const decision = await diceThroneAiRuntime.localPolicies.baseline.decide(passiveOnlyContext);
+        const chosenAction = passiveOnlyContext.legalActions.find((action) => action.actionId === decision?.actionId);
+
+        expect(chosenAction?.kind).toBe('use-passive-ability');
+        expect(chosenAction?.commands[0]?.type).toBe('USE_PASSIVE_ABILITY');
+        expect(chosenAction?.commands[0]?.payload).toMatchObject({
+            passiveId: 'tithes',
+            actionIndex: 0,
+        });
+        expect((chosenAction?.commands[0]?.payload as { targetDieId?: number } | undefined)?.targetDieId).toBe(4);
+    });
+
     it('教皇税同值重掷不应清掉已确认骰面', () => {
         let state = createHeroMatchup('paladin', 'monk')(['0', '1'], fixedRandom);
         state.sys.phase = 'offensiveRoll';
@@ -2556,6 +3001,22 @@ describe('AI legal actions', () => {
         expect(easyEvaluations.some((item) => item.searched)).toBe(false);
         expect(expertEvaluations.some((item) => item.searched)).toBe(true);
         expect(expertEvaluations.every((item) => item.noiseScore === 0)).toBe(true);
+    });
+
+    it('本地 AI 不应再把纯资源牌与真实 token 收益牌打平，应优先打出 card-inner-peace', async () => {
+        const state = createSetupWithHand(['card-inner-peace', 'card-boss-generous'], { cp: 0 })(['0', '1'], fixedRandom);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'dicethrone-ai-prioritize-real-token-value',
+            seatControllers: {
+                '0': { type: 'local-ai', difficulty: 'expert' },
+            },
+        });
+
+        expect(resolution?.action.kind).toBe('play-card');
+        expect(resolution?.action.metadata).toMatchObject({ cardId: 'card-inner-peace' });
     });
 
     it('响应窗口 legal action 会附带 survive-response strategy tags', () => {

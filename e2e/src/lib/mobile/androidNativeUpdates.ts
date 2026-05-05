@@ -169,6 +169,14 @@ const nativeUpdateRequestListeners = new Set<(request: NativeUpdateRequest) => v
 const nativePlugin = registerPlugin<NativeAppUpdatePlugin>('AppUpdate');
 let nativePluginLoader: NativeAppUpdatePlugin | null | undefined;
 
+const getErrorMessage = (error: unknown) => (
+    error instanceof Error ? error.message : String(error)
+);
+
+const isPluginNotImplementedError = (error: unknown) => (
+    /plugin is not implemented on android/i.test(getErrorMessage(error))
+);
+
 export const HIDDEN_ANDROID_NATIVE_UPDATE_STATE: AndroidNativeUpdateState = {
     phase: 'hidden',
     blocking: false,
@@ -545,7 +553,16 @@ export const subscribeAndroidNativeUpdateState = async (
     if (!plugin) {
         return null;
     }
-    return plugin.addListener('updateStateChanged', listener);
+    try {
+        return await plugin.addListener('updateStateChanged', listener);
+    } catch (error) {
+        const message = getErrorMessage(error);
+        logMobileRuntimeCritical('NativeUpdate', 'subscribe-state-failed', {
+            error: message,
+            isPluginNotImplemented: isPluginNotImplementedError(error),
+        });
+        return null;
+    }
 };
 
 export const mapNativeUpdateEventToState = (

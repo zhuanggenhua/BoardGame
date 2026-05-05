@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { fireTriggers } from '../domain/ongoingEffects';
 import { makeBase, makeMatchState, makeMinion, makeState } from './helpers';
 
@@ -111,7 +111,7 @@ describe('外星侦察兵 afterScoring', () => {
 
         const interaction = result.matchState!.sys.interaction!.current!;
         const returnOption = interaction.data.options.find((entry: any) => entry.value?.returnIt === true);
-        const handler = getInteractionHandler('alien_scout_return');
+        const handler = getAbilityRuntimePromptHandler('alien_scout_return');
 
         expect(interaction.data.sourceId).toBe('alien_scout_return');
         expect(returnOption).toBeDefined();

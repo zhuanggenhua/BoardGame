@@ -21,6 +21,7 @@ import { SPLENDOR_AUDIO_CONFIG } from './audio.config';
 import { SPLENDOR_MANIFEST } from './manifest';
 import { buildActionLogRows } from '../../components/game/utils/actionLogFormat';
 import { ActionLogSegments } from '../../components/game/framework/widgets/ActionLogSegments';
+import { useMatchPlayerViewModel } from '../../components/game/framework';
 import { getCardPreviewGetter, getCardPreviewMaxDim } from '../../components/game/registry/cardPreviewRegistry';
 
 type Props = GameBoardProps<SplendorCore, SplendorCommandMap>;
@@ -28,7 +29,18 @@ type Props = GameBoardProps<SplendorCore, SplendorCommandMap>;
 const TIERS: CardTier[] = [3, 2, 1];
 
 export default function SplendorBoard({ G, dispatch, playerID, matchData, isMultiplayer }: Props) {
-    const selfId = playerID ?? G.core.currentPlayer;
+    const { t, i18n } = useTranslation('game-splendor');
+    const playerView = useMatchPlayerViewModel({
+        core: G.core,
+        playerID,
+        matchData,
+        getFallbackName: (playerId) => t('player.guest', { number: Number(playerId) + 1 }),
+        resolvePreferredOrder: ({ core }) => core?.playerOrder,
+        resolveFallbackOrder: ({ core }) => core?.playerOrder,
+        resolveSelfPlayerId: ({ core, playerID: currentPlayerId }) => currentPlayerId ?? core?.currentPlayer,
+        resolveTurnPlayerId: ({ core }) => core?.currentPlayer,
+    });
+    const selfId = playerView.selfPlayerId ?? G.core.currentPlayer;
     const self = G.core.players[selfId];
     const pending = G.core.pendingResolution;
     const isMyTurn = G.core.currentPlayer === selfId;
@@ -38,7 +50,6 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
     const isHostPlayer = String(playerID ?? '') === String(G.core.hostPlayerId);
     const canAct = isMyTurn && (!isOnlineMatch || G.core.hostStarted);
     const reserveDisabled = self.reservedCardIds.length >= 3;
-    const { t, i18n } = useTranslation('game-splendor');
     const nobleTitleChars = Array.from('贵族板块');
 
     const selectionScopeKey = `${selfId}:${G.core.currentPlayer}:${pending?.type ?? 'none'}`;
@@ -84,8 +95,8 @@ export default function SplendorBoard({ G, dispatch, playerID, matchData, isMult
     }, []);
 
     const renderPlayerName = useCallback((id: string) =>
-        matchData?.find((player) => String(player.id) === id)?.name || t('player.guest', { number: Number(id) + 1 }), [matchData, t]);
-    const startingPlayerName = renderPlayerName(G.core.startingPlayerId);
+        playerView.getPlayerName(id), [playerView]);
+    const startingPlayerName = playerView.getPlayerName(G.core.startingPlayerId);
 
     const getCardPreviewRef = useMemo(() => getCardPreviewGetter(SPLENDOR_MANIFEST.id), []);
     const cardPreviewMaxDim = useMemo(() => getCardPreviewMaxDim(SPLENDOR_MANIFEST.id), []);

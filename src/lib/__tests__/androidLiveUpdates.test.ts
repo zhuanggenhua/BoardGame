@@ -222,6 +222,40 @@ describe('androidLiveUpdates', () => {
         });
     });
 
+    it('原生 AppUpdate 插件在旧 Android 壳缺失时，订阅更新状态应静默降级而不是抛出未处理拒绝', async () => {
+        vi.resetModules();
+
+        const addListenerMock = vi.fn().mockRejectedValue(
+            new Error('"AppUpdate" plugin is not implemented on android'),
+        );
+
+        vi.doMock('@capacitor/core', async (importOriginal) => {
+            const actual = await importOriginal<typeof import('@capacitor/core')>();
+            return {
+                ...actual,
+                registerPlugin: vi.fn(() => ({
+                    addListener: addListenerMock,
+                })),
+            };
+        });
+        vi.doMock('../mobile/androidRuntime', async (importOriginal) => {
+            const actual = await importOriginal<typeof import('../mobile/androidRuntime')>();
+            return {
+                ...actual,
+                isNativeAndroidRuntime: () => true,
+            };
+        });
+
+        const {
+            subscribeAndroidNativeUpdateState,
+        } = await import('../mobile/androidNativeUpdates');
+
+        await expect(
+            subscribeAndroidNativeUpdateState(() => undefined),
+        ).resolves.toBeNull();
+        expect(addListenerMock).toHaveBeenCalledWith('updateStateChanged', expect.any(Function));
+    });
+
     it('manifest 兼容性支持 targetNativeVersion 精确命中', () => {
         expect(isManifestCompatibleWithNativeVersion({
             version: '0.5.0-ota.1',

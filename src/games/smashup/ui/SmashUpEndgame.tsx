@@ -49,9 +49,10 @@ function getTrackMax(
 interface SmashUpEndgameContentProps extends ContentSlotProps {
     core: SmashUpCore;
     myPlayerId: string | null;
+    playerNames: Record<string, string>;
 }
 
-export function SmashUpEndgameContent({ core, myPlayerId, result }: SmashUpEndgameContentProps) {
+export function SmashUpEndgameContent({ core, myPlayerId, playerNames, result }: SmashUpEndgameContentProps) {
     const { t: tSmashUp } = useTranslation('game-smashup');
     const finalScores = useMemo(() => getScores(core), [core]);
     const isTeamMode = useMemo(() => isSmashUpTwoVsTwoMode(core), [core]);
@@ -159,7 +160,7 @@ export function SmashUpEndgameContent({ core, myPlayerId, result }: SmashUpEndga
                                 >
                                     <div
                                         className={`w-5 h-5 rounded-full ${conf.bg} border-2 border-white shadow-md flex items-center justify-center text-[9px] font-black text-white`}
-                                        title={`P${pid}: ${score} VP`}
+                                        title={`${playerNames[pid] ?? `P${Number(pid) + 1}`}: ${score} VP`}
                                     >
                                         {score}
                                     </div>
@@ -181,6 +182,7 @@ export function SmashUpEndgameContent({ core, myPlayerId, result }: SmashUpEndga
                         const penalty = rawVp - finalVp;
                         const isMe = pid === myPlayerId;
                         const isThisWinner = winners.has(pid);
+                        const displayName = playerNames[pid] ?? `P${Number(pid) + 1}`;
                         const factionIcons = (player.factions ?? []).map(fid => getFactionMeta(fid)).filter(Boolean);
 
                         return (
@@ -208,9 +210,10 @@ export function SmashUpEndgameContent({ core, myPlayerId, result }: SmashUpEndga
                                 {/* 信息 */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-sm font-black text-slate-800">
-                                            {isMe ? tSmashUp('ui.you', { defaultValue: '你自己' }) : tSmashUp('ui.player_short', { defaultValue: 'P{{id}}', id: pid })}
+                                        <span className="max-w-[13rem] truncate text-sm font-black text-slate-800">
+                                            {displayName}
                                         </span>
+                                        {isMe && <span className="rounded-full bg-slate-800/8 px-1.5 py-0.5 text-[10px] font-bold text-slate-500">{tSmashUp('ui.you_short', { defaultValue: '你' })}</span>}
                                         {isThisWinner && <Trophy className="w-4 h-4 text-amber-500" />}
                                     </div>
                                     {/* 派系图标 */}

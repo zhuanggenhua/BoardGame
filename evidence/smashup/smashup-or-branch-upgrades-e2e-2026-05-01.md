@@ -20,13 +20,21 @@ node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newFactio
 
 结果：`8 passed`
 
-### E2E
+### E2E（正常 Titania / Fairy Ring 串行链路）
 
 ```bash
 npm run test:e2e:ci:file -- e2e/smashup/smashup-gameplay.e2e.ts "Fairies OR 分支"
 ```
 
 结果：`2 passed`
+
+### E2E（same-frame 插队交互门控）
+
+```bash
+npm run test:e2e:ci:file -- e2e/smashup/smashup-gameplay.e2e.ts "Fairies OR 分支：同 frame 插队交互会先于剩余分支收口"
+```
+
+结果：`1 passed`
 
 ---
 
@@ -104,12 +112,53 @@ npm run test:e2e:ci:file -- e2e/smashup/smashup-gameplay.e2e.ts "Fairies OR 分�
 
 ---
 
+## 证据三：same-frame 插队交互会挡住剩余分支，直到插队交互自己收口
+
+> 这一组不是拿来冒充“真实回手触发器已经完整接进来了”，而是专门验证 **resolution frame gating**：
+> - 正常 Titania 链路由“证据一”证明：**先执行已选分支，再出现剩余分支**；
+> - 这一组额外证明：**只要同一个 frame 里还挂着插队交互，剩余分支不能抢先弹出来**。
+> - 场景通过 test harness 把一个 `synthetic_inserted` simple-choice 注入到 Titania 当前 frame，目的是验证控制流门禁，不是假装它就是某张真实卡的 returned-to-hand 效果。
+
+### 截图 1：注入 same-frame 插队交互后，界面先显示插队交互本体
+- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-gameplay.e2e\Fairies-OR-分支：同-frame-插队交互会先于剩余分支收口\fairies-titania-inserted-interaction-visible.png`
+- 我实际看到：
+  - 画面中央是一个黑底小弹层，标题是 `模拟返回时插队交互`。
+  - 这一步只有一个 `跳过` 按钮。
+  - 画面上 **还看不到** `额外打出一个随从` 这个剩余分支按钮。
+- 验收判断：
+  - **达到验收标准。**
+  - 这证明只要 same-frame 插队交互还活着，第二边不会抢先出现。
+
+### 截图 2：插队交互关闭后，才恢复 Titania 的剩余分支 + 跳过
+- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-gameplay.e2e\Fairies-OR-分支：同-frame-插队交互会先于剩余分支收口\fairies-titania-follow-up-after-inserted-visible.png`
+- 我实际看到：
+  - 中央 prompt 已经从 `模拟返回时插队交互` 切换回 Titania 的 follow-up。
+  - 现在可见的按钮是 `额外打出一个随从` 和 `跳过`。
+  - 原先的插队交互按钮不再停留在界面上。
+- 验收判断：
+  - **达到验收标准。**
+  - 这证明恢复顺序正确：**先收口插队交互，再恢复 OR 的剩余分支**。
+
+### 截图 3：执行剩余分支后，prompt 收口且额外随从额度落地
+- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-gameplay.e2e\Fairies-OR-分支：同-frame-插队交互会先于剩余分支收口\fairies-titania-inserted-interaction-resolved.png`
+- 我实际看到：
+  - 中央 prompt 已经关闭，界面回到正常棋盘态。
+  - 右下角资源区显示 `随从 1`，说明剩余分支“额外打出一个随从”已经实际生效。
+  - `First Mate` 仍在场上；这是因为这组 synthetic gating 场景只验证 **插队交互门控 + 剩余分支恢复**，不是用来重复证明真实回手结果。真实回手已经由“证据一”的 Titania 正常链路证明。
+- 验收判断：
+  - **达到验收标准。**
+  - 这证明插队交互收口后，剩余分支可以继续执行并最终正常收口，没有残留半完成 frame / prompt。
+
+---
+
 ## 本轮结论
 
 - Titania 之前接错成 `targetType: 'generic'` 的问题，本轮已经改回：
   - `targetType: 'minion'`
   - 使用正常 **场上直点随从** 链路
 - Fairy Ring 证明这不是单卡修补，而是 **通用 OR 升级语义** 已统一改成串行补选。
+- same-frame synthetic gating 进一步证明：**剩余分支的恢复点已经从“旧 prompt 一结束”提升为“整条 resolution frame 真正空闲以后”**。
 - 因此本轮可以成立的对外交付口径是：
   - **Smash Up 的 OR 升级交互已经重构为“先选分支 → 先执行 → 再给剩余分支 + 跳过”**
   - **Titania 的目标选择已经恢复为正常场上交互，不再使用新造的 generic PromptOverlay 选卡方式**
+  - **若第一边过程里同一 frame 还有插队交互 / response / child prompt，第二边会等待这些东西先收口，不会提前弹出**

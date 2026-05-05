@@ -976,6 +976,51 @@ describe('P2: ninja_way_of_deception（欺诈之道）2步链', () => {
     });
 });
 
+describe('P2: ninja_acolyte（忍者侍从）额外打随从后的 onPlay 链', () => {
+    it('忍者侍从额外打出的枪手应继续创建决斗交互', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('gun1', 'cowboys_gunfighter', '0', 'minion')],
+                    factions: ['ninjas', 'cowboys'] as [string, string],
+                    minionsPlayed: 0,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_the_workshop', [
+                    makeMinion('ac1', 'ninja_acolyte', '0', 2),
+                    makeMinion('opp1', 'pirate_first_mate', '1', 2),
+                ]),
+                makeBase('test_base_2'),
+            ],
+        });
+
+        const state = makeFullMatchState(core);
+
+        const r1 = runCommand(state, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '0',
+            payload: { minionUid: 'ac1', baseIndex: 0 },
+        }, 'ninja_acolyte step1: 激活 special');
+
+        expect(r1.steps[0]?.success).toBe(true);
+        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        expect(choice1.sourceId).toBe('ninja_acolyte_play');
+
+        const gunfighterOpt = findOption(choice1, (option: any) => option.value?.defId === 'cowboys_gunfighter');
+        const r2 = respond(r1.finalState, '0', gunfighterOpt, 'ninja_acolyte step2: 打出枪手');
+
+        expect(r2.steps[0]?.success).toBe(true);
+        expect(r2.finalState.core.bases[0].minions.some(minion => minion.uid === 'gun1')).toBe(true);
+
+        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        expect(choice2.sourceId).toBe('cowboys_gunfighter');
+        const optionTargets = choice2.options.map((option: any) => option.value?.minionUid);
+        expect(optionTargets).toContain('opp1');
+    });
+});
+
 describe('P2: dino_natural_selection（自然选择）2步链', () => {
     it('选己方随从 → 选目标随从 → 两个都被消灭', () => {
         const core = makeState({
@@ -2004,8 +2049,8 @@ describe('P3: alien_crop_circles（麦田怪圈）循环链', () => {
 
 describe('P3: pirate_full_sail（全速前进）循环链', () => {
     it('选随从 → 选基地 → 循环选下一个 → 完成', () => {
-        // full_sail 是特殊行动卡，只能在 Me First! 响应窗口中打出
-        // 需要设置 responseWindow 和 scoreBases 阶段
+        // full_sail 当前同时保留 onPlay / special 两个入口；这里固定验证链式移动本身，
+        // 避免被历史响应窗口模型差异干扰。
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -2025,17 +2070,6 @@ describe('P3: pirate_full_sail（全速前进）循环链', () => {
         });
 
         const state = makeFullMatchState(core);
-        // 设置 Me First! 响应窗口 + scoreBases 阶段
-        state.sys.phase = 'scoreBases' as any;
-        (state.sys as any).responseWindow = {
-            current: {
-                id: 'meFirst_test',
-                windowType: 'meFirst',
-                responderQueue: ['0', '1'],
-                currentResponderIndex: 0,
-                passedPlayers: [],
-            },
-        };
 
         // Step 1: 打出 → 选随从
         const r1 = runCommand(state, {
@@ -2146,7 +2180,7 @@ describe('P3: alien_terraform（地形改造）3步链', () => {
 
         const state = makeFullMatchState(core);
 
-        // Step 1: 打出 terraform 并直点基地 → 进入“确认被替换基地”
+        // Step 1: 打出 terraform 并直点基地 → 直接进入“选替换基地”
         const r1 = runCommand(state, {
             type: SU_COMMANDS.PLAY_ACTION, playerId: '0',
             payload: { cardUid: 'tf1', targetBaseIndex: 0 },
@@ -2154,32 +2188,24 @@ describe('P3: alien_terraform（地形改造）3步链', () => {
 
         expect(r1.steps[0]?.success).toBe(true);
         const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1.sourceId).toBe('alien_terraform');
+        expect(choice1.sourceId).toBe('alien_terraform_choose_replacement');
 
-        // Step 2: 确认被替换基地 → 进入“选替换基地”
-        const baseOpt = findOption(choice1, (o: any) => o.value?.baseIndex === 0);
-        const r2 = respond(r1.finalState, '0', baseOpt, 'terraform step2: 选被替换基地');
+        // Step 2: 选替换基地 → 可选打随从
+        const replOpt = findOption(choice1, (o: any) => o.value?.newBaseDefId === 'base_ninja_dojo');
+        const r2 = respond(r1.finalState, '0', replOpt, 'terraform step2: 选替换');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
-        expect(choice2.sourceId).toBe('alien_terraform_choose_replacement');
 
-        // Step 3: 选替换基地 → 可选打随从
-        const replOpt = findOption(choice2, (o: any) => o.value?.newBaseDefId === 'base_ninja_dojo');
-        const r3 = respond(r2.finalState, '0', replOpt, 'terraform step3: 选替换');
-
-        expect(r3.steps[0]?.success).toBe(true);
-
-        // 可能有第四步（选是否打随从），也可能直接结束
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current);
-        let finalState = r3.finalState;
+        // 可能有第三步（选是否打随从），也可能直接结束
+        const choice3 = asSimpleChoice(r2.finalState.sys.interaction.current);
+        let finalState = r2.finalState;
         if (choice3) {
             expect(choice3.sourceId).toBe('alien_terraform_play_minion');
             // 跳过打随从
-            const r4 = respond(r3.finalState, '0', 'skip', 'terraform step4: 跳过打随从');
-            expect(r4.steps[0]?.success).toBe(true);
-            expect(r4.finalState.sys.interaction.current).toBeUndefined();
-            finalState = r4.finalState;
+            const r3 = respond(r2.finalState, '0', 'skip', 'terraform step3: 跳过打随从');
+            expect(r3.steps[0]?.success).toBe(true);
+            expect(r3.finalState.sys.interaction.current).toBeUndefined();
+            finalState = r3.finalState;
         }
 
         // 验证：base0 被替换为 base_ninja_dojo
@@ -2370,6 +2396,26 @@ describe('P3: alien_scout_return（侦察兵回手）触发链', () => {
                 data: {
                     title: '侦察兵：基地记分后，是否将此侦察兵返回手牌？',
                     sourceId: 'alien_scout_return',
+                    runtimePrompt: {
+                        owner: 'smashup-ability-runtime',
+                        sourceId: 'alien_scout_return',
+                        continuationId: 'smashup-runtime:alien_scout_return:test-yes',
+                        continuation: {
+                            context: {
+                                playerId: '0',
+                                now: 0,
+                                scout: {
+                                    uid: 'scout1',
+                                    defId: 'alien_scout',
+                                    owner: '0',
+                                    controller: '0',
+                                    baseIndex: 0,
+                                    baseDefId: 'test_base_1',
+                                },
+                            },
+                            contextHasMatchState: true,
+                        },
+                    },
                     options: [
                         { id: 'yes', label: '返回手牌', value: { returnIt: true, minionUid: 'scout1', minionDefId: 'alien_scout', owner: '0', baseIndex: 0 } },
                         { id: 'no', label: '留在基地', value: { returnIt: false } },
@@ -2413,6 +2459,26 @@ describe('P3: alien_scout_return（侦察兵回手）触发链', () => {
                 data: {
                     title: '侦察兵：基地记分后，是否将此侦察兵返回手牌？',
                     sourceId: 'alien_scout_return',
+                    runtimePrompt: {
+                        owner: 'smashup-ability-runtime',
+                        sourceId: 'alien_scout_return',
+                        continuationId: 'smashup-runtime:alien_scout_return:test-no',
+                        continuation: {
+                            context: {
+                                playerId: '0',
+                                now: 0,
+                                scout: {
+                                    uid: 'scout1',
+                                    defId: 'alien_scout',
+                                    owner: '0',
+                                    controller: '0',
+                                    baseIndex: 0,
+                                    baseDefId: 'test_base_1',
+                                },
+                            },
+                            contextHasMatchState: true,
+                        },
+                    },
                     options: [
                         { id: 'yes', label: '返回手牌', value: { returnIt: true, minionUid: 'scout1', minionDefId: 'alien_scout', owner: '0', baseIndex: 0 } },
                         { id: 'no', label: '留在基地', value: { returnIt: false } },

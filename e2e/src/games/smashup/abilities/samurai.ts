@@ -1,6 +1,6 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { registerInteractionHandler, type InteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
@@ -21,9 +21,14 @@ import {
     grantExtraAction,
     grantExtraMinion,
 } from '../domain/abilityHelpers';
-import type { MinionMetadataUpdatedEvent, SmashUpCore, SmashUpEvent, VpAwardedEvent } from '../domain/types';
+import type { MinionMetadataUpdatedEvent, MinionOnBase, SmashUpCore, SmashUpEvent, VpAwardedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+} from '../domain/abilityRuntime';
 
 type BaseChoice = { baseIndex?: number; baseDefId?: string };
 type MinionChoice = { minionUid?: string; baseIndex?: number; defId?: string };
@@ -41,17 +46,55 @@ type CombatContinuation = {
     destroyReason?: string;
     friendlyMinionUid?: string;
 };
+type SamuraiPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+type SamuraiRoninContext = SamuraiPromptContext & RoninContinuation;
+type SamuraiCombatRootContext = SamuraiPromptContext & Pick<CombatContinuation, 'sourceId' | 'outcome' | 'destroyReason'>;
+type SamuraiCombatPromptContext = SamuraiCombatRootContext & { baseIndex: number; friendlyMinionUid?: string };
+type SamuraiCodeOfBushidoContext = SamuraiPromptContext & { remaining: number };
+type SamuraiHonorAncestorsContext = SamuraiPromptContext & HonorAncestorsContinuation;
+
+function createSamuraiPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    extra?: TExtra,
+): SamuraiPromptContext & TExtra {
+    return {
+        matchState,
+        playerId,
+        now,
+        ...(extra ?? {} as TExtra),
+    };
+}
+
+function attachOptionsGenerator<T>(
+    interaction: T,
+    optionsGenerator: (state: MatchState<SmashUpCore>) => unknown[],
+): T & { data: Record<string, unknown> } {
+    const descriptor = interaction as T & { data?: Record<string, unknown> };
+    return {
+        ...descriptor,
+        data: {
+            ...(descriptor.data ?? {}),
+            optionsGenerator,
+        },
+    };
+}
 
 export function registerSamuraiAbilities(): void {
-    registerAbility('samurai_ronin', 'onPlay', samuraiRoninOnPlay);
-    registerAbility('samurai_ronin_pod', 'onPlay', samuraiRoninPodOnPlay);
-    registerAbility('samurai_yokai_attack', 'onPlay', samuraiYokaiAttackOnPlay);
-    registerAbility('samurai_honorable_combat', 'onPlay', samuraiHonorableCombatOnPlay);
-    registerAbility('samurai_code_of_bushido', 'onPlay', samuraiCodeOfBushidoOnPlay);
-    registerAbility('samurai_honor_the_ancestors', 'onPlay', samuraiHonorTheAncestorsOnPlay);
-    registerAbility('samurai_way_of_the_warrior', 'onPlay', samuraiWayOfTheWarriorOnPlay);
-    registerAbility('samurai_way_of_the_warrior_pod', 'onPlay', samuraiWayOfTheWarriorOnPlay);
-    registerAbility('samurai_heart_of_the_battle', 'special', samuraiHeartOfTheBattleSpecial);
+    registerAbilityProgram('samurai_ronin', 'onPlay', { program: samuraiRoninOnPlayProgram });
+    registerAbilityProgram('samurai_ronin_pod', 'onPlay', { program: samuraiRoninPodOnPlayProgram });
+    registerAbilityProgram('samurai_yokai_attack', 'onPlay', { program: samuraiYokaiAttackOnPlayProgram });
+    registerAbilityProgram('samurai_honorable_combat', 'onPlay', { program: samuraiHonorableCombatOnPlayProgram });
+    registerAbilityProgram('samurai_code_of_bushido', 'onPlay', { program: samuraiCodeOfBushidoOnPlayProgram });
+    registerAbilityProgram('samurai_honor_the_ancestors', 'onPlay', { program: samuraiHonorTheAncestorsOnPlayProgram });
+    registerSimpleAbility('samurai_way_of_the_warrior', 'onPlay', samuraiWayOfTheWarriorOnPlay);
+    registerSimpleAbility('samurai_way_of_the_warrior_pod', 'onPlay', samuraiWayOfTheWarriorOnPlay);
+    registerAbilityProgram('samurai_heart_of_the_battle', 'special', { program: samuraiHeartOfTheBattleSpecialProgram });
 
     registerTrigger('samurai_samurai_chan', 'onMinionDestroyed', samuraiChanTrigger, { perInstance: true });
     registerTrigger('samurai_samurai_chan', 'onMinionDiscardedFromBase', samuraiChanTrigger, { perInstance: true });
@@ -102,27 +145,33 @@ export function registerSamuraiAbilities(): void {
 }
 
 export function registerSamuraiInteractionHandlers(): void {
-    registerInteractionHandler('samurai_ronin', handleSamuraiRonin);
-    registerInteractionHandler('samurai_ronin_pod', handleSamuraiRonin);
-    registerInteractionHandler('samurai_yokai_attack', handleSamuraiYokaiAttack);
-    registerInteractionHandler('samurai_honorable_combat_base', handleSamuraiCombatBase);
-    registerInteractionHandler('samurai_honorable_combat_friendly', handleSamuraiCombatFriendly);
-    registerInteractionHandler('samurai_honorable_combat_enemy', handleSamuraiCombatEnemy);
-    registerInteractionHandler('samurai_code_of_bushido', handleSamuraiCodeOfBushido);
-    registerInteractionHandler('samurai_honor_the_ancestors', handleSamuraiHonorTheAncestors);
-    registerInteractionHandler('samurai_heart_of_the_battle_friendly', handleSamuraiCombatFriendly);
-    registerInteractionHandler('samurai_heart_of_the_battle_enemy', handleSamuraiCombatEnemy);
     registerInteractionHandler('base_shoguns_palace', handleBaseShogunsPalace);
 }
 
-function samuraiRoninOnPlay(ctx: AbilityContext): AbilityResult {
-    const source = findMinionOnBases(ctx.state, ctx.cardUid);
-    if (!source) return { events: [] };
-    const ownMinions = ctx.state.bases[source.baseIndex]?.minions.filter(minion => minion.controller === ctx.playerId) ?? [];
-    if (ownMinions.length !== 1) return { events: [] };
-    const roninInteraction = createSimpleChoice(
-        `samurai_ronin_${ctx.now}`,
-        ctx.playerId,
+function resolveSamuraiRoninPrompt(
+    context: SamuraiRoninContext,
+    value: unknown,
+    timestamp: number,
+): AbilityResult {
+    if (!(value as { apply?: boolean } | undefined)?.apply) return { events: [] };
+    return {
+        events: [
+            addPowerCounter(
+                context.minionUid,
+                context.baseIndex,
+                context.counterAmount ?? 1,
+                context.sourceId ?? 'samurai_ronin',
+                timestamp,
+            ),
+        ],
+    };
+}
+
+const samuraiRoninPromptProgram = createPromptProgram<SamuraiRoninContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'samurai_ronin',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `samurai_ronin_${context.now}`,
+        context.playerId,
         '浪人：你可以在此随从上放置一个 +1 力量指示物',
         [
             {
@@ -139,23 +188,15 @@ function samuraiRoninOnPlay(ctx: AbilityContext): AbilityResult {
             },
         ],
         { sourceId: 'samurai_ronin', targetType: 'button' },
-    );
-    (roninInteraction.data as any).continuationContext = {
-        minionUid: source.minion.uid,
-        baseIndex: source.baseIndex,
-    } satisfies RoninContinuation;
-    return { events: [], matchState: queueInteraction(ctx.matchState, roninInteraction) };
-}
+    ),
+    onResolve: ({ context, value, timestamp }) => resolveSamuraiRoninPrompt(context, value, timestamp),
+});
 
-
-function samuraiRoninPodOnPlay(ctx: AbilityContext): AbilityResult {
-    const source = findMinionOnBases(ctx.state, ctx.cardUid);
-    if (!source) return { events: [] };
-    const ownMinions = ctx.state.bases[source.baseIndex]?.minions.filter(minion => minion.controller === ctx.playerId) ?? [];
-    if (ownMinions.length !== 1) return { events: [] };
-    const roninInteraction = createSimpleChoice(
-        `samurai_ronin_pod_${ctx.now}`,
-        ctx.playerId,
+const samuraiRoninPodPromptProgram = createPromptProgram<SamuraiRoninContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'samurai_ronin_pod',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `samurai_ronin_pod_${context.now}`,
+        context.playerId,
         '浪人（POD）：若这是你在此基地唯一的随从，你可以在此随从上放置两个 +1 力量指示物',
         [
             {
@@ -172,63 +213,300 @@ function samuraiRoninPodOnPlay(ctx: AbilityContext): AbilityResult {
             },
         ],
         { sourceId: 'samurai_ronin_pod', targetType: 'button' },
-    );
-    (roninInteraction.data as any).continuationContext = {
-        minionUid: source.minion.uid,
-        baseIndex: source.baseIndex,
-        counterAmount: 2,
-        sourceId: 'samurai_ronin_pod',
-    } satisfies RoninContinuation;
-    return { events: [], matchState: queueInteraction(ctx.matchState, roninInteraction) };
-}
+    ),
+    onResolve: ({ context, value, timestamp }) => resolveSamuraiRoninPrompt(context, value, timestamp),
+});
 
-function samuraiYokaiAttackOnPlay(ctx: AbilityContext): AbilityResult {
+const samuraiRoninOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const source = findMinionOnBases(ctx.state, ctx.cardUid);
+    if (!source) return { events: [] };
+    const ownMinions = ctx.state.bases[source.baseIndex]?.minions.filter(minion => minion.controller === ctx.playerId) ?? [];
+    if (ownMinions.length !== 1) return { events: [] };
+    return {
+        events: [],
+        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            minionUid: source.minion.uid,
+            baseIndex: source.baseIndex,
+            counterAmount: 1,
+            sourceId: 'samurai_ronin',
+        } satisfies RoninContinuation),
+        nextProgram: samuraiRoninPromptProgram,
+    };
+});
+
+const samuraiRoninPodOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const source = findMinionOnBases(ctx.state, ctx.cardUid);
+    if (!source) return { events: [] };
+    const ownMinions = ctx.state.bases[source.baseIndex]?.minions.filter(minion => minion.controller === ctx.playerId) ?? [];
+    if (ownMinions.length !== 1) return { events: [] };
+    return {
+        events: [],
+        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            minionUid: source.minion.uid,
+            baseIndex: source.baseIndex,
+            counterAmount: 2,
+            sourceId: 'samurai_ronin_pod',
+        } satisfies RoninContinuation),
+        nextProgram: samuraiRoninPodPromptProgram,
+    };
+});
+
+const samuraiYokaiAttackPromptProgram = createPromptProgram<SamuraiPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'samurai_yokai_attack_prompt',
+    interactionSourceIds: ['samurai_yokai_attack'],
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `samurai_yokai_attack_${context.now}`,
+            context.playerId,
+            '妖怪来袭！：你可以消灭一个自己的随从，以额外打出一个随从和一个行动',
+            [
+                createSkipOption('跳过（不消灭随从）') as any,
+                ...buildMinionTargetOptions(
+                    collectOwnMinions(context.matchState.core, context.playerId),
+                    { state: context.matchState.core, sourcePlayerId: context.playerId },
+                ) as any[],
+            ],
+            { sourceId: 'samurai_yokai_attack', targetType: 'minion', responseValidationMode: 'live' },
+        ),
+        (state) => [
+            createSkipOption('跳过（不消灭随从）') as any,
+            ...buildMinionTargetOptions(
+                collectOwnMinions(state.core, context.playerId),
+                { state: state.core, sourcePlayerId: context.playerId },
+            ) as any[],
+        ],
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        if (isMinionProtected(state.core, target, selected.baseIndex, playerId, 'destroy')) {
+            return { events: [] };
+        }
+        return {
+            events: [
+                ...buildValidatedDestroyEvents(state, {
+                    minionUid: selected.minionUid,
+                    minionDefId: selected.defId,
+                    fromBaseIndex: selected.baseIndex,
+                    destroyerId: playerId,
+                    reason: 'samurai_yokai_attack',
+                    now: timestamp,
+                }),
+                grantExtraMinion(playerId, 'samurai_yokai_attack', timestamp),
+                grantExtraAction(playerId, 'samurai_yokai_attack', timestamp),
+            ],
+        };
+    },
+});
+
+const samuraiYokaiAttackOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const ownMinions = collectOwnMinions(ctx.state, ctx.playerId);
     if (ownMinions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `samurai_yokai_attack_${ctx.now}`,
-        ctx.playerId,
-        '妖怪来袭！：你可以消灭一个自己的随从，以额外打出一个随从和一个行动',
-        [
-            createSkipOption('跳过（不消灭随从）') as any,
-            ...buildMinionTargetOptions(ownMinions, { state: ctx.state, sourcePlayerId: ctx.playerId, sourceDefId: ctx.defId }) as any[],
-        ],
-        { sourceId: 'samurai_yokai_attack', targetType: 'minion' },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    return {
+        events: [],
+        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+        nextProgram: samuraiYokaiAttackPromptProgram,
+    };
+});
 
-function samuraiHonorableCombatOnPlay(ctx: AbilityContext): AbilityResult {
+const samuraiCombatEnemyPromptProgram = createPromptProgram<SamuraiCombatPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'samurai_combat_enemy_prompt',
+    interactionSourceIds: ['samurai_honorable_combat_enemy', 'samurai_heart_of_the_battle_enemy'],
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `samurai_combat_enemy_${context.now}`,
+            context.playerId,
+            '选择对手要决斗的随从',
+            buildCombatEnemyOptions(
+                context.matchState.core,
+                context.baseIndex,
+                context.playerId,
+                context.sourceId === 'samurai_honorable_combat',
+                true,
+            ),
+            {
+                sourceId: context.sourceId === 'samurai_heart_of_the_battle'
+                    ? 'samurai_heart_of_the_battle_enemy'
+                    : 'samurai_honorable_combat_enemy',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+                autoCancelOption: true,
+            },
+        ),
+        (state) => buildCombatEnemyOptions(
+            state.core,
+            context.baseIndex,
+            context.playerId,
+            context.sourceId === 'samurai_honorable_combat',
+            true,
+        ),
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
+        const selected = value as MinionChoice | undefined;
+        if (!context.friendlyMinionUid || !selected?.minionUid) return { events: [] };
+        return {
+            events: [],
+            matchState: startDuel(state, {
+                sourceId: context.sourceId,
+                sourcePlayerId: context.playerId,
+                challengerMinionUid: context.friendlyMinionUid,
+                challengedMinionUid: selected.minionUid,
+                outcome: context.outcome,
+                destroyReason: context.destroyReason,
+            }, timestamp),
+        };
+    },
+});
+
+const samuraiCombatFriendlyPromptProgram = createPromptProgram<SamuraiCombatPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'samurai_combat_friendly_prompt',
+    interactionSourceIds: ['samurai_honorable_combat_friendly', 'samurai_heart_of_the_battle_friendly'],
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `samurai_combat_friendly_${context.now}_${context.baseIndex}`,
+            context.playerId,
+            context.sourceId === 'samurai_heart_of_the_battle' ? '战斗之心：选择你要决斗的随从' : '荣誉决斗：选择你要决斗的随从',
+            buildMinionTargetOptions(
+                collectOwnMinionsOnBase(context.matchState.core, context.playerId, context.baseIndex),
+                { state: context.matchState.core, sourcePlayerId: context.playerId },
+            ) as any[],
+            {
+                sourceId: context.sourceId === 'samurai_heart_of_the_battle'
+                    ? 'samurai_heart_of_the_battle_friendly'
+                    : 'samurai_honorable_combat_friendly',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+                autoCancelOption: true,
+            },
+        ),
+        (state) => buildMinionTargetOptions(
+            collectOwnMinionsOnBase(state.core, context.playerId, context.baseIndex),
+            { state: state.core, sourcePlayerId: context.playerId },
+        ) as any[],
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        if (buildCombatEnemyOptions(
+            state.core,
+            context.baseIndex,
+            context.playerId,
+            context.sourceId === 'samurai_honorable_combat',
+            true,
+        ).length === 0) {
+            return { events: [] };
+        }
+        return {
+            events: [],
+            context: createSamuraiPromptContext(state, context.playerId, timestamp, {
+                sourceId: context.sourceId,
+                outcome: context.outcome,
+                destroyReason: context.destroyReason,
+                baseIndex: context.baseIndex,
+                friendlyMinionUid: selected.minionUid,
+            }),
+            nextProgram: samuraiCombatEnemyPromptProgram,
+        };
+    },
+});
+
+const samuraiCombatBasePromptProgram = createPromptProgram<SamuraiCombatRootContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'samurai_combat_base_prompt',
+    interactionSourceIds: ['samurai_honorable_combat_base'],
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `samurai_combat_base_${context.now}`,
+            context.playerId,
+            '荣誉决斗：选择一个有对手力量高于你的基地',
+            buildBaseTargetOptions(collectHonorableCombatBases(context.matchState.core, context.playerId), context.matchState.core),
+            { sourceId: 'samurai_honorable_combat_base', targetType: 'base', responseValidationMode: 'live' },
+        ),
+        (state) => buildBaseTargetOptions(collectHonorableCombatBases(state.core, context.playerId), state.core),
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as BaseChoice | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        return {
+            events: [],
+            context: createSamuraiPromptContext(state, context.playerId, timestamp, {
+                sourceId: context.sourceId,
+                outcome: context.outcome,
+                destroyReason: context.destroyReason,
+                baseIndex: selected.baseIndex,
+            }),
+            nextProgram: samuraiCombatFriendlyPromptProgram,
+        };
+    },
+});
+
+const samuraiHonorableCombatOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     if (!canStartDuel(ctx.state) || ctx.duel) return { events: [] };
     const baseOptions = collectHonorableCombatBases(ctx.state, ctx.playerId);
     if (baseOptions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
     if (baseOptions.length === 1) {
-        return queueFriendlyCombatPrompt(
-            ctx.matchState,
-            ctx.state,
-            ctx.playerId,
-            baseOptions[0].baseIndex,
-            ctx.now,
-            'samurai_honorable_combat_friendly',
-            '荣誉决斗：选择你要决斗的随从',
-            { sourceId: 'samurai_honorable_combat', outcome: 'vp_to_winner' },
-        );
+        return {
+            events: [],
+            context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                sourceId: 'samurai_honorable_combat',
+                outcome: 'vp_to_winner',
+                baseIndex: baseOptions[0].baseIndex,
+            }),
+            nextProgram: samuraiCombatFriendlyPromptProgram,
+        };
     }
-    const interaction = createSimpleChoice(
-        `samurai_honorable_combat_base_${ctx.now}`,
-        ctx.playerId,
-        '荣誉决斗：选择一个有对手力量高于你的基地',
-        buildBaseTargetOptions(baseOptions, ctx.state),
-        { sourceId: 'samurai_honorable_combat_base', targetType: 'base' },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    return {
+        events: [],
+        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'samurai_honorable_combat',
+            outcome: 'vp_to_winner',
+        }),
+        nextProgram: samuraiCombatBasePromptProgram,
+    };
+});
 
-function samuraiCodeOfBushidoOnPlay(ctx: AbilityContext): AbilityResult {
+const samuraiCodeOfBushidoPromptProgram = createPromptProgram<SamuraiCodeOfBushidoContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'samurai_code_of_bushido_prompt',
+    interactionSourceIds: ['samurai_code_of_bushido'],
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `samurai_code_of_bushido_${context.now}_${context.remaining}`,
+            context.playerId,
+            `武士道：选择一个你的随从放置 +1 力量指示物（还需 ${context.remaining} 次）`,
+            buildMinionTargetOptions(
+                collectOwnMinions(context.matchState.core, context.playerId),
+                { state: context.matchState.core, sourcePlayerId: context.playerId },
+            ) as any[],
+            { sourceId: 'samurai_code_of_bushido', targetType: 'minion', responseValidationMode: 'live' },
+        ),
+        (state) => buildMinionTargetOptions(
+            collectOwnMinions(state.core, context.playerId),
+            { state: state.core, sourcePlayerId: context.playerId },
+        ) as any[],
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined || context.remaining <= 0) return { events: [] };
+        const nextRemaining = context.remaining - 1;
+        return {
+            events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'samurai_code_of_bushido', timestamp)],
+            ...(nextRemaining > 0 ? {
+                context: createSamuraiPromptContext(state, context.playerId, timestamp, { remaining: nextRemaining }),
+                nextProgram: samuraiCodeOfBushidoPromptProgram,
+            } : {}),
+        };
+    },
+});
+
+const samuraiCodeOfBushidoOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const ownMinions = collectOwnMinions(ctx.state, ctx.playerId);
     if (ownMinions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
@@ -243,10 +521,42 @@ function samuraiCodeOfBushidoOnPlay(ctx: AbilityContext): AbilityResult {
             ],
         };
     }
-    return queueCodeOfBushidoPrompt(ctx.matchState, ctx.state, ctx.playerId, 3, ctx.now);
-}
+    return {
+        events: [],
+        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, { remaining: 3 }),
+        nextProgram: samuraiCodeOfBushidoPromptProgram,
+    };
+});
 
-function samuraiHonorTheAncestorsOnPlay(ctx: AbilityContext): AbilityResult {
+const samuraiHonorTheAncestorsPromptProgram = createPromptProgram<SamuraiHonorAncestorsContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'samurai_honor_the_ancestors_prompt',
+    interactionSourceIds: ['samurai_honor_the_ancestors'],
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `samurai_honor_the_ancestors_${context.now}`,
+            context.playerId,
+            '致敬先祖：选择一个你的随从放置 +1 力量指示物',
+            buildMinionTargetOptions(
+                collectOwnMinions(context.matchState.core, context.playerId),
+                { state: context.matchState.core, sourcePlayerId: context.playerId },
+            ) as any[],
+            { sourceId: 'samurai_honor_the_ancestors', targetType: 'minion', responseValidationMode: 'live' },
+        ),
+        (state) => buildMinionTargetOptions(
+            collectOwnMinions(state.core, context.playerId),
+            { state: state.core, sourcePlayerId: context.playerId },
+        ) as any[],
+    ),
+    onResolve: ({ context, state, value, random, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: buildHonorAncestorsEvents(state.core, context.playerId, selected.minionUid, selected.baseIndex, context.maxShuffle, random, timestamp),
+        };
+    },
+});
+
+const samuraiHonorTheAncestorsOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const ownMinions = collectOwnMinions(ctx.state, ctx.playerId);
     if (ownMinions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
@@ -258,16 +568,29 @@ function samuraiHonorTheAncestorsOnPlay(ctx: AbilityContext): AbilityResult {
             events: buildHonorAncestorsEvents(ctx.state, ctx.playerId, target.uid, target.baseIndex, maxShuffle, ctx.random, ctx.now),
         };
     }
-    const interaction = createSimpleChoice(
-        `samurai_honor_the_ancestors_${ctx.now}`,
-        ctx.playerId,
-        '致敬先祖：选择一个你的随从放置 +1 力量指示物',
-        buildMinionTargetOptions(ownMinions, { state: ctx.state, sourcePlayerId: ctx.playerId, sourceDefId: ctx.defId }) as any[],
-        { sourceId: 'samurai_honor_the_ancestors', targetType: 'minion' },
-    );
-    (interaction.data as any).continuationContext = { maxShuffle } satisfies HonorAncestorsContinuation;
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    return {
+        events: [],
+        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, { maxShuffle }),
+        nextProgram: samuraiHonorTheAncestorsPromptProgram,
+    };
+});
+
+const samuraiHeartOfTheBattleSpecialProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    if (!canStartDuel(ctx.state) || ctx.duel) return { events: [] };
+    if (collectOwnMinionsOnBase(ctx.state, ctx.playerId, ctx.baseIndex).length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    return {
+        events: [],
+        context: createSamuraiPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'samurai_heart_of_the_battle',
+            outcome: 'destroy_loser',
+            destroyReason: 'samurai_heart_of_the_battle',
+            baseIndex: ctx.baseIndex,
+        }),
+        nextProgram: samuraiCombatFriendlyPromptProgram,
+    };
+});
 
 function samuraiWayOfTheWarriorOnPlay(ctx: AbilityContext): AbilityResult {
     if (!ctx.targetMinionUid) return { events: [] };
@@ -296,23 +619,6 @@ function samuraiWayOfTheWarriorOnPlay(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function samuraiHeartOfTheBattleSpecial(ctx: AbilityContext): AbilityResult {
-    if (!canStartDuel(ctx.state) || ctx.duel) return { events: [] };
-    return queueFriendlyCombatPrompt(
-        ctx.matchState,
-        ctx.state,
-        ctx.playerId,
-        ctx.baseIndex,
-        ctx.now,
-        'samurai_heart_of_the_battle_friendly',
-        '战斗之心：选择你要决斗的随从',
-        {
-            sourceId: 'samurai_heart_of_the_battle',
-            outcome: 'destroy_loser',
-            destroyReason: 'samurai_heart_of_the_battle',
-        },
-    );
-}
 
 function samuraiChanTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceControllerId || ctx.triggerMinionUid !== ctx.sourceCardUid) return [];
@@ -422,131 +728,6 @@ function samuraiBaseShogunsPalaceOnMinionPlayed(ctx: BaseAbilityContext): Abilit
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
-const handleSamuraiRonin: InteractionHandler = (state, _playerId, value, data, _random, now) => {
-    if (!(value as any)?.apply) return { state, events: [] };
-    const ctx = data?.continuationContext as RoninContinuation | undefined;
-    if (!ctx) return { state, events: [] };
-    const counterAmount = ctx.counterAmount ?? 1;
-    const sourceId = ctx.sourceId ?? 'samurai_ronin';
-    return {
-        state,
-        events: [
-            addPowerCounter(ctx.minionUid, ctx.baseIndex, counterAmount, sourceId, now),
-        ],
-    };
-};
-
-const handleSamuraiYokaiAttack: InteractionHandler = (state, playerId, value, _data, _random, now) => {
-    if ((value as { skip?: boolean } | undefined)?.skip) return { state, events: [] };
-    const selected = value as MinionChoice | undefined;
-    if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
-    const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
-    if (!target) return { state, events: [] };
-    if (isMinionProtected(state.core, target, selected.baseIndex, playerId, 'destroy')) {
-        return { state, events: [] };
-    }
-    return {
-        state,
-        events: [
-            ...buildValidatedDestroyEvents(state, {
-                minionUid: selected.minionUid,
-                minionDefId: selected.defId,
-                fromBaseIndex: selected.baseIndex,
-                destroyerId: playerId,
-                reason: 'samurai_yokai_attack',
-                now,
-            }),
-            grantExtraMinion(playerId, 'samurai_yokai_attack', now),
-            grantExtraAction(playerId, 'samurai_yokai_attack', now),
-        ],
-    };
-};
-
-const handleSamuraiCombatBase: InteractionHandler = (state, playerId, value, _data, _random, now) => {
-    const selected = value as BaseChoice | undefined;
-    if (selected?.baseIndex === undefined) return { state, events: [] };
-    return queueFriendlyCombatPrompt(
-        state,
-        state.core,
-        playerId,
-        selected.baseIndex,
-        now,
-        'samurai_honorable_combat_friendly',
-        '荣誉决斗：选择你要决斗的随从',
-        { sourceId: 'samurai_honorable_combat', outcome: 'vp_to_winner' },
-    );
-};
-
-const handleSamuraiCombatFriendly: InteractionHandler = (state, playerId, value, data, _random, now) => {
-    const selected = value as MinionChoice | undefined;
-    const ctx = data?.continuationContext as CombatContinuation | undefined;
-    if (!ctx || !selected?.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const respectActionProtection = ctx.sourceId === 'samurai_honorable_combat' || ctx.sourceId === 'samurai_heart_of_the_battle';
-    const enemyOptions = buildCombatEnemyOptions(
-        state.core,
-        ctx.baseIndex,
-        playerId,
-        ctx.sourceId === 'samurai_honorable_combat',
-        respectActionProtection,
-    );
-    if (enemyOptions.length === 0) return { state, events: [] };
-    const nextSourceId = ctx.sourceId === 'samurai_heart_of_the_battle'
-        ? 'samurai_heart_of_the_battle_enemy'
-        : 'samurai_honorable_combat_enemy';
-    const interaction = createSimpleChoice(
-        `${nextSourceId}_${now}`,
-        playerId,
-        '选择对手要决斗的随从',
-        enemyOptions,
-        { sourceId: nextSourceId, targetType: 'minion' },
-    );
-    (interaction.data as any).continuationContext = {
-        ...ctx,
-        friendlyMinionUid: selected.minionUid,
-    } satisfies CombatContinuation;
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleSamuraiCombatEnemy: InteractionHandler = (state, _playerId, value, data, random, now) => {
-    const selected = value as MinionChoice | undefined;
-    const ctx = data?.continuationContext as CombatContinuation | undefined;
-    if (!ctx || !ctx.friendlyMinionUid || !selected?.minionUid) return { state, events: [] };
-    return {
-        state: startDuel(state, {
-            sourceId: ctx.sourceId,
-            sourcePlayerId: ctx.casterPlayerId,
-            challengerMinionUid: ctx.friendlyMinionUid,
-            challengedMinionUid: selected.minionUid,
-            outcome: ctx.outcome,
-            destroyReason: ctx.destroyReason,
-        }, now),
-        events: [],
-    };
-};
-
-const handleSamuraiCodeOfBushido: InteractionHandler = (state, playerId, value, data, _random, now) => {
-    const selected = value as MinionChoice | undefined;
-    const remaining = (data?.continuationContext as { remaining?: number } | undefined)?.remaining ?? 0;
-    if (!selected?.minionUid || selected.baseIndex === undefined || remaining <= 0) return { state, events: [] };
-    const nextRemaining = remaining - 1;
-    const events = [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'samurai_code_of_bushido', now)];
-    if (nextRemaining <= 0) {
-        return { state, events };
-    }
-    const next = queueCodeOfBushidoPrompt(state, state.core, playerId, nextRemaining, now);
-    return { state: next.matchState ?? state, events: [...events, ...next.events] };
-};
-
-const handleSamuraiHonorTheAncestors: InteractionHandler = (state, playerId, value, data, random, now) => {
-    const selected = value as MinionChoice | undefined;
-    const maxShuffle = (data?.continuationContext as HonorAncestorsContinuation | undefined)?.maxShuffle ?? 0;
-    if (!selected?.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    return {
-        state,
-        events: buildHonorAncestorsEvents(state.core, playerId, selected.minionUid, selected.baseIndex, maxShuffle, random, now),
-    };
-};
-
 const handleBaseShogunsPalace: InteractionHandler = (state, _playerId, value, data, random, now) => {
     if ((value as any)?.skip) return { state, events: [] };
     const selected = value as MinionChoice | undefined;
@@ -563,57 +744,6 @@ const handleBaseShogunsPalace: InteractionHandler = (state, _playerId, value, da
         events: [],
     };
 };
-
-function queueCodeOfBushidoPrompt(
-    matchState: MatchState<SmashUpCore>,
-    state: SmashUpCore,
-    playerId: PlayerId,
-    remaining: number,
-    now: number,
-): AbilityResult {
-    const ownMinions = collectOwnMinions(state, playerId);
-    if (ownMinions.length === 0 || remaining <= 0) return { events: [], matchState };
-    const interaction = createSimpleChoice(
-        `samurai_code_of_bushido_${now}_${remaining}`,
-        playerId,
-        `武士道：选择一个你的随从放置 +1 力量指示物（还需 ${remaining} 次）`,
-        buildMinionTargetOptions(ownMinions, { state, sourcePlayerId: playerId }) as any[],
-        { sourceId: 'samurai_code_of_bushido', targetType: 'minion' },
-    );
-    (interaction.data as any).continuationContext = { remaining };
-    return { events: [], matchState: queueInteraction(matchState, interaction) };
-}
-
-function queueFriendlyCombatPrompt(
-    matchState: MatchState<SmashUpCore>,
-    state: SmashUpCore,
-    playerId: PlayerId,
-    baseIndex: number,
-    now: number,
-    sourceId: string,
-    title: string,
-    options: Pick<CombatContinuation, 'sourceId' | 'outcome' | 'destroyReason'>,
-): AbilityResult {
-    const ownMinions = collectOwnMinionsOnBase(state, playerId, baseIndex);
-    if (ownMinions.length === 0) {
-        return { events: [buildAbilityFeedback(playerId, 'feedback.no_valid_targets', now)], matchState };
-    }
-    const interaction = createSimpleChoice(
-        `${sourceId}_${now}_${baseIndex}`,
-        playerId,
-        title,
-        buildMinionTargetOptions(ownMinions, { state, sourcePlayerId: playerId }) as any[],
-        { sourceId, targetType: 'minion' },
-    );
-    (interaction.data as any).continuationContext = {
-        sourceId: options.sourceId,
-        baseIndex,
-        casterPlayerId: playerId,
-        outcome: options.outcome,
-        destroyReason: options.destroyReason,
-    } satisfies CombatContinuation;
-    return { events: [], matchState: queueInteraction(matchState, interaction) };
-}
 
 function buildHonorAncestorsEvents(
     state: SmashUpCore,

@@ -30,7 +30,7 @@ export const TRICKSTER_POD_MINIONS: MinionCardDef[] = [
         faction: 'tricksters_pod',
         power: 3,
         abilityTags: ['special'],
-        activatableAbilities: [{ kind: 'special', zone: 'board', window: 'playCards' }],
+        activatableAbilities: [{ kind: 'special', zone: 'board', window: 'beforeScoring' }],
         specialLimitGroup: 'trickster_gnome_pod',
         count: 3,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS4, index: 26 },

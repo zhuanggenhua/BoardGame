@@ -9,6 +9,7 @@ import type {
     DieFace,
     SelectableCharacterId,
     InteractionDescriptor,
+    PendingDefenderChoice,
     PendingDamage,
     PendingAttack,
     PendingBonusDiceSettlement,
@@ -95,6 +96,8 @@ export const DT_EVENTS = defineEvents({
   
   CHOICE_REQUESTED: { audio: 'immediate', sound: CHOICE_REQUEST_KEY },
   CHOICE_RESOLVED: { audio: 'immediate', sound: CHOICE_RESOLVE_KEY },
+  DEFENDER_SELECTION_REQUESTED: { audio: 'immediate', sound: CHOICE_REQUEST_KEY },
+  DEFENDER_SELECTION_RESOLVED: { audio: 'immediate', sound: CHOICE_RESOLVE_KEY },
   
   RESPONSE_WINDOW_OPENED: { audio: 'immediate', sound: RESPONSE_WINDOW_OPEN_KEY },
   RESPONSE_WINDOW_CLOSED: { audio: 'immediate', sound: RESPONSE_WINDOW_CLOSE_KEY },
@@ -664,6 +667,19 @@ export interface ChoiceResolvedEvent extends GameEvent<'CHOICE_RESOLVED'> {
     };
 }
 
+export interface DefenderSelectionRequestedEvent extends GameEvent<'DEFENDER_SELECTION_REQUESTED'> {
+    payload: PendingDefenderChoice;
+}
+
+export interface DefenderSelectionResolvedEvent extends GameEvent<'DEFENDER_SELECTION_RESOLVED'> {
+    payload: {
+        attackerId: PlayerId;
+        chooserPlayerId: PlayerId;
+        defenderId: PlayerId;
+        sourceAbilityId: string;
+    };
+}
+
 /** 回合切换事件 */
 export interface TurnChangedEvent extends GameEvent<'TURN_CHANGED'> {
     payload: {
@@ -933,6 +949,8 @@ export type DiceThroneEvent =
     | AttackMadeUndefendableEvent
     | ChoiceRequestedEvent
     | ChoiceResolvedEvent
+    | DefenderSelectionRequestedEvent
+    | DefenderSelectionResolvedEvent
     | TurnChangedEvent
     | AbilityReplacedEvent
     | ResponseWindowOpenedEvent

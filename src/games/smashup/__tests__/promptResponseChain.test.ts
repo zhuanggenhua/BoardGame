@@ -12,7 +12,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { SU_COMMANDS } from '../domain/types';
 import { INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
 import { smashUpFlowHooks } from '../domain/index';
@@ -20,6 +20,7 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { createSmashUpEventSystem } from '../domain/systems';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 
@@ -59,7 +60,7 @@ describe('Prompt 响应链集成测试', () => {
             // 只测试实际注册了继续函数的能力（多目标选择类）
             // 注意：一些能力用 MVP 自动选择模式，不需要继续函数
             // 仍使用 promptContinuation 的能力
-            // 已迁移到 InteractionHandler 的能力
+            // 已迁移到 InteractionHandler 或 runtime prompt 的能力
             const interactionAbilities = [
                 'alien_supreme_overlord',
                 'alien_collector',
@@ -72,6 +73,7 @@ describe('Prompt 响应链集成测试', () => {
                 'alien_probe',
                 'alien_terraform',
                 'alien_abduction',
+                'alien_scout_return',
                 'zombie_grave_digger',
                 'zombie_grave_robbing',
                 'zombie_not_enough_bullets',
@@ -85,8 +87,10 @@ describe('Prompt 响应链集成测试', () => {
                 'ninja_disguise_choose_base',
                 'ninja_hidden_ninja',
                 'dino_laser_triceratops',
+                'dino_laser_triceratops_pod',
                 'dino_augmentation',
                 'dino_natural_selection_choose_mine',
+                'dino_natural_selection_choose_target',
                 'dino_survival_tiebreak',
                 'dino_rampage',
                 'dino_rampage_choose_minion',
@@ -94,8 +98,8 @@ describe('Prompt 响应链集成测试', () => {
                 'robot_tech_center',
             ];
             for (const id of interactionAbilities) {
-                const handler = getInteractionHandler(id);
-                expect(handler, `${id} 交互处理函数应已注册`).toBeDefined();
+                const handler = getInteractionHandler(id) ?? getAbilityRuntimePromptHandler(id);
+                expect(handler, `${id} 交互处理函数或 runtime prompt 应已注册`).toBeDefined();
             }
         });
     });
@@ -207,8 +211,8 @@ describe('能力特定的 Prompt 流程', () => {
     });
 
     describe('zombie_grave_digger (掘墓人)', () => {
-        it('交互处理函数存在且为函数类型', () => {
-            const handler = getInteractionHandler('zombie_grave_digger');
+        it('runtime prompt 处理函数存在且为函数类型', () => {
+            const handler = getAbilityRuntimePromptHandler('zombie_grave_digger');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
@@ -229,8 +233,16 @@ describe('能力特定的 Prompt 流程', () => {
     });
 
     describe('alien_crop_circles (麦田怪圈)', () => {
-        it('交互处理函数存在且为函数类型', () => {
-            const handler = getInteractionHandler('alien_crop_circles');
+        it('runtime prompt 处理函数存在且为函数类型', () => {
+            const handler = getAbilityRuntimePromptHandler('alien_crop_circles');
+            expect(handler).toBeDefined();
+            expect(typeof handler).toBe('function');
+        });
+    });
+
+    describe('alien_scout_return (侦察兵回手)', () => {
+        it('runtime prompt 处理函数存在且为函数类型', () => {
+            const handler = getAbilityRuntimePromptHandler('alien_scout_return');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });

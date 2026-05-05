@@ -8,7 +8,7 @@ import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem'
 import { makeCard, makeMatchState, makeMinion, makePlayer, makeState, getInteractionsFromMS } from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import { getEffectivePower } from '../domain/ongoingModifiers';
-import { getTriggerExecutor } from '../domain/triggerExecutors';
+import { executeTriggerProgramExecutor } from '../domain/triggerExecutors';
 
 beforeAll(() => {
     clearRegistry();
@@ -229,15 +229,18 @@ describe('elder_things_pod: Dunwich Horror POD', () => {
     });
 
     it('does not inherit base version end-of-turn auto-destroy trigger', () => {
-        const executor = getTriggerExecutor('onTurnEnd', 'elder_thing_dunwich_horror_pod');
-        expect(executor).toBeDefined();
-
         const core = makeState({
             players: { '0': makePlayer('0'), '1': makePlayer('1') },
             bases: [{ defId: 'base_a', minions: [makeMinion('m1', 'robot_microbot', '0', 3)], ongoingActions: [] }],
         });
-        const out = executor!({ state: core, playerId: '0', now: 1, timing: 'onTurnEnd' } as any);
-        const events = Array.isArray(out) ? out : out.events;
+        const events = executeTriggerProgramExecutor('onTurnEnd', 'elder_thing_dunwich_horror_pod', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            now: 1,
+            timing: 'onTurnEnd',
+            random: defaultTestRandom,
+        } as any).events;
         expect(events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
     });
 });

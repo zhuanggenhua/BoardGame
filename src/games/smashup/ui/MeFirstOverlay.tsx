@@ -14,6 +14,7 @@ import { isCardActionLike, isCardMinionLike } from '../domain/utils';
 import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 import { UI_Z_INDEX } from '../../../core';
 import { PLAYER_CONFIG } from './playerConfig';
+import { getCompactPlayerBadgeLabel } from '../../../components/game/framework/playerDisplay';
 
 // ============================================================================
 // Me First! Response Window Overlay
@@ -28,10 +29,11 @@ export const MeFirstOverlay: React.FC<{
     G: MatchState<SmashUpCore>;
     dispatch: (type: string, payload?: unknown) => void;
     playerID: string | null;
+    playerNames?: Record<string, string>;
     /** 当前待选基地的 Special 卡（需要基地目标时） */
     pendingCard: MeFirstPendingCard | null;
     onSelectCard: (card: MeFirstPendingCard | null) => void;
-}> = ({ G, dispatch, playerID, pendingCard, onSelectCard }) => {
+}> = ({ G, dispatch, playerID, playerNames, pendingCard, onSelectCard }) => {
     const { t } = useTranslation('game-smashup');
     const reactionWindow = getSmashUpReactionWindowPresentation(G);
 
@@ -50,6 +52,7 @@ export const MeFirstOverlay: React.FC<{
     const currentResponderId = reactionWindow.activePlayerId;
     const isMyResponse = playerID === currentResponderId;
     const core = G.core;
+    const currentResponderName = playerNames?.[currentResponderId] ?? `P${Number(currentResponderId) + 1}`;
 
     // 检查手牌中是否有可在当前响应窗口打出的行动卡或 beforeScoringPlayable 随从
     const myPlayer = playerID ? core.players[playerID] : undefined;
@@ -115,7 +118,10 @@ export const MeFirstOverlay: React.FC<{
                     <p className="text-sm font-bold text-slate-600 mt-1" data-testid="me-first-status">
                         {isMyResponse
                             ? t('ui.me_first_your_turn')
-                            : t('ui.me_first_waiting', { player: currentResponderId })
+                            : t('ui.me_first_waiting', {
+                                player: currentResponderName,
+                                defaultValue: '等待 {{player}} 响应...',
+                            })
                         }
                     </p>
                 </div>
@@ -157,8 +163,13 @@ export const MeFirstOverlay: React.FC<{
                                 key={pid}
                                 className={`w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black text-white border-2 ${conf.bg} ${isCurrent ? 'ring-2 ring-amber-400 scale-125' : isPassed ? 'opacity-40' : ''
                                     }`}
+                                title={playerNames?.[pid] ?? `P${Number(pid) + 1}`}
                             >
-                                {isPassed ? <CheckCircle size={12} strokeWidth={3} /> : pid === playerID ? t('ui.you_badge') : pid}
+                                {isPassed
+                                    ? <CheckCircle size={12} strokeWidth={3} />
+                                    : pid === playerID
+                                        ? t('ui.you_badge')
+                                        : getCompactPlayerBadgeLabel(playerNames?.[pid] ?? `P${Number(pid) + 1}`, 2)}
                             </div>
                         );
                     })}

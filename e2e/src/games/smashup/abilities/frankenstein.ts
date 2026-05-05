@@ -4,37 +4,98 @@
  * 主题：+1力量指示物的放置、移除、转移
  */
 
-import { registerAbility } from '../domain/abilityRegistry';
+import type { MatchState, PlayerId } from '../../../engine/types';
+import type { PromptOption } from '../../../engine/systems/InteractionSystem';
+import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
-    addPowerCounter, removePowerCounter, destroyMinion,
-    getMinionPower, grantContextualExtraMinion, grantExtraMinion, queueMinionPlayEffect, buildMinionTargetOptions,
-    resolveOrPrompt, findMinionOnBases, buildAbilityFeedback, buildValidatedCardToDeckBottomEvents, buildValidatedDestroyEvents,
+    addPowerCounter,
+    buildAbilityFeedback,
+    buildMinionTargetOptions,
+    buildValidatedCardToDeckBottomEvents,
+    buildValidatedDestroyEvents,
+    destroyMinion,
+    findMinionOnBases,
+    getMinionPower,
+    grantContextualExtraMinion,
+    grantExtraMinion,
+    queueMinionPlayEffect,
+    removePowerCounter,
 } from '../domain/abilityHelpers';
-import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, MinionOnBase, SmashUpCore } from '../domain/types';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
-import type { TriggerContext } from '../domain/ongoingEffects';
+import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
+import { reduce } from '../domain/reduce';
 import { getCardDef } from '../data/cards';
-import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { SU_EVENTS } from '../domain/types';
+import type { MinionOnBase, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { matchesDefId } from '../domain/utils';
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 
 const BODY_SHOP_PENDING_DISTRIBUTIONS_KEY = '_pendingBodyShopDistributions';
 
-interface BodyShopPendingDistribution {
+export interface BodyShopPendingDistribution {
     playerId: PlayerId;
     targetMinionUid: string;
     totalCounters: number;
 }
 
+type FrankensteinPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    state: SmashUpCore;
+    playerId: PlayerId;
+    now: number;
+};
+
+type CounterPromptContext = FrankensteinPromptContext & {
+    reasonDefId: string;
+    excludeUid?: string;
+    excludeBaseIndex?: number;
+};
+
+type AngryMobCardContext = FrankensteinPromptContext & {
+    minionUid: string;
+    baseIndex: number;
+};
+
+type BlitzedRemoveContext = FrankensteinPromptContext & {
+    removedTotal: number;
+};
+
+type BlitzedDestroyContext = FrankensteinPromptContext & {
+    removedTotal: number;
+};
+
+type BodyShopDistributeContext = FrankensteinPromptContext & {
+    remaining: number;
+};
+
+type MinionChoiceValue = {
+    minionUid: string;
+    minionDefId: string;
+    baseIndex: number;
+};
+
+type AngryMobCardChoiceValue = { cardUid: string; defId: string };
+type AngryMobStopChoiceValue = { stop: true };
+type BlitzedRemoveChoiceValue = { minionUid: string; defId: string; baseIndex: number } | { done: true };
+type BodyShopDistributeChoiceValue = {
+    minionUid: string;
+    minionDefId: string;
+    baseIndex: number;
+    remaining: number;
+};
+
 function appendPendingBodyShopDistribution(
     matchState: MatchState<SmashUpCore>,
     pending: BodyShopPendingDistribution,
 ): MatchState<SmashUpCore> {
-    const existing = Array.isArray((matchState.sys as any)[BODY_SHOP_PENDING_DISTRIBUTIONS_KEY])
-        ? (matchState.sys as any)[BODY_SHOP_PENDING_DISTRIBUTIONS_KEY] as BodyShopPendingDistribution[]
+    const existing = Array.isArray((matchState.sys as Record<string, unknown>)[BODY_SHOP_PENDING_DISTRIBUTIONS_KEY])
+        ? (matchState.sys as Record<string, unknown>)[BODY_SHOP_PENDING_DISTRIBUTIONS_KEY] as BodyShopPendingDistribution[]
         : [];
     return {
         ...matchState,
@@ -45,141 +106,674 @@ function appendPendingBodyShopDistribution(
     };
 }
 
-// ============================================================================
-// 注册入口
-// ============================================================================
-
-/** 注册科学怪人派系所有能力 */
-export function registerFrankensteinAbilities(): void {
-    // 随从能力
-    registerAbility('frankenstein_lab_assistant', 'onPlay', frankensteinLabAssistant);
-    registerAbility('frankenstein_the_monster', 'talent', {
-        execute: frankensteinTheMonster,
-        validateUse: (ctx) => {
-            const minion = ctx.state.bases[ctx.baseIndex]?.minions.find(candidate => candidate.uid === ctx.cardUid);
-            return (minion?.powerCounters ?? 0) >= 1 ? null : '该随从当前无法发动天赋：没有+1力量指示物';
-        },
-    });
-    registerAbility('frankenstein_herr_doktor', 'talent', {
-        execute: frankensteinHerrDoktor,
-        validateUse: (ctx) => {
-            const hasOtherOwnMinion = ctx.state.bases.some(base =>
-                base.minions.some(minion => minion.controller === ctx.playerId && minion.uid !== ctx.cardUid),
-            );
-            return hasOtherOwnMinion ? null : '当前没有可选择的目标';
-        },
-    });
-    registerAbility('frankenstein_igor', 'onDestroy', frankensteinIgorOnDestroy);
-
-    // 行动卡能力
-    registerAbility('frankenstein_jolt', 'onPlay', frankensteinJolt);
-    registerAbility('frankenstein_its_alive', 'onPlay', frankensteinItsAlive);
-    registerAbility('frankenstein_angry_mob', 'onPlay', frankensteinAngryMob);
-    registerAbility('frankenstein_body_shop', 'onPlay', frankensteinBodyShop);
-    registerAbility('frankenstein_blitzed', 'onPlay', frankensteinBlitzed);
-
-    // ongoing 效果
-    registerFrankensteinOngoingEffects();
+function simulateCore(core: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
+    let nextCore = core;
+    for (const event of events) {
+        nextCore = reduce(nextCore, event);
+    }
+    return nextCore;
 }
 
-/** 注册科学怪人派系交互处理函数 */
-export function registerFrankensteinInteractionHandlers(): void {
-    registerInteractionHandler('frankenstein_lab_assistant', handleLabAssistantChoice);
-    registerInteractionHandler('frankenstein_herr_doktor', handleHerrDoktorChoice);
-    registerInteractionHandler('frankenstein_angry_mob', handleAngryMobChooseMinion);
-    registerInteractionHandler('frankenstein_angry_mob_choose_card', handleAngryMobChooseCard);
-    registerInteractionHandler('frankenstein_body_shop', handleBodyShopChooseMinion);
-    registerInteractionHandler('frankenstein_body_shop_distribute', handleBodyShopDistribute);
-    registerInteractionHandler('frankenstein_blitzed_remove', handleBlitzedRemove);
-    registerInteractionHandler('frankenstein_blitzed_destroy', handleBlitzedDestroy);
-    registerInteractionHandler('frankenstein_igor', handleIgorChooseTarget);
+function withSimulatedMatchState(
+    matchState: MatchState<SmashUpCore>,
+    events: SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    return {
+        ...matchState,
+        core: simulateCore(matchState.core, events),
+    };
 }
 
-// ============================================================================
-// 辅助函数
-// ============================================================================
+function createPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    extra?: TExtra,
+): FrankensteinPromptContext & TExtra {
+    return {
+        matchState,
+        state: matchState.core,
+        playerId,
+        now,
+        ...(extra ?? {} as TExtra),
+    };
+}
 
-/** 获取场上所有己方随从（跨基地） */
-function getAllOwnMinions(ctx: AbilityContext): { minion: MinionOnBase; baseIndex: number }[] {
-    const result: { minion: MinionOnBase; baseIndex: number }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId) result.push({ minion: m, baseIndex: i });
+function getAllOwnMinions(core: SmashUpCore, playerId: PlayerId): Array<{ minion: MinionOnBase; baseIndex: number }> {
+    const result: Array<{ minion: MinionOnBase; baseIndex: number }> = [];
+    for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex += 1) {
+        for (const minion of core.bases[baseIndex].minions) {
+            if (minion.controller === playerId) {
+                result.push({ minion, baseIndex });
+            }
         }
     }
     return result;
 }
 
-/** 构建己方随从选项（用于放指示物等，排除指定 uid） */
-function buildOwnMinionOptions(
-    ctx: AbilityContext,
+function buildOwnMinionCandidates(
+    core: SmashUpCore,
+    playerId: PlayerId,
     excludeUid?: string,
-    filter?: (m: MinionOnBase, baseIndex: number) => boolean,
+    excludeBaseIndex?: number,
+    filter?: (minion: MinionOnBase, baseIndex: number) => boolean,
 ) {
-    const minions = getAllOwnMinions(ctx);
-    return minions
-        .filter(({ minion, baseIndex }) => minion.uid !== excludeUid && (!filter || filter(minion, baseIndex)))
-        .map(({ minion, baseIndex }) => {
-            const def = getCardDef(minion.defId);
-            const power = getMinionPower(ctx.state, minion, baseIndex);
-            return {
-                uid: minion.uid, defId: minion.defId, baseIndex,
-                label: `${def?.name ?? minion.defId} (力量 ${power})`,
-            };
+    return getAllOwnMinions(core, playerId)
+        .filter(({ minion, baseIndex }) =>
+            minion.uid !== excludeUid
+            && baseIndex !== excludeBaseIndex
+            && (!filter || filter(minion, baseIndex)))
+        .map(({ minion, baseIndex }) => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex,
+            label: `${getCardDef(minion.defId)?.name ?? minion.defId} (力量 ${getMinionPower(core, minion, baseIndex)})`,
+        }));
+}
+
+function buildFriendlyMinionPromptOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    excludeUid?: string,
+    excludeBaseIndex?: number,
+    filter?: (minion: MinionOnBase, baseIndex: number) => boolean,
+): PromptOption<MinionChoiceValue>[] {
+    return buildOwnMinionCandidates(core, playerId, excludeUid, excludeBaseIndex, filter).map((candidate, index) => ({
+        id: `minion-${index}`,
+        label: candidate.label,
+        value: { minionUid: candidate.uid, minionDefId: candidate.defId, baseIndex: candidate.baseIndex },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
+    }));
+}
+
+function buildCounterTargetOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    excludeUid?: string,
+    excludeBaseIndex?: number,
+): PromptOption<MinionChoiceValue>[] {
+    return buildFriendlyMinionPromptOptions(core, playerId, excludeUid, excludeBaseIndex);
+}
+
+function buildAngryMobCardOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+): PromptOption<AngryMobCardChoiceValue | AngryMobStopChoiceValue>[] {
+    const player = core.players[playerId];
+    if (!player) return [];
+    return [
+        ...player.hand.map((card, index) => ({
+            id: `card-${index}`,
+            label: getCardDef(card.defId)?.name ?? card.defId,
+            value: { cardUid: card.uid, defId: card.defId },
+            _source: 'hand' as const,
+            displayMode: 'card' as const,
+        })),
+        {
+            id: 'stop',
+            label: '完成放牌',
+            value: { stop: true },
+            displayMode: 'button' as const,
+        },
+    ];
+}
+
+function buildBlitzedRemoveOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    removedTotal: number,
+): PromptOption<BlitzedRemoveChoiceValue>[] {
+    const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
+    for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex += 1) {
+        for (const minion of core.bases[baseIndex].minions) {
+            if (minion.controller !== playerId || (minion.powerCounters ?? 0) <= 0) continue;
+            candidates.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: `${getCardDef(minion.defId)?.name ?? minion.defId}（移除1个，剩余 ${minion.powerCounters ?? 0}）`,
+            });
+        }
+    }
+    return [
+        ...buildMinionTargetOptions(candidates, { state: core, sourcePlayerId: playerId }),
+        {
+            id: 'done',
+            label: removedTotal > 0 ? `完成移除（已移除 ${removedTotal} 个，消灭力量≤${removedTotal} 的随从）` : '跳过（不移除）',
+            displayMode: 'button' as const,
+            value: { done: true },
+        },
+    ];
+}
+
+function buildBlitzedDestroyOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    removedTotal: number,
+): PromptOption<MinionChoiceValue>[] {
+    const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
+    for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex += 1) {
+        for (const minion of core.bases[baseIndex].minions) {
+            const power = getMinionPower(core, minion, baseIndex);
+            if (power > removedTotal) continue;
+            candidates.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: `${getCardDef(minion.defId)?.name ?? minion.defId} (力量 ${power})`,
+            });
+        }
+    }
+    return buildMinionTargetOptions(candidates, {
+        state: core,
+        sourcePlayerId: playerId,
+        effectType: 'destroy',
+    });
+}
+
+function buildBodyShopDistributeOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    remaining: number,
+    excludeUid?: string,
+): PromptOption<BodyShopDistributeChoiceValue>[] {
+    return buildOwnMinionCandidates(core, playerId, excludeUid).map((candidate, index) => ({
+        id: `minion-${index}`,
+        label: candidate.label,
+        value: {
+            minionUid: candidate.uid,
+            minionDefId: candidate.defId,
+            baseIndex: candidate.baseIndex,
+            remaining,
+        },
+        _source: 'field' as const,
+        displayMode: 'card' as const,
+    }));
+}
+
+function runtimeResultToTriggerResult(
+    result: ReturnType<typeof executeAbilityProgram<unknown, SmashUpCore, SmashUpEvent>>,
+    fallbackState: MatchState<SmashUpCore>,
+): TriggerResult {
+    return {
+        events: result.events,
+        matchState: result.matchState ?? fallbackState,
+    };
+}
+
+function resolveCounterPlacement(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    context: { reasonDefId: string; excludeUid?: string; excludeBaseIndex?: number },
+    selected: Partial<MinionChoiceValue> | undefined,
+    timestamp: number,
+): SmashUpEvent[] {
+    if (!selected?.minionUid || typeof selected.baseIndex !== 'number') return [];
+    const liveTarget = state.bases[selected.baseIndex]?.minions.find((minion) =>
+        minion.uid === selected.minionUid
+        && minion.controller === playerId
+        && minion.uid !== context.excludeUid,
+    );
+    if (!liveTarget || selected.baseIndex === context.excludeBaseIndex) return [];
+    return [addPowerCounter(selected.minionUid, selected.baseIndex, 1, context.reasonDefId, timestamp)];
+}
+
+const frankensteinLabAssistantPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'frankenstein_lab_assistant',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `frankenstein_lab_assistant_${context.now}`,
+            context.playerId,
+            '选择一个你的随从放置+1力量指示物',
+            buildCounterTargetOptions(context.state, context.playerId, context.excludeUid),
+            { sourceId: 'frankenstein_lab_assistant', targetType: 'minion', responseValidationMode: 'live' },
+        );
+        interaction.data.optionsGenerator = (state) =>
+            buildCounterTargetOptions(state.core as SmashUpCore, context.playerId, context.excludeUid);
+        return interaction;
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => ({
+        events: resolveCounterPlacement(state.core, playerId, context, value as Partial<MinionChoiceValue>, timestamp),
+    }),
+});
+
+const frankensteinHerrDoktorPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'frankenstein_herr_doktor',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `frankenstein_herr_doktor_${context.now}`,
+            context.playerId,
+            '选择一个你的随从放置+1力量指示物',
+            buildCounterTargetOptions(context.state, context.playerId, context.excludeUid),
+            { sourceId: 'frankenstein_herr_doktor', targetType: 'minion', responseValidationMode: 'live' },
+        );
+        interaction.data.optionsGenerator = (state) =>
+            buildCounterTargetOptions(state.core as SmashUpCore, context.playerId, context.excludeUid);
+        return interaction;
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => ({
+        events: resolveCounterPlacement(state.core, playerId, context, value as Partial<MinionChoiceValue>, timestamp),
+    }),
+});
+
+const frankensteinIgorPromptProgram = createPromptProgram<CounterPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'frankenstein_igor',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `frankenstein_igor_${context.playerId}_${context.now}`,
+            context.playerId,
+            '选择一个你的随从放置+1力量指示物（科学小怪蛋）',
+            buildCounterTargetOptions(context.state, context.playerId, context.excludeUid, context.excludeBaseIndex),
+            { sourceId: 'frankenstein_igor', targetType: 'minion', responseValidationMode: 'live' },
+        );
+        interaction.data.optionsGenerator = (state) =>
+            buildCounterTargetOptions(
+                state.core as SmashUpCore,
+                context.playerId,
+                context.excludeUid,
+                context.excludeBaseIndex,
+            );
+        return interaction;
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => ({
+        events: resolveCounterPlacement(state.core, playerId, context, value as Partial<MinionChoiceValue>, timestamp),
+    }),
+});
+
+const frankensteinAngryMobChooseCardPromptProgram = createPromptProgram<AngryMobCardContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'frankenstein_angry_mob_choose_card',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `frankenstein_angry_mob_choose_card_${context.now}`,
+            context.playerId,
+            '愤怒的民众：选择一张手牌放到牌库底（或完成放牌）',
+            buildAngryMobCardOptions(context.state, context.playerId),
+            {
+                sourceId: 'frankenstein_angry_mob_choose_card',
+                targetType: 'hand',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state) =>
+            buildAngryMobCardOptions(state.core as SmashUpCore, context.playerId);
+        return interaction;
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as ({ __cancel__?: boolean } & Partial<AngryMobCardChoiceValue & AngryMobStopChoiceValue>) | undefined;
+        if (selected?.__cancel__ || selected?.stop) return { events: [] };
+        if (!selected?.cardUid || !selected?.defId) return { events: [] };
+
+        const deckBottomEvents = buildValidatedCardToDeckBottomEvents(state, {
+            cardUid: selected.cardUid,
+            defId: selected.defId,
+            ownerId: playerId,
+            reason: 'frankenstein_angry_mob',
+            now: timestamp,
+            expectedLocation: 'hand',
         });
+        if (deckBottomEvents.length === 0) return { events: [] };
+
+        const events: SmashUpEvent[] = [
+            ...deckBottomEvents,
+            addPowerCounter(context.minionUid, context.baseIndex, 1, 'frankenstein_angry_mob', timestamp),
+        ];
+        const nextState = withSimulatedMatchState(state, events);
+        if ((nextState.core.players[playerId]?.hand.length ?? 0) === 0) {
+            return { events };
+        }
+
+        return {
+            events,
+            context: createPromptContext(nextState, playerId, timestamp, {
+                minionUid: context.minionUid,
+                baseIndex: context.baseIndex,
+            }),
+            nextProgram: frankensteinAngryMobChooseCardPromptProgram,
+        };
+    },
+});
+
+const frankensteinAngryMobPromptProgram = createPromptProgram<FrankensteinPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'frankenstein_angry_mob',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `frankenstein_angry_mob_${context.now}`,
+            context.playerId,
+            '选择一个你的随从（每放一张手牌到牌库底就放一个+1力量指示物）',
+            buildCounterTargetOptions(context.state, context.playerId),
+            { sourceId: 'frankenstein_angry_mob', targetType: 'minion', responseValidationMode: 'live' },
+        );
+        interaction.data.optionsGenerator = (state) =>
+            buildCounterTargetOptions(state.core as SmashUpCore, context.playerId);
+        return interaction;
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as Partial<MinionChoiceValue> | undefined;
+        if (!selected?.minionUid || typeof selected.baseIndex !== 'number') return { events: [] };
+        const liveTarget = state.core.bases[selected.baseIndex]?.minions.find((minion) =>
+            minion.uid === selected.minionUid && minion.controller === playerId,
+        );
+        if (!liveTarget || (state.core.players[playerId]?.hand.length ?? 0) === 0) return { events: [] };
+        return {
+            events: [],
+            context: createPromptContext(state, playerId, timestamp, {
+                minionUid: selected.minionUid,
+                baseIndex: selected.baseIndex,
+            }),
+            nextProgram: frankensteinAngryMobChooseCardPromptProgram,
+        };
+    },
+});
+
+const frankensteinBodyShopDistributePromptProgram = createPromptProgram<BodyShopDistributeContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'frankenstein_body_shop_distribute',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `frankenstein_body_shop_distribute_${context.now}`,
+            context.playerId,
+            `选择随从放置+1指示物（剩余 ${context.remaining} 个）`,
+            buildBodyShopDistributeOptions(context.state, context.playerId, context.remaining),
+            {
+                sourceId: 'frankenstein_body_shop_distribute',
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state) =>
+            buildBodyShopDistributeOptions(state.core as SmashUpCore, context.playerId, context.remaining);
+        return interaction;
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as Partial<BodyShopDistributeChoiceValue> | undefined;
+        if (!selected?.minionUid || typeof selected.baseIndex !== 'number') return { events: [] };
+        const liveTarget = state.core.bases[selected.baseIndex]?.minions.find((minion) =>
+            minion.uid === selected.minionUid && minion.controller === playerId,
+        );
+        if (!liveTarget) return { events: [] };
+        const currentRemaining = typeof context?.remaining === 'number'
+            ? context.remaining
+            : (typeof selected.remaining === 'number' ? selected.remaining : 0);
+        if (currentRemaining <= 0) return { events: [] };
+
+        const events: SmashUpEvent[] = [
+            addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'frankenstein_body_shop', timestamp),
+        ];
+        const nextRemaining = currentRemaining - 1;
+        if (nextRemaining <= 0) return { events };
+
+        const nextState = withSimulatedMatchState(state, events);
+        if (buildBodyShopDistributeOptions(nextState.core, playerId, nextRemaining).length === 0) {
+            return { events };
+        }
+
+        return {
+            events,
+            context: createPromptContext(nextState, playerId, timestamp, { remaining: nextRemaining }),
+            nextProgram: frankensteinBodyShopDistributePromptProgram,
+        };
+    },
+});
+
+const frankensteinBodyShopPromptProgram = createPromptProgram<FrankensteinPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'frankenstein_body_shop',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `frankenstein_body_shop_${context.now}`,
+            context.playerId,
+            '选择你要消灭的随从（其力量数的+1指示物将分配到其他随从）',
+            buildCounterTargetOptions(context.state, context.playerId),
+            { sourceId: 'frankenstein_body_shop', targetType: 'minion', responseValidationMode: 'live' },
+        );
+        interaction.data.optionsGenerator = (state) =>
+            buildCounterTargetOptions(state.core as SmashUpCore, context.playerId);
+        return interaction;
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as Partial<MinionChoiceValue> | undefined;
+        if (!selected?.minionUid || !selected?.minionDefId || typeof selected.baseIndex !== 'number') {
+            return { events: [] };
+        }
+        const liveTarget = state.core.bases[selected.baseIndex]?.minions.find((minion) =>
+            minion.uid === selected.minionUid && minion.controller === playerId,
+        );
+        if (!liveTarget) return { events: [] };
+
+        const power = getMinionPower(state.core, liveTarget, selected.baseIndex);
+        const events: SmashUpEvent[] = [
+            destroyMinion(
+                selected.minionUid,
+                selected.minionDefId,
+                selected.baseIndex,
+                liveTarget.owner,
+                playerId,
+                'frankenstein_body_shop',
+                timestamp,
+            ),
+        ];
+        if (power <= 0) return { events };
+        return {
+            events,
+            matchState: appendPendingBodyShopDistribution(state, {
+                playerId,
+                targetMinionUid: selected.minionUid,
+                totalCounters: power,
+            }),
+        };
+    },
+});
+
+const frankensteinBlitzedDestroyPromptProgram = createPromptProgram<BlitzedDestroyContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'frankenstein_blitzed_destroy',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `frankenstein_blitzed_destroy_${context.now}`,
+            context.playerId,
+            `选择要消灭的随从（力量≤${context.removedTotal}）`,
+            buildBlitzedDestroyOptions(context.state, context.playerId, context.removedTotal),
+            {
+                sourceId: 'frankenstein_blitzed_destroy',
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state) =>
+            buildBlitzedDestroyOptions(state.core as SmashUpCore, context.playerId, context.removedTotal);
+        return interaction;
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as (Partial<MinionChoiceValue> & { defId?: string }) | undefined;
+        const selectedDefId = selected?.minionDefId ?? selected?.defId;
+        if (!selected?.minionUid || !selectedDefId || typeof selected.baseIndex !== 'number') {
+            return { events: [] };
+        }
+        return {
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selectedDefId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: playerId,
+                reason: 'frankenstein_blitzed',
+                now: timestamp,
+            }),
+        };
+    },
+});
+
+const frankensteinBlitzedRemovePromptProgram = createPromptProgram<BlitzedRemoveContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'frankenstein_blitzed_remove',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `frankenstein_blitzed_remove_${context.now}`,
+            context.playerId,
+            `闪电攻击：点击随从移除1个指示物（已移除 ${context.removedTotal}）`,
+            buildBlitzedRemoveOptions(context.state, context.playerId, context.removedTotal),
+            {
+                sourceId: 'frankenstein_blitzed_remove',
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state, data) => {
+            const liveRemovedTotal = typeof (data as { continuationContext?: { removedTotal?: number } } | undefined)?.continuationContext?.removedTotal === 'number'
+                ? (data as { continuationContext?: { removedTotal?: number } }).continuationContext!.removedTotal!
+                : context.removedTotal;
+            return buildBlitzedRemoveOptions(state.core as SmashUpCore, context.playerId, liveRemovedTotal);
+        };
+        return interaction;
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as Partial<{ minionUid: string; baseIndex: number; done: boolean }> | undefined;
+        if (selected?.done) {
+            if (buildBlitzedDestroyOptions(state.core, playerId, context.removedTotal).length === 0) return { events: [] };
+            return {
+                events: [],
+                context: createPromptContext(state, playerId, timestamp, { removedTotal: context.removedTotal }),
+                nextProgram: frankensteinBlitzedDestroyPromptProgram,
+            };
+        }
+        if (!selected?.minionUid || typeof selected.baseIndex !== 'number') return { events: [] };
+        const liveTarget = state.core.bases[selected.baseIndex]?.minions.find((minion) =>
+            minion.uid === selected.minionUid
+            && minion.controller === playerId
+            && (minion.powerCounters ?? 0) > 0,
+        );
+        if (!liveTarget) return { events: [] };
+
+        const events: SmashUpEvent[] = [
+            removePowerCounter(selected.minionUid, selected.baseIndex, 1, 'frankenstein_blitzed', timestamp),
+        ];
+        const nextState = withSimulatedMatchState(state, events);
+        return {
+            events,
+            context: createPromptContext(nextState, playerId, timestamp, { removedTotal: context.removedTotal + 1 }),
+            nextProgram: frankensteinBlitzedRemovePromptProgram,
+        };
+    },
+});
+
+export function createFrankensteinBodyShopDistributionInteraction(
+    state: MatchState<SmashUpCore>,
+    pending: BodyShopPendingDistribution,
+    timestamp: number,
+) {
+    const interaction = createAbilityRuntimeSimpleChoice(
+        `frankenstein_body_shop_distribute_${timestamp}`,
+        pending.playerId,
+        `选择随从放置+1指示物（剩余 ${pending.totalCounters} 个）`,
+        buildBodyShopDistributeOptions(state.core, pending.playerId, pending.totalCounters, pending.targetMinionUid),
+        {
+            sourceId: 'frankenstein_body_shop_distribute',
+            continuationId: `frankenstein_body_shop_distribute:${pending.playerId}:${timestamp}`,
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+            responseValidationMode: 'live',
+        },
+    );
+    interaction.data.optionsGenerator = (latestState) =>
+        buildBodyShopDistributeOptions(
+            (latestState.core as SmashUpCore),
+            pending.playerId,
+            pending.totalCounters,
+            pending.targetMinionUid,
+        );
+    return interaction;
 }
 
-// ============================================================================
-// 随从能力
-// ============================================================================
+const frankensteinLabAssistantProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const options = buildCounterTargetOptions(ctx.state, ctx.playerId, ctx.cardUid);
+    if (options.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    if (options.length === 1) {
+        const selected = options[0].value;
+        return { events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'frankenstein_lab_assistant', ctx.now)] };
+    }
+    return {
+        events: [],
+        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            reasonDefId: 'frankenstein_lab_assistant',
+            excludeUid: ctx.cardUid,
+        }),
+        nextProgram: frankensteinLabAssistantPromptProgram,
+    };
+});
 
-/** 实验室助手 onPlay：在你的另一个随从上放置一个+1力量指示物 */
-function frankensteinLabAssistant(ctx: AbilityContext): AbilityResult {
-    const candidates = buildOwnMinionOptions(ctx, ctx.cardUid);
-    if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+const frankensteinHerrDoktorProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const options = buildCounterTargetOptions(ctx.state, ctx.playerId, ctx.cardUid);
+    if (options.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    if (options.length === 1) {
+        const selected = options[0].value;
+        return { events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'frankenstein_herr_doktor', ctx.now)] };
+    }
+    return {
+        events: [],
+        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            reasonDefId: 'frankenstein_herr_doktor',
+            excludeUid: ctx.cardUid,
+        }),
+        nextProgram: frankensteinHerrDoktorPromptProgram,
+    };
+});
 
-    const options = candidates.map((c, i) => ({
-        id: `minion-${i}`,
-        label: c.label,
-        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
+const frankensteinIgorOnDestroyProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const options = buildCounterTargetOptions(ctx.state, ctx.playerId, ctx.cardUid);
+    if (options.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    if (options.length === 1) {
+        const selected = options[0].value;
+        return { events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, ctx.defId, ctx.now)] };
+    }
+    return {
+        events: [],
+        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            reasonDefId: ctx.defId,
+            excludeUid: ctx.cardUid,
+        }),
+        nextProgram: frankensteinIgorPromptProgram,
+    };
+});
 
-    return resolveOrPrompt(ctx, options, {
-        id: 'frankenstein_lab_assistant',
-        title: '选择一个你的随从放置+1力量指示物',
-        sourceId: 'frankenstein_lab_assistant',
-        targetType: 'minion' as const,
-    }, (val) => ({
-        events: [addPowerCounter(val.minionUid, val.baseIndex, 1, 'frankenstein_lab_assistant', ctx.now)],
-    }));
-}
+const frankensteinAngryMobProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const minionOptions = buildCounterTargetOptions(ctx.state, ctx.playerId);
+    if (minionOptions.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    if ((ctx.state.players[ctx.playerId]?.hand.length ?? 0) === 0) {
+        return { events: [] };
+    }
+    return {
+        events: [],
+        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+        nextProgram: frankensteinAngryMobPromptProgram,
+    };
+});
 
-/** 黑尔博士 talent：在你的另一个随从上放置一个+1力量指示物 */
-function frankensteinHerrDoktor(ctx: AbilityContext): AbilityResult {
-    const candidates = buildOwnMinionOptions(ctx, ctx.cardUid);
-    if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+const frankensteinBodyShopProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const minionOptions = buildCounterTargetOptions(ctx.state, ctx.playerId);
+    if (minionOptions.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    return {
+        events: [],
+        context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+        nextProgram: frankensteinBodyShopPromptProgram,
+    };
+});
 
-    const options = candidates.map((c, i) => ({
-        id: `minion-${i}`,
-        label: c.label,
-        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
+const frankensteinBlitzedProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => ({
+    events: [],
+    context: createPromptContext(ctx.matchState, ctx.playerId, ctx.now, { removedTotal: 0 }),
+    nextProgram: frankensteinBlitzedRemovePromptProgram,
+}));
 
-    return resolveOrPrompt(ctx, options, {
-        id: 'frankenstein_herr_doktor',
-        title: '选择一个你的随从放置+1力量指示物',
-        sourceId: 'frankenstein_herr_doktor',
-        targetType: 'minion' as const,
-    }, (val) => ({
-        events: [addPowerCounter(val.minionUid, val.baseIndex, 1, 'frankenstein_herr_doktor', ctx.now)],
-    }));
-}
-
-/** 怪物 talent：从自身移除一个+1力量指示物来额外打出一个随从 */
 function frankensteinTheMonster(ctx: AbilityContext): AbilityResult {
     const found = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!found || (found.minion.powerCounters ?? 0) < 1) {
@@ -193,57 +787,18 @@ function frankensteinTheMonster(ctx: AbilityContext): AbilityResult {
     };
 }
 
-/** 科学小怪蛋 onDestroy：本随从被消灭后，在你的一个随从上放+1指示物 */
-function frankensteinIgorOnDestroy(ctx: AbilityContext): AbilityResult {
-    const candidates: { uid: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId && m.uid !== ctx.cardUid) {
-                const def = getCardDef(m.defId);
-                candidates.push({ uid: m.uid, baseIndex: i, label: def?.name ?? m.defId });
-            }
-        }
-    }
-    
-    if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    if (candidates.length === 1) {
-        return { events: [addPowerCounter(candidates[0].uid, candidates[0].baseIndex, 1, 'frankenstein_igor', ctx.now)] };
-    }
-    const options = candidates.map((c, idx) => ({
-        id: `minion-${idx}`, label: c.label,
-        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
-    
-    const interactionId = `frankenstein_igor_${ctx.playerId}_${ctx.now}`;
-    
-    const result = resolveOrPrompt(ctx, options, {
-        id: interactionId,
-        title: '选择一个你的随从放置+1力量指示物（科学小怪蛋）',
-        sourceId: 'frankenstein_igor',
-        targetType: 'minion' as const,
-    }, (val) => ({
-        events: [addPowerCounter(val.minionUid, val.baseIndex, 1, 'frankenstein_igor', ctx.now)],
-    }));
-    
-    return result;
-}
-
-/** 震撼 onPlay：在你的每个随从上放置一个+1力量指示物 */
 function frankensteinJolt(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId) {
-                events.push(addPowerCounter(m.uid, i, 1, 'frankenstein_jolt', ctx.now));
+    for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
+        for (const minion of ctx.state.bases[baseIndex].minions) {
+            if (minion.controller === ctx.playerId) {
+                events.push(addPowerCounter(minion.uid, baseIndex, 1, 'frankenstein_jolt', ctx.now));
             }
         }
     }
     return { events };
 }
 
-/** 它活过来了！ onPlay：打出一个额外的随从并在它身上放置一个+1力量指示物 */
 function frankensteinItsAlive(ctx: AbilityContext): AbilityResult {
     return {
         events: [
@@ -256,446 +811,70 @@ function frankensteinItsAlive(ctx: AbilityContext): AbilityResult {
     };
 }
 
-// ============================================================================
-// 行动卡能力（需要交互）
-// ============================================================================
-
-/** 愤怒的民众 onPlay：选己方随从，逐张选手牌放牌库底，每放一张放一个+1指示物，随时可停 */
-function frankensteinAngryMob(ctx: AbilityContext): AbilityResult {
-    const candidates = buildOwnMinionOptions(ctx);
-    if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const options = candidates.map((c, i) => ({
-        id: `minion-${i}`,
-        label: c.label,
-        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
-
-    return resolveOrPrompt(ctx, options, {
-        id: 'frankenstein_angry_mob',
-        title: '选择一个你的随从（每放一张手牌到牌库底就放一个+1指示物）',
-        sourceId: 'frankenstein_angry_mob',
-        targetType: 'minion' as const,
-    }, (val) => {
-        // 单随从自动选定后，直接进入逐张选牌
-        const player = ctx.state.players[ctx.playerId];
-        if (!player || player.hand.length === 0) return { events: [] };
-        return createAngryMobPickCardStep(ctx.matchState, ctx.playerId, { minionUid: val.minionUid, baseIndex: val.baseIndex }, ctx.now);
-    });
-}
-
-interface AngryMobCardContext { minionUid: string; baseIndex: number }
-type AngryMobCardChoiceValue = { cardUid: string; defId: string };
-type AngryMobStopChoiceValue = { stop: true };
-type BlitzedRemoveChoiceValue = { minionUid: string; defId: string; baseIndex: number } | { done: true };
-
-function buildAngryMobCardOptions(core: SmashUpCore, playerId: string): PromptOption<AngryMobCardChoiceValue | AngryMobStopChoiceValue>[] {
-    const player = core.players[playerId];
-    if (!player) return [];
-    const cardOptions = player.hand.map((c, i) => {
-        const def = getCardDef(c.defId);
-        return { id: `card-${i}`, label: `${def?.name ?? c.defId}`, value: { cardUid: c.uid, defId: c.defId } , _source: 'hand' as const, displayMode: 'card' as const };
-    });
-    return [
-        ...cardOptions,
-        { id: 'stop', label: '完成放牌', value: { stop: true }, displayMode: 'button' as const },
-    ];
-}
-
-function createAngryMobPickCardStep(
-    ms: MatchState<SmashUpCore>, playerId: string, context: AngryMobCardContext, now: number,
-): AbilityResult {
-    const options = buildAngryMobCardOptions(ms.core, playerId);
-    const interaction = createSimpleChoice<AngryMobCardChoiceValue | AngryMobStopChoiceValue>(
-        `frankenstein_angry_mob_choose_card_${now}`, playerId,
-        '愤怒的民众：选择一张手牌放到牌库底（或完成放牌）',
-        options,
-        { sourceId: 'frankenstein_angry_mob_choose_card', targetType: 'hand' as const, autoResolveIfSingle: false },
-    );
-    return {
-        events: [],
-        matchState: queueInteraction(ms, {
-            ...interaction,
-            data: {
-                ...interaction.data,
-                continuationContext: context,
-                optionsGenerator: nextState => buildAngryMobCardOptions(nextState.core as SmashUpCore, playerId),
-            },
-        }),
-    };
-}
-
-const handleAngryMobChooseCard: IH = (state, playerId, value, interactionData, _random, now) => {
-    const context = interactionData?.continuationContext as AngryMobCardContext | undefined;
-    if (!context) return undefined;
-    const v = value as { cardUid?: string; defId?: string; stop?: boolean };
-    // 点击完成放牌
-    if (v.stop) return { state, events: [] };
-    if (!v.cardUid) return undefined;
-    // 放一张牌到牌库底 + 立即放一个指示物
-    const deckBottomEvents = buildValidatedCardToDeckBottomEvents(state, {
-        cardUid: v.cardUid,
-        defId: v.defId!,
-        ownerId: playerId,
-        reason: 'frankenstein_angry_mob',
-        now,
-        expectedLocation: 'hand',
-    });
-    if (deckBottomEvents.length === 0) return { state, events: [] };
-    const events: SmashUpEvent[] = [
-        ...deckBottomEvents,
-        addPowerCounter(context.minionUid, context.baseIndex, 1, 'frankenstein_angry_mob', now),
-    ];
-    // 手牌还剩卡（当前放的那张还在 state 中未 reduce）
-    const player = state.core.players[playerId];
-    if (!player || player.hand.length <= 1) return { state, events };
-    // 继续选下一张
-    const nextInteraction = createSimpleChoice<AngryMobCardChoiceValue | AngryMobStopChoiceValue>(
-        `frankenstein_angry_mob_choose_card_${now}`, playerId,
-        '愤怒的民众：选择一张手牌放到牌库底（或完成放牌）',
-        buildAngryMobCardOptions(state.core, playerId),
-        { sourceId: 'frankenstein_angry_mob_choose_card', targetType: 'hand' as const, autoResolveIfSingle: false },
-    );
-    return {
-        state: queueInteraction(state, {
-            ...nextInteraction,
-            data: {
-                ...nextInteraction.data,
-                continuationContext: context,
-                optionsGenerator: nextState => buildAngryMobCardOptions(nextState.core as SmashUpCore, playerId),
-            },
-        }),
-        events,
-    };
-};
-
-/** 尸体商店 onPlay：消灭己方随从，力量数的指示物分配到己方随从 */
-function frankensteinBodyShop(ctx: AbilityContext): AbilityResult {
-    const candidates = buildOwnMinionOptions(ctx);
-    if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const options = candidates.map((c, i) => ({
-        id: `minion-${i}`,
-        label: c.label,
-        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, defId: c.defId },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
-
-    return resolveOrPrompt(ctx, options, {
-        id: 'frankenstein_body_shop',
-        title: '选择你要消灭的随从（其力量数的+1指示物将分配到其他随从）',
-        sourceId: 'frankenstein_body_shop',
-        targetType: 'minion' as const,
-    }, (val) => {
-        const minion = ctx.state.bases[val.baseIndex]?.minions.find(m => m.uid === val.minionUid);
-        if (!minion) return { events: [] };
-        const power = getMinionPower(ctx.state, minion, val.baseIndex);
-        const events: SmashUpEvent[] = [
-            destroyMinion(val.minionUid, val.defId, val.baseIndex, minion.owner, undefined, 'frankenstein_body_shop', ctx.now),
-        ];
-        if (power <= 0) return { events };
-        return {
-            events,
-            matchState: appendPendingBodyShopDistribution(ctx.matchState, {
-                playerId: ctx.playerId,
-                targetMinionUid: val.minionUid,
-                totalCounters: power,
-            }),
-        };
-    });
-}
-
-/** 闪电攻击 onPlay：逐个点击己方随从移除指示物，然后消灭力量≤移除数的随从 */
-function frankensteinBlitzed(ctx: AbilityContext): AbilityResult {
-    const blitzedCtx: BlitzedRemoveContext = { removedTotal: 0 };
-    const interaction = createBlitzedRemoveInteraction(ctx.matchState, ctx.playerId, blitzedCtx, ctx.now);
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-interface BlitzedRemoveContext { removedTotal: number }
-
-function buildBlitzedRemoveOptions(core: SmashUpCore, playerId: string, removedTotal: number): PromptOption<BlitzedRemoveChoiceValue>[] {
-    const candidates: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < core.bases.length; i++) {
-        for (const m of core.bases[i].minions) {
-            if (m.controller === playerId && (m.powerCounters ?? 0) > 0) {
-                const def = getCardDef(m.defId);
-                candidates.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId}（移除1个，剩余 ${m.powerCounters ?? 0}）` });
-            }
-        }
-    }
-    const minionOptions = buildMinionTargetOptions(candidates, { state: core, sourcePlayerId: playerId });
-    return [
-        ...minionOptions,
-        {
-            id: 'done',
-            label: removedTotal > 0 ? `完成移除（已移除 ${removedTotal} 个，消灭力量≤${removedTotal} 的随从）` : '跳过（不移除）',
-            displayMode: 'button' as const,
-            value: { done: true },
-        },
-    ];
-}
-
-function createBlitzedRemoveInteraction(
-    ms: MatchState<SmashUpCore>, playerId: string, context: BlitzedRemoveContext, now: number,
-) {
-    const options = buildBlitzedRemoveOptions(ms.core, playerId, context.removedTotal);
-    const interaction = createSimpleChoice<BlitzedRemoveChoiceValue>(
-        `frankenstein_blitzed_remove_${now}`, playerId,
-        `闪电攻击：点击随从移除1个指示物（已移除 ${context.removedTotal}）`,
-        options,
-        { sourceId: 'frankenstein_blitzed_remove', targetType: 'minion', autoResolveIfSingle: false },
-    );
-    return {
-        ...interaction,
-        data: {
-                ...interaction.data,
-                continuationContext: context,
-                optionsGenerator: (nextState, data) => {
-                    const cc = ((data as typeof interaction.data & { continuationContext?: BlitzedRemoveContext }).continuationContext) ?? context;
-                    return buildBlitzedRemoveOptions(nextState.core, playerId, cc.removedTotal);
-                },
-            },
-    };
-}
-
-// ============================================================================
-// 交互处理函数
-// ============================================================================
-
-type IH = (
-    state: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    value: unknown,
-    interactionData: Record<string, unknown> | undefined,
-    random: RandomFn,
-    timestamp: number
-) => { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } | undefined;
-
-const handleLabAssistantChoice: IH = (state, _pid, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number };
-    return { state, events: [addPowerCounter(v.minionUid, v.baseIndex, 1, 'frankenstein_lab_assistant', now)] };
-};
-
-const handleHerrDoktorChoice: IH = (state, _pid, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number };
-    return { state, events: [addPowerCounter(v.minionUid, v.baseIndex, 1, 'frankenstein_herr_doktor', now)] };
-};
-
-const handleAngryMobChooseMinion: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number };
-    const player = state.core.players[playerId];
-    if (!player || player.hand.length === 0) return { state, events: [] };
-    const context: AngryMobCardContext = { minionUid: v.minionUid, baseIndex: v.baseIndex };
-    const options = buildAngryMobCardOptions(state.core, playerId);
-    const interaction = createSimpleChoice<AngryMobCardChoiceValue | AngryMobStopChoiceValue>(
-        `frankenstein_angry_mob_choose_card_${now}`, playerId,
-        '愤怒的民众：选择一张手牌放到牌库底（或完成放牌）',
-        options,
-        { sourceId: 'frankenstein_angry_mob_choose_card', targetType: 'hand' as const, autoResolveIfSingle: false },
-    );
-    return {
-        state: queueInteraction(state, {
-            ...interaction,
-            data: {
-                ...interaction.data,
-                continuationContext: context,
-                optionsGenerator: nextState => buildAngryMobCardOptions(nextState.core as SmashUpCore, playerId),
-            },
-        }),
-        events: [],
-    };
-};
-
-const handleBodyShopChooseMinion: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number; defId: string };
-    const minion = state.core.bases[v.baseIndex]?.minions.find(mi => mi.uid === v.minionUid);
-    if (!minion) return undefined;
-    const power = getMinionPower(state.core, minion, v.baseIndex);
-    const events: SmashUpEvent[] = [
-        destroyMinion(v.minionUid, v.defId, v.baseIndex, minion.owner, playerId, 'frankenstein_body_shop', now),
-    ];
-    if (power <= 0) return { state, events };
-
-    return {
-        state: appendPendingBodyShopDistribution(state, {
-            playerId,
-            targetMinionUid: v.minionUid,
-            totalCounters: power,
-        }),
-        events,
-    };
-};
-
-const handleBodyShopDistribute: IH = (state, _pid, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number; remaining: number };
-    const events: SmashUpEvent[] = [addPowerCounter(v.minionUid, v.baseIndex, 1, 'frankenstein_body_shop', now)];
-    const newRemaining = v.remaining - 1;
-    if (newRemaining <= 0) return { state, events };
-    // 仍有剩余，继续分配
-    const candidates: { uid: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < state.core.bases.length; i++) {
-        for (const mi of state.core.bases[i].minions) {
-            if (mi.controller === _pid) {
-                const def = getCardDef(mi.defId);
-                candidates.push({ uid: mi.uid, baseIndex: i, label: def?.name ?? mi.defId });
-            }
-        }
-    }
-    if (candidates.length === 0) return { state, events };
-    if (candidates.length === 1) {
-        events.push(addPowerCounter(candidates[0].uid, candidates[0].baseIndex, newRemaining, 'frankenstein_body_shop', now));
-        return { state, events };
-    }
-    const options = candidates.map((c, idx) => ({
-        id: `minion-${idx}`, label: c.label,
-        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, remaining: newRemaining },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
-    const interaction = createSimpleChoice(
-        `frankenstein_body_shop_distribute_${now}`, _pid,
-        `选择随从放置+1指示物（剩余 ${newRemaining} 个）`, options,
-        { sourceId: 'frankenstein_body_shop_distribute', targetType: 'minion' },
-    );
-    return { state: queueInteraction(state, interaction), events };
-};
-
-const handleBlitzedRemove: IH = (state, playerId, value, interactionData, _random, now) => {
-    const context = interactionData?.continuationContext as BlitzedRemoveContext | undefined;
-    if (!context) return undefined;
-
-    const selected = value as { minionUid?: string; baseIndex?: number; done?: boolean };
-
-    // 点击"完成移除"
-    if (selected.done) {
-        const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-        for (let i = 0; i < state.core.bases.length; i++) {
-            for (const mi of state.core.bases[i].minions) {
-                const pwr = getMinionPower(state.core, mi, i);
-                if (pwr <= context.removedTotal) {
-                    const def = getCardDef(mi.defId);
-                    targets.push({ uid: mi.uid, defId: mi.defId, baseIndex: i, label: `${def?.name ?? mi.defId} (力量 ${pwr})` });
-                }
-            }
-        }
-        if (targets.length === 0) return { state, events: [] };
-        const options = buildMinionTargetOptions(targets, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' });
-        if (options.length === 0) return { state, events: [] };
-        const interaction = createSimpleChoice(
-            `frankenstein_blitzed_destroy_${now}`, playerId,
-            `选择要消灭的随从（力量≤${context.removedTotal}）`, options,
-            { sourceId: 'frankenstein_blitzed_destroy', targetType: 'minion' },
-        );
-        return { state: queueInteraction(state, interaction), events: [] };
-    }
-
-    // 点击随从移除 1 个指示物
-    if (!selected.minionUid || selected.baseIndex === undefined) return undefined;
-    const minion = state.core.bases[selected.baseIndex]?.minions.find(m => m.uid === selected.minionUid);
-    if (!minion || minion.controller !== playerId || (minion.powerCounters ?? 0) <= 0) return undefined;
-
-    const nextContext: BlitzedRemoveContext = { removedTotal: context.removedTotal + 1 };
-    const nextInteraction = createBlitzedRemoveInteraction(state, playerId, nextContext, now);
-    return {
-        state: queueInteraction(state, nextInteraction),
-        events: [removePowerCounter(selected.minionUid, selected.baseIndex, 1, 'frankenstein_blitzed', now)],
-    };
-};
-
-const handleIgorChooseTarget: IH = (state, _pid, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number };
-    return { state, events: [addPowerCounter(v.minionUid, v.baseIndex, 1, 'frankenstein_igor', now)] };
-};
-
-const handleBlitzedDestroy: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number; defId: string };
-    return {
-        state,
-        events: buildValidatedDestroyEvents(state, {
-            minionUid: v.minionUid,
-            minionDefId: v.defId,
-            fromBaseIndex: v.baseIndex,
-            destroyerId: playerId,
-            reason: 'frankenstein_blitzed',
-            now,
-        }),
-    };
-};
-
-// Ongoing 效果注册
-// ============================================================================
 function registerFrankensteinOngoingEffects(): void {
-    // 科学小怪蛋 (igor) ongoing：本随从被弃掉后，在你的一个随从上放+1指示物
-    // 消灭场景由 onDestroy 能力处理（registerAbility），这里只处理基地结算弃置
-    // 仅在被弃的随从是 Igor 自身时触发
     registerTrigger('frankenstein_igor', 'onMinionDiscardedFromBase', (ctx: TriggerContext) => {
-        // 只在被弃的随从是 Igor 自身时触发
         const isIgor = ctx.triggerMinionDefId === 'frankenstein_igor' || ctx.triggerMinionDefId === 'frankenstein_igor_pod';
-        if (!isIgor) return [];
-        const { state, now, matchState } = ctx;
-        const sourceDefId = ctx.triggerMinionDefId;
-        // 找到被弃 Igor 的控制者
-        const base = state.bases[ctx.baseIndex!];
-        const igor = base?.minions.find(m => m.uid === ctx.triggerMinionUid);
+        if (!isIgor || ctx.baseIndex === undefined || !ctx.triggerMinionUid) return [];
+
+        const base = ctx.state.bases[ctx.baseIndex];
+        const igor = base?.minions.find((minion) => minion.uid === ctx.triggerMinionUid);
         if (!igor) return [];
+
         const controllerId = igor.controller;
-        // 收集该控制者的所有随从（排除被弃基地上的，因为同基地随从都会被弃）
-        const candidates: { uid: string; baseIndex: number; label: string }[] = [];
-        for (let i = 0; i < state.bases.length; i++) {
-            if (i === ctx.baseIndex) continue;
-            for (const m of state.bases[i].minions) {
-                if (m.controller === controllerId) {
-                    const def = getCardDef(m.defId);
-                    candidates.push({ uid: m.uid, baseIndex: i, label: def?.name ?? m.defId });
-                }
-            }
-        }
-        if (candidates.length === 0) return [];
-        if (candidates.length === 1) {
-            return [addPowerCounter(candidates[0].uid, candidates[0].baseIndex, 1, sourceDefId, now)];
-        }
-        if (!matchState) return [addPowerCounter(candidates[0].uid, candidates[0].baseIndex, 1, sourceDefId, now)];
-        const options = candidates.map((c, idx) => ({
-            id: `minion-${idx}`, label: c.label,
-            value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
-            _source: 'field' as const,
-            displayMode: 'card' as const,
-        }));
-        const interaction = createSimpleChoice(
-            `frankenstein_igor_${controllerId}_${now}`, controllerId,
-            '选择一个你的随从放置+1力量指示物（科学小怪蛋）', options,
-            { sourceId: 'frankenstein_igor', targetType: 'minion' },
+        const options = buildCounterTargetOptions(
+            ctx.state,
+            controllerId,
+            ctx.triggerMinionUid,
+            ctx.baseIndex,
         );
-        return { events: [], matchState: queueInteraction(matchState, interaction) };
+        if (options.length === 0) return [];
+
+        const reasonDefId = ctx.triggerMinionDefId;
+        if (options.length === 1) {
+            const selected = options[0].value;
+            return [addPowerCounter(selected.minionUid, selected.baseIndex, 1, reasonDefId, ctx.now)];
+        }
+        if (!ctx.matchState) {
+            const selected = options[0].value;
+            return [addPowerCounter(selected.minionUid, selected.baseIndex, 1, reasonDefId, ctx.now)];
+        }
+
+        return runtimeResultToTriggerResult(
+            executeAbilityProgram(
+                frankensteinIgorPromptProgram,
+                createPromptContext(ctx.matchState, controllerId, ctx.now, {
+                    reasonDefId,
+                    excludeUid: ctx.triggerMinionUid,
+                    excludeBaseIndex: ctx.baseIndex,
+                }),
+            ),
+            ctx.matchState,
+        );
     });
 
-    // 德国工程学 ongoing：打出随从到此基地后放+1指示物
     registerTrigger('frankenstein_german_engineering', 'onMinionPlayed', (ctx: TriggerContext) => {
         const { state, baseIndex, triggerMinionUid, playerId, now } = ctx;
         if (baseIndex === undefined || !triggerMinionUid) return [];
         const base = state.bases[baseIndex];
         if (!base) return [];
-        // 检查此基地是否有德国工程学 ongoing 卡且由该玩家拥有
-        const hasGE = base.ongoingActions.some(a => matchesDefId(a.defId, 'frankenstein_german_engineering') && a.ownerId === playerId);
-        if (!hasGE) return [];
+        const hasGermanEngineering = base.ongoingActions.some((action) =>
+            matchesDefId(action.defId, 'frankenstein_german_engineering') && action.ownerId === playerId,
+        );
+        if (!hasGermanEngineering) return [];
         return [addPowerCounter(triggerMinionUid, baseIndex, 1, 'frankenstein_german_engineering', now)];
     });
 
-    // 死亡境地 ongoing：己方随从在此被消灭时，改为回到手牌（replacement）
     registerTrigger('frankenstein_grave_situation', 'onMinionDestroyed', (ctx: TriggerContext) => {
         const { state, baseIndex, triggerMinionUid, triggerMinionDefId, playerId, now } = ctx;
         if (baseIndex === undefined || !triggerMinionUid || !triggerMinionDefId) return [];
         const base = state.bases[baseIndex];
         if (!base) return [];
-        const hasGS = base.ongoingActions.some(a => matchesDefId(a.defId, 'frankenstein_grave_situation') && a.ownerId === playerId);
-        if (!hasGS) return [];
+        const hasGraveSituation = base.ongoingActions.some((action) =>
+            matchesDefId(action.defId, 'frankenstein_grave_situation') && action.ownerId === playerId,
+        );
+        if (!hasGraveSituation) return [];
 
-        // “你的随从” = 你控制的随从
-        const minion = base.minions.find(m => m.uid === triggerMinionUid);
+        const minion = base.minions.find((candidate) => candidate.uid === triggerMinionUid);
         if (!minion || minion.controller !== playerId) return [];
 
         return [{
@@ -711,28 +890,52 @@ function registerFrankensteinOngoingEffects(): void {
         } as SmashUpEvent];
     }, { phase: 'replacement' });
 
-    // 身体改造 (uberserum) ongoing：回合开始放指示物 + 不可消灭
     registerTrigger('frankenstein_uberserum', 'onTurnStart', (ctx: TriggerContext) => {
         const { state, playerId, now } = ctx;
         const events: SmashUpEvent[] = [];
-        for (let i = 0; i < state.bases.length; i++) {
-            for (const m of state.bases[i].minions) {
-                // “At the start of your turn” refers to the action's controller (ownerId on attachment),
-                // not the minion's controller.
-                const hasUber = m.attachedActions.some(a => matchesDefId(a.defId, 'frankenstein_uberserum') && a.ownerId === playerId);
-                if (hasUber) {
-                    events.push(addPowerCounter(m.uid, i, 1, 'frankenstein_uberserum', now));
+        for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
+            for (const minion of state.bases[baseIndex].minions) {
+                const hasUberserum = minion.attachedActions.some((action) =>
+                    matchesDefId(action.defId, 'frankenstein_uberserum') && action.ownerId === playerId,
+                );
+                if (hasUberserum) {
+                    events.push(addPowerCounter(minion.uid, baseIndex, 1, 'frankenstein_uberserum', now));
                 }
             }
         }
         return events;
     });
 
-    // 身体改造 protection：不可被消灭
-    registerProtection('frankenstein_uberserum', 'destroy', (ctx) => {
-        const { targetMinion } = ctx;
-        return targetMinion.attachedActions.some(a => matchesDefId(a.defId, 'frankenstein_uberserum'));
-    });
+    registerProtection('frankenstein_uberserum', 'destroy', (ctx) =>
+        ctx.targetMinion.attachedActions.some((action) => matchesDefId(action.defId, 'frankenstein_uberserum')),
+    );
+}
 
-    // 它活过来了! 的 +1 指示物现在通过 queueMinionPlayEffect 在 fireMinionPlayedTriggers 中自动消费
+export function registerFrankensteinAbilities(): void {
+    registerAbilityProgram('frankenstein_lab_assistant', 'onPlay', { program: frankensteinLabAssistantProgram });
+    registerSimpleAbility('frankenstein_the_monster', 'talent', {
+        execute: frankensteinTheMonster,
+        validateUse: (ctx) => {
+            const minion = ctx.state.bases[ctx.baseIndex]?.minions.find((candidate) => candidate.uid === ctx.cardUid);
+            return (minion?.powerCounters ?? 0) >= 1 ? null : '该随从当前无法发动天赋：没有+1力量指示物';
+        },
+    });
+    registerAbilityProgram('frankenstein_herr_doktor', 'talent', {
+        program: frankensteinHerrDoktorProgram,
+        validateUse: (ctx) => {
+            const hasOtherOwnMinion = ctx.state.bases.some((base) =>
+                base.minions.some((minion) => minion.controller === ctx.playerId && minion.uid !== ctx.cardUid),
+            );
+            return hasOtherOwnMinion ? null : '当前没有可选择的目标';
+        },
+    });
+    registerAbilityProgram('frankenstein_igor', 'onDestroy', { program: frankensteinIgorOnDestroyProgram });
+
+    registerSimpleAbility('frankenstein_jolt', 'onPlay', frankensteinJolt);
+    registerSimpleAbility('frankenstein_its_alive', 'onPlay', frankensteinItsAlive);
+    registerAbilityProgram('frankenstein_angry_mob', 'onPlay', { program: frankensteinAngryMobProgram });
+    registerAbilityProgram('frankenstein_body_shop', 'onPlay', { program: frankensteinBodyShopProgram });
+    registerAbilityProgram('frankenstein_blitzed', 'onPlay', { program: frankensteinBlitzedProgram });
+
+    registerFrankensteinOngoingEffects();
 }

@@ -27,7 +27,8 @@ function createCardDisplayName(
     tier: 1 | 2 | 3,
     bonus: SplendorCardDef['bonus'],
 ): string {
-    const sequence = id.split('-').at(-1) ?? '1';
+    const segments = id.split('-');
+    const sequence = segments.length > 0 ? segments[segments.length - 1] : '1';
     return `${BONUS_LABEL_ZH[bonus]}发展卡 ${TIER_LABEL_ZH[tier]}-${sequence}`;
 }
 

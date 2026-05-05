@@ -1,10 +1,19 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import {
     createSimpleChoice,
-    queueInteraction,
     type PromptOption,
     type SimpleChoiceTargetType,
 } from '../../../engine/systems/InteractionSystem';
+import {
+    completeResolutionFrame,
+    getActiveResolutionFrame,
+    getResolutionFrameById,
+    getResolutionFrames,
+    pushResolutionFrame,
+    updateResolutionFrame,
+    upsertResolutionFrame,
+} from '../../../engine/systems/resolutionStack';
+import { createPromptProgram, executeAbilityProgram } from './abilityRuntime';
 import type { SmashUpCore, SmashUpEvent } from './types';
 import { reduce } from './reduce';
 
@@ -33,21 +42,14 @@ export interface QueueBranchingChoiceArgs {
     sourceId: string;
     title: string;
     options: BranchingChoiceOption[];
+    executeBranch: BranchExecutor;
     targetType?: SimpleChoiceTargetType;
-    continuationContext?: Record<string, unknown>;
-    upgrade?: BranchingChoiceUpgrade;
-}
-
-interface BranchingChoiceMeta {
-    sourceId: string;
-    title: string;
-    targetType: SimpleChoiceTargetType;
     planContext?: Record<string, unknown>;
     upgrade?: BranchingChoiceUpgrade;
-    followUpChoice?: boolean;
 }
 
 interface PendingBranchPlan {
+    playerId: PlayerId;
     sourceId: string;
     title: string;
     targetType: SimpleChoiceTargetType;
@@ -56,8 +58,28 @@ interface PendingBranchPlan {
     upgrade?: BranchingChoiceUpgrade;
 }
 
-const BRANCHING_CHOICE_META_KEY = '_branchingChoiceMeta';
-const BRANCHING_CHOICE_PLAN_KEY = '_branchingChoicePlan';
+interface BranchingChoiceFrameMeta {
+    pendingPlan?: PendingBranchPlan;
+}
+
+interface BranchingChoicePromptContext {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    sourceId: string;
+    title: string;
+    options: BranchingChoiceOption[];
+    targetType: SimpleChoiceTargetType;
+    executeBranch: BranchExecutor;
+    planContext?: Record<string, unknown>;
+    upgrade?: BranchingChoiceUpgrade;
+    followUpChoice?: boolean;
+}
+
+const BRANCHING_CHOICE_FRAME_META_KEY = '_branchingChoiceFrameMeta';
+const BRANCHING_CHOICE_FRAME_KIND = 'smashup:branching-choice';
+const BRANCHING_CHOICE_RUNTIME_SOURCE = 'smashup_branching_choice';
+const branchExecutorRegistry = new Map<string, BranchExecutor>();
 
 export interface BranchExecutionResult {
     state: MatchState<SmashUpCore>;
@@ -73,56 +95,47 @@ export type BranchExecutor = (args: {
     timestamp: number;
 }) => BranchExecutionResult | undefined;
 
+function registerBranchExecutor(sourceId: string, executeBranch: BranchExecutor): void {
+    const existing = branchExecutorRegistry.get(sourceId);
+    if (existing && existing !== executeBranch) {
+        throw new Error(`SmashUp branching choice executor 重复注册且实现不一致: ${sourceId}`);
+    }
+    branchExecutorRegistry.set(sourceId, executeBranch);
+}
+
+function requireBranchExecutor(sourceId: string): BranchExecutor {
+    const executeBranch = branchExecutorRegistry.get(sourceId);
+    if (!executeBranch) {
+        throw new Error(`SmashUp branching choice executor 缺失: ${sourceId}`);
+    }
+    return executeBranch;
+}
+
 function asRecord(value: unknown): Record<string, unknown> | undefined {
     if (!value || typeof value !== 'object' || Array.isArray(value)) return undefined;
     return value as Record<string, unknown>;
-}
-
-function getContinuationContext(data: Record<string, unknown> | undefined): Record<string, unknown> | undefined {
-    return asRecord(data?.continuationContext);
-}
-
-function getBranchingChoiceMeta(data: Record<string, unknown> | undefined): BranchingChoiceMeta | undefined {
-    const continuationContext = getContinuationContext(data);
-    const meta = continuationContext ? asRecord(continuationContext[BRANCHING_CHOICE_META_KEY]) : undefined;
-    if (!meta) return undefined;
-
-    const targetType = meta.targetType;
-    if (
-        targetType !== 'button'
-        && targetType !== 'generic'
-        && targetType !== 'card'
-        && targetType !== 'base'
-        && targetType !== 'minion'
-    ) {
-        return undefined;
-    }
-
-    return {
-        sourceId: typeof meta.sourceId === 'string' ? meta.sourceId : '',
-        title: typeof meta.title === 'string' ? meta.title : '',
-        targetType,
-        planContext: asRecord(meta.planContext),
-        upgrade: asRecord(meta.upgrade) as BranchingChoiceUpgrade | undefined,
-        followUpChoice: meta.followUpChoice === true,
-    };
 }
 
 function normalizeBranchingOptions(value: unknown): BranchingChoiceOption[] {
     if (!Array.isArray(value)) return [];
     return value.map((entry) => {
         const option = asRecord(entry);
-        if (!option || typeof option.id !== 'string' || typeof option.label !== 'string' || typeof option.value !== 'object' || !option.value) {
+        if (!option || typeof option.id !== 'string' || typeof option.label !== 'string') {
             return undefined;
         }
         const optionValue = asRecord(option.value);
-        if (!optionValue || typeof optionValue.branchId !== 'string') return undefined;
+        const branchId = typeof optionValue?.branchId === 'string'
+            ? optionValue.branchId
+            : typeof option.branchId === 'string'
+                ? option.branchId
+                : undefined;
+        if (!branchId) return undefined;
 
         return {
             id: option.id,
-            branchId: optionValue.branchId,
+            branchId,
             label: option.label,
-            value: optionValue,
+            ...(optionValue ? { value: optionValue } : {}),
             ...(option.displayMode === 'card' || option.displayMode === 'button' ? { displayMode: option.displayMode } : {}),
             ...(typeof option.disabled === 'boolean' ? { disabled: option.disabled } : {}),
             ...(typeof option.disabledReason === 'string' ? { disabledReason: option.disabledReason } : {}),
@@ -131,91 +144,105 @@ function normalizeBranchingOptions(value: unknown): BranchingChoiceOption[] {
     }).filter((entry): entry is BranchingChoiceOption => !!entry);
 }
 
-function getPromptOptions(data: Record<string, unknown> | undefined): BranchingChoiceOption[] {
-    return normalizeBranchingOptions(data?.options);
-}
-
-function getPendingBranchPlan(data: Record<string, unknown> | undefined): PendingBranchPlan | undefined {
-    const continuationContext = getContinuationContext(data);
-    const raw = continuationContext ? asRecord(continuationContext[BRANCHING_CHOICE_PLAN_KEY]) : undefined;
-    if (!raw) return undefined;
-
-    const targetType = raw.targetType;
-    if (
-        targetType !== 'button'
-        && targetType !== 'generic'
-        && targetType !== 'card'
-        && targetType !== 'base'
-        && targetType !== 'minion'
-    ) {
-        return undefined;
-    }
-
-    return {
-        sourceId: typeof raw.sourceId === 'string' ? raw.sourceId : '',
-        title: typeof raw.title === 'string' ? raw.title : '',
-        targetType,
-        planContext: asRecord(raw.planContext),
-        remainingOptions: normalizeBranchingOptions(raw.remainingOptions),
-        upgrade: asRecord(raw.upgrade) as BranchingChoiceUpgrade | undefined,
-    };
-}
-
 function hasPendingInteraction(state: MatchState<SmashUpCore>): boolean {
     return !!state.sys.interaction?.current || (state.sys.interaction?.queue?.length ?? 0) > 0;
 }
 
-function attachPendingBranchPlan(
+function getBranchingChoiceFrameMeta(
     state: MatchState<SmashUpCore>,
-    plan: PendingBranchPlan,
-): MatchState<SmashUpCore> {
-    const interactionState = state.sys.interaction;
-    if (!interactionState) return state;
+    frameId?: string,
+): BranchingChoiceFrameMeta | undefined {
+    const frame = getResolutionFrameById(state, frameId);
+    const meta = frame?.metadata ? asRecord(frame.metadata[BRANCHING_CHOICE_FRAME_META_KEY]) : undefined;
+    if (!meta) return undefined;
 
-    const patchInteraction = (interaction: typeof interactionState.current) => {
-        if (!interaction || !interaction.data || typeof interaction.data !== 'object') return interaction;
-        const data = interaction.data as Record<string, unknown>;
-        const continuationContext = asRecord(data.continuationContext) ?? {};
-        return {
-            ...interaction,
-            data: {
-                ...data,
-                continuationContext: {
-                    ...continuationContext,
-                    [BRANCHING_CHOICE_PLAN_KEY]: plan,
-                },
-            },
-        };
+    const pendingPlanRaw = asRecord(meta.pendingPlan);
+    return {
+        pendingPlan: pendingPlanRaw
+            ? {
+                playerId: typeof pendingPlanRaw.playerId === 'string' ? pendingPlanRaw.playerId : '0',
+                sourceId: typeof pendingPlanRaw.sourceId === 'string' ? pendingPlanRaw.sourceId : '',
+                title: typeof pendingPlanRaw.title === 'string' ? pendingPlanRaw.title : '',
+                targetType:
+                    pendingPlanRaw.targetType === 'button'
+                    || pendingPlanRaw.targetType === 'generic'
+                    || pendingPlanRaw.targetType === 'card'
+                    || pendingPlanRaw.targetType === 'base'
+                    || pendingPlanRaw.targetType === 'minion'
+                        ? pendingPlanRaw.targetType
+                        : 'button',
+                planContext: asRecord(pendingPlanRaw.planContext),
+                remainingOptions: normalizeBranchingOptions(pendingPlanRaw.remainingOptions),
+                upgrade: asRecord(pendingPlanRaw.upgrade) as BranchingChoiceUpgrade | undefined,
+            }
+            : undefined,
     };
+}
 
-    if (interactionState.current) {
+function setBranchingChoiceFrameMeta(
+    state: MatchState<SmashUpCore>,
+    frameId: string,
+    meta: BranchingChoiceFrameMeta | undefined,
+): MatchState<SmashUpCore> {
+    return updateResolutionFrame(state, frameId, (frame) => ({
+        ...frame,
+        metadata: {
+            ...(frame.metadata ?? {}),
+            [BRANCHING_CHOICE_FRAME_META_KEY]: meta,
+        },
+    }));
+}
+
+function getBranchingChoiceFrameId(state: MatchState<SmashUpCore>): string | undefined {
+    const interactionFrameId = state.sys.interaction?.current?.resolutionFrameId;
+    if (interactionFrameId && getBranchingChoiceFrameMeta(state, interactionFrameId)) {
+        return interactionFrameId;
+    }
+
+    const activeFrameId = getActiveResolutionFrame(state)?.id;
+    if (activeFrameId && getBranchingChoiceFrameMeta(state, activeFrameId)) {
+        return activeFrameId;
+    }
+
+    return undefined;
+}
+
+function ensureBranchingChoiceFrame(
+    state: MatchState<SmashUpCore>,
+    pendingPlan: PendingBranchPlan,
+    timestamp: number,
+): { state: MatchState<SmashUpCore>; frameId: string } {
+    const existingFrameId = getBranchingChoiceFrameId(state);
+    if (existingFrameId) {
         return {
-            ...state,
-            sys: {
-                ...state.sys,
-                interaction: {
-                    ...interactionState,
-                    current: patchInteraction(interactionState.current),
-                },
-            },
+            state: setBranchingChoiceFrameMeta(state, existingFrameId, { pendingPlan }),
+            frameId: existingFrameId,
         };
     }
 
-    if ((interactionState.queue?.length ?? 0) > 0) {
-        const [first, ...rest] = interactionState.queue;
-        return {
-            ...state,
-            sys: {
-                ...state.sys,
-                interaction: {
-                    ...interactionState,
-                    queue: [patchInteraction(first), ...rest],
-                },
-            },
-        };
-    }
+    const activeFrame = getActiveResolutionFrame(state);
+    const frameId = `${BRANCHING_CHOICE_FRAME_KIND}:${pendingPlan.sourceId}:${timestamp}`;
+    const nextState = pushResolutionFrame(state, {
+        id: frameId,
+        kind: `${BRANCHING_CHOICE_FRAME_KIND}:${pendingPlan.sourceId}`,
+        ownerGame: 'smashup',
+        ownerSystem: 'smashup-branching-choice',
+        ownerToken: frameId,
+        ordering: 'nested-body',
+        status: 'running',
+        step: 'awaiting-branch-completion',
+        phase: state.sys.phase,
+        phaseGate: 'block-advance-when-blocked',
+        metadata: {
+            [BRANCHING_CHOICE_FRAME_META_KEY]: {
+                pendingPlan,
+            } satisfies BranchingChoiceFrameMeta,
+        },
+    }, {
+        parentFrameId: activeFrame?.id,
+    });
 
-    return state;
+    return { state: nextState, frameId };
 }
 
 function applyEventsToState(
@@ -254,49 +281,6 @@ function buildPromptOptions(options: BranchingChoiceOption[]): PromptOption[] {
     }));
 }
 
-function queueBranchPrompt(args: {
-    matchState: MatchState<SmashUpCore>;
-    playerId: PlayerId;
-    now: number;
-    sourceId: string;
-    title: string;
-    options: BranchingChoiceOption[];
-    targetType: SimpleChoiceTargetType;
-    continuationContext?: Record<string, unknown>;
-    upgrade?: BranchingChoiceUpgrade;
-    followUpChoice?: boolean;
-}): MatchState<SmashUpCore> {
-    const interaction = createSimpleChoice(
-        `${args.sourceId}_${args.now}`,
-        args.playerId,
-        args.title,
-        buildPromptOptions(args.options),
-        {
-            sourceId: args.sourceId,
-            targetType: args.targetType,
-            autoResolveIfSingle: false,
-        },
-    );
-
-    return queueInteraction(args.matchState, {
-        ...interaction,
-        data: {
-            ...interaction.data,
-            continuationContext: {
-                ...(args.continuationContext ?? {}),
-                [BRANCHING_CHOICE_META_KEY]: {
-                    sourceId: args.sourceId,
-                    title: args.title,
-                    targetType: args.targetType,
-                    planContext: args.continuationContext ?? {},
-                    ...(args.upgrade ? { upgrade: args.upgrade } : {}),
-                    ...(args.followUpChoice ? { followUpChoice: true } : {}),
-                } satisfies BranchingChoiceMeta,
-            },
-        },
-    });
-}
-
 function isSkipSelection(selection: Record<string, unknown> | undefined): boolean {
     return selection?.skip === true || selection?.branchId === 'skip';
 }
@@ -309,6 +293,180 @@ function createSkipBranchOption(): BranchingChoiceOption {
         value: { skip: true },
         displayMode: 'button',
     };
+}
+
+function executeSelectedBranch(args: {
+    state: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    selection: Record<string, unknown>;
+    planContext: Record<string, unknown> | undefined;
+    pendingPlan?: PendingBranchPlan;
+    prefixEvents?: SmashUpEvent[];
+    random: RandomFn;
+    timestamp: number;
+    executeBranch: BranchExecutor;
+    preserveFrameUntilSettled?: boolean;
+    branchingFrameId?: string;
+}): BranchExecutionResult {
+    const allEvents: SmashUpEvent[] = [...(args.prefixEvents ?? [])];
+    const executionState = applyEventsToState(args.state, args.prefixEvents ?? []);
+    const result = args.executeBranch({
+        state: executionState,
+        playerId: args.playerId,
+        selection: args.selection,
+        planContext: args.planContext,
+        random: args.random,
+        timestamp: args.timestamp,
+    }) ?? { state: executionState, events: [] };
+
+    allEvents.push(...result.events);
+
+    if (args.pendingPlan) {
+        if (hasPendingInteraction(result.state)) {
+            return {
+                state: stripAppliedCore(args.state, result.state),
+                events: allEvents,
+            };
+        }
+
+        let advancedState = applyEventsToState(result.state, result.events);
+        if (args.branchingFrameId) {
+            advancedState = setBranchingChoiceFrameMeta(advancedState, args.branchingFrameId, undefined);
+        }
+        return {
+            state: stripAppliedCore(
+                args.state,
+                queueFollowUpBranchChoice(advancedState, args.playerId, args.timestamp, args.pendingPlan),
+            ),
+            events: allEvents,
+        };
+    }
+
+    if (args.preserveFrameUntilSettled && args.branchingFrameId && !hasPendingInteraction(result.state)) {
+        return {
+            state: stripAppliedCore(args.state, result.state),
+            events: allEvents,
+        };
+    }
+
+    return {
+        state: stripAppliedCore(args.state, result.state),
+        events: allEvents,
+    };
+}
+
+function resolveBranchingChoiceSelection(args: {
+    context: BranchingChoicePromptContext;
+    state: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    value: unknown;
+    random: RandomFn;
+    timestamp: number;
+}): BranchExecutionResult {
+    const selection = asRecord(args.value);
+    if (!selection || isSkipSelection(selection)) {
+        return { state: args.state, events: [] };
+    }
+
+    const promptOptions = args.context.options.filter((option) => !isSkipSelection(option.value));
+    const remainingOptions = args.context.upgrade?.mode === 'optional-both'
+        ? promptOptions.filter((option) => option.branchId !== selection.branchId)
+        : [];
+    const pendingPlan = remainingOptions.length > 0
+        ? {
+            playerId: args.playerId,
+            sourceId: args.context.sourceId,
+            title: args.context.title,
+            targetType: args.context.targetType,
+            planContext: args.context.planContext,
+            remainingOptions,
+            upgrade: args.context.upgrade,
+        } satisfies PendingBranchPlan
+        : undefined;
+
+    const prefixEvents = args.context.followUpChoice ? (args.context.upgrade?.consumeEvents ?? []) : [];
+    let state = args.state;
+    let branchingFrameId: string | undefined;
+    if (pendingPlan && !args.context.followUpChoice) {
+        const frame = ensureBranchingChoiceFrame(state, pendingPlan, args.timestamp);
+        state = frame.state;
+        branchingFrameId = frame.frameId;
+    } else if (args.context.followUpChoice) {
+        branchingFrameId = getBranchingChoiceFrameId(state);
+    }
+
+    return executeSelectedBranch({
+        state,
+        playerId: args.playerId,
+        selection,
+        planContext: args.context.planContext,
+        pendingPlan,
+        prefixEvents,
+        random: args.random,
+        timestamp: args.timestamp,
+        executeBranch: requireBranchExecutor(args.context.sourceId),
+        preserveFrameUntilSettled: args.context.followUpChoice,
+        branchingFrameId,
+    });
+}
+
+const branchingChoicePromptProgram = createPromptProgram<BranchingChoicePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: BRANCHING_CHOICE_RUNTIME_SOURCE,
+    buildInteraction: (context) => createSimpleChoice(
+        `${context.sourceId}_${context.now}`,
+        context.playerId,
+        context.title,
+        buildPromptOptions(context.options),
+        {
+            sourceId: context.sourceId,
+            targetType: context.targetType,
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, playerId, value, random, timestamp }) => {
+        const result = resolveBranchingChoiceSelection({
+            context,
+            state,
+            playerId,
+            value,
+            random,
+            timestamp,
+        });
+        return {
+            events: result.events,
+            matchState: result.state,
+        };
+    },
+});
+
+function queueBranchPrompt(args: {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    sourceId: string;
+    title: string;
+    options: BranchingChoiceOption[];
+    executeBranch: BranchExecutor;
+    targetType: SimpleChoiceTargetType;
+    planContext?: Record<string, unknown>;
+    upgrade?: BranchingChoiceUpgrade;
+    followUpChoice?: boolean;
+}): MatchState<SmashUpCore> {
+    registerBranchExecutor(args.sourceId, args.executeBranch);
+    const result = executeAbilityProgram(branchingChoicePromptProgram, {
+        matchState: args.matchState,
+        playerId: args.playerId,
+        now: args.now,
+        sourceId: args.sourceId,
+        title: args.title,
+        options: args.options,
+        executeBranch: args.executeBranch,
+        targetType: args.targetType,
+        planContext: args.planContext,
+        upgrade: args.upgrade,
+        followUpChoice: args.followUpChoice,
+    } satisfies BranchingChoicePromptContext);
+    return result.matchState ?? args.matchState;
 }
 
 function queueFollowUpBranchChoice(
@@ -327,59 +485,28 @@ function queueFollowUpBranchChoice(
         sourceId: plan.sourceId,
         title: plan.title,
         options: [...remainingOptions, createSkipBranchOption()],
+        executeBranch: requireBranchExecutor(plan.sourceId),
         targetType: plan.targetType,
-        continuationContext: plan.planContext,
+        planContext: plan.planContext,
         upgrade: plan.upgrade,
         followUpChoice: true,
     });
 }
 
-function executeSelectedBranch(args: {
-    state: MatchState<SmashUpCore>;
-    playerId: PlayerId;
-    selection: Record<string, unknown>;
-    planContext: Record<string, unknown> | undefined;
-    pendingPlan?: PendingBranchPlan;
-    prefixEvents?: SmashUpEvent[];
-    random: RandomFn;
-    timestamp: number;
-    executeBranch: BranchExecutor;
-}): BranchExecutionResult {
-    const allEvents: SmashUpEvent[] = [...(args.prefixEvents ?? [])];
-    const executionState = applyEventsToState(args.state, args.prefixEvents ?? []);
-    const result = args.executeBranch({
-        state: executionState,
-        playerId: args.playerId,
-        selection: args.selection,
-        planContext: args.planContext,
-        random: args.random,
-        timestamp: args.timestamp,
-    }) ?? { state: executionState, events: [] };
+function frameOwnsInteraction(state: MatchState<SmashUpCore>, frameId: string): boolean {
+    const current = state.sys.interaction?.current;
+    if (current?.resolutionFrameId === frameId) return true;
+    return (state.sys.interaction?.queue ?? []).some((interaction) => interaction.resolutionFrameId === frameId);
+}
 
-    allEvents.push(...result.events);
+function frameOwnsResponseWindow(state: MatchState<SmashUpCore>, frameId: string): boolean {
+    return state.sys.responseWindow?.current?.resolutionFrameId === frameId;
+}
 
-    if (args.pendingPlan) {
-        if (hasPendingInteraction(result.state)) {
-            return {
-                state: attachPendingBranchPlan(stripAppliedCore(args.state, result.state), args.pendingPlan),
-                events: allEvents,
-            };
-        }
-
-        const advancedState = applyEventsToState(result.state, result.events);
-        return {
-            state: stripAppliedCore(
-                args.state,
-                queueFollowUpBranchChoice(advancedState, args.playerId, args.timestamp, args.pendingPlan),
-            ),
-            events: allEvents,
-        };
-    }
-
-    return {
-        state: stripAppliedCore(args.state, result.state),
-        events: allEvents,
-    };
+function frameHasLiveChild(state: MatchState<SmashUpCore>, frameId: string): boolean {
+    return getResolutionFrames(state).some((frame) =>
+        frame.parentFrameId === frameId && frame.status !== 'completed',
+    );
 }
 
 export function queueBranchingChoice(args: QueueBranchingChoiceArgs): MatchState<SmashUpCore> {
@@ -390,87 +517,52 @@ export function queueBranchingChoice(args: QueueBranchingChoiceArgs): MatchState
         sourceId: args.sourceId,
         title: args.title,
         options: args.options,
+        executeBranch: args.executeBranch,
         targetType: args.targetType ?? 'button',
-        continuationContext: args.continuationContext,
+        planContext: args.planContext,
         upgrade: args.upgrade,
     });
 }
 
-export function resolveBranchingChoiceSelection(args: {
-    state: MatchState<SmashUpCore>;
-    playerId: PlayerId;
-    value: unknown;
-    interactionData: Record<string, unknown> | undefined;
-    random: RandomFn;
-    timestamp: number;
-    executeBranch: BranchExecutor;
-}): BranchExecutionResult | undefined {
-    const meta = getBranchingChoiceMeta(args.interactionData);
-    const selection = asRecord(args.value);
-    if (!meta || !selection) return undefined;
+export function resumePendingBranchingChoiceFrames(
+    state: MatchState<SmashUpCore>,
+    timestamp: number,
+): MatchState<SmashUpCore> {
+    const candidateFrames = getResolutionFrames(state)
+        .filter((frame) => frame.kind.startsWith(BRANCHING_CHOICE_FRAME_KIND))
+        .slice()
+        .reverse();
 
-    if (isSkipSelection(selection)) {
-        return { state: args.state, events: [] };
+    let nextState = state;
+
+    for (const frame of candidateFrames) {
+        const liveFrame = getResolutionFrameById(nextState, frame.id);
+        if (!liveFrame) continue;
+        if (liveFrame.status !== 'running' || liveFrame.blockedBy) continue;
+        if (frameHasLiveChild(nextState, liveFrame.id)) continue;
+        if (frameOwnsInteraction(nextState, liveFrame.id)) continue;
+        if (frameOwnsResponseWindow(nextState, liveFrame.id)) continue;
+
+        const meta = getBranchingChoiceFrameMeta(nextState, liveFrame.id);
+        if (meta?.pendingPlan) {
+            nextState = upsertResolutionFrame(nextState, liveFrame, { setActive: true });
+            const queuedState = queueFollowUpBranchChoice(
+                nextState,
+                meta.pendingPlan.playerId,
+                timestamp,
+                meta.pendingPlan,
+            );
+            if (queuedState === nextState) {
+                nextState = completeResolutionFrame(nextState, liveFrame.id);
+                continue;
+            }
+            nextState = setBranchingChoiceFrameMeta(queuedState, liveFrame.id, undefined);
+            return nextState;
+        }
+
+        nextState = completeResolutionFrame(nextState, liveFrame.id);
+        return nextState;
     }
 
-    const promptOptions = getPromptOptions(args.interactionData).filter((option) => !isSkipSelection(option.value));
-    const remainingOptions = meta.upgrade?.mode === 'optional-both'
-        ? promptOptions.filter((option) => option.branchId !== selection.branchId)
-        : [];
-    const pendingPlan = remainingOptions.length > 0
-        ? {
-            sourceId: meta.sourceId,
-            title: meta.title,
-            targetType: meta.targetType,
-            planContext: meta.planContext,
-            remainingOptions,
-            upgrade: meta.upgrade,
-        } satisfies PendingBranchPlan
-        : undefined;
-
-    const prefixEvents = meta.followUpChoice ? (meta.upgrade?.consumeEvents ?? []) : [];
-    return executeSelectedBranch({
-        state: args.state,
-        playerId: args.playerId,
-        selection,
-        planContext: meta.planContext,
-        pendingPlan,
-        prefixEvents,
-        random: args.random,
-        timestamp: args.timestamp,
-        executeBranch: args.executeBranch,
-    });
-}
-
-export function resumeBranchingChoicePlan(args: {
-    state: MatchState<SmashUpCore>;
-    playerId: PlayerId;
-    interactionData: Record<string, unknown> | undefined;
-    random: RandomFn;
-    timestamp: number;
-    executeBranch: BranchExecutor;
-    prefixEvents?: SmashUpEvent[];
-}): BranchExecutionResult | undefined {
-    const plan = getPendingBranchPlan(args.interactionData);
-    if (!plan) return undefined;
-
-    const events = [...(args.prefixEvents ?? [])];
-    const advancedState = applyEventsToState(args.state, events);
-    return {
-        state: stripAppliedCore(
-            args.state,
-            queueFollowUpBranchChoice(advancedState, args.playerId, args.timestamp, plan),
-        ),
-        events,
-    };
-}
-
-export function hasBranchingChoiceSelection(value: unknown): boolean {
-    const selection = asRecord(value);
-    return typeof selection?.branchId === 'string';
-}
-
-export function getSelectedBranchIds(value: unknown): string[] {
-    const selection = asRecord(value);
-    return typeof selection?.branchId === 'string' ? [selection.branchId] : [];
+    return nextState;
 }

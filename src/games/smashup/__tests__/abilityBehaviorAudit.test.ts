@@ -85,6 +85,18 @@ function buildEntities(): AuditableEntity[] {
     }));
 }
 
+function collectAbilityFileUsage(pattern: RegExp): string[] {
+    const abilitiesDir = resolve(__dirname, '../abilities');
+    return readdirSync(abilitiesDir)
+        .filter((fileName) => fileName.endsWith('.ts'))
+        .filter((fileName) => {
+            const source = readFileSync(resolve(abilitiesDir, fileName), 'utf-8');
+            const matcher = new RegExp(pattern.source, pattern.flags);
+            return matcher.test(source);
+        })
+        .sort();
+}
+
 /** 收集所有已注册的 ongoing 效果 ID（合并所有注册表） */
 function collectAllRegisteredIds(): Set<string> {
     const { protectionIds, restrictionIds, triggerIds, interceptorIds, baseAbilitySuppressionIds } = getRegisteredOngoingEffectIds();
@@ -127,6 +139,50 @@ beforeAll(() => {
 // ============================================================================
 
 describe('SmashUp 能力行为审计', () => {
+    describe('能力 runtime 迁移边界', () => {
+        it('遗留 registerAbility 仅允许存在于明确未迁完的旧能力文件', () => {
+            const allowedLegacyFiles = [
+                'bear_cavalry.ts',
+                'cowboys.ts',
+                'elder_things.ts',
+                'giant_ants.ts',
+                'mermaids.ts',
+                'miskatonic.ts',
+                'ninjas.ts',
+                'pirates.ts',
+                'podAutoMapping.ts',
+                'skeletons.ts',
+                'titans.ts',
+                'tricksters.ts',
+                'vampires.ts',
+                'vikings.ts',
+                'world_champs.ts',
+            ];
+            expect(collectAbilityFileUsage(/\bregisterAbility\(/g)).toEqual(allowedLegacyFiles);
+        });
+
+        it('遗留 registerInteractionHandler 仅允许存在于明确未迁完的旧能力文件', () => {
+            const allowedLegacyHandlerFiles = [
+                'bear_cavalry.ts',
+                'cowboys.ts',
+                'elder_things.ts',
+                'giant_ants.ts',
+                'mermaids.ts',
+                'miskatonic.ts',
+                'ninjas.ts',
+                'pirates.ts',
+                'samurai.ts',
+                'skeletons.ts',
+                'titans.ts',
+                'tricksters.ts',
+                'vampires.ts',
+                'vikings.ts',
+                'world_champs.ts',
+            ];
+            expect(collectAbilityFileUsage(/\bregisterInteractionHandler\(/g)).toEqual(allowedLegacyHandlerFiles);
+        });
+    });
+
     describe('POD 阵营接入完整性', () => {
         it('所有 POD 阵营数据文件都已接入 cards / ids / factionMeta / locale', () => {
             const podFactionIds = collectPodFactionIdsFromDataFiles();

@@ -1885,10 +1885,16 @@ describe('special_madness onPlay', () => {
                 '1': makePlayer('1'),
             },
         });
+        const executor = resolveAbility('special_madness', 'onPlay');
         const handler = getInteractionHandler('special_madness');
         expect(handler).toBeDefined();
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
-        const result = handler!(ms, '0', { action: 'draw' }, { continuationContext: { cardUid: 'mad-1' } }, dummyRandom, 0);
+        const promptResult = executor!({
+            state, matchState: ms, playerId: '0', cardUid: 'mad-1', defId: 'special_madness',
+            baseIndex: 0, random: dummyRandom, now: 0,
+        } as AbilityContext);
+        const prompt = (promptResult.matchState?.sys as any)?.interaction?.current;
+        const result = handler!(promptResult.matchState as any, '0', { action: 'draw' }, prompt?.data, dummyRandom, 0);
         expect(result.events.length).toBe(1);
         expect(result.events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
         const drawEvt = result.events[0] as CardsDrawnEvent;
@@ -1898,10 +1904,16 @@ describe('special_madness onPlay', () => {
 
     it('选择返回时产生 MADNESS_RETURNED 事件', () => {
         const state = makeState();
+        const executor = resolveAbility('special_madness', 'onPlay');
         const handler = getInteractionHandler('special_madness');
         expect(handler).toBeDefined();
         const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
-        const result = handler!(ms, '0', { action: 'return' }, { continuationContext: { cardUid: 'mad-1' } }, dummyRandom, 0);
+        const promptResult = executor!({
+            state, matchState: ms, playerId: '0', cardUid: 'mad-1', defId: 'special_madness',
+            baseIndex: 0, random: dummyRandom, now: 0,
+        } as AbilityContext);
+        const prompt = (promptResult.matchState?.sys as any)?.interaction?.current;
+        const result = handler!(promptResult.matchState as any, '0', { action: 'return' }, prompt?.data, dummyRandom, 0);
         expect(result.events.length).toBe(1);
         expect(result.events[0].type).toBe(SU_EVENTS.MADNESS_RETURNED);
         const retEvt = result.events[0] as MadnessReturnedEvent;

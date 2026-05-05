@@ -1,9 +1,12 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
-import type { InteractionHandler } from '../domain/abilityInteractionHandlers';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 import {
     addPermanentPower,
     buildActionMinionTargetOptions,
@@ -25,11 +28,7 @@ import {
 import { registerProtection, registerRestriction } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, RestrictionCheckContext } from '../domain/ongoingEffects';
 import {
-    hasBranchingChoiceSelection,
     queueBranchingChoice,
-    resolveBranchingChoiceSelection,
-    resumeBranchingChoicePlan,
-    type BranchExecutionResult,
     type BranchExecutor,
     type BranchingChoiceOption,
     type BranchingChoiceUpgrade,
@@ -79,6 +78,45 @@ type FairiesEnchantmentContinuation = {
     baseIndex: number;
     selectedBranchIds?: Array<'plus' | 'minus'>;
     allowBoth?: boolean;
+};
+
+type FairiesPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type FairiesMinionTarget = {
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    label: string;
+};
+
+type FairiesTransferPromptContext = FairiesPromptContext & {
+    attachedCardUid: string;
+    targets: FairiesMinionTarget[];
+};
+
+type FairiesTitaniaReturnPromptContext = FairiesPromptContext;
+
+type FairiesGlymmerPromptContext = FairiesPromptContext & {
+    sourceCardUid: string;
+    sourceBaseIndex: number;
+};
+
+type FairiesTinxPromptContext = FairiesPromptContext & {
+    targetBaseIndex: number;
+    targetMinionUid: string;
+    options: Array<{ cardUid: string; label: string }>;
+};
+
+type FairiesPlayfulTricksDestroyPromptContext = FairiesPromptContext & {
+    options: Array<{ cardUid: string; defId: string; ownerId: PlayerId; label: string }>;
+};
+
+type FairiesPlayfulTricksSpiritBasePromptContext = FairiesPromptContext & {
+    titanUid: string;
 };
 
 function appendTimedPowerModifier(
@@ -162,20 +200,16 @@ function buildTransferAttachedActionEvents(
     ];
 }
 
-function queueTransferSelfPrompt(
-    ctx: AbilityContext,
-    sourceId: 'fairies_ladybug' | 'fairies_leaf_armor',
-    title: string,
-): AbilityResult {
-    const attached = findAttachedActionState(ctx.state, ctx.cardUid);
-    if (!attached) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const candidates: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
-    for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex++) {
-        const base = ctx.state.bases[baseIndex];
+function buildOtherMinionTargets(
+    state: SmashUpCore,
+    excluded: { baseIndex: number; minionUid: string },
+): FairiesMinionTarget[] {
+    const candidates: FairiesMinionTarget[] = [];
+    for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex++) {
+        const base = state.bases[baseIndex];
         const baseName = getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`;
         for (const minion of base.minions) {
-            if (baseIndex === attached.baseIndex && minion.uid === attached.minionUid) continue;
+            if (baseIndex === excluded.baseIndex && minion.uid === excluded.minionUid) continue;
             const minionName = getCardDef(minion.defId)?.name ?? minion.defId;
             candidates.push({
                 uid: minion.uid,
@@ -185,62 +219,7 @@ function queueTransferSelfPrompt(
             });
         }
     }
-
-    if (candidates.length === 0) {
-        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    }
-
-    const interaction = createSimpleChoice(
-        `${sourceId}_${ctx.now}`,
-        ctx.playerId,
-        title,
-        buildActionMinionTargetOptions(candidates, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            effectType: 'affect',
-        }),
-        { sourceId, targetType: 'minion', autoResolveIfSingle: false },
-    );
-
-    return {
-        events: [],
-        matchState: queueInteraction(ctx.matchState, {
-            ...interaction,
-            data: { ...interaction.data, continuationContext: attached },
-        }),
-    };
-}
-
-function queueGlymmerPrompt(ctx: AbilityContext): AbilityResult {
-    const current = findMinionOnBases(ctx.state, ctx.cardUid);
-    if (!current) return { events: [] };
-
-    const options = [
-        { id: 'self', label: '本随从直到你的下回合开始时 +1 力量', value: { choice: 'self_bonus' }, displayMode: 'button' as const },
-        ...buildGlymmerTargetOptions(ctx.state, ctx.cardUid, ctx.playerId),
-    ];
-
-    const interaction = createSimpleChoice(
-        `fairies_glymmer_${ctx.now}`,
-        ctx.playerId,
-        'Glymmer：选择另一个随从直到你的下回合开始时 -4 力量，或让本随从直到你的下回合开始时 +1 力量',
-        options,
-        { sourceId: 'fairies_glymmer', targetType: 'generic', autoResolveIfSingle: false },
-    );
-
-    return {
-        events: [],
-        matchState: queueInteraction(ctx.matchState, {
-            ...interaction,
-            data: {
-                ...interaction.data,
-                continuationContext: {
-                    sourceCardUid: ctx.cardUid,
-                    sourceBaseIndex: current.baseIndex,
-                },
-            },
-        }),
-    };
+    return candidates;
 }
 
 function buildGlymmerTargetOptions(state: SmashUpCore, sourceCardUid: string, sourcePlayerId: PlayerId) {
@@ -311,68 +290,6 @@ function buildFairiesEnchantmentPromptOptions(
     return includeSkip ? [...options, createSkipOption()] : options;
 }
 
-function queueFairiesEnchantmentPrompt(
-    matchState: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    now: number,
-    continuation: FairiesEnchantmentContinuation,
-): MatchState<SmashUpCore> {
-    const selectedBranchIds = continuation.selectedBranchIds ?? [];
-    const includeSkip = selectedBranchIds.length > 0;
-    const options = buildFairiesEnchantmentPromptOptions(selectedBranchIds, includeSkip);
-    const interaction = createSimpleChoice(
-        `fairies_enchantment_${now}`,
-        playerId,
-        includeSkip
-            ? '结果：你可以继续执行剩余效果，或跳过'
-            : '结果：选择让此基地所有随从 +1 力量，或所有随从 -1 力量',
-        options,
-        {
-            sourceId: 'fairies_enchantment',
-            targetType: 'button',
-            autoResolveIfSingle: false,
-        },
-    );
-
-    return queueInteraction(matchState, {
-        ...interaction,
-        data: {
-            ...interaction.data,
-            continuationContext: continuation,
-        },
-    });
-}
-
-function queueTitaniaReturnPrompt(
-    matchState: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    now: number,
-    continuationContext?: Record<string, unknown>,
-): MatchState<SmashUpCore> {
-    const options = buildTitaniaReturnOptions(matchState.core, playerId);
-    const interaction = createSimpleChoice(
-        `fairies_titania_return_minion_${now}`,
-        playerId,
-        'Titania：选择一个要移回其拥有者手牌的随从',
-        options,
-        {
-            sourceId: 'fairies_titania_return_minion',
-            targetType: 'minion',
-            autoResolveIfSingle: false,
-        },
-    );
-
-    return queueInteraction(matchState, continuationContext
-        ? {
-            ...interaction,
-            data: {
-                ...interaction.data,
-                continuationContext,
-            },
-        }
-        : interaction);
-}
-
 function buildPlayfulTricksActionOptions(state: SmashUpCore) {
     const options = [];
     for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex++) {
@@ -439,86 +356,419 @@ function createButtonBranchOption(
     };
 }
 
-function queuePlayfulTricksDestroyPrompt(
-    matchState: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    now: number,
-    options: Array<{ id: string; label: string; value: { cardUid: string; defId: string; ownerId: PlayerId }; _source: 'field'; displayMode: 'card' }>,
-    continuationContext?: Record<string, unknown>,
-): MatchState<SmashUpCore> {
-    const interaction = createSimpleChoice(
-        `fairies_playful_tricks_${now}`,
-        playerId,
-        '有趣的把戏：选择至多两张打在基地或随从上的行动卡并摧毁它们',
-        options,
-        {
-            sourceId: 'fairies_playful_tricks',
-            targetType: 'generic',
-            multi: { min: 0, max: Math.min(2, options.length) },
-            autoResolveIfSingle: false,
-        },
-    );
-
-    return queueInteraction(matchState, continuationContext
-        ? {
-            ...interaction,
-            data: {
-                ...interaction.data,
-                continuationContext,
-            },
-        }
-        : interaction);
+function runtimeResultToAbilityResult(
+    result: ReturnType<typeof executeAbilityProgram<unknown, SmashUpCore, SmashUpEvent>>,
+    fallbackState: MatchState<SmashUpCore>,
+): AbilityResult {
+    return {
+        events: result.events,
+        matchState: result.matchState ?? fallbackState,
+    };
 }
 
-function queuePlayfulTricksSpiritBasePrompt(
-    matchState: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    titanUid: string,
-    now: number,
-    continuationContext?: Record<string, unknown>,
+function runtimeResultToBranchResult(
+    result: ReturnType<typeof executeAbilityProgram<unknown, SmashUpCore, SmashUpEvent>>,
+    fallbackState: MatchState<SmashUpCore>,
 ) {
-    const options = buildBaseTargetOptions(
-        matchState.core.bases.map((base, baseIndex) => ({
-            baseIndex,
-            label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
+    return {
+        state: result.matchState ?? fallbackState,
+        events: result.events,
+    };
+}
+
+function createTransferSelfAbilityProgram(
+    sourceId: 'fairies_ladybug' | 'fairies_leaf_armor',
+    title: string,
+    reason: 'fairies_ladybug' | 'fairies_leaf_armor',
+) {
+    const promptProgram = createPromptProgram<FairiesTransferPromptContext, SmashUpCore, SmashUpEvent>({
+        sourceId,
+        buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+            `${sourceId}_${context.now}`,
+            context.playerId,
+            title,
+            buildActionMinionTargetOptions(context.targets, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                effectType: 'affect',
+            }),
+            { sourceId, targetType: 'minion', autoResolveIfSingle: false },
+        ),
+        onResolve: ({ context, state, value, timestamp }) => {
+            const selected = value as MinionChoice;
+            if (!selected.minionUid || selected.baseIndex === undefined) {
+                return { events: [] };
+            }
+            const liveAttached = findAttachedActionState(state.core, context.attachedCardUid);
+            if (!liveAttached) return { events: [] };
+            if (selected.baseIndex === liveAttached.baseIndex && selected.minionUid === liveAttached.minionUid) {
+                return { events: [] };
+            }
+            return {
+                events: buildTransferAttachedActionEvents(
+                    liveAttached,
+                    selected.baseIndex,
+                    selected.minionUid,
+                    reason,
+                    timestamp,
+                ),
+            };
+        },
+    });
+
+    return createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+        const attached = findAttachedActionState(ctx.state, ctx.cardUid);
+        if (!attached) {
+            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+        }
+
+        const targets = buildOtherMinionTargets(ctx.state, {
+            baseIndex: attached.baseIndex,
+            minionUid: attached.minionUid,
+        });
+        if (targets.length === 0) {
+            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+        }
+
+        return {
+            events: [],
+            context: {
+                matchState: ctx.matchState,
+                playerId: ctx.playerId,
+                now: ctx.now,
+                attachedCardUid: ctx.cardUid,
+                targets,
+            } satisfies FairiesTransferPromptContext,
+            nextProgram: promptProgram,
+        };
+    });
+}
+
+const fairiesTitaniaReturnPromptProgram = createPromptProgram<FairiesTitaniaReturnPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'fairies_titania_return_minion',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `fairies_titania_return_minion_${context.now}`,
+        context.playerId,
+        'Titania：选择一个要移回其拥有者手牌的随从',
+        buildTitaniaReturnOptions(context.matchState.core, context.playerId),
+        {
+            sourceId: 'fairies_titania_return_minion',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const isStillValidTarget = buildTitaniaReturnOptions(state.core, playerId).some(
+            option => option.value.minionUid === selected.minionUid && option.value.baseIndex === selected.baseIndex,
+        );
+        if (!isStillValidTarget) return { events: [] };
+        return {
+            events: buildValidatedReturnEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId ?? '',
+                fromBaseIndex: selected.baseIndex,
+                reason: 'fairies_titania',
+                now: timestamp,
+                sourcePlayerId: playerId,
+            }),
+        };
+    },
+});
+
+const fairiesGlymmerTargetPromptProgram = createPromptProgram<FairiesGlymmerPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'fairies_glymmer_target',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `fairies_glymmer_target_${context.now}`,
+        context.playerId,
+        'Glymmer：选择另一个随从直到你的下回合开始时 -4 力量',
+        buildGlymmerTargetOptions(context.matchState.core, context.sourceCardUid, context.playerId),
+        { sourceId: 'fairies_glymmer_target', targetType: 'minion', autoResolveIfSingle: false },
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const isStillValidTarget = buildGlymmerTargetOptions(state.core, context.sourceCardUid, playerId).some(
+            option => option.value.minionUid === selected.minionUid && option.value.baseIndex === selected.baseIndex,
+        );
+        if (!isStillValidTarget) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        return {
+            events: [addPermanentPower(target.uid, selected.baseIndex, -4, 'fairies_glymmer', timestamp)],
+            matchState: appendTimedPowerModifier(state, target.uid, -4, 'fairies_glymmer'),
+        };
+    },
+});
+
+const fairiesGlymmerPromptProgram = createPromptProgram<FairiesGlymmerPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'fairies_glymmer',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `fairies_glymmer_${context.now}`,
+        context.playerId,
+        'Glymmer：选择另一个随从直到你的下回合开始时 -4 力量，或让本随从直到你的下回合开始时 +1 力量',
+        [
+            { id: 'self', label: '本随从直到你的下回合开始时 +1 力量', value: { choice: 'self_bonus' }, displayMode: 'button' as const },
+            ...(buildGlymmerTargetOptions(context.matchState.core, context.sourceCardUid, context.playerId).length > 0
+                ? [{ id: 'target-other', label: '选择另一个随从直到你的下回合开始时 -4 力量', value: { choice: 'target_other' }, displayMode: 'button' as const }]
+                : []),
+        ],
+        { sourceId: 'fairies_glymmer', targetType: 'button', autoResolveIfSingle: false },
+    ),
+    onResolve: ({ context, state, value, timestamp, playerId }) => {
+        const selected = value as ButtonChoice;
+        const glymmer = state.core.bases[context.sourceBaseIndex]?.minions.find(
+            minion => minion.uid === context.sourceCardUid,
+        );
+        if (!glymmer) return { events: [] };
+
+        if (selected.choice === 'self_bonus') {
+            return {
+                events: [addPermanentPower(glymmer.uid, context.sourceBaseIndex, 1, 'fairies_glymmer', timestamp)],
+                matchState: appendTimedPowerModifier(state, glymmer.uid, 1, 'fairies_glymmer'),
+            };
+        }
+
+        if (selected.choice !== 'target_other') return { events: [] };
+        return {
+            events: [],
+            context: {
+                matchState: state,
+                playerId,
+                now: timestamp,
+                sourceCardUid: context.sourceCardUid,
+                sourceBaseIndex: context.sourceBaseIndex,
+            } satisfies FairiesGlymmerPromptContext,
+            nextProgram: fairiesGlymmerTargetPromptProgram,
+        };
+    },
+});
+
+const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'fairies_tinx',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `fairies_tinx_${context.now}`,
+        context.playerId,
+        'Tinx：你可以将另一个随从上的一张行动卡移到这张牌上',
+        [
+            createSkipOption(),
+            ...context.options.map((option, index) => ({
+                id: `attached-${index}`,
+                label: option.label,
+                value: { cardUid: option.cardUid },
+                _source: 'field' as const,
+                displayMode: 'card' as const,
+            })),
+        ],
+        { sourceId: 'fairies_tinx', targetType: 'generic', autoResolveIfSingle: false },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as { skip?: boolean; cardUid?: string };
+        if (selected.skip || !selected.cardUid) return { events: [] };
+        const attached = findAttachedActionState(state.core, selected.cardUid);
+        if (!attached || (attached.baseIndex === context.targetBaseIndex && attached.minionUid === context.targetMinionUid)) {
+            return { events: [] };
+        }
+        return {
+            events: buildTransferAttachedActionEvents(
+                attached,
+                context.targetBaseIndex,
+                context.targetMinionUid,
+                'fairies_tinx',
+                timestamp,
+            ),
+        };
+    },
+});
+
+const fairiesEnchantmentPromptProgram = createPromptProgram<FairiesEnchantmentContinuation & FairiesPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'fairies_enchantment',
+    buildInteraction: (context) => {
+        const selectedBranchIds = context.selectedBranchIds ?? [];
+        const includeSkip = selectedBranchIds.length > 0;
+        return createAbilityRuntimeSimpleChoice(
+            `fairies_enchantment_${context.now}`,
+            context.playerId,
+            includeSkip
+                ? '结果：你可以继续执行剩余效果，或跳过'
+                : '结果：选择让此基地所有随从 +1 力量，或所有随从 -1 力量',
+            buildFairiesEnchantmentPromptOptions(selectedBranchIds, includeSkip),
+            {
+                sourceId: 'fairies_enchantment',
+                targetType: 'button',
+                autoResolveIfSingle: false,
+            },
+        );
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        if (context.baseIndex === undefined) return { events: [] };
+        const selectedValue = value as { branchId?: string; skip?: boolean };
+        const previousBranchIds = context.selectedBranchIds ?? [];
+
+        if (
+            (selectedValue.branchId === 'plus' || selectedValue.branchId === 'minus')
+            && context.allowBoth
+            && previousBranchIds.length === 0
+        ) {
+            return {
+                events: [],
+                context: {
+                    ...context,
+                    matchState: state,
+                    playerId,
+                    now: timestamp,
+                    selectedBranchIds: [selectedValue.branchId],
+                },
+                nextProgram: fairiesEnchantmentPromptProgram,
+            };
+        }
+
+        const branchIds = selectedValue.branchId === 'plus' || selectedValue.branchId === 'minus'
+            ? [...previousBranchIds, selectedValue.branchId]
+            : previousBranchIds;
+        if (branchIds.length === 0) return { events: [] };
+
+        const attached = state.core.bases[context.baseIndex]?.ongoingActions.find(action =>
+            action.ownerId === playerId && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
+        );
+        if (!attached) return { events: [] };
+        const spirit = branchIds.length > 1 ? getAvailableSpiritOfTheForestOrTitan(state.core, playerId) : undefined;
+        const fairiesEnchantmentMode = branchIds.includes('plus') && branchIds.includes('minus')
+            ? 'both'
+            : branchIds[0];
+        if (fairiesEnchantmentMode !== 'plus' && fairiesEnchantmentMode !== 'minus' && fairiesEnchantmentMode !== 'both') {
+            return { events: [] };
+        }
+
+        return {
+            events: [
+                {
+                    type: SU_EVENTS.ONGOING_ATTACHED,
+                    payload: {
+                        cardUid: attached.uid,
+                        defId: attached.defId,
+                        ownerId: attached.ownerId,
+                        targetType: 'base',
+                        targetBaseIndex: context.baseIndex,
+                        metadata: { fairiesEnchantmentMode },
+                        talentUsed: attached.talentUsed,
+                    },
+                    timestamp,
+                } as OngoingAttachedEvent,
+                ...(spirit ? [markSpiritOfTheForestOrUsed(spirit.uid, state.core.turnNumber, timestamp)] : []),
+            ],
+        };
+    },
+});
+
+const fairiesPlayfulTricksDestroyPromptProgram = createPromptProgram<FairiesPlayfulTricksDestroyPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'fairies_playful_tricks_destroy',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `fairies_playful_tricks_destroy_${context.now}`,
+        context.playerId,
+        '有趣的把戏：选择至多两张打在基地或随从上的行动卡并摧毁它们',
+        context.options.map((option, index) => ({
+            id: `destroy-${index}`,
+            label: option.label,
+            value: { cardUid: option.cardUid, defId: option.defId, ownerId: option.ownerId },
+            _source: 'field' as const,
+            displayMode: 'card' as const,
         })),
-        matchState.core,
-    );
-    const interaction = createSimpleChoice(
-        `fairies_playful_tricks_spirit_base_${now}`,
-        playerId,
+        {
+            sourceId: 'fairies_playful_tricks_destroy',
+            targetType: 'generic',
+            multi: { min: 0, max: Math.min(2, context.options.length) },
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ value, timestamp }) => {
+        const rawSelections = Array.isArray(value)
+            ? value as Array<{ cardUid?: string; defId?: string; ownerId?: string }>
+            : [];
+        const unique = new Map<string, { cardUid: string; defId: string; ownerId: string }>();
+        for (const selection of rawSelections) {
+            if (!selection.cardUid || !selection.defId || !selection.ownerId) continue;
+            unique.set(selection.cardUid, {
+                cardUid: selection.cardUid,
+                defId: selection.defId,
+                ownerId: selection.ownerId,
+            });
+        }
+
+        return {
+            events: Array.from(unique.values()).map(selection => ({
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: {
+                    cardUid: selection.cardUid,
+                    defId: selection.defId,
+                    ownerId: selection.ownerId,
+                    reason: 'fairies_playful_tricks',
+                },
+                timestamp,
+            } as OngoingDetachedEvent)),
+        };
+    },
+});
+
+const fairiesPlayfulTricksSpiritBasePromptProgram = createPromptProgram<FairiesPlayfulTricksSpiritBasePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'fairies_playful_tricks_spirit_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `fairies_playful_tricks_spirit_base_${context.now}`,
+        context.playerId,
         '有趣的把戏：选择一个基地来打出丛林之灵',
-        options,
+        buildBaseTargetOptions(
+            context.matchState.core.bases.map((base, baseIndex) => ({
+                baseIndex,
+                label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
+            })),
+            context.matchState.core,
+        ),
         {
             sourceId: 'fairies_playful_tricks_spirit_base',
             targetType: 'base',
             autoResolveIfSingle: false,
         },
-    );
-
-    return queueInteraction(matchState, {
-        ...interaction,
-        data: {
-            ...interaction.data,
-            continuationContext: {
-                titanUid,
-                ...(continuationContext ?? {}),
-            },
-        },
-    });
-}
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as { baseIndex?: number; baseDefId?: string };
+        if (selected.baseIndex === undefined || getTitanByController(state.core, playerId)) {
+            return { events: [] };
+        }
+        const titan = state.core.titans?.find((candidate) =>
+            candidate.uid === context.titanUid
+            && candidate.ownerId === playerId
+            && candidate.location.zone === 'setaside',
+        );
+        if (!titan || !canControllerPlayTitan(state.core, playerId, titan.uid)) return { events: [] };
+        return {
+            events: [
+                playTitan(
+                    titan,
+                    playerId,
+                    selected.baseIndex,
+                    'fairies_playful_tricks_spirit',
+                    timestamp,
+                    selected.baseDefId,
+                ),
+            ],
+        };
+    },
+});
 
 export function registerFairiesAbilities(): void {
-    registerAbility('fairies_titania', 'onPlay', fairiesTitania);
-    registerAbility('fairies_glymmer', 'talent', fairiesGlymmer);
-    registerAbility('fairies_puck', 'onPlay', fairiesPuck);
-    registerAbility('fairies_tinx', 'onPlay', fairiesTinx);
-    registerAbility('fairies_ladybug', 'talent', fairiesLadybug);
-    registerAbility('fairies_leaf_armor', 'talent', fairiesLeafArmor);
-    registerAbility('fairies_magic_acorns', 'onPlay', fairiesMagicAcorns);
-    registerAbility('fairies_playful_tricks', 'onPlay', fairiesPlayfulTricks);
-    registerAbility('fairies_enchantment', 'onPlay', fairiesEnchantment);
-    registerAbility('fairies_fairy_ballet', 'onPlay', fairiesFairyBallet);
+    registerSimpleAbility('fairies_titania', 'onPlay', fairiesTitania);
+    registerAbilityProgram('fairies_glymmer', 'talent', { program: fairiesGlymmerProgram });
+    registerSimpleAbility('fairies_puck', 'onPlay', fairiesPuck);
+    registerAbilityProgram('fairies_tinx', 'onPlay', { program: fairiesTinxProgram });
+    registerAbilityProgram('fairies_ladybug', 'talent', { program: fairiesLadybugProgram });
+    registerAbilityProgram('fairies_leaf_armor', 'talent', { program: fairiesLeafArmorProgram });
+    registerSimpleAbility('fairies_magic_acorns', 'onPlay', fairiesMagicAcorns);
+    registerSimpleAbility('fairies_playful_tricks', 'onPlay', fairiesPlayfulTricks);
+    registerAbilityProgram('fairies_enchantment', 'onPlay', { program: fairiesEnchantmentProgram });
+    registerSimpleAbility('fairies_fairy_ballet', 'onPlay', fairiesFairyBallet);
 
     registerProtection('fairies_ladybug', 'destroy', fairiesLadybugProtectionChecker);
     registerRestriction('fairies_magic_ward', 'play_action', fairiesMagicWardRestrictionChecker);
@@ -538,6 +788,7 @@ function fairiesTitania(ctx: AbilityContext): AbilityResult {
             now: ctx.now,
             sourceId: 'fairies_titania',
             title: 'Titania：将一个随从移回其拥有者手牌，或额外打出一个随从',
+            executeBranch: runFairiesTitaniaBranch,
             targetType: 'generic',
             upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
             options,
@@ -545,9 +796,21 @@ function fairiesTitania(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function fairiesGlymmer(ctx: AbilityContext): AbilityResult {
-    return queueGlymmerPrompt(ctx);
-}
+const fairiesGlymmerProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const current = findMinionOnBases(ctx.state, ctx.cardUid);
+    if (!current) return { events: [] };
+    return {
+        events: [],
+        context: {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            sourceCardUid: ctx.cardUid,
+            sourceBaseIndex: current.baseIndex,
+        } satisfies FairiesGlymmerPromptContext,
+        nextProgram: fairiesGlymmerPromptProgram,
+    };
+});
 
 function fairiesPuck(ctx: AbilityContext): AbilityResult {
     return {
@@ -558,6 +821,7 @@ function fairiesPuck(ctx: AbilityContext): AbilityResult {
             now: ctx.now,
             sourceId: 'fairies_puck',
             title: 'Puck：额外打出一张行动卡，或抽一张牌',
+            executeBranch: runFairiesPuckBranch,
             targetType: 'button',
             upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
             options: [
@@ -568,11 +832,11 @@ function fairiesPuck(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function fairiesTinx(ctx: AbilityContext): AbilityResult {
+const fairiesTinxProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const current = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!current) return { events: [] };
 
-    const options = [createSkipOption()];
+    const options: FairiesTinxPromptContext['options'] = [];
     for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex++) {
         const base = ctx.state.bases[baseIndex];
         const baseName = getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`;
@@ -582,42 +846,39 @@ function fairiesTinx(ctx: AbilityContext): AbilityResult {
             for (const attached of minion.attachedActions) {
                 const actionName = getCardDef(attached.defId)?.name ?? attached.defId;
                 options.push({
-                    id: `attached-${attached.uid}`,
+                    cardUid: attached.uid,
                     label: `${actionName} @ ${minionName} @ ${baseName}`,
-                    value: { cardUid: attached.uid },
-                    _source: 'field' as const,
-                    displayMode: 'card' as const,
                 });
             }
         }
     }
 
-    if (options.length === 1) return { events: [] };
-
-    const interaction = createSimpleChoice(
-        `fairies_tinx_${ctx.now}`,
-        ctx.playerId,
-        'Tinx：你可以将另一个随从上的一张行动卡移到这张牌上',
-        options,
-        { sourceId: 'fairies_tinx', targetType: 'generic', autoResolveIfSingle: false },
-    );
-
+    if (options.length === 0) return { events: [] };
     return {
         events: [],
-        matchState: queueInteraction(ctx.matchState, {
-            ...interaction,
-            data: { ...interaction.data, continuationContext: { targetBaseIndex: current.baseIndex, targetMinionUid: ctx.cardUid } },
-        }),
+        context: {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            targetBaseIndex: current.baseIndex,
+            targetMinionUid: ctx.cardUid,
+            options,
+        } satisfies FairiesTinxPromptContext,
+        nextProgram: fairiesTinxPromptProgram,
     };
-}
+});
 
-function fairiesLadybug(ctx: AbilityContext): AbilityResult {
-    return queueTransferSelfPrompt(ctx, 'fairies_ladybug', 'Ladybug：选择另一个随从来转移这张牌');
-}
+const fairiesLadybugProgram = createTransferSelfAbilityProgram(
+    'fairies_ladybug',
+    'Ladybug：选择另一个随从来转移这张牌',
+    'fairies_ladybug',
+);
 
-function fairiesLeafArmor(ctx: AbilityContext): AbilityResult {
-    return queueTransferSelfPrompt(ctx, 'fairies_leaf_armor', '叶之甲：选择另一个随从来转移这张牌');
-}
+const fairiesLeafArmorProgram = createTransferSelfAbilityProgram(
+    'fairies_leaf_armor',
+    '叶之甲：选择另一个随从来转移这张牌',
+    'fairies_leaf_armor',
+);
 
 function fairiesMagicAcorns(ctx: AbilityContext): AbilityResult {
     return {
@@ -628,6 +889,7 @@ function fairiesMagicAcorns(ctx: AbilityContext): AbilityResult {
             now: ctx.now,
             sourceId: 'fairies_magic_acorns',
             title: '魔法橡子：选择让每位其他玩家随机弃一张牌，或抽一张牌并额外打出一张行动卡',
+            executeBranch: runFairiesMagicAcornsBranch,
             targetType: 'button',
             upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
             options: [
@@ -645,10 +907,20 @@ function fairiesPlayfulTricks(ctx: AbilityContext): AbilityResult {
 
     if (!canPlaySpirit) {
         if (actionOptions.length === 0) return { events: [] };
-        return {
-            events: [],
-            matchState: queuePlayfulTricksDestroyPrompt(ctx.matchState, ctx.playerId, ctx.now, actionOptions),
-        };
+        return runtimeResultToAbilityResult(executeAbilityProgram(
+            fairiesPlayfulTricksDestroyPromptProgram,
+            {
+                matchState: ctx.matchState,
+                playerId: ctx.playerId,
+                now: ctx.now,
+                options: actionOptions.map(option => ({
+                    cardUid: option.value.cardUid,
+                    defId: option.value.defId,
+                    ownerId: option.value.ownerId,
+                    label: option.label,
+                })),
+            } satisfies FairiesPlayfulTricksDestroyPromptContext,
+        ), ctx.matchState);
     }
 
     return {
@@ -659,8 +931,9 @@ function fairiesPlayfulTricks(ctx: AbilityContext): AbilityResult {
             now: ctx.now,
             sourceId: 'fairies_playful_tricks',
             title: '有趣的把戏：选择消灭至多两张行动卡，或打出丛林之灵',
+            executeBranch: runFairiesPlayfulTricksBranch,
             targetType: 'button',
-            continuationContext: {
+            planContext: {
                 titanUid: setAsideSpirit?.uid,
             },
             options: [
@@ -671,16 +944,20 @@ function fairiesPlayfulTricks(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function fairiesEnchantment(ctx: AbilityContext): AbilityResult {
+const fairiesEnchantmentProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const upgrade = getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now);
     return {
         events: [],
-        matchState: queueFairiesEnchantmentPrompt(ctx.matchState, ctx.playerId, ctx.now, {
+        context: {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
             baseIndex: ctx.baseIndex,
             allowBoth: !!upgrade,
-        }),
+        } satisfies FairiesEnchantmentContinuation & FairiesPromptContext,
+        nextProgram: fairiesEnchantmentPromptProgram,
     };
-}
+});
 
 function fairiesFairyBallet(ctx: AbilityContext): AbilityResult {
     return {
@@ -691,6 +968,7 @@ function fairiesFairyBallet(ctx: AbilityContext): AbilityResult {
             now: ctx.now,
             sourceId: 'fairies_fairy_ballet',
             title: '精灵芭蕾：抽两张牌，或抽一张牌并额外打出一张行动卡',
+            executeBranch: runFairiesFairyBalletBranch,
             targetType: 'button',
             upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
             options: [
@@ -721,82 +999,12 @@ const runFairiesTitaniaBranch: BranchExecutor = ({ state, playerId, selection, t
         };
     }
     if (branchId === 'return_minion') {
-        return {
-            state: queueTitaniaReturnPrompt(state, playerId, timestamp),
-            events: [],
-        };
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesTitaniaReturnPromptProgram,
+            { matchState: state, playerId, now: timestamp } satisfies FairiesTitaniaReturnPromptContext,
+        ), state);
     }
     return { state, events: [] };
-};
-
-const handleFairiesTitaniaReturnMinion: InteractionHandler = (state, playerId, value, data, random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined) {
-        return { state, events: [] };
-    }
-    const result: BranchExecutionResult = {
-        state,
-        events: buildValidatedReturnEvents(state, {
-            minionUid: selected.minionUid,
-            minionDefId: selected.defId ?? '',
-            fromBaseIndex: selected.baseIndex,
-            reason: 'fairies_titania',
-            now: timestamp,
-            sourcePlayerId: playerId,
-        }),
-    };
-    return resumeBranchingChoicePlan({
-        state: result.state,
-        playerId,
-        interactionData: data,
-        random,
-        timestamp,
-        executeBranch: runFairiesTitaniaBranch,
-        prefixEvents: result.events,
-    }) ?? result;
-};
-
-const handleFairiesTitania: InteractionHandler = (state, playerId, value, data, random, timestamp) => {
-    return resolveBranchingChoiceSelection({
-        state,
-        playerId,
-        value,
-        interactionData: data,
-        random,
-        timestamp,
-        executeBranch: runFairiesTitaniaBranch,
-    }) ?? { state, events: [] };
-};
-
-const handleFairiesGlymmer: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice & ButtonChoice;
-    const continuation = (_data?.continuationContext as { sourceCardUid?: string; sourceBaseIndex?: number } | undefined);
-    if (!continuation?.sourceCardUid || continuation.sourceBaseIndex === undefined) {
-        return { state, events: [] };
-    }
-    const glymmer = state.core.bases[continuation.sourceBaseIndex]?.minions.find(
-        minion => minion.uid === continuation.sourceCardUid,
-    );
-    if (!glymmer) return { state, events: [] };
-
-    if (selected.choice === 'self_bonus') {
-        return {
-            state: appendTimedPowerModifier(state, glymmer.uid, 1, 'fairies_glymmer'),
-            events: [addPermanentPower(glymmer.uid, continuation.sourceBaseIndex, 1, 'fairies_glymmer', timestamp)],
-        };
-    }
-
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const isStillValidTarget = buildGlymmerTargetOptions(state.core, continuation.sourceCardUid, playerId).some(
-        option => option.value.minionUid === selected.minionUid && option.value.baseIndex === selected.baseIndex,
-    );
-    if (!isStillValidTarget) return { state, events: [] };
-    const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
-    if (!target) return { state, events: [] };
-    return {
-        state: appendTimedPowerModifier(state, target.uid, -4, 'fairies_glymmer'),
-        events: [addPermanentPower(target.uid, selected.baseIndex, -4, 'fairies_glymmer', timestamp)],
-    };
 };
 
 const runFairiesPuckBranch: BranchExecutor = ({ state, playerId, selection, random, timestamp }) => {
@@ -815,59 +1023,6 @@ const runFairiesPuckBranch: BranchExecutor = ({ state, playerId, selection, rand
     }
     return { state, events: [] };
 };
-
-const handleFairiesPuck: InteractionHandler = (state, playerId, value, _data, random, timestamp) => {
-    return resolveBranchingChoiceSelection({
-        state,
-        playerId,
-        value,
-        interactionData: _data,
-        random,
-        timestamp,
-        executeBranch: runFairiesPuckBranch,
-    }) ?? { state, events: [] };
-};
-
-const handleFairiesTinx: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const selected = value as { skip?: boolean; cardUid?: string };
-    const continuation = (data?.continuationContext as { targetBaseIndex?: number; targetMinionUid?: string } | undefined);
-    if (selected.skip || !selected.cardUid || continuation?.targetBaseIndex === undefined || !continuation.targetMinionUid) {
-        return { state, events: [] };
-    }
-    const attached = findAttachedActionState(state.core, selected.cardUid);
-    if (!attached || (attached.baseIndex === continuation.targetBaseIndex && attached.minionUid === continuation.targetMinionUid)) {
-        return { state, events: [] };
-    }
-    return {
-        state,
-        events: buildTransferAttachedActionEvents(
-            attached,
-            continuation.targetBaseIndex,
-            continuation.targetMinionUid,
-            'fairies_tinx',
-            timestamp,
-        ),
-    };
-};
-
-function handleTransferSelfTalent(sourceId: 'fairies_ladybug' | 'fairies_leaf_armor', reason: string): InteractionHandler {
-    return (state, _playerId, value, data, _random, timestamp) => {
-        const selected = value as MinionChoice;
-        const continuation = data?.continuationContext as AttachedActionState | undefined;
-        if (!continuation || !selected.minionUid || selected.baseIndex === undefined) {
-            return { state, events: [] };
-        }
-        const liveAttached = findAttachedActionState(state.core, continuation.cardUid);
-        if (!liveAttached) return { state, events: [] };
-        if (selected.baseIndex === liveAttached.baseIndex && selected.minionUid === liveAttached.minionUid) {
-            return { state, events: [] };
-        }
-        return {
-            state,
-            events: buildTransferAttachedActionEvents(liveAttached, selected.baseIndex, selected.minionUid, reason, timestamp),
-        };
-    };
-}
 
 const runFairiesMagicAcornsBranch: BranchExecutor = ({ state, playerId, selection, random, timestamp }) => {
     const branchId = selection.branchId;
@@ -896,185 +1051,42 @@ const runFairiesMagicAcornsBranch: BranchExecutor = ({ state, playerId, selectio
     return { state, events: [] };
 };
 
-const handleFairiesMagicAcorns: InteractionHandler = (state, playerId, value, _data, random, timestamp) => {
-    return resolveBranchingChoiceSelection({
-        state,
-        playerId,
-        value,
-        interactionData: _data,
-        random,
-        timestamp,
-        executeBranch: runFairiesMagicAcornsBranch,
-    }) ?? { state, events: [] };
-};
-
 const runFairiesPlayfulTricksBranch: BranchExecutor = ({ state, playerId, selection, planContext, timestamp }) => {
     const branchId = selection.branchId;
     if (branchId === 'destroy_actions') {
         const actionOptions = buildPlayfulTricksActionOptions(state.core);
         if (actionOptions.length === 0) return { state, events: [] };
-        return {
-            state: queuePlayfulTricksDestroyPrompt(state, playerId, timestamp, actionOptions),
-            events: [],
-        };
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesPlayfulTricksDestroyPromptProgram,
+            {
+                matchState: state,
+                playerId,
+                now: timestamp,
+                options: actionOptions.map(option => ({
+                    cardUid: option.value.cardUid,
+                    defId: option.value.defId,
+                    ownerId: option.value.ownerId,
+                    label: option.label,
+                })),
+            } satisfies FairiesPlayfulTricksDestroyPromptContext,
+        ), state);
     }
 
     if (branchId === 'play_spirit') {
         const titanUid = typeof planContext?.titanUid === 'string' ? planContext.titanUid : undefined;
         if (!titanUid) return { state, events: [] };
-        return {
-            state: queuePlayfulTricksSpiritBasePrompt(state, playerId, titanUid, timestamp),
-            events: [],
-        };
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesPlayfulTricksSpiritBasePromptProgram,
+            {
+                matchState: state,
+                playerId,
+                now: timestamp,
+                titanUid,
+            } satisfies FairiesPlayfulTricksSpiritBasePromptContext,
+        ), state);
     }
 
     return { state, events: [] };
-};
-
-const handleFairiesPlayfulTricks: InteractionHandler = (state, playerId, value, _data, random, timestamp) => {
-    if (hasBranchingChoiceSelection(value)) {
-        return resolveBranchingChoiceSelection({
-            state,
-            playerId,
-            value,
-            interactionData: _data,
-            random,
-            timestamp,
-            executeBranch: runFairiesPlayfulTricksBranch,
-        }) ?? { state, events: [] };
-    }
-
-    const rawSelections = Array.isArray(value)
-        ? value as Array<{ cardUid?: string; defId?: string; ownerId?: string }>
-        : [];
-    const unique = new Map<string, { cardUid: string; defId: string; ownerId: string }>();
-    for (const selection of rawSelections) {
-        if (!selection.cardUid || !selection.defId || !selection.ownerId) continue;
-        unique.set(selection.cardUid, {
-            cardUid: selection.cardUid,
-            defId: selection.defId,
-            ownerId: selection.ownerId,
-        });
-    }
-
-    const events: SmashUpEvent[] = [];
-    for (const selection of unique.values()) {
-        events.push({
-            type: SU_EVENTS.ONGOING_DETACHED,
-            payload: {
-                cardUid: selection.cardUid,
-                defId: selection.defId,
-                ownerId: selection.ownerId,
-                reason: 'fairies_playful_tricks',
-            },
-            timestamp,
-        } as OngoingDetachedEvent);
-    }
-
-    return resumeBranchingChoicePlan({
-        state,
-        playerId,
-        interactionData: _data,
-        random,
-        timestamp,
-        executeBranch: runFairiesPlayfulTricksBranch,
-        prefixEvents: events,
-    }) ?? { state, events };
-};
-
-const handleFairiesPlayfulTricksSpiritBase: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as { baseIndex?: number; baseDefId?: string };
-    const continuation = data?.continuationContext as { titanUid?: string } | undefined;
-    if (selected.baseIndex === undefined || !continuation?.titanUid || getTitanByController(state.core, playerId)) {
-        return { state, events: [] };
-    }
-    const titan = state.core.titans?.find((candidate) =>
-        candidate.uid === continuation.titanUid
-        && candidate.ownerId === playerId
-        && candidate.location.zone === 'setaside',
-    );
-    if (!titan || !canControllerPlayTitan(state.core, playerId, titan.uid)) return { state, events: [] };
-    const result: BranchExecutionResult = {
-        state,
-        events: [
-            playTitan(
-                titan,
-                playerId,
-                selected.baseIndex,
-                'fairies_playful_tricks_spirit',
-                timestamp,
-                selected.baseDefId,
-            ),
-        ],
-    };
-    return resumeBranchingChoicePlan({
-        state: result.state,
-        playerId,
-        interactionData: data,
-        random: _random,
-        timestamp,
-        executeBranch: runFairiesPlayfulTricksBranch,
-        prefixEvents: result.events,
-    }) ?? result;
-};
-
-const handleFairiesEnchantment: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const continuation = data?.continuationContext as FairiesEnchantmentContinuation | undefined;
-    if (!continuation || continuation.baseIndex === undefined) return { state, events: [] };
-    const selectedValue = value as { branchId?: string; skip?: boolean };
-    const previousBranchIds = continuation.selectedBranchIds ?? [];
-
-    if (
-        (selectedValue.branchId === 'plus' || selectedValue.branchId === 'minus')
-        && continuation.allowBoth
-        && previousBranchIds.length === 0
-    ) {
-        return {
-            state: queueFairiesEnchantmentPrompt(state, playerId, timestamp, {
-                ...continuation,
-                selectedBranchIds: [selectedValue.branchId],
-            }),
-            events: [],
-        };
-    }
-
-    const branchIds = selectedValue.branchId === 'plus' || selectedValue.branchId === 'minus'
-        ? [...previousBranchIds, selectedValue.branchId]
-        : previousBranchIds;
-    if (branchIds.length === 0) return { state, events: [] };
-
-    const attached = state.core.bases[continuation.baseIndex]?.ongoingActions.find(action =>
-        action.ownerId === playerId && (action.defId === 'fairies_enchantment' || action.defId === 'fairies_enchantment_pod'),
-    );
-    if (!attached) return { state, events: [] };
-    const spirit = branchIds.length > 1 ? getAvailableSpiritOfTheForestOrTitan(state.core, playerId) : undefined;
-    const fairiesEnchantmentMode = branchIds.includes('plus') && branchIds.includes('minus')
-        ? 'both'
-        : branchIds[0];
-    if (fairiesEnchantmentMode !== 'plus' && fairiesEnchantmentMode !== 'minus' && fairiesEnchantmentMode !== 'both') {
-        return { state, events: [] };
-    }
-
-    const result: BranchExecutionResult = {
-        state,
-        events: [
-            {
-                type: SU_EVENTS.ONGOING_ATTACHED,
-                payload: {
-                    cardUid: attached.uid,
-                    defId: attached.defId,
-                    ownerId: attached.ownerId,
-                    targetType: 'base',
-                    targetBaseIndex: continuation.baseIndex,
-                    metadata: { fairiesEnchantmentMode },
-                    talentUsed: attached.talentUsed,
-                },
-                timestamp,
-            } as OngoingAttachedEvent,
-            ...(spirit ? [markSpiritOfTheForestOrUsed(spirit.uid, state.core.turnNumber, timestamp)] : []),
-        ],
-    };
-    return result;
 };
 
 const runFairiesFairyBalletBranch: BranchExecutor = ({ state, playerId, selection, random, timestamp }) => {
@@ -1096,30 +1108,3 @@ const runFairiesFairyBalletBranch: BranchExecutor = ({ state, playerId, selectio
     }
     return { state, events: [] };
 };
-
-const handleFairiesFairyBallet: InteractionHandler = (state, playerId, value, _data, random, timestamp) => {
-    return resolveBranchingChoiceSelection({
-        state,
-        playerId,
-        value,
-        interactionData: _data,
-        random,
-        timestamp,
-        executeBranch: runFairiesFairyBalletBranch,
-    }) ?? { state, events: [] };
-};
-
-export function registerFairiesInteractionHandlers(): void {
-    registerInteractionHandler('fairies_titania', handleFairiesTitania);
-    registerInteractionHandler('fairies_titania_return_minion', handleFairiesTitaniaReturnMinion);
-    registerInteractionHandler('fairies_glymmer', handleFairiesGlymmer);
-    registerInteractionHandler('fairies_puck', handleFairiesPuck);
-    registerInteractionHandler('fairies_tinx', handleFairiesTinx);
-    registerInteractionHandler('fairies_ladybug', handleTransferSelfTalent('fairies_ladybug', 'fairies_ladybug'));
-    registerInteractionHandler('fairies_leaf_armor', handleTransferSelfTalent('fairies_leaf_armor', 'fairies_leaf_armor'));
-    registerInteractionHandler('fairies_magic_acorns', handleFairiesMagicAcorns);
-    registerInteractionHandler('fairies_playful_tricks', handleFairiesPlayfulTricks);
-    registerInteractionHandler('fairies_playful_tricks_spirit_base', handleFairiesPlayfulTricksSpiritBase);
-    registerInteractionHandler('fairies_enchantment', handleFairiesEnchantment);
-    registerInteractionHandler('fairies_fairy_ballet', handleFairiesFairyBallet);
-}

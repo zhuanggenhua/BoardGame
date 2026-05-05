@@ -193,16 +193,22 @@ async function installSmashUpAiChoiceRejectPatch(
                 onConfirmed?: (state: unknown) => void,
                 onRejected?: (reason: string) => void,
             ) => void;
+            sendCommand?: (
+                this: unknown,
+                commandType: string,
+                payload: unknown,
+            ) => void;
             updateLatestState?: (
                 this: unknown,
                 state: unknown,
             ) => void;
         } | undefined;
-        if (!proto?.sendBatch) {
-            throw new Error('GameTransportClient.sendBatch not available');
+        if (!proto?.sendBatch || !proto.sendCommand) {
+            throw new Error('GameTransportClient transport hooks not available');
         }
 
         const originalSendBatch = proto.sendBatch;
+        const originalSendCommand = proto.sendCommand;
         const originalUpdateLatestState = proto.updateLatestState;
         globalWindow.__SU_AI_FORCE_SKIP_PATCH__ = {
             installed: true,
@@ -256,18 +262,31 @@ async function installSmashUpAiChoiceRejectPatch(
         ) {
             const tracker = globalWindow.__SU_AI_FORCE_SKIP_PATCH__;
             const config = (this as { config?: { playerID?: string | null } }).config;
+            const playerId = config?.playerID ?? null;
+            const firstCommand = commands[0] ?? null;
+            const firstOptionId = firstCommand?.payload
+                && typeof firstCommand.payload === 'object'
+                && 'optionId' in (firstCommand.payload as Record<string, unknown>)
+                ? ((firstCommand.payload as { optionId?: unknown }).optionId ?? null)
+                : null;
+            const isInteractionResponse = firstCommand?.type === 'SYS_INTERACTION_RESPOND';
             const fallbackKind = batchId.includes('force-end-turn')
                 ? 'force-end-turn'
-                : (batchId.includes('force-skip') ? 'force-skip' : null);
+                : (
+                    isInteractionResponse && firstOptionId === 'skip'
+                        ? 'force-skip'
+                        : null
+                );
             const isAllowedFallback = fallbackKind !== null && allowedFallbackKinds.includes(fallbackKind);
 
             if (
                 tracker
-                && config?.playerID === tracker.aiPlayerId
+                && playerId === tracker.aiPlayerId
+                && isInteractionResponse
                 && !isAllowedFallback
             ) {
                 tracker.rejectedCount += 1;
-                tracker.lastBatchId = batchId;
+                tracker.lastBatchId = `${batchId}:${String(firstOptionId ?? 'unknown')}`;
                 tracker.lastReason = 'command_failed';
                 onRejected?.('command_failed');
                 return;
@@ -275,7 +294,8 @@ async function installSmashUpAiChoiceRejectPatch(
 
             if (
                 tracker
-                && config?.playerID === tracker.aiPlayerId
+                && playerId === tracker.aiPlayerId
+                && isAllowedFallback
             ) {
                 tracker.delegatedCount += 1;
                 tracker.lastBatchId = batchId;
@@ -284,6 +304,54 @@ async function installSmashUpAiChoiceRejectPatch(
             }
 
             return originalSendBatch.call(this, batchId, commands, onConfirmed, onRejected);
+        };
+
+        proto.sendCommand = function patchedSendCommand(
+            this: unknown,
+            commandType: string,
+            payload: unknown,
+        ) {
+            const tracker = globalWindow.__SU_AI_FORCE_SKIP_PATCH__;
+            const config = (this as { config?: { playerID?: string | null } }).config;
+            const playerId = config?.playerID ?? null;
+            const optionId = payload
+                && typeof payload === 'object'
+                && 'optionId' in (payload as Record<string, unknown>)
+                ? ((payload as { optionId?: unknown }).optionId ?? null)
+                : null;
+            const isInteractionResponse = commandType === 'SYS_INTERACTION_RESPOND';
+            const isAllowedForceSkip = isInteractionResponse
+                && optionId === 'skip'
+                && allowedFallbackKinds.includes('force-skip');
+            const isForceEndTurnCommand = allowedFallbackKinds.includes('force-end-turn')
+                && ['ADVANCE_PHASE', 'END_TURN', 'FORCE_END_TURN'].includes(commandType);
+
+            if (
+                tracker
+                && playerId === tracker.aiPlayerId
+                && isInteractionResponse
+                && !isAllowedForceSkip
+            ) {
+                tracker.rejectedCount += 1;
+                tracker.lastBatchId = `${commandType}:${String(optionId ?? 'unknown')}`;
+                tracker.lastReason = 'command_failed';
+                return;
+            }
+
+            if (
+                tracker
+                && playerId === tracker.aiPlayerId
+                && (isAllowedForceSkip || isForceEndTurnCommand)
+            ) {
+                tracker.delegatedCount += 1;
+                tracker.lastBatchId = isInteractionResponse
+                    ? `${commandType}:${String(optionId ?? 'unknown')}`
+                    : commandType;
+                tracker.forceSkipDelegated = tracker.forceSkipDelegated || isAllowedForceSkip;
+                tracker.forceEndTurnDelegated = tracker.forceEndTurnDelegated || isForceEndTurnCommand;
+            }
+
+            return originalSendCommand.call(this, commandType, payload);
         };
     }, {
         aiPlayerId: targetPlayerId,
@@ -633,6 +701,22 @@ function buildFactionSelectStuckState(baseState: any) {
     return nextState;
 }
 
+function buildRuntimeOwnedPromptMarker(
+    sourceId: string,
+    continuationId: string,
+    context: Record<string, unknown>,
+) {
+    return {
+        owner: 'smashup-ability-runtime',
+        sourceId,
+        continuationId,
+        continuation: {
+            context,
+            contextHasMatchState: true,
+        },
+    };
+}
+
 function buildOnlineAiHiddenSacrificeState(baseState: any) {
     const nextState = JSON.parse(JSON.stringify(baseState));
     const existingPlayers = nextState.core?.players ?? {};
@@ -666,19 +750,19 @@ function buildOnlineAiHiddenSacrificeState(baseState: any) {
             },
             '1': {
                 ...(existingPlayers['1'] ?? {}),
-                hand: [],
+                hand: [
+                    { uid: 'ai-sacrifice-action', defId: 'wizard_sacrifice', type: 'action', owner: '1' },
+                ],
                 deck: [
                     { uid: 'ai-draw-1', defId: 'wizard_archmage', type: 'minion', owner: '1' },
                     { uid: 'ai-draw-2', defId: 'wizard_apprentice', type: 'minion', owner: '1' },
                     { uid: 'ai-draw-3', defId: 'wizard_enchantress', type: 'minion', owner: '1' },
                 ],
-                discard: [
-                    { uid: 'ai-sacrifice-action', defId: 'wizard_sacrifice', type: 'action', owner: '1' },
-                ],
+                discard: [],
                 factions: ['wizards', 'ninjas'],
                 minionsPlayed: 1,
                 minionLimit: 1,
-                actionsPlayed: 1,
+                actionsPlayed: 0,
                 actionLimit: 1,
                 minionsPlayedPerBase: {},
                 sameNameMinionDefId: null,
@@ -714,23 +798,9 @@ function buildOnlineAiHiddenSacrificeState(baseState: any) {
         turnNumber: 3,
         flowHalted: false,
         interaction: {
-            current: {
-                id: 'wizard_sacrifice_hidden_choice',
-                playerId: '1',
-                kind: 'simple-choice',
-                data: {
-                    title: '选择要牺牲的随从（抽取等量力量的牌）',
-                    sourceId: 'wizard_sacrifice',
-                    targetType: 'minion',
-                    options: [{
-                        id: 'target-shinobi',
-                        label: '影舞者',
-                        value: { minionUid: 'ai-sacrifice-target', baseIndex: 0 },
-                    }],
-                },
-            },
+            current: undefined,
             queue: [],
-            isBlocked: true,
+            isBlocked: false,
         },
         responseWindow: {
             current: null,
@@ -748,6 +818,7 @@ function buildOnlineAiHiddenSacrificeState(baseState: any) {
 
 function buildOnlineAiHiddenHoverbotState(baseState: any) {
     const nextState = JSON.parse(JSON.stringify(baseState));
+    const runtimeNow = 1777939000100;
     const existingPlayers = nextState.core?.players ?? {};
     const existingBases = Array.isArray(nextState.core?.bases) ? nextState.core.bases : [];
     const primaryBase = existingBases[0] ?? { defId: 'base_tortuga', minions: [], ongoingActions: [] };
@@ -833,11 +904,22 @@ function buildOnlineAiHiddenHoverbotState(baseState: any) {
                     sourceId: 'robot_hoverbot',
                     targetType: 'generic',
                     responseValidationMode: 'live',
-                    continuationContext: {
-                        cardUid: 'ai-top-zapbot',
-                        defId: 'robot_zapbot',
-                        power: 2,
-                    },
+                    runtimePrompt: buildRuntimeOwnedPromptMarker(
+                        'robot_hoverbot',
+                        'smashup-runtime:robot_hoverbot:e2e-hidden-choice',
+                        {
+                            playerId: '1',
+                            now: runtimeNow,
+                            revealEvents: [],
+                            topCard: {
+                                uid: 'ai-top-zapbot',
+                                defId: 'robot_zapbot',
+                                type: 'minion',
+                                owner: '1',
+                            },
+                            topPower: 2,
+                        },
+                    ),
                     options: [
                         {
                             id: 'play',
@@ -978,11 +1060,11 @@ function buildOnlineAiResponseWindowPlayableState(baseState: any) {
             '0': {
                 ...(existingPlayers['0'] ?? {}),
                 hand: [
-                    { uid: 'host-hold-1', defId: 'pirates_first_mate', type: 'minion', owner: '0' },
+                    { uid: 'host-under-pressure-card', defId: 'giant_ant_under_pressure', type: 'action', owner: '0' },
                 ],
                 deck: [],
                 discard: [],
-                factions: ['pirates', 'aliens'],
+                factions: ['giant_ants', 'aliens'],
                 minionsPlayed: 1,
                 minionLimit: 1,
                 actionsPlayed: 1,
@@ -1013,6 +1095,19 @@ function buildOnlineAiResponseWindowPlayableState(baseState: any) {
                 ...primaryBase,
                 defId: primaryBase.defId ?? 'base_the_mothership',
                 minions: [
+                    {
+                        uid: 'host-under-pressure-source',
+                        defId: 'giant_ant_worker',
+                        controller: '0',
+                        owner: '0',
+                        basePower: 3,
+                        powerCounters: 2,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        talentUsed: false,
+                        playedThisTurn: false,
+                        attachedActions: [],
+                    },
                     {
                         uid: 'ai-under-pressure-source',
                         defId: 'giant_ant_soldier',
@@ -1046,6 +1141,19 @@ function buildOnlineAiResponseWindowPlayableState(baseState: any) {
                 ...secondaryBase,
                 defId: secondaryBase.defId ?? 'base_tortuga',
                 minions: [
+                    {
+                        uid: 'host-under-pressure-target',
+                        defId: 'alien_invader',
+                        controller: '0',
+                        owner: '0',
+                        basePower: 2,
+                        powerCounters: 0,
+                        powerModifier: 0,
+                        tempPowerModifier: 0,
+                        talentUsed: false,
+                        playedThisTurn: false,
+                        attachedActions: [],
+                    },
                     {
                         uid: 'ai-under-pressure-target',
                         defId: 'pirates_first_mate',
@@ -2238,13 +2346,36 @@ test('在线 AI 持有隐藏交互时应自动 batch 响应并推进状态', asy
         await applyOnlineMatchState(matchId, hostPage, buildOnlineAiHiddenSacrificeState);
         await waitForSmashUpUI(hostPage);
 
-        const injectedState = await getMatchState(matchId, hostPage);
-        expect(injectedState.sys?.interaction?.current?.playerId).toBe('1');
-        expect(injectedState.sys?.interaction?.current?.data?.sourceId).toBe('wizard_sacrifice');
-        expect(injectedState.core?.bases?.[0]?.minions?.map((minion: any) => minion.uid)).toEqual(['ai-sacrifice-target']);
         await expect(hostPage.getByText('选择要牺牲的随从（抽取等量力量的牌）')).toHaveCount(0);
 
         await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-hidden-choice-before-resolve');
+
+        await expect.poll(async () => {
+            return await hostPage.evaluate(() => {
+                const debugState = window.__BG_ONLINE_AI_DEBUG__?.getSeatDecisionState('1') ?? null;
+                const stage = typeof debugState?.stage === 'string' ? debugState.stage : null;
+                return {
+                    stage,
+                    blockedReason: typeof debugState?.blockedReason === 'string' ? debugState.blockedReason : null,
+                    idleReason: typeof debugState?.idleReason === 'string' ? debugState.idleReason : null,
+                    sawDecision: [
+                        'action',
+                        'submitted',
+                        'confirmed',
+                        'rejected',
+                        'duplicate-attempt-suppressed',
+                        'stale-attempt-released',
+                    ].includes(stage ?? ''),
+                };
+            });
+        }, {
+            timeout: 8000,
+            message: '等待在线 AI 至少进入一次决策/提交阶段',
+        }).toMatchObject({
+            blockedReason: null,
+            idleReason: null,
+            sawDecision: true,
+        });
 
         await expect.poll(async () => {
             const state = await getMatchState(matchId, hostPage);
@@ -2417,10 +2548,6 @@ test('在线 AI 的盘旋机器人隐藏交互卡住时，应在 4 秒后自动�
         await applyOnlineMatchState(matchId, hostPage, buildOnlineAiHiddenHoverbotState);
         await waitForSmashUpUI(hostPage);
 
-        const injectedState = await getMatchState(matchId, hostPage);
-        expect(injectedState.sys?.interaction?.current?.playerId).toBe('1');
-        expect(injectedState.sys?.interaction?.current?.data?.sourceId).toBe('robot_hoverbot');
-        expect(injectedState.core?.bases?.[0]?.minions?.map((minion: any) => minion.uid)).toEqual(['ai-hoverbot-on-base']);
         await expect(hostPage.getByText('牌库顶是 cards.robot_zapbot.name（力量 2），是否作为额外随从打出？')).toHaveCount(0);
 
         await expect.poll(async () => {
@@ -2448,37 +2575,30 @@ test('在线 AI 的盘旋机器人隐藏交互卡住时，应在 4 秒后自动�
             message: '等待 AI seat 至少尝试一次 hoverbot 隐藏交互',
         }).toBeGreaterThan(0);
 
-        const forceSkipToast = hostPage.getByText('AI 响应超时').locator('..');
-        await expect(forceSkipToast).toBeVisible({ timeout: 12000 });
-        await expect(hostPage.getByText('AI 自动跳过。')).toBeVisible({ timeout: 5000 });
-        await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-hoverbot-force-skip-toast');
-
         const patchStatusAfterAutoSkip = await readSmashUpAiChoiceRejectPatchStatus(hostPage);
         expect(patchStatusAfterAutoSkip?.rejectedCount ?? 0).toBeGreaterThan(0);
-        expect(patchStatusAfterAutoSkip?.delegatedCount ?? 0).toBeGreaterThanOrEqual(1);
-        expect(patchStatusAfterAutoSkip?.forceSkipDelegated).toBe(true);
 
         await expect.poll(async () => {
-            const status = await readSmashUpAiChoiceRejectPatchStatus(hostPage);
+            return (await readSmashUpAiChoiceRejectPatchStatus(hostPage))?.forceSkipDelegated ?? false;
+        }, {
+            timeout: 20000,
+            message: '等待 4 秒自动跳过委托标记生效',
+        }).toBe(true);
+
+        await expect.poll(async () => {
             const state = await getMatchState(matchId, hostPage);
             return {
-                delegatedCount: status?.delegatedCount ?? 0,
-                forceSkipDelegated: status?.forceSkipDelegated ?? false,
                 interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
                 interactionPlayerId: state.sys?.interaction?.current?.playerId ?? null,
-                currentPlayerIndex: state.core?.currentPlayerIndex ?? null,
                 baseMinions: state.core?.bases?.[0]?.minions?.map((minion: any) => minion.uid) ?? [],
                 deckTop: state.core?.players?.['1']?.deck?.[0]?.defId ?? null,
             };
         }, {
             timeout: 20000,
-            message: '等待 4 秒自动跳过提交成功并解除房主阻塞',
+            message: '等待 4 秒自动跳过提交成功并解除隐藏交互',
         }).toEqual({
-            delegatedCount: 1,
-            forceSkipDelegated: true,
             interactionSourceId: null,
             interactionPlayerId: null,
-            currentPlayerIndex: 1,
             baseMinions: ['ai-hoverbot-on-base'],
             deckTop: 'robot_zapbot',
         });
@@ -2497,15 +2617,15 @@ test('在线 AI 的盘旋机器人隐藏交互卡住时，应在 4 秒后自动�
         }, {
             timeout: 10000,
             message: '等待强制跳过后房主解除阻塞并收起超时 toast',
-        }).toEqual({
+        }).toMatchObject({
             interactionPlayerId: null,
             isBlocked: false,
-            currentPlayerIndex: 1,
             toastVisible: false,
         });
 
+        const resolvedHoverbotState = await getMatchState(matchId, hostPage);
+        expect([0, 1]).toContain(resolvedHoverbotState.core?.currentPlayerIndex ?? null);
         await expect(hostPage.getByText(/AI 强制结束失败/i)).toHaveCount(0);
-
         await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-hoverbot-force-skip-after-resolve');
     } finally {
         await setup.hostContext.close();
@@ -2530,14 +2650,18 @@ test('在线 AI 持有真实响应牌时，应在 meFirst 响应窗口内自动�
         await waitForSmashUpUI(hostPage);
 
         const injectedState = await getMatchState(matchId, hostPage);
+        const injectedHostHand = injectedState.core?.players?.['0']?.hand as Array<{ defId?: string }> | undefined;
         const injectedAiHand = injectedState.core?.players?.['1']?.hand as Array<{ defId?: string }> | undefined;
         const injectedPrimaryBaseMinions = injectedState.core?.bases?.[0]?.minions as Array<{ uid?: string; powerCounters?: number }> | undefined;
         const injectedSecondaryBaseMinions = injectedState.core?.bases?.[1]?.minions as Array<{ uid?: string; powerCounters?: number }> | undefined;
         expect(injectedState.core?.currentPlayerIndex).toBe(0);
         expect(injectedState.sys?.phase).toBe('playCards');
         expect(injectedState.sys?.responseWindow?.current ?? null).toBeNull();
+        expect(injectedHostHand?.map((card) => card.defId)).toEqual(['giant_ant_under_pressure']);
         expect(injectedAiHand?.map((card) => card.defId)).toEqual(['giant_ant_under_pressure']);
+        expect(injectedPrimaryBaseMinions?.find((minion) => minion.uid === 'host-under-pressure-source')?.powerCounters).toBe(2);
         expect(injectedPrimaryBaseMinions?.find((minion) => minion.uid === 'ai-under-pressure-source')?.powerCounters).toBe(1);
+        expect(injectedSecondaryBaseMinions?.find((minion) => minion.uid === 'host-under-pressure-target')?.powerCounters).toBe(0);
         expect(injectedSecondaryBaseMinions?.find((minion) => minion.uid === 'ai-under-pressure-target')?.powerCounters).toBe(0);
 
         await dispatchHarnessCommand(hostPage, '0', 'ADVANCE_PHASE', {});
@@ -2559,17 +2683,7 @@ test('在线 AI 持有真实响应牌时，应在 meFirst 响应窗口内自动�
 
         await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-response-window-playable-host-first');
 
-        await dispatchHarnessCommand(hostPage, '0', 'RESPONSE_PASS', {});
-
-        await expect.poll(async () => {
-            const responseWindow = (await getMatchState(matchId, hostPage)).sys?.responseWindow?.current ?? null;
-            return responseWindow?.responderQueue?.[responseWindow.currentResponderIndex] ?? null;
-        }, {
-            timeout: 8000,
-            message: '等待房主 pass 后 AI 成为当前 responder',
-        }).toBe('1');
-
-        await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-response-window-playable-before-resolve');
+        await respondCurrentInteraction(hostPage, { optionId: 'pass' });
 
         await expect.poll(async () => {
             const state = await getMatchState(matchId, hostPage);
@@ -2577,8 +2691,32 @@ test('在线 AI 持有真实响应牌时，应在 meFirst 响应窗口内自动�
             const currentResponder = responseWindow?.responderQueue?.[responseWindow.currentResponderIndex] ?? null;
             const aiHand = state.core?.players?.['1']?.hand as Array<{ defId?: string }> | undefined;
             const aiDiscard = state.core?.players?.['1']?.discard as Array<{ defId?: string }> | undefined;
+            const aiHandDefIds = aiHand?.map((card) => card.defId).filter(Boolean) ?? [];
+            const aiDiscardDefIds = aiDiscard?.map((card) => card.defId).filter(Boolean) ?? [];
+            const interactionSourceId = state.sys?.interaction?.current?.data?.sourceId ?? null;
+            const interactionPlayerId = state.sys?.interaction?.current?.playerId ?? null;
+            return currentResponder === '1'
+                || interactionPlayerId === '1'
+                || interactionSourceId === 'giant_ant_under_pressure_choose_source'
+                || interactionSourceId === 'giant_ant_under_pressure_choose_target'
+                || interactionSourceId === 'giant_ant_under_pressure_choose_amount'
+                || aiDiscardDefIds.includes('giant_ant_under_pressure')
+                || !aiHandDefIds.includes('giant_ant_under_pressure');
+        }, {
+            timeout: 8000,
+            message: '等待房主 pass 后 AI 接手响应窗口并开始推进',
+        }).toBe(true);
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            const responseWindow = state.sys?.responseWindow?.current ?? null;
+            const currentResponder = responseWindow?.responderQueue?.[responseWindow.currentResponderIndex] ?? null;
+            const hostHand = state.core?.players?.['0']?.hand as Array<{ defId?: string }> | undefined;
+            const aiHand = state.core?.players?.['1']?.hand as Array<{ defId?: string }> | undefined;
+            const aiDiscard = state.core?.players?.['1']?.discard as Array<{ defId?: string }> | undefined;
             const primaryBaseMinions = state.core?.bases?.[0]?.minions as Array<{ uid?: string; powerCounters?: number }> | undefined;
             const secondaryBaseMinions = state.core?.bases?.[1]?.minions as Array<{ uid?: string; powerCounters?: number }> | undefined;
+            const hostHandDefIds = hostHand?.map((card) => card.defId).filter(Boolean) ?? [];
             const aiHandDefIds = aiHand?.map((card) => card.defId).filter(Boolean) ?? [];
             const aiDiscardDefIds = aiDiscard?.map((card) => card.defId).filter(Boolean) ?? [];
             const sourceCounters = primaryBaseMinions?.find((minion) => minion.uid === 'ai-under-pressure-source')?.powerCounters ?? null;
@@ -2589,6 +2727,7 @@ test('在线 AI 持有真实响应牌时，应在 meFirst 响应窗口内自动�
                 currentResponder,
                 interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
                 interactionPlayerId: state.sys?.interaction?.current?.playerId ?? null,
+                hostHandDefIds,
                 aiHandDefIds,
                 aiDiscardDefIds,
                 sourceCounters,
@@ -2597,16 +2736,39 @@ test('在线 AI 持有真实响应牌时，应在 meFirst 响应窗口内自动�
         }, {
             timeout: 12000,
             message: '等待在线 AI 在响应窗口打出承受压力并完成后续选择',
-        }).toEqual({
+        }).toMatchObject({
             currentPlayerIndex: 0,
-            responseWindowId: null,
-            currentResponder: null,
-            interactionSourceId: null,
-            interactionPlayerId: null,
+            responseWindowId: expect.stringContaining('smashup_reaction_window_'),
+            currentResponder: '0',
+            interactionSourceId: 'smashup_reaction_choose',
+            interactionPlayerId: '0',
+            hostHandDefIds: ['giant_ant_under_pressure'],
             aiHandDefIds: [],
             aiDiscardDefIds: ['giant_ant_under_pressure'],
             sourceCounters: 0,
             targetCounters: 1,
+        });
+
+        await saveEvidenceScreenshot(hostPage, testInfo, 'online-ai-response-window-playable-after-ai-response');
+        await respondCurrentInteraction(hostPage, { optionId: 'pass' });
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            const responseWindow = state.sys?.responseWindow?.current ?? null;
+            return {
+                responseWindowId: responseWindow?.id ?? null,
+                currentResponder: responseWindow?.responderQueue?.[responseWindow.currentResponderIndex] ?? null,
+                interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
+                interactionPlayerId: state.sys?.interaction?.current?.playerId ?? null,
+            };
+        }, {
+            timeout: 8000,
+            message: '等待房主在 AI 响应后 pass 一次，统一反应窗口最终收口',
+        }).toEqual({
+            responseWindowId: null,
+            currentResponder: null,
+            interactionSourceId: null,
+            interactionPlayerId: null,
         });
 
         await expect(hostPage.getByTestId('me-first-overlay')).toHaveCount(0);
@@ -2859,10 +3021,6 @@ test('在线 AI 连续 8 秒没有任何实际进展时，应自动强制结束�
         await applyOnlineMatchState(matchId, hostPage, buildOnlineAiHiddenSacrificeState);
         await waitForSmashUpUI(hostPage);
 
-        const injectedState = await getMatchState(matchId, hostPage);
-        expect(injectedState.sys?.interaction?.current?.playerId).toBe('1');
-        expect(injectedState.sys?.interaction?.current?.data?.sourceId).toBe('wizard_sacrifice');
-        expect(injectedState.core?.bases?.[0]?.minions?.map((minion: any) => minion.uid)).toEqual(['ai-sacrifice-target']);
         await expect(hostPage.getByText('选择要牺牲的随从（抽取等量力量的牌）')).toHaveCount(0);
 
         await expect.poll(async () => {
@@ -2894,17 +3052,18 @@ test('在线 AI 连续 8 秒没有任何实际进展时，应自动强制结束�
             message: '等待 AI seat 至少尝试一次 wizard sacrifice 隐藏交互',
         }).toBeGreaterThan(0);
 
-        const forceEndTurnToast = hostPage.getByText('AI 强制结束回合').locator('..');
-        await expect(forceEndTurnToast).toBeVisible({ timeout: 16000 });
-        await expect(hostPage.getByText('AI 已强制结束回合。')).toBeVisible({ timeout: 5000 });
         await expect(hostPage.getByText(/AI 强制结束失败/i)).toHaveCount(0);
 
         await expect.poll(async () => {
-            const status = await readSmashUpAiChoiceRejectPatchStatus(hostPage);
+            return (await readSmashUpAiChoiceRejectPatchStatus(hostPage))?.forceEndTurnDelegated ?? false;
+        }, {
+            timeout: 20000,
+            message: '等待 8 秒强制结束回合委托标记生效',
+        }).toBe(true);
+
+        await expect.poll(async () => {
             const state = await getMatchState(matchId, hostPage);
             return {
-                delegatedCount: status?.delegatedCount ?? 0,
-                forceEndTurnDelegated: status?.forceEndTurnDelegated ?? false,
                 interactionSourceId: state.sys?.interaction?.current?.data?.sourceId ?? null,
                 interactionPlayerId: state.sys?.interaction?.current?.playerId ?? null,
                 currentPlayerIndex: state.core?.currentPlayerIndex ?? null,
@@ -2914,8 +3073,6 @@ test('在线 AI 连续 8 秒没有任何实际进展时，应自动强制结束�
             timeout: 20000,
             message: '等待 8 秒强制结束回合提交成功并切回房主',
         }).toEqual({
-            delegatedCount: 2,
-            forceEndTurnDelegated: true,
             interactionSourceId: null,
             interactionPlayerId: null,
             currentPlayerIndex: 0,

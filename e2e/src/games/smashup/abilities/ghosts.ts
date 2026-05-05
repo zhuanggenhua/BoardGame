@@ -4,33 +4,45 @@
  * 主题：手牌少时获得增益、弃牌操作?
  */
 
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { grantContextualExtraMinion, grantContextualExtraAction, grantExtraMinion, destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, recoverCardsFromDiscard, buildAbilityFeedback } from '../domain/abilityHelpers';
+import { grantContextualExtraMinion, grantContextualExtraAction, destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, recoverCardsFromDiscard, buildAbilityFeedback } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { CardsDrawnEvent, VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, OngoingDetachedEvent, CardsDiscardedEvent, ActionPlayedEvent, CardToDeckBottomEvent, MinionControlChangedEvent } from '../domain/types';
-import type { MinionCardDef, ActionCardDef } from '../domain/types';
+import type { CardsDrawnEvent, VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, OngoingDetachedEvent, CardsDiscardedEvent, MinionControlChangedEvent, SmashUpCore, CardInstance } from '../domain/types';
+import type { MinionCardDef } from '../domain/types';
 import { drawCards } from '../domain/utils';
 import { registerProtection } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext } from '../domain/ongoingEffects';
 import { registerDiscardPlayProvider } from '../domain/discardPlayability';
 import { getCardDef, getBaseDef } from '../data/cards';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import type { InteractionDescriptor, PromptOption } from '../../../engine/systems/InteractionSystem';
+import type { MatchState, PlayerId } from '../../../engine/types';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createBranchProgram,
+    createEffectProgram,
+    createPromptProgram,
+} from '../domain/abilityRuntime';
 import { validateDiscardMinionPlaySemantics } from '../domain/playLegality';
 
 /** 注册幽灵派系所有能力*/
 export function registerGhostAbilities(): void {
     // 幽灵 onPlay：弃一张手牌
-    registerAbility('ghost_ghost', 'onPlay', ghostGhost);
+    registerAbilityProgram('ghost_ghost', 'onPlay', {
+        program: ghostGhostProgram,
+        createContext: createGhostGhostContext,
+    });
     // 招魂（行动卡）：手牌堆?时抽牌??
-    registerAbility('ghost_seance', 'onPlay', ghostSeance);
+    registerSimpleAbility('ghost_seance', 'onPlay', ghostSeance);
     // 阴暗交易（行动卡）：手牌堆?时获得?VP
-    registerAbility('ghost_shady_deal', 'onPlay', ghostShadyDeal);
+    registerSimpleAbility('ghost_shady_deal', 'onPlay', ghostShadyDeal);
     // 悄然而至（行动卡）：额外打出一个随从和一个行动
-    registerAbility('ghost_ghostly_arrival', 'onPlay', ghostGhostlyArrival);
+    registerSimpleAbility('ghost_ghostly_arrival', 'onPlay', ghostGhostlyArrival);
     // 灵魂（随从onPlay）：弃等量力量的牌消灭一个随从
-    registerAbility('ghost_spirit', 'onPlay', ghostSpirit);
+    registerAbilityProgram('ghost_spirit', 'onPlay', {
+        program: ghostSpiritProgram,
+        createContext: createGhostSpiritContext,
+    });
 
     // === ongoing 效果注册 ===
     // ghost_incorporeal: 打出到随从上，持续：该随从不受其他玩家卡牌影响?
@@ -40,15 +52,21 @@ export function registerGhostAbilities(): void {
     registerProtection('ghost_haunting', 'affect', ghostHauntingChecker);
 
     // ghost_make_contact: ongoing 卡，附着到对手随从上改变控制权
-    registerAbility('ghost_make_contact', 'onPlay', ghostMakeContact);
+    registerSimpleAbility('ghost_make_contact', 'onPlay', ghostMakeContact);
     // 亡者崛起：弃牌→从弃牌堆打出力?弃牌数的额外随从
-    registerAbility('ghost_the_dead_rise', 'onPlay', ghostTheDeadRise);
+    registerAbilityProgram('ghost_the_dead_rise', 'onPlay', {
+        program: ghostTheDeadRiseProgram,
+        createContext: createGhostTheDeadRiseContext,
+    });
     // 越过边界：选一个卡名，取回弃牌堆中所有同名随从
-    registerAbility('ghost_across_the_divide', 'onPlay', ghostAcrossTheDivide);
+    registerAbilityProgram('ghost_across_the_divide', 'onPlay', {
+        program: ghostAcrossTheDivideProgram,
+        createContext: createGhostAcrossTheDivideContext,
+    });
 
     // === POD 版专属能力注册 ===
     // ghost_make_contact_pod：打出时若有手牌则自毁，否则控制随从
-    registerAbility('ghost_make_contact_pod', 'onPlay', ghostMakeContactPod);
+    registerSimpleAbility('ghost_make_contact_pod', 'onPlay', ghostMakeContactPod);
 
     // === 弃牌堆出牌能力注册 ===
     // 幽灵之主：手牌≤2时可从弃牌堆打出（替代正常随从打出，消耗随从额度）
@@ -76,49 +94,355 @@ export function registerGhostAbilities(): void {
     });
 }
 
-/** 幽灵 onPlay：弃一张手牌*/
-function ghostGhost(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    const discardable = player.hand.filter(c => c.uid !== ctx.cardUid);
+type GhostPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
 
-    if (discardable.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.hand_empty', ctx.now)] };
+type GhostGhostContext = GhostPromptContext & {
+    playedCardUid: string;
+};
 
-    // 先生成初始选项（基于当前状态）
-    const initialOptions = discardable.map((c, i) => {
-        const def = getCardDef(c.defId);
-        const name = def?.name ?? c.defId;
-        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const, displayMode: 'card' as const };
-    });
-    const skipOption = { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const };
+type GhostSpiritCandidate = {
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    label: string;
+};
 
-    const allOptions = [...initialOptions, skipOption];
+type GhostSpiritContext = GhostPromptContext & {
+    playedCardUid: string;
+    candidates: GhostSpiritCandidate[];
+};
 
-    const pid = ctx.playerId;
-    const playedCardUid = ctx.cardUid;
-    const interaction = createSimpleChoice(
-        `ghost_ghost_${ctx.now}`,
-        pid,
-        '选择要弃掉的手牌（可跳过）',
-        allOptions as any[],
-        { sourceId: 'ghost_ghost', targetType: 'hand' },
-    );
+type GhostSpiritDiscardContext = GhostPromptContext & {
+    minionUid: string;
+    baseIndex: number;
+    requiredCount: number;
+};
 
-    // 手牌弃牌类交互：使用 optionsGenerator 动态生成选项
-    // 确保队列中等待时手牌变化后选项正确（如同时触发鬼屋弃牌）
-    (interaction.data as any).optionsGenerator = (state: any) => {
-        const p = state.core?.players?.[pid];
-        if (!p || !p.hand || p.hand.length === 0) return [skipOption];
-        const cards = p.hand.filter((c: any) => c.uid !== playedCardUid);
-        if (cards.length === 0) return [skipOption];
-        const opts = cards.map((c: any, i: number) => {
-            const def = getCardDef(c.defId);
-            return { id: `card-${i}`, label: def?.name ?? c.defId, value: { cardUid: c.uid, defId: c.defId }, displayMode: 'card' as const };
-        });
-        return [...opts, skipOption];
+type GhostSpiritConfirmContext = GhostPromptContext & {
+    minionUid: string;
+    baseIndex: number;
+};
+
+type GhostTheDeadRiseContext = GhostPromptContext & {
+    playedCardUid: string;
+    maxDiscard: number;
+};
+
+type GhostDeadRiseCandidate = {
+    cardUid: string;
+    defId: string;
+    power: number;
+    label: string;
+};
+
+type GhostTheDeadRisePlayContext = GhostPromptContext & {
+    discardCount: number;
+    eligible: GhostDeadRiseCandidate[];
+};
+
+type GhostTheDeadRiseBaseContext = GhostPromptContext & {
+    cardUid: string;
+    defId: string;
+    power: number;
+};
+
+type GhostAcrossTheDivideGroup = {
+    defId: string;
+    uids: string[];
+    name: string;
+};
+
+type GhostAcrossTheDivideContext = GhostPromptContext & {
+    groups: GhostAcrossTheDivideGroup[];
+};
+
+type GhostCardChoiceValue = { cardUid: string; defId: string };
+type GhostSkipValue = { skip: true };
+type GhostBaseChoiceValue = { baseIndex: number; baseDefId?: string };
+type GhostSpiritChoiceValue = { minionUid?: string; baseIndex?: number; defId?: string; __cancel__?: true };
+type GhostConfirmChoiceValue = { confirm?: boolean };
+type GhostAcrossChoiceValue = { defId?: string; __cancel__?: true };
+type GhostDeadRisePlayChoiceValue = { cardUid?: string; defId?: string; power?: number; baseIndex?: number; skip?: true };
+
+function attachOptionsGenerator<T>(
+    interaction: InteractionDescriptor<T>,
+    optionsGenerator: (state: MatchState<SmashUpCore>) => unknown[],
+): InteractionDescriptor<T> {
+    return {
+        ...interaction,
+        data: {
+            ...(interaction.data ?? {}),
+            optionsGenerator,
+        },
     };
-
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
+
+function isSkipSelection(value: unknown): value is GhostSkipValue {
+    return typeof value === 'object' && value !== null && 'skip' in value;
+}
+
+function isCancelSelection(value: unknown): value is { __cancel__: true } {
+    return typeof value === 'object' && value !== null && '__cancel__' in value;
+}
+
+function getSingleCardSelection(value: unknown): GhostCardChoiceValue | null {
+    if (typeof value !== 'object' || value === null) return null;
+    const record = value as { cardUid?: unknown; defId?: unknown };
+    if (typeof record.cardUid !== 'string' || typeof record.defId !== 'string') return null;
+    return { cardUid: record.cardUid, defId: record.defId };
+}
+
+function getSelectedCardUids(value: unknown): string[] {
+    const selected = Array.isArray(value) ? value : value ? [value] : [];
+    return selected
+        .map((item) => (typeof item === 'object' && item !== null ? (item as { cardUid?: unknown }).cardUid : undefined))
+        .filter((cardUid): cardUid is string => typeof cardUid === 'string');
+}
+
+function buildGhostHandOptions(
+    hand: CardInstance[],
+    excludedUid?: string,
+    options?: { includeSkip?: boolean; skipLabel?: string },
+): PromptOption<GhostCardChoiceValue | GhostSkipValue>[] {
+    const cards = hand.filter((card) => card.uid !== excludedUid);
+    const cardOptions: PromptOption<GhostCardChoiceValue | GhostSkipValue>[] = cards.map((card, index) => {
+        const def = getCardDef(card.defId);
+        return {
+            id: `card-${index}`,
+            label: def?.name ?? card.defId,
+            value: { cardUid: card.uid, defId: card.defId },
+            displayMode: 'card' as const,
+        };
+    });
+    if (!options?.includeSkip) {
+        return cardOptions;
+    }
+    return [
+        ...cardOptions,
+        {
+            id: 'skip',
+            label: options.skipLabel ?? '跳过',
+            value: { skip: true },
+            displayMode: 'button' as const,
+        },
+    ];
+}
+
+function buildGhostGhostOptionsFromState(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    playedCardUid: string,
+): PromptOption<GhostCardChoiceValue | GhostSkipValue>[] {
+    const player = core.players[playerId];
+    if (!player) return [{ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }];
+    return buildGhostHandOptions(player.hand, playedCardUid, { includeSkip: true });
+}
+
+function buildGhostSpiritCandidates(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    playedCardUid: string,
+): GhostSpiritCandidate[] {
+    const player = core.players[playerId];
+    if (!player) return [];
+    const discardableCount = player.hand.filter((card) => card.uid !== playedCardUid).length;
+    if (discardableCount <= 0) return [];
+
+    const targets: GhostSpiritCandidate[] = [];
+    for (let i = 0; i < core.bases.length; i += 1) {
+        for (const minion of core.bases[i].minions) {
+            const power = getMinionPower(core, minion, i);
+            if (power > discardableCount) continue;
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const baseDef = getBaseDef(core.bases[i].defId);
+            targets.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: i,
+                label: `${def?.name ?? minion.defId} (力量 ${power}, 需要弃 ${power} 张牌) @ ${baseDef?.name ?? `基地 ${i + 1}`}`,
+            });
+        }
+    }
+    return targets;
+}
+
+function buildGhostSpiritTargetOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+    playedCardUid: string,
+) {
+    return buildMinionTargetOptions(
+        buildGhostSpiritCandidates(core, playerId, playedCardUid),
+        { state: core, sourcePlayerId: playerId, effectType: 'destroy' },
+    );
+}
+
+function buildGhostSpiritDiscardOptions(
+    core: SmashUpCore,
+    playerId: PlayerId,
+): PromptOption<GhostCardChoiceValue | GhostSkipValue>[] {
+    const player = core.players[playerId];
+    if (!player) return [{ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }];
+    return buildGhostHandOptions(player.hand, undefined, { includeSkip: true });
+}
+
+function buildGhostDeadRiseCandidatesFromCards(
+    cards: CardInstance[],
+    discardCount: number,
+): GhostDeadRiseCandidate[] {
+    return cards
+        .filter((card) => {
+            if (card.type !== 'minion') return false;
+            const def = getCardDef(card.defId) as MinionCardDef | undefined;
+            return def !== undefined && def.power < discardCount;
+        })
+        .map((card) => {
+            const def = getCardDef(card.defId) as MinionCardDef | undefined;
+            const power = def?.power ?? 0;
+            return {
+                cardUid: card.uid,
+                defId: card.defId,
+                power,
+                label: `${def?.name ?? card.defId} (力量 ${power})`,
+            };
+        });
+}
+
+function buildGhostDeadRisePlayOptions(
+    eligible: GhostDeadRiseCandidate[],
+): PromptOption<GhostDeadRisePlayChoiceValue>[] {
+    return [
+        ...eligible.map((card, index) => ({
+            id: `card-${index}`,
+            label: card.label,
+            value: { cardUid: card.cardUid, defId: card.defId, power: card.power },
+            displayMode: 'card' as const,
+        })),
+        {
+            id: 'skip',
+            label: '跳过',
+            value: { skip: true },
+            displayMode: 'button' as const,
+        },
+    ];
+}
+
+function buildGhostAcrossTheDivideGroups(cards: CardInstance[]): GhostAcrossTheDivideGroup[] {
+    const groups = new Map<string, GhostAcrossTheDivideGroup>();
+    for (const card of cards) {
+        if (card.type !== 'minion') continue;
+        const existing = groups.get(card.defId);
+        if (existing) {
+            existing.uids.push(card.uid);
+            continue;
+        }
+        const def = getCardDef(card.defId);
+        groups.set(card.defId, {
+            defId: card.defId,
+            uids: [card.uid],
+            name: def?.name ?? card.defId,
+        });
+    }
+    return Array.from(groups.values());
+}
+
+function buildGhostAcrossTheDivideOptions(
+    groups: GhostAcrossTheDivideGroup[],
+): PromptOption<GhostAcrossChoiceValue>[] {
+    return groups.map((group, index) => ({
+        id: `group-${index}`,
+        label: `${group.name} (×${group.uids.length})`,
+        value: { defId: group.defId },
+    }));
+}
+
+function createGhostGhostContext(ctx: AbilityContext): GhostGhostContext {
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        playedCardUid: ctx.cardUid,
+    };
+}
+
+function createGhostSpiritContext(ctx: AbilityContext): GhostSpiritContext {
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        playedCardUid: ctx.cardUid,
+        candidates: buildGhostSpiritCandidates(ctx.state, ctx.playerId, ctx.cardUid),
+    };
+}
+
+function createGhostTheDeadRiseContext(ctx: AbilityContext): GhostTheDeadRiseContext {
+    const player = ctx.state.players[ctx.playerId];
+    const discardable = player?.hand.filter((card) => card.uid !== ctx.cardUid) ?? [];
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        playedCardUid: ctx.cardUid,
+        maxDiscard: discardable.length,
+    };
+}
+
+function createGhostAcrossTheDivideContext(ctx: AbilityContext): GhostAcrossTheDivideContext {
+    const player = ctx.state.players[ctx.playerId];
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        groups: buildGhostAcrossTheDivideGroups(player?.discard ?? []),
+    };
+}
+
+const ghostGhostPromptProgram = createPromptProgram<GhostGhostContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'ghost_ghost',
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `ghost_ghost_${context.now}`,
+            context.playerId,
+            '选择要弃掉的手牌（可跳过）',
+            buildGhostGhostOptionsFromState(context.matchState.core, context.playerId, context.playedCardUid),
+            {
+                sourceId: 'ghost_ghost',
+                targetType: 'hand',
+                autoRefresh: 'hand',
+                responseValidationMode: 'live',
+            },
+        ),
+        (state) => buildGhostGhostOptionsFromState(state.core, context.playerId, context.playedCardUid),
+    ),
+    onResolve: ({ playerId, value, timestamp }) => {
+        if (isSkipSelection(value)) return { events: [] };
+        const selection = getSingleCardSelection(value);
+        if (!selection) return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.CARDS_DISCARDED,
+                payload: { playerId, cardUids: [selection.cardUid] },
+                timestamp,
+            } as CardsDiscardedEvent],
+        };
+    },
+});
+
+const ghostGhostProgram = createBranchProgram<GhostGhostContext, SmashUpCore, SmashUpEvent>({
+    when: (context) => buildGhostGhostOptionsFromState(
+        context.matchState.core,
+        context.playerId,
+        context.playedCardUid,
+    ).filter((option) => !isSkipSelection(option.value)).length === 0,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.hand_empty', context.now)],
+    })),
+    else: ghostGhostPromptProgram,
+});
 
 /** 招魂 onPlay：手牌≤2时抽牌??*/
 function ghostSeance(ctx: AbilityContext): AbilityResult {
@@ -209,354 +533,393 @@ function ghostMakeContact(ctx: AbilityContext): AbilityResult {
     return { events: buildMakeContactControlChangeEvents(ctx) };
 }
 
-/**
- * 灵魂 onPlay：选择一个随从，弃等量力量的手牌来消灭它
- */
-function ghostSpirit(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    const discardable = player.hand.filter(c => c.uid !== ctx.cardUid);
-    if (discardable.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.hand_empty', ctx.now)] };
-
-    // 找所有可消灭的随从（力量 ≤ 可弃手牌数，不限所有者）
-    // 描述：「选择一个随从。你可以弃置等同于该随从力量数量的卡来消灭它。」
-    const targets: { uid: string; defId: string; baseIndex: number; owner: string; power: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            const power = getMinionPower(ctx.state, m, i);
-            if (power <= discardable.length) {
-                const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? m.defId;
-                const baseDef = getBaseDef(ctx.state.bases[i].defId);
-                const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-                targets.push({ uid: m.uid, defId: m.defId, baseIndex: i, owner: m.owner, power, label: `${name} (力量 ${power}, 需要?${power} 张牌) @ ${baseName}` });
-            }
-        }
-    }
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    // Prompt 选择（包含取消选项）
-    const options = targets.map(t => ({ uid: t.uid, defId: t.defId, baseIndex: t.baseIndex, label: t.label }));
-    const interaction = createSimpleChoice(
-        `ghost_spirit_${ctx.now}`, ctx.playerId,
-        '选择要消灭的随从（需弃等量力量的手牌）', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }),
-        { sourceId: 'ghost_spirit', targetType: 'minion', autoCancelOption: true }
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-// ============================================================================
-// 亡者崛起：弃任意数量牌→从弃牌堆打出力?弃牌数的额外随从
-// ============================================================================
-
-/** 亡者崛起?onPlay：Prompt 选择弃牌数量 */
-function ghostTheDeadRise(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    const discardable = player.hand.filter(c => c.uid !== ctx.cardUid);
-    if (discardable.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.hand_empty', ctx.now)] };
-    // 检查弃牌堆中有没有随从可打出（至少力量<1，即力量0的也不行，需力量<弃牌数）
-    // 先让玩家选弃几张）?
-    const options = discardable.map((c, i) => {
-        const def = getCardDef(c.defId);
-        const name = def?.name ?? c.defId;
-        return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const, displayMode: 'card' as const };
-    });
-    const interaction = createSimpleChoice(
-        `ghost_the_dead_rise_discard_${ctx.now}`, ctx.playerId,
-        '亡者崛起：选择要弃掉的手牌', [...options, { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }] as any[], { sourceId: 'ghost_the_dead_rise_discard', targetType: 'hand' },
-        undefined, { min: 0, max: discardable.length },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-// ============================================================================
-// 越过边界：选一个卡名，取回弃牌堆中所有同名随从
-// ============================================================================
-
-/** 越过边界 onPlay：按 defId 分组弃牌堆随从，选一组取?*/
-function ghostAcrossTheDivide(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    const minionsInDiscard = player.discard.filter(c => c.type === 'minion');
-    if (minionsInDiscard.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
-    // ?defId 分组
-    const groups = new Map<string, { defId: string; uids: string[]; name: string }>();
-    for (const c of minionsInDiscard) {
-        if (!groups.has(c.defId)) {
-            const def = getCardDef(c.defId);
-            groups.set(c.defId, { defId: c.defId, uids: [], name: def?.name ?? c.defId });
-        }
-        groups.get(c.defId)!.uids.push(c.uid);
-    }
-    const groupList = Array.from(groups.values());
-    const options = groupList.map((g, i) => ({
-        id: `group-${i}`, label: `${g.name} (×${g.uids.length})`, value: { defId: g.defId },
-    }));
-    const interaction = createSimpleChoice(
-        `ghost_across_the_divide_${ctx.now}`, ctx.playerId,
-        '越过边界：选择一个卡名（取回所有同名随从）', options as any[],
-        { sourceId: 'ghost_across_the_divide', targetType: 'generic', autoCancelOption: true },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-// ============================================================================
-// Prompt 继续函数
-// ============================================================================
-
-/** 注册幽灵派系的交互解决处理函数 */
-export function registerGhostInteractionHandlers(): void {
-    // 幽灵：选择弃哪张手牌（可跳过）
-    registerInteractionHandler('ghost_ghost', (state, playerId, value, _iData, _random, timestamp) => {
-        if (value && (value as any).skip) return { state, events: [] };
-        const { cardUid } = value as { cardUid: string };
+const ghostSpiritConfirmPromptProgram = createPromptProgram<GhostSpiritConfirmContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'ghost_spirit_confirm',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `ghost_spirit_confirm_${context.now}`,
+        context.playerId,
+        '是否消灭该随从？（力量 0，无需弃牌）',
+        [
+            { id: 'yes', label: '消灭', value: { confirm: true } },
+            { id: 'no', label: '跳过', value: { confirm: false } },
+        ],
+        {
+            sourceId: 'ghost_spirit_confirm',
+            targetType: 'button',
+        },
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const choice = value as GhostConfirmChoiceValue | undefined;
+        if (!choice?.confirm) return { events: [] };
+        const base = state.core.bases[context.baseIndex];
+        const target = base?.minions.find((minion) => minion.uid === context.minionUid);
+        if (!target) return { events: [] };
         return {
-            state, events: [{
-                type: SU_EVENTS.CARDS_DISCARDED,
-                payload: { playerId, cardUids: [cardUid] },
-                timestamp,
-            }]
+            events: [destroyMinion(target.uid, target.defId, context.baseIndex, target.owner, playerId, 'ghost_spirit', timestamp)],
         };
-    });
+    },
+});
 
-    // 灵魂：选择目标后→链式创建弃牌确认交互（"你可以"=可跳过）
-    registerInteractionHandler('ghost_spirit', (state, playerId, value, _iData, _random, timestamp) => {
-        // 检查取消标记
-        if ((value as any).__cancel__) return { state, events: [] };
+const ghostSpiritDiscardPromptProgram = createPromptProgram<GhostSpiritDiscardContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'ghost_spirit_discard',
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `ghost_spirit_discard_${context.now}`,
+            context.playerId,
+            `选择 ${context.requiredCount} 张手牌弃置来消灭该随从（可跳过）`,
+            buildGhostSpiritDiscardOptions(context.matchState.core, context.playerId),
+            {
+                sourceId: 'ghost_spirit_discard',
+                targetType: 'hand',
+                multi: { min: context.requiredCount, max: context.requiredCount },
+                autoRefresh: 'hand',
+                responseValidationMode: 'live',
+            },
+        ),
+        (state) => buildGhostSpiritDiscardOptions(state.core, context.playerId),
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        if (isSkipSelection(value)) return { events: [] };
+        const cardUids = getSelectedCardUids(value);
+        if (cardUids.length !== context.requiredCount) return { events: [] };
+        const base = state.core.bases[context.baseIndex];
+        const target = base?.minions.find((minion) => minion.uid === context.minionUid);
+        if (!target) return { events: [] };
+        return {
+            events: [
+                {
+                    type: SU_EVENTS.CARDS_DISCARDED,
+                    payload: { playerId, cardUids },
+                    timestamp,
+                } as CardsDiscardedEvent,
+                destroyMinion(target.uid, target.defId, context.baseIndex, target.owner, playerId, 'ghost_spirit', timestamp),
+            ],
+        };
+    },
+});
 
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        const power = getMinionPower(state.core, target, baseIndex);
-        const player = state.core.players[playerId];
-        const discardable = player.hand.filter(c => c.uid !== minionUid);
+const ghostSpiritPromptProgram = createPromptProgram<GhostSpiritContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'ghost_spirit',
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `ghost_spirit_${context.now}`,
+            context.playerId,
+            '选择要消灭的随从（需弃等量力量的手牌）',
+            buildGhostSpiritTargetOptions(context.matchState.core, context.playerId, context.playedCardUid),
+            {
+                sourceId: 'ghost_spirit',
+                targetType: 'minion',
+                autoCancelOption: true,
+                responseValidationMode: 'live',
+            },
+        ),
+        (state) => buildGhostSpiritTargetOptions(state.core, context.playerId, context.playedCardUid),
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        if (isCancelSelection(value)) return { events: [] };
+        const choice = value as GhostSpiritChoiceValue | undefined;
+        if (!choice?.minionUid || choice.baseIndex === undefined) return { events: [] };
 
-        // 手牌不够弃→无法消灭，直接跳过（不创建交互）
-        if (discardable.length < power) {
-            return { state, events: [] };
-        }
+        const currentCandidates = buildGhostSpiritCandidates(state.core, playerId, context.playedCardUid);
+        const candidate = currentCandidates.find((item) => item.uid === choice.minionUid && item.baseIndex === choice.baseIndex);
+        if (!candidate) return { events: [] };
 
-        // 力量为 0 → 无需弃牌直接消灭（但仍需确认"你可以"）
+        const base = state.core.bases[candidate.baseIndex];
+        const target = base?.minions.find((minion) => minion.uid === candidate.uid);
+        if (!target) return { events: [] };
+
+        const power = getMinionPower(state.core, target, candidate.baseIndex);
         if (power === 0) {
-            const base = state.core.bases[baseIndex];
-            const targetMinion = base.minions.find(m => m.uid === minionUid);
-            const confirmInteraction = createSimpleChoice(
-                `ghost_spirit_confirm_${timestamp}`, playerId,
-                `是否消灭该随从？（力量 0，无需弃牌）`,
-                [
-                    { id: 'yes', label: '消灭', value: { confirm: true, minionUid, minionDefId: targetMinion?.defId, baseIndex, baseDefId: base.defId } },
-                    { id: 'no', label: '跳过', value: { confirm: false, minionDefId: targetMinion?.defId } },
-                ], { sourceId: 'ghost_spirit_confirm', targetType: 'minion' }
-            );
-            return { state: queueInteraction(state, confirmInteraction), events: [] };
-        }
-
-        // 力量>0 → 让玩家选择弃哪些牌（多选，恰好 power 张，或者不选任何牌跳过）
-        const cardOptions = discardable.map((c, i) => {
-            const def = getCardDef(c.defId);
-            const name = def?.name ?? c.defId;
-            return { id: `card-${i}`, label: name, value: { cardUid: c.uid, defId: c.defId }, _source: 'hand' as const, displayMode: 'card' as const };
-        });
-        // 使用 min=0 允许不选（跳过），max=power 限制上限
-        // 但在 handler 中只接受 0 张（跳过）或 power 张（执行）
-        const skipOption = { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const };
-        const discardInteraction = createSimpleChoice(
-            `ghost_spirit_discard_${timestamp}`, playerId,
-            `选择 ${power} 张手牌弃置来消灭该随从（可跳过）`,
-            [...cardOptions, skipOption] as any[],
-            { sourceId: 'ghost_spirit_discard', targetType: 'hand', multi: { min: 0, max: power } },
-        );
-        return {
-            state: queueInteraction(state, {
-                ...discardInteraction,
-                data: { ...discardInteraction.data, continuationContext: { minionUid, baseIndex, requiredCount: power } },
-            }),
-            events: [],
-        };
-    });
-
-    // 灵魂弃牌确认：玩家选择了弃哪些牌（或跳过）
-    registerInteractionHandler('ghost_spirit_discard', (state, playerId, value, iData, _random, timestamp) => {
-        const ctx = iData?.continuationContext as { minionUid: string; baseIndex: number; requiredCount: number } | undefined;
-        if (!ctx) return undefined;
-
-        // 多选模式：value 可能是数组或单个对象
-        const selected = Array.isArray(value) ? value : value ? [value] : [];
-        const cardUids = selected.map((v: any) => v.cardUid).filter(Boolean) as string[];
-
-        // 只接受两种情况：
-        // 1. 选择 0 张卡牌 → 跳过（不执行效果）
-        // 2. 选择恰好 power 张卡牌 → 执行效果
-        // 其他情况（1-2 张等部分选择）→ 拒绝（返回 undefined 让系统提示错误）
-        if (cardUids.length === 0) {
-            // 跳过
-            return { state, events: [] };
-        }
-
-        if (cardUids.length !== ctx.requiredCount) {
-            // 部分选择，拒绝
-            return undefined;
-        }
-
-        // 执行效果：弃牌并消灭随从
-        const base = state.core.bases[ctx.baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === ctx.minionUid);
-        if (!target) return { state, events: [] };
-        const events: SmashUpEvent[] = [
-            { type: SU_EVENTS.CARDS_DISCARDED, payload: { playerId, cardUids }, timestamp },
-            destroyMinion(target.uid, target.defId, ctx.baseIndex, target.owner, playerId, 'ghost_spirit', timestamp),
-        ];
-        return { state, events };
-    });
-
-    // 灵魂力量0确认：是否消灭（无需弃牌）
-    registerInteractionHandler('ghost_spirit_confirm', (state, playerId, value, _iData, _random, timestamp) => {
-        const { confirm, minionUid, baseIndex } = value as { confirm: boolean; minionUid?: string; baseIndex?: number };
-        if (!confirm || minionUid === undefined || baseIndex === undefined) return { state, events: [] };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return { state, events: [] };
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ghost_spirit', timestamp)] };
-    });
-
-    // 亡者崛起：多选弃牌后→链式选择弃牌堆中力量<弃牌数的随从（可跳过）
-    registerInteractionHandler('ghost_the_dead_rise_discard', (state, playerId, value, _iData, _random, timestamp) => {
-        const selectedCards = Array.isArray(value) ? value as Array<{ cardUid: string }> : [];
-        // min:0 允许不选，空数组 = 跳过
-        if (selectedCards.length === 0) return { state, events: [] };
-        const discardUids = selectedCards.map(v => v.cardUid);
-        const discardCount = discardUids.length;
-        const events: SmashUpEvent[] = [{
-            type: SU_EVENTS.CARDS_DISCARDED,
-            payload: { playerId, cardUids: discardUids },
-            timestamp,
-        }];
-        const player = state.core.players[playerId];
-        // 注意：CARDS_DISCARDED 事件还未 reduce，刚弃的牌仍在 hand 中，需要合并：
-        // 1. 原弃牌堆中已有的随从
-        // 2. 本次刚弃掉的手牌中的随从（从 hand 中找 discardUids 对应的牌）
-        const justDiscarded = player.hand.filter(c => discardUids.includes(c.uid));
-        const allDiscardMinions = [...player.discard, ...justDiscarded];
-        const eligible = allDiscardMinions.filter(c => {
-            if (c.type !== 'minion') return false;
-            const def = getCardDef(c.defId) as MinionCardDef | undefined;
-            return def !== undefined && def.power < discardCount;
-        });
-        if (eligible.length === 0) return { state, events };
-        const skipOption = { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const };
-        const options = eligible.map((c, i) => {
-            const def = getCardDef(c.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? c.defId;
-            const power = def?.power ?? 0;
-            return { id: `card-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'discard' as const, displayMode: 'card' as const };
-        });
-        const next = createSimpleChoice(
-            `ghost_the_dead_rise_play_${timestamp}`, playerId,
-            `选择力量<${discardCount}的随从从弃牌堆打出，然后点击目标基地（可跳过）`, [...options, skipOption] as any[], { sourceId: 'ghost_the_dead_rise_play', targetType: 'discard_minion' },
-        );
-        return {
-            state: queueInteraction(state, {
-                ...next,
-                data: {
-                    ...next.data,
-                    allowedBaseIndices: state.core.bases.map((_, index) => index),
+            return {
+                events: [],
+                context: {
+                    matchState: state,
+                    playerId,
+                    now: timestamp,
+                    minionUid: candidate.uid,
+                    baseIndex: candidate.baseIndex,
                 },
-            }),
-            events,
-        };
-    });
+                nextProgram: ghostSpiritConfirmPromptProgram,
+            };
+        }
 
-    // 亡者崛起：选择随从后，链式选择基地
-    registerInteractionHandler('ghost_the_dead_rise_play', (state, playerId, value, _iData, _random, timestamp) => {
-        // 跳过
-        if ((value as any)?.skip) return { state, events: [] };
-        const { cardUid, defId, power, baseIndex } = value as { cardUid: string; defId: string; power: number; baseIndex?: number };
-        const playFromDiscard = (chosenBaseIndex: number) => {
-            if (!validateDiscardMinionPlaySemantics(state.core, playerId, {
-                cardUid,
-                baseIndex: chosenBaseIndex,
-                consumesNormalLimit: false,
-            }).valid) {
-                return { state, events: [] };
-            }
-            const playedEvt: MinionPlayedEvent = {
+        return {
+            events: [],
+            context: {
+                matchState: state,
+                playerId,
+                now: timestamp,
+                minionUid: candidate.uid,
+                baseIndex: candidate.baseIndex,
+                requiredCount: power,
+            },
+            nextProgram: ghostSpiritDiscardPromptProgram,
+        };
+    },
+});
+
+const ghostSpiritProgram = createBranchProgram<GhostSpiritContext, SmashUpCore, SmashUpEvent>({
+    when: (context) => {
+        const player = context.matchState.core.players[context.playerId];
+        return !player || player.hand.filter((card) => card.uid !== context.playedCardUid).length === 0;
+    },
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.hand_empty', context.now)],
+    })),
+    else: createBranchProgram({
+        when: (context) => context.candidates.length === 0,
+        then: createEffectProgram((context) => ({
+            events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
+        })),
+        else: ghostSpiritPromptProgram,
+    }),
+});
+
+const ghostTheDeadRiseBasePromptProgram = createPromptProgram<GhostTheDeadRiseBaseContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'ghost_the_dead_rise_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `ghost_the_dead_rise_base_${context.now}`,
+        context.playerId,
+        '亡者崛起：选择打出随从的基地',
+        buildBaseTargetOptions(
+            context.matchState.core.bases.map((base, index) => ({
+                baseIndex: index,
+                label: getBaseDef(base.defId)?.name ?? `基地 ${index + 1}`,
+            })),
+            context.matchState.core,
+        ),
+        {
+            sourceId: 'ghost_the_dead_rise_base',
+            targetType: 'base',
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const choice = value as GhostBaseChoiceValue | undefined;
+        if (choice?.baseIndex === undefined) return { events: [] };
+        if (!validateDiscardMinionPlaySemantics(state.core, playerId, {
+            cardUid: context.cardUid,
+            baseIndex: choice.baseIndex,
+            consumesNormalLimit: false,
+        }).valid) {
+            return { events: [] };
+        }
+        return {
+            events: [{
                 type: SU_EVENTS.MINION_PLAYED,
                 payload: {
                     playerId,
-                    cardUid,
-                    defId,
-                    baseIndex: chosenBaseIndex,
-                    baseDefId: state.core.bases[chosenBaseIndex]?.defId,
-                    power,
+                    cardUid: context.cardUid,
+                    defId: context.defId,
+                    baseIndex: choice.baseIndex,
+                    baseDefId: state.core.bases[choice.baseIndex]?.defId,
+                    power: context.power,
                     fromDiscard: true,
-                    allowImplicitSource: true,
                     consumesNormalLimit: false,
+                    allowImplicitSource: true,
                 },
                 timestamp,
-            };
-            return { state, events: [playedEvt] };
+            } as MinionPlayedEvent],
         };
-        if (typeof baseIndex === 'number') {
-            return playFromDiscard(baseIndex);
+    },
+});
+
+const ghostTheDeadRisePlayPromptProgram = createPromptProgram<GhostTheDeadRisePlayContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'ghost_the_dead_rise_play',
+    buildInteraction: (context) => {
+        const interaction = attachOptionsGenerator(
+            createAbilityRuntimeSimpleChoice(
+                `ghost_the_dead_rise_play_${context.now}`,
+                context.playerId,
+                `选择力量<${context.discardCount}的随从从弃牌堆打出，然后点击目标基地（可跳过）`,
+                buildGhostDeadRisePlayOptions(context.eligible),
+                {
+                    sourceId: 'ghost_the_dead_rise_play',
+                    targetType: 'discard_minion',
+                    autoRefresh: 'discard',
+                    responseValidationMode: 'live',
+                },
+            ),
+            (state) => buildGhostDeadRisePlayOptions(
+                buildGhostDeadRiseCandidatesFromCards(
+                    state.core.players[context.playerId]?.discard ?? [],
+                    context.discardCount,
+                ),
+            ),
+        );
+        return {
+            ...interaction,
+            data: {
+                ...(interaction.data ?? {}),
+                allowedBaseIndices: context.matchState.core.bases.map((_base, index) => index),
+            },
+        };
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        if (isSkipSelection(value)) return { events: [] };
+        const choice = value as GhostDeadRisePlayChoiceValue | undefined;
+        if (!choice?.cardUid || !choice.defId) return { events: [] };
+
+        const eligible = buildGhostDeadRiseCandidatesFromCards(
+            state.core.players[playerId]?.discard ?? [],
+            context.discardCount,
+        );
+        const selected = eligible.find((card) => card.cardUid === choice.cardUid);
+        if (!selected) return { events: [] };
+
+        const playFromDiscard = (baseIndex: number) => {
+            if (!validateDiscardMinionPlaySemantics(state.core, playerId, {
+                cardUid: selected.cardUid,
+                baseIndex,
+                consumesNormalLimit: false,
+            }).valid) {
+                return { events: [] };
+            }
+            return {
+                events: [{
+                    type: SU_EVENTS.MINION_PLAYED,
+                    payload: {
+                        playerId,
+                        cardUid: selected.cardUid,
+                        defId: selected.defId,
+                        baseIndex,
+                        baseDefId: state.core.bases[baseIndex]?.defId,
+                        power: selected.power,
+                        fromDiscard: true,
+                        allowImplicitSource: true,
+                        consumesNormalLimit: false,
+                    },
+                    timestamp,
+                } as MinionPlayedEvent],
+            };
+        };
+
+        if (typeof choice.baseIndex === 'number') {
+            return playFromDiscard(choice.baseIndex);
         }
-        // 只有一个基地时直接打出
         if (state.core.bases.length === 1) {
             return playFromDiscard(0);
         }
-        // 多个基地时让玩家选择
-        const baseCandidates = state.core.bases.map((b, i) => {
-            const baseDef = getBaseDef(b.defId);
-            return { baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` };
-        });
-        const next = createSimpleChoice(
-            `ghost_the_dead_rise_base_${timestamp}`, playerId,
-            '亡者崛起：选择打出随从的基地', buildBaseTargetOptions(baseCandidates, state.core),
-            { sourceId: 'ghost_the_dead_rise_base', targetType: 'base' },
-        );
         return {
-            state: queueInteraction(state, {
-                ...next,
-                data: { ...next.data, continuationContext: { cardUid, defId, power } },
-            }),
             events: [],
-        };
-    });
-
-    // 亡者崛起：选择基地后打出随从
-    registerInteractionHandler('ghost_the_dead_rise_base', (state, playerId, value, iData, _random, timestamp) => {
-        const { baseIndex } = value as { baseIndex: number };
-        const ctx = iData?.continuationContext as { cardUid: string; defId: string; power: number } | undefined;
-        if (!ctx) return undefined;
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: {
+            context: {
+                matchState: state,
                 playerId,
-                cardUid: ctx.cardUid,
-                defId: ctx.defId,
-                baseIndex,
-                power: ctx.power,
-                fromDiscard: true,
-                consumesNormalLimit: false,
-                allowImplicitSource: true,
+                now: timestamp,
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                power: selected.power,
             },
+            nextProgram: ghostTheDeadRiseBasePromptProgram,
+        };
+    },
+});
+
+const ghostTheDeadRiseDiscardPromptProgram = createPromptProgram<GhostTheDeadRiseContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'ghost_the_dead_rise_discard',
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `ghost_the_dead_rise_discard_${context.now}`,
+            context.playerId,
+            '亡者崛起：选择要弃掉的手牌',
+            buildGhostHandOptions(context.matchState.core.players[context.playerId]?.hand ?? [], context.playedCardUid, { includeSkip: true }),
+            {
+                sourceId: 'ghost_the_dead_rise_discard',
+                targetType: 'hand',
+                multi: { min: 0, max: context.maxDiscard },
+                autoRefresh: 'hand',
+                responseValidationMode: 'live',
+            },
+        ),
+        (state) => buildGhostHandOptions(state.core.players[context.playerId]?.hand ?? [], context.playedCardUid, { includeSkip: true }),
+    ),
+    onResolve: ({ context: _context, state, playerId, value, timestamp }) => {
+        if (isSkipSelection(value)) return { events: [] };
+        const discardUids = getSelectedCardUids(value);
+        if (discardUids.length === 0) return { events: [] };
+
+        const discardEvent: CardsDiscardedEvent = {
+            type: SU_EVENTS.CARDS_DISCARDED,
+            payload: { playerId, cardUids: discardUids },
             timestamp,
         };
-        return { state, events: [playedEvt] };
-    });
-
-    // 越过边界：选卡名后取回所有同名随从
-    registerInteractionHandler('ghost_across_the_divide', (state, playerId, value, _iData, _random, timestamp) => {
-        // 检查取消标记
-        if ((value as any).__cancel__) return { state, events: [] };
-
-        const { defId } = value as { defId: string };
         const player = state.core.players[playerId];
-        const sameNameMinions = player.discard.filter(c => c.type === 'minion' && c.defId === defId);
-        if (sameNameMinions.length === 0) return { state, events: [] };
-        return { state, events: [recoverCardsFromDiscard(playerId, sameNameMinions.map(c => c.uid), 'ghost_across_the_divide', timestamp)] };
-    });
-}
+        const justDiscarded = player.hand.filter((card) => discardUids.includes(card.uid));
+        const eligible = buildGhostDeadRiseCandidatesFromCards(
+            [...player.discard, ...justDiscarded],
+            discardUids.length,
+        );
+        if (eligible.length === 0) {
+            return { events: [discardEvent] };
+        }
+
+        return {
+            events: [discardEvent],
+            context: {
+                matchState: state,
+                playerId,
+                now: timestamp,
+                discardCount: discardUids.length,
+                eligible,
+            },
+            nextProgram: ghostTheDeadRisePlayPromptProgram,
+        };
+    },
+});
+
+const ghostTheDeadRiseProgram = createBranchProgram<GhostTheDeadRiseContext, SmashUpCore, SmashUpEvent>({
+    when: (context) => context.maxDiscard === 0,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.hand_empty', context.now)],
+    })),
+    else: ghostTheDeadRiseDiscardPromptProgram,
+});
+
+const ghostAcrossTheDividePromptProgram = createPromptProgram<GhostAcrossTheDivideContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'ghost_across_the_divide',
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `ghost_across_the_divide_${context.now}`,
+            context.playerId,
+            '越过边界：选择一个卡名（取回所有同名随从）',
+            buildGhostAcrossTheDivideOptions(context.groups),
+            {
+                sourceId: 'ghost_across_the_divide',
+                targetType: 'generic',
+                autoCancelOption: true,
+                autoRefresh: 'discard',
+                responseValidationMode: 'live',
+            },
+        ),
+        (state) => buildGhostAcrossTheDivideOptions(
+            buildGhostAcrossTheDivideGroups(state.core.players[context.playerId]?.discard ?? []),
+        ),
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        if (isCancelSelection(value)) return { events: [] };
+        const choice = value as GhostAcrossChoiceValue | undefined;
+        if (!choice?.defId) return { events: [] };
+        const sameNameMinions = (state.core.players[playerId]?.discard ?? [])
+            .filter((card) => card.type === 'minion' && card.defId === choice.defId);
+        if (sameNameMinions.length === 0) return { events: [] };
+        return {
+            events: [recoverCardsFromDiscard(
+                playerId,
+                sameNameMinions.map((card) => card.uid),
+                'ghost_across_the_divide',
+                timestamp,
+            )],
+        };
+    },
+});
+
+const ghostAcrossTheDivideProgram = createBranchProgram<GhostAcrossTheDivideContext, SmashUpCore, SmashUpEvent>({
+    when: (context) => context.groups.length === 0,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.discard_empty', context.now)],
+    })),
+    else: ghostAcrossTheDividePromptProgram,
+});
 
 // ============================================================================
 // POD 版幽灵能力函数

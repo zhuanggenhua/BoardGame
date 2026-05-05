@@ -1,9 +1,15 @@
-import { Type } from 'class-transformer';
-import { IsArray, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
+import { Transform, Type } from 'class-transformer';
+import { IsArray, IsBoolean, IsEnum, IsIn, IsNotEmpty, IsNumber, IsOptional, IsString, MaxLength, ValidateNested } from 'class-validator';
 import { FeedbackReporterType, FeedbackSeverity, FeedbackStatus, FeedbackType } from './feedback.schema';
 
 export const FEEDBACK_SORT_OPTIONS = ['newest', 'oldest'] as const;
 export type FeedbackSortOption = typeof FEEDBACK_SORT_OPTIONS[number];
+
+const parseBoolean = (value: unknown): boolean | undefined => {
+    if (value === true || value === 'true') return true;
+    if (value === false || value === 'false') return false;
+    return undefined;
+};
 
 export class FeedbackViewportDto {
     @IsNumber()
@@ -226,6 +232,11 @@ export class QueryFeedbackDto {
     @IsOptional()
     @IsIn(FEEDBACK_SORT_OPTIONS)
     sort?: FeedbackSortOption;
+
+    @IsOptional()
+    @Transform(({ value }: { value: unknown }) => parseBoolean(value))
+    @IsBoolean()
+    preferMine?: boolean;
 }
 
 export class FeedbackFilterDto {

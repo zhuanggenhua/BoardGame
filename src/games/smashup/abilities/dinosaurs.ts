@@ -4,52 +4,152 @@
  * 主题：高力量、消灭低力量随从、力量增强
  */
 
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     destroyMinion,
-    addPowerCounter,
     addTempPower,
     modifyBreakpoint,
     getMinionPower,
     buildMinionTargetOptions,
     buildBaseTargetOptions,
-    resolveOrPrompt,
     buildAbilityFeedback,
     createSkipOption,
     buildValidatedDestroyEvents,
 } from '../domain/abilityHelpers';
-import type { SmashUpEvent, SmashUpCore, MinionOnBase, OngoingDetachedEvent, MinionDestroyedEvent, MinionReturnedEvent, CardToDeckBottomEvent } from '../domain/types';
+import type { SmashUpEvent, SmashUpCore, OngoingDetachedEvent, MinionDestroyedEvent, MinionReturnedEvent, CardToDeckBottomEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
 import type { MinionCardDef } from '../domain/types';
 import { registerProtection, registerInterceptor } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext } from '../domain/ongoingEffects';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
-import type { MatchState } from '../../../engine/types';
+import type { MatchState, PlayerId } from '../../../engine/types';
 import { matchesDefId } from '../domain/utils';
 import { queueFortTitanosaurusOngoingChoice } from './titans';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createBranchProgram,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
+
+type DinoMinionChoice = {
+    minionUid?: string;
+    baseIndex?: number;
+    defId?: string;
+    skip?: boolean;
+    __cancel__?: boolean;
+};
+
+type DinoBaseChoice = {
+    baseIndex?: number;
+    baseDefId?: string;
+    __cancel__?: boolean;
+};
+
+type DinoMinionTarget = {
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    label: string;
+};
+
+type DinoPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type DinoLaserTriceratopsContext = DinoPromptContext & {
+    targets: DinoMinionTarget[];
+};
+
+type DinoAugmentationContext = DinoPromptContext & {
+    targets: DinoMinionTarget[];
+};
+
+type DinoNaturalSelectionMineContext = DinoPromptContext & {
+    candidates: DinoMinionTarget[];
+};
+
+type DinoNaturalSelectionTargetContext = DinoPromptContext & {
+    sourceMinionUid: string;
+    baseIndex: number;
+    targets: DinoMinionTarget[];
+};
+
+type DinoSurvivalTiebreakContext = DinoPromptContext & {
+    remainingBases: Array<{
+        baseIndex: number;
+        minPower: number;
+        candidates: Array<{
+            uid: string;
+            defId: string;
+            owner: PlayerId;
+            label: string;
+        }>;
+    }>;
+};
+
+type DinoRampageBaseContext = DinoPromptContext & {
+    baseCandidates: Array<{ baseIndex: number; label: string }>;
+};
+
+type DinoRampageMinionCandidate = { uid: string; defId: string; baseIndex: number; power: number; label: string };
+
+type DinoRampageMinionContext = DinoPromptContext & {
+    baseIndex: number;
+    candidates: DinoRampageMinionCandidate[];
+};
 
 /** 注册恐龙派系所有能力 */
 export function registerDinosaurAbilities(): void {
-    registerAbility('dino_laser_triceratops', 'onPlay', dinoLaserTriceratops);
-    registerAbility('dino_laser_triceratops_pod', 'onPlay', dinoLaserTriceratopsPod); // POD版: 看印制力量
+    registerAbilityProgram('dino_laser_triceratops', 'onPlay', {
+        program: dinoLaserTriceratopsProgram,
+        createContext: createDinoLaserTriceratopsContext,
+    });
+    registerAbilityProgram('dino_laser_triceratops_pod', 'onPlay', {
+        program: dinoLaserTriceratopsPodProgram,
+        createContext: createDinoLaserTriceratopsPodContext,
+    }); // POD版: 看印制力量
 
-    registerAbility('dino_augmentation', 'onPlay', dinoAugmentation);
-    registerAbility('dino_augmentation_pod', 'onPlay', dinoAugmentation);
-    registerAbility('dino_howl', 'onPlay', dinoHowl);
-    registerAbility('dino_howl_pod', 'onPlay', dinoHowl);
-    registerAbility('dino_natural_selection', 'onPlay', dinoNaturalSelection);
-    registerAbility('dino_natural_selection_pod', 'onPlay', dinoNaturalSelection);
-    registerAbility('dino_survival_of_the_fittest', 'onPlay', dinoSurvivalOfTheFittest);
-    registerAbility('dino_survival_of_the_fittest_pod', 'onPlay', dinoSurvivalOfTheFittest);
+    registerAbilityProgram('dino_augmentation', 'onPlay', {
+        program: dinoAugmentationProgram,
+        createContext: createDinoAugmentationContext,
+    });
+    registerAbilityProgram('dino_augmentation_pod', 'onPlay', {
+        program: dinoAugmentationProgram,
+        createContext: createDinoAugmentationContext,
+    });
+    registerSimpleAbility('dino_howl', 'onPlay', dinoHowl);
+    registerSimpleAbility('dino_howl_pod', 'onPlay', dinoHowl);
+    registerAbilityProgram('dino_natural_selection', 'onPlay', {
+        program: dinoNaturalSelectionProgram,
+        createContext: createDinoNaturalSelectionMineContext,
+    });
+    registerAbilityProgram('dino_natural_selection_pod', 'onPlay', {
+        program: dinoNaturalSelectionProgram,
+        createContext: createDinoNaturalSelectionMineContext,
+    });
+    registerAbilityProgram('dino_survival_of_the_fittest', 'onPlay', {
+        program: dinoSurvivalOfTheFittestProgram,
+    });
+    registerAbilityProgram('dino_survival_of_the_fittest_pod', 'onPlay', {
+        program: dinoSurvivalOfTheFittestProgram,
+    });
     // 狂暴：降低基地爆破点
-    registerAbility('dino_rampage', 'onPlay', dinoRampage);
-    registerAbility('dino_rampage_pod', 'onPlay', dinoRampage);
+    registerAbilityProgram('dino_rampage', 'onPlay', {
+        program: dinoRampageProgram,
+        createContext: createDinoRampageBaseContext,
+    });
+    registerAbilityProgram('dino_rampage_pod', 'onPlay', {
+        program: dinoRampageProgram,
+        createContext: createDinoRampageBaseContext,
+    });
 
     // POD独占的 Talent
-    registerAbility('dino_armor_stego_pod', 'talent', dinoArmorStegoPodTalent);
+    registerSimpleAbility('dino_armor_stego_pod', 'talent', dinoArmorStegoPodTalent);
 
     // === ongoing 效果注册 ===
     // 全副武装原版：拦截影响事件时自毁以保护附着随从
@@ -64,86 +164,389 @@ export function registerDinosaurAbilities(): void {
     registerProtection('dino_wildlife_preserve', 'action', dinoWildlifePreserveChecker);
     registerProtection('dino_wildlife_preserve_pod', 'action', dinoWildlifePreserveChecker);
 }
-
 // ============================================================================
 // 随从能力
 // ============================================================================
 
 /** 激光三角龙 onPlay：消灭本基地一个力量≤2的随从 */
-function dinoLaserTriceratops(ctx: AbilityContext): AbilityResult {
+function createDinoLaserTriceratopsContext(ctx: AbilityContext): DinoLaserTriceratopsContext {
     const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) return { events: [] };
-    const targets = base.minions.filter(
-        m => m.uid !== ctx.cardUid && getMinionPower(ctx.state, m, ctx.baseIndex) <= 2
-    );
-    const options = targets.map(t => {
-        const def = getCardDef(t.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? t.defId;
-        const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
+    if (!base) {
+        return { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now, targets: [] };
+    }
+    const targets = base.minions
+        .filter((minion) => minion.uid !== ctx.cardUid && getMinionPower(ctx.state, minion, ctx.baseIndex) <= 2)
+        .map((minion) => {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const power = getMinionPower(ctx.state, minion, ctx.baseIndex);
+            return {
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: ctx.baseIndex,
+                label: `${name} (力量 ${power})`,
+            };
+        });
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        targets,
+    };
+}
+
+function createDinoLaserTriceratopsPodContext(ctx: AbilityContext): DinoLaserTriceratopsContext {
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (!base) {
+        return { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now, targets: [] };
+    }
+    const targets = base.minions
+        .filter((minion) => {
+            if (minion.uid === ctx.cardUid) return false;
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            return (def?.power ?? 0) <= 2;
+        })
+        .map((minion) => {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const printedPower = def?.power ?? 0;
+            return {
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: ctx.baseIndex,
+                label: `${name} (印制力量 ${printedPower})`,
+            };
+        });
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        targets,
+    };
+}
+
+function createDinoAugmentationContext(ctx: AbilityContext): DinoAugmentationContext {
+    const targets: DinoMinionTarget[] = [];
+    for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
+        const base = ctx.state.bases[baseIndex];
+        const baseDef = getBaseDef(base.defId);
+        const baseName = baseDef?.name ?? `基地 ${baseIndex + 1}`;
+        for (const minion of base.minions) {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const power = getMinionPower(ctx.state, minion, baseIndex);
+            targets.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: `${name} (力量 ${power}) @ ${baseName}`,
+            });
+        }
+    }
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        targets,
+    };
+}
+
+function createDinoNaturalSelectionMineContext(ctx: AbilityContext): DinoNaturalSelectionMineContext {
+    const candidates: DinoMinionTarget[] = [];
+    for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
+        const base = ctx.state.bases[baseIndex];
+        for (const minion of base.minions) {
+            if (minion.controller !== ctx.playerId) continue;
+            const power = getMinionPower(ctx.state, minion, baseIndex);
+            const hasTarget = base.minions.some(
+                (target) => target.uid !== minion.uid && getMinionPower(ctx.state, target, baseIndex) < power,
+            );
+            if (!hasTarget) continue;
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            candidates.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: `${name} (力量 ${power})`,
+            });
+        }
+    }
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        candidates,
+    };
+}
+
+function createDinoNaturalSelectionTargetContext(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    baseIndex: number,
+    sourceMinionUid: string,
+): DinoNaturalSelectionTargetContext | undefined {
+    const base = matchState.core.bases[baseIndex];
+    if (!base) return undefined;
+    const sourceMinion = base.minions.find((minion) => minion.uid === sourceMinionUid && minion.controller === playerId);
+    if (!sourceMinion) return undefined;
+    const sourcePower = getMinionPower(matchState.core, sourceMinion, baseIndex);
+    const targets = base.minions
+        .filter((minion) => minion.uid !== sourceMinion.uid && getMinionPower(matchState.core, minion, baseIndex) < sourcePower)
+        .map((minion) => {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const power = getMinionPower(matchState.core, minion, baseIndex);
+            return {
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: `${name} (力量 ${power})`,
+            };
+        });
+    if (targets.length === 0) return undefined;
+    return {
+        matchState,
+        playerId,
+        now,
+        sourceMinionUid,
+        baseIndex,
+        targets,
+    };
+}
+
+function collectDinoSurvivalTiebreakBases(state: SmashUpCore): Array<{
+    baseIndex: number;
+    minPower: number;
+    candidates: Array<{ uid: string; defId: string; owner: PlayerId; label: string }>;
+}> {
+    const tieBreakBases: Array<{
+        baseIndex: number;
+        minPower: number;
+        candidates: Array<{ uid: string; defId: string; owner: PlayerId; label: string }>;
+    }> = [];
+
+    for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
+        const base = state.bases[baseIndex];
+        if (base.minions.length < 2) continue;
+
+        let minPower = Infinity;
+        for (const minion of base.minions) {
+            const power = getMinionPower(state, minion, baseIndex);
+            if (power < minPower) minPower = power;
+        }
+        const hasHigher = base.minions.some((minion) => getMinionPower(state, minion, baseIndex) > minPower);
+        if (!hasHigher) continue;
+
+        const lowest = base.minions.filter((minion) => getMinionPower(state, minion, baseIndex) === minPower);
+        if (lowest.length <= 1) continue;
+
+        const baseDef = getBaseDef(base.defId);
+        const baseName = baseDef?.name ?? `基地 ${baseIndex + 1}`;
+        tieBreakBases.push({
+            baseIndex,
+            minPower,
+            candidates: lowest.map((minion) => {
+                const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+                const name = def?.name ?? minion.defId;
+                return {
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    owner: minion.owner,
+                    label: `${name} (力量 ${minPower}) @ ${baseName}`,
+                };
+            }),
+        });
+    }
+
+    return tieBreakBases;
+}
+
+function collectDinoRampageMinions(state: SmashUpCore, playerId: PlayerId, baseIndex: number): DinoRampageMinionCandidate[] {
+    const base = state.bases[baseIndex];
+    if (!base) return [];
+
+    const baseDef = getBaseDef(base.defId);
+    const baseName = baseDef?.name ?? `基地 ${baseIndex + 1}`;
+
+    return base.minions
+        .filter((minion) => minion.controller === playerId)
+        .map((minion) => {
+            const power = getMinionPower(state, minion, baseIndex);
+            const minionDef = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const minionName = minionDef?.name ?? minion.defId;
+            return {
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                power,
+                label: `${minionName} @ ${baseName} (力量 ${power})`,
+            };
+        })
+        .filter((candidate) => candidate.power > 0);
+}
+
+function createDinoRampageBaseContext(ctx: AbilityContext): DinoRampageBaseContext {
+    const baseCandidates: Array<{ baseIndex: number; label: string }> = [];
+    for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
+        const minionCandidates = collectDinoRampageMinions(ctx.state, ctx.playerId, baseIndex);
+        if (minionCandidates.length === 0) continue;
+        const baseDef = getBaseDef(ctx.state.bases[baseIndex].defId);
+        const baseName = baseDef?.name ?? `基地 ${baseIndex + 1}`;
+        baseCandidates.push({
+            baseIndex,
+            label: minionCandidates.length === 1
+                ? `${baseName} (降低 ${minionCandidates[0].power} 爆破点)`
+                : `${baseName} (选择一个己方随从的力量)`,
+        });
+    }
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        baseCandidates,
+    };
+}
+
+function createDinoRampageMinionContext(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    baseIndex: number,
+): DinoRampageMinionContext | undefined {
+    const candidates = collectDinoRampageMinions(matchState.core, playerId, baseIndex);
+    if (candidates.length <= 1) return undefined;
+    return {
+        matchState,
+        playerId,
+        now,
+        baseIndex,
+        candidates,
+    };
+}
+
+function buildDinoDestroyEvents(
+    state: MatchState<SmashUpCore> | SmashUpCore,
+    target: { uid: string; defId: string; baseIndex: number },
+    reason: string,
+    destroyerId: PlayerId | undefined,
+    now: number,
+): SmashUpEvent[] {
+    return buildValidatedDestroyEvents(state, {
+        minionUid: target.uid,
+        minionDefId: target.defId,
+        fromBaseIndex: target.baseIndex,
+        destroyerId,
+        reason,
+        now,
     });
-    // 强制效果：消灭一个力量≤2的随从，单候选自动执行
-    return resolveOrPrompt(ctx, buildMinionTargetOptions(options, {
-        state: ctx.state,
-        sourcePlayerId: ctx.playerId,
-        effectType: 'destroy',
-    }), {
-        id: 'dino_laser_triceratops',
-        title: '选择要消灭的力量≤2的随从',
-        sourceId: 'dino_laser_triceratops',
-        targetType: 'minion',
-    }, (value) => ({
-        events: buildValidatedDestroyEvents(ctx.state, {
-            minionUid: value.minionUid,
-            minionDefId: value.defId,
-            fromBaseIndex: value.baseIndex,
-            reason: 'dino_laser_triceratops',
-            now: ctx.now,
+}
+
+const dinoLaserTriceratopsPromptProgram = createPromptProgram<
+    DinoLaserTriceratopsContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'dino_laser_triceratops',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `dino_laser_triceratops_${context.now}`,
+        context.playerId,
+        '选择要消灭的力量≤2的随从',
+        buildMinionTargetOptions(context.targets, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            effectType: 'destroy',
         }),
-    }));
-}
-
-/** 激光三角龙 POD版 onPlay：你可以消灭本基地一个 [印制力量/Printed Power] ≤2 的随从 */
-function dinoLaserTriceratopsPod(ctx: AbilityContext): AbilityResult {
-    const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) return { events: [] };
-    const targets = base.minions.filter(m => {
-        if (m.uid === ctx.cardUid) return false;
-        const def = getCardDef(m.defId) as MinionCardDef | undefined;
-        return (def?.power ?? 0) <= 2;
-    });
-
-    // 没有合法目标时直接跳过
-    if (targets.length === 0) return { events: [] };
-
-    const options = targets.map(t => {
-        const def = getCardDef(t.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? t.defId;
-        const printedPower = def?.power ?? 0;
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (印制力量 ${printedPower})` };
-    });
-
-    // "你可以（may）"效果：加入跳过选项
-    const minionOptions = buildMinionTargetOptions(options, {
-        state: ctx.state,
-        sourcePlayerId: ctx.playerId,
-        effectType: 'destroy',
-    });
-    // 联合类型：skipOption 的 value 是 { skip: true }，minionOption 的 value 是 { minionUid, baseIndex, defId }
-    const allOptions = [createSkipOption('跳过（不消灭随从）'), ...minionOptions] as any[];
-
-    const interaction = createSimpleChoice(
-        `dino_laser_triceratops_pod_${ctx.now}`, ctx.playerId,
-        '你可以消灭这里一个印制力量≤2的随从',
-        allOptions,
         {
-            sourceId: 'dino_laser_triceratops_pod',
+            sourceId: 'dino_laser_triceratops',
             targetType: 'minion',
-            subtitle: '按印制力量判断；+1/+2 等当前战力修正不影响可选范围。',
         },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    ),
+    onResolve: ({ playerId, value, timestamp, state }) => {
+        const choice = value as DinoMinionChoice;
+        if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) {
+            return { events: [] };
+        }
+        return {
+            events: buildDinoDestroyEvents(
+                state,
+                { uid: choice.minionUid, defId: choice.defId, baseIndex: choice.baseIndex },
+                'dino_laser_triceratops',
+                playerId,
+                timestamp,
+            ),
+        };
+    },
+});
+
+const dinoLaserTriceratopsProgram = createBranchProgram<
+    DinoLaserTriceratopsContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => context.targets.length === 0,
+    then: createEffectProgram(() => ({ events: [] })),
+    else: createBranchProgram({
+        when: (context) => context.targets.length === 1,
+        then: createEffectProgram((context) => ({
+            events: buildDinoDestroyEvents(
+                context.matchState,
+                context.targets[0],
+                'dino_laser_triceratops',
+                context.playerId,
+                context.now,
+            ),
+        })),
+        else: dinoLaserTriceratopsPromptProgram,
+    }),
+});
+
+const dinoLaserTriceratopsPodProgram = createBranchProgram<
+    DinoLaserTriceratopsContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => context.targets.length === 0,
+    then: createEffectProgram(() => ({ events: [] })),
+    else: createPromptProgram({
+        sourceId: 'dino_laser_triceratops_pod',
+        buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+            `dino_laser_triceratops_pod_${context.now}`,
+            context.playerId,
+            '你可以消灭这里一个印制力量≤2的随从',
+            [
+                createSkipOption('跳过（不消灭随从）'),
+                ...buildMinionTargetOptions(context.targets, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    effectType: 'destroy',
+                }),
+            ],
+            {
+                sourceId: 'dino_laser_triceratops_pod',
+                targetType: 'minion',
+                subtitle: '按印制力量判断；+1/+2 等当前战力修正不影响可选范围。',
+            },
+        ),
+        onResolve: ({ playerId, value, timestamp, state }) => {
+            const choice = value as DinoMinionChoice;
+            if (choice.skip) return { events: [] };
+            if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) {
+                return { events: [] };
+            }
+            return {
+                events: buildDinoDestroyEvents(
+                    state,
+                    { uid: choice.minionUid, defId: choice.defId, baseIndex: choice.baseIndex },
+                    'dino_laser_triceratops_pod',
+                    playerId,
+                    timestamp,
+                ),
+            };
+        },
+    }),
+});
 
 /**
  * 装甲剑龙 POD版 Talent：直到下个你的回合开始前，此随从在其他玩家的回合拥有+2力量
@@ -162,30 +565,41 @@ function dinoArmorStegoPodTalent(_ctx: AbilityContext): AbilityResult {
 // 行动卡能力
 // ============================================================================
 
-/** 增强 onPlay：一个随从+4力量（直到回合结束，任意随从） */
-function dinoAugmentation(ctx: AbilityContext): AbilityResult {
-    const allMinions: { uid: string; defId: string; baseIndex: number; power: number }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            allMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, power: getMinionPower(ctx.state, m, i) });
-        }
-    }
-    if (allMinions.length === 0) return { events: [] };
-    const options = allMinions.map(entry => {
-        const def = getCardDef(entry.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? entry.defId;
-        const baseDef = getBaseDef(ctx.state.bases[entry.baseIndex].defId);
-        const baseName = baseDef?.name ?? `基地 ${entry.baseIndex + 1}`;
-        return { uid: entry.uid, defId: entry.defId, baseIndex: entry.baseIndex, label: `${name} (力量 ${entry.power}) @ ${baseName}` };
-    });
-    const interaction = createSimpleChoice(
-        `dino_augmentation_${ctx.now}`, ctx.playerId,
-        '选择一个随从获得+4力量（直到回合结束）',
-        buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
-        { sourceId: 'dino_augmentation', targetType: 'minion' },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+const dinoAugmentationProgram = createBranchProgram<
+    DinoAugmentationContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => context.targets.length === 0,
+    then: createEffectProgram(() => ({ events: [] })),
+    else: createPromptProgram({
+        sourceId: 'dino_augmentation',
+        buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+            `dino_augmentation_${context.now}`,
+            context.playerId,
+            '选择一个随从获得+4力量（直到回合结束）',
+            buildMinionTargetOptions(context.targets, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+            }),
+            {
+                sourceId: 'dino_augmentation',
+                targetType: 'minion',
+            },
+        ),
+        onResolve: ({ playerId, value, timestamp, state }) => {
+            const choice = value as DinoMinionChoice;
+            if (!choice.minionUid || choice.baseIndex === undefined) {
+                return { events: [] };
+            }
+            const nextState = queueFortTitanosaurusOngoingChoice(state, playerId, [choice.minionUid], timestamp);
+            return {
+                events: [addTempPower(choice.minionUid, choice.baseIndex, 4, 'dino_augmentation', timestamp)],
+                matchState: nextState ?? state,
+            };
+        },
+    }),
+});
 
 /** 嚎叫 onPlay：你的全部随从+1力量（直到回合结束） */
 function dinoHowl(ctx: AbilityContext): AbilityResult {
@@ -208,312 +622,289 @@ function dinoHowl(ctx: AbilityContext): AbilityResult {
     return nextMatchState ? { events, matchState: nextMatchState } : { events };
 }
 
-/** 物竞天择 onPlay：选择你的一个随从，消灭该基地一个力量低于它的随从 */
-function dinoNaturalSelection(ctx: AbilityContext): AbilityResult {
-    const myMinions: { minion: MinionOnBase; baseIndex: number; power: number }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId) {
-                const power = getMinionPower(ctx.state, m, i);
-                const hasTarget = ctx.state.bases[i].minions.some(
-                    t => t.uid !== m.uid && getMinionPower(ctx.state, t, i) < power
-                );
-                if (hasTarget) {
-                    myMinions.push({ minion: m, baseIndex: i, power });
-                }
-            }
+const dinoNaturalSelectionTargetPromptProgram = createPromptProgram<
+    DinoNaturalSelectionTargetContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'dino_natural_selection_choose_target',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `dino_natural_selection_target_${context.now}`,
+        context.playerId,
+        '选择要消灭的随从',
+        buildMinionTargetOptions(context.targets, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            effectType: 'destroy',
+        }),
+        {
+            sourceId: 'dino_natural_selection_choose_target',
+            targetType: 'minion',
+        },
+    ),
+    onResolve: ({ playerId, value, timestamp, state }) => {
+        const choice = value as DinoMinionChoice;
+        if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) {
+            return { events: [] };
         }
-    }
-    if (myMinions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = myMinions.map((entry) => {
-        const def = getCardDef(entry.minion.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? entry.minion.defId;
+        const base = state.core.bases[choice.baseIndex];
+        const target = base?.minions.find((minion) => minion.uid === choice.minionUid);
+        if (!target) {
+            return { events: [] };
+        }
         return {
-            uid: entry.minion.uid,
-            defId: entry.minion.defId,
-            baseIndex: entry.baseIndex,
-            label: `${name} (力量 ${entry.power})`,
+            events: [destroyMinion(choice.minionUid, choice.defId, choice.baseIndex, target.owner, playerId, 'dino_natural_selection', timestamp)],
         };
-    });
-    const interaction = createSimpleChoice(
-        `dino_natural_selection_${ctx.now}`, ctx.playerId,
-        '选择你的一个随从作为参照', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }),
-        { sourceId: 'dino_natural_selection_choose_mine', targetType: 'minion', autoCancelOption: true }
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    },
+});
 
-/**
- * 适者生存 onPlay：每个基地上，如果存在两个及以上随从且有力量差异，
- * 消灭一个最低力量的随从（平局时由当前玩家选择）
- */
-function dinoSurvivalOfTheFittest(ctx: AbilityContext): AbilityResult {
+const dinoNaturalSelectionProgram = createBranchProgram<
+    DinoNaturalSelectionMineContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => context.candidates.length === 0,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
+    })),
+    else: createPromptProgram({
+        sourceId: 'dino_natural_selection_choose_mine',
+        buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+            `dino_natural_selection_${context.now}`,
+            context.playerId,
+            '选择你的一个随从作为参照',
+            buildMinionTargetOptions(context.candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+            }),
+            {
+                sourceId: 'dino_natural_selection_choose_mine',
+                targetType: 'minion',
+                autoCancelOption: true,
+            },
+        ),
+        onResolve: ({ state, playerId, value, timestamp }) => {
+            const choice = value as DinoMinionChoice;
+            if (choice.__cancel__) return { events: [] };
+            if (!choice.minionUid || choice.baseIndex === undefined) {
+                return { events: [] };
+            }
+            const nextContext = createDinoNaturalSelectionTargetContext(
+                state,
+                playerId,
+                timestamp,
+                choice.baseIndex,
+                choice.minionUid,
+            );
+            if (!nextContext) {
+                return { events: [] };
+            }
+            return {
+                events: [],
+                context: nextContext,
+                nextProgram: dinoNaturalSelectionTargetPromptProgram,
+            };
+        },
+    }),
+});
+
+const dinoSurvivalTiebreakPromptProgram = createPromptProgram<
+    DinoSurvivalTiebreakContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'dino_survival_tiebreak',
+    buildInteraction: (context) => {
+        const [currentBase] = context.remainingBases;
+        return createAbilityRuntimeSimpleChoice(
+            `dino_sotf_tiebreak_${context.now}`,
+            context.playerId,
+            '选择要消灭的最低力量随从',
+            buildMinionTargetOptions(currentBase.candidates.map((candidate) => ({
+                uid: candidate.uid,
+                defId: candidate.defId,
+                baseIndex: currentBase.baseIndex,
+                label: candidate.label,
+            })), {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                effectType: 'destroy',
+            }),
+            {
+                sourceId: 'dino_survival_tiebreak',
+                targetType: 'minion',
+            },
+        );
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const choice = value as DinoMinionChoice;
+        if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) {
+            return { events: [] };
+        }
+        const currentBase = context.remainingBases[0];
+        const chosen = currentBase?.candidates.find((candidate) => candidate.uid === choice.minionUid);
+        if (!chosen) {
+            return { events: [] };
+        }
+        const events: SmashUpEvent[] = [
+            destroyMinion(choice.minionUid, choice.defId, choice.baseIndex, chosen.owner, playerId, 'dino_survival_of_the_fittest', timestamp),
+        ];
+        const remainingBases = context.remainingBases.slice(1);
+        if (remainingBases.length === 0) {
+            return { events };
+        }
+        return {
+            events,
+            context: {
+                matchState: state,
+                playerId,
+                now: timestamp,
+                remainingBases,
+            },
+            nextProgram: dinoSurvivalTiebreakPromptProgram,
+        };
+    },
+});
+
+const dinoSurvivalOfTheFittestProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const events: SmashUpEvent[] = [];
-    // 收集需要玩家选择的基地（有多个最低力量随从平局）
-    const tieBreakBases: { baseIndex: number; candidates: MinionOnBase[]; minPower: number }[] = [];
-
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        const base = ctx.state.bases[i];
+    for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
+        const base = ctx.state.bases[baseIndex];
         if (base.minions.length < 2) continue;
-        // 找最低力量
         let minPower = Infinity;
-        for (const m of base.minions) {
-            const power = getMinionPower(ctx.state, m, i);
+        for (const minion of base.minions) {
+            const power = getMinionPower(ctx.state, minion, baseIndex);
             if (power < minPower) minPower = power;
         }
-        // 检查是否有更高力量的随从（必须有力量差异）
-        const hasHigher = base.minions.some(m => getMinionPower(ctx.state, m, i) > minPower);
+        const hasHigher = base.minions.some((minion) => getMinionPower(ctx.state, minion, baseIndex) > minPower);
         if (!hasHigher) continue;
-        // 找所有最低力量随从
-        const lowest = base.minions.filter(m => getMinionPower(ctx.state, m, i) === minPower);
+        const lowest = base.minions.filter((minion) => getMinionPower(ctx.state, minion, baseIndex) === minPower);
         if (lowest.length === 1) {
-            // 唯一最低，直接消灭
-            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, i, lowest[0].owner, undefined, 'dino_survival_of_the_fittest', ctx.now));
-        } else {
-            // 平局，需要玩家选择
-            tieBreakBases.push({ baseIndex: i, candidates: lowest, minPower });
+            events.push(destroyMinion(lowest[0].uid, lowest[0].defId, baseIndex, lowest[0].owner, undefined, 'dino_survival_of_the_fittest', ctx.now));
         }
     }
 
-    if (tieBreakBases.length > 0) {
-        // 创建第一个平局选择交互，剩余基地通过 continuationContext 链式传递
-        const first = tieBreakBases[0];
-        const remaining = tieBreakBases.slice(1);
-        const options = first.candidates.map(m => {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const baseDef = getBaseDef(ctx.state.bases[first.baseIndex].defId);
-            const baseName = baseDef?.name ?? `基地 ${first.baseIndex + 1}`;
-            return { uid: m.uid, defId: m.defId, baseIndex: first.baseIndex, label: `${name} (力量 ${first.minPower}) @ ${baseName}` };
-        });
-        const interaction = createSimpleChoice(
-            `dino_sotf_tiebreak_${ctx.now}`, ctx.playerId, '选择要消灭的最低力量随从', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }), { sourceId: 'dino_survival_tiebreak', targetType: 'minion' }
-        );
-        const remainingData = remaining.map(tb => ({
-            baseIndex: tb.baseIndex,
-            candidateUids: tb.candidates.map(c => ({ uid: c.uid, defId: c.defId, owner: c.owner })),
-            minPower: tb.minPower,
-        }));
-        return {
-            events, matchState: queueInteraction(ctx.matchState, {
-                ...interaction,
-                data: { ...interaction.data, continuationContext: { remainingBases: remainingData } },
-            })
-        };
+    const remainingBases = collectDinoSurvivalTiebreakBases(ctx.state);
+    if (remainingBases.length === 0) {
+        return { events };
     }
 
-    return { events };
-}
+    const promptResult = executeAbilityProgram(dinoSurvivalTiebreakPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        remainingBases,
+    });
 
-type DinoRampageMinionCandidate = { uid: string; defId: string; baseIndex: number; power: number; label: string };
+    return {
+        events: [...events, ...promptResult.events],
+        matchState: promptResult.matchState,
+        suspended: promptResult.suspended,
+        continuationId: promptResult.continuationId,
+    };
+});
 
-function collectDinoRampageMinions(state: SmashUpCore, playerId: string, baseIndex: number): DinoRampageMinionCandidate[] {
-    const base = state.bases[baseIndex];
-    if (!base) return [];
-
-    const baseDef = getBaseDef(base.defId);
-    const baseName = baseDef?.name ?? `基地 ${baseIndex + 1}`;
-
-    return base.minions
-        .filter(m => m.controller === playerId)
-        .map(m => {
-            const power = getMinionPower(state, m, baseIndex);
-            const minionDef = getCardDef(m.defId) as MinionCardDef | undefined;
-            const minionName = minionDef?.name ?? m.defId;
-            return {
-                uid: m.uid,
-                defId: m.defId,
-                baseIndex,
-                power,
-                label: `${minionName} @ ${baseName} (力量 ${power})`,
-            };
-        })
-        .filter(candidate => candidate.power > 0);
-}
-
-function queueDinoRampageMinionChoice(
+function resolveDinoRampageBaseSelection(
     matchState: MatchState<SmashUpCore>,
-    state: SmashUpCore,
-    playerId: string,
-    candidates: DinoRampageMinionCandidate[],
+    playerId: PlayerId,
     now: number,
-): MatchState<SmashUpCore> {
-    const interaction = createSimpleChoice(
-        `dino_rampage_choose_minion_${now}`,
-        playerId,
-        '选择用于降低爆破点的随从',
-        buildMinionTargetOptions(candidates, { state, sourcePlayerId: playerId }),
-        { sourceId: 'dino_rampage_choose_minion', targetType: 'minion' },
-    );
-    return queueInteraction(matchState, interaction);
-}
-
-/** 狂暴 onPlay：将一个基地的爆破点降低等同于你在该基地一个己方随从的力量（直到回合结束） */
-function dinoRampage(ctx: AbilityContext): AbilityResult {
-    const baseCandidates: { baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        const minionCandidates = collectDinoRampageMinions(ctx.state, ctx.playerId, i);
-        if (minionCandidates.length === 0) continue;
-        const baseDef = getBaseDef(ctx.state.bases[i].defId);
-        const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-        const label = minionCandidates.length === 1
-            ? `${baseName} (降低 ${minionCandidates[0].power} 爆破点)`
-            : `${baseName} (选择一个己方随从的力量)`;
-        baseCandidates.push({ baseIndex: i, label });
+    baseIndex: number,
+) {
+    const candidates = collectDinoRampageMinions(matchState.core, playerId, baseIndex);
+    if (candidates.length === 0) {
+        return { events: [] as SmashUpEvent[] };
     }
-
-    return resolveOrPrompt(ctx, buildBaseTargetOptions(baseCandidates, ctx.state), {
-        id: 'dino_rampage',
-        title: '选择要降低爆破点的基地',
-        sourceId: 'dino_rampage',
-        targetType: 'base',
-    }, (value) => {
-        const minionCandidates = collectDinoRampageMinions(ctx.state, ctx.playerId, value.baseIndex);
-        if (minionCandidates.length === 0) return { events: [] };
-        if (minionCandidates.length === 1) {
-            return { events: [modifyBreakpoint(value.baseIndex, -minionCandidates[0].power, 'dino_rampage', ctx.now)] };
-        }
+    if (candidates.length === 1) {
         return {
-            events: [],
-            matchState: queueDinoRampageMinionChoice(ctx.matchState, ctx.state, ctx.playerId, minionCandidates, ctx.now),
+            events: [modifyBreakpoint(baseIndex, -candidates[0].power, 'dino_rampage', now)],
         };
-    });
+    }
+    const minionContext = createDinoRampageMinionContext(matchState, playerId, now, baseIndex);
+    if (!minionContext) {
+        return { events: [] as SmashUpEvent[] };
+    }
+    return executeAbilityProgram(dinoRampageMinionPromptProgram, minionContext);
 }
 
-// ============================================================================
-// 交互处理函数注册
-// ============================================================================
-
-/** 注册恐龙派系的交互解决处理函数 */
-export function registerDinosaurInteractionHandlers(): void {
-    // 激光三角龙 (原版)：选择目标后消灭
-    registerInteractionHandler('dino_laser_triceratops', (state, _playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, _playerId, 'dino_laser_triceratops', timestamp)] };
-    });
-
-    // 激光三角龙 (POD版)：选择目标后消灭（支持跳过）
-    registerInteractionHandler('dino_laser_triceratops_pod', (state, _playerId, value, _iData, _random, timestamp) => {
-        // 处理跳过选项
-        if ((value as any).skip) return { state, events: [] };
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, _playerId, 'dino_laser_triceratops_pod', timestamp)] };
-    });
-
-    // 增强：选择目标后加临时力量（回合结束清零）
-    registerInteractionHandler('dino_augmentation', (state, _playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const nextState = queueFortTitanosaurusOngoingChoice(state, _playerId, [minionUid], timestamp);
+const dinoRampageMinionPromptProgram = createPromptProgram<
+    DinoRampageMinionContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'dino_rampage_choose_minion',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `dino_rampage_choose_minion_${context.now}`,
+        context.playerId,
+        '选择用于降低爆破点的随从',
+        buildMinionTargetOptions(context.candidates, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+        }),
+        {
+            sourceId: 'dino_rampage_choose_minion',
+            targetType: 'minion',
+        },
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const choice = value as DinoMinionChoice;
+        if (!choice.minionUid || choice.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const base = state.core.bases[choice.baseIndex];
+        if (!base) return { events: [] };
+        const minion = base.minions.find((candidate) => candidate.uid === choice.minionUid && candidate.controller === playerId);
+        if (!minion) return { events: [] };
+        const power = getMinionPower(state.core, minion, choice.baseIndex);
+        if (power <= 0) return { events: [] };
         return {
-            state: nextState ?? state,
-            events: [addTempPower(minionUid, baseIndex, 4, 'dino_augmentation', timestamp)],
+            events: [modifyBreakpoint(choice.baseIndex, -power, 'dino_rampage', timestamp)],
         };
-    });
+    },
+});
 
-    // 物竞天择第一步：选择己方随从后，链式选择目标
-    registerInteractionHandler('dino_natural_selection_choose_mine', (state, playerId, value, _iData, _random, timestamp) => {
-        // 检查取消标记
-        if ((value as any).__cancel__) return { state, events: [] };
-
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const myMinion = base.minions.find(m => m.uid === minionUid);
-        if (!myMinion) return undefined;
-        const myPower = getMinionPower(state.core, myMinion, baseIndex);
-        const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-        for (const m of base.minions) {
-            if (m.uid === myMinion.uid) continue;
-            const power = getMinionPower(state.core, m, baseIndex);
-            if (power < myPower) {
-                const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? m.defId;
-                targets.push({ uid: m.uid, defId: m.defId, baseIndex, label: `${name} (力量 ${power})` });
-            }
+const dinoRampageBasePromptProgram = createPromptProgram<
+    DinoRampageBaseContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'dino_rampage',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `dino_rampage_${context.now}`,
+        context.playerId,
+        '选择要降低爆破点的基地',
+        buildBaseTargetOptions(context.baseCandidates, context.matchState.core),
+        {
+            sourceId: 'dino_rampage',
+            targetType: 'base',
+        },
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const choice = value as DinoBaseChoice;
+        if (choice.baseIndex === undefined) {
+            return { events: [] };
         }
-        if (targets.length === 0) return undefined;
-        const next = createSimpleChoice(
-            `dino_natural_selection_target_${timestamp}`, playerId, '选择要消灭的随从', buildMinionTargetOptions(targets, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' }), { sourceId: 'dino_natural_selection_choose_target', targetType: 'minion' }
-        );
-        return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { baseIndex } } }), events: [] };
-    });
+        return resolveDinoRampageBaseSelection(state, playerId, timestamp, choice.baseIndex);
+    },
+});
 
-    // 物竞天择第二步：选择目标后消灭
-    registerInteractionHandler('dino_natural_selection_choose_target', (state, playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'dino_natural_selection', timestamp)] };
-    });
-
-    // 适者生存平局选择（支持多基地链式交互）
-    registerInteractionHandler('dino_survival_tiebreak', (state, playerId, value, iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        const events: SmashUpEvent[] = [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'dino_survival_of_the_fittest', timestamp)];
-
-        // 检查是否有剩余基地需要平局选择
-        const ctx = iData?.continuationContext as { remainingBases?: { baseIndex: number; candidateUids: { uid: string; defId: string; owner: string }[]; minPower: number }[] } | undefined;
-        const remaining = ctx?.remainingBases ?? [];
-        if (remaining.length > 0) {
-            const next = remaining[0];
-            const rest = remaining.slice(1);
-            const options = next.candidateUids.map(c => {
-                const def = getCardDef(c.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? c.defId;
-                const baseDef = getBaseDef(state.core.bases[next.baseIndex]?.defId ?? '');
-                const baseName = baseDef?.name ?? `基地 ${next.baseIndex + 1}`;
-                return { uid: c.uid, defId: c.defId, baseIndex: next.baseIndex, label: `${name} (力量 ${next.minPower}) @ ${baseName}` };
-            });
-            const interaction = createSimpleChoice(
-                `dino_sotf_tiebreak_${timestamp}`, playerId, '选择要消灭的最低力量随从', buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' }), { sourceId: 'dino_survival_tiebreak', targetType: 'minion' }
-            );
-            return { state: queueInteraction(state, { ...interaction, data: { ...interaction.data, continuationContext: { remainingBases: rest } } }), events };
-        }
-
-        return { state, events };
-    });
-
-    // 狂暴：先选基地，若该基地有多个己方随从则继续选随从
-    registerInteractionHandler('dino_rampage', (state, playerId, value, _iData, _random, timestamp) => {
-        const { baseIndex } = value as { baseIndex: number };
-        const minionCandidates = collectDinoRampageMinions(state.core, playerId, baseIndex);
-        if (minionCandidates.length === 0) return { state, events: [] };
-        if (minionCandidates.length === 1) {
-            return { state, events: [modifyBreakpoint(baseIndex, -minionCandidates[0].power, 'dino_rampage', timestamp)] };
-        }
-        return {
-            state: queueDinoRampageMinionChoice(state, state.core, playerId, minionCandidates, timestamp),
-            events: [],
-        };
-    });
-
-    registerInteractionHandler('dino_rampage_choose_minion', (state, playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const minion = base.minions.find(m => m.uid === minionUid && m.controller === playerId);
-        if (!minion) return undefined;
-        const power = getMinionPower(state.core, minion, baseIndex);
-        if (power <= 0) return { state, events: [] };
-        return { state, events: [modifyBreakpoint(baseIndex, -power, 'dino_rampage', timestamp)] };
-    });
-}
-
-// ============================================================================
+const dinoRampageProgram = createBranchProgram<
+    DinoRampageBaseContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => context.baseCandidates.length === 0,
+    then: createEffectProgram(() => ({ events: [] })),
+    else: createBranchProgram({
+        when: (context) => context.baseCandidates.length === 1,
+        then: createEffectProgram((context) => resolveDinoRampageBaseSelection(
+            context.matchState,
+            context.playerId,
+            context.now,
+            context.baseCandidates[0].baseIndex,
+        )),
+        else: dinoRampageBasePromptProgram,
+    }),
+});
 // ongoing 效果
 // ============================================================================
 

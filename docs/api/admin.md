@@ -844,6 +844,7 @@ Authorization: Bearer <admin_token>
 | type | string | 否 | 按类型筛选，支持 `bug` / `suggestion` / `other` |
 | severity | string | 否 | 按严重程度筛选，支持 `low` / `medium` / `high` / `critical` |
 | sort | string | 否 | 时间排序，支持 `newest`（默认） / `oldest` |
+| preferMine | boolean | 否 | 是否优先显示当前登录用户自己的反馈，默认 `false` |
 
 **响应示例**:
 ```json

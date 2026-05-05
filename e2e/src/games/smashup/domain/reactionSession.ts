@@ -1,5 +1,5 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { queueInteraction } from '../../../engine/systems/InteractionSystem';
 import {
     completeResolutionFrame,
     getActiveResolutionFrame,
@@ -12,7 +12,8 @@ import { getScoringEligibleBaseIndices } from './ongoingModifiers';
 import { validate } from './commands';
 import { execute } from './reducer';
 import { reduce } from './reduce';
-import { getTriggerExecutor } from './triggerExecutors';
+import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
+import { executeTriggerProgramExecutor } from './triggerExecutors';
 import type {
     SmashUpCore,
     SmashUpEvent,
@@ -38,6 +39,13 @@ interface ReactionOption {
     labelParams?: Record<string, string | number>;
     value: ReactionChoiceValue;
     displayMode: 'button';
+}
+
+export interface ResolvedSmashUpReactionChoice {
+    session: SmashUpReactionSession;
+    options: ReactionOption[];
+    value: ReactionChoiceValue;
+    wasStale: boolean;
 }
 
 type ReactionPostProcessor = (
@@ -219,16 +227,12 @@ function isTriggerSourceStillPresentDuringScoring(
     }
 
     for (const special of state.core.pendingAfterScoringSpecials ?? []) {
-        if (
-            special.cardUid === trigger.sourceCardUid
-            && (trigger.sourceBaseIndex === undefined || special.baseIndex === trigger.sourceBaseIndex)
-        ) {
+        if (special.cardUid === trigger.sourceCardUid) {
             return true;
         }
     }
 
-    const base = trigger.sourceBaseIndex === undefined ? undefined : state.core.bases[trigger.sourceBaseIndex];
-    if (base) {
+    for (const base of state.core.bases) {
         if (base.ongoingActions.some(action => action.uid === trigger.sourceCardUid)) {
             return true;
         }
@@ -243,7 +247,6 @@ function isTriggerSourceStillPresentDuringScoring(
     return (state.core.titans ?? []).some(titan => (
         titan.uid === trigger.sourceCardUid
         && titan.location.zone === 'base'
-        && (trigger.sourceBaseIndex === undefined || titan.location.baseIndex === trigger.sourceBaseIndex)
     ));
 }
 
@@ -559,7 +562,7 @@ function buildPlayableCardOptions(
     return options;
 }
 
-function buildReactionOptions(
+export function buildReactionOptions(
     state: MatchState<SmashUpCore>,
     session: SmashUpReactionSession,
     now: number,
@@ -581,7 +584,7 @@ function buildReactionOptions(
     }));
 
     const cardOptions = buildPlayableCardOptions(state, session, session.activePlayerId, now);
-    return [
+    return dedupeReactionOptions([
         ...triggerOptions,
         ...cardOptions,
         {
@@ -591,7 +594,76 @@ function buildReactionOptions(
             value: { kind: 'pass' },
             displayMode: 'button',
         },
-    ];
+    ]);
+}
+
+function isSameReactionChoiceValue(left: ReactionChoiceValue, right: ReactionChoiceValue): boolean {
+    if (left.kind !== right.kind) return false;
+
+    switch (left.kind) {
+        case 'trigger':
+            return left.triggerId === (right as Extract<ReactionChoiceValue, { kind: 'trigger' }>).triggerId;
+        case 'play_action':
+            return left.playerId === (right as Extract<ReactionChoiceValue, { kind: 'play_action' }>).playerId
+                && left.cardUid === (right as Extract<ReactionChoiceValue, { kind: 'play_action' }>).cardUid
+                && left.targetBaseIndex === (right as Extract<ReactionChoiceValue, { kind: 'play_action' }>).targetBaseIndex;
+        case 'play_minion':
+            return left.playerId === (right as Extract<ReactionChoiceValue, { kind: 'play_minion' }>).playerId
+                && left.cardUid === (right as Extract<ReactionChoiceValue, { kind: 'play_minion' }>).cardUid
+                && left.baseIndex === (right as Extract<ReactionChoiceValue, { kind: 'play_minion' }>).baseIndex;
+        case 'activate_special':
+            return left.playerId === (right as Extract<ReactionChoiceValue, { kind: 'activate_special' }>).playerId
+                && left.baseIndex === (right as Extract<ReactionChoiceValue, { kind: 'activate_special' }>).baseIndex
+                && left.minionUid === (right as Extract<ReactionChoiceValue, { kind: 'activate_special' }>).minionUid
+                && left.titanUid === (right as Extract<ReactionChoiceValue, { kind: 'activate_special' }>).titanUid;
+        case 'pass':
+            return true;
+        default:
+            return false;
+    }
+}
+
+function dedupeReactionOptions(options: ReactionOption[]): ReactionOption[] {
+    const deduped: ReactionOption[] = [];
+    for (const option of options) {
+        const hasDuplicate = deduped.some((existing) =>
+            existing.id === option.id || isSameReactionChoiceValue(existing.value, option.value),
+        );
+        if (!hasDuplicate) {
+            deduped.push(option);
+        }
+    }
+    return deduped;
+}
+
+export function resolveLiveSmashUpReactionChoice(
+    state: MatchState<SmashUpCore>,
+    value: ReactionChoiceValue,
+    now: number,
+): ResolvedSmashUpReactionChoice | undefined {
+    const session = getSmashUpReactionSession(state);
+    if (!session) return undefined;
+
+    const options = buildReactionOptions(state, session, now);
+    const matchedOption = options.find(option => isSameReactionChoiceValue(option.value, value));
+    if (matchedOption) {
+        return {
+            session,
+            options,
+            value: matchedOption.value,
+            wasStale: false,
+        };
+    }
+
+    const passOption = options.find(option => option.value.kind === 'pass');
+    return {
+        session,
+        options,
+        value: session.phase === 'optional' && passOption
+            ? passOption.value
+            : value,
+        wasStale: true,
+    };
 }
 
 function executeQueuedTrigger(
@@ -606,13 +678,8 @@ function executeQueuedTrigger(
         timestamp: now,
     };
     const coreAfterConsume = reduce(state.core, consumed as unknown as SmashUpEvent);
-    const exec = getTriggerExecutor(trigger.timing, trigger.sourceDefId);
     const baseState = { ...state, core: coreAfterConsume };
-    if (!exec) {
-        return { state: baseState, events: [consumed] };
-    }
-
-    const result = exec({
+    const result = executeTriggerProgramExecutor(trigger.timing, trigger.sourceDefId, {
         state: coreAfterConsume,
         matchState: baseState,
         timing: trigger.timing,
@@ -803,7 +870,7 @@ function buildReactionInteraction(
     now: number,
 ) {
     const initialOptions = buildReactionOptions(state, session, now);
-    const interaction = createSimpleChoice(
+    const interaction = createAbilityRuntimeSimpleChoice(
         `smashup_reaction_${session.frameId}_${session.activePlayerId}_${now}`,
         session.activePlayerId,
         session.phase === 'mandatory'
@@ -826,6 +893,24 @@ function buildReactionInteraction(
     };
     return interaction;
 }
+
+registerAbilityRuntimePrompt('smashup_reaction_choose', (state, _playerId, value, _interactionData, random, timestamp) => {
+    const resolved = resolveSmashUpReactionChoice(
+        state,
+        random,
+        timestamp,
+        (value ?? { kind: 'pass' }) as ReactionChoiceValue,
+    );
+    return {
+        ...resolved,
+        state: !resolved.state || resolved.state.core === state.core
+            ? resolved.state
+            : {
+                ...resolved.state,
+                core: state.core,
+            },
+    };
+});
 
 function continueSuspendedReactionIfNeeded(
     state: MatchState<SmashUpCore>,
@@ -992,10 +1077,16 @@ export function resolveSmashUpReactionChoice(
     now: number,
     value: ReactionChoiceValue,
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const session = getSmashUpReactionSession(state);
-    if (!session) return { state, events: [] };
+    const resolvedChoice = resolveLiveSmashUpReactionChoice(state, value, now);
+    if (!resolvedChoice) return { state, events: [] };
+    const { session, value: liveValue, wasStale } = resolvedChoice;
 
-    if (value.kind === 'pass') {
+    if (wasStale && liveValue === value) {
+        const refreshed = advanceSmashUpReactionSession(state, random, now);
+        return refreshed ?? { state, events: [] };
+    }
+
+    if (liveValue.kind === 'pass') {
         const nextPassCount = session.consecutivePasses + 1;
         if (nextPassCount >= state.core.turnOrder.length) {
             const clearedState = completeResolutionFrame(clearSmashUpReactionSession(state), session.frameId);
@@ -1022,14 +1113,14 @@ export function resolveSmashUpReactionChoice(
     const workingState = state;
 
     let result: { state: MatchState<SmashUpCore>; events: SmashUpEvent[] };
-    if (value.kind === 'trigger') {
-        const trigger = (workingState.core.triggerQueue ?? []).find(candidate => candidate.id === value.triggerId);
+    if (liveValue.kind === 'trigger') {
+        const trigger = (workingState.core.triggerQueue ?? []).find(candidate => candidate.id === liveValue.triggerId);
         if (!trigger) {
             return { state, events: [] };
         }
         result = executeQueuedTrigger(workingState, trigger, random, now);
     } else {
-        result = executeReactionCommand(workingState, session, value, random, now);
+        result = executeReactionCommand(workingState, session, liveValue, random, now);
     }
 
     const resultSession = getSmashUpReactionSession(result.state);

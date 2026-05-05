@@ -458,5 +458,30 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(trigger.sourceEventId).toBe(`deck-inspected:${SU_EVENTS.REVEAL_HAND}:hand:1:0:11`);
     expect(trigger.frameId).toBe(`deck-inspected-frame:${SU_EVENTS.REVEAL_HAND}:hand:1:0:11`);
   });
+
+  it('queued trigger 缺少 runtime executor 时直接报错，不再静默吞掉', () => {
+    const core = baseCore({
+      triggerQueue: [{
+        id: 'missing-trigger',
+        timing: 'onMinionMoved',
+        sourceDefId: 'missing_executor_source',
+        ownerPlayerId: '0',
+        mandatory: true,
+        resolutionClass: 'mandatory',
+        frameId: 'missing-frame',
+        sourceEventId: 'missing-event',
+      }] as any,
+    });
+
+    const state = makeMatchState(core);
+
+    expect(() =>
+      maybeResolveReactionQueue(
+        state,
+        { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+        99,
+      ),
+    ).toThrowError(/缺少 ability runtime executor/);
+  });
 });
 

@@ -74,7 +74,7 @@ export class FeedbackService {
         const manager = actorUserId ? await this.assertActorCanManage(actorUserId) : null;
         const page = Math.max(1, Number(query.page) || 1);
         const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
-        const { status, type, severity, sort, reporterType, source } = query;
+        const { status, type, severity, sort, reporterType, source, preferMine } = query;
         const filter: Record<string, unknown> = {};
         if (status) filter.status = status;
         if (type) filter.type = type;
@@ -88,6 +88,7 @@ export class FeedbackService {
         const total = await this.feedbackModel.countDocuments(filter);
         const skip = (page - 1) * limit;
         let items: Array<FeedbackDocument | Feedback> = [];
+        const shouldPreferMine = Boolean(manager?.actorUserObjectId && preferMine);
 
         if (manager?.actorUserObjectId) {
             const aggregatedItems = await this.feedbackModel.aggregate<Array<Feedback & { __isMine?: number }>>([
@@ -101,7 +102,7 @@ export class FeedbackService {
                 },
                 {
                     $sort: {
-                        __isMine: -1,
+                        ...(shouldPreferMine ? { __isMine: -1 } : {}),
                         createdAt: createdAtSort,
                     },
                 },

@@ -25,6 +25,7 @@ import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { registerNinjaAbilities, registerNinjaInteractionHandlers } from '../abilities/ninjas';
+import { registerCowboysAbilities, registerCowboysInteractionHandlers } from '../abilities/cowboys';
 import { registerRobotAbilities } from '../abilities/robots';
 import { registerWizardAbilities } from '../abilities/wizards';
 import { registerTricksterAbilities } from '../abilities/tricksters';
@@ -33,6 +34,7 @@ import { reduce } from '../domain/reduce';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { getMinionDef } from '../data/cards';
 import { buildAffectRecords } from '../domain/affect';
+import { runCommand, defaultTestRandom } from './testRunner';
 
 // ============================================================================
 // 测试辅助
@@ -718,6 +720,64 @@ describe('忍者 ongoing/special 能力', () => {
             };
             const next = reduce(state, evt as any);
             expect(next.players['0'].minionsPlayed).toBe(1);
+        });
+
+        test('忍者侍从额外打出的枪手会继续接管当前交互并创建决斗选择', () => {
+            clearInteractionHandlers();
+            registerNinjaInteractionHandlers();
+            registerCowboysAbilities();
+            registerCowboysInteractionHandlers();
+
+            const base = makeBase({
+                defId: 'base_the_workshop',
+                minions: [
+                    makeMinion({ defId: 'ninja_acolyte', uid: 'ac-1', controller: '0', owner: '0', basePower: 2 }),
+                    makeMinion({ defId: 'pirate_first_mate', uid: 'opp-1', controller: '1', owner: '1', basePower: 2 }),
+                ],
+            });
+            const templateState = makeState([base]);
+            const state = makeState([base], {
+                '0': {
+                    ...templateState.players['0'],
+                    hand: [makeCard('gun-1', 'cowboys_gunfighter', 'minion', '0', SMASHUP_FACTION_IDS.NINJAS)],
+                    factions: [SMASHUP_FACTION_IDS.NINJAS, 'cowboys'] as [string, string],
+                    minionsPlayed: 0,
+                },
+            });
+
+            const activated = runCommand(
+                makeMatchState(state),
+                {
+                    type: 'su:activate_special',
+                    playerId: '0',
+                    payload: { minionUid: 'ac-1', baseIndex: 0 },
+                } as any,
+                defaultTestRandom,
+            );
+
+            expect(activated.success).toBe(true);
+            expect((activated.finalState.sys.interaction.current as any)?.data?.sourceId).toBe('ninja_acolyte_play');
+
+            const acolyteOptions = ((activated.finalState.sys.interaction.current as any)?.data?.options ?? []) as any[];
+            const gunfighterOption = acolyteOptions.find(option => option?.value?.defId === 'cowboys_gunfighter');
+            expect(gunfighterOption).toBeDefined();
+
+            const resolved = runCommand(
+                activated.finalState,
+                {
+                    type: 'SYS_INTERACTION_RESPOND',
+                    playerId: '0',
+                    payload: { optionId: gunfighterOption.id },
+                } as any,
+                defaultTestRandom,
+            );
+
+            expect(resolved.success).toBe(true);
+            expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'gun-1')).toBe(true);
+            expect((resolved.finalState.sys.interaction.current as any)?.data?.sourceId).toBe('cowboys_gunfighter');
+
+            const duelOptions = ((resolved.finalState.sys.interaction.current as any)?.data?.options ?? []) as any[];
+            expect(duelOptions.some(option => option?.value?.minionUid === 'opp-1')).toBe(true);
         });
     });
 });

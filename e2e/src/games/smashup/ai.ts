@@ -28,10 +28,12 @@ import {
     type CardInstance,
     type FusionCardDef,
     type SmashUpCore,
+    type TriggerInstance,
 } from './domain/types';
 import { SMASHUP_FACTION_IDS } from './domain/ids';
 import { validate } from './domain/commands';
 import { hasCardActivatableAbility } from './domain/activationMetadata';
+import { resolveLiveSmashUpReactionChoice } from './domain/reactionSession';
 import {
     actionLikeNeedsResponseWindowBase,
     getActionLikeResponseWindowTiming,
@@ -1190,9 +1192,14 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
 
     const data = current.data as {
         options?: SmashUpInteractionOption[];
+        sourceId?: string;
         multi?: PromptMultiConfig;
     };
-    const refreshedOptions = getFreshSimpleChoiceOptions(state, current as EngineInteractionDescriptor<unknown>);
+    const liveReactionChoice = data.sourceId === 'smashup_reaction_choose'
+        ? resolveLiveSmashUpReactionChoice(state, { kind: 'pass' }, state.core.turnNumber ?? 0)
+        : undefined;
+    const refreshedOptions = liveReactionChoice?.options
+        ?? getFreshSimpleChoiceOptions(state, current as EngineInteractionDescriptor<unknown>);
     const options = refreshedOptions.filter((option): option is Required<Pick<SmashUpInteractionOption, 'id'>> & SmashUpInteractionOption => {
         return typeof option.id === 'string' && option.disabled !== true;
     });
@@ -1942,6 +1949,23 @@ const readSmashUpReactionChoiceValue = (action: AiLegalAction): SmashUpReactionC
     return rawValue as SmashUpReactionChoiceValue;
 };
 
+const getSmashUpReactionTriggerById = (
+    state: SmashUpState,
+    triggerId: string | undefined,
+): TriggerInstance | null => {
+    if (!triggerId) return null;
+    return state.core.triggerQueue?.find((trigger) => trigger.id === triggerId) ?? null;
+};
+
+const getSmashUpTriggerRelevantBaseIndices = (trigger: TriggerInstance): number[] => {
+    const candidates = [
+        trigger.sourceBaseIndex,
+        trigger.baseIndex,
+        trigger.actionTargetBaseIndex,
+    ].filter((value): value is number => typeof value === 'number' && value >= 0);
+    return [...new Set(candidates)];
+};
+
 const estimateSmashUpReactionChoiceUrgency = (
     state: SmashUpState,
     playerId: PlayerId,
@@ -1964,12 +1988,32 @@ const estimateSmashUpReactionChoiceUrgency = (
             ? action.metadata.optionOrder
             : 0;
         const triggerId = typeof choiceValue.triggerId === 'string' ? choiceValue.triggerId : '';
+        const liveTrigger = getSmashUpReactionTriggerById(state, triggerId);
         let score = 18 - optionOrder * 3;
         if (triggerId.includes('afterScoring')) score += 6;
         if (triggerId.includes('beforeScoring')) score += 4;
+        if (liveTrigger) {
+            let bestBaseUrgency = 0;
+            for (const baseIndex of getSmashUpTriggerRelevantBaseIndices(liveTrigger)) {
+                const { scoringEligible, gapBefore, baseTotalPower, breakpoint } = getBasePressureMetrics(state, baseIndex);
+                let baseUrgency = 0;
+                if (scoringEligible) baseUrgency += 36;
+                else if (gapBefore <= 2) baseUrgency += 16 - gapBefore * 5;
+                else if (gapBefore >= 8) baseUrgency -= 6;
+
+                if (baseTotalPower >= breakpoint) baseUrgency += 10;
+                bestBaseUrgency = Math.max(bestBaseUrgency, baseUrgency);
+            }
+
+            score += bestBaseUrgency;
+            if (liveTrigger.ownerPlayerId === playerId) score += 8;
+            if (liveTrigger.sourceControllerId === playerId) score += 10;
+        }
         return {
-            score,
-            reason: '统一反应入口里的触发顺序默认沿用当前队列优先级',
+            score: Number(score.toFixed(3)),
+            reason: liveTrigger
+                ? '统一反应入口里的 trigger 应按 live trigger 对当前基地结算的真实影响排序'
+                : '统一反应入口里的触发顺序默认沿用当前队列优先级',
         };
     }
 

@@ -112,7 +112,7 @@ function execPlayActionWithMatch(state: SmashUpCore, playerId: string, cardUid: 
     
     // Call postProcessSystemEvents to trigger onPlay abilities，传入 matchState
     const processed = postProcessSystemEvents(state, events, random ?? defaultRandom, ms);
-    
+    lastMatchState = processed.matchState!;
     return { state: processed.matchState!.core, events: processed.events, matchState: processed.matchState! };
 }
 
@@ -124,8 +124,16 @@ function resolveInteraction(state: SmashUpCore, interactionId: string, value: un
         throw new Error(`No interaction handler found for ${interactionId}`);
     }
     
-    // 调用 handler
-    const result = handler({ core: state } as any, state.players[state.turnOrder[state.currentPlayerIndex]].id, value, undefined, defaultRandom, timestamp);
+    const interactionData = getLastInteractions()
+        .find((interaction) => (interaction?.data as any)?.sourceId === interactionId)?.data;
+    const result = handler(
+        { core: state } as any,
+        state.players[state.turnOrder[state.currentPlayerIndex]].id,
+        value,
+        interactionData,
+        defaultRandom,
+        timestamp,
+    );
     if (!result) throw new Error(`Handler returned undefined for ${interactionId}`);
     return { state: result.state?.core ?? state, events: result.events };
 }
@@ -316,8 +324,8 @@ describe('克苏鲁之仆 - cthulhu_madness_unleashed（疯狂释放）', () => 
         // 解决交互：选跳过（空数组）
         const handler = getInteractionHandler('cthulhu_madness_unleashed');
         expect(handler).toBeDefined();
-        const ms = makeMatchState(state);
-        const result = handler!(ms, '0', [], undefined, defaultRandom, 1000);
+        const prompt = interactions[0];
+        const result = handler!(prompt.state, '0', [], prompt.data, defaultRandom, 1000);
         expect(result.events.length).toBe(0);
         // 疯狂卡仍在手牌（未弃）
         expect(state.players['0'].hand.some(c => c.uid === 'm1')).toBe(true);
@@ -344,16 +352,17 @@ describe('克苏鲁之仆 - cthulhu_madness_unleashed（疯狂释放）', () => 
             },
         });
 
-        const playEvents = execPlayAction(state, '0', 'a1');
-        const afterPlay = applyEvents(state, playEvents);
+        const playResult = execPlayActionWithMatch(state, '0', 'a1');
+        const afterPlay = applyEvents(state, playResult.events);
 
         const handler = getInteractionHandler('cthulhu_madness_unleashed');
         expect(handler).toBeDefined();
+        const prompt = (playResult.matchState.sys as any)?.interaction?.current;
         const result = handler!(
-            makeMatchState(afterPlay),
+            playResult.matchState,
             '0',
             [{ cardUid: 'm1' }, { cardUid: 'm2' }],
-            undefined,
+            prompt?.data,
             defaultRandom,
             1000,
         );
@@ -400,16 +409,17 @@ describe('克苏鲁之仆 - cthulhu_madness_unleashed（疯狂释放）', () => 
             },
         });
 
-        const playEvents = execPlayAction(state, '0', 'a1');
-        const afterPlay = applyEvents(state, playEvents);
+        const playResult = execPlayActionWithMatch(state, '0', 'a1');
+        const afterPlay = applyEvents(state, playResult.events);
 
         const handler = getInteractionHandler('cthulhu_madness_unleashed');
         expect(handler).toBeDefined();
+        const prompt = (playResult.matchState.sys as any)?.interaction?.current;
         const result = handler!(
-            makeMatchState(afterPlay),
+            playResult.matchState,
             '0',
             [{ cardUid: 'm1' }],
-            undefined,
+            prompt?.data,
             defaultRandom,
             1000,
         );

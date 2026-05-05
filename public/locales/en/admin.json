@@ -12,8 +12,10 @@
       "reporterType": "Reporter",
       "source": "System source",
       "sort": "Sort",
+      "priority": "Priority",
       "newest": "Newest first",
       "oldest": "Oldest first",
+      "preferMine": "Prefer mine",
       "all": "All"
     },
     "pagination": {

@@ -8,7 +8,7 @@
 import { useMemo } from 'react';
 import type { PlayerId, MatchState, ResponseWindowState } from '../../../engine/types';
 import { asSimpleChoice, type SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
-import type { HeroState, Die, TurnPhase, PendingAttack } from '../types';
+import type { HeroState, Die, TurnPhase, PendingAttack, PendingDefenderChoice } from '../types';
 import type { DiceThroneCore } from '../domain';
 import { getAvailableAbilityIds, getDefensiveAbilityIds, canAdvancePhase as canAdvancePhaseDomain } from '../domain/rules';
 
@@ -234,6 +234,22 @@ export function useCurrentChoice(access: DiceThroneStateAccess): {
             sourceAbilityId: undefined,
         };
     }, [access.prompt]);
+}
+
+export function useCurrentDefenderChoice(
+    access: DiceThroneStateAccess,
+): (PendingDefenderChoice & { id: string; playerId: PlayerId }) | undefined {
+    return useMemo(() => {
+        const interaction = access.sys.interaction?.current;
+        if (!interaction || interaction.kind !== 'dt:defender-choice') {
+            return undefined;
+        }
+        return {
+            ...(interaction.data as PendingDefenderChoice),
+            id: interaction.id,
+            playerId: interaction.playerId,
+        };
+    }, [access.sys.interaction]);
 }
 
 /**

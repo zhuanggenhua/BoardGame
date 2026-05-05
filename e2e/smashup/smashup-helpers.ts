@@ -313,7 +313,11 @@ export const createMatchViaAPI = async (page: Page, guestId: string): Promise<st
 export const setupTwoPlayerMatch = async (
     browser: { newContext: (opts?: BrowserContextOptions) => Promise<BrowserContext> },
     baseURL: string | undefined,
-    options?: { enableE2EDebug?: boolean; contextOptions?: BrowserContextOptions },
+    options?: {
+        enableE2EDebug?: boolean;
+        skipImageGate?: boolean;
+        contextOptions?: BrowserContextOptions;
+    },
 ): Promise<TwoPlayerSetup | null> => {
     const hostContext = await browser.newContext({ baseURL, ...(options?.contextOptions ?? {}) });
     
@@ -324,7 +328,10 @@ export const setupTwoPlayerMatch = async (
         });
     }
     
-    await initContext(hostContext, { storageKey: '__smashup_storage_reset' });
+    await initContext(hostContext, {
+        storageKey: '__smashup_storage_reset',
+        skipImageGate: options?.skipImageGate ?? false,
+    });
     const hostPage = await hostContext.newPage();
 
     await hostPage.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
@@ -351,7 +358,10 @@ export const setupTwoPlayerMatch = async (
         });
     }
     
-    await initContext(guestContext, { storageKey: '__smashup_storage_reset' });
+    await initContext(guestContext, {
+        storageKey: '__smashup_storage_reset',
+        skipImageGate: options?.skipImageGate ?? false,
+    });
     const guestPage = await guestContext.newPage();
 
     const guestGuestId = `e2e_guest_${Date.now()}_${Math.floor(Math.random() * 10000)}`;

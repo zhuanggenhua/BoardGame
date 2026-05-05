@@ -178,6 +178,19 @@ describe('卡牌展示系统', () => {
 
             expect(await screen.findByTestId('reveal-overlay')).toBeInTheDocument();
         });
+
+        it('展示标题应优先显示玩家昵称', async () => {
+            render(React.createElement(RevealOverlay, {
+                entries: [makeRevealEntry({ id: 4, viewerPlayerId: 'all' })],
+                currentPlayerId: '0',
+                playerNames: {
+                    '0': '阿土',
+                    '1': '老王',
+                },
+            }));
+
+            expect(await screen.findByText('老王 的手牌')).toBeInTheDocument();
+        });
     });
 
     describe('疯狂卡平局规则', () => {

@@ -33,10 +33,14 @@ import { SU_COMMANDS } from '../domain/types';
 import { ToastProvider } from '../../../contexts/ToastContext';
 import { PromptOverlay } from '../ui/PromptOverlay';
 import { SmashUpCardRenderer } from '../ui/SmashUpCardRenderer';
+import { BaseZone } from '../ui/BaseZone';
 import {
     buildMinionUidSnapshotByController,
     resolveEnteringMinionUidsByController,
 } from '../ui/baseZoneEntryAnimation';
+import { buildMatchPlayerViewModel } from '../../../components/game/framework/matchPlayerViewModel';
+import { buildPlayerDisplayNameMap, resolveOrderedPlayerIds } from '../../../components/game/framework/playerDisplay';
+import type { TitanState } from '../domain/types';
 
 vi.mock('../../../components/common/media/CardPreview', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../../components/common/media/CardPreview')>();
@@ -184,6 +188,110 @@ describe('SmashUp UI 交互验证', () => {
 
         expect(Array.from(entering['0'] ?? [])).toEqual(['ally-2']);
         expect(Array.from(entering['1'] ?? [])).toEqual([]);
+    });
+
+    it('BaseZone 的泰坦 hover 应沿用随从级别的轻微放大，不再把整张卡放大过头', () => {
+        const titan: TitanState = {
+            uid: 't-kraken',
+            defId: 'pirates_the_kraken',
+            faction: 'pirates',
+            ownerId: '0',
+            controllerId: '0',
+            powerCounters: 0,
+            talentUsed: false,
+            location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+        };
+        const core = makeState({
+            titans: [titan],
+        });
+
+        render(
+            React.createElement(
+                ToastProvider,
+                undefined,
+                React.createElement(BaseZone, {
+                    base: core.bases[0],
+                    baseIndex: 0,
+                    core,
+                    turnOrder: core.turnOrder,
+                    isDeployMode: false,
+                    isMyTurn: true,
+                    myPlayerId: '0',
+                    dispatch: vi.fn(),
+                    onClick: vi.fn(),
+                    onViewMinion: vi.fn(),
+                    onViewAction: vi.fn(),
+                    onViewBase: vi.fn(),
+                    onViewTitan: vi.fn(),
+                }),
+            ),
+        );
+
+        const titanCard = screen.getByTestId('su-base-titan-t-kraken');
+        expect(titanCard.className).toContain('origin-bottom');
+        expect(titanCard.className).toContain('hover:scale-110');
+        expect(titanCard.className).not.toContain('hover:scale-125');
+    });
+
+    it('通用玩家显示工具应优先使用昵称，并在缺失时回退到座位标签', () => {
+        const playerNames = buildPlayerDisplayNameMap(
+            ['0', '1', '2'],
+            [
+                { id: 0, name: '阿土' },
+                { id: 2, name: '老王' },
+            ],
+            (playerId) => `P${Number(playerId) + 1}`,
+        );
+
+        expect(playerNames).toEqual({
+            '0': '阿土',
+            '1': 'P2',
+            '2': '老王',
+        });
+    });
+
+    it('通用玩家顺序工具应优先使用 seatOrder，并在缺项时回退到 turnOrder', () => {
+        const orderedPlayerIds = resolveOrderedPlayerIds({
+            preferredOrder: ['2', '0'],
+            fallbackOrder: ['0', '1', '2'],
+            players: { '0': {}, '1': {}, '2': {} },
+        });
+
+        expect(orderedPlayerIds).toEqual(['2', '0', '1']);
+    });
+
+    it('通用玩家视图模型应统一产出自己、当前回合与当前操作者名称', () => {
+        const playerView = buildMatchPlayerViewModel({
+            core: {
+                players: { '0': {}, '1': {} },
+                seatOrder: ['1', '0'],
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 1,
+            },
+            playerID: '0',
+            matchData: [
+                { id: 0, name: '阿土' },
+                { id: 1, name: '老王' },
+            ],
+            resolvePreferredOrder: ({ core }) => core?.seatOrder,
+            resolveFallbackOrder: ({ core }) => core?.turnOrder,
+            resolveTurnPlayerId: ({ core }) => core?.turnOrder[core.currentPlayerIndex],
+            resolveActiveActorId: () => '0',
+        });
+
+        expect(playerView.orderedPlayerIds).toEqual(['1', '0']);
+        expect(playerView.playerOrderLabels).toEqual({
+            '1': 'P1',
+            '0': 'P2',
+        });
+        expect(playerView.selfPlayerId).toBe('0');
+        expect(playerView.selfPlayerName).toBe('阿土');
+        expect(playerView.turnPlayerId).toBe('1');
+        expect(playerView.turnPlayerName).toBe('老王');
+        expect(playerView.activeActorId).toBe('0');
+        expect(playerView.activeActorName).toBe('阿土');
+        expect(playerView.getPlayerOrderLabel('1')).toBe('P1');
+        expect(playerView.getPlayerOrderLabel('0')).toBe('P2');
     });
 
     it('原生泰坦图集预览应透传正确的 atlas index', () => {

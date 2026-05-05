@@ -4,42 +4,150 @@
  * 主题：消灭随从、潜入基地
  */
 
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { destroyMinion, moveMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback, buildValidatedMoveEvents } from '../domain/abilityHelpers';
+import { destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, isSpecialLimitBlocked, emitSpecialLimitUsed, buildAbilityFeedback, buildValidatedMoveEvents } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, MinionReturnedEvent, OngoingDetachedEvent, MinionPlayedEvent } from '../domain/types';
 import { getCardDef, getBaseDef } from '../data/cards';
 import type { MinionCardDef } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { matchesDefId } from '../domain/utils';
+import type { MatchState, PlayerId } from '../../../engine/types';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+} from '../domain/abilityRuntime';
+
+type NinjaPromptContext = {
+    matchState: MatchState<any>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type NinjaDestroyMinionPromptContext = NinjaPromptContext & {
+    sourceId: 'ninja_master' | 'ninja_tiger_assassin' | 'ninja_seeing_stars';
+    title: string;
+    allowSkip?: boolean;
+    targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
+};
+
+type NinjaDestroyOngoingPromptContext = NinjaPromptContext & {
+    sourceId: 'ninja_infiltrate_destroy' | 'ninja_infiltrate_pod_destroy';
+    title: string;
+    allowSkip?: boolean;
+    targets: Array<{ uid: string; defId: string; ownerId: string; label: string }>;
+};
+
+type NinjaMovePromptContext = NinjaPromptContext & {
+    sourceId: 'ninja_way_of_deception_choose_minion' | 'ninja_way_of_deception_choose_base';
+    title: string;
+    minionCandidates?: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
+    fromBaseIndex?: number;
+    minionUid?: string;
+    minionDefId?: string;
+};
+
+type NinjaPlayFromHandPromptContext = NinjaPromptContext & {
+    sourceId: 'ninja_hidden_ninja' | 'ninja_acolyte_play';
+    title: string;
+    baseIndex: number;
+    includeSkip?: boolean;
+    handOptions: Array<{
+        id: string;
+        label: string;
+        value: { cardUid: string; defId: string; power: number };
+        _source: 'hand';
+        displayMode: 'card';
+    }>;
+};
+
+type NinjaDisguiseContext = NinjaPromptContext & {
+    sourceId:
+        | 'ninja_disguise_choose_base'
+        | 'ninja_disguise_choose_minions'
+        | 'ninja_disguise_choose_play1'
+        | 'ninja_disguise_choose_play2';
+    cardUid: string;
+    eligibleBases: Array<{ baseIndex: number; count: number; label: string }>;
+    baseIndex?: number;
+    selectedMinionUids?: string[];
+    totalToPlay?: number;
+    playedHandUids?: string[];
+};
+
+function createNinjaPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+    matchState: MatchState<any>,
+    playerId: PlayerId,
+    now: number,
+    extra?: TExtra,
+): NinjaPromptContext & TExtra {
+    return {
+        matchState,
+        playerId,
+        now,
+        ...(extra ?? {} as TExtra),
+    };
+}
+
+function createSkipButton(label = '跳过') {
+    return { id: 'skip', label, value: { skip: true }, displayMode: 'button' as const };
+}
+
+function buildDestroyMinionOptions(
+    context: NinjaDestroyMinionPromptContext,
+) {
+    const options = buildMinionTargetOptions(context.targets, {
+        state: context.matchState.core,
+        sourcePlayerId: context.playerId,
+        effectType: 'destroy',
+    });
+    if (context.allowSkip) {
+        options.push(createSkipButton());
+    }
+    return options as any[];
+}
+
+function buildHandPlayEvents(
+    playerId: PlayerId,
+    baseIndex: number,
+    cardUid: string,
+    defId: string,
+    power: number,
+    timestamp: number,
+): MinionPlayedEvent {
+    return {
+        type: SU_EVENTS.MINION_PLAYED,
+        payload: { playerId, cardUid, defId, baseIndex, power, consumesNormalLimit: false },
+        timestamp,
+    };
+}
 
 /** 注册忍者派系所有能力*/
 export function registerNinjaAbilities(): void {
     // 忍者大师：消灭本基地一个随从
-    registerAbility('ninja_master', 'onPlay', ninjaMaster);
+    registerAbilityProgram('ninja_master', 'onPlay', { program: ninjaMasterProgram });
     // 猛虎刺客：消灭本基地一个力量≤3的随从
-    registerAbility('ninja_tiger_assassin', 'onPlay', ninjaTigerAssassin);
+    registerAbilityProgram('ninja_tiger_assassin', 'onPlay', { program: ninjaTigerAssassinProgram });
     // 手里剑（行动卡）：消灭一个力量≤3的随从（任意基地）
-    registerAbility('ninja_seeing_stars', 'onPlay', ninjaSeeingStars);
+    registerAbilityProgram('ninja_seeing_stars', 'onPlay', { program: ninjaSeeingStarsProgram });
     // 欺骗之道（行动卡）：移动己方一个随从到另一个基地
-    registerAbility('ninja_way_of_deception', 'onPlay', ninjaWayOfDeception);
+    registerAbilityProgram('ninja_way_of_deception', 'onPlay', { program: ninjaWayOfDeceptionProgram });
     // 伪装（行动卡）：将己方一个随从返回手牌，然后打出一个随从到该基地
-    registerAbility('ninja_disguise', 'onPlay', ninjaDisguise);
+    registerAbilityProgram('ninja_disguise', 'onPlay', { program: ninjaDisguiseProgram });
     // 渗透（ongoing 行动卡）：onPlay 消灭基地上一个已有的战术
-    registerAbility('ninja_infiltrate', 'onPlay', ninjaInfiltrateOnPlay);
+    registerAbilityProgram('ninja_infiltrate', 'onPlay', { program: ninjaInfiltrateOnPlayProgram });
     // 渗透 POD（ongoing 行动卡）：onPlay 可选消灭基地上另一张战术；talent 可自毁以压制基地能力
-    registerAbility('ninja_infiltrate_pod', 'onPlay', ninjaInfiltratePodOnPlay);
+    registerAbilityProgram('ninja_infiltrate_pod', 'onPlay', { program: ninjaInfiltratePodOnPlayProgram });
     registerAbility('ninja_infiltrate_pod', 'talent', ninjaInfiltratePodTalent);
     // 隐忍（special action）：基地计分前打出手牌中的随从到该基地
-    registerAbility('ninja_hidden_ninja', 'special', ninjaHiddenNinja);
+    registerAbilityProgram('ninja_hidden_ninja', 'special', { program: ninjaHiddenNinjaProgram });
     // 忍者侍从（special）：基地计分前返回手牌并额外打出一个随从到该基地
-    registerAbility('ninja_acolyte', 'special', ninjaAcolyteSpecial);
+    registerAbilityProgram('ninja_acolyte', 'special', { program: ninjaAcolyteSpecialProgram });
     // 忍者侍从 POD（talent）：若本回合尚未打出过随从，则返回手牌并立即在这里额外打出一个随从
-    registerAbility('ninja_acolyte_pod', 'talent', {
-        execute: ninjaAcolytePodTalent,
+    registerAbilityProgram('ninja_acolyte_pod', 'talent', {
+        program: ninjaAcolytePodTalentProgram,
         validateUse: ninjaAcolytePodTalentValidate,
     });
 
@@ -47,71 +155,114 @@ export function registerNinjaAbilities(): void {
     registerNinjaOngoingEffects();
 }
 
-/** 忍者大师?onPlay：消灭本基地一个随从*/
-function ninjaMaster(ctx: AbilityContext): AbilityResult {
+const ninjaDestroyMinionPromptProgram = createPromptProgram<NinjaDestroyMinionPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'ninja_destroy_minion_prompt',
+    interactionSourceIds: ['ninja_master', 'ninja_tiger_assassin', 'ninja_seeing_stars'],
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.sourceId}_${context.now}`,
+        context.playerId,
+        context.title,
+        buildDestroyMinionOptions(context),
+        { sourceId: context.sourceId, targetType: 'minion' },
+    ),
+    onResolve: ({ state, playerId, value, context, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const base = state.core.bases[selected.baseIndex];
+        if (!base) return { events: [] };
+        const target = base.minions.find((minion) => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        return {
+            events: [
+                destroyMinion(
+                    target.uid,
+                    target.defId,
+                    selected.baseIndex,
+                    target.owner,
+                    playerId,
+                    context.sourceId,
+                    timestamp,
+                ),
+            ],
+        };
+    },
+});
+
+const ninjaMasterProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
-    const targets = base.minions.filter(m => m.uid !== ctx.cardUid);
+    const targets = base.minions
+        .filter((minion) => minion.uid !== ctx.cardUid)
+        .map((minion) => {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const power = getMinionPower(ctx.state, minion, ctx.baseIndex);
+            return { uid: minion.uid, defId: minion.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
+        });
     if (targets.length === 0) return { events: [] };
-    const options = targets.map(t => {
-        const def = getCardDef(t.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? t.defId;
-        const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
-    });
-    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
-    const interaction = createSimpleChoice(
-        `ninja_master_${ctx.now}`, ctx.playerId,
-        '选择要消灭的随从（可跳过）',
-        [...buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }), skipOption] as any[],
-        { sourceId: 'ninja_master', targetType: 'minion' },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    return {
+        events: [],
+        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'ninja_master',
+            title: '选择要消灭的随从（可跳过）',
+            allowSkip: true,
+            targets,
+        }),
+        nextProgram: ninjaDestroyMinionPromptProgram,
+    };
+});
 
-/** 猛虎刺客 onPlay：消灭本基地一个力量≤3的随从*/
-function ninjaTigerAssassin(ctx: AbilityContext): AbilityResult {
+const ninjaTigerAssassinProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
-    const targets = base.minions.filter(
-        m => m.uid !== ctx.cardUid && getMinionPower(ctx.state, m, ctx.baseIndex) <= 3
-    );
+    const targets = base.minions
+        .filter((minion) => minion.uid !== ctx.cardUid && getMinionPower(ctx.state, minion, ctx.baseIndex) <= 3)
+        .map((minion) => {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const power = getMinionPower(ctx.state, minion, ctx.baseIndex);
+            return { uid: minion.uid, defId: minion.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
+        });
     if (targets.length === 0) return { events: [] };
-    const options = targets.map(t => {
-        const def = getCardDef(t.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? t.defId;
-        const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
-    });
-    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
-    const interaction = createSimpleChoice(
-        `ninja_tiger_assassin_${ctx.now}`, ctx.playerId, '选择要消灭的力量≤3的随从（可跳过）', [...buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }), skipOption] as any[], { sourceId: 'ninja_tiger_assassin', targetType: 'minion' }
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    return {
+        events: [],
+        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'ninja_tiger_assassin',
+            title: '选择要消灭的力量≤3的随从（可跳过）',
+            allowSkip: true,
+            targets,
+        }),
+        nextProgram: ninjaDestroyMinionPromptProgram,
+    };
+});
 
-/** 手里剑 onPlay：消灭一个力量≤3的随从（任意基地，包含己方） */
-function ninjaSeeingStars(ctx: AbilityContext): AbilityResult {
-    const targets: { uid: string; defId: string; baseIndex: number; owner: string; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (getMinionPower(ctx.state, m, i) <= 3) {
-                const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? m.defId;
-                const baseDef = getBaseDef(ctx.state.bases[i].defId);
-                const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-                const power = getMinionPower(ctx.state, m, i);
-                targets.push({ uid: m.uid, defId: m.defId, baseIndex: i, owner: m.owner, label: `${name} (力量 ${power}) @ ${baseName}` });
-            }
+const ninjaSeeingStarsProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
+    const targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
+    for (let index = 0; index < ctx.state.bases.length; index += 1) {
+        for (const minion of ctx.state.bases[index].minions) {
+            if (getMinionPower(ctx.state, minion, index) > 3) continue;
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const baseDef = getBaseDef(ctx.state.bases[index].defId);
+            const baseName = baseDef?.name ?? `基地 ${index + 1}`;
+            const power = getMinionPower(ctx.state, minion, index);
+            targets.push({ uid: minion.uid, defId: minion.defId, baseIndex: index, label: `${name} (力量 ${power}) @ ${baseName}` });
         }
     }
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = targets.map(t => ({ uid: t.uid, defId: t.defId, baseIndex: t.baseIndex, label: t.label }));
-    const interaction = createSimpleChoice(
-        `ninja_seeing_stars_${ctx.now}`, ctx.playerId, '选择要消灭的力量≤3的随从', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }), { sourceId: 'ninja_seeing_stars', targetType: 'minion' }
-        );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    if (targets.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    return {
+        events: [],
+        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'ninja_seeing_stars',
+            title: '选择要消灭的力量≤3的随从',
+            targets,
+        }),
+        nextProgram: ninjaDestroyMinionPromptProgram,
+    };
+});
 
 // ninja_poison (ongoing) - 已通过 ongoingModifiers 系统实现力量修正（-4力量）
 // onPlay 效果：消灭目标随从身上的所有战术（附着的行动卡）
@@ -149,90 +300,659 @@ function ninjaPoisonOnPlay(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/**
- * 渗透 onPlay：消灭基地上一个已有的战术（ongoing 行动卡）
- * 描述："打出到一个基地上。消灭一个已经被打出到这的战术。"
- */
-function ninjaInfiltrateOnPlay(ctx: AbilityContext): AbilityResult {
+const ninjaDestroyOngoingPromptProgram = createPromptProgram<NinjaDestroyOngoingPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'ninja_destroy_ongoing_prompt',
+    interactionSourceIds: ['ninja_infiltrate_destroy', 'ninja_infiltrate_pod_destroy'],
+    buildInteraction: (context) => {
+        const options = context.targets.map((target, index) => ({
+            id: `tactic-${index}`,
+            label: target.label,
+            value: { cardUid: target.uid, defId: target.defId, ownerId: target.ownerId },
+            _source: 'ongoing' as const,
+            displayMode: 'card' as const,
+        }));
+        if (context.allowSkip) {
+            options.push(createSkipButton('跳过（不消灭）'));
+        }
+        return createAbilityRuntimeSimpleChoice(
+            `${context.sourceId}_${context.now}`,
+            context.playerId,
+            context.title,
+            options as any[],
+            { sourceId: context.sourceId, targetType: 'ongoing' },
+        );
+    },
+    onResolve: ({ value, context, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { cardUid?: string; defId?: string; ownerId?: string } | undefined;
+        if (!selected?.cardUid || !selected.defId || !selected.ownerId) return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: {
+                    cardUid: selected.cardUid,
+                    defId: selected.defId,
+                    ownerId: selected.ownerId,
+                    reason: context.sourceId,
+                },
+                timestamp,
+            } as OngoingDetachedEvent],
+        };
+    },
+});
+
+const ninjaInfiltrateOnPlayProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
     const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) {
-        return { events: [] };
-    }
-
-    // 收集基地上的 ongoing 行动卡（排除刚打出的渗透自身）
-    // 注意：只收集 base.ongoingActions，不包括随从身上的 attachedActions
-    // 因为卡牌描述是"消灭一个已经被打出到这（基地）的战术"
-    const targets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
-    for (const o of base.ongoingActions) {
-        if (o.uid === ctx.cardUid) continue; // 排除自身
-        const def = getCardDef(o.defId);
-        targets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: def?.name ?? o.defId });
-    }
-
-    if (targets.length === 0) {
-        return { events: [] };
-    }
-
-    // 只有一个目标时自动消灭
+    if (!base) return { events: [] };
+    const targets = base.ongoingActions
+        .filter((ongoing) => ongoing.uid !== ctx.cardUid)
+        .map((ongoing) => {
+            const def = getCardDef(ongoing.defId);
+            return { uid: ongoing.uid, defId: ongoing.defId, ownerId: ongoing.ownerId, label: def?.name ?? ongoing.defId };
+        });
+    if (targets.length === 0) return { events: [] };
     if (targets.length === 1) {
         return {
             events: [{
                 type: SU_EVENTS.ONGOING_DETACHED,
-                payload: { cardUid: targets[0].uid, defId: targets[0].defId, ownerId: targets[0].ownerId, reason: 'ninja_infiltrate_destroy' },
+                payload: {
+                    cardUid: targets[0].uid,
+                    defId: targets[0].defId,
+                    ownerId: targets[0].ownerId,
+                    reason: 'ninja_infiltrate_destroy',
+                },
                 timestamp: ctx.now,
             } as OngoingDetachedEvent],
         };
     }
+    return {
+        events: [],
+        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'ninja_infiltrate_destroy',
+            title: '选择要消灭的战术',
+            targets,
+        }),
+        nextProgram: ninjaDestroyOngoingPromptProgram,
+    };
+});
 
-    // 多个目标时创建选择交互
-    const options = targets.map((t, i) => ({
-        id: `tactic-${i}`,
-        label: t.label,
-        value: { cardUid: t.uid, defId: t.defId, ownerId: t.ownerId },
-        _source: 'ongoing' as const,
-        displayMode: 'card' as const,
-    }));
-    const interaction = createSimpleChoice(
-        `ninja_infiltrate_${ctx.now}`, ctx.playerId,
-        '选择要消灭的战术', options as any[],
-        { sourceId: 'ninja_infiltrate_destroy', targetType: 'ongoing' },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-/**
- * 渗透 POD onPlay：可选消灭基地上一个已有的战术（ongoing 行动卡）
- * 描述："Play on a base. You may destroy another action on this base."
- */
-function ninjaInfiltratePodOnPlay(ctx: AbilityContext): AbilityResult {
+const ninjaInfiltratePodOnPlayProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
+    const targets = base.ongoingActions
+        .filter((ongoing) => ongoing.uid !== ctx.cardUid)
+        .map((ongoing) => {
+            const def = getCardDef(ongoing.defId);
+            return { uid: ongoing.uid, defId: ongoing.defId, ownerId: ongoing.ownerId, label: def?.name ?? ongoing.defId };
+        });
+    if (targets.length === 0) return { events: [] };
+    return {
+        events: [],
+        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'ninja_infiltrate_pod_destroy',
+            title: '你可以消灭该基地上的另一张战术',
+            allowSkip: true,
+            targets,
+        }),
+        nextProgram: ninjaDestroyOngoingPromptProgram,
+    };
+});
 
-    const targets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
-    for (const o of base.ongoingActions) {
-        if (o.uid === ctx.cardUid) continue;
-        const def = getCardDef(o.defId);
-        targets.push({ uid: o.uid, defId: o.defId, ownerId: o.ownerId, label: def?.name ?? o.defId });
+const ninjaWayOfDeceptionBasePromptProgram = createPromptProgram<NinjaMovePromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'ninja_way_of_deception_base_prompt',
+    interactionSourceIds: ['ninja_way_of_deception_choose_base'],
+    buildInteraction: (context) => {
+        const candidates: Array<{ baseIndex: number; label: string }> = [];
+        for (let index = 0; index < context.matchState.core.bases.length; index += 1) {
+            if (index === context.fromBaseIndex) continue;
+            const baseDef = getBaseDef(context.matchState.core.bases[index].defId);
+            candidates.push({ baseIndex: index, label: baseDef?.name ?? `基地 ${index + 1}` });
+        }
+        return createAbilityRuntimeSimpleChoice(
+            `ninja_way_of_deception_base_${context.now}`,
+            context.playerId,
+            '选择目标基地',
+            buildBaseTargetOptions(candidates, context.matchState.core) as any[],
+            { sourceId: 'ninja_way_of_deception_choose_base', targetType: 'base' },
+        );
+    },
+    onResolve: ({ state, value, context, timestamp }) => {
+        const selected = value as { baseIndex?: number } | undefined;
+        if (selected?.baseIndex === undefined || context.fromBaseIndex === undefined || !context.minionUid || !context.minionDefId) {
+            return { events: [] };
+        }
+        return {
+            events: buildValidatedMoveEvents(state, {
+                minionUid: context.minionUid,
+                minionDefId: context.minionDefId,
+                fromBaseIndex: context.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                reason: 'ninja_way_of_deception',
+                now: timestamp,
+            }),
+        };
+    },
+});
+
+const ninjaWayOfDeceptionMinionPromptProgram = createPromptProgram<NinjaMovePromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'ninja_way_of_deception_minion_prompt',
+    interactionSourceIds: ['ninja_way_of_deception_choose_minion'],
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `ninja_way_of_deception_${context.now}`,
+        context.playerId,
+        context.title,
+        buildMinionTargetOptions(context.minionCandidates ?? [], {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+        }) as any[],
+        { sourceId: 'ninja_way_of_deception_choose_minion', targetType: 'minion' },
+    ),
+    onResolve: ({ state, value, context, timestamp }) => {
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const base = state.core.bases[selected.baseIndex];
+        if (!base) return { events: [] };
+        const minion = base.minions.find((item) => item.uid === selected.minionUid);
+        if (!minion) return { events: [] };
+        const candidates: Array<{ baseIndex: number; label: string }> = [];
+        for (let index = 0; index < state.core.bases.length; index += 1) {
+            if (index === selected.baseIndex) continue;
+            const baseDef = getBaseDef(state.core.bases[index].defId);
+            candidates.push({ baseIndex: index, label: baseDef?.name ?? `基地 ${index + 1}` });
+        }
+        if (candidates.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: createNinjaPromptContext(state, context.playerId, timestamp, {
+                sourceId: 'ninja_way_of_deception_choose_base',
+                title: '选择目标基地',
+                fromBaseIndex: selected.baseIndex,
+                minionUid: selected.minionUid,
+                minionDefId: minion.defId,
+            }),
+            nextProgram: ninjaWayOfDeceptionBasePromptProgram,
+        };
+    },
+});
+
+const ninjaWayOfDeceptionProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
+    const myMinions: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
+    for (let index = 0; index < ctx.state.bases.length; index += 1) {
+        for (const minion of ctx.state.bases[index].minions) {
+            if (minion.controller !== ctx.playerId) continue;
+            const power = getMinionPower(ctx.state, minion, index);
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const baseDef = getBaseDef(ctx.state.bases[index].defId);
+            const baseName = baseDef?.name ?? `基地 ${index + 1}`;
+            myMinions.push({ uid: minion.uid, defId: minion.defId, baseIndex: index, label: `${name} (力量 ${power}) @ ${baseName}` });
+        }
+    }
+    if (myMinions.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    if (ctx.state.bases.length <= 1) {
+        return { events: [] };
+    }
+    return {
+        events: [],
+        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'ninja_way_of_deception_choose_minion',
+            title: '选择要移动的己方随从',
+            minionCandidates: myMinions,
+        }),
+        nextProgram: ninjaWayOfDeceptionMinionPromptProgram,
+    };
+});
+
+function buildHandMinionOptions(cards: AbilityContext['state']['players'][PlayerId]['hand']) {
+    return cards
+        .filter((card) => card.type === 'minion')
+        .map((card, index) => {
+            const def = getCardDef(card.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? card.defId;
+            const power = def?.power ?? 0;
+            return {
+                id: `hand-${index}`,
+                label: `${name} (力量 ${power})`,
+                value: { cardUid: card.uid, defId: card.defId, power },
+                _source: 'hand' as const,
+                displayMode: 'card' as const,
+            };
+        });
+}
+
+const ninjaPlayFromHandPromptProgram = createPromptProgram<NinjaPlayFromHandPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'ninja_play_from_hand_prompt',
+    interactionSourceIds: ['ninja_hidden_ninja', 'ninja_acolyte_play'],
+    buildInteraction: (context) => {
+        const options = context.includeSkip
+            ? [...context.handOptions, createSkipButton()]
+            : context.handOptions;
+        return createAbilityRuntimeSimpleChoice(
+            `${context.sourceId}_${context.now}`,
+            context.playerId,
+            context.title,
+            options as any[],
+            { sourceId: context.sourceId, targetType: 'hand' },
+        );
+    },
+    onResolve: ({ value, context, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { cardUid?: string; defId?: string; power?: number } | undefined;
+        if (!selected?.cardUid || !selected.defId || selected.power === undefined) return { events: [] };
+        return {
+            events: [buildHandPlayEvents(context.playerId, context.baseIndex, selected.cardUid, selected.defId, selected.power, timestamp)],
+        };
+    },
+});
+
+const ninjaHiddenNinjaProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
+    if (isSpecialLimitBlocked(ctx.state, 'ninja_hidden_ninja', ctx.baseIndex)) {
+        return { events: [] };
+    }
+    const player = ctx.state.players[ctx.playerId];
+    const handOptions = buildHandMinionOptions(player.hand);
+    if (handOptions.length === 0) return { events: [] };
+    const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_hidden_ninja', ctx.baseIndex, ctx.now);
+    return {
+        events: limitEvt ? [limitEvt] : [],
+        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'ninja_hidden_ninja',
+            title: '选择要打出到该基地的随从（可跳过）',
+            baseIndex: ctx.baseIndex,
+            includeSkip: true,
+            handOptions,
+        }),
+        nextProgram: ninjaPlayFromHandPromptProgram,
+    };
+});
+
+const ninjaAcolyteSpecialProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
+    if (isSpecialLimitBlocked(ctx.state, 'ninja_acolyte', ctx.baseIndex)) return { events: [] };
+    const player = ctx.state.players[ctx.playerId];
+    if (player.minionsPlayed > 0) return { events: [] };
+    const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_acolyte', ctx.baseIndex, ctx.now);
+    const events: SmashUpEvent[] = limitEvt ? [limitEvt] : [];
+    events.push({
+        type: SU_EVENTS.MINION_RETURNED,
+        payload: { minionUid: ctx.cardUid, minionDefId: 'ninja_acolyte', fromBaseIndex: ctx.baseIndex, toPlayerId: ctx.playerId, reason: 'ninja_acolyte' },
+        timestamp: ctx.now,
+    } as MinionReturnedEvent);
+    const acolyteDef = getCardDef('ninja_acolyte') as MinionCardDef | undefined;
+    const handOptions = [
+        ...buildHandMinionOptions(player.hand),
+        {
+            id: 'hand-self',
+            label: `${acolyteDef?.name ?? '忍者侍从'} (力量 ${acolyteDef?.power ?? 2})`,
+            value: { cardUid: ctx.cardUid, defId: 'ninja_acolyte', power: acolyteDef?.power ?? 2 },
+            _source: 'hand' as const,
+            displayMode: 'card' as const,
+        },
+    ];
+    if (handOptions.length === 0) return { events };
+    return {
+        events,
+        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'ninja_acolyte_play',
+            title: '选择要打出到该基地的随从（可跳过）',
+            baseIndex: ctx.baseIndex,
+            includeSkip: true,
+            handOptions,
+        }),
+        nextProgram: ninjaPlayFromHandPromptProgram,
+    };
+});
+
+const ninjaAcolytePodTalentProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
+    const player = ctx.state.players[ctx.playerId];
+    if (player.minionsPlayed > 0) return { events: [] };
+
+    const events: SmashUpEvent[] = [{
+        type: SU_EVENTS.MINION_RETURNED,
+        payload: {
+            minionUid: ctx.cardUid,
+            minionDefId: 'ninja_acolyte_pod',
+            fromBaseIndex: ctx.baseIndex,
+            toPlayerId: ctx.playerId,
+            reason: 'ninja_acolyte_pod',
+        },
+        timestamp: ctx.now,
+    } as MinionReturnedEvent];
+
+    const acolyteDef = getCardDef('ninja_acolyte_pod') as MinionCardDef | undefined;
+    const handOptions = [
+        ...buildHandMinionOptions(player.hand),
+        {
+            id: 'hand-self',
+            label: `${acolyteDef?.name ?? '忍者侍从'} (力量 ${acolyteDef?.power ?? 2})`,
+            value: { cardUid: ctx.cardUid, defId: 'ninja_acolyte_pod', power: acolyteDef?.power ?? 2 },
+            _source: 'hand' as const,
+            displayMode: 'card' as const,
+        },
+    ];
+
+    if (handOptions.length === 0) return { events };
+    return {
+        events,
+        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'ninja_acolyte_play',
+            title: '选择要打出到该基地的随从（可跳过）',
+            baseIndex: ctx.baseIndex,
+            includeSkip: true,
+            handOptions,
+        }),
+        nextProgram: ninjaPlayFromHandPromptProgram,
+    };
+});
+
+function buildNinjaDisguiseEligibleBases(
+    ctx: AbilityContext,
+): Array<{ baseIndex: number; count: number; label: string }> {
+    const handMinionCount = ctx.state.players[ctx.playerId]?.hand.filter(
+        (card) => card.type === 'minion' && card.uid !== ctx.cardUid,
+    ).length ?? 0;
+    if (handMinionCount === 0) return [];
+
+    const candidates: Array<{ baseIndex: number; count: number; label: string }> = [];
+    for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
+        const count = ctx.state.bases[baseIndex].minions.filter(
+            (minion) => minion.controller === ctx.playerId,
+        ).length;
+        if (count === 0) continue;
+        const baseDef = getBaseDef(ctx.state.bases[baseIndex].defId);
+        candidates.push({
+            baseIndex,
+            count,
+            label: `${baseDef?.name ?? `基地 ${baseIndex + 1}`} (${count} 个己方随从)`,
+        });
+    }
+    return candidates;
+}
+
+function buildNinjaDisguiseHandOptions(
+    state: AbilityContext['state'],
+    playerId: PlayerId,
+    cardUid: string,
+    excludedCardUids: string[] = [],
+) {
+    return state.players[playerId].hand
+        .filter((card) => card.type === 'minion' && card.uid !== cardUid && !excludedCardUids.includes(card.uid))
+        .map((card, index) => {
+            const def = getCardDef(card.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? card.defId;
+            const power = def?.power ?? 0;
+            return {
+                id: `hand-${index}`,
+                label: `${name} (力量 ${power})`,
+                value: { cardUid: card.uid, defId: card.defId, power },
+                _source: 'hand' as const,
+                displayMode: 'card' as const,
+            };
+        });
+}
+
+function buildNinjaDisguiseReturnEvents(
+    state: AbilityContext['state'],
+    baseIndex: number,
+    selectedMinionUids: string[],
+    timestamp: number,
+): MinionReturnedEvent[] {
+    const base = state.bases[baseIndex];
+    if (!base) return [];
+
+    const events: MinionReturnedEvent[] = [];
+    for (const minionUid of selectedMinionUids) {
+        const minion = base.minions.find((entry) => entry.uid === minionUid);
+        if (!minion) continue;
+        events.push({
+            type: SU_EVENTS.MINION_RETURNED,
+            payload: {
+                minionUid,
+                minionDefId: minion.defId,
+                fromBaseIndex: baseIndex,
+                toPlayerId: minion.owner,
+                reason: 'ninja_disguise',
+            },
+            timestamp,
+        } as MinionReturnedEvent);
+    }
+    return events;
+}
+
+const ninjaDisguiseChooseBasePromptProgram = createPromptProgram<NinjaDisguiseContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'ninja_disguise_choose_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `ninja_disguise_base_${context.now}`,
+        context.playerId,
+        '伪装：选择一个基地',
+        buildBaseTargetOptions(context.eligibleBases, context.matchState.core),
+        { sourceId: 'ninja_disguise_choose_base', targetType: 'base', autoCancelOption: true },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) {
+            return { events: [], matchState: state };
+        }
+        const selected = value as { baseIndex?: number } | undefined;
+        if (selected?.baseIndex === undefined) {
+            return { events: [], matchState: state };
+        }
+        return {
+            events: [],
+            matchState: state,
+            context: {
+                ...context,
+                matchState: state,
+                now: timestamp,
+                baseIndex: selected.baseIndex,
+                sourceId: 'ninja_disguise_choose_minions',
+            },
+            nextProgram: ninjaDisguiseChooseMinionsPromptProgram,
+        };
+    },
+});
+
+const ninjaDisguiseChooseMinionsPromptProgram = createPromptProgram<NinjaDisguiseContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'ninja_disguise_choose_minions',
+    buildInteraction: (context) => {
+        if (context.baseIndex === undefined) {
+            throw new Error('ninja_disguise_choose_minions 缺少 baseIndex');
+        }
+        const base = context.matchState.core.bases[context.baseIndex];
+        if (!base) {
+            throw new Error(`ninja_disguise_choose_minions 基地不存在: ${context.baseIndex}`);
+        }
+
+        const handOptions = buildNinjaDisguiseHandOptions(
+            context.matchState.core,
+            context.playerId,
+            context.cardUid,
+        );
+        const myMinions = base.minions.filter((minion) => minion.controller === context.playerId);
+        const maxSelect = Math.min(2, myMinions.length, handOptions.length);
+        if (maxSelect <= 0) {
+            throw new Error('ninja_disguise_choose_minions 没有可执行的伪装目标');
+        }
+
+        const minionOptions = myMinions.map((minion) => {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const power = getMinionPower(context.matchState.core, minion, context.baseIndex!);
+            return {
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.baseIndex!,
+                label: `${name} (力量 ${power})`,
+            };
+        });
+
+        return createAbilityRuntimeSimpleChoice(
+            `ninja_disguise_select_${context.now}`,
+            context.playerId,
+            `伪装：选择 1-${maxSelect} 个己方随从`,
+            buildMinionTargetOptions(minionOptions, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+            }),
+            { sourceId: 'ninja_disguise_choose_minions', targetType: 'minion' },
+            undefined,
+            { min: 1, max: maxSelect },
+        );
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selections = (Array.isArray(value) ? value : [value]) as Array<{ minionUid?: string }>;
+        const selectedMinionUids = selections
+            .map((selection) => selection.minionUid)
+            .filter((minionUid): minionUid is string => typeof minionUid === 'string');
+        if (selectedMinionUids.length === 0) {
+            return { events: [], matchState: state };
+        }
+        return {
+            events: [],
+            matchState: state,
+            context: {
+                ...context,
+                matchState: state,
+                now: timestamp,
+                selectedMinionUids,
+                totalToPlay: selectedMinionUids.length,
+                playedHandUids: [],
+                sourceId: 'ninja_disguise_choose_play1',
+            },
+            nextProgram: ninjaDisguisePlayPromptProgram,
+        };
+    },
+});
+
+const ninjaDisguisePlayPromptProgram = createPromptProgram<NinjaDisguiseContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'ninja_disguise_choose_play1',
+    interactionSourceIds: ['ninja_disguise_choose_play2'],
+    buildInteraction: (context) => {
+        if (context.baseIndex === undefined) {
+            throw new Error('ninja_disguise_choose_play 缺少 baseIndex');
+        }
+        if (!context.selectedMinionUids?.length || context.totalToPlay === undefined) {
+            throw new Error('ninja_disguise_choose_play 缺少已选随从上下文');
+        }
+
+        const handOptions = buildNinjaDisguiseHandOptions(
+            context.matchState.core,
+            context.playerId,
+            context.cardUid,
+            context.playedHandUids ?? [],
+        );
+        if (handOptions.length === 0) {
+            throw new Error('ninja_disguise_choose_play 没有可打出的手牌随从');
+        }
+
+        const choosingSecond = (context.playedHandUids?.length ?? 0) > 0;
+        return createAbilityRuntimeSimpleChoice(
+            `ninja_disguise_play_${context.now}_${context.playedHandUids?.length ?? 0}`,
+            context.playerId,
+            choosingSecond ? '伪装：选择第二个要打出的手牌随从' : '伪装：选择要打出的手牌随从',
+            handOptions,
+            { sourceId: context.sourceId, targetType: 'hand' },
+        );
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        if (context.baseIndex === undefined) {
+            throw new Error('ninja_disguise_choose_play resolve 缺少 baseIndex');
+        }
+        if (!context.selectedMinionUids?.length || context.totalToPlay === undefined) {
+            throw new Error('ninja_disguise_choose_play resolve 缺少已选随从上下文');
+        }
+
+        const selected = value as { cardUid?: string; defId?: string; power?: number } | undefined;
+        if (!selected?.cardUid || !selected.defId || selected.power === undefined) {
+            return { events: [], matchState: state };
+        }
+
+        const base = state.core.bases[context.baseIndex];
+        if (!base) {
+            return { events: [], matchState: state };
+        }
+
+        const playedEvent: MinionPlayedEvent = {
+            type: SU_EVENTS.MINION_PLAYED,
+            payload: {
+                playerId,
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                baseIndex: context.baseIndex,
+                baseDefId: base.defId,
+                power: selected.power,
+                consumesNormalLimit: false,
+            },
+            timestamp,
+        };
+
+        const playedHandUids = [...(context.playedHandUids ?? []), selected.cardUid];
+        const events: SmashUpEvent[] = [playedEvent];
+
+        if (playedHandUids.length < context.totalToPlay) {
+            const remainingHandOptions = buildNinjaDisguiseHandOptions(
+                state.core,
+                playerId,
+                context.cardUid,
+                playedHandUids,
+            );
+            if (remainingHandOptions.length > 0) {
+                return {
+                    events,
+                    matchState: state,
+                    context: {
+                        ...context,
+                        matchState: state,
+                        now: timestamp,
+                        playedHandUids,
+                        sourceId: 'ninja_disguise_choose_play2',
+                    },
+                    nextProgram: ninjaDisguisePlayPromptProgram,
+                };
+            }
+        }
+
+        events.push(
+            ...buildNinjaDisguiseReturnEvents(
+                state.core,
+                context.baseIndex,
+                context.selectedMinionUids,
+                timestamp,
+            ),
+        );
+        return { events, matchState: state };
+    },
+});
+
+const ninjaDisguiseProgram = createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
+    const eligibleBases = buildNinjaDisguiseEligibleBases(ctx);
+    if (eligibleBases.length === 0) {
+        return { events: [] };
     }
 
-    if (targets.length === 0) return { events: [] };
+    if (eligibleBases.length === 1) {
+        return {
+            events: [],
+            context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                sourceId: 'ninja_disguise_choose_minions',
+                cardUid: ctx.cardUid,
+                eligibleBases,
+                baseIndex: eligibleBases[0].baseIndex,
+            }),
+            nextProgram: ninjaDisguiseChooseMinionsPromptProgram,
+        };
+    }
 
-    const options: any[] = targets.map((t, i) => ({
-        id: `tactic-${i}`,
-        label: t.label,
-        value: { cardUid: t.uid, defId: t.defId, ownerId: t.ownerId },
-        _source: 'ongoing' as const,
-        displayMode: 'card' as const,
-    }));
-    options.push({ id: 'skip', label: '跳过（不消灭）', value: { skip: true }, displayMode: 'button' as const });
-
-    const interaction = createSimpleChoice(
-        `ninja_infiltrate_pod_onplay_${ctx.now}`, ctx.playerId,
-        '你可以消灭该基地上的另一张战术', options,
-        { sourceId: 'ninja_infiltrate_pod_destroy', targetType: 'ongoing' },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    return {
+        events: [],
+        context: createNinjaPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceId: 'ninja_disguise_choose_base',
+            cardUid: ctx.cardUid,
+            eligibleBases,
+        }),
+        nextProgram: ninjaDisguiseChooseBasePromptProgram,
+    };
+});
 
 /**
  * 渗透 POD talent：消灭本战术，压制该基地能力直到你的下回合开始。
@@ -252,248 +972,6 @@ function ninjaInfiltratePodTalent(ctx: AbilityContext): AbilityResult {
         } as any,
     ];
     return { events };
-}
-
-/** 欺骗之道 onPlay：选择己方一个随从移动到另一个基地*/
-function ninjaWayOfDeception(ctx: AbilityContext): AbilityResult {
-    const myMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller !== ctx.playerId) continue;
-            const power = getMinionPower(ctx.state, m, i);
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const baseDef = getBaseDef(ctx.state.bases[i].defId);
-            const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-            myMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${name} (力量 ${power}) @ ${baseName}` });
-        }
-    }
-    if (myMinions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = myMinions.map(m => ({ uid: m.uid, defId: m.defId, baseIndex: m.baseIndex, label: m.label }));
-    const interaction = createSimpleChoice(
-        `ninja_way_of_deception_${ctx.now}`, ctx.playerId, '选择要移动的己方随从', buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'ninja_way_of_deception_choose_minion', targetType: 'minion' }
-        );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-/**
- * 伪装 onPlay：选择一个基地里的1-2个己方随从，打出等量手牌随从到该基地，再将选中随从收回手牌
- *
- * 流程：选择基地 → 多选1-2个随从 → 逐个选手牌随从打出 → 收回旧随从
- */
-function ninjaDisguise(ctx: AbilityContext): AbilityResult {
-    // 找出有己方随从的基地
-    const baseCandidates: { baseIndex: number; count: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        const count = ctx.state.bases[i].minions.filter(m => m.controller === ctx.playerId).length;
-        if (count === 0) continue;
-        const baseDef = getBaseDef(ctx.state.bases[i].defId);
-        baseCandidates.push({ baseIndex: i, count, label: `${baseDef?.name ?? `基地 ${i + 1}`} (${count} 个己方随从)` });
-    }
-    if (baseCandidates.length === 0) return { events: [] };
-
-    // 只有一个基地时直接跳到选随从
-    if (baseCandidates.length === 1) {
-        return ninjaDisguiseSelectMinions(ctx, baseCandidates[0].baseIndex);
-    }
-
-    const interaction = createSimpleChoice(
-        `ninja_disguise_base_${ctx.now}`, ctx.playerId,
-        '伪装：选择一个基地', buildBaseTargetOptions(baseCandidates, ctx.state),
-        { sourceId: 'ninja_disguise_choose_base', targetType: 'base', autoCancelOption: true }
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ctx.cardUid } } }) };
-}
-
-/** 伪装：在指定基地多选1-2个己方随从 */
-function ninjaDisguiseSelectMinions(ctx: AbilityContext, baseIndex: number): AbilityResult {
-    const base = ctx.state.bases[baseIndex];
-    const myMinions = base.minions.filter(m => m.controller === ctx.playerId);
-    if (myMinions.length === 0) return { events: [] };
-
-    // 手牌中可打出的随从数量决定最多能选几个
-    const player = ctx.state.players[ctx.playerId];
-    const handMinions = player.hand.filter(c => c.type === 'minion' && c.uid !== ctx.cardUid);
-    const maxSelect = Math.min(2, myMinions.length, handMinions.length);
-    if (maxSelect === 0) return { events: [] };
-
-    const options = myMinions.map(m => {
-        const def = getCardDef(m.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? m.defId;
-        const power = getMinionPower(ctx.state, m, baseIndex);
-        return { uid: m.uid, defId: m.defId, baseIndex, label: `${name} (力量 ${power})` };
-    });
-    const interaction = createSimpleChoice(
-        `ninja_disguise_select_${ctx.now}`, ctx.playerId,
-        `伪装：选择 1-${maxSelect} 个己方随从`, buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'ninja_disguise_choose_minions', targetType: 'minion' }, undefined, { min: 1, max: maxSelect }
-        );
-    return { events: [], matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ctx.cardUid, baseIndex } } }) };
-}
-
-// ============================================================================
-// Special 时机能力
-// ============================================================================
-
-/**
- * 影舞者 special：基地计分前，可以从手牌打出到该基地
- * 限制：每个基地只能使用一次影舞者（通过 specialLimitGroup: 'ninja_shinobi' 数据驱动）
- */
-/**
- * 便衣忍者 special action：基地计分前，选择手牌中一个随从打出到该基地
- * 限制：每个基地只能使用一次便衣忍者（通过 specialLimitGroup: 'ninja_hidden_ninja' 数据驱动）
- */
-function ninjaHiddenNinja(ctx: AbilityContext): AbilityResult {
-
-    // 限制组检查
-    if (isSpecialLimitBlocked(ctx.state, 'ninja_hidden_ninja', ctx.baseIndex)) {
-        return { events: [] };
-    }
-
-    const player = ctx.state.players[ctx.playerId];
-    const minionCards = player.hand.filter(c => c.type === 'minion');
-    
-    if (minionCards.length === 0) {
-        return { events: [] };
-    }
-
-    // 记录限制组使用
-    const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_hidden_ninja', ctx.baseIndex, ctx.now);
-    const events: SmashUpEvent[] = limitEvt ? [limitEvt] : [];
-
-    const options = minionCards.map((c, i) => {
-        const def = getCardDef(c.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? c.defId;
-        const power = def?.power ?? 0;
-        return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , _source: 'hand' as const, displayMode: 'card' as const };
-    });
-    
-    // 添加"跳过"选项（允许玩家选择不打出随从）
-    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
-    
-    const interaction = createSimpleChoice(
-        `ninja_hidden_ninja_${ctx.now}`, ctx.playerId,
-        '选择要打出到该基地的随从（可跳过）', // 更新标题
-        [...options, skipOption] as any[], // 添加跳过选项
-        { sourceId: 'ninja_hidden_ninja', targetType: 'hand' },
-    );
-    
-    
-    const resultMatchState = queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } });
-    
-    return { events, matchState: resultMatchState };
-}
-
-/**
- * 忍者侍从 special：返回手牌并额外打出一个随从到该基地
- * 前置条件：本回合还未打出随从（minionsPlayed === 0）
- * 限制：每个基地只能使用一次忍者侍从（通过 specialLimitGroup: 'ninja_acolyte' 数据驱动）
- */
-function ninjaAcolyteSpecial(ctx: AbilityContext): AbilityResult {
-    // 限制组检查
-    if (isSpecialLimitBlocked(ctx.state, 'ninja_acolyte', ctx.baseIndex)) return { events: [] };
-
-    // 前置条件：本回合还未打出随从
-    const player = ctx.state.players[ctx.playerId];
-    if (player.minionsPlayed > 0) return { events: [] };
-
-    // 记录限制组使用
-    const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'ninja_acolyte', ctx.baseIndex, ctx.now);
-    const events: SmashUpEvent[] = limitEvt ? [limitEvt] : [];
-
-    // 返回手牌
-    events.push({
-        type: SU_EVENTS.MINION_RETURNED,
-        payload: { minionUid: ctx.cardUid, minionDefId: 'ninja_acolyte', fromBaseIndex: ctx.baseIndex, toPlayerId: ctx.playerId, reason: 'ninja_acolyte' },
-        timestamp: ctx.now,
-    } as MinionReturnedEvent);
-
-    // 创建交互：选择手牌中的随从打出到该基地
-    // 注意：忍者侍从刚返回手牌，也可以被选择打出
-    const minionCards = player.hand.filter(c => c.type === 'minion');
-    // 加上刚返回的忍者侍从自身（因为 reduce 还没执行，手牌中还没有它）
-    const acolyteDef = getCardDef('ninja_acolyte') as MinionCardDef | undefined;
-    const allOptions = [
-        ...minionCards.map((c, i) => {
-            const def = getCardDef(c.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? c.defId;
-            const power = def?.power ?? 0;
-            return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power } , _source: 'hand' as const, displayMode: 'card' as const };
-        }),
-        // 忍者侍从自身（刚返回手牌）
-        { id: `hand-self`, label: `${acolyteDef?.name ?? '忍者侍从'} (力量 ${acolyteDef?.power ?? 2})`, value: { cardUid: ctx.cardUid, defId: 'ninja_acolyte', power: acolyteDef?.power ?? 2 } , _source: 'hand' as const, displayMode: 'card' as const },
-    ];
-
-    if (allOptions.length === 0) return { events };
-
-    // 添加"跳过"选项（允许玩家选择不打出随从）
-    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
-
-    const interaction = createSimpleChoice(
-        `ninja_acolyte_play_${ctx.now}`, ctx.playerId,
-        '选择要打出到该基地的随从（可跳过）', // 更新标题
-        [...allOptions, skipOption] as any[], // 添加跳过选项
-        { sourceId: 'ninja_acolyte_play', targetType: 'hand' },
-    );
-    return { events, matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } }) };
-}
-
-function ninjaAcolytePodTalent(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    if (player.minionsPlayed > 0) return { events: [] };
-
-    const events: SmashUpEvent[] = [{
-        type: SU_EVENTS.MINION_RETURNED,
-        payload: {
-            minionUid: ctx.cardUid,
-            minionDefId: 'ninja_acolyte_pod',
-            fromBaseIndex: ctx.baseIndex,
-            toPlayerId: ctx.playerId,
-            reason: 'ninja_acolyte_pod',
-        },
-        timestamp: ctx.now,
-    } as MinionReturnedEvent];
-
-    const minionCards = player.hand.filter(c => c.type === 'minion');
-    const acolyteDef = getCardDef('ninja_acolyte_pod') as MinionCardDef | undefined;
-    const allOptions = [
-        ...minionCards.map((c, i) => {
-            const def = getCardDef(c.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? c.defId;
-            const power = def?.power ?? 0;
-            return {
-                id: `hand-${i}`,
-                label: `${name} (力量 ${power})`,
-                value: { cardUid: c.uid, defId: c.defId, power },
-                _source: 'hand' as const,
-                displayMode: 'card' as const,
-            };
-        }),
-        {
-            id: 'hand-self',
-            label: `${acolyteDef?.name ?? '忍者侍从'} (力量 ${acolyteDef?.power ?? 2})`,
-            value: { cardUid: ctx.cardUid, defId: 'ninja_acolyte_pod', power: acolyteDef?.power ?? 2 },
-            _source: 'hand' as const,
-            displayMode: 'card' as const,
-        },
-    ];
-
-    if (allOptions.length === 0) return { events };
-
-    const interaction = createSimpleChoice(
-        `ninja_acolyte_pod_play_${ctx.now}`,
-        ctx.playerId,
-        '选择要打出到该基地的随从（可跳过）',
-        [...allOptions, { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }] as any[],
-        { sourceId: 'ninja_acolyte_play', targetType: 'hand' },
-    );
-
-    return {
-        events,
-        matchState: queueInteraction(ctx.matchState, {
-            ...interaction,
-            data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } },
-        }),
-    };
 }
 
 function ninjaAcolytePodTalentValidate(ctx: AbilityContext): string | null {
@@ -619,259 +1097,6 @@ function registerNinjaOngoingEffects(): void {
 
 /** 注册忍者派系的交互解决处理函数 */
 export function registerNinjaInteractionHandlers(): void {
-    // 忍者侍从：选择手牌随从打出到基地（可跳过）
-    registerInteractionHandler('ninja_acolyte_play', (state, playerId, value, iData, _random, timestamp) => {
-        // 跳过时不打出随从
-        if ((value as any).skip) return { state, events: [] };
-        
-        const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
-        const baseIndex = ((iData as any)?.continuationContext as { baseIndex: number })?.baseIndex;
-        if (baseIndex === undefined) return undefined;
-        // 不消耗正常额度（额外随从）
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex, power, consumesNormalLimit: false },
-            timestamp,
-        };
-        return { state, events: [playedEvt] };
-    });
-
-    // === 出牌阶段交互处理 ===
-
-    // 忍者大师：选择目标后消灭（可跳过）
-    registerInteractionHandler('ninja_master', (state, playerId, value, _iData, _random, timestamp) => {
-        if (value && (value as any).skip) return { state, events: [] };
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ninja_master', timestamp)] };
-    });
-
-    // 猛虎刺客：选择目标后消灭（可跳过）
-    registerInteractionHandler('ninja_tiger_assassin', (state, playerId, value, _iData, _random, timestamp) => {
-        if (value && (value as any).skip) return { state, events: [] };
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ninja_tiger_assassin', timestamp)] };
-    });
-
-    // 手里剑：选择目标后消灭
-    registerInteractionHandler('ninja_seeing_stars', (state, playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'ninja_seeing_stars', timestamp)] };
-    });
-
-    // 欺骗之道：选择随从后，链式选择目标基地
-    registerInteractionHandler('ninja_way_of_deception_choose_minion', (state, playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const minion = base.minions.find(m => m.uid === minionUid);
-        if (!minion) return undefined;
-        const candidates: { baseIndex: number; label: string }[] = [];
-        for (let i = 0; i < state.core.bases.length; i++) {
-            if (i === baseIndex) continue;
-            const baseDef = getBaseDef(state.core.bases[i].defId);
-            candidates.push({ baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` });
-        }
-        if (candidates.length === 0) return undefined;
-        const next = createSimpleChoice(
-            `ninja_way_of_deception_base_${timestamp}`, playerId, '选择目标基地', buildBaseTargetOptions(candidates, state.core), { sourceId: 'ninja_way_of_deception_choose_base', targetType: 'base' }
-            );
-        return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: minion.defId, fromBaseIndex: baseIndex } } }), events: [] };
-    });
-
-    // 欺骗之道：选择基地后移动
-    registerInteractionHandler('ninja_way_of_deception_choose_base', (state, _playerId, value, iData, _random, timestamp) => {
-        const { baseIndex: destBase } = value as { baseIndex: number };
-        const ctx = (iData as any)?.continuationContext as { minionUid: string; minionDefId: string; fromBaseIndex: number };
-        if (!ctx) return undefined;
-        return {
-            state,
-            events: buildValidatedMoveEvents(state, {
-                minionUid: ctx.minionUid,
-                minionDefId: ctx.minionDefId,
-                fromBaseIndex: ctx.fromBaseIndex,
-                toBaseIndex: destBase,
-                reason: 'ninja_way_of_deception',
-                now: timestamp,
-            }),
-        };
-    });
-
-    // 伪装：选择基地后，链式选择随从
-    registerInteractionHandler('ninja_disguise_choose_base', (state, playerId, value, iData, _random, timestamp) => {
-        // 检查取消标记
-        if ((value as any).__cancel__) return { state, events: [] };
-        
-        const { baseIndex } = value as { baseIndex: number };
-        const ctx = (iData as any)?.continuationContext as { cardUid: string };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const myMinions = base.minions.filter(m => m.controller === playerId);
-        if (myMinions.length === 0) return { state, events: [] };
-        const player = state.core.players[playerId];
-        const handMinions = player.hand.filter(c => c.type === 'minion' && c.uid !== ctx?.cardUid);
-        const maxSelect = Math.min(2, myMinions.length, handMinions.length);
-        if (maxSelect === 0) return { state, events: [] };
-        const options = myMinions.map(m => {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const power = getMinionPower(state.core, m, baseIndex);
-            return { uid: m.uid, defId: m.defId, baseIndex, label: `${name} (力量 ${power})` };
-        });
-        const next = createSimpleChoice(
-            `ninja_disguise_select_${timestamp}`, playerId,
-            `伪装：选择 1-${maxSelect} 个己方随从`, buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId }), { sourceId: 'ninja_disguise_choose_minions', targetType: 'minion' }, undefined, { min: 1, max: maxSelect }
-            );
-        return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { cardUid: ctx?.cardUid, baseIndex } } }), events: [] };
-    });
-
-    // 伪装：多选随从后，链式选择手牌随从打出（第一个）
-    registerInteractionHandler('ninja_disguise_choose_minions', (state, playerId, value, iData, _random, timestamp) => {
-        // 多选时 value 是数组
-        const selections = (Array.isArray(value) ? value : [value]) as { minionUid: string; baseIndex: number }[];
-        const ctx = (iData as any)?.continuationContext as { cardUid: string; baseIndex: number };
-        if (!ctx) return undefined;
-        const returnUids = selections.map(s => s.minionUid);
-        // 选择第一个手牌随从打出
-        const player = state.core.players[playerId];
-        const handMinions = player.hand.filter(c => c.type === 'minion' && c.uid !== ctx.cardUid);
-        if (handMinions.length === 0) return { state, events: [] };
-        const handOptions = handMinions.map((c, i) => {
-            const def = getCardDef(c.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? c.defId;
-            const power = def?.power ?? 0;
-            return { id: `hand-${i}`, label: `${name} (力量 ${power})`, value: { cardUid: c.uid, defId: c.defId, power }, _source: 'hand' as const , displayMode: 'card' as const };
-        });
-        const next = createSimpleChoice(
-            `ninja_disguise_play1_${timestamp}`, playerId,
-            '伪装：选择要打出的手牌随从', handOptions as any[], { sourceId: 'ninja_disguise_choose_play1', targetType: 'hand' },
-        );
-        return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { baseIndex: ctx.baseIndex, returnUids, totalToPlay: returnUids.length, playedUids: [] } } }), events: [] };
-    });
-
-    // 伪装：选择第一个打出的随从后
-    registerInteractionHandler('ninja_disguise_choose_play1', (state, playerId, value, iData, _random, timestamp) => {
-        const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
-        const ctx = (iData as any)?.continuationContext as { baseIndex: number; returnUids: string[]; totalToPlay: number; playedUids: string[] };
-        if (!ctx) return undefined;
-        const base = state.core.bases[ctx.baseIndex];
-        if (!base) return undefined;
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex: ctx.baseIndex, baseDefId: base.defId, power },
-            timestamp,
-        };
-        const events: SmashUpEvent[] = [playedEvt];
-        const playedUids = [...ctx.playedUids, cardUid];
-        // 如果还需要打出第二个
-        if (playedUids.length < ctx.totalToPlay) {
-            const player = state.core.players[playerId];
-            const handMinions = player.hand.filter(c => c.type === 'minion' && !playedUids.includes(c.uid));
-            if (handMinions.length > 0) {
-                const handOptions = handMinions.map((c, i) => {
-                    const def = getCardDef(c.defId) as MinionCardDef | undefined;
-                    const name = def?.name ?? c.defId;
-                    const pw = def?.power ?? 0;
-                    return { id: `hand-${i}`, label: `${name} (力量 ${pw})`, value: { cardUid: c.uid, defId: c.defId, power: pw }, _source: 'hand' as const , displayMode: 'card' as const };
-                });
-                const next = createSimpleChoice(
-                    `ninja_disguise_play2_${timestamp}`, playerId,
-                    '伪装：选择第二个要打出的手牌随从', handOptions as any[], { sourceId: 'ninja_disguise_choose_play2', targetType: 'hand' },
-                );
-                return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { baseIndex: ctx.baseIndex, returnUids: ctx.returnUids } } }), events };
-            }
-        }
-        // 打出完毕，收回旧随从
-        for (const uid of ctx.returnUids) {
-            const base = state.core.bases[ctx.baseIndex];
-            const minion = base?.minions.find(m => m.uid === uid);
-            if (minion) {
-                events.push({
-                    type: SU_EVENTS.MINION_RETURNED,
-                    payload: { minionUid: uid, minionDefId: minion.defId, fromBaseIndex: ctx.baseIndex, toPlayerId: minion.owner, reason: 'ninja_disguise' },
-                    timestamp,
-                } as MinionReturnedEvent);
-            }
-        }
-        return { state, events };
-    });
-
-    // 伪装：选择第二个打出的随从后，收回旧随从
-    registerInteractionHandler('ninja_disguise_choose_play2', (state, playerId, value, iData, _random, timestamp) => {
-        const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
-        const ctx = (iData as any)?.continuationContext as { baseIndex: number; returnUids: string[] };
-        if (!ctx) return undefined;
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex: ctx.baseIndex, baseDefId: state.core.bases[ctx.baseIndex]?.defId, power },
-            timestamp,
-        };
-        const events: SmashUpEvent[] = [playedEvt];
-        // 收回旧随从
-        for (const uid of ctx.returnUids) {
-            const base = state.core.bases[ctx.baseIndex];
-            const minion = base?.minions.find(m => m.uid === uid);
-            if (minion) {
-                events.push({
-                    type: SU_EVENTS.MINION_RETURNED,
-                    payload: { minionUid: uid, minionDefId: minion.defId, fromBaseIndex: ctx.baseIndex, toPlayerId: minion.owner, reason: 'ninja_disguise' },
-                    timestamp,
-                } as MinionReturnedEvent);
-            }
-        }
-        return { state, events };
-    });
-
-    // 隐忍：选择手牌随从打出到基地（可跳过）
-    registerInteractionHandler('ninja_hidden_ninja', (state, playerId, value, iData, _random, timestamp) => {
-        // 跳过时不打出随从
-        if ((value as any).skip) return { state, events: [] };
-        
-        const { cardUid, defId, power } = value as { cardUid: string; defId: string; power: number };
-        const baseIndex = ((iData as any)?.continuationContext as { baseIndex: number })?.baseIndex;
-        if (baseIndex === undefined) return undefined;
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex, power, consumesNormalLimit: false },
-            timestamp,
-        };
-        return { state, events: [playedEvt] };
-    });
-
-    // 渗透：选择要消灭的战术
-    registerInteractionHandler('ninja_infiltrate_destroy', (state, _playerId, value, _iData, _random, timestamp) => {
-        const { cardUid: ongoingUid, defId, ownerId } = value as { cardUid: string; defId: string; ownerId: string };
-        return {
-            state,
-            events: [{
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: { cardUid: ongoingUid, defId, ownerId, reason: 'ninja_infiltrate_destroy' },
-                timestamp,
-            } as OngoingDetachedEvent],
-        };
-    });
-
-    registerInteractionHandler('ninja_infiltrate_pod_destroy', (state, _playerId, value, _iData, _random, timestamp) => {
-        if (value && (value as any).skip) return { state, events: [] };
-        const { cardUid: ongoingUid, defId, ownerId } = value as { cardUid: string; defId: string; ownerId: string };
-        return {
-            state,
-            events: [{
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: { cardUid: ongoingUid, defId, ownerId, reason: 'ninja_infiltrate_pod_destroy' },
-                timestamp,
-            } as OngoingDetachedEvent],
-        };
-    });
+    // 忍者当前已无额外 raw InteractionHandler；
+    // 所有需要玩家交互的能力均走声明式 ability runtime。
 }

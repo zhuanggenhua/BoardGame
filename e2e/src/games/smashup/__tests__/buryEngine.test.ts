@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
@@ -345,6 +345,61 @@ describe('bury engine', () => {
         ]));
         expect(next.players['0'].discard).toHaveLength(0);
         expect(next.bases[0].minions).toHaveLength(0);
+    });
+
+    it('翻开需要执行的埋葬行动若缺少声明会直接报错', async () => {
+        vi.resetModules();
+        vi.doMock('../data/cards', async () => {
+            const actual = await vi.importActual<typeof import('../data/cards')>('../data/cards');
+            return {
+                ...actual,
+                getCardDef: (defId: string) => {
+                    if (defId === 'missing_bury_action') {
+                        return {
+                            id: defId,
+                            name: '缺声明埋葬行动',
+                            type: 'action',
+                            subtype: 'standard',
+                        } as any;
+                    }
+                    return actual.getCardDef(defId);
+                },
+            };
+        });
+
+        const { uncoverBuriedCard: uncoverBuriedCardWithMock } = await import('../domain/bury');
+
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [], deck: [], discard: [] }),
+                '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [],
+                buriedCards: [{
+                    uid: 'missing-bury-1',
+                    defId: 'missing_bury_action',
+                    trueOwnerId: '0',
+                    controllerId: '0',
+                    buriedFrom: 'play',
+                }],
+            }],
+        });
+
+        expect(() => uncoverBuriedCardWithMock({
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'missing-bury-1',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 200,
+            reason: 'test_missing_bury_action',
+        })).toThrowError(/SmashUp ability 缺少声明: missing_bury_action::onPlay \(bury\.executeUncoveredAction\)/);
+
+        vi.doUnmock('../data/cards');
+        vi.resetModules();
     });
 });
 

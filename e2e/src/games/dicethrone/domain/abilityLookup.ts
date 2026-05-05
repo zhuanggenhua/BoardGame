@@ -136,7 +136,7 @@ function hasEffectDamage(effects: AbilityEffect[]): boolean {
 }
 
 function effectNeedsSingleOpponentTarget(action: EffectAction): boolean {
-    if (action.target === 'opponent' || action.target === 'select') {
+    if (action.target === 'opponent') {
         return true;
     }
     if (action.type === 'custom' && action.customActionId) {

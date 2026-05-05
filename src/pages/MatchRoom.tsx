@@ -53,7 +53,7 @@ import { LoadingScreen } from '../components/system/LoadingScreen';
 import { ConnectionLoadingScreen } from '../components/system/ConnectionLoadingScreen';
 import { GameNamespaceLoadError } from '../components/system/GameNamespaceLoadError';
 import { usePerformanceMonitor } from '../hooks/ui/usePerformanceMonitor';
-import { CriticalImageGate, MobileBoardShell } from '../components/game/framework';
+import { CriticalImageGate, MobileBoardShell, resolveMatchSeatSwapContext } from '../components/game/framework';
 import { preloadWarmImages } from '../core';
 import { resolveCriticalImages } from '../core/CriticalImageResolverRegistry';
 import { UI_Z_INDEX, HudPortal } from '../core';
@@ -77,6 +77,7 @@ import {
     finalizeOnlineAiResolutionConfirmation,
     resolveCurrentPlayerId,
     resolveManualForceEndAiPhase,
+    resolveOnlineAiAutoRecoveryCompletionNotice,
     resolveForceEndTurnRecoveryStep,
     resolveForceEndTurnForStalledAi,
     resolveForceSkippableHiddenAiInteraction,
@@ -104,10 +105,15 @@ const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_st
 type OnlineAiDebugWindow = Window & {
     __BG_ONLINE_AI_DEBUG__?: {
         getSeatLatestState: (playerId: string) => MatchState<unknown> | null;
+        getSeatDecisionState: (playerId: string) => Record<string, unknown> | null;
+        getTransportLog: () => Array<Record<string, unknown>>;
+        getPerfLog: () => Array<Record<string, unknown>>;
         setSeatLatestStateOverride: (playerId: string, state: MatchState<unknown> | null) => void;
         clearSeatLatestStateOverride: (playerId: string) => void;
         clearAllSeatLatestStateOverrides: () => void;
     };
+    __BG_ONLINE_AI_TRANSPORT_LOG__?: Array<Record<string, unknown>>;
+    __BG_ONLINE_AI_PERF_LOG__?: Array<Record<string, unknown>>;
 };
 
 /**
@@ -173,13 +179,29 @@ const MAX_FORCE_END_TURN_FOLLOW_UP_STEPS = 16;
 const RECOVERY_FAILURE_SYNC_GRACE_MS = 700;
 const STALE_SEAT_RECOVERY_RETRY_MS = 350;
 const STALE_SEAT_RECOVERY_MIN_INTERVAL_MS = 1200;
+const STALE_ONLINE_AI_ATTEMPT_TIMEOUT_MS = 4000;
 const onlineAiPerfLogger = createScopedLogger('ONLINE_AI_PERF');
+function appendOnlineAiDevLog(kind: 'transport' | 'perf', event: Record<string, unknown>): void {
+    if (typeof window === 'undefined' || !import.meta.env.DEV) {
+        return;
+    }
+    const debugWindow = window as OnlineAiDebugWindow;
+    const targetKey = kind === 'transport'
+        ? '__BG_ONLINE_AI_TRANSPORT_LOG__'
+        : '__BG_ONLINE_AI_PERF_LOG__';
+    const nextLog = [...(debugWindow[targetKey] ?? []), event].slice(-80);
+    debugWindow[targetKey] = nextLog;
+}
 function emitOnlineAiPerf(stage: string, payload: Record<string, unknown>): void {
-    console.log('[ONLINE_AI_PERF]', { stage, ...payload });
+    const event = { stage, ...payload };
+    appendOnlineAiDevLog('perf', event);
+    console.log('[ONLINE_AI_PERF]', event);
 }
 const onlineAiTransportLogger = createScopedLogger('ONLINE_AI_TRANSPORT');
 function emitOnlineAiTransport(stage: string, payload: Record<string, unknown>): void {
-    console.log('[ONLINE_AI_TRANSPORT]', { stage, ...payload });
+    const event = { stage, ...payload };
+    appendOnlineAiDevLog('transport', event);
+    console.log('[ONLINE_AI_TRANSPORT]', event);
 }
 const aiRuntimeTruthLogger = createScopedLogger('AI_RUNTIME_TRUTH');
 function emitAiRuntimeTruth(stage: string, payload: Record<string, unknown>): void {
@@ -192,6 +214,54 @@ function summarizeSeatControllerTypes(seatControllers: Record<string, AiSeatCont
             .sort(([leftId], [rightId]) => leftId.localeCompare(rightId))
             .map(([playerId, controller]) => [playerId, controller.type]),
     );
+}
+
+type OnlineAiSeatStateRecord = Record<string, MatchState<unknown> | null | undefined>;
+
+export function resolveOnlineAiEffectiveSeatState(args: {
+    playerId: string;
+    seatStateOverrides: OnlineAiSeatStateRecord;
+    seatLatestStates: OnlineAiSeatStateRecord;
+}): MatchState<unknown> | null {
+    const override = args.seatStateOverrides[args.playerId];
+    if (override !== undefined) {
+        return override ?? null;
+    }
+    return args.seatLatestStates[args.playerId] ?? null;
+}
+
+export function resolveOnlineAiEffectiveSeatStates(args: {
+    playerIds: string[];
+    seatStateOverrides: OnlineAiSeatStateRecord;
+    seatLatestStates: OnlineAiSeatStateRecord;
+}): Record<string, MatchState<unknown> | null> {
+    return Object.fromEntries(
+        args.playerIds.map((playerId) => [
+            playerId,
+            resolveOnlineAiEffectiveSeatState({
+                playerId,
+                seatStateOverrides: args.seatStateOverrides,
+                seatLatestStates: args.seatLatestStates,
+            }),
+        ]),
+    );
+}
+
+export function shouldStageOnlineAiSeatOverrideFromConfirmedState(args: {
+    authoritativeState: MatchState<unknown> | unknown;
+    latestSeatState: MatchState<unknown> | null | undefined;
+}): boolean {
+    const authoritativeState = args.authoritativeState && typeof args.authoritativeState === 'object'
+        ? args.authoritativeState as MatchState<unknown>
+        : null;
+    if (!authoritativeState) {
+        return false;
+    }
+    const latestSeatState = args.latestSeatState ?? null;
+    if (!latestSeatState) {
+        return true;
+    }
+    return buildAiProgressMarker(latestSeatState) !== buildAiProgressMarker(authoritativeState);
 }
 
 const OnlineAiSeatBridge = ({
@@ -241,11 +311,53 @@ const OnlineAiSeatBridge = ({
     const latestSharedStateRef = useRef<MatchState<unknown> | null>(null);
     const pendingRecoveryCheckTimersRef = useRef<Set<ReturnType<typeof setTimeout>>>(new Set());
     const aiSeatStateOverridesRef = useRef<Record<string, MatchState<unknown> | null>>({});
+    const aiSeatDecisionDebugRef = useRef<Record<string, Record<string, unknown>>>({});
+    const activeAiAttemptRef = useRef<{
+        attemptKey: string;
+        playerId: string;
+        reservedAt: number;
+        sharedMarker: string;
+        seatMarker: string | null;
+    } | null>(null);
     const pendingSeatResyncRef = useRef<Record<string, {
         requestedAt: number;
         reason: string;
         meta?: Record<string, unknown>;
     }>>({});
+
+    const getSeatLatestState = useCallback((playerId: string): MatchState<unknown> | null => {
+        const latestState = clientsRef.current[playerId]?.latestState;
+        return latestState && typeof latestState === 'object'
+            ? latestState as MatchState<unknown>
+            : null;
+    }, []);
+
+    const getEffectiveSeatState = useCallback((playerId: string): MatchState<unknown> | null => (
+        resolveOnlineAiEffectiveSeatState({
+            playerId,
+            seatStateOverrides: aiSeatStateOverridesRef.current,
+            seatLatestStates: {
+                [playerId]: getSeatLatestState(playerId),
+            },
+        })
+    ), [getSeatLatestState]);
+
+    const getEffectiveSeatStates = useCallback((): Record<string, MatchState<unknown> | null> => (
+        resolveOnlineAiEffectiveSeatStates({
+            playerIds: Object.keys(clientsRef.current),
+            seatStateOverrides: aiSeatStateOverridesRef.current,
+            seatLatestStates: Object.fromEntries(
+                Object.keys(clientsRef.current).map((playerId) => [playerId, getSeatLatestState(playerId)]),
+            ),
+        })
+    ), [getSeatLatestState]);
+
+    const clearActiveAiAttemptIfMatches = useCallback((attemptKey: string) => {
+        releaseAiAttemptKeyIfMatches(lastAiAttemptKeyRef, attemptKey);
+        if (activeAiAttemptRef.current?.attemptKey === attemptKey) {
+            activeAiAttemptRef.current = null;
+        }
+    }, []);
 
     useEffect(() => {
         latestSharedStateRef.current = state && typeof state === 'object'
@@ -335,16 +447,10 @@ const OnlineAiSeatBridge = ({
         }
         const debugWindow = window as OnlineAiDebugWindow;
         debugWindow.__BG_ONLINE_AI_DEBUG__ = {
-            getSeatLatestState: (playerId: string) => {
-                const override = aiSeatStateOverridesRef.current[playerId];
-                if (override !== undefined) {
-                    return override;
-                }
-                const seatState = clientsRef.current[playerId]?.latestState;
-                return seatState && typeof seatState === 'object'
-                    ? seatState as MatchState<unknown>
-                    : null;
-            },
+            getSeatLatestState: (playerId: string) => getEffectiveSeatState(playerId),
+            getSeatDecisionState: (playerId: string) => aiSeatDecisionDebugRef.current[playerId] ?? null,
+            getTransportLog: () => debugWindow.__BG_ONLINE_AI_TRANSPORT_LOG__ ?? [],
+            getPerfLog: () => debugWindow.__BG_ONLINE_AI_PERF_LOG__ ?? [],
             setSeatLatestStateOverride: (playerId: string, nextState: MatchState<unknown> | null) => {
                 aiSeatStateOverridesRef.current[playerId] = nextState;
             },
@@ -358,7 +464,7 @@ const OnlineAiSeatBridge = ({
         return () => {
             delete debugWindow.__BG_ONLINE_AI_DEBUG__;
         };
-    }, []);
+    }, [getEffectiveSeatState]);
 
     useEffect(() => {
         const pendingTimers = pendingRecoveryCheckTimersRef.current;
@@ -388,15 +494,15 @@ const OnlineAiSeatBridge = ({
             playerId,
             reason,
             clientConnected: client.isConnected,
-            currentSeatMarker: client.latestState && typeof client.latestState === 'object'
-                ? buildAiProgressMarker(client.latestState as MatchState<unknown>)
+            currentSeatMarker: getEffectiveSeatState(playerId)
+                ? buildAiProgressMarker(getEffectiveSeatState(playerId) as MatchState<unknown>)
                 : null,
             ...(meta ?? {}),
         };
         onlineAiTransportLogger.warn('resync-requested', payload);
         emitOnlineAiTransport('resync-requested', payload);
         client.resync();
-    }, [engineConfig.gameId, matchId]);
+    }, [engineConfig.gameId, getEffectiveSeatState, matchId]);
 
     const scheduleRecoveryFailureNotice = useCallback((args: {
         targetClient: GameTransportClient;
@@ -416,8 +522,9 @@ const OnlineAiSeatBridge = ({
             const sharedMarker = latestSharedStateRef.current
                 ? buildAiProgressMarker(latestSharedStateRef.current)
                 : markerBefore;
-            const seatMarker = targetClient.latestState && typeof targetClient.latestState === 'object'
-                ? buildAiProgressMarker(targetClient.latestState as MatchState<unknown>)
+            const seatState = getEffectiveSeatState(playerId);
+            const seatMarker = seatState
+                ? buildAiProgressMarker(seatState)
                 : markerBefore;
             if (sharedMarker !== markerBefore || seatMarker !== markerBefore) {
                 return;
@@ -425,7 +532,7 @@ const OnlineAiSeatBridge = ({
             onStillStalled();
         }, RECOVERY_FAILURE_SYNC_GRACE_MS);
         pendingRecoveryCheckTimersRef.current.add(timer);
-    }, [requestSeatResync]);
+    }, [getEffectiveSeatState, requestSeatResync]);
 
     useEffect(() => {
         const nextClientKeys = new Set(
@@ -471,6 +578,7 @@ const OnlineAiSeatBridge = ({
                     onlineAiTransportLogger.info('state-update', payload);
                     emitOnlineAiTransport('state-update', payload);
                     delete pendingSeatResyncRef.current[playerId];
+                    delete aiSeatStateOverridesRef.current[playerId];
                     setAiRetryVersion((version) => version + 1);
                 },
                 onConnectionChange: (connected) => {
@@ -546,6 +654,7 @@ const OnlineAiSeatBridge = ({
         const hasAiSeat = Object.values(seatControllers).some((controller) => controller.type !== 'human');
         if (!hasAiSeat || !state) {
             lastAiAttemptKeyRef.current = null;
+            activeAiAttemptRef.current = null;
             lastVisibleAiActionAtRef.current = null;
             staleSeatRecoveryRef.current = null;
 
@@ -557,6 +666,41 @@ const OnlineAiSeatBridge = ({
         let pendingDelayHandle: ReturnType<typeof startCancelableAiDelay> | null = null;
 
         const runAiTurn = async () => {
+            const activeAttempt = activeAiAttemptRef.current;
+            if (activeAttempt) {
+                const elapsedMs = Date.now() - activeAttempt.reservedAt;
+                const currentSharedMarker = buildAiProgressMarker(state as MatchState<unknown>);
+                const currentSeatState = getEffectiveSeatState(activeAttempt.playerId);
+                const currentSeatMarker = currentSeatState ? buildAiProgressMarker(currentSeatState) : null;
+                if (
+                    elapsedMs >= STALE_ONLINE_AI_ATTEMPT_TIMEOUT_MS
+                    && currentSharedMarker === activeAttempt.sharedMarker
+                    && currentSeatMarker === activeAttempt.seatMarker
+                ) {
+                    aiSeatDecisionDebugRef.current[activeAttempt.playerId] = {
+                        stage: 'stale-attempt-released',
+                        attemptKey: activeAttempt.attemptKey,
+                        elapsedMs,
+                        sharedMarker: currentSharedMarker,
+                        seatMarker: currentSeatMarker,
+                        updatedAt: Date.now(),
+                    };
+                    clearActiveAiAttemptIfMatches(activeAttempt.attemptKey);
+                    const targetClient = clientsRef.current[activeAttempt.playerId];
+                    if (targetClient) {
+                        requestSeatResync({
+                            playerId: activeAttempt.playerId,
+                            client: targetClient,
+                            reason: 'stale-inflight-attempt',
+                            meta: {
+                                attemptKey: activeAttempt.attemptKey,
+                                elapsedMs,
+                            },
+                        });
+                    }
+                }
+            }
+
             const startedAt = Date.now();
             const aiDispatchResult = await resolveNextAiDispatch({
                 engineConfig,
@@ -564,14 +708,8 @@ const OnlineAiSeatBridge = ({
                 matchId,
                 seatControllers,
                 visibleStateResolver: (playerId) => {
-                    const overriddenSeatState = aiSeatStateOverridesRef.current[playerId];
-                    const rawSeatState = overriddenSeatState !== undefined
-                        ? overriddenSeatState
-                        : clientsRef.current[playerId]?.latestState;
                     const sharedState = state as MatchState<unknown>;
-                    const privateOverlay = rawSeatState && typeof rawSeatState === 'object'
-                        ? rawSeatState as MatchState<unknown>
-                        : null;
+                    const privateOverlay = getEffectiveSeatState(playerId);
                     const decisionView = resolveOnlineAiDecisionView({
                         runtime: getGameImplementation(engineConfig.gameId).ai,
                         sharedState,
@@ -587,6 +725,13 @@ const OnlineAiSeatBridge = ({
             if (cancelled) return;
 
             if (aiDispatchResult.kind === 'blocked') {
+                aiSeatDecisionDebugRef.current[aiDispatchResult.playerId] = {
+                    stage: 'blocked',
+                    blockedReason: aiDispatchResult.blockedReason,
+                    visibility: aiDispatchResult.visibility,
+                    diagnostics: aiDispatchResult.diagnostics,
+                    updatedAt: Date.now(),
+                };
                 logMobileRuntimeCritical('MatchRoom', 'online-ai-dispatch-blocked', {
                     gameId: engineConfig.gameId,
                     matchId,
@@ -685,6 +830,18 @@ const OnlineAiSeatBridge = ({
             }
 
             if (aiDispatchResult.kind === 'idle') {
+                const sharedState = state as MatchState<unknown>;
+                const currentPlayerId = resolveCurrentPlayerId(sharedState);
+                const activeAiPlayerId = currentPlayerId && seatControllers[currentPlayerId]?.type !== 'human'
+                    ? currentPlayerId
+                    : null;
+                if (activeAiPlayerId) {
+                    aiSeatDecisionDebugRef.current[activeAiPlayerId] = {
+                        stage: 'idle',
+                        idleReason: aiDispatchResult.idleReason,
+                        updatedAt: Date.now(),
+                    };
+                }
                 logMobileRuntimeCritical('MatchRoom', 'online-ai-dispatch-idle', {
                     gameId: engineConfig.gameId,
                     matchId,
@@ -709,11 +866,6 @@ const OnlineAiSeatBridge = ({
                 if (lastAiAttemptKeyRef.current) {
                     return;
                 }
-                const sharedState = state as MatchState<unknown>;
-                const currentPlayerId = resolveCurrentPlayerId(sharedState);
-                const activeAiPlayerId = currentPlayerId && seatControllers[currentPlayerId]?.type !== 'human'
-                    ? currentPlayerId
-                    : null;
                 if (activeAiPlayerId) {
                     const idleDecisionKey = [
                         'idle-active-ai',
@@ -756,6 +908,13 @@ const OnlineAiSeatBridge = ({
             staleSeatDecisionKeyRef.current = null;
             staleSeatRecoveryRef.current = null;
             const resolution = aiDispatchResult.resolution;
+            aiSeatDecisionDebugRef.current[resolution.playerId] = {
+                stage: 'action',
+                source: resolution.source,
+                actionKind: resolution.action.kind,
+                commandTypes: resolution.action.commands.map((command) => command.type),
+                updatedAt: Date.now(),
+            };
             logMobileRuntimeCritical('MatchRoom', 'online-ai-dispatch-action', {
                 gameId: engineConfig.gameId,
                 matchId,
@@ -768,8 +927,26 @@ const OnlineAiSeatBridge = ({
                 sharedCurrentPlayerId: resolveCurrentPlayerId(state as MatchState<unknown>),
             });
             if (!tryReserveAiAttemptKey(lastAiAttemptKeyRef, resolution.attemptKey)) {
+                aiSeatDecisionDebugRef.current[resolution.playerId] = {
+                    stage: 'duplicate-attempt-suppressed',
+                    source: resolution.source,
+                    actionKind: resolution.action.kind,
+                    commandTypes: resolution.action.commands.map((command) => command.type),
+                    attemptKey: resolution.attemptKey,
+                    activeAttemptKey: lastAiAttemptKeyRef.current,
+                    updatedAt: Date.now(),
+                };
                 return;
             }
+            activeAiAttemptRef.current = {
+                attemptKey: resolution.attemptKey,
+                playerId: resolution.playerId,
+                reservedAt: Date.now(),
+                sharedMarker: buildAiProgressMarker(state as MatchState<unknown>),
+                seatMarker: getEffectiveSeatState(resolution.playerId)
+                    ? buildAiProgressMarker(getEffectiveSeatState(resolution.playerId) as MatchState<unknown>)
+                    : null,
+            };
 
             const controller = seatControllers[resolution.playerId];
             const client = clientsRef.current[resolution.playerId];
@@ -824,7 +1001,7 @@ const OnlineAiSeatBridge = ({
                         }, STALE_SEAT_RECOVERY_RETRY_MS);
                     }
                 }
-                releaseAiAttemptKeyIfMatches(lastAiAttemptKeyRef, resolution.attemptKey);
+                clearActiveAiAttemptIfMatches(resolution.attemptKey);
                 return;
             }
 
@@ -900,7 +1077,7 @@ const OnlineAiSeatBridge = ({
                         cancelled,
                         clientConnected: client.isConnected,
                     });
-                    releaseAiAttemptKeyIfMatches(lastAiAttemptKeyRef, resolution.attemptKey);
+                    clearActiveAiAttemptIfMatches(resolution.attemptKey);
                     return;
                 }
                 onlineAiPerfLogger.info('delay-finished', {
@@ -948,7 +1125,7 @@ const OnlineAiSeatBridge = ({
                     clientConnected: client.isConnected,
                     ...delayPlan,
                 });
-                releaseAiAttemptKeyIfMatches(lastAiAttemptKeyRef, resolution.attemptKey);
+                clearActiveAiAttemptIfMatches(resolution.attemptKey);
                 return;
             }
 
@@ -1016,6 +1193,13 @@ const OnlineAiSeatBridge = ({
                 });
             }
 
+            aiSeatDecisionDebugRef.current[resolution.playerId] = {
+                stage: 'submitted',
+                source: resolution.source,
+                actionKind: resolution.action.kind,
+                commandTypes,
+                updatedAt: Date.now(),
+            };
             submitOnlineAiResolution({
                 client,
                 resolution,
@@ -1035,7 +1219,26 @@ const OnlineAiSeatBridge = ({
                         },
                     });
                 },
-                onConfirmed: () => {
+                onConfirmed: (authoritativeState) => {
+                    aiSeatDecisionDebugRef.current[resolution.playerId] = {
+                        stage: 'confirmed',
+                        source: resolution.source,
+                        actionKind: resolution.action.kind,
+                        commandTypes,
+                        updatedAt: Date.now(),
+                    };
+                    const confirmedSeatState = authoritativeState && typeof authoritativeState === 'object'
+                        ? authoritativeState as MatchState<unknown>
+                        : null;
+                    const shouldStageOverride = shouldStageOnlineAiSeatOverrideFromConfirmedState({
+                        authoritativeState,
+                        latestSeatState: getSeatLatestState(resolution.playerId),
+                    });
+                    if (shouldStageOverride && confirmedSeatState) {
+                        aiSeatStateOverridesRef.current[resolution.playerId] = confirmedSeatState;
+                    } else {
+                        delete aiSeatStateOverridesRef.current[resolution.playerId];
+                    }
                     logMobileRuntimeCritical('MatchRoom', 'online-ai-command-confirmed', {
                         gameId: engineConfig.gameId,
                         matchId,
@@ -1063,6 +1266,17 @@ const OnlineAiSeatBridge = ({
                         commandTypes,
                         confirmElapsedMs: Date.now() - submittedAt,
                     });
+                    if (shouldStageOverride) {
+                        requestSeatResync({
+                            playerId: resolution.playerId,
+                            client,
+                            reason: 'batch-confirmed-follow-up',
+                            meta: {
+                                actionKind: resolution.action.kind,
+                                commandTypes,
+                            },
+                        });
+                    }
                     finalizeOnlineAiResolutionConfirmation({
                         lastAiAttemptKeyRef,
                         resolutionAttemptKey: resolution.attemptKey,
@@ -1070,8 +1284,22 @@ const OnlineAiSeatBridge = ({
                             setAiRetryVersion((version) => version + 1);
                         },
                     });
+                    if (activeAiAttemptRef.current?.attemptKey === resolution.attemptKey) {
+                        activeAiAttemptRef.current = null;
+                    }
                 },
                 onRejected: (reason) => {
+                    aiSeatDecisionDebugRef.current[resolution.playerId] = {
+                        stage: 'rejected',
+                        source: resolution.source,
+                        actionKind: resolution.action.kind,
+                        commandTypes,
+                        rejectReason: reason,
+                        updatedAt: Date.now(),
+                    };
+                    if (activeAiAttemptRef.current?.attemptKey === resolution.attemptKey) {
+                        activeAiAttemptRef.current = null;
+                    }
                     onlineAiPerfLogger.warn('rejected', {
                         gameId: engineConfig.gameId,
                         matchId,
@@ -1106,19 +1334,14 @@ const OnlineAiSeatBridge = ({
             pendingDelayHandle?.cancel();
             pendingDelayHandle = null;
         };
-    }, [aiRetryVersion, connectionVersion, engineConfig, matchId, requestSeatResync, seatControllers, seatCredentials, state]);
+    }, [aiRetryVersion, clearActiveAiAttemptIfMatches, connectionVersion, engineConfig, getEffectiveSeatState, getSeatLatestState, matchId, requestSeatResync, seatControllers, seatCredentials, state]);
 
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout> | null = null;
         const progressMarker = state && typeof state === 'object'
             ? buildAiProgressMarker(state as MatchState<unknown>)
             : 'no-shared-state';
-        const seatStates = Object.fromEntries(
-            Object.entries(clientsRef.current).map(([playerId, client]) => {
-                const latestState = client.latestState;
-                return [playerId, latestState && typeof latestState === 'object' ? latestState as MatchState<unknown> : null];
-            }),
-        );
+        const seatStates = getEffectiveSeatStates();
 
         const candidate = resolveForceSkippableHiddenAiInteraction({
             sharedState: state as MatchState<unknown> | null | undefined,
@@ -1233,7 +1456,7 @@ const OnlineAiSeatBridge = ({
                 clearTimeout(timer);
             }
         };
-    }, [aiRetryVersion, connectionVersion, forceSkipCheckVersion, scheduleRecoveryFailureNotice, seatControllers, state, toast]);
+    }, [aiRetryVersion, connectionVersion, forceSkipCheckVersion, getEffectiveSeatStates, scheduleRecoveryFailureNotice, seatControllers, state, toast]);
 
     useEffect(() => {
         if (!state) {
@@ -1242,12 +1465,7 @@ const OnlineAiSeatBridge = ({
         }
 
         let timer: ReturnType<typeof setTimeout> | null = null;
-        const seatStates = Object.fromEntries(
-            Object.entries(clientsRef.current).map(([playerId, client]) => {
-                const latestState = client.latestState;
-                return [playerId, latestState && typeof latestState === 'object' ? latestState as MatchState<unknown> : null];
-            }),
-        );
+        const seatStates = getEffectiveSeatStates();
         const candidate = resolveForceEndTurnForStalledAi({
             sharedState: state as MatchState<unknown>,
             seatControllers,
@@ -1339,12 +1557,19 @@ const OnlineAiSeatBridge = ({
                     allowAdvancePhase: candidate.requiresConfirmedAdvancePhase === true && stepIndex === 0,
                 });
             },
-            onCompleted: () => {
-                toast.warning(
-                    'AI 已强制结束回合。',
-                    'AI 强制结束回合',
-                    { dedupeKey: `game.ai-force-end-turn.resolved.${trackerKey}` },
-                );
+            onCompleted: (authoritativeState) => {
+                const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
+                    candidateReason: candidate.reason,
+                    authoritativeState: authoritativeState as MatchState<unknown> | null | undefined,
+                    seatControllers,
+                });
+                if (!notice) {
+                    return;
+                }
+                const notify = notice.tone === 'warning' ? toast.warning : toast.info;
+                notify(notice.message, notice.title, {
+                    dedupeKey: `game.ai-force-end-turn.resolved.${trackerKey}`,
+                });
             },
             onRejected: (reason, context) => {
                 const tracker = forceEndTurnTrackerRef.current;
@@ -1380,7 +1605,7 @@ const OnlineAiSeatBridge = ({
                 clearTimeout(timer);
             }
         };
-    }, [aiRetryVersion, connectionVersion, scheduleRecoveryFailureNotice, seatControllers, state, toast]);
+    }, [aiRetryVersion, connectionVersion, getEffectiveSeatStates, scheduleRecoveryFailureNotice, seatControllers, state, toast]);
 
     const forceEndAiPhase = useCallback(async (): Promise<boolean> => {
         if (!state) {
@@ -1388,12 +1613,7 @@ const OnlineAiSeatBridge = ({
             return false;
         }
 
-        const seatStates = Object.fromEntries(
-            Object.entries(clientsRef.current).map(([playerId, client]) => {
-                const latestState = client.latestState;
-                return [playerId, latestState && typeof latestState === 'object' ? latestState as MatchState<unknown> : null];
-            }),
-        );
+        const seatStates = getEffectiveSeatStates();
 
         const candidate = resolveManualForceEndAiPhase({
             sharedState: state as MatchState<unknown>,
@@ -1462,7 +1682,7 @@ const OnlineAiSeatBridge = ({
                 },
             });
         });
-    }, [seatControllers, state, tGame, toast]);
+    }, [getEffectiveSeatStates, seatControllers, state, tGame, toast]);
 
     useEffect(() => {
         if (!onForceEndAiPhaseReady) return;
@@ -1622,120 +1842,25 @@ const OnlineGameHudBridge = ({
         }
         return map;
     }, [hudPresence.players, tGame]);
-    const seatSwapContext = useMemo(() => {
-        const seatSwapMode = gameId === 'dicethrone'
-            ? 'request'
-            : (gameId === 'smashup' || gameId === 'summonerwars')
-                ? 'instant'
-                : null;
-        if (!seatSwapMode) {
-            return null;
-        }
-        if (!state || normalizedMyPlayerId == null) {
-            return null;
-        }
-        const core = state.core;
-        if (!core || typeof core !== 'object') {
-            return null;
-        }
-        const coreRecord = core as Record<string, unknown>;
-        const sysPhase = state.sys?.phase;
-        const corePhase = typeof coreRecord.phase === 'string' ? coreRecord.phase : null;
-        const hasFactionSelectionState = (
-            (coreRecord.factionSelection && typeof coreRecord.factionSelection === 'object')
-            || (coreRecord.selectedFactions && typeof coreRecord.selectedFactions === 'object')
-        );
-        const isSetupNotStarted = coreRecord.hostStarted === false;
-        const canUseSeatSwap = (
-            seatSwapMode === 'request'
-                ? (
-                    sysPhase === 'setup'
-                    || sysPhase === 'factionSelect'
-                    || corePhase === 'setup'
-                    || corePhase === 'factionSelect'
-                )
-                : (
-                    isSetupNotStarted
-                    && (
-                        sysPhase === 'setup'
-                        || sysPhase === 'factionSelect'
-                        || corePhase === 'factionSelect'
-                        || hasFactionSelectionState
-                    )
-                )
-        );
-        if (!canUseSeatSwap) {
-            return null;
-        }
-        const seatingOrderFromCore = Array.isArray(coreRecord.seatingOrder)
-            ? coreRecord.seatingOrder.filter((pid): pid is string => typeof pid === 'string')
-            : [];
-        const turnOrderFromCore = Array.isArray(coreRecord.turnOrder)
-            ? coreRecord.turnOrder.filter((pid): pid is string => typeof pid === 'string')
-            : [];
-        const seatingOrderFromPlayers = (coreRecord.players && typeof coreRecord.players === 'object')
-            ? Object.keys(coreRecord.players as Record<string, unknown>).filter((pid): pid is string => typeof pid === 'string')
-            : [];
-        const startingPlayerId = typeof coreRecord.startingPlayerId === 'string'
-            ? coreRecord.startingPlayerId
-            : null;
-        const seatingOrderFromStartingPlayer = (
-            startingPlayerId
-            && seatingOrderFromPlayers.length > 1
-            && seatingOrderFromPlayers.includes(startingPlayerId)
-        )
-            ? [startingPlayerId, ...seatingOrderFromPlayers.filter((pid) => pid !== startingPlayerId)]
-            : [];
-        const seatingOrder = seatingOrderFromCore.length > 0
-            ? seatingOrderFromCore
-            : turnOrderFromCore.length > 0
-                ? turnOrderFromCore
-                : seatingOrderFromStartingPlayer.length > 0
-                    ? seatingOrderFromStartingPlayer
-                    : seatingOrderFromPlayers;
-        if (seatingOrder.length < 2 || !seatingOrder.includes(normalizedMyPlayerId)) {
-            return null;
-        }
-
-        const seatControllerTypeByPlayerId: Record<string, string> = {};
-        const coreSeatControllers = (coreRecord.seatControllers && typeof coreRecord.seatControllers === 'object')
-            ? coreRecord.seatControllers as Record<string, unknown>
-            : {};
-        for (const pid of seatingOrder) {
-            const coreController = coreSeatControllers[pid];
-            if (coreController && typeof coreController === 'object' && typeof (coreController as { type?: unknown }).type === 'string') {
-                seatControllerTypeByPlayerId[pid] = (coreController as { type: string }).type;
-                continue;
-            }
-            const hudControllerType = seatControllers[pid]?.type;
-            if (typeof hudControllerType === 'string') {
-                seatControllerTypeByPlayerId[pid] = hudControllerType;
-            }
-        }
-
-        let pendingSeatSwapRequest: { requesterId: string; targetPlayerId: string } | null = null;
-        if (seatSwapMode === 'request' && coreRecord.seatSwapRequest && typeof coreRecord.seatSwapRequest === 'object') {
-            const request = coreRecord.seatSwapRequest as { requesterId?: unknown; targetPlayerId?: unknown };
-            if (typeof request.requesterId === 'string' && typeof request.targetPlayerId === 'string') {
-                pendingSeatSwapRequest = {
-                    requesterId: request.requesterId,
-                    targetPlayerId: request.targetPlayerId,
-                };
-            }
-        }
-
-        return {
-            seatSwapMode,
-            seatingOrder,
-            seatControllerTypeByPlayerId,
-            pendingSeatSwapRequest,
-        };
-    }, [gameId, normalizedMyPlayerId, seatControllers, state]);
+    const seatSwapContext = useMemo(() => resolveMatchSeatSwapContext({
+        gameId,
+        state,
+        myPlayerId: normalizedMyPlayerId,
+        seatControllers,
+    }), [gameId, normalizedMyPlayerId, seatControllers, state]);
     const seatSwapContent = useMemo(() => {
         if (!seatSwapContext || normalizedMyPlayerId == null) {
             return undefined;
         }
-        const { seatSwapMode, seatingOrder, seatControllerTypeByPlayerId, pendingSeatSwapRequest } = seatSwapContext;
+        const {
+            seatSwapMode,
+            seatingOrder,
+            seatControllerTypeByPlayerId,
+            pendingSeatSwapRequest,
+            requestSeatSwapCommandType,
+            respondSeatSwapCommandType,
+            cancelSeatSwapCommandType,
+        } = seatSwapContext;
         const isSeatSwapPending = seatSwapMode === 'request' && Boolean(pendingSeatSwapRequest);
         const isRequester = pendingSeatSwapRequest?.requesterId === normalizedMyPlayerId;
         const isTarget = pendingSeatSwapRequest?.targetPlayerId === normalizedMyPlayerId;
@@ -1778,13 +1903,7 @@ const OnlineGameHudBridge = ({
                                 type="button"
                                 disabled={isSeatSwapPending || isSelfSeat}
                                 onClick={() => {
-                                    if (seatSwapMode === 'request') {
-                                        dispatch('REQUEST_SEAT_SWAP', { targetPlayerId: seatPlayerId });
-                                    } else if (gameId === 'smashup') {
-                                        dispatch('su:swap_seat', { targetPlayerId: seatPlayerId });
-                                    } else if (gameId === 'summonerwars') {
-                                        dispatch('sw:swap_seat', { targetPlayerId: seatPlayerId });
-                                    }
+                                    dispatch(requestSeatSwapCommandType, { targetPlayerId: seatPlayerId });
                                     closePanel();
                                 }}
                                 className={`w-full rounded-md border px-3 py-2 text-left text-xs transition-colors ${
@@ -1819,7 +1938,9 @@ const OnlineGameHudBridge = ({
                         <button
                             type="button"
                             onClick={() => {
-                                dispatch('RESPOND_SEAT_SWAP', { approve: true });
+                                if (respondSeatSwapCommandType) {
+                                    dispatch(respondSeatSwapCommandType, { approve: true });
+                                }
                                 closePanel();
                             }}
                             className="rounded-md border border-emerald-500/45 bg-emerald-500/15 px-3 py-2 text-xs font-bold text-emerald-200 transition-colors hover:bg-emerald-500/28"
@@ -1830,7 +1951,9 @@ const OnlineGameHudBridge = ({
                         <button
                             type="button"
                             onClick={() => {
-                                dispatch('RESPOND_SEAT_SWAP', { approve: false });
+                                if (respondSeatSwapCommandType) {
+                                    dispatch(respondSeatSwapCommandType, { approve: false });
+                                }
                                 closePanel();
                             }}
                             className="rounded-md border border-rose-500/45 bg-rose-500/15 px-3 py-2 text-xs font-bold text-rose-200 transition-colors hover:bg-rose-500/28"
@@ -1845,7 +1968,9 @@ const OnlineGameHudBridge = ({
                     <button
                         type="button"
                         onClick={() => {
-                            dispatch('CANCEL_SEAT_SWAP', {});
+                            if (cancelSeatSwapCommandType) {
+                                dispatch(cancelSeatSwapCommandType, {});
+                            }
                             closePanel();
                         }}
                         className="w-full rounded-md border border-white/18 bg-white/8 px-3 py-2 text-xs font-bold text-white/85 transition-colors hover:bg-white/14"
@@ -1856,7 +1981,7 @@ const OnlineGameHudBridge = ({
                 )}
             </div>
         );
-    }, [dispatch, gameId, normalizedMyPlayerId, seatNameByPlayerId, seatSwapContext, tGame]);
+    }, [dispatch, normalizedMyPlayerId, seatNameByPlayerId, seatSwapContext, tGame]);
 
     return (
         <GameHUD

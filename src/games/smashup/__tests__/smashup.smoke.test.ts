@@ -4,7 +4,7 @@
  * 覆盖：setup、派系选择、出牌、阶段推进
  */
 
-import { describe, expect, it, beforeAll } from 'vitest';
+import { describe, expect, it, beforeAll, vi } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import { postProcessSystemEvents } from '../domain';
@@ -14,7 +14,7 @@ import { resolveNextLocalAiAction } from '../../../engine/ai';
 import { resolveAiDifficultyProfile } from '../../../engine/ai/difficulty';
 import { createSimpleChoice, INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import { executePipeline } from '../../../engine/pipeline';
-import type { CardsDrawnEvent, SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
+import type { CardsDrawnEvent, SmashUpCore, SmashUpCommand, SmashUpEvent, SmashUpReactionSession } from '../domain/types';
 import { MADNESS_CARD_DEF_ID, SU_COMMANDS, SU_EVENTS, TEAM_VP_TO_WIN_2V2, getCurrentPlayerId } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { getCardDef, getTitanDef } from '../data/cards';
@@ -26,6 +26,7 @@ import { uncoverBuriedCard } from '../domain/bury';
 import { collectTriggers, fireTriggers, interceptEvent } from '../domain/ongoingEffects';
 import { filterProtectedDestroyEvents, filterProtectedMoveEvents, filterProtectedReturnEvents, processAffectTriggers, processDestroyTriggers, processMoveTriggers, processReturnToHandTriggers } from '../domain/reducer';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
+import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { initAllAbilities } from '../abilities';
 import { createSmashUpEventSystem } from '../domain/systems';
 import { findInteractionOption, getInteractionsFromMS, makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState, resolveInteractionChain } from './helpers';
@@ -95,6 +96,15 @@ function resolveDuelChain(
 
         throw new Error(`未处理的决斗交互 sourceId: ${sourceId ?? 'unknown'}`);
     }, FIXED_RANDOM);
+}
+
+function attachReactionSession(
+    state: ReturnType<typeof makeMatchState>,
+    reactionSession: SmashUpReactionSession,
+    phase: 'playCards' | 'scoreBases' = 'scoreBases',
+) {
+    state.sys.phase = phase;
+    return startSmashUpReactionSession(state, reactionSession);
 }
 
 /** 蛇形选秀命令序列（多轮 afterEvents 会自动推进 factionSelect → startTurn → playCards） */
@@ -2248,16 +2258,16 @@ describe('smashup', () => {
                 }),
             ],
         });
-        const stateForAi = makeMatchState(core);
-        stateForAi.sys.responseWindow = {
-            current: {
-                id: 'rw-ai-urgent-base',
-                windowType: 'meFirst',
-                responderQueue: ['0'],
-                currentResponderIndex: 0,
-                passedPlayers: [],
-            },
-        };
+        const stateForAi = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-before:0:smoke-urgent-response',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'meFirst',
+        });
 
         const legalActions = buildSmashUpAiLegalActions({
             playerId: '0',
@@ -2391,16 +2401,16 @@ describe('smashup', () => {
                 }),
             ],
         });
-        const stateForAi = makeMatchState(core);
-        stateForAi.sys.responseWindow = {
-            current: {
-                id: 'rw-ai-calm-window',
-                windowType: 'meFirst',
-                responderQueue: ['0'],
-                currentResponderIndex: 0,
-                passedPlayers: [],
-            },
-        };
+        const stateForAi = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-before:0:smoke-calm-response',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'meFirst',
+        });
 
         const legalActions = buildSmashUpAiLegalActions({
             playerId: '0',
@@ -2522,7 +2532,7 @@ describe('smashup', () => {
         };
         const core = makeState({
             players: {
-                '0': makePlayer('0', { hand: [makeCard('h1', 'alien_invader', 'minion', '0')] }),
+                '0': makePlayer('0', { hand: [makeCard('tf1', 'alien_terraform', 'action', '0'), makeCard('h1', 'alien_invader', 'minion', '0')] }),
                 '1': makePlayer('1'),
             },
             titans: [tricksterTitan],
@@ -2530,24 +2540,28 @@ describe('smashup', () => {
             baseDeck: ['base_new', 'base_alt'],
         });
 
-        const handler1 = getInteractionHandler('alien_terraform');
-        const handler2 = getInteractionHandler('alien_terraform_choose_replacement');
-        const handler3 = getInteractionHandler('alien_terraform_play_minion');
-        expect(handler1).toBeDefined();
-        expect(handler2).toBeDefined();
-        expect(handler3).toBeDefined();
-
-        const step1 = handler1!(makeMatchState(core), '0', { baseIndex: 0 }, undefined, FIXED_RANDOM, 3020);
-        const step1Current = (step1!.state.sys as any).interaction?.current;
-        const step2 = handler2!(
+        const played = runCommand(
             makeMatchState(core),
-            '0',
-            { newBaseDefId: 'base_new' },
-            step1Current?.data,
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'tf1', targetBaseIndex: 0 },
+            } as any,
             FIXED_RANDOM,
-            3021,
         );
-        const step2Current = (step2!.state.sys as any).interaction?.current;
+        const step1Current = (played.finalState.sys as any).interaction?.current;
+        const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
+        expect(replacementOption).toBeDefined();
+        const step2 = runCommand(
+            played.finalState,
+            {
+                type: 'SYS_INTERACTION_RESPOND',
+                playerId: '0',
+                payload: { optionId: replacementOption.id },
+            } as any,
+            FIXED_RANDOM,
+        );
+        const step2Current = (step2.finalState.sys as any).interaction?.current;
         const titanOption = step2Current?.data?.options?.find((opt: any) => opt.value?.titanUid === 't1');
         expect(titanOption).toBeDefined();
         expect(titanOption.value).toMatchObject({
@@ -2556,22 +2570,23 @@ describe('smashup', () => {
             playKind: 'minion',
         });
 
-        const step3 = handler3!(
-            makeMatchState(core),
-            '0',
-            titanOption.value,
-            step2Current?.data,
+        const step3 = runCommand(
+            step2.finalState,
+            {
+                type: 'SYS_INTERACTION_RESPOND',
+                playerId: '0',
+                payload: { optionId: titanOption.id },
+            } as any,
             FIXED_RANDOM,
-            3022,
         );
-        const titanPlayed = step3!.events.find(event => event.type === SU_EVENTS.TITAN_PLAYED);
+        const titanPlayed = step3.events.find(event => event.type === SU_EVENTS.TITAN_PLAYED);
         expect(titanPlayed).toBeDefined();
         expect((titanPlayed as any).payload).toMatchObject({
             titanUid: 't1',
             defId: 'tricksters_big_funny_giant',
             controllerId: '0',
             baseIndex: 0,
-            baseDefId: 'base_old',
+            baseDefId: 'base_new',
             reason: 'alien_terraform',
         });
     });
@@ -7056,6 +7071,68 @@ describe('smashup', () => {
         expect(finalPecos?.location).toMatchObject({ zone: 'base', baseIndex: 0 });
         expect(finalPecos?.metadata?.deferClashUntilDuelEnds).toBe(false);
         expect(finalArcane?.location.zone).toBe('setaside');
+    });
+
+    it('决斗里打出需要立即执行的行动若缺少声明会直接报错', async () => {
+        vi.resetModules();
+        vi.doMock('../data/cards', async () => {
+            const actual = await vi.importActual<typeof import('../data/cards')>('../data/cards');
+            return {
+                ...actual,
+                getCardDef: (defId: string) => {
+                    if (defId === 'missing_duel_action') {
+                        return {
+                            id: defId,
+                            name: '缺声明决斗行动',
+                            type: 'action',
+                            subtype: 'standard',
+                        } as any;
+                    }
+                    return actual.getCardDef(defId);
+                },
+            };
+        });
+
+        const { startDuel: startDuelWithMock } = await import('../domain/duel');
+
+        const duelState = makeMatchState(makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('missing-duel-card', 'missing_duel_action', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_a',
+                minions: [
+                    makeMinion('ally-1', 'cowboys_gunfighter_pod', '0', 4),
+                    makeMinion('enemy-1', 'robot_microbot_alpha', '1', 2),
+                ],
+                ongoingActions: [],
+            })],
+        }));
+
+        const started = startDuelWithMock(
+            duelState,
+            {
+                sourceId: 'cowboys_high_noon_pod',
+                sourcePlayerId: '0',
+                challengerMinionUid: 'ally-1',
+                challengedMinionUid: 'enemy-1',
+                outcome: 'destroy_loser',
+            },
+            300,
+        );
+
+        expect(() => resolveDuelChain(started, {
+            smashup_duel_card: (prompt) => {
+                const missingActionOption = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'missing-duel-card');
+                return { optionId: missingActionOption.id };
+            },
+        })).toThrowError(/SmashUp ability 缺少声明: missing_duel_action::onPlay \(duel\.playActionAsDuelCard\)/);
+
+        vi.doUnmock('../data/cards');
+        vi.resetModules();
     });
     it('Great Wolf Spirit creates a start-of-turn move interaction and only offers bases where you are strictly ahead', () => {
         const core = makeState({

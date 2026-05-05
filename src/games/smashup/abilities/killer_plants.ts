@@ -4,7 +4,7 @@
  * 主题：额外出随从、搜索牌库、力量修正
  */
 
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     grantContextualExtraMinion, grantExtraMinion, destroyMinion,
@@ -12,7 +12,7 @@ import {
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type {
-    SmashUpEvent, CardsDrawnEvent,
+    SmashUpEvent, CardsDrawnEvent, SmashUpCore,
     DeckReorderedEvent, MinionCardDef, OngoingDetachedEvent,
     MinionPlayedEvent, BreakpointModifiedEvent, MinionMetadataUpdatedEvent, CardInstance,
 } from '../domain/types';
@@ -20,12 +20,54 @@ import { registerPowerModifier } from '../domain/ongoingModifiers';
 import { isMinionProtectedNonConsumable, registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import type { PromptOption, SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import type { InteractionDescriptor, PromptOption } from '../../../engine/systems/InteractionSystem';
+import type { MatchState, PlayerId } from '../../../engine/types';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createBranchProgram,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 
 type DeckSearchOptionValue = { cardUid: string; defId: string } | { skip: true };
-type DeckSearchChoiceData = SimpleChoiceData<DeckSearchOptionValue> & { continuationContext?: { baseIndex: number } };
+
+type KillerPlantPromptContext = {
+    core: SmashUpCore;
+    matchState?: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type KillerPlantDeckSearchCandidate = {
+    cardUid: string;
+    defId: string;
+    power: number;
+    label: string;
+};
+
+type KillerPlantDeckSearchContext = KillerPlantPromptContext & {
+    baseIndex: number;
+    deck: CardInstance[];
+    eligible: KillerPlantDeckSearchCandidate[];
+};
+
+type KillerPlantBuddingCandidate = {
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    label: string;
+};
+
+type KillerPlantBuddingContext = KillerPlantPromptContext & {
+    candidates: KillerPlantBuddingCandidate[];
+};
+
+type KillerPlantBuddingChoice = {
+    minionUid?: string;
+    baseIndex?: number;
+    __cancel__?: true;
+};
 
 const getSproutSharedDecks = (ctx: TriggerContext): Map<string, CardInstance[]> => {
     const holder = ctx.triggerSharedState ?? {};
@@ -57,6 +99,124 @@ const getDeckSearchSelection = (value: unknown): { cardUid: string; defId: strin
     }
     return { cardUid: record.cardUid, defId: record.defId };
 };
+
+function attachOptionsGenerator<T>(
+    interaction: InteractionDescriptor<T>,
+    optionsGenerator: (state: MatchState<SmashUpCore>) => unknown[],
+): InteractionDescriptor<T> {
+    return {
+        ...interaction,
+        data: {
+            ...(interaction.data ?? {}),
+            optionsGenerator,
+        },
+    };
+}
+
+function buildKillerPlantDeckSearchCandidates(
+    deck: CardInstance[],
+    maxPower: number,
+): KillerPlantDeckSearchCandidate[] {
+    return deck
+        .filter((card) => {
+            if (card.type !== 'minion') return false;
+            const def = getMinionDef(card.defId);
+            return def !== undefined && def.power <= maxPower;
+        })
+        .map((card) => {
+            const def = getMinionDef(card.defId);
+            return {
+                cardUid: card.uid,
+                defId: card.defId,
+                power: def?.power ?? 0,
+                label: `${def?.name ?? card.defId} (力量 ${def?.power ?? '?'})`,
+            };
+        });
+}
+
+function buildKillerPlantDeckSearchOptions(
+    eligible: KillerPlantDeckSearchCandidate[],
+    options?: { includeSkip?: boolean; skipLabel?: string },
+): PromptOption<DeckSearchOptionValue>[] {
+    const cardOptions: PromptOption<DeckSearchOptionValue>[] = eligible.map((card, index) => ({
+        id: `card-${index}`,
+        label: card.label,
+        value: { cardUid: card.cardUid, defId: card.defId },
+        displayMode: 'card' as const,
+    }));
+    if (!options?.includeSkip) {
+        return cardOptions;
+    }
+    return [
+        ...cardOptions,
+        {
+            id: 'skip',
+            label: options.skipLabel ?? '跳过',
+            value: { skip: true },
+            displayMode: 'button' as const,
+        },
+    ];
+}
+
+function buildKillerPlantDeckSearchResolutionEvents(params: {
+    core: SmashUpCore;
+    deck: CardInstance[];
+    playerId: PlayerId;
+    selection: { cardUid: string; defId: string };
+    baseIndex: number;
+    abilitySourceId: 'killer_plant_sprout' | 'killer_plant_venus_man_trap';
+    timestamp: number;
+}): SmashUpEvent[] {
+    const { core, deck, playerId, selection, baseIndex, abilitySourceId, timestamp } = params;
+    const inDeck = deck.some((card) => card.uid === selection.cardUid);
+    if (!inDeck) {
+        return [
+            buildDeckReshuffle({ deck }, playerId, [], timestamp),
+            buildAbilityFeedback(playerId, 'feedback.deck_search_no_match', timestamp),
+        ];
+    }
+
+    const def = getMinionDef(selection.defId);
+    const power = def?.power ?? 0;
+    return [
+        {
+            type: SU_EVENTS.CARDS_DRAWN,
+            payload: { playerId, count: 1, cardUids: [selection.cardUid] },
+            timestamp,
+        } as CardsDrawnEvent,
+        grantExtraMinion(playerId, abilitySourceId, timestamp),
+        {
+            type: SU_EVENTS.MINION_PLAYED,
+            payload: {
+                playerId,
+                cardUid: selection.cardUid,
+                defId: selection.defId,
+                baseIndex,
+                baseDefId: core.bases[baseIndex]?.defId,
+                power,
+            },
+            timestamp,
+        } as MinionPlayedEvent,
+        buildDeckReshuffle({ deck }, playerId, [selection.cardUid], timestamp),
+    ];
+}
+
+function buildKillerPlantBuddingCandidates(core: SmashUpCore): KillerPlantBuddingCandidate[] {
+    const candidates: KillerPlantBuddingCandidate[] = [];
+    for (let i = 0; i < core.bases.length; i += 1) {
+        for (const minion of core.bases[i].minions) {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const baseDef = getBaseDef(core.bases[i].defId);
+            candidates.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: i,
+                label: `${def?.name ?? minion.defId} @ ${baseDef?.name ?? `基地 ${i + 1}`}`,
+            });
+        }
+    }
+    return candidates;
+}
 
 /** 急速生长?onPlay：额外打出一个随从*/
 function killerPlantInstaGrow(ctx: AbilityContext): AbilityResult {
@@ -176,67 +336,36 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
             if (!player) return { events, matchState };
             const deck = simulatedDecks.get(targetSprout.controller) ?? [...player.deck];
             simulatedDecks.set(targetSprout.controller, deck);
-            const eligible = deck.filter(c => {
-                if (c.type !== 'minion') return false;
-                const def = getMinionDef(c.defId);
-                return def !== undefined && def.power <= 3;
-            });
-            if (eligible.length === 0) {
-                events.push(buildDeckReshuffle(player, targetSprout.controller, [], ctx.now));
-                events.push(buildAbilityFeedback(targetSprout.controller, 'feedback.deck_search_no_match', ctx.now));
-                return { events, matchState };
-            }
-            if (eligible.length === 1) {
-                const card = eligible[0];
-                simulatedDecks.set(targetSprout.controller, deck.filter(c => c.uid !== card.uid));
-                const def = getMinionDef(card.defId);
-                const power = def?.power ?? 0;
-                events.push(
-                    { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId: targetSprout.controller, count: 1, cardUids: [card.uid] }, timestamp: ctx.now } as CardsDrawnEvent,
-                    grantExtraMinion(targetSprout.controller, 'killer_plant_sprout', ctx.now),
-                );
-                events.push({
-                    type: SU_EVENTS.MINION_PLAYED,
-                    payload: { playerId: targetSprout.controller, cardUid: card.uid, defId: card.defId, baseIndex: sproutBaseIndex, baseDefId: ctx.state.bases[sproutBaseIndex].defId, power },
+            const eligible = buildKillerPlantDeckSearchCandidates(deck, 3);
+            if (!matchState && eligible.length > 0) {
+                const [selected] = eligible;
+                simulatedDecks.set(targetSprout.controller, deck.filter((card) => card.uid !== selected.cardUid));
+                events.push(...buildKillerPlantDeckSearchResolutionEvents({
+                    core: ctx.state,
+                    deck,
+                    playerId: targetSprout.controller,
+                    selection: { cardUid: selected.cardUid, defId: selected.defId },
+                    baseIndex: sproutBaseIndex,
+                    abilitySourceId: 'killer_plant_sprout',
                     timestamp: ctx.now,
-                } as MinionPlayedEvent);
-                events.push(buildDeckReshuffle(player, targetSprout.controller, [card.uid], ctx.now));
-                return { events, matchState };
-            }
-            if (matchState) {
-                const options: PromptOption<DeckSearchOptionValue>[] = eligible.map((c, idx) => {
-                    const def = getMinionDef(c.defId);
-                    return {
-                        id: `minion-${idx}`,
-                        label: `${def?.name ?? c.defId} (鍔涢噺 ${def?.power ?? '?'})`,
-                        value: { cardUid: c.uid, defId: c.defId },
-                        displayMode: 'card' as const
-                    };
-                });
-                options.push({ id: 'skip', label: '璺宠繃', value: { skip: true }, displayMode: 'button' as const });
-                const interaction = createSimpleChoice<DeckSearchOptionValue>(
-                    `killer_plant_sprout_search_${targetSprout.uid}_${ctx.now}`, targetSprout.controller,
-                    '嫩芽：从牌库中选择一个力量3或更低的随从打出（可跳过）', options, { sourceId: 'killer_plant_sprout_search', targetType: 'generic', autoRefresh: 'deck', responseValidationMode: 'live' },
-                );
-                (interaction.data as DeckSearchChoiceData).continuationContext = { baseIndex: sproutBaseIndex };
-                matchState = queueInteraction(matchState, interaction);
+                }));
                 return { events, matchState };
             }
 
-            const card = eligible[0];
-            simulatedDecks.set(targetSprout.controller, deck.filter(c => c.uid !== card.uid));
-            const def = getMinionDef(card.defId);
-            const power = def?.power ?? 0;
-            events.push(
-                { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId: targetSprout.controller, count: 1, cardUids: [card.uid] }, timestamp: ctx.now } as CardsDrawnEvent,
-                grantExtraMinion(targetSprout.controller, 'killer_plant_sprout', ctx.now),
-            );
-            events.push({
-                type: SU_EVENTS.MINION_PLAYED,
-                payload: { playerId: targetSprout.controller, cardUid: card.uid, defId: card.defId, baseIndex: sproutBaseIndex, baseDefId: ctx.state.bases[sproutBaseIndex].defId, power },
-                timestamp: ctx.now,
-            } as MinionPlayedEvent);
-            events.push(buildDeckReshuffle(player, targetSprout.controller, [card.uid], ctx.now));
+            const result = executeAbilityProgram(killerPlantSproutProgram, {
+                core: ctx.state,
+                matchState,
+                playerId: targetSprout.controller,
+                now: ctx.now,
+                baseIndex: sproutBaseIndex,
+                deck,
+                eligible,
+            });
+            if (eligible.length === 1) {
+                simulatedDecks.set(targetSprout.controller, deck.filter((card) => card.uid !== eligible[0].cardUid));
+            }
+            events.push(...result.events);
+            matchState = result.matchState;
             return { events, matchState };
         }
         return { events, matchState };
@@ -256,71 +385,36 @@ export function killerPlantSproutTrigger(ctx: TriggerContext): TriggerResult {
             if (!player) continue;
             const deck = simulatedDecks.get(m.controller) ?? [...player.deck];
             simulatedDecks.set(m.controller, deck);
-            const eligible = deck.filter(c => {
-                if (c.type !== 'minion') return false;
-                const def = getMinionDef(c.defId);
-                return def !== undefined && def.power <= 3;
-            });
-            if (eligible.length === 0) {
-                // 牌库中无符合条件的随从，规则仍要求重洗牌库
-                events.push(buildDeckReshuffle(player, m.controller, [], ctx.now));
-                events.push(buildAbilityFeedback(m.controller, 'feedback.deck_search_no_match', ctx.now));
+            const eligible = buildKillerPlantDeckSearchCandidates(deck, 3);
+            if (!matchState && eligible.length > 0) {
+                const [selected] = eligible;
+                simulatedDecks.set(m.controller, deck.filter((card) => card.uid !== selected.cardUid));
+                events.push(...buildKillerPlantDeckSearchResolutionEvents({
+                    core: ctx.state,
+                    deck,
+                    playerId: m.controller,
+                    selection: { cardUid: selected.cardUid, defId: selected.defId },
+                    baseIndex: sproutBaseIndex,
+                    abilitySourceId: 'killer_plant_sprout',
+                    timestamp: ctx.now,
+                }));
                 continue;
             }
+
+            const result = executeAbilityProgram(killerPlantSproutProgram, {
+                core: ctx.state,
+                matchState,
+                playerId: m.controller,
+                now: ctx.now,
+                baseIndex: sproutBaseIndex,
+                deck,
+                eligible,
+            });
             if (eligible.length === 1) {
-                // 只有一个候选，自动选择：直接打出到 sprout 所在基地
-                const card = eligible[0];
-                simulatedDecks.set(m.controller, deck.filter(c => c.uid !== card.uid));
-                const def = getMinionDef(card.defId);
-                const power = def?.power ?? 0;
-                events.push(
-                    { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId: m.controller, count: 1, cardUids: [card.uid] }, timestamp: ctx.now } as CardsDrawnEvent,
-                    grantExtraMinion(m.controller, 'killer_plant_sprout', ctx.now),
-                );
-                const playedEvt: MinionPlayedEvent = {
-                    type: SU_EVENTS.MINION_PLAYED,
-                    payload: { playerId: m.controller, cardUid: card.uid, defId: card.defId, baseIndex: sproutBaseIndex, baseDefId: ctx.state.bases[sproutBaseIndex].defId, power },
-                    timestamp: ctx.now,
-                };
-                events.push(playedEvt);
-                events.push(buildDeckReshuffle(player, m.controller, [card.uid], ctx.now));
-            } else if (matchState) {
-                // 多候选：创建交互让玩家选择
-                const options: PromptOption<DeckSearchOptionValue>[] = eligible.map((c, idx) => {
-                    const def = getMinionDef(c.defId);
-                    return {
-                        id: `minion-${idx}`,
-                        label: `${def?.name ?? c.defId} (力量 ${def?.power ?? '?'})`,
-                        value: { cardUid: c.uid, defId: c.defId },
-                        displayMode: 'card' as const
-                    };
-                });
-                options.push({ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const });
-                const interaction = createSimpleChoice<DeckSearchOptionValue>(
-                    `killer_plant_sprout_search_${m.uid}_${ctx.now}`, m.controller,
-                    '嫩芽：从牌库中选择一个力量3或更低的随从打出（可跳过）', options, { sourceId: 'killer_plant_sprout_search', targetType: 'generic', autoRefresh: 'deck', responseValidationMode: 'live' },
-                );
-                // 传递 sprout 所在基地索引，交互处理器需要用它来锁定目标基地
-                (interaction.data as DeckSearchChoiceData).continuationContext = { baseIndex: sproutBaseIndex };
-                matchState = queueInteraction(matchState, interaction);
-            } else {
-                // 无 matchState 回退：自动选第一个（测试环境等）
-                const card = eligible[0];
-                simulatedDecks.set(m.controller, deck.filter(c => c.uid !== card.uid));
-                const def = getMinionDef(card.defId);
-                const power = def?.power ?? 0;
-                events.push(
-                    { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId: m.controller, count: 1, cardUids: [card.uid] }, timestamp: ctx.now } as CardsDrawnEvent,
-                    grantExtraMinion(m.controller, 'killer_plant_sprout', ctx.now),
-                );
-                const playedEvt: MinionPlayedEvent = {
-                    type: SU_EVENTS.MINION_PLAYED,
-                    payload: { playerId: m.controller, cardUid: card.uid, defId: card.defId, baseIndex: sproutBaseIndex, baseDefId: ctx.state.bases[sproutBaseIndex].defId, power },
-                    timestamp: ctx.now,
-                };
-                events.push(playedEvt);
-                events.push(buildDeckReshuffle(player, m.controller, [card.uid], ctx.now));
+                simulatedDecks.set(m.controller, deck.filter((card) => card.uid !== eligible[0].cardUid));
             }
+            events.push(...result.events);
+            matchState = result.matchState;
         }
     }
     return { events, matchState };
@@ -350,89 +444,6 @@ function killerPlantChokingVinesTrigger(ctx: TriggerContext): SmashUpEvent[] {
 // ============================================================================
 
 /**
- * 金星捕蝇草 talent：搜索牌库打出力量≤2随从到此基地
- * 正确流程：CARDS_DRAWN(牌库→手牌) + grantExtraMinion(额度) + MINION_PLAYED(手牌→此基地) + 洗牌
- */
-function killerPlantVenusManTrap(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    const eligible = player.deck.filter(c => {
-        if (c.type !== 'minion') return false;
-        const def = getMinionDef(c.defId);
-        return def !== undefined && def.power <= 2;
-    });
-    if (eligible.length === 0) {
-        // 牌库中无符合条件的随从，规则仍要求重洗牌库
-        return {
-            events: [
-                buildDeckReshuffle(player, ctx.playerId, [], ctx.now),
-                buildAbilityFeedback(ctx.playerId, 'feedback.deck_search_no_match', ctx.now),
-            ]
-        };
-    }
-    if (eligible.length === 1) {
-        // 只有一个候选，自动选择：直接打出到此基地
-        const card = eligible[0];
-        const def = getMinionDef(card.defId);
-        const power = def?.power ?? 0;
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId: ctx.playerId, cardUid: card.uid, defId: card.defId, baseIndex: ctx.baseIndex, baseDefId: ctx.state.bases[ctx.baseIndex].defId, power },
-            timestamp: ctx.now,
-        };
-        return {
-            events: [
-                { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId: ctx.playerId, count: 1, cardUids: [card.uid] }, timestamp: ctx.now } as CardsDrawnEvent,
-                grantExtraMinion(ctx.playerId, 'killer_plant_venus_man_trap', ctx.now),
-                playedEvt,
-                buildDeckReshuffle(player, ctx.playerId, [card.uid], ctx.now),
-            ],
-        };
-    }
-    // 多个候选，Prompt 选择
-    const options: PromptOption<DeckSearchOptionValue>[] = eligible.map((c, idx) => {
-        const def = getMinionDef(c.defId);
-        return {
-            id: `minion-${idx}`,
-            label: `${def?.name ?? c.defId} (力量 ${def?.power ?? '?'})`,
-            value: { cardUid: c.uid, defId: c.defId },
-            displayMode: 'card' as const
-        };
-    });
-    const interaction = createSimpleChoice<DeckSearchOptionValue>(
-        `killer_plant_venus_man_trap_search_${ctx.now}`, ctx.playerId,
-        '维纳斯捕食者：从牌库中选择一个力量2或更低的随从打出', options, { sourceId: 'killer_plant_venus_man_trap_search', targetType: 'generic', autoRefresh: 'deck', responseValidationMode: 'live' },
-    );
-    (interaction.data as DeckSearchChoiceData).continuationContext = { baseIndex: ctx.baseIndex };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-/**
- * 出芽生殖 onPlay：选择场上一个随从，搜索牌库同名卡加入手牌
- */
-function killerPlantBudding(ctx: AbilityContext): AbilityResult {
-    // 收集场上所有随从作为候选?
-    const candidates: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const baseDef = getBaseDef(ctx.state.bases[i].defId);
-            const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-            candidates.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${name} @ ${baseName}` });
-        }
-    }
-    if (candidates.length === 0) return { events: [] };
-    // Prompt 选择场上随从
-    const interaction = createSimpleChoice(
-        `killer_plant_budding_choose_${ctx.now}`, ctx.playerId,
-        '出芽生殖：选择一个场上的随从',
-        buildMinionTargetOptions(candidates, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }),
-        { sourceId: 'killer_plant_budding_choose', targetType: 'minion', autoCancelOption: true },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-/**
  * 绽放 onPlay：额外打出至多三个同名随从
  */
 function killerPlantBlossom(ctx: AbilityContext): AbilityResult {
@@ -445,15 +456,293 @@ function killerPlantBlossom(ctx: AbilityContext): AbilityResult {
     };
 }
 
+function createKillerPlantVenusManTrapContext(ctx: AbilityContext): KillerPlantDeckSearchContext {
+    const player = ctx.state.players[ctx.playerId];
+    const deck = player?.deck ?? [];
+    return {
+        core: ctx.state,
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        baseIndex: ctx.baseIndex,
+        deck,
+        eligible: buildKillerPlantDeckSearchCandidates(deck, 2),
+    };
+}
+
+function createKillerPlantBuddingContext(ctx: AbilityContext): KillerPlantBuddingContext {
+    return {
+        core: ctx.state,
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        candidates: buildKillerPlantBuddingCandidates(ctx.state),
+    };
+}
+
+const killerPlantVenusManTrapPromptProgram = createPromptProgram<
+    KillerPlantDeckSearchContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'killer_plant_venus_man_trap_search',
+    buildInteraction: (context) => {
+        if (!context.matchState) {
+            throw new Error('killer_plant_venus_man_trap_search 缺少 matchState');
+        }
+        return attachOptionsGenerator(
+            createAbilityRuntimeSimpleChoice(
+                `killer_plant_venus_man_trap_search_${context.now}`,
+                context.playerId,
+                '维纳斯捕食者：从牌库中选择一个力量 2 或更低的随从打出',
+                buildKillerPlantDeckSearchOptions(context.eligible),
+                {
+                    sourceId: 'killer_plant_venus_man_trap_search',
+                    targetType: 'generic',
+                    autoRefresh: 'deck',
+                    responseValidationMode: 'live',
+                },
+            ),
+            (state) => buildKillerPlantDeckSearchOptions(
+                buildKillerPlantDeckSearchCandidates(state.core.players[context.playerId]?.deck ?? [], 2),
+            ),
+        );
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selection = getDeckSearchSelection(value);
+        if (!selection) return { events: [] };
+        return {
+            events: buildKillerPlantDeckSearchResolutionEvents({
+                core: state.core,
+                deck: state.core.players[playerId]?.deck ?? [],
+                playerId,
+                selection,
+                baseIndex: context.baseIndex,
+                abilitySourceId: 'killer_plant_venus_man_trap',
+                timestamp,
+            }),
+        };
+    },
+});
+
+const killerPlantVenusManTrapProgram = createBranchProgram<
+    KillerPlantDeckSearchContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => context.eligible.length === 0,
+    then: createEffectProgram((context) => ({
+        events: [
+            buildDeckReshuffle({ deck: context.deck }, context.playerId, [], context.now),
+            buildAbilityFeedback(context.playerId, 'feedback.deck_search_no_match', context.now),
+        ],
+    })),
+    else: createBranchProgram({
+        when: (context) => context.eligible.length === 1 || !context.matchState,
+        then: createEffectProgram((context) => {
+            const [selected] = context.eligible;
+            if (!selected) return { events: [] };
+            return {
+                events: buildKillerPlantDeckSearchResolutionEvents({
+                    core: context.core,
+                    deck: context.deck,
+                    playerId: context.playerId,
+                    selection: { cardUid: selected.cardUid, defId: selected.defId },
+                    baseIndex: context.baseIndex,
+                    abilitySourceId: 'killer_plant_venus_man_trap',
+                    timestamp: context.now,
+                }),
+            };
+        }),
+        else: killerPlantVenusManTrapPromptProgram,
+    }),
+});
+
+const killerPlantSproutPromptProgram = createPromptProgram<
+    KillerPlantDeckSearchContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'killer_plant_sprout_search',
+    buildInteraction: (context) => {
+        if (!context.matchState) {
+            throw new Error('killer_plant_sprout_search 缺少 matchState');
+        }
+        return attachOptionsGenerator(
+            createAbilityRuntimeSimpleChoice(
+                `killer_plant_sprout_search_${context.baseIndex}_${context.now}`,
+                context.playerId,
+                '嫩芽：从牌库中选择一个力量 3 或更低的随从打出（可跳过）',
+                buildKillerPlantDeckSearchOptions(context.eligible, { includeSkip: true }),
+                {
+                    sourceId: 'killer_plant_sprout_search',
+                    targetType: 'generic',
+                    autoRefresh: 'deck',
+                    responseValidationMode: 'live',
+                },
+            ),
+            (state) => buildKillerPlantDeckSearchOptions(
+                buildKillerPlantDeckSearchCandidates(state.core.players[context.playerId]?.deck ?? [], 3),
+                { includeSkip: true },
+            ),
+        );
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        if (isSkipSelection(value)) {
+            return {
+                events: [
+                    buildDeckReshuffle({ deck: state.core.players[playerId]?.deck ?? [] }, playerId, [], timestamp),
+                    buildAbilityFeedback(playerId, 'feedback.deck_search_skipped', timestamp),
+                ],
+            };
+        }
+        const selection = getDeckSearchSelection(value);
+        if (!selection) return { events: [] };
+        return {
+            events: buildKillerPlantDeckSearchResolutionEvents({
+                core: state.core,
+                deck: state.core.players[playerId]?.deck ?? [],
+                playerId,
+                selection,
+                baseIndex: context.baseIndex,
+                abilitySourceId: 'killer_plant_sprout',
+                timestamp,
+            }),
+        };
+    },
+});
+
+const killerPlantSproutProgram = createBranchProgram<
+    KillerPlantDeckSearchContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => context.eligible.length === 0,
+    then: createEffectProgram((context) => ({
+        events: [
+            buildDeckReshuffle({ deck: context.deck }, context.playerId, [], context.now),
+            buildAbilityFeedback(context.playerId, 'feedback.deck_search_no_match', context.now),
+        ],
+    })),
+    else: createBranchProgram({
+        when: (context) => context.eligible.length === 1 || !context.matchState,
+        then: createEffectProgram((context) => {
+            const [selected] = context.eligible;
+            if (!selected) return { events: [] };
+            return {
+                events: buildKillerPlantDeckSearchResolutionEvents({
+                    core: context.core,
+                    deck: context.deck,
+                    playerId: context.playerId,
+                    selection: { cardUid: selected.cardUid, defId: selected.defId },
+                    baseIndex: context.baseIndex,
+                    abilitySourceId: 'killer_plant_sprout',
+                    timestamp: context.now,
+                }),
+            };
+        }),
+        else: killerPlantSproutPromptProgram,
+    }),
+});
+
+const killerPlantBuddingPromptProgram = createPromptProgram<
+    KillerPlantBuddingContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'killer_plant_budding_choose',
+    buildInteraction: (context) => {
+        if (!context.matchState) {
+            throw new Error('killer_plant_budding_choose 缺少 matchState');
+        }
+        return attachOptionsGenerator(
+            createAbilityRuntimeSimpleChoice(
+                `killer_plant_budding_choose_${context.now}`,
+                context.playerId,
+                '出芽生殖：选择一个场上的随从',
+                buildMinionTargetOptions(context.candidates, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    effectType: 'destroy',
+                }),
+                {
+                    sourceId: 'killer_plant_budding_choose',
+                    targetType: 'minion',
+                    autoCancelOption: true,
+                    autoRefresh: 'field',
+                    responseValidationMode: 'live',
+                },
+            ),
+            (state) => buildMinionTargetOptions(
+                buildKillerPlantBuddingCandidates(state.core),
+                { state: state.core, sourcePlayerId: context.playerId, effectType: 'destroy' },
+            ),
+        );
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        if (isCancelSelection(value)) {
+            return { events: [] };
+        }
+        const choice = value as KillerPlantBuddingChoice | undefined;
+        if (!choice?.minionUid) {
+            return { events: [] };
+        }
+
+        let chosenDefId: string | null = null;
+        for (const base of state.core.bases) {
+            const found = base.minions.find((minion) => minion.uid === choice.minionUid);
+            if (found) {
+                chosenDefId = found.defId;
+                break;
+            }
+        }
+        if (!chosenDefId) {
+            return { events: [] };
+        }
+
+        const deck = state.core.players[playerId]?.deck ?? [];
+        const sameNameCard = deck.find((card) => card.defId === chosenDefId);
+        if (!sameNameCard) {
+            return {
+                events: [
+                    buildDeckReshuffle({ deck }, playerId, [], timestamp),
+                    buildAbilityFeedback(playerId, 'feedback.deck_search_no_match', timestamp),
+                ],
+            };
+        }
+        return {
+            events: [
+                {
+                    type: SU_EVENTS.CARDS_DRAWN,
+                    payload: { playerId, count: 1, cardUids: [sameNameCard.uid] },
+                    timestamp,
+                } as CardsDrawnEvent,
+                buildDeckReshuffle({ deck }, playerId, [sameNameCard.uid], timestamp),
+            ],
+        };
+    },
+});
+
+const killerPlantBuddingProgram = createBranchProgram<
+    KillerPlantBuddingContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => context.candidates.length === 0,
+    then: createEffectProgram(() => ({ events: [] })),
+    else: killerPlantBuddingPromptProgram,
+});
+
 /** 注册食人花派系所有能力*/
 export function registerKillerPlantAbilities(): void {
     // 急速生长（行动卡）：额外打出一个随从
-    registerAbility('killer_plant_insta_grow', 'onPlay', killerPlantInstaGrow);
+    registerSimpleAbility('killer_plant_insta_grow', 'onPlay', killerPlantInstaGrow);
     // 野生食人花（随从）：打出回合-2力量
-    registerAbility('killer_plant_weed_eater', 'onPlay', killerPlantWeedEater);
+    registerSimpleAbility('killer_plant_weed_eater', 'onPlay', killerPlantWeedEater);
     // 金星捕蝇草（talent）：搜索牌库打出力量的随从
-    registerAbility('killer_plant_venus_man_trap', 'talent', {
-        execute: killerPlantVenusManTrap,
+    registerAbilityProgram('killer_plant_venus_man_trap', 'talent', {
+        program: killerPlantVenusManTrapProgram,
+        createContext: createKillerPlantVenusManTrapContext,
         validateUse: (ctx) => {
             const player = ctx.state.players[ctx.playerId];
             const hasEligible = player.deck.some(card => {
@@ -465,10 +754,13 @@ export function registerKillerPlantAbilities(): void {
         },
     });
     // 发芽（行动卡）：搜索牌库打出同名随从
-    registerAbility('killer_plant_budding', 'onPlay', killerPlantBudding);
+    registerAbilityProgram('killer_plant_budding', 'onPlay', {
+        program: killerPlantBuddingProgram,
+        createContext: createKillerPlantBuddingContext,
+    });
     // 绽放（行动卡）：额外打出3个随从
-    registerAbility('killer_plant_blossom', 'onPlay', killerPlantBlossom);
-    registerAbility('killer_plant_weed_eater_pod', 'onPlay', killerPlantWeedEaterPod);
+    registerSimpleAbility('killer_plant_blossom', 'onPlay', killerPlantBlossom);
+    registerSimpleAbility('killer_plant_weed_eater_pod', 'onPlay', killerPlantWeedEaterPod);
 
     // === POD 专有逻辑 ===
     // 野生食人花 POD: 力量修正逻辑在 ongoingModifiers 中实现
@@ -578,132 +870,6 @@ function buildDeckReshuffle(
         payload: { playerId, deckUids: remaining },
         timestamp: now,
     };
-}
-
-// ============================================================================
-// 交互解决处理函数
-// ============================================================================
-
-/** 注册食人花派系的交互解决处理函数 */
-export function registerKillerPlantInteractionHandlers(): void {
-    registerInteractionHandler('killer_plant_venus_man_trap_search', (state, playerId, value, iData, _random, timestamp) => {
-        const selection = getDeckSearchSelection(value);
-        if (!selection) {
-            return { state, events: [] };
-        }
-        const { cardUid, defId } = selection;
-        const player = state.core.players[playerId];
-        // 防御：若所选随从已不在牌库（已被其他效果抽走/打出），则不再重复打出，但仍按规则重洗
-        const inDeck = player.deck.some(c => c.uid === cardUid);
-        if (!inDeck) {
-            return {
-                state,
-                events: [
-                    buildDeckReshuffle(player, playerId, [], timestamp),
-                    buildAbilityFeedback(playerId, 'feedback.deck_search_no_match', timestamp),
-                ],
-            };
-        }
-        // 从 continuationContext 获取锁定的目标基地
-        const contCtx = (iData as { continuationContext?: { baseIndex: number } } | undefined)?.continuationContext;
-        const baseIndex = contCtx?.baseIndex ?? 0;
-        const def = getMinionDef(defId);
-        const power = def?.power ?? 0;
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex, baseDefId: state.core.bases[baseIndex]?.defId, power },
-            timestamp,
-        };
-        return {
-            state, events: [
-                { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId, count: 1, cardUids: [cardUid] }, timestamp } as CardsDrawnEvent,
-                grantExtraMinion(playerId, 'killer_plant_venus_man_trap', timestamp),
-                playedEvt,
-                buildDeckReshuffle(player, playerId, [cardUid], timestamp),
-            ]
-        };
-    });
-
-    registerInteractionHandler('killer_plant_sprout_search', (state, playerId, value, iData, _random, timestamp) => {
-        if (isSkipSelection(value)) {
-            // 跳过选择，规则仍要求重洗牌库
-            const player = state.core.players[playerId];
-            return {
-                state, events: [
-                    buildDeckReshuffle(player, playerId, [], timestamp),
-                    buildAbilityFeedback(playerId, 'feedback.deck_search_skipped', timestamp),
-                ]
-            };
-        }
-        const selection = getDeckSearchSelection(value);
-        if (!selection) {
-            return { state, events: [] };
-        }
-        const { cardUid, defId } = selection;
-        const player = state.core.players[playerId];
-        // 防御：若所选随从已不在牌库（已被其他嫩芽打出/抽走），则不再重复打出
-        const inDeck = player.deck.some(c => c.uid === cardUid);
-        if (!inDeck) {
-            return {
-                state,
-                events: [
-                    buildDeckReshuffle(player, playerId, [], timestamp),
-                    buildAbilityFeedback(playerId, 'feedback.deck_search_no_match', timestamp),
-                ],
-            };
-        }
-        // 从 continuationContext 获取 sprout 所在基地索引
-        const contCtx = (iData as { continuationContext?: { baseIndex: number } } | undefined)?.continuationContext;
-        const baseIndex = contCtx?.baseIndex ?? 0;
-        const def = getMinionDef(defId);
-        const power = def?.power ?? 0;
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex, baseDefId: state.core.bases[baseIndex]?.defId, power },
-            timestamp,
-        };
-        return {
-            state, events: [
-                { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId, count: 1, cardUids: [cardUid] }, timestamp } as CardsDrawnEvent,
-                grantExtraMinion(playerId, 'killer_plant_sprout', timestamp),
-                playedEvt,
-                buildDeckReshuffle(player, playerId, [cardUid], timestamp),
-            ]
-        };
-    });
-
-    registerInteractionHandler('killer_plant_budding_choose', (state, playerId, value, _iData, _random, timestamp) => {
-        // 检查取消标记
-        if (isCancelSelection(value)) return { state, events: [] };
-
-        if (typeof value !== 'object' || value === null || !('minionUid' in value)) {
-            return { state, events: [] };
-        }
-        const { minionUid } = value as { minionUid: string };
-        let chosenDefId = '';
-        for (const base of state.core.bases) {
-            const found = base.minions.find(m => m.uid === minionUid);
-            if (found) { chosenDefId = found.defId; break; }
-        }
-        if (!chosenDefId) return { state, events: [] };
-        const player = state.core.players[playerId];
-        const sameNameCard = player.deck.find(c => c.defId === chosenDefId);
-        if (!sameNameCard) {
-            // 牌库中未找到同名卡，规则仍要求重洗牌库
-            return {
-                state, events: [
-                    buildDeckReshuffle(player, playerId, [], timestamp),
-                    buildAbilityFeedback(playerId, 'feedback.deck_search_no_match', timestamp),
-                ]
-            };
-        }
-        return {
-            state, events: [
-                { type: SU_EVENTS.CARDS_DRAWN, payload: { playerId, count: 1, cardUids: [sameNameCard.uid] }, timestamp } as CardsDrawnEvent,
-                buildDeckReshuffle(player, playerId, [sameNameCard.uid], timestamp),
-            ]
-        };
-    });
 }
 
 /**

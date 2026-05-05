@@ -4,7 +4,7 @@
  * 主题：陷阱、干扰对手、消灭随从
  */
 
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     destroyMinion,
@@ -37,6 +37,237 @@ import { createSimpleChoice, queueInteraction } from '../../../engine/systems/In
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { FACTION_DISPLAY_NAMES } from '../domain/ids';
 import { getOpponentLabel } from '../domain/utils';
+import type { MatchState, PlayerId } from '../../../engine/types';
+import { createAbilityRuntimeSimpleChoice, createEffectProgram, createPromptProgram } from '../domain/abilityRuntime';
+
+type TricksterPromptContext = {
+    matchState: MatchState<any>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type TricksterBlockThePathPromptContext = TricksterPromptContext & {
+    cardUid: string;
+    baseIndex: number;
+};
+
+function createTricksterPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+    matchState: MatchState<any>,
+    playerId: PlayerId,
+    now: number,
+    extra?: TExtra,
+): TricksterPromptContext & TExtra {
+    return {
+        matchState,
+        playerId,
+        now,
+        ...(extra ?? {} as TExtra),
+    };
+}
+
+function collectDisenchantTargets(state: AbilityContext['state']): Array<{ uid: string; defId: string; ownerId: string; label: string }> {
+    const targets: Array<{ uid: string; defId: string; ownerId: string; label: string }> = [];
+    for (let index = 0; index < state.bases.length; index += 1) {
+        const base = state.bases[index];
+        for (const ongoing of base.ongoingActions) {
+            const def = getCardDef(ongoing.defId);
+            const name = def?.name ?? ongoing.defId;
+            targets.push({ uid: ongoing.uid, defId: ongoing.defId, ownerId: ongoing.ownerId, label: `${name} (基地行动)` });
+        }
+        for (const minion of base.minions) {
+            for (const attached of minion.attachedActions) {
+                const def = getCardDef(attached.defId);
+                const name = def?.name ?? attached.defId;
+                targets.push({ uid: attached.uid, defId: attached.defId, ownerId: attached.ownerId, label: `${name} (附着行动)` });
+            }
+        }
+    }
+    return targets;
+}
+
+function collectBlockThePathFactions(state: AbilityContext['state']): string[] {
+    const factionSet = new Set<string>();
+    for (const base of state.bases) {
+        for (const minion of base.minions) {
+            const def = getCardDef(minion.defId);
+            if (def?.faction) factionSet.add(def.faction);
+        }
+    }
+    for (const pid of state.turnOrder) {
+        const player = state.players[pid];
+        for (const card of player.hand) {
+            const def = getCardDef(card.defId);
+            if (def?.faction) factionSet.add(def.faction);
+        }
+    }
+    return Array.from(factionSet);
+}
+
+const tricksterDisenchantPromptProgram = createPromptProgram<TricksterPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_disenchant',
+    buildInteraction: (context) => {
+        const targets = collectDisenchantTargets(context.matchState.core);
+        const options = targets.map((target, index) => ({
+            id: `action-${index}`,
+            label: target.label,
+            value: { cardUid: target.uid, defId: target.defId, ownerId: target.ownerId },
+            _source: 'ongoing' as const,
+            displayMode: 'card' as const,
+        }));
+        return createAbilityRuntimeSimpleChoice(
+            `trickster_disenchant_${context.now}`,
+            context.playerId,
+            '选择要消灭的行动牌',
+            options as any[],
+            { sourceId: 'trickster_disenchant', targetType: 'ongoing' },
+        );
+    },
+    onResolve: ({ value, timestamp }) => {
+        const selected = value as { cardUid?: string; defId?: string; ownerId?: string } | undefined;
+        if (!selected?.cardUid || !selected.defId || !selected.ownerId) return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: {
+                    cardUid: selected.cardUid,
+                    defId: selected.defId,
+                    ownerId: selected.ownerId,
+                    reason: 'trickster_disenchant',
+                },
+                timestamp,
+            } as OngoingDetachedEvent],
+        };
+    },
+});
+
+const tricksterBlockThePathPromptProgram = createPromptProgram<TricksterBlockThePathPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_block_the_path',
+    buildInteraction: (context) => {
+        const options = collectBlockThePathFactions(context.matchState.core).map((factionId, index) => ({
+            id: `faction-${index}`,
+            label: FACTION_DISPLAY_NAMES[factionId] || factionId,
+            value: { factionId },
+        }));
+        return createAbilityRuntimeSimpleChoice(
+            `trickster_block_the_path_${context.now}`,
+            context.playerId,
+            '封路：选择一个派系（该派系随从不能被打出到此基地）',
+            options as any[],
+            { sourceId: 'trickster_block_the_path', targetType: 'generic', autoCancelOption: true },
+        );
+    },
+    onResolve: ({ context, state, value }) => {
+        if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
+        const factionId = (value as { factionId?: string } | undefined)?.factionId;
+        if (!factionId) return { events: [] };
+        const newBases = state.core.bases.map((base, index) => {
+            if (index !== context.baseIndex) return base;
+            return {
+                ...base,
+                ongoingActions: base.ongoingActions.map((ongoing) => {
+                    if (ongoing.uid !== context.cardUid) return ongoing;
+                    return { ...ongoing, metadata: { blockedFaction: factionId } };
+                }),
+            };
+        });
+        return {
+            events: [],
+            matchState: { ...state, core: { ...state.core, bases: newBases } },
+        };
+    },
+});
+
+const tricksterMarkOfSleepPromptProgram = createPromptProgram<TricksterPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_mark_of_sleep',
+    buildInteraction: (context) => {
+        const options = context.matchState.core.turnOrder.map((pid, index) => ({
+            id: `player-${index}`,
+            label: pid === context.playerId ? '你自己' : getOpponentLabel(pid),
+            value: { pid },
+        }));
+        return createAbilityRuntimeSimpleChoice(
+            `trickster_mark_of_sleep_${context.now}`,
+            context.playerId,
+            '选择一个玩家（其下回合不能打行动卡）',
+            options as any[],
+            { sourceId: 'trickster_mark_of_sleep', targetType: 'player', autoCancelOption: true },
+        );
+    },
+    onResolve: ({ state, value }) => {
+        if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
+        const pid = (value as { pid?: string } | undefined)?.pid;
+        if (!pid) return { events: [] };
+        const currentMarked = state.core.sleepMarkedPlayers ?? [];
+        if (currentMarked.includes(pid)) return { events: [] };
+        return {
+            events: [],
+            matchState: {
+                ...state,
+                core: {
+                    ...state.core,
+                    sleepMarkedPlayers: [...currentMarked, pid],
+                },
+            },
+        };
+    },
+});
+
+const tricksterMarkOfSleepPodPromptProgram = createPromptProgram<TricksterPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_mark_of_sleep_pod',
+    buildInteraction: (context) => {
+        const otherPlayers = context.matchState.core.turnOrder.filter(pid => pid !== context.playerId);
+        const combos: { noActions: string[]; noMove: string[]; label: string }[] = [];
+        const total = 1 << otherPlayers.length;
+        for (let mask = 0; mask < total; mask += 1) {
+            const noActions: string[] = [];
+            const noMove: string[] = [];
+            const parts: string[] = [];
+            for (let index = 0; index < otherPlayers.length; index += 1) {
+                const pid = otherPlayers[index];
+                const pickNoActions = ((mask >> index) & 1) === 1;
+                if (pickNoActions) {
+                    noActions.push(pid);
+                    parts.push(`${getOpponentLabel(pid)}：不能打战术`);
+                } else {
+                    noMove.push(pid);
+                    parts.push(`${getOpponentLabel(pid)}：不能移动随从`);
+                }
+            }
+            combos.push({ noActions, noMove, label: parts.join('；') });
+        }
+        const options = combos.map((combo, index) => ({
+            id: `combo-${index}`,
+            label: combo.label,
+            value: { noActions: combo.noActions, noMove: combo.noMove },
+        }));
+        return createAbilityRuntimeSimpleChoice(
+            `trickster_mark_of_sleep_pod_${context.now}`,
+            context.playerId,
+            '睡眠印记：为每个对手选择限制（持续到你下回合开始）',
+            options as any[],
+            { sourceId: 'trickster_mark_of_sleep_pod', targetType: 'player', autoCancelOption: true },
+        );
+    },
+    onResolve: ({ state, value }) => {
+        if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
+        const selected = value as { noActions?: string[]; noMove?: string[] } | undefined;
+        const noActions = selected?.noActions ?? [];
+        const noMove = selected?.noMove ?? [];
+        const expiresOnTurnNumber = state.core.turnNumber + state.core.turnOrder.length;
+        return {
+            events: [],
+            matchState: {
+                ...state,
+                core: {
+                    ...state.core,
+                    sleepMarkedPlayers: noActions.length ? noActions : undefined,
+                    sleepMoveMarkedPlayers: noMove.length ? noMove : undefined,
+                    sleepMarkExpiresOnTurnNumber: expiresOnTurnNumber,
+                } as any,
+            },
+        };
+    },
+});
 
 /** 侏儒 onPlay：消灭力量低于己方随从数量的随从 */
 function tricksterGnome(ctx: AbilityContext): AbilityResult {
@@ -102,38 +333,6 @@ function tricksterTakeTheShinies(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/** 幻想破碎 onPlay：消灭一个已打出到随从或基地上的行动?*/
-function tricksterDisenchant(ctx: AbilityContext): AbilityResult {
-    // 收集所有已打出的持续行动卡（描述无"对手"限定，包含自己的）
-    const targets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        const base = ctx.state.bases[i];
-        for (const ongoing of base.ongoingActions) {
-            const def = getCardDef(ongoing.defId);
-            const name = def?.name ?? ongoing.defId;
-            targets.push({ uid: ongoing.uid, defId: ongoing.defId, ownerId: ongoing.ownerId, label: `${name} (基地行动)` });
-        }
-        for (const m of base.minions) {
-            for (const attached of m.attachedActions) {
-                const def = getCardDef(attached.defId);
-                const name = def?.name ?? attached.defId;
-                targets.push({ uid: attached.uid, defId: attached.defId, ownerId: attached.ownerId, label: `${name} (附着行动)` });
-            }
-        }
-    }
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = targets.map((t, i) => ({
-        id: `action-${i}`, label: t.label, value: { cardUid: t.uid, defId: t.defId, ownerId: t.ownerId }, _source: 'ongoing' as const,
-        displayMode: 'card' as const,
-    }));
-    const interaction = createSimpleChoice(
-        `trickster_disenchant_${ctx.now}`, ctx.playerId,
-        '选择要消灭的行动牌', options as any[],
-        { sourceId: 'trickster_disenchant', targetType: 'ongoing' },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
 /** 隐蔽迷雾 onPlay：打出当回合给予额外随从（与大法师同理，ongoing 能力在进入场上时生效） */
 function tricksterEnshroudingMistOnPlay(ctx: AbilityContext): AbilityResult {
     return {
@@ -147,13 +346,46 @@ export function registerTricksterAbilities(): void {
     // 带走宝物（行动卡）：每个对手随机弃两张手牌
     registerAbility('trickster_take_the_shinies', 'onPlay', tricksterTakeTheShinies);
     // 幻想破碎（行动卡）：消灭一个已打出的行动卡
-    registerAbility('trickster_disenchant', 'onPlay', tricksterDisenchant);
+    registerAbilityProgram('trickster_disenchant', 'onPlay', {
+        program: createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
+            const targets = collectDisenchantTargets(ctx.state);
+            if (targets.length === 0) {
+                return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+            }
+            return {
+                events: [],
+                context: createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+                nextProgram: tricksterDisenchantPromptProgram,
+            };
+        }),
+    });
     // 小妖精?onDestroy：被消灭后抽1张牌 + 对手随机?张牌
     registerAbility('trickster_gremlin', 'onDestroy', tricksterGremlinOnDestroy);
     // 沉睡印记（行动卡）：对手下回合不能打行动
-    registerAbility('trickster_mark_of_sleep', 'onPlay', tricksterMarkOfSleep);
+    registerAbilityProgram('trickster_mark_of_sleep', 'onPlay', {
+        program: createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => ({
+            events: [],
+            context: createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+            nextProgram: tricksterMarkOfSleepPromptProgram,
+        })),
+    });
     // 封路（ongoing）：打出时选择一个派系
-    registerAbility('trickster_block_the_path', 'onPlay', tricksterBlockThePath);
+    registerAbilityProgram('trickster_block_the_path', 'onPlay', {
+        program: createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
+            const factions = collectBlockThePathFactions(ctx.state);
+            if (factions.length === 0) {
+                return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+            }
+            return {
+                events: [],
+                context: createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                    cardUid: ctx.cardUid,
+                    baseIndex: ctx.baseIndex,
+                }),
+                nextProgram: tricksterBlockThePathPromptProgram,
+            };
+        }),
+    });
     // 隐蔽迷雾（ongoing）：打出当回合也给予额外随从（与大法师同理）
     registerAbility('trickster_enshrouding_mist', 'onPlay', tricksterEnshroudingMistOnPlay);
 
@@ -216,7 +448,17 @@ function tricksterGnomePodSpecial(ctx: AbilityContext): AbilityResult {
 
 function registerTricksterPodAbilities(): void {
     registerAbility('trickster_take_the_shinies_pod', 'onPlay', tricksterTakeTheShinies);
-    registerAbility('trickster_mark_of_sleep_pod', 'onPlay', tricksterMarkOfSleepPod);
+    registerAbilityProgram('trickster_mark_of_sleep_pod', 'onPlay', {
+        program: createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
+            const otherPlayers = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
+            if (otherPlayers.length === 0) return { events: [] };
+            return {
+                events: [],
+                context: createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now),
+                nextProgram: tricksterMarkOfSleepPodPromptProgram,
+            };
+        }),
+    });
     registerAbility('trickster_pixie_pod', 'onPlay', tricksterPixiePodOnPlay);
     registerAbility('trickster_enshrouding_mist_pod', 'talent', tricksterEnshroudingMistPodTalent);
     registerAbility('trickster_hideout_pod', 'talent', {
@@ -318,69 +560,6 @@ export function registerTricksterInteractionHandlers(): void {
         const target = base.minions.find(m => m.uid === minionUid);
         if (!target) return undefined;
         return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'trickster_gnome', timestamp)] };
-    });
-
-    // 幻想破碎：选择行动卡后消灭
-    registerInteractionHandler('trickster_disenchant', (state, _playerId, value, _iData, _random, timestamp) => {
-        const { cardUid: ongoingUid, defId, ownerId } = value as { cardUid: string; defId: string; ownerId: string };
-        return { state, events: [{ type: SU_EVENTS.ONGOING_DETACHED, payload: { cardUid: ongoingUid, defId, ownerId, reason: 'trickster_disenchant' }, timestamp }] };
-    });
-
-    // 沉睡印记：选择对手后标记（下回合生效）
-    registerInteractionHandler('trickster_mark_of_sleep', (state, _playerId, value, _iData, _random, _timestamp) => {
-        // 检查取消标记
-        if ((value as any).__cancel__) return { state, events: [] };
-        
-        const { pid } = value as { pid: string };
-        // 添加沉睡标记，在对手的下一个回合开始时生效
-        const currentMarked = state.core.sleepMarkedPlayers ?? [];
-        if (currentMarked.includes(pid)) return { state, events: [] };
-        return {
-            state: { ...state, core: { ...state.core, sleepMarkedPlayers: [...currentMarked, pid] } },
-            events: [],
-        };
-    });
-
-    // 封路：选择派系后，将派系信息存入 ongoing 的 metadata
-    registerInteractionHandler('trickster_block_the_path', (state, _playerId, value, iData, _random, _timestamp) => {
-        // 检查取消标记
-        if ((value as any).__cancel__) return { state, events: [] };
-        
-        const { factionId } = value as { factionId: string };
-        const ctx = (iData as any)?.continuationContext as { cardUid: string; baseIndex: number };
-        if (!ctx) return undefined;
-        // 找到刚附着的 ongoing 并更新 metadata
-        const newBases = state.core.bases.map((base, i) => {
-            if (i !== ctx.baseIndex) return base;
-            return {
-                ...base,
-                ongoingActions: base.ongoingActions.map(o => {
-                    if (o.uid !== ctx.cardUid) return o;
-                    return { ...o, metadata: { blockedFaction: factionId } };
-                }),
-            };
-        });
-        return { state: { ...state, core: { ...state.core, bases: newBases } }, events: [] };
-    });
-
-    // POD 沉睡印记：一次性写入 noActions / noMove 标记，持续到施放者下回合开始
-    registerInteractionHandler('trickster_mark_of_sleep_pod', (state, playerId, value, _iData, _random, _timestamp) => {
-        if ((value as any).__cancel__) return { state, events: [] };
-        const { noActions, noMove } = value as { noActions: string[]; noMove: string[] };
-        const expiresOnTurnNumber = state.core.turnNumber + state.core.turnOrder.length;
-
-        return {
-            state: {
-                ...state,
-                core: {
-                    ...state.core,
-                    sleepMarkedPlayers: noActions.length ? noActions : undefined,
-                    sleepMoveMarkedPlayers: noMove.length ? noMove : undefined,
-                    sleepMarkExpiresOnTurnNumber: expiresOnTurnNumber,
-                } as any,
-            },
-            events: [],
-        };
     });
 
     // Pixie（战术）：先消灭一张已打出的战术，再选择 1-2 个己方随从分配两枚 +1 指示物
@@ -635,94 +814,6 @@ function tricksterGremlinOnDestroy(ctx: AbilityContext): AbilityResult {
     }
 
     return { events };
-}
-
-/** 封路 onPlay（ongoing）：选择一个派系，该派系随从不能被打出到此基地 */
-function tricksterBlockThePath(ctx: AbilityContext): AbilityResult {
-    // 收集场上所有派系
-    const factionSet = new Set<string>();
-    for (const base of ctx.state.bases) {
-        for (const m of base.minions) {
-            const def = getCardDef(m.defId);
-            if (def?.faction) factionSet.add(def.faction);
-        }
-    }
-    // 也从所有玩家手牌中收集派系
-    for (const pid of ctx.state.turnOrder) {
-        const player = ctx.state.players[pid];
-        for (const c of player.hand) {
-            const def = getCardDef(c.defId);
-            if (def?.faction) factionSet.add(def.faction);
-        }
-    }
-    if (factionSet.size === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = Array.from(factionSet).map((fid, i) => ({
-        id: `faction-${i}`, label: FACTION_DISPLAY_NAMES[fid] || fid, value: { factionId: fid },
-    }));
-    const interaction = createSimpleChoice(
-        `trickster_block_the_path_${ctx.now}`, ctx.playerId,
-        '封路：选择一个派系（该派系随从不能被打出到此基地）', options as any[],
-        { sourceId: 'trickster_block_the_path', targetType: 'generic', autoCancelOption: true },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ctx.cardUid, baseIndex: ctx.baseIndex } } }) };
-}
-
-/** 沉睡印记 onPlay：选择一个对手，其下回合不能打行动卡 */
-function tricksterMarkOfSleep(ctx: AbilityContext): AbilityResult {
-    // 可以选择任何玩家（包括自己）
-    const allPlayers = ctx.state.turnOrder;
-    const options = allPlayers.map((pid, i) => ({
-        id: `player-${i}`, 
-        label: pid === ctx.playerId ? '你自己' : getOpponentLabel(pid), 
-        value: { pid },
-    }));
-    const interaction = createSimpleChoice(
-        `trickster_mark_of_sleep_${ctx.now}`, ctx.playerId,
-        '选择一个玩家（其下回合不能打行动卡）', options as any[],
-        { sourceId: 'trickster_mark_of_sleep', targetType: 'player', autoCancelOption: true },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-/** POD 沉睡印记：对每个其他玩家分别选择“不能打出战术”或“不能移动随从”，持续到你下回合开始 */
-function tricksterMarkOfSleepPod(ctx: AbilityContext): AbilityResult {
-    const otherPlayers = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
-    if (otherPlayers.length === 0) return { events: [] };
-
-    // 组合选项：每位对手二选一（最多 3 位对手 → 8 种组合）
-    const combos: { noActions: string[]; noMove: string[]; label: string }[] = [];
-    const total = 1 << otherPlayers.length;
-    for (let mask = 0; mask < total; mask++) {
-        const noActions: string[] = [];
-        const noMove: string[] = [];
-        const parts: string[] = [];
-        for (let i = 0; i < otherPlayers.length; i++) {
-            const pid = otherPlayers[i];
-            const pickNoActions = ((mask >> i) & 1) === 1;
-            if (pickNoActions) {
-                noActions.push(pid);
-                parts.push(`${getOpponentLabel(pid)}：不能打战术`);
-            } else {
-                noMove.push(pid);
-                parts.push(`${getOpponentLabel(pid)}：不能移动随从`);
-            }
-        }
-        combos.push({ noActions, noMove, label: parts.join('；') });
-    }
-
-    const options = combos.map((c, i) => ({
-        id: `combo-${i}`,
-        label: c.label,
-        value: { noActions: c.noActions, noMove: c.noMove },
-    }));
-    const interaction = createSimpleChoice(
-        `trickster_mark_of_sleep_pod_${ctx.now}`,
-        ctx.playerId,
-        '睡眠印记：为每个对手选择限制（持续到你下回合开始）',
-        options as any[],
-        { sourceId: 'trickster_mark_of_sleep_pod', targetType: 'player', autoCancelOption: true },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function tricksterPixiePodOnPlay(ctx: AbilityContext): AbilityResult {

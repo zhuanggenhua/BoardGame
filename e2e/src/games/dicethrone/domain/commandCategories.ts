@@ -94,6 +94,7 @@ export const COMMAND_CATEGORIES: Record<string, CommandCategory> = {
     'SKIP_BONUS_DICE_REROLL': CommandCategory.STATE_MANAGEMENT,
     'REMOVE_STATUS': CommandCategory.STATE_MANAGEMENT,
     'TRANSFER_STATUS': CommandCategory.STATE_MANAGEMENT,
+    'SELECT_DEFENDER_TARGET': CommandCategory.STATE_MANAGEMENT,
     'RESOLVE_CHOICE': CommandCategory.STATE_MANAGEMENT,
     'GRANT_TOKENS': CommandCategory.STATE_MANAGEMENT,
     

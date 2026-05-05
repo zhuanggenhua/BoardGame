@@ -18,7 +18,7 @@ import type {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { applyEvents } from './helpers';
 import { makeMatchState as makeMatchStateFromHelpers } from './helpers';
 import { runCommand } from './testRunner';
@@ -406,9 +406,9 @@ describe('僵尸派系能力', () => {
         expect(current?.data?.sourceId).toBe('zombie_outbreak_choose_base');
 
         // 选择基地后直接授予额度（限定到该基地）
-        const chooseBaseHandler = getInteractionHandler('zombie_outbreak_choose_base');
+        const chooseBaseHandler = getAbilityRuntimePromptHandler('zombie_outbreak_choose_base');
         expect(chooseBaseHandler).toBeDefined();
-        const resolved = chooseBaseHandler!(matchState, '0', { baseIndex: 1 }, undefined, defaultRandom, 1);
+        const resolved = chooseBaseHandler!(matchState, '0', { baseIndex: 1 }, current?.data, defaultRandom, 1);
         expect(resolved).toBeDefined();
         const granted = resolved!.events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
         expect(granted.length).toBe(1);
@@ -481,11 +481,12 @@ describe('僵尸派系能力', () => {
     });
 
     it('zombie_mall_crawl: 选择卡名后同名卡进入弃牌堆，牌库重洗', () => {
-        // 模拟 interaction 解决时的状态：a1 已打出（在弃牌堆中），牌库有 4 张卡
-        const stateAtInteraction = makeState({
+        const state = makeState({
             players: {
                 '0': makePlayer('0', {
-                    hand: [],
+                    hand: [
+                        makeCard('a1', 'zombie_mall_crawl', 'action', '0'),
+                    ],
                     deck: [
                         makeCard('d1', 'zombie_walker', 'minion', '0'),
                         makeCard('d2', 'zombie_grave_digger', 'minion', '0'),
@@ -500,16 +501,18 @@ describe('僵尸派系能力', () => {
                 '1': makePlayer('1'),
             },
         });
-        const matchState = makeMatchState(stateAtInteraction);
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const current = (matchState.sys as any).interaction?.current;
+        expect(current?.data?.sourceId).toBe('zombie_mall_crawl');
 
         // 解决交互：选择 zombie_walker
-        const handler = getInteractionHandler('zombie_mall_crawl');
+        const handler = getAbilityRuntimePromptHandler('zombie_mall_crawl');
         expect(handler).toBeDefined();
-        const result = handler!(matchState, '0', { defId: 'zombie_walker' }, undefined, defaultRandom, 1);
+        const result = handler!(matchState, '0', { defId: 'zombie_walker' }, current?.data, defaultRandom, 1);
         expect(result).toBeDefined();
 
         // 应用事件
-        const finalState = applyEvents(stateAtInteraction, result!.events);
+        const finalState = applyEvents(matchState.core, result!.events);
 
         // 验证：d1, d3 (zombie_walker) 应在弃牌堆中
         const discardUids = finalState.players['0'].discard.map(c => c.uid);
@@ -533,9 +536,9 @@ describe('僵尸派系能力', () => {
         const walkersInDeck = finalState.players['0'].deck.filter(c => c.defId === 'zombie_walker');
         expect(walkersInDeck.length).toBe(0);
 
-        // 验证：总卡牌数守恒（4 deck + 2 discard = 6）
+        // 验证：总卡牌数守恒（4 张原牌库 + 2 张原弃牌 + 打出的 a1 = 7）
         const totalCards = finalState.players['0'].deck.length + finalState.players['0'].discard.length + finalState.players['0'].hand.length;
-        expect(totalCards).toBe(6);
+        expect(totalCards).toBe(7);
     });
 });
 

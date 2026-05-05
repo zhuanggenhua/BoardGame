@@ -151,7 +151,7 @@ function collectPushedOptions(
 export function isCreateSimpleChoiceCall(node: ts.Node): node is ts.CallExpression {
     if (!ts.isCallExpression(node)) return false;
     const callName = getExpressionName(node.expression);
-    return callName === 'createSimpleChoice' || callName === 'resolveOrPrompt';
+    return callName === 'createSimpleChoice' || callName === 'createAbilityRuntimeSimpleChoice' || callName === 'resolveOrPrompt';
 }
 
 export function extractSimpleChoiceConfig(node: ts.CallExpression): SimpleChoiceConfigInfo {

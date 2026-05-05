@@ -53,6 +53,7 @@ const {
     latestConfirmModalProps,
     latestPasswordEntryModalProps,
     ensureGameCriticalImageResolverLoadedMock,
+    hasGameTutorialLoaderMock,
     prefetchGameImplementationMock,
     resolveCriticalImagesMock,
     preloadWarmImagesMock,
@@ -88,6 +89,7 @@ const {
     latestConfirmModalProps: { current: null as null | Record<string, unknown> },
     latestPasswordEntryModalProps: { current: null as null | Record<string, unknown> },
     ensureGameCriticalImageResolverLoadedMock: vi.fn(),
+    hasGameTutorialLoaderMock: vi.fn(() => true),
     prefetchGameImplementationMock: vi.fn(),
     resolveCriticalImagesMock: vi.fn(),
     preloadWarmImagesMock: vi.fn(),
@@ -247,6 +249,7 @@ vi.mock('../../../config/games.config', () => ({
 
 vi.mock('../../../games/registry', () => ({
     ensureGameCriticalImageResolverLoaded: (...args: unknown[]) => ensureGameCriticalImageResolverLoadedMock(...args),
+    hasGameTutorialLoader: (...args: unknown[]) => hasGameTutorialLoaderMock(...args),
     prefetchGameImplementation: (...args: unknown[]) => prefetchGameImplementationMock(...args),
 }));
 
@@ -489,6 +492,8 @@ beforeEach(() => {
     mockLoggerInfo.mockReset();
     ensureGameCriticalImageResolverLoadedMock.mockReset();
     ensureGameCriticalImageResolverLoadedMock.mockResolvedValue(undefined);
+    hasGameTutorialLoaderMock.mockReset();
+    hasGameTutorialLoaderMock.mockReturnValue(true);
     prefetchGameImplementationMock.mockReset();
     prefetchGameImplementationMock.mockResolvedValue(null);
     resolveCriticalImagesMock.mockReset();
@@ -1891,14 +1896,24 @@ describe('GameDetailsModal create room ai entry', () => {
         expect(screen.queryByText('packageManager.installAction')).toBeNull();
     });
 
-    it('未下载 package-managed 游戏时，教程入口直接进入网页流程', () => {
+    it('未下载 package-managed 游戏时，教程入口会立即跳转并在后台补拉 tutorial', () => {
+        prefetchGameImplementationMock.mockReturnValue(new Promise(() => {}));
         render(createElement(GameDetailsModal, baseProps));
 
         fireEvent.click(screen.getByText('actions.tutorial'));
 
+        expect(prefetchGameImplementationMock).toHaveBeenCalledWith('dicethrone', { includeTutorial: true });
         expect(navigateMock).toHaveBeenCalledWith('/play/dicethrone/tutorial');
         expect(screen.queryByText('package-install-confirm')).toBeNull();
         expect(latestPackageInstallModalProps.current).toBeNull();
+    });
+
+    it('未注册教程模块时不显示教程入口', () => {
+        hasGameTutorialLoaderMock.mockReturnValue(false);
+
+        render(createElement(GameDetailsModal, baseProps));
+
+        expect(screen.queryByText('actions.tutorial')).toBeNull();
     });
 
     it('标记必须更新时，创建房间仍走普通网页流程', async () => {

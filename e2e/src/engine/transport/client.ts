@@ -69,6 +69,7 @@ export type ClientConnectionState = 'disconnected' | 'connecting' | 'connected';
 // ============================================================================
 
 export class GameTransportClient {
+    private readonly stateUpdateSubscribers = new Set<(state: unknown) => void>();
     private socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
     private readonly config: GameTransportClientConfig;
     private _connectionState: ClientConnectionState = 'disconnected';
@@ -103,6 +104,23 @@ export class GameTransportClient {
     /** 最新游戏状态 */
     get latestState(): unknown {
         return this._latestState;
+    }
+
+    subscribeStateUpdate(listener: (state: unknown) => void): () => void {
+        this.stateUpdateSubscribers.add(listener);
+        return () => {
+            this.stateUpdateSubscribers.delete(listener);
+        };
+    }
+
+    private notifyStateUpdateSubscribers(state: unknown): void {
+        for (const subscriber of this.stateUpdateSubscribers) {
+            try {
+                subscriber(state);
+            } catch {
+                // 调试/辅助订阅者异常不应影响主同步链路
+            }
+        }
     }
 
     /** 对局玩家信息 */
@@ -175,6 +193,7 @@ export class GameTransportClient {
             });
             this.config.onConnectionChange?.(true);
             this.config.onStateUpdate?.(state, matchPlayers, syncMeta, randomMeta);
+            this.notifyStateUpdateSubscribers(state);
         });
 
         socket.on('state:update', (matchID, state, matchPlayers, meta) => {
@@ -186,6 +205,7 @@ export class GameTransportClient {
                 this._lastReceivedStateID = meta.stateID;
             }
             this.config.onStateUpdate?.(state, matchPlayers, meta);
+            this.notifyStateUpdateSubscribers(state);
         });
 
         socket.on('state:patch', (matchID, patches, matchPlayers, meta) => {
@@ -233,6 +253,7 @@ export class GameTransportClient {
 
             // 传递给上层，与 state:update 行为一致
             this.config.onStateUpdate?.(result.state!, matchPlayers, meta);
+            this.notifyStateUpdateSubscribers(result.state!);
         });
 
         socket.on('error', (matchID, error) => {

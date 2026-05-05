@@ -11,9 +11,6 @@
 
 import { describe, test, expect, beforeEach } from 'vitest';
 import {
-    registerProtection,
-    registerRestriction,
-    registerTrigger,
     clearOngoingEffectRegistry,
     isMinionProtected,
     isOperationRestricted,
@@ -25,12 +22,13 @@ import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { callHandler } from './helpers';
+import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
+import { callHandler, getInteractionsFromMS } from './helpers';
 import { buildAffectRecords } from '../domain/affect';
 import { registerGhostAbilities } from '../abilities/ghosts';
-import { registerSteampunkAbilities, registerSteampunkInteractionHandlers } from '../abilities/steampunks';
-import { registerKillerPlantAbilities, registerKillerPlantInteractionHandlers } from '../abilities/killer_plants';
-import { registerInnsmouthAbilities, registerInnsmouthInteractionHandlers } from '../abilities/innsmouth';
+import { registerSteampunkAbilities } from '../abilities/steampunks';
+import { registerKillerPlantAbilities } from '../abilities/killer_plants';
+import { registerInnsmouthAbilities } from '../abilities/innsmouth';
 import { registerMiskatonicAbilities, registerMiskatonicInteractionHandlers } from '../abilities/miskatonic';
 
 // ============================================================================
@@ -279,7 +277,6 @@ describe('蒸汽朋克 ongoing 能力', () => {
         clearRegistry();
         clearInteractionHandlers();
         registerSteampunkAbilities();
-        registerSteampunkInteractionHandlers();
     });
 
     describe('steampunk_steam_queen: 蒸汽女王保护', () => {
@@ -522,16 +519,10 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(current).toBeDefined();
             const options = current?.data?.options || [];
             
-            // 应该只有 2 个选项：escape_hatch（打出到基地）+ 取消
-            expect(options.length).toBe(2);
             const cardUids = options.map((opt: any) => opt.value?.cardUid).filter(Boolean);
-            expect(cardUids).toContain('dis-1'); // escape_hatch
+            expect(cardUids).toEqual(['dis-1']); // 只保留可打到基地上的 ongoing
             expect(cardUids).not.toContain('dis-2'); // smoke_bomb（打出到随从）应该被排除
             expect(cardUids).not.toContain('dis-3'); // scrap_diving（普通行动牌）应该被排除
-            
-            // 验证有取消选项
-            const hasCancelOption = options.some((opt: any) => opt.id === '__cancel__');
-            expect(hasCancelOption).toBe(true);
         });
 
         test('反馈 69a2f027：附着到随从上的 ongoing 不应进入机械师候选，也不应被 handler 接受', () => {
@@ -557,15 +548,17 @@ describe('蒸汽朋克 ongoing 能力', () => {
             const cardUids = (current?.data?.options ?? []).map((opt: any) => opt.value?.cardUid).filter(Boolean);
             expect(cardUids).toEqual(['dis-base']);
 
-            const handler = getInteractionHandler('steampunk_mechanic');
+            const handler = getAbilityRuntimePromptHandler('steampunk_mechanic');
             expect(handler).toBeDefined();
-            const events = callHandler(handler!, {
-                state,
-                playerId: '0',
-                selectedValue: { cardUid: 'dis-minion-a', defId: 'ninja_smoke_bomb' },
-                random: dummyRandom,
-                now: 1000,
-            });
+            const resolved = handler!(
+                result.matchState!,
+                '0',
+                { cardUid: 'dis-minion-a', defId: 'ninja_smoke_bomb' },
+                current?.data,
+                dummyRandom,
+                1000,
+            );
+            const events = resolved?.events ?? [];
             expect(events).toHaveLength(0);
         });
 
@@ -588,89 +581,192 @@ describe('蒸汽朋克 ongoing 能力', () => {
         });
 
         test('若所选行动已不在弃牌堆则不再恢复或打出', () => {
-            const handler = getInteractionHandler('steampunk_mechanic');
-            expect(handler).toBeDefined();
-
             const base = makeBase();
             const state = makeState([base]);
-            state.players['0'].discard = [];
+            state.players['0'].discard = [
+                makeCard('dis-1', 'steampunk_escape_hatch', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
+            ];
+            const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
 
-            const events = callHandler(handler!, {
-                state,
-                playerId: '0',
-                selectedValue: { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
-                random: dummyRandom,
-                now: 1000,
+            const executor = resolveAbility('steampunk_mechanic', 'onPlay')!;
+            const result = executor({
+                state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
+                baseIndex: 0, random: dummyRandom, now: 1000,
             });
+            const current = (result.matchState?.sys as any)?.interaction?.current;
+
+            const handler = getAbilityRuntimePromptHandler('steampunk_mechanic');
+            expect(handler).toBeDefined();
+
+            const staleState = {
+                ...result.matchState!,
+                core: {
+                    ...result.matchState!.core,
+                    players: {
+                        ...result.matchState!.core.players,
+                        '0': {
+                            ...result.matchState!.core.players['0'],
+                            discard: [],
+                        },
+                    },
+                },
+            } as any;
+
+            const resolved = handler!(
+                staleState,
+                '0',
+                { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
+                current?.data,
+                dummyRandom,
+                1001,
+            );
+            const events = resolved?.events ?? [];
 
             expect(events).toHaveLength(0);
         });
 
         test('steampunk_mechanic_target: 目标基地被对手 ornate_dome 封锁时不再附着', () => {
-            const handler = getInteractionHandler('steampunk_mechanic_target');
-            expect(handler).toBeDefined();
-
             const base = makeBase();
-            base.ongoingActions = [{
-                uid: 'dome-1',
-                defId: 'steampunk_ornate_dome',
-                ownerId: '1',
-                talentUsed: false,
-            } as any];
             const state = makeState([base]);
-            state.players['0'].hand = [
+            state.players['0'].discard = [
                 makeCard('dis-1', 'steampunk_escape_hatch', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
             ];
+            const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
 
-            const events = callHandler(handler!, {
-                state,
-                playerId: '0',
-                selectedValue: { baseIndex: 0 },
-                data: { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
-                random: dummyRandom,
-                now: 1000,
+            const executor = resolveAbility('steampunk_mechanic', 'onPlay')!;
+            const result = executor({
+                state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
+                baseIndex: 0, random: dummyRandom, now: 1000,
             });
+            const chooseActionInteraction = (result.matchState?.sys as any)?.interaction?.current;
+            const chooseActionHandler = getAbilityRuntimePromptHandler('steampunk_mechanic');
+            const chooseTargetHandler = getAbilityRuntimePromptHandler('steampunk_mechanic_target');
+            expect(chooseActionHandler).toBeDefined();
+            expect(chooseTargetHandler).toBeDefined();
+
+            const step1 = chooseActionHandler!(
+                result.matchState!,
+                '0',
+                { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
+                chooseActionInteraction?.data,
+                dummyRandom,
+                1001,
+            );
+            const chooseTargetInteraction = getInteractionsFromMS(step1!.state)[0];
+
+            const blockedState = {
+                ...step1!.state,
+                core: {
+                    ...step1!.state.core,
+                    bases: [{
+                        ...step1!.state.core.bases[0],
+                        ongoingActions: [{
+                            uid: 'dome-1',
+                            defId: 'steampunk_ornate_dome',
+                            ownerId: '1',
+                            talentUsed: false,
+                        } as any],
+                    }],
+                },
+            } as any;
+
+            const resolved = chooseTargetHandler!(
+                blockedState,
+                '0',
+                { baseIndex: 0 },
+                chooseTargetInteraction?.data,
+                dummyRandom,
+                1002,
+            );
+            const events = resolved?.events ?? [];
 
             expect(events).toHaveLength(0);
         });
 
         test('若所选行动不是可打到基地上的行动牌则不再恢复或打出', () => {
-            const handler = getInteractionHandler('steampunk_mechanic');
-            expect(handler).toBeDefined();
-
             const base = makeBase();
             const state = makeState([base]);
             state.players['0'].discard = [
+                makeCard('dis-1', 'steampunk_escape_hatch', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
                 makeCard('dis-3', 'steampunk_scrap_diving', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
             ];
+            const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
 
-            const events = callHandler(handler!, {
-                state,
-                playerId: '0',
-                selectedValue: { cardUid: 'dis-3', defId: 'steampunk_scrap_diving' },
-                random: dummyRandom,
-                now: 1000,
+            const executor = resolveAbility('steampunk_mechanic', 'onPlay')!;
+            const result = executor({
+                state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
+                baseIndex: 0, random: dummyRandom, now: 1000,
             });
+            const current = (result.matchState?.sys as any)?.interaction?.current;
+
+            const handler = getAbilityRuntimePromptHandler('steampunk_mechanic');
+            expect(handler).toBeDefined();
+
+            const resolved = handler!(
+                result.matchState!,
+                '0',
+                { cardUid: 'dis-3', defId: 'steampunk_scrap_diving' },
+                current?.data,
+                dummyRandom,
+                1001,
+            );
+            const events = resolved?.events ?? [];
 
             expect(events).toHaveLength(0);
         });
 
         test('steampunk_mechanic_target: 若待附着的 ongoing 已不在手牌则不再附着到基地', () => {
-            const handler = getInteractionHandler('steampunk_mechanic_target');
-            expect(handler).toBeDefined();
-
             const base = makeBase();
             const state = makeState([base]);
-            state.players['0'].hand = [];
+            state.players['0'].discard = [
+                makeCard('dis-1', 'steampunk_escape_hatch', 'action', '0', SMASHUP_FACTION_IDS.STEAMPUNKS),
+            ];
+            const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
 
-            const events = callHandler(handler!, {
-                state,
-                playerId: '0',
-                selectedValue: { baseIndex: 0 },
-                data: { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
-                random: dummyRandom,
-                now: 1000,
+            const executor = resolveAbility('steampunk_mechanic', 'onPlay')!;
+            const result = executor({
+                state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
+                baseIndex: 0, random: dummyRandom, now: 1000,
             });
+            const chooseActionInteraction = (result.matchState?.sys as any)?.interaction?.current;
+            const chooseActionHandler = getAbilityRuntimePromptHandler('steampunk_mechanic');
+            const chooseTargetHandler = getAbilityRuntimePromptHandler('steampunk_mechanic_target');
+            expect(chooseActionHandler).toBeDefined();
+            expect(chooseTargetHandler).toBeDefined();
+
+            const step1 = chooseActionHandler!(
+                result.matchState!,
+                '0',
+                { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
+                chooseActionInteraction?.data,
+                dummyRandom,
+                1001,
+            );
+            const chooseTargetInteraction = getInteractionsFromMS(step1!.state)[0];
+
+            const staleHandState = {
+                ...step1!.state,
+                core: {
+                    ...step1!.state.core,
+                    players: {
+                        ...step1!.state.core.players,
+                        '0': {
+                            ...step1!.state.core.players['0'],
+                            hand: [],
+                        },
+                    },
+                },
+            } as any;
+
+            const resolved = chooseTargetHandler!(
+                staleHandState,
+                '0',
+                { baseIndex: 0 },
+                chooseTargetInteraction?.data,
+                dummyRandom,
+                1002,
+            );
+            const events = resolved?.events ?? [];
 
             expect(events).toHaveLength(0);
         });
@@ -678,21 +774,62 @@ describe('蒸汽朋克 ongoing 能力', () => {
 
     describe('steampunk_change_of_venue: 换场', () => {
         test('steampunk_change_of_venue_choose_base: 若待重打的 ongoing 已不在手牌则不再附着', () => {
-            const handler = getInteractionHandler('steampunk_change_of_venue_choose_base');
-            expect(handler).toBeDefined();
-
-            const base = makeBase();
-            const state = makeState([base]);
-            state.players['0'].hand = [];
-
-            const events = callHandler(handler!, {
-                state,
-                playerId: '0',
-                selectedValue: { baseIndex: 0 },
-                data: { cardUid: 'ongoing-1', defId: 'steampunk_escape_hatch' },
-                random: dummyRandom,
-                now: 1000,
+            const base = makeBase({
+                ongoingActions: [{
+                    uid: 'ongoing-1',
+                    defId: 'steampunk_escape_hatch',
+                    ownerId: '0',
+                    talentUsed: false,
+                } as any],
             });
+            const state = makeState([base]);
+            const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+
+            const executor = resolveAbility('steampunk_change_of_venue', 'onPlay')!;
+            const result = executor({
+                state, matchState: ms, playerId: '0', cardUid: 'cov-1', defId: 'steampunk_change_of_venue',
+                baseIndex: 0, random: dummyRandom, now: 1000,
+            });
+            const chooseOngoingInteraction = (result.matchState?.sys as any)?.interaction?.current;
+
+            const chooseOngoingHandler = getAbilityRuntimePromptHandler('steampunk_change_of_venue');
+            const chooseBaseHandler = getAbilityRuntimePromptHandler('steampunk_change_of_venue_choose_base');
+            expect(chooseOngoingHandler).toBeDefined();
+            expect(chooseBaseHandler).toBeDefined();
+
+            const step1 = chooseOngoingHandler!(
+                result.matchState!,
+                '0',
+                { cardUid: 'ongoing-1', defId: 'steampunk_escape_hatch', ownerId: '0' },
+                chooseOngoingInteraction?.data,
+                dummyRandom,
+                1001,
+            );
+            const chooseBaseInteraction = getInteractionsFromMS(step1!.state)[0];
+
+            const staleHandState = {
+                ...step1!.state,
+                core: {
+                    ...step1!.state.core,
+                    players: {
+                        ...step1!.state.core.players,
+                        '0': {
+                            ...step1!.state.core.players['0'],
+                            hand: [],
+                        },
+                    },
+                },
+            } as any;
+
+            const resolved = chooseBaseHandler!(
+                staleHandState,
+                '0',
+                { baseIndex: 0 },
+                chooseBaseInteraction?.data,
+                dummyRandom,
+                1002,
+            );
+            const events = resolved?.events ?? [];
 
             expect(events).toHaveLength(0);
         });
@@ -702,6 +839,49 @@ describe('蒸汽朋克 ongoing 能力', () => {
         test('talent 能力已注册', () => {
             const executor = resolveAbility('steampunk_captain_ahab', 'talent');
             expect(executor).toBeDefined();
+        });
+
+        test('多个候选基地时创建 base interaction', () => {
+            const captain = makeMinion({ uid: 'ahab-1', defId: 'steampunk_captain_ahab', controller: '0', owner: '0' });
+            const state = makeState([
+                makeBase({ minions: [captain] }),
+                makeBase({ ongoingActions: [{ uid: 'ongoing-1', defId: 'steampunk_escape_hatch', ownerId: '0', talentUsed: false } as any] }),
+                makeBase({ ongoingActions: [{ uid: 'ongoing-2', defId: 'steampunk_difference_engine', ownerId: '0', talentUsed: false } as any] }),
+            ]);
+            const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+
+            const executor = resolveAbility('steampunk_captain_ahab', 'talent')!;
+            const result = executor({
+                state, matchState: ms, playerId: '0', cardUid: 'ahab-1', defId: 'steampunk_captain_ahab',
+                baseIndex: 0, random: dummyRandom, now: 1000,
+            });
+
+            const current = (result.matchState?.sys as any)?.interaction?.current;
+            expect(current).toBeDefined();
+            expect(current?.data?.sourceId).toBe('steampunk_captain_ahab');
+            expect(current?.data?.targetType).toBe('base');
+        });
+
+        test('唯一候选基地时直接移动，不创建 interaction', () => {
+            const captain = makeMinion({ uid: 'ahab-1', defId: 'steampunk_captain_ahab', controller: '0', owner: '0' });
+            const state = makeState([
+                makeBase({ minions: [captain] }),
+                makeBase({ ongoingActions: [{ uid: 'ongoing-1', defId: 'steampunk_escape_hatch', ownerId: '0', talentUsed: false } as any] }),
+                makeBase(),
+            ]);
+            const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+
+            const executor = resolveAbility('steampunk_captain_ahab', 'talent')!;
+            const result = executor({
+                state, matchState: ms, playerId: '0', cardUid: 'ahab-1', defId: 'steampunk_captain_ahab',
+                baseIndex: 0, random: dummyRandom, now: 1000,
+            });
+
+            expect((result.matchState?.sys as any)?.interaction?.current).toBeUndefined();
+            const moved = result.events.find(event => event.type === SU_EVENTS.MINION_MOVED) as any;
+            expect(moved).toBeDefined();
+            expect(moved.payload.fromBaseIndex).toBe(0);
+            expect(moved.payload.toBaseIndex).toBe(1);
         });
     });
 });
@@ -717,7 +897,6 @@ describe('食人花 ongoing 能力', () => {
         clearRegistry();
         clearInteractionHandlers();
         registerKillerPlantAbilities();
-        registerKillerPlantInteractionHandlers();
     });
 
     describe('killer_plant_deep_roots: 深根保护', () => {
@@ -900,22 +1079,42 @@ describe('食人花 ongoing 能力', () => {
         });
 
         test('嫩芽交互在卡已离开牌库后不会再次打出同一 UID', () => {
-            const handler = getInteractionHandler('killer_plant_sprout_search');
+            const handler = getAbilityRuntimePromptHandler('killer_plant_sprout_search');
             expect(handler).toBeDefined();
 
-            const state = makeState([makeBase()]);
-            state.players['0'].deck = [
+            const initialState = makeState([makeBase({
+                minions: [makeMinion({ defId: 'killer_plant_sprout', uid: 'sp-1', controller: '0', owner: '0' })],
+            })]);
+            initialState.players['0'].deck = [
+                makeCard('wl-1', 'killer_plant_water_lily', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+                makeCard('sp-1-deck', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+            ];
+            const staleState = makeState([makeBase()]);
+            staleState.players['0'].deck = [
                 makeCard('wl-2', 'killer_plant_water_lily', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
             ];
-
-            const events = callHandler(handler!, {
-                state,
+            const matchState = {
+                core: initialState,
+                sys: { phase: 'startTurn', interaction: { current: undefined, queue: [] } },
+            } as any;
+            const promptState = fireTriggers(initialState, 'onTurnStart', {
+                state: initialState,
+                matchState,
                 playerId: '0',
-                selectedValue: { cardUid: 'wl-1', defId: 'killer_plant_water_lily' },
-                data: { baseIndex: 0 },
                 random: dummyRandom,
-                now: 1000,
-            });
+                now: 999,
+            }).matchState as any;
+            const prompt = promptState?.sys?.interaction?.current;
+            expect(prompt?.data?.sourceId).toBe('killer_plant_sprout_search');
+
+            const events = handler!(
+                { ...promptState, core: staleState },
+                '0',
+                { cardUid: 'wl-1', defId: 'killer_plant_water_lily' },
+                prompt.data,
+                dummyRandom,
+                1000,
+            )?.events ?? [];
 
             expect(events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
             expect(events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
@@ -973,23 +1172,41 @@ describe('食人花 ongoing 能力', () => {
         });
 
         test('venus man trap 交互响应会带上基地信息', () => {
-            const handler = getInteractionHandler('killer_plant_venus_man_trap_search');
+            const handler = getAbilityRuntimePromptHandler('killer_plant_venus_man_trap_search');
             expect(handler).toBeDefined();
 
             const base = makeBase({ defId: 'base_crypt' });
             const state = makeState([base]);
             state.players['0'].deck = [
                 makeCard('sp-1', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+                makeCard('sp-2', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
             ];
-
-            const events = callHandler(handler!, {
+            const executor = resolveAbility('killer_plant_venus_man_trap', 'talent')!;
+            const matchState = {
+                core: state,
+                sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
+            } as any;
+            const promptState = executor({
                 state,
+                matchState,
                 playerId: '0',
-                selectedValue: { cardUid: 'sp-1', defId: 'killer_plant_sprout' },
-                data: { baseIndex: 0 },
+                cardUid: 'vmt-1',
+                defId: 'killer_plant_venus_man_trap',
+                baseIndex: 0,
                 random: dummyRandom,
-                now: 1000,
-            });
+                now: 999,
+            } as any).matchState as any;
+            const prompt = promptState?.sys?.interaction?.current;
+            expect(prompt?.data?.sourceId).toBe('killer_plant_venus_man_trap_search');
+
+            const events = handler!(
+                promptState,
+                '0',
+                { cardUid: 'sp-1', defId: 'killer_plant_sprout' },
+                prompt.data,
+                dummyRandom,
+                1000,
+            )?.events ?? [];
 
             const playedEvent = events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
             expect(playedEvent).toBeDefined();
@@ -999,22 +1216,45 @@ describe('食人花 ongoing 能力', () => {
         });
 
         test('venus man trap 交互目标已离开牌库时不会重复打出', () => {
-            const handler = getInteractionHandler('killer_plant_venus_man_trap_search');
+            const handler = getAbilityRuntimePromptHandler('killer_plant_venus_man_trap_search');
             expect(handler).toBeDefined();
 
-            const state = makeState([makeBase()]);
-            state.players['0'].deck = [
-                makeCard('sp-2', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+            const initialState = makeState([makeBase()]);
+            initialState.players['0'].deck = [
+                makeCard('sp-1', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+                makeCard('sp-3', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
             ];
-
-            const events = callHandler(handler!, {
-                state,
+            const staleState = makeState([makeBase()]);
+            staleState.players['0'].deck = [
+                makeCard('sp-2', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+                makeCard('wl-2', 'killer_plant_water_lily', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
+            ];
+            const executor = resolveAbility('killer_plant_venus_man_trap', 'talent')!;
+            const matchState = {
+                core: initialState,
+                sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } },
+            } as any;
+            const promptState = executor({
+                state: initialState,
+                matchState,
                 playerId: '0',
-                selectedValue: { cardUid: 'sp-1', defId: 'killer_plant_sprout' },
-                data: { baseIndex: 0 },
+                cardUid: 'vmt-1',
+                defId: 'killer_plant_venus_man_trap',
+                baseIndex: 0,
                 random: dummyRandom,
-                now: 1000,
-            });
+                now: 999,
+            } as any).matchState as any;
+            const prompt = promptState?.sys?.interaction?.current;
+            expect(prompt?.data?.sourceId).toBe('killer_plant_venus_man_trap_search');
+
+            const events = handler!(
+                { ...promptState, core: staleState },
+                '0',
+                { cardUid: 'sp-1', defId: 'killer_plant_sprout' },
+                prompt.data,
+                dummyRandom,
+                1000,
+            )?.events ?? [];
 
             expect(events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
             expect(events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
@@ -1053,7 +1293,6 @@ describe('印斯茅斯 ongoing 能力', () => {
         clearRegistry();
         clearInteractionHandlers();
         registerInnsmouthAbilities();
-        registerInnsmouthInteractionHandlers();
     });
 
     describe('innsmouth_in_plain_sight: 众目睽睽', () => {
@@ -1150,13 +1389,8 @@ describe('印斯茅斯 ongoing 能力', () => {
             const handler = getInteractionHandler('innsmouth_return_to_the_sea');
             expect(handler).toBeDefined();
 
-            const liveEvents = callHandler(handler!, {
-                state,
-                playerId: '0',
-                selectedValue: [firstOption.value],
-                random: dummyRandom,
-                now: 1001,
-            });
+            const liveResult = handler!(result.matchState as any, '0', [firstOption.value], interaction.data, dummyRandom, 1001);
+            const liveEvents = liveResult?.events ?? [];
             expect(liveEvents).toHaveLength(1);
             expect(liveEvents[0].type).toBe(SU_EVENTS.MINION_RETURNED);
             expect((liveEvents[0] as any).payload.fromBaseIndex).toBe(0);
@@ -1173,13 +1407,9 @@ describe('印斯茅斯 ongoing 能力', () => {
                     },
                 },
             });
-            const staleEvents = callHandler(handler!, {
-                state: staleState,
-                playerId: '0',
-                selectedValue: [firstOption.value],
-                random: dummyRandom,
-                now: 1002,
-            });
+            const staleMs = { core: staleState, sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } } } as any;
+            const staleResult = handler!(staleMs, '0', [firstOption.value], interaction.data, dummyRandom, 1002);
+            const staleEvents = staleResult?.events ?? [];
             expect(staleEvents).toHaveLength(0);
         });
     });
@@ -1327,22 +1557,40 @@ describe('米斯卡塔尼克 新增能力', () => {
             });
             const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
 
+            const executor = resolveAbility('miskatonic_researcher_pod', 'onPlay')!;
+            const firstStep = executor({
+                state,
+                matchState: ms,
+                playerId: '0',
+                cardUid: 'res-pod-1',
+                defId: 'miskatonic_researcher_pod',
+                baseIndex: 0,
+                random: dummyRandom,
+                now: 1000,
+            });
+            const current = (firstStep.matchState?.sys as any)?.interaction?.current;
+
             const step1 = getInteractionHandler('miskatonic_researcher_pod');
             expect(step1).toBeDefined();
-            const step1Result = step1!(ms, '0', { draw: true }, undefined, dummyRandom, 1001);
-            const chooseMinion = (step1Result.state?.sys as any)?.interaction?.current;
+            const step1Result = step1!(firstStep.matchState as any, '0', { draw: true }, current?.data, dummyRandom, 1001);
+            const interactionState = (step1Result.state?.sys as any)?.interaction;
+            const chooseMinion = interactionState?.current?.data?.sourceId === 'miskatonic_researcher_pod_choose_minion'
+                ? interactionState.current
+                : (interactionState?.queue ?? []).find((entry: any) => entry?.data?.sourceId === 'miskatonic_researcher_pod_choose_minion');
             expect(chooseMinion).toBeDefined();
             expect(chooseMinion?.data?.sourceId).toBe('miskatonic_researcher_pod_choose_minion');
 
             const step2 = getInteractionHandler('miskatonic_researcher_pod_choose_minion');
             expect(step2).toBeDefined();
-            const events = callHandler(step2!, {
-                state,
-                playerId: '0',
-                selectedValue: { minionUid: 'm-1', baseIndex: 0 },
-                random: dummyRandom,
-                now: 1002,
-            });
+            const step2Result = step2!(
+                step1Result.state as any,
+                '0',
+                { minionUid: 'm-1', baseIndex: 0 },
+                chooseMinion?.data,
+                dummyRandom,
+                1002,
+            );
+            const events = step2Result?.events ?? [];
 
             expect(events.some(e => e.type === SU_EVENTS.MADNESS_DRAWN)).toBe(true);
             expect(events.some(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
@@ -1411,13 +1659,26 @@ describe('米斯卡塔尼克 新增能力', () => {
                     },
                 },
             });
+            const executor = resolveAbility('miskatonic_field_trip_pod', 'onPlay')!;
+            const matchState = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+            const firstStep = executor({
+                state,
+                matchState,
+                playerId: '0',
+                cardUid: 'ft-pod-1',
+                defId: 'miskatonic_field_trip_pod',
+                random: dummyRandom,
+                now: 1002,
+            });
+            const current = (firstStep.matchState?.sys as any)?.interaction?.current;
             const handler = getInteractionHandler('miskatonic_field_trip_pod');
             expect(handler).toBeDefined();
 
             const events = callHandler(handler!, {
-                state,
+                state: firstStep.matchState?.core ?? state,
                 playerId: '0',
                 selectedValue: { skip: true },
+                data: current?.data,
                 random: dummyRandom,
                 now: 1003,
             });
@@ -1432,16 +1693,33 @@ describe('米斯卡塔尼克 新增能力', () => {
             const state = makeState([base], {
                 madnessDeck: [MADNESS_CARD_DEF_ID, MADNESS_CARD_DEF_ID, MADNESS_CARD_DEF_ID],
             });
-            const handler = getInteractionHandler('miskatonic_things_best_not_known_pod_draw');
-            expect(handler).toBeDefined();
-
-            const events = callHandler(handler!, {
+            const executor = resolveAbility('miskatonic_things_best_not_known_pod', 'special');
+            expect(executor).toBeDefined();
+            const matchState = { core: state, sys: { phase: 'beforeScoring', interaction: { current: undefined, queue: [] } } } as any;
+            const firstStep = executor!({
                 state,
+                matchState,
                 playerId: '0',
-                selectedValue: { count: 2, minionUid: 'target-1', baseIndex: 0 },
+                cardUid: 'tbnk-1',
+                defId: 'miskatonic_things_best_not_known_pod',
+                baseIndex: 0,
                 random: dummyRandom,
                 now: 1004,
             });
+            const interactionState = firstStep.matchState?.sys.interaction;
+            const current = interactionState?.current ?? interactionState?.queue?.[0];
+            const handler = getInteractionHandler('miskatonic_things_best_not_known_pod_draw');
+            expect(handler).toBeDefined();
+
+            const result = handler!(
+                (firstStep.matchState ?? matchState) as any,
+                '0',
+                { count: 2 },
+                current?.data as any,
+                dummyRandom,
+                1004,
+            );
+            const events = result?.events ?? [];
 
             expect(events.some(e => e.type === SU_EVENTS.MADNESS_DRAWN)).toBe(true);
             expect(events.some(e => e.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(true);
@@ -1470,21 +1748,42 @@ describe('米斯卡塔尼克 新增能力', () => {
                     },
                 },
             });
+            const talentExecutor = resolveAbility('miskatonic_librarian_pod', 'talent')!;
             const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
-
+            const firstStep = talentExecutor({
+                state,
+                matchState: ms,
+                playerId: '0',
+                cardUid: 'lib-pod-1',
+                defId: 'miskatonic_librarian_pod',
+                random: dummyRandom,
+                now: 1005,
+            });
+            const current = (firstStep.matchState?.sys as any)?.interaction?.current;
             const modeHandler = getInteractionHandler('miskatonic_librarian_pod');
             expect(modeHandler).toBeDefined();
-            const modeResult = modeHandler!(ms, '0', { mode: 'extra' }, undefined, dummyRandom, 1005);
-            const chooseMadness = (modeResult.state?.sys as any)?.interaction?.current;
+            const modeResult = modeHandler!(
+                firstStep.matchState as any,
+                '0',
+                { mode: 'extra' },
+                current?.data,
+                dummyRandom,
+                1005,
+            );
+            const modeInteraction = (modeResult.state?.sys as any)?.interaction;
+            const chooseMadness = modeInteraction?.current?.data?.sourceId === 'miskatonic_librarian_pod_play_madness'
+                ? modeInteraction.current
+                : (modeInteraction?.queue ?? []).find((entry: any) => entry?.data?.sourceId === 'miskatonic_librarian_pod_play_madness');
             expect(chooseMadness).toBeDefined();
             expect(chooseMadness?.data?.sourceId).toBe('miskatonic_librarian_pod_play_madness');
 
             const playMadnessHandler = getInteractionHandler('miskatonic_librarian_pod_play_madness');
             expect(playMadnessHandler).toBeDefined();
             const events = callHandler(playMadnessHandler!, {
-                state,
+                state: modeResult.state?.core ?? state,
                 playerId: '0',
                 selectedValue: { cardUid: 'mad1' },
+                data: chooseMadness?.data,
                 random: dummyRandom,
                 now: 1006,
             });

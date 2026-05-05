@@ -26,9 +26,12 @@ interface Props {
     core: SmashUpCore;
     dispatch: (type: string, payload?: unknown) => void;
     playerID: PlayerId | null;
+    playerNames: Record<string, string>;
+    playerOrder: string[];
+    getPlayerOrderLabel: (playerId: string | null | undefined) => string;
 }
 
-export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) => {
+export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, playerNames, playerOrder, getPlayerOrderLabel }) => {
     const { t, i18n } = useTranslation('game-smashup');
     const navigate = useNavigate();
     const selectionState = core.factionSelection;
@@ -185,7 +188,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                             <div className="flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
                                 <span className="text-slate-800 font-bold uppercase text-[10px] tracking-widest">
-                                    {t('ui.waiting_for_player', { id: currentPlayerId })}
+                                    {t('ui.waiting_for_player', {
+                                        id: playerNames[currentPlayerId] ?? `P${Number(currentPlayerId) + 1}`,
+                                        player: playerNames[currentPlayerId] ?? `P${Number(currentPlayerId) + 1}`,
+                                        defaultValue: '正在等待 {{player}}',
+                                    })}
                                 </span>
                             </div>
                         </motion.div>
@@ -257,7 +264,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                         <Lock size={24} className="text-white" strokeWidth={2.5} />
                                     </div>
                                     <span className="font-black text-white text-xs uppercase tracking-tight">
-                                        {t('ui.player_taken', { id: ownerId })}
+                                        {t('ui.player_taken', {
+                                            id: ownerId ? (playerNames[ownerId] ?? `P${Number(ownerId) + 1}`) : '',
+                                            player: ownerId ? (playerNames[ownerId] ?? `P${Number(ownerId) + 1}`) : '',
+                                            defaultValue: '{{player}} 已占领',
+                                        })}
                                     </span>
                                 </div>
                             )}
@@ -309,9 +320,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
             data-testid="faction-selection-player-rail"
         >
             <div className={useDesktopLikeLandscapeLayout ? 'max-w-6xl mx-auto flex items-end justify-center gap-5 px-3' : 'max-w-7xl mx-auto flex items-end justify-center gap-3 px-3 lg:gap-8 lg:px-6'}>
-                {core.turnOrder.map((pid, pidx) => {
+                {playerOrder.map((pid, pidx) => {
                     const selections = selectionState.playerSelections[pid] || [];
                     const isCurrent = pid === currentPlayerId;
+                    const displayName = playerNames[pid] ?? `P${Number(pid) + 1}`;
+                    const badgeLabel = getPlayerOrderLabel(pid);
 
                     return (
                         <motion.div
@@ -336,7 +349,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                                 ${useDesktopLikeLandscapeLayout ? 'w-11 h-11 text-[13px]' : 'w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 text-sm sm:text-base md:text-lg'}
                                 ${pid === '0' ? 'bg-red-500' : pidx === 1 ? 'bg-blue-500' : 'bg-green-500'}
                             `}>
-                                {t('ui.player_short', { id: pid })}
+                                {badgeLabel}
                             </div>
 
                             <div className={useDesktopLikeLandscapeLayout ? 'flex gap-2 shrink-0' : 'flex gap-1.5 sm:gap-2'}>
@@ -368,8 +381,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID }) 
                             </div>
 
                             <div className={useDesktopLikeLandscapeLayout ? 'flex min-w-0 flex-col items-center leading-none' : 'flex flex-col items-center'}>
-                                <span className={`${useDesktopLikeLandscapeLayout ? 'text-[10.5px]' : 'text-[10px] sm:text-[11px]'} font-black uppercase tracking-tight sm:tracking-tighter leading-none ${isCurrent ? 'text-amber-800' : 'text-slate-700'}`}>
-                                    {t('ui.player_short', { id: pid })}
+                                <span className={`${useDesktopLikeLandscapeLayout ? 'max-w-[6.5rem] text-[10.5px]' : 'max-w-[6rem] text-[10px] sm:text-[11px]'} truncate font-black tracking-tight sm:tracking-tighter leading-none ${isCurrent ? 'text-amber-800' : 'text-slate-700'}`}>
+                                    {displayName}
                                 </span>
                                 {isCurrent && (
                                     <span className={useDesktopLikeLandscapeLayout

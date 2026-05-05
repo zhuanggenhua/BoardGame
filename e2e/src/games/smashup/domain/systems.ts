@@ -23,7 +23,9 @@ import type {
     CardToDeckTopEvent,
 } from './types';
 import { getInteractionHandler } from './abilityInteractionHandlers';
+import { resolveAbilityRuntimePrompt } from './abilityRuntime';
 import { addPowerCounter, buildValidatedMoveEvents } from './abilityHelpers';
+import { resumePendingBranchingChoiceFrames } from './branchingChoice';
 import { SU_EVENT_TYPES } from './events';
 import { reduce } from './reduce';
 import { resolveLiveBaseIndex } from './utils';
@@ -37,6 +39,7 @@ import {
     updateScoringSession,
 } from './scoringSession';
 import { getCardDef } from '../data/cards';
+import { createFrankensteinBodyShopDistributionInteraction } from '../abilities/frankenstein';
 
 const BODY_SHOP_PENDING_DISTRIBUTIONS_KEY = '_pendingBodyShopDistributions';
 
@@ -148,29 +151,11 @@ function materializeBodyShopDistribution(
         };
     }
 
-    const options = candidates.map((candidate, index) => ({
-        id: `minion-${index}`,
-        label: candidate.label,
-        value: {
-            minionUid: candidate.uid,
-            minionDefId: candidate.defId,
-            baseIndex: candidate.baseIndex,
-            remaining: pending.totalCounters,
-        },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
-
-    const interaction = createSimpleChoice(
-        `frankenstein_body_shop_distribute_${timestamp}`,
-        pending.playerId,
-        `选择随从放置+1指示物（剩余 ${pending.totalCounters} 个）`,
-        options,
-        { sourceId: 'frankenstein_body_shop_distribute', targetType: 'minion' },
-    );
-
     return {
-        state: queueInteraction(state, interaction),
+        state: queueInteraction(
+            state,
+            createFrankensteinBodyShopDistributionInteraction(state, pending, timestamp),
+        ),
         events: [],
     };
 }
@@ -458,20 +443,28 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                     }
 
                     if (payload.sourceId) {
-                        const handler = getInteractionHandler(payload.sourceId);
-                        if (handler) {
+                        const runtimeResult = resolveAbilityRuntimePrompt(
+                            newState,
+                            payload.playerId,
+                            resolvedValue,
+                            payload.interactionData,
+                            random,
+                            eventTimestamp,
+                        );
+                        const handler = runtimeResult ? undefined : getInteractionHandler(payload.sourceId);
+                        if (runtimeResult || handler) {
                             const activeSys = newState.sys as SmashUpSystemState;
                             const startTurnWindowActive =
                                 newState.sys.phase === 'startTurn'
                                 || Boolean(activeSys._smashupStartTurnWindowActive);
 
-                            const result = handler(
+                            const result = runtimeResult ?? handler!(
                                 newState,
                                 payload.playerId,
                                 resolvedValue,
                                 payload.interactionData,
                                 random,
-                                eventTimestamp
+                                eventTimestamp,
                             );
 
                             if (result) {
@@ -696,6 +689,16 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                 if (reactionQueueResult) {
                     newState = reactionQueueResult.state;
                     nextEvents.push(...reactionQueueResult.events as GameEvent[]);
+                }
+            }
+
+            if (nextEvents.length === 0) {
+                const resumedBranchingState = resumePendingBranchingChoiceFrames(
+                    newState as MatchState<SmashUpCore>,
+                    latestTimestamp,
+                );
+                if (resumedBranchingState !== newState) {
+                    newState = resumedBranchingState;
                 }
             }
 

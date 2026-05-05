@@ -7,8 +7,6 @@ import type { StatusAtlases } from './statusEffects';
 import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
 import { UI_Z_INDEX } from '../../../core';
 import { resolveI18nList } from './utils';
-import { OpponentHeader } from './OpponentHeader';
-import type { HeroState } from '../types';
 
 interface ChoiceOption {
     id: string;
@@ -33,7 +31,6 @@ interface SliderConfig {
 interface ChoiceData {
     title: string;
     options: ChoiceOption[];
-    sourceAbilityId?: string;
     /**
      * slider 模式配置。存在时渲染滑动条而非按钮列表。
      * 约定：options[0] = 确认选项（value=max），options[last] = 跳过选项（value=0）
@@ -57,10 +54,6 @@ export const ChoiceModal = ({
     onResolveWithValue,
     locale,
     statusIconAtlas,
-    currentPlayerId,
-    players,
-    playerNames,
-    teamIdByPlayerId,
 }: {
     choice: ChoiceData | null | undefined;
     canResolve: boolean;
@@ -70,10 +63,6 @@ export const ChoiceModal = ({
     onResolveWithValue?: (optionId: string, mergedValue: unknown) => void;
     locale?: string;
     statusIconAtlas?: StatusAtlases | null;
-    currentPlayerId?: string;
-    players?: Record<string, HeroState>;
-    playerNames?: Record<string, string>;
-    teamIdByPlayerId?: Record<string, string>;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     // 防御性检查：如果 choice 存在但 options 为空，不显示模态框
@@ -115,21 +104,12 @@ export const ChoiceModal = ({
     const skipLabel = choice?.slider?.skipLabelKey
         ? translateRuntimeKey(t, choice.slider.skipLabelKey, { defaultValue: choice.slider.skipLabelKey })
         : skipOption ? resolveOptionLabel(skipOption) : '';
-    const isTargetChoice = Boolean(
-        choice
-        && choice.sourceAbilityId === 'targeting-roll'
-        && currentPlayerId
-        && players
-        && choice.options.length > 0
-        && choice.options.every((option) => option.customId?.startsWith('select-target:'))
-    );
 
     return (
         <GameModal
             isOpen={isOpen}
             title={t('choices.title')}
-            width={isTargetChoice ? 'xl' : 'md'}
-            className={isTargetChoice ? 'max-w-4xl' : undefined}
+            width="md"
             closeOnBackdrop={false}
         >
             <div className="flex flex-col gap-6 w-full items-center">
@@ -178,17 +158,6 @@ export const ChoiceModal = ({
                             t={t}
                         />
                     )
-                ) : isTargetChoice && choice && currentPlayerId && players ? (
-                    <TargetChoicePanel
-                        choice={choice}
-                        canResolve={canResolve}
-                        onResolve={onResolve}
-                        players={players}
-                        playerNames={playerNames}
-                        currentPlayerId={currentPlayerId}
-                        teamIdByPlayerId={teamIdByPlayerId}
-                        locale={locale}
-                    />
                 ) : (
                     (() => {
                         // 将选项分为 token 图标和普通按钮（skip/cancel 等）
@@ -251,81 +220,6 @@ export const ChoiceModal = ({
                 )}
             </div>
         </GameModal>
-    );
-};
-
-/** 可点击的 Token 图标选项（带悬浮 tooltip） */
-const TargetChoicePanel = ({
-    choice,
-    canResolve,
-    onResolve,
-    players,
-    playerNames,
-    currentPlayerId,
-    teamIdByPlayerId,
-    locale,
-}: {
-    choice: ChoiceData;
-    canResolve: boolean;
-    onResolve: (optionId: string) => void;
-    players: Record<string, HeroState>;
-    playerNames?: Record<string, string>;
-    currentPlayerId: string;
-    teamIdByPlayerId?: Record<string, string>;
-    locale?: string;
-}) => {
-    const { t } = useTranslation('game-dicethrone');
-    const resolveTone = (targetPlayerId: string): 'ally' | 'enemy' => {
-        const currentTeamId = teamIdByPlayerId?.[currentPlayerId];
-        const targetTeamId = teamIdByPlayerId?.[targetPlayerId];
-        if (currentTeamId && targetTeamId && currentTeamId === targetTeamId) {
-            return 'ally';
-        }
-        return 'enemy';
-    };
-
-    return (
-        <div className="w-full max-w-[42rem] flex flex-col gap-3" data-testid="dt-target-choice-panel">
-            {choice.options.map((option) => {
-                const targetPlayerId = option.customId?.slice('select-target:'.length);
-                if (!targetPlayerId) return null;
-
-                const targetPlayer = players[targetPlayerId];
-                if (!targetPlayer) return null;
-
-                return (
-                    <div key={option.id} className="relative w-full">
-                        <OpponentHeader
-                            opponent={targetPlayer}
-                            playerId={targetPlayerId}
-                            opponentName={playerNames?.[targetPlayerId] ?? `P${Number(targetPlayerId) + 1}`}
-                            viewMode="opponent"
-                            isOpponentShaking={false}
-                            shouldAutoObserve={false}
-                            onToggleView={() => {
-                                if (!canResolve || option.disabled) return;
-                                onResolve(option.id);
-                            }}
-                            tone={resolveTone(targetPlayerId)}
-                            selected={!option.disabled}
-                            observed={false}
-                            compact={false}
-                            locale={locale}
-                            layout="inline"
-                            allowPointerEvents
-                            containerClassName="w-full"
-                            disabled={option.disabled}
-                            testId={`dt-target-option-${targetPlayerId}`}
-                        />
-                        {option.disabled && (
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-black/55 px-3 py-1 text-[11px] font-bold tracking-[0.18em] text-slate-300">
-                                {t('selection.targetOptionDisabled')}
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
-        </div>
     );
 };
 

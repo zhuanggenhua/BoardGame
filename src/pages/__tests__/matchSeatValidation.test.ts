@@ -19,13 +19,21 @@ import {
 import {
     applyAiAutoRecoveryRejection,
     finalizeOnlineAiResolutionConfirmation,
+    resolveOnlineAiAutoRecoveryCompletionNotice,
     resolveForceAdvancePhaseAfterRecovery,
     resolveForceEndTurnForStalledAi,
     resolveForceSkippableHiddenAiInteraction,
     shouldSilentlyRetryOnlineAiBatchRejection,
     submitOnlineAiResolution,
 } from '../onlineAiForceSkip';
+import {
+    resolveOnlineAiEffectiveSeatState,
+    resolveOnlineAiEffectiveSeatStates,
+    shouldStageOnlineAiSeatOverrideFromConfirmedState,
+} from '../MatchRoom';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
+import { resolveMatchSeatSwapContext } from '../../components/game/framework/matchSeatSwap';
+import { findMatchPlayerInfo, resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';
 import { resolveExitMatchErrorMessageKey } from '../../components/lobby/roomActions';
 
 type Player = { id: number; name?: string | null };
@@ -54,6 +62,42 @@ const buildGameManifest = (): GameManifestEntry => ({
         remoteAi: false,
     },
 });
+
+const buildOnlineAiSeatState = (args?: {
+    nextId?: number;
+    phase?: string;
+    currentPlayerId?: string;
+    interactionId?: string;
+    interactionSourceId?: string;
+}): MatchState<unknown> => ({
+    core: {
+        currentPlayerId: args?.currentPlayerId ?? '1',
+    },
+    sys: {
+        phase: args?.phase ?? 'playCards',
+        turnNumber: 1,
+        decisionEpoch: 0,
+        eventStream: {
+            nextId: args?.nextId ?? 1,
+            entries: [],
+        },
+        interaction: {
+            current: args?.interactionId
+                ? {
+                    id: args.interactionId,
+                    sourceId: args.interactionSourceId ?? args.interactionId,
+                    data: {
+                        sourceId: args.interactionSourceId ?? args.interactionId,
+                        options: [],
+                    },
+                }
+                : undefined,
+            queue: [],
+            isBlocked: Boolean(args?.interactionId),
+        },
+        responseWindow: {},
+    },
+}) as MatchState<unknown>;
 
 describe('validateStoredMatchSeat', () => {
     it('缺失本地信息时不清理', () => {
@@ -111,6 +155,118 @@ describe('validateStoredMatchSeat', () => {
     });
 });
 
+describe('resolveMatchSeatSwapContext', () => {
+    it('应优先使用 seatingOrder，并在 setup 阶段暴露请求型换座上下文', () => {
+        const context = resolveMatchSeatSwapContext({
+            gameId: 'dicethrone',
+            myPlayerId: '1',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+                '2': { type: 'human' },
+            },
+            state: {
+                sys: { phase: 'setup' },
+                core: {
+                    seatingOrder: ['2', '1', '0'],
+                    turnOrder: ['0', '1', '2'],
+                    players: { '0': {}, '1': {}, '2': {} },
+                    seatSwapRequest: { requesterId: '1', targetPlayerId: '2' },
+                },
+            } as MatchState<unknown>,
+        });
+
+        expect(context).toEqual({
+            seatSwapMode: 'request',
+            seatingOrder: ['2', '1', '0'],
+            seatControllerTypeByPlayerId: {
+                '0': 'human',
+                '1': 'local-ai',
+                '2': 'human',
+            },
+            pendingSeatSwapRequest: {
+                requesterId: '1',
+                targetPlayerId: '2',
+            },
+            requestSeatSwapCommandType: 'REQUEST_SEAT_SWAP',
+            respondSeatSwapCommandType: 'RESPOND_SEAT_SWAP',
+            cancelSeatSwapCommandType: 'CANCEL_SEAT_SWAP',
+        });
+    });
+
+    it('当没有显式座位顺序时，应回退到 startingPlayerId 旋转后的玩家顺序', () => {
+        const context = resolveMatchSeatSwapContext({
+            gameId: 'summonerwars',
+            myPlayerId: '0',
+            state: {
+                sys: { phase: 'factionSelect' },
+                core: {
+                    hostStarted: false,
+                    startingPlayerId: '1',
+                    selectedFactions: { '0': 'phoenixelves', '1': 'guilddwarves' },
+                    players: { '0': {}, '1': {}, '2': {} },
+                },
+            } as MatchState<unknown>,
+        });
+
+        expect(context?.seatSwapMode).toBe('instant');
+        expect(context?.seatingOrder).toEqual(['1', '0', '2']);
+        expect(context?.pendingSeatSwapRequest).toBeNull();
+        expect(context?.requestSeatSwapCommandType).toBe('sw:swap_seat');
+        expect(context?.respondSeatSwapCommandType).toBeNull();
+        expect(context?.cancelSeatSwapCommandType).toBeNull();
+    });
+
+    it('应为大杀四方解析即时换座命令类型', () => {
+        const context = resolveMatchSeatSwapContext({
+            gameId: 'smashup',
+            myPlayerId: '0',
+            state: {
+                sys: { phase: 'factionSelect' },
+                core: {
+                    hostStarted: false,
+                    selectedFactions: { '0': 'wizards', '1': 'dinosaurs' },
+                    players: { '0': {}, '1': {} },
+                },
+            } as MatchState<unknown>,
+        });
+
+        expect(context?.requestSeatSwapCommandType).toBe('su:swap_seat');
+        expect(context?.respondSeatSwapCommandType).toBeNull();
+        expect(context?.cancelSeatSwapCommandType).toBeNull();
+    });
+
+    it('不在可换座阶段时应返回 null', () => {
+        const context = resolveMatchSeatSwapContext({
+            gameId: 'dicethrone',
+            myPlayerId: '0',
+            state: {
+                sys: { phase: 'main1' },
+                core: {
+                    seatingOrder: ['0', '1'],
+                    players: { '0': {}, '1': {} },
+                },
+            } as MatchState<unknown>,
+        });
+
+        expect(context).toBeNull();
+    });
+});
+
+describe('matchPlayers helpers', () => {
+    it('应按 playerId 查找 transport 玩家并读取连接状态', () => {
+        const players = [
+            { id: 0, name: 'Alice', isConnected: true },
+            { id: 2, name: 'Bot', isConnected: false },
+        ];
+
+        expect(findMatchPlayerInfo(players, '2')).toEqual({ id: 2, name: 'Bot', isConnected: false });
+        expect(resolveMatchPlayerConnected(players, '2', true)).toBe(false);
+        expect(resolveMatchPlayerConnected(players, '1', true)).toBe(true);
+        expect(resolveMatchPlayerConnected(players, '1', false)).toBe(false);
+    });
+});
+
 describe('isMatchNotFoundError', () => {
     it('识别 404 异常对象', () => {
         expect(isMatchNotFoundError({ status: 404, message: 'Match not found' })).toBe(true);
@@ -122,6 +278,65 @@ describe('isMatchNotFoundError', () => {
 
     it('忽略非 404 错误', () => {
         expect(isMatchNotFoundError(new Error('500: network error'))).toBe(false);
+    });
+});
+
+describe('resolveOnlineAiAutoRecoveryCompletionNotice', () => {
+    const seatControllers: Record<string, AiSeatController> = {
+        '0': { type: 'human' },
+        '1': { type: 'local-ai', policyId: 'baseline' },
+    };
+
+    it('响应窗口恢复完成后如果已经切回人类回合，不再弹自动提示', () => {
+        const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
+            candidateReason: 'response-window',
+            authoritativeState: {
+                core: {
+                    activePlayerId: '0',
+                },
+                sys: {
+                    phase: 'main1',
+                },
+            } as MatchState<unknown>,
+            seatControllers,
+        });
+
+        expect(notice).toBeNull();
+    });
+
+    it('交互超时仍停留在 AI 流程时，显示自动跳过提示', () => {
+        const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
+            candidateReason: 'visible-interaction',
+            authoritativeState: {
+                core: {
+                    activePlayerId: '1',
+                },
+                sys: {
+                    phase: 'main2',
+                },
+            } as MatchState<unknown>,
+            seatControllers,
+        });
+
+        expect(notice).toEqual({
+            tone: 'info',
+            title: 'AI 响应超时',
+            message: 'AI 已自动跳过。',
+        });
+    });
+
+    it('真正的 active-turn 强制推进仍保留强制结束回合提示', () => {
+        const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
+            candidateReason: 'active-turn',
+            authoritativeState: null,
+            seatControllers,
+        });
+
+        expect(notice).toEqual({
+            tone: 'warning',
+            title: 'AI 强制结束回合',
+            message: 'AI 已强制结束回合。',
+        });
     });
 });
 
@@ -1587,10 +1802,84 @@ describe('resolveNextAiAction 在线视角', () => {
 });
 
 describe('submitOnlineAiResolution', () => {
+    const buildResolution = (args?: {
+        attemptKey?: string;
+        commands?: Array<{ type: string; payload: unknown }>;
+    }) => ({
+        playerId: '1',
+        attemptKey: args?.attemptKey ?? 'attempt-default',
+        source: 'local-ai' as const,
+        action: {
+            actionId: 'respond-choice',
+            kind: 'interaction-choice' as const,
+            label: '响应',
+            commands: args?.commands ?? [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-1' } }],
+        },
+    });
+
+    it('effective seat state 应优先读取临时 override，供 confirmed 后下一拍继续决策', () => {
+        const staleSeatState = buildOnlineAiSeatState({
+            nextId: 3,
+            interactionId: 'stale-hidden',
+            interactionSourceId: 'wizard_sacrifice',
+        });
+        const confirmedSeatState = buildOnlineAiSeatState({
+            nextId: 4,
+        });
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': staleSeatState },
+        })).toBe(confirmedSeatState);
+    });
+
+    it('构建 force-skip/force-end-turn seatStates 时应统一走 effective seat state', () => {
+        const staleSeatState = buildOnlineAiSeatState({
+            nextId: 5,
+            interactionId: 'stale-hidden',
+            interactionSourceId: 'wizard_sacrifice',
+        });
+        const confirmedSeatState = buildOnlineAiSeatState({
+            nextId: 6,
+        });
+
+        expect(resolveOnlineAiEffectiveSeatStates({
+            playerIds: ['1', '2'],
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': staleSeatState, '2': null },
+        })).toEqual({
+            '1': confirmedSeatState,
+            '2': null,
+        });
+    });
+
+    it('confirmed 标记已追平 latestState 时无需 staging override；缺失或不一致时必须 staging', () => {
+        const latestState = buildOnlineAiSeatState({ nextId: 8 });
+        const sameMarkerConfirmedState = buildOnlineAiSeatState({ nextId: 8 });
+        const advancedConfirmedState = buildOnlineAiSeatState({ nextId: 9 });
+
+        expect(shouldStageOnlineAiSeatOverrideFromConfirmedState({
+            authoritativeState: sameMarkerConfirmedState,
+            latestSeatState: latestState,
+        })).toBe(false);
+
+        expect(shouldStageOnlineAiSeatOverrideFromConfirmedState({
+            authoritativeState: advancedConfirmedState,
+            latestSeatState: latestState,
+        })).toBe(true);
+
+        expect(shouldStageOnlineAiSeatOverrideFromConfirmedState({
+            authoritativeState: advancedConfirmedState,
+            latestSeatState: null,
+        })).toBe(true);
+    });
 
     it('batch confirmed 只透传权威态，不直接回写 seat latestState', () => {
         const updateLatestState = vi.fn();
         const resync = vi.fn();
+        const sendCommand = vi.fn();
+        const subscribeStateUpdate = vi.fn(() => vi.fn());
         const sendBatch = vi.fn((_batchId, _commands, onConfirmed) => {
             onConfirmed?.({ sys: { phase: 'playCards' } });
         });
@@ -1600,27 +1889,26 @@ describe('submitOnlineAiResolution', () => {
         submitOnlineAiResolution({
             client: {
                 sendBatch,
+                sendCommand,
+                subscribeStateUpdate,
+                latestState: buildOnlineAiSeatState({ nextId: 8 }),
                 updateLatestState,
                 resync,
             },
-
-            resolution: {
-                playerId: '1',
+            resolution: buildResolution({
                 attemptKey: 'attempt-confirmed',
-                source: 'local-ai',
-                action: {
-                    actionId: 'respond-choice',
-                    kind: 'interaction-choice',
-                    label: '响应',
-                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-1' } }],
-                },
-            },
+                commands: [
+                    { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-1' } },
+                    { type: 'ADVANCE_PHASE', payload: { reason: 'follow-up' } },
+                ],
+            }),
             lastAiAttemptKeyRef,
             scheduleRetry: vi.fn(),
         });
 
         expect(lastAiAttemptKeyRef.current).toBe('attempt-confirmed');
         expect(sendBatch).toHaveBeenCalledTimes(1);
+        expect(sendCommand).not.toHaveBeenCalled();
         expect(updateLatestState).not.toHaveBeenCalled();
     });
 
@@ -1628,6 +1916,8 @@ describe('submitOnlineAiResolution', () => {
         const retry = vi.fn();
         const resync = vi.fn();
         const lastAiAttemptKeyRef = { current: null as string | null };
+        const sendCommand = vi.fn();
+        const subscribeStateUpdate = vi.fn(() => vi.fn());
         let rejectHandler: ((reason: string) => void) | undefined;
         const sendBatch = vi.fn((_batchId, _commands, _onConfirmed, onRejected) => {
             rejectHandler = onRejected;
@@ -1636,21 +1926,19 @@ describe('submitOnlineAiResolution', () => {
         submitOnlineAiResolution({
             client: {
                 sendBatch,
+                sendCommand,
+                subscribeStateUpdate,
+                latestState: buildOnlineAiSeatState({ nextId: 9 }),
                 updateLatestState: vi.fn(),
                 resync,
             },
-
-            resolution: {
-                playerId: '1',
+            resolution: buildResolution({
                 attemptKey: 'attempt-rejected',
-                source: 'local-ai',
-                action: {
-                    actionId: 'respond-choice',
-                    kind: 'interaction-choice',
-                    label: '响应',
-                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-1' } }],
-                },
-            },
+                commands: [
+                    { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-1' } },
+                    { type: 'ADVANCE_PHASE', payload: { reason: 'follow-up' } },
+                ],
+            }),
             lastAiAttemptKeyRef,
             scheduleRetry: retry,
         });
@@ -1663,21 +1951,19 @@ describe('submitOnlineAiResolution', () => {
         submitOnlineAiResolution({
             client: {
                 sendBatch,
+                sendCommand,
+                subscribeStateUpdate,
+                latestState: buildOnlineAiSeatState({ nextId: 10 }),
                 updateLatestState: vi.fn(),
                 resync,
             },
-
-            resolution: {
-                playerId: '1',
+            resolution: buildResolution({
                 attemptKey: 'attempt-unauthorized',
-                source: 'local-ai',
-                action: {
-                    actionId: 'respond-choice',
-                    kind: 'interaction-choice',
-                    label: '响应',
-                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-1' } }],
-                },
-            },
+                commands: [
+                    { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-1' } },
+                    { type: 'ADVANCE_PHASE', payload: { reason: 'follow-up' } },
+                ],
+            }),
             lastAiAttemptKeyRef,
             scheduleRetry: retry,
         });
@@ -1692,6 +1978,8 @@ describe('submitOnlineAiResolution', () => {
         const onConfirmed = vi.fn();
         const onRejected = vi.fn();
         const resync = vi.fn();
+        const sendCommand = vi.fn();
+        const subscribeStateUpdate = vi.fn(() => vi.fn());
         let rejectHandler: ((reason: string) => void) | undefined;
         const sendBatch = vi.fn((_batchId, _commands, confirmed, rejected) => {
             confirmed?.({ sys: { phase: 'playCards' } });
@@ -1701,20 +1989,19 @@ describe('submitOnlineAiResolution', () => {
         submitOnlineAiResolution({
             client: {
                 sendBatch,
+                sendCommand,
+                subscribeStateUpdate,
+                latestState: buildOnlineAiSeatState({ nextId: 11 }),
                 updateLatestState: vi.fn(),
                 resync,
             },
-            resolution: {
-                playerId: '1',
+            resolution: buildResolution({
                 attemptKey: 'attempt-callbacks',
-                source: 'local-ai',
-                action: {
-                    actionId: 'respond-choice',
-                    kind: 'interaction-choice',
-                    label: '响应',
-                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } }],
-                },
-            },
+                commands: [
+                    { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } },
+                    { type: 'ADVANCE_PHASE', payload: { reason: 'follow-up' } },
+                ],
+            }),
             lastAiAttemptKeyRef: { current: null },
             scheduleRetry: vi.fn(),
             onConfirmed,
@@ -1730,6 +2017,8 @@ describe('submitOnlineAiResolution', () => {
         const retry = vi.fn();
         const resync = vi.fn();
         const onWillResync = vi.fn();
+        const sendCommand = vi.fn();
+        const subscribeStateUpdate = vi.fn(() => vi.fn());
         let rejectHandler: ((reason: string) => void) | undefined;
         const sendBatch = vi.fn((_batchId, _commands, _onConfirmed, onRejected) => {
             rejectHandler = onRejected;
@@ -1738,20 +2027,19 @@ describe('submitOnlineAiResolution', () => {
         submitOnlineAiResolution({
             client: {
                 sendBatch,
+                sendCommand,
+                subscribeStateUpdate,
+                latestState: buildOnlineAiSeatState({ nextId: 12 }),
                 updateLatestState: vi.fn(),
                 resync,
             },
-            resolution: {
-                playerId: '1',
+            resolution: buildResolution({
                 attemptKey: 'attempt-callback-resync',
-                source: 'local-ai',
-                action: {
-                    actionId: 'respond-choice',
-                    kind: 'interaction-choice',
-                    label: '响应',
-                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } }],
-                },
-            },
+                commands: [
+                    { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } },
+                    { type: 'ADVANCE_PHASE', payload: { reason: 'follow-up' } },
+                ],
+            }),
             lastAiAttemptKeyRef: { current: null },
             scheduleRetry: retry,
             onWillResync,
@@ -1761,6 +2049,94 @@ describe('submitOnlineAiResolution', () => {
         expect(onWillResync).toHaveBeenCalledWith('command_failed');
         expect(resync).not.toHaveBeenCalled();
         expect(retry).toHaveBeenCalledTimes(1);
+    });
+
+    it('单命令提交应通过 state update 确认，不依赖 batch confirmed', () => {
+        const onConfirmed = vi.fn();
+        const unsubscribe = vi.fn();
+        const sendBatch = vi.fn();
+        const sendCommand = vi.fn();
+        let stateListener: ((state: unknown) => void) | null = null;
+        const subscribeStateUpdate = vi.fn((listener: (state: unknown) => void) => {
+            stateListener = listener;
+            return unsubscribe;
+        });
+
+        submitOnlineAiResolution({
+            client: {
+                sendBatch,
+                sendCommand,
+                subscribeStateUpdate,
+                latestState: buildOnlineAiSeatState({ nextId: 13 }),
+                updateLatestState: vi.fn(),
+                resync: vi.fn(),
+            },
+            resolution: buildResolution({
+                attemptKey: 'attempt-single-confirmed',
+                commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'pick-1' } }],
+            }),
+            lastAiAttemptKeyRef: { current: null },
+            scheduleRetry: vi.fn(),
+            onConfirmed,
+        });
+
+        expect(sendBatch).not.toHaveBeenCalled();
+        expect(sendCommand).toHaveBeenCalledWith('SYS_INTERACTION_RESPOND', { optionId: 'pick-1' });
+
+        stateListener?.(buildOnlineAiSeatState({ nextId: 14 }));
+        expect(onConfirmed).toHaveBeenCalledWith(expect.objectContaining({
+            sys: expect.objectContaining({
+                eventStream: expect.objectContaining({ nextId: 14 }),
+            }),
+        }));
+        expect(unsubscribe).toHaveBeenCalledTimes(1);
+    });
+
+    it('单命令超时后会清空 attemptKey、安排重试，并允许 onWillResync 接管 resync', async () => {
+        vi.useFakeTimers();
+        try {
+            const retry = vi.fn();
+            const resync = vi.fn();
+            const onWillResync = vi.fn();
+            const onRejected = vi.fn();
+            const unsubscribe = vi.fn();
+            const sendBatch = vi.fn();
+            const sendCommand = vi.fn();
+            const subscribeStateUpdate = vi.fn(() => unsubscribe);
+            const lastAiAttemptKeyRef = { current: null as string | null };
+
+            submitOnlineAiResolution({
+                client: {
+                    sendBatch,
+                    sendCommand,
+                    subscribeStateUpdate,
+                    latestState: buildOnlineAiSeatState({ nextId: 15 }),
+                    updateLatestState: vi.fn(),
+                    resync,
+                },
+                resolution: buildResolution({
+                    attemptKey: 'attempt-single-timeout',
+                    commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } }],
+                }),
+                lastAiAttemptKeyRef,
+                scheduleRetry: retry,
+                onWillResync,
+                onRejected,
+            });
+
+            expect(lastAiAttemptKeyRef.current).toBe('attempt-single-timeout');
+            await vi.advanceTimersByTimeAsync(4000);
+
+            expect(lastAiAttemptKeyRef.current).toBeNull();
+            expect(sendBatch).not.toHaveBeenCalled();
+            expect(onWillResync).toHaveBeenCalledWith('command_timeout');
+            expect(resync).not.toHaveBeenCalled();
+            expect(retry).toHaveBeenCalledTimes(1);
+            expect(onRejected).toHaveBeenCalledWith('command_timeout');
+            expect(unsubscribe).toHaveBeenCalledTimes(1);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 });
 
@@ -1879,7 +2255,7 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
         });
     });
 
-    it('隐藏交互包含可执行选项时，不应返回强制跳过 resolution', () => {
+    it('隐藏交互包含可执行选项但显式提供 skip/pass 时，仍应返回强制跳过 resolution', () => {
         const candidate = resolveForceSkippableHiddenAiInteraction({
             sharedState: {
                 core: {},
@@ -1919,7 +2295,10 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
             },
         });
 
-        expect(candidate).toBeNull();
+        expect(candidate?.resolution.action.commands[0]).toEqual({
+            type: 'SYS_INTERACTION_RESPOND',
+            payload: { optionId: 'skip' },
+        });
     });
     it('隐藏交互只剩 __emergency_skip__ 或 done 时，也应返回自动收口 resolution', () => {
         const emergencyCandidate = resolveForceSkippableHiddenAiInteraction({

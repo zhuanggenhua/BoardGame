@@ -168,6 +168,44 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result?.resolution.action.commands).toEqual([]);
     });
 
+    it('Splendor 即使残留了 AI seat metadata，也不得生成裸 ADVANCE_PHASE fallback', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'main1',
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+            gameId: 'splendor',
+        });
+
+        expect(result).toMatchObject({
+            playerId: '1',
+            reason: 'active-turn-legal-only',
+            legalActionOnly: true,
+        });
+        expect(result?.resolution.action.commands).toEqual([]);
+    });
+
     it('游戏结束后即使有交互也应该返回 null', () => {
         // 构造一个游戏已结束且有交互的状态
         const sharedState: MatchState<unknown> = {
@@ -443,6 +481,39 @@ describe('resolveForceAdvancePhaseAfterRecovery - 游戏结束检查', () => {
         expect(result).not.toBeNull();
         expect(result?.playerId).toBe('1');
         expect(result?.action.commands[0]?.type).toBe('ADVANCE_PHASE');
+    });
+
+    it('Splendor 交互收口后不得再补发阶段推进命令', () => {
+        const authoritativeState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+                phase: 'main1',
+            },
+            sys: {
+                gameover: undefined,
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceAdvancePhaseAfterRecovery({
+            authoritativeState,
+            seatControllers,
+            playerId: '1',
+            gameId: 'splendor',
+        });
+
+        expect(result).toBeNull();
     });
 });
 

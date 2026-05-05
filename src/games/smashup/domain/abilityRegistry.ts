@@ -8,6 +8,11 @@
 import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
 import type { SmashUpCore, SmashUpEvent, AbilityTag, ActiveDuel, ValidationResult } from './types';
 import { getTitanDef } from '../data/cards';
+import {
+    createEffectProgram,
+    executeAbilityProgram,
+    type AbilityProgram,
+} from './abilityRuntime';
 
 // ============================================================================
 // 能力执行上下文与结果
@@ -46,12 +51,40 @@ export type AbilityExecutor = (ctx: AbilityContext) => AbilityResult;
 /** 可选的发动前校验：返回 null 表示可发动，否则返回错误原因 */
 export type AbilityUseValidator = (ctx: AbilityContext) => string | null;
 
-export interface RegisteredAbility {
+export type SmashUpAbilityProgram<TContext = AbilityContext> =
+    AbilityProgram<TContext, SmashUpCore, SmashUpEvent>;
+
+export type AbilityProgramContextFactory<TContext = AbilityContext> = (
+    ctx: AbilityContext,
+) => TContext;
+
+export interface AbilityProgramRegistration<TContext = AbilityContext> {
+    program: SmashUpAbilityProgram<TContext>;
+    createContext?: AbilityProgramContextFactory<TContext>;
+    validateUse?: AbilityUseValidator;
+}
+
+export interface SimpleAbilityRegistration {
     execute: AbilityExecutor;
     validateUse?: AbilityUseValidator;
 }
 
-export type AbilityRegistration = AbilityExecutor | RegisteredAbility;
+interface LegacyRegisteredAbility {
+    execute: AbilityExecutor;
+    validateUse?: AbilityUseValidator;
+}
+
+export interface RegisteredAbility {
+    program: SmashUpAbilityProgram<any>;
+    createContext: AbilityProgramContextFactory<any>;
+    execute: AbilityExecutor;
+    validateUse?: AbilityUseValidator;
+}
+
+export type AbilityRegistration =
+    | AbilityExecutor
+    | LegacyRegisteredAbility
+    | AbilityProgramRegistration<any>;
 
 // ============================================================================
 // 注册表实现
@@ -61,9 +94,47 @@ export type AbilityRegistration = AbilityExecutor | RegisteredAbility;
 const registry = new Map<string, Map<AbilityTag, RegisteredAbility>>();
 
 function normalizeRegistration(registration: AbilityRegistration): RegisteredAbility {
-    return typeof registration === 'function'
-        ? { execute: registration }
-        : registration;
+    const createContext: AbilityProgramContextFactory = (ctx) => ctx;
+    if (typeof registration === 'function') {
+        const program = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(registration);
+        return {
+            program,
+            createContext,
+            execute: createProgramExecutor(program, createContext),
+        };
+    }
+
+    if ('program' in registration) {
+        const program = registration.program;
+        const contextFactory = registration.createContext ?? createContext;
+        return {
+            program,
+            createContext: contextFactory,
+            execute: createProgramExecutor(program, contextFactory),
+            validateUse: registration.validateUse,
+        };
+    }
+
+    const program = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(registration.execute);
+    return {
+        program,
+        createContext,
+        execute: createProgramExecutor(program, createContext),
+        validateUse: registration.validateUse,
+    };
+}
+
+function createProgramExecutor<TContext>(
+    program: SmashUpAbilityProgram<TContext>,
+    createContext: AbilityProgramContextFactory<TContext>,
+): AbilityExecutor {
+    return (ctx) => {
+        const result = executeAbilityProgram(program, createContext(ctx));
+        return {
+            events: result.events,
+            matchState: result.matchState,
+        };
+    };
 }
 
 /** 注册一个能力执行函数 */
@@ -80,12 +151,41 @@ export function registerAbility(
     tagMap.set(tag, normalizeRegistration(registration));
 }
 
+export function registerAbilityProgram<TContext>(
+    defId: string,
+    tag: AbilityTag,
+    registration: AbilityProgramRegistration<TContext>,
+): void {
+    registerAbility(defId, tag, registration);
+}
+
+export function registerSimpleAbility(
+    defId: string,
+    tag: AbilityTag,
+    registration: AbilityExecutor | SimpleAbilityRegistration,
+): void {
+    const normalized = typeof registration === 'function'
+        ? { execute: registration }
+        : registration;
+    registerAbilityProgram(defId, tag, {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(normalized.execute),
+        ...(normalized.validateUse ? { validateUse: normalized.validateUse } : {}),
+    });
+}
+
 /** 按 defId + tag 解析能力定义 */
 export function resolveAbilityDefinition(
     defId: string,
     tag: AbilityTag
 ): RegisteredAbility | undefined {
     return registry.get(defId)?.get(tag);
+}
+
+export function resolveAbilityProgram(
+    defId: string,
+    tag: AbilityTag,
+): SmashUpAbilityProgram<any> | undefined {
+    return resolveAbilityDefinition(defId, tag)?.program;
 }
 
 /** 按 defId + tag 解析能力执行函数 */
@@ -96,9 +196,41 @@ export function resolveAbility(
     return resolveAbilityDefinition(defId, tag)?.execute;
 }
 
+function buildMissingAbilityError(
+    defId: string,
+    tag: AbilityTag,
+    reason?: string,
+): Error {
+    return new Error(`SmashUp ability 缺少声明: ${defId}::${tag}${reason ? ` (${reason})` : ''}`);
+}
+
+export function requireAbilityDefinition(
+    defId: string,
+    tag: AbilityTag,
+    reason?: string,
+): RegisteredAbility {
+    const definition = resolveAbilityDefinition(defId, tag);
+    if (!definition) {
+        throw buildMissingAbilityError(defId, tag, reason);
+    }
+    return definition;
+}
+
+export function requireAbility(
+    defId: string,
+    tag: AbilityTag,
+    reason?: string,
+): AbilityExecutor {
+    return requireAbilityDefinition(defId, tag, reason).execute;
+}
+
 /** 快捷：解析 onPlay 能力 */
 export function resolveOnPlay(defId: string): AbilityExecutor | undefined {
     return resolveAbility(defId, 'onPlay');
+}
+
+export function requireOnPlay(defId: string, reason?: string): AbilityExecutor {
+    return requireAbility(defId, 'onPlay', reason);
 }
 
 /** 快捷：解析 talent 能力 */
@@ -121,6 +253,10 @@ export function resolveSpecial(defId: string): AbilityExecutor | undefined {
     return resolveAbility(defId, 'special');
 }
 
+export function requireSpecial(defId: string, reason?: string): AbilityExecutor {
+    return requireAbility(defId, 'special', reason);
+}
+
 export function validateSpecialUse(ctx: AbilityContext): ValidationResult {
     return validateAbilityUseByTag(ctx, 'special');
 }
@@ -133,6 +269,10 @@ export function resolveOnDestroy(defId: string): AbilityExecutor | undefined {
 /** 快捷：解析 onUncover 能力 */
 export function resolveOnUncover(defId: string): AbilityExecutor | undefined {
     return resolveAbility(defId, 'onUncover');
+}
+
+export function requireOnUncover(defId: string, reason?: string): AbilityExecutor {
+    return requireAbility(defId, 'onUncover', reason);
 }
 
 /** 快捷：解析在场主动 ongoing 能力 */

@@ -6,19 +6,30 @@
  * 覆盖 Property 6: 天赋每回合一次
  */
 
-import { describe, expect, it, beforeAll, beforeEach } from 'vitest';
+import { describe, expect, it, beforeEach } from 'vitest';
 import {
+    requireAbilityDefinition,
+    requireOnPlay,
+    requireSpecial,
     registerAbility,
+    registerAbilityProgram,
+    registerSimpleAbility,
     resolveAbility,
+    resolveAbilityDefinition,
     resolveOnPlay,
+    resolveAbilityProgram,
     resolveTalent,
     resolveSpecial,
     hasAbility,
     clearRegistry,
     getRegistrySize,
 } from '../domain/abilityRegistry';
-import type { AbilityContext, AbilityResult, AbilityExecutor } from '../domain/abilityRegistry';
+import type { AbilityExecutor } from '../domain/abilityRegistry';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
+import { appendResolvedActionAbility } from '../domain/externalActionPlay';
+import { makeMatchState, makeState } from './helpers';
+import { SU_EVENTS } from '../domain/types';
+import { createEffectProgram } from '../domain/abilityRuntime';
 
 describe('能力注册表', () => {
     beforeEach(() => {
@@ -33,7 +44,7 @@ describe('能力注册表', () => {
             registerAbility('test_card', 'onPlay', executor);
 
             const resolved = resolveAbility('test_card', 'onPlay');
-            expect(resolved).toBe(executor);
+            expect(resolved).toBeDefined();
         });
 
         it('未注册的 defId 解析返回 undefined', () => {
@@ -50,8 +61,8 @@ describe('能力注册表', () => {
             registerAbility('multi_tag', 'onPlay', onPlayFn);
             registerAbility('multi_tag', 'talent', talentFn);
 
-            expect(resolveOnPlay('multi_tag')).toBe(onPlayFn);
-            expect(resolveTalent('multi_tag')).toBe(talentFn);
+            expect(resolveOnPlay('multi_tag')).toBeDefined();
+            expect(resolveTalent('multi_tag')).toBeDefined();
         });
 
         it('hasAbility 正确检查', () => {
@@ -82,6 +93,93 @@ describe('能力注册表', () => {
             expect(resolveTalent('shortcut_test')).toBe(resolveAbility('shortcut_test', 'talent'));
             expect(resolveSpecial('shortcut_test')).toBe(resolveAbility('shortcut_test', 'special'));
         });
+
+        it('program 注册成为唯一真相源，并可经统一解释器执行', () => {
+            const program = createEffectProgram((ctx: any) => ({
+                events: [{
+                    type: 'test_program_event',
+                    payload: { defId: ctx.defId, playerId: ctx.playerId },
+                    timestamp: ctx.now,
+                }] as any[],
+            }));
+            registerAbilityProgram('program_card', 'onPlay', { program });
+
+            expect(resolveAbilityProgram('program_card', 'onPlay')).toBe(program);
+            expect(resolveAbilityDefinition('program_card', 'onPlay')?.program).toBe(program);
+
+            const resolved = resolveOnPlay('program_card');
+            const result = resolved!({
+                state: {} as any,
+                matchState: {} as any,
+                playerId: '0',
+                cardUid: 'card-1',
+                defId: 'program_card',
+                baseIndex: 0,
+                random: { random: () => 0.5, d: (_n: number) => 1, range: (a: number, _b: number) => a, shuffle: <T>(arr: T[]) => [...arr] },
+                now: 42,
+            });
+
+            expect(result.events).toHaveLength(1);
+            expect((result.events[0] as any).payload).toMatchObject({ defId: 'program_card', playerId: '0' });
+        });
+
+        it('simple ability 注册会显式编译为 effect program', () => {
+            const executor: AbilityExecutor = (ctx) => ({
+                events: [{
+                    type: 'test_simple_event',
+                    payload: { defId: ctx.defId, playerId: ctx.playerId },
+                    timestamp: ctx.now,
+                }] as any[],
+            });
+            registerSimpleAbility('simple_card', 'onPlay', executor);
+
+            const definition = requireAbilityDefinition('simple_card', 'onPlay');
+            expect(resolveAbilityProgram('simple_card', 'onPlay')).toBe(definition.program);
+
+            const result = definition.execute({
+                state: {} as any,
+                matchState: {} as any,
+                playerId: '0',
+                cardUid: 'card-1',
+                defId: 'simple_card',
+                baseIndex: 0,
+                random: { random: () => 0.5, d: (_n: number) => 1, range: (a: number, _b: number) => a, shuffle: <T>(arr: T[]) => [...arr] },
+                now: 99,
+            });
+
+            expect(result.events).toHaveLength(1);
+            expect((result.events[0] as any).payload).toMatchObject({ defId: 'simple_card', playerId: '0' });
+        });
+
+        it('require 系列在缺声明时直接报错', () => {
+            expect(() => requireAbilityDefinition('missing_card', 'onPlay', 'test')).toThrowError(
+                /SmashUp ability 缺少声明: missing_card::onPlay \(test\)/,
+            );
+            expect(() => requireOnPlay('missing_card', 'test_onplay')).toThrowError(
+                /SmashUp ability 缺少声明: missing_card::onPlay \(test_onplay\)/,
+            );
+            expect(() => requireSpecial('missing_card', 'test_special')).toThrowError(
+                /SmashUp ability 缺少声明: missing_card::special \(test_special\)/,
+            );
+        });
+
+        it('显式追加外部行动能力时缺声明直接报错', () => {
+            const state = makeMatchState(makeState());
+            expect(() => appendResolvedActionAbility({
+                state,
+                events: [{
+                    type: SU_EVENTS.ACTION_PLAYED,
+                    payload: { playerId: '0', cardUid: 'missing-action-1', defId: 'missing_action_def' },
+                    timestamp: 100,
+                } as any],
+                playerId: '0',
+                cardUid: 'missing-action-1',
+                defId: 'missing_action_def',
+                random: { random: () => 0.5, d: () => 1, range: (min: number) => min, shuffle: <T>(items: T[]) => [...items] },
+                timestamp: 100,
+                baseIndex: 0,
+            })).toThrowError(/SmashUp ability 缺少声明: missing_action_def::onPlay \(externalActionPlay\.appendResolvedActionAbility\)/);
+        });
     });
 
     // Property 5: onPlay 能力触发
@@ -103,7 +201,7 @@ describe('能力注册表', () => {
                 cardUid: 'c1',
                 defId: 'test_onplay',
                 baseIndex: 0,
-                random: { random: () => 0.5, d: (n: number) => 1, range: (a: number, b: number) => a, shuffle: <T>(arr: T[]) => [...arr] },
+                random: { random: () => 0.5, d: (_n: number) => 1, range: (a: number, _b: number) => a, shuffle: <T>(arr: T[]) => [...arr] },
                 now: 1000,
             });
 

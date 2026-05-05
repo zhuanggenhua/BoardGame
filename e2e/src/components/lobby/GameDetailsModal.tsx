@@ -29,7 +29,7 @@ import { logger } from '../../lib/logger';
 import { logMobileRuntimeCritical } from '../../lib/mobile/mobileRuntimeDebug';
 import { appendMatchLoadTrace, startMatchLoadTrace } from '../../lib/matchLoadTrace';
 import { UI_Z_INDEX, preloadWarmImages, resolveCriticalImages } from '../../core';
-import { ensureGameCriticalImageResolverLoaded, prefetchGameImplementation } from '../../games/registry';
+import { ensureGameCriticalImageResolverLoaded, hasGameTutorialLoader, prefetchGameImplementation } from '../../games/registry';
 import {
     normalizeLocalMatchPreferences,
     readStoredLocalMatchPreferences,
@@ -631,9 +631,16 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     ]);
 
     const handleTutorial = () => {
+        void ensureGameCriticalImageResolverLoaded(gameId).catch(() => {
+            // 具体失败链路由加载器日志记录，这里保持教程入口可继续跳转。
+        });
+        void prefetchGameImplementation(gameId, { includeTutorial: true }).catch(() => {
+            // 预加载失败时仍允许进入教程页，由路由页继续走兜底加载/报错链路。
+        });
         onNavigate?.();
         navigate(`/play/${gameId}/tutorial`);
     };
+    const hasTutorialEntry = useMemo(() => hasGameTutorialLoader(gameId), [gameId]);
     const loadCreateRoomPreferences = async (): Promise<LocalMatchPreferences | null> => {
         if (!gameManifest) {
             return null;
@@ -1999,15 +2006,17 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                             </div>
 
                             {/* 操作按钮 - 固定在底部 */}
-                            <div className="mt-1 grid shrink-0 w-full gap-2 md:mt-0 md:grid-cols-1">
-                                <button
-                                    type="button"
-                                    onClick={handleTutorial}
-                                    className="w-full py-1.5 md:py-2 px-3 md:px-4 bg-parchment-card-bg border border-parchment-card-border/30 text-parchment-base-text font-bold rounded-[4px] hover:bg-parchment-base-bg transition-all flex items-center justify-center gap-2 cursor-pointer text-[10px] md:text-xs"
-                                >
-                                    {t('actions.tutorial')}
-                                </button>
-                            </div>
+                            {hasTutorialEntry ? (
+                                <div className="mt-1 grid shrink-0 w-full gap-2 md:mt-0 md:grid-cols-1">
+                                    <button
+                                        type="button"
+                                        onClick={handleTutorial}
+                                        className="w-full py-1.5 md:py-2 px-3 md:px-4 bg-parchment-card-bg border border-parchment-card-border/30 text-parchment-base-text font-bold rounded-[4px] hover:bg-parchment-base-bg transition-all flex items-center justify-center gap-2 cursor-pointer text-[10px] md:text-xs"
+                                    >
+                                        {t('actions.tutorial')}
+                                    </button>
+                                </div>
+                            ) : null}
 
                             <div className="hidden shrink-0 w-full justify-center pt-2 md:flex md:pt-3">
                                 <button

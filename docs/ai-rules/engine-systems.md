@@ -691,6 +691,9 @@ interface SimpleChoiceConfig {
 7. **配置对象形式中 `multi` 必须嵌套**：`{ sourceId, multi: { min, max } }` ✅，`{ sourceId, min, max }` ❌（`min`/`max` 作为顶层字段会被忽略）。
 8. **可能跨 `BASE_CLEARED` / `BASE_REPLACED` / 基地移除后再解决的交互，禁止只传 `baseIndex`**。如果 handler 在交互解决时还需要重新定位基地，必须同时携带稳定标识（如 `baseDefId`），并在 handler 中先按稳定标识解析活体基地，再 fallback 到仍有效的 `baseIndex`。`baseIndex` 只是当时快照位置，不是跨时序稳定标识。
 9. **`responseWindow` 与 `simple-choice` 可以并存，命令放行权必须归 `ResponseWindowSystem`**。当 `state.sys.interaction.current.kind === 'simple-choice'` 且同时存在活动 `state.sys.responseWindow.current` 时，`SimpleChoiceSystem` 不能一刀切拦截同玩家的普通非 `SYS_` 命令；此时命令是否合法必须交给 `ResponseWindowSystem` 裁决。只有在没有活动响应窗口时，`SimpleChoiceSystem` 才负责阻塞“请先完成当前选择”类普通命令。
+10. **一个 interaction kind 只能表达一种稳定业务语义（强制）**。`simple-choice` 只保留真正的分支/按钮/数值选择；像“为当前 pendingAttack 选 defender”“选择 compare-roll 胜方”“奖励骰重掷结算确认”这类有独立业务语义的步骤，必须建 dedicated kind / dedicated reader / dedicated modal，禁止继续把不同职责塞进同一个 `simple-choice` / `selectPlayer` 壳子里。
+11. **阻塞交互的前台承载默认走 modal stack（强制）**。如果某个前台直接拥有当前交互步骤的确认权，或它的关闭/确认会决定业务是否继续推进，那么它必须作为 modal stack entry 承载；只有纯展示、不会改变交互 ownership 的特写/放大层，才允许保留在 overlay 通道。
+12. **modal stack entry 的真实可点击内容必须与 entry 同树（强制）**。一旦前台已经进栈，禁止其内部再通过 `HudPortal` / `modal-root` / 其它 portal 把主体内容挪到栈外；否则会出现“栈里的 fixed 空层拦截点击、真正内容在另一棵树里单飞”的命中错误。若同一组件既要支持 overlay 展示态、也要支持入栈阻塞态，必须提供 `usePortal=false` 这类底层开关，让栈式场景原位渲染。
 
 ### PromptOption.displayMode（渲染模式声明）
 
@@ -743,6 +746,14 @@ if (state.sys.interaction.current?.kind === 'simple-choice') {
     return { valid: false, error: '请先完成当前选择' };
 }
 
+// ❌ 用 simple-choice 伪装“选受击者 / 选 compare-roll 结果 / 奖励骰确认”
+createSimpleChoice(id, pid, title, opts, {
+    sourceId: 'targeting-roll',
+});
+
+// ❌ 会阻塞业务推进的前台绕过 modal stack，单独走 overlay 通道
+return <BonusDieOverlay open settlement={pendingSettlement} onClose={confirmAndAdvance} />;
+
 // ✅ 位置参数形式 + multi
 createSimpleChoice(id, pid, title, opts, sourceId, undefined, { min: 0, max: opts.length })
 
@@ -772,6 +783,19 @@ if (
 ) {
     return validateByResponseWindow(...);
 }
+
+// ✅ 专用业务语义使用专用 interaction kind + 专用 UI reader
+queueInteraction(state, {
+    id: `defender-choice-${attackId}`,
+    kind: 'dt:defender-choice',
+    playerId: chooserPlayerId,
+    data: { attackerId, chooserPlayerId, options },
+});
+
+// ✅ 拥有确认权的阻塞前台注册为 modal stack entry
+useSyncedModalStackEntry(currentInteraction?.kind === 'dt:bonus-dice'
+    ? { id: currentInteraction.id, kind: 'dt:bonus-dice', node: <BonusDieOverlay ... /> }
+    : null);
 ```
 
 ---

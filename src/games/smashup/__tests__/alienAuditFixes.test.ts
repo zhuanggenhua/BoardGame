@@ -17,7 +17,7 @@ import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { BaseInPlay, CardInstance, MinionOnBase, PlayerState, SmashUpCore, TitanState } from '../domain/types';
 import { ALIEN_ACTIONS } from '../data/factions/aliens';
 import { ALIEN_POD_ACTIONS } from '../data/factions/aliens_pod';
@@ -29,10 +29,23 @@ function makeCard(uid: string, defId: string, type: 'minion' | 'action', owner: 
   return { uid, defId, type, owner };
 }
 
-function makeMinion(uid: string, defId: string, controller: string, power: number, owner?: string): MinionOnBase {
+function makeMinion(
+  uid: string,
+  defId: string,
+  controller: string,
+  power: number,
+  ownerOrOverrides?: string | Partial<MinionOnBase>,
+): MinionOnBase {
+  const overrides = typeof ownerOrOverrides === 'string'
+    ? {}
+    : ownerOrOverrides ?? {};
   return {
-    uid, defId, controller, owner: owner ?? controller,
+    uid,
+    defId,
+    controller,
+    owner: typeof ownerOrOverrides === 'string' ? ownerOrOverrides : controller,
     basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
+    ...overrides,
   };
 }
 
@@ -69,14 +82,28 @@ const dummyRandom: RandomFn = {
   shuffle: (arr: any[]) => [...arr],
 };
 
-function execPlayAction(state: SmashUpCore, playerId: string, cardUid: string, targetBaseIndex?: number) {
+function execPlayAction(
+  state: SmashUpCore,
+  playerId: string,
+  cardUid: string,
+  targetBaseIndex?: number,
+  targetMinionUid?: string,
+) {
   const ms = makeMatchState(state);
   const result = runCommand(ms, {
     type: SU_COMMANDS.PLAY_ACTION,
     playerId,
-    payload: { cardUid, targetBaseIndex },
+    payload: { cardUid, targetBaseIndex, targetMinionUid },
   } as any, dummyRandom);
   return { events: result.events, matchState: result.finalState };
+}
+
+function respondInteraction(matchState: MatchState<SmashUpCore>, playerId: string, optionId: string) {
+  return runCommand(matchState, {
+    type: 'SYS_INTERACTION_RESPOND',
+    playerId,
+    payload: { optionId },
+  } as any, dummyRandom);
 }
 
 beforeAll(() => {
@@ -129,21 +156,23 @@ describe('Aliens 审计修复回归（新 ID）', () => {
   });
 
   it('alien_disintegrator: 结算为 CARD_TO_DECK_BOTTOM', () => {
-    const handler = getInteractionHandler('alien_disintegrator');
-    expect(handler).toBeDefined();
     const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('a1', 'alien_disintegrator', 'action', '0')] }),
+        '1': makePlayer('1'),
+      },
       bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 2, { powerModifier: 0 })])],
     });
-    const result = handler!(makeMatchState(core), '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 1000);
-    expect(result).toBeDefined();
-    expect(result!.events).toHaveLength(1);
-    expect(result!.events[0].type).toBe(SU_EVENTS.CARD_TO_DECK_BOTTOM);
-    expect((result!.events[0] as any).payload).toMatchObject({
+    const result = execPlayAction(core, '0', 'a1', 0, 'm1');
+    expect(result.events).toHaveLength(2);
+    const resolved = result.events.find(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
+    expect(resolved).toBeDefined();
+    expect((resolved as any).payload).toMatchObject({
       cardUid: 'm1', ownerId: '0', reason: 'alien_disintegrator',
     });
   });
 
-  it('alien_beam_up: 创建随从选择交互并返回手牌', () => {
+  it('alien_beam_up: 直点目标随从打出后直接返回手牌', () => {
     const state = makeState({
       players: {
         '0': makePlayer('0', { hand: [makeCard('a1', 'alien_beam_up', 'action', '0')] }),
@@ -154,36 +183,36 @@ describe('Aliens 审计修复回归（新 ID）', () => {
         makeBase('base_new', [makeMinion('m2', 'minion_b', '1', 2, { powerModifier: 0 })]),
       ],
     });
-    const { matchState } = execPlayAction(state, '0', 'a1');
-    const current = (matchState.sys as any).interaction?.current;
-    expect(current?.data?.sourceId).toBe('alien_beam_up');
-
-    const handler = getInteractionHandler('alien_beam_up');
-    expect(handler).toBeDefined();
-    const resolved = handler!(makeMatchState(state), '0', { minionUid: 'm2', baseIndex: 1 }, undefined, dummyRandom, 1001);
-    expect(resolved).toBeDefined();
-    expect(resolved!.events).toHaveLength(1);
-    expect(resolved!.events[0].type).toBe(SU_EVENTS.MINION_RETURNED);
-    expect((resolved!.events[0] as any).payload.reason).toBe('alien_beam_up');
+    const played = execPlayAction(state, '0', 'a1', 1, 'm2');
+    expect((played.matchState.sys as any).interaction?.current).toBeUndefined();
+    const returned = played.events.find(event => event.type === SU_EVENTS.MINION_RETURNED);
+    expect(returned).toBeDefined();
+    expect((returned as any).payload).toMatchObject({
+      minionUid: 'm2',
+      fromBaseIndex: 1,
+      reason: 'alien_beam_up',
+    });
   });
 
   it('alien_crop_circles: 选择基地后自动返回所有随从（强制效果）', () => {
     const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('a1', 'alien_crop_circles', 'action', '0')] }),
+        '1': makePlayer('1'),
+      },
       bases: [makeBase('base_old', [
         makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 }),
         makeMinion('m2', 'minion_b', '1', 2),
       ])],
     });
+    const played = execPlayAction(core, '0', 'a1');
+    const current = (played.matchState.sys as any).interaction?.current;
+    expect(current?.data?.sourceId).toBe('alien_crop_circles');
+    const baseOption = current?.data?.options?.find((entry: any) => entry.value?.baseIndex === 0);
+    expect(baseOption).toBeDefined();
+    const result = respondInteraction(played.matchState, '0', baseOption.id);
 
-    const handler = getInteractionHandler('alien_crop_circles');
-    expect(handler).toBeDefined();
-    
-    // 选择基地后，直接返回该基地所有随从
-    const result = handler!(makeMatchState(core), '0', { baseIndex: 0 }, undefined, dummyRandom, 2000);
-    expect(result).toBeDefined();
-    
-    // 应该产生 2 个 MINION_RETURNED 事件（基地上有 2 个随从）
-    const returned = result!.events.filter(e => e.type === SU_EVENTS.MINION_RETURNED);
+    const returned = result.events.filter(e => e.type === SU_EVENTS.MINION_RETURNED);
     expect(returned).toHaveLength(2);
     
     // 验证两个随从都被返回
@@ -195,32 +224,21 @@ describe('Aliens 审计修复回归（新 ID）', () => {
   it('alien_terraform: 三步交互替换基地并仅能在新基地额外打随从', () => {
     const core = makeState({
       players: {
-        '0': makePlayer('0', { hand: [makeCard('h1', 'alien_invader', 'minion', '0')] }),
+        '0': makePlayer('0', { hand: [makeCard('tf1', 'alien_terraform', 'action', '0'), makeCard('h1', 'alien_invader', 'minion', '0')] }),
         '1': makePlayer('1'),
       },
       bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 })])],
       baseDeck: ['base_new', 'base_alt'],
     });
 
-    const handler1 = getInteractionHandler('alien_terraform');
-    expect(handler1).toBeDefined();
-    const step1 = handler1!(makeMatchState(core), '0', { baseIndex: 0 }, undefined, dummyRandom, 3000);
-    expect(step1).toBeDefined();
-    const step1Current = (step1!.state.sys as any).interaction?.current;
+    const played = execPlayAction(core, '0', 'tf1', 0);
+    const step1Current = (played.matchState.sys as any).interaction?.current;
     expect(step1Current?.data?.sourceId).toBe('alien_terraform_choose_replacement');
+    const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
+    expect(replacementOption).toBeDefined();
 
-    const handler2 = getInteractionHandler('alien_terraform_choose_replacement');
-    expect(handler2).toBeDefined();
-    const step2 = handler2!(
-      makeMatchState(core),
-      '0',
-      { newBaseDefId: 'base_new' },
-      step1Current?.data,
-      dummyRandom,
-      3001,
-    );
-    expect(step2).toBeDefined();
-    const replaced = step2!.events.find(e => e.type === SU_EVENTS.BASE_REPLACED);
+    const step2 = respondInteraction(played.matchState, '0', replacementOption.id);
+    const replaced = step2.events.find(e => e.type === SU_EVENTS.BASE_REPLACED);
     expect(replaced).toBeDefined();
     expect((replaced as any).payload).toMatchObject({
       baseIndex: 0,
@@ -229,25 +247,17 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       keepCards: true,
     });
 
-    const step2Current = (step2!.state.sys as any).interaction?.current;
+    const step2Current = (step2.finalState.sys as any).interaction?.current;
     expect(step2Current?.data?.sourceId).toBe('alien_terraform_play_minion');
+    const minionOption = step2Current?.data?.options?.find((entry: any) => entry.value?.cardUid === 'h1');
+    expect(minionOption).toBeDefined();
 
-    const handler3 = getInteractionHandler('alien_terraform_play_minion');
-    expect(handler3).toBeDefined();
-    const step3 = handler3!(
-      makeMatchState(core),
-      '0',
-      { cardUid: 'h1', defId: 'alien_invader' },
-      step2Current?.data,
-      dummyRandom,
-      3002,
-    );
-    expect(step3).toBeDefined();
-    const minionPlayed = step3!.events.find(e => e.type === SU_EVENTS.MINION_PLAYED);
+    const step3 = respondInteraction(step2.finalState, '0', minionOption.id);
+    const minionPlayed = step3.events.find(e => e.type === SU_EVENTS.MINION_PLAYED);
     expect(minionPlayed).toBeDefined();
     expect((minionPlayed as any).payload.baseIndex).toBe(0);
 
-    const extraMinion = step3!.events.find(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
+    const extraMinion = step3.events.find(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
     expect(extraMinion).toBeDefined();
     expect((extraMinion as any).payload).toMatchObject({
       playerId: '0',
@@ -270,7 +280,7 @@ describe('Aliens 审计修复回归（新 ID）', () => {
     };
     const core = makeState({
       players: {
-        '0': makePlayer('0', { hand: [makeCard('h1', 'alien_invader', 'minion', '0')] }),
+        '0': makePlayer('0', { hand: [makeCard('tf1', 'alien_terraform', 'action', '0'), makeCard('h1', 'alien_invader', 'minion', '0')] }),
         '1': makePlayer('1'),
       },
       titans: [tricksterTitan],
@@ -278,24 +288,12 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       baseDeck: ['base_new', 'base_alt'],
     });
 
-    const handler1 = getInteractionHandler('alien_terraform');
-    const handler2 = getInteractionHandler('alien_terraform_choose_replacement');
-    const handler3 = getInteractionHandler('alien_terraform_play_minion');
-    expect(handler1).toBeDefined();
-    expect(handler2).toBeDefined();
-    expect(handler3).toBeDefined();
-
-    const step1 = handler1!(makeMatchState(core), '0', { baseIndex: 0 }, undefined, dummyRandom, 3020);
-    const step1Current = (step1!.state.sys as any).interaction?.current;
-    const step2 = handler2!(
-      makeMatchState(core),
-      '0',
-      { newBaseDefId: 'base_new' },
-      step1Current?.data,
-      dummyRandom,
-      3021,
-    );
-    const step2Current = (step2!.state.sys as any).interaction?.current;
+    const played = execPlayAction(core, '0', 'tf1', 0);
+    const step1Current = (played.matchState.sys as any).interaction?.current;
+    const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
+    expect(replacementOption).toBeDefined();
+    const step2 = respondInteraction(played.matchState, '0', replacementOption.id);
+    const step2Current = (step2.finalState.sys as any).interaction?.current;
     const titanOption = step2Current?.data?.options?.find((opt: any) => opt.value?.titanUid === 't1');
     expect(titanOption).toBeDefined();
     expect(titanOption.value).toMatchObject({
@@ -304,22 +302,15 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       playKind: 'minion',
     });
 
-    const step3 = handler3!(
-      makeMatchState(core),
-      '0',
-      titanOption.value,
-      step2Current?.data,
-      dummyRandom,
-      3022,
-    );
-    const titanPlayed = step3!.events.find(e => e.type === SU_EVENTS.TITAN_PLAYED);
+    const step3 = respondInteraction(step2.finalState, '0', titanOption.id);
+    const titanPlayed = step3.events.find(e => e.type === SU_EVENTS.TITAN_PLAYED);
     expect(titanPlayed).toBeDefined();
     expect((titanPlayed as any).payload).toMatchObject({
       titanUid: 't1',
       defId: 'tricksters_big_funny_giant',
       controllerId: '0',
       baseIndex: 0,
-      baseDefId: 'base_old',
+      baseDefId: 'base_new',
       reason: 'alien_terraform',
     });
   });
@@ -327,82 +318,65 @@ describe('Aliens 审计修复回归（新 ID）', () => {
   it('alien_terraform: 第三步选择跳过时不产生额外随从事件', () => {
     const core = makeState({
       players: {
-        '0': makePlayer('0', { hand: [makeCard('h1', 'alien_invader', 'minion', '0')] }),
+        '0': makePlayer('0', { hand: [makeCard('tf1', 'alien_terraform', 'action', '0'), makeCard('h1', 'alien_invader', 'minion', '0')] }),
         '1': makePlayer('1'),
       },
       bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '0', 3, { powerModifier: 0 })])],
       baseDeck: ['base_new', 'base_alt'],
     });
 
-    const handler1 = getInteractionHandler('alien_terraform');
-    const handler2 = getInteractionHandler('alien_terraform_choose_replacement');
-    const handler3 = getInteractionHandler('alien_terraform_play_minion');
-    expect(handler1).toBeDefined();
-    expect(handler2).toBeDefined();
-    expect(handler3).toBeDefined();
+    const played = execPlayAction(core, '0', 'tf1', 0);
+    const step1Current = (played.matchState.sys as any).interaction?.current;
+    const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
+    expect(replacementOption).toBeDefined();
+    const step2 = respondInteraction(played.matchState, '0', replacementOption.id);
+    const step2Current = (step2.finalState.sys as any).interaction?.current;
+    const skipOption = step2Current?.data?.options?.find((entry: any) => entry.value?.skip === true);
+    expect(skipOption).toBeDefined();
 
-    const step1 = handler1!(makeMatchState(core), '0', { baseIndex: 0 }, undefined, dummyRandom, 3010);
-    const step1Current = (step1!.state.sys as any).interaction?.current;
-    const step2 = handler2!(
-      makeMatchState(core),
-      '0',
-      { newBaseDefId: 'base_new' },
-      step1Current?.data,
-      dummyRandom,
-      3011,
-    );
-    const step2Current = (step2!.state.sys as any).interaction?.current;
-
-    const step3 = handler3!(
-      makeMatchState(core),
-      '0',
-      { skip: true },
-      step2Current?.data,
-      dummyRandom,
-      3012,
-    );
-    expect(step3).toBeDefined();
-    expect(step3!.events).toEqual([]);
+    const step3 = respondInteraction(step2.finalState, '0', skipOption.id);
+    const domainEvents = step3.events.filter(event => !String(event.type).startsWith('SYS_'));
+    expect(domainEvents).toEqual([]);
   });
 
   it('alien_abduction: 返回随从 + 额外随从额度', () => {
     const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('a1', 'alien_abduction', 'action', '0')] }),
+        '1': makePlayer('1'),
+      },
       bases: [makeBase('base_old', [makeMinion('m1', 'minion_a', '1', 3, { powerModifier: 0 })])],
     });
-    const handler = getInteractionHandler('alien_abduction');
-    expect(handler).toBeDefined();
-    const result = handler!(makeMatchState(core), '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 4000);
-    expect(result).toBeDefined();
-    expect(result!.events).toHaveLength(2);
-    expect(result!.events[0].type).toBe(SU_EVENTS.MINION_RETURNED);
-    expect(result!.events[1].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
+    const result = execPlayAction(core, '0', 'a1', 0, 'm1');
+    expect(result.events).toHaveLength(3);
+    expect(result.events.find(event => event.type === SU_EVENTS.MINION_RETURNED)).toBeDefined();
+    expect(result.events.find(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBeDefined();
   });
 
-  it('alien_invasion: 两步交互移动随从', () => {
+  it('alien_invasion: 直点目标后进入选基地并移动随从', () => {
     const core = makeState({
+      players: {
+        '0': makePlayer('0', { hand: [makeCard('inv1', 'alien_invasion', 'action', '0')] }),
+        '1': makePlayer('1'),
+      },
       bases: [
         makeBase('base_a', [makeMinion('m1', 'minion_a', '0', 3)]),
         makeBase('base_b', []),
       ],
     });
-    // 第一步：选择随从
-    const handler1 = getInteractionHandler('alien_invasion_choose_minion');
-    expect(handler1).toBeDefined();
-    const step1 = handler1!(makeMatchState(core), '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 5000);
-    expect(step1).toBeDefined();
-    const step1Current = (step1!.state.sys as any).interaction?.current;
-    expect(step1Current?.data?.sourceId).toBe('alien_invasion_choose_base');
-
-    // 第二步：选择目标基地
-    const handler2 = getInteractionHandler('alien_invasion_choose_base');
-    expect(handler2).toBeDefined();
-    const step2 = handler2!(
-      makeMatchState(core), '0', { baseIndex: 1 },
-      step1Current?.data, dummyRandom, 5001,
-    );
-    expect(step2).toBeDefined();
-    expect(step2!.events).toHaveLength(1);
-    expect(step2!.events[0].type).toBe(SU_EVENTS.MINION_MOVED);
+    const played = execPlayAction(core, '0', 'inv1', 0, 'm1');
+    const current = (played.matchState.sys as any).interaction?.current;
+    expect(current?.data?.sourceId).toBe('alien_invasion_choose_base');
+    const baseOption = current?.data?.options?.find((entry: any) => entry.value?.baseIndex === 1);
+    expect(baseOption).toBeDefined();
+    const step2 = respondInteraction(played.matchState, '0', baseOption.id);
+    const moved = step2.events.find(event => event.type === SU_EVENTS.MINION_MOVED);
+    expect(moved).toBeDefined();
+    expect((moved as any).payload).toMatchObject({
+      minionUid: 'm1',
+      fromBaseIndex: 0,
+      toBaseIndex: 1,
+    });
   });
 
   it('alien_invasion: 直点随从打出时应直接进入选基地第二步', () => {
@@ -427,17 +401,17 @@ describe('Aliens 审计修复回归（新 ID）', () => {
         playerId: '0',
         payload: { cardUid: 'inv1', targetBaseIndex: 0, targetMinionUid: 'm1' },
       },
-      'alien_invasion targeted play',
+      dummyRandom,
     );
 
-    expect(result.steps[0]?.success).toBe(true);
+    expect(result.success).toBe(true);
     expect((result.finalState.sys.interaction?.current?.data as any)?.sourceId).toBe('alien_invasion_choose_base');
   });
 
   it('alien_invasion: 第二步若目标已离开来源基地则不再移动', () => {
     const core = makeState({
       players: {
-        '0': makePlayer('0'),
+        '0': makePlayer('0', { hand: [makeCard('inv1', 'alien_invasion', 'action', '0')] }),
         '1': makePlayer('1'),
       },
       bases: [
@@ -446,13 +420,8 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       ],
     });
 
-    const handler1 = getInteractionHandler('alien_invasion_choose_minion');
-    const handler2 = getInteractionHandler('alien_invasion_choose_base');
-    expect(handler1).toBeDefined();
-    expect(handler2).toBeDefined();
-
-    const step1 = handler1!(makeMatchState(core), '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 5100);
-    const step1Current = (step1!.state.sys as any).interaction?.current;
+    const played = execPlayAction(core, '0', 'inv1', 0, 'm1');
+    const step1Current = (played.matchState.sys as any).interaction?.current;
     expect(step1Current?.data?.sourceId).toBe('alien_invasion_choose_base');
 
     const staleCore = makeState({
@@ -470,21 +439,27 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       ],
     });
 
-    const step2 = handler2!(
-      makeMatchState(staleCore),
-      '0',
-      { baseIndex: 1 },
-      step1Current?.data,
-      dummyRandom,
-      5101,
-    );
-    expect(step2?.events ?? []).toHaveLength(0);
+    const staleState: MatchState<SmashUpCore> = {
+      core: staleCore,
+      sys: {
+        ...played.matchState.sys,
+        interaction: {
+          ...((played.matchState.sys as any).interaction),
+          current: step1Current,
+        },
+      } as any,
+    };
+    const baseOption = step1Current?.data?.options?.find((entry: any) => entry.value?.baseIndex === 1);
+    expect(baseOption).toBeDefined();
+    const step2 = respondInteraction(staleState, '0', baseOption.id);
+    const domainEvents = step2.events.filter(event => !String(event.type).startsWith('SYS_'));
+    expect(domainEvents).toHaveLength(0);
   });
 
   it('alien_invasion: 第二步若目标基地已不存在则不再移动', () => {
     const core = makeState({
       players: {
-        '0': makePlayer('0'),
+        '0': makePlayer('0', { hand: [makeCard('inv1', 'alien_invasion', 'action', '0')] }),
         '1': makePlayer('1'),
       },
       bases: [
@@ -493,13 +468,8 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       ],
     });
 
-    const handler1 = getInteractionHandler('alien_invasion_choose_minion');
-    const handler2 = getInteractionHandler('alien_invasion_choose_base');
-    expect(handler1).toBeDefined();
-    expect(handler2).toBeDefined();
-
-    const step1 = handler1!(makeMatchState(core), '0', { minionUid: 'm1', baseIndex: 0 }, undefined, dummyRandom, 5200);
-    const step1Current = (step1!.state.sys as any).interaction?.current;
+    const played = execPlayAction(core, '0', 'inv1', 0, 'm1');
+    const step1Current = (played.matchState.sys as any).interaction?.current;
     expect(step1Current?.data?.sourceId).toBe('alien_invasion_choose_base');
 
     const staleCore = makeState({
@@ -507,15 +477,21 @@ describe('Aliens 审计修复回归（新 ID）', () => {
       bases: [makeBase('base_a', [makeMinion('m1', 'minion_a', '0', 3)])],
     });
 
-    const step2 = handler2!(
-      makeMatchState(staleCore),
-      '0',
-      { baseIndex: 1 },
-      step1Current?.data,
-      dummyRandom,
-      5201,
-    );
+    const staleState: MatchState<SmashUpCore> = {
+      core: staleCore,
+      sys: {
+        ...played.matchState.sys,
+        interaction: {
+          ...((played.matchState.sys as any).interaction),
+          current: step1Current,
+        },
+      } as any,
+    };
+    const baseOption = step1Current?.data?.options?.find((entry: any) => entry.value?.baseIndex === 1);
+    expect(baseOption).toBeDefined();
+    const step2 = respondInteraction(staleState, '0', baseOption.id);
 
-    expect(step2?.events ?? []).toHaveLength(0);
+    const domainEvents = step2.events.filter(event => !String(event.type).startsWith('SYS_'));
+    expect(domainEvents).toHaveLength(0);
   });
 });

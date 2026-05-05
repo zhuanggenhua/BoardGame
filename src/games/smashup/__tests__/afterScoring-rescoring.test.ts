@@ -9,6 +9,7 @@ import { asSimpleChoice, createSimpleChoice } from '../../../engine/systems/Inte
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
+import { queueImmediateExtraPlayInteractions } from '../domain/extraPlay';
 import { getSmashUpReactionSession, startSmashUpReactionSession } from '../domain/reactionSession';
 import { smashUpSystemsForTest } from '../game';
 import type { MinionOnBase, SmashUpCommand, SmashUpCore, SmashUpEvent } from '../domain/types';
@@ -618,35 +619,21 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             core.players['1'].hand = [];
             sys.phase = 'startTurn';
 
-            const interaction = createSimpleChoice(
-                'smashup_immediate_extra_0',
-                '0',
-                '立刻打出一个额外随从，或放弃这次机会',
-                [
-                    {
-                        id: 'card-0',
-                        label: '行尸 (力量 2)',
-                        value: { cardUid: 'h1', defId: 'zombie_walker' },
-                        displayMode: 'card',
-                        _source: 'hand' as const,
+            return queueImmediateExtraPlayInteractions(
+                { sys, core },
+                [{
+                    type: SU_EVENTS.LIMIT_MODIFIED,
+                    payload: {
+                        playerId: '0',
+                        limitType: 'minion',
+                        delta: 1,
+                        reason: '神秘花园：额外打出力量≤2的随从',
+                        playTiming: 'immediate',
+                        restrictToBase: 0,
                     },
-                ] as any[],
-                { sourceId: 'smashup_immediate_extra_minion', targetType: 'hand', autoResolveIfSingle: false },
+                    timestamp: 0,
+                } as any],
             );
-            (interaction.data as any).continuationContext = {
-                extra: {
-                    playerId: '0',
-                    limitType: 'minion',
-                    delta: 1,
-                    reason: '神秘花园：额外打出力量≤2的随从',
-                    playTiming: 'immediate',
-                    restrictToBase: 0,
-                },
-            };
-            sys.interaction.current = interaction as any;
-            sys.interaction.queue = [];
-
-            return { sys, core };
         });
 
         const current = getCurrentChoice(runner.getState());

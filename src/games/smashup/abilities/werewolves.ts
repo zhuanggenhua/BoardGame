@@ -4,12 +4,12 @@
  * 主题：临时力量增益（回合结束清零）、消灭低力量随从
  */
 
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addTempPower,
-    grantExtraAction, buildActionMinionTargetOptions,
-    resolveOrPrompt, findMinionOnBases, findMinionByAttachedCard, buildAbilityFeedback,
+    grantExtraAction, buildActionMinionTargetOptions, buildMinionTargetOptions,
+    findMinionOnBases, findMinionByAttachedCard, buildAbilityFeedback,
     modifyBreakpoint,
     buildValidatedDestroyEvents,
 } from '../domain/abilityHelpers';
@@ -19,36 +19,253 @@ import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
 import { getEffectivePower, getEffectiveBreakpoint } from '../domain/ongoingModifiers';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createBranchProgram,
+    createEffectProgram,
+    createPromptProgram,
+} from '../domain/abilityRuntime';
+import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
 import { drawCards, matchesDefId } from '../domain/utils';
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type { MatchState, PlayerId } from '../../../engine/types';
 
 // ============================================================================
 // 注册入口
 // ============================================================================
 
+type WerewolfPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type WerewolfCandidate = {
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    label: string;
+};
+
+type WerewolfChewToyContext = WerewolfPromptContext & {
+    ownMinions: WerewolfCandidate[];
+};
+
+type WerewolfChewToyTargetContext = WerewolfPromptContext & {
+    sourceUid: string;
+    baseIndex: number;
+};
+
+type WerewolfLetTheDogOutContext = WerewolfPromptContext & {
+    ownMinions: WerewolfCandidate[];
+};
+
+type WerewolfLetTheDogOutTargetsContext = WerewolfPromptContext & {
+    budget: number;
+    sourceUid: string;
+    destroyedUids: string[];
+};
+
+type WerewolfChoice = {
+    minionUid?: string;
+    minionDefId?: string;
+    baseIndex?: number;
+    defId?: string;
+    done?: boolean;
+    budget?: number;
+    sourceUid?: string;
+};
+
+function attachOptionsGenerator<T>(
+    interaction: InteractionDescriptor<T>,
+    optionsGenerator: (state: MatchState<SmashUpCore>) => unknown[],
+): InteractionDescriptor<T> {
+    return {
+        ...interaction,
+        data: {
+            ...(interaction.data ?? {}),
+            optionsGenerator,
+        },
+    };
+}
+
+function buildWerewolfOwnMinionCandidates(state: SmashUpCore, playerId: string): WerewolfCandidate[] {
+    const ownMinions: WerewolfCandidate[] = [];
+    for (let i = 0; i < state.bases.length; i += 1) {
+        for (const minion of state.bases[i].minions) {
+            if (minion.controller !== playerId) continue;
+            const def = getCardDef(minion.defId);
+            const power = getEffectivePower(state, minion, i);
+            ownMinions.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: i,
+                label: `${def?.name ?? minion.defId} (力量 ${power})`,
+            });
+        }
+    }
+    return ownMinions;
+}
+
+function buildWerewolfChewToyRawTargets(
+    state: SmashUpCore,
+    baseIndex: number,
+    sourceUid: string,
+): WerewolfCandidate[] {
+    const source = state.bases[baseIndex]?.minions.find((minion) => minion.uid === sourceUid);
+    if (!source) return [];
+    const myPower = getEffectivePower(state, source, baseIndex);
+    const targets: WerewolfCandidate[] = [];
+    for (const minion of state.bases[baseIndex].minions) {
+        if (minion.uid === sourceUid) continue;
+        const power = getEffectivePower(state, minion, baseIndex);
+        if (power >= myPower) continue;
+        const def = getCardDef(minion.defId);
+        targets.push({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex,
+            label: `${def?.name ?? minion.defId} (力量 ${power})`,
+        });
+    }
+    return targets;
+}
+
+function resolveWerewolfChewToySourceSelection(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    choice: WerewolfChoice,
+    timestamp: number,
+) {
+    if (!choice.minionUid || choice.baseIndex === undefined) return { events: [] };
+    const rawTargets = buildWerewolfChewToyRawTargets(state.core, choice.baseIndex, choice.minionUid);
+    if (rawTargets.length === 0) {
+        return { events: [buildAbilityFeedback(playerId, 'feedback.no_valid_targets', timestamp)] };
+    }
+    const options = buildActionMinionTargetOptions(rawTargets, {
+        state: state.core,
+        sourcePlayerId: playerId,
+        effectType: 'destroy',
+    });
+    if (options.length === 0) {
+        return { events: [buildAbilityFeedback(playerId, 'feedback.all_protected', timestamp)] };
+    }
+    if (options.length === 1) {
+        const target = options[0].value as WerewolfChoice;
+        return {
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: target.minionUid!,
+                minionDefId: target.defId!,
+                fromBaseIndex: target.baseIndex!,
+                destroyerId: playerId,
+                reason: 'werewolf_chew_toy',
+                now: timestamp,
+            }),
+        };
+    }
+    return {
+        events: [],
+        context: {
+            matchState: state,
+            playerId,
+            now: timestamp,
+            sourceUid: choice.minionUid,
+            baseIndex: choice.baseIndex,
+        },
+        nextProgram: werewolfChewToyTargetPromptProgram,
+    };
+}
+
+function collectWerewolfLetTheDogOutTargets(
+    state: SmashUpCore,
+    budget: number,
+    sourceUid: string,
+    destroyedUids: string[] = [],
+) {
+    const destroyed = new Set(destroyedUids);
+    const results: WerewolfCandidate[] = [];
+    for (let i = 0; i < state.bases.length; i += 1) {
+        for (const minion of state.bases[i].minions) {
+            if (minion.uid === sourceUid || destroyed.has(minion.uid)) continue;
+            const power = getEffectivePower(state, minion, i);
+            if (power > budget) continue;
+            const def = getCardDef(minion.defId);
+            results.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: i,
+                label: `${def?.name ?? minion.defId} (力量 ${power})`,
+            });
+        }
+    }
+    return results;
+}
+
+function buildWerewolfLetTheDogOutPromptOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    budget: number,
+    sourceUid: string,
+    destroyedUids: string[] = [],
+) {
+    return buildActionMinionTargetOptions(
+        collectWerewolfLetTheDogOutTargets(state, budget, sourceUid, destroyedUids),
+        { state, sourcePlayerId: playerId, effectType: 'destroy' },
+    ).map((option) => ({
+        ...option,
+        value: { ...(option.value as object), budget, sourceUid },
+    }));
+}
+
+function resolveWerewolfLetTheDogOutSourceSelection(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    choice: WerewolfChoice,
+    timestamp: number,
+) {
+    if (!choice.minionUid || choice.baseIndex === undefined) return { events: [] };
+    const source = state.core.bases[choice.baseIndex]?.minions.find((minion) => minion.uid === choice.minionUid);
+    if (!source) return { events: [] };
+    const budget = getEffectivePower(state.core, source, choice.baseIndex);
+    const rawTargets = collectWerewolfLetTheDogOutTargets(state.core, budget, choice.minionUid);
+    if (rawTargets.length === 0) return { events: [] };
+    const options = buildWerewolfLetTheDogOutPromptOptions(state.core, playerId, budget, choice.minionUid);
+    if (options.length === 0) {
+        return { events: [buildAbilityFeedback(playerId, 'feedback.all_protected', timestamp)] };
+    }
+    return {
+        events: [],
+        context: {
+            matchState: state,
+            playerId,
+            now: timestamp,
+            budget,
+            sourceUid: choice.minionUid,
+            destroyedUids: [],
+        },
+        nextProgram: werewolfLetTheDogOutTargetsPromptProgram,
+    };
+}
+
 export function registerWerewolfAbilities(): void {
     // 随从 talent
-    registerAbility('werewolf_howler', 'onPlay', werewolfHowler);
-    registerAbility('werewolf_teenage_wolf', 'talent', werewolfTeenageWolf);
+    registerSimpleAbility('werewolf_howler', 'onPlay', werewolfHowler);
+    registerSimpleAbility('werewolf_teenage_wolf', 'talent', werewolfTeenageWolf);
     // loup_garou 和 pack_alpha 是异能（Special），在 beforeScoring 自动触发
     // 注册在 registerWerewolfOngoingEffects 中
 
     // 行动卡
-    registerAbility('werewolf_frenzy', 'onPlay', werewolfFrenzy);
-    registerAbility('werewolf_chew_toy', 'onPlay', werewolfChewToy);
-    registerAbility('werewolf_let_the_dog_out', 'onPlay', werewolfLetTheDogOut);
+    registerSimpleAbility('werewolf_frenzy', 'onPlay', werewolfFrenzy);
+    registerAbilityProgram('werewolf_chew_toy', 'onPlay', {
+        program: werewolfChewToyProgram,
+        createContext: createWerewolfChewToyContext,
+    });
+    registerAbilityProgram('werewolf_let_the_dog_out', 'onPlay', {
+        program: werewolfLetTheDogOutProgram,
+        createContext: createWerewolfLetTheDogOutContext,
+    });
 
     // ongoing 效果
     registerWerewolfOngoingEffects();
-}
-
-export function registerWerewolfInteractionHandlers(): void {
-    registerInteractionHandler('werewolf_chew_toy', handleChewToyChooseMinion);
-    registerInteractionHandler('werewolf_chew_toy_target', handleChewToyChooseTarget);
-    registerInteractionHandler('werewolf_let_the_dog_out', handleLetTheDogOutChooseMinion);
-    registerInteractionHandler('werewolf_let_the_dog_out_targets', handleLetTheDogOutChooseTarget);
 }
 
 // ============================================================================
@@ -91,265 +308,377 @@ function werewolfFrenzy(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-/** 咀嚼玩具 onPlay：选己方随从，消灭同基地比它力量低的一个随从 */
-function werewolfChewToy(ctx: AbilityContext): AbilityResult {
-    const ownMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId) {
-                const def = getCardDef(m.defId);
-                const power = getEffectivePower(ctx.state, m, i);
-                ownMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId} (力量 ${power})` });
-            }
-        }
-    }
-    if (ownMinions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const options = ownMinions.map((c, i) => ({
-        id: `minion-${i}`, label: c.label,
-        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, defId: c.defId },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
-
-    return resolveOrPrompt(ctx, options, {
-        id: 'werewolf_chew_toy', title: '选择你的一个随从（消灭同基地比它力量低的随从）',
-        sourceId: 'werewolf_chew_toy', targetType: 'minion' as const,
-    }, (val) => createChewToyTargetInteraction(ctx, val.minionUid, val.baseIndex));
-}
-
-function createChewToyTargetInteraction(ctx: AbilityContext, minionUid: string, baseIndex: number): AbilityResult {
-    const minion = ctx.state.bases[baseIndex]?.minions.find(m => m.uid === minionUid);
-    if (!minion) return { events: [] };
-    const myPower = getEffectivePower(ctx.state, minion, baseIndex);
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (const m of ctx.state.bases[baseIndex].minions) {
-        if (m.uid === minionUid) continue;
-        const power = getEffectivePower(ctx.state, m, baseIndex);
-        if (power < myPower) {
-            const def = getCardDef(m.defId);
-            targets.push({ uid: m.uid, defId: m.defId, baseIndex, label: `${def?.name ?? m.defId} (力量 ${power})` });
-        }
-    }
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    // 行动卡来源：需要尊重“烟雾弹”等 action 保护
-    const options = buildActionMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
-    if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.all_protected', ctx.now)] };
-
-    return resolveOrPrompt(ctx, options, {
-        id: 'werewolf_chew_toy_target', title: '选择要消灭的随从',
-        sourceId: 'werewolf_chew_toy_target', targetType: 'minion' as const,
-    }, (val) => ({
-        events: buildValidatedDestroyEvents(ctx.state, {
-            minionUid: val.minionUid,
-            minionDefId: val.defId,
-            fromBaseIndex: val.baseIndex,
-            destroyerId: ctx.playerId,
-            reason: 'werewolf_chew_toy',
-            now: ctx.now,
-        }),
-    }));
-}
-
-/** 关门放狗 onPlay：选己方随从，消灭力量总和≤其力量的随从 */
-function werewolfLetTheDogOut(ctx: AbilityContext): AbilityResult {
-    const ownMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId) {
-                const def = getCardDef(m.defId);
-                const power = getEffectivePower(ctx.state, m, i);
-                ownMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId} (力量 ${power})` });
-            }
-        }
-    }
-    if (ownMinions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const options = ownMinions.map((c, i) => ({
-        id: `minion-${i}`, label: c.label,
-        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, defId: c.defId },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
-
-    return resolveOrPrompt(ctx, options, {
-        id: 'werewolf_let_the_dog_out', title: '选择你的一个随从（消灭力量总和≤其力量的随从们）',
-        sourceId: 'werewolf_let_the_dog_out', targetType: 'minion' as const,
-    }, (val) => {
-        const minion = ctx.state.bases[val.baseIndex]?.minions.find(m => m.uid === val.minionUid);
-        if (!minion) return { events: [] };
-        const myPower = getEffectivePower(ctx.state, minion, val.baseIndex);
-        return buildLetTheDogOutTargetInteraction(ctx.state, ctx.playerId, ctx.now, ctx.matchState, myPower, val.minionUid);
-    });
-}
-
-/** 构建放狗目标选择交互 */
-function buildLetTheDogOutTargetInteraction(
-    state: SmashUpCore, playerId: string, now: number, matchState: any,
-    budget: number, sourceUid: string,
-): AbilityResult {
-    const rawTargets = collectLetTheDogOutTargets(state, budget, sourceUid);
-    const targets = buildActionMinionTargetOptions(
-        rawTargets,
-        { state, sourcePlayerId: playerId, effectType: 'destroy' },
-    ).map(o => ({
-        ...o,
-        value: { ...o.value, budget, sourceUid },
-    }));
-
-    if (targets.length === 0) {
-        return rawTargets.length === 0
-            ? { events: [] }
-            : { events: [buildAbilityFeedback(playerId, 'feedback.all_protected', now)] };
-    }
-    const options = [...targets];
-    options.push({ id: 'done', label: `完成选择（剩余预算 ${budget}）`, value: { done: true, budget, sourceUid }, displayMode: 'button' as const } as any);
-    const interaction = createSimpleChoice(
-        `werewolf_let_the_dog_out_targets_${now}`, playerId,
-        `选择要消灭的随从（力量预算剩余 ${budget}）`, options,
-        { sourceId: 'werewolf_let_the_dog_out_targets', targetType: 'minion' },
-    );
-    return { events: [], matchState: queueInteraction(matchState, interaction) };
-}
-
-function collectLetTheDogOutTargets(state: SmashUpCore, budget: number, sourceUid: string) {
-    const results: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < state.bases.length; i++) {
-        for (const m of state.bases[i].minions) {
-            if (m.uid === sourceUid) continue;
-            const power = getEffectivePower(state, m, i);
-            if (power <= budget) {
-                const def = getCardDef(m.defId);
-                results.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId} (力量 ${power})` });
-            }
-        }
-    }
-    return results;
-}
-
-// ============================================================================
-// 交互处理函数
-// ============================================================================
-
-type IH = (
-    state: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    value: unknown,
-    interactionData: Record<string, unknown> | undefined,
-    random: RandomFn,
-    timestamp: number
-) => { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } | undefined;
-
-const handleChewToyChooseMinion: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number };
-
-    const minion = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!minion) return undefined;
-    const myPower = getEffectivePower(state.core, minion, v.baseIndex);
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (const m of state.core.bases[v.baseIndex].minions) {
-        if (m.uid === v.minionUid) continue;
-        const power = getEffectivePower(state.core, m, v.baseIndex);
-        if (power < myPower) {
-            const def = getCardDef(m.defId);
-            targets.push({ uid: m.uid, defId: m.defId, baseIndex: v.baseIndex, label: `${def?.name ?? m.defId} (力量 ${power})` });
-        }
-    }
-    if (targets.length === 0) return { state, events: [] };
-    const options = buildActionMinionTargetOptions(targets, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' });
-    if (options.length === 0) {
-        return { state, events: [buildAbilityFeedback(playerId, 'feedback.all_protected', now)] };
-    }
-
-    const interaction = createSimpleChoice(
-        `werewolf_chew_toy_target_${now}`, playerId,
-        '选择要消灭的随从', options,
-        { sourceId: 'werewolf_chew_toy_target', targetType: 'minion' },
-    );
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleChewToyChooseTarget: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number; defId: string };
-
+function createWerewolfChewToyContext(ctx: AbilityContext): WerewolfChewToyContext {
     return {
-        state,
-        events: buildValidatedDestroyEvents(state, {
-            minionUid: v.minionUid,
-            minionDefId: v.defId,
-            fromBaseIndex: v.baseIndex,
-            destroyerId: playerId,
-            reason: 'werewolf_chew_toy',
-            now,
-        }),
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        ownMinions: buildWerewolfOwnMinionCandidates(ctx.state, ctx.playerId),
     };
-};
+}
 
-const handleLetTheDogOutChooseMinion: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number };
-    const minion = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!minion) return undefined;
-    const myPower = getEffectivePower(state.core, minion, v.baseIndex);
-    const targets = collectLetTheDogOutTargets(state.core, myPower, v.minionUid);
-    if (targets.length === 0) return { state, events: [] };
-    const options = buildActionMinionTargetOptions(targets, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' })
-        .map(o => ({
-            ...o,
-            value: { ...o.value, budget: myPower, sourceUid: v.minionUid },
-        }));
-    if (options.length === 0) {
-        return { state, events: [buildAbilityFeedback(playerId, 'feedback.all_protected', now)] };
-    }
-    const allOptions = [...options];
-    allOptions.push({ id: 'done', label: `完成选择（剩余预算 ${myPower}）`, value: { done: true, budget: myPower, sourceUid: v.minionUid }, displayMode: 'button' as const } as any);
-    const interaction = createSimpleChoice(
-        `werewolf_let_the_dog_out_targets_${now}`, playerId,
-        `选择要消灭的随从（力量预算剩余 ${myPower}）`, allOptions,
-        { sourceId: 'werewolf_let_the_dog_out_targets', targetType: 'minion' },
-    );
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleLetTheDogOutChooseTarget: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid?: string; defId?: string; baseIndex?: number; done?: boolean; budget: number; sourceUid: string };
-    if (v.done) return { state, events: [] };
-    if (!v.minionUid || !v.defId || v.baseIndex === undefined) return { state, events: [] };
-    const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!target) return { state, events: [] };
-    const destroyEvents = buildValidatedDestroyEvents(state, {
-        minionUid: v.minionUid,
-        minionDefId: v.defId,
-        fromBaseIndex: v.baseIndex,
-        destroyerId: playerId,
-        reason: 'werewolf_let_the_dog_out',
-        now,
+function buildWerewolfOwnMinionPromptOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+): ReturnType<typeof buildMinionTargetOptions> {
+    return buildMinionTargetOptions(buildWerewolfOwnMinionCandidates(state, playerId), {
+        state,
+        sourcePlayerId: playerId,
     });
-    if (destroyEvents.length === 0) return { state, events: [] };
-    const targetPower = getEffectivePower(state.core, target, v.baseIndex);
-    const events: SmashUpEvent[] = [...destroyEvents];
-    const newBudget = v.budget - targetPower;
-    if (newBudget <= 0) return { state, events };
-    // 检查是否还有可消灭目标
-    const remaining = collectLetTheDogOutTargets(state.core, newBudget, v.sourceUid)
-        .filter(t => t.uid !== v.minionUid);
-    if (remaining.length === 0) return { state, events };
-    const options = buildActionMinionTargetOptions(remaining, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' })
-        .map(o => ({
-            ...o,
-            value: { ...o.value, budget: newBudget, sourceUid: v.sourceUid },
-        }));
-    if (options.length === 0) {
-        return { state, events: [...events, buildAbilityFeedback(playerId, 'feedback.all_protected', now)] };
-    }
-    const allOptions = [...options];
-    allOptions.push({ id: 'done', label: `完成选择（剩余预算 ${newBudget}）`, value: { done: true, budget: newBudget, sourceUid: v.sourceUid }, displayMode: 'button' as const } as any);
-    const interaction = createSimpleChoice(
-        `werewolf_let_the_dog_out_targets_${now}`, playerId,
-        `选择要消灭的随从（力量预算剩余 ${newBudget}）`, allOptions,
-        { sourceId: 'werewolf_let_the_dog_out_targets', targetType: 'minion' },
+}
+
+function createWerewolfLetTheDogOutContext(ctx: AbilityContext): WerewolfLetTheDogOutContext {
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        ownMinions: buildWerewolfOwnMinionCandidates(ctx.state, ctx.playerId),
+    };
+}
+
+function buildWerewolfChewToyTargetOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    baseIndex: number,
+    sourceUid: string,
+) {
+    return buildActionMinionTargetOptions(
+        buildWerewolfChewToyRawTargets(state, baseIndex, sourceUid),
+        { state, sourcePlayerId: playerId, effectType: 'destroy' },
     );
-    return { state: queueInteraction(state, interaction), events };
-};
+}
+
+function buildWerewolfLetTheDogOutTargetOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    budget: number,
+    sourceUid: string,
+    destroyedUids: string[] = [],
+) {
+    const options = buildWerewolfLetTheDogOutPromptOptions(
+        state,
+        playerId,
+        budget,
+        sourceUid,
+        destroyedUids,
+    );
+    return [
+        ...options,
+        {
+            id: 'done',
+            label: `完成选择（剩余预算 ${budget}）`,
+            value: { done: true, budget, sourceUid },
+            displayMode: 'button' as const,
+        },
+    ];
+}
+
+const werewolfChewToyTargetPromptProgram = createPromptProgram<
+    WerewolfChewToyTargetContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'werewolf_chew_toy_target',
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `werewolf_chew_toy_target_${context.now}`,
+            context.playerId,
+            '选择要消灭的随从',
+            buildWerewolfChewToyTargetOptions(
+                context.matchState.core,
+                context.playerId,
+                context.baseIndex,
+                context.sourceUid,
+            ),
+            {
+                sourceId: 'werewolf_chew_toy_target',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+            },
+        ),
+        (state) => buildWerewolfChewToyTargetOptions(
+            state.core,
+            context.playerId,
+            context.baseIndex,
+            context.sourceUid,
+        ),
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const choice = value as WerewolfChoice;
+        if (!choice.minionUid || !choice.defId || choice.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const stillValid = buildWerewolfChewToyTargetOptions(
+            state.core,
+            playerId,
+            context.baseIndex,
+            context.sourceUid,
+        );
+        const selected = stillValid.find((option) => (option.value as WerewolfChoice).minionUid === choice.minionUid);
+        if (!selected) {
+            return { events: [] };
+        }
+        return {
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: choice.minionUid,
+                minionDefId: choice.defId,
+                fromBaseIndex: choice.baseIndex,
+                destroyerId: playerId,
+                reason: 'werewolf_chew_toy',
+                now: timestamp,
+            }),
+        };
+    },
+});
+
+const werewolfChewToyPromptProgram = createPromptProgram<WerewolfChewToyContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'werewolf_chew_toy',
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `werewolf_chew_toy_${context.now}`,
+            context.playerId,
+            '选择你的一个随从（消灭同基地比它力量低的随从）',
+            buildWerewolfOwnMinionPromptOptions(context.matchState.core, context.playerId),
+            {
+                sourceId: 'werewolf_chew_toy',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+            },
+        ),
+        (state) => buildWerewolfOwnMinionPromptOptions(state.core, context.playerId),
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const choice = value as WerewolfChoice;
+        if (!choice.minionUid || choice.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const ownMinions = buildWerewolfOwnMinionCandidates(state.core, playerId);
+        const selected = ownMinions.find((minion) => minion.uid === choice.minionUid && minion.baseIndex === choice.baseIndex);
+        if (!selected) {
+            return { events: [] };
+        }
+        return resolveWerewolfChewToySourceSelection(
+            state,
+            playerId,
+            {
+                minionUid: selected.uid,
+                minionDefId: selected.defId,
+                baseIndex: selected.baseIndex,
+                defId: selected.defId,
+            },
+            timestamp,
+        );
+    },
+});
+
+const werewolfChewToyProgram = createBranchProgram<WerewolfChewToyContext, SmashUpCore, SmashUpEvent>({
+    when: (context) => context.ownMinions.length === 0,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
+    })),
+    else: createBranchProgram({
+        when: (context) => context.ownMinions.length === 1,
+        then: createEffectProgram((context) => {
+            const [selected] = context.ownMinions;
+            return resolveWerewolfChewToySourceSelection(
+                context.matchState,
+                context.playerId,
+                {
+                    minionUid: selected.uid,
+                    minionDefId: selected.defId,
+                    baseIndex: selected.baseIndex,
+                    defId: selected.defId,
+                },
+                context.now,
+            );
+        }),
+        else: werewolfChewToyPromptProgram,
+    }),
+});
+
+const werewolfLetTheDogOutTargetsPromptProgram = createPromptProgram<
+    WerewolfLetTheDogOutTargetsContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'werewolf_let_the_dog_out_targets',
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `werewolf_let_the_dog_out_targets_${context.now}`,
+            context.playerId,
+            `选择要消灭的随从（力量预算剩余 ${context.budget}）`,
+            buildWerewolfLetTheDogOutTargetOptions(
+                context.matchState.core,
+                context.playerId,
+                context.budget,
+                context.sourceUid,
+                context.destroyedUids,
+            ),
+            {
+                sourceId: 'werewolf_let_the_dog_out_targets',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+            },
+        ),
+        (state) => buildWerewolfLetTheDogOutTargetOptions(
+            state.core,
+            context.playerId,
+            context.budget,
+            context.sourceUid,
+            context.destroyedUids,
+        ),
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const choice = value as WerewolfChoice;
+        if (choice.done) {
+            return { events: [] };
+        }
+        if (!choice.minionUid || !choice.defId || choice.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const stillValid = buildWerewolfLetTheDogOutPromptOptions(
+            state.core,
+            playerId,
+            context.budget,
+            context.sourceUid,
+            context.destroyedUids,
+        );
+        const selected = stillValid.find((option) => (option.value as WerewolfChoice).minionUid === choice.minionUid);
+        if (!selected) {
+            return { events: [] };
+        }
+        const target = state.core.bases[choice.baseIndex]?.minions.find((minion) => minion.uid === choice.minionUid);
+        if (!target) {
+            return { events: [] };
+        }
+        const destroyEvents = buildValidatedDestroyEvents(state, {
+            minionUid: choice.minionUid,
+            minionDefId: choice.defId,
+            fromBaseIndex: choice.baseIndex,
+            destroyerId: playerId,
+            reason: 'werewolf_let_the_dog_out',
+            now: timestamp,
+        });
+        if (destroyEvents.length === 0) {
+            return { events: [] };
+        }
+        const targetPower = getEffectivePower(state.core, target, choice.baseIndex);
+        const newBudget = context.budget - targetPower;
+        if (newBudget <= 0) {
+            return { events: destroyEvents };
+        }
+        const destroyedUids = [...context.destroyedUids, choice.minionUid];
+        const remainingRawTargets = collectWerewolfLetTheDogOutTargets(
+            state.core,
+            newBudget,
+            context.sourceUid,
+            destroyedUids,
+        );
+        if (remainingRawTargets.length === 0) {
+            return { events: destroyEvents };
+        }
+        const remainingLegalTargets = buildWerewolfLetTheDogOutPromptOptions(
+            state.core,
+            playerId,
+            newBudget,
+            context.sourceUid,
+            destroyedUids,
+        );
+        if (remainingLegalTargets.length === 0) {
+            return {
+                events: [
+                    ...destroyEvents,
+                    buildAbilityFeedback(playerId, 'feedback.all_protected', timestamp),
+                ],
+            };
+        }
+        return {
+            events: destroyEvents,
+            context: {
+                matchState: state,
+                playerId,
+                now: timestamp,
+                budget: newBudget,
+                sourceUid: context.sourceUid,
+                destroyedUids,
+            },
+            nextProgram: werewolfLetTheDogOutTargetsPromptProgram,
+        };
+    },
+});
+
+const werewolfLetTheDogOutPromptProgram = createPromptProgram<
+    WerewolfLetTheDogOutContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'werewolf_let_the_dog_out',
+    buildInteraction: (context) => attachOptionsGenerator(
+        createAbilityRuntimeSimpleChoice(
+            `werewolf_let_the_dog_out_${context.now}`,
+            context.playerId,
+            '选择你的一个随从（消灭力量总和≤其力量的随从们）',
+            buildWerewolfOwnMinionPromptOptions(context.matchState.core, context.playerId),
+            {
+                sourceId: 'werewolf_let_the_dog_out',
+                targetType: 'minion',
+                responseValidationMode: 'live',
+            },
+        ),
+        (state) => buildWerewolfOwnMinionPromptOptions(state.core, context.playerId),
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const choice = value as WerewolfChoice;
+        if (!choice.minionUid || choice.baseIndex === undefined) {
+            return { events: [] };
+        }
+        const ownMinions = buildWerewolfOwnMinionCandidates(state.core, playerId);
+        const selected = ownMinions.find((minion) => minion.uid === choice.minionUid && minion.baseIndex === choice.baseIndex);
+        if (!selected) {
+            return { events: [] };
+        }
+        return resolveWerewolfLetTheDogOutSourceSelection(
+            state,
+            playerId,
+            {
+                minionUid: selected.uid,
+                minionDefId: selected.defId,
+                baseIndex: selected.baseIndex,
+                defId: selected.defId,
+            },
+            timestamp,
+        );
+    },
+});
+
+const werewolfLetTheDogOutProgram = createBranchProgram<
+    WerewolfLetTheDogOutContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => context.ownMinions.length === 0,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
+    })),
+    else: createBranchProgram({
+        when: (context) => context.ownMinions.length === 1,
+        then: createEffectProgram((context) => {
+            const [selected] = context.ownMinions;
+            return resolveWerewolfLetTheDogOutSourceSelection(
+                context.matchState,
+                context.playerId,
+                {
+                    minionUid: selected.uid,
+                    minionDefId: selected.defId,
+                    baseIndex: selected.baseIndex,
+                    defId: selected.defId,
+                },
+                context.now,
+            );
+        }),
+        else: werewolfLetTheDogOutPromptProgram,
+    }),
+});
 
 // ============================================================================
 // Ongoing 效果注册
@@ -432,7 +761,7 @@ function registerWerewolfOngoingEffects(): void {
     });
 
     // 狼群领袖 ongoing(minion)+talent：如果本随从力量最高，额外打出行动
-    registerAbility('werewolf_leader_of_the_pack', 'talent', (ctx: AbilityContext): AbilityResult => {
+    registerSimpleAbility('werewolf_leader_of_the_pack', 'talent', (ctx: AbilityContext): AbilityResult => {
         const found = findMinionByAttachedCard(ctx.state, ctx.cardUid);
         if (!found) return { events: [] };
         const myPower = getEffectivePower(ctx.state, found.minion, found.baseIndex);
@@ -448,7 +777,7 @@ function registerWerewolfOngoingEffects(): void {
     });
 
     // 月之触 ongoing(minion)+talent：如果本随从力量最高，抽一张牌
-    registerAbility('werewolf_moontouched', 'talent', (ctx: AbilityContext): AbilityResult => {
+    registerSimpleAbility('werewolf_moontouched', 'talent', (ctx: AbilityContext): AbilityResult => {
         const found = findMinionByAttachedCard(ctx.state, ctx.cardUid);
         if (!found) return { events: [] };
         const myPower = getEffectivePower(ctx.state, found.minion, found.baseIndex);

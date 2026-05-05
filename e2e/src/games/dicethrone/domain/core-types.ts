@@ -295,6 +295,26 @@ export interface InteractionDescriptor {
 /** @deprecated 使用 InteractionDescriptor 代替 */
 export type PendingInteraction = InteractionDescriptor;
 
+export interface DefenderChoiceOption {
+    playerId: PlayerId;
+    customId: string;
+    disabled?: boolean;
+}
+
+/**
+ * 4 人 / 2v2 targetingRoll 的专用受击者选择。
+ * 仅表达“为当前 pendingAttack 选 defender”，不复用 simple-choice/selectPlayer 语义。
+ */
+export interface PendingDefenderChoice {
+    attackerId: PlayerId;
+    chooserPlayerId: PlayerId;
+    sourceAbilityId: string;
+    titleKey: string;
+    targetRollValue: number;
+    options: DefenderChoiceOption[];
+    allowedCommands?: string[];
+}
+
 
 /**
  * 伤害护盾

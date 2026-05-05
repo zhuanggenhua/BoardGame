@@ -26,6 +26,7 @@ import type {
     SeatSwapCancelledEvent,
     PlayerReadyEvent,
     PlayerUnreadyEvent,
+    DefenderSelectionResolvedEvent,
 } from './types';
 import {
     getRollerId,
@@ -517,6 +518,40 @@ export function execute(
         case 'RESOLVE_CHOICE': {
             // 由 InteractionSystem 处理，这里只生成领域事件
             // 实际的交互清理在系统层
+            break;
+        }
+
+        case 'SELECT_DEFENDER_TARGET': {
+            const currentInteraction = matchState.sys?.interaction?.current;
+            if (currentInteraction?.kind !== 'dt:defender-choice') {
+                break;
+            }
+            const pendingChoice = currentInteraction.data as {
+                attackerId?: PlayerId;
+                chooserPlayerId?: PlayerId;
+                sourceAbilityId?: string;
+            } | null;
+            if (
+                !pendingChoice
+                || typeof pendingChoice.attackerId !== 'string'
+                || typeof pendingChoice.chooserPlayerId !== 'string'
+                || typeof pendingChoice.sourceAbilityId !== 'string'
+            ) {
+                break;
+            }
+
+            const event: DefenderSelectionResolvedEvent = {
+                type: 'DEFENDER_SELECTION_RESOLVED',
+                payload: {
+                    attackerId: pendingChoice.attackerId,
+                    chooserPlayerId: pendingChoice.chooserPlayerId,
+                    defenderId: command.payload.defenderId,
+                    sourceAbilityId: pendingChoice.sourceAbilityId,
+                },
+                sourceCommandType: command.type,
+                timestamp,
+            };
+            events.push(event);
             break;
         }
 

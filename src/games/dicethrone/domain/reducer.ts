@@ -481,25 +481,51 @@ const handleTokenLimitChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TO
  */
 const handleChoiceRequested: EventHandler<Extract<DiceThroneEvent, { type: 'CHOICE_REQUESTED' }>> = (
     state,
-    event
+    _event
 ) => {
-    const isTargetSelection = event.payload.options.some((option) => option.customId?.startsWith('select-target:'));
-    if (isTargetSelection && state.pendingAttack) {
-        if (state.pendingAttack.targetingSelectionResolved === true) {
-            return state;
-        }
-        return {
-            ...state,
-            pendingAttack: {
-                ...state.pendingAttack,
-                targetingSelectionPending: true,
-                targetingSelectionResolved: false,
-            },
-        };
-    }
-
     // 不修改核心状态，prompt 由系统层管理
     return state;
+};
+
+const handleDefenderSelectionRequested: EventHandler<Extract<DiceThroneEvent, { type: 'DEFENDER_SELECTION_REQUESTED' }>> = (
+    state,
+    event,
+) => {
+    if (!state.pendingAttack || state.pendingAttack.attackerId !== event.payload.attackerId) {
+        return state;
+    }
+    if (state.pendingAttack.targetingSelectionResolved === true) {
+        return state;
+    }
+    return {
+        ...state,
+        pendingAttack: {
+            ...state.pendingAttack,
+            targetingSelectionPending: true,
+            targetingSelectionResolved: false,
+        },
+    };
+};
+
+const handleDefenderSelectionResolved: EventHandler<Extract<DiceThroneEvent, { type: 'DEFENDER_SELECTION_RESOLVED' }>> = (
+    state,
+    event,
+) => {
+    if (!state.pendingAttack || state.pendingAttack.attackerId !== event.payload.attackerId) {
+        return state;
+    }
+    if (!state.players[event.payload.defenderId]) {
+        return state;
+    }
+    return {
+        ...state,
+        pendingAttack: {
+            ...state.pendingAttack,
+            defenderId: event.payload.defenderId,
+            targetingSelectionPending: false,
+            targetingSelectionResolved: true,
+        },
+    };
 };
 
 /**
@@ -959,6 +985,10 @@ export const reduce = (
             return handleChoiceRequested(state, event);
         case 'CHOICE_RESOLVED':
             return handleChoiceResolved(state, event);
+        case 'DEFENDER_SELECTION_REQUESTED':
+            return handleDefenderSelectionRequested(state, event);
+        case 'DEFENDER_SELECTION_RESOLVED':
+            return handleDefenderSelectionResolved(state, event);
         case 'TURN_CHANGED':
             return handleTurnChanged(state, event);
         case 'ABILITY_REPLACED':

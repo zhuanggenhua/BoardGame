@@ -26,6 +26,7 @@
 import { describe, expect, it, beforeAll } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
+import { resolveAbilityRuntimePrompt } from '../domain/abilityRuntime';
 import { clearBaseAbilityRegistry, triggerBaseAbility, triggerExtendedBaseAbility } from '../domain/baseAbilities';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
@@ -90,45 +91,48 @@ describe('expansion base extra timing regression coverage', () => {
         const ms = makeMatchState(core);
         ms.sys.phase = 'startTurn';
 
-        const result = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', makeCtx({
+        const triggerCtx = makeCtx({
             state: core,
             matchState: ms,
             baseDefId: 'base_fairy_ring',
             baseIndex: 0,
             minionUid: 'm1',
-        }));
+        });
+        const result = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
 
         expect(result.events).toHaveLength(0);
         const prompt = getInteractionsFromResult(result)[0] as any;
         expect(prompt?.data?.sourceId).toBe('base_fairy_ring');
 
-        const handler = getInteractionHandler('base_fairy_ring');
-        expect(handler).toBeDefined();
-
-        const minionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
-        const actionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
+        const minionTrigger = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
+        const minionPrompt = getInteractionsFromResult(minionTrigger)[0] as any;
+        const minionOption = minionPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
         expect(minionOption).toBeDefined();
-        expect(actionOption).toBeDefined();
 
-        const minionResolved = handler!(
-            result.matchState!,
+        const minionResolved = resolveAbilityRuntimePrompt(
+            minionTrigger.matchState!,
             '0',
             minionOption.value,
-            prompt.data,
-            dummyRandom,
-            1000,
-        );
-        const actionResolved = handler!(
-            result.matchState!,
-            '0',
-            actionOption.value,
-            prompt.data,
+            minionPrompt.data,
             dummyRandom,
             1000,
         );
 
-        const minionEvent = minionResolved.events.find(e => e.type === SU_EVENTS.LIMIT_MODIFIED) as any;
-        const actionEvent = actionResolved.events.find(e => e.type === SU_EVENTS.LIMIT_MODIFIED) as any;
+        const actionTrigger = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
+        const actionPrompt = getInteractionsFromResult(actionTrigger)[0] as any;
+        const actionOption = actionPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
+        expect(actionOption).toBeDefined();
+        const actionResolved = resolveAbilityRuntimePrompt(
+            actionTrigger.matchState!,
+            '0',
+            actionOption.value,
+            actionPrompt.data,
+            dummyRandom,
+            1000,
+        );
+
+        const minionEvent = minionResolved?.events.find(e => e.type === SU_EVENTS.LIMIT_MODIFIED) as any;
+        const actionEvent = actionResolved?.events.find(e => e.type === SU_EVENTS.LIMIT_MODIFIED) as any;
         expect(minionEvent?.payload.limitType).toBe('minion');
         expect(actionEvent?.payload.limitType).toBe('action');
         expect(minionEvent?.payload.playTiming).toBe('immediate');
@@ -1497,47 +1501,50 @@ describe('base_fairy_ring: 仙灵圈 - 首次打随从额外额度', () => {
             },
         });
 
-        const result = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', makeCtx({
+        const triggerCtx = makeCtx({
             state: core,
             matchState: makeMatchState(core),
             baseDefId: 'base_fairy_ring',
             baseIndex: 0,
             minionUid: 'm1',
-        }));
+        });
+        const result = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
 
         expect(result.events).toHaveLength(0);
         const prompt = getInteractionsFromResult(result)[0] as any;
         expect(prompt?.data?.sourceId).toBe('base_fairy_ring');
 
-        const handler = getInteractionHandler('base_fairy_ring');
-        expect(handler).toBeDefined();
-
-        const minionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
-        const actionOption = prompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
+        const minionTrigger = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
+        const minionPrompt = getInteractionsFromResult(minionTrigger)[0] as any;
+        const minionOption = minionPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
         expect(minionOption).toBeDefined();
-        expect(actionOption).toBeDefined();
 
-        const minionResolved = handler!(
-            result.matchState!,
+        const minionResolved = resolveAbilityRuntimePrompt(
+            minionTrigger.matchState!,
             '0',
             minionOption.value,
-            prompt.data,
-            dummyRandom,
-            1000,
-        );
-        const actionResolved = handler!(
-            result.matchState!,
-            '0',
-            actionOption.value,
-            prompt.data,
+            minionPrompt.data,
             dummyRandom,
             1000,
         );
 
-        const minionLimit = minionResolved.events.find(e =>
+        const actionTrigger = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
+        const actionPrompt = getInteractionsFromResult(actionTrigger)[0] as any;
+        const actionOption = actionPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
+        expect(actionOption).toBeDefined();
+        const actionResolved = resolveAbilityRuntimePrompt(
+            actionTrigger.matchState!,
+            '0',
+            actionOption.value,
+            actionPrompt.data,
+            dummyRandom,
+            1000,
+        );
+
+        const minionLimit = minionResolved?.events.find(e =>
             e.type === SU_EVENTS.LIMIT_MODIFIED && (e as any).payload.limitType === 'minion'
         );
-        const actionLimit = actionResolved.events.find(e =>
+        const actionLimit = actionResolved?.events.find(e =>
             e.type === SU_EVENTS.LIMIT_MODIFIED && (e as any).payload.limitType === 'action'
         );
         expect(minionLimit).toBeDefined();

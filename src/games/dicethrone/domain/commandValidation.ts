@@ -45,6 +45,8 @@ import type {
     SkipBonusDiceRerollCommand,
     UsePassiveAbilityCommand,
     GrantTokensCommand,
+    PendingDefenderChoice,
+    SelectDefenderTargetCommand,
 } from './types';
 import {
     getRollerId,
@@ -557,6 +559,12 @@ const validateSelectAbility = (
             if (!hasAbility) {
                 return fail('ability_not_available');
             }
+            return ok();
+        }
+
+        // 掷骰后选择：若唯一防御技能已在进入 defensiveRoll 时自动选中，
+        // 允许同 ID 的重复 SELECT_ABILITY 作为幂等操作。
+        if (state.pendingAttack.defenseAbilityId === abilityId) {
             return ok();
         }
 
@@ -1258,6 +1266,30 @@ const validateSkipBonusDiceReroll = (
     return ok();
 };
 
+const validateSelectDefenderTarget = (
+    _state: DiceThroneCore,
+    cmd: SelectDefenderTargetCommand,
+    playerId: PlayerId,
+    pendingDefenderChoice?: PendingDefenderChoice,
+): ValidationResult => {
+    if (!pendingDefenderChoice) {
+        return fail('no_pending_defender_choice');
+    }
+    if (pendingDefenderChoice.chooserPlayerId !== playerId) {
+        return fail('player_mismatch');
+    }
+
+    const option = pendingDefenderChoice.options.find((entry) => entry.playerId === cmd.payload.defenderId);
+    if (!option) {
+        return fail('invalid_defender_target');
+    }
+    if (option.disabled) {
+        return fail('defender_target_disabled');
+    }
+
+    return ok();
+};
+
 /**
  * 验证使用被动能力命令（如教皇税：花费 CP 重掷/抽牌）
  */
@@ -1344,6 +1376,7 @@ export const validateCommand = (
     command: DiceThroneCommand,
     phase: TurnPhase,
     pendingInteraction?: InteractionDescriptor,
+    pendingDefenderChoice?: PendingDefenderChoice,
     responseWindowType?: DtResponseWindowType
 ): ValidationResult => {
     if (command.type.startsWith('SYS_')) {
@@ -1363,6 +1396,7 @@ export const validateCommand = (
     if (isCommandType(command, 'PLAY_CARD')) return validatePlayCard(state, command, playerId, phase, responseWindowType);
     if (isCommandType(command, 'PLAY_UPGRADE_CARD')) return validatePlayUpgradeCard(state, command, playerId, phase);
     if (isCommandType(command, 'RESOLVE_CHOICE')) return validateResolveChoice(state, command, playerId);
+    if (isCommandType(command, 'SELECT_DEFENDER_TARGET')) return validateSelectDefenderTarget(state, command, playerId, pendingDefenderChoice);
     if (isCommandType(command, 'ADVANCE_PHASE')) return validateAdvancePhase(state, command, playerId, phase);
     if (isCommandType(command, 'SELECT_CHARACTER')) return validateSelectCharacter(state, command, playerId, phase);
     if (isCommandType(command, 'HOST_START_GAME')) return validateHostStartGame(state, command, playerId, phase);

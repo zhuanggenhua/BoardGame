@@ -31,7 +31,9 @@ import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { reduce } from '../domain/reduce';
 import { execute, processDestroyTriggers } from '../domain/reducer';
+import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { validate } from '../domain/commands';
+import { resumePendingBranchingChoiceFrames } from '../domain/branchingChoice';
 import {
     makeMinion,
     makeCard,
@@ -44,7 +46,12 @@ import {
 } from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import type { MatchState } from '../../../engine/types';
-import { refreshInteractionOptions } from '../../../engine/systems/InteractionSystem';
+import {
+    createSimpleChoice,
+    queueInteraction,
+    refreshInteractionOptions,
+    resolveInteraction,
+} from '../../../engine/systems/InteractionSystem';
 import { SMASHUP_AUDIO_CONFIG } from '../audio.config';
 import { COWBOYS_ACTIONS, COWBOYS_MINIONS } from '../data/factions/cowboys';
 import { COWBOYS_POD_ACTIONS, COWBOYS_POD_MINIONS } from '../data/factions/cowboys_pod';
@@ -3305,7 +3312,7 @@ describe('stale destroy regression: 交互提示能力', () => {
 
         const prompt = getInteractionsFromMS(playResult.finalState)[0] as any;
         const option = prompt?.data?.options?.find((entry: any) => entry?.value?.minionUid === 'e1');
-        const handler = getInteractionHandler('werewolf_let_the_dog_out_targets');
+        const handler = getAbilityRuntimePromptHandler('werewolf_let_the_dog_out_targets');
         expect(prompt?.data?.sourceId).toBe('werewolf_let_the_dog_out_targets');
         expect(option).toBeDefined();
         expect(handler).toBeDefined();
@@ -4941,13 +4948,16 @@ describe('科学怪人派系能力', () => {
     });
 
     it('愤怒的民众：若所选手牌已离开手牌，不应凭旧交互再塞回牌库', () => {
-        const handler = getInteractionHandler('frankenstein_angry_mob_choose_card');
-        expect(handler).toBeDefined();
+        const chooseMinionHandler = getAbilityRuntimePromptHandler('frankenstein_angry_mob');
+        const chooseCardHandler = getAbilityRuntimePromptHandler('frankenstein_angry_mob_choose_card');
+        expect(chooseMinionHandler).toBeDefined();
+        expect(chooseCardHandler).toBeDefined();
 
-        const liveState = makeMatchState(makeState({
+        const playState = makeMatchState(makeState({
             players: {
                 '0': makePlayer('0', {
                     hand: [
+                        makeCard('angry-mob', 'frankenstein_angry_mob', 'action', '0'),
                         makeCard('h1', 'test_action_a', 'action', '0'),
                         makeCard('h2', 'test_action_b', 'action', '0'),
                     ],
@@ -4961,20 +4971,33 @@ describe('科学怪人派系能力', () => {
             }],
         }));
 
-        const interactionData = {
-            continuationContext: {
-                minionUid: 'monster1',
-                baseIndex: 0,
-            },
-        };
+        const played = runCommand(
+            playState,
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'angry-mob' } },
+            defaultTestRandom,
+        );
+        const chooseMinionPrompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(chooseMinionPrompt?.data?.sourceId).toBe('frankenstein_angry_mob');
 
-        const liveResult = handler!(
-            liveState,
+        const afterChooseMinion = chooseMinionHandler!(
+            played.finalState,
             '0',
-            { cardUid: 'h1', defId: 'test_action_a' },
-            interactionData as any,
+            { minionUid: 'monster1', minionDefId: 'frankenstein_the_monster', baseIndex: 0 },
+            chooseMinionPrompt.data,
             defaultTestRandom,
             1000,
+        );
+        const afterChooseMinionState = resolveInteraction(afterChooseMinion!.state);
+        const chooseCardPrompt = getInteractionsFromMS(afterChooseMinionState)[0] as any;
+        expect(chooseCardPrompt?.data?.sourceId).toBe('frankenstein_angry_mob_choose_card');
+
+        const liveResult = chooseCardHandler!(
+            afterChooseMinionState,
+            '0',
+            { cardUid: 'h1', defId: 'test_action_a' },
+            chooseCardPrompt.data,
+            defaultTestRandom,
+            1001,
         );
         expect(liveResult?.events.some(e => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(true);
         expect(liveResult?.events.some(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
@@ -4994,13 +5017,13 @@ describe('科学怪人派系能力', () => {
             }],
         }));
 
-        const staleResult = handler!(
+        const staleResult = chooseCardHandler!(
             staleState,
             '0',
             { cardUid: 'h1', defId: 'test_action_a' },
-            interactionData as any,
+            chooseCardPrompt.data,
             defaultTestRandom,
-            1001,
+            1002,
         );
         expect(staleResult?.events ?? []).toHaveLength(0);
     });
@@ -8587,6 +8610,77 @@ describe('Fairies abilities', () => {
         expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBe(1);
     });
 
+    it('fairies_titania 的第二个 OR 分支必须等待同 frame 的插队交互先结清', () => {
+        const core = makeState({
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('titania-1', 'fairies_titania', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            titans: [{
+                uid: 'spirit-1',
+                defId: 'fairies_spirit_of_the_forest',
+                faction: 'fairies',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'base', baseIndex: 0, enteredAt: 1 },
+            }],
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('enemy-1', 'robot_microbot_alpha', '1', 1, { owner: '1', powerModifier: 0 })],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'titania-1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+        const firstPrompt = getInteractionsFromMS(played.finalState)[0] as any;
+        const returnOption = firstPrompt.data.options.find((entry: any) => entry.value?.branchId === 'return_minion');
+        expect(returnOption).toBeDefined();
+
+        const choseReturnBranch = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: returnOption.id } } as any,
+            defaultTestRandom,
+        );
+        const targetPrompt = getInteractionsFromMS(choseReturnBranch.finalState)[0] as any;
+        const frameId = targetPrompt?.resolutionFrameId as string | undefined;
+        expect(frameId).toBeTruthy();
+
+        const injectedPrompt = createSimpleChoice(
+            'synthetic-inserted',
+            '0',
+            '模拟返回时插队交互',
+            [{ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const }],
+            { sourceId: 'synthetic_inserted', targetType: 'button', autoResolveIfSingle: false },
+        );
+        const queuedInserted = queueInteraction(choseReturnBranch.finalState, {
+            ...injectedPrompt,
+            resolutionFrameId: frameId,
+        });
+        const insertedCurrentState = resolveInteraction(queuedInserted);
+        const insertedPromptState = getInteractionsFromMS(insertedCurrentState)[0] as any;
+        expect(insertedPromptState?.data?.sourceId).toBe('synthetic_inserted');
+
+        const blockedByInserted = resumePendingBranchingChoiceFrames(insertedCurrentState, 5003);
+        expect(getInteractionsFromMS(blockedByInserted)[0]?.data?.sourceId).toBe('synthetic_inserted');
+
+        const afterInsertedResolved = resolveInteraction(insertedCurrentState);
+        const resumedState = resumePendingBranchingChoiceFrames(afterInsertedResolved, 5004);
+        const followUpPrompt = getInteractionsFromMS(resumedState)[0] as any;
+        expect(followUpPrompt?.data?.sourceId).toBe('fairies_titania');
+        const followUpExtraMinion = followUpPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
+        expect(followUpExtraMinion).toBeDefined();
+        expect(followUpPrompt.data.options.find((entry: any) => entry.value?.branchId === 'return_minion')).toBeUndefined();
+    });
+
     it('fairies_glymmer 对其他随从的 -4 力量会在你的下回合开始时结束', () => {
         const core = makeState({
             turnOrder: ['0', '1'],
@@ -8614,11 +8708,21 @@ describe('Fairies abilities', () => {
 
         const prompt = getInteractionsFromMS(used.finalState)[0] as any;
         expect(prompt?.data?.sourceId).toBe('fairies_glymmer');
-        const targetOption = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
+        const targetBranch = prompt.data.options.find((entry: any) => entry.value?.choice === 'target_other');
+        expect(targetBranch).toBeDefined();
+
+        const choseTargetBranch = runCommand(
+            used.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetBranch.id } } as any,
+            defaultTestRandom,
+        );
+        const targetPrompt = getInteractionsFromMS(choseTargetBranch.finalState)[0] as any;
+        expect(targetPrompt?.data?.sourceId).toBe('fairies_glymmer_target');
+        const targetOption = targetPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
         expect(targetOption).toBeDefined();
 
         const resolved = runCommand(
-            used.finalState,
+            choseTargetBranch.finalState,
             { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
             defaultTestRandom,
         );
@@ -9115,6 +9219,172 @@ describe('Princesses abilities', () => {
 
         expect(resolved.finalState.core.players['0'].discard.map(card => card.uid)).not.toContain('spell-1');
         expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['deck-1', 'spell-1']);
+    });
+
+    it('princesses_fairy_godmother 选择 buff 时会进入第二段目标选择并给目标 +2 力量', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('fg-1', 'princesses_fairy_godmother', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('ally-1', 'robot_microbot_alpha', '0', 2),
+                    makeMinion('enemy-1', 'robot_microbot_beta', '1', 3),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'fg-1' } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('princesses_fairy_godmother');
+
+        const buffOption = prompt.data.options.find((entry: any) => entry.value?.choice === 'buff');
+        expect(buffOption).toBeDefined();
+
+        const choseBuff = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: buffOption.id } } as any,
+            defaultTestRandom,
+        );
+        const targetPrompt = getInteractionsFromMS(choseBuff.finalState)[0] as any;
+        expect(targetPrompt?.data?.sourceId).toBe('princesses_fairy_godmother_target');
+
+        const targetOption = targetPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'ally-1');
+        expect(targetOption).toBeDefined();
+
+        const resolved = runCommand(
+            choseBuff.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1')?.tempPowerModifier).toBe(2);
+    });
+
+    it('princesses_true_loves_kiss 会先选随从再选基地并完成移动', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('tlk-1', 'princesses_true_loves_kiss', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('enemy-1', 'robot_microbot_alpha', '1', 2)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'tlk-1' } },
+            defaultTestRandom,
+        );
+        const prompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('princesses_true_loves_kiss');
+
+        const minionOption = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
+        expect(minionOption).toBeDefined();
+
+        const choseMinion = runCommand(
+            played.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minionOption.id } } as any,
+            defaultTestRandom,
+        );
+        const basePrompt = getInteractionsFromMS(choseMinion.finalState)[0] as any;
+        expect(basePrompt?.data?.sourceId).toBe('princesses_true_loves_kiss_base');
+
+        const baseOption = basePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(baseOption).toBeDefined();
+
+        const resolved = runCommand(
+            choseMinion.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('enemy-1');
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toContain('enemy-1');
+    });
+
+    it('princesses_some_day_my_prince_will_come 会先选本基地随从再选目标基地', () => {
+        const executor = resolveSpecial('princesses_some_day_my_prince_will_come');
+        expect(executor).toBeDefined();
+
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('ally-1', 'robot_microbot_alpha', '0', 2),
+                        makeMinion('enemy-1', 'robot_microbot_beta', '1', 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const result = executor!({
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'special-1',
+            defId: 'princesses_some_day_my_prince_will_come',
+            baseIndex: 0,
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        const prompt = getInteractionsFromMS(result.matchState!)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('princesses_some_day_my_prince_will_come');
+        const minionOption = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'ally-1');
+        expect(minionOption).toBeDefined();
+
+        const choseMinion = runCommand(
+            result.matchState!,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: minionOption.id } } as any,
+            defaultTestRandom,
+        );
+        const basePrompt = getInteractionsFromMS(choseMinion.finalState)[0] as any;
+        expect(basePrompt?.data?.sourceId).toBe('princesses_some_day_my_prince_will_come_base');
+
+        const baseOption = basePrompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
+        expect(baseOption).toBeDefined();
+
+        const resolved = runCommand(
+            choseMinion.finalState,
+            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: baseOption.id } } as any,
+            defaultTestRandom,
+        );
+
+        expect(resolved.finalState.core.bases[0].minions.map(minion => minion.uid)).not.toContain('ally-1');
+        expect(resolved.finalState.core.bases[1].minions.map(minion => minion.uid)).toContain('ally-1');
     });
 
     it('princesses_skillet 会消灭低力量随从并抽三张牌', () => {

@@ -1,9 +1,7 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
-import type { InteractionHandler } from '../domain/abilityInteractionHandlers';
+import { createAbilityRuntimeSimpleChoice, createEffectProgram, createPromptProgram, executeAbilityProgram } from '../domain/abilityRuntime';
 import {
     addTempPower,
     buildAbilityFeedback,
@@ -46,18 +44,65 @@ type BaseChoice = {
     baseDefId?: string;
 };
 
-type MoveContinuation = {
-    minionUid: string;
-    defId: string;
-    fromBaseIndex: number;
-    reason: string;
+type PrincessesRuntimePromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    sourceDefId: string;
 };
 
-type WoodlandHelpersContinuation = {
+type PrincessesDestroyMinionPromptContext = PrincessesRuntimePromptContext & {
+    sourceId: 'princesses_apricot' | 'princesses_skillet';
+    title: string;
+    reason: 'princesses_apricot' | 'princesses_skillet';
+    targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
+    drawCount?: number;
+};
+
+type PrincessesDiscardSelectionPromptContext = PrincessesRuntimePromptContext & {
+    sourceId: 'princesses_direct_to_dvd_sequel' | 'princesses_griselda';
+    title: string;
+    reason: 'princesses_direct_to_dvd_sequel' | 'princesses_griselda';
+    mode: 'shuffle_draw' | 'recover';
+    options: Array<{ cardUid: string; defId: string; label: string }>;
+};
+
+type PrincessesMovePromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    sourceId: 'princesses_true_loves_kiss' | 'princesses_some_day_my_prince_will_come';
+    sourceDefId: string;
+    title: string;
+    destinationTitle: string;
+    targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
+    reason: string;
+    selectedTarget?: { minionUid: string; defId: string; fromBaseIndex: number };
+};
+
+type PrincessesFairyGodmotherPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type PrincessesSnowWhitePromptContext = PrincessesRuntimePromptContext & {
+    destinationBaseIndex: number;
+    title: string;
+    targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }>;
+};
+
+type PrincessesWoodlandHelpersPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
     cardUid: string;
     defId: string;
     ownerId: PlayerId;
+    cardName: string;
 };
+
+let princessesRuntimePromptCounter = 0;
 
 function collectAllMinions(core: SmashUpCore) {
     const targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
@@ -83,27 +128,6 @@ function getOtherBaseChoices(core: SmashUpCore, fromBaseIndex: number) {
             label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
         }))
         .filter(candidate => candidate.baseIndex !== fromBaseIndex);
-}
-
-function queueMoveDestinationPrompt(
-    matchState: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    now: number,
-    sourceId: 'princesses_true_loves_kiss_base' | 'princesses_some_day_my_prince_will_come_base',
-    title: string,
-    continuation: MoveContinuation,
-): MatchState<SmashUpCore> {
-    const options = buildBaseTargetOptions(getOtherBaseChoices(matchState.core, continuation.fromBaseIndex), matchState.core);
-    if (options.length === 0) return matchState;
-    const interaction = createSimpleChoice(
-        `${sourceId}_${now}`,
-        playerId,
-        title,
-        options,
-        { sourceId, targetType: 'base', autoResolveIfSingle: false },
-    );
-    (interaction.data as { continuationContext?: MoveContinuation }).continuationContext = continuation;
-    return queueInteraction(matchState, interaction);
 }
 
 function shuffleCardIntoDeck(
@@ -153,6 +177,18 @@ function parseActionCardUid(sourceEventId?: string): string | undefined {
     return match?.[1];
 }
 
+function buildPrincessesDiscardCardOptions(
+    cards: Array<{ cardUid: string; defId: string; label: string }>,
+) {
+    return cards.map((card, index) => ({
+        id: `discard-${index}`,
+        label: card.label,
+        value: { cardUid: card.cardUid, defId: card.defId },
+        _source: 'discard' as const,
+        displayMode: 'card' as const,
+    }));
+}
+
 function princessesHappilyEverAfter(ctx: TriggerContext): TriggerResult | SmashUpEvent[] {
     if (ctx.rankings?.some(ranking => ranking.playerId === ctx.playerId && ranking.vp > 0) !== true) {
         return [];
@@ -177,25 +213,18 @@ function princessesWoodlandHelpers(ctx: TriggerContext): TriggerResult | SmashUp
     const card = player?.discard.find(entry => entry.uid === cardUid);
     if (!player || !card || card.type !== 'action') return [];
 
-    const cardName = getCardDef(card.defId)?.name ?? card.defId;
-    const interaction = createSimpleChoice(
-        `princesses_woodland_helpers_${cardUid}_${ctx.now}`,
-        ctx.playerId,
-        `丛林帮手：你可以将 ${cardName} 放到牌库底而不是留在弃牌堆`,
-        [
-            { id: 'move-bottom', label: '放到牌库底', value: { choice: 'move_to_bottom' }, displayMode: 'button' as const },
-            createSkipOption('留在弃牌堆'),
-        ],
-        { sourceId: 'princesses_woodland_helpers', targetType: 'button', autoResolveIfSingle: false },
-    );
-    (interaction.data as { continuationContext?: WoodlandHelpersContinuation }).continuationContext = {
+    const result = executeAbilityProgram(princessesWoodlandHelpersPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
         cardUid,
         defId: card.defId,
         ownerId: ctx.playerId,
-    };
+        cardName: getCardDef(card.defId)?.name ?? card.defId,
+    } satisfies PrincessesWoodlandHelpersPromptContext);
     return {
-        events: [],
-        matchState: queueInteraction(ctx.matchState, interaction),
+        events: result.events,
+        matchState: result.matchState,
     };
 }
 
@@ -241,35 +270,6 @@ function princessesHeirloomInterceptor(_state: SmashUpCore, event: SmashUpEvent)
     return null;
 }
 
-function princessesApricot(ctx: AbilityContext): AbilityResult {
-    const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) return { events: [] };
-    const targets = base.minions
-        .filter(minion => minion.controller !== ctx.playerId)
-        .filter(minion => getMinionPower(ctx.state, minion, ctx.baseIndex) <= 2)
-        .map(minion => ({
-            uid: minion.uid,
-            defId: minion.defId,
-            baseIndex: ctx.baseIndex,
-            label: getCardDef(minion.defId)?.name ?? minion.defId,
-        }));
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const interaction = createSimpleChoice(
-        `princesses_apricot_${ctx.now}`,
-        ctx.playerId,
-        '杏子公主：选择这里另一个玩家的一个力量为 2 或更小的仆从',
-        buildMinionTargetOptions(targets, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            effectType: 'destroy',
-        }),
-        { sourceId: 'princesses_apricot', targetType: 'minion', autoResolveIfSingle: false },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
 function princessesMarieDeGraw(ctx: AbilityContext): AbilityResult {
     const peeked = peekDeckTop(ctx.state, ctx.random, ctx.playerId, 'all', 'princesses_marie_degraw', ctx.now);
     if (!peeked) return { events: [] };
@@ -296,119 +296,6 @@ function princessesMarieDeGraw(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function princessesDirectToDvdSequel(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    if (!player) return { events: [] };
-
-    const options = player.discard
-        .filter(card => card.type === 'minion')
-        .map((card, index) => ({
-            id: `discard-${index}`,
-            label: getCardDef(card.defId)?.name ?? card.defId,
-            value: { cardUid: card.uid, defId: card.defId },
-            _source: 'discard' as const,
-            displayMode: 'card' as const,
-        }));
-    if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const interaction = createSimpleChoice(
-        `princesses_direct_to_dvd_sequel_${ctx.now}`,
-        ctx.playerId,
-        '直出结局：选择你弃牌堆中的一个仆从',
-        options,
-        { sourceId: 'princesses_direct_to_dvd_sequel', targetType: 'generic', autoRefresh: 'discard', responseValidationMode: 'live' },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-function princessesFairyGodmother(ctx: AbilityContext): AbilityResult {
-    const interaction = createSimpleChoice(
-        `princesses_fairy_godmother_${ctx.now}`,
-        ctx.playerId,
-        '妖精奶奶：抽一张牌，或者让一个仆从获得 +2 力量直到回合结束',
-        [
-            { id: 'draw', label: '抽一张牌', value: { choice: 'draw' }, displayMode: 'button' as const },
-            { id: 'buff', label: '给予 +2 力量', value: { choice: 'buff' }, displayMode: 'button' as const },
-        ],
-        { sourceId: 'princesses_fairy_godmother', targetType: 'button', autoResolveIfSingle: false },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-function princessesSkillet(ctx: AbilityContext): AbilityResult {
-    const targets = collectAllMinions(ctx.state)
-        .filter(target => {
-            const live = ctx.state.bases[target.baseIndex]?.minions.find(minion => minion.uid === target.uid);
-            return !!live && getMinionPower(ctx.state, live, target.baseIndex) <= 2;
-        });
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const interaction = createSimpleChoice(
-        `princesses_skillet_${ctx.now}`,
-        ctx.playerId,
-        '平底锅：选择一个力量为 2 或更小的仆从',
-        buildMinionTargetOptions(targets, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            effectType: 'destroy',
-        }),
-        { sourceId: 'princesses_skillet', targetType: 'minion', autoResolveIfSingle: false },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-function princessesTrueLovesKiss(ctx: AbilityContext): AbilityResult {
-    if (ctx.state.bases.length < 2) {
-        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    }
-    const targets = collectAllMinions(ctx.state);
-    if (targets.length === 0) return { events: [] };
-
-    const interaction = createSimpleChoice(
-        `princesses_true_loves_kiss_${ctx.now}`,
-        ctx.playerId,
-        '真爱之吻：选择一个仆从移动到另一个基地',
-        buildMinionTargetOptions(targets, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            effectType: 'move',
-        }),
-        { sourceId: 'princesses_true_loves_kiss', targetType: 'minion', autoResolveIfSingle: false },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-function princessesSomeDayMyPrinceWillCome(ctx: AbilityContext): AbilityResult {
-    if (ctx.state.bases.length < 2) {
-        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    }
-    const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) return { events: [] };
-    const targets = base.minions.map(minion => ({
-        uid: minion.uid,
-        defId: minion.defId,
-        baseIndex: ctx.baseIndex,
-        label: getCardDef(minion.defId)?.name ?? minion.defId,
-    }));
-    if (targets.length === 0) return { events: [] };
-
-    const interaction = createSimpleChoice(
-        `princesses_some_day_my_prince_will_come_${ctx.now}`,
-        ctx.playerId,
-        '总有一天我的王子会来的：选择一个仆从从这里移动到另一个基地',
-        buildMinionTargetOptions(targets, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            effectType: 'move',
-        }),
-        { sourceId: 'princesses_some_day_my_prince_will_come', targetType: 'minion', autoResolveIfSingle: false },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
 function princessesTaleAsOldAsTime(ctx: AbilityContext): AbilityResult {
     if (!ctx.state.bases[ctx.baseIndex]) return { events: [] };
     return {
@@ -429,63 +316,41 @@ function princessesTaleAsOldAsTime(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function princessesSnowWhite(ctx: AbilityContext): AbilityResult {
-    const targets = collectAllMinions(ctx.state).filter(target => target.baseIndex !== ctx.baseIndex);
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const interaction = createSimpleChoice(
-        `princesses_snow_white_${ctx.now}`,
-        ctx.playerId,
-        '白雪公主：选择另一个基地上的一个仆从移动到这里',
-        buildMinionTargetOptions(targets, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            effectType: 'move',
-        }),
-        { sourceId: 'princesses_snow_white', targetType: 'minion', autoResolveIfSingle: false },
-    );
-    (interaction.data as { continuationContext?: { destinationBaseIndex?: number } }).continuationContext = {
-        destinationBaseIndex: ctx.baseIndex,
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-function princessesGriselda(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    if (!player) return { events: [] };
-    const heirlooms = player.discard
-        .filter(card => card.defId === 'princesses_heirloom' || card.defId === 'princesses_heirloom_pod')
-        .map((card, index) => ({
-            id: `discard-${index}`,
-            label: getCardDef(card.defId)?.name ?? card.defId,
-            value: { cardUid: card.uid, defId: card.defId },
-            _source: 'discard' as const,
-            displayMode: 'card' as const,
-        }));
-    if (heirlooms.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const interaction = createSimpleChoice(
-        `princesses_griselda_${ctx.now}`,
-        ctx.playerId,
-        '格丽泽尔达：选择你弃牌堆中的一张传家宝回到手牌',
-        heirlooms,
-        { sourceId: 'princesses_griselda', targetType: 'generic', autoRefresh: 'discard', responseValidationMode: 'live' },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
 export function registerPrincessesAbilities(): void {
-    registerAbility('princesses_apricot', 'talent', princessesApricot);
-    registerAbility('princesses_marie_degraw', 'talent', princessesMarieDeGraw);
-    registerAbility('princesses_direct_to_dvd_sequel', 'onPlay', princessesDirectToDvdSequel);
-    registerAbility('princesses_fairy_godmother', 'onPlay', princessesFairyGodmother);
-    registerAbility('princesses_skillet', 'onPlay', princessesSkillet);
-    registerAbility('princesses_true_loves_kiss', 'onPlay', princessesTrueLovesKiss);
-    registerAbility('princesses_some_day_my_prince_will_come', 'special', princessesSomeDayMyPrinceWillCome);
-    registerAbility('princesses_tale_as_old_as_time', 'onPlay', princessesTaleAsOldAsTime);
-    registerAbility('princesses_snow_white', 'talent', princessesSnowWhite);
-    registerAbility('princesses_griselda', 'talent', princessesGriselda);
+    registerSimpleAbility('princesses_marie_degraw', 'talent', princessesMarieDeGraw);
+    registerSimpleAbility('princesses_tale_as_old_as_time', 'onPlay', princessesTaleAsOldAsTime);
+    registerAbilityProgram('princesses_apricot', 'talent', {
+        program: princessesApricotProgram,
+        createContext: createPrincessesApricotContext,
+    });
+    registerAbilityProgram('princesses_direct_to_dvd_sequel', 'onPlay', {
+        program: princessesDirectToDvdSequelProgram,
+        createContext: createPrincessesDirectToDvdSequelContext,
+    });
+    registerAbilityProgram('princesses_fairy_godmother', 'onPlay', {
+        program: princessesFairyGodmotherPromptProgram,
+        createContext: createPrincessesFairyGodmotherContext,
+    });
+    registerAbilityProgram('princesses_skillet', 'onPlay', {
+        program: princessesSkilletProgram,
+        createContext: createPrincessesSkilletContext,
+    });
+    registerAbilityProgram('princesses_true_loves_kiss', 'onPlay', {
+        program: princessesTrueLovesKissProgram,
+        createContext: createPrincessesTrueLovesKissContext,
+    });
+    registerAbilityProgram('princesses_some_day_my_prince_will_come', 'special', {
+        program: princessesSomeDayMyPrinceWillComeProgram,
+        createContext: createPrincessesSomeDayMyPrinceWillComeContext,
+    });
+    registerAbilityProgram('princesses_snow_white', 'talent', {
+        program: princessesSnowWhiteProgram,
+        createContext: createPrincessesSnowWhiteContext,
+    });
+    registerAbilityProgram('princesses_griselda', 'talent', {
+        program: princessesGriseldaProgram,
+        createContext: createPrincessesGriseldaContext,
+    });
 
     registerTrigger('princesses_happily_ever_after', 'afterScoring', princessesHappilyEverAfter, {
         perInstance: true,
@@ -509,28 +374,224 @@ export function registerPrincessesAbilities(): void {
     registerInterceptor('princesses_heirloom', princessesHeirloomInterceptor);
 }
 
-const handlePrincessesApricot: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice | undefined;
-    if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
+function createPrincessesApricotContext(ctx: AbilityContext): PrincessesDestroyMinionPromptContext {
+    const base = ctx.state.bases[ctx.baseIndex];
     return {
-        state,
-        events: buildValidatedDestroyEvents(state, {
-            minionUid: selected.minionUid,
-            minionDefId: selected.defId,
-            fromBaseIndex: selected.baseIndex,
-            destroyerId: playerId,
-            reason: 'princesses_apricot',
-            now: timestamp,
-        }),
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceDefId: ctx.defId,
+        sourceId: 'princesses_apricot',
+        title: '杏子公主：选择这里另一个玩家的一个力量为 2 或更小的仆从',
+        reason: 'princesses_apricot',
+        targets: base
+            ? base.minions
+                .filter(minion => minion.controller !== ctx.playerId)
+                .filter(minion => getMinionPower(ctx.state, minion, ctx.baseIndex) <= 2)
+                .map(minion => ({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex: ctx.baseIndex,
+                    label: getCardDef(minion.defId)?.name ?? minion.defId,
+                }))
+            : [],
     };
-};
+}
 
-const handlePrincessesDirectToDvdSequel: InteractionHandler = (state, playerId, value, _data, random, timestamp) => {
+function createPrincessesDirectToDvdSequelContext(ctx: AbilityContext): PrincessesDiscardSelectionPromptContext {
+    const player = ctx.state.players[ctx.playerId];
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceDefId: ctx.defId,
+        sourceId: 'princesses_direct_to_dvd_sequel',
+        title: '直出结局：选择你弃牌堆中的一个仆从',
+        reason: 'princesses_direct_to_dvd_sequel',
+        mode: 'shuffle_draw',
+        options: (player?.discard ?? [])
+            .filter(card => card.type === 'minion')
+            .map(card => ({
+                cardUid: card.uid,
+                defId: card.defId,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+            })),
+    };
+}
+
+function createPrincessesFairyGodmotherContext(ctx: AbilityContext): PrincessesFairyGodmotherPromptContext {
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+    };
+}
+
+function createPrincessesSkilletContext(ctx: AbilityContext): PrincessesDestroyMinionPromptContext {
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceDefId: ctx.defId,
+        sourceId: 'princesses_skillet',
+        title: '平底锅：选择一个力量为 2 或更小的仆从',
+        reason: 'princesses_skillet',
+        drawCount: 3,
+        targets: collectAllMinions(ctx.state)
+            .filter(target => {
+                const live = ctx.state.bases[target.baseIndex]?.minions.find(minion => minion.uid === target.uid);
+                return !!live && getMinionPower(ctx.state, live, target.baseIndex) <= 2;
+            }),
+    };
+}
+
+function createPrincessesTrueLovesKissContext(ctx: AbilityContext): PrincessesMovePromptContext {
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'princesses_true_loves_kiss',
+        sourceDefId: ctx.defId,
+        title: '真爱之吻：选择一个仆从移动到另一个基地',
+        destinationTitle: '真爱之吻：选择要移动到的基地',
+        targets: collectAllMinions(ctx.state),
+        reason: 'princesses_true_loves_kiss',
+    };
+}
+
+function createPrincessesSomeDayMyPrinceWillComeContext(ctx: AbilityContext): PrincessesMovePromptContext {
+    const base = ctx.state.bases[ctx.baseIndex];
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'princesses_some_day_my_prince_will_come',
+        sourceDefId: ctx.defId,
+        title: '总有一天我的王子会来的：选择一个仆从从这里移动到另一个基地',
+        destinationTitle: '总有一天我的王子会来的：选择要移动到的基地',
+        targets: (base?.minions ?? []).map(minion => ({
+            uid: minion.uid,
+            defId: minion.defId,
+            baseIndex: ctx.baseIndex,
+            label: getCardDef(minion.defId)?.name ?? minion.defId,
+        })),
+        reason: 'princesses_some_day_my_prince_will_come',
+    };
+}
+
+function createPrincessesSnowWhiteContext(ctx: AbilityContext): PrincessesSnowWhitePromptContext {
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceDefId: ctx.defId,
+        destinationBaseIndex: ctx.baseIndex,
+        title: '白雪公主：选择另一个基地上的一个仆从移动到这里',
+        targets: collectAllMinions(ctx.state).filter(target => target.baseIndex !== ctx.baseIndex),
+    };
+}
+
+function createPrincessesGriseldaContext(ctx: AbilityContext): PrincessesDiscardSelectionPromptContext {
+    const player = ctx.state.players[ctx.playerId];
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceDefId: ctx.defId,
+        sourceId: 'princesses_griselda',
+        title: '格丽泽尔达：选择你弃牌堆中的一张传家宝回到手牌',
+        reason: 'princesses_griselda',
+        mode: 'recover',
+        options: (player?.discard ?? [])
+            .filter(card => card.defId === 'princesses_heirloom' || card.defId === 'princesses_heirloom_pod')
+            .map(card => ({
+                cardUid: card.uid,
+                defId: card.defId,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+            })),
+    };
+}
+
+const princessesDestroyMinionPromptProgram = createPromptProgram<
+    PrincessesDestroyMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'princesses_apricot',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.sourceId}_${princessesRuntimePromptCounter++}`,
+        context.playerId,
+        context.title,
+        buildMinionTargetOptions(context.targets, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            sourceDefId: context.sourceDefId,
+            effectType: 'destroy',
+        }),
+        {
+            sourceId: context.sourceId,
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, playerId, value, random, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [
+                ...buildValidatedDestroyEvents(state, {
+                    minionUid: selected.minionUid,
+                    minionDefId: selected.defId,
+                    fromBaseIndex: selected.baseIndex,
+                    destroyerId: playerId,
+                    reason: context.reason,
+                    now: timestamp,
+                }),
+                ...(context.drawCount ? buildStandardDrawEvents(state.core, playerId, context.drawCount, random, timestamp) : []),
+            ],
+        };
+    },
+});
+
+const princessesApricotProgram = createEffectProgram<
+    PrincessesDestroyMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => (
+    context.targets.length === 0
+        ? { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)] }
+        : { events: [], nextProgram: princessesDestroyMinionPromptProgram }
+));
+
+const princessesSkilletProgram = createEffectProgram<
+    PrincessesDestroyMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => (
+    context.targets.length === 0
+        ? { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)] }
+        : { events: [], nextProgram: princessesDestroyMinionPromptProgram }
+));
+
+function resolvePrincessesDirectToDvdSequelSelection(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    value: unknown,
+    random: AbilityContext['random'],
+    timestamp: number,
+) {
     const selected = value as CardChoice | undefined;
-    if (!selected?.cardUid || !selected.defId) return { state, events: [] };
+    if (!selected?.cardUid || !selected.defId) {
+        return { matchState: state, events: [] };
+    }
     const player = state.core.players[playerId];
     const card = player?.discard.find(entry => entry.uid === selected.cardUid && entry.defId === selected.defId);
-    if (!player || !card) return { state, events: [] };
+    if (!player || !card) {
+        return { matchState: state, events: [] };
+    }
 
     const shuffledDeck = random.shuffle([...player.deck, card]);
     const events: SmashUpEvent[] = [{
@@ -553,189 +614,380 @@ const handlePrincessesDirectToDvdSequel: InteractionHandler = (state, playerId, 
             timestamp,
         } as CardsDrawnEvent);
     }
-    return { state, events };
-};
+    return { matchState: state, events };
+}
 
-const handlePrincessesFairyGodmother: InteractionHandler = (state, playerId, value, _data, random, timestamp) => {
-    const selected = value as ButtonChoice | undefined;
-    if (selected?.choice === 'draw') {
+const princessesDirectToDvdSequelPromptProgram = createPromptProgram<
+    PrincessesDiscardSelectionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'princesses_direct_to_dvd_sequel',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `princesses_direct_to_dvd_sequel_${princessesRuntimePromptCounter++}`,
+        context.playerId,
+        context.title,
+        buildPrincessesDiscardCardOptions(context.options),
+        {
+            sourceId: 'princesses_direct_to_dvd_sequel',
+            targetType: 'generic',
+            autoRefresh: 'discard',
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ state, playerId, value, random, timestamp }) => (
+        resolvePrincessesDirectToDvdSequelSelection(state, playerId, value, random, timestamp)
+    ),
+});
+
+const princessesGriseldaPromptProgram = createPromptProgram<
+    PrincessesDiscardSelectionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'princesses_griselda',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `princesses_griselda_${princessesRuntimePromptCounter++}`,
+        context.playerId,
+        context.title,
+        buildPrincessesDiscardCardOptions(context.options),
+        {
+            sourceId: 'princesses_griselda',
+            targetType: 'generic',
+            autoRefresh: 'discard',
+            responseValidationMode: 'live',
+        },
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as CardChoice | undefined;
+        if (!selected?.cardUid) {
+            return { matchState: state, events: [] };
+        }
         return {
-            state,
-            events: buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
+            matchState: state,
+            events: [recoverCardsFromDiscard(playerId, [selected.cardUid], 'princesses_griselda', timestamp)],
         };
+    },
+});
+
+const princessesDirectToDvdSequelProgram = createEffectProgram<
+    PrincessesDiscardSelectionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => (
+    context.options.length === 0
+        ? { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)] }
+        : { events: [], nextProgram: princessesDirectToDvdSequelPromptProgram }
+));
+
+const princessesGriseldaProgram = createEffectProgram<
+    PrincessesDiscardSelectionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => (
+    context.options.length === 0
+        ? { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)] }
+        : { events: [], nextProgram: princessesGriseldaPromptProgram }
+));
+
+const princessesTrueLovesKissProgram = createEffectProgram<
+    PrincessesMovePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (context.matchState.core.bases.length < 2) {
+        return { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)] };
     }
-    if (selected?.choice !== 'buff') return { state, events: [] };
+    if (context.targets.length === 0) {
+        return { events: [] };
+    }
+    return { events: [], nextProgram: princessesMovePromptProgram };
+});
 
-    const targets = collectAllMinions(state.core);
-    if (targets.length === 0) return { state, events: [] };
-    const interaction = createSimpleChoice(
-        `princesses_fairy_godmother_target_${timestamp}`,
-        playerId,
-        '妖精奶奶：选择一个仆从获得 +2 力量直到回合结束',
-        buildMinionTargetOptions(targets, {
-            state: state.core,
-            sourcePlayerId: playerId,
-            sourceDefId: 'princesses_fairy_godmother',
-            effectType: 'power_change',
+const princessesSomeDayMyPrinceWillComeProgram = createEffectProgram<
+    PrincessesMovePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => {
+    if (context.matchState.core.bases.length < 2) {
+        return { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)] };
+    }
+    if (context.targets.length === 0) {
+        return { events: [] };
+    }
+    return { events: [], nextProgram: princessesMovePromptProgram };
+});
+
+const princessesSnowWhitePromptProgram = createPromptProgram<
+    PrincessesSnowWhitePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'princesses_snow_white',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `princesses_snow_white_${princessesRuntimePromptCounter++}`,
+        context.playerId,
+        context.title,
+        buildMinionTargetOptions(context.targets, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            sourceDefId: context.sourceDefId,
+            effectType: 'move',
         }),
-        { sourceId: 'princesses_fairy_godmother_target', targetType: 'minion', autoResolveIfSingle: false },
-    );
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handlePrincessesFairyGodmotherTarget: InteractionHandler = (state, _playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice | undefined;
-    if (!selected?.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    return {
-        state,
-        events: [
-            addTempPower(
-                selected.minionUid,
-                selected.baseIndex,
-                2,
-                'princesses_fairy_godmother',
-                timestamp,
-            ),
-        ],
-    };
-};
-
-const handlePrincessesSkillet: InteractionHandler = (state, playerId, value, _data, random, timestamp) => {
-    const selected = value as MinionChoice | undefined;
-    if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
-    return {
-        state,
-        events: [
-            ...buildValidatedDestroyEvents(state, {
+        {
+            sourceId: 'princesses_snow_white',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: buildValidatedMoveEvents(state, {
                 minionUid: selected.minionUid,
                 minionDefId: selected.defId,
                 fromBaseIndex: selected.baseIndex,
-                destroyerId: playerId,
-                reason: 'princesses_skillet',
+                toBaseIndex: context.destinationBaseIndex,
+                toBaseDefId: state.core.bases[context.destinationBaseIndex]?.defId,
+                reason: 'princesses_snow_white',
                 now: timestamp,
             }),
-            ...buildStandardDrawEvents(state.core, playerId, 3, random, timestamp),
+        };
+    },
+});
+
+const princessesSnowWhiteProgram = createEffectProgram<
+    PrincessesSnowWhitePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>((context) => (
+    context.targets.length === 0
+        ? { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)] }
+        : { events: [], nextProgram: princessesSnowWhitePromptProgram }
+));
+
+const princessesWoodlandHelpersPromptProgram = createPromptProgram<
+    PrincessesWoodlandHelpersPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'princesses_woodland_helpers',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `princesses_woodland_helpers_${context.cardUid}_${princessesRuntimePromptCounter++}`,
+        context.playerId,
+        `丛林帮手：你可以将 ${context.cardName} 放到牌库底而不是留在弃牌堆`,
+        [
+            { id: 'move-bottom', label: '放到牌库底', value: { choice: 'move_to_bottom' }, displayMode: 'button' as const },
+            createSkipOption('留在弃牌堆'),
         ],
-    };
-};
+        {
+            sourceId: 'princesses_woodland_helpers',
+            targetType: 'button',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as ButtonChoice | undefined;
+        if (selected?.skip || selected?.choice !== 'move_to_bottom') {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: buildValidatedCardToDeckBottomEvents(state, {
+                cardUid: context.cardUid,
+                defId: context.defId,
+                ownerId: context.ownerId,
+                reason: 'princesses_woodland_helpers',
+                now: timestamp,
+                expectedLocation: 'discard',
+            }),
+        };
+    },
+});
 
-const handlePrincessesTrueLovesKiss: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice | undefined;
-    if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
-    return {
-        state: queueMoveDestinationPrompt(
-            state,
-            playerId,
-            timestamp,
-            'princesses_true_loves_kiss_base',
-            '真爱之吻：选择要移动到的基地',
+const princessesMoveDestinationPromptProgram = createPromptProgram<
+    PrincessesMovePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'princesses_true_loves_kiss_base',
+    buildInteraction: (context) => {
+        const selectedTarget = context.selectedTarget;
+        if (!selectedTarget) {
+            throw new Error(`Princesses move runtime 缺少 selectedTarget: ${context.sourceId}`);
+        }
+        return createAbilityRuntimeSimpleChoice(
+            `${context.sourceId}_base_${princessesRuntimePromptCounter++}`,
+            context.playerId,
+            context.destinationTitle,
+            buildBaseTargetOptions(
+                getOtherBaseChoices(context.matchState.core, selectedTarget.fromBaseIndex),
+                context.matchState.core,
+            ),
             {
-                minionUid: selected.minionUid,
-                defId: selected.defId,
-                fromBaseIndex: selected.baseIndex,
-                reason: 'princesses_true_loves_kiss',
+                sourceId: `${context.sourceId}_base`,
+                targetType: 'base',
+                autoResolveIfSingle: false,
             },
-        ),
-        events: [],
-    };
-};
+        );
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as BaseChoice | undefined;
+        const selectedTarget = context.selectedTarget;
+        if (selected?.baseIndex === undefined || !selectedTarget) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: selectedTarget.minionUid,
+                minionDefId: selectedTarget.defId,
+                fromBaseIndex: selectedTarget.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                toBaseDefId: selected.baseDefId,
+                reason: context.reason,
+                now: timestamp,
+            }),
+        };
+    },
+});
 
-const handlePrincessesMoveToBase: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const selected = value as BaseChoice | undefined;
-    const continuation = data?.continuationContext as MoveContinuation | undefined;
-    if (selected?.baseIndex === undefined || !continuation) return { state, events: [] };
-    return {
-        state,
-        events: buildValidatedMoveEvents(state, {
-            minionUid: continuation.minionUid,
-            minionDefId: continuation.defId,
-            fromBaseIndex: continuation.fromBaseIndex,
-            toBaseIndex: selected.baseIndex,
-            toBaseDefId: selected.baseDefId,
-            reason: continuation.reason,
-            now: timestamp,
+const princessesMovePromptProgram = createPromptProgram<
+    PrincessesMovePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'princesses_true_loves_kiss',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.sourceId}_${princessesRuntimePromptCounter++}`,
+        context.playerId,
+        context.title,
+        buildMinionTargetOptions(context.targets, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            sourceDefId: context.sourceDefId,
+            effectType: 'move',
         }),
-    };
-};
-
-const handlePrincessesSomeDayMyPrinceWillCome: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice | undefined;
-    if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
-    return {
-        state: queueMoveDestinationPrompt(
-            state,
-            playerId,
-            timestamp,
-            'princesses_some_day_my_prince_will_come_base',
-            '总有一天我的王子会来的：选择要移动到的基地',
-            {
-                minionUid: selected.minionUid,
-                defId: selected.defId,
-                fromBaseIndex: selected.baseIndex,
-                reason: 'princesses_some_day_my_prince_will_come',
+        {
+            sourceId: context.sourceId,
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [],
+            context: {
+                ...context,
+                matchState: state,
+                playerId,
+                now: timestamp,
+                selectedTarget: {
+                    minionUid: selected.minionUid,
+                    defId: selected.defId,
+                    fromBaseIndex: selected.baseIndex,
+                },
             },
-        ),
-        events: [],
-    };
-};
+            nextProgram: princessesMoveDestinationPromptProgram,
+        };
+    },
+});
 
-const handlePrincessesSnowWhite: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice | undefined;
-    const destinationBaseIndex = (data?.continuationContext as { destinationBaseIndex?: number } | undefined)?.destinationBaseIndex;
-    if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId || destinationBaseIndex === undefined) {
-        return { state, events: [] };
-    }
-    return {
-        state,
-        events: buildValidatedMoveEvents(state, {
-            minionUid: selected.minionUid,
-            minionDefId: selected.defId,
-            fromBaseIndex: selected.baseIndex,
-            toBaseIndex: destinationBaseIndex,
-            toBaseDefId: state.core.bases[destinationBaseIndex]?.defId,
-            reason: 'princesses_snow_white',
-            now: timestamp,
+const princessesFairyGodmotherTargetPromptProgram = createPromptProgram<
+    PrincessesFairyGodmotherPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'princesses_fairy_godmother_target',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `princesses_fairy_godmother_target_${princessesRuntimePromptCounter++}`,
+        context.playerId,
+        '妖精奶奶：选择一个仆从获得 +2 力量直到回合结束',
+        buildMinionTargetOptions(collectAllMinions(context.matchState.core), {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            sourceDefId: 'princesses_fairy_godmother',
+            effectType: 'power_change',
         }),
-    };
-};
+        {
+            sourceId: 'princesses_fairy_godmother_target',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ state, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [
+                addTempPower(
+                    selected.minionUid,
+                    selected.baseIndex,
+                    2,
+                    'princesses_fairy_godmother',
+                    timestamp,
+                ),
+            ],
+        };
+    },
+});
 
-const handlePrincessesGriselda: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as CardChoice | undefined;
-    if (!selected?.cardUid) return { state, events: [] };
-    return {
-        state,
-        events: [recoverCardsFromDiscard(playerId, [selected.cardUid], 'princesses_griselda', timestamp)],
-    };
-};
-
-const handlePrincessesWoodlandHelpers: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const selected = value as ButtonChoice | undefined;
-    const continuation = data?.continuationContext as WoodlandHelpersContinuation | undefined;
-    if (!continuation || selected?.skip || selected?.choice !== 'move_to_bottom') return { state, events: [] };
-    return {
-        state,
-        events: buildValidatedCardToDeckBottomEvents(state, {
-            cardUid: continuation.cardUid,
-            defId: continuation.defId,
-            ownerId: continuation.ownerId,
-            reason: 'princesses_woodland_helpers',
-            now: timestamp,
-            expectedLocation: 'discard',
-        }),
-    };
-};
-
-export function registerPrincessesInteractionHandlers(): void {
-    registerInteractionHandler('princesses_apricot', handlePrincessesApricot);
-    registerInteractionHandler('princesses_direct_to_dvd_sequel', handlePrincessesDirectToDvdSequel);
-    registerInteractionHandler('princesses_fairy_godmother', handlePrincessesFairyGodmother);
-    registerInteractionHandler('princesses_fairy_godmother_target', handlePrincessesFairyGodmotherTarget);
-    registerInteractionHandler('princesses_skillet', handlePrincessesSkillet);
-    registerInteractionHandler('princesses_true_loves_kiss', handlePrincessesTrueLovesKiss);
-    registerInteractionHandler('princesses_true_loves_kiss_base', handlePrincessesMoveToBase);
-    registerInteractionHandler('princesses_some_day_my_prince_will_come', handlePrincessesSomeDayMyPrinceWillCome);
-    registerInteractionHandler('princesses_some_day_my_prince_will_come_base', handlePrincessesMoveToBase);
-    registerInteractionHandler('princesses_snow_white', handlePrincessesSnowWhite);
-    registerInteractionHandler('princesses_griselda', handlePrincessesGriselda);
-    registerInteractionHandler('princesses_woodland_helpers', handlePrincessesWoodlandHelpers);
-}
+const princessesFairyGodmotherPromptProgram = createPromptProgram<
+    PrincessesFairyGodmotherPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'princesses_fairy_godmother',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `princesses_fairy_godmother_${princessesRuntimePromptCounter++}`,
+        context.playerId,
+        '妖精奶奶：抽一张牌，或者让一个仆从获得 +2 力量直到回合结束',
+        [
+            { id: 'draw', label: '抽一张牌', value: { choice: 'draw' }, displayMode: 'button' as const },
+            { id: 'buff', label: '给予 +2 力量', value: { choice: 'buff' }, displayMode: 'button' as const },
+        ],
+        {
+            sourceId: 'princesses_fairy_godmother',
+            targetType: 'button',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, playerId, value, random, timestamp }) => {
+        const selected = value as ButtonChoice | undefined;
+        if (selected?.choice === 'draw') {
+            return {
+                matchState: state,
+                events: buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
+            };
+        }
+        if (selected?.choice !== 'buff') {
+            return { matchState: state, events: [] };
+        }
+        if (collectAllMinions(state.core).length === 0) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [],
+            context: {
+                ...context,
+                matchState: state,
+                playerId,
+                now: timestamp,
+            },
+            nextProgram: princessesFairyGodmotherTargetPromptProgram,
+        };
+    },
+});

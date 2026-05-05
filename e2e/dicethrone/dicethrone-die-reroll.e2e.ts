@@ -141,7 +141,7 @@ test.describe('DiceThrone - 选择骰子重投', () => {
 
         await page.waitForFunction(() => Boolean(window.__BG_TEST_HARNESS__?.dice));
         await page.evaluate(() => {
-            window.__BG_TEST_HARNESS__?.dice.setValues([2, 6]);
+            window.__BG_TEST_HARNESS__?.dice.setValues([2]);
         });
 
         const initialState = await game.getState();
@@ -212,8 +212,11 @@ test.describe('DiceThrone - 选择骰子重投', () => {
 
         await game.screenshot('gunslinger-wild-west-bonus-die-overlay', testInfo);
 
-        const bonusDie = overlay.locator('.dice3d-perspective').first();
+        const bonusDie = page.getByTestId('bonus-die-reroll-option-0');
         await expect(bonusDie).toBeVisible({ timeout: 5000 });
+        await page.evaluate(() => {
+            window.__BG_TEST_HARNESS__?.dice.setValues([6]);
+        });
         await bonusDie.click({ force: true });
 
         await expect.poll(async () => {
@@ -233,8 +236,10 @@ test.describe('DiceThrone - 选择骰子重投', () => {
 
         await game.screenshot('gunslinger-wild-west-bonus-die-rerolled', testInfo);
 
-        // 关闭特写并触发结算（Board.tsx: onBonusDieClose -> SKIP_BONUS_DICE_REROLL）
-        await overlay.click({ force: true });
+        // 交互式奖励骰现在通过显式确认按钮收口；内容区点击不再承担关闭职责。
+        const confirmDamageButton = page.getByRole('button', { name: /^(确认伤害|Confirm Damage)$/i }).first();
+        await expect(confirmDamageButton).toBeVisible({ timeout: 5000 });
+        await confirmDamageButton.click();
         await expect(overlay).toBeHidden({ timeout: 5000 });
         await game.screenshot('gunslinger-wild-west-bonus-die-closed', testInfo);
 

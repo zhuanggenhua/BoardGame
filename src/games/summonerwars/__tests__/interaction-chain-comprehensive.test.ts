@@ -163,6 +163,19 @@ function runPipeline(
   );
 }
 
+function runGamePipeline(
+  state: MatchState<SummonerWarsCore>,
+  command: { type: string; playerId: PlayerId; payload: Record<string, unknown> },
+) {
+  return executePipeline(
+    { domain: engineConfig.domain, systems: engineConfig.systems as any },
+    state,
+    command,
+    testRandom(),
+    ['0', '1'],
+  );
+}
+
 // ============================================================================
 // AI 交互覆盖
 // ============================================================================
@@ -2146,5 +2159,90 @@ describe('Phase B 事件卡交互可见性', () => {
     state = picked.state;
     expect(getSwCurrentType(state)).toBe('annihilate_select_damage');
     expect(state.sys.interaction.current?.kind).toBe('simple-choice');
+  });
+
+  it('[annihilate] 完整交互链最终应产生 EVENT_PLAYED，并写入打出事件日志', () => {
+    resetInstanceCounter();
+    const core = createInitializedCore(['0', '1'], testRandom(), { faction0: 'necromancer', faction1: 'trickster' });
+    clearRect(core, [2, 3, 4, 5, 6], [0, 1, 2, 3, 4, 5]);
+    core.phase = 'move';
+    core.currentPlayer = '0';
+
+    putUnit(core, { row: 4, col: 1 }, mkUnit('ally-a', { faction: 'necromancer' }), '0');
+    putUnit(core, { row: 4, col: 3 }, mkUnit('ally-b', { faction: 'necromancer' }), '0');
+    putUnit(core, { row: 4, col: 2 }, mkUnit('enemy-a', { faction: 'trickster' }), '1');
+    putUnit(core, { row: 3, col: 3 }, mkUnit('enemy-b', { faction: 'trickster' }), '1');
+    core.players['0'].hand = [{
+      id: CARD_IDS.NECRO_ANNIHILATE,
+      cardType: 'event',
+      name: '除灭',
+      eventType: 'common',
+      faction: 'necromancer',
+      cost: 0,
+      playPhase: 'move',
+      effect: '测试',
+      deckSymbols: [],
+    } as EventCard];
+
+    let state: MatchState<SummonerWarsCore> = {
+      core,
+      sys: createInitialSystemState(['0', '1'], engineConfig.systems as any, undefined),
+    };
+
+    const requested = runGamePipeline(state, {
+      type: SW_COMMANDS.REQUEST_EVENT_INTERACTION,
+      playerId: '0',
+      payload: { cardId: CARD_IDS.NECRO_ANNIHILATE },
+    });
+    expect(requested.success).toBe(true);
+    state = requested.state;
+    expect(getSwCurrentType(state)).toBe('annihilate_select_targets');
+
+    const pickTargets = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: {
+        interactionId: state.sys.interaction.current!.id,
+        optionIds: ['pos:4,1', 'pos:4,3'],
+      },
+    });
+    expect(pickTargets.success).toBe(true);
+    state = pickTargets.state;
+    expect(getSwCurrentType(state)).toBe('annihilate_select_damage');
+
+    const firstDamage = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: {
+        interactionId: state.sys.interaction.current!.id,
+        optionId: 'pos:4,2',
+      },
+    });
+    expect(firstDamage.success).toBe(true);
+    state = firstDamage.state;
+    expect(getSwCurrentType(state)).toBe('annihilate_select_damage');
+
+    const secondDamage = runGamePipeline(state, {
+      type: INTERACTION_COMMANDS.RESPOND,
+      playerId: '0',
+      payload: {
+        interactionId: state.sys.interaction.current!.id,
+        optionId: 'pos:3,3',
+      },
+    });
+    expect(secondDamage.success).toBe(true);
+
+    const finalState = secondDamage.state;
+    const eventPlayedEvents = secondDamage.events.filter((event) => event.type === SW_EVENTS.EVENT_PLAYED);
+    const actionLogEntries = finalState.sys.actionLog?.entries ?? [];
+    const playEventEntries = actionLogEntries.filter((entry) =>
+      entry.kind === SW_EVENTS.EVENT_PLAYED
+      && entry.segments.some((segment) => segment.type === 'i18n' && (segment as { key?: string }).key === 'actionLog.playEvent')
+    );
+
+    expect(finalState.sys.interaction.current).toBeUndefined();
+    expect(eventPlayedEvents).toHaveLength(1);
+    expect(finalState.core.players['0'].discard.some((card) => card.id === CARD_IDS.NECRO_ANNIHILATE)).toBe(true);
+    expect(playEventEntries).toHaveLength(1);
   });
 });

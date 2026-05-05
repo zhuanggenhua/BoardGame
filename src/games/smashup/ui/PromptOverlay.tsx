@@ -30,6 +30,7 @@ interface Props {
     interaction: InteractionDescriptor | undefined;
     dispatch: (type: string, payload?: unknown) => void;
     playerID: PlayerId | null;
+    playerNames?: Record<string, string>;
     /** 通用卡牌展示模式（弃牌堆查看等）：展示卡牌列表 + 关闭按钮 */
     displayCards?: {
         title: string;
@@ -205,7 +206,7 @@ function formatSliderText(template: string | undefined, value: number, max: numb
 
 /** 鼠标滚轮转水平滚动 */
 
-export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID, displayCards }) => {
+export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID, playerNames, displayCards }) => {
     const prompt = asSimpleChoice(interaction);
     const { t, i18n } = useTranslation('game-smashup');
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
@@ -213,6 +214,9 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     const { ref: revealScrollRef } = useHorizontalDragScroll();
     const { ref: cardScrollRef } = useHorizontalDragScroll();
     const toast = useToast();
+    const promptOwnerName = prompt?.playerId != null
+        ? (playerNames?.[prompt.playerId] ?? `P${Number(prompt.playerId) + 1}`)
+        : undefined;
 
     // 所有 hooks 必须在条件返回之前调用（React hooks 规则）
     const isMyPrompt = isSmashUpPromptOwnedByPlayer({ currentPrompt: prompt, playerID });
@@ -509,7 +513,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                             </h2>
                             {!isMyPrompt && (
                                 <div className="mt-2 text-center text-xs text-yellow-400/80 font-bold animate-pulse">
-                                    {t('ui.waiting_for_player', { id: prompt.playerId })}
+                                    {t('ui.waiting_for_player', {
+                                        id: promptOwnerName,
+                                        player: promptOwnerName,
+                                        defaultValue: '正在等待 {{player}}',
+                                    })}
                                 </div>
                             )}
                         </div>
@@ -645,7 +653,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         {/* 按钮并排 */}
                         {!isMyPrompt ? (
                             <div className="bg-black/60 px-4 py-2 rounded text-sm text-yellow-400 font-bold animate-pulse">
-                                {t('ui.waiting_for_player', { id: prompt.playerId })}
+                                {t('ui.waiting_for_player', {
+                                    id: promptOwnerName,
+                                    player: promptOwnerName,
+                                    defaultValue: '正在等待 {{player}}',
+                                })}
                             </div>
                         ) : (
                             <div className="flex flex-col items-center gap-3">
@@ -712,7 +724,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
                     {!isMyPrompt && (
                         <div className="mb-4 text-base text-yellow-400/80 font-bold animate-pulse">
-                            {t('ui.waiting_for_player', { id: prompt.playerId })}
+                            {t('ui.waiting_for_player', {
+                                id: promptOwnerName,
+                                player: promptOwnerName,
+                                defaultValue: '正在等待 {{player}}',
+                            })}
                         </div>
                     )}
 
@@ -915,7 +931,11 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         </h2>
                         {!isMyPrompt && (
                             <div className="mt-2 text-center text-xs text-yellow-400/80 font-bold animate-pulse">
-                                {t('ui.waiting_for_player', { id: prompt.playerId })}
+                                {t('ui.waiting_for_player', {
+                                    id: promptOwnerName,
+                                    player: promptOwnerName,
+                                    defaultValue: '正在等待 {{player}}',
+                                })}
                             </div>
                         )}
                     </div>

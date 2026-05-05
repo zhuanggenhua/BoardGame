@@ -39,6 +39,7 @@ type Props = {
     onViewTitan?: (defId: string) => void;
     dispatch: (type: string, payload?: unknown) => void;
     playerID: string | null;
+    playerNames?: Record<string, string>;
 };
 
 export const DeckDiscardZone: React.FC<Props> = ({
@@ -62,6 +63,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
     onViewTitan,
     dispatch,
     playerID,
+    playerNames,
 }) => {
     const { t } = useTranslation('game-smashup');
     const [showDiscard, setShowDiscard] = useState(false);
@@ -380,6 +382,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                         interaction={undefined}
                         dispatch={dispatch}
                         playerID={playerID}
+                        playerNames={playerNames}
                         displayCards={displayCardsData}
                     />
                 </div>,

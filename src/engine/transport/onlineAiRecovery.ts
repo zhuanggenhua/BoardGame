@@ -280,10 +280,21 @@ function buildForceEndTurnFollowUpSuffix(state: MatchState<unknown>, playerId: s
     return `follow-up:${playerId}:${turnNumber}:${phase}:${eventStreamNextId}`;
 }
 
+function resolveWatchdogAdvancePhaseCommandType(gameId?: string | null): string | null {
+    if (gameId === 'summonerwars') {
+        return 'sw:end_phase';
+    }
+    if (gameId === 'splendor') {
+        return null;
+    }
+    return 'ADVANCE_PHASE';
+}
+
 export function resolveForceAdvancePhaseAfterRecovery(args: {
     authoritativeState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     playerId: string;
+    gameId?: string | null;
 }): AiResolution | null {
     const { authoritativeState, seatControllers, playerId } = args;
     if (!authoritativeState || authoritativeState.sys?.gameover) {
@@ -311,10 +322,15 @@ export function resolveForceAdvancePhaseAfterRecovery(args: {
         return null;
     }
 
+    const advancePhaseCommandType = resolveWatchdogAdvancePhaseCommandType(args.gameId);
+    if (!advancePhaseCommandType) {
+        return null;
+    }
+
     return buildForceEndTurnResolution({
         playerId,
         suffix: buildForceEndTurnFollowUpSuffix(authoritativeState, playerId),
-        commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+        commands: [{ type: advancePhaseCommandType, payload: {} }],
     });
 }
 
@@ -322,6 +338,7 @@ export function resolveForceEndTurnFollowUpAfterConfirmation(args: {
     candidate: ForceEndTurnStalledAiResolution;
     authoritativeState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
+    gameId?: string | null;
 }): AiResolution | null {
     const { candidate, authoritativeState, seatControllers } = args;
     if (!candidate.requiresConfirmedAdvancePhase) {
@@ -332,6 +349,7 @@ export function resolveForceEndTurnFollowUpAfterConfirmation(args: {
         authoritativeState,
         seatControllers,
         playerId: candidate.playerId,
+        gameId: args.gameId,
     });
 }
 
@@ -377,10 +395,6 @@ function buildForceSkipPayloadFromSeatState(
     }
 
     const data = current.data;
-    const allowWhenHasNonControl = options?.allowWhenHasNonControl ?? true;
-    if (!allowWhenHasNonControl && hasEnabledNonControlOptions(data)) {
-        return null;
-    }
     const enabledOptions = Array.isArray(data?.options)
         ? data.options.filter((option): option is HiddenSimpleChoiceOption & { id: string } =>
             Boolean(option) && option.disabled !== true && typeof option.id === 'string')
@@ -405,6 +419,11 @@ function buildForceSkipPayloadFromSeatState(
             sourceId,
             title,
         };
+    }
+
+    const allowWhenHasNonControl = options?.allowWhenHasNonControl ?? true;
+    if (!allowWhenHasNonControl && hasEnabledNonControlOptions(data)) {
+        return null;
     }
 
     const cancelOption = enabledOptions.find((option) =>
@@ -459,13 +478,40 @@ function buildForceSkipPayloadFromSeatState(
     return null;
 }
 
+function hasPendingResponseWindowInteractionLock(
+    state: MatchState<unknown> | null | undefined,
+): boolean {
+    const currentWindow = (state?.sys?.responseWindow as {
+        current?: {
+            pendingInteractionId?: unknown;
+        };
+    } | undefined)?.current;
+    return typeof currentWindow?.pendingInteractionId === 'string'
+        && currentWindow.pendingInteractionId.length > 0;
+}
+
+export function shouldInspectSeatStatesForHiddenAiInteraction(
+    state: MatchState<unknown> | null | undefined,
+): boolean {
+    const sharedInteraction = state?.sys?.interaction as {
+        current?: unknown;
+        isBlocked?: unknown;
+    } | undefined;
+    if (sharedInteraction?.current) {
+        return false;
+    }
+    if (sharedInteraction?.isBlocked === true) {
+        return true;
+    }
+    return hasPendingResponseWindowInteractionLock(state);
+}
+
 export function resolveForceSkippableHiddenAiInteraction(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     seatStates: Record<string, MatchState<unknown> | null | undefined>;
 }): ForceSkippableHiddenAiInteraction | null {
-    const sharedInteraction = args.sharedState?.sys?.interaction as { current?: unknown; isBlocked?: unknown } | undefined;
-    if (!sharedInteraction || sharedInteraction.current || sharedInteraction.isBlocked !== true) {
+    if (!shouldInspectSeatStatesForHiddenAiInteraction(args.sharedState)) {
         return null;
     }
 
@@ -509,10 +555,69 @@ export function resolveForceSkippableHiddenAiInteraction(args: {
     return null;
 }
 
+function resolveOrphanDisplayOnlyBonusDiceSettlement(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    seatControllers: Record<string, AiSeatController>;
+}): ForceEndTurnStalledAiResolution | null {
+    const phase = typeof args.sharedState?.sys?.phase === 'string'
+        ? args.sharedState.sys.phase
+        : '';
+    if (phase === 'offensiveRoll' || phase === 'targetingRoll' || phase === 'defensiveRoll') {
+        return null;
+    }
+
+    const currentInteraction = args.sharedState?.sys?.interaction as { current?: unknown; isBlocked?: unknown } | undefined;
+    if (currentInteraction?.current || currentInteraction?.isBlocked === true) {
+        return null;
+    }
+
+    const responseWindow = args.sharedState?.sys?.responseWindow as { current?: unknown } | undefined;
+    if (responseWindow?.current) {
+        return null;
+    }
+
+    const core = args.sharedState?.core as {
+        pendingAttack?: unknown;
+        pendingBonusDiceSettlement?: {
+            id?: unknown;
+            attackerId?: unknown;
+            displayOnly?: unknown;
+        };
+    } | undefined;
+    if (core?.pendingAttack) {
+        return null;
+    }
+
+    const settlement = core?.pendingBonusDiceSettlement;
+    if (settlement?.displayOnly !== true || typeof settlement.attackerId !== 'string') {
+        return null;
+    }
+
+    if (args.seatControllers[settlement.attackerId]?.type === 'human') {
+        return null;
+    }
+
+    const settlementId = typeof settlement.id === 'string' && settlement.id.length > 0
+        ? settlement.id
+        : 'unknown-display-only-settlement';
+
+    return {
+        playerId: settlement.attackerId,
+        reason: 'seat-legal-only',
+        fingerprintHint: `display-only-bonus:${settlement.attackerId}:${phase || 'unknown-phase'}:${settlementId}`,
+        resolution: buildForceEndTurnResolution({
+            playerId: settlement.attackerId,
+            suffix: `display-only-bonus:${settlement.attackerId}:${settlementId}`,
+            commands: [{ type: 'SKIP_BONUS_DICE_REROLL', payload: {} }],
+        }),
+    };
+}
+
 export function resolveForceEndTurnForStalledAi(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatControllers: Record<string, AiSeatController>;
     seatStates: Record<string, MatchState<unknown> | null | undefined>;
+    gameId?: string | null;
 }): ForceEndTurnStalledAiResolution | null {
     if (args.sharedState?.sys?.gameover) {
         return null;
@@ -531,7 +636,7 @@ export function resolveForceEndTurnForStalledAi(args: {
         );
     }
 
-    if (currentInteraction?.current == null && currentInteraction?.isBlocked === true) {
+    if (shouldInspectSeatStatesForHiddenAiInteraction(args.sharedState)) {
         for (const [playerId, controller] of Object.entries(args.seatControllers)) {
             if (controller.type === 'human') continue;
             const seatState = args.seatStates[playerId];
@@ -567,6 +672,17 @@ export function resolveForceEndTurnForStalledAi(args: {
                 commands: [{ type: 'RESPONSE_PASS', payload: {} }],
             }),
         };
+    }
+    if (typeof responderId === 'string' && args.seatControllers[responderId]?.type === 'human') {
+        // 当前响应权在 human 手里时，watchdog 不能把它误判成 active AI 卡死，
+        // 否则 DiceThrone 的 afterRollConfirmed / afterAttackResolved 会被错误上报为
+        // active-turn-legal-only，并制造不该有的 force-end-turn 门禁。
+        return null;
+    }
+
+    const orphanDisplayOnlyBonusSettlement = resolveOrphanDisplayOnlyBonusDiceSettlement(args);
+    if (orphanDisplayOnlyBonusSettlement) {
+        return orphanDisplayOnlyBonusSettlement;
     }
 
     const phase = typeof args.sharedState?.sys?.phase === 'string'
@@ -608,6 +724,7 @@ export function resolveForceEndTurnForStalledAi(args: {
         const isDiceRollPhase = phase === 'offensiveRoll'
             || phase === 'targetingRoll'
             || phase === 'defensiveRoll';
+        const advancePhaseCommandType = resolveWatchdogAdvancePhaseCommandType(args.gameId);
 
         // 派系选择阶段的 AI 没动作，通常是 seat 凭据/seat state 还没准备好。
         // 这里若强行发 ADVANCE_PHASE，会把 match 非法推进到 startTurn/playCards，
@@ -619,7 +736,7 @@ export function resolveForceEndTurnForStalledAi(args: {
         // offensiveRoll / targetingRoll / defensiveRoll 的真实推进依赖掷骰、确认、
         // 选目标或防御响应。若 seat overlay stale 或 legalActions 暂时为 0，
         // 强发 ADVANCE_PHASE 只会打出 command_failed，并制造高频误导性自动反馈。
-        if (phase === 'factionSelect' || isDiceRollPhase) {
+        if (phase === 'factionSelect' || isDiceRollPhase || !advancePhaseCommandType) {
             return {
                 playerId: currentPlayerId,
                 reason: 'active-turn-legal-only',
@@ -638,7 +755,7 @@ export function resolveForceEndTurnForStalledAi(args: {
             resolution: buildForceEndTurnResolution({
                 playerId: currentPlayerId,
                 suffix: `active-turn:${currentPlayerId}`,
-                commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                commands: [{ type: advancePhaseCommandType, payload: {} }],
             }),
         };
     }
@@ -704,6 +821,7 @@ export function resolveForceEndTurnRecoveryStep(args: {
     seatControllers: Record<string, AiSeatController>;
     playerId: string;
     allowAdvancePhase?: boolean;
+    gameId?: string | null;
 }): AiResolution | null {
     const { authoritativeState, seatControllers, playerId, allowAdvancePhase = false } = args;
     if (!authoritativeState || authoritativeState.sys?.gameover) {
@@ -737,6 +855,7 @@ export function resolveForceEndTurnRecoveryStep(args: {
         authoritativeState,
         seatControllers,
         playerId,
+        gameId: args.gameId,
     });
 }
 

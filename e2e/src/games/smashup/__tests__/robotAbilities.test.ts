@@ -15,9 +15,10 @@ import type {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
+import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { makeMatchState as makeMatchStateFromHelpers } from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
@@ -142,10 +143,11 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
         expect(r1.success).toBe(true);
 
         // 解决交互：传空数组（跳过）
-        const handler = getInteractionHandler('robot_microbot_reclaimer');
+        const interaction = (r1.finalState.sys as any)?.interaction?.current;
+        const handler = getAbilityRuntimePromptHandler('robot_microbot_reclaimer');
         expect(handler).toBeDefined();
-        const result = handler!(r1.finalState, '0', [], undefined, defaultRandom, 1000);
-        expect(result.events.length).toBe(0);
+        const result = handler!(r1.finalState, '0', [], interaction?.data, defaultRandom, 1000);
+        expect(result?.events.length).toBe(0);
         // 弃牌堆中的微型机仍在
         expect(r1.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'mb1')).toBe(true);
     });
@@ -171,11 +173,12 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
         } as any, defaultRandom);
         expect(r1.success).toBe(true);
 
-        const handler = getInteractionHandler('robot_microbot_reclaimer');
+        const interaction = (r1.finalState.sys as any)?.interaction?.current;
+        const handler = getAbilityRuntimePromptHandler('robot_microbot_reclaimer');
         expect(handler).toBeDefined();
         // 选择 mb1 洗回牌库
-        const result = handler!(r1.finalState, '0', [{ cardUid: 'mb1' }], undefined, defaultRandom, 1000);
-        const reorderEvents = result.events.filter((e: any) => e.type === SU_EVENTS.DECK_REORDERED);
+        const result = handler!(r1.finalState, '0', [{ cardUid: 'mb1' }], interaction?.data, defaultRandom, 1000);
+        const reorderEvents = result?.events.filter((e: any) => e.type === SU_EVENTS.DECK_REORDERED) ?? [];
         expect(reorderEvents.length).toBe(1);
         const deckUids = (reorderEvents[0] as any).payload.deckUids;
         expect(deckUids).toContain('mb1');

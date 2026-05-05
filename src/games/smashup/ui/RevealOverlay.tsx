@@ -38,6 +38,7 @@ interface RevealItem {
 interface RevealOverlayProps {
     entries: EventStreamEntry[];
     currentPlayerId: PlayerId | null;
+    playerNames?: Record<string, string>;
 }
 
 const AUTO_DISMISS_MS = 15_000;
@@ -46,7 +47,7 @@ const AUTO_DISMISS_MS = 15_000;
 // 组件
 // ============================================================================
 
-export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) {
+export function RevealOverlay({ entries, currentPlayerId, playerNames }: RevealOverlayProps) {
     const { t } = useTranslation('game-smashup');
     const [queue, setQueue] = useState<RevealItem[]>([]);
     const [magnifyTarget, setMagnifyTarget] = useState<CardMagnifyTarget | null>(null);
@@ -161,10 +162,12 @@ export function RevealOverlay({ entries, currentPlayerId }: RevealOverlayProps) 
 
     if (!current) return null;
 
-    const targetLabel = current.targetPlayerIds.map(id => `P${id}`).join(', ');
+    const targetLabel = current.targetPlayerIds
+        .map(id => playerNames?.[id] ?? `P${Number(id) + 1}`)
+        .join(', ');
     const title = current.type === 'hand'
-        ? t('ui.reveal_hand_title', { player: targetLabel, defaultValue: 'P{{player}} 的手牌' })
-        : t('ui.reveal_deck_top_title', { player: targetLabel, defaultValue: 'P{{player}} 的牌库顶' });
+        ? t('ui.reveal_hand_title', { player: targetLabel, defaultValue: '{{player}} 的手牌' })
+        : t('ui.reveal_deck_top_title', { player: targetLabel, defaultValue: '{{player}} 的牌库顶' });
 
     return (
         <AnimatePresence mode="wait">

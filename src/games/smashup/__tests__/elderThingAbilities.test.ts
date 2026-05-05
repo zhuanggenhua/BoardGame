@@ -335,11 +335,23 @@ describe('远古之物派系能力', () => {
                 bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
             });
             const ms = makeMatchState(state);
+            const executor = resolveAbility('elder_thing_mi_go', 'onPlay');
+            expect(executor).toBeDefined();
+            const promptResult = executor!({
+                state,
+                matchState: ms,
+                playerId: '0',
+                cardUid: 'm1',
+                defId: 'elder_thing_mi_go',
+                baseIndex: 0,
+                random: defaultRandom,
+                now: 0,
+            });
+            const promptData = promptResult.matchState?.sys.interaction.current?.data as Record<string, unknown> | undefined;
+            expect(promptData?.sourceId).toBe('elder_thing_mi_go');
             const handler = getInteractionHandler('elder_thing_mi_go');
             expect(handler).toBeDefined();
-            const result = handler!(ms, '1', { choice: 'draw_madness' }, {
-                continuationContext: { casterPlayerId: '0', opponents: ['1'], opponentIdx: 0 },
-            }, defaultRandom, 0);
+            const result = handler!(promptResult.matchState ?? ms, '1', { choice: 'draw_madness' }, promptData, defaultRandom, 0);
             expect(result).toBeDefined();
             const madnessEvents = result!.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
@@ -357,11 +369,23 @@ describe('远古之物派系能力', () => {
                 bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
             });
             const ms = makeMatchState(state);
+            const executor = resolveAbility('elder_thing_mi_go', 'onPlay');
+            expect(executor).toBeDefined();
+            const promptResult = executor!({
+                state,
+                matchState: ms,
+                playerId: '0',
+                cardUid: 'm1',
+                defId: 'elder_thing_mi_go',
+                baseIndex: 0,
+                random: defaultRandom,
+                now: 0,
+            });
+            const promptData = promptResult.matchState?.sys.interaction.current?.data as Record<string, unknown> | undefined;
+            expect(promptData?.sourceId).toBe('elder_thing_mi_go');
             const handler = getInteractionHandler('elder_thing_mi_go');
             expect(handler).toBeDefined();
-            const result = handler!(ms, '1', { choice: 'decline' }, {
-                continuationContext: { casterPlayerId: '0', opponents: ['1'], opponentIdx: 0 },
-            }, defaultRandom, 0);
+            const result = handler!(promptResult.matchState ?? ms, '1', { choice: 'decline' }, promptData, defaultRandom, 0);
             expect(result).toBeDefined();
             const drawEvents = result!.events.filter(e => e.type === SU_EVENTS.CARDS_DRAWN);
             const selfDraw = drawEvents.filter(e => (e as any).payload.playerId === '0');

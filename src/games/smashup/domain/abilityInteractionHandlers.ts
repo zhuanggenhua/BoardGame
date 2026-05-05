@@ -11,6 +11,7 @@
 
 import type { PlayerId, RandomFn, MatchState } from '../../../engine/types';
 import type { SmashUpCore, SmashUpEvent } from './types';
+import { getAbilityRuntimePromptHandler, getRegisteredAbilityRuntimePromptIds } from './abilityRuntime';
 
 // ============================================================================
 // 交互处理函数类型
@@ -51,7 +52,20 @@ export function registerInteractionHandler(
 export function getInteractionHandler(
     sourceId: string
 ): InteractionHandler | undefined {
-    return interactionHandlers.get(sourceId);
+    const registered = interactionHandlers.get(sourceId);
+    if (registered) return registered;
+
+    const runtimePromptHandler = getAbilityRuntimePromptHandler(sourceId);
+    if (!runtimePromptHandler) return undefined;
+
+    return (
+        state: MatchState<SmashUpCore>,
+        playerId: PlayerId,
+        value: unknown,
+        interactionData: Record<string, unknown> | undefined,
+        random: RandomFn,
+        timestamp: number,
+    ) => runtimePromptHandler(state, playerId, value, interactionData, random, timestamp);
 }
 
 /** 清空注册表（测试用） */
@@ -66,7 +80,10 @@ export function getInteractionHandlersSize(): number {
 
 /** 获取所有已注册的 handler sourceId（用于交互完整性审计） */
 export function getRegisteredInteractionHandlerIds(): Set<string> {
-    return new Set(interactionHandlers.keys());
+    return new Set([
+        ...interactionHandlers.keys(),
+        ...getRegisteredAbilityRuntimePromptIds(),
+    ]);
 }
 
 /**

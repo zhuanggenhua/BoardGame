@@ -37,6 +37,7 @@ export const BaseZone: React.FC<{
     baseIndex: number;
     core: SmashUpCore;
     turnOrder: string[];
+    playerNames?: Record<string, string>;
     isMobileViewport?: boolean;
     isDeployMode: boolean;
     isMinionSelectMode?: boolean;
@@ -76,7 +77,7 @@ export const BaseZone: React.FC<{
     usableTitanOngoingUids?: Set<string>;
     canUseBaseAbility?: boolean;
     tokenRef?: (el: HTMLDivElement | null) => void;
-}> = ({ base, baseIndex, core, turnOrder, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, canUseBaseAbility = false, tokenRef }) => {
+}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, canUseBaseAbility = false, tokenRef }) => {
     const { t } = useTranslation('game-smashup');
     const { selectedFactions } = useSmashUpOverlay();
     const [expandedMinionUid, setExpandedMinionUid] = React.useState<string | null>(null);
@@ -409,9 +410,19 @@ export const BaseZone: React.FC<{
         const titanActivationKey = `titan-${titan.uid}`;
         const isTitanActivationArmed = isActivationArmed(titanActivationKey);
         const showUsedTitanState = titan.talentUsed && !canActivateTitan;
+        const titanFrameClassName = `relative aspect-[0.714] w-full cursor-pointer rounded-[0.18vw] border-[0.12vw] bg-white shadow-lg origin-bottom transition-[transform,box-shadow,filter,opacity] duration-200 ${
+            isCoarsePointer ? '' : 'hover:scale-110 hover:-translate-y-[0.12vw]'
+        } ${
+            isTitanActivationArmed
+                ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.75)]'
+                : canActivateTitan
+                ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
+                : showUsedTitanState
+                ? USED_STATE_CLASS
+                : `${pConf.border} ${pConf.shadow}`}`;
 
         return (
-            <div className="group relative" style={{ width: `${titanCardWidth}vw` }}>
+            <div className="group relative hover:!z-[999]" style={{ width: `${titanCardWidth}vw` }}>
             <motion.div
                 key={titan.uid}
                 data-titan-uid={titan.uid}
@@ -459,15 +470,7 @@ export const BaseZone: React.FC<{
                     clearArmedActivation();
                     onViewTitan(titan.defId);
                 }}
-                className={`relative aspect-[0.714] w-full bg-white rounded-[0.18vw] shadow-lg cursor-pointer
-                    hover:z-50 hover:scale-125 hover:-translate-y-[0.3vw] transition-all border-[0.12vw]
-                    ${isTitanActivationArmed
-                        ? 'border-amber-300 ring-4 ring-amber-300 shadow-[0_0_18px_rgba(251,191,36,0.75)]'
-                        : canActivateTitan
-                        ? 'border-amber-400 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)]'
-                        : showUsedTitanState
-                        ? USED_STATE_CLASS
-                        : `${pConf.border} ${pConf.shadow}`}`}
+                className={titanFrameClassName}
                 initial={{ y: 20, opacity: 0, scale: 0.7 }}
                 animate={canActivateTitan
                     ? { y: 0, opacity: 1, scale: 1, rotate: [-1, 1, -1], transition: { rotate: { repeat: Infinity, duration: 1.5, ease: 'easeInOut' } } }
@@ -824,9 +827,10 @@ export const BaseZone: React.FC<{
                                                         }
                                                         : undefined;
                                                     const buriedInspectKey = `buried-${buried.uid}`;
+                                                    const buriedOwnerName = playerNames?.[buried.controllerId] ?? `P${Number(buried.controllerId) + 1}`;
                                                     const buriedTitle = buriedDef
                                                         ? `${resolveCardName(buriedDef, t) || buried.defId}\n${resolveCardText(buriedDef, t) || ''}`.trim()
-                                                        : `${t('ui.card_placeholder')} · P${parseInt(buried.controllerId, 10) + 1}`;
+                                                        : `${t('ui.card_placeholder')} · ${buriedOwnerName}`;
                                                     const isBuriedSelectable = !!isBuriedSelectMode && !!selectableBuriedCardUids?.has(buried.uid);
                                                     const isBuriedSelected = !!multiSelectedBuriedCardUids?.has(buried.uid);
                                                     const isBuriedDimmed = !!isBuriedSelectMode && !isBuriedSelectable && !isBuriedSelected;

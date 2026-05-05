@@ -27,7 +27,7 @@ import { useEndgame } from '../../hooks/game/useEndgame';
 import { useGameAudio, playSound } from '../../lib/audio/useGameAudio';
 import { OptimizedImage } from '../../components/common/media/OptimizedImage';
 import { BoardLayoutEditor } from '../../components/game/framework/BoardLayoutEditor';
-import { TutorialSelectionGate } from '../../components/game/framework';
+import { TutorialSelectionGate, useMatchPlayerViewModel } from '../../components/game/framework';
 import { saveSummonerWarsLayout } from '../../api/layout';
 import type { BoardLayoutConfig, GridConfig } from '../../core/ui/board-layout.types';
 import { SUMMONER_WARS_MANIFEST } from './manifest';
@@ -193,18 +193,19 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const useSafeCombatVisualFallback = isTestEnvironment() || (typeof navigator !== 'undefined' && navigator.webdriver);
 
   // 阵营选择状态
-  const rootPid = (playerID || '0') as PlayerId;
+  const playerView = useMatchPlayerViewModel({
+    core: G.core,
+    playerID,
+    matchData,
+    getFallbackName: (pid) => pid === '0' ? t('player.default1') : t('player.default2'),
+    resolvePreferredOrder: ({ core }) => core ? ['0', '1'].filter((pid) => !!core.players?.[pid as PlayerId]) : undefined,
+    resolveTurnPlayerId: ({ core }) => core?.currentPlayer,
+  });
+  const rootPid = (playerView.selfPlayerId ?? '0') as PlayerId;
   const isInFactionSelection = !G.core.hostStarted;
 
   // 玩家名称映射
-  const playerNames = useMemo(() => {
-    const names: Record<string, string> = {};
-    for (const pid of ['0', '1']) {
-      names[pid] = matchData?.find(p => String(p.id) === pid)?.name
-        ?? (pid === '0' ? t('player.default1') : t('player.default2'));
-    }
-    return names;
-  }, [matchData, t]);
+  const playerNames = playerView.playerNames;
 
   // 阵营选择回调
   const handleSelectFaction = useCallback((factionId: FactionId) => {
@@ -294,10 +295,10 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   // 游戏状态
   const core = G.core;
   const currentPhase = core.phase;
-  const activePlayerId = core.currentPlayer;
+  const activePlayerId = (playerView.turnPlayerId ?? core.currentPlayer) as PlayerId;
   const isMyTurn = isLocalMatch || (playerID !== null && playerID !== undefined && activePlayerId === playerID);
   const myPlayerId = isLocalMatch ? '0' : (playerID === '1' ? '1' : '0');
-  const opponentPlayerId = myPlayerId === '0' ? '1' : '0';
+  const opponentPlayerId = (playerView.orderedPlayerIds.find((pid) => pid !== myPlayerId) ?? (myPlayerId === '0' ? '1' : '0')) as PlayerId;
   const isWinner = !!isGameOver && isGameOver?.winner === rootPid;
   const shouldFlipView = !isLocalMatch && !isSpectator && myPlayerId === '1';
   const toViewCoord = useCallback((coord: CellCoord): CellCoord => (
@@ -1229,7 +1230,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                 <div className={opponentBarClass} data-testid="sw-opponent-bar">
                   <div className="flex items-center gap-3 rounded-lg border border-slate-600/20 bg-black/60 px-3 py-2">
                     <span className="max-w-[9rem] truncate text-sm font-medium text-white text-opacity-100">
-                      {matchData?.[playerID === '1' ? 0 : 1]?.name ?? t('player.opponent')}
+                      {playerView.getPlayerName(opponentPlayerId)}
                     </span>
                     <EnergyBar current={opponentMagic} testId="sw-energy-opponent" size="normal" />
                   </div>
@@ -1311,7 +1312,7 @@ export const SummonerWarsBoard: React.FC<Props> = ({
 
                   <div className="flex items-center gap-3 rounded-lg border border-slate-600/20 bg-black/60 px-3 py-2">
                     <span className="max-w-[9rem] truncate text-sm font-medium text-white text-opacity-100">
-                      {matchData?.[playerID === '1' ? 1 : 0]?.name ?? t('player.self')}
+                      {playerView.getPlayerName(myPlayerId)}
                     </span>
                     <EnergyBar current={myMagic} testId="sw-energy-player" size="normal" />
                   </div>

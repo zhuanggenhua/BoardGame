@@ -99,6 +99,67 @@ async function injectInnsmouthRevealScene(matchId: string, page: any, deck: stri
     await injectMatchState(matchId, nextState, page);
 }
 
+async function injectInnsmouthHomeworldChainScene(matchId: string, page: any): Promise<void> {
+    const currentState = await getMatchState(matchId, page);
+    const nextState = normalizeInjectedMatchState(matchId, {
+        ...currentState,
+        core: {
+            ...currentState.core,
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            phase: 'playCards',
+            players: {
+                ...currentState.core.players,
+                '0': {
+                    ...currentState.core.players['0'],
+                    hand: [
+                        { uid: 'h-local-1', defId: 'innsmouth_the_locals', type: 'minion', owner: '0' },
+                        { uid: 'h-big-1', defId: 'alien_invader', type: 'minion', owner: '0' },
+                    ],
+                    deck: [
+                        { uid: 'deck-local-1', defId: 'innsmouth_the_locals', type: 'minion', owner: '0' },
+                        { uid: 'deck-scout-1', defId: 'aliens_scout', type: 'minion', owner: '0' },
+                        { uid: 'deck-local-2', defId: 'innsmouth_the_locals', type: 'minion', owner: '0' },
+                    ],
+                    discard: [],
+                    factions: ['innsmouth', 'aliens'],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    minionsPlayedPerBase: undefined,
+                    baseLimitedMinionQuota: undefined,
+                    baseLimitedMinionPowerCaps: undefined,
+                    baseLimitedSameNameRequired: undefined,
+                    baseLimitedSameNameDefId: undefined,
+                    sameNameMinionRemaining: undefined,
+                    sameNameMinionDefId: undefined,
+                    extraMinionPowerCaps: undefined,
+                    extraMinionPowerMax: undefined,
+                },
+                '1': {
+                    ...currentState.core.players['1'],
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    factions: ['pirates', 'dinosaurs'],
+                },
+            },
+            bases: [
+                { defId: 'base_the_homeworld', minions: [], ongoingActions: [] },
+                { defId: 'base_the_factory', minions: [], ongoingActions: [] },
+                { defId: 'base_great_library', minions: [], ongoingActions: [] },
+            ],
+        },
+        sys: {
+            ...currentState.sys,
+            phase: 'playCards',
+            interaction: { current: undefined, queue: [] },
+        },
+    });
+    await injectMatchState(matchId, nextState, page);
+}
+
 async function injectPrivateRevealVisibilityScene(matchId: string, page: any): Promise<void> {
     const currentState = await getMatchState(matchId, page);
     const existingEntries = Array.isArray(currentState.sys?.eventStream?.entries)
@@ -139,7 +200,7 @@ async function injectPrivateRevealVisibilityScene(matchId: string, page: any): P
 }
 
 async function withOnlineMatch(browser: any, baseURL: string | undefined, run: (setup: any) => Promise<void>): Promise<void> {
-    const setup = await setupTwoPlayerMatch(browser, baseURL);
+    const setup = await setupTwoPlayerMatch(browser, baseURL, { skipImageGate: true });
     if (!setup) {
         test.skip(true, '游戏服务器不可用或创建房间失败');
         return;
@@ -224,6 +285,98 @@ test.describe('印斯茅斯“本地人”展示功能', () => {
             const baseLocals = finalState.core.bases[0].minions.filter((minion: any) => minion.defId === 'innsmouth_the_locals' && minion.controller === '0').length;
             expect(handLocals).toBe(0);
             expect(baseLocals).toBe(1);
+        });
+    });
+
+    test('本地人打到家园后只能有限连打低战力随从，不能继续打 3 力随从', async ({ browser }, testInfo) => {
+        await withOnlineMatch(browser, testInfo.project.use.baseURL as string | undefined, async ({ hostPage, guestPage, matchId }) => {
+            const sharedDir = join(process.cwd(), 'test-results', 'evidence-screenshots', '_shared');
+
+            await injectInnsmouthHomeworldChainScene(matchId, hostPage);
+
+            await hostPage.click('[data-card-uid="h-local-1"]');
+            await hostPage.click('[data-base-index="0"]');
+            await Promise.all([
+                expect(hostPage.getByTestId('reveal-overlay')).toBeVisible({ timeout: 5000 }),
+                expect(guestPage.getByTestId('reveal-overlay')).toBeVisible({ timeout: 5000 }),
+            ]);
+            await hostPage.screenshot({
+                path: join(sharedDir, 'smashup-homeworld-locals-chain-step1-first-reveal.png'),
+                fullPage: false,
+            });
+            await Promise.all([
+                dismissRevealOverlay(hostPage),
+                dismissRevealOverlay(guestPage),
+            ]);
+
+            const afterFirstPlay = await getMatchState(matchId, hostPage);
+            const firstBonusLocalsUids = afterFirstPlay.core.players['0'].hand
+                .filter((card: any) => card.defId === 'innsmouth_the_locals')
+                .map((card: any) => card.uid);
+            expect(firstBonusLocalsUids).toHaveLength(2);
+            expect(afterFirstPlay.core.players['0'].minionsPlayed).toBe(1);
+            expect(afterFirstPlay.core.players['0'].minionLimit).toBe(2);
+            expect(afterFirstPlay.core.players['0'].extraMinionPowerMax).toBe(2);
+
+            await hostPage.click(`[data-card-uid="${firstBonusLocalsUids[0]}"]`);
+            await hostPage.click('[data-base-index="0"]');
+            await Promise.all([
+                expect(hostPage.getByTestId('reveal-overlay')).toBeVisible({ timeout: 5000 }),
+                expect(guestPage.getByTestId('reveal-overlay')).toBeVisible({ timeout: 5000 }),
+            ]);
+            await hostPage.screenshot({
+                path: join(sharedDir, 'smashup-homeworld-locals-chain-step2-second-reveal.png'),
+                fullPage: false,
+            });
+            await Promise.all([
+                dismissRevealOverlay(hostPage),
+                dismissRevealOverlay(guestPage),
+            ]);
+
+            const afterSecondPlay = await getMatchState(matchId, hostPage);
+            const remainingLocalUid = afterSecondPlay.core.players['0'].hand.find(
+                (card: any) => card.defId === 'innsmouth_the_locals',
+            )?.uid;
+            expect(remainingLocalUid).toBeTruthy();
+            expect(afterSecondPlay.core.players['0'].minionsPlayed).toBe(2);
+            expect(afterSecondPlay.core.players['0'].minionLimit).toBe(3);
+            expect(afterSecondPlay.core.players['0'].extraMinionPowerMax).toBe(2);
+
+            await hostPage.click(`[data-card-uid="${remainingLocalUid}"]`);
+            await hostPage.click('[data-base-index="0"]');
+            await Promise.all([
+                expect(hostPage.getByTestId('reveal-overlay')).toBeVisible({ timeout: 5000 }),
+                expect(guestPage.getByTestId('reveal-overlay')).toBeVisible({ timeout: 5000 }),
+            ]);
+            await hostPage.screenshot({
+                path: join(sharedDir, 'smashup-homeworld-locals-chain-step3-third-reveal.png'),
+                fullPage: false,
+            });
+            await Promise.all([
+                dismissRevealOverlay(hostPage),
+                dismissRevealOverlay(guestPage),
+            ]);
+
+            const beforeBigMinionAttempt = await getMatchState(matchId, hostPage);
+            expect(beforeBigMinionAttempt.core.players['0'].hand.some((card: any) => card.uid === 'h-big-1')).toBe(true);
+            expect(beforeBigMinionAttempt.core.players['0'].hand.some((card: any) => card.defId === 'innsmouth_the_locals')).toBe(false);
+            expect(beforeBigMinionAttempt.core.players['0'].minionsPlayed).toBe(3);
+            expect(beforeBigMinionAttempt.core.players['0'].minionLimit).toBe(4);
+            expect(beforeBigMinionAttempt.core.players['0'].extraMinionPowerMax).toBe(2);
+
+            await hostPage.click('[data-card-uid="h-big-1"]');
+            await hostPage.click('[data-base-index="1"]');
+            await hostPage.waitForTimeout(500);
+            await hostPage.screenshot({
+                path: join(sharedDir, 'smashup-homeworld-locals-chain-step4-big-minion-blocked.png'),
+                fullPage: false,
+            });
+
+            const afterBigMinionAttempt = await getMatchState(matchId, hostPage);
+            expect(afterBigMinionAttempt.core.players['0'].hand.some((card: any) => card.uid === 'h-big-1')).toBe(true);
+            expect(afterBigMinionAttempt.core.players['0'].minionsPlayed).toBe(3);
+            expect(afterBigMinionAttempt.core.bases[0].minions.filter((minion: any) => minion.controller === '0')).toHaveLength(3);
+            expect(afterBigMinionAttempt.core.players['0'].extraMinionPowerMax).toBe(2);
         });
     });
 

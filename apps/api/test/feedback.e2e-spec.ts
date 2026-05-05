@@ -1487,7 +1487,7 @@ describe('Feedback Module (e2e)', () => {
         expect(updateRes.body.status).toBe('resolved');
     });
 
-    it('普通用户可查看全部反馈且仅能修改自己的反馈（并优先显示自己的）', async () => {
+    it('普通用户可查看全部反馈且仅能修改自己的反馈，并可切换我的优先排序', async () => {
         const { userToken } = await seedUsers();
         const { token: otherUserToken } = await registerUser({
             username: 'player-feedback-2',
@@ -1528,11 +1528,19 @@ describe('Feedback Module (e2e)', () => {
             .expect(200);
 
         expect(listRes.body.items).toHaveLength(2);
-        expect(listRes.body.items[0]._id).toBe(ownFeedbackRes.body._id);
+        expect(listRes.body.items[0]._id).toBe(otherFeedbackRes.body._id);
         const ownRow = listRes.body.items.find((item: { _id: string }) => item._id === ownFeedbackRes.body._id);
         const otherRow = listRes.body.items.find((item: { _id: string }) => item._id === otherFeedbackRes.body._id);
         expect(ownRow?.canManage).toBe(true);
         expect(otherRow?.canManage).toBe(false);
+
+        const preferMineListRes = await request(app.getHttpServer())
+            .get('/admin/feedback?limit=20&preferMine=true')
+            .set('Authorization', `Bearer ${userToken}`)
+            .expect(200);
+
+        expect(preferMineListRes.body.items).toHaveLength(2);
+        expect(preferMineListRes.body.items[0]._id).toBe(ownFeedbackRes.body._id);
 
         await request(app.getHttpServer())
             .patch(`/admin/feedback/${ownFeedbackRes.body._id as string}/status`)

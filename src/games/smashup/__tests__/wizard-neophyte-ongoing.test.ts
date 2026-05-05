@@ -8,10 +8,10 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { makeState, makePlayer, makeCard, makeBase, makeMatchState } from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { SU_COMMANDS } from '../domain/types';
 import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
-import { registerWizardAbilities, registerWizardInteractionHandlers } from '../abilities/wizards';
-import { registerZombieAbilities, registerZombieInteractionHandlers } from '../abilities/zombies';
+import { registerWizardAbilities } from '../abilities/wizards';
+import { registerZombieAbilities } from '../abilities/zombies';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 
@@ -19,9 +19,7 @@ beforeAll(() => {
     clearRegistry();
     clearInteractionHandlers();
     registerWizardAbilities();
-    registerWizardInteractionHandlers();
     registerZombieAbilities();
-    registerZombieInteractionHandlers();
 });
 
 describe('学徒打出 ongoing 行动卡', () => {

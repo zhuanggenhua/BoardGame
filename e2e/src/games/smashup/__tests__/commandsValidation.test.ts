@@ -322,7 +322,7 @@ describe('SmashUp command validation', () => {
         expect(result.valid).toBe(true);
     });
 
-    it('uses smashupReactionSession as the truth source for scoreBases minion special activation order', () => {
+    it('frame-backed reaction session 不会把仅限 playCards 的 minion special 误放行到 scoreBases', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -354,7 +354,10 @@ describe('SmashUp command validation', () => {
             payload: { minionUid: 'acolyte-1', baseIndex: 0 },
         } as any);
 
-        expect(result.valid).toBe(true);
+        expect(result).toEqual({
+            valid: false,
+            error: '该随从没有特殊能力',
+        });
     });
 
     it('afterScoring 响应窗口中的 special 只能指向当前正在结算的基地', () => {
@@ -410,11 +413,25 @@ describe('SmashUp command validation', () => {
     });
 
     it('ignores orphaned responseWindow state without a frame-backed reaction session', () => {
+        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
         const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            titans: [
+                makeTitan({
+                    uid: 'titan-ghost-1',
+                    defId: 'ghosts_creampuff_man',
+                    faction: 'ghosts',
+                    ownerId: '0',
+                    controllerId: '0',
+                }),
+            ],
             bases: [
                 makeBase({
                     defId: 'test_base',
-                    minions: [makeMinion('acolyte-1', 'ninja_acolyte', '0', 2)],
+                    minions: [makeMinion('ally-1', 'robot_microbot_alpha', '0', 2)],
                 }),
             ],
             scoringEligibleBaseIndices: [0],
@@ -437,7 +454,78 @@ describe('SmashUp command validation', () => {
         const result = validate(ms, {
             type: SU_COMMANDS.ACTIVATE_SPECIAL,
             playerId: '0',
-            payload: { minionUid: 'acolyte-1', baseIndex: 0 },
+            payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
+        } as any);
+
+        expect(result.valid).toBe(true);
+    });
+
+    it('frame-backed reaction session 已切到 smashup_reaction_choose 时，不应再被 legacy Me First 门禁拦掉 special', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            titans: [
+                makeTitan({
+                    uid: 'titan-ghost-1',
+                    defId: 'ghosts_creampuff_man',
+                    faction: 'ghosts',
+                    ownerId: '1',
+                    controllerId: '1',
+                }),
+            ],
+            bases: [makeBase({ defId: 'test_base' })],
+            scoringEligibleBaseIndices: [0],
+            currentPlayerIndex: 0,
+        });
+        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
+        const ms = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-before:0:test',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: '1',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'meFirst',
+        });
+
+        ms.sys.responseWindow = {
+            ...(ms.sys.responseWindow ?? {}),
+            current: {
+                id: 'legacy-window',
+                windowType: 'meFirst',
+                sourceId: 'legacy_me_first',
+                responderQueue: ['0', '1'],
+                currentResponderIndex: 1,
+                passedPlayers: [],
+            },
+        } as any;
+        ms.sys.interaction = {
+            ...(ms.sys.interaction ?? {}),
+            current: {
+                id: 'reaction-choice',
+                kind: 'simple-choice',
+                playerId: '1',
+                data: {
+                    sourceId: 'smashup_reaction_choose',
+                    options: [
+                        {
+                            id: 'trigger-1',
+                            label: '触发',
+                            value: { kind: 'trigger', triggerId: 'trigger-1' },
+                        },
+                    ],
+                },
+            },
+            queue: [],
+        } as any;
+
+        const result = validate(ms, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: '1',
+            payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
         } as any);
 
         expect(result.valid).toBe(true);

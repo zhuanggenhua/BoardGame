@@ -26,6 +26,10 @@ const EXCLUDED_DIRS = new Set(['__tests__', 'data']);
 const HELPER_SOURCE_ARG_INDEX = new Map<string, number>([
     // pirates.ts: buildMoveToBaseInteraction(..., interactionIdPrefix, sourceId, ...)
     ['buildMoveToBaseInteraction', 5],
+    // fairies.ts: queueTransferSelfPrompt(ctx, sourceId, title)
+    ['queueTransferSelfPrompt', 1],
+    // skeletons.ts: buildOptionalCounterPrompt(id, playerId, title, sourceId, ...)
+    ['buildOptionalCounterPrompt', 3],
 ]);
 
 function listImplementationTsFiles(dir: string): string[] {
@@ -52,10 +56,35 @@ function getCallIdentifierName(call: ts.CallExpression): string | null {
     return null;
 }
 
-function extractStringLiteral(expr: ts.Expression | undefined): string | null {
+function collectStringConstants(root: ts.Node): Map<string, string> {
+    const constants = new Map<string, string>();
+
+    const visit = (node: ts.Node) => {
+        if (ts.isVariableDeclaration(node) && ts.isIdentifier(node.name)) {
+            const name = node.name.text;
+            const value = node.initializer
+                && (ts.isStringLiteral(node.initializer) || ts.isNoSubstitutionTemplateLiteral(node.initializer))
+                ? node.initializer.text
+                : null;
+            if (value !== null) {
+                constants.set(name, value);
+            }
+        }
+        ts.forEachChild(node, visit);
+    };
+
+    visit(root);
+    return constants;
+}
+
+function extractStringLiteral(
+    expr: ts.Expression | undefined,
+    constants?: Map<string, string>,
+): string | null {
     if (!expr) return null;
     if (ts.isStringLiteral(expr)) return expr.text;
     if (ts.isNoSubstitutionTemplateLiteral(expr)) return expr.text;
+    if (constants && ts.isIdentifier(expr)) return constants.get(expr.text) ?? null;
     return null;
 }
 
@@ -66,15 +95,39 @@ function getPropertyName(name: ts.PropertyName): string | null {
     return null;
 }
 
-function extractSourceIdFromConfigObject(expr: ts.Expression | undefined): string | null {
+function extractSourceIdFromConfigObject(
+    expr: ts.Expression | undefined,
+    constants?: Map<string, string>,
+): string | null {
     if (!expr || !ts.isObjectLiteralExpression(expr)) return null;
+    for (const prop of expr.properties) {
+        if (ts.isPropertyAssignment(prop)) {
+            const name = getPropertyName(prop.name);
+            if (name !== 'sourceId') continue;
+            return extractStringLiteral(prop.initializer, constants);
+        }
+        if (ts.isShorthandPropertyAssignment(prop) && prop.name.text === 'sourceId') {
+            return extractStringLiteral(prop.name, constants);
+        }
+    }
+    return null;
+}
+
+function extractStringArrayFromConfigObject(
+    expr: ts.Expression | undefined,
+    propertyName: string,
+    constants?: Map<string, string>,
+): string[] {
+    if (!expr || !ts.isObjectLiteralExpression(expr)) return [];
     for (const prop of expr.properties) {
         if (!ts.isPropertyAssignment(prop)) continue;
         const name = getPropertyName(prop.name);
-        if (name !== 'sourceId') continue;
-        return extractStringLiteral(prop.initializer);
+        if (name !== propertyName || !ts.isArrayLiteralExpression(prop.initializer)) continue;
+        return prop.initializer.elements
+            .map((element) => extractStringLiteral(element as ts.Expression, constants))
+            .filter((value): value is string => !!value);
     }
-    return null;
+    return [];
 }
 
 function pushWarning(
@@ -94,7 +147,8 @@ function pushWarning(
 function collectChoiceSourceIds(
     root: ts.Node,
     sourceFile: ts.SourceFile,
-    warnings: InteractionAuditExtractionWarning[]
+    warnings: InteractionAuditExtractionWarning[],
+    constants: Map<string, string>,
 ): string[] {
     const ids = new Set<string>();
 
@@ -102,8 +156,8 @@ function collectChoiceSourceIds(
         if (ts.isCallExpression(node) && getCallIdentifierName(node) === 'createSimpleChoice') {
             const sourceArg = node.arguments[4];
             const sourceId =
-                extractStringLiteral(sourceArg)
-                ?? extractSourceIdFromConfigObject(sourceArg);
+                extractStringLiteral(sourceArg, constants)
+                ?? extractSourceIdFromConfigObject(sourceArg, constants);
             if (sourceId) {
                 ids.add(sourceId);
             } else {
@@ -127,7 +181,10 @@ function collectChoiceSourceIds(
     return Array.from(ids);
 }
 
-function collectHelperProducedSourceIds(root: ts.Node): string[] {
+function collectDeclaredSourceIds(
+    root: ts.Node,
+    constants: Map<string, string>,
+): string[] {
     const ids = new Set<string>();
 
     const visit = (node: ts.Node) => {
@@ -135,13 +192,28 @@ function collectHelperProducedSourceIds(root: ts.Node): string[] {
             const callName = getCallIdentifierName(node);
             if (callName && HELPER_SOURCE_ARG_INDEX.has(callName)) {
                 const argIndex = HELPER_SOURCE_ARG_INDEX.get(callName)!;
-                const sourceId = extractStringLiteral(node.arguments[argIndex]);
+                const sourceId = extractStringLiteral(node.arguments[argIndex], constants);
                 if (sourceId) {
                     ids.add(sourceId);
                 }
             }
             if (callName === 'resolveOrPrompt') {
-                const sourceId = extractSourceIdFromConfigObject(node.arguments[2]);
+                const sourceId = extractSourceIdFromConfigObject(node.arguments[2], constants);
+                if (sourceId) {
+                    ids.add(sourceId);
+                }
+            }
+            if (callName === 'createPromptProgram') {
+                const sourceId = extractSourceIdFromConfigObject(node.arguments[0], constants);
+                if (sourceId) {
+                    ids.add(sourceId);
+                }
+                for (const interactionSourceId of extractStringArrayFromConfigObject(node.arguments[0], 'interactionSourceIds', constants)) {
+                    ids.add(interactionSourceId);
+                }
+            }
+            if (callName === 'createAbilityRuntimeSimpleChoice') {
+                const sourceId = extractSourceIdFromConfigObject(node.arguments[4], constants);
                 if (sourceId) {
                     ids.add(sourceId);
                 }
@@ -154,13 +226,13 @@ function collectHelperProducedSourceIds(root: ts.Node): string[] {
     return Array.from(ids);
 }
 
-function collectGrantExtraReasons(root: ts.Node): string[] {
+function collectGrantExtraReasons(root: ts.Node, constants: Map<string, string>): string[] {
     const reasons = new Set<string>();
     const visit = (node: ts.Node) => {
         if (ts.isCallExpression(node)) {
             const callName = getCallIdentifierName(node);
             if (callName === 'grantExtraMinion' || callName === 'grantExtraAction') {
-                const reason = extractStringLiteral(node.arguments[1]);
+                const reason = extractStringLiteral(node.arguments[1], constants);
                 if (reason) reasons.add(reason);
             }
         }
@@ -182,17 +254,18 @@ export function collectSmashupInteractionAuditAuto(): InteractionAuditAutoResult
     for (const filePath of files) {
         const content = fs.readFileSync(filePath, 'utf-8');
         const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+        const constants = collectStringConstants(sourceFile);
 
         // 1) 全局提取 createSimpleChoice sourceId（作为审计输入源）
-        for (const sourceId of collectChoiceSourceIds(sourceFile, sourceFile, warnings)) {
+        for (const sourceId of collectChoiceSourceIds(sourceFile, sourceFile, warnings, constants)) {
             allSourceIds.add(sourceId);
         }
-        // 1.1) helper 调用中传入的静态 sourceId
-        for (const sourceId of collectHelperProducedSourceIds(sourceFile)) {
+        // 1.1) helper / runtime helper / branching helper 调用中传入的静态 sourceId
+        for (const sourceId of collectDeclaredSourceIds(sourceFile, constants)) {
             allSourceIds.add(sourceId);
         }
         // 1.2) grantExtra* 的 reason（部分交互由系统根据 reason 生成 sourceId）
-        for (const reason of collectGrantExtraReasons(sourceFile)) {
+        for (const reason of collectGrantExtraReasons(sourceFile, constants)) {
             extraReasonIds.add(reason);
             extraReasonIds.add(`${reason}_search`);
         }
@@ -223,8 +296,8 @@ export function collectSmashupInteractionAuditAuto(): InteractionAuditAutoResult
             handlerIds.add(sourceId);
 
             const producedIds = [
-                ...collectChoiceSourceIds(handlerExpr, sourceFile, warnings),
-                ...collectHelperProducedSourceIds(handlerExpr),
+                ...collectChoiceSourceIds(handlerExpr, sourceFile, warnings, constants),
+                ...collectDeclaredSourceIds(handlerExpr, constants),
             ];
             if (!chainMap.has(sourceId)) {
                 chainMap.set(sourceId, new Set<string>());

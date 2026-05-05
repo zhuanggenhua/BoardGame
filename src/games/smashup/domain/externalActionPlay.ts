@@ -1,11 +1,17 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
-import { resolveOnPlay, resolveSpecial, type AbilityContext } from './abilityRegistry';
+import {
+    requireOnPlay,
+    resolveSpecial,
+    type AbilityContext,
+} from './abilityRegistry';
 import { reduce } from './reduce';
 import type { SmashUpCore, SmashUpEvent } from './types';
 
-function resolvePlayedActionExecutor(defId: string) {
-    return resolveSpecial(defId) ?? resolveOnPlay(defId);
+function requirePlayedActionExecutor(defId: string) {
+    return resolveSpecial(defId)
+        ?? requireOnPlay(defId, 'externalActionPlay.appendResolvedActionAbility');
 }
+
 
 export function getExternalActionEffectiveHandSize(
     state: MatchState<SmashUpCore>,
@@ -28,10 +34,7 @@ export function appendResolvedActionAbility(params: {
     targetMinionUid?: string;
     handSizeAfterPlay?: number;
 }): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const executor = resolvePlayedActionExecutor(params.defId);
-    if (!executor) {
-        return { state: params.state, events: params.events };
-    }
+    const executor = requirePlayedActionExecutor(params.defId);
 
     let simCore = params.state.core;
     for (const evt of params.events) {

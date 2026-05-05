@@ -19,6 +19,9 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { initAllAbilities } from '../abilities';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
+import { runCommand } from './testRunner';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -173,6 +176,76 @@ describe('完整回合循环', () => {
         expect(result.finalState.core.currentPlayerIndex).toBe(0);
         expect(result.finalState.core.players['0'].minionsPlayed).toBe(0);
         expect(result.finalState.core.players['0'].actionsPlayed).toBe(0);
+    });
+
+    it('endTurn 反应交互结算后不会把同一组 onTurnEnd trigger 重新入队', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.NINJAS, SMASHUP_FACTION_IDS.COWBOYS] as [string, string],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.STEAMPUNKS, SMASHUP_FACTION_IDS.PIRATES] as [string, string],
+                    deck: [makeCard('d1', 'steampunk_scrap_diving', 'action', '1')],
+                }),
+                '2': makePlayer('2', {
+                    factions: [SMASHUP_FACTION_IDS.TRICKSTERS, SMASHUP_FACTION_IDS.ALIENS] as [string, string],
+                }),
+            },
+            turnOrder: ['0', '1', '2'],
+            currentPlayerIndex: 1,
+            turnNumber: 9,
+            bases: [
+                makeBase({
+                    defId: 'base_drakkar',
+                    minions: [makeMinion('m1', 'pirate_buccaneer', '1', 4)],
+                    ongoingActions: [{ uid: 'de1', defId: 'steampunk_difference_engine', ownerId: '1', talentUsed: false }],
+                }),
+                makeBase('base_saloon'),
+                makeBase('base_factory_436-1337'),
+                makeBase('base_longhouse'),
+            ],
+            titans: [
+                {
+                    uid: 't1',
+                    defId: 'tricksters_big_funny_giant',
+                    ownerId: '2',
+                    controllerId: '2',
+                    power: 5,
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 3 },
+                } as any,
+            ],
+        });
+        const initialState = makeMatchState(core);
+        initialState.sys.phase = 'endTurn';
+
+        const enterTurnEnd = runCommand(initialState, {
+            type: 'ADVANCE_PHASE',
+            playerId: '1',
+            payload: {},
+            timestamp: 1,
+        } as any);
+        expect(enterTurnEnd.success).toBe(true);
+        expect(enterTurnEnd.finalState.sys.phase).toBe('endTurn');
+        expect(enterTurnEnd.finalState.sys.interaction?.current?.data?.sourceId).toBe('smashup_reaction_choose');
+
+        const resolveDifferenceEngine = runCommand(enterTurnEnd.finalState, {
+            type: INTERACTION_COMMANDS.RESPOND as any,
+            playerId: '1',
+            payload: { optionId: 'trigger:onTurnEnd:steampunk_difference_engine:1:0' },
+            timestamp: 2,
+        } as any);
+
+        expect(resolveDifferenceEngine.success).toBe(true);
+        expect(resolveDifferenceEngine.events.some(event => event.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(false);
+        expect(resolveDifferenceEngine.finalState.core.players['1'].hand.map(card => card.uid)).toContain('d1');
+        expect(
+            (resolveDifferenceEngine.finalState.core.triggerQueue ?? []).some(
+                trigger => trigger.frameId?.startsWith('turn-end:1:9'),
+            ),
+        ).toBe(false);
     });
 });
 

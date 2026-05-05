@@ -206,6 +206,12 @@ export interface ResolveInteractionCommand extends Command<'RESOLVE_INTERACTION'
     };
 }
 
+export interface SelectDefenderTargetCommand extends Command<'SELECT_DEFENDER_TARGET'> {
+    payload: {
+        defenderId: PlayerId;
+    };
+}
+
 /** 取消交互命令（已废弃 - 迁移到 InteractionSystem 的 CANCEL 命令） */
 export interface CancelInteractionCommand extends Command<'CANCEL_INTERACTION'> {
     payload: Record<string, never>;
@@ -303,6 +309,7 @@ export type DiceThroneCommand =
     | RemoveStatusCommand
     | TransferStatusCommand
     | ResolveInteractionCommand
+    | SelectDefenderTargetCommand
     // | ConfirmInteractionCommand  // 已废弃 - 使用 InteractionSystem
     // | CancelInteractionCommand   // 已废弃 - 使用 InteractionSystem
     | UseTokenCommand

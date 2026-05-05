@@ -49,10 +49,18 @@ function extractChoiceCustomIds(interactionData: unknown): string[] {
         .filter((customId): customId is string => typeof customId === 'string');
 }
 
-function isTargetingSelectionChoice(customIds: string[], sourceId?: string): boolean {
-    if (sourceId === 'targeting-roll') return true;
-    if (customIds.length === 0) return false;
-    return customIds.every((customId) => customId.startsWith('select-target:'));
+function isDefenderChoiceInteractionData(interactionData: unknown): boolean {
+    if (!interactionData || typeof interactionData !== 'object') return false;
+    const data = interactionData as {
+        attackerId?: unknown;
+        chooserPlayerId?: unknown;
+        targetRollValue?: unknown;
+        options?: unknown;
+    };
+    return typeof data.attackerId === 'string'
+        && typeof data.chooserPlayerId === 'string'
+        && typeof data.targetRollValue === 'number'
+        && Array.isArray(data.options);
 }
 
 function isOffensiveRollEndTokenChoice(customIds: string[], sourceId?: string): boolean {
@@ -62,11 +70,34 @@ function isOffensiveRollEndTokenChoice(customIds: string[], sourceId?: string): 
         && customIds.some((customId) => customId === 'skip');
 }
 
+function isOnOffensiveRollEndToken(core: DiceThroneCore, tokenId: string): boolean {
+    const timing = core.tokenDefinitions.find((definition) => definition.id === tokenId)?.activeUse?.timing;
+    return timing === 'onOffensiveRollEnd'
+        || (Array.isArray(timing) && timing.includes('onOffensiveRollEnd'));
+}
+
+function isStaleOffensiveRollEndChoiceResolved(core: DiceThroneCore, event: ChoiceResolvedEvent): boolean {
+    const { tokenId, playerId } = event.payload;
+    if (!tokenId || !isOnOffensiveRollEndToken(core, tokenId)) {
+        return false;
+    }
+
+    if (!core.pendingAttack || core.pendingAttack.offensiveRollEndTokenResolved === true) {
+        return true;
+    }
+
+    const player = core.players[playerId];
+    if (!player) {
+        return true;
+    }
+
+    return (player.tokens[tokenId] ?? 0) <= 0;
+}
+
 function applyEmergencySkipFallback(core: DiceThroneCore, context: EmergencySkipContext): DiceThroneCore | null {
     if (!core.pendingAttack) return null;
-    const customIds = extractChoiceCustomIds(context.interactionData);
 
-    if (isTargetingSelectionChoice(customIds, context.sourceId)) {
+    if (isDefenderChoiceInteractionData(context.interactionData)) {
         return {
             ...core,
             pendingAttack: null,
@@ -74,6 +105,7 @@ function applyEmergencySkipFallback(core: DiceThroneCore, context: EmergencySkip
         };
     }
 
+    const customIds = extractChoiceCustomIds(context.interactionData);
     if (isOffensiveRollEndTokenChoice(customIds, context.sourceId) && core.pendingAttack.offensiveRollEndTokenResolved !== true) {
         return {
             ...core,
@@ -273,11 +305,6 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 if (dtEvent.type === 'CHOICE_REQUESTED') {
                     const payload = (dtEvent as ChoiceRequestedEvent).payload;
                     const eventTimestamp = typeof dtEvent.timestamp === 'number' ? dtEvent.timestamp : 0;
-                    const isResolvedTargetingChoice = payload.sourceAbilityId === 'targeting-roll'
-                        && newState.core.pendingAttack?.targetingSelectionResolved === true;
-                    if (isResolvedTargetingChoice) {
-                        continue;
-                    }
 
                     // compare-roll-choice：双骰特写 + 分支选择 / 自动确认
                     if (payload.compareRoll?.contestants?.length === 2) {
@@ -363,6 +390,29 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     }
 
                     newState = queueInteraction(newState, interaction);
+                }
+
+                if (dtEvent.type === 'DEFENDER_SELECTION_REQUESTED') {
+                    const payload = dtEvent.payload;
+                    const interaction: EngineInteractionDescriptor = {
+                        id: `dt-defender-choice-${payload.attackerId}-${payload.targetRollValue}-${typeof dtEvent.timestamp === 'number' ? dtEvent.timestamp : 0}`,
+                        kind: 'dt:defender-choice',
+                        playerId: payload.chooserPlayerId,
+                        data: {
+                            ...payload,
+                            sourceId: payload.sourceAbilityId,
+                        },
+                    };
+                    newState = queueInteraction(newState, interaction);
+                    continue;
+                }
+
+                if (dtEvent.type === 'DEFENDER_SELECTION_RESOLVED') {
+                    const current = newState.sys.interaction.current;
+                    if (current?.kind === 'dt:defender-choice') {
+                        newState = resolveInteraction(newState);
+                    }
+                    continue;
                 }
 
                 // ---- INTERACTION_REQUESTED → 根据类型创建不同交互 ----
@@ -630,7 +680,9 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                     };
 
                     const reason = typeof payload.reason === 'string' ? payload.reason : undefined;
-                    if (reason && UNSATISFIABLE_CHOICE_REASONS.has(reason)) {
+                    const shouldApplyEmergencySkip = isDefenderChoiceInteractionData(payload.interactionData)
+                        || (reason !== undefined && UNSATISFIABLE_CHOICE_REASONS.has(reason));
+                    if (shouldApplyEmergencySkip) {
                         const emergencyCore = applyEmergencySkipFallback(newState.core, {
                             sourceId: typeof payload.sourceId === 'string' ? payload.sourceId : undefined,
                             interactionData: payload.interactionData,
@@ -673,6 +725,9 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                 // 处理 Prompt 响应 -> 生成 CHOICE_RESOLVED 领域事件
                 const resolvedEvent = handlePromptResolved(event);
                 if (resolvedEvent) {
+                    if (isStaleOffensiveRollEndChoiceResolved(newState.core, resolvedEvent)) {
+                        continue;
+                    }
                     nextEvents.push(resolvedEvent);
                     const customId = resolvedEvent.payload.customId;
                     if (customId) {

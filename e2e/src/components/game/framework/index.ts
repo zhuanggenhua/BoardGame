@@ -52,6 +52,8 @@ export {
     useVisualSequenceGate,
     useCardSpotlightQueue,
 } from './hooks';
+export { buildMatchPlayerViewModel, useMatchPlayerViewModel } from './useMatchPlayerViewModel';
+export { resolveMatchSeatSwapContext } from './matchSeatSwap';
 export type {
     UseGameBoardConfig,
     UseHandAreaConfig,
@@ -62,6 +64,17 @@ export type {
     UseCardSpotlightQueueConfig,
     UseCardSpotlightQueueReturn,
 } from './hooks';
+export type {
+    BuildMatchPlayerViewModelOptions,
+    MatchPlayerViewModel,
+    MatchPlayerViewModelResolverContext,
+} from './useMatchPlayerViewModel';
+export type {
+    MatchSeatSwapContext,
+    MatchSeatSwapMode,
+    PendingSeatSwapRequest,
+    ResolveMatchSeatSwapContextArgs,
+} from './matchSeatSwap';
 
 // 预设渲染函数
 export {

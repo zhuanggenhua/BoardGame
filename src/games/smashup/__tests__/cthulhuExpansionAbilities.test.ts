@@ -356,24 +356,33 @@ describe('米斯卡塔尼克大学派系能力', () => {
 
             // 先打出卡 → 创建 interaction
             const { matchState } = execPlayAction(state, '0', 'a1');
+            const basePrompt = (matchState.sys as any)?.interaction?.current;
             // 第一步：选择基地 0 → 创建点击式行动卡选择
             const handler = getInteractionHandler('miskatonic_those_meddling_kids');
             expect(handler).toBeDefined();
-            const step1 = handler!(matchState, '0', { baseIndex: 0 }, undefined, defaultRandom, 1000);
+            const step1 = handler!(matchState, '0', { baseIndex: 0 }, basePrompt?.data, defaultRandom, 1000);
             expect(step1.events.length).toBe(0); // 不直接产生消灭事件
+            const step1Interaction = (step1.state?.sys as any)?.interaction;
+            const chooseAction1 = step1Interaction?.current?.data?.sourceId === 'miskatonic_those_meddling_kids_select'
+                ? step1Interaction.current
+                : (step1Interaction?.queue ?? []).find((entry: any) => entry?.data?.sourceId === 'miskatonic_those_meddling_kids_select');
             // 第二步：点击第一张行动卡
             const selectHandler = getInteractionHandler('miskatonic_those_meddling_kids_select');
             expect(selectHandler).toBeDefined();
             const step2 = selectHandler!(step1.state ?? matchState, '0',
                 { cardUid: 'o1', defId: 'test_ongoing', ownerId: '1' },
-                { continuationContext: { baseIndex: 0 } } as any, defaultRandom, 1001);
+                chooseAction1?.data, defaultRandom, 1001);
             const detachEvents1 = step2.events.filter((e: any) => e.type === SU_EVENTS.ONGOING_DETACHED);
             expect(detachEvents1.length).toBe(1);
             expect(detachEvents1[0].payload.cardUid).toBe('o1');
+            const step2Interaction = (step2.state?.sys as any)?.interaction;
+            const chooseAction2 = step2Interaction?.current?.data?.sourceId === 'miskatonic_those_meddling_kids_select'
+                ? step2Interaction.current
+                : (step2Interaction?.queue ?? []).find((entry: any) => entry?.data?.sourceId === 'miskatonic_those_meddling_kids_select');
             // 第三步：点击第二张行动卡
             const step3 = selectHandler!(step2.state ?? matchState, '0',
                 { cardUid: 'o2', defId: 'test_ongoing2', ownerId: '0' },
-                { continuationContext: { baseIndex: 0 } } as any, defaultRandom, 1002);
+                chooseAction2?.data, defaultRandom, 1002);
             const detachEvents2 = step3.events.filter((e: any) => e.type === SU_EVENTS.ONGOING_DETACHED);
             expect(detachEvents2.length).toBe(1);
             expect(detachEvents2[0].payload.cardUid).toBe('o2');
@@ -401,24 +410,33 @@ describe('米斯卡塔尼克大学派系能力', () => {
             });
 
             const { matchState } = execPlayAction(state, '0', 'a1');
+            const basePrompt = (matchState.sys as any)?.interaction?.current;
             // 第一步：选择基地 0 → 创建点击式行动卡选择
             const handler = getInteractionHandler('miskatonic_those_meddling_kids');
             expect(handler).toBeDefined();
-            const step1 = handler!(matchState, '0', { baseIndex: 0 }, undefined, defaultRandom, 1000);
+            const step1 = handler!(matchState, '0', { baseIndex: 0 }, basePrompt?.data, defaultRandom, 1000);
             expect(step1.events.length).toBe(0);
+            const step1Interaction = (step1.state?.sys as any)?.interaction;
+            const chooseAction1 = step1Interaction?.current?.data?.sourceId === 'miskatonic_those_meddling_kids_select'
+                ? step1Interaction.current
+                : (step1Interaction?.queue ?? []).find((entry: any) => entry?.data?.sourceId === 'miskatonic_those_meddling_kids_select');
             // 第二步：点击第一张行动卡
             const selectHandler = getInteractionHandler('miskatonic_those_meddling_kids_select');
             expect(selectHandler).toBeDefined();
             const step2 = selectHandler!(step1.state ?? matchState, '0',
                 { cardUid: 'o1', defId: 'test_ongoing', ownerId: '1' },
-                { continuationContext: { baseIndex: 0 } } as any, defaultRandom, 1001);
+                chooseAction1?.data, defaultRandom, 1001);
             const detachEvents1 = step2.events.filter((e: any) => e.type === SU_EVENTS.ONGOING_DETACHED);
             expect(detachEvents1.length).toBe(1);
             expect(detachEvents1[0].payload.cardUid).toBe('o1');
+            const step2Interaction = (step2.state?.sys as any)?.interaction;
+            const chooseAction2 = step2Interaction?.current?.data?.sourceId === 'miskatonic_those_meddling_kids_select'
+                ? step2Interaction.current
+                : (step2Interaction?.queue ?? []).find((entry: any) => entry?.data?.sourceId === 'miskatonic_those_meddling_kids_select');
             // 第三步：点击附着的行动卡
             const step3 = selectHandler!(step2.state ?? matchState, '0',
                 { cardUid: 'att1', defId: 'test_attached', ownerId: '1' },
-                { continuationContext: { baseIndex: 0 } } as any, defaultRandom, 1002);
+                chooseAction2?.data, defaultRandom, 1002);
             const detachEvents2 = step3.events.filter((e: any) => e.type === SU_EVENTS.ONGOING_DETACHED);
             expect(detachEvents2.length).toBe(1);
             expect(detachEvents2[0].payload.cardUid).toBe('att1');
@@ -500,17 +518,22 @@ describe('米斯卡塔尼克大学派系能力', () => {
 
             // 先打出卡 → 创建基地选择 interaction
             const { events: playEvents, matchState } = execPlayAction(state, '0', 'a1');
+            const basePrompt = (matchState.sys as any)?.interaction?.current;
             // 第一步：选择基地 0 → 创建点击式行动卡选择
             const handler = getInteractionHandler('miskatonic_those_meddling_kids');
             expect(handler).toBeDefined();
-            const step1 = handler!(matchState, '0', { baseIndex: 0 }, undefined, defaultRandom, 1000);
+            const step1 = handler!(matchState, '0', { baseIndex: 0 }, basePrompt?.data, defaultRandom, 1000);
             expect(step1.events.length).toBe(0);
+            const step1Interaction = (step1.state?.sys as any)?.interaction;
+            const chooseAction = step1Interaction?.current?.data?.sourceId === 'miskatonic_those_meddling_kids_select'
+                ? step1Interaction.current
+                : (step1Interaction?.queue ?? []).find((entry: any) => entry?.data?.sourceId === 'miskatonic_those_meddling_kids_select');
             const selectHandler = getInteractionHandler('miskatonic_those_meddling_kids_select');
             expect(selectHandler).toBeDefined();
             // 第二步：点击消灭 o1
             const step2 = selectHandler!(step1.state ?? matchState, '0',
                 { cardUid: 'o1', defId: 'test_ongoing', ownerId: '1' },
-                { continuationContext: { baseIndex: 0 } } as any, defaultRandom, 1001);
+                chooseAction?.data, defaultRandom, 1001);
             const allEvents = [...playEvents, ...step2.events];
             const newState = applyEvents(state, allEvents);
             // 基地上不应有持续行动卡
@@ -568,10 +591,11 @@ describe('克苏鲁之仆派系能力', () => {
             });
 
             const { matchState } = execPlayAction(state, '0', 'a1');
+            const prompt = (matchState.sys as any)?.interaction?.current;
             const handler = getInteractionHandler('cthulhu_recruit_by_force');
             expect(handler).toBeDefined();
             // 选择两张随从
-            const result = handler!(matchState, '0', [{ cardUid: 'dis1' }, { cardUid: 'dis3' }], undefined, defaultRandom, 1000);
+            const result = handler!(matchState, '0', [{ cardUid: 'dis1' }, { cardUid: 'dis3' }], prompt?.data, defaultRandom, 1000);
             const reorderEvents = result.events.filter((e: any) => e.type === SU_EVENTS.DECK_REORDERED);
             expect(reorderEvents.length).toBe(1);
             const deckUids = (reorderEvents[0] as any).payload.deckUids;
@@ -619,9 +643,10 @@ describe('克苏鲁之仆派系能力', () => {
             });
 
             const { events: playEvents, matchState } = execPlayAction(state, '0', 'a1');
+            const prompt = (matchState.sys as any)?.interaction?.current;
             const handler = getInteractionHandler('cthulhu_recruit_by_force');
             expect(handler).toBeDefined();
-            const result = handler!(matchState, '0', [{ cardUid: 'dis1' }], undefined, defaultRandom, 1000);
+            const result = handler!(matchState, '0', [{ cardUid: 'dis1' }], prompt?.data, defaultRandom, 1000);
             const allEvents = [...playEvents, ...result.events];
             const newState = applyEvents(state, allEvents);
             // DECK_REORDERED 不清空弃牌堆，只移走被引用的卡
@@ -663,10 +688,11 @@ describe('克苏鲁之仆派系能力', () => {
                 },
             });
             const { matchState } = execPlayAction(state, '0', 'a1');
+            const prompt = (matchState.sys as any)?.interaction?.current;
             const handler = getInteractionHandler('cthulhu_recruit_by_force');
             expect(handler).toBeDefined();
             // 传空数组模拟跳过（min=0）
-            const result = handler!(matchState, '0', [], undefined, defaultRandom, 1000);
+            const result = handler!(matchState, '0', [], prompt?.data, defaultRandom, 1000);
             expect(result.events.length).toBe(0);
             // 弃牌堆中的随从仍在弃牌堆
             expect(matchState.core.players['0'].discard.some((c: any) => c.uid === 'dis1')).toBe(true);
@@ -702,8 +728,7 @@ describe('克苏鲁之仆派系能力', () => {
             // 解析交互：选择全部行动卡
             const handler = getInteractionHandler('cthulhu_it_begins_again');
             expect(handler).toBeDefined();
-            const ms2 = makeMatchState(state);
-            const result = handler!(ms2, '0', [{ cardUid: 'dis1' }, { cardUid: 'dis2' }], undefined, defaultRandom, 0);
+            const result = handler!(matchState, '0', [{ cardUid: 'dis1' }, { cardUid: 'dis2' }], current?.data, defaultRandom, 0);
             const reorderEvents = result.events.filter(e => e.type === SU_EVENTS.DECK_REORDERED);
             expect(reorderEvents.length).toBe(1);
             const deckUids = (reorderEvents[0] as any).payload.deckUids;
@@ -746,17 +771,12 @@ describe('克苏鲁之仆派系能力', () => {
                 },
             });
 
-            // 通过 handler 直接验证 reduce
+            const { events: playEvents, matchState } = execPlayAction(state, '0', 'a1');
+            const prompt = (matchState.sys as any)?.interaction?.current;
             const handler = getInteractionHandler('cthulhu_it_begins_again');
             expect(handler).toBeDefined();
-            const ms = makeMatchState(state);
-            const result = handler!(ms, '0', [{ cardUid: 'dis1' }], undefined, defaultRandom, 0);
-            // 先 apply ACTION_PLAYED 事件（模拟打出行动卡）
-            const playEvents: SmashUpEvent[] = [
-                { type: SU_EVENTS.ACTION_PLAYED, payload: { playerId: '0', cardUid: 'a1', defId: 'cthulhu_it_begins_again' }, timestamp: 0 } as any,
-                ...result.events,
-            ];
-            const newState = applyEvents(state, playEvents);
+            const result = handler!(matchState, '0', [{ cardUid: 'dis1' }], prompt?.data, defaultRandom, 0);
+            const newState = applyEvents(state, [...playEvents, ...result.events]);
             // DECK_REORDERED 不清空弃牌堆，只移走被引用的卡
             // 牌库：d1 + dis1（从弃牌堆移入）
             expect(newState.players['0'].deck.length).toBe(2);
@@ -797,10 +817,11 @@ describe('克苏鲁之仆派系能力', () => {
                 },
             });
             const { matchState } = execPlayAction(state, '0', 'a1');
+            const prompt = (matchState.sys as any)?.interaction?.current;
             const handler = getInteractionHandler('cthulhu_it_begins_again');
             expect(handler).toBeDefined();
             // 传空数组模拟跳过（min=0）
-            const result = handler!(matchState, '0', [], undefined, defaultRandom, 1000);
+            const result = handler!(matchState, '0', [], prompt?.data, defaultRandom, 1000);
             expect(result.events.length).toBe(0);
             // 牌库不变
             expect(matchState.core.players['0'].deck.some((c: any) => c.uid === 'd1')).toBe(true);

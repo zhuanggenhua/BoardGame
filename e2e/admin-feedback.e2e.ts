@@ -352,6 +352,7 @@ test.describe('后台反馈管理 E2E', () => {
             const typeParam = url.searchParams.get('type');
             const severityParam = url.searchParams.get('severity');
             const sortParam = url.searchParams.get('sort') ?? 'newest';
+            const preferMineParam = url.searchParams.get('preferMine') === 'true';
 
             let items = [...feedbackItems];
             if (statusParam) items = items.filter((item) => item.status === statusParam);
@@ -362,6 +363,13 @@ test.describe('后台反馈管理 E2E', () => {
                     ? left.createdAt.localeCompare(right.createdAt)
                     : right.createdAt.localeCompare(left.createdAt)
             ));
+            if (preferMineParam) {
+                items.sort((left, right) => {
+                    const leftMine = left._id === 'feedback_bug_1' ? 1 : 0;
+                    const rightMine = right._id === 'feedback_bug_1' ? 1 : 0;
+                    return rightMine - leftMine;
+                });
+            }
 
             const start = (pageParam - 1) * limitParam;
             const pagedItems = items.slice(start, start + limitParam);
@@ -393,6 +401,10 @@ test.describe('后台反馈管理 E2E', () => {
         expect(requests.some((entry) => entry.includes('type=bug'))).toBeTruthy();
         expect(requests.some((entry) => entry.includes('severity=critical'))).toBeTruthy();
         expect(requests.some((entry) => entry.includes('sort=oldest'))).toBeTruthy();
+
+        await controls.getByRole('button', { name: '我的优先' }).click();
+        await expect(page.locator('[data-testid="feedback-row"]').first()).toContainText('最早的严重 Bug');
+        expect(requests.some((entry) => entry.includes('preferMine=true'))).toBeTruthy();
 
         const listScroll = page.getByTestId('feedback-list-scroll');
         const scrollState = await listScroll.evaluate((element) => {

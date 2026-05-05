@@ -36,6 +36,7 @@ import { logger } from '../../lib/logger';
 import { safeMatchMedia, subscribeMediaQueryChange } from '../../lib/mediaQuery';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { isNodeContainedBy } from './ui/domGuards';
+import { resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';
 
 type Props = GameBoardProps<CardiaCore>;
 
@@ -437,7 +438,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
     const opponentId = core.playerOrder.find(id => id !== myPlayerId) || core.playerOrder[1];
     const myPlayer = core.players[myPlayerId];
     const opponent = core.players[opponentId];
-    const opponentConnected = matchData?.find(player => String(player.id) === String(opponentId))?.isConnected ?? true;
+    const opponentConnected = resolveMatchPlayerConnected(matchData, opponentId, true);
     
     // 监听交互状态变化
     useEffect(() => {

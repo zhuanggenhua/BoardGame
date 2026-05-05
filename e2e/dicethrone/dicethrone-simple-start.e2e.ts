@@ -4509,17 +4509,17 @@ test.describe('DiceThrone Simple Start', () => {
         await defenderCaptainPage.waitForFunction(() => {
             return (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.playerId === '3';
         }, { timeout: 10000 });
-        await expect(defenderCaptainPage.getByTestId('dt-target-choice-panel')).toBeVisible({ timeout: 10000 });
-        await expect(defenderCaptainPage.locator('[data-testid^="dt-target-option-"]')).toHaveCount(2, { timeout: 10000 });
-        await expect(defenderCaptainPage.getByTestId('dt-target-option-1')).toBeVisible({ timeout: 10000 });
-        await expect(defenderCaptainPage.getByTestId('dt-target-option-3')).toBeVisible({ timeout: 10000 });
-        await expect(defenderCaptainPage.getByTestId('dt-target-option-2')).toHaveCount(0);
-        await defenderCaptainPage.getByTestId('dt-target-option-1').click();
+        await expect(defenderCaptainPage.getByTestId('dt-defender-choice-panel')).toBeVisible({ timeout: 10000 });
+        await expect(defenderCaptainPage.locator('[data-testid^="dt-defender-choice-option-"]')).toHaveCount(2, { timeout: 10000 });
+        await expect(defenderCaptainPage.getByTestId('dt-defender-choice-option-1')).toBeVisible({ timeout: 10000 });
+        await expect(defenderCaptainPage.getByTestId('dt-defender-choice-option-3')).toBeVisible({ timeout: 10000 });
+        await expect(defenderCaptainPage.getByTestId('dt-defender-choice-option-2')).toHaveCount(0);
+        await defenderCaptainPage.getByTestId('dt-defender-choice-option-1').click();
         await defenderCaptainPage.waitForFunction(() => {
             const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
             return state?.sys?.phase === 'defensiveRoll' && state?.core?.pendingAttack?.defenderId === '1';
         }, { timeout: 10000 });
-        await expect(defenderCaptainPage.getByTestId('dt-target-choice-panel')).toBeHidden({ timeout: 10000 });
+        await expect(defenderCaptainPage.getByTestId('dt-defender-choice-panel')).toBeHidden({ timeout: 10000 });
 
         await applyOnlineMatchState(matchId, hostPage, (state) => buildTargetingRollState(state, 6));
         await waitForPhase(hostPage, 'targetingRoll');
@@ -4527,19 +4527,19 @@ test.describe('DiceThrone Simple Start', () => {
         await hostPage.waitForFunction(() => {
             return (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.playerId === '0';
         }, { timeout: 10000 });
-        await expect(hostPage.getByTestId('dt-target-choice-panel')).toBeVisible({ timeout: 10000 });
-        await expect(hostPage.locator('[data-testid^="dt-target-option-"]')).toHaveCount(2, { timeout: 10000 });
-        await expect(hostPage.getByTestId('dt-target-option-1')).toHaveAttribute('data-team-tone', 'enemy');
-        await expect(hostPage.getByTestId('dt-target-option-3')).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(hostPage.getByTestId('dt-defender-choice-panel')).toBeVisible({ timeout: 10000 });
+        await expect(hostPage.locator('[data-testid^="dt-defender-choice-option-"]')).toHaveCount(2, { timeout: 10000 });
+        await expect(hostPage.getByTestId('dt-defender-choice-option-1')).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(hostPage.getByTestId('dt-defender-choice-option-3')).toHaveAttribute('data-team-tone', 'enemy');
 
         await saveEvidenceScreenshot(hostPage, testInfo, '06-four-player-target-choice-panel-host');
 
-        await hostPage.getByTestId('dt-target-option-1').click();
+        await hostPage.getByTestId('dt-defender-choice-option-1').click();
         await hostPage.waitForFunction(() => {
             const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
             return state?.sys?.phase === 'defensiveRoll' && state?.core?.pendingAttack?.defenderId === '1';
         }, { timeout: 10000 });
-        await expect(hostPage.getByTestId('dt-target-choice-panel')).toBeHidden({ timeout: 10000 });
+        await expect(hostPage.getByTestId('dt-defender-choice-panel')).toBeHidden({ timeout: 10000 });
 
         await cleanupDTMatch(setup);
     });
@@ -5066,9 +5066,9 @@ test.describe('DiceThrone Simple Start', () => {
         await applyOnlineMatchState(matchId, hostPage, buildFourPlayerPistolWhipState);
         await waitForPhase(hostPage, 'offensiveRoll');
 
-        const enemyOne = hostPage.getByTestId('dt-target-option-1');
-        const allyTarget = hostPage.getByTestId('dt-target-option-2');
-        const enemyTwo = hostPage.getByTestId('dt-target-option-3');
+        const enemyOne = hostPage.getByTestId('dt-defender-choice-option-1');
+        const allyTarget = hostPage.getByTestId('dt-defender-choice-option-2');
+        const enemyTwo = hostPage.getByTestId('dt-defender-choice-option-3');
 
         const beforeState = await readHarnessState<any>(hostPage);
         const enemyHpBefore = beforeState.core.players['3'].resources[RESOURCE_IDS.HP] ?? 0;
@@ -5123,7 +5123,7 @@ test.describe('DiceThrone Simple Start', () => {
             return (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current?.playerId === '0';
         }, undefined, { timeout: 10000, polling: 200 });
 
-        await expect(hostPage.getByTestId('dt-target-choice-panel')).toBeVisible();
+        await expect(hostPage.getByTestId('dt-defender-choice-panel')).toBeVisible();
         await expect(enemyOne).toHaveAttribute('data-team-tone', 'enemy');
         await expect(enemyTwo).toHaveAttribute('data-team-tone', 'enemy');
         await expect(allyTarget).toHaveCount(0);
@@ -5593,7 +5593,7 @@ test.describe('DiceThrone Simple Start', () => {
         await applyOnlineMatchState(matchId, hostPage, (state) => buildTargetingRollState(state, 6));
         await waitForPhase(hostPage, 'targetingRoll');
         await dispatchHarnessCommand(hostPage, 'ADVANCE_PHASE', '0');
-        await hostPage.getByTestId('dt-target-option-1').click();
+        await hostPage.getByTestId('dt-defender-choice-option-1').click();
         await defenderPage.waitForFunction(() => {
             const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
             return state?.sys?.phase === 'defensiveRoll' && state?.core?.pendingAttack?.defenderId === '1';

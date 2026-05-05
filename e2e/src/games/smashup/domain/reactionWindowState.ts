@@ -96,3 +96,26 @@ export function getSmashUpReactionWindowPresentation(
         passedPlayers: responseWindow.passedPlayers ?? [],
     };
 }
+
+export function hasBlockingLegacyResponseWindow(
+    state: MatchState<SmashUpCore>,
+): boolean {
+    const responseWindow = state.sys.responseWindow?.current;
+    if (!responseWindow) {
+        return false;
+    }
+
+    if (!getReactionSessionFromResolution(state)) {
+        return false;
+    }
+
+    // 新响应链统一镜像为 smashup_reaction_choose；这里仅拦截仍未收口的旧窗口状态。
+    if (responseWindow.sourceId === 'smashup_reaction_choose') {
+        return false;
+    }
+
+    const interactionSourceId = (
+        state.sys.interaction?.current?.data as { sourceId?: string } | undefined
+    )?.sourceId;
+    return interactionSourceId !== 'smashup_reaction_choose';
+}

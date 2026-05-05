@@ -17,7 +17,6 @@ import type {
 } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { queueImmediateExtraPlayInteractions } from '../domain/extraPlay';
  
@@ -1140,6 +1139,98 @@ describe('外星人派系能力', () => {
         expect(current?.data?.sourceId).toBe('alien_collector');
     });
 
+    it('alien_collector: 选择目标后通过 runtime prompt 返回随从', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'alien_collector', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'b1', minions: [
+                    makeMinion('m2', 'test', '1', 3),
+                    makeMinion('m3', 'test', '1', 5),
+                ], ongoingActions: [],
+            }],
+        });
+
+        const playResult = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const current = playResult.finalState.sys.interaction?.current as any;
+        expect(current?.data?.sourceId).toBe('alien_collector');
+        const option = current?.data?.options?.find((candidate: any) => candidate?.value?.minionUid === 'm2');
+        expect(option).toBeDefined();
+
+        const respondResult = runCommand(playResult.finalState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionId: option.id },
+        } as any, defaultRandom);
+
+        const returnedEvent = respondResult.events.find(event => event.type === SU_EVENTS.MINION_RETURNED);
+        expect(returnedEvent).toBeDefined();
+        expect((returnedEvent as any).payload).toMatchObject({
+            minionUid: 'm2',
+            reason: 'alien_collector',
+            toPlayerId: '1',
+        });
+        expect(respondResult.finalState.core.bases[0].minions.some(minion => minion.uid === 'm2')).toBe(false);
+    });
+
+    it('alien_supreme_overlord: 选择目标后通过 runtime prompt 返回随从', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'alien_supreme_overlord', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'b1',
+                    minions: [makeMinion('ally-1', 'test_ally', '0', 4)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'b2',
+                    minions: [makeMinion('enemy-1', 'test_enemy', '1', 3)],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const playResult = runCommand(makeMatchState(state), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'm1', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const current = playResult.finalState.sys.interaction?.current as any;
+        expect(current?.data?.sourceId).toBe('alien_supreme_overlord');
+        const option = current?.data?.options?.find((candidate: any) => candidate?.value?.minionUid === 'enemy-1');
+        expect(option).toBeDefined();
+
+        const respondResult = runCommand(playResult.finalState, {
+            type: 'SYS_INTERACTION_RESPOND',
+            playerId: '0',
+            payload: { optionId: option.id },
+        } as any, defaultRandom);
+
+        const returnedEvent = respondResult.events.find(event => event.type === SU_EVENTS.MINION_RETURNED);
+        expect(returnedEvent).toBeDefined();
+        expect((returnedEvent as any).payload).toMatchObject({
+            minionUid: 'enemy-1',
+            reason: 'alien_supreme_overlord',
+            toPlayerId: '1',
+        });
+        expect(respondResult.finalState.core.bases[1].minions.some(minion => minion.uid === 'enemy-1')).toBe(false);
+    });
+
     it('alien_disintegrator: 缺少 targetMinionUid 时应校验失败；提供目标后正常结算', () => {
         const state = makeState({
             players: {
@@ -1159,13 +1250,10 @@ describe('外星人派系能力', () => {
         expect((missingTarget.matchState.sys as any).interaction?.current).toBeUndefined();
         expect(missingTarget.matchState.core.players['0'].hand.some(card => card.uid === 'a1')).toBe(true);
 
-        const handler = getInteractionHandler('alien_disintegrator');
-        expect(handler).toBeDefined();
-        const resolved = handler!(makeMatchState(state), '0', { minionUid: 'm1', baseIndex: 0 }, undefined, defaultRandom, 1000);
-        expect(resolved).toBeDefined();
-        expect(resolved!.events).toHaveLength(1);
-        expect(resolved!.events[0].type).toBe(SU_EVENTS.CARD_TO_DECK_BOTTOM);
-        expect((resolved!.events[0] as any).payload).toMatchObject({
+        const resolved = execPlayAction(state, '0', 'a1', 0, 'm1');
+        const deckBottom = resolved.events.find(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
+        expect(deckBottom).toBeDefined();
+        expect((deckBottom as any).payload).toMatchObject({
             cardUid: 'm1',
             reason: 'alien_disintegrator',
         });

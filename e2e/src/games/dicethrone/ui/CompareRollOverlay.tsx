@@ -14,6 +14,7 @@ interface CompareRollOverlayProps {
     locale?: string;
     onResolveOption: (optionId: string) => void;
     onConfirm: () => void;
+    usePortal?: boolean;
 }
 
 const RESULT_TONE_CLASS: Record<NonNullable<CompareRollChoiceData['resultTone']>, string> = {
@@ -29,6 +30,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
     locale,
     onResolveOption,
     onConfirm,
+    usePortal,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
     const hasTranslation = React.useCallback((key?: string) => {
@@ -68,6 +70,7 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
             closeOnContentClick={false}
             blockPointerEvents={true}
             zIndex={UI_Z_INDEX.overlayRaised + 120}
+            usePortal={usePortal}
         >
             <div
                 className="flex flex-col items-center gap-[1.6vw] px-[1vw]"

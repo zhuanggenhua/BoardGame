@@ -1,7 +1,7 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
-import { resolveOnPlay, resolveSpecial } from './abilityRegistry';
+import { requireOnPlay, requireSpecial, resolveOnPlay, resolveSpecial } from './abilityRegistry';
 import {
     addPowerCounter,
     addTempPower,
@@ -29,6 +29,14 @@ import type {
     VpAwardedEvent,
 } from './types';
 import { SU_EVENTS } from './types';
+
+function requireDuelActionExecutor(defId: string, subtype: string) {
+    if (subtype === 'special') {
+        if (resolveSpecial(defId)) return requireSpecial(defId, 'duel.playActionAsDuelCard');
+        return requireOnPlay(defId, 'duel.playActionAsDuelCard');
+    }
+    return requireOnPlay(defId, 'duel.playActionAsDuelCard');
+}
 
 type DuelStage =
     | 'pinkerton_challenger'
@@ -492,26 +500,22 @@ function playActionAsDuelCard(
         timestamp: now,
     } as SmashUpEvent];
 
-    const executor = subtype === 'special'
-        ? (resolveSpecial(defId) ?? resolveOnPlay(defId))
-        : resolveOnPlay(defId);
+    const executor = requireDuelActionExecutor(defId, subtype ?? 'standard');
     let nextState = state;
-    if (executor) {
-        const simCore = simulateCore(state.core, events);
-        const result = executor({
-            state: simCore,
-            matchState: { ...state, core: simCore },
-            playerId,
-            cardUid,
-            defId,
-            baseIndex: duel.baseIndex,
-            random,
-            now,
-            duel,
-        });
-        events.push(...result.events);
-        nextState = result.matchState ?? state;
-    }
+    const simCore = simulateCore(state.core, events);
+    const result = executor({
+        state: simCore,
+        matchState: { ...state, core: simCore },
+        playerId,
+        cardUid,
+        defId,
+        baseIndex: duel.baseIndex,
+        random,
+        now,
+        duel,
+    });
+    events.push(...result.events);
+    nextState = result.matchState ?? state;
 
     const stageResult = advanceQueuedStage(nextState, duel, nextStage, now);
     return { state: stageResult.state, events: [...events, ...stageResult.events] };

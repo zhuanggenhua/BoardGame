@@ -49,7 +49,6 @@ import {
 } from './scoringSession';
 import {
     queueBranchingChoice,
-    resolveBranchingChoiceSelection,
     type BranchExecutor,
     type BranchingChoiceOption,
     type BranchingChoiceUpgrade,
@@ -93,6 +92,35 @@ function createBaseFairyRingBranchOption(
         displayMode: 'button',
     };
 }
+
+const runBaseFairyRingBranch: BranchExecutor = ({ state, playerId, selection, planContext, timestamp }) => {
+    const branchId = selection.branchId;
+    if (branchId === 'skip') {
+        return { state, events: [] };
+    }
+    if (branchId === 'extra_minion') {
+        const continuation = planContext as { baseIndex?: number } | undefined;
+        if (continuation?.baseIndex === undefined) return { state, events: [] };
+        return {
+            state,
+            events: [grantContextualExtraMinion(
+                { playerId, now: timestamp, matchState: state },
+                'base_fairy_ring',
+                continuation.baseIndex,
+            )],
+        };
+    }
+    if (branchId === 'extra_action') {
+        return {
+            state,
+            events: [grantContextualExtraAction(
+                { playerId, now: timestamp, matchState: state },
+                'base_fairy_ring',
+            )],
+        };
+    }
+    return { state, events: [] };
+};
 
 // ============================================================================
 // 克苏鲁扩展基地能力
@@ -532,8 +560,9 @@ export function registerExpansionBaseAbilities(): void {
                 now: ctx.now,
                 sourceId: 'base_fairy_ring',
                 title: '精灵之环：选择额外打出一个随从到这里，或额外打出一张行动卡',
+                executeBranch: runBaseFairyRingBranch,
                 targetType: 'button',
-                continuationContext: { baseIndex: ctx.baseIndex },
+                planContext: { baseIndex: ctx.baseIndex },
                 upgrade: getSpiritOptionalBothUpgradeForBase(ctx.state, ctx.playerId, ctx.now),
                 options: [
                     createBaseFairyRingBranchOption('extra-minion', '额外打出一个随从到这里', 'extra_minion'),
@@ -900,47 +929,6 @@ export function registerExpansionBaseInteractionHandlers(): void {
 
         return { state, events: [] };
     });
-    const runBaseFairyRingBranch: BranchExecutor = ({ state, playerId, selection, planContext, timestamp }) => {
-        const branchId = selection.branchId;
-        if (branchId === 'skip') {
-            return { state, events: [] };
-        }
-        if (branchId === 'extra_minion') {
-            const continuation = planContext as { baseIndex?: number } | undefined;
-            if (continuation?.baseIndex === undefined) return { state, events: [] };
-            return {
-                state,
-                events: [grantContextualExtraMinion(
-                    { playerId, now: timestamp, matchState: state },
-                    'base_fairy_ring',
-                    continuation.baseIndex,
-                )],
-            };
-        }
-        if (branchId === 'extra_action') {
-            return {
-                state,
-                events: [grantContextualExtraAction(
-                    { playerId, now: timestamp, matchState: state },
-                    'base_fairy_ring',
-                )],
-            };
-        }
-        return { state, events: [] };
-    };
-
-    registerInteractionHandler('base_fairy_ring', (state, playerId, value, iData, random, timestamp) => {
-        return resolveBranchingChoiceSelection({
-            state,
-            playerId,
-            value,
-            interactionData: iData,
-            random,
-            timestamp,
-            executeBranch: runBaseFairyRingBranch,
-        }) ?? { state, events: [] };
-    });
-
     // 疯人院：先选手牌，再选择一个自己的随从放置 +1 力量指示物
     registerInteractionHandler('base_the_asylum', (state, playerId, value, _iData, _random, timestamp) => {
         const selected = value as { skip?: boolean; cardUid?: string; defId?: string };

@@ -67,6 +67,7 @@ import {
 import { validate } from './domain/commands';
 import {
     SMASHUP_TEAM_IDS,
+    getSmashUpSeatOrder,
     getSmashUpTeamScores,
     getSmashUpVictoryTarget,
     isSmashUpTwoVsTwoMode,
@@ -74,7 +75,7 @@ import {
 import { SMASHUP_AUDIO_CONFIG } from './audio.config';
 import { useTutorialBridge, useTutorial } from '../../contexts/TutorialContext';
 import { UndoProvider } from '../../contexts/UndoContext';
-import { MobileBattlefieldViewport, TutorialSelectionGate, useCardSpotlightQueue, CardSpotlightQueue } from '../../components/game/framework';
+import { MobileBattlefieldViewport, TutorialSelectionGate, useCardSpotlightQueue, CardSpotlightQueue, useMatchPlayerViewModel } from '../../components/game/framework';
 import { LoadingScreen } from '../../components/system/LoadingScreen';
 import { GameDebugPanel } from '../../components/game/framework/widgets/GameDebugPanel';
 import { SmashUpDebugConfig } from './debug-config';
@@ -258,10 +259,19 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const coreBases = core?.bases ?? EMPTY_BASES;
     const coreTurnOrder = core?.turnOrder ?? EMPTY_TURN_ORDER;
     const coreTitans = core?.titans ?? EMPTY_TITANS;
-    const currentPid = core ? getCurrentPlayerId(core) : '0';
     const playerID = rawPlayerID;
+    const playerView = useMatchPlayerViewModel({
+        core,
+        playerID,
+        matchData,
+        getFallbackName: (playerId) => `P${Number(playerId) + 1}`,
+        resolvePreferredOrder: ({ core: smashCore }) => smashCore ? getSmashUpSeatOrder(smashCore) : undefined,
+        resolveFallbackOrder: ({ core: smashCore }) => smashCore?.turnOrder,
+        resolveTurnPlayerId: ({ core: smashCore }) => smashCore ? getCurrentPlayerId(smashCore) : undefined,
+    });
+    const currentPid = playerView.turnPlayerId ?? '0';
     const isMyTurn = playerID === currentPid;
-    const rootPid = playerID || '0';
+    const rootPid = playerView.selfPlayerId ?? '0';
     // 观战模式下默认显示玩家 0 的视角
     const myPlayer = corePlayers[rootPid];
     const isGameOver = G?.sys?.gameover;
@@ -300,9 +310,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     );
     const isMobileViewport = useMobileViewport();
     const runtimeViewport = useRuntimeViewport({ syncCssVars: false });
+    const playerDisplayOrder = playerView.orderedPlayerIds;
+    const playerNames = playerView.playerNames;
     
     // 响应式布局配置
-    const playerCount = coreTurnOrder.length || 2;
+    const playerCount = playerDisplayOrder.length || coreTurnOrder.length || 2;
     const layout = getLayoutConfig(playerCount, { isMobileViewport });
     const topHudScale = layout.topHudScale;
     const endTurnHudScale = layout.endTurnHudScale;
@@ -2446,7 +2458,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         <div className="absolute inset-0 z-0 pointer-events-none opacity-40 mix-blend-multiply">
                             <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/wood-pattern.png')]" />
                         </div>
-                        <FactionSelection core={core} dispatch={dispatch} playerID={playerID} />
+                        <FactionSelection
+                            core={core}
+                            dispatch={dispatch}
+                            playerID={playerID}
+                            playerNames={playerNames}
+                            playerOrder={playerDisplayOrder}
+                            getPlayerOrderLabel={playerView.getPlayerOrderLabel}
+                        />
                     </div>
                 </TutorialSelectionGate>
                 <GameDebugPanel
@@ -2535,12 +2554,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             </div>
                         )}
                         <div className="flex gap-5">
-                            {core.turnOrder.map(pid => {
+                            {playerDisplayOrder.map(pid => {
                                 const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
                                 const isCurrent = pid === currentPid;
                                 const player = core.players[pid];
                                 const isMe = pid === playerID;
                                 const isOpponent = !isMe;
+                                const displayName = playerNames[pid] ?? `P${Number(pid) + 1}`;
                                 // 派系图标
                                 const factionIcons = (player.factions ?? [])
                                     .map(fid => getFactionMeta(fid))
@@ -2555,8 +2575,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             // 悬浮在对手区域时显示眼睛图标
                                         }}
                                     >
-                                        <span className="text-xs font-black uppercase mb-1">
-                                            {isMe ? t('ui.you_short') : t('ui.player_short', { id: pid })}
+                                        <span className="mb-1 max-w-[6rem] truncate text-xs font-black">
+                                            {displayName}
                                         </span>
                                         <motion.div
                                             key={`vp-${pid}-${core.players[pid]?.vp ?? 0}`}
@@ -3107,7 +3127,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     base={base}
                                     baseIndex={idx}
                                     core={core}
-                                    turnOrder={core.turnOrder}
+                                    turnOrder={playerDisplayOrder}
+                                    playerNames={playerNames}
                                     isMobileViewport={isMobileViewport}
                                     isDeployMode={
                                         (!!selectedCardUid && selectedCardMode !== 'action' && deployableBaseIndices.has(idx))
@@ -3372,6 +3393,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 onViewCard={handleViewCardDetail}
                                 dispatch={dispatch}
                                 playerID={playerID}
+                                playerNames={playerNames}
                             />
                         </div>
                     )
@@ -3431,6 +3453,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 <RevealOverlay
                     entries={eventStreamEntries}
                     currentPlayerId={revealViewerId}
+                    playerNames={playerNames}
                 />
 
                 {/* PREVIEW OVERLAY */}
@@ -3444,6 +3467,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             interaction={G.sys.interaction?.current}
                             dispatch={dispatch}
                             playerID={playerID}
+                            playerNames={playerNames}
                         />
                     ) : null;
                 })()}
@@ -3455,6 +3479,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     playerID={playerID}
                     pendingCard={meFirstPendingCard}
                     onSelectCard={setMeFirstPendingCard}
+                    playerNames={playerNames}
                 />
 
                 {/* 自定义结束页面（计分轨风格） */}
@@ -3465,6 +3490,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             {...props}
                             core={core}
                             myPlayerId={playerID}
+                            playerNames={playerNames}
                         />
                     )}
                     renderActions={(actionsProps) => (

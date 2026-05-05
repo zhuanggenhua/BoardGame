@@ -28,6 +28,8 @@ export interface CardSpotlightConfig {
     isSpectator?: boolean;
     /** 鐜╁閫夎鏄犲皠锛堢敤浜庤В鏋愰瀛愬浘闆嗭級 */
     selectedCharacters?: Record<PlayerId, CharacterId>;
+    /** 阻塞式奖励骰已由 modal stack 接管时，禁止再产出独立奖励骰特写 */
+    suppressStandaloneBonusDie?: boolean;
 }
 
 const normalizePlayerId = (value: PlayerId | string | number | null | undefined): string => {
@@ -154,6 +156,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
         opponentName,
         isSpectator = false,
         selectedCharacters,
+        suppressStandaloneBonusDie = false,
     } = config;
 
     // 鍗＄墝鐗瑰啓闃熷垪
@@ -173,6 +176,20 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
     const [bonusDieDisplayOnly, setBonusDieDisplayOnly] = useState<boolean | undefined>(undefined);
     const [bonusDieCharacterId, setBonusDieCharacterId] = useState<string | undefined>(undefined);
     const [showBonusDie, setShowBonusDie] = useState(false);
+
+    const clearBonusDieState = useCallback(() => {
+        setShowBonusDie(false);
+        setBonusDieValue(undefined);
+        setBonusDieFace(undefined);
+        setBonusDieEffectKey(undefined);
+        setBonusDieEffectParams(undefined);
+        setBonusDiceList(undefined);
+        setBonusDieSummaryEffectKey(undefined);
+        setBonusDieSummaryEffectParams(undefined);
+        setBonusDieShowTotal(undefined);
+        setBonusDieDisplayOnly(undefined);
+        setBonusDieCharacterId(undefined);
+    }, []);
 
     // 閫氱敤娓告爣锛堣嚜鍔ㄥ鐞嗛娆℃寕杞借烦杩?+ Undo 閲嶇疆锛?
     const { consumeNew } = useEventStreamCursor({
@@ -194,17 +211,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
             cardSpotlightQueueRef.current = [];
             processedCardSpotlightKeysRef.current.clear();
             setCardSpotlightQueue([]);
-            setShowBonusDie(false);
-            setBonusDieValue(undefined);
-            setBonusDieFace(undefined);
-            setBonusDieEffectKey(undefined);
-            setBonusDieEffectParams(undefined);
-            setBonusDiceList(undefined);
-            setBonusDieSummaryEffectKey(undefined);
-            setBonusDieSummaryEffectParams(undefined);
-            setBonusDieShowTotal(undefined);
-            setBonusDieDisplayOnly(undefined);
-            setBonusDieCharacterId(undefined);
+            clearBonusDieState();
         }
         if (newEntries.length === 0) return;
 
@@ -538,6 +545,14 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
         }
 
         if (pendingStandaloneMultiDice) {
+            if (suppressStandaloneBonusDie) {
+                spotlightLogger.info('bonus-multi-state-suppressed', {
+                    diceCount: pendingStandaloneMultiDice.bonusDice.length,
+                    characterId: pendingStandaloneMultiDice.characterId,
+                });
+                clearBonusDieState();
+                return;
+            }
             setBonusDieValue(undefined);
             setBonusDieFace(undefined);
             setBonusDieEffectKey(undefined);
@@ -558,6 +573,16 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
         }
 
         if (pendingStandaloneBonusDie) {
+            if (suppressStandaloneBonusDie) {
+                spotlightLogger.info('bonus-state-suppressed', {
+                    value: pendingStandaloneBonusDie.value,
+                    face: pendingStandaloneBonusDie.face,
+                    effectKey: pendingStandaloneBonusDie.effectKey,
+                    characterId: pendingStandaloneBonusDie.characterId,
+                });
+                clearBonusDieState();
+                return;
+            }
             setBonusDiceList(undefined);
             setBonusDieSummaryEffectKey(undefined);
             setBonusDieSummaryEffectParams(undefined);
@@ -576,7 +601,18 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                 characterId: pendingStandaloneBonusDie.characterId,
             });
         }
-    }, [eventStreamEntries, consumeNew, currentPlayerId, opponentName, isSpectator, selectedCharacters]);
+    }, [clearBonusDieState, consumeNew, currentPlayerId, eventStreamEntries, isSpectator, opponentName, selectedCharacters, suppressStandaloneBonusDie]);
+
+    useEffect(() => {
+        if (!suppressStandaloneBonusDie || !showBonusDie) {
+            return;
+        }
+
+        spotlightLogger.info('bonus-state-cleared-for-blocking-settlement', {
+            currentPlayerId: String(currentPlayerId),
+        });
+        clearBonusDieState();
+    }, [clearBonusDieState, currentPlayerId, showBonusDie, suppressStandaloneBonusDie]);
 
     /**
      * 鍏抽棴鍗＄墝鐗瑰啓
@@ -589,7 +625,6 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
      * 鍏抽棴棰濆楠板瓙鐗瑰啓
      */
     const handleBonusDieClose = useCallback(() => {
-            console.log('[handleBonusDieClose] 被调用');
             spotlightLogger.info('bonus-close', {
                 value: bonusDieValue,
                 face: bonusDieFace,
@@ -598,22 +633,8 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                 summaryEffectKey: bonusDieSummaryEffectKey,
                 characterId: bonusDieCharacterId,
             });
-            console.log('[handleBonusDieClose] 设置 showBonusDie=false');
-            setShowBonusDie(false);
-            // 清除所有骰子状态，防止 useEffect 重新触发时又弹出
-            console.log('[handleBonusDieClose] 清除所有骰子状态');
-            setBonusDieValue(undefined);
-            setBonusDieFace(undefined);
-            setBonusDieEffectKey(undefined);
-            setBonusDieEffectParams(undefined);
-            setBonusDiceList(undefined);
-            setBonusDieSummaryEffectKey(undefined);
-            setBonusDieSummaryEffectParams(undefined);
-            setBonusDieShowTotal(undefined);
-            setBonusDieDisplayOnly(undefined);
-            setBonusDieCharacterId(undefined);
-            console.log('[handleBonusDieClose] 完成');
-        }, [bonusDiceList?.length, bonusDieCharacterId, bonusDieEffectKey, bonusDieFace, bonusDieSummaryEffectKey, bonusDieValue])
+            clearBonusDieState();
+        }, [bonusDiceList?.length, bonusDieCharacterId, bonusDieEffectKey, bonusDieFace, bonusDieSummaryEffectKey, bonusDieValue, clearBonusDieState])
 
 
     return {

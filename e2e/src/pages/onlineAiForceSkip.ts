@@ -1,6 +1,9 @@
 import type { GameTransportClient } from '../engine/transport/client';
 import type { MatchState } from '../engine/types';
 import type { AiResolution } from '../engine/ai';
+import type { AiSeatController } from '../engine/ai';
+import type { ForceEndTurnStalledAiReason } from '../engine/transport/onlineAiRecovery';
+import { buildAiProgressMarker, resolveCurrentPlayerId } from '../engine/transport/onlineAiRecovery';
 
 export {
     applyAiAutoRecoveryRejection,
@@ -18,13 +21,54 @@ export {
     type ForceSkippableHiddenAiInteraction,
 } from '../engine/transport/onlineAiRecovery';
 
+export type OnlineAiAutoRecoveryCompletionNotice = {
+    tone: 'info' | 'warning';
+    title: string;
+    message: string;
+};
+
+export function resolveOnlineAiAutoRecoveryCompletionNotice(args: {
+    candidateReason: ForceEndTurnStalledAiReason;
+    authoritativeState: MatchState<unknown> | null | undefined;
+    seatControllers: Record<string, AiSeatController>;
+}): OnlineAiAutoRecoveryCompletionNotice | null {
+    const { candidateReason, authoritativeState, seatControllers } = args;
+
+    if (candidateReason === 'active-turn') {
+        return {
+            tone: 'warning',
+            title: 'AI 强制结束回合',
+            message: 'AI 已强制结束回合。',
+        };
+    }
+
+    if (
+        candidateReason !== 'hidden-interaction'
+        && candidateReason !== 'visible-interaction'
+        && candidateReason !== 'response-window'
+    ) {
+        return null;
+    }
+
+    const currentPlayerId = resolveCurrentPlayerId(authoritativeState);
+    if (currentPlayerId && seatControllers[currentPlayerId]?.type === 'human') {
+        return null;
+    }
+
+    return {
+        tone: 'info',
+        title: 'AI 响应超时',
+        message: 'AI 已自动跳过。',
+    };
+}
+
 function buildAiBatchId(playerId: string, attemptKey: string): string {
     const normalizedAttemptKey = attemptKey.replace(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 120);
     return `ai-${playerId}-${normalizedAttemptKey}`;
 }
 
 type SubmitOnlineAiResolutionArgs = {
-    client: Pick<GameTransportClient, 'sendBatch' | 'updateLatestState' | 'resync'>;
+    client: Pick<GameTransportClient, 'sendBatch' | 'sendCommand' | 'subscribeStateUpdate' | 'latestState' | 'updateLatestState' | 'resync'>;
     resolution: AiResolution;
     lastAiAttemptKeyRef: { current: string | null };
     scheduleRetry: () => void;
@@ -34,7 +78,7 @@ type SubmitOnlineAiResolutionArgs = {
 };
 
 type SubmitOnlineAiResolutionSequenceArgs = {
-    client: Pick<GameTransportClient, 'sendBatch' | 'updateLatestState' | 'resync'>;
+    client: Pick<GameTransportClient, 'sendBatch' | 'sendCommand' | 'subscribeStateUpdate' | 'latestState' | 'updateLatestState' | 'resync'>;
     initialResolution: AiResolution;
     lastAiAttemptKeyRef: { current: string | null };
     scheduleRetry: () => void;
@@ -55,6 +99,8 @@ type SubmitOnlineAiResolutionSequenceArgs = {
         stepIndex: number;
     }) => void;
 };
+
+const SINGLE_COMMAND_CONFIRM_TIMEOUT_MS = 4000;
 
 type FinalizeOnlineAiResolutionConfirmationArgs = {
     lastAiAttemptKeyRef: { current: string | null };
@@ -95,6 +141,59 @@ function submitSingleOnlineAiResolution(args: SubmitOnlineAiResolutionArgs): voi
     } = args;
 
     lastAiAttemptKeyRef.current = resolution.attemptKey;
+    if (resolution.action.commands.length === 1) {
+        const [command] = resolution.action.commands;
+        const markerBefore = client.latestState && typeof client.latestState === 'object'
+            ? buildAiProgressMarker(client.latestState as MatchState<unknown>)
+            : null;
+        let settled = false;
+        let timeoutHandle: ReturnType<typeof setTimeout> | null = null;
+        let unsubscribe: (() => void) | null = null;
+
+        const cleanup = () => {
+            if (timeoutHandle) {
+                clearTimeout(timeoutHandle);
+                timeoutHandle = null;
+            }
+            unsubscribe?.();
+            unsubscribe = null;
+        };
+
+        unsubscribe = client.subscribeStateUpdate((nextState) => {
+            if (settled || !nextState || typeof nextState !== 'object') {
+                return;
+            }
+            const nextMarker = buildAiProgressMarker(nextState as MatchState<unknown>);
+            if (markerBefore !== null && nextMarker === markerBefore) {
+                return;
+            }
+            settled = true;
+            cleanup();
+            onConfirmed?.(nextState);
+        });
+
+        timeoutHandle = setTimeout(() => {
+            if (settled) {
+                return;
+            }
+            settled = true;
+            cleanup();
+            if (lastAiAttemptKeyRef.current === resolution.attemptKey) {
+                lastAiAttemptKeyRef.current = null;
+            }
+            if (onWillResync) {
+                onWillResync('command_timeout');
+            } else {
+                client.resync();
+            }
+            scheduleRetry();
+            onRejected?.('command_timeout');
+        }, SINGLE_COMMAND_CONFIRM_TIMEOUT_MS);
+
+        client.sendCommand(command.type, command.payload);
+        return;
+    }
+
     client.sendBatch(
         buildAiBatchId(resolution.playerId, resolution.attemptKey),
         resolution.action.commands.map((command) => ({

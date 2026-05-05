@@ -4,9 +4,10 @@
  * 主题：干扰对手，将随从送回手牌，控制基地
  */
 
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { SU_EVENTS } from '../domain/types';
+import type { MatchState, PlayerId } from '../../../engine/types';
 import type {
     MinionReturnedEvent, VpAwardedEvent, SmashUpEvent,
     MinionCardDef, OngoingDetachedEvent, BaseReplacedEvent,
@@ -18,22 +19,494 @@ import type {
 } from '../domain/types';
 import {
     buildActionMinionTargetOptions, buildBaseTargetOptions, buildMinionTargetOptions, buildPlayerTargetOptions, getMinionPower,
-    grantContextualExtraMinion, grantExtraMinion, moveMinion, shuffleBaseDeck,
-    resolveOrPrompt, buildAbilityFeedback, canControllerPlayTitan, getSetAsideTitansPlayableAs, playTitan,
+    grantContextualExtraMinion, grantExtraMinion, shuffleBaseDeck,
+    buildAbilityFeedback, canControllerPlayTitan, getSetAsideTitansPlayableAs, playTitan, buildValidatedMoveEvents,
 } from '../domain/abilityHelpers';
-import { getBaseDef, getCardDef, getMinionDef } from '../data/cards';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { getBaseDef, getCardDef } from '../data/cards';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createBranchProgram,
+    createEffectProgram,
+    executeAbilityProgram,
+    createPromptProgram,
+    createStopProgram,
+} from '../domain/abilityRuntime';
 import { registerTrigger, registerBaseAbilitySuppression, isMinionProtected } from '../domain/ongoingEffects';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getPlayerLabel } from '../domain/utils';
 
+type AlienMinionTarget = {
+    uid: string;
+    defId: string;
+    baseIndex: number;
+    label: string;
+};
+
+type AlienInvasionPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    hasNoValidTargets?: boolean;
+    selectedTarget?: {
+        minionUid: string;
+        defId: string;
+        fromBaseIndex: number;
+    };
+};
+
+type AlienTerraformPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    baseDeckEmpty?: boolean;
+    hasAnyBase?: boolean;
+    selectedBaseIndex?: number;
+    oldBaseDefId?: string;
+    newBaseDefId?: string;
+};
+
+type AlienMinionPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    sourceBaseIndex?: number;
+    sourceDefId?: string;
+    hasNoValidTargets?: boolean;
+    selectedTarget?: {
+        minionUid: string;
+        defId: string;
+        baseIndex: number;
+    };
+};
+
+type AlienBasePromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    hasNoValidTargets?: boolean;
+};
+
+type AlienProbePromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    hasNoOpponents?: boolean;
+    targetPlayerId?: PlayerId;
+};
+
+type AlienScoutReturnPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    scout: {
+        uid: string;
+        defId: string;
+        owner: PlayerId;
+        controller: PlayerId;
+        baseIndex: number;
+        baseDefId: string;
+    };
+};
+
+type AlienMinionChoice = {
+    minionUid?: string;
+    baseIndex?: number;
+    defId?: string;
+};
+
+type AlienBaseChoice = {
+    baseIndex?: number;
+    baseDefId?: string;
+    newBaseDefId?: string;
+};
+
+let alienRuntimePromptCounter = 0;
+
+function createAlienInvasionProgramContext(ctx: AbilityContext): AlienInvasionPromptContext {
+    const targets = collectAlienMinionTargets(ctx.state);
+    const options = buildActionMinionTargetOptions(
+        targets,
+        {
+            state: ctx.state,
+            sourcePlayerId: ctx.playerId,
+            effectType: 'move',
+        }
+    );
+    const selectedOption = ctx.targetMinionUid
+        ? options.find(option => {
+            const value = option.value as { minionUid?: string; baseIndex?: number } | undefined;
+            return value?.minionUid === ctx.targetMinionUid && value?.baseIndex === ctx.baseIndex;
+        })
+        : undefined;
+    const selectedTarget = selectedOption
+        ? targets.find(target => target.uid === ctx.targetMinionUid && target.baseIndex === ctx.baseIndex)
+        : undefined;
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        hasNoValidTargets: ctx.state.bases.length <= 1 || options.length === 0,
+        selectedTarget: selectedTarget
+            ? {
+                minionUid: selectedTarget.uid,
+                defId: selectedTarget.defId,
+                fromBaseIndex: selectedTarget.baseIndex,
+            }
+            : undefined,
+    };
+}
+
+function createAlienTerraformProgramContext(ctx: AbilityContext): AlienTerraformPromptContext {
+    const targetedBase = ctx.state.bases[ctx.baseIndex];
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        baseDeckEmpty: ctx.state.baseDeck.length === 0,
+        hasAnyBase: ctx.state.bases.length > 0,
+        selectedBaseIndex: targetedBase ? ctx.baseIndex : undefined,
+        oldBaseDefId: targetedBase?.defId,
+    };
+}
+
+function createAlienMinionPromptContext(
+    ctx: AbilityContext,
+    targets: AlienMinionTarget[],
+    buildOptions: (targets: AlienMinionTarget[]) => Array<{ value: { minionUid?: string; baseIndex?: number } }>,
+): AlienMinionPromptContext {
+    const options = buildOptions(targets);
+    const selectedOption = ctx.targetMinionUid
+        ? options.find(option => {
+            const value = option.value;
+            return value?.minionUid === ctx.targetMinionUid && value?.baseIndex === ctx.baseIndex;
+        })
+        : undefined;
+    const selectedTarget = selectedOption
+        ? targets.find(target => target.uid === ctx.targetMinionUid && target.baseIndex === ctx.baseIndex)
+        : undefined;
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceBaseIndex: ctx.baseIndex,
+        sourceDefId: ctx.defId,
+        hasNoValidTargets: options.length === 0,
+        selectedTarget: selectedTarget
+            ? {
+                minionUid: selectedTarget.uid,
+                defId: selectedTarget.defId,
+                baseIndex: selectedTarget.baseIndex,
+            }
+            : undefined,
+    };
+}
+
+function createAlienDisintegratorProgramContext(ctx: AbilityContext): AlienMinionPromptContext {
+    const targets = collectAlienMinionTargets(ctx.state).filter(target => {
+        const base = ctx.state.bases[target.baseIndex];
+        const minion = base?.minions.find(candidate => candidate.uid === target.uid);
+        return minion ? getMinionPower(ctx.state, minion, target.baseIndex) <= 3 : false;
+    });
+    return createAlienMinionPromptContext(
+        ctx,
+        targets,
+        (candidates) => buildMinionTargetOptions(candidates, { state: ctx.state, sourcePlayerId: ctx.playerId }),
+    );
+}
+
+function createAlienBeamUpProgramContext(ctx: AbilityContext): AlienMinionPromptContext {
+    const targets = collectAlienMinionTargets(ctx.state);
+    return createAlienMinionPromptContext(
+        ctx,
+        targets,
+        (candidates) => buildMinionTargetOptions(candidates, { state: ctx.state, sourcePlayerId: ctx.playerId }),
+    );
+}
+
+function createAlienAbductionProgramContext(ctx: AbilityContext): AlienMinionPromptContext {
+    const targets = collectAlienMinionTargets(ctx.state);
+    return createAlienMinionPromptContext(
+        ctx,
+        targets,
+        (candidates) => buildMinionTargetOptions(candidates, { state: ctx.state, sourcePlayerId: ctx.playerId }),
+    );
+}
+
+function createAlienCropCirclesProgramContext(ctx: AbilityContext): AlienBasePromptContext {
+    const hasNoValidTargets = !ctx.state.bases.some(base => base.minions.length > 0);
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        hasNoValidTargets,
+    };
+}
+
+function createAlienProbeProgramContext(ctx: AbilityContext): AlienProbePromptContext {
+    const opponents = Object.keys(ctx.state.players).filter(pid => pid !== ctx.playerId);
+    const options = buildPlayerTargetOptions(
+        opponents.map((pid, index) => ({
+            id: `player-${index}`,
+            label: getPlayerLabel(pid),
+            targetPlayerId: pid,
+        })),
+        {
+            sourcePlayerId: ctx.playerId,
+            effectIntent: 'inspect',
+        },
+    );
+    const autoTargetPlayerId = options.length === 1 ? options[0].value.targetPlayerId : undefined;
+    return {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        hasNoOpponents: options.length === 0,
+        targetPlayerId: autoTargetPlayerId,
+    };
+}
+
+function createAlienSupremeOverlordProgramContext(ctx: AbilityContext): AlienMinionPromptContext {
+    return createAlienMinionPromptContext(
+        ctx,
+        collectAlienMinionTargets(ctx.state),
+        (candidates) => buildMinionTargetOptions(
+            candidates,
+            {
+                state: ctx.state,
+                sourcePlayerId: ctx.playerId,
+                effectType: 'affect',
+            },
+        ),
+    );
+}
+
+function createAlienCollectorProgramContext(ctx: AbilityContext): AlienMinionPromptContext {
+    const targets = collectAlienMinionTargets(ctx.state).filter(target => {
+        const base = ctx.state.bases[target.baseIndex];
+        const minion = base?.minions.find(candidate => candidate.uid === target.uid);
+        if (!minion) return false;
+        const isPod = ctx.defId === 'alien_collector_pod';
+        if (!isPod && (minion.defId === 'alien_collector' || minion.defId === 'alien_collector_pod')) {
+            return false;
+        }
+        return getMinionPower(ctx.state, minion, target.baseIndex) <= 3;
+    });
+    return createAlienMinionPromptContext(
+        ctx,
+        targets,
+        (candidates) => buildMinionTargetOptions(
+            candidates,
+            {
+                state: ctx.state,
+                sourcePlayerId: ctx.playerId,
+                effectType: 'affect',
+            },
+        ),
+    );
+}
+
+function collectAlienMinionTargets(core: SmashUpCore): AlienMinionTarget[] {
+    const targets: AlienMinionTarget[] = [];
+    for (let baseIndex = 0; baseIndex < core.bases.length; baseIndex += 1) {
+        const base = core.bases[baseIndex];
+        const baseDef = getBaseDef(base.defId);
+        for (const minion of base.minions) {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            targets.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: `${def?.name ?? minion.defId} (力量 ${getMinionPower(core, minion, baseIndex)}) @ ${baseDef?.name ?? `基地 ${baseIndex + 1}`}`,
+            });
+        }
+    }
+    return targets;
+}
+
+function buildAlienOtherBaseChoices(core: SmashUpCore, fromBaseIndex: number): Array<{ baseIndex: number; label: string }> {
+    return core.bases
+        .map((base, baseIndex) => ({
+            baseIndex,
+            label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
+        }))
+        .filter(candidate => candidate.baseIndex !== fromBaseIndex);
+}
+
+function buildAlienTerraformPlayOptions(core: SmashUpCore, playerId: PlayerId): Array<{
+    id: string;
+    label: string;
+    value: CardOrTitanChoiceValue;
+    displayMode: 'button' | 'card';
+}> {
+    const player = core.players[playerId];
+    if (!player) return [];
+
+    const minionOptions = player.hand
+        .filter(card => card.type === 'minion')
+        .map((card, index) => {
+            const def = getCardDef(card.defId) as MinionCardDef | undefined;
+            const power = def?.power ?? 0;
+            return {
+                id: `hand-minion-${index}`,
+                label: `${def?.name ?? card.defId} (力量 ${power})`,
+                value: { cardUid: card.uid, defId: card.defId } satisfies CardOrTitanChoiceValue,
+                _source: 'hand' as const,
+                displayMode: 'card' as const,
+            };
+        });
+
+    const titanOptions = getSetAsideTitansPlayableAs(core, playerId, 'minion').map((titan, index) => {
+        const def = getCardDef(titan.defId);
+        return {
+            id: `setaside-titan-${index}`,
+            label: def?.name ?? titan.defId,
+            value: { titanUid: titan.uid, defId: titan.defId, playKind: 'minion' } satisfies CardOrTitanChoiceValue,
+            _source: 'hand' as const,
+            displayMode: 'card' as const,
+        };
+    });
+
+    if (minionOptions.length === 0 && titanOptions.length === 0) {
+        return [];
+    }
+
+    return [
+        { id: 'skip', label: '跳过额外随从', value: { skip: true, defId: '__skip__' }, displayMode: 'button' as const },
+        ...minionOptions,
+        ...titanOptions,
+    ];
+}
+
+function buildAlienTerraformReplacementEvents(
+    core: SmashUpCore,
+    baseIndex: number,
+    oldBaseDefId: string,
+    newBaseDefId: string,
+    random: AbilityContext['random'] | TriggerContext['random'],
+    timestamp: number,
+): SmashUpEvent[] {
+    const base = core.bases[baseIndex];
+    if (!base) return [];
+
+    const events: SmashUpEvent[] = [];
+    for (const action of base.ongoingActions) {
+        events.push({
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: { cardUid: action.uid, defId: action.defId, ownerId: action.ownerId, reason: 'alien_terraform' },
+            timestamp,
+        } as OngoingDetachedEvent);
+    }
+
+    events.push({
+        type: SU_EVENTS.BASE_REPLACED,
+        payload: {
+            baseIndex,
+            oldBaseDefId,
+            newBaseDefId,
+            keepCards: true,
+        },
+        timestamp,
+    } as BaseReplacedEvent);
+
+    const remainingDeck = core.baseDeck.filter(id => id !== newBaseDefId);
+    const deckWithOld = [...remainingDeck, oldBaseDefId];
+    const shuffled = [...deckWithOld];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(random.random() * (index + 1));
+        [shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]];
+    }
+    events.push(shuffleBaseDeck(shuffled, 'alien_terraform', timestamp));
+
+    return events;
+}
+
+function buildAlienProbeHandOptions(
+    hand: SmashUpCore['players'][PlayerId]['hand'],
+    targetPlayerId: PlayerId,
+) {
+    return hand.map(card => {
+        const isMinion = card.type === 'minion';
+        const def = getCardDef(card.defId);
+        return {
+            id: card.uid,
+            label: def?.name ?? card.defId,
+            value: { cardUid: card.uid, defId: card.defId, targetPlayerId },
+            _source: 'hand' as const,
+            displayMode: 'card' as const,
+            disabled: !isMinion,
+        };
+    });
+}
+
+function buildAlienCollectorTargets(
+    core: SmashUpCore,
+    baseIndex: number,
+    sourceDefId: string,
+): AlienMinionTarget[] {
+    const base = core.bases[baseIndex];
+    if (!base) return [];
+    const isPod = sourceDefId === 'alien_collector_pod';
+    return base.minions
+        .filter(minion => {
+            if (!isPod && (minion.defId === 'alien_collector' || minion.defId === 'alien_collector_pod')) {
+                return false;
+            }
+            return getMinionPower(core, minion, baseIndex) <= 3;
+        })
+        .map(minion => {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            return {
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: `${def?.name ?? minion.defId} (力量 ${getMinionPower(core, minion, baseIndex)})`,
+            };
+        });
+}
+
+function buildAlienMinionReturnEvent(
+    core: SmashUpCore,
+    target: AlienMinionChoice | AlienMinionPromptContext['selectedTarget'] | undefined,
+    reason: string,
+    sourcePlayerId: PlayerId,
+    timestamp: number,
+): MinionReturnedEvent | undefined {
+    const baseIndex = target?.baseIndex;
+    const minionUid = target?.minionUid;
+    if (baseIndex === undefined || !minionUid) {
+        return undefined;
+    }
+    const base = core.bases[baseIndex];
+    const minion = base?.minions.find(candidate => candidate.uid === minionUid);
+    if (!minion) {
+        return undefined;
+    }
+    return {
+        type: SU_EVENTS.MINION_RETURNED,
+        payload: {
+            minionUid: minion.uid,
+            minionDefId: minion.defId,
+            fromBaseIndex: baseIndex,
+            toPlayerId: minion.owner,
+            reason,
+            sourcePlayerId,
+        },
+        timestamp,
+    } as MinionReturnedEvent;
+}
+
 /** 注册外星人派系所有能力 */
 export function registerAlienAbilities(): void {
     // --- 随从 ---
-    registerAbility('alien_supreme_overlord', 'onPlay', alienSupremeOverlord);
-    registerAbility('alien_collector', 'onPlay', alienCollector);
-    registerAbility('alien_invader', 'onPlay', alienInvader);
+    registerAbilityProgram('alien_supreme_overlord', 'onPlay', {
+        program: alienSupremeOverlordProgram,
+        createContext: createAlienSupremeOverlordProgramContext,
+    });
+    registerAbilityProgram('alien_collector', 'onPlay', {
+        program: alienCollectorProgram,
+        createContext: createAlienCollectorProgramContext,
+    });
+    registerSimpleAbility('alien_invader', 'onPlay', alienInvader);
     // afterScoring：按每个侦察兵实例单独触发（perInstance），否则在同一基地多个侦察兵时
     // 若处理函数再“扫描全基地侦察兵”会导致重复创建交互/重复回手。
     registerTrigger('alien_scout', 'afterScoring', alienScoutAfterScoringPerInstance, {
@@ -42,13 +515,34 @@ export function registerAlienAbilities(): void {
     });
     // POD 版本会通过 registerPodOngoingAliases() 自动映射，无需手动注册
     // --- 行动卡 ---
-    registerAbility('alien_invasion', 'onPlay', alienInvasion);
-    registerAbility('alien_disintegrator', 'onPlay', alienDisintegrator);
-    registerAbility('alien_beam_up', 'onPlay', alienBeamUp);
-    registerAbility('alien_crop_circles', 'onPlay', alienCropCircles);
-    registerAbility('alien_probe', 'onPlay', alienProbe);
-    registerAbility('alien_terraform', 'onPlay', alienTerraform);
-    registerAbility('alien_abduction', 'onPlay', alienAbduction);
+    registerAbilityProgram('alien_invasion', 'onPlay', {
+        program: alienInvasionProgram,
+        createContext: createAlienInvasionProgramContext,
+    });
+    registerAbilityProgram('alien_disintegrator', 'onPlay', {
+        program: alienDisintegratorProgram,
+        createContext: createAlienDisintegratorProgramContext,
+    });
+    registerAbilityProgram('alien_beam_up', 'onPlay', {
+        program: alienBeamUpProgram,
+        createContext: createAlienBeamUpProgramContext,
+    });
+    registerAbilityProgram('alien_crop_circles', 'onPlay', {
+        program: alienCropCirclesProgram,
+        createContext: createAlienCropCirclesProgramContext,
+    });
+    registerAbilityProgram('alien_probe', 'onPlay', {
+        program: alienProbeProgram,
+        createContext: createAlienProbeProgramContext,
+    });
+    registerAbilityProgram('alien_terraform', 'onPlay', {
+        program: alienTerraformProgram,
+        createContext: createAlienTerraformProgramContext,
+    });
+    registerAbilityProgram('alien_abduction', 'onPlay', {
+        program: alienAbductionProgram,
+        createContext: createAlienAbductionProgramContext,
+    });
     // 糟糕的信号：所有玩家无视此基地能力（ongoing 行动卡附着到基地）
     registerBaseAbilitySuppression('alien_jammed_signal', (state, baseIndex) => {
         return state.bases[baseIndex].ongoingActions.some((a: any) => a.defId === 'alien_jammed_signal');
@@ -62,82 +556,155 @@ export function registerAlienAbilities(): void {
 // 随从能力
 // ============================================================================
 
-function alienSupremeOverlord(ctx: AbilityContext): AbilityResult {
-    // 描述：你可以将一个随从返回到其拥有者的手上（任意基地，不限本基地）
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            // Wiki 描述："You may return a minion to its owner's hand."
-            // 没有说"another minion"，所以可以返回自己
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const baseDef = getBaseDef(ctx.state.bases[i].defId);
-            const power = getMinionPower(ctx.state, m, i);
-            targets.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${name} (力量 ${power}) @ ${baseDef?.name ?? `基地 ${i + 1}`}` });
-        }
-    }
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const minionOptions = buildMinionTargetOptions(
-        targets,
+const alienSupremeOverlordPromptProgram = createPromptProgram<
+    AlienMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_supreme_overlord',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_supreme_overlord_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '你可以将一个随从返回到其拥有者的手上',
+        [
+            { id: 'skip', label: '跳过（不返回随从）', value: { skip: true }, displayMode: 'button' as const },
+            ...buildMinionTargetOptions(
+                collectAlienMinionTargets(context.matchState.core),
+                {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    effectType: 'affect',
+                },
+            ),
+        ],
         {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            effectType: 'affect',
+            sourceId: 'alien_supreme_overlord',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ state, value, playerId, timestamp }) => {
+        const selected = value as (AlienMinionChoice & { skip?: boolean }) | undefined;
+        if (selected?.skip) {
+            return { matchState: state, events: [] };
         }
-    );
-    if (minionOptions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = [
-        { id: 'skip', label: '跳过（不返回随从）', value: { skip: true }, displayMode: 'button' as const },
-        ...minionOptions,
-    ] as any[];
-    return {
-        events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-            `alien_supreme_overlord_${ctx.now}`, ctx.playerId,
-            '你可以将一个随从返回到其拥有者的手上', options, { sourceId: 'alien_supreme_overlord', targetType: 'minion' },
-        ))
-    };
-}
+        const returnEvent = buildAlienMinionReturnEvent(
+            state.core,
+            selected,
+            'alien_supreme_overlord',
+            playerId,
+            timestamp,
+        );
+        return {
+            matchState: state,
+            events: returnEvent ? [returnEvent] : [],
+        };
+    },
+});
 
-function alienCollector(ctx: AbilityContext): AbilityResult {
-    const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) return { events: [] };
-    // BGB 勘误：基础版 Collector 只能收“非 Collector 的力量≤3 随从”
-    // POD 勘误：Collector POD 回到“可以收任何力量≤3 随从”（含 Collector 自己）
-    const isPod = ctx.defId === 'alien_collector_pod';
-    const targets = base.minions.filter(m => {
-        // 基础版：排除所有 Collector（无论是否 POD 版）
-        if (!isPod && (m.defId === 'alien_collector' || m.defId === 'alien_collector_pod')) {
-            return false;
-        }
-        return getMinionPower(ctx.state, m, ctx.baseIndex) <= 3;
-    });
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const minionTargets = targets.map(t => {
-        const def = getCardDef(t.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? t.defId;
-        const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
-    });
-    const minionOptions = buildMinionTargetOptions(
-        minionTargets,
+const alienSupremeOverlordProgram = createBranchProgram<
+    AlienMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => !!context.hasNoValidTargets,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
+    })),
+    else: createBranchProgram({
+        when: (context) => !!context.selectedTarget,
+        then: createEffectProgram((context) => {
+            const returnEvent = buildAlienMinionReturnEvent(
+                context.matchState.core,
+                context.selectedTarget,
+                'alien_supreme_overlord',
+                context.playerId,
+                context.now,
+            );
+            return {
+                events: returnEvent ? [returnEvent] : [],
+            };
+        }),
+        else: alienSupremeOverlordPromptProgram,
+    }),
+});
+
+const alienCollectorPromptProgram = createPromptProgram<
+    AlienMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_collector',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_collector_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '你可以将这个基地的一个力量≤3的随从返回其拥有者的手上',
+        [
+            { id: 'skip', label: '跳过（不收回随从）', value: { skip: true }, displayMode: 'button' as const },
+            ...buildMinionTargetOptions(
+                buildAlienCollectorTargets(
+                    context.matchState.core,
+                    context.sourceBaseIndex ?? -1,
+                    context.sourceDefId ?? 'alien_collector',
+                ),
+                {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    effectType: 'affect',
+                },
+            ),
+        ],
         {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            effectType: 'affect',
+            sourceId: 'alien_collector',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ state, value, playerId, timestamp }) => {
+        const selected = value as (AlienMinionChoice & { skip?: boolean }) | undefined;
+        if (selected?.skip) {
+            return { matchState: state, events: [] };
         }
-    );
-    if (minionOptions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = [
-        { id: 'skip', label: '跳过（不收回随从）', value: { skip: true }, displayMode: 'button' as const },
-        ...minionOptions,
-    ] as any[];
-    return {
-        events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-            `alien_collector_${ctx.now}`, ctx.playerId,
-            '你可以将这个基地的一个力量≤3的随从返回其拥有者的手上', options, { sourceId: 'alien_collector', targetType: 'minion' },
-        ))
-    };
-}
+        const returnEvent = buildAlienMinionReturnEvent(
+            state.core,
+            selected,
+            'alien_collector',
+            playerId,
+            timestamp,
+        );
+        return {
+            matchState: state,
+            events: returnEvent ? [returnEvent] : [],
+        };
+    },
+});
+
+const alienCollectorProgram = createBranchProgram<
+    AlienMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => !!context.hasNoValidTargets,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
+    })),
+    else: createBranchProgram({
+        when: (context) => !!context.selectedTarget,
+        then: createEffectProgram((context) => {
+            const returnEvent = buildAlienMinionReturnEvent(
+                context.matchState.core,
+                context.selectedTarget,
+                'alien_collector',
+                context.playerId,
+                context.now,
+            );
+            return {
+                events: returnEvent ? [returnEvent] : [],
+            };
+        }),
+        else: alienCollectorPromptProgram,
+    }),
+});
 
 function alienInvader(ctx: AbilityContext): AbilityResult {
     return {
@@ -149,75 +716,66 @@ function alienInvader(ctx: AbilityContext): AbilityResult {
     };
 }
 
-function alienScoutAfterScoring(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
-    console.log('[alienScoutAfterScoring] 开始执行:', {
-        baseIndex: ctx.baseIndex,
-        hasMatchState: !!ctx.matchState,
-        stateBasesCount: ctx.state.bases.length,
-    });
-
-    if (ctx.baseIndex === undefined) {
-        console.log('[alienScoutAfterScoring] baseIndex undefined，返回空');
-        return [];
-    }
-    const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) {
-        console.log('[alienScoutAfterScoring] base 不存在，返回空');
-        return [];
-    }
-
-    // 规则：所有玩家的 alien_scout 都可以在计分后触发（不限当前回合玩家）
-    // 支持基础版和 POD 版
-    const scouts = base.minions.filter(m => m.defId === 'alien_scout' || m.defId === 'alien_scout_pod');
-    console.log('[alienScoutAfterScoring] 找到侦察兵:', {
-        scoutCount: scouts.length,
-        scouts: scouts.map(s => ({ uid: s.uid, defId: s.defId, owner: s.owner, controller: s.controller })),
-        allMinions: base.minions.map(m => ({ uid: m.uid, defId: m.defId, owner: m.owner })),
-    });
-
-    if (scouts.length === 0) {
-        console.log('[alienScoutAfterScoring] 没有侦察兵，返回空');
-        return [];
-    }
-    if (!ctx.matchState) {
-        console.log('[alienScoutAfterScoring] 无 matchState，回退到自动回手');
-        // 无 matchState 时回退到自动回手
-        return scouts.map(scout => ({
-            type: SU_EVENTS.MINION_RETURNED,
-            payload: { minionUid: scout.uid, minionDefId: scout.defId, fromBaseIndex: ctx.baseIndex!, toPlayerId: scout.owner, reason: 'alien_scout', sourcePlayerId: scout.controller },
-            timestamp: ctx.now,
-        } as MinionReturnedEvent));
-    }
-
-    console.log('[alienScoutAfterScoring] 创建交互');
-    // 创建交互让玩家选择是否回手（多个 scout 时链式处理）
-    const scoutInfos = scouts.map(s => ({ uid: s.uid, defId: s.defId, owner: s.owner, controller: s.controller, baseIndex: ctx.baseIndex! }));
-    const first = scoutInfos[0];
-    const remaining = scoutInfos.slice(1);
-    const interaction = createSimpleChoice(
-        `alien_scout_return_${ctx.now}`, first.controller,
+const alienScoutReturnPromptProgram = createPromptProgram<
+    AlienScoutReturnPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_scout_return',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_scout_return_${context.scout.uid}_${context.now}`,
+        context.playerId,
         '侦察兵：基地记分后，是否将此侦察兵返回手牌？',
         [
-            { id: 'yes', label: '返回手牌', value: { returnIt: true, minionUid: first.uid, minionDefId: first.defId, owner: first.owner, baseIndex: first.baseIndex, baseDefId: base.defId }, displayMode: 'card' as const },
-            { id: 'no', label: '留在基地', value: { returnIt: false }, displayMode: 'button' as const },
+            {
+                id: 'yes',
+                label: '返回手牌',
+                value: { returnIt: true },
+                displayMode: 'card' as const,
+            },
+            {
+                id: 'no',
+                label: '留在基地',
+                value: { returnIt: false },
+                displayMode: 'button' as const,
+            },
         ],
-        { sourceId: 'alien_scout_return', targetType: 'minion' },
-    );
-    const ms = queueInteraction(ctx.matchState, {
-        ...interaction,
-        data: { ...interaction.data, continuationContext: { remaining } },
-    });
+        {
+            sourceId: 'alien_scout_return',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as { returnIt?: boolean } | undefined;
+        if (!selected?.returnIt) {
+            return { matchState: state, events: [] };
+        }
 
-    console.log('[alienScoutAfterScoring] 交互已创建:', {
-        interactionId: interaction.id,
-        playerId: first.controller,
-        hasQueue: !!ms.sys.interaction?.queue,
-        queueLength: ms.sys.interaction?.queue?.length ?? 0,
-        hasCurrent: !!ms.sys.interaction?.current,
-    });
+        const scout = context.scout;
+        const base = state.core.bases[scout.baseIndex];
+        const stillThere = !!base?.minions?.some(minion => minion.uid === scout.uid);
+        if (!stillThere) {
+            return { matchState: state, events: [] };
+        }
 
-    return { events: [], matchState: ms };
-}
+        return {
+            matchState: state,
+            events: [{
+                type: SU_EVENTS.MINION_RETURNED,
+                payload: {
+                    minionUid: scout.uid,
+                    minionDefId: scout.defId,
+                    fromBaseIndex: scout.baseIndex,
+                    toPlayerId: scout.owner,
+                    reason: 'alien_scout',
+                    sourcePlayerId: scout.controller,
+                },
+                timestamp,
+            } as MinionReturnedEvent],
+        };
+    },
+});
 
 function alienScoutAfterScoringPerInstance(ctx: TriggerContext): SmashUpEvent[] | TriggerResult {
     if (ctx.baseIndex === undefined) return [];
@@ -246,266 +804,808 @@ function alienScoutAfterScoringPerInstance(ctx: TriggerContext): SmashUpEvent[] 
         } as MinionReturnedEvent];
     }
 
-    const interaction = createSimpleChoice(
-        `alien_scout_return_${scout.uid}_${ctx.now}`,
-        scout.controller,
-        '侦察兵：基地记分后，是否将此侦察兵返回手牌？',
-        [
-            {
-                id: 'yes',
-                label: '返回手牌',
-                value: {
-                    returnIt: true,
-                    minionUid: scout.uid,
-                    minionDefId: scout.defId,
-                    owner: scout.owner,
-                    baseIndex: ctx.baseIndex,
-                    baseDefId: base.defId,
-                },
-                displayMode: 'card' as const,
-            },
-            { id: 'no', label: '留在基地', value: { returnIt: false }, displayMode: 'button' as const },
-        ],
-        { sourceId: 'alien_scout_return', targetType: 'minion' },
-    );
+    const result = executeAbilityProgram(alienScoutReturnPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: scout.controller,
+        now: ctx.now,
+        scout: {
+            uid: scout.uid,
+            defId: scout.defId,
+            owner: scout.owner,
+            controller: scout.controller,
+            baseIndex: ctx.baseIndex,
+            baseDefId: base.defId,
+        },
+    });
 
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return {
+        events: result.events,
+        matchState: result.matchState,
+    };
 }
 
 // ============================================================================
 // 行动卡能力
 // ============================================================================
 
-function alienInvasion(ctx: AbilityContext): AbilityResult {
-    if (ctx.state.bases.length <= 1) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const baseDef = getBaseDef(ctx.state.bases[i].defId);
-            targets.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId} (力量 ${getMinionPower(ctx.state, m, i)}) @ ${baseDef?.name ?? `基地 ${i + 1}`}` });
+const alienInvasionDestinationPromptProgram = createPromptProgram<
+    AlienInvasionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_invasion_choose_base',
+    buildInteraction: (context) => {
+        const selectedTarget = context.selectedTarget;
+        if (!selectedTarget) {
+            throw new Error('Alien invasion runtime 缺少 selectedTarget');
         }
-    }
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    const options = buildActionMinionTargetOptions(
-        targets,
-        {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            effectType: 'move',
-        }
-    );
-    if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-    if (ctx.targetMinionUid) {
-        const selectedOption = options.find(option => {
-            const value = option.value as { minionUid?: string; baseIndex?: number } | undefined;
-            return value?.minionUid === ctx.targetMinionUid && value?.baseIndex === ctx.baseIndex;
-        });
-        const sourceBase = ctx.state.bases[ctx.baseIndex];
-        const target = sourceBase?.minions.find(minion => minion.uid === ctx.targetMinionUid);
-        if (selectedOption && target) {
-            const baseCandidates: { baseIndex: number; label: string }[] = [];
-            for (let i = 0; i < ctx.state.bases.length; i++) {
-                if (i === ctx.baseIndex) continue;
-                const baseDef = getBaseDef(ctx.state.bases[i].defId);
-                baseCandidates.push({ baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` });
-            }
-            if (baseCandidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-
-            const interaction = createSimpleChoice(
-                `alien_invasion_base_${ctx.now}`,
-                ctx.playerId,
-                '选择要移动到的基地',
-                buildBaseTargetOptions(baseCandidates, ctx.state),
-                { sourceId: 'alien_invasion_choose_base', targetType: 'base' },
-            );
-            return {
-                events: [],
-                matchState: queueInteraction(ctx.matchState, {
-                    ...interaction,
-                    data: {
-                        ...interaction.data,
-                        continuationContext: {
-                            minionUid: target.uid,
-                            minionDefId: target.defId,
-                            fromBaseIndex: ctx.baseIndex,
-                        },
-                    },
-                }),
-            };
-        }
-    }
-
-    return {
-        events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-            `alien_invasion_${ctx.now}`, ctx.playerId, '选择要移动的随从', options, { sourceId: 'alien_invasion_choose_minion', targetType: 'minion' },
-        ))
-    };
-}
-
-function alienDisintegrator(ctx: AbilityContext): AbilityResult {
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (getMinionPower(ctx.state, m, i) <= 3) {
-                const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                const baseDef = getBaseDef(ctx.state.bases[i].defId);
-                targets.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId} (力量 ${getMinionPower(ctx.state, m, i)}) @ ${baseDef?.name ?? `基地 ${i + 1}`}` });
-            }
-        }
-    }
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    return {
-        events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-            `alien_disintegrator_${ctx.now}`, ctx.playerId, '选择要放到牌库底的力量≤3的随从', buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'alien_disintegrator', targetType: 'minion' }
-        ))
-    };
-}
-
-function alienBeamUp(ctx: AbilityContext): AbilityResult {
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const baseDef = getBaseDef(ctx.state.bases[i].defId);
-            targets.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId} (力量 ${getMinionPower(ctx.state, m, i)}) @ ${baseDef?.name ?? `基地 ${i + 1}`}` });
-        }
-    }
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    return {
-        events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-            `alien_beam_up_${ctx.now}`, ctx.playerId, '选择要返回手牌的随从', buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'alien_beam_up', targetType: 'minion' }
-        ))
-    };
-}
-
-function alienCropCircles(ctx: AbilityContext): AbilityResult {
-    const baseCandidates: { baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        if (ctx.state.bases[i].minions.length > 0) {
-            const baseDef = getBaseDef(ctx.state.bases[i].defId);
-            baseCandidates.push({ baseIndex: i, label: `${baseDef?.name ?? `基地 ${i + 1}`} (${ctx.state.bases[i].minions.length} 个随从)` });
-        }
-    }
-    if (baseCandidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    return {
-        events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-            `alien_crop_circles_${ctx.now}`, ctx.playerId, '选择一个基地，将随从返回手牌', buildBaseTargetOptions(baseCandidates, ctx.state), { sourceId: 'alien_crop_circles', targetType: 'base' }
-        ))
-    };
-}
-
-function alienProbe(ctx: AbilityContext): AbilityResult {
-    const opponents = Object.keys(ctx.state.players).filter(pid => pid !== ctx.playerId);
-    if (opponents.length === 0) return { events: [] };
-
-    // 数据驱动：强制效果，单对手自动执行
-    const opOptions = buildPlayerTargetOptions(
-        opponents.map((pid, index) => ({
-            id: `player-${index}`,
-            label: getPlayerLabel(pid),
-            targetPlayerId: pid,
-        })),
-        {
-            sourcePlayerId: ctx.playerId,
-            effectIntent: 'inspect',
-        },
-    );
-
-    return resolveOrPrompt(ctx, opOptions, {
-        id: 'alien_probe_choose_target',
-        title: '选择要查看手牌的玩家',
-        sourceId: 'alien_probe_choose_target',
-        targetType: 'player',
-    }, (value) => {
-        const targetPid = value.targetPlayerId;
-        const targetPlayer = ctx.state.players[targetPid];
-
-        // 从手牌中筛选随从卡（用于检查是否有可选目标）
-        const minionCards = targetPlayer.hand.filter(c => c.type === 'minion');
-
-        if (minionCards.length === 0) {
-            // 没有随从卡，效果结束
-            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_minions_in_hand', ctx.now)] };
-        }
-
-        // 创建交互：展示所有手牌，但只有随从可选
-        // 正确实现：先看手牌（所有卡），再选择其中的随从
-        const allHandOptions = targetPlayer.hand.map(card => {
-            const isMinion = card.type === 'minion';
-            const def = getCardDef(card.defId);
-            return {
-                id: card.uid,
-                label: def?.name ?? card.defId,
-                value: { cardUid: card.uid, defId: card.defId, targetPlayerId: targetPid },
-                _source: 'hand' as const,
-                displayMode: 'card' as const,
-                disabled: !isMinion, // 非随从卡禁用（显示但不可选）
-            };
-        });
-
-        const interaction = createSimpleChoice(
-            `alien_probe_${ctx.now}`, ctx.playerId,
-            '选择对手手牌中的一张随从，让其弃掉',
-            allHandOptions,
-            { sourceId: 'alien_probe', targetType: 'generic', autoResolveIfSingle: false },
+        return createAbilityRuntimeSimpleChoice(
+            `alien_invasion_base_${alienRuntimePromptCounter++}`,
+            context.playerId,
+            '选择要移动到的基地',
+            buildBaseTargetOptions(
+                buildAlienOtherBaseChoices(context.matchState.core, selectedTarget.fromBaseIndex),
+                context.matchState.core,
+            ),
+            {
+                sourceId: 'alien_invasion_choose_base',
+                targetType: 'base',
+                autoResolveIfSingle: false,
+            },
         );
-
-        // 添加自定义 optionsGenerator，确保刷新时检查对手的手牌而不是当前玩家的手牌
-        (interaction.data as any).optionsGenerator = (state: any) => {
-            const targetPlayer = state.core.players[targetPid];
-            return targetPlayer.hand.map((card: any) => {
-                const isMinion = card.type === 'minion';
-                const def = getCardDef(card.defId);
-                return {
-                    id: card.uid,
-                    label: def?.name ?? card.defId,
-                    value: { cardUid: card.uid, defId: card.defId, targetPlayerId: targetPid },
-                    _source: 'hand' as const,
-                    displayMode: 'card' as const,
-                    disabled: !isMinion, // 非随从卡禁用
-                };
-            });
-        };
-
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-    });
-}
-
-function alienTerraform(ctx: AbilityContext): AbilityResult {
-    const baseCandidates: { baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        const baseDef = getBaseDef(ctx.state.bases[i].defId);
-        baseCandidates.push({ baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` });
-    }
-    if (baseCandidates.length === 0) {
-        return { events: [] };
-    }
-    const interaction = createSimpleChoice(
-        `alien_terraform_${ctx.now}`, ctx.playerId, '选择要替换的基地', buildBaseTargetOptions(baseCandidates, ctx.state), { sourceId: 'alien_terraform', targetType: 'base' }
-    );
-    const newMatchState = queueInteraction(ctx.matchState, interaction);
-    return { events: [], matchState: newMatchState };
-}
-
-function alienAbduction(ctx: AbilityContext): AbilityResult {
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const baseDef = getBaseDef(ctx.state.bases[i].defId);
-            targets.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId} (力量 ${getMinionPower(ctx.state, m, i)}) @ ${baseDef?.name ?? `基地 ${i + 1}`}` });
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as AlienBaseChoice | undefined;
+        const selectedTarget = context.selectedTarget;
+        if (selected?.baseIndex === undefined || !selectedTarget) {
+            return { matchState: state, events: [] };
         }
-    }
-    if (targets.length === 0) return { events: [grantContextualExtraMinion(ctx, 'alien_abduction')] };
-    return {
-        events: [], matchState: queueInteraction(ctx.matchState, createSimpleChoice(
-            `alien_abduction_${ctx.now}`, ctx.playerId, '选择要返回手牌的随从', buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId }), { sourceId: 'alien_abduction', targetType: 'minion' }
-        ))
-    };
-}
+        return {
+            matchState: state,
+            events: buildValidatedMoveEvents(state, {
+                minionUid: selectedTarget.minionUid,
+                minionDefId: selectedTarget.defId,
+                fromBaseIndex: selectedTarget.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                toBaseDefId: selected.baseDefId,
+                reason: 'alien_invasion',
+                now: timestamp,
+            }),
+        };
+    },
+});
+
+const alienInvasionPromptProgram = createPromptProgram<
+    AlienInvasionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_invasion_choose_minion',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_invasion_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '选择要移动的随从',
+        buildActionMinionTargetOptions(
+            collectAlienMinionTargets(context.matchState.core),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                effectType: 'move',
+            },
+        ),
+        {
+            sourceId: 'alien_invasion_choose_minion',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as AlienMinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [],
+            context: {
+                ...context,
+                matchState: state,
+                playerId,
+                now: timestamp,
+                selectedTarget: {
+                    minionUid: selected.minionUid,
+                    defId: selected.defId,
+                    fromBaseIndex: selected.baseIndex,
+                },
+            },
+            nextProgram: alienInvasionDestinationPromptProgram,
+        };
+    },
+});
+
+const alienTerraformPlayMinionPromptProgram = createPromptProgram<
+    AlienTerraformPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_terraform_play_minion',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_terraform_play_minion_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '适居化：你可以在新基地上额外打出一个随从',
+        buildAlienTerraformPlayOptions(context.matchState.core, context.playerId),
+        {
+            sourceId: 'alien_terraform_play_minion',
+            targetType: 'hand',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as CardOrTitanChoiceValue;
+        if (selected.skip) {
+            return { matchState: state, events: [] };
+        }
+        if (context.selectedBaseIndex === undefined || !context.newBaseDefId) {
+            return { matchState: state, events: [] };
+        }
+
+        if (selected.titanUid) {
+            const selectedTitan = state.core.titans?.find((titan) =>
+                titan.uid === selected.titanUid
+                && titan.defId === selected.defId
+                && titan.ownerId === playerId
+                && titan.location.zone === 'setaside',
+            );
+            if (!selectedTitan || !canControllerPlayTitan(state.core, playerId, selectedTitan.uid)) {
+                return { matchState: state, events: [] };
+            }
+            return {
+                matchState: state,
+                events: [
+                    playTitan(
+                        selectedTitan,
+                        playerId,
+                        context.selectedBaseIndex,
+                        'alien_terraform',
+                        timestamp,
+                        context.newBaseDefId,
+                    ),
+                ],
+            };
+        }
+
+        const player = state.core.players[playerId];
+        const selectedCard = player.hand.find(card =>
+            card.uid === selected.cardUid
+            && card.defId === selected.defId
+            && card.type === 'minion',
+        );
+        if (!selectedCard) {
+            return { matchState: state, events: [] };
+        }
+
+        const def = getCardDef(selectedCard.defId) as MinionCardDef | undefined;
+        return {
+            matchState: state,
+            events: [
+                grantExtraMinion(playerId, 'alien_terraform', timestamp),
+                {
+                    type: SU_EVENTS.MINION_PLAYED,
+                    payload: {
+                        playerId,
+                        cardUid: selectedCard.uid,
+                        defId: selectedCard.defId,
+                        baseIndex: context.selectedBaseIndex,
+                        baseDefId: context.newBaseDefId,
+                        power: def?.power ?? 0,
+                    },
+                    timestamp,
+                } as MinionPlayedEvent,
+            ],
+        };
+    },
+});
+
+const alienTerraformReplacementPromptProgram = createPromptProgram<
+    AlienTerraformPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_terraform_choose_replacement',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_terraform_choose_replacement_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '地形改造：从基地牌库中选择一张基地进行替换',
+        context.matchState.core.baseDeck.map((baseDefId, index) => {
+            const baseDef = getBaseDef(baseDefId);
+            return {
+                id: `replacement-${index}`,
+                label: baseDef?.name ?? baseDefId,
+                value: { newBaseDefId: baseDefId, baseDefId },
+                displayMode: 'card' as const,
+            };
+        }),
+        {
+            sourceId: 'alien_terraform_choose_replacement',
+            targetType: 'generic',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, playerId, value, random, timestamp }) => {
+        const selected = value as AlienBaseChoice | undefined;
+        if (context.selectedBaseIndex === undefined || !selected?.newBaseDefId) {
+            return { matchState: state, events: [] };
+        }
+
+        const base = state.core.bases[context.selectedBaseIndex];
+        if (!base) {
+            return { matchState: state, events: [] };
+        }
+
+        const events = buildAlienTerraformReplacementEvents(
+            state.core,
+            context.selectedBaseIndex,
+            base.defId,
+            selected.newBaseDefId,
+            random,
+            timestamp,
+        );
+        const playOptions = buildAlienTerraformPlayOptions(state.core, playerId);
+        if (playOptions.length === 0) {
+            return {
+                matchState: state,
+                events,
+            };
+        }
+
+        return {
+            matchState: state,
+            events,
+            context: {
+                ...context,
+                matchState: state,
+                playerId,
+                now: timestamp,
+                selectedBaseIndex: context.selectedBaseIndex,
+                oldBaseDefId: base.defId,
+                newBaseDefId: selected.newBaseDefId,
+            },
+            nextProgram: alienTerraformPlayMinionPromptProgram,
+        };
+    },
+});
+
+const alienTerraformPromptProgram = createPromptProgram<
+    AlienTerraformPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_terraform',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_terraform_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '选择要替换的基地',
+        buildBaseTargetOptions(
+            context.matchState.core.bases.map((base, baseIndex) => ({
+                baseIndex,
+                label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
+            })),
+            context.matchState.core,
+        ),
+        {
+            sourceId: 'alien_terraform',
+            targetType: 'base',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const selected = value as AlienBaseChoice | undefined;
+        if (selected?.baseIndex === undefined) {
+            return { matchState: state, events: [] };
+        }
+        const targetBase = state.core.bases[selected.baseIndex];
+        if (!targetBase) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [],
+            context: {
+                ...context,
+                matchState: state,
+                playerId,
+                now: timestamp,
+                selectedBaseIndex: selected.baseIndex,
+                oldBaseDefId: targetBase.defId,
+            },
+            nextProgram: alienTerraformReplacementPromptProgram,
+        };
+    },
+});
+
+const alienInvasionProgram = createBranchProgram<
+    AlienInvasionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => !!context.hasNoValidTargets,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
+    })),
+    else: createBranchProgram({
+        when: (context) => !!context.selectedTarget,
+        then: alienInvasionDestinationPromptProgram,
+        else: alienInvasionPromptProgram,
+    }),
+});
+
+const alienTerraformProgram = createBranchProgram<
+    AlienTerraformPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => !!context.baseDeckEmpty,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.base_deck_empty', context.now)],
+    })),
+    else: createBranchProgram({
+        when: (context) => context.selectedBaseIndex !== undefined,
+        then: alienTerraformReplacementPromptProgram,
+        else: createBranchProgram({
+            when: (context) => !context.hasAnyBase,
+            then: createStopProgram(),
+            else: alienTerraformPromptProgram,
+        }),
+    }),
+});
+
+const alienDisintegratorPromptProgram = createPromptProgram<
+    AlienMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_disintegrator',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_disintegrator_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '选择要放到牌库底的力量≤3的随从',
+        buildMinionTargetOptions(
+            collectAlienMinionTargets(context.matchState.core).filter(target => {
+                const base = context.matchState.core.bases[target.baseIndex];
+                const minion = base?.minions.find(candidate => candidate.uid === target.uid);
+                return minion ? getMinionPower(context.matchState.core, minion, target.baseIndex) <= 3 : false;
+            }),
+            { state: context.matchState.core, sourcePlayerId: context.playerId },
+        ),
+        {
+            sourceId: 'alien_disintegrator',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ state, value, timestamp }) => {
+        const selected = value as AlienMinionChoice | undefined;
+        const baseIndex = selected?.baseIndex;
+        const minionUid = selected?.minionUid;
+        if (baseIndex === undefined || !minionUid) {
+            return { matchState: state, events: [] };
+        }
+        const base = state.core.bases[baseIndex];
+        const target = base?.minions.find(minion => minion.uid === minionUid);
+        if (!target) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [{
+                type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+                payload: { cardUid: target.uid, defId: target.defId, ownerId: target.owner, reason: 'alien_disintegrator' },
+                timestamp,
+            } as CardToDeckBottomEvent],
+        };
+    },
+});
+
+const alienDisintegratorProgram = createBranchProgram<
+    AlienMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => !!context.hasNoValidTargets,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
+    })),
+    else: createBranchProgram({
+        when: (context) => !!context.selectedTarget,
+        then: createEffectProgram((context) => {
+            const target = context.selectedTarget;
+            if (!target) return { events: [] };
+            const base = context.matchState.core.bases[target.baseIndex];
+            const minion = base?.minions.find(candidate => candidate.uid === target.minionUid);
+            if (!minion) return { events: [] };
+            return {
+                events: [{
+                    type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
+                    payload: { cardUid: minion.uid, defId: minion.defId, ownerId: minion.owner, reason: 'alien_disintegrator' },
+                    timestamp: context.now,
+                } as CardToDeckBottomEvent],
+            };
+        }),
+        else: alienDisintegratorPromptProgram,
+    }),
+});
+
+const alienBeamUpPromptProgram = createPromptProgram<
+    AlienMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_beam_up',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_beam_up_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '选择要返回手牌的随从',
+        buildMinionTargetOptions(
+            collectAlienMinionTargets(context.matchState.core),
+            { state: context.matchState.core, sourcePlayerId: context.playerId },
+        ),
+        {
+            sourceId: 'alien_beam_up',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ state, value, playerId, timestamp }) => {
+        const selected = value as AlienMinionChoice | undefined;
+        const baseIndex = selected?.baseIndex;
+        const minionUid = selected?.minionUid;
+        if (baseIndex === undefined || !minionUid) {
+            return { matchState: state, events: [] };
+        }
+        const base = state.core.bases[baseIndex];
+        const target = base?.minions.find(minion => minion.uid === minionUid);
+        if (!target) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [{
+                type: SU_EVENTS.MINION_RETURNED,
+                payload: {
+                    minionUid: target.uid,
+                    minionDefId: target.defId,
+                    fromBaseIndex: baseIndex,
+                    toPlayerId: target.owner,
+                    reason: 'alien_beam_up',
+                    sourcePlayerId: playerId,
+                },
+                timestamp,
+            } as MinionReturnedEvent],
+        };
+    },
+});
+
+const alienBeamUpProgram = createBranchProgram<
+    AlienMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => !!context.hasNoValidTargets,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
+    })),
+    else: createBranchProgram({
+        when: (context) => !!context.selectedTarget,
+        then: createEffectProgram((context) => {
+            const target = context.selectedTarget;
+            if (!target) return { events: [] };
+            const base = context.matchState.core.bases[target.baseIndex];
+            const minion = base?.minions.find(candidate => candidate.uid === target.minionUid);
+            if (!minion) return { events: [] };
+            return {
+                events: [{
+                    type: SU_EVENTS.MINION_RETURNED,
+                    payload: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        fromBaseIndex: target.baseIndex,
+                        toPlayerId: minion.owner,
+                        reason: 'alien_beam_up',
+                        sourcePlayerId: context.playerId,
+                    },
+                    timestamp: context.now,
+                } as MinionReturnedEvent],
+            };
+        }),
+        else: alienBeamUpPromptProgram,
+    }),
+});
+
+const alienCropCirclesPromptProgram = createPromptProgram<
+    AlienBasePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_crop_circles',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_crop_circles_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '选择一个基地，将随从返回手牌',
+        buildBaseTargetOptions(
+            context.matchState.core.bases
+                .map((base, baseIndex) => ({
+                    baseIndex,
+                    label: `${getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`} (${base.minions.length} 个随从)`,
+                }))
+                .filter(candidate => context.matchState.core.bases[candidate.baseIndex]?.minions.length > 0),
+            context.matchState.core,
+        ),
+        {
+            sourceId: 'alien_crop_circles',
+            targetType: 'base',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as AlienBaseChoice | undefined;
+        const baseIndex = selected?.baseIndex;
+        if (baseIndex === undefined) {
+            return { matchState: state, events: [] };
+        }
+        const base = state.core.bases[baseIndex];
+        if (!base) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: buildCropCirclesReturnEvents(state.core, baseIndex, base.minions.map(minion => minion.uid), timestamp, playerId),
+        };
+    },
+});
+
+const alienCropCirclesProgram = createBranchProgram<
+    AlienBasePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => !!context.hasNoValidTargets,
+    then: createEffectProgram((context) => ({
+        events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', context.now)],
+    })),
+    else: alienCropCirclesPromptProgram,
+});
+
+const alienProbeDiscardPromptProgram = createPromptProgram<
+    AlienProbePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_probe',
+    buildInteraction: (context) => {
+        if (!context.targetPlayerId) {
+            throw new Error('Alien probe runtime 缺少 targetPlayerId');
+        }
+        const targetPlayer = context.matchState.core.players[context.targetPlayerId];
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `alien_probe_${alienRuntimePromptCounter++}`,
+            context.playerId,
+            '选择对手手牌中的一张随从，让其弃掉',
+            targetPlayer ? buildAlienProbeHandOptions(targetPlayer.hand, context.targetPlayerId) : [],
+            {
+                sourceId: 'alien_probe',
+                targetType: 'generic',
+                autoResolveIfSingle: false,
+            },
+        );
+        (interaction.data as { optionsGenerator?: (state: MatchState<SmashUpCore>) => unknown[] }).optionsGenerator = (state) => {
+            const nextTargetPlayer = state.core.players[context.targetPlayerId!];
+            return nextTargetPlayer ? buildAlienProbeHandOptions(nextTargetPlayer.hand, context.targetPlayerId!) : [];
+        };
+        return interaction;
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const targetPlayerId = context.targetPlayerId;
+        if (!targetPlayerId) {
+            return { matchState: state, events: [] };
+        }
+        const targetPlayer = state.core.players[targetPlayerId];
+        const selected = value as { cardUid?: string } | undefined;
+        const cardUid = selected?.cardUid;
+        if (!targetPlayer || !cardUid) {
+            return { matchState: state, events: [] };
+        }
+        const card = targetPlayer.hand.find(entry => entry.uid === cardUid && entry.type === 'minion');
+        if (!card) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [{
+                type: SU_EVENTS.CARDS_DISCARDED,
+                payload: {
+                    playerId: targetPlayerId,
+                    cardUids: [card.uid],
+                },
+                timestamp,
+            } as CardsDiscardedEvent],
+        };
+    },
+});
+
+const alienProbeChooseTargetPromptProgram = createPromptProgram<
+    AlienProbePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_probe_choose_target',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_probe_choose_target_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '选择要查看手牌的玩家',
+        buildPlayerTargetOptions(
+            Object.keys(context.matchState.core.players)
+                .filter(pid => pid !== context.playerId)
+                .map((pid, index) => ({
+                    id: `player-${index}`,
+                    label: getPlayerLabel(pid),
+                    targetPlayerId: pid,
+                })),
+            {
+                sourcePlayerId: context.playerId,
+                effectIntent: 'inspect',
+            },
+        ),
+        {
+            sourceId: 'alien_probe_choose_target',
+            targetType: 'player',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, value, playerId, timestamp }) => {
+        const selected = value as { targetPlayerId?: PlayerId } | undefined;
+        const targetPlayerId = selected?.targetPlayerId;
+        if (!targetPlayerId) {
+            return { matchState: state, events: [] };
+        }
+        const targetPlayer = state.core.players[targetPlayerId];
+        const minionCards = targetPlayer?.hand.filter(card => card.type === 'minion') ?? [];
+        if (minionCards.length === 0) {
+            return {
+                matchState: state,
+                events: [buildAbilityFeedback(playerId, 'feedback.no_minions_in_hand', timestamp)],
+            };
+        }
+        return {
+            matchState: state,
+            events: [],
+            context: {
+                ...context,
+                matchState: state,
+                playerId,
+                now: timestamp,
+                targetPlayerId,
+            },
+            nextProgram: alienProbeDiscardPromptProgram,
+        };
+    },
+});
+
+const alienProbeProgram = createBranchProgram<
+    AlienProbePromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => !!context.hasNoOpponents,
+    then: createStopProgram(),
+    else: createBranchProgram({
+        when: (context) => !!context.targetPlayerId,
+        then: createBranchProgram({
+            when: (context) => {
+                const targetPlayerId = context.targetPlayerId;
+                if (!targetPlayerId) return false;
+                const targetPlayer = context.matchState.core.players[targetPlayerId];
+                return (targetPlayer?.hand.filter(card => card.type === 'minion').length ?? 0) === 0;
+            },
+            then: createEffectProgram((context) => ({
+                events: [buildAbilityFeedback(context.playerId, 'feedback.no_minions_in_hand', context.now)],
+            })),
+            else: alienProbeDiscardPromptProgram,
+        }),
+        else: alienProbeChooseTargetPromptProgram,
+    }),
+});
+
+const alienAbductionPromptProgram = createPromptProgram<
+    AlienMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    sourceId: 'alien_abduction',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `alien_abduction_${alienRuntimePromptCounter++}`,
+        context.playerId,
+        '选择要返回手牌的随从',
+        buildMinionTargetOptions(
+            collectAlienMinionTargets(context.matchState.core),
+            { state: context.matchState.core, sourcePlayerId: context.playerId },
+        ),
+        {
+            sourceId: 'alien_abduction',
+            targetType: 'minion',
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ state, value, playerId, timestamp }) => {
+        const selected = value as AlienMinionChoice | undefined;
+        const baseIndex = selected?.baseIndex;
+        const minionUid = selected?.minionUid;
+        if (baseIndex === undefined || !minionUid) {
+            return { matchState: state, events: [] };
+        }
+        const base = state.core.bases[baseIndex];
+        const target = base?.minions.find(minion => minion.uid === minionUid);
+        if (!target) {
+            return { matchState: state, events: [] };
+        }
+        return {
+            matchState: state,
+            events: [
+                {
+                    type: SU_EVENTS.MINION_RETURNED,
+                    payload: {
+                        minionUid: target.uid,
+                        minionDefId: target.defId,
+                        fromBaseIndex: baseIndex,
+                        toPlayerId: target.owner,
+                        reason: 'alien_abduction',
+                        sourcePlayerId: playerId,
+                    },
+                    timestamp,
+                } as MinionReturnedEvent,
+                grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'alien_abduction'),
+            ],
+        };
+    },
+});
+
+const alienAbductionProgram = createBranchProgram<
+    AlienMinionPromptContext,
+    SmashUpCore,
+    SmashUpEvent
+>({
+    when: (context) => !!context.hasNoValidTargets,
+    then: createEffectProgram((context) => ({
+        events: [grantContextualExtraMinion({ playerId: context.playerId, now: context.now, matchState: context.matchState }, 'alien_abduction')],
+    })),
+    else: createBranchProgram({
+        when: (context) => !!context.selectedTarget,
+        then: createEffectProgram((context) => {
+            const target = context.selectedTarget;
+            if (!target) return { events: [] };
+            const base = context.matchState.core.bases[target.baseIndex];
+            const minion = base?.minions.find(candidate => candidate.uid === target.minionUid);
+            if (!minion) return { events: [] };
+            return {
+                events: [
+                    {
+                        type: SU_EVENTS.MINION_RETURNED,
+                        payload: {
+                            minionUid: minion.uid,
+                            minionDefId: minion.defId,
+                            fromBaseIndex: target.baseIndex,
+                            toPlayerId: minion.owner,
+                            reason: 'alien_abduction',
+                            sourcePlayerId: context.playerId,
+                        },
+                        timestamp: context.now,
+                    } as MinionReturnedEvent,
+                    grantContextualExtraMinion({ playerId: context.playerId, now: context.now, matchState: context.matchState }, 'alien_abduction'),
+                ],
+            };
+        }),
+        else: alienAbductionPromptProgram,
+    }),
+});
 
 function buildCropCirclesReturnEvents(
     core: SmashUpCore,
@@ -539,455 +1639,4 @@ function buildCropCirclesReturnEvents(
             timestamp,
         } as MinionReturnedEvent));
 }
-
-// ============================================================================
-// 交互处理函数注册
-// ============================================================================
-
-/** 注册外星人派系的交互解决处理函数 */
-export function registerAlienInteractionHandlers(): void {
-    // 至高霸主：选择目标后返回手牌
-    registerInteractionHandler('alien_supreme_overlord', (state, playerId, value, _iData, _random, timestamp) => {
-        const selected = value as { skip?: boolean; minionUid?: string; baseIndex?: number; defId?: string };
-        if (selected.skip) return { state, events: [] };
-        const { minionUid, baseIndex } = selected;
-        if (minionUid === undefined || baseIndex === undefined) return undefined;
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        // 保护检查已在 buildMinionTargetOptions 中完成，这里不需要重复检查
-        return {
-            state, events: [{
-                type: SU_EVENTS.MINION_RETURNED,
-                payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_supreme_overlord', sourcePlayerId: playerId },
-                timestamp,
-            } as MinionReturnedEvent]
-        };
-    });
-
-    // 收集者：选择力量≤3随从返回手牌
-    registerInteractionHandler('alien_collector', (state, playerId, value, _iData, _random, timestamp) => {
-        const selected = value as { skip?: boolean; minionUid?: string; baseIndex?: number; defId?: string };
-        if (selected.skip) return { state, events: [] };
-        const { minionUid, baseIndex } = selected;
-        if (minionUid === undefined || baseIndex === undefined) return undefined;
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        // 保护检查已在 buildMinionTargetOptions 中完成，这里不需要重复检查
-        return {
-            state, events: [{
-                type: SU_EVENTS.MINION_RETURNED,
-                payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_collector', sourcePlayerId: playerId },
-                timestamp,
-            } as MinionReturnedEvent]
-        };
-    });
-
-    // 入侵第一步：选择随从后，链式选择目标基地
-    registerInteractionHandler('alien_invasion_choose_minion', (state, playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex: fromBaseIndex } = value as { minionUid: string; baseIndex: number; defId: string };
-        const base = state.core.bases[fromBaseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        // 构建可移动到的基地列表（排除当前基地）
-        const baseCandidates: { baseIndex: number; label: string }[] = [];
-        for (let i = 0; i < state.core.bases.length; i++) {
-            if (i === fromBaseIndex) continue;
-            const baseDef = getBaseDef(state.core.bases[i].defId);
-            baseCandidates.push({ baseIndex: i, label: baseDef?.name ?? `基地 ${i + 1}` });
-        }
-        if (baseCandidates.length === 0) return undefined;
-        const next = createSimpleChoice(
-            `alien_invasion_base_${timestamp}`, playerId, '选择要移动到的基地', buildBaseTargetOptions(baseCandidates, state.core), { sourceId: 'alien_invasion_choose_base', targetType: 'base' }
-        );
-        return { state: queueInteraction(state, { ...next, data: { ...next.data, continuationContext: { minionUid, minionDefId: target.defId, fromBaseIndex } } }), events: [] };
-    });
-
-    // 入侵第二步：移动随从到目标基地
-    registerInteractionHandler('alien_invasion_choose_base', (state, _playerId, value, iData, _random, timestamp) => {
-        const { baseIndex: toBaseIndex } = value as { baseIndex: number };
-        const ctx = iData?.continuationContext as { minionUid: string; minionDefId: string; fromBaseIndex: number } | undefined;
-        if (!ctx) return undefined;
-        return { state, events: [moveMinion(ctx.minionUid, ctx.minionDefId, ctx.fromBaseIndex, toBaseIndex, 'alien_invasion', timestamp)] };
-    });
-
-    // 分解者：将力量≤3随从放到牌库底
-    registerInteractionHandler('alien_disintegrator', (state, _playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex, defId } = value as { minionUid: string; baseIndex: number; defId: string };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        return {
-            state, events: [{
-                type: SU_EVENTS.CARD_TO_DECK_BOTTOM,
-                payload: { cardUid: target.uid, defId, ownerId: target.owner, reason: 'alien_disintegrator' },
-                timestamp,
-            } as CardToDeckBottomEvent]
-        };
-    });
-
-    // 光束传送：返回随从到手牌
-    registerInteractionHandler('alien_beam_up', (state, playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number; defId: string };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        // 保护检查已在 buildMinionTargetOptions 中完成，这里不需要重复检查
-        return {
-            state, events: [{
-                type: SU_EVENTS.MINION_RETURNED,
-                payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_beam_up', sourcePlayerId: playerId },
-                timestamp,
-            } as MinionReturnedEvent]
-        };
-    });
-
-    // 麦田怪圈：选择基地后,自动返回该基地所有随从（强制效果）
-    registerInteractionHandler('alien_crop_circles', (state, playerId, value, _iData, _random, timestamp) => {
-        const { baseIndex } = value as { baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) {
-            return undefined;
-        }
-
-        // 直接返回该基地所有随从（强制效果："返回每个在这个基地上的随从"）
-        const events = buildCropCirclesReturnEvents(state.core, baseIndex, base.minions.map(m => m.uid), timestamp, playerId);
-        return { state, events };
-    });
-
-    // 探测第一步（多对手时）：选择目标玩家后，展示其整手牌并仅允许选择随从
-    registerInteractionHandler('alien_probe_choose_target', (state, playerId, value, _iData, _random, timestamp) => {
-        const { targetPlayerId } = value as { targetPlayerId: string };
-        const targetPlayer = state.core.players[targetPlayerId];
-
-        if (!targetPlayer) return { state, events: [] };
-        const hasMinion = targetPlayer.hand.some(c => c.type === 'minion');
-        if (!hasMinion) {
-            // 没有随从卡，效果结束
-            return { state, events: [buildAbilityFeedback(playerId, 'feedback.no_minions_in_hand', timestamp)] };
-        }
-
-        const buildHandOptions = (hand: typeof targetPlayer.hand) => hand.map(card => {
-            const isMinion = card.type === 'minion';
-            const def = getCardDef(card.defId);
-            return {
-                id: card.uid,
-                label: def?.name ?? card.defId,
-                value: { cardUid: card.uid, defId: card.defId, targetPlayerId },
-                _source: 'hand' as const,
-                displayMode: 'card' as const,
-                disabled: !isMinion,
-            };
-        });
-
-        const next = createSimpleChoice(
-            `alien_probe_${timestamp}`, playerId,
-            '选择对手手牌中的一张随从，让其弃掉',
-            buildHandOptions(targetPlayer.hand),
-            { sourceId: 'alien_probe', targetType: 'generic' },
-        );
-
-        // 添加自定义 optionsGenerator，确保刷新时检查对手的手牌而不是当前玩家的手牌
-        (next.data as any).optionsGenerator = (state: any) => {
-            const nextTargetPlayer = state.core.players[targetPlayerId];
-            return nextTargetPlayer ? buildHandOptions(nextTargetPlayer.hand) : [];
-        };
-
-        return { state: queueInteraction(state, next), events: [] };
-    });
-
-    // 探测最终步：执行弃牌
-    registerInteractionHandler('alien_probe', (state, _playerId, value, _iData, _random, timestamp) => {
-        const { cardUid, targetPlayerId } = value as { cardUid: string; targetPlayerId: string };
-        const targetPlayer = state.core.players[targetPlayerId];
-
-        if (!targetPlayer) return { state, events: [] };
-
-        const card = targetPlayer.hand.find(c => c.uid === cardUid);
-        if (!card) return { state, events: [] };
-
-        // 生成弃牌事件
-        const event: CardsDiscardedEvent = {
-            type: SU_EVENTS.CARDS_DISCARDED,
-            payload: {
-                playerId: targetPlayerId,
-                cardUids: [card.uid],
-            },
-            timestamp,
-        };
-
-        return { state, events: [event] };
-    });
-
-    // 地形改造：第一步选被替换基地，第二步从基地牌库选择替换目标
-    registerInteractionHandler('alien_terraform', (state, playerId, value, _iData, _random, timestamp) => {
-        const { baseIndex } = value as { baseIndex: number };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        if (state.core.baseDeck.length === 0) {
-            // 基地牌库为空，无法替换，给出反馈
-            return { state, events: [buildAbilityFeedback(playerId, 'feedback.base_deck_empty', timestamp)] };
-        }
-
-        const options = state.core.baseDeck.map((baseDefId, index) => {
-            const baseDef = getBaseDef(baseDefId);
-            return {
-                id: `replacement-${index}`,
-                label: baseDef?.name ?? baseDefId,
-                value: { newBaseDefId: baseDefId, baseDefId },
-                displayMode: 'card' as const,
-            };
-        });
-
-        const next = createSimpleChoice(
-            `alien_terraform_choose_replacement_${timestamp}`,
-            playerId,
-            '地形改造：从基地牌库中选择一张基地进行替换',
-            options,
-            { sourceId: 'alien_terraform_choose_replacement', targetType: 'generic' },
-        );
-
-        return {
-            state: queueInteraction(state, {
-                ...next,
-                data: {
-                    ...next.data,
-                    continuationContext: {
-                        baseIndex,
-                        oldBaseDefId: base.defId,
-                    },
-                },
-            }),
-            events: [],
-        };
-    });
-
-    // 地形改造：第二步执行替换 + 洗混基地牌库 + 创建“在新基地额外打随从”交互
-    registerInteractionHandler('alien_terraform_choose_replacement', (state, playerId, value, iData, random, timestamp) => {
-        const { newBaseDefId } = value as { newBaseDefId?: string };
-        const ctx = iData?.continuationContext as { baseIndex: number; oldBaseDefId: string } | undefined;
-        if (!ctx || !newBaseDefId) return undefined;
-
-        const base = state.core.bases[ctx.baseIndex];
-        if (!base) return undefined;
-
-        const events: SmashUpEvent[] = [];
-
-        // 先分离该基地上所有 ongoing 行动卡
-        for (const action of base.ongoingActions) {
-            events.push({
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: { cardUid: action.uid, defId: action.defId, ownerId: action.ownerId, reason: 'alien_terraform' },
-                timestamp,
-            } as OngoingDetachedEvent);
-        }
-
-        // 替换基地（保留随从，旧基地回牌库）
-        events.push({
-            type: SU_EVENTS.BASE_REPLACED,
-            payload: {
-                baseIndex: ctx.baseIndex,
-                oldBaseDefId: ctx.oldBaseDefId,
-                newBaseDefId,
-                keepCards: true,
-            },
-            timestamp,
-        } as BaseReplacedEvent);
-
-        // 洗混基地牌库（BASE_REPLACED reducer 会把旧基地放回牌库并移除新基地）
-        // 计算替换后的牌库内容：移除 newBaseDefId，加入 oldBaseDefId
-        const remainingDeck = state.core.baseDeck.filter(id => id !== newBaseDefId);
-        const deckWithOld = [...remainingDeck, ctx.oldBaseDefId];
-        const shuffled = [...deckWithOld];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(random.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        events.push(shuffleBaseDeck(shuffled, 'alien_terraform', timestamp));
-
-        // 可选：在新基地额外打出一个随从（通过链式交互固化基地限定，避免全局额度泄漏）
-        const player = state.core.players[playerId];
-        const minionCards = player.hand.filter(card => card.type === 'minion');
-        if (minionCards.length === 0) {
-            return { state, events };
-        }
-
-        const titanOptions = getSetAsideTitansPlayableAs(state.core, playerId, 'minion').map((titan, index) => {
-            const def = getCardDef(titan.defId);
-            return {
-                id: `setaside-titan-${index}`,
-                label: def?.name ?? titan.defId,
-                value: { titanUid: titan.uid, defId: titan.defId, playKind: 'minion' } satisfies CardOrTitanChoiceValue,
-                _source: 'hand' as const,
-                displayMode: 'card' as const,
-            };
-        });
-
-        const options: Array<{
-            id: string;
-            label: string;
-            value: CardOrTitanChoiceValue;
-            displayMode: 'button' | 'card';
-        }> = [
-                { id: 'skip', label: '跳过额外随从', value: { skip: true, defId: '__skip__' }, displayMode: 'button' as const },
-                ...minionCards.map((card, index) => {
-                    const def = getCardDef(card.defId) as MinionCardDef | undefined;
-                    const power = def?.power ?? 0;
-                    return {
-                        id: `hand-minion-${index}`,
-                        label: `${def?.name ?? card.defId} (力量 ${power})`,
-                        value: { cardUid: card.uid, defId: card.defId },
-                        _source: 'hand' as const,
-                        displayMode: 'card' as const,
-                    };
-                }),
-                ...titanOptions,
-            ];
-
-        const interaction = createSimpleChoice(
-            `alien_terraform_play_minion_${timestamp}`,
-            playerId,
-            '适居化：你可以在新基地上额外打出一个随从',
-            options,
-            { sourceId: 'alien_terraform_play_minion', targetType: 'hand' },
-        );
-
-        return {
-            state: queueInteraction(state, {
-                ...interaction,
-                data: {
-                    ...interaction.data,
-                    continuationContext: { newBaseIndex: ctx.baseIndex },
-                },
-            }),
-            events,
-        };
-    });
-
-    // 地形改造：第三步在“新基地”可选打出一个手牌随从（原子发放额度并立即消耗）
-    registerInteractionHandler('alien_terraform_play_minion', (state, playerId, value, iData, _random, timestamp) => {
-        const selected = value as CardOrTitanChoiceValue;
-        if (selected.skip) return { state, events: [] };
-
-        const ctx = iData?.continuationContext as { newBaseIndex: number } | undefined;
-        if (!ctx) return { state, events: [] };
-        const targetBase = state.core.bases[ctx.newBaseIndex];
-        if (!targetBase) return { state, events: [] };
-
-        if (selected.titanUid) {
-            const selectedTitan = state.core.titans?.find((titan) =>
-                titan.uid === selected.titanUid
-                && titan.defId === selected.defId
-                && titan.ownerId === playerId
-                && titan.location.zone === 'setaside',
-            );
-            if (!selectedTitan || !canControllerPlayTitan(state.core, playerId, selectedTitan.uid)) return { state, events: [] };
-
-            return {
-                state,
-                events: [
-                    playTitan(
-                        selectedTitan,
-                        playerId,
-                        ctx.newBaseIndex,
-                        'alien_terraform',
-                        timestamp,
-                        targetBase.defId,
-                    ),
-                ],
-            };
-        }
-
-        const player = state.core.players[playerId];
-        const selectedCard = player.hand.find(card =>
-            card.uid === selected.cardUid &&
-            card.defId === selected.defId &&
-            card.type === 'minion',
-        );
-        if (!selectedCard) return { state, events: [] };
-
-        const def = getCardDef(selectedCard.defId) as MinionCardDef | undefined;
-        const power = def?.power ?? 0;
-
-        const playedEvt: MinionPlayedEvent = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid: selectedCard.uid, defId: selectedCard.defId, baseIndex: ctx.newBaseIndex, baseDefId: targetBase.defId, power },
-            timestamp,
-        };
-        return {
-            state,
-            events: [
-                grantExtraMinion(playerId, 'alien_terraform', timestamp),
-                playedEvt,
-            ],
-        };
-    });
-
-    // 侦察兵：基地记分后选择是否回手（链式处理多个侦察兵）
-    registerInteractionHandler('alien_scout_return', (state, playerId, value, iData, _random, timestamp) => {
-        const selected = value as { returnIt: boolean; minionUid?: string; minionDefId?: string; owner?: string; baseIndex?: number };
-        const ctx = iData?.continuationContext as { remaining: { uid: string; defId: string; owner: string; controller: string; baseIndex: number }[] } | undefined;
-        const events: SmashUpEvent[] = [];
-
-        if (selected.returnIt && selected.minionUid && selected.minionDefId && selected.owner !== undefined && selected.baseIndex !== undefined) {
-            const base = state.core.bases[selected.baseIndex];
-            const stillThere = !!base?.minions?.some(m => m.uid === selected.minionUid);
-            if (!stillThere) {
-                // 过期选择：侦察兵已离开基地（被消灭/移动），不再回手
-                // 仍继续处理 remaining 链
-            } else {
-            events.push({
-                type: SU_EVENTS.MINION_RETURNED,
-                payload: { minionUid: selected.minionUid, minionDefId: selected.minionDefId, fromBaseIndex: selected.baseIndex, toPlayerId: selected.owner, reason: 'alien_scout', sourcePlayerId: playerId },
-                timestamp,
-            } as MinionReturnedEvent);
-            }
-        }
-
-        const remaining = ctx?.remaining ?? [];
-        if (remaining.length > 0) {
-            const next = remaining[0];
-            const rest = remaining.slice(1);
-            const base = state.core.bases[next.baseIndex];
-            const interaction = createSimpleChoice(
-                `alien_scout_return_${timestamp}`, next.controller, '侦察兵：基地记分后，是否将此侦察兵返回手牌？',
-                [
-                    { id: 'yes', label: '返回手牌', value: { returnIt: true, minionUid: next.uid, minionDefId: next.defId, owner: next.owner, baseIndex: next.baseIndex, baseDefId: base.defId }, displayMode: 'card' as const },
-                    { id: 'no', label: '留在基地', value: { returnIt: false }, displayMode: 'button' as const },
-                ],
-                { sourceId: 'alien_scout_return', targetType: 'minion' }
-            );
-            return { state: queueInteraction(state, { ...interaction, data: { ...interaction.data, continuationContext: { remaining: rest } } }), events };
-        }
-
-        return { state, events };
-    });
-
-    // 绑架：返回随从到手牌 + 额外出一个随从
-    registerInteractionHandler('alien_abduction', (state, playerId, value, _iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number; defId: string };
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        const events: SmashUpEvent[] = [];
-        // 保护检查已在 buildMinionTargetOptions 中完成，这里不需要重复检查
-        const returnEvent = {
-            type: SU_EVENTS.MINION_RETURNED,
-            payload: { minionUid: target.uid, minionDefId: target.defId, fromBaseIndex: baseIndex, toPlayerId: target.owner, reason: 'alien_abduction', sourcePlayerId: playerId },
-            timestamp,
-        } as MinionReturnedEvent;
-        events.push(returnEvent);
-        // 额外随从额度
-        events.push(grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'alien_abduction'));
-        return { state, events };
-    });
-}
-
 

@@ -68,6 +68,8 @@ interface BonusDieOverlayProps {
     summaryEffectKey?: string;
     /** 多骰汇总文本参数 */
     summaryEffectParams?: Record<string, string | number>;
+    /** 已由 modal stack 承载时，禁止再次 portal */
+    usePortal?: boolean;
 }
 
 export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
@@ -93,6 +95,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
     characterId,
     summaryEffectKey,
     summaryEffectParams,
+    usePortal,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
     // 只要有 bonusDice 就进入多骰模式，不依赖 onReroll 或 displayOnly
@@ -198,9 +201,10 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
             : bonusDice.length >= 5
                 ? '0.8vw'
                 : '1.2vw';
-        // 只有真正可重掷时才保持交互态；展示模式或无资源时都自动关闭/允许点背景关闭
-        const isInteractive = !displayOnly && canReroll === true;
-        const shouldDisableAutoClose = isManualCloseOnly || isInteractive;
+        // 阻塞式奖励骰结算必须始终保留显式确认入口；是否还能点骰子重掷是另一层语义。
+        const requiresExplicitSettlement = !displayOnly && typeof onSkipReroll === 'function';
+        const canSelectDieToReroll = canReroll === true;
+        const shouldDisableAutoClose = isManualCloseOnly || requiresExplicitSettlement;
 
         bonusDieOverlayLogger.info('render-reroll', {
             total,
@@ -218,13 +222,14 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                 isVisible={isVisible}
                 onClose={handleOverlayClose}
                 disableAutoClose={shouldDisableAutoClose && !hasForceAutoClose}
-                disableBackdropClose={isInteractive}
-                blockPointerEvents={isInteractive}
+                disableBackdropClose={requiresExplicitSettlement}
+                blockPointerEvents={requiresExplicitSettlement}
                 autoCloseDelay={resolvedAutoCloseDelay}
                 zIndex={UI_Z_INDEX.overlayRaised + 100}
-                closeOnContentClick={!isInteractive}
+                closeOnContentClick={!requiresExplicitSettlement}
                 // 奖励骰特写保留短保护窗，避免触发它的同一次点击立刻关闭
                 closeClickGuardMs={BONUS_DIE_CLOSE_CLICK_GUARD_MS}
+                usePortal={usePortal}
             >
                 <div className="flex flex-col items-center gap-[1.5vw]" data-testid="bonus-die-overlay">
                     {/* 提示文字 - DiceThrone 风格 */}
@@ -251,16 +256,19 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                         data-testid={isSingleDieRerollSpotlight ? 'bonus-die-single-reroll-spotlight' : 'bonus-die-multi-reroll-spotlight'}
                     >
                         {bonusDice.map((die) => (
-                            <motion.div
+                            <motion.button
                                 key={die.index}
+                                type="button"
                                 initial={{ scale: 0.5, opacity: 0 }}
                                 animate={{ scale: 1, opacity: 1 }}
                                 transition={{ delay: die.index * 0.15 }}
-                                className={`relative ${
-                                    canReroll
+                                className={`relative bg-transparent border-0 p-0 ${
+                                    canSelectDieToReroll
                                         ? 'cursor-pointer hover:scale-110 transition-transform'
                                         : ''
                                 }`}
+                                data-testid={`bonus-die-reroll-option-${die.index}`}
+                                disabled={!canSelectDieToReroll}
                                 onClick={() => handleDieClick(die.index)}
                             >
                                 <BonusDieSpotlightContent
@@ -275,7 +283,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                                     compact={!isSingleDieRerollSpotlight}
                                     hideEffectText={!isSingleDieRerollSpotlight && bonusDice.length > 1}
                                 />
-                                {canReroll && (
+                                {canSelectDieToReroll && (
                                     <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
                                         <div className="bg-amber-600/80 rounded-full p-[0.5vw] border border-amber-300/50 shadow-[0_0_12px_rgba(245,158,11,0.4)]">
                                             <svg className="w-[2vw] h-[2vw] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -284,7 +292,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                                         </div>
                                     </div>
                                 )}
-                            </motion.div>
+                            </motion.button>
                         ))}
                     </div>
 
@@ -319,7 +327,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                     )}
 
                     {/* 操作按钮：只有可重掷时才显示确认入口 */}
-                    {isInteractive && (
+                    {requiresExplicitSettlement && (
                         <motion.div
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
@@ -362,6 +370,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
             zIndex={UI_Z_INDEX.overlayRaised + 100}
             // 奖励骰特写保留短保护窗，避免触发它的同一次点击立刻关闭
             closeClickGuardMs={BONUS_DIE_CLOSE_CLICK_GUARD_MS}
+            usePortal={usePortal}
         >
             <div data-testid="bonus-die-overlay">
                 <BonusDieSpotlightContent

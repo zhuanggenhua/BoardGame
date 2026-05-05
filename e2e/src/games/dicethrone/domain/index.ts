@@ -5,7 +5,7 @@
 import type { DomainCore, GameOverResult, PlayerId, RandomFn } from '../../../engine/types';
 import { registerDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
-import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent, HeroState, CharacterId, TurnPhase, InteractionDescriptor, DtResponseWindowType, SeatControllerKind } from './types';
+import type { DiceThroneCore, DiceThroneCommand, DiceThroneEvent, HeroState, CharacterId, TurnPhase, InteractionDescriptor, DtResponseWindowType, SeatControllerKind, PendingDefenderChoice } from './types';
 import { INITIAL_HEALTH } from './types';
 import { RESOURCE_IDS } from './resources';
 import { validateCommand } from './commandValidation';
@@ -166,8 +166,11 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
         // dt:card-interaction：data 直接是 PendingInteraction（状态选择类）
         // multistep-choice：骰子类交互，从 meta 构造兼容的 InteractionDescriptor
         let pendingInteraction: InteractionDescriptor | undefined;
+        let pendingDefenderChoice: PendingDefenderChoice | undefined;
         if (interaction?.kind === 'dt:card-interaction') {
             pendingInteraction = interaction.data as InteractionDescriptor;
+        } else if (interaction?.kind === 'dt:defender-choice') {
+            pendingDefenderChoice = interaction.data as PendingDefenderChoice;
         } else if (interaction?.kind === 'multistep-choice') {
             const data = (interaction.data as Record<string, unknown> | undefined) ?? {};
             const meta = data.meta as Record<string, unknown> | undefined;
@@ -200,7 +203,7 @@ export const DiceThroneDomain: DomainCore<DiceThroneCore, DiceThroneCommand, Dic
             }
         }
 
-        return validateCommand(state.core, command, phase, pendingInteraction, responseWindowType);
+        return validateCommand(state.core, command, phase, pendingInteraction, pendingDefenderChoice, responseWindowType);
     },
     execute: (state, command, random) => execute(state, command, random),
     reduce,

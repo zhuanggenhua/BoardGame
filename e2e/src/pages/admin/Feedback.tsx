@@ -313,7 +313,7 @@ function MetaBadge({ children, tone = 'bg-zinc-100 text-zinc-600' }: { children:
 }
 
 export default function AdminFeedbackPage() {
-    const { token } = useAuth();
+    const { token, user } = useAuth();
     const { success, error } = useToast();
     const { t } = useTranslation('admin');
 
@@ -343,6 +343,7 @@ export default function AdminFeedbackPage() {
     const [reporterTypeFilter, setReporterTypeFilter] = useState<string>('user');
     const [sourceFilter, setSourceFilter] = useState<string>('all');
     const [sortFilter, setSortFilter] = useState<string>('newest');
+    const [preferMineFilter, setPreferMineFilter] = useState(false);
     const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
     const [activeId, setActiveId] = useState<string | null>(null);
     const [isPolling, setIsPolling] = useState(false);
@@ -378,6 +379,7 @@ export default function AdminFeedbackPage() {
             if (reporterTypeFilter !== 'all') params.set('reporterType', reporterTypeFilter);
             if (sourceFilter !== 'all') params.set('source', sourceFilter);
             if (sortFilter) params.set('sort', sortFilter);
+            if (preferMineFilter) params.set('preferMine', 'true');
 
             const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
             const response = await fetch(`${ADMIN_API_URL}/feedback?${params}`, {
@@ -400,7 +402,7 @@ export default function AdminFeedbackPage() {
                 setIsPolling(false);
             }
         }
-    }, [error, page, reporterTypeFilter, severityFilter, sortFilter, sourceFilter, statusFilter, t, token, typeFilter]);
+    }, [error, page, preferMineFilter, reporterTypeFilter, severityFilter, sortFilter, sourceFilter, statusFilter, t, token, typeFilter]);
 
     useEffect(() => {
         fetchFeedbacks();
@@ -408,7 +410,7 @@ export default function AdminFeedbackPage() {
 
     useEffect(() => {
         setPage(1);
-    }, [statusFilter, typeFilter, severityFilter, reporterTypeFilter, sourceFilter, sortFilter]);
+    }, [statusFilter, typeFilter, severityFilter, reporterTypeFilter, sourceFilter, sortFilter, preferMineFilter]);
 
     useEffect(() => {
         if (reporterTypeFilter !== 'system' && sourceFilter !== 'all') {
@@ -733,6 +735,20 @@ export default function AdminFeedbackPage() {
                             </FilterTab>
                         ))}
                     </div>
+
+                    {user && (
+                        <div className="flex flex-wrap items-center gap-1">
+                            <span className="mr-1 text-[10px] font-medium uppercase tracking-wide text-zinc-400">
+                                {t('feedback.filters.priority')}
+                            </span>
+                            <FilterTab
+                                active={preferMineFilter}
+                                onClick={() => setPreferMineFilter((prev) => !prev)}
+                            >
+                                {t('feedback.filters.preferMine')}
+                            </FilterTab>
+                        </div>
+                    )}
                 </div>
             </div>
 

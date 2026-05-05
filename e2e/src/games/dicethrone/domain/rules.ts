@@ -1193,7 +1193,7 @@ const actionNeedsSelectedDefender = (
             || rollBranchNeedsSelectedDefender(action.defaultEffect);
     }
 
-    if (action.target === 'opponent' || action.target === 'select') {
+    if (action.target === 'opponent') {
         return true;
     }
 

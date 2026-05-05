@@ -16,6 +16,7 @@ import type { OngoingActionOnBase } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { grantExtraMinion } from '../domain/abilityHelpers';
 import { clearRegistry } from '../domain/abilityRegistry';
+import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import {
@@ -368,12 +369,10 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
         const chooseMinionInteraction = getInteractionsFromMS(ms)[0];
         expect(chooseMinionInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_minion');
 
-        const chooseMinion = getInteractionHandler('steampunk_zeppelin_choose_minion');
-        const chooseBase = getInteractionHandler('steampunk_zeppelin_choose_base');
-        const legacyHandler = getInteractionHandler('steampunk_zeppelin');
+        const chooseMinion = getAbilityRuntimePromptHandler('steampunk_zeppelin_choose_minion');
+        const chooseBase = getAbilityRuntimePromptHandler('steampunk_zeppelin_choose_base');
         expect(chooseMinion).toBeDefined();
         expect(chooseBase).toBeDefined();
-        expect(legacyHandler).toBeDefined();
 
         const step1 = chooseMinion!(
             ms,
@@ -414,16 +413,6 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
             2101,
         );
         expect(step2?.events ?? []).toHaveLength(0);
-
-        const legacy = legacyHandler!(
-            makeMatchState(staleCore),
-            '0',
-            { minionUid: 'm2', minionDefId: 'pirate_saucy_wench', fromBase: 1, toBase: 0 },
-            undefined,
-            defaultRandom,
-            2102,
-        );
-        expect(legacy?.events ?? []).toHaveLength(0);
     });
 
     it('从其他基地选择随从时，第二步只能移动到齐柏林所在基地', () => {
@@ -451,18 +440,26 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
             ],
         });
 
-        const chooseMinion = getInteractionHandler('steampunk_zeppelin_choose_minion');
+        const ms = makeMatchState(core);
+        execute(ms, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const chooseMinionInteraction = getInteractionsFromMS(ms)[0];
+        const chooseMinion = getAbilityRuntimePromptHandler('steampunk_zeppelin_choose_minion');
         expect(chooseMinion).toBeDefined();
 
         const result = chooseMinion!(
-            makeMatchState(core),
+            ms,
             '0',
             { minionUid: 'away-minion', baseIndex: 1 },
-            { continuationContext: { zepBaseIndex: 0 } } as any,
+            chooseMinionInteraction?.data,
             defaultRandom,
             2200,
         );
-        const chooseBaseInteraction = result ? getInteractionsFromMS(result.state)[0] : undefined;
+        const chooseBaseInteraction = result ? (result.state.sys as any)?.interaction?.queue?.[0] : undefined;
         const options = chooseBaseInteraction?.data?.options ?? [];
         expect(chooseBaseInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_base');
         expect(chooseBaseInteraction?.data?.autoResolveIfSingle).toBe(true);
@@ -495,18 +492,26 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
             ],
         });
 
-        const chooseMinion = getInteractionHandler('steampunk_zeppelin_choose_minion');
+        const ms = makeMatchState(core);
+        execute(ms, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
+        } as any, defaultRandom);
+
+        const chooseMinionInteraction = getInteractionsFromMS(ms)[0];
+        const chooseMinion = getAbilityRuntimePromptHandler('steampunk_zeppelin_choose_minion');
         expect(chooseMinion).toBeDefined();
 
         const result = chooseMinion!(
-            makeMatchState(core),
+            ms,
             '0',
             { minionUid: 'home-minion', baseIndex: 0 },
-            { continuationContext: { zepBaseIndex: 0 } } as any,
+            chooseMinionInteraction?.data,
             defaultRandom,
             2201,
         );
-        const chooseBaseInteraction = result ? getInteractionsFromMS(result.state)[0] : undefined;
+        const chooseBaseInteraction = result ? (result.state.sys as any)?.interaction?.queue?.[0] : undefined;
         const options = chooseBaseInteraction?.data?.options ?? [];
         expect(chooseBaseInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_base');
         expect(options).toHaveLength(2);

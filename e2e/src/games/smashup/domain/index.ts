@@ -75,6 +75,7 @@ import { collectBaseAbilityTriggers, collectExtendedBaseAbilityTriggers } from '
 import { buildBaseTargetOptions, createSkipOption, isSpecialLimitBlocked } from './abilityHelpers';
 import type { PhaseExitResult } from '../../../engine/systems/FlowSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
+import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import type { SpecialAfterScoringConsumedEvent } from './types';
 import { queueImmediateExtraPlayInteractions } from './extraPlay';
@@ -277,7 +278,7 @@ function buildMultiBaseScoringInteraction(
 
     const hintByBaseIndex = new Map(candidates.map(candidate => [candidate.baseIndex, candidate.estimatedSwing]));
 
-    return createSimpleChoice(
+    return createAbilityRuntimeSimpleChoice(
         `multi_base_scoring_${now}`,
         playerId,
         candidates.length === 1 ? '计分最后一个基地' : '选择先计分的基地',
@@ -852,31 +853,34 @@ export function scoreOneBase(
 }
 
 export function registerMultiBaseScoringInteractionHandler(): void {
-    registerInteractionHandler('multi_base_scoring', (state, _playerId, value) => {
-        const { baseIndex } = value as { baseIndex?: number };
-        if (baseIndex === undefined) {
-            return { state, events: [] };
-        }
-
-        const baseRef = createScoringBaseRef(state.core, baseIndex);
-        if (!baseRef) {
-            return { state, events: [] };
-        }
-
-        const nextState = ensureScoreBasesSession(state);
-        return {
-            state: updateScoringSession(nextState, (session) => session
-                ? {
-                    ...session,
-                    currentBaseRef: baseRef,
-                    currentStep: 'resolving-base',
-                }
-                : session,
-            ),
-            events: [],
-        };
-    });
+    // `multi_base_scoring` 已由 ability runtime prompt 接管。
+    // 保留该入口作为幂等初始化点，避免旧初始化流程重复注册第二条续链。
 }
+
+registerAbilityRuntimePrompt('multi_base_scoring', (state, _playerId, value) => {
+    const { baseIndex } = value as { baseIndex?: number };
+    if (baseIndex === undefined) {
+        return { state, events: [] };
+    }
+
+    const baseRef = createScoringBaseRef(state.core, baseIndex);
+    if (!baseRef) {
+        return { state, events: [] };
+    }
+
+    const nextState = ensureScoreBasesSession(state);
+    return {
+        state: updateScoringSession(nextState, (session) => session
+            ? {
+                ...session,
+                currentBaseRef: baseRef,
+                currentStep: 'resolving-base',
+            }
+            : session,
+        ),
+        events: [],
+    };
+});
 
 function applyEventsForStartTurnSimulation(
     core: SmashUpCore,
@@ -917,6 +921,27 @@ function keepSysUpdatesOnly(
         ...updatedState,
         core: baseState.core,
     };
+}
+
+function hasPendingPhaseReactionFrame(
+    core: SmashUpCore,
+    phase: GamePhase,
+    state: MatchState<SmashUpCore>,
+): boolean {
+    const activeSession = getSmashUpReactionSession(state);
+    if (activeSession) {
+        if (phase === 'startTurn' && activeSession.frameId.startsWith('turn-start:')) {
+            return true;
+        }
+        if (phase === 'endTurn' && activeSession.frameId.startsWith('turn-end:')) {
+            return true;
+        }
+    }
+
+    const framePrefix = phase === 'startTurn' ? 'turn-start:' : phase === 'endTurn' ? 'turn-end:' : '';
+    if (!framePrefix) return false;
+
+    return (core.triggerQueue ?? []).some(trigger => trigger.frameId?.startsWith(framePrefix));
 }
 
 function processImmediateStartTurnMinionTriggers(
@@ -1172,6 +1197,21 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         const now = typeof command.timestamp === 'number' ? command.timestamp : 0;
 
         if (from === 'endTurn') {
+            const resumedAfterTurnEndReactionResolution =
+                !!state.sys.flowHalted
+                && !state.sys.interaction?.current
+                && !getSmashUpReactionSession(state)
+                && !(state.core.triggerQueue ?? []).some(trigger => trigger.frameId?.startsWith('turn-end:'));
+
+            if (resumedAfterTurnEndReactionResolution) {
+                const nextIndex = (core.currentPlayerIndex + 1) % core.turnOrder.length;
+                return [{
+                    type: SU_EVENTS.TURN_ENDED,
+                    payload: { playerId: pid, nextPlayerIndex: nextIndex },
+                    timestamp: now,
+                } as TurnEndedEvent];
+            }
+
             const events: SmashUpEvent[] = [];
             let currentMatchState: MatchState<SmashUpCore> = state;
             let hasPendingTurnEndResolution = false;
@@ -1629,10 +1669,17 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         return events;
     },
 
-    onAutoContinueCheck({ state }): { autoContinue: boolean; playerId: PlayerId } | void {
+    onAutoContinueCheck({ state, events }): { autoContinue: boolean; playerId: PlayerId } | void {
         const core = state.core;
         const pid = getCurrentPlayerId(core);
         const phase = state.sys.phase as GamePhase;
+        const justResolvedSmashUpReactionChoice = events.some((event) => {
+            if (event.type !== 'SYS_INTERACTION_RESOLVED' && event.type !== 'SYS_INTERACTION_CANCELLED') {
+                return false;
+            }
+            const payload = event.payload as { sourceId?: unknown } | undefined;
+            return payload?.sourceId === 'smashup_reaction_choose';
+        });
 
         if (phase === 'factionSelect' && !core.factionSelection) {
             return { autoContinue: true, playerId: pid };
@@ -1655,11 +1702,20 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             if ((state.sys as any)._waitForStartTurnInteractionReduce) {
                 return undefined;
             }
+            if (justResolvedSmashUpReactionChoice) {
+                return undefined;
+            }
+            if (hasPendingPhaseReactionFrame(core, phase, state)) {
+                return undefined;
+            }
             return { autoContinue: true, playerId: pid };
         }
 
         if (phase === 'scoreBases') {
             if (getSmashUpReactionSession(state)) {
+                return undefined;
+            }
+            if (state.sys.responseWindow?.current) {
                 return undefined;
             }
             if ((state.sys as any)._waitForScoreBasesInteractionReduce) {
@@ -1706,6 +1762,12 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         }
 
         if (phase === 'endTurn') {
+            if (justResolvedSmashUpReactionChoice) {
+                return undefined;
+            }
+            if (hasPendingPhaseReactionFrame(core, phase, state)) {
+                return undefined;
+            }
             return { autoContinue: true, playerId: pid };
         }
     },
@@ -2165,7 +2227,9 @@ function postProcessSystemEvents(
             }
 
             const payload = event.payload;
-            if (payload.fromDeck || payload.fromDiscard || payload.fromBuried) {
+            if (!inputEventsAlreadyReduced) {
+                tempCore = reduce(tempCore, event);
+            } else if (payload.fromDeck || payload.fromDiscard || payload.fromBuried) {
                 tempCore = reduce(tempCore, event);
             }
             

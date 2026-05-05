@@ -4,7 +4,13 @@ import type { SmashUpCore, SmashUpEvent, BuriedCardOnBase, MinionPlayedEvent, On
 import { SU_EVENTS } from './types';
 import { registerInteractionHandler, type InteractionHandler } from './abilityInteractionHandlers';
 import { getBaseDef, getCardDef } from '../data/cards';
-import { resolveOnPlay, resolveOnUncover, resolveSpecial } from './abilityRegistry';
+import {
+    requireOnPlay,
+    requireSpecial,
+    resolveOnPlay,
+    resolveOnUncover,
+    resolveSpecial,
+} from './abilityRegistry';
 import type { AbilityContext } from './abilityRegistry';
 import { buildActionPlayedEvent } from './actionPlayEvent';
 import { collectTriggers } from './ongoingEffects';
@@ -47,6 +53,17 @@ type ExecuteUncoveredActionParams = {
     targetMinionUid?: string;
     targetBaseIndex?: number;
 };
+
+function requireUncoveredActionExecutor(
+    defId: string,
+    subtype: string,
+): NonNullable<ReturnType<typeof resolveOnPlay> | ReturnType<typeof resolveSpecial>> {
+    if (subtype === 'special') {
+        if (resolveSpecial(defId)) return requireSpecial(defId, 'bury.executeUncoveredAction');
+        return requireOnPlay(defId, 'bury.executeUncoveredAction');
+    }
+    return requireOnPlay(defId, 'bury.executeUncoveredAction');
+}
 
 type BuildBuriedCardReturnedToHandEventParams = {
     core: SmashUpCore;
@@ -328,10 +345,10 @@ function executeUncoveredAction(params: ExecuteUncoveredActionParams): {
         }
     }
 
-    const executor = subtype === 'special'
-        ? (resolveSpecial(buried.defId) ?? resolveOnPlay(buried.defId))
-        : resolveOnPlay(buried.defId);
-    if (executor) {
+    if (subtype !== 'ongoing' || resolveOnPlay(buried.defId)) {
+        const executor = subtype === 'ongoing'
+            ? requireOnPlay(buried.defId, 'bury.executeUncoveredAction.ongoing')
+            : requireUncoveredActionExecutor(buried.defId, subtype);
         const ctx: AbilityContext = {
             state: currentState.core,
             matchState: currentState,

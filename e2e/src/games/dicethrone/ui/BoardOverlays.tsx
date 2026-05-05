@@ -12,7 +12,6 @@ import { OptimizedImage } from '../../../components/common/media/OptimizedImage'
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { BonusDieOverlay } from './BonusDieOverlay';
 import { CardSpotlightOverlay } from './CardSpotlightOverlay';
-import { CompareRollOverlay } from './CompareRollOverlay';
 import { EndgameOverlay } from '../../../components/game/framework/widgets/EndgameOverlay';
 import { RematchActions } from '../../../components/game/framework/widgets/RematchActions';
 import { DiceThroneEndgameContent, renderDiceThroneButton } from './DiceThroneEndgame';
@@ -20,7 +19,6 @@ import type { StatusAtlases } from './statusEffects';
 import type { AbilityCard, DieFace, HeroState, PendingBonusDiceSettlement, CharacterId, TurnPhase } from '../domain/types';
 import type { PlayerId } from '../../../engine/types';
 import type { CardSpotlightItem } from './CardSpotlightOverlay';
-import { INTERACTION_COMMANDS, type CompareRollChoiceData } from '../../../engine/systems/InteractionSystem';
 import {
     getAbilitySlotLayoutForCharacter,
     getPlayerBoardAspectRatio,
@@ -48,13 +46,6 @@ export interface BoardOverlaysProps {
     playerNames: Record<PlayerId, string>;
     seatingOrder?: PlayerId[];
     teamIdByPlayerId?: Record<PlayerId, string>;
-    // 对比掷骰特写（compare-roll-choice）
-    compareRoll?: CompareRollChoiceData<{
-        statusId?: string;
-        tokenId?: string;
-        value: number;
-        customId?: string;
-    }> & { id: string; playerId: string };
 
     // 卡牌特写
     cardSpotlightQueue: CardSpotlightItem[];
@@ -78,6 +69,7 @@ export interface BoardOverlaysProps {
         characterId?: string;
     };
     onBonusDieClose: () => void;
+    suppressBonusDieOverlay?: boolean;
 
     // 奖励骰重掷交互
     pendingBonusDiceSettlement?: PendingBonusDiceSettlement;
@@ -97,7 +89,6 @@ export interface BoardOverlaysProps {
     // 其他
     statusIconAtlas?: StatusAtlases | null;
     locale: string;
-    dispatch: (type: string, payload?: unknown) => void;
     currentPhase: TurnPhase;
 
     // 选角相关
@@ -152,6 +143,8 @@ const MagnifyUpgradeOverlay: React.FC<{
 export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const { t } = useTranslation('game-dicethrone');
     const { ref: multiCardScrollRef, dragProps: multiCardDragProps } = useHorizontalDragScroll();
+    const shouldShowBonusDieOverlay = !props.suppressBonusDieOverlay
+        && (props.bonusDie.show || Boolean(props.pendingBonusDiceSettlement));
 
     // 调试日志：bonusDie prop
     React.useEffect(() => {
@@ -231,31 +224,15 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                     </MagnifyOverlay>
                 )}
 
-                {/* 对比掷骰特写（如枪手对决） */}
-                {props.compareRoll && (
-                    <CompareRollOverlay
-                        key="compare-roll"
-                        compareRoll={props.compareRoll}
-                        isVisible={true}
-                        locale={props.locale}
-                        onResolveOption={(optionId) => {
-                            props.dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
-                        }}
-                        onConfirm={() => {
-                            props.dispatch(INTERACTION_COMMANDS.CONFIRM, {});
-                        }}
-                    />
-                )}
-
                 {/* 额外骰子特写 / 重掷交互 */}
-                {(props.bonusDie.show || props.pendingBonusDiceSettlement) && (
+                {shouldShowBonusDieOverlay && (
                     <BonusDieOverlay
                         key="bonus-die"
                         value={props.bonusDie.value}
                         face={props.bonusDie.face}
                         effectKey={props.bonusDie.effectKey}
                         effectParams={props.bonusDie.effectParams}
-                        isVisible={props.bonusDie.show || Boolean(props.pendingBonusDiceSettlement)}
+                        isVisible={shouldShowBonusDieOverlay}
                         onClose={props.onBonusDieClose}
                         locale={props.locale}
                         bonusDice={props.pendingBonusDiceSettlement?.dice ?? props.bonusDie.bonusDice}

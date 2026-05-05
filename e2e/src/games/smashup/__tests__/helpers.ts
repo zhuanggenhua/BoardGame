@@ -228,9 +228,12 @@ export function callHandler(
     },
 ): SmashUpEvent[] {
     const ms = makeMatchState(args.state);
-    // 旧测试的 data 字段对应新 handler 中 iData.continuationContext
+    const hasRuntimePrompt = !!args.data && typeof args.data === 'object' && 'runtimePrompt' in args.data;
+    // 旧测试的 data 字段对应新 handler 中 iData.continuationContext；runtime prompt 则直接传原始 data
     const iData = args.data && Object.keys(args.data).length > 0
-        ? { continuationContext: args.data } as Record<string, unknown>
+        ? (hasRuntimePrompt
+            ? args.data
+            : { continuationContext: args.data } as Record<string, unknown>)
         : undefined;
     const result = handler(
         ms,
