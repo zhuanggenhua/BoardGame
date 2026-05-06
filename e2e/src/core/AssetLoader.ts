@@ -21,6 +21,8 @@ const COMPRESSED_SUBDIR = 'compressed';
 const LOCALIZED_ASSETS_SUBDIR = 'i18n';
 const VERSION_PARAM = 'v';
 const COMMON_AUDIO_BASE_PATH = 'common/audio';
+const IMAGE_READY_HINT_STORAGE_KEY = '__BG_IMAGE_READY_HINTS__';
+const IMAGE_READY_HINT_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 
 const normalizeAssetsBaseUrl = (value?: string) => {
     if (!value) return null;
@@ -74,6 +76,7 @@ let assetHashes: Record<string, string> = typeof __ASSET_HASHES__ !== 'undefined
 let localizedImageIndex: Record<string, 1> = typeof __LOCALIZED_IMAGE_INDEX__ !== 'undefined' ? __LOCALIZED_IMAGE_INDEX__ : {};
 const gameAssetBaseOverrides = new Map<string, string>();
 let commonAudioAssetBaseOverride: string | undefined;
+let persistentImageReadyHints: Map<string, number> | null = null;
 
 export function setAssetsBaseUrl(value?: string): void {
     assetsBaseUrl = normalizeAssetsBaseUrl(value) ?? resolveAssetsBaseUrlFromEnv(import.meta.env);
@@ -120,6 +123,27 @@ export function setAssetHashesForTesting(value?: Record<string, string>): void {
  */
 export function setLocalizedImageIndexForTesting(value?: Record<string, 1>): void {
     localizedImageIndex = value ?? {};
+}
+
+export function __resetAssetLoaderCachesForTests(options?: { keepPersistentHints?: boolean }): void {
+    preloadedImages.clear();
+    preloadedAudio.clear();
+    preloadFailCount.clear();
+    inFlightPreloads.clear();
+
+    if (options?.keepPersistentHints) {
+        persistentImageReadyHints = null;
+        return;
+    }
+
+    persistentImageReadyHints = new Map();
+    if (typeof window !== 'undefined') {
+        try {
+            window.localStorage.removeItem(IMAGE_READY_HINT_STORAGE_KEY);
+        } catch {
+            // ignore storage reset failures in tests
+        }
+    }
 }
 
 // ============================================================================
@@ -507,12 +531,7 @@ export function areAllCriticalImagesCached(
         if (!p) continue;
         const candidates = getLocalizedImageCandidateUrls(p, effectiveLocale);
         if (candidates.length === 0) return false;
-        const hasLoadedCandidate = candidates.some(candidate => {
-            const { webp } = getOptimizedImageUrls(candidate);
-            if (!webp) return false;
-            const el = preloadedImages.get(webp);
-            return !!el && el.naturalWidth > 0;
-        });
+        const hasLoadedCandidate = candidates.some((candidate) => hasImageReadyEvidence(candidate, effectiveLocale));
         if (!hasLoadedCandidate) return false;
     }
     return true;
@@ -683,18 +702,192 @@ function stripVersionParam(value: string): string {
     return nextQuery ? `${path}?${nextQuery}${hash}` : `${path}${hash}`;
 }
 
+function toCanonicalAssetCacheKey(value: string): string {
+    if (!isString(value) || !value || isPassthroughSource(value)) {
+        return '';
+    }
+
+    const normalized = assetsPath(value);
+    if (!normalized || isPassthroughSource(normalized)) {
+        return '';
+    }
+
+    const { path, query } = splitUrlParts(normalized);
+    const relativeKey = stripKnownAssetPrefixes(path);
+    if (!relativeKey) {
+        return '';
+    }
+
+    const version = new URLSearchParams(query).get(VERSION_PARAM);
+    return version ? `${relativeKey}?${VERSION_PARAM}=${version}` : relativeKey;
+}
+
+function getPersistentImageReadyHintKeys(src: string, locale?: string): string[] {
+    const keys = new Set<string>();
+    const normalizedKey = normalizePreloadedImageCacheKey(src, locale);
+    const normalizedCanonical = toCanonicalAssetCacheKey(normalizedKey);
+    if (normalizedCanonical) {
+        keys.add(normalizedCanonical);
+    }
+
+    const exactKey = assetsPath(src);
+    const exactCanonical = toCanonicalAssetCacheKey(exactKey);
+    if (exactCanonical) {
+        keys.add(exactCanonical);
+    }
+
+    return [...keys];
+}
+
+function loadPersistentImageReadyHints(): Map<string, number> {
+    if (persistentImageReadyHints) {
+        return persistentImageReadyHints;
+    }
+
+    const now = Date.now();
+    const hints = new Map<string, number>();
+
+    if (typeof window !== 'undefined') {
+        try {
+            const raw = window.localStorage.getItem(IMAGE_READY_HINT_STORAGE_KEY);
+            if (raw) {
+                const parsed = JSON.parse(raw) as Record<string, unknown>;
+                Object.entries(parsed).forEach(([key, value]) => {
+                    if (typeof value !== 'number' || !Number.isFinite(value)) {
+                        return;
+                    }
+                    if (now - value > IMAGE_READY_HINT_TTL_MS) {
+                        return;
+                    }
+                    hints.set(key, value);
+                });
+            }
+        } catch {
+            // ignore malformed / unavailable storage
+        }
+    }
+
+    persistentImageReadyHints = hints;
+    return hints;
+}
+
+function persistImageReadyHints(): void {
+    if (typeof window === 'undefined' || !persistentImageReadyHints) {
+        return;
+    }
+
+    try {
+        const serialized = JSON.stringify(Object.fromEntries(persistentImageReadyHints.entries()));
+        window.localStorage.setItem(IMAGE_READY_HINT_STORAGE_KEY, serialized);
+    } catch {
+        // ignore quota / storage failures
+    }
+}
+
+function rememberPersistentImageReadyHint(src: string, locale?: string): void {
+    const keys = getPersistentImageReadyHintKeys(src, locale);
+    if (keys.length === 0) {
+        return;
+    }
+
+    const hints = loadPersistentImageReadyHints();
+    const now = Date.now();
+    keys.forEach((key) => hints.set(key, now));
+    persistImageReadyHints();
+}
+
+function hasPersistentImageReadyHint(src: string, locale?: string): boolean {
+    const keys = getPersistentImageReadyHintKeys(src, locale);
+    if (keys.length === 0) {
+        return false;
+    }
+
+    const hints = loadPersistentImageReadyHints();
+    const now = Date.now();
+    let hit = false;
+
+    keys.forEach((key) => {
+        const timestamp = hints.get(key);
+        if (timestamp == null) {
+            return;
+        }
+        if (now - timestamp > IMAGE_READY_HINT_TTL_MS) {
+            hints.delete(key);
+            return;
+        }
+        hit = true;
+    });
+
+    if (!hit) {
+        persistImageReadyHints();
+    }
+
+    return hit;
+}
+
+function getSynchronousImageProbeUrls(src: string, locale?: string): string[] {
+    const urls = new Set<string>();
+    const exactKey = assetsPath(src);
+    if (exactKey) {
+        urls.add(exactKey);
+        urls.add(stripVersionParam(exactKey));
+    }
+
+    const normalizedKey = normalizePreloadedImageCacheKey(src, locale);
+    if (normalizedKey) {
+        urls.add(normalizedKey);
+        urls.add(stripVersionParam(normalizedKey));
+    }
+
+    return [...urls].filter(Boolean);
+}
+
+function probeSynchronousImageReady(src: string, locale?: string): boolean {
+    for (const url of getSynchronousImageProbeUrls(src, locale)) {
+        const testImg = new Image();
+        testImg.src = url;
+        if (testImg.complete && testImg.naturalWidth > 0) {
+            cacheLoadedImage(url, testImg, locale);
+            return true;
+        }
+    }
+    return false;
+}
+
+function hasImageReadyEvidence(src: string, locale?: string): boolean {
+    if (isImagePreloaded(src, locale)) {
+        return true;
+    }
+
+    if (probeSynchronousImageReady(src, locale)) {
+        return true;
+    }
+
+    return hasPersistentImageReadyHint(src, locale);
+}
+
 function getPreloadedImageCacheKeys(src: string, locale?: string): string[] {
     const keys = new Set<string>();
     const exactKey = assetsPath(src);
     if (exactKey) {
         keys.add(exactKey);
         keys.add(stripVersionParam(exactKey));
+        const exactCanonical = toCanonicalAssetCacheKey(exactKey);
+        if (exactCanonical) {
+            keys.add(exactCanonical);
+            keys.add(stripVersionParam(exactCanonical));
+        }
     }
 
     const normalizedKey = normalizePreloadedImageCacheKey(src, locale);
     if (normalizedKey) {
         keys.add(normalizedKey);
         keys.add(stripVersionParam(normalizedKey));
+        const normalizedCanonical = toCanonicalAssetCacheKey(normalizedKey);
+        if (normalizedCanonical) {
+            keys.add(normalizedCanonical);
+            keys.add(stripVersionParam(normalizedCanonical));
+        }
     }
 
     return [...keys];
@@ -704,6 +897,7 @@ function cacheLoadedImage(src: string, imgElement: HTMLImageElement, locale?: st
     for (const key of getPreloadedImageCacheKeys(src, locale)) {
         preloadedImages.set(key, imgElement);
     }
+    rememberPersistentImageReadyHint(src, locale);
 }
 
 export function markImageLoaded(src: string, locale?: string, imgElement?: HTMLImageElement): void {
@@ -870,18 +1064,12 @@ async function preloadOptimizedImage(src: string): Promise<void> {
     // 已成功加载过的跳过（naturalWidth > 0 表示真正加载成功）
     const cached = preloadedImages.get(webp);
     if (cached && cached.naturalWidth > 0) return;
-    
-    // 同步检查浏览器磁盘缓存：创建临时 Image 对象，如果浏览器缓存命中，
-    // complete 和 naturalWidth 会立即可用（无需等待网络请求）。
-    // 这避免了"资源已缓存但 preloadedImages Map 为空"时仍然等待 30s 超时的问题。
-    const testImg = new Image();
-    testImg.src = webp;
-    if (testImg.complete && testImg.naturalWidth > 0) {
-        // 浏览器缓存命中，直接标记为已加载，跳过异步加载流程
-        cacheLoadedImage(webp, testImg);
+
+    // 优先吃内存缓存 / 同步磁盘缓存命中，避免刷新后因为运行时 Map 丢失而再次阻塞。
+    if (probeSynchronousImageReady(webp)) {
         return;
     }
-    
+
     // 同一 URL 正在加载中 → 复用已有 Promise，不发新请求
     const inFlight = inFlightPreloads.get(webp);
     if (inFlight) return inFlight;

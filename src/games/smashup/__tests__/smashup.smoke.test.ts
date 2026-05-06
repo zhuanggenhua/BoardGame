@@ -1716,6 +1716,32 @@ describe('smashup', () => {
 
         expect(selectableFactionIds.length).toBeGreaterThan(0);
         expect(selectableFactionIds).not.toContain(SMASHUP_FACTION_IDS.ALIENS);
+        expect(selectableFactionIds).not.toContain(SMASHUP_FACTION_IDS.ALIENS_POD);
+    });
+
+    it('Smash Up AI 第二次选派系时不会把自己已拿的普通版/POD 别名再次列为候选', () => {
+        const runner = createRunner();
+        const result = runner.run({
+            name: 'AI 第二次选派系避开同阵营别名',
+            commands: [
+                { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+                { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
+                { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
+            ],
+        });
+
+        const actions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: result.finalState,
+        });
+
+        const selectableFactionIds = actions
+            .filter((action) => action.kind === 'select-faction')
+            .map((action) => action.metadata?.factionId);
+
+        expect(selectableFactionIds.length).toBeGreaterThan(0);
+        expect(selectableFactionIds).not.toContain(SMASHUP_FACTION_IDS.ALIENS);
+        expect(selectableFactionIds).not.toContain(SMASHUP_FACTION_IDS.ALIENS_POD);
     });
 
     it('Smash Up baseline AI 第二次选派系时会参考已选派系协同，而不是只按静态优先级', async () => {

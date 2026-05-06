@@ -1976,7 +1976,7 @@ function giantAntUnderPressure(ctx: AbilityContext): AbilityResult {
 function giantAntWeAreTheChampions(ctx: AbilityContext): AbilityResult {
     const reactionWindow = getSmashUpReactionWindowContext(ctx.matchState);
     const isInAfterScoringWindow = reactionWindow?.windowType === 'afterScoring';
-    
+
     if (isInAfterScoringWindow) {
         // 在响应窗口中：立即执行（不生成 ARMED 事件）
         // 捕获当前基地上己方有力量指示物的随从
@@ -1989,18 +1989,17 @@ function giantAntWeAreTheChampions(ctx: AbilityContext): AbilityResult {
                 baseIndex: ctx.baseIndex,
                 counterAmount: m.powerCounters,
             })) ?? [];
-        
+
         if (sources.length === 0) {
             // 没有符合条件的随从
             return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
         }
-        
+
         // 检查是否有足够的随从进行转移（至少需要2个随从：来源+目标）
         const allMyMinions = collectOwnMinions(ctx.state, ctx.playerId);
         if (allMyMinions.length < 2) {
             return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
         }
-        
         return runtimeResultToAbilityResult(executeAbilityProgram(
             giantAntWeAreTheChampionsChooseSourcePromptProgram,
             createGiantAntPromptContext(ctx.matchState, ctx.playerId, ctx.now, {

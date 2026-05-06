@@ -93,6 +93,26 @@ export const SMASHUP_FACTION_IDS = {
     NINJAS_POD: 'ninjas_pod',
 } as const;
 
+const POD_SUFFIX = '_pod';
+
+export function normalizeFactionSelectionId(factionId: string | null | undefined): string {
+    if (typeof factionId !== 'string' || factionId.length === 0) return '';
+    return factionId.endsWith(POD_SUFFIX)
+        ? factionId.slice(0, -POD_SUFFIX.length)
+        : factionId;
+}
+
+export function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): Set<string> {
+    const identities = new Set<string>();
+    for (const factionId of factionIds) {
+        const normalizedId = normalizeFactionSelectionId(factionId);
+        if (normalizedId) {
+            identities.add(normalizedId);
+        }
+    }
+    return identities;
+}
+
 /** 派系中文显示名（domain 层使用，避免依赖 i18n） */
 export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.PIRATES]: '海盗',

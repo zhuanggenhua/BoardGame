@@ -792,11 +792,15 @@ queueInteraction(state, {
     data: { attackerId, chooserPlayerId, options },
 });
 
-// ✅ 拥有确认权的阻塞前台注册为 modal stack entry
+// ⚠️ 历史接入示例：DiceThrone 曾用同步桥把既有状态挂到 modal stack。
+// 新游戏不要默认模仿，优先直接围绕 openModal/closeModal 设计单一 truth source。
 useSyncedModalStackEntry(currentInteraction?.kind === 'dt:bonus-dice'
     ? { id: currentInteraction.id, kind: 'dt:bonus-dice', node: <BonusDieOverlay ... /> }
     : null);
 ```
+
+> 上面的 `useSyncedModalStackEntry` 仅表示“历史上已有本地/引擎前台状态时，如何临时接入 modal stack”的过渡方案，不代表新游戏推荐架构。
+> **新游戏强制口径**：阻塞前台默认直接作为 modal stack entry 设计，禁止先做一层本地 modal 状态/overlay，再额外同步给 modal stack。
 
 ---
 

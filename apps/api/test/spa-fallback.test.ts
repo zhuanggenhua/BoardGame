@@ -1,5 +1,15 @@
 import { describe, expect, it } from 'vitest';
-import { LONG_CACHE_MAX_AGE, NO_CACHE_HEADER, isNoCacheSpaEntryPath, isNoCacheStaticFilePath, shouldServeSpaFallback } from '../src/spa-fallback';
+import {
+    LONG_CACHE_IMMUTABLE_HEADER,
+    LONG_CACHE_MAX_AGE,
+    NO_CACHE_HEADER,
+    SHORT_CACHE_HEADER,
+    getPublicAssetCacheControl,
+    isNoCacheSpaEntryPath,
+    isNoCacheStaticFilePath,
+    shouldServeSpaFallback,
+    shouldUseImmutablePublicAssetCache,
+} from '../src/spa-fallback';
 
 describe('SPA fallback guards', () => {
     it('should keep /assets requests out of SPA fallback', () => {
@@ -38,5 +48,18 @@ describe('SPA fallback guards', () => {
         expect(isNoCacheStaticFilePath('D:/repo/dist/logos/logo_1_grid.svg')).toBe(false);
         expect(isNoCacheStaticFilePath('D:/repo/dist/game-data/dicethrone/monk/dice-sprite.png')).toBe(false);
         expect(LONG_CACHE_MAX_AGE).toBe('1y');
+    });
+
+    it('should keep versioned public asset media on immutable cache', () => {
+        expect(shouldUseImmutablePublicAssetCache('/assets/i18n/zh-CN/smashup/cards/compressed/cards1.webp?v=hash1234')).toBe(true);
+        expect(shouldUseImmutablePublicAssetCache('/assets/common/audio/compressed/bgm.ogg?v=hash5678')).toBe(true);
+        expect(getPublicAssetCacheControl('/assets/i18n/zh-CN/smashup/cards/compressed/cards1.webp?v=hash1234')).toBe(LONG_CACHE_IMMUTABLE_HEADER);
+    });
+
+    it('should keep non-versioned or non-media public assets on short cache', () => {
+        expect(shouldUseImmutablePublicAssetCache('/assets/i18n/zh-CN/smashup/cards/compressed/cards1.webp')).toBe(false);
+        expect(shouldUseImmutablePublicAssetCache('/assets/atlas-configs/dicethrone/ability-cards-common.atlas.json?v=hash1234')).toBe(false);
+        expect(getPublicAssetCacheControl('/assets/i18n/zh-CN/smashup/cards/compressed/cards1.webp')).toBe(SHORT_CACHE_HEADER);
+        expect(getPublicAssetCacheControl('/assets/atlas-configs/dicethrone/ability-cards-common.atlas.json?v=hash1234')).toBe(SHORT_CACHE_HEADER);
     });
 });

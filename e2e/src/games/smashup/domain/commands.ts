@@ -42,6 +42,21 @@ import { isCardActionLike, isCardMinionLike } from './utils';
 import { getSmashUpReactionWindowContext, hasBlockingLegacyResponseWindow } from './reactionWindowState';
 
 type TitanAbilityKind = SmashUpActivationKind;
+const POD_FACTION_SUFFIX = '_pod';
+
+function normalizeFactionSelectionId(factionId: string): string {
+    return factionId.endsWith(POD_FACTION_SUFFIX)
+        ? factionId.slice(0, -POD_FACTION_SUFFIX.length)
+        : factionId;
+}
+
+function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): Set<string> {
+    const identities = new Set<string>();
+    for (const factionId of factionIds) {
+        identities.add(normalizeFactionSelectionId(factionId));
+    }
+    return identities;
+}
 
 function getCurrentManualActivationWindow(state: MatchState<SmashUpCore>): SmashUpActivationWindow {
     if (state.sys.phase !== 'scoreBases') return 'playCards';
@@ -676,10 +691,16 @@ export function validate(
             if (!selection) return { valid: false, error: '派系选择状态未初始化' };
 
             const factionId = command.payload.factionId;
-            if (selection.takenFactions.includes(factionId)) {
+            const factionIdentity = normalizeFactionSelectionId(factionId);
+            const takenFactionIdentities = buildFactionSelectionIdentitySet(selection.takenFactions);
+            if (takenFactionIdentities.has(factionIdentity)) {
                 return { valid: false, error: '该派系已被选择' };
             }
             const playerSelections = selection.playerSelections[command.playerId] || [];
+            const playerSelectionIdentities = buildFactionSelectionIdentitySet(playerSelections);
+            if (playerSelectionIdentities.has(factionIdentity)) {
+                return { valid: false, error: '该派系已被选择' };
+            }
             if (playerSelections.length >= 2) {
                 return { valid: false, error: '你已选择了两个派系' };
             }

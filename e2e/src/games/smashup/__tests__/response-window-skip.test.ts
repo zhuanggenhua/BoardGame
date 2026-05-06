@@ -259,6 +259,13 @@ describe('响应窗口跳过逻辑', () => {
                 ],
                 ongoingActions: [],
             };
+            core.bases[1] = {
+                defId: 'base_the_hive',
+                minions: [
+                    makeMinion('friendly-target', 'test_minion', '0', '0', 2),
+                ],
+                ongoingActions: [],
+            };
             core.players['0'].hand = [
                 { uid: 'card-1', defId: 'giant_ant_under_pressure', type: 'action', owner: '0' },
             ];
@@ -294,6 +301,30 @@ describe('响应窗口跳过逻辑', () => {
             option => option.value?.minionUid === 'minion-1',
             '找不到承受压力的来源随从',
         );
+
+        const staleState = runner.getState();
+        runner.setState({
+            ...staleState,
+            core: {
+                ...staleState.core,
+                bases: staleState.core.bases.map((base, baseIndex) => (
+                    baseIndex !== 0
+                        ? base
+                        : {
+                            ...base,
+                            minions: base.minions.map((minion) => (
+                                minion.uid !== 'minion-1'
+                                    ? minion
+                                    : {
+                                        ...minion,
+                                        powerCounters: 0,
+                                    }
+                            )),
+                        }
+                )),
+            },
+        });
+
         const resolveSourceResult = runner.resolveInteraction('0', { optionId: sourceOptionId });
         expect(resolveSourceResult.success).toBe(true);
 

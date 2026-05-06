@@ -1043,6 +1043,37 @@ export function advanceSmashUpReactionSession(
 
     const options = buildReactionOptions(currentState, session, now);
     const nonPassOptions = options.filter(option => option.id !== 'pass');
+    if (session.phase === 'mandatory' && nonPassOptions.length === 0) {
+        const optionalState = setSmashUpReactionSession(currentState, {
+            ...session,
+            phase: 'optional',
+            activePlayerId: session.currentPlayerId,
+            consecutivePasses: 0,
+        });
+        const continued = advanceSmashUpReactionSession(optionalState, random, now);
+        return continued
+            ? {
+                state: continued.state,
+                events: [...emittedEvents, ...continued.events],
+            }
+            : {
+                state: optionalState,
+                events: emittedEvents,
+            };
+    }
+    if (session.phase === 'optional' && nonPassOptions.length === 0) {
+        const autoAdvancedState = autoAdvanceOptionalWithoutChoices(currentState, session, now);
+        const autoAdvancedSession = getSmashUpReactionSession(autoAdvancedState);
+        if (!autoAdvancedSession) {
+            const resumed = continueSuspendedReactionIfNeeded(autoAdvancedState, random, now);
+            return resumed ?? {
+                state: autoAdvancedState,
+                events: emittedEvents,
+            };
+        }
+        currentState = autoAdvancedState;
+        session = autoAdvancedSession;
+    }
     if (session.phase === 'mandatory' && nonPassOptions.length === 1) {
         const resolved = resolveSmashUpReactionChoice(currentState, random, now, nonPassOptions[0].value);
         return {

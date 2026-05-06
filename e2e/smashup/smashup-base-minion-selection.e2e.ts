@@ -206,6 +206,88 @@ async function injectMiskatonicPodBaseState(matchId: string, page: Page): Promis
     await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
 }
 
+async function injectMushroomInvisibleTurnStartState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => ({
+        ...state,
+        core: {
+            ...state.core,
+            players: {
+                ...(state.core?.players ?? {}),
+                '0': {
+                    ...(state.core?.players?.['0'] ?? {}),
+                    id: '0',
+                    vp: 0,
+                    hand: [
+                        makeInjectedCard('host-card-1', 'alien_scout', 'minion', HOST_PLAYER_ID),
+                        makeInjectedCard('host-card-2', 'pirate_first_mate', 'minion', HOST_PLAYER_ID),
+                    ],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['ninjas', 'aliens'],
+                    sameNameMinionDefId: null,
+                },
+                '1': {
+                    ...(state.core?.players?.['1'] ?? {}),
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['robots', 'pirates'],
+                    sameNameMinionDefId: null,
+                },
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            phase: 'endTurn',
+            bases: [
+                { defId: 'base_mushroom_kingdom', minions: [], ongoingActions: [] },
+                {
+                    defId: 'base_the_factory',
+                    minions: [makeInjectedMinion('enemy-minion-1', 'robot_microbot_alpha', '1', '1', 1)],
+                    ongoingActions: [],
+                },
+                { defId: 'base_great_library', minions: [], ongoingActions: [] },
+            ],
+            titans: [
+                {
+                    uid: 'titan-invisible-ninja-1',
+                    defId: 'ninjas_invisible_ninja',
+                    faction: 'ninjas',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 2, enteredAt: 1 },
+                },
+            ],
+            enabledExpansions: ['titans'],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 3,
+            nextUid: 900,
+            cardsPlayedThisTurn: 0,
+            powerCountersPlacedOnMinionsThisTurn: 0,
+            turnDestroyedMinions: [],
+            triggerQueue: [],
+        },
+        sys: {
+            ...state.sys,
+            phase: 'endTurn',
+            interaction: { current: undefined, queue: [] },
+        },
+    }));
+    await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
+}
+
 function makeInjectedCard(uid: string, defId: string, type: 'minion' | 'action', owner: string) {
     return { uid, defId, type, owner };
 }
@@ -989,5 +1071,113 @@ test.describe('SmashUp Base/Minion Selection', () => {
             filename: 'smashup-miskatonic-pod-base-magnify-text.png',
         });
         await podTextInMagnify.screenshot({ path: magnifyTextShot });
+    });
+
+    test('反馈复现：蘑菇王国 + Invisible Ninja 同回合开始时，应直接进入真实交互，不先弹结算顺序', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await injectMushroomInvisibleTurnStartState(matchId, hostPage);
+
+        await dispatchHarnessCommand(guestPage, '1', 'ADVANCE_PHASE', {});
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return state?.sys?.interaction?.current?.data?.sourceId ?? null;
+        }, { timeout: 8000 }).not.toBeNull();
+
+        const firstState = await getMatchState(matchId, hostPage);
+        const firstSourceId = firstState?.sys?.interaction?.current?.data?.sourceId ?? null;
+        expect(firstSourceId).not.toBe('smashup_reaction_choose');
+        expect(['base_mushroom_kingdom', 'titan_ninjas_invisible_ninja_start_turn']).toContain(firstSourceId);
+
+        const firstPromptShot = getEvidenceScreenshotPath(testInfo, 'mushroom-invisible-first-prompt', {
+            filename: 'smashup-mushroom-invisible-first-prompt.png',
+        });
+        await hostPage.screenshot({ path: firstPromptShot, fullPage: false });
+
+        for (let i = 0; i < 3; i += 1) {
+            const liveState = await getMatchState(matchId, hostPage);
+            const current = liveState?.sys?.interaction?.current ?? null;
+            if (!current) break;
+
+            const liveSourceId = current?.data?.sourceId ?? null;
+            if (liveSourceId === 'smashup_reaction_choose') {
+                const guestState = await getMatchState(matchId, guestPage);
+                throw new Error(JSON.stringify({
+                    loopIndex: i,
+                    host: {
+                        currentPlayerIndex: liveState?.core?.currentPlayerIndex ?? null,
+                        phase: liveState?.sys?.phase ?? null,
+                        interaction: liveState?.sys?.interaction?.current
+                            ? {
+                                playerId: liveState.sys.interaction.current.playerId,
+                                sourceId: liveState.sys.interaction.current.data?.sourceId ?? null,
+                                optionIds: Array.isArray(liveState.sys.interaction.current.data?.options)
+                                    ? liveState.sys.interaction.current.data.options.map((option: { id?: string }) => option?.id ?? null)
+                                    : [],
+                            }
+                            : null,
+                        triggerQueue: Array.isArray(liveState?.core?.triggerQueue)
+                            ? liveState.core.triggerQueue.map((trigger: { sourceDefId?: string; frameId?: string; resolutionClass?: string; mandatory?: boolean }) => ({
+                                sourceDefId: trigger?.sourceDefId ?? null,
+                                frameId: trigger?.frameId ?? null,
+                                resolutionClass: trigger?.resolutionClass ?? null,
+                                mandatory: trigger?.mandatory ?? null,
+                            }))
+                            : [],
+                        frames: Array.isArray(liveState?.sys?.resolution?.frames)
+                            ? liveState.sys.resolution.frames.map((frame: { id?: string; step?: string; metadata?: { smashupReactionSession?: unknown } }) => ({
+                                id: frame?.id ?? null,
+                                step: frame?.step ?? null,
+                                hasReactionSession: Boolean(frame?.metadata?.smashupReactionSession),
+                            }))
+                            : [],
+                    },
+                    guest: {
+                        currentPlayerIndex: guestState?.core?.currentPlayerIndex ?? null,
+                        phase: guestState?.sys?.phase ?? null,
+                        interaction: guestState?.sys?.interaction?.current
+                            ? {
+                                playerId: guestState.sys.interaction.current.playerId,
+                                sourceId: guestState.sys.interaction.current.data?.sourceId ?? null,
+                                optionIds: Array.isArray(guestState.sys.interaction.current.data?.options)
+                                    ? guestState.sys.interaction.current.data.options.map((option: { id?: string }) => option?.id ?? null)
+                                    : [],
+                            }
+                            : null,
+                    },
+                }, null, 2));
+            }
+
+            const options = Array.isArray(current?.data?.options)
+                ? current.data.options as Array<{ id?: string }>
+                : [];
+            const skipId = options.find(option => option?.id === 'skip')?.id;
+            expect(skipId).toBeTruthy();
+            await respondCurrentInteraction(hostPage, { optionId: skipId });
+        }
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                phase: state?.sys?.phase ?? null,
+                sourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+            };
+        }, { timeout: 8000 }).toEqual({
+            phase: 'playCards',
+            sourceId: null,
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'mushroom-invisible-resolved', {
+            filename: 'smashup-mushroom-invisible-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
     });
 });

@@ -17,7 +17,6 @@ beforeAll(() => {
     clearInteractionHandlers();
     initAllAbilities();
 });
-
 describe('elder_things_pod: Elder Thing POD', () => {
     it('if cannot destroy two other minions, must go to deck bottom', () => {
         const core = makeState({
@@ -38,7 +37,6 @@ describe('elder_things_pod: Elder Thing POD', () => {
         expect(destroyOpt?.disabled).toBe(true);
     });
 });
-
 describe('elder_things_pod: Unfathomable Goals POD', () => {
     it('extra thresholds from revealed madness snapshot', () => {
         const core = makeState({

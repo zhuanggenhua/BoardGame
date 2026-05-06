@@ -46,6 +46,43 @@ const ModalStackContext = createContext<ModalStackContextValue | null>(null);
 // 保证每次打开都有稳定唯一的栈条目 ID
 const createId = () => `modal_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
+const areOwnerRefsEquivalent = (
+    left: ResolutionOwnerRef | undefined,
+    right: ResolutionOwnerRef | undefined,
+) => {
+    if (left === right) {
+        return true;
+    }
+    if (!left || !right) {
+        return !left && !right;
+    }
+
+    const leftRecord = left as Record<string, unknown>;
+    const rightRecord = right as Record<string, unknown>;
+    const leftKeys = Object.keys(leftRecord);
+    const rightKeys = Object.keys(rightRecord);
+    if (leftKeys.length !== rightKeys.length) {
+        return false;
+    }
+
+    return leftKeys.every((key) => Object.is(leftRecord[key], rightRecord[key]));
+};
+
+const areModalEntriesEquivalent = (
+    left: ModalEntry,
+    right: ModalEntry,
+) => {
+    return left.id === right.id
+        && left.render === right.render
+        && left.onClose === right.onClose
+        && left.closeOnEsc === right.closeOnEsc
+        && left.closeOnBackdrop === right.closeOnBackdrop
+        && left.lockScroll === right.lockScroll
+        && left.zIndex === right.zIndex
+        && left.allowPointerThrough === right.allowPointerThrough
+        && areOwnerRefsEquivalent(left.owner, right.owner);
+};
+
 export const ModalStackProvider = ({ children }: { children: ReactNode }) => {
     const [stack, setStack] = useState<ModalEntry[]>([]);
     const stackRef = useRef<ModalEntry[]>([]);
@@ -84,8 +121,25 @@ export const ModalStackProvider = ({ children }: { children: ReactNode }) => {
     const updateModal = useCallback((id: string, entry: Omit<ModalEntry, 'id'>) => {
         const target = stackRef.current.find((item) => item.id === id);
         if (!target) return;
+        const nextEntry = { ...entry, id };
+        if (areModalEntriesEquivalent(target, nextEntry)) {
+            return;
+        }
         logModalAction('update', { ...entry, id }, stackRef.current.length);
-        setStack((prev) => prev.map((item) => (item.id === id ? { ...entry, id } : item)));
+        setStack((prev) => {
+            let changed = false;
+            const next = prev.map((item) => {
+                if (item.id !== id) {
+                    return item;
+                }
+                if (areModalEntriesEquivalent(item, nextEntry)) {
+                    return item;
+                }
+                changed = true;
+                return nextEntry;
+            });
+            return changed ? next : prev;
+        });
     }, [logModalAction]);
 
     // 精确关闭某个栈条目

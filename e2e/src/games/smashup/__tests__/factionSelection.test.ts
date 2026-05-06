@@ -75,6 +75,42 @@ describe('派系选择系统', () => {
             expect(result.steps[2]?.error).toContain('已被选择');
         });
 
+        it('普通版与 POD 版视为同一派系，其他玩家不能重复选择', () => {
+            const runner = createRunner();
+            const result = runner.run({
+                name: '普通版与 POD 版跨玩家互斥',
+                commands: [
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS_POD } },
+                ],
+            });
+
+            expect(result.steps[0]?.success).toBe(true);
+            expect(result.steps[1]?.success).toBe(true);
+            expect(result.steps[2]?.success).toBe(false);
+            expect(result.steps[2]?.error).toContain('已被选择');
+        });
+
+        it('普通版与 POD 版视为同一派系，同一玩家第二选不能重复', () => {
+            const runner = createRunner();
+            const result = runner.run({
+                name: '普通版与 POD 版同玩家互斥',
+                commands: [
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
+                    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS_POD } },
+                ],
+            });
+
+            expect(result.steps[0]?.success).toBe(true);
+            expect(result.steps[1]?.success).toBe(true);
+            expect(result.steps[2]?.success).toBe(true);
+            expect(result.steps[3]?.success).toBe(false);
+            expect(result.steps[3]?.error).toContain('已被选择');
+        });
+
         it('不同派系可以被不同玩家选择', () => {
             const runner = createRunner();
             const result = runner.run({

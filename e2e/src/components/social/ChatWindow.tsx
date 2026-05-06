@@ -6,7 +6,7 @@ import { Send, Gamepad2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import clsx from 'clsx';
 import type { Message } from '../../services/social.types';
-import { socialSocket, SOCIAL_EVENTS, type NewMessagePayload } from '../../services/socialSocket';
+import { socialSocket, SOCIAL_EVENTS, normalizeNewMessagePayload, type NewMessagePayload } from '../../services/socialSocket';
 import { MAX_CHAT_LENGTH } from '../../shared/chat';
 
 // NOTE: 该组件是“好友私聊”窗口，不是局内聊天。局内聊天在 `src/components/game/GameHUD.tsx`。
@@ -66,13 +66,14 @@ export const ChatWindow = ({ targetUserId, inviteData }: ChatWindowProps) => {
 
     // 监听新消息
     useEffect(() => {
-        const handleNewMessage = (payload: NewMessagePayload) => {
+        const handleNewMessage = (rawPayload: NewMessagePayload) => {
+            const payload = normalizeNewMessagePayload(rawPayload, user?.id);
             // 只处理当前会话的消息
             if (payload.from === targetUserId || (payload.to === targetUserId && payload.from === user?.id)) {
                 const newMsg: Message = {
                     id: payload.id,
                     from: payload.from,
-                    to: payload.to, // 当前用户
+                    to: payload.to,
                     content: payload.content,
                     type: payload.type,
                     read: false,

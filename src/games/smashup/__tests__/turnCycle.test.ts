@@ -13,6 +13,7 @@ import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
+import { resolveInteraction } from '../../../engine/systems/InteractionSystem';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS, getCurrentPlayerId, HAND_LIMIT, VP_TO_WIN, DRAW_PER_TURN } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
@@ -21,6 +22,8 @@ import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
 import { collectTriggers } from '../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
+import { advanceSmashUpReactionSession } from '../domain/reactionSession';
+import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
 import { runCommand } from './testRunner';
 
@@ -311,6 +314,27 @@ describe('完整回合循环', () => {
         expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
         expect((resolved!.state.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'ninjas_invisible_ninja')).toBe(true);
         expect((resolved!.state.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'base_mushroom_kingdom')).toBe(false);
+
+        const firstInteraction = resolved!.state.sys.interaction?.current as any;
+        const firstHandler = getInteractionHandler(firstInteraction?.data?.sourceId);
+        expect(firstHandler).toBeDefined();
+
+        const firstResolved = firstHandler!(
+            resolved!.state,
+            '0',
+            { skip: true },
+            firstInteraction.data,
+            random,
+            1,
+        );
+        expect(firstResolved).toBeDefined();
+        const afterFirstResolve = resolveInteraction(firstResolved!.state);
+        expect(afterFirstResolve.sys.interaction?.current).toBeUndefined();
+
+        const resumed = advanceSmashUpReactionSession(afterFirstResolve, random, 2);
+        expect(resumed).toBeDefined();
+        expect((resumed!.state.sys.interaction?.current?.data as any)?.sourceId).toBe('titan_ninjas_invisible_ninja_start_turn');
+        expect((resumed!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
     });
 });
 

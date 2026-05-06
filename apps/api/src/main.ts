@@ -18,7 +18,13 @@ import { AdminTestLatencyService } from './modules/admin/admin-test-latency.serv
 import { GlobalHttpExceptionFilter } from './shared/filters/http-exception.filter';
 import logger from '../../../server/logger';
 import { isNoCacheSpaEntryPath, shouldServeSpaFallback } from './spa-fallback';
-import { LONG_CACHE_MAX_AGE, NO_CACHE_HEADER, isNoCacheStaticFilePath } from './spa-fallback';
+import {
+    LONG_CACHE_IMMUTABLE_HEADER,
+    LONG_CACHE_MAX_AGE,
+    NO_CACHE_HEADER,
+    getPublicAssetCacheControl,
+    isNoCacheStaticFilePath,
+} from './spa-fallback';
 
 type TestMongoServerHandle = {
     stop(): Promise<void>;
@@ -287,6 +293,13 @@ async function bootstrap() {
             maxAge: '7d',
             etag: true,
             lastModified: true,
+            setHeaders: (res) => {
+                const requestPath = res.req?.originalUrl || res.req?.url || '';
+                const cacheControl = getPublicAssetCacheControl(requestPath);
+                if (cacheControl === LONG_CACHE_IMMUTABLE_HEADER) {
+                    res.setHeader('Cache-Control', cacheControl);
+                }
+            },
         }));
     }
 

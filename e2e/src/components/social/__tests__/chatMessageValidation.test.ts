@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { generateUUID } from '../../../lib/uuid';
 import { MAX_CHAT_LENGTH } from '../../../shared/chat';
-import { scheduleDeferredSocialConnect } from '../../../services/socialSocket';
+import { normalizeNewMessagePayload, scheduleDeferredSocialConnect } from '../../../services/socialSocket';
 
 /**
  * 聊天消息验证测试。
@@ -83,6 +83,33 @@ describe('聊天消息验证', () => {
         expect(typeof serverResponse.message).toBe('string');
         // 新代码：从 messageData 构造 → 得到正确的 id
         expect(serverResponse.messageData.id).toBe('msg_123');
+    });
+
+    it('normalizeNewMessagePayload 兼容 fromUser/toUser 结构', () => {
+        const payload = normalizeNewMessagePayload({
+            id: 'msg_nested',
+            fromUser: { id: 'friend_1', username: '好友' },
+            toUser: { id: 'me', username: '我' },
+            content: 'hello',
+            type: 'text',
+            createdAt: '2026-05-06T00:00:00.000Z',
+        }, 'me');
+
+        expect(payload.from).toBe('friend_1');
+        expect(payload.to).toBe('me');
+    });
+
+    it('normalizeNewMessagePayload 在缺少 toUser 时回退当前用户 id', () => {
+        const payload = normalizeNewMessagePayload({
+            id: 'msg_fallback',
+            fromUser: { id: 'friend_2', username: '好友2' },
+            content: 'ping',
+            type: 'text',
+            createdAt: '2026-05-06T00:00:00.000Z',
+        }, 'me');
+
+        expect(payload.from).toBe('friend_2');
+        expect(payload.to).toBe('me');
     });
 });
 

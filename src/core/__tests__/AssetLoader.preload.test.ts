@@ -1,10 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
+    __resetAssetLoaderCachesForTests,
+    areAllCriticalImagesCached,
     clearGameAssetBaseOverrides,
     getLocalizedImageCandidateUrls,
     getLocalizedImageUrls,
     getPreloadedImageElement,
     isImagePreloaded,
+    markImageLoaded,
     registerGameAssets,
     preloadCriticalImages,
     setAssetHashesForTesting,
@@ -34,6 +37,7 @@ beforeEach(() => {
     setAssetHashesForTesting({});
     setLocalizedImageIndexForTesting({});
     clearGameAssetBaseOverrides();
+    __resetAssetLoaderCachesForTests();
     vi.stubGlobal('Image', MockImage);
 });
 
@@ -176,5 +180,40 @@ describe('preloadCriticalImages', () => {
         expect(candidates[0]).toBe('http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/smashup/current/assets/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234');
         expect(candidates[1]).toBe('http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/smashup/current/assets/i18n/en/smashup/cards/compressed/cards1.webp');
         expect(candidates).toContain('https://assets.easyboardgame.top/official/i18n/en/smashup/cards/compressed/cards1.webp');
+    });
+
+    it('不同资源 base 的同一张图应复用统一缓存键', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setAssetHashesForTesting({
+            'i18n/en/smashup/cards/compressed/cards1.webp': 'hash1234',
+        });
+
+        const remoteUrl = getLocalizedImageUrls('smashup/cards/cards1', 'en').primary.webp;
+        const loadedImage = new Image() as HTMLImageElement;
+        loadedImage.src = remoteUrl;
+        markImageLoaded(remoteUrl, undefined, loadedImage);
+
+        expect(isImagePreloaded('/assets/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234')).toBe(true);
+        expect(getPreloadedImageElement('/assets/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234')).not.toBeNull();
+    });
+
+    it('runtime 内存缓存丢失后，仍可通过持久化 ready hint 判定关键图已就绪', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setAssetHashesForTesting({
+            'i18n/en/smashup/cards/compressed/cards1.webp': 'hash1234',
+        });
+
+        registerGameAssets('test-persistent-hint', {
+            criticalImages: ['smashup/cards/cards1'],
+        });
+
+        const remoteUrl = getLocalizedImageUrls('smashup/cards/cards1', 'en').primary.webp;
+        const loadedImage = new Image() as HTMLImageElement;
+        loadedImage.src = remoteUrl;
+        markImageLoaded(remoteUrl, undefined, loadedImage);
+
+        __resetAssetLoaderCachesForTests({ keepPersistentHints: true });
+
+        expect(areAllCriticalImagesCached('test-persistent-hint', undefined, 'en')).toBe(true);
     });
 });

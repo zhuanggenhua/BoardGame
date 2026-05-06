@@ -30,7 +30,11 @@ import {
     type SmashUpCore,
     type TriggerInstance,
 } from './domain/types';
-import { SMASHUP_FACTION_IDS } from './domain/ids';
+import {
+    buildFactionSelectionIdentitySet,
+    normalizeFactionSelectionId,
+    SMASHUP_FACTION_IDS,
+} from './domain/ids';
 import { validate } from './domain/commands';
 import { hasCardActivatableAbility } from './domain/activationMetadata';
 import { resolveLiveSmashUpReactionChoice } from './domain/reactionSession';
@@ -1315,9 +1319,9 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
 const buildFactionSelectActions = (state: SmashUpState, playerId: PlayerId): AiLegalAction[] => {
     const selection = state.core.factionSelection;
     if (!selection) return [];
-    const taken = new Set(selection.takenFactions);
+    const taken = buildFactionSelectionIdentitySet(selection.takenFactions);
     const actions: AiLegalAction[] = [];
-    const availableFactions = SELECTABLE_FACTIONS.filter((factionId) => !taken.has(factionId));
+    const availableFactions = SELECTABLE_FACTIONS.filter((factionId) => !taken.has(normalizeFactionSelectionId(factionId)));
     const candidates = availableFactions.length > 0 ? availableFactions : SELECTABLE_FACTIONS;
 
     for (const factionId of candidates) {

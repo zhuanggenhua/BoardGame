@@ -7,6 +7,9 @@
 
 import { type BrowserContext, type Page } from '@playwright/test';
 
+export const DEFAULT_FATAL_FRONTEND_ERROR_PATTERN =
+    /Maximum update depth exceeded|Too many re-renders/i;
+
 // ============================================================================
 // 浏览器上下文初始化（注入 localStorage / 拦截请求）
 // ============================================================================
@@ -248,6 +251,27 @@ export const attachPageDiagnostics = (page: Page) => {
         }
     });
     return diagnostics;
+};
+
+/** 断言页面未出现致命前端渲染错误 */
+export const assertNoFatalFrontendErrors = (
+    diagnosticsEntries: Array<{ label: string; diagnostics: { errors: string[] } }>,
+    pattern: RegExp = DEFAULT_FATAL_FRONTEND_ERROR_PATTERN,
+) => {
+    const matched = diagnosticsEntries.flatMap(({ label, diagnostics }) =>
+        diagnostics.errors
+            .filter((entry) => pattern.test(entry))
+            .map((entry) => `[${label}] ${entry}`),
+    );
+
+    if (matched.length > 0) {
+        throw new Error(
+            [
+                '检测到致命前端渲染错误：',
+                ...matched,
+            ].join('\n'),
+        );
+    }
 };
 
 /** 等待 Vite 前端资源就绪 */

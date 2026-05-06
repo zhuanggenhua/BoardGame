@@ -843,6 +843,14 @@ describe('useSyncedModalStackEntry', () => {
         );
     };
 
+    const StackChangeProbe = ({ onStackChange }: { onStackChange: (size: number) => void }) => {
+        const { stack } = useModalStack();
+        React.useEffect(() => {
+            onStackChange(stack.length);
+        }, [onStackChange, stack]);
+        return null;
+    };
+
     it('应在 entry 更新时原位更新栈内容而不是重复打开', async () => {
         const App = ({ enabled, label }: { enabled: boolean; label: string }) => (
             <MemoryRouter>
@@ -934,5 +942,169 @@ describe('useSyncedModalStackEntry', () => {
         });
 
         expect(screen.getByTestId('top-owner-label')).toHaveTextContent('interaction:interaction-parent');
+    });
+
+    it('entry 输入对象抖动时不应重复更新 modal stack', async () => {
+        const onStackChange = vi.fn();
+
+        const App = ({ enabled, label }: { enabled: boolean; label: string }) => {
+            const entry = {
+                owner: {
+                    system: 'interaction' as const,
+                    id: 'unstable-owner',
+                    gameId: 'dicethrone',
+                    namespace: 'dicethrone',
+                    blocksProgress: true,
+                },
+                render: ({ close }: { close: () => void; closeOnBackdrop: boolean }) => (
+                    <div>
+                        <div data-testid="unstable-synced-modal-label">{label}</div>
+                        <button type="button" onClick={close}>close-unstable-modal</button>
+                    </div>
+                ),
+            };
+
+            useSyncedModalStackEntry({
+                enabled,
+                entryId: 'unstable-synced-modal',
+                entry,
+            });
+
+            return null;
+        };
+
+        const { rerender } = render(
+            <MemoryRouter>
+                <ModalStackProvider>
+                    <StackChangeProbe onStackChange={onStackChange} />
+                    <App enabled label="第一版内容" />
+                    <ModalStackRoot />
+                </ModalStackProvider>
+            </MemoryRouter>,
+        );
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+
+        expect(screen.getByTestId('unstable-synced-modal-label')).toHaveTextContent('第一版内容');
+        expect(onStackChange).toHaveBeenCalledTimes(2);
+
+        await act(async () => {
+            rerender(
+                <MemoryRouter>
+                    <ModalStackProvider>
+                        <StackChangeProbe onStackChange={onStackChange} />
+                        <App enabled label="第二版内容" />
+                        <ModalStackRoot />
+                    </ModalStackProvider>
+                </MemoryRouter>,
+            );
+            await Promise.resolve();
+        });
+
+        expect(screen.getByTestId('unstable-synced-modal-label')).toHaveTextContent('第二版内容');
+        expect(onStackChange).toHaveBeenCalledTimes(2);
+    });
+
+    it('等价 updateModal 不应触发栈状态变更，真实变更仍应生效', async () => {
+        const onStackChange = vi.fn();
+        const sharedOwner = {
+            system: 'interaction' as const,
+            id: 'modal-guard-owner',
+            gameId: 'dicethrone',
+            namespace: 'dicethrone',
+            blocksProgress: true,
+        };
+        const sharedOnClose = vi.fn();
+        const stableRender = () => <div data-testid="guard-modal-label">稳定内容</div>;
+        const changedRender = () => <div data-testid="guard-modal-label">变更内容</div>;
+
+        const ModalUpdateHarness = () => {
+            const { openModal, updateModal } = useModalStack();
+            const modalIdRef = React.useRef<string | null>(null);
+
+            return (
+                <div>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            modalIdRef.current = openModal({
+                                owner: sharedOwner,
+                                onClose: sharedOnClose,
+                                render: stableRender,
+                            });
+                        }}
+                    >
+                        open-guard-modal
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (!modalIdRef.current) return;
+                            updateModal(modalIdRef.current, {
+                                owner: sharedOwner,
+                                onClose: sharedOnClose,
+                                render: stableRender,
+                            });
+                        }}
+                    >
+                        noop-update-guard-modal
+                    </button>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            if (!modalIdRef.current) return;
+                            updateModal(modalIdRef.current, {
+                                owner: sharedOwner,
+                                onClose: sharedOnClose,
+                                render: changedRender,
+                            });
+                        }}
+                    >
+                        real-update-guard-modal
+                    </button>
+                </div>
+            );
+        };
+
+        render(
+            <MemoryRouter>
+                <ModalStackProvider>
+                    <StackChangeProbe onStackChange={onStackChange} />
+                    <ModalUpdateHarness />
+                    <ModalStackRoot />
+                </ModalStackProvider>
+            </MemoryRouter>,
+        );
+
+        await act(async () => {
+            await Promise.resolve();
+        });
+        expect(onStackChange).toHaveBeenCalledTimes(1);
+
+        await act(async () => {
+            fireEvent.click(screen.getByText('open-guard-modal'));
+            await Promise.resolve();
+        });
+
+        expect(screen.getByTestId('guard-modal-label')).toHaveTextContent('稳定内容');
+        expect(onStackChange).toHaveBeenCalledTimes(2);
+
+        await act(async () => {
+            fireEvent.click(screen.getByText('noop-update-guard-modal'));
+            await Promise.resolve();
+        });
+
+        expect(screen.getByTestId('guard-modal-label')).toHaveTextContent('稳定内容');
+        expect(onStackChange).toHaveBeenCalledTimes(2);
+
+        await act(async () => {
+            fireEvent.click(screen.getByText('real-update-guard-modal'));
+            await Promise.resolve();
+        });
+
+        expect(screen.getByTestId('guard-modal-label')).toHaveTextContent('变更内容');
+        expect(onStackChange).toHaveBeenCalledTimes(3);
     });
 });

@@ -22,6 +22,7 @@ import { test as base, expect as baseExpect } from '@playwright/test';
 import { GameTestContext } from './GameTestContext';
 import { loadWorkerPorts } from '../../scripts/infra/port-allocator.js';
 import { E2E_SINGLE_WORKER_PORTS } from '../../scripts/infra/e2e-port-config.js';
+import { assertNoFatalFrontendErrors, attachPageDiagnostics } from '../helpers/common';
 
 /**
  * Worker 端口信息
@@ -42,6 +43,13 @@ interface FrameworkFixtures {
      * 提供统一的测试 API，封装状态注入、游戏动作、断言等功能。
      */
     game: GameTestContext;
+
+    /**
+     * 自动前端致命错误门禁。
+     *
+     * 默认拦截 React 渲染循环等会让 UI 进入不可信状态的错误。
+     */
+    fatalFrontendErrors: void;
     
     /**
      * Worker 端口信息
@@ -105,6 +113,34 @@ export const test = base.extend<FrameworkFixtures>({
 
         await use(context);
     },
+
+    fatalFrontendErrors: [async ({ context, page }, use) => {
+        const trackedPages = new Map<typeof page, {
+            label: string;
+            diagnostics: ReturnType<typeof attachPageDiagnostics>;
+        }>();
+        const trackPage = (targetPage: typeof page) => {
+            if (trackedPages.has(targetPage)) {
+                return;
+            }
+            trackedPages.set(targetPage, {
+                label: `page-${trackedPages.size}`,
+                diagnostics: attachPageDiagnostics(targetPage),
+            });
+        };
+
+        trackPage(page);
+        context.pages().forEach(trackPage);
+        context.on('page', trackPage);
+
+        try {
+            await use();
+        } finally {
+            context.removeListener('page', trackPage);
+            await Promise.resolve();
+            assertNoFatalFrontendErrors(Array.from(trackedPages.values()));
+        }
+    }, { auto: true }],
 
     /**
      * workerPorts fixture
