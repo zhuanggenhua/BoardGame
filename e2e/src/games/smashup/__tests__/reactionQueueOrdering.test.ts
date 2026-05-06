@@ -10,6 +10,7 @@ import { getInteractionHandler, clearInteractionHandlers } from '../domain/abili
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { resolveSmashUpReactionChoice } from '../domain/reactionSession';
 import { processAffectTriggers, processDeckInspectionTriggers, processMoveTriggers } from '../domain/reducer';
+import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import '../domain/index';
 
 // Minimal factories reused from other tests
@@ -133,6 +134,61 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(rq!.state.core.triggerQueue ?? []).toHaveLength(0);
     expect(rq!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
     expect(rq!.events.filter(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toHaveLength(2);
+  });
+
+  it('互不冲突的 mandatory triggers 若会进入真实交互，应直接进入真实交互而不是先弹排序', () => {
+    registerTrigger('test_real_prompt', 'onTurnStart', (ctx: any) => {
+      const interaction = createSimpleChoice(
+        `test_real_prompt_${ctx.now}`,
+        '0',
+        '真实交互',
+        [
+          { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+          { id: 'apply', label: '执行', value: { apply: true }, displayMode: 'button' as const },
+        ],
+        { sourceId: 'test_real_prompt', targetType: 'button' },
+      );
+      return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, interaction),
+      };
+    }, {
+      orderingFootprint: {
+        reads: ['handState'],
+        writes: ['handState', 'discardState'],
+      },
+    });
+    registerTrigger('test_real_side_effect', 'onTurnStart', () => ([{
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: { playerId: '0', messageKey: 'side_effect', tone: 'info' },
+      timestamp: 1,
+    }] as any), {
+      orderingFootprint: {
+        writes: ['playLimits'],
+      },
+    });
+
+    const core = baseCore({
+      bases: [
+        makeBase('test_base_1', [makeMinion('p1', 'test_real_prompt', '0', 3)]),
+        makeBase('test_base_2', [makeMinion('s1', 'test_real_side_effect', '0', 3)]),
+      ],
+    });
+
+    const queued = collectTriggers(core, 'onTurnStart', {
+      state: core,
+      matchState: makeMatchState(core),
+      playerId: '0',
+      random: { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+      now: 1,
+    });
+    expect(queued).toBeDefined();
+
+    const ms0 = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
+    const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
+    expect(rq).toBeDefined();
+    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).toBe('test_real_prompt');
+    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).not.toBe('smashup_reaction_choose');
   });
 
   it('存在读写冲突的 mandatory triggers 仍应保留排序交互', () => {
