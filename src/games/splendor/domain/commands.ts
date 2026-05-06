@@ -51,6 +51,9 @@ export function validate(state: SplendorCore, command: SplendorCommand): Validat
 }
 
 function validateTakeTwoSame(state: SplendorCore, color: string): ValidationResult {
+    if (state.pendingResolution) {
+        return { valid: false, error: 'pendingResolutionActive' };
+    }
     if (!GEM_COLORS.includes(color as (typeof GEM_COLORS)[number])) {
         return { valid: false, error: 'invalidGemColor' };
     }
@@ -70,6 +73,9 @@ function validateHostStartGame(state: SplendorCore, playerId: string): Validatio
 }
 
 function validateTakeThree(state: SplendorCore, colors: string[]): ValidationResult {
+    if (state.pendingResolution) {
+        return { valid: false, error: 'pendingResolutionActive' };
+    }
     const unique = Array.from(new Set(colors));
     if (unique.length !== colors.length || unique.length < 1 || unique.length > 3) {
         return { valid: false, error: 'invalidTakeThreeSelection' };
@@ -91,6 +97,9 @@ function validateTakeThree(state: SplendorCore, colors: string[]): ValidationRes
 }
 
 function validateReserveOpen(state: SplendorCore, tier: number, cardId: string, playerId: string): ValidationResult {
+    if (state.pendingResolution) {
+        return { valid: false, error: 'pendingResolutionActive' };
+    }
     if (!CARD_TIERS.includes(tier as 1 | 2 | 3)) {
         return { valid: false, error: 'invalidTier' };
     }
@@ -104,6 +113,9 @@ function validateReserveOpen(state: SplendorCore, tier: number, cardId: string, 
 }
 
 function validateReserveDeckTop(state: SplendorCore, tier: number, playerId: string): ValidationResult {
+    if (state.pendingResolution) {
+        return { valid: false, error: 'pendingResolutionActive' };
+    }
     if (!CARD_TIERS.includes(tier as 1 | 2 | 3)) {
         return { valid: false, error: 'invalidTier' };
     }
@@ -117,6 +129,9 @@ function validateReserveDeckTop(state: SplendorCore, tier: number, playerId: str
 }
 
 function validateBuyOpen(state: SplendorCore, tier: number, cardId: string, playerId: string): ValidationResult {
+    if (state.pendingResolution) {
+        return { valid: false, error: 'pendingResolutionActive' };
+    }
     if (!CARD_TIERS.includes(tier as 1 | 2 | 3) || !state.market[tier as 1 | 2 | 3].includes(cardId)) {
         return { valid: false, error: 'cardNotInMarket' };
     }
@@ -128,6 +143,9 @@ function validateBuyOpen(state: SplendorCore, tier: number, cardId: string, play
 }
 
 function validateBuyReserved(state: SplendorCore, cardId: string, playerId: string): ValidationResult {
+    if (state.pendingResolution) {
+        return { valid: false, error: 'pendingResolutionActive' };
+    }
     if (!state.players[playerId].reservedCardIds.includes(cardId)) {
         return { valid: false, error: 'cardNotReserved' };
     }

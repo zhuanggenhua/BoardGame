@@ -95,13 +95,28 @@ export function calculateEffectiveCost(player: SplendorPlayerState, card: Splend
     };
 }
 
-export function canAffordCard(player: SplendorPlayerState, card: SplendorCardDef): boolean {
+export function getMissingTokenCount(player: SplendorPlayerState, card: SplendorCardDef): number {
     const effectiveCost = calculateEffectiveCost(player, card);
     let missing = 0;
     for (const color of GEM_COLORS) {
         missing += Math.max(0, effectiveCost[color] - player.tokens[color]);
     }
-    return missing <= player.tokens.gold;
+    return Math.max(0, missing - player.tokens.gold);
+}
+
+export function getMissingColors(player: SplendorPlayerState, card: SplendorCardDef): GemColor[] {
+    const effectiveCost = calculateEffectiveCost(player, card);
+    const missing: GemColor[] = [];
+    for (const color of GEM_COLORS) {
+        if (effectiveCost[color] > player.tokens[color]) {
+            missing.push(color);
+        }
+    }
+    return missing;
+}
+
+export function canAffordCard(player: SplendorPlayerState, card: SplendorCardDef): boolean {
+    return getMissingTokenCount(player, card) <= 0;
 }
 
 export function getPaymentTokens(player: SplendorPlayerState, card: SplendorCardDef): Partial<Record<TokenColor, number>> {
@@ -131,12 +146,20 @@ export function calculatePoints(player: SplendorPlayerState): number {
     return cardPoints + noblePoints;
 }
 
+export function getMissingNobleRequirementCount(player: SplendorPlayerState, noble: SplendorNobleDef): number {
+    const discounts = calculateDiscounts(player);
+    let totalMissing = 0;
+    for (const color of GEM_COLORS) {
+        totalMissing += Math.max(0, noble.requirement[color] - discounts[color]);
+    }
+    return totalMissing;
+}
+
 export function getEligibleNobles(core: SplendorCore, playerId: PlayerId): string[] {
     const player = core.players[playerId];
-    const discounts = calculateDiscounts(player);
     return core.nobleIds.filter((nobleId) => {
         const noble = NOBLE_DEFS_BY_ID[nobleId];
-        return noble ? GEM_COLORS.every((color) => discounts[color] >= noble.requirement[color]) : false;
+        return noble ? getMissingNobleRequirementCount(player, noble) === 0 : false;
     });
 }
 
@@ -163,6 +186,10 @@ export function computeGameResult(core: SplendorCore): GameOverResult {
     return { draw: true, winners, scores };
 }
 
+function maskDeck(tier: CardTier, deck: string[]): string[] {
+    return deck.map((_, index) => `hidden-deck-${tier}-${index}`);
+}
+
 export function maskCoreForPlayer(core: SplendorCore, playerId: PlayerId): Partial<SplendorCore> {
     const players = Object.fromEntries(
         Object.entries(core.players).map(([id, player]) => {
@@ -178,5 +205,10 @@ export function maskCoreForPlayer(core: SplendorCore, playerId: PlayerId): Parti
             ];
         }),
     ) as SplendorCore['players'];
-    return { players };
+    const decks = {
+        1: maskDeck(1, core.decks[1]),
+        2: maskDeck(2, core.decks[2]),
+        3: maskDeck(3, core.decks[3]),
+    } as SplendorCore['decks'];
+    return { players, decks };
 }

@@ -40,8 +40,8 @@ const entry: GameManifestEntry = {
         },
     },
     ai: {
-        capture: false,
-        localAi: false,
+        capture: true,
+        localAi: true,
         remoteAi: false,
     },
     mobileProfile: 'landscape-adapted',

@@ -1,9 +1,14 @@
 import { describe, expect, test } from 'vitest';
 import { SplendorDomain } from '../domain';
-import type { SplendorCommand, SplendorCore } from '../domain';
-import { CARD_DEFS_BY_ID, NOBLE_DEFS_BY_ID, calculateDiscounts, calculateEffectiveCost, computeGameResult } from '../domain/rules';
-import { formatSplendorActionEntry } from '../game';
-import type { ActionLogEntry, ActionLogSegment, Command, GameEvent, RandomFn } from '../../../engine/types';
+import type { SplendorCommand, SplendorCore, TokenColor } from '../domain';
+import { CARD_DEFS_BY_ID, NOBLE_DEFS_BY_ID, calculateDiscounts, calculateEffectiveCost, computeGameResult, createPlayerState, getBankForPlayerCount } from '../domain/rules';
+import { AI_ACTION_KINDS, buildSplendorAiLegalActions, splendorScorers } from '../ai';
+import { formatSplendorActionEntry, engineConfig } from '../game';
+import { resolveNextLocalAiAction } from '../../../engine/ai';
+import type { AiDecisionContext, AiLegalAction } from '../../../engine/ai';
+import { resolveAiDifficultyProfile } from '../../../engine/ai/difficulty';
+import { createInitialSystemState } from '../../../engine/pipeline';
+import type { ActionLogEntry, ActionLogSegment, Command, GameEvent, MatchState, RandomFn } from '../../../engine/types';
 import { SPLENDOR_AUDIO_CONFIG } from '../audio.config';
 import type { AudioEvent } from '../../../lib/audio/types';
 import { SPLENDOR_ASSETS } from '../assets';
@@ -18,6 +23,67 @@ const makeRandom = (): RandomFn => ({
     d: (max: number) => Math.max(1, Math.ceil(max / 2)),
     range: (min: number, max: number) => Math.floor((min + max) / 2),
     shuffle: <T,>(array: T[]) => [...array],
+});
+
+const createAiState = (coreOverrides: Partial<SplendorCore> = {}): MatchState<SplendorCore> => {
+    const playerIds = ['0', '1'];
+    const baseCore: SplendorCore = {
+        playerOrder: playerIds,
+        hostPlayerId: '0',
+        hostStarted: true,
+        startingPlayerId: '0',
+        currentPlayer: '0',
+        round: 1,
+        players: {
+            '0': createPlayerState('0'),
+            '1': createPlayerState('1'),
+        },
+        bank: getBankForPlayerCount(2),
+        market: {
+            1: ['t1-black-1', 't1-blue-1', 't1-green-1', 't1-red-1'],
+            2: ['t2-black-1', 't2-blue-1', 't2-green-1', 't2-red-1'],
+            3: ['t3-black-1', 't3-blue-1', 't3-green-1', 't3-red-1'],
+        },
+        decks: { 1: [], 2: [], 3: [] },
+        nobleIds: ['noble-1', 'noble-2', 'noble-3'],
+        endgame: { triggered: false },
+        setupPlayerCount: 2,
+    };
+    const core = { ...baseCore, ...coreOverrides } as SplendorCore;
+    return {
+        core,
+        sys: {
+            ...createInitialSystemState(playerIds, []),
+            phase: 'main',
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+        },
+    } as unknown as MatchState<SplendorCore>;
+};
+
+const createAiDecisionContext = (
+    state: MatchState<SplendorCore>,
+    difficulty: 'easy' | 'normal' | 'hard' | 'expert' = 'hard',
+): AiDecisionContext => ({
+    gameId: 'splendor',
+    matchId: 'test',
+    playerId: '0',
+    visibleState: state,
+    interaction: null,
+    responseWindow: null,
+    legalActions: [],
+    rulesVersion: null,
+    decisionBudgetMs: 250,
+    source: 'local',
+    difficulty: resolveAiDifficultyProfile(difficulty),
+});
+
+const createAiTestAction = (kind: string, metadata: Record<string, unknown> = {}): AiLegalAction => ({
+    actionId: `test-${kind}-${JSON.stringify(metadata)}`,
+    kind,
+    label: kind,
+    commands: [{ type: 'TEST', payload: {} }],
+    metadata,
 });
 
 const reduceAll = (core: SplendorCore, events: ReturnType<typeof SplendorDomain.execute>) => {
@@ -48,6 +114,13 @@ const findI18nSegment = (segments: ActionLogSegment[], key: string) =>
     segments.find((segment) => segment.type === 'i18n' && (segment as { key: string }).key === key) as
         | { type: 'i18n'; ns: string; key: string; params?: Record<string, string | number> }
         | undefined;
+
+const hasTokenPair = (segments: ActionLogSegment[], color: TokenColor, count: number): boolean =>
+    segments.some((segment, index) => {
+        if (segment.type !== 'text' || segment.text !== `${count}枚`) return false;
+        const next = segments[index + 1];
+        return next?.type === 'i18n' && (next as { key: string }).key === `colors.${color}`;
+    });
 
 describe('splendor smoke', () => {
     test('setup creates bank and market for two players', () => {
@@ -1079,6 +1152,9 @@ describe('splendor smoke', () => {
 
         const partial = SplendorDomain.playerView?.(hiddenCore, '0');
         expect(partial?.players?.['1'].reservedCardIds).toEqual(['hidden-reserved-1-0', 'hidden-reserved-1-1']);
+        expect(partial?.decks?.[1]).toHaveLength(hiddenCore.decks[1].length);
+        expect(partial?.decks?.[1]?.[0]).toBe('hidden-deck-1-0');
+        expect(partial?.decks?.[1]).not.toEqual(hiddenCore.decks[1]);
     });
 
     test('playerView masks each opponent reserved cards consistently in three-player game', () => {
@@ -1105,6 +1181,10 @@ describe('splendor smoke', () => {
         expect(p0View?.players?.['2'].reservedCardIds).toEqual(['hidden-reserved-2-0', 'hidden-reserved-2-1']);
         expect(p1View?.players?.['1'].reservedCardIds).toEqual(['t1-white-1']);
         expect(p1View?.players?.['2'].reservedCardIds).toEqual(['hidden-reserved-2-0', 'hidden-reserved-2-1']);
+        expect(p0View?.decks?.[2]).toHaveLength(hiddenCore.decks[2].length);
+        expect(p0View?.decks?.[2]?.[0]).toBe('hidden-deck-2-0');
+        expect(p1View?.decks?.[3]).toHaveLength(hiddenCore.decks[3].length);
+        expect(p1View?.decks?.[3]?.[0]).toBe('hidden-deck-3-0');
     });
 
     test('game ends after last player completes round once endgame was triggered', () => {
@@ -1803,6 +1883,55 @@ describe('splendor smoke', () => {
         expect(cardSeg?.previewRef?.rendererId).toBe('splendor-card-renderer');
     });
 
+    test('action log buy card uses TOKENS_SPENT event payload instead of recomputing from post-buy state', () => {
+        const core = startedCore(SplendorDomain.setup(['0', '1'], makeRandom()));
+        const cardId = 't2-white-2';
+        const setupCore: SplendorCore = {
+            ...core,
+            market: {
+                ...core.market,
+                2: [cardId, ...core.market[2].filter((id) => id !== cardId)],
+            },
+            players: {
+                ...core.players,
+                '0': {
+                    ...core.players['0'],
+                    tokens: {
+                        white: 2,
+                        blue: 3,
+                        green: 0,
+                        red: 3,
+                        black: 0,
+                        gold: 0,
+                    },
+                },
+            },
+        };
+
+        const command: SplendorCommand = {
+            type: 'BUY_OPEN_CARD',
+            playerId: '0',
+            payload: { tier: 2, cardId },
+            timestamp: 1,
+        };
+        const events = SplendorDomain.execute(stateOf(setupCore), command, makeRandom());
+        const nextCore = reduceAll(setupCore, events);
+        const entries = normalizeEntries(formatSplendorActionEntry({
+            command,
+            state: stateOf(nextCore),
+            events: events as GameEvent[],
+        }));
+
+        expect(entries).toHaveLength(1);
+        expect(hasTokenPair(entries[0].segments, 'white', 2)).toBe(true);
+        expect(hasTokenPair(entries[0].segments, 'blue', 3)).toBe(true);
+        expect(hasTokenPair(entries[0].segments, 'red', 3)).toBe(true);
+        expect(entries[0].segments.some((segment) =>
+            segment.type === 'i18n' && (segment as { key: string }).key === 'colors.gold')).toBe(false);
+        expect(entries[0].segments.some((segment) =>
+            segment.type === 'text' && segment.text === '7枚')).toBe(false);
+    });
+
     test('action log uses resolved noble name for choose noble', () => {
         const core = SplendorDomain.setup(['0', '1'], makeRandom());
         const command: Command = {
@@ -1821,5 +1950,85 @@ describe('splendor smoke', () => {
         expect(entries).toHaveLength(1);
         const seg = findI18nSegment(entries[0].segments, 'actionLog.chooseNoble');
         expect(seg?.params).toEqual({ noble: NOBLE_DEFS_BY_ID['noble-1']?.name });
+    });
+
+    test('AI 待处理丢弃时只生成 discard 动作', () => {
+        const state = createAiState({
+            players: {
+                '0': { ...createPlayerState('0'), tokens: { white: 3, blue: 3, green: 3, red: 2, black: 0, gold: 0 } },
+                '1': createPlayerState('1'),
+            },
+            pendingResolution: { type: 'discardToLimit', excess: 1 },
+        });
+
+        const actions = buildSplendorAiLegalActions({ playerId: '0', state });
+        expect(actions.length).toBeGreaterThan(0);
+        expect(actions.every((action) => action.kind === 'discard')).toBe(true);
+    });
+
+    test('discard scorer 会把仅存在于 reserved 中的目标颜色算进弃牌偏好', () => {
+        const discardScorer = splendorScorers.find((scorer) => scorer.id === 'discard');
+        expect(discardScorer).toBeTruthy();
+
+        const state = createAiState({
+            market: { 1: [], 2: [], 3: [] },
+            decks: { 1: [], 2: [], 3: [] },
+            players: {
+                '0': {
+                    ...createPlayerState('0'),
+                    tokens: { white: 1, blue: 1, green: 0, red: 1, black: 8, gold: 0 },
+                    reservedCardIds: ['t1-black-3'],
+                },
+                '1': createPlayerState('1'),
+            },
+            pendingResolution: { type: 'discardToLimit', excess: 1 },
+        });
+        const context = createAiDecisionContext(state, 'hard');
+
+        const blackScore = discardScorer?.score(
+            context,
+            createAiTestAction(AI_ACTION_KINDS.DISCARD, { color: 'black' }),
+        );
+        const whiteScore = discardScorer?.score(
+            context,
+            createAiTestAction(AI_ACTION_KINDS.DISCARD, { color: 'white' }),
+        );
+        const blueScore = discardScorer?.score(
+            context,
+            createAiTestAction(AI_ACTION_KINDS.DISCARD, { color: 'blue' }),
+        );
+
+        expect(blackScore).not.toBeNull();
+        expect(whiteScore).not.toBeNull();
+        expect(blueScore).not.toBeNull();
+        expect((blackScore as { score: number }).score).toBeGreaterThan((whiteScore as { score: number }).score);
+        expect((blackScore as { score: number }).score).toBeGreaterThan((blueScore as { score: number }).score);
+    });
+
+    test('AI 贵族选择决议不会退化成选第一个动作', async () => {
+        const state = createAiState({
+            nobleIds: ['noble-3', 'noble-1'],
+            players: {
+                '0': {
+                    ...createPlayerState('0'),
+                    purchasedCardIds: ['t1-white-1', 't1-white-2', 't1-blue-1', 't1-blue-2'],
+                },
+                '1': createPlayerState('1'),
+            },
+            pendingResolution: { type: 'chooseNoble', nobleIds: ['noble-3', 'noble-1'] },
+        });
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig,
+            state,
+            matchId: 'local:splendor-choose-noble-alignment',
+            seatControllers: {
+                '0': { type: 'local-ai', difficulty: 'hard' },
+            },
+        });
+
+        expect(resolution).not.toBeNull();
+        expect(resolution?.action.kind).toBe('choose-noble');
+        expect(resolution?.action.metadata?.nobleId).toBe('noble-1');
     });
 });
