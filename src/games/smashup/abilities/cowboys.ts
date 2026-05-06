@@ -1,8 +1,7 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
-import { createSimpleChoice, getCurrentTrackedCardTopSnapshot, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerAbility } from '../domain/abilityRegistry';
+import { getCurrentTrackedCardTopSnapshot } from '../../../engine/systems/InteractionSystem';
+import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import {
     addTempPower,
     buildActionMinionTargetOptions,
@@ -17,7 +16,7 @@ import {
     inspectDeck,
     moveTitan,
 } from '../domain/abilityHelpers';
-import { registerBaseAbility, registerExtended } from '../domain/baseAbilities';
+import { registerBaseAbility, registerExtended, type BaseAbilityContext } from '../domain/baseAbilities';
 import { isMinionProtected, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { canStartDuel, isMinionInActiveDuel, startDuel } from '../domain/duel';
@@ -29,6 +28,7 @@ import type {
     CardsDrawnEvent,
     CardInstance,
     DeckReorderedEvent,
+    DuelOutcomeKind,
     MinionOnBase,
     MinionMetadataUpdatedEvent,
     SmashUpCore,
@@ -36,13 +36,50 @@ import type {
 } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 
 type MinionChoice = { minionUid: string; baseIndex: number; defId?: string };
 type FriendlyChoice = MinionChoice;
-type DuelContinuation = {
+type CowboysPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+type CowboysDuelPromptContext = CowboysPromptContext & {
+    visibleSourceId: string;
+    title: string;
     friendlyMinionUid: string;
+    sourceBaseIndex: number;
     casterPlayerId: PlayerId;
-    sourceId: string;
+    duelSourceId: string;
+    outcome: DuelOutcomeKind;
+    destroyReason?: string;
+    respectActionProtection?: boolean;
+};
+type CowboysFriendlyDuelPromptContext = CowboysPromptContext & {
+    visibleSourceId: string;
+    title: string;
+    nextVisibleSourceId: string;
+    nextTitle: string;
+    duelSourceId: string;
+    outcome: DuelOutcomeKind;
+    destroyReason?: string;
+    respectActionProtection?: boolean;
+};
+type CowboysDynamitePromptContext = CowboysPromptContext & {
+    baseIndex: number;
+    defId: string;
+};
+type CowboysDynamiteSeenPromptContext = CowboysPromptContext & {
+    cardUid: string;
+    ownerPlayerId: PlayerId;
+    targetPlayerId: PlayerId;
+    sourceZone: 'hand' | 'deck';
 };
 type StagecoachSourceContinuation = {
     sourceBaseIndex: number;
@@ -60,13 +97,36 @@ type StagecoachDestinationContinuation = {
     sourceBaseIndex: number;
     selectedCards: StagecoachCardChoice[];
 };
-type GoldChoice = { cardUid: string; defId: string };
 type GoldModeChoice = { mode: 'hand' | 'play' };
 type GoldOrderChoice = { topCardUid: string; cardUid?: string; defId?: string };
 type GoldPromptContext = {
     chosenCard: CardInstance;
     remainingCards: CardInstance[];
 };
+type GoldSelectPromptContext = CowboysPromptContext & {
+    topCards: CardInstance[];
+    random: RandomFn;
+};
+type GoldRuntimePromptContext = CowboysPromptContext & GoldPromptContext & {
+    random: RandomFn;
+};
+type StagecoachSourcePromptContext = CowboysPromptContext;
+type StagecoachCardsPromptContext = CowboysPromptContext & StagecoachSourceContinuation;
+type StagecoachDestinationPromptContext = CowboysPromptContext & StagecoachDestinationContinuation;
+
+function createCowboysPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    extra?: TExtra,
+): CowboysPromptContext & TExtra {
+    return {
+        matchState,
+        playerId,
+        now,
+        ...(extra ?? {} as TExtra),
+    };
+}
 
 function getCurrentDeckTopSnapshotCards<T extends { uid: string; defId: string }>(
     core: SmashUpCore,
@@ -117,14 +177,28 @@ function isDynamiteSurpriseDefId(defId: string): boolean {
 }
 
 export function registerCowboysAbilities(): void {
-    registerAbility('cowboys_gunfighter', 'onPlay', cowboysGunfighterOnPlay);
-    registerAbility('cowboys_quick_draw', 'onPlay', cowboysQuickDrawOnPlay);
-    registerAbility('cowboys_high_noon', 'onPlay', cowboysHighNoonOnPlay);
-    registerAbility('cowboys_run_em_off', 'onPlay', cowboysRunEmOffOnPlay);
-    registerAbility('cowboys_gold_in_them_thar_hills', 'onPlay', cowboysGoldInThemTharHillsOnPlay);
-    registerAbility('cowboys_stagecoach', 'onPlay', cowboysStagecoachOnPlay);
+    registerAbilityProgram('cowboys_gunfighter', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(cowboysGunfighterOnPlay),
+    });
+    registerAbilityProgram('cowboys_quick_draw', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(cowboysQuickDrawOnPlay),
+    });
+    registerAbilityProgram('cowboys_high_noon', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(cowboysHighNoonOnPlay),
+    });
+    registerAbilityProgram('cowboys_run_em_off', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(cowboysRunEmOffOnPlay),
+    });
+    registerAbilityProgram('cowboys_gold_in_them_thar_hills', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(cowboysGoldInThemTharHillsOnPlay),
+    });
+    registerAbilityProgram('cowboys_stagecoach', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(cowboysStagecoachOnPlay),
+    });
     registerAbility('cowboys_form_a_posse', 'onPlay', cowboysFormAPosseOnPlay);
-    registerAbility('cowboys_dynamite_surprise', 'special', cowboysDynamiteSurpriseSpecial);
+    registerAbilityProgram('cowboys_dynamite_surprise', 'special', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(cowboysDynamiteSurpriseSpecial),
+    });
 
     registerTrigger('cowboys_sheriff', 'beforeScoring', cowboysSheriffBeforeScoring, {
         optional: true,
@@ -134,49 +208,49 @@ export function registerCowboysAbilities(): void {
     registerTrigger('cowboys_gold_strike', 'onMinionPlayed', cowboysGoldStrikeOnMinionPlayed, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        orderingFootprint: {
+            reads: ['sourceState', 'deckState'],
+            writes: ['handState', 'deckState'],
+        },
     });
     registerTrigger('cowboys_dynamite_surprise', 'onDeckInspected', cowboysDynamiteSurpriseSeenTrigger, {
         global: true,
         globalZones: ['hand', 'deck'],
     });
 
-    registerBaseAbility('base_so_so_corral', 'onMinionPlayed', cowboysBaseSoSoCorralOnMinionPlayed, { mandatory: false });
+    registerBaseAbility('base_so_so_corral', 'onMinionPlayed', cowboysBaseSoSoCorralOnMinionPlayed, {
+        mandatory: false,
+        orderingFootprint: {
+            reads: ['triggerMinionState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+        },
+    });
     registerExtended('base_saloon', 'onMinionDestroyed', cowboysBaseSaloonOnMinionDestroyed, { mandatory: true });
 }
 
 export function registerCowboysInteractionHandlers(): void {
-    registerInteractionHandler('cowboys_gunfighter', handleGunfighterTarget);
-    registerInteractionHandler('cowboys_quick_draw', handleQuickDraw);
-    registerInteractionHandler('cowboys_high_noon_friendly', handleHighNoonFriendly);
-    registerInteractionHandler('cowboys_high_noon_enemy', handleHighNoonEnemy);
-    registerInteractionHandler('cowboys_run_em_off_friendly', handleRunEmOffFriendly);
-    registerInteractionHandler('cowboys_run_em_off_enemy', handleRunEmOffEnemy);
-    registerInteractionHandler('cowboys_gold_in_them_thar_hills', handleGoldInThemTharHills);
-    registerInteractionHandler('cowboys_gold_in_them_thar_hills_order', handleGoldInThemTharHillsOrder);
-    registerInteractionHandler('cowboys_gold_in_them_thar_hills_mode', handleGoldInThemTharHillsMode);
-    registerInteractionHandler('cowboys_gold_in_them_thar_hills_minion_base', handleGoldInThemTharHillsMinionBase);
-    registerInteractionHandler('cowboys_gold_in_them_thar_hills_action_base', handleGoldInThemTharHillsActionBase);
-    registerInteractionHandler('cowboys_gold_in_them_thar_hills_action_minion', handleGoldInThemTharHillsActionMinion);
-    registerInteractionHandler('cowboys_stagecoach_source', handleStagecoachSource);
-    registerInteractionHandler('cowboys_stagecoach_cards', handleStagecoachCards);
-    registerInteractionHandler('cowboys_stagecoach_destination', handleStagecoachDestination);
-    registerInteractionHandler('cowboys_dynamite_surprise', handleDynamiteSurprise);
-    registerInteractionHandler('cowboys_dynamite_surprise_seen', handleDynamiteSurpriseSeen);
-    registerInteractionHandler('cowboys_sheriff_before_scoring', handleSheriffBeforeScoring);
-    registerInteractionHandler('base_so_so_corral', handleBaseSoSoCorral);
 }
 
 function cowboysGunfighterOnPlay(ctx: AbilityContext): AbilityResult {
     if (!canStartDuel(ctx.state) || ctx.duel) return { events: [] };
-    return queueEnemyDuelPrompt(
-        ctx.matchState,
-        ctx.state,
-        ctx.playerId,
-        ctx.cardUid,
-        ctx.now,
-        'cowboys_gunfighter',
-        '枪手：你可以令此随从与这里另一位玩家的一个随从决斗',
+    const enemyOptions = buildEnemyMinionOptions(ctx.state, ctx.baseIndex, ctx.playerId);
+    if (enemyOptions.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        cowboysOptionalDuelPromptProgram,
+        createCowboysPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            visibleSourceId: 'cowboys_gunfighter',
+            title: '枪手：你可以令此随从与这里另一位玩家的一个随从决斗',
+            friendlyMinionUid: ctx.cardUid,
+            sourceBaseIndex: ctx.baseIndex,
+            casterPlayerId: ctx.playerId,
+            duelSourceId: 'cowboys_gunfighter',
+            outcome: 'destroy_loser' as DuelOutcomeKind,
+            destroyReason: 'cowboys_gunfighter',
+        }),
     );
+    return { events: result.events, matchState: result.matchState };
 }
 
 function cowboysQuickDrawOnPlay(ctx: AbilityContext): AbilityResult {
@@ -184,14 +258,11 @@ function cowboysQuickDrawOnPlay(ctx: AbilityContext): AbilityResult {
     if (ownMinions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `cowboys_quick_draw_${ctx.now}`,
-        ctx.playerId,
-        '拔枪术：选择你的一个随从获得力量加成',
-        buildMinionTargetOptions(ownMinions, { state: ctx.state, sourcePlayerId: ctx.playerId, sourceDefId: ctx.defId }) as any[],
-        { sourceId: 'cowboys_quick_draw', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        cowboysQuickDrawPromptProgram,
+        createCowboysPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function cowboysHighNoonOnPlay(ctx: AbilityContext): AbilityResult {
@@ -200,14 +271,20 @@ function cowboysHighNoonOnPlay(ctx: AbilityContext): AbilityResult {
     if (options.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `cowboys_high_noon_friendly_${ctx.now}`,
-        ctx.playerId,
-        '正午决斗：选择你的一个随从开始决斗',
-        buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, sourceDefId: ctx.defId }) as any[],
-        { sourceId: 'cowboys_high_noon_friendly', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        cowboysFriendlyDuelPromptProgram,
+        createCowboysPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            visibleSourceId: 'cowboys_high_noon_friendly',
+            title: '正午决斗：选择你的一个随从开始决斗',
+            nextVisibleSourceId: 'cowboys_high_noon_enemy',
+            nextTitle: '正午决斗：选择要决斗的对手随从',
+            duelSourceId: 'cowboys_high_noon',
+            outcome: 'high_noon' as DuelOutcomeKind,
+            destroyReason: 'cowboys_high_noon',
+            respectActionProtection: true,
+        }),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function cowboysRunEmOffOnPlay(ctx: AbilityContext): AbilityResult {
@@ -216,44 +293,32 @@ function cowboysRunEmOffOnPlay(ctx: AbilityContext): AbilityResult {
     if (options.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `cowboys_run_em_off_friendly_${ctx.now}`,
-        ctx.playerId,
-        '赶走他们：选择你的一个随从开始决斗',
-        buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, sourceDefId: ctx.defId }) as any[],
-        { sourceId: 'cowboys_run_em_off_friendly', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        cowboysFriendlyDuelPromptProgram,
+        createCowboysPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            visibleSourceId: 'cowboys_run_em_off_friendly',
+            title: '赶走他们：选择你的一个随从开始决斗',
+            nextVisibleSourceId: 'cowboys_run_em_off_enemy',
+            nextTitle: '赶走他们：选择要决斗的对手随从',
+            duelSourceId: 'cowboys_run_em_off',
+            outcome: 'run_em_off' as DuelOutcomeKind,
+            respectActionProtection: true,
+        }),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function cowboysGoldInThemTharHillsOnPlay(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player || player.deck.length === 0) return { events: [] };
     const topCards = player.deck.slice(0, 3);
-    const options = topCards.map((card, index) => ({
-        id: `top-${index}`,
-        label: getCardDef(card.defId)?.name ?? card.defId,
-        value: { cardUid: card.uid, defId: card.defId },
-        _source: 'deck' as const,
-        displayMode: 'card' as const,
-    }));
-    const interaction = createSimpleChoice(
-        `cowboys_gold_in_them_thar_hills_${ctx.now}`,
-        ctx.playerId,
-        '那山里有金子：从牌库顶三张牌中选择一张抓到手里',
-        options,
-        { sourceId: 'cowboys_gold_in_them_thar_hills', targetType: 'generic', responseValidationMode: 'live' },
+    const result = executeAbilityProgram(
+        cowboysGoldSelectPromptProgram,
+        createCowboysPromptContext(ctx.matchState, ctx.playerId, ctx.now, { topCards, random: ctx.random }),
     );
-    (interaction.data as any).continuationContext = {
-        topCards,
-    };
-    (interaction.data as any).optionsGenerator = (nextState: MatchState<SmashUpCore>, data: any) => {
-        const topSnapshot = (data?.continuationContext as { topCards?: CardInstance[] } | undefined)?.topCards ?? [];
-        return buildGoldTopCardOptions(nextState.core, ctx.playerId, topSnapshot);
-    };
     return {
         events: [inspectDeck(ctx.playerId, ctx.playerId, topCards.length, 'cowboys_gold_in_them_thar_hills', ctx.now)],
-        matchState: queueInteraction(ctx.matchState, interaction),
+        matchState: result.matchState,
     };
 }
 
@@ -262,14 +327,11 @@ function cowboysStagecoachOnPlay(ctx: AbilityContext): AbilityResult {
     if (sourceBases.length === 0 || ctx.state.bases.length <= 1) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `cowboys_stagecoach_source_${ctx.now}`,
-        ctx.playerId,
-        '驿站马车：选择要搬运卡牌的来源基地',
-        buildBaseTargetOptions(sourceBases, ctx.state),
-        { sourceId: 'cowboys_stagecoach_source', targetType: 'base' },
+    const result = executeAbilityProgram(
+        cowboysStagecoachSourcePromptProgram,
+        createCowboysPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function cowboysFormAPosseOnPlay(ctx: AbilityContext): AbilityResult {
@@ -323,14 +385,14 @@ function cowboysDynamiteSurpriseSpecial(ctx: AbilityContext): AbilityResult {
     if (targetOptions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `cowboys_dynamite_surprise_${ctx.now}`,
-        ctx.playerId,
-        '炸药惊喜：选择一个力量4或以下的随从消灭',
-        targetOptions as any[],
-        { sourceId: 'cowboys_dynamite_surprise', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        cowboysDynamiteSurprisePromptProgram,
+        createCowboysPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            baseIndex: ctx.baseIndex,
+            defId: ctx.defId,
+        }),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function cowboysDynamiteSurpriseSeenTrigger(ctx: TriggerContext): AbilityResult {
@@ -359,23 +421,16 @@ function cowboysDynamiteSurpriseSeenTrigger(ctx: TriggerContext): AbilityResult 
     const targets = collectDynamiteSeenTargets(ctx.state, ctx.inspectionCausePlayerId);
     if (targets.length === 0) return { events: [] };
 
-    const interaction = createSimpleChoice(
-        `cowboys_dynamite_surprise_seen_${ctx.now}_${exposedCard.uid}`,
-        ownerPlayerId,
-        '炸药惊喜：你可以打出这张牌，消灭其中一个力量 4 或以下的随从',
-        [createSkipOption('跳过（不打出）'), ...buildActionMinionTargetOptions(targets, {
-            state: ctx.state,
-            sourcePlayerId: ownerPlayerId,
-            effectType: 'destroy',
-        })] as any[],
-        { sourceId: 'cowboys_dynamite_surprise_seen', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        cowboysDynamiteSurpriseSeenPromptProgram,
+        createCowboysPromptContext(ctx.matchState, ownerPlayerId, ctx.now, {
+            cardUid: exposedCard.uid,
+            ownerPlayerId,
+            targetPlayerId: ctx.inspectionCausePlayerId,
+            sourceZone: ctx.inspectionZone,
+        }),
     );
-    (interaction.data as any).continuationContext = {
-        cardUid: exposedCard.uid,
-        ownerPlayerId,
-        sourceZone: ctx.inspectionZone,
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function cowboysSheriffBeforeScoring(ctx: TriggerContext): AbilityResult {
@@ -383,19 +438,22 @@ function cowboysSheriffBeforeScoring(ctx: TriggerContext): AbilityResult {
         return { events: [] };
     }
     if (!canStartDuel(ctx.state)) return { events: [] };
-    const interaction = createSimpleChoice(
-        `cowboys_sheriff_before_scoring_${ctx.now}_${ctx.sourceCardUid}`,
-        ctx.sourceControllerId,
-        '警长：你可以令此随从与这里另一位玩家的一个随从决斗',
-        [createSkipOption('跳过（不决斗）'), ...buildEnemyMinionOptions(ctx.state, ctx.baseIndex, ctx.sourceControllerId)] as any[],
-        { sourceId: 'cowboys_sheriff_before_scoring', targetType: 'minion' },
+    const enemyOptions = buildEnemyMinionOptions(ctx.state, ctx.baseIndex, ctx.sourceControllerId);
+    if (enemyOptions.length === 0) return { events: [] };
+    const result = executeAbilityProgram(
+        cowboysOptionalDuelPromptProgram,
+        createCowboysPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
+            visibleSourceId: 'cowboys_sheriff_before_scoring',
+            title: '警长：你可以令此随从与这里另一位玩家的一个随从决斗',
+            friendlyMinionUid: ctx.sourceCardUid,
+            sourceBaseIndex: ctx.baseIndex,
+            casterPlayerId: ctx.sourceControllerId,
+            duelSourceId: 'cowboys_sheriff_before_scoring',
+            outcome: 'destroy_loser' as DuelOutcomeKind,
+            destroyReason: 'cowboys_sheriff_before_scoring',
+        }),
     );
-    (interaction.data as any).continuationContext = {
-        sourceId: 'cowboys_sheriff_before_scoring',
-        friendlyMinionUid: ctx.sourceCardUid,
-        casterPlayerId: ctx.sourceControllerId,
-    } satisfies DuelContinuation;
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function cowboysGoldStrikeOnMinionPlayed(ctx: TriggerContext): SmashUpEvent[] {
@@ -403,26 +461,27 @@ function cowboysGoldStrikeOnMinionPlayed(ctx: TriggerContext): SmashUpEvent[] {
     return buildStandardDrawEvents(ctx.state, ctx.sourceControllerId, 1, ctx.random, ctx.now);
 }
 
-function cowboysBaseSoSoCorralOnMinionPlayed(ctx: any): AbilityResult {
+function cowboysBaseSoSoCorralOnMinionPlayed(ctx: BaseAbilityContext): AbilityResult {
     if (!ctx.matchState || !ctx.minionUid || ctx.baseIndex === undefined) return { events: [] };
     if (!canStartDuel(ctx.state)) return { events: [] };
     const minion = ctx.state.bases[ctx.baseIndex]?.minions.find((entry: MinionOnBase) => entry.uid === ctx.minionUid);
     if (!minion) return { events: [] };
     const enemyOptions = buildEnemyMinionOptions(ctx.state, ctx.baseIndex, minion.controller);
     if (enemyOptions.length === 0) return { events: [] };
-    const interaction = createSimpleChoice(
-        `base_so_so_corral_${ctx.now}_${ctx.minionUid}`,
-        minion.controller,
-        '小镇：你可以令刚打出的随从与这里另一位玩家的一个随从决斗',
-        [createSkipOption('跳过（不决斗）'), ...enemyOptions] as any[],
-        { sourceId: 'base_so_so_corral', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        cowboysOptionalDuelPromptProgram,
+        createCowboysPromptContext(ctx.matchState, minion.controller, ctx.now, {
+            visibleSourceId: 'base_so_so_corral',
+            title: '小镇：你可以令刚打出的随从与这里另一位玩家的一个随从决斗',
+            friendlyMinionUid: ctx.minionUid,
+            sourceBaseIndex: ctx.baseIndex,
+            casterPlayerId: minion.controller,
+            duelSourceId: 'base_so_so_corral',
+            outcome: 'destroy_loser' as DuelOutcomeKind,
+            destroyReason: 'base_so_so_corral',
+        }),
     );
-    (interaction.data as any).continuationContext = {
-        sourceId: 'base_so_so_corral',
-        friendlyMinionUid: ctx.minionUid,
-        casterPlayerId: minion.controller,
-    } satisfies DuelContinuation;
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function cowboysBaseSaloonOnMinionDestroyed(ctx: any): AbilityResult {
@@ -434,417 +493,740 @@ function cowboysBaseSaloonOnMinionDestroyed(ctx: any): AbilityResult {
     };
 }
 
-function queueEnemyDuelPrompt(
-    matchState: MatchState<SmashUpCore>,
-    state: SmashUpCore,
-    playerId: PlayerId,
-    friendlyMinionUid: string,
-    now: number,
-    sourceId: string,
-    title: string,
-): AbilityResult {
-    const found = state.bases.findIndex(base => base.minions.some(minion => minion.uid === friendlyMinionUid));
-    if (found < 0) return { events: [] };
-    const enemyOptions = buildEnemyMinionOptions(state, found, playerId);
-    if (enemyOptions.length === 0) {
-        return { events: [buildAbilityFeedback(playerId, 'feedback.no_valid_targets', now)] };
-    }
-    const interaction = createSimpleChoice(
-        `${sourceId}_${now}_${friendlyMinionUid}`,
-        playerId,
-        title,
-        [createSkipOption('跳过（不决斗）'), ...enemyOptions] as any[],
-        { sourceId, targetType: 'minion' },
-    );
-    (interaction.data as any).continuationContext = {
-        sourceId,
-        friendlyMinionUid,
-        casterPlayerId: playerId,
-    } satisfies DuelContinuation;
-    return { events: [], matchState: queueInteraction(matchState, interaction) };
-}
-
-const handleGunfighterTarget = (state: MatchState<SmashUpCore>, _playerId: string, value: unknown, data: any, _random: RandomFn, now: number) => {
-    const selected = value as { skip?: boolean; minionUid?: string };
-    if (selected?.skip || !selected?.minionUid) return { state, events: [] };
-    const ctx = data?.continuationContext as DuelContinuation | undefined;
-    if (!ctx) return { state, events: [] };
-    return {
-        state: startDuel(state, {
-            sourceId: ctx.sourceId,
-            sourcePlayerId: ctx.casterPlayerId,
-            challengerMinionUid: ctx.friendlyMinionUid,
-            challengedMinionUid: selected.minionUid,
-            outcome: 'destroy_loser',
-            destroyReason: ctx.sourceId,
-        }, now),
-        events: [],
-    };
-};
-
-const handleQuickDraw = (state: MatchState<SmashUpCore>, _playerId: string, value: unknown, _data: any, _random: RandomFn, now: number) => {
-    const selected = value as FriendlyChoice | undefined;
-    if (!selected?.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const inDuel = isMinionInActiveDuel(state.core, selected.minionUid);
-    return {
-        state,
-        events: [addTempPower(selected.minionUid, selected.baseIndex, inDuel ? 4 : 2, 'cowboys_quick_draw', now)],
-    };
-};
-
-const handleHighNoonFriendly = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, _data: any, _random: RandomFn, now: number) => {
-    const selected = value as FriendlyChoice | undefined;
-    if (!selected?.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const options = buildEnemyMinionOptions(state.core, selected.baseIndex, playerId, { respectActionProtection: true });
-    if (options.length === 0) return { state, events: [] };
-    const interaction = createSimpleChoice(
-        `cowboys_high_noon_enemy_${now}`,
-        playerId,
-        '正午决斗：选择要决斗的对手随从',
-        options,
-        { sourceId: 'cowboys_high_noon_enemy', targetType: 'minion' },
-    );
-    (interaction.data as any).continuationContext = {
-        sourceId: 'cowboys_high_noon_enemy',
-        friendlyMinionUid: selected.minionUid,
-        casterPlayerId: playerId,
-    } satisfies DuelContinuation;
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleHighNoonEnemy = (state: MatchState<SmashUpCore>, _playerId: string, value: unknown, data: any, _random: RandomFn, now: number) => {
-    const selected = value as MinionChoice | undefined;
-    const ctx = data?.continuationContext as DuelContinuation | undefined;
-    if (!ctx || !selected?.minionUid) return { state, events: [] };
-    return {
-        state: startDuel(state, {
-            sourceId: 'cowboys_high_noon',
-            sourcePlayerId: ctx.casterPlayerId,
-            challengerMinionUid: ctx.friendlyMinionUid,
-            challengedMinionUid: selected.minionUid,
-            outcome: 'high_noon',
-            destroyReason: 'cowboys_high_noon',
-        }, now),
-        events: [],
-    };
-};
-
-const handleRunEmOffFriendly = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, _data: any, _random: RandomFn, now: number) => {
-    const selected = value as FriendlyChoice | undefined;
-    if (!selected?.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const options = buildEnemyMinionOptions(state.core, selected.baseIndex, playerId, { respectActionProtection: true });
-    if (options.length === 0) return { state, events: [] };
-    const interaction = createSimpleChoice(
-        `cowboys_run_em_off_enemy_${now}`,
-        playerId,
-        '赶走他们：选择要决斗的对手随从',
-        options,
-        { sourceId: 'cowboys_run_em_off_enemy', targetType: 'minion' },
-    );
-    (interaction.data as any).continuationContext = {
-        sourceId: 'cowboys_run_em_off_enemy',
-        friendlyMinionUid: selected.minionUid,
-        casterPlayerId: playerId,
-    } satisfies DuelContinuation;
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleRunEmOffEnemy = (state: MatchState<SmashUpCore>, _playerId: string, value: unknown, data: any, _random: RandomFn, now: number) => {
-    const selected = value as MinionChoice | undefined;
-    const ctx = data?.continuationContext as DuelContinuation | undefined;
-    if (!ctx || !selected?.minionUid) return { state, events: [] };
-    return {
-        state: startDuel(state, {
-            sourceId: 'cowboys_run_em_off',
-            sourcePlayerId: ctx.casterPlayerId,
-            challengerMinionUid: ctx.friendlyMinionUid,
-            challengedMinionUid: selected.minionUid,
-            outcome: 'run_em_off',
-        }, now),
-        events: [],
-    };
-};
-
-const handleGoldInThemTharHills = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, data: any, _random: RandomFn, now: number) => {
-    const selected = value as { cardUid?: string; defId?: string } | undefined;
-    const topCards = ((data?.continuationContext as any)?.topCards ?? []) as CardInstance[];
-    if (!selected?.cardUid || topCards.length === 0) return { state, events: [] };
-    const currentTopCards = getCurrentDeckTopSnapshotCards(state.core, playerId as PlayerId, topCards);
-    const chosen = topCards.find(card => card.uid === selected.cardUid);
-    const currentChosen = currentTopCards.find(card => card.uid === selected.cardUid);
-    if (!chosen || !currentChosen) return { state, events: [] };
-    const remaining = currentTopCards.filter(card => card.uid !== currentChosen.uid);
-    if (remaining.length > 1) {
-        const interaction = createSimpleChoice(
-            `cowboys_gold_in_them_thar_hills_order_${now}`,
-            playerId,
-            '那山里有金子：选择其余牌放回牌库顶的顺序',
-            buildGoldOrderOptions(state.core, playerId as PlayerId, { chosenCard: currentChosen, remainingCards: remaining }),
-            { sourceId: 'cowboys_gold_in_them_thar_hills_order', targetType: 'generic', responseValidationMode: 'live' },
-        );
-        (interaction.data as any).continuationContext = { chosenCard: currentChosen, remainingCards: remaining } satisfies GoldPromptContext;
-        (interaction.data as any).optionsGenerator = (nextState: MatchState<SmashUpCore>, interactionData: any) => {
-            const ctx = (interactionData?.continuationContext ?? {}) as GoldPromptContext;
-            return buildGoldOrderOptions(nextState.core, playerId as PlayerId, ctx);
+const cowboysOptionalDuelPromptProgram = createPromptProgram<CowboysDuelPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_optional_duel_target',
+    interactionSourceIds: ['cowboys_gunfighter', 'cowboys_sheriff_before_scoring', 'base_so_so_corral'],
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.visibleSourceId}_${context.now}_${context.friendlyMinionUid}`,
+        context.playerId,
+        context.title,
+        [
+            createSkipOption('跳过（不决斗）'),
+            ...buildEnemyMinionOptions(
+                context.matchState.core,
+                context.sourceBaseIndex,
+                context.casterPlayerId,
+                context.respectActionProtection ? { respectActionProtection: true } : undefined,
+            ),
+        ] as any[],
+        { sourceId: context.visibleSourceId, targetType: 'minion' },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { skip?: boolean; minionUid?: string } | undefined;
+        if (selected?.skip || !selected?.minionUid) return { events: [] };
+        return {
+            events: [],
+            matchState: startDuel(state, {
+                sourceId: context.duelSourceId,
+                sourcePlayerId: context.casterPlayerId,
+                challengerMinionUid: context.friendlyMinionUid,
+                challengedMinionUid: selected.minionUid,
+                outcome: context.outcome,
+                ...(context.destroyReason ? { destroyReason: context.destroyReason } : {}),
+            }, timestamp),
         };
-        return { state: queueInteraction(state, interaction), events: [] };
-    }
-    return queueGoldModePrompt(state, playerId as PlayerId, currentChosen, remaining, now);
-};
+    },
+});
 
-const handleGoldInThemTharHillsOrder = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, data: any, _random: RandomFn, now: number) => {
-    const selected = value as GoldOrderChoice | undefined;
-    const ctx = data?.continuationContext as GoldPromptContext | undefined;
-    if (!selected?.topCardUid || !ctx) return { state, events: [] };
-    const snapshot = getCurrentDeckTopSnapshotCards(state.core, playerId as PlayerId, [ctx.chosenCard, ...ctx.remainingCards]);
-    const currentChosen = snapshot.find(card => card.uid === ctx.chosenCard.uid);
-    if (!currentChosen) return { state, events: [] };
-    const currentRemaining = snapshot.filter(card => card.uid !== ctx.chosenCard.uid);
-    const topCard = currentRemaining.find(card => card.uid === selected.topCardUid);
-    if (!topCard) return { state, events: [] };
-    const orderedRemaining = [topCard, ...currentRemaining.filter(card => card.uid !== selected.topCardUid)];
-    return queueGoldModePrompt(state, playerId as PlayerId, currentChosen, orderedRemaining, now);
-};
-
-const handleGoldInThemTharHillsMode = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, data: any, random: RandomFn, now: number) => {
-    const selected = value as GoldModeChoice | undefined;
-    const ctx = data?.continuationContext as GoldPromptContext | undefined;
-    if (!selected?.mode || !ctx) return { state, events: [] };
-    if (selected.mode === 'hand') {
-        return { state, events: buildGoldDrawAndDeckEvents(state.core, playerId, ctx.chosenCard, ctx.remainingCards, now) };
-    }
-    return queueGoldPlayTargetPrompt(state, playerId, ctx.chosenCard, ctx.remainingCards, random, now);
-};
-
-const handleGoldInThemTharHillsMinionBase = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, data: any, random: RandomFn, now: number) => {
-    const selected = value as { baseIndex?: number } | undefined;
-    const ctx = data?.continuationContext as GoldPromptContext | undefined;
-    if (selected?.baseIndex === undefined || !ctx) return { state, events: [] };
-    return playGoldCard(state, playerId, ctx.chosenCard, ctx.remainingCards, { baseIndex: selected.baseIndex }, random, now);
-};
-
-const handleGoldInThemTharHillsActionBase = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, data: any, random: RandomFn, now: number) => {
-    const selected = value as { baseIndex?: number } | undefined;
-    const ctx = data?.continuationContext as GoldPromptContext | undefined;
-    if (selected?.baseIndex === undefined || !ctx) return { state, events: [] };
-    return playGoldCard(state, playerId, ctx.chosenCard, ctx.remainingCards, { targetBaseIndex: selected.baseIndex }, random, now);
-};
-
-const handleGoldInThemTharHillsActionMinion = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, data: any, random: RandomFn, now: number) => {
-    const selected = value as { minionUid?: string } | undefined;
-    const ctx = data?.continuationContext as GoldPromptContext | undefined;
-    if (!selected?.minionUid || !ctx) return { state, events: [] };
-    return playGoldCard(state, playerId, ctx.chosenCard, ctx.remainingCards, { targetMinionUid: selected.minionUid }, random, now);
-};
-
-const handleStagecoachSource = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, _data: any, _random: RandomFn, now: number) => {
-    const selected = value as { baseIndex?: number } | undefined;
-    if (selected?.baseIndex === undefined) return { state, events: [] };
-    const sourceBase = state.core.bases[selected.baseIndex];
-    if (!sourceBase) return { state, events: [] };
-
-    const movableCards = collectStagecoachCardsOnBase(state.core, playerId as PlayerId, selected.baseIndex);
-    if (movableCards.length === 0) {
-        return { state, events: [] };
-    }
-
-    const interaction = createSimpleChoice(
-        `cowboys_stagecoach_cards_${now}`,
-        playerId,
-        '驿站马车：选择 1-2 张要搬运到另一个基地的牌',
-        movableCards.map((card, index) => ({
-            id: `stagecoach-card-${index}`,
-            label: card.label,
-            value: {
-                kind: card.kind,
-                uid: card.uid,
-                defId: card.defId,
-                baseIndex: card.baseIndex,
-                baseDefId: card.baseDefId,
-                ownerId: card.ownerId,
-                trueOwnerId: card.trueOwnerId,
+const cowboysFriendlyDuelPromptProgram = createPromptProgram<CowboysFriendlyDuelPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_friendly_duel_select',
+    interactionSourceIds: ['cowboys_high_noon_friendly', 'cowboys_run_em_off_friendly'],
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.visibleSourceId}_${context.now}`,
+        context.playerId,
+        context.title,
+        buildMinionTargetOptions(
+            collectFriendlyDuelStarters(
+                context.matchState.core,
+                context.playerId,
+                context.respectActionProtection ? { respectActionProtection: true } : undefined,
+            ),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.duelSourceId,
             },
-            _source: 'field' as const,
-            displayMode: 'card' as const,
-        })),
+        ) as any[],
+        { sourceId: context.visibleSourceId, targetType: 'minion' },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as FriendlyChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [],
+            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+                visibleSourceId: context.nextVisibleSourceId,
+                title: context.nextTitle,
+                friendlyMinionUid: selected.minionUid,
+                sourceBaseIndex: selected.baseIndex,
+                casterPlayerId: context.playerId,
+                duelSourceId: context.duelSourceId,
+                outcome: context.outcome,
+                ...(context.destroyReason ? { destroyReason: context.destroyReason } : {}),
+                respectActionProtection: context.respectActionProtection,
+            }),
+            nextProgram: cowboysEnemyDuelPromptProgram,
+        };
+    },
+});
+
+const cowboysEnemyDuelPromptProgram = createPromptProgram<CowboysDuelPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_enemy_duel_target',
+    interactionSourceIds: ['cowboys_high_noon_enemy', 'cowboys_run_em_off_enemy'],
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.visibleSourceId}_${context.now}`,
+        context.playerId,
+        context.title,
+        buildEnemyMinionOptions(
+            context.matchState.core,
+            context.sourceBaseIndex,
+            context.casterPlayerId,
+            context.respectActionProtection ? { respectActionProtection: true } : undefined,
+        ) as any[],
+        { sourceId: context.visibleSourceId, targetType: 'minion' },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid) return { events: [] };
+        return {
+            events: [],
+            matchState: startDuel(state, {
+                sourceId: context.duelSourceId,
+                sourcePlayerId: context.casterPlayerId,
+                challengerMinionUid: context.friendlyMinionUid,
+                challengedMinionUid: selected.minionUid,
+                outcome: context.outcome,
+                ...(context.destroyReason ? { destroyReason: context.destroyReason } : {}),
+            }, timestamp),
+        };
+    },
+});
+
+const cowboysQuickDrawPromptProgram = createPromptProgram<CowboysPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_quick_draw',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `cowboys_quick_draw_${context.now}`,
+        context.playerId,
+        '拔枪术：选择你的一个随从获得力量加成',
+        buildMinionTargetOptions(
+            collectOwnMinions(context.matchState.core, context.playerId),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'cowboys_quick_draw',
+            },
+        ) as any[],
+        { sourceId: 'cowboys_quick_draw', targetType: 'minion' },
+    ),
+    onResolve: ({ state, value, timestamp }) => {
+        const selected = value as FriendlyChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const inDuel = isMinionInActiveDuel(state.core, selected.minionUid);
+        return {
+            events: [addTempPower(selected.minionUid, selected.baseIndex, inDuel ? 4 : 2, 'cowboys_quick_draw', timestamp)],
+        };
+    },
+});
+
+const cowboysDynamiteSurprisePromptProgram = createPromptProgram<CowboysDynamitePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_dynamite_surprise',
+    buildInteraction: (context) => {
+        const base = context.matchState.core.bases[context.baseIndex];
+        const targets = !base
+            ? []
+            : base.minions
+                .filter(minion => getMinionPower(context.matchState.core, minion, context.baseIndex) <= 4)
+                .map(minion => ({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex: context.baseIndex,
+                    label: `${getCardDef(minion.defId)?.name ?? minion.defId}`,
+                }));
+        return createAbilityRuntimeSimpleChoice(
+            `cowboys_dynamite_surprise_${context.now}`,
+            context.playerId,
+            '炸药惊喜：选择一个力量4或以下的随从消灭',
+            buildActionMinionTargetOptions(targets, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.defId,
+                effectType: 'destroy',
+            }) as any[],
+            { sourceId: 'cowboys_dynamite_surprise', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        return {
+            events: buildValidatedDestroyEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'cowboys_dynamite_surprise',
+                now: timestamp,
+            }),
+        };
+    },
+});
+
+const cowboysDynamiteSurpriseSeenPromptProgram = createPromptProgram<CowboysDynamiteSeenPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_dynamite_surprise_seen',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `cowboys_dynamite_surprise_seen_${context.now}_${context.cardUid}`,
+        context.playerId,
+        '炸药惊喜：你可以打出这张牌，消灭其中一个力量 4 或以下的随从',
+        [
+            createSkipOption('跳过（不打出）'),
+            ...buildActionMinionTargetOptions(
+                collectDynamiteSeenTargets(context.matchState.core, context.targetPlayerId),
+                {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.ownerPlayerId,
+                    effectType: 'destroy',
+                },
+            ),
+        ] as any[],
+        { sourceId: 'cowboys_dynamite_surprise_seen', targetType: 'minion' },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { skip?: boolean; minionUid?: string; baseIndex?: number; defId?: string } | undefined;
+        if (selected?.skip || !selected?.minionUid || selected.baseIndex === undefined || !selected.defId) {
+            return { events: [] };
+        }
+
+        const owner = state.core.players[context.ownerPlayerId];
+        if (!owner) return { events: [] };
+        const sourceCards = context.sourceZone === 'hand' ? owner.hand : owner.deck;
+        const playedCard = sourceCards.find(card => card.uid === context.cardUid && isDynamiteSurpriseDefId(card.defId));
+        if (!playedCard) return { events: [] };
+
+        const remainingSourceCards = sourceCards.filter(card => card.uid !== context.cardUid);
+        const nextCore: SmashUpCore = {
+            ...state.core,
+            players: {
+                ...state.core.players,
+                [context.ownerPlayerId]: {
+                    ...owner,
+                    ...(context.sourceZone === 'hand' ? { hand: remainingSourceCards } : { deck: remainingSourceCards }),
+                    discard: [...owner.discard, playedCard],
+                },
+            },
+        };
+        const nextState: MatchState<SmashUpCore> = { ...state, core: nextCore };
+
+        return {
+            matchState: nextState,
+            events: buildValidatedDestroyEvents(nextState, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: context.ownerPlayerId,
+                reason: 'cowboys_dynamite_surprise_seen',
+                now: timestamp,
+            }),
+        };
+    },
+});
+
+const cowboysGoldSelectPromptProgram = createPromptProgram<GoldSelectPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_gold_in_them_thar_hills',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `cowboys_gold_in_them_thar_hills_${context.now}`,
+        context.playerId,
+        '那山里有金子：从牌库顶三张牌中选择一张抓到手里',
+        buildGoldTopCardOptions(context.matchState.core, context.playerId, context.topCards),
         {
-            sourceId: 'cowboys_stagecoach_cards',
+            sourceId: 'cowboys_gold_in_them_thar_hills',
             targetType: 'generic',
-            multi: { min: 1, max: Math.min(2, movableCards.length) },
+            responseValidationMode: 'live',
         },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { cardUid?: string } | undefined;
+        if (!selected?.cardUid || context.topCards.length === 0) return { events: [] };
+        const currentTopCards = getCurrentDeckTopSnapshotCards(state.core, context.playerId, context.topCards);
+        const currentChosen = currentTopCards.find(card => card.uid === selected.cardUid);
+        if (!currentChosen) return { events: [] };
+        const remaining = currentTopCards.filter(card => card.uid !== currentChosen.uid);
+        return {
+            events: [],
+            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+                chosenCard: currentChosen,
+                remainingCards: remaining,
+                random: context.random,
+            }),
+            nextProgram: remaining.length > 1 ? cowboysGoldOrderPromptProgram : cowboysGoldPostOrderProgram,
+        };
+    },
+});
+
+const cowboysGoldOrderPromptProgram = createPromptProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_gold_in_them_thar_hills_order',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `cowboys_gold_in_them_thar_hills_order_${context.now}`,
+            context.playerId,
+            '那山里有金子：选择其余牌放回牌库顶的顺序',
+            buildGoldOrderOptions(context.matchState.core, context.playerId, context),
+            {
+                sourceId: 'cowboys_gold_in_them_thar_hills_order',
+                targetType: 'generic',
+                responseValidationMode: 'live',
+            },
+        );
+        (interaction.data as Record<string, unknown>).optionsGenerator = (
+            latestState: MatchState<SmashUpCore>,
+        ) => buildGoldOrderOptions(latestState.core, context.playerId, context);
+        return interaction;
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as GoldOrderChoice | undefined;
+        if (!selected?.topCardUid) return { events: [] };
+        const snapshot = getCurrentDeckTopSnapshotCards(state.core, context.playerId, [context.chosenCard, ...context.remainingCards]);
+        const currentChosen = snapshot.find(card => card.uid === context.chosenCard.uid);
+        if (!currentChosen) return { events: [] };
+        const currentRemaining = snapshot.filter(card => card.uid !== context.chosenCard.uid);
+        const topCard = currentRemaining.find(card => card.uid === selected.topCardUid);
+        if (!topCard) return { events: [] };
+        const orderedRemaining = [topCard, ...currentRemaining.filter(card => card.uid !== selected.topCardUid)];
+        return {
+            events: [],
+            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+                chosenCard: currentChosen,
+                remainingCards: orderedRemaining,
+                random: context.random,
+            }),
+            nextProgram: cowboysGoldPostOrderProgram,
+        };
+    },
+});
+
+const cowboysGoldPostOrderProgram = createEffectProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>((context) => {
+    if (!canOfferGoldExtraPlay(context.matchState.core, context.playerId, context.chosenCard)) {
+        return {
+            events: buildGoldDrawAndDeckEvents(
+                context.matchState.core,
+                context.playerId,
+                context.chosenCard,
+                context.remainingCards,
+                context.now,
+            ),
+        };
+    }
+    return {
+        events: [],
+        context,
+        nextProgram: cowboysGoldModePromptProgram,
+    };
+});
+
+const cowboysGoldModePromptProgram = createPromptProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_gold_in_them_thar_hills_mode',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `cowboys_gold_in_them_thar_hills_mode_${context.now}`,
+        context.playerId,
+        '那山里有金子：选择把这张牌抓到手里，或立刻作为额外牌打出',
+        [
+            {
+                id: 'gold-keep',
+                label: '抓到手里',
+                value: { mode: 'hand' as const },
+                displayMode: 'button' as const,
+            },
+            {
+                id: 'gold-play',
+                label: '作为额外牌打出',
+                value: { mode: 'play' as const },
+                displayMode: 'button' as const,
+            },
+        ],
+        { sourceId: 'cowboys_gold_in_them_thar_hills_mode', targetType: 'button' },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as GoldModeChoice | undefined;
+        if (!selected?.mode) return { events: [] };
+        if (selected.mode === 'hand') {
+            return {
+                events: buildGoldDrawAndDeckEvents(state.core, context.playerId, context.chosenCard, context.remainingCards, timestamp),
+            };
+        }
+        return {
+            events: [],
+            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+                chosenCard: context.chosenCard,
+                remainingCards: context.remainingCards,
+                random: context.random,
+            }),
+            nextProgram: cowboysGoldPlayResolverProgram,
+        };
+    },
+});
+
+const cowboysGoldPlayResolverProgram = createEffectProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>((context) => {
+    if (context.chosenCard.type === 'minion') {
+        const options = context.matchState.core.bases
+            .map((base, baseIndex) => ({
+                baseIndex,
+                baseDefId: base.defId,
+                label: getBaseDef(base.defId)?.name ?? base.defId,
+            }))
+            .filter(base => validateDeckTopRegularMinionPlaySemantics(context.matchState.core, context.playerId, {
+                baseIndex: base.baseIndex,
+                cardUid: context.chosenCard.uid,
+                defId: context.chosenCard.defId,
+            }).valid);
+        if (options.length === 0) {
+            return {
+                events: buildGoldDrawAndDeckEvents(
+                    context.matchState.core,
+                    context.playerId,
+                    context.chosenCard,
+                    context.remainingCards,
+                    context.now,
+                ),
+            };
+        }
+        return { events: [], context, nextProgram: cowboysGoldMinionBasePromptProgram };
+    }
+
+    if (context.chosenCard.type !== 'action') {
+        return {
+            events: buildGoldDrawAndDeckEvents(
+                context.matchState.core,
+                context.playerId,
+                context.chosenCard,
+                context.remainingCards,
+                context.now,
+            ),
+        };
+    }
+
+    const actionDef = getCardDef(context.chosenCard.defId) as any;
+    if (!actionDef || actionDef.subtype === 'special') {
+        return {
+            events: buildGoldDrawAndDeckEvents(
+                context.matchState.core,
+                context.playerId,
+                context.chosenCard,
+                context.remainingCards,
+                context.now,
+            ),
+        };
+    }
+
+    if (actionLikeNeedsPlayMinion(actionDef)) {
+        const minionOptions = context.matchState.core.bases.flatMap((base, baseIndex) => (
+            base.minions
+                .filter(minion => !isMinionProtected(context.matchState.core, minion, baseIndex, context.playerId, 'action'))
+                .filter(minion => validateActionPlaySemantics(context.matchState.core, context.playerId, {
+                    defId: context.chosenCard.defId,
+                    targetBaseIndex: baseIndex,
+                    targetMinionUid: minion.uid,
+                }).valid)
+                .map(minion => ({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex,
+                    label: getCardDef(minion.defId)?.name ?? minion.defId,
+                }))
+        ));
+        if (minionOptions.length === 0) {
+            return {
+                events: buildGoldDrawAndDeckEvents(
+                    context.matchState.core,
+                    context.playerId,
+                    context.chosenCard,
+                    context.remainingCards,
+                    context.now,
+                ),
+            };
+        }
+        return { events: [], context, nextProgram: cowboysGoldActionMinionPromptProgram };
+    }
+
+    if (actionLikeNeedsPlayBase(actionDef) || actionDef.subtype === 'ongoing') {
+        const baseOptions = context.matchState.core.bases
+            .map((base, baseIndex) => ({
+                baseIndex,
+                baseDefId: base.defId,
+                label: getBaseDef(base.defId)?.name ?? base.defId,
+            }))
+            .filter(base => validateActionPlaySemantics(context.matchState.core, context.playerId, {
+                defId: context.chosenCard.defId,
+                targetBaseIndex: base.baseIndex,
+            }).valid);
+        if (baseOptions.length === 0) {
+            return {
+                events: buildGoldDrawAndDeckEvents(
+                    context.matchState.core,
+                    context.playerId,
+                    context.chosenCard,
+                    context.remainingCards,
+                    context.now,
+                ),
+            };
+        }
+        return { events: [], context, nextProgram: cowboysGoldActionBasePromptProgram };
+    }
+
+    return playGoldCard(
+        context.matchState,
+        context.playerId,
+        context.chosenCard,
+        context.remainingCards,
+        {},
+        context.random,
+        context.now,
     );
-    (interaction.data as any).continuationContext = {
-        sourceBaseIndex: selected.baseIndex,
-    } satisfies StagecoachSourceContinuation;
-    return { state: queueInteraction(state, interaction), events: [] };
-};
+});
 
-const handleStagecoachCards = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, data: any, _random: RandomFn, now: number) => {
-    const ctx = (data?.continuationContext ?? {}) as StagecoachSourceContinuation;
-    const selected = (Array.isArray(value) ? value : []) as StagecoachCardChoice[];
-    if (ctx.sourceBaseIndex === undefined || selected.length === 0) return { state, events: [] };
+const cowboysGoldMinionBasePromptProgram = createPromptProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_gold_in_them_thar_hills_minion_base',
+    buildInteraction: (context) => {
+        const options = context.matchState.core.bases
+            .map((base, baseIndex) => ({
+                baseIndex,
+                baseDefId: base.defId,
+                label: getBaseDef(base.defId)?.name ?? base.defId,
+            }))
+            .filter(base => validateDeckTopRegularMinionPlaySemantics(context.matchState.core, context.playerId, {
+                baseIndex: base.baseIndex,
+                cardUid: context.chosenCard.uid,
+                defId: context.chosenCard.defId,
+            }).valid);
+        return createAbilityRuntimeSimpleChoice(
+            `cowboys_gold_in_them_thar_hills_minion_base_${context.now}`,
+            context.playerId,
+            '那山里有金子：选择这张额外随从要打到哪个基地',
+            buildBaseTargetOptions(options, context.matchState.core),
+            { sourceId: 'cowboys_gold_in_them_thar_hills_minion_base', targetType: 'base' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { baseIndex?: number } | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        return playGoldCard(
+            state,
+            context.playerId,
+            context.chosenCard,
+            context.remainingCards,
+            { baseIndex: selected.baseIndex },
+            context.random,
+            timestamp,
+        );
+    },
+});
 
-    const destinationBases = state.core.bases
-        .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? base.defId }))
-        .filter(base => base.baseIndex !== ctx.sourceBaseIndex);
-    if (destinationBases.length === 0) return { state, events: [] };
+const cowboysGoldActionBasePromptProgram = createPromptProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_gold_in_them_thar_hills_action_base',
+    buildInteraction: (context) => {
+        const options = context.matchState.core.bases
+            .map((base, baseIndex) => ({
+                baseIndex,
+                baseDefId: base.defId,
+                label: getBaseDef(base.defId)?.name ?? base.defId,
+            }))
+            .filter(base => validateActionPlaySemantics(context.matchState.core, context.playerId, {
+                defId: context.chosenCard.defId,
+                targetBaseIndex: base.baseIndex,
+            }).valid);
+        return createAbilityRuntimeSimpleChoice(
+            `cowboys_gold_in_them_thar_hills_action_base_${context.now}`,
+            context.playerId,
+            '那山里有金子：选择这张额外行动的目标基地',
+            buildBaseTargetOptions(options, context.matchState.core),
+            { sourceId: 'cowboys_gold_in_them_thar_hills_action_base', targetType: 'base' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { baseIndex?: number } | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        return playGoldCard(
+            state,
+            context.playerId,
+            context.chosenCard,
+            context.remainingCards,
+            { targetBaseIndex: selected.baseIndex },
+            context.random,
+            timestamp,
+        );
+    },
+});
 
-    const interaction = createSimpleChoice(
-        `cowboys_stagecoach_destination_${now}`,
-        playerId,
-        '驿站马车：选择目标基地',
-        buildBaseTargetOptions(destinationBases, state.core),
-        { sourceId: 'cowboys_stagecoach_destination', targetType: 'base' },
-    );
-    (interaction.data as any).continuationContext = {
-        sourceBaseIndex: ctx.sourceBaseIndex,
-        selectedCards: selected
+const cowboysGoldActionMinionPromptProgram = createPromptProgram<GoldRuntimePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_gold_in_them_thar_hills_action_minion',
+    buildInteraction: (context) => {
+        const minionOptions = context.matchState.core.bases.flatMap((base, baseIndex) => (
+            base.minions
+                .filter(minion => !isMinionProtected(context.matchState.core, minion, baseIndex, context.playerId, 'action'))
+                .filter(minion => validateActionPlaySemantics(context.matchState.core, context.playerId, {
+                    defId: context.chosenCard.defId,
+                    targetBaseIndex: baseIndex,
+                    targetMinionUid: minion.uid,
+                }).valid)
+                .map(minion => ({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex,
+                    label: getCardDef(minion.defId)?.name ?? minion.defId,
+                }))
+        ));
+        return createAbilityRuntimeSimpleChoice(
+            `cowboys_gold_in_them_thar_hills_action_minion_${context.now}`,
+            context.playerId,
+            '那山里有金子：选择这张额外行动的目标随从',
+            buildMinionTargetOptions(
+                minionOptions,
+                { state: context.matchState.core, sourcePlayerId: context.playerId, sourceDefId: context.chosenCard.defId },
+            ) as any[],
+            { sourceId: 'cowboys_gold_in_them_thar_hills_action_minion', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { minionUid?: string } | undefined;
+        if (!selected?.minionUid) return { events: [] };
+        return playGoldCard(
+            state,
+            context.playerId,
+            context.chosenCard,
+            context.remainingCards,
+            { targetMinionUid: selected.minionUid },
+            context.random,
+            timestamp,
+        );
+    },
+});
+
+const cowboysStagecoachSourcePromptProgram = createPromptProgram<StagecoachSourcePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_stagecoach_source',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `cowboys_stagecoach_source_${context.now}`,
+        context.playerId,
+        '驿站马车：选择要搬运卡牌的来源基地',
+        buildBaseTargetOptions(collectStagecoachSourceBases(context.matchState.core, context.playerId), context.matchState.core),
+        { sourceId: 'cowboys_stagecoach_source', targetType: 'base' },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { baseIndex?: number } | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        const movableCards = collectStagecoachCardsOnBase(state.core, context.playerId, selected.baseIndex);
+        if (movableCards.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+                sourceBaseIndex: selected.baseIndex,
+            }),
+            nextProgram: cowboysStagecoachCardsPromptProgram,
+        };
+    },
+});
+
+const cowboysStagecoachCardsPromptProgram = createPromptProgram<StagecoachCardsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_stagecoach_cards',
+    buildInteraction: (context) => {
+        const movableCards = collectStagecoachCardsOnBase(context.matchState.core, context.playerId, context.sourceBaseIndex);
+        return createAbilityRuntimeSimpleChoice(
+            `cowboys_stagecoach_cards_${context.now}`,
+            context.playerId,
+            '驿站马车：选择 1-2 张要搬运到另一个基地的牌',
+            movableCards.map((card, index) => ({
+                id: `stagecoach-card-${index}`,
+                label: card.label,
+                value: {
+                    kind: card.kind,
+                    uid: card.uid,
+                    defId: card.defId,
+                    baseIndex: card.baseIndex,
+                    baseDefId: card.baseDefId,
+                    ownerId: card.ownerId,
+                    trueOwnerId: card.trueOwnerId,
+                },
+                _source: 'field' as const,
+                displayMode: 'card' as const,
+            })),
+            {
+                sourceId: 'cowboys_stagecoach_cards',
+                targetType: 'generic',
+                multi: { min: 1, max: Math.min(2, movableCards.length) },
+            },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = (Array.isArray(value) ? value : []) as StagecoachCardChoice[];
+        if (selected.length === 0) return { events: [] };
+        const sanitizedCards = selected
             .filter(choice => choice.uid && choice.defId)
             .map(choice => ({
                 kind: choice.kind,
                 uid: choice.uid,
                 defId: choice.defId,
                 baseIndex: choice.baseIndex,
+                baseDefId: choice.baseDefId,
                 ownerId: choice.ownerId,
                 trueOwnerId: choice.trueOwnerId,
-            })),
-    } satisfies StagecoachDestinationContinuation;
-    return { state: queueInteraction(state, interaction), events: [] };
-};
+            }));
+        if (sanitizedCards.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: createCowboysPromptContext(state, context.playerId, timestamp, {
+                sourceBaseIndex: context.sourceBaseIndex,
+                selectedCards: sanitizedCards,
+            }),
+            nextProgram: cowboysStagecoachDestinationPromptProgram,
+        };
+    },
+});
 
-const handleStagecoachDestination = (state: MatchState<SmashUpCore>, _playerId: string, value: unknown, data: any, _random: RandomFn, now: number) => {
-    const selected = value as { baseIndex?: number; baseDefId?: string } | undefined;
-    const ctx = (data?.continuationContext ?? {}) as StagecoachDestinationContinuation;
-    if (selected?.baseIndex === undefined || ctx.sourceBaseIndex === undefined || !ctx.selectedCards?.length) {
-        return { state, events: [] };
-    }
-
-    const nextCore = relocateStagecoachStaticCards(state.core, ctx.sourceBaseIndex, selected.baseIndex, ctx.selectedCards);
-    return {
-        state: nextCore === state.core ? state : { ...state, core: nextCore },
-        events: ctx.selectedCards.flatMap((card) => {
-            if (card.kind === 'minion') {
-                return buildValidatedMoveEvents(state, {
-                    minionUid: card.uid,
-                    minionDefId: card.defId,
-                    fromBaseIndex: ctx.sourceBaseIndex,
-                    toBaseIndex: selected.baseIndex!,
-                    toBaseDefId: selected.baseDefId,
-                    reason: 'cowboys_stagecoach',
-                    now,
-                });
-            }
-            if (card.kind === 'titan') {
-                return [moveTitan(
-                    card.uid,
-                    card.defId,
-                    ctx.sourceBaseIndex,
-                    selected.baseIndex!,
-                    'cowboys_stagecoach',
-                    now,
-                    selected.baseDefId,
-                )];
-            }
-            return [];
-        }),
-    };
-};
-
-const handleDynamiteSurprise = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, _data: any, _random: RandomFn, now: number) => {
-    const selected = value as MinionChoice | undefined;
-    if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
-    return {
-        state,
-        events: buildValidatedDestroyEvents(state, {
-            minionUid: selected.minionUid,
-            minionDefId: selected.defId,
-            fromBaseIndex: selected.baseIndex,
-            destroyerId: playerId,
-            reason: 'cowboys_dynamite_surprise',
-            now,
-        }),
-    };
-};
-
-const handleDynamiteSurpriseSeen = (state: MatchState<SmashUpCore>, playerId: string, value: unknown, data: any, _random: RandomFn, now: number) => {
-    const selected = value as { skip?: boolean; minionUid?: string; baseIndex?: number; defId?: string } | undefined;
-    if (selected?.skip) return { state, events: [] };
-    if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
-
-    const ctx = (data?.continuationContext ?? {}) as {
-        cardUid?: string;
-        ownerPlayerId?: PlayerId;
-        sourceZone?: 'hand' | 'deck';
-    };
-    if (!ctx.cardUid || !ctx.ownerPlayerId || !ctx.sourceZone) return { state, events: [] };
-
-    const owner = state.core.players[ctx.ownerPlayerId];
-    if (!owner) return { state, events: [] };
-    const sourceCards = ctx.sourceZone === 'hand' ? owner.hand : owner.deck;
-    const playedCard = sourceCards.find(card => card.uid === ctx.cardUid && isDynamiteSurpriseDefId(card.defId));
-    if (!playedCard) return { state, events: [] };
-
-    const remainingSourceCards = sourceCards.filter(card => card.uid !== ctx.cardUid);
-    const nextCore: SmashUpCore = {
-        ...state.core,
-        players: {
-            ...state.core.players,
-            [ctx.ownerPlayerId]: {
-                ...owner,
-                ...(ctx.sourceZone === 'hand' ? { hand: remainingSourceCards } : { deck: remainingSourceCards }),
-                discard: [...owner.discard, playedCard],
-            },
-        },
-    };
-
-    return {
-        state: { ...state, core: nextCore },
-        events: buildValidatedDestroyEvents(nextCore, {
-            minionUid: selected.minionUid,
-            minionDefId: selected.defId,
-            fromBaseIndex: selected.baseIndex,
-            destroyerId: playerId as PlayerId,
-            reason: 'cowboys_dynamite_surprise_seen',
-            now,
-        }),
-    };
-};
-
-const handleSheriffBeforeScoring = (state: MatchState<SmashUpCore>, _playerId: string, value: unknown, data: any, _random: RandomFn, now: number) => {
-    const selected = value as { skip?: boolean; minionUid?: string } | undefined;
-    if (selected?.skip || !selected?.minionUid) return { state, events: [] };
-    const ctx = data?.continuationContext as DuelContinuation | undefined;
-    if (!ctx) return { state, events: [] };
-    return {
-        state: startDuel(state, {
-            sourceId: 'cowboys_sheriff_before_scoring',
-            sourcePlayerId: ctx.casterPlayerId,
-            challengerMinionUid: ctx.friendlyMinionUid,
-            challengedMinionUid: selected.minionUid,
-            outcome: 'destroy_loser',
-            destroyReason: 'cowboys_sheriff_before_scoring',
-        }, now),
-        events: [],
-    };
-};
-
-const handleBaseSoSoCorral = (state: MatchState<SmashUpCore>, _playerId: string, value: unknown, data: any, _random: RandomFn, now: number) => {
-    const selected = value as { skip?: boolean; minionUid?: string } | undefined;
-    if (selected?.skip || !selected?.minionUid) return { state, events: [] };
-    const ctx = data?.continuationContext as DuelContinuation | undefined;
-    if (!ctx) return { state, events: [] };
-    return {
-        state: startDuel(state, {
-            sourceId: 'base_so_so_corral',
-            sourcePlayerId: ctx.casterPlayerId,
-            challengerMinionUid: ctx.friendlyMinionUid,
-            challengedMinionUid: selected.minionUid,
-            outcome: 'destroy_loser',
-            destroyReason: 'base_so_so_corral',
-        }, now),
-        events: [],
-    };
-};
+const cowboysStagecoachDestinationPromptProgram = createPromptProgram<StagecoachDestinationPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'cowboys_stagecoach_destination',
+    buildInteraction: (context) => {
+        const destinationBases = context.matchState.core.bases
+            .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? base.defId }))
+            .filter(base => base.baseIndex !== context.sourceBaseIndex);
+        return createAbilityRuntimeSimpleChoice(
+            `cowboys_stagecoach_destination_${context.now}`,
+            context.playerId,
+            '驿站马车：选择目标基地',
+            buildBaseTargetOptions(destinationBases, context.matchState.core),
+            { sourceId: 'cowboys_stagecoach_destination', targetType: 'base' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { baseIndex?: number; baseDefId?: string } | undefined;
+        if (selected?.baseIndex === undefined || !context.selectedCards.length) return { events: [] };
+        const nextCore = relocateStagecoachStaticCards(state.core, context.sourceBaseIndex, selected.baseIndex, context.selectedCards);
+        return {
+            matchState: nextCore === state.core ? state : { ...state, core: nextCore },
+            events: context.selectedCards.flatMap((card) => {
+                if (card.kind === 'minion') {
+                    return buildValidatedMoveEvents(state, {
+                        minionUid: card.uid,
+                        minionDefId: card.defId,
+                        fromBaseIndex: context.sourceBaseIndex,
+                        toBaseIndex: selected.baseIndex!,
+                        toBaseDefId: selected.baseDefId,
+                        reason: 'cowboys_stagecoach',
+                        now: timestamp,
+                    });
+                }
+                if (card.kind === 'titan') {
+                    return [moveTitan(
+                        card.uid,
+                        card.defId,
+                        context.sourceBaseIndex,
+                        selected.baseIndex!,
+                        'cowboys_stagecoach',
+                        timestamp,
+                        selected.baseDefId,
+                    )];
+                }
+                return [];
+            }),
+        };
+    },
+});
 
 function collectOwnMinions(state: SmashUpCore, playerId: PlayerId): Array<{ uid: string; defId: string; baseIndex: number; label: string }> {
     const results: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
@@ -1022,142 +1404,6 @@ function buildEnemyMinionOptions(
     );
 }
 
-function queueGoldModePrompt(
-    state: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    chosenCard: CardInstance,
-    remainingCards: CardInstance[],
-    now: number,
-): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const options = [{
-        id: 'gold-keep',
-        label: '抓到手里',
-        value: { mode: 'hand' as const },
-        displayMode: 'button' as const,
-    }];
-    if (canOfferGoldExtraPlay(state.core, playerId, chosenCard)) {
-        options.push({
-            id: 'gold-play',
-            label: '作为额外牌打出',
-            value: { mode: 'play' as const },
-            displayMode: 'button' as const,
-        });
-    }
-    if (options.length === 1) {
-        return { state, events: buildGoldDrawAndDeckEvents(state.core, playerId, chosenCard, remainingCards, now) };
-    }
-    const interaction = createSimpleChoice(
-        `cowboys_gold_in_them_thar_hills_mode_${now}`,
-        playerId,
-        '那山里有金子：选择把这张牌抓到手里，或立刻作为额外牌打出',
-        options,
-        { sourceId: 'cowboys_gold_in_them_thar_hills_mode', targetType: 'button' },
-    );
-    (interaction.data as any).continuationContext = { chosenCard, remainingCards } satisfies GoldPromptContext;
-    return { state: queueInteraction(state, interaction), events: [] };
-}
-
-function queueGoldPlayTargetPrompt(
-    state: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    chosenCard: CardInstance,
-    remainingCards: CardInstance[],
-    random: RandomFn,
-    now: number,
-): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    if (chosenCard.type === 'minion') {
-        const options = state.core.bases
-            .map((base, baseIndex) => ({
-                baseIndex,
-                baseDefId: base.defId,
-                label: getBaseDef(base.defId)?.name ?? base.defId,
-            }))
-            .filter(base => validateDeckTopRegularMinionPlaySemantics(state.core, playerId, {
-                baseIndex: base.baseIndex,
-                cardUid: chosenCard.uid,
-                defId: chosenCard.defId,
-            }).valid);
-        if (options.length === 0) {
-            return { state, events: buildGoldDrawAndDeckEvents(state.core, playerId, chosenCard, remainingCards, now) };
-        }
-        const interaction = createSimpleChoice(
-            `cowboys_gold_in_them_thar_hills_minion_base_${now}`,
-            playerId,
-            '那山里有金子：选择这张额外随从要打到哪个基地',
-            buildBaseTargetOptions(options, state.core),
-            { sourceId: 'cowboys_gold_in_them_thar_hills_minion_base', targetType: 'base' },
-        );
-        (interaction.data as any).continuationContext = { chosenCard, remainingCards } satisfies GoldPromptContext;
-        return { state: queueInteraction(state, interaction), events: [] };
-    }
-
-    if (chosenCard.type !== 'action') {
-        return { state, events: buildGoldDrawAndDeckEvents(state.core, playerId, chosenCard, remainingCards, now) };
-    }
-
-    const actionDef = getCardDef(chosenCard.defId) as any;
-    if (!actionDef || actionDef.subtype === 'special') {
-        return { state, events: buildGoldDrawAndDeckEvents(state.core, playerId, chosenCard, remainingCards, now) };
-    }
-
-    if (actionLikeNeedsPlayMinion(actionDef)) {
-        const minionOptions = state.core.bases.flatMap((base, baseIndex) => (
-            base.minions
-                .filter(minion => !isMinionProtected(state.core, minion, baseIndex, playerId, 'action'))
-                .filter(minion => validateActionPlaySemantics(state.core, playerId, {
-                    defId: chosenCard.defId,
-                    targetBaseIndex: baseIndex,
-                    targetMinionUid: minion.uid,
-                }).valid)
-                .map(minion => ({
-                    uid: minion.uid,
-                    defId: minion.defId,
-                    baseIndex,
-                    label: getCardDef(minion.defId)?.name ?? minion.defId,
-                }))
-        ));
-        if (minionOptions.length === 0) {
-            return { state, events: buildGoldDrawAndDeckEvents(state.core, playerId, chosenCard, remainingCards, now) };
-        }
-        const interaction = createSimpleChoice(
-            `cowboys_gold_in_them_thar_hills_action_minion_${now}`,
-            playerId,
-            '那山里有金子：选择这张额外行动的目标随从',
-            buildMinionTargetOptions(minionOptions, { state: state.core, sourcePlayerId: playerId, sourceDefId: chosenCard.defId }) as any[],
-            { sourceId: 'cowboys_gold_in_them_thar_hills_action_minion', targetType: 'minion' },
-        );
-        (interaction.data as any).continuationContext = { chosenCard, remainingCards } satisfies GoldPromptContext;
-        return { state: queueInteraction(state, interaction), events: [] };
-    }
-
-    if (actionLikeNeedsPlayBase(actionDef) || actionDef.subtype === 'ongoing') {
-        const baseOptions = state.core.bases
-            .map((base, baseIndex) => ({
-                baseIndex,
-                baseDefId: base.defId,
-                label: getBaseDef(base.defId)?.name ?? base.defId,
-            }))
-            .filter(base => validateActionPlaySemantics(state.core, playerId, {
-                defId: chosenCard.defId,
-                targetBaseIndex: base.baseIndex,
-            }).valid);
-        if (baseOptions.length === 0) {
-            return { state, events: buildGoldDrawAndDeckEvents(state.core, playerId, chosenCard, remainingCards, now) };
-        }
-        const interaction = createSimpleChoice(
-            `cowboys_gold_in_them_thar_hills_action_base_${now}`,
-            playerId,
-            '那山里有金子：选择这张额外行动的目标基地',
-            buildBaseTargetOptions(baseOptions, state.core),
-            { sourceId: 'cowboys_gold_in_them_thar_hills_action_base', targetType: 'base' },
-        );
-        (interaction.data as any).continuationContext = { chosenCard, remainingCards } satisfies GoldPromptContext;
-        return { state: queueInteraction(state, interaction), events: [] };
-    }
-
-    return playGoldCard(state, playerId, chosenCard, remainingCards, {}, random, now);
-}
-
 function buildGoldDrawAndDeckEvents(
     core: SmashUpCore,
     playerId: PlayerId,
@@ -1227,7 +1473,7 @@ function playGoldCard(
     targets: { baseIndex?: number; targetBaseIndex?: number; targetMinionUid?: string },
     random: RandomFn,
     now: number,
-): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
+): { matchState: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
     const prefixEvents = buildGoldDrawAndDeckEvents(state.core, playerId, chosenCard, remainingCards, now);
     let simulatedCore = state.core;
     for (const event of prefixEvents) simulatedCore = reduce(simulatedCore, event);
@@ -1275,7 +1521,7 @@ function playGoldCard(
     ) || ((simulatedState.sys.interaction?.queue?.length ?? 0) > (state.sys.interaction?.queue?.length ?? 0));
 
     return {
-        state: hasNewInteraction ? { ...state, sys: simulatedState.sys } : state,
+        matchState: hasNewInteraction ? { ...state, sys: simulatedState.sys } : state,
         events: [...prefixEvents, ...playEvents],
     };
 }

@@ -1030,6 +1030,16 @@ function registerNinjaOngoingEffects(): void {
             }
         }
         return events;
+    }, {
+        orderingFootprint: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+        },
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'minionBoardState'],
+            writes: ['sourceState', 'minionBoardState'],
+        },
     });
 
     // 暗杀：回合结束时消灭目标随从（附着在随从上）
@@ -1059,6 +1069,16 @@ function registerNinjaOngoingEffects(): void {
             }
         }
         return events;
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+        },
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     // 渗透：附着此卡的随从不受基地能力影响（广义保护）?
@@ -1088,6 +1108,16 @@ function registerNinjaOngoingEffects(): void {
             }
         }
         return events;
+    }, {
+        orderingFootprint: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+        },
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'minionBoardState'],
+            writes: ['sourceState', 'minionBoardState'],
+        },
     });
 }
 

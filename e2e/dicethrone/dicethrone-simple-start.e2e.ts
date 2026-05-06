@@ -5,10 +5,10 @@
 
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import type { Browser, BrowserContext, Page, TestInfo } from '@playwright/test';
+import type { Browser, BrowserContext, BrowserContextOptions, Page, TestInfo } from '@playwright/test';
 import { test, expect } from '../framework';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
-import { ensureGameServerAvailable, getGameServerBaseURL, initContext, setChineseLocale, waitForTestHarness } from '../helpers/common';
+import { attachPageDiagnostics, ensureGameServerAvailable, getGameServerBaseURL, initContext, setChineseLocale, waitForTestHarness } from '../helpers/common';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { createCharacterDice } from '../../src/games/dicethrone/domain/characters';
 import { CHARACTER_DATA_MAP } from '../../src/games/dicethrone/domain/characters';
@@ -120,6 +120,50 @@ const saveLocatorEvidenceScreenshot = async (
     await mkdir(dirname(path), { recursive: true });
     await locator.screenshot({ path });
     return path;
+};
+
+const TRANSFER_STATUS_FATAL_ERROR_PATTERN = /Maximum update depth exceeded|Too many re-renders/i;
+const MOBILE_TRANSFER_CONTEXT_OPTIONS: BrowserContextOptions = {
+    viewport: { width: 915, height: 412 },
+    screen: { width: 915, height: 412 },
+    deviceScaleFactor: 2.625,
+    isMobile: true,
+    hasTouch: true,
+    userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Mobile Safari/537.36',
+};
+
+const attachTransferStatusDiagnostics = (pages: Page[]) => {
+    return pages.map((page, index) => ({
+        label: `player-${index}`,
+        diagnostics: attachPageDiagnostics(page),
+    }));
+};
+
+const resetTransferStatusDiagnostics = (
+    diagnosticsEntries: Array<{ diagnostics: { errors: string[] } }>,
+) => {
+    diagnosticsEntries.forEach(({ diagnostics }) => {
+        diagnostics.errors.length = 0;
+    });
+};
+
+const assertNoTransferStatusFatalErrors = (
+    diagnosticsEntries: Array<{ label: string; diagnostics: { errors: string[] } }>,
+) => {
+    const matched = diagnosticsEntries.flatMap(({ label, diagnostics }) =>
+        diagnostics.errors
+            .filter((entry) => TRANSFER_STATUS_FATAL_ERROR_PATTERN.test(entry))
+            .map((entry) => `[${label}] ${entry}`),
+    );
+
+    if (matched.length > 0) {
+        throw new Error(
+            [
+                '检测到 transfer-status 链路出现致命渲染报错：',
+                ...matched,
+            ].join('\n'),
+        );
+    }
 };
 
 const readHudStyleContract = async (page: Page) => {
@@ -1656,6 +1700,75 @@ const buildFourPlayerTransferTokenState = (state: any) => {
     next.core.players['3'].tokens = {
         ...(next.core.players['3'].tokens ?? {}),
         [TOKEN_IDS.CRIT]: 0,
+    };
+    return next;
+};
+
+const buildFourPlayerTransferOwnTokenState = (state: any) => {
+    const next = buildFourPlayerNoResponseState(state);
+    const transferCard = TRANSFER_STATUS_CARD;
+    if (!transferCard) {
+        throw new Error(`未找到稳定转移卡 ${TRANSFER_STATUS_CARD_ID}，无法构造 4 人自来源转移 token 场景`);
+    }
+
+    next.core.activePlayerId = '0';
+    next.sys.phase = 'main1';
+    next.sys.flowHalted = false;
+    next.core.pendingAttack = null;
+    next.core.selectedAbilityId = undefined;
+    next.core.rollConfirmed = false;
+    next.core.players['0'].hand = [{ ...structuredClone(transferCard), id: 'transfer-own-inst' }];
+    next.core.players['0'].resources.cp = Math.max(next.core.players['0'].resources.cp ?? 0, 5);
+    next.core.players['0'].tokens = {
+        ...(next.core.players['0'].tokens ?? {}),
+        [TOKEN_IDS.CRIT]: 1,
+    };
+    next.core.players['1'].tokens = {
+        ...(next.core.players['1'].tokens ?? {}),
+        [TOKEN_IDS.CRIT]: 0,
+    };
+    next.core.players['2'].tokens = {
+        ...(next.core.players['2'].tokens ?? {}),
+        [TOKEN_IDS.CRIT]: 0,
+    };
+    next.core.players['3'].tokens = {
+        ...(next.core.players['3'].tokens ?? {}),
+        [TOKEN_IDS.CRIT]: 0,
+    };
+    return next;
+};
+
+const buildFourPlayerTransferOwnLoadedState = (state: any) => {
+    const next = buildFourPlayerNoResponseState(state);
+    const transferCard = TRANSFER_STATUS_CARD;
+    if (!transferCard) {
+        throw new Error(`未找到稳定转移卡 ${TRANSFER_STATUS_CARD_ID}，无法构造 4 人枪手装填转移场景`);
+    }
+
+    next.core.activePlayerId = '0';
+    next.sys.phase = 'main1';
+    next.sys.flowHalted = false;
+    next.core.pendingAttack = null;
+    next.core.selectedAbilityId = undefined;
+    next.core.rollConfirmed = false;
+    next.core.players['0'].hand = [{ ...structuredClone(transferCard), id: 'transfer-loaded-inst' }];
+    next.core.players['0'].resources.cp = Math.max(next.core.players['0'].resources.cp ?? 0, 5);
+    next.core.players['0'].tokens = {
+        ...(next.core.players['0'].tokens ?? {}),
+        [TOKEN_IDS.LOADED]: 1,
+        [TOKEN_IDS.CRIT]: 0,
+    };
+    next.core.players['1'].tokens = {
+        ...(next.core.players['1'].tokens ?? {}),
+        [TOKEN_IDS.LOADED]: 0,
+    };
+    next.core.players['2'].tokens = {
+        ...(next.core.players['2'].tokens ?? {}),
+        [TOKEN_IDS.LOADED]: 0,
+    };
+    next.core.players['3'].tokens = {
+        ...(next.core.players['3'].tokens ?? {}),
+        [TOKEN_IDS.LOADED]: 0,
     };
     return next;
 };
@@ -4705,6 +4818,239 @@ test.describe('DiceThrone Simple Start', () => {
         expect(hostState.sys.interaction?.current).toBeUndefined();
         expect(allyState.core.players['2'].tokens[TOKEN_IDS.CRIT] ?? 0).toBe(1);
 
+        await cleanupDTMatch(setup);
+    });
+
+    test('Online 4-player transfer token: own token can be transferred to enemy without target freeze', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+        const setup = await setupDTOnlineMatchWithPlayers(browser, baseURL, {
+            numPlayers: 4,
+            gameServerBaseURL: getGameServerBaseURL(),
+        });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或四人房间创建失败');
+            return;
+        }
+
+        const { hostPage, matchId, players } = setup;
+        const enemyPage = players[1].page;
+
+        await selectCharacter(players[0].page, 'shadow_thief');
+        await selectCharacter(players[1].page, 'paladin');
+        await selectCharacter(players[2].page, 'monk');
+        await selectCharacter(players[3].page, 'pyromancer');
+        await readyMultiplePlayersAndStartGame(hostPage, players.slice(1).map((player) => player.page));
+
+        await waitForGameBoard(hostPage);
+        await waitForHarnessPages(players.map((player) => player.page));
+        const diagnosticsEntries = attachTransferStatusDiagnostics(players.map((player) => player.page));
+
+        await applyOnlineMatchState(matchId, hostPage, buildFourPlayerTransferOwnTokenState);
+        await waitForPhase(hostPage, 'main1');
+        resetTransferStatusDiagnostics(diagnosticsEntries);
+
+        await dispatchHarnessCommand(hostPage, 'PLAY_CARD', '0', { cardId: 'transfer-own-inst' });
+        await expect(hostPage.getByTestId('dt-status-owner-0')).toHaveAttribute('data-team-tone', 'self');
+        await expect(hostPage.getByTestId('dt-status-effect-0-crit')).toBeVisible({ timeout: 10000 });
+
+        await hostPage.getByTestId('dt-status-effect-0-crit').click();
+        await expect(hostPage.getByTestId('dt-transfer-source-locked-0')).toHaveAttribute('data-team-tone', 'self');
+        await expect(hostPage.getByTestId('dt-transfer-source-locked-0')).toHaveAttribute('data-locked', 'true');
+        await expect(hostPage.getByTestId('dt-transfer-target-1')).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(hostPage.getByTestId('dt-transfer-target-2')).toHaveAttribute('data-team-tone', 'ally');
+        await expect(hostPage.getByTestId('dt-transfer-target-3')).toHaveAttribute('data-team-tone', 'enemy');
+
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await saveEvidenceScreenshot(hostPage, testInfo, '06b-four-player-transfer-own-token-target-selection');
+
+        await hostPage.getByTestId('dt-transfer-target-1').click();
+        await expect(hostPage.getByTestId('dt-transfer-target-1')).toHaveAttribute('data-selected', 'true');
+        await expect(hostPage.getByRole('button', { name: /Confirm|确认/i }).last()).toBeEnabled();
+        await saveEvidenceScreenshot(hostPage, testInfo, '06c-four-player-transfer-own-token-target-picked');
+        await hostPage.getByRole('button', { name: /Confirm|确认/i }).last().click();
+
+        await hostPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['0']?.tokens?.crit ?? 0) === 0
+                && (state?.core?.players?.['1']?.tokens?.crit ?? 0) === 1;
+        }, undefined, { timeout: 10000 });
+        await enemyPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['0']?.tokens?.crit ?? 0) === 0
+                && (state?.core?.players?.['1']?.tokens?.crit ?? 0) === 1;
+        }, undefined, { timeout: 10000 });
+
+        const hostState = await readHarnessState<any>(hostPage);
+        const enemyState = await readHarnessState<any>(enemyPage);
+        expect(hostState.core.players['0'].tokens[TOKEN_IDS.CRIT] ?? 0).toBe(0);
+        expect(hostState.core.players['1'].tokens[TOKEN_IDS.CRIT] ?? 0).toBe(1);
+        expect(hostState.sys.interaction?.current).toBeUndefined();
+        expect(enemyState.core.players['0'].tokens[TOKEN_IDS.CRIT] ?? 0).toBe(0);
+        expect(enemyState.core.players['1'].tokens[TOKEN_IDS.CRIT] ?? 0).toBe(1);
+        assertNoTransferStatusFatalErrors(diagnosticsEntries);
+
+        await saveEvidenceScreenshot(hostPage, testInfo, '06d-four-player-transfer-own-token-resolved');
+        await cleanupDTMatch(setup);
+    });
+
+    test('Online 4-player transfer token: gunslinger opening loaded can be transferred from self to enemy', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+        const setup = await setupDTOnlineMatchWithPlayers(browser, baseURL, {
+            numPlayers: 4,
+            gameServerBaseURL: getGameServerBaseURL(),
+        });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或四人房间创建失败');
+            return;
+        }
+
+        const { hostPage, matchId, players } = setup;
+        const enemyPage = players[1].page;
+
+        await selectCharacter(players[0].page, 'gunslinger');
+        await selectCharacter(players[1].page, 'paladin');
+        await selectCharacter(players[2].page, 'monk');
+        await selectCharacter(players[3].page, 'pyromancer');
+        await readyMultiplePlayersAndStartGame(hostPage, players.slice(1).map((player) => player.page));
+
+        await waitForGameBoard(hostPage);
+        await waitForHarnessPages(players.map((player) => player.page));
+        const diagnosticsEntries = attachTransferStatusDiagnostics(players.map((player) => player.page));
+
+        await applyOnlineMatchState(matchId, hostPage, buildFourPlayerTransferOwnLoadedState);
+        await waitForPhase(hostPage, 'main1');
+        resetTransferStatusDiagnostics(diagnosticsEntries);
+
+        await dispatchHarnessCommand(hostPage, 'PLAY_CARD', '0', { cardId: 'transfer-loaded-inst' });
+        await expect(hostPage.getByTestId('dt-status-owner-0')).toHaveAttribute('data-team-tone', 'self');
+        await expect(hostPage.getByTestId('dt-status-effect-0-loaded')).toBeVisible({ timeout: 10000 });
+
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await saveEvidenceScreenshot(hostPage, testInfo, '06e-four-player-transfer-gunslinger-loaded-source-selection');
+
+        await hostPage.getByTestId('dt-status-effect-0-loaded').click();
+        await expect(hostPage.getByTestId('dt-transfer-source-locked-0')).toHaveAttribute('data-team-tone', 'self');
+        await expect(hostPage.getByTestId('dt-transfer-source-effect-loaded')).toBeVisible({ timeout: 10000 });
+        await expect(hostPage.getByTestId('dt-transfer-target-1')).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(hostPage.getByTestId('dt-transfer-target-2')).toHaveAttribute('data-team-tone', 'ally');
+        await expect(hostPage.getByTestId('dt-transfer-target-3')).toHaveAttribute('data-team-tone', 'enemy');
+
+        await saveEvidenceScreenshot(hostPage, testInfo, '06f-four-player-transfer-gunslinger-loaded-target-selection');
+
+        await hostPage.getByTestId('dt-transfer-target-1').click();
+        await expect(hostPage.getByTestId('dt-transfer-target-1')).toHaveAttribute('data-selected', 'true');
+        await expect(hostPage.getByRole('button', { name: /Confirm|确认/i }).last()).toBeEnabled();
+        await saveEvidenceScreenshot(hostPage, testInfo, '06g-four-player-transfer-gunslinger-loaded-target-picked');
+        await hostPage.getByRole('button', { name: /Confirm|确认/i }).last().click();
+
+        await hostPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['0']?.tokens?.loaded ?? 0) === 0
+                && (state?.core?.players?.['1']?.tokens?.loaded ?? 0) === 1;
+        }, undefined, { timeout: 10000 });
+        await enemyPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['0']?.tokens?.loaded ?? 0) === 0
+                && (state?.core?.players?.['1']?.tokens?.loaded ?? 0) === 1;
+        }, undefined, { timeout: 10000 });
+
+        const hostState = await readHarnessState<any>(hostPage);
+        const enemyState = await readHarnessState<any>(enemyPage);
+        expect(hostState.core.players['0'].tokens[TOKEN_IDS.LOADED] ?? 0).toBe(0);
+        expect(hostState.core.players['1'].tokens[TOKEN_IDS.LOADED] ?? 0).toBe(1);
+        expect(hostState.sys.interaction?.current).toBeUndefined();
+        expect(enemyState.core.players['0'].tokens[TOKEN_IDS.LOADED] ?? 0).toBe(0);
+        expect(enemyState.core.players['1'].tokens[TOKEN_IDS.LOADED] ?? 0).toBe(1);
+        assertNoTransferStatusFatalErrors(diagnosticsEntries);
+
+        await saveEvidenceScreenshot(hostPage, testInfo, '06h-four-player-transfer-gunslinger-loaded-resolved');
+        await cleanupDTMatch(setup);
+    });
+
+    test('Online 4-player transfer token mobile: gunslinger opening loaded can be transferred from self to enemy without render loop', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+
+        const setup = await setupDTOnlineMatchWithPlayers(browser, baseURL, {
+            numPlayers: 4,
+            gameServerBaseURL: getGameServerBaseURL(),
+            contextOptions: MOBILE_TRANSFER_CONTEXT_OPTIONS,
+        });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或四人房间创建失败');
+            return;
+        }
+
+        const { hostPage, matchId, players } = setup;
+        const enemyPage = players[1].page;
+
+        await selectCharacter(players[0].page, 'gunslinger');
+        await selectCharacter(players[1].page, 'paladin');
+        await selectCharacter(players[2].page, 'monk');
+        await selectCharacter(players[3].page, 'pyromancer');
+        await readyMultiplePlayersAndStartGame(hostPage, players.slice(1).map((player) => player.page));
+
+        await waitForGameBoard(hostPage);
+        await waitForHarnessPages(players.map((player) => player.page));
+        const diagnosticsEntries = attachTransferStatusDiagnostics(players.map((player) => player.page));
+
+        await applyOnlineMatchState(matchId, hostPage, buildFourPlayerTransferOwnLoadedState);
+        await waitForPhase(hostPage, 'main1');
+        resetTransferStatusDiagnostics(diagnosticsEntries);
+
+        await dispatchHarnessCommand(hostPage, 'PLAY_CARD', '0', { cardId: 'transfer-loaded-inst' });
+        await expect(hostPage.getByTestId('dt-status-owner-0')).toHaveAttribute('data-team-tone', 'self');
+        await expect(hostPage.getByTestId('dt-status-effect-0-loaded')).toBeVisible({ timeout: 10000 });
+
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await saveEvidenceScreenshot(hostPage, testInfo, '06i-mobile-four-player-transfer-gunslinger-loaded-source-selection');
+
+        await hostPage.getByTestId('dt-status-effect-0-loaded').click();
+        await expect(hostPage.getByTestId('dt-transfer-source-locked-0')).toHaveAttribute('data-team-tone', 'self');
+        await expect(hostPage.getByTestId('dt-transfer-source-effect-loaded')).toBeVisible({ timeout: 10000 });
+        await expect(hostPage.getByTestId('dt-transfer-target-1')).toHaveAttribute('data-team-tone', 'enemy');
+        await expect(hostPage.getByTestId('dt-transfer-target-2')).toHaveAttribute('data-team-tone', 'ally');
+        await expect(hostPage.getByTestId('dt-transfer-target-3')).toHaveAttribute('data-team-tone', 'enemy');
+
+        await saveEvidenceScreenshot(hostPage, testInfo, '06j-mobile-four-player-transfer-gunslinger-loaded-target-selection');
+
+        await hostPage.getByTestId('dt-transfer-target-1').click();
+        await expect(hostPage.getByTestId('dt-transfer-target-1')).toHaveAttribute('data-selected', 'true');
+        await expect(hostPage.getByRole('button', { name: /Confirm|确认/i }).last()).toBeEnabled();
+        await saveEvidenceScreenshot(hostPage, testInfo, '06k-mobile-four-player-transfer-gunslinger-loaded-target-picked');
+        await hostPage.getByRole('button', { name: /Confirm|确认/i }).last().click();
+
+        await hostPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['0']?.tokens?.loaded ?? 0) === 0
+                && (state?.core?.players?.['1']?.tokens?.loaded ?? 0) === 1;
+        }, undefined, { timeout: 10000 });
+        await enemyPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['0']?.tokens?.loaded ?? 0) === 0
+                && (state?.core?.players?.['1']?.tokens?.loaded ?? 0) === 1;
+        }, undefined, { timeout: 10000 });
+
+        const hostState = await readHarnessState<any>(hostPage);
+        const enemyState = await readHarnessState<any>(enemyPage);
+        expect(hostState.core.players['0'].tokens[TOKEN_IDS.LOADED] ?? 0).toBe(0);
+        expect(hostState.core.players['1'].tokens[TOKEN_IDS.LOADED] ?? 0).toBe(1);
+        expect(hostState.sys.interaction?.current).toBeUndefined();
+        expect(enemyState.core.players['0'].tokens[TOKEN_IDS.LOADED] ?? 0).toBe(0);
+        expect(enemyState.core.players['1'].tokens[TOKEN_IDS.LOADED] ?? 0).toBe(1);
+        assertNoTransferStatusFatalErrors(diagnosticsEntries);
+
+        await saveEvidenceScreenshot(hostPage, testInfo, '06l-mobile-four-player-transfer-gunslinger-loaded-resolved');
         await cleanupDTMatch(setup);
     });
 

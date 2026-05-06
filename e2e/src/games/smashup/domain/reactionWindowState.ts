@@ -57,6 +57,30 @@ export function getSmashUpReactionWindowContext(
         };
     }
 
+    const legacyWindow = state.sys.responseWindow?.current;
+    const legacyWindowType = legacyWindow?.windowType;
+    if (
+        (legacyWindowType === 'meFirst' || legacyWindowType === 'afterScoring')
+        && legacyWindow.responderQueue?.length
+    ) {
+        const currentResponderIndex = Math.max(
+            0,
+            Math.min(legacyWindow.currentResponderIndex ?? 0, legacyWindow.responderQueue.length - 1),
+        );
+        const activePlayerId = legacyWindow.responderQueue[currentResponderIndex];
+        if (!activePlayerId) {
+            return undefined;
+        }
+        return {
+            windowType: legacyWindowType,
+            activePlayerId,
+            currentPlayerId: legacyWindow.responderQueue[0] ?? activePlayerId,
+            sourceBaseIndex: typeof legacyWindow.sourceBaseIndex === 'number'
+                ? legacyWindow.sourceBaseIndex
+                : undefined,
+        };
+    }
+
     return undefined;
 }
 
@@ -119,3 +143,4 @@ export function hasBlockingLegacyResponseWindow(
     )?.sourceId;
     return interactionSourceId !== 'smashup_reaction_choose';
 }
+

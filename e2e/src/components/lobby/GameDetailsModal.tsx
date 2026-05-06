@@ -169,6 +169,42 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         || packageInstallCardState.status === 'downloading'
         || packageInstallCardState.status === 'verifying'
         || hasInstalledPackageForMobileGame;
+
+    useEffect(() => {
+        if (!isOpen) {
+            return;
+        }
+
+        const namespace = `game-${gameId}`;
+        void ensureGameCriticalImageResolverLoaded(gameId).catch((error: unknown) => {
+            logger.warn('[GameDetailsModal] 详情弹窗预热 critical image resolver 失败', {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+        void prefetchGameImplementation(gameId, { includeTutorial: false }).catch((error: unknown) => {
+            logger.warn('[GameDetailsModal] 详情弹窗预热游戏 runtime 失败', {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+        void prefetchOnlineMatchRoute().catch((error: unknown) => {
+            logger.warn('[GameDetailsModal] 详情弹窗预热联机房间路由失败', {
+                gameId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+        });
+        if (!i18n.hasLoadedNamespace(namespace)) {
+            void i18n.loadNamespaces(namespace).catch((error: unknown) => {
+                logger.warn('[GameDetailsModal] 详情弹窗预热游戏 namespace 失败', {
+                    gameId,
+                    namespace,
+                    error: error instanceof Error ? error.message : String(error),
+                });
+            });
+        }
+    }, [gameId, i18n, isOpen]);
+
     const mobilePackageToggleMeta = useMemo(() => {
         if (isAppUpdateRequiredForMobileGame) {
             return {

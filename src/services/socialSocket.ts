@@ -79,12 +79,23 @@ export interface FriendRequestPayload {
     createdAt: string;
 }
 
+interface SocialUserPayload {
+    id: string;
+    username?: string;
+}
+
 export interface NewMessagePayload {
     id: string;
-    from: string;
-    to: string;
+    from?: string;
+    to?: string;
+    fromUser?: SocialUserPayload;
+    toUser?: SocialUserPayload;
     content: string;
     type: 'text' | 'invite';
+    inviteData?: {
+        matchId: string;
+        gameName: string;
+    };
     createdAt: string;
 }
 
@@ -97,6 +108,14 @@ export interface GameInvitePayload {
     gameId?: string; // 例如 'tic-tac-toe'
     roomId?: string;
     message?: string;
+}
+
+export function normalizeNewMessagePayload(payload: NewMessagePayload, currentUserId?: string | null) {
+    return {
+        ...payload,
+        from: payload.from ?? payload.fromUser?.id ?? '',
+        to: payload.to ?? payload.toUser?.id ?? currentUserId ?? '',
+    };
 }
 
 type EventCallback = (payload: unknown) => void;

@@ -862,6 +862,16 @@ function registerFrankensteinOngoingEffects(): void {
         );
         if (!hasGermanEngineering) return [];
         return [addPowerCounter(triggerMinionUid, baseIndex, 1, 'frankenstein_german_engineering', now)];
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'triggerMinionState'],
+            writes: ['triggerMinionPower'],
+        },
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'triggerMinionState'],
+            writes: ['triggerMinionPower'],
+        },
     });
 
     registerTrigger('frankenstein_grave_situation', 'onMinionDestroyed', (ctx: TriggerContext) => {
@@ -904,6 +914,16 @@ function registerFrankensteinOngoingEffects(): void {
             }
         }
         return events;
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+        },
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     registerProtection('frankenstein_uberserum', 'destroy', (ctx) =>

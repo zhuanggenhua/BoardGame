@@ -3429,7 +3429,13 @@ export function registerTitanAbilities(): void {
             ? null
             : '你只能将其打到有你随从的基地';
     });
-    registerTrigger('ninjas_invisible_ninja', 'onTurnStart', invisibleNinjaOnTurnStart, { global: true });
+    registerTrigger('ninjas_invisible_ninja', 'onTurnStart', invisibleNinjaOnTurnStart, {
+        global: true,
+        orderingFootprint: {
+            reads: ['sourceState', 'titanBoardState'],
+            writes: ['sourceState', 'titanBoardState', 'playLimits'],
+        },
+    });
     registerTrigger('ninjas_invisible_ninja', 'onMinionDestroyed', invisibleNinjaTriggered, {
         optional: true,
         baseScoped: false,
@@ -3473,7 +3479,13 @@ export function registerTitanAbilities(): void {
         }) ?? false;
         return hasCandidate ? null : '你的弃牌堆中没有符合战斗力条件的随从';
     });
-    registerTrigger('killer_plants_killer_kudzu', 'onTurnStart', killerKudzuOnTurnStart, { global: true });
+    registerTrigger('killer_plants_killer_kudzu', 'onTurnStart', killerKudzuOnTurnStart, {
+        global: true,
+        orderingFootprint: {
+            reads: ['titanBoardState'],
+            writes: ['titanBoardState'],
+        },
+    });
     registerTrigger('killer_plants_killer_kudzu', 'onTitanRemovedFromPlay', killerKudzuOnTitanRemovedFromPlay, { optional: true, global: true });
 
     registerAbility('frankenstein_the_bride', 'talent', theBrideTalent);
@@ -3485,7 +3497,13 @@ export function registerTitanAbilities(): void {
             ? null
             : 'No valid talent targets';
     });
-    registerTrigger('frankenstein_the_bride', 'onTurnStart', theBrideOnTurnStart, { global: true });
+    registerTrigger('frankenstein_the_bride', 'onTurnStart', theBrideOnTurnStart, {
+        global: true,
+        orderingFootprint: {
+            reads: ['handState', 'minionBoardState', 'titanBoardState'],
+            writes: ['handState', 'minionBoardState', 'titanBoardState'],
+        },
+    });
     registerTrigger('frankenstein_the_bride', 'onMinionAffected', theBrideOnPowerCounterChanged, { baseScoped: false });
 
     registerAbility('super_spies_moon_zero_three', 'special', superSpiesMoonZeroThreeSpecial);
@@ -3527,7 +3545,13 @@ export function registerTitanAbilities(): void {
             ? null
             : '你的手牌与弃牌堆中没有战斗力 3 或更低的随从';
     });
-    registerTrigger('penguins_emperor_penguin', 'onTurnStart', penguinsEmperorPenguinOnTurnStart, { global: true });
+    registerTrigger('penguins_emperor_penguin', 'onTurnStart', penguinsEmperorPenguinOnTurnStart, {
+        global: true,
+        orderingFootprint: {
+            reads: ['minionBoardState', 'titanBoardState'],
+            writes: ['titanBoardState'],
+        },
+    });
 
     registerTitanSpecialValidator('changerbots_mergacon', () =>
         '合体机器人只能在你的回合开始时通过特殊能力进场');
@@ -3538,7 +3562,13 @@ export function registerTitanAbilities(): void {
             ? null
             : 'There is no other base to move to';
     });
-    registerTrigger('changerbots_mergacon', 'onTurnStart', changerbotsMergaconOnTurnStart, { global: true });
+    registerTrigger('changerbots_mergacon', 'onTurnStart', changerbotsMergaconOnTurnStart, {
+        global: true,
+        orderingFootprint: {
+            reads: ['minionBoardState', 'titanBoardState'],
+            writes: ['titanBoardState'],
+        },
+    });
     registerTitanPowerModifier('changerbots_mergacon', ({ state, titan }) =>
         (state.titanOngoingSuppressedUntilTurnEnd ?? []).includes(titan.uid) ? 0 : 3);
 
@@ -3558,14 +3588,24 @@ export function registerTitanAbilities(): void {
         rankings: ctx.rankings,
         now: ctx.now,
     }), { global: true });
-    registerTrigger('itty_critters_rainboroc', 'onMinionPlayed', ittyCrittersRainborocOnMinionPlayed);
+    registerTrigger('itty_critters_rainboroc', 'onMinionPlayed', ittyCrittersRainborocOnMinionPlayed, {
+        orderingFootprint: {
+            reads: ['triggerMinionState', 'triggerMinionPower', 'titanBoardState', 'turnFlags'],
+            writes: ['titanBoardState', 'turnFlags'],
+        },
+    });
 
     registerAbility('kaiju_gorgodzolla', 'special', kaijuGorgodzollaSpecial);
     registerTitanSpecialValidator('kaiju_gorgodzolla', ({ state, playerId, baseIndex }) =>
         getOwnActionCountOnBase(state, baseIndex, playerId) >= 2
             ? null
             : 'You can only play Gorgodzolla on a base where you have at least two actions');
-    registerTrigger('kaiju_gorgodzolla', 'onMinionPlayed', kaijuGorgodzollaOnMinionPlayed);
+    registerTrigger('kaiju_gorgodzolla', 'onMinionPlayed', kaijuGorgodzollaOnMinionPlayed, {
+        orderingFootprint: {
+            reads: ['triggerMinionState', 'titanBoardState'],
+            writes: ['titanBoardState'],
+        },
+    });
     registerTrigger('kaiju_gorgodzolla', 'onActionPlayed', kaijuGorgodzollaOnActionPlayed);
 
     registerAbility('explorers_very_large_boulder', 'special', explorersVeryLargeBoulderSpecial);
@@ -3581,7 +3621,12 @@ export function registerTitanAbilities(): void {
     registerTrigger('explorers_very_large_boulder', 'onMinionMoved', explorersVeryLargeBoulderOnMinionMoved, {
         playerContext: 'sourceController',
     });
-    registerTrigger('explorers_very_large_boulder', 'onTurnEnd', explorersVeryLargeBoulderOnTurnEnd);
+    registerTrigger('explorers_very_large_boulder', 'onTurnEnd', explorersVeryLargeBoulderOnTurnEnd, {
+        orderingFootprint: {
+            reads: ['titanBoardState', 'turnFlags'],
+            writes: ['titanBoardState', 'turnFlags'],
+        },
+    });
 
     registerAbility('ignobles_the_hill_that_strolls', 'special', ignoblesTheHillThatStrollsSpecial);
     registerAbility('ignobles_the_hill_that_strolls', 'talent', ignoblesTheHillThatStrollsTalent);
@@ -3609,7 +3654,14 @@ export function registerTitanAbilities(): void {
         getTimeBoxCounter(titan) >= 5 ? null : '时间盒子的计数还未达到 5');
     registerTitanTalentValidator('time_travelers_time_box', ({ titan }) =>
         titan.location.zone === 'base' ? null : '该泰坦当前不在场');
-    registerTrigger('time_travelers_time_box', 'onTurnStart', timeTravelersTimeBoxOnTurnStart, { global: true, optional: true });
+    registerTrigger('time_travelers_time_box', 'onTurnStart', timeTravelersTimeBoxOnTurnStart, {
+        global: true,
+        optional: true,
+        orderingFootprint: {
+            reads: ['titanBoardState'],
+            writes: ['titanBoardState'],
+        },
+    });
     registerTrigger('time_travelers_time_box', 'onCardReturnedToHand', timeTravelersTimeBoxOnCardReturnedToHand, { global: true, optional: true });
 
     registerTrigger('pecos_bill', 'onDuelStarted', pecosBillOnDuelStarted, { global: true });
@@ -3623,7 +3675,13 @@ export function registerTitanAbilities(): void {
             ? null
             : 'You have no card in hand to bury';
     });
-    registerTrigger('sphinx', 'onTurnStart', sphinxOnTurnStart, { global: true });
+    registerTrigger('sphinx', 'onTurnStart', sphinxOnTurnStart, {
+        global: true,
+        orderingFootprint: {
+            reads: ['baseState', 'handState', 'titanBoardState'],
+            writes: ['baseState', 'handState', 'titanBoardState'],
+        },
+    });
     registerTrigger('sphinx', 'afterScoring', (ctx) => sphinxAfterScoring({
         state: ctx.state,
         matchState: ctx.matchState,
@@ -3787,7 +3845,14 @@ export function registerTitanAbilities(): void {
             : 'This base does not satisfy Great Wolf Spirit special';
     });
     registerAbility('werewolves_great_wolf_spirit', 'talent', werewolvesGreatWolfSpiritTalent);
-    registerTrigger('werewolves_great_wolf_spirit', 'onTurnStart', werewolvesGreatWolfSpiritOnTurnStart, { global: true, optional: true });
+    registerTrigger('werewolves_great_wolf_spirit', 'onTurnStart', werewolvesGreatWolfSpiritOnTurnStart, {
+        global: true,
+        optional: true,
+        orderingFootprint: {
+            reads: ['minionBoardState', 'titanBoardState'],
+            writes: ['titanBoardState'],
+        },
+    });
     registerTitanTalentValidator('werewolves_great_wolf_spirit', ({ state, titan, playerId }) => {
         if (titan.location.zone !== 'base') return '该泰坦当前不在场';
         return getGreatWolfSpiritTalentTargets(state, playerId).length > 0
@@ -3797,6 +3862,10 @@ export function registerTitanAbilities(): void {
 
     registerTrigger('werewolves_great_wolf_spirit', 'onTurnStart', werewolvesGreatWolfSpiritOnTurnStart, {
         global: true,
+        orderingFootprint: {
+            reads: ['minionBoardState', 'titanBoardState'],
+            writes: ['titanBoardState'],
+        },
     });
 
     registerAbility('tricksters_big_funny_giant', 'special', trickstersBigFunnyGiantSpecial);
@@ -3830,8 +3899,18 @@ export function registerTitanAbilities(): void {
             ? null
             : '没有可移动的基地';
     });
-    registerTrigger('tricksters_big_funny_giant', 'onTurnEnd', trickstersBigFunnyGiantOnTurnEnd);
-    registerTrigger('tricksters_big_funny_giant', 'onMinionPlayed', trickstersBigFunnyGiantOnMinionPlayed);
+    registerTrigger('tricksters_big_funny_giant', 'onTurnEnd', trickstersBigFunnyGiantOnTurnEnd, {
+        orderingFootprint: {
+            reads: ['minionBoardState', 'titanBoardState'],
+            writes: ['titanBoardState'],
+        },
+    });
+    registerTrigger('tricksters_big_funny_giant', 'onMinionPlayed', trickstersBigFunnyGiantOnMinionPlayed, {
+        orderingFootprint: {
+            reads: ['triggerMinionState', 'handState', 'titanBoardState'],
+            writes: ['handState'],
+        },
+    });
     registerTrigger('tricksters_big_funny_giant', 'afterScoring', (ctx) => trickstersBigFunnyGiantAfterScoring({
         state: ctx.state,
         baseIndex: ctx.baseIndex,

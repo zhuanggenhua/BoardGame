@@ -28,6 +28,8 @@ export interface AbilityContext {
     defId: string;
     /** 随从所在基地 / 行动卡目标基地 */
     baseIndex: number;
+    /** 行动卡在命令层显式选择的目标基地；未选择时保持 undefined。 */
+    targetBaseIndex?: number;
     /** 行动卡目标随从 */
     targetMinionUid?: string;
     /** 当前决斗上下文（仅 duel 内核触发的卡牌结算时提供） */
@@ -338,3 +340,5 @@ export function getRegisteredAbilityKeys(): Set<string> {
     }
     return keys;
 }
+
+

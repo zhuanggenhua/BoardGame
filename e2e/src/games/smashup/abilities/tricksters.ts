@@ -11,8 +11,6 @@ import {
     getMinionPower,
     buildMinionTargetOptions,
     grantContextualExtraMinion,
-    resolveOrPrompt,
-    resolveExtraPlayTiming,
     buildAbilityFeedback,
     createSkipOption,
     buildStandardDrawEvents,
@@ -21,24 +19,26 @@ import {
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type {
+    CardInstance,
     CardsDiscardedEvent,
     OngoingDetachedEvent,
     SmashUpEvent,
-    LimitModifiedEvent,
-    TriggerQueuedEvent,
     PowerCounterAddedEvent,
     BreakpointModifiedEvent,
 } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
 import { matchesDefId } from '../domain/utils';
 import { registerInterceptor, registerProtection, registerRestriction, registerTrigger } from '../domain/ongoingEffects';
-import { getCardDef, getBaseDef } from '../data/cards';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { getCardDef } from '../data/cards';
 import { FACTION_DISPLAY_NAMES } from '../domain/ids';
 import { getOpponentLabel } from '../domain/utils';
 import type { MatchState, PlayerId } from '../../../engine/types';
-import { createAbilityRuntimeSimpleChoice, createEffectProgram, createPromptProgram } from '../domain/abilityRuntime';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 
 type TricksterPromptContext = {
     matchState: MatchState<any>;
@@ -49,6 +49,34 @@ type TricksterPromptContext = {
 type TricksterBlockThePathPromptContext = TricksterPromptContext & {
     cardUid: string;
     baseIndex: number;
+};
+
+type TricksterBlockThePathPodPromptContext = TricksterPromptContext & {
+    cardUid: string;
+    baseIndex: number;
+};
+
+type TricksterHideoutPodSwapPromptContext = TricksterPromptContext & {
+    baseIndex: number;
+    hideoutUid: string;
+};
+
+type TricksterHideoutPodDestroyPromptContext = TricksterPromptContext & {
+    baseIndex: number;
+};
+
+type TricksterPixiePodMinionPromptContext = TricksterPromptContext & {
+    baseIndex: number;
+};
+
+type TricksterFlameTrapPodPromptContext = TricksterPromptContext & {
+    baseIndex: number;
+    trapUid: string;
+};
+
+type TricksterGnomePromptContext = TricksterPromptContext & {
+    baseIndex: number;
+    cardUid: string;
 };
 
 function createTricksterPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
@@ -63,6 +91,33 @@ function createTricksterPromptContext<TExtra extends Record<string, unknown> = R
         now,
         ...(extra ?? {} as TExtra),
     };
+}
+
+function buildTricksterGnomePromptOptions(
+    state: AbilityContext['state'],
+    playerId: PlayerId,
+    baseIndex: number,
+    cardUid: string,
+) {
+    const base = state.bases[baseIndex];
+    if (!base) {
+        return { candidates: [], options: [createSkipOption()] as any[] };
+    }
+
+    const myMinionCount = base.minions.filter(m => m.controller === playerId).length;
+    const candidates = base.minions.filter(
+        m => m.uid !== cardUid && getMinionPower(state, m, baseIndex) < myMinionCount,
+    );
+    const options = buildMinionTargetOptions(
+        candidates.map((target) => {
+            const def = getCardDef(target.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? target.defId;
+            const power = getMinionPower(state, target, baseIndex);
+            return { uid: target.uid, defId: target.defId, baseIndex, label: `${name} (力量 ${power})` };
+        }),
+        { state, sourcePlayerId: playerId, effectType: 'destroy' },
+    );
+    return { candidates, options: [...options, createSkipOption()] as any[] };
 }
 
 function collectDisenchantTargets(state: AbilityContext['state']): Array<{ uid: string; defId: string; ownerId: string; label: string }> {
@@ -269,40 +324,540 @@ const tricksterMarkOfSleepPodPromptProgram = createPromptProgram<TricksterPrompt
     },
 });
 
+function isPlayOnBaseOngoingAction(defId: string): boolean {
+    const def = getCardDef(defId);
+    return def?.type === 'action' && def.subtype === 'ongoing' && ((def.ongoingTarget ?? 'base') === 'base');
+}
+
+function buildHideoutPodSwapOptions(state: AbilityContext['state'], playerId: PlayerId) {
+    const player = state.players[playerId];
+    if (!player) return [];
+
+    return [
+        ...player.hand
+            .filter(card => card.type === 'action' && isPlayOnBaseOngoingAction(card.defId))
+            .map((card, index) => {
+                const def = getCardDef(card.defId);
+                return {
+                    id: `hand-${index}`,
+                    label: `手牌：${def?.name ?? card.defId}`,
+                    value: { zone: 'hand' as const, cardUid: card.uid, defId: card.defId },
+                    _source: 'hand' as const,
+                    displayMode: 'card' as const,
+                };
+            }),
+        ...player.deck
+            .filter(card => card.type === 'action' && isPlayOnBaseOngoingAction(card.defId))
+            .map((card, index) => {
+                const def = getCardDef(card.defId);
+                return {
+                    id: `deck-${index}`,
+                    label: `牌库：${def?.name ?? card.defId}`,
+                    value: { zone: 'deck' as const, cardUid: card.uid, defId: card.defId },
+                    _source: 'deck' as const,
+                    displayMode: 'card' as const,
+                };
+            }),
+        createSkipOption() as any,
+    ];
+}
+
+function buildTricksterControlledMinionOptions(
+    state: AbilityContext['state'],
+    playerId: PlayerId,
+) {
+    const options: Array<{
+        id: string;
+        label: string;
+        value: { minionUid: string; baseIndex: number };
+        _source: 'minion';
+        displayMode: 'card';
+    }> = [];
+
+    for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
+        const base = state.bases[baseIndex];
+        for (const minion of base.minions) {
+            if (minion.controller !== playerId) continue;
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const power = getMinionPower(state, minion, baseIndex);
+            options.push({
+                id: `minion-${options.length}`,
+                label: `${name} (力量 ${power})`,
+                value: { minionUid: minion.uid, baseIndex },
+                _source: 'minion',
+                displayMode: 'card',
+            });
+        }
+    }
+
+    return options;
+}
+
+function buildTricksterBaseControlledMinionOptions(
+    state: AbilityContext['state'],
+    playerId: PlayerId,
+    baseIndex: number,
+) {
+    const base = state.bases[baseIndex];
+    if (!base) return [];
+
+    return base.minions
+        .filter(minion => minion.controller === playerId)
+        .map((minion, index) => {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const name = def?.name ?? minion.defId;
+            const power = getMinionPower(state, minion, baseIndex);
+            return {
+                id: `minion-${index}`,
+                label: `${name} (力量 ${power})`,
+                value: { minionUid: minion.uid, baseIndex },
+                _source: 'minion' as const,
+                displayMode: 'card' as const,
+            };
+        });
+}
+
+function buildHideoutPodDestroyOptions(
+    state: AbilityContext['state'],
+    baseIndex: number,
+) {
+    const base = state.bases[baseIndex];
+    if (!base) return [];
+
+    return [
+        ...base.minions
+            .filter(minion => getMinionPower(state, minion, baseIndex) <= 2)
+            .map((minion, index) => {
+                const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+                const name = def?.name ?? minion.defId;
+                const power = getMinionPower(state, minion, baseIndex);
+                return {
+                    id: `minion-${index}`,
+                    label: `${name} (战斗力 ${power})`,
+                    value: { minionUid: minion.uid, baseIndex },
+                    _source: 'minion' as const,
+                    displayMode: 'card' as const,
+                };
+            }),
+        createSkipOption() as any,
+    ];
+}
+
+function buildBlockThePathPodCombos(
+    state: AbilityContext['state'],
+    playerId: PlayerId,
+): Array<{ blocked: Record<string, string>; label: string }> {
+    const opponents = state.turnOrder
+        .filter(pid => pid !== playerId)
+        .map(pid => ({
+            pid,
+            factions: (state.players[pid]?.factions ?? []).filter(Boolean) as string[],
+        }));
+
+    if (opponents.length === 0 || opponents.some(entry => entry.factions.length === 0)) {
+        return [];
+    }
+
+    const combos: Array<{ blocked: Record<string, string>; label: string }> = [];
+    const walk = (
+        index: number,
+        blocked: Record<string, string>,
+        labels: string[],
+    ) => {
+        if (index >= opponents.length) {
+            combos.push({ blocked: { ...blocked }, label: labels.join('；') });
+            return;
+        }
+
+        const { pid, factions } = opponents[index];
+        for (const factionId of factions) {
+            blocked[pid] = factionId;
+            labels.push(`${getOpponentLabel(pid)}：${FACTION_DISPLAY_NAMES[factionId] ?? factionId}`);
+            walk(index + 1, blocked, labels);
+            labels.pop();
+            delete blocked[pid];
+        }
+    };
+
+    walk(0, {}, []);
+    return combos;
+}
+
+const tricksterHideoutPodDestroyPromptProgram = createPromptProgram<TricksterHideoutPodDestroyPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_hideout_pod_destroy',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `trickster_hideout_pod_destroy_${context.now}`,
+        context.playerId,
+        '藏身处：你可以消灭这里一个战斗力≤2的随从（或跳过）',
+        buildHideoutPodDestroyOptions(context.matchState.core, context.baseIndex) as any[],
+        { sourceId: 'trickster_hideout_pod_destroy', targetType: 'minion' },
+    ),
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        return {
+            events: [destroyMinion(target.uid, target.defId, selected.baseIndex, target.owner, playerId, 'trickster_hideout_pod', timestamp)],
+        };
+    },
+});
+
+const tricksterHideoutPodSwapPromptProgram = createPromptProgram<TricksterHideoutPodSwapPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_hideout_pod_swap',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `trickster_hideout_pod_swap_${context.now}`,
+        context.playerId,
+        '藏身处：选择要交换进来的“打出到基地上”的持续战术（或跳过）',
+        buildHideoutPodSwapOptions(context.matchState.core, context.playerId) as any[],
+        { sourceId: 'trickster_hideout_pod_swap', targetType: 'generic' },
+    ),
+    onResolve: ({ context, state, playerId, value, random, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
+
+        const selected = value as { zone?: 'hand' | 'deck'; cardUid?: string; defId?: string } | undefined;
+        if (!selected?.zone || !selected.cardUid || !selected.defId) return { events: [] };
+
+        const base = state.core.bases[context.baseIndex];
+        const hideout = base?.ongoingActions.find(ongoing => ongoing.uid === context.hideoutUid);
+        const player = state.core.players[playerId];
+        if (!base || !hideout || !player) return { events: [] };
+
+        const nextHand = selected.zone === 'hand'
+            ? player.hand.filter(card => card.uid !== selected.cardUid)
+            : player.hand;
+        const nextDeckWithoutSelection = selected.zone === 'deck'
+            ? player.deck.filter(card => card.uid !== selected.cardUid)
+            : player.deck;
+        const hideoutCard: CardInstance = {
+            uid: hideout.uid,
+            defId: hideout.defId,
+            type: 'action',
+            owner: hideout.ownerId,
+        };
+        const updatedDeck = selected.zone === 'deck'
+            ? ((random.shuffle
+                ? random.shuffle([...nextDeckWithoutSelection, hideoutCard])
+                : [...nextDeckWithoutSelection, hideoutCard]) as CardInstance[])
+            : nextDeckWithoutSelection;
+
+        const nextState: MatchState<AbilityContext['state']> = {
+            ...state,
+            core: {
+                ...state.core,
+                bases: state.core.bases.map((currentBase, index) => {
+                    if (index !== context.baseIndex) return currentBase;
+                    return {
+                        ...currentBase,
+                        ongoingActions: [
+                            ...currentBase.ongoingActions.filter(ongoing => ongoing.uid !== context.hideoutUid),
+                            { uid: selected.cardUid!, defId: selected.defId!, ownerId: playerId, talentUsed: false },
+                        ],
+                    };
+                }),
+                players: {
+                    ...state.core.players,
+                    [playerId]: {
+                        ...player,
+                        hand: selected.zone === 'hand'
+                            ? [...nextHand, hideoutCard]
+                            : nextHand,
+                        deck: updatedDeck,
+                    },
+                },
+            },
+        };
+
+        const events: SmashUpEvent[] = [];
+        if (selected.zone === 'deck') {
+            events.push({
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: { playerId, deckUids: updatedDeck.map(card => card.uid) },
+                timestamp,
+            } as any);
+        }
+
+        const destroyOptions = buildHideoutPodDestroyOptions(nextState.core, context.baseIndex);
+        if (destroyOptions.length <= 1) {
+            return { events, matchState: nextState };
+        }
+
+        return {
+            events,
+            matchState: nextState,
+            context: createTricksterPromptContext(nextState, playerId, timestamp, {
+                baseIndex: context.baseIndex,
+            }) satisfies TricksterHideoutPodDestroyPromptContext,
+            nextProgram: tricksterHideoutPodDestroyPromptProgram,
+        };
+    },
+});
+
+const tricksterPixiePodMinionPromptProgram = createPromptProgram<TricksterPixiePodMinionPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_pixie_pod_minion',
+    buildInteraction: (context) => {
+        const options = buildTricksterBaseControlledMinionOptions(context.matchState.core, context.playerId, context.baseIndex);
+        return createAbilityRuntimeSimpleChoice(
+            `trickster_pixie_pod_minion_${context.now}`,
+            context.playerId,
+            '小精灵：选择任意数量己方随从放置 +1 力量指示物（可不选）',
+            options as any[],
+            {
+                sourceId: 'trickster_pixie_pod_minion',
+                targetType: 'minion',
+                multi: { min: 0, max: options.length },
+            },
+        );
+    },
+    onResolve: ({ value, timestamp }) => {
+        const selections = (Array.isArray(value) ? value : [value]) as Array<{ minionUid?: string; baseIndex?: number }>;
+        const valid = selections.filter(selection => selection.minionUid && selection.baseIndex !== undefined) as Array<{ minionUid: string; baseIndex: number }>;
+        return {
+            events: valid.map(selection => ({
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: { minionUid: selection.minionUid, baseIndex: selection.baseIndex, amount: 1, reason: 'trickster_pixie_pod_minion' },
+                timestamp,
+            } as PowerCounterAddedEvent)),
+        };
+    },
+});
+
+const tricksterPixiePodActionCountersPromptProgram = createPromptProgram<TricksterPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_pixie_pod_action_counters',
+    buildInteraction: (context) => {
+        const options = buildTricksterControlledMinionOptions(context.matchState.core, context.playerId);
+        return createAbilityRuntimeSimpleChoice(
+            `trickster_pixie_pod_action_counters_${context.now}`,
+            context.playerId,
+            '小精灵（战术）：选择 1-2 个己方随从放置两枚 +1 指示物',
+            options as any[],
+            {
+                sourceId: 'trickster_pixie_pod_action_counters',
+                targetType: 'minion',
+                multi: { min: 1, max: Math.min(2, options.length) },
+            },
+        );
+    },
+    onResolve: ({ value, timestamp }) => {
+        const selections = (Array.isArray(value) ? value : [value]) as Array<{ minionUid?: string; baseIndex?: number }>;
+        const valid = selections.filter(selection => selection.minionUid && selection.baseIndex !== undefined) as Array<{ minionUid: string; baseIndex: number }>;
+        if (valid.length === 0) return { events: [] };
+
+        if (valid.length === 1) {
+            return {
+                events: [{
+                    type: SU_EVENTS.POWER_COUNTER_ADDED,
+                    payload: { minionUid: valid[0].minionUid, baseIndex: valid[0].baseIndex, amount: 2, reason: 'trickster_pixie_pod_action' },
+                    timestamp,
+                } as PowerCounterAddedEvent],
+            };
+        }
+
+        return {
+            events: valid.slice(0, 2).map(selection => ({
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: { minionUid: selection.minionUid, baseIndex: selection.baseIndex, amount: 1, reason: 'trickster_pixie_pod_action' },
+                timestamp,
+            } as PowerCounterAddedEvent)),
+        };
+    },
+});
+
+const tricksterPixiePodActionDestroyPromptProgram = createPromptProgram<TricksterPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_pixie_pod_action_destroy',
+    buildInteraction: (context) => {
+        const targets = collectDisenchantTargets(context.matchState.core);
+        return createAbilityRuntimeSimpleChoice(
+            `trickster_pixie_pod_action_destroy_${context.now}`,
+            context.playerId,
+            '小精灵（战术）：选择要消灭的已打出战术',
+            targets.map((target, index) => ({
+                id: `action-${index}`,
+                label: target.label,
+                value: { cardUid: target.uid, defId: target.defId, ownerId: target.ownerId },
+                _source: 'ongoing' as const,
+                displayMode: 'card' as const,
+            })) as any[],
+            { sourceId: 'trickster_pixie_pod_action_destroy', targetType: 'ongoing', autoCancelOption: true },
+        );
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
+        const selected = value as { cardUid?: string; defId?: string; ownerId?: string } | undefined;
+        if (!selected?.cardUid || !selected.defId || !selected.ownerId) return { events: [] };
+
+        const events: SmashUpEvent[] = [{
+            type: SU_EVENTS.ONGOING_DETACHED,
+            payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: selected.ownerId, reason: 'trickster_pixie_pod_action' },
+            timestamp,
+        } as OngoingDetachedEvent];
+
+        const nextOptions = buildTricksterControlledMinionOptions(state.core, playerId);
+        if (nextOptions.length === 0) {
+            return { events };
+        }
+
+        return {
+            events,
+            context: createTricksterPromptContext(state, playerId, timestamp),
+            nextProgram: tricksterPixiePodActionCountersPromptProgram,
+        };
+    },
+});
+
+const tricksterBlockThePathPodPromptProgram = createPromptProgram<TricksterBlockThePathPodPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_block_the_path_pod',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `trickster_block_the_path_pod_${context.now}`,
+        context.playerId,
+        '通路禁止：为每个对手指定一个派系',
+        buildBlockThePathPodCombos(context.matchState.core, context.playerId).map((combo, index) => ({
+            id: `combo-${index}`,
+            label: combo.label,
+            value: { blocked: combo.blocked },
+        })) as any[],
+        { sourceId: 'trickster_block_the_path_pod', targetType: 'option', autoCancelOption: true },
+    ),
+    onResolve: ({ context, state, value }) => {
+        if ((value as { __cancel__?: boolean } | undefined)?.__cancel__) return { events: [] };
+        const blocked = (value as { blocked?: Record<string, string> } | undefined)?.blocked;
+        if (!blocked) return { events: [] };
+
+        const updatedBases = state.core.bases.map((base, index) => {
+            if (index !== context.baseIndex) return base;
+            return {
+                ...base,
+                ongoingActions: base.ongoingActions.map((ongoing) => {
+                    if (ongoing.uid !== context.cardUid) return ongoing;
+                    return { ...ongoing, metadata: { ...(ongoing.metadata ?? {}), blockedFactionsByPlayer: blocked } };
+                }),
+            };
+        });
+
+        return {
+            events: [],
+            matchState: { ...state, core: { ...state.core, bases: updatedBases } },
+        };
+    },
+});
+
+const tricksterFlameTrapPodBreakpointPromptProgram = createPromptProgram<TricksterFlameTrapPodPromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_flame_trap_pod_bp',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `trickster_flame_trap_pod_bp_${context.now}`,
+        context.playerId,
+        '火焰陷阱：是否降低此基地爆分线？',
+        [
+            { id: 'yes', label: '是（本回合该基地 breakpoint -4）', value: { yes: true }, displayMode: 'button' as const },
+            { id: 'no', label: '否', value: { yes: false }, displayMode: 'button' as const },
+        ],
+        { sourceId: 'trickster_flame_trap_pod_bp', targetType: 'option', autoCancelOption: false },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        if ((value as { yes?: boolean } | undefined)?.yes !== true) return { events: [] };
+        const trap = state.core.bases[context.baseIndex]?.ongoingActions.find(ongoing => ongoing.uid === context.trapUid);
+        if (!trap) return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.BREAKPOINT_MODIFIED,
+                payload: { baseIndex: context.baseIndex, delta: -4, reason: 'trickster_flame_trap_pod' },
+                timestamp,
+            } as BreakpointModifiedEvent],
+        };
+    },
+});
+
+const tricksterGnomePromptProgram = createPromptProgram<TricksterGnomePromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_gnome',
+    buildInteraction: (context) => {
+        const { options } = buildTricksterGnomePromptOptions(
+            context.matchState.core,
+            context.playerId,
+            context.baseIndex,
+            context.cardUid,
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `trickster_gnome_${context.now}`,
+            context.playerId,
+            '选择要消灭的随从（力量低于己方随从数量），或跳过',
+            options,
+            { sourceId: 'trickster_gnome', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selectedUid = (value as { minionUid?: string } | undefined)?.minionUid;
+        if (!selectedUid) return { events: [] };
+
+        const { candidates } = buildTricksterGnomePromptOptions(
+            state.core,
+            context.playerId,
+            context.baseIndex,
+            context.cardUid,
+        );
+        const target = candidates.find(m => m.uid === selectedUid);
+        if (!target) return { events: [] };
+
+        return {
+            events: [destroyMinion(target.uid, target.defId, context.baseIndex, target.owner, playerId, 'trickster_gnome', timestamp)],
+        };
+    },
+});
+
+const tricksterGnomePodPromptProgram = createPromptProgram<TricksterGnomePromptContext, AbilityContext['state'], SmashUpEvent>({
+    sourceId: 'trickster_gnome_pod',
+    buildInteraction: (context) => {
+        const { options } = buildTricksterGnomePromptOptions(
+            context.matchState.core,
+            context.playerId,
+            context.baseIndex,
+            context.cardUid,
+        );
+        return createAbilityRuntimeSimpleChoice(
+            `trickster_gnome_pod_${context.now}`,
+            context.playerId,
+            '侏儒：你可以消灭这里一个力量低于你在此基地随从数量的随从（或跳过）',
+            options,
+            { sourceId: 'trickster_gnome_pod', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ context, state, value, timestamp, playerId }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selectedUid = (value as { minionUid?: string } | undefined)?.minionUid;
+        if (!selectedUid) return { events: [] };
+
+        const { candidates } = buildTricksterGnomePromptOptions(
+            state.core,
+            context.playerId,
+            context.baseIndex,
+            context.cardUid,
+        );
+        const target = candidates.find(m => m.uid === selectedUid);
+        if (!target) return { events: [] };
+
+        return {
+            events: [destroyMinion(target.uid, target.defId, context.baseIndex, target.owner, playerId, 'trickster_gnome_pod', timestamp)],
+        };
+    },
+});
+
 /** 侏儒 onPlay：消灭力量低于己方随从数量的随从 */
 function tricksterGnome(ctx: AbilityContext): AbilityResult {
-    const base = ctx.state.bases[ctx.baseIndex];
-    if (!base) return { events: [] };
-    const myMinionCount = base.minions.filter(m => m.controller === ctx.playerId).length + 1;
-    const targets = base.minions.filter(
-        m => m.uid !== ctx.cardUid && getMinionPower(ctx.state, m, ctx.baseIndex) < myMinionCount
+    const { candidates } = buildTricksterGnomePromptOptions(ctx.state, ctx.playerId, ctx.baseIndex, ctx.cardUid);
+    if (candidates.length === 0) {
+        return { events: [] };
+    }
+    const result = executeAbilityProgram(
+        tricksterGnomePromptProgram,
+        createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            baseIndex: ctx.baseIndex,
+            cardUid: ctx.cardUid,
+        }) satisfies TricksterGnomePromptContext,
     );
-    const options = targets.map(t => {
-        const def = getCardDef(t.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? t.defId;
-        const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
-    });
-    // "你可以"效果：添加跳过选项
-    const minionOptions = buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
-    minionOptions.push(createSkipOption());
-    return resolveOrPrompt(ctx, minionOptions, {
-        id: 'trickster_gnome',
-        title: '选择要消灭的随从（力量低于己方随从数量），或跳过',
-        sourceId: 'trickster_gnome',
-        targetType: 'minion',
-        autoResolveIfSingle: false,
-    }, (value) => {
-        // 检查 skip 标记
-        if ((value as any).skip) return { events: [] };
-        
-        const { minionUid } = value as { minionUid?: string };
-        if (!minionUid) return { events: [] };
-        
-        const target = targets.find(t => t.uid === minionUid);
-        if (!target) return { events: [] };
-        return { events: [destroyMinion(target.uid, target.defId, ctx.baseIndex, target.owner, undefined, 'trickster_gnome', ctx.now)] };
-    });
+    return { events: result.events, matchState: result.matchState };
 }
 
 /** 带走宝物 onPlay：每个其他玩家随机弃两张手牌 */
@@ -414,32 +969,16 @@ function tricksterGnomePodSpecial(ctx: AbilityContext): AbilityResult {
     );
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
 
-    const options = targets.map(t => {
-        const def = getCardDef(t.defId) as MinionCardDef | undefined;
-        const name = def?.name ?? t.defId;
-        const power = getMinionPower(ctx.state, t, ctx.baseIndex);
-        return { uid: t.uid, defId: t.defId, baseIndex: ctx.baseIndex, label: `${name} (力量 ${power})` };
-    });
-    const minionOptions = buildMinionTargetOptions(options, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
-    minionOptions.push(createSkipOption());
-
     const limitEvt = emitSpecialLimitUsed(ctx.playerId, 'trickster_gnome_pod', ctx.baseIndex, ctx.now);
     const limitEvents = limitEvt ? [limitEvt] : [];
 
-    const result = resolveOrPrompt(ctx, minionOptions, {
-        id: 'trickster_gnome_pod',
-        title: '侏儒：你可以消灭这里一个力量低于你在此基地随从数量的随从（或跳过）',
-        sourceId: 'trickster_gnome_pod',
-        targetType: 'minion',
-        autoResolveIfSingle: false,
-    }, (value) => {
-        if ((value as any).skip) return { events: [] };
-        const { minionUid } = value as { minionUid?: string };
-        if (!minionUid) return { events: [] };
-        const target = targets.find(m => m.uid === minionUid);
-        if (!target) return { events: [] };
-        return { events: [destroyMinion(target.uid, target.defId, ctx.baseIndex, target.owner, ctx.playerId, 'trickster_gnome_pod', ctx.now)] };
-    });
+    const result = executeAbilityProgram(
+        tricksterGnomePodPromptProgram,
+        createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            baseIndex: ctx.baseIndex,
+            cardUid: ctx.cardUid,
+        }) satisfies TricksterGnomePromptContext,
+    );
     if (result.matchState) {
         return { events: [...limitEvents, ...result.events], matchState: result.matchState };
     }
@@ -459,22 +998,19 @@ function registerTricksterPodAbilities(): void {
             };
         }),
     });
-    registerAbility('trickster_pixie_pod', 'onPlay', tricksterPixiePodOnPlay);
+    registerAbilityProgram('trickster_pixie_pod', 'onPlay', {
+        program: createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>(tricksterPixiePodOnPlay),
+    });
     registerAbility('trickster_enshrouding_mist_pod', 'talent', tricksterEnshroudingMistPodTalent);
-    registerAbility('trickster_hideout_pod', 'talent', {
-        execute: tricksterHideoutPodTalent,
+    registerAbilityProgram('trickster_hideout_pod', 'talent', {
+        program: createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>(tricksterHideoutPodTalent),
         validateUse: (ctx) => {
             const owner = ctx.state.players[ctx.playerId];
             if (!owner) return '当前条件不满足';
 
-            const isPlayOnBaseOngoing = (defId: string) => {
-                const def = getCardDef(defId);
-                return def?.type === 'action' && def.subtype === 'ongoing' && ((def.ongoingTarget ?? 'base') === 'base');
-            };
-
             const hasCandidate =
-                owner.hand.some(card => card.type === 'action' && isPlayOnBaseOngoing(card.defId)) ||
-                owner.deck.some(card => card.type === 'action' && isPlayOnBaseOngoing(card.defId));
+                owner.hand.some(card => card.type === 'action' && isPlayOnBaseOngoingAction(card.defId)) ||
+                owner.deck.some(card => card.type === 'action' && isPlayOnBaseOngoingAction(card.defId));
 
             return hasCandidate ? null : '当前条件不满足';
         },
@@ -487,309 +1023,24 @@ function registerTricksterPodAbilities(): void {
 function tricksterHideoutPodTalent(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
     if (!base) return { events: [] };
-    const owner = ctx.state.players[ctx.playerId];
-    if (!owner) return { events: [] };
-
-    // 只允许与“打出到基地上”的持续战术交换（subtype=ongoing 且 ongoingTarget='base'）
-    const isPlayOnBaseOngoing = (defId: string) => {
-        const def = getCardDef(defId);
-        return def?.type === 'action' && def.subtype === 'ongoing' && ((def.ongoingTarget ?? 'base') === 'base');
-    };
-
-    const handCandidates = owner.hand.filter(c => c.type === 'action' && isPlayOnBaseOngoing(c.defId));
-    const deckCandidates = owner.deck.filter(c => c.type === 'action' && isPlayOnBaseOngoing(c.defId));
-
-    if (handCandidates.length === 0 && deckCandidates.length === 0) {
+    const options = buildHideoutPodSwapOptions(ctx.state, ctx.playerId);
+    if (options.length <= 1) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
     }
 
-    const options = [
-        ...handCandidates.map((c, i) => {
-            const def = getCardDef(c.defId);
-            const name = def?.name ?? c.defId;
-            return {
-                id: `hand-${i}`,
-                label: `手牌：${name}`,
-                value: { zone: 'hand' as const, cardUid: c.uid, defId: c.defId },
-                _source: 'hand' as const,
-                displayMode: 'card' as const,
-            };
-        }),
-        ...deckCandidates.map((c, i) => {
-            const def = getCardDef(c.defId);
-            const name = def?.name ?? c.defId;
-            return {
-                id: `deck-${i}`,
-                label: `牌库：${name}`,
-                value: { zone: 'deck' as const, cardUid: c.uid, defId: c.defId },
-                _source: 'deck' as const,
-                displayMode: 'card' as const,
-            };
-        }),
-        createSkipOption() as any,
-    ];
-
-    const interaction = createSimpleChoice(
-        `trickster_hideout_pod_swap_${ctx.now}`,
-        ctx.playerId,
-        '藏身处：选择要交换进来的“打出到基地上”的持续战术（或跳过）',
-        options as any[],
-        { sourceId: 'trickster_hideout_pod_swap', targetType: 'generic' },
+    const result = executeAbilityProgram(
+        tricksterHideoutPodSwapPromptProgram,
+        createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            baseIndex: ctx.baseIndex,
+            hideoutUid: ctx.cardUid,
+        }) satisfies TricksterHideoutPodSwapPromptContext,
     );
-    return {
-        events: [],
-        matchState: queueInteraction(ctx.matchState, {
-            ...interaction,
-            data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex, hideoutUid: ctx.cardUid } } as any,
-        }),
-    };
+    return { events: result.events, matchState: result.matchState };
 }
 
 /** 注册诡术师派系的交互解决处理函数 */
 export function registerTricksterInteractionHandlers(): void {
-    // 侏儒：选择目标后消灭（支持跳过）
-    registerInteractionHandler('trickster_gnome', (state, playerId, value, _iData, _random, timestamp) => {
-        // 统一检查 skip 标记
-        if ((value as any).skip) return { state, events: [] };
-        
-        const { minionUid, baseIndex } = value as { minionUid?: string; baseIndex?: number };
-        if (!minionUid || baseIndex === undefined) return { state, events: [] };
-        
-        const base = state.core.bases[baseIndex];
-        if (!base) return undefined;
-        const target = base.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        return { state, events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'trickster_gnome', timestamp)] };
-    });
-
-    // Pixie（战术）：先消灭一张已打出的战术，再选择 1-2 个己方随从分配两枚 +1 指示物
-    registerInteractionHandler('trickster_pixie_pod_action_destroy', (state, playerId, value, _iData, random, timestamp) => {
-        if ((value as any).__cancel__) return { state, events: [] };
-        const { cardUid, defId, ownerId } = value as { cardUid: string; defId: string; ownerId: string };
-
-        const myMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-        for (let bi = 0; bi < state.core.bases.length; bi++) {
-            const base = state.core.bases[bi];
-            for (const m of base.minions) {
-                if (m.controller !== playerId) continue;
-                const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? m.defId;
-                const power = getMinionPower(state.core, m, bi);
-                myMinions.push({ uid: m.uid, defId: m.defId, baseIndex: bi, label: `${name} (力量 ${power})` });
-            }
-        }
-        if (myMinions.length === 0) {
-            return {
-                state,
-                events: [{
-                    type: SU_EVENTS.ONGOING_DETACHED,
-                    payload: { cardUid, defId, ownerId, reason: 'trickster_pixie_pod_action' },
-                    timestamp,
-                } as OngoingDetachedEvent],
-            };
-        }
-
-        const options = myMinions.map((m, i) => ({
-            id: `minion-${i}`,
-            label: m.label,
-            value: { minionUid: m.uid, baseIndex: m.baseIndex },
-            _source: 'minion' as const,
-            displayMode: 'card' as const,
-        }));
-
-        const next = createSimpleChoice(
-            `trickster_pixie_pod_action_counters_${timestamp}`,
-            playerId,
-            '小精灵（战术）：选择 1-2 个己方随从放置两枚 +1 指示物',
-            options as any[],
-            { sourceId: 'trickster_pixie_pod_action_counters', targetType: 'minion' },
-            undefined,
-            { min: 1, max: Math.min(2, options.length) },
-        );
-        return {
-            state: queueInteraction(state, {
-                ...next,
-                data: { ...next.data, continuationContext: { destroy: { cardUid, defId, ownerId } } } as any,
-            }),
-            events: [{
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: { cardUid, defId, ownerId, reason: 'trickster_pixie_pod_action' },
-                timestamp,
-            } as OngoingDetachedEvent],
-        };
-    });
-
-    registerInteractionHandler('trickster_pixie_pod_action_counters', (state, playerId, value, _iData, _random, timestamp) => {
-        const selections = (Array.isArray(value) ? value : [value]) as { minionUid?: string; baseIndex?: number }[];
-        const valid = selections.filter(s => s.minionUid && s.baseIndex !== undefined) as { minionUid: string; baseIndex: number }[];
-        if (valid.length === 0) return { state, events: [] };
-
-        const events: SmashUpEvent[] = [];
-        if (valid.length === 1) {
-            events.push({
-                type: SU_EVENTS.POWER_COUNTER_ADDED,
-                payload: { minionUid: valid[0].minionUid, baseIndex: valid[0].baseIndex, amount: 2, reason: 'trickster_pixie_pod_action' },
-                timestamp,
-            } as PowerCounterAddedEvent);
-        } else {
-            for (const s of valid.slice(0, 2)) {
-                events.push({
-                    type: SU_EVENTS.POWER_COUNTER_ADDED,
-                    payload: { minionUid: s.minionUid, baseIndex: s.baseIndex, amount: 1, reason: 'trickster_pixie_pod_action' },
-                    timestamp,
-                } as PowerCounterAddedEvent);
-            }
-        }
-        return { state, events };
-    });
-
-    registerInteractionHandler('trickster_pixie_pod_minion', (state, playerId, value, _iData, _random, timestamp) => {
-        const selections = (Array.isArray(value) ? value : [value]) as { minionUid?: string; baseIndex?: number }[];
-        const valid = selections.filter(s => s.minionUid && s.baseIndex !== undefined) as { minionUid: string; baseIndex: number }[];
-        if (valid.length === 0) return { state, events: [] };
-        const events: SmashUpEvent[] = valid.map(s => ({
-            type: SU_EVENTS.POWER_COUNTER_ADDED,
-            payload: { minionUid: s.minionUid, baseIndex: s.baseIndex, amount: 1, reason: 'trickster_pixie_pod_minion' },
-            timestamp,
-        } as PowerCounterAddedEvent));
-        return { state, events };
-    });
-
-    registerInteractionHandler('trickster_flame_trap_pod_bp', (state, _playerId, value, _iData, _random, timestamp) => {
-        const yes = (value as any)?.yes === true;
-        if (!yes) return { state, events: [] };
-        // 选择窗口只会在拥有者回合开始时出现，因此直接定位该拥有者的第一张 trap
-        const baseIndex = state.core.bases.findIndex(b => b.ongoingActions.some(o => o.defId === 'trickster_flame_trap_pod'));
-        if (baseIndex < 0) return { state, events: [] };
-        return {
-            state,
-            events: [{
-                type: SU_EVENTS.BREAKPOINT_MODIFIED,
-                payload: { baseIndex, delta: -4, reason: 'trickster_flame_trap_pod' },
-                timestamp,
-            } as BreakpointModifiedEvent],
-        };
-    });
-
-    registerInteractionHandler('trickster_block_the_path_pod', (state, _playerId, value, iData, _random, _timestamp) => {
-        if ((value as any).__cancel__) return { state, events: [] };
-        const { blocked } = value as { blocked: Record<string, string> };
-        const ctx = (iData as any)?.continuationContext as { cardUid: string; baseIndex: number };
-        if (!ctx) return undefined;
-        const newBases = state.core.bases.map((b, i) => {
-            if (i !== ctx.baseIndex) return b;
-            return {
-                ...b,
-                ongoingActions: b.ongoingActions.map(o => {
-                    if (o.uid !== ctx.cardUid) return o;
-                    return { ...o, metadata: { ...(o.metadata ?? {}), blockedFactionsByPlayer: blocked } };
-                }),
-            };
-        });
-        return { state: { ...state, core: { ...state.core, bases: newBases } }, events: [] };
-    });
-
-    registerInteractionHandler('trickster_hideout_pod_swap', (state, playerId, value, iData, _random, timestamp) => {
-        if ((value as any).skip) return { state, events: [] };
-        if ((value as any).__cancel__) return { state, events: [] };
-        const { zone, cardUid, defId } = value as { zone: 'hand' | 'deck'; cardUid: string; defId: string };
-        const ctx = (iData as any)?.continuationContext as { baseIndex: number; hideoutUid: string };
-        if (!ctx) return undefined;
-
-        const base = state.core.bases[ctx.baseIndex];
-        if (!base) return undefined;
-        const hideout = base.ongoingActions.find(o => o.uid === ctx.hideoutUid);
-        if (!hideout) return undefined;
-
-        const player = state.core.players[playerId];
-        if (!player) return undefined;
-
-        // 1) 从手牌/牌库移除目标战术
-        const fromHand = zone === 'hand' ? player.hand.filter(c => c.uid !== cardUid) : player.hand;
-        const fromDeck = zone === 'deck' ? player.deck.filter(c => c.uid !== cardUid) : player.deck;
-
-        // 2) 藏身处从基地离场（swap 的另一半）
-        const hideoutCard: CardInstance = { uid: hideout.uid, defId: hideout.defId, type: 'action', owner: hideout.ownerId };
-
-        // 3) 目标战术进入基地 ongoingActions（保持 cardUid）
-        const newOngoing = { uid: cardUid, defId, ownerId: playerId, talentUsed: false };
-
-        const newBases = state.core.bases.map((b, i) => {
-            if (i !== ctx.baseIndex) return b;
-            return {
-                ...b,
-                ongoingActions: [
-                    ...b.ongoingActions.filter(o => o.uid !== hideout.uid),
-                    newOngoing,
-                ],
-            };
-        });
-
-        // 牌库交换：藏身处洗回牌库并发出 DECK_REORDERED（与其他“洗回牌库”语义一致）
-        const nextDeck = zone === 'deck'
-            ? ((_random?.shuffle ? _random.shuffle([...fromDeck, hideoutCard]) : [...fromDeck, hideoutCard]) as CardInstance[])
-            : fromDeck;
-
-        const events: SmashUpEvent[] = [];
-        if (zone === 'deck') {
-            events.push({
-                type: SU_EVENTS.DECK_REORDERED,
-                payload: { playerId, deckUids: nextDeck.map(c => c.uid) },
-                timestamp,
-            } as any);
-        }
-
-        let nextState = {
-            ...state,
-            core: {
-                ...state.core,
-                bases: newBases,
-                players: {
-                    ...state.core.players,
-                    [playerId]: {
-                        ...player,
-                        hand: zone === 'hand' ? [...fromHand, hideoutCard] : fromHand,
-                        deck: nextDeck,
-                    },
-                },
-            },
-        };
-
-        // 4) 交换后：你可以消灭这里一个战斗力≤2的随从（可选）
-        const updatedBase = nextState.core.bases[ctx.baseIndex];
-        const candidates = updatedBase.minions.filter(m => getMinionPower(nextState.core, m, ctx.baseIndex) <= 2);
-        if (candidates.length === 0) return { state: nextState, events };
-        const options = candidates.map((m, i) => {
-            const mDef = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = mDef?.name ?? m.defId;
-            const power = getMinionPower(nextState.core, m, ctx.baseIndex);
-            return { id: `m-${i}`, label: `${name} (战斗力 ${power})`, value: { minionUid: m.uid, baseIndex: ctx.baseIndex }, _source: 'minion' as const, displayMode: 'card' as const };
-        });
-        options.push(createSkipOption() as any);
-
-        const prompt = createSimpleChoice(
-            `trickster_hideout_pod_destroy_${timestamp}`,
-            playerId,
-            '藏身处：你可以消灭这里一个战斗力≤2的随从（或跳过）',
-            options as any[],
-            { sourceId: 'trickster_hideout_pod_destroy', targetType: 'minion' },
-        );
-        nextState = queueInteraction(nextState, prompt);
-        return { state: nextState, events };
-    });
-
-    registerInteractionHandler('trickster_hideout_pod_destroy', (state, playerId, value, _iData, _random, timestamp) => {
-        if ((value as any).skip) return { state, events: [] };
-        const { minionUid, baseIndex } = value as { minionUid?: string; baseIndex?: number };
-        if (!minionUid || baseIndex === undefined) return { state, events: [] };
-        const base = state.core.bases[baseIndex];
-        const target = base?.minions.find(m => m.uid === minionUid);
-        if (!target) return undefined;
-        return {
-            state,
-            events: [destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'trickster_hideout_pod', timestamp)],
-        };
-    });
+    // 已迁移到 abilityRuntime prompt program，保留空函数维持注册入口结构一致。
 }
 
 /** 小妖精?onDestroy：被消灭后抽1张牌 + 每个对手随机?张牌 */
@@ -834,72 +1085,25 @@ function tricksterPixiePodOnPlay(ctx: AbilityContext): AbilityResult {
             return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
         }
 
-        const myMinionsHere = base.minions.filter(m => m.controller === ctx.playerId);
-        if (myMinionsHere.length === 0) return { events: [] };
-        const options = myMinionsHere.map((m, i) => {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const power = getMinionPower(ctx.state, m, ctx.baseIndex);
-            return {
-                id: `minion-${i}`,
-                label: `${name} (力量 ${power})`,
-                value: { minionUid: m.uid, baseIndex: ctx.baseIndex },
-                _source: 'minion' as const,
-                displayMode: 'card' as const,
-            };
-        });
-        // any number（可 0 张）
-        const interaction = createSimpleChoice(
-            `trickster_pixie_pod_minion_${ctx.now}`,
-            ctx.playerId,
-            '小精灵：选择任意数量己方随从放置 +1 力量指示物（可不选）',
-            options as any[],
-            { sourceId: 'trickster_pixie_pod_minion', targetType: 'minion' },
-            undefined,
-            { min: 0, max: options.length },
+        const options = buildTricksterBaseControlledMinionOptions(ctx.state, ctx.playerId, ctx.baseIndex);
+        if (options.length === 0) return { events: [] };
+        const result = executeAbilityProgram(
+            tricksterPixiePodMinionPromptProgram,
+            createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                baseIndex: ctx.baseIndex,
+            }) satisfies TricksterPixiePodMinionPromptContext,
         );
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+        return { events: result.events, matchState: result.matchState };
     }
 
     // Pixie as action: choose an action in play to destroy, then distribute two +1 counters among your minions
-    const targets: { uid: string; defId: string; ownerId: string; label: string }[] = [];
-    for (let bi = 0; bi < ctx.state.bases.length; bi++) {
-        const b = ctx.state.bases[bi];
-        for (const oa of b.ongoingActions) {
-            const def = getCardDef(oa.defId);
-            const name = def?.name ?? oa.defId;
-            targets.push({ uid: oa.uid, defId: oa.defId, ownerId: oa.ownerId, label: `${name} (基地)` });
-        }
-        for (const m of b.minions) {
-            for (const aa of m.attachedActions) {
-                const def = getCardDef(aa.defId);
-                const name = def?.name ?? aa.defId;
-                targets.push({ uid: aa.uid, defId: aa.defId, ownerId: aa.ownerId, label: `${name} (附着)` });
-            }
-        }
-    }
+    const targets = collectDisenchantTargets(ctx.state);
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = targets.map((t, i) => ({
-        id: `action-${i}`,
-        label: t.label,
-        value: { cardUid: t.uid, defId: t.defId, ownerId: t.ownerId },
-        _source: 'ongoing' as const,
-        displayMode: 'card' as const,
-    }));
-    const interaction = createSimpleChoice(
-        `trickster_pixie_pod_action_destroy_${ctx.now}`,
-        ctx.playerId,
-        '小精灵（战术）：选择要消灭的已打出战术',
-        options as any[],
-        { sourceId: 'trickster_pixie_pod_action_destroy', targetType: 'ongoing', autoCancelOption: true },
+    const result = executeAbilityProgram(
+        tricksterPixiePodActionDestroyPromptProgram,
+        createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return {
-        events: [],
-        matchState: queueInteraction(ctx.matchState, {
-            ...interaction,
-            data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } as any,
-        }),
-    };
+    return { events: result.events, matchState: result.matchState };
 }
 
 // executeMarkOfSleep 已移除，沉睡印记改为标记模式（在对手回合开始时生效）
@@ -942,6 +1146,11 @@ function registerTricksterOngoingEffects(): void {
             }
         }
         return [];
+    }, {
+        orderingFootprint: {
+            reads: ['minionBoardState', 'triggerMinionState', 'triggerMinionPower'],
+            writes: ['triggerMinionState'],
+        },
     });
 
     // 布朗尼：被对手卡牌效果影响时，对手弃两张牌
@@ -1022,6 +1231,11 @@ function registerTricksterOngoingEffects(): void {
             ];
         }
         return [];
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'triggerMinionState'],
+            writes: ['sourceState', 'triggerMinionState'],
+        },
     });
 
     // 封路：指定派系不能打出随从到此基地（描述无"对手"限定，对所有玩家生效）
@@ -1060,12 +1274,22 @@ function registerTricksterOngoingEffects(): void {
             }];
         }
         return [];
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'handState'],
+            writes: ['handState', 'discardState'],
+        },
     });
 }
 
 function registerTricksterPodOngoingEffects(): void {
     registerTrigger('trickster_brownie_pod', 'onMinionAffected', () => []);
-    registerTrigger('trickster_enshrouding_mist_pod', 'onTurnStart', () => []);
+    registerTrigger('trickster_enshrouding_mist_pod', 'onTurnStart', () => [], {
+        orderingFootprint: {
+            reads: [],
+            writes: [],
+        },
+    });
     registerProtection('trickster_hideout_pod', 'action', () => false);
     // Hideout POD：其他玩家不能将随从移动到此基地（用事件拦截器阻止移动）
     registerInterceptor('trickster_hideout_pod', (state, event) => {
@@ -1135,6 +1359,11 @@ function registerTricksterPodOngoingEffects(): void {
             break;
         }
         return events;
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'triggerMinionState', 'triggerMinionPower'],
+            writes: ['sourceState', 'triggerMinionState'],
+        },
     });
 
     // Brownie POD：每回合一次，当对手在另一基地打出随从后，你抽 1 张牌
@@ -1170,6 +1399,11 @@ function registerTricksterPodOngoingEffects(): void {
             }
         }
         return events;
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'triggerMinionState', 'handState', 'deckState', 'turnFlags'],
+            writes: ['sourceState', 'handState', 'deckState'],
+        },
     });
 
     // Gremlin POD：被消灭进入弃牌堆后抽 1；若被消灭则每位对手随机弃 1
@@ -1231,29 +1465,31 @@ function registerTricksterPodOngoingEffects(): void {
                 timestamp: trigCtx.now,
             },
         ];
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'triggerMinionState'],
+            writes: ['sourceState', 'triggerMinionState'],
+        },
     });
 
     // Flame Trap POD：你回合开始时，可以让此基地本回合 breakpoint -4
     registerTrigger('trickster_flame_trap_pod', 'onTurnStart', (trigCtx) => {
-        for (let bi = 0; bi < trigCtx.state.bases.length; bi++) {
-            const base = trigCtx.state.bases[bi];
-            const trap = base.ongoingActions.find(o => o.defId === 'trickster_flame_trap_pod');
-            if (!trap) continue;
-            if (trap.ownerId !== trigCtx.playerId) continue;
-            const options = [
-                { id: 'yes', label: '是（本回合该基地 breakpoint -4）', value: { yes: true } },
-                { id: 'no', label: '否', value: { yes: false } },
-            ];
-            const interaction = createSimpleChoice(
-                `trickster_flame_trap_pod_bp_${trigCtx.now}`,
-                trigCtx.playerId,
-                '火焰陷阱：是否降低此基地爆分线？',
-                options as any[],
-                { sourceId: 'trickster_flame_trap_pod_bp', targetType: 'option', autoCancelOption: false },
-            );
-            return { events: [], matchState: queueInteraction(trigCtx.matchState as any, interaction) } as any;
-        }
-        return [];
+        if (!trigCtx.matchState || trigCtx.sourceBaseIndex === undefined || !trigCtx.sourceCardUid) return [];
+        const trap = trigCtx.state.bases[trigCtx.sourceBaseIndex]?.ongoingActions.find(ongoing => ongoing.uid === trigCtx.sourceCardUid);
+        if (!trap || trap.ownerId !== trigCtx.playerId) return [];
+        return executeAbilityProgram(
+            tricksterFlameTrapPodBreakpointPromptProgram,
+            createTricksterPromptContext(trigCtx.matchState, trigCtx.playerId, trigCtx.now, {
+                baseIndex: trigCtx.sourceBaseIndex,
+                trapUid: trigCtx.sourceCardUid,
+            }) satisfies TricksterFlameTrapPodPromptContext,
+        );
+    }, {
+        perInstance: true,
+        orderingFootprint: {
+            reads: ['sourceState', 'scoringState'],
+            writes: ['scoringState'],
+        },
     });
 
     // Pay the Piper POD：对手在此基地打出随从后，该玩家弃 1 张牌（先按随机实现，后续可升级为选择弃牌）
@@ -1273,49 +1509,29 @@ function registerTricksterPodOngoingEffects(): void {
             payload: { playerId: trigCtx.playerId, cardUids: [opponent.hand[idx].uid] },
             timestamp: trigCtx.now,
         } as CardsDiscardedEvent];
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'handState'],
+            writes: ['handState', 'discardState'],
+        },
     });
 
     // Block the Path POD：对每个对手指定其拥有的一个派系，阻止该对手派系随从打到此基地
-    registerAbility('trickster_block_the_path_pod', 'onPlay', (ctx) => {
-        const otherPlayers = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
-        if (otherPlayers.length === 0) return { events: [] };
-        const perOpponentFactions = otherPlayers.map(pid => ({
-            pid,
-            factions: (ctx.state.players[pid]?.factions ?? []).filter(Boolean) as string[],
-        }));
-        if (perOpponentFactions.some(x => x.factions.length === 0)) {
-            return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
-        }
-
-        // 组合：每位对手在其两个派系中选一个（最多 3 位对手 → 2^3 = 8）
-        const combos: { blocked: Record<string, string>; label: string }[] = [];
-        const total = 1 << otherPlayers.length;
-        for (let mask = 0; mask < total; mask++) {
-            const blocked: Record<string, string> = {};
-            const parts: string[] = [];
-            for (let i = 0; i < otherPlayers.length; i++) {
-                const { pid, factions } = perOpponentFactions[i];
-                const pick = ((mask >> i) & 1) === 1 ? factions[1] : factions[0];
-                blocked[pid] = pick;
-                const name = FACTION_DISPLAY_NAMES[pick] ?? pick;
-                parts.push(`${getOpponentLabel(pid)}：${name}`);
+    registerAbilityProgram('trickster_block_the_path_pod', 'onPlay', {
+        program: createEffectProgram<AbilityContext, AbilityContext['state'], SmashUpEvent>((ctx) => {
+            const combos = buildBlockThePathPodCombos(ctx.state, ctx.playerId);
+            if (combos.length === 0) {
+                return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
             }
-            combos.push({ blocked, label: parts.join('；') });
-        }
-        const options = combos.map((c, i) => ({
-            id: `combo-${i}`,
-            label: c.label,
-            value: { blocked: c.blocked },
-        }));
-        const interaction = createSimpleChoice(
-            `trickster_block_the_path_pod_${ctx.now}`,
-            ctx.playerId,
-            '通路禁止：为每个对手指定一个派系',
-            options as any[],
-            { sourceId: 'trickster_block_the_path_pod', targetType: 'option', autoCancelOption: true },
-        );
-        // continuationContext 由 Board.tsx/InteractionHandlers 需要存 cardUid/baseIndex
-        return { events: [], matchState: queueInteraction(ctx.matchState, { ...interaction, data: { ...interaction.data, continuationContext: { cardUid: ctx.cardUid, baseIndex: ctx.baseIndex } } as any }) };
+            return {
+                events: [],
+                context: createTricksterPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                    cardUid: ctx.cardUid,
+                    baseIndex: ctx.baseIndex,
+                }) satisfies TricksterBlockThePathPodPromptContext,
+                nextProgram: tricksterBlockThePathPodPromptProgram,
+            };
+        }),
     });
 
     registerRestriction('trickster_block_the_path_pod', 'play_minion', (ctx) => {

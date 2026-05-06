@@ -211,18 +211,27 @@ function buildBaseRankings(
     const sorted = Array.from(playerPowers.entries())
         .sort((a, b) => b[1] - a[1]);
     const rankings: { playerId: PlayerId; power: number; vp: number }[] = [];
-    let rankSlot = 0;
+    let index = 0;
 
-    for (let i = 0; i < sorted.length; i++) {
-        const [playerId, power] = sorted[i];
-        if (i > 0 && power < sorted[i - 1][1]) {
-            rankSlot = i;
+    while (index < sorted.length) {
+        const [, power] = sorted[index];
+        let groupEnd = index;
+        while (groupEnd + 1 < sorted.length && sorted[groupEnd + 1][1] === power) {
+            groupEnd += 1;
         }
-        rankings.push({
-            playerId,
-            power,
-            vp: rankSlot < 3 ? baseDef.vpAwards[rankSlot] : 0,
-        });
+
+        const awardSlot = groupEnd;
+        const vp = awardSlot < 3 ? (baseDef.vpAwards[awardSlot] ?? 0) : 0;
+
+        for (let i = index; i <= groupEnd; i += 1) {
+            rankings.push({
+                playerId: sorted[i][0],
+                power,
+                vp,
+            });
+        }
+
+        index = groupEnd + 1;
     }
 
     return rankings;

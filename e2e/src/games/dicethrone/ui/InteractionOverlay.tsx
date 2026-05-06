@@ -322,13 +322,14 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     data-player-id={pid}
                                     data-team-tone={teamTone}
                                     data-locked={isSourcePlayer ? 'true' : 'false'}
+                                    data-selected={isSelected ? 'true' : 'false'}
                                     className={`
                                         p-4 rounded-xl border-2 transition-all duration-200 min-w-0
-                                        ${canSelect ? 'cursor-pointer hover:scale-[1.03]' : 'cursor-not-allowed opacity-75'}
+                                        ${canSelect ? 'cursor-pointer hover:scale-[1.03] hover:shadow-[0_14px_34px_rgba(15,23,42,0.28)]' : 'cursor-not-allowed opacity-75'}
                                         ${isSourcePlayer
                                             ? 'border-slate-500/70 bg-slate-900/80'
                                             : isSelected
-                                                ? 'border-amber-400 bg-amber-950/30 ring-2 ring-amber-300/80'
+                                                ? 'border-amber-400 bg-amber-950/35 ring-2 ring-amber-300/85 shadow-[0_0_0_1px_rgba(251,191,36,0.45),0_18px_40px_rgba(251,191,36,0.16)]'
                                                 : idleBorderClassName}
                                     `}
                                 >
@@ -376,6 +377,13 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             />
                                         </div>
                                     )}
+                                    <div className="mt-3 text-center text-xs font-semibold tracking-[0.18em] uppercase text-slate-300/85">
+                                        {isSourcePlayer
+                                            ? '已选来源'
+                                            : isSelected
+                                                ? '已选目标'
+                                                : '点击作为接收目标'}
+                                    </div>
                                 </div>
                             );
                         })}

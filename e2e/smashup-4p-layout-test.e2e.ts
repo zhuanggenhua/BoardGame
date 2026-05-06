@@ -898,7 +898,7 @@ test.describe('大杀四方四人局三基地同时计分', () => {
         await game.screenshot('03-final-four-player-state', testInfo);
     });
 
-    test('移动端横屏点击对手分数应能进入并退出对手视角', async ({ page, game }, testInfo) => {
+    test('移动端横屏点击不同对手分数应能切换对应玩家视角并退出', async ({ page, game }, testInfo) => {
         test.setTimeout(150000);
 
         await page.setViewportSize(MOBILE_LANDSCAPE_VIEWPORT);
@@ -927,7 +927,33 @@ test.describe('大杀四方四人局三基地同时计分', () => {
             numPlayers: 4,
             skipInitialization: true,
         }, 120000);
-        await game.setupScene(buildFourPlayerMobileScene());
+        const scene = buildFourPlayerMobileScene();
+        scene.extra.core.players['1'] = {
+            ...scene.extra.core.players['1'],
+            deck: [
+                { uid: 'p1-deck-1', defId: 'alien_invader', type: 'minion', owner: '1' },
+                { uid: 'p1-deck-2', defId: 'alien_collector', type: 'minion', owner: '1' },
+                { uid: 'p1-deck-3', defId: 'ninja_tiger_assassin', type: 'minion', owner: '1' },
+            ],
+            discard: [
+                { uid: 'p1-discard-1', defId: 'alien_scout', type: 'minion', owner: '1' },
+            ],
+        };
+        scene.extra.core.players['2'] = {
+            ...scene.extra.core.players['2'],
+            deck: [
+                { uid: 'p2-deck-1', defId: 'ghost_spectre', type: 'minion', owner: '2' },
+                { uid: 'p2-deck-2', defId: 'ghost_ghost', type: 'minion', owner: '2' },
+                { uid: 'p2-deck-3', defId: 'wizard_chronomage', type: 'minion', owner: '2' },
+                { uid: 'p2-deck-4', defId: 'wizard_archmage', type: 'minion', owner: '2' },
+                { uid: 'p2-deck-5', defId: 'ghost_spirit', type: 'minion', owner: '2' },
+            ],
+            discard: [
+                { uid: 'p2-discard-1', defId: 'wizard_acolyte', type: 'minion', owner: '2' },
+                { uid: 'p2-discard-2', defId: 'ghost_spectre', type: 'minion', owner: '2' },
+            ],
+        };
+        await game.setupScene(scene);
 
         await page.waitForFunction(() => {
             const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
@@ -939,26 +965,43 @@ test.describe('大杀四方四人局三基地同时计分', () => {
 
         await waitForSmashUpMainUiReady(page);
 
-        const opponentScoreButton = page.locator('[data-testid="su-score-vp-1"]');
+        const firstOpponentScoreButton = page.locator('[data-testid="su-score-vp-1"]');
+        const secondOpponentScoreButton = page.locator('[data-testid="su-score-vp-2"]');
         const opponentViewBanner = page.getByText('对手视角');
         const backToSelfButton = page.getByRole('button', { name: '返回' });
+        const deckStack = page.locator('[data-testid="su-deck-stack"]');
+        const discardToggle = page.locator('[data-testid="su-discard-toggle"]');
 
-        await expect(opponentScoreButton).toBeVisible({ timeout: 15000 });
-        const hitTestId = await opponentScoreButton.evaluate((element: HTMLElement) => {
+        await expect(firstOpponentScoreButton).toBeVisible({ timeout: 15000 });
+        await expect(secondOpponentScoreButton).toBeVisible({ timeout: 15000 });
+        const hitTestId = await firstOpponentScoreButton.evaluate((element: HTMLElement) => {
             const rect = element.getBoundingClientRect();
             const target = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2) as HTMLElement | null;
             return target?.closest('[data-testid]')?.getAttribute('data-testid') ?? null;
         });
         expect(hitTestId, '分数球中心点命中目标应仍是分数按钮本身').toBe('su-score-vp-1');
 
-        await tapTouchCenter(opponentScoreButton, page);
+        await tapTouchCenter(firstOpponentScoreButton, page);
         await expect(opponentViewBanner).toBeVisible({ timeout: 5000 });
         await expect(backToSelfButton).toBeVisible({ timeout: 5000 });
+        await expect(deckStack).toContainText('3');
+        await expect(discardToggle).toContainText('(1)');
 
         await game.screenshot('03a-mobile-opponent-view-entry', testInfo);
 
+        await tapTouchCenter(secondOpponentScoreButton, page);
+        await expect(opponentViewBanner).toBeVisible({ timeout: 5000 });
+        await expect(deckStack).toContainText('5');
+        await expect(discardToggle).toContainText('(2)');
+
+        await game.screenshot('03b-mobile-opponent-view-switch-player-2', testInfo);
+
         await backToSelfButton.click();
         await expect(opponentViewBanner).toHaveCount(0);
+        await expect(discardToggle).toContainText('(0)');
+        await expect(deckStack).toContainText('0');
+
+        await game.screenshot('03c-mobile-opponent-view-return-self', testInfo);
     });
 
     test('移动端横屏应保持四人局布局可用，并支持手牌长按看牌与战场拖拽放大', async ({ page, game }, testInfo) => {

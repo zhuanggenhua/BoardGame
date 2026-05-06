@@ -191,6 +191,43 @@ const buildProxyState = (target: HTMLElement): ProxyState => {
     };
 };
 
+const areInlineStylesEqual = (
+    left?: Record<string, string>,
+    right?: Record<string, string>,
+) => {
+    if (left === right) {
+        return true;
+    }
+    if (!left || !right) {
+        return !left && !right;
+    }
+
+    const leftKeys = Object.keys(left);
+    const rightKeys = Object.keys(right);
+    if (leftKeys.length !== rightKeys.length) {
+        return false;
+    }
+
+    return leftKeys.every((key) => left[key] === right[key]);
+};
+
+const areProxyStatesEquivalent = (current: ProxyState | null, next: ProxyState) => {
+    if (!current) {
+        return false;
+    }
+
+    return current.target === next.target
+        && current.multiline === next.multiline
+        && current.value === next.value
+        && current.placeholder === next.placeholder
+        && current.inputType === next.inputType
+        && current.inputMode === next.inputMode
+        && current.maxLength === next.maxLength
+        && current.enterKeyHint === next.enterKeyHint
+        && current.className === next.className
+        && areInlineStylesEqual(current.inlineStyle, next.inlineStyle);
+};
+
 const freezeTargetForProxy = (target: HTMLElement): TargetProxySnapshot => {
     const host = target.closest('[data-mobile-text-entry-proxy-host="true"]');
     const snapshot: TargetProxySnapshot = {
@@ -352,7 +389,10 @@ export const MobileTextEntryProxyLayer = () => {
                 cssInset: readCssKeyboardInset(),
                 keyboardInset: readKeyboardInset(),
             });
-            setProxyState(buildProxyState(target));
+            setProxyState((current) => {
+                const next = buildProxyState(target);
+                return areProxyStatesEquivalent(current, next) ? current : next;
+            });
         };
 
         const maybeActivateFromActiveElement = () => {
@@ -498,9 +538,13 @@ export const MobileTextEntryProxyLayer = () => {
                 if (!current || current.target !== proxyState.target) {
                     return current;
                 }
+                const nextValue = readTextEntryValue(current.target);
+                if (current.value === nextValue) {
+                    return current;
+                }
                 return {
                     ...current,
-                    value: readTextEntryValue(current.target),
+                    value: nextValue,
                 };
             });
         };
@@ -716,7 +760,10 @@ export const MobileTextEntryProxyLayer = () => {
                     return;
                 }
                 if (isTextEntryElement(active) && isTextEntryProxyEligible(active) && readKeyboardInset() >= KEYBOARD_PROXY_MIN_INSET) {
-                    setProxyState(buildProxyState(active));
+                    setProxyState((current) => {
+                        const next = buildProxyState(active);
+                        return areProxyStatesEquivalent(current, next) ? current : next;
+                    });
                     return;
                 }
                 debugProxyEvent('proxy-blur-clear', {

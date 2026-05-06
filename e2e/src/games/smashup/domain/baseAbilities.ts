@@ -536,7 +536,13 @@ export function registerBaseAbilities(): void {
             events: [],
             matchState: queueInteraction(ctx.matchState, interaction),
         };
-    }, { mandatory: false });
+    }, {
+        mandatory: false,
+        orderingFootprint: {
+            reads: ['minionBoardState'],
+            writes: ['triggerMinionPower'],
+        },
+    });
 
     // base_central_brain: 中央大脑
     // "每个在这里的随从获得+1力量"
@@ -822,6 +828,11 @@ export function registerBaseAbilities(): void {
         };
         
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        orderingFootprint: {
+            reads: ['handState'],
+            writes: ['handState', 'discardState'],
+        },
     });
 
     // base_the_field_of_honor: 荣誉之地
@@ -918,6 +929,10 @@ export function registerBaseAbilities(): void {
         return {
             events: [addPowerCounter(ctx.minionUid, ctx.baseIndex, 1, 'base_laboratorium', ctx.now)],
         };
+    }, {
+        orderingFootprint: {
+            writes: ['triggerMinionPower'],
+        },
     });
 
     // base_golem_schloss: 魔像城堡 (Golem Schloß)
@@ -968,6 +983,10 @@ export function registerBaseAbilities(): void {
                 timestamp: ctx.now,
             } as SmashUpEvent],
         };
+    }, {
+        orderingFootprint: {
+            writes: ['triggerMinionPower'],
+        },
     });
 
     // base_standing_stones: 巨石阵 (Standing Stones)
@@ -1029,6 +1048,11 @@ export function registerBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { targetBaseIndex: ctx.baseIndex } },
             }),
         };
+    }, {
+        orderingFootprint: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     // base_ritual_site: 仪式场所
@@ -1067,6 +1091,11 @@ export function registerBaseAbilities(): void {
         if (ignoredByOwner) return { events: [] };
         const evt = drawMadnessCards(ownerId, 1, ctx.state, 'base_mountains_of_madness', ctx.now);
         return { events: evt ? [evt] : [] };
+    }, {
+        orderingFootprint: {
+            reads: ['madnessDeckState'],
+            writes: ['handState', 'madnessDeckState'],
+        },
     });
 
     // base_rlyeh: 拉莱耶
@@ -1098,6 +1127,11 @@ export function registerBaseAbilities(): void {
             { sourceId: 'base_rlyeh', targetType: 'minion' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        orderingFootprint: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState', 'vpState'],
+        },
     });
 
     // base_rlyeh: 仅当“本基地能力导致的消灭真正发生”时给予 1VP
@@ -1122,6 +1156,10 @@ export function registerBaseAbilities(): void {
         return {
             events: [grantContextualExtraMinion(ctx, '母星：额外打出力量≤2的随从', undefined, { powerMax: 2 })],
         };
+    }, {
+        orderingFootprint: {
+            writes: ['playLimits'],
+        },
     });
 
     // base_the_mothership: 母舰
@@ -1494,6 +1532,11 @@ export function registerBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { mushroomBaseIndex } },
             }),
         };
+    }, {
+        orderingFootprint: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     // base_mushroom_kingdom_pod: 蘑菇王国（POD）
@@ -1549,6 +1592,11 @@ export function registerBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { mushroomBaseIndex } },
             }),
         };
+    }, {
+        orderingFootprint: {
+            reads: ['handState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     // === 限制类基地已通过 BaseCardDef.restrictions 数据驱动，isOperationRestricted 自动解析 ===

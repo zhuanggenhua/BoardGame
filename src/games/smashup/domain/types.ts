@@ -541,6 +541,13 @@ export interface BaseLkiSnapshot {
 export type ReactionOrderingAtom =
     | 'playLimits'
     | 'triggerMinionPower'
+    | 'minionBoardState'
+    | 'titanBoardState'
+    | 'handState'
+    | 'deckState'
+    | 'madnessDeckState'
+    | 'discardState'
+    | 'vpState'
     | 'triggerMinionState'
     | 'sourceState'
     | 'baseState'

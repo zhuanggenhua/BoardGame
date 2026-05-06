@@ -436,6 +436,10 @@ export function registerSkeletonAbilities(): void {
     registerTrigger('skeletons_returned_one', 'onMinionPlayed', skeletonsReturnedOneAfterUncover, {
         optional: true,
         perInstance: true,
+        orderingFootprint: {
+            reads: ['triggerMinionState', 'baseState'],
+            writes: ['baseState'],
+        },
     });
     registerTrigger('skeletons_lord_of_bones', 'onBuriedCardUncovered', skeletonsLordOfBonesOnUncovered, {
         optional: true,

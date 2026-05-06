@@ -2,7 +2,7 @@
  * DiceThrone E2E 测试辅助函数
  */
 
-import { expect, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { expect, type Browser, type BrowserContext, type BrowserContextOptions, type Page } from '@playwright/test';
 import {
     getGameServerBaseURL,
     ensureGameServerAvailable,
@@ -281,6 +281,7 @@ export const setupDTOnlineMatchWithPlayers = async (
         gameServerBaseURL?: string;
         joinPlayerIds?: string[];
         setupData?: Record<string, unknown>;
+        contextOptions?: BrowserContextOptions;
     },
 ): Promise<DTMultiMatchSetup | null> => {
     const numPlayers = options.numPlayers;
@@ -289,7 +290,10 @@ export const setupDTOnlineMatchWithPlayers = async (
         ? options.joinPlayerIds
         : Array.from({ length: numPlayers - 1 }, (_, index) => String(index + 1));
 
-    const hostContext = await browser.newContext({ baseURL });
+    const hostContext = await browser.newContext({
+        ...options.contextOptions,
+        baseURL,
+    });
     await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
     const hostPage = await hostContext.newPage();
 
@@ -331,7 +335,10 @@ export const setupDTOnlineMatchWithPlayers = async (
     const extraPlayers: DTPlayerSetup[] = [];
 
     for (const playerId of joinPlayerIds) {
-        const guestContext = await browser.newContext({ baseURL });
+        const guestContext = await browser.newContext({
+            ...options.contextOptions,
+            baseURL,
+        });
         await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
         const guestPage = await guestContext.newPage();
 

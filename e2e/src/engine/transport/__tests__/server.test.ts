@@ -24,6 +24,7 @@ import type {
 import type { TrainingDataRecorder, TrainingDecisionSample } from '../trainingData';
 import { GAME_MANIFEST_BY_ID } from '../../../games/manifest';
 import smashUpEngineConfig, { smashUpSystemsForTest } from '../../../games/smashup/game';
+import { smashUpAiRuntime } from '../../../games/smashup/ai';
 import { startSmashUpReactionSession } from '../../../games/smashup/domain/reactionSession';
 
 type EventHandler = (...args: unknown[]) => void | Promise<void>;
@@ -582,6 +583,66 @@ describe('online decision view（epoch 硬约束）', () => {
         expect(result.blockedReason).toBe('stale-private-overlay');
         expect(result.diagnostics.sharedEventStreamNextId).toBe(10);
         expect(result.diagnostics.privateEventStreamNextId).toBeNull();
+    });
+
+    it('SmashUp 可见的 mandatory 结算顺序选择应允许直接走 shared 视图，避免 stale overlay 卡住 AI', () => {
+        const sharedState = {
+            core: {
+                activePlayerId: '1',
+            },
+            sys: {
+                phase: 'scoreBases',
+                turnNumber: 4,
+                eventStream: { nextId: 10 },
+                interaction: {
+                    current: createSimpleChoice(
+                        'mandatory-reaction-order-choice',
+                        '1',
+                        '选择一个反应动作',
+                        [
+                            {
+                                id: 'trigger-base-arena',
+                                label: '竞技场',
+                                value: { kind: 'trigger', triggerId: 'trigger:onMinionPlayed:base_arena:1:0' },
+                            },
+                            {
+                                id: 'trigger-wizard-archmage',
+                                label: '大法师',
+                                value: { kind: 'trigger', triggerId: 'trigger:onMinionPlayed:wizard_archmage:1:0' },
+                            },
+                        ],
+                        {
+                            sourceId: 'smashup_reaction_choose',
+                            targetType: 'button',
+                        },
+                    ),
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        } as any;
+
+        const privateOverlay = {
+            ...sharedState,
+            sys: {
+                ...sharedState.sys,
+                eventStream: { nextId: 9 },
+            },
+        } as any;
+
+        const result = resolveOnlineAiDecisionView({
+            runtime: smashUpAiRuntime,
+            sharedState,
+            privateOverlay,
+            playerId: '1',
+        });
+
+        expect(result.visibility).toBe('shared');
+        expect(result.canDecide).toBe(true);
+        expect(result.blockedReason).toBeNull();
+        expect(result.visibleState).toBe(sharedState);
     });
 });
 
@@ -3126,6 +3187,86 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(match.state.sys.phase).toBe('main2');
         expect(match.state.core.activePlayerId).toBe('1');
         expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
+    it('online AI watchdog 在 legal-only 恢复前若现场切到 human afterRollConfirmed，应丢弃旧 candidate 而不是继续上报失败', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-stale-legal-only-becomes-human-response', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'offensiveRoll',
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'dicethrone' }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('dicethrone')],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            tryRecoverOnlineAiWithLegalAction: (
+                match: any,
+                candidate: any,
+                tracker: any,
+                seatControllers: any,
+            ) => Promise<{
+                applied: boolean;
+                blockedReason: 'missing-visible-state' | 'missing-private-overlay' | 'stale-private-overlay' | null;
+                executedCommandTypes: string[];
+                outcome: 'applied' | 'blocked' | 'no-legal-action' | 'legal-action-command-failed';
+            }>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-stale-legal-only-becomes-human-response');
+        const tryRecoverSpy = vi.spyOn(serverInternal, 'tryRecoverOnlineAiWithLegalAction').mockImplementationOnce(async (activeMatch) => {
+            activeMatch.state = {
+                ...activeMatch.state,
+                sys: {
+                    ...activeMatch.state.sys,
+                    responseWindow: {
+                        ...(activeMatch.state.sys?.responseWindow ?? {}),
+                        current: {
+                            id: 'rw-after-roll-human-late-1',
+                            sourceId: 'attack-roll-1',
+                            windowType: 'afterRollConfirmed',
+                            responderQueue: ['0'],
+                            currentResponderIndex: 0,
+                        },
+                    },
+                },
+            };
+            return {
+                applied: false,
+                blockedReason: null,
+                executedCommandTypes: [],
+                outcome: 'no-legal-action',
+            };
+        });
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        for (let i = 0; i < 6; i++) { await nextTick(); }
+
+        expect(tryRecoverSpy).toHaveBeenCalled();
+        expect(match.state.sys.responseWindow.current).toMatchObject({
+            id: 'rw-after-roll-human-late-1',
+            windowType: 'afterRollConfirmed',
+            responderQueue: ['0'],
+            currentResponderIndex: 0,
+        });
+        expect(feedbackReporter).not.toHaveBeenCalled();
+        expect((server as any).onlineAiRecoveryTrackers.has('match-watchdog-stale-legal-only-becomes-human-response')).toBe(false);
     });
 
     it('online AI watchdog 在额外战术交互卡住后，不应自动 ADVANCE_PHASE 跳过 AI 回合', async () => {

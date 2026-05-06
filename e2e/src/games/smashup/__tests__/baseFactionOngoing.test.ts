@@ -35,6 +35,7 @@ import { clearInteractionHandlers, getInteractionHandler } from '../domain/abili
 import { getMinionDef } from '../data/cards';
 import { buildAffectRecords } from '../domain/affect';
 import { runCommand, defaultTestRandom } from './testRunner';
+import { makeMatchState as makePromptMatchState } from './helpers';
 
 // ============================================================================
 // 测试辅助
@@ -1411,6 +1412,64 @@ describe('诡术师 ongoing 能力', () => {
             expect(events).toHaveLength(2);
             expect(events[1].type).toBe(SU_EVENTS.MINION_DESTROYED);
             expect((events[1] as any).payload.destroyerId).toBe('0');
+        });
+
+        test('POD 版 onTurnStart 为每个陷阱实例保留独立 runtime prompt 上下文', () => {
+            const base0 = makeBase({
+                ongoingActions: [{ uid: 'ft-pod-1', defId: 'trickster_flame_trap_pod', ownerId: '0' }],
+            });
+            const base1 = makeBase({
+                ongoingActions: [{ uid: 'ft-pod-2', defId: 'trickster_flame_trap_pod', ownerId: '0' }],
+            });
+            const state = makeState([base0, base1]);
+            const matchState = makePromptMatchState(state as any);
+
+            const { events, matchState: promptedState } = fireTriggers(state, 'onTurnStart', {
+                state,
+                playerId: '0',
+                matchState,
+                random: dummyRandom,
+                now: 1000,
+            });
+
+            expect(events).toHaveLength(0);
+            const current = promptedState?.sys.interaction.current;
+            const queued = promptedState?.sys.interaction.queue ?? [];
+            expect((current?.data as any)?.sourceId).toBe('trickster_flame_trap_pod_bp');
+            expect((queued[0]?.data as any)?.sourceId).toBe('trickster_flame_trap_pod_bp');
+
+            const handler = getInteractionHandler('trickster_flame_trap_pod_bp');
+            expect(handler).toBeDefined();
+
+            const first = handler!(
+                promptedState!,
+                '0',
+                { yes: true },
+                current?.data as any,
+                dummyRandom,
+                1001,
+            );
+            const second = handler!(
+                promptedState!,
+                '0',
+                { yes: true },
+                queued[0]?.data as any,
+                dummyRandom,
+                1002,
+            );
+
+            expect(first?.events).toEqual([
+                expect.objectContaining({
+                    type: SU_EVENTS.BREAKPOINT_MODIFIED,
+                    payload: expect.objectContaining({ baseIndex: 0, delta: -4, reason: 'trickster_flame_trap_pod' }),
+                }),
+            ]);
+            expect(second?.events).toEqual([
+                expect.objectContaining({
+                    type: SU_EVENTS.BREAKPOINT_MODIFIED,
+                    payload: expect.objectContaining({ baseIndex: 1, delta: -4, reason: 'trickster_flame_trap_pod' }),
+                }),
+            ]);
         });
 
         function makeBrownieState(overrides?: Partial<MinionOnBase>): SmashUpCore {

@@ -129,10 +129,20 @@ export function registerZombieAbilities(): void {
     // === ongoing 效果注册 ===
     // 泛滥横行：其他玩家不能打随从到此基地 + 回合开始自毁
     registerRestriction('zombie_overrun', 'play_minion', zombieOverrunRestriction);
-    registerTrigger('zombie_overrun', 'onTurnStart', zombieOverrunSelfDestruct);
+    registerTrigger('zombie_overrun', 'onTurnStart', zombieOverrunSelfDestruct, {
+        orderingFootprint: {
+            reads: ['sourceState'],
+            writes: ['sourceState'],
+        },
+    });
 
     registerRestriction('zombie_overrun_pod', 'play_minion', zombieOverrunRestriction);
-    registerTrigger('zombie_overrun_pod', 'onTurnStart', zombieOverrunSelfDestruct);
+    registerTrigger('zombie_overrun_pod', 'onTurnStart', zombieOverrunSelfDestruct, {
+        orderingFootprint: {
+            reads: ['sourceState'],
+            writes: ['sourceState'],
+        },
+    });
 
     // === 弃牌堆出牌能力注册 ===
     // 顽强丧尸：被动，弃牌堆中可作为额外随从打出（每回合限一次）

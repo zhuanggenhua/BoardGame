@@ -152,15 +152,33 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
     const [autoResponseEnabled, setAutoResponseEnabled] = React.useState(() => getAutoResponseEnabled());
 
     const isGameOver = rawG.sys.gameover;
-    const playerView = useMatchPlayerViewModel({
+    const resolveMatchFallbackName = React.useCallback((playerId: string) => `P${Number(playerId) + 1}`, []);
+    const resolveMatchPreferredOrder = React.useCallback(
+        ({ core: dtCore }: { core?: typeof G | null }) => (dtCore ? getSeatingOrder(dtCore) : undefined),
+        [],
+    );
+    const resolveMatchTurnPlayerId = React.useCallback(
+        ({ core: dtCore }: { core?: typeof G | null }) => dtCore?.activePlayerId,
+        [],
+    );
+    const playerViewOptions = React.useMemo(() => ({
         state: rawG,
         core: G,
         playerID,
         matchData,
-        getFallbackName: (playerId) => `P${Number(playerId) + 1}`,
-        resolvePreferredOrder: ({ core: dtCore }) => dtCore ? getSeatingOrder(dtCore) : undefined,
-        resolveTurnPlayerId: ({ core: dtCore }) => dtCore?.activePlayerId,
-    });
+        getFallbackName: resolveMatchFallbackName,
+        resolvePreferredOrder: resolveMatchPreferredOrder,
+        resolveTurnPlayerId: resolveMatchTurnPlayerId,
+    }), [
+        G,
+        matchData,
+        playerID,
+        rawG,
+        resolveMatchFallbackName,
+        resolveMatchPreferredOrder,
+        resolveMatchTurnPlayerId,
+    ]);
+    const playerView = useMatchPlayerViewModel(playerViewOptions);
     const rootPid = playerView.selfPlayerId ?? '0';
     const player = G.players[rootPid] || G.players['0'];
     const currentPhase = access.turnPhase;

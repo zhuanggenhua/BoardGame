@@ -14,7 +14,7 @@ import { initAllAbilities } from '../abilities';
 import { defaultTestRandom } from './testRunner';
 import { execute, processDestroyMoveCycle } from '../domain/reducer';
 import { SU_COMMANDS } from '../domain/types';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 
 describe('Bug: 对手打出"一大口"消灭 Igor 时触发两次', () => {
     beforeAll(() => {
@@ -63,7 +63,7 @@ describe('Bug: 对手打出"一大口"消灭 Igor 时触发两次', () => {
         console.log('Big Gulp interaction options:', (interaction1?.data as any)?.options?.map((o: any) => o.label));
         
         // 步骤2：调用 vampire_big_gulp handler（模拟玩家选择消灭 Igor）
-        const handler = getInteractionHandler('vampire_big_gulp');
+        const handler = getAbilityRuntimePromptHandler('vampire_big_gulp');
         expect(handler).toBeDefined();
         
         const handlerResult = handler!(
@@ -74,13 +74,15 @@ describe('Bug: 对手打出"一大口"消灭 Igor 时触发两次', () => {
             defaultTestRandom,
             1001
         );
+        expect(handlerResult).toBeDefined();
+        if (!handlerResult) return;
         
         console.log('Handler result events:', handlerResult.events.map((e: any) => e.type));
         
         // 步骤3：调用 processDestroyMoveCycle（模拟 SmashUpEventSystem.afterEvents）
         const afterDestroyMove = processDestroyMoveCycle(
             handlerResult.events as any[],
-            handlerResult.matchState ?? executeResult.matchState!,
+            handlerResult.state,
             '0',
             defaultTestRandom,
             1001

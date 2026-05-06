@@ -15,7 +15,7 @@ import { SU_COMMANDS, SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import type { OngoingActionOnBase } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { grantExtraMinion } from '../domain/abilityHelpers';
-import { clearRegistry } from '../domain/abilityRegistry';
+import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
@@ -840,6 +840,145 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
         const reorderedEvent = (result?.events ?? []).find(event => event.type === SU_EVENTS.DECK_REORDERED) as any;
         expect(reorderedEvent).toBeDefined();
         expect(reorderedEvent.payload.deckUids).toEqual(['oa1', 'd-extra']);
+    });
+});
+
+describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
+    it('作为随从打出时创建 runtime 多选交互，并只给本基地己方随从加指示物', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('h1', 'pirate_first_mate', 'minion', '0'),
+                        makeCard('h2', 'wizard_archmage', 'minion', '0'),
+                        makeCard('h3', 'robot_microbot_alpha', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('opp-h1', 'alien_invader', 'minion', '1')],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('pixie-1', 'trickster_pixie_pod', '0', 2),
+                    makeMinion('ally-a', 'pirate_saucy_wench', '0', 2),
+                    makeMinion('opp-a', 'alien_invader', '1', 3),
+                ],
+                ongoingActions: [],
+            }, {
+                defId: 'base_b',
+                minions: [makeMinion('ally-b', 'wizard_apprentice', '0', 2)],
+                ongoingActions: [],
+            }],
+        });
+
+        const executor = resolveAbility('trickster_pixie_pod', 'onPlay')!;
+        const result = executor({
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'pixie-1',
+            defId: 'trickster_pixie_pod',
+            baseIndex: 0,
+            random: defaultRandom,
+            now: 4000,
+        });
+
+        const interaction = getInteractionsFromMS(result.matchState!)[0];
+        expect(interaction?.data?.sourceId).toBe('trickster_pixie_pod_minion');
+        const optionUids = (interaction?.data?.options ?? []).map((option: any) => option.value?.minionUid).filter(Boolean);
+        expect(optionUids).toEqual(['pixie-1', 'ally-a']);
+
+        const handler = getInteractionHandler('trickster_pixie_pod_minion');
+        expect(handler).toBeDefined();
+        const resolved = handler!(
+            result.matchState!,
+            '0',
+            [{ minionUid: 'ally-a', baseIndex: 0 }],
+            interaction?.data,
+            defaultRandom,
+            4001,
+        );
+
+        expect(resolved?.events).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: expect.objectContaining({ minionUid: 'ally-a', baseIndex: 0, amount: 1, reason: 'trickster_pixie_pod_minion' }),
+            }),
+        ]);
+    });
+
+    it('作为战术打出时走 destroy -> counters 的 runtime 交互链', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('ally-a', 'pirate_saucy_wench', '0', 2)],
+                ongoingActions: [{ uid: 'target-oa', defId: 'trickster_flame_trap_pod', ownerId: '1' }],
+            }, {
+                defId: 'base_b',
+                minions: [makeMinion('ally-b', 'wizard_apprentice', '0', 3)],
+                ongoingActions: [],
+            }],
+        });
+
+        const executor = resolveAbility('trickster_pixie_pod', 'onPlay')!;
+        const result = executor({
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            cardUid: 'pixie-action',
+            defId: 'trickster_pixie_pod',
+            baseIndex: 0,
+            random: defaultRandom,
+            now: 4100,
+        });
+
+        const destroyInteraction = getInteractionsFromMS(result.matchState!)[0];
+        expect(destroyInteraction?.data?.sourceId).toBe('trickster_pixie_pod_action_destroy');
+
+        const destroyHandler = getInteractionHandler('trickster_pixie_pod_action_destroy');
+        expect(destroyHandler).toBeDefined();
+        const chained = destroyHandler!(
+            result.matchState!,
+            '0',
+            { cardUid: 'target-oa', defId: 'trickster_flame_trap_pod', ownerId: '1' },
+            destroyInteraction?.data,
+            defaultRandom,
+            4101,
+        );
+
+        expect(chained?.events).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.ONGOING_DETACHED,
+                payload: expect.objectContaining({ cardUid: 'target-oa', reason: 'trickster_pixie_pod_action' }),
+            }),
+        ]);
+
+        const counterInteraction = (chained?.state.sys as any).interaction?.queue?.[0];
+        expect(counterInteraction?.data?.sourceId).toBe('trickster_pixie_pod_action_counters');
+
+        const counterHandler = getInteractionHandler('trickster_pixie_pod_action_counters');
+        expect(counterHandler).toBeDefined();
+        const counterResolved = counterHandler!(
+            chained!.state,
+            '0',
+            [{ minionUid: 'ally-a', baseIndex: 0 }],
+            counterInteraction?.data,
+            defaultRandom,
+            4102,
+        );
+
+        expect(counterResolved?.events).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: expect.objectContaining({ minionUid: 'ally-a', baseIndex: 0, amount: 2, reason: 'trickster_pixie_pod_action' }),
+            }),
+        ]);
     });
 });
 

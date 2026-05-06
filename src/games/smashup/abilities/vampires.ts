@@ -4,18 +4,19 @@
  * 主题：消灭低力量随从获取+1力量指示物
  */
 
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     addPowerCounter, addOngoingCardCounter, destroyMinion,
     buildMinionTargetOptions,
-    resolveOrPrompt, findMinionOnBases, buildAbilityFeedback,
+    findMinionOnBases, buildAbilityFeedback,
     buildBaseTargetOptions,
     buildValidatedDestroyEvents,
     addTempPower,
     addPermanentPower,
     revealAndPickFromDeck,
     buildStandardDrawEvents,
+    createSkipOption,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, SmashUpCore } from '../domain/types';
@@ -25,11 +26,100 @@ import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
 import { getEffectivePower } from '../domain/ongoingModifiers';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 import type { MinionPlayedEvent } from '../domain/types';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import type { MatchState, PlayerId } from '../../../engine/types';
 import { matchesDefId } from '../domain/utils';
-import { drawCards } from '../domain/utils';
 import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
+import { reduce } from '../domain/reduce';
+import {
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
+
+type VampirePromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type VampireSourceMinionPromptContext = VampirePromptContext & {
+    sourceMinionUid: string;
+    sourceBaseIndex: number;
+};
+
+type VampireBaseMinionPromptContext = VampirePromptContext & {
+    minionUid: string;
+    baseIndex: number;
+};
+
+type VampireCrackOfDuskPromptContext = VampirePromptContext & {
+    cardUid: string;
+    defId: string;
+};
+
+type VampireCountPodAddCounterPromptContext = VampirePromptContext & {
+    targetBaseIndex: number;
+};
+
+type VampireBuffetPodPlayPromptContext = VampirePromptContext & {
+    cardUid: string;
+    defId: string;
+};
+
+type VampireMadMonsterPartyPodPlayPromptContext = VampirePromptContext & {
+    cardUid: string;
+    baseIndex: number;
+};
+
+type VampireFledglingPodBuryBasePromptContext = VampirePromptContext & {
+    cardUid: string;
+    fromDiscard: boolean;
+};
+
+type VampireDinnerDatePodPromptContext = VampirePromptContext & {
+    attachedMinionUid: string;
+    attachedBaseIndex: number;
+};
+
+type VampireCullTheWeakPodPromptContext = VampirePromptContext & {
+    discardedCount: number;
+    deckEvents: SmashUpEvent[];
+    discardUids: string[];
+};
+
+type VampireWolfPactPodMinionPromptContext = VampirePromptContext & {
+    wolfUid: string;
+    wolfBaseIndex: number;
+};
+
+type VampireWolfPactPodMinionTargetPromptContext = VampirePromptContext & {
+    wolfBaseIndex: number;
+};
+
+function createVampirePromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    extra?: TExtra,
+): VampirePromptContext & TExtra {
+    return {
+        matchState,
+        playerId,
+        now,
+        ...(extra ?? {} as TExtra),
+    };
+}
+
+function applyEventsToMatchState(
+    state: MatchState<SmashUpCore>,
+    events: SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    if (events.length === 0) return state;
+    return {
+        ...state,
+        core: events.reduce((core, event) => reduce(core, event), state.core),
+    };
+}
 
 // ============================================================================
 // 注册入口
@@ -38,16 +128,28 @@ import { buildActionPlayedEvent } from '../domain/actionPlayEvent';
 export function registerVampireAbilities(): void {
     // 随从
     registerAbility('vampire_fledgling_vampire', 'onPlay', vampireFledgling);
-    registerAbility('vampire_heavy_drinker', 'onPlay', vampireHeavyDrinker);
-    registerAbility('vampire_nightstalker', 'onPlay', vampireNightstalker);
+    registerAbilityProgram('vampire_heavy_drinker', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vampireHeavyDrinker),
+    });
+    registerAbilityProgram('vampire_nightstalker', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vampireNightstalker),
+    });
 
     // 行动卡
     registerAbility('vampire_buffet', 'special', vampireBuffetSpecial);
-    registerAbility('vampire_dinner_date', 'onPlay', vampireDinnerDate);
-    registerAbility('vampire_big_gulp', 'onPlay', vampireBigGulp);
+    registerAbilityProgram('vampire_dinner_date', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vampireDinnerDate),
+    });
+    registerAbilityProgram('vampire_big_gulp', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vampireBigGulp),
+    });
     registerAbility('vampire_mad_monster_party', 'onPlay', vampireMadMonsterParty);
-    registerAbility('vampire_cull_the_weak', 'onPlay', vampireCullTheWeak);
-    registerAbility('vampire_crack_of_dusk', 'onPlay', vampireCrackOfDusk);
+    registerAbilityProgram('vampire_cull_the_weak', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vampireCullTheWeak),
+    });
+    registerAbilityProgram('vampire_crack_of_dusk', 'onPlay', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(vampireCrackOfDusk),
+    });
 
     // ongoing 效果
     registerVampireOngoingEffects();
@@ -58,32 +160,7 @@ export function registerVampireAbilities(): void {
 }
 
 export function registerVampireInteractionHandlers(): void {
-    registerInteractionHandler('vampire_heavy_drinker', handleHeavyDrinkerChoice);
-    registerInteractionHandler('vampire_nightstalker', handleNightstalkerChoice);
-    registerInteractionHandler('vampire_dinner_date', handleDinnerDateChooseMinion);
-    registerInteractionHandler('vampire_dinner_date_target', handleDinnerDateChooseTarget);
-    registerInteractionHandler('vampire_big_gulp', handleBigGulpChoice);
-    registerInteractionHandler('vampire_cull_the_weak', handleCullTheWeakChooseMinion);
-    registerInteractionHandler('vampire_cull_the_weak_choose_card', handleCullTheWeakChooseCard);
-    registerInteractionHandler('vampire_crack_of_dusk', handleCrackOfDuskChoice);
-    registerInteractionHandler('vampire_crack_of_dusk_base', handleCrackOfDuskChooseBase);
-
-    // POD handlers
-    registerInteractionHandler('vampire_heavy_drinker_pod', handleHeavyDrinkerPodChoice);
-    registerInteractionHandler('vampire_the_count_pod_add_counter', handleCountPodAddCounter);
-    registerInteractionHandler('vampire_the_count_pod_talent', handleCountPodTalent);
-    registerInteractionHandler('vampire_nightstalker_pod_talent', handleNightstalkerPodTalent);
-    registerInteractionHandler('vampire_big_gulp_pod', handleBigGulpPodChoice);
-    registerInteractionHandler('vampire_cull_the_weak_pod', handleCullTheWeakPodChooseMinion);
-    registerInteractionHandler('vampire_cull_the_weak_pod_choose_card', handleCullTheWeakPodChooseCard);
-    registerInteractionHandler('vampire_crack_of_dusk_pod', handleCrackOfDuskPodChoice);
-    registerInteractionHandler('vampire_crack_of_dusk_pod_base', handleCrackOfDuskPodChooseBase);
-    registerInteractionHandler('vampire_dinner_date_pod', handleDinnerDatePodChooseMinion);
-    registerInteractionHandler('vampire_wolf_pact_pod_minion', handleWolfPactPodPickDebuffTarget);
-    registerInteractionHandler('vampire_wolf_pact_pod_minion_target', handleWolfPactPodPickCounterTarget);
-    registerInteractionHandler('vampire_wolf_pact_pod_action', handleWolfPactPodShuffleChoice);
-    registerInteractionHandler('vampire_fledgling_vampire_pod_bury_source', handleFledglingPodBuryChooseSource);
-    registerInteractionHandler('vampire_fledgling_vampire_pod_bury_base', handleFledglingPodBuryChooseBase);
+    // 吸血鬼派系交互已全部迁移到 ability runtime prompt program。
 }
 
 function registerVampirePodAbilities(): void {
@@ -154,31 +231,16 @@ function registerVampirePodOngoingEffects(): void {
         );
         if (counts.length === 0) return [];
 
-        const options = base.minions.map((m, i) => {
-            const def = getCardDef(m.defId);
-            return {
-                id: `m-${i}`,
-                label: def?.name ?? m.defId,
-                value: { minionUid: m.uid, defId: m.defId, baseIndex },
-                _source: 'field' as const,
-                displayMode: 'card' as const,
-            };
-        });
-        if (options.length === 0) return [];
+        if (base.minions.length === 0) return [];
         let matchState = ctx.matchState;
         for (const count of counts) {
-            const interaction = createSimpleChoice(
-                `vampire_the_count_pod_add_${count.uid}_${now}`,
-                count.controller,
-                '吸血鬼伯爵：你可以在该基地的一个随从上放置+1战斗力指示物',
-                [
-                    ...options,
-                    { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
-                ] as any[],
-                { sourceId: 'vampire_the_count_pod_add_counter', targetType: 'minion' },
+            const result = executeAbilityProgram(
+                vampireCountPodAddCounterPromptProgram,
+                createVampirePromptContext(matchState, count.controller, now, {
+                    targetBaseIndex: baseIndex,
+                }),
             );
-            (interaction.data as any).continuationContext = { countUid: count.uid };
-            matchState = queueInteraction(matchState, interaction);
+            matchState = result.matchState ?? matchState;
         }
         return { events: [], matchState } as any;
     }, { optional: true });
@@ -212,31 +274,15 @@ function registerVampirePodOngoingEffects(): void {
         const p = state.players[destroyerId];
         const buffet = p.hand.find(c => c.defId === 'vampire_buffet_pod');
         if (!buffet) return [];
-        const interaction = createSimpleChoice(
-            `vampire_buffet_pod_${destroyerId}_${now}`,
-            destroyerId,
-            '自助餐：你可以打出此牌（抽两张牌）',
-            [
-                { id: 'play', label: '打出自助餐', value: { play: true }, displayMode: 'button' as const },
-                { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
-            ] as any[],
-            { sourceId: 'vampire_buffet_pod_play', targetType: 'button' },
+        const result = executeAbilityProgram(
+            vampireBuffetPodPlayPromptProgram,
+            createVampirePromptContext(ctx.matchState!, destroyerId, now, {
+                cardUid: buffet.uid,
+                defId: buffet.defId,
+            }),
         );
-        (interaction.data as any).continuationContext = { cardUid: buffet.uid, defId: buffet.defId };
-        return { events: [], matchState: queueInteraction(ctx.matchState!, interaction) } as any;
+        return { events: result.events, matchState: result.matchState ?? ctx.matchState! } as any;
     }, { optional: true, global: true });
-
-    registerInteractionHandler('vampire_buffet_pod_play', (state, playerId, value, iData, random, timestamp) => {
-        const v = value as any;
-        if (v?.skip) return { state, events: [] };
-        const ctx = (iData as any)?.continuationContext as { cardUid: string; defId: string } | undefined;
-        if (!ctx) return { state, events: [] };
-        const events: SmashUpEvent[] = [
-            buildActionPlayedEvent({ playerId, cardUid: ctx.cardUid, defId: ctx.defId, isExtraAction: true, timestamp }) as any,
-        ];
-        events.push(...buildStandardDrawEvents(state.core, playerId, 2, random, timestamp));
-        return { state, events };
-    });
 
     // Mad Monster Party POD: after you destroy a minion, choose its base and place +1 counter on each of your minions there.
     registerTrigger('vampire_mad_monster_party_pod', 'onMinionDestroyed', (ctx: TriggerContext) => {
@@ -247,35 +293,15 @@ function registerVampirePodOngoingEffects(): void {
         const p = ctx.state.players[destroyerId];
         const card = p.hand.find(c => c.defId === 'vampire_mad_monster_party_pod');
         if (!card) return [];
-        const interaction = createSimpleChoice(
-            `vampire_mad_monster_party_pod_${destroyerId}_${ctx.now}`,
-            destroyerId,
-            '疯狂怪物派对：你可以打出此牌（选择被消灭随从的基地）',
-            [
-                { id: 'play', label: '打出疯狂怪物派对', value: { play: true }, displayMode: 'button' as const },
-                { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
-            ] as any[],
-            { sourceId: 'vampire_mad_monster_party_pod_play', targetType: 'button' },
+        const result = executeAbilityProgram(
+            vampireMadMonsterPartyPodPlayPromptProgram,
+            createVampirePromptContext(ctx.matchState!, destroyerId, ctx.now, {
+                cardUid: card.uid,
+                baseIndex,
+            }),
         );
-        (interaction.data as any).continuationContext = { cardUid: card.uid, baseIndex };
-        return { events: [], matchState: queueInteraction(ctx.matchState!, interaction) } as any;
+        return { events: result.events, matchState: result.matchState ?? ctx.matchState! } as any;
     }, { optional: true, global: true });
-
-    registerInteractionHandler('vampire_mad_monster_party_pod_play', (state, playerId, value, iData, _random, timestamp) => {
-        const v = value as any;
-        if (v?.skip) return { state, events: [] };
-        const ctx = (iData as any)?.continuationContext as { cardUid: string; baseIndex: number } | undefined;
-        if (!ctx) return { state, events: [] };
-        const base = state.core.bases[ctx.baseIndex];
-        if (!base) return { state, events: [] };
-        const events: SmashUpEvent[] = [
-            buildActionPlayedEvent({ playerId, cardUid: ctx.cardUid, defId: 'vampire_mad_monster_party_pod', isExtraAction: true, timestamp }) as any,
-        ];
-        for (const m of base.minions) {
-            if (m.controller === playerId) events.push(addPowerCounter(m.uid, ctx.baseIndex, 1, 'vampire_mad_monster_party_pod', timestamp));
-        }
-        return { state, events };
-    });
 
     // Fledgling Vampire POD: after you destroy another minion, you may bury this card from hand or discard on any base.
     registerTrigger('vampire_fledgling_vampire_pod', 'onMinionDestroyed', (ctx: TriggerContext) => {
@@ -291,32 +317,11 @@ function registerVampirePodOngoingEffects(): void {
         const inDiscard = p.discard.filter(c => c.defId === 'vampire_fledgling_vampire_pod');
         if (inHand.length === 0 && inDiscard.length === 0) return [];
 
-        const options: any[] = [
-            ...inHand.map((c, i) => ({
-                id: `hand-${i}`,
-                label: '从手牌埋葬',
-                value: { cardUid: c.uid, from: 'hand' },
-                _source: 'hand' as const,
-                displayMode: 'card' as const,
-            })),
-            ...inDiscard.map((c, i) => ({
-                id: `discard-${i}`,
-                label: '从弃牌堆埋葬',
-                value: { cardUid: c.uid, from: 'discard' },
-                _source: 'discard' as const,
-                displayMode: 'card' as const,
-            })),
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
-        ];
-
-        const interaction = createSimpleChoice(
-            `vampire_fledgling_vampire_pod_bury_${destroyerId}_${now}`,
-            destroyerId,
-            '新生吸血鬼：你可以埋葬这张牌到任意基地',
-            options,
-            { sourceId: 'vampire_fledgling_vampire_pod_bury_source', targetType: 'generic' },
+        const result = executeAbilityProgram(
+            vampireFledglingPodBurySourcePromptProgram,
+            createVampirePromptContext(ctx.matchState!, destroyerId, now),
         );
-        return { events: [], matchState: queueInteraction(ctx.matchState!, interaction) } as any;
+        return { events: result.events, matchState: result.matchState ?? ctx.matchState! } as any;
     }, { optional: true, global: true });
 
     // Stakeout POD restriction: block minions power>=3 when active
@@ -329,45 +334,6 @@ function registerVampirePodOngoingEffects(): void {
         return power >= 3;
     });
 }
-
-const handleFledglingPodBuryChooseSource: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as any;
-    if (v?.skip) return { state, events: [] };
-    if (!v?.cardUid) return { state, events: [] };
-    const bases = state.core.bases.map((b, i) => ({ baseIndex: i, label: getBaseDef(b.defId)?.name ?? `基地 #${i + 1}` }));
-    const baseOptions = buildBaseTargetOptions(bases, state.core);
-    const interaction = createSimpleChoice(
-        `vampire_fledgling_vampire_pod_bury_base_${now}`,
-        playerId,
-        '选择要埋葬到的基地',
-        baseOptions,
-        { sourceId: 'vampire_fledgling_vampire_pod_bury_base', targetType: 'base' },
-    );
-    (interaction.data as any).continuationContext = { cardUid: v.cardUid, fromDiscard: v.from === 'discard' };
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleFledglingPodBuryChooseBase: IH = (state, playerId, value, interactionData, _random, now) => {
-    const ctx = interactionData?.continuationContext as { cardUid: string; fromDiscard: boolean } | undefined;
-    if (!ctx) return { state, events: [] };
-    const v = value as any;
-    const baseIndex = v?.baseIndex as number | undefined;
-    if (baseIndex === undefined) return { state, events: [] };
-    const buriedEvt: SmashUpEvent = {
-        type: SU_EVENTS.CARD_BURIED,
-        payload: {
-            playerId,
-            cardUid: ctx.cardUid,
-            defId: 'vampire_fledgling_vampire_pod',
-            baseIndex,
-            trueOwnerId: playerId,
-            buriedFrom: ctx.fromDiscard ? 'discard' : 'hand',
-            reason: 'vampire_fledgling_vampire_pod',
-        } as any,
-        timestamp: now,
-    };
-    return { state, events: [buriedEvt] };
-};
 
 // ============================================================================
 // 随从能力
@@ -408,102 +374,36 @@ function vampireFledgling(ctx: AbilityContext): AbilityResult {
 function vampireHeavyDrinker(ctx: AbilityContext): AbilityResult {
     const found = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!found) return { events: [] };
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId && m.uid !== ctx.cardUid) {
-                const def = getCardDef(m.defId);
-                targets.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId}` });
-            }
-        }
-    }
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options: any[] = targets.map((t, i) => ({
-        id: `minion-${i}`, label: `消灭 ${t.label}`,
-        value: {
-            minionUid: t.uid,
-            minionDefId: t.defId,
-            defId: t.defId,
-            baseIndex: t.baseIndex,
+    const hasTargets = ctx.state.bases.some(base =>
+        base.minions.some(minion => minion.controller === ctx.playerId && minion.uid !== found.minion.uid),
+    );
+    if (!hasTargets) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    const result = executeAbilityProgram(
+        vampireHeavyDrinkerPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceMinionUid: found.minion.uid,
             sourceBaseIndex: found.baseIndex,
-        },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
-    options.push({ id: 'skip', label: '跳过（不消灭）', value: { skip: true }, displayMode: 'button' as const });
-    return resolveOrPrompt(ctx, options, {
-        id: 'vampire_heavy_drinker', title: '选择要消灭的己方随从（本随从+1指示物）',
-        sourceId: 'vampire_heavy_drinker', targetType: 'minion' as const,
-    }, (rawVal) => {
-        const val = rawVal as any;
-        if (val.skip) return { events: [] };
-        const destroyEvents = buildValidatedDestroyEvents(ctx.state, {
-            minionUid: val.minionUid,
-            minionDefId: val.defId,
-            fromBaseIndex: val.baseIndex,
-            destroyerId: ctx.playerId,
-            reason: 'vampire_heavy_drinker',
-            now: ctx.now,
-        });
-        if (destroyEvents.length === 0) return { events: [] };
-        return {
-            events: [
-                ...destroyEvents,
-                addPowerCounter(val.sourceMinionUid, val.sourceBaseIndex, 1, 'vampire_heavy_drinker', ctx.now),
-            ],
-        };
-    });
+        }),
+    );
+    return { events: result.events, matchState: result.matchState };
 }
 
 /** 夜行者 onPlay：消灭同基地力量≤2的随从，本随从+1指示物 */
 function vampireNightstalker(ctx: AbilityContext): AbilityResult {
     const found = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!found) return { events: [] };
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (const m of ctx.state.bases[found.baseIndex].minions) {
-        if (m.uid === ctx.cardUid) continue;
-        const power = getEffectivePower(ctx.state, m, found.baseIndex);
-        if (power <= 2) {
-            const def = getCardDef(m.defId);
-            targets.push({ uid: m.uid, defId: m.defId, baseIndex: found.baseIndex, label: `${def?.name ?? m.defId} (力量 ${power})` });
-        }
-    }
-    if (targets.length === 0) return { events: [] };
-    const minionOptions = buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
-    if (minionOptions.length === 0) return { events: [] };
-    const nsOptions: any[] = [...minionOptions];
-    for (const option of nsOptions) {
-        if (!option?.value) continue;
-        option.value = {
-            ...option.value,
+    const hasTargets = ctx.state.bases[found.baseIndex].minions.some(minion =>
+        minion.uid !== found.minion.uid && getEffectivePower(ctx.state, minion, found.baseIndex) <= 2,
+    );
+    if (!hasTargets) return { events: [] };
+    const result = executeAbilityProgram(
+        vampireNightstalkerPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now, {
             sourceMinionUid: found.minion.uid,
             sourceBaseIndex: found.baseIndex,
-        };
-    }
-    nsOptions.push({ id: 'skip', label: '跳过（不消灭）', value: { skip: true }, displayMode: 'button' as const });
-    return resolveOrPrompt(ctx, nsOptions, {
-        id: 'vampire_nightstalker', title: '选择要消灭的力量≤2随从（本随从+1指示物）',
-        sourceId: 'vampire_nightstalker', targetType: 'minion' as const,
-    }, (rawVal) => {
-        const val = rawVal as any;
-        if (val.skip) return { events: [] };
-        const destroyEvents = buildValidatedDestroyEvents(ctx.state, {
-            minionUid: val.minionUid,
-            minionDefId: val.defId,
-            fromBaseIndex: val.baseIndex,
-            destroyerId: ctx.playerId,
-            reason: 'vampire_nightstalker',
-            now: ctx.now,
-        });
-        if (destroyEvents.length === 0) return { events: [] };
-        return {
-            events: [
-                ...destroyEvents,
-                addPowerCounter(val.sourceMinionUid, val.sourceBaseIndex, 1, 'vampire_nightstalker', ctx.now + 1), // +1ms 避免音频节流
-            ],
-        };
-    });
+        }),
+    );
+    return { events: result.events, matchState: result.matchState };
 }
 
 // ============================================================================
@@ -528,76 +428,26 @@ function vampireBuffetSpecial(ctx: AbilityContext): AbilityResult {
 
 /** 晚餐约会 onPlay：选己方随从+1指示物，然后消灭同基地力量≤2随从 */
 function vampireDinnerDate(ctx: AbilityContext): AbilityResult {
-    const ownMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId) {
-                const def = getCardDef(m.defId);
-                ownMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId}` });
-            }
-        }
-    }
-    if (ownMinions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = ownMinions.map((c, i) => ({
-        id: `minion-${i}`, label: c.label,
-        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
-    return resolveOrPrompt(ctx, options, {
-        id: 'vampire_dinner_date', title: '选择你的随从放置+1指示物（然后消灭同基地力量≤2随从）',
-        sourceId: 'vampire_dinner_date', targetType: 'minion' as const,
-    }, (val) => {
-        const handled = handleDinnerDateChooseMinion(
-            ctx.matchState,
-            ctx.playerId,
-            { minionUid: val.minionUid, baseIndex: val.baseIndex },
-            undefined,
-            ctx.random,
-            ctx.now,
-        );
-        if (!handled) return { events: [] };
-        return {
-            events: handled.events,
-            matchState: handled.state,
-        };
-    });
+    const hasOwnMinions = ctx.state.bases.some(base => base.minions.some(minion => minion.controller === ctx.playerId));
+    if (!hasOwnMinions) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    const result = executeAbilityProgram(
+        vampireDinnerDatePromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now),
+    );
+    return { events: result.events, matchState: result.matchState };
 }
 
 /** 一大口 onPlay：消灭一个力量≤4的随从（可跳过） */
 function vampireBigGulp(ctx: AbilityContext): AbilityResult {
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            const power = getEffectivePower(ctx.state, m, i);
-            if (power <= 4) {
-                const def = getCardDef(m.defId);
-                targets.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId} (力量 ${power})` });
-            }
-        }
-    }
-    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' });
-    if (options.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.all_protected', ctx.now)] };
-    
-    // 添加"跳过"选项
-    const skipOption = { id: 'skip', label: '跳过', value: { skip: true } , displayMode: 'button' as const };
-    
-    return resolveOrPrompt(ctx, [...options, skipOption], {
-        id: 'vampire_big_gulp', title: '选择要消灭的力量≤4随从（可跳过）',
-        sourceId: 'vampire_big_gulp', targetType: 'minion' as const,
-    }, (val) => {
-        // 跳过时不消灭随从
-        if ((val as any).skip) return { events: [] };
-        
-        const minion = ctx.state.bases[val.baseIndex]?.minions.find(m => m.uid === val.minionUid);
-        if (!minion) {
-            return { events: [] };
-        }
-        return {
-            events: [destroyMinion(val.minionUid, val.defId, val.baseIndex, minion.owner, ctx.playerId, 'vampire_big_gulp', ctx.now)],
-        };
-    });
+    const hasTargets = ctx.state.bases.some((base, baseIndex) =>
+        base.minions.some(minion => getEffectivePower(ctx.state, minion, baseIndex) <= 4),
+    );
+    if (!hasTargets) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    const result = executeAbilityProgram(
+        vampireBigGulpPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now),
+    );
+    return { events: result.events, matchState: result.matchState };
 }
 
 /** 疯狂怪物派对 onPlay：没有+1指示物的己方随从各放一个 */
@@ -615,37 +465,16 @@ function vampireMadMonsterParty(ctx: AbilityContext): AbilityResult {
 
 /** 剔除弱者 onPlay：选己方随从，弃手牌随从卡，每弃1张+1指示物 */
 function vampireCullTheWeak(ctx: AbilityContext): AbilityResult {
-    const ownMinions: { uid: string; baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId) {
-                const def = getCardDef(m.defId);
-                ownMinions.push({ uid: m.uid, baseIndex: i, label: `${def?.name ?? m.defId}` });
-            }
-        }
-    }
-    if (ownMinions.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const player = ctx.state.players[ctx.playerId];
+    const hasOwnMinions = ctx.state.bases.some(base => base.minions.some(minion => minion.controller === ctx.playerId));
+    if (!hasOwnMinions) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const minionCardsInHand = player.hand.filter(c => c.type === 'minion');
     if (minionCardsInHand.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_minion_cards_in_hand', ctx.now)] };
-    const options = ownMinions.map((c, i) => ({
-        id: `minion-${i}`, label: c.label,
-        value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex },
-        _source: 'field' as const,
-        displayMode: 'card' as const,
-    }));
-    return resolveOrPrompt(ctx, options, {
-        id: 'vampire_cull_the_weak', title: '选择你的随从（弃手牌随从卡来放指示物）',
-        sourceId: 'vampire_cull_the_weak', targetType: 'minion' as const,
-    }, (val) => {
-        const interaction = createCullTheWeakCardInteraction(
-            ctx.matchState,
-            ctx.playerId,
-            { minionUid: val.minionUid, baseIndex: val.baseIndex },
-            ctx.now,
-        );
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-    });
+    const result = executeAbilityProgram(
+        vampireCullTheWeakPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now),
+    );
+    return { events: result.events, matchState: result.matchState };
 }
 
 /** 破晓 onPlay：从弃牌堆打出力量≤2随从并+1指示物 */
@@ -657,42 +486,11 @@ function vampireCrackOfDusk(ctx: AbilityContext): AbilityResult {
         return def && def.type === 'minion' && (def as { power: number }).power <= 2;
     });
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const options = candidates.map((c, i) => {
-        const def = getCardDef(c.defId);
-        return { id: `card-${i}`, label: `${def?.name ?? c.defId}`, value: { cardUid: c.uid, defId: c.defId }, _source: 'discard' as const, displayMode: 'card' as const };
-    });
-    return resolveOrPrompt(ctx, options, {
-        id: 'vampire_crack_of_dusk', title: '从弃牌堆选择力量≤2的随从打出（+1指示物）',
-        sourceId: 'vampire_crack_of_dusk', targetType: 'generic' as const,
-    }, (val) => {
-        // 选完随从后，创建基地选择交互
-        return crackOfDuskCreateBaseSelect(ctx.matchState, ctx.playerId, val.cardUid, val.defId, ctx.now);
-    });
-}
-
-function crackOfDuskCreateBaseSelect(state: MatchState<SmashUpCore>, playerId: string, cardUid: string, defId: string, now: number): AbilityResult {
-    const core = state.core;
-    const candidates: { baseIndex: number; label: string }[] = [];
-    for (let i = 0; i < core.bases.length; i++) {
-        const baseDef = getBaseDef(core.bases[i].defId);
-        candidates.push({ baseIndex: i, label: baseDef?.name ?? `基地 #${i + 1}` });
-    }
-    if (candidates.length === 0) return { events: [buildAbilityFeedback(playerId, 'feedback.no_valid_bases', now)] };
-    const baseOptions = buildBaseTargetOptions(candidates, core);
-    const interaction = createSimpleChoice(
-        `vampire_crack_of_dusk_base_${now}`, playerId,
-        '选择要打出随从的基地', baseOptions,
-        { sourceId: 'vampire_crack_of_dusk_base', targetType: 'base' },
+    const result = executeAbilityProgram(
+        vampireCrackOfDuskPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    // 将选中的随从信息写入 continuationContext
-    const enriched = {
-        ...interaction,
-        data: { ...interaction.data, continuationContext: { cardUid, defId } },
-    };
-    return {
-        matchState: queueInteraction(state, enriched),
-        events: [],
-    };
+    return { events: result.events, matchState: result.matchState };
 }
 
 // 剔除弱者 多选辅助
@@ -754,227 +552,1026 @@ function createCullTheWeakCardInteraction(
 }
 
 // ============================================================================
-// 交互处理函数
+// 声明式 runtime prompt 程序
 // ============================================================================
 
-type IH = (
-    state: MatchState<SmashUpCore>,
-    playerId: PlayerId,
-    value: unknown,
-    interactionData: Record<string, unknown> | undefined,
-    random: RandomFn,
-    timestamp: number
-) => { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } | undefined;
-
-const handleHeavyDrinkerChoice: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as {
-        minionUid?: string;
-        defId?: string;
-        baseIndex?: number;
-        skip?: boolean;
-        sourceMinionUid?: string;
-        sourceBaseIndex?: number;
-    };
-
-    if (v.skip) return { state, events: [] };
-    if (!v.minionUid || !v.defId || v.baseIndex === undefined) return undefined;
-    const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!target) return undefined;
-    let hdUid = v.sourceMinionUid ?? '';
-    let hdBase = v.sourceBaseIndex ?? -1;
-    if (!hdUid || hdBase < 0) {
-        for (let i = 0; i < state.core.bases.length; i++) {
-            const found = state.core.bases[i].minions.find(m => matchesDefId(m.defId, 'vampire_heavy_drinker') && m.controller === playerId);
-            if (found) {
-                hdUid = found.uid;
-                hdBase = i;
-                break;
+const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinionPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_heavy_drinker',
+    buildInteraction: (context) => {
+        const targets: Array<{ uid: string; defId: string; baseIndex: number; label: string }> = [];
+        for (let baseIndex = 0; baseIndex < context.matchState.core.bases.length; baseIndex += 1) {
+            for (const minion of context.matchState.core.bases[baseIndex].minions) {
+                if (minion.controller !== context.playerId || minion.uid === context.sourceMinionUid) continue;
+                const def = getCardDef(minion.defId);
+                targets.push({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex,
+                    label: def?.name ?? minion.defId,
+                });
             }
         }
-    }
 
-    if (!hdUid) return undefined;
-    const destroyEvents = buildValidatedDestroyEvents(state, {
-        minionUid: v.minionUid,
-        minionDefId: v.defId,
-        fromBaseIndex: v.baseIndex,
-        destroyerId: playerId,
-        reason: 'vampire_heavy_drinker',
-        now,
-    });
-    if (destroyEvents.length === 0) return { state, events: [] };
-    return {
-        state,
-        events: [
-            ...destroyEvents,
-            addPowerCounter(hdUid, hdBase, 1, 'vampire_heavy_drinker', now + 1), // +1ms 避免音频节流
-        ],
-    };
-};
+        return createSimpleChoice(
+            `vampire_heavy_drinker_${context.now}`,
+            context.playerId,
+            '选择要消灭的己方随从（本随从+1指示物）',
+            [
+                ...targets.map((target, index) => ({
+                    id: `minion-${index}`,
+                    label: `消灭 ${target.label}`,
+                    value: {
+                        minionUid: target.uid,
+                        defId: target.defId,
+                        baseIndex: target.baseIndex,
+                    },
+                    _source: 'field' as const,
+                    displayMode: 'card' as const,
+                })),
+                createSkipOption('跳过（不消灭）') as any,
+            ] as any[],
+            { sourceId: 'vampire_heavy_drinker', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const destroyEvents = buildValidatedDestroyEvents(state, {
+            minionUid: selected.minionUid,
+            minionDefId: selected.defId,
+            fromBaseIndex: selected.baseIndex,
+            destroyerId: context.playerId,
+            reason: 'vampire_heavy_drinker',
+            now: timestamp,
+        });
+        if (destroyEvents.length === 0) return { events: [] };
+        return {
+            events: [
+                ...destroyEvents,
+                addPowerCounter(context.sourceMinionUid, context.sourceBaseIndex, 1, 'vampire_heavy_drinker', timestamp + 1),
+            ],
+        };
+    },
+});
 
-const handleNightstalkerChoice: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as {
-        minionUid?: string;
-        defId?: string;
-        baseIndex?: number;
-        skip?: boolean;
-        sourceMinionUid?: string;
-        sourceBaseIndex?: number;
-    };
+const vampireNightstalkerPromptProgram = createPromptProgram<VampireSourceMinionPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_nightstalker',
+    buildInteraction: (context) => {
+        const base = context.matchState.core.bases[context.sourceBaseIndex];
+        const targets = (base?.minions ?? [])
+            .filter(minion =>
+                minion.uid !== context.sourceMinionUid
+                && getEffectivePower(context.matchState.core, minion, context.sourceBaseIndex) <= 2,
+            )
+            .map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.sourceBaseIndex,
+                label: `${getCardDef(minion.defId)?.name ?? minion.defId} (力量 ${getEffectivePower(context.matchState.core, minion, context.sourceBaseIndex)})`,
+            }));
 
-    if (v.skip) return { state, events: [] };
-    if (!v.minionUid || !v.defId || v.baseIndex === undefined) return undefined;
-    const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!target) return undefined;
+        return createSimpleChoice(
+            `vampire_nightstalker_${context.now}`,
+            context.playerId,
+            '选择要消灭的力量≤2随从（本随从+1指示物）',
+            [
+                ...buildMinionTargetOptions(targets, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    effectType: 'destroy',
+                }),
+                createSkipOption('跳过（不消灭）') as any,
+            ] as any[],
+            { sourceId: 'vampire_nightstalker', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const destroyEvents = buildValidatedDestroyEvents(state, {
+            minionUid: selected.minionUid,
+            minionDefId: selected.defId,
+            fromBaseIndex: selected.baseIndex,
+            destroyerId: context.playerId,
+            reason: 'vampire_nightstalker',
+            now: timestamp,
+        });
+        if (destroyEvents.length === 0) return { events: [] };
+        return {
+            events: [
+                ...destroyEvents,
+                addPowerCounter(context.sourceMinionUid, context.sourceBaseIndex, 1, 'vampire_nightstalker', timestamp + 1),
+            ],
+        };
+    },
+});
 
-    let nsUid = v.sourceMinionUid ?? '';
-    let nsBase = v.sourceBaseIndex ?? -1;
-    if (!nsUid || nsBase < 0) {
-        for (let i = 0; i < state.core.bases.length; i++) {
-            const found = state.core.bases[i].minions.find(m => matchesDefId(m.defId, 'vampire_nightstalker') && m.controller === playerId);
-            if (found) {
-                nsUid = found.uid;
-                nsBase = i;
-                break;
+const vampireDinnerDateTargetPromptProgram = createPromptProgram<VampireBaseMinionPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_dinner_date_target',
+    buildInteraction: (context) => {
+        const base = context.matchState.core.bases[context.baseIndex];
+        const targets = (base?.minions ?? [])
+            .filter(minion =>
+                minion.uid !== context.minionUid
+                && getEffectivePower(context.matchState.core, minion, context.baseIndex) <= 2,
+            )
+            .map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.baseIndex,
+                label: `${getCardDef(minion.defId)?.name ?? minion.defId} (力量 ${getEffectivePower(context.matchState.core, minion, context.baseIndex)})`,
+            }));
+
+        return createSimpleChoice(
+            `vampire_dinner_date_target_${context.now}`,
+            context.playerId,
+            '选择要消灭的力量≤2随从',
+            buildMinionTargetOptions(targets, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                effectType: 'destroy',
+            }),
+            { sourceId: 'vampire_dinner_date_target', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        return {
+            events: [destroyMinion(selected.minionUid, selected.defId, selected.baseIndex, target.owner, context.playerId, 'vampire_dinner_date', timestamp)],
+        };
+    },
+});
+
+const vampireDinnerDatePromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_dinner_date',
+    buildInteraction: (context) => {
+        const ownMinions = context.matchState.core.bases.flatMap((base, baseIndex) =>
+            base.minions
+                .filter(minion => minion.controller === context.playerId)
+                .map((minion, index) => ({
+                    id: `minion-${baseIndex}-${index}`,
+                    label: getCardDef(minion.defId)?.name ?? minion.defId,
+                    value: { minionUid: minion.uid, baseIndex },
+                    _source: 'field' as const,
+                    displayMode: 'card' as const,
+                })),
+        );
+        return createSimpleChoice(
+            `vampire_dinner_date_${context.now}`,
+            context.playerId,
+            '选择你的随从放置+1指示物（然后消灭同基地力量≤2随从）',
+            ownMinions as any[],
+            { sourceId: 'vampire_dinner_date', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const source = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!source) return { events: [] };
+
+        const events: SmashUpEvent[] = [
+            addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'vampire_dinner_date', timestamp),
+        ];
+        const hasDestroyTargets = state.core.bases[selected.baseIndex]?.minions.some(minion =>
+            minion.uid !== selected.minionUid
+            && getEffectivePower(state.core, minion, selected.baseIndex!) <= 2,
+        );
+        if (!hasDestroyTargets) return { events };
+        return {
+            events,
+            context: createVampirePromptContext(state, context.playerId, timestamp, {
+                minionUid: selected.minionUid,
+                baseIndex: selected.baseIndex,
+            }),
+            nextProgram: vampireDinnerDateTargetPromptProgram,
+        };
+    },
+});
+
+const vampireBigGulpPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_big_gulp',
+    buildInteraction: (context) => {
+        const targets = context.matchState.core.bases.flatMap((base, baseIndex) =>
+            base.minions
+                .filter(minion => getEffectivePower(context.matchState.core, minion, baseIndex) <= 4)
+                .map((minion) => ({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex,
+                    label: `${getCardDef(minion.defId)?.name ?? minion.defId} (力量 ${getEffectivePower(context.matchState.core, minion, baseIndex)})`,
+                })),
+        );
+        return createSimpleChoice(
+            `vampire_big_gulp_${context.now}`,
+            context.playerId,
+            '选择要消灭的力量≤4随从（可跳过）',
+            [
+                ...buildMinionTargetOptions(targets, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    effectType: 'destroy',
+                }),
+                createSkipOption('跳过') as any,
+            ] as any[],
+            { sourceId: 'vampire_big_gulp', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        return {
+            events: [destroyMinion(selected.minionUid, selected.defId, selected.baseIndex, target.owner, context.playerId, 'vampire_big_gulp', timestamp)],
+        };
+    },
+});
+
+const vampireCullTheWeakChooseCardPromptProgram = createPromptProgram<VampireBaseMinionPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_cull_the_weak_choose_card',
+    buildInteraction: (context) => createCullTheWeakCardInteraction(
+        context.matchState,
+        context.playerId,
+        { minionUid: context.minionUid, baseIndex: context.baseIndex },
+        context.now,
+    ),
+    onResolve: ({ state, context, playerId, value, timestamp }) => {
+        const selected = value as { cardUid?: string; stop?: boolean } | undefined;
+        if (selected?.stop) return { events: [] };
+        if (!selected?.cardUid) return { events: [] };
+
+        const events: SmashUpEvent[] = [
+            {
+                type: SU_EVENTS.CARDS_DISCARDED,
+                payload: { playerId, cardUids: [selected.cardUid] },
+                timestamp,
+            } as SmashUpEvent,
+            addPowerCounter(context.minionUid, context.baseIndex, 1, 'vampire_cull_the_weak', timestamp),
+        ];
+        const remainingMinions = (state.core.players[playerId]?.hand ?? [])
+            .filter(card => card.type === 'minion' && card.uid !== selected.cardUid)
+            .length;
+        if (remainingMinions <= 0) return { events };
+
+        const simulatedState = applyEventsToMatchState(state, events);
+        return {
+            events,
+            context: createVampirePromptContext(simulatedState, context.playerId, timestamp, {
+                minionUid: context.minionUid,
+                baseIndex: context.baseIndex,
+            }),
+            nextProgram: vampireCullTheWeakChooseCardPromptProgram,
+        };
+    },
+});
+
+const vampireCullTheWeakPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_cull_the_weak',
+    buildInteraction: (context) => {
+        const ownMinions = context.matchState.core.bases.flatMap((base, baseIndex) =>
+            base.minions
+                .filter(minion => minion.controller === context.playerId)
+                .map((minion, index) => ({
+                    id: `minion-${baseIndex}-${index}`,
+                    label: getCardDef(minion.defId)?.name ?? minion.defId,
+                    value: { minionUid: minion.uid, baseIndex },
+                    _source: 'field' as const,
+                    displayMode: 'card' as const,
+                })),
+        );
+        return createSimpleChoice(
+            `vampire_cull_the_weak_${context.now}`,
+            context.playerId,
+            '选择你的随从（弃手牌随从卡来放指示物）',
+            ownMinions as any[],
+            { sourceId: 'vampire_cull_the_weak', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        const minionCards = state.core.players[context.playerId]?.hand.filter(card => card.type === 'minion') ?? [];
+        if (minionCards.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: createVampirePromptContext(state, context.playerId, timestamp, {
+                minionUid: selected.minionUid,
+                baseIndex: selected.baseIndex,
+            }),
+            nextProgram: vampireCullTheWeakChooseCardPromptProgram,
+        };
+    },
+});
+
+const vampireCrackOfDuskBasePromptProgram = createPromptProgram<VampireCrackOfDuskPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_crack_of_dusk_base',
+    buildInteraction: (context) => createSimpleChoice(
+        `vampire_crack_of_dusk_base_${context.now}`,
+        context.playerId,
+        '选择要打出随从的基地',
+        buildBaseTargetOptions(
+            context.matchState.core.bases.map((base, baseIndex) => ({
+                baseIndex,
+                label: getBaseDef(base.defId)?.name ?? `基地 #${baseIndex + 1}`,
+            })),
+            context.matchState.core,
+        ),
+        { sourceId: 'vampire_crack_of_dusk_base', targetType: 'base' },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { baseIndex?: number } | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        const stillInDiscard = state.core.players[context.playerId]?.discard.some(card => card.uid === context.cardUid);
+        if (!stillInDiscard) return { events: [] };
+        const minionDef = getMinionDef(context.defId);
+        const playedEvt: MinionPlayedEvent = {
+            type: SU_EVENTS.MINION_PLAYED,
+            payload: {
+                playerId: context.playerId,
+                cardUid: context.cardUid,
+                defId: context.defId,
+                baseIndex: selected.baseIndex,
+                power: minionDef?.power ?? 0,
+                fromDiscard: true,
+            } as any,
+            timestamp,
+        };
+        return {
+            events: [
+                playedEvt,
+                addPowerCounter(context.cardUid, selected.baseIndex, 1, 'vampire_crack_of_dusk', timestamp + 1),
+            ],
+        };
+    },
+});
+
+const vampireCrackOfDuskPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_crack_of_dusk',
+    buildInteraction: (context) => {
+        const discard = context.matchState.core.players[context.playerId]?.discard ?? [];
+        const options = discard
+            .filter(card => {
+                if (card.type !== 'minion') return false;
+                const def = getCardDef(card.defId);
+                return !!def && def.type === 'minion' && (def as { power: number }).power <= 2;
+            })
+            .map((card, index) => ({
+                id: `card-${index}`,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId },
+                _source: 'discard' as const,
+                displayMode: 'card' as const,
+            }));
+        return createSimpleChoice(
+            `vampire_crack_of_dusk_${context.now}`,
+            context.playerId,
+            '从弃牌堆选择力量≤2的随从打出（+1指示物）',
+            options as any[],
+            { sourceId: 'vampire_crack_of_dusk', targetType: 'generic' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { cardUid?: string; defId?: string } | undefined;
+        if (!selected?.cardUid || !selected.defId) return { events: [] };
+        const stillInDiscard = state.core.players[context.playerId]?.discard.some(card => card.uid === selected.cardUid);
+        if (!stillInDiscard) return { events: [] };
+        return {
+            events: [],
+            context: createVampirePromptContext(state, context.playerId, timestamp, {
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+            }),
+            nextProgram: vampireCrackOfDuskBasePromptProgram,
+        };
+    },
+});
+
+const vampireCountPodAddCounterPromptProgram = createPromptProgram<VampireCountPodAddCounterPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_the_count_pod_add_counter',
+    buildInteraction: (context) => {
+        const base = context.matchState.core.bases[context.targetBaseIndex];
+        const options = (base?.minions ?? []).map((minion, index) => ({
+            id: `minion-${index}`,
+            label: getCardDef(minion.defId)?.name ?? minion.defId,
+            value: { minionUid: minion.uid, baseIndex: context.targetBaseIndex },
+            _source: 'field' as const,
+            displayMode: 'card' as const,
+        }));
+        return createSimpleChoice(
+            `vampire_the_count_pod_add_counter_${context.playerId}_${context.now}`,
+            context.playerId,
+            '吸血鬼伯爵：你可以在该基地的一个随从上放置+1战斗力指示物',
+            [
+                ...options,
+                createSkipOption('跳过') as any,
+            ] as any[],
+            { sourceId: 'vampire_the_count_pod_add_counter', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'vampire_the_count_pod', timestamp)],
+        };
+    },
+});
+
+const vampireBuffetPodPlayPromptProgram = createPromptProgram<VampireBuffetPodPlayPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_buffet_pod_play',
+    buildInteraction: (context) => createSimpleChoice(
+        `vampire_buffet_pod_${context.playerId}_${context.now}`,
+        context.playerId,
+        '自助餐：你可以打出此牌（抽两张牌）',
+        [
+            { id: 'play', label: '打出自助餐', value: { play: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        ] as any[],
+        { sourceId: 'vampire_buffet_pod_play', targetType: 'button' },
+    ),
+    onResolve: ({ state, context, value, playerId, random, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const events: SmashUpEvent[] = [
+            buildActionPlayedEvent({ playerId, cardUid: context.cardUid, defId: context.defId, isExtraAction: true, timestamp }) as any,
+        ];
+        events.push(...buildStandardDrawEvents(state.core, playerId, 2, random, timestamp));
+        return { events };
+    },
+});
+
+const vampireMadMonsterPartyPodPlayPromptProgram = createPromptProgram<VampireMadMonsterPartyPodPlayPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_mad_monster_party_pod_play',
+    buildInteraction: (context) => createSimpleChoice(
+        `vampire_mad_monster_party_pod_${context.playerId}_${context.now}`,
+        context.playerId,
+        '疯狂怪物派对：你可以打出此牌（选择被消灭随从的基地）',
+        [
+            { id: 'play', label: '打出疯狂怪物派对', value: { play: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        ] as any[],
+        { sourceId: 'vampire_mad_monster_party_pod_play', targetType: 'button' },
+    ),
+    onResolve: ({ state, context, value, playerId, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const base = state.core.bases[context.baseIndex];
+        if (!base) return { events: [] };
+        const events: SmashUpEvent[] = [
+            buildActionPlayedEvent({ playerId, cardUid: context.cardUid, defId: 'vampire_mad_monster_party_pod', isExtraAction: true, timestamp }) as any,
+        ];
+        for (const minion of base.minions) {
+            if (minion.controller === playerId) {
+                events.push(addPowerCounter(minion.uid, context.baseIndex, 1, 'vampire_mad_monster_party_pod', timestamp));
             }
         }
-    }
+        return { events };
+    },
+});
 
-    if (!nsUid) return undefined;
-    const destroyEvents = buildValidatedDestroyEvents(state, {
-        minionUid: v.minionUid,
-        minionDefId: v.defId,
-        fromBaseIndex: v.baseIndex,
-        destroyerId: playerId,
-        reason: 'vampire_nightstalker',
-        now,
-    });
-    if (destroyEvents.length === 0) return { state, events: [] };
-    return {
-        state,
-        events: [
-            ...destroyEvents,
-            addPowerCounter(nsUid, nsBase, 1, 'vampire_nightstalker', now + 1), // +1ms 避免音频节流
-        ],
-    };
-};
+const vampireFledglingPodBuryBasePromptProgram = createPromptProgram<VampireFledglingPodBuryBasePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_fledgling_vampire_pod_bury_base',
+    buildInteraction: (context) => createSimpleChoice(
+        `vampire_fledgling_vampire_pod_bury_base_${context.now}`,
+        context.playerId,
+        '选择要埋葬到的基地',
+        buildBaseTargetOptions(
+            context.matchState.core.bases.map((base, baseIndex) => ({
+                baseIndex,
+                label: getBaseDef(base.defId)?.name ?? `基地 #${baseIndex + 1}`,
+            })),
+            context.matchState.core,
+        ),
+        { sourceId: 'vampire_fledgling_vampire_pod_bury_base', targetType: 'base' },
+    ),
+    onResolve: ({ context, value, playerId, timestamp }) => {
+        const selected = value as { baseIndex?: number } | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.CARD_BURIED,
+                payload: {
+                    playerId,
+                    cardUid: context.cardUid,
+                    defId: 'vampire_fledgling_vampire_pod',
+                    baseIndex: selected.baseIndex,
+                    trueOwnerId: playerId,
+                    buriedFrom: context.fromDiscard ? 'discard' : 'hand',
+                    reason: 'vampire_fledgling_vampire_pod',
+                } as any,
+                timestamp,
+            } as SmashUpEvent],
+        };
+    },
+});
 
-const handleDinnerDateChooseMinion: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number };
-    const events: SmashUpEvent[] = [addPowerCounter(v.minionUid, v.baseIndex, 1, 'vampire_dinner_date', now)];
-    const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-    for (const m of state.core.bases[v.baseIndex].minions) {
-        if (m.uid === v.minionUid) continue;
-        const power = getEffectivePower(state.core, m, v.baseIndex);
-        if (power <= 2) {
-            const def = getCardDef(m.defId);
-            targets.push({ uid: m.uid, defId: m.defId, baseIndex: v.baseIndex, label: `${def?.name ?? m.defId} (力量 ${power})` });
+const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_fledgling_vampire_pod_bury_source',
+    buildInteraction: (context) => {
+        const player = context.matchState.core.players[context.playerId];
+        const options = [
+            ...(player?.hand ?? [])
+                .filter(card => card.defId === 'vampire_fledgling_vampire_pod')
+                .map((card, index) => ({
+                    id: `hand-${index}`,
+                    label: '从手牌埋葬',
+                    value: { cardUid: card.uid, fromDiscard: false },
+                    _source: 'hand' as const,
+                    displayMode: 'card' as const,
+                })),
+            ...(player?.discard ?? [])
+                .filter(card => card.defId === 'vampire_fledgling_vampire_pod')
+                .map((card, index) => ({
+                    id: `discard-${index}`,
+                    label: '从弃牌堆埋葬',
+                    value: { cardUid: card.uid, fromDiscard: true },
+                    _source: 'discard' as const,
+                    displayMode: 'card' as const,
+                })),
+            createSkipOption('跳过') as any,
+        ];
+        return createSimpleChoice(
+            `vampire_fledgling_vampire_pod_bury_${context.playerId}_${context.now}`,
+            context.playerId,
+            '新生吸血鬼：你可以埋葬这张牌到任意基地',
+            options as any[],
+            { sourceId: 'vampire_fledgling_vampire_pod_bury_source', targetType: 'generic' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { cardUid?: string; fromDiscard?: boolean } | undefined;
+        if (!selected?.cardUid) return { events: [] };
+        return {
+            events: [],
+            context: createVampirePromptContext(state, context.playerId, timestamp, {
+                cardUid: selected.cardUid,
+                fromDiscard: !!selected.fromDiscard,
+            }),
+            nextProgram: vampireFledglingPodBuryBasePromptProgram,
+        };
+    },
+});
+
+const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMinionPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_heavy_drinker_pod',
+    buildInteraction: (context) => {
+        const base = context.matchState.core.bases[context.sourceBaseIndex];
+        const hereTargets = (base?.minions ?? [])
+            .filter(minion =>
+                minion.uid !== context.sourceMinionUid
+                && getEffectivePower(context.matchState.core, minion, context.sourceBaseIndex) <= 2,
+            )
+            .map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.sourceBaseIndex,
+                label: `${getCardDef(minion.defId)?.name ?? minion.defId} (战斗力 ${getEffectivePower(context.matchState.core, minion, context.sourceBaseIndex)})`,
+            }));
+        const otherOwnTargets = context.matchState.core.bases.flatMap((currentBase, baseIndex) =>
+            currentBase.minions
+                .filter(minion => minion.controller === context.playerId && minion.uid !== context.sourceMinionUid)
+                .map((minion) => ({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex,
+                    label: getCardDef(minion.defId)?.name ?? minion.defId,
+                })),
+        );
+        return createSimpleChoice(
+            `vampire_heavy_drinker_pod_${context.now}`,
+            context.playerId,
+            '海量酒鬼：选择要消灭的随从（本随从放置两个+1战斗力指示物）',
+            [
+                ...buildMinionTargetOptions(hereTargets, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    effectType: 'destroy',
+                }).map((option) => ({
+                    ...option,
+                    id: `here-${option.id}`,
+                })),
+                ...otherOwnTargets.map((target, index) => ({
+                    id: `own-${index}`,
+                    label: `消灭：${target.label}`,
+                    value: { minionUid: target.uid, defId: target.defId, baseIndex: target.baseIndex },
+                    _source: 'field' as const,
+                    displayMode: 'card' as const,
+                })),
+                createSkipOption('跳过（不消灭）') as any,
+            ] as any[],
+            { sourceId: 'vampire_heavy_drinker_pod', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const destroyEvents = buildValidatedDestroyEvents(state, {
+            minionUid: selected.minionUid,
+            minionDefId: selected.defId,
+            fromBaseIndex: selected.baseIndex,
+            destroyerId: context.playerId,
+            reason: 'vampire_heavy_drinker_pod',
+            now: timestamp,
+        });
+        if (destroyEvents.length === 0) return { events: [] };
+        return {
+            events: [
+                ...destroyEvents,
+                addPowerCounter(context.sourceMinionUid, context.sourceBaseIndex, 2, 'vampire_heavy_drinker_pod', timestamp),
+            ],
+        };
+    },
+});
+
+const vampireCountPodTalentPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_the_count_pod_talent',
+    buildInteraction: (context) => {
+        const targets = context.matchState.core.bases.flatMap((base, baseIndex) =>
+            base.minions.map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            })),
+        );
+        return createSimpleChoice(
+            `vampire_the_count_pod_talent_${context.now}`,
+            context.playerId,
+            '吸血鬼伯爵：选择一个随从直到你的下回合开始时-1战斗力',
+            [
+                ...buildMinionTargetOptions(targets, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    effectType: 'affect',
+                }),
+                createSkipOption('跳过') as any,
+            ] as any[],
+            { sourceId: 'vampire_the_count_pod_talent', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        const nextState = schedulePowerModifierUntilNextTurnStart(
+            state,
+            selected.minionUid,
+            -1,
+            'vampire_the_count_pod',
+        );
+        return {
+            matchState: nextState,
+            events: [addPermanentPower(selected.minionUid, selected.baseIndex, -1, 'vampire_the_count_pod', timestamp)],
+        };
+    },
+});
+
+const vampireBigGulpPodPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_big_gulp_pod',
+    buildInteraction: (context) => {
+        const targets = context.matchState.core.bases.flatMap((base, baseIndex) =>
+            base.minions
+                .filter(minion => getEffectivePower(context.matchState.core, minion, baseIndex) <= 4)
+                .map((minion) => ({
+                    uid: minion.uid,
+                    defId: minion.defId,
+                    baseIndex,
+                    label: `${getCardDef(minion.defId)?.name ?? minion.defId} (战斗力 ${getEffectivePower(context.matchState.core, minion, baseIndex)})`,
+                })),
+        );
+        return createSimpleChoice(
+            `vampire_big_gulp_pod_${context.now}`,
+            context.playerId,
+            '选择要消灭的战斗力≤4的随从',
+            buildMinionTargetOptions(targets, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                effectType: 'destroy',
+            }),
+            { sourceId: 'vampire_big_gulp_pod', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        return {
+            events: [destroyMinion(selected.minionUid, selected.defId, selected.baseIndex, target.owner, context.playerId, 'vampire_big_gulp_pod', timestamp)],
+        };
+    },
+});
+
+const vampireCullTheWeakPodPromptProgram = createPromptProgram<VampireCullTheWeakPodPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_cull_the_weak_pod',
+    buildInteraction: (context) => {
+        const minions = context.matchState.core.bases.flatMap((base, baseIndex) =>
+            base.minions.map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            })),
+        );
+        return createSimpleChoice(
+            `vampire_cull_the_weak_pod_${context.now}`,
+            context.playerId,
+            '剔除弱者：选择一个随从放置+1战斗力指示物（每弃1张随从放1个）',
+            buildMinionTargetOptions(minions, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                effectType: 'affect',
+            }) as any,
+            { sourceId: 'vampire_cull_the_weak_pod', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ context, value, playerId, timestamp }) => {
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const events: SmashUpEvent[] = [...context.deckEvents];
+        events.push({
+            type: SU_EVENTS.CARDS_MILLED,
+            payload: { playerId, count: context.discardUids.length, cardUids: context.discardUids },
+            timestamp,
+        } as any);
+        for (let index = 0; index < context.discardedCount; index += 1) {
+            events.push(addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'vampire_cull_the_weak_pod', timestamp));
         }
-    }
-    if (targets.length === 0) return { state, events };
-    const options = buildMinionTargetOptions(targets, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' });
-    if (options.length === 0) return { state, events };
-    const interaction = createSimpleChoice(
-        `vampire_dinner_date_target_${now}`, playerId,
-        '选择要消灭的力量≤2随从', options,
-        { sourceId: 'vampire_dinner_date_target', targetType: 'minion' },
-    );
-    return { state: queueInteraction(state, interaction), events };
-};
+        return { events };
+    },
+});
 
-const handleDinnerDateChooseTarget: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid: string; defId: string; baseIndex: number };
-    const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!target) {
-        return { state, events: [] };
-    }
-    // 晚餐约会：先+1指示物（已在 handleDinnerDateChooseMinion 中生成），再消灭随从
-    // 这里不需要 +1ms 偏移，因为两个事件在不同的交互步骤中生成
-    return {
-        state,
-        events: [destroyMinion(v.minionUid, v.defId, v.baseIndex, target.owner, playerId, 'vampire_dinner_date', now)],
-    };
-};
+const vampireCrackOfDuskPodBasePromptProgram = createPromptProgram<VampireCrackOfDuskPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_crack_of_dusk_pod_base',
+    buildInteraction: (context) => createSimpleChoice(
+        `vampire_crack_of_dusk_pod_base_${context.now}`,
+        context.playerId,
+        '选择要打出随从的基地',
+        buildBaseTargetOptions(
+            context.matchState.core.bases.map((base, baseIndex) => ({
+                baseIndex,
+                label: getBaseDef(base.defId)?.name ?? `基地 #${baseIndex + 1}`,
+            })),
+            context.matchState.core,
+        ),
+        { sourceId: 'vampire_crack_of_dusk_pod_base', targetType: 'base' },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { baseIndex?: number } | undefined;
+        if (selected?.baseIndex === undefined) return { events: [] };
+        const stillInDiscard = state.core.players[context.playerId]?.discard.some(card => card.uid === context.cardUid);
+        if (!stillInDiscard) return { events: [] };
+        const minionDef = getMinionDef(context.defId);
+        const playedEvt: MinionPlayedEvent = {
+            type: SU_EVENTS.MINION_PLAYED,
+            payload: {
+                playerId: context.playerId,
+                cardUid: context.cardUid,
+                defId: context.defId,
+                baseIndex: selected.baseIndex,
+                power: minionDef?.power ?? 0,
+                fromDiscard: true,
+                consumesNormalLimit: false,
+            } as any,
+            timestamp,
+        };
+        return {
+            events: [
+                playedEvt,
+                addPowerCounter(context.cardUid, selected.baseIndex, 1, 'vampire_crack_of_dusk_pod', timestamp + 1),
+            ],
+        };
+    },
+});
 
-const handleBigGulpChoice: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid: string; defId: string; baseIndex: number };
-    const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!target) {
-        return { state, events: [] };
-    }
-    return {
-        state,
-        events: [destroyMinion(v.minionUid, v.defId, v.baseIndex, target.owner, playerId, 'vampire_big_gulp', now)],
-    };
-};
+const vampireCrackOfDuskPodPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_crack_of_dusk_pod',
+    buildInteraction: (context) => {
+        const discard = context.matchState.core.players[context.playerId]?.discard ?? [];
+        const options = discard
+            .filter(card => {
+                if (card.type !== 'minion') return false;
+                const def = getCardDef(card.defId);
+                return !!def && def.type === 'minion' && (def as { power: number }).power <= 2;
+            })
+            .map((card, index) => ({
+                id: `card-${index}`,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId },
+                _source: 'discard' as const,
+                displayMode: 'card' as const,
+            }));
+        return createSimpleChoice(
+            `vampire_crack_of_dusk_pod_${context.now}`,
+            context.playerId,
+            '从弃牌堆选择力量≤2的随从打出（+1指示物，不占用普通随从次数）',
+            options as any[],
+            { sourceId: 'vampire_crack_of_dusk_pod', targetType: 'generic' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as { cardUid?: string; defId?: string } | undefined;
+        if (!selected?.cardUid || !selected.defId) return { events: [] };
+        const stillInDiscard = state.core.players[context.playerId]?.discard.some(card => card.uid === selected.cardUid);
+        if (!stillInDiscard) return { events: [] };
+        return {
+            events: [],
+            context: createVampirePromptContext(state, context.playerId, timestamp, {
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+            }),
+            nextProgram: vampireCrackOfDuskPodBasePromptProgram,
+        };
+    },
+});
 
-const handleCullTheWeakChooseMinion: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { minionUid: string; baseIndex: number };
-    const player = state.core.players[playerId];
-    if (!player) return undefined;
-    const minionCards = player.hand.filter(c => c.type === 'minion');
-    if (minionCards.length === 0) return { state, events: [] };
-    const interaction = createCullTheWeakCardInteraction(
-        state, playerId, { minionUid: v.minionUid, baseIndex: v.baseIndex }, now,
-    );
-    return { state: queueInteraction(state, interaction), events: [] };
-};
+const vampireDinnerDatePodPromptProgram = createPromptProgram<VampireDinnerDatePodPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_dinner_date_pod',
+    buildInteraction: (context) => {
+        const ownMinions = context.matchState.core.bases.flatMap((base, baseIndex) =>
+            base.minions
+                .filter(minion => minion.controller === context.playerId)
+                .map((minion, index) => ({
+                    id: `minion-${baseIndex}-${index}`,
+                    label: getCardDef(minion.defId)?.name ?? minion.defId,
+                    value: { minionUid: minion.uid, baseIndex },
+                    _source: 'field' as const,
+                    displayMode: 'card' as const,
+                })),
+        );
+        return createSimpleChoice(
+            `vampire_dinner_date_pod_${context.now}`,
+            context.playerId,
+            '晚餐约会：选择你的一个随从放置两个+1战斗力指示物',
+            buildMinionTargetOptions(
+                ownMinions.map((option) => ({
+                    uid: option.value.minionUid,
+                    defId: context.matchState.core.bases[option.value.baseIndex].minions.find(minion => minion.uid === option.value.minionUid)?.defId ?? '',
+                    baseIndex: option.value.baseIndex,
+                    label: option.label,
+                })),
+                { state: context.matchState.core, sourcePlayerId: context.playerId, effectType: 'affect' },
+            ) as any,
+            { sourceId: 'vampire_dinner_date_pod', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, context, value, playerId, timestamp }) => {
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const events: SmashUpEvent[] = [addPowerCounter(selected.minionUid, selected.baseIndex, 2, 'vampire_dinner_date_pod', timestamp)];
+        const attachedBase = state.core.bases[context.attachedBaseIndex];
+        const attachedMinion = attachedBase?.minions.find(minion => minion.uid === context.attachedMinionUid);
+        if (!attachedMinion) return { events };
+        const effectiveNow = getEffectivePower(state.core, attachedMinion, context.attachedBaseIndex);
+        const hasDinnerDateAttached = attachedMinion.attachedActions.some(action => action.defId === 'vampire_dinner_date_pod');
+        const projectedPower = hasDinnerDateAttached ? effectiveNow : effectiveNow - 2;
+        if (projectedPower > 0) return { events };
+        return {
+            events: [
+                ...events,
+                ...buildValidatedDestroyEvents(state.core, {
+                    minionUid: attachedMinion.uid,
+                    minionDefId: attachedMinion.defId,
+                    fromBaseIndex: context.attachedBaseIndex,
+                    destroyerId: playerId,
+                    reason: 'vampire_dinner_date_pod',
+                    now: timestamp,
+                }),
+            ],
+        };
+    },
+});
 
-const handleCullTheWeakChooseCard: IH = (state, playerId, value, interactionData, _random, now) => {
-    const context = interactionData?.continuationContext as CullTheWeakCardContext | undefined;
-    if (!context) return undefined;
-    const v = value as { cardUid?: string; defId?: string; stop?: boolean };
-    if (v.stop) return { state, events: [] };
-    if (!v.cardUid) return undefined;
-    const events: SmashUpEvent[] = [
-        {
-            type: SU_EVENTS.CARDS_DISCARDED,
-            payload: { playerId, cardUids: [v.cardUid] },
-            timestamp: now,
-        } as SmashUpEvent,
-        addPowerCounter(context.minionUid, context.baseIndex, 1, 'vampire_cull_the_weak', now),
-    ];
-    const player = state.core.players[playerId];
-    const remainingMinions = player
-        ? player.hand.filter(c => c.type === 'minion' && c.uid !== v.cardUid).length
-        : 0;
-    if (remainingMinions <= 0) return { state, events };
-    const nextInteraction = createCullTheWeakCardInteraction(state, playerId, context, now);
-    return { state: queueInteraction(state, nextInteraction), events };
-};
+const vampireWolfPactPodMinionTargetPromptProgram = createPromptProgram<VampireWolfPactPodMinionTargetPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_wolf_pact_pod_minion_target',
+    buildInteraction: (context) => {
+        const base = context.matchState.core.bases[context.wolfBaseIndex];
+        const recipients = (base?.minions ?? [])
+            .filter(minion => minion.controller === context.playerId)
+            .map((minion, index) => ({
+                id: `recipient-${index}`,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+                value: { minionUid: minion.uid, baseIndex: context.wolfBaseIndex },
+                _source: 'field' as const,
+                displayMode: 'card' as const,
+            }));
+        return createSimpleChoice(
+            `vampire_wolf_pact_pod_minion_target_${context.now}`,
+            context.playerId,
+            '狼之契约：选择在该基地的另一个你的随从放置+1战斗力指示物',
+            recipients as any[],
+            { sourceId: 'vampire_wolf_pact_pod_minion_target', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ value, timestamp }) => {
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'vampire_wolf_pact_pod', timestamp)],
+        };
+    },
+});
 
-const handleCrackOfDuskChoice: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as { cardUid: string; defId: string };
-    // 选完随从后，创建基地选择交互
-    const result = crackOfDuskCreateBaseSelect(state, playerId, v.cardUid, v.defId, now);
-    return { state: result.matchState ?? state, events: result.events };
-};
+const vampireWolfPactPodMinionPromptProgram = createPromptProgram<VampireWolfPactPodMinionPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_wolf_pact_pod_minion',
+    buildInteraction: (context) => createSimpleChoice(
+        `vampire_wolf_pact_pod_minion_${context.now}`,
+        context.playerId,
+        '狼之契约（随从）：选择一个随从直到你下回合开始时-1战斗力',
+        [
+            ...buildMinionTargetOptions(
+                context.matchState.core.bases.flatMap((base, baseIndex) =>
+                    base.minions.map(minion => ({
+                        uid: minion.uid,
+                        defId: minion.defId,
+                        baseIndex,
+                        label: getCardDef(minion.defId)?.name ?? minion.defId,
+                    })),
+                ),
+                { state: context.matchState.core, sourcePlayerId: context.playerId, effectType: 'affect' },
+            ),
+            createSkipOption('跳过') as any,
+        ] as any[],
+        { sourceId: 'vampire_wolf_pact_pod_minion', targetType: 'minion' },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const target = state.core.bases[selected.baseIndex]?.minions.find(minion => minion.uid === selected.minionUid);
+        if (!target) return { events: [] };
+        const base = state.core.bases[context.wolfBaseIndex];
+        if (!base) return { events: [] };
+        const recipients = base.minions.filter(minion => minion.controller === context.playerId && minion.uid !== context.wolfUid);
+        if (recipients.length === 0) return { events: [] };
+        const nextState = schedulePowerModifierUntilNextTurnStart(
+            state,
+            selected.minionUid,
+            -1,
+            'vampire_wolf_pact_pod',
+        );
+        return {
+            matchState: nextState,
+            events: [addPermanentPower(selected.minionUid, selected.baseIndex, -1, 'vampire_wolf_pact_pod', timestamp)],
+            context: createVampirePromptContext(nextState, context.playerId, timestamp, {
+                wolfBaseIndex: context.wolfBaseIndex,
+            }),
+            nextProgram: vampireWolfPactPodMinionTargetPromptProgram,
+        };
+    },
+});
 
-const handleCrackOfDuskChooseBase: IH = (state, playerId, value, interactionData, _random, now) => {
-    const context = interactionData?.continuationContext as { cardUid: string; defId: string } | undefined;
-    if (!context) return undefined;
-    const v = value as { baseIndex: number };
-    const minionDef = getMinionDef(context.defId);
-    const playedEvt: MinionPlayedEvent = {
-        type: SU_EVENTS.MINION_PLAYED,
-        payload: {
-            playerId,
-            cardUid: context.cardUid,
-            defId: context.defId,
-            baseIndex: v.baseIndex,
-            power: minionDef?.power ?? 0,
-            fromDiscard: true,
-        },
-        timestamp: now,
-    };
-    return {
-        state,
-        events: [
-            playedEvt,
-            addPowerCounter(context.cardUid, v.baseIndex, 1, 'vampire_crack_of_dusk', now + 1), // +1ms 避免与打出随从音效冲突
-        ],
-    };
-};
+const vampireWolfPactPodActionPromptProgram = createPromptProgram<VampirePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'vampire_wolf_pact_pod_action',
+    buildInteraction: (context) => {
+        const player = context.matchState.core.players[context.playerId];
+        const options = (player?.discard ?? []).map((card, index) => ({
+            id: `card-${index}`,
+            label: getCardDef(card.defId)?.name ?? card.defId,
+            value: { cardUid: card.uid },
+            _source: 'discard' as const,
+            displayMode: 'card' as const,
+        }));
+        return createSimpleChoice(
+            `vampire_wolf_pact_pod_action_${context.now}`,
+            context.playerId,
+            '狼之契约（战术）：选择弃牌堆的一张卡洗入牌库',
+            options as any[],
+            { sourceId: 'vampire_wolf_pact_pod_action', targetType: 'generic' },
+        );
+    },
+    onResolve: ({ state, value, playerId, random, timestamp }) => {
+        const selected = value as { cardUid?: string } | undefined;
+        if (!selected?.cardUid) return { events: [] };
+        const player = state.core.players[playerId];
+        const card = player?.discard.find(entry => entry.uid === selected.cardUid);
+        if (!card) return { events: [] };
+        const newDeckUids = random.shuffle([...player.deck.map(entry => entry.uid), card.uid]);
+        return {
+            events: [{
+                type: SU_EVENTS.DECK_REORDERED,
+                payload: { playerId, deckUids: newDeckUids },
+                timestamp,
+            } as any],
+        };
+    },
+});
+
+// ============================================================================
+// 交互处理函数（POD / 非 runtime 残留）
+// ============================================================================
 
 // ============================================================================
 // POD implementations
@@ -1004,53 +1601,18 @@ function vampireHeavyDrinkerPod(ctx: AbilityContext): AbilityResult {
             otherOwnTargets.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${def?.name ?? m.defId}` });
         }
     }
-
-    const interaction = createSimpleChoice(
-        `vampire_heavy_drinker_pod_${ctx.now}`,
-        ctx.playerId,
-        '海量酒鬼：选择要消灭的随从（本随从放置两个+1战斗力指示物）',
-        [
-            ...buildMinionTargetOptions(hereTargets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }).map(o => ({
-                ...o,
-                id: `here-${o.id}`,
-                value: { ...o.value, sourceMinionUid: found.minion.uid, sourceBaseIndex: found.baseIndex },
-            })),
-            ...otherOwnTargets.map((t, i) => ({
-                id: `own-${i}`,
-                label: `消灭：${t.label}`,
-                value: { minionUid: t.uid, defId: t.defId, baseIndex: t.baseIndex, sourceMinionUid: found.minion.uid, sourceBaseIndex: found.baseIndex },
-                _source: 'field' as const,
-                displayMode: 'card' as const,
-            })),
-            { id: 'skip', label: '跳过（不消灭）', value: { skip: true }, displayMode: 'button' as const },
-        ] as any[],
-        { sourceId: 'vampire_heavy_drinker_pod', targetType: 'minion' },
+    if (hereTargets.length === 0 && otherOwnTargets.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    }
+    const result = executeAbilityProgram(
+        vampireHeavyDrinkerPodPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceMinionUid: found.minion.uid,
+            sourceBaseIndex: found.baseIndex,
+        }),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
-
-const handleHeavyDrinkerPodChoice: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as any;
-    if (v?.skip) return { state, events: [] };
-    const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!target) return { state, events: [] };
-    const destroyEvents = buildValidatedDestroyEvents(state.core, {
-        minionUid: v.minionUid,
-        minionDefId: v.defId,
-        fromBaseIndex: v.baseIndex,
-        destroyerId: playerId,
-        reason: 'vampire_heavy_drinker_pod',
-        now,
-    });
-    if (destroyEvents.length === 0) return { state, events: [] };
-    return {
-        state,
-        events: [
-            ...destroyEvents,
-            addPowerCounter(v.sourceMinionUid, v.sourceBaseIndex, 2, 'vampire_heavy_drinker_pod', now),
-        ],
-    };
-};
 
 function vampireCountPodTalent(ctx: AbilityContext): AbilityResult {
     const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
@@ -1061,41 +1623,12 @@ function vampireCountPodTalent(ctx: AbilityContext): AbilityResult {
         }
     }
     if (targets.length === 0) return { events: [] };
-    const interaction = createSimpleChoice(
-        `vampire_the_count_pod_talent_${ctx.now}`,
-        ctx.playerId,
-        '吸血鬼伯爵：选择一个随从直到你的下回合开始时-1战斗力',
-        [
-            ...buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'affect' }),
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
-        ] as any[],
-        { sourceId: 'vampire_the_count_pod_talent', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        vampireCountPodTalentPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
-
-const handleCountPodTalent: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as any;
-    if (v?.skip) return { state, events: [] };
-    const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!target) return { state, events: [] };
-    const nextState = schedulePowerModifierUntilNextTurnStart(
-        state,
-        v.minionUid,
-        -1,
-        'vampire_the_count_pod',
-    );
-    return {
-        state: nextState,
-        events: [addPermanentPower(v.minionUid, v.baseIndex, -1, 'vampire_the_count_pod', now)],
-    };
-};
-
-const handleCountPodAddCounter: IH = (state, _playerId, value, _data, _random, now) => {
-    const v = value as any;
-    if (v?.skip) return { state, events: [] };
-    return { state, events: [addPowerCounter(v.minionUid, v.baseIndex, 1, 'vampire_the_count_pod', now)] };
-};
 
 function vampireBuffetPod(ctx: AbilityContext): AbilityResult {
     return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 2, ctx.random, ctx.now) };
@@ -1109,8 +1642,6 @@ function vampireNightstalkerPodTalent(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-const handleNightstalkerPodTalent: IH = (state) => ({ state, events: [] });
-
 function vampireBigGulpPod(ctx: AbilityContext): AbilityResult {
     const targets: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
     for (let i = 0; i < ctx.state.bases.length; i++) {
@@ -1123,22 +1654,12 @@ function vampireBigGulpPod(ctx: AbilityContext): AbilityResult {
         }
     }
     if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
-    const interaction = createSimpleChoice(
-        `vampire_big_gulp_pod_${ctx.now}`,
-        ctx.playerId,
-        '选择要消灭的战斗力≤4的随从',
-        buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }),
-        { sourceId: 'vampire_big_gulp_pod', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        vampireBigGulpPodPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
-
-const handleBigGulpPodChoice: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as any;
-    const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!target) return { state, events: [] };
-    return { state, events: [destroyMinion(v.minionUid, v.defId, v.baseIndex, target.owner, playerId, 'vampire_big_gulp_pod', now)] };
-};
 
 function vampireCullTheWeakPod(ctx: AbilityContext): AbilityResult {
     // Engine limitation: no full deck browse UI. We approximate by searching until 2 minions found, discard them, then place counters.
@@ -1161,66 +1682,31 @@ function vampireCullTheWeakPod(ctx: AbilityContext): AbilityResult {
             myMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: def?.name ?? m.defId });
         }
     }
-    const interaction = createSimpleChoice(
-        `vampire_cull_the_weak_pod_${ctx.now}`,
-        ctx.playerId,
-        '剔除弱者：选择一个随从放置+1战斗力指示物（每弃1张随从放1个）',
-        buildMinionTargetOptions(myMinions, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'affect' }) as any,
-        { sourceId: 'vampire_cull_the_weak_pod', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        vampireCullTheWeakPodPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            discardedCount: picked.picked.length,
+            deckEvents: picked.events,
+            discardUids: picked.picked.map(card => card.uid),
+        }),
     );
-    (interaction.data as any).continuationContext = { discardedCount: picked.picked.length, deckEvents: picked.events, discardUids: picked.picked.map(c => c.uid) };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
-
-const handleCullTheWeakPodChooseMinion: IH = (state, playerId, value, interactionData, _random, now) => {
-    const ctx = interactionData?.continuationContext as any;
-    if (!ctx) return { state, events: [] };
-    const v = value as any;
-    const events: SmashUpEvent[] = [...(ctx.deckEvents ?? [])];
-    // discard picked uids from deck top via CARDS_MILLED (deck->discard) approximation
-    events.push({ type: SU_EVENTS.CARDS_MILLED, payload: { playerId, count: ctx.discardUids.length, cardUids: ctx.discardUids }, timestamp: now } as any);
-    for (let i = 0; i < (ctx.discardedCount ?? 0); i++) {
-        events.push(addPowerCounter(v.minionUid, v.baseIndex, 1, 'vampire_cull_the_weak_pod', now));
-    }
-    return { state, events };
-};
-
-const handleCullTheWeakPodChooseCard: IH = (state) => ({ state, events: [] });
 
 function vampireCrackOfDuskPod(ctx: AbilityContext): AbilityResult {
-    // Same as base but played as extra minion
-    return vampireCrackOfDusk(ctx);
+    const player = ctx.state.players[ctx.playerId];
+    const candidates = player.discard.filter(c => {
+        if (c.type !== 'minion') return false;
+        const def = getCardDef(c.defId);
+        return def && def.type === 'minion' && (def as { power: number }).power <= 2;
+    });
+    if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    const result = executeAbilityProgram(
+        vampireCrackOfDuskPodPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now),
+    );
+    return { events: result.events, matchState: result.matchState };
 }
-
-const handleCrackOfDuskPodChoice: IH = (state, playerId, value, _data, _random, now) => {
-    const v = value as any;
-    const result = crackOfDuskCreateBaseSelect(state, playerId, v.cardUid, v.defId, now);
-    // override sourceId so we can treat as extra in base handler
-    const interaction = (result.matchState?.sys.interaction.current) as any;
-    if (interaction) interaction.data.sourceId = 'vampire_crack_of_dusk_pod_base';
-    return { state: result.matchState ?? state, events: result.events };
-};
-
-const handleCrackOfDuskPodChooseBase: IH = (state, playerId, value, interactionData, _random, now) => {
-    const context = interactionData?.continuationContext as { cardUid: string; defId: string } | undefined;
-    if (!context) return undefined;
-    const v = value as { baseIndex: number };
-    const minionDef = getMinionDef(context.defId);
-    const playedEvt: MinionPlayedEvent = {
-        type: SU_EVENTS.MINION_PLAYED,
-        payload: {
-            playerId,
-            cardUid: context.cardUid,
-            defId: context.defId,
-            baseIndex: v.baseIndex,
-            power: minionDef?.power ?? 0,
-            fromDiscard: true,
-            consumesNormalLimit: false,
-        } as any,
-        timestamp: now,
-    };
-    return { state, events: [playedEvt, addPowerCounter(context.cardUid, v.baseIndex, 1, 'vampire_crack_of_dusk_pod', now + 1)] };
-};
 
 function vampireDinnerDatePod(ctx: AbilityContext): AbilityResult {
     // When played as ongoing on a minion: choose one of your minions to receive two counters; attached minion -2 power.
@@ -1233,45 +1719,15 @@ function vampireDinnerDatePod(ctx: AbilityContext): AbilityResult {
             own.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: def?.name ?? m.defId });
         }
     }
-    const interaction = createSimpleChoice(
-        `vampire_dinner_date_pod_${ctx.now}`,
-        ctx.playerId,
-        '晚餐约会：选择你的一个随从放置两个+1战斗力指示物',
-        buildMinionTargetOptions(own, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'affect' }) as any,
-        { sourceId: 'vampire_dinner_date_pod', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        vampireDinnerDatePodPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            attachedMinionUid: ctx.targetMinionUid,
+            attachedBaseIndex: ctx.baseIndex,
+        }),
     );
-    (interaction.data as any).continuationContext = { attachedMinionUid: ctx.targetMinionUid, attachedBaseIndex: ctx.baseIndex };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
-
-const handleDinnerDatePodChooseMinion: IH = (state, playerId, value, interactionData, _random, now) => {
-    const ctx = interactionData?.continuationContext as any;
-    if (!ctx) return { state, events: [] };
-    const v = value as any;
-    const events: SmashUpEvent[] = [addPowerCounter(v.minionUid, v.baseIndex, 2, 'vampire_dinner_date_pod', now)];
-
-    // Dinner Date POD 的 -2 是 ongoing 修正（见 ongoing_modifiers.ts），
-    // 这里仅处理“若该随从力量为 0，则将其消灭”的即时检查。
-    const attachedBase = state.core.bases[ctx.attachedBaseIndex];
-    const attachedMinion = attachedBase?.minions.find(m => m.uid === ctx.attachedMinionUid);
-    if (attachedMinion) {
-        const effectiveNow = getEffectivePower(state.core, attachedMinion, ctx.attachedBaseIndex);
-        const hasDinnerDateAttached = attachedMinion.attachedActions.some(a => a.defId === 'vampire_dinner_date_pod');
-        const projectedPower = hasDinnerDateAttached ? effectiveNow : effectiveNow - 2;
-        if (projectedPower > 0) return { state, events };
-        events.push(
-            ...buildValidatedDestroyEvents(state.core, {
-                minionUid: attachedMinion.uid,
-                minionDefId: attachedMinion.defId,
-                fromBaseIndex: ctx.attachedBaseIndex,
-                destroyerId: playerId,
-                reason: 'vampire_dinner_date_pod',
-                now,
-            }),
-        );
-    }
-    return { state, events };
-};
 
 function vampireWolfPactPodMinionOnPlay(ctx: AbilityContext): AbilityResult {
     const base = ctx.state.bases[ctx.baseIndex];
@@ -1280,99 +1736,25 @@ function vampireWolfPactPodMinionOnPlay(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    const interaction = createSimpleChoice(
-        `vampire_wolf_pact_pod_minion_${ctx.now}`,
-        ctx.playerId,
-        '狼之契约（随从）：选择一个随从直到你下回合开始时-1战斗力',
-        [
-            ...buildMinionTargetOptions(
-                ctx.state.bases.flatMap((b, i) =>
-                    b.minions.map(m => ({ uid: m.uid, defId: m.defId, baseIndex: i, label: getCardDef(m.defId)?.name ?? m.defId })),
-                ),
-                { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'affect' },
-            ),
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
-        ] as any,
-        { sourceId: 'vampire_wolf_pact_pod_minion', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        vampireWolfPactPodMinionPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            wolfUid: ctx.cardUid,
+            wolfBaseIndex: ctx.baseIndex,
+        }),
     );
-    (interaction.data as any).continuationContext = { wolfUid: ctx.cardUid, wolfBaseIndex: ctx.baseIndex };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
-
-const handleWolfPactPodPickDebuffTarget: IH = (state, playerId, value, interactionData, _random, now) => {
-    const ctx = interactionData?.continuationContext as any;
-    if (!ctx) return { state, events: [] };
-    const v = value as any;
-    if (v?.skip) return { state, events: [] };
-    const target = state.core.bases[v.baseIndex]?.minions.find(m => m.uid === v.minionUid);
-    if (!target) return { state, events: [] };
-    const base = state.core.bases[ctx.wolfBaseIndex];
-    if (!base) return { state, events: [] };
-    const recipients = base.minions
-        .filter((m: any) => m.controller === playerId && m.uid !== ctx.wolfUid)
-        .map((m: any, i: number) => ({
-            id: `r-${i}`,
-            label: getCardDef(m.defId)?.name ?? m.defId,
-            value: { minionUid: m.uid, defId: m.defId, baseIndex: ctx.wolfBaseIndex, debuffed: v },
-            _source: 'field' as const,
-            displayMode: 'card' as const,
-        }));
-    // 文本是“you may ... to place +1 on another one of your minions here”：
-    // 没有“another one”时，不能强制扣 -1。
-    if (recipients.length === 0) return { state, events: [] };
-    const interaction = createSimpleChoice(
-        `vampire_wolf_pact_pod_minion_target_${now}`,
-        playerId,
-        '狼之契约：选择在该基地的另一个你的随从放置+1战斗力指示物',
-        recipients as any[],
-        { sourceId: 'vampire_wolf_pact_pod_minion_target', targetType: 'minion' },
-    );
-    const nextState = schedulePowerModifierUntilNextTurnStart(
-        queueInteraction(state, interaction),
-        v.minionUid,
-        -1,
-        'vampire_wolf_pact_pod',
-    );
-    return {
-        state: nextState,
-        events: [addPermanentPower(v.minionUid, v.baseIndex, -1, 'vampire_wolf_pact_pod', now)],
-    };
-};
-
-const handleWolfPactPodPickCounterTarget: IH = (state, _playerId, value, _data, _random, now) => {
-    const v = value as any;
-    return { state, events: [addPowerCounter(v.minionUid, v.baseIndex, 1, 'vampire_wolf_pact_pod', now)] };
-};
 
 function vampireWolfPactPodActionOnPlay(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     if (!player || player.discard.length === 0) return { events: [] };
-    const options = player.discard.map((c, i) => ({
-        id: `c-${i}`,
-        label: getCardDef(c.defId)?.name ?? c.defId,
-        value: { cardUid: c.uid },
-        _source: 'discard' as const,
-        displayMode: 'card' as const,
-    }));
-    const interaction = createSimpleChoice(
-        `vampire_wolf_pact_pod_action_${ctx.now}`,
-        ctx.playerId,
-        '狼之契约（战术）：选择弃牌堆的一张卡洗入牌库',
-        options as any[],
-        { sourceId: 'vampire_wolf_pact_pod_action', targetType: 'generic' },
+    const result = executeAbilityProgram(
+        vampireWolfPactPodActionPromptProgram,
+        createVampirePromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
-
-const handleWolfPactPodShuffleChoice: IH = (state, playerId, value, _data, random, now) => {
-    const v = value as any;
-    if (!v.cardUid) return { state, events: [] };
-    const p = state.core.players[playerId];
-    const card = p.discard.find(c => c.uid === v.cardUid);
-    if (!card) return { state, events: [] };
-    const newDeckUids = random.shuffle([...p.deck.map(c => c.uid), card.uid]);
-    return { state, events: [{ type: SU_EVENTS.DECK_REORDERED, payload: { playerId, deckUids: newDeckUids }, timestamp: now } as any] };
-};
 
 function vampireStakeoutPodTalent(ctx: AbilityContext): AbilityResult {
     // Find base where this ongoing is attached
@@ -1383,7 +1765,6 @@ function vampireStakeoutPodTalent(ctx: AbilityContext): AbilityResult {
     const hasOther = decreased.some(pid => pid !== ctx.playerId);
     if (!hasOther) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const expires = ctx.state.turnNumber + ctx.state.turnOrder.length;
-    const prev = ctx.state.stakeoutPodBlocks ?? [];
     const events: SmashUpEvent[] = [
         {
             type: SU_EVENTS.STAKEOUT_POD_BLOCK_ADDED,
@@ -1440,6 +1821,11 @@ function registerVampireOngoingEffects(): void {
             }
         }
         return events;
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState'],
+            writes: ['sourceState'],
+        },
     });
 
     // 自助餐 special：基地计分后如果打出者是赢家（排名第一），己方所有随从+1指示物

@@ -1,8 +1,6 @@
-import type { PlayerId } from '../../../engine/types';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerAbility } from '../domain/abilityRegistry';
+import type { MatchState, PlayerId } from '../../../engine/types';
+import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { registerInteractionHandler, type InteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { canStartDuel, startDuel } from '../domain/duel';
@@ -41,6 +39,12 @@ import type {
     PermanentPowerAddedEvent,
 } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 
 type MinionChoice = { minionUid?: string; baseIndex?: number; defId?: string; skip?: boolean };
 type PlayerChoice = { targetPlayerId?: PlayerId; skip?: boolean };
@@ -76,26 +80,61 @@ type EhContinuation = {
     sourceCardUid: string;
 };
 
-type SharkTattooContinuation = {
-    sourceCardUid: string;
-};
-
-type OngoingAttachContinuation = {
-    sourceCardUid: string;
-};
-
 type BewitchedTransferContinuation = {
     sourceCardUid: string;
     sourceDefId: string;
     ownerId: PlayerId;
 };
 
-type SmartSetUpAttachContinuation = {
+type WorldChampsPromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+};
+
+type WorldChampsMinionPromptContext = WorldChampsPromptContext & {
+    sourceBaseIndex: number;
     sourceCardUid: string;
+    sourceDefId: string;
+};
+
+type WorldChampsAkyeCardPromptContext = WorldChampsPromptContext & AkyeContinuation;
+
+type WorldChampsHighSpeedChaseBasePromptContext = WorldChampsPromptContext & HighSpeedChaseContinuation;
+
+type WorldChampsMouseBirdTargetsPromptContext = WorldChampsPromptContext & MouseBirdAndSausageContinuation;
+
+type WorldChampsEhPromptContext = WorldChampsPromptContext & EhContinuation;
+
+type WorldChampsSheriffPromptContext = WorldChampsPromptContext & SheriffContinuation & {
+    sourceBaseIndex: number;
+};
+
+type WorldChampsMummyPromptContext = WorldChampsPromptContext & MummyContinuation & {
+    sourceBaseIndex: number;
+    sourceControllerId: PlayerId;
+};
+
+type WorldChampsBewitchedTransferPromptContext = WorldChampsPromptContext & BewitchedTransferContinuation & {
+    triggerMinionUid: string;
 };
 
 const WORLD_CHAMPS_ARAMIS_TRIGGERED_TURN_META = 'worldChampsAramisTriggeredTurn';
 const WORLD_CHAMPS_DIVA_TRIGGERED_TURN_META = 'worldChampsDivaTriggeredTurn';
+
+function createWorldChampsPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    extra?: TExtra,
+): WorldChampsPromptContext & TExtra {
+    return {
+        matchState,
+        playerId,
+        now,
+        ...(extra ?? {} as TExtra),
+    };
+}
 
 function transferCard(
     cardUid: string,
@@ -201,6 +240,649 @@ function buildEnemyMinionOptions(state: SmashUpCore, baseIndex: number, sourcePl
     });
 }
 
+const worldChampsStonefordPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_stoneford',
+    buildInteraction: (context) => {
+        const player = context.matchState.core.players[context.playerId];
+        const options = player.deck
+            .filter(card => card.type === 'action')
+            .map((card, index) => ({
+                id: `action-${index}`,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId },
+                _source: 'deck' as const,
+                displayMode: 'card' as const,
+            }));
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_stoneford_${context.now}`,
+            context.playerId,
+            '斯坦福：从牌库选择一张行动卡加入手牌',
+            options,
+            {
+                sourceId: 'world_champs_stoneford',
+                targetType: 'generic',
+                autoRefresh: 'deck',
+                responseValidationMode: 'live',
+            },
+        );
+    },
+    onResolve: ({ context, value, timestamp }) => {
+        const selected = value as StonefordChoice;
+        if (!selected.cardUid) return { events: [] };
+        const player = context.matchState.core.players[context.playerId];
+        const selectedCard = player.deck.find(card => card.uid === selected.cardUid && (!selected.defId || card.defId === selected.defId));
+        if (!selectedCard || selectedCard.type !== 'action') return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: context.playerId, count: 1, cardUids: [selectedCard.uid] },
+                timestamp,
+            } as CardsDrawnEvent],
+        };
+    },
+});
+
+const worldChampsShieldMaidenPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_shield_maiden',
+    buildInteraction: (context) => {
+        const state = context.matchState.core;
+        const opponents = getOtherPlayers(state, context.playerId).filter(pid => {
+            const player = state.players[pid];
+            return !!player && (player.deck.length > 0 || player.discard.length > 0);
+        });
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_shield_maiden_${context.now}`,
+            context.playerId,
+            '盾牌少女：选择另一位玩家，展示其牌库顶的一张牌',
+            [
+                createSkipOption('跳过（不揭示）'),
+                ...buildPlayerTargetOptions(
+                    opponents.map((pid) => ({
+                        label: `玩家 ${pid}`,
+                        targetPlayerId: pid,
+                        displayMode: 'button' as const,
+                    })),
+                    { sourcePlayerId: context.playerId, effectIntent: 'inspect' },
+                ),
+            ],
+            { sourceId: 'world_champs_shield_maiden', targetType: 'generic' },
+        );
+    },
+    onResolve: ({ state, context, value, random, timestamp }) => {
+        const selected = value as PlayerChoice;
+        if (selected.skip || !selected.targetPlayerId) return { events: [] };
+        const peek = peekDeckTop(state.core, random, selected.targetPlayerId, 'all', 'world_champs_shield_maiden', timestamp);
+        if (!peek) return { events: [] };
+
+        const events: SmashUpEvent[] = [...peek.events];
+        const topCard = peek.card;
+        let shouldGainCard = topCard.type === 'action';
+        if (!shouldGainCard && topCard.type === 'minion') {
+            const minionDef = getCardDef(topCard.defId) as MinionCardDef | undefined;
+            shouldGainCard = (minionDef?.power ?? 99) <= 3;
+        }
+        if (shouldGainCard) {
+            events.push(transferCard(topCard.uid, topCard.defId, selected.targetPlayerId, context.playerId, 'world_champs_shield_maiden', timestamp));
+        }
+        return { events };
+    },
+});
+
+const worldChampsCalicoinPromptProgram = createPromptProgram<WorldChampsMinionPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_calicoin',
+    buildInteraction: (context) => {
+        const base = context.matchState.core.bases[context.sourceBaseIndex];
+        const targets = base?.minions
+            .filter(minion => minion.uid !== context.sourceCardUid)
+            .map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.sourceBaseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            })) ?? [];
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_calicoin_${context.now}`,
+            context.playerId,
+            '金币猫：选择一个其他随从放置 1 个 +1 力量指示物',
+            buildMinionTargetOptions(targets, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: context.sourceDefId,
+            }),
+            { sourceId: 'world_champs_calicoin', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'world_champs_calicoin', timestamp)],
+        };
+    },
+});
+
+const worldChampsItsBlitzinTimePromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_its_blitzin_time',
+    buildInteraction: (context) => {
+        const ownMinions = collectOwnMinions(context.matchState.core, context.playerId);
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_its_blitzin_time_${context.now}`,
+            context.playerId,
+            '现在是闪电时间！：选择你的一个随从，本回合力量 +3',
+            buildMinionTargetOptions(ownMinions, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'world_champs_its_blitzin_time',
+            }),
+            { sourceId: 'world_champs_its_blitzin_time', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [addTempPower(selected.minionUid, selected.baseIndex, 3, 'world_champs_its_blitzin_time', timestamp)],
+        };
+    },
+});
+
+const worldChampsFightingSpiritPrizePromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_fighting_spirit_prize',
+    buildInteraction: (context) => {
+        const ownMinions = collectOwnMinions(context.matchState.core, context.playerId);
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_fighting_spirit_prize_${context.now}`,
+            context.playerId,
+            '战斗精神奖：选择 1-2 个你的随从分配 2 个 +1 力量指示物',
+            buildMinionTargetOptions(ownMinions, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'world_champs_fighting_spirit_prize',
+            }),
+            {
+                sourceId: 'world_champs_fighting_spirit_prize',
+                targetType: 'minion',
+                multi: { min: 1, max: Math.min(2, ownMinions.length) },
+            },
+        );
+    },
+    onResolve: ({ value, timestamp }) => {
+        const picks = Array.isArray(value) ? value as MinionChoice[] : [value as MinionChoice];
+        const validPicks = picks
+            .filter(pick => !pick.skip && pick.minionUid && pick.baseIndex !== undefined)
+            .slice(0, 2);
+        if (validPicks.length === 0) return { events: [] };
+        if (validPicks.length === 1) {
+            const only = validPicks[0];
+            return {
+                events: [
+                    addPowerCounter(only.minionUid!, only.baseIndex!, 1, 'world_champs_fighting_spirit_prize', timestamp),
+                    addPowerCounter(only.minionUid!, only.baseIndex!, 1, 'world_champs_fighting_spirit_prize', timestamp),
+                ],
+            };
+        }
+        return {
+            events: validPicks.map((pick) => addPowerCounter(
+                pick.minionUid!,
+                pick.baseIndex!,
+                1,
+                'world_champs_fighting_spirit_prize',
+                timestamp,
+            )),
+        };
+    },
+});
+
+const worldChampsAkyeCardPromptProgram = createPromptProgram<WorldChampsAkyeCardPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_akye_the_turtle_card',
+    buildInteraction: (context) => {
+        const player = context.matchState.core.players[context.playerId];
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_akye_the_turtle_card_${context.now}`,
+            context.playerId,
+            '海龟阿凯：选择要交给对方的一张手牌',
+            player.hand.map((card, index) => ({
+                id: `card-${index}`,
+                label: getCardDef(card.defId)?.name ?? card.defId,
+                value: { cardUid: card.uid, defId: card.defId },
+                _source: 'hand' as const,
+                displayMode: 'card' as const,
+            })),
+            { sourceId: 'world_champs_akye_the_turtle_card', targetType: 'hand' },
+        );
+    },
+    onResolve: ({ state, context, value, random, timestamp }) => {
+        const selected = value as CardChoice;
+        if (!selected.cardUid || !selected.defId || !context.targetPlayerId) return { events: [] };
+        return {
+            events: [
+                transferCard(selected.cardUid, selected.defId, context.playerId, context.targetPlayerId, 'world_champs_akye_the_turtle', timestamp),
+                ...buildStandardDrawEvents(state.core, context.playerId, 2, random, timestamp),
+            ],
+        };
+    },
+});
+
+const worldChampsAkyePlayerPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_akye_the_turtle_player',
+    buildInteraction: (context) => {
+        const opponents = getOtherPlayers(context.matchState.core, context.playerId);
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_akye_the_turtle_player_${context.now}`,
+            context.playerId,
+            '海龟阿凯：选择一位玩家并交给其一张手牌（然后你抽两张牌）',
+            [
+                createSkipOption('跳过（不发动）'),
+                ...buildPlayerTargetOptions(
+                    opponents.map(opponentId => ({
+                        targetPlayerId: opponentId,
+                        label: `玩家 ${opponentId}`,
+                        displayMode: 'button' as const,
+                    })),
+                    { sourcePlayerId: context.playerId, effectIntent: 'affect' },
+                ),
+            ],
+            { sourceId: 'world_champs_akye_the_turtle_player', targetType: 'generic' },
+        );
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as PlayerChoice;
+        if (selected.skip || !selected.targetPlayerId) return { events: [] };
+        const player = state.core.players[playerId];
+        if (!player || player.hand.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: createWorldChampsPromptContext(state, playerId, timestamp, {
+                targetPlayerId: selected.targetPlayerId,
+            } satisfies AkyeContinuation),
+            nextProgram: worldChampsAkyeCardPromptProgram,
+        };
+    },
+});
+
+const worldChampsFastAsLightningPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_fast_as_lightning',
+    buildInteraction: (context) => {
+        const minions = collectAllMinions(context.matchState.core);
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_fast_as_lightning_${context.now}`,
+            context.playerId,
+            '快如闪电：选择一个随从，本回合力量 +2',
+            buildMinionTargetOptions(minions, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'world_champs_fast_as_lightning',
+                effectType: 'affect',
+            }),
+            { sourceId: 'world_champs_fast_as_lightning', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [addTempPower(selected.minionUid, selected.baseIndex, 2, 'world_champs_fast_as_lightning', timestamp)],
+        };
+    },
+});
+
+const worldChampsHighSpeedChaseBasePromptProgram = createPromptProgram<WorldChampsHighSpeedChaseBasePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_high_speed_chase_base',
+    buildInteraction: (context) => {
+        const baseOptions = context.matchState.core.bases
+            .map((base, baseIndex) => ({
+                baseIndex,
+                label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
+            }))
+            .filter(base => base.baseIndex !== context.sourceBaseIndex);
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_high_speed_chase_base_${context.now}`,
+            context.playerId,
+            '高速追逐：选择目标基地',
+            buildBaseTargetOptions(baseOptions, context.matchState.core),
+            { sourceId: 'world_champs_high_speed_chase_base', targetType: 'base' },
+        );
+    },
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as BaseChoice;
+        if (selected.baseIndex === undefined) return { events: [] };
+
+        const sourceBase = state.core.bases[context.sourceBaseIndex];
+        const ongoing = sourceBase?.ongoingActions.find(action => action.defId === 'world_champs_high_speed_chase' && action.ownerId === context.playerId);
+        if (!ongoing) return { events: [] };
+        const moveEvents = buildValidatedMoveEvents(state, {
+            minionUid: context.minionUid,
+            minionDefId: context.minionDefId,
+            fromBaseIndex: context.sourceBaseIndex,
+            toBaseIndex: selected.baseIndex,
+            reason: 'world_champs_high_speed_chase',
+            now: timestamp,
+        });
+
+        return {
+            events: [
+                {
+                    type: SU_EVENTS.ONGOING_DETACHED,
+                    payload: {
+                        cardUid: ongoing.uid,
+                        defId: ongoing.defId,
+                        ownerId: ongoing.ownerId,
+                        reason: 'world_champs_high_speed_chase',
+                    },
+                    timestamp,
+                } as SmashUpEvent,
+                {
+                    type: SU_EVENTS.ONGOING_ATTACHED,
+                    payload: {
+                        cardUid: ongoing.uid,
+                        defId: ongoing.defId,
+                        ownerId: ongoing.ownerId,
+                        targetType: 'base',
+                        targetBaseIndex: selected.baseIndex,
+                        talentUsed: true,
+                    },
+                    timestamp,
+                } as SmashUpEvent,
+                ...moveEvents,
+                ...(moveEvents.length > 0 ? [addTempPower(context.minionUid, selected.baseIndex, 3, 'world_champs_high_speed_chase', timestamp)] : []),
+            ],
+        };
+    },
+});
+
+const worldChampsHighSpeedChaseMinionPromptProgram = createPromptProgram<WorldChampsPromptContext & { sourceBaseIndex: number }, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_high_speed_chase_minion',
+    buildInteraction: (context) => {
+        const base = context.matchState.core.bases[context.sourceBaseIndex];
+        const ownMinionsHere = base?.minions
+            .filter(minion => minion.controller === context.playerId)
+            .map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.sourceBaseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            })) ?? [];
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_high_speed_chase_minion_${context.now}`,
+            context.playerId,
+            '高速追逐：选择你在此基地的一个随从',
+            buildMinionTargetOptions(ownMinionsHere, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'world_champs_high_speed_chase',
+                effectType: 'move',
+            }),
+            { sourceId: 'world_champs_high_speed_chase_minion', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const baseOptions = state.core.bases
+            .map((base, baseIndex) => ({
+                baseIndex,
+                label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
+            }))
+            .filter(base => base.baseIndex !== selected.baseIndex);
+        if (baseOptions.length === 0) return { events: [] };
+        return {
+            events: [],
+            context: createWorldChampsPromptContext(state, playerId, timestamp, {
+                sourceBaseIndex: selected.baseIndex,
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+            } satisfies HighSpeedChaseContinuation),
+            nextProgram: worldChampsHighSpeedChaseBasePromptProgram,
+        };
+    },
+});
+
+const worldChampsMouseBirdTargetsPromptProgram = createPromptProgram<WorldChampsMouseBirdTargetsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_mouse_bird_and_sausage_targets',
+    buildInteraction: (context) => {
+        const base = context.matchState.core.bases[context.baseIndex];
+        const candidates = base?.minions
+            .filter(minion => getCardDef(minion.defId)?.faction === context.faction)
+            .map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: context.baseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            })) ?? [];
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_mouse_bird_and_sausage_targets_${context.now}`,
+            context.playerId,
+            '老鼠、鸟和香肠：选择至多两张同派系随从',
+            buildMinionTargetOptions(candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'world_champs_mouse_bird_and_sausage',
+                effectType: 'affect',
+            }),
+            {
+                sourceId: 'world_champs_mouse_bird_and_sausage_targets',
+                targetType: 'minion',
+                multi: { min: 1, max: Math.min(2, candidates.length) },
+            },
+        );
+    },
+    onResolve: ({ context, value, timestamp }) => {
+        const picks = (Array.isArray(value) ? value : [value]) as MinionChoice[];
+        const selected = picks
+            .filter(pick => pick.minionUid && pick.baseIndex === context.baseIndex)
+            .slice(0, 2);
+        if (selected.length === 0) return { events: [] };
+        return {
+            events: selected.map(pick => addTempPower(
+                pick.minionUid!,
+                context.baseIndex,
+                2,
+                'world_champs_mouse_bird_and_sausage',
+                timestamp,
+            )),
+        };
+    },
+});
+
+const worldChampsMouseBirdAnchorPromptProgram = createPromptProgram<WorldChampsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_mouse_bird_and_sausage_anchor',
+    buildInteraction: (context) => {
+        const minions = collectAllMinions(context.matchState.core);
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_mouse_bird_and_sausage_anchor_${context.now}`,
+            context.playerId,
+            '老鼠、鸟和香肠：先选择同一基地同派系的一张随从',
+            buildMinionTargetOptions(minions, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'world_champs_mouse_bird_and_sausage',
+                effectType: 'affect',
+            }),
+            { sourceId: 'world_champs_mouse_bird_and_sausage_anchor', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ state, playerId, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const anchorDef = getCardDef(selected.defId);
+        const faction = anchorDef?.faction;
+        if (!faction) return { events: [] };
+        const base = state.core.bases[selected.baseIndex];
+        if (!base) return { events: [] };
+        const candidates = base.minions
+            .filter(minion => getCardDef(minion.defId)?.faction === faction)
+            .map((minion) => ({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex: selected.baseIndex,
+                label: getCardDef(minion.defId)?.name ?? minion.defId,
+            }));
+        if (candidates.length === 0) return { events: [] };
+        if (candidates.length <= 2) {
+            return {
+                events: candidates.map(minion => addTempPower(minion.uid, minion.baseIndex, 2, 'world_champs_mouse_bird_and_sausage', timestamp)),
+            };
+        }
+        return {
+            events: [],
+            context: createWorldChampsPromptContext(state, playerId, timestamp, {
+                baseIndex: selected.baseIndex,
+                faction,
+            } satisfies MouseBirdAndSausageContinuation),
+            nextProgram: worldChampsMouseBirdTargetsPromptProgram,
+        };
+    },
+});
+
+const worldChampsEhPromptProgram = createPromptProgram<WorldChampsEhPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_eh',
+    buildInteraction: (context) => {
+        const ownMinions = collectOwnMinions(context.matchState.core, context.playerId);
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_eh_${context.now}`,
+            context.playerId,
+            '嗯？：选择你的一个随从，本回合力量 +1（并将此卡返回手牌）',
+            [
+                createSkipOption('跳过（不发动）'),
+                ...buildMinionTargetOptions(ownMinions, {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'world_champs_eh',
+                    effectType: 'affect',
+                }),
+            ],
+            { sourceId: 'world_champs_eh', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ context, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (selected.skip || !selected.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [
+                {
+                    type: SU_EVENTS.DISCARD_ABILITY_USED,
+                    payload: {
+                        playerId: context.playerId,
+                        sourceId: 'world_champs_eh',
+                    },
+                    timestamp,
+                },
+                addTempPower(selected.minionUid, selected.baseIndex, 1, 'world_champs_eh', timestamp),
+                recoverCardsFromDiscard(context.playerId, [context.sourceCardUid], 'world_champs_eh', timestamp),
+            ],
+        };
+    },
+});
+
+const worldChampsSheriffBeforeScoringPromptProgram = createPromptProgram<WorldChampsSheriffPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_sheriff_before_scoring',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `world_champs_sheriff_before_scoring_${context.now}_${context.friendlyMinionUid}`,
+        context.playerId,
+        '警长：你可以令此随从与这里另一位玩家的一个随从决斗',
+        [
+            createSkipOption('跳过（不决斗）'),
+            ...buildEnemyMinionOptions(context.matchState.core, context.sourceBaseIndex, context.casterPlayerId),
+        ],
+        { sourceId: 'world_champs_sheriff_before_scoring', targetType: 'minion' },
+    ),
+    onResolve: ({ state, context, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (selected.skip || !selected.minionUid) return { events: [] };
+        return {
+            events: [],
+            matchState: startDuel(state, {
+                sourceId: 'world_champs_sheriff_before_scoring',
+                sourcePlayerId: context.casterPlayerId,
+                challengerMinionUid: context.friendlyMinionUid,
+                challengedMinionUid: selected.minionUid,
+                outcome: 'destroy_loser',
+                destroyReason: 'world_champs_sheriff',
+            }, timestamp),
+        };
+    },
+});
+
+const worldChampsMummyAfterScoringPromptProgram = createPromptProgram<WorldChampsMummyPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_mummy_after_scoring',
+    buildInteraction: (context) => {
+        const baseOptions = context.matchState.core.bases
+            .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}` }))
+            .filter(base => base.baseIndex !== context.sourceBaseIndex);
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_mummy_after_scoring_${context.now}_${context.cardUid}`,
+            context.playerId,
+            '木乃伊：你可以将本随从埋葬到另一个基地',
+            [createSkipOption('跳过（不埋葬）'), ...buildBaseTargetOptions(baseOptions, context.matchState.core)],
+            { sourceId: 'world_champs_mummy_after_scoring', targetType: 'base' },
+        );
+    },
+    onResolve: ({ state, context, value, random, timestamp }) => {
+        const selected = value as BaseChoice;
+        if (selected.skip || selected.baseIndex === undefined) return { events: [] };
+        const source = state.core.bases
+            .map((base, baseIndex) => ({
+                baseIndex,
+                minion: base.minions.find(minion => minion.uid === context.cardUid),
+            }))
+            .find(entry => entry.minion !== undefined);
+        if (!source?.minion) return { events: [] };
+        return {
+            events: buildBuryCardEvents({
+                core: state.core,
+                matchState: state,
+                playerId: source.minion.controller,
+                cardUid: source.minion.uid,
+                defId: source.minion.defId,
+                baseIndex: selected.baseIndex,
+                trueOwnerId: source.minion.owner,
+                buriedFrom: 'play',
+                reason: 'world_champs_mummy',
+                random,
+                now: timestamp,
+            }),
+        };
+    },
+});
+
+const worldChampsBewitchedTransferPromptProgram = createPromptProgram<WorldChampsBewitchedTransferPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'world_champs_bewitched_transfer',
+    buildInteraction: (context) => {
+        const minionOptions = collectAllMinions(context.matchState.core).filter(minion => minion.uid !== context.triggerMinionUid);
+        return createAbilityRuntimeSimpleChoice(
+            `world_champs_bewitched_transfer_${context.now}_${context.sourceCardUid}`,
+            context.playerId,
+            '着魔：宿主离场，选择另一个随从转移附着',
+            buildMinionTargetOptions(minionOptions, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'world_champs_bewitched',
+                effectType: 'affect',
+            }),
+            { sourceId: 'world_champs_bewitched_transfer', targetType: 'minion' },
+        );
+    },
+    onResolve: ({ context, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.ONGOING_ATTACHED,
+                payload: {
+                    cardUid: context.sourceCardUid,
+                    defId: context.sourceDefId ?? 'world_champs_bewitched',
+                    ownerId: context.ownerId,
+                    targetType: 'minion',
+                    targetBaseIndex: selected.baseIndex,
+                    targetMinionUid: selected.minionUid,
+                    removeFromDiscard: true,
+                },
+                timestamp,
+            } as OngoingAttachedEvent],
+        };
+    },
+});
+
 function worldChampsStonefordOnPlay(ctx: AbilityContext): AbilityResult {
     const player = ctx.state.players[ctx.playerId];
     const actionCards = player.deck.filter(card => card.type === 'action');
@@ -211,22 +893,11 @@ function worldChampsStonefordOnPlay(ctx: AbilityContext): AbilityResult {
             ],
         };
     }
-
-    const options = actionCards.map((card, index) => ({
-        id: `action-${index}`,
-        label: getCardDef(card.defId)?.name ?? card.defId,
-        value: { cardUid: card.uid, defId: card.defId },
-        _source: 'deck' as const,
-        displayMode: 'card' as const,
-    }));
-    const interaction = createSimpleChoice(
-        `world_champs_stoneford_${ctx.now}`,
-        ctx.playerId,
-        '斯坦福：从牌库选择一张行动卡加入手牌',
-        options,
-        { sourceId: 'world_champs_stoneford', targetType: 'generic', autoRefresh: 'deck', responseValidationMode: 'live' },
+    const result = executeAbilityProgram(
+        worldChampsStonefordPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function worldChampsShieldMaidenOnPlay(ctx: AbilityContext): AbilityResult {
@@ -236,25 +907,11 @@ function worldChampsShieldMaidenOnPlay(ctx: AbilityContext): AbilityResult {
     if (opponents.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const options = [
-        createSkipOption('跳过（不揭示）'),
-        ...buildPlayerTargetOptions(
-            opponents.map((pid) => ({
-                label: `玩家 ${pid}`,
-                targetPlayerId: pid,
-                displayMode: 'button' as const,
-            })),
-            { sourcePlayerId: ctx.playerId, effectIntent: 'inspect' },
-        ),
-    ];
-    const interaction = createSimpleChoice(
-        `world_champs_shield_maiden_${ctx.now}`,
-        ctx.playerId,
-        '盾牌少女：选择另一位玩家，展示其牌库顶的一张牌',
-        options,
-        { sourceId: 'world_champs_shield_maiden', targetType: 'generic' },
+    const result = executeAbilityProgram(
+        worldChampsShieldMaidenPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function worldChampsCalicoinOnPlay(ctx: AbilityContext): AbilityResult {
@@ -274,14 +931,15 @@ function worldChampsCalicoinOnPlay(ctx: AbilityContext): AbilityResult {
     if (targets.length === 1) {
         return { events: [addPowerCounter(targets[0].uid, targets[0].baseIndex, 1, 'world_champs_calicoin', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `world_champs_calicoin_${ctx.now}`,
-        ctx.playerId,
-        '金币猫：选择一个其他随从放置 1 个 +1 力量指示物',
-        buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, sourceDefId: ctx.defId }),
-        { sourceId: 'world_champs_calicoin', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        worldChampsCalicoinPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceBaseIndex: ctx.baseIndex,
+            sourceCardUid: ctx.cardUid,
+            sourceDefId: ctx.defId,
+        }),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function worldChampsRainbowGirlOnPlay(ctx: AbilityContext): AbilityResult {
@@ -301,14 +959,11 @@ function worldChampsItsBlitzinTimeOnPlay(ctx: AbilityContext): AbilityResult {
     if (ownMinions.length === 1) {
         return { events: [addTempPower(ownMinions[0].uid, ownMinions[0].baseIndex, 3, 'world_champs_its_blitzin_time', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `world_champs_its_blitzin_time_${ctx.now}`,
-        ctx.playerId,
-        '现在是闪电时间！：选择你的一个随从，本回合力量 +3',
-        buildMinionTargetOptions(ownMinions, { state: ctx.state, sourcePlayerId: ctx.playerId, sourceDefId: ctx.defId }),
-        { sourceId: 'world_champs_its_blitzin_time', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        worldChampsItsBlitzinTimePromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function worldChampsKaijuConflictOnPlay(ctx: AbilityContext): AbilityResult {
@@ -336,25 +991,13 @@ function worldChampsFightingSpiritPrizeOnPlay(ctx: AbilityContext): AbilityResul
         };
     }
 
-    const interaction = createSimpleChoice(
-        `world_champs_fighting_spirit_prize_${ctx.now}`,
-        ctx.playerId,
-        '战斗精神奖：选择 1-2 个你的随从分配 2 个 +1 力量指示物',
-        buildMinionTargetOptions(ownMinions, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-        }),
-        {
-            sourceId: 'world_champs_fighting_spirit_prize',
-            targetType: 'minion',
-            multi: { min: 1, max: Math.min(2, ownMinions.length) },
-        },
+    const result = executeAbilityProgram(
+        worldChampsFightingSpiritPrizePromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-
     return {
-        events: drawEvents,
-        matchState: queueInteraction(ctx.matchState, interaction),
+        events: [...drawEvents, ...result.events],
+        matchState: result.matchState,
     };
 }
 
@@ -365,25 +1008,11 @@ function worldChampsAkyeTheTurtleOnPlay(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    const playerInteraction = createSimpleChoice(
-        `world_champs_akye_the_turtle_player_${ctx.now}`,
-        ctx.playerId,
-        '海龟阿凯：选择一位玩家并交给其一张手牌（然后你抽两张牌）',
-        [
-            createSkipOption('跳过（不发动）'),
-            ...buildPlayerTargetOptions(
-                opponents.map(opponentId => ({
-                    targetPlayerId: opponentId,
-                    label: `玩家 ${opponentId}`,
-                    displayMode: 'button' as const,
-                })),
-                { sourcePlayerId: ctx.playerId, effectIntent: 'affect' },
-            ),
-        ],
-        { sourceId: 'world_champs_akye_the_turtle_player', targetType: 'generic' },
+    const result = executeAbilityProgram(
+        worldChampsAkyePlayerPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-
-    return { events: [], matchState: queueInteraction(ctx.matchState, playerInteraction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function worldChampsFastAsLightningOnPlay(ctx: AbilityContext): AbilityResult {
@@ -395,19 +1024,11 @@ function worldChampsFastAsLightningOnPlay(ctx: AbilityContext): AbilityResult {
         return { events: [addTempPower(minions[0].uid, minions[0].baseIndex, 2, 'world_champs_fast_as_lightning', ctx.now)] };
     }
 
-    const interaction = createSimpleChoice(
-        `world_champs_fast_as_lightning_${ctx.now}`,
-        ctx.playerId,
-        '快如闪电：选择一个随从，本回合力量 +2',
-        buildMinionTargetOptions(minions, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            effectType: 'affect',
-        }),
-        { sourceId: 'world_champs_fast_as_lightning', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        worldChampsFastAsLightningPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function worldChampsHighSpeedChaseTalent(ctx: AbilityContext): AbilityResult {
@@ -425,19 +1046,13 @@ function worldChampsHighSpeedChaseTalent(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    const interaction = createSimpleChoice(
-        `world_champs_high_speed_chase_minion_${ctx.now}`,
-        ctx.playerId,
-        '高速追逐：选择你在此基地的一个随从',
-        buildMinionTargetOptions(ownMinionsHere, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            effectType: 'move',
+    const result = executeAbilityProgram(
+        worldChampsHighSpeedChaseMinionPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceBaseIndex: ctx.baseIndex,
         }),
-        { sourceId: 'world_champs_high_speed_chase_minion', targetType: 'minion' },
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function worldChampsMouseBirdAndSausageOnPlay(ctx: AbilityContext): AbilityResult {
@@ -445,21 +1060,11 @@ function worldChampsMouseBirdAndSausageOnPlay(ctx: AbilityContext): AbilityResul
     if (minions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-
-    const interaction = createSimpleChoice(
-        `world_champs_mouse_bird_and_sausage_anchor_${ctx.now}`,
-        ctx.playerId,
-        '老鼠、鸟和香肠：先选择同一基地同派系的一张随从',
-        buildMinionTargetOptions(minions, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            effectType: 'affect',
-        }),
-        { sourceId: 'world_champs_mouse_bird_and_sausage_anchor', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        worldChampsMouseBirdAnchorPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function worldChampsSharkTattooOnPlay(ctx: AbilityContext): AbilityResult {
@@ -505,24 +1110,13 @@ function worldChampsEhSpecial(ctx: AbilityContext): AbilityResult {
     if (ownMinions.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-
-    const interaction = createSimpleChoice(
-        `world_champs_eh_${ctx.now}`,
-        ctx.playerId,
-        '嗯？：选择你的一个随从，本回合力量 +1（并将此卡返回手牌）',
-        [
-            createSkipOption('跳过（不发动）'),
-            ...buildMinionTargetOptions(ownMinions, {
-                state: ctx.state,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: ctx.defId,
-                effectType: 'affect',
-            }),
-        ],
-        { sourceId: 'world_champs_eh', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        worldChampsEhPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            sourceCardUid: ctx.cardUid,
+        } satisfies EhContinuation),
     );
-    (interaction.data as { continuationContext?: EhContinuation }).continuationContext = { sourceCardUid: ctx.cardUid };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function worldChampsAramisOnMinionAffected(ctx: TriggerContext): SmashUpEvent[] {
@@ -609,25 +1203,15 @@ function worldChampsBewitchedTransferOnLeave(ctx: TriggerContext): AbilityResult
 
     const minionOptions = collectAllMinions(ctx.state).filter(minion => minion.uid !== ctx.triggerMinionUid);
     if (minionOptions.length === 0) return { events: [] };
-
-    const interaction = createSimpleChoice(
-        `world_champs_bewitched_transfer_${ctx.now}_${ctx.sourceCardUid}`,
-        ctx.sourceControllerId,
-        '着魔：宿主离场，选择另一个随从转移附着',
-        buildMinionTargetOptions(minionOptions, {
-            state: ctx.state,
-            sourcePlayerId: ctx.sourceControllerId,
+    return executeAbilityProgram(
+        worldChampsBewitchedTransferPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
+            sourceCardUid: ctx.sourceCardUid,
             sourceDefId: 'world_champs_bewitched',
-            effectType: 'affect',
-        }),
-        { sourceId: 'world_champs_bewitched_transfer', targetType: 'minion' },
+            ownerId: ctx.sourceControllerId,
+            triggerMinionUid: ctx.triggerMinionUid,
+        } satisfies BewitchedTransferContinuation & { triggerMinionUid: string }),
     );
-    (interaction.data as { continuationContext?: BewitchedTransferContinuation }).continuationContext = {
-        sourceCardUid: ctx.sourceCardUid,
-        sourceDefId: 'world_champs_bewitched',
-        ownerId: ctx.sourceControllerId,
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function normalizeSourceDefIdFromReason(reason?: string): string | undefined {
@@ -782,19 +1366,14 @@ function worldChampsSheriffBeforeScoring(ctx: TriggerContext): AbilityResult {
     if (!canStartDuel(ctx.state)) return { events: [] };
     const enemyOptions = buildEnemyMinionOptions(ctx.state, ctx.baseIndex, ctx.sourceControllerId);
     if (enemyOptions.length === 0) return { events: [] };
-
-    const interaction = createSimpleChoice(
-        `world_champs_sheriff_before_scoring_${ctx.now}_${ctx.sourceCardUid}`,
-        ctx.sourceControllerId,
-        '警长：你可以令此随从与这里另一位玩家的一个随从决斗',
-        [createSkipOption('跳过（不决斗）'), ...enemyOptions],
-        { sourceId: 'world_champs_sheriff_before_scoring', targetType: 'minion' },
+    return executeAbilityProgram(
+        worldChampsSheriffBeforeScoringPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
+            friendlyMinionUid: ctx.sourceCardUid,
+            casterPlayerId: ctx.sourceControllerId,
+            sourceBaseIndex: ctx.baseIndex,
+        } satisfies SheriffContinuation & { sourceBaseIndex: number }),
     );
-    (interaction.data as { continuationContext?: SheriffContinuation }).continuationContext = {
-        friendlyMinionUid: ctx.sourceCardUid,
-        casterPlayerId: ctx.sourceControllerId,
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function worldChampsSamuraiChanTrigger(ctx: TriggerContext): SmashUpEvent[] {
@@ -814,18 +1393,14 @@ function worldChampsMummyAfterScoring(ctx: TriggerContext): AbilityResult {
         .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}` }))
         .filter(base => base.baseIndex !== ctx.sourceBaseIndex);
     if (baseOptions.length === 0) return { events: [] };
-
-    const interaction = createSimpleChoice(
-        `world_champs_mummy_after_scoring_${ctx.now}_${ctx.sourceCardUid}`,
-        ctx.sourceControllerId,
-        '木乃伊：你可以将本随从埋葬到另一个基地',
-        [createSkipOption('跳过（不埋葬）'), ...buildBaseTargetOptions(baseOptions, ctx.state)],
-        { sourceId: 'world_champs_mummy_after_scoring', targetType: 'base' },
+    return executeAbilityProgram(
+        worldChampsMummyAfterScoringPromptProgram,
+        createWorldChampsPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
+            cardUid: ctx.sourceCardUid,
+            sourceBaseIndex: ctx.sourceBaseIndex,
+            sourceControllerId: ctx.sourceControllerId,
+        } satisfies MummyContinuation & { sourceBaseIndex: number; sourceControllerId: PlayerId }),
     );
-    (interaction.data as { continuationContext?: MummyContinuation }).continuationContext = {
-        cardUid: ctx.sourceCardUid,
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function worldChampsSharkTattooTurnStart(ctx: TriggerContext): SmashUpEvent[] {
@@ -844,27 +1419,27 @@ function worldChampsSharkTattooTurnStart(ctx: TriggerContext): SmashUpEvent[] {
 
 export function registerWorldChampsAbilities(): void {
     registerAbility('world_champs_bewitched', 'onPlay', worldChampsBewitchedOnPlay);
-    registerAbility('world_champs_stoneford', 'onPlay', worldChampsStonefordOnPlay);
-    registerAbility('world_champs_akye_the_turtle', 'onPlay', worldChampsAkyeTheTurtleOnPlay);
-    registerAbility('world_champs_shield_maiden', 'onPlay', worldChampsShieldMaidenOnPlay);
-    registerAbility('world_champs_calicoin', 'onPlay', worldChampsCalicoinOnPlay);
-    registerAbility('world_champs_fast_as_lightning', 'onPlay', worldChampsFastAsLightningOnPlay);
+    registerAbilityProgram('world_champs_stoneford', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(worldChampsStonefordOnPlay) });
+    registerAbilityProgram('world_champs_akye_the_turtle', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(worldChampsAkyeTheTurtleOnPlay) });
+    registerAbilityProgram('world_champs_shield_maiden', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(worldChampsShieldMaidenOnPlay) });
+    registerAbilityProgram('world_champs_calicoin', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(worldChampsCalicoinOnPlay) });
+    registerAbilityProgram('world_champs_fast_as_lightning', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(worldChampsFastAsLightningOnPlay) });
     registerAbility('world_champs_rainbow_girl', 'onPlay', worldChampsRainbowGirlOnPlay);
-    registerAbility('world_champs_its_blitzin_time', 'onPlay', worldChampsItsBlitzinTimeOnPlay);
+    registerAbilityProgram('world_champs_its_blitzin_time', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(worldChampsItsBlitzinTimeOnPlay) });
     registerAbility('world_champs_kaiju_conflict', 'onPlay', worldChampsKaijuConflictOnPlay);
-    registerAbility('world_champs_fighting_spirit_prize', 'onPlay', worldChampsFightingSpiritPrizeOnPlay);
-    registerAbility('world_champs_high_speed_chase', 'talent', {
-        execute: worldChampsHighSpeedChaseTalent,
+    registerAbilityProgram('world_champs_fighting_spirit_prize', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(worldChampsFightingSpiritPrizeOnPlay) });
+    registerAbilityProgram('world_champs_high_speed_chase', 'talent', {
+        program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(worldChampsHighSpeedChaseTalent),
         validateUse: (ctx) => {
             const base = ctx.state.bases[ctx.baseIndex];
             if (!base) return '当前没有可选择的目标';
             return base.minions.some(minion => minion.controller === ctx.playerId) ? null : '当前没有可选择的目标';
         },
     });
-    registerAbility('world_champs_mouse_bird_and_sausage', 'onPlay', worldChampsMouseBirdAndSausageOnPlay);
+    registerAbilityProgram('world_champs_mouse_bird_and_sausage', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(worldChampsMouseBirdAndSausageOnPlay) });
     registerAbility('world_champs_shark_tattoo', 'onPlay', worldChampsSharkTattooOnPlay);
     registerAbility('world_champs_smart_set_up', 'onPlay', worldChampsSmartSetUpOnPlay);
-    registerAbility('world_champs_eh', 'special', worldChampsEhSpecial);
+    registerAbilityProgram('world_champs_eh', 'special', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(worldChampsEhSpecial) });
     registerDiscardSpecialProvider({
         id: 'world_champs_eh',
         getActivatableCards(core, playerId) {
@@ -916,474 +1491,22 @@ export function registerWorldChampsAbilities(): void {
         perInstance: true,
         sourceScope: 'triggerBase',
     });
-    registerTrigger('world_champs_shark_tattoo', 'onTurnStart', worldChampsSharkTattooTurnStart, { perInstance: true });
+    registerTrigger('world_champs_shark_tattoo', 'onTurnStart', worldChampsSharkTattooTurnStart, {
+        perInstance: true,
+        orderingFootprint: {
+            reads: ['sourceState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+        },
+    });
     registerTrigger('world_champs_smart_set_up', 'onMinionPlayed', worldChampsSmartSetUpOnMinionPlayed, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        orderingFootprint: {
+            reads: ['sourceState', 'turnFlags', 'deckState'],
+            writes: ['handState', 'deckState'],
+        },
     });
 }
 
-const handleWorldChampsStoneford: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as StonefordChoice;
-    if (!selected.cardUid) return { state, events: [] };
-    const player = state.core.players[playerId];
-    const selectedCard = player.deck.find(card => card.uid === selected.cardUid && (!selected.defId || card.defId === selected.defId));
-    if (!selectedCard || selectedCard.type !== 'action') return { state, events: [] };
-
-    return {
-        state,
-        events: [
-            {
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId, count: 1, cardUids: [selectedCard.uid] },
-                timestamp,
-            } as CardsDrawnEvent,
-        ],
-    };
-};
-
-const handleWorldChampsAkyePlayer: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as PlayerChoice;
-    if (selected.skip || !selected.targetPlayerId) return { state, events: [] };
-    const player = state.core.players[playerId];
-    if (!player || player.hand.length === 0) return { state, events: [] };
-
-    const interaction = createSimpleChoice(
-        `world_champs_akye_the_turtle_card_${timestamp}`,
-        playerId,
-        '海龟阿凯：选择要交给对方的一张手牌',
-        player.hand.map((card, index) => ({
-            id: `card-${index}`,
-            label: getCardDef(card.defId)?.name ?? card.defId,
-            value: { cardUid: card.uid, defId: card.defId },
-            _source: 'hand' as const,
-            displayMode: 'card' as const,
-        })),
-        { sourceId: 'world_champs_akye_the_turtle_card', targetType: 'hand' },
-    );
-    (interaction.data as { continuationContext?: AkyeContinuation }).continuationContext = {
-        targetPlayerId: selected.targetPlayerId,
-    };
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleWorldChampsAkyeCard: InteractionHandler = (state, playerId, value, data, random, timestamp) => {
-    const selected = value as CardChoice;
-    const continuation = data?.continuationContext as AkyeContinuation | undefined;
-    if (!selected.cardUid || !selected.defId || !continuation?.targetPlayerId) return { state, events: [] };
-    return {
-        state,
-        events: [
-            transferCard(selected.cardUid, selected.defId, playerId, continuation.targetPlayerId, 'world_champs_akye_the_turtle', timestamp),
-            ...buildStandardDrawEvents(state, playerId, 2, random, timestamp),
-        ],
-    };
-};
-
-const handleWorldChampsShieldMaiden: InteractionHandler = (state, playerId, value, _data, random, timestamp) => {
-    const selected = value as PlayerChoice;
-    if (selected.skip || !selected.targetPlayerId) return { state, events: [] };
-    const peek = peekDeckTop(state.core, random, selected.targetPlayerId, 'all', 'world_champs_shield_maiden', timestamp);
-    if (!peek) return { state, events: [] };
-
-    const events: SmashUpEvent[] = [...peek.events];
-    const topCard = peek.card;
-    let shouldGainCard = topCard.type === 'action';
-    if (!shouldGainCard && topCard.type === 'minion') {
-        const minionDef = getCardDef(topCard.defId) as MinionCardDef | undefined;
-        shouldGainCard = (minionDef?.power ?? 99) <= 3;
-    }
-    if (shouldGainCard) {
-        events.push(transferCard(topCard.uid, topCard.defId, selected.targetPlayerId, playerId, 'world_champs_shield_maiden', timestamp));
-    }
-    return { state, events };
-};
-
-const handleWorldChampsCalicoin: InteractionHandler = (state, _playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    return {
-        state,
-        events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'world_champs_calicoin', timestamp)],
-    };
-};
-
-const handleWorldChampsBewitched: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const minion = state.core.bases[selected.baseIndex]?.minions.find(entry => entry.uid === selected.minionUid);
-    if (!minion) return { state, events: [] };
-    const continuation = data?.continuationContext as OngoingAttachContinuation | undefined;
-    if (!continuation?.sourceCardUid) return { state, events: [] };
-    return {
-        state,
-        events: [{
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: continuation.sourceCardUid,
-                defId: 'world_champs_bewitched',
-                ownerId: playerId,
-                targetType: 'minion',
-                targetBaseIndex: selected.baseIndex,
-                targetMinionUid: selected.minionUid,
-            },
-            timestamp,
-        } as OngoingAttachedEvent],
-    };
-};
-
-const handleWorldChampsBewitchedTransfer: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const minion = state.core.bases[selected.baseIndex]?.minions.find(entry => entry.uid === selected.minionUid);
-    if (!minion) return { state, events: [] };
-    const continuation = data?.continuationContext as BewitchedTransferContinuation | undefined;
-    if (!continuation?.sourceCardUid || !continuation?.ownerId) return { state, events: [] };
-    return {
-        state,
-        events: [{
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: continuation.sourceCardUid,
-                defId: continuation.sourceDefId ?? 'world_champs_bewitched',
-                ownerId: continuation.ownerId,
-                targetType: 'minion',
-                targetBaseIndex: selected.baseIndex,
-                targetMinionUid: selected.minionUid,
-                removeFromDiscard: true,
-            },
-            timestamp,
-        } as OngoingAttachedEvent],
-    };
-};
-
-const handleWorldChampsSmartSetUp: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const minion = state.core.bases[selected.baseIndex]?.minions.find(entry => entry.uid === selected.minionUid);
-    if (!minion || minion.controller === playerId) return { state, events: [] };
-    const continuation = data?.continuationContext as SmartSetUpAttachContinuation | undefined;
-    if (!continuation?.sourceCardUid) return { state, events: [] };
-    return {
-        state,
-        events: [{
-            type: SU_EVENTS.ONGOING_ATTACHED,
-            payload: {
-                cardUid: continuation.sourceCardUid,
-                defId: 'world_champs_smart_set_up',
-                ownerId: playerId,
-                targetType: 'minion',
-                targetBaseIndex: selected.baseIndex,
-                targetMinionUid: selected.minionUid,
-            },
-            timestamp,
-        } as OngoingAttachedEvent],
-    };
-};
-
-const handleWorldChampsItsBlitzinTime: InteractionHandler = (state, _playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    return {
-        state,
-        events: [addTempPower(selected.minionUid, selected.baseIndex, 3, 'world_champs_its_blitzin_time', timestamp)],
-    };
-};
-
-const handleWorldChampsFightingSpiritPrize: InteractionHandler = (state, _playerId, value, _data, _random, timestamp) => {
-    const picks = Array.isArray(value) ? value as MinionChoice[] : [value as MinionChoice];
-    const validPicks = picks
-        .filter(pick => !pick.skip && pick.minionUid && pick.baseIndex !== undefined)
-        .slice(0, 2);
-    if (validPicks.length === 0) return { state, events: [] };
-    if (validPicks.length === 1) {
-        const only = validPicks[0];
-        return {
-            state,
-            events: [
-                addPowerCounter(only.minionUid!, only.baseIndex!, 1, 'world_champs_fighting_spirit_prize', timestamp),
-                addPowerCounter(only.minionUid!, only.baseIndex!, 1, 'world_champs_fighting_spirit_prize', timestamp),
-            ],
-        };
-    }
-    return {
-        state,
-        events: validPicks.map((pick) => addPowerCounter(
-            pick.minionUid!,
-            pick.baseIndex!,
-            1,
-            'world_champs_fighting_spirit_prize',
-            timestamp,
-        )),
-    };
-};
-
-const handleWorldChampsFastAsLightning: InteractionHandler = (state, _playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    return {
-        state,
-        events: [addTempPower(selected.minionUid, selected.baseIndex, 2, 'world_champs_fast_as_lightning', timestamp)],
-    };
-};
-
-const handleWorldChampsHighSpeedChaseMinion: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
-    const baseOptions = state.core.bases
-        .map((base, baseIndex) => ({
-            baseIndex,
-            label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
-        }))
-        .filter(base => base.baseIndex !== selected.baseIndex);
-    if (baseOptions.length === 0) return { state, events: [] };
-
-    const interaction = createSimpleChoice(
-        `world_champs_high_speed_chase_base_${timestamp}`,
-        playerId,
-        '高速追逐：选择目标基地',
-        buildBaseTargetOptions(baseOptions, state.core),
-        { sourceId: 'world_champs_high_speed_chase_base', targetType: 'base' },
-    );
-    (interaction.data as { continuationContext?: HighSpeedChaseContinuation }).continuationContext = {
-        sourceBaseIndex: selected.baseIndex,
-        minionUid: selected.minionUid,
-        minionDefId: selected.defId,
-    };
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleWorldChampsHighSpeedChaseBase: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as BaseChoice;
-    const continuation = data?.continuationContext as HighSpeedChaseContinuation | undefined;
-    if (selected.baseIndex === undefined || !continuation) return { state, events: [] };
-
-    const sourceBase = state.core.bases[continuation.sourceBaseIndex];
-    const ongoing = sourceBase?.ongoingActions.find(action => action.defId === 'world_champs_high_speed_chase' && action.ownerId === playerId);
-    if (!ongoing) return { state, events: [] };
-    const moveEvents = buildValidatedMoveEvents(state, {
-        minionUid: continuation.minionUid,
-        minionDefId: continuation.minionDefId,
-        fromBaseIndex: continuation.sourceBaseIndex,
-        toBaseIndex: selected.baseIndex,
-        reason: 'world_champs_high_speed_chase',
-        now: timestamp,
-    });
-
-    return {
-        state,
-        events: [
-            {
-                type: SU_EVENTS.ONGOING_DETACHED,
-                payload: {
-                    cardUid: ongoing.uid,
-                    defId: ongoing.defId,
-                    ownerId: ongoing.ownerId,
-                    reason: 'world_champs_high_speed_chase',
-                },
-                timestamp,
-            } as SmashUpEvent,
-            {
-                type: SU_EVENTS.ONGOING_ATTACHED,
-                payload: {
-                    cardUid: ongoing.uid,
-                    defId: ongoing.defId,
-                    ownerId: ongoing.ownerId,
-                    targetType: 'base',
-                    targetBaseIndex: selected.baseIndex,
-                    talentUsed: true,
-                },
-                timestamp,
-            } as SmashUpEvent,
-            ...moveEvents,
-            ...(moveEvents.length > 0 ? [addTempPower(continuation.minionUid, selected.baseIndex, 3, 'world_champs_high_speed_chase', timestamp)] : []),
-        ],
-    };
-};
-
-const handleWorldChampsMouseBirdAndSausageAnchor: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { state, events: [] };
-    const anchorDef = getCardDef(selected.defId);
-    const faction = anchorDef?.faction;
-    if (!faction) return { state, events: [] };
-    const base = state.core.bases[selected.baseIndex];
-    if (!base) return { state, events: [] };
-    const candidates = base.minions
-        .filter(minion => getCardDef(minion.defId)?.faction === faction)
-        .map((minion) => ({
-            uid: minion.uid,
-            defId: minion.defId,
-            baseIndex: selected.baseIndex,
-            label: getCardDef(minion.defId)?.name ?? minion.defId,
-        }));
-    if (candidates.length === 0) return { state, events: [] };
-    if (candidates.length <= 2) {
-        return {
-            state,
-            events: candidates.map(minion => addTempPower(minion.uid, minion.baseIndex, 2, 'world_champs_mouse_bird_and_sausage', timestamp)),
-        };
-    }
-
-    const interaction = createSimpleChoice(
-        `world_champs_mouse_bird_and_sausage_targets_${timestamp}`,
-        playerId,
-        '老鼠、鸟和香肠：选择至多两张同派系随从',
-        buildMinionTargetOptions(candidates, {
-            state: state.core,
-            sourcePlayerId: playerId,
-            sourceDefId: 'world_champs_mouse_bird_and_sausage',
-            effectType: 'affect',
-        }),
-        {
-            sourceId: 'world_champs_mouse_bird_and_sausage_targets',
-            targetType: 'minion',
-            multi: { min: 1, max: 2 },
-        },
-    );
-    (interaction.data as { continuationContext?: MouseBirdAndSausageContinuation }).continuationContext = {
-        baseIndex: selected.baseIndex,
-        faction,
-    };
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleWorldChampsMouseBirdAndSausageTargets: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const continuation = data?.continuationContext as MouseBirdAndSausageContinuation | undefined;
-    if (!continuation) return { state, events: [] };
-    const picks = (Array.isArray(value) ? value : [value]) as MinionChoice[];
-    const selected = picks
-        .filter(pick => pick.minionUid && pick.baseIndex === continuation.baseIndex)
-        .slice(0, 2);
-    if (selected.length === 0) return { state, events: [] };
-    return {
-        state,
-        events: selected.map(pick => addTempPower(
-            pick.minionUid!,
-            continuation.baseIndex,
-            2,
-            'world_champs_mouse_bird_and_sausage',
-            timestamp,
-        )),
-    };
-};
-
-const handleWorldChampsSharkTattoo: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const minion = state.core.bases[selected.baseIndex]?.minions.find(entry => entry.uid === selected.minionUid);
-    if (!minion || minion.controller !== playerId) return { state, events: [] };
-    const continuation = data?.continuationContext as SharkTattooContinuation | undefined;
-    if (!continuation?.sourceCardUid) return { state, events: [] };
-    return {
-        state,
-        events: [
-            {
-                type: SU_EVENTS.ONGOING_ATTACHED,
-                payload: {
-                    cardUid: continuation.sourceCardUid,
-                    defId: 'world_champs_shark_tattoo',
-                    ownerId: playerId,
-                    targetType: 'minion',
-                    targetBaseIndex: selected.baseIndex,
-                    targetMinionUid: selected.minionUid,
-                },
-                timestamp,
-            } as SmashUpEvent,
-            addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'world_champs_shark_tattoo', timestamp),
-        ],
-    };
-};
-
-const handleWorldChampsEh: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (selected.skip || !selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const continuation = data?.continuationContext as EhContinuation | undefined;
-    const events: SmashUpEvent[] = [
-        {
-            type: SU_EVENTS.DISCARD_ABILITY_USED,
-            payload: {
-                playerId,
-                sourceId: 'world_champs_eh',
-            },
-            timestamp,
-        },
-        addTempPower(selected.minionUid, selected.baseIndex, 1, 'world_champs_eh', timestamp),
-    ];
-    if (continuation?.sourceCardUid) {
-        events.push(recoverCardsFromDiscard(playerId, [continuation.sourceCardUid], 'world_champs_eh', timestamp));
-    }
-    return { state, events };
-};
-
-const handleWorldChampsSheriffBeforeScoring: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (selected.skip || !selected.minionUid) return { state, events: [] };
-    const ctx = data?.continuationContext as SheriffContinuation | undefined;
-    if (!ctx) return { state, events: [] };
-    return {
-        state: startDuel(state, {
-            sourceId: 'world_champs_sheriff_before_scoring',
-            sourcePlayerId: ctx.casterPlayerId,
-            challengerMinionUid: ctx.friendlyMinionUid,
-            challengedMinionUid: selected.minionUid,
-            outcome: 'destroy_loser',
-            destroyReason: 'world_champs_sheriff',
-        }, timestamp),
-        events: [],
-    };
-};
-
-const handleWorldChampsMummyAfterScoring: InteractionHandler = (state, _playerId, value, data, random, timestamp) => {
-    const selected = value as { baseIndex?: number; skip?: boolean };
-    if (selected.skip || selected.baseIndex === undefined) return { state, events: [] };
-    const continuation = data?.continuationContext as MummyContinuation | undefined;
-    if (!continuation?.cardUid) return { state, events: [] };
-
-    const source = state.core.bases
-        .map((base, baseIndex) => ({
-            baseIndex,
-            minion: base.minions.find(minion => minion.uid === continuation.cardUid),
-        }))
-        .find(entry => entry.minion !== undefined);
-    if (!source?.minion) return { state, events: [] };
-
-    return {
-        state,
-        events: buildBuryCardEvents({
-            core: state.core,
-            matchState: state,
-            playerId: source.minion.controller,
-            cardUid: source.minion.uid,
-            defId: source.minion.defId,
-            baseIndex: selected.baseIndex,
-            trueOwnerId: source.minion.owner,
-            buriedFrom: 'play',
-            reason: 'world_champs_mummy',
-            random,
-            now: timestamp,
-        }),
-    };
-};
-
 export function registerWorldChampsInteractionHandlers(): void {
-    registerInteractionHandler('world_champs_bewitched', handleWorldChampsBewitched);
-    registerInteractionHandler('world_champs_bewitched_transfer', handleWorldChampsBewitchedTransfer);
-    registerInteractionHandler('world_champs_stoneford', handleWorldChampsStoneford);
-    registerInteractionHandler('world_champs_akye_the_turtle_player', handleWorldChampsAkyePlayer);
-    registerInteractionHandler('world_champs_akye_the_turtle_card', handleWorldChampsAkyeCard);
-    registerInteractionHandler('world_champs_shield_maiden', handleWorldChampsShieldMaiden);
-    registerInteractionHandler('world_champs_calicoin', handleWorldChampsCalicoin);
-    registerInteractionHandler('world_champs_smart_set_up', handleWorldChampsSmartSetUp);
-    registerInteractionHandler('world_champs_fast_as_lightning', handleWorldChampsFastAsLightning);
-    registerInteractionHandler('world_champs_its_blitzin_time', handleWorldChampsItsBlitzinTime);
-    registerInteractionHandler('world_champs_fighting_spirit_prize', handleWorldChampsFightingSpiritPrize);
-    registerInteractionHandler('world_champs_high_speed_chase_minion', handleWorldChampsHighSpeedChaseMinion);
-    registerInteractionHandler('world_champs_high_speed_chase_base', handleWorldChampsHighSpeedChaseBase);
-    registerInteractionHandler('world_champs_mouse_bird_and_sausage_anchor', handleWorldChampsMouseBirdAndSausageAnchor);
-    registerInteractionHandler('world_champs_mouse_bird_and_sausage_targets', handleWorldChampsMouseBirdAndSausageTargets);
-    registerInteractionHandler('world_champs_shark_tattoo', handleWorldChampsSharkTattoo);
-    registerInteractionHandler('world_champs_eh', handleWorldChampsEh);
-    registerInteractionHandler('world_champs_sheriff_before_scoring', handleWorldChampsSheriffBeforeScoring);
-    registerInteractionHandler('world_champs_mummy_after_scoring', handleWorldChampsMummyAfterScoring);
 }

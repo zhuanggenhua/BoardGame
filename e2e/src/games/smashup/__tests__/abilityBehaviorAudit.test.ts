@@ -164,20 +164,8 @@ describe('SmashUp 能力行为审计', () => {
         it('遗留 registerInteractionHandler 仅允许存在于明确未迁完的旧能力文件', () => {
             const allowedLegacyHandlerFiles = [
                 'bear_cavalry.ts',
-                'cowboys.ts',
-                'elder_things.ts',
-                'giant_ants.ts',
-                'mermaids.ts',
-                'miskatonic.ts',
-                'ninjas.ts',
-                'pirates.ts',
-                'samurai.ts',
                 'skeletons.ts',
                 'titans.ts',
-                'tricksters.ts',
-                'vampires.ts',
-                'vikings.ts',
-                'world_champs.ts',
             ];
             expect(collectAbilityFileUsage(/\bregisterInteractionHandler\(/g)).toEqual(allowedLegacyHandlerFiles);
         });

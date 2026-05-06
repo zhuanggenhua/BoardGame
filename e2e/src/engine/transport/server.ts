@@ -1318,6 +1318,28 @@ export class GameTransportServer {
             }
             return nextCandidate;
         };
+        const revalidateRecoveryCandidate = async (
+            expectedCandidate: ForceEndTurnStalledAiResolution,
+        ): Promise<ForceEndTurnStalledAiResolution | null> => {
+            const latestCandidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
+            if (!latestCandidate) {
+                this.onlineAiRecoveryTrackers.delete(match.matchID);
+                tracker.autoSubmittedAt = null;
+                return null;
+            }
+
+            const stillSameCandidate = latestCandidate.playerId === expectedCandidate.playerId
+                && latestCandidate.reason === expectedCandidate.reason
+                && latestCandidate.requiresConfirmedAdvancePhase === expectedCandidate.requiresConfirmedAdvancePhase
+                && latestCandidate.legalActionOnly === expectedCandidate.legalActionOnly;
+            if (!stillSameCandidate) {
+                this.onlineAiRecoveryTrackers.delete(match.matchID);
+                tracker.autoSubmittedAt = null;
+                return null;
+            }
+
+            return latestCandidate;
+        };
         const hasHumanResponderInCurrentWindow = (): boolean => {
             const currentWindow = (match.state.sys as { responseWindow?: { current?: unknown } } | undefined)
                 ?.responseWindow?.current as {
@@ -1365,6 +1387,11 @@ export class GameTransportServer {
             const seenMarkers = new Set<string>([progressMarkerBeforeRecovery]);
             let recoverySteps = 0;
             let allowNaturalAiContinuation = false;
+            const initialCandidate = await revalidateRecoveryCandidate(currentCandidate);
+            if (!initialCandidate) {
+                return;
+            }
+            currentCandidate = initialCandidate;
 
             while (recoverySteps <= this.onlineAiRecoveryMaxAdvanceSteps) {
                 phaseLabel = currentCandidate.requiresConfirmedAdvancePhase ? 'recover-interaction' : 'follow-up-advance';
@@ -1387,6 +1414,11 @@ export class GameTransportServer {
                         && recoveryCommands.length > 0;
                     if ((currentCandidate.legalActionOnly === true && !canFallbackToRecoveryCommandAfterLegalActionAttempt)
                         || recoveryCommands.length === 0) {
+                        const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
+                        if (!revalidatedCandidate) {
+                            return;
+                        }
+                        currentCandidate = revalidatedCandidate;
                         const legalActionUnavailableReason = actionRecovery.blockedReason === 'stale-private-overlay'
                             ? 'private_overlay_stale'
                             : actionRecovery.blockedReason === 'missing-private-overlay'
@@ -1413,6 +1445,11 @@ export class GameTransportServer {
                     const nextCommandType = nextCommand?.type ?? 'UNKNOWN';
                     if (nextCommandType === advancePhaseCommandType
                         && !canExecuteWatchdogAdvancePhase(currentCandidate.playerId)) {
+                        const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
+                        if (!revalidatedCandidate) {
+                            return;
+                        }
+                        currentCandidate = revalidatedCandidate;
                         await this.handleOnlineAiRecoveryFailure(
                             match,
                             tracker,
@@ -1430,6 +1467,11 @@ export class GameTransportServer {
                         nextCommand?.payload ?? {},
                     );
                     if (!nextSuccess) {
+                        const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
+                        if (!revalidatedCandidate) {
+                            return;
+                        }
+                        currentCandidate = revalidatedCandidate;
                         await this.handleOnlineAiRecoveryFailure(
                             match,
                             tracker,
@@ -1450,6 +1492,11 @@ export class GameTransportServer {
                 recoverySteps += 1;
                 const nextMarker = buildAiProgressMarker(match.state);
                 if (nextMarker === markerBeforeStep) {
+                    const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
+                    if (!revalidatedCandidate) {
+                        return;
+                    }
+                    currentCandidate = revalidatedCandidate;
                     await this.handleOnlineAiRecoveryFailure(
                         match,
                         tracker,
@@ -1461,6 +1508,11 @@ export class GameTransportServer {
                     return;
                 }
                 if (seenMarkers.has(nextMarker)) {
+                    const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
+                    if (!revalidatedCandidate) {
+                        return;
+                    }
+                    currentCandidate = revalidatedCandidate;
                     await this.handleOnlineAiRecoveryFailure(
                         match,
                         tracker,
@@ -1555,17 +1607,26 @@ export class GameTransportServer {
                 ? null
                 : await resolveChainedRecoveryCandidate(candidate.playerId);
             if (unresolvedCandidate?.playerId === candidate.playerId) {
+                const revalidatedCandidate = await revalidateRecoveryCandidate(unresolvedCandidate);
+                if (!revalidatedCandidate) {
+                    return;
+                }
                 await this.handleOnlineAiRecoveryFailure(
                     match,
                     tracker,
-                    unresolvedCandidate,
-                    unresolvedCandidate.requiresConfirmedAdvancePhase ? 'recover-interaction' : 'follow-up-advance',
+                    revalidatedCandidate,
+                    revalidatedCandidate.requiresConfirmedAdvancePhase ? 'recover-interaction' : 'follow-up-advance',
                     progressMarkerBeforeRecovery,
                     'blocker_persisted',
                 );
                 return;
             }
             if (markerAfterRecovery === progressMarkerBeforeRecovery) {
+                const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
+                if (!revalidatedCandidate) {
+                    return;
+                }
+                currentCandidate = revalidatedCandidate;
                 await this.handleOnlineAiRecoveryFailure(
                     match,
                     tracker,

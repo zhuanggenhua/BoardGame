@@ -3,7 +3,14 @@ import { getBaseDef, getCardDef, getMinionLikePower } from '../data/cards';
 import { validate } from './commands';
 import { execute } from './reducer';
 import { reduce } from './reduce';
-import { buildBaseTargetOptions, buildMinionTargetOptions, createSkipOption, grantExtraAction, grantExtraMinion } from './abilityHelpers';
+import {
+    buildBaseTargetOptions,
+    buildMinionTargetOptions,
+    createSkipOption,
+    getSetAsideTitansPlayableAs,
+    grantExtraAction,
+    grantExtraMinion,
+} from './abilityHelpers';
 import { createAbilityRuntimeSimpleChoice, createPromptProgram, executeAbilityProgram } from './abilityRuntime';
 import {
     SU_COMMANDS,
@@ -26,7 +33,9 @@ type ImmediateExtraLimitPayload = LimitModifiedEvent['payload'] & { playTiming: 
 type ImmediateExtraMinionPayload = ImmediateExtraLimitPayload & { limitType: 'minion' };
 type ImmediateExtraActionPayload = ImmediateExtraLimitPayload & { limitType: 'action' };
 
-type ImmediateMinionCardChoice = { cardUid: string; defId: string };
+type ImmediateMinionCardChoice =
+    | { cardUid: string; defId: string }
+    | { titanUid: string; defId: string; playKind: 'minion' };
 type ImmediateActionCardChoice = { cardUid: string; defId: string };
 type ImmediateBaseChoice = { baseIndex: number };
 type ImmediateMinionTargetChoice = { baseIndex: number; minionUid: string };
@@ -70,7 +79,7 @@ function buildImmediateExtraMinionCardOptions(
     const player = state.core.players[extra.playerId];
     if (!player) return [createSkipOption('放弃这次额外随从') as any];
 
-    const options = player.hand
+    const handOptions = player.hand
         .filter(card => isCardMinionLike(card))
         .flatMap((card, index) => {
             const validBaseIndices = state.core.bases
@@ -94,7 +103,33 @@ function buildImmediateExtraMinionCardOptions(
             }];
         });
 
-    return [...options, createSkipOption('放弃这次额外随从') as any];
+    const titanOptions = getSetAsideTitansPlayableAs(state.core, extra.playerId, 'minion')
+        .flatMap((titan, index) => {
+            const validBaseIndices = state.core.bases
+                .map((_, baseIndex) => baseIndex)
+                .filter(baseIndex => validate(validationState, {
+                    type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                    playerId: extra.playerId,
+                    payload: { titanUid: titan.uid, baseIndex },
+                }).valid);
+
+            if (validBaseIndices.length === 0) return [];
+
+            const def = getCardDef(titan.defId);
+            return [{
+                id: `setaside-titan-${index}`,
+                label: def?.name ?? titan.defId,
+                value: {
+                    titanUid: titan.uid,
+                    defId: titan.defId,
+                    playKind: 'minion',
+                } satisfies ImmediateMinionCardChoice,
+                displayMode: 'card' as const,
+                _source: 'hand' as const,
+            }];
+        });
+
+    return [...handOptions, ...titanOptions, createSkipOption('放弃这次额外随从') as any];
 }
 
 function buildImmediateExtraMinionBaseOptions(
@@ -103,6 +138,18 @@ function buildImmediateExtraMinionBaseOptions(
     choice: ImmediateMinionCardChoice,
 ) {
     const validationState = buildValidationState(state, extra);
+    if ('titanUid' in choice) {
+        const candidates = state.core.bases
+            .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}` }))
+            .filter(candidate => validate(validationState, {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: extra.playerId,
+                payload: { titanUid: choice.titanUid, baseIndex: candidate.baseIndex },
+            }).valid);
+
+        return buildBaseTargetOptions(candidates, state.core);
+    }
+
     const candidates = state.core.bases
         .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}` }))
         .filter(candidate => validate(validationState, {
@@ -237,22 +284,35 @@ function executeImmediateExtraMinionPlay(
     random: Parameters<typeof execute>[2],
 ) {
     const validationState = buildValidationState(state, extra);
-    const validation = validate(validationState, {
-        type: SU_COMMANDS.PLAY_MINION,
-        playerId: extra.playerId,
-        payload: { cardUid: choice.cardUid, baseIndex },
-    });
+    const validation = 'titanUid' in choice
+        ? validate(validationState, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: extra.playerId,
+            payload: { titanUid: choice.titanUid, baseIndex },
+        })
+        : validate(validationState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: extra.playerId,
+            payload: { cardUid: choice.cardUid, baseIndex },
+        });
     if (!validation.valid) {
         return { state, events: [] };
     }
 
     const execState: MatchState<SmashUpCore> = { ...state, sys: { ...state.sys } };
-    const events = execute(execState, {
-        type: SU_COMMANDS.PLAY_MINION,
-        playerId: extra.playerId,
-        payload: { cardUid: choice.cardUid, baseIndex },
-        timestamp,
-    }, random);
+    const events = 'titanUid' in choice
+        ? execute(execState, {
+            type: SU_COMMANDS.ACTIVATE_SPECIAL,
+            playerId: extra.playerId,
+            payload: { titanUid: choice.titanUid, baseIndex },
+            timestamp,
+        }, random)
+        : execute(execState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: extra.playerId,
+            payload: { cardUid: choice.cardUid, baseIndex },
+            timestamp,
+        }, random);
 
     return {
         state: execState,
@@ -434,7 +494,7 @@ const immediateExtraMinionPromptProgram = createPromptProgram<
         }
 
         const choice = value as ImmediateMinionCardChoice;
-        if (!choice.cardUid || context.extra.playerId !== playerId) {
+        if ((!('cardUid' in choice) && !('titanUid' in choice)) || context.extra.playerId !== playerId) {
             return { state, events: [] };
         }
 

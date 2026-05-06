@@ -13,13 +13,14 @@ import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
-import type { SmashUpCore, SmashUpCommand, SmashUpEvent, CardInstance } from '../domain/types';
+import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS, getCurrentPlayerId, HAND_LIMIT, VP_TO_WIN, DRAW_PER_TURN } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { initAllAbilities } from '../abilities';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
-import { createInitialSystemState } from '../../../engine/pipeline';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
+import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
+import { collectTriggers } from '../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
 import { runCommand } from './testRunner';
 
@@ -178,7 +179,7 @@ describe('完整回合循环', () => {
         expect(result.finalState.core.players['0'].actionsPlayed).toBe(0);
     });
 
-    it('endTurn 反应交互结算后不会把同一组 onTurnEnd trigger 重新入队', () => {
+    it('endTurn 无冲突 trigger 会自动收口，且不会把同一组 onTurnEnd trigger 重新入队', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -228,24 +229,88 @@ describe('完整回合循环', () => {
             timestamp: 1,
         } as any);
         expect(enterTurnEnd.success).toBe(true);
-        expect(enterTurnEnd.finalState.sys.phase).toBe('endTurn');
-        expect(enterTurnEnd.finalState.sys.interaction?.current?.data?.sourceId).toBe('smashup_reaction_choose');
-
-        const resolveDifferenceEngine = runCommand(enterTurnEnd.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND as any,
-            playerId: '1',
-            payload: { optionId: 'trigger:onTurnEnd:steampunk_difference_engine:1:0' },
-            timestamp: 2,
-        } as any);
-
-        expect(resolveDifferenceEngine.success).toBe(true);
-        expect(resolveDifferenceEngine.events.some(event => event.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(false);
-        expect(resolveDifferenceEngine.finalState.core.players['1'].hand.map(card => card.uid)).toContain('d1');
+        expect(enterTurnEnd.finalState.sys.phase).toBe('playCards');
+        expect(enterTurnEnd.finalState.sys.interaction?.current).toBeUndefined();
+        expect(enterTurnEnd.finalState.core.players['1'].hand.map(card => card.uid)).toContain('d1');
         expect(
-            (resolveDifferenceEngine.finalState.core.triggerQueue ?? []).some(
+            (enterTurnEnd.finalState.core.triggerQueue ?? []).some(
                 trigger => trigger.frameId?.startsWith('turn-end:1:9'),
             ),
         ).toBe(false);
+    });
+
+    it('蘑菇王国与 Invisible Ninja 同回合开始时应直接进入真实交互，不先弹结算顺序', () => {
+        const frameId = 'turn-start:0:1:0';
+        const random = { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any;
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.FAIRIES, SMASHUP_FACTION_IDS.NINJAS] as [string, string],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.ROBOTS] as [string, string],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            bases: [
+                makeBase('base_ninja_dojo', [
+                    makeMinion('enemy-minion', 'pirate_buccaneer', '1', 4),
+                ]),
+                makeBase('base_mushroom_kingdom'),
+            ],
+            titans: [
+                {
+                    uid: 'titan-invisible',
+                    defId: 'ninjas_invisible_ninja',
+                    faction: SMASHUP_FACTION_IDS.NINJAS,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'base', baseIndex: 0, enteredAt: 0 },
+                } as any,
+            ],
+        });
+
+        const queuedBase = collectBaseAbilityTriggers({
+            core,
+            timing: 'onTurnStart',
+            ownerPlayerId: '0',
+            baseIndex: 1,
+            frameId,
+            sourceEventId: frameId,
+            now: 0,
+        });
+        expect(queuedBase).toBeDefined();
+
+        const queuedTurnStart = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            frameId,
+            sourceEventId: frameId,
+            random,
+            now: 0,
+        });
+        expect(queuedTurnStart).toBeDefined();
+
+        const state = makeMatchState({
+            ...core,
+            triggerQueue: [
+                ...((queuedBase as any).payload.triggers ?? []),
+                ...((queuedTurnStart as any).payload.triggers ?? []),
+            ],
+        });
+        state.sys.phase = 'startTurn';
+
+        const resolved = maybeResolveReactionQueue(state, random, 0);
+        expect(resolved).toBeDefined();
+        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).toBe('base_mushroom_kingdom');
+        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
+        expect((resolved!.state.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'ninjas_invisible_ninja')).toBe(true);
+        expect((resolved!.state.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'base_mushroom_kingdom')).toBe(false);
     });
 });
 

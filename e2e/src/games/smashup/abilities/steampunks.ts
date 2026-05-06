@@ -1008,7 +1008,12 @@ export function registerSteampunkAbilities(): void {
     registerInterceptor('steampunk_steam_queen', steampunkSteamQueenInterceptor);
     registerSimpleAbility('steampunk_ornate_dome', 'onPlay', steampunkOrnateDomeOnPlay);
     registerRestriction('steampunk_ornate_dome', 'play_action', steampunkOrnateDomeChecker);
-    registerTrigger('steampunk_difference_engine', 'onTurnEnd', steampunkDifferenceEngineTrigger);
+    registerTrigger('steampunk_difference_engine', 'onTurnEnd', steampunkDifferenceEngineTrigger, {
+        orderingFootprint: {
+            reads: ['sourceState', 'deckState'],
+            writes: ['handState', 'deckState'],
+        },
+    });
     registerTrigger('steampunk_escape_hatch', 'onMinionDestroyed', steampunkEscapeHatchTrigger, { phase: 'replacement' });
     registerAbilityProgram('steampunk_zeppelin', 'talent', {
         program: steampunkZeppelinProgram,

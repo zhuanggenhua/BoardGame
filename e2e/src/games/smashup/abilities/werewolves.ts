@@ -753,6 +753,11 @@ function registerWerewolfOngoingEffects(): void {
             }
         }
         return [];
+    }, {
+        orderingFootprint: {
+            reads: ['sourceState', 'minionBoardState', 'scoringState'],
+            writes: ['scoringState'],
+        },
     });
 
     // 势不可挡 ongoing(minion)：本随从不可被消灭

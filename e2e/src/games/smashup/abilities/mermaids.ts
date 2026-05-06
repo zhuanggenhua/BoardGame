@@ -1,8 +1,6 @@
 import type { PlayerId } from '../../../engine/types';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerAbility } from '../domain/abilityRegistry';
+import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { registerInteractionHandler, type InteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import {
@@ -27,6 +25,12 @@ import type {
     SmashUpEvent,
 } from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createEffectProgram,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
 
 type MinionChoice = { minionUid?: string; baseIndex?: number; defId?: string; skip?: boolean };
 type BaseChoice = { baseIndex?: number; skip?: boolean };
@@ -40,14 +44,6 @@ type CharmerMoveContinuation = {
 };
 
 type CharmerTargetContinuation = {
-    targetBaseIndex: number;
-};
-
-type MermaidQueenMoveContinuation = {
-    targetBaseIndex: number;
-};
-
-type MermaidQueenControlContinuation = {
     targetBaseIndex: number;
 };
 
@@ -96,10 +92,45 @@ type CharmedContinuation = {
     fromBaseIndex: number;
 };
 
+type MermaidsPromptContext = {
+    matchState: AbilityContext['matchState'];
+    playerId: PlayerId;
+    now: number;
+};
+
+type MermaidsCharmerMovePromptContext = MermaidsPromptContext & CharmerMoveContinuation;
+type MermaidsCharmerTargetPromptContext = MermaidsPromptContext & CharmerTargetContinuation;
+type MermaidsMermaidQueenModePromptContext = MermaidsPromptContext & MermaidQueenModeContinuation;
+type MermaidsMermaidQueenTargetPromptContext = MermaidsPromptContext & { targetBaseIndex: number };
+type MermaidsCaptiveAudiencePromptContext = MermaidsPromptContext & CaptiveAudienceContinuation & { baseIndex: number };
+type MermaidsOngoingMovePromptContext = MermaidsPromptContext & OngoingMoveContinuation & {
+    title: string;
+    allowSkip?: boolean;
+    skipLabel?: string;
+};
+type MermaidsUltimateSongHandPromptContext = MermaidsPromptContext & UltimateSongContinuation;
+type MermaidsSirenSongDestinationPromptContext = MermaidsPromptContext & SirenSongDestinationContinuation;
+type MermaidsSirenSongTargetPromptContext = MermaidsPromptContext & SirenSongTargetContinuation & { targetPlayerId: PlayerId };
+type MermaidsCharmedDestinationPromptContext = MermaidsPromptContext & CharmedContinuation;
+
 const MERMAIDS_CHARMED_SUPPRESSED_TURN_META = 'mermaidsCharmedSuppressedTurn';
 const MERMAIDS_TEMP_CONTROL_CONTROLLER_META = 'mermaidsTemporaryControlOriginalController';
 const MERMAIDS_TEMP_CONTROL_PLAYER_META = 'mermaidsTemporaryControlPlayerId';
 const MERMAIDS_TEMP_CONTROL_TURN_META = 'mermaidsTemporaryControlTurn';
+
+function createMermaidsPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
+    matchState: AbilityContext['matchState'],
+    playerId: PlayerId,
+    now: number,
+    extra?: TExtra,
+): MermaidsPromptContext & TExtra {
+    return {
+        matchState,
+        playerId,
+        now,
+        ...(extra ?? {} as TExtra),
+    };
+}
 
 function getBaseLabel(state: SmashUpCore, baseIndex: number): string {
     return getBaseDef(state.bases[baseIndex]?.defId ?? '')?.name ?? `基地 ${baseIndex + 1}`;
@@ -245,14 +276,12 @@ function buildMoveOngoingEvents(
     ];
 }
 
-function queueCharmerTargetPrompt(
-    matchState: AbilityContext['matchState'],
+function getMermaidsCharmerCandidates(
     state: SmashUpCore,
     playerId: PlayerId,
     targetBaseIndex: number,
-    now: number,
-): AbilityResult {
-    const candidates = collectMinions(
+) {
+    return collectMinions(
         state,
         (minion, baseIndex) => (
             minion.controller !== playerId
@@ -260,38 +289,16 @@ function queueCharmerTargetPrompt(
             && getMinionPower(state, minion, baseIndex) <= 3
         ),
     );
-    if (candidates.length === 0) {
-        return { events: [] };
-    }
-    const interaction = createSimpleChoice(
-        `mermaids_charmer_target_${now}`,
-        playerId,
-        '迷人的人：你可以把另一个玩家一个力量 3 或以下的随从移到这里',
-        [
-            createSkipOption('不移动别人的随从'),
-            ...buildMinionTargetOptions(candidates, {
-                state,
-                sourcePlayerId: playerId,
-                sourceDefId: 'mermaids_charmer',
-                effectType: 'move',
-            }),
-        ],
-        { sourceId: 'mermaids_charmer_target', targetType: 'minion' },
-    );
-    (interaction.data as { continuationContext?: CharmerTargetContinuation }).continuationContext = {
-        targetBaseIndex,
-    };
-    return { events: [], matchState: queueInteraction(matchState, interaction) };
 }
 
-function queueUltimateSongPrompt(
+function advanceUltimateSongHandPrompt(
     matchState: AbilityContext['matchState'],
     state: SmashUpCore,
     casterPlayerId: PlayerId,
     targetBaseIndex: number,
     remainingPlayerIds: PlayerId[],
     now: number,
-): AbilityResult {
+) {
     const events: SmashUpEvent[] = [];
     const pending = [...remainingPlayerIds];
 
@@ -302,36 +309,28 @@ function queueUltimateSongPrompt(
             events.push(buildAbilityFeedback(forcedPlayerId, 'feedback.no_valid_targets', now));
             continue;
         }
-        const interaction = createSimpleChoice(
-            `mermaids_ultimate_song_hand_${forcedPlayerId}_${now}`,
-            forcedPlayerId,
-            '最后的歌声：选择一张力量 3 或以下的随从额外打出到目标基地',
-            options,
-            { sourceId: 'mermaids_ultimate_song_hand', targetType: 'hand' },
-        );
-        (interaction.data as { continuationContext?: UltimateSongContinuation }).continuationContext = {
-            casterPlayerId,
-            targetBaseIndex,
-            remainingPlayerIds: pending,
-            forcedPlayerId,
+        return {
+            events,
+            context: createMermaidsPromptContext(matchState, forcedPlayerId, now, {
+                casterPlayerId,
+                targetBaseIndex,
+                remainingPlayerIds: pending,
+                forcedPlayerId,
+            }) satisfies MermaidsUltimateSongHandPromptContext,
+            nextProgram: mermaidsUltimateSongHandPromptProgram,
         };
-        return { events, matchState: queueInteraction(matchState, interaction) };
     }
 
-    events.push(
-        grantContextualExtraMinion(
-            { playerId: casterPlayerId, now, matchState },
-            'mermaids_ultimate_song',
-        ),
-        grantContextualExtraAction(
-            { playerId: casterPlayerId, now, matchState },
-            'mermaids_ultimate_song',
-        ),
-    );
-    return { events };
+    return {
+        events: [
+            ...events,
+            grantContextualExtraMinion({ playerId: casterPlayerId, now, matchState }, 'mermaids_ultimate_song'),
+            grantContextualExtraAction({ playerId: casterPlayerId, now, matchState }, 'mermaids_ultimate_song'),
+        ],
+    };
 }
 
-function queueSirenSongTargetPrompt(
+function advanceSirenSongTargetPrompt(
     matchState: AbilityContext['matchState'],
     state: SmashUpCore,
     playerId: PlayerId,
@@ -339,9 +338,8 @@ function queueSirenSongTargetPrompt(
     toBaseIndex: number,
     remainingPlayerIds: PlayerId[],
     now: number,
-): AbilityResult {
+) {
     const pending = [...remainingPlayerIds];
-
     while (pending.length > 0) {
         const targetPlayerId = pending.shift()!;
         const candidates = collectMinionsOnBase(
@@ -355,26 +353,586 @@ function queueSirenSongTargetPrompt(
             sourceDefId: 'mermaids_siren_song',
             effectType: 'move',
         });
-        if (options.length === 0) {
-            continue;
-        }
-        const interaction = createSimpleChoice(
-            `mermaids_siren_song_target_${targetPlayerId}_${now}`,
-            playerId,
-            `塞壬的歌声：选择玩家 ${targetPlayerId} 的一个随从移动`,
-            options,
-            { sourceId: 'mermaids_siren_song_target', targetType: 'minion' },
-        );
-        (interaction.data as { continuationContext?: SirenSongTargetContinuation }).continuationContext = {
-            fromBaseIndex,
-            toBaseIndex,
-            remainingPlayerIds: pending,
+        if (options.length === 0) continue;
+
+        return {
+            events: [],
+            context: createMermaidsPromptContext(matchState, playerId, now, {
+                fromBaseIndex,
+                toBaseIndex,
+                targetPlayerId,
+                remainingPlayerIds: pending,
+            }) satisfies MermaidsSirenSongTargetPromptContext,
+            nextProgram: mermaidsSirenSongTargetPromptProgram,
         };
-        return { events: [], matchState: queueInteraction(matchState, interaction) };
     }
 
     return { events: [] };
 }
+
+const mermaidsCharmerTargetPromptProgram = createPromptProgram<MermaidsCharmerTargetPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_charmer_target',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_charmer_target_${context.now}`,
+        context.playerId,
+        '迷人的人：你可以把另一个玩家一个力量 3 或以下的随从移到这里',
+        [
+            createSkipOption('不移动别人的随从'),
+            ...buildMinionTargetOptions(
+                getMermaidsCharmerCandidates(context.matchState.core, context.playerId, context.targetBaseIndex),
+                {
+                    state: context.matchState.core,
+                    sourcePlayerId: context.playerId,
+                    sourceDefId: 'mermaids_charmer',
+                    effectType: 'move',
+                },
+            ),
+        ] as any[],
+        { sourceId: 'mermaids_charmer_target', targetType: 'minion' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (selected.skip || !selected.minionUid || selected.baseIndex === undefined || !selected.defId) {
+            return { events: [] };
+        }
+        return {
+            events: buildValidatedMoveEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: selected.baseIndex,
+                toBaseIndex: context.targetBaseIndex,
+                reason: 'mermaids_charmer',
+                now: timestamp,
+            }),
+        };
+    },
+});
+
+const mermaidsCharmerMovePromptProgram = createPromptProgram<MermaidsCharmerMovePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_charmer_move',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_charmer_move_${context.now}`,
+        context.playerId,
+        '迷人的人：你可以先移动这个随从',
+        [
+            createSkipOption('不移动这个随从'),
+            ...buildBaseTargetOptions(getOtherBases(context.matchState.core, context.fromBaseIndex), context.matchState.core),
+        ] as any[],
+        { sourceId: 'mermaids_charmer_move', targetType: 'base' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as BaseChoice;
+        const targetBaseIndex = selected.skip || selected.baseIndex === undefined
+            ? context.fromBaseIndex
+            : selected.baseIndex;
+        const moveEvents = (!selected.skip && selected.baseIndex !== undefined)
+            ? buildValidatedMoveEvents(state, {
+                minionUid: context.charmerUid,
+                minionDefId: context.charmerDefId,
+                fromBaseIndex: context.fromBaseIndex,
+                toBaseIndex: selected.baseIndex,
+                reason: 'mermaids_charmer',
+                now: timestamp,
+            })
+            : [];
+
+        if (getMermaidsCharmerCandidates(state.core, context.playerId, targetBaseIndex).length === 0) {
+            return { events: moveEvents };
+        }
+
+        return {
+            events: moveEvents,
+            context: createMermaidsPromptContext(state, context.playerId, timestamp, {
+                targetBaseIndex,
+            }) satisfies MermaidsCharmerTargetPromptContext,
+            nextProgram: mermaidsCharmerTargetPromptProgram,
+        };
+    },
+});
+
+const mermaidsMermaidQueenMovePromptProgram = createPromptProgram<MermaidsMermaidQueenTargetPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_mermaid_queen_move',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_mermaid_queen_move_${context.now}`,
+        context.playerId,
+        '人鱼女王：选择一个其他玩家的随从移到这里',
+        buildMinionTargetOptions(
+            collectMinions(context.matchState.core, (minion, baseIndex) => (
+                minion.controller !== context.playerId && baseIndex !== context.targetBaseIndex
+            )),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'mermaids_mermaid_queen',
+                effectType: 'move',
+            },
+        ) as any[],
+        { sourceId: 'mermaids_mermaid_queen_move', targetType: 'minion' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        return {
+            events: buildValidatedMoveEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: selected.baseIndex,
+                toBaseIndex: context.targetBaseIndex,
+                reason: 'mermaids_mermaid_queen',
+                now: timestamp,
+            }),
+        };
+    },
+});
+
+const mermaidsMermaidQueenControlPromptProgram = createPromptProgram<MermaidsMermaidQueenTargetPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_mermaid_queen_control',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_mermaid_queen_control_${context.now}`,
+        context.playerId,
+        '人鱼女王：选择这里一个力量 3 或以下的随从，直到回合结束获得其控制权',
+        buildMinionTargetOptions(
+            collectMinionsOnBase(
+                context.matchState.core,
+                context.targetBaseIndex,
+                minion => minion.controller !== context.playerId
+                    && getMinionPower(context.matchState.core, minion, context.targetBaseIndex) <= 3,
+            ),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'mermaids_mermaid_queen',
+                effectType: 'affect',
+            },
+        ) as any[],
+        { sourceId: 'mermaids_mermaid_queen_control', targetType: 'minion' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const minion = state.core.bases[selected.baseIndex]?.minions.find(entry => entry.uid === selected.minionUid);
+        if (!minion || minion.controller === context.playerId) return { events: [] };
+        return {
+            events: [
+                changeMinionController(
+                    minion.uid,
+                    minion.defId,
+                    selected.baseIndex,
+                    minion.owner,
+                    minion.controller,
+                    context.playerId,
+                    context.playerId,
+                    'mermaids_mermaid_queen',
+                    timestamp,
+                ),
+                buildMermaidsMetadataUpdatedEvent(
+                    minion.uid,
+                    selected.baseIndex,
+                    {
+                        [MERMAIDS_TEMP_CONTROL_CONTROLLER_META]: minion.controller,
+                        [MERMAIDS_TEMP_CONTROL_PLAYER_META]: context.playerId,
+                        [MERMAIDS_TEMP_CONTROL_TURN_META]: state.core.turnNumber,
+                    },
+                    'mermaids_mermaid_queen',
+                    timestamp,
+                ),
+            ],
+        };
+    },
+});
+
+const mermaidsMermaidQueenModePromptProgram = createPromptProgram<MermaidsMermaidQueenModePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_mermaid_queen_mode',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_mermaid_queen_mode_${context.now}`,
+        context.playerId,
+        '人鱼女王：选择要执行的效果',
+        [
+            { id: 'move', label: '把一个其他玩家的随从移到这里', value: { mode: 'move' }, displayMode: 'button' as const },
+            { id: 'control', label: '直到回合结束获得这里一个力量 3 或以下随从的控制权', value: { mode: 'control' }, displayMode: 'button' as const },
+        ],
+        { sourceId: 'mermaids_mermaid_queen_mode', targetType: 'static' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as ModeChoice;
+        if (!selected.mode) return { events: [] };
+        if (selected.mode === 'move') {
+            const moveTargets = collectMinions(
+                state.core,
+                (minion, baseIndex) => minion.controller !== context.playerId && baseIndex !== context.targetBaseIndex,
+            );
+            if (moveTargets.length === 0) {
+                return { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', timestamp)] };
+            }
+            return {
+                events: [],
+                context: createMermaidsPromptContext(state, context.playerId, timestamp, {
+                    targetBaseIndex: context.targetBaseIndex,
+                }) satisfies MermaidsMermaidQueenTargetPromptContext,
+                nextProgram: mermaidsMermaidQueenMovePromptProgram,
+            };
+        }
+
+        const controlTargets = collectMinionsOnBase(
+            state.core,
+            context.targetBaseIndex,
+            minion => minion.controller !== context.playerId
+                && getMinionPower(state.core, minion, context.targetBaseIndex) <= 3,
+        );
+        if (controlTargets.length === 0) {
+            return { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', timestamp)] };
+        }
+        return {
+            events: [],
+            context: createMermaidsPromptContext(state, context.playerId, timestamp, {
+                targetBaseIndex: context.targetBaseIndex,
+            }) satisfies MermaidsMermaidQueenTargetPromptContext,
+            nextProgram: mermaidsMermaidQueenControlPromptProgram,
+        };
+    },
+});
+
+const mermaidsCaptiveAudiencePromptProgram = createPromptProgram<MermaidsCaptiveAudiencePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_captive_audience',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_captive_audience_${context.now}`,
+        context.playerId,
+        `迷倒观众：选择你的一个随从，获得 +${context.bonusPower} 力量直到回合结束`,
+        buildMinionTargetOptions(
+            collectMinionsOnBase(context.matchState.core, context.baseIndex, minion => minion.controller === context.playerId),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'mermaids_captive_audience',
+            },
+        ) as any[],
+        { sourceId: 'mermaids_captive_audience', targetType: 'minion' },
+    ),
+    onResolve: ({ context, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined) {
+            return {
+                events: [grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: context.matchState }, 'mermaids_captive_audience')],
+            };
+        }
+        return {
+            events: [
+                addTempPower(selected.minionUid, selected.baseIndex, context.bonusPower, 'mermaids_captive_audience', timestamp),
+                grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: context.matchState }, 'mermaids_captive_audience'),
+            ],
+        };
+    },
+});
+
+const mermaidsOngoingMovePromptProgram = createPromptProgram<MermaidsOngoingMovePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_becalmed_shores',
+    interactionSourceIds: ['mermaids_shipwreck_cove_after_scoring'],
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.reason}_${context.now}`,
+        context.playerId,
+        context.title,
+        [
+            ...(context.allowSkip ? [createSkipOption(context.skipLabel ?? '跳过')] : []),
+            ...buildBaseTargetOptions(getOtherBases(context.matchState.core, context.fromBaseIndex), context.matchState.core),
+        ] as any[],
+        {
+            sourceId: context.reason === 'mermaids_shipwreck_cove'
+                ? 'mermaids_shipwreck_cove_after_scoring'
+                : 'mermaids_becalmed_shores',
+            targetType: 'base',
+        },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as BaseChoice;
+        if (selected.skip || selected.baseIndex === undefined || selected.baseIndex === context.fromBaseIndex) {
+            return { events: [] };
+        }
+        const currentOngoing = state.core.bases[context.fromBaseIndex]?.ongoingActions.find(action => action.uid === context.cardUid);
+        return {
+            events: buildMoveOngoingEvents(
+                context.cardUid,
+                context.defId,
+                context.ownerId,
+                selected.baseIndex,
+                context.reason,
+                timestamp,
+                currentOngoing ? { metadata: currentOngoing.metadata, talentUsed: currentOngoing.talentUsed } : undefined,
+            ),
+        };
+    },
+});
+
+const mermaidsUltimateSongHandPromptProgram = createPromptProgram<MermaidsUltimateSongHandPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_ultimate_song_hand',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_ultimate_song_hand_${context.forcedPlayerId}_${context.now}`,
+        context.forcedPlayerId,
+        '最后的歌声：选择一张力量 3 或以下的随从额外打出到目标基地',
+        buildHandMinionOptions(context.matchState.core, context.forcedPlayerId, 3) as any[],
+        { sourceId: 'mermaids_ultimate_song_hand', targetType: 'hand' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as HandMinionChoice;
+        if (!selected.cardUid || !selected.defId) return { events: [] };
+
+        const playedEvent: SmashUpEvent = {
+            type: SU_EVENTS.MINION_PLAYED,
+            payload: {
+                playerId: context.forcedPlayerId,
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                baseIndex: context.targetBaseIndex,
+                baseDefId: state.core.bases[context.targetBaseIndex]?.defId,
+                power: selected.power ?? 0,
+                consumesNormalLimit: false,
+                skipOnPlayAbility: true,
+            },
+            timestamp,
+        };
+
+        const advanced = advanceUltimateSongHandPrompt(
+            state,
+            state.core,
+            context.casterPlayerId,
+            context.targetBaseIndex,
+            context.remainingPlayerIds,
+            timestamp,
+        );
+        return { ...advanced, events: [playedEvent, ...advanced.events] };
+    },
+});
+
+const mermaidsUltimateSongBasePromptProgram = createPromptProgram<MermaidsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_ultimate_song_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_ultimate_song_base_${context.now}`,
+        context.playerId,
+        '最后的歌声：选择目标基地',
+        buildBaseTargetOptions(collectBasesWithOwnMinions(context.matchState.core, context.playerId), context.matchState.core) as any[],
+        { sourceId: 'mermaids_ultimate_song_base', targetType: 'base' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as BaseChoice;
+        if (selected.baseIndex === undefined) return { events: [] };
+        return advanceUltimateSongHandPrompt(
+            state,
+            state.core,
+            context.playerId,
+            selected.baseIndex,
+            getOtherPlayers(state.core, context.playerId),
+            timestamp,
+        );
+    },
+});
+
+const mermaidsSirenSongTargetPromptProgram = createPromptProgram<MermaidsSirenSongTargetPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_siren_song_target',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_siren_song_target_${context.targetPlayerId}_${context.now}`,
+        context.playerId,
+        `塞壬的歌声：选择玩家 ${context.targetPlayerId} 的一个随从移动`,
+        buildMinionTargetOptions(
+            collectMinionsOnBase(
+                context.matchState.core,
+                context.fromBaseIndex,
+                minion => minion.controller === context.targetPlayerId,
+            ),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'mermaids_siren_song',
+                effectType: 'move',
+            },
+        ) as any[],
+        { sourceId: 'mermaids_siren_song_target', targetType: 'minion' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) return { events: [] };
+        const advanced = advanceSirenSongTargetPrompt(
+            state,
+            state.core,
+            context.playerId,
+            context.fromBaseIndex,
+            context.toBaseIndex,
+            context.remainingPlayerIds,
+            timestamp,
+        );
+        return {
+            ...advanced,
+            events: [
+                ...buildValidatedMoveEvents(state, {
+                    minionUid: selected.minionUid,
+                    minionDefId: selected.defId,
+                    fromBaseIndex: selected.baseIndex,
+                    toBaseIndex: context.toBaseIndex,
+                    reason: 'mermaids_siren_song',
+                    now: timestamp,
+                }),
+                ...advanced.events,
+            ],
+        };
+    },
+});
+
+const mermaidsSirenSongDestinationPromptProgram = createPromptProgram<MermaidsSirenSongDestinationPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_siren_song_destination',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_siren_song_destination_${context.now}`,
+        context.playerId,
+        '塞壬的歌声：选择目标基地',
+        buildBaseTargetOptions(collectBasesWithOwnMinions(context.matchState.core, context.playerId, context.fromBaseIndex), context.matchState.core) as any[],
+        { sourceId: 'mermaids_siren_song_destination', targetType: 'base' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as BaseChoice;
+        if (selected.baseIndex === undefined) return { events: [] };
+        return advanceSirenSongTargetPrompt(
+            state,
+            state.core,
+            context.playerId,
+            context.fromBaseIndex,
+            selected.baseIndex,
+            context.remainingPlayerIds,
+            timestamp,
+        );
+    },
+});
+
+const mermaidsSirenSongBasePromptProgram = createPromptProgram<MermaidsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_siren_song_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_siren_song_base_${context.now}`,
+        context.playerId,
+        '塞壬的歌声：选择来源基地',
+        buildBaseTargetOptions(
+            context.matchState.core.bases
+                .map((base, baseIndex) => ({
+                    baseIndex,
+                    label: getBaseLabel(context.matchState.core, baseIndex),
+                    opponentMinionCount: base.minions.filter(minion => minion.controller !== context.playerId).length,
+                    destinationCount: collectBasesWithOwnMinions(context.matchState.core, context.playerId, baseIndex).length,
+                }))
+                .filter(base => base.opponentMinionCount > 0 && base.destinationCount > 0),
+            context.matchState.core,
+        ) as any[],
+        { sourceId: 'mermaids_siren_song_base', targetType: 'base' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as BaseChoice;
+        if (selected.baseIndex === undefined) return { events: [] };
+        const destinationBases = collectBasesWithOwnMinions(state.core, context.playerId, selected.baseIndex);
+        if (destinationBases.length === 0) {
+            return { events: [buildAbilityFeedback(context.playerId, 'feedback.no_valid_targets', timestamp)] };
+        }
+        return {
+            events: [],
+            context: createMermaidsPromptContext(state, context.playerId, timestamp, {
+                fromBaseIndex: selected.baseIndex,
+                remainingPlayerIds: getOtherPlayers(state.core, context.playerId),
+            }) satisfies MermaidsSirenSongDestinationPromptContext,
+            nextProgram: mermaidsSirenSongDestinationPromptProgram,
+        };
+    },
+});
+
+const mermaidsCharmedDestinationPromptProgram = createPromptProgram<MermaidsCharmedDestinationPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_charmed_destination',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_charmed_destination_${context.now}`,
+        context.playerId,
+        '魅惑：你可以把它移动到另一个你有随从的基地',
+        [
+            createSkipOption('不移动，直接完成'),
+            ...buildBaseTargetOptions(collectBasesWithOwnMinions(context.matchState.core, context.playerId, context.fromBaseIndex), context.matchState.core),
+        ] as any[],
+        { sourceId: 'mermaids_charmed_destination', targetType: 'base' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as BaseChoice;
+        const metadataBaseIndex = selected.skip || selected.baseIndex === undefined
+            ? context.fromBaseIndex
+            : selected.baseIndex;
+        const metadataEvent = buildMermaidsMetadataUpdatedEvent(
+            context.minionUid,
+            metadataBaseIndex,
+            { [MERMAIDS_CHARMED_SUPPRESSED_TURN_META]: state.core.turnNumber },
+            'mermaids_charmed',
+            timestamp,
+        );
+        if (selected.skip || selected.baseIndex === undefined) {
+            return {
+                events: [
+                    metadataEvent,
+                    grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: context.matchState }, 'mermaids_charmed'),
+                ],
+            };
+        }
+        return {
+            events: [
+                ...buildValidatedMoveEvents(state, {
+                    minionUid: context.minionUid,
+                    minionDefId: context.minionDefId,
+                    fromBaseIndex: context.fromBaseIndex,
+                    toBaseIndex: selected.baseIndex,
+                    reason: 'mermaids_charmed',
+                    now: timestamp,
+                }),
+                metadataEvent,
+                grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: context.matchState }, 'mermaids_charmed'),
+            ],
+        };
+    },
+});
+
+const mermaidsCharmedPromptProgram = createPromptProgram<MermaidsPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mermaids_charmed',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mermaids_charmed_${context.now}`,
+        context.playerId,
+        '魅惑：选择一个力量 3 或以下的随从',
+        buildMinionTargetOptions(
+            collectMinions(context.matchState.core, (minion, baseIndex) => getMinionPower(context.matchState.core, minion, baseIndex) <= 3),
+            {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceDefId: 'mermaids_charmed',
+                effectType: 'affect',
+            },
+        ) as any[],
+        { sourceId: 'mermaids_charmed', targetType: 'minion' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = value as MinionChoice;
+        if (!selected.minionUid || selected.baseIndex === undefined) return { events: [] };
+        const minion = state.core.bases[selected.baseIndex]?.minions.find(entry => entry.uid === selected.minionUid);
+        if (!minion) return { events: [] };
+        const destinationBases = collectBasesWithOwnMinions(state.core, context.playerId, selected.baseIndex);
+        if (destinationBases.length === 0) {
+            return {
+                events: [
+                    buildMermaidsMetadataUpdatedEvent(
+                        selected.minionUid,
+                        selected.baseIndex,
+                        { [MERMAIDS_CHARMED_SUPPRESSED_TURN_META]: state.core.turnNumber },
+                        'mermaids_charmed',
+                        timestamp,
+                    ),
+                    grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: context.matchState }, 'mermaids_charmed'),
+                ],
+            };
+        }
+        return {
+            events: [],
+            context: createMermaidsPromptContext(state, context.playerId, timestamp, {
+                minionUid: selected.minionUid,
+                minionDefId: minion.defId,
+                fromBaseIndex: selected.baseIndex,
+            }) satisfies MermaidsCharmedDestinationPromptContext,
+            nextProgram: mermaidsCharmedDestinationPromptProgram,
+        };
+    },
+});
 
 function mermaidsCharmerTalent(ctx: AbilityContext): AbilityResult {
     const otherBases = getOtherBases(ctx.state, ctx.baseIndex);
@@ -391,22 +949,15 @@ function mermaidsCharmerTalent(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    const interaction = createSimpleChoice(
-        `mermaids_charmer_move_${ctx.now}`,
-        ctx.playerId,
-        '迷人的人：你可以先移动这个随从',
-        [
-            createSkipOption('不移动这个随从'),
-            ...buildBaseTargetOptions(otherBases, ctx.state),
-        ],
-        { sourceId: 'mermaids_charmer_move', targetType: 'base' },
+    const result = executeAbilityProgram(
+        mermaidsCharmerMovePromptProgram,
+        createMermaidsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            charmerUid: ctx.cardUid,
+            charmerDefId: ctx.defId,
+            fromBaseIndex: ctx.baseIndex,
+        }) satisfies MermaidsCharmerMovePromptContext,
     );
-    (interaction.data as { continuationContext?: CharmerMoveContinuation }).continuationContext = {
-        charmerUid: ctx.cardUid,
-        charmerDefId: ctx.defId,
-        fromBaseIndex: ctx.baseIndex,
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function mermaidsMermaidQueenOnPlay(ctx: AbilityContext): AbilityResult {
@@ -425,57 +976,32 @@ function mermaidsMermaidQueenOnPlay(ctx: AbilityContext): AbilityResult {
     }
 
     if (moveTargets.length > 0 && controlTargets.length === 0) {
-        const interaction = createSimpleChoice(
-            `mermaids_mermaid_queen_move_${ctx.now}`,
-            ctx.playerId,
-            '人鱼女王：选择一个其他玩家的随从移到这里',
-            buildMinionTargetOptions(moveTargets, {
-                state: ctx.state,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: ctx.defId,
-                effectType: 'move',
-            }),
-            { sourceId: 'mermaids_mermaid_queen_move', targetType: 'minion' },
+        const result = executeAbilityProgram(
+            mermaidsMermaidQueenMovePromptProgram,
+            createMermaidsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                targetBaseIndex: ctx.baseIndex,
+            }) satisfies MermaidsMermaidQueenTargetPromptContext,
         );
-        (interaction.data as { continuationContext?: MermaidQueenMoveContinuation }).continuationContext = {
-            targetBaseIndex: ctx.baseIndex,
-        };
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+        return { events: result.events, matchState: result.matchState };
     }
 
     if (moveTargets.length === 0) {
-        const interaction = createSimpleChoice(
-            `mermaids_mermaid_queen_control_${ctx.now}`,
-            ctx.playerId,
-            '人鱼女王：选择这里一个力量 3 或以下的随从，直到回合结束获得其控制权',
-            buildMinionTargetOptions(controlTargets, {
-                state: ctx.state,
-                sourcePlayerId: ctx.playerId,
-                sourceDefId: ctx.defId,
-                effectType: 'affect',
-            }),
-            { sourceId: 'mermaids_mermaid_queen_control', targetType: 'minion' },
+        const result = executeAbilityProgram(
+            mermaidsMermaidQueenControlPromptProgram,
+            createMermaidsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+                targetBaseIndex: ctx.baseIndex,
+            }) satisfies MermaidsMermaidQueenTargetPromptContext,
         );
-        (interaction.data as { continuationContext?: MermaidQueenControlContinuation }).continuationContext = {
-            targetBaseIndex: ctx.baseIndex,
-        };
-        return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+        return { events: result.events, matchState: result.matchState };
     }
 
-    const interaction = createSimpleChoice(
-        `mermaids_mermaid_queen_mode_${ctx.now}`,
-        ctx.playerId,
-        '人鱼女王：选择要执行的效果',
-        [
-            { id: 'move', label: '把一个其他玩家的随从移到这里', value: { mode: 'move' }, displayMode: 'button' as const },
-            { id: 'control', label: '直到回合结束获得这里一个力量 3 或以下随从的控制权', value: { mode: 'control' }, displayMode: 'button' as const },
-        ],
-        { sourceId: 'mermaids_mermaid_queen_mode', targetType: 'static' },
+    const result = executeAbilityProgram(
+        mermaidsMermaidQueenModePromptProgram,
+        createMermaidsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            targetBaseIndex: ctx.baseIndex,
+        }) satisfies MermaidsMermaidQueenModePromptContext,
     );
-    (interaction.data as { continuationContext?: MermaidQueenModeContinuation }).continuationContext = {
-        targetBaseIndex: ctx.baseIndex,
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function mermaidsCaptiveAudienceOnPlay(ctx: AbilityContext): AbilityResult {
@@ -496,21 +1022,14 @@ function mermaidsCaptiveAudienceOnPlay(ctx: AbilityContext): AbilityResult {
         };
     }
 
-    const interaction = createSimpleChoice(
-        `mermaids_captive_audience_${ctx.now}`,
-        ctx.playerId,
-        `迷倒观众：选择你的一个随从，获得 +${bonusPower} 力量直到回合结束`,
-        buildMinionTargetOptions(ownMinions, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-        }),
-        { sourceId: 'mermaids_captive_audience', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        mermaidsCaptiveAudiencePromptProgram,
+        createMermaidsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            bonusPower,
+            baseIndex: ctx.baseIndex,
+        }) satisfies MermaidsCaptiveAudiencePromptContext,
     );
-    (interaction.data as { continuationContext?: CaptiveAudienceContinuation }).continuationContext = {
-        bonusPower,
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function mermaidsBecalmedShoresTalent(ctx: AbilityContext): AbilityResult {
@@ -518,21 +1037,18 @@ function mermaidsBecalmedShoresTalent(ctx: AbilityContext): AbilityResult {
     if (baseTargets.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `mermaids_becalmed_shores_${ctx.now}`,
-        ctx.playerId,
-        '安静的海岸：把这张牌移到另一个基地',
-        buildBaseTargetOptions(baseTargets, ctx.state),
-        { sourceId: 'mermaids_becalmed_shores', targetType: 'base' },
+    const result = executeAbilityProgram(
+        mermaidsOngoingMovePromptProgram,
+        createMermaidsPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            cardUid: ctx.cardUid,
+            defId: ctx.defId,
+            ownerId: ctx.playerId,
+            fromBaseIndex: ctx.baseIndex,
+            reason: 'mermaids_becalmed_shores',
+            title: '安静的海岸：把这张牌移到另一个基地',
+        }) satisfies MermaidsOngoingMovePromptContext,
     );
-    (interaction.data as { continuationContext?: OngoingMoveContinuation }).continuationContext = {
-        cardUid: ctx.cardUid,
-        defId: ctx.defId,
-        ownerId: ctx.playerId,
-        fromBaseIndex: ctx.baseIndex,
-        reason: 'mermaids_becalmed_shores',
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function mermaidsUltimateSongOnPlay(ctx: AbilityContext): AbilityResult {
@@ -540,14 +1056,11 @@ function mermaidsUltimateSongOnPlay(ctx: AbilityContext): AbilityResult {
     if (baseTargets.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `mermaids_ultimate_song_base_${ctx.now}`,
-        ctx.playerId,
-        '最后的歌声：选择目标基地',
-        buildBaseTargetOptions(baseTargets, ctx.state),
-        { sourceId: 'mermaids_ultimate_song_base', targetType: 'base' },
+    const result = executeAbilityProgram(
+        mermaidsUltimateSongBasePromptProgram,
+        createMermaidsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function mermaidsSirenSongOnPlay(ctx: AbilityContext): AbilityResult {
@@ -563,14 +1076,11 @@ function mermaidsSirenSongOnPlay(ctx: AbilityContext): AbilityResult {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
 
-    const interaction = createSimpleChoice(
-        `mermaids_siren_song_base_${ctx.now}`,
-        ctx.playerId,
-        '塞壬的歌声：选择来源基地',
-        buildBaseTargetOptions(sourceBases, ctx.state),
-        { sourceId: 'mermaids_siren_song_base', targetType: 'base' },
+    const result = executeAbilityProgram(
+        mermaidsSirenSongBasePromptProgram,
+        createMermaidsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function mermaidsTollBayOnPlay(ctx: AbilityContext): AbilityResult {
@@ -597,19 +1107,11 @@ function mermaidsCharmedOnPlay(ctx: AbilityContext): AbilityResult {
     if (targets.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     }
-    const interaction = createSimpleChoice(
-        `mermaids_charmed_${ctx.now}`,
-        ctx.playerId,
-        '魅惑：选择一个力量 3 或以下的随从',
-        buildMinionTargetOptions(targets, {
-            state: ctx.state,
-            sourcePlayerId: ctx.playerId,
-            sourceDefId: ctx.defId,
-            effectType: 'affect',
-        }),
-        { sourceId: 'mermaids_charmed', targetType: 'minion' },
+    const result = executeAbilityProgram(
+        mermaidsCharmedPromptProgram,
+        createMermaidsPromptContext(ctx.matchState, ctx.playerId, ctx.now),
     );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return { events: result.events, matchState: result.matchState };
 }
 
 function mermaidsShipwreckCoveAfterScoring(ctx: TriggerContext): AbilityResult {
@@ -620,24 +1122,20 @@ function mermaidsShipwreckCoveAfterScoring(ctx: TriggerContext): AbilityResult {
     if (baseTargets.length === 0) {
         return { events: [] };
     }
-    const interaction = createSimpleChoice(
-        `mermaids_shipwreck_cove_after_scoring_${ctx.now}`,
-        ctx.sourceControllerId,
-        '沉船湾：你可以把这张牌移到另一个基地',
-        [
-            createSkipOption('不移动沉船湾'),
-            ...buildBaseTargetOptions(baseTargets, ctx.state),
-        ],
-        { sourceId: 'mermaids_shipwreck_cove_after_scoring', targetType: 'base' },
+    if (!ctx.matchState) return { events: [] };
+    return executeAbilityProgram(
+        mermaidsOngoingMovePromptProgram,
+        createMermaidsPromptContext(ctx.matchState, ctx.sourceControllerId, ctx.now, {
+            cardUid: ctx.sourceCardUid,
+            defId: 'mermaids_shipwreck_cove',
+            ownerId: ctx.sourceControllerId,
+            fromBaseIndex: ctx.sourceBaseIndex,
+            reason: 'mermaids_shipwreck_cove',
+            title: '沉船湾：你可以把这张牌移到另一个基地',
+            allowSkip: true,
+            skipLabel: '不移动沉船湾',
+        }) satisfies MermaidsOngoingMovePromptContext,
     );
-    (interaction.data as { continuationContext?: OngoingMoveContinuation }).continuationContext = {
-        cardUid: ctx.sourceCardUid,
-        defId: 'mermaids_shipwreck_cove',
-        ownerId: ctx.sourceControllerId,
-        fromBaseIndex: ctx.sourceBaseIndex,
-        reason: 'mermaids_shipwreck_cove',
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
 
 function mermaidsDesertIslandOnTurnStart(ctx: TriggerContext): SmashUpEvent[] {
@@ -656,15 +1154,15 @@ function mermaidsDesertIslandOnTurnStart(ctx: TriggerContext): SmashUpEvent[] {
 }
 
 export function registerMermaidsAbilities(): void {
-    registerAbility('mermaids_charmer', 'talent', mermaidsCharmerTalent);
-    registerAbility('mermaids_mermaid_queen', 'onPlay', mermaidsMermaidQueenOnPlay);
-    registerAbility('mermaids_ultimate_song', 'onPlay', mermaidsUltimateSongOnPlay);
-    registerAbility('mermaids_captive_audience', 'onPlay', mermaidsCaptiveAudienceOnPlay);
-    registerAbility('mermaids_becalmed_shores', 'talent', mermaidsBecalmedShoresTalent);
-    registerAbility('mermaids_siren_song', 'onPlay', mermaidsSirenSongOnPlay);
+    registerAbilityProgram('mermaids_charmer', 'talent', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCharmerTalent) });
+    registerAbilityProgram('mermaids_mermaid_queen', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsMermaidQueenOnPlay) });
+    registerAbilityProgram('mermaids_ultimate_song', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsUltimateSongOnPlay) });
+    registerAbilityProgram('mermaids_captive_audience', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCaptiveAudienceOnPlay) });
+    registerAbilityProgram('mermaids_becalmed_shores', 'talent', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsBecalmedShoresTalent) });
+    registerAbilityProgram('mermaids_siren_song', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsSirenSongOnPlay) });
     registerAbility('mermaids_toll_bay', 'onPlay', mermaidsTollBayOnPlay);
     registerAbility('mermaids_shipwreck_cove', 'special', mermaidsShipwreckCoveSpecial);
-    registerAbility('mermaids_charmed', 'onPlay', mermaidsCharmedOnPlay);
+    registerAbilityProgram('mermaids_charmed', 'onPlay', { program: createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>(mermaidsCharmedOnPlay) });
     registerAbility('mermaids_desert_island', 'onPlay', mermaidsDesertIslandOnPlay);
 
     registerTrigger('mermaids_shipwreck_cove', 'afterScoring', mermaidsShipwreckCoveAfterScoring, {
@@ -675,429 +1173,12 @@ export function registerMermaidsAbilities(): void {
     registerTrigger('mermaids_desert_island', 'onTurnStart', mermaidsDesertIslandOnTurnStart, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        orderingFootprint: {
+            reads: ['sourceState'],
+            writes: ['sourceState'],
+        },
     });
 }
 
-const handleMermaidsCharmerMove: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as BaseChoice;
-    const continuation = data?.continuationContext as CharmerMoveContinuation | undefined;
-    if (!continuation) return { state, events: [] };
-
-    const targetBaseIndex = selected.skip || selected.baseIndex === undefined
-        ? continuation.fromBaseIndex
-        : selected.baseIndex;
-    const moveEvents = (!selected.skip && selected.baseIndex !== undefined)
-        ? buildValidatedMoveEvents(state, {
-            minionUid: continuation.charmerUid,
-            minionDefId: continuation.charmerDefId,
-            fromBaseIndex: continuation.fromBaseIndex,
-            toBaseIndex: selected.baseIndex,
-            reason: 'mermaids_charmer',
-            now: timestamp,
-        })
-        : [];
-
-    const queued = queueCharmerTargetPrompt(state, state.core, playerId, targetBaseIndex, timestamp);
-    return {
-        state: queued.matchState ?? state,
-        events: [...moveEvents, ...queued.events],
-    };
-};
-
-const handleMermaidsCharmerTarget: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    const continuation = data?.continuationContext as CharmerTargetContinuation | undefined;
-    if (!continuation || selected.skip || !selected.minionUid || selected.baseIndex === undefined || !selected.defId) {
-        return { state, events: [] };
-    }
-    return {
-        state,
-        events: buildValidatedMoveEvents(state, {
-            minionUid: selected.minionUid,
-            minionDefId: selected.defId,
-            fromBaseIndex: selected.baseIndex,
-            toBaseIndex: continuation.targetBaseIndex,
-            reason: 'mermaids_charmer',
-            now: timestamp,
-        }),
-    };
-};
-
-const handleMermaidsMermaidQueenMode: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as ModeChoice;
-    const continuation = data?.continuationContext as MermaidQueenModeContinuation | undefined;
-    if (!continuation || !selected.mode) return { state, events: [] };
-
-    if (selected.mode === 'move') {
-        const moveTargets = collectMinions(
-            state.core,
-            (minion, baseIndex) => minion.controller !== playerId && baseIndex !== continuation.targetBaseIndex,
-        );
-        if (moveTargets.length === 0) {
-            return { state, events: [buildAbilityFeedback(playerId, 'feedback.no_valid_targets', timestamp)] };
-        }
-        const interaction = createSimpleChoice(
-            `mermaids_mermaid_queen_move_${timestamp}`,
-            playerId,
-            '人鱼女王：选择一个其他玩家的随从移到这里',
-            buildMinionTargetOptions(moveTargets, {
-                state: state.core,
-                sourcePlayerId: playerId,
-                sourceDefId: 'mermaids_mermaid_queen',
-                effectType: 'move',
-            }),
-            { sourceId: 'mermaids_mermaid_queen_move', targetType: 'minion' },
-        );
-        (interaction.data as { continuationContext?: MermaidQueenMoveContinuation }).continuationContext = {
-            targetBaseIndex: continuation.targetBaseIndex,
-        };
-        return { state: queueInteraction(state, interaction), events: [] };
-    }
-
-    const controlTargets = collectMinionsOnBase(
-        state.core,
-        continuation.targetBaseIndex,
-        minion => minion.controller !== playerId && getMinionPower(state.core, minion, continuation.targetBaseIndex) <= 3,
-    );
-    if (controlTargets.length === 0) {
-        return { state, events: [buildAbilityFeedback(playerId, 'feedback.no_valid_targets', timestamp)] };
-    }
-    const interaction = createSimpleChoice(
-        `mermaids_mermaid_queen_control_${timestamp}`,
-        playerId,
-        '人鱼女王：选择这里一个力量 3 或以下的随从，直到回合结束获得其控制权',
-        buildMinionTargetOptions(controlTargets, {
-            state: state.core,
-            sourcePlayerId: playerId,
-            sourceDefId: 'mermaids_mermaid_queen',
-            effectType: 'affect',
-        }),
-        { sourceId: 'mermaids_mermaid_queen_control', targetType: 'minion' },
-    );
-    (interaction.data as { continuationContext?: MermaidQueenControlContinuation }).continuationContext = {
-        targetBaseIndex: continuation.targetBaseIndex,
-    };
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleMermaidsMermaidQueenMove: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    const continuation = data?.continuationContext as MermaidQueenMoveContinuation | undefined;
-    if (!continuation || !selected.minionUid || selected.baseIndex === undefined || !selected.defId) {
-        return { state, events: [] };
-    }
-    return {
-        state,
-        events: buildValidatedMoveEvents(state, {
-            minionUid: selected.minionUid,
-            minionDefId: selected.defId,
-            fromBaseIndex: selected.baseIndex,
-            toBaseIndex: continuation.targetBaseIndex,
-            reason: 'mermaids_mermaid_queen',
-            now: timestamp,
-        }),
-    };
-};
-
-const handleMermaidsMermaidQueenControl: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined || !selected.defId) {
-        return { state, events: [] };
-    }
-    const minion = state.core.bases[selected.baseIndex]?.minions.find(entry => entry.uid === selected.minionUid);
-    if (!minion || minion.controller === playerId) {
-        return { state, events: [] };
-    }
-    return {
-        state,
-        events: [
-            changeMinionController(
-                minion.uid,
-                minion.defId,
-                selected.baseIndex,
-                minion.owner,
-                minion.controller,
-                playerId,
-                playerId,
-                'mermaids_mermaid_queen',
-                timestamp,
-            ),
-            buildMermaidsMetadataUpdatedEvent(
-                minion.uid,
-                selected.baseIndex,
-                {
-                    [MERMAIDS_TEMP_CONTROL_CONTROLLER_META]: minion.controller,
-                    [MERMAIDS_TEMP_CONTROL_PLAYER_META]: playerId,
-                    [MERMAIDS_TEMP_CONTROL_TURN_META]: state.core.turnNumber,
-                },
-                'mermaids_mermaid_queen',
-                timestamp,
-            ),
-        ],
-    };
-};
-
-const handleMermaidsCaptiveAudience: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    const continuation = data?.continuationContext as CaptiveAudienceContinuation | undefined;
-    if (!continuation || !selected.minionUid || selected.baseIndex === undefined) {
-        return {
-            state,
-            events: [grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'mermaids_captive_audience')],
-        };
-    }
-    return {
-        state,
-        events: [
-            addTempPower(selected.minionUid, selected.baseIndex, continuation.bonusPower, 'mermaids_captive_audience', timestamp),
-            grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'mermaids_captive_audience'),
-        ],
-    };
-};
-
-const handleMermaidsOngoingMove: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const selected = value as BaseChoice;
-    const continuation = data?.continuationContext as OngoingMoveContinuation | undefined;
-    if (!continuation || selected.skip || selected.baseIndex === undefined || selected.baseIndex === continuation.fromBaseIndex) {
-        return { state, events: [] };
-    }
-    const currentOngoing = state.core.bases[continuation.fromBaseIndex]?.ongoingActions
-        .find(action => action.uid === continuation.cardUid);
-    return {
-        state,
-        events: buildMoveOngoingEvents(
-            continuation.cardUid,
-            continuation.defId,
-            continuation.ownerId,
-            selected.baseIndex,
-            continuation.reason,
-            timestamp,
-            currentOngoing ? {
-                metadata: currentOngoing.metadata,
-                talentUsed: currentOngoing.talentUsed,
-            } : undefined,
-        ),
-    };
-};
-
-const handleMermaidsUltimateSongBase: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as BaseChoice;
-    if (selected.baseIndex === undefined) return { state, events: [] };
-    const queued = queueUltimateSongPrompt(
-        state,
-        state.core,
-        playerId,
-        selected.baseIndex,
-        getOtherPlayers(state.core, playerId),
-        timestamp,
-    );
-    return { state: queued.matchState ?? state, events: queued.events };
-};
-
-const handleMermaidsUltimateSongHand: InteractionHandler = (state, _playerId, value, data, _random, timestamp) => {
-    const selected = value as HandMinionChoice;
-    const continuation = data?.continuationContext as UltimateSongContinuation | undefined;
-    if (!continuation || !selected.cardUid || !selected.defId) {
-        return { state, events: [] };
-    }
-
-    const playedEvent: SmashUpEvent = {
-        type: SU_EVENTS.MINION_PLAYED,
-        payload: {
-            playerId: continuation.forcedPlayerId,
-            cardUid: selected.cardUid,
-            defId: selected.defId,
-            baseIndex: continuation.targetBaseIndex,
-            baseDefId: state.core.bases[continuation.targetBaseIndex]?.defId,
-            power: selected.power ?? 0,
-            consumesNormalLimit: false,
-            skipOnPlayAbility: true,
-        },
-        timestamp,
-    };
-
-    const queued = queueUltimateSongPrompt(
-        state,
-        state.core,
-        continuation.casterPlayerId,
-        continuation.targetBaseIndex,
-        continuation.remainingPlayerIds,
-        timestamp,
-    );
-
-    return {
-        state: queued.matchState ?? state,
-        events: [playedEvent, ...queued.events],
-    };
-};
-
-const handleMermaidsSirenSongBase: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as BaseChoice;
-    if (selected.baseIndex === undefined) return { state, events: [] };
-
-    const destinationBases = collectBasesWithOwnMinions(state.core, playerId, selected.baseIndex);
-    if (destinationBases.length === 0) {
-        return { state, events: [buildAbilityFeedback(playerId, 'feedback.no_valid_targets', timestamp)] };
-    }
-
-    const interaction = createSimpleChoice(
-        `mermaids_siren_song_destination_${timestamp}`,
-        playerId,
-        '塞壬的歌声：选择目标基地',
-        buildBaseTargetOptions(destinationBases, state.core),
-        { sourceId: 'mermaids_siren_song_destination', targetType: 'base' },
-    );
-    (interaction.data as { continuationContext?: SirenSongDestinationContinuation }).continuationContext = {
-        fromBaseIndex: selected.baseIndex,
-        remainingPlayerIds: getOtherPlayers(state.core, playerId),
-    };
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleMermaidsSirenSongDestination: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as BaseChoice;
-    const continuation = data?.continuationContext as SirenSongDestinationContinuation | undefined;
-    if (!continuation || selected.baseIndex === undefined) return { state, events: [] };
-
-    const queued = queueSirenSongTargetPrompt(
-        state,
-        state.core,
-        playerId,
-        continuation.fromBaseIndex,
-        selected.baseIndex,
-        continuation.remainingPlayerIds,
-        timestamp,
-    );
-    return { state: queued.matchState ?? state, events: queued.events };
-};
-
-const handleMermaidsSirenSongTarget: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    const continuation = data?.continuationContext as SirenSongTargetContinuation | undefined;
-    if (!continuation || !selected.minionUid || selected.baseIndex === undefined || !selected.defId) {
-        return { state, events: [] };
-    }
-
-    const queued = queueSirenSongTargetPrompt(
-        state,
-        state.core,
-        playerId,
-        continuation.fromBaseIndex,
-        continuation.toBaseIndex,
-        continuation.remainingPlayerIds,
-        timestamp,
-    );
-
-    return {
-        state: queued.matchState ?? state,
-        events: [
-            ...buildValidatedMoveEvents(state, {
-                minionUid: selected.minionUid,
-                minionDefId: selected.defId,
-                fromBaseIndex: selected.baseIndex,
-                toBaseIndex: continuation.toBaseIndex,
-                reason: 'mermaids_siren_song',
-                now: timestamp,
-            }),
-            ...queued.events,
-        ],
-    };
-};
-
-const handleMermaidsCharmed: InteractionHandler = (state, playerId, value, _data, _random, timestamp) => {
-    const selected = value as MinionChoice;
-    if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
-    const minion = state.core.bases[selected.baseIndex]?.minions.find(entry => entry.uid === selected.minionUid);
-    if (!minion) return { state, events: [] };
-    const destinationBases = collectBasesWithOwnMinions(state.core, playerId, selected.baseIndex);
-    if (destinationBases.length === 0) {
-        return {
-            state,
-            events: [
-                buildMermaidsMetadataUpdatedEvent(
-                    selected.minionUid,
-                    selected.baseIndex,
-                    { [MERMAIDS_CHARMED_SUPPRESSED_TURN_META]: state.core.turnNumber },
-                    'mermaids_charmed',
-                    timestamp,
-                ),
-                grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'mermaids_charmed'),
-            ],
-        };
-    }
-    const interaction = createSimpleChoice(
-        `mermaids_charmed_destination_${timestamp}`,
-        playerId,
-        '魅惑：你可以把它移动到另一个你有随从的基地',
-        [
-            createSkipOption('不移动，直接完成'),
-            ...buildBaseTargetOptions(destinationBases, state.core),
-        ],
-        { sourceId: 'mermaids_charmed_destination', targetType: 'base' },
-    );
-    (interaction.data as { continuationContext?: CharmedContinuation }).continuationContext = {
-        minionUid: selected.minionUid,
-        minionDefId: minion.defId,
-        fromBaseIndex: selected.baseIndex,
-    };
-    return { state: queueInteraction(state, interaction), events: [] };
-};
-
-const handleMermaidsCharmedDestination: InteractionHandler = (state, playerId, value, data, _random, timestamp) => {
-    const selected = value as BaseChoice;
-    const continuation = data?.continuationContext as CharmedContinuation | undefined;
-    if (!continuation) return { state, events: [] };
-
-    const metadataBaseIndex = selected.skip || selected.baseIndex === undefined
-        ? continuation.fromBaseIndex
-        : selected.baseIndex;
-    const metadataEvent = buildMermaidsMetadataUpdatedEvent(
-        continuation.minionUid,
-        metadataBaseIndex,
-        { [MERMAIDS_CHARMED_SUPPRESSED_TURN_META]: state.core.turnNumber },
-        'mermaids_charmed',
-        timestamp,
-    );
-    if (selected.skip || selected.baseIndex === undefined) {
-        return {
-            state,
-            events: [
-                metadataEvent,
-                grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'mermaids_charmed'),
-            ],
-        };
-    }
-    return {
-        state,
-        events: [
-            ...buildValidatedMoveEvents(state, {
-                minionUid: continuation.minionUid,
-                minionDefId: continuation.minionDefId,
-                fromBaseIndex: continuation.fromBaseIndex,
-                toBaseIndex: selected.baseIndex,
-                reason: 'mermaids_charmed',
-                now: timestamp,
-            }),
-            metadataEvent,
-            grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'mermaids_charmed'),
-        ],
-    };
-};
-
 export function registerMermaidsInteractionHandlers(): void {
-    registerInteractionHandler('mermaids_charmer_move', handleMermaidsCharmerMove);
-    registerInteractionHandler('mermaids_charmer_target', handleMermaidsCharmerTarget);
-    registerInteractionHandler('mermaids_mermaid_queen_mode', handleMermaidsMermaidQueenMode);
-    registerInteractionHandler('mermaids_mermaid_queen_move', handleMermaidsMermaidQueenMove);
-    registerInteractionHandler('mermaids_mermaid_queen_control', handleMermaidsMermaidQueenControl);
-    registerInteractionHandler('mermaids_captive_audience', handleMermaidsCaptiveAudience);
-    registerInteractionHandler('mermaids_becalmed_shores', handleMermaidsOngoingMove);
-    registerInteractionHandler('mermaids_shipwreck_cove_after_scoring', handleMermaidsOngoingMove);
-    registerInteractionHandler('mermaids_ultimate_song_base', handleMermaidsUltimateSongBase);
-    registerInteractionHandler('mermaids_ultimate_song_hand', handleMermaidsUltimateSongHand);
-    registerInteractionHandler('mermaids_siren_song_base', handleMermaidsSirenSongBase);
-    registerInteractionHandler('mermaids_siren_song_destination', handleMermaidsSirenSongDestination);
-    registerInteractionHandler('mermaids_siren_song_target', handleMermaidsSirenSongTarget);
-    registerInteractionHandler('mermaids_charmed', handleMermaidsCharmed);
-    registerInteractionHandler('mermaids_charmed_destination', handleMermaidsCharmedDestination);
 }

@@ -177,6 +177,11 @@ export function registerExpansionBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { targetBaseIndex: ctx.baseIndex } },
             }),
         };
+    }, {
+        orderingFootprint: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     // ── 藏骨堂（Ossuary）──────────────────────────────────────
@@ -214,6 +219,11 @@ export function registerExpansionBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { targetBaseIndex: ctx.baseIndex } },
             }),
         };
+    }, {
+        orderingFootprint: {
+            reads: ['discardState'],
+            writes: ['discardState', 'baseState'],
+        },
     });
 
     // ── 竞技场（Arena）───────────────────────────────────────────
@@ -237,6 +247,10 @@ export function registerExpansionBaseAbilities(): void {
             { sourceId: 'base_arena', targetType: 'button' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        orderingFootprint: {
+            writes: ['playLimits', 'handState', 'deckState'],
+        },
     });
 
     // ── 名人堂（Hall of Fame）───────────────────────────────────
@@ -285,6 +299,11 @@ export function registerExpansionBaseAbilities(): void {
             { sourceId: 'base_the_asylum', targetType: 'hand' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        orderingFootprint: {
+            reads: ['handState', 'minionBoardState'],
+            writes: ['handState', 'minionBoardState'],
+        },
     });
 
     // ── 印斯茅斯基地（Innsmouth Base）────────────────────────────
@@ -373,6 +392,11 @@ export function registerExpansionBaseAbilities(): void {
             { sourceId: 'base_miskatonic_university_base', targetType: 'button' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        orderingFootprint: {
+            reads: ['handState', 'madnessDeckState'],
+            writes: ['handState', 'madnessDeckState', 'playLimits'],
+        },
     });
 
     // ── 冷原高地（Plateau of Leng）──────────────────────────────
@@ -398,6 +422,10 @@ export function registerExpansionBaseAbilities(): void {
                 }),
             ],
         };
+    }, {
+        orderingFootprint: {
+            writes: ['playLimits'],
+        },
     });
 
     // ============================================================================
@@ -528,6 +556,11 @@ export function registerExpansionBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } },
             }),
         };
+    }, {
+        orderingFootprint: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState', 'handState', 'deckState'],
+        },
     });
 
     // ── 魔法林地（Enchanted Glade）──────────────────────────────
@@ -571,6 +604,11 @@ export function registerExpansionBaseAbilities(): void {
                 ],
             }),
         };
+    }, {
+        orderingFootprint: {
+            reads: ['titanBoardState'],
+            writes: ['playLimits', 'titanBoardState'],
+        },
     });
 
     // ── 平衡之地（Land of Balance）──────────────────────────────
@@ -624,6 +662,11 @@ export function registerExpansionBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { balanceBaseIndex } },
             }),
         };
+    }, {
+        orderingFootprint: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     // ── 九命之屋（House of Nine Lives）──────────────────────────

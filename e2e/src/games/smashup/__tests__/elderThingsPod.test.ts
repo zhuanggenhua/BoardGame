@@ -308,6 +308,58 @@ describe('elder_things_pod: The Price of Power POD', () => {
         expect(counters.every(e => e.payload.amount === 1)).toBe(true);
         expect(counters.every(e => e.payload.reason === 'elder_thing_the_price_of_power_pod')).toBe(true);
     });
+
+    it('outside Me First! window prompts to choose a base and resolves through runtime prompt chain', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'elder_thing_the_price_of_power_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1', {
+                    hand: [makeCard('m1', MADNESS_CARD_DEF_ID, 'action', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            bases: [
+                {
+                    defId: 'base_the_jungle',
+                    minions: [],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_temple_of_goju',
+                    minions: [
+                        makeMinion('p0m1', 'robot_microbot', '0', 3),
+                        makeMinion('p1m1', 'robot_microbot', '1', 3),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt: any = getInteractionsFromMS(played.finalState)[0]?.data;
+        expect(prompt?.sourceId).toBe('elder_thing_the_price_of_power_pod_choose_base');
+        expect((prompt?.options ?? []).map((option: any) => option.value?.baseIndex)).toEqual([0, 1]);
+
+        const chooseBase = runCommand(
+            played.finalState,
+            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: prompt.options[1].id } },
+            defaultTestRandom,
+        );
+
+        const revealEvt: any = chooseBase.events.find(e => e.type === SU_EVENTS.REVEAL_HAND);
+        expect(revealEvt?.payload?.targetPlayerId).toBe('1');
+        const counters = chooseBase.events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED) as any[];
+        expect(counters).toHaveLength(1);
+        expect(counters[0].payload.amount).toBe(1);
+        expect(counters[0].payload.reason).toBe('elder_thing_the_price_of_power_pod');
+    });
 });
 
 describe('elder_things_pod: Spreading Horror POD', () => {
@@ -442,4 +494,7 @@ describe('elder_things_pod extra timing regression coverage', () => {
         expect((limitEvents[0] as any).payload.playTiming).toBe('immediate');
     });
 });
+
+
+
 

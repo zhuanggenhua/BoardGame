@@ -123,13 +123,14 @@ describe('修格斯消灭随从选择权', () => {
         const opM2 = makeMinion('op-2', 'test_minion_b', '1', 5, { powerModifier: 0 });
         const base = makeBase({ minions: [shoggoth, opM1, opM2] });
         const state = makeState({ bases: [base] });
-        const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+        const first = triggerShoggothOnPlay(state);
+        const firstPrompt = (first.matchState?.sys as any)?.interaction?.current;
+        const opponentHandler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
+        const afterDecline = opponentHandler(first.matchState!, '1', { choice: 'decline' }, firstPrompt?.data, dummyRandom, 1)!;
+        const destroyPrompt = (afterDecline.state?.sys as any)?.interaction?.current;
 
         const destroyHandler = getInteractionHandler('elder_thing_shoggoth_destroy')!;
-        const iData = {
-            continuationContext: { casterPlayerId: '0', baseIndex: 0, opponents: ['1'], opponentIdx: 0 },
-        };
-        const result = destroyHandler(ms, '0', { minionUid: 'op-2', baseIndex: 0, defId: 'test_minion_b' }, iData, dummyRandom, 2)!;
+        const result = destroyHandler(afterDecline.state!, '0', { minionUid: 'op-2', baseIndex: 0, defId: 'test_minion_b' }, destroyPrompt?.data, dummyRandom, 2)!;
 
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(1);

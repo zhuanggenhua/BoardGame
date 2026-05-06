@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useState, useMemo, type ReactNode, useCallback } from 'react';
 import { useAuth } from './AuthContext';
 import { generateUUID } from '../lib/uuid';
-import { socialSocket, SOCIAL_EVENTS, scheduleDeferredSocialConnect, type FriendStatusPayload, type FriendRequestPayload, type NewMessagePayload } from '../services/socialSocket';
+import { socialSocket, SOCIAL_EVENTS, scheduleDeferredSocialConnect, normalizeNewMessagePayload, type FriendStatusPayload, type FriendRequestPayload, type NewMessagePayload } from '../services/socialSocket';
 import { AUTH_API_URL } from '../config/server';
 import type { FriendUser, FriendRequest, Conversation, Message, SearchUserResult } from '../services/social.types';
 import i18n from '../lib/i18n';
@@ -202,12 +202,13 @@ export function SocialProvider({ children }: { children: ReactNode }) {
             log.info('friend_request_received', { requestId: payload.requestId, fromUserId: payload.from.id });
         };
 
-        const handleNewMessage = (payload: NewMessagePayload) => {
+        const handleNewMessage = (rawPayload: NewMessagePayload) => {
+            const payload = normalizeNewMessagePayload(rawPayload, user.id);
             // 如果是新消息，更新会话列表
             // 如果当前未打开该会话，增加未读数 (这里简单粗暴先刷新会话列表)
             // 理想做法是乐观更新
             refreshConversations();
-            log.info('message_received', { messageId: payload.id, fromUserId: payload.from });
+            log.info('message_received', { messageId: payload.id, fromUserId: payload.from, toUserId: payload.to });
         };
 
         const cleanupConnect = socialSocket.on('connect', handleConnect);

@@ -225,11 +225,27 @@ export const attachPageDiagnostics = (page: Page) => {
     (page as Page & { __e2eDiagnostics?: { errors: string[] } }).__e2eDiagnostics =
         diagnostics;
     page.on('pageerror', (err) =>
-        diagnostics.errors.push(`pageerror:${err.message}`),
+        diagnostics.errors.push(`pageerror:${err.stack ?? err.message}`),
     );
     page.on('console', (msg) => {
-        if (msg.type() === 'error')
-            diagnostics.errors.push(`console:${msg.text()}`);
+        if (msg.type() === 'error') {
+            void Promise.all(msg.args().map(async (arg) => {
+                try {
+                    return await arg.jsonValue();
+                } catch {
+                    return '[unserializable]';
+                }
+            })).then((args) => {
+                const location = msg.location();
+                const locationText = location?.url
+                    ? `${location.url}:${location.lineNumber ?? 0}:${location.columnNumber ?? 0}`
+                    : 'unknown';
+                const argText = args.length > 0
+                    ? ` | args=${args.map((value) => (typeof value === 'string' ? value : JSON.stringify(value))).join(' || ')}`
+                    : '';
+                diagnostics.errors.push(`console:${locationText}:${msg.text()}${argText}`);
+            });
+        }
     });
     return diagnostics;
 };

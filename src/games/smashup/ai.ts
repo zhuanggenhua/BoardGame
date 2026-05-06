@@ -436,8 +436,12 @@ const estimateBaseVpAward = (
     const strongerPlayers = Object.entries(powerByPlayer)
         .filter(([candidatePlayerId, power]) => candidatePlayerId !== playerId && power > ownPower)
         .length;
+    const tiedPlayers = Object.entries(powerByPlayer)
+        .filter(([, power]) => power === ownPower)
+        .length;
+    const awardSlot = strongerPlayers + tiedPlayers - 1;
 
-    return strongerPlayers < 3 ? (baseDef.vpAwards[strongerPlayers] ?? 0) : 0;
+    return awardSlot < 3 ? (baseDef.vpAwards[awardSlot] ?? 0) : 0;
 };
 
 const estimateBestOpponentVpAward = (
@@ -1943,6 +1947,54 @@ type SmashUpReactionChoiceValue = {
     titanUid?: string;
 };
 
+type SmashUpInteractionVisibilityOption = {
+    value?: {
+        kind?: unknown;
+    };
+    disabled?: boolean;
+};
+
+function shouldUseSharedDecisionViewForReactionOrdering(args: {
+    playerId: PlayerId;
+    sharedState: MatchState<unknown>;
+}): boolean {
+    const currentInteraction = (args.sharedState.sys?.interaction as {
+        current?: {
+            playerId?: unknown;
+            kind?: unknown;
+            data?: {
+                sourceId?: unknown;
+                options?: unknown;
+            } | null;
+        } | null;
+    } | undefined)?.current;
+
+    if (!currentInteraction || currentInteraction.playerId !== args.playerId) {
+        return false;
+    }
+    if (currentInteraction.kind !== 'simple-choice') {
+        return false;
+    }
+
+    const data = currentInteraction.data;
+    if (data?.sourceId !== 'smashup_reaction_choose') {
+        return false;
+    }
+
+    const options = Array.isArray(data.options)
+        ? data.options.filter((option): option is SmashUpInteractionVisibilityOption => Boolean(option))
+        : [];
+    const enabledOptions = options.filter(option => option.disabled !== true);
+    if (enabledOptions.length === 0) {
+        return false;
+    }
+
+    return enabledOptions.every((option) => {
+        const kind = option.value?.kind;
+        return kind === 'trigger' || kind === 'pass';
+    });
+}
+
 const readSmashUpReactionChoiceValue = (action: AiLegalAction): SmashUpReactionChoiceValue | null => {
     const rawValue = action.metadata?.optionValue;
     if (!rawValue || typeof rawValue !== 'object') return null;
@@ -2395,6 +2447,15 @@ const baselineLocalPolicy = createLookaheadLocalAiPolicy({
 export const smashUpAiRuntime: GameAiRuntime = {
     gameId: 'smashup',
     buildLegalActions: buildSmashUpAiLegalActions,
+    resolveOnlineDecisionVisibility(args) {
+        if (shouldUseSharedDecisionViewForReactionOrdering({
+            playerId: args.playerId,
+            sharedState: args.sharedState,
+        })) {
+            return 'shared';
+        }
+        return undefined;
+    },
     localPolicies: {
         baseline: baselineLocalPolicy,
     },

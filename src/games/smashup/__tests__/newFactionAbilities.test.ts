@@ -3245,7 +3245,7 @@ describe('stale destroy regression: 交互提示能力', () => {
 
         const prompt = getInteractionsFromMS(playResult.finalState)[0] as any;
         const option = prompt?.data?.options?.find((entry: any) => entry?.value?.minionUid === 'fod1');
-        const handler = getInteractionHandler('vampire_heavy_drinker');
+        const handler = getAbilityRuntimePromptHandler('vampire_heavy_drinker');
         expect(prompt?.data?.sourceId).toBe('vampire_heavy_drinker');
         expect(option).toBeDefined();
         expect(handler).toBeDefined();
@@ -4531,8 +4531,8 @@ describe('巨蚁派系能力', () => {
         const allInteractions = getInteractionsFromMS(result.matchState!);
         const droneInteractions = allInteractions.filter((i: any) => i?.data?.sourceId === 'giant_ant_drone_prevent_destroy');
         expect(droneInteractions.length).toBe(1);
-        const ctx = (droneInteractions[0] as any)?.data?.continuationContext;
-        expect(ctx?.targetMinionUid).toBe('d1');
+        const runtimeContinuation = (droneInteractions[0] as any)?.data?.runtimePrompt?.continuation?.context;
+        expect(runtimeContinuation?.targetMinionUid).toBe('d1');
 
         // 选择防止 → 雄蜂消耗指示物，存活
         const interaction = result.matchState!.sys.interaction.current!;
@@ -4638,7 +4638,9 @@ describe('巨蚁派系能力', () => {
         expect((second!.data as any)?.sourceId).toBe('giant_ant_drone_prevent_destroy');
 
         // 解决第2个交互：尝试防止 m2（但雄蜂已无指示物）
-        const droneOption2 = (second!.data as any).options.find((o: any) => o?.value?.droneUid === 'd1');
+        const secondOptions = (second!.data as any).options;
+        const droneOption2 = secondOptions.find((o: any) => o?.value?.droneUid === 'd1');
+        expect(droneOption2).toBeDefined();
         const r2 = runCommand(
             r1.finalState,
             { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: droneOption2.id } } as any,
@@ -6544,7 +6546,24 @@ describe('World Champs abilities', () => {
             makeMatchState(core),
             '0',
             { minionUid: 'target-1', baseIndex: 0 } as any,
-            { continuationContext: { sourceCardUid: 'bewitched-card', sourceDefId: 'world_champs_bewitched', ownerId: '0' } },
+            {
+                runtimePrompt: {
+                    owner: 'smashup-ability-runtime',
+                    sourceId: 'world_champs_bewitched_transfer',
+                    continuationId: 'test-bewitched-transfer',
+                    continuation: {
+                        context: {
+                            playerId: '0',
+                            now: 3400,
+                            sourceCardUid: 'bewitched-card',
+                            sourceDefId: 'world_champs_bewitched',
+                            ownerId: '0',
+                            triggerMinionUid: 'host-1',
+                        },
+                        contextHasMatchState: true,
+                    },
+                },
+            } as any,
             defaultTestRandom,
             3400,
         );

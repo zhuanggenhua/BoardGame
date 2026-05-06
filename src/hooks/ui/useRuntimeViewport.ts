@@ -1,4 +1,4 @@
-import { useLayoutEffect, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import {
     detectMobileLayoutEngineCapabilities,
     resolveRuntimeLayoutScaleMetrics,
@@ -142,6 +142,19 @@ export const readLiveRuntimeKeyboardInsetBottom = (options: { hasFocusedTextEntr
     });
 };
 
+const areRuntimeViewportMetricsEqual = (
+    left: RuntimeViewportMetrics,
+    right: RuntimeViewportMetrics,
+) => {
+    return left.width === right.width
+        && left.height === right.height
+        && left.safeArea.top === right.safeArea.top
+        && left.safeArea.right === right.safeArea.right
+        && left.safeArea.bottom === right.safeArea.bottom
+        && left.safeArea.left === right.safeArea.left
+        && left.keyboardInsetBottom === right.keyboardInsetBottom;
+};
+
 const setLayoutEngineDataset = (layoutMode: 'legacy' | 'modern', enabled: boolean) => {
     if (typeof document === 'undefined') return;
     [document.documentElement, document.body].forEach((target) => {
@@ -251,6 +264,14 @@ export const useRuntimeViewport = (
 ): RuntimeViewportMetrics => {
     const { syncCssVars = true } = options;
     const [viewport, setViewport] = useState<RuntimeViewportMetrics>(() => readRuntimeViewportMetrics());
+    const pendingViewportUpdateTimerRef = useRef<number | null>(null);
+
+    useLayoutEffect(() => {
+        if (!syncCssVars) {
+            return;
+        }
+        applyRuntimeViewportCssVars(viewport);
+    }, [syncCssVars, viewport]);
 
     useLayoutEffect(() => {
         if (typeof window === 'undefined') {
@@ -258,40 +279,31 @@ export const useRuntimeViewport = (
         }
 
         const visualViewport = window.visualViewport;
-        const updateViewport = () => {
+        const flushViewportUpdate = () => {
+            pendingViewportUpdateTimerRef.current = null;
             setViewport((previous) => {
                 const next = readRuntimeViewportMetrics(previous);
-                if (syncCssVars) {
-                    applyRuntimeViewportCssVars(next);
-                }
-
-                if (
-                    next.width === previous.width
-                    && next.height === previous.height
-                    && next.safeArea.top === previous.safeArea.top
-                    && next.safeArea.right === previous.safeArea.right
-                    && next.safeArea.bottom === previous.safeArea.bottom
-                    && next.safeArea.left === previous.safeArea.left
-                    && next.keyboardInsetBottom === previous.keyboardInsetBottom
-                ) {
-                    return previous;
-                }
-
-                return next;
+                return areRuntimeViewportMetricsEqual(previous, next) ? previous : next;
             });
         };
+        const scheduleViewportUpdate = () => {
+            if (pendingViewportUpdateTimerRef.current != null) {
+                return;
+            }
+            pendingViewportUpdateTimerRef.current = window.setTimeout(flushViewportUpdate, 0);
+        };
 
-        updateViewport();
-        window.addEventListener('resize', updateViewport);
-        window.addEventListener('orientationchange', updateViewport);
-        visualViewport?.addEventListener('resize', updateViewport);
+        scheduleViewportUpdate();
+        window.addEventListener('resize', scheduleViewportUpdate);
+        window.addEventListener('orientationchange', scheduleViewportUpdate);
+        visualViewport?.addEventListener('resize', scheduleViewportUpdate);
 
         const attributeObserver = typeof MutationObserver === 'function'
             ? new MutationObserver((mutations) => {
                 if (!mutations.some((mutation) => mutation.type === 'attributes')) {
                     return;
                 }
-                updateViewport();
+                scheduleViewportUpdate();
             })
             : null;
 
@@ -319,12 +331,16 @@ export const useRuntimeViewport = (
         }
 
         return () => {
-            window.removeEventListener('resize', updateViewport);
-            window.removeEventListener('orientationchange', updateViewport);
-            visualViewport?.removeEventListener('resize', updateViewport);
+            if (pendingViewportUpdateTimerRef.current != null) {
+                window.clearTimeout(pendingViewportUpdateTimerRef.current);
+                pendingViewportUpdateTimerRef.current = null;
+            }
+            window.removeEventListener('resize', scheduleViewportUpdate);
+            window.removeEventListener('orientationchange', scheduleViewportUpdate);
+            visualViewport?.removeEventListener('resize', scheduleViewportUpdate);
             attributeObserver?.disconnect();
         };
-    }, [syncCssVars]);
+    }, []);
 
     return viewport;
 };

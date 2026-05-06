@@ -12,6 +12,7 @@ import {
     grantContextualExtraAction,
     grantContextualExtraMinion,
     destroyMinion,
+    buildValidatedDestroyEvents,
     getMinionPower,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
@@ -28,23 +29,22 @@ import type {
     CardsDiscardedEvent,
     DeckReshuffledEvent,
     MinionCardDef,
-    MinionOnBase,
 } from '../domain/types';
 import { drawCards, matchesDefId } from '../domain/utils';
 import { getFactionCards, getCardDef, getBaseDef } from '../data/cards';
 import { registerTrigger, registerProtection } from '../domain/ongoingEffects';
 import type { TriggerContext, ProtectionCheckContext } from '../domain/ongoingEffects';
 import { getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from '../domain/ongoingModifiers';
+import { getSmashUpReactionWindowContext } from '../domain/reactionWindowState';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
-import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { isMinionProtectedNonConsumable } from '../domain/ongoingEffects';
-import { filterProtectedDestroyEvents } from '../domain/reducer';
+import { filterProtectedDestroyEvents, reduce } from '../domain/reducer';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
     createPromptProgram,
+    executeAbilityProgram,
 } from '../domain/abilityRuntime';
 
 /** 注册远古之物派系所有能力*/
@@ -83,6 +83,97 @@ type ElderThingBeginTheSummoningPromptContext = ElderThingPromptContext;
 type ElderThingUnfathomableGoalsPromptContext = ElderThingPromptContext & {
     opponents: string[];
     opponentIdx: number;
+};
+
+type ElderThingSelfDestroyChoice = {
+    minionUid: string;
+    baseIndex: number;
+    defId: string;
+};
+
+type ElderThingOnPlayPromptContext = ElderThingPromptContext & {
+    elderThingDefId: string;
+    baseIndex: number;
+};
+
+type ElderThingDestroySecondPromptContext = ElderThingOnPlayPromptContext & {
+    firstTarget: ElderThingSelfDestroyChoice;
+};
+
+type ElderThingShoggothPromptContext = ElderThingPromptContext & {
+    casterPlayerId: PlayerId;
+    baseIndex: number;
+    opponents: string[];
+    opponentIdx: number;
+};
+
+type ElderThingShoggothDestroyPromptContext = ElderThingShoggothPromptContext & {
+    targetPlayerId: PlayerId;
+};
+
+type ElderThingPodModePromptContext = ElderThingPromptContext & {
+    baseIndex: number;
+};
+
+type ElderThingShoggothPodPromptContext = ElderThingPromptContext & {
+    casterPlayerId: PlayerId;
+    baseIndex: number;
+    opponents: string[];
+    opponentIdx: number;
+    decliners: PlayerId[];
+};
+
+type ElderThingShoggothPodDestroyPromptContext = ElderThingShoggothPodPromptContext & {
+    declinerIdx: number;
+};
+
+type ElderThingMiGoPodPromptContext = ElderThingPromptContext & {
+    casterPlayerId: PlayerId;
+    baseIndex: number;
+    opponents: string[];
+    opponentIdx: number;
+    anyDrew: boolean;
+    declinedCount: number;
+};
+
+type ElderThingBeginTheSummoningPodPromptContext = ElderThingPromptContext;
+
+type ElderThingSpreadingHorrorPodOpponentPromptContext = ElderThingPromptContext & {
+    casterPlayerId: PlayerId;
+    opponents: string[];
+    idx: number;
+    decliners: PlayerId[];
+};
+
+type ElderThingSpreadingHorrorPodMayPlayPromptContext = ElderThingPromptContext & {
+    casterPlayerId: PlayerId;
+    remaining: number;
+    usedBases: number[];
+};
+
+type ElderThingSpreadingHorrorPodChooseBasePromptContext = ElderThingSpreadingHorrorPodMayPlayPromptContext;
+
+type ElderThingSpreadingHorrorPodChooseMinionPromptContext = ElderThingSpreadingHorrorPodMayPlayPromptContext & {
+    chosenBaseIndex: number;
+};
+
+type ElderThingPowerOfMadnessPodPromptContext = ElderThingPromptContext & {
+    opponents: string[];
+    idx: number;
+};
+
+type ElderThingPriceOfPowerPodChooseBasePromptContext = ElderThingPromptContext & {
+    perMadnessCounterAmount: number;
+};
+
+type ElderThingDunwichHorrorPodChoicePromptContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    baseIndex: number;
+    minionUid: string;
+    minionDefId: string;
+    ownerId: string;
 };
 
 function attachOptionsGenerator<T>(
@@ -158,6 +249,235 @@ function buildUnfathomableGoalsOptions(
             label: `${name} (力量 ${minion.power}) @ ${baseName}`,
         };
     });
+}
+
+function createElderThingPromptContext<TExtra extends Record<string, unknown>>(
+    matchState: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    now: number,
+    extra: TExtra,
+): ElderThingPromptContext & TExtra {
+    return {
+        matchState,
+        playerId,
+        now,
+        cardUid: typeof extra.cardUid === 'string' ? extra.cardUid : '',
+        ...extra,
+    };
+}
+
+function simulateCore(core: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
+    let nextCore = core;
+    for (const event of events) {
+        nextCore = reduce(nextCore, event);
+    }
+    return nextCore;
+}
+
+function withSimulatedMatchState(
+    matchState: MatchState<SmashUpCore>,
+    events: SmashUpEvent[],
+): MatchState<SmashUpCore> {
+    return {
+        ...matchState,
+        core: simulateCore(matchState.core, events),
+    };
+}
+
+function collectFriendlyOtherMinions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    elderThingUid: string,
+    excludedMinionUids: string[] = [],
+): Array<{ uid: string; defId: string; baseIndex: number; owner: string; label: string }> {
+    const excluded = new Set(excludedMinionUids);
+    const result: Array<{ uid: string; defId: string; baseIndex: number; owner: string; label: string }> = [];
+    for (let baseIndex = 0; baseIndex < state.bases.length; baseIndex += 1) {
+        for (const minion of state.bases[baseIndex].minions) {
+            if (minion.controller !== playerId) continue;
+            if (minion.uid === elderThingUid) continue;
+            if (excluded.has(minion.uid)) continue;
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            const baseDef = getBaseDef(state.bases[baseIndex].defId);
+            result.push({
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                owner: minion.owner,
+                label: `${def?.name ?? minion.defId} (力量 ${getMinionPower(state, minion, baseIndex)}) @ ${baseDef?.name ?? `基地 ${baseIndex + 1}`}`,
+            });
+        }
+    }
+    return result;
+}
+
+function getSelectedMinionChoice(value: unknown): ElderThingSelfDestroyChoice | null {
+    if (!value || typeof value !== 'object') return null;
+    const record = value as { minionUid?: unknown; baseIndex?: unknown; defId?: unknown };
+    if (
+        typeof record.minionUid !== 'string'
+        || typeof record.baseIndex !== 'number'
+        || typeof record.defId !== 'string'
+    ) {
+        return null;
+    }
+    return {
+        minionUid: record.minionUid,
+        baseIndex: record.baseIndex,
+        defId: record.defId,
+    };
+}
+
+function buildElderThingDestroyPromptOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+    elderThingUid: string,
+    excludedMinionUids: string[] = [],
+) {
+    return buildMinionTargetOptions(
+        collectFriendlyOtherMinions(state, playerId, elderThingUid, excludedMinionUids),
+        { state, sourcePlayerId: playerId },
+    );
+}
+
+function buildShoggothDestroyPromptOptions(
+    state: SmashUpCore,
+    casterPlayerId: PlayerId,
+    targetPlayerId: PlayerId,
+    baseIndex: number,
+) {
+    const base = state.bases[baseIndex];
+    if (!base) return [];
+    const candidates = base.minions
+        .filter((minion) => minion.controller === targetPlayerId)
+        .map((minion) => {
+            const def = getCardDef(minion.defId) as MinionCardDef | undefined;
+            return {
+                uid: minion.uid,
+                defId: minion.defId,
+                baseIndex,
+                label: def?.name ?? minion.defId,
+            };
+        });
+    return buildMinionTargetOptions(candidates, {
+        state,
+        sourcePlayerId: casterPlayerId,
+        effectType: 'destroy',
+    });
+}
+
+function getSelectedMinionChoices(value: unknown): ElderThingSelfDestroyChoice[] {
+    const rawSelections = Array.isArray(value) ? value : [value];
+    return rawSelections
+        .map((entry) => {
+            if (!entry || typeof entry !== 'object') return null;
+            const record = entry as { minionUid?: unknown; uid?: unknown; baseIndex?: unknown; defId?: unknown };
+            const minionUid = typeof record.minionUid === 'string'
+                ? record.minionUid
+                : typeof record.uid === 'string'
+                    ? record.uid
+                    : undefined;
+            if (!minionUid || typeof record.baseIndex !== 'number' || typeof record.defId !== 'string') {
+                return null;
+            }
+            return {
+                minionUid,
+                baseIndex: record.baseIndex,
+                defId: record.defId,
+            } satisfies ElderThingSelfDestroyChoice;
+        })
+        .filter((entry): entry is ElderThingSelfDestroyChoice => !!entry);
+}
+
+function finalizeShoggothPodEvents(
+    state: MatchState<SmashUpCore>,
+    casterPlayerId: PlayerId,
+    baseIndex: number,
+    timestamp: number,
+) {
+    const base = state.core.bases[baseIndex];
+    const myPower = base ? getPlayerEffectivePowerOnBase(state.core, base, baseIndex, casterPlayerId) : 0;
+    if (myPower >= 12) {
+        return [] as SmashUpEvent[];
+    }
+    const event = drawMadnessCards(casterPlayerId, 2, state.core, 'elder_thing_shoggoth_pod', timestamp);
+    return event ? [event] : [];
+}
+
+function buildDiscardSmallMinionOptions(
+    state: SmashUpCore,
+    playerId: PlayerId,
+) {
+    return state.players[playerId].discard
+        .filter((card) => {
+            if (card.type !== 'minion') return false;
+            const def = getCardDef(card.defId) as MinionCardDef | undefined;
+            return (def?.power ?? Infinity) <= 3;
+        })
+        .map((card, index) => ({
+            id: `m-${index}`,
+            label: getCardDef(card.defId)?.name ?? card.defId,
+            value: { cardUid: card.uid, defId: card.defId },
+            displayMode: 'card' as const,
+            _source: 'discard' as const,
+        }));
+}
+
+function buildAvailableBaseOptions(
+    state: SmashUpCore,
+    usedBases: number[],
+) {
+    return state.bases
+        .map((base, baseIndex) => ({
+            baseIndex,
+            label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}`,
+        }))
+        .filter((candidate) => !usedBases.includes(candidate.baseIndex));
+}
+
+function buildAllMinionAffectOptions(
+    state: SmashUpCore,
+    sourcePlayerId: PlayerId,
+) {
+    const candidates = state.bases.flatMap((base, baseIndex) => base.minions.map((minion) => ({
+        uid: minion.uid,
+        defId: minion.defId,
+        baseIndex,
+        label: getCardDef(minion.defId)?.name ?? minion.defId,
+    })));
+    return buildMinionTargetOptions(candidates, {
+        state,
+        sourcePlayerId,
+        effectType: 'affect',
+    });
+}
+
+function buildPowerOfMadnessPodActionOptions(state: SmashUpCore) {
+    const factionIds = new Set<string>();
+    for (const player of Object.values(state.players)) {
+        const factions = (player as { factions?: [string, string] }).factions;
+        if (!factions) continue;
+        factionIds.add(factions[0]);
+        factionIds.add(factions[1]);
+    }
+
+    const actionDefIds = new Set<string>();
+    for (const factionId of factionIds) {
+        for (const def of getFactionCards(factionId as never)) {
+            if (def.type !== 'action') continue;
+            actionDefIds.add(def.id);
+        }
+    }
+    actionDefIds.add(MADNESS_CARD_DEF_ID);
+
+    return Array.from(actionDefIds)
+        .sort((left, right) => (getCardDef(left)?.name ?? left).localeCompare(getCardDef(right)?.name ?? right, 'zh-CN'))
+        .map((defId, index) => ({
+            id: `a-${index}`,
+            label: getCardDef(defId)?.name ?? defId,
+            value: { defId },
+            displayMode: 'button' as const,
+        }));
 }
 
 const elderThingMiGoPromptProgram = createPromptProgram<ElderThingMiGoPromptContext, SmashUpCore, SmashUpEvent>({
@@ -445,21 +765,21 @@ export function registerElderThingAbilities(): void {
     registerAbilityProgram('elder_thing_unfathomable_goals', 'onPlay', { program: elderThingUnfathomableGoalsProgram });
 
     // 远古之物 onPlay：消灭两个己方随从或放牌库底 + 不收回受对手影响
-    registerAbility('elder_thing_elder_thing', 'onPlay', elderThingElderThingOnPlay);
+    registerAbilityProgram('elder_thing_elder_thing', 'onPlay', { program: elderThingElderThingProgram });
     // 修格斯?onPlay：对手选择抽疯狂卡或被消灭随从
-    registerAbility('elder_thing_shoggoth', 'onPlay', elderThingShoggoth);
+    registerAbilityProgram('elder_thing_shoggoth', 'onPlay', { program: elderThingShoggothProgram });
 
     // === POD 版本 ===
-    registerAbility('elder_thing_elder_thing_pod', 'onPlay', elderThingElderThingPodOnPlay);
-    registerAbility('elder_thing_shoggoth_pod', 'onPlay', elderThingShoggothPod);
-    registerAbility('elder_thing_mi_go_pod', 'onPlay', elderThingMiGoPod);
+    registerAbilityProgram('elder_thing_elder_thing_pod', 'onPlay', { program: elderThingElderThingPodProgram });
+    registerAbilityProgram('elder_thing_shoggoth_pod', 'onPlay', { program: elderThingShoggothPodProgram });
+    registerAbilityProgram('elder_thing_mi_go_pod', 'onPlay', { program: elderThingMiGoPodProgram });
     registerAbility('elder_thing_byakhee_pod', 'onPlay', elderThingByakheePod);
 
-    registerAbility('elder_thing_begin_the_summoning_pod', 'onPlay', elderThingBeginTheSummoningPod);
-    registerAbility('elder_thing_the_price_of_power_pod', 'onPlay', elderThingPriceOfPowerPodOnPlay);
+    registerAbilityProgram('elder_thing_begin_the_summoning_pod', 'onPlay', { program: elderThingBeginTheSummoningPodProgram });
+    registerAbilityProgram('elder_thing_the_price_of_power_pod', 'onPlay', { program: elderThingPriceOfPowerPodOnPlayProgram });
     registerAbility('elder_thing_insanity_pod', 'onPlay', elderThingInsanityPod);
-    registerAbility('elder_thing_power_of_madness_pod', 'onPlay', elderThingPowerOfMadnessPod);
-    registerAbility('elder_thing_spreading_horror_pod', 'onPlay', elderThingSpreadingHorrorPod);
+    registerAbilityProgram('elder_thing_power_of_madness_pod', 'onPlay', { program: elderThingPowerOfMadnessPodProgram });
+    registerAbilityProgram('elder_thing_spreading_horror_pod', 'onPlay', { program: elderThingSpreadingHorrorPodProgram });
     registerAbility('elder_thing_the_price_of_power_pod', 'special', elderThingPriceOfPowerPodSpecial);
     registerAbility('elder_thing_unfathomable_goals_pod', 'onPlay', elderThingUnfathomableGoalsPod);
     registerAbility('elder_thing_touch_of_madness_pod', 'onPlay', elderThingTouchOfMadnessPod);
@@ -467,7 +787,12 @@ export function registerElderThingAbilities(): void {
     // Dunwich Horror POD：before scoring trigger (mandatory)
     registerTrigger('elder_thing_dunwich_horror_pod', 'beforeScoring', elderThingDunwichHorrorPodBeforeScoring, { mandatory: true });
     // POD 版不会“回合结束自动消灭”，这里显式注册 no-op，阻止 alias 继承原版 onTurnEnd 触发。
-    registerTrigger('elder_thing_dunwich_horror_pod', 'onTurnEnd', elderThingDunwichHorrorPodOnTurnEndNoop);
+    registerTrigger('elder_thing_dunwich_horror_pod', 'onTurnEnd', elderThingDunwichHorrorPodOnTurnEndNoop, {
+        orderingFootprint: {
+            reads: [],
+            writes: [],
+        },
+    });
 
     // 远古之物 POD：不受对手卡牌影响
     registerProtection('elder_thing_elder_thing_pod', 'destroy', elderThingPodProtectionChecker);
@@ -476,7 +801,12 @@ export function registerElderThingAbilities(): void {
 
     // === ongoing 效果注册 ===
     // 郦威奇恐怖：回合结束时消灭附着了此卡的随从
-    registerTrigger('elder_thing_dunwich_horror', 'onTurnEnd', elderThingDunwichHorrorTrigger);
+    registerTrigger('elder_thing_dunwich_horror', 'onTurnEnd', elderThingDunwichHorrorTrigger, {
+        orderingFootprint: {
+            reads: ['sourceState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+        },
+    });
     // 力量的代价：基地计分前按对手疑狂卡数给己方随从力量
     registerAbility('elder_thing_the_price_of_power', 'special', elderThingPriceOfPowerSpecial);
     // 远古之物：不收回受对手卡牌影响（保护 destroy + move?
@@ -659,97 +989,527 @@ function elderThingByakheePod(ctx: AbilityContext): AbilityResult {
 
 type PodYesNoChoiceValue = { choice: 'yes' } | { choice: 'no' };
 
-function elderThingMiGoPod(ctx: AbilityContext): AbilityResult {
-    const opponents = getOrderedOpponentIds(ctx.state, ctx.playerId);
-    if (opponents.length === 0) return { events: [] };
-    const interaction = createSimpleChoice(
-        `elder_thing_mi_go_pod_${opponents[0]}_${ctx.now}`,
-        opponents[0],
+function getNextMiGoPodContext(
+    context: ElderThingMiGoPodPromptContext,
+    state: MatchState<SmashUpCore>,
+    timestamp: number,
+): ElderThingMiGoPodPromptContext | null {
+    const nextIdx = context.opponentIdx + 1;
+    if (nextIdx >= context.opponents.length) return null;
+    return createElderThingPromptContext(state, context.playerId, timestamp, {
+        cardUid: context.cardUid,
+        casterPlayerId: context.casterPlayerId,
+        baseIndex: context.baseIndex,
+        opponents: context.opponents,
+        opponentIdx: nextIdx,
+        anyDrew: context.anyDrew,
+        declinedCount: context.declinedCount,
+    }) satisfies ElderThingMiGoPodPromptContext;
+}
+
+const elderThingMiGoPodCounterPromptProgram = createPromptProgram<ElderThingMiGoPodPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_mi_go_pod_counter',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `elder_thing_mi_go_pod_counter_${context.now}`,
+            context.casterPlayerId,
+            '米-格：你可以在一个随从上放置+1战斗力指示物',
+            [
+                { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+                ...buildAllMinionAffectOptions(context.matchState.core, context.casterPlayerId),
+            ],
+            { sourceId: 'elder_thing_mi_go_pod_counter', targetType: 'minion' },
+        );
+        interaction.data.optionsGenerator = (state) => [
+            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            ...buildAllMinionAffectOptions(state.core as SmashUpCore, context.casterPlayerId),
+        ];
+        return interaction;
+    },
+    onResolve: ({ value, timestamp }) => {
+        if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
+        const selected = value as { minionUid?: string; baseIndex?: number } | undefined;
+        if (!selected?.minionUid || selected.baseIndex === undefined) return { events: [] };
+        return {
+            events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'elder_thing_mi_go_pod', timestamp)],
+        };
+    },
+});
+
+const elderThingMiGoPodPromptProgram = createPromptProgram<ElderThingMiGoPodPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_mi_go_pod',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `elder_thing_mi_go_pod_${context.opponents[context.opponentIdx]}_${context.now}`,
+        context.opponents[context.opponentIdx],
         '米-格：你可以抽一张疯狂卡',
         [
-            { id: 'yes', label: '抽一张疯狂卡', value: { choice: 'yes' }, displayMode: 'button' as const },
-            { id: 'no', label: '不抽', value: { choice: 'no' }, displayMode: 'button' as const },
-        ] as any[],
+            { id: 'yes', label: '抽一张疯狂卡', value: { choice: 'yes' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+            { id: 'no', label: '不抽', value: { choice: 'no' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+        ],
         { sourceId: 'elder_thing_mi_go_pod', targetType: 'button' },
-    );
-    (interaction.data as any).continuationContext = {
-        casterPlayerId: ctx.playerId,
-        baseIndex: ctx.baseIndex,
-        opponents,
-        opponentIdx: 0,
-        anyDrew: false,
-        declinedCount: 0,
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    ),
+    onResolve: ({ context, state, value, random, timestamp }) => {
+        const choice = (value as PodYesNoChoiceValue | undefined)?.choice;
+        const opponent = context.opponents[context.opponentIdx];
+        const events: SmashUpEvent[] = [];
+        let nextContext = context;
 
-function elderThingShoggothPod(ctx: AbilityContext): AbilityResult {
+        if (choice === 'yes') {
+            const evt = drawMadnessCards(opponent, 1, state.core, 'elder_thing_mi_go_pod', timestamp);
+            if (evt) events.push(evt);
+            nextContext = { ...context, anyDrew: true };
+        } else {
+            const caster = state.core.players[context.casterPlayerId];
+            const { drawnUids } = drawCards(caster, 1, random);
+            if (drawnUids.length > 0) {
+                events.push({
+                    type: SU_EVENTS.CARDS_DRAWN,
+                    payload: { playerId: context.casterPlayerId, count: 1, cardUids: drawnUids },
+                    timestamp,
+                } as CardsDrawnEvent);
+            }
+            nextContext = { ...context, declinedCount: context.declinedCount + 1 };
+        }
+
+        const pendingContext = getNextMiGoPodContext(nextContext, state, timestamp);
+        if (pendingContext) {
+            return { events, context: pendingContext, nextProgram: elderThingMiGoPodPromptProgram };
+        }
+
+        if (!nextContext.anyDrew && buildAllMinionAffectOptions(state.core, nextContext.casterPlayerId).length > 0) {
+            return { events, context: nextContext, nextProgram: elderThingMiGoPodCounterPromptProgram };
+        }
+
+        return { events };
+    },
+});
+
+const elderThingMiGoPodProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const opponents = getOrderedOpponentIds(ctx.state, ctx.playerId);
     if (opponents.length === 0) return { events: [] };
-    const interaction = createSimpleChoice(
-        `elder_thing_shoggoth_pod_${opponents[0]}_${ctx.now}`,
-        opponents[0],
-        '修格斯：你可以抽一张疯狂卡',
-        [
-            { id: 'yes', label: '抽一张疯狂卡', value: { choice: 'yes' }, displayMode: 'button' as const },
-            { id: 'no', label: '不抽', value: { choice: 'no' }, displayMode: 'button' as const },
-        ] as any[],
-        { sourceId: 'elder_thing_shoggoth_pod', targetType: 'button' },
-    );
-    (interaction.data as any).continuationContext = {
-        casterPlayerId: ctx.playerId,
-        baseIndex: ctx.baseIndex,
-        opponents,
-        opponentIdx: 0,
-        decliners: [] as string[],
+    return {
+        events: [],
+        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            cardUid: ctx.cardUid,
+            casterPlayerId: ctx.playerId,
+            baseIndex: ctx.baseIndex,
+            opponents,
+            opponentIdx: 0,
+            anyDrew: false,
+            declinedCount: 0,
+        }) satisfies ElderThingMiGoPodPromptContext,
+        nextProgram: elderThingMiGoPodPromptProgram,
     };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+});
 
-function elderThingElderThingPodOnPlay(ctx: AbilityContext): AbilityResult {
-    const otherMinions: { uid: string; defId: string; baseIndex: number; owner: string; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller !== ctx.playerId) continue;
-            if (m.uid === ctx.cardUid) continue;
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            otherMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, owner: m.owner, label: def?.name ?? m.defId });
+const elderThingElderThingPodDestroyPromptProgram = createPromptProgram<ElderThingPodModePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_elder_thing_pod_destroy',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `elder_thing_elder_thing_pod_destroy_${context.now}`,
+            context.playerId,
+            '远古之物：选择要消灭的两个你的其他随从',
+            buildElderThingDestroyPromptOptions(context.matchState.core, context.playerId, context.cardUid),
+            {
+                sourceId: 'elder_thing_elder_thing_pod_destroy',
+                targetType: 'minion',
+                multi: { min: 2, max: 2 },
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state) => buildElderThingDestroyPromptOptions(
+            state.core as SmashUpCore,
+            context.playerId,
+            context.cardUid,
+        );
+        return interaction;
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const picks = getSelectedMinionChoices(value).slice(0, 2);
+        if (picks.length < 2) {
+            return { events: [] };
         }
+
+        let destroyableCount = 0;
+        const destroyEvents: SmashUpEvent[] = [];
+        for (const pick of picks) {
+            const minion = state.core.bases[pick.baseIndex]?.minions.find((candidate) => candidate.uid === pick.minionUid);
+            if (!minion) continue;
+            if (!isMinionProtectedNonConsumable(state.core, minion, pick.baseIndex, context.playerId, 'destroy')) {
+                destroyableCount += 1;
+            }
+            destroyEvents.push(...buildValidatedDestroyEvents(state, {
+                minionUid: pick.minionUid,
+                minionDefId: pick.defId,
+                fromBaseIndex: pick.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'elder_thing_elder_thing_pod',
+                now: timestamp,
+            }));
+        }
+
+        if (destroyableCount < 2) {
+            return {
+                events: [
+                    ...destroyEvents,
+                    ...buildValidatedCardToDeckBottomEvents(state, {
+                        cardUid: context.cardUid,
+                        defId: 'elder_thing_elder_thing_pod',
+                        ownerId: context.playerId,
+                        reason: 'elder_thing_elder_thing_pod_fallback',
+                        now: timestamp,
+                        expectedLocation: 'bases',
+                    }),
+                ],
+            };
+        }
+
+        return { events: destroyEvents };
+    },
+});
+
+const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingPodModePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_elder_thing_pod_mode',
+    buildInteraction: (context) => {
+        const canDestroy = collectFriendlyOtherMinions(
+            context.matchState.core,
+            context.playerId,
+            context.cardUid,
+        ).length >= 2;
+        return createAbilityRuntimeSimpleChoice(
+            `elder_thing_elder_thing_pod_mode_${context.now}`,
+            context.playerId,
+            '远古之物：消灭两个你的其他随从，否则将其放到牌库底',
+            [
+                {
+                    id: 'destroy',
+                    label: '消灭两个你的其他随从',
+                    value: { mode: 'destroy' },
+                    displayMode: 'button' as const,
+                    disabled: !canDestroy,
+                },
+                {
+                    id: 'bottom',
+                    label: '将本随从放到牌库底',
+                    value: { mode: 'bottom' },
+                    displayMode: 'button' as const,
+                },
+            ],
+            { sourceId: 'elder_thing_elder_thing_pod_mode', targetType: 'button' },
+        );
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const mode = (value as { mode?: 'destroy' | 'bottom' } | undefined)?.mode;
+        if (mode === 'bottom') {
+            return {
+                events: buildValidatedCardToDeckBottomEvents(state, {
+                    cardUid: context.cardUid,
+                    defId: 'elder_thing_elder_thing_pod',
+                    ownerId: context.playerId,
+                    reason: 'elder_thing_elder_thing_pod',
+                    now: timestamp,
+                    expectedLocation: 'bases',
+                }),
+            };
+        }
+
+        const canDestroy = collectFriendlyOtherMinions(state.core, context.playerId, context.cardUid).length >= 2;
+        if (!canDestroy) {
+            return {
+                events: buildValidatedCardToDeckBottomEvents(state, {
+                    cardUid: context.cardUid,
+                    defId: 'elder_thing_elder_thing_pod',
+                    ownerId: context.playerId,
+                    reason: 'elder_thing_elder_thing_pod_forced',
+                    now: timestamp,
+                    expectedLocation: 'bases',
+                }),
+            };
+        }
+
+        return {
+            events: [],
+            context,
+            nextProgram: elderThingElderThingPodDestroyPromptProgram,
+        };
+    },
+});
+
+const elderThingElderThingPodProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => ({
+    events: [],
+    context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        cardUid: ctx.cardUid,
+        baseIndex: ctx.baseIndex,
+    }) satisfies ElderThingPodModePromptContext,
+    nextProgram: elderThingElderThingPodModePromptProgram,
+}));
+
+function getNextShoggothPodPromptContext(
+    context: ElderThingShoggothPodPromptContext,
+    state: MatchState<SmashUpCore>,
+    timestamp: number,
+): ElderThingShoggothPodPromptContext | null {
+    const nextIdx = context.opponentIdx + 1;
+    if (nextIdx >= context.opponents.length) {
+        return null;
     }
-    const canDestroy = otherMinions.length >= 2;
-    const interaction = createSimpleChoice(
-        `elder_thing_elder_thing_pod_mode_${ctx.now}`,
-        ctx.playerId,
-        '远古之物：消灭两个你的其他随从，否则将其放到牌库底',
-        [
-            { id: 'destroy', label: '消灭两个你的其他随从', value: { mode: 'destroy' }, displayMode: 'button' as const, disabled: !canDestroy },
-            { id: 'bottom', label: '将本随从放到牌库底', value: { mode: 'bottom' }, displayMode: 'button' as const },
-        ] as any[],
-        { sourceId: 'elder_thing_elder_thing_pod_mode', targetType: 'button' },
-    );
-    (interaction.data as any).continuationContext = { cardUid: ctx.cardUid, baseIndex: ctx.baseIndex };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    return createElderThingPromptContext(state, context.playerId, timestamp, {
+        cardUid: context.cardUid,
+        casterPlayerId: context.casterPlayerId,
+        baseIndex: context.baseIndex,
+        opponents: context.opponents,
+        opponentIdx: nextIdx,
+        decliners: context.decliners,
+    }) satisfies ElderThingShoggothPodPromptContext;
 }
 
-function elderThingBeginTheSummoningPod(ctx: AbilityContext): AbilityResult {
+function getNextShoggothPodDeclinerContext(
+    context: ElderThingShoggothPodDestroyPromptContext,
+    state: MatchState<SmashUpCore>,
+    timestamp: number,
+): ElderThingShoggothPodDestroyPromptContext | null {
+    const nextDeclinerIdx = context.declinerIdx + 1;
+    if (nextDeclinerIdx >= context.decliners.length) {
+        return null;
+    }
+    return createElderThingPromptContext(state, context.playerId, timestamp, {
+        cardUid: context.cardUid,
+        casterPlayerId: context.casterPlayerId,
+        baseIndex: context.baseIndex,
+        opponents: context.opponents,
+        opponentIdx: context.opponentIdx,
+        decliners: context.decliners,
+        declinerIdx: nextDeclinerIdx,
+    }) satisfies ElderThingShoggothPodDestroyPromptContext;
+}
+
+const elderThingShoggothPodDestroyPromptProgram = createPromptProgram<ElderThingShoggothPodDestroyPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_shoggoth_pod_destroy',
+    buildInteraction: (context) => {
+        const targetPlayerId = context.decliners[context.declinerIdx];
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `elder_thing_shoggoth_pod_destroy_${context.now}_${context.declinerIdx}`,
+            context.casterPlayerId,
+            `修格斯：选择消灭 ${targetPlayerId} 在此基地的一个随从`,
+            buildShoggothDestroyPromptOptions(
+                context.matchState.core,
+                context.casterPlayerId,
+                targetPlayerId,
+                context.baseIndex,
+            ),
+            {
+                sourceId: 'elder_thing_shoggoth_pod_destroy',
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state) => buildShoggothDestroyPromptOptions(
+            state.core as SmashUpCore,
+            context.casterPlayerId,
+            targetPlayerId,
+            context.baseIndex,
+        );
+        return interaction;
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = getSelectedMinionChoice(value);
+        const events = selected
+            ? buildValidatedDestroyEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: context.casterPlayerId,
+                reason: 'elder_thing_shoggoth_pod',
+                now: timestamp,
+            })
+            : [];
+
+        const nextDecliner = getNextShoggothPodDeclinerContext(context, state, timestamp);
+        if (!nextDecliner) {
+            return {
+                events: [...events, ...finalizeShoggothPodEvents(state, context.casterPlayerId, context.baseIndex, timestamp)],
+            };
+        }
+
+        const nextTargetPlayerId = nextDecliner.decliners[nextDecliner.declinerIdx];
+        const nextOptions = buildShoggothDestroyPromptOptions(
+            state.core,
+            context.casterPlayerId,
+            nextTargetPlayerId,
+            context.baseIndex,
+        );
+        if (nextOptions.length === 0) {
+            const skippedContext = getNextShoggothPodDeclinerContext(nextDecliner, state, timestamp);
+            if (!skippedContext) {
+                return {
+                    events: [...events, ...finalizeShoggothPodEvents(state, context.casterPlayerId, context.baseIndex, timestamp)],
+                };
+            }
+            return {
+                events,
+                context: skippedContext,
+                nextProgram: elderThingShoggothPodDestroyPromptProgram,
+            };
+        }
+
+        return {
+            events,
+            context: nextDecliner,
+            nextProgram: elderThingShoggothPodDestroyPromptProgram,
+        };
+    },
+});
+
+const elderThingShoggothPodPromptProgram = createPromptProgram<ElderThingShoggothPodPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_shoggoth_pod',
+    buildInteraction: (context) => {
+        const targetPlayerId = context.opponents[context.opponentIdx];
+        return createAbilityRuntimeSimpleChoice(
+            `elder_thing_shoggoth_pod_${targetPlayerId}_${context.now}`,
+            targetPlayerId,
+            '修格斯：你可以抽一张疯狂卡',
+            [
+                { id: 'yes', label: '抽一张疯狂卡', value: { choice: 'yes' }, displayMode: 'button' as const },
+                { id: 'no', label: '不抽', value: { choice: 'no' }, displayMode: 'button' as const },
+            ],
+            { sourceId: 'elder_thing_shoggoth_pod', targetType: 'button' },
+        );
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = (value as { choice?: 'yes' | 'no' } | undefined)?.choice;
+        const targetPlayerId = context.opponents[context.opponentIdx];
+        const events: SmashUpEvent[] = [];
+        const decliners = [...context.decliners];
+        if (choice === 'yes') {
+            const event = drawMadnessCards(targetPlayerId, 1, state.core, 'elder_thing_shoggoth_pod', timestamp);
+            if (event) events.push(event);
+        } else {
+            decliners.push(targetPlayerId);
+        }
+
+        const nextPrompt = getNextShoggothPodPromptContext({
+            ...context,
+            decliners,
+        }, state, timestamp);
+        if (nextPrompt) {
+            return { events, context: nextPrompt, nextProgram: elderThingShoggothPodPromptProgram };
+        }
+
+        if (decliners.length === 0) {
+            return {
+                events: [...events, ...finalizeShoggothPodEvents(state, context.casterPlayerId, context.baseIndex, timestamp)],
+            };
+        }
+
+        const firstDestroyContext = createElderThingPromptContext(state, context.playerId, timestamp, {
+            cardUid: context.cardUid,
+            casterPlayerId: context.casterPlayerId,
+            baseIndex: context.baseIndex,
+            opponents: context.opponents,
+            opponentIdx: context.opponentIdx,
+            decliners,
+            declinerIdx: 0,
+        }) satisfies ElderThingShoggothPodDestroyPromptContext;
+        const firstDecliner = decliners[0];
+        const destroyOptions = buildShoggothDestroyPromptOptions(
+            state.core,
+            context.casterPlayerId,
+            firstDecliner,
+            context.baseIndex,
+        );
+        if (destroyOptions.length === 0) {
+            const skippedContext = getNextShoggothPodDeclinerContext(firstDestroyContext, state, timestamp);
+            if (!skippedContext) {
+                return {
+                    events: [...events, ...finalizeShoggothPodEvents(state, context.casterPlayerId, context.baseIndex, timestamp)],
+                };
+            }
+            return {
+                events,
+                context: skippedContext,
+                nextProgram: elderThingShoggothPodDestroyPromptProgram,
+            };
+        }
+
+        return {
+            events,
+            context: firstDestroyContext,
+            nextProgram: elderThingShoggothPodDestroyPromptProgram,
+        };
+    },
+});
+
+const elderThingShoggothPodProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const opponents = getOrderedOpponentIds(ctx.state, ctx.playerId);
+    if (opponents.length === 0) {
+        return { events: [] };
+    }
+    return {
+        events: [],
+        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            cardUid: ctx.cardUid,
+            casterPlayerId: ctx.playerId,
+            baseIndex: ctx.baseIndex,
+            opponents,
+            opponentIdx: 0,
+            decliners: [] as PlayerId[],
+        }) satisfies ElderThingShoggothPodPromptContext,
+        nextProgram: elderThingShoggothPodPromptProgram,
+    };
+});
+
+const elderThingBeginTheSummoningPodPromptProgram = createPromptProgram<ElderThingBeginTheSummoningPodPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_begin_the_summoning_pod',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `elder_thing_begin_the_summoning_pod_${context.now}`,
+            context.playerId,
+            '选择要放到牌库顶的随从',
+            buildDiscardMinionCardOptions(context.matchState.core, context.playerId),
+            {
+                sourceId: 'elder_thing_begin_the_summoning_pod',
+                targetType: 'generic',
+                autoRefresh: 'discard',
+                responseValidationMode: 'live',
+            },
+        );
+        return attachOptionsGenerator(interaction, (state) => buildDiscardMinionCardOptions(state.core, context.playerId));
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = getSelectedCard(value);
+        if (!selected) return { events: [] };
+        const player = state.core.players[context.playerId];
+        const inDiscard = player.discard.find((card) => card.uid === selected.cardUid && card.type === 'minion');
+        if (!inDiscard) return { events: [] };
+        const evt: SmashUpEvent = {
+            type: SU_EVENTS.CARD_TO_DECK_TOP,
+            payload: { cardUid: selected.cardUid, defId: selected.defId, ownerId: context.playerId, reason: 'elder_thing_begin_the_summoning_pod' },
+            timestamp,
+        };
+        return {
+            events: [
+                evt,
+                grantContextualExtraAction({ playerId: context.playerId, now: timestamp, matchState: state }, 'elder_thing_begin_the_summoning_pod'),
+            ],
+        };
+    },
+});
+
+const elderThingBeginTheSummoningPodProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const player = ctx.state.players[ctx.playerId];
-    const minionsInDiscard = player.discard.filter(c => c.type === 'minion');
+    const minionsInDiscard = player.discard.filter((card) => card.type === 'minion');
     if (minionsInDiscard.length === 0) {
         return { events: [grantContextualExtraAction(ctx, 'elder_thing_begin_the_summoning_pod')] };
     }
-    const options = minionsInDiscard.map((c, i) => {
-        const def = getCardDef(c.defId);
-        return { id: `card-${i}`, label: def?.name ?? c.defId, value: { cardUid: c.uid, defId: c.defId }, displayMode: 'card' as const, _source: 'discard' as const };
-    });
-    const interaction = createSimpleChoice(
-        `elder_thing_begin_the_summoning_pod_${ctx.now}`,
-        ctx.playerId,
-        '选择要放到牌库顶的随从',
-        options as any[],
-        { sourceId: 'elder_thing_begin_the_summoning_pod', targetType: 'generic', autoRefresh: 'discard', responseValidationMode: 'live' },
-    );
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    return {
+        events: [],
+        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            cardUid: ctx.cardUid,
+        }) satisfies ElderThingBeginTheSummoningPodPromptContext,
+        nextProgram: elderThingBeginTheSummoningPodPromptProgram,
+    };
+});
 
 function elderThingDunwichHorrorPodOnPlay(ctx: AbilityContext): AbilityResult {
     // POD：+5 仅来自 ongoing 修正；onPlay 不应再额外叠加永久力量，避免与 ongoing 叠加成 +10。
@@ -773,40 +1533,323 @@ function elderThingInsanityPod(ctx: AbilityContext): AbilityResult {
     return { events };
 }
 
-function elderThingPowerOfMadnessPod(ctx: AbilityContext): AbilityResult {
-    // Correct order (POD): name an action, then reveal hand, discard named copies, then shuffle discard into deck.
-    const opponents = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
-    if (opponents.length === 0) return { events: [] };
+const elderThingPowerOfMadnessPodPromptProgram = createPromptProgram<ElderThingPowerOfMadnessPodPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_power_of_madness_pod_choose',
+    interactionSourceIds: ['elder_thing_power_of_madness_pod_start'],
+    buildInteraction: (context) => {
+        const targetPid = context.opponents[context.idx];
+        return createAbilityRuntimeSimpleChoice(
+            `elder_thing_power_of_madness_pod_choose_${targetPid}_${context.now}`,
+            context.playerId,
+            `疯狂之力：为 ${targetPid} 选择要命名的战术`,
+            buildPowerOfMadnessPodActionOptions(context.matchState.core),
+            { sourceId: 'elder_thing_power_of_madness_pod_choose', targetType: 'button' },
+        );
+    },
+    onResolve: ({ context, state, value, random, timestamp }) => {
+        const targetPid = context.opponents[context.idx];
+        const namedDefId = (value as { defId?: string } | undefined)?.defId;
+        const opponent = state.core.players[targetPid];
+        const events: SmashUpEvent[] = [];
 
-    const interaction = createSimpleChoice(
-        `elder_thing_power_of_madness_pod_${ctx.now}`,
-        ctx.playerId,
-        '疯狂之力：依次为每个对手选择一个要命名的战术',
+        if (opponent.hand.length > 0) {
+            events.push(revealHand(
+                targetPid,
+                'all',
+                opponent.hand.map((card) => ({ uid: card.uid, defId: card.defId })),
+                'elder_thing_power_of_madness_pod',
+                timestamp,
+                context.playerId,
+            ));
+        }
+
+        if (namedDefId) {
+            const discardedCards = opponent.hand.filter((card) => card.defId === namedDefId);
+            const discards = discardedCards.map((card) => card.uid);
+            if (discards.length > 0) {
+                events.push({
+                    type: SU_EVENTS.CARDS_DISCARDED,
+                    payload: { playerId: targetPid, cardUids: discards },
+                    timestamp,
+                } as CardsDiscardedEvent);
+            }
+            const newDeck = random.shuffle([...opponent.deck, ...opponent.discard, ...discardedCards]);
+            events.push({
+                type: SU_EVENTS.DECK_RESHUFFLED,
+                payload: { playerId: targetPid, deckUids: newDeck.map((card) => card.uid) },
+                timestamp,
+            } as DeckReshuffledEvent);
+        } else {
+            const newDeck = random.shuffle([...opponent.deck, ...opponent.discard]);
+            events.push({
+                type: SU_EVENTS.DECK_RESHUFFLED,
+                payload: { playerId: targetPid, deckUids: newDeck.map((card) => card.uid) },
+                timestamp,
+            } as DeckReshuffledEvent);
+        }
+
+        const nextIdx = context.idx + 1;
+        if (nextIdx >= context.opponents.length) {
+            return { events };
+        }
+        return {
+            events,
+            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                cardUid: context.cardUid,
+                opponents: context.opponents,
+                idx: nextIdx,
+            }) satisfies ElderThingPowerOfMadnessPodPromptContext,
+            nextProgram: elderThingPowerOfMadnessPodPromptProgram,
+        };
+    },
+});
+
+const elderThingPowerOfMadnessPodProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const opponents = ctx.state.turnOrder.filter((pid) => pid !== ctx.playerId);
+    if (opponents.length === 0) return { events: [] };
+    return {
+        events: [],
+        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            cardUid: ctx.cardUid,
+            opponents,
+            idx: 0,
+        }) satisfies ElderThingPowerOfMadnessPodPromptContext,
+        nextProgram: elderThingPowerOfMadnessPodPromptProgram,
+    };
+});
+
+const elderThingSpreadingHorrorPodChooseMinionPromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodChooseMinionPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_spreading_horror_pod_choose_minion',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `elder_thing_spreading_horror_pod_choose_minion_${context.now}_${context.remaining}`,
+            context.casterPlayerId,
+            '散播恐怖：选择要从弃牌堆打出的随从（战斗力≤3）',
+            buildDiscardSmallMinionOptions(context.matchState.core, context.casterPlayerId),
+            {
+                sourceId: 'elder_thing_spreading_horror_pod_choose_minion',
+                targetType: 'generic',
+                autoRefresh: 'discard',
+                responseValidationMode: 'live',
+            },
+        );
+        return attachOptionsGenerator(interaction, (state) => buildDiscardSmallMinionOptions(state.core, context.casterPlayerId));
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = getSelectedCard(value);
+        if (!selected) return { events: [] };
+        const def = getCardDef(selected.defId) as MinionCardDef | undefined;
+        const playedEvent = {
+            type: SU_EVENTS.MINION_PLAYED,
+            payload: {
+                playerId: context.casterPlayerId,
+                cardUid: selected.cardUid,
+                defId: selected.defId,
+                baseIndex: context.chosenBaseIndex,
+                power: def?.power ?? 0,
+                fromDiscard: true,
+                consumesNormalLimit: false,
+                discardPlaySourceId: 'elder_thing_spreading_horror_pod',
+            },
+            timestamp,
+        } as SmashUpEvent;
+        const events = [playedEvent];
+        const remaining = context.remaining - 1;
+        if (remaining <= 0) return { events };
+        const nextState = withSimulatedMatchState(state, events);
+        return {
+            events,
+            context: createElderThingPromptContext(nextState, context.playerId, timestamp, {
+                cardUid: context.cardUid,
+                casterPlayerId: context.casterPlayerId,
+                remaining,
+                usedBases: [...context.usedBases, context.chosenBaseIndex],
+            }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext,
+            nextProgram: elderThingSpreadingHorrorPodMayPlayDecisionProgram,
+        };
+    },
+});
+
+const elderThingSpreadingHorrorPodChooseBasePromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodChooseBasePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_spreading_horror_pod_choose_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `elder_thing_spreading_horror_pod_choose_base_${context.now}_${context.remaining}`,
+        context.casterPlayerId,
+        '散播恐怖：选择要打出随从的基地（每次必须不同）',
+        buildBaseTargetOptions(buildAvailableBaseOptions(context.matchState.core, context.usedBases), context.matchState.core),
+        { sourceId: 'elder_thing_spreading_horror_pod_choose_base', targetType: 'base' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const baseIndex = (value as { baseIndex?: number } | undefined)?.baseIndex;
+        if (baseIndex === undefined || context.usedBases.includes(baseIndex)) {
+            return { events: [] };
+        }
+        if (buildDiscardSmallMinionOptions(state.core, context.casterPlayerId).length === 0) {
+            const remaining = context.remaining - 1;
+            if (remaining <= 0) return { events: [] };
+            return {
+                events: [],
+                context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                    cardUid: context.cardUid,
+                    casterPlayerId: context.casterPlayerId,
+                    remaining,
+                    usedBases: context.usedBases,
+                }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext,
+                nextProgram: elderThingSpreadingHorrorPodMayPlayDecisionProgram,
+            };
+        }
+        return {
+            events: [],
+            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                cardUid: context.cardUid,
+                casterPlayerId: context.casterPlayerId,
+                remaining: context.remaining,
+                usedBases: context.usedBases,
+                chosenBaseIndex: baseIndex,
+            }) satisfies ElderThingSpreadingHorrorPodChooseMinionPromptContext,
+            nextProgram: elderThingSpreadingHorrorPodChooseMinionPromptProgram,
+        };
+    },
+});
+
+const elderThingSpreadingHorrorPodMayPlayPromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodMayPlayPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_spreading_horror_pod_may_play',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `elder_thing_spreading_horror_pod_may_${context.now}_${context.remaining}`,
+        context.casterPlayerId,
+        '散播恐怖：你可以从弃牌堆打出一个战斗力≤3的随从',
         [
-            { id: 'start', label: '开始', value: { start: true }, displayMode: 'button' as const },
+            { id: 'yes', label: '打出一个随从', value: { choice: 'yes' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+            { id: 'no', label: '不打出', value: { choice: 'no' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
         ],
-        { sourceId: 'elder_thing_power_of_madness_pod_start', targetType: 'button' },
-    );
-    (interaction.data as any).continuationContext = { opponents, idx: 0 };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+        { sourceId: 'elder_thing_spreading_horror_pod_may_play', targetType: 'button' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = (value as PodYesNoChoiceValue | undefined)?.choice;
+        if (choice !== 'yes') {
+            const remaining = context.remaining - 1;
+            if (remaining <= 0) return { events: [] };
+            return {
+                events: [],
+                context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                    cardUid: context.cardUid,
+                    casterPlayerId: context.casterPlayerId,
+                    remaining,
+                    usedBases: context.usedBases,
+                }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext,
+                nextProgram: elderThingSpreadingHorrorPodMayPlayDecisionProgram,
+            };
+        }
+        return {
+            events: [],
+            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                cardUid: context.cardUid,
+                casterPlayerId: context.casterPlayerId,
+                remaining: context.remaining,
+                usedBases: context.usedBases,
+            }) satisfies ElderThingSpreadingHorrorPodChooseBasePromptContext,
+            nextProgram: elderThingSpreadingHorrorPodChooseBasePromptProgram,
+        };
+    },
+});
 
-function elderThingSpreadingHorrorPod(ctx: AbilityContext): AbilityResult {
-    const opponents = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
-    if (opponents.length === 0) return { events: [] };
-    const interaction = createSimpleChoice(
-        `elder_thing_spreading_horror_pod_${opponents[0]}_${ctx.now}`,
-        opponents[0],
+const elderThingSpreadingHorrorPodMayPlayDecisionProgram = createEffectProgram<ElderThingSpreadingHorrorPodMayPlayPromptContext, SmashUpCore, SmashUpEvent>((context) => {
+    if (context.remaining <= 0) {
+        return { events: [] };
+    }
+
+    const hasPlayableDiscardMinion = buildDiscardSmallMinionOptions(context.matchState.core, context.casterPlayerId).length > 0;
+    const hasAvailableBase = buildAvailableBaseOptions(context.matchState.core, context.usedBases).length > 0;
+    if (!hasPlayableDiscardMinion || !hasAvailableBase) {
+        return {
+            events: [],
+            context: {
+                ...context,
+                remaining: context.remaining - 1,
+            },
+            nextProgram: elderThingSpreadingHorrorPodMayPlayDecisionProgram,
+        };
+    }
+
+    return {
+        events: [],
+        context,
+        nextProgram: elderThingSpreadingHorrorPodMayPlayPromptProgram,
+    };
+});
+
+const elderThingSpreadingHorrorPodOpponentPromptProgram = createPromptProgram<ElderThingSpreadingHorrorPodOpponentPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_spreading_horror_pod_opponent',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `elder_thing_spreading_horror_pod_${context.opponents[context.idx]}_${context.now}`,
+        context.opponents[context.idx],
         '散播恐怖：你可以弃置两张非疯狂卡',
         [
-            { id: 'yes', label: '弃置两张非疯狂卡', value: { choice: 'yes' }, displayMode: 'button' as const },
-            { id: 'no', label: '不弃置', value: { choice: 'no' }, displayMode: 'button' as const },
-        ] as any[],
+            { id: 'yes', label: '弃置两张非疯狂卡', value: { choice: 'yes' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+            { id: 'no', label: '不弃置', value: { choice: 'no' } satisfies PodYesNoChoiceValue, displayMode: 'button' as const },
+        ],
         { sourceId: 'elder_thing_spreading_horror_pod_opponent', targetType: 'button' },
-    );
-    (interaction.data as any).continuationContext = { casterPlayerId: ctx.playerId, opponents, idx: 0, decliners: [] as string[] };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const pid = context.opponents[context.idx];
+        const player = state.core.players[pid];
+        const nonMadness = player.hand.filter((card) => card.defId !== MADNESS_CARD_DEF_ID);
+        const events: SmashUpEvent[] = [];
+        const decliners = [...context.decliners];
+        if ((value as PodYesNoChoiceValue | undefined)?.choice === 'yes' && nonMadness.length >= 2) {
+            events.push({
+                type: SU_EVENTS.CARDS_DISCARDED,
+                payload: { playerId: pid, cardUids: [nonMadness[0].uid, nonMadness[1].uid] },
+                timestamp,
+            } as CardsDiscardedEvent);
+        } else {
+            decliners.push(pid);
+        }
+
+        const nextIdx = context.idx + 1;
+        if (nextIdx < context.opponents.length) {
+            return {
+                events,
+                context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                    cardUid: context.cardUid,
+                    casterPlayerId: context.casterPlayerId,
+                    opponents: context.opponents,
+                    idx: nextIdx,
+                    decliners,
+                }) satisfies ElderThingSpreadingHorrorPodOpponentPromptContext,
+                nextProgram: elderThingSpreadingHorrorPodOpponentPromptProgram,
+            };
+        }
+
+        if (decliners.length === 0) return { events };
+        return {
+            events,
+            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                cardUid: context.cardUid,
+                casterPlayerId: context.casterPlayerId,
+                remaining: decliners.length,
+                usedBases: [] as number[],
+            }) satisfies ElderThingSpreadingHorrorPodMayPlayPromptContext,
+            nextProgram: elderThingSpreadingHorrorPodMayPlayDecisionProgram,
+        };
+    },
+});
+
+const elderThingSpreadingHorrorPodProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const opponents = ctx.state.turnOrder.filter((pid) => pid !== ctx.playerId);
+    if (opponents.length === 0) return { events: [] };
+    return {
+        events: [],
+        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            cardUid: ctx.cardUid,
+            casterPlayerId: ctx.playerId,
+            opponents,
+            idx: 0,
+            decliners: [] as PlayerId[],
+        }) satisfies ElderThingSpreadingHorrorPodOpponentPromptContext,
+        nextProgram: elderThingSpreadingHorrorPodOpponentPromptProgram,
+    };
+});
 
 function elderThingUnfathomableGoalsPod(ctx: AbilityContext): AbilityResult {
     const opponents = ctx.state.turnOrder.filter(pid => pid !== ctx.playerId);
@@ -899,11 +1942,50 @@ function elderThingPriceOfPowerPodSpecial(ctx: AbilityContext): AbilityResult {
 }
 
 function elderThingDunwichHorrorPodBeforeScoring(ctx: TriggerContext): SmashUpEvent[] | { events: SmashUpEvent[]; matchState?: any } {
+    const result = executeAbilityProgram(elderThingDunwichHorrorPodBeforeScoringProgram, ctx);
+    return {
+        events: result.events,
+        ...(result.matchState ? { matchState: result.matchState } : {}),
+    };
+}
+
+const elderThingDunwichHorrorPodChoicePromptProgram = createPromptProgram<ElderThingDunwichHorrorPodChoicePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_dunwich_horror_pod_choice',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `elder_thing_dunwich_horror_pod_${context.minionUid}_${context.now}`,
+        context.playerId,
+        '敦威治恐怖：抽两张疯狂卡，或者消灭该随从',
+        [
+            { id: 'draw', label: '抽两张疯狂卡', value: { choice: 'draw' }, displayMode: 'button' as const },
+            { id: 'destroy', label: '消灭该随从', value: { choice: 'destroy' }, displayMode: 'button' as const },
+        ],
+        { sourceId: 'elder_thing_dunwich_horror_pod_choice', targetType: 'button' },
+    ),
+    onResolve: ({ context, value, state, timestamp }) => {
+        const choice = (value as { choice?: 'draw' | 'destroy' } | undefined)?.choice;
+        if (choice === 'draw') {
+            const evt = drawMadnessCards(context.playerId, 2, state.core, 'elder_thing_dunwich_horror_pod', timestamp);
+            return { events: evt ? [evt] : [] };
+        }
+        return {
+            events: [destroyMinion(
+                context.minionUid,
+                context.minionDefId,
+                context.baseIndex,
+                context.ownerId,
+                context.playerId,
+                'elder_thing_dunwich_horror_pod',
+                timestamp,
+            )],
+        };
+    },
+});
+
+const elderThingDunwichHorrorPodBeforeScoringProgram = createEffectProgram<TriggerContext, SmashUpCore, SmashUpEvent>((ctx) => {
     const { state, baseIndex, now } = ctx;
-    if (baseIndex === undefined) return [];
-    if (!ctx.matchState) return [];
+    if (baseIndex === undefined || !ctx.matchState) return { events: [] };
     const base = state.bases[baseIndex];
-    if (!base) return [];
+    if (!base) return { events: [] };
 
     // Find minions on this base with Dunwich Horror POD attached
     const targets: { controller: string; minionUid: string; minionDefId: string; ownerId: string }[] = [];
@@ -912,187 +1994,199 @@ function elderThingDunwichHorrorPodBeforeScoring(ctx: TriggerContext): SmashUpEv
             targets.push({ controller: m.controller, minionUid: m.uid, minionDefId: m.defId, ownerId: m.owner });
         }
     }
-    if (targets.length === 0) return [];
+    if (targets.length === 0) return { events: [] };
 
     // Only handle one at a time (queue will re-trigger next scoring check if multiple)
     const t = targets[0];
-    const interaction = createSimpleChoice(
-        `elder_thing_dunwich_horror_pod_${t.minionUid}_${now}`,
-        t.controller,
-        '敦威治恐怖：抽两张疯狂卡，或者消灭该随从',
-        [
-            { id: 'draw', label: '抽两张疯狂卡', value: { choice: 'draw' }, displayMode: 'button' as const },
-            { id: 'destroy', label: '消灭该随从', value: { choice: 'destroy' }, displayMode: 'button' as const },
-        ] as any[],
-        { sourceId: 'elder_thing_dunwich_horror_pod_choice', targetType: 'button' },
-    );
-    (interaction.data as any).continuationContext = { baseIndex, ...t };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+    return {
+        events: [],
+        context: {
+            matchState: ctx.matchState,
+            playerId: t.controller,
+            now,
+            baseIndex,
+            minionUid: t.minionUid,
+            minionDefId: t.minionDefId,
+            ownerId: t.ownerId,
+        } satisfies ElderThingDunwichHorrorPodChoicePromptContext,
+        nextProgram: elderThingDunwichHorrorPodChoicePromptProgram,
+    };
+});
 
 function elderThingDunwichHorrorPodOnTurnEndNoop(_ctx: TriggerContext): SmashUpEvent[] {
     return [];
 }
 
-/** 远古之物 onPlay：消灭两个己方其他随从或将本随从放到牌库底 */
-function elderThingElderThingOnPlay(ctx: AbilityContext): AbilityResult {
-    // 收集己方其他随从
-    const otherMinions: { uid: string; defId: string; baseIndex: number; owner: string; label: string }[] = [];
-    for (let i = 0; i < ctx.state.bases.length; i++) {
-        for (const m of ctx.state.bases[i].minions) {
-            if (m.controller === ctx.playerId && m.uid !== ctx.cardUid) {
-                const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? m.defId;
-                const baseDef = getBaseDef(ctx.state.bases[i].defId);
-                const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-                otherMinions.push({ uid: m.uid, defId: m.defId, baseIndex: i, owner: m.owner, label: `${name} @ ${baseName}` });
-            }
-        }
-    }
-
-    // 始终显示选择界面，随从不足 2 个时"消灭"选项置灰
-    const canDestroy = otherMinions.length >= 2;
-    const options = [
-        {
-            id: 'destroy',
-            label: canDestroy ? '消灭两个己方其他随从' : '消灭两个己方其他随从（随从不足）',
-            value: { choice: 'destroy' },
-            displayMode: 'button' as const,
-            disabled: !canDestroy,
-        },
-        { 
-            id: 'deckbottom', 
-            label: '将本随从放到牌库底', 
-            value: { choice: 'deckbottom' },
-            displayMode: 'button' as const,
-        },
-    ];
-    const interaction = createSimpleChoice(
-        `elder_thing_elder_thing_choice_${ctx.now}`, ctx.playerId,
-        '选择远古之物的效果', options as any[],
-        { sourceId: 'elder_thing_elder_thing_choice', targetType: 'button' },
-    );
-    (interaction.data as any).continuationContext = { cardUid: ctx.cardUid, defId: ctx.defId, baseIndex: ctx.baseIndex };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-// ============================================================================
-// 修格斯?(Shoggoth) - onPlay
-// ============================================================================
-
-/** 修格斯 onPlay：每个对手可抽疯狂卡，不收回抽则消灭该对手在此基地的一个随从*/
-function elderThingShoggoth(ctx: AbilityContext): AbilityResult {
-    // 前置条件：你只能将这张卡打到你至少拥有6点力量的基地
-    const base = ctx.state.bases[ctx.baseIndex];
-    if (base) {
-        const playerPower = getPlayerEffectivePowerOnBase(ctx.state, base, ctx.baseIndex, ctx.playerId);
-        if (playerPower < 6) return { events: [] };
-    }
-
-    const opponents = getOrderedOpponentIds(ctx.state, ctx.playerId);
-    if (opponents.length === 0) return { events: [] };
-
-    const options = [
-        { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
-        { id: 'decline', label: '拒绝（被消灭一个随从）', value: { choice: 'decline' }, displayMode: 'button' as const },
-    ];
-    const interaction = createSimpleChoice(
-        `elder_thing_shoggoth_opponent_${ctx.now}`, opponents[0],
-        '修格斯：你可以抽一张疯狂卡，否则你在此基地的一个随从将被消灭', options as any[],
-        { sourceId: 'elder_thing_shoggoth_opponent', targetType: 'button' },
-    );
-    (interaction.data as any).continuationContext = {
-        casterPlayerId: ctx.playerId,
-        targetPlayerId: opponents[0],
-        baseIndex: ctx.baseIndex,
-        opponents,
-        opponentIdx: 0,
-    };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
-
-// ============================================================================
-// 交互解决处理函数
-// ============================================================================
-
-/** 修格斯链式处理：继续询问下一个对手 */
-function shoggothContinueChain(
-    state: any, events: SmashUpEvent[],
-    ctx: { casterPlayerId: string; baseIndex: number; opponents: string[]; opponentIdx: number },
-    timestamp: number,
-): { state: any; events: SmashUpEvent[] } {
-    const nextIdx = ctx.opponentIdx + 1;
-    if (nextIdx < ctx.opponents.length) {
-        const nextPid = ctx.opponents[nextIdx];
-        const options = [
-            { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
-            { id: 'decline', label: '拒绝（被消灭一个随从）', value: { choice: 'decline' }, displayMode: 'button' as const },
-        ];
-        const interaction = createSimpleChoice(
-            `elder_thing_shoggoth_opponent_${nextIdx}_${timestamp}`, nextPid,
-            '修格斯：你可以抽一张疯狂卡，否则你在此基地的一个随从将被消灭', options as any[],
-            { sourceId: 'elder_thing_shoggoth_opponent', targetType: 'button' },
+const elderThingDestroySecondPromptProgram = createPromptProgram<ElderThingDestroySecondPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_elder_thing_destroy_second',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `elder_thing_elder_thing_destroy_second_${context.now}`,
+            context.playerId,
+            '远古之物：点击第二个要消灭的随从',
+            buildElderThingDestroyPromptOptions(
+                context.matchState.core,
+                context.playerId,
+                context.cardUid,
+                [context.firstTarget.minionUid],
+            ),
+            {
+                sourceId: 'elder_thing_elder_thing_destroy_second',
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
         );
-        (interaction.data as any).continuationContext = {
-            casterPlayerId: ctx.casterPlayerId,
-            targetPlayerId: nextPid,
-            baseIndex: ctx.baseIndex,
-            opponents: ctx.opponents,
-            opponentIdx: nextIdx,
+        interaction.data.optionsGenerator = (state) => buildElderThingDestroyPromptOptions(
+            state.core as SmashUpCore,
+            context.playerId,
+            context.cardUid,
+            [context.firstTarget.minionUid],
+        );
+        return interaction;
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = getSelectedMinionChoice(value);
+        if (!selected) {
+            return { events: [] };
+        }
+
+        const firstTarget = context.firstTarget;
+        const proposed: SmashUpEvent[] = [
+            ...buildValidatedDestroyEvents(state, {
+                minionUid: firstTarget.minionUid,
+                minionDefId: firstTarget.defId,
+                fromBaseIndex: firstTarget.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'elder_thing_elder_thing',
+                now: timestamp,
+            }),
+            ...buildValidatedDestroyEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'elder_thing_elder_thing',
+                now: timestamp,
+            }),
+        ];
+        const filtered = filterProtectedDestroyEvents(proposed, state.core, context.playerId);
+        const destroyCount = filtered.filter((event) => event.type === SU_EVENTS.MINION_DESTROYED).length;
+        if (destroyCount < 2) {
+            return {
+                events: buildValidatedCardToDeckBottomEvents(state, {
+                    cardUid: context.cardUid,
+                    defId: context.elderThingDefId,
+                    ownerId: context.playerId,
+                    reason: 'elder_thing_elder_thing_failed_destroy',
+                    now: timestamp,
+                    expectedLocation: 'bases',
+                }),
+            };
+        }
+
+        return { events: proposed };
+    },
+});
+
+const elderThingDestroyFirstPromptProgram = createPromptProgram<ElderThingOnPlayPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_elder_thing_destroy_first',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `elder_thing_elder_thing_destroy_first_${context.now}`,
+            context.playerId,
+            '远古之物：点击第一个要消灭的随从',
+            buildElderThingDestroyPromptOptions(context.matchState.core, context.playerId, context.cardUid),
+            {
+                sourceId: 'elder_thing_elder_thing_destroy_first',
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state) => buildElderThingDestroyPromptOptions(
+            state.core as SmashUpCore,
+            context.playerId,
+            context.cardUid,
+        );
+        return interaction;
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const firstTarget = getSelectedMinionChoice(value);
+        if (!firstTarget) {
+            return { events: [] };
+        }
+
+        const remaining = collectFriendlyOtherMinions(
+            state.core,
+            context.playerId,
+            context.cardUid,
+            [firstTarget.minionUid],
+        );
+        if (remaining.length === 0) {
+            return {
+                events: buildValidatedCardToDeckBottomEvents(state, {
+                    cardUid: context.cardUid,
+                    defId: context.elderThingDefId,
+                    ownerId: context.playerId,
+                    reason: 'elder_thing_elder_thing_failed_destroy',
+                    now: timestamp,
+                    expectedLocation: 'bases',
+                }),
+            };
+        }
+
+        return {
+            events: [],
+            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                cardUid: context.cardUid,
+                elderThingDefId: context.elderThingDefId,
+                baseIndex: context.baseIndex,
+                firstTarget,
+            }) satisfies ElderThingDestroySecondPromptContext,
+            nextProgram: elderThingDestroySecondPromptProgram,
         };
-        return { state: queueInteraction(state, interaction), events };
-    }
-    return { state, events };
-}
+    },
+});
 
-function queueSpreadingHorrorPodMayPlay(
-    state: any,
-    ctx: { casterPlayerId: string; remaining: number; usedBases: number[] },
-    timestamp: number,
-): { state: any; events: SmashUpEvent[] } {
-    if (ctx.remaining <= 0) return { state, events: [] };
-
-    const player = state.core.players[ctx.casterPlayerId];
-    const hasPlayableDiscardMinion = player.discard.some((c: any) => {
-        if (c.type !== 'minion') return false;
-        const def = getCardDef(c.defId) as any;
-        return def?.type === 'minion' && def.power <= 3;
-    });
-    const hasAvailableBase = state.core.bases.some((_b: any, i: number) => !ctx.usedBases.includes(i));
-
-    // 没有可打出的随从或没有可选基地：该次机会自动跳过，继续下一个“可选打出”机会。
-    if (!hasPlayableDiscardMinion || !hasAvailableBase) {
-        return queueSpreadingHorrorPodMayPlay(state, { ...ctx, remaining: ctx.remaining - 1 }, timestamp);
-    }
-
-    const interaction = createSimpleChoice(
-        `elder_thing_spreading_horror_pod_may_${timestamp}_${ctx.remaining}`,
-        ctx.casterPlayerId,
-        '散播恐怖：你可以从弃牌堆打出一个战斗力≤3的随从',
-        [
-            { id: 'yes', label: '打出一个随从', value: { choice: 'yes' }, displayMode: 'button' as const },
-            { id: 'no', label: '不打出', value: { choice: 'no' }, displayMode: 'button' as const },
-        ] as any[],
-        { sourceId: 'elder_thing_spreading_horror_pod_may_play', targetType: 'button' },
-    );
-    (interaction.data as any).continuationContext = ctx;
-    return { state: queueInteraction(state, interaction), events: [] };
-}
-
-/** 注册远古之物派系的交互解决处理函数 */
-export function registerElderThingInteractionHandlers(): void {
-    registerInteractionHandler('elder_thing_elder_thing_choice', (state, playerId, value, iData, _random, timestamp) => {
-        const { choice } = value as { choice: string };
-        const ctx = (iData as any)?.continuationContext as { cardUid: string; defId: string; baseIndex: number };
-        if (!ctx) return { state, events: [] };
-
+const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_elder_thing_choice',
+    buildInteraction: (context) => {
+        const candidateCount = collectFriendlyOtherMinions(
+            context.matchState.core,
+            context.playerId,
+            context.cardUid,
+        ).length;
+        return createAbilityRuntimeSimpleChoice(
+            `elder_thing_elder_thing_choice_${context.now}`,
+            context.playerId,
+            '选择远古之物的效果',
+            [
+                {
+                    id: 'destroy',
+                    label: candidateCount >= 2 ? '消灭两个己方其他随从' : '消灭两个己方其他随从（随从不足）',
+                    value: { choice: 'destroy' },
+                    displayMode: 'button' as const,
+                    disabled: candidateCount < 2,
+                },
+                {
+                    id: 'deckbottom',
+                    label: '将本随从放到牌库底',
+                    value: { choice: 'deckbottom' },
+                    displayMode: 'button' as const,
+                },
+            ],
+            { sourceId: 'elder_thing_elder_thing_choice', targetType: 'button' },
+        );
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = (value as { choice?: string } | undefined)?.choice;
         if (choice === 'deckbottom') {
             return {
-                state,
                 events: buildValidatedCardToDeckBottomEvents(state, {
-                    cardUid: ctx.cardUid,
-                    defId: ctx.defId,
-                    ownerId: playerId,
+                    cardUid: context.cardUid,
+                    defId: context.elderThingDefId,
+                    ownerId: context.playerId,
                     reason: 'elder_thing_elder_thing',
                     now: timestamp,
                     expectedLocation: 'bases',
@@ -1100,741 +2194,234 @@ export function registerElderThingInteractionHandlers(): void {
             };
         }
 
-        // choice === 'destroy' → 选择两个目标；只有两者都能被成功消灭时才消灭，否则远古之物进牌库底且不消灭任何随从（FAQ）。
-        const myMinions: { minion: MinionOnBase; baseIndex: number }[] = [];
-        for (let i = 0; i < state.core.bases.length; i++) {
-            for (const m of state.core.bases[i].minions) {
-                if (m.controller === playerId && m.uid !== ctx.cardUid) {
-                    myMinions.push({ minion: m, baseIndex: i });
-                }
-            }
+        const candidates = collectFriendlyOtherMinions(state.core, context.playerId, context.cardUid);
+        if (candidates.length < 2) {
+            return {
+                events: buildValidatedCardToDeckBottomEvents(state, {
+                    cardUid: context.cardUid,
+                    defId: context.elderThingDefId,
+                    ownerId: context.playerId,
+                    reason: 'elder_thing_elder_thing_failed_destroy',
+                    now: timestamp,
+                    expectedLocation: 'bases',
+                }),
+            };
         }
-        
-        // 恰好 2 个随从：无需选择，但要先检查是否“都能被成功消灭”
-        if (myMinions.length === 2) {
-            const [a, b] = myMinions;
-            const proposed: SmashUpEvent[] = [
-                destroyMinion(a.minion.uid, a.minion.defId, a.baseIndex, a.minion.owner, playerId, 'elder_thing_elder_thing', timestamp),
-                destroyMinion(b.minion.uid, b.minion.defId, b.baseIndex, b.minion.owner, playerId, 'elder_thing_elder_thing', timestamp),
-            ];
-            const filtered = filterProtectedDestroyEvents(proposed, state.core, playerId);
-            const destroyCount = filtered.filter(e => e.type === SU_EVENTS.MINION_DESTROYED).length;
+
+        if (candidates.length === 2) {
+            const proposed: SmashUpEvent[] = candidates.flatMap((candidate) => buildValidatedDestroyEvents(state, {
+                minionUid: candidate.uid,
+                minionDefId: candidate.defId,
+                fromBaseIndex: candidate.baseIndex,
+                destroyerId: context.playerId,
+                reason: 'elder_thing_elder_thing',
+                now: timestamp,
+            }));
+            const filtered = filterProtectedDestroyEvents(proposed, state.core, context.playerId);
+            const destroyCount = filtered.filter((event) => event.type === SU_EVENTS.MINION_DESTROYED).length;
             if (destroyCount < 2) {
                 return {
-                    state,
                     events: buildValidatedCardToDeckBottomEvents(state, {
-                        cardUid: ctx.cardUid,
-                        defId: ctx.defId,
-                        ownerId: playerId,
+                        cardUid: context.cardUid,
+                        defId: context.elderThingDefId,
+                        ownerId: context.playerId,
                         reason: 'elder_thing_elder_thing_failed_destroy',
                         now: timestamp,
                         expectedLocation: 'bases',
                     }),
                 };
             }
-            return { state, events: proposed };
-        }
-        
-        // >2 个随从时：让玩家点击第一个要消灭的随从
-        const options = myMinions.map(({ minion: m, baseIndex: bi }) => {
-            const def = getCardDef(m.defId) as MinionCardDef | undefined;
-            const name = def?.name ?? m.defId;
-            const baseDef = getBaseDef(state.core.bases[bi].defId);
-            const baseName = baseDef?.name ?? `基地 ${bi + 1}`;
-            const power = getMinionPower(state.core, m, bi);
-            return { uid: m.uid, defId: m.defId, baseIndex: bi, label: `${name} (力量 ${power}) @ ${baseName}` };
-        });
-        const interaction = createSimpleChoice(
-            `elder_thing_elder_thing_destroy_first_${timestamp}`, playerId,
-            '远古之物：点击第一个要消灭的随从', buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId }),
-            { sourceId: 'elder_thing_elder_thing_destroy_first', targetType: 'minion' }
-        );
-        (interaction.data as any).continuationContext = { elderThingUid: ctx.cardUid, elderThingDefId: ctx.defId };
-        return { state: queueInteraction(state, interaction), events: [] };
-    });
-
-    // 远古之物：玩家点击第一个要消灭的随从
-    registerInteractionHandler('elder_thing_elder_thing_destroy_first', (state, playerId, value, iData, _random, timestamp) => {
-        const { minionUid, baseIndex } = value as { minionUid: string; baseIndex: number; defId: string };
-        const cont = (iData as any)?.continuationContext as { elderThingUid: string; elderThingDefId: string } | undefined;
-        if (!cont?.elderThingUid || !cont?.elderThingDefId) return { state, events: [] };
-        const base = state.core.bases[baseIndex];
-        const target = base?.minions.find(m => m.uid === minionUid);
-        if (!target) return { state, events: [] };
-
-        // 第二步：让玩家选择第二个目标（先不消灭任何随从，避免“只消灭 1 个”的非法中间态）
-        const candidates: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-        for (let i = 0; i < state.core.bases.length; i++) {
-            for (const m of state.core.bases[i].minions) {
-                if (m.controller !== playerId) continue;
-                if (m.uid === minionUid) continue;
-                if (matchesDefId(m.defId, 'elder_thing_elder_thing')) continue;
-                const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                const name = def?.name ?? m.defId;
-                const baseDef = getBaseDef(state.core.bases[i].defId);
-                const baseName = baseDef?.name ?? `基地 ${i + 1}`;
-                const power = getMinionPower(state.core, m, i);
-                candidates.push({ uid: m.uid, defId: m.defId, baseIndex: i, label: `${name} (力量 ${power}) @ ${baseName}` });
-            }
+            return { events: proposed };
         }
 
-        if (candidates.length === 0) {
-            // 理论上不该发生（前面已保证至少 2 个其他随从），兜底：失败 → 远古之物进牌库底
-            return {
-                state,
-                events: buildValidatedCardToDeckBottomEvents(state, {
-                    cardUid: cont.elderThingUid,
-                    defId: cont.elderThingDefId,
-                    ownerId: playerId,
-                    reason: 'elder_thing_elder_thing_failed_destroy',
-                    now: timestamp,
-                    expectedLocation: 'bases',
-                }),
-            };
-        }
-
-        const interaction = createSimpleChoice(
-            `elder_thing_elder_thing_destroy_second_${timestamp}`,
-            playerId,
-            '远古之物：点击第二个要消灭的随从',
-            buildMinionTargetOptions(candidates, { state: state.core, sourcePlayerId: playerId }),
-            { sourceId: 'elder_thing_elder_thing_destroy_second', targetType: 'minion' }
-        );
-        (interaction.data as any).continuationContext = {
-            elderThingUid: cont.elderThingUid,
-            elderThingDefId: cont.elderThingDefId,
-            first: { minionUid, baseIndex, defId: target.defId },
+        return {
+            events: [],
+            context,
+            nextProgram: elderThingDestroyFirstPromptProgram,
         };
-        return { state: queueInteraction(state, interaction), events: [] };
-    });
-    
-    // 远古之物：玩家点击第二个要消灭的随从
-    registerInteractionHandler('elder_thing_elder_thing_destroy_second', (state, playerId, value, iData, _random, timestamp) => {
-        const { minionUid, baseIndex, defId } = value as { minionUid: string; baseIndex: number; defId: string };
-        const base = state.core.bases[baseIndex];
-        const target = base?.minions.find(m => m.uid === minionUid);
-        if (!target) return { state, events: [] };
+    },
+});
 
-        const cont = (iData as any)?.continuationContext as { elderThingUid?: string; elderThingDefId?: string; first?: { minionUid: string; baseIndex: number; defId: string } } | undefined;
-        const first = cont?.first;
-        if (!first) return { state, events: [] };
+const elderThingElderThingProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => ({
+    events: [],
+    context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+        cardUid: ctx.cardUid,
+        elderThingDefId: ctx.defId,
+        baseIndex: ctx.baseIndex,
+    }) satisfies ElderThingOnPlayPromptContext,
+    nextProgram: elderThingChoicePromptProgram,
+}));
 
-        const firstBase = state.core.bases[first.baseIndex];
-        const firstMinion = firstBase?.minions.find(m => m.uid === first.minionUid);
-        if (!firstMinion) return { state, events: [] };
+function getNextShoggothPromptContext(
+    context: ElderThingShoggothPromptContext,
+    state: MatchState<SmashUpCore>,
+    timestamp: number,
+): ElderThingShoggothPromptContext | null {
+    const nextIdx = context.opponentIdx + 1;
+    if (nextIdx >= context.opponents.length) {
+        return null;
+    }
+    return createElderThingPromptContext(state, context.playerId, timestamp, {
+        cardUid: context.cardUid,
+        casterPlayerId: context.casterPlayerId,
+        baseIndex: context.baseIndex,
+        opponents: context.opponents,
+        opponentIdx: nextIdx,
+    }) satisfies ElderThingShoggothPromptContext;
+}
 
-        const proposed: SmashUpEvent[] = [
-            destroyMinion(firstMinion.uid, firstMinion.defId, first.baseIndex, firstMinion.owner, playerId, 'elder_thing_elder_thing', timestamp),
-            destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'elder_thing_elder_thing', timestamp),
-        ];
-        const filtered = filterProtectedDestroyEvents(proposed, state.core, playerId);
-        const destroyCount = filtered.filter(e => e.type === SU_EVENTS.MINION_DESTROYED).length;
-        if (destroyCount < 2) {
-            // 失败：远古之物进牌库底，且不消灭任何随从
-            if (!cont?.elderThingUid || !cont?.elderThingDefId) return { state, events: [] };
-            return {
-                state,
-                events: buildValidatedCardToDeckBottomEvents(state, {
-                    cardUid: cont.elderThingUid,
-                    defId: cont.elderThingDefId,
-                    ownerId: playerId,
-                    reason: 'elder_thing_elder_thing_failed_destroy',
-                    now: timestamp,
-                    expectedLocation: 'bases',
-                }),
-            };
-        }
+const elderThingShoggothDestroyPromptProgram = createPromptProgram<ElderThingShoggothDestroyPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_shoggoth_destroy',
+    buildInteraction: (context) => {
+        const interaction = createAbilityRuntimeSimpleChoice(
+            `elder_thing_shoggoth_destroy_${context.opponentIdx}_${context.now}`,
+            context.casterPlayerId,
+            '修格斯：选择消灭对手在此基地的一个随从',
+            buildShoggothDestroyPromptOptions(
+                context.matchState.core,
+                context.casterPlayerId,
+                context.targetPlayerId,
+                context.baseIndex,
+            ),
+            {
+                sourceId: 'elder_thing_shoggoth_destroy',
+                targetType: 'minion',
+                autoResolveIfSingle: false,
+                responseValidationMode: 'live',
+            },
+        );
+        interaction.data.optionsGenerator = (state) => buildShoggothDestroyPromptOptions(
+            state.core as SmashUpCore,
+            context.casterPlayerId,
+            context.targetPlayerId,
+            context.baseIndex,
+        );
+        return interaction;
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const selected = getSelectedMinionChoice(value);
+        const events = selected
+            ? buildValidatedDestroyEvents(state, {
+                minionUid: selected.minionUid,
+                minionDefId: selected.defId,
+                fromBaseIndex: selected.baseIndex,
+                destroyerId: context.casterPlayerId,
+                reason: 'elder_thing_shoggoth',
+                now: timestamp,
+            })
+            : [];
+        const nextContext = getNextShoggothPromptContext(context, state, timestamp);
+        return nextContext
+            ? { events, context: nextContext, nextProgram: elderThingShoggothPromptProgram }
+            : { events };
+    },
+});
 
-        return { state, events: proposed };
-    });
-
-    registerInteractionHandler('elder_thing_shoggoth_opponent', (state, _playerId, value, iData, _random, timestamp) => {
-        const { choice } = value as { choice: string };
-        const ctx = (iData as any)?.continuationContext as { baseIndex: number; opponents: string[]; opponentIdx: number; targetPlayerId: string; casterPlayerId: string };
-        if (!ctx) return { state, events: [] };
-        const events: SmashUpEvent[] = [];
-
+const elderThingShoggothPromptProgram = createPromptProgram<ElderThingShoggothPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_shoggoth_opponent',
+    buildInteraction: (context) => {
+        const targetPlayerId = context.opponents[context.opponentIdx];
+        return createAbilityRuntimeSimpleChoice(
+            `elder_thing_shoggoth_opponent_${context.opponentIdx}_${context.now}`,
+            targetPlayerId,
+            '修格斯：你可以抽一张疯狂卡，否则你在此基地的一个随从将被消灭',
+            [
+                { id: 'draw_madness', label: '抽一张疯狂卡', value: { choice: 'draw_madness' }, displayMode: 'button' as const },
+                { id: 'decline', label: '拒绝（被消灭一个随从）', value: { choice: 'decline' }, displayMode: 'button' as const },
+            ],
+            { sourceId: 'elder_thing_shoggoth_opponent', targetType: 'button' },
+        );
+    },
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = (value as { choice?: string } | undefined)?.choice;
+        const targetPlayerId = context.opponents[context.opponentIdx];
         if (choice === 'draw_madness') {
-            const evt = drawMadnessCards(ctx.targetPlayerId, 1, state.core, 'elder_thing_shoggoth', timestamp);
-            if (evt) events.push(evt);
-        } else {
-            // 对手拒绝抽疯狂卡 → 由修格斯控制者选择消灭该对手在此基地的一个随从
-            const base = state.core.bases[ctx.baseIndex];
-            if (base) {
-                const opMinions = base.minions.filter((m: any) => m.controller === ctx.targetPlayerId);
-                if (opMinions.length === 1) {
-                    // 只有一个随从，直接消灭
-                    events.push(destroyMinion(opMinions[0].uid, opMinions[0].defId, ctx.baseIndex, opMinions[0].owner, ctx.casterPlayerId, 'elder_thing_shoggoth', timestamp));
-                } else if (opMinions.length > 1) {
-                    // 多个随从，由修格斯控制者选择
-                    const options = opMinions.map(m => {
-                        const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                        return { uid: m.uid, defId: m.defId, baseIndex: ctx.baseIndex, label: def?.name ?? m.defId };
-                    });
-                    const interaction = createSimpleChoice(
-                        `elder_thing_shoggoth_destroy_${ctx.opponentIdx}_${timestamp}`, ctx.casterPlayerId,
-                        `修格斯：选择消灭对手在此基地的一个随从`, buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: ctx.casterPlayerId, effectType: 'destroy' }), { sourceId: 'elder_thing_shoggoth_destroy', targetType: 'minion' }
-                        );
-                    (interaction.data as any).continuationContext = {
-                        casterPlayerId: ctx.casterPlayerId,
-                        baseIndex: ctx.baseIndex,
-                        opponents: ctx.opponents,
-                        opponentIdx: ctx.opponentIdx,
-                    };
-                    return { state: queueInteraction(state, interaction), events };
-                }
-            }
+            const event = drawMadnessCards(targetPlayerId, 1, state.core, 'elder_thing_shoggoth', timestamp);
+            const nextContext = getNextShoggothPromptContext(context, state, timestamp);
+            const events = event ? [event] : [];
+            return nextContext
+                ? { events, context: nextContext, nextProgram: elderThingShoggothPromptProgram }
+                : { events };
         }
 
-        // 链式垂询下一个对手
-        return shoggothContinueChain(state, events, ctx, timestamp);
-    });
-
-    // 修格斯：控制者选择消灭对手随从后的处理
-    registerInteractionHandler('elder_thing_shoggoth_destroy', (state, playerId, value, iData, _random, timestamp) => {
-        const { minionUid, baseIndex, defId } = value as { minionUid: string; baseIndex: number; defId: string };
-        const ctx = (iData as any)?.continuationContext as { casterPlayerId: string; baseIndex: number; opponents: string[]; opponentIdx: number };
-        if (!ctx) return { state, events: [] };
-
-        const base = state.core.bases[baseIndex];
-        const target = base?.minions.find(m => m.uid === minionUid);
-        const events: SmashUpEvent[] = [];
-        if (target) {
-            events.push(destroyMinion(target.uid, target.defId, baseIndex, target.owner, playerId, 'elder_thing_shoggoth', timestamp));
+        const destroyOptions = buildShoggothDestroyPromptOptions(
+            state.core,
+            context.casterPlayerId,
+            targetPlayerId,
+            context.baseIndex,
+        );
+        if (destroyOptions.length === 0) {
+            const nextContext = getNextShoggothPromptContext(context, state, timestamp);
+            return nextContext
+                ? { events: [], context: nextContext, nextProgram: elderThingShoggothPromptProgram }
+                : { events: [] };
+        }
+        if (destroyOptions.length === 1) {
+            const onlyOption = destroyOptions[0]?.value as ElderThingSelfDestroyChoice | undefined;
+            const events = onlyOption
+                ? buildValidatedDestroyEvents(state, {
+                    minionUid: onlyOption.minionUid,
+                    minionDefId: onlyOption.defId,
+                    fromBaseIndex: onlyOption.baseIndex,
+                    destroyerId: context.casterPlayerId,
+                    reason: 'elder_thing_shoggoth',
+                    now: timestamp,
+                })
+                : [];
+            const nextContext = getNextShoggothPromptContext(context, state, timestamp);
+            return nextContext
+                ? { events, context: nextContext, nextProgram: elderThingShoggothPromptProgram }
+                : { events };
         }
 
-        // 继续链式处理下一个对手
-        return shoggothContinueChain(state, events, ctx, timestamp);
-    });
+        return {
+            events: [],
+            context: createElderThingPromptContext(state, context.playerId, timestamp, {
+                cardUid: context.cardUid,
+                casterPlayerId: context.casterPlayerId,
+                targetPlayerId,
+                baseIndex: context.baseIndex,
+                opponents: context.opponents,
+                opponentIdx: context.opponentIdx,
+            }) satisfies ElderThingShoggothDestroyPromptContext,
+            nextProgram: elderThingShoggothDestroyPromptProgram,
+        };
+    },
+});
 
+const elderThingShoggothProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const base = ctx.state.bases[ctx.baseIndex];
+    if (base) {
+        const playerPower = getPlayerEffectivePowerOnBase(ctx.state, base, ctx.baseIndex, ctx.playerId);
+        if (playerPower < 6) {
+            return { events: [] };
+        }
+    }
+
+    const opponents = getOrderedOpponentIds(ctx.state, ctx.playerId);
+    if (opponents.length === 0) {
+        return { events: [] };
+    }
+
+    return {
+        events: [],
+        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            cardUid: ctx.cardUid,
+            casterPlayerId: ctx.playerId,
+            baseIndex: ctx.baseIndex,
+            opponents,
+            opponentIdx: 0,
+        }) satisfies ElderThingShoggothPromptContext,
+        nextProgram: elderThingShoggothPromptProgram,
+    };
+});
+
+/** 注册远古之物派系的交互解决处理函数 */
+export function registerElderThingInteractionHandlers(): void {
     // =========================
     // POD handlers
     // =========================
 
-    registerInteractionHandler('elder_thing_elder_thing_pod_mode', (state, playerId, value, iData, _random, timestamp) => {
-        const { mode } = value as { mode?: 'destroy' | 'bottom' };
-        const ctx = (iData as any)?.continuationContext as { cardUid: string; baseIndex: number } | undefined;
-        if (!ctx) return { state, events: [] };
-
-        if (mode === 'bottom') {
-            return {
-                state,
-                events: buildValidatedCardToDeckBottomEvents(state, {
-                    cardUid: ctx.cardUid,
-                    defId: 'elder_thing_elder_thing_pod',
-                    ownerId: playerId,
-                    reason: 'elder_thing_elder_thing_pod',
-                    now: timestamp,
-                    expectedLocation: 'bases',
-                }),
-            };
-        }
-
-        // destroy mode: choose exactly 2 other minions; if not possible → forced bottom
-        const candidates: { uid: string; defId: string; baseIndex: number; owner: string; label: string }[] = [];
-        for (let bi = 0; bi < state.core.bases.length; bi++) {
-            for (const m of state.core.bases[bi].minions) {
-                if (m.controller !== playerId) continue;
-                if (m.uid === ctx.cardUid) continue;
-                const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                candidates.push({ uid: m.uid, defId: m.defId, baseIndex: bi, owner: m.owner, label: def?.name ?? m.defId });
-            }
-        }
-        if (candidates.length < 2) {
-            return {
-                state,
-                events: buildValidatedCardToDeckBottomEvents(state, {
-                    cardUid: ctx.cardUid,
-                    defId: 'elder_thing_elder_thing_pod',
-                    ownerId: playerId,
-                    reason: 'elder_thing_elder_thing_pod_forced',
-                    now: timestamp,
-                    expectedLocation: 'bases',
-                }),
-            };
-        }
-        const options = buildMinionTargetOptions(candidates, { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' });
-        const interaction = createSimpleChoice(
-            `elder_thing_elder_thing_pod_destroy_${timestamp}`,
-            playerId,
-            '远古之物：选择要消灭的两个你的其他随从',
-            options,
-            { sourceId: 'elder_thing_elder_thing_pod_destroy', targetType: 'minion', multi: { min: 2, max: 2 } },
-        );
-        (interaction.data as any).continuationContext = ctx;
-        return { state: queueInteraction(state, interaction), events: [] };
-    });
-
-    registerInteractionHandler('elder_thing_elder_thing_pod_destroy', (state, playerId, value, iData, _random, timestamp) => {
-        const ctx = (iData as any)?.continuationContext as { cardUid: string; baseIndex: number } | undefined;
-        if (!ctx) return { state, events: [] };
-        const selected = Array.isArray(value) ? value as any[] : [value as any];
-        const picks = selected
-            .map(v => ({ minionUid: v.minionUid ?? v.uid, baseIndex: v.baseIndex, defId: v.defId }))
-            .filter(v => v.minionUid && v.baseIndex !== undefined) as Array<{ minionUid: string; baseIndex: number; defId: string }>;
-        if (picks.length < 2) return { state, events: [] };
-
-        let destroyableCount = 0;
-        const events: SmashUpEvent[] = [];
-        for (const p of picks.slice(0, 2)) {
-            const base = state.core.bases[p.baseIndex];
-            const m = base?.minions.find(x => x.uid === p.minionUid);
-            if (!m) continue;
-            if (!isMinionProtectedNonConsumable(state.core, m, p.baseIndex, playerId, 'destroy')) {
-                destroyableCount++;
-            }
-            events.push(destroyMinion(m.uid, m.defId, p.baseIndex, m.owner, playerId, 'elder_thing_elder_thing_pod', timestamp));
-        }
-
-        // Clarification: if you cannot destroy two successfully, you must place Elder Thing on deck bottom.
-        if (destroyableCount < 2) {
-            events.push(...buildValidatedCardToDeckBottomEvents(state, {
-                cardUid: ctx.cardUid,
-                defId: 'elder_thing_elder_thing_pod',
-                ownerId: playerId,
-                reason: 'elder_thing_elder_thing_pod_fallback',
-                now: timestamp,
-                expectedLocation: 'bases',
-            }));
-        }
-
-        return { state, events };
-    });
-
-    registerInteractionHandler('elder_thing_begin_the_summoning_pod', (state, playerId, value, _iData, _random, timestamp) => {
-        const { cardUid, defId } = value as { cardUid?: string; defId?: string };
-        if (!cardUid || !defId) return { state, events: [] };
-        const player = state.core.players[playerId];
-        const inDiscard = player.discard.find(c => c.uid === cardUid && c.type === 'minion');
-        if (!inDiscard) return { state, events: [] };
-        const evt: SmashUpEvent = {
-            type: SU_EVENTS.CARD_TO_DECK_TOP,
-            payload: { cardUid, defId, ownerId: playerId, reason: 'elder_thing_begin_the_summoning_pod' },
-            timestamp,
-        };
-        return {
-            state,
-            events: [evt, grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'elder_thing_begin_the_summoning_pod')],
-        };
-    });
-
-    registerInteractionHandler('elder_thing_mi_go_pod', (state, _playerId, value, iData, random, timestamp) => {
-        const { choice } = value as { choice?: 'yes' | 'no' };
-        const ctx = (iData as any)?.continuationContext as {
-            casterPlayerId: string; baseIndex: number; opponents: string[]; opponentIdx: number; anyDrew: boolean; declinedCount: number;
-        } | undefined;
-        if (!ctx) return { state, events: [] };
-        const opponent = ctx.opponents[ctx.opponentIdx];
-        const events: SmashUpEvent[] = [];
-        if (choice === 'yes') {
-            const evt = drawMadnessCards(opponent, 1, state.core, 'elder_thing_mi_go_pod', timestamp);
-            if (evt) events.push(evt);
-            ctx.anyDrew = true;
-        } else {
-            // caster draws a card
-            const caster = state.core.players[ctx.casterPlayerId];
-            const { drawnUids } = drawCards(caster, 1, random);
-            if (drawnUids.length > 0) {
-                events.push({ type: SU_EVENTS.CARDS_DRAWN, payload: { playerId: ctx.casterPlayerId, count: 1, cardUids: drawnUids }, timestamp } as CardsDrawnEvent);
-            }
-            ctx.declinedCount += 1;
-        }
-        const nextIdx = ctx.opponentIdx + 1;
-        if (nextIdx < ctx.opponents.length) {
-            const nextPid = ctx.opponents[nextIdx];
-            const interaction = createSimpleChoice(
-                `elder_thing_mi_go_pod_${nextPid}_${timestamp}`,
-                nextPid,
-                '米-格：你可以抽一张疯狂卡',
-                [
-                    { id: 'yes', label: '抽一张疯狂卡', value: { choice: 'yes' }, displayMode: 'button' as const },
-                    { id: 'no', label: '不抽', value: { choice: 'no' }, displayMode: 'button' as const },
-                ] as any[],
-                { sourceId: 'elder_thing_mi_go_pod', targetType: 'button' },
-            );
-            (interaction.data as any).continuationContext = { ...ctx, opponentIdx: nextIdx };
-            return { state: queueInteraction(state, interaction), events };
-        }
-
-        // If no one drew a madness card, you may place a +1 power counter on a minion.
-        if (!ctx.anyDrew) {
-            const myMinions: { uid: string; defId: string; baseIndex: number; label: string }[] = [];
-            for (let bi = 0; bi < state.core.bases.length; bi++) {
-                for (const m of state.core.bases[bi].minions) {
-                    const def = getCardDef(m.defId) as MinionCardDef | undefined;
-                    myMinions.push({ uid: m.uid, defId: m.defId, baseIndex: bi, label: def?.name ?? m.defId });
-                }
-            }
-            if (myMinions.length > 0) {
-                const interaction = createSimpleChoice(
-                    `elder_thing_mi_go_pod_counter_${timestamp}`,
-                    ctx.casterPlayerId,
-                    '米-格：你可以在一个随从上放置+1战斗力指示物',
-                    [
-                        { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
-                        ...buildMinionTargetOptions(myMinions, { state: state.core, sourcePlayerId: ctx.casterPlayerId, effectType: 'affect' }),
-                    ] as any[],
-                    { sourceId: 'elder_thing_mi_go_pod_counter', targetType: 'minion' },
-                );
-                return { state: queueInteraction(state, interaction), events };
-            }
-        }
-        return { state, events };
-    });
-
-    registerInteractionHandler('elder_thing_mi_go_pod_counter', (state, playerId, value, _iData, _random, timestamp) => {
-        if (value && (value as any).skip) return { state, events: [] };
-        const v = value as { minionUid?: string; baseIndex?: number };
-        if (!v.minionUid || v.baseIndex === undefined) return { state, events: [] };
-        return { state, events: [addPowerCounter(v.minionUid, v.baseIndex, 1, 'elder_thing_mi_go_pod', timestamp)] };
-    });
-
-    registerInteractionHandler('elder_thing_shoggoth_pod', (state, _playerId, value, iData, _random, timestamp) => {
-        const { choice } = value as { choice?: 'yes' | 'no' };
-        const ctx = (iData as any)?.continuationContext as {
-            casterPlayerId: string; baseIndex: number; opponents: string[]; opponentIdx: number; decliners: string[];
-        } | undefined;
-        if (!ctx) return { state, events: [] };
-        const opponent = ctx.opponents[ctx.opponentIdx];
-        const events: SmashUpEvent[] = [];
-        if (choice === 'yes') {
-            const evt = drawMadnessCards(opponent, 1, state.core, 'elder_thing_shoggoth_pod', timestamp);
-            if (evt) events.push(evt);
-        } else {
-            ctx.decliners.push(opponent);
-        }
-        const nextIdx = ctx.opponentIdx + 1;
-        if (nextIdx < ctx.opponents.length) {
-            const nextPid = ctx.opponents[nextIdx];
-            const interaction = createSimpleChoice(
-                `elder_thing_shoggoth_pod_${nextPid}_${timestamp}`,
-                nextPid,
-                '修格斯：你可以抽一张疯狂卡',
-                [
-                    { id: 'yes', label: '抽一张疯狂卡', value: { choice: 'yes' }, displayMode: 'button' as const },
-                    { id: 'no', label: '不抽', value: { choice: 'no' }, displayMode: 'button' as const },
-                ] as any[],
-                { sourceId: 'elder_thing_shoggoth_pod', targetType: 'button' },
-            );
-            (interaction.data as any).continuationContext = { ...ctx, opponentIdx: nextIdx };
-            return { state: queueInteraction(state, interaction), events };
-        }
-
-        // process decliners: if any, prompt caster to destroy minions here
-        if (ctx.decliners.length > 0) {
-            const first = ctx.decliners[0];
-            const base = state.core.bases[ctx.baseIndex];
-            const minions = base?.minions.filter(m => m.controller === first) ?? [];
-            if (minions.length > 0) {
-                const options = buildMinionTargetOptions(minions.map(m => ({ uid: m.uid, defId: m.defId, baseIndex: ctx.baseIndex, label: getCardDef(m.defId)?.name ?? m.defId })), { state: state.core, sourcePlayerId: ctx.casterPlayerId, effectType: 'destroy' });
-                const interaction = createSimpleChoice(
-                    `elder_thing_shoggoth_pod_destroy_${timestamp}`,
-                    ctx.casterPlayerId,
-                    `修格斯：选择消灭 ${first} 在此基地的一个随从`,
-                    options,
-                    { sourceId: 'elder_thing_shoggoth_pod_destroy', targetType: 'minion' },
-                );
-                (interaction.data as any).continuationContext = { ...ctx, declinerIdx: 0 };
-                return { state: queueInteraction(state, interaction), events };
-            }
-        }
-
-        // No decliners or no minions to destroy: finalize power check
-        const base = state.core.bases[ctx.baseIndex];
-        const myPower = base ? getPlayerEffectivePowerOnBase(state.core, base, ctx.baseIndex, ctx.casterPlayerId) : 0;
-        if (myPower < 12) {
-            const evt = drawMadnessCards(ctx.casterPlayerId, 2, state.core, 'elder_thing_shoggoth_pod', timestamp);
-            if (evt) events.push(evt);
-        }
-        return { state, events };
-    });
-
-    registerInteractionHandler('elder_thing_shoggoth_pod_destroy', (state, playerId, value, iData, _random, timestamp) => {
-        const ctx = (iData as any)?.continuationContext as any;
-        if (!ctx) return { state, events: [] };
-        const v = value as { minionUid?: string; baseIndex?: number };
-        if (!v.minionUid || v.baseIndex === undefined) return { state, events: [] };
-        const base = state.core.bases[v.baseIndex];
-        const target = base?.minions.find(m => m.uid === v.minionUid);
-        const events: SmashUpEvent[] = [];
-        if (target) {
-            events.push(destroyMinion(target.uid, target.defId, v.baseIndex, target.owner, playerId, 'elder_thing_shoggoth_pod', timestamp));
-        }
-        const nextDeclinerIdx = (ctx.declinerIdx ?? 0) + 1;
-        if (nextDeclinerIdx < ctx.decliners.length) {
-            const nextPid = ctx.decliners[nextDeclinerIdx];
-            const base2 = state.core.bases[ctx.baseIndex];
-            const minions2 = base2?.minions.filter((m: any) => m.controller === nextPid) ?? [];
-            if (minions2.length > 0) {
-                const options = buildMinionTargetOptions(minions2.map((m: any) => ({ uid: m.uid, defId: m.defId, baseIndex: ctx.baseIndex, label: getCardDef(m.defId)?.name ?? m.defId })), { state: state.core, sourcePlayerId: playerId, effectType: 'destroy' });
-                const interaction = createSimpleChoice(
-                    `elder_thing_shoggoth_pod_destroy_${timestamp}_${nextDeclinerIdx}`,
-                    playerId,
-                    `修格斯：选择消灭 ${nextPid} 在此基地的一个随从`,
-                    options,
-                    { sourceId: 'elder_thing_shoggoth_pod_destroy', targetType: 'minion' },
-                );
-                (interaction.data as any).continuationContext = { ...ctx, declinerIdx: nextDeclinerIdx };
-                return { state: queueInteraction(state, interaction), events };
-            }
-        }
-        // finalize power check
-        const baseFinal = state.core.bases[ctx.baseIndex];
-        const myPower = baseFinal ? getPlayerEffectivePowerOnBase(state.core, baseFinal, ctx.baseIndex, ctx.casterPlayerId) : 0;
-        if (myPower < 12) {
-            const evt = drawMadnessCards(ctx.casterPlayerId, 2, state.core, 'elder_thing_shoggoth_pod', timestamp);
-            if (evt) events.push(evt);
-        }
-        return { state, events };
-    });
-
-    registerInteractionHandler('elder_thing_dunwich_horror_pod_choice', (state, playerId, value, iData, _random, timestamp) => {
-        const { choice } = value as { choice?: 'draw' | 'destroy' };
-        const ctx = (iData as any)?.continuationContext as { baseIndex: number; minionUid: string; minionDefId: string; ownerId: string } | undefined;
-        if (!ctx) return { state, events: [] };
-        if (choice === 'draw') {
-            const evt = drawMadnessCards(playerId, 2, state.core, 'elder_thing_dunwich_horror_pod', timestamp);
-            return { state, events: evt ? [evt] : [] };
-        }
-        // destroy
-        return { state, events: [destroyMinion(ctx.minionUid, ctx.minionDefId, ctx.baseIndex, ctx.ownerId, playerId, 'elder_thing_dunwich_horror_pod', timestamp)] };
-    });
-
-    registerInteractionHandler('elder_thing_the_price_of_power_pod_choose_base', (state, playerId, value, iData, random, timestamp) => {
-        const { baseIndex } = value as { baseIndex?: number };
-        const continuation = (iData as any)?.continuationContext as {
-            sourceId?: string;
-            perMadnessCounterAmount?: number;
-        } | undefined;
-        if (baseIndex === undefined || !continuation?.sourceId || continuation.perMadnessCounterAmount === undefined) {
-            return { state, events: [] };
-        }
-
-        const result = applyPriceOfPower({
-            state: state.core,
-            matchState: state,
-            playerId,
-            cardUid: '',
-            defId: 'elder_thing_the_price_of_power_pod',
-            baseIndex,
-            random,
-            now: timestamp,
-        }, {
-            sourceId: continuation.sourceId,
-            perMadnessCounterAmount: continuation.perMadnessCounterAmount,
-            baseIndex,
-        });
-
-        return { state: result.matchState ?? state, events: result.events };
-    });
-
-    registerInteractionHandler('elder_thing_spreading_horror_pod_opponent', (state, _playerId, value, iData, _random, timestamp) => {
-        const { choice } = value as { choice?: 'yes' | 'no' };
-        const ctx = (iData as any)?.continuationContext as any;
-        if (!ctx) return { state, events: [] };
-        const pid = ctx.opponents[ctx.idx];
-        const player = state.core.players[pid];
-        const nonMadness = player.hand.filter((c: any) => c.defId !== MADNESS_CARD_DEF_ID);
-        const events: SmashUpEvent[] = [];
-        if (choice === 'yes' && nonMadness.length >= 2) {
-            events.push({ type: SU_EVENTS.CARDS_DISCARDED, payload: { playerId: pid, cardUids: [nonMadness[0].uid, nonMadness[1].uid] }, timestamp } as any);
-        } else {
-            ctx.decliners.push(pid);
-        }
-        const nextIdx = ctx.idx + 1;
-        if (nextIdx < ctx.opponents.length) {
-            const nextPid = ctx.opponents[nextIdx];
-            const interaction = createSimpleChoice(
-                `elder_thing_spreading_horror_pod_${nextPid}_${timestamp}`,
-                nextPid,
-                '散播恐怖：你可以弃置两张非疯狂卡',
-                [
-                    { id: 'yes', label: '弃置两张非疯狂卡', value: { choice: 'yes' }, displayMode: 'button' as const },
-                    { id: 'no', label: '不弃置', value: { choice: 'no' }, displayMode: 'button' as const },
-                ] as any[],
-                { sourceId: 'elder_thing_spreading_horror_pod_opponent', targetType: 'button' },
-            );
-            (interaction.data as any).continuationContext = { ...ctx, idx: nextIdx };
-            return { state: queueInteraction(state, interaction), events };
-        }
-        // after all opponents, if decliners >0 start play-from-discard loop
-        if (ctx.decliners.length > 0) {
-            const next = queueSpreadingHorrorPodMayPlay(
-                state,
-                { casterPlayerId: ctx.casterPlayerId, remaining: ctx.decliners.length, usedBases: [] as number[] },
-                timestamp,
-            );
-            return { state: next.state, events: [...events, ...next.events] };
-        }
-        return { state, events };
-    });
-
-    registerInteractionHandler('elder_thing_spreading_horror_pod_may_play', (state, playerId, value, iData, _random, timestamp) => {
-        const ctx = (iData as any)?.continuationContext as { casterPlayerId: string; remaining: number; usedBases: number[] } | undefined;
-        const { choice } = value as { choice?: 'yes' | 'no' };
-        if (!ctx) return { state, events: [] };
-
-        if (choice !== 'yes') {
-            const nextCtx = { ...ctx, remaining: ctx.remaining - 1 };
-            if (nextCtx.remaining <= 0) return { state, events: [] };
-            return queueSpreadingHorrorPodMayPlay(state, nextCtx, timestamp);
-        }
-
-        const bases = state.core.bases
-            .map((b: any, i: number) => ({ baseIndex: i, label: getBaseDef(b.defId)?.name ?? `基地 ${i + 1}` }))
-            .filter((b: any) => !ctx.usedBases.includes(b.baseIndex));
-        if (bases.length === 0) {
-            const nextCtx = { ...ctx, remaining: ctx.remaining - 1 };
-            if (nextCtx.remaining <= 0) return { state, events: [] };
-            return queueSpreadingHorrorPodMayPlay(state, nextCtx, timestamp);
-        }
-
-        const interaction = createSimpleChoice(
-            `elder_thing_spreading_horror_pod_choose_base_${timestamp}_${ctx.remaining}`,
-            playerId,
-            '散播恐怖：选择要打出随从的基地（每次必须不同）',
-            buildBaseTargetOptions(bases, state.core),
-            { sourceId: 'elder_thing_spreading_horror_pod_choose_base', targetType: 'base' },
-        );
-        (interaction.data as any).continuationContext = ctx;
-        return { state: queueInteraction(state, interaction), events: [] };
-    });
-
-    registerInteractionHandler('elder_thing_spreading_horror_pod_choose_base', (state, playerId, value, iData, _random, timestamp) => {
-        const ctx = (iData as any)?.continuationContext as any;
-        const { baseIndex } = value as { baseIndex?: number };
-        if (!ctx || baseIndex === undefined) return { state, events: [] };
-        if (ctx.usedBases.includes(baseIndex)) return { state, events: [] };
-        const player = state.core.players[playerId];
-        const discardMinions = player.discard.filter((c: any) => c.type === 'minion').filter((c: any) => {
-            const def = getCardDef(c.defId) as any;
-            return def?.type === 'minion' && def.power <= 3;
-        });
-        if (discardMinions.length === 0) {
-            const nextCtx = { ...ctx, remaining: (ctx.remaining ?? 1) - 1 };
-            if (nextCtx.remaining <= 0) return { state, events: [] };
-            return queueSpreadingHorrorPodMayPlay(state, nextCtx, timestamp);
-        }
-        const options = discardMinions.map((c: any, i: number) => ({ id: `m-${i}`, label: getCardDef(c.defId)?.name ?? c.defId, value: { cardUid: c.uid, defId: c.defId }, displayMode: 'card' as const, _source: 'discard' as const }));
-        const interaction = createSimpleChoice(
-            `elder_thing_spreading_horror_pod_choose_minion_${timestamp}`,
-            playerId,
-            '散播恐怖：选择要从弃牌堆打出的随从（战斗力≤3）',
-            options as any[],
-            { sourceId: 'elder_thing_spreading_horror_pod_choose_minion', targetType: 'generic', autoRefresh: 'discard', responseValidationMode: 'live' },
-        );
-        (interaction.data as any).continuationContext = { ...ctx, chosenBaseIndex: baseIndex };
-        return { state: queueInteraction(state, interaction), events: [] };
-    });
-
-    registerInteractionHandler('elder_thing_spreading_horror_pod_choose_minion', (state, playerId, value, iData, _random, timestamp) => {
-        const ctx = (iData as any)?.continuationContext as any;
-        const { cardUid, defId } = value as any;
-        if (!ctx || !cardUid || !defId) return { state, events: [] };
-        const def = getCardDef(defId) as any;
-        const playedEvt: any = {
-            type: SU_EVENTS.MINION_PLAYED,
-            payload: { playerId, cardUid, defId, baseIndex: ctx.chosenBaseIndex, power: def?.power ?? 0, fromDiscard: true, consumesNormalLimit: false, discardPlaySourceId: 'elder_thing_spreading_horror_pod' },
-            timestamp,
-        };
-        const events: SmashUpEvent[] = [playedEvt];
-        const remaining = (ctx.remaining ?? 1) - 1;
-        const usedBases = [...ctx.usedBases, ctx.chosenBaseIndex];
-        if (remaining > 0) {
-            const next = queueSpreadingHorrorPodMayPlay(
-                state,
-                { casterPlayerId: playerId, remaining, usedBases },
-                timestamp,
-            );
-            return { state: next.state, events: [...events, ...next.events] };
-        }
-        return { state, events };
-    });
-
-    registerInteractionHandler('elder_thing_power_of_madness_pod_start', (state, playerId, _value, iData, random, timestamp) => {
-        const ctx = (iData as any)?.continuationContext as { opponents: string[]; idx: number } | undefined;
-        if (!ctx) return { state, events: [] };
-        const targetPid = ctx.opponents[ctx.idx];
-        // Only list actions from factions that are present in this match (all players' selected factions),
-        // plus Madness (also an action). This keeps the naming list searchable.
-        const factionIds = new Set<string>();
-        for (const p of Object.values(state.core.players)) {
-            const factions = (p as any)?.factions as [string, string] | undefined;
-            if (!factions) continue;
-            factionIds.add(factions[0]);
-            factionIds.add(factions[1]);
-        }
-        const actionDefIds = new Set<string>();
-        for (const fid of factionIds) {
-            for (const def of getFactionCards(fid as any)) {
-                if (def.type !== 'action') continue;
-                actionDefIds.add(def.id);
-            }
-        }
-        actionDefIds.add(MADNESS_CARD_DEF_ID);
-
-        const allActionDefIds = Array.from(actionDefIds);
-        allActionDefIds.sort((a, b) => (getCardDef(a)?.name ?? a).localeCompare(getCardDef(b)?.name ?? b, 'zh-CN'));
-
-        const options = allActionDefIds.map((defId: string, i: number) => ({
-            id: `a-${i}`,
-            label: getCardDef(defId)?.name ?? defId,
-            value: { defId },
-            displayMode: 'button' as const,
-        }));
-        const interaction = createSimpleChoice(
-            `elder_thing_power_of_madness_pod_choose_${targetPid}_${timestamp}`,
-            playerId,
-            `疯狂之力：为 ${targetPid} 选择要命名的战术`,
-            options as any[],
-            { sourceId: 'elder_thing_power_of_madness_pod_choose', targetType: 'button' },
-        );
-        (interaction.data as any).continuationContext = { ...ctx, targetPid };
-        return { state: queueInteraction(state, interaction), events: [] };
-    });
-
-    registerInteractionHandler('elder_thing_power_of_madness_pod_choose', (state, playerId, value, iData, random, timestamp) => {
-        const ctx = (iData as any)?.continuationContext as any;
-        if (!ctx) return { state, events: [] };
-        const targetPid = ctx.targetPid as string;
-        const namedDefId = (value as any).defId as string;
-        const opponent = state.core.players[targetPid];
-        const events: SmashUpEvent[] = [];
-
-        // Reveal AFTER naming (rule order)
-        if (opponent.hand.length > 0) {
-            events.push(
-                revealHand(targetPid, 'all', opponent.hand.map((c: any) => ({ uid: c.uid, defId: c.defId })), 'elder_thing_power_of_madness_pod', timestamp, playerId)
-            );
-        }
-
-        // Discard all copies of the named action from hand
-        if (namedDefId) {
-            const discards = opponent.hand.filter((c: any) => c.defId === namedDefId).map((c: any) => c.uid);
-            if (discards.length > 0) {
-                events.push({ type: SU_EVENTS.CARDS_DISCARDED, payload: { playerId: targetPid, cardUids: discards }, timestamp } as any);
-            }
-        }
-
-        // Shuffle discard pile into deck even if no discards (FAQ)
-        const newDeck = random.shuffle([...opponent.deck, ...opponent.discard]);
-        events.push({ type: SU_EVENTS.DECK_RESHUFFLED, payload: { playerId: targetPid, deckUids: newDeck.map((c: any) => c.uid) }, timestamp } as any);
-
-        const nextIdx = (ctx.idx ?? 0) + 1;
-        if (nextIdx < ctx.opponents.length) {
-            const nextCtx = { opponents: ctx.opponents, idx: nextIdx };
-            const interaction = createSimpleChoice(
-                `elder_thing_power_of_madness_pod_next_${timestamp}_${nextIdx}`,
-                playerId,
-                '疯狂之力：继续',
-                [{ id: 'next', label: '继续', value: { start: true }, displayMode: 'button' as const }],
-                { sourceId: 'elder_thing_power_of_madness_pod_start', targetType: 'button' },
-            );
-            (interaction.data as any).continuationContext = nextCtx;
-            return { state: queueInteraction(state, interaction), events };
-        }
-        return { state, events };
-    });
 }
 
 // ============================================================================
@@ -1851,20 +2438,6 @@ function elderThingPriceOfPowerSpecial(ctx: AbilityContext): AbilityResult {
     return applyPriceOfPower(ctx, {
         sourceId: 'elder_thing_the_price_of_power',
         perMadnessCounterAmount: 2,
-    });
-}
-
-function elderThingPriceOfPowerPodOnPlay(ctx: AbilityContext): AbilityResult {
-    // POD：无论是否在 Me First! 窗口中打出，均为 +1 指示物版本。
-    const perMadnessCounterAmount = 1;
-    const resolvedBaseIndex = resolvePriceOfPowerPodBaseIndex(ctx);
-    if (resolvedBaseIndex === undefined) {
-        return promptPriceOfPowerPodChooseBase(ctx, perMadnessCounterAmount);
-    }
-    return applyPriceOfPower(ctx, {
-        sourceId: 'elder_thing_the_price_of_power_pod',
-        perMadnessCounterAmount,
-        baseIndex: resolvedBaseIndex,
     });
 }
 
@@ -1915,7 +2488,7 @@ function applyPriceOfPower(
 }
 
 function resolvePriceOfPowerPodBaseIndex(ctx: AbilityContext): number | undefined {
-    if (ctx.baseIndex !== undefined) return ctx.baseIndex;
+    if (ctx.targetBaseIndex !== undefined) return ctx.targetBaseIndex;
     const candidates = getPriceOfPowerPodCandidateBases(ctx);
     if (candidates.length === 1) {
         return candidates[0].baseIndex;
@@ -1923,14 +2496,18 @@ function resolvePriceOfPowerPodBaseIndex(ctx: AbilityContext): number | undefine
     return undefined;
 }
 
-function getPriceOfPowerPodCandidateBases(ctx: AbilityContext): Array<{ baseIndex: number; label: string }> {
+function getPriceOfPowerPodCandidateBases(params: {
+    state: SmashUpCore;
+    matchState: MatchState<SmashUpCore>;
+}): Array<{ baseIndex: number; label: string }> {
+    const windowType = getSmashUpReactionWindowContext(params.matchState)?.windowType;
     const candidateIndices = windowType === 'meFirst'
-        ? getScoringEligibleBaseIndices(ctx.state)
-        : ctx.state.bases.map((_, index) => index);
+        ? getScoringEligibleBaseIndices(params.state)
+        : params.state.bases.map((_, index) => index);
 
     return candidateIndices
         .map(baseIndex => {
-            const base = ctx.state.bases[baseIndex];
+            const base = params.state.bases[baseIndex];
             if (!base) return null;
             const baseDef = getBaseDef(base.defId);
             return {
@@ -1941,26 +2518,68 @@ function getPriceOfPowerPodCandidateBases(ctx: AbilityContext): Array<{ baseInde
         .filter((candidate): candidate is { baseIndex: number; label: string } => candidate !== null);
 }
 
-function promptPriceOfPowerPodChooseBase(
-    ctx: AbilityContext,
-    perMadnessCounterAmount: number,
-): AbilityResult {
-    const candidates = getPriceOfPowerPodCandidateBases(ctx);
-    if (candidates.length === 0) return { events: [] };
-
-    const interaction = createSimpleChoice(
-        `elder_thing_the_price_of_power_pod_choose_base_${ctx.now}`,
-        ctx.playerId,
+const elderThingPriceOfPowerPodChooseBasePromptProgram = createPromptProgram<ElderThingPriceOfPowerPodChooseBasePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'elder_thing_the_price_of_power_pod_choose_base',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `elder_thing_the_price_of_power_pod_choose_base_${context.now}`,
+        context.playerId,
         '力量的代价：选择一个基地',
-        buildBaseTargetOptions(candidates, ctx.state),
+        buildBaseTargetOptions(
+            getPriceOfPowerPodCandidateBases({
+                state: context.matchState.core,
+                matchState: context.matchState,
+            }),
+            context.matchState.core,
+        ),
         { sourceId: 'elder_thing_the_price_of_power_pod_choose_base', targetType: 'base' },
-    );
-    (interaction.data as any).continuationContext = {
-        sourceId: 'elder_thing_the_price_of_power_pod',
-        perMadnessCounterAmount,
+    ),
+    onResolve: ({ context, state, value, random, timestamp }) => {
+        const baseIndex = (value as { baseIndex?: number } | undefined)?.baseIndex;
+        if (baseIndex === undefined) {
+            return { events: [] };
+        }
+        return applyPriceOfPower({
+            state: state.core,
+            matchState: state,
+            playerId: context.playerId,
+            cardUid: context.cardUid,
+            defId: 'elder_thing_the_price_of_power_pod',
+            baseIndex,
+            random,
+            now: timestamp,
+        }, {
+            sourceId: 'elder_thing_the_price_of_power_pod',
+            perMadnessCounterAmount: context.perMadnessCounterAmount,
+            baseIndex,
+        });
+    },
+});
+
+const elderThingPriceOfPowerPodOnPlayProgram = createEffectProgram<AbilityContext, SmashUpCore, SmashUpEvent>((ctx) => {
+    const perMadnessCounterAmount = 1;
+    const resolvedBaseIndex = resolvePriceOfPowerPodBaseIndex(ctx);
+    if (resolvedBaseIndex !== undefined) {
+        return applyPriceOfPower(ctx, {
+            sourceId: 'elder_thing_the_price_of_power_pod',
+            perMadnessCounterAmount,
+            baseIndex: resolvedBaseIndex,
+        });
+    }
+
+    const candidates = getPriceOfPowerPodCandidateBases(ctx);
+    if (candidates.length === 0) {
+        return { events: [] };
+    }
+
+    return {
+        events: [],
+        context: createElderThingPromptContext(ctx.matchState, ctx.playerId, ctx.now, {
+            cardUid: ctx.cardUid,
+            perMadnessCounterAmount,
+        }) satisfies ElderThingPriceOfPowerPodChooseBasePromptContext,
+        nextProgram: elderThingPriceOfPowerPodChooseBasePromptProgram,
     };
-    return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-}
+});
 
 
 /** 邓威奇恐怖触发：回合结束时消灭附着了此卡的随从 */
@@ -1974,3 +2593,7 @@ function elderThingDunwichHorrorTrigger(ctx: TriggerContext): SmashUpEvent[] {
     }
     return events;
 }
+
+
+
+

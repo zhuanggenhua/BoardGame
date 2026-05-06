@@ -371,13 +371,24 @@ export function createPromptProgram<TContext, TState, TEvent>(params: {
 
     const promptHandler: AbilityRuntimePromptHandler = (state, playerId, value, interactionData, random, timestamp) => {
         const marker = getAbilityRuntimePromptMarker(interactionData);
-        const continuationId = marker?.continuationId;
-        if (!continuationId) {
-            throw new Error(`SmashUp runtime prompt 缺少 continuationId: ${params.sourceId}`);
-        }
-        const continuation = marker.continuation;
+        const continuation = marker?.continuation;
+        const legacyContinuationContext = asPlainRecord(interactionData?.continuationContext);
+        const resolvedContext = marker
+            ? rehydrateAbilityRuntimeContext(state, continuation) as TContext
+            : (() => {
+                if (!legacyContinuationContext) {
+                    return undefined as TContext | undefined;
+                }
+                if (Object.prototype.hasOwnProperty.call(legacyContinuationContext, 'matchState')) {
+                    return legacyContinuationContext as TContext;
+                }
+                return {
+                    ...legacyContinuationContext,
+                    matchState: state,
+                } as TContext;
+            })();
         const resumeResult = promptProgram.onResolve({
-            context: rehydrateAbilityRuntimeContext(state, continuation) as TContext,
+            context: resolvedContext as TContext,
             state,
             playerId,
             value,
@@ -385,7 +396,7 @@ export function createPromptProgram<TContext, TState, TEvent>(params: {
             random,
             timestamp,
         });
-        const nextContext = resumeResult.context ?? rehydrateAbilityRuntimeContext(state, continuation) as TContext;
+        const nextContext = resumeResult.context ?? resolvedContext as TContext;
         const nextProgram = resumeResult.nextProgram
             ?? (continuation?.nextProgramId
                 ? requireAbilityProgramById<TContext, TState, TEvent>(continuation.nextProgramId)

@@ -248,6 +248,7 @@ function executeCommand(
                     cardUid: card.uid,
                     defId: card.defId,
                     baseIndex,
+                    targetBaseIndex: command.payload.targetBaseIndex,
                     targetMinionUid: command.payload.targetMinionUid,
                     random,
                     now,
@@ -1704,4 +1705,6 @@ export function processDeckInspectionTriggers(
 }
 
 export { reduce } from './reduce';
+
+
 

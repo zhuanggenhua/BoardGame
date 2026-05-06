@@ -1,6 +1,6 @@
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { GlobalErrorBoundary } from '../GlobalErrorBoundary';
 import {
@@ -40,6 +40,7 @@ import {
 import {
     applyRuntimeViewportCssVars,
     resolveRuntimeKeyboardInsetBottom,
+    useRuntimeViewport,
 } from '../../../hooks/ui/useRuntimeViewport';
 
 // Mock Dependencies
@@ -441,6 +442,70 @@ describe('Runtime viewport helpers', () => {
             documentClientHeight: 800,
             hasFocusedTextEntry: false,
         })).toBe(0);
+    });
+
+    it('同一 tick 内连续 visualViewport resize 只合并一次 viewport 状态刷新', async () => {
+        vi.useFakeTimers();
+        try {
+            const resizeListeners = new Set<(event: Event) => void>();
+            const visualViewport = {
+                width: 915,
+                height: 412,
+                offsetTop: 0,
+                addEventListener: vi.fn((eventName: string, handler: (event: Event) => void) => {
+                    if (eventName === 'resize') {
+                        resizeListeners.add(handler);
+                    }
+                }),
+                removeEventListener: vi.fn((eventName: string, handler: (event: Event) => void) => {
+                    if (eventName === 'resize') {
+                        resizeListeners.delete(handler);
+                    }
+                }),
+            };
+
+            Object.defineProperty(window, 'visualViewport', {
+                configurable: true,
+                value: visualViewport,
+            });
+            Object.defineProperty(window, 'innerWidth', { configurable: true, value: 915 });
+            Object.defineProperty(window, 'innerHeight', { configurable: true, value: 412 });
+            Object.defineProperty(document.documentElement, 'clientWidth', { configurable: true, value: 915 });
+            Object.defineProperty(document.documentElement, 'clientHeight', { configurable: true, value: 412 });
+
+            const renderHeights: number[] = [];
+            const Probe = () => {
+                const viewport = useRuntimeViewport();
+                renderHeights.push(viewport.height);
+                return <div data-testid="viewport-height-probe">{viewport.height}</div>;
+            };
+
+            render(<Probe />);
+
+            await act(async () => {
+                await vi.runOnlyPendingTimersAsync();
+            });
+
+            visualViewport.height = 410;
+            resizeListeners.forEach((listener) => listener(new Event('resize')));
+            visualViewport.height = 409;
+            resizeListeners.forEach((listener) => listener(new Event('resize')));
+            visualViewport.height = 408;
+            resizeListeners.forEach((listener) => listener(new Event('resize')));
+
+            expect(screen.getByTestId('viewport-height-probe')).toHaveTextContent('412');
+
+            await act(async () => {
+                await vi.runOnlyPendingTimersAsync();
+            });
+
+            expect(screen.getByTestId('viewport-height-probe')).toHaveTextContent('408');
+            expect(renderHeights).toContain(408);
+            expect(renderHeights).not.toContain(410);
+            expect(renderHeights).not.toContain(409);
+        } finally {
+            vi.useRealTimers();
+        }
     });
 
     it('过滤非文本控件，只识别真实输入目标', () => {

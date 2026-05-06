@@ -414,24 +414,31 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         runtimeViewport.width,
     ]);
     
-    // 对手视角切换状态（必须在使用前声明，避免 TDZ 错误）
-    const [viewMode, setViewMode] = useState<'self' | 'opponent'>('self');
+    // 多人局/观战时允许直接切到任意玩家的公开牌区，而不是只在“自己/首个对手”之间二选一。
+    const [viewTargetPlayerId, setViewTargetPlayerId] = useState<string | null>(null);
     const opponentScoreTouchHandledAtRef = useRef(0);
-    const toggleViewMode = useCallback(() => {
-        setViewMode(prev => prev === 'self' ? 'opponent' : 'self');
-    }, []);
-    const triggerOpponentViewFromTouch = useCallback(() => {
+    const defaultViewedPlayerId = playerID ?? rootPid;
+    const displayedDeckPlayerId = viewTargetPlayerId && corePlayers[viewTargetPlayerId]
+        ? viewTargetPlayerId
+        : defaultViewedPlayerId;
+    const isAlternateView = displayedDeckPlayerId !== defaultViewedPlayerId;
+    const displayedDeckPlayer = corePlayers[displayedDeckPlayerId];
+    const setViewedPlayerId = useCallback((targetPlayerId: string | null) => {
+        setViewTargetPlayerId((prev) => {
+            if (!targetPlayerId || targetPlayerId === defaultViewedPlayerId) {
+                return null;
+            }
+            return prev === targetPlayerId ? null : targetPlayerId;
+        });
+    }, [defaultViewedPlayerId]);
+    const triggerAlternateViewFromTouch = useCallback((targetPlayerId: string) => {
         const now = Date.now();
         if (now - opponentScoreTouchHandledAtRef.current < 400) {
             return;
         }
         opponentScoreTouchHandledAtRef.current = now;
-        toggleViewMode();
-    }, [toggleViewMode]);
-    
-    // 对手玩家数据
-    const opponentPid = coreTurnOrder.find(pid => pid !== rootPid) || '1';
-    const opponentPlayer = corePlayers[opponentPid];
+        setViewedPlayerId(targetPlayerId);
+    }, [setViewedPlayerId]);
     
     // 根据视角模式选择显示的玩家数据
     // 重赛系统（通用 hook）
@@ -1011,7 +1018,6 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return new Set(getScoringEligibleBaseIndices(core));
     }, [meFirstPendingCard, core]);
 
-    const displayedDeckPlayerId = viewMode === 'opponent' ? opponentPid : (playerID ?? '0');
     const setAsideTitansForDisplay = useMemo(() => {
         return coreTitans.filter((titan) =>
             titan.ownerId === displayedDeckPlayerId && titan.location.zone === 'setaside',
@@ -1575,7 +1581,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [phase, currentPid]);
 
     useEffect(() => {
-        if (handInteractionMode === 'drag' && viewMode !== 'opponent') return;
+        if (handInteractionMode === 'drag' && !isAlternateView) return;
         let cancelled = false;
         queueMicrotask(() => {
             if (cancelled) return;
@@ -1584,7 +1590,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return () => {
             cancelled = true;
         };
-    }, [handInteractionMode, viewMode]);
+    }, [handInteractionMode, isAlternateView]);
 
     useEffect(() => {
         if (endTurnCooldownUntil <= Date.now()) return;
@@ -2591,7 +2597,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                 }
                                                 event.preventDefault();
                                                 event.stopPropagation();
-                                                triggerOpponentViewFromTouch();
+                                                triggerAlternateViewFromTouch(pid);
                                             }}
                                             onTouchEnd={(event) => {
                                                 if (!isOpponent) {
@@ -2599,14 +2605,14 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                 }
                                                 event.preventDefault();
                                                 event.stopPropagation();
-                                                triggerOpponentViewFromTouch();
+                                                triggerAlternateViewFromTouch(pid);
                                             }}
                                             onClick={() => {
                                                 if (isOpponent) {
                                                     if (Date.now() - opponentScoreTouchHandledAtRef.current < 400) {
                                                         return;
                                                     }
-                                                    toggleViewMode();
+                                                    setViewedPlayerId(pid);
                                                 }
                                             }}
                                         >
@@ -2615,7 +2621,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             {isOpponent && !isMobileViewport && (
                                                 <svg 
                                                     viewBox="0 0 24 24" 
-                                                    className={`absolute inset-0 m-auto w-5 h-5 fill-white/80 drop-shadow-[0_0_4px_rgba(0,0,0,0.8)] transition-opacity duration-300 pointer-events-none ${viewMode === 'opponent' ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                                                    className={`absolute inset-0 m-auto w-5 h-5 fill-white/80 drop-shadow-[0_0_4px_rgba(0,0,0,0.8)] transition-opacity duration-300 pointer-events-none ${displayedDeckPlayerId === pid ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
                                                 >
                                                     <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
                                                 </svg>
@@ -2643,7 +2649,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* 对手视角指示器 */}
                 <AnimatePresence>
-                    {viewMode === 'opponent' && (
+                    {isAlternateView && (
                         <motion.div
                             initial={{ y: -20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
@@ -2658,7 +2664,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     {t('ui.opponent_view', { defaultValue: '对手视角' })}
                                 </span>
                                 <button
-                                    onClick={toggleViewMode}
+                                    onClick={() => setViewedPlayerId(null)}
                                     className="ml-2 px-3 py-1 bg-amber-500 hover:bg-amber-400 text-slate-900 font-bold text-sm rounded transition-colors pointer-events-auto"
                                 >
                                     {t('ui.back_to_self', { defaultValue: '返回' })}
@@ -3227,7 +3233,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         </div>
                     </motion.div>
                 )}
-                {handInteractionMode === 'drag' && handDragPreview && viewMode !== 'opponent' && typeof document !== 'undefined' && createPortal(
+                {handInteractionMode === 'drag' && handDragPreview && !isAlternateView && typeof document !== 'undefined' && createPortal(
                     <div className="fixed inset-0 z-[58] pointer-events-none">
                         <svg className="absolute inset-0 w-full h-full overflow-visible">
                             {dragGuidePaths && (
@@ -3285,7 +3291,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                         >
 
                             <HandArea
-                                hand={viewMode === 'opponent' ? opponentPlayer.hand : myPlayer.hand}
+                                hand={isAlternateView ? (displayedDeckPlayer?.hand ?? []) : (myPlayer?.hand ?? [])}
                                 selectedCardUid={selectedCardUid}
                                 onCardSelect={handleCardClick}
                                 compactLayout={isMobileViewport}
@@ -3301,7 +3307,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 }
                                 disabledCardUids={meFirstDisabledUids ?? handPromptDisabledUids ?? tutorialDisabledUids}
                                 onCardView={handleViewCardDetail}
-                                isOpponentView={viewMode === 'opponent'}
+                                isOpponentView={isAlternateView}
                                 interactionMode={handInteractionMode}
                                 onResolveDropTarget={resolveHandDropTarget}
                                 onCardDragPlay={handleCardDragPlay}
@@ -3360,9 +3366,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                             {/* NEW: Deck & Discard Zone */}
                             <DeckDiscardZone
-                                deckCount={viewMode === 'opponent' ? opponentPlayer.deck.length : myPlayer.deck.length}
+                                deckCount={isAlternateView ? (displayedDeckPlayer?.deck.length ?? 0) : (myPlayer?.deck.length ?? 0)}
                                 madnessSupplyCount={core.madnessDeck !== undefined ? core.madnessDeck.length : undefined}
-                                discard={viewMode === 'opponent' ? opponentPlayer.discard : myPlayer.discard}
+                                discard={isAlternateView ? (displayedDeckPlayer?.discard ?? []) : (myPlayer?.discard ?? [])}
                                 compactLayout={isMobileViewport}
                                 isMyTurn={isMyTurn}
                                 hasPlayableFromDiscard={discardPlayOptions.length > 0 || discardSpecialOptions.length > 0 || isDiscardMinionPrompt}

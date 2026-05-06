@@ -26,8 +26,10 @@ const EXCLUDED_DIRS = new Set(['__tests__', 'data']);
 const HELPER_SOURCE_ARG_INDEX = new Map<string, number>([
     // pirates.ts: buildMoveToBaseInteraction(..., interactionIdPrefix, sourceId, ...)
     ['buildMoveToBaseInteraction', 5],
-    // fairies.ts: queueTransferSelfPrompt(ctx, sourceId, title)
+    // fairies.ts: 历史 helper，保留兼容
     ['queueTransferSelfPrompt', 1],
+    // fairies.ts: createTransferSelfAbilityProgram(sourceId, title, reason)
+    ['createTransferSelfAbilityProgram', 0],
     // skeletons.ts: buildOptionalCounterPrompt(id, playerId, title, sourceId, ...)
     ['buildOptionalCounterPrompt', 3],
 ]);

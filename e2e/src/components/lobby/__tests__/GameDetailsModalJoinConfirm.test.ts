@@ -55,6 +55,7 @@ const {
     ensureGameCriticalImageResolverLoadedMock,
     hasGameTutorialLoaderMock,
     prefetchGameImplementationMock,
+    prefetchOnlineMatchRouteMock,
     resolveCriticalImagesMock,
     preloadWarmImagesMock,
 } = vi.hoisted(() => ({
@@ -91,6 +92,7 @@ const {
     ensureGameCriticalImageResolverLoadedMock: vi.fn(),
     hasGameTutorialLoaderMock: vi.fn(() => true),
     prefetchGameImplementationMock: vi.fn(),
+    prefetchOnlineMatchRouteMock: vi.fn(),
     resolveCriticalImagesMock: vi.fn(),
     preloadWarmImagesMock: vi.fn(),
 }));
@@ -251,6 +253,10 @@ vi.mock('../../../games/registry', () => ({
     ensureGameCriticalImageResolverLoaded: (...args: unknown[]) => ensureGameCriticalImageResolverLoadedMock(...args),
     hasGameTutorialLoader: (...args: unknown[]) => hasGameTutorialLoaderMock(...args),
     prefetchGameImplementation: (...args: unknown[]) => prefetchGameImplementationMock(...args),
+}));
+
+vi.mock('../../../lib/prefetchPlayRoute', () => ({
+    prefetchOnlineMatchRoute: (...args: unknown[]) => prefetchOnlineMatchRouteMock(...args),
 }));
 
 vi.mock('../../../core', async (importOriginal) => {
@@ -496,6 +502,8 @@ beforeEach(() => {
     hasGameTutorialLoaderMock.mockReturnValue(true);
     prefetchGameImplementationMock.mockReset();
     prefetchGameImplementationMock.mockResolvedValue(null);
+    prefetchOnlineMatchRouteMock.mockReset();
+    prefetchOnlineMatchRouteMock.mockResolvedValue(undefined);
     resolveCriticalImagesMock.mockReset();
     resolveCriticalImagesMock.mockReturnValue({
         critical: ['dicethrone/cards/cards1'],
@@ -942,6 +950,16 @@ describe('GameDetailsModal create room ai entry', () => {
         descriptionKey: 'games.dicethrone.description',
         thumbnail: createElement('div'),
     };
+
+    it('打开详情弹窗时会提前预热联机房间冷加载依赖', async () => {
+        render(createElement(GameDetailsModal, baseProps));
+
+        await waitFor(() => {
+            expect(ensureGameCriticalImageResolverLoadedMock).toHaveBeenCalledWith('dicethrone');
+            expect(prefetchGameImplementationMock).toHaveBeenCalledWith('dicethrone', { includeTutorial: false });
+            expect(prefetchOnlineMatchRouteMock).toHaveBeenCalled();
+        });
+    });
 
     it('创建房间弹窗内直接配置 AI，不再显示独立对战 AI 入口', async () => {
         markGamePackageInstalled();

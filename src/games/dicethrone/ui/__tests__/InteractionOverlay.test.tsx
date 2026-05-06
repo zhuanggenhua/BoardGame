@@ -555,6 +555,121 @@ describe('InteractionOverlay', () => {
             expect(screen.queryByTestId('dt-status-owner-2')).not.toBeInTheDocument();
             expect(screen.queryByTestId('dt-status-owner-3')).not.toBeInTheDocument();
         });
+
+        it('4人自来源转移第二阶段应允许点击敌方与队友目标，且来源卡保持锁定', () => {
+            const phase2Interaction: InteractionDescriptor = {
+                ...transferInteraction,
+                transferConfig: {
+                    sourcePlayerId: '0',
+                    statusId: 'poison',
+                },
+                targetPlayerIds: ['0', '1', '2', '3'],
+            };
+
+            const fourPlayerMockPlayers: Record<PlayerId, HeroState> = {
+                ...mockPlayers,
+                '2': {
+                    characterId: 'paladin',
+                    resources: { hp: 40, cp: 2 },
+                    statusEffects: { shock: 1 },
+                    tokens: {},
+                    hand: [],
+                    discard: [],
+                    deck: [],
+                    abilityLevels: {},
+                } as HeroState,
+                '3': {
+                    characterId: 'pyromancer',
+                    resources: { hp: 35, cp: 4 },
+                    statusEffects: {},
+                    tokens: { burn: 2 } as any,
+                    hand: [],
+                    discard: [],
+                    deck: [],
+                    abilityLevels: {},
+                } as HeroState,
+            };
+
+            render(
+                <InteractionOverlay
+                    interaction={phase2Interaction}
+                    players={fourPlayerMockPlayers}
+                    currentPlayerId="0"
+                    playerNames={fourPlayerNames}
+                    seatingOrder={fourPlayerOrder}
+                    teamIdByPlayerId={fourPlayerTeams}
+                    {...mockHandlers}
+                />
+            );
+
+            fireEvent.click(screen.getByTestId('dt-transfer-source-locked-0'));
+            expect(mockHandlers.onSelectPlayer).not.toHaveBeenCalled();
+
+            fireEvent.click(screen.getByTestId('dt-transfer-target-1'));
+            fireEvent.click(screen.getByTestId('dt-transfer-target-2'));
+            fireEvent.click(screen.getByTestId('dt-transfer-target-3'));
+
+            expect(screen.getByTestId('dt-transfer-source-locked-0')).toHaveAttribute('data-locked', 'true');
+            expect(screen.getByTestId('dt-transfer-target-1')).toHaveAttribute('data-team-tone', 'enemy');
+            expect(screen.getByTestId('dt-transfer-target-2')).toHaveAttribute('data-team-tone', 'ally');
+            expect(screen.getByTestId('dt-transfer-target-3')).toHaveAttribute('data-team-tone', 'enemy');
+            expect(mockHandlers.onSelectPlayer).toHaveBeenNthCalledWith(1, '1');
+            expect(mockHandlers.onSelectPlayer).toHaveBeenNthCalledWith(2, '2');
+            expect(mockHandlers.onSelectPlayer).toHaveBeenNthCalledWith(3, '3');
+        });
+
+        it('4人自来源转移第二阶段应为已选目标提供明确视觉标识', () => {
+            const phase2Interaction: InteractionDescriptor = {
+                ...transferInteraction,
+                selected: ['1'],
+                transferConfig: {
+                    sourcePlayerId: '0',
+                    statusId: 'poison',
+                },
+                targetPlayerIds: ['0', '1', '2', '3'],
+            };
+
+            const fourPlayerMockPlayers: Record<PlayerId, HeroState> = {
+                ...mockPlayers,
+                '2': {
+                    characterId: 'paladin',
+                    resources: { hp: 40, cp: 2 },
+                    statusEffects: { shock: 1 },
+                    tokens: {},
+                    hand: [],
+                    discard: [],
+                    deck: [],
+                    abilityLevels: {},
+                } as HeroState,
+                '3': {
+                    characterId: 'pyromancer',
+                    resources: { hp: 35, cp: 4 },
+                    statusEffects: {},
+                    tokens: { burn: 2 } as any,
+                    hand: [],
+                    discard: [],
+                    deck: [],
+                    abilityLevels: {},
+                } as HeroState,
+            };
+
+            render(
+                <InteractionOverlay
+                    interaction={phase2Interaction}
+                    players={fourPlayerMockPlayers}
+                    currentPlayerId="0"
+                    playerNames={fourPlayerNames}
+                    seatingOrder={fourPlayerOrder}
+                    teamIdByPlayerId={fourPlayerTeams}
+                    {...mockHandlers}
+                />
+            );
+
+            expect(screen.getByTestId('dt-transfer-source-locked-0')).toHaveAttribute('data-selected', 'false');
+            expect(screen.getByTestId('dt-transfer-target-1')).toHaveAttribute('data-selected', 'true');
+            expect(screen.getByTestId('dt-transfer-target-1')).toHaveTextContent('已选目标');
+            expect(screen.getByTestId('dt-transfer-target-2')).toHaveTextContent('点击作为接收目标');
+        });
     });
 
     describe('accessibility', () => {
