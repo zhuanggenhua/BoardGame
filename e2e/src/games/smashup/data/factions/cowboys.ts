@@ -129,7 +129,6 @@ export const COWBOYS_ACTIONS: ActionCardDef[] = [
         name: '炸药惊喜',
         nameEn: 'Dynamite Surprise',
         faction: SMASHUP_FACTION_IDS.COWBOYS,
-        abilityTags: ['special'],
         soundKey: 'combat.explosives_sound_fx_pack.fuse.dynamite_fuse_start_001',
         specialTiming: 'beforeScoring',
         specialNeedsBase: true,

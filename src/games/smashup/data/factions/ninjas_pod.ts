@@ -113,9 +113,9 @@ export const NINJA_POD_ACTIONS: ActionCardDef[] = [
         faction: 'ninjas_pod',
         // 注意：便衣忍者在 Me First! 窗口中打出，不是点击场上卡牌激活
         // 因此不应该有 abilityTags: ['special']
+        specialTiming: 'beforeScoring',
         specialNeedsBase: true,
         specialLimitGroup: 'ninja_pod_special',
-        beforeScoringPlayable: true,
         count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS1, index: 19 },
     },

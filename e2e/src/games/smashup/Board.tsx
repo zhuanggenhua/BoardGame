@@ -20,10 +20,9 @@ import type { SmashUpCore, CardInstance, ActionCardDef, FusionCardDef, CardOrTit
 import { SU_COMMANDS, HAND_LIMIT, getCurrentPlayerId } from './domain/types';
 import { FLOW_COMMANDS } from '../../engine/systems/FlowSystem';
 import { asSimpleChoice, INTERACTION_COMMANDS } from '../../engine/systems/InteractionSystem';
-import { getCardDef, getBaseDef, getFusionDef, getMinionDef, resolveCardName, resolveCardText } from './data/cards';
+import { getCardDef, getBaseDef, getMinionDef, resolveCardName, resolveCardText } from './data/cards';
 import { getPlayerEffectivePowerOnBase, getScoringEligibleBaseIndices } from './domain/ongoingModifiers';
 import { isOperationRestricted } from './domain/ongoingEffects';
-import { isSpecialLimitBlocked } from './domain/abilityHelpers';
 import { useGameAudio, playDeniedSound, playSound } from '../../lib/audio/useGameAudio';
 import { CardPreview } from '../../components/common/media/CardPreview';
 import { AnimatePresence, motion } from 'framer-motion';
@@ -55,6 +54,9 @@ import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
     actionLikeNeedsResponseWindowBase,
+    canCardBePlayedInResponseWindow,
+    getResponseWindowPlayableBaseIndicesForCard,
+    getMaxRemainingBaseLimitedPowerQuota,
     getMaxRemainingGlobalPowerLimitedQuota,
     isActionLikeRespondableInWindow,
     mustUseBaseLimitedMinionQuota,
@@ -63,6 +65,7 @@ import {
     isSameNameDefId,
     isCardActionLike,
     isCardMinionLike,
+    isMinionLikeRespondableInWindow,
 } from './domain/utils';
 import { validate } from './domain/commands';
 import {
@@ -602,6 +605,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (!isBaseSelectPrompt || !currentPrompt) return new Set();
         const indices = new Set<number>();
         for (const opt of currentPrompt.options) {
+            if (opt.disabled) continue;
             const val = opt.value as { baseIndex?: number } | undefined;
             if (val != null && typeof val.baseIndex === 'number' && val.baseIndex >= 0) {
                 indices.add(val.baseIndex);
@@ -702,6 +706,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (!isMinionSelectPrompt || !currentPrompt) return new Set();
         const uids = new Set<string>();
         for (const opt of currentPrompt.options) {
+            if (opt.disabled) continue;
             const val = opt.value as { minionUid?: string; skip?: boolean } | undefined;
             // 排除跳过选项（不高亮）
             if (val?.skip === true) continue;
@@ -709,6 +714,51 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         }
         return uids;
     }, [isMinionSelectPrompt, currentPrompt]);
+
+    const getBaseLimitedQuotaMeta = useCallback((player: SmashUpCore['players'][string], baseIndex: number) => {
+        const baseDef = getBaseDef(core.bases[baseIndex]?.defId);
+        const baseName = baseDef?.name
+            ? t(`cards.${baseDef.id}.name`, { defaultValue: baseDef.name })
+            : `#${baseIndex + 1}`;
+        const sameNameRequired = player.baseLimitedSameNameRequired?.[baseIndex] === true;
+        const requiredDefId = player.baseLimitedSameNameDefId?.[baseIndex];
+        const requiredMinionDef = requiredDefId ? getMinionDef(requiredDefId) : undefined;
+        const requiredName = requiredDefId
+            ? t(`cards.${requiredDefId}.name`, { defaultValue: requiredMinionDef?.name ?? requiredDefId })
+            : null;
+        const maxPowerCap = getMaxRemainingBaseLimitedPowerQuota(player, baseIndex);
+
+        return {
+            baseName,
+            sameNameRequired,
+            requiredName,
+            maxPowerCap,
+        };
+    }, [core.bases, t]);
+
+    const formatBaseLimitedQuotaLabel = useCallback((player: SmashUpCore['players'][string], baseIndex: number, count: number) => {
+        const meta = getBaseLimitedQuotaMeta(player, baseIndex);
+        const constraints: string[] = [];
+        if (meta.sameNameRequired) {
+            constraints.push(meta.requiredName
+                ? t('ui.base_limited_same_name_exact', {
+                    defaultValue: '仅同名：{{name}}',
+                    name: meta.requiredName,
+                })
+                : t('ui.base_limited_same_name_generic', {
+                    defaultValue: '仅同名随从',
+                }));
+        }
+        if (meta.maxPowerCap !== undefined) {
+            constraints.push(t('ui.minion_power_cap', {
+                defaultValue: '力量限制 ≤{{max}}',
+                max: meta.maxPowerCap,
+            }));
+        }
+
+        const suffix = constraints.length > 0 ? `（${constraints.join('，')}）` : '';
+        return `+${count} → ${meta.baseName}${suffix}`;
+    }, [getBaseLimitedQuotaMeta, t]);
 
     // 随从选择中的非随从选项（如"跳过"/"完成"），需要作为浮动按钮显示
     const minionSelectExtraOptions = useMemo(() => {
@@ -982,29 +1032,11 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const windowType = reactionWindow?.windowType;
         
         for (const card of myPlayer.hand) {
-            if (card.type === 'minion') {
-                // beforeScoringPlayable 随从只在 meFirst 窗口可用
-                if (windowType === 'meFirst') {
-                    const mDef = getMinionDef(card.defId);
-                    if (!mDef?.beforeScoringPlayable) {
-                        disabled.add(card.uid);
-                    }
-                } else {
-                    // afterScoring 窗口禁用所有随从
-                    disabled.add(card.uid);
-                }
-                continue;
-            }
-            if (!isCardActionLike(card)) {
+            if (!windowType) {
                 disabled.add(card.uid);
                 continue;
             }
-            const def = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
-            if (!def) {
-                disabled.add(card.uid);
-                continue;
-            }
-            if (!isActionLikeRespondableInWindow(def, windowType)) {
+            if (!canCardBePlayedInResponseWindow(core, card, windowType)) {
                 disabled.add(card.uid);
             }
         }
@@ -1220,15 +1252,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const indices = new Set<number>();
         if (!playerID || !cardMode) return { deployableBaseIndices: indices, deployBlockReason: null };
 
-        // Me First! 窗口中 beforeScoringPlayable 随从：只允许即将计分的基地
-        if (isMeFirstResponse && card.type === 'minion') {
-            const mDef = getMinionDef(card.defId);
-            if (mDef?.beforeScoringPlayable) {
-                const eligible = getScoringEligibleBaseIndices(core);
-                for (const idx of eligible) {
-                    if (!isSpecialLimitBlocked(core, card.defId, idx)) {
-                        indices.add(idx);
-                    }
+        // 响应窗口中的可打出卡：若需要基地，则只允许即将计分的基地
+        if ((isMeFirstResponse || isAfterScoringResponse) && reactionWindow?.windowType) {
+            const responseWindowEligible = getResponseWindowPlayableBaseIndicesForCard(core, card.defId, reactionWindow.windowType);
+            if (responseWindowEligible.length > 0) {
+                for (const idx of responseWindowEligible) {
+                    indices.add(idx);
                 }
                 return { deployableBaseIndices: indices, deployBlockReason: null };
             }
@@ -1311,8 +1340,58 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 }
             }
         }
+        if (cardMode === 'minion' && indices.size === 0) {
+            const minionDef = getMinionDef(card.defId);
+            const basePower = minionDef?.power ?? 0;
+            const globalRemaining = player.minionLimit - player.minionsPlayed;
+            const sameNameRemaining = player.sameNameMinionRemaining ?? 0;
+            const quotaEntries = Object.entries(player.baseLimitedMinionQuota ?? {})
+                .map(([baseIndex, count]) => ({ baseIndex: Number(baseIndex), count }))
+                .filter(({ baseIndex, count }) => count > 0 && Number.isInteger(baseIndex) && baseIndex >= 0);
+
+            if (globalRemaining <= 0 && sameNameRemaining <= 0 && quotaEntries.length > 0) {
+                const sameNameBlockedBase = quotaEntries.find(({ baseIndex }) => {
+                    const meta = getBaseLimitedQuotaMeta(player, baseIndex);
+                    return meta.sameNameRequired && !canUseBaseLimitedMinionQuota(core, player, baseIndex, card.defId, basePower);
+                });
+                if (sameNameBlockedBase) {
+                    const meta = getBaseLimitedQuotaMeta(player, sameNameBlockedBase.baseIndex);
+                    return {
+                        deployableBaseIndices: indices,
+                        deployBlockReason: meta.requiredName
+                            ? t('ui.base_limited_same_name_block_exact', {
+                                defaultValue: '额外随从额度仅限将 {{name}} 打到 {{base}}',
+                                name: meta.requiredName,
+                                base: meta.baseName,
+                            })
+                            : t('ui.base_limited_same_name_block', {
+                                defaultValue: '额外随从额度仅限将同名随从打到 {{base}}',
+                                base: meta.baseName,
+                            }),
+                    };
+                }
+
+                const powerBlockedBase = quotaEntries.find(({ baseIndex }) => {
+                    const maxPowerCap = getMaxRemainingBaseLimitedPowerQuota(player, baseIndex);
+                    return maxPowerCap !== undefined
+                        && basePower > maxPowerCap
+                        && !canUseBaseLimitedMinionQuota(core, player, baseIndex, card.defId, basePower);
+                });
+                if (powerBlockedBase) {
+                    const meta = getBaseLimitedQuotaMeta(player, powerBlockedBase.baseIndex);
+                    return {
+                        deployableBaseIndices: indices,
+                        deployBlockReason: t('ui.base_limited_power_cap_block', {
+                            defaultValue: '{{base}} 的额外随从额度仅限力量不高于 {{max}} 的随从',
+                            base: meta.baseName,
+                            max: meta.maxPowerCap ?? 0,
+                        }),
+                    };
+                }
+            }
+        }
         return { deployableBaseIndices: indices, deployBlockReason: null };
-    }, [core, isMeFirstResponse, playerID, t]);
+    }, [core, getBaseLimitedQuotaMeta, isMeFirstResponse, playerID, t]);
 
     const collectMinionTargetUids = useCallback((baseIndices: Set<number>) => {
         const uids = new Set<string>();
@@ -1825,7 +1904,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 return;
             }
             const option = currentPrompt.options.find(
-                opt => (opt.value as { baseIndex?: number })?.baseIndex === index
+                opt => !opt.disabled && (opt.value as { baseIndex?: number })?.baseIndex === index
             );
             if (option) {
                 setSelectedCardUid(null);
@@ -1850,16 +1929,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             // Me First! 响应窗口期间打出 beforeScoringPlayable 随从：检查响应窗口状态
             if (reactionWindow?.windowType === 'meFirst') {
                 const card = myPlayer?.hand.find(c => c.uid === selectedCardUid);
-                if (card?.type === 'minion') {
-                    const mDef = getMinionDef(card.defId);
-                    if (mDef?.beforeScoringPlayable) {
-                        // 检查是否还是当前响应者
-                        if (playerID !== reactionWindow.activePlayerId) {
-                            toast(t('ui.wait_for_your_turn', { defaultValue: '等待你的响应回合' }));
-                            setSelectedCardUid(null);
-                            setSelectedCardMode(null);
-                            return;
-                        }
+                if (card && isMinionLikeRespondableInWindow(card.defId, 'meFirst')) {
+                    // 检查是否还是当前响应者
+                    if (playerID !== reactionWindow.activePlayerId) {
+                        toast(t('ui.wait_for_your_turn', { defaultValue: '等待你的响应回合' }));
+                        setSelectedCardUid(null);
+                        setSelectedCardMode(null);
+                        return;
                     }
                 }
             }
@@ -1947,19 +2023,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         const isInResponseWindow = isMeFirstResponse || isAfterScoringResponse;
         if (isInResponseWindow) {
             const windowType = reactionWindow?.windowType;
+            if (!windowType || !canCardBePlayedInResponseWindow(core, card, windowType)) {
+                playDeniedSound();
+                return;
+            }
 
             if (isCardMinionLike(card)) {
-                if (windowType !== 'meFirst') {
-                    playDeniedSound();
-                    return;
-                }
-                const mDef = getMinionDef(card.defId);
-                const fDef = getFusionDef(card.defId);
-                const canBeforeScoring = mDef?.beforeScoringPlayable || fDef?.minionBeforeScoringPlayable;
-                if (!canBeforeScoring) {
-                    playDeniedSound();
-                    return;
-                }
                 if (selectedCardUid === card.uid) {
                     setSelectedCardUid(null);
                     setSelectedCardMode(null);
@@ -1983,7 +2052,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             }
 
             if (actionLikeNeedsResponseWindowBase(cardDef)) {
-                if (getScoringEligibleBaseIndices(core).length === 0) {
+                if (getResponseWindowPlayableBaseIndicesForCard(core, card.defId, windowType).length === 0) {
                     playDeniedSound();
                     toast(t('ui.no_valid_targets', { defaultValue: '场上没有符合条件的目标' }));
                     return;
@@ -2154,7 +2223,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (isMinionSelectPrompt && currentPrompt) {
             if (!selectableMinionUids.has(minionUid)) return;
             const option = currentPrompt.options.find(
-                opt => (opt.value as { minionUid?: string })?.minionUid === minionUid
+                opt => !opt.disabled && (opt.value as { minionUid?: string })?.minionUid === minionUid
             );
             if (!option) return;
 
@@ -2778,10 +2847,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                             </div>
                                                             {Object.entries(baseQuota).map(([baseIdx, count]) => {
                                                                 if (count <= 0) return null;
-                                                                const bDef = getBaseDef(core.bases[Number(baseIdx)]?.defId);
-                                                                const bName = bDef?.name ? t(`cards.${bDef.id}.name`, { defaultValue: bDef.name }) : `#${Number(baseIdx) + 1}`;
                                                                 return (
-                                                                    <div key={baseIdx} className="text-amber-300">+{count} → {bName}</div>
+                                                                    <div key={baseIdx} className="text-amber-300">
+                                                                        {formatBaseLimitedQuotaLabel(myPlayer, Number(baseIdx), count)}
+                                                                    </div>
                                                                 );
                                                             })}
                                                             {myPlayer.extraMinionPowerMax !== undefined && (

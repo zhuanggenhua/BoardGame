@@ -1,6 +1,7 @@
 /* @vitest-environment happy-dom */
 import { createElement, useEffect } from 'react';
 import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as matchApi from '../../services/matchApi';
 import { isMatchNotFoundError, leaveMatch, useMatchStatus, validateStoredMatchSeat, type StoredMatchCredentials } from '../../hooks/match/useMatchStatus';
@@ -27,6 +28,7 @@ import {
     submitOnlineAiResolution,
 } from '../onlineAiForceSkip';
 import {
+    isTutorialRoutePath,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
@@ -152,6 +154,104 @@ describe('validateStoredMatchSeat', () => {
         const stored = buildStored({ playerName: undefined });
         const result = validateStoredMatchSeat(stored, buildPlayers([{ id: 0, name: 'Any' }]), '0');
         expect(result.shouldClear).toBe(false);
+    });
+});
+
+describe('isTutorialRoutePath', () => {
+    it('正确识别默认教程与子教程路由', () => {
+        expect(isTutorialRoutePath('/play/dicethrone/tutorial')).toBe(true);
+        expect(isTutorialRoutePath('/play/smashup/tutorial/cowboys-duel')).toBe(true);
+    });
+
+    it('不会把普通对局或测试路由误判成教程路由', () => {
+        expect(isTutorialRoutePath('/play/dicethrone')).toBe(false);
+        expect(isTutorialRoutePath('/play/dicethrone/match/m-1')).toBe(false);
+    });
+});
+
+describe('TutorialMatchRoomWithAudio', () => {
+    it('切换教程路由时会强制重建 MatchRoom，避免残留旧教程状态', async () => {
+        vi.resetModules();
+        const lifecycle: string[] = [];
+
+        vi.doMock('../MatchRoom', async () => {
+            const React = await vi.importActual<typeof import('react')>('react');
+            const router = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+
+            return {
+                MatchRoom: () => {
+                    const location = router.useLocation();
+
+                    React.useEffect(() => {
+                        lifecycle.push(`mount:${location.pathname}`);
+                        return () => {
+                            lifecycle.push(`unmount:${location.pathname}`);
+                        };
+                    }, []);
+
+                    return React.createElement('div', { 'data-testid': 'tutorial-match-room-probe' }, location.pathname);
+                },
+            };
+        });
+
+        try {
+            const { default: TutorialMatchRoomWithAudio } = await import('../TutorialMatchRoomWithAudio');
+
+            const Harness = ({ nextPath }: { nextPath?: string }) => {
+                const navigate = useNavigate();
+
+                useEffect(() => {
+                    if (nextPath) {
+                        navigate(nextPath);
+                    }
+                }, [navigate, nextPath]);
+
+                return createElement(
+                    Routes,
+                    null,
+                    createElement(Route, {
+                        path: '/play/:gameId/tutorial',
+                        element: createElement(TutorialMatchRoomWithAudio),
+                    }),
+                    createElement(Route, {
+                        path: '/play/:gameId/tutorial/:tutorialId',
+                        element: createElement(TutorialMatchRoomWithAudio),
+                    }),
+                );
+            };
+
+            const { rerender } = render(
+                createElement(
+                    MemoryRouter,
+                    { initialEntries: ['/play/smashup/tutorial'] },
+                    createElement(Harness),
+                ),
+            );
+
+            expect(screen.getByTestId('tutorial-match-room-probe').textContent).toBe('/play/smashup/tutorial');
+            expect(lifecycle).toEqual(['mount:/play/smashup/tutorial']);
+
+            rerender(
+                createElement(
+                    MemoryRouter,
+                    { initialEntries: ['/play/smashup/tutorial'] },
+                    createElement(Harness, { nextPath: '/play/smashup/tutorial/cowboys-duel' }),
+                ),
+            );
+
+            await waitFor(() => {
+                expect(screen.getByTestId('tutorial-match-room-probe').textContent).toBe('/play/smashup/tutorial/cowboys-duel');
+            });
+
+            expect(lifecycle).toEqual([
+                'mount:/play/smashup/tutorial',
+                'unmount:/play/smashup/tutorial',
+                'mount:/play/smashup/tutorial/cowboys-duel',
+            ]);
+        } finally {
+            vi.doUnmock('../MatchRoom');
+            vi.resetModules();
+        }
     });
 });
 

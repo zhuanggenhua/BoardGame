@@ -368,7 +368,7 @@ export const BaseZone: React.FC<{
                     <div
                         className={isCoarsePointer
                             ? 'absolute inset-0 z-60'
-                            : 'absolute inset-0 z-60 transition-transform duration-200 group-hover:scale-125 group-hover:-translate-y-[0.3vw]'}
+                            : 'absolute inset-0 z-60 pointer-events-none transition-transform duration-200 group-hover:scale-125 group-hover:-translate-y-[0.3vw]'}
                     >
                         <button
                             type="button"

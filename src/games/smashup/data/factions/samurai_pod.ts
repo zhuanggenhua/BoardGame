@@ -91,7 +91,6 @@ export const SAMURAI_POD_ACTIONS: ActionCardDef[] = [
         name: '战斗之心',
         nameEn: 'Heart of the Battle',
         faction: 'samurai_pod',
-        abilityTags: ['special'],
         specialTiming: 'beforeScoring',
         specialNeedsBase: true,
         count: 1,

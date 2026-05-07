@@ -29,11 +29,13 @@ import { validateTitanOngoingActivation, validateTitanSpecialActivation, validat
 import { hasCardActivatableAbility } from './activationMetadata';
 import {
     actionLikeNeedsResponseWindowBase,
+    canCardBePlayedInResponseWindow,
     getActionLikeResponseWindowTiming,
     canUseBaseLimitedMinionQuota,
     canUseSameNameMinionQuota,
     getMaxRemainingBaseLimitedPowerQuota,
     getMaxRemainingGlobalPowerLimitedQuota,
+    isMinionLikeRespondableInWindow,
     isSameNameDefId,
     mustUseBaseLimitedMinionQuota,
     mustUseGlobalPowerLimitedMinionQuota,
@@ -278,10 +280,7 @@ export function validate(
                 const mfCard = mfPlayer.hand.find(c => c.uid === command.payload.cardUid);
                 if (!mfCard) return { valid: false, error: '手牌中没有该卡牌' };
                 if (!isCardMinionLike(mfCard)) return { valid: false, error: '该卡牌不是随从' };
-                const mfDef = getMinionDef(mfCard.defId);
-                const mfFusionDef = getFusionDef(mfCard.defId);
-                if (!mfDef && !mfFusionDef) return { valid: false, error: '卡牌定义不存在' };
-                if (!(mfDef?.beforeScoringPlayable || mfFusionDef?.minionBeforeScoringPlayable)) {
+                if (!isMinionLikeRespondableInWindow(mfCard.defId, 'meFirst')) {
                     return { valid: false, error: '该随从不能在基地计分前打出' };
                 }
                 const mfBaseIndex = command.payload.baseIndex;
@@ -526,20 +525,16 @@ export function validate(
                     return { valid: false, error: '该行动卡不能在响应窗口中打出' };
                 }
                 
-                // 检查 specialTiming 是否匹配窗口类型
-                const cardTiming = (rDef as any).type === 'fusion'
-                    ? ((rDef as FusionCardDef).actionSpecialTiming ?? 'beforeScoring')
-                    : ((rDef as ActionCardDef).specialTiming ?? 'beforeScoring'); // 默认为 beforeScoring
-                if (reactionWindow.windowType === 'meFirst' && cardTiming !== 'beforeScoring') {
+                if (reactionWindow.windowType === 'meFirst' && responseTiming !== 'beforeScoring') {
                     console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - wrong timing for meFirst window', {
-                        cardTiming,
+                        responseTiming,
                         windowType: reactionWindow.windowType,
                     });
                     return { valid: false, error: '该卡牌只能在计分后打出' };
                 }
-                if (reactionWindow.windowType === 'afterScoring' && cardTiming !== 'afterScoring') {
+                if (reactionWindow.windowType === 'afterScoring' && responseTiming !== 'afterScoring') {
                     console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - wrong timing for afterScoring window', {
-                        cardTiming,
+                        responseTiming,
                         windowType: reactionWindow.windowType,
                     });
                     return { valid: false, error: '该卡牌只能在计分前打出' };
@@ -562,6 +557,9 @@ export function validate(
                 });
                 
                 const needsBase = actionLikeNeedsResponseWindowBase(rDef);
+                if (!canCardBePlayedInResponseWindow(core, rCard, reactionWindow.windowType)) {
+                    return { valid: false, error: '该行动卡当前没有可执行的响应目标' };
+                }
                 if (needsBase) {
                     if (typeof targetBase !== 'number' || !Number.isInteger(targetBase)) {
                         console.log('[DEBUG] PLAY_ACTION validation: BLOCKED - needs base but no valid base provided');

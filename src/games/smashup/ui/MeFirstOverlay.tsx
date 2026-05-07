@@ -8,9 +8,8 @@ import { motion } from 'framer-motion';
 import { CheckCircle } from 'lucide-react';
 import { GameButton } from './GameButton';
 import type { MatchState } from '../../../engine/types';
-import type { SmashUpCore, ActionCardDef, FusionCardDef } from '../domain/types';
-import { getCardDef } from '../data/cards';
-import { isCardActionLike, isCardMinionLike } from '../domain/utils';
+import type { SmashUpCore } from '../domain/types';
+import { canCardBePlayedInResponseWindow } from '../domain/utils';
 import { getSmashUpReactionWindowPresentation } from '../domain/reactionWindowState';
 import { UI_Z_INDEX } from '../../../core';
 import { PLAYER_CONFIG } from './playerConfig';
@@ -57,39 +56,9 @@ export const MeFirstOverlay: React.FC<{
     // 检查手牌中是否有可在当前响应窗口打出的行动卡或 beforeScoringPlayable 随从
     const myPlayer = playerID ? core.players[playerID] : undefined;
     
-    // 根据窗口类型过滤可用卡牌
-    const responseCards = myPlayer?.hand.filter(c => {
-        if (!isCardActionLike(c)) return false;
-        const def = getCardDef(c.defId) as ActionCardDef | FusionCardDef | undefined;
-        if (!def) return false;
-        const subtype = (def as any).type === 'fusion'
-            ? (def as FusionCardDef).actionSubtype
-            : (def as ActionCardDef).subtype;
-        if (subtype !== 'special') return false;
-        
-        // 检查 specialTiming 是否匹配窗口类型
-        const cardTiming = (def as any).type === 'fusion'
-            ? ((def as FusionCardDef).actionSpecialTiming ?? 'beforeScoring')
-            : ((def as ActionCardDef).specialTiming ?? 'beforeScoring'); // 默认为 beforeScoring
-        if (reactionWindow.windowType === 'meFirst') {
-            // meFirst 窗口：只允许 beforeScoring 卡牌
-            return cardTiming === 'beforeScoring';
-        } else if (reactionWindow.windowType === 'afterScoring') {
-            // afterScoring 窗口：只允许 afterScoring 卡牌
-            return cardTiming === 'afterScoring';
-        }
-        return false;
-    }) ?? [];
-    
-    const beforeScoringMinions = myPlayer?.hand.filter(c => {
-        // beforeScoringPlayable 随从只在 meFirst 窗口可用
-        if (reactionWindow.windowType === 'afterScoring') return false;
-        if (!isCardMinionLike(c)) return false;
-        const def = getCardDef(c.defId);
-        return (def as any)?.beforeScoringPlayable === true;
-    }) ?? [];
-    
-    const hasRespondableCards = responseCards.length > 0 || beforeScoringMinions.length > 0;
+    const hasRespondableCards = myPlayer?.hand.some(card =>
+        canCardBePlayedInResponseWindow(core, card, reactionWindow.windowType),
+    ) ?? false;
     
     // 窗口标题
     const windowTitle = reactionWindow.windowType === 'afterScoring'

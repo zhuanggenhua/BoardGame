@@ -902,6 +902,7 @@ describe('Property 18: Me First 窗口协议', () => {
 
     test('非当前响应者不能在 Me First 窗口中打牌', () => {
         const specialCard = makeCard('s-1', 'ninja_hidden_ninja', 'action');
+        const followupMinion = makeCard('m-2', 'ninja_shinobi', 'minion');
         const state: SmashUpCore = {
             players: {
                 '0': makePlayer('0', [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.NINJAS]),
@@ -937,9 +938,10 @@ describe('Property 18: Me First 窗口协议', () => {
 
     test('specialNeedsBase=true 的特殊行动卡必须显式选择达标基地', () => {
         const specialCard = makeCard('s-1', 'ninja_hidden_ninja', 'action');
+        const followupMinion = makeCard('m-2', 'ninja_shinobi', 'minion');
         const state: SmashUpCore = {
             players: {
-                '0': makePlayer('0', [SMASHUP_FACTION_IDS.NINJAS, SMASHUP_FACTION_IDS.GHOSTS], { hand: [specialCard] }),
+                '0': makePlayer('0', [SMASHUP_FACTION_IDS.NINJAS, SMASHUP_FACTION_IDS.GHOSTS], { hand: [specialCard, followupMinion] }),
                 '1': makePlayer('1', [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.ALIENS]),
             },
             turnOrder: ['0', '1'], currentPlayerIndex: 0,
@@ -1144,6 +1146,24 @@ describe('Property 18: Me First 窗口协议', () => {
             } as any);
 
             expect(result.valid, testCase.defId).toBe(true);
+        }
+    });
+
+    test('special 子类型若依赖窗口或上下文，必须显式声明 specialTiming', () => {
+        const explicitCases = [
+            ['ninja_hidden_ninja', 'beforeScoring'],
+            ['elder_thing_the_price_of_power', 'beforeScoring'],
+            ['miskatonic_thing_on_the_doorstep', 'beforeScoring'],
+            ['miskatonic_mandatory_reading', 'beforeScoring'],
+            ['vampire_buffet', 'afterScoring'],
+            ['vampire_mad_monster_party_pod', 'triggered'],
+        ] as const;
+
+        for (const [defId, timing] of explicitCases) {
+            const def = getCardDef(defId);
+            expect(def?.type).toBe('action');
+            expect((def as any)?.subtype).toBe('special');
+            expect((def as any)?.specialTiming).toBe(timing);
         }
     });
 });

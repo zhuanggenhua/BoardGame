@@ -12,6 +12,77 @@ import { SelectableEffectsContainer, type StatusAtlases } from './statusEffects'
 import { GameModal } from './components/GameModal';
 import { GameButton } from './components/GameButton';
 
+type TeamTone = 'self' | 'ally' | 'enemy';
+
+interface ToneClasses {
+    idleBorderClassName: string;
+    passiveBorderClassName: string;
+    titleClassName: string;
+    badgeClassName: string;
+}
+
+const PlayerCardShell = ({
+    testId,
+    playerId,
+    teamTone,
+    titleClassName,
+    badgeClassName,
+    displayName,
+    relationLabel,
+    seatLabel,
+    containerClassName,
+    onClick,
+    locked,
+    selected,
+    footer,
+    children,
+}: {
+    testId: string;
+    playerId: PlayerId;
+    teamTone: TeamTone;
+    titleClassName: string;
+    badgeClassName: string;
+    displayName: string;
+    relationLabel: string;
+    seatLabel: string;
+    containerClassName: string;
+    onClick?: () => void;
+    locked?: boolean;
+    selected?: boolean;
+    footer?: React.ReactNode;
+    children: React.ReactNode;
+}) => (
+    <div
+        onClick={onClick}
+        data-testid={testId}
+        data-player-id={playerId}
+        data-team-tone={teamTone}
+        data-locked={locked ? 'true' : 'false'}
+        data-selected={selected ? 'true' : 'false'}
+        className={containerClassName}
+    >
+        <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+                <div className={`font-bold text-lg leading-tight ${titleClassName}`}>
+                    {displayName}
+                </div>
+                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
+                    {relationLabel}
+                </div>
+            </div>
+            <div className={`rounded-full border px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${badgeClassName}`}>
+                {seatLabel}
+            </div>
+        </div>
+        {children}
+        {footer ? (
+            <div className="mt-3 text-center text-xs font-semibold tracking-[0.18em] uppercase text-slate-300/85">
+                {footer}
+            </div>
+        ) : null}
+    </div>
+);
+
 export interface InteractionOverlayProps {
     /** 当前交互（从 sys.interaction.current 获取） */
     interaction: InteractionDescriptor;
@@ -97,7 +168,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
         return { isSelf, isAlly, teamTone, seatLabel, displayName, relationLabel };
     }, [currentPlayerId, currentTeamId, playerNames, resolvedSeatingOrder, t, teamIdByPlayerId]);
 
-    const getToneClasses = React.useCallback((teamTone: 'self' | 'ally' | 'enemy') => {
+    const getToneClasses = React.useCallback((teamTone: TeamTone): ToneClasses => {
         if (teamTone === 'self') {
             return {
                 idleBorderClassName: 'border-cyan-500/60 bg-cyan-950/20 hover:border-cyan-400',
@@ -201,13 +272,18 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                 // 不要求目标有状态时，所有玩家都可选
                                 const canSelect = requiresTargetWithStatus ? hasStatus : true;
                                 return (
-                                    <div
+                                    <PlayerCardShell
                                         key={pid}
-                                        onClick={() => canSelect && onSelectPlayer(pid)}
-                                        data-testid={`dt-player-target-${pid}`}
-                                        data-player-id={pid}
-                                        data-team-tone={teamTone}
-                                        className={`
+                                        testId={`dt-player-target-${pid}`}
+                                        playerId={pid}
+                                        teamTone={teamTone}
+                                        titleClassName={titleClassName}
+                                        badgeClassName={badgeClassName}
+                                        displayName={displayName}
+                                        relationLabel={relationLabel}
+                                        seatLabel={seatLabel}
+                                        onClick={canSelect ? () => onSelectPlayer(pid) : undefined}
+                                        containerClassName={`
                                             p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                             ${canSelect ? 'cursor-pointer hover:scale-[1.03]' : 'opacity-50 cursor-not-allowed'}
                                             ${isSelected
@@ -217,19 +293,6 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                     : 'border-slate-700 bg-slate-800/30'}
                                         `}
                                     >
-                                        <div className="mb-3 flex items-start justify-between gap-3">
-                                            <div className="min-w-0">
-                                                <div className={`font-bold text-lg leading-tight ${titleClassName}`}>
-                                                    {displayName}
-                                                </div>
-                                                <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
-                                                    {relationLabel}
-                                                </div>
-                                            </div>
-                                            <div className={`rounded-full border px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${badgeClassName}`}>
-                                                {seatLabel}
-                                            </div>
-                                        </div>
                                         {/* 显示玩家的状态效果（仅供参考） */}
                                         <SelectableEffectsContainer
                                             effects={player.statusEffects ?? {}}
@@ -246,37 +309,29 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                 {t('interaction.noStatus')}
                                             </div>
                                         )}
-                                    </div>
+                                    </PlayerCardShell>
                                 );
                             }
 
                             // 状态效果选择模式
                             return (
-                                <div
+                                <PlayerCardShell
                                     key={pid}
-                                    data-testid={`dt-status-owner-${pid}`}
-                                    data-player-id={pid}
-                                    data-team-tone={teamTone}
-                                    className={`
+                                    testId={`dt-status-owner-${pid}`}
+                                    playerId={pid}
+                                    teamTone={teamTone}
+                                    titleClassName={titleClassName}
+                                    badgeClassName={badgeClassName}
+                                    displayName={displayName}
+                                    relationLabel={relationLabel}
+                                    seatLabel={seatLabel}
+                                    containerClassName={`
                                         p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
                                         ${hasStatus
                                             ? passiveBorderClassName
                                             : 'border-slate-700 bg-slate-800/30 opacity-50'}
                                     `}
                                 >
-                                    <div className="mb-3 flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <div className={`font-bold text-lg leading-tight ${titleClassName}`}>
-                                                {displayName}
-                                            </div>
-                                            <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
-                                                {relationLabel}
-                                            </div>
-                                        </div>
-                                        <div className={`rounded-full border px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${badgeClassName}`}>
-                                            {seatLabel}
-                                        </div>
-                                    </div>
                                     {hasStatus ? (
                                         <SelectableEffectsContainer
                                             effects={player.statusEffects ?? {}}
@@ -295,7 +350,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                             {t('interaction.noStatus')}
                                         </div>
                                     )}
-                                </div>
+                                </PlayerCardShell>
                             );
                         })}
                     </div>
@@ -303,7 +358,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
 
                 {/* 转移目标选择（第二阶段） */}
                 {isTransferTargetSelection && (
-                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                    <div className="flex flex-wrap gap-4 justify-center">
                         {targetPlayerIds.map(pid => {
                             const player = players[pid];
                             if (!player) return null;
@@ -315,37 +370,36 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                             const canSelect = !isSourcePlayer;
 
                             return (
-                                <div
+                                <PlayerCardShell
                                     key={pid}
-                                    onClick={() => canSelect && onSelectPlayer(pid)}
-                                    data-testid={isSourcePlayer ? `dt-transfer-source-locked-${pid}` : `dt-transfer-target-${pid}`}
-                                    data-player-id={pid}
-                                    data-team-tone={teamTone}
-                                    data-locked={isSourcePlayer ? 'true' : 'false'}
-                                    data-selected={isSelected ? 'true' : 'false'}
-                                    className={`
-                                        p-4 rounded-xl border-2 transition-all duration-200 min-w-0
-                                        ${canSelect ? 'cursor-pointer hover:scale-[1.03] hover:shadow-[0_14px_34px_rgba(15,23,42,0.28)]' : 'cursor-not-allowed opacity-75'}
-                                        ${isSourcePlayer
-                                            ? 'border-slate-500/70 bg-slate-900/80'
+                                    testId={isSourcePlayer ? `dt-transfer-source-locked-${pid}` : `dt-transfer-target-${pid}`}
+                                    playerId={pid}
+                                    teamTone={teamTone}
+                                    titleClassName={titleClassName}
+                                    badgeClassName={badgeClassName}
+                                    displayName={displayName}
+                                    relationLabel={isSourcePlayer ? `${relationLabel} / 已选来源` : relationLabel}
+                                    seatLabel={seatLabel}
+                                    onClick={canSelect ? () => onSelectPlayer(pid) : undefined}
+                                    locked={isSourcePlayer}
+                                    selected={isSelected}
+                                    footer={
+                                        isSourcePlayer
+                                            ? '已选来源'
                                             : isSelected
-                                                ? 'border-amber-400 bg-amber-950/35 ring-2 ring-amber-300/85 shadow-[0_0_0_1px_rgba(251,191,36,0.45),0_18px_40px_rgba(251,191,36,0.16)]'
+                                                ? '已选目标'
+                                                : '点击作为接收目标'
+                                    }
+                                    containerClassName={`
+                                        p-4 rounded-xl border-2 transition-all duration-200 min-w-[200px]
+                                        ${canSelect ? 'cursor-pointer hover:scale-[1.03]' : 'cursor-not-allowed opacity-75'}
+                                        ${isSourcePlayer
+                                            ? `${passiveBorderClassName} ring-2 ring-white/10`
+                                            : isSelected
+                                                ? 'border-amber-400 bg-amber-950/30 ring-2 ring-amber-300/80'
                                                 : idleBorderClassName}
                                     `}
                                 >
-                                    <div className="mb-3 flex items-start justify-between gap-3">
-                                        <div className="min-w-0">
-                                            <div className={`font-bold text-lg leading-tight ${titleClassName}`}>
-                                                {displayName}
-                                            </div>
-                                            <div className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
-                                                {isSourcePlayer ? `${relationLabel} / 已选来源` : relationLabel}
-                                            </div>
-                                        </div>
-                                        <div className={`rounded-full border px-2 py-1 text-xs font-semibold uppercase tracking-[0.18em] ${badgeClassName}`}>
-                                            {seatLabel}
-                                        </div>
-                                    </div>
                                     {isSourcePlayer && transferSourceCard ? (
                                         Object.keys(transferSourceCard.effects).length > 0 || Object.keys(transferSourceCard.tokens).length > 0 ? (
                                             <SelectableEffectsContainer
@@ -354,7 +408,7 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                 highlightAll={false}
                                                 selectedId={transferSourceCard.statusId}
                                                 getItemTestId={(statusId) => `dt-transfer-source-effect-${statusId}`}
-                                                size="small"
+                                                size="normal"
                                                 className="justify-center"
                                                 locale={locale}
                                                 atlas={statusIconAtlas}
@@ -370,21 +424,14 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                                 effects={player.statusEffects ?? {}}
                                                 tokens={player.tokens}
                                                 highlightAll={false}
-                                                size="small"
+                                                size="normal"
                                                 className="justify-center"
                                                 locale={locale}
                                                 atlas={statusIconAtlas}
                                             />
                                         </div>
                                     )}
-                                    <div className="mt-3 text-center text-xs font-semibold tracking-[0.18em] uppercase text-slate-300/85">
-                                        {isSourcePlayer
-                                            ? '已选来源'
-                                            : isSelected
-                                                ? '已选目标'
-                                                : '点击作为接收目标'}
-                                    </div>
-                                </div>
+                                </PlayerCardShell>
                             );
                         })}
                     </div>

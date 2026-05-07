@@ -114,7 +114,7 @@ export const MERMAIDS_ACTIONS: ActionCardDef[] = [
         name: '沉船湾',
         nameEn: 'Shipwreck Cove',
         faction: SMASHUP_FACTION_IDS.MERMAIDS,
-        abilityTags: ['ongoing', 'special'],
+        abilityTags: ['ongoing'],
         ongoingTarget: 'base',
         specialTiming: 'afterScoring',
         specialNeedsBase: true,

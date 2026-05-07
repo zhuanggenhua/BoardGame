@@ -2,6 +2,7 @@ import type { PlayerId, RandomFn, ResponseWindowType } from '../../../engine/typ
 import type { ActionCardDef, CardInstance, FusionCardDef, PlayerState, SmashUpCore, MinionOnBase, SpecialTiming } from './types';
 import { getBaseDef, getCardDef, getFactionCards, getFusionDef, getMinionDef } from '../data/cards';
 import { getScoringEligibleBaseIndices } from './ongoingModifiers';
+import { getCardDefActivatableAbilities } from './activationMetadata';
 
 // ============================================================================
 // 玩家显示名
@@ -105,23 +106,57 @@ export function isCardActionLike(card: CardInstance): boolean {
 }
 
 type ActionLikeDef = ActionCardDef | FusionCardDef;
+export type ResponseWindowPlayableTiming = Extract<SpecialTiming, 'beforeScoring' | 'afterScoring'>;
 
 function isFusionActionDef(def: ActionLikeDef): def is FusionCardDef {
     return def.type === 'fusion';
 }
 
-export function getActionLikeResponseWindowTiming(def: ActionLikeDef): SpecialTiming | undefined {
+function toResponseWindowPlayableTiming(
+    timing: SpecialTiming | undefined,
+): ResponseWindowPlayableTiming | undefined {
+    if (timing === 'beforeScoring' || timing === 'afterScoring') {
+        return timing;
+    }
+    return undefined;
+}
+
+function hasManualSpecialActivation(def: ActionLikeDef): boolean {
+    const abilities = isFusionActionDef(def)
+        ? getCardDefActivatableAbilities(def, { face: 'action' })
+        : getCardDefActivatableAbilities(def);
+    return abilities.some(ability => ability.kind === 'special');
+}
+
+function getDeclaredActionLikeSpecialTiming(def: ActionLikeDef): SpecialTiming | undefined {
     if (isFusionActionDef(def)) {
-        if (def.actionSubtype === 'special') {
-            return def.actionSpecialTiming ?? 'beforeScoring';
-        }
-        return def.actionResponseWindowTiming;
+        if (def.actionSubtype !== 'special') return undefined;
+        if (def.actionSpecialTiming) return def.actionSpecialTiming;
+        if (hasManualSpecialActivation(def)) return undefined;
+        throw new Error(`[SmashUp] ${def.id} 的 fusion actionSubtype=special 缺少显式 actionSpecialTiming 或 manual special 声明`);
     }
 
-    if (def.subtype === 'special') {
-        return def.specialTiming ?? 'beforeScoring';
+    if (def.subtype !== 'special') return undefined;
+    if (def.specialTiming) return def.specialTiming;
+    if (hasManualSpecialActivation(def)) return undefined;
+    throw new Error(`[SmashUp] ${def.id} 的 subtype=special 缺少显式 specialTiming 或 manual special 声明`);
+}
+
+function getActionLikeResponseWindowLimitGroup(def: ActionLikeDef): string | undefined {
+    if (isFusionActionDef(def)) {
+        return def.actionSubtype === 'special' ? def.actionSpecialLimitGroup : undefined;
     }
-    return def.responseWindowTiming;
+    return def.subtype === 'special' ? def.specialLimitGroup : undefined;
+}
+
+export function getActionLikeResponseWindowTiming(def: ActionLikeDef): ResponseWindowPlayableTiming | undefined {
+    if (isFusionActionDef(def)) {
+        return toResponseWindowPlayableTiming(def.actionResponseWindowTiming)
+            ?? toResponseWindowPlayableTiming(getDeclaredActionLikeSpecialTiming(def));
+    }
+
+    return toResponseWindowPlayableTiming(def.responseWindowTiming)
+        ?? toResponseWindowPlayableTiming(getDeclaredActionLikeSpecialTiming(def));
 }
 
 export function actionLikeNeedsResponseWindowBase(def: ActionLikeDef): boolean {
@@ -163,6 +198,17 @@ export function isActionLikeRespondableInWindow(
     return false;
 }
 
+export function isMinionLikeRespondableInWindow(
+    cardDefId: string,
+    windowType: ResponseWindowType,
+): boolean {
+    if (windowType !== 'meFirst') return false;
+    const minionDef = getMinionDef(cardDefId);
+    if (minionDef?.beforeScoringPlayable) return true;
+    const fusionDef = getFusionDef(cardDefId);
+    return fusionDef?.minionBeforeScoringPlayable === true;
+}
+
 function isSpecialLimitBlockedByGroup(
     state: SmashUpCore,
     limitGroup: string | undefined,
@@ -183,40 +229,70 @@ export function getMeFirstPlayableBaseIndicesForCard(
     state: SmashUpCore,
     cardDefId: string,
 ): number[] {
+    return getResponseWindowPlayableBaseIndicesForCard(state, cardDefId, 'meFirst');
+}
+
+export function getResponseWindowPlayableBaseIndicesForCard(
+    state: SmashUpCore,
+    cardDefId: string,
+    windowType: ResponseWindowType,
+): number[] {
     const eligibleBaseIndices = getScoringEligibleBaseIndices(state);
     if (eligibleBaseIndices.length === 0) return [];
 
-    const minionDef = getMinionDef(cardDefId);
-    if (minionDef?.beforeScoringPlayable) {
+    if (isMinionLikeRespondableInWindow(cardDefId, windowType)) {
+        const minionDef = getMinionDef(cardDefId);
+        const fusionDef = getFusionDef(cardDefId);
+        const limitGroup = minionDef?.specialLimitGroup ?? fusionDef?.minionSpecialLimitGroup;
         return eligibleBaseIndices.filter(baseIndex =>
-            !isSpecialLimitBlockedByGroup(state, minionDef.specialLimitGroup, baseIndex),
-        );
-    }
-
-    const fusionDef = getFusionDef(cardDefId);
-    if (fusionDef?.minionBeforeScoringPlayable) {
-        return eligibleBaseIndices.filter(baseIndex =>
-            !isSpecialLimitBlockedByGroup(state, fusionDef.minionSpecialLimitGroup, baseIndex),
+            !isSpecialLimitBlockedByGroup(state, limitGroup, baseIndex),
         );
     }
 
     const actionDef = getCardDef(cardDefId) as ActionCardDef | FusionCardDef | undefined;
-    if (!actionDef || !isActionLikeRespondableInWindow(actionDef, 'meFirst')) {
+    if (!actionDef || !isActionLikeRespondableInWindow(actionDef, windowType)) {
         return [];
     }
     if (!actionLikeNeedsResponseWindowBase(actionDef)) {
         return [];
     }
 
-    if (isFusionActionDef(actionDef)) {
-        return eligibleBaseIndices.filter(baseIndex =>
-            !isSpecialLimitBlockedByGroup(state, actionDef.actionSpecialLimitGroup, baseIndex),
-        );
+    const limitGroup = getActionLikeResponseWindowLimitGroup(actionDef);
+    return eligibleBaseIndices.filter(baseIndex =>
+        !isSpecialLimitBlockedByGroup(state, limitGroup, baseIndex),
+    );
+}
+
+export function canCardBePlayedInResponseWindow(
+    state: SmashUpCore,
+    card: CardInstance,
+    windowType: ResponseWindowType,
+): boolean {
+    if (isCardMinionLike(card)) {
+        return getResponseWindowPlayableBaseIndicesForCard(state, card.defId, windowType).length > 0;
     }
 
-    return eligibleBaseIndices.filter(baseIndex =>
-        !isSpecialLimitBlockedByGroup(state, actionDef.specialLimitGroup, baseIndex),
-    );
+    if (!isCardActionLike(card)) return false;
+    const actionDef = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
+    if (!actionDef || !isActionLikeRespondableInWindow(actionDef, windowType)) {
+        return false;
+    }
+
+    if (
+        actionLikeNeedsResponseWindowBase(actionDef)
+        && getResponseWindowPlayableBaseIndicesForCard(state, card.defId, windowType).length === 0
+    ) {
+        return false;
+    }
+
+    if (normalizePodDefId(card.defId) === 'ninja_hidden_ninja') {
+        const player = state.players[card.owner];
+        if (!player?.hand.some(handCard => handCard.uid !== card.uid && isCardMinionLike(handCard))) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 /**

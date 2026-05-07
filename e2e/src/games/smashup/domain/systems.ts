@@ -32,6 +32,7 @@ import { resolveLiveBaseIndex } from './utils';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import { getSmashUpReactionSession, resolveSmashUpReactionChoice } from './reactionSession';
 import {
+    appendScoringFrameDeferredPayload,
     getDeferredPostScoringEvents,
     getScoringSession,
     mergeDeferredPostScoringCompatibility,
@@ -535,8 +536,9 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 // 补发延迟的 BASE_CLEARED/BASE_REPLACED 事件
                                 // afterScoring 基地能力创建交互时，清除事件被延迟到交互解决后发出，
                                 // 确保 targetType: 'minion' 的场上点选交互能看到随从
-                                const ctx = payload.interactionData?.continuationContext as Record<string, unknown> | undefined;
-                                const deferred = ctx?._deferredPostScoringEvents as { type: string; payload: unknown; timestamp: number }[] | undefined;
+                                const deferred = getDeferredPostScoringEvents(newState, payload.interactionData) as
+                                    | { type: string; payload: unknown; timestamp: number }[]
+                                    | undefined;
                                 const scoringSession = getScoringSession(newState);
                                 const scoringSessionOwnsDeferredFlush =
                                     !!scoringSession?.currentBaseRef
@@ -546,6 +548,26 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                     if (scoringSessionOwnsDeferredFlush) {
                                         // session-first 计分链会在 scoreBases onPhaseExit 里统一补发 deferred，
                                         // 这里保留 continuationContext 传递，但不能再兼容性补发一次。
+                                        const pendingActions = newState.core.pendingPostScoringActions ?? [];
+                                        if (pendingActions.length > 0) {
+                                            newState = appendScoringFrameDeferredPayload(newState, {
+                                                deferredActions: pendingActions,
+                                            });
+                                            newState = {
+                                                ...newState,
+                                                core: {
+                                                    ...newState.core,
+                                                    pendingPostScoringActions: undefined,
+                                                },
+                                            };
+                                        }
+                                        newState = {
+                                            ...newState,
+                                            sys: {
+                                                ...newState.sys,
+                                                [pendingScoreBasesInteractionReduceFlag]: true,
+                                            } as typeof newState.sys,
+                                        };
                                         continue;
                                     }
                                     // 【关键修复】无论是否有后续交互，都立即设置 flowHalted=true

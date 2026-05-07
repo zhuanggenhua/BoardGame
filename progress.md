@@ -1244,3 +1244,129 @@
   - 其前一个 Android 壳基线 `7c013bce` 的 `MainActivity.java` 没有 `registerPlugin(AppUpdatePlugin.class)`；
   - 首个确认带插件的正式包是 `0.5.1.apk`，其稳定发布地址 `official/native-app-updates/android/stable/packages/0.5.1.apk` 当前仍可访问，且包内 `classes.dex` 能直接检出 `AppUpdatePlugin`；
   - 因此线上这批 `"AppUpdate" plugin is not implemented on android` 的用户，跑的缺插件正式壳就是 `0.5.0`（或更早），不是某个新 OTA bundle 本身缺插件。
+
+## 2026-05-05 SmashUp 并列计分修复
+- 根因确认：`buildBaseRankings()` 把并列玩家继续按当前高位名次发分，和当前产品口径不一致。
+- 修复内容：
+  - `src/games/smashup/domain/index.ts`：并列组改为按该组占据的最低名次发分。
+  - `src/games/smashup/ai.ts`：同步修正 AI 的 VP 估值槽位计算。
+  - `src/games/smashup/__tests__/baseScoring.test.ts`：新增并列第一 / 并列第二两条回归。
+- 验证结果：
+  - `baseScoring.test.ts`：19 passed
+  - `npm run typecheck`：passed
+
+## 2026-05-05 23:35 人类反馈优先续跑
+- 已把“人类反馈 > 系统自动反馈”回写到 `.windsurf/skills/feedback-closeout/SKILL.md` 和 `task_plan.md`，后续默认先处理 `feedback-modal` 人工单。
+- `69f96a734590ce09779a7205`：
+  - 复核结论未变：并列计分本地已修。
+  - 定向验证通过：`node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --maxWorkers 1 --testNamePattern "scoreOneBase 在并列第一时给并列玩家第二位分|scoreOneBase 在并列第二时给并列玩家第三位分"` -> `2 passed`。
+- `69f9623c4590ce09779a715f`：
+  - 根因确认：`src/games/smashup/domain/extraPlay.ts` 的 `smashup_immediate_extra_minion` 只枚举手牌随从，没有纳入 `getSetAsideTitansPlayableAs(..., 'minion')` 返回的泰坦。
+  - 已修复：`src/.../extraPlay.ts` 与 `e2e/src/.../extraPlay.ts` 同步支持 `setaside` 泰坦候选、基地校验走 `ACTIVATE_SPECIAL`、执行也走 `ACTIVATE_SPECIAL`。
+  - 已补回归：`src/games/smashup/__tests__/afterScoring-rescoring.test.ts` 与镜像 `e2e/src/games/smashup/__tests__/afterScoring-rescoring.test.ts` 新增“额外随从可打 setaside 泰坦”用例。
+  - 已验证：
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterScoring-rescoring.test.ts --configLoader native --maxWorkers 1 --testNamePattern "smashup_immediate_extra_minion 应允许选择可作为随从打出的 setaside 泰坦"` -> `1 passed`
+    - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/afterScoring-rescoring.test.ts --configLoader native --maxWorkers 1` -> `8 passed`
+- 本地状态板补记暂缓：
+  - 这 3 条新人工反馈 ID 当前不在 `temp/feedback-closeout/status-board.json` 的旧 summary 快照里。
+  - 在拿到最新 human summary 或明确远端写授权前，先保持规划文档与代码证据一致，不伪造旧板子条目。
+- `69f961ca4590ce09779a715a`：
+  - 已确认根因不在 server `join` / `playerView`，而在 `SmashUpBoard` 只支持“自己 / 第一个对手”的二元视角。
+  - 已把 `src/games/smashup/Board.tsx` 与 `e2e/src/games/smashup/Board.tsx` 改为 `viewTargetPlayerId` 模型，支持点谁看谁。
+  - 已补 E2E 收口截图链：
+    - `03a-mobile-opponent-view-entry`
+    - `03b-mobile-opponent-view-switch-player-2`
+    - `03c-mobile-opponent-view-return-self`
+  - 已复跑通过：`npm run test:e2e:ci:file -- e2e/smashup/smashup-4p-layout-test.e2e.ts "移动端横屏点击不同对手分数应能切换对应玩家视角并退出"` -> `1 passed`
+- 本轮新增本地收口证据：
+  - `evidence/smashup/smashup-feedback-69f96a734590ce09779a7205-tied-base-scoring-local-closeout-2026-05-05.md`
+  - `evidence/smashup/smashup-feedback-69f9623c4590ce09779a715f-extra-minion-titan-local-closeout-2026-05-05.md`
+  - `evidence/smashup/smashup-feedback-69f961ca4590ce09779a715a-multi-opponent-view-local-closeout-2026-05-05.md`
+- 下一步：如需正式回写线上反馈状态，先同步最新 human summary，再把这 3 条反馈纳入 `status-board.json` 或直接走远端写回。
+
+## 2026-05-06 07:42 SmashUp 三条人工反馈状态回写
+- 用户本轮明确要求“状态回写”。
+- 先核对真实写入口：
+  - `GET https://api.easyboardgame.top/feedback/open?status=open&page=1&limit=10` 返回 `404`
+  - 因此本轮未走 HTTP 开放反馈接口，而是按允许的 fallback 走生产 Mongo 直连。
+- 生产 Mongo 回写前核对：
+  - `69f961ca4590ce09779a715a` / `69f9623c4590ce09779a715f` / `69f96a734590ce09779a7205` 在 `feedbacks` 集合中均存在，且 `status=open`
+  - 结果已落盘：`temp/feedback-closeout/query-feedback-69f96a-69f9623c-69f961ca-before-20260506.raw.txt`
+- 本地状态板同步：
+  - 已将这 3 条补入 `temp/feedback-closeout/status-board.json`
+  - 已挂接各自 `evidence` / `verification` / 必要截图
+  - `node scripts/verify/verify-feedback-status.mjs temp/feedback-closeout/status-board.json` -> `ok`
+- 生产 Mongo 正式回写：
+  - 目标脚本：`temp/feedback-closeout/update-feedback-status-20260506-smashup-human-three-to-resolved.js`
+  - 首次真实写入结果：`matched=3, modified=3`
+  - 后续为补落盘做过一次幂等重放，因状态已是 `resolved`，返回 `0/0`，不影响首轮真实写入结论
+- 回写后复核：
+  - 三条目标反馈当前都已是 `resolved`
+  - 快照：`temp/feedback-closeout/query-feedback-69f96a-69f9623c-69f961ca-after-20260506.raw.txt`
+  - 当前线上人类 `open/in_progress` 仍剩 `2` 条：
+    - `69fa23e04590ce09779a7c52`
+    - `69fa0bd74590ce09779a7bd6`
+  - 快照：`temp/feedback-closeout/query-human-open-inprogress-after-writeback-20260506.raw.txt`
+- 新增总证据：
+  - `evidence/feedback-closeout/smashup-human-three-writeback-2026-05-06.md`
+
+## 2026-05-05 22:53 DiceThrone watchdog stale candidate 再校验
+- 已在 `src/engine/transport/server.ts` 为 `runOnlineAiRecoverySequence()` 增加 server 侧 candidate 再校验。
+- 新门禁：如果 watchdog 已锁定的 `active-turn-legal-only` 现场，在真正失败上报前已经切成 `human` 的 `afterRollConfirmed` 响应窗，则直接丢弃旧 candidate，不再继续写 `force-end-turn-failed active-turn-legal-only:...legal_action_unavailable`。
+- 已补回归：`src/engine/transport/__tests__/server.test.ts`
+  - `online AI watchdog 在 legal-only 恢复前若现场切到 human afterRollConfirmed，应丢弃旧 candidate 而不是继续上报失败`
+- 已复跑通过：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --maxWorkers 1 --testNamePattern "online AI watchdog 在 human 当前响应窗口中不应误判为 AI 卡死|online AI watchdog 在 legal-only 恢复前若现场切到 human afterRollConfirmed，应丢弃旧 candidate 而不是继续上报失败|DiceThrone afterRollConfirmed 当前响应者为 human 时，不应回退成 active-turn-legal-only"`
+- 当前状态：
+  - 本地 transport 修复与回归已完成；
+  - 尚未执行生产热补 / 镜像更新 / 远端状态回写。
+
+## 2026-05-06 08:10 SmashUp 最后两条人工反馈状态回写完成
+- 已读取生产前快照：
+  - `temp/feedback-closeout/query-feedback-69fa23e0-69fa0bd7-before-writeback-20260506.raw.txt`
+  - 结果确认两条都仍为 `open`
+- 已确认判定口径：
+  - `69fa23e04590ce09779a7c52`：已修未回写，目标状态 `resolved`
+  - `69fa0bd74590ce09779a7bd6`：非 bug / 规则符合，目标状态 `closed`
+- 已核对生产回写回显：
+  - `temp/feedback-closeout/update-feedback-status-20260506-smashup-human-remaining-two.raw.txt`
+  - 两条都为 `matched=1 / modified=1`
+- 已核对回写后快照：
+  - `temp/feedback-closeout/query-feedback-69fa23e0-69fa0bd7-after-writeback-20260506.raw.txt`
+  - 当前状态分别为 `resolved` / `closed`
+- 已复核最终人类未收口列表：
+  - `temp/feedback-closeout/query-human-open-inprogress-after-final-writeback-20260506.raw.txt`
+  - 查询结果 `count=0`
+- 已确认本地状态板未分叉：
+  - `temp/feedback-closeout/status-board.json` 已包含这两条，状态分别为 `resolved` / `closed`
+  - `node scripts/verify/verify-feedback-status.mjs temp/feedback-closeout/status-board.json` -> `feedback-status: ok`
+- 已新增总证据：
+  - `evidence/feedback-closeout/smashup-human-final-two-writeback-2026-05-06.md`
+
+## 2026-05-07 00:20 SmashUp 宗教圆环点击吞没修复
+- 新人工反馈 `69faac614590ce09779a7d8f` 当前原文为：`宗教圆环发不了效果`。
+- 已结合线上快照、用户截图和本地新 E2E 收敛出真实根因：
+  - 不是 `USE_TALENT` / same-name quota 领域规则坏掉；
+  - 而是 `BaseZone` 上基地 ongoing 放大镜的透明包裹层覆盖整张卡面，拦截了对《宗教圆环》本体的点击。
+- 已做最小修复：
+  - `src/games/smashup/ui/BaseZone.tsx`
+  - `e2e/src/games/smashup/ui/BaseZone.tsx`
+  - 桌面端透明包裹层新增 `pointer-events-none`，避免吞掉 card-body click。
+- 已新增最小复现场景：
+  - `e2e/smashup/smashup-base-minion-selection.e2e.ts`
+  - 覆盖真实链路：点击《宗教圆环》→ 出现已用态 + same-name quota → 点击手牌《本地人》→ 点击巫师学院落场成功。
+- 已跑通验证：
+  - `npm run test:e2e:ci:file -- e2e/smashup/smashup-base-minion-selection.e2e.ts "反馈复现：宗教圆环发动后，应允许把手牌中的同名本地人打到该基地"`
+- 已补证据：
+  - `evidence/smashup/smashup-feedback-69faac614590ce09779a7d8f-sacred-circle-click-fix-e2e-2026-05-07.md`
+- 当前状态：
+  - 本地修复与 E2E 收口已完成；
+  - 远端状态回写尚未执行。
+
+## 2026-05-07 00:24 反馈回写口径更新
+- 已按用户最新要求回写项目内规范：
+  - `.windsurf/skills/feedback-closeout/SKILL.md`
+- 新强制口径：
+  - 只要某条反馈已经满足“修复 + 验证 + 证据”，默认必须立刻执行远端正式状态回写；
+  - 不再把“先停在本地 resolved，等后面再统一回写”当成默认流程；
+  - 若写入口不可用或用户明确要求暂缓，才允许保留中间态，并且必须显式说明阻塞。

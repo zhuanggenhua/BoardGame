@@ -3,11 +3,13 @@ import type {
     AbilityTag,
     ActionCardDef,
     CardDef,
+    FusionCardDef,
     MinionCardDef,
     SmashUpCore,
 } from './domain/types';
 import { getCardDefActivatableAbilities } from './domain/activationMetadata';
 import { getCardDef, getCardDefsByFaction } from './data/cards';
+import { getActionLikeResponseWindowTiming } from './domain/utils';
 
 type SmashUpState = MatchState<SmashUpCore>;
 
@@ -92,13 +94,20 @@ function collectFeatureCountsFromCardDef(def: CardDef, playKind?: SmashUpPlayKin
         if (power >= 4) counts.highPower += 1;
     };
 
-    const applyActionFace = (
-        actionDef: Pick<ActionCardDef, 'subtype' | 'abilityTags' | 'specialTiming' | 'responseWindowTiming'>,
-    ) => {
-        if (hasTag(actionDef.abilityTags, 'extra')) counts.extraAction += 1;
-        if (actionDef.subtype === 'ongoing' || hasTag(actionDef.abilityTags, 'ongoing')) counts.ongoing += 1;
-        if (actionDef.subtype === 'special') counts.scoringWindow += 1;
-        if (actionDef.specialTiming || actionDef.responseWindowTiming) counts.scoringWindow += 1;
+    const applyActionFace = (options: {
+        abilityTags: AbilityTag[] | undefined;
+        subtype: ActionCardDef['subtype'];
+        responseTiming: ReturnType<typeof getActionLikeResponseWindowTiming>;
+        activations: ReturnType<typeof getCardDefActivatableAbilities>;
+    }) => {
+        if (hasTag(options.abilityTags, 'extra')) counts.extraAction += 1;
+        if (options.subtype === 'ongoing' || hasTag(options.abilityTags, 'ongoing')) counts.ongoing += 1;
+        if (
+            options.responseTiming
+            || options.activations.some(activation => activation.kind === 'special')
+        ) {
+            counts.scoringWindow += 1;
+        }
     };
 
     if (def.type === 'minion') {
@@ -107,7 +116,12 @@ function collectFeatureCountsFromCardDef(def: CardDef, playKind?: SmashUpPlayKin
     }
 
     if (def.type === 'action') {
-        applyActionFace(def);
+        applyActionFace({
+            abilityTags: def.abilityTags,
+            subtype: def.subtype,
+            responseTiming: getActionLikeResponseWindowTiming(def),
+            activations: getCardDefActivatableAbilities(def),
+        });
         return counts;
     }
 
@@ -117,10 +131,10 @@ function collectFeatureCountsFromCardDef(def: CardDef, playKind?: SmashUpPlayKin
         }
         if (!playKind || playKind === 'action') {
             applyActionFace({
-                subtype: def.actionSubtype,
                 abilityTags: def.actionAbilityTags,
-                specialTiming: def.actionSpecialTiming,
-                responseWindowTiming: def.actionResponseWindowTiming,
+                subtype: def.actionSubtype,
+                responseTiming: getActionLikeResponseWindowTiming(def),
+                activations: getCardDefActivatableAbilities(def, { face: 'action' }),
             });
         }
         return counts;

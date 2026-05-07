@@ -78,7 +78,6 @@ export const ANCIENT_EGYPTIANS_POD_ACTIONS: ActionCardDef[] = [
         name: '蝗灾',
         nameEn: 'Plague of Locusts',
         faction: 'ancient_egyptians_pod',
-        abilityTags: ['special'],
         playNeedsBase: true,
         responseWindowTiming: 'beforeScoring',
         responseWindowNeedsBase: true,

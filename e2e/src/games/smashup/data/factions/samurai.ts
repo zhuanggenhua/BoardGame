@@ -68,7 +68,6 @@ export const SAMURAI_ACTIONS: ActionCardDef[] = [
         name: '战斗之心',
         nameEn: 'Heart of the Battle',
         faction: SMASHUP_FACTION_IDS.SAMURAI,
-        abilityTags: ['special'],
         specialTiming: 'beforeScoring',
         specialNeedsBase: true,
         count: 1,

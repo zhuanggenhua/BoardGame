@@ -126,7 +126,6 @@ export const PRINCESSES_ACTIONS: ActionCardDef[] = [
         name: '总有一天我的王子会来的',
         nameEn: 'Some Day My Prince Will Come',
         faction: SMASHUP_FACTION_IDS.PRINCESSES,
-        abilityTags: ['special'],
         specialTiming: 'beforeScoring',
         specialNeedsBase: true,
         count: 1,

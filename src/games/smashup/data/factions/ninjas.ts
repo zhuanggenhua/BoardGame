@@ -45,7 +45,6 @@ export const NINJA_MINIONS: MinionCardDef[] = [
         nameEn: 'Ninja Acolyte',
         faction: 'ninjas',
         power: 2,
-        abilityTags: ['special'],
         activatableAbilities: [
             // 原版为场上手动发动的 special，不是计分前/后响应窗能力。
             { kind: 'special', zone: 'board', window: 'playCards' },
@@ -100,6 +99,7 @@ export const NINJA_ACTIONS: ActionCardDef[] = [
         faction: 'ninjas',
         // 注意：便衣忍者在 Me First! 窗口中打出，不是点击场上卡牌激活
         // 因此不应该有 abilityTags: ['special']
+        specialTiming: 'beforeScoring',
         specialNeedsBase: true,
         specialLimitGroup: 'ninja_hidden_ninja',
         count: 1,

@@ -135,7 +135,6 @@ export const WORLD_CHAMPS_ACTIONS: ActionCardDef[] = [
         name: '嗯？',
         nameEn: 'Eh?',
         faction: SMASHUP_FACTION_IDS.WORLD_CHAMPS,
-        abilityTags: ['special'],
         activatableAbilities: [{ kind: 'special', zone: 'discard', window: 'playCards' }],
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS7, index: 39 },

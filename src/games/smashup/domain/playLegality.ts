@@ -3,9 +3,13 @@ import type { ActionCardDef, FusionCardDef, PlayConstraint, SmashUpCore } from '
 import { getCardDef, getFusionDef, getMinionDef, getMinionLikePower } from '../data/cards';
 import { hasPlayerTurnRestriction, isOperationRestricted } from './ongoingEffects';
 import { getPlayerEffectivePowerOnBase } from './ongoingModifiers';
-import { mustUseBaseLimitedMinionQuota } from './utils';
-import { isCardMinionLike } from './utils';
-import { actionLikeNeedsPlayBase, actionLikeNeedsPlayMinion } from './utils';
+import {
+    actionLikeNeedsPlayBase,
+    actionLikeNeedsPlayMinion,
+    getActionLikeResponseWindowTiming,
+    isCardMinionLike,
+    mustUseBaseLimitedMinionQuota,
+} from './utils';
 
 function isCurrentTurnPlayer(core: SmashUpCore, playerId: string): boolean {
     return core.turnOrder[core.currentPlayerIndex] === playerId;
@@ -154,13 +158,14 @@ export function validateActionPlaySemantics(
         ? (def as FusionCardDef).actionSubtype
         : (def as ActionCardDef).subtype;
     if (subtype === 'special') {
-        const cardTiming = (def as any).type === 'fusion'
-            ? ((def as FusionCardDef).actionSpecialTiming ?? 'beforeScoring')
-            : ((def as ActionCardDef).specialTiming ?? 'beforeScoring');
+        const cardTiming = getActionLikeResponseWindowTiming(def);
         if (cardTiming === 'beforeScoring') {
             return { valid: false, error: '该特殊行动卡只能在基地计分前的响应窗口中打出' };
         }
-        return { valid: false, error: '该特殊行动卡只能在基地计分后的响应窗口中打出' };
+        if (cardTiming === 'afterScoring') {
+            return { valid: false, error: '该特殊行动卡只能在基地计分后的响应窗口中打出' };
+        }
+        return { valid: false, error: '该特殊行动卡不能作为普通行动主动打出' };
     }
 
     const targetBaseIndex = params.targetBaseIndex;

@@ -188,7 +188,7 @@ export interface TitanCardDef {
 }
 
 /** Special 技能触发时机 */
-export type SpecialTiming = 'beforeScoring' | 'afterScoring';
+export type SpecialTiming = 'beforeScoring' | 'afterScoring' | 'triggered';
 
 /** 行动卡定义 */
 export interface ActionCardDef {
@@ -223,9 +223,10 @@ export interface ActionCardDef {
     /** 显式声明可手动发动的能力入口。 */
     activatableAbilities?: SmashUpActivatableAbility[];
     /**
-     * special 技能的触发时机（仅对 subtype='special' 有效）：
-     * - 'beforeScoring': 在 Me First! 窗口打出时立即执行（默认）
+     * special 技能的显式触发时机（仅对 subtype='special' 有效）：
+     * - 'beforeScoring': 在 Me First! 窗口打出时立即执行
      * - 'afterScoring': 生成 ARMED 事件，延迟到基地计分后执行
+     * - 'triggered': 不能进入通用计分响应窗口，只允许由特定 trigger / provider 驱动
      */
     specialTiming?: SpecialTiming;
     /**

@@ -60,7 +60,7 @@ import type { PlayerId } from '../../../engine/types';
 import { SU_COMMANDS, SU_EVENTS, STARTING_HAND_SIZE } from './types';
 import { getMinionDef, getMinionLikePower, getCardDef, getBaseDefIdsForFactions, getFusionDef } from '../data/cards';
 import type { ActionCardDef, FusionCardDef } from './types';
-import { buildDeck, drawCards, isCardMinionLike } from './utils';
+import { buildDeck, drawCards, getActionLikeResponseWindowTiming, isCardMinionLike } from './utils';
 import { autoMulligan } from '../../../engine/primitives/mulligan';
 import { maybeQueueStartingHandMulliganPrompt } from './mulliganHandlers';
 import { resolveOnPlay, resolveSpecial, resolveTalent, resolveOnDestroy, resolveOngoingActivation } from './abilityRegistry';
@@ -188,8 +188,12 @@ function executeCommand(
             events.push(playedEvt);
 
             // meFirst 响应窗口中打出 beforeScoringPlayable 随从时，记录 specialLimitGroup 使用
-            if (reactionWindow?.windowType === 'meFirst' && minionDef?.beforeScoringPlayable) {
-                const limitGroup = minionDef.specialLimitGroup;
+            const fusionDef = getFusionDef(card.defId);
+            if (
+                reactionWindow?.windowType === 'meFirst'
+                && (minionDef?.beforeScoringPlayable || fusionDef?.minionBeforeScoringPlayable)
+            ) {
+                const limitGroup = minionDef?.specialLimitGroup ?? fusionDef?.minionSpecialLimitGroup;
                 if (limitGroup) {
                     events.push({
                         type: SU_EVENTS.SPECIAL_LIMIT_USED,
@@ -297,11 +301,13 @@ function executeCommand(
                 const isSpecial = subtype === 'special';
                 
                 if (isSpecial) {
-                    // Special 技能：根据 specialTiming 决定执行时机
-                    const specialTiming = (def as any)?.type === 'fusion'
-                        ? ((def as FusionCardDef).actionSpecialTiming ?? 'beforeScoring')
-                        : ((def as ActionCardDef | undefined)?.specialTiming ?? 'beforeScoring'); // 默认 beforeScoring
-                    
+                    if (!def) {
+                        throw new Error(`[SmashUp] ${card.defId} 缺少 action/fusion 定义，无法执行 special 打牌`);
+                    }
+                    const specialTiming = getActionLikeResponseWindowTiming(def as ActionCardDef | FusionCardDef);
+                    if (!specialTiming) {
+                        throw new Error(`[SmashUp] ${card.defId} 作为手牌 special 打出时缺少可执行的显式 response window timing`);
+                    }
                     if (specialTiming === 'beforeScoring') {
                         // beforeScoring：立即执行（当前行为）
                         runActionExecutor(resolveSpecial(card.defId) ?? resolveOnPlay(card.defId), targetBaseIndex);

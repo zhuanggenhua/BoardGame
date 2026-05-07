@@ -110,7 +110,7 @@ export const ELDER_THINGS_ACTIONS: ActionCardDef[] = [
         name: '力量的代价',
         nameEn: 'The Price of Power',
         faction: 'elder_things',
-        abilityTags: ['special'],
+        specialTiming: 'beforeScoring',
         specialNeedsBase: true,
         count: 1,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS2, index: 44 },

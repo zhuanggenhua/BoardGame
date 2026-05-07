@@ -45,6 +45,33 @@
   - `modified=2`
   - `updatedAt=2026-05-04T05:50:00.000Z`
 
+## Addendum（2026-05-06）：SmashUp 最后两条人工反馈已按正确口径回写，当前人类未收口为 0
+
+- 本轮继续沿用 `人类反馈 > 系统自动反馈`，没有再把最后两条人工单让位给 watchdog 系统单。
+- `69fa23e04590ce09779a7c52`（`“嗯？”可以重复使用。`）的结论是：
+  - 不是新 bug，而是已修未回写。
+  - fresh 证据链已覆盖：
+    - `src/games/smashup/__tests__/newFactionAbilities.test.ts` 中 `world_champs_eh`
+    - 真实入口 E2E：`e2e/smashup/smashup-robot-hoverbot-new.e2e.ts`
+    - 三张收口截图：`eh-discard-panel-available` / `eh-minion-prompt-visible` / `eh-resolved-returned-to-hand`
+  - 因此正式回写口径是 `resolved`。
+- `69fa0bd74590ce09779a7bd6`（`尸体商店 + 雄蜂`）的结论是：
+  - 不是实现 bug，而是规则理解偏差。
+  - “防止被消灭”不等于“已经被消灭”，不会满足依赖“消灭”获得标记的语义。
+  - 因此正式回写口径是 `closed`，不是 `resolved`。
+- 生产回写回显：
+  - `temp/feedback-closeout/update-feedback-status-20260506-smashup-human-remaining-two.raw.txt`
+  - `69fa23e04590ce09779a7c52`：`matched=1 / modified=1 -> resolved`
+  - `69fa0bd74590ce09779a7bd6`：`matched=1 / modified=1 -> closed`
+- 回写后生产复核：
+  - `temp/feedback-closeout/query-feedback-69fa23e0-69fa0bd7-after-writeback-20260506.raw.txt`
+  - `temp/feedback-closeout/query-human-open-inprogress-after-final-writeback-20260506.raw.txt`
+  - 当前 `reporterType=user && status in [open,in_progress]` 的查询结果为：
+    - `count = 0`
+    - `docs = []`
+- 本轮正式证据文档：
+  - `evidence/feedback-closeout/smashup-human-final-two-writeback-2026-05-06.md`
+
 ## Addendum（2026-05-04）：当前线上 open 反馈已清零
 
 - 最终生产盘面：
@@ -1612,3 +1639,95 @@
 - 结论收敛：
   - **首个确认带 `AppUpdatePlugin` 的正式原生包是 `0.5.1.apk`。**
   - 因此线上这类 `"AppUpdate" plugin is not implemented on android` 反馈，对应的缺插件正式壳就是 **`0.5.0` 正式 Android 包（以及更早壳）**，不是 `index-D9GB3chM.js` 这类 OTA/H5 hash 对应的 bundle。
+
+## 2026-05-05 SmashUp 并列计分口径修复
+- 真实业务仓库确认是 `D:/gongzuo/webgame/BoardGame`，不是 AstrBot 仓库；来源是 `tools/codex_cli_bridge.py` 与 `data/config/astrbot_plugin_hapi_connector_config.json` 的 `auto_forward_codex_bridge_cwd`。
+- `大杀四方战斗力相等的情况下应该是取第二位分` 的根因定位到：
+  - `src/games/smashup/domain/index.ts` -> `buildBaseRankings()`
+  - 旧逻辑把并列玩家保留在当前高位 `rankSlot`，所以并列第一仍拿第一位分，并列第二仍拿第二位分。
+- 修复后口径：并列组按其占据的最低名次发分。
+  - 两人并列第一 -> 都拿第二位分
+  - 两人并列第二 -> 都拿第三位分
+- 为避免 AI 继续按旧口径判断基地收益，同步修了 `src/games/smashup/ai.ts` 的 `estimateBaseVpAward()`。
+- 回归：`src/games/smashup/__tests__/baseScoring.test.ts` 新增 2 条并列计分测试，复跑通过；`npm run typecheck` 通过。
+
+## 2026-05-05 DiceThrone watchdog：server 侧 stale candidate 才是剩余误报入口
+- 当前生产新刷的 `dicethrone|online-ai-watchdog` 现场虽然快照里已经是：
+  - `phase=offensiveRoll/defensiveRoll`
+  - `responseWindow.windowType=afterRollConfirmed`
+  - `responseWindow.responderQueue=['0']`
+  - `legalActions.total=0`
+  - 但本地纯函数 `resolveForceEndTurnForStalledAi(...)` 其实早已覆盖“当前 responder 是 human 时返回 null”。
+- 新确认的剩余缺口不在纯函数，而在 `src/engine/transport/server.ts` 的 watchdog 序列：
+  - server 拿到旧的 `active-turn-legal-only` candidate 后，若现场在恢复尝试期间切成了 human 响应窗，旧实现仍可能沿用旧 candidate 继续走失败上报；
+  - 于是会出现“反馈 reason 还是 `active-turn-legal-only:follow-up-advance:legal_action_unavailable`，但 `stateSnapshot` 看起来已经是 human `afterRollConfirmed` 窗口”的错位现象。
+- 本轮最小修复：
+  - 在 `runOnlineAiRecoverySequence()` 里新增 candidate 再校验；
+  - 任何失败上报前，都会重新跑一次 `resolveOnlineAiRecoveryCandidate(...)`；
+  - 若现场已经不再匹配原 candidate（特别是已变成 human 响应窗或已无 candidate），直接删除 tracker 并静默退出，不再写系统单。
+- 新增回归直接覆盖这类错位现场：
+  - `online AI watchdog 在 legal-only 恢复前若现场切到 human afterRollConfirmed，应丢弃旧 candidate 而不是继续上报失败`
+- 已验证：
+  - 上述新回归 + 既有两条 human response window 用例一并通过，共 `3 passed`。
+- 结论：
+  - 这次更像“server 侧旧 candidate 过期未失效”，不是 `onlineAiRecovery.ts` 再次漏判 human responder。
+  - 目前仍停在本地修复验证；若要真正止住线上这批 watchdog，需要后续把这一个 transport 补丁带到生产。
+
+## 2026-05-05 SmashUp 人类反馈优先续跑
+- 当前人工主线是 3 条 `smashup|feedback-modal`：
+  - `69f96a734590ce09779a7205`：并列计分
+  - `69f9623c4590ce09779a715f`：熊的泰坦不能用额外随从打出
+  - `69f961ca4590ce09779a715a`：多人观战有 bug 看不了其他人
+- `69f96a...`：
+  - 已确认属于“代码已修、状态未回写”而非新根因；`buildBaseRankings()` 与 AI VP 估值都已按新产品口径修正。
+- `69f9623c...`：
+  - 共享根因不是熊派系专属能力，而是 `smashup_immediate_extra_minion` 的候选集漏掉了 `playAsKinds=['minion']` 的 `setaside` 泰坦。
+  - 最小正确修复不是给 `bear_cavalry_major_ursa` 写特判，而是让共享 `extraPlay` 逻辑同时支持：
+    - 候选枚举：`player.hand` 随从 + `getSetAsideTitansPlayableAs(..., 'minion')`
+    - 基地校验：手牌随从走 `PLAY_MINION`；泰坦走 `ACTIVATE_SPECIAL`
+    - 执行：手牌随从走 `PLAY_MINION`；泰坦走 `ACTIVATE_SPECIAL`
+  - 新回归已经证明：额外随从 prompt 能看到 `t-ursa`，选中后会进入基地选择并最终产出 `SU_EVENTS.TITAN_PLAYED`。
+- 本地状态板现状：
+  - `temp/feedback-closeout/status-board.json` 仍是旧 `remote-human-unresolved-20260421-163730.json` 派生板，当前 3 条人工单 ID 不在其中。
+  - 因此现在不能用 `update-local-feedback-board.mjs` 直接补状态，只能先在规划文档里登记最新事实，待拿到最新 human summary 后再正式 sync。
+- `69f961ca...`：
+  - 真实根因不是 spectator 加房链路，而是 `src/games/smashup/Board.tsx` 旧实现把“对手视角”建模成 `self/opponent` 二元状态，并固定取 `coreTurnOrder` 里的第一个非自己玩家。
+  - 这导致四人局/观战时点击第 2、3 个玩家分数，也只能看到第一个对手的公开牌区。
+  - 当前已改成 `viewTargetPlayerId` 直指被点击玩家；`displayedDeckPlayerId`、`HandArea`、`DeckDiscardZone`、返回按钮和 touch 入口都跟着切到统一模型。
+  - 真实 E2E 已证明：
+    - 点 P2 后能进入 `对手视角`，公开牌区显示 `牌库 3 / 弃牌 (1)`；
+    - 再点 P3 后公开牌区切成 `牌库 5 / 弃牌 (2)`，不是仍停在第一个对手；
+    - 返回后横幅消失，自己的手牌恢复，公开区回到 `牌库 0 / 弃牌 (0)`。
+- 本轮已补 3 份本地 closeout evidence，后续可直接作为远端状态回写依据：
+  - `evidence/smashup/smashup-feedback-69f96a734590ce09779a7205-tied-base-scoring-local-closeout-2026-05-05.md`
+  - `evidence/smashup/smashup-feedback-69f9623c4590ce09779a715f-extra-minion-titan-local-closeout-2026-05-05.md`
+  - `evidence/smashup/smashup-feedback-69f961ca4590ce09779a715a-multi-opponent-view-local-closeout-2026-05-05.md`
+
+## 2026-05-06 SmashUp 三条人工反馈状态回写
+- 当前开放反馈 HTTP 路径不能作为正式写入口：
+  - `GET https://api.easyboardgame.top/feedback/open?status=open&page=1&limit=10` 直接返回 `404`
+  - 因此本轮正式回写仍以生产 `feedbacks` 集合为准，不冒充走了 HTTP 接口。
+- 生产 `feedbacks` 直连核对结果：
+  - `69f96a734590ce09779a7205` / `69f9623c4590ce09779a715f` / `69f961ca4590ce09779a715a` 回写前都处于 `open`
+  - 正式写入后都处于 `resolved`
+  - 主证据链是回写前后两份生产快照：
+    - `temp/feedback-closeout/query-feedback-69f96a-69f9623c-69f961ca-before-20260506.raw.txt`
+    - `temp/feedback-closeout/query-feedback-69f96a-69f9623c-69f961ca-after-20260506.raw.txt`
+- 本地状态板这次不再停在“老 summary 缺 ID”的状态：
+  - 已把 3 条缺失人工反馈补入 `temp/feedback-closeout/status-board.json`
+  - 已挂接本地 closeout evidence、验证命令和 E2E 截图
+  - 校验通过：`feedback-status: ok`
+- 当前剩余线上人类未收口项仍有 2 条：
+  - `69fa23e04590ce09779a7c52`
+  - `69fa0bd74590ce09779a7bd6`
+  - 因此本轮只能宣称“指定 3 条已完成正式状态回写”，不能宣称“线上人类反馈已清零”。
+
+## 2026-05-07 00:20 SmashUp `69faac614590ce09779a7d8f` 宗教圆环发不了效果
+
+- 首轮新增 E2E 没有失败在规则校验或 quota 消费，而是失败在点击 `[data-ongoing-uid="oa-sacred-circle"]` 这一步。
+- Playwright 明确回显：一个 `absolute inset-0 z-60` 的透明层拦截了 pointer events，这层来自基地 ongoing 卡放大镜按钮的包裹容器。
+- 因此这条反馈的真实根因是 **UI 透明层吞点击**，不是《宗教圆环》领域能力本身无效。
+- 最小修复方式是：
+  - 桌面端把该包裹层改成 `pointer-events-none`
+  - 保留真正的放大镜按钮在 hover 时 `pointer-events-auto`
+- 修后同一条 E2E 已通过，截图证明《宗教圆环》能进入“已用”态，且手牌《本地人》最终成功落到巫师学院。

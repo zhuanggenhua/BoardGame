@@ -4,7 +4,16 @@
 > 说明：本节是当前正式计划入口；下方旧任务计划仅保留为历史记录，不再作为本轮任务入口。
 
 ## Goal
-> 持续清空当前线上 `open` 反馈，优先恢复生产反馈链路、止住仍在刷新的 watchdog 问题，再逐条修复用户反馈、补验证证据并回写状态。
+> 持续清空当前线上 `open` 反馈，默认以**人类反馈优先**为主线推进；系统自动反馈只作为补现场、补根因或止血支线处理。对仍在持续刷新的 watchdog，可并行止血，但不得再覆盖人类反馈的主优先级。
+
+## Priority Rule
+
+- [x] 已按 2026-05-05 新口径更新本任务优先级
+  - 默认顺序：`人类反馈 > 系统自动反馈`
+  - `watchdog` / `unsatisfiable-interaction-auto-skipped` / `force-end-turn-*` 仅在两类情况下提前处理：
+    - 为某条人类反馈补现场或补根因；
+    - 正在持续制造新故障、刷屏或资源风险，需要并行止血。
+  - 后续汇报必须区分“人类反馈主线”与“系统反馈止血支线”，不得再混成单一优先级口径。
 
 ## Current Snapshot
 
@@ -425,3 +434,80 @@
 - [x] 将 69f86b739ec13b96d71107d4 / 69f86c159ec13b96d7110804 按证据链回写为 resolved，并同步 status-board
 - [x] 锁定 Android `AppUpdate` 缺插件对应的正式原生壳版本：`0.5.0`（以及更早壳）；首个确认带 `AppUpdatePlugin` 的正式包为 `0.5.1.apk`
 - [ ] 视发布窗口决定是否将 Android AppUpdate 缺插件兜底补丁随下一次正式发布带上生产
+
+## Addendum（2026-05-05）：SmashUp 并列计分口径修复
+- 用户给出的当前产品口径：`大杀四方战斗力相等时，应取第二位/更低位分，不取并列名次的高位分`。
+- 已定位根因：`src/games/smashup/domain/index.ts` 的 `buildBaseRankings()` 之前按“并列沿用当前 rankSlot”发分，导致并列第一仍拿第一位分、并列第二仍拿第二位分。
+- 已落修复：改为按并列组占据的最低名次发分（例如并列第一拿第二位分，并列第二拿第三位分）。
+- 一致性补充：同步修正 `src/games/smashup/ai.ts` 的基地 VP 估值逻辑，避免 AI 仍按旧口径评估。
+- 已补测试：`src/games/smashup/__tests__/baseScoring.test.ts`
+  - `scoreOneBase 在并列第一时给并列玩家第二位分`
+  - `scoreOneBase 在并列第二时给并列玩家第三位分`
+- 已验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseScoring.test.ts --configLoader native --maxWorkers 1`
+  - `npm run typecheck`
+
+## Addendum（2026-05-05 23:35 +08）：人类反馈优先续跑
+
+### Goal
+> 按“人类反馈优先”新口径，先收敛 SmashUp 剩余 3 条人工反馈：并列计分、熊泰坦额外随从、多人观战异常。
+
+### Phase
+- [x] 把 `人类反馈 > 系统自动反馈` 回写到 `.windsurf/skills/feedback-closeout/SKILL.md` 与本计划
+- [x] `69f96a734590ce09779a7205` 并列计分：确认本地已修并复跑定向回归
+- [x] `69f9623c4590ce09779a715f` 熊的泰坦不能用额外随从打出：完成共享修复与回归
+- [x] `69f961ca4590ce09779a715a` 多人观战有 bug 看不了其他人：完成多视角修复、真实 E2E 与收口截图
+
+### Notes
+- `69f9623c4590ce09779a715f` 的共享根因已确认不是熊专属逻辑，而是 `smashup_immediate_extra_minion` 候选只枚举手牌随从，没有纳入 `playAsKinds=['minion']` 的 `setaside` 泰坦。
+- `69f961ca4590ce09779a715a` 的真实根因已收敛到 `SmashUpBoard` 的二元视角模型：旧实现只能在“自己 / 第一个对手”之间切换，多人局无法点谁看谁。
+- 本轮新增本地收口证据：
+  - `evidence/smashup/smashup-feedback-69f96a734590ce09779a7205-tied-base-scoring-local-closeout-2026-05-05.md`
+  - `evidence/smashup/smashup-feedback-69f9623c4590ce09779a715f-extra-minion-titan-local-closeout-2026-05-05.md`
+  - `evidence/smashup/smashup-feedback-69f961ca4590ce09779a715a-multi-opponent-view-local-closeout-2026-05-05.md`
+- 本地状态板当前还是旧 `remote-human-unresolved-20260421-163730.json` 衍生快照，这 3 条新人工反馈尚未进入板子；在拿到最新 human summary 或正式远端写入口前，不伪造状态板条目。
+
+## Addendum（2026-05-06 07:42 +08）：SmashUp 三条人工反馈正式状态回写
+
+- [x] 核对 HTTP 反馈接口当前不可作为正式写入口：`GET /feedback/open?...` 返回 `404`
+- [x] 通过生产 `feedbacks` 集合直连确认 3 条目标反馈回写前均为 `open`
+- [x] 已把 `69f96a734590ce09779a7205 / 69f9623c4590ce09779a715f / 69f961ca4590ce09779a715a` 正式回写为 `resolved`
+- [x] 已把本地 `temp/feedback-closeout/status-board.json` 同步补入并校验通过
+- [x] 线上人类未收口反馈最终已清零；最后两条 `69fa23e04590ce09779a7c52 / 69fa0bd74590ce09779a7bd6` 已在后续批次完成正式回写
+
+## Addendum（2026-05-06 08:10 +08）：SmashUp 最后两条人工反馈回写与人类未收口清零
+
+- [x] 继续沿用 `人类反馈 > 系统自动反馈` 口径处理最后两条 `smashup|feedback-modal`
+- [x] `69fa23e04590ce09779a7c52` 已按“已修未回写”回写为 `resolved`
+- [x] `69fa0bd74590ce09779a7bd6` 已按“非 bug / 规则符合”回写为 `closed`
+- [x] 本地 `status-board.json` 已与这两条最终状态对齐，并通过 `feedback-status: ok`
+- [x] 已通过生产 `feedbacks` 复核：`reporterType=user && status in [open,in_progress]` 当前 `count=0`
+
+### Notes
+
+- 正式证据文档：
+  - `evidence/feedback-closeout/smashup-human-final-two-writeback-2026-05-06.md`
+- 关键快照：
+  - `temp/feedback-closeout/query-feedback-69fa23e0-69fa0bd7-before-writeback-20260506.raw.txt`
+  - `temp/feedback-closeout/update-feedback-status-20260506-smashup-human-remaining-two.raw.txt`
+  - `temp/feedback-closeout/query-feedback-69fa23e0-69fa0bd7-after-writeback-20260506.raw.txt`
+  - `temp/feedback-closeout/query-human-open-inprogress-after-final-writeback-20260506.raw.txt`
+
+## Addendum（2026-05-07 00:20 +08）：SmashUp 新人工反馈 `69faac614590ce09779a7d8f` 宗教圆环发不了效果
+
+- [x] 重新核对线上真源，确认当前人类反馈新增 1 条 `smashup|feedback-modal`
+- [x] 锁定目标反馈：`69faac614590ce09779a7d8f`，原文 `宗教圆环发不了效果`
+- [x] 结合生产快照与用户截图定位到前端根因，不是领域校验失败
+  - 新补 E2E 首轮直接卡在点击 `[data-ongoing-uid="oa-sacred-circle"]`
+  - Playwright 明确报错为透明 `absolute inset-0 z-60` 层拦截点击
+- [x] 已做最小修复
+  - `src/games/smashup/ui/BaseZone.tsx`
+  - `e2e/src/games/smashup/ui/BaseZone.tsx`
+  - 桌面端基地 ongoing 放大镜包裹层改为 `pointer-events-none`
+- [x] 已补最小 UI 复现
+  - `e2e/smashup/smashup-base-minion-selection.e2e.ts`
+  - 场景覆盖：点击《宗教圆环》 -> 进入已用态 -> 选择手牌《本地人》 -> 成功打到巫师学院
+- [x] 已完成本地 E2E 收口并补证据
+  - `evidence/smashup/smashup-feedback-69faac614590ce09779a7d8f-sacred-circle-click-fix-e2e-2026-05-07.md`
+- [x] 已按 2026-05-07 新口径补充 workflow：反馈只要完成修复验证，就应立刻回写远端正式状态，不再默认停在本地 resolved
+- [ ] 远端反馈状态回写执行中

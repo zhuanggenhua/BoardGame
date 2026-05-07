@@ -19,6 +19,7 @@ import { hasBaseAbility } from '../../domain/baseAbilities';
 import type { RegisteredBaseTriggerTiming } from '../../domain/baseAbilities';
 import { getRegisteredInteractionHandlerIds } from '../../domain/abilityInteractionHandlers';
 import { getCardDefActivatableAbilities } from '../../domain/activationMetadata';
+import { getActionLikeResponseWindowTiming, isMinionLikeRespondableInWindow } from '../../domain/utils';
 
 // ============================================================================
 // 重新导出测试辅助函数
@@ -419,20 +420,15 @@ function hasSpecialActivationForWindow(def: CardDef | undefined, window: Scoring
 function hasScoringWindowCardMetadata(def: CardDef | undefined, window: ScoringWindow | null): boolean {
     if (!def) return false;
     if (def.type === 'minion') {
-        return window === 'beforeScoring' && def.beforeScoringPlayable === true;
+        return window === 'beforeScoring' && isMinionLikeRespondableInWindow(def.id, 'meFirst');
     }
     if (def.type !== 'action') return false;
-
     const actionDef = def as ActionCardDef;
+    const responseTiming = getActionLikeResponseWindowTiming(actionDef);
     if (!window) {
-        return actionDef.subtype === 'special'
-            || actionDef.specialTiming === 'beforeScoring'
-            || actionDef.specialTiming === 'afterScoring'
-            || actionDef.responseWindowTiming === 'beforeScoring'
-            || actionDef.responseWindowTiming === 'afterScoring';
+        return responseTiming !== undefined;
     }
-
-    return actionDef.specialTiming === window || actionDef.responseWindowTiming === window;
+    return responseTiming === window;
 }
 
 export function hasSpecialSemanticsRegistration(

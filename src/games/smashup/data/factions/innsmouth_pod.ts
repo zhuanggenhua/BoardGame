@@ -44,7 +44,6 @@ export const INNSMOUTH_POD_ACTIONS: ActionCardDef[] = [
         name: '重返深海',
         nameEn: 'Return to the Sea',
         faction: 'innsmouth_pod',
-        abilityTags: ['special'],
         specialTiming: 'afterScoring',
         specialNeedsBase: true,
         count: 1,

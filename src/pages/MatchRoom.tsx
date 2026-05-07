@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useState, useMemo, useRef, useCallback } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { useLocation, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import * as matchApi from '../services/matchApi';
 import { getGameImplementation, resolveGameTutorialManifest } from '../games/registry';
 import {
@@ -101,6 +101,10 @@ const SYSTEM_ERRORS = new Set(['unauthorized', 'match_not_found', 'sync_timeout'
 const ONLINE_TRANSPORT_ERRORS = new Set(['unauthorized', 'match_not_found', 'sync_timeout']);
 // 教程系统正常拦截，不弹 toast（用户跟着教程走时的正常行为）
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
+
+export const isTutorialRoutePath = (pathname: string): boolean => (
+    /^\/play\/[^/]+\/tutorial(?:\/[^/]+)?\/?$/.test(pathname)
+);
 
 type OnlineAiDebugWindow = Window & {
     __BG_ONLINE_AI_DEBUG__?: {
@@ -2012,6 +2016,7 @@ export const MatchRoom = () => {
     usePerformanceMonitor();
     const { playerID: debugPlayerID, setPlayerID } = useDebug();
     const { gameId, matchId, tutorialId } = useParams();
+    const location = useLocation();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { startTutorial, closeTutorial, isActive, currentStep, isBoardMounted } = useTutorial();
@@ -2044,8 +2049,7 @@ export const MatchRoom = () => {
         [gameConfig, gameId],
     );
     const requiresGameNamespace = Boolean(gameConfig);
-    const pathname = typeof window !== 'undefined' ? window.location.pathname : '';
-    const isTutorialRoute = /^\/play\/[^/]+\/tutorial(?:\/[^/]+)?\/?$/.test(pathname);
+    const isTutorialRoute = isTutorialRoutePath(location.pathname);
     useEffect(() => syncGamePageDocumentAttributes(gamePageDataAttributes), [gamePageDataAttributes]);
     useEffect(() => {
         appendMatchLoadTrace({

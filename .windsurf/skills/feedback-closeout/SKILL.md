@@ -55,6 +55,19 @@ description: 用于 BoardGame 项目中批量处理线上真实反馈、开放�
   3. 再执行远端正式状态回写
   4. 最后跑 `scripts/verify/verify-feedback-status.mjs` 做一次本地校验
 
+### 修复后立刻回写（强制，2026-05-07 新增）
+
+- 只要某条反馈已经满足“修复 + 验证 + 证据”三件套，就**不得**继续长时间停留在“本地已修 / status-board 已 resolved / 远端未回写”的中间态。
+- 默认动作应是：
+  1. 立刻补齐本地状态板
+  2. 立刻执行远端正式状态回写
+  3. 立刻复核远端状态与剩余未收口数量
+- 只有在以下场景才允许暂不回写，并且必须在当轮汇报里显式写明阻塞：
+  - 真实写入口不可用；
+  - 用户明确要求“先别回写”；
+  - 结论仍存在证据缺口，尚不能判为 `resolved/closed`。
+- 禁止把“先记到本地，等攒几条一起回写”当作默认流程；除非用户明确要求批量统一回写。
+
 初始化/刷新状态板：
 
 ```bash
@@ -220,7 +233,7 @@ node .windsurf/skills/feedback-closeout/scripts/sync-feedback-status-board.mjs t
 本地状态板和远端正式状态必须一起维护：
 
 1. 先更新 `temp/feedback-closeout/status-board.json`
-2. 再回写远端正式状态
+2. 立刻回写远端正式状态
 3. 如果远端回写失败，必须立刻在本地状态板补 `notes` 说明阻塞原因，必要时改成 `blocked`
 
 使用：

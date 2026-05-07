@@ -29,7 +29,6 @@ export const TRICKSTER_POD_MINIONS: MinionCardDef[] = [
         nameEn: 'Gnome',
         faction: 'tricksters_pod',
         power: 3,
-        abilityTags: ['special'],
         activatableAbilities: [{ kind: 'special', zone: 'board', window: 'beforeScoring' }],
         specialLimitGroup: 'trickster_gnome_pod',
         count: 3,

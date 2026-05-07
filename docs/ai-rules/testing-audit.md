@@ -219,7 +219,7 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 | D9 | 幂等与重入 | 重复触发/撤销重做安全？**后处理循环中的事件去重集合是否从正确的数据源构建？交互解决后函数重入时，函数内所有触发点是否都有防重复机制？** |
 | D10 | 元数据一致 | categories/tags/meta 与实际行为匹配？ |
 | D11 | **Reducer 消耗路径** | 事件写入的资源/额度/状态，在 reducer 消耗时走的分支是否正确？**多种额度来源并存时消耗优先级是否正确？** |
-| D12 | **写入-消耗对称** | 能力/事件写入的字段，在所有消费点（reducer/validate/UI）是否被正确读取和消耗？写入路径和消耗路径的条件分支是否对称？**Reducer 操作范围是否与 payload 声明的范围一致（禁止全量清空 payload 未涉及的数据）？** |
+| D12 | **写入-消耗对称** | 能力/事件写入的字段，在所有消费点（reducer/validate/UI/finalize）是否被正确读取和消耗？写入路径和消耗路径的条件分支是否对称？**Reducer 操作范围是否与 payload 声明的范围一致（禁止全量清空 payload 未涉及的数据）？** 对于跨阶段/可暂停/可恢复/由 finalize 消费的临时事务状态，必须明确唯一权威宿主（session/frame/core/snapshot 只能有一个主宿主）；若存在兼容镜像或 fallback，必须显式定义同步桥，并用回归测试覆盖“写入点 -> 最终消费点”。 |
 | D13 | **多来源竞争** | 同一资源/额度/状态有多个写入来源时，消耗逻辑是否正确区分来源？不同来源的优先级/互斥/叠加规则是否正确？ |
 | D14 | **回合清理完整** | 回合/阶段结束时临时状态（额度/buff/标记/计数器）是否全部正确清理？清理遗漏会导致下回合状态泄漏 |
 | D15 | **UI 状态同步** | UI 展示的数值/状态是否与 core 状态一致？UI 读取的字段是否是 reducer 实际写入的字段？UI 是否遗漏了某些状态来源？**UI 计算参考点是否与描述语义一致？UI 交互门控是否与 validate 合法路径对齐？** |
@@ -242,9 +242,9 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 | D32 | **替代路径后处理对齐** | 代码中存在多条路径调用同一核心函数（如 `resolvePostDamageEffects`/`resolveAttack`）时，所有路径是否实现了相同的后处理检查集？替代/快捷路径（如潜行免伤、闪避、先手击杀）是否遗漏了规范路径中的 halt 检查、响应窗口、额外攻击等后处理逻辑？ |
 | D33 | **跨实体同类能力实现路径一致性** | 不同实体（英雄/派系/卡组/单位类型）中语义相同的能力（伤害/治疗/抽牌/移动/状态修正/额外行动/回收/限制等）是否使用一致的事件类型、注册模式和副作用处理？合理差异（语义本身不同导致的实现差异）需标注原因，不合理差异需修复 |
 | D34 | **交互选项 UI 渲染模式正确性** | 交互选项的 `value` 字段是否包含会被 UI 误判为"卡牌选择"的字段（`defId`/`minionDefId`/`baseDefId`）？简单确认交互（是/否）是否显式声明 `displayMode: 'button'`？选项 `value` 中的字段是否都被交互处理器实际使用（禁止包含不必要的上下文字段）？UI 组件的 `isCardOption`/`extractDefId` 逻辑是否与交互设计意图一致？ |
-| D35 | **交互上下文快照完整性** | 交互创建时是否保存了所有必要的上下文信息到 `continuationContext`？**关键场景**：① 基地计分后创建交互（`afterScoring`），此时基地上的随从/ongoing 卡牌信息需要快照，因为 `BASE_CLEARED` 事件被延迟，但其他交互可能会修改基地状态；② 链式交互中，第一个交互解决后可能改变第二个交互的候选列表，需要在创建时快照；③ 交互处理器需要访问的任何"可能在交互解决前变化"的数据，都必须快照；④ **交互会跨基地清场/换基地/基地列表收缩后再解决时，不能只保存 `baseIndex`，必须同时保存稳定标识（如 `baseDefId`），handler 中先按稳定标识回找活体基地，再 fallback 到仍有效的 `baseIndex`。**`baseIndex` 只是快照位置，不是稳定身份。**反模式**：只保存 `baseIndex`/`cardUid` 等引用，但不保存实体的详细信息（如力量值、defId、owner 等）；或把 `baseIndex` 当成跨时序稳定键使用。**审查补充**：只有 handler 真正需要跨时序重新定位基地时才应携带 `baseDefId` 等稳定标识，纯按钮确认类交互不要为了“保险”无脑塞入无用字段，避免引发 D34 的 UI 误判。**参考实现**：海盗湾（`base_pirate_cove`）的 `minionsSnapshot`；需要跨基地重定位时可参考 `resolveLiveBaseIndex` 一类 helper。 |
+| D35 | **交互上下文快照完整性** | 交互创建时是否保存了所有必要的上下文信息到 `continuationContext`？**关键场景**：① 基地计分后创建交互（`afterScoring`），此时基地上的随从/ongoing 卡牌信息需要快照，因为 `BASE_CLEARED` 事件被延迟，但其他交互可能会修改基地状态；② 链式交互中，第一个交互解决后可能改变第二个交互的候选列表，需要在创建时快照；③ 交互处理器需要访问的任何"可能在交互解决前变化"的数据，都必须快照；④ **交互会跨基地清场/换基地/基地列表收缩后再解决时，不能只保存 `baseIndex`，必须同时保存稳定标识（如 `baseDefId`），handler 中先按稳定标识回找活体基地，再 fallback 到仍有效的 `baseIndex`。**`baseIndex` 只是快照位置，不是稳定身份。⑤ **快照字段与事务权威状态必须分离**：`continuationContext`/snapshot 负责保存 handler 需要的上下文，不能偷偷充当 deferred actions / deferred events / finalize 控制标志的唯一宿主；这类跨阶段事务状态必须有唯一权威宿主。**反模式**：只保存 `baseIndex`/`cardUid` 等引用，但不保存实体的详细信息（如力量值、defId、owner 等）；或把 `baseIndex` 当成跨时序稳定键使用；或把本应由 scoring frame / session 持有的 deferred 状态临时塞进 snapshot，导致 finalize 读不到。**审查补充**：只有 handler 真正需要跨时序重新定位基地时才应携带 `baseDefId` 等稳定标识，纯按钮确认类交互不要为了“保险”无脑塞入无用字段，避免引发 D34 的 UI 误判。**参考实现**：海盗湾（`base_pirate_cove`）的 `minionsSnapshot`；需要跨基地重定位时可参考 `resolveLiveBaseIndex` 一类 helper。 |
 | D35.1 | **多系统命令门控职责清晰** | 当 `responseWindow` 与 `simple-choice` 等交互并存时，命令是否合法应由哪个系统裁决？**强制规则**：若存在活动 `sys.responseWindow.current`，则响应牌/响应命令的放行权属于 `ResponseWindowSystem`；`SimpleChoiceSystem` 只能处理 simple-choice 自身的提交/超时/无响应窗口时的普通阻塞，不能一刀切拦截所有非 `SYS_` 命令。**测试要求**：必须同时验证 ① `sys.interaction.current` 仍存在 ② `sys.responseWindow.current` 仍存在 ③ 合法响应命令可以通过 ④ 非法普通命令仍被阻止。**典型缺陷**：系统状态看起来都对，但响应牌被“请先完成当前选择”误拦，属于门控职责串位，而不是单纯 UI 问题。 |
-| D36 | **延迟事件补发的健壮性** | 延迟事件（如 `_deferredPostScoringEvents`）的补发是否依赖脆弱的条件？**脆弱设计**：补发逻辑只在 `sourceId` 存在且 `getInteractionHandler(sourceId)` 返回有效 handler 时执行 → 如果 handler 未注册或抛出异常，延迟事件永远不会被发出，游戏卡死。**健壮设计**：延迟事件的补发应该在框架层（如 `InteractionSystem`）无条件执行，不依赖游戏层的 handler 实现。**检查清单**：① 所有创建交互的能力是否都注册了 handler？② handler 是否可能抛出异常导致补发逻辑不执行？③ 延迟事件的存储位置是否安全（不会被意外修改或删除）？④ 链式交互时，延迟事件是否正确传递到下一个交互？ |
+| D36 | **延迟事件补发的健壮性** | 延迟事件（如 `_deferredPostScoringEvents`）的补发是否依赖脆弱的条件？**脆弱设计**：补发逻辑只在 `sourceId` 存在且 `getInteractionHandler(sourceId)` 返回有效 handler 时执行 → 如果 handler 未注册或抛出异常，延迟事件永远不会被发出，游戏卡死。**健壮设计**：延迟事件的补发应该在框架层（如 `InteractionSystem`）无条件执行，不依赖游戏层的 handler 实现。**session-first / scoring frame 补充**：交互解决后新产生的 deferred actions / deferred events，若最终由 scoring frame / finalize 消费，必须在交互收口时回写同一权威宿主，不能只停留在 `core.pendingPostScoringActions`、临时 `continuationContext` 或其他旁路字段。**检查清单**：① 所有创建交互的能力是否都注册了 handler？② handler 是否可能抛出异常导致补发逻辑不执行？③ 延迟事件的存储位置是否安全（不会被意外修改或删除）？④ 链式交互时，延迟事件是否正确传递到下一个交互？⑤ 审计 `scoreBases`/`afterScoring` 时，是否验证了 finalize 最终消费的是与交互写入同一份 deferred 状态，而不是另一份影子状态？ |
 | D37 | **交互选项动态刷新完整性** | 框架层已支持自动推断选项类型（根据 `value` 的字段：`minionUid` → field、`baseIndex` → base、`cardUid` → hand/discard），无需手动添加 `_source` 字段。**根因**：同时触发多个交互时，后续交互创建时基于初始状态，可能包含已失效的选项（如已被替换的基地、已被消灭的随从、已被弃掉的手牌）。框架层的 `refreshInteractionOptions` 自动刷新所有选项。**可选优化**：复杂场景（如从弃牌堆/牌库选择）可显式声明 `_source: 'discard'` 提升性能，但非必需。**自动化检查**：grep 所有 `createSimpleChoice` 调用，查找手写 `optionsGenerator` 的地方（通常不需要，框架层已自动处理）。**参考文档**：`docs/bugs/smashup/smashup-jinx-dynamic-options.md`。**教训**：海盗大副（pirate_first_mate）、蒸汽朋克亚哈船长（steampunk_captain_ahab）、机械师（steampunk_mechanic）、场地变更（steampunk_change_of_venue）、托尔图加（base_tortuga）、诡猫巷（base_cat_fanciers_alley）、平衡之地（base_land_of_balance）、绵羊神社（base_sheep_shrine）、牧场（base_the_pasture）都因缺少动态刷新导致托尔图加计分后基地被替换时选项过时，用户点击后卡住。框架层自动推断后，这些问题全部自动修复，无需修改游戏层代码。 |
 | D38 | **UI 门控系统优先级冲突** | 多个独立的 UI 门控系统（`disabled*`/`*DisabledUids`/`isSelectable` 等）同时作用于同一 UI 元素时，是否存在优先级冲突？**根因**：不同上下文（响应窗口/交互系统/教学模式/阶段限制）各自计算禁用集合，UI 层取并集导致过度禁用。**核心原则**：交互系统激活时应该是最高优先级，其他门控系统必须检查交互状态并退让（返回 `undefined`）。**审查方法**：① 识别所有 UI 门控系统（grep `disabled*`/`*DisabledUids` 的 useMemo）② 绘制状态机交叉矩阵（哪些状态可能同时激活）③ 检查高优先级门控是否在计算开始时检查低优先级状态并提前返回 ④ 典型冲突：响应窗口门控 × 交互系统门控、教学模式 × 正常游戏、阶段限制 × 能力授予额外行动。**优先级规则**：交互系统 > 响应窗口 > 教学模式 > 阶段限制；全局禁用（游戏结束/加载中）> 所有局部门控。**自动化检查**：在 HandArea 等组件中添加 warning，当多个 `disabledCardUids` 同时非空时打印警告。**参考文档**：`docs/bugs/smashup/smashup-ninja-hidden-ninja-ui-state-conflict.md`。**教训**：便衣忍者在 Me First! 窗口中打出后创建手牌选择交互，但 `meFirstDisabledUids` 继续禁用所有非 `beforeScoringPlayable` 随从，导致交互无法完成。修复：`meFirstDisabledUids` 计算中添加 `if (isHandDiscardPrompt) return undefined;`。 |
 | D39 | **流程控制标志清除完整性** | 流程控制标志（`flowHalted`/`isProcessing`/`isPending` 等）的清除条件是否完整？清除条件必须检查标志背后的状态，而非只检查标志本身。**核心原则：流程控制标志是"症状"，背后的状态（如交互是否完成）才是"病因"。清除标志时必须检查病因是否已消除，而非只检查症状是否存在。** 审查方法：① **识别所有流程控制标志**：grep `flowHalted`/`isProcessing`/`isPending`/`isLocked` 等标志的设置点 ② **追踪每个标志的设置原因**：标志为什么被设置？背后的状态是什么？（如 `flowHalted=true` 因为创建了交互等待玩家响应）③ **追踪每个标志的清除条件**：清除逻辑是否检查了背后的状态？（如检查 `sys.interaction.current` 是否为空）还是只检查标志本身？④ **检查所有退出路径**：正常完成、用户取消、错误、超时等所有路径是否都正确清除标志？⑤ **检查守卫逻辑**：使用标志的守卫（如 `if (flowHalted) return { halt: true }`）是否同时检查了背后的状态？**典型缺陷模式**：❌ 守卫只检查 `flowHalted` 标志，不检查交互是否仍在进行 → 交互完成后标志未清除，守卫永远 halt ❌ 清除逻辑只在正常完成路径，错误/取消路径未清除 → 标志泄漏到下次操作 ❌ 多个系统共享同一标志，一个系统清除后另一个系统仍依赖 → 状态不一致 ✅ 守卫检查 `flowHalted && sys.interaction.current` → 只有标志存在且交互仍在进行时才 halt ✅ 所有退出路径（正常/取消/错误）都清除标志 ✅ 每个标志有明确的"拥有者"系统，只有拥有者负责清除。**审查输出格式**：```标志: flowHalted (src/games/smashup/domain/index.ts:577)设置原因: 创建交互等待玩家响应（beforeScoring/afterScoring 技能）背后状态: sys.interaction.current 存在清除条件: ❌ 只检查 flowHalted 标志，不检查 sys.interaction.current守卫逻辑: if (state.sys.flowHalted) return { halt: true } ❌ 缺少交互状态检查退出路径: 正常完成 ✅ / 用户取消 ✅ / 错误 ❌ / 超时 ❌判定: ❌ 清除条件不完整（只检查标志不检查状态）修复方案: 将守卫改为 if (state.sys.flowHalted && state.sys.interaction.current) return { halt: true }```**排查信号**：① "操作后卡住/无法继续" + 日志显示 `halt=true` 但交互已完成 = 高度怀疑标志清除条件不完整 ② 标志在某些场景下正常清除，某些场景下泄漏 = 退出路径不完整 ③ 多个系统使用同一标志，行为不一致 = 标志所有权不明确。**参考文档**：`docs/bugs/smashup/smashup-tortuga-pirate-king-卡住-2026-02-28-16-53.md`。**教训**：托尔图加海盗王移动后卡住。`flowHalted=true` 因为 beforeScoring 创建交互，用户响应后交互完成，但 `onPhaseExit` 守卫只检查 `flowHalted` 标志不检查 `sys.interaction.current`，直接返回 `halt=true`，导致 afterScoring 永远不执行。修复：守卫改为 `if (state.sys.flowHalted && state.sys.interaction.current) return { halt: true }`，只有标志存在且交互仍在进行时才 halt。 |
@@ -759,6 +759,15 @@ onAutoContinueCheck({ state }) {
 1. **列出写入链**：事件 payload → reducer case → 写入的字段名和数据结构
 2. **列出消耗链**：所有读取该字段的位置（reducer 其他 case、validate、UI 组件），每个位置的读取方式和条件
 3. **对称性检查**：写入时的 key 类型（string/number）与读取时是否一致？写入时的嵌套层级与读取时是否一致？写入时的条件分支与消耗时的条件分支是否覆盖相同的场景空间？
+4. **跨阶段事务状态单一宿主检查**：若写入的是 deferred actions / deferred events / finalize 控制标志 / 交互恢复所需临时状态，必须明确它的唯一权威宿主是 `session`、`scoring frame`、`core`、`snapshot` 中哪一个；只能有一个主宿主，其他位置若存在镜像只允许作为兼容桥，不得并列当真相源
+5. **写入点到最终消费点拉通**：审计不能停在“prompt 出现”或“interaction resolved”；必须继续追到最终消费点（如 `scoreBases` finalize、`afterScoring` 收口、后续 reducer 分支），确认消费方读到的是同一份状态，而非影子副本
+
+**D12 子项：跨阶段事务状态唯一宿主（强制）**（新增/修改 `scoreBases`、`afterScoring`、可暂停交互、session-first 流程，或修"交互解决了但后续 finalize 没效果"时触发）：跨阶段、可暂停、可恢复、由后续 finalize/settle 消费的临时事务状态，必须只有一个权威宿主。**核心原则：同一语义如果同时散落在 `continuationContext`、`core.pending*`、`frame.deferred*` 等多个位置，而没有显式同步桥，迟早会出现“前半段写对了，后半段读错了”的静默失效。** 审查方法：
+1. **列出事务状态**：本轮机制依赖哪些跨阶段临时状态？例如 `deferredEvents`、`deferredActions`、`pendingPostScoringActions`、`waitForFinalize` 标志
+2. **指定唯一宿主**：为每个事务状态明确主宿主，只能从 `session` / `frame` / `core` / `snapshot` 中选一个；其余位置如果出现同义字段，必须标记为镜像/桥接/缓存，而非同等级真相源
+3. **列出同步桥**：若兼容旧链路必须保留镜像字段，需明确“谁写主宿主、谁在何时回写镜像、最终消费方只读哪里”
+4. **重点审计 session-first**：交互解决后新产生的 deferred actions，如果最终要由 `scoreBases` finalize 继续消费，就必须在交互收口后回写 scoring frame，不能只停在 `core.pendingPostScoringActions` 或临时 `continuationContext`
+5. **回归测试要求**：至少补一条“写入点 -> 交互解决 -> finalize 消费”的整链回归，证明最终副作用真实发生，而不是只证明中间 prompt 能显示/能点选
 
 **D12 子项：Reducer 操作范围与 payload 语义对齐（强制）**（新增/修改 reducer case、或修"操作影响了不该影响的数据"时触发）：reducer case 对状态的操作范围是否与事件 payload 声明的范围一致。**核心原则：reducer 只能操作 payload 中显式声明的数据范围，禁止对 payload 未涉及的数据做"全量清空"等隐式操作。当同一事件类型被多个调用方复用时，reducer 必须兼容所有调用方的语义——既能处理"全量操作"也能处理"部分操作"。** 审查方法：
 1. **识别 reducer 中的全量操作**：grep 所有 reducer case 中的 `hand: []`、`discard: []`、`deck: []`、`= []`、`= {}`、`= undefined` 等无条件清空/重置模式
@@ -974,6 +983,22 @@ onAutoContinueCheck({ state }) {
 - D12（写入-消耗对称）：events 写入的状态变更与 interaction 选项读取的数据源是否对称
 - D17（隐式依赖）：选项构建隐式依赖 events 已被 reduce 的假设
 
+**D35 交互上下文快照完整性（强制）**（新增/修改 `continuationContext`、跨阶段交互、基地计分后交互，或修"交互解决后找不到原对象/找到错对象"时触发）：交互创建时是否保存了 handler 真正需要、且在交互解决前可能变化的上下文。**核心原则：snapshot 负责“记住当时的上下文”，不负责充当事务真相源。凡是 handler 在稍后解决时仍要依赖、但中途可能被清场/换基地/替换/动态刷新改变的数据，都必须显式快照；凡是 deferred actions / deferred events / finalize 控制状态，则必须回到唯一权威宿主，不得只塞进 snapshot。** 审查方法：
+1. **列出 handler 读取项**：交互 handler 在解决时会读哪些数据？区分为“实体身份”“实体快照”“事务状态”三类
+2. **实体身份稳定性检查**：若交互会跨基地清场、基地替换、列表收缩、实体离场后再解决，不能只存 `baseIndex`/`cardUid` 这类易失引用；必须同时保存稳定标识（如 `baseDefId`、`ownerId`、必要的快照字段）
+3. **快照充分性检查**：handler 需要的力量值、owner、defId、来源类型、候选列表基线等，是否都在创建交互时快照？不能指望解决时再从活体状态“临时现查”
+4. **快照与事务宿主分离**：`continuationContext` 只保存 handler 所需上下文，不得把本应由 `session` / `frame` / `core` 持有的 deferred 状态偷偷塞成唯一来源；否则 finalize/后续系统会读不到
+5. **重定位策略检查**：需要跨时序重新定位实体时，handler 是否先按稳定标识回找活体对象，再 fallback 到仍有效的位置索引；纯按钮确认类交互不要无脑塞无用标识，避免引发 D34 的 UI 误判
+6. **测试要求**：至少覆盖一次“创建交互后，中途发生基地替换/清场/候选变化，再解决交互”的路径，确认 handler 仍命中正确对象
+
+**D36 延迟事件补发的健壮性（强制）**（新增/修改 deferred events、deferred actions、交互补发、finalize 收口，或修"交互结束了但后续没发生"时触发）：延迟事件/动作的补发与最终消费是否建立在稳定的框架契约上。**核心原则：延迟事件可以延后，但不能失忆。框架层必须保证 deferred 状态沿交互链、session-first 链路、finalize 链路完整传递，且最终由同一权威宿主被消费。** 审查方法：
+1. **识别 deferred 状态**：列出本轮机制的 `_deferredPostScoringEvents`、`deferredActions`、`pendingPostScoringActions`、`waitForFinalize` 等延迟状态及其创建点
+2. **检查补发触发条件**：补发逻辑是否依赖 handler 注册成功、`sourceId` 存在、某个 UI 分支命中、某个可选上下文字段存在等脆弱条件？若依赖这些条件 = 高风险
+3. **检查链式传递**：多个交互串联时，deferred 状态是否沿交互链传递到下一个交互，还是在中途被覆盖/清空/遗忘
+4. **检查 session-first 回写**：若交互解决后新产生 deferred actions，而最终消费方是 scoring frame / finalize，则必须在交互收口时回写 frame；不能只写 `core.pendingPostScoringActions` 就结束
+5. **检查 finalize 消费一致性**：最终 `scoreBases` / `afterScoring` / settle 收口时，消费方是否读取与写入方同一份 deferred 状态；若读的是另一份影子字段，即使 prompt 正常也属于未修好
+6. **回归测试要求**：不能只测“prompt 出现”“interaction resolved”；必须补“交互解决后 finalize 继续执行，并真实消费 deferred 状态”的整链测试
+
 ### 维度选择指南
 
 | 任务 | 必选 | 推荐 |
@@ -1037,6 +1062,7 @@ onAutoContinueCheck({ state }) {
 | 修"操作后卡住/无法继续" | D39,D8,D3 | D5,D17 |
 | 修"交互完成后仍然 halt" | D39,D8,D5 | D3,D17 |
 | 新增/修改流程控制标志 | D39,D8,D17 | D3,D5 |
+| 修`scoreBases`/`afterScoring` 交互后效果丢失 | D12,D35,D36,D8 | D39,D24,D17 |
 
 ### 输出格式
 
@@ -1157,8 +1183,10 @@ ID 只出现在定义+注册 = 消费层缺失。
 - 时序正确（D8）：写入时机必须在消费窗口内，阶段结束交互必须 halt 推进
 - Reducer 消耗路径（D11）：多来源并存时消耗优先级必须正确
 - 写入-消耗对称（D12）：写入路径和消费路径的条件分支必须对称
+- 事务状态唯一宿主（D12/D35/D36）：跨阶段 deferred 状态只能有一个权威宿主，镜像字段必须显式桥接
 - 回合清理完整（D14）：临时状态必须在回合/阶段结束时正确清理
 - UI 状态同步（D15）：UI 读取的字段必须与 reducer 写入的字段一致
+- 审计必须通到 finalize（D35/D36）：不能只证明 prompt 创建/交互解决，必须证明最终收口消费了同一份 deferred 状态
 
 详细案例见 git history 和 docs/bugs/ 目录。
 

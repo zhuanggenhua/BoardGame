@@ -288,6 +288,107 @@ async function injectMushroomInvisibleTurnStartState(matchId: string, page: Page
     await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
 }
 
+async function injectSacredCircleSameNameState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => ({
+        ...state,
+        core: {
+            ...state.core,
+            players: {
+                ...(state.core?.players ?? {}),
+                '0': {
+                    ...(state.core?.players?.['0'] ?? {}),
+                    id: '0',
+                    vp: 0,
+                    hand: [
+                        makeInjectedCard('hand-local', 'innsmouth_the_locals_pod', 'minion', HOST_PLAYER_ID),
+                        makeInjectedCard('hand-zapbot', 'robot_zapbot_pod', 'minion', HOST_PLAYER_ID),
+                    ],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['innsmouth_pod', 'robots_pod'],
+                    sameNameMinionDefId: null,
+                    sameNameMinionRemaining: undefined,
+                    baseLimitedMinionQuota: undefined,
+                    baseLimitedSameNameRequired: undefined,
+                    baseLimitedSameNameDefId: undefined,
+                },
+                '1': {
+                    ...(state.core?.players?.['1'] ?? {}),
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['wizards', 'samurai'],
+                    sameNameMinionDefId: null,
+                },
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            phase: 'playCards',
+            bases: [
+                { defId: 'base_mushroom_kingdom', minions: [], ongoingActions: [] },
+                {
+                    defId: 'base_wizard_academy',
+                    minions: [
+                        makeInjectedMinion('locals-a', 'innsmouth_the_locals_pod', '0', '0', 2),
+                        makeInjectedMinion('locals-b', 'innsmouth_the_locals_pod', '0', '0', 2),
+                        makeInjectedMinion('locals-c', 'innsmouth_the_locals_pod', '0', '0', 2),
+                    ],
+                    ongoingActions: [
+                        {
+                            uid: 'oa-sacred-circle',
+                            defId: 'innsmouth_sacred_circle_pod',
+                            ownerId: '0',
+                            talentUsed: false,
+                        },
+                    ],
+                },
+                {
+                    defId: 'base_sakura_garden',
+                    minions: [makeInjectedMinion('enemy-minion-1', 'samurai_bushi_pod', '1', '1', 4)],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [
+                {
+                    uid: 'titan-dagon',
+                    defId: 'innsmouth_dagon',
+                    faction: 'innsmouth',
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: true,
+                    location: { zone: 'base', baseIndex: 1, enteredAt: 1 },
+                },
+            ],
+            enabledExpansions: ['titans'],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 7,
+            nextUid: 900,
+            cardsPlayedThisTurn: 0,
+            powerCountersPlacedOnMinionsThisTurn: 0,
+            turnDestroyedMinions: [],
+            triggerQueue: [],
+        },
+        sys: {
+            ...state.sys,
+            phase: 'playCards',
+            interaction: { current: undefined, queue: [] },
+        },
+    }));
+    await page.waitForSelector('[data-testid="base-zone-1"]', { timeout: 5000 });
+}
+
 function makeInjectedCard(uid: string, defId: string, type: 'minion' | 'action', owner: string) {
     return { uid, defId, type, owner };
 }
@@ -1177,6 +1278,67 @@ test.describe('SmashUp Base/Minion Selection', () => {
 
         const resolvedShot = getEvidenceScreenshotPath(testInfo, 'mushroom-invisible-resolved', {
             filename: 'smashup-mushroom-invisible-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+    });
+
+    test('反馈复现：宗教圆环发动后，应允许把手牌中的同名本地人打到该基地', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await injectSacredCircleSameNameState(matchId, hostPage);
+
+        await hostPage.locator('[data-ongoing-uid="oa-sacred-circle"]').click();
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                talentUsed: state?.core?.bases?.[1]?.ongoingActions?.find((card: any) => card.uid === 'oa-sacred-circle')?.talentUsed ?? null,
+                quota: state?.core?.players?.['0']?.baseLimitedMinionQuota?.[1] ?? 0,
+                sameNameRequired: state?.core?.players?.['0']?.baseLimitedSameNameRequired?.[1] ?? false,
+            };
+        }, { timeout: 8000 }).toEqual({
+            talentUsed: true,
+            quota: 1,
+            sameNameRequired: true,
+        });
+
+        const usedShot = getEvidenceScreenshotPath(testInfo, 'sacred-circle-used', {
+            filename: 'smashup-sacred-circle-used.png',
+        });
+        await hostPage.screenshot({ path: usedShot, fullPage: false });
+
+        await hostPage.locator('[data-card-uid="hand-local"]').click();
+        await waitForSelectableBase(hostPage, 1, 5000);
+
+        const highlightShot = getEvidenceScreenshotPath(testInfo, 'sacred-circle-highlight', {
+            filename: 'smashup-sacred-circle-highlight.png',
+        });
+        await hostPage.screenshot({ path: highlightShot, fullPage: false });
+
+        await clickBaseZone(hostPage, 1);
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                minionOnBase: state?.core?.bases?.[1]?.minions?.some((minion: any) => minion.uid === 'hand-local') ?? false,
+                stillInHand: state?.core?.players?.['0']?.hand?.some((card: any) => card.uid === 'hand-local') ?? false,
+                quota: state?.core?.players?.['0']?.baseLimitedMinionQuota?.[1] ?? 0,
+            };
+        }, { timeout: 8000 }).toEqual({
+            minionOnBase: true,
+            stillInHand: false,
+            quota: 0,
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'sacred-circle-resolved', {
+            filename: 'smashup-sacred-circle-resolved.png',
         });
         await hostPage.screenshot({ path: resolvedShot, fullPage: false });
     });

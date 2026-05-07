@@ -7,7 +7,7 @@
  */
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { asSimpleChoice, INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
+import { asSimpleChoice, createSimpleChoice, INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { createFlowSystem, createBaseSystems } from '../../../engine/systems';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
@@ -24,7 +24,7 @@ import type { SmashUpCommand } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { SmashUpDomain, smashUpSystemsForTest } from '../game';
-import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
+import { appendScoringFrameDeferredPayload, createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { getScoringSession } from '../domain/scoringSession';
 import { defaultTestRandom } from './testRunner';
@@ -357,6 +357,128 @@ describe('afterScoring 延迟清场回归', () => {
         expect(finalCore?.bases[0].defId).toBe('base_secret_garden');
         expect(finalCore?.bases[0].minions.map(minion => minion.uid)).toEqual(['m3']);
         expect(finalCore?.bases[1].minions).toHaveLength(0);
+    });
+
+    it('base_tortuga: session 模式下点选随从后，后续 scoreBases 收尾仍应把随从移到替换基地', () => {
+        const system = createSmashUpEventSystem();
+        let state = wrapState(makeCore({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_tortuga', {
+                    minions: [
+                        makeMinion('m1', '0', 5),
+                        makeMinion('m2', '1', 3),
+                    ],
+                }),
+                makeBase('base_other', {
+                    minions: [makeMinion('m3', '1', 2)],
+                }),
+            ],
+            baseDeck: ['base_secret_garden'],
+        }));
+
+        const baseRef = createScoringBaseRef(state.core, 0);
+        if (!baseRef) {
+            throw new Error('无法构造托尔图加 scoring base ref');
+        }
+
+        state = setScoringSession(state, {
+            ...createScoringSession(state.core, [0]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-interactions',
+        });
+        state = appendScoringFrameDeferredPayload(state, {
+            deferredEvents: [
+                {
+                    type: SU_EVENTS.BASE_CLEARED,
+                    payload: { baseIndex: 0, baseDefId: 'base_tortuga' },
+                    timestamp: 2300,
+                },
+                {
+                    type: SU_EVENTS.BASE_REPLACED,
+                    payload: {
+                        baseIndex: 0,
+                        oldBaseDefId: 'base_tortuga',
+                        newBaseDefId: 'base_secret_garden',
+                    },
+                    timestamp: 2300,
+                },
+            ],
+        });
+
+        const interaction = createSimpleChoice(
+            'i-tortuga-session',
+            '1',
+            '托尔图加：选择移动一个其他基地上的随从到替换基地',
+            [
+                {
+                    id: 'minion-0',
+                    label: 'm3',
+                    value: { minionUid: 'm3', minionDefId: 'd1', fromBaseIndex: 1 },
+                    displayMode: 'card',
+                },
+            ],
+            { sourceId: 'base_tortuga', targetType: 'minion' },
+        );
+        (interaction.data as any).continuationContext = { baseIndex: 0 };
+        state = {
+            ...state,
+            sys: {
+                ...state.sys,
+                interaction: {
+                    ...state.sys.interaction,
+                    current: interaction,
+                    queue: [],
+                },
+            },
+        };
+
+        const resolved = system.afterEvents?.({
+            state,
+            random: undefined as any,
+            events: [{
+                type: INTERACTION_EVENTS.RESOLVED,
+                payload: {
+                    interactionId: 'i-tortuga-session',
+                    playerId: '1',
+                    optionId: 'minion-0',
+                    value: { minionUid: 'm3', minionDefId: 'd1', fromBaseIndex: 1 },
+                    sourceId: 'base_tortuga',
+                    interactionData: interaction.data,
+                },
+                timestamp: 2300,
+            } as any],
+        });
+
+        expect((resolved?.events as SmashUpEvent[] | undefined) ?? []).toHaveLength(0);
+        expect(resolved?.state.sys.interaction.current).toBeFalsy();
+        expect((resolved?.state.sys as any)._waitForScoreBasesInteractionReduce).toBe(true);
+
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: resolved?.state ?? state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            random: defaultTestRandom,
+        });
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
+
+        expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
+            SU_EVENTS.BASE_CLEARED,
+            SU_EVENTS.BASE_REPLACED,
+            SU_EVENTS.MINION_MOVED,
+        ]);
+
+        const finalCore = finalizeEvents.reduce(
+            (core, event: SmashUpEvent) => reduce(core, event),
+            state.core as SmashUpCore,
+        );
+        expect(finalCore.bases[0].defId).toBe('base_secret_garden');
+        expect(finalCore.bases[0].minions.map(minion => minion.uid)).toEqual(['m3']);
+        expect(finalCore.bases[1].minions).toHaveLength(0);
     });
 
     it('base_the_mothership should not flush deferred clear events when next interaction is in current', () => {

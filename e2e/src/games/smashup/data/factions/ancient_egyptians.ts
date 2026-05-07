@@ -78,7 +78,6 @@ export const ANCIENT_EGYPTIANS_ACTIONS: ActionCardDef[] = [
         name: '蝗灾',
         nameEn: 'Plague of Locusts',
         faction: SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS,
-        abilityTags: ['special'],
         playNeedsBase: true,
         responseWindowTiming: 'beforeScoring',
         responseWindowNeedsBase: true,

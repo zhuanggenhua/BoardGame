@@ -36,7 +36,7 @@ import {
     SMASHUP_FACTION_IDS,
 } from './domain/ids';
 import { validate } from './domain/commands';
-import { hasCardActivatableAbility } from './domain/activationMetadata';
+import { getCardDefActivatableAbilities, hasCardActivatableAbility } from './domain/activationMetadata';
 import { resolveLiveSmashUpReactionChoice } from './domain/reactionSession';
 import {
     actionLikeNeedsResponseWindowBase,
@@ -202,14 +202,13 @@ const buildCardAiMetrics = (cardDef: SmashUpResolvedCardDef, count = 1): Partial
 
     if (cardDef.type === 'action') {
         const tags = normalizeAbilityTags(cardDef.abilityTags);
+        const hasManualSpecial = getCardDefActivatableAbilities(cardDef)
+            .some(ability => ability.kind === 'special');
+        const responseTiming = getActionLikeResponseWindowTiming(cardDef);
         return {
             extraAction: tags.has('extra') ? count * 2.3 : 0,
             ongoing: cardDef.subtype === 'ongoing' || tags.has('ongoing') ? count * 2.1 : 0,
-            reactive: (
-                cardDef.specialTiming === 'beforeScoring'
-                || cardDef.responseWindowTiming === 'beforeScoring'
-                || cardDef.subtype === 'special'
-            ) ? count * 2.3 : 0,
+            reactive: responseTiming ? count * 2.3 : (hasManualSpecial ? count * 1.2 : 0),
             control: cardDef.playNeedsMinion || cardDef.ongoingTarget === 'minion' ? count * 1.1 : 0,
         };
     }
@@ -217,6 +216,8 @@ const buildCardAiMetrics = (cardDef: SmashUpResolvedCardDef, count = 1): Partial
     if (cardDef.type === 'fusion') {
         const minionTags = normalizeAbilityTags(cardDef.minionAbilityTags);
         const actionTags = normalizeAbilityTags(cardDef.actionAbilityTags);
+        const hasManualActionSpecial = getCardDefActivatableAbilities(cardDef, { face: 'action' })
+            .some(ability => ability.kind === 'special');
         const hasScoringWindowFusionSpecial = hasCardActivatableAbility(
             cardDef.id,
             { kind: 'special', zone: 'board', window: 'beforeScoring' },
@@ -237,9 +238,8 @@ const buildCardAiMetrics = (cardDef: SmashUpResolvedCardDef, count = 1): Partial
             reactive: (
                 cardDef.minionBeforeScoringPlayable
                 || hasScoringWindowFusionSpecial
-                || cardDef.actionSpecialTiming === 'beforeScoring'
-                || cardDef.actionResponseWindowTiming === 'beforeScoring'
-            ) ? count * 2 : 0,
+                || !!getActionLikeResponseWindowTiming(cardDef)
+            ) ? count * 2 : (hasManualActionSpecial ? count * 1.1 : 0),
             burst: cardDef.minionPower >= 4 ? count * 1.1 : 0,
             control: cardDef.actionPlayNeedsMinion || cardDef.actionOngoingTarget === 'minion' ? count : 0,
         };
@@ -1709,15 +1709,19 @@ const estimateCardKeepValue = (card: CardInstance): number => {
 
     const cardDef = getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined;
     if (!cardDef) return 5;
+    const hasManualSpecial = cardDef.type === 'fusion'
+        ? getCardDefActivatableAbilities(cardDef, { face: 'action' }).some(ability => ability.kind === 'special')
+        : getCardDefActivatableAbilities(cardDef).some(ability => ability.kind === 'special');
+    const hasResponseTiming = !!getActionLikeResponseWindowTiming(cardDef);
 
     if (cardDef.type === 'fusion') {
         if (cardDef.actionSubtype === 'ongoing') return 16;
-        if (cardDef.actionSubtype === 'special') return 13;
+        if (hasResponseTiming || hasManualSpecial) return 13;
         return 11;
     }
 
     if (cardDef.subtype === 'ongoing') return 14;
-    if (cardDef.subtype === 'special') return 11;
+    if (hasResponseTiming || hasManualSpecial) return 11;
     return 9;
 };
 

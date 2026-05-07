@@ -91,7 +91,6 @@ export const PIRATE_POD_ACTIONS: ActionCardDef[] = [
         name: '全速航行',
         nameEn: 'Full Sail',
         faction: 'pirates_pod',
-        abilityTags: ['special'],
         responseWindowTiming: 'beforeScoring',
         soundKey: 'ambient.water_sound_fx_pack_vol.splashes_and_movement.big_splash_a',
         count: 2,
