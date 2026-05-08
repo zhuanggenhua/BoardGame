@@ -22,4 +22,5 @@ export const UI_Z_INDEX = {
     modalTooltip: 2350,
     toast: 2250,
     tutorial: 2300,
+    emergencyHud: 2400,
 } as const;

@@ -123,6 +123,9 @@ function getRequiredReadAtomsForPath(path: Array<string | number>): ReactionOrde
     }
 
     switch (root) {
+        case 'baseDeck':
+        case 'baseDiscard':
+            return ['baseDeckState'];
         case 'pendingAfterScoringSpecials':
         case 'scoringEligibleBaseIndices':
         case 'beforeScoringTriggeredBases':
@@ -133,6 +136,7 @@ function getRequiredReadAtomsForPath(path: Array<string | number>): ReactionOrde
         case 'currentPlayerIndex':
         case 'turnNumber':
         case 'turnPhase':
+        case 'turnOrder':
         case 'activeDuel':
         case 'playerRestrictionsUntilTurnStart':
         case 'specialLimitUsed':
@@ -140,6 +144,7 @@ function getRequiredReadAtomsForPath(path: Array<string | number>): ReactionOrde
         case 'suppressedCardsUntilTurnStart':
         case 'turnUsedOngoingUids':
         case 'usedBaseAbilitiesThisTurn':
+        case 'minionsMovedToBaseThisTurn':
             return ['turnFlags'];
         case 'triggerQueue':
             return ['turnFlags'];

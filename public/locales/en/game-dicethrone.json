@@ -633,6 +633,7 @@
     "rerollLimitReached": "Reroll limit reached",
     "diceResult": "Dice Results",
     "total": "Total Damage",
+    "closeSpotlight": "Close Spotlight",
     "confirmDamage": "Confirm Damage",
     "continue": "Continue",
     "knockdownTrigger": "Knockdown!"

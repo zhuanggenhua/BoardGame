@@ -4,6 +4,7 @@ import type { BaseAbilityContext, BaseTriggerTiming } from './baseAbilities';
 import { SU_EVENTS } from './types';
 import { getBaseAbilityOptions, getExtendedBaseAbilityOptions, hasBaseAbility, triggerBaseAbility, triggerExtendedBaseAbility } from './baseAbilities';
 import { createAbilityRuntimeExecutor, createEffectProgram } from './abilityRuntime';
+import { wrapTriggerCallbackWithEffectContract } from './triggerEffectContract';
 import { registerTriggerProgramExecutor } from './triggerExecutors';
 
 type BaseTriggerTimingAsTrigger = BaseTriggerTiming;
@@ -23,30 +24,40 @@ export function registerBaseAbilityAsQueuedTrigger(
   baseDefId: string,
   timing: BaseTriggerTimingAsTrigger,
 ): void {
+  const options = getBaseAbilityOptions(baseDefId, timing);
+  const declaredContract = options?.effectContract;
+  const triggerCallback = (ctx: any) => {
+    const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
+    const baseCtx: BaseAbilityContext = {
+      state: ctx.state,
+      matchState: ctx.matchState,
+      random: ctx.random,
+      baseIndex,
+      baseDefId: baseDefId,
+      playerId: ctx.playerId,
+      minionUid: ctx.triggerMinionUid,
+      minionDefId: ctx.triggerMinionDefId,
+      minionPower: ctx.triggerMinionPower,
+      rankings: ctx.rankings,
+      actionTargetBaseIndex: ctx.actionTargetBaseIndex,
+      actionTargetType: ctx.actionTargetType,
+      actionTargetMinionUid: ctx.actionTargetMinionUid,
+      now: ctx.now,
+    };
+    return triggerBaseAbility(baseDefId, timing, baseCtx);
+  };
   registerTriggerProgramExecutor(
     baseDefId,
     timingToTriggerTiming(timing),
     createAbilityRuntimeExecutor(
-      createEffectProgram((ctx: any) => {
-        const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
-        const baseCtx: BaseAbilityContext = {
-          state: ctx.state,
-          matchState: ctx.matchState,
-          random: ctx.random,
-          baseIndex,
-          baseDefId: baseDefId,
-          playerId: ctx.playerId,
-          minionUid: ctx.triggerMinionUid,
-          minionDefId: ctx.triggerMinionDefId,
-          minionPower: ctx.triggerMinionPower,
-          rankings: ctx.rankings,
-          actionTargetBaseIndex: ctx.actionTargetBaseIndex,
-          actionTargetType: ctx.actionTargetType,
-          actionTargetMinionUid: ctx.actionTargetMinionUid,
-          now: ctx.now,
-        };
-        return triggerBaseAbility(baseDefId, timing, baseCtx);
-      }),
+      createEffectProgram(declaredContract
+        ? wrapTriggerCallbackWithEffectContract(
+            baseDefId,
+            timingToTriggerTiming(timing),
+            triggerCallback,
+            declaredContract,
+          )
+        : triggerCallback),
     ),
   );
 }
@@ -131,30 +142,40 @@ export function registerExtendedBaseAbilityAsQueuedTrigger(
   baseDefId: string,
   timing: string,
 ): void {
+  const options = getExtendedBaseAbilityOptions(baseDefId, timing);
+  const declaredContract = options?.effectContract;
+  const triggerCallback = (ctx: any) => {
+    const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
+    const baseCtx: BaseAbilityContext = {
+      state: ctx.state,
+      matchState: ctx.matchState,
+      random: ctx.random,
+      baseIndex,
+      baseDefId,
+      playerId: ctx.playerId,
+      minionUid: ctx.triggerMinionUid,
+      minionDefId: ctx.triggerMinionDefId,
+      minionPower: ctx.triggerMinionPower,
+      rankings: ctx.rankings,
+      actionTargetBaseIndex: ctx.actionTargetBaseIndex,
+      actionTargetType: ctx.actionTargetType,
+      actionTargetMinionUid: ctx.actionTargetMinionUid,
+      now: ctx.now,
+    };
+    return triggerExtendedBaseAbility(baseDefId, timing, baseCtx);
+  };
   registerTriggerProgramExecutor(
     baseDefId,
     timingToTriggerTiming(timing as any),
     createAbilityRuntimeExecutor(
-      createEffectProgram((ctx: any) => {
-        const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
-        const baseCtx: BaseAbilityContext = {
-          state: ctx.state,
-          matchState: ctx.matchState,
-          random: ctx.random,
-          baseIndex,
-          baseDefId,
-          playerId: ctx.playerId,
-          minionUid: ctx.triggerMinionUid,
-          minionDefId: ctx.triggerMinionDefId,
-          minionPower: ctx.triggerMinionPower,
-          rankings: ctx.rankings,
-          actionTargetBaseIndex: ctx.actionTargetBaseIndex,
-          actionTargetType: ctx.actionTargetType,
-          actionTargetMinionUid: ctx.actionTargetMinionUid,
-          now: ctx.now,
-        };
-        return triggerExtendedBaseAbility(baseDefId, timing, baseCtx);
-      }),
+      createEffectProgram(declaredContract
+        ? wrapTriggerCallbackWithEffectContract(
+            baseDefId,
+            timingToTriggerTiming(timing as any),
+            triggerCallback,
+            declaredContract,
+          )
+        : triggerCallback),
     ),
   );
 }

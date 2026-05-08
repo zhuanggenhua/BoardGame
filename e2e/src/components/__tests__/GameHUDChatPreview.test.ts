@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchChatMessage } from '../../services/matchSocket';
-import { getLatestIncomingMessage, isSelfChatMessage, trimChatMessages } from '../game/framework/widgets/GameHUD';
+import { UI_Z_INDEX } from '../../core';
+import { GAME_HUD_FAB_Z_INDEX, getLatestIncomingMessage, isSelfChatMessage, trimChatMessages } from '../game/framework/widgets/GameHUD';
 import { resolveFabSatellitesToRender, shouldTrackFabButtonRect } from '../system/FabMenu';
 import { resolveExpandedFabLayout } from '../system/fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from '../system/fabPosition';
@@ -70,6 +71,12 @@ describe('GameHUD chat preview helpers', () => {
 });
 
 describe('FabMenu helpers', () => {
+    it('游戏内应急悬浮球层级必须高于所有常规 modal 内容层', () => {
+        expect(GAME_HUD_FAB_Z_INDEX).toBe(UI_Z_INDEX.emergencyHud);
+        expect(GAME_HUD_FAB_Z_INDEX).toBeGreaterThan(UI_Z_INDEX.modalContent);
+        expect(GAME_HUD_FAB_Z_INDEX).toBeGreaterThan(UI_Z_INDEX.tutorial);
+    });
+
     it('卫星按钮顺序始终按业务定义靠近主球的一端优先渲染', () => {
         expect(resolveFabSatellitesToRender(['feedback', 'fullscreen', 'action-log', 'settings'])).toEqual([
             'settings',

@@ -73,6 +73,7 @@ function materializeReactionOrderingAtom(
             return `${atom}:${resolveBaseScope(trigger)}`;
         case 'minionBoardState':
         case 'titanBoardState':
+        case 'baseDeckState':
         case 'scoringState':
         case 'targetAvailability':
             return atom;

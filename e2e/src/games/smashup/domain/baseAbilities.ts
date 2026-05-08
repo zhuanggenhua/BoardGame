@@ -405,15 +405,14 @@ export function registerPodBaseAbilityAliases(): void {
         if (isPodDefId(baseDefId)) continue;
         const podDefId = toPodDefId(baseDefId);
         const podTimingMap = baseAbilityRegistry.get(podDefId) ?? new Map<BaseTriggerTiming, BaseAbilityEntry>();
+        if (!baseAbilityRegistry.has(podDefId)) {
+            baseAbilityRegistry.set(podDefId, podTimingMap);
+        }
 
         for (const [timing, entry] of timingMap.entries()) {
             if (podTimingMap.has(timing)) continue;
             podTimingMap.set(timing, entry);
             registerBaseAbilityAsQueuedTrigger(podDefId, timing);
-        }
-
-        if (!baseAbilityRegistry.has(podDefId)) {
-            baseAbilityRegistry.set(podDefId, podTimingMap);
         }
     }
 
@@ -473,6 +472,11 @@ export function registerBaseAbilities(): void {
             }
         }
         return { events };
+    }, {
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['vpState'],
+        },
     });
 
     // base_castle_blood: 血堡 (Castle Blood)
@@ -531,8 +535,9 @@ export function registerBaseAbilities(): void {
     }, {
         mandatory: false,
         effectContract: {
-            reads: ['minionBoardState'],
+            reads: ['minionBoardState', 'baseState'],
             writes: ['triggerMinionPower'],
+            opensInteraction: true,
         },
     });
 
@@ -555,6 +560,10 @@ export function registerBaseAbilities(): void {
                 timestamp: ctx.now,
             } as VpAwardedEvent],
         };
+    }, {
+        effectContract: {
+            writes: ['vpState'],
+        },
     });
 
     // base_cave_of_shinies_pod: 闪光洞穴（POD）
@@ -574,6 +583,11 @@ export function registerBaseAbilities(): void {
                 timestamp: ctx.now,
             } as VpAwardedEvent],
         };
+    }, {
+        effectContract: {
+            reads: ['turnFlags'],
+            writes: ['vpState'],
+        },
     });
 
     // base_the_factory: 436-1337工厂
@@ -605,6 +619,11 @@ export function registerBaseAbilities(): void {
                 timestamp: ctx.now,
             } as VpAwardedEvent],
         };
+    }, {
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['vpState'],
+        },
     });
 
     // base_tar_pits: 焦油坑
@@ -649,6 +668,11 @@ export function registerBaseAbilities(): void {
             : ctx.state;
         events.push(...buildStandardDrawEvents(drawState, winnerId, 5, ctx.random, ctx.now));
         return { events };
+    }, {
+        effectContract: {
+            reads: ['handState', 'deckState', 'discardState'],
+            writes: ['handState', 'deckState', 'discardState'],
+        },
     });
 
     // base_temple_of_goju: 刚柔流寺庙
@@ -749,11 +773,20 @@ export function registerBaseAbilities(): void {
         }
 
         return { events };
-    }, { mandatory: true });
+    }, {
+        mandatory: true,
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState', 'deckState'],
+            opensInteraction: true,
+        },
+    });
 
     // base_temple_of_goju_pod: POD 版本为“随从被消灭后置牌库底”，
     // 由 reducer 在 MINION_DESTROYED 阶段处理；因此 afterScoring 无效果。
-    registerBaseAbility('base_temple_of_goju_pod', 'afterScoring', () => ({ events: [] }));
+    registerBaseAbility('base_temple_of_goju_pod', 'afterScoring', () => ({ events: [] }), {
+        effectContract: {},
+    });
 
     // base_great_library: 大图书馆
     // "在这个基地计分后，所有在这里有随从的玩家可以抽一张卡牌"
@@ -770,6 +803,11 @@ export function registerBaseAbilities(): void {
             events.push(...buildStandardDrawEvents(ctx.state, pid, 1, ctx.random, ctx.now));
         }
         return { events };
+    }, {
+        effectContract: {
+            reads: ['minionBoardState', 'deckState', 'discardState'],
+            writes: ['handState', 'deckState', 'discardState'],
+        },
     });
 
     // === 扩展包 (Awesome Level 9000) ===
@@ -824,6 +862,7 @@ export function registerBaseAbilities(): void {
         effectContract: {
             reads: ['handState'],
             writes: ['handState', 'discardState'],
+            opensInteraction: true,
         },
     });
 
@@ -843,6 +882,10 @@ export function registerBaseAbilities(): void {
                 timestamp: ctx.now,
             } as VpAwardedEvent],
         };
+    }, {
+        effectContract: {
+            writes: ['vpState'],
+        },
     });
 
     // base_the_workshop: 工坊
@@ -853,6 +896,10 @@ export function registerBaseAbilities(): void {
         return {
             events: [grantContextualExtraAction(ctx, '工坊：额外打出一张战斗牌')],
         };
+    }, {
+        effectContract: {
+            writes: ['playLimits'],
+        },
     });
 
     // base_crypt: 地窖 (Crypt)
@@ -899,6 +946,12 @@ export function registerBaseAbilities(): void {
             events: [],
             matchState: queueInteraction(ctx.matchState, interaction),
         };
+    }, {
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
     });
 
     // === Monster Smash 基地能力 ===
@@ -923,6 +976,7 @@ export function registerBaseAbilities(): void {
         };
     }, {
         effectContract: {
+            reads: ['playLimits', 'minionBoardState', 'baseState'],
             writes: ['triggerMinionPower'],
         },
     });
@@ -947,6 +1001,11 @@ export function registerBaseAbilities(): void {
             }
         }
         return { events };
+    }, {
+        effectContract: {
+            reads: ['minionBoardState', 'baseState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     // base_moot_site: 集会场 (Moot Site)
@@ -977,6 +1036,7 @@ export function registerBaseAbilities(): void {
         };
     }, {
         effectContract: {
+            reads: ['playLimits', 'minionBoardState', 'baseState'],
             writes: ['triggerMinionPower'],
         },
     });
@@ -1042,8 +1102,9 @@ export function registerBaseAbilities(): void {
         };
     }, {
         effectContract: {
-            reads: ['minionBoardState'],
+            reads: ['minionBoardState', 'baseState'],
             writes: ['minionBoardState'],
+            opensInteraction: true,
         },
     });
 
@@ -1066,6 +1127,11 @@ export function registerBaseAbilities(): void {
             } as CardToDeckBottomEvent);
         }
         return { events };
+    }, {
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState', 'deckState'],
+        },
     });
 
     // === 克苏鲁扩展基地 ===
@@ -1085,7 +1151,7 @@ export function registerBaseAbilities(): void {
         return { events: evt ? [evt] : [] };
     }, {
         effectContract: {
-            reads: ['madnessDeckState'],
+            reads: ['minionBoardState', 'baseState', 'madnessDeckState'],
             writes: ['handState', 'madnessDeckState'],
         },
     });
@@ -1123,6 +1189,7 @@ export function registerBaseAbilities(): void {
         effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState', 'vpState'],
+            opensInteraction: true,
         },
     });
 
@@ -1137,6 +1204,10 @@ export function registerBaseAbilities(): void {
                 timestamp: ctx.now,
             } as VpAwardedEvent],
         };
+    }, {
+        effectContract: {
+            writes: ['vpState'],
+        },
     });
 
     // === 基础版需要 Prompt 的基地 ===
@@ -1209,6 +1280,12 @@ export function registerBaseAbilities(): void {
                 },
             }),
         };
+    }, {
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState', 'handState'],
+            opensInteraction: true,
+        },
     });
 
     // base_ninja_dojo: 忍者道场
@@ -1262,10 +1339,19 @@ export function registerBaseAbilities(): void {
         });
 
         return { events: [], matchState: nextMatchState };
-    }, { mandatory: false });
+    }, {
+        mandatory: false,
+        effectContract: {
+            reads: ['minionBoardState', 'baseState', 'controllerState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
+    });
 
     // base_ninja_dojo_pod: POD 勘误为无基地能力。
-    registerBaseAbility('base_ninja_dojo_pod', 'afterScoring', () => ({ events: [] }));
+    registerBaseAbility('base_ninja_dojo_pod', 'afterScoring', () => ({ events: [] }), {
+        effectContract: {},
+    });
 
     // === 基础版需要 Prompt 的基地（续） ===
 
@@ -1332,8 +1418,7 @@ export function registerBaseAbilities(): void {
                 ...minionOptions,
             ];
             if (ctx.matchState) {
-                // 使用 state.nextUid 确保交互 ID 唯一
-                const interactionId = `base_pirate_cove_${pid}_${ctx.state.nextUid}`;
+                const interactionId = `base_pirate_cove_${pid}_${ctx.baseIndex}_${ctx.now}`;
                 const interaction = createSimpleChoice(
                     interactionId, pid,
                     '海盗湾：选择移动一个随从到其他基地', options,
@@ -1388,6 +1473,12 @@ export function registerBaseAbilities(): void {
             }
         }
         return { events, matchState: ctx.matchState };
+    }, {
+        effectContract: {
+            reads: ['minionBoardState', 'controllerState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
     });
 
     // base_tortuga: 托尔图加
@@ -1444,6 +1535,12 @@ export function registerBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } },
             }),
         };
+    }, {
+        effectContract: {
+            reads: ['minionBoardState', 'baseState', 'controllerState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
     });
 
     // base_wizard_academy: 巫师学院
@@ -1476,6 +1573,12 @@ export function registerBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex, topCards: wizardAcademyTopCards } },
             }),
         };
+    }, {
+        effectContract: {
+            reads: ['baseDeckState'],
+            writes: ['baseDeckState'],
+            opensInteraction: true,
+        },
     });
 
     // base_mushroom_kingdom: 蘑菇王国
@@ -1526,8 +1629,9 @@ export function registerBaseAbilities(): void {
         };
     }, {
         effectContract: {
-            reads: ['minionBoardState'],
+            reads: ['minionBoardState', 'baseState', 'controllerState'],
             writes: ['minionBoardState'],
+            opensInteraction: true,
         },
     });
 
@@ -1586,8 +1690,9 @@ export function registerBaseAbilities(): void {
         };
     }, {
         effectContract: {
-            reads: ['handState', 'minionBoardState'],
+            reads: ['handState', 'minionBoardState', 'baseState', 'controllerState'],
             writes: ['minionBoardState'],
+            opensInteraction: true,
         },
     });
 

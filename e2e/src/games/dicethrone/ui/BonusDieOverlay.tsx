@@ -8,6 +8,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
+import { X } from 'lucide-react';
 
 import type { DieFace, BonusDieInfo } from '../domain/types';
 import SpotlightContainer from './SpotlightContainer';
@@ -167,6 +168,14 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
 
         handleOverlayClose();
     }, [bonusDice?.length, handleOverlayClose, onSkipReroll]);
+    const handleEmergencyDismiss = React.useCallback((event?: React.MouseEvent) => {
+        event?.stopPropagation();
+        if (isRerollMode && !displayOnly && typeof onSkipReroll === 'function') {
+            handleConfirmDamage();
+            return;
+        }
+        handleOverlayClose();
+    }, [displayOnly, handleConfirmDamage, handleOverlayClose, isRerollMode, onSkipReroll]);
 
     // 调试日志：组件渲染
     React.useEffect(() => {
@@ -231,7 +240,16 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                 closeClickGuardMs={BONUS_DIE_CLOSE_CLICK_GUARD_MS}
                 usePortal={usePortal}
             >
-                <div className="flex flex-col items-center gap-[1.5vw]" data-testid="bonus-die-overlay">
+                <div className="relative flex flex-col items-center gap-[1.5vw]" data-testid="bonus-die-overlay">
+                    <GameButton
+                        type="button"
+                        variant="glass"
+                        size="sm"
+                        icon={<X size={16} />}
+                        onClick={handleEmergencyDismiss}
+                        aria-label={requiresExplicitSettlement ? t('bonusDie.confirmDamage') : t('bonusDie.closeSpotlight')}
+                        className="absolute right-0 top-0 !min-h-0 !rounded-full !px-[0.7vw] !py-[0.7vw] !shadow-[0_0_16px_rgba(0,0,0,0.35)]"
+                    />
                     {/* 提示文字 - DiceThrone 风格 */}
                     <motion.div
                         initial={{ opacity: 0, y: -20 }}
@@ -372,7 +390,16 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
             closeClickGuardMs={BONUS_DIE_CLOSE_CLICK_GUARD_MS}
             usePortal={usePortal}
         >
-            <div data-testid="bonus-die-overlay">
+            <div className="relative" data-testid="bonus-die-overlay">
+                <GameButton
+                    type="button"
+                    variant="glass"
+                    size="sm"
+                    icon={<X size={16} />}
+                    onClick={handleEmergencyDismiss}
+                    aria-label={t('bonusDie.closeSpotlight')}
+                    className="absolute -right-[1vw] -top-[1vw] !min-h-0 !rounded-full !px-[0.7vw] !py-[0.7vw] !shadow-[0_0_16px_rgba(0,0,0,0.35)]"
+                />
                 <BonusDieSpotlightContent
                     value={value}
                     face={face}

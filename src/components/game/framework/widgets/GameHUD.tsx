@@ -63,6 +63,8 @@ interface GameHUDProps {
     onForceExit?: () => void;
     showForceEndAiPhase?: boolean;
     onForceEndAiPhase?: () => boolean | void | Promise<boolean | void>;
+    showForceDismissPopup?: boolean;
+    onForceDismissPopup?: () => boolean | void | Promise<boolean | void>;
     showSeatSwap?: boolean;
     seatSwapActionLabel?: string;
     seatSwapActionActive?: boolean;
@@ -104,6 +106,8 @@ export const trimChatMessages = (
     return messages.slice(messages.length - maxMessages);
 };
 
+export const GAME_HUD_FAB_Z_INDEX = UI_Z_INDEX.emergencyHud;
+
 export const GameHUD = ({
     mode,
     matchId,
@@ -120,6 +124,8 @@ export const GameHUD = ({
     onForceExit,
     showForceEndAiPhase,
     onForceEndAiPhase,
+    showForceDismissPopup,
+    onForceDismissPopup,
     showSeatSwap,
     seatSwapActionLabel,
     seatSwapActionActive,
@@ -144,10 +150,11 @@ export const GameHUD = ({
     }, [_gameId]);
 
     const locale = i18n.language;
-    const { openModal, closeModal } = useModalStack();
+    const { stack, openModal, closeModal, closeTop } = useModalStack();
     const { unreadTotal, requests, ensureRealtimeConnection } = useOptionalSocial();
     const [copied, setCopied] = useState(false);
     const [isForceEndingAiPhase, setIsForceEndingAiPhase] = useState(false);
+    const [isForceDismissingPopup, setIsForceDismissingPopup] = useState(false);
 
     // 撤回状态
     const undoState = useUndo();
@@ -459,6 +466,9 @@ export const GameHUD = ({
     // 本地模式：无聊天主按钮，设置按钮应作为离主球最近的第一个卫星按钮
     const useChatAsMain = isOnline || isTutorial;
     const canForceEndAiPhase = Boolean(showForceEndAiPhase && onForceEndAiPhase);
+    const topModalId = stack[stack.length - 1]?.id ?? null;
+    const hasLocalClosableForegroundUi = Boolean(showAbout || showFeedback || socialModalId || stack.length > 0);
+    const canForceDismissPopup = Boolean(showForceDismissPopup || onForceDismissPopup || hasLocalClosableForegroundUi);
     const handleForceEndAiPhaseClick = useCallback(async (closePanel: () => void) => {
         if (!onForceEndAiPhase || isForceEndingAiPhase) {
             return;
@@ -473,6 +483,57 @@ export const GameHUD = ({
             setIsForceEndingAiPhase(false);
         }
     }, [isForceEndingAiPhase, onForceEndAiPhase]);
+    const handleForceDismissPopupClick = useCallback(async (closePanel: () => void) => {
+        if (isForceDismissingPopup) {
+            return;
+        }
+
+        setIsForceDismissingPopup(true);
+        try {
+            let handled = false;
+            if (onForceDismissPopup) {
+                const result = await onForceDismissPopup();
+                handled = result !== false;
+            }
+
+            if (!handled) {
+                if (topModalId) {
+                    if (socialModalId && topModalId === socialModalId) {
+                        closeModal(socialModalId);
+                    } else {
+                        closeTop();
+                    }
+                    handled = true;
+                } else if (showFeedback) {
+                    setShowFeedback(false);
+                    handled = true;
+                } else if (showAbout) {
+                    setShowAbout(false);
+                    handled = true;
+                }
+            }
+
+            if (handled) {
+                closePanel();
+                return;
+            }
+
+            toast.info(t('hud.ai.forceDismissPopupUnavailable'));
+        } finally {
+            setIsForceDismissingPopup(false);
+        }
+    }, [
+        closeModal,
+        closeTop,
+        isForceDismissingPopup,
+        onForceDismissPopup,
+        showAbout,
+        showFeedback,
+        socialModalId,
+        topModalId,
+        t,
+        toast,
+    ]);
 
     if (useChatAsMain) {
         // [0] 聊天（主按钮）
@@ -950,7 +1011,41 @@ export const GameHUD = ({
         });
     }
 
-    // 5.6 换位（位于操作日志与强制结束 AI 之间）
+    // 5.6 强制去弹窗（用于前台阻塞弹层/特写卡死）
+    if (canForceDismissPopup) {
+        items.push({
+            id: 'force-dismiss-popup',
+            icon: <AlertTriangle size={20} />,
+            label: t('hud.ai.forceDismissPopup'),
+            color: 'text-rose-300',
+            content: ({ closePanel }) => (
+                <div className="space-y-3">
+                    <p className="text-xs text-white/70">
+                        {t('hud.ai.forceDismissPopupHint')}
+                    </p>
+                    <button
+                        type="button"
+                        onClick={() => {
+                            void handleForceDismissPopupClick(closePanel);
+                        }}
+                        disabled={isForceDismissingPopup}
+                        className={`w-full rounded-md border px-3 py-2 text-xs font-bold transition-colors ${
+                            isForceDismissingPopup
+                                ? 'cursor-wait border-rose-500/25 bg-rose-500/10 text-rose-100/70'
+                                : 'border-rose-500/40 bg-rose-500/15 text-rose-100 hover:bg-rose-500/25'
+                        }`}
+                        data-testid="hud-force-dismiss-popup"
+                    >
+                        {isForceDismissingPopup
+                            ? t('hud.ai.forceDismissPopupSubmitting')
+                            : t('hud.ai.forceDismissPopupConfirm')}
+                    </button>
+                </div>
+            ),
+        });
+    }
+
+    // 5.7 换位（位于操作日志与强制结束 AI 之间）
     if (showSeatSwap && (seatSwapContent || onSeatSwapClick)) {
         items.push({
             id: 'seat-swap',
@@ -993,7 +1088,7 @@ export const GameHUD = ({
                 isDark={true}
                 items={items}
                 position="bottom-right"
-                zIndex={UI_Z_INDEX.overlayRaised}
+                zIndex={GAME_HUD_FAB_Z_INDEX}
             />
 
             {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}

@@ -217,8 +217,45 @@ describe('BonusDieOverlay', () => {
         );
 
         expect(html).toContain('bonusDie.diceResult');
+        expect(html).toContain('bonusDie.closeSpotlight');
         expect(html).not.toContain('bonusDie.continue');
         expect(html).not.toContain('bonusDie.confirmDamage');
+    });
+
+    it('阻塞式奖励骰结算的关闭按钮应走确认伤害收口，而不是只做本地关闭', () => {
+        const onClose = vi.fn();
+        const onSkipReroll = vi.fn();
+
+        render(
+            <BonusDieOverlay
+                isVisible
+                onClose={onClose}
+                bonusDice={buildBonusDice()}
+                canReroll={false}
+                onSkipReroll={onSkipReroll}
+            />
+        );
+
+        fireEvent.click(screen.getByLabelText('bonusDie.confirmDamage'));
+        expect(onSkipReroll).toHaveBeenCalledTimes(1);
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    it('单骰特写的关闭按钮应直接关闭特写', () => {
+        const onClose = vi.fn();
+
+        render(
+            <BonusDieOverlay
+                isVisible
+                onClose={onClose}
+                value={4}
+                face="lotus"
+                autoCloseDelay={10000}
+            />
+        );
+
+        fireEvent.click(screen.getByLabelText('bonusDie.closeSpotlight'));
+        expect(onClose).toHaveBeenCalledTimes(1);
     });
 
     it('多骰紧凑模式不应在每颗骰子下重复渲染长效果文本', async () => {

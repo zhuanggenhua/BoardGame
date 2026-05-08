@@ -544,6 +544,7 @@ export type ReactionOrderingAtom =
     | 'triggerMinionPower'
     | 'minionBoardState'
     | 'titanBoardState'
+    | 'baseDeckState'
     | 'handState'
     | 'deckState'
     | 'madnessDeckState'

@@ -666,6 +666,7 @@
     "rerollLimitReached": "已达到本次重掷上限",
     "diceResult": "投掷结果",
     "total": "总伤害",
+    "closeSpotlight": "关闭特写",
     "confirmDamage": "确认伤害",
     "continue": "继续",
     "knockdownTrigger": "倒地!"

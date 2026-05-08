@@ -1839,6 +1839,17 @@ const OnlineGameHudBridge = ({
         seatControllers,
     }), [fallbackPlayers, isConnected, matchPlayers, myPlayerId, seatControllers]);
     const canForceEndAiPhase = Boolean(showForceEndAiPhase && onForceEndAiPhase);
+    const canForceDismissPopup = true;
+    const forceDismissPopup = useCallback(async (): Promise<boolean> => {
+        if (gameId === 'dicethrone') {
+            const currentInteractionKind = (state as MatchState<unknown> | null | undefined)?.sys?.interaction?.current?.kind;
+            if (currentInteractionKind === 'dt:bonus-dice') {
+                dispatch('SKIP_BONUS_DICE_REROLL', {});
+                return true;
+            }
+        }
+        return false;
+    }, [dispatch, gameId, state]);
     const normalizedMyPlayerId = myPlayerId != null ? String(myPlayerId) : null;
     const seatNameByPlayerId = useMemo(() => {
         const map = new Map<string, string>();
@@ -2011,6 +2022,8 @@ const OnlineGameHudBridge = ({
             onForceExit={onForceExit}
             showForceEndAiPhase={canForceEndAiPhase}
             onForceEndAiPhase={canForceEndAiPhase ? onForceEndAiPhase : undefined}
+            showForceDismissPopup={canForceDismissPopup}
+            onForceDismissPopup={forceDismissPopup}
             showSeatSwap={Boolean(seatSwapContext)}
             seatSwapActionActive={Boolean(seatSwapContext?.pendingSeatSwapRequest)}
             seatSwapContent={seatSwapContent}
