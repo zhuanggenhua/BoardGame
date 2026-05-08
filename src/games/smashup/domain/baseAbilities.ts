@@ -12,10 +12,7 @@ import type {
     MinionCardDef,
     MinionReturnedEvent,
     VpAwardedEvent,
-    CardsDrawnEvent,
     CardsDiscardedEvent,
-
-    LimitModifiedEvent,
     CardToDeckBottomEvent,
     MinionOnBase,
     BaseDeckReorderedEvent,
