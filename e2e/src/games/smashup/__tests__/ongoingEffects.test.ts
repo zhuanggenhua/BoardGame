@@ -275,6 +275,11 @@ describe('持续效果拦截框架', () => {
                     }
                 }
                 return [];
+            }, {
+                effectContract: {
+                    reads: ['baseState'],
+                    writes: ['minionBoardState'],
+                },
             });
 
             const base = makeBase({
@@ -301,7 +306,9 @@ describe('持续效果拦截框架', () => {
                 type: SU_EVENTS.MINION_DESTROYED,
                 payload: { minionUid: 'x', minionDefId: 'x', fromBaseIndex: 0, ownerId: '1', reason: 'test' },
                 timestamp: 0,
-            }]);
+            }], {
+                effectContract: { writes: ['minionBoardState'] },
+            });
 
             const base = makeBase(); // 无 ongoing
             const state = makeState([base]);
@@ -343,12 +350,16 @@ describe('持续效果拦截框架', () => {
                 type: SU_EVENTS.CARDS_DRAWN,
                 payload: { playerId: '0', count: 1, cardUids: ['a'] },
                 timestamp: 0,
-            }]);
+            }], {
+                effectContract: { writes: ['handState'] },
+            });
             registerTrigger('trigger_b', 'onMinionPlayed', () => [{
                 type: SU_EVENTS.CARDS_DRAWN,
                 payload: { playerId: '1', count: 1, cardUids: ['b'] },
                 timestamp: 0,
-            }]);
+            }], {
+                effectContract: { writes: ['handState'] },
+            });
 
             const base = makeBase({
                 minions: [
@@ -400,7 +411,9 @@ describe('持续效果拦截框架', () => {
                 type: SU_EVENTS.MINION_RETURNED,
                 payload: { minionUid: 'x', minionDefId: 'x', fromBaseIndex: 0, toPlayerId: '0', reason: 'escape_hatch' },
                 timestamp: 0,
-            }]);
+            }], {
+                effectContract: { writes: ['minionBoardState', 'handState'] },
+            });
 
             const minion = makeMinion({
                 uid: 'm-1',
@@ -441,7 +454,9 @@ describe('持续效果拦截框架', () => {
                     sourceBaseIndex: ctx.sourceBaseIndex,
                 },
                 timestamp: ctx.now,
-            } as SmashUpEvent]);
+            } as SmashUpEvent], {
+                effectContract: { writes: ['playLimits'] },
+            });
 
             const first = makeMinion({ uid: 'source-a', defId: 'test_source' });
             const second = makeMinion({ uid: 'source-b', defId: 'test_source' });
@@ -473,6 +488,7 @@ describe('持续效果拦截框架', () => {
             } as SmashUpEvent], {
                 global: true,
                 globalZones: ['deck'],
+                effectContract: { writes: ['playLimits'] },
             });
 
             const state = makeState([makeBase()]);

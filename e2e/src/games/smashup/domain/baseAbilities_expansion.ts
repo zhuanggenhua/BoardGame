@@ -43,9 +43,8 @@ import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
 import { getPlayerLabel } from './utils';
 import {
     appendPendingPostScoringActions,
-    getDeferredPostScoringEvents as readDeferredPostScoringEvents,
     getDeferredReplacementBaseDefId,
-    mergeDeferredPostScoringCompatibility,
+    isScoringSessionAwaitingDeferredResolution,
 } from './scoringSession';
 import {
     queueBranchingChoice,
@@ -56,13 +55,6 @@ import {
 
 function getContinuationContext<T>(interactionData: Record<string, unknown> | undefined): T | undefined {
     return interactionData?.continuationContext as T | undefined;
-}
-
-function getDeferredPostScoringEvents(
-    state: MatchState<SmashUpCore>,
-    interactionData: Record<string, unknown> | undefined,
-): SmashUpEvent[] | undefined {
-    return readDeferredPostScoringEvents(state, interactionData) as SmashUpEvent[] | undefined;
 }
 
 function getSpiritOptionalBothUpgradeForBase(
@@ -178,7 +170,7 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState'],
         },
@@ -220,7 +212,7 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['discardState'],
             writes: ['discardState', 'baseState'],
         },
@@ -248,7 +240,7 @@ export function registerExpansionBaseAbilities(): void {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        orderingFootprint: {
+        effectContract: {
             writes: ['playLimits', 'handState', 'deckState'],
         },
     });
@@ -265,7 +257,7 @@ export function registerExpansionBaseAbilities(): void {
             events: [addTempPower(ctx.minionUid, ctx.baseIndex, 2, 'base_hall_of_fame', ctx.now)],
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             writes: ['triggerMinionPower'],
         },
     });
@@ -300,7 +292,7 @@ export function registerExpansionBaseAbilities(): void {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['handState', 'minionBoardState'],
             writes: ['handState', 'minionBoardState'],
         },
@@ -393,7 +385,7 @@ export function registerExpansionBaseAbilities(): void {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['handState', 'madnessDeckState'],
             writes: ['handState', 'madnessDeckState', 'playLimits'],
         },
@@ -423,7 +415,7 @@ export function registerExpansionBaseAbilities(): void {
             ],
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             writes: ['playLimits'],
         },
     });
@@ -557,7 +549,7 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState', 'handState', 'deckState'],
         },
@@ -605,7 +597,7 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['titanBoardState'],
             writes: ['playLimits', 'titanBoardState'],
         },
@@ -663,7 +655,7 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState'],
         },
@@ -730,7 +722,14 @@ export function registerExpansionBaseAbilities(): void {
         });
         // 返回空事件 + 更新后的 matchState（processDestroyTriggers 检测到 matchState 变化 → pendingSaveMinionUids）
         return { events: [], matchState: updatedMS };
-    }, { phase: 'replacement' });
+    }, {
+        phase: 'replacement',
+        effectContract: {
+            reads: ['baseState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
+    });
 
     // ── 被动保护类基地──────────────────────────────────────────
 
@@ -1170,15 +1169,9 @@ export function registerExpansionBaseInteractionHandlers(): void {
         );
         if (!cardInDeck) return { state, events: [] };
         const power = selected.power ?? (getMinionDef(selected.defId!)?.power ?? 0);
-        const deferredEvents = (getDeferredPostScoringEvents(state, iData) ?? []) as Array<{
-            type: string;
-            payload?: { newBaseDefId?: string };
-            timestamp: number;
-        }>;
-        const replacementBaseDefId = getDeferredReplacementBaseDefId(state, iData)
-            ?? state.core.bases[ctx.baseIndex]?.defId;
-        if (!replacementBaseDefId) return { state, events: [] };
-        if (deferredEvents.length > 0) {
+        if (isScoringSessionAwaitingDeferredResolution(state)) {
+            const replacementBaseDefId = getDeferredReplacementBaseDefId(state, iData);
+            if (!replacementBaseDefId) return { state, events: [] };
             const pendingAction: PendingPostScoringAction = {
                 kind: 'playMinionOnReplacementBase',
                 playerId,
@@ -1188,18 +1181,13 @@ export function registerExpansionBaseInteractionHandlers(): void {
                 targetBaseDefId: replacementBaseDefId,
                 power,
             };
-            const compatibility = mergeDeferredPostScoringCompatibility(state, iData, timestamp, {
-                primaryOrder: 'before',
-                extraPendingActions: [pendingAction],
-            });
-            if (compatibility) {
-                return compatibility;
-            }
             return {
                 state: appendPendingPostScoringActions(state, [pendingAction]),
                 events: [],
             };
         }
+        const replacementBaseDefId = state.core.bases[ctx.baseIndex]?.defId;
+        if (!replacementBaseDefId) return { state, events: [] };
         const playedEvt: MinionPlayedEvent = {
             type: SU_EVENTS.MINION_PLAYED,
             payload: {

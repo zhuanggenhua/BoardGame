@@ -72,6 +72,20 @@ describe('同一交互重复 respond 防护', () => {
                     ],
                     sourceId: 'giant_ant_drone_prevent_destroy',
                     targetType: 'generic',
+                    runtimePrompt: {
+                        owner: 'smashup-ability-runtime',
+                        sourceId: 'giant_ant_drone_prevent_destroy',
+                        continuation: {
+                            context: {
+                                playerId: '0',
+                                now: 0,
+                                targetMinionUid: 'target-1',
+                                targetMinionDefId: 'test_minion',
+                                fromBaseIndex: 0,
+                                toPlayerId: '0',
+                            },
+                        },
+                    },
                     continuationContext: {
                         targetMinionUid: 'target-1',
                         targetMinionDefId: 'test_minion',
@@ -171,6 +185,20 @@ describe('同一交互重复 respond 防护', () => {
                     ],
                     sourceId: 'giant_ant_drone_prevent_destroy',
                     targetType: 'generic',
+                    runtimePrompt: {
+                        owner: 'smashup-ability-runtime',
+                        sourceId: 'giant_ant_drone_prevent_destroy',
+                        continuation: {
+                            context: {
+                                playerId: '0',
+                                now: 0,
+                                targetMinionUid: 'target-1',
+                                targetMinionDefId: 'test_minion',
+                                fromBaseIndex: 0,
+                                toPlayerId: '0',
+                            },
+                        },
+                    },
                     continuationContext: {
                         targetMinionUid: 'target-1',
                         targetMinionDefId: 'test_minion',

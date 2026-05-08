@@ -5,7 +5,11 @@ import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as matchApi from '../../services/matchApi';
 import { isMatchNotFoundError, leaveMatch, useMatchStatus, validateStoredMatchSeat, type StoredMatchCredentials } from '../../hooks/match/useMatchStatus';
-import { haveAiSeatCredentialsChanged, loadOnlineAiSeatState } from '../onlineAiSeats';
+import {
+    haveAiSeatCredentialsChanged,
+    loadOnlineAiSeatState,
+    resolveMissingOnlineAiSeatCredentialIds,
+} from '../onlineAiSeats';
 import type { GameManifestEntry } from '../../games/manifest.types';
 import type { MatchState } from '../../engine/types';
 import { registerGameAiRuntime, resolveNextAiAction, resolveNextAiDispatch, resolveOnlineAiDecisionView } from '../../engine/ai';
@@ -17,6 +21,7 @@ import {
     tryReserveAiAttemptKey,
     useGameClient,
 } from '../../engine/transport/react';
+import { buildLocalMatchSnapshotKey, persistLocalMatchSnapshot } from '../../engine/transport/localSession';
 import {
     applyAiAutoRecoveryRejection,
     finalizeOnlineAiResolutionConfirmation,
@@ -637,6 +642,23 @@ describe('onlineAiSeats', () => {
             '1': 'existing-ai-1',
             '2': 'claimed-2',
         });
+    });
+
+    it('应识别仍缺少凭据的 AI 座位，供重进后的自动补领重试使用', () => {
+        expect(resolveMissingOnlineAiSeatCredentialIds({
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', difficulty: 'hard' },
+            '2': { type: 'local-ai', difficulty: 'normal' },
+        }, {
+            '1': 'existing-ai-1',
+        })).toEqual(['2']);
+
+        expect(resolveMissingOnlineAiSeatCredentialIds({
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', difficulty: 'hard' },
+        }, {
+            '1': 'existing-ai-1',
+        })).toEqual([]);
     });
 
     it('回归：matchInfo.players 暂未列出后续空座时，仍应从显式 seatControllers 恢复第二个 AI 座位', async () => {
@@ -3081,6 +3103,147 @@ describe('LocalGameProvider AI 重试集成', () => {
         await waitFor(() => {
             expect(decideSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
         }, { timeout: 1000 });
+    });
+
+    it('回归：从本地快照恢复到 AI 回合后，AI 应继续自动推进', async () => {
+        const gameId = '__test_local_ai_resume_after_restore__';
+        const seed = 'local-ai-resume-seed';
+        const decideSpy = vi.fn(() => ({ actionId: 'advance-to-human' }));
+
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId, state }) => {
+                const core = state.core as {
+                    currentPlayerIndex?: number;
+                    turnOrder?: string[];
+                };
+                const currentPlayerId = Array.isArray(core.turnOrder) && typeof core.currentPlayerIndex === 'number'
+                    ? core.turnOrder[core.currentPlayerIndex]
+                    : null;
+                if (playerId !== '1' || currentPlayerId !== '1') {
+                    return [];
+                }
+                return [{
+                    actionId: 'advance-to-human',
+                    kind: 'advance-phase',
+                    label: '推进到真人回合',
+                    commands: [{ type: 'ADVANCE_TO_HUMAN', payload: {} }],
+                }];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: decideSpy,
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const engineConfig = {
+            gameId,
+            domain: {
+                gameId,
+                setup: () => ({
+                    turnOrder: ['0', '1'],
+                    currentPlayerIndex: 1,
+                }),
+                validate: () => ({ valid: true }),
+                execute: (_state: MatchState<unknown>, command: { type: string }) => (
+                    command.type === 'ADVANCE_TO_HUMAN'
+                        ? [{ type: 'TURN_PASSED' } as const]
+                        : []
+                ),
+                reduce: (
+                    core: {
+                        turnOrder: string[];
+                        currentPlayerIndex: number;
+                        resumedAiTurns?: number;
+                    },
+                    event: { type: string },
+                ) => (
+                    event.type === 'TURN_PASSED'
+                        ? {
+                            ...core,
+                            currentPlayerIndex: 0,
+                            resumedAiTurns: (core.resumedAiTurns ?? 0) + 1,
+                        }
+                        : core
+                ),
+            },
+            systems: [],
+        } as const;
+
+        const snapshotState = {
+            core: {
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 1,
+                resumedAiTurns: 0,
+            },
+            sys: {
+                phase: 'playCards',
+                turnNumber: 3,
+                eventStream: {
+                    nextId: 1,
+                    entries: [],
+                },
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        } as MatchState<unknown>;
+
+        persistLocalMatchSnapshot({
+            gameId,
+            seed,
+            numPlayers: 2,
+            state: snapshotState,
+            randomCursor: 0,
+        });
+
+        const Probe = () => {
+            const { state } = useGameClient<{
+                currentPlayerIndex: number;
+                resumedAiTurns?: number;
+            }>();
+            return createElement(
+                'div',
+                {
+                    'data-testid': 'local-ai-resume-probe',
+                },
+                JSON.stringify({
+                    currentPlayerIndex: state?.core.currentPlayerIndex ?? null,
+                    resumedAiTurns: state?.core.resumedAiTurns ?? null,
+                }),
+            );
+        };
+
+        try {
+            render(createElement(
+                LocalGameProvider,
+                {
+                    config: engineConfig as never,
+                    numPlayers: 2,
+                    seed,
+                    persistSession: true,
+                    seatControllers: { '1': { type: 'local-ai', minimumActionDelayMs: 0 } },
+                },
+                createElement(Probe),
+            ));
+
+            await waitFor(() => {
+                const probe = screen.getByTestId('local-ai-resume-probe');
+                expect(probe.textContent).toContain('"currentPlayerIndex":0');
+                expect(probe.textContent).toContain('"resumedAiTurns":1');
+            }, { timeout: 1500 });
+
+        } finally {
+            localStorage.removeItem(buildLocalMatchSnapshotKey(gameId, seed));
+        }
     });
 });
 

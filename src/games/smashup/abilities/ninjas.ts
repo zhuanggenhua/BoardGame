@@ -1031,14 +1031,14 @@ function registerNinjaOngoingEffects(): void {
         }
         return events;
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState'],
         },
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'minionBoardState'],
-            writes: ['sourceState', 'minionBoardState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState'],
+            writes: ['sourceSelfState', 'minionBoardState'],
         },
     });
 
@@ -1070,13 +1070,13 @@ function registerNinjaOngoingEffects(): void {
         }
         return events;
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'minionBoardState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState'],
             writes: ['minionBoardState'],
         },
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'minionBoardState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState'],
             writes: ['minionBoardState'],
         },
     });
@@ -1109,14 +1109,14 @@ function registerNinjaOngoingEffects(): void {
         }
         return events;
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState'],
         },
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'minionBoardState'],
-            writes: ['sourceState', 'minionBoardState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState'],
+            writes: ['sourceSelfState', 'minionBoardState'],
         },
     });
 }

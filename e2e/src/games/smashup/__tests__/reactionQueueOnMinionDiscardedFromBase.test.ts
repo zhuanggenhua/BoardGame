@@ -13,8 +13,12 @@ beforeEach(() => {
 
 describe('reaction queue: onMinionDiscardedFromBase ordering', () => {
   it('multiple mandatory discarded-from-base triggers open ordering interaction', () => {
-    registerTrigger('test_discard_a', 'onMinionDiscardedFromBase', () => []);
-    registerTrigger('test_discard_b', 'onMinionDiscardedFromBase', () => []);
+    registerTrigger('test_discard_a', 'onMinionDiscardedFromBase', () => [], {
+      effectContract: { writes: ['minionBoardState'] },
+    });
+    registerTrigger('test_discard_b', 'onMinionDiscardedFromBase', () => [], {
+      effectContract: { writes: ['minionBoardState'] },
+    });
 
     const core = makeState({
       turnOrder: ['0', '1'],

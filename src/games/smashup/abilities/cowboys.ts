@@ -204,23 +204,31 @@ export function registerCowboysAbilities(): void {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState', 'turnFlags'],
+            opensInteraction: true,
+        },
     });
     registerTrigger('cowboys_gold_strike', 'onMinionPlayed', cowboysGoldStrikeOnMinionPlayed, {
         perInstance: true,
         sourceScope: 'triggerBase',
-        orderingFootprint: {
-            reads: ['sourceState', 'deckState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'controllerState', 'handState', 'deckState', 'discardState'],
             writes: ['handState', 'deckState'],
         },
     });
     registerTrigger('cowboys_dynamite_surprise', 'onDeckInspected', cowboysDynamiteSurpriseSeenTrigger, {
         global: true,
         globalZones: ['hand', 'deck'],
+        effectContract: {
+            reads: ['controllerState', 'sourceSelfState', 'scoringState', 'handState', 'deckState', 'minionBoardState', 'baseState', 'turnFlags'],
+            opensInteraction: true,
+        },
     });
 
     registerBaseAbility('base_so_so_corral', 'onMinionPlayed', cowboysBaseSoSoCorralOnMinionPlayed, {
         mandatory: false,
-        orderingFootprint: {
+        effectContract: {
             reads: ['triggerMinionState', 'minionBoardState'],
             writes: ['minionBoardState'],
         },

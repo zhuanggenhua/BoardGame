@@ -29,6 +29,12 @@ import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { initAllAbilities } from '../abilities';
 import { createSmashUpEventSystem } from '../domain/systems';
+import {
+    appendScoringFrameDeferredPayload,
+    createScoringBaseRef,
+    createScoringSession,
+    setScoringSession,
+} from '../domain/scoringSession';
 import { findInteractionOption, getInteractionsFromMS, makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState, resolveInteractionChain } from './helpers';
 import { runCommand } from './testRunner';
 import type { TitanState } from '../domain/types';
@@ -3619,7 +3625,7 @@ describe('smashup', () => {
         });
     });
 
-    it('彩虹鸟在你赢得基地后会创建打到替换基地的 special 交互', () => {
+    it('彩虹鸟的替换基地 special 会在 scoreBases 收尾时真正把泰坦落到新基地', () => {
         const core = makeState({
             bases: [
                 makeBase({ defId: 'base_the_homeworld' }),
@@ -3638,24 +3644,35 @@ describe('smashup', () => {
             } satisfies TitanState],
         });
 
-        const triggerResult = fireTriggers(core, 'afterScoring', {
-            state: core,
-            matchState: makeMatchState(core),
-            playerId: '0',
-            baseIndex: 0,
-            rankings: [
-                { playerId: '0', power: 10, vp: 1 },
-                { playerId: '1', power: 6, vp: 0 },
-            ],
-            random: FIXED_RANDOM,
-            now: 84,
+        const baseRef = createScoringBaseRef(core, 0);
+        if (!baseRef) {
+            throw new Error('无法构造彩虹鸟替换基地 scoring base ref');
+        }
+
+        let state = makeMatchState(core, 'scoreBases', '0');
+        state = setScoringSession(state, {
+            ...createScoringSession(core, [0]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-interactions',
         });
-
-        expect(getInteractionsFromMS(triggerResult.matchState!).map(interaction => interaction.data?.sourceId)).toContain(
-            'titan_itty_critters_rainboroc_play_replacement',
-        );
-
-        const state = makeMatchState(core);
+        state = appendScoringFrameDeferredPayload(state, {
+            deferredEvents: [
+                {
+                    type: SU_EVENTS.BASE_CLEARED,
+                    payload: { baseIndex: 0, baseDefId: core.bases[0].defId },
+                    timestamp: 85,
+                },
+                {
+                    type: SU_EVENTS.BASE_REPLACED,
+                    payload: {
+                        baseIndex: 0,
+                        oldBaseDefId: core.bases[0].defId,
+                        newBaseDefId: 'base_factory_436-1337',
+                    },
+                    timestamp: 85,
+                },
+            ],
+        });
         const smashUpEventSystem = createSmashUpEventSystem();
         const hook = smashUpEventSystem.afterEvents?.({
             state,
@@ -3672,22 +3689,7 @@ describe('smashup', () => {
                         continuationContext: {
                             titanUid: 't-rainboroc-setaside',
                             titanDefId: 'itty_critters_rainboroc',
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: SU_EVENTS.BASE_CLEARED,
-                                    payload: { baseIndex: 0, baseDefId: core.bases[0].defId },
-                                    timestamp: 85,
-                                },
-                                {
-                                    type: SU_EVENTS.BASE_REPLACED,
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: core.bases[0].defId,
-                                        newBaseDefId: 'base_factory_436-1337',
-                                    },
-                                    timestamp: 85,
-                                },
-                            ],
+                            scoringBaseIndex: 0,
                         },
                     },
                 },
@@ -3697,16 +3699,26 @@ describe('smashup', () => {
         }) as any;
 
         const emittedEvents = hook?.events ?? [];
-        expect(emittedEvents.map((event: SmashUpEvent) => event.type)).toEqual([
+        expect(emittedEvents).toEqual([]);
+        expect(hook?.state?.sys?.interaction?.current).toBeFalsy();
+
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: hook?.state ?? state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            random: FIXED_RANDOM,
+        });
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
+        expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
             SU_EVENTS.BASE_CLEARED,
             SU_EVENTS.BASE_REPLACED,
             SU_EVENTS.TITAN_PLAYED,
         ]);
 
-        const postSystemState = hook?.state ?? state;
-        const finalCore = emittedEvents.reduce(
+        const finalCore = finalizeEvents.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            postSystemState.core,
+            (hook?.state ?? state).core,
         );
         expect(finalCore.titans?.find(candidate => candidate.uid === 't-rainboroc-setaside')?.location).toMatchObject({
             zone: 'base',
@@ -6259,7 +6271,35 @@ describe('smashup', () => {
             } satisfies TitanState],
         });
 
-        const state = makeMatchState(core);
+        const baseRef = createScoringBaseRef(core, 0);
+        if (!baseRef) {
+            throw new Error('无法构造海怪克拉肯替换基地 scoring base ref');
+        }
+
+        let state = makeMatchState(core, 'scoreBases', '0');
+        state = setScoringSession(state, {
+            ...createScoringSession(core, [0]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-interactions',
+        });
+        state = appendScoringFrameDeferredPayload(state, {
+            deferredEvents: [
+                {
+                    type: SU_EVENTS.BASE_CLEARED,
+                    payload: { baseIndex: 0, baseDefId: 'base_the_homeworld' },
+                    timestamp: 75,
+                },
+                {
+                    type: SU_EVENTS.BASE_REPLACED,
+                    payload: {
+                        baseIndex: 0,
+                        oldBaseDefId: 'base_the_homeworld',
+                        newBaseDefId: 'base_factory_436-1337',
+                    },
+                    timestamp: 75,
+                },
+            ],
+        });
         const smashUpEventSystem = createSmashUpEventSystem();
         const hook = smashUpEventSystem.afterEvents?.({
             state,
@@ -6279,22 +6319,6 @@ describe('smashup', () => {
                             ownerId: '0',
                             controllerId: '0',
                             scoringBaseIndex: 0,
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: SU_EVENTS.BASE_CLEARED,
-                                    payload: { baseIndex: 0, baseDefId: 'base_the_homeworld' },
-                                    timestamp: 75,
-                                },
-                                {
-                                    type: SU_EVENTS.BASE_REPLACED,
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_the_homeworld',
-                                        newBaseDefId: 'base_factory_436-1337',
-                                    },
-                                    timestamp: 75,
-                                },
-                            ],
                         },
                     },
                 },
@@ -6304,16 +6328,26 @@ describe('smashup', () => {
         }) as any;
 
         const emittedEvents = hook?.events ?? [];
-        expect(emittedEvents.map((event: SmashUpEvent) => event.type)).toEqual([
+        expect(emittedEvents).toEqual([]);
+        expect(hook?.state?.sys?.interaction?.current).toBeFalsy();
+
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: hook?.state ?? state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            random: FIXED_RANDOM,
+        });
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
+        expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
             SU_EVENTS.BASE_CLEARED,
             SU_EVENTS.BASE_REPLACED,
             SU_EVENTS.TITAN_PLAYED,
         ]);
 
-        const postSystemState = hook?.state ?? state;
-        const finalCore = emittedEvents.reduce(
+        const finalCore = finalizeEvents.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            postSystemState.core,
+            (hook?.state ?? state).core,
         );
         const kraken = (finalCore.titans ?? []).find(candidate => candidate.uid === 't-kraken-setaside');
 

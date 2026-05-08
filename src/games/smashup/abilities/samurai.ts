@@ -56,6 +56,40 @@ type SamuraiCombatPromptContext = SamuraiCombatRootContext & { baseIndex: number
 type SamuraiCodeOfBushidoContext = SamuraiPromptContext & { remaining: number };
 type SamuraiHonorAncestorsContext = SamuraiPromptContext & HonorAncestorsContinuation;
 
+const samuraiChanTriggerContract = {
+    reads: ['controllerState', 'handState', 'deckState', 'discardState'] as const,
+    writes: ['handState', 'deckState'] as const,
+};
+
+const samuraiBushiTriggerContract = {
+    writes: ['vpState'] as const,
+};
+
+const samuraiShogunTriggerContract = {
+    reads: ['sourceSelfState', 'triggerMinionState', 'controllerState'] as const,
+    writes: ['sourceSelfState'] as const,
+};
+
+const samuraiFinalHaikuTriggerContract = {
+    reads: ['sourceSelfState', 'triggerMinionState', 'minionBoardState', 'controllerState'] as const,
+    writes: ['minionBoardState'] as const,
+};
+
+const samuraiWayOfTheWarriorTriggerContract = {
+    reads: ['triggerMinionState', 'turnFlags', 'baseState', 'controllerState', 'handState', 'deckState', 'discardState'] as const,
+    writes: ['handState', 'deckState'] as const,
+};
+
+const samuraiHonorTheFallenTriggerContract = {
+    reads: ['triggerMinionState', 'controllerState', 'handState', 'deckState', 'discardState'] as const,
+    writes: ['handState', 'deckState'] as const,
+};
+
+const samuraiSakuraGardenTriggerContract = {
+    reads: ['triggerMinionState', 'turnFlags', 'controllerState', 'handState', 'deckState', 'discardState'] as const,
+    writes: ['handState', 'deckState', 'discardState'] as const,
+};
+
 function createSamuraiPromptContext<TExtra extends Record<string, unknown> = Record<string, never>>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -95,52 +129,58 @@ export function registerSamuraiAbilities(): void {
     registerSimpleAbility('samurai_way_of_the_warrior_pod', 'onPlay', samuraiWayOfTheWarriorOnPlay);
     registerAbilityProgram('samurai_heart_of_the_battle', 'special', { program: samuraiHeartOfTheBattleSpecialProgram });
 
-    registerTrigger('samurai_samurai_chan', 'onMinionDestroyed', samuraiChanTrigger, { perInstance: true });
-    registerTrigger('samurai_samurai_chan', 'onMinionDiscardedFromBase', samuraiChanTrigger, { perInstance: true });
-    registerTrigger('samurai_samurai_chan_pod', 'onMinionDestroyed', samuraiChanTrigger, { perInstance: true });
-    registerTrigger('samurai_samurai_chan_pod', 'onMinionDiscardedFromBase', samuraiChanTrigger, { perInstance: true });
-    registerTrigger('samurai_bushi', 'onMinionDestroyed', samuraiBushiTrigger, { perInstance: true });
-    registerTrigger('samurai_bushi', 'onMinionDiscardedFromBase', samuraiBushiTrigger, { perInstance: true });
-    registerTrigger('samurai_bushi_pod', 'onMinionDestroyed', samuraiBushiTrigger, { perInstance: true });
-    registerTrigger('samurai_bushi_pod', 'onMinionDiscardedFromBase', samuraiBushiTrigger, { perInstance: true });
-    registerTrigger('samurai_shogun', 'onMinionDestroyed', samuraiShogunTrigger, { perInstance: true });
-    registerTrigger('samurai_shogun', 'onMinionDiscardedFromBase', samuraiShogunTrigger, { perInstance: true });
-    registerTrigger('samurai_shogun_pod', 'onMinionDestroyed', samuraiShogunTrigger, { perInstance: true });
-    registerTrigger('samurai_shogun_pod', 'onMinionDiscardedFromBase', samuraiShogunTrigger, { perInstance: true });
-    registerTrigger('samurai_final_haiku', 'onMinionDestroyed', samuraiFinalHaikuTrigger, { perInstance: true });
-    registerTrigger('samurai_final_haiku', 'onMinionDiscardedFromBase', samuraiFinalHaikuTrigger, { perInstance: true });
-    registerTrigger('samurai_final_haiku_pod', 'onMinionDestroyed', samuraiFinalHaikuTrigger, { perInstance: true });
-    registerTrigger('samurai_final_haiku_pod', 'onMinionDiscardedFromBase', samuraiFinalHaikuTrigger, { perInstance: true });
-    registerTrigger('samurai_way_of_the_warrior', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, { global: true });
-    registerTrigger('samurai_way_of_the_warrior', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, { global: true });
-    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, { global: true });
-    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, { global: true });
+    registerTrigger('samurai_samurai_chan', 'onMinionDestroyed', samuraiChanTrigger, { perInstance: true, effectContract: samuraiChanTriggerContract });
+    registerTrigger('samurai_samurai_chan', 'onMinionDiscardedFromBase', samuraiChanTrigger, { perInstance: true, effectContract: samuraiChanTriggerContract });
+    registerTrigger('samurai_samurai_chan_pod', 'onMinionDestroyed', samuraiChanTrigger, { perInstance: true, effectContract: samuraiChanTriggerContract });
+    registerTrigger('samurai_samurai_chan_pod', 'onMinionDiscardedFromBase', samuraiChanTrigger, { perInstance: true, effectContract: samuraiChanTriggerContract });
+    registerTrigger('samurai_bushi', 'onMinionDestroyed', samuraiBushiTrigger, { perInstance: true, effectContract: samuraiBushiTriggerContract });
+    registerTrigger('samurai_bushi', 'onMinionDiscardedFromBase', samuraiBushiTrigger, { perInstance: true, effectContract: samuraiBushiTriggerContract });
+    registerTrigger('samurai_bushi_pod', 'onMinionDestroyed', samuraiBushiTrigger, { perInstance: true, effectContract: samuraiBushiTriggerContract });
+    registerTrigger('samurai_bushi_pod', 'onMinionDiscardedFromBase', samuraiBushiTrigger, { perInstance: true, effectContract: samuraiBushiTriggerContract });
+    registerTrigger('samurai_shogun', 'onMinionDestroyed', samuraiShogunTrigger, { perInstance: true, effectContract: samuraiShogunTriggerContract });
+    registerTrigger('samurai_shogun', 'onMinionDiscardedFromBase', samuraiShogunTrigger, { perInstance: true, effectContract: samuraiShogunTriggerContract });
+    registerTrigger('samurai_shogun_pod', 'onMinionDestroyed', samuraiShogunTrigger, { perInstance: true, effectContract: samuraiShogunTriggerContract });
+    registerTrigger('samurai_shogun_pod', 'onMinionDiscardedFromBase', samuraiShogunTrigger, { perInstance: true, effectContract: samuraiShogunTriggerContract });
+    registerTrigger('samurai_final_haiku', 'onMinionDestroyed', samuraiFinalHaikuTrigger, { perInstance: true, effectContract: samuraiFinalHaikuTriggerContract });
+    registerTrigger('samurai_final_haiku', 'onMinionDiscardedFromBase', samuraiFinalHaikuTrigger, { perInstance: true, effectContract: samuraiFinalHaikuTriggerContract });
+    registerTrigger('samurai_final_haiku_pod', 'onMinionDestroyed', samuraiFinalHaikuTrigger, { perInstance: true, effectContract: samuraiFinalHaikuTriggerContract });
+    registerTrigger('samurai_final_haiku_pod', 'onMinionDiscardedFromBase', samuraiFinalHaikuTrigger, { perInstance: true, effectContract: samuraiFinalHaikuTriggerContract });
+    registerTrigger('samurai_way_of_the_warrior', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, { global: true, effectContract: samuraiWayOfTheWarriorTriggerContract });
+    registerTrigger('samurai_way_of_the_warrior', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, { global: true, effectContract: samuraiWayOfTheWarriorTriggerContract });
+    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDestroyed', samuraiWayOfTheWarriorTrigger, { global: true, effectContract: samuraiWayOfTheWarriorTriggerContract });
+    registerTrigger('samurai_way_of_the_warrior_pod', 'onMinionDiscardedFromBase', samuraiWayOfTheWarriorTrigger, { global: true, effectContract: samuraiWayOfTheWarriorTriggerContract });
     registerTrigger('samurai_honor_the_fallen', 'onMinionDestroyed', samuraiHonorTheFallenTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: samuraiHonorTheFallenTriggerContract,
     });
     registerTrigger('samurai_honor_the_fallen', 'onMinionDiscardedFromBase', samuraiHonorTheFallenTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: samuraiHonorTheFallenTriggerContract,
     });
     registerTrigger('samurai_honor_the_fallen_pod', 'onMinionDestroyed', samuraiHonorTheFallenTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: samuraiHonorTheFallenTriggerContract,
     });
     registerTrigger('samurai_honor_the_fallen_pod', 'onMinionDiscardedFromBase', samuraiHonorTheFallenTrigger, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: samuraiHonorTheFallenTriggerContract,
     });
     registerTrigger('base_sakura_garden', 'onMinionDestroyed', samuraiSakuraGardenTrigger, {
         sourceScope: 'triggerBase',
+        effectContract: samuraiSakuraGardenTriggerContract,
     });
     registerTrigger('base_sakura_garden', 'onMinionDiscardedFromBase', samuraiSakuraGardenTrigger, {
         sourceScope: 'triggerBase',
+        effectContract: samuraiSakuraGardenTriggerContract,
     });
 
     registerBaseAbility('base_shoguns_palace', 'onMinionPlayed', samuraiBaseShogunsPalaceOnMinionPlayed, {
         mandatory: false,
-        orderingFootprint: {
+        effectContract: {
             reads: ['triggerMinionState', 'minionBoardState'],
             writes: ['minionBoardState', 'handState', 'deckState'],
         },

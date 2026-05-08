@@ -56,8 +56,8 @@ import type { ProtectionCheckContext, TriggerContext, TriggerResult } from '../d
 import { getPlayerEffectivePowerOnBase, registerTitanPowerModifier } from '../domain/ongoingModifiers';
 import {
     appendPendingPostScoringActions,
+    getDeferredPostScoringEvents,
     getDeferredReplacementBaseDefId,
-    mergeDeferredPostScoringCompatibility,
 } from '../domain/scoringSession';
 import { validateActionPlaySemantics } from '../domain/playLegality';
 import {
@@ -187,26 +187,6 @@ function buildOtherPlayerChoiceOptions(state: AbilityContext['state'], playerId:
             value: { targetPlayerId: pid },
             displayMode: 'button' as const,
         }));
-}
-
-function getDeferredPostScoringEvents(interactionData: Record<string, unknown> | undefined): SmashUpEvent[] | undefined {
-    const continuation = interactionData?.continuationContext as { _deferredPostScoringEvents?: SmashUpEvent[] } | undefined;
-    return continuation?._deferredPostScoringEvents;
-}
-
-function appendDeferredPostScoringEventsIfLast(
-    state: AbilityContext['matchState'],
-    interactionData: Record<string, unknown> | undefined,
-    events: SmashUpEvent[],
-): SmashUpEvent[] {
-    const deferredEvents = getDeferredPostScoringEvents(interactionData);
-    const hasPendingInteraction =
-        !!state.sys.interaction?.current
-        || (state.sys.interaction?.queue?.length ?? 0) > 0;
-    if (deferredEvents && deferredEvents.length > 0 && !hasPendingInteraction) {
-        events.push(...deferredEvents);
-    }
-    return events;
 }
 
 function schedulePowerModifierUntilNextTurnStart(
@@ -3412,7 +3392,14 @@ export function registerTitanAbilities(): void {
         if (titan.location.zone !== 'base') return '该泰坦当前不在场';
         return titan.powerCounters >= 4 ? null : 'This titan needs at least 4 +1 power counters';
     });
-    registerTrigger('dinosaurs_fort_titanosaurus', 'onActionPlayed', fortTitanosaurusOnActionPlayed, { optional: true, baseScoped: false });
+    registerTrigger('dinosaurs_fort_titanosaurus', 'onActionPlayed', fortTitanosaurusOnActionPlayed, {
+        optional: true,
+        baseScoped: false,
+        effectContract: {
+            reads: ['titanBoardState', 'minionBoardState', 'turnFlags'],
+            opensInteraction: true,
+        },
+    });
 
     registerAbility('ninjas_invisible_ninja', 'special', invisibleNinjaSpecial);
     registerTitanSpecialValidator('ninjas_invisible_ninja', ({ state, playerId, baseIndex, titan }) => {
@@ -3431,20 +3418,31 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('ninjas_invisible_ninja', 'onTurnStart', invisibleNinjaOnTurnStart, {
         global: true,
-        orderingFootprint: {
-            reads: ['sourceState', 'titanBoardState'],
-            writes: ['sourceState', 'titanBoardState', 'playLimits'],
+        effectContract: {
+            reads: ['sourceSelfState', 'titanBoardState', 'turnFlags'],
+            writes: ['sourceSelfState', 'titanBoardState', 'playLimits'],
+            opensInteraction: true,
         },
     });
     registerTrigger('ninjas_invisible_ninja', 'onMinionDestroyed', invisibleNinjaTriggered, {
         optional: true,
         baseScoped: false,
         playerContext: 'sourceController',
+        effectContract: {
+            reads: ['titanBoardState', 'triggerMinionState', 'controllerState', 'deckState', 'discardState', 'turnFlags'],
+            writes: ['deckState'],
+            opensInteraction: true,
+        },
     });
     registerTrigger('ninjas_invisible_ninja', 'onCardReturnedToHand', invisibleNinjaTriggered, {
         optional: true,
         baseScoped: false,
         playerContext: 'sourceController',
+        effectContract: {
+            reads: ['titanBoardState', 'triggerMinionState', 'controllerState', 'deckState', 'discardState', 'turnFlags'],
+            writes: ['deckState'],
+            opensInteraction: true,
+        },
     });
 
     registerAbility('killer_plants_killer_kudzu', 'special', killerKudzuSpecial);
@@ -3481,12 +3479,20 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('killer_plants_killer_kudzu', 'onTurnStart', killerKudzuOnTurnStart, {
         global: true,
-        orderingFootprint: {
+        effectContract: {
             reads: ['titanBoardState'],
             writes: ['titanBoardState'],
         },
     });
-    registerTrigger('killer_plants_killer_kudzu', 'onTitanRemovedFromPlay', killerKudzuOnTitanRemovedFromPlay, { optional: true, global: true });
+    registerTrigger('killer_plants_killer_kudzu', 'onTitanRemovedFromPlay', killerKudzuOnTitanRemovedFromPlay, {
+        optional: true,
+        global: true,
+        effectContract: {
+            reads: ['controllerState', 'deckState', 'discardState'],
+            writes: ['handState', 'deckState', 'discardState'],
+            opensInteraction: true,
+        },
+    });
 
     registerAbility('frankenstein_the_bride', 'talent', theBrideTalent);
     registerTitanTalentValidator('frankenstein_the_bride', ({ state, playerId, titan }) => {
@@ -3499,12 +3505,19 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('frankenstein_the_bride', 'onTurnStart', theBrideOnTurnStart, {
         global: true,
-        orderingFootprint: {
-            reads: ['handState', 'minionBoardState', 'titanBoardState'],
+        effectContract: {
+            reads: ['handState', 'minionBoardState', 'titanBoardState', 'controllerState', 'baseState', 'discardState'],
             writes: ['handState', 'minionBoardState', 'titanBoardState'],
+            opensInteraction: true,
         },
     });
-    registerTrigger('frankenstein_the_bride', 'onMinionAffected', theBrideOnPowerCounterChanged, { baseScoped: false });
+    registerTrigger('frankenstein_the_bride', 'onMinionAffected', theBrideOnPowerCounterChanged, {
+        baseScoped: false,
+        effectContract: {
+            reads: ['triggerMinionState', 'titanBoardState', 'turnFlags', 'deckState', 'controllerState', 'discardState', 'handState'],
+            writes: ['titanBoardState', 'handState', 'deckState'],
+        },
+    });
 
     registerAbility('super_spies_moon_zero_three', 'special', superSpiesMoonZeroThreeSpecial);
     registerAbility('super_spies_moon_zero_three', 'talent', superSpiesMoonZeroThreeTalent);
@@ -3520,7 +3533,12 @@ export function registerTitanAbilities(): void {
             ? null
             : '没有可查看的牌库';
     });
-    registerTrigger('super_spies_moon_zero_three', 'onDeckInspected', superSpiesMoonZeroThreeOnDeckInspected);
+    registerTrigger('super_spies_moon_zero_three', 'onDeckInspected', superSpiesMoonZeroThreeOnDeckInspected, {
+        effectContract: {
+            reads: ['titanBoardState', 'turnFlags'],
+            writes: ['titanBoardState'],
+        },
+    });
 
     registerTitanSpecialValidator('penguins_emperor_penguin', () =>
         '企鹅帝皇只能在你的回合开始时通过特殊能力进场');
@@ -3547,9 +3565,10 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('penguins_emperor_penguin', 'onTurnStart', penguinsEmperorPenguinOnTurnStart, {
         global: true,
-        orderingFootprint: {
-            reads: ['minionBoardState', 'titanBoardState'],
+        effectContract: {
+            reads: ['minionBoardState', 'titanBoardState', 'baseState'],
             writes: ['titanBoardState'],
+            opensInteraction: true,
         },
     });
 
@@ -3564,9 +3583,10 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('changerbots_mergacon', 'onTurnStart', changerbotsMergaconOnTurnStart, {
         global: true,
-        orderingFootprint: {
-            reads: ['minionBoardState', 'titanBoardState'],
+        effectContract: {
+            reads: ['minionBoardState', 'titanBoardState', 'baseState'],
             writes: ['titanBoardState'],
+            opensInteraction: true,
         },
     });
     registerTitanPowerModifier('changerbots_mergacon', ({ state, titan }) =>
@@ -3587,9 +3607,15 @@ export function registerTitanAbilities(): void {
         baseIndex: ctx.baseIndex,
         rankings: ctx.rankings,
         now: ctx.now,
-    }), { global: true });
+    }), {
+        global: true,
+        effectContract: {
+            reads: ['titanBoardState', 'scoringState'],
+            opensInteraction: true,
+        },
+    });
     registerTrigger('itty_critters_rainboroc', 'onMinionPlayed', ittyCrittersRainborocOnMinionPlayed, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['triggerMinionState', 'triggerMinionPower', 'titanBoardState', 'turnFlags'],
             writes: ['titanBoardState', 'turnFlags'],
         },
@@ -3601,12 +3627,18 @@ export function registerTitanAbilities(): void {
             ? null
             : 'You can only play Gorgodzolla on a base where you have at least two actions');
     registerTrigger('kaiju_gorgodzolla', 'onMinionPlayed', kaijuGorgodzollaOnMinionPlayed, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['triggerMinionState', 'titanBoardState'],
             writes: ['titanBoardState'],
         },
     });
-    registerTrigger('kaiju_gorgodzolla', 'onActionPlayed', kaijuGorgodzollaOnActionPlayed);
+    registerTrigger('kaiju_gorgodzolla', 'onActionPlayed', kaijuGorgodzollaOnActionPlayed, {
+        effectContract: {
+            reads: ['titanBoardState', 'controllerState', 'deckState', 'discardState'],
+            writes: ['titanBoardState'],
+            opensInteraction: true,
+        },
+    });
 
     registerAbility('explorers_very_large_boulder', 'special', explorersVeryLargeBoulderSpecial);
     registerTitanSpecialValidator('explorers_very_large_boulder', ({ state, baseIndex, titan }) => {
@@ -3620,9 +3652,13 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('explorers_very_large_boulder', 'onMinionMoved', explorersVeryLargeBoulderOnMinionMoved, {
         playerContext: 'sourceController',
+        effectContract: {
+            reads: ['titanBoardState', 'baseState', 'minionBoardState'],
+            opensInteraction: true,
+        },
     });
     registerTrigger('explorers_very_large_boulder', 'onTurnEnd', explorersVeryLargeBoulderOnTurnEnd, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['titanBoardState', 'turnFlags'],
             writes: ['titanBoardState', 'turnFlags'],
         },
@@ -3646,6 +3682,10 @@ export function registerTitanAbilities(): void {
         optional: true,
         playerContext: 'sourceController',
         baseScoped: false,
+        effectContract: {
+            reads: ['triggerMinionState'],
+            opensInteraction: true,
+        },
     });
 
     registerAbility('time_travelers_time_box', 'special', timeTravelersTimeBoxSpecial);
@@ -3657,15 +3697,35 @@ export function registerTitanAbilities(): void {
     registerTrigger('time_travelers_time_box', 'onTurnStart', timeTravelersTimeBoxOnTurnStart, {
         global: true,
         optional: true,
-        orderingFootprint: {
-            reads: ['titanBoardState'],
+        effectContract: {
+            reads: ['titanBoardState', 'baseState'],
             writes: ['titanBoardState'],
+            opensInteraction: true,
         },
     });
-    registerTrigger('time_travelers_time_box', 'onCardReturnedToHand', timeTravelersTimeBoxOnCardReturnedToHand, { global: true, optional: true });
+    registerTrigger('time_travelers_time_box', 'onCardReturnedToHand', timeTravelersTimeBoxOnCardReturnedToHand, {
+        global: true,
+        optional: true,
+        effectContract: {
+            reads: ['titanBoardState', 'baseState'],
+            writes: ['titanBoardState'],
+            opensInteraction: true,
+        },
+    });
 
-    registerTrigger('pecos_bill', 'onDuelStarted', pecosBillOnDuelStarted, { global: true });
-    registerTrigger('pecos_bill', 'onDuelResolved', pecosBillOnDuelResolved);
+    registerTrigger('pecos_bill', 'onDuelStarted', pecosBillOnDuelStarted, {
+        global: true,
+        effectContract: {
+            reads: ['titanBoardState', 'handState', 'turnFlags', 'controllerState', 'baseState'],
+            opensInteraction: true,
+        },
+    });
+    registerTrigger('pecos_bill', 'onDuelResolved', pecosBillOnDuelResolved, {
+        effectContract: {
+            reads: ['titanBoardState', 'deckState', 'controllerState', 'discardState', 'handState'],
+            writes: ['handState', 'deckState'],
+        },
+    });
     registerProtection('pecos_bill', 'move', pecosBillMoveProtectionChecker);
 
     registerAbility('sphinx', 'talent', sphinxTalent);
@@ -3677,9 +3737,10 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('sphinx', 'onTurnStart', sphinxOnTurnStart, {
         global: true,
-        orderingFootprint: {
+        effectContract: {
             reads: ['baseState', 'handState', 'titanBoardState'],
             writes: ['baseState', 'handState', 'titanBoardState'],
+            opensInteraction: true,
         },
     });
     registerTrigger('sphinx', 'afterScoring', (ctx) => sphinxAfterScoring({
@@ -3687,7 +3748,13 @@ export function registerTitanAbilities(): void {
         matchState: ctx.matchState,
         baseIndex: ctx.baseIndex,
         now: ctx.now,
-    }), { global: true });
+    }), {
+        global: true,
+        effectContract: {
+            reads: ['titanBoardState', 'baseState'],
+            opensInteraction: true,
+        },
+    });
 
     registerAbility('magical_girls_walking_castle', 'special', magicalGirlsWalkingCastleSpecial);
     registerTitanSpecialValidator('magical_girls_walking_castle', ({ state, playerId, baseIndex, titan }) => {
@@ -3710,7 +3777,12 @@ export function registerTitanAbilities(): void {
         getOwnMinionCountOnBase(state, baseIndex, playerId) >= 3
             ? null
             : '你只能将超级佐德打出到有你至少 3 个随从的基地');
-    registerTrigger('mega_troopers_megabot', 'beforeScoring', megaTroopersMegabotBeforeScoring);
+    registerTrigger('mega_troopers_megabot', 'beforeScoring', megaTroopersMegabotBeforeScoring, {
+        effectContract: {
+            reads: ['titanBoardState', 'baseState'],
+            opensInteraction: true,
+        },
+    });
     registerTitanPowerModifier('mega_troopers_megabot', ({ state, baseIndex, playerId }) =>
         getOwnMinionCountOnBase(state, baseIndex, playerId));
 
@@ -3753,8 +3825,10 @@ export function registerTitanAbilities(): void {
 
     registerAbility('wizards_arcane_protector', 'special', wizardArcaneProtectorSpecial);
     registerAbility('wizards_arcane_protector', 'talent', wizardArcaneProtectorTalent);
-    registerTitanSpecialValidator('wizards_arcane_protector', ({ state }) =>
-        (state.cardsPlayedThisTurn ?? 0) >= 5 ? null : '你本回合还没有打出 5 张牌');
+    registerTitanSpecialValidator('wizards_arcane_protector', ({ state, titan }) => {
+        if (titan.location.zone !== 'setaside') return '该泰坦当前不在牌库旁';
+        return (state.cardsPlayedThisTurn ?? 0) >= 5 ? null : '你本回合还没有打出 5 张牌';
+    });
 
     registerTitanPowerModifier('wizards_arcane_protector', ({ state, playerId }) => {
         const handSize = state.players[playerId]?.hand.length ?? 0;
@@ -3788,10 +3862,18 @@ export function registerTitanAbilities(): void {
     registerTrigger('giant_ants_death_on_six_legs', 'onMinionDestroyed', giantAntsDeathOnSixLegsBeforeDiscard, {
         playerContext: 'sourceController',
         baseScoped: false,
+        effectContract: {
+            reads: ['triggerMinionState', 'titanBoardState'],
+            writes: ['titanBoardState'],
+        },
     });
     registerTrigger('giant_ants_death_on_six_legs', 'onMinionDiscardedFromBase', giantAntsDeathOnSixLegsBeforeDiscard, {
         playerContext: 'sourceController',
         baseScoped: false,
+        effectContract: {
+            reads: ['triggerMinionState', 'titanBoardState'],
+            writes: ['titanBoardState'],
+        },
     });
     registerAbility('bear_cavalry_major_ursa', 'special', bearCavalryMajorUrsaSpecial);
     registerAbility('bear_cavalry_major_ursa', 'talent', bearCavalryMajorUrsaTalent);
@@ -3804,7 +3886,13 @@ export function registerTitanAbilities(): void {
             : 'You can only play Major Ursa on a base where you have a minion';
     });
 
-    registerTrigger('bear_cavalry_major_ursa', 'onTitanMoved', bearCavalryMajorUrsaOnTitanMoved, { optional: true });
+    registerTrigger('bear_cavalry_major_ursa', 'onTitanMoved', bearCavalryMajorUrsaOnTitanMoved, {
+        optional: true,
+        effectContract: {
+            reads: ['titanBoardState', 'minionBoardState', 'baseState', 'turnFlags', 'scoringState'],
+            opensInteraction: true,
+        },
+    });
     registerTitanTalentValidator('bear_cavalry_major_ursa', ({ state, titan }) => {
         if (titan.location.zone !== 'base') return '该泰坦当前不在场';
         const canMoveTitan = getOtherBaseOptions(state, titan.location.baseIndex).length > 0;
@@ -3813,6 +3901,10 @@ export function registerTitanAbilities(): void {
     registerTrigger('bear_cavalry_major_ursa', 'onMinionMoved', bearCavalryMajorUrsaOnMinionMoved, {
         optional: true,
         playerContext: 'sourceController',
+        effectContract: {
+            reads: ['titanBoardState', 'minionBoardState', 'triggerMinionState'],
+            writes: ['titanBoardState'],
+        },
     });
 
     registerAbility('vampires_ancient_lord', 'special', vampireAncientLordSpecial);
@@ -3833,6 +3925,10 @@ export function registerTitanAbilities(): void {
         global: true,
         optional: true,
         baseScoped: false,
+        effectContract: {
+            reads: ['triggerMinionState', 'titanBoardState'],
+            opensInteraction: true,
+        },
     });
 
     registerAbility('werewolves_great_wolf_spirit', 'special', werewolvesGreatWolfSpiritSpecial);
@@ -3848,9 +3944,10 @@ export function registerTitanAbilities(): void {
     registerTrigger('werewolves_great_wolf_spirit', 'onTurnStart', werewolvesGreatWolfSpiritOnTurnStart, {
         global: true,
         optional: true,
-        orderingFootprint: {
-            reads: ['minionBoardState', 'titanBoardState'],
+        effectContract: {
+            reads: ['minionBoardState', 'titanBoardState', 'turnFlags', 'baseState'],
             writes: ['titanBoardState'],
+            opensInteraction: true,
         },
     });
     registerTitanTalentValidator('werewolves_great_wolf_spirit', ({ state, titan, playerId }) => {
@@ -3862,9 +3959,10 @@ export function registerTitanAbilities(): void {
 
     registerTrigger('werewolves_great_wolf_spirit', 'onTurnStart', werewolvesGreatWolfSpiritOnTurnStart, {
         global: true,
-        orderingFootprint: {
-            reads: ['minionBoardState', 'titanBoardState'],
+        effectContract: {
+            reads: ['minionBoardState', 'titanBoardState', 'turnFlags', 'baseState'],
             writes: ['titanBoardState'],
+            opensInteraction: true,
         },
     });
 
@@ -3900,14 +3998,14 @@ export function registerTitanAbilities(): void {
             : '没有可移动的基地';
     });
     registerTrigger('tricksters_big_funny_giant', 'onTurnEnd', trickstersBigFunnyGiantOnTurnEnd, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['minionBoardState', 'titanBoardState'],
             writes: ['titanBoardState'],
         },
     });
     registerTrigger('tricksters_big_funny_giant', 'onMinionPlayed', trickstersBigFunnyGiantOnMinionPlayed, {
-        orderingFootprint: {
-            reads: ['triggerMinionState', 'handState', 'titanBoardState'],
+        effectContract: {
+            reads: ['triggerMinionState', 'handState', 'titanBoardState', 'controllerState'],
             writes: ['handState'],
         },
     });
@@ -3916,7 +4014,13 @@ export function registerTitanAbilities(): void {
         baseIndex: ctx.baseIndex,
         rankings: ctx.rankings,
         now: ctx.now,
-    }), { global: true });
+    }), {
+        global: true,
+        effectContract: {
+            reads: ['titanBoardState', 'minionBoardState', 'scoringState'],
+            writes: ['vpState'],
+        },
+    });
 
     registerAbility('pirates_the_kraken', 'talent', piratesTheKrakenTalent);
     registerTitanTalentValidator('pirates_the_kraken', ({ state, titan }) => {
@@ -3925,7 +4029,13 @@ export function registerTitanAbilities(): void {
             ? null
             : 'There is no other base to move to';
     });
-    registerTrigger('pirates_the_kraken', 'afterScoring', piratesTheKrakenAfterScoring, { global: true });
+    registerTrigger('pirates_the_kraken', 'afterScoring', piratesTheKrakenAfterScoring, {
+        global: true,
+        effectContract: {
+            reads: ['titanBoardState', 'minionBoardState', 'baseState'],
+            opensInteraction: true,
+        },
+    });
 }
 
 export function registerTitanInteractionHandlers(): void {
@@ -5371,7 +5481,7 @@ export function registerTitanInteractionHandlers(): void {
             continuationContext?: { titanUid?: string; titanDefId?: string };
         } | undefined)?.continuationContext;
         const titan = continuation?.titanUid ? getTitanByUid(state.core, continuation.titanUid) : undefined;
-        const replacementEvent = getDeferredPostScoringEvents(data as Record<string, unknown> | undefined)?.find(
+        const replacementEvent = getDeferredPostScoringEvents(state, data as Record<string, unknown> | undefined)?.find(
             event => event.type === SU_EVENTS.BASE_REPLACED,
         );
         const replacementBaseIndex = replacementEvent?.payload?.baseIndex;
@@ -5390,13 +5500,6 @@ export function registerTitanInteractionHandlers(): void {
             targetBaseDefId: replacementBaseDefId,
             reason: 'itty_critters_rainboroc_special',
         };
-
-        const compatibility = mergeDeferredPostScoringCompatibility(state, data as Record<string, unknown> | undefined, timestamp, {
-            extraPendingActions: [pendingAction],
-        });
-        if (compatibility) {
-            return compatibility;
-        }
 
         return {
             state: appendPendingPostScoringActions(state, [pendingAction]),
@@ -5908,12 +6011,6 @@ export function registerTitanInteractionHandlers(): void {
                     targetBaseDefId: replacementBaseDefId,
                     reason: 'pirates_the_kraken_after_scoring_play',
                 };
-                const compatibility = mergeDeferredPostScoringCompatibility(state, data as Record<string, unknown> | undefined, _timestamp, {
-                    extraPendingActions: [pendingAction],
-                });
-                if (compatibility) {
-                    return compatibility;
-                }
                 nextState = appendPendingPostScoringActions(state, [pendingAction]);
             }
         }

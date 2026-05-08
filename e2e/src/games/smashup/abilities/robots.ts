@@ -674,5 +674,10 @@ function registerRobotOngoingEffects(): void {
                 timestamp: trigCtx.now,
             },
         ];
+    }, {
+        effectContract: {
+            reads: ['minionBoardState', 'controllerState', 'handState', 'deckState', 'discardState'],
+            writes: ['handState', 'deckState', 'discardState'],
+        },
     });
 }

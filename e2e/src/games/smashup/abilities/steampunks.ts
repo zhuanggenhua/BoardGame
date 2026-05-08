@@ -1009,12 +1009,18 @@ export function registerSteampunkAbilities(): void {
     registerSimpleAbility('steampunk_ornate_dome', 'onPlay', steampunkOrnateDomeOnPlay);
     registerRestriction('steampunk_ornate_dome', 'play_action', steampunkOrnateDomeChecker);
     registerTrigger('steampunk_difference_engine', 'onTurnEnd', steampunkDifferenceEngineTrigger, {
-        orderingFootprint: {
-            reads: ['sourceState', 'deckState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'deckState', 'controllerState'],
             writes: ['handState', 'deckState'],
         },
     });
-    registerTrigger('steampunk_escape_hatch', 'onMinionDestroyed', steampunkEscapeHatchTrigger, { phase: 'replacement' });
+    registerTrigger('steampunk_escape_hatch', 'onMinionDestroyed', steampunkEscapeHatchTrigger, {
+        phase: 'replacement',
+        effectContract: {
+            reads: ['baseState', 'minionBoardState'],
+            writes: ['minionBoardState', 'handState'],
+        },
+    });
     registerAbilityProgram('steampunk_zeppelin', 'talent', {
         program: steampunkZeppelinProgram,
         validateUse: (ctx) => {

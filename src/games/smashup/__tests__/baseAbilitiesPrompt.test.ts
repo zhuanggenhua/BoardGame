@@ -28,7 +28,7 @@ import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, CardInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { getScoringSession } from '../domain/scoringSession';
+import { appendScoringFrameDeferredPayload, consumeScoringFrameDeferredPayload, createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import { triggerBaseAbilityWithMS, getInteractionsFromResult, makeMatchState } from './helpers';
 import type { RandomFn } from '../../../engine/types';
 
@@ -758,52 +758,71 @@ describe('base_tortuga: 计分后亚军移动随从', () => {
         expect(option).toBeDefined();
         expect(handler).toBeDefined();
 
+        let resolvedState = makeMatchState(makeState({
+            bases: [
+                makeBase('base_tortuga', {
+                    minions: [
+                        makeMinion('m1', '0', 5),
+                        makeMinion('m2', '1', 3),
+                    ],
+                }),
+                makeBase('base_other', {
+                    minions: [
+                        makeMinion('m3', '1', 2),
+                    ],
+                }),
+            ],
+        }));
+        const baseRef = createScoringBaseRef(resolvedState.core, 0);
+        if (!baseRef) {
+            throw new Error('无法构造托尔图加 scoring base ref');
+        }
+        resolvedState = setScoringSession(resolvedState, {
+            ...createScoringSession(resolvedState.core, [0]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-interactions',
+        });
+        resolvedState = appendScoringFrameDeferredPayload(resolvedState, {
+            deferredEvents: [
+                {
+                    type: SU_EVENTS.BASE_CLEARED,
+                    payload: { baseIndex: 0, baseDefId: 'base_tortuga' },
+                    timestamp: 2000,
+                },
+                {
+                    type: SU_EVENTS.BASE_REPLACED,
+                    payload: {
+                        baseIndex: 0,
+                        oldBaseDefId: 'base_tortuga',
+                        newBaseDefId: 'base_secret_garden',
+                    },
+                    timestamp: 2000,
+                },
+            ],
+        });
+
         const resolved = handler!(
-            makeMatchState(makeState({
-                bases: [
-                    makeBase('base_tortuga', {
-                        minions: [
-                            makeMinion('m1', '0', 5),
-                            makeMinion('m2', '1', 3),
-                        ],
-                    }),
-                    makeBase('base_other', {
-                        minions: [
-                            makeMinion('m3', '1', 2),
-                        ],
-                    }),
-                ],
-            })),
+            resolvedState,
             '1',
             option.value,
-            {
-                ...interaction.data,
-                continuationContext: {
-                    ...(interaction.data as any).continuationContext,
-                    _deferredPostScoringEvents: [
-                        {
-                            type: SU_EVENTS.BASE_CLEARED,
-                            payload: { baseIndex: 0, baseDefId: 'base_tortuga' },
-                            timestamp: 2000,
-                        },
-                        {
-                            type: SU_EVENTS.BASE_REPLACED,
-                            payload: {
-                                baseIndex: 0,
-                                oldBaseDefId: 'base_tortuga',
-                                newBaseDefId: 'base_secret_garden',
-                            },
-                            timestamp: 2000,
-                        },
-                    ],
-                },
-            } as any,
+            interaction.data as any,
             dummyRandom,
             2001,
         );
 
-        expect(resolved?.events ?? []).toHaveLength(3);
-        expect(getScoringSession(resolved!.state)?.pendingPostScoringActions ?? []).toEqual([]);
+        expect(resolved?.events ?? []).toHaveLength(0);
+        const consumed = consumeScoringFrameDeferredPayload(resolved!.state);
+        expect(consumed.deferredActions).toEqual([
+            {
+                kind: 'moveMinionToReplacementBase',
+                minionUid: 'm3',
+                minionDefId: 'd1',
+                fromBaseIndex: 1,
+                toBaseIndex: 0,
+                targetBaseDefId: 'base_secret_garden',
+                reason: '托尔图加：亚军移动随从到替换基地',
+            },
+        ]);
     });
 });
 

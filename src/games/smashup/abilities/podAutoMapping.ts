@@ -10,7 +10,7 @@
  * ```typescript
  * // 1. 正常注册基础版本
  * registerAbility('alien_scout', 'onPlay', alienScout);
- * registerTrigger('zombie_overrun', 'onTurnStart', zombieOverrunTrigger);
+ * // ongoing trigger 也会通过别名注册器自动映射
  * 
  * // 2. 在所有派系注册完成后，调用一次自动映射
  * autoMapPodAbilities();
@@ -20,11 +20,8 @@
  * ```
  */
 
-import { abilityRegistry, triggerRegistry } from '../domain/abilityRegistry';
-import { registerAbility } from '../domain/abilityRegistry';
-import { registerTrigger, registerRestriction, registerProtection, registerBaseAbilitySuppression } from '../domain/ongoingEffects';
-import type { AbilityTiming } from '../domain/abilityRegistry';
-import type { TriggerTiming } from '../domain/ongoingEffects';
+import { registerPodAbilityAliases } from '../domain/abilityRegistry';
+import { registerPodOngoingAliases } from '../domain/ongoingEffects';
 
 /**
  * 自动为所有 POD 版本创建能力映射
@@ -41,79 +38,8 @@ import type { TriggerTiming } from '../domain/ongoingEffects';
  * - registerBaseAbilitySuppression
  */
 export function autoMapPodAbilities(): void {
-    console.log('[POD Auto Mapping] 开始自动映射 POD 能力...');
-    
-    let mappedCount = 0;
-    let skippedCount = 0;
-    
-    // 1. 映射 Ability (onPlay/talent/special)
-    const abilityTimings: AbilityTiming[] = ['onPlay', 'talent', 'special'];
-    for (const timing of abilityTimings) {
-        const entries = abilityRegistry[timing];
-        if (!entries) continue;
-        
-        for (const [defId, callback] of entries.entries()) {
-            // 跳过已经是 _pod 的
-            if (defId.endsWith('_pod')) continue;
-            
-            const podDefId = `${defId}_pod`;
-            
-            // 如果 POD 版本已经注册，跳过
-            if (entries.has(podDefId)) {
-                skippedCount++;
-                continue;
-            }
-            
-            // 自动注册 POD 版本
-            registerAbility(podDefId, timing, callback);
-            mappedCount++;
-            console.log(`[POD Auto Mapping] ${timing}: ${defId} → ${podDefId}`);
-        }
-    }
-    
-    // 2. 映射 Trigger (onTurnStart/afterScoring/...)
-    const processedTriggers = new Set<string>();
-    for (const entry of triggerRegistry) {
-        const { sourceDefId, timing, callback } = entry;
-        
-        // 跳过已经是 _pod 的
-        if (sourceDefId.endsWith('_pod')) continue;
-        
-        const podDefId = `${sourceDefId}_pod`;
-        const key = `${podDefId}:${timing}`;
-        
-        // 避免重复处理（同一个 defId 可能有多个 timing）
-        if (processedTriggers.has(key)) continue;
-        processedTriggers.add(key);
-        
-        // 如果 POD 版本已经注册，跳过
-        const alreadyRegistered = triggerRegistry.some(
-            e => e.sourceDefId === podDefId && e.timing === timing
-        );
-        if (alreadyRegistered) {
-            skippedCount++;
-            continue;
-        }
-        
-        // 自动注册 POD 版本
-        registerTrigger(podDefId, timing, callback);
-        mappedCount++;
-        console.log(`[POD Auto Mapping] trigger(${timing}): ${sourceDefId} → ${podDefId}`);
-    }
-    
-    // 3. 映射 Restriction (play_minion/play_action)
-    // 注意：restrictionRegistry 是私有的，需要通过 ongoingEffects.ts 暴露
-    // 暂时跳过，因为 restriction 通常需要配合 trigger 使用，会被 trigger 映射覆盖
-    
-    // 4. 映射 Protection (destroy/move/affect/action)
-    // 注意：protectionRegistry 是私有的，需要通过 ongoingEffects.ts 暴露
-    // 暂时跳过，因为 protection 通常需要配合 trigger 使用
-    
-    // 5. 映射 BaseAbilitySuppression
-    // 注意：baseAbilitySuppressionRegistry 是私有的，需要通过 ongoingEffects.ts 暴露
-    // 暂时跳过，因为这类卡牌较少
-    
-    console.log(`[POD Auto Mapping] 完成！映射 ${mappedCount} 个，跳过 ${skippedCount} 个（已显式注册）`);
+    registerPodAbilityAliases();
+    registerPodOngoingAliases();
 }
 
 /**

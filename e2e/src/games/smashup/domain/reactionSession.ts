@@ -14,12 +14,13 @@ import { execute } from './reducer';
 import { reduce } from './reduce';
 import { createAbilityRuntimeSimpleChoice, registerAbilityRuntimePrompt } from './abilityRuntime';
 import { executeTriggerProgramExecutor } from './triggerExecutors';
+import { partitionMandatoryReactionOrderingComponents } from './reactionOrdering';
+import { getCurrentScoringBaseIndex } from './scoringSession';
 import type {
     SmashUpCore,
     SmashUpEvent,
     SmashUpReactionPhase,
     SmashUpReactionSession,
-    ReactionOrderingFootprint,
     TriggerConsumedEvent,
     TriggerInstance,
 } from './types';
@@ -307,43 +308,12 @@ function getOptionalFrameTriggers(
     );
 }
 
-function hasOrderingOverlap(left: string[], right: string[]): boolean {
-    return left.some(tag => right.includes(tag));
-}
-
-function isOrderingFootprintConflicting(
-    left: ReactionOrderingFootprint | undefined,
-    right: ReactionOrderingFootprint | undefined,
-): boolean {
-    if (!left || !right) return true;
-    if (left.opensInteraction || right.opensInteraction) return true;
-
-    const leftReads = left.reads ?? [];
-    const leftWrites = left.writes ?? [];
-    const rightReads = right.reads ?? [];
-    const rightWrites = right.writes ?? [];
-
-    return hasOrderingOverlap(leftWrites, [...rightReads, ...rightWrites])
-        || hasOrderingOverlap(rightWrites, [...leftReads, ...leftWrites]);
-}
-
-function canAutoCollapseMandatoryFrame(
+function getMandatoryResolutionGroup(
     state: MatchState<SmashUpCore>,
     session: SmashUpReactionSession,
-): boolean {
+): TriggerInstance[] {
     const triggers = getMandatoryFrameTriggers(state, session.frameId);
-    if (triggers.length <= 1) return false;
-    if (triggers.some(trigger => !trigger.orderingFootprint)) return false;
-
-    for (let i = 0; i < triggers.length; i++) {
-        for (let j = i + 1; j < triggers.length; j++) {
-            if (isOrderingFootprintConflicting(triggers[i].orderingFootprint, triggers[j].orderingFootprint)) {
-                return false;
-            }
-        }
-    }
-
-    return true;
+    return partitionMandatoryReactionOrderingComponents(triggers)[0] ?? [];
 }
 
 function nextClockwisePlayer(core: SmashUpCore, playerId: PlayerId): PlayerId {
@@ -398,17 +368,15 @@ function buildPlayableCardOptions(
     const scoringEligibleBaseIndices = getScoringEligibleBaseIndices(state.core);
     const eligibleBaseIndices = session.responseWindowType === 'afterScoring'
         ? (
-            typeof session.sourceBaseIndex === 'number'
-                && session.sourceBaseIndex >= 0
-                && session.sourceBaseIndex < state.core.bases.length
-                ? (
-                    // afterScoring 仅允许当前正在结算的基地；该基地结算完成后不再提供反应选项
-                    scoringEligibleBaseIndices.includes(session.sourceBaseIndex)
-                        ? [session.sourceBaseIndex]
-                        : []
-                )
-                // 兼容旧状态：若缺 sourceBaseIndex，则回退到当前可计分基地集合
-                : scoringEligibleBaseIndices
+            (() => {
+                const currentScoringBaseIndex = getCurrentScoringBaseIndex(state);
+                if (currentScoringBaseIndex === undefined) {
+                    return [];
+                }
+                return scoringEligibleBaseIndices.includes(currentScoringBaseIndex)
+                    ? [currentScoringBaseIndex]
+                    : [];
+            })()
         )
         : scoringEligibleBaseIndices;
     const probeState = buildProbeState(state, session, playerId, now);
@@ -568,7 +536,7 @@ export function buildReactionOptions(
     now: number,
 ): ReactionOption[] {
     if (session.phase === 'mandatory') {
-        return getMandatoryFrameTriggers(state, session.frameId).map(trigger => ({
+        return getMandatoryResolutionGroup(state, session).map(trigger => ({
             id: `trigger:${trigger.id}`,
             label: buildTriggerLabel(trigger),
             value: { kind: 'trigger', triggerId: trigger.id },
@@ -1081,20 +1049,6 @@ export function advanceSmashUpReactionSession(
             events: [...emittedEvents, ...resolved.events],
         };
     }
-    if (session.phase === 'mandatory' && canAutoCollapseMandatoryFrame(currentState, session)) {
-        const firstTrigger = getMandatoryFrameTriggers(currentState, session.frameId)[0];
-        if (firstTrigger) {
-            const resolved = resolveSmashUpReactionChoice(currentState, random, now, {
-                kind: 'trigger',
-                triggerId: firstTrigger.id,
-            });
-            return {
-                state: resolved.state,
-                events: [...emittedEvents, ...resolved.events],
-            };
-        }
-    }
-
     const interaction = buildReactionInteraction(currentState, session, now);
     return {
         state: queueInteraction(currentState, interaction),

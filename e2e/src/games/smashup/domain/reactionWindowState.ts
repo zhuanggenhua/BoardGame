@@ -1,4 +1,5 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
+import { getCurrentScoringBaseIndex } from './scoringSession';
 import type { SmashUpCore, SmashUpReactionSession } from './types';
 
 function getReactionSessionFromResolution(
@@ -49,11 +50,14 @@ export function getSmashUpReactionWindowContext(
 ): SmashUpReactionWindowContext | undefined {
     const session = getReactionSessionFromResolution(state);
     if (session?.responseWindowType) {
+        const sourceBaseIndex = session.responseWindowType === 'afterScoring'
+            ? getCurrentScoringBaseIndex(state)
+            : session.sourceBaseIndex;
         return {
             windowType: session.responseWindowType,
             activePlayerId: session.activePlayerId,
             currentPlayerId: session.currentPlayerId,
-            sourceBaseIndex: session.sourceBaseIndex,
+            sourceBaseIndex,
         };
     }
 
@@ -96,12 +100,15 @@ export function getSmashUpReactionWindowPresentation(
         const mirroredPassedPlayers = responseWindow?.sourceId === 'smashup_reaction_choose'
             ? (responseWindow.passedPlayers ?? [])
             : [];
+        const sourceBaseIndex = session.responseWindowType === 'afterScoring'
+            ? getCurrentScoringBaseIndex(state)
+            : session.sourceBaseIndex;
 
         return {
             windowType: session.responseWindowType,
             activePlayerId: session.activePlayerId,
             currentPlayerId: session.currentPlayerId,
-            sourceBaseIndex: session.sourceBaseIndex,
+            sourceBaseIndex,
             responderQueue,
             currentResponderIndex,
             passedPlayers: mirroredPassedPlayers,

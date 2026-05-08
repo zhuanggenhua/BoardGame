@@ -2226,22 +2226,10 @@ describe('Samurai abilities', () => {
 
         expect(queued).toBeDefined();
         const queuedState = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
-        const prompt = maybeResolveReactionQueue(queuedState, defaultTestRandom, 1000);
-        expect(prompt?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
-        const queueById = new Map(prompt!.state.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
-        const targetOption = (prompt!.state.sys.interaction.current as any).data.options.find((option: any) => {
-            const trigger = queueById.get(option.value.triggerId) as any;
-            return trigger?.sourceDefId === 'samurai_way_of_the_warrior';
-        });
-        expect(targetOption).toBeDefined();
-
-        const resolved = runCommand(
-            prompt!.state,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
-            defaultTestRandom,
-        );
-
-        const drawEvent = resolved.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
+        const resolved = maybeResolveReactionQueue(queuedState, defaultTestRandom, 1000);
+        expect(resolved).toBeDefined();
+        expect(resolved!.state.sys.interaction.current).toBeUndefined();
+        const drawEvent = resolved!.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
         expect(drawEvent).toBeDefined();
         expect(drawEvent.payload.playerId).toBe('0');
         expect(drawEvent.payload.count).toBe(2);
@@ -2289,22 +2277,10 @@ describe('Samurai abilities', () => {
 
         expect(queued).toBeDefined();
         const queuedState = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
-        const prompt = maybeResolveReactionQueue(queuedState, defaultTestRandom, 1000);
-        expect(prompt?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
-        const queueById = new Map(prompt!.state.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
-        const targetOption = (prompt!.state.sys.interaction.current as any).data.options.find((option: any) => {
-            const trigger = queueById.get(option.value.triggerId) as any;
-            return trigger?.sourceDefId === 'samurai_way_of_the_warrior';
-        });
-        expect(targetOption).toBeDefined();
-
-        const resolved = runCommand(
-            prompt!.state,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
-            defaultTestRandom,
-        );
-
-        const drawEvent = resolved.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
+        const resolved = maybeResolveReactionQueue(queuedState, defaultTestRandom, 1000);
+        expect(resolved).toBeDefined();
+        expect(resolved!.state.sys.interaction.current).toBeUndefined();
+        const drawEvent = resolved!.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
         expect(drawEvent).toBeDefined();
         expect(drawEvent.payload.playerId).toBe('0');
         expect(drawEvent.payload.count).toBe(2);

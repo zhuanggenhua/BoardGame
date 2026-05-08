@@ -20,7 +20,7 @@ import type {
     MinionOnBase,
     BaseDeckReorderedEvent,
     PendingPostScoringAction,
-    ReactionOrderingFootprint,
+    TriggerEffectContract,
 } from './types';
 import { SU_EVENTS } from './types';
 import { getEffectivePower } from './ongoingModifiers';
@@ -50,10 +50,9 @@ import { isBaseAbilitySuppressed } from './ongoingEffects';
 import { registerBaseAbilityAsQueuedTrigger } from './baseAbilityQueue';
 import { resolveLiveBaseIndex } from './utils';
 import {
-    buildPendingPostScoringActionEvents,
-    flushDeferredPostScoringCompatibility,
-    getDeferredPostScoringEvents as readDeferredPostScoringEvents,
+    appendPendingPostScoringActions,
     getDeferredReplacementBaseDefId,
+    isScoringSessionAwaitingDeferredResolution,
 } from './scoringSession';
 
 // ============================================================================
@@ -124,7 +123,7 @@ export type BaseAbilityRegistrationOptions = {
     /** Whether this trigger is mandatory for reaction ordering rules */
     mandatory?: boolean;
     /** 仅用于 reaction queue 自动收口判定；未标注时保持保守排序。 */
-    orderingFootprint?: ReactionOrderingFootprint;
+    effectContract?: TriggerEffectContract;
 };
 
 export type ActiveBaseAbilityRegistrationOptions = {
@@ -142,13 +141,6 @@ function getContinuationContext<T>(
 ): T | undefined {
     if (!interactionData) return undefined;
     return interactionData.continuationContext as T | undefined;
-}
-
-function getDeferredPostScoringEvents(
-    state: MatchState<SmashUpCore>,
-    interactionData: Record<string, unknown> | undefined,
-): SmashUpEvent[] | undefined {
-    return readDeferredPostScoringEvents(state, interactionData) as SmashUpEvent[] | undefined;
 }
 
 function getCurrentBaseDeckTopSnapshotDefIds(
@@ -218,7 +210,7 @@ export function registerBaseAbility(
         executor,
         options: {
             mandatory: options.mandatory ?? true,
-            orderingFootprint: options.orderingFootprint,
+            effectContract: options.effectContract,
         },
     });
     // Make this base ability runnable by the global reaction queue.
@@ -355,7 +347,7 @@ export type ExtendedBaseTrigger = BaseTriggerTiming | 'onMinionDestroyed';
 /** 扩展注册表：支持 onMinionDestroyed */
 type ExtendedBaseAbilityRegistrationOptions = {
     mandatory?: boolean;
-    orderingFootprint?: ReactionOrderingFootprint;
+    effectContract?: TriggerEffectContract;
 };
 
 type ExtendedBaseAbilityEntry = { executor: BaseAbilityExecutor; options: Required<ExtendedBaseAbilityRegistrationOptions> };
@@ -377,7 +369,7 @@ export function registerExtended(
         executor,
         options: {
             mandatory: options.mandatory ?? true,
-            orderingFootprint: options.orderingFootprint,
+            effectContract: options.effectContract,
         },
     });
 }
@@ -538,7 +530,7 @@ export function registerBaseAbilities(): void {
         };
     }, {
         mandatory: false,
-        orderingFootprint: {
+        effectContract: {
             reads: ['minionBoardState'],
             writes: ['triggerMinionPower'],
         },
@@ -829,7 +821,7 @@ export function registerBaseAbilities(): void {
         
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['handState'],
             writes: ['handState', 'discardState'],
         },
@@ -930,7 +922,7 @@ export function registerBaseAbilities(): void {
             events: [addPowerCounter(ctx.minionUid, ctx.baseIndex, 1, 'base_laboratorium', ctx.now)],
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             writes: ['triggerMinionPower'],
         },
     });
@@ -984,7 +976,7 @@ export function registerBaseAbilities(): void {
             } as SmashUpEvent],
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             writes: ['triggerMinionPower'],
         },
     });
@@ -1049,7 +1041,7 @@ export function registerBaseAbilities(): void {
             }),
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState'],
         },
@@ -1092,7 +1084,7 @@ export function registerBaseAbilities(): void {
         const evt = drawMadnessCards(ownerId, 1, ctx.state, 'base_mountains_of_madness', ctx.now);
         return { events: evt ? [evt] : [] };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['madnessDeckState'],
             writes: ['handState', 'madnessDeckState'],
         },
@@ -1128,7 +1120,7 @@ export function registerBaseAbilities(): void {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState', 'vpState'],
         },
@@ -1157,7 +1149,7 @@ export function registerBaseAbilities(): void {
             events: [grantContextualExtraMinion(ctx, '母星：额外打出力量≤2的随从', undefined, { powerMax: 2 })],
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             writes: ['playLimits'],
         },
     });
@@ -1533,7 +1525,7 @@ export function registerBaseAbilities(): void {
             }),
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState'],
         },
@@ -1593,7 +1585,7 @@ export function registerBaseAbilities(): void {
             }),
         };
     }, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['handState', 'minionBoardState'],
             writes: ['minionBoardState'],
         },
@@ -1726,10 +1718,6 @@ export function registerBaseInteractionHandlers(): void {
             }));
         }
         
-        // 【关键修复】检查是否是最后一个交互，如果是则补发延迟事件
-        // 当有多个 afterScoring 交互时（如海盗湾 + 忍者道场），延迟的 BASE_CLEARED 事件
-        // 存储在第一个交互的 continuationContext._deferredPostScoringEvents 中。
-        // InteractionSystem.resolveInteraction 会自动传递给下一个交互，最后一个交互解决时必须补发。
         return { state, events };
     });
 
@@ -1771,9 +1759,6 @@ export function registerBaseInteractionHandlers(): void {
             '海盗湾：选择移动到的基地', options,
             { sourceId: 'base_pirate_cove_choose_base', targetType: 'base' },
         );
-        const deferredEvents = getDeferredPostScoringEvents(state, iData);
-        
-        // 关键修复：将延迟的 BASE_CLEARED 事件传递到链式交互
         return {
             // 使用 urgent 标志，确保链式交互的第二步不被其他交互插队
             state: queueInteraction(state, {
@@ -1784,7 +1769,6 @@ export function registerBaseInteractionHandlers(): void {
                         minionUid: selected.minionUid,
                         minionDefId: selected.minionDefId,
                         fromBaseIndex: ctx.baseIndex,
-                        ...(deferredEvents ? { _deferredPostScoringEvents: deferredEvents } : {}),
                     },
                 },
             }, { urgent: true }), // 链式交互的后续步骤标记为 urgent
@@ -1798,8 +1782,7 @@ export function registerBaseInteractionHandlers(): void {
         const ctx = getContinuationContext<{ minionUid: string; minionDefId: string; fromBaseIndex: number }>(iData);
         if (!ctx) return { state, events: [] };
 
-        const deferredEvents = getDeferredPostScoringEvents(state, iData);
-        if (deferredEvents && deferredEvents.length > 0) {
+        if (isScoringSessionAwaitingDeferredResolution(state)) {
             const resolvedTargetBase = resolveLiveBaseIndex(state.core, targetBase, baseDefId) ?? targetBase;
             const moveEvent: SmashUpEvent = {
                 type: SU_EVENTS.MINION_MOVED,
@@ -1812,19 +1795,7 @@ export function registerBaseInteractionHandlers(): void {
                 },
                 timestamp,
             };
-            const compatibility = flushDeferredPostScoringCompatibility(state, iData, timestamp);
-            if (compatibility.flushed) {
-                return {
-                    state: compatibility.state,
-                    events: [moveEvent, ...compatibility.events],
-                };
-            }
-            const events: SmashUpEvent[] = [
-                {
-                    ...moveEvent,
-                },
-            ];
-            return { state, events };
+            return { state, events: [moveEvent] };
         }
 
         return {
@@ -1858,9 +1829,8 @@ export function registerBaseInteractionHandlers(): void {
         if (moveEvents.length === 0) {
             return { state, events: [] };
         }
-        const deferredEvents = getDeferredPostScoringEvents(state, iData);
-        if (deferredEvents && deferredEvents.length > 0) {
-            const targetBaseDefId = getDeferredReplacementBaseDefId(state, iData) ?? state.core.bases[ctx.baseIndex]?.defId;
+        if (isScoringSessionAwaitingDeferredResolution(state)) {
+            const targetBaseDefId = getDeferredReplacementBaseDefId(state, iData);
             if (!targetBaseDefId) {
                 return { state, events: [] };
             }
@@ -1873,31 +1843,8 @@ export function registerBaseInteractionHandlers(): void {
                 targetBaseDefId,
                 reason: '托尔图加：亚军移动随从到替换基地',
             };
-            const compatibility = flushDeferredPostScoringCompatibility(state, iData, timestamp);
-            if (compatibility.flushed) {
-                return {
-                    state: compatibility.state,
-                    events: [
-                        ...compatibility.events,
-                        ...buildPendingPostScoringActionEvents(
-                            { core: state.core },
-                            [pendingAction],
-                            timestamp,
-                        ),
-                    ],
-                };
-            }
             return {
-                state: {
-                    ...state,
-                    core: {
-                        ...state.core,
-                        pendingPostScoringActions: [
-                            ...(state.core.pendingPostScoringActions ?? []),
-                            pendingAction,
-                        ],
-                    },
-                },
+                state: appendPendingPostScoringActions(state, [pendingAction]),
                 events: [],
             };
         }
@@ -2136,9 +2083,6 @@ export function registerBaseInteractionHandlers(): void {
                 '刚柔流寺庙：选择放入牌库底的最高力量随从', buildMinionTargetOptions(options, { state: state.core, sourcePlayerId: playerId }),
                 { sourceId: 'base_temple_of_goju_tiebreak', targetType: 'minion' },
             );
-            const deferredEvents = getDeferredPostScoringEvents(state, iData);
-            
-            // 关键修复：将延迟的 BASE_CLEARED 事件传递到链式交互
             return { 
                 // 使用 urgent 标志，确保链式交互的后续步骤不被其他交互插队
                 state: queueInteraction(state, { 
@@ -2148,7 +2092,6 @@ export function registerBaseInteractionHandlers(): void {
                         continuationContext: { 
                             baseIndex: ctx!.baseIndex, 
                             remainingPlayers: rest,
-                            ...(deferredEvents ? { _deferredPostScoringEvents: deferredEvents } : {}),
                         } 
                     } 
                 }, { urgent: true }), // 链式交互的后续步骤标记为 urgent

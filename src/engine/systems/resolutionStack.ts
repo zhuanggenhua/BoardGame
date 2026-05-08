@@ -520,6 +520,8 @@ export function hasBlockingResolutionFrame<TCore>(
     if (!frame) return false;
     if (frame.phaseGate !== 'block-advance-when-blocked') return false;
     if (frame.status !== 'blocked') return false;
-    if (phase && frame.phase && frame.phase !== phase) return false;
+    // Active blocking frames must gate phase advance even if sys.phase has drifted.
+    // Otherwise a suspended score/reaction chain can leak into a later phase and be skipped.
+    void phase;
     return true;
 }

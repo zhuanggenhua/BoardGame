@@ -79,6 +79,7 @@ export function resolveLiveBaseIndex(
     if (baseDefId) {
         const liveIndex = state.bases.findIndex(base => base.defId === baseDefId);
         if (liveIndex >= 0) return liveIndex;
+        return undefined;
     }
     if (baseIndex !== undefined && state.bases[baseIndex]) {
         return baseIndex;

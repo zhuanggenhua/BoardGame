@@ -1147,8 +1147,8 @@ function registerTricksterOngoingEffects(): void {
         }
         return [];
     }, {
-        orderingFootprint: {
-            reads: ['minionBoardState', 'triggerMinionState', 'triggerMinionPower'],
+        effectContract: {
+            reads: ['minionBoardState', 'triggerMinionState', 'triggerMinionPower', 'turnFlags', 'baseState', 'titanBoardState'],
             writes: ['triggerMinionState'],
         },
     });
@@ -1175,6 +1175,11 @@ function registerTricksterOngoingEffects(): void {
             payload: { playerId: trigCtx.playerId, cardUids: discardUids },
             timestamp: trigCtx.now,
         }];
+    }, {
+        effectContract: {
+            reads: ['triggerMinionState', 'controllerState', 'handState'],
+            writes: ['handState', 'discardState'],
+        },
     });
 
     // 藏身处：保护同基地己方随从不受对手行动卡影响（消耗型：触发后自毁）
@@ -1232,9 +1237,9 @@ function registerTricksterOngoingEffects(): void {
         }
         return [];
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'triggerMinionState'],
-            writes: ['sourceState', 'triggerMinionState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'triggerMinionState'],
+            writes: ['sourceSelfState', 'triggerMinionState'],
         },
     });
 
@@ -1275,17 +1280,22 @@ function registerTricksterOngoingEffects(): void {
         }
         return [];
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'handState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'handState', 'controllerState'],
             writes: ['handState', 'discardState'],
         },
     });
 }
 
 function registerTricksterPodOngoingEffects(): void {
-    registerTrigger('trickster_brownie_pod', 'onMinionAffected', () => []);
+    registerTrigger('trickster_brownie_pod', 'onMinionAffected', () => [], {
+        effectContract: {
+            reads: [],
+            writes: [],
+        },
+    });
     registerTrigger('trickster_enshrouding_mist_pod', 'onTurnStart', () => [], {
-        orderingFootprint: {
+        effectContract: {
             reads: [],
             writes: [],
         },
@@ -1360,9 +1370,9 @@ function registerTricksterPodOngoingEffects(): void {
         }
         return events;
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'triggerMinionState', 'triggerMinionPower'],
-            writes: ['sourceState', 'triggerMinionState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'triggerMinionState', 'triggerMinionPower', 'turnFlags'],
+            writes: ['sourceSelfState', 'triggerMinionState'],
         },
     });
 
@@ -1400,9 +1410,9 @@ function registerTricksterPodOngoingEffects(): void {
         }
         return events;
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'triggerMinionState', 'handState', 'deckState', 'turnFlags'],
-            writes: ['sourceState', 'handState', 'deckState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'triggerMinionState', 'handState', 'deckState', 'discardState', 'turnFlags', 'controllerState'],
+            writes: ['sourceSelfState', 'handState', 'deckState', 'discardState'],
         },
     });
 
@@ -1426,6 +1436,11 @@ function registerTricksterPodOngoingEffects(): void {
             } as CardsDiscardedEvent);
         }
         return events;
+    }, {
+        effectContract: {
+            reads: ['triggerMinionState', 'controllerState', 'handState', 'deckState', 'discardState'],
+            writes: ['handState', 'deckState', 'discardState'],
+        },
     });
 
     // Gremlin POD：基地计分清场时进入弃牌堆（非消灭）也抽 1
@@ -1435,6 +1450,11 @@ function registerTricksterPodOngoingEffects(): void {
         const player = trigCtx.state.players[ownerId];
         if (!player) return [];
         return buildStandardDrawEvents(trigCtx.state, ownerId, 1, trigCtx.random, trigCtx.now);
+    }, {
+        effectContract: {
+            reads: ['triggerMinionState', 'controllerState', 'deckState'],
+            writes: ['handState', 'deckState'],
+        },
     });
 
     // Flame Trap POD：对手打出随从到此基地后，先自毁再尝试消灭该随从
@@ -1466,9 +1486,9 @@ function registerTricksterPodOngoingEffects(): void {
             },
         ];
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'triggerMinionState'],
-            writes: ['sourceState', 'triggerMinionState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'triggerMinionState'],
+            writes: ['sourceSelfState', 'triggerMinionState'],
         },
     });
 
@@ -1486,9 +1506,10 @@ function registerTricksterPodOngoingEffects(): void {
         );
     }, {
         perInstance: true,
-        orderingFootprint: {
-            reads: ['sourceState', 'scoringState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'scoringState'],
             writes: ['scoringState'],
+            opensInteraction: true,
         },
     });
 
@@ -1510,8 +1531,8 @@ function registerTricksterPodOngoingEffects(): void {
             timestamp: trigCtx.now,
         } as CardsDiscardedEvent];
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'handState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'handState'],
             writes: ['handState', 'discardState'],
         },
     });

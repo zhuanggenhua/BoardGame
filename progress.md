@@ -1,3 +1,17 @@
+## Addendum: 2026-05-07 审计流程已升级为“深度审计流程”硬门禁
+
+- 已回写并更新审计规范：
+  - `docs/ai-rules/testing-audit.md`
+- 本轮不是只补 `D37` / `D40` 两个维度说明，而是把“执行层级不够深”正式改成可执行流程：
+  - 审计前必须先建对象清单，并给每个对象标 `L0/L1/L2/L3/L4`
+  - 每个对象必须串完整链路：`规则语义 -> 静态定义 -> validator -> command/reducer -> afterEvents/postProcess -> UI 出口 -> 真实入口验证`
+  - 命中 reaction / afterScoring / onDestroy / 动态候选 / 恢复态 / 同批事件后处理时，L3 真实入口证据变成强制项
+  - 命中共享 reducer / handler / pipeline / transport 根因时，必须自动扩审，不能只修当前反馈
+  - 旧 evidence 结论被新 bug 推翻时，必须原地降级并回写，不再允许“旧文档继续挂已审计”
+- 本轮新增的流程目标是：
+  - 不再把“看过代码”“跑过单测”“prompt 弹出来了”当成“已深入审计”
+  - 把 `D37` 的 live options / `zone-location` 前置条件核对，以及 `D40` 的批内副作用串行推进，升级成强制深审位点
+
 ## Session: 2026-05-03 线上反馈持续修复
 - **Status:** completed
 - Actions taken:
@@ -1359,9 +1373,71 @@
   - `npm run test:e2e:ci:file -- e2e/smashup/smashup-base-minion-selection.e2e.ts "反馈复现：宗教圆环发动后，应允许把手牌中的同名本地人打到该基地"`
 - 已补证据：
   - `evidence/smashup/smashup-feedback-69faac614590ce09779a7d8f-sacred-circle-click-fix-e2e-2026-05-07.md`
+- 已完成生产状态回写：
+  - 回写前快照：`temp/feedback-closeout/query-feedback-69faac61-before-writeback-20260507.raw.txt`，确认目标仍为 `open`
+  - 回写结果：`temp/feedback-closeout/update-feedback-status-20260507-69faac61-to-resolved.raw.txt`，`matched=1 / modified=1`
+  - 回写后快照：`temp/feedback-closeout/query-feedback-69faac61-after-writeback-20260507.raw.txt`，确认目标已为 `resolved`
+  - 最终线上人类未收口复核：`temp/feedback-closeout/query-human-open-inprogress-after-20260507.raw.txt`，`count=0`
 - 当前状态：
-  - 本地修复与 E2E 收口已完成；
-  - 远端状态回写尚未执行。
+  - 本地修复、E2E 收口、远端状态回写与线上最终清零复核均已完成。
+
+## 2026-05-07 08:32 全量未收口反馈口径复核
+- 为回答“所有反馈是否都修好”，补查了生产真源的**全量** `status in [open, in_progress]`，不再只看人类单。
+- 查询快照：
+  - `temp/feedback-closeout/query-all-open-inprogress-after-20260507.raw.txt`
+- 结果：
+  - 全量未收口 `count=32`
+  - 全部是 `reporterType=system`、`source=online-ai-watchdog`
+  - 当前没有新增人类未收口项；人类口径仍是 `count=0`
+- 结论：
+  - 现在准确说法是“线上人类反馈已清零，但所有反馈还没有全部修完”
+  - 后续如继续收口，主队列将转到剩余 `32` 条 watchdog 系统反馈
+
+## 2026-05-07 21:25 最后 21 条 watchdog 系统反馈正式清零
+- 上一版“还剩 32 条”的复核结论已失效。
+- 先单独回写了 2 条更早的 SmashUp stale `arcane protector` watchdog 单：
+  - `69fb3fde76f10333c15ed8d9`
+  - `69fc62984a37805e1526f6d9`
+- 随后把最后 21 条 watchdog 系统单批量正式回写完毕：
+  - `resolved = 9`
+  - `closed = 12`
+- 生产回写回显：
+  - `temp/feedback-closeout/update-feedback-status-20260507-final-watchdog-batch.raw.txt`
+- 最终复核：
+  - `temp/feedback-closeout/query-all-open-inprogress-current-20260507.raw.txt`
+  - `totalOpenOrInProgress = 0`
+  - `humanOpen = 0`
+- 现在的最终口径是：
+  - 线上人类反馈已清零
+  - 系统 watchdog 反馈已清零
+  - 所有反馈已清零
+
+## 2026-05-07 21:52 `69fc6298` 短暂重开后再次清零
+- 生产 fresh 复核时，发现 `69fc62984a37805e1526f6d9` 又短暂回到 `open`。
+- 当拍生产计数：
+  - `totalOpenOrInProgress = 1`
+  - `humanOpen = 0`
+- 随后继续查同局 `bSJjqanl8rO` 日志，确认 watchdog 已把同一局从 `scoreBases` 继续推进到 `draw` 和 `playCards`，不是新的人工主线问题。
+- 因为这条仍属于失败类系统聚合项，所以再次按既定口径回写 `resolved`：
+  - `matchedCount = 1`
+  - `modifiedCount = 1`
+- 最新复核时间 `2026-05-07 21:52 +08`：
+  - `totalOpenOrInProgress = 0`
+  - `humanOpen = 0`
+- 当前最新口径保持不变：
+  - 线上人类反馈已清零
+  - 系统 watchdog 反馈已清零
+  - 所有反馈已清零
+
+## 2026-05-07 22:00 fresh 生产直查
+- 再次直查生产 Mongo：
+  - `ts = 2026-05-07T14:00:21.653Z`
+  - `totalOpenOrInProgress = 0`
+  - `humanOpen = 0`
+- 当前最终结论未变化：
+  - 线上人类反馈已清零
+  - 系统 watchdog 反馈已清零
+  - 所有反馈已清零
 
 ## 2026-05-07 00:24 反馈回写口径更新
 - 已按用户最新要求回写项目内规范：

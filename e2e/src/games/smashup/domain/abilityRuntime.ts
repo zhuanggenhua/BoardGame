@@ -211,7 +211,12 @@ function serializeAbilityRuntimeContext(
         };
     }
 
-    const { matchState: _matchState, ...rest } = record;
+    const {
+        matchState: _matchState,
+        core: _core,
+        state: _state,
+        ...rest
+    } = record;
     const serializedContext = sanitizeRuntimeValue(rest);
     return {
         ...(serializedContext !== undefined ? { context: serializedContext } : {}),

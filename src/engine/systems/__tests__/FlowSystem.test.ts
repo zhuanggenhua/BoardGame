@@ -274,6 +274,37 @@ describe('FlowSystem', () => {
         expect(result?.error).toBe('resolution_blocked');
     });
 
+    it('active blocking frame 的 phase 与 sys.phase 不一致时，仍应阻止阶段推进', () => {
+        const system = createFlowSystem<TestCore>({ hooks: buildHooks() });
+        const state = createTestState('phase2', {
+            resolution: {
+                activeFrameId: 'frame-1',
+                frames: [{
+                    id: 'frame-1',
+                    kind: 'smashup:reaction:score-after',
+                    ownerGame: 'smashup',
+                    ordering: 'explicit',
+                    status: 'blocked',
+                    phase: 'phase1',
+                    phaseGate: 'block-advance-when-blocked',
+                    blockedBy: { type: 'interaction', id: 'interaction-1', reason: 'simple-choice' },
+                }],
+            },
+        });
+        const command: Command = { type: FLOW_COMMANDS.ADVANCE_PHASE, playerId: '0', payload: {} };
+
+        const result = system.beforeCommand?.({
+            state,
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result?.error).toBe('resolution_blocked');
+    });
+
     it('存在被阻塞的 resolution frame 时，不触发 autoContinue', () => {
         const system = createFlowSystem<TestCore>({
             hooks: buildHooks({

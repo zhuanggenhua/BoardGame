@@ -42,8 +42,6 @@ export interface SmashUpScoringSession {
     completedBaseRefs: SmashUpScoringBaseRef[];
     currentBaseRef?: SmashUpScoringBaseRef;
     currentStep: SmashUpScoringStep;
-    deferredPostScoringEvents?: SerializedPostScoringEvent[];
-    pendingPostScoringActions?: PendingPostScoringAction[];
 }
 
 function getScoringFrame(state: MatchState<SmashUpCore>) {
@@ -68,8 +66,6 @@ function buildScoringSessionFromFrame(state: MatchState<SmashUpCore>): SmashUpSc
         completedBaseRefs: metadata.completedBaseRefs ?? [],
         currentBaseRef: metadata.currentBaseRef,
         currentStep: (frame.step as SmashUpScoringStep | undefined) ?? 'idle',
-        deferredPostScoringEvents: frame.deferredEvents as SerializedPostScoringEvent[] | undefined,
-        pendingPostScoringActions: frame.deferredActions as PendingPostScoringAction[] | undefined,
     };
 }
 
@@ -162,77 +158,6 @@ export function clearScoringSession(state: MatchState<SmashUpCore>): MatchState<
     return setScoringSession(state, undefined);
 }
 
-export function mirrorDeferredPostScoringToFirstInteraction(
-    state: MatchState<SmashUpCore>,
-    deferredEvents: SerializedPostScoringEvent[] | undefined,
-): MatchState<SmashUpCore> {
-    if (!deferredEvents?.length) {
-        return state;
-    }
-
-    const current = state.sys.interaction?.current;
-    if (current) {
-        const data = (current.data ?? {}) as Record<string, unknown>;
-        const continuationContext = (data.continuationContext ?? {}) as Record<string, unknown>;
-        if (!continuationContext._deferredPostScoringEvents) {
-            return {
-                ...state,
-                sys: {
-                    ...state.sys,
-                    interaction: {
-                        ...state.sys.interaction,
-                        current: {
-                            ...current,
-                            data: {
-                                ...data,
-                                continuationContext: {
-                                    ...continuationContext,
-                                    _deferredPostScoringEvents: deferredEvents,
-                                },
-                            },
-                        },
-                    },
-                },
-            };
-        }
-        return state;
-    }
-
-    const firstQueued = state.sys.interaction?.queue?.[0];
-    if (!firstQueued) {
-        return state;
-    }
-
-    const data = (firstQueued.data ?? {}) as Record<string, unknown>;
-    const continuationContext = (data.continuationContext ?? {}) as Record<string, unknown>;
-    if (continuationContext._deferredPostScoringEvents) {
-        return state;
-    }
-
-    return {
-        ...state,
-        sys: {
-            ...state.sys,
-            interaction: {
-                ...state.sys.interaction,
-                queue: [
-                    {
-                        ...firstQueued,
-                        data: {
-                            ...data,
-                            continuationContext: {
-                                ...continuationContext,
-                                _deferredPostScoringEvents: deferredEvents,
-                            },
-                        },
-                    },
-                    ...(state.sys.interaction?.queue?.slice(1) ?? []),
-                ],
-            },
-        },
-    };
-}
-
 export function getRemainingScoringBaseRefs(state: MatchState<SmashUpCore>): SmashUpScoringBaseRef[] {
     const session = getScoringSession(state);
     if (!session) return [];
@@ -251,23 +176,34 @@ export function serializePostScoringEvents(events: SmashUpEvent[]): SerializedPo
 
 export function getDeferredPostScoringEvents(
     state: MatchState<SmashUpCore>,
-    interactionData?: Record<string, unknown>,
+    _interactionData?: Record<string, unknown>,
 ): SerializedPostScoringEvent[] | undefined {
     const session = getScoringSession(state);
-    const frameDeferred = session
-        ? getResolutionFrameById(state, session.frameId)?.deferredEvents as SerializedPostScoringEvent[] | undefined
-        : undefined;
-    if (frameDeferred && frameDeferred.length > 0) {
-        return frameDeferred;
+    if (!session) {
+        return undefined;
     }
-    const sessionDeferred = getScoringSession(state)?.deferredPostScoringEvents;
-    if (sessionDeferred && sessionDeferred.length > 0) {
-        return sessionDeferred;
+    const frameDeferred = getResolutionFrameById(state, session.frameId)?.deferredEvents as
+        | SerializedPostScoringEvent[]
+        | undefined;
+    return frameDeferred && frameDeferred.length > 0 ? frameDeferred : undefined;
+}
+
+export function getCurrentScoringBaseIndex(
+    state: MatchState<SmashUpCore>,
+): number | undefined {
+    const session = getScoringSession(state);
+    return resolveScoringBaseRefSlotIndex(state, session?.currentBaseRef);
+}
+
+export function isScoringSessionAwaitingDeferredResolution(
+    state: MatchState<SmashUpCore>,
+): boolean {
+    const session = getScoringSession(state);
+    if (!session?.currentBaseRef) {
+        return false;
     }
-    const continuation = interactionData?.continuationContext as {
-        _deferredPostScoringEvents?: SerializedPostScoringEvent[];
-    } | undefined;
-    return continuation?._deferredPostScoringEvents;
+    return session.currentStep === 'awaiting-interactions'
+        || session.currentStep === 'awaiting-response-window';
 }
 
 export function getDeferredReplacementBaseDefId(
@@ -278,49 +214,6 @@ export function getDeferredReplacementBaseDefId(
         (event) => event.type === 'su:base_replaced',
     );
     return (replacementEvent?.payload as { newBaseDefId?: string } | undefined)?.newBaseDefId;
-}
-
-export function flushDeferredPostScoringCompatibility(
-    state: MatchState<SmashUpCore>,
-    interactionData: Record<string, unknown> | undefined,
-    timestamp: number,
-): { state: MatchState<SmashUpCore>; events: SmashUpEvent[]; flushed: boolean } {
-    if (getScoringSession(state)) {
-        return { state, events: [], flushed: false };
-    }
-
-    const deferredEvents = getDeferredPostScoringEvents(state, interactionData);
-    if (!deferredEvents?.length) {
-        return { state, events: [], flushed: false };
-    }
-
-    const flushedEvents: SmashUpEvent[] = deferredEvents.map((event) => ({
-        type: event.type,
-        payload: event.payload,
-        timestamp: event.timestamp,
-    })) as SmashUpEvent[];
-
-    flushedEvents.push(
-        ...buildPendingPostScoringActionEvents(
-            { core: state.core },
-            state.core.pendingPostScoringActions,
-            timestamp,
-        ),
-    );
-
-    return {
-        state: state.core.pendingPostScoringActions?.length
-            ? {
-                ...state,
-                core: {
-                    ...state.core,
-                    pendingPostScoringActions: undefined,
-                },
-            }
-            : state,
-        events: flushedEvents,
-        flushed: true,
-    };
 }
 
 export function appendPendingPostScoringActions(
@@ -337,45 +230,7 @@ export function appendPendingPostScoringActions(
             deferredActions: actions,
         });
     }
-
-    return {
-        ...state,
-        core: {
-            ...state.core,
-            pendingPostScoringActions: [
-                ...(state.core.pendingPostScoringActions ?? []),
-                ...actions,
-            ],
-        },
-    };
-}
-
-export function mergeDeferredPostScoringCompatibility(
-    state: MatchState<SmashUpCore>,
-    interactionData: Record<string, unknown> | undefined,
-    timestamp: number,
-    options?: {
-        primaryOrder?: 'before' | 'after';
-        extraPendingActions?: PendingPostScoringAction[];
-    },
-): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } | undefined {
-    if (getScoringSession(state)) {
-        return undefined;
-    }
-
-    const nextState = appendPendingPostScoringActions(state, options?.extraPendingActions);
-    const deferredEvents = getDeferredPostScoringEvents(nextState, interactionData);
-    if (!deferredEvents?.length) {
-        return options?.extraPendingActions?.length
-            ? { state: nextState, events: [] }
-            : undefined;
-    }
-
-    const flushed = flushDeferredPostScoringCompatibility(nextState, interactionData, timestamp);
-    return {
-        state: flushed.state,
-        events: flushed.events,
-    };
+    return state;
 }
 
 export function resolveScoringBaseRefSlotIndex(
@@ -405,8 +260,6 @@ export function markScoringBaseCompleted(
                 ? session.completedBaseRefs
                 : [...session.completedBaseRefs, baseRef],
             currentBaseRef: undefined,
-            deferredPostScoringEvents: undefined,
-            pendingPostScoringActions: undefined,
         };
     });
 }

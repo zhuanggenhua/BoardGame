@@ -7,6 +7,7 @@ import { SU_COMMANDS } from '../domain/types';
 import type { SmashUpReactionSession, TitanState } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
+import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 
 function makeTitan(overrides: Partial<TitanState> & Pick<TitanState, 'uid' | 'defId' | 'faction' | 'ownerId' | 'controllerId'>): TitanState {
     return {
@@ -28,7 +29,20 @@ function attachReactionSession(
     phase: 'playCards' | 'scoreBases' = 'scoreBases',
 ) {
     session.sys.phase = phase;
-    return startSmashUpReactionSession(session, reactionSession);
+    let nextSession = session;
+    if (reactionSession.responseWindowType === 'afterScoring') {
+        const scoringBaseIndex = reactionSession.sourceBaseIndex ?? 0;
+        const baseRef = createScoringBaseRef(nextSession.core, scoringBaseIndex);
+        if (!baseRef) {
+            throw new Error(`无法构造 afterScoring 命令验证用 scoring base ref: ${scoringBaseIndex}`);
+        }
+        nextSession = setScoringSession(nextSession, {
+            ...createScoringSession(nextSession.core, [scoringBaseIndex]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-response-window',
+        });
+    }
+    return startSmashUpReactionSession(nextSession, reactionSession);
 }
 
 beforeAll(() => {

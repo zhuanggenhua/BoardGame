@@ -71,7 +71,11 @@ import { SmashUpOverlayProvider } from '../games/smashup/ui/SmashUpOverlayContex
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { resolveGameDisplayName } from '../components/lobby/gameDetailsContent';
 import { resolveOnlineHudPresence } from './matchHudPresence';
-import { haveAiSeatCredentialsChanged, loadOnlineAiSeatState } from './onlineAiSeats';
+import {
+    haveAiSeatCredentialsChanged,
+    loadOnlineAiSeatState,
+    resolveMissingOnlineAiSeatCredentialIds,
+} from './onlineAiSeats';
 import {
     applyAiAutoRecoveryRejection,
     finalizeOnlineAiResolutionConfirmation,
@@ -101,6 +105,9 @@ const SYSTEM_ERRORS = new Set(['unauthorized', 'match_not_found', 'sync_timeout'
 const ONLINE_TRANSPORT_ERRORS = new Set(['unauthorized', 'match_not_found', 'sync_timeout']);
 // 教程系统正常拦截，不弹 toast（用户跟着教程走时的正常行为）
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
+const ONLINE_AI_SEAT_LOAD_RETRY_BASE_MS = 1_000;
+const ONLINE_AI_SEAT_LOAD_RETRY_MAX_MS = 8_000;
+const ONLINE_AI_SEAT_LOAD_RETRY_MAX_ATTEMPTS = 5;
 
 export const isTutorialRoutePath = (pathname: string): boolean => (
     /^\/play\/[^/]+\/tutorial(?:\/[^/]+)?\/?$/.test(pathname)
@@ -2221,6 +2228,7 @@ export const MatchRoom = () => {
     const [forceExitModalId, setForceExitModalId] = useState<string | null>(null);
     const [shouldShowMatchError, setShouldShowMatchError] = useState(false);
     const [localStorageTick, setLocalStorageTick] = useState(0);
+    const [onlineAiSeatReloadTick, setOnlineAiSeatReloadTick] = useState(0);
     const [onlineAiSeatControllers, setOnlineAiSeatControllers] = useState<Record<string, AiSeatController>>({});
     const [onlineAiSeatCredentials, setOnlineAiSeatCredentials] = useState<Record<string, string>>({});
     const [forceEndAiPhaseHandler, setForceEndAiPhaseHandler] = useState<(() => Promise<boolean>) | null>(null);
@@ -2234,6 +2242,7 @@ export const MatchRoom = () => {
         [onlineAiSeatControllers],
     );
     const aiRuntimeTruthKeyRef = useRef<string | null>(null);
+    const onlineAiSeatReloadAttemptRef = useRef(0);
     const handleForceEndAiPhaseReady = useCallback((handler: (() => Promise<boolean>) | null) => {
         setForceEndAiPhaseHandler(() => handler);
     }, []);
@@ -2561,13 +2570,57 @@ export const MatchRoom = () => {
         && (matchStatus.isHost || statusPlayerID === '0');
 
     useEffect(() => {
+        onlineAiSeatReloadAttemptRef.current = 0;
+    }, [canClaimMissingAiSeatCredentials, gameId, guestId, matchId, statusPlayerID, token]);
+
+    useEffect(() => {
         if (isTutorialRoute || !matchId || !gameId || !gameConfig) {
+            onlineAiSeatReloadAttemptRef.current = 0;
             setOnlineAiSeatControllers({});
             setOnlineAiSeatCredentials({});
             return;
         }
 
         let cancelled = false;
+        let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+        const scheduleOnlineAiSeatReload = (reason: string, extra?: Record<string, unknown>) => {
+            if (cancelled) return;
+            if (onlineAiSeatReloadAttemptRef.current >= ONLINE_AI_SEAT_LOAD_RETRY_MAX_ATTEMPTS) {
+                logMobileRuntimeCritical('MatchRoom', 'online-ai-seat-state-retry-gave-up', {
+                    gameId,
+                    matchId,
+                    reason,
+                    attempts: onlineAiSeatReloadAttemptRef.current,
+                    statusPlayerID: statusPlayerID ?? null,
+                    matchStatusIsHost: matchStatus.isHost,
+                    canClaimMissingAiSeatCredentials,
+                    ...(extra ?? {}),
+                });
+                return;
+            }
+            onlineAiSeatReloadAttemptRef.current += 1;
+            const delayMs = Math.min(
+                ONLINE_AI_SEAT_LOAD_RETRY_BASE_MS * (2 ** (onlineAiSeatReloadAttemptRef.current - 1)),
+                ONLINE_AI_SEAT_LOAD_RETRY_MAX_MS,
+            );
+            logMobileRuntimeCritical('MatchRoom', 'online-ai-seat-state-retry-scheduled', {
+                gameId,
+                matchId,
+                reason,
+                delayMs,
+                attempt: onlineAiSeatReloadAttemptRef.current,
+                statusPlayerID: statusPlayerID ?? null,
+                matchStatusIsHost: matchStatus.isHost,
+                canClaimMissingAiSeatCredentials,
+                ...(extra ?? {}),
+            });
+            retryTimer = setTimeout(() => {
+                retryTimer = null;
+                if (cancelled) return;
+                setOnlineAiSeatReloadTick((tick) => tick + 1);
+            }, delayMs);
+        };
 
         const loadOnlineAiSeatControllers = async () => {
             try {
@@ -2638,9 +2691,19 @@ export const MatchRoom = () => {
                     persistAiSeatCredentials(matchId, nextAiSeatState.seatCredentials);
                 }
 
+                onlineAiSeatReloadAttemptRef.current = 0;
                 setOnlineAiSeatControllers(nextAiSeatState.seatControllers);
                 setOnlineAiSeatCredentials(nextAiSeatState.seatCredentials);
-            } catch {
+
+                const missingAiSeatCredentialIds = canClaimMissingAiSeatCredentials
+                    ? resolveMissingOnlineAiSeatCredentialIds(nextAiSeatState.seatControllers, nextAiSeatState.seatCredentials)
+                    : [];
+                if (missingAiSeatCredentialIds.length > 0) {
+                    scheduleOnlineAiSeatReload('missing-ai-seat-credentials', {
+                        missingAiSeatCredentialIds,
+                    });
+                }
+            } catch (error) {
                 if (!cancelled) {
                     logMobileRuntimeCritical('MatchRoom', 'online-ai-seat-state-load-failed', {
                         gameId,
@@ -2648,9 +2711,15 @@ export const MatchRoom = () => {
                         statusPlayerID: statusPlayerID ?? null,
                         matchStatusIsHost: matchStatus.isHost,
                         canClaimMissingAiSeatCredentials,
+                        error,
                     });
-                    setOnlineAiSeatControllers({});
-                    setOnlineAiSeatCredentials({});
+                    if (isMatchNotFoundError(error)) {
+                        onlineAiSeatReloadAttemptRef.current = 0;
+                        setOnlineAiSeatControllers({});
+                        setOnlineAiSeatCredentials({});
+                        return;
+                    }
+                    scheduleOnlineAiSeatReload('load-failed');
                 }
             }
         };
@@ -2659,8 +2728,11 @@ export const MatchRoom = () => {
 
         return () => {
             cancelled = true;
+            if (retryTimer) {
+                clearTimeout(retryTimer);
+            }
         };
-    }, [canClaimMissingAiSeatCredentials, gameConfig, gameId, guestId, guestName, isTutorialRoute, localStorageTick, matchId, matchStatus.isHost, statusPlayerID, tLobby, token]);
+    }, [canClaimMissingAiSeatCredentials, gameConfig, gameId, guestId, guestName, isTutorialRoute, localStorageTick, matchId, matchStatus.isHost, onlineAiSeatReloadTick, statusPlayerID, tLobby, token]);
     // 教程启动 effect
     // 使用 useLayoutEffect 确保在 CriticalImageGate 的 useEffect 之前执行。
     // 配合 TutorialDispatchBridge 的 useLayoutEffect（先 bindDispatch），

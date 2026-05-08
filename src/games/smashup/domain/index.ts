@@ -89,13 +89,13 @@ import {
     getRemainingScoringBaseRefs,
     getScoringSession,
     markScoringBaseCompleted,
-    mirrorDeferredPostScoringToFirstInteraction,
     resolveScoringBaseRefSlotIndex,
     serializePostScoringEvents,
     setScoringSession,
     updateScoringSession,
     type SmashUpScoringBaseRef,
 } from './scoringSession';
+import { getActiveResolutionFrame } from '../../../engine/systems/resolutionStack';
 
 // ============================================================================
 
@@ -317,9 +317,7 @@ function finalizeCurrentScoringBase(
     }
     const events: SmashUpEvent[] = [];
 
-    const deferredEvents = consumedDeferred.deferredEvents.length > 0
-        ? consumedDeferred.deferredEvents
-        : (session.deferredPostScoringEvents ?? []);
+    const deferredEvents = consumedDeferred.deferredEvents;
     if (deferredEvents.length > 0) {
         events.push(...deferredEvents.map((event) => ({
             type: event.type,
@@ -332,13 +330,10 @@ function finalizeCurrentScoringBase(
         workingState.core,
     );
 
-    const deferredActions = consumedDeferred.deferredActions.length > 0
-        ? consumedDeferred.deferredActions
-        : (session.pendingPostScoringActions ?? workingState.core.pendingPostScoringActions);
     events.push(
         ...buildPendingPostScoringActionEvents(
             { core: postDeferredCore },
-            deferredActions,
+            consumedDeferred.deferredActions,
             now,
         ),
     );
@@ -349,16 +344,11 @@ function finalizeCurrentScoringBase(
             ? {
                 ...currentSession,
                 currentStep: 'awaiting-post-reduce',
-                pendingPostScoringActions: undefined,
             }
             : currentSession,
     );
     const awaitingReduceState = {
         ...completedState,
-        core: {
-            ...completedState.core,
-            pendingPostScoringActions: undefined,
-        },
         sys: {
             ...completedState.sys,
             _waitForPostScoringReduce: true,
@@ -740,7 +730,6 @@ export function scoreOneBase(
                 frameId: afterScoringFrameId,
                 frameKind: 'score-after',
                 responseWindowType: 'afterScoring',
-                sourceBaseIndex: baseIndex,
             });
             const rq = maybeResolveReactionQueue(ms, rng, now);
             if (rq) {
@@ -828,31 +817,12 @@ export function scoreOneBase(
                     ...session,
                     currentBaseRef,
                     currentStep: waitingStep,
-                    deferredPostScoringEvents: serializedDeferredEvents,
                 }
                 : session,
             );
             ms = appendScoringFrameDeferredPayload(ms, {
                 deferredEvents: serializedDeferredEvents,
-                deferredActions: ms.core.pendingPostScoringActions ?? [],
             });
-            if (ms.core.pendingPostScoringActions?.length) {
-                ms = {
-                    ...ms,
-                    core: {
-                        ...ms.core,
-                        pendingPostScoringActions: undefined,
-                    },
-                };
-            }
-            ms = mirrorDeferredPostScoringToFirstInteraction(ms, serializedDeferredEvents);
-            const firstInteraction = ms.sys.interaction?.current ?? ms.sys.interaction?.queue?.[0];
-            if (firstInteraction?.data) {
-                const data = firstInteraction.data as Record<string, unknown>;
-                const continuationContext = (data.continuationContext ?? {}) as Record<string, unknown>;
-                continuationContext._deferredPostScoringEvents = serializedDeferredEvents;
-                data.continuationContext = continuationContext;
-            }
         }
         return { events, newBaseDeck, matchState: ms };
     }
@@ -1665,6 +1635,7 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
                     ...state,
                     sys: {
                         ...state.sys,
+                        _smashupStartTurnWindowActive: undefined,
                         _waitForStartTurnInteractionReduce: undefined,
                     } as any,
                 },
@@ -1698,6 +1669,11 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
             return undefined;
         }
 
+        const hasLiveScoringOrReactionFrame = Boolean(
+            getSmashUpReactionSession(state)
+            || getScoringSession(state)?.currentBaseRef,
+        );
+
         // factionSelect 鑷姩鎺ㄨ繘 check
         if (phase === 'factionSelect') {
 
@@ -1708,6 +1684,9 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
 
         // startTurn 鑷姩鎺ㄨ繘鍒?playCards
         if (phase === 'startTurn') {
+            if (hasLiveScoringOrReactionFrame) {
+                return undefined;
+            }
             if ((state.sys as any)._waitForStartTurnInteractionReduce) {
                 return undefined;
             }
@@ -1764,6 +1743,9 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         }
 
         if (phase === 'draw') {
+            if (hasLiveScoringOrReactionFrame) {
+                return undefined;
+            }
             const player = core.players[pid];
             if (player && player.hand.length <= HAND_LIMIT) {
                 return { autoContinue: true, playerId: pid };
@@ -1771,6 +1753,9 @@ export const smashUpFlowHooks: FlowHooks<SmashUpCore> = {
         }
 
         if (phase === 'endTurn') {
+            if (hasLiveScoringOrReactionFrame) {
+                return undefined;
+            }
             if (justResolvedSmashUpReactionChoice) {
                 return undefined;
             }
@@ -2463,7 +2448,10 @@ function postProcessSystemEvents(
         !!ms.sys.interaction?.current
         || (ms.sys.interaction?.queue?.length ?? 0) > 0;
 
-    if ((ms.sys as any)._smashupStartTurnWindowActive && hasStartTurnInteraction && ms.sys.phase !== 'startTurn') {
+    const activeResolutionFrame = getActiveResolutionFrame(ms);
+    const isActualStartTurnWindow = activeResolutionFrame?.kind === 'smashup:reaction:turn-start'
+        || (activeResolutionFrame?.metadata as { smashupReactionSession?: { frameKind?: string } } | undefined)?.smashupReactionSession?.frameKind === 'turn-start';
+    if ((ms.sys as any)._smashupStartTurnWindowActive && hasStartTurnInteraction && ms.sys.phase !== 'startTurn' && isActualStartTurnWindow) {
         ms = {
             ...ms,
             sys: {

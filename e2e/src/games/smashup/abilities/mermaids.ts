@@ -1169,13 +1169,17 @@ export function registerMermaidsAbilities(): void {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['sourceSelfState', 'baseState'],
+            opensInteraction: true,
+        },
     });
     registerTrigger('mermaids_desert_island', 'onTurnStart', mermaidsDesertIslandOnTurnStart, {
         perInstance: true,
         sourceScope: 'triggerBase',
-        orderingFootprint: {
-            reads: ['sourceState'],
-            writes: ['sourceState'],
+        effectContract: {
+            reads: ['sourceSelfState'],
+            writes: ['sourceSelfState'],
         },
     });
 }

@@ -114,7 +114,9 @@ describe('Reaction queue: base abilities', () => {
       type: SU_EVENTS.ABILITY_FEEDBACK,
       payload: { playerId: ctx.playerId, messageKey: 'minion-action', tone: 'info' },
       timestamp: ctx.now,
-    }] as any));
+    }] as any), {
+      effectContract: {},
+    });
 
     const core = core2b({
       bases: [

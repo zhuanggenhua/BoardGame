@@ -17,6 +17,10 @@
 
 ## Current Snapshot
 
+- [x] 审计流程已按“执行层级不够深”的复盘结论升级
+  - 已更新 `docs/ai-rules/testing-audit.md`，新增“深度审计流程（强制）”
+  - 已把对象清单、完整链路、真实入口、共享根因扩审、旧结论失效回写，改成统一深审门禁
+  - 已明确把 `D37` 与 `D40` 标为本轮漏审复盘中的高风险专项
 - [x] 生产反馈真源已恢复可读
   - 2026-05-03 生产 `Mongo` 因根盘打满 + `FTDC diagnostic.data` 异常重启，导致 `/admin/feedback` 返回 `500`
   - 已截断 `boardgame-game-server` 的 `13G` Docker 日志，根盘从 `100%` 降到 `68%`
@@ -510,4 +514,59 @@
 - [x] 已完成本地 E2E 收口并补证据
   - `evidence/smashup/smashup-feedback-69faac614590ce09779a7d8f-sacred-circle-click-fix-e2e-2026-05-07.md`
 - [x] 已按 2026-05-07 新口径补充 workflow：反馈只要完成修复验证，就应立刻回写远端正式状态，不再默认停在本地 resolved
-- [ ] 远端反馈状态回写执行中
+- [x] 已完成远端反馈状态回写与生产复核
+  - `temp/feedback-closeout/query-feedback-69faac61-before-writeback-20260507.raw.txt`
+  - `temp/feedback-closeout/update-feedback-status-20260507-69faac61-to-resolved.raw.txt`
+  - `temp/feedback-closeout/query-feedback-69faac61-after-writeback-20260507.raw.txt`
+  - `temp/feedback-closeout/query-human-open-inprogress-after-20260507.raw.txt`
+  - 线上 `reporterType=user && status in [open,in_progress]` 当前 `count=0`
+- [x] 全量线上反馈已清零
+  - `temp/feedback-closeout/update-feedback-status-20260507-final-watchdog-batch.raw.txt`
+  - `temp/feedback-closeout/query-all-open-inprogress-after-final-watchdog-batch-20260507.raw.txt`
+  - `temp/feedback-closeout/query-all-open-inprogress-current-20260507.raw.txt`
+  - 截至 `2026-05-07 21:25 +08`，生产真源 `open/in_progress = 0`
+  - 本轮最后 `21` 条 watchdog 系统单已完成正式回写：`resolved = 9`、`closed = 12`
+  - 当前可以正式宣称“线上人类反馈已清零，系统反馈也已清零，所有反馈都已修好”
+
+## Addendum（2026-05-07 21:25 +08）：最后 21 条 watchdog 系统反馈正式清零
+
+- [x] 生产真源回写前盘面核对完成
+  - 回写前真实待清批次是 `21` 条，另有 `69fb3fde... / 69fc6298...` 已在本轮更早一拍单独回写
+  - 这 `21` 条全部来自 `reporterType=system`、`source=online-ai-watchdog`
+- [x] 判定口径已落地
+  - `force-end-turn-failed ...` 与 `unsatisfiable-interaction-auto-skipped empty-options` 按 `resolved`
+  - `force-end-turn-success ...` 按 `closed`
+- [x] 最后一批生产正式回写完成
+  - 回写时间：`2026-05-07 21:08:22 +08`
+  - 回写结果：`resolved.matchedCount=9 / modifiedCount=9`，`closed.matchedCount=12 / modifiedCount=12`
+- [x] 本地状态板已同步补入并准备校验
+  - `temp/feedback-closeout/status-board.json`
+- [x] 最终复核已确认线上全量清零
+  - `temp/feedback-closeout/query-all-open-inprogress-current-20260507.raw.txt`
+  - 截至 `2026-05-07 21:25 +08`：`totalOpenOrInProgress=0`、`humanOpen=0`
+
+## Addendum（2026-05-07 21:52 +08）：`69fc6298` 短暂重开后再次清零
+
+- [x] `69fc62984a37805e1526f6d9` 在生产真源短暂回到 `open`
+  - fresh 生产直查结果：`totalOpenOrInProgress=1`、`humanOpen=0`
+- [x] 复核同局 `bSJjqanl8rO` 的日志后确认这是同一系统聚合项的再刷
+  - watchdog 已继续把局面从 `scoreBases -> draw -> playCards` 推进收口
+  - 这条仍按失败类系统单回写 `resolved`
+- [x] 生产再次回写成功
+  - `matchedCount=1 / modifiedCount=1`
+  - 目标：`69fc62984a37805e1526f6d9`
+- [x] 最新复核再次确认全量清零
+  - `totalOpenOrInProgress=0`
+  - `humanOpen=0`
+  - 当前最终口径仍是“所有反馈已清零”
+
+## Addendum（2026-05-07 22:00 +08）：fresh 生产直查仍为全量清零
+
+- [x] 最新生产直查结果
+  - `ts=2026-05-07T14:00:21.653Z`
+  - `totalOpenOrInProgress=0`
+  - `humanOpen=0`
+- [x] 当前最终口径再次确认不变
+  - 线上人类反馈已清零
+  - 系统 watchdog 反馈已清零
+  - 所有反馈已清零

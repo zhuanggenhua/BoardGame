@@ -1454,7 +1454,7 @@ function registerWizardOngoingEffects(): void {
             timestamp: trigCtx.now,
         }];
     }, {
-        orderingFootprint: {
+        effectContract: {
             writes: ['playLimits'],
         },
     });

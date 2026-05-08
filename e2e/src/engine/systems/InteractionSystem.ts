@@ -806,33 +806,9 @@ export function queueInteraction<TCore>(
 export function resolveInteraction<TCore>(
     state: MatchState<TCore>,
 ): MatchState<TCore> {
-    const { current, queue } = state.sys.interaction;
+    const { queue } = state.sys.interaction;
     let next = queue[0];
     const newQueue = queue.slice(1);
-
-    // 传递延迟的 afterScoring 事件给下一个交互（避免链式交互丢失）
-    if (current && next) {
-        const currentData = asPlainRecord(current.data);
-        const currentCtx = asPlainRecord(currentData.continuationContext);
-        const deferredEvents = currentCtx._deferredPostScoringEvents;
-
-        if (Array.isArray(deferredEvents) && deferredEvents.length > 0) {
-            const nextData = asPlainRecord(next.data);
-            const nextCtx = asPlainRecord(nextData.continuationContext);
-            if (!nextCtx._deferredPostScoringEvents) {
-                next = {
-                    ...next,
-                    data: {
-                        ...nextData,
-                        continuationContext: {
-                            ...nextCtx,
-                            _deferredPostScoringEvents: deferredEvents,
-                        },
-                    },
-                };
-            }
-        }
-    }
 
     // 如果下一个交互是 simple-choice，刷新选项
     if (next && next.kind === 'simple-choice') {

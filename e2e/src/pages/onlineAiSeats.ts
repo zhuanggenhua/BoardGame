@@ -71,6 +71,17 @@ export const haveAiSeatCredentialsChanged = (
     return nextKeys.some((key) => prev[key] !== next[key]);
 };
 
+export const resolveMissingOnlineAiSeatCredentialIds = (
+    seatControllers: Record<string, AiSeatController>,
+    seatCredentials: Record<string, string>,
+): string[] => (
+    Object.entries(seatControllers)
+        .filter(([, controller]) => isAiSeatController(controller))
+        .map(([playerId]) => playerId)
+        .filter((playerId) => !seatCredentials[playerId])
+        .sort((left, right) => Number(left) - Number(right))
+);
+
 export async function loadOnlineAiSeatState({
     gameConfig,
     matchInfo,

@@ -555,4 +555,212 @@ test.describe('大杀四方 - afterScoring 响应窗口', () => {
             throw error;
         }
     });
+
+    test('托尔图加 afterScoring 选中随从后会移动到替换基地', async ({ page, game }, testInfo) => {
+        test.setTimeout(180000);
+
+        const diagnostics = attachPageDiagnostics(page);
+        page.on('console', (msg) => {
+            if (msg.type() === 'error' || msg.text().includes('[LocalGame]')) {
+                console.log(`[browser-console] ${msg.type()}: ${msg.text()}`);
+            }
+        });
+
+        try {
+            await openSmashupScene(page, game, {
+                gameId: 'smashup',
+                phase: 'playCards',
+                currentPlayer: '0',
+                player0: {
+                    hand: [],
+                    field: [],
+                    factions: ['dinosaurs', 'ninjas'],
+                },
+                player1: {
+                    hand: [],
+                    field: [],
+                    factions: ['robots', 'wizards'],
+                },
+                bases: [
+                    { defId: 'base_tortuga', minions: [] },
+                    { defId: 'base_secret_garden', minions: [] },
+                    { defId: 'base_great_library', minions: [] },
+                ],
+                extra: {
+                    core: {
+                        baseDeck: ['base_the_jungle'],
+                        bases: [
+                            {
+                                defId: 'base_tortuga',
+                                minions: [
+                                    {
+                                        uid: 'tortuga-winner-rex',
+                                        defId: 'dino_king_rex',
+                                        owner: '0',
+                                        controller: '0',
+                                        basePower: 7,
+                                        powerModifier: 0,
+                                        powerCounters: 0,
+                                        tempPowerModifier: 0,
+                                        talentUsed: false,
+                                        attachedActions: [],
+                                    },
+                                    {
+                                        uid: 'tortuga-winner-laser',
+                                        defId: 'dino_laser_triceratops',
+                                        owner: '0',
+                                        controller: '0',
+                                        basePower: 4,
+                                        powerModifier: 0,
+                                        powerCounters: 0,
+                                        tempPowerModifier: 0,
+                                        talentUsed: false,
+                                        attachedActions: [],
+                                    },
+                                    {
+                                        uid: 'tortuga-winner-assassin',
+                                        defId: 'ninja_tiger_assassin',
+                                        owner: '0',
+                                        controller: '0',
+                                        basePower: 4,
+                                        powerModifier: 0,
+                                        powerCounters: 0,
+                                        tempPowerModifier: 0,
+                                        talentUsed: false,
+                                        attachedActions: [],
+                                    },
+                                    {
+                                        uid: 'tortuga-winner-shinobi',
+                                        defId: 'ninja_shinobi',
+                                        owner: '0',
+                                        controller: '0',
+                                        basePower: 3,
+                                        powerModifier: 0,
+                                        powerCounters: 0,
+                                        tempPowerModifier: 0,
+                                        talentUsed: false,
+                                        attachedActions: [],
+                                    },
+                                    {
+                                        uid: 'tortuga-runnerup-archmage',
+                                        defId: 'wizard_archmage',
+                                        owner: '1',
+                                        controller: '1',
+                                        basePower: 4,
+                                        powerModifier: 0,
+                                        powerCounters: 0,
+                                        tempPowerModifier: 0,
+                                        talentUsed: false,
+                                        attachedActions: [],
+                                    },
+                                ],
+                                ongoingActions: [],
+                            },
+                            {
+                                defId: 'base_secret_garden',
+                                minions: [
+                                    {
+                                        uid: 'runner-up-traveler',
+                                        defId: 'robot_hoverbot',
+                                        owner: '1',
+                                        controller: '1',
+                                        basePower: 3,
+                                        powerModifier: 0,
+                                        powerCounters: 0,
+                                        tempPowerModifier: 0,
+                                        talentUsed: false,
+                                        attachedActions: [],
+                                    },
+                                ],
+                                ongoingActions: [],
+                            },
+                            {
+                                defId: 'base_great_library',
+                                minions: [],
+                                ongoingActions: [],
+                            },
+                        ],
+                    },
+                },
+            });
+
+            await page.waitForFunction(
+                () => {
+                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                    return state?.sys?.phase === 'playCards'
+                        && state?.core?.factionSelection === undefined
+                        && state?.core?.bases?.[0]?.defId === 'base_tortuga'
+                        && state?.core?.bases?.[0]?.minions?.length === 5
+                        && state?.core?.bases?.[1]?.minions?.some((minion: any) => minion.uid === 'runner-up-traveler');
+                },
+                { timeout: 30000 },
+            );
+
+            await game.screenshot('tortuga-01-scene-ready', testInfo);
+
+            await advancePhaseFromUI(page, game);
+
+            await page.waitForFunction(
+                () => {
+                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                    return state?.sys?.interaction?.current?.data?.sourceId === 'base_tortuga';
+                },
+                { timeout: 20000, polling: 100 },
+            );
+
+            const tortugaInteraction = await readCurrentInteraction(page);
+            expect(tortugaInteraction?.sourceId).toBe('base_tortuga');
+            const moveOption = tortugaInteraction?.options.find((option) => (
+                option.value?.minionUid === 'runner-up-traveler'
+            ));
+            expect(moveOption).toBeTruthy();
+            await game.screenshot('tortuga-02-interaction-open', testInfo);
+            await respondCurrentInteractionByOptionId(page, moveOption!.id);
+
+            await page.waitForFunction(
+                () => {
+                    const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                    if (!state) return false;
+                    const replacementBase = state.core?.bases?.[0];
+                    const sourceBase = state.core?.bases?.[1];
+                    return !state.sys?.interaction?.current
+                        && !state.sys?.responseWindow?.current
+                        && state.sys?.phase === 'playCards'
+                        && state.core?.currentPlayerIndex === 1
+                        && replacementBase?.defId === 'base_the_jungle'
+                        && replacementBase?.minions?.some((minion: any) => minion.uid === 'runner-up-traveler')
+                        && !sourceBase?.minions?.some((minion: any) => minion.uid === 'runner-up-traveler');
+                },
+                { timeout: 20000, polling: 100 },
+            );
+
+            const finalState = await page.evaluate(() => {
+                const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+                return {
+                    phase: state?.sys?.phase,
+                    currentPlayerIndex: state?.core?.currentPlayerIndex,
+                    responseWindowId: state?.sys?.responseWindow?.current?.id ?? null,
+                    interactionSourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                    replacementBaseDefId: state?.core?.bases?.[0]?.defId ?? null,
+                    replacementBaseMinions: (state?.core?.bases?.[0]?.minions ?? []).map((minion: any) => minion.uid),
+                    originalBaseMinions: (state?.core?.bases?.[1]?.minions ?? []).map((minion: any) => minion.uid),
+                };
+            });
+
+            expect(finalState.phase).toBe('playCards');
+            expect(finalState.currentPlayerIndex).toBe(1);
+            expect(finalState.responseWindowId).toBeNull();
+            expect(finalState.interactionSourceId).toBeNull();
+            expect(finalState.replacementBaseDefId).toBe('base_the_jungle');
+            expect(finalState.replacementBaseMinions).toContain('runner-up-traveler');
+            expect(finalState.originalBaseMinions).not.toContain('runner-up-traveler');
+
+            await game.screenshot('tortuga-03-moved-to-replacement-base', testInfo);
+        } catch (error) {
+            if (diagnostics.errors.length > 0) {
+                console.log('[page-diagnostics]', diagnostics.errors);
+            }
+            throw error;
+        }
+    });
 });

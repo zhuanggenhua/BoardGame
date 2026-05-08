@@ -31,7 +31,7 @@ import { clearBaseAbilityRegistry, triggerBaseAbility, triggerExtendedBaseAbilit
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-import { appendScoringFrameDeferredPayload, createScoringSession, getScoringSession, setScoringSession } from '../domain/scoringSession';
+import { appendScoringFrameDeferredPayload, consumeScoringFrameDeferredPayload, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, CardInstance } from '../domain/types';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
@@ -857,7 +857,7 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             1853,
         );
         expect(resolved?.events ?? []).toHaveLength(0);
-        expect(getScoringSession(resolved!.state)?.pendingPostScoringActions ?? []).toEqual([]);
+        expect(consumeScoringFrameDeferredPayload(resolved!.state).deferredActions).toEqual([]);
     });
 
     it('base_greenhouse: replacement follow-up 应写入 scoring session，不写 core', () => {
@@ -930,7 +930,8 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
         );
 
         expect(resolved?.events ?? []).toHaveLength(0);
-        expect(getScoringSession(resolved!.state)?.pendingPostScoringActions ?? []).toEqual([
+        const consumed = consumeScoringFrameDeferredPayload(resolved!.state);
+        expect(consumed.deferredActions).toEqual([
             {
                 kind: 'playMinionOnReplacementBase',
                 playerId: '0',

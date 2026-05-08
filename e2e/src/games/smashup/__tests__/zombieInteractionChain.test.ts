@@ -29,7 +29,7 @@ import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/In
 import type { ActionCardDef } from '../domain/types';
 import { getCardDef } from '../data/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
-import { SU_COMMANDS } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import type { SmashUpCore, MinionOnBase, CardInstance, BaseInPlay } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
@@ -37,7 +37,8 @@ import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
-import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers } from '../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 
 // ============================================================================
 // 测试工具（与 interactionChainE2E.test.ts 保持一致）
@@ -933,5 +934,50 @@ describe('zombie_overrun（泛滥横行）ongoing 效果', () => {
             payload: { cardUid: 'm1', baseIndex: 1 },
         }, 'overrun: P1 打随从到非限制基地');
         expect(r2.steps[0]?.success).toBe(true);
+    });
+
+    it('与其他 sourceSelfState 自收口 trigger 同时出现时，应自动收口且不弹排序选择', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { factions: ['zombies', 'mermaids'] as [string, string] }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('test_base_1', [], [
+                    { uid: 'overrun1', defId: 'zombie_overrun', ownerId: '0' },
+                ]),
+                makeBase('test_base_2', [], [
+                    { uid: 'desert1', defId: 'mermaids_desert_island', ownerId: '0' },
+                ]),
+            ],
+            currentPlayerIndex: 0,
+        });
+        const state = makeFullMatchState(core);
+
+        const queued = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: state,
+            playerId: '0',
+            random: { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+            now: 1,
+        });
+        expect(queued).toBeDefined();
+
+        const queuedState = makeFullMatchState({
+            ...core,
+            triggerQueue: (queued as any).payload.triggers,
+        });
+        const resolved = maybeResolveReactionQueue(
+            queuedState,
+            { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
+            1,
+        );
+
+        expect(resolved).toBeDefined();
+        expect(resolved!.state.sys.interaction.current).toBeUndefined();
+        expect(resolved!.events.filter((event: any) => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
+        expect(resolved!.state.core.triggerQueue ?? []).toHaveLength(0);
+        expect(resolved!.state.core.bases[0].ongoingActions.some(action => action.uid === 'overrun1')).toBe(false);
+        expect(resolved!.state.core.bases[1].ongoingActions.some(action => action.uid === 'desert1')).toBe(false);
     });
 });

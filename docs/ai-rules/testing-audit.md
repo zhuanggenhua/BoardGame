@@ -51,6 +51,93 @@
 - **要写“当前发布口径已收口”**：必须同时具备 L1、L2、L3、L4；缺任一层都要降级表述。
 - **发现共享根因或未审家族**：结论必须至少降到“仍有残余范围”，直到共享路径与残余范围被明确清掉。
 
+### 深度审计流程（强制）
+
+> 适用场景：用户要求“审计 / 全面核对 / 这批都看完 / 为什么审计没发现”，或当前问题已暴露出共享根因、链式交互、跨系统状态推进风险。
+
+**核心目标**：禁止把“看过代码 / 跑过单测 / prompt 弹出来了”误报成“已经深入审计”。深审必须把**对象清单、完整链路、真实入口、共享根因、失效回写**五件事一次打穿。
+
+#### Step 0：先建对象清单，再开始审
+
+- 审计前必须先列出本轮对象清单；对象可以是卡牌、能力、交互链、系统函数、事件家族或反馈簇。
+- 每个对象都要显式标记当前层级：
+  - `L0`：只建立了对象名，还没完成结构核对。
+  - `L1`：结构层已核对。
+  - `L2`：行为层已核对。
+  - `L3`：真实入口玩法已核对。
+  - `L4`：治理层已核对，能支撑收口。
+- 没有对象清单时，禁止使用“这一批已经审过 / 基本都没问题 / 还剩个别尾巴”这类汇报口径。
+
+#### Step 1：每个对象必须串完整链路
+
+- 每个对象至少要按下面顺序过一遍，缺一段都不能叫“深入审计”：
+  - 规则/描述语义
+  - 静态定义与注册入口
+  - validator / canActivate / legality check
+  - command / reducer / trigger / handler
+  - afterEvents / postProcess / pipeline 后处理
+  - UI 消费链或可见交互出口
+  - 真实入口验证
+- 交付文档里必须写清“本对象链路具体落在哪些文件/函数”，不能只写一个总入口文件名。
+- 若读静态定义无法独立解释运行时为何会触发，即使运行时暂时能跑，也只能记为 finding，不能写“实现完整”。
+
+#### Step 2：高风险对象必须强制打到真实入口
+
+- 命中下列任一风险时，L3 真实入口证据为强制项，不能只靠 L1/L2：
+  - response window / `smashup_reaction_choose` / 中间反应态
+  - `afterScoring` / `onDestroy` / `onPlay` / `onTurnEnd` 等链式触发
+  - 动态候选刷新、基地替换、位置变更、宿主离场、`setaside` / `discard` / `buried` / `attached` 等区域依赖
+  - 多系统协作、watchdog、恢复态、隐藏交互、可见交互恢复
+  - 同批事件结算、循环后处理、批内副作用串行推进
+- 命中这些风险时，至少要证明：
+  - 候选/交互从真实入口出现，而不是注入状态造出来。
+  - 真实用户动作后，最终权威状态确实变化。
+  - 中间态没有被单测观察面或 prompt 存在性偷换掉。
+
+#### Step 3：共享根因必须自动扩审，不能只修当前 case
+
+- 一旦根因落在共享 reducer / handler / hook / system / pipeline / transport，上报时必须同时给出扩审范围。
+- 扩审至少覆盖：
+  - 同游戏同类能力或卡牌家族
+  - 同游戏共享函数/共享状态字段
+  - 引擎或框架层同类调用点
+  - 使用同一事件 kind / payload 字段 / helper 的其他路径
+- 典型高风险专项必须单独勾选：
+  - `D37`：动态刷新只说明候选会跟 live state 走，不代表 `zone/location/可打出形态` 前置条件已经完整。
+  - `D40`：同批输入事件的副作用必须串行吃到最新状态，不得反复基于批次入口旧 state/core。
+- 如果扩审还没做完，结论只能写“仍有残余范围”，不能抢跑成“已收口”。
+
+#### Step 4：旧审计结论失效时，必须原地降级并回写
+
+- 发现旧 evidence 的完成结论被新 bug、新共享根因或新链路证据推翻时，必须直接回写原文档。
+- 回写至少包含：
+  - 哪条旧结论失效
+  - 失效原因属于哪类根因
+  - 新命中的审计维度
+  - 新增修复/回归/证据路径
+  - 旧结论降级后的当前状态
+- 禁止另写一份新文档假装“现在这份才算真相”，而让旧文档继续顶着“已审计”状态存在。
+
+#### Step 5：退出条件必须按层级核销
+
+- 对单个对象宣称“当前发布口径已收口”前，必须同时满足：
+  - `L1`：结构入口、defId、注册、handler 覆盖已核对。
+  - `L2`：代表性行为测试已证明语义生效。
+  - `L3`：真实入口玩法证据已证明完整链路成立。
+  - `L4`：共享根因、残余范围、旧结论失效回写已完成。
+- 对整批对象宣称“这一批审完了”前，必须同时满足：
+  - 清单中的每一项都有当前层级。
+  - 没有对象停留在未声明的灰区。
+  - 所有“仍有残余范围”的对象都已写明残余点和后续入口。
+
+#### 深审禁区（强制）
+
+- 只看 `validator` / 只看 `canActivate` 就结束。
+- 只跑结构审计或单测，就把交互/玩法写成“已验证”。
+- 只看某一张卡当前 case，不追共享函数和同类调用点。
+- 发现旧审计被推翻，但不回写旧 evidence。
+- 用“动态刷新有了”“E2E 打开了 prompt”“日志里发了事件”来替代最终权威状态证明。
+
 ### 禁止假阳性收口（强制）
 
 以下证据只能证明“展示存在 / 结构有接入 / prompt 能出现”，不能单独作为玩法收口依据：
@@ -245,10 +332,10 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 | D35 | **交互上下文快照完整性** | 交互创建时是否保存了所有必要的上下文信息到 `continuationContext`？**关键场景**：① 基地计分后创建交互（`afterScoring`），此时基地上的随从/ongoing 卡牌信息需要快照，因为 `BASE_CLEARED` 事件被延迟，但其他交互可能会修改基地状态；② 链式交互中，第一个交互解决后可能改变第二个交互的候选列表，需要在创建时快照；③ 交互处理器需要访问的任何"可能在交互解决前变化"的数据，都必须快照；④ **交互会跨基地清场/换基地/基地列表收缩后再解决时，不能只保存 `baseIndex`，必须同时保存稳定标识（如 `baseDefId`），handler 中先按稳定标识回找活体基地，再 fallback 到仍有效的 `baseIndex`。**`baseIndex` 只是快照位置，不是稳定身份。⑤ **快照字段与事务权威状态必须分离**：`continuationContext`/snapshot 负责保存 handler 需要的上下文，不能偷偷充当 deferred actions / deferred events / finalize 控制标志的唯一宿主；这类跨阶段事务状态必须有唯一权威宿主。**反模式**：只保存 `baseIndex`/`cardUid` 等引用，但不保存实体的详细信息（如力量值、defId、owner 等）；或把 `baseIndex` 当成跨时序稳定键使用；或把本应由 scoring frame / session 持有的 deferred 状态临时塞进 snapshot，导致 finalize 读不到。**审查补充**：只有 handler 真正需要跨时序重新定位基地时才应携带 `baseDefId` 等稳定标识，纯按钮确认类交互不要为了“保险”无脑塞入无用字段，避免引发 D34 的 UI 误判。**参考实现**：海盗湾（`base_pirate_cove`）的 `minionsSnapshot`；需要跨基地重定位时可参考 `resolveLiveBaseIndex` 一类 helper。 |
 | D35.1 | **多系统命令门控职责清晰** | 当 `responseWindow` 与 `simple-choice` 等交互并存时，命令是否合法应由哪个系统裁决？**强制规则**：若存在活动 `sys.responseWindow.current`，则响应牌/响应命令的放行权属于 `ResponseWindowSystem`；`SimpleChoiceSystem` 只能处理 simple-choice 自身的提交/超时/无响应窗口时的普通阻塞，不能一刀切拦截所有非 `SYS_` 命令。**测试要求**：必须同时验证 ① `sys.interaction.current` 仍存在 ② `sys.responseWindow.current` 仍存在 ③ 合法响应命令可以通过 ④ 非法普通命令仍被阻止。**典型缺陷**：系统状态看起来都对，但响应牌被“请先完成当前选择”误拦，属于门控职责串位，而不是单纯 UI 问题。 |
 | D36 | **延迟事件补发的健壮性** | 延迟事件（如 `_deferredPostScoringEvents`）的补发是否依赖脆弱的条件？**脆弱设计**：补发逻辑只在 `sourceId` 存在且 `getInteractionHandler(sourceId)` 返回有效 handler 时执行 → 如果 handler 未注册或抛出异常，延迟事件永远不会被发出，游戏卡死。**健壮设计**：延迟事件的补发应该在框架层（如 `InteractionSystem`）无条件执行，不依赖游戏层的 handler 实现。**session-first / scoring frame 补充**：交互解决后新产生的 deferred actions / deferred events，若最终由 scoring frame / finalize 消费，必须在交互收口时回写同一权威宿主，不能只停留在 `core.pendingPostScoringActions`、临时 `continuationContext` 或其他旁路字段。**检查清单**：① 所有创建交互的能力是否都注册了 handler？② handler 是否可能抛出异常导致补发逻辑不执行？③ 延迟事件的存储位置是否安全（不会被意外修改或删除）？④ 链式交互时，延迟事件是否正确传递到下一个交互？⑤ 审计 `scoreBases`/`afterScoring` 时，是否验证了 finalize 最终消费的是与交互写入同一份 deferred 状态，而不是另一份影子状态？ |
-| D37 | **交互选项动态刷新完整性** | 框架层已支持自动推断选项类型（根据 `value` 的字段：`minionUid` → field、`baseIndex` → base、`cardUid` → hand/discard），无需手动添加 `_source` 字段。**根因**：同时触发多个交互时，后续交互创建时基于初始状态，可能包含已失效的选项（如已被替换的基地、已被消灭的随从、已被弃掉的手牌）。框架层的 `refreshInteractionOptions` 自动刷新所有选项。**可选优化**：复杂场景（如从弃牌堆/牌库选择）可显式声明 `_source: 'discard'` 提升性能，但非必需。**自动化检查**：grep 所有 `createSimpleChoice` 调用，查找手写 `optionsGenerator` 的地方（通常不需要，框架层已自动处理）。**参考文档**：`docs/bugs/smashup/smashup-jinx-dynamic-options.md`。**教训**：海盗大副（pirate_first_mate）、蒸汽朋克亚哈船长（steampunk_captain_ahab）、机械师（steampunk_mechanic）、场地变更（steampunk_change_of_venue）、托尔图加（base_tortuga）、诡猫巷（base_cat_fanciers_alley）、平衡之地（base_land_of_balance）、绵羊神社（base_sheep_shrine）、牧场（base_the_pasture）都因缺少动态刷新导致托尔图加计分后基地被替换时选项过时，用户点击后卡住。框架层自动推断后，这些问题全部自动修复，无需修改游戏层代码。 |
+| D37 | **交互选项动态刷新完整性** | 框架层已支持自动推断选项类型（根据 `value` 的字段：`minionUid` → field、`baseIndex` → base、`cardUid` → hand/discard），无需手动添加 `_source` 字段。**根因**：同时触发多个交互时，后续交互创建时基于初始状态，可能包含已失效的选项（如已被替换的基地、已被消灭的随从、已被弃掉的手牌）。框架层的 `refreshInteractionOptions` 自动刷新所有选项。**强制补充**：动态刷新只负责把旧快照换成 live 候选，**不负责替游戏层补“当前是否仍可激活”**。凡是候选依赖实体当前位置 / 区域 / 可打出形态（如 `setaside` 泰坦 special、已离场宿主、只在某基地有效的 talent），审计时必须继续核对对应 validator / legality check 是否把 `zone/location` 前置条件写全；否则 live options 仍会稳定暴露“当前其实不可发动”的候选。**可选优化**：复杂场景（如从弃牌堆/牌库选择）可显式声明 `_source: 'discard'` 提升性能，但非必需。**自动化检查**：grep 所有 `createSimpleChoice` 调用，查找手写 `optionsGenerator` 的地方（通常不需要，框架层已自动处理），并 grep 所有相关 `validator` / `canActivate` / `legality` 逻辑确认是否同时校验实体当前位置。**参考文档**：`docs/bugs/smashup/smashup-jinx-dynamic-options.md`。**教训**：海盗大副（pirate_first_mate）、蒸汽朋克亚哈船长（steampunk_captain_ahab）、机械师（steampunk_mechanic）、场地变更（steampunk_change_of_venue）、托尔图加（base_tortuga）、诡猫巷（base_cat_fanciers_alley）、平衡之地（base_land_of_balance）、绵羊神社（base_sheep_shrine）、牧场（base_the_pasture）都因缺少动态刷新导致托尔图加计分后基地被替换时选项过时，用户点击后卡住。框架层自动推断后，这些问题全部自动修复，无需修改游戏层代码。补充案例：`wizards_arcane_protector` 已进场后，live `smashup_reaction_choose` 仍暴露 `activate_special`，根因不是选项没刷新，而是游戏层 validator 漏了 `titan.location.zone === 'setaside'` 前置条件。 |
 | D38 | **UI 门控系统优先级冲突** | 多个独立的 UI 门控系统（`disabled*`/`*DisabledUids`/`isSelectable` 等）同时作用于同一 UI 元素时，是否存在优先级冲突？**根因**：不同上下文（响应窗口/交互系统/教学模式/阶段限制）各自计算禁用集合，UI 层取并集导致过度禁用。**核心原则**：交互系统激活时应该是最高优先级，其他门控系统必须检查交互状态并退让（返回 `undefined`）。**审查方法**：① 识别所有 UI 门控系统（grep `disabled*`/`*DisabledUids` 的 useMemo）② 绘制状态机交叉矩阵（哪些状态可能同时激活）③ 检查高优先级门控是否在计算开始时检查低优先级状态并提前返回 ④ 典型冲突：响应窗口门控 × 交互系统门控、教学模式 × 正常游戏、阶段限制 × 能力授予额外行动。**优先级规则**：交互系统 > 响应窗口 > 教学模式 > 阶段限制；全局禁用（游戏结束/加载中）> 所有局部门控。**自动化检查**：在 HandArea 等组件中添加 warning，当多个 `disabledCardUids` 同时非空时打印警告。**参考文档**：`docs/bugs/smashup/smashup-ninja-hidden-ninja-ui-state-conflict.md`。**教训**：便衣忍者在 Me First! 窗口中打出后创建手牌选择交互，但 `meFirstDisabledUids` 继续禁用所有非 `beforeScoringPlayable` 随从，导致交互无法完成。修复：`meFirstDisabledUids` 计算中添加 `if (isHandDiscardPrompt) return undefined;`。 |
 | D39 | **流程控制标志清除完整性** | 流程控制标志（`flowHalted`/`isProcessing`/`isPending` 等）的清除条件是否完整？清除条件必须检查标志背后的状态，而非只检查标志本身。**核心原则：流程控制标志是"症状"，背后的状态（如交互是否完成）才是"病因"。清除标志时必须检查病因是否已消除，而非只检查症状是否存在。** 审查方法：① **识别所有流程控制标志**：grep `flowHalted`/`isProcessing`/`isPending`/`isLocked` 等标志的设置点 ② **追踪每个标志的设置原因**：标志为什么被设置？背后的状态是什么？（如 `flowHalted=true` 因为创建了交互等待玩家响应）③ **追踪每个标志的清除条件**：清除逻辑是否检查了背后的状态？（如检查 `sys.interaction.current` 是否为空）还是只检查标志本身？④ **检查所有退出路径**：正常完成、用户取消、错误、超时等所有路径是否都正确清除标志？⑤ **检查守卫逻辑**：使用标志的守卫（如 `if (flowHalted) return { halt: true }`）是否同时检查了背后的状态？**典型缺陷模式**：❌ 守卫只检查 `flowHalted` 标志，不检查交互是否仍在进行 → 交互完成后标志未清除，守卫永远 halt ❌ 清除逻辑只在正常完成路径，错误/取消路径未清除 → 标志泄漏到下次操作 ❌ 多个系统共享同一标志，一个系统清除后另一个系统仍依赖 → 状态不一致 ✅ 守卫检查 `flowHalted && sys.interaction.current` → 只有标志存在且交互仍在进行时才 halt ✅ 所有退出路径（正常/取消/错误）都清除标志 ✅ 每个标志有明确的"拥有者"系统，只有拥有者负责清除。**审查输出格式**：```标志: flowHalted (src/games/smashup/domain/index.ts:577)设置原因: 创建交互等待玩家响应（beforeScoring/afterScoring 技能）背后状态: sys.interaction.current 存在清除条件: ❌ 只检查 flowHalted 标志，不检查 sys.interaction.current守卫逻辑: if (state.sys.flowHalted) return { halt: true } ❌ 缺少交互状态检查退出路径: 正常完成 ✅ / 用户取消 ✅ / 错误 ❌ / 超时 ❌判定: ❌ 清除条件不完整（只检查标志不检查状态）修复方案: 将守卫改为 if (state.sys.flowHalted && state.sys.interaction.current) return { halt: true }```**排查信号**：① "操作后卡住/无法继续" + 日志显示 `halt=true` 但交互已完成 = 高度怀疑标志清除条件不完整 ② 标志在某些场景下正常清除，某些场景下泄漏 = 退出路径不完整 ③ 多个系统使用同一标志，行为不一致 = 标志所有权不明确。**参考文档**：`docs/bugs/smashup/smashup-tortuga-pirate-king-卡住-2026-02-28-16-53.md`。**教训**：托尔图加海盗王移动后卡住。`flowHalted=true` 因为 beforeScoring 创建交互，用户响应后交互完成，但 `onPhaseExit` 守卫只检查 `flowHalted` 标志不检查 `sys.interaction.current`，直接返回 `halt=true`，导致 afterScoring 永远不执行。修复：守卫改为 `if (state.sys.flowHalted && state.sys.interaction.current) return { halt: true }`，只有标志存在且交互仍在进行时才 halt。 |
-| D40 | **后处理循环事件去重完整性** | 后处理循环中判定"新事件"时，去重集合必须从**输入事件**构建，而非从**输出事件**构建。输出事件可能被过滤/替换/追加，不能作为"已处理"的判定依据。**核心原则**：循环中的"已处理"集合应该反映真正已处理的输入事件，而非处理后的输出事件。**审查方法**：① **识别后处理循环**：grep 所有包含 `while`/`for` 循环且处理事件列表的函数（如 `processDestroyMoveCycle`/`runAfterEventsRounds`）② **追踪去重集合构建**：循环中用于判定"新事件"的集合（如 `destroyUidsBefore`/`processedUids`），其数据源是什么？③ **判定标准**：去重集合从**输入事件**构建 → ✅ 正确（反映真正已处理的事件）；去重集合从**输出事件**构建 → ❌ 错误（输出可能被过滤，导致误判）；去重集合从**中间状态**构建 → ⚠️ 需要验证中间状态是否等价于输入 ④ **循环不变式检查**：每次迭代后，去重集合是否正确更新（累加新处理的事件）？⑤ **典型缺陷模式**：❌ `Set(afterProcess.events.filter(...))` — 从输出构建，可能遗漏被过滤的事件 ❌ 循环中去重集合不更新 — 每次迭代都用初始集合，导致重复处理 ✅ `Set(inputEvents.filter(...))` — 从输入构建，反映真正已处理的事件 ✅ 每次迭代后 `processedUids.add(newUid)` — 累加更新。**审查输出格式**：```函数: processDestroyMoveCycle (reducer.ts:991-1070)循环类型: while (newDestroyEvents.length > 0)去重集合: destroyUidsBefore数据源: afterDestroy.events ❌ 应该从 events 参数构建判定: ❌ 去重集合从输出事件构建，可能遗漏被过滤的事件修复方案: 将 line 1008 改为 events.filter(...)```**典型案例**：SmashUp `processDestroyMoveCycle`：`destroyUidsBefore` 从 `afterDestroy.events` 构建 → 被拯救的随从 UID 不在集合中 → 后续循环误判为"新消灭" → 重复触发 onDestroy。**参考文档**：`docs/bugs/smashup/smashup-igor-double-trigger-investigation.md`。**教训**：Igor 被消灭时 onDestroy 触发两次。`processDestroyTriggers` 第一轮处理 Igor 消灭，但 `destroyUidsBefore` 从 `afterDestroy.events` 构建（而非输入 `events`），导致循环中同一个 Igor UID 被误判为"新的"消灭，`processDestroyTriggers` 被再次调用，Igor onDestroy 触发第二次。修复：将 `destroyUidsBefore` 改为从输入 `events` 构建。 |
+| D40 | **后处理循环事件去重完整性** | 后处理循环中判定"新事件"时，去重集合必须从**输入事件**构建，而非从**输出事件**构建。输出事件可能被过滤/替换/追加，不能作为"已处理"的判定依据。**同一批输入事件在循环内串行产生副作用时，后一个事件必须读取前一个事件副作用已落地后的最新状态，不能反复基于批次入口的旧 state/core 生成事件。** 否则即使事件数量看起来正确，后续副作用也会因为 stale state 落到同一目标、抽到同一张牌，或在最终 reduce 时只生效一次。**核心原则**：循环中的"已处理"集合应该反映真正已处理的输入事件，而非处理后的输出事件；循环中的"当前状态"也必须随每个输入事件处理结果持续推进。**审查方法**：① **识别后处理循环**：grep 所有包含 `while`/`for` 循环且处理事件列表的函数（如 `processDestroyMoveCycle`/`runAfterEventsRounds`/`processDestroyTriggers`）② **追踪去重集合构建**：循环中用于判定"新事件"的集合（如 `destroyUidsBefore`/`processedUids`），其数据源是什么？③ **检查批内状态推进**：循环体里是否存在 `currentState/currentCore` 一类随迭代推进的权威状态？后一个输入事件读取的是批次入口状态，还是前一个输入事件副作用已 reduce 后的最新状态？④ **判定标准**：去重集合从**输入事件**构建 → ✅ 正确（反映真正已处理的事件）；去重集合从**输出事件**构建 → ❌ 错误（输出可能被过滤，导致误判）；每处理完一个输入事件就把其副作用 reduce 回当前状态，再给下一个输入事件读取 → ✅ 正确；循环内所有输入事件都基于同一份旧 state/core 生成副作用 → ❌ 错误；去重集合从**中间状态**构建 → ⚠️ 需要验证中间状态是否等价于输入 ⑤ **循环不变式检查**：每次迭代后，去重集合是否正确更新（累加新处理的事件）？当前 state/core 是否同步推进？⑥ **典型缺陷模式**：❌ `Set(afterProcess.events.filter(...))` — 从输出构建，可能遗漏被过滤的事件 ❌ 循环中去重集合不更新 — 每次迭代都用初始集合，导致重复处理 ❌ `for (const event of batch) resolveOnDestroy(initialCore, event)` — 后续副作用始终读取批次入口旧状态，导致两个 onDestroy 都抽同一张牌/弃同一张牌 ✅ `Set(inputEvents.filter(...))` — 从输入构建，反映真正已处理的事件 ✅ 每次迭代后 `processedUids.add(newUid)` — 累加更新 ✅ 每处理完一个输入事件，就先 `reduce` 其副作用到 `currentState/currentCore`，再处理下一个事件。**审查输出格式**：```函数: processDestroyTriggers (reducer.ts)循环类型: for (const destroyEvent of destroyEvents)去重集合: destroyEvents（按 uid 去重后）✅状态推进: ❌ onDestroy 都基于 batch 入口 core 生成判定: ❌ 同批事件未串行吃到最新状态风险: 两个 onDestroy 都抽同一张牌/弃同一张牌，最终只真实落地一次修复方案: 为循环引入 currentState/currentCore；每处理完一个 destroyEvent 就先 reduce 副作用，再给下一个 destroyEvent 读取最新状态```**典型案例**：SmashUp `processDestroyMoveCycle`：`destroyUidsBefore` 从 `afterDestroy.events` 构建 → 被拯救的随从 UID 不在集合中 → 后续循环误判为"新消灭" → 重复触发 onDestroy。SmashUp `processDestroyTriggers`：同批两个 `MINION_DESTROYED` 的 `onDestroy` 都基于批次入口 `core` 生成事件，导致两个小鬼同时被远古之物消灭时，两次抽牌/弃牌都命中同一份旧状态，最终用户只看到一次真实结算。**参考文档**：`docs/bugs/smashup/smashup-igor-double-trigger-investigation.md`。**教训**：Igor 被消灭时 onDestroy 触发两次，属于去重集合来源错误；两个小鬼同批被消灭时只结算一次，属于批内副作用未串行吃到最新状态。修复：前者将 `destroyUidsBefore` 改为从输入 `events` 构建；后者在循环内维护 `currentState/currentCore`，每处理完一个 destroyEvent 就先 reduce 副作用再继续。 |
 | D41 | **系统职责重叠检测** | 多个系统是否对同一批数据执行相同处理？**触发条件**：新增系统、重构现有系统、修复"重复触发"类 bug。**审查方法**：① **识别所有处理同类数据的系统**：grep 所有调用相同核心函数的地方（如 `processDestroyMoveCycle`）② **绘制调用链路图**：每个系统在什么时机调用？输入是什么？输出是什么？③ **检查职责边界**：两个系统是否对同一批数据执行相同处理？④ **判定标准**：同一批数据被处理一次 → ✅ 正确；同一批数据被处理多次 → ❌ 职责重叠。**输出格式**：```系统 A: SmashUpEventSystem.afterEvents()调用: processDestroyMoveCycle(交互解决产生的事件)时机: Pipeline afterEvents 阶段系统 B: postProcessSystemEvents()调用: processDestroyMoveCycle(所有系统事件)时机: Pipeline 步骤 4.5 和步骤 5判定: ❌ 职责重叠（交互解决产生的事件被处理两次）```**典型案例**：SmashUp Igor 双重触发 — `SmashUpEventSystem.afterEvents()` 和 `postProcessSystemEvents` 都调用 `processDestroyMoveCycle`，导致 Igor onDestroy 触发两次。**参考文档**：`docs/bugs/smashup/smashup-igor-double-trigger-root-cause-final.md`、`docs/bugs/smashup/smashup-igor-fix-summary.md`。 |
 | D42 | **事件流全链路审计** | 事件从产生到消费的完整路径是否被重复处理或遗漏处理？**触发条件**：新增事件类型、修改事件处理逻辑、修复"事件丢失/重复"类 bug。**审查方法**：① **选择代表性事件**：如 `MINION_DESTROYED` ② **追踪完整生命周期**：产生（哪些地方会产生？）→ 传递（如何从产生点传递到消费点？）→ 处理（哪些系统会处理？处理顺序？）→ 消费（如何影响状态？）③ **检查重复处理**：同一个事件是否被多个系统处理？④ **检查遗漏处理**：是否有应该处理但没有处理的系统？**典型案例**：SmashUp Igor — `MINION_DESTROYED` 事件被 `SmashUpEventSystem` 和 `postProcessSystemEvents` 重复处理。**参考文档**：`docs/bugs/smashup/smashup-igor-fix-summary.md`。 |
 | D43 | **重构完整性检查** | 引入新系统替代旧系统时，旧系统的职责是否完全迁移？遗留代码是否已清理？**触发条件**：引入新系统替代旧系统、重构现有架构。**审查方法**：① **识别新旧系统**：新系统是什么？旧系统是什么？② **检查职责迁移**：旧系统的职责是否完全迁移到新系统？③ **检查遗留代码**：旧系统的代码是否已清理？④ **检查调用点**：所有调用旧系统的地方是否已更新？⑤ **判定标准**：旧系统完全移除 → ✅ 重构完整；旧系统部分保留 → ⚠️ 需要文档说明原因；新旧系统并存且职责重叠 → ❌ 重构不完整。**典型案例**：SmashUp — 引入 `postProcessSystemEvents` 统一处理所有系统事件，但忘记移除 `SmashUpEventSystem` 中的后处理逻辑，导致职责重叠。**参考文档**：`docs/bugs/smashup/smashup-igor-fix-summary.md`。 |
@@ -436,7 +523,7 @@ PR 必跑：`typecheck` → `test:games` → `i18n:check` → `test:e2e:critical
 
 **D9 幂等与重入 — 深入审计**（新增/修改创建交互并 halt 的函数、或修"交互解决后能力重复触发"时触发）：
 
-**D9.1 后处理循环事件去重**（原有内容）：后处理循环中判定"新事件"时，去重集合必须从**输入事件**构建，而非从**输出事件**构建。详见 D40。
+**D9.1 后处理循环事件去重**（原有内容）：后处理循环中判定"新事件"时，去重集合必须从**输入事件**构建，而非从**输出事件**构建。若同一批输入事件会在循环内继续读写共享状态，还要额外检查**批内串行状态推进**：后一个事件必须读取前一个事件副作用已落地后的最新状态，而不是批次入口旧状态。详见 D40。
 
 **D9.2 交互解决后函数重入防重复（强制·通用）**：当函数创建交互并 halt 流程时，交互解决后函数会被重入。函数内部的**所有触发点**（beforeScoring/afterScoring/onPlay/onDestroy/onPhaseStart/onPhaseEnd 等）都必须有防重复机制，不能只保护部分触发点。
 

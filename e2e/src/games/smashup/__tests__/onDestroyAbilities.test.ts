@@ -20,6 +20,8 @@ import type {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
+import { processDestroyTriggers } from '../domain/reducer';
+import { reduce } from '../domain/reduce';
 import { makeMinion, makeCard, makePlayer, makeState, makeMatchState } from './helpers';
 import type { MatchState, RandomFn } from '../../../engine/types';
 
@@ -513,6 +515,78 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
             e => e.type === SU_EVENTS.CARDS_DISCARDED && (e as any).payload.playerId === '2'
         );
         expect(discardP2.length).toBe(0);
+    });
+
+    it('同批次两个小鬼被同时消灭时，两次 onDestroy 都应真实落地', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('h1', 'test_card_a', 'minion', '0'),
+                        makeCard('h2', 'test_card_b', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1', {
+                    deck: [
+                        makeCard('d1', 'draw_card_1', 'minion', '1'),
+                        makeCard('d2', 'draw_card_2', 'minion', '1'),
+                    ],
+                }),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('g1', 'trickster_gremlin', '1', 2),
+                    makeMinion('g2', 'trickster_gremlin', '1', 2),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const destroyEvents = [
+            {
+                type: SU_EVENTS.MINION_DESTROYED,
+                payload: {
+                    minionUid: 'g1',
+                    minionDefId: 'trickster_gremlin',
+                    fromBaseIndex: 0,
+                    ownerId: '1',
+                    destroyerId: '0',
+                    reason: 'elder_thing_elder_thing',
+                },
+                timestamp: 1000,
+            },
+            {
+                type: SU_EVENTS.MINION_DESTROYED,
+                payload: {
+                    minionUid: 'g2',
+                    minionDefId: 'trickster_gremlin',
+                    fromBaseIndex: 0,
+                    ownerId: '1',
+                    destroyerId: '0',
+                    reason: 'elder_thing_elder_thing',
+                },
+                timestamp: 1000,
+            },
+        ] as any;
+
+        const processed = processDestroyTriggers(destroyEvents, makeMatchState(core), '0', defaultRandom, 1000);
+        const drawEvents = processed.events.filter(
+            e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '1',
+        ) as any[];
+        const discardEvents = processed.events.filter(
+            e => e.type === SU_EVENTS.CARDS_DISCARDED && (e as any).payload.playerId === '0',
+        ) as any[];
+
+        expect(drawEvents).toHaveLength(2);
+        expect(drawEvents.map(event => event.payload.cardUids[0])).toEqual(['d1', 'd2']);
+        expect(discardEvents).toHaveLength(2);
+        expect(new Set(discardEvents.map(event => event.payload.cardUids[0]))).toEqual(new Set(['h1', 'h2']));
+
+        const finalCore = processed.events.reduce((acc, event) => reduce(acc, event), core);
+        expect(finalCore.players['1'].hand.map(card => card.uid)).toEqual(['d1', 'd2']);
+        expect(finalCore.players['1'].deck).toHaveLength(0);
+        expect(finalCore.players['0'].hand).toHaveLength(0);
     });
 });
 

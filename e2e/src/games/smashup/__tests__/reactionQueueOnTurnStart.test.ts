@@ -15,8 +15,12 @@ beforeEach(() => {
 
 describe('reaction queue: onTurnStart ordering', () => {
   it('multiple mandatory onTurnStart triggers open ordering interaction for current player', () => {
-    registerTrigger('test_turn_start_a', 'onTurnStart', () => []);
-    registerTrigger('test_turn_start_b', 'onTurnStart', () => []);
+    registerTrigger('test_turn_start_a', 'onTurnStart', () => [], {
+      effectContract: { writes: ['turnFlags'] },
+    });
+    registerTrigger('test_turn_start_b', 'onTurnStart', () => [], {
+      effectContract: { writes: ['turnFlags'] },
+    });
 
     const core = makeState({
       turnOrder: ['0', '1'],
@@ -47,8 +51,12 @@ describe('reaction queue: onTurnStart ordering', () => {
   });
 
   it('onTurnEnd uses the same smashup reaction session and halts phase advance until ordering is resolved', () => {
-    registerTrigger('test_turn_end_a', 'onTurnEnd', () => []);
-    registerTrigger('test_turn_end_b', 'onTurnEnd', () => []);
+    registerTrigger('test_turn_end_a', 'onTurnEnd', () => [], {
+      effectContract: { writes: ['turnFlags'] },
+    });
+    registerTrigger('test_turn_end_b', 'onTurnEnd', () => [], {
+      effectContract: { writes: ['turnFlags'] },
+    });
 
     const core = makeState({
       turnOrder: ['0', '1'],

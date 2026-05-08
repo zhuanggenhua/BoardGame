@@ -512,6 +512,11 @@ export function registerAlienAbilities(): void {
     registerTrigger('alien_scout', 'afterScoring', alienScoutAfterScoringPerInstance, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['sourceSelfState'],
+            writes: ['sourceSelfState'],
+            opensInteraction: true,
+        },
     });
     // POD 版本会通过 registerPodOngoingAliases() 自动映射，无需手动注册
     // --- 行动卡 ---

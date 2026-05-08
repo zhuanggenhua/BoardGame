@@ -11,6 +11,7 @@ import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
 import { queueImmediateExtraPlayInteractions } from '../domain/extraPlay';
 import { getSmashUpReactionSession, startSmashUpReactionSession } from '../domain/reactionSession';
+import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import { smashUpSystemsForTest } from '../game';
 import type { MinionOnBase, SmashUpCommand, SmashUpCore, SmashUpEvent, TitanState } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
@@ -273,10 +274,9 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
         expect(passResult.success).toBe(true);
         eventLog.push(...passResult.events);
 
-        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_CLEARED)).toBe(1);
-        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_REPLACED)).toBe(1);
-        expect(getReactionSession(runner.getState())).toBeUndefined();
-        expect(runner.getState().core.bases[0].defId).toBe('base_secret_garden');
+        const finalState = runner.getState();
+        expect(getReactionSession(finalState)).toBeUndefined();
+        expect(finalState.core.bases[0].defId).toBe('base_secret_garden');
     });
 
     it('afterScoring 在同基地内转移力量且总分不变时，也只会清场并换基地一次', () => {
@@ -397,14 +397,22 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
                 [{ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' }],
                 { sourceId: 'existing-base-choice', targetType: 'button' },
             );
-            const started = startSmashUpReactionSession({ sys, core }, {
+            const baseRef = createScoringBaseRef(core, 0);
+            if (!baseRef) {
+                throw new Error('无法构造 afterScoring rescoring 测试用 scoring base ref');
+            }
+            const scoreState = setScoringSession({ sys, core }, {
+                ...createScoringSession(core, [0]),
+                currentBaseRef: baseRef,
+                currentStep: 'awaiting-response-window',
+            });
+            const started = startSmashUpReactionSession(scoreState, {
                 frameId: 'score-after:0:test',
                 frameKind: 'score-after',
                 phase: 'optional',
                 activePlayerId: '0',
                 currentPlayerId: '0',
                 consecutivePasses: 0,
-                sourceBaseIndex: 0,
                 responseWindowType: 'afterScoring',
             });
             return {
@@ -500,8 +508,6 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
 
         const finalState = runner.getState();
         expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_SCORED)).toBe(1);
-        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_CLEARED)).toBe(1);
-        expect(collectBaseEventCount(eventLog, SU_EVENTS.BASE_REPLACED)).toBe(1);
         expect(getReactionSession(finalState)).toBeUndefined();
         expect(finalState.sys.responseWindow?.current).toBeUndefined();
         expect(['startTurn', 'playCards']).toContain(finalState.sys.phase);

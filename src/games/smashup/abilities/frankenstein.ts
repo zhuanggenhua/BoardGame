@@ -46,7 +46,6 @@ export interface BodyShopPendingDistribution {
 
 type FrankensteinPromptContext = {
     matchState: MatchState<SmashUpCore>;
-    state: SmashUpCore;
     playerId: PlayerId;
     now: number;
 };
@@ -132,7 +131,6 @@ function createPromptContext<TExtra extends Record<string, unknown> = Record<str
 ): FrankensteinPromptContext & TExtra {
     return {
         matchState,
-        state: matchState.core,
         playerId,
         now,
         ...(extra ?? {} as TExtra),
@@ -326,7 +324,7 @@ const frankensteinLabAssistantPromptProgram = createPromptProgram<CounterPromptC
             `frankenstein_lab_assistant_${context.now}`,
             context.playerId,
             '选择一个你的随从放置+1力量指示物',
-            buildCounterTargetOptions(context.state, context.playerId, context.excludeUid),
+            buildCounterTargetOptions(context.matchState.core, context.playerId, context.excludeUid),
             { sourceId: 'frankenstein_lab_assistant', targetType: 'minion', responseValidationMode: 'live' },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -345,7 +343,7 @@ const frankensteinHerrDoktorPromptProgram = createPromptProgram<CounterPromptCon
             `frankenstein_herr_doktor_${context.now}`,
             context.playerId,
             '选择一个你的随从放置+1力量指示物',
-            buildCounterTargetOptions(context.state, context.playerId, context.excludeUid),
+            buildCounterTargetOptions(context.matchState.core, context.playerId, context.excludeUid),
             { sourceId: 'frankenstein_herr_doktor', targetType: 'minion', responseValidationMode: 'live' },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -364,7 +362,7 @@ const frankensteinIgorPromptProgram = createPromptProgram<CounterPromptContext, 
             `frankenstein_igor_${context.playerId}_${context.now}`,
             context.playerId,
             '选择一个你的随从放置+1力量指示物（科学小怪蛋）',
-            buildCounterTargetOptions(context.state, context.playerId, context.excludeUid, context.excludeBaseIndex),
+            buildCounterTargetOptions(context.matchState.core, context.playerId, context.excludeUid, context.excludeBaseIndex),
             { sourceId: 'frankenstein_igor', targetType: 'minion', responseValidationMode: 'live' },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -388,7 +386,7 @@ const frankensteinAngryMobChooseCardPromptProgram = createPromptProgram<AngryMob
             `frankenstein_angry_mob_choose_card_${context.now}`,
             context.playerId,
             '愤怒的民众：选择一张手牌放到牌库底（或完成放牌）',
-            buildAngryMobCardOptions(context.state, context.playerId),
+            buildAngryMobCardOptions(context.matchState.core, context.playerId),
             {
                 sourceId: 'frankenstein_angry_mob_choose_card',
                 targetType: 'hand',
@@ -442,7 +440,7 @@ const frankensteinAngryMobPromptProgram = createPromptProgram<FrankensteinPrompt
             `frankenstein_angry_mob_${context.now}`,
             context.playerId,
             '选择一个你的随从（每放一张手牌到牌库底就放一个+1力量指示物）',
-            buildCounterTargetOptions(context.state, context.playerId),
+            buildCounterTargetOptions(context.matchState.core, context.playerId),
             { sourceId: 'frankenstein_angry_mob', targetType: 'minion', responseValidationMode: 'live' },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -474,7 +472,7 @@ const frankensteinBodyShopDistributePromptProgram = createPromptProgram<BodyShop
             `frankenstein_body_shop_distribute_${context.now}`,
             context.playerId,
             `选择随从放置+1指示物（剩余 ${context.remaining} 个）`,
-            buildBodyShopDistributeOptions(context.state, context.playerId, context.remaining),
+            buildBodyShopDistributeOptions(context.matchState.core, context.playerId, context.remaining),
             {
                 sourceId: 'frankenstein_body_shop_distribute',
                 targetType: 'minion',
@@ -524,7 +522,7 @@ const frankensteinBodyShopPromptProgram = createPromptProgram<FrankensteinPrompt
             `frankenstein_body_shop_${context.now}`,
             context.playerId,
             '选择你要消灭的随从（其力量数的+1指示物将分配到其他随从）',
-            buildCounterTargetOptions(context.state, context.playerId),
+            buildCounterTargetOptions(context.matchState.core, context.playerId),
             { sourceId: 'frankenstein_body_shop', targetType: 'minion', responseValidationMode: 'live' },
         );
         interaction.data.optionsGenerator = (state) =>
@@ -572,7 +570,7 @@ const frankensteinBlitzedDestroyPromptProgram = createPromptProgram<BlitzedDestr
             `frankenstein_blitzed_destroy_${context.now}`,
             context.playerId,
             `选择要消灭的随从（力量≤${context.removedTotal}）`,
-            buildBlitzedDestroyOptions(context.state, context.playerId, context.removedTotal),
+            buildBlitzedDestroyOptions(context.matchState.core, context.playerId, context.removedTotal),
             {
                 sourceId: 'frankenstein_blitzed_destroy',
                 targetType: 'minion',
@@ -610,7 +608,7 @@ const frankensteinBlitzedRemovePromptProgram = createPromptProgram<BlitzedRemove
             `frankenstein_blitzed_remove_${context.now}`,
             context.playerId,
             `闪电攻击：点击随从移除1个指示物（已移除 ${context.removedTotal}）`,
-            buildBlitzedRemoveOptions(context.state, context.playerId, context.removedTotal),
+            buildBlitzedRemoveOptions(context.matchState.core, context.playerId, context.removedTotal),
             {
                 sourceId: 'frankenstein_blitzed_remove',
                 targetType: 'minion',
@@ -850,6 +848,12 @@ function registerFrankensteinOngoingEffects(): void {
             ),
             ctx.matchState,
         );
+    }, {
+        effectContract: {
+            reads: ['baseState', 'minionBoardState', 'triggerMinionState', 'turnFlags', 'titanBoardState', 'controllerState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
     });
 
     registerTrigger('frankenstein_german_engineering', 'onMinionPlayed', (ctx: TriggerContext) => {
@@ -863,13 +867,13 @@ function registerFrankensteinOngoingEffects(): void {
         if (!hasGermanEngineering) return [];
         return [addPowerCounter(triggerMinionUid, baseIndex, 1, 'frankenstein_german_engineering', now)];
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'triggerMinionState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'triggerMinionState'],
             writes: ['triggerMinionPower'],
         },
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'triggerMinionState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'triggerMinionState'],
             writes: ['triggerMinionPower'],
         },
     });
@@ -898,7 +902,13 @@ function registerFrankensteinOngoingEffects(): void {
             },
             timestamp: now,
         } as SmashUpEvent];
-    }, { phase: 'replacement' });
+    }, {
+        phase: 'replacement',
+        effectContract: {
+            reads: ['baseState', 'minionBoardState', 'triggerMinionState'],
+            writes: ['minionBoardState', 'handState'],
+        },
+    });
 
     registerTrigger('frankenstein_uberserum', 'onTurnStart', (ctx: TriggerContext) => {
         const { state, playerId, now } = ctx;
@@ -915,13 +925,13 @@ function registerFrankensteinOngoingEffects(): void {
         }
         return events;
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'minionBoardState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState'],
             writes: ['minionBoardState'],
         },
     }, {
-        orderingFootprint: {
-            reads: ['sourceState', 'minionBoardState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState'],
             writes: ['minionBoardState'],
         },
     });

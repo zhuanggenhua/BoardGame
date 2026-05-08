@@ -550,14 +550,18 @@ export type ReactionOrderingAtom =
     | 'discardState'
     | 'vpState'
     | 'triggerMinionState'
-    | 'sourceState'
+    | 'sourceSelfState'
     | 'baseState'
     | 'controllerState'
     | 'scoringState'
     | 'targetAvailability'
     | 'turnFlags';
 
-export interface ReactionOrderingFootprint {
+export interface TriggerEffectContract {
+    /**
+     * `sourceSelfState` 表示“当前触发来源实例自身”的状态，
+     * 必须在运行时绑定到具体 source instance，绝不能退回成全局共享桶。
+     */
     /**
      * 触发结算期间会读取的状态标签。
      * 若另一个触发会写入这些标签，则顺序可能影响结果。
@@ -626,7 +630,7 @@ export interface TriggerInstance {
     inspectionZone?: 'deck' | 'hand';
     inspectionTargetPlayerIds?: PlayerId[];
     inspectionCausePlayerId?: PlayerId;
-    orderingFootprint?: ReactionOrderingFootprint;
+    effectContract?: TriggerEffectContract;
 
     /** LKI snapshots captured at queue time */
     lkiMinion?: MinionLkiSnapshot;

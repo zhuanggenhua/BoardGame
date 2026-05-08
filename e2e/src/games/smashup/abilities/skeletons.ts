@@ -431,29 +431,54 @@ export function registerSkeletonAbilities(): void {
         },
     });
 
-    registerTrigger('skeletons_gravetender', 'onCardBuried', skeletonsGravetenderTriggered, { perInstance: true });
-    registerTrigger('skeletons_gravetender', 'onBuriedCardUncovered', skeletonsGravetenderTriggered, { perInstance: true });
+    registerTrigger('skeletons_gravetender', 'onCardBuried', skeletonsGravetenderTriggered, {
+        perInstance: true,
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState', 'controllerState', 'handState', 'deckState', 'discardState', 'turnFlags'],
+            writes: ['sourceSelfState', 'handState', 'deckState'],
+            opensInteraction: true,
+        },
+    });
+    registerTrigger('skeletons_gravetender', 'onBuriedCardUncovered', skeletonsGravetenderTriggered, {
+        perInstance: true,
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState', 'controllerState', 'handState', 'deckState', 'discardState', 'turnFlags'],
+            writes: ['sourceSelfState', 'handState', 'deckState'],
+            opensInteraction: true,
+        },
+    });
     registerTrigger('skeletons_returned_one', 'onMinionPlayed', skeletonsReturnedOneAfterUncover, {
         optional: true,
         perInstance: true,
-        orderingFootprint: {
+        effectContract: {
             reads: ['triggerMinionState', 'baseState'],
             writes: ['baseState'],
+            opensInteraction: true,
         },
     });
     registerTrigger('skeletons_lord_of_bones', 'onBuriedCardUncovered', skeletonsLordOfBonesOnUncovered, {
         optional: true,
         perInstance: true,
+        effectContract: {
+            opensInteraction: true,
+        },
     });
     registerTrigger('skeletons_gravestones', 'onBuriedCardUncovered', skeletonsGravestonesOnUncovered, {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            opensInteraction: true,
+        },
     });
     registerTrigger('skeletons_gravestones', 'afterScoring', skeletonsGravestonesAfterScoring, {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['baseState'],
+            opensInteraction: true,
+        },
     });
 }
 

@@ -395,7 +395,7 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         await game.screenshot('ninja-acolyte-after-direct-click', testInfo);
     });
 
-    test('大衮额外随从在宗教圆环已消费后，仍可把非同名随从打到所在基地', async ({ page, game }, testInfo) => {
+    test('本地反馈：额外随从额度显示 +2 时，选中手牌随从后对应基地应高亮并可打出', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
 
         await game.openTestGame('smashup', INNSMOUTH_DAGON_QUERY, 45000);
@@ -465,7 +465,7 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
                         ...state.core.players,
                         '0': {
                             ...state.core.players['0'],
-                            baseLimitedMinionQuota: { 0: 1 },
+                            baseLimitedMinionQuota: { 0: 2 },
                             baseLimitedSameNameRequired: undefined,
                             baseLimitedSameNameDefId: undefined,
                         },
@@ -479,17 +479,52 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         await game.waitForCurrentPlayer('0');
 
         const initialState = await game.getState();
-        expect(initialState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
+        expect(initialState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(2);
         expect(initialState.core.players['0'].baseLimitedSameNameRequired?.[0]).toBeUndefined();
 
         const handCard = page.locator('[data-card-uid="hand-zapbot"]');
         const targetBase = page.locator('[data-base-index="0"]');
+        const quotaBadge = page.locator('[data-testid="su-end-turn-minion-quota"]');
 
         await expect(handCard).toBeVisible();
         await expect(targetBase).toBeVisible();
+        await expect(quotaBadge).toBeVisible();
+
+        await quotaBadge.hover();
+        await expect(page.getByText(/\+2\s*→/)).toBeVisible();
+        await game.screenshot('dagon-extra-minion-quota-tooltip', testInfo);
 
         await handCard.click();
         await page.waitForTimeout(300);
+
+        const baseVisualState = await page.evaluate(() => {
+            const inspectBase = (baseIndex: number) => {
+                const zone = document.querySelector<HTMLElement>(`[data-testid="base-zone-${baseIndex}"]`);
+                if (!zone) {
+                    return { exists: false, selectable: false, dimmed: false };
+                }
+                const nodes = [zone, ...Array.from(zone.querySelectorAll<HTMLElement>('*'))];
+                const classText = nodes.map((node) => node.getAttribute('class') ?? '').join(' ');
+                return {
+                    exists: true,
+                    selectable: /ring-green-300|ring-green-400/.test(classText),
+                    dimmed: /opacity-40/.test(classText) && /grayscale/.test(classText),
+                };
+            };
+
+            return {
+                base0: inspectBase(0),
+                base1: inspectBase(1),
+            };
+        });
+
+        expect(baseVisualState.base0).toEqual({
+            exists: true,
+            selectable: true,
+            dimmed: false,
+        });
+        expect(baseVisualState.base1.exists).toBe(true);
+
         await game.screenshot('dagon-extra-minion-before-base-select', testInfo);
 
         await targetBase.click();
@@ -507,7 +542,7 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         const finalState = await game.getState();
         expect(finalState.core.bases[0].minions.some((minion: any) => minion.uid === 'hand-zapbot')).toBe(true);
         expect(finalState.core.players['0'].hand.some((card: any) => card.uid === 'hand-zapbot')).toBe(false);
-        expect(finalState.core.players['0'].baseLimitedMinionQuota?.[0] ?? 0).toBe(0);
+        expect(finalState.core.players['0'].baseLimitedMinionQuota?.[0] ?? 0).toBe(1);
 
         await game.screenshot('dagon-extra-minion-after-play', testInfo);
     });

@@ -110,10 +110,35 @@ function wrapState(core: SmashUpCore) {
     return { core, sys };
 }
 
+function withDeferredScoringFrame(
+    state: ReturnType<typeof wrapState>,
+    baseIndex: number,
+    deferredEvents: SmashUpEvent[],
+    deferredActions?: NonNullable<Parameters<typeof appendScoringFrameDeferredPayload>[1]['deferredActions']>,
+) {
+    const baseRef = createScoringBaseRef(state.core, baseIndex);
+    if (!baseRef) {
+        throw new Error(`无法构造 scoring base ref: ${baseIndex}`);
+    }
+
+    let nextState = setScoringSession(state, {
+        ...createScoringSession(state.core, [baseIndex]),
+        currentBaseRef: baseRef,
+        currentStep: 'awaiting-interactions',
+    });
+
+    nextState = appendScoringFrameDeferredPayload(nextState, {
+        deferredEvents,
+        deferredActions,
+    });
+
+    return nextState;
+}
+
 describe('afterScoring 延迟清场回归', () => {
     it('base_greenhouse: 应先换基地，再把牌库随从打到新基地', () => {
         const system = createSmashUpEventSystem();
-        const state = wrapState(makeCore({
+        let state = wrapState(makeCore({
             players: {
                 '0': makePlayer('0', {
                     deck: [makeCard('dk1', 'alien_collector', 'minion')],
@@ -123,6 +148,22 @@ describe('afterScoring 延迟清场回归', () => {
             bases: [makeBase('base_greenhouse')],
             baseDeck: ['base_secret_garden'],
         }));
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
+                timestamp: 2100,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_greenhouse',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2100,
+            },
+        ]);
         const result = system.afterEvents?.({
             state,
             random: undefined as any,
@@ -136,25 +177,7 @@ describe('afterScoring 延迟清场回归', () => {
                     sourceId: 'base_greenhouse',
                     interactionData: {
                         sourceId: 'base_greenhouse',
-                        continuationContext: {
-                            baseIndex: 0,
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: SU_EVENTS.BASE_CLEARED,
-                                    payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
-                                    timestamp: 2100,
-                                },
-                                {
-                                    type: SU_EVENTS.BASE_REPLACED,
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_greenhouse',
-                                        newBaseDefId: 'base_secret_garden',
-                                    },
-                                    timestamp: 2100,
-                                },
-                            ],
-                        },
+                        continuationContext: { baseIndex: 0 },
                     },
                 },
                 timestamp: 2100,
@@ -169,19 +192,45 @@ describe('afterScoring 延迟清场回归', () => {
             result?.state ?? state,
         );
         const processedEvents = processed.events as SmashUpEvent[];
-        expect(processedEvents.map(event => event.type)).toEqual([
+        expect(processedEvents).toEqual([]);
+
+        const reducedState = {
+            ...(result?.state ?? state),
+            core: processedEvents.reduce(
+                (core, event) => reduce(core, event),
+                state.core as SmashUpCore,
+            ),
+        };
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: reducedState,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            random: defaultTestRandom,
+        });
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
+        expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
             SU_EVENTS.BASE_CLEARED,
             SU_EVENTS.BASE_REPLACED,
             SU_EVENTS.MINION_PLAYED,
-            // alien_collector 在新基地无可选随从时应反馈无有效目标
+        ]);
+
+        const finalizedProcessed = postProcessSystemEvents(
+            reducedState.core as SmashUpCore,
+            finalizeEvents,
+            defaultTestRandom,
+            (finalize as any)?.updatedState ?? reducedState,
+        );
+        expect((finalizedProcessed.events as SmashUpEvent[]).map(event => event.type)).toEqual([
+            SU_EVENTS.BASE_CLEARED,
+            SU_EVENTS.BASE_REPLACED,
+            SU_EVENTS.MINION_PLAYED,
             SU_EVENTS.ABILITY_FEEDBACK,
         ]);
 
-        // PPSE 里的 matchState.core 是用于派生计算的预览态；真正落地仍以补发事件为准。
-        // 这里需要从原始 core 重放事件，避免把 BASE_CLEARED / BASE_REPLACED 二次叠加到预览态上。
-        const finalCore = processedEvents.reduce(
+        const finalCore = (finalizedProcessed.events as SmashUpEvent[]).reduce(
             (core, event) => reduce(core, event),
-            state.core as SmashUpCore,
+            reducedState.core,
         );
         expect(finalCore?.bases[0].defId).toBe('base_secret_garden');
         expect(finalCore?.bases[0].minions.map(minion => minion.uid)).toEqual(['dk1']);
@@ -190,7 +239,7 @@ describe('afterScoring 延迟清场回归', () => {
 
     it('base_greenhouse 被 watchdog emergency-cancel 时，仍应补发延迟清场而不是卡在 afterScoring', () => {
         const system = createSmashUpEventSystem();
-        const state = wrapState(makeCore({
+        let state = wrapState(makeCore({
             players: {
                 '0': makePlayer('0', {
                     deck: [makeCard('dk1', 'alien_collector', 'minion')],
@@ -200,6 +249,22 @@ describe('afterScoring 延迟清场回归', () => {
             bases: [makeBase('base_greenhouse')],
             baseDeck: ['base_secret_garden'],
         }));
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
+                timestamp: 2102,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_greenhouse',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2102,
+            },
+        ]);
 
         const result = system.afterEvents?.({
             state,
@@ -216,25 +281,7 @@ describe('afterScoring 延迟清场回归', () => {
                         options: [
                             { id: '__emergency_skip__', label: '跳过（当前无可执行选项）', value: { __emergency_skip__: true, skip: true } },
                         ],
-                        continuationContext: {
-                            baseIndex: 0,
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: SU_EVENTS.BASE_CLEARED,
-                                    payload: { baseIndex: 0, baseDefId: 'base_greenhouse' },
-                                    timestamp: 2102,
-                                },
-                                {
-                                    type: SU_EVENTS.BASE_REPLACED,
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_greenhouse',
-                                        newBaseDefId: 'base_secret_garden',
-                                    },
-                                    timestamp: 2102,
-                                },
-                            ],
-                        },
+                        continuationContext: { baseIndex: 0 },
                     },
                 },
                 timestamp: 2102,
@@ -242,12 +289,22 @@ describe('afterScoring 延迟清场回归', () => {
         });
 
         const emittedEvents = result?.events as SmashUpEvent[] | undefined;
-        expect(emittedEvents?.map(event => event.type)).toEqual([
+        expect(emittedEvents ?? []).toHaveLength(0);
+
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: result?.state ?? state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            random: defaultTestRandom,
+        });
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
+        expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
             SU_EVENTS.BASE_CLEARED,
             SU_EVENTS.BASE_REPLACED,
         ]);
 
-        const finalCore = emittedEvents?.reduce((core, event) => reduce(core, event), state.core as SmashUpCore);
+        const finalCore = finalizeEvents.reduce((core, event) => reduce(core, event), state.core as SmashUpCore);
         expect(finalCore?.bases[0].defId).toBe('base_secret_garden');
         expect(finalCore?.bases[0].minions).toHaveLength(0);
         expect(finalCore?.players['0'].deck).toHaveLength(1);
@@ -289,7 +346,7 @@ describe('afterScoring 延迟清场回归', () => {
 
     it('base_tortuga: 应先换基地，再把亚军随从移到新基地', () => {
         const system = createSmashUpEventSystem();
-        const state = wrapState(makeCore({
+        let state = wrapState(makeCore({
             players: {
                 '0': makePlayer('0'),
                 '1': makePlayer('1'),
@@ -307,6 +364,22 @@ describe('afterScoring 延迟清场回归', () => {
             ],
             baseDeck: ['base_secret_garden'],
         }));
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_tortuga' },
+                timestamp: 2200,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_tortuga',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2200,
+            },
+        ]);
 
         const result = system.afterEvents?.({
             state,
@@ -321,25 +394,7 @@ describe('afterScoring 延迟清场回归', () => {
                     sourceId: 'base_tortuga',
                     interactionData: {
                         sourceId: 'base_tortuga',
-                        continuationContext: {
-                            baseIndex: 0,
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: SU_EVENTS.BASE_CLEARED,
-                                    payload: { baseIndex: 0, baseDefId: 'base_tortuga' },
-                                    timestamp: 2200,
-                                },
-                                {
-                                    type: SU_EVENTS.BASE_REPLACED,
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_tortuga',
-                                        newBaseDefId: 'base_secret_garden',
-                                    },
-                                    timestamp: 2200,
-                                },
-                            ],
-                        },
+                        continuationContext: { baseIndex: 0 },
                     },
                 },
                 timestamp: 2200,
@@ -347,13 +402,23 @@ describe('afterScoring 延迟清场回归', () => {
         });
 
         const emittedEvents = result?.events as SmashUpEvent[] | undefined;
-        expect(emittedEvents?.map(event => event.type)).toEqual([
+        expect(emittedEvents ?? []).toHaveLength(0);
+
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: result?.state ?? state,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            random: defaultTestRandom,
+        });
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
+        expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
             SU_EVENTS.BASE_CLEARED,
             SU_EVENTS.BASE_REPLACED,
             SU_EVENTS.MINION_MOVED,
         ]);
 
-        const finalCore = emittedEvents?.reduce((core, event) => reduce(core, event), state.core as SmashUpCore);
+        const finalCore = finalizeEvents.reduce((core, event) => reduce(core, event), state.core as SmashUpCore);
         expect(finalCore?.bases[0].defId).toBe('base_secret_garden');
         expect(finalCore?.bases[0].minions.map(minion => minion.uid)).toEqual(['m3']);
         expect(finalCore?.bases[1].minions).toHaveLength(0);
@@ -455,7 +520,7 @@ describe('afterScoring 延迟清场回归', () => {
 
         expect((resolved?.events as SmashUpEvent[] | undefined) ?? []).toHaveLength(0);
         expect(resolved?.state.sys.interaction.current).toBeFalsy();
-        expect((resolved?.state.sys as any)._waitForScoreBasesInteractionReduce).toBe(true);
+        expect((resolved?.state.sys as any)._waitForScoreBasesInteractionReduce).toBeUndefined();
 
         const finalize = smashUpFlowHooks.onPhaseExit?.({
             state: resolved?.state ?? state,
@@ -483,7 +548,7 @@ describe('afterScoring 延迟清场回归', () => {
 
     it('base_the_mothership should not flush deferred clear events when next interaction is in current', () => {
         const system = createSmashUpEventSystem();
-        const state = wrapState(makeCore({
+        let state = wrapState(makeCore({
             players: {
                 '0': makePlayer('0'),
                 '1': makePlayer('1'),
@@ -498,6 +563,22 @@ describe('afterScoring 延迟清场回归', () => {
             ],
             baseDeck: ['base_secret_garden'],
         }));
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_the_mothership' },
+                timestamp: 2200,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_the_mothership',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2200,
+            },
+        ]);
 
         // 模拟：当前交互（母舰）已被弹出，下一交互（侦察兵）已在 current，queue 为空。
         state.sys.interaction.current = {
@@ -527,25 +608,7 @@ describe('afterScoring 延迟清场回归', () => {
                     sourceId: 'base_the_mothership',
                     interactionData: {
                         sourceId: 'base_the_mothership',
-                        continuationContext: {
-                            baseIndex: 0,
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: SU_EVENTS.BASE_CLEARED,
-                                    payload: { baseIndex: 0, baseDefId: 'base_the_mothership' },
-                                    timestamp: 2200,
-                                },
-                                {
-                                    type: SU_EVENTS.BASE_REPLACED,
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_the_mothership',
-                                        newBaseDefId: 'base_secret_garden',
-                                    },
-                                    timestamp: 2200,
-                                },
-                            ],
-                        },
+                        continuationContext: { baseIndex: 0 },
                     },
                 },
                 timestamp: 2200,
@@ -557,14 +620,11 @@ describe('afterScoring 延迟清场回归', () => {
         expect(emittedEvents?.some(event => event.type === SU_EVENTS.BASE_CLEARED)).toBe(false);
         expect(emittedEvents?.some(event => event.type === SU_EVENTS.BASE_REPLACED)).toBe(false);
 
-        const nextCtx = (result?.state.sys.interaction.current?.data as any)?.continuationContext;
-        expect(nextCtx?._deferredPostScoringEvents).toBeDefined();
-        expect(nextCtx?._deferredPostScoringEvents).toHaveLength(2);
     });
 
     it('最后一个 afterScoring 交互已补发延迟事件时，不应再次重复补发', () => {
         const system = createSmashUpEventSystem();
-        const state = wrapState(makeCore({
+        let state = wrapState(makeCore({
             players: {
                 '0': makePlayer('0'),
                 '1': makePlayer('1'),
@@ -579,6 +639,22 @@ describe('afterScoring 延迟清场回归', () => {
             ],
             baseDeck: ['base_secret_garden'],
         }));
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_the_mothership' },
+                timestamp: 2200,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_the_mothership',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2200,
+            },
+        ]);
 
         // 模拟：当前交互（母舰）已被弹出，下一交互（侦察兵）已在 current，queue 为空。
         state.sys.interaction.current = {
@@ -608,25 +684,7 @@ describe('afterScoring 延迟清场回归', () => {
                     sourceId: 'base_the_mothership',
                     interactionData: {
                         sourceId: 'base_the_mothership',
-                        continuationContext: {
-                            baseIndex: 0,
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: SU_EVENTS.BASE_CLEARED,
-                                    payload: { baseIndex: 0, baseDefId: 'base_the_mothership' },
-                                    timestamp: 2200,
-                                },
-                                {
-                                    type: SU_EVENTS.BASE_REPLACED,
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_the_mothership',
-                                        newBaseDefId: 'base_secret_garden',
-                                    },
-                                    timestamp: 2200,
-                                },
-                            ],
-                        },
+                        continuationContext: { baseIndex: 0 },
                     },
                 },
                 timestamp: 2200,
@@ -638,9 +696,6 @@ describe('afterScoring 延迟清场回归', () => {
         expect(emittedEvents?.some(event => event.type === SU_EVENTS.BASE_CLEARED)).toBe(false);
         expect(emittedEvents?.some(event => event.type === SU_EVENTS.BASE_REPLACED)).toBe(false);
 
-        const nextCtx = (result?.state.sys.interaction.current?.data as any)?.continuationContext;
-        expect(nextCtx?._deferredPostScoringEvents).toBeDefined();
-        expect(nextCtx?._deferredPostScoringEvents).toHaveLength(2);
     });
 
     it('base_temple_of_goju_tiebreak: session 模式下 legacy 最后一跳只应输出主事件，延迟清场留给 finalize', () => {
@@ -656,26 +711,32 @@ describe('afterScoring 延迟清场回归', () => {
                 }),
             ],
             baseDeck: ['base_secret_garden'],
-            pendingPostScoringActions: [{
-                kind: 'moveMinionToReplacementBase',
-                minionUid: 'runner',
-                minionDefId: 'd1',
-                fromBaseIndex: 2,
-                toBaseIndex: 1,
-                targetBaseDefId: 'base_secret_garden',
-                reason: '托尔图加：亚军移动随从到替换基地',
-            }],
         }));
 
-        const baseRef = createScoringBaseRef(state.core, 0);
-        if (!baseRef) {
-            throw new Error('无法构造 baseRef');
-        }
-        state = setScoringSession(state, {
-            ...createScoringSession(state.core, [0]),
-            currentBaseRef: baseRef,
-            currentStep: 'awaiting-interactions',
-        });
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_temple_of_goju' },
+                timestamp: 2350,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_temple_of_goju',
+                    newBaseDefId: 'base_secret_garden',
+                },
+                timestamp: 2350,
+            },
+        ], [{
+            kind: 'moveMinionToReplacementBase',
+            minionUid: 'runner',
+            minionDefId: 'd1',
+            fromBaseIndex: 2,
+            toBaseIndex: 1,
+            targetBaseDefId: 'base_secret_garden',
+            reason: '托尔图加：亚军移动随从到替换基地',
+        }]);
 
         const result = system.afterEvents?.({
             state,
@@ -693,22 +754,6 @@ describe('afterScoring 延迟清场回归', () => {
                         continuationContext: {
                             baseIndex: 0,
                             remainingPlayers: [],
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: SU_EVENTS.BASE_CLEARED,
-                                    payload: { baseIndex: 0, baseDefId: 'base_temple_of_goju' },
-                                    timestamp: 2350,
-                                },
-                                {
-                                    type: SU_EVENTS.BASE_REPLACED,
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_temple_of_goju',
-                                        newBaseDefId: 'base_secret_garden',
-                                    },
-                                    timestamp: 2350,
-                                },
-                            ],
                         },
                     },
                 },
@@ -726,7 +771,7 @@ describe('afterScoring 延迟清场回归', () => {
 
     it('海盗湾最后一步若随从已暂离来源基地但仍处于延迟清场链，应继续发出移动事件', () => {
         const system = createSmashUpEventSystem();
-        const state = wrapState(makeCore({
+        let state = wrapState(makeCore({
             players: {
                 '0': makePlayer('0', {
                     discard: [makeCard('archmage', 'wizard_archmage_pod', 'minion')],
@@ -742,6 +787,22 @@ describe('afterScoring 延迟清场回归', () => {
             ],
             baseDeck: ['base_tar_pits_pod'],
         }));
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_pirate_cove_pod' },
+                timestamp: 2400,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_pirate_cove_pod',
+                    newBaseDefId: 'base_tar_pits_pod',
+                },
+                timestamp: 2400,
+            },
+        ]);
 
         const result = system.afterEvents?.({
             state,
@@ -760,22 +821,6 @@ describe('afterScoring 延迟清场回归', () => {
                             minionUid: 'archmage',
                             minionDefId: 'wizard_archmage_pod',
                             fromBaseIndex: 0,
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: SU_EVENTS.BASE_CLEARED,
-                                    payload: { baseIndex: 0, baseDefId: 'base_pirate_cove_pod' },
-                                    timestamp: 2400,
-                                },
-                                {
-                                    type: SU_EVENTS.BASE_REPLACED,
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_pirate_cove_pod',
-                                        newBaseDefId: 'base_tar_pits_pod',
-                                    },
-                                    timestamp: 2400,
-                                },
-                            ],
                         },
                     },
                 },
@@ -786,8 +831,6 @@ describe('afterScoring 延迟清场回归', () => {
         const emittedEvents = result?.events as SmashUpEvent[] | undefined;
         expect(emittedEvents?.map(event => event.type)).toEqual([
             SU_EVENTS.MINION_MOVED,
-            SU_EVENTS.BASE_CLEARED,
-            SU_EVENTS.BASE_REPLACED,
         ]);
         expect(emittedEvents?.[0]).toMatchObject({
             type: SU_EVENTS.MINION_MOVED,
@@ -799,7 +842,24 @@ describe('afterScoring 延迟清场回归', () => {
             },
         });
 
-        const finalCore = emittedEvents?.reduce((core, event) => reduce(core, event), state.core as SmashUpCore);
+        const reducedState = {
+            ...(result?.state ?? state),
+            core: (emittedEvents ?? []).reduce((core, event) => reduce(core, event), state.core as SmashUpCore),
+        };
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: reducedState,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            random: defaultTestRandom,
+        });
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
+        expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
+            SU_EVENTS.BASE_CLEARED,
+            SU_EVENTS.BASE_REPLACED,
+        ]);
+
+        const finalCore = finalizeEvents.reduce((core, event) => reduce(core, event), reducedState.core);
         expect(finalCore?.bases[0].defId).toBe('base_tar_pits_pod');
         expect(finalCore?.bases[1].minions.map(minion => minion.uid)).toEqual(['archmage']);
         expect(finalCore?.players['0'].discard.some(card => card.uid === 'archmage')).toBe(false);
@@ -807,7 +867,7 @@ describe('afterScoring 延迟清场回归', () => {
 
     it('海盗湾最后一步若随从已暂离来源基地但仍处于延迟清场链，应继续发出移动事件', () => {
         const system = createSmashUpEventSystem();
-        const state = wrapState(makeCore({
+        let state = wrapState(makeCore({
             players: {
                 '0': makePlayer('0', {
                     discard: [makeCard('archmage', 'wizard_archmage_pod', 'minion')],
@@ -823,6 +883,22 @@ describe('afterScoring 延迟清场回归', () => {
             ],
             baseDeck: ['base_tar_pits_pod'],
         }));
+        state = withDeferredScoringFrame(state, 0, [
+            {
+                type: SU_EVENTS.BASE_CLEARED,
+                payload: { baseIndex: 0, baseDefId: 'base_pirate_cove_pod' },
+                timestamp: 2400,
+            },
+            {
+                type: SU_EVENTS.BASE_REPLACED,
+                payload: {
+                    baseIndex: 0,
+                    oldBaseDefId: 'base_pirate_cove_pod',
+                    newBaseDefId: 'base_tar_pits_pod',
+                },
+                timestamp: 2400,
+            },
+        ]);
 
         const result = system.afterEvents?.({
             state,
@@ -841,22 +917,6 @@ describe('afterScoring 延迟清场回归', () => {
                             minionUid: 'archmage',
                             minionDefId: 'wizard_archmage_pod',
                             fromBaseIndex: 0,
-                            _deferredPostScoringEvents: [
-                                {
-                                    type: SU_EVENTS.BASE_CLEARED,
-                                    payload: { baseIndex: 0, baseDefId: 'base_pirate_cove_pod' },
-                                    timestamp: 2400,
-                                },
-                                {
-                                    type: SU_EVENTS.BASE_REPLACED,
-                                    payload: {
-                                        baseIndex: 0,
-                                        oldBaseDefId: 'base_pirate_cove_pod',
-                                        newBaseDefId: 'base_tar_pits_pod',
-                                    },
-                                    timestamp: 2400,
-                                },
-                            ],
                         },
                     },
                 },
@@ -867,8 +927,6 @@ describe('afterScoring 延迟清场回归', () => {
         const emittedEvents = result?.events as SmashUpEvent[] | undefined;
         expect(emittedEvents?.map(event => event.type)).toEqual([
             SU_EVENTS.MINION_MOVED,
-            SU_EVENTS.BASE_CLEARED,
-            SU_EVENTS.BASE_REPLACED,
         ]);
         expect(emittedEvents?.[0]).toMatchObject({
             type: SU_EVENTS.MINION_MOVED,
@@ -880,7 +938,24 @@ describe('afterScoring 延迟清场回归', () => {
             },
         });
 
-        const finalCore = emittedEvents?.reduce((core, event) => reduce(core, event), state.core as SmashUpCore);
+        const reducedState = {
+            ...(result?.state ?? state),
+            core: (emittedEvents ?? []).reduce((core, event) => reduce(core, event), state.core as SmashUpCore),
+        };
+        const finalize = smashUpFlowHooks.onPhaseExit?.({
+            state: reducedState,
+            from: 'scoreBases',
+            to: 'draw',
+            command: { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any,
+            random: defaultTestRandom,
+        });
+        const finalizeEvents = Array.isArray(finalize) ? finalize : (finalize as any)?.events ?? [];
+        expect(finalizeEvents.map((event: SmashUpEvent) => event.type)).toEqual([
+            SU_EVENTS.BASE_CLEARED,
+            SU_EVENTS.BASE_REPLACED,
+        ]);
+
+        const finalCore = finalizeEvents.reduce((core, event) => reduce(core, event), reducedState.core);
         expect(finalCore?.bases[0].defId).toBe('base_tar_pits_pod');
         expect(finalCore?.bases[1].minions.map(minion => minion.uid)).toEqual(['archmage']);
         expect(finalCore?.players['0'].discard.some(card => card.uid === 'archmage')).toBe(false);
@@ -943,14 +1018,22 @@ describe('afterScoring 延迟清场回归', () => {
         }));
 
         state.sys.flowHalted = true;
-        const started = startSmashUpReactionSession(state, {
+        const baseRef = createScoringBaseRef(state.core, 0);
+        if (!baseRef) {
+            throw new Error('无法构造 afterScoring auto-continue 测试用 scoring base ref');
+        }
+        const scoringState = setScoringSession(state, {
+            ...createScoringSession(state.core, [0]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-response-window',
+        });
+        const started = startSmashUpReactionSession(scoringState, {
             frameId: 'test-after-scoring',
             frameKind: 'score-after',
             phase: 'optional',
             activePlayerId: '0',
             currentPlayerId: '0',
             consecutivePasses: 0,
-            sourceBaseIndex: 0,
             responseWindowType: 'afterScoring',
         });
 

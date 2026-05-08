@@ -243,7 +243,14 @@ function registerVampirePodOngoingEffects(): void {
             matchState = result.matchState ?? matchState;
         }
         return { events: [], matchState } as any;
-    }, { optional: true });
+    }, {
+        optional: true,
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
+    });
 
     // Dinner Date POD：被附着随从若力量变为 0，则将其消灭。
     registerTrigger('vampire_dinner_date_pod', 'onMinionAffected', (ctx: TriggerContext) => {
@@ -264,6 +271,11 @@ function registerVampirePodOngoingEffects(): void {
             reason: 'vampire_dinner_date_pod',
             now,
         });
+    }, {
+        effectContract: {
+            reads: ['minionBoardState', 'triggerMinionState', 'turnFlags', 'baseState', 'titanBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     // Buffet POD: after you destroy a minion, you may play Buffet from hand (draw 2).
@@ -282,7 +294,15 @@ function registerVampirePodOngoingEffects(): void {
             }),
         );
         return { events: result.events, matchState: result.matchState ?? ctx.matchState! } as any;
-    }, { optional: true, global: true });
+    }, {
+        optional: true,
+        global: true,
+        effectContract: {
+            reads: ['controllerState', 'handState'],
+            writes: ['handState', 'deckState', 'discardState'],
+            opensInteraction: true,
+        },
+    });
 
     // Mad Monster Party POD: after you destroy a minion, choose its base and place +1 counter on each of your minions there.
     registerTrigger('vampire_mad_monster_party_pod', 'onMinionDestroyed', (ctx: TriggerContext) => {
@@ -301,7 +321,15 @@ function registerVampirePodOngoingEffects(): void {
             }),
         );
         return { events: result.events, matchState: result.matchState ?? ctx.matchState! } as any;
-    }, { optional: true, global: true });
+    }, {
+        optional: true,
+        global: true,
+        effectContract: {
+            reads: ['controllerState', 'handState'],
+            writes: ['handState', 'minionBoardState', 'discardState'],
+            opensInteraction: true,
+        },
+    });
 
     // Fledgling Vampire POD: after you destroy another minion, you may bury this card from hand or discard on any base.
     registerTrigger('vampire_fledgling_vampire_pod', 'onMinionDestroyed', (ctx: TriggerContext) => {
@@ -322,7 +350,14 @@ function registerVampirePodOngoingEffects(): void {
             createVampirePromptContext(ctx.matchState!, destroyerId, now),
         );
         return { events: result.events, matchState: result.matchState ?? ctx.matchState! } as any;
-    }, { optional: true, global: true });
+    }, {
+        optional: true,
+        global: true,
+        effectContract: {
+            reads: ['minionBoardState', 'controllerState', 'handState', 'discardState'],
+            opensInteraction: true,
+        },
+    });
 
     // Stakeout POD restriction: block minions power>=3 when active
     registerRestriction('vampire_stakeout_pod', 'play_minion', (rctx) => {
@@ -332,6 +367,11 @@ function registerVampirePodOngoingEffects(): void {
         if (rctx.playerId === block.ownerId) return false;
         const power = (rctx.extra?.basePower as number | undefined) ?? 0;
         return power >= 3;
+    }, {
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 }
 
@@ -484,6 +524,11 @@ function vampireCrackOfDusk(ctx: AbilityContext): AbilityResult {
         if (c.type !== 'minion') return false;
         const def = getCardDef(c.defId);
         return def && def.type === 'minion' && (def as { power: number }).power <= 2;
+    }, {
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     const result = executeAbilityProgram(
@@ -1672,6 +1717,11 @@ function vampireCullTheWeakPod(ctx: AbilityContext): AbilityResult {
         revealTo: ctx.playerId,
         reason: 'vampire_cull_the_weak_pod',
         now: ctx.now,
+    }, {
+        effectContract: {
+            reads: ['scoringState', 'minionBoardState'],
+            writes: ['scoringState', 'minionBoardState'],
+        },
     });
     if (picked.picked.length === 0) return { events: [] };
     // Choose target minion to receive counters (one per discarded minion)
@@ -1792,6 +1842,11 @@ function registerVampireOngoingEffects(): void {
             }
         }
         return events;
+    }, {
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     // 投机主义 ongoing(minion)：对手随从被消灭后+1指示物
@@ -1807,6 +1862,11 @@ function registerVampireOngoingEffects(): void {
             }
         }
         return events;
+    }, {
+        effectContract: {
+            reads: ['minionBoardState'],
+            writes: ['minionBoardState'],
+        },
     });
 
     // 召唤狼群 ongoing(base)：回合开始在本卡上放+1力量指示物
@@ -1822,9 +1882,9 @@ function registerVampireOngoingEffects(): void {
         }
         return events;
     }, {
-        orderingFootprint: {
-            reads: ['sourceState'],
-            writes: ['sourceState'],
+        effectContract: {
+            reads: ['sourceSelfState'],
+            writes: ['sourceSelfState'],
         },
     });
 
@@ -1859,5 +1919,10 @@ function registerVampireOngoingEffects(): void {
             }
         }
         return events;
+    }, {
+        effectContract: {
+            reads: ['scoringState', 'baseState', 'minionBoardState'],
+            writes: ['scoringState', 'minionBoardState'],
+        },
     });
 }

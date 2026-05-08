@@ -1046,17 +1046,19 @@ export function processDestroyTriggers(
     const baseDestroyBatchSeen = new Set<string>();
 
     for (const de of destroyEvents) {
+        const currentState = ms ?? state;
+        const currentCore = currentState.core;
         const { minionUid, minionDefId, fromBaseIndex, ownerId: eventOwnerId, destroyerId: eventDestroyerId, reason } = de.payload;
-        const base = core.bases[fromBaseIndex];
+        const base = currentCore.bases[fromBaseIndex];
         const minion = base?.minions.find(m => m.uid === minionUid);
-        const triggerMinionPower = minion ? getEffectivePower(core, minion, fromBaseIndex) : undefined;
+        const triggerMinionPower = minion ? getEffectivePower(currentCore, minion, fromBaseIndex) : undefined;
         // ✅ 优先从 state 读取 owner（兜底修复：即使事件中的 ownerId 错了也能修复）
         const ownerId = minion?.owner ?? eventOwnerId;
         const destroyerId = eventDestroyerId ?? playerId ?? minion?.controller ?? ownerId;
 
         // === Phase 1: 先检查防止消灭触发器（基地能力 + ongoing） ===
         // 在触发 onDestroy 之前，先确认消灭是否会被防止
-        const currentMS_save = ms ?? state;
+        const currentMS_save = currentState;
         const interactionCountBefore =
             (currentMS_save.sys.interaction.current ? 1 : 0) + currentMS_save.sys.interaction.queue.length;
 
@@ -1073,8 +1075,8 @@ export function processDestroyTriggers(
                 } else {
                     baseDestroyBatchSeen.add(batchKey);
                     const baseCtx = {
-                        state: core,
-                        matchState: ms ?? state,
+                        state: currentCore,
+                        matchState: currentMS_save,
                         baseIndex: fromBaseIndex,
                         baseDefId: base.defId,
                         playerId: ownerId,
@@ -1091,8 +1093,8 @@ export function processDestroyTriggers(
                 }
             } else {
             const baseCtx = {
-                state: core,
-                matchState: ms ?? state,
+                state: currentCore,
+                matchState: currentMS_save,
                 baseIndex: fromBaseIndex,
                 baseDefId: base.defId,
                 playerId: ownerId,
@@ -1110,9 +1112,9 @@ export function processDestroyTriggers(
         }
 
         // 3. 触发 ongoing 拦截器 onMinionDestroyed（replacement：如雄蜂防止消灭、逃生舱回手牌）
-        const ongoingDestroyEvents = fireTriggers(core, 'onMinionDestroyed', {
-            state: core,
-            matchState: ms ?? state,
+        const ongoingDestroyEvents = fireTriggers(currentCore, 'onMinionDestroyed', {
+            state: currentCore,
+            matchState: ms ?? currentMS_save,
             playerId: ownerId,
             baseIndex: fromBaseIndex,
             triggerMinionUid: minionUid,
@@ -1180,12 +1182,14 @@ export function processDestroyTriggers(
                 )
                 : [...saveEvents];
         if (!isPendingSave && !hasSaveEvent) {
+            const phase2State = ms ?? currentState;
+            const phase2Core = phase2State.core;
             const sourceEventId = `minion-destroyed:${minionUid}:${fromBaseIndex}:${now}`;
             const frameId = `minion-destroyed-frame:${minionUid}:${fromBaseIndex}:${now}`;
             // reaction-phase triggers for onMinionDestroyed are queued and resolved later (Wiki simultaneous ordering)
-            const queuedDestroyReactions = collectTriggers(core, 'onMinionDestroyed', {
-                state: core,
-                matchState: ms ?? state,
+            const queuedDestroyReactions = collectTriggers(phase2Core, 'onMinionDestroyed', {
+                state: phase2Core,
+                matchState: phase2State,
                 playerId: ownerId,
                 baseIndex: fromBaseIndex,
                 triggerMinionUid: minionUid,
@@ -1206,8 +1210,8 @@ export function processDestroyTriggers(
             const executor = resolveOnDestroy(minionDefId);
             if (executor) {
                 const ctx: AbilityContext = {
-                    state: core,
-                    matchState: ms ?? state,
+                    state: phase2Core,
+                    matchState: phase2State,
                     playerId: ownerId,  // ✅ onDestroy 能力属于随从拥有者，不是消灭者
                     cardUid: minionUid,
                     defId: minionDefId,
@@ -1221,8 +1225,21 @@ export function processDestroyTriggers(
             }
         }
 
-        const filteredLocal = filterProtectedDestroyEvents(localEvents, core, destroyerId);
+        const filteredLocal = filterProtectedDestroyEvents(localEvents, (ms ?? currentState).core, destroyerId);
         extraEvents.push(...filteredLocal);
+
+        // 同批次多个 MINION_DESTROYED 需要串行吃到最新手牌/牌库状态，
+        // 否则像“双小鬼同时被消灭”会重复抽到同一张牌、重复弃同一张牌，第二次实际落不下去。
+        if (filteredLocal.length > 0) {
+            const stateBeforeAdvance = ms ?? currentState;
+            const advancedCore = filteredLocal.reduce((acc, event) => reduce(acc, event), stateBeforeAdvance.core);
+            if (advancedCore !== stateBeforeAdvance.core) {
+                ms = {
+                    ...stateBeforeAdvance,
+                    core: advancedCore,
+                };
+            }
+        }
     }
 
     // 记录已处理的消灭事件，防止同一事件在后续流程中重复触发

@@ -785,10 +785,16 @@ export function registerElderThingAbilities(): void {
     registerAbility('elder_thing_touch_of_madness_pod', 'onPlay', elderThingTouchOfMadnessPod);
 
     // Dunwich Horror POD：before scoring trigger (mandatory)
-    registerTrigger('elder_thing_dunwich_horror_pod', 'beforeScoring', elderThingDunwichHorrorPodBeforeScoring, { mandatory: true });
+    registerTrigger('elder_thing_dunwich_horror_pod', 'beforeScoring', elderThingDunwichHorrorPodBeforeScoring, {
+        mandatory: true,
+        effectContract: {
+            reads: ['minionBoardState'],
+            opensInteraction: true,
+        },
+    });
     // POD 版不会“回合结束自动消灭”，这里显式注册 no-op，阻止 alias 继承原版 onTurnEnd 触发。
     registerTrigger('elder_thing_dunwich_horror_pod', 'onTurnEnd', elderThingDunwichHorrorPodOnTurnEndNoop, {
-        orderingFootprint: {
+        effectContract: {
             reads: [],
             writes: [],
         },
@@ -802,8 +808,8 @@ export function registerElderThingAbilities(): void {
     // === ongoing 效果注册 ===
     // 郦威奇恐怖：回合结束时消灭附着了此卡的随从
     registerTrigger('elder_thing_dunwich_horror', 'onTurnEnd', elderThingDunwichHorrorTrigger, {
-        orderingFootprint: {
-            reads: ['sourceState', 'minionBoardState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState'],
             writes: ['minionBoardState'],
         },
     });

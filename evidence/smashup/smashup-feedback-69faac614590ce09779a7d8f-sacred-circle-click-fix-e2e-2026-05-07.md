@@ -64,4 +64,8 @@ npm run test:e2e:ci:file -- e2e/smashup/smashup-base-minion-selection.e2e.ts "�
   1. 点击《宗教圆环》会真正进入已用态；
   2. 点击手牌《本地人》后可继续进入打牌选择；
   3. 最终《本地人》能成功打到巫师学院。
-- 当前仍是**本地修复 + 本地 E2E 证据已完成**；本轮尚未执行远端反馈状态回写。
+- 本轮已完成远端正式状态回写与复核：
+  - 回写前生产 `feedbacks` 文档仍为 `status=open`：`temp/feedback-closeout/query-feedback-69faac61-before-writeback-20260507.raw.txt`
+  - 正式回写结果：`matchedCount=1`、`modifiedCount=1`：`temp/feedback-closeout/update-feedback-status-20260507-69faac61-to-resolved.raw.txt`
+  - 回写后生产 `feedbacks` 文档已为 `status=resolved`：`temp/feedback-closeout/query-feedback-69faac61-after-writeback-20260507.raw.txt`
+  - 同批复核线上人类未收口数量：`count=0`：`temp/feedback-closeout/query-human-open-inprogress-after-20260507.raw.txt`

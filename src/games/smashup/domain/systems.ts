@@ -14,8 +14,6 @@ import type {
     SmashUpCore,
     SmashUpEvent,
     SmashUpSystemState,
-    PendingPostScoringAction,
-    MinionPlayedEvent,
     MinionDestroyedEvent,
     MinionMovedEvent,
     MinionReturnedEvent,
@@ -24,19 +22,15 @@ import type {
 } from './types';
 import { getInteractionHandler } from './abilityInteractionHandlers';
 import { resolveAbilityRuntimePrompt } from './abilityRuntime';
-import { addPowerCounter, buildValidatedMoveEvents } from './abilityHelpers';
+import { addPowerCounter } from './abilityHelpers';
 import { resumePendingBranchingChoiceFrames } from './branchingChoice';
 import { SU_EVENT_TYPES } from './events';
 import { reduce } from './reduce';
-import { resolveLiveBaseIndex } from './utils';
 import { maybeResolveReactionQueue } from './reactionQueue';
 import { getSmashUpReactionSession, resolveSmashUpReactionChoice } from './reactionSession';
 import {
-    appendScoringFrameDeferredPayload,
     getDeferredPostScoringEvents,
-    getScoringSession,
-    mergeDeferredPostScoringCompatibility,
-    mirrorDeferredPostScoringToFirstInteraction,
+    isScoringSessionAwaitingDeferredResolution,
     updateScoringSession,
 } from './scoringSession';
 import { getCardDef } from '../data/cards';
@@ -213,74 +207,6 @@ function reconcilePendingBodyShopDistributions(
 // ============================================================================
 // SmashUp 事件处理系统
 // ============================================================================
-
-function buildPendingPostScoringActionEvents(
-    state: { core: SmashUpCore },
-    actions: PendingPostScoringAction[],
-    timestamp: number,
-): SmashUpEvent[] {
-    const events: SmashUpEvent[] = [];
-    let virtualCore = state.core;
-    for (const action of actions) {
-        if (action.kind === 'playMinionOnReplacementBase') {
-            const player = virtualCore.players[action.playerId];
-            const cardStillInDeck = player?.deck.some(card =>
-                card.uid === action.cardUid
-                && card.defId === action.defId
-                && card.type === 'minion',
-            );
-            const liveBaseIndex = resolveLiveBaseIndex(virtualCore, action.baseIndex, action.targetBaseDefId);
-            if (!player || !cardStillInDeck || liveBaseIndex === undefined) {
-                continue;
-            }
-            const playEvent = {
-                type: SU_EVENT_TYPES.MINION_PLAYED,
-                payload: {
-                    playerId: action.playerId,
-                    cardUid: action.cardUid,
-                    defId: action.defId,
-                    baseIndex: liveBaseIndex,
-                    baseDefId: action.targetBaseDefId,
-                    power: action.power,
-                    fromDeck: true,
-                    consumesNormalLimit: false,
-                },
-                timestamp,
-            } as MinionPlayedEvent;
-            events.push(playEvent);
-            virtualCore = reduce(virtualCore, playEvent as SmashUpEvent);
-            continue;
-        }
-
-        const liveTargetBaseIndex = resolveLiveBaseIndex(virtualCore, action.toBaseIndex, action.targetBaseDefId);
-        if (liveTargetBaseIndex === undefined) {
-            continue;
-        }
-        const moveEvents = buildValidatedMoveEvents(virtualCore, {
-            minionUid: action.minionUid,
-            minionDefId: action.minionDefId,
-            fromBaseIndex: action.fromBaseIndex,
-            toBaseIndex: liveTargetBaseIndex,
-            reason: action.reason,
-            now: timestamp,
-        });
-        events.push(...moveEvents);
-        for (const event of moveEvents) {
-            virtualCore = reduce(virtualCore, event as SmashUpEvent);
-        }
-    }
-    return events;
-}
-
-function isSameDeferredEvent(
-    emittedEvent: SmashUpEvent,
-    deferredEvent: { type: string; payload: unknown; timestamp: number },
-): boolean {
-    if (emittedEvent.type !== deferredEvent.type) return false;
-    const emittedPayload = (emittedEvent as GameEvent).payload;
-    return JSON.stringify(emittedPayload) === JSON.stringify(deferredEvent.payload)
-        && (typeof emittedEvent.timestamp === 'number' ? emittedEvent.timestamp : 0) === deferredEvent.timestamp;
-}
 
 function isSameInteractionDataSnapshot(
     currentData: unknown,
@@ -476,10 +402,6 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 let emittedEvents = [...result.events] as SmashUpEvent[];
 
                                 newState = result.state;
-                                newState = mirrorDeferredPostScoringToFirstInteraction(
-                                    newState,
-                                    getDeferredPostScoringEvents(newState, payload.interactionData),
-                                );
 
                                 const currentInteractionIdAfter = newState.sys.interaction?.current?.id;
                                 const shouldResolveCurrentInteraction = Boolean(currentInteractionIdBefore)
@@ -493,23 +415,6 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                     newState = resolveInteraction(newState);
                                 }
 
-                                if (
-                                    emittedEvents.length === 0
-                                    && !getScoringSession(newState)
-                                    && !newState.sys.interaction?.current
-                                    && (newState.sys.interaction?.queue?.length ?? 0) === 0
-                                ) {
-                                    const compatibility = mergeDeferredPostScoringCompatibility(
-                                        newState,
-                                        payload.interactionData,
-                                        eventTimestamp,
-                                    );
-                                    if (compatibility) {
-                                        newState = compatibility.state;
-                                        emittedEvents = compatibility.events;
-                                    }
-                                }
-                                
                                 // 注意：afterEvents 轮产生的领域事件会在 pipeline.runAfterEventsRounds 中
                                 // 统一调用 postProcessSystemEvents 处理（包含 trigger/保护/去重逻辑）。
                                 // 此处不再手动调用，避免重复触发（D41/D45）。
@@ -523,6 +428,9 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 const producedDomainEvents = emittedEvents.some(
                                     (resultEvent) => typeof resultEvent.type === 'string' && !resultEvent.type.startsWith('SYS_'),
                                 );
+                                // 只有本轮真的产出了待 reduce 的领域事件时，才需要阻断 scoreBases 自动推进。
+                                // 纯 state 变更（例如 multi_base_scoring 选基地、afterScoring 把后续动作写入 deferred frame）
+                                // 必须允许 FlowSystem 在同一轮基于最新 sys 继续推进，否则会停在 scoreBases。
                                 if (newState.sys.phase === 'scoreBases' && producedDomainEvents) {
                                     newState = {
                                         ...newState,
@@ -539,90 +447,20 @@ export function createSmashUpEventSystem(): EngineSystem<SmashUpCore> {
                                 const deferred = getDeferredPostScoringEvents(newState, payload.interactionData) as
                                     | { type: string; payload: unknown; timestamp: number }[]
                                     | undefined;
-                                const scoringSession = getScoringSession(newState);
-                                const scoringSessionOwnsDeferredFlush =
-                                    !!scoringSession?.currentBaseRef
-                                    && (scoringSession.currentStep === 'awaiting-interactions'
-                                        || scoringSession.currentStep === 'awaiting-response-window');
                                 if (deferred && deferred.length > 0) {
-                                    if (scoringSessionOwnsDeferredFlush) {
-                                        // session-first 计分链会在 scoreBases onPhaseExit 里统一补发 deferred，
-                                        // 这里保留 continuationContext 传递，但不能再兼容性补发一次。
-                                        const pendingActions = newState.core.pendingPostScoringActions ?? [];
-                                        if (pendingActions.length > 0) {
-                                            newState = appendScoringFrameDeferredPayload(newState, {
-                                                deferredActions: pendingActions,
-                                            });
-                                            newState = {
-                                                ...newState,
-                                                core: {
-                                                    ...newState.core,
-                                                    pendingPostScoringActions: undefined,
-                                                },
-                                            };
-                                        }
-                                        newState = {
-                                            ...newState,
-                                            sys: {
-                                                ...newState.sys,
-                                                [pendingScoreBasesInteractionReduceFlag]: true,
-                                            } as typeof newState.sys,
-                                        };
-                                        continue;
+                                    if (!isScoringSessionAwaitingDeferredResolution(newState)) {
+                                        throw new Error('SmashUp deferred post-scoring payload 丢失 scoreBases frame 所有权');
                                     }
-                                    // 【关键修复】无论是否有后续交互，都立即设置 flowHalted=true
-                                    // 防止 FlowSystem.afterEvents 在交互解决后重新进入 onPhaseExit('scoreBases')
-                                    // 导致同一个基地被重复计分（因为 BASE_CLEARED 还没有从 scoringEligibleBaseIndices 中移除基地）
-                                    newState.sys.flowHalted = true;
-                                    
-                                    // 仅在没有后续交互时补发（链式交互需要等最后一个解决后再清除）
-                                    if (!newState.sys.interaction?.current && (!newState.sys.interaction?.queue || newState.sys.interaction.queue.length === 0)) {
-                                        const handlerAlreadyEmittedDeferred = deferred.every(d =>
-                                            nextEvents.some(event => isSameDeferredEvent(event, d))
-                                        );
-                                        if (!handlerAlreadyEmittedDeferred) {
-                                            for (const d of deferred) {
-                                                nextEvents.push({ type: d.type, payload: d.payload, timestamp: d.timestamp } as GameEvent);
-                                            }
-                                        }
-                                        const postDeferredCore = deferred.reduce(
-                                            (core, d) => reduce(core, {
-                                                type: d.type,
-                                                payload: d.payload,
-                                                timestamp: d.timestamp,
-                                            } as SmashUpEvent),
-                                            newState.core,
-                                        );
-                                        const pendingActions = newState.core.pendingPostScoringActions ?? [];
-                                        if (pendingActions.length > 0) {
-                                            nextEvents.push(...buildPendingPostScoringActionEvents({
-                                                core: postDeferredCore,
-                                            }, pendingActions, eventTimestamp));
-                                            newState = {
-                                                ...newState,
-                                                core: {
-                                                    ...newState.core,
-                                                    pendingPostScoringActions: undefined,
-                                                },
-                                            };
-                                        }
-                                        newState = {
-                                            ...newState,
-                                            sys: {
-                                                ...newState.sys,
-                                                [pendingReduceFlag]: true,
-                                            } as typeof newState.sys,
-                                        };
-                                    } else {
-                                        // 还有后续交互：把 deferred events 传递到下一个交互的 continuationContext
-                                        const nextInteraction = newState.sys.interaction.current ?? newState.sys.interaction.queue?.[0];
-                                        if (nextInteraction?.data) {
-                                            const nextData = nextInteraction.data as Record<string, unknown>;
-                                            const nextCtx = (nextData.continuationContext ?? {}) as Record<string, unknown>;
-                                            nextCtx._deferredPostScoringEvents = deferred;
-                                            nextData.continuationContext = nextCtx;
-                                        }
-                                    }
+                                    // session-first 计分链会在 scoreBases onPhaseExit 里统一补发 deferred。
+                                    newState = {
+                                        ...newState,
+                                        sys: {
+                                            ...newState.sys,
+                                            flowHalted: true,
+                                            [pendingScoreBasesInteractionReduceFlag]: producedDomainEvents ? true : undefined,
+                                        } as typeof newState.sys,
+                                    };
+                                    continue;
                                 }
 
                                 const producedMinionPlayed = emittedEvents.some(

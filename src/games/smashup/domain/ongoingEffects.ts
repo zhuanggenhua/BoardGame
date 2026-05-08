@@ -20,10 +20,11 @@ import type {
     TriggerInstance,
     TriggerQueuedEvent,
     PlayerTurnRestrictionType,
-    ReactionOrderingFootprint,
+    TriggerEffectContract,
 } from './types';
 import { SU_EVENTS } from './types';
 import { registerTriggerExecutor } from './triggerExecutors';
+import { requireTriggerEffectContract, wrapTriggerCallbackWithEffectContract } from './triggerEffectContract';
 import { getBaseDef, getTitanDef } from '../data/cards';
 import { matchesDefId, mustUseBaseLimitedMinionQuota } from './utils';
 
@@ -240,6 +241,7 @@ interface RestrictionEntry {
 interface TriggerEntry {
     sourceDefId: string;
     timing: TitanAwareTriggerTiming;
+    rawCallback: TriggerCallback;
     callback: TriggerCallback;
     optional?: boolean;
     mandatory?: boolean;
@@ -257,7 +259,7 @@ interface TriggerEntry {
     global?: boolean;
     /** global 闁荤喐鐟辩粻鎴ｃ亹閸岀偛闂柕濞垮劚鐢帡鎮规担鍦憙妞ゎ偄妫涢幏鐘虫媴閻戞鏆犻梺鍝勵槶閸庤尙鑺遍鈧畷鐘诲传閸曨厼骞嶉梺鎸庣⊕閻╊垳鍒掗婊勫?hand + discard */
     globalZones?: Array<'hand' | 'discard' | 'deck'>;
-    orderingFootprint?: ReactionOrderingFootprint;
+    effectContract?: TriggerEffectContract;
 }
 
 interface TriggerSourceLocation {
@@ -319,15 +321,22 @@ export function registerTrigger(
         baseScoped?: boolean;
         perInstance?: boolean;
         sourceScope?: 'any' | 'triggerBase';
-        orderingFootprint?: ReactionOrderingFootprint;
+        effectContract?: TriggerEffectContract;
     }
 ): void {
     // 闂佸憡锚椤兘宕抽崨濠勨攳婵犻潧娲よ闂佹寧绋掗懝楣冨箖閹惧鈻旈柍?sourceDefId + timing 闂佸憡鐟禍婵嬪极閻愬搫绀冮悘鐐跺亹椤忚鲸绻涢崱蹇旑潐缂佽鲸鐟╁濂稿矗婢舵ê澹?HMR 闂備焦褰冪粔鎾囬幓鎺嗘灃闁靛鍎遍弬鈧梺?
     if (triggerRegistry.some(e => e.sourceDefId === sourceDefId && e.timing === timing)) return;
-    triggerRegistry.push({
+    const wrappedCallback = wrapTriggerCallbackWithEffectContract(
         sourceDefId,
         timing,
         callback,
+        options?.effectContract,
+    );
+    triggerRegistry.push({
+        sourceDefId,
+        timing,
+        rawCallback: callback,
+        callback: wrappedCallback,
         optional: options?.optional,
         mandatory: options?.mandatory,
         phase: options?.phase ?? 'reaction',
@@ -337,9 +346,9 @@ export function registerTrigger(
         globalZones: options?.globalZones,
         playerContext: options?.playerContext ?? 'eventPlayer',
         baseScoped: options?.baseScoped ?? true,
-        orderingFootprint: options?.orderingFootprint,
+        effectContract: options?.effectContract,
     });
-    registerTriggerExecutor(sourceDefId, timing, callback);
+    registerTriggerExecutor(sourceDefId, timing, wrappedCallback);
 }
 
 function locateSources(state: SmashUpCore, sourceDefId: string): TriggerSourceLocation[] {
@@ -426,6 +435,7 @@ function createTriggerInstance(
     located: TriggerSourceLocation,
     ctx: Omit<TriggerContext, 'timing'>,
 ): TriggerInstance {
+    requireTriggerEffectContract(entry.sourceDefId, timing, entry.effectContract, 'collectTriggers');
     const mandatory = entry.mandatory ?? !(entry.optional ?? false);
     const sourceEventId = ctx.sourceEventId ?? `${timing}:${now}`;
     const frameId = ctx.frameId ?? `${timing}:${sourceEventId}`;
@@ -473,7 +483,7 @@ function createTriggerInstance(
         inspectionZone: ctx.inspectionZone,
         inspectionTargetPlayerIds: ctx.inspectionTargetPlayerIds,
         inspectionCausePlayerId: ctx.inspectionCausePlayerId,
-        orderingFootprint: entry.orderingFootprint,
+        effectContract: entry.effectContract,
         lkiMinion: ctx.triggerMinion
             ? {
                 uid: ctx.triggerMinion.uid,
@@ -661,7 +671,7 @@ export function registerPodOngoingAliases(): void {
     // 1. 闂佸搫瀚慨鎾儍?Trigger
     const triggersToAdd: TriggerEntry[] = [];
     for (const entry of triggerRegistry) {
-        const { sourceDefId, timing, callback } = entry;
+        const { sourceDefId, timing, rawCallback, effectContract } = entry;
         
         // 闁荤姴鎼悿鍥╂崲閸愵煈鍟呴柤纰卞墰閻ュ懘鏌?_pod 闂?
         if (sourceDefId.endsWith('_pod')) continue;
@@ -679,13 +689,15 @@ export function registerPodOngoingAliases(): void {
         triggersToAdd.push({
             sourceDefId: podDefId,
             timing,
-            callback,
+            rawCallback,
+            callback: rawCallback,
             optional: entry.optional,
             phase: entry.phase,
             perInstance: entry.perInstance,
             sourceScope: entry.sourceScope,
             global: entry.global,
             globalZones: entry.globalZones,
+            effectContract,
         });
         mappedCount++;
     }
@@ -699,6 +711,7 @@ export function registerPodOngoingAliases(): void {
             sourceScope: entry.sourceScope,
             global: entry.global,
             globalZones: entry.globalZones,
+            effectContract: entry.effectContract,
         });
     }
     
@@ -1195,6 +1208,7 @@ export function fireTriggers(
 
     for (const entry of triggerRegistry) {
         if (entry.timing !== timing) continue;
+        requireTriggerEffectContract(entry.sourceDefId, timing, entry.effectContract, 'fireTriggers');
         if (options?.phase && (entry.phase ?? 'reaction') !== options.phase) continue;
         
         const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
@@ -1299,6 +1313,7 @@ export function fireTriggerForSource(
     for (const entry of triggerRegistry) {
         if (entry.sourceDefId !== sourceDefId) continue;
         if (entry.timing !== timing) continue;
+        requireTriggerEffectContract(entry.sourceDefId, timing, entry.effectContract, 'fireTriggerForSource');
         if (options?.phase && (entry.phase ?? 'reaction') !== options.phase) continue;
 
         const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);

@@ -1,5 +1,20 @@
 # Findings & Resources
 
+## Addendum（2026-05-07）：漏审主因已确认为“流程层不够深”，已升级审计规范
+
+- 本轮结论不是“审计完全没维度”，而是：
+  - 一部分维度口径需要补硬，典型是 `D37`
+  - 更大的问题是执行层级停在 `L1/L2`，没有稳定打到 `L3/L4`
+- 已在 `docs/ai-rules/testing-audit.md` 新增“深度审计流程（强制）”章节，核心变化：
+  - 审计前先建对象清单并标层级，不再允许模糊汇报“这一批差不多审过了”
+  - 每个对象必须串完整链路，不能只核对 validator 或只跑单测
+  - reaction / response window / afterScoring / onDestroy / 动态候选 / 恢复态 / 同批事件后处理，全部改成真实入口强制核对项
+  - 命中共享根因时必须自动扩审到同类函数、同类事件和共享调用点
+  - 旧审计文档被推翻时必须原地回写失效结论
+- 本轮点名加强的两个高风险位点：
+  - `D37`：动态刷新不等于合法性完整，仍需继续核对 `zone/location/可打出形态`
+  - `D40`：批内副作用必须串行吃最新状态，避免“同时杀俩小鬼只结算一次”这类 stale state 漏审
+
 ## Addendum（2026-05-04）：Splendor watchdog `69f6c4bc...` 已按本地热补止血结果回写 resolved
 
 - `69f6c4bc9ec13b96d710e10d` 的系统文案是：
@@ -1731,3 +1746,67 @@
   - 桌面端把该包裹层改成 `pointer-events-none`
   - 保留真正的放大镜按钮在 hover 时 `pointer-events-auto`
 - 修后同一条 E2E 已通过，截图证明《宗教圆环》能进入“已用”态，且手牌《本地人》最终成功落到巫师学院。
+- 生产 `feedbacks` 直查已完成正式闭环：
+  - 回写前：`69faac614590ce09779a7d8f` 仍为 `status=open`
+  - 回写结果：`matchedCount=1`、`modifiedCount=1`
+  - 回写后：该条已为 `status=resolved`，`updatedAt=2026-05-07T00:28:41.546Z`
+- 同批最终复核：`reporterType=user && status in [open, in_progress]` 当前 `count=0`，说明截至 `2026-05-07 08:xx +08`，线上人类未收口反馈已清零。
+- 但若按“所有反馈”口径看生产真源全量 `status in [open, in_progress]`：
+  - 当前仍有 `32` 条未收口
+  - 全部来自 `reporterType=system`、`source=online-ai-watchdog`
+  - 因此当前不能回答“所有反馈都修好了”；更准确的说法是“人类反馈已清零，系统 watchdog 反馈还剩 32 条”
+
+## 2026-05-07 21:25 最后 21 条 watchdog 系统反馈清零
+
+- 上面“还剩 32 条”的结论已失效。
+- 本轮后续又处理了：
+  - 先单独回写 `69fb3fde76f10333c15ed8d9 / 69fc62984a37805e1526f6d9` 两条 SmashUp stale `arcane protector` watchdog 单；
+  - 再批量回写最后 `21` 条系统单。
+- 最后 21 条的正式回写结果是：
+  - `resolved.matchedCount = 9`
+  - `resolved.modifiedCount = 9`
+  - `closed.matchedCount = 12`
+  - `closed.modifiedCount = 12`
+- 判定口径明确为：
+  - `force-end-turn-failed ...` / `unsatisfiable-interaction-auto-skipped empty-options` 属于已修未回写或失败留痕，回写 `resolved`
+  - `force-end-turn-success ...` 属于历史成功 telemetry，回写 `closed`
+- 生产最终复核快照：
+  - `temp/feedback-closeout/query-all-open-inprogress-current-20260507.raw.txt`
+  - 结果：`totalOpenOrInProgress = 0`、`humanOpen = 0`
+- 因此截至 `2026-05-07 21:25 +08`，准确口径已变为：
+  - 人类反馈未收口：`0`
+  - 系统反馈未收口：`0`
+  - 全量未收口：`0`
+
+## 2026-05-07 21:52 `69fc6298` 短暂重开后再次清零
+
+- `69fc62984a37805e1526f6d9` 在 `2026-05-07 21:39 +08` 又被生产真源打成了 `open`。
+- fresh 生产复核当时结果是：
+  - `totalOpenOrInProgress = 1`
+  - `humanOpen = 0`
+- 这次不是新的人工反馈，而是同一个 SmashUp watchdog 聚合项再次刷开。
+- 结合同局 `matchId=bSJjqanl8rO` 的生产日志，我实际看到：
+  - 先出现 `force-end-turn-failed visible-interaction:recover-interaction:blocker_persisted`
+  - 随后 watchdog 又继续把同局从 `scoreBases` 推到 `draw`、再推回 `playCards`
+  - 说明这条在当拍已经重新收口，只是反馈状态没有跟着二次回写
+- 因此本轮再次按失败类系统单口径，把该条正式回写为 `resolved`：
+  - `matchedCount = 1`
+  - `modifiedCount = 1`
+- 最新生产复核时间是 `2026-05-07 21:52 +08`：
+  - `totalOpenOrInProgress = 0`
+  - `humanOpen = 0`
+- 当前最终真相：
+  - 人类反馈仍为 `0`
+  - 系统反馈仍为 `0`
+  - 全量反馈仍为 `0`
+
+## 2026-05-07 22:00 fresh 复核仍为 0
+
+- 最新生产直查：
+  - `ts = 2026-05-07T14:00:21.653Z`
+  - `totalOpenOrInProgress = 0`
+  - `humanOpen = 0`
+- 说明当前最终口径没有再变，仍是：
+  - 人类反馈已清零
+  - 系统反馈已清零
+  - 全量反馈已清零

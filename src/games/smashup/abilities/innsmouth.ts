@@ -80,6 +80,10 @@ export function registerInnsmouthAbilities(): void {
     registerTrigger('innsmouth_return_to_the_sea', 'afterScoring', innsmouthReturnToTheSeaAfterScoring, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['scoringState', 'baseState', 'minionBoardState'],
+            opensInteraction: true,
+        },
     });
     // 深潜者的秘密（行动卡）：3+同名随从时抽牌，可选额外抽牌并获得疯狂卡牌
     registerAbilityProgram('innsmouth_mysteries_of_the_deep', 'onPlay', { program: innsmouthMysteriesOfTheDeepProgram });

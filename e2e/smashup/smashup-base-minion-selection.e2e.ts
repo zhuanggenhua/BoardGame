@@ -389,6 +389,106 @@ async function injectSacredCircleSameNameState(matchId: string, page: Page): Pro
     await page.waitForSelector('[data-testid="base-zone-1"]', { timeout: 5000 });
 }
 
+async function injectTortugaRunnerUpSelectionState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => ({
+        ...state,
+        core: {
+            ...state.core,
+            players: {
+                ...(state.core?.players ?? {}),
+                '0': {
+                    ...(state.core?.players?.['0'] ?? {}),
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['aliens', 'pirates'],
+                    sameNameMinionDefId: null,
+                },
+                '1': {
+                    ...(state.core?.players?.['1'] ?? {}),
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['ninjas', 'robots'],
+                    sameNameMinionDefId: null,
+                },
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            phase: 'playCards',
+            bases: [
+                {
+                    defId: 'base_tortuga',
+                    minions: [
+                        makeInjectedMinion('tortuga-winner-rex', 'dino_king_rex', '0', '0', 7),
+                        makeInjectedMinion('tortuga-winner-laser', 'dino_laser_triceratops', '0', '0', 4),
+                        makeInjectedMinion('tortuga-winner-assassin', 'ninja_tiger_assassin', '0', '0', 4),
+                        makeInjectedMinion('tortuga-winner-shinobi', 'ninja_shinobi', '0', '0', 3),
+                        makeInjectedMinion('tortuga-runnerup-archmage', 'wizard_archmage', '1', '1', 4),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_secret_garden',
+                    minions: [
+                        makeInjectedMinion('runner-up-traveler', 'robot_hoverbot', '1', '1', 3),
+                    ],
+                    ongoingActions: [],
+                },
+                { defId: 'base_great_library', minions: [], ongoingActions: [] },
+            ],
+            baseDeck: ['base_the_jungle', 'base_mushroom_kingdom'],
+            baseDiscard: [],
+            titans: [],
+            enabledExpansions: [],
+            turnNumber: 1,
+            nextUid: 1200,
+            cardsPlayedThisTurn: 0,
+            powerCountersPlacedOnMinionsThisTurn: 0,
+            turnDestroyedMinions: [],
+            triggerQueue: [],
+            beforeScoringTriggeredBases: [],
+            whenScoringTriggeredBases: [],
+            afterScoringTriggeredBases: [],
+            pendingAfterScoringSpecials: [],
+            activeDuel: null,
+            titanOngoingSuppressedUntilTurnEnd: [],
+            rainborocTriggeredTurnByTitan: {},
+            veryLargeBoulderTriggeredTurnByTitan: {},
+            moonZeroThreeTriggeredTurnByTitan: {},
+            titanMovedTurnByTitanUid: {},
+        },
+        sys: {
+            ...state.sys,
+            phase: 'playCards',
+            currentPlayerIndex: 0,
+            flowHalted: false,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+            scoredBaseIndices: undefined,
+            smashupScoring: undefined,
+            smashupReactionSession: undefined,
+            smashupReactionStack: undefined,
+            _waitForPostScoringReduce: undefined,
+            _waitForScoreBasesInteractionReduce: undefined,
+            resolution: undefined,
+        },
+    }));
+    await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
+}
+
 function makeInjectedCard(uid: string, defId: string, type: 'minion' | 'action', owner: string) {
     return { uid, defId, type, owner };
 }
@@ -1341,5 +1441,61 @@ test.describe('SmashUp Base/Minion Selection', () => {
             filename: 'smashup-sacred-circle-resolved.png',
         });
         await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+    });
+
+    test('反馈复现：托尔图加计分后，响应方应能在自己页面直接点随从并移动到新基地', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+    const { hostPage, guestPage, matchId } = smashupMatch;
+    await clearEvidenceScreenshotsForTest(testInfo);
+    await waitForTestHarness(hostPage);
+    await waitForTestHarness(guestPage);
+    await injectTortugaRunnerUpSelectionState(matchId, hostPage);
+
+        await dispatchHarnessCommand(hostPage, '0', 'ADVANCE_PHASE', {});
+        await waitForInteractionSourceId(matchId, guestPage, 'base_tortuga', 20000);
+
+        const promptOverlay = guestPage.locator('[data-testid="prompt-overlay"]');
+        await expect(promptOverlay).not.toBeVisible();
+        await waitForSelectableMinion(guestPage, 'runner-up-traveler', 8000);
+        await expect.poll(async () => isMinionSelectable(guestPage, 'tortuga-winner-rex')).toBe(false);
+
+        const interactionShot = getEvidenceScreenshotPath(testInfo, 'tortuga-runner-up-interaction', {
+            filename: 'smashup-tortuga-runner-up-interaction.png',
+        });
+        await guestPage.screenshot({ path: interactionShot, fullPage: false });
+        await clickMinion(guestPage, 'runner-up-traveler');
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            const replacementBase = state?.core?.bases?.[0];
+            const sourceBase = state?.core?.bases?.[1];
+            return {
+                interactionSourceId: getInteractionSourceId(state),
+                responseWindowOpen: Boolean(state?.sys?.responseWindow?.current),
+                phase: state?.sys?.phase ?? null,
+                currentPlayerIndex: state?.core?.currentPlayerIndex ?? null,
+                replacementBaseDefId: replacementBase?.defId ?? null,
+                movedToReplacement: replacementBase?.minions?.some((minion: any) => minion.uid === 'runner-up-traveler') ?? false,
+                stillAtSource: sourceBase?.minions?.some((minion: any) => minion.uid === 'runner-up-traveler') ?? false,
+            };
+        }, { timeout: 12000 }).toEqual({
+            interactionSourceId: null,
+            responseWindowOpen: false,
+            phase: 'playCards',
+            currentPlayerIndex: 1,
+            replacementBaseDefId: 'base_the_jungle',
+            movedToReplacement: true,
+            stillAtSource: false,
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'tortuga-runner-up-resolved', {
+            filename: 'smashup-tortuga-runner-up-resolved.png',
+        });
+        await guestPage.screenshot({ path: resolvedShot, fullPage: false });
     });
 });

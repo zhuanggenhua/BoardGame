@@ -160,7 +160,7 @@ describe('便衣忍者无随从场景', () => {
         const mirroredWindow = result.finalState.sys.responseWindow?.current;
         if (mirroredWindow) {
             expect(mirroredWindow.sourceId).toBe('smashup_reaction_choose');
-            expect(mirroredWindow.windowType).toBe('meFirst');
+            expect(mirroredWindow.windowType).toBe('afterScoring');
         }
 
         // 验证：应该停在 scoreBases，统一反应交互已创建

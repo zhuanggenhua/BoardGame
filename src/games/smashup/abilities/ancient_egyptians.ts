@@ -91,18 +91,34 @@ export function registerAncientEgyptiansAbilities(): void {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['sourceSelfState', 'baseState', 'minionBoardState'],
+            opensInteraction: true,
+        },
     });
     registerTrigger('ancient_egyptians_pharaoh', 'beforeScoring', ancientEgyptiansPharaohBeforeScoring, {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['sourceSelfState', 'baseState'],
+            opensInteraction: true,
+        },
     });
     registerTrigger('ancient_egyptians_pharaoh', 'onBuriedCardUncovered', ancientEgyptiansPharaohOnUncover, {
         perInstance: true,
+        effectContract: {
+            reads: ['controllerState', 'deckState'],
+            writes: ['handState', 'deckState'],
+        },
     });
     registerTrigger('base_star_portal', 'onCardBuried', ancientEgyptiansStarPortalOnBuried, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['controllerState', 'handState', 'deckState', 'discardState'],
+            writes: ['handState', 'deckState'],
+        },
     });
 
     registerActiveBaseAbility('base_pyramids', ancientEgyptiansPyramidsDuringTurn, {

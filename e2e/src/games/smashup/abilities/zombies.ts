@@ -4,7 +4,7 @@
  * 主题：从弃牌堆复活随从、弃牌堆操作
  */
 
-import { registerAbilityProgram } from '../domain/abilityRegistry';
+import { registerAbility, registerAbilityProgram } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
 import { SU_EVENTS } from '../domain/types';
 import type {
@@ -129,18 +129,20 @@ export function registerZombieAbilities(): void {
     // === ongoing 效果注册 ===
     // 泛滥横行：其他玩家不能打随从到此基地 + 回合开始自毁
     registerRestriction('zombie_overrun', 'play_minion', zombieOverrunRestriction);
+    registerAbility('zombie_overrun', 'onPlay', () => []);
     registerTrigger('zombie_overrun', 'onTurnStart', zombieOverrunSelfDestruct, {
-        orderingFootprint: {
-            reads: ['sourceState'],
-            writes: ['sourceState'],
+        effectContract: {
+            reads: ['sourceSelfState'],
+            writes: ['sourceSelfState'],
         },
     });
 
     registerRestriction('zombie_overrun_pod', 'play_minion', zombieOverrunRestriction);
+    registerAbility('zombie_overrun_pod', 'onPlay', () => []);
     registerTrigger('zombie_overrun_pod', 'onTurnStart', zombieOverrunSelfDestruct, {
-        orderingFootprint: {
-            reads: ['sourceState'],
-            writes: ['sourceState'],
+        effectContract: {
+            reads: ['sourceSelfState'],
+            writes: ['sourceSelfState'],
         },
     });
 

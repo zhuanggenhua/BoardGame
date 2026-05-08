@@ -174,11 +174,23 @@ export function registerVikingsAbilities(): void {
     registerAbility('vikings_tribute', 'onPlay', vikingsTributeOnPlay);
     registerAbility('vikings_combat_training', 'onPlay', vikingsCombatTrainingOnPlay);
 
-    registerTrigger('vikings_viking_funeral', 'onMinionDestroyed', vikingsVikingFuneralTrigger, { perInstance: true });
-    registerTrigger('vikings_viking_funeral', 'onMinionDiscardedFromBase', vikingsVikingFuneralTrigger, { perInstance: true });
+    registerTrigger('vikings_viking_funeral', 'onMinionDestroyed', vikingsVikingFuneralTrigger, {
+        perInstance: true,
+        effectContract: {
+            reads: ['triggerMinionState', 'sourceSelfState'],
+            writes: ['vpState', 'discardState'],
+        },
+    });
+    registerTrigger('vikings_viking_funeral', 'onMinionDiscardedFromBase', vikingsVikingFuneralTrigger, {
+        perInstance: true,
+        effectContract: {
+            reads: ['triggerMinionState', 'sourceSelfState'],
+            writes: ['vpState', 'discardState'],
+        },
+    });
 
     registerBaseAbility('base_drakkar', 'onMinionPlayed', vikingsBaseDrakkarOnMinionPlayed, {
-        orderingFootprint: {
+        effectContract: {
             reads: ['deckState'],
             writes: ['deckState', 'handState'],
         },

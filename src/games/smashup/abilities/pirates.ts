@@ -14,9 +14,7 @@ import { getCardDef, getBaseDef } from '../data/cards';
 import { registerTrigger, isMinionProtected } from '../domain/ongoingEffects';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { FACTION_DISPLAY_NAMES } from '../domain/ids';
-import { getOpponentLabel } from '../domain/utils';
-import { mergeDeferredPostScoringCompatibility } from '../domain/scoringSession';
-import { getSmashUpReactionSession } from '../domain/reactionSession';
+import { getOpponentLabel, resolveLiveBaseIndex } from '../domain/utils';
 import {
     createAbilityRuntimeSimpleChoice,
     createEffectProgram,
@@ -127,15 +125,33 @@ export function registerPirateAbilities(): void {
 
     // === ongoing 效果注册 ===
     // 海盗王：基地计分前移动到该基地
-    registerTrigger('pirate_king', 'beforeScoring', pirateKingBeforeScoring);
+    registerTrigger('pirate_king', 'beforeScoring', pirateKingBeforeScoring, {
+        effectContract: {
+            reads: ['baseState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
+    });
     // 副官：基地计分后移动到其他基地（而非弃牌堆）
     registerTrigger('pirate_first_mate', 'afterScoring', pirateFirstMateAfterScoring, {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['sourceSelfState', 'baseState', 'minionBoardState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
     });
     // 海盗（海盗）：被消灭时移动到其他基地而非进入弃牌堆
-    registerTrigger('pirate_buccaneer', 'onMinionDestroyed', buccaneerOnDestroyed, { phase: 'replacement' });
+    registerTrigger('pirate_buccaneer', 'onMinionDestroyed', buccaneerOnDestroyed, {
+        phase: 'replacement',
+        effectContract: {
+            reads: ['baseState', 'minionBoardState', 'turnFlags'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
+    });
 }
 
 /** 粗鲁少妇 onPlay：消灭本基地一个力量≤2的随从*/
@@ -1318,40 +1334,10 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
             { sourceId: 'pirate_first_mate_choose_base', targetType: 'base' },
         );
     },
-    onResolve: ({ state, context, value, interactionData, timestamp }) => {
+    onResolve: ({ state, context, value, timestamp }) => {
         const selected = value as { skip?: boolean; baseIndex?: number; baseDefId?: string } | undefined;
-        const deferredEvents = (interactionData?.continuationContext as any)?._deferredPostScoringEvents as
-            { type: string; payload: unknown; timestamp: number }[] | undefined;
-        const hasNextInteraction =
-            !!state.sys.interaction?.current
-            || (state.sys.interaction?.queue?.length ?? 0) > 0;
-        const hasPendingReactionWork =
-            (state.core.triggerQueue?.length ?? 0) > 0
-            || Boolean(getSmashUpReactionSession(state));
-        const legacyPendingActions = state.core.pendingPostScoringActions ?? [];
-        const shouldFlushDeferred = !!(
-            deferredEvents
-            && deferredEvents.length > 0
-            && !hasNextInteraction
-            && !hasPendingReactionWork
-        );
 
         if (selected?.skip) {
-            if (shouldFlushDeferred) {
-                const compatibility = mergeDeferredPostScoringCompatibility(state, interactionData, timestamp, {
-                    extraPendingActions: legacyPendingActions.length > 0 ? legacyPendingActions : undefined,
-                });
-                if (compatibility) {
-                    const clearedState = legacyPendingActions.length > 0
-                        ? {
-                            ...compatibility.state,
-                            core: { ...compatibility.state.core, pendingPostScoringActions: undefined },
-                        }
-                        : compatibility.state;
-                    return { matchState: clearedState, events: compatibility.events };
-                }
-                return { events: deferredEvents as SmashUpEvent[] };
-            }
             return { events: [] };
         }
 
@@ -1372,24 +1358,6 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
                 context.mateDefId === 'pirate_first_mate_pod' ? 'pirate_first_mate_pod' : 'pirate_first_mate',
                 timestamp,
             ));
-        }
-
-        if (shouldFlushDeferred) {
-            const compatibility = mergeDeferredPostScoringCompatibility(state, interactionData, timestamp, {
-                primaryEvents: events,
-                primaryOrder: 'after',
-                extraPendingActions: legacyPendingActions.length > 0 ? legacyPendingActions : undefined,
-            });
-            if (compatibility) {
-                const clearedState = legacyPendingActions.length > 0
-                    ? {
-                        ...compatibility.state,
-                        core: { ...compatibility.state.core, pendingPostScoringActions: undefined },
-                    }
-                    : compatibility.state;
-                return { matchState: clearedState, events: compatibility.events };
-            }
-            events.push(...deferredEvents as SmashUpEvent[]);
         }
 
         return { events };
@@ -1422,21 +1390,6 @@ function piratePowderkeg(ctx: AbilityContext): AbilityResult {
 // ============================================================================
 // 交互解决处理函数（InteractionHandler）
 // ============================================================================
-
-function resolveLiveBaseIndex(
-    state: SmashUpCore,
-    baseIndex: number | undefined,
-    baseDefId?: string,
-): number | undefined {
-    if (baseDefId) {
-        const liveIndex = state.bases.findIndex(base => base.defId === baseDefId);
-        return liveIndex >= 0 ? liveIndex : undefined;
-    }
-    if (baseIndex !== undefined && state.bases[baseIndex]) {
-        return baseIndex;
-    }
-    return undefined;
-}
 
 export function registerPirateInteractionHandlers(): void {
     // 海盗派系交互已迁移到 ability runtime prompt program。

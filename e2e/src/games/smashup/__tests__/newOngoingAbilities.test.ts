@@ -35,6 +35,7 @@ import { SU_COMMANDS } from '../domain/types';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import type { RandomFn } from '../../../engine/types';
 
 // ============================================================================
@@ -762,21 +763,29 @@ describe('pirate_first_mate afterScoring', () => {
             timestamp: 101,
         } as any);
 
-        const ms = startSmashUpReactionSession({
+        const scoringBaseState = {
             core: { ...movedCore, triggerQueue: [trigger!] },
             sys: {
                 phase: 'scoreBases',
                 interaction: { current: undefined, queue: [] },
                 responseWindow: { current: undefined },
             },
-        } as any, {
+        } as any;
+        const baseRef = createScoringBaseRef(scoringBaseState.core, 0);
+        if (!baseRef) {
+            throw new Error('无法构造 ongoing afterScoring 测试用 scoring base ref');
+        }
+        const ms = startSmashUpReactionSession(setScoringSession(scoringBaseState, {
+            ...createScoringSession(scoringBaseState.core, [0]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-response-window',
+        }), {
             frameId: trigger!.frameId ?? trigger!.id,
             frameKind: 'score-after',
             phase: 'optional',
             activePlayerId: '0',
             currentPlayerId: '0',
             consecutivePasses: 0,
-            sourceBaseIndex: 0,
             responseWindowType: 'afterScoring',
         });
         ms.sys.responseWindow = { ...(ms.sys.responseWindow ?? {}), current: undefined } as any;

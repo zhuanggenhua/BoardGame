@@ -1464,45 +1464,85 @@ export function registerWorldChampsAbilities(): void {
     registerTrigger('world_champs_aramis', 'onMinionAffected', worldChampsAramisOnMinionAffected, {
         optional: true,
         perInstance: true,
+        effectContract: {
+            reads: ['sourceSelfState', 'triggerMinionState', 'turnFlags'],
+            writes: ['sourceSelfState', 'playLimits'],
+        },
     });
     registerTrigger('world_champs_diva', 'onMinionAffected', worldChampsDivaOnMinionAffected, {
         optional: true,
         perInstance: true,
         playerContext: 'sourceController',
+        effectContract: {
+            reads: ['sourceSelfState', 'triggerMinionState', 'turnFlags'],
+            writes: ['sourceSelfState', 'minionBoardState', 'discardState', 'handState'],
+        },
     });
     registerTrigger('world_champs_sheriff', 'beforeScoring', worldChampsSheriffBeforeScoring, {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState', 'turnFlags'],
+            opensInteraction: true,
+        },
     });
     registerTrigger('world_champs_bewitched', 'onMinionDestroyed', worldChampsBewitchedTransferOnLeave, {
         perInstance: true,
+        effectContract: {
+            reads: ['minionBoardState'],
+            opensInteraction: true,
+        },
     });
     registerTrigger('world_champs_bewitched', 'onMinionDiscardedFromBase', worldChampsBewitchedTransferOnLeave, {
         perInstance: true,
+        effectContract: {
+            reads: ['minionBoardState'],
+            opensInteraction: true,
+        },
     });
     registerTrigger('world_champs_bewitched', 'onCardReturnedToHand', worldChampsBewitchedTransferOnLeave, {
         perInstance: true,
+        effectContract: {
+            reads: ['minionBoardState'],
+            opensInteraction: true,
+        },
     });
-    registerTrigger('world_champs_samurai_chan', 'onMinionDestroyed', worldChampsSamuraiChanTrigger, { perInstance: true });
-    registerTrigger('world_champs_samurai_chan', 'onMinionDiscardedFromBase', worldChampsSamuraiChanTrigger, { perInstance: true });
+    registerTrigger('world_champs_samurai_chan', 'onMinionDestroyed', worldChampsSamuraiChanTrigger, {
+        perInstance: true,
+        effectContract: {
+            reads: ['controllerState', 'handState', 'deckState', 'discardState'],
+            writes: ['handState', 'deckState'],
+        },
+    });
+    registerTrigger('world_champs_samurai_chan', 'onMinionDiscardedFromBase', worldChampsSamuraiChanTrigger, {
+        perInstance: true,
+        effectContract: {
+            reads: ['controllerState', 'handState', 'deckState', 'discardState'],
+            writes: ['handState', 'deckState'],
+        },
+    });
     registerTrigger('world_champs_mummy', 'afterScoring', worldChampsMummyAfterScoring, {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState', 'baseState'],
+            opensInteraction: true,
+        },
     });
     registerTrigger('world_champs_shark_tattoo', 'onTurnStart', worldChampsSharkTattooTurnStart, {
         perInstance: true,
-        orderingFootprint: {
-            reads: ['sourceState', 'minionBoardState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'minionBoardState'],
             writes: ['minionBoardState'],
         },
     });
     registerTrigger('world_champs_smart_set_up', 'onMinionPlayed', worldChampsSmartSetUpOnMinionPlayed, {
         perInstance: true,
         sourceScope: 'triggerBase',
-        orderingFootprint: {
-            reads: ['sourceState', 'turnFlags', 'deckState'],
+        effectContract: {
+            reads: ['sourceSelfState', 'turnFlags', 'controllerState', 'playLimits', 'handState', 'deckState', 'discardState'],
             writes: ['handState', 'deckState'],
         },
     });

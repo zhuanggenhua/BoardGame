@@ -13,18 +13,27 @@ import type { SmashUpCore, SmashUpCommand, SmashUpEvent, MinionOnBase } from '..
 import { SU_EVENT_TYPES } from '../domain/events';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
+import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 
 function attachFrameBackedAfterScoringSession(
     state: { core: SmashUpCore; sys: ReturnType<typeof createInitialSystemState> },
 ) {
-    const nextState = startSmashUpReactionSession(state, {
+    const baseRef = createScoringBaseRef(state.core, 0);
+    if (!baseRef) {
+        throw new Error('无法构造 afterScoring 响应窗口测试用 scoring base ref');
+    }
+    const scoringState = setScoringSession(state as any, {
+        ...createScoringSession(state.core, [0]),
+        currentBaseRef: baseRef,
+        currentStep: 'awaiting-response-window',
+    });
+    const nextState = startSmashUpReactionSession(scoringState, {
         frameId: 'score-after:0:test',
         frameKind: 'score-after',
         phase: 'optional',
         activePlayerId: '0',
         currentPlayerId: '0',
         consecutivePasses: 0,
-        sourceBaseIndex: 0,
         responseWindowType: 'afterScoring',
     });
     return {
