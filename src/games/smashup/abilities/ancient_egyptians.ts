@@ -128,7 +128,13 @@ export function registerAncientEgyptiansAbilities(): void {
             return !!player && player.hand.length > 0;
         },
     });
-    registerBaseAbility('base_star_portal', 'onActionPlayed', ancientEgyptiansStarPortalOnActionPlayed, { mandatory: true });
+    registerBaseAbility('base_star_portal', 'onActionPlayed', ancientEgyptiansStarPortalOnActionPlayed, {
+        mandatory: true,
+        effectContract: {
+            reads: ['deckState'],
+            writes: ['handState', 'deckState'],
+        },
+    });
 }
 
 function ancientEgyptiansBurySelfOnPlay(ctx: AbilityContext): AbilityResult {

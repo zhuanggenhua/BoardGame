@@ -197,7 +197,7 @@ describe('preloadCriticalImages', () => {
         expect(getPreloadedImageElement('/assets/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234')).not.toBeNull();
     });
 
-    it('runtime 内存缓存丢失后，仍可通过持久化 ready hint 判定关键图已就绪', () => {
+    it('runtime 内存缓存丢失后，不能仅凭持久化 ready hint 判定关键图已就绪', () => {
         setAssetsBaseUrl('https://assets.easyboardgame.top/official');
         setAssetHashesForTesting({
             'i18n/en/smashup/cards/compressed/cards1.webp': 'hash1234',
@@ -214,6 +214,41 @@ describe('preloadCriticalImages', () => {
 
         __resetAssetLoaderCachesForTests({ keepPersistentHints: true });
 
-        expect(areAllCriticalImagesCached('test-persistent-hint', undefined, 'en')).toBe(true);
+        expect(areAllCriticalImagesCached('test-persistent-hint', undefined, 'en')).toBe(false);
+    });
+
+    it('runtime 内存缓存丢失后，同步磁盘缓存探测命中仍可判定关键图已就绪', () => {
+        setAssetsBaseUrl('https://assets.easyboardgame.top/official');
+        setAssetHashesForTesting({
+            'i18n/en/smashup/cards/compressed/cards1.webp': 'hash1234',
+        });
+
+        registerGameAssets('test-sync-disk-hit', {
+            criticalImages: ['smashup/cards/cards1'],
+        });
+
+        vi.stubGlobal('Image', class {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 0;
+            naturalHeight = 0;
+            complete = false;
+            private _src = '';
+
+            get src() {
+                return this._src;
+            }
+
+            set src(value: string) {
+                this._src = value;
+                if (value.includes('cards1.webp?v=hash1234')) {
+                    this.complete = true;
+                    this.naturalWidth = 300;
+                    this.naturalHeight = 600;
+                }
+            }
+        });
+
+        expect(areAllCriticalImagesCached('test-sync-disk-hit', undefined, 'en')).toBe(true);
     });
 });

@@ -180,11 +180,6 @@ export const OptimizedImage = ({
             setLoaded(true);
         } else if (isImagePreloaded(src, effectiveLocale)) {
             setLoaded(true);
-        } else if (isPublicAssetsUrl(currentSrc)) {
-            // 仅 public /assets/... 资源允许乐观收敛；
-            // Android 已安装素材包走 /_capacitor_file_/... 时必须等待真实 onload/onerror，
-            // 否则本地包失效时既不会回退，也无法维持 shimmer 提示。
-            setLoaded(true);
         } else {
             setLoaded(false);
         }

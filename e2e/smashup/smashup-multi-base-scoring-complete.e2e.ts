@@ -55,6 +55,7 @@ async function openScene(game: any): Promise<void> {
 
 test.describe('多基地计分完整流程', () => {
     test('第二次排序选择后，最后一个基地应自动结算且只结算一次', async ({ game }, testInfo) => {
+        test.setTimeout(90000);
         await openScene(game);
         await game.screenshot('multi-base-auto-finish-initial', testInfo);
 

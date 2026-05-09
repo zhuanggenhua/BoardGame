@@ -11,8 +11,15 @@ import type { UISceneCompiledArtifact } from '../ui-scene/types';
 const HOME_V2_BOOK_DESK = getOptimizedImageUrls('/assets/common/images/home-v2/book-desk/1.png').webp;
 const HOME_V2_COMPILED_SCENE = compiledHomeV2Scene as UISceneCompiledArtifact;
 const HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY = 9;
+const HOME_V2_OVERVIEW_RIGHT_PAGE_CAPACITY = 9;
+const HOME_V2_OVERVIEW_SPREAD_CAPACITY = HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY + HOME_V2_OVERVIEW_RIGHT_PAGE_CAPACITY;
 
 type HomeV2TabId = 'lobby' | 'rooms' | 'leaderboard' | 'changelog' | 'about';
+type PendingHomeV2Transition = {
+    nextSceneState: 'overview' | 'detail';
+    nextSelectedGameId: string | null;
+    nextOverviewPageIndex?: number;
+};
 
 function HomeV2TabPlaceholder({ title, description }: { title: string; description: string }) {
     return (
@@ -32,7 +39,8 @@ export const HomeV2 = () => {
     const [sceneState, setSceneState] = React.useState<HomeV2SceneState>('open');
     const [activeTab, setActiveTab] = React.useState<HomeV2TabId>('lobby');
     const [selectedGameId, setSelectedGameId] = React.useState<string | null>(null);
-    const pendingGameIdRef = React.useRef<string | null>(null);
+    const [overviewPageIndex, setOverviewPageIndex] = React.useState(0);
+    const pendingTransitionRef = React.useRef<PendingHomeV2Transition | null>(null);
     const debugRegions = searchParams.get('homeV2Debug') === '1';
     const overviewGames = React.useMemo(
         () => getAllGames().filter((game) => game.enabled && game.type === 'game'),
@@ -40,13 +48,47 @@ export const HomeV2 = () => {
     );
     const selectedGame = selectedGameId ? getGameById(selectedGameId) ?? null : null;
     const isPageFlipping = sceneState === 'flippingToDetail' || sceneState === 'flippingToOverview';
+    const overviewPageCount = React.useMemo(
+        () => Math.max(1, Math.ceil(overviewGames.length / HOME_V2_OVERVIEW_SPREAD_CAPACITY)),
+        [overviewGames.length],
+    );
+    const currentOverviewStartIndex = overviewPageIndex * HOME_V2_OVERVIEW_SPREAD_CAPACITY;
+    const currentOverviewLeftGames = React.useMemo(
+        () => overviewGames.slice(currentOverviewStartIndex, currentOverviewStartIndex + HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY),
+        [currentOverviewStartIndex, overviewGames],
+    );
+    const currentOverviewRightGames = React.useMemo(
+        () => overviewGames.slice(
+            currentOverviewStartIndex + HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY,
+            currentOverviewStartIndex + HOME_V2_OVERVIEW_SPREAD_CAPACITY,
+        ),
+        [currentOverviewStartIndex, overviewGames],
+    );
+
+    const commitPendingTransition = React.useCallback(() => {
+        const transition = pendingTransitionRef.current;
+        if (!transition) {
+            return;
+        }
+
+        if (typeof transition.nextOverviewPageIndex === 'number') {
+            setOverviewPageIndex(transition.nextOverviewPageIndex);
+        }
+
+        setSelectedGameId(transition.nextSelectedGameId);
+        setSceneState(transition.nextSceneState);
+        pendingTransitionRef.current = null;
+    }, []);
 
     const handleGameOpen = React.useCallback((gameId: string) => {
         if (sceneState !== 'overview' || isPageFlipping) {
             return;
         }
 
-        pendingGameIdRef.current = gameId;
+        pendingTransitionRef.current = {
+            nextSceneState: 'detail',
+            nextSelectedGameId: gameId,
+        };
         setSceneState('flippingToDetail');
     }, [isPageFlipping, sceneState]);
 
@@ -55,30 +97,109 @@ export const HomeV2 = () => {
             return;
         }
 
-        pendingGameIdRef.current = null;
+        pendingTransitionRef.current = {
+            nextSceneState: 'overview',
+            nextSelectedGameId: null,
+        };
         setSceneState('flippingToOverview');
     }, [isPageFlipping, sceneState, selectedGameId]);
 
-    const handleSceneEvent = React.useCallback((event: { eventId: string }) => {
-        if (event.eventId === 'page.flip.to-detail.complete') {
-            setSelectedGameId(pendingGameIdRef.current);
-            setSceneState('detail');
+    const handlePrevPage = React.useCallback(() => {
+        if (isPageFlipping) {
             return;
         }
 
-        if (event.eventId === 'page.flip.to-overview.complete') {
-            setSelectedGameId(null);
-            setSceneState('overview');
+        if (sceneState === 'detail') {
+            pendingTransitionRef.current = {
+                nextSceneState: 'overview',
+                nextSelectedGameId: null,
+            };
+            setSceneState('flippingToOverview');
+            return;
         }
-    }, []);
+
+        if (sceneState !== 'overview' || overviewPageIndex <= 0) {
+            return;
+        }
+
+        pendingTransitionRef.current = {
+            nextSceneState: 'overview',
+            nextSelectedGameId: null,
+            nextOverviewPageIndex: overviewPageIndex - 1,
+        };
+        setSceneState('flippingToOverview');
+    }, [isPageFlipping, overviewPageIndex, sceneState]);
+
+    const handleNextPage = React.useCallback(() => {
+        if (isPageFlipping) {
+            return;
+        }
+
+        if (sceneState === 'detail') {
+            if (!selectedGameId) {
+                return;
+            }
+
+            const currentIndex = overviewGames.findIndex((game) => game.id === selectedGameId);
+            const nextGame = currentIndex >= 0 ? overviewGames[currentIndex + 1] : null;
+            if (!nextGame) {
+                return;
+            }
+
+            pendingTransitionRef.current = {
+                nextSceneState: 'detail',
+                nextSelectedGameId: nextGame.id,
+                nextOverviewPageIndex: Math.floor((currentIndex + 1) / HOME_V2_OVERVIEW_SPREAD_CAPACITY),
+            };
+            setSceneState('flippingToDetail');
+            return;
+        }
+
+        if (sceneState !== 'overview' || overviewPageIndex >= overviewPageCount - 1) {
+            return;
+        }
+
+        pendingTransitionRef.current = {
+            nextSceneState: 'overview',
+            nextSelectedGameId: null,
+            nextOverviewPageIndex: overviewPageIndex + 1,
+        };
+        setSceneState('flippingToDetail');
+    }, [isPageFlipping, overviewGames, overviewPageCount, overviewPageIndex, sceneState, selectedGameId]);
 
     const handleTabChange = React.useCallback((tabId: HomeV2TabId) => {
         setActiveTab(tabId);
+        pendingTransitionRef.current = null;
+        setOverviewPageIndex(0);
         if (sceneState === 'detail') {
             setSelectedGameId(null);
             setSceneState('overview');
         }
     }, [sceneState]);
+
+    const handleSceneEvent = React.useCallback((event: { eventId: string; payload?: unknown }) => {
+        if (event.eventId === 'page.flip.to-detail.complete' || event.eventId === 'page.flip.to-overview.complete') {
+            commitPendingTransition();
+            return;
+        }
+
+        if (event.eventId === 'navigation.tab-select') {
+            const payload = event.payload as { tabId?: HomeV2TabId } | undefined;
+            if (payload?.tabId) {
+                handleTabChange(payload.tabId);
+            }
+            return;
+        }
+
+        if (event.eventId === 'navigation.prev-page') {
+            handlePrevPage();
+            return;
+        }
+
+        if (event.eventId === 'navigation.next-page') {
+            handleNextPage();
+        }
+    }, [commitPendingTransition, handleNextPage, handlePrevPage, handleTabChange]);
 
     const sceneContext = React.useMemo(() => ({
         activeTab,
@@ -105,13 +226,13 @@ export const HomeV2 = () => {
         if (activeTab === 'lobby') {
             slots.overview_left_page = (
                 <LobbyDirectory.Left
-                    games={overviewGames.slice(0, HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY)}
+                    games={currentOverviewLeftGames}
                     onGameClick={handleGameOpen}
                 />
             );
             slots.overview_right_page = (
                 <LobbyDirectory.Right
-                    games={overviewGames.slice(HOME_V2_OVERVIEW_LEFT_PAGE_CAPACITY)}
+                    games={currentOverviewRightGames}
                     onGameClick={handleGameOpen}
                 />
             );
@@ -156,7 +277,7 @@ export const HomeV2 = () => {
         }
 
         return slots;
-    }, [activeTab, handleBackToOverview, handleGameOpen, overviewGames, sceneState, selectedGame]);
+    }, [activeTab, currentOverviewLeftGames, currentOverviewRightGames, handleBackToOverview, handleGameOpen, sceneState, selectedGame]);
 
     return (
         <main

@@ -976,76 +976,81 @@ export const GameHUD = ({
         }
     }
 
-    // 5.5 强制结束 AI 当前阶段（仅房主且 AI 在场）
+    // 5.5 强制操作（将强制结束 AI / 强制去弹窗合并到一个展开面板）
     // 注意：这里要放在撤回之后 push，反转渲染后才会出现在“撤回上面”。
-    if (canForceEndAiPhase) {
+    if (canForceEndAiPhase || canForceDismissPopup) {
         items.push({
-            id: 'force-end-ai-phase',
+            id: 'force-actions',
             icon: <AlertTriangle size={20} />,
-            label: t('hud.ai.forceEndPhase'),
-            color: 'text-amber-400',
+            label: canForceEndAiPhase && canForceDismissPopup
+                ? t('hud.ai.forceEndPhase')
+                : canForceEndAiPhase
+                    ? t('hud.ai.forceEndPhase')
+                    : t('hud.ai.forceDismissPopup'),
+            color: canForceEndAiPhase ? 'text-amber-400' : 'text-rose-300',
             content: ({ closePanel }) => (
                 <div className="space-y-3">
-                    <p className="text-xs text-white/70">
-                        {t('hud.ai.forceEndPhaseHint')}
-                    </p>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            void handleForceEndAiPhaseClick(closePanel);
-                        }}
-                        disabled={isForceEndingAiPhase}
-                        className={`w-full rounded-md border px-3 py-2 text-xs font-bold transition-colors ${
-                            isForceEndingAiPhase
-                                ? 'cursor-wait border-amber-500/25 bg-amber-500/10 text-amber-200/70'
-                                : 'border-amber-500/40 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25'
-                        }`}
-                        data-testid="hud-force-end-ai-phase"
-                    >
-                        {isForceEndingAiPhase
-                            ? t('hud.ai.forceEndPhaseSubmitting')
-                            : t('hud.ai.forceEndPhaseConfirm')}
-                    </button>
+                    {canForceEndAiPhase && (
+                        <div className="space-y-3 rounded-md border border-amber-500/20 bg-amber-500/5 p-3">
+                            <p className="text-xs font-bold text-amber-300">
+                                {t('hud.ai.forceEndPhase')}
+                            </p>
+                            <p className="text-xs text-white/70">
+                                {t('hud.ai.forceEndPhaseHint')}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handleForceEndAiPhaseClick(closePanel);
+                                }}
+                                disabled={isForceEndingAiPhase}
+                                className={`w-full rounded-md border px-3 py-2 text-xs font-bold transition-colors ${
+                                    isForceEndingAiPhase
+                                        ? 'cursor-wait border-amber-500/25 bg-amber-500/10 text-amber-200/70'
+                                        : 'border-amber-500/40 bg-amber-500/15 text-amber-200 hover:bg-amber-500/25'
+                                }`}
+                                data-testid="hud-force-end-ai-phase"
+                            >
+                                {isForceEndingAiPhase
+                                    ? t('hud.ai.forceEndPhaseSubmitting')
+                                    : t('hud.ai.forceEndPhaseConfirm')}
+                            </button>
+                        </div>
+                    )}
+
+                    {canForceDismissPopup && (
+                        <div className="space-y-3 rounded-md border border-rose-500/20 bg-rose-500/5 p-3">
+                            <p className="text-xs font-bold text-rose-200">
+                                {t('hud.ai.forceDismissPopup')}
+                            </p>
+                            <p className="text-xs text-white/70">
+                                {t('hud.ai.forceDismissPopupHint')}
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    void handleForceDismissPopupClick(closePanel);
+                                }}
+                                disabled={isForceDismissingPopup}
+                                className={`w-full rounded-md border px-3 py-2 text-xs font-bold transition-colors ${
+                                    isForceDismissingPopup
+                                        ? 'cursor-wait border-rose-500/25 bg-rose-500/10 text-rose-100/70'
+                                        : 'border-rose-500/40 bg-rose-500/15 text-rose-100 hover:bg-rose-500/25'
+                                }`}
+                                data-testid="hud-force-dismiss-popup"
+                            >
+                                {isForceDismissingPopup
+                                    ? t('hud.ai.forceDismissPopupSubmitting')
+                                    : t('hud.ai.forceDismissPopupConfirm')}
+                            </button>
+                        </div>
+                    )}
                 </div>
             ),
         });
     }
 
-    // 5.6 强制去弹窗（用于前台阻塞弹层/特写卡死）
-    if (canForceDismissPopup) {
-        items.push({
-            id: 'force-dismiss-popup',
-            icon: <AlertTriangle size={20} />,
-            label: t('hud.ai.forceDismissPopup'),
-            color: 'text-rose-300',
-            content: ({ closePanel }) => (
-                <div className="space-y-3">
-                    <p className="text-xs text-white/70">
-                        {t('hud.ai.forceDismissPopupHint')}
-                    </p>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            void handleForceDismissPopupClick(closePanel);
-                        }}
-                        disabled={isForceDismissingPopup}
-                        className={`w-full rounded-md border px-3 py-2 text-xs font-bold transition-colors ${
-                            isForceDismissingPopup
-                                ? 'cursor-wait border-rose-500/25 bg-rose-500/10 text-rose-100/70'
-                                : 'border-rose-500/40 bg-rose-500/15 text-rose-100 hover:bg-rose-500/25'
-                        }`}
-                        data-testid="hud-force-dismiss-popup"
-                    >
-                        {isForceDismissingPopup
-                            ? t('hud.ai.forceDismissPopupSubmitting')
-                            : t('hud.ai.forceDismissPopupConfirm')}
-                    </button>
-                </div>
-            ),
-        });
-    }
-
-    // 5.7 换位（位于操作日志与强制结束 AI 之间）
+    // 5.6 换位（位于操作日志与强制操作之间）
     if (showSeatSwap && (seatSwapContent || onSeatSwapClick)) {
         items.push({
             id: 'seat-swap',

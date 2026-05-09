@@ -42,6 +42,27 @@ export interface PendingBonusOverlayVisibilityArgs {
     viewerPlayerId: PlayerId | string;
 }
 
+interface BonusDiceInteractionSnapshot {
+    kind?: string;
+    playerId?: PlayerId | string;
+}
+
+interface BonusDiceInteractionStateSnapshot {
+    current?: BonusDiceInteractionSnapshot;
+    queue?: BonusDiceInteractionSnapshot[];
+}
+
+interface BonusDiceResponseWindowStateSnapshot {
+    current?: unknown;
+}
+
+export interface InteractivePendingBonusOverlayArgs {
+    settlement?: PendingBonusDiceSettlement;
+    viewerPlayerId: PlayerId | string;
+    interactionState?: BonusDiceInteractionStateSnapshot;
+    responseWindowState?: BonusDiceResponseWindowStateSnapshot;
+}
+
 export function shouldSuppressPendingDisplayOnlyBonusOverlay({
     settlement,
     cardSpotlightQueue,
@@ -67,4 +88,40 @@ export function shouldSuppressPendingDisplayOnlyBonusOverlay({
     }
 
     return hasMatchingSpotlightTimestamp(currentSpotlight, settlementTimestamp);
+}
+
+export function resolveInteractivePendingBonusDiceSettlement({
+    settlement,
+    viewerPlayerId,
+    interactionState,
+    responseWindowState,
+}: InteractivePendingBonusOverlayArgs): PendingBonusDiceSettlement | undefined {
+    if (!settlement || settlement.displayOnly) {
+        return undefined;
+    }
+
+    const viewerId = normalizePlayerId(viewerPlayerId);
+    const attackerId = normalizePlayerId(settlement.attackerId);
+    if (!viewerId || !attackerId || viewerId !== attackerId) {
+        return undefined;
+    }
+
+    const currentInteraction = interactionState?.current;
+    if (currentInteraction?.kind === 'dt:bonus-dice') {
+        return settlement;
+    }
+
+    if (currentInteraction) {
+        return undefined;
+    }
+
+    if ((interactionState?.queue?.length ?? 0) > 0) {
+        return undefined;
+    }
+
+    if (responseWindowState?.current) {
+        return undefined;
+    }
+
+    return settlement;
 }

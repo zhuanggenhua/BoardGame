@@ -5,12 +5,14 @@
  * 基于 MagnifyOverlay 通用壳 + SmashUp 卡牌数据。
  */
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { MagnifyOverlay } from '../../../components/common/overlays/MagnifyOverlay';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { getCardDef, getBaseDef, getBasePodVariantId, resolveCardName, resolveCardText } from '../data/cards';
 import { useSmashUpOverlay } from './SmashUpOverlayContext';
+
+export const SMASHUP_FORCE_DISMISS_EVENT = 'smashup:force-dismiss-popup';
 
 export interface CardMagnifyTarget {
     defId: string;
@@ -25,6 +27,18 @@ interface Props {
 export const CardMagnifyOverlay: React.FC<Props> = ({ target, onClose }) => {
     const { t } = useTranslation('game-smashup');
     const { selectedFactions } = useSmashUpOverlay();
+
+    useEffect(() => {
+        if (!target || typeof window === 'undefined') return;
+        const handleForceDismiss = () => {
+            onClose();
+        };
+        window.addEventListener(SMASHUP_FORCE_DISMISS_EVENT, handleForceDismiss);
+        return () => {
+            window.removeEventListener(SMASHUP_FORCE_DISMISS_EVENT, handleForceDismiss);
+        };
+    }, [onClose, target]);
+
     if (!target) return null;
 
     const baseDef = target.type === 'base' ? getBaseDef(target.defId) : undefined;

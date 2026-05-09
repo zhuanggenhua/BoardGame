@@ -208,6 +208,63 @@ describe('CardPreview i18n atlas path', () => {
         expect(html).toContain('https://old-cdn.example.com/i18n/zh-CN/smashup/cards/compressed/source-cache-fallback.webp');
     });
 
+    it('懒注册 atlas 命中同步磁盘缓存但未触发 onload 时，也应恢复显示', async () => {
+        const atlasId = 'test:card-preview:lazy-sync-cache-hit';
+        const atlasImage = 'smashup/cards/lazy-sync-cache-hit';
+        registerLazyCardAtlasSource(atlasId, {
+            image: atlasImage,
+            grid: { rows: 1, cols: 1 },
+        });
+
+        const primaryUrl = getCardAtlasCandidateUrls(atlasImage, 'zh-CN')[0];
+
+        class MockImage {
+            onload: (() => void) | null = null;
+            onerror: (() => void) | null = null;
+            naturalWidth = 0;
+            naturalHeight = 0;
+            complete = false;
+            currentSrc = '';
+            private _src = '';
+
+            get src() {
+                return this._src;
+            }
+
+            set src(value: string) {
+                this._src = value;
+                this.currentSrc = value;
+                if (value === primaryUrl) {
+                    this.complete = true;
+                    this.naturalWidth = 100;
+                    this.naturalHeight = 200;
+                }
+            }
+        }
+
+        vi.stubGlobal('Image', MockImage as unknown as typeof Image);
+
+        try {
+            const { container } = render(
+                <CardPreview previewRef={{ type: 'atlas', atlasId, index: 0 }} locale="zh-CN" />
+            );
+
+            await act(async () => {
+                await Promise.resolve();
+                await Promise.resolve();
+            });
+
+            await waitFor(() => {
+                const atlasNode = container.querySelector('div[style*="background-image"]');
+                expect(atlasNode).not.toBeNull();
+                expect(atlasNode?.getAttribute('style')).toContain(primaryUrl);
+                expect(atlasNode?.className).not.toContain('atlas-shimmer');
+            });
+        } finally {
+            vi.unstubAllGlobals();
+        }
+    });
+
     it('懒注册图集不应把 1x1 占位图当成有效 atlas', () => {
         const atlasId = 'test:card-preview:lazy-atlas-placeholder';
         registerLazyCardAtlasSource(atlasId, {

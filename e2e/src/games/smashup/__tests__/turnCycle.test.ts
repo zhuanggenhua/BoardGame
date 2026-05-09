@@ -83,6 +83,110 @@ describe('完整回合循环', () => {
         expect(p0.hand.length).toBe(7);
     });
 
+    it('线上反馈 69fd9c33：已用完随从和战术额度时仍可结束回合', () => {
+        const local = (uid: string, playedThisTurn = false) => makeMinion(
+            uid,
+            'innsmouth_the_locals_pod',
+            '0',
+            2,
+            { tempPowerModifier: 1, powerCounters: 0, playedThisTurn },
+        );
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        makeCard('c33', 'dino_survival_of_the_fittest_pod', 'action', '0'),
+                        makeCard('c32', 'dino_natural_selection_pod', 'action', '0'),
+                        makeCard('c39', 'dino_augmentation_pod', 'action', '0'),
+                        makeCard('c16', 'innsmouth_spreading_the_word_pod', 'action', '0'),
+                    ],
+                    deck: [
+                        makeCard('c30', 'dino_war_raptor_pod', 'minion', '0'),
+                        makeCard('c36', 'dino_howl_pod', 'action', '0'),
+                    ],
+                    discard: [makeCard('c19', 'innsmouth_the_deep_ones_pod', 'action', '0')],
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    actionsPlayed: 1,
+                    actionLimit: 1,
+                    factions: ['innsmouth_pod', 'dinosaurs_pod'],
+                    minionsPlayedPerBase: { 1: 2, 2: 1 },
+                    baseLimitedMinionQuota: { 1: 0 },
+                    sameNameMinionDefId: null,
+                } as any),
+                '1': makePlayer('1', {
+                    hand: [makeCard('c55', 'robot_microbot_guard', 'minion', '1')],
+                    deck: [makeCard('c70', 'wizard_neophyte', 'minion', '1')],
+                    discard: [makeCard('c72', 'wizard_mystic_studies', 'action', '1')],
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    actionsPlayed: 1,
+                    actionLimit: 2,
+                    factions: ['robots', 'wizards'],
+                }),
+            },
+            bases: [
+                makeBase('base_innsmouth_base', [
+                    makeMinion('c46', 'robot_hoverbot', '1', 3),
+                    makeMinion('c41', 'robot_nukebot', '1', 5),
+                    makeMinion('c62', 'wizard_chronomage', '1', 3, { playedThisTurn: true }),
+                ]),
+                makeBase({
+                    defId: 'base_the_factory',
+                    minions: [
+                        local('c6'),
+                        local('c1'),
+                        local('c4'),
+                        local('c10'),
+                        local('c8'),
+                        local('c9', true),
+                        makeMinion('c26', 'dino_armor_stego_pod', '0', 3, { playedThisTurn: true }),
+                    ],
+                    ongoingActions: [{ uid: 'c12', defId: 'innsmouth_sacred_circle_pod', ownerId: '0', talentUsed: true } as any],
+                }),
+                makeBase('base_tar_pits', [
+                    makeMinion('c56', 'robot_microbot_alpha', '1', 1),
+                    local('c3'),
+                    local('c2', true),
+                ]),
+            ],
+            titans: [{
+                uid: 'titan_0_innsmouth_dagon',
+                defId: 'innsmouth_dagon',
+                faction: 'innsmouth',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: true,
+                location: { zone: 'base', baseIndex: 1, enteredAt: 1778228065083 },
+            } as any],
+            enabledExpansions: ['titans'],
+            baseDeck: ['base_central_brain', 'base_ritual_site'],
+            turnNumber: 3,
+            turnPhase: 'playCards',
+            cardsPlayedThisTurn: 4,
+            turnDestroyedMinions: [],
+        } as any);
+
+        const state = makeMatchState(core);
+        expect(state.sys.interaction.current).toBeUndefined();
+
+        const result = runCommand(state, { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined } as any);
+
+        expect(result.success, result.error).toBe(true);
+        expect(result.finalState.sys.phase).toBe('playCards');
+        expect(result.finalState.core.currentPlayerIndex).toBe(1);
+        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual([
+            'c33',
+            'c32',
+            'c39',
+            'c16',
+            'c30',
+            'c36',
+        ]);
+    });
+
     it('draw phase reshuffles after drawing the last card in deck', () => {
         const runner = createRunner();
         const draftResult = runner.run({

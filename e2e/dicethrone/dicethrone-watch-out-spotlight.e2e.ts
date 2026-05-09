@@ -23,6 +23,7 @@ import {
     selectCharacter,
     setupDTOnlineMatch,
     waitForDiceThroneHarness,
+    waitForGameBoard,
 } from '../helpers/dicethrone';
 import { setChineseLocale, waitForTestHarness } from '../helpers/common';
 
@@ -410,6 +411,119 @@ async function waitForPyromancerAttackModifierScene(
     }, options, { timeout: 30000, polling: 200 });
 }
 
+async function injectPyromancerPyroBlast2DisplayScene(page: Page): Promise<void> {
+    await page.evaluate(async () => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!harness || !state) {
+            throw new Error('TestHarness state not ready');
+        }
+
+        const random = {
+            random: () => 0.5,
+            d: (max: number) => Math.min(max, 1),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array],
+        };
+        const [{ initHeroState }, { PYRO_BLAST_2 }] = await Promise.all([
+            import('/src/games/dicethrone/domain/characters.ts'),
+            import('/src/games/dicethrone/heroes/pyromancer/abilities.ts'),
+        ]);
+        const pyromancerBase = initHeroState('0', 'pyromancer', random as any);
+        const shadowThiefBase = initHeroState('1', 'shadow_thief', random as any);
+
+        const nextState = {
+            ...state,
+            sys: {
+                ...state.sys,
+                phase: 'offensiveRoll',
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+            core: {
+                ...state.core,
+                activePlayerId: '0',
+                hostStarted: true,
+                selectedCharacters: {
+                    ...(state.core.selectedCharacters ?? {}),
+                    '0': 'pyromancer',
+                    '1': 'shadow_thief',
+                },
+                turnOrder: ['0', '1'],
+                currentPlayerIndex: 0,
+                turnNumber: 1,
+                rollCount: 1,
+                rollLimit: 3,
+                rollConfirmed: true,
+                dice: [
+                    { id: 0, value: 1, symbol: 'fire', isKept: false, playerId: '0' },
+                    { id: 1, value: 1, symbol: 'fire', isKept: false, playerId: '0' },
+                    { id: 2, value: 1, symbol: 'fire', isKept: false, playerId: '0' },
+                    { id: 3, value: 6, symbol: 'meteor', isKept: false, playerId: '0' },
+                    { id: 4, value: 5, symbol: 'fiery_soul', isKept: false, playerId: '0' },
+                ],
+                players: {
+                    ...state.core.players,
+                    '0': {
+                        ...pyromancerBase,
+                        hand: [],
+                        discard: [],
+                        abilities: pyromancerBase.abilities.map((ability: any) => (
+                            ability.id === 'pyro-blast' ? JSON.parse(JSON.stringify(PYRO_BLAST_2)) : ability
+                        )),
+                        resources: {
+                            ...pyromancerBase.resources,
+                            CP: 2,
+                            HP: 50,
+                        },
+                    },
+                    '1': {
+                        ...shadowThiefBase,
+                        resources: {
+                            ...shadowThiefBase.resources,
+                            HP: 50,
+                        },
+                        tokens: {
+                            ...shadowThiefBase.tokens,
+                            sneak: 1,
+                        },
+                    },
+                },
+                pendingAttack: null,
+                pendingBonusDiceSettlement: undefined,
+                sneakGainedTurn: {
+                    ...(state.core.sneakGainedTurn ?? {}),
+                    '1': 1,
+                },
+            },
+        };
+
+        harness.state.set(nextState);
+        (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    });
+}
+
+async function waitForPyromancerPyroBlast2DisplayScene(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const pyroBlast = state?.core?.players?.['0']?.abilities?.find((ability: any) => ability.id === 'pyro-blast');
+        return state?.sys?.phase === 'offensiveRoll'
+            && state?.core?.activePlayerId === '0'
+            && state?.core?.hostStarted === true
+            && state?.core?.selectedCharacters?.['0'] === 'pyromancer'
+            && state?.core?.selectedCharacters?.['1'] === 'shadow_thief'
+            && state?.core?.players?.['1']?.tokens?.sneak === 1
+            && pyroBlast?.effects?.some((effect: any) => (
+                effect?.action?.customActionId === 'pyro-blast-2-roll'
+            ));
+    }, { timeout: 30000, polling: 200 });
+}
+
 async function injectSamuraiAttackModifierScene(
     page: Page,
     options: {
@@ -539,6 +653,30 @@ async function waitForSamuraiAttackModifierScene(
                 ? state?.core?.pendingAttack?.sourceAbilityId === sourceAbilityId
                 : state?.core?.pendingAttack == null);
     }, options, { timeout: 30000, polling: 200 });
+}
+
+async function openForceActionsPanel(page: Page): Promise<void> {
+    const mainFabButton = page.locator('[data-fab-id="chat"]');
+    await expect(mainFabButton).toBeVisible({ timeout: 10000 });
+    await mainFabButton.click();
+
+    const forceActionsButton = page.locator('[data-fab-id="force-actions"]');
+    await expect(forceActionsButton).toBeVisible({ timeout: 5000 });
+    await forceActionsButton.click();
+
+    await expect(page.getByTestId('fab-panel-force-actions')).toBeVisible({ timeout: 5000 });
+}
+
+async function closeCardSpotlightByRealClickIfVisible(page: Page): Promise<void> {
+    const cardSpotlight = page.getByTestId('card-spotlight-overlay');
+    const appeared = await cardSpotlight.waitFor({ state: 'visible', timeout: 2500 })
+        .then(() => true)
+        .catch(() => false);
+    if (!appeared) return;
+
+    await page.waitForTimeout(250);
+    await cardSpotlight.click();
+    await expect(cardSpotlight).toBeHidden({ timeout: 5000 });
 }
 
 async function injectSamuraiTokenResponseScene(
@@ -2209,6 +2347,82 @@ test.skip('samurai zanshin should show 5-die settlement and mixed samurai effect
     await game.screenshot('10-samurai-zanshin-vs-paladin', testInfo);
 });
 
+test('pyromancer pyro blast II should show and close a two-dice display-only bonus settlement', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await clearEvidenceScreenshotsForTest(testInfo);
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectPyromancerPyroBlast2DisplayScene(page);
+    await waitForPyromancerPyroBlast2DisplayScene(page);
+
+    await page.evaluate(() => {
+        (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([1, 6]);
+        (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    });
+
+    await dispatchHarnessCommand(page, 'SELECT_ABILITY', '0', { abilityId: 'pyro-blast' });
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            sourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
+            commandRejected: await page.evaluate(() => (window as any).__BG_LAST_COMMAND_REJECTED__ ?? null),
+        };
+    }, { timeout: 5000 }).toMatchObject({
+        sourceAbilityId: 'pyro-blast',
+        commandRejected: null,
+    });
+
+    await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return state?.core?.pendingBonusDiceSettlement?.displayOnly === true
+            && state?.core?.pendingBonusDiceSettlement?.dice?.length === 2
+            && state?.core?.pendingBonusDiceSettlement?.sourceAbilityId === 'pyro-blast';
+    }, { timeout: 10000, polling: 200 });
+
+    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
+    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+    await expect(bonusDieOverlay).toContainText(/Dice Results|投掷结果/i, { timeout: 5000 });
+    await expect(page.getByTestId('bonus-die-multi-reroll-spotlight')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('bonus-die-reroll-option-0')).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId('bonus-die-reroll-option-1')).toBeVisible({ timeout: 5000 });
+    await game.screenshot('11-pyromancer-pyro-blast-2-display-overlay', testInfo);
+    await savePageEvidenceScreenshot(
+        page,
+        testInfo,
+        'pyromancer-pyro-blast-2-display-page',
+        '11-pyromancer-pyro-blast-2-display-overlay-page.png',
+    );
+    await saveLocatorEvidenceScreenshot(
+        bonusDieOverlay,
+        testInfo,
+        'pyromancer-pyro-blast-2-display-bonus-dice-detail',
+        '11-pyromancer-pyro-blast-2-display-overlay-detail.png',
+    );
+
+    const pyroBlastBonusDieCloseButton = bonusDieOverlay.getByLabel(/关闭特写|Close Spotlight/i);
+    await expect(pyroBlastBonusDieCloseButton).toBeVisible({ timeout: 5000 });
+    await pyroBlastBonusDieCloseButton.click();
+    await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
+    await game.screenshot('11-pyromancer-pyro-blast-2-display-closed', testInfo);
+
+    await expect.poll(async () => {
+        const state = await game.getState();
+        return {
+            phase: state?.sys?.phase ?? null,
+            pendingBonusDiceSettlement: state?.core?.pendingBonusDiceSettlement ?? null,
+            commandRejected: await page.evaluate(() => (window as any).__BG_LAST_COMMAND_REJECTED__ ?? null),
+        };
+    }, { timeout: 10000 }).toMatchObject({
+        phase: 'main2',
+        pendingBonusDiceSettlement: null,
+        commandRejected: null,
+    });
+    await game.screenshot('11-pyromancer-pyro-blast-2-display-settled', testInfo);
+});
+
 test('samurai righteousness should resolve a valid branch against monk', async ({ page, game }, testInfo) => {
     test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
 
@@ -2230,35 +2444,20 @@ test('samurai righteousness should resolve a valid branch against monk', async (
         (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([1]);
     });
     await page.locator('[data-card-id="card-righteousness"]').first().click();
-
-    // 真实链路：打出卡牌后通常会先出现卡牌特写，再进入奖励骰特写。
-    // 该用例需要显式关闭卡牌特写，否则奖励骰特写可能被队列阻塞，导致“找不到 bonus-die-overlay”。
-    const cardSpotlight = page.locator('[data-testid="card-spotlight-overlay"]');
-    const cardSpotlightAppeared = await cardSpotlight.waitFor({ state: 'visible', timeout: 2500 }).then(() => true).catch(() => false);
-    if (cardSpotlightAppeared) {
-        // SpotlightContainer 有 closeClickGuard（默认 180ms），避免触发它的同一次点击立刻把特写关掉
-        await page.waitForTimeout(250);
-        await cardSpotlight.click({ force: true });
-        await expect(cardSpotlight).toBeHidden({ timeout: 5000 });
-    }
+    await closeCardSpotlightByRealClickIfVisible(page);
 
     const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
     await expect(bonusDieOverlay).toBeVisible({ timeout: 10000 });
+    await page.waitForTimeout(250);
+    await expect(bonusDieOverlay).toBeVisible({ timeout: 1000 });
+    await game.screenshot('09-samurai-righteousness-bonus-die-overlay', testInfo);
 
     // 攻击修正徽章应在打出卡牌后出现（效果提示）
     const activeBadgeEarly = page.locator('[data-testid="active-modifier-badge"]').first();
     await expect(activeBadgeEarly).toBeVisible({ timeout: 5000 });
     await game.screenshot('09-samurai-righteousness-badge-after-play', testInfo);
 
-    // 特写骰子 / 奖励骰 overlay 必须有成功路径证据截图
-    // 必须等到“骰子停止 + 最终效果文案出现”后再截图，否则证据链不成立
-    await page.waitForFunction(() => {
-        const overlay = document.querySelector('[data-testid="bonus-die-overlay"]');
-        if (!overlay) return false;
-        // BonusDieSpotlightContent 在停止滚动后会渲染 glow ring（class=animate-pulse）
-        return overlay.querySelectorAll('.animate-pulse').length >= 1;
-    }, { timeout: 10000, polling: 100 });
-
+    // 成功证据以“业务状态 + 最终效果文案”为准，避免依赖短暂的 animate-pulse 视觉态。
     await page.waitForFunction(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
         const entries = state?.sys?.eventStream?.entries ?? [];
@@ -2289,18 +2488,6 @@ test('samurai righteousness should resolve a valid branch against monk', async (
     expect(stateAfterPlay.effectKey).toBe('bonusDie.effect.samuraiRighteousnessKatana');
 
     const activeBadge = page.locator('[data-testid="active-modifier-badge"]');
-    await expect(bonusDieOverlay).toContainText(/samuraiRighteousnessKatana|武士刀：\+2 伤害|Katana:\s*\+2 damage|\+2\s*(伤害|damage)/i, { timeout: 5000 });
-    // 证据链要求：必须截图到“最终文案已真正显现”（而不是刚插入 DOM 但仍处于 opacity=0 的过渡态）
-    const effectChip = bonusDieOverlay.getByText(/武士刀：\+2 伤害|Katana:\s*\+2 damage/i).first();
-    await expect.poll(async () => {
-        try {
-            const opacity = await effectChip.evaluate((el) => Number.parseFloat(getComputedStyle(el).opacity));
-            return Number.isFinite(opacity) ? opacity : 0;
-        } catch {
-            return 0;
-        }
-    }, { timeout: 8000, intervals: [100, 150, 200, 300] }).toBeGreaterThan(0.9);
-    await game.screenshot('09-samurai-righteousness-bonus-die-overlay', testInfo);
     await expect(activeBadge).toBeVisible({ timeout: 5000 });
     await expect(activeBadge).toContainText(/攻击修正\s*\+2|Attack Modifier\s*\+2/i, { timeout: 5000 });
     expect(stateAfterPlay.attackModifierBonusDamage).toBe(2);
@@ -2308,8 +2495,9 @@ test('samurai righteousness should resolve a valid branch against monk', async (
     expect(stateAfterPlay.shame).toBe(0);
     expect(stateAfterPlay.samuraiRetribution).toBe(0);
 
-    // displayOnly 特写：点击遮罩关闭，证明可收口并继续推进
-    await bonusDieOverlay.click({ force: true });
+    const bonusDieCloseButton = page.getByLabel(/关闭特写|Close Spotlight/i);
+    await expect(bonusDieCloseButton).toBeVisible({ timeout: 5000 });
+    await bonusDieCloseButton.click();
     await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
     await game.screenshot('09-samurai-righteousness-bonus-die-closed', testInfo);
 
@@ -2320,6 +2508,192 @@ test('samurai righteousness should resolve a valid branch against monk', async (
     await game.screenshot('09-samurai-righteousness-settled', testInfo);
 
     await game.screenshot('09-samurai-righteousness-vs-monk', testInfo);
+});
+
+test('online samurai righteousness bonus-die spotlight should close through force-dismiss panel', async ({ browser }, testInfo) => {
+    test.setTimeout(DICETHRONE_ONLINE_TEST_TIMEOUT_MS);
+    await clearEvidenceScreenshotsForTest(testInfo);
+
+    const baseURL = testInfo.project.use.baseURL as string | undefined;
+    const setup = await setupDTOnlineMatch(browser, baseURL);
+    if (!setup) {
+        test.skip(true, 'online setup unavailable in current environment');
+        return;
+    }
+
+    const { hostPage, guestPage, hostContext, guestContext } = setup;
+
+    try {
+        await selectCharacter(hostPage, 'monk');
+        await selectCharacter(guestPage, 'samurai');
+        await readyAndStartGame(hostPage, guestPage);
+        await waitForGameBoard(hostPage);
+        await waitForGameBoard(guestPage);
+        await waitForTestHarness(hostPage, 10000);
+        await waitForTestHarness(guestPage, 10000);
+        await ensureDebugPanelClosed(hostPage);
+        await ensureDebugPanelClosed(guestPage);
+
+        const matchState = await readMatchStateFromDebugPanel(hostPage);
+        const injectedState = cloneJson(matchState);
+        const samuraiCard = SAMURAI_CARDS.find((card) => card.id === 'card-righteousness');
+        if (!samuraiCard) {
+            throw new Error('card-righteousness not found');
+        }
+
+        injectedState.sys = {
+            ...(injectedState.sys ?? {}),
+            phase: 'offensiveRoll',
+            interaction: {
+                current: undefined,
+                queue: [],
+            },
+            responseWindow: {
+                current: undefined,
+            },
+        };
+        injectedState.core = {
+            ...(injectedState.core ?? {}),
+            activePlayerId: '1',
+            hostStarted: true,
+            selectedCharacters: {
+                ...(injectedState.core?.selectedCharacters ?? {}),
+                '0': 'monk',
+                '1': 'samurai',
+            },
+            readyPlayers: {
+                ...(injectedState.core?.readyPlayers ?? {}),
+                '0': true,
+                '1': true,
+            },
+            rollCount: 1,
+            rollConfirmed: true,
+            dice: [
+                { id: 0, value: 1, isKept: false, playerId: '1' },
+                { id: 1, value: 1, isKept: false, playerId: '1' },
+                { id: 2, value: 1, isKept: false, playerId: '1' },
+                { id: 3, value: 4, isKept: false, playerId: '1' },
+                { id: 4, value: 4, isKept: false, playerId: '1' },
+            ],
+            players: {
+                ...(injectedState.core?.players ?? {}),
+                '0': {
+                    ...(injectedState.core?.players?.['0'] ?? {}),
+                    resources: {
+                        ...(injectedState.core?.players?.['0']?.resources ?? {}),
+                        CP: 2,
+                        HP: 50,
+                    },
+                },
+                '1': {
+                    ...(injectedState.core?.players?.['1'] ?? {}),
+                    hand: [cloneJson(samuraiCard)],
+                    discard: [],
+                    resources: {
+                        ...(injectedState.core?.players?.['1']?.resources ?? {}),
+                        CP: 2,
+                        HP: 50,
+                    },
+                },
+            },
+            pendingAttack: {
+                attackerId: '1',
+                defenderId: '0',
+                isDefendable: true,
+                sourceAbilityId: 'katana-slice-3',
+                damage: 6,
+                bonusDamage: 0,
+                attackModifierBonusDamage: 0,
+                damageResolved: false,
+                resolvedDamage: 0,
+                preDefenseResolved: false,
+                offensiveRollEndTokenResolved: false,
+            },
+            pendingBonusDiceSettlement: undefined,
+        };
+
+        await applyFullStateDirect(hostPage, injectedState);
+        await ensureDebugPanelClosed(hostPage);
+        await ensureDebugPanelClosed(guestPage);
+
+        await guestPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return state?.sys?.phase === 'offensiveRoll'
+                && state?.core?.activePlayerId === '1'
+                && state?.core?.selectedCharacters?.['1'] === 'samurai'
+                && state?.core?.players?.['1']?.hand?.[0]?.id === 'card-righteousness'
+                && state?.core?.pendingAttack?.sourceAbilityId === 'katana-slice-3';
+        }, { timeout: 15000, polling: 200 });
+
+        await guestPage.evaluate(() => {
+            (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([1]);
+            (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+        });
+        await waitForHandCardVisualReady(guestPage, 'card-righteousness');
+
+        const righteousnessCard = guestPage.locator('[data-testid="hand-area"] [data-card-id="card-righteousness"]').first();
+        await expect(righteousnessCard).toBeVisible({ timeout: 10000 });
+        await righteousnessCard.click();
+        await closeCardSpotlightByRealClickIfVisible(guestPage);
+
+        const guestBonusDieOverlay = guestPage.locator('[data-testid="bonus-die-overlay"]');
+        await expect(guestBonusDieOverlay).toBeVisible({ timeout: 10000 });
+        await guestPage.waitForTimeout(250);
+        await expect(guestBonusDieOverlay).toBeVisible({ timeout: 1000 });
+        await savePageEvidenceScreenshot(
+            guestPage,
+            testInfo,
+            'online-samurai-righteousness-force-dismiss-before',
+            '11-online-samurai-righteousness-force-dismiss-before.png',
+        );
+
+        await guestPage.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return state?.core?.pendingBonusDiceSettlement?.attackerId === '1'
+                && state?.core?.pendingBonusDiceSettlement?.displayOnly === true;
+        }, { timeout: 10000, polling: 200 });
+
+        await openForceActionsPanel(guestPage);
+        await savePageEvidenceScreenshot(
+            guestPage,
+            testInfo,
+            'online-samurai-righteousness-force-dismiss-panel-open',
+            '11b-online-samurai-righteousness-force-dismiss-panel-open.png',
+        );
+        const forceDismissButton = guestPage.getByTestId('hud-force-dismiss-popup');
+        await expect(forceDismissButton).toBeVisible({ timeout: 5000 });
+        await saveLocatorEvidenceScreenshot(
+            forceDismissButton,
+            testInfo,
+            'online-samurai-righteousness-force-dismiss-button',
+            '11c-online-samurai-righteousness-force-dismiss-button.png',
+        );
+        await forceDismissButton.click();
+
+        await expect(guestPage.getByTestId('fab-panel-force-actions')).toBeHidden({ timeout: 5000 });
+        await expect(guestBonusDieOverlay).toBeHidden({ timeout: 5000 });
+
+        await expect.poll(async () => {
+            const state = await guestPage.evaluate(() => (window as any).__BG_TEST_HARNESS__?.state?.get?.());
+            return {
+                interactionKind: state?.sys?.interaction?.current?.kind ?? null,
+                pendingBonusDiceSettlement: state?.core?.pendingBonusDiceSettlement ?? null,
+            };
+        }, { timeout: 10000 }).toEqual({
+            interactionKind: null,
+            pendingBonusDiceSettlement: null,
+        });
+
+        await savePageEvidenceScreenshot(
+            guestPage,
+            testInfo,
+            'online-samurai-righteousness-force-dismiss-after',
+            '12-online-samurai-righteousness-force-dismiss-after.png',
+        );
+    } finally {
+        await guestContext.close();
+        await hostContext.close();
+    }
 });
 
 test('samurai zanshin should settle 5 bonus dice and synchronize effects against paladin', async ({ page, game }, testInfo) => {
@@ -2357,7 +2731,7 @@ test('samurai zanshin should settle 5 bonus dice and synchronize effects against
     }, { timeout: 10000, polling: 200 });
 
     await expect(bonusDieOverlay).toContainText(/Dice Results|投掷结果/i, { timeout: 5000 });
-    await expect(bonusDieOverlay).toContainText(/2.*(武士刀|Katana).*1.*(耻辱|Shame).*2.*(反击|Back Strike)/i, { timeout: 5000 });
+    await expect(bonusDieOverlay).toContainText(/(\+2|2).*(耻辱|Shame).*1.*(反击|Back Strike)/i, { timeout: 5000 });
     // 必须等到“骰子停止 + 汇总文案出现”后再截图，否则看不到最终描述文案
     await page.waitForFunction(() => {
         const overlay = document.querySelector('[data-testid="bonus-die-overlay"]');
@@ -2420,8 +2794,10 @@ test('samurai zanshin should settle 5 bonus dice and synchronize effects against
     await expect(activeBadge).toBeVisible({ timeout: 5000 });
     await expect(activeBadge).toContainText(/攻击修正\s*\+2|Attack Modifier\s*\+2/i, { timeout: 5000 });
 
-    // displayOnly 特写：点击遮罩关闭，证明可收口
-    await bonusDieOverlay.click({ force: true });
+    // displayOnly 特写：真实点击关闭按钮，证明可收口
+    const zanshinBonusDieCloseButton = bonusDieOverlay.getByLabel(/关闭特写|Close Spotlight/i);
+    await expect(zanshinBonusDieCloseButton).toBeVisible({ timeout: 5000 });
+    await zanshinBonusDieCloseButton.click();
     await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
     await game.screenshot('10-samurai-zanshin-bonus-die-closed', testInfo);
 

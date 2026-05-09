@@ -68,6 +68,7 @@ import { GameCursorProvider } from '../core/cursor';
 import { useGameNamespaceReady } from '../hooks/useGameNamespaceReady';
 import { useGameImplementationReady } from '../hooks/useGameImplementationReady';
 import { SmashUpOverlayProvider } from '../games/smashup/ui/SmashUpOverlayContext';
+import { SMASHUP_FORCE_DISMISS_EVENT } from '../games/smashup/ui/CardMagnifyOverlay';
 import { notifyExitMatchErrorToast } from '../components/lobby/roomActions';
 import { resolveGameDisplayName } from '../components/lobby/gameDetailsContent';
 import { resolveOnlineHudPresence } from './matchHudPresence';
@@ -1842,14 +1843,24 @@ const OnlineGameHudBridge = ({
     const canForceDismissPopup = true;
     const forceDismissPopup = useCallback(async (): Promise<boolean> => {
         if (gameId === 'dicethrone') {
-            const currentInteractionKind = (state as MatchState<unknown> | null | undefined)?.sys?.interaction?.current?.kind;
-            if (currentInteractionKind === 'dt:bonus-dice') {
+            const pendingBonusDiceSettlement = (state as MatchState<{
+                pendingBonusDiceSettlement?: { attackerId?: string | number };
+            }> | null | undefined)?.core?.pendingBonusDiceSettlement;
+            if (
+                pendingBonusDiceSettlement
+                && myPlayerId != null
+                && String(pendingBonusDiceSettlement.attackerId) === String(myPlayerId)
+            ) {
                 dispatch('SKIP_BONUS_DICE_REROLL', {});
                 return true;
             }
         }
+        if (gameId === 'smashup' && typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent(SMASHUP_FORCE_DISMISS_EVENT));
+            return true;
+        }
         return false;
-    }, [dispatch, gameId, state]);
+    }, [dispatch, gameId, myPlayerId, state]);
     const normalizedMyPlayerId = myPlayerId != null ? String(myPlayerId) : null;
     const seatNameByPlayerId = useMemo(() => {
         const map = new Map<string, string>();

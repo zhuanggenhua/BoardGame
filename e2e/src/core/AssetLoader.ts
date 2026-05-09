@@ -796,35 +796,6 @@ function rememberPersistentImageReadyHint(src: string, locale?: string): void {
     persistImageReadyHints();
 }
 
-function hasPersistentImageReadyHint(src: string, locale?: string): boolean {
-    const keys = getPersistentImageReadyHintKeys(src, locale);
-    if (keys.length === 0) {
-        return false;
-    }
-
-    const hints = loadPersistentImageReadyHints();
-    const now = Date.now();
-    let hit = false;
-
-    keys.forEach((key) => {
-        const timestamp = hints.get(key);
-        if (timestamp == null) {
-            return;
-        }
-        if (now - timestamp > IMAGE_READY_HINT_TTL_MS) {
-            hints.delete(key);
-            return;
-        }
-        hit = true;
-    });
-
-    if (!hit) {
-        persistImageReadyHints();
-    }
-
-    return hit;
-}
-
 function getSynchronousImageProbeUrls(src: string, locale?: string): string[] {
     const urls = new Set<string>();
     const exactKey = assetsPath(src);
@@ -859,11 +830,7 @@ function hasImageReadyEvidence(src: string, locale?: string): boolean {
         return true;
     }
 
-    if (probeSynchronousImageReady(src, locale)) {
-        return true;
-    }
-
-    return hasPersistentImageReadyHint(src, locale);
+    return probeSynchronousImageReady(src, locale);
 }
 
 function getPreloadedImageCacheKeys(src: string, locale?: string): string[] {
@@ -894,10 +861,13 @@ function getPreloadedImageCacheKeys(src: string, locale?: string): string[] {
 }
 
 function cacheLoadedImage(src: string, imgElement: HTMLImageElement, locale?: string): void {
-    for (const key of getPreloadedImageCacheKeys(src, locale)) {
+    const keys = getPreloadedImageCacheKeys(src, locale);
+    for (const key of keys) {
         preloadedImages.set(key, imgElement);
     }
     rememberPersistentImageReadyHint(src, locale);
+    _emitImageReady(src);
+    keys.forEach((key) => _emitImageReady(key));
 }
 
 export function markImageLoaded(src: string, locale?: string, imgElement?: HTMLImageElement): void {

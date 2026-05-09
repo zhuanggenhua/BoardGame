@@ -173,6 +173,7 @@ export function registerExpansionBaseAbilities(): void {
         effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState'],
+            opensInteraction: true,
         },
     });
 
@@ -215,6 +216,7 @@ export function registerExpansionBaseAbilities(): void {
         effectContract: {
             reads: ['discardState'],
             writes: ['discardState', 'baseState'],
+            opensInteraction: true,
         },
     });
 
@@ -241,7 +243,9 @@ export function registerExpansionBaseAbilities(): void {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
         effectContract: {
+            reads: ['playLimits'],
             writes: ['playLimits', 'handState', 'deckState'],
+            opensInteraction: true,
         },
     });
 
@@ -295,6 +299,7 @@ export function registerExpansionBaseAbilities(): void {
         effectContract: {
             reads: ['handState', 'minionBoardState'],
             writes: ['handState', 'minionBoardState'],
+            opensInteraction: true,
         },
     });
 
@@ -338,7 +343,14 @@ export function registerExpansionBaseAbilities(): void {
             { sourceId: 'base_innsmouth_base_choose_player', targetType: 'player', autoCancelOption: true },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
-    }, { mandatory: false });
+    }, {
+        mandatory: false,
+        effectContract: {
+            reads: ['minionBoardState', 'baseState', 'discardState'],
+            writes: ['discardState', 'deckState'],
+            opensInteraction: true,
+        },
+    });
 
     // ── 密斯卡托尼克大学基地（Miskatonic University Base）────────
     // "每回合一次，在你打出一个随从到这里后，你可以抓两张疯狂卡，或者从手牌弃置一张疯狂卡来额外打出一张行动。"
@@ -386,8 +398,9 @@ export function registerExpansionBaseAbilities(): void {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
         effectContract: {
-            reads: ['handState', 'madnessDeckState'],
-            writes: ['handState', 'madnessDeckState', 'playLimits'],
+            reads: ['playLimits', 'handState', 'madnessDeckState'],
+            writes: ['handState', 'discardState', 'madnessDeckState', 'playLimits'],
+            opensInteraction: true,
         },
     });
 
@@ -463,7 +476,14 @@ export function registerExpansionBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } },
             }),
         };
-    }, { mandatory: false });
+    }, {
+        mandatory: false,
+        effectContract: {
+            reads: ['deckState'],
+            writes: ['deckState', 'minionBoardState'],
+            opensInteraction: true,
+        },
+    });
 
     // ── 神秘花园（Secret Garden）──────────────────────────────
     // "On your turn" 语义统一在进入 playCards 时发放额度，
@@ -503,6 +523,12 @@ export function registerExpansionBaseAbilities(): void {
             { sourceId: 'base_inventors_salon', targetType: 'generic' },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
+    }, {
+        effectContract: {
+            reads: ['discardState'],
+            writes: ['discardState', 'handState'],
+            opensInteraction: true,
+        },
     });
 
     // ============================================================================
@@ -551,7 +577,8 @@ export function registerExpansionBaseAbilities(): void {
     }, {
         effectContract: {
             reads: ['minionBoardState'],
-            writes: ['minionBoardState', 'handState', 'deckState'],
+            writes: ['minionBoardState', 'handState', 'deckState', 'discardState'],
+            opensInteraction: true,
         },
     });
 
@@ -563,6 +590,11 @@ export function registerExpansionBaseAbilities(): void {
         if (actionTargetType !== 'minion') return { events: [] };
 
         return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now) };
+    }, {
+        effectContract: {
+            reads: ['deckState'],
+            writes: ['handState', 'deckState'],
+        },
     });
 
     // ── 仙灵之环（Fairy Circle）────────────────────────────────
@@ -598,8 +630,9 @@ export function registerExpansionBaseAbilities(): void {
         };
     }, {
         effectContract: {
-            reads: ['titanBoardState'],
+            reads: ['playLimits', 'titanBoardState'],
             writes: ['playLimits', 'titanBoardState'],
+            opensInteraction: true,
         },
     });
 
@@ -658,6 +691,7 @@ export function registerExpansionBaseAbilities(): void {
         effectContract: {
             reads: ['minionBoardState'],
             writes: ['minionBoardState'],
+            opensInteraction: true,
         },
     });
 
@@ -835,7 +869,14 @@ export function registerExpansionBaseAbilities(): void {
         }
 
         return { events: [], matchState: ms };
-    }, { mandatory: false });
+    }, {
+        mandatory: false,
+        effectContract: {
+            reads: ['turnFlags', 'minionBoardState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
+    });
 
     // ── 牧场（The Pasture）──────────────────────────────────
     // "每回合玩家第一次移动一个随从到这里后，移动另一基地的一个随从到这。"
@@ -891,6 +932,12 @@ export function registerExpansionBaseAbilities(): void {
                 data: { ...interaction.data, continuationContext: { targetBaseIndex: ctx.baseIndex } },
             }),
         };
+    }, {
+        effectContract: {
+            reads: ['turnFlags', 'minionBoardState'],
+            writes: ['minionBoardState'],
+            opensInteraction: true,
+        },
     });
 }
 

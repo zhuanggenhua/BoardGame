@@ -300,6 +300,10 @@ export function getBaseAbilityOptions(baseDefId: string, timing: BaseTriggerTimi
     return baseAbilityRegistry.get(baseDefId)?.get(timing)?.options;
 }
 
+export function getBaseAbilityExecutor(baseDefId: string, timing: BaseTriggerTiming): BaseAbilityExecutor | undefined {
+    return baseAbilityRegistry.get(baseDefId)?.get(timing)?.executor;
+}
+
 export function hasActiveBaseAbility(baseDefId: string): boolean {
     return activeBaseAbilityRegistry.has(baseDefId);
 }
@@ -388,6 +392,10 @@ export function getExtendedBaseAbilityOptions(baseDefId: string, timing: string)
     return extendedRegistry.get(baseDefId)?.get(timing)?.options;
 }
 
+export function getExtendedBaseAbilityExecutor(baseDefId: string, timing: string): BaseAbilityExecutor | undefined {
+    return extendedRegistry.get(baseDefId)?.get(timing)?.executor;
+}
+
 /**
  * 为基地能力注册表补充 POD 别名。
  *
@@ -471,7 +479,7 @@ export function registerBaseAbilities(): void {
         return { events };
     }, {
         effectContract: {
-            reads: ['minionBoardState'],
+            reads: ['minionBoardState', 'baseState', 'titanBoardState', 'turnFlags'],
             writes: ['vpState'],
         },
     });
@@ -618,7 +626,7 @@ export function registerBaseAbilities(): void {
         };
     }, {
         effectContract: {
-            reads: ['minionBoardState'],
+            reads: ['minionBoardState', 'baseState', 'titanBoardState', 'turnFlags'],
             writes: ['vpState'],
         },
     });
@@ -1534,7 +1542,7 @@ export function registerBaseAbilities(): void {
         };
     }, {
         effectContract: {
-            reads: ['minionBoardState', 'baseState', 'controllerState'],
+            reads: ['minionBoardState', 'baseState', 'controllerState', 'titanBoardState', 'turnFlags'],
             writes: ['minionBoardState'],
             opensInteraction: true,
         },
@@ -1595,7 +1603,7 @@ export function registerBaseAbilities(): void {
                     uid: m.uid,
                     defId: m.defId,
                     baseIndex: i,
-                    label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${getEffectivePower(ctx.state, m, i)})`,
+                    label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${(m.basePower ?? 0) + (m.powerCounters ?? 0) + (m.powerModifier ?? 0) + (m.tempPowerModifier ?? 0)})`,
                 });
             }
         }

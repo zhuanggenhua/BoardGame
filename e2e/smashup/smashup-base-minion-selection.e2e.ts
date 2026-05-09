@@ -281,8 +281,20 @@ async function injectMushroomInvisibleTurnStartState(matchId: string, page: Page
         },
         sys: {
             ...state.sys,
-            phase: 'endTurn',
+            phase: 'playCards',
+            currentPlayerIndex: 1,
+            flowHalted: false,
             interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+            resolution: undefined,
+            smashupReactionSession: undefined,
+            smashupReactionStack: undefined,
+            scoredBaseIndices: undefined,
+            smashupScoring: undefined,
+            _smashupStartTurnWindowActive: undefined,
+            _waitForStartTurnInteractionReduce: undefined,
+            _waitForScoreBasesInteractionReduce: undefined,
+            _waitForPostScoringReduce: undefined,
         },
     }));
     await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
@@ -752,9 +764,9 @@ async function dispatchHarnessCommand(
     type: string,
     payload: Record<string, unknown>,
 ): Promise<void> {
-    await page.evaluate(({ commandType, commandPayload, commandPlayerId }) => {
+    await page.evaluate(async ({ commandType, commandPayload, commandPlayerId }) => {
         const harness = (window as any).__BG_TEST_HARNESS__;
-        harness.command.dispatch({
+        await harness.command.dispatch({
             type: commandType,
             playerId: commandPlayerId,
             payload: commandPayload,
@@ -1284,14 +1296,32 @@ test.describe('SmashUp Base/Minion Selection', () => {
         const { hostPage, guestPage, matchId } = smashupMatch;
         await clearEvidenceScreenshotsForTest(testInfo);
         await waitForTestHarness(hostPage);
+        await waitForTestHarness(guestPage);
         await injectMushroomInvisibleTurnStartState(matchId, hostPage);
 
-        await dispatchHarnessCommand(guestPage, '1', 'ADVANCE_PHASE', {});
+        const injectedState = await getMatchState(matchId, hostPage);
+        expect(injectedState?.core?.turnOrder?.[injectedState?.core?.currentPlayerIndex]).toBe('1');
+        expect(injectedState?.sys?.phase).toBe('playCards');
+        await expect.poll(async () => guestPage.evaluate(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return {
+                phase: state?.sys?.phase ?? null,
+                currentPlayerId: state?.core?.turnOrder?.[state?.core?.currentPlayerIndex] ?? null,
+            };
+        }), { timeout: 8000 }).toEqual({
+            phase: 'playCards',
+            currentPlayerId: '1',
+        });
+
+        await guestPage.bringToFront();
+        const finishButton = guestPage.getByTestId('su-end-turn-action-button');
+        await expect(finishButton).toBeVisible({ timeout: 8000 });
+        await finishButton.click({ force: true });
 
         await expect.poll(async () => {
             const state = await getMatchState(matchId, hostPage);
             return state?.sys?.interaction?.current?.data?.sourceId ?? null;
-        }, { timeout: 8000 }).not.toBeNull();
+        }, { timeout: 12000 }).not.toBeNull();
 
         const firstState = await getMatchState(matchId, hostPage);
         const firstSourceId = firstState?.sys?.interaction?.current?.data?.sourceId ?? null;

@@ -114,6 +114,9 @@ const ATLAS_AUTO_RETRY_MAX_MS = 30000;
 const hasUsableAtlasImage = (img: HTMLImageElement | null | undefined): img is HTMLImageElement =>
     img != null && img.naturalWidth >= MIN_VALID_ATLAS_DIMENSION_PX && img.naturalHeight >= MIN_VALID_ATLAS_DIMENSION_PX;
 
+const hasSynchronousAtlasImageHit = (img: HTMLImageElement): boolean =>
+    img.complete === true && hasUsableAtlasImage(img);
+
 const normalizeComparableUrl = (url: string): string => {
     if (!url) return '';
     if (typeof window === 'undefined') return url;
@@ -240,6 +243,10 @@ function loadAtlasCandidateUrls({
 
         const timeoutId = window.setTimeout(() => {
             timerIds.delete(timeoutId);
+            if (hasSynchronousAtlasImageHit(img)) {
+                resolveSuccess(url, img);
+                return;
+            }
             advance();
         }, getAtlasCandidateTimeoutMs(url));
         timerIds.add(timeoutId);
@@ -267,6 +274,13 @@ function loadAtlasCandidateUrls({
         };
 
         img.src = url;
+        if (hasSynchronousAtlasImageHit(img)) {
+            if (timerIds.has(timeoutId)) {
+                window.clearTimeout(timeoutId);
+                timerIds.delete(timeoutId);
+            }
+            resolveSuccess(url, img);
+        }
     };
 
     tryLoad(0);

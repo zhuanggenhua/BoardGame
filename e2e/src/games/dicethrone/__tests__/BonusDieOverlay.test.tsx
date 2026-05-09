@@ -9,7 +9,10 @@ import { useCardSpotlight } from '../hooks/useCardSpotlight';
 import { BonusDieOverlay } from '../ui/BonusDieOverlay';
 import { BoardOverlays } from '../ui/BoardOverlays';
 import { SpotlightContainer } from '../ui/SpotlightContainer';
-import { shouldSuppressPendingDisplayOnlyBonusOverlay } from '../ui/bonusDiceOverlayVisibility';
+import {
+    resolveInteractivePendingBonusDiceSettlement,
+    shouldSuppressPendingDisplayOnlyBonusOverlay,
+} from '../ui/bonusDiceOverlayVisibility';
 import { shouldHighlightOpponentViewAbilities } from '../ui/abilityHighlightVisibility';
 import { resolveBonusDieText } from '../ui/bonusDieTranslation';
 import {
@@ -220,6 +223,52 @@ describe('BonusDieOverlay', () => {
         expect(html).toContain('bonusDie.closeSpotlight');
         expect(html).not.toContain('bonusDie.continue');
         expect(html).not.toContain('bonusDie.confirmDamage');
+    });
+
+    it('displayOnly 多骰特写点击骰子内容时应冒泡关闭容器', () => {
+        const onClose = vi.fn();
+        vi.useFakeTimers();
+
+        render(
+            <BonusDieOverlay
+                isVisible
+                onClose={onClose}
+                bonusDice={buildBonusDice()}
+                canReroll={false}
+                displayOnly
+                usePortal={false}
+            />
+        );
+
+        fireEvent.pointerDown(screen.getByTestId('bonus-die-reroll-option-0'));
+        fireEvent.click(screen.getByTestId('bonus-die-reroll-option-0'));
+        act(() => {
+            vi.advanceTimersByTime(350);
+        });
+        expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    it('displayOnly 且 manualCloseOnly 时不应自动关闭', () => {
+        const onClose = vi.fn();
+        vi.useFakeTimers();
+
+        render(
+            <BonusDieOverlay
+                isVisible
+                onClose={onClose}
+                bonusDice={buildBonusDice()}
+                canReroll={false}
+                displayOnly
+                manualCloseOnly
+                usePortal={false}
+            />
+        );
+
+        act(() => {
+            vi.advanceTimersByTime(3500);
+        });
+
+        expect(onClose).not.toHaveBeenCalled();
     });
 
     it('阻塞式奖励骰结算的关闭按钮应走确认伤害收口，而不是只做本地关闭', () => {
@@ -1538,5 +1587,93 @@ describe('BonusDieOverlay', () => {
             expect(state.bonusDice).toBeUndefined();
             expect(state.effectKey).toBeUndefined();
         });
+    });
+
+    it('keeps interactive bonus settlement visible when dt:bonus-dice interaction is current', () => {
+        const settlement = {
+            id: 'samurai-righteousness-1000',
+            sourceAbilityId: 'samurai-righteousness',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 4, face: 'sword' as const }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            readyToSettle: false,
+        };
+
+        expect(resolveInteractivePendingBonusDiceSettlement({
+            settlement,
+            viewerPlayerId: '0',
+            interactionState: {
+                current: {
+                    kind: 'dt:bonus-dice',
+                    playerId: '0',
+                },
+            },
+        })).toBe(settlement);
+    });
+
+    it('falls back to pending interactive bonus settlement when interaction ownership is lost', () => {
+        const settlement = {
+            id: 'samurai-righteousness-1000',
+            sourceAbilityId: 'samurai-righteousness',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 4, face: 'sword' as const }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            readyToSettle: false,
+        };
+
+        expect(resolveInteractivePendingBonusDiceSettlement({
+            settlement,
+            viewerPlayerId: '0',
+            interactionState: {
+                current: undefined,
+                queue: [],
+            },
+            responseWindowState: {
+                current: undefined,
+            },
+        })).toBe(settlement);
+    });
+
+    it('does not steal foreground when another interaction still owns the modal stack', () => {
+        const settlement = {
+            id: 'samurai-righteousness-1000',
+            sourceAbilityId: 'samurai-righteousness',
+            attackerId: '0',
+            targetId: '1',
+            dice: [{ index: 0, value: 4, face: 'sword' as const }],
+            rerollCostTokenId: '',
+            rerollCostAmount: 0,
+            rerollCount: 0,
+            readyToSettle: false,
+        };
+
+        expect(resolveInteractivePendingBonusDiceSettlement({
+            settlement,
+            viewerPlayerId: '0',
+            interactionState: {
+                current: {
+                    kind: 'simple-choice',
+                    playerId: '0',
+                },
+            },
+        })).toBeUndefined();
+
+        expect(resolveInteractivePendingBonusDiceSettlement({
+            settlement,
+            viewerPlayerId: '0',
+            interactionState: {
+                current: undefined,
+                queue: [{
+                    kind: 'simple-choice',
+                    playerId: '0',
+                }],
+            },
+        })).toBeUndefined();
     });
 });

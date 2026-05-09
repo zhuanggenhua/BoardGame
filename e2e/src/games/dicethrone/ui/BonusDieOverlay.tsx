@@ -111,8 +111,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
         return resolveBonusDieText(summaryEffectKey, { t, i18n }, summaryEffectParams);
     }, [summaryEffectKey, summaryEffectParams, i18n, t]);
     const hasForceAutoClose = typeof forceAutoCloseDelay === 'number' && forceAutoCloseDelay > 0;
-    // displayOnly 展示态始终允许自动关闭，避免多人房间中被手动关闭策略卡住
-    const isManualCloseOnly = manualCloseOnly === true && !hasForceAutoClose && !displayOnly;
+    const isManualCloseOnly = manualCloseOnly === true && !hasForceAutoClose;
     const resolvedAutoCloseDelay = hasForceAutoClose
         ? forceAutoCloseDelay
         : (displayOnly ? DISPLAY_ONLY_AUTO_CLOSE_DELAY_MS : autoCloseDelay);
@@ -273,45 +272,63 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                         style={{ gap: multiDieGap }}
                         data-testid={isSingleDieRerollSpotlight ? 'bonus-die-single-reroll-spotlight' : 'bonus-die-multi-reroll-spotlight'}
                     >
-                        {bonusDice.map((die) => (
-                            <motion.button
-                                key={die.index}
-                                type="button"
-                                initial={{ scale: 0.5, opacity: 0 }}
-                                animate={{ scale: 1, opacity: 1 }}
-                                transition={{ delay: die.index * 0.15 }}
-                                className={`relative bg-transparent border-0 p-0 ${
-                                    canSelectDieToReroll
-                                        ? 'cursor-pointer hover:scale-110 transition-transform'
-                                        : ''
-                                }`}
-                                data-testid={`bonus-die-reroll-option-${die.index}`}
-                                disabled={!canSelectDieToReroll}
-                                onClick={() => handleDieClick(die.index)}
-                            >
-                                <BonusDieSpotlightContent
-                                    value={die.value}
-                                    face={die.face}
-                                    effectKey={die.effectKey}
-                                    effectParams={die.effectParams}
-                                    locale={locale}
-                                    size={multiDieSize}
-                                    rollingDurationMs={600 + die.index * 100}
-                                    characterId={characterId}
-                                    compact={!isSingleDieRerollSpotlight}
-                                    hideEffectText={!isSingleDieRerollSpotlight && bonusDice.length > 1}
-                                />
-                                {canSelectDieToReroll && (
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
-                                        <div className="bg-amber-600/80 rounded-full p-[0.5vw] border border-amber-300/50 shadow-[0_0_12px_rgba(245,158,11,0.4)]">
-                                            <svg className="w-[2vw] h-[2vw] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                                            </svg>
+                        {bonusDice.map((die) => {
+                            const dieContent = (
+                                <>
+                                    <BonusDieSpotlightContent
+                                        value={die.value}
+                                        face={die.face}
+                                        effectKey={die.effectKey}
+                                        effectParams={die.effectParams}
+                                        locale={locale}
+                                        size={multiDieSize}
+                                        rollingDurationMs={600 + die.index * 100}
+                                        characterId={characterId}
+                                        compact={!isSingleDieRerollSpotlight}
+                                        hideEffectText={!isSingleDieRerollSpotlight && bonusDice.length > 1}
+                                    />
+                                    {canSelectDieToReroll && (
+                                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity">
+                                            <div className="bg-amber-600/80 rounded-full p-[0.5vw] border border-amber-300/50 shadow-[0_0_12px_rgba(245,158,11,0.4)]">
+                                                <svg className="w-[2vw] h-[2vw] text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                                </svg>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </motion.button>
-                        ))}
+                                    )}
+                                </>
+                            );
+
+                            if (!canSelectDieToReroll) {
+                                return (
+                                    <motion.div
+                                        key={die.index}
+                                        initial={{ scale: 0.5, opacity: 0 }}
+                                        animate={{ scale: 1, opacity: 1 }}
+                                        transition={{ delay: die.index * 0.15 }}
+                                        className="relative bg-transparent border-0 p-0"
+                                        data-testid={`bonus-die-reroll-option-${die.index}`}
+                                    >
+                                        {dieContent}
+                                    </motion.div>
+                                );
+                            }
+
+                            return (
+                                <motion.button
+                                    key={die.index}
+                                    type="button"
+                                    initial={{ scale: 0.5, opacity: 0 }}
+                                    animate={{ scale: 1, opacity: 1 }}
+                                    transition={{ delay: die.index * 0.15 }}
+                                    className="relative bg-transparent border-0 p-0 cursor-pointer hover:scale-110 transition-transform"
+                                    data-testid={`bonus-die-reroll-option-${die.index}`}
+                                    onClick={() => handleDieClick(die.index)}
+                                >
+                                    {dieContent}
+                                </motion.button>
+                            );
+                        })}
                     </div>
 
                     {/* 总和显示 */}

@@ -233,7 +233,13 @@ export function registerCowboysAbilities(): void {
             writes: ['minionBoardState'],
         },
     });
-    registerExtended('base_saloon', 'onMinionDestroyed', cowboysBaseSaloonOnMinionDestroyed, { mandatory: true });
+    registerExtended('base_saloon', 'onMinionDestroyed', cowboysBaseSaloonOnMinionDestroyed, {
+        mandatory: true,
+        effectContract: {
+            reads: ['minionBoardState', 'deckState'],
+            writes: ['handState', 'deckState'],
+        },
+    });
 }
 
 export function registerCowboysInteractionHandlers(): void {

@@ -1,7 +1,7 @@
 import { test, expect } from '../framework';
 
 test.describe('DiceThrone - 选择骰子重投', () => {
-    test('card-worthy-of-me 应通过 framework 场景完成单骰重投', async ({ page, game }) => {
+    test('card-worthy-of-me 应通过 framework 场景完成单骰重投', async ({ page, game }, testInfo) => {
         await game.openTestGame('dicethrone');
 
         await game.setupScene({
@@ -62,6 +62,8 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             selectCount: 2,
         });
 
+        await game.screenshot('worthy-of-me-select-dice-overlay', testInfo);
+
         const firstDieButton = page.locator('[data-testid="die-button-0"]');
         await expect(firstDieButton).toBeVisible({ timeout: 5000 });
         await firstDieButton.click();
@@ -70,6 +72,8 @@ test.describe('DiceThrone - 选择骰子重投', () => {
         await page.evaluate(() => {
             window.__BG_TEST_HARNESS__?.dice.setValues([6]);
         });
+
+        await game.screenshot('worthy-of-me-die-rerolled', testInfo);
 
         const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).first();
         await expect(confirmButton).toBeEnabled({ timeout: 5000 });
@@ -89,6 +93,8 @@ test.describe('DiceThrone - 选择骰子重投', () => {
             interactionKind: null,
             handIds: [],
         });
+
+        await game.screenshot('worthy-of-me-settled', testInfo);
 
         const finalState = await game.getState();
         const finalHandIds = (finalState?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id);

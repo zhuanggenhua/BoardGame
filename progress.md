@@ -1446,3 +1446,49 @@
   - 只要某条反馈已经满足“修复 + 验证 + 证据”，默认必须立刻执行远端正式状态回写；
   - 不再把“先停在本地 resolved，等后面再统一回写”当成默认流程；
   - 若写入口不可用或用户明确要求暂缓，才允许保留中间态，并且必须显式说明阻塞。
+
+## 2026-05-08 09:40 DiceThrone 奖励骰特写回归复盘
+- 新定位结论：
+  - “技能骰子特写瞬间跳过”的主回归点仍锁在 `2026-05-05` 的 `80ab89df` 交互真相重构。
+  - 具体脱节位点：`src/games/dicethrone/Board.tsx` 把 attacker 视角的 interactive bonus settlement 显示条件绑死到 `sys.interaction.current.kind === 'dt:bonus-dice'`，导致 `pendingBonusDiceSettlement` 仍在、但 interaction frame 短暂丢失时，前台特写直接消失。
+- 本轮修复：
+  - 新增 `src/games/dicethrone/ui/bonusDiceOverlayVisibility.ts` 的 `resolveInteractivePendingBonusDiceSettlement()`，仅在“没有别的前台交互/响应窗占位”时，对 orphan 的 attacker settlement 做稳定回退显示。
+  - 修正 `src/games/dicethrone/Board.tsx`：
+    - `displayOnly` settlement 现在也尊重 `dismissedBonusDiceId`，避免本地关闭后立刻重渲染回来；
+    - 攻击方关闭自己的 `displayOnly` 奖励骰特写时，改为正式发送 `SKIP_BONUS_DICE_REROLL` 清理权威状态，不再只做本地隐藏。
+  - 修正 `src/games/dicethrone/ui/BonusDieOverlay.tsx`：
+    - 不可重掷的展示态骰子改为非禁用按钮包装，保证点击内容能正常冒泡到 `SpotlightContainer`。
+- 本轮验证：
+  - `npx vitest run src/games/dicethrone/__tests__/BonusDieOverlay.test.tsx` 通过（新增 orphan fallback / displayOnly 内容点击关闭回归）。
+  - `npm run typecheck` 通过。
+  - 真实 E2E 仍未形成最终 pass 结论：
+    - 通过精确路径与默认入口复跑后，不再立刻报旧的“overlay 永远不隐藏”断言；
+    - 但当前 `run-e2e-single` 链路在 `samurai righteousness should resolve a valid branch against monk` 这条用例上仍存在长时间挂起，产物只稳定落到 `09-samurai-righteousness-badge-after-play.png`，尚未拿到最终 `bonus-die-closed / settled` 截图。
+
+## 2026-05-08 23:56 DiceThrone 奖励骰特写真实点击收口
+- 修复补充：
+  - `displayOnly + manualCloseOnly` 不再自动关闭；
+  - `displayOnly` 多骰不再渲染成 disabled button，真实点击骰子内容可以冒泡关闭；
+  - DiceThrone 在线“强制去弹窗”改为基于 `core.pendingBonusDiceSettlement` 派发 `SKIP_BONUS_DICE_REROLL`，不再只依赖 `sys.interaction.current.kind === 'dt:bonus-dice'`。
+- 验证结果：
+  - `npx vitest run src/games/dicethrone/__tests__/BonusDieOverlay.test.tsx` -> `39 passed`
+  - `npm run typecheck` -> passed
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "samurai righteousness should resolve a valid branch against monk"` -> `1 passed`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "online samurai righteousness bonus-die spotlight should close through force-dismiss panel"` -> `1 passed`
+- 证据文档：
+  - `evidence/dicethrone/dicethrone-bonus-die-real-click-closeout-2026-05-08.md`
+- 关键截图：
+  - `test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/samurai-righteousness-should-resolve-a-valid-branch-against-monk/09-samurai-righteousness-bonus-die-overlay.png`
+  - `test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/samurai-righteousness-should-resolve-a-valid-branch-against-monk/09-samurai-righteousness-bonus-die-closed.png`
+  - `test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/online-samurai-righteousness-bonus-die-spotlight-should-close-through-force-dismiss-panel/11b-online-samurai-righteousness-force-dismiss-panel-open.png`
+  - `test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/online-samurai-righteousness-bonus-die-spotlight-should-close-through-force-dismiss-panel/12-online-samurai-righteousness-force-dismiss-after.png`
+
+## 2026-05-09 03:06 DiceThrone 奖励骰真实点击复核补充
+- 新鲜复核中，正常链首次失败不是实现未触发奖励骰，而是 Righteousness 打出后先出现卡牌特写；测试此前没有按真实用户路径关闭卡牌特写，导致后续奖励骰特写被队列挡住。
+- 已修正 E2E：卡牌特写出现时等待关闭保护后真实点击卡牌特写关闭，再进入奖励骰特写；在线链手牌点击也改为普通 `click()`，不再使用不必要的 `force: true`。
+- 最新复跑结果：
+  - `npx eslint e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts` -> `0 errors`（仅保留既有 warnings）
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "samurai righteousness should resolve a valid branch against monk"` -> `1 passed`
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "online samurai righteousness bonus-die spotlight should close through force-dismiss panel"` -> `1 passed`
+- 新增按钮局部证据：
+  - `test-results/evidence-screenshots/dicethrone/dicethrone-watch-out-spotlight.e2e/online-samurai-righteousness-bonus-die-spotlight-should-close-through-force-dismiss-panel/11c-online-samurai-righteousness-force-dismiss-button.png`

@@ -38,8 +38,14 @@ function withResolvedInteraction(ms: any) {
 describe('Reaction queue: optional base triggers resolve clockwise', () => {
   it('optional triggers use smashup reaction session and start with the first clockwise eligible player', () => {
     // Two optional base abilities, owned by different players.
-    registerBaseAbility('base_a', 'onTurnStart', () => ({ events: [] }), { mandatory: false });
-    registerBaseAbility('base_b', 'onTurnStart', () => ({ events: [] }), { mandatory: false });
+    registerBaseAbility('base_a', 'onTurnStart', () => ({ events: [] }), {
+      mandatory: false,
+      effectContract: {},
+    });
+    registerBaseAbility('base_b', 'onTurnStart', () => ({ events: [] }), {
+      mandatory: false,
+      effectContract: {},
+    });
 
     const core = core3p();
     const q1 = collectBaseAbilityTriggers({ core, timing: 'onTurnStart', ownerPlayerId: '1', baseIndex: 0, now: 1 })!;
@@ -63,8 +69,14 @@ describe('Reaction queue: optional base triggers resolve clockwise', () => {
   });
 
   it('a player who passed may still act later in the same optional cycle', () => {
-    registerBaseAbility('base_a', 'onTurnStart', () => ({ events: [] }), { mandatory: false });
-    registerBaseAbility('base_b', 'onTurnStart', () => ({ events: [] }), { mandatory: false });
+    registerBaseAbility('base_a', 'onTurnStart', () => ({ events: [] }), {
+      mandatory: false,
+      effectContract: {},
+    });
+    registerBaseAbility('base_b', 'onTurnStart', () => ({ events: [] }), {
+      mandatory: false,
+      effectContract: {},
+    });
 
     const core = core3p();
     const q1 = collectBaseAbilityTriggers({ core, timing: 'onTurnStart', ownerPlayerId: '1', baseIndex: 0, now: 1 })!;

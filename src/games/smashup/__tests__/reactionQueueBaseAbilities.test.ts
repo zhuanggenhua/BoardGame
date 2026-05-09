@@ -2,13 +2,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { SmashUpCore, SmashUpEvent, TriggerInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { makeMatchState, makeState, makeBase, makeMinion } from './helpers';
-import { clearBaseAbilityRegistry, registerBaseAbility } from '../domain/baseAbilities';
+import { clearBaseAbilityRegistry, registerBaseAbility, registerExtended } from '../domain/baseAbilities';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
-import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
+import { collectBaseAbilityTriggers, collectExtendedBaseAbilityTriggers } from '../domain/baseAbilityQueue';
 import { clearOngoingEffectRegistry, registerTrigger } from '../domain/ongoingEffects';
 import { postProcessSystemEvents } from '../domain';
+import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
 
 function core2b(overrides?: Partial<SmashUpCore>): SmashUpCore {
   return makeState({
@@ -35,14 +36,18 @@ describe('Reaction queue: base abilities', () => {
         payload: { playerId: ctx.playerId, messageKey: 'a', tone: 'info' },
         timestamp: ctx.now,
       }] as any,
-    }));
+    }), {
+      effectContract: { writes: ['playLimits'] },
+    });
     registerBaseAbility('base_b', 'onTurnStart', (ctx) => ({
       events: [{
         type: SU_EVENTS.ABILITY_FEEDBACK,
         payload: { playerId: ctx.playerId, messageKey: 'b', tone: 'info' },
         timestamp: ctx.now,
       }] as any,
-    }));
+    }), {
+      effectContract: { writes: ['playLimits'] },
+    });
 
     const core = core2b();
 
@@ -80,7 +85,9 @@ describe('Reaction queue: base abilities', () => {
         payload: { playerId: ctx.playerId, messageKey: 'base-action', tone: 'info' },
         timestamp: ctx.now,
       }] as any,
-    }));
+    }), {
+      effectContract: { writes: ['playLimits'] },
+    });
 
     const core = core2b();
     const matchState = makeMatchState(core);
@@ -109,13 +116,15 @@ describe('Reaction queue: base abilities', () => {
         payload: { playerId: ctx.playerId, messageKey: 'base-action', tone: 'info' },
         timestamp: ctx.now,
       }] as any,
-    }));
+    }), {
+      effectContract: { writes: ['playLimits'] },
+    });
     registerTrigger('test_action_watcher', 'onActionPlayed', (ctx) => ([{
       type: SU_EVENTS.ABILITY_FEEDBACK,
       payload: { playerId: ctx.playerId, messageKey: 'minion-action', tone: 'info' },
       timestamp: ctx.now,
     }] as any), {
-      effectContract: {},
+      effectContract: { writes: ['playLimits'] },
     });
 
     const core = core2b({
@@ -142,6 +151,77 @@ describe('Reaction queue: base abilities', () => {
     expect(current.data.sourceId).toBe('smashup_reaction_choose');
     expect(current.data.options.some((option: any) => String(option.label).includes('base_a'))).toBe(true);
     expect(current.data.options.some((option: any) => String(option.label).includes('test_action_watcher'))).toBe(true);
+  });
+
+  it('queued base ability 未声明 effectContract 时在注册阶段直接报错', () => {
+    expect(() => registerBaseAbility('base_a', 'onTurnStart', () => ({ events: [] })))
+      .toThrowError(/SmashUp trigger 缺少声明: base_a::onTurnStart \(baseAbility.registerQueued\)/);
+  });
+
+  it('queued extended base ability 未声明 effectContract 时在 collect 阶段直接报错', () => {
+    registerExtended('base_a', 'onMinionDestroyed', () => ({ events: [] }), { mandatory: true });
+
+    const core = core2b({
+      bases: [makeBase('base_a'), makeBase('base_b')],
+    });
+
+    expect(() => collectExtendedBaseAbilityTriggers({
+      core,
+      timing: 'onMinionDestroyed',
+      ownerPlayerId: '0',
+      baseIndex: 0,
+      now: 1,
+    })).toThrowError(/SmashUp trigger 缺少声明: base_a::onMinionDestroyed \(collectTriggers\)/);
+  });
+
+  it('互不冲突的 mandatory base abilities 若会进入真实交互，应直接进入真实交互而不是先弹排序', () => {
+    registerBaseAbility('base_a', 'onTurnStart', (ctx) => {
+      const interaction = createSimpleChoice(
+        `base_a_prompt_${ctx.now}`,
+        ctx.playerId,
+        'base_a 真实交互',
+        [
+          { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+          { id: 'apply', label: '执行', value: { apply: true }, displayMode: 'button' as const },
+        ],
+        { sourceId: 'base_a_prompt', targetType: 'button' },
+      );
+      return {
+        events: [],
+        matchState: queueInteraction(ctx.matchState, interaction),
+      };
+    }, {
+      effectContract: {
+        reads: ['handState'],
+        writes: ['handState', 'discardState'],
+        opensInteraction: true,
+      },
+    });
+    registerBaseAbility('base_b', 'onTurnStart', (ctx) => ({
+      events: [{
+        type: SU_EVENTS.ABILITY_FEEDBACK,
+        payload: { playerId: ctx.playerId, messageKey: 'base-b-side-effect', tone: 'info' },
+        timestamp: ctx.now,
+      }] as any,
+    }), {
+      effectContract: {
+        writes: ['playLimits'],
+      },
+    });
+
+    const core = core2b();
+    const qA = collectBaseAbilityTriggers({ core, timing: 'onTurnStart', ownerPlayerId: '0', baseIndex: 0, now: 1 })!;
+    const qB = collectBaseAbilityTriggers({ core, timing: 'onTurnStart', ownerPlayerId: '0', baseIndex: 1, now: 1 })!;
+    const triggers: TriggerInstance[] = [
+      ...(qA as any).payload.triggers,
+      ...(qB as any).payload.triggers,
+    ];
+
+    const ms0 = makeMatchState({ ...core, triggerQueue: triggers });
+    const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
+    expect(rq).toBeDefined();
+    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).toBe('base_a_prompt');
+    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).not.toBe('smashup_reaction_choose');
   });
 });
 

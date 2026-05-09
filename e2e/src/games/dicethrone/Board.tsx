@@ -54,7 +54,10 @@ import { useSpectatorMoves, useEventStreamCursor } from '../../engine';
 import { useInteractionState } from './hooks/useInteractionState';
 import { useAnimationEffects } from './hooks/useAnimationEffects';
 import { useCardSpotlight } from './hooks/useCardSpotlight';
-import { shouldSuppressPendingDisplayOnlyBonusOverlay } from './ui/bonusDiceOverlayVisibility';
+import {
+    resolveInteractivePendingBonusDiceSettlement,
+    shouldSuppressPendingDisplayOnlyBonusOverlay,
+} from './ui/bonusDiceOverlayVisibility';
 import { useActiveModifiers } from './hooks/useActiveModifiers';
 import { useUIState } from './hooks/useUIState';
 import { useDiceThroneAudio } from './hooks/useDiceThroneAudio';
@@ -377,27 +380,31 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         if (!settlement) {
             return undefined;
         }
+        if (dismissedBonusDiceId === settlement.id) {
+            return undefined;
+        }
         if (settlement.displayOnly) {
+            if (shouldHidePendingDisplayOnlyBonusOverlay) {
+                return undefined;
+            }
             return settlement;
         }
         if (settlement.attackerId === rootPid) {
             return undefined;
         }
-        if (dismissedBonusDiceId === settlement.id || shouldHidePendingDisplayOnlyBonusOverlay) {
+        if (shouldHidePendingDisplayOnlyBonusOverlay) {
             return undefined;
         }
         return { ...settlement, displayOnly: true };
     }, [G.pendingBonusDiceSettlement, dismissedBonusDiceId, rootPid, shouldHidePendingDisplayOnlyBonusOverlay]);
-    const interactiveBonusDiceSettlement = React.useMemo(() => {
-        const settlement = G.pendingBonusDiceSettlement;
-        if (!settlement || settlement.displayOnly) {
-            return undefined;
-        }
-        if (settlement.attackerId !== rootPid) {
-            return undefined;
-        }
-        return rawG.sys.interaction?.current?.kind === 'dt:bonus-dice' ? settlement : undefined;
-    }, [G.pendingBonusDiceSettlement, rawG.sys.interaction?.current?.kind, rootPid]);
+    const interactiveBonusDiceSettlement = React.useMemo(() => (
+        resolveInteractivePendingBonusDiceSettlement({
+            settlement: G.pendingBonusDiceSettlement,
+            viewerPlayerId: rootPid,
+            interactionState: rawG.sys.interaction,
+            responseWindowState: rawG.sys.responseWindow,
+        })
+    ), [G.pendingBonusDiceSettlement, rawG.sys.interaction, rawG.sys.responseWindow, rootPid]);
 
     // 监听 DIE_REROLLED 事件触发骰子重投动画
     const { consumeNew: consumeDieRerolled } = useEventStreamCursor({ 
@@ -814,11 +821,11 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             return;
         }
 
-        const canSettleFromCurrentView = !settlement.displayOnly && settlement.attackerId === rootPid;
+        const canSettleFromCurrentView = settlement.attackerId === rootPid;
         if (canSettleFromCurrentView) {
             boardBonusDieLogger.info('overlay-close-settle-dispatch', {
                 settlementId: settlement.id,
-                reason: 'attacker-close',
+                reason: settlement.displayOnly ? 'attacker-display-only-close' : 'attacker-close',
             });
             engineMoves.skipBonusDiceReroll();
             return;
