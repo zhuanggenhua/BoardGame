@@ -163,7 +163,7 @@ const CARDIA_TUTORIAL: TutorialManifest = {
             requireAction: true,
             allowedCommands: [CARDIA_COMMANDS.PLAY_CARD],
             allowedTargets: ['tut-1'],
-            advanceOnEvents: [{ type: CARDIA_EVENTS.CARD_PLAYED, match: { playerId: '0' } }],
+            advanceOnEvents: [{ type: CARDIA_EVENTS.CARD_PLAYED.type, match: { playerId: '0' } }],
         },
 
         // 8: 对手打牌（AI 自动）— 触发遭遇结算，推进到能力阶段
@@ -204,7 +204,7 @@ const CARDIA_TUTORIAL: TutorialManifest = {
             position: 'left',
             requireAction: true,
             allowedCommands: [CARDIA_COMMANDS.ACTIVATE_ABILITY],
-            advanceOnEvents: [{ type: CARDIA_EVENTS.ABILITY_ACTIVATED }],
+            advanceOnEvents: [{ type: CARDIA_EVENTS.ABILITY_ACTIVATED.type }],
         },
 
         // ================================================================

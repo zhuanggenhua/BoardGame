@@ -924,6 +924,52 @@ describe('beforeScoring trigger: cthulhu_chosen', () => {
         // 验证 ongoing 存在
         expect(core.bases[0].ongoingActions.some(o => o.defId === 'cthulhu_chosen')).toBe(true);
     });
+
+    it('线上反馈 69ff0310：cthulhu_chosen 计分前确认应是 generic 按钮交互', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('madness-draw-source', 'pirate_first_mate', '0', 'minion')],
+                    factions: ['pirates', 'minions_of_cthulhu'] as [string, string],
+                }),
+                '1': makePlayer('1', {
+                    factions: ['robots', 'wizards'] as [string, string],
+                }),
+            },
+            currentPlayerIndex: 1,
+            bases: [
+                makeBase('base_central_brain', [
+                    makeMinion('chosen-1', 'cthulhu_chosen', '0', 2),
+                    makeMinion('robot-1', 'robot_hoverbot', '1', 10),
+                    makeMinion('wizard-1', 'wizard_chronomage', '1', 10),
+                ]),
+                makeBase('test_base_2'),
+                makeBase('test_base_3'),
+            ],
+            madnessDeck: ['special_madness', 'special_madness'],
+        } as any);
+        const state = makeFullMatchState(core);
+
+        const enterScoring = runCommand(state, {
+            type: 'ADVANCE_PHASE',
+            playerId: '1',
+            payload: {},
+        }, '69ff0310: 进入计分触发 cthulhu_chosen');
+
+        expect(enterScoring.steps[0]?.success).toBe(true);
+        const choice = asSimpleChoice(enterScoring.finalState.sys.interaction?.current);
+        expect(choice?.sourceId).toBe('cthulhu_chosen_confirm');
+        expect(choice?.targetType).toBe('generic');
+        expect(choice?.playerId).toBe('0');
+        expect(choice?.options?.map(option => option.id)).toEqual(['yes', 'no']);
+        expect(choice?.options?.every(option => option.displayMode === 'button')).toBe(true);
+
+        const skipOption = findOption(choice, option => option.id === 'no');
+        const resolved = respond(enterScoring.finalState, '0', skipOption, '69ff0310: 不触发并收口确认交互');
+
+        expect(resolved.steps[0]?.success).toBe(true);
+        expect(resolved.finalState.sys.interaction?.current?.id).not.toBe(choice?.id);
+    });
 });
 
 // ============================================================================

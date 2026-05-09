@@ -765,6 +765,81 @@ describe('巫师派系能力', () => {
         expect(current?.data?.targetType).toBe('button');
     });
 
+    it('线上反馈 69feac13：POD 学徒在牌库空但弃牌堆有牌时先洗回牌库再揭示顶牌', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'wizard_neophyte_pod', 'minion', '0')],
+                    deck: [],
+                    discard: [
+                        makeCard('d1', 'wizard_scry_pod', 'action', '0'),
+                        makeCard('d2', 'alien_scout_pod', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
+        });
+
+        const { events, matchState } = execPlayMinion(state, '0', 'm1', 0);
+        expect(events.some(e => e.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
+        expect(events.some(e => e.type === SU_EVENTS.REVEAL_DECK_TOP)).toBe(true);
+        expect(matchState.core.players['0'].deck.map(card => card.uid)).toEqual(['d1', 'd2']);
+        expect(matchState.core.players['0'].discard).toEqual([]);
+        expect((matchState.sys as any).interaction?.current?.data?.sourceId).toBe('wizard_neophyte');
+    });
+
+    it('线上反馈 69feac13：女巫在牌库空但弃牌堆有牌时应洗牌并实际抽到手牌', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'wizard_enchantress', 'minion', '0')],
+                    deck: [],
+                    discard: [
+                        makeCard('d1', 'alien_invasion_pod', 'action', '0'),
+                        makeCard('d2', 'alien_scout_pod', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
+        });
+
+        const { events, matchState } = execPlayMinion(state, '0', 'm1', 0);
+        expect(events.map(e => e.type)).toEqual(expect.arrayContaining([
+            SU_EVENTS.DECK_RESHUFFLED,
+            SU_EVENTS.CARDS_DRAWN,
+        ]));
+        expect(matchState.core.players['0'].hand.map(card => card.uid)).toContain('d1');
+        expect(matchState.core.players['0'].deck.map(card => card.uid)).toEqual(['d2']);
+        expect(matchState.core.players['0'].discard).toEqual([]);
+    });
+
+    it('线上反馈 69feac13：秘术学习在牌库空但弃牌堆有牌时应洗牌并实际抽牌', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'wizard_mystic_studies', 'action', '0')],
+                    deck: [],
+                    discard: [
+                        makeCard('d1', 'alien_invasion_pod', 'action', '0'),
+                        makeCard('d2', 'alien_scout_pod', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
+        });
+
+        const { events, matchState } = execPlayAction(state, '0', 'a1');
+        expect(events.map(e => e.type)).toEqual(expect.arrayContaining([
+            SU_EVENTS.DECK_RESHUFFLED,
+            SU_EVENTS.CARDS_DRAWN,
+        ]));
+        expect(matchState.core.players['0'].hand.map(card => card.uid)).toEqual(expect.arrayContaining(['d1', 'd2']));
+        expect(matchState.core.players['0'].deck).toEqual([]);
+    });
+
     it('wizard_neophyte: 牌库顶不是行动卡时不产生事件', () => {
         const state = makeState({
             players: {

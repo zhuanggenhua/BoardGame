@@ -221,6 +221,30 @@ describe('base_the_mothership: 计分后冠军收回随从', () => {
         expect(options.length).toBe(2);
     });
 
+    it('线上反馈 69ff0cd0：母舰检查可收回随从时允许读取回合压制标记', () => {
+        const core = makeState({
+            suppressedCardsUntilTurnStart: [
+                { cardUid: 'disabled-card', reason: 'regression-fixture' },
+            ] as any,
+            bases: [makeBase('base_the_mothership', {
+                minions: [
+                    makeMinion('m1', '0', 2, 'robot_zapbot'),
+                ],
+            })],
+        });
+
+        const result = triggerBaseAbilityWithMS('base_the_mothership', 'afterScoring', makeCtx({
+            state: core,
+            matchState: makeMatchState(core),
+            baseDefId: 'base_the_mothership',
+            rankings: [{ playerId: '0', power: 2, vp: 4 }],
+        }));
+
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
+        expect(interactions[0].data.sourceId).toBe('base_the_mothership');
+    });
+
     it('冠军无力量≤3的随从时不生成 Prompt', () => {
         const { events } = triggerBaseAbility('base_the_mothership', 'afterScoring', makeCtx({
             state: makeState({

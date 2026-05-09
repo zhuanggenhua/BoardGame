@@ -1,3 +1,6 @@
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { test, expect } from '../framework';
 
 test.describe('DiceThrone - 雷霆万钧', () => {
@@ -57,36 +60,68 @@ test.describe('DiceThrone - 雷霆万钧', () => {
         const overlay = page.locator('[data-testid="bonus-die-overlay"]').first();
         await expect(overlay).toBeVisible({ timeout: 5000 });
         await expect(
-            page.getByRole('button', { name: /Confirm Damage|Continue|确认伤害|继续/i }),
+            overlay.getByRole('button', { name: /Confirm Damage|Continue|确认伤害|继续/i }).last(),
         ).toBeVisible({ timeout: 5000 });
 
-        const bonusDice = overlay.locator('.dice3d-perspective');
-        await expect(bonusDice).toHaveCount(3, { timeout: 5000 });
-        await bonusDice.first().click();
+        const evidenceDir = join(
+            process.cwd(),
+            'test-results',
+            'evidence-screenshots',
+            'dicethrone',
+            'bonus-reroll-targeted-animation',
+        );
+        mkdirSync(evidenceDir, { recursive: true });
 
+        const bonusDice = overlay.locator('.dice3d-perspective');
+        const bonusContents = overlay.locator('[data-testid="bonus-die-spotlight-content"]');
+        await expect(bonusDice).toHaveCount(3, { timeout: 5000 });
+        await expect(bonusContents).toHaveCount(3, { timeout: 5000 });
+        await overlay.screenshot({ path: join(evidenceDir, '01-before-reroll.png') });
+        await expect.poll(async () => bonusDice.evaluateAll((nodes) => nodes.map((node) => {
+            const cube = node.firstElementChild as HTMLElement | null;
+            return cube?.className.includes('animate-dice3d-bonus-tumble') ?? false;
+        })), { timeout: 2000 }).toEqual([false, false, false]);
+        await expect.poll(async () => bonusContents.evaluateAll((nodes) => nodes.map((node) =>
+            (node as HTMLElement).dataset.rollAnimationKey ?? ''
+        ))).toEqual(['', '', '']);
+
+        await bonusDice.first().click();
         await expect.poll(async () => {
             const state = await game.getState();
             const settlement = state?.core?.pendingBonusDiceSettlement;
             const eventTypes = (state?.sys?.eventStream?.entries ?? [])
                 .slice(-6)
-                .map((entry: any) => entry.event?.type);
+                .map((entry: { event?: { type?: string } }) => entry.event?.type);
             return {
                 rerollCount: settlement?.rerollCount ?? null,
+                lastRerolledDieIndex: settlement?.lastRerolledDieIndex ?? null,
+                rerollAnimationKey: settlement?.rerollAnimationKey ?? null,
                 taiji: state?.core?.players?.['0']?.tokens?.taiji ?? 0,
                 eventTypes,
             };
         }, { timeout: 5000 }).toMatchObject({
             rerollCount: 1,
+            lastRerolledDieIndex: 0,
+            rerollAnimationKey: 1,
             taiji: 0,
         });
+        await expect.poll(async () => bonusContents.evaluateAll((nodes) => nodes.map((node) =>
+            (node as HTMLElement).dataset.rollAnimationKey ?? ''
+        )), { timeout: 2000 }).toEqual(['1:0', '', '']);
+        await expect.poll(async () => bonusContents.evaluateAll((nodes) => nodes.map((node) =>
+            (node as HTMLElement).dataset.animateOnMount ?? ''
+        )), { timeout: 2000 }).toEqual(['true', 'false', 'false']);
+        await overlay.screenshot({ path: join(evidenceDir, '02-after-first-die-reroll-result.png') });
 
         const finalState = await game.getState();
         const finalSettlement = finalState?.core?.pendingBonusDiceSettlement;
         const finalEventTypes = (finalState?.sys?.eventStream?.entries ?? [])
             .slice(-6)
-            .map((entry: any) => entry.event?.type);
+            .map((entry: { event?: { type?: string } }) => entry.event?.type);
 
         expect(finalSettlement?.rerollCount ?? null).toBe(1);
+        expect(finalSettlement?.lastRerolledDieIndex ?? null).toBe(0);
+        expect(finalSettlement?.rerollAnimationKey ?? null).toBe(1);
         expect(finalState?.core?.players?.['0']?.tokens?.taiji ?? 0).toBe(0);
         expect(finalEventTypes).toContain('BONUS_DIE_REROLLED');
     });

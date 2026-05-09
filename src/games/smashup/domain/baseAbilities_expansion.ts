@@ -36,7 +36,7 @@ import {
 import { buildBuryCardEvents } from './bury';
 import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
-import { registerBaseAbility, registerExtended as registerExtendedBase } from './baseAbilities';
+import { registerBaseAbility, registerExtended as registerExtendedBase, type BaseAbilityContext } from './baseAbilities';
 import { registerProtection, registerTrigger } from './ongoingEffects';
 import type { ProtectionCheckContext } from './ongoingEffects';
 import { getCardDef, getMinionDef, getBaseDef } from '../data/cards';
@@ -55,6 +55,16 @@ import {
 
 function getContinuationContext<T>(interactionData: Record<string, unknown> | undefined): T | undefined {
     return interactionData?.continuationContext as T | undefined;
+}
+
+function isQueuedBaseTriggerContext(ctx: BaseAbilityContext): boolean {
+    return Boolean((ctx as BaseAbilityContext & { frameId?: string; sourceEventId?: string }).frameId
+        || (ctx as BaseAbilityContext & { frameId?: string; sourceEventId?: string }).sourceEventId);
+}
+
+function isFirstMinionPlayedByPlayerAtBaseThisTurn(ctx: BaseAbilityContext): boolean {
+    const player = ctx.state.players[ctx.playerId];
+    return (player?.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0) === 1;
 }
 
 function getSpiritOptionalBothUpgradeForBase(
@@ -253,14 +263,12 @@ export function registerExpansionBaseAbilities(): void {
     // 第一次在此基地打出的随从获得回合内 +2 力量
     registerBaseAbility('base_hall_of_fame', 'onMinionPlayed', (ctx) => {
         if (!ctx.minionUid) return { events: [] };
-        const player = ctx.state.players[ctx.playerId];
-        if (!player) return { events: [] };
-        const playedAtBase = player.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0;
-        if (playedAtBase !== 1) return { events: [] };
+        if (!isQueuedBaseTriggerContext(ctx) && !isFirstMinionPlayedByPlayerAtBaseThisTurn(ctx)) return { events: [] };
         return {
             events: [addTempPower(ctx.minionUid, ctx.baseIndex, 2, 'base_hall_of_fame', ctx.now)],
         };
     }, {
+        canTrigger: isFirstMinionPlayedByPlayerAtBaseThisTurn,
         effectContract: {
             writes: ['triggerMinionPower'],
         },
@@ -345,8 +353,17 @@ export function registerExpansionBaseAbilities(): void {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
         mandatory: false,
+        canTrigger: (ctx) => {
+            const base = ctx.state.bases[ctx.baseIndex];
+            const playedMinion = ctx.minionUid ? base?.minions.find(m => m.uid === ctx.minionUid) : undefined;
+            const ownerId = playedMinion?.owner ?? ctx.playerId;
+            const ignoredByOwner = base?.ongoingActions?.some(o =>
+                o.ownerId === ownerId && o.defId === 'ninja_infiltrate',
+            ) ?? false;
+            return !ignoredByOwner && Object.values(ctx.state.players).some(player => player.discard.length > 0);
+        },
         effectContract: {
-            reads: ['minionBoardState', 'baseState', 'discardState'],
+            reads: ['minionBoardState', 'baseState', 'discardState', 'controllerState'],
             writes: ['discardState', 'deckState'],
             opensInteraction: true,
         },
@@ -479,7 +496,7 @@ export function registerExpansionBaseAbilities(): void {
     }, {
         mandatory: false,
         effectContract: {
-            reads: ['deckState'],
+            reads: ['deckState', 'controllerState'],
             writes: ['deckState', 'minionBoardState'],
             opensInteraction: true,
         },

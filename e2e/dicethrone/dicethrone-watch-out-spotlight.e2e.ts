@@ -3759,6 +3759,22 @@ test('mobile long press hand card should open magnify without playing card', asy
     });
 
     await expect(boardMagnifyOverlay).toBeVisible({ timeout: 5000 });
+    const magnifiedCardFrame = boardMagnifyOverlay
+        .locator('[data-card-atlas-frame="true"][data-card-atlas-id="dicethrone:moon_elf-cards"][data-card-atlas-index="3"]')
+        .first();
+    await expect(magnifiedCardFrame).toBeVisible({ timeout: 5000 });
+    const magnifiedCardMetrics = await magnifiedCardFrame.evaluate((node) => {
+        const frameRect = node.getBoundingClientRect();
+        const clipParentRect = node.parentElement?.getBoundingClientRect();
+        return {
+            frame: { width: frameRect.width, height: frameRect.height },
+            clipParent: clipParentRect ? { width: clipParentRect.width, height: clipParentRect.height } : null,
+        };
+    });
+    expect(magnifiedCardMetrics.clipParent, 'magnified hand card should have a clipping parent').not.toBeNull();
+    expect(magnifiedCardMetrics.frame.height).toBeLessThanOrEqual(magnifiedCardMetrics.clipParent!.height + 2);
+    expect(magnifiedCardMetrics.frame.width).toBeLessThanOrEqual(magnifiedCardMetrics.clipParent!.width + 2);
+    expect(magnifiedCardMetrics.frame.width / magnifiedCardMetrics.frame.height).toBeCloseTo(0.61, 1);
     await game.screenshot('13-mobile-hand-long-press-magnify-open', testInfo);
 
     const stateAfterLongPress = await page.evaluate(() => {

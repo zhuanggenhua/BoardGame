@@ -359,6 +359,50 @@ describe('BonusDieOverlay', () => {
         expect(onReroll).toHaveBeenCalledWith(0);
     });
 
+    it('多骰重掷后只应让被选中的那颗骰子播放重投动画', async () => {
+        vi.useFakeTimers();
+
+        const readRollingStates = () => screen.getAllByTestId('dice-3d').map((die) => {
+            const cube = die.firstElementChild as HTMLElement | null;
+            return cube?.className.includes('animate-dice3d-bonus-tumble') ?? false;
+        });
+
+        const { rerender } = render(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                bonusDice={[
+                    { index: 0, value: 1, face: 'palm' },
+                    { index: 1, value: 2, face: 'sword' },
+                    { index: 2, value: 3, face: 'taiji' },
+                ]}
+                canReroll
+            />
+        );
+
+        await act(async () => {
+            vi.advanceTimersByTime(1200);
+        });
+        expect(readRollingStates()).toEqual([false, false, false]);
+
+        rerender(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                bonusDice={[
+                    { index: 0, value: 1, face: 'palm' },
+                    { index: 1, value: 5, face: 'sword' },
+                    { index: 2, value: 3, face: 'taiji' },
+                ]}
+                canReroll
+                lastRerolledDieIndex={1}
+                rerollAnimationKey={1}
+            />
+        );
+
+        expect(readRollingStates()).toEqual([false, true, false]);
+    });
+
     it('奖励骰展示态特写应保留首次点击保护，0.3 秒后才允许关闭', () => {
         vi.useFakeTimers();
         const onClose = vi.fn();

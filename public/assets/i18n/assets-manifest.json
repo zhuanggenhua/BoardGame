@@ -4,6 +4,1131 @@
   "id": "i18n",
   "basePrefix": "official/i18n/",
   "files": {
+    "en/smashup/cards/compressed/tts_atlas_0157978c57": {
+      "variants": {
+        "webp": {
+          "sha256": "9a93a94bcf43292b79fb93de7bb5bff00cee97c548b548b293e5f3cc3590d9b8",
+          "bytes": 790094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_0392b4d8c8": {
+      "variants": {
+        "webp": {
+          "sha256": "7b822da55280d9172f33678fcdc6afd6f2bfed023abde31d6953846b03baf986",
+          "bytes": 2511370,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_07877c7f55": {
+      "variants": {
+        "webp": {
+          "sha256": "b37038960dcf70dae881c53c8bc539b365b43a66283ca98727d5ae4770b2163c",
+          "bytes": 2033246,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_07985ccca1": {
+      "variants": {
+        "webp": {
+          "sha256": "60822d7f429baac61498e3f95c6fdded8dae08d76a5a137ffae3b9db0d1f7593",
+          "bytes": 291734,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_0811830fe4": {
+      "variants": {
+        "webp": {
+          "sha256": "2d45d63ee0f10c0588651d8b5e9a950d90ce0afe0e22b57ef90391f35c1c2f7d",
+          "bytes": 758180,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_089779424a": {
+      "variants": {
+        "webp": {
+          "sha256": "78340a7dab1b8d8069d81a02238a1aa2ed2fd8d05db6b065f7989a9d37b6afc0",
+          "bytes": 2404906,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_09617c1706": {
+      "variants": {
+        "webp": {
+          "sha256": "01a88183edbd0183eac8391738ba23e6d2e1c1a220fd0929ead70154a0fd02cf",
+          "bytes": 3382014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_0996284e1b": {
+      "variants": {
+        "webp": {
+          "sha256": "a910714975c4936b05bdeb2c7fa4dbedb889ded8c8edd149fcfeac005fa59732",
+          "bytes": 2523650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_0a564692f2": {
+      "variants": {
+        "webp": {
+          "sha256": "85d1a715aead75cf8e6cca16402d21b2ff3e80e664f6f2c8e17b090ec25385ca",
+          "bytes": 320634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_0b888d02fd": {
+      "variants": {
+        "webp": {
+          "sha256": "725f883969d209e10864557a02aa9cab74d691e11f734364b6490d06bce317cc",
+          "bytes": 260100,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_0ec09b7cdf": {
+      "variants": {
+        "webp": {
+          "sha256": "8db2d5048fae439dd34b1c2f2559ef6743db9d751e1f652803847f365677e1eb",
+          "bytes": 896634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1": {
+      "variants": {
+        "webp": {
+          "sha256": "36b8cfccda20c6528764962e9de557eb39d020740daf501d2a210d6d098feee3",
+          "bytes": 617284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_10": {
+      "variants": {
+        "webp": {
+          "sha256": "5316479b90b36b6f2790fe7cb8c96eb129c3f8b35c10dc5b411422daf09cdd60",
+          "bytes": 661094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_11": {
+      "variants": {
+        "webp": {
+          "sha256": "9e1eeddcb9134339c789c8be0c0e0b6eecd0a0f5281e7e85e2b4e422f2dce4fc",
+          "bytes": 1896162,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1111": {
+      "variants": {
+        "webp": {
+          "sha256": "e7019ede71dbeea022bf5cb04d5d3ccbd82bde9d4960d1c1c16c2e7d2a66f176",
+          "bytes": 1625332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_12": {
+      "variants": {
+        "webp": {
+          "sha256": "c4860beec1e31b6a6e039a5c2462f7dc610c61189c37da07e3aaf02a77eee682",
+          "bytes": 2251030,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1211": {
+      "variants": {
+        "webp": {
+          "sha256": "769b20e44ee31436ec9c63a214647fa2ebd130c18d414b2e5b88e962e7c03fb7",
+          "bytes": 674812,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1213": {
+      "variants": {
+        "webp": {
+          "sha256": "ef8a53840317f690360f5f3d9969ef859cf1b273e0ff07b4e227b33bbc963a1b",
+          "bytes": 2346970,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1214": {
+      "variants": {
+        "webp": {
+          "sha256": "eeff91b964ae41dc8826585bc1dc8b239ce50d2505609c2ee8e559b48cee47fa",
+          "bytes": 455326,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1216": {
+      "variants": {
+        "webp": {
+          "sha256": "49027be02dd4b8d8421e3c2d6fca2550727ce0f84eac3fe309d3606bfeb8f61f",
+          "bytes": 358510,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1217": {
+      "variants": {
+        "webp": {
+          "sha256": "9988a5f80cbe88e5988122970283cdfc478ee62d4b77ccf79d7ade53e7b3bf9d",
+          "bytes": 327438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1218": {
+      "variants": {
+        "webp": {
+          "sha256": "f5ff01980a6e9d250258488602c4c25b7f0e7bbfa4e08d077d69f129efef3cc1",
+          "bytes": 271948,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1219": {
+      "variants": {
+        "webp": {
+          "sha256": "e4d3523a71e6809648b2328f89559b0aafd42c6cafba68893405326e854cedcb",
+          "bytes": 595782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1220": {
+      "variants": {
+        "webp": {
+          "sha256": "a842a52a1191666b17638230e06c9b0d9dcc0113f0fc45dc87e5b8269b1cd1b5",
+          "bytes": 347140,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1221": {
+      "variants": {
+        "webp": {
+          "sha256": "12b29bce373c2f07607cdef8dff1be7461201e0aed5fec04741f10d322d9b9f5",
+          "bytes": 308144,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1222": {
+      "variants": {
+        "webp": {
+          "sha256": "febc5b3be18fdc6821ca61c360f2ea7ade3a9d029db7da3f653da3dc60417f57",
+          "bytes": 341676,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1223": {
+      "variants": {
+        "webp": {
+          "sha256": "ba4ab1f832caf11ea9b925861977f0fa9a7bf4be807817e02db3bf0f900bab30",
+          "bytes": 449556,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1224": {
+      "variants": {
+        "webp": {
+          "sha256": "64ea94d2c735db899b2c4b32096d2e7945daa7bf8ee386f87d399612744c1afb",
+          "bytes": 304496,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1227": {
+      "variants": {
+        "webp": {
+          "sha256": "893f9e9a8bbe812412ae0c307912dd98d808cb1aee381c72f7138257f92bc528",
+          "bytes": 1026554,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_13": {
+      "variants": {
+        "webp": {
+          "sha256": "77bc845b37bd120b3c05e7071fb8ef975d4fdff9194879a5df4c9e6d50b5f63f",
+          "bytes": 768132,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1315": {
+      "variants": {
+        "webp": {
+          "sha256": "de4f332ca89225ab89a3193ef872ccc2626b3b578deaa712a3befd367f739bcd",
+          "bytes": 1108372,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_14": {
+      "variants": {
+        "webp": {
+          "sha256": "1de8f224e29d27ae907960397e843d6e18c45767a5aff74d88a5240703648d38",
+          "bytes": 1908936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_14f0222fe4": {
+      "variants": {
+        "webp": {
+          "sha256": "9e1eeddcb9134339c789c8be0c0e0b6eecd0a0f5281e7e85e2b4e422f2dce4fc",
+          "bytes": 1896162,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_15": {
+      "variants": {
+        "webp": {
+          "sha256": "aed9dccd1b365479641a48fdd2ee1cdb626f13ab8dfd9d56a4e1af0cb2ea0222",
+          "bytes": 1861852,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_15cd3592e1": {
+      "variants": {
+        "webp": {
+          "sha256": "83039575df00203ad9723098e844b0cf2721ad741938e075455d10e3faa30c62",
+          "bytes": 2291136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_16": {
+      "variants": {
+        "webp": {
+          "sha256": "ce8e6e1ce31aa21ef1e6659874bb29bf7b6ec237f78c04627caa503191902889",
+          "bytes": 715024,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_18": {
+      "variants": {
+        "webp": {
+          "sha256": "4efd0237d505d87203118681e1b2db001c8ed38ff633f2ce4b52c573c776367e",
+          "bytes": 796132,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_183bdfa0f4": {
+      "variants": {
+        "webp": {
+          "sha256": "143fb4764f703092ee4c566851f270074780ee3f997980842c37cfb5e7548d67",
+          "bytes": 759282,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_19": {
+      "variants": {
+        "webp": {
+          "sha256": "a910714975c4936b05bdeb2c7fa4dbedb889ded8c8edd149fcfeac005fa59732",
+          "bytes": 2523650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_196": {
+      "variants": {
+        "webp": {
+          "sha256": "d6932ca56bfcf4d3240d6e8cd456380f06f8195a0757cfc8dc93eff123b24b18",
+          "bytes": 2932350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1a2e383c2d": {
+      "variants": {
+        "webp": {
+          "sha256": "cffb5cbc2fae0559eaa734b8743f3410553cfcece13e3d5f102a60ccff4d8629",
+          "bytes": 721172,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1b9028ddb6": {
+      "variants": {
+        "webp": {
+          "sha256": "9e16d0988f3da9ef30e62fab2a7c85622d10be4edeb14267428acd01560323e0",
+          "bytes": 2120302,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1d34a5c0f7": {
+      "variants": {
+        "webp": {
+          "sha256": "1b7d02cd3e1d65d283b4e6e1b9c78139ca116f532b9da5ac49d9151fe41ed261",
+          "bytes": 534760,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_1f6f56fe48": {
+      "variants": {
+        "webp": {
+          "sha256": "f0c5a80d59311f5d8aa734ee28f0c90e0ed9bb937ca470e3532d39f5cc0aa6db",
+          "bytes": 2507972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_2": {
+      "variants": {
+        "webp": {
+          "sha256": "a8d53fbaec827b3a0ebd1caaf537bbf43fe35f24601ff84428a858530c8bb8ac",
+          "bytes": 1043656,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_20": {
+      "variants": {
+        "webp": {
+          "sha256": "8405bfdb0605a646f53ba2d36ac66df5ce4e1c3d22cc0ce9ea2a8fdda52ba4bb",
+          "bytes": 799908,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_201": {
+      "variants": {
+        "webp": {
+          "sha256": "83039575df00203ad9723098e844b0cf2721ad741938e075455d10e3faa30c62",
+          "bytes": 2291136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_204": {
+      "variants": {
+        "webp": {
+          "sha256": "78340a7dab1b8d8069d81a02238a1aa2ed2fd8d05db6b065f7989a9d37b6afc0",
+          "bytes": 2404906,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_207": {
+      "variants": {
+        "webp": {
+          "sha256": "e7019ede71dbeea022bf5cb04d5d3ccbd82bde9d4960d1c1c16c2e7d2a66f176",
+          "bytes": 1625332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_21": {
+      "variants": {
+        "webp": {
+          "sha256": "f3bc63942b8a6917dd2020d55b5aa7869e3194655e75f42ca7fa544b0951990f",
+          "bytes": 770042,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_214": {
+      "variants": {
+        "webp": {
+          "sha256": "f0c5a80d59311f5d8aa734ee28f0c90e0ed9bb937ca470e3532d39f5cc0aa6db",
+          "bytes": 2507972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_216": {
+      "variants": {
+        "webp": {
+          "sha256": "a2f1323ee30a68b189ec35f0832346a35b05a4f74905fdf9524efdf183db71ae",
+          "bytes": 2365736,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_2198b466d5": {
+      "variants": {
+        "webp": {
+          "sha256": "eeff91b964ae41dc8826585bc1dc8b239ce50d2505609c2ee8e559b48cee47fa",
+          "bytes": 455326,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_22": {
+      "variants": {
+        "webp": {
+          "sha256": "8db2d5048fae439dd34b1c2f2559ef6743db9d751e1f652803847f365677e1eb",
+          "bytes": 896634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_225": {
+      "variants": {
+        "webp": {
+          "sha256": "83af177ed49a2b05aac5ef75397594f8d34bafdf25134fbf1e41850a758c541d",
+          "bytes": 2272066,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_226": {
+      "variants": {
+        "webp": {
+          "sha256": "aae871f30287d341d2769fb72c052c1c679ae7ddb3e32c15c0fe02190f77aff4",
+          "bytes": 2560350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_23": {
+      "variants": {
+        "webp": {
+          "sha256": "806e525544146bd2dc1be0d292c49ddb8bebe5af4b887239dcae4750496c00ac",
+          "bytes": 711814,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_23adde9d48": {
+      "variants": {
+        "webp": {
+          "sha256": "518f4445a657ac82a17ea3406c492a3bdd489106554a2df0026ca1212f0665ed",
+          "bytes": 634566,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_24": {
+      "variants": {
+        "webp": {
+          "sha256": "3a3a0194cf3ad371b82e56a83be659dbc7b5fe3f2a8be05e3ac66d1bc8ca0a01",
+          "bytes": 793788,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_241": {
+      "variants": {
+        "webp": {
+          "sha256": "546fa3398f5c3eb3f793dcf06c47762459f099058b6c0b387fc081ee1e326c44",
+          "bytes": 2921624,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_243": {
+      "variants": {
+        "webp": {
+          "sha256": "8963f73fa80ccd053636815c7f1cff51d11aec9a362ec44f2f24d706f3b8fa50",
+          "bytes": 1900242,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_246": {
+      "variants": {
+        "webp": {
+          "sha256": "670b297ac742cbc2896c1024b1986047a8a6b12e70a17eb8ec6697c46d6ef82d",
+          "bytes": 2304264,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_25": {
+      "variants": {
+        "webp": {
+          "sha256": "7b822da55280d9172f33678fcdc6afd6f2bfed023abde31d6953846b03baf986",
+          "bytes": 2511370,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_250": {
+      "variants": {
+        "webp": {
+          "sha256": "169e4ecba375592ca9809845a1d81661c9df6b2086fa29482ae6eb9a42ff9a37",
+          "bytes": 1918336,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_26": {
+      "variants": {
+        "webp": {
+          "sha256": "c9b34ca6c7eabf22a17d63f2cde4bdca2a4086677fc2aeb9d306b29f4a038f9b",
+          "bytes": 1563834,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_269": {
+      "variants": {
+        "webp": {
+          "sha256": "67f8477c388c22bbef5dbab38bcbdbaee7ebf354fdda525061d1c6786a362e8a",
+          "bytes": 1547808,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_27": {
+      "variants": {
+        "webp": {
+          "sha256": "bbcbcd6d05a303f5e9fccf478553a38482e8de89c1f3a3c756da080966039d68",
+          "bytes": 1587616,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_271": {
+      "variants": {
+        "webp": {
+          "sha256": "cc3c51e0bcc0cebb0abe7cf4c88f05a1119fa942920836fede623fd2ca2ebbfd",
+          "bytes": 2682440,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_272": {
+      "variants": {
+        "webp": {
+          "sha256": "3c840098a0a4022cbcc52b8f9f83956f957c1602e0487bffb94dcd38b9f10e99",
+          "bytes": 2396784,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_273": {
+      "variants": {
+        "webp": {
+          "sha256": "e8de0436fc4f4370f549bb9ec8c8898c8e91d0c48580b3431e5f816d960ee139",
+          "bytes": 3031950,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_28": {
+      "variants": {
+        "webp": {
+          "sha256": "4cb39b325e610ba7344c5367db17947d0983cb519e70dc76173ebc6a6e36f1b2",
+          "bytes": 1330470,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_289": {
+      "variants": {
+        "webp": {
+          "sha256": "01a88183edbd0183eac8391738ba23e6d2e1c1a220fd0929ead70154a0fd02cf",
+          "bytes": 3382014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_29": {
+      "variants": {
+        "webp": {
+          "sha256": "0b606a68816d0ef49944631073cc49ab5f7f05f4bc07e04e7a51cb0480aebd94",
+          "bytes": 2155386,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_29c71570f6": {
+      "variants": {
+        "webp": {
+          "sha256": "0b606a68816d0ef49944631073cc49ab5f7f05f4bc07e04e7a51cb0480aebd94",
+          "bytes": 2155386,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_2bd9d5a3e5": {
+      "variants": {
+        "webp": {
+          "sha256": "7789d44daa3754a6b55c53afeb8d84e6f4471b6e8fefc6d50bc47d57129a3ea4",
+          "bytes": 3156924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_2f22a88c27": {
+      "variants": {
+        "webp": {
+          "sha256": "aa0e20a03d202f33cbcb4773688f0e6c6a6de6995f71aed67bee58fc4bf379e5",
+          "bytes": 849318,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_2f2c64cf07": {
+      "variants": {
+        "webp": {
+          "sha256": "6b7b8bfb3dbf68aeb3aedac50a99f87df5d94c10719af9eef2d3b551c848996f",
+          "bytes": 870894,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_3": {
+      "variants": {
+        "webp": {
+          "sha256": "59fe2869ca765159368eec95589b947630638e5b4572bdc8b62c40039830cd43",
+          "bytes": 657722,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_30": {
+      "variants": {
+        "webp": {
+          "sha256": "3cae7b0ec00cd7d9f8a3a19be1ed6aa7e3326e69a1df6962ddcc4f0bf0d167fe",
+          "bytes": 2114318,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_303683745f": {
+      "variants": {
+        "webp": {
+          "sha256": "c4860beec1e31b6a6e039a5c2462f7dc610c61189c37da07e3aaf02a77eee682",
+          "bytes": 2251030,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_31": {
+      "variants": {
+        "webp": {
+          "sha256": "a0cecabd0a99332f547ac04aa4e643749a276d9ad4a0969c342da48591fd2912",
+          "bytes": 2578698,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_32": {
+      "variants": {
+        "webp": {
+          "sha256": "b37038960dcf70dae881c53c8bc539b365b43a66283ca98727d5ae4770b2163c",
+          "bytes": 2033246,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_33": {
+      "variants": {
+        "webp": {
+          "sha256": "ff167dec92a57d274030a3b0fc0f98b0c913176f168a2214ef13cf1c048a02b7",
+          "bytes": 2682930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_34": {
+      "variants": {
+        "webp": {
+          "sha256": "f34378cd6fc35c2b62f2df3bf84dc962b0222a2339a02f78400bacc1cb530196",
+          "bytes": 1986014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_34823f3ac6": {
+      "variants": {
+        "webp": {
+          "sha256": "a2f1323ee30a68b189ec35f0832346a35b05a4f74905fdf9524efdf183db71ae",
+          "bytes": 2365736,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_34ab70c63a": {
+      "variants": {
+        "webp": {
+          "sha256": "3a3a0194cf3ad371b82e56a83be659dbc7b5fe3f2a8be05e3ac66d1bc8ca0a01",
+          "bytes": 793788,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_35": {
+      "variants": {
+        "webp": {
+          "sha256": "6b7b8bfb3dbf68aeb3aedac50a99f87df5d94c10719af9eef2d3b551c848996f",
+          "bytes": 870894,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_35baee482e": {
+      "variants": {
+        "webp": {
+          "sha256": "a603736bdfbd55fc619c1fbd2196bf095a688eb3fbd3766d130cdb6e738fb6bd",
+          "bytes": 729588,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_36": {
+      "variants": {
+        "webp": {
+          "sha256": "82b99caa664e5ab20c8524d78bbe41ce7a418dfe8f60a8e850c7a02aafe0a44a",
+          "bytes": 746686,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_37": {
+      "variants": {
+        "webp": {
+          "sha256": "eb9c85226a716a806931b4bc84180af99c52a40e9e44a2539a2db7273dd9e25f",
+          "bytes": 909240,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_38": {
+      "variants": {
+        "webp": {
+          "sha256": "c3c7e6eec7a2abfda8fc477bcfc2c7a451c4eb8f877c6ed4d3da2c5b21aedfaf",
+          "bytes": 702316,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_39": {
+      "variants": {
+        "webp": {
+          "sha256": "441bc9f514f6915c0148deeb41142f298511e7e2dc46f43c402acf31cdf4b368",
+          "bytes": 925038,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_4": {
+      "variants": {
+        "webp": {
+          "sha256": "6d436968608480ccffe9131b982a256b25eef22e1448e19a4bec4d64b4dc52ee",
+          "bytes": 1967064,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_40": {
+      "variants": {
+        "webp": {
+          "sha256": "6c39804e53c43bf61190d707d13cb845e9ff54e489d61e8dd347bab5c10863d7",
+          "bytes": 1137054,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_41": {
+      "variants": {
+        "webp": {
+          "sha256": "939ba47442f2cfcf3bff211e6285c39c5b6d087cd182ff077ef1a192cdb9a1dd",
+          "bytes": 829810,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_4162ed0c77": {
+      "variants": {
+        "webp": {
+          "sha256": "8405bfdb0605a646f53ba2d36ac66df5ce4e1c3d22cc0ce9ea2a8fdda52ba4bb",
+          "bytes": 799908,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_41f3be19c7": {
+      "variants": {
+        "webp": {
+          "sha256": "939ba47442f2cfcf3bff211e6285c39c5b6d087cd182ff077ef1a192cdb9a1dd",
+          "bytes": 829810,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_42": {
+      "variants": {
+        "webp": {
+          "sha256": "3e964a4a1190dd3baaad6df5604356956fcd90334f1cb005e78c0d753f83742a",
+          "bytes": 674048,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_42d874dd65": {
+      "variants": {
+        "webp": {
+          "sha256": "62285decd476be5c98403cd2f4d37596b158522a7c00c75617114c76d8edc55f",
+          "bytes": 932616,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_43": {
+      "variants": {
+        "webp": {
+          "sha256": "4ffb7a215b5f8b67ab6eb1f149e38189bd013b049c74ce1ded094ee9e448b00a",
+          "bytes": 625966,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_43f235a8d6": {
+      "variants": {
+        "webp": {
+          "sha256": "a0f8eeea40bb37e5d2d975c5803598c3677ff34aec2bb550a899ea1b8f33c552",
+          "bytes": 798914,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_44": {
+      "variants": {
+        "webp": {
+          "sha256": "b7dd9c89f81e036f7460ff03ccae749df8b9082c3044cddb39adf0545267e94c",
+          "bytes": 776396,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_44bfecde20": {
+      "variants": {
+        "webp": {
+          "sha256": "806e525544146bd2dc1be0d292c49ddb8bebe5af4b887239dcae4750496c00ac",
+          "bytes": 711814,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_45": {
+      "variants": {
+        "webp": {
+          "sha256": "a603736bdfbd55fc619c1fbd2196bf095a688eb3fbd3766d130cdb6e738fb6bd",
+          "bytes": 729588,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_46": {
+      "variants": {
+        "webp": {
+          "sha256": "cffb5cbc2fae0559eaa734b8743f3410553cfcece13e3d5f102a60ccff4d8629",
+          "bytes": 721172,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_47": {
+      "variants": {
+        "webp": {
+          "sha256": "889178d259a6e764f0ad4a022dece3c99ea05f4b6cc3696de736d8db10e528b4",
+          "bytes": 654984,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_48": {
+      "variants": {
+        "webp": {
+          "sha256": "62285decd476be5c98403cd2f4d37596b158522a7c00c75617114c76d8edc55f",
+          "bytes": 932616,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_485d4516a6": {
+      "variants": {
+        "webp": {
+          "sha256": "c7dcf1c9e4f0d4aee2c18357d491974a2cff469d0af44094341314a335c804ba",
+          "bytes": 960678,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_49": {
+      "variants": {
+        "webp": {
+          "sha256": "8178d9f455f8bc5522c64ae98c8edb503ad3f6b2584d1b7446c216c9ec12f391",
+          "bytes": 720920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_49842bb3f0": {
+      "variants": {
+        "webp": {
+          "sha256": "1287017fd7feeeb7921ce6a77ac5b296902fcb1ef79004521c83c2324252f75f",
+          "bytes": 2542912,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_4ac4e636af": {
+      "variants": {
+        "webp": {
+          "sha256": "52dd86ee60e29b8a2e4c797e8e8687bad1dd8b8ed4a0f41fb625084608b28e56",
+          "bytes": 661096,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_4b991aec61": {
+      "variants": {
+        "webp": {
+          "sha256": "ff4158a48b8fb76553dbf6f611f2483c351ef913987dad640aa73d4d74338ace",
+          "bytes": 833404,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_4be7434878": {
+      "variants": {
+        "webp": {
+          "sha256": "2af4da3c2ef1cd17e7654bb4c8bb1278b0126100d0dcc1a8715dca67b92883a2",
+          "bytes": 834300,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_4c71f8845b": {
+      "variants": {
+        "webp": {
+          "sha256": "e7019ede71dbeea022bf5cb04d5d3ccbd82bde9d4960d1c1c16c2e7d2a66f176",
+          "bytes": 1625332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_4d5d4ba0b7": {
+      "variants": {
+        "webp": {
+          "sha256": "7b1d7387b9b93703587bdbdc9d47ee29d0bf3bd9618db96cb737df670cae950a",
+          "bytes": 904334,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_4e78c08ea1": {
+      "variants": {
+        "webp": {
+          "sha256": "30449f4b831d18a6d7e907a18ee5a93d71fcf4cd282d88012d72dc5bdab9b7fe",
+          "bytes": 951510,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_4eb9dd5d6c": {
+      "variants": {
+        "webp": {
+          "sha256": "ddd34c0253bab9092d25319d908c1490ecf74630114f79fd94d4033445aa5450",
+          "bytes": 930910,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_4f40a5ed86": {
+      "variants": {
+        "webp": {
+          "sha256": "55354a8f9cb10450d7571f3b11db8c5f3f9e2f5544e425c00c53d7877b79592f",
+          "bytes": 816044,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_5": {
+      "variants": {
+        "webp": {
+          "sha256": "c78d0a085dbb177db6858f7d131c0ec8289fa63a664bfc8922795cb093ac7688",
+          "bytes": 653466,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_50": {
+      "variants": {
+        "webp": {
+          "sha256": "bc4ca514fba5ed7588010d9c2abb99f7012098fa79d4e40b126c762918bc7e97",
+          "bytes": 1005926,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_51": {
+      "variants": {
+        "webp": {
+          "sha256": "a28794850bdd153442d72985456dec9d72a26c971d84c69407ad8b6d5aaf096f",
+          "bytes": 694098,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_51dad24c60": {
+      "variants": {
+        "webp": {
+          "sha256": "7326f9c783d4448f8a9248eca1e46839abab5b28602d8450f904197c91b0e987",
+          "bytes": 781336,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_52": {
+      "variants": {
+        "webp": {
+          "sha256": "9f613994a7c47de2a05d72a3c3a02b0ebd1eba49d9574d4cd7a5553294b1e0a0",
+          "bytes": 878988,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_52070a521b": {
+      "variants": {
+        "webp": {
+          "sha256": "62cc6ec7514a869519eb65a2ba4b06a79e9bd6642293a74be8ef4e463218a478",
+          "bytes": 321448,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_5340dc25f5": {
+      "variants": {
+        "webp": {
+          "sha256": "4ffb7a215b5f8b67ab6eb1f149e38189bd013b049c74ce1ded094ee9e448b00a",
+          "bytes": 625966,
+          "mime": "image/webp"
+        }
+      }
+    },
     "en/smashup/cards/compressed/tts_atlas_54": {
       "variants": {
         "webp": {
@@ -22,11 +1147,425 @@
         }
       }
     },
+    "en/smashup/cards/compressed/tts_atlas_5529c8f177": {
+      "variants": {
+        "webp": {
+          "sha256": "83af177ed49a2b05aac5ef75397594f8d34bafdf25134fbf1e41850a758c541d",
+          "bytes": 2272066,
+          "mime": "image/webp"
+        }
+      }
+    },
     "en/smashup/cards/compressed/tts_atlas_56": {
       "variants": {
         "webp": {
           "sha256": "222fbaf7ce22397d1f4aa3fd345b484660fdf98a1ad3070f3a7a661d667c6793",
           "bytes": 868466,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_5693961bd1": {
+      "variants": {
+        "webp": {
+          "sha256": "f34378cd6fc35c2b62f2df3bf84dc962b0222a2339a02f78400bacc1cb530196",
+          "bytes": 1986014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_57": {
+      "variants": {
+        "webp": {
+          "sha256": "ddd34c0253bab9092d25319d908c1490ecf74630114f79fd94d4033445aa5450",
+          "bytes": 930910,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_58": {
+      "variants": {
+        "webp": {
+          "sha256": "85d1a715aead75cf8e6cca16402d21b2ff3e80e664f6f2c8e17b090ec25385ca",
+          "bytes": 320634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_59": {
+      "variants": {
+        "webp": {
+          "sha256": "eadd16d73e4201b6adb9ddd8188363ee334400454e954e26c7667105c215a0e3",
+          "bytes": 836014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_5b41a4b70f": {
+      "variants": {
+        "webp": {
+          "sha256": "789211167ff81789cad2e341fd1e2fd1251ae5e0554fce2946ca8ec5d2237c84",
+          "bytes": 1010494,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_5de4849f3a": {
+      "variants": {
+        "webp": {
+          "sha256": "4efd0237d505d87203118681e1b2db001c8ed38ff633f2ce4b52c573c776367e",
+          "bytes": 796132,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_5f46c2af3d": {
+      "variants": {
+        "webp": {
+          "sha256": "cc3c51e0bcc0cebb0abe7cf4c88f05a1119fa942920836fede623fd2ca2ebbfd",
+          "bytes": 2682440,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_6": {
+      "variants": {
+        "webp": {
+          "sha256": "a3de1e0ceb219a792913edbae0f2f1dad1ad073057dec43f7610b08d1a16e5db",
+          "bytes": 732942,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_60": {
+      "variants": {
+        "webp": {
+          "sha256": "96cd9f1dc74fa1641f7302a3e12ff9df98fe521f33009d530df6d5f26e160029",
+          "bytes": 851342,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_600383ce45": {
+      "variants": {
+        "webp": {
+          "sha256": "c3c7e6eec7a2abfda8fc477bcfc2c7a451c4eb8f877c6ed4d3da2c5b21aedfaf",
+          "bytes": 702316,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_6040877bdc": {
+      "variants": {
+        "webp": {
+          "sha256": "d6932ca56bfcf4d3240d6e8cd456380f06f8195a0757cfc8dc93eff123b24b18",
+          "bytes": 2932350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_60d724d1cb": {
+      "variants": {
+        "webp": {
+          "sha256": "e4d3523a71e6809648b2328f89559b0aafd42c6cafba68893405326e854cedcb",
+          "bytes": 595782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_61": {
+      "variants": {
+        "webp": {
+          "sha256": "2a39ee58df906ca8c7662ce71a9f53342bb9ad7755b6914ee4566457238d7896",
+          "bytes": 783764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_62": {
+      "variants": {
+        "webp": {
+          "sha256": "7da63fe58d7963caf7dbdabf1dbd267ac66091298b57d587a3e8616fcd77bdf8",
+          "bytes": 1173716,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_62bfd62f81": {
+      "variants": {
+        "webp": {
+          "sha256": "4cb39b325e610ba7344c5367db17947d0983cb519e70dc76173ebc6a6e36f1b2",
+          "bytes": 1330470,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_63": {
+      "variants": {
+        "webp": {
+          "sha256": "1287017fd7feeeb7921ce6a77ac5b296902fcb1ef79004521c83c2324252f75f",
+          "bytes": 2542912,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_6395c5f4bd": {
+      "variants": {
+        "webp": {
+          "sha256": "c9b34ca6c7eabf22a17d63f2cde4bdca2a4086677fc2aeb9d306b29f4a038f9b",
+          "bytes": 1563834,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_64": {
+      "variants": {
+        "webp": {
+          "sha256": "dcfd7bee2c5a2e4eec212611d5a31d6369fec78b9b9a2d66d6c0cfbdba6af493",
+          "bytes": 1072968,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_65": {
+      "variants": {
+        "webp": {
+          "sha256": "ff4158a48b8fb76553dbf6f611f2483c351ef913987dad640aa73d4d74338ace",
+          "bytes": 833404,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_66": {
+      "variants": {
+        "webp": {
+          "sha256": "55354a8f9cb10450d7571f3b11db8c5f3f9e2f5544e425c00c53d7877b79592f",
+          "bytes": 816044,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_66a73f8c2b": {
+      "variants": {
+        "webp": {
+          "sha256": "3e964a4a1190dd3baaad6df5604356956fcd90334f1cb005e78c0d753f83742a",
+          "bytes": 674048,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_66b01e463b": {
+      "variants": {
+        "webp": {
+          "sha256": "5857dbfccac086e78c6576bd55839a73f6bb8147516dce4bbcff98e84786966f",
+          "bytes": 843486,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_67": {
+      "variants": {
+        "webp": {
+          "sha256": "c71fb814186e42998f3808825cc92d0964753b2b69941ed576e70141d26c173f",
+          "bytes": 750056,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_670635d440": {
+      "variants": {
+        "webp": {
+          "sha256": "225d92cfa6ef0c64a63bbd14d53006374136107624bd398f3219ce0417004dea",
+          "bytes": 339448,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_68": {
+      "variants": {
+        "webp": {
+          "sha256": "0b56f1604f3cfa3d090057e3eac470dd1a620a7d6cda0b1015a9dc1ca205b7cf",
+          "bytes": 894782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_69": {
+      "variants": {
+        "webp": {
+          "sha256": "7bc22ca966e0989cebeed1d76290a710a7039f42ca9757b7d332ab9be1f154fb",
+          "bytes": 797900,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_6b5b5880e4": {
+      "variants": {
+        "webp": {
+          "sha256": "7bc22ca966e0989cebeed1d76290a710a7039f42ca9757b7d332ab9be1f154fb",
+          "bytes": 797900,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_6c775eca08": {
+      "variants": {
+        "webp": {
+          "sha256": "e8de0436fc4f4370f549bb9ec8c8898c8e91d0c48580b3431e5f816d960ee139",
+          "bytes": 3031950,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_6df31169cb": {
+      "variants": {
+        "webp": {
+          "sha256": "9e4db4438716840341327f2d76a400320cdbff42c79f60b91c4b3ab2c74dec19",
+          "bytes": 853782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_6e805b2c17": {
+      "variants": {
+        "webp": {
+          "sha256": "0296443f1252a050f6b018ef94b63cccb4d2481af4f330ba37d2e51edb718f63",
+          "bytes": 1104882,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_7": {
+      "variants": {
+        "webp": {
+          "sha256": "67a8aaa0301fea11074a3be557ebe34d9ae0de17db4c1168f449f9d575e7d9d9",
+          "bytes": 1918066,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_70": {
+      "variants": {
+        "webp": {
+          "sha256": "518f4445a657ac82a17ea3406c492a3bdd489106554a2df0026ca1212f0665ed",
+          "bytes": 634566,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_71": {
+      "variants": {
+        "webp": {
+          "sha256": "88acec587f431220c2d91e52d7d792efbba8a6da65ccfe913d6c922ef7c51d63",
+          "bytes": 1072828,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_71884a4b2b": {
+      "variants": {
+        "webp": {
+          "sha256": "a98261508cabc94d9f18c9f16b3afcbb97a0fda0e9a14384fcb16f9e1084f813",
+          "bytes": 949772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_72": {
+      "variants": {
+        "webp": {
+          "sha256": "a0f8eeea40bb37e5d2d975c5803598c3677ff34aec2bb550a899ea1b8f33c552",
+          "bytes": 798914,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_73": {
+      "variants": {
+        "webp": {
+          "sha256": "0296443f1252a050f6b018ef94b63cccb4d2481af4f330ba37d2e51edb718f63",
+          "bytes": 1104882,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_737": {
+      "variants": {
+        "webp": {
+          "sha256": "7789d44daa3754a6b55c53afeb8d84e6f4471b6e8fefc6d50bc47d57129a3ea4",
+          "bytes": 3156924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_74": {
+      "variants": {
+        "webp": {
+          "sha256": "9e16d0988f3da9ef30e62fab2a7c85622d10be4edeb14267428acd01560323e0",
+          "bytes": 2120302,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_74a43bf42f": {
+      "variants": {
+        "webp": {
+          "sha256": "6c39804e53c43bf61190d707d13cb845e9ff54e489d61e8dd347bab5c10863d7",
+          "bytes": 1137054,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_74e70018e2": {
+      "variants": {
+        "webp": {
+          "sha256": "7da63fe58d7963caf7dbdabf1dbd267ac66091298b57d587a3e8616fcd77bdf8",
+          "bytes": 1173716,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_75": {
+      "variants": {
+        "webp": {
+          "sha256": "225d92cfa6ef0c64a63bbd14d53006374136107624bd398f3219ce0417004dea",
+          "bytes": 339448,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_752d625ca7": {
+      "variants": {
+        "webp": {
+          "sha256": "aa4c5c1206a52a6fbc1eca1872a91bfd6ed01b51b35fd4427de63db82d1fc04b",
+          "bytes": 1715632,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_75bed3fb10": {
+      "variants": {
+        "webp": {
+          "sha256": "96cd9f1dc74fa1641f7302a3e12ff9df98fe521f33009d530df6d5f26e160029",
+          "bytes": 851342,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_76": {
+      "variants": {
+        "webp": {
+          "sha256": "143fb4764f703092ee4c566851f270074780ee3f997980842c37cfb5e7548d67",
+          "bytes": 759282,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_77": {
+      "variants": {
+        "webp": {
+          "sha256": "675ee31f00149e5e540f50e4cc44c4d5151ea0df4c4b17fa5c6989974ba09631",
+          "bytes": 906352,
           "mime": "image/webp"
         }
       }
@@ -49,11 +1588,2405 @@
         }
       }
     },
+    "en/smashup/cards/compressed/tts_atlas_794cc8ef13": {
+      "variants": {
+        "webp": {
+          "sha256": "9988a5f80cbe88e5988122970283cdfc478ee62d4b77ccf79d7ade53e7b3bf9d",
+          "bytes": 327438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_795e8e6e5c": {
+      "variants": {
+        "webp": {
+          "sha256": "b547d6d76bc2245be58a61d2733982c60a8d30e2f2cc3b69a59564488cc8c745",
+          "bytes": 900392,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_7ac1b5109f": {
+      "variants": {
+        "webp": {
+          "sha256": "78a5c229e0e698ad3895a60677f2ccf672c019decf0b885d7081d10b45ce225f",
+          "bytes": 747898,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_7bd50d35b3": {
+      "variants": {
+        "webp": {
+          "sha256": "bbcbcd6d05a303f5e9fccf478553a38482e8de89c1f3a3c756da080966039d68",
+          "bytes": 1587616,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_8": {
+      "variants": {
+        "webp": {
+          "sha256": "aa0e20a03d202f33cbcb4773688f0e6c6a6de6995f71aed67bee58fc4bf379e5",
+          "bytes": 849318,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_83": {
+      "variants": {
+        "webp": {
+          "sha256": "7b1d7387b9b93703587bdbdc9d47ee29d0bf3bd9618db96cb737df670cae950a",
+          "bytes": 904334,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_8310911466": {
+      "variants": {
+        "webp": {
+          "sha256": "1cd31144356b35ac41fbc9ce903f76fea762919fa329a41fb1e922d5d5bcf5d6",
+          "bytes": 1052924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_864ee0f922": {
+      "variants": {
+        "webp": {
+          "sha256": "889178d259a6e764f0ad4a022dece3c99ea05f4b6cc3696de736d8db10e528b4",
+          "bytes": 654984,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_86c81d3243": {
+      "variants": {
+        "webp": {
+          "sha256": "ba4ab1f832caf11ea9b925861977f0fa9a7bf4be807817e02db3bf0f900bab30",
+          "bytes": 449556,
+          "mime": "image/webp"
+        }
+      }
+    },
     "en/smashup/cards/compressed/tts_atlas_8789f47742": {
       "variants": {
         "webp": {
           "sha256": "e21bf2e15a921afe5a7a6cd38b263a6c0388454b585d70b4d45d5eac72755034",
           "bytes": 2677026,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_8d51577efe": {
+      "variants": {
+        "webp": {
+          "sha256": "441bc9f514f6915c0148deeb41142f298511e7e2dc46f43c402acf31cdf4b368",
+          "bytes": 925038,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_8eb624b12c": {
+      "variants": {
+        "webp": {
+          "sha256": "aae72b8ca628f138a9f0867753f179b7d301a1f3347ea91d636ae7beb188ea31",
+          "bytes": 536082,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_9": {
+      "variants": {
+        "webp": {
+          "sha256": "b7f3ca26bfde3b6f5586a74a8c382aa8f14ecc5e3b4a1d439dd27e8f7ff57751",
+          "bytes": 896588,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_9024433d46": {
+      "variants": {
+        "webp": {
+          "sha256": "3c840098a0a4022cbcc52b8f9f83956f957c1602e0487bffb94dcd38b9f10e99",
+          "bytes": 2396784,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_93ed960187": {
+      "variants": {
+        "webp": {
+          "sha256": "769b20e44ee31436ec9c63a214647fa2ebd130c18d414b2e5b88e962e7c03fb7",
+          "bytes": 674812,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_946084ab91": {
+      "variants": {
+        "webp": {
+          "sha256": "222fbaf7ce22397d1f4aa3fd345b484660fdf98a1ad3070f3a7a661d667c6793",
+          "bytes": 868466,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_976846e145": {
+      "variants": {
+        "webp": {
+          "sha256": "169e4ecba375592ca9809845a1d81661c9df6b2086fa29482ae6eb9a42ff9a37",
+          "bytes": 1918336,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_9927d7beff": {
+      "variants": {
+        "webp": {
+          "sha256": "eadd16d73e4201b6adb9ddd8188363ee334400454e954e26c7667105c215a0e3",
+          "bytes": 836014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_9ae2a2880e": {
+      "variants": {
+        "webp": {
+          "sha256": "5316479b90b36b6f2790fe7cb8c96eb129c3f8b35c10dc5b411422daf09cdd60",
+          "bytes": 661094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_9aed5872d2": {
+      "variants": {
+        "webp": {
+          "sha256": "f5ff01980a6e9d250258488602c4c25b7f0e7bbfa4e08d077d69f129efef3cc1",
+          "bytes": 271948,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_9b3f8bcbc7": {
+      "variants": {
+        "webp": {
+          "sha256": "c71fb814186e42998f3808825cc92d0964753b2b69941ed576e70141d26c173f",
+          "bytes": 750056,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_9c48771dd1": {
+      "variants": {
+        "webp": {
+          "sha256": "febc5b3be18fdc6821ca61c360f2ea7ade3a9d029db7da3f653da3dc60417f57",
+          "bytes": 341676,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_a324c8f8f4": {
+      "variants": {
+        "webp": {
+          "sha256": "82b99caa664e5ab20c8524d78bbe41ce7a418dfe8f60a8e850c7a02aafe0a44a",
+          "bytes": 746686,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_a385555b59": {
+      "variants": {
+        "webp": {
+          "sha256": "893f9e9a8bbe812412ae0c307912dd98d808cb1aee381c72f7138257f92bc528",
+          "bytes": 1026554,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_a686a49a10": {
+      "variants": {
+        "webp": {
+          "sha256": "bc1c6059de8b28044efcdca9e4af642b66d43cdaaec46df79ae20458c827f7e5",
+          "bytes": 810126,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_a77782df57": {
+      "variants": {
+        "webp": {
+          "sha256": "8963f73fa80ccd053636815c7f1cff51d11aec9a362ec44f2f24d706f3b8fa50",
+          "bytes": 1900242,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_a9e2eeadeb": {
+      "variants": {
+        "webp": {
+          "sha256": "18965e54942cb37eaa3c12afe1875e2e2ec42b9053c4b4bb656474e1d2d33426",
+          "bytes": 2139364,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_aa707fdcbc": {
+      "variants": {
+        "webp": {
+          "sha256": "45e4e1ffac4d1b72c9c2788a5ce80c4fc9893066168471ffdcb7e4de19c0e65d",
+          "bytes": 849660,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_aa830cae17": {
+      "variants": {
+        "webp": {
+          "sha256": "59fe2869ca765159368eec95589b947630638e5b4572bdc8b62c40039830cd43",
+          "bytes": 657722,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_ad1adf9026": {
+      "variants": {
+        "webp": {
+          "sha256": "eb9c85226a716a806931b4bc84180af99c52a40e9e44a2539a2db7273dd9e25f",
+          "bytes": 909240,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_ae74eb71e5": {
+      "variants": {
+        "webp": {
+          "sha256": "f3bc63942b8a6917dd2020d55b5aa7869e3194655e75f42ca7fa544b0951990f",
+          "bytes": 770042,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_af0e18eb13": {
+      "variants": {
+        "webp": {
+          "sha256": "aae871f30287d341d2769fb72c052c1c679ae7ddb3e32c15c0fe02190f77aff4",
+          "bytes": 2560350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_b4c2b36b89": {
+      "variants": {
+        "webp": {
+          "sha256": "670b297ac742cbc2896c1024b1986047a8a6b12e70a17eb8ec6697c46d6ef82d",
+          "bytes": 2304264,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_b582d5c5a5": {
+      "variants": {
+        "webp": {
+          "sha256": "2a39ee58df906ca8c7662ce71a9f53342bb9ad7755b6914ee4566457238d7896",
+          "bytes": 783764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_b83bad4e65": {
+      "variants": {
+        "webp": {
+          "sha256": "ce8e6e1ce31aa21ef1e6659874bb29bf7b6ec237f78c04627caa503191902889",
+          "bytes": 715024,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_bb6d9458a5": {
+      "variants": {
+        "webp": {
+          "sha256": "871dea6998fefd4d115d3521bf7a91f4c4db60d6eda6a23ea6199347ccf962fa",
+          "bytes": 1437674,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_bcb4f4caab": {
+      "variants": {
+        "webp": {
+          "sha256": "ef8a53840317f690360f5f3d9969ef859cf1b273e0ff07b4e227b33bbc963a1b",
+          "bytes": 2346970,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_bcb76c662b": {
+      "variants": {
+        "webp": {
+          "sha256": "b8e8ed40de26556920228773eff68bbdbb18ca7178a1b12e4fd0bdbadaa47843",
+          "bytes": 2187782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_bd1dfb4157": {
+      "variants": {
+        "webp": {
+          "sha256": "49027be02dd4b8d8421e3c2d6fca2550727ce0f84eac3fe309d3606bfeb8f61f",
+          "bytes": 358510,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_bd2112e526": {
+      "variants": {
+        "webp": {
+          "sha256": "a3462eb28db1d124f434b2090ad2cb09eb514039aa7212fb539ca30435840643",
+          "bytes": 906648,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_bd2c1f70da": {
+      "variants": {
+        "webp": {
+          "sha256": "88acec587f431220c2d91e52d7d792efbba8a6da65ccfe913d6c922ef7c51d63",
+          "bytes": 1072828,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_bde38a3fbd": {
+      "variants": {
+        "webp": {
+          "sha256": "3cae7b0ec00cd7d9f8a3a19be1ed6aa7e3326e69a1df6962ddcc4f0bf0d167fe",
+          "bytes": 2114318,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_bdef9d8107": {
+      "variants": {
+        "webp": {
+          "sha256": "7d75a941ac691a0144f08829c549f6ce9a9f4d66401ecbf97bb21ca83c77df5d",
+          "bytes": 1374568,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_be186a4bb6": {
+      "variants": {
+        "webp": {
+          "sha256": "546fa3398f5c3eb3f793dcf06c47762459f099058b6c0b387fc081ee1e326c44",
+          "bytes": 2921624,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_be3505fbd7": {
+      "variants": {
+        "webp": {
+          "sha256": "aed9dccd1b365479641a48fdd2ee1cdb626f13ab8dfd9d56a4e1af0cb2ea0222",
+          "bytes": 1861852,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_bf3878fbe2": {
+      "variants": {
+        "webp": {
+          "sha256": "696ae49258a543ef8ea75e4562ba80696ac0d78105e821db780b10f5959d9183",
+          "bytes": 2176112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_bf7d1fd1e9": {
+      "variants": {
+        "webp": {
+          "sha256": "b7dd9c89f81e036f7460ff03ccae749df8b9082c3044cddb39adf0545267e94c",
+          "bytes": 776396,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_c05086eaaa": {
+      "variants": {
+        "webp": {
+          "sha256": "bc4ca514fba5ed7588010d9c2abb99f7012098fa79d4e40b126c762918bc7e97",
+          "bytes": 1005926,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_c3b09d55e4": {
+      "variants": {
+        "webp": {
+          "sha256": "675ee31f00149e5e540f50e4cc44c4d5151ea0df4c4b17fa5c6989974ba09631",
+          "bytes": 906352,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_c41ac32dcd": {
+      "variants": {
+        "webp": {
+          "sha256": "eeec78988bd77ac4cc3231eeb379e0290e9bfe3deb99883af11d54d5d9ac6e80",
+          "bytes": 1124400,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_c83b7ab51f": {
+      "variants": {
+        "webp": {
+          "sha256": "1d1b70de81efa04a09ce3800d4c8970ec101f430b934f45f12becdae9e95dac2",
+          "bytes": 88762,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_cf516fcdc3": {
+      "variants": {
+        "webp": {
+          "sha256": "a0cecabd0a99332f547ac04aa4e643749a276d9ad4a0969c342da48591fd2912",
+          "bytes": 2578698,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_d3225f8d13": {
+      "variants": {
+        "webp": {
+          "sha256": "dcfd7bee2c5a2e4eec212611d5a31d6369fec78b9b9a2d66d6c0cfbdba6af493",
+          "bytes": 1072968,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_d5a8749d27": {
+      "variants": {
+        "webp": {
+          "sha256": "a8d53fbaec827b3a0ebd1caaf537bbf43fe35f24601ff84428a858530c8bb8ac",
+          "bytes": 1043656,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_d82adb6729": {
+      "variants": {
+        "webp": {
+          "sha256": "77bc845b37bd120b3c05e7071fb8ef975d4fdff9194879a5df4c9e6d50b5f63f",
+          "bytes": 768132,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_da4636e134": {
+      "variants": {
+        "webp": {
+          "sha256": "de4f332ca89225ab89a3193ef872ccc2626b3b578deaa712a3befd367f739bcd",
+          "bytes": 1108372,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_db2a02c617": {
+      "variants": {
+        "webp": {
+          "sha256": "a28794850bdd153442d72985456dec9d72a26c971d84c69407ad8b6d5aaf096f",
+          "bytes": 694098,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_db8169bde7": {
+      "variants": {
+        "webp": {
+          "sha256": "36b8cfccda20c6528764962e9de557eb39d020740daf501d2a210d6d098feee3",
+          "bytes": 617284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_dc8145c335": {
+      "variants": {
+        "webp": {
+          "sha256": "a3de1e0ceb219a792913edbae0f2f1dad1ad073057dec43f7610b08d1a16e5db",
+          "bytes": 732942,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_dddbad1f6c": {
+      "variants": {
+        "webp": {
+          "sha256": "c78d0a085dbb177db6858f7d131c0ec8289fa63a664bfc8922795cb093ac7688",
+          "bytes": 653466,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_de514149af": {
+      "variants": {
+        "webp": {
+          "sha256": "9f613994a7c47de2a05d72a3c3a02b0ebd1eba49d9574d4cd7a5553294b1e0a0",
+          "bytes": 878988,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_dfcc237ab2": {
+      "variants": {
+        "webp": {
+          "sha256": "64ea94d2c735db899b2c4b32096d2e7945daa7bf8ee386f87d399612744c1afb",
+          "bytes": 304496,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_e67949e1ba": {
+      "variants": {
+        "webp": {
+          "sha256": "1de8f224e29d27ae907960397e843d6e18c45767a5aff74d88a5240703648d38",
+          "bytes": 1908936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_e8b5b06d38": {
+      "variants": {
+        "webp": {
+          "sha256": "67f8477c388c22bbef5dbab38bcbdbaee7ebf354fdda525061d1c6786a362e8a",
+          "bytes": 1547808,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_eb94df26cf": {
+      "variants": {
+        "webp": {
+          "sha256": "a842a52a1191666b17638230e06c9b0d9dcc0113f0fc45dc87e5b8269b1cd1b5",
+          "bytes": 347140,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_ebe6348cfc": {
+      "variants": {
+        "webp": {
+          "sha256": "b7f3ca26bfde3b6f5586a74a8c382aa8f14ecc5e3b4a1d439dd27e8f7ff57751",
+          "bytes": 896588,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_ee67c46828": {
+      "variants": {
+        "webp": {
+          "sha256": "67a8aaa0301fea11074a3be557ebe34d9ae0de17db4c1168f449f9d575e7d9d9",
+          "bytes": 1918066,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_ee8ec4b4de": {
+      "variants": {
+        "webp": {
+          "sha256": "ff167dec92a57d274030a3b0fc0f98b0c913176f168a2214ef13cf1c048a02b7",
+          "bytes": 2682930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_f13fd6e7b0": {
+      "variants": {
+        "webp": {
+          "sha256": "9b308b645a9db7fcf54a22a3ede9b2356c67b0155f8c97db817345d0e86bf78f",
+          "bytes": 1130864,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_f3fba3157d": {
+      "variants": {
+        "webp": {
+          "sha256": "0b56f1604f3cfa3d090057e3eac470dd1a620a7d6cda0b1015a9dc1ca205b7cf",
+          "bytes": 894782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_f6db5f7d36": {
+      "variants": {
+        "webp": {
+          "sha256": "8178d9f455f8bc5522c64ae98c8edb503ad3f6b2584d1b7446c216c9ec12f391",
+          "bytes": 720920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_fa522a4b3d": {
+      "variants": {
+        "webp": {
+          "sha256": "6d436968608480ccffe9131b982a256b25eef22e1448e19a4bec4d64b4dc52ee",
+          "bytes": 1967064,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_fc7c333356": {
+      "variants": {
+        "webp": {
+          "sha256": "9f676b7ecf609898fbab1fedc4f459c4ce2775dd132f47e7a2d2d00559ab932c",
+          "bytes": 164014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/cards/compressed/tts_atlas_feba133f58": {
+      "variants": {
+        "webp": {
+          "sha256": "12b29bce373c2f07607cdef8dff1be7461201e0aed5fec04741f10d322d9b9f5",
+          "bytes": 308144,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_0157978c57": {
+      "variants": {
+        "webp": {
+          "sha256": "9a93a94bcf43292b79fb93de7bb5bff00cee97c548b548b293e5f3cc3590d9b8",
+          "bytes": 790094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_0811830fe4": {
+      "variants": {
+        "webp": {
+          "sha256": "2d45d63ee0f10c0588651d8b5e9a950d90ce0afe0e22b57ef90391f35c1c2f7d",
+          "bytes": 758180,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_0b888d02fd": {
+      "variants": {
+        "webp": {
+          "sha256": "725f883969d209e10864557a02aa9cab74d691e11f734364b6490d06bce317cc",
+          "bytes": 260100,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1": {
+      "variants": {
+        "webp": {
+          "sha256": "36b8cfccda20c6528764962e9de557eb39d020740daf501d2a210d6d098feee3",
+          "bytes": 617284,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_10": {
+      "variants": {
+        "webp": {
+          "sha256": "5316479b90b36b6f2790fe7cb8c96eb129c3f8b35c10dc5b411422daf09cdd60",
+          "bytes": 661094,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_11": {
+      "variants": {
+        "webp": {
+          "sha256": "9e1eeddcb9134339c789c8be0c0e0b6eecd0a0f5281e7e85e2b4e422f2dce4fc",
+          "bytes": 1896162,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_12": {
+      "variants": {
+        "webp": {
+          "sha256": "c4860beec1e31b6a6e039a5c2462f7dc610c61189c37da07e3aaf02a77eee682",
+          "bytes": 2251030,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1211": {
+      "variants": {
+        "webp": {
+          "sha256": "769b20e44ee31436ec9c63a214647fa2ebd130c18d414b2e5b88e962e7c03fb7",
+          "bytes": 674812,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1213": {
+      "variants": {
+        "webp": {
+          "sha256": "ef8a53840317f690360f5f3d9969ef859cf1b273e0ff07b4e227b33bbc963a1b",
+          "bytes": 2346970,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1214": {
+      "variants": {
+        "webp": {
+          "sha256": "eeff91b964ae41dc8826585bc1dc8b239ce50d2505609c2ee8e559b48cee47fa",
+          "bytes": 455326,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1216": {
+      "variants": {
+        "webp": {
+          "sha256": "49027be02dd4b8d8421e3c2d6fca2550727ce0f84eac3fe309d3606bfeb8f61f",
+          "bytes": 358510,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1217": {
+      "variants": {
+        "webp": {
+          "sha256": "9988a5f80cbe88e5988122970283cdfc478ee62d4b77ccf79d7ade53e7b3bf9d",
+          "bytes": 327438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1218": {
+      "variants": {
+        "webp": {
+          "sha256": "f5ff01980a6e9d250258488602c4c25b7f0e7bbfa4e08d077d69f129efef3cc1",
+          "bytes": 271948,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1219": {
+      "variants": {
+        "webp": {
+          "sha256": "e4d3523a71e6809648b2328f89559b0aafd42c6cafba68893405326e854cedcb",
+          "bytes": 595782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1220": {
+      "variants": {
+        "webp": {
+          "sha256": "a842a52a1191666b17638230e06c9b0d9dcc0113f0fc45dc87e5b8269b1cd1b5",
+          "bytes": 347140,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1221": {
+      "variants": {
+        "webp": {
+          "sha256": "12b29bce373c2f07607cdef8dff1be7461201e0aed5fec04741f10d322d9b9f5",
+          "bytes": 308144,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1222": {
+      "variants": {
+        "webp": {
+          "sha256": "febc5b3be18fdc6821ca61c360f2ea7ade3a9d029db7da3f653da3dc60417f57",
+          "bytes": 341676,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1223": {
+      "variants": {
+        "webp": {
+          "sha256": "ba4ab1f832caf11ea9b925861977f0fa9a7bf4be807817e02db3bf0f900bab30",
+          "bytes": 449556,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1224": {
+      "variants": {
+        "webp": {
+          "sha256": "64ea94d2c735db899b2c4b32096d2e7945daa7bf8ee386f87d399612744c1afb",
+          "bytes": 304496,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1227": {
+      "variants": {
+        "webp": {
+          "sha256": "893f9e9a8bbe812412ae0c307912dd98d808cb1aee381c72f7138257f92bc528",
+          "bytes": 1026554,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_13": {
+      "variants": {
+        "webp": {
+          "sha256": "77bc845b37bd120b3c05e7071fb8ef975d4fdff9194879a5df4c9e6d50b5f63f",
+          "bytes": 768132,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1315": {
+      "variants": {
+        "webp": {
+          "sha256": "de4f332ca89225ab89a3193ef872ccc2626b3b578deaa712a3befd367f739bcd",
+          "bytes": 1108372,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_14": {
+      "variants": {
+        "webp": {
+          "sha256": "1de8f224e29d27ae907960397e843d6e18c45767a5aff74d88a5240703648d38",
+          "bytes": 1908936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_15": {
+      "variants": {
+        "webp": {
+          "sha256": "aed9dccd1b365479641a48fdd2ee1cdb626f13ab8dfd9d56a4e1af0cb2ea0222",
+          "bytes": 1861852,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_16": {
+      "variants": {
+        "webp": {
+          "sha256": "ce8e6e1ce31aa21ef1e6659874bb29bf7b6ec237f78c04627caa503191902889",
+          "bytes": 715024,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_18": {
+      "variants": {
+        "webp": {
+          "sha256": "4efd0237d505d87203118681e1b2db001c8ed38ff633f2ce4b52c573c776367e",
+          "bytes": 796132,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_19": {
+      "variants": {
+        "webp": {
+          "sha256": "a910714975c4936b05bdeb2c7fa4dbedb889ded8c8edd149fcfeac005fa59732",
+          "bytes": 2523650,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_196": {
+      "variants": {
+        "webp": {
+          "sha256": "d6932ca56bfcf4d3240d6e8cd456380f06f8195a0757cfc8dc93eff123b24b18",
+          "bytes": 2932350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_1d34a5c0f7": {
+      "variants": {
+        "webp": {
+          "sha256": "1b7d02cd3e1d65d283b4e6e1b9c78139ca116f532b9da5ac49d9151fe41ed261",
+          "bytes": 534760,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_2": {
+      "variants": {
+        "webp": {
+          "sha256": "a8d53fbaec827b3a0ebd1caaf537bbf43fe35f24601ff84428a858530c8bb8ac",
+          "bytes": 1043656,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_20": {
+      "variants": {
+        "webp": {
+          "sha256": "8405bfdb0605a646f53ba2d36ac66df5ce4e1c3d22cc0ce9ea2a8fdda52ba4bb",
+          "bytes": 799908,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_201": {
+      "variants": {
+        "webp": {
+          "sha256": "83039575df00203ad9723098e844b0cf2721ad741938e075455d10e3faa30c62",
+          "bytes": 2291136,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_204": {
+      "variants": {
+        "webp": {
+          "sha256": "78340a7dab1b8d8069d81a02238a1aa2ed2fd8d05db6b065f7989a9d37b6afc0",
+          "bytes": 2404906,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_207": {
+      "variants": {
+        "webp": {
+          "sha256": "e7019ede71dbeea022bf5cb04d5d3ccbd82bde9d4960d1c1c16c2e7d2a66f176",
+          "bytes": 1625332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_21": {
+      "variants": {
+        "webp": {
+          "sha256": "f3bc63942b8a6917dd2020d55b5aa7869e3194655e75f42ca7fa544b0951990f",
+          "bytes": 770042,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_214": {
+      "variants": {
+        "webp": {
+          "sha256": "f0c5a80d59311f5d8aa734ee28f0c90e0ed9bb937ca470e3532d39f5cc0aa6db",
+          "bytes": 2507972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_216": {
+      "variants": {
+        "webp": {
+          "sha256": "a2f1323ee30a68b189ec35f0832346a35b05a4f74905fdf9524efdf183db71ae",
+          "bytes": 2365736,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_22": {
+      "variants": {
+        "webp": {
+          "sha256": "8db2d5048fae439dd34b1c2f2559ef6743db9d751e1f652803847f365677e1eb",
+          "bytes": 896634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_225": {
+      "variants": {
+        "webp": {
+          "sha256": "83af177ed49a2b05aac5ef75397594f8d34bafdf25134fbf1e41850a758c541d",
+          "bytes": 2272066,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_226": {
+      "variants": {
+        "webp": {
+          "sha256": "aae871f30287d341d2769fb72c052c1c679ae7ddb3e32c15c0fe02190f77aff4",
+          "bytes": 2560350,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_23": {
+      "variants": {
+        "webp": {
+          "sha256": "806e525544146bd2dc1be0d292c49ddb8bebe5af4b887239dcae4750496c00ac",
+          "bytes": 711814,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_24": {
+      "variants": {
+        "webp": {
+          "sha256": "3a3a0194cf3ad371b82e56a83be659dbc7b5fe3f2a8be05e3ac66d1bc8ca0a01",
+          "bytes": 793788,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_241": {
+      "variants": {
+        "webp": {
+          "sha256": "546fa3398f5c3eb3f793dcf06c47762459f099058b6c0b387fc081ee1e326c44",
+          "bytes": 2921624,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_243": {
+      "variants": {
+        "webp": {
+          "sha256": "8963f73fa80ccd053636815c7f1cff51d11aec9a362ec44f2f24d706f3b8fa50",
+          "bytes": 1900242,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_246": {
+      "variants": {
+        "webp": {
+          "sha256": "670b297ac742cbc2896c1024b1986047a8a6b12e70a17eb8ec6697c46d6ef82d",
+          "bytes": 2304264,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_25": {
+      "variants": {
+        "webp": {
+          "sha256": "7b822da55280d9172f33678fcdc6afd6f2bfed023abde31d6953846b03baf986",
+          "bytes": 2511370,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_250": {
+      "variants": {
+        "webp": {
+          "sha256": "169e4ecba375592ca9809845a1d81661c9df6b2086fa29482ae6eb9a42ff9a37",
+          "bytes": 1918336,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_26": {
+      "variants": {
+        "webp": {
+          "sha256": "c9b34ca6c7eabf22a17d63f2cde4bdca2a4086677fc2aeb9d306b29f4a038f9b",
+          "bytes": 1563834,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_269": {
+      "variants": {
+        "webp": {
+          "sha256": "67f8477c388c22bbef5dbab38bcbdbaee7ebf354fdda525061d1c6786a362e8a",
+          "bytes": 1547808,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_27": {
+      "variants": {
+        "webp": {
+          "sha256": "bbcbcd6d05a303f5e9fccf478553a38482e8de89c1f3a3c756da080966039d68",
+          "bytes": 1587616,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_271": {
+      "variants": {
+        "webp": {
+          "sha256": "cc3c51e0bcc0cebb0abe7cf4c88f05a1119fa942920836fede623fd2ca2ebbfd",
+          "bytes": 2682440,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_272": {
+      "variants": {
+        "webp": {
+          "sha256": "3c840098a0a4022cbcc52b8f9f83956f957c1602e0487bffb94dcd38b9f10e99",
+          "bytes": 2396784,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_273": {
+      "variants": {
+        "webp": {
+          "sha256": "e8de0436fc4f4370f549bb9ec8c8898c8e91d0c48580b3431e5f816d960ee139",
+          "bytes": 3031950,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_28": {
+      "variants": {
+        "webp": {
+          "sha256": "4cb39b325e610ba7344c5367db17947d0983cb519e70dc76173ebc6a6e36f1b2",
+          "bytes": 1330470,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_289": {
+      "variants": {
+        "webp": {
+          "sha256": "01a88183edbd0183eac8391738ba23e6d2e1c1a220fd0929ead70154a0fd02cf",
+          "bytes": 3382014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_29": {
+      "variants": {
+        "webp": {
+          "sha256": "0b606a68816d0ef49944631073cc49ab5f7f05f4bc07e04e7a51cb0480aebd94",
+          "bytes": 2155386,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_3": {
+      "variants": {
+        "webp": {
+          "sha256": "59fe2869ca765159368eec95589b947630638e5b4572bdc8b62c40039830cd43",
+          "bytes": 657722,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_30": {
+      "variants": {
+        "webp": {
+          "sha256": "3cae7b0ec00cd7d9f8a3a19be1ed6aa7e3326e69a1df6962ddcc4f0bf0d167fe",
+          "bytes": 2114318,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_31": {
+      "variants": {
+        "webp": {
+          "sha256": "a0cecabd0a99332f547ac04aa4e643749a276d9ad4a0969c342da48591fd2912",
+          "bytes": 2578698,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_32": {
+      "variants": {
+        "webp": {
+          "sha256": "b37038960dcf70dae881c53c8bc539b365b43a66283ca98727d5ae4770b2163c",
+          "bytes": 2033246,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_33": {
+      "variants": {
+        "webp": {
+          "sha256": "ff167dec92a57d274030a3b0fc0f98b0c913176f168a2214ef13cf1c048a02b7",
+          "bytes": 2682930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_34": {
+      "variants": {
+        "webp": {
+          "sha256": "f34378cd6fc35c2b62f2df3bf84dc962b0222a2339a02f78400bacc1cb530196",
+          "bytes": 1986014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_35": {
+      "variants": {
+        "webp": {
+          "sha256": "6b7b8bfb3dbf68aeb3aedac50a99f87df5d94c10719af9eef2d3b551c848996f",
+          "bytes": 870894,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_36": {
+      "variants": {
+        "webp": {
+          "sha256": "82b99caa664e5ab20c8524d78bbe41ce7a418dfe8f60a8e850c7a02aafe0a44a",
+          "bytes": 746686,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_37": {
+      "variants": {
+        "webp": {
+          "sha256": "eb9c85226a716a806931b4bc84180af99c52a40e9e44a2539a2db7273dd9e25f",
+          "bytes": 909240,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_38": {
+      "variants": {
+        "webp": {
+          "sha256": "c3c7e6eec7a2abfda8fc477bcfc2c7a451c4eb8f877c6ed4d3da2c5b21aedfaf",
+          "bytes": 702316,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_39": {
+      "variants": {
+        "webp": {
+          "sha256": "441bc9f514f6915c0148deeb41142f298511e7e2dc46f43c402acf31cdf4b368",
+          "bytes": 925038,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_4": {
+      "variants": {
+        "webp": {
+          "sha256": "6d436968608480ccffe9131b982a256b25eef22e1448e19a4bec4d64b4dc52ee",
+          "bytes": 1967064,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_40": {
+      "variants": {
+        "webp": {
+          "sha256": "6c39804e53c43bf61190d707d13cb845e9ff54e489d61e8dd347bab5c10863d7",
+          "bytes": 1137054,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_41": {
+      "variants": {
+        "webp": {
+          "sha256": "939ba47442f2cfcf3bff211e6285c39c5b6d087cd182ff077ef1a192cdb9a1dd",
+          "bytes": 829810,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_42": {
+      "variants": {
+        "webp": {
+          "sha256": "3e964a4a1190dd3baaad6df5604356956fcd90334f1cb005e78c0d753f83742a",
+          "bytes": 674048,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_43": {
+      "variants": {
+        "webp": {
+          "sha256": "4ffb7a215b5f8b67ab6eb1f149e38189bd013b049c74ce1ded094ee9e448b00a",
+          "bytes": 625966,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_44": {
+      "variants": {
+        "webp": {
+          "sha256": "b7dd9c89f81e036f7460ff03ccae749df8b9082c3044cddb39adf0545267e94c",
+          "bytes": 776396,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_45": {
+      "variants": {
+        "webp": {
+          "sha256": "a603736bdfbd55fc619c1fbd2196bf095a688eb3fbd3766d130cdb6e738fb6bd",
+          "bytes": 729588,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_46": {
+      "variants": {
+        "webp": {
+          "sha256": "cffb5cbc2fae0559eaa734b8743f3410553cfcece13e3d5f102a60ccff4d8629",
+          "bytes": 721172,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_47": {
+      "variants": {
+        "webp": {
+          "sha256": "889178d259a6e764f0ad4a022dece3c99ea05f4b6cc3696de736d8db10e528b4",
+          "bytes": 654984,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_48": {
+      "variants": {
+        "webp": {
+          "sha256": "62285decd476be5c98403cd2f4d37596b158522a7c00c75617114c76d8edc55f",
+          "bytes": 932616,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_49": {
+      "variants": {
+        "webp": {
+          "sha256": "8178d9f455f8bc5522c64ae98c8edb503ad3f6b2584d1b7446c216c9ec12f391",
+          "bytes": 720920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_4ac4e636af": {
+      "variants": {
+        "webp": {
+          "sha256": "52dd86ee60e29b8a2e4c797e8e8687bad1dd8b8ed4a0f41fb625084608b28e56",
+          "bytes": 661096,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_4e78c08ea1": {
+      "variants": {
+        "webp": {
+          "sha256": "30449f4b831d18a6d7e907a18ee5a93d71fcf4cd282d88012d72dc5bdab9b7fe",
+          "bytes": 951510,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_5": {
+      "variants": {
+        "webp": {
+          "sha256": "c78d0a085dbb177db6858f7d131c0ec8289fa63a664bfc8922795cb093ac7688",
+          "bytes": 653466,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_50": {
+      "variants": {
+        "webp": {
+          "sha256": "bc4ca514fba5ed7588010d9c2abb99f7012098fa79d4e40b126c762918bc7e97",
+          "bytes": 1005926,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_51": {
+      "variants": {
+        "webp": {
+          "sha256": "a28794850bdd153442d72985456dec9d72a26c971d84c69407ad8b6d5aaf096f",
+          "bytes": 694098,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_51dad24c60": {
+      "variants": {
+        "webp": {
+          "sha256": "7326f9c783d4448f8a9248eca1e46839abab5b28602d8450f904197c91b0e987",
+          "bytes": 781336,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_52": {
+      "variants": {
+        "webp": {
+          "sha256": "9f613994a7c47de2a05d72a3c3a02b0ebd1eba49d9574d4cd7a5553294b1e0a0",
+          "bytes": 878988,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_52070a521b": {
+      "variants": {
+        "webp": {
+          "sha256": "62cc6ec7514a869519eb65a2ba4b06a79e9bd6642293a74be8ef4e463218a478",
+          "bytes": 321448,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_54": {
+      "variants": {
+        "webp": {
+          "sha256": "2af4da3c2ef1cd17e7654bb4c8bb1278b0126100d0dcc1a8715dca67b92883a2",
+          "bytes": 834300,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_55": {
+      "variants": {
+        "webp": {
+          "sha256": "bc1c6059de8b28044efcdca9e4af642b66d43cdaaec46df79ae20458c827f7e5",
+          "bytes": 810126,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_56": {
+      "variants": {
+        "webp": {
+          "sha256": "222fbaf7ce22397d1f4aa3fd345b484660fdf98a1ad3070f3a7a661d667c6793",
+          "bytes": 868466,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_57": {
+      "variants": {
+        "webp": {
+          "sha256": "ddd34c0253bab9092d25319d908c1490ecf74630114f79fd94d4033445aa5450",
+          "bytes": 930910,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_58": {
+      "variants": {
+        "webp": {
+          "sha256": "85d1a715aead75cf8e6cca16402d21b2ff3e80e664f6f2c8e17b090ec25385ca",
+          "bytes": 320634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_59": {
+      "variants": {
+        "webp": {
+          "sha256": "eadd16d73e4201b6adb9ddd8188363ee334400454e954e26c7667105c215a0e3",
+          "bytes": 836014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_5b41a4b70f": {
+      "variants": {
+        "webp": {
+          "sha256": "789211167ff81789cad2e341fd1e2fd1251ae5e0554fce2946ca8ec5d2237c84",
+          "bytes": 1010494,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_6": {
+      "variants": {
+        "webp": {
+          "sha256": "a3de1e0ceb219a792913edbae0f2f1dad1ad073057dec43f7610b08d1a16e5db",
+          "bytes": 732942,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_60": {
+      "variants": {
+        "webp": {
+          "sha256": "96cd9f1dc74fa1641f7302a3e12ff9df98fe521f33009d530df6d5f26e160029",
+          "bytes": 851342,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_61": {
+      "variants": {
+        "webp": {
+          "sha256": "2a39ee58df906ca8c7662ce71a9f53342bb9ad7755b6914ee4566457238d7896",
+          "bytes": 783764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_62": {
+      "variants": {
+        "webp": {
+          "sha256": "7da63fe58d7963caf7dbdabf1dbd267ac66091298b57d587a3e8616fcd77bdf8",
+          "bytes": 1173716,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_63": {
+      "variants": {
+        "webp": {
+          "sha256": "1287017fd7feeeb7921ce6a77ac5b296902fcb1ef79004521c83c2324252f75f",
+          "bytes": 2542912,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_64": {
+      "variants": {
+        "webp": {
+          "sha256": "dcfd7bee2c5a2e4eec212611d5a31d6369fec78b9b9a2d66d6c0cfbdba6af493",
+          "bytes": 1072968,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_65": {
+      "variants": {
+        "webp": {
+          "sha256": "ff4158a48b8fb76553dbf6f611f2483c351ef913987dad640aa73d4d74338ace",
+          "bytes": 833404,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_66": {
+      "variants": {
+        "webp": {
+          "sha256": "55354a8f9cb10450d7571f3b11db8c5f3f9e2f5544e425c00c53d7877b79592f",
+          "bytes": 816044,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_66b01e463b": {
+      "variants": {
+        "webp": {
+          "sha256": "5857dbfccac086e78c6576bd55839a73f6bb8147516dce4bbcff98e84786966f",
+          "bytes": 843486,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_67": {
+      "variants": {
+        "webp": {
+          "sha256": "c71fb814186e42998f3808825cc92d0964753b2b69941ed576e70141d26c173f",
+          "bytes": 750056,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_68": {
+      "variants": {
+        "webp": {
+          "sha256": "0b56f1604f3cfa3d090057e3eac470dd1a620a7d6cda0b1015a9dc1ca205b7cf",
+          "bytes": 894782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_69": {
+      "variants": {
+        "webp": {
+          "sha256": "7bc22ca966e0989cebeed1d76290a710a7039f42ca9757b7d332ab9be1f154fb",
+          "bytes": 797900,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_6df31169cb": {
+      "variants": {
+        "webp": {
+          "sha256": "9e4db4438716840341327f2d76a400320cdbff42c79f60b91c4b3ab2c74dec19",
+          "bytes": 853782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_7": {
+      "variants": {
+        "webp": {
+          "sha256": "67a8aaa0301fea11074a3be557ebe34d9ae0de17db4c1168f449f9d575e7d9d9",
+          "bytes": 1918066,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_70": {
+      "variants": {
+        "webp": {
+          "sha256": "518f4445a657ac82a17ea3406c492a3bdd489106554a2df0026ca1212f0665ed",
+          "bytes": 634566,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_71": {
+      "variants": {
+        "webp": {
+          "sha256": "88acec587f431220c2d91e52d7d792efbba8a6da65ccfe913d6c922ef7c51d63",
+          "bytes": 1072828,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_71884a4b2b": {
+      "variants": {
+        "webp": {
+          "sha256": "a98261508cabc94d9f18c9f16b3afcbb97a0fda0e9a14384fcb16f9e1084f813",
+          "bytes": 949772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_72": {
+      "variants": {
+        "webp": {
+          "sha256": "a0f8eeea40bb37e5d2d975c5803598c3677ff34aec2bb550a899ea1b8f33c552",
+          "bytes": 798914,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_73": {
+      "variants": {
+        "webp": {
+          "sha256": "0296443f1252a050f6b018ef94b63cccb4d2481af4f330ba37d2e51edb718f63",
+          "bytes": 1104882,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_737": {
+      "variants": {
+        "webp": {
+          "sha256": "7789d44daa3754a6b55c53afeb8d84e6f4471b6e8fefc6d50bc47d57129a3ea4",
+          "bytes": 3156924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_74": {
+      "variants": {
+        "webp": {
+          "sha256": "9e16d0988f3da9ef30e62fab2a7c85622d10be4edeb14267428acd01560323e0",
+          "bytes": 2120302,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_75": {
+      "variants": {
+        "webp": {
+          "sha256": "225d92cfa6ef0c64a63bbd14d53006374136107624bd398f3219ce0417004dea",
+          "bytes": 339448,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_752d625ca7": {
+      "variants": {
+        "webp": {
+          "sha256": "aa4c5c1206a52a6fbc1eca1872a91bfd6ed01b51b35fd4427de63db82d1fc04b",
+          "bytes": 1715632,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_76": {
+      "variants": {
+        "webp": {
+          "sha256": "143fb4764f703092ee4c566851f270074780ee3f997980842c37cfb5e7548d67",
+          "bytes": 759282,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_77": {
+      "variants": {
+        "webp": {
+          "sha256": "675ee31f00149e5e540f50e4cc44c4d5151ea0df4c4b17fa5c6989974ba09631",
+          "bytes": 906352,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_78": {
+      "variants": {
+        "webp": {
+          "sha256": "60822d7f429baac61498e3f95c6fdded8dae08d76a5a137ffae3b9db0d1f7593",
+          "bytes": 291734,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_79": {
+      "variants": {
+        "webp": {
+          "sha256": "c7dcf1c9e4f0d4aee2c18357d491974a2cff469d0af44094341314a335c804ba",
+          "bytes": 960678,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_795e8e6e5c": {
+      "variants": {
+        "webp": {
+          "sha256": "b547d6d76bc2245be58a61d2733982c60a8d30e2f2cc3b69a59564488cc8c745",
+          "bytes": 900392,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_7ac1b5109f": {
+      "variants": {
+        "webp": {
+          "sha256": "78a5c229e0e698ad3895a60677f2ccf672c019decf0b885d7081d10b45ce225f",
+          "bytes": 747898,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_8": {
+      "variants": {
+        "webp": {
+          "sha256": "aa0e20a03d202f33cbcb4773688f0e6c6a6de6995f71aed67bee58fc4bf379e5",
+          "bytes": 849318,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_83": {
+      "variants": {
+        "webp": {
+          "sha256": "7b1d7387b9b93703587bdbdc9d47ee29d0bf3bd9618db96cb737df670cae950a",
+          "bytes": 904334,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_8310911466": {
+      "variants": {
+        "webp": {
+          "sha256": "1cd31144356b35ac41fbc9ce903f76fea762919fa329a41fb1e922d5d5bcf5d6",
+          "bytes": 1052924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_8eb624b12c": {
+      "variants": {
+        "webp": {
+          "sha256": "aae72b8ca628f138a9f0867753f179b7d301a1f3347ea91d636ae7beb188ea31",
+          "bytes": 536082,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_9": {
+      "variants": {
+        "webp": {
+          "sha256": "b7f3ca26bfde3b6f5586a74a8c382aa8f14ecc5e3b4a1d439dd27e8f7ff57751",
+          "bytes": 896588,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_a9e2eeadeb": {
+      "variants": {
+        "webp": {
+          "sha256": "18965e54942cb37eaa3c12afe1875e2e2ec42b9053c4b4bb656474e1d2d33426",
+          "bytes": 2139364,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_aa707fdcbc": {
+      "variants": {
+        "webp": {
+          "sha256": "45e4e1ffac4d1b72c9c2788a5ce80c4fc9893066168471ffdcb7e4de19c0e65d",
+          "bytes": 849660,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_bb6d9458a5": {
+      "variants": {
+        "webp": {
+          "sha256": "871dea6998fefd4d115d3521bf7a91f4c4db60d6eda6a23ea6199347ccf962fa",
+          "bytes": 1437674,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_bcb76c662b": {
+      "variants": {
+        "webp": {
+          "sha256": "b8e8ed40de26556920228773eff68bbdbb18ca7178a1b12e4fd0bdbadaa47843",
+          "bytes": 2187782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_bd2112e526": {
+      "variants": {
+        "webp": {
+          "sha256": "a3462eb28db1d124f434b2090ad2cb09eb514039aa7212fb539ca30435840643",
+          "bytes": 906648,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_bdef9d8107": {
+      "variants": {
+        "webp": {
+          "sha256": "7d75a941ac691a0144f08829c549f6ce9a9f4d66401ecbf97bb21ca83c77df5d",
+          "bytes": 1374568,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_bf3878fbe2": {
+      "variants": {
+        "webp": {
+          "sha256": "696ae49258a543ef8ea75e4562ba80696ac0d78105e821db780b10f5959d9183",
+          "bytes": 2176112,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_c41ac32dcd": {
+      "variants": {
+        "webp": {
+          "sha256": "eeec78988bd77ac4cc3231eeb379e0290e9bfe3deb99883af11d54d5d9ac6e80",
+          "bytes": 1124400,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_c83b7ab51f": {
+      "variants": {
+        "webp": {
+          "sha256": "1d1b70de81efa04a09ce3800d4c8970ec101f430b934f45f12becdae9e95dac2",
+          "bytes": 88762,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_f13fd6e7b0": {
+      "variants": {
+        "webp": {
+          "sha256": "9b308b645a9db7fcf54a22a3ede9b2356c67b0155f8c97db817345d0e86bf78f",
+          "bytes": 1130864,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/pod-assets/compressed/tts_atlas_fc7c333356": {
+      "variants": {
+        "webp": {
+          "sha256": "9f676b7ecf609898fbab1fedc4f459c4ce2775dd132f47e7a2d2d00559ab932c",
+          "bytes": 164014,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/taitan/compressed/taitan1": {
+      "variants": {
+        "webp": {
+          "sha256": "fc1cec26f52d1bde810efd90933e470700536b8fa36b3813837c38b43611d049",
+          "bytes": 2185502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/taitan/taitan1": {
+      "variants": {
+        "png": {
+          "sha256": "0584de5873d93e19292ec60a346ceb4efbe73f42766645f2d34036bcaa60f981",
+          "bytes": 23674169,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/cardia/board/compressed/background": {
+      "variants": {
+        "webp": {
+          "sha256": "c1d87115a39aa4914c2856e9cccd589b993cde4f15229808d191029b5b425ec3",
+          "bytes": 333653,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/common/compressed/deck1-back": {
+      "variants": {
+        "webp": {
+          "sha256": "7d8f6513429003e3cbc0cfe67dd5f7ee3a47ffd1f988a6d25e1d8a19e6492878",
+          "bytes": 135882,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/compressed/deck1-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "a7858e8fb61d61a6ad05e60df290381daee09c3e656ed3f5562e34f10c42efb4",
+          "bytes": 403744,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/compressed/deck2-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "c523723c4c5a053527f0c85da04cb9e9a1e296b3f0be202ee1652bfd2be1f3b8",
+          "bytes": 403742,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "af23f265af0f3c1fc9944646b984900748f27c07fad33694614c887182ec718e",
+          "bytes": 270088,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/10": {
+      "variants": {
+        "webp": {
+          "sha256": "15109981a716378aea98c99f82466446211468928a6b54b0706f112344b511de",
+          "bytes": 279860,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/11": {
+      "variants": {
+        "webp": {
+          "sha256": "9ab7899ddb741919230f8bcf15b5f04ca4ab043421166f48226e3d0859a1c382",
+          "bytes": 244996,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/12": {
+      "variants": {
+        "webp": {
+          "sha256": "99c6694c1219c6fc5d4c68f30e33537654d396770f5636f5ebd1afe40824b7bb",
+          "bytes": 319698,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/13": {
+      "variants": {
+        "webp": {
+          "sha256": "c44afd9f2e089d1a2ba897deb4d5eb143350fca8d71250e6f25b37e6413f9dfc",
+          "bytes": 312682,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/14": {
+      "variants": {
+        "webp": {
+          "sha256": "97ff1ad7c120040724373015765fd1b5127ec6e22060d7cb26571e47c7986308",
+          "bytes": 277190,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/15": {
+      "variants": {
+        "webp": {
+          "sha256": "ea6f42abe5aa2a0bd5f3a9e2d7292000f0a3fac59645b0af3b63aede4e15d16b",
+          "bytes": 314260,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/16": {
+      "variants": {
+        "webp": {
+          "sha256": "eb3bd6f0071175b0de8dc9861bdbd849013246b2eed2285ef9a9a328ce4d560b",
+          "bytes": 371430,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "5c3c27eaff945996a3695ca8c5d36b2c64489308d42c89845f8866fe2b36cff9",
+          "bytes": 295070,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "c3e6369c7c9f1eac272d4248d4a8ce5e578bc87eec9c9d0edbdd97eece22ecb6",
+          "bytes": 272576,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "e8e72b0d79bb48b7bb77eeb5f45b4a49e3191adaf7f0024223608cb1a65da17b",
+          "bytes": 327694,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "504210c77c4e27eab94c7e66f1dc3e0d0945e556716c1bd2c9ba4adbe1c595dc",
+          "bytes": 292608,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "7daa13a97d26d12ec44ca4321a30571187d742ccc9cc024962417f7a11ea48d4",
+          "bytes": 290266,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "6687733213206b73c643685c2e6bf98098e541f134f705f850dd289fb2014d79",
+          "bytes": 299924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/8": {
+      "variants": {
+        "webp": {
+          "sha256": "eebe3c979578ed0e97b5a2c6e004192b1de882b08e1348d4adfb3c0981d5461d",
+          "bytes": 339022,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck1/compressed/9": {
+      "variants": {
+        "webp": {
+          "sha256": "d366a7d9f204bae882365ed0d3979472dd29d7cd52c1e813bfe91bbaf929c14a",
+          "bytes": 286770,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "6b0d7f7e84411e15ead8e3550ab6db8e480866fbf02e840b4a93f5f81b2188eb",
+          "bytes": 260524,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/10": {
+      "variants": {
+        "webp": {
+          "sha256": "a3d09131642ce3fc2ca00d43277a23d913921d40a2d4571334546dbe49624c2b",
+          "bytes": 279368,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/11": {
+      "variants": {
+        "webp": {
+          "sha256": "485c9bded6edd5384f0461fafc5a581915fca2f6465e4bca5d388861c1a0f4e5",
+          "bytes": 267194,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/12": {
+      "variants": {
+        "webp": {
+          "sha256": "b968553ce79b9fb95fc720572998cf681a879cb4e9c24bbd972b7c8fe4d856f0",
+          "bytes": 316260,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/13": {
+      "variants": {
+        "webp": {
+          "sha256": "49bd6607b0e3a39304b47952d74c65e6a533e88db3db0571b3233abea0745411",
+          "bytes": 290806,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/14": {
+      "variants": {
+        "webp": {
+          "sha256": "aa2a9315f7df65faea4eb653993478dcf435587afd640760b11353b7dc624546",
+          "bytes": 312010,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/15": {
+      "variants": {
+        "webp": {
+          "sha256": "fd8022c6233bd72174ef24c1fa65e9e41411849fd1bebbc83e7699008452a1c5",
+          "bytes": 279952,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/16": {
+      "variants": {
+        "webp": {
+          "sha256": "b45a108d15e808563f36d2205ca25243a98aa24afab0bf3ae2798b62a9df2c0f",
+          "bytes": 313158,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "4ac6ef21d1a8704aa71e7a3368ea799b85a3e145662687c78bd659066d94b38e",
+          "bytes": 347024,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "495cb7786ace87a913dc1f8090ff856947700b5ffcdeccac5dc7ce9b3246a090",
+          "bytes": 271692,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "111659d035a12fc1cfcdb9b793d0797af676447e3660e070820e8331f8ab1466",
+          "bytes": 319044,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "c88fa48949e3f29d9d4ac9c716322826c383b6e2d7302723e7ac0ba11f50555d",
+          "bytes": 256634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "d92be7ebee8160f53ec858ec44f1b2638133e5d797c3456fbfdbce568860c4ec",
+          "bytes": 281518,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "bae646487ed5f2b0d2bf1ce2d63a179e002d7e7db6a2a0c82fe2845a6730442c",
+          "bytes": 266134,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/8": {
+      "variants": {
+        "webp": {
+          "sha256": "101061065e8768f30664fdbc23b1c72c8da79fba47ac277c2ada6f9ee0e9f571",
+          "bytes": 340520,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/deck2/compressed/9": {
+      "variants": {
+        "webp": {
+          "sha256": "b83970b1e3fb302af9793dc0aa4fdec19f5adc60a7626144d6e2dd85bc2ea796",
+          "bytes": 308178,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/locations/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "56380f9bae1a796ed53ac75424c1140bad82fa6c587b8296c8e8512cd52332ce",
+          "bytes": 349708,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/locations/compressed/2": {
+      "variants": {
+        "webp": {
+          "sha256": "3b2438937d8595e3eb73366dd2781ec512b4e6c9f7154934aff2c102205d19d7",
+          "bytes": 338250,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/locations/compressed/3": {
+      "variants": {
+        "webp": {
+          "sha256": "72dea6cc79b0c0290280297d4cd3cef23b6546a49aed671b06da54774727912f",
+          "bytes": 326160,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/locations/compressed/4": {
+      "variants": {
+        "webp": {
+          "sha256": "5daaeba633403bfb400f4fd17a7ba82a498ebd23dc53cababecc70dc9b90d72f",
+          "bytes": 309962,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/locations/compressed/5": {
+      "variants": {
+        "webp": {
+          "sha256": "236c827b0a14da658e40fb3b7228056a4191eff700e02bc8f79e31f2a0d4ec16",
+          "bytes": 289378,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/locations/compressed/6": {
+      "variants": {
+        "webp": {
+          "sha256": "b3f0cc85cfd04407ccef12a6687e0750de18c4956dfb6f6d89be303e92a0b78f",
+          "bytes": 322868,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/locations/compressed/7": {
+      "variants": {
+        "webp": {
+          "sha256": "54d8d23df0ef84fdf830853c1e74307bc49221c3090beea615aa8f9675f24ad8",
+          "bytes": 304748,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/cards/locations/compressed/8": {
+      "variants": {
+        "webp": {
+          "sha256": "ef65523845edef55e665bae06f2f28126377d2be5eb5c8edef4ee5399da74924",
+          "bytes": 324498,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/help/compressed/helper1": {
+      "variants": {
+        "webp": {
+          "sha256": "693213e736f1ad6b7a9e9b718eb156fe9ce56e03897b5f2a24f3f78823c027df",
+          "bytes": 205676,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/help/compressed/helper2": {
+      "variants": {
+        "webp": {
+          "sha256": "73f3ba0e9ccc29c49b49fa57899b8bec439ce3f4d7adceaa62285b4c236ed700",
+          "bytes": 189944,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/cardia/thumbnails/compressed/title": {
+      "variants": {
+        "webp": {
+          "sha256": "5766af27946abc70afb022cce331676d051f8d6cff1ad28ae73f2d14264e2a60",
+          "bytes": 149438,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/barbarian/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "9a97c062a8d5ac31f5ab1bb6ebc2ea8fb9773056a8d4dfb8a20c7e2f12d1375b",
+          "bytes": 354834,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/barbarian/compressed/barbarian-base-ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "a26eafb1362cbfa894ba24fcb99110343d45961c65f0a5d53333420a9cc759c8",
+          "bytes": 278626,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/barbarian/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "0b09c82b05152c2ab2a17378cece9466de8bb2a237662ef287a678bba19cac47",
+          "bytes": 18468,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/barbarian/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "fe0af0e56aa28023fb41b8bd7de98b9f2da13301f33f75d1ff4cbe0f233385e3",
+          "bytes": 590846,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/barbarian/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "e43beb42e241b680d5a1952f8c4e1b4f7fff824de1a1aeb4257725dd4dc14cce",
+          "bytes": 13896,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/barbarian/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "6bb76d72941456d417f30addf9c883990bde57991cb0507cb0146c5e844c0fec",
+          "bytes": 286512,
           "mime": "image/webp"
         }
       }
@@ -67,12 +4000,156 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/Common/compressed/background": {
+      "variants": {
+        "webp": {
+          "sha256": "0aa554c2ea095db6762b954f0e98f020a74d87e460705511877af2594f3baef7",
+          "bytes": 98502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/Common/compressed/card-background": {
+      "variants": {
+        "webp": {
+          "sha256": "d048889c409b984858de44dc0c1b866ca776f7a9b93ed9562e70345d9f575688",
+          "bytes": 21170,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/Common/compressed/character-portraits": {
+      "variants": {
+        "webp": {
+          "sha256": "329ed4504c3bf59d31dce7b93be7af951f9277c89aa9931103a0d459bcd325ed",
+          "bytes": 165570,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/gunslinger/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "5f169b3a7fd203df3d0da62a95a362fd374ce5ad81e8ddb7ab73eb6db9d45b08",
+          "bytes": 4818294,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/gunslinger/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "dfcfe18518d3b2bcbb6e1bfd9dbf5ff48d65890190715cedc0aa03e8d95237b4",
+          "bytes": 18412,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/gunslinger/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "9fd4d912e3ed300083c1141022c7ce82b280e7a2039391702d3986f3bd7ec5a7",
+          "bytes": 487964,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/gunslinger/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "039a011da531c13f1cf97c402273cd1f448a393e435c131ab5a9500c097f9e48",
+          "bytes": 30220,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/gunslinger/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "1340d446f03588692399c65e1c40e06224c2c0d583093d36ad12e666a2363b48",
+          "bytes": 503930,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/gunslinger/icons/compressed/弹药装填": {
+      "variants": {
+        "webp": {
+          "sha256": "19544424a6493cf822917f200bc5367d11e09fce98c070d72e12dcb77cb2b809",
+          "bytes": 5314,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/gunslinger/icons/compressed/赏金": {
+      "variants": {
+        "webp": {
+          "sha256": "ec7cdda227d6da6a6728cf4cbb32f08c17a4e8758def58e75d20fa26623fc560",
+          "bytes": 4956,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/gunslinger/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "98476906a2f6f6de26740f75586292f6a7d431feebe8963e6922bf370010e5a1",
           "bytes": 738,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/monk/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "51374975a8ebf5e7734144c6359c22ea8aa942259af73e1cda13a78205a817cb",
+          "bytes": 340144,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/monk/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "617e1c0a94224abd0c980e84e1f6f3432d689b1bf9f8f9cbc6f02d0c989efbf8",
+          "bytes": 19554,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/monk/compressed/effect-icons": {
+      "variants": {
+        "webp": {
+          "sha256": "f75625c46f8fdaeba6534db7c0cd499c1285ed3307e8107c8e2b9d8224216146",
+          "bytes": 69790,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/monk/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "f25a2ac98467af7e92fa083397d05bc12596ac4810785507858307571ece3ab3",
+          "bytes": 750176,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/monk/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "00be51f8f3571eedd4a7cad6fbbc38d54157b7d6ad3c4a1d03a3dcf926897096",
+          "bytes": 32642,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/monk/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "78d1e6e12a607b50638a74d27586dcab689fd9c91ef98f1f926d53eacc0e89bf",
+          "bytes": 348536,
+          "mime": "image/webp"
         }
       }
     },
@@ -85,12 +4162,165 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/moon_elf/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "033eff865a9e5cb14c679f1881841cac0e72feef123bf0e791fe6138fb3c7c79",
+          "bytes": 340822,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/moon_elf/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "00cc6504ee2d5520194381121a9510cb44fadff7714672f6c75c9efae2f5dcd5",
+          "bytes": 25690,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/moon_elf/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "6910533a61ed2332e10bba23397127ff4d654ba282858644501703bc59d13799",
+          "bytes": 494292,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/moon_elf/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "ca71ff0103bf066ea5844ac9cb2ca3b740d8c489d7a7d7f89cf232e824c27da9",
+          "bytes": 25096,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/moon_elf/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "7ed0461a37e7c36067870201512979ef6e2a9c71195c627148c6476d4ac24d4a",
+          "bytes": 379818,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/moon_elf/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "e8282362dd899ff5ca19dc68dfa78e374ec556ebc131005975e35e778e434650",
           "bytes": 642,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/慢性中毒": {
+      "variants": {
+        "png": {
+          "sha256": "c690c58ca28ecb318f93ed15055a476dba8a409ccb3600745988be133ea4a5a4",
+          "bytes": 49098,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/忍术icon": {
+      "variants": {
+        "png": {
+          "sha256": "27962c4a1c81bc2da74865e5d26039507a03a7cfbed4e267cfd5676b1c7cfbbb",
+          "bytes": 34564,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/提示板": {
+      "variants": {
+        "png": {
+          "sha256": "e870eceeec133ab55c90544f761500d737f08418aeb5ef81dbc404cc2b399060",
+          "bytes": 9404983,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "e0f217c0c85b81790eb19fb2fff7c16850f34797752c38bfb255bb96e7322fe0",
+          "bytes": 10431472,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/烟雾弹icon": {
+      "variants": {
+        "png": {
+          "sha256": "1fb5fcabcd1c91370814b49b91157927ce9a67b97c208c9d97218a0eca03befa",
+          "bytes": 42841,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/Ablilitycards": {
+      "variants": {
+        "png": {
+          "sha256": "2c1605f4b0e8188b5c1ca051cffbe2a81a41c9151ff7f20e94737cef7bb4c66b",
+          "bytes": 14972616,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/dice": {
+      "variants": {
+        "png": {
+          "sha256": "85882a0e782e061275fab30f86ea016f072d76c9a6ee06650fdd5d6d9dc70c7e",
+          "bytes": 35654,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/paladin/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "d5a687ab0fcd6339ed05ad072171c978eb19b2d6679cd751bd5da72db74c5175",
+          "bytes": 357952,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/paladin/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "30716cfc588ae4e711376c2568cff0d261263ea8f492c44309d99cce2683cf5c",
+          "bytes": 20610,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/paladin/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "2723c83aee6f4464cf6c0598e05178e7396a33f000d9c0a660fd7e8f7cc80c79",
+          "bytes": 521456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/paladin/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "108f4646858ffb6e5f5e2f1112be63194ca936e7c447ab0ab27fea1524a27074",
+          "bytes": 62472,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/paladin/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "6af37b2a2904c593ecdc3801164ed1497a21dee669015deb86d850c4090a977c",
+          "bytes": 368890,
+          "mime": "image/webp"
         }
       }
     },
@@ -103,6 +4333,60 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/pyromancer/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "708c54614b6e882f72860833e9241ff7823c424bff2715b547e103124ddeb9c9",
+          "bytes": 352698,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/pyromancer/compressed/base-ability": {
+      "variants": {
+        "webp": {
+          "sha256": "e42c04f36938951b239d548818d0dc25ea0b176cbbce301e170b3b33a5e51878",
+          "bytes": 299452,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/pyromancer/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "52edb8810f9e4ede3d92d330a0a8bdbe9dcfedf44b4fcbb6aecfbde878e0a63e",
+          "bytes": 24120,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/pyromancer/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "53e95a68fca021c6606118afe7dd9c2ed80de37bbd4a1aff96d0eb2eba168329",
+          "bytes": 596868,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/pyromancer/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "e3558791f132a0614287fdb6b7d9a2d5163b4f9723f5502385b915b9b48676bd",
+          "bytes": 26206,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/pyromancer/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "f6840fa7212e26412e6fbd097e1f9edba62d7684e1b67b32d1409337009601d9",
+          "bytes": 336250,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/pyromancer/status-icons-atlas.json": {
       "variants": {
         "json": {
@@ -112,12 +4396,138 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/samurai/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "33422fb0977edd134a229ddb134c219b5baefaf3516a78563a26774a0ee2cff9",
+          "bytes": 345654,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "95119577131dc9420e3793149ee243f72f02d2a974d32e69bf3bc1f3cb59618c",
+          "bytes": 24920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "a1c1c57c04160c4bdd475201d8de0bceba8cae5d0df002603e8315334983b917",
+          "bytes": 431352,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "3362498161cac08141fe3b9d84ed63f5e3407ac55deb50e901f44bc6a6595efd",
+          "bytes": 41390,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "bb9d82afbf65233f792bb8dd3a77bb76967a0fef38402c4ba53b27e405c90851",
+          "bytes": 473174,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/dice": {
+      "variants": {
+        "png": {
+          "sha256": "578e964552d4b06502aa9edcf9b0c71f143b0300456aba1ca9f5f70300b6c3cc",
+          "bytes": 53337,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/icons/compressed/耻辱": {
+      "variants": {
+        "webp": {
+          "sha256": "db44f98a983c0b719187825194dec6251c75ad071d170bb11f69dfb0acb7a6d9",
+          "bytes": 4010,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/icons/compressed/反击": {
+      "variants": {
+        "webp": {
+          "sha256": "5a718638ae7475abe32c4dd20db190040988f6b016c3f49e2dee1c5350323348",
+          "bytes": 3884,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/samurai/icons/compressed/荣誉": {
+      "variants": {
+        "webp": {
+          "sha256": "3fbad8c928a6fdab731aeea349957d1715ff652847a31fd150047cc176a83822",
+          "bytes": 10396,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/samurai/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "aec1b6413c51c921105ad70e33fc216ac736b73c995315353d707ae09e01eb7f",
-          "bytes": 622,
+          "sha256": "8e8512012c12ebb59a77fb9bb8cbeb299ca1622d898a148187e2706312c99f54",
+          "bytes": 627,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/shadow_thief/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "faeb2a562837dc86453ed59a36033aa8577b07139f3329690023e839013c4b1c",
+          "bytes": 322946,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/shadow_thief/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "9877d8a40a3a8df5e9abd37950bdc9f29fc8157eb03b6d47912a6af03e046bde",
+          "bytes": 22104,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/shadow_thief/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "a0b6a96709792f4c65ccffa8c2b0b9201647fab6a0e7ba6218c400914837524e",
+          "bytes": 562506,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/shadow_thief/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "0a1ff47a656c40d3ea3a6eb54e8c682b99b7b0b644e0ec3a1ef1b03f2f932aa4",
+          "bytes": 15320,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/shadow_thief/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "c27bc6e1c8b2622b82ae89667d39b38ce6c97a1be506be25883197e8e952230c",
+          "bytes": 321172,
+          "mime": "image/webp"
         }
       }
     },
@@ -127,6 +4537,483 @@
           "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
           "bytes": 521,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/木苗树灵": {
+      "variants": {
+        "png": {
+          "sha256": "85d2f782ad9dc81556217b0276bee729e2d2852607e2c3228ea52adceb6792ab",
+          "bytes": 69810,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/神性树灵": {
+      "variants": {
+        "png": {
+          "sha256": "d7396c997b70dbdadbdb3f3bd338146cc6757fae7495bef8bd9ab9be0fb85fd0",
+          "bytes": 63315,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/生命源泉": {
+      "variants": {
+        "png": {
+          "sha256": "84ce3ffdaa8c714c87bda024ad2a0d51ce393d0cf27101c11d4df01ab701293a",
+          "bytes": 64314,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/提示板": {
+      "variants": {
+        "png": {
+          "sha256": "18f048353c8d5b951d59a298d01b4f2a106dbe1a6b935f76fab2cd968a0728f0",
+          "bytes": 9228891,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "19944a80c701ec6e5d7d49f656ba596a3faa57d705f6e9dd105afe87645b4428",
+          "bytes": 12598188,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/幼种树灵": {
+      "variants": {
+        "png": {
+          "sha256": "9e11bfb6199bcee56ff5b87d64d8d8c83285ebfbf457ae7e0603701ac76bb902",
+          "bytes": 50153,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/abilitycards": {
+      "variants": {
+        "png": {
+          "sha256": "d7a894a209b8acf4c3d47ee4de693464e2938c7334073508b687d7ef54304a5d",
+          "bytes": 14960145,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/dice": {
+      "variants": {
+        "png": {
+          "sha256": "ca7df6144dd6323bd9e71f7e57591eeaa6957534337bbf6f47120363e936fcb4",
+          "bytes": 58772,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/thumbnails/compressed/fengm": {
+      "variants": {
+        "webp": {
+          "sha256": "94ee6fa631ea1e21bab79a031e3f1d9689dad4d23e5232017bbb6da7071ebb90",
+          "bytes": 9768,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/base3": {
+      "variants": {
+        "png": {
+          "sha256": "cca1be600566e4212366f405181a6ef8c73fc201fc5973f9119ad0dcef5dbf48",
+          "bytes": 8991232,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/aiji_base": {
+      "variants": {
+        "webp": {
+          "sha256": "abf449a390d70e2fa80df773fbfae0dce6b588a4f9e9638edbb0b7e59206bf92",
+          "bytes": 251770,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/base1": {
+      "variants": {
+        "webp": {
+          "sha256": "df5073cdb7969644092ed41e8a6edd2ea5ec44e5ab44fcf4f3db6e84cbb618ee",
+          "bytes": 540744,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/base2": {
+      "variants": {
+        "webp": {
+          "sha256": "44e2436a03a0b459d6a279cc76ca83fec35b00986ac0557e748ab8715699ecf5",
+          "bytes": 269722,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/base3": {
+      "variants": {
+        "webp": {
+          "sha256": "ed34508db2241fcafc1bac46698964f3359d279b90fc1187ab8ff8bbb56872d4",
+          "bytes": 683480,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/base4": {
+      "variants": {
+        "webp": {
+          "sha256": "b0267cef7bd8cac875040f0eda7cc97228f5fcbbf358e8462af9a73ffe8adb63",
+          "bytes": 314420,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/wangling_base": {
+      "variants": {
+        "webp": {
+          "sha256": "ac6bf989362e14fe01b84c86b3ffefb0d00a2a8e711c1ac6a97d1ca225bfa9ad",
+          "bytes": 708688,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/aiji": {
+      "variants": {
+        "webp": {
+          "sha256": "a99c4731a714ac0a20489d10c6b04dba863e5044c5dd9000f263af41ff8db18e",
+          "bytes": 827752,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/cards1": {
+      "variants": {
+        "webp": {
+          "sha256": "a07220cb8d13a0ee4469a9996ea4a08b72ce5cff6a16e0e339c3f231f9901766",
+          "bytes": 933066,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/cards2": {
+      "variants": {
+        "webp": {
+          "sha256": "16aebda53fdc1e57741a4a8f65dc687f3de62494faa99b9de30ca9c25d017711",
+          "bytes": 691772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/cards3": {
+      "variants": {
+        "webp": {
+          "sha256": "89f82ec778ea14d767235f401bc553a23147c431b1132badd91c4f273e32eecc",
+          "bytes": 896796,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/cards4": {
+      "variants": {
+        "webp": {
+          "sha256": "95b38d3e2cb27d77ea623a475d6340731731e46440a3010e2b778248eb4d0193",
+          "bytes": 858772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/cards5": {
+      "variants": {
+        "webp": {
+          "sha256": "6d01aa62abf961b76c75d398a4d4ac2a4e670e353956912efe95fd346ff88270",
+          "bytes": 899038,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/pretty_pretty": {
+      "variants": {
+        "webp": {
+          "sha256": "9acb69320a70f81287570cb7b9b00318192fc4229c90d12016265fcd83776a63",
+          "bytes": 2549084,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/tts_atlas_752d625ca7": {
+      "variants": {
+        "webp": {
+          "sha256": "aa4c5c1206a52a6fbc1eca1872a91bfd6ed01b51b35fd4427de63db82d1fc04b",
+          "bytes": 1715632,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/wangling": {
+      "variants": {
+        "webp": {
+          "sha256": "13554fc412e309bd19557ef55dee237263a57ab24b2056abbb0ac4a846ce5ff5",
+          "bytes": 852528,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/pretty_pretty": {
+      "variants": {
+        "png": {
+          "sha256": "360bda45784ff280418ab80a1959e28a66790a11b669ddd758d057e9b4233a1f",
+          "bytes": 25271332,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/taitan/compressed/taitan1": {
+      "variants": {
+        "webp": {
+          "sha256": "fc1cec26f52d1bde810efd90933e470700536b8fa36b3813837c38b43611d049",
+          "bytes": 2185502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/taitan/taitan1": {
+      "variants": {
+        "png": {
+          "sha256": "0584de5873d93e19292ec60a346ceb4efbe73f42766645f2d34036bcaa60f981",
+          "bytes": 23674169,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/thumbnails/compressed/smashup": {
+      "variants": {
+        "webp": {
+          "sha256": "1ae0270532e40348e0a2a03ae6cd576b082c28fcf0488d696c68030a03d829b4",
+          "bytes": 71064,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/common/compressed/cardback": {
+      "variants": {
+        "webp": {
+          "sha256": "5477cd29fc4f5fc31805385e0734927e45816fe5d18240d5c89a3f70cf2e7a9f",
+          "bytes": 128832,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/common/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "53c11f4eda6e0302dea63a581cb37e015a4f9db96c7c4cb474030309893b1a66",
+          "bytes": 14982,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/common/compressed/map": {
+      "variants": {
+        "webp": {
+          "sha256": "9cc47e7d448ed87f129c27242cbbc6ce293c6cb43d87b269d87e10352e432ca5",
+          "bytes": 425064,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/common/compressed/Portal": {
+      "variants": {
+        "webp": {
+          "sha256": "9d874b89d81700c16ee1f86e7bc5a2e617fe15beb10e224a8757a9afc04a980f",
+          "bytes": 200920,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Barbaric/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "b191eb661e826ca2f08ec84870547b56ff11a071e1834d10660f926c94d47f04",
+          "bytes": 440452,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Barbaric/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "a3a593860f25f05b59953423ea2cb082888666fd051fb66c63cdef2e14a314aa",
+          "bytes": 230856,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Barbaric/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "be85380286e5d22560f0a49afa692df078c7bc175b8d938061f86908e97069d5",
+          "bytes": 119936,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Frost/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "de0c75362dedb696b1fc67ceed981d2a493117b92fc18b11089f15fb86b920a1",
+          "bytes": 371828,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Frost/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "3004920cb1268edbd13e4b0a08cec801da98f6baa536c532894b1953bae10bbf",
+          "bytes": 207224,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Frost/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "3e55f40ce473847abef66e7de5fc3aa4136a7b5e4f8e00bd779c629bcc10b604",
+          "bytes": 115966,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Goblin/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "26c1334773de45120e2b2e50f8b3987338a8dbc0c113e05cebe87ce2e23e6d73",
+          "bytes": 404010,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Goblin/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "c5f914a4c18e18435961db7cc12c88ab278e8f5fa896a280684e5963b25c2ce2",
+          "bytes": 220312,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Goblin/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "90de8414cf7a4061ded62c5ba3c5dac5a9da6a3b144e00f177af6872fec6573b",
+          "bytes": 115780,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Necromancer/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "39fbef2718c88d46541827c7e9401e3e1e6b98705885da2849f9be0ef67fdaf7",
+          "bytes": 370814,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Necromancer/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "39bc90419860f06beb4390776a33221231738c92feb4279cf4434da2e3f7a44f",
+          "bytes": 220704,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Necromancer/compressed/Necromancer": {
+      "variants": {
+        "webp": {
+          "sha256": "39bc90419860f06beb4390776a33221231738c92feb4279cf4434da2e3f7a44f",
+          "bytes": 220704,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Necromancer/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "f40d8638fd0673acb5ab2d43ae35ca086d07f59b38c77c2f234e1513facf1856",
+          "bytes": 111918,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Paladin/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "1b51146be6fd317371f3852a8aa0a570b06d1ea166ebfa1ead1686c5197c0d0d",
+          "bytes": 382702,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Paladin/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "6d42eec0743581099ada5dcbc3a8d64ec46aff9b2b601175117db99b0e88dfa6",
+          "bytes": 220734,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Paladin/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "8a8068f046d456a26a47cffad4826933df2129b2c73e371b5a3509c45540378e",
+          "bytes": 106306,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Trickster/compressed/cards": {
+      "variants": {
+        "webp": {
+          "sha256": "90fa96f4f3f94cbee99495291c6bc2b10f0e588ac553d49b7ded8c32f39bd30f",
+          "bytes": 403334,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Trickster/compressed/hero": {
+      "variants": {
+        "webp": {
+          "sha256": "5f97a4a33fde34315c7262a64729ce6cee0bea7e3e9e62d04499d4f853a8a5bc",
+          "bytes": 207456,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/hero/Trickster/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "fdc7fecd22ce6416ca59d67104936c7289b4eb89cfa64c35f82595f652e76b92",
+          "bytes": 108480,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/summonerwars/thumbnails/compressed/cover": {
+      "variants": {
+        "webp": {
+          "sha256": "dd89ffc6d46ee880ea41c51ca64cabaeb903058b79685079873c830ba737aac2",
+          "bytes": 203014,
+          "mime": "image/webp"
         }
       }
     }

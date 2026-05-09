@@ -48,6 +48,123 @@ void __ensureThreeAxesMarker;
 test.describe('Smash Up 克苏鲁扩展特殊交互', () => {
     test.setTimeout(120000);
 
+    test('线上反馈 69ff0310：旧天选之人确认交互应显示按钮弹层并可关闭', async ({ page, game }, testInfo) => {
+        await game.openTestGame('smashup', {
+            p0: 'minions_of_cthulhu,pirates',
+            p1: 'robots,wizards',
+            skipFactionSelect: true,
+            skipInitialization: false,
+            seed: 690310,
+        }, 20000);
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: [],
+                deck: ['special_madness'],
+                discard: [],
+                factions: ['minions_of_cthulhu', 'pirates'],
+                minionsPlayed: 1,
+                minionLimit: 1,
+                actionsPlayed: 1,
+                actionLimit: 1,
+            },
+            player1: {
+                hand: [],
+                deck: [],
+                discard: [],
+                factions: ['robots', 'wizards'],
+            },
+            bases: [
+                {
+                    defId: 'base_central_brain',
+                    breakpoint: 10,
+                    minions: [
+                        { uid: 'c23', defId: 'cthulhu_chosen', baseIndex: 0, owner: '0', controller: '0', basePower: 3 },
+                        { uid: 'r1', defId: 'robot_warbot', baseIndex: 0, owner: '1', controller: '1', basePower: 4 },
+                    ],
+                },
+                { defId: 'base_the_factory', breakpoint: 16, minions: [] },
+                { defId: 'base_great_library', breakpoint: 22, minions: [] },
+            ],
+            currentPlayer: '0',
+            phase: 'scoreBases',
+            sys: {
+                flowHalted: true,
+                interaction: {
+                    current: {
+                        id: 'cthulhu_chosen_confirm_c23_0',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                        data: {
+                            title: '天选之人：是否抽一张疯狂牌来获得 +2 力量？',
+                            sourceId: 'cthulhu_chosen_confirm',
+                            targetType: 'minion',
+                            options: [
+                                {
+                                    id: 'yes',
+                                    label: '是（抽疯狂牌，+2 力量）',
+                                    value: {
+                                        activate: true,
+                                        uid: 'c23',
+                                        minionUid: 'c23',
+                                        defId: 'cthulhu_chosen',
+                                        minionDefId: 'cthulhu_chosen',
+                                        baseIndex: 0,
+                                        controller: '0',
+                                    },
+                                    displayMode: 'button',
+                                },
+                                {
+                                    id: 'no',
+                                    label: '否（不触发）',
+                                    value: { activate: false },
+                                    displayMode: 'button',
+                                },
+                            ],
+                            runtimePrompt: {
+                                owner: 'smashup-ability-runtime',
+                                sourceId: 'cthulhu_chosen_confirm',
+                                continuationId: 'smashup-runtime:cthulhu_chosen_confirm:e2e-69ff0310',
+                                continuation: {
+                                    contextHasMatchState: true,
+                                    context: {
+                                        now: 690310,
+                                        chosen: {
+                                            uid: 'c23',
+                                            defId: 'cthulhu_chosen',
+                                            controller: '0',
+                                            baseIndex: 0,
+                                        },
+                                        remaining: [],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+            },
+        });
+
+        await game.waitForInteraction('cthulhu_chosen_confirm', 10000);
+        const injectedState = await game.getState();
+        expect(injectedState.sys.interaction.current.data.targetType).toBe('minion');
+        expect(injectedState.sys.interaction.current.data.options.every((option: any) => option.displayMode === 'button')).toBe(true);
+
+        await expect(page.getByText('天选之人：是否抽一张疯狂牌来获得 +2 力量？')).toBeVisible();
+        await expect(page.getByRole('button', { name: /抽疯狂牌/ })).toBeVisible();
+        await expect(page.getByRole('button', { name: /否/ })).toBeVisible();
+        await expect(page.getByTestId('prompt-card-0')).not.toBeVisible();
+        await game.screenshot('69ff0310-chosen-confirm-button-overlay', testInfo);
+
+        await page.getByRole('button', { name: /否/ }).click();
+        await game.waitForNoInteraction(10000);
+        await expect(page.getByText('天选之人：是否抽一张疯狂牌来获得 +2 力量？')).not.toBeVisible();
+        await game.screenshot('69ff0310-chosen-confirm-after-no', testInfo);
+    });
+
     test('克苏鲁派系选择 → 疯狂牌库初始化 → 进入游戏', async ({ browser }, testInfo) => {
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const setup = await setupTwoPlayerMatch(browser, baseURL);

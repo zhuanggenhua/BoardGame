@@ -1155,33 +1155,6 @@ export class GameTransportServer {
             .map((value) => (typeof value === 'string' ? value : ''))
             .filter((value) => value.length > 0)
             .join('|');
-        const isAiTurnBlockedByHumanResponseWindow = candidate.reason === 'active-turn'
-            && Boolean(currentWindow)
-            && resolveCurrentPlayerId(match.state) === candidate.playerId
-            && typeof currentResponderId === 'string'
-            && seatControllers[currentResponderId]?.type === 'human';
-
-        if (isAiTurnBlockedByHumanResponseWindow) {
-            const suffix = `response-window-human:${candidate.playerId}:${currentResponderId}:${phase}:${windowType}:${queueSignature}`;
-            return {
-                ...candidate,
-                reason: 'response-window',
-                requiresConfirmedAdvancePhase: true,
-                fingerprintHint: suffix,
-                resolution: {
-                    playerId: candidate.playerId,
-                    attemptKey: `force-end-turn:${candidate.playerId}:${suffix}`,
-                    source: 'local-ai',
-                    action: {
-                        actionId: `force-end-turn:${suffix}`,
-                        kind: 'force-end-turn',
-                        label: '强制结束 AI 回合',
-                        commands: [{ type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE', payload: {} }],
-                    },
-                },
-            };
-        }
-
         if (candidate.reason === 'response-window') {
             const currentTracker = this.onlineAiRecoveryTrackers.get(match.matchID);
             const currentProgressMarker = buildAiProgressMarker(match.state);
@@ -1383,6 +1356,79 @@ export class GameTransportServer {
         let lastForcedReason: ForceEndTurnStalledAiResolution['reason'] | null = null;
         let lastForcedPhaseLabel: 'recover-interaction' | 'follow-up-advance' = phaseLabel;
 
+        const isInteractionRecoveryReason = (reason: ForceEndTurnStalledAiResolution['reason']): boolean =>
+            reason === 'visible-interaction' || reason === 'hidden-interaction';
+        const readCurrentAiInteractionSemanticFingerprint = (playerId: string): string | null => {
+            const currentInteraction = (match.state.sys?.interaction as {
+                current?: {
+                    playerId?: unknown;
+                    kind?: unknown;
+                    data?: {
+                        sourceId?: unknown;
+                        title?: unknown;
+                        options?: unknown;
+                    };
+                };
+            } | undefined)?.current;
+            if (!currentInteraction || String(currentInteraction.playerId ?? '') !== playerId) {
+                return null;
+            }
+            const data = currentInteraction.data;
+            const options = Array.isArray(data?.options)
+                ? data.options.map((option) => {
+                    const item = option as {
+                        id?: unknown;
+                        disabled?: unknown;
+                        value?: unknown;
+                    };
+                    return [
+                        typeof item.id === 'string' ? item.id : '',
+                        item.disabled === true ? '1' : '0',
+                        JSON.stringify(item.value ?? null),
+                    ].join(':');
+                }).join(',')
+                : '';
+            return [
+                typeof currentInteraction.kind === 'string' ? currentInteraction.kind : '',
+                typeof data?.sourceId === 'string' ? data.sourceId : '',
+                typeof data?.title === 'string' ? data.title : '',
+                options,
+            ].join('|');
+        };
+        const tryHardCancelCurrentAiInteraction = async (
+            candidateToCancel: ForceEndTurnStalledAiResolution,
+        ): Promise<boolean> => {
+            if (!isInteractionRecoveryReason(candidateToCancel.reason)) {
+                return false;
+            }
+            if (!candidateToCancel.playerId || seatControllers[candidateToCancel.playerId]?.type === 'human') {
+                return false;
+            }
+
+            const currentInteraction = (match.state.sys?.interaction as {
+                current?: {
+                    id?: unknown;
+                    playerId?: unknown;
+                };
+            } | undefined)?.current;
+            if (!currentInteraction || String(currentInteraction.playerId ?? '') !== candidateToCancel.playerId) {
+                return false;
+            }
+
+            usedForcedRecoveryCommand = true;
+            totalForcedCommands += 1;
+            lastForcedReason = candidateToCancel.reason;
+            lastForcedPhaseLabel = phaseLabel;
+
+            const success = await this.executeCommandInternal(
+                match,
+                candidateToCancel.playerId,
+                INTERACTION_COMMANDS.CANCEL,
+                {},
+            );
+            return success;
+        };
+
         try {
             const seenMarkers = new Set<string>([progressMarkerBeforeRecovery]);
             let recoverySteps = 0;
@@ -1396,6 +1442,7 @@ export class GameTransportServer {
             while (recoverySteps <= this.onlineAiRecoveryMaxAdvanceSteps) {
                 phaseLabel = currentCandidate.requiresConfirmedAdvancePhase ? 'recover-interaction' : 'follow-up-advance';
                 const markerBeforeStep = buildAiProgressMarker(match.state);
+                const interactionFingerprintBeforeStep = readCurrentAiInteractionSemanticFingerprint(currentCandidate.playerId);
                 const actionRecovery = await this.tryRecoverOnlineAiWithLegalAction(
                     match,
                     currentCandidate,
@@ -1490,8 +1537,21 @@ export class GameTransportServer {
                 }
 
                 recoverySteps += 1;
+                const attemptedInteractionRespond = executedCommandTypes.has(INTERACTION_COMMANDS.RESPOND);
                 const nextMarker = buildAiProgressMarker(match.state);
+                const interactionFingerprintAfterStep = readCurrentAiInteractionSemanticFingerprint(currentCandidate.playerId);
                 if (nextMarker === markerBeforeStep) {
+                    if (attemptedInteractionRespond
+                        && interactionFingerprintBeforeStep
+                        && interactionFingerprintAfterStep === interactionFingerprintBeforeStep
+                        && await tryHardCancelCurrentAiInteraction(currentCandidate)) {
+                        const postCancelCandidate = await resolveChainedRecoveryCandidate(candidate.playerId);
+                        if (!postCancelCandidate || postCancelCandidate.playerId !== candidate.playerId) {
+                            break;
+                        }
+                        currentCandidate = postCancelCandidate;
+                        continue;
+                    }
                     const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
                     if (!revalidatedCandidate) {
                         return;
@@ -1528,6 +1588,19 @@ export class GameTransportServer {
                 const nextCandidate = await resolveChainedRecoveryCandidate(candidate.playerId);
                 if (!nextCandidate || nextCandidate.playerId !== candidate.playerId) {
                     break;
+                }
+                if (attemptedInteractionRespond
+                    && isInteractionRecoveryReason(currentCandidate.reason)
+                    && isInteractionRecoveryReason(nextCandidate.reason)
+                    && interactionFingerprintBeforeStep
+                    && interactionFingerprintAfterStep === interactionFingerprintBeforeStep
+                    && await tryHardCancelCurrentAiInteraction(nextCandidate)) {
+                    const postCancelCandidate = await resolveChainedRecoveryCandidate(candidate.playerId);
+                    if (!postCancelCandidate || postCancelCandidate.playerId !== candidate.playerId) {
+                        break;
+                    }
+                    currentCandidate = postCancelCandidate;
+                    continue;
                 }
                 // 响应窗口循环检测：如果刚执行了 RESPONSE_PASS 但同一 AI 的 response-window 立刻重开，
                 // 说明 RESPONSE_PASS 无法推进，应升级为 FORCE_CLOSE 强制关闭窗口。

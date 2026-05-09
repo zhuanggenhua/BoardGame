@@ -89,10 +89,29 @@ function materializeTriggerEffectContract(
     footprint: TriggerEffectContract | undefined,
 ): MaterializedTriggerEffectContract | undefined {
     if (!footprint) return undefined;
+    const normalizedFootprint = normalizePersistedTriggerEffectContract(trigger, footprint);
     return {
-        reads: (footprint.reads ?? []).map(atom => materializeReactionOrderingAtom(atom, trigger)),
-        writes: (footprint.writes ?? []).map(atom => materializeReactionOrderingAtom(atom, trigger)),
-        opensInteraction: footprint.opensInteraction ?? false,
+        reads: (normalizedFootprint.reads ?? []).map(atom => materializeReactionOrderingAtom(atom, trigger)),
+        writes: (normalizedFootprint.writes ?? []).map(atom => materializeReactionOrderingAtom(atom, trigger)),
+        opensInteraction: normalizedFootprint.opensInteraction ?? false,
+    };
+}
+
+function normalizePersistedTriggerEffectContract(
+    trigger: TriggerInstance,
+    footprint: TriggerEffectContract,
+): TriggerEffectContract {
+    const isLegacyFirstMinionBaseTrigger = (
+        trigger.timing === 'onMinionPlayed'
+        && (trigger.sourceDefId === 'base_laboratorium' || trigger.sourceDefId === 'base_moot_site')
+        && (footprint.writes ?? []).includes('triggerMinionPower')
+        && (footprint.reads ?? []).includes('playLimits')
+    );
+    if (!isLegacyFirstMinionBaseTrigger) return footprint;
+
+    return {
+        ...footprint,
+        reads: (footprint.reads ?? []).filter(atom => atom !== 'playLimits'),
     };
 }
 

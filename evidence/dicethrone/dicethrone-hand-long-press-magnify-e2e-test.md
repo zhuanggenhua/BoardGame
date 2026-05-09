@@ -16,6 +16,36 @@
 
 ## 执行记录
 
+### 3) 2026-05-09 修复放大卡面被父容器裁剪（通过）
+
+命令：
+
+```bash
+npm run typecheck
+npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "mobile long press hand card should open magnify without playing card"
+```
+
+结果：
+
+- `typecheck` 通过。
+- E2E：`1 passed`。
+
+新增断言：
+
+- 长按后放大层里必须出现月精灵 `watch-out` 的 atlas 卡面。
+- 放大卡面的 `getBoundingClientRect()` 宽高不得超过其裁剪父容器，防止再次出现“只显示左上/上半部分”的裁剪回归。
+- 放大卡面宽高比约为 `0.61`。
+
+截图（绝对路径）：
+
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-long-press-hand-card-should-open-magnify-without-playing-card\13-mobile-hand-long-press-magnify-open.png`
+
+肉眼观察：
+
+- 放大层中央能看到完整的「看箭！」卡牌：标题、插画、攻击修正标签、下方规则文本和底部边框都在画面内。
+- 卡牌没有只露出左上角或上半截；HUD、技能板和骰子区仍在背景同一坐标系中，没有被误改成窄布局。
+- 长按后手牌仍保留 `watch-out`，没有误触发出牌。
+
 ### 1) dev 模式（通过）
 
 命令：

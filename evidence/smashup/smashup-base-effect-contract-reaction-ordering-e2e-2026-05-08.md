@@ -9,29 +9,30 @@
   - `src/games/smashup/domain/reactionOrdering.ts`
   - `src/games/smashup/domain/triggerEffectContract.ts`
 - 关联 E2E：
-  - `e2e/smashup/smashup-multi-base-scoring-complete.e2e.ts`
+  - `e2e/smashup/smashup-robot-hoverbot-new.e2e.ts`
   - `e2e/smashup/smashup-base-minion-selection.e2e.ts`
 
 ## 验证命令
 
 ```powershell
-node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-multi-base-scoring-complete.e2e.ts
+node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-robot-hoverbot-new.e2e.ts "快如闪电打到阿拉密斯"
 node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-base-minion-selection.e2e.ts "反馈复现：蘑菇王国"
 ```
 
 结果：
 
-- `smashup-multi-base-scoring-complete.e2e.ts`：1 passed
+- `smashup-robot-hoverbot-new.e2e.ts` 中“快如闪电打到阿拉密斯...”：1 passed
 - `smashup-base-minion-selection.e2e.ts` 中“反馈复现：蘑菇王国 + Invisible Ninja...”：1 passed
 
 ## 关键截图与肉眼结论
 
-### 1. 应显示顺序选择：多基地同时可计分
+### 1. 应显示顺序选择：Fast as Lightning 触发 Diva + Aramis
 
-- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-multi-base-scoring-complete.e2e\第二次排序选择后，最后一个基地应自动结算且只结算一次\multi-base-auto-finish-first-choice.png`
-- 我实际看到：顶部提示条显示“选择先计分的基地”，三个达标基地都有绿色高亮边框和绿色分数徽章。
-- 我实际看到：这是基地计分顺序选择本体，不是空的强制跳过弹窗，也不是普通单基地交互。
-- 验收判断：**达到**。多基地同时达标时仍会进入真实的先计分选择界面。
+- 路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-robot-hoverbot-new.e2e\快如闪电打到阿拉密斯后应可选触发女主角复制并让阿拉密斯提供额外行动\world-champs-diva-aramis-reaction-prompt.png`
+- 我实际看到：中央提示条显示“选择一个反应动作”，下方按钮为“阿拉密斯”“女主角”“跳过”。
+- 我实际看到：棋盘左侧同一个基地上有 `Diva` 与 `Aramis`，右下手牌/弃牌区域可见刚打出的 `Fast as Lightning`，这是一条真实卡牌触发链。
+- 我实际看到：该截图不是多基地计分的“选择先计分的基地”，也不是基地选择界面；它对应 E2E 中断言的 `sourceId === 'smashup_reaction_choose'`，并且选项来源分别为 `world_champs_diva` 与 `world_champs_aramis`。
+- 验收判断：**达到**。真实 reaction ordering 链路中仍会显示 `smashup_reaction_choose`。
 
 ### 2. 不应显示顺序选择：蘑菇王国 + Invisible Ninja 同回合开始
 
@@ -51,5 +52,7 @@ node scripts/infra/run-e2e-single.mjs ci e2e/smashup/smashup-base-minion-selecti
 
 严格 `effectContract` 收口后，两类 UI 分流均通过真实 E2E 验证：
 
-1. 多个基地同时达标计分时，仍显示“选择先计分的基地”。
+1. `Fast as Lightning` 同时触发 `Diva` 与 `Aramis` 时，仍显示 `smashup_reaction_choose` 让玩家选择反应顺序。
 2. 蘑菇王国与 Invisible Ninja 同回合开始触发时，不先弹 `smashup_reaction_choose`，而是直接进入蘑菇王国真实交互。
+
+注：多基地同时达标计分会显示“选择先计分的基地”，但那是计分系统固有选择，不再作为本次 reaction ordering 重构的“应显示顺序选择”证据。

@@ -18,10 +18,12 @@ import {
     buildAbilityFeedback,
     findCardInPlayerZone,
     resolveExtraPlayTiming,
+    peekDeckTop,
+    buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { CardsDrawnEvent, SmashUpEvent, DeckReorderedEvent, MinionCardDef, CardToDeckTopEvent, ActionCardDef, SmashUpCore } from '../domain/types';
-import { drawCards, getOpponentLabel } from '../domain/utils';
+import { getOpponentLabel } from '../domain/utils';
 import { registerTrigger } from '../domain/ongoingEffects';
 import { getCurrentTrackedCardTopSnapshot } from '../../../engine/systems/InteractionSystem';
 import type { InteractionDescriptor, PromptOption } from '../../../engine/systems/InteractionSystem';
@@ -169,28 +171,18 @@ function wizardArchmagePodTalent(ctx: AbilityContext): AbilityResult {
 
 /** 女巫 onPlay：抽一张牌 */
 function wizardEnchantress(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    const { drawnUids } = drawCards(player, 1, ctx.random);
-    if (drawnUids.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
-    const evt: CardsDrawnEvent = {
-        type: SU_EVENTS.CARDS_DRAWN,
-        payload: { playerId: ctx.playerId, count: 1, cardUids: drawnUids },
-        timestamp: ctx.now,
-    };
-    return { events: [evt] };
+    const events = buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
+    return events.length > 0
+        ? { events }
+        : { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
 }
 
 /** 秘术学习 onPlay：抽两张）?*/
 function wizardMysticStudies(ctx: AbilityContext): AbilityResult {
-    const player = ctx.state.players[ctx.playerId];
-    const { drawnUids } = drawCards(player, 2, ctx.random);
-    if (drawnUids.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
-    const evt: CardsDrawnEvent = {
-        type: SU_EVENTS.CARDS_DRAWN,
-        payload: { playerId: ctx.playerId, count: drawnUids.length, cardUids: drawnUids },
-        timestamp: ctx.now,
-    };
-    return { events: [evt] };
+    const events = buildStandardDrawEvents(ctx.state, ctx.playerId, 2, ctx.random, ctx.now);
+    return events.length > 0
+        ? { events }
+        : { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
 }
 
 /** 召唤 onPlay：额外打出一个随从*/
@@ -1209,15 +1201,7 @@ const wizardSacrificePromptProgram = createPromptProgram<WizardPromptContext, Sm
         const power = getMinionPower(state.core, minion, choice.baseIndex);
         const events: SmashUpEvent[] = [];
         if (power > 0) {
-            const player = state.core.players[context.playerId];
-            const { drawnUids } = drawCards(player, power, random);
-            if (drawnUids.length > 0) {
-                events.push({
-                    type: SU_EVENTS.CARDS_DRAWN,
-                    payload: { playerId: context.playerId, count: drawnUids.length, cardUids: drawnUids },
-                    timestamp,
-                } as SmashUpEvent);
-            }
+            events.push(...buildStandardDrawEvents(state.core, context.playerId, power, random, timestamp));
         }
         events.push(destroyMinion(minion.uid, minion.defId, choice.baseIndex, minion.owner, context.playerId, 'wizard_sacrifice', timestamp));
         return { events, matchState: state };
@@ -1225,24 +1209,46 @@ const wizardSacrificePromptProgram = createPromptProgram<WizardPromptContext, Sm
 });
 
 const wizardNeophyteProgram = createEffectProgram<WizardNeophyteContext, SmashUpCore, SmashUpEvent>((context) => {
-    const topCard = context.topCard;
+    let topCard = context.topCard;
+    const events: SmashUpEvent[] = [];
     if (!topCard) {
-        return { events: [buildAbilityFeedback(context.playerId, 'feedback.deck_empty', context.now)] };
+        const peek = peekDeckTop(
+            context.matchState.core,
+            context.random,
+            context.playerId,
+            'all',
+            'wizard_neophyte',
+            context.now,
+            context.playerId,
+        );
+        if (!peek) {
+            return { events: [buildAbilityFeedback(context.playerId, 'feedback.deck_empty', context.now)] };
+        }
+        events.push(...peek.events);
+        topCard = {
+            uid: peek.card.uid,
+            defId: peek.card.defId,
+            type: peek.card.type,
+            name: getCardDef(peek.card.defId)?.name ?? peek.card.defId,
+        };
     }
-    const revealEvent = revealDeckTop(
-        context.playerId,
-        'all',
-        [{ uid: topCard.uid, defId: topCard.defId }],
-        1,
-        'wizard_neophyte',
-        context.now,
-        context.playerId,
-    );
+    if (context.topCard) {
+        events.push(revealDeckTop(
+            context.playerId,
+            'all',
+            [{ uid: topCard.uid, defId: topCard.defId }],
+            1,
+            'wizard_neophyte',
+            context.now,
+            context.playerId,
+        ));
+    }
     if (topCard.type !== 'action') {
-        return { events: [revealEvent] };
+        return { events };
     }
     return {
-        events: [revealEvent],
+        events,
+        context: { ...context, topCard },
         nextProgram: wizardNeophytePromptProgram,
     };
 });

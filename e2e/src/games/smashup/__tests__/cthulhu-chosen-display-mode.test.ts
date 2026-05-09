@@ -76,6 +76,32 @@ const dummyRandom = {
 };
 
 describe('神选者交互 displayMode 修复', () => {
+    it('线上反馈 69ff0310：确认交互应走按钮弹层而不是场上随从直点', () => {
+        const chosen = makeMinion('ch1', 'cthulhu_chosen', '0', 3, { powerModifier: 0 });
+        const scoringBase = makeBase({ minions: [chosen] });
+        const state = makeState({
+            bases: [scoringBase],
+            madnessDeck: ['special_madness', 'special_madness'],
+        });
+        const ms = makeMS(state);
+
+        const result = fireTriggers(state, 'beforeScoring', {
+            state,
+            matchState: ms,
+            playerId: '0',
+            baseIndex: 0,
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        const interaction = result.matchState?.sys?.interaction?.current;
+        expect(interaction).toBeDefined();
+        expect((interaction?.data as any)?.targetType).toBe('generic');
+        expect((interaction?.data as any)?.sourceId).toBe('cthulhu_chosen_confirm');
+        expect((interaction?.data as any)?.options.map((option: any) => option.id)).toEqual(['yes', 'no']);
+        expect((interaction?.data as any)?.options.every((option: any) => option.displayMode === 'button')).toBe(true);
+    });
+
     it('选项应该有 displayMode: "button"', () => {
         const chosen = makeMinion('ch1', 'cthulhu_chosen', '1', 3, { powerModifier: 0 });
         const scoringBase = makeBase({ minions: [chosen] });

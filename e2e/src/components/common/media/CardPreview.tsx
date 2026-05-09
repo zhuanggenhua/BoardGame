@@ -625,6 +625,9 @@ function AtlasCard({ atlasId, index, locale, className, style, title }: AtlasCar
 
     return (
         <div
+            data-card-atlas-frame="true"
+            data-card-atlas-id={atlasId}
+            data-card-atlas-index={index}
             className={`${effectiveLoaded ? '' : 'atlas-shimmer'} ${className ?? ''}`}
             title={title}
             style={{

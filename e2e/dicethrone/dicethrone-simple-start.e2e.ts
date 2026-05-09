@@ -71,6 +71,8 @@ const RESPONSE_WINDOW_CARD = COMMON_CARDS.find((card) => card.id === RESPONSE_WI
 const AFTER_CARD_PLAYABLE_RESPONSE_CARD = COMMON_CARDS.find((card) => card.id === AFTER_CARD_PLAYABLE_RESPONSE_CARD_ID);
 const REMOVE_SINGLE_STATUS_CARD_ID = 'card-get-away';
 const REMOVE_SINGLE_STATUS_CARD = COMMON_CARDS.find((card) => card.id === REMOVE_SINGLE_STATUS_CARD_ID);
+const BYE_BYE_CARD_ID = 'card-bye-bye';
+const BYE_BYE_CARD = COMMON_CARDS.find((card) => card.id === BYE_BYE_CARD_ID);
 const REMOVE_ALL_STATUS_CARD_ID = 'card-what-status';
 const REMOVE_ALL_STATUS_CARD = COMMON_CARDS.find((card) => card.id === REMOVE_ALL_STATUS_CARD_ID);
 const TRANSFER_STATUS_CARD_ID = 'card-transfer-status';
@@ -1237,6 +1239,32 @@ const buildTwoPlayerTransferTokenState = (state: any) => {
     next.core.players['1'].tokens = {
         ...(next.core.players['1'].tokens ?? {}),
         [TOKEN_IDS.CRIT]: 1,
+    };
+    return next;
+};
+
+const buildTwoPlayerByeByeBountyState = (state: any) => {
+    const next = buildFourPlayerNoResponseState(state);
+    const byeByeCard = BYE_BYE_CARD;
+    if (!byeByeCard) {
+        throw new Error(`未找到拜拜您卡 ${BYE_BYE_CARD_ID}，无法构造赏金移除复现场景`);
+    }
+
+    next.core.activePlayerId = '0';
+    next.sys.phase = 'main1';
+    next.core.phase = 'main1';
+    next.sys.flowHalted = false;
+    next.core.pendingAttack = null;
+    next.core.selectedAbilityId = undefined;
+    next.core.rollConfirmed = false;
+    next.core.players['0'].hand = [structuredClone(byeByeCard)];
+    next.core.players['0'].resources.cp = Math.max(next.core.players['0'].resources.cp ?? 0, 5);
+    next.core.players['1'].tokens = {
+        ...(next.core.players['1'].tokens ?? {}),
+        [TOKEN_IDS.BOUNTY]: 1,
+    };
+    next.core.players['1'].statusEffects = {
+        ...(next.core.players['1'].statusEffects ?? {}),
     };
     return next;
 };
@@ -5765,6 +5793,61 @@ test.describe('DiceThrone Simple Start', () => {
         expect(hostState.core.players['1'].tokens[TOKEN_IDS.CRIT] ?? 0).toBe(0);
         expect(targetState.core.players['1'].tokens[TOKEN_IDS.CRIT] ?? 0).toBe(0);
         expect(hostState.sys.interaction?.current).toBeUndefined();
+
+        await cleanupDTMatch(setup);
+    });
+
+    test('Online 2-player Bye Bye: real hand play should remove Bounty from target player', async ({ browser, workerPorts }, testInfo) => {
+        test.setTimeout(90000);
+        const baseURL = `http://127.0.0.1:${workerPorts.frontend}`;
+        const gameServerBaseURL = `http://127.0.0.1:${workerPorts.gameServer}`;
+
+        const setup = await setupDTOnlineMatch(browser, baseURL, { gameServerBaseURL });
+        if (!setup) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = setup;
+
+        await selectCharacter(hostPage, 'gunslinger');
+        await selectCharacter(guestPage, 'barbarian');
+        await readyAndStartGame(hostPage, guestPage);
+
+        await waitForGameBoard(hostPage);
+        await waitForGameBoard(guestPage);
+        await waitForHarnessPages([hostPage, guestPage]);
+
+        await applyOnlineMatchState(matchId, hostPage, buildTwoPlayerByeByeBountyState);
+        await waitForPhase(hostPage, 'main1');
+        await waitForHandCardVisualReady(hostPage, BYE_BYE_CARD_ID);
+
+        const byeByeCard = hostPage.locator(`[data-testid="hand-area"] [data-card-id="${BYE_BYE_CARD_ID}"]`).first();
+        await expect(byeByeCard).toBeVisible({ timeout: 10000 });
+
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await saveEvidenceScreenshot(hostPage, testInfo, '01-bye-bye-bounty-before-play');
+
+        await hostPage.evaluate(() => {
+            (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+        });
+
+        await byeByeCard.click({ force: true });
+
+        const bountyOption = hostPage.getByTestId('dt-status-effect-1-bounty');
+        const confirmButton = hostPage.getByRole('button', { name: /Confirm|确认/i }).last();
+        await expect(bountyOption).toBeVisible({ timeout: 10000 });
+        await saveEvidenceScreenshot(hostPage, testInfo, '02-bye-bye-bounty-selectable');
+
+        await bountyOption.click();
+        await expect(confirmButton).toBeEnabled({ timeout: 5000 });
+        await confirmButton.click();
+        await hostPage.waitForTimeout(1200);
+        await saveEvidenceScreenshot(hostPage, testInfo, '03-bye-bye-bounty-after-confirm');
+
+        const afterState = await readHarnessState<any>(hostPage);
+        expect(afterState.core.players['1'].tokens[TOKEN_IDS.BOUNTY] ?? 0).toBe(0);
+        expect(afterState.sys.interaction?.current).toBeUndefined();
 
         await cleanupDTMatch(setup);
     });

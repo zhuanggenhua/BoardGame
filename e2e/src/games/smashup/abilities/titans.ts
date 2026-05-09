@@ -3942,7 +3942,6 @@ export function registerTitanAbilities(): void {
     });
     registerAbility('werewolves_great_wolf_spirit', 'talent', werewolvesGreatWolfSpiritTalent);
     registerTrigger('werewolves_great_wolf_spirit', 'onTurnStart', werewolvesGreatWolfSpiritOnTurnStart, {
-        global: true,
         optional: true,
         effectContract: {
             reads: ['minionBoardState', 'titanBoardState', 'turnFlags', 'baseState'],
@@ -3955,15 +3954,6 @@ export function registerTitanAbilities(): void {
         return getGreatWolfSpiritTalentTargets(state, playerId).length > 0
             ? null
             : '没有可获得力量的己方随从';
-    });
-
-    registerTrigger('werewolves_great_wolf_spirit', 'onTurnStart', werewolvesGreatWolfSpiritOnTurnStart, {
-        global: true,
-        effectContract: {
-            reads: ['minionBoardState', 'titanBoardState', 'turnFlags', 'baseState'],
-            writes: ['titanBoardState'],
-            opensInteraction: true,
-        },
     });
 
     registerAbility('tricksters_big_funny_giant', 'special', trickstersBigFunnyGiantSpecial);

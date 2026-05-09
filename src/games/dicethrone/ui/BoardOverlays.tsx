@@ -160,10 +160,11 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const isPlayerBoardPreview = Boolean(props.magnifiedImage?.includes('player-board'));
     const isMultiCardPreview = props.magnifiedCards.length > 0;
     const playerBoardAspectRatio = getPlayerBoardAspectRatio(props.viewCharacterId);
+    const magnifiedCardWidth = 'min(54.9vh, 39.65vw, 396px, 60vw, 400px)';
     const magnifyContainerClassName = `
         group/modal
         ${isPlayerBoardPreview ? 'h-auto w-auto max-h-[90vh] max-w-[90vw]' : ''}
-        ${props.magnifiedCard ? 'aspect-[0.61] h-auto w-auto max-h-[90vh] max-w-[60vw]' : ''}
+        ${props.magnifiedCard ? 'aspect-[0.61] w-auto max-h-[90vh] max-w-[60vw]' : ''}
         ${isMultiCardPreview ? 'max-h-[90vh] max-w-[90vw]' : ''}
         ${!isPlayerBoardPreview && !props.magnifiedCard && !isMultiCardPreview ? 'max-h-[90vh] max-w-[90vw]' : ''}
     `;
@@ -195,8 +196,12 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                             </div>
                         ) : props.magnifiedCard ? (
                             <CardPreview
-                                className="w-[40vw] h-[65vw] max-w-[400px] max-h-[650px]"
-                                style={{ backgroundColor: '#0f172a' }}
+                                className="rounded-[1vw]"
+                                style={{
+                                    backgroundColor: '#0f172a',
+                                    width: magnifiedCardWidth,
+                                    aspectRatio: '0.61',
+                                }}
                                 previewRef={props.magnifiedCard.previewRef}
                                 locale={props.locale}
                             />
@@ -248,6 +253,8 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         rerollCostAmount={props.pendingBonusDiceSettlement?.rerollCostAmount}
                         rerollCostTokenId={props.pendingBonusDiceSettlement?.rerollCostTokenId}
                         displayOnly={props.pendingBonusDiceSettlement?.displayOnly ?? props.bonusDie.displayOnly}
+                        lastRerolledDieIndex={props.pendingBonusDiceSettlement?.lastRerolledDieIndex}
+                        rerollAnimationKey={props.pendingBonusDiceSettlement?.rerollAnimationKey}
                         summaryEffectKey={props.pendingBonusDiceSettlement?.summaryEffectKey ?? props.bonusDie.summaryEffectKey}
                         summaryEffectParams={props.pendingBonusDiceSettlement?.summaryEffectParams ?? props.bonusDie.summaryEffectParams}
                         characterId={

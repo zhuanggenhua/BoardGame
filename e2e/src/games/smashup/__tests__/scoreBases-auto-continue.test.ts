@@ -2400,4 +2400,97 @@ describe('scoreBases 阶段自动推进', () => {
         expect(resolution?.action.kind).toBe('play-minion');
         expect((resolution?.action.commands[0]?.payload as { baseIndex?: number } | undefined)?.baseIndex).toBe(1);
     });
+
+    it('线上反馈 69ff0cd0：AI 出牌阶段无可用出牌时应自动结束阶段', async () => {
+        registerGameAiRuntime(smashUpAiRuntime);
+
+        const state: MatchState<SmashUpCore> = {
+            core: makeMinimalCore({
+                currentPlayerIndex: 1,
+                turnOrder: ['0', '1', '2', '3'],
+                players: {
+                    '0': {
+                        ...makeMinimalCore().players['0'],
+                        factions: ['tricksters', 'aliens'],
+                    },
+                    '1': {
+                        ...makeMinimalCore().players['1'],
+                        factions: ['robots', 'elder_things'],
+                        hand: [
+                            { uid: 'c65', defId: 'elder_thing_mi_go', type: 'minion', owner: '1' },
+                            { uid: 'c54', defId: 'robot_microbot_guard', type: 'minion', owner: '1' },
+                            { uid: 'c51', defId: 'robot_microbot_reclaimer', type: 'minion', owner: '1' },
+                            { uid: 'c52', defId: 'robot_microbot_reclaimer', type: 'minion', owner: '1' },
+                            { uid: 'c66', defId: 'elder_thing_mi_go', type: 'minion', owner: '1' },
+                            { uid: 'c58', defId: 'robot_microbot_fixer', type: 'minion', owner: '1' },
+                            { uid: 'c68', defId: 'elder_thing_byakhee', type: 'minion', owner: '1' },
+                            { uid: 'c62', defId: 'elder_thing_shoggoth', type: 'minion', owner: '1' },
+                        ] as any,
+                        discard: [
+                            { uid: 'c60', defId: 'robot_tech_center', type: 'action', owner: '1' },
+                            { uid: 'c57', defId: 'robot_microbot_fixer', type: 'minion', owner: '1' },
+                        ] as any,
+                        minionsPlayed: 2,
+                        minionLimit: 2,
+                        actionsPlayed: 0,
+                        actionLimit: 1,
+                    },
+                    '2': {
+                        ...makeMinimalCore().players['1'],
+                        id: '2',
+                        factions: ['killer_plants', 'steampunks'],
+                    },
+                    '3': {
+                        ...makeMinimalCore().players['1'],
+                        id: '3',
+                        factions: ['wizards', 'zombies'],
+                    },
+                },
+                bases: [
+                    makeBase('base_the_factory', [
+                        makeMinion('3', 'wizard_chronomage', 3),
+                    ]),
+                    makeBase('base_rhodes_plaza', [
+                        makeMinion('0', 'alien_collector', 2),
+                    ]),
+                    makeBase('base_great_library', [
+                        makeMinion('1', 'elder_thing_byakhee', 2),
+                    ]),
+                    makeBase('base_the_asylum', []),
+                    makeBase('base_the_mothership', [
+                        makeMinion('3', 'wizard_neophyte', 2),
+                        makeMinion('1', 'robot_zapbot', 2),
+                        makeMinion('1', 'elder_thing_byakhee', 2),
+                    ]),
+                ],
+            }),
+            sys: {
+                phase: 'playCards',
+                flowHalted: false,
+                interaction: { current: null, queue: [] },
+                responseWindow: { current: null, history: [] },
+            } as any,
+        };
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '1',
+            state: state as any,
+        });
+
+        expect(legalActions.some((action) => action.kind === 'play-minion')).toBe(false);
+        expect(legalActions.some((action) => action.kind === 'advance-phase')).toBe(true);
+
+        const resolution = await resolveNextLocalAiAction({
+            engineConfig: smashUpAiEngineConfig,
+            state: state as any,
+            matchId: 'feedback-69ff0cd0-ai-stalled-playcards',
+            seatControllers: { '1': { type: 'local-ai' } },
+        });
+
+        expect(resolution?.playerId).toBe('1');
+        expect(resolution?.action.kind).toBe('advance-phase');
+        expect(resolution?.action.commands).toEqual([
+            { type: 'ADVANCE_PHASE', payload: {} },
+        ]);
+    });
 });

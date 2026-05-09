@@ -5,11 +5,44 @@
  */
 
 import { test, expect } from '../fixtures';
+import type { Page, TestInfo } from '@playwright/test';
+import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
+
+declare global {
+    interface Window {
+        __TEST_ERRORS__?: unknown[];
+        __IMAGE_PRELOAD_CACHE__?: unknown;
+        __CRITICAL_IMAGE_RESOLVERS__?: Record<string, (defId: string) => unknown>;
+        __BG_CARD_REGISTRY__?: unknown;
+    }
+}
+
+const waitForTutorialStep = async (page: Page, stepId: string, timeout = 15000) => {
+    await expect(page.locator(`[data-tutorial-step="${stepId}"]`)).toBeVisible({ timeout });
+};
+
+const clickNext = async (page: Page) => {
+    const nextButton = page.getByTestId('tutorial-next-button');
+    await expect(nextButton).toBeVisible({ timeout: 10000 });
+    await nextButton.click();
+};
+
+const saveEvidenceScreenshot = async (
+    page: Page,
+    testInfo: TestInfo,
+    name: string,
+) => {
+    await page.screenshot({
+        path: getEvidenceScreenshotPath(testInfo, name, { filename: `${name}.png` }),
+        fullPage: false,
+    });
+};
 
 test.describe('Cardia Tutorial Debug', () => {
-    test('should load tutorial mode successfully', async ({ page }) => {
+    test('教程完整流程应从欢迎步骤推进到完成', async ({ page }, testInfo) => {
         // 设置更长的超时时间
         test.setTimeout(120000);
+        await clearEvidenceScreenshotsForTest(testInfo);
 
         console.log('=== 开始教程模式调试 ===');
 
@@ -115,7 +148,7 @@ test.describe('Cardia Tutorial Debug', () => {
                         
                         // 获取控制台错误
                         const errors = await page.evaluate(() => {
-                            return (window as any).__TEST_ERRORS__ || [];
+                            return window.__TEST_ERRORS__ || [];
                         });
                         if (errors.length > 0) {
                             console.error('控制台错误:', errors);
@@ -135,34 +168,51 @@ test.describe('Cardia Tutorial Debug', () => {
         const board = page.locator('[data-testid="cardia-board"]');
         await expect(board).toBeVisible({ timeout: 10000 });
         
-        // 截图：游戏界面
-        await page.screenshot({ path: 'test-results/tutorial-debug-04-game-board.png', fullPage: true });
-        console.log('✓ 成功进入游戏界面');
+        // 5. 教程全流程：setup 是 AI 步骤，不渲染浮层；等待其自动推进到 welcome。
+        console.log('步骤 5: 推进教程信息步骤');
+        await waitForTutorialStep(page, 'welcome');
+        await saveEvidenceScreenshot(page, testInfo, '01-welcome-visible');
 
-        // 5. 检查教程系统是否激活
-        console.log('步骤 5: 检查教程系统是否激活');
-        
-        const tutorialOverlay = page.locator('[data-testid="tutorial-overlay"]');
-        const hasTutorialOverlay = await tutorialOverlay.isVisible().catch(() => false);
-        
-        if (hasTutorialOverlay) {
-            console.log('✓ 教程覆盖层已显示');
-            
-            // 获取教程步骤信息
-            const stepInfo = await page.evaluate(() => {
-                const overlay = document.querySelector('[data-testid="tutorial-overlay"]');
-                return {
-                    visible: !!overlay,
-                    content: overlay?.textContent?.substring(0, 100),
-                };
-            });
-            console.log('教程步骤信息:', stepInfo);
-        } else {
-            console.warn('⚠ 未找到教程覆盖层');
-        }
+        await clickNext(page);
+        await waitForTutorialStep(page, 'handIntro');
+        await clickNext(page);
+        await waitForTutorialStep(page, 'battlefieldIntro');
+        await clickNext(page);
+        await waitForTutorialStep(page, 'signetIntro');
+        await clickNext(page);
+        await waitForTutorialStep(page, 'phaseIntro');
+        await clickNext(page);
+        await waitForTutorialStep(page, 'playPhaseExplain');
+        await clickNext(page);
 
-        // 截图：最终状态
-        await page.screenshot({ path: 'test-results/tutorial-debug-05-final.png', fullPage: true });
+        // 6. 真实操作：点击教程固定手牌外科医生，等待教程自动执行对手出牌并进入能力阶段说明。
+        console.log('步骤 6: 打出教程指定手牌并等待 AI 对手出牌');
+        await waitForTutorialStep(page, 'playFirstCard');
+        await saveEvidenceScreenshot(page, testInfo, '02-play-first-card-required');
+        await expect(page.locator('[data-testid="card-tut-1"]')).toBeVisible({ timeout: 10000 });
+        await page.locator('[data-testid="card-tut-1"]').click();
+        await waitForTutorialStep(page, 'abilityPhaseExplain', 20000);
+        await saveEvidenceScreenshot(page, testInfo, '03-ai-opponent-resolved-ability-phase');
+
+        // 7. 真实操作：进入能力步骤并点击外科医生能力。
+        console.log('步骤 7: 激活失败方能力');
+        await clickNext(page);
+        await waitForTutorialStep(page, 'activateAbility');
+        await expect(page.locator('[data-testid="cardia-activate-ability-btn"]')).toBeVisible({ timeout: 10000 });
+        await page.locator('[data-testid="cardia-activate-ability-btn"]').click();
+        await waitForTutorialStep(page, 'encounterExplain', 20000);
+
+        // 8. 收尾到 finish，并点击完成关闭教程。
+        console.log('步骤 8: 推进到教程完成');
+        await clickNext(page);
+        await waitForTutorialStep(page, 'influenceExplain');
+        await clickNext(page);
+        await waitForTutorialStep(page, 'summary');
+        await clickNext(page);
+        await waitForTutorialStep(page, 'finish');
+        await saveEvidenceScreenshot(page, testInfo, '04-finish-visible');
+        await clickNext(page);
+        await expect(page.locator('[data-tutorial-step]')).toHaveCount(0, { timeout: 10000 });
 
         console.log('=== 教程模式调试完成 ===');
     });
@@ -177,11 +227,11 @@ test.describe('Cardia Tutorial Debug', () => {
         const assetConfig = await page.evaluate(() => {
             return {
                 // 检查图片预加载配置
-                imagePreloadCache: (window as any).__IMAGE_PRELOAD_CACHE__,
+                imagePreloadCache: window.__IMAGE_PRELOAD_CACHE__,
                 // 检查关键图片解析器
-                criticalImageResolvers: Object.keys((window as any).__CRITICAL_IMAGE_RESOLVERS__ || {}),
+                criticalImageResolvers: Object.keys(window.__CRITICAL_IMAGE_RESOLVERS__ || {}),
                 // 检查卡牌注册表
-                cardRegistry: (window as any).__BG_CARD_REGISTRY__ ? 'exists' : 'missing',
+                cardRegistry: window.__BG_CARD_REGISTRY__ ? 'exists' : 'missing',
             };
         });
 
@@ -189,7 +239,7 @@ test.describe('Cardia Tutorial Debug', () => {
 
         // 检查 Cardia 的关键图片
         const cardiaImages = await page.evaluate(() => {
-            const resolver = (window as any).__CRITICAL_IMAGE_RESOLVERS__?.cardia;
+            const resolver = window.__CRITICAL_IMAGE_RESOLVERS__?.cardia;
             if (!resolver) return null;
             
             return {

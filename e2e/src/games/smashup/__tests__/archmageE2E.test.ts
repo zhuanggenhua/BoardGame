@@ -229,6 +229,41 @@ describe('大法师 E2E: 打出当回合额外行动', () => {
         const archmage = result.finalState.core.bases[0].minions.find(minion => minion.defId === 'wizard_archmage');
         expect(archmage?.tempPowerModifier ?? 0).toBe(2);
     });
+
+    it('线上反馈 69ff7291：在实验工坊打出大法师时应自动结算实验工坊与大法师触发', () => {
+        const archmageCard = makeCard('am-card', 'wizard_archmage', 'minion', '0');
+
+        const core = makeState({
+            currentPlayerIndex: 0,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [archmageCard],
+                    minionsPlayedPerBase: { 0: 0 },
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_laboratorium', []),
+            ],
+        });
+
+        const runner = createCustomRunner(makeFullMatchState(core));
+        const result = runner.run({
+            name: '线上反馈 69ff7291 - 实验工坊大法师自动收口',
+            commands: [
+                { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'am-card', baseIndex: 0 } },
+            ] as any[],
+        });
+
+        const archmage = result.finalState.core.bases[0].minions.find(minion => minion.defId === 'wizard_archmage');
+
+        expect(result.steps[0]?.success).toBe(true);
+        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expect(result.finalState.core.triggerQueue).toBeUndefined();
+        expect(result.finalState.core.players['0'].actionLimit).toBe(2);
+        expect(archmage?.powerCounters ?? 0).toBe(1);
+    });
 });
 
 describe('隐蔽迷雾 E2E: 进入 playCards 的额外随从', () => {

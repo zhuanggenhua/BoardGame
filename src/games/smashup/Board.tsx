@@ -92,7 +92,7 @@ import { resolveRuntimeLayoutScaleMetrics } from '../mobileSupport';
 import { getEventStreamEntries } from '../../engine/systems/EventStreamSystem';
 import { RevealOverlay } from './ui/RevealOverlay';
 import { useSmashUpOverlay } from './ui/SmashUpOverlayContext';
-import { isSmashUpPromptOwnedByPlayer, resolveSmashUpHandInteractionMode, resolveSmashUpHandPromptUiMode } from './ui/interactionMode';
+import { isSmashUpPromptOwnedByPlayer, resolveSmashUpHandInteractionMode, resolveSmashUpHandPromptUiMode, shouldForceSmashUpPromptOverlay } from './ui/interactionMode';
 import { useMobileViewport } from '../../hooks/ui/useMobileViewport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
 import { getSmashUpReactionWindowPresentation } from './domain/reactionWindowState';
@@ -536,6 +536,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const currentInteraction = G?.sys?.interaction?.current;
     const currentPrompt = useMemo(() => asSimpleChoice(currentInteraction), [currentInteraction]);
     const currentPromptTargetType = (currentInteraction?.data as Record<string, unknown> | undefined)?.targetType;
+    const shouldRenderPromptInOverlay = useMemo(() => shouldForceSmashUpPromptOverlay(currentPrompt), [currentPrompt]);
     const isCurrentPromptForPlayer = useMemo(() => {
         return isSmashUpPromptOwnedByPlayer({ currentPrompt, playerID });
     }, [currentPrompt, playerID]);
@@ -591,12 +592,12 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 基地选择交互检测：当前 interaction 的选项包含有效 baseIndex 时，用基地区直接点击选择
     const isBaseSelectPrompt = useMemo(() => {
-        if (!isCurrentPromptForPlayer || !currentPrompt) return false;
+        if (!isCurrentPromptForPlayer || !currentPrompt || shouldRenderPromptInOverlay) return false;
         // 多选交互不走棋盘点击模式，交给 PromptOverlay 卡牌多选面板处理
         if (currentPrompt.multi) return false;
         const data = currentInteraction?.data as Record<string, unknown> | undefined;
         return data?.targetType === 'base';
-    }, [currentInteraction, currentPrompt, isCurrentPromptForPlayer]);
+    }, [currentInteraction, currentPrompt, isCurrentPromptForPlayer, shouldRenderPromptInOverlay]);
 
     const _baseSelectPromptTitle = isBaseSelectPrompt && currentPrompt ? currentPrompt.title : '';
 
@@ -696,10 +697,10 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 随从选择交互检测：targetType === 'minion' 或有随从选项（跳过选项不影响判断）
     const isMinionSelectPrompt = useMemo(() => {
-        if (!isCurrentPromptForPlayer || !currentPrompt) return false;
+        if (!isCurrentPromptForPlayer || !currentPrompt || shouldRenderPromptInOverlay) return false;
         const data = currentInteraction?.data as Record<string, unknown> | undefined;
         return data?.targetType === 'minion';
-    }, [currentInteraction, currentPrompt, isCurrentPromptForPlayer]);
+    }, [currentInteraction, currentPrompt, isCurrentPromptForPlayer, shouldRenderPromptInOverlay]);
 
     // 可选随从 UID 集合（只高亮候选随从，排除跳过选项）
     const selectableMinionUids = useMemo<Set<string>>(() => {

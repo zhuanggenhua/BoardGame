@@ -440,6 +440,53 @@ describe('完整回合循环', () => {
         expect((resumed!.state.sys.interaction?.current?.data as any)?.sourceId).toBe('titan_ninjas_invisible_ninja_start_turn');
         expect((resumed!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
     });
+
+    it('线上反馈 69feede0：场下巨狼之灵不应在回合开始入队询问触发', () => {
+        const random = { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any;
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.WEREWOLVES, SMASHUP_FACTION_IDS.PRINCESSES] as [string, string],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 9,
+            bases: [
+                makeBase('base_beautiful_castle', [
+                    makeMinion('wolf-home', 'werewolf_pack_alpha', '0', 5),
+                ]),
+                makeBase('base_great_library', [
+                    makeMinion('wolf-ahead', 'werewolf_howler', '0', 4),
+                    makeMinion('enemy-low', 'robot_zapbot', '1', 2),
+                ]),
+                makeBase('base_standing_stones'),
+            ],
+            titans: [{
+                uid: 't-gws-setaside',
+                defId: 'werewolves_great_wolf_spirit',
+                faction: SMASHUP_FACTION_IDS.WEREWOLVES,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } as any],
+        });
+
+        const queued = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core, 'startTurn', '0'),
+            playerId: '0',
+            frameId: 'turn-start:0:9:0',
+            sourceEventId: 'turn-start:0:9:0',
+            random,
+            now: 9,
+        });
+
+        expect(queued).toBeUndefined();
+    });
 });
 
 // ============================================================================

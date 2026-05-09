@@ -29,6 +29,8 @@ import { clearRegistry } from '../domain/abilityRegistry';
 import { resolveAbilityRuntimePrompt } from '../domain/abilityRuntime';
 import { clearBaseAbilityRegistry, triggerBaseAbility, triggerExtendedBaseAbility } from '../domain/baseAbilities';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
+import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import { appendScoringFrameDeferredPayload, consumeScoringFrameDeferredPayload, createScoringSession, setScoringSession } from '../domain/scoringSession';
@@ -685,6 +687,49 @@ describe('base_innsmouth_base: 印斯茅斯 - 弃牌堆卡入牌库底', () => {
 
         expect(events).toHaveLength(0);
     });
+
+    it('queued reaction 选择印斯茅斯时不会被 effect contract 拦截', () => {
+        const core = makeState({
+            bases: [
+                makeBase('base_innsmouth_base', {
+                    minions: [makeMinion('m1', '0', 2, 'innsmouth_the_locals')],
+                }),
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    discard: [makeCard('d1', 'wizard_scry', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const queued = collectBaseAbilityTriggers({
+            core,
+            timing: 'onMinionPlayed',
+            ownerPlayerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'm1',
+            triggerMinionDefId: 'innsmouth_the_locals',
+            triggerMinionPower: 2,
+            frameId: 'minion-played-frame:m1:0:1000',
+            sourceEventId: 'minion-played:m1:0:1000',
+            now: 1000,
+        }) as any;
+        const reaction = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: queued.payload.triggers }),
+            dummyRandom,
+            1001,
+        );
+        const current = reaction!.state.sys.interaction.current as any;
+        const option = current.data.options.find((entry: any) => entry.id.startsWith('trigger:'));
+        const handler = getInteractionHandler('smashup_reaction_choose');
+
+        expect(option).toBeDefined();
+        expect(handler).toBeDefined();
+        const resolved = handler!(reaction!.state as any, '0', option.value, current.data, dummyRandom, 1002);
+
+        expect(resolved?.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
+        expect((resolved?.state.sys.interaction.queue?.[0] as any)?.data?.sourceId).toBe('base_innsmouth_base_choose_player');
+    });
 });
 
 describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
@@ -985,6 +1030,43 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             1854,
         );
         expect(resolved?.events ?? []).toHaveLength(0);
+    });
+
+    it('queued reaction 选择温室时不会被 effect contract 拦截', () => {
+        const core = makeState({
+            bases: [makeBase('base_greenhouse')],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('dk1', 'alien_collector', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const queued = collectBaseAbilityTriggers({
+            core,
+            timing: 'afterScoring',
+            ownerPlayerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 5, vp: 4 }],
+            frameId: 'score-after:0:0',
+            sourceEventId: 'score-after:0:0',
+            now: 1000,
+        }) as any;
+        const reaction = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: queued.payload.triggers }),
+            dummyRandom,
+            1001,
+        );
+        const current = reaction!.state.sys.interaction.current as any;
+        const option = current.data.options.find((entry: any) => entry.id.startsWith('trigger:'));
+        const handler = getInteractionHandler('smashup_reaction_choose');
+
+        expect(option).toBeDefined();
+        expect(handler).toBeDefined();
+        const resolved = handler!(reaction!.state as any, '0', option.value, current.data, dummyRandom, 1002);
+
+        expect(resolved?.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
+        expect((resolved?.state.sys.interaction.queue?.[0] as any)?.data?.sourceId).toBe('base_greenhouse');
     });
 });
 

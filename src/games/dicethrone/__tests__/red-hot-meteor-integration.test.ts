@@ -709,6 +709,7 @@ describe('红热攻击修正出牌边界', () => {
             } as any,
             'defensiveRoll',
             undefined,
+            undefined,
             'afterRollConfirmed'
         );
 

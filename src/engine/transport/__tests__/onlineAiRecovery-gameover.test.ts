@@ -518,7 +518,7 @@ describe('resolveForceAdvancePhaseAfterRecovery - 游戏结束检查', () => {
 });
 
 describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
-    it('AI 当前阶段里若 human 正在响应，手动强制结束应优先强制关闭响应窗口', () => {
+    it('AI 当前阶段里若 human 正在响应，手动强制结束不得强制关闭玩家响应窗口', () => {
         const sharedState: MatchState<unknown> = {
             core: {
                 activePlayerId: '1',
@@ -553,13 +553,6 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
             seatStates: {},
         });
 
-        expect(result).not.toBeNull();
-        expect(result?.playerId).toBe('1');
-        expect(result?.reason).toBe('response-window');
-        expect(result?.requiresConfirmedAdvancePhase).toBe(true);
-        expect(result?.resolution.action.commands[0]).toEqual({
-            type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE',
-            payload: {},
-        });
+        expect(result).toBeNull();
     });
 });

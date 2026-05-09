@@ -312,6 +312,31 @@ describe('集成: base_innsmouth_base 印斯茅斯 (onMinionPlayed)', () => {
         const resolved = resolveReactionQueueTriggerForSourceDefId(resultMs4, 'base_innsmouth_base', 1);
         expect(hasInteraction(resolved, 'base_innsmouth_base_choose_player')).toBe(true);
     });
+
+    it('线上反馈 69feca4b/69fecbb9：所有弃牌堆为空时不暴露印斯茅斯空触发', () => {
+        const core = makeState({
+            turnOrder: ['0', '1', '2'],
+            bases: [makeBase('base_innsmouth_base')],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        { uid: 'minion-1', defId: 'innsmouth_the_locals', type: 'minion', owner: '0' },
+                    ],
+                    discard: [],
+                }),
+                '1': makePlayer('1', { discard: [] }),
+                '2': makePlayer('2', { discard: [] }),
+            },
+        });
+        const ms = makeMatchState(core);
+        const { ms: afterPlay } = executePlayMinion(ms, '0', 'minion-1', 0);
+
+        expect((afterPlay.core.triggerQueue ?? []).some(trigger => trigger.sourceDefId === 'base_innsmouth_base')).toBe(false);
+        expect(hasInteraction(afterPlay, 'smashup_reaction_choose')).toBe(false);
+
+        const resolved = maybeResolveReactionQueue(afterPlay, dummyRandom, 1);
+        expect(resolved?.state.sys.interaction?.current).toBeUndefined();
+    });
 });
 
 describe('集成: base_plateau_of_leng 伦格高地 (onMinionPlayed)', () => {
@@ -593,6 +618,30 @@ describe('集成: base_wizard_academy 巫师学院 (afterScoring)', () => {
         const ms = makeScoreBasesMS(core);
         callOnPhaseExitScoreBases(ms);
         expect(hasInteraction(ms, 'base_wizard_academy')).toBe(true);
+    });
+});
+
+describe('集成: base_laboratorium 实验工坊 (onMinionPlayed)', () => {
+    it('线上反馈 69ff720c：普通随从首次打到实验工坊后应自动结算 +1 且不残留 triggerQueue', () => {
+        const core = makeState({
+            bases: [makeBase('base_laboratorium')],
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        { uid: 'hoverbot-1', defId: 'robot_hoverbot', type: 'minion', owner: '0' },
+                    ],
+                    minionsPlayedPerBase: { 0: 0 },
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const ms = makeMatchState(core);
+        const { ms: resultMs } = executePlayMinion(ms, '0', 'hoverbot-1', 0);
+        const hoverbot = resultMs.core.bases[0].minions.find(minion => minion.uid === 'hoverbot-1');
+
+        expect(resultMs.sys.interaction?.current).toBeUndefined();
+        expect(resultMs.core.triggerQueue).toBeUndefined();
+        expect(hoverbot?.powerCounters ?? 0).toBe(1);
     });
 });
 

@@ -13,6 +13,15 @@
         }
       }
     },
+    "dicethrone/ability-cards-gunslinger.atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "9e462b4ac975030a8332436ba89ea0977b68027de36463f845d18ecaa3a2f564",
+          "bytes": 2047,
+          "mime": "application/json"
+        }
+      }
+    },
     "smashup/2833984701.json": {
       "variants": {
         "json": {

@@ -6,6 +6,10 @@ type HandPromptLike = {
     multi?: unknown;
 } | null | undefined;
 
+type ButtonOverlayPromptLike = HandPromptLike & {
+    options?: Array<{ displayMode?: unknown }>;
+};
+
 type ResolveHandPromptUiModeInput = {
     currentPrompt: HandPromptLike;
     playerID: string | null | undefined;
@@ -29,6 +33,11 @@ export function isSmashUpPromptOwnedByPlayer({
 }: ResolvePromptOwnershipInput): boolean {
     if (!currentPrompt || !playerID || currentPrompt.playerId == null) return false;
     return String(currentPrompt.playerId) === String(playerID);
+}
+
+export function shouldForceSmashUpPromptOverlay(currentPrompt: ButtonOverlayPromptLike): boolean {
+    const options = currentPrompt?.options;
+    return Array.isArray(options) && options.length > 0 && options.every(option => option.displayMode === 'button');
 }
 
 /**

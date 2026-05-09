@@ -61,8 +61,10 @@ export function registerBaseAbilityAsQueuedTrigger(
         actionTargetBaseIndex: ctx.actionTargetBaseIndex,
         actionTargetType: ctx.actionTargetType,
         actionTargetMinionUid: ctx.actionTargetMinionUid,
+        frameId: ctx.frameId,
+        sourceEventId: ctx.sourceEventId,
         now: ctx.now,
-      };
+      } as BaseAbilityContext;
       if (!executor) return { events: [] };
       return executor(baseCtx);
     },
@@ -128,6 +130,22 @@ export function collectBaseAbilityTriggers(params: {
     options?.effectContract,
     'collectTriggers',
   );
+  if (options?.canTrigger && !options.canTrigger({
+    state: core,
+    baseIndex,
+    baseDefId: base.defId,
+    playerId: ownerPlayerId,
+    minionUid: triggerMinionUid,
+    minionDefId: triggerMinionDefId,
+    minionPower: triggerMinionPower,
+    rankings,
+    actionTargetBaseIndex,
+    actionTargetType,
+    actionTargetMinionUid,
+    now,
+  })) {
+    return undefined;
+  }
   // Witness rule (base as source): it must still be in play when the trigger is queued.
   // Since we are queueing from the live bases array, this is satisfied here.
 

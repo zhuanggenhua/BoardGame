@@ -570,3 +570,71 @@
   - 线上人类反馈已清零
   - 系统 watchdog 反馈已清零
   - 所有反馈已清零
+
+## Addendum（2026-05-09 23:58 +08）：新一批人工反馈继续处理
+
+- [x] 生产 Mongo 重新拉取人工 open/in_progress
+  - 截至 `2026-05-09 20:40:30 +08`：8 条人工未收口。
+  - 本地状态板：`temp/feedback-closeout/status-board.json` 已补入新批次。
+- [x] 优先修复 3 条 SmashUp critical 扩展基地反馈
+  - `69feca4bf0a61f28ba015d7e`：印斯茅斯弃牌区为空时无法发动/跳过。
+  - `69fecbb9f0a61f28ba015d9e`：印斯茅斯效果触发不了。
+  - `69fec94df0a61f28ba015d49`：温室无法执行。
+  - 根因：queued reaction 执行器 effect contract 缺少 `controllerState`，运行时读取 `state.players.*` 时抛错。
+- [x] 已补修复与验证
+  - `src/games/smashup/domain/baseAbilities_expansion.ts`
+  - `src/games/smashup/__tests__/expansionBaseAbilities.test.ts`
+  - 证据：`evidence/smashup/smashup-feedback-20260509-expansion-base-effect-contract.md`
+- [x] 已回写 3 条生产反馈为 `resolved`
+  - `69fec94df0a61f28ba015d49` 本轮脚本实际 `matched=1 / modified=1`
+  - `69feca4bf0a61f28ba015d7e`、`69fecbb9f0a61f28ba015d9e` 回写前已是 `resolved`
+- [x] 已修复 `69feac13f0a61f28ba015c93` 巫师空牌库抽牌/揭示反馈
+  - `wizard_neophyte` 空牌库走 `peekDeckTop`，POD 学徒可先洗弃牌堆再揭示。
+  - `wizard_enchantress`、`wizard_mystic_studies`、`wizard_sacrifice` 改走 `buildStandardDrawEvents`，避免空牌库时只记录抽牌但最终手牌未增加。
+  - 验证：`factionAbilities.test.ts -t "69feac13"` 3 passed；整文件 46 passed；eslint 0 errors。
+  - 证据：`evidence/smashup/smashup-wizard-neophyte-empty-deck-feedback-2026-05-09.md`
+- [x] 已回写 `69feac13f0a61f28ba015c93` 生产反馈为 `resolved` 并复查剩余未收口数量
+- [x] 已修复并回写 `69feede0f0a61f28ba0163df` 泰坦场下询问反馈
+  - 根因：`werewolves_great_wolf_spirit` 的 `onTurnStart` 被错误登记为 `global`，场下 setaside 泰坦也会被 `collectTriggers()` 放入 reaction queue。
+  - 修复：移除巨狼之灵 `global` 触发注册，删除重复注册块，同步 `e2e/src` 镜像。
+  - 验证：`turnCycle -t 线上反馈 69feede0` 1 passed；`smashup.smoke -t Great Wolf Spirit creates a start-of-turn move interaction` 1 passed；eslint 0 errors。
+  - 证据：`evidence/smashup/smashup-great-wolf-spirit-setaside-feedback-2026-05-09.md`
+  - 生产回写：`matched=1 / modified=1`
+- [x] 最新生产剩余人工/反馈弹窗队列已重新拉取并同步状态板
+  - 截至 `2026-05-10 02:55 +08`：`remainingHumanOrModalOpenInProgress.count = 5`
+  - 新增两条：`69ff7291f0a61f28ba0189b9` 实验工坊有bug；`69ff720cf0a61f28ba01897d` 非常多bug，海盗的bug很多。
+- [x] 继续处理剩余 5 条：Cardia 教程、SmashUp AI/卡住、实验工坊、海盗反馈等。
+- [x] 已修复并回写 `69ff7291f0a61f28ba0189b9` 实验工坊反馈
+  - 根因：实验工坊/同类基地把“本回合该基地已打出随从次数”放在 queued trigger 执行期读取，并声明 `playLimits`，与大法师写 `playLimits` 误判为强制触发排序冲突。
+  - 修复：基地能力支持 `canTrigger` 入队前预筛；实验工坊/集会场/名人堂不再在 queued 执行期读取出牌计数字段，避免残留 `triggerQueue` 或弹无意义排序窗口。
+  - 验证：`archmageE2E` 聚焦 `69ff7291` 1 passed，整文件 9 passed；`newBaseAbilities` 实验工坊/集会场 7 passed；`expansionBaseAbilities` 名人堂 1 passed；eslint 0 errors。
+  - 证据：`evidence/smashup/smashup-laboratorium-archmage-feedback-2026-05-09.md`
+  - 生产 Mongo 回写：`matchedCount=1 / modifiedCount=1`；回写后剩余人工/反馈弹窗 open/in_progress 为 4 条。
+- [x] 已补充 `69ff7291f0a61f28ba0189b9` 旧生产持久化队列兼容复核
+  - 发现：生产快照中的 `base_laboratorium` trigger 已持久化旧 `effectContract.reads`，需要证明旧局也能恢复。
+  - 补充：`reactionOrdering` 物化排序 contract 时兼容旧版实验工坊/集会场首随从基地触发；新增旧队列回归。
+  - 验证：生产快照只读灌入 `maybeResolveReactionQueue` 后 `triggerQueueLength=0 / currentInteractionSourceId=null / archmagePowerCounters=1 / actionLimit=2`；`newBaseAbilities` 59 passed；`reactionQueueOrdering` 18 passed。
+  - 证据已修订：`evidence/smashup/smashup-laboratorium-archmage-feedback-2026-05-09.md`
+- [x] 已回写 `69ff720cf0a61f28ba01897d` 海盗泛反馈为同根因 `resolved`
+  - 现场：用户描述泛称海盗 bug，但快照实际为 `robot_hoverbot` 打到 `base_laboratorium` 后残留旧实验工坊 trigger。
+  - 验证：生产快照只读灌入 `maybeResolveReactionQueue` 后 `triggerQueueLength=0 / currentInteractionSourceId=null / hoverbotPowerCounters=1 / consumedEvents=1`。
+  - 证据：`evidence/smashup/smashup-laboratorium-archmage-feedback-2026-05-09.md`
+  - 生产 Mongo 回写：`matchedCount=1 / modifiedCount=1`；fresh 后剩余人工/反馈弹窗 open/in_progress 为 3 条。
+
+## Addendum（2026-05-10 05:36 +08）：5/10 本批人工反馈清零
+
+- [x] 剩余 3 条人工/反馈弹窗 open 已全部收口并回写生产 Mongo。
+  - `69ff0e90f0a61f28ba016a4d` Cardia 教程反馈：`resolved`，证据 `evidence/cardia/cardia-tutorial-full-flow-e2e-test.md`
+  - `69ff0cd0f0a61f28ba0169e9` SmashUp AI 出牌阶段卡死：`resolved`，回写产物 `temp/feedback-closeout/update-feedback-status-20260510-69ff0cd0-ai-playcards-stalled-to-resolved.raw.txt`，`matched=1 / modified=1`
+  - `69ff0310f0a61f28ba0167d6` SmashUp 天选之人确认交互卡住：`resolved`，回写产物 `temp/feedback-closeout/update-feedback-status-20260510-69ff0310-cthulhu-chosen-confirm-to-resolved.raw.txt`，`matched=1 / modified=1`
+- [x] 已补齐 69ff0310 浏览器 UI 证据链。
+  - E2E：`npm run test:e2e:ci:file -- e2e/smashup/smashup-cthulhu.e2e.ts "线上反馈 69ff0310：旧天选之人确认交互应显示按钮弹层并可关闭"` -> `1 passed`
+  - 截图 1：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-cthulhu.e2e\线上反馈-69ff0310：旧天选之人确认交互应显示按钮弹层并可关闭\69ff0310-chosen-confirm-button-overlay.png`
+  - 截图 2：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-cthulhu.e2e\线上反馈-69ff0310：旧天选之人确认交互应显示按钮弹层并可关闭\69ff0310-chosen-confirm-after-no.png`
+- [x] 已补充 69ff0cd0 最新回归验证。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseAbilitiesPrompt.test.ts --configLoader native --maxWorkers 1 -t "69ff0cd0|base_the_mothership"` -> `6 passed`
+- [x] 本地状态板已更新并通过校验。
+  - `node scripts/verify/verify-feedback-status.mjs temp/feedback-closeout/status-board.json` -> `feedback-status: ok`
+- [x] fresh 生产真源清零核对完成。
+  - 查询产物：`temp/feedback-closeout/query-open-human-final-20260510.raw.txt`
+  - 截至 `2026-05-10 05:35 +08`，生产 Mongo 人工/feedback-modal `open/in_progress`：`count=0`

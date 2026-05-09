@@ -1,6 +1,5 @@
 import type { AiResolution, AiSeatController } from '../ai';
 import type { MatchState } from '../types';
-import { RESPONSE_WINDOW_COMMANDS } from '../systems/ResponseWindowSystem';
 
 type HiddenSimpleChoiceOption = {
     id?: unknown;
@@ -50,6 +49,7 @@ export type ForceEndTurnStalledAiReason =
     | 'hidden-interaction'
     | 'visible-interaction'
     | 'response-window'
+    | 'response-loop'
     | 'active-turn'
     | 'active-turn-legal-only'
     | 'seat-legal-only';
@@ -791,21 +791,7 @@ export function resolveManualForceEndAiPhase(args: {
         const hasHumanResponder = responderQueue.some((responderId) => args.seatControllers[responderId]?.type === 'human');
 
         if (hasHumanResponder) {
-            const windowId = typeof currentWindow.id === 'string' ? currentWindow.id : 'unknown-window';
-            const windowType = typeof currentWindow.windowType === 'string' ? currentWindow.windowType : 'unknown-type';
-            const sourceId = typeof currentWindow.sourceId === 'string' ? currentWindow.sourceId : 'unknown-source';
-            const fingerprintHint = `manual-force-close:${currentPlayerId}:${windowType}:${sourceId}`;
-            return {
-                playerId: currentPlayerId,
-                reason: 'response-window',
-                requiresConfirmedAdvancePhase: true,
-                fingerprintHint,
-                resolution: buildForceEndTurnResolution({
-                    playerId: currentPlayerId,
-                    suffix: `manual-response-window:${currentPlayerId}:${windowType}:${sourceId}:${windowId}`,
-                    commands: [{ type: RESPONSE_WINDOW_COMMANDS.FORCE_CLOSE, payload: {} }],
-                }),
-            };
+            return null;
         }
     }
 

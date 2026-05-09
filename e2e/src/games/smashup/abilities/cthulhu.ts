@@ -727,7 +727,7 @@ const cthulhuChosenConfirmPromptProgram = createPromptProgram<CthulhuChosenPromp
         context.chosen.controller,
         '天选之人：是否抽一张疯狂牌来获得 +2 力量？',
         buildChosenPromptOptions(context.matchState.core, context.chosen),
-        { sourceId: 'cthulhu_chosen_confirm', targetType: 'minion' },
+        { sourceId: 'cthulhu_chosen_confirm', targetType: 'generic' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const selected = value as {

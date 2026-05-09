@@ -17,7 +17,7 @@ import {
     inferDirectTargetTypeFromOptions,
     isCreateSimpleChoiceCall,
 } from './helpers/simpleChoiceAst';
-import { isSmashUpPromptOwnedByPlayer, resolveSmashUpHandInteractionMode, resolveSmashUpHandPromptUiMode } from '../ui/interactionMode';
+import { isSmashUpPromptOwnedByPlayer, resolveSmashUpHandInteractionMode, resolveSmashUpHandPromptUiMode, shouldForceSmashUpPromptOverlay } from '../ui/interactionMode';
 
 interface TargetTypeIssue {
     file: string;
@@ -66,7 +66,7 @@ const REQUIRED_SOURCE_CONFIGS: Record<string, { targetType?: string; autoRefresh
     cthulhu_it_begins_again: { targetType: 'generic' },
     cthulhu_corruption: { targetType: 'minion', autoRefresh: 'field', responseValidationMode: 'live' },
     cthulhu_madness_unleashed: { targetType: 'hand' },
-    cthulhu_chosen_confirm: { targetType: 'minion' },
+    cthulhu_chosen_confirm: { targetType: 'generic' },
     cthulhu_star_spawn: { targetType: 'generic' },
     cthulhu_servitor: { targetType: 'generic' },
     special_madness: { targetType: 'button' },
@@ -151,6 +151,7 @@ const APPROVED_GENERIC_SOURCE_REASONS: Record<string, string> = {
     base_inventors_salon: '候选项是抽象奖励分支，不是单一棋盘实体直点。',
     base_wizard_academy: '牌库顶揭示后的处理分支，依赖展示卡牌上下文而不是棋盘实体。',
     cthulhu_it_begins_again: '多选弃牌堆行动卡，来源为 discard，不能映射为单选 hand/board 直选。',
+    cthulhu_chosen_confirm: '这是确认是否触发当前随从效果的 yes/no 按钮交互，虽携带 minionUid/baseIndex 供结算使用，但不应要求玩家点击场上随从。',
     cthulhu_recruit_by_force: '多选弃牌堆随从卡，来源为 discard 卡面而不是棋盘实体。',
     cthulhu_servitor: '从弃牌堆行动卡中选回牌库的目标，来源为 discard 卡面。',
     cthulhu_star_spawn: '同时涉及目标玩家与疯狂卡转移，不能压缩成单一实体语义。',
@@ -866,6 +867,14 @@ describe('SmashUp Interaction targetType 审计', () => {
     });
 
     it('hand targetType 的交互必须先按 direct / overlay 分流，再决定是否允许拖拽', () => {
+        expect(shouldForceSmashUpPromptOverlay({
+            playerId: '0',
+            options: [
+                { displayMode: 'button' },
+                { displayMode: 'button' },
+            ],
+        })).toBe(true);
+
         expect(resolveSmashUpHandPromptUiMode({
             currentPrompt: { playerId: '0', multi: undefined },
             playerID: '0',

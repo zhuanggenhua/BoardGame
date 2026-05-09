@@ -69,6 +69,10 @@ interface BonusDieOverlayProps {
     summaryEffectKey?: string;
     /** 多骰汇总文本参数 */
     summaryEffectParams?: Record<string, string | number>;
+    /** 最近一次被重掷的奖励骰索引，仅用于限定动画目标 */
+    lastRerolledDieIndex?: number;
+    /** 最近一次重掷动画序号，仅用于区分连续重掷 */
+    rerollAnimationKey?: string | number;
     /** 已由 modal stack 承载时，禁止再次 portal */
     usePortal?: boolean;
 }
@@ -96,6 +100,8 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
     characterId,
     summaryEffectKey,
     summaryEffectParams,
+    lastRerolledDieIndex,
+    rerollAnimationKey,
     usePortal,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
@@ -273,6 +279,9 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                         data-testid={isSingleDieRerollSpotlight ? 'bonus-die-single-reroll-spotlight' : 'bonus-die-multi-reroll-spotlight'}
                     >
                         {bonusDice.map((die) => {
+                            const hasTargetedRerollAnimation = rerollAnimationKey !== undefined
+                                && lastRerolledDieIndex !== undefined;
+                            const shouldAnimateDie = !hasTargetedRerollAnimation || die.index === lastRerolledDieIndex;
                             const dieContent = (
                                 <>
                                     <BonusDieSpotlightContent
@@ -283,6 +292,10 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                                         locale={locale}
                                         size={multiDieSize}
                                         rollingDurationMs={600 + die.index * 100}
+                                        animateOnMount={shouldAnimateDie}
+                                        rollAnimationKey={shouldAnimateDie && hasTargetedRerollAnimation
+                                            ? `${rerollAnimationKey}:${die.index}`
+                                            : undefined}
                                         characterId={characterId}
                                         compact={!isSingleDieRerollSpotlight}
                                         hideEffectText={!isSingleDieRerollSpotlight && bonusDice.length > 1}
@@ -299,7 +312,8 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                                 </>
                             );
 
-                            if (!canSelectDieToReroll) {
+                            const shouldRenderRerollButton = isRerollMode && !displayOnly;
+                            if (!shouldRenderRerollButton) {
                                 return (
                                     <motion.div
                                         key={die.index}
@@ -318,12 +332,18 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                                 <motion.button
                                     key={die.index}
                                     type="button"
+                                    disabled={!canSelectDieToReroll}
+                                    aria-disabled={!canSelectDieToReroll}
                                     initial={{ scale: 0.5, opacity: 0 }}
                                     animate={{ scale: 1, opacity: 1 }}
                                     transition={{ delay: die.index * 0.15 }}
-                                    className="relative bg-transparent border-0 p-0 cursor-pointer hover:scale-110 transition-transform"
+                                    className={`relative bg-transparent border-0 p-0 transition-transform ${
+                                        canSelectDieToReroll
+                                            ? 'cursor-pointer hover:scale-110'
+                                            : 'cursor-default'
+                                    }`}
                                     data-testid={`bonus-die-reroll-option-${die.index}`}
-                                    onClick={() => handleDieClick(die.index)}
+                                    onClick={canSelectDieToReroll ? () => handleDieClick(die.index) : undefined}
                                 >
                                     {dieContent}
                                 </motion.button>

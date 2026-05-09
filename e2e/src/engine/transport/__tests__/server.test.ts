@@ -6956,6 +6956,137 @@ describe('GameTransportServer（离座与重连）', () => {
         }));
     });
 
+    it('smashup AI reaction pass 后仍停在同一交互时，应升级为硬取消而不是 blocker_persisted', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-smashup-reaction-pass-stuck', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'scoreBases',
+                interaction: {
+                    current: {
+                        id: 'reaction-choice-stuck',
+                        kind: 'simple-choice',
+                        playerId: '1',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个反应动作',
+                            options: [
+                                {
+                                    id: 'trigger-ninja-dojo',
+                                    label: '结算 Ninja Dojo',
+                                    value: { kind: 'trigger', triggerId: 'afterScoring:base_ninja_dojo:1:0' },
+                                },
+                                {
+                                    id: 'pass',
+                                    label: 'Pass',
+                                    value: { kind: 'pass' },
+                                },
+                            ],
+                        },
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('smashup')],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryMaxAdvanceSteps: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-smashup-reaction-pass-stuck');
+        const executed: Array<{ commandType: string; payload: unknown }> = [];
+        vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
+            executed.push({ commandType, payload });
+            expect(playerID).toBe('1');
+
+            if (commandType === INTERACTION_COMMANDS.RESPOND) {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    sys: {
+                        ...activeMatch.state.sys,
+                        eventStream: {
+                            ...(activeMatch.state.sys?.eventStream ?? {}),
+                            nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
+                        },
+                        interaction: {
+                            ...(activeMatch.state.sys?.interaction ?? {}),
+                            current: {
+                                ...(activeMatch.state.sys?.interaction?.current ?? {}),
+                                id: 'reaction-choice-stuck-reopened',
+                            },
+                        },
+                    },
+                };
+                return true;
+            }
+
+            if (commandType === INTERACTION_COMMANDS.CANCEL) {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    core: {
+                        ...activeMatch.state.core,
+                        activePlayerId: '0',
+                        currentPlayerIndex: 0,
+                    },
+                    sys: {
+                        ...activeMatch.state.sys,
+                        phase: 'playCards',
+                        eventStream: {
+                            ...(activeMatch.state.sys?.eventStream ?? {}),
+                            nextId: (activeMatch.state.sys?.eventStream?.nextId ?? 1) + 1,
+                        },
+                        interaction: {
+                            ...(activeMatch.state.sys?.interaction ?? {}),
+                            current: undefined,
+                            isBlocked: false,
+                        },
+                    },
+                };
+                return true;
+            }
+
+            return false;
+        });
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        for (let i = 0; i < 10; i++) { await nextTick(); }
+
+        expect(executed.map((item) => item.commandType)).toEqual([
+            INTERACTION_COMMANDS.RESPOND,
+            INTERACTION_COMMANDS.CANCEL,
+        ]);
+        expect(match.state.sys.interaction?.current).toBeUndefined();
+        expect(match.state.core.activePlayerId).toBe('0');
+        expect(feedbackReporter).not.toHaveBeenCalledWith(expect.objectContaining({
+            matchId: 'match-watchdog-smashup-reaction-pass-stuck',
+            incidentKind: 'force-end-turn-failed',
+            reason: expect.stringContaining('blocker_persisted'),
+        }));
+    });
+
     it('online AI watchdog 自动反馈冷却期内应按 trackerKey 去重，即使 progressMarker 变化也不重复上报', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
