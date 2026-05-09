@@ -976,16 +976,7 @@ const checkResponseWindowCardPlay = (
             return { ok: true };
         }
         case 'afterCardPlayed':
-            if (card.timing !== 'instant' && card.timing !== 'roll') {
-                return failResponseWindow();
-            }
-            if (!hasAnyActionEffect(card)) {
-                return failResponseWindow();
-            }
-            if (hasAnyDiceEffect(card)) {
-                return failResponseWindow();
-            }
-            return { ok: true };
+            return failResponseWindow();
         case 'afterAttackResolved':
             if (cond?.pendingDamage) {
                 if (card.timing !== 'instant' && card.timing !== 'roll') {

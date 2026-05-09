@@ -16,26 +16,20 @@ import type {
     CardReorderedEvent,
     CardPlayedEvent,
     CpChangedEvent,
-    ResponseWindowOpenedEvent,
     InteractionRequestedEvent,
 } from './types';
 import {
     getUpgradeTargetAbilityId,
     cardNeedsSelectedDefender,
-    hasOpponentTargetEffect,
     getContextualOpponentId,
     getOpponents,
-    getResponderQueue,
     getSelectedCombatOpponentId,
     isTeamMode,
 } from './rules';
-import { reduce } from './reducer';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
 import { resolveEffectsToEvents, type EffectContext } from './effects';
 import { buildDrawEvents } from './deckEvents';
-import { applyEvents } from './utils';
-import { hasAfterCardPlayedWindowBeenHandled } from './responseWindowGuards';
 
 type MatchStateView = {
     core: DiceThroneCore;
@@ -263,34 +257,6 @@ export function executeCardCommand(
                     };
                     const effectEvents = resolveEffectsToEvents(card.effects, 'immediate', effectCtx, { random });
                     events.push(...effectEvents);
-                }
-            }
-            
-            // 检测是否需要打开响应窗口
-            // 条件：卡牌效果对对手生效 && 有玩家有可响应内容 && 当前不在响应窗口中
-            // 规则：在响应窗口中打出的卡牌不再触发新的响应窗口（避免无限嵌套）
-            const isInResponseWindow = !!matchState.sys?.responseWindow?.current;
-            if (hasOpponentTargetEffect(card) && !isInResponseWindow && !needsSelectedOpponent && !deferAttackModifierUntilTargetResolved) {
-                // 先应用已产生的事件，然后检查响应队列（排除出牌玩家，因为可以主动出牌）
-                const stateAfterCard = applyEvents(state, events, reduce);
-                if (hasAfterCardPlayedWindowBeenHandled(stateAfterCard)) {
-                    break;
-                }
-                const responderQueue = getResponderQueue(stateAfterCard, 'afterCardPlayed', opponentId, card.id, actingPlayerId, phase);
-                if (responderQueue.length > 0) {
-                    const windowId = `afterCard-${card.id}-${timestamp}`;
-                    const responseWindowEvent: ResponseWindowOpenedEvent = {
-                        type: 'RESPONSE_WINDOW_OPENED',
-                        payload: {
-                            windowId,
-                            responderQueue,
-                            windowType: 'afterCardPlayed',
-                            sourceId: card.id,
-                        },
-                        sourceCommandType: command.type,
-                        timestamp,
-                    };
-                    events.push(responseWindowEvent);
                 }
             }
             break;

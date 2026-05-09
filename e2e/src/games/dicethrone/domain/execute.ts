@@ -34,7 +34,6 @@ import {
     getDefaultOpponentId,
     getNextPlayerId,
     getResponderQueue,
-    hasOpponentTargetEffect,
     getTokenStackLimit,
     getSeatingOrder,
     isTeamMode,
@@ -52,9 +51,7 @@ import { getPlayerPassiveAbilities } from './passiveAbility';
 import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
 import { getCustomActionHandler } from './effects';
-import { findHeroCard } from '../heroes';
 import {
-    hasAfterCardPlayedWindowBeenHandled,
     hasAfterRollConfirmedWindowBeenHandled,
     buildAfterRollConfirmedSignature,
 } from './responseWindowGuards';
@@ -938,43 +935,6 @@ export function execute(
                 } as DiceThroneEvent);
             }
 
-            if (
-                resolveCustomActionId === 'resolve-card-effects-on-selected-opponent'
-                && !matchState.sys?.responseWindow?.current
-                && resolvedPlayerIds.length === 1
-                && interaction.sourceCardId
-            ) {
-                const card = findHeroCard(interaction.sourceCardId);
-                const selectedTargetId = resolvedPlayerIds[0];
-                if (card && hasOpponentTargetEffect(card)) {
-                    const stateAfterCardResolution = applyEvents(state, events, reduce);
-                    if (hasAfterCardPlayedWindowBeenHandled(stateAfterCardResolution)) {
-                        break;
-                    }
-                    const responderQueue = getResponderQueue(
-                        stateAfterCardResolution,
-                        'afterCardPlayed',
-                        selectedTargetId,
-                        card.id,
-                        interaction.playerId,
-                        phase,
-                    );
-                    if (responderQueue.length > 0) {
-                        const responseWindowEvent: ResponseWindowOpenedEvent = {
-                            type: 'RESPONSE_WINDOW_OPENED',
-                            payload: {
-                                windowId: `afterCard-${card.id}-${timestamp}`,
-                                responderQueue,
-                                windowType: 'afterCardPlayed',
-                                sourceId: card.id,
-                            },
-                            sourceCommandType: command.type,
-                            timestamp,
-                        };
-                        events.push(responseWindowEvent);
-                    }
-                }
-            }
             break;
         }
 

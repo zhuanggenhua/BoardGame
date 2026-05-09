@@ -14,7 +14,6 @@ import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore, type DiceThroneComma
 import { CP_MAX, HAND_LIMIT, INITIAL_CP, INITIAL_HEALTH } from '../domain/types';
 import { STATUS_IDS, TOKEN_IDS, DICETHRONE_COMMANDS, DICETHRONE_CARD_ATLAS_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
-import type { TokenDef } from '../domain/tokenTypes';
 import { resolveEffectsToEvents, type EffectContext } from '../domain/effects';
 import { executeCardCommand } from '../domain/executeCards';
 import { getLeftOpponentId, getResponderQueue, getRightOpponentId, getTeamIdByPlayerIdMap } from '../domain/rules';
@@ -2604,10 +2603,10 @@ describe('王权骰铸流程测试', () => {
             expect(events.map((event) => event.type)).toEqual(['ROLL_CONFIRMED']);
         });
 
-        it('掌击后对手仅持有弹一手时不应打开 afterCardPlayed', () => {
+        it('掌击后对手仅持有弹一手时不应打开通用打牌响应窗口', () => {
             const runner = createRunner(fixedRandom);
             const result = runner.run({
-                name: 'afterCardPlayed 不打开 - dice instant only',
+                name: '普通出牌后不打开通用响应 - dice instant only',
                 setup: createSetupWithHand(['card-palm-strike'], {
                     cp: 10,
                     mutate: (core) => {
@@ -2625,49 +2624,25 @@ describe('王权骰铸流程测试', () => {
             expect(result.finalState.sys.responseWindow?.current).toBeUndefined();
         });
 
-        it('源头级去重：同一 cardPlayed 序号已处理时，不应再次发出 afterCardPlayed OPENED', () => {
-            const state = createSetupWithHand(['card-palm-strike'], {
-                playerId: '0',
-                cp: 10,
-                mutate: (core) => {
-                    const manualResponseStatus: TokenDef = {
-                        id: 'test-manual-response',
-                        name: 'status.test-manual-response.name',
-                        colorTheme: 'bg-slate-500',
-                        description: ['test manual response'],
-                        stackLimit: 99,
-                        category: 'debuff',
-                        passiveTrigger: {
-                            timing: 'manual',
-                            removable: true,
-                        },
-                    };
-                    core.players['1'].statusEffects['test-manual-response'] = 1;
-                    core.tokenDefinitions.push(manualResponseStatus);
-                    core.players['0'].deck = [];
-                    core.players['1'].deck = [];
-                },
-            })(['0', '1'], fixedRandom);
-
-            state.sys.phase = 'main1';
-            state.core.cardPlayedSequence = 4;
-            state.core.afterCardResponseWindowSequence = 5;
-
-            const events = executeCardCommand(
-                { core: state.core, sys: { phase: 'main1' } },
-                {
-                    type: 'PLAY_CARD',
-                    playerId: '0',
-                    payload: { cardId: 'card-palm-strike' },
-                    timestamp: 456,
-                } as DiceThroneCommand,
-                fixedRandom,
-                'main1',
-                456,
-            );
-
-            expect(events.some((event) => event.type === 'RESPONSE_WINDOW_OPENED')).toBe(false);
-            expect(events.some((event) => event.type === 'CARD_PLAYED')).toBe(true);
+        it('掌击后对手仅持有超级加倍时不应打开通用打牌响应窗口', () => {
+            const runner = createRunner(fixedRandom);
+            const result = runner.run({
+                name: '普通出牌后不打开通用响应 - self draw instant',
+                setup: createSetupWithHand(['card-palm-strike'], {
+                    cp: 10,
+                    mutate: (core) => {
+                        core.players['1'].hand = [getCardById('card-super-double')];
+                        core.players['1'].resources.cp = 10;
+                        core.players['0'].deck = [];
+                        core.players['1'].deck = [];
+                    },
+                }),
+                commands: [
+                    cmd('PLAY_CARD', '0', { cardId: 'card-palm-strike' }),
+                ],
+            });
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.sys.responseWindow?.current).toBeUndefined();
         });
 
         it('击倒：可花费 2CP 主动移除', () => {
