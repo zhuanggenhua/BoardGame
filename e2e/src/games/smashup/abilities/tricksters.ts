@@ -1438,7 +1438,7 @@ function registerTricksterPodOngoingEffects(): void {
         return events;
     }, {
         effectContract: {
-            reads: ['triggerMinionState', 'controllerState', 'handState', 'deckState', 'discardState'],
+            reads: ['triggerMinionState', 'controllerState', 'handState', 'deckState', 'discardState', 'turnFlags'],
             writes: ['handState', 'deckState', 'discardState'],
         },
     });

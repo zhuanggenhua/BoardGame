@@ -9203,6 +9203,7 @@ describe('Princesses abilities', () => {
 
         const prompt = getInteractionsFromMS(triggerResult.matchState!)[0] as any;
         expect(prompt?.data?.sourceId).toBe('princesses_woodland_helpers');
+        expect(prompt?.data?.displayCard).toEqual({ defId: 'wizard_summon', cardUid: 'spell-1' });
         const option = prompt.data.options.find((entry: any) => entry.value?.choice === 'move_to_bottom');
         expect(option).toBeDefined();
 

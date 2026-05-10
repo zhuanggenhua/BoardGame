@@ -260,7 +260,7 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       highlightTarget: 'sw-hand-area',
       position: 'top',
       requireAction: true,
-      allowedCommands: [SW_COMMANDS.PLAY_EVENT],
+      allowedCommands: [SW_COMMANDS.REQUEST_EVENT_INTERACTION, SW_COMMANDS.PLAY_EVENT],
       advanceOnEvents: [{ type: SW_EVENTS.EVENT_PLAYED }],
     },
 

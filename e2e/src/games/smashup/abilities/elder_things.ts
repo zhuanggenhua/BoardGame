@@ -1201,7 +1201,11 @@ const elderThingElderThingPodModePromptProgram = createPromptProgram<ElderThingP
                     displayMode: 'button' as const,
                 },
             ],
-            { sourceId: 'elder_thing_elder_thing_pod_mode', targetType: 'button' },
+            {
+                sourceId: 'elder_thing_elder_thing_pod_mode',
+                targetType: 'button',
+                displayCard: { defId: 'elder_thing_elder_thing_pod', cardUid: context.cardUid },
+            },
         );
     },
     onResolve: ({ context, state, value, timestamp }) => {
@@ -2182,7 +2186,11 @@ const elderThingChoicePromptProgram = createPromptProgram<ElderThingOnPlayPrompt
                     displayMode: 'button' as const,
                 },
             ],
-            { sourceId: 'elder_thing_elder_thing_choice', targetType: 'button' },
+            {
+                sourceId: 'elder_thing_elder_thing_choice',
+                targetType: 'button',
+                displayCard: { defId: context.elderThingDefId, cardUid: context.cardUid },
+            },
         );
     },
     onResolve: ({ context, state, value, timestamp }) => {

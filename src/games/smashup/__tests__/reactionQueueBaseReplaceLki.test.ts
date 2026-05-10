@@ -23,7 +23,7 @@ describe('Reaction queue: base replacement vs LKI', () => {
         payload: { playerId: ctx.playerId, messageKey: 'old', tone: 'info' },
         timestamp: ctx.now,
       }] as any,
-    }));
+    }), { effectContract: {} });
 
     const core0: SmashUpCore = makeState({
       turnOrder: ['0', '1'],
@@ -55,14 +55,16 @@ describe('Reaction queue: base replacement vs LKI', () => {
       timestamp: 1,
     } as any);
 
-    const ms1 = makeMatchState({ ...core1, triggerQueue: [t] });
     // Even after the base is replaced, the queued trigger should still survive into the same reaction frame.
     const ms2 = makeMatchState({ ...core1, triggerQueue: [t, { ...t, id: `${t.id}:2` }] });
     const rq = maybeResolveReactionQueue(ms2 as any, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1)!;
-    const current = rq.state.sys.interaction.current as any;
-    expect(current).toBeDefined();
-    expect(current.data.sourceId).toBe('smashup_reaction_choose');
-    expect(current.data.options.some((option: any) => String(option.label).includes('base_old'))).toBe(true);
+    expect(rq.state.sys.interaction.current).toBeUndefined();
+    expect(rq.state.core.triggerQueue ?? []).toHaveLength(0);
+    expect(rq.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
+    expect(rq.events.filter(event =>
+      event.type === SU_EVENTS.ABILITY_FEEDBACK
+      && (event as any).payload?.messageKey === 'old',
+    )).toHaveLength(2);
   });
 });
 

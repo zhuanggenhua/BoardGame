@@ -837,16 +837,13 @@ export function resolveManualForceEndAiPhase(args: {
         const responderQueue = Array.isArray(currentWindow.responderQueue)
             ? currentWindow.responderQueue.filter((value): value is string => typeof value === 'string')
             : [];
-        const hasHumanResponder = responderQueue.some((responderId) => args.seatControllers[responderId]?.type === 'human');
-
-        if (hasHumanResponder) {
-            return null;
-        }
-
         const responderIndex = typeof currentWindow.currentResponderIndex === 'number'
             ? currentWindow.currentResponderIndex
             : 0;
         const responderId = responderQueue[responderIndex];
+        if (typeof responderId === 'string' && args.seatControllers[responderId]?.type === 'human') {
+            return null;
+        }
         if (typeof responderId === 'string' && args.seatControllers[responderId]?.type !== 'human') {
             const windowId = typeof currentWindow.id === 'string' && currentWindow.id.length > 0
                 ? currentWindow.id

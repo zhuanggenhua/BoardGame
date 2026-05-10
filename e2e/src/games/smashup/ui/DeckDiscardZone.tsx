@@ -22,7 +22,7 @@ type Props = {
     hasPlayableFromDiscard?: boolean;
     /** 是否为 interaction 驱动的弃牌堆选择（僵尸领主等），自动打开面板 */
     autoOpenPanel?: boolean;
-    /** 可从弃牌堆打出的卡牌列表（用于高亮） */
+    /** 可从弃牌堆打出的卡牌列表；uid 是选择态唯一真相源。 */
     playableCards?: { uid: string; defId: string; label: string }[];
     /** 当前选中的卡牌 uid */
     selectedUid?: string | null;
@@ -34,6 +34,7 @@ type Props = {
     onClosePanel?: () => void;
     setAsideTitans?: TitanState[];
     activatableTitanUids?: Set<string>;
+    reactionTitanUids?: Set<string>;
     selectedTitanUid?: string | null;
     onSelectTitan?: (titanUid: string) => void;
     onViewTitan?: (defId: string) => void;
@@ -58,6 +59,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
     onClosePanel,
     setAsideTitans = [],
     activatableTitanUids,
+    reactionTitanUids,
     selectedTitanUid,
     onSelectTitan,
     onViewTitan,
@@ -116,9 +118,6 @@ export const DeckDiscardZone: React.FC<Props> = ({
     const displayCardsData = useMemo(() => {
         if (!showDiscard || discard.length === 0) return undefined;
 
-        // 构建可打出的 defId 集合
-        const playableDefIds = new Set(playableCards?.map(c => c.defId) || []);
-
         return {
             title: `${t('ui.discard_pile', { defaultValue: '弃牌堆' })} (${discard.length})`,
             // 反转顺序：最新弃掉的卡在左边
@@ -130,7 +129,6 @@ export const DeckDiscardZone: React.FC<Props> = ({
                 onSelect: onSelectCard,
                 selectHint: selectHint || t('ui.click_base_to_deploy', { defaultValue: '点击基地放置随从' }),
                 playableUids: new Set(playableCards.map(c => c.uid)),
-                playableDefIds,
             }),
         };
     }, [showDiscard, discard, playableCards, selectedUid, onSelectCard, selectHint, t, handleCloseDiscard]);
@@ -237,7 +235,8 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                 const titanDef = getTitanDef(titan.defId);
                                 const titanName = titanDef ? resolveCardName(titanDef, t) || titan.defId : titan.defId;
                                 const isSelected = selectedTitanUid === titan.uid;
-                                const isActivatable = !!activatableTitanUids?.has(titan.uid) && isMyTurn;
+                                const isReactionTitan = !!reactionTitanUids?.has(titan.uid);
+                                const isActivatable = !!activatableTitanUids?.has(titan.uid) && (isMyTurn || isReactionTitan);
                                 const showTitanInspectButton = showDesktopTitanInspectButton || isCoarseTitanPointer;
                                 return (
                                     <div key={titan.uid} className="group relative" style={{ width: titanWidth }}>
@@ -273,7 +272,9 @@ export const DeckDiscardZone: React.FC<Props> = ({
                                                         className="whitespace-nowrap rounded-sm border border-white bg-amber-300/95 px-1.5 py-[1px] font-black leading-none text-slate-900 shadow-md"
                                                         style={{ fontSize: titanAbilityBadgeFontSize }}
                                                     >
-                                                        {t('ui.titan_play_available', { defaultValue: '可打出' })}
+                                                        {isReactionTitan
+                                                            ? t('ui.titan_reaction_available', { defaultValue: '可触发' })
+                                                            : t('ui.titan_play_available', { defaultValue: '可打出' })}
                                                     </div>
                                                 </div>
                                             )}

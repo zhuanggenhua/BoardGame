@@ -804,6 +804,7 @@ const princessesWoodlandHelpersPromptProgram = createPromptProgram<
         {
             sourceId: 'princesses_woodland_helpers',
             targetType: 'button',
+            displayCard: { defId: context.defId, cardUid: context.cardUid },
             autoResolveIfSingle: false,
         },
     ),

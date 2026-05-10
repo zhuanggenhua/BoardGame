@@ -206,8 +206,7 @@ function buildCardiaAiLegalActions(args: BuildGameAiLegalActionsArgs): AiLegalAc
                 return abilityActions;
             }
             case 'end':
-                // 回合结束阶段无需 AI 决策
-                return [];
+                return buildEndTurnActions(core, playerId);
             default:
                 return [];
         }
@@ -286,7 +285,7 @@ function buildAbilityActions(
     
     // 检查是否有输掉的卡牌可以激活能力
     const loserCard = getLoserCard(core, playerId);
-    if (!loserCard || loserCard.abilityIds.length === 0) {
+    if (!loserCard) {
         return [];
     }
     
@@ -331,6 +330,26 @@ function buildAbilityActions(
     });
     
     return actions;
+}
+
+function buildEndTurnActions(
+    core: CardiaCore,
+    playerId: PlayerId,
+): AiLegalAction[] {
+    if (core.currentPlayerId !== playerId) {
+        return [];
+    }
+
+    return [{
+        actionId: createAiLegalActionId('end-turn'),
+        kind: 'end-turn',
+        label: '结束回合',
+        commands: [{
+            type: CARDIA_COMMANDS.END_TURN,
+            payload: {},
+        }],
+        metadata: withAiActionStrategyTags({}, ['economy']),
+    }];
 }
 
 /**

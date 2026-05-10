@@ -26,25 +26,38 @@ import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScro
 import { useToast } from '../../../contexts/ToastContext';
 import { isSmashUpPromptOwnedByPlayer } from './interactionMode';
 
+type DisplayCardItem = { uid: string; defId: string };
+
+type DisplayCardsBase = {
+    title: string;
+    cards: DisplayCardItem[];
+    onClose: () => void;
+};
+
+type DisplayCardsViewOnly = DisplayCardsBase & {
+    onSelect?: undefined;
+    selectedUid?: never;
+    selectHint?: never;
+    playableUids?: never;
+};
+
+type DisplayCardsSelectable = DisplayCardsBase & {
+    /** 选择模式必须由真实 card uid 驱动，不能用 defId/name 推断可点态。 */
+    onSelect: (uid: string | null) => void;
+    selectedUid?: string | null;
+    selectHint?: string;
+    playableUids: Set<string>;
+};
+
+type DisplayCardsConfig = DisplayCardsViewOnly | DisplayCardsSelectable;
+
 interface Props {
     interaction: InteractionDescriptor | undefined;
     dispatch: (type: string, payload?: unknown) => void;
     playerID: PlayerId | null;
     playerNames?: Record<string, string>;
     /** 通用卡牌展示模式（弃牌堆查看等）：展示卡牌列表 + 关闭按钮 */
-    displayCards?: {
-        title: string;
-        cards: { uid: string; defId: string }[];
-        onClose: () => void;
-        /** 可选：支持选中卡牌（弃牌堆出牌等场景） */
-        selectedUid?: string | null;
-        onSelect?: (uid: string | null) => void;
-        /** 选中卡牌后的提示文本 */
-        selectHint?: string;
-        playableUids?: Set<string>;
-        /** 可打出的卡牌 defId 集合（同 defId 的卡功能一样，选哪张都行） */
-        playableDefIds?: Set<string>;
-    };
+    displayCards?: DisplayCardsConfig;
 }
 
 function buildRendererPreviewRef(defId: string | undefined): CardPreviewRef | undefined {
@@ -85,6 +98,11 @@ function isCardOption(option: { value: unknown; displayMode?: 'card' | 'button' 
 
 /** 从 continuationContext 提取上下文卡牌预览 ref */
 function extractContextPreview(prompt: any): CardPreviewRef | undefined {
+    const displayCard = prompt?.displayCard as Record<string, unknown> | undefined;
+    if (displayCard && typeof displayCard.defId === 'string') {
+        return buildRendererPreviewRef(displayCard.defId);
+    }
+
     const ctx = prompt?.continuationContext as Record<string, unknown> | undefined;
     if (!ctx || typeof ctx.defId !== 'string') return undefined;
     return buildRendererPreviewRef(ctx.defId);
@@ -371,7 +389,8 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     }, [isSubmitLocked, prompt, dispatch]);
 
     if (displayCards) {
-        const { selectedUid: selUid, onSelect: onSel, playableDefIds, playableUids } = displayCards;
+        const { selectedUid: selUid, onSelect: onSel } = displayCards;
+        const playableUids = onSel ? displayCards.playableUids : undefined;
 
         return (
             <AnimatePresence mode="wait">
@@ -400,7 +419,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 const def = getCardDef(card.defId);
                                 const name = def ? resolveCardName(def, t) : card.defId;
                                 const isSel = card.uid === selUid;
-                                const isPlayable = playableUids?.has(card.uid) ?? playableDefIds?.has(card.defId) ?? false;
+                                const isPlayable = !!(onSel && playableUids?.has(card.uid));
                                 
                                 const handleCardClick = () => {
                                     if (isPlayable && onSel) {
@@ -646,10 +665,12 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                         </div>
                         {/* 上下文卡图 */}
                         {contextPreviewRef && (
-                            <CardPreview
-                                previewRef={contextPreviewRef}
-                                className="w-[8.5vw] aspect-[0.714] rounded shadow-[0_4px_24px_rgba(0,0,0,0.6)] ring-2 ring-white/30"
-                            />
+                            <div data-testid="prompt-context-card">
+                                <CardPreview
+                                    previewRef={contextPreviewRef}
+                                    className="w-[8.5vw] aspect-[0.714] rounded shadow-[0_4px_24px_rgba(0,0,0,0.6)] ring-2 ring-white/30"
+                                />
+                            </div>
                         )}
                         {/* 按钮并排 */}
                         {!isMyPrompt ? (

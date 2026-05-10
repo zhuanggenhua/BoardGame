@@ -7,6 +7,7 @@
 import { describe, it, expect } from 'vitest';
 import * as fc from 'fast-check';
 import SUMMONER_WARS_TUTORIAL from '../tutorial';
+import { SW_COMMANDS } from '../domain';
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
 
@@ -68,6 +69,16 @@ describe('Property 2: Action steps must have allowedCommands', () => {
             ),
             { numRuns: 100 }
         );
+    });
+});
+
+describe('Property 2.1: Interactive event tutorial steps allow interaction request', () => {
+    it('狱火铸剑教学步骤先允许 REQUEST_EVENT_INTERACTION，再等待 EVENT_PLAYED 推进', () => {
+        const step = SUMMONER_WARS_TUTORIAL.steps.find((item) => item.id === 'event-card-action');
+
+        expect(step).toBeDefined();
+        expect(step?.allowedCommands).toContain(SW_COMMANDS.REQUEST_EVENT_INTERACTION);
+        expect(step?.allowedCommands).toContain(SW_COMMANDS.PLAY_EVENT);
     });
 });
 

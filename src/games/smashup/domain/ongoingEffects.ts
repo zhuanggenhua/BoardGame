@@ -260,6 +260,7 @@ interface TriggerEntry {
     /** global 闁荤喐鐟辩粻鎴ｃ亹閸岀偛闂柕濞垮劚鐢帡鎮规担鍦憙妞ゎ偄妫涢幏鐘虫媴閻戞鏆犻梺鍝勵槶閸庤尙鑺遍鈧畷鐘诲传閸曨厼骞嶉梺鎸庣⊕閻╊垳鍒掗婊勫?hand + discard */
     globalZones?: Array<'hand' | 'discard' | 'deck'>;
     effectContract?: TriggerEffectContract;
+    fallbackFootprint?: import('./types').SmashUpReactionResourceFootprint & { fallbackReason: string };
 }
 
 interface TriggerSourceLocation {
@@ -322,6 +323,7 @@ export function registerTrigger(
         perInstance?: boolean;
         sourceScope?: 'any' | 'triggerBase';
         effectContract?: TriggerEffectContract;
+        fallbackFootprint?: import('./types').SmashUpReactionResourceFootprint & { fallbackReason: string };
     }
 ): void {
     // 闂佸憡锚椤兘宕抽崨濠勨攳婵犻潧娲よ闂佹寧绋掗懝楣冨箖閹惧鈻旈柍?sourceDefId + timing 闂佸憡鐟禍婵嬪极閻愬搫绀冮悘鐐跺亹椤忚鲸绻涢崱蹇旑潐缂佽鲸鐟╁濂稿矗婢舵ê澹?HMR 闂備焦褰冪粔鎾囬幓鎺嗘灃闁靛鍎遍弬鈧梺?
@@ -347,8 +349,9 @@ export function registerTrigger(
         playerContext: options?.playerContext ?? 'eventPlayer',
         baseScoped: options?.baseScoped ?? true,
         effectContract: options?.effectContract,
+        fallbackFootprint: options?.fallbackFootprint,
     });
-    registerTriggerExecutor(sourceDefId, timing, wrappedCallback);
+    registerTriggerExecutor(sourceDefId, timing, callback);
 }
 
 function locateSources(state: SmashUpCore, sourceDefId: string): TriggerSourceLocation[] {
@@ -447,7 +450,6 @@ function createTriggerInstance(
     located: TriggerSourceLocation,
     ctx: Omit<TriggerContext, 'timing'>,
 ): TriggerInstance {
-    requireTriggerEffectContract(entry.sourceDefId, timing, entry.effectContract, 'collectTriggers');
     const mandatory = entry.mandatory ?? !(entry.optional ?? false);
     const sourceEventId = ctx.sourceEventId ?? `${timing}:${now}`;
     const frameId = ctx.frameId ?? `${timing}:${sourceEventId}`;
@@ -496,6 +498,7 @@ function createTriggerInstance(
         inspectionTargetPlayerIds: ctx.inspectionTargetPlayerIds,
         inspectionCausePlayerId: ctx.inspectionCausePlayerId,
         effectContract: entry.effectContract,
+        fallbackFootprint: entry.fallbackFootprint,
         lkiMinion: ctx.triggerMinion
             ? {
                 uid: ctx.triggerMinion.uid,
@@ -694,7 +697,7 @@ export function registerPodOngoingAliases(): void {
     // 1. 闂佸搫瀚慨鎾儍?Trigger
     const triggersToAdd: TriggerEntry[] = [];
     for (const entry of triggerRegistry) {
-        const { sourceDefId, timing, rawCallback, effectContract } = entry;
+        const { sourceDefId, timing, rawCallback, effectContract, fallbackFootprint } = entry;
         
         // 闁荤姴鎼悿鍥╂崲閸愵煈鍟呴柤纰卞墰閻ュ懘鏌?_pod 闂?
         if (sourceDefId.endsWith('_pod')) continue;
@@ -721,6 +724,7 @@ export function registerPodOngoingAliases(): void {
             global: entry.global,
             globalZones: entry.globalZones,
             effectContract,
+            fallbackFootprint,
         });
         mappedCount++;
     }
@@ -735,6 +739,7 @@ export function registerPodOngoingAliases(): void {
             global: entry.global,
             globalZones: entry.globalZones,
             effectContract: entry.effectContract,
+            fallbackFootprint: entry.fallbackFootprint,
         });
     }
     

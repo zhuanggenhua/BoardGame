@@ -2,8 +2,6 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import type { SmashUpCore, SmashUpEvent, TriggerInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { makeMatchState, makeMinion, makeState, makeBase } from './helpers';
-import { buildSmashUpAiLegalActions } from '../ai';
-import { scoreAiHints } from '../../../engine/ai';
 import { clearOngoingEffectRegistry, registerTrigger, collectTriggers, fireTriggers } from '../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { getInteractionHandler, clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
@@ -11,6 +9,13 @@ import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueu
 import { resolveSmashUpReactionChoice } from '../domain/reactionSession';
 import { processAffectTriggers, processDeckInspectionTriggers, processMoveTriggers } from '../domain/reducer';
 import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import {
+  clearReactionFootprintFallbackAudit,
+  deriveFootprintFromEvent,
+  deriveFootprintFromInteraction,
+  getReactionFootprintFallbackAudit,
+  reactionResourceKey,
+} from '../domain/reactionResources';
 import '../domain/index';
 
 // Minimal factories reused from other tests
@@ -26,26 +31,215 @@ function baseCore(overrides?: Partial<SmashUpCore>): SmashUpCore {
 beforeEach(() => {
   clearOngoingEffectRegistry();
   clearInteractionHandlers();
+  clearReactionFootprintFallbackAudit();
   registerReactionQueueInteractionHandlers();
+});
+
+describe('Smash Up reaction resource footprint inference', () => {
+  it('事件 footprint 按真实状态事件推导资源，信息事件不写资源', () => {
+    const moved = deriveFootprintFromEvent({
+      type: SU_EVENTS.MINION_MOVED,
+      payload: {
+        minionUid: 'moved-1',
+        minionDefId: 'robot_zapbot',
+        fromBaseIndex: 0,
+        toBaseIndex: 1,
+        reason: 'test',
+      },
+      timestamp: 1,
+    } as SmashUpEvent);
+
+    const movedWrites = new Set(moved.writes.map(reactionResourceKey));
+    expect(movedWrites).toContain('minion:moved-1');
+    expect(movedWrites).toContain('base:0');
+    expect(movedWrites).toContain('base:1');
+    expect(movedWrites).toContain('targetAvailability:global');
+    expect(moved.fallbackReason).toBeUndefined();
+
+    const feedback = deriveFootprintFromEvent({
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: { playerId: '0', messageKey: 'only_ui', tone: 'info' },
+      timestamp: 1,
+    } as SmashUpEvent);
+    expect(feedback.reads).toHaveLength(0);
+    expect(feedback.writes).toHaveLength(0);
+    expect(feedback.fallbackReason).toBeUndefined();
+  });
+
+  it('所有 Smash Up 事件类型都有 footprint 推导分支，未知结构不靠 legacy contract 补洞', () => {
+    const broadPayload = {
+      playerId: '0',
+      ownerId: '0',
+      controllerId: '0',
+      toPlayerId: '0',
+      fromPlayerId: '0',
+      toPlayerId2: '1',
+      suppressorPlayerId: '0',
+      targetPlayerId: '1',
+      requesterId: '0',
+      targetPlayerId2: '1',
+      cardUid: 'card-1',
+      sourceCardUid: 'source-1',
+      minionUid: 'minion-1',
+      triggerMinionUid: 'minion-1',
+      titanUid: 'titan-1',
+      uid: 'card-1',
+      defId: 'test_def',
+      minionDefId: 'test_minion',
+      baseIndex: 0,
+      fromBaseIndex: 0,
+      toBaseIndex: 1,
+      targetBaseIndex: 0,
+      sourceBaseIndex: 0,
+      targetMinionUid: 'minion-1',
+      reason: 'footprint_coverage',
+      readiedPlayers: {
+        '0': { deck: [], hand: [] },
+        '1': { deck: [], hand: [] },
+      },
+    };
+
+    for (const type of Object.values(SU_EVENTS)) {
+      const footprint = deriveFootprintFromEvent({
+        type,
+        payload: broadPayload,
+        timestamp: 1,
+      } as unknown as SmashUpEvent);
+      expect(footprint.fallbackReason, `event ${type}`).toBeUndefined();
+      expect(Array.isArray(footprint.reads), `event ${type}`).toBe(true);
+      expect(Array.isArray(footprint.writes), `event ${type}`).toBe(true);
+    }
+  });
+
+  it('交互 footprint 从结构化 option 和 continuationContext 推导候选目标资源', () => {
+    const interaction = createSimpleChoice(
+      'footprint_interaction',
+      '0',
+      '选择目标',
+      [
+        { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        {
+          id: 'target-minion',
+          label: '目标随从',
+          value: { minionUid: 'target-1', baseIndex: 2, playerId: '1' },
+          displayMode: 'button' as const,
+        },
+      ],
+      {
+        sourceId: 'footprint_interaction',
+        targetType: 'minion',
+      },
+    );
+    (interaction.data as any).continuationContext = { titanUid: 'titan-1', cardUid: 'source-card-1' };
+
+    const footprint = deriveFootprintFromInteraction(interaction);
+    expect(footprint).toBeDefined();
+    const writes = new Set(footprint!.writes.map(reactionResourceKey));
+    expect(writes).toContain('minion:target-1');
+    expect(writes).toContain('base:2');
+    expect(writes).toContain('playerControl:1');
+    expect(writes).toContain('titan:titan-1');
+    expect(writes).toContain('cardInstance:source-card-1');
+    expect(footprint!.opensInteraction).toBe(true);
+    expect(footprint!.fallbackReason).toBeUndefined();
+  });
+
+  it.each([
+    ['Mushroom Kingdom', 'base_mushroom_kingdom', { minionUid: 'mk-target', baseIndex: 0 }],
+    ['Sprout', 'killer_plant_sprout_search', { cardUid: 'sprout-deck-card', baseIndex: 0, playerId: '0' }],
+    ['The Bride', 'titan_frankenstein_the_bride_start_choose_target', { minionUid: 'bride-target', baseIndex: 1, titanUid: 'bride-titan' }],
+    ['Sphinx', 'titan_sphinx_start_turn', { cardUid: 'buried-card', baseIndex: 1, titanUid: 'sphinx-titan' }],
+    ['Emperor Penguin', 'titan_penguins_emperor_penguin_play', { baseIndex: 2, titanUid: 'penguin-titan' }],
+    ['Mergacon', 'titan_changerbots_mergacon_play', { baseIndex: 2, titanUid: 'mergacon-titan' }],
+  ])('%s 结构化交互 option 可推导 footprint，不回退到手写排序桶', (_label, sourceId, value) => {
+    const interaction = createSimpleChoice(
+      `${sourceId}_footprint`,
+      '0',
+      '结构化交互',
+      [
+        { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+        { id: 'apply', label: '执行', value, displayMode: 'button' as const },
+      ],
+      { sourceId, targetType: 'button' },
+    );
+
+    const footprint = deriveFootprintFromInteraction(interaction);
+    expect(footprint?.fallbackReason).toBeUndefined();
+    expect(footprint?.writes.length).toBeGreaterThan(0);
+  });
+
+  it('交互 option 无结构化目标时只标记明确 fallback，不伪造成全局冲突', () => {
+    const interaction = createSimpleChoice(
+      'unstructured_interaction',
+      '0',
+      '选择',
+      [{ id: 'raw', label: '原始值', value: { apply: true }, displayMode: 'button' as const }],
+      { sourceId: 'unstructured_source', targetType: 'button' },
+    );
+
+    const footprint = deriveFootprintFromInteraction(interaction);
+    expect(footprint).toBeDefined();
+    expect(footprint!.writes).toHaveLength(0);
+    expect(footprint!.fallbackReason).toContain('unstructured_source');
+  });
+
+  it('显式 fallback footprint 会记录审计原因，并按实际资源读写参与冲突比较', () => {
+    registerTrigger('test_fallback_reader', 'onTurnStart', () => [{
+      type: SU_EVENTS.ABILITY_FEEDBACK,
+      payload: { playerId: '0', messageKey: 'reader', tone: 'info' },
+      timestamp: 1,
+    }] as any, {
+      fallbackFootprint: {
+        reads: [{ kind: 'playerHand', playerId: '0' }],
+        writes: [],
+        fallbackReason: 'test reads hand through non-event query',
+      },
+    });
+    registerTrigger('test_fallback_writer', 'onTurnStart', () => [{
+      type: SU_EVENTS.CARDS_DRAWN,
+      payload: { playerId: '0', count: 1, cardUids: ['drawn-1'] },
+      timestamp: 1,
+    }] as any);
+
+    const core = baseCore({
+      bases: [makeBase('test_base_1', [
+        makeMinion('r1', 'test_fallback_reader', '0', 3),
+        makeMinion('w1', 'test_fallback_writer', '0', 3),
+      ])],
+    });
+    const queued = collectTriggers(core, 'onTurnStart', {
+      state: core,
+      matchState: makeMatchState(core),
+      playerId: '0',
+      random: { shuffle: (a: any[]) => a } as any,
+      now: 1,
+    });
+    const rq = maybeResolveReactionQueue(
+      makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
+      { shuffle: (a: any[]) => a } as any,
+      1,
+    );
+    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).toBe('smashup_reaction_choose');
+    expect(getReactionFootprintFallbackAudit()).toContainEqual(expect.objectContaining({
+      sourceDefId: 'test_fallback_reader',
+      reason: 'test reads hand through non-event query',
+    }));
+  });
 });
 
 describe('Reaction queue ordering (Wiki-style)', () => {
   it('current player chooses order among mandatory simultaneous triggers', () => {
     // Arrange: two sources in play on base 1 (witnessed) and two triggers queued
     registerTrigger('test_source_a', 'onMinionMoved', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'a', tone: 'info' },
+      type: SU_EVENTS.POWER_COUNTER_ADDED,
+      payload: { minionUid: 'moved1', baseIndex: 1, amount: 1, reason: 'a' },
       timestamp: 1,
-    }] as any, {
-      effectContract: { writes: ['playLimits'] },
-    });
+    }] as any);
     registerTrigger('test_source_b', 'onMinionMoved', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'b', tone: 'info' },
+      type: SU_EVENTS.POWER_COUNTER_REMOVED,
+      payload: { minionUid: 'moved1', baseIndex: 1, amount: 1, reason: 'b' },
       timestamp: 1,
-    }] as any, {
-      effectContract: { writes: ['playLimits'] },
-    });
+    }] as any);
 
     const core = baseCore({
       bases: [
@@ -90,24 +284,20 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     const evts = r2!.events as SmashUpEvent[];
     expect(evts[0].type).toBe(SU_EVENTS.TRIGGER_CONSUMED);
     // And executor event is produced
-    expect(evts.some(e => e.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
+    expect(evts.some(e => e.type === SU_EVENTS.POWER_COUNTER_REMOVED)).toBe(true);
   });
 
   it('显式标注为互不冲突的 mandatory triggers 应自动收口，不再弹排序交互', () => {
     registerTrigger('test_auto_a', 'onMinionMoved', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'auto_a', tone: 'info' },
+      type: SU_EVENTS.CARDS_DRAWN,
+      payload: { playerId: '0', count: 1, cardUids: ['drawn-1'] },
       timestamp: 1,
-    }] as any, {
-      effectContract: { writes: ['triggerMinionPower'] },
-    });
+    }] as any);
     registerTrigger('test_auto_b', 'onMinionMoved', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'auto_b', tone: 'info' },
+      type: SU_EVENTS.POWER_COUNTER_ADDED,
+      payload: { minionUid: 'moved1', baseIndex: 1, amount: 1, reason: 'auto_b' },
       timestamp: 1,
-    }] as any, {
-      effectContract: { writes: ['playLimits'] },
-    });
+    }] as any);
 
     const core = baseCore({
       bases: [
@@ -137,30 +327,21 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(rq!.state.sys.interaction.current).toBeUndefined();
     expect(rq!.state.core.triggerQueue ?? []).toHaveLength(0);
     expect(rq!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
-    expect(rq!.events.filter(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toHaveLength(2);
+    expect(rq!.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+    expect(rq!.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
   });
 
   it('不同 sourceSelfState 实例的 mandatory triggers 不应被误判为需要排序', () => {
-    registerTrigger('test_self_state_a', 'onTurnStart', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'self_a', tone: 'info' },
+    registerTrigger('test_self_state_a', 'onTurnStart', (ctx: any) => [{
+      type: SU_EVENTS.MINION_METADATA_UPDATED,
+      payload: { minionUid: ctx.sourceCardUid, baseIndex: ctx.sourceBaseIndex, metadataUpdate: { touched: 'a' }, reason: 'self_a' },
       timestamp: 1,
-    }] as any, {
-      effectContract: {
-        reads: ['sourceSelfState'],
-        writes: ['sourceSelfState'],
-      },
-    });
-    registerTrigger('test_self_state_b', 'onTurnStart', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'self_b', tone: 'info' },
+    }] as any);
+    registerTrigger('test_self_state_b', 'onTurnStart', (ctx: any) => [{
+      type: SU_EVENTS.MINION_METADATA_UPDATED,
+      payload: { minionUid: ctx.sourceCardUid, baseIndex: ctx.sourceBaseIndex, metadataUpdate: { touched: 'b' }, reason: 'self_b' },
       timestamp: 1,
-    }] as any, {
-      effectContract: {
-        reads: ['sourceSelfState'],
-        writes: ['sourceSelfState'],
-      },
-    });
+    }] as any);
 
     const core = baseCore({
       bases: [
@@ -184,46 +365,34 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(rq!.state.sys.interaction.current).toBeUndefined();
     expect(rq!.state.core.triggerQueue ?? []).toHaveLength(0);
     expect(rq!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
-    expect(rq!.events.filter(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toHaveLength(2);
+    expect(rq!.events.filter(event => event.type === SU_EVENTS.MINION_METADATA_UPDATED)).toHaveLength(2);
   });
 
   it('singleton mandatory triggers 应先自动收口，排序弹窗只展示真实冲突分量', () => {
-    registerTrigger('test_component_singleton_a', 'onTurnStart', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'singleton_a', tone: 'info' },
+    registerTrigger('test_component_singleton_a', 'onTurnStart', (ctx: any) => [{
+      type: SU_EVENTS.MINION_METADATA_UPDATED,
+      payload: { minionUid: ctx.sourceCardUid, baseIndex: ctx.sourceBaseIndex, metadataUpdate: { touched: 'singleton_a' }, reason: 'singleton_a' },
       timestamp: 1,
-    }] as any, {
-      effectContract: {
-        reads: ['sourceSelfState'],
-        writes: ['sourceSelfState'],
-      },
-    });
-    registerTrigger('test_component_singleton_b', 'onTurnStart', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'singleton_b', tone: 'info' },
+    }] as any);
+    registerTrigger('test_component_singleton_b', 'onTurnStart', (ctx: any) => [{
+      type: SU_EVENTS.MINION_METADATA_UPDATED,
+      payload: { minionUid: ctx.sourceCardUid, baseIndex: ctx.sourceBaseIndex, metadataUpdate: { touched: 'singleton_b' }, reason: 'singleton_b' },
       timestamp: 1,
-    }] as any, {
-      effectContract: {
-        reads: ['sourceSelfState'],
-        writes: ['sourceSelfState'],
-      },
-    });
+    }] as any);
     registerTrigger('test_component_conflict_writer', 'onTurnStart', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'conflict_writer', tone: 'info' },
+      type: SU_EVENTS.CARDS_DRAWN,
+      payload: { playerId: '0', count: 1, cardUids: ['drawn-1'] },
       timestamp: 1,
-    }] as any, {
-      effectContract: {
-        writes: ['handState'],
-      },
-    });
+    }] as any);
     registerTrigger('test_component_conflict_reader', 'onTurnStart', (_ctx: any) => [{
       type: SU_EVENTS.ABILITY_FEEDBACK,
       payload: { playerId: '0', messageKey: 'conflict_reader', tone: 'info' },
       timestamp: 1,
     }] as any, {
-      effectContract: {
-        reads: ['handState'],
+      fallbackFootprint: {
+        reads: [{ kind: 'playerHand', playerId: '0' }],
+        writes: [],
+        fallbackReason: 'test reader observes player 0 hand without emitting state event',
       },
     });
 
@@ -231,9 +400,9 @@ describe('Reaction queue ordering (Wiki-style)', () => {
       bases: [
         makeBase('test_base_1', [
           makeMinion('single-a', 'test_component_singleton_a', '0', 3),
-          makeMinion('single-b', 'test_component_singleton_b', '0', 3),
         ]),
         makeBase('test_base_2', [
+          makeMinion('single-b', 'test_component_singleton_b', '0', 3),
           makeMinion('conflict-writer', 'test_component_conflict_writer', '0', 3),
           makeMinion('conflict-reader', 'test_component_conflict_reader', '0', 3),
         ]),
@@ -271,7 +440,7 @@ describe('Reaction queue ordering (Wiki-style)', () => {
         '真实交互',
         [
           { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
-          { id: 'apply', label: '执行', value: { apply: true }, displayMode: 'button' as const },
+          { id: 'apply', label: '执行', value: { baseIndex: 0 }, displayMode: 'button' as const },
         ],
         { sourceId: 'test_real_prompt', targetType: 'button' },
       );
@@ -280,21 +449,12 @@ describe('Reaction queue ordering (Wiki-style)', () => {
         matchState: queueInteraction(ctx.matchState, interaction),
       };
     }, {
-      effectContract: {
-        reads: ['handState'],
-        writes: ['handState', 'discardState'],
-        opensInteraction: true,
-      },
     });
     registerTrigger('test_real_side_effect', 'onTurnStart', () => ([{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'side_effect', tone: 'info' },
+      type: SU_EVENTS.CARDS_DRAWN,
+      payload: { playerId: '0', count: 1, cardUids: ['drawn-1'] },
       timestamp: 1,
-    }] as any), {
-      effectContract: {
-        writes: ['playLimits'],
-      },
-    });
+    }] as any));
 
     const core = baseCore({
       bases: [
@@ -321,19 +481,15 @@ describe('Reaction queue ordering (Wiki-style)', () => {
 
   it('存在读写冲突的 mandatory triggers 仍应保留排序交互', () => {
     registerTrigger('test_conflict_writer', 'onMinionMoved', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'writer', tone: 'info' },
+      type: SU_EVENTS.POWER_COUNTER_ADDED,
+      payload: { minionUid: 'moved1', baseIndex: 1, amount: 1, reason: 'writer' },
       timestamp: 1,
-    }] as any, {
-      effectContract: { writes: ['triggerMinionPower'] },
-    });
+    }] as any);
     registerTrigger('test_conflict_reader', 'onMinionMoved', (_ctx: any) => [{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: '0', messageKey: 'reader', tone: 'info' },
+      type: SU_EVENTS.POWER_COUNTER_REMOVED,
+      payload: { minionUid: 'moved1', baseIndex: 1, amount: 1, reason: 'reader' },
       timestamp: 1,
-    }] as any, {
-      effectContract: { reads: ['triggerMinionPower'] },
-    });
+    }] as any);
 
     const core = baseCore({
       bases: [
@@ -463,7 +619,11 @@ describe('Reaction queue ordering (Wiki-style)', () => {
         } as any]
         : [];
     }, {
-      effectContract: { reads: ['minionBoardState'] },
+      fallbackFootprint: {
+        reads: [{ kind: 'base', index: 0 }],
+        writes: [],
+        fallbackReason: 'test source checks whether it is still on scoring base',
+      },
     });
 
     const core = baseCore({
@@ -662,20 +822,28 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(trigger.frameId).toBe(`deck-inspected-frame:${SU_EVENTS.REVEAL_HAND}:hand:1:0:11`);
   });
 
-  it('trigger 未声明 effectContract 时在 collectTriggers 阶段直接报错', () => {
-    registerTrigger('missing_contract_source', 'onTurnStart', () => ([] as any));
+  it('trigger 未声明 effectContract 时不再阻断收集，排序 footprint 由运行时产物推导', () => {
+    registerTrigger('missing_contract_source', 'onTurnStart', () => ([{
+      type: SU_EVENTS.CARDS_DRAWN,
+      payload: { playerId: '0', count: 1, cardUids: ['drawn-1'] },
+      timestamp: 1,
+    }] as any));
 
     const core = baseCore({
       bases: [makeBase('test_base_1', [makeMinion('m1', 'missing_contract_source', '0', 3)])],
     });
 
-    expect(() => collectTriggers(core, 'onTurnStart', {
+    const queued = collectTriggers(core, 'onTurnStart', {
       state: core,
       matchState: makeMatchState(core),
       playerId: '0',
       random: { shuffle: (a: any[]) => a } as any,
       now: 1,
-    })).toThrowError(/SmashUp trigger 缺少声明: missing_contract_source::onTurnStart \(collectTriggers\)/);
+    });
+    expect(queued).toBeDefined();
+    const state = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
+    const resolved = maybeResolveReactionQueue(state, { shuffle: (a: any[]) => a } as any, 1);
+    expect(resolved?.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
   });
 
   it('trigger 读取未声明状态时直接报错', () => {

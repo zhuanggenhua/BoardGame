@@ -33,6 +33,7 @@ describe('elder_things_pod: Elder Thing POD', () => {
         );
         const prompt: any = getInteractionsFromMS(play.finalState)[0]?.data;
         expect(prompt?.sourceId).toBe('elder_thing_elder_thing_pod_mode');
+        expect(prompt?.displayCard).toEqual({ defId: 'elder_thing_elder_thing_pod', cardUid: 'c1' });
         const destroyOpt = prompt.options.find((o: any) => o.id === 'destroy');
         expect(destroyOpt?.disabled).toBe(true);
     });
@@ -439,6 +440,7 @@ describe('elder_things (base): Elder Thing', () => {
         const choiceInteraction: any = getInteractionsFromMS(played.finalState)[0];
         const choicePrompt: any = choiceInteraction?.data;
         expect(choicePrompt?.sourceId).toBe('elder_thing_elder_thing_choice');
+        expect(choicePrompt?.displayCard).toEqual({ defId: 'elder_thing_elder_thing', cardUid: 'et1' });
         const destroyOpt = choicePrompt.options.find((o: any) => o.id === 'destroy');
         expect(destroyOpt?.disabled).toBe(true);
         const deckBottomOpt = choicePrompt.options.find((o: any) => o.id === 'deckbottom');

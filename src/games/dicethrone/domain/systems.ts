@@ -77,7 +77,11 @@ function isOnOffensiveRollEndToken(core: DiceThroneCore, tokenId: string): boole
 }
 
 function isStaleOffensiveRollEndChoiceResolved(core: DiceThroneCore, event: ChoiceResolvedEvent): boolean {
-    const { tokenId, playerId } = event.payload;
+    const { tokenId, playerId, customId } = event.payload;
+    if (typeof customId !== 'string' || !customId.startsWith('use-')) {
+        return false;
+    }
+
     if (!tokenId || !isOnOffensiveRollEndToken(core, tokenId)) {
         return false;
     }

@@ -483,7 +483,7 @@ const zombieWalkerChoiceProgram = createPromptProgram<ZombieWalkerContext, Smash
             { id: 'discard', label: '弃掉', value: { action: 'discard' }, displayMode: 'button' as const },
             { id: 'keep', label: '放回牌库顶', value: { action: 'keep' }, displayMode: 'button' as const },
         ],
-        { sourceId: 'zombie_walker', targetType: 'button' },
+        { sourceId: 'zombie_walker', targetType: 'button', displayCard: { defId: context.defId, cardUid: context.cardUid } },
     ),
     onResolve: ({ context, playerId, value, timestamp }) => {
         const choice = value as ZombieDiscardChoice;

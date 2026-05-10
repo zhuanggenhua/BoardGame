@@ -576,6 +576,51 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return titanUids;
     }, [isDirectHandSelectPrompt, currentPrompt]);
 
+    const reactionTitanTriggerOptionIdsByUid = useMemo<Map<string, string>>(() => {
+        const result = new Map<string, string>();
+        if (!isCurrentPromptForPlayer || !currentPrompt) return result;
+        if (currentPrompt.sourceId !== 'smashup_reaction_choose') return result;
+
+        const queuedTriggers = core.triggerQueue ?? [];
+        for (const opt of currentPrompt.options) {
+            const val = opt.value as { kind?: string; triggerId?: string } | undefined;
+            if (val?.kind !== 'trigger' || !val.triggerId) continue;
+            const trigger = queuedTriggers.find(candidate => candidate.id === val.triggerId);
+            if (!trigger || trigger.resolutionClass !== 'optional' || !trigger.sourceCardUid) continue;
+            const titan = coreTitans.find(candidate => candidate.uid === trigger.sourceCardUid);
+            if (!titan) continue;
+            result.set(titan.uid, opt.id);
+        }
+        return result;
+    }, [core.triggerQueue, coreTitans, currentPrompt, isCurrentPromptForPlayer]);
+
+    const reactionTitanPromptUids = useMemo(
+        () => new Set(reactionTitanTriggerOptionIdsByUid.keys()),
+        [reactionTitanTriggerOptionIdsByUid],
+    );
+    const isTitanReactionPrompt = useMemo(() => {
+        if (!currentPrompt || reactionTitanTriggerOptionIdsByUid.size === 0) return false;
+        const nonPassOptions = currentPrompt.options.filter(opt => {
+            const val = opt.value as { kind?: string } | undefined;
+            return val?.kind !== 'pass';
+        });
+        return nonPassOptions.length > 0 && nonPassOptions.every(opt => {
+            const val = opt.value as { kind?: string; triggerId?: string } | undefined;
+            if (val?.kind !== 'trigger' || !val.triggerId) return false;
+            return [...reactionTitanTriggerOptionIdsByUid.values()].includes(opt.id);
+        });
+    }, [currentPrompt, reactionTitanTriggerOptionIdsByUid]);
+    const reactionTitanExtraOptions = useMemo(() => {
+        if (!isTitanReactionPrompt || !currentPrompt) return [];
+        return currentPrompt.options.filter(opt => {
+            const val = opt.value as { kind?: string } | undefined;
+            return val?.kind === 'pass';
+        }).map(opt => ({
+            ...opt,
+            label: resolvePromptOptionLabel(opt),
+        }));
+    }, [currentPrompt, isTitanReactionPrompt, resolvePromptOptionLabel]);
+
     // 手牌选择中的非手牌选项（如"跳过"/"完成"），需要作为浮动按钮显示
     const handSelectExtraOptions = useMemo(() => {
         if (!isDirectHandSelectPrompt || !currentPrompt) return [];
@@ -855,8 +900,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         else if (isMinionSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isDirectHandSelectPrompt && currentPrompt) raw = currentPrompt.title;
         else if (isOngoingSelectPrompt && currentPrompt) raw = currentPrompt.title;
+        else if (isTitanReactionPrompt) raw = 'ui.titan_reaction_click_prompt';
         return raw ? resolveI18nKeys(raw, t) : '';
-    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, currentPrompt, t]);
+    }, [isBaseSelectPrompt, isBuriedSelectPrompt, isMinionSelectPrompt, isDirectHandSelectPrompt, isOngoingSelectPrompt, isTitanReactionPrompt, currentPrompt, t]);
 
     const interactionSelectSubtitle = useMemo(() => {
         let raw = '';
@@ -878,7 +924,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     const activePromptSurface = useMemo<'none' | 'hand' | 'board' | 'overlay'>(() => {
         if (!isCurrentPromptForPlayer || !currentPrompt) return 'none';
         if (isDirectHandSelectPrompt) return 'hand';
-        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isOngoingSelectPrompt || isDiscardMinionPrompt) {
+        if (isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isOngoingSelectPrompt || isDiscardMinionPrompt || isTitanReactionPrompt) {
             return 'board';
         }
         return 'overlay';
@@ -888,6 +934,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         isBuriedSelectPrompt,
         isDiscardMinionPrompt,
         isDirectHandSelectPrompt,
+        isTitanReactionPrompt,
         isMinionSelectPrompt,
         isOngoingSelectPrompt,
         isCurrentPromptForPlayer,
@@ -1105,8 +1152,13 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         for (const titanUid of handPromptTitanUids) {
             next.add(titanUid);
         }
+        if (isTitanReactionPrompt) {
+            for (const titanUid of reactionTitanPromptUids) {
+                next.add(titanUid);
+            }
+        }
         return next;
-    }, [activatableSetAsideTitanUids, displayedDeckPlayerId, handPromptTitanUids, playerID]);
+    }, [activatableSetAsideTitanUids, displayedDeckPlayerId, handPromptTitanUids, isTitanReactionPrompt, playerID, reactionTitanPromptUids]);
 
     const selectedTitanDeployableBaseIndices = useMemo(() => {
         if (!selectedSetAsideTitanUid) return new Set<number>();
@@ -1812,8 +1864,21 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return true;
     }, [getCardPlayTargetState, t]);
 
+    const handleTitanReactionTrigger = useCallback((titanUid: string) => {
+        const optionId = reactionTitanTriggerOptionIdsByUid.get(titanUid);
+        if (!optionId) {
+            playDeniedSound();
+            return;
+        }
+        dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
+    }, [dispatch, reactionTitanTriggerOptionIdsByUid]);
+
     const handleSetAsideTitanSelect = useCallback((titanUid: string) => {
         if (!playerID) return;
+        if (isTitanReactionPrompt && reactionTitanTriggerOptionIdsByUid.has(titanUid)) {
+            handleTitanReactionTrigger(titanUid);
+            return;
+        }
         if (shouldLockNormalHandInteraction) {
             playDeniedSound();
             return;
@@ -1844,7 +1909,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         setDiscardStripSelectedUid(null);
         setMeFirstPendingCard(null);
         setSelectedSetAsideTitanUid((prev) => (prev === titanUid ? null : titanUid));
-    }, [playerID, shouldLockNormalHandInteraction, isDirectHandSelectPrompt, currentPrompt, handPromptTitanUids, dispatch, setAsideTitanActivationState, toastCommandFeedback]);
+    }, [playerID, isTitanReactionPrompt, reactionTitanTriggerOptionIdsByUid, shouldLockNormalHandInteraction, isDirectHandSelectPrompt, currentPrompt, handPromptTitanUids, dispatch, setAsideTitanActivationState, toastCommandFeedback, handleTitanReactionTrigger]);
 
     // VIEWING STATE
     const [viewingCard, setViewingCard] = useState<CardMagnifyTarget | null>(null);
@@ -2394,9 +2459,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     }, [setViewingCard]);
 
     const visibleActivatableTitanUids = useMemo<Set<string>>(() => {
-        if (shouldLockNormalHandInteraction) return new Set();
+        if (shouldLockNormalHandInteraction && !isTitanReactionPrompt) return new Set();
         return selectableSetAsideTitanUids;
-    }, [selectableSetAsideTitanUids, shouldLockNormalHandInteraction]);
+    }, [isTitanReactionPrompt, selectableSetAsideTitanUids, shouldLockNormalHandInteraction]);
 
     const dragGuideTarget = useMemo(() => {
         if (!handDragPreview?.dropTarget || typeof document === 'undefined') return null;
@@ -2965,7 +3030,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* --- 交互选择提示横幅（基地/随从/手牌选择） --- */}
                 <AnimatePresence>
-                    {(isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isDirectHandSelectPrompt || isOngoingSelectPrompt) && (
+                    {(isBaseSelectPrompt || isBuriedSelectPrompt || isMinionSelectPrompt || isDirectHandSelectPrompt || isOngoingSelectPrompt || isTitanReactionPrompt) && (
                         <motion.div
                             initial={{ y: -20, opacity: 0, scale: 0.95 }}
                             animate={{ y: 0, opacity: 1, scale: 1 }}
@@ -3142,6 +3207,32 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     )}
                 </AnimatePresence>
 
+                {/* --- 泰坦可选反应浮动操作栏（跳过按钮） --- */}
+                <AnimatePresence>
+                    {isTitanReactionPrompt && reactionTitanExtraOptions.length > 0 && (
+                        <motion.div
+                            initial={{ y: 40, opacity: 0 }}
+                            animate={{ y: 0, opacity: 1 }}
+                            exit={{ y: 40, opacity: 0 }}
+                            className={floatingHintClassName}
+                            style={floatingHintStyle}
+                        >
+                            <div className="flex gap-3 pointer-events-auto">
+                                {reactionTitanExtraOptions.map(opt => (
+                                    <SmashUpGameButton
+                                        key={opt.id}
+                                        variant="secondary"
+                                        size="md"
+                                        onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id })}
+                                    >
+                                        {opt.label}
+                                    </SmashUpGameButton>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
                 {/* --- 持续行动卡选择浮动操作栏（跳过按钮） --- */}
                 <AnimatePresence>
                     {isOngoingSelectPrompt && ongoingSelectExtraOptions.length > 0 && (
@@ -3257,6 +3348,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     usableOngoingTalentUids={usableOngoingTalentUids}
                                     usableTitanTalentUids={usableTitanTalentUids}
                                     usableTitanOngoingUids={usableTitanOngoingUids}
+                                    reactionTitanTriggerUids={isTitanReactionPrompt ? reactionTitanPromptUids : undefined}
+                                    onResolveTitanReaction={handleTitanReactionTrigger}
                                     canUseBaseAbility={usableActiveBaseAbilityIndices.has(idx)}
                                     tokenRef={(el) => {
                                         if (el) baseRefsMap.current.set(idx, el);
@@ -3463,6 +3556,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                 }
                                 setAsideTitans={setAsideTitansForDisplay}
                                 activatableTitanUids={visibleActivatableTitanUids}
+                                reactionTitanUids={isTitanReactionPrompt ? reactionTitanPromptUids : undefined}
                                 selectedTitanUid={activeSelectedSetAsideTitanUid}
                                 onSelectTitan={handleSetAsideTitanSelect}
                                 onViewTitan={(defId) => setViewingCard({ defId, type: 'titan' })}
@@ -3537,7 +3631,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                 {/* PROMPT OVERLAY（手牌弃牌/基地选择/随从选择/行动卡选择/弃牌堆出牌交互时隐藏，由对应区域直接处理） */}
                 {(() => {
-                    const shouldRender = !isDirectHandSelectPrompt && !isBaseSelectPrompt && !isBuriedSelectPrompt && !isMinionSelectPrompt && !isOngoingSelectPrompt && !isDiscardMinionPrompt;
+                    const shouldRender = !isDirectHandSelectPrompt && !isBaseSelectPrompt && !isBuriedSelectPrompt && !isMinionSelectPrompt && !isOngoingSelectPrompt && !isDiscardMinionPrompt && !isTitanReactionPrompt;
                     return shouldRender ? (
                         <PromptOverlay
                             interaction={G.sys.interaction?.current}

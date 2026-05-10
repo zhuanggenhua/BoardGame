@@ -659,6 +659,47 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
         });
     });
 
+    it('混合 responderQueue 里当前轮到 AI 响应时，手动强制结束仍应允许强制关闭响应窗口', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+                phase: 'main1',
+            },
+            sys: {
+                gameover: undefined,
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: {
+                        id: 'rw-mixed-response',
+                        windowType: 'afterCardPlayed',
+                        sourceId: 'card-surprise',
+                        responderQueue: ['0', '1'],
+                        currentResponderIndex: 1,
+                    },
+                },
+            },
+        };
+
+        const result = resolveManualForceEndAiPhase({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(result?.reason).toBe('response-window');
+        expect(result?.playerId).toBe('1');
+        expect(result?.resolution.action.commands[0]).toEqual({
+            type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE',
+            payload: {},
+        });
+    });
+
     it('AI 当前阶段里若 human 正在响应，手动强制结束不得强制关闭玩家响应窗口', () => {
         const sharedState: MatchState<unknown> = {
             core: {

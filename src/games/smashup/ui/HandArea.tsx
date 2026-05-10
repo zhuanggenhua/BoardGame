@@ -236,7 +236,8 @@ const HandCard: React.FC<HandCardProps> = ({
     // Max overlap at 10 cards
     const overlapStart = compactLayout ? 6 : 7;
     const overlapStep = compactLayout ? 1.05 : 0.8;
-    const spacingVw = total <= overlapStart ? 0.8 : -1 * ((total - overlapStart) * overlapStep);
+    const maxOverlapVw = compactLayout ? 4.2 : 3.4;
+    const spacingVw = total <= overlapStart ? 0.8 : -Math.min((total - overlapStart) * overlapStep, maxOverlapVw);
     const cardWidthVw = compactLayout ? MOBILE_CARD_WIDTH_VW : DESKTOP_CARD_WIDTH_VW;
     const selectedLiftVw = compactLayout ? MOBILE_SELECTED_Y_LIFT_VW : DESKTOP_SELECTED_Y_LIFT_VW;
     const inspectButtonSizeVw = compactLayout ? 3.2 : 2;

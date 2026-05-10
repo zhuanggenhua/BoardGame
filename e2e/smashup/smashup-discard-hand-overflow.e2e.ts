@@ -104,6 +104,7 @@ test.describe('SmashUp 弃牌阶段手牌溢出布局', () => {
         expect(discardMetrics.className).toBe(normalMetrics.className);
         expect(discardMetrics.margins).toEqual(normalMetrics.margins);
         expect(discardMetrics.margins.some((margin) => margin < 0)).toBe(true);
+        expect(Math.min(...discardMetrics.margins)).toBeGreaterThanOrEqual(-3.4);
 
         const normalShot = getEvidenceScreenshotPath(testInfo, 'discard-hand-overflow-normal-phase', {
             filename: 'discard-hand-overflow-normal-phase.png',

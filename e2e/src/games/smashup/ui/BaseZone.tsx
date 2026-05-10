@@ -75,9 +75,11 @@ export const BaseZone: React.FC<{
     usableOngoingTalentUids?: Set<string>;
     usableTitanTalentUids?: Set<string>;
     usableTitanOngoingUids?: Set<string>;
+    reactionTitanTriggerUids?: Set<string>;
+    onResolveTitanReaction?: (titanUid: string) => void;
     canUseBaseAbility?: boolean;
     tokenRef?: (el: HTMLDivElement | null) => void;
-}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, canUseBaseAbility = false, tokenRef }) => {
+}> = ({ base, baseIndex, core, turnOrder, playerNames, isMobileViewport = false, isDeployMode, isMinionSelectMode, selectableMinionUids, multiSelectedMinionUids, duelParticipantMinionUids, isBuriedSelectMode, selectableBuriedCardUids, multiSelectedBuriedCardUids, isSelectable, isDimmed, selectableOngoingUids, isMyTurn, myPlayerId, dispatch, onClick, onMinionSelect, onOngoingSelect, onBuriedCardSelect, onViewMinion, onViewAction, onViewBase, onViewTitan, usableMinionTalentUids, usableSpecialMinionUids, usableOngoingTalentUids, usableTitanTalentUids, usableTitanOngoingUids, reactionTitanTriggerUids, onResolveTitanReaction, canUseBaseAbility = false, tokenRef }) => {
     const { t } = useTranslation('game-smashup');
     const { selectedFactions } = useSmashUpOverlay();
     const [expandedMinionUid, setExpandedMinionUid] = React.useState<string | null>(null);
@@ -404,8 +406,9 @@ export const BaseZone: React.FC<{
         const pConf = PLAYER_CONFIG[parseInt(titan.controllerId) % PLAYER_CONFIG.length];
         const canUseTitanTalent = !!usableTitanTalentUids?.has(titan.uid);
         const canUseTitanOngoing = !!usableTitanOngoingUids?.has(titan.uid);
+        const canUseTitanReaction = !!reactionTitanTriggerUids?.has(titan.uid);
         const hasMultipleTitanActivations = canUseTitanTalent && canUseTitanOngoing;
-        const canActivateTitan = canUseTitanTalent || canUseTitanOngoing;
+        const canActivateTitan = canUseTitanReaction || canUseTitanTalent || canUseTitanOngoing;
 
         const titanActivationKey = `titan-${titan.uid}`;
         const isTitanActivationArmed = isActivationArmed(titanActivationKey);
@@ -431,6 +434,11 @@ export const BaseZone: React.FC<{
                 onClick={(e) => {
                     e.stopPropagation();
                     if (shouldBlockTitanClick(`titan-${titan.uid}`)) return;
+                    if (canUseTitanReaction) {
+                        clearArmedActivation();
+                        onResolveTitanReaction?.(titan.uid);
+                        return;
+                    }
                     if (hasMultipleTitanActivations) {
                         if (!isCoarsePointer) {
                             setArmedKey((current) => current === titanActivationKey ? null : titanActivationKey);
@@ -493,6 +501,13 @@ export const BaseZone: React.FC<{
                         transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
                         style={{ background: 'radial-gradient(ellipse at center, rgba(251,191,36,0.4) 0%, transparent 70%)' }}
                     />
+                )}
+                {canUseTitanReaction && (
+                    <div className="absolute bottom-[0.18vw] left-[0.12vw] right-[0.12vw] z-30 flex justify-center pointer-events-none">
+                        <div className="rounded bg-emerald-300/95 px-[0.28vw] py-[0.08vw] text-[0.42vw] font-black text-emerald-950 shadow border border-white">
+                            {t('ui.titan_reaction_available', { defaultValue: '可触发' })}
+                        </div>
+                    </div>
                 )}
                 {hasMultipleTitanActivations && isTitanActivationArmed && (
                     <div className="absolute -top-[1.45vw] left-1/2 z-50 flex -translate-x-1/2 gap-[0.18vw]">

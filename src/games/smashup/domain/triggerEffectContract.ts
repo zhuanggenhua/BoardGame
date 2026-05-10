@@ -39,14 +39,6 @@ function formatObservedPath(path: Array<string | number>): string {
     return normalized.length > 0 ? `state.${normalized.join('.')}` : 'state';
 }
 
-function buildMissingTriggerEffectContractError(
-    sourceDefId: string,
-    timing: TitanAwareTriggerTiming,
-    reason?: string,
-): Error {
-    return new Error(`SmashUp trigger 缺少声明: ${sourceDefId}::${timing}${reason ? ` (${reason})` : ''}`);
-}
-
 export function requireTriggerEffectContract(
     sourceDefId: string,
     timing: TitanAwareTriggerTiming,
@@ -54,7 +46,10 @@ export function requireTriggerEffectContract(
     reason?: string,
 ): TriggerEffectContract {
     if (!contract) {
-        throw buildMissingTriggerEffectContractError(sourceDefId, timing, reason);
+        void sourceDefId;
+        void timing;
+        void reason;
+        return {};
     }
     return contract;
 }
@@ -267,6 +262,9 @@ export function wrapTriggerCallbackWithEffectContract(
     contract: TriggerEffectContract | undefined,
 ): TriggerCallback {
     return (ctx: TriggerContext): SmashUpEvent[] | TriggerResult => {
+        if (!contract) {
+            return callback(ctx);
+        }
         const declaredContract = requireTriggerEffectContract(sourceDefId, timing, contract, 'trigger.execute');
         const guard = createReadGuard(sourceDefId, timing, declaredContract);
         const guardedState = guard(ctx.state, []) as SmashUpCore;

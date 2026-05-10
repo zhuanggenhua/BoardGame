@@ -1015,6 +1015,9 @@ export const checkPlayCard = (
     responseWindowType?: DtResponseWindowType,
 ): CardPlayCheckResult => {
     if (card.type === 'upgrade') {
+        if (responseWindowType) {
+            return checkResponseWindowCardPlay(state, playerId, card, responseWindowType, phase);
+        }
         return checkUpgradeCardPlay(state, playerId, card, phase);
     }
 

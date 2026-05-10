@@ -74,9 +74,66 @@ describe('reaction queue: preserves destroyerId context', () => {
             );
             const nextState = resolved?.state ?? after;
             const nextInteractions = getInteractionsFromMS(nextState) as any[];
-            expect(nextInteractions.some(i => i?.data?.sourceId === 'vampire_mad_monster_party_pod_play')).toBe(true);
+            const prompt = nextInteractions.find(i => i?.data?.sourceId === 'vampire_mad_monster_party_pod_play');
+            expect(prompt).toBeDefined();
+            expect(prompt?.data?.displayCard).toEqual({ defId: 'vampire_mad_monster_party_pod', cardUid: 'a-mmp' });
         } else {
             expect(first?.data?.sourceId).toBe('vampire_mad_monster_party_pod_play');
+            expect(first?.data?.displayCard).toEqual({ defId: 'vampire_mad_monster_party_pod', cardUid: 'a-mmp' });
+        }
+    });
+
+    it('vampire_buffet_pod trigger prompt includes the playable card preview context', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a-buffet', defId: 'vampire_buffet_pod', type: 'action', owner: '0' } as any],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const trigger: TriggerInstance = {
+            id: 't-buffet',
+            timing: 'onMinionDestroyed',
+            sourceDefId: 'vampire_buffet_pod',
+            mandatory: false,
+            ownerPlayerId: '0',
+            witnessRequirement: 'inPlayAtTriggerTime',
+            witnessed: true,
+            baseIndex: 0,
+            triggerMinionUid: 'dead1',
+            triggerMinionDefId: 'test_dead',
+            destroyerId: '0',
+            reason: 'test_destroy',
+        };
+
+        const ms: MatchState<SmashUpCore> = makeMatchState({ ...(core as any), triggerQueue: [trigger] });
+        const rq = maybeResolveReactionQueue(ms, defaultTestRandom, 1);
+        expect(rq).toBeDefined();
+
+        const first = getInteractionsFromMS(rq!.state)[0] as any;
+        if (first?.data?.sourceId === 'smashup_reaction_choose') {
+            const option = first.data.options.find((opt: any) => opt.id === `trigger:${trigger.id}`)
+                ?? first.data.options.find((opt: any) => String(opt.id).includes('trigger:'));
+            const handler = getInteractionHandler('smashup_reaction_choose');
+            const resolved = handler!(
+                rq!.state as any,
+                first.playerId,
+                option.value,
+                first.data,
+                defaultTestRandom as any,
+                2,
+            );
+            const prompt = (getInteractionsFromMS(resolved?.state ?? rq!.state) as any[])
+                .find(i => i?.data?.sourceId === 'vampire_buffet_pod_play');
+            expect(prompt?.data?.displayCard).toEqual({ defId: 'vampire_buffet_pod', cardUid: 'a-buffet' });
+        } else {
+            expect(first?.data?.sourceId).toBe('vampire_buffet_pod_play');
+            expect(first?.data?.displayCard).toEqual({ defId: 'vampire_buffet_pod', cardUid: 'a-buffet' });
         }
     });
 });

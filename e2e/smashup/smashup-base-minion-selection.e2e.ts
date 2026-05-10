@@ -1866,6 +1866,33 @@ test.describe('SmashUp Base/Minion Selection', () => {
             filename: 'smashup-mushroom-own-bride-mushroom-resolved.png',
         });
         await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return state?.sys?.interaction?.current?.data?.sourceId ?? null;
+        }, { timeout: 8000 }).toBe('smashup_reaction_choose');
+
+        const brideTitan = hostPage.getByTestId('su-rail-titan-own-bride-titan');
+        await expect(brideTitan).toBeVisible({ timeout: 8000 });
+        await expect(hostPage.getByTestId('su-rail-titan-badge-own-bride-titan')).toContainText(/可触发|React/);
+        await expect(hostPage.getByText(/选择一个反应动作|Choose a reaction/)).toHaveCount(0);
+        await expect(hostPage.getByRole('button', { name: /让过|Pass/ })).toBeVisible();
+
+        const titanWindowShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-titan-click-window', {
+            filename: 'smashup-mushroom-own-bride-titan-click-window.png',
+        });
+        await hostPage.screenshot({ path: titanWindowShot, fullPage: false });
+
+        await brideTitan.click({ force: true });
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return state?.sys?.interaction?.current?.data?.sourceId ?? null;
+        }, { timeout: 8000 }).toBe('titan_frankenstein_the_bride_start_choose_branch');
+
+        const brideBranchShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-branch-after-titan-click', {
+            filename: 'smashup-mushroom-own-bride-branch-after-titan-click.png',
+        });
+        await hostPage.screenshot({ path: brideBranchShot, fullPage: false });
     });
 
     test('反馈复现：宗教圆环发动后，应允许把手牌中的同名本地人打到该基地', async ({ browser }, testInfo) => {

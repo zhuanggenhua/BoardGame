@@ -301,7 +301,7 @@ export function registerExpansionBaseAbilities(): void {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
         effectContract: {
-            reads: ['handState', 'minionBoardState'],
+            reads: ['handState', 'minionBoardState', 'controllerState'],
             writes: ['handState', 'minionBoardState'],
             opensInteraction: true,
         },
@@ -411,7 +411,7 @@ export function registerExpansionBaseAbilities(): void {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
         effectContract: {
-            reads: ['playLimits', 'handState', 'madnessDeckState'],
+            reads: ['playLimits', 'handState', 'madnessDeckState', 'controllerState'],
             writes: ['handState', 'discardState', 'madnessDeckState', 'playLimits'],
             opensInteraction: true,
         },
@@ -442,6 +442,7 @@ export function registerExpansionBaseAbilities(): void {
         };
     }, {
         effectContract: {
+            reads: ['playLimits', 'controllerState'],
             writes: ['playLimits'],
         },
     });
@@ -538,7 +539,7 @@ export function registerExpansionBaseAbilities(): void {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
         effectContract: {
-            reads: ['discardState'],
+            reads: ['discardState', 'controllerState'],
             writes: ['discardState', 'handState'],
             opensInteraction: true,
         },
@@ -589,7 +590,7 @@ export function registerExpansionBaseAbilities(): void {
         };
     }, {
         effectContract: {
-            reads: ['minionBoardState'],
+            reads: ['minionBoardState', 'baseState', 'turnFlags', 'titanBoardState'],
             writes: ['minionBoardState', 'handState', 'deckState', 'discardState'],
             opensInteraction: true,
         },
@@ -643,7 +644,7 @@ export function registerExpansionBaseAbilities(): void {
         };
     }, {
         effectContract: {
-            reads: ['playLimits', 'titanBoardState'],
+            reads: ['playLimits', 'titanBoardState', 'controllerState', 'turnFlags'],
             writes: ['playLimits', 'titanBoardState'],
             opensInteraction: true,
         },
@@ -702,7 +703,7 @@ export function registerExpansionBaseAbilities(): void {
         };
     }, {
         effectContract: {
-            reads: ['minionBoardState'],
+            reads: ['minionBoardState', 'baseState', 'turnFlags', 'titanBoardState'],
             writes: ['minionBoardState'],
             opensInteraction: true,
         },

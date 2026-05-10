@@ -791,7 +791,7 @@ export function registerBaseAbilities(): void {
     }, {
         mandatory: true,
         effectContract: {
-            reads: ['minionBoardState'],
+            reads: ['minionBoardState', 'baseState', 'turnFlags', 'titanBoardState'],
             writes: ['minionBoardState', 'deckState'],
             opensInteraction: true,
         },
@@ -820,7 +820,7 @@ export function registerBaseAbilities(): void {
         return { events };
     }, {
         effectContract: {
-            reads: ['minionBoardState', 'deckState', 'discardState'],
+            reads: ['minionBoardState', 'handState', 'deckState', 'discardState', 'controllerState'],
             writes: ['handState', 'deckState', 'discardState'],
         },
     });
@@ -875,7 +875,7 @@ export function registerBaseAbilities(): void {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
         effectContract: {
-            reads: ['handState'],
+            reads: ['handState', 'controllerState'],
             writes: ['handState', 'discardState'],
             opensInteraction: true,
         },
@@ -1202,7 +1202,7 @@ export function registerBaseAbilities(): void {
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
         effectContract: {
-            reads: ['minionBoardState'],
+            reads: ['minionBoardState', 'baseState', 'turnFlags', 'titanBoardState'],
             writes: ['minionBoardState', 'vpState'],
             opensInteraction: true,
         },
@@ -1357,7 +1357,7 @@ export function registerBaseAbilities(): void {
     }, {
         mandatory: false,
         effectContract: {
-            reads: ['minionBoardState', 'baseState', 'controllerState'],
+            reads: ['minionBoardState', 'baseState', 'controllerState', 'turnFlags', 'titanBoardState'],
             writes: ['minionBoardState'],
             opensInteraction: true,
         },
@@ -1490,7 +1490,7 @@ export function registerBaseAbilities(): void {
         return { events, matchState: ctx.matchState };
     }, {
         effectContract: {
-            reads: ['minionBoardState', 'controllerState'],
+            reads: ['minionBoardState', 'baseState', 'controllerState', 'turnFlags', 'titanBoardState'],
             writes: ['minionBoardState'],
             opensInteraction: true,
         },

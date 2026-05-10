@@ -491,6 +491,185 @@ describe('Cardia AI - 动作生成', () => {
             expect(skipAction).toBeDefined();
             expect(skipAction?.metadata?.strategyTags).toContain('economy');
         });
+
+        it('败者没有可用能力时也应该生成跳过能力动作', () => {
+            const loserCard = {
+                uid: 'loser-no-ability',
+                defId: 'card-def-1',
+                ownerId: '0',
+                baseInfluence: 5,
+                faction: 'military',
+                abilityIds: [],
+                difficulty: 1,
+                modifiers: createModifierStack(),
+                tags: createTagContainer(),
+                signets: 0,
+                ongoingMarkers: [],
+            };
+
+            const state: MatchState<CardiaCore> = {
+                core: {
+                    players: {
+                        '0': {
+                            id: '0',
+                            name: 'Player 1',
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: true,
+                            cardRevealed: true,
+                        },
+                        '1': {
+                            id: '1',
+                            name: 'Player 2',
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: true,
+                            cardRevealed: true,
+                        },
+                    },
+                    playerOrder: ['0', '1'],
+                    currentPlayerId: '0',
+                    turnNumber: 1,
+                    phase: 'ability',
+                    currentEncounter: {
+                        player1Card: loserCard,
+                        player2Card: {
+                            uid: 'winner-card',
+                            defId: 'card-def-2',
+                            ownerId: '1',
+                            baseInfluence: 10,
+                            faction: 'religious',
+                            abilityIds: [],
+                            difficulty: 1,
+                            modifiers: createModifierStack(),
+                            tags: createTagContainer(),
+                            signets: 0,
+                            ongoingMarkers: [],
+                        },
+                        player1Influence: 5,
+                        player2Influence: 10,
+                        winnerId: '1',
+                        loserId: '0',
+                    },
+                    encounterHistory: [],
+                    ongoingAbilities: [],
+                    modifierTokens: [],
+                    delayedEffects: [],
+                    revealFirstNextEncounter: null,
+                    forcedPlayOrderNextEncounter: null,
+                    mechanicalSpiritActive: null,
+                    deckVariant: 'deck1',
+                    targetSignets: 5,
+                },
+                sys: {
+                    flow: { phase: 'ability' },
+                    interaction: null,
+                    actionLog: { entries: [] },
+                    undo: { snapshots: [], aiSeatIds: [] },
+                    rematch: { requests: {} },
+                    responseWindow: null,
+                    tutorial: null,
+                    eventStream: { entries: [] },
+                    gameover: null,
+                },
+            };
+
+            const actions = cardiaAiRuntime.buildLegalActions({
+                state,
+                playerId: '0',
+            });
+
+            expect(actions).toHaveLength(1);
+            expect(actions[0]).toMatchObject({
+                kind: 'skip-ability',
+                commands: [{
+                    type: 'cardia:skip_ability',
+                    payload: { playerId: '0' },
+                }],
+            });
+        });
+    });
+
+    describe('结束阶段', () => {
+        it('当前玩家在结束阶段应该生成结束回合动作', () => {
+            const state: MatchState<CardiaCore> = {
+                core: {
+                    players: {
+                        '0': {
+                            id: '0',
+                            name: 'Player 1',
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: true,
+                            cardRevealed: true,
+                        },
+                        '1': {
+                            id: '1',
+                            name: 'Player 2',
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: true,
+                            cardRevealed: true,
+                        },
+                    },
+                    playerOrder: ['0', '1'],
+                    currentPlayerId: '0',
+                    turnNumber: 1,
+                    phase: 'end',
+                    encounterHistory: [],
+                    ongoingAbilities: [],
+                    modifierTokens: [],
+                    delayedEffects: [],
+                    revealFirstNextEncounter: null,
+                    forcedPlayOrderNextEncounter: null,
+                    mechanicalSpiritActive: null,
+                    deckVariant: 'deck1',
+                    targetSignets: 5,
+                },
+                sys: {
+                    flow: { phase: 'end' },
+                    interaction: null,
+                    actionLog: { entries: [] },
+                    undo: { snapshots: [], aiSeatIds: [] },
+                    rematch: { requests: {} },
+                    responseWindow: null,
+                    tutorial: null,
+                    eventStream: { entries: [] },
+                    gameover: null,
+                },
+            };
+
+            const actions = cardiaAiRuntime.buildLegalActions({
+                state,
+                playerId: '0',
+            });
+
+            expect(actions).toHaveLength(1);
+            expect(actions[0]).toMatchObject({
+                kind: 'end-turn',
+                commands: [{
+                    type: 'cardia:end_turn',
+                    payload: {},
+                }],
+            });
+            expect(actions[0].metadata?.strategyTags).toContain('economy');
+        });
     });
 
     describe('动作 ID 唯一性', () => {

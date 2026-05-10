@@ -272,6 +272,7 @@ describe('僵尸派系能力', () => {
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('zombie_walker');
         expect(current?.data?.targetType).toBe('button');
+        expect(current?.data?.displayCard).toEqual({ defId: 'top_card', cardUid: 'd1' });
     });
 
     it('zombie_grave_robbing: 多张弃牌时创建 Prompt', () => {

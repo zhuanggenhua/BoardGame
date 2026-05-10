@@ -97,6 +97,7 @@ function collectBaseEventCount(events: SmashUpEvent[], type: typeof SU_EVENTS.BA
 function advanceToAfterScoring(
     runner: GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>,
     actingPlayerId: PlayerId = '0',
+    options: { allowDirectAfterScoringSourceId?: string } = {},
 ) {
     const eventLog: SmashUpEvent[] = [];
 
@@ -109,6 +110,9 @@ function advanceToAfterScoring(
         const session = getReactionSession(state);
         if (session?.responseWindowType === 'afterScoring') {
             const choice = getCurrentChoice(state);
+            if (choice?.sourceId === options.allowDirectAfterScoringSourceId) {
+                return { advance, eventLog, choice: choice! };
+            }
             expect(choice?.sourceId).toBe('smashup_reaction_choose');
             return { advance, eventLog, choice: choice! };
         }
@@ -556,18 +560,10 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             return { sys, core };
         });
 
-        const { eventLog, choice } = advanceToAfterScoring(runner, '1');
-        const chooseGreatLibrary = runner.resolveInteraction('1', {
-            optionId: findQueuedTriggerOptionId(
-                runner.getState(),
-                choice,
-                'base_great_library',
-                '找不到大图书馆的统一反应入口',
-            ),
+        const { eventLog, choice } = advanceToAfterScoring(runner, '1', {
+            allowDirectAfterScoringSourceId: 'alien_scout_return',
         });
-
-        expect(chooseGreatLibrary.success).toBe(true);
-        eventLog.push(...chooseGreatLibrary.events);
+        expect(choice.sourceId).toBe('alien_scout_return');
 
         const player1Reshuffle = eventLog.find(event =>
             event.type === SU_EVENTS.DECK_RESHUFFLED

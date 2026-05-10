@@ -68,6 +68,7 @@ type VampireBuffetPodPlayPromptContext = VampirePromptContext & {
 
 type VampireMadMonsterPartyPodPlayPromptContext = VampirePromptContext & {
     cardUid: string;
+    defId: string;
     baseIndex: number;
 };
 
@@ -317,6 +318,7 @@ function registerVampirePodOngoingEffects(): void {
             vampireMadMonsterPartyPodPlayPromptProgram,
             createVampirePromptContext(ctx.matchState!, destroyerId, ctx.now, {
                 cardUid: card.uid,
+                defId: card.defId,
                 baseIndex,
             }),
         );
@@ -1042,7 +1044,7 @@ const vampireBuffetPodPlayPromptProgram = createPromptProgram<VampireBuffetPodPl
             { id: 'play', label: '打出自助餐', value: { play: true }, displayMode: 'button' as const },
             { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
         ] as any[],
-        { sourceId: 'vampire_buffet_pod_play', targetType: 'button' },
+        { sourceId: 'vampire_buffet_pod_play', targetType: 'button', displayCard: { defId: context.defId, cardUid: context.cardUid } },
     ),
     onResolve: ({ state, context, value, playerId, random, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
@@ -1064,14 +1066,14 @@ const vampireMadMonsterPartyPodPlayPromptProgram = createPromptProgram<VampireMa
             { id: 'play', label: '打出疯狂怪物派对', value: { play: true }, displayMode: 'button' as const },
             { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
         ] as any[],
-        { sourceId: 'vampire_mad_monster_party_pod_play', targetType: 'button' },
+        { sourceId: 'vampire_mad_monster_party_pod_play', targetType: 'button', displayCard: { defId: context.defId, cardUid: context.cardUid } },
     ),
     onResolve: ({ state, context, value, playerId, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
         const base = state.core.bases[context.baseIndex];
         if (!base) return { events: [] };
         const events: SmashUpEvent[] = [
-            buildActionPlayedEvent({ playerId, cardUid: context.cardUid, defId: 'vampire_mad_monster_party_pod', isExtraAction: true, timestamp }) as any,
+            buildActionPlayedEvent({ playerId, cardUid: context.cardUid, defId: context.defId, isExtraAction: true, timestamp }) as any,
         ];
         for (const minion of base.minions) {
             if (minion.controller === playerId) {

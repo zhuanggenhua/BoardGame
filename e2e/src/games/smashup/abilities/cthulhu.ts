@@ -875,7 +875,11 @@ const specialMadnessPromptProgram = createPromptProgram<SpecialMadnessPromptCont
             { id: 'draw', label: '抽两张卡', value: { action: 'draw' }, displayMode: 'button' as const },
             { id: 'return', label: '消耗这张疯狂牌', value: { action: 'return' }, displayMode: 'button' as const },
         ],
-        { sourceId: 'special_madness', targetType: 'button' },
+        {
+            sourceId: 'special_madness',
+            targetType: 'button',
+            displayCard: { defId: MADNESS_CARD_DEF_ID, cardUid: context.cardUid },
+        },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const { action } = value as MadnessActionChoiceValue;

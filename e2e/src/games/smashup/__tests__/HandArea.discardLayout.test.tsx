@@ -61,5 +61,6 @@ describe('SmashUp HandArea discard layout', () => {
         expect(scroller?.className).not.toContain('smashup-h-scrollbar');
         expect(getCardMargins(discardView.container)).toEqual(getCardMargins(normalView.container));
         expect(getCardMargins(discardView.container).some((margin) => margin < 0)).toBe(true);
+        expect(Math.min(...getCardMargins(discardView.container))).toBeGreaterThanOrEqual(-3.4);
     });
 });

@@ -1474,6 +1474,7 @@ describe('elder_thing_elder_thing onPlay', () => {
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('elder_thing_elder_thing_choice');
         expect(current?.data?.targetType).toBe('button');
+        expect(current?.data?.displayCard).toEqual({ defId: 'elder_thing_elder_thing', cardUid: 'et-1' });
         // 消灭选项应该被禁用
         const destroyOption = current?.data?.options?.find((o: any) => o.id === 'destroy');
         expect(destroyOption?.disabled).toBe(true);
@@ -1879,6 +1880,7 @@ describe('special_madness onPlay', () => {
         expect(current).toBeDefined();
         expect(current?.data?.sourceId).toBe('special_madness');
         expect(current?.data?.targetType).toBe('button');
+        expect(current?.data?.displayCard).toEqual({ defId: 'special_madness', cardUid: 'mad-1' });
         const options = current?.data?.options;
         expect(options.length).toBe(2);
         expect(options.some((o: any) => o.value.action === 'draw')).toBe(true);

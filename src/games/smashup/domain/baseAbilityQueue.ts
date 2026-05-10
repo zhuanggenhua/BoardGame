@@ -12,7 +12,7 @@ import {
 import { createAbilityRuntimeExecutor, createEffectProgram } from './abilityRuntime';
 import { isBaseAbilitySuppressed } from './ongoingEffects';
 import type { TitanAwareTriggerTiming, TriggerContext } from './ongoingEffects';
-import { requireTriggerEffectContract, wrapTriggerCallbackWithEffectContract } from './triggerEffectContract';
+import { wrapTriggerCallbackWithEffectContract } from './triggerEffectContract';
 import { registerTriggerProgramExecutor } from './triggerExecutors';
 
 type BaseTriggerTimingAsTrigger = BaseTriggerTiming;
@@ -36,12 +36,6 @@ export function registerBaseAbilityAsQueuedTrigger(
   const options = getBaseAbilityOptions(baseDefId, timing);
   const triggerTiming = timingToTriggerTiming(timing);
   const executor = getBaseAbilityExecutor(baseDefId, timing);
-  const declaredContract = requireTriggerEffectContract(
-    baseDefId,
-    triggerTiming,
-    options?.effectContract,
-    'baseAbility.registerQueued',
-  );
   const guardedTriggerCallback = wrapTriggerCallbackWithEffectContract(
     baseDefId,
     triggerTiming,
@@ -68,7 +62,7 @@ export function registerBaseAbilityAsQueuedTrigger(
       if (!executor) return { events: [] };
       return executor(baseCtx);
     },
-    declaredContract,
+    options?.effectContract,
   );
   const triggerCallback = (ctx: QueuedBaseTriggerContext) => {
     const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
@@ -124,12 +118,6 @@ export function collectBaseAbilityTriggers(params: {
 
   if (!hasBaseAbility(base.defId, timing)) return undefined;
   const options = getBaseAbilityOptions(base.defId, timing);
-  const effectContract = requireTriggerEffectContract(
-    base.defId,
-    timingToTriggerTiming(timing),
-    options?.effectContract,
-    'collectTriggers',
-  );
   if (options?.canTrigger && !options.canTrigger({
     state: core,
     baseIndex,
@@ -163,7 +151,7 @@ export function collectBaseAbilityTriggers(params: {
     ownerPlayerId,
     witnessRequirement: 'inPlayAtTriggerTime',
     witnessed: true,
-    effectContract,
+    effectContract: options?.effectContract,
     baseIndex,
     triggerMinionUid,
     triggerMinionDefId,
@@ -189,12 +177,6 @@ export function registerExtendedBaseAbilityAsQueuedTrigger(
   const options = getExtendedBaseAbilityOptions(baseDefId, timing);
   const triggerTiming = timingToTriggerTiming(timing);
   const executor = getExtendedBaseAbilityExecutor(baseDefId, timing);
-  const declaredContract = requireTriggerEffectContract(
-    baseDefId,
-    triggerTiming,
-    options?.effectContract,
-    'extendedBaseAbility.registerQueued',
-  );
   const guardedTriggerCallback = wrapTriggerCallbackWithEffectContract(
     baseDefId,
     triggerTiming,
@@ -219,7 +201,7 @@ export function registerExtendedBaseAbilityAsQueuedTrigger(
       if (!executor) return { events: [] };
       return executor(baseCtx);
     },
-    declaredContract,
+    options?.effectContract,
   );
   const triggerCallback = (ctx: QueuedBaseTriggerContext) => {
     const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
@@ -249,12 +231,6 @@ export function collectExtendedBaseAbilityTriggers(params: {
   if (!base) return undefined;
   const opts = getExtendedBaseAbilityOptions(base.defId, timing);
   if (!opts) return undefined;
-  const effectContract = requireTriggerEffectContract(
-    base.defId,
-    timingToTriggerTiming(timing),
-    opts.effectContract,
-    'collectTriggers',
-  );
 
   // Ensure executor exists for queue consumption.
   registerExtendedBaseAbilityAsQueuedTrigger(base.defId, timing);
@@ -273,7 +249,7 @@ export function collectExtendedBaseAbilityTriggers(params: {
     ownerPlayerId,
     witnessRequirement: 'inPlayAtTriggerTime',
     witnessed: true,
-    effectContract,
+    effectContract: opts.effectContract,
     baseIndex,
     lkiBase: { baseIndex, defId: base.defId },
   };

@@ -582,6 +582,20 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
         }
     }
 
+    if (
+        sourceAbilityId
+        && resultState.pendingAttack?.sourceAbilityId === sourceAbilityId
+        && resultState.pendingAttack.offensiveRollEndTokenResolved !== true
+    ) {
+        resultState = {
+            ...resultState,
+            pendingAttack: {
+                ...resultState.pendingAttack,
+                offensiveRollEndTokenResolved: true,
+            },
+        };
+    }
+
     if (sourceAbilityId) {
         resultState = {
             ...resultState,

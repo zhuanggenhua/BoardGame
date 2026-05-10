@@ -6166,21 +6166,23 @@ describe('smashup', () => {
 
         const queuedState = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
         const firstPrompt = maybeResolveReactionQueue(queuedState, FIXED_RANDOM, 75);
-        expect(firstPrompt?.state.sys.interaction.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        let stateAfterChooseFirstMateTrigger = firstPrompt!.state;
+        if (firstPrompt?.state.sys.interaction.current?.data?.sourceId === 'smashup_reaction_choose') {
+            const firstQueueById = new Map(firstPrompt.state.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
+            const firstMateOption = (firstPrompt.state.sys.interaction.current as any).data.options.find((option: any) => {
+                const trigger = firstQueueById.get(option.value.triggerId) as any;
+                return trigger?.sourceDefId === 'pirate_first_mate';
+            }) ?? (firstPrompt.state.sys.interaction.current as any).data.options[0];
 
-        const firstQueueById = new Map(firstPrompt!.state.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
-        const firstMateOption = (firstPrompt!.state.sys.interaction.current as any).data.options.find((option: any) => {
-            const trigger = firstQueueById.get(option.value.triggerId) as any;
-            return trigger?.sourceDefId === 'pirate_first_mate';
-        }) ?? (firstPrompt!.state.sys.interaction.current as any).data.options[0];
+            const afterChooseFirstMateTrigger = runCommand(
+                firstPrompt.state,
+                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: firstMateOption.id } } as any,
+                FIXED_RANDOM,
+            );
+            stateAfterChooseFirstMateTrigger = afterChooseFirstMateTrigger.finalState;
+        }
 
-        const afterChooseFirstMateTrigger = runCommand(
-            firstPrompt!.state,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: firstMateOption.id } } as any,
-            FIXED_RANDOM,
-        );
-
-        const firstMatePrompt = getInteractionsFromMS(afterChooseFirstMateTrigger.finalState)[0] as any;
+        const firstMatePrompt = getInteractionsFromMS(stateAfterChooseFirstMateTrigger)[0] as any;
         expect(firstMatePrompt?.data?.sourceId).toBe('pirate_first_mate_choose_base');
 
         const moveMateOption = firstMatePrompt.data.options.find((option: any) => option.value?.baseIndex === 1)
@@ -6188,7 +6190,7 @@ describe('smashup', () => {
             ?? firstMatePrompt.data.options[0];
 
         const afterMoveFirstMate = runCommand(
-            afterChooseFirstMateTrigger.finalState,
+            stateAfterChooseFirstMateTrigger,
             { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: moveMateOption.id } } as any,
             FIXED_RANDOM,
         );

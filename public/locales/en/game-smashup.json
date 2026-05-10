@@ -103,6 +103,7 @@
     "after_scoring_title": "After Scoring Response",
     "reaction_choose_mandatory_title": "Choose the mandatory effect to resolve first",
     "reaction_choose_optional_title": "Choose a reaction",
+    "titan_reaction_click_prompt": "Click a highlighted titan to resolve it, or pass",
     "reaction_choose_play_to_base": "{{name}} -> Base {{baseNumber}}",
     "reaction_choose_activate_special": "{{name}} Special",
     "move_there": "Move there",
@@ -238,6 +239,7 @@
     "tap_again_to_activate": "Tap again to activate",
     "titan_ability": "Titan Ability",
     "titan_play_available": "Playable",
+    "titan_reaction_available": "React",
     "no_valid_targets": "No valid targets",
     "faction_implementation_in_progress": "Implementation in Progress"
   },

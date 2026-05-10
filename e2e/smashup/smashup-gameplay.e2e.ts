@@ -243,6 +243,7 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         await game.playCard('zombie_walker', { targetBaseIndex: 0 });
         await game.waitForInteraction('zombie_walker', 10000);
 
+        await expect(page.getByTestId('prompt-context-card')).toBeVisible();
         await expect(page.getByRole('button', { name: /^弃掉$/ })).toBeVisible();
         await expect(page.getByRole('button', { name: /放回牌库顶/i })).toBeVisible();
         await game.screenshot('legacy-or-zombie-walker-prompt-visible', testInfo);

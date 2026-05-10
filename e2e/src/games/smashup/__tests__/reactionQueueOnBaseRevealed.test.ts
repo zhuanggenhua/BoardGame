@@ -15,7 +15,7 @@ beforeEach(() => {
 
 describe('Reaction queue: extended base timing onBaseRevealed', () => {
   it('optional onBaseRevealed triggers choose next by clockwise owner', () => {
-    registerExtended('base_old', 'onBaseRevealed', () => ({ events: [] }), { mandatory: false });
+    registerExtended('base_old', 'onBaseRevealed', () => ({ events: [] }), { mandatory: false, effectContract: {} });
 
     const core: SmashUpCore = makeState({
       turnOrder: ['0', '1'],

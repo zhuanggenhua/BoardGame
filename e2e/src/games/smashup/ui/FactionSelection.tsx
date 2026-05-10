@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { SU_COMMANDS, getCurrentPlayerId } from '../domain/types';
 import type { SmashUpCore } from '../domain/types';
+import { buildFactionSelectionIdentitySet, normalizeFactionSelectionId } from '../domain/ids';
 import {
     FACTION_METADATA,
     getFactionMechanicTutorial,
@@ -60,10 +61,26 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         };
     }, []);
 
-    const takenFactions = new Set(selectionState?.takenFactions ?? []);
     const mySelections = useMemo(
         () => (playerID && selectionState ? selectionState.playerSelections[playerID] || [] : []),
         [playerID, selectionState],
+    );
+    const takenFactionIdentities = useMemo(
+        () => buildFactionSelectionIdentitySet(selectionState?.takenFactions ?? []),
+        [selectionState],
+    );
+    const mySelectionIdentities = useMemo(
+        () => buildFactionSelectionIdentitySet(mySelections),
+        [mySelections],
+    );
+    const playerSelectionIdentities = useMemo(
+        () => Object.fromEntries(
+            Object.entries(selectionState?.playerSelections ?? {}).map(([pid, picks]) => [
+                pid,
+                buildFactionSelectionIdentitySet(picks),
+            ]),
+        ),
+        [selectionState],
     );
     const isMyTurn = playerID === getCurrentPlayerId(core);
     const currentPlayerId = getCurrentPlayerId(core);
@@ -109,7 +126,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
 
     const handleConfirmSelect = (factionId: string) => {
         if (!isMyTurn) return;
-        if (takenFactions.has(factionId)) return;
+        if (takenFactionIdentities.has(normalizeFactionSelectionId(factionId))) return;
+        if (mySelectionIdentities.has(normalizeFactionSelectionId(factionId))) return;
         if (mySelections.length >= 2) return;
 
         dispatch(SU_COMMANDS.SELECT_FACTION, { factionId });
@@ -202,13 +220,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         </motion.div>
     );
     const factionOptionNodes = visibleFactionGroups.map((group, idx) => {
-        const selectedVariantId = group.variants.find((variant) => mySelections.includes(variant.id))?.id ?? null;
-        const takenVariantId = group.variants.find((variant) => takenFactions.has(variant.id))?.id ?? null;
-        const ownerId = takenVariantId
-            ? Object.entries(selectionState.playerSelections).find(([_, picks]) => picks.includes(takenVariantId))?.[0]
-            : undefined;
+        const selectedVariantId = mySelections.find((selectedId) => group.variants.some((variant) => variant.id === selectedId)) ?? null;
+        const ownerId = Object.entries(playerSelectionIdentities).find(([, identities]) => identities.has(group.groupId))?.[0];
         const isSelectedByMe = Boolean(selectedVariantId);
-        const isTakenByOther = Boolean(takenVariantId) && !isSelectedByMe;
+        const isTakenByOther = takenFactionIdentities.has(group.groupId) && !isSelectedByMe;
         const previewFactionId = selectedVariantId ?? group.defaultVariant.id;
         const cards = getFactionCards(previewFactionId);
         const coverCard = cards.find((card) => card.type === 'minion') || cards[0];
@@ -247,7 +262,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                         ${selectionCardSurfaceClassName}
                         ${isSelectedByMe
                             ? 'border-green-500 scale-105 -translate-y-2'
-                            : takenVariantId
+                            : isTakenByOther
                                 ? 'border-slate-300'
                                 : 'border-white group-hover:border-amber-400 group-hover:shadow-amber-500/30'
                         }
@@ -496,10 +511,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                             {(() => {
                                                 const cards = getFactionCards(focusedFactionMeta.id);
                                                 const titans = getFactionTitans(focusedFactionMeta.id);
-                                                const selectedVariantId = focusedFactionGroup.variants.find((variant) => mySelections.includes(variant.id))?.id ?? null;
-                                                const takenVariantId = focusedFactionGroup.variants.find((variant) => takenFactions.has(variant.id))?.id ?? null;
+                                                const selectedVariantId = mySelections.find((selectedId) => focusedFactionGroup.variants.some((variant) => variant.id === selectedId)) ?? null;
                                                 const isSelectedByMe = Boolean(selectedVariantId);
-                                                const isTakenByOther = Boolean(takenVariantId) && !isSelectedByMe;
+                                                const isTakenByOther = takenFactionIdentities.has(focusedFactionGroup.groupId) && !isSelectedByMe;
                                                 const canSelect = isMyTurn && !isTakenByOther && mySelections.length < 2 && !isSelectedByMe;
                                                 const titanGridCols = 'grid-cols-1';
 

@@ -270,6 +270,11 @@ export interface SimpleChoiceData<T = unknown> {
      * - undefined / 'generic': 使用通用弹窗选择
      */
     targetType?: SimpleChoiceTargetType;
+    /** 可选：按钮类/目标类交互需要同时展示的一张上下文卡牌 */
+    displayCard?: {
+        defId: string;
+        cardUid?: string;
+    };
     /**
      * 单候选时是否自动解决（跳过玩家选择）。
      * - true（默认）：强制效果，只有一个候选时自动执行
@@ -515,6 +520,11 @@ export interface SimpleChoiceConfig {
     multi?: PromptMultiConfig;
     /** 选择目标类型，决定 UI 渲染方式（'base' | 'minion' | 'hand' | 'ongoing' | 'player' | 'button' | 'discard_minion' | 'generic'） */
     targetType?: SimpleChoiceTargetType;
+    /** 可选：按钮类/目标类交互需要同时展示的一张上下文卡牌 */
+    displayCard?: {
+        defId: string;
+        cardUid?: string;
+    };
     /** 单候选时是否自动解决，默认 true（强制效果自动跳过） */
     autoResolveIfSingle?: boolean;
     /**
@@ -609,6 +619,7 @@ export function createSimpleChoice<T>(
             timeout: config.timeout,
             multi: config.multi,
             targetType: config.targetType,
+            displayCard: config.displayCard,
             autoResolveIfSingle: config.autoResolveIfSingle,
             // 将 autoRefresh 传递到 data 中（作为私有字段）
             autoRefresh: config.autoRefresh,

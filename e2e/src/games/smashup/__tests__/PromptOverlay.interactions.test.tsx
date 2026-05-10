@@ -84,6 +84,32 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         expect(dispatch).toHaveBeenCalledTimes(1);
     });
 
+    it('button-only prompts render an explicit context card preview when displayCard is provided', () => {
+        const dispatch = vi.fn();
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'zombie_walker_1',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '牌库顶是「行尸」，选择处理方式',
+                sourceId: 'zombie_walker',
+                targetType: 'button',
+                displayCard: { defId: 'zombie_walker', cardUid: 'top-card' },
+                options: [
+                    { id: 'discard', label: '弃掉', value: { action: 'discard' }, displayMode: 'button' },
+                    { id: 'keep', label: '放回牌库顶', value: { action: 'keep' }, displayMode: 'button' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+
+        expect(screen.getByTestId('prompt-context-card')).toBeInTheDocument();
+        expect(screen.getByTestId('mock-card-preview')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '弃掉' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: '放回牌库顶' })).toBeInTheDocument();
+    });
+
     it('discard display card mode toggles playable cards by uid', () => {
         const onSelect = vi.fn();
         const dispatch = vi.fn();
@@ -101,7 +127,7 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
                 onClose: vi.fn(),
                 selectedUid: null,
                 onSelect,
-                playableDefIds: new Set(['zombie_walker']),
+                playableUids: new Set(['discard-card-1']),
             },
         });
 
@@ -109,6 +135,32 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
 
         expect(onSelect).toHaveBeenCalledWith('discard-card-1');
         expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('discard display card mode ignores defId-only selectability from stale callers', () => {
+        const onSelect = vi.fn();
+
+        renderPromptOverlay({
+            interaction: undefined,
+            dispatch: vi.fn(),
+            playerID: '0',
+            displayCards: {
+                title: '弃牌堆 (2)',
+                cards: [
+                    { uid: 'discard-card-1', defId: 'zombie_walker' },
+                    { uid: 'discard-card-2', defId: 'zombie_walker' },
+                ],
+                onClose: vi.fn(),
+                selectedUid: null,
+                onSelect,
+                playableDefIds: new Set(['zombie_walker']),
+            } as any,
+        });
+
+        fireEvent.click(screen.getAllByTestId('mock-card-preview')[0]);
+        fireEvent.click(screen.getAllByTestId('mock-card-preview')[1]);
+
+        expect(onSelect).not.toHaveBeenCalled();
     });
 
     it('discard display card mode does not enable same-defId cards outside playable uid set', () => {
@@ -128,7 +180,6 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
                 selectedUid: null,
                 onSelect,
                 playableUids: new Set(['prompt-option-copy']),
-                playableDefIds: new Set(['zombie_walker']),
             },
         });
 

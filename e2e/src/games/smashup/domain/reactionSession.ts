@@ -311,9 +311,11 @@ function getOptionalFrameTriggers(
 function getMandatoryResolutionGroup(
     state: MatchState<SmashUpCore>,
     session: SmashUpReactionSession,
+    random?: RandomFn,
+    now?: number,
 ): TriggerInstance[] {
     const triggers = getMandatoryFrameTriggers(state, session.frameId);
-    return partitionMandatoryReactionOrderingComponents(triggers)[0] ?? [];
+    return partitionMandatoryReactionOrderingComponents(triggers, state, random, now)[0] ?? [];
 }
 
 function nextClockwisePlayer(core: SmashUpCore, playerId: PlayerId): PlayerId {
@@ -534,9 +536,10 @@ export function buildReactionOptions(
     state: MatchState<SmashUpCore>,
     session: SmashUpReactionSession,
     now: number,
+    random?: RandomFn,
 ): ReactionOption[] {
     if (session.phase === 'mandatory') {
-        return getMandatoryResolutionGroup(state, session).map(trigger => ({
+        return getMandatoryResolutionGroup(state, session, random, now).map(trigger => ({
             id: `trigger:${trigger.id}`,
             label: buildTriggerLabel(trigger),
             value: { kind: 'trigger', triggerId: trigger.id },
@@ -608,11 +611,12 @@ export function resolveLiveSmashUpReactionChoice(
     state: MatchState<SmashUpCore>,
     value: ReactionChoiceValue,
     now: number,
+    random?: RandomFn,
 ): ResolvedSmashUpReactionChoice | undefined {
     const session = getSmashUpReactionSession(state);
     if (!session) return undefined;
 
-    const options = buildReactionOptions(state, session, now);
+    const options = buildReactionOptions(state, session, now, random);
     const matchedOption = options.find(option => isSameReactionChoiceValue(option.value, value));
     if (matchedOption) {
         return {
@@ -836,8 +840,9 @@ function buildReactionInteraction(
     state: MatchState<SmashUpCore>,
     session: SmashUpReactionSession,
     now: number,
+    random: RandomFn,
 ) {
-    const initialOptions = buildReactionOptions(state, session, now);
+    const initialOptions = buildReactionOptions(state, session, now, random);
     const interaction = createAbilityRuntimeSimpleChoice(
         `smashup_reaction_${session.frameId}_${session.activePlayerId}_${now}`,
         session.activePlayerId,
@@ -857,7 +862,7 @@ function buildReactionInteraction(
     };
     interactionData.optionsGenerator = (latestState: MatchState<SmashUpCore>) => {
         const nextSession = getSmashUpReactionSession(latestState) ?? session;
-        return buildReactionOptions(latestState, nextSession, now);
+        return buildReactionOptions(latestState, nextSession, now, random);
     };
     return interaction;
 }
@@ -1009,7 +1014,7 @@ export function advanceSmashUpReactionSession(
     session = getSmashUpReactionSession(currentState);
     if (!session) return undefined;
 
-    const options = buildReactionOptions(currentState, session, now);
+    const options = buildReactionOptions(currentState, session, now, random);
     const nonPassOptions = options.filter(option => option.id !== 'pass');
     if (session.phase === 'mandatory' && nonPassOptions.length === 0) {
         const optionalState = setSmashUpReactionSession(currentState, {
@@ -1049,7 +1054,7 @@ export function advanceSmashUpReactionSession(
             events: [...emittedEvents, ...resolved.events],
         };
     }
-    const interaction = buildReactionInteraction(currentState, session, now);
+    const interaction = buildReactionInteraction(currentState, session, now, random);
     return {
         state: queueInteraction(currentState, interaction),
         events: emittedEvents,
@@ -1062,7 +1067,7 @@ export function resolveSmashUpReactionChoice(
     now: number,
     value: ReactionChoiceValue,
 ): { state: MatchState<SmashUpCore>; events: SmashUpEvent[] } {
-    const resolvedChoice = resolveLiveSmashUpReactionChoice(state, value, now);
+    const resolvedChoice = resolveLiveSmashUpReactionChoice(state, value, now, random);
     if (!resolvedChoice) return { state, events: [] };
     const { session, value: liveValue, wasStale } = resolvedChoice;
 

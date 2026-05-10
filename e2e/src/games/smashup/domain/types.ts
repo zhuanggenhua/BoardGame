@@ -579,6 +579,33 @@ export interface TriggerEffectContract {
     opensInteraction?: boolean;
 }
 
+export type SmashUpReactionResourceRef =
+    | { kind: 'minion'; uid: string }
+    | { kind: 'base'; index: number }
+    | { kind: 'cardInstance'; uid: string }
+    | { kind: 'sourceInstance'; uid: string }
+    | { kind: 'titan'; uid: string }
+    | { kind: 'playerHand'; playerId: PlayerId }
+    | { kind: 'playerDeck'; playerId: PlayerId }
+    | { kind: 'playerDiscard'; playerId: PlayerId }
+    | { kind: 'playerRemoved'; playerId: PlayerId }
+    | { kind: 'playerPlayLimit'; playerId: PlayerId }
+    | { kind: 'playerVp'; playerId: PlayerId }
+    | { kind: 'playerControl'; playerId: PlayerId }
+    | { kind: 'turnFlag'; key: string; playerId?: PlayerId }
+    | { kind: 'baseDeck' }
+    | { kind: 'madnessDeck' }
+    | { kind: 'scoring'; baseIndex?: number }
+    | { kind: 'targetAvailability'; baseIndex?: number }
+    | { kind: 'global'; key: string };
+
+export interface SmashUpReactionResourceFootprint {
+    reads: SmashUpReactionResourceRef[];
+    writes: SmashUpReactionResourceRef[];
+    opensInteraction?: boolean;
+    fallbackReason?: string;
+}
+
 export interface TriggerInstance {
     /** stable id for interaction selection */
     id: string;
@@ -632,6 +659,13 @@ export interface TriggerInstance {
     inspectionTargetPlayerIds?: PlayerId[];
     inspectionCausePlayerId?: PlayerId;
     effectContract?: TriggerEffectContract;
+    /**
+     * Explicit, auditable fallback used only when runtime artifact probing cannot
+     * derive a concrete resource footprint. Normal ordering must come from
+     * emitted events / structured interactions instead of this field.
+     */
+    fallbackFootprint?: SmashUpReactionResourceFootprint & { fallbackReason: string };
+    derivedFootprint?: SmashUpReactionResourceFootprint;
 
     /** LKI snapshots captured at queue time */
     lkiMinion?: MinionLkiSnapshot;
