@@ -3487,10 +3487,6 @@ export function registerTitanAbilities(): void {
     registerTrigger('dinosaurs_fort_titanosaurus', 'onActionPlayed', fortTitanosaurusOnActionPlayed, {
         optional: true,
         baseScoped: false,
-        effectContract: {
-            reads: ['titanBoardState', 'minionBoardState', 'turnFlags'],
-            opensInteraction: true,
-        },
     });
 
     registerAbility('ninjas_invisible_ninja', 'special', invisibleNinjaSpecial);
@@ -3510,31 +3506,16 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('ninjas_invisible_ninja', 'onTurnStart', invisibleNinjaOnTurnStart, {
         global: true,
-        effectContract: {
-            reads: ['sourceSelfState', 'titanBoardState', 'turnFlags'],
-            writes: ['sourceSelfState', 'titanBoardState', 'playLimits'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('ninjas_invisible_ninja', 'onMinionDestroyed', invisibleNinjaTriggered, {
         optional: true,
         baseScoped: false,
         playerContext: 'sourceController',
-        effectContract: {
-            reads: ['titanBoardState', 'triggerMinionState', 'controllerState', 'deckState', 'discardState', 'turnFlags'],
-            writes: ['deckState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('ninjas_invisible_ninja', 'onCardReturnedToHand', invisibleNinjaTriggered, {
         optional: true,
         baseScoped: false,
         playerContext: 'sourceController',
-        effectContract: {
-            reads: ['titanBoardState', 'triggerMinionState', 'controllerState', 'deckState', 'discardState', 'turnFlags'],
-            writes: ['deckState'],
-            opensInteraction: true,
-        },
     });
 
     registerAbility('killer_plants_killer_kudzu', 'special', killerKudzuSpecial);
@@ -3571,19 +3552,10 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('killer_plants_killer_kudzu', 'onTurnStart', killerKudzuOnTurnStart, {
         global: true,
-        effectContract: {
-            reads: ['titanBoardState'],
-            writes: ['titanBoardState'],
-        },
     });
     registerTrigger('killer_plants_killer_kudzu', 'onTitanRemovedFromPlay', killerKudzuOnTitanRemovedFromPlay, {
         optional: true,
         global: true,
-        effectContract: {
-            reads: ['controllerState', 'deckState', 'discardState'],
-            writes: ['handState', 'deckState', 'discardState'],
-            opensInteraction: true,
-        },
     });
 
     registerAbility('frankenstein_the_bride', 'talent', theBrideTalent);
@@ -3599,18 +3571,9 @@ export function registerTitanAbilities(): void {
         global: true,
         optional: true,
         playerContext: 'sourceController',
-        effectContract: {
-            reads: ['handState', 'minionBoardState', 'titanBoardState', 'controllerState', 'baseState', 'discardState'],
-            writes: ['handState', 'minionBoardState', 'titanBoardState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('frankenstein_the_bride', 'onMinionAffected', theBrideOnPowerCounterChanged, {
         baseScoped: false,
-        effectContract: {
-            reads: ['triggerMinionState', 'titanBoardState', 'turnFlags', 'deckState', 'controllerState', 'discardState', 'handState'],
-            writes: ['titanBoardState', 'handState', 'deckState'],
-        },
     });
 
     registerAbility('super_spies_moon_zero_three', 'special', superSpiesMoonZeroThreeSpecial);
@@ -3628,10 +3591,6 @@ export function registerTitanAbilities(): void {
             : '没有可查看的牌库';
     });
     registerTrigger('super_spies_moon_zero_three', 'onDeckInspected', superSpiesMoonZeroThreeOnDeckInspected, {
-        effectContract: {
-            reads: ['titanBoardState', 'turnFlags'],
-            writes: ['titanBoardState'],
-        },
     });
 
     registerTitanSpecialValidator('penguins_emperor_penguin', () =>
@@ -3659,11 +3618,6 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('penguins_emperor_penguin', 'onTurnStart', penguinsEmperorPenguinOnTurnStart, {
         global: true,
-        effectContract: {
-            reads: ['minionBoardState', 'titanBoardState', 'baseState'],
-            writes: ['titanBoardState'],
-            opensInteraction: true,
-        },
     });
 
     registerTitanSpecialValidator('changerbots_mergacon', () =>
@@ -3677,11 +3631,6 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('changerbots_mergacon', 'onTurnStart', changerbotsMergaconOnTurnStart, {
         global: true,
-        effectContract: {
-            reads: ['minionBoardState', 'titanBoardState', 'baseState'],
-            writes: ['titanBoardState'],
-            opensInteraction: true,
-        },
     });
     registerTitanPowerModifier('changerbots_mergacon', ({ state, titan }) =>
         (state.titanOngoingSuppressedUntilTurnEnd ?? []).includes(titan.uid) ? 0 : 3);
@@ -3703,16 +3652,8 @@ export function registerTitanAbilities(): void {
         now: ctx.now,
     }), {
         global: true,
-        effectContract: {
-            reads: ['titanBoardState', 'scoringState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('itty_critters_rainboroc', 'onMinionPlayed', ittyCrittersRainborocOnMinionPlayed, {
-        effectContract: {
-            reads: ['triggerMinionState', 'triggerMinionPower', 'titanBoardState', 'turnFlags'],
-            writes: ['titanBoardState', 'turnFlags'],
-        },
     });
 
     registerAbility('kaiju_gorgodzolla', 'special', kaijuGorgodzollaSpecial);
@@ -3721,17 +3662,8 @@ export function registerTitanAbilities(): void {
             ? null
             : 'You can only play Gorgodzolla on a base where you have at least two actions');
     registerTrigger('kaiju_gorgodzolla', 'onMinionPlayed', kaijuGorgodzollaOnMinionPlayed, {
-        effectContract: {
-            reads: ['triggerMinionState', 'titanBoardState'],
-            writes: ['titanBoardState'],
-        },
     });
     registerTrigger('kaiju_gorgodzolla', 'onActionPlayed', kaijuGorgodzollaOnActionPlayed, {
-        effectContract: {
-            reads: ['titanBoardState', 'controllerState', 'deckState', 'discardState'],
-            writes: ['titanBoardState'],
-            opensInteraction: true,
-        },
     });
 
     registerAbility('explorers_very_large_boulder', 'special', explorersVeryLargeBoulderSpecial);
@@ -3746,16 +3678,8 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('explorers_very_large_boulder', 'onMinionMoved', explorersVeryLargeBoulderOnMinionMoved, {
         playerContext: 'sourceController',
-        effectContract: {
-            reads: ['titanBoardState', 'baseState', 'minionBoardState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('explorers_very_large_boulder', 'onTurnEnd', explorersVeryLargeBoulderOnTurnEnd, {
-        effectContract: {
-            reads: ['titanBoardState', 'turnFlags'],
-            writes: ['titanBoardState', 'turnFlags'],
-        },
     });
 
     registerAbility('ignobles_the_hill_that_strolls', 'special', ignoblesTheHillThatStrollsSpecial);
@@ -3776,10 +3700,6 @@ export function registerTitanAbilities(): void {
         optional: true,
         playerContext: 'sourceController',
         baseScoped: false,
-        effectContract: {
-            reads: ['triggerMinionState'],
-            opensInteraction: true,
-        },
     });
 
     registerAbility('time_travelers_time_box', 'special', timeTravelersTimeBoxSpecial);
@@ -3791,34 +3711,16 @@ export function registerTitanAbilities(): void {
     registerTrigger('time_travelers_time_box', 'onTurnStart', timeTravelersTimeBoxOnTurnStart, {
         global: true,
         optional: true,
-        effectContract: {
-            reads: ['titanBoardState', 'baseState'],
-            writes: ['titanBoardState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('time_travelers_time_box', 'onCardReturnedToHand', timeTravelersTimeBoxOnCardReturnedToHand, {
         global: true,
         optional: true,
-        effectContract: {
-            reads: ['titanBoardState', 'baseState'],
-            writes: ['titanBoardState'],
-            opensInteraction: true,
-        },
     });
 
     registerTrigger('pecos_bill', 'onDuelStarted', pecosBillOnDuelStarted, {
         global: true,
-        effectContract: {
-            reads: ['titanBoardState', 'handState', 'turnFlags', 'controllerState', 'baseState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('pecos_bill', 'onDuelResolved', pecosBillOnDuelResolved, {
-        effectContract: {
-            reads: ['titanBoardState', 'deckState', 'controllerState', 'discardState', 'handState'],
-            writes: ['handState', 'deckState'],
-        },
     });
     registerProtection('pecos_bill', 'move', pecosBillMoveProtectionChecker);
 
@@ -3831,11 +3733,6 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('sphinx', 'onTurnStart', sphinxOnTurnStart, {
         global: true,
-        effectContract: {
-            reads: ['baseState', 'handState', 'titanBoardState'],
-            writes: ['baseState', 'handState', 'titanBoardState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('sphinx', 'afterScoring', (ctx) => sphinxAfterScoring({
         state: ctx.state,
@@ -3844,10 +3741,6 @@ export function registerTitanAbilities(): void {
         now: ctx.now,
     }), {
         global: true,
-        effectContract: {
-            reads: ['titanBoardState', 'baseState'],
-            opensInteraction: true,
-        },
     });
 
     registerAbility('magical_girls_walking_castle', 'special', magicalGirlsWalkingCastleSpecial);
@@ -3872,10 +3765,6 @@ export function registerTitanAbilities(): void {
             ? null
             : '你只能将超级佐德打出到有你至少 3 个随从的基地');
     registerTrigger('mega_troopers_megabot', 'beforeScoring', megaTroopersMegabotBeforeScoring, {
-        effectContract: {
-            reads: ['titanBoardState', 'baseState'],
-            opensInteraction: true,
-        },
     });
     registerTitanPowerModifier('mega_troopers_megabot', ({ state, baseIndex, playerId }) =>
         getOwnMinionCountOnBase(state, baseIndex, playerId));
@@ -3956,18 +3845,10 @@ export function registerTitanAbilities(): void {
     registerTrigger('giant_ants_death_on_six_legs', 'onMinionDestroyed', giantAntsDeathOnSixLegsBeforeDiscard, {
         playerContext: 'sourceController',
         baseScoped: false,
-        effectContract: {
-            reads: ['triggerMinionState', 'titanBoardState'],
-            writes: ['titanBoardState'],
-        },
     });
     registerTrigger('giant_ants_death_on_six_legs', 'onMinionDiscardedFromBase', giantAntsDeathOnSixLegsBeforeDiscard, {
         playerContext: 'sourceController',
         baseScoped: false,
-        effectContract: {
-            reads: ['triggerMinionState', 'titanBoardState'],
-            writes: ['titanBoardState'],
-        },
     });
     registerAbility('bear_cavalry_major_ursa', 'special', bearCavalryMajorUrsaSpecial);
     registerAbility('bear_cavalry_major_ursa', 'talent', bearCavalryMajorUrsaTalent);
@@ -3982,10 +3863,6 @@ export function registerTitanAbilities(): void {
 
     registerTrigger('bear_cavalry_major_ursa', 'onTitanMoved', bearCavalryMajorUrsaOnTitanMoved, {
         optional: true,
-        effectContract: {
-            reads: ['titanBoardState', 'minionBoardState', 'baseState', 'turnFlags', 'scoringState'],
-            opensInteraction: true,
-        },
     });
     registerTitanTalentValidator('bear_cavalry_major_ursa', ({ state, titan }) => {
         if (titan.location.zone !== 'base') return '该泰坦当前不在场';
@@ -3995,10 +3872,6 @@ export function registerTitanAbilities(): void {
     registerTrigger('bear_cavalry_major_ursa', 'onMinionMoved', bearCavalryMajorUrsaOnMinionMoved, {
         optional: true,
         playerContext: 'sourceController',
-        effectContract: {
-            reads: ['titanBoardState', 'minionBoardState', 'triggerMinionState'],
-            writes: ['titanBoardState'],
-        },
     });
 
     registerAbility('vampires_ancient_lord', 'special', vampireAncientLordSpecial);
@@ -4019,10 +3892,6 @@ export function registerTitanAbilities(): void {
         global: true,
         optional: true,
         baseScoped: false,
-        effectContract: {
-            reads: ['triggerMinionState', 'titanBoardState'],
-            opensInteraction: true,
-        },
     });
 
     registerAbility('werewolves_great_wolf_spirit', 'special', werewolvesGreatWolfSpiritSpecial);
@@ -4037,11 +3906,6 @@ export function registerTitanAbilities(): void {
     registerAbility('werewolves_great_wolf_spirit', 'talent', werewolvesGreatWolfSpiritTalent);
     registerTrigger('werewolves_great_wolf_spirit', 'onTurnStart', werewolvesGreatWolfSpiritOnTurnStart, {
         optional: true,
-        effectContract: {
-            reads: ['minionBoardState', 'titanBoardState', 'turnFlags', 'baseState'],
-            writes: ['titanBoardState'],
-            opensInteraction: true,
-        },
     });
     registerTitanTalentValidator('werewolves_great_wolf_spirit', ({ state, titan, playerId }) => {
         if (titan.location.zone !== 'base') return '该泰坦当前不在场';
@@ -4082,16 +3946,8 @@ export function registerTitanAbilities(): void {
             : '没有可移动的基地';
     });
     registerTrigger('tricksters_big_funny_giant', 'onTurnEnd', trickstersBigFunnyGiantOnTurnEnd, {
-        effectContract: {
-            reads: ['minionBoardState', 'titanBoardState'],
-            writes: ['titanBoardState'],
-        },
     });
     registerTrigger('tricksters_big_funny_giant', 'onMinionPlayed', trickstersBigFunnyGiantOnMinionPlayed, {
-        effectContract: {
-            reads: ['triggerMinionState', 'handState', 'titanBoardState', 'controllerState'],
-            writes: ['handState'],
-        },
     });
     registerTrigger('tricksters_big_funny_giant', 'afterScoring', (ctx) => trickstersBigFunnyGiantAfterScoring({
         state: ctx.state,
@@ -4100,10 +3956,6 @@ export function registerTitanAbilities(): void {
         now: ctx.now,
     }), {
         global: true,
-        effectContract: {
-            reads: ['titanBoardState', 'minionBoardState', 'scoringState'],
-            writes: ['vpState'],
-        },
     });
 
     registerAbility('pirates_the_kraken', 'talent', piratesTheKrakenTalent);
@@ -4115,10 +3967,6 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('pirates_the_kraken', 'afterScoring', piratesTheKrakenAfterScoring, {
         global: true,
-        effectContract: {
-            reads: ['titanBoardState', 'minionBoardState', 'baseState'],
-            opensInteraction: true,
-        },
     });
 }
 

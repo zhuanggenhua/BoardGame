@@ -23,7 +23,7 @@ describe('Reaction queue: base replacement vs LKI', () => {
         payload: { playerId: ctx.playerId, messageKey: 'old', tone: 'info' },
         timestamp: ctx.now,
       }] as any,
-    }), { effectContract: {} });
+    }), {});
 
     const core0: SmashUpCore = makeState({
       turnOrder: ['0', '1'],

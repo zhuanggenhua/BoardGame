@@ -275,33 +275,16 @@ export function registerCthulhuAbilities(): void {
     // === ongoing 效果注册 ===
     // 克苏鲁祭坛：打出随从时额外打出一张战术?
     registerTrigger('cthulhu_altar', 'onMinionPlayed', cthulhuAltarTrigger, {
-        effectContract: {
-            reads: ['sourceSelfState', 'turnFlags'],
-            writes: ['playLimits', 'turnFlags'],
-        },
     });
     // 深化目标：回合结束时条件获VP
     registerTrigger('cthulhu_furthering_the_cause', 'onTurnEnd', cthulhuFurtheringTheCauseTrigger, {
-        effectContract: {
-            reads: ['sourceSelfState', 'turnFlags'],
-            writes: ['vpState'],
-        },
     });
     // 天选之人：基地计分前抽疑狂卡?2力量
     registerTrigger('cthulhu_chosen', 'beforeScoring', cthulhuChosenBeforeScoringPerInstance, {
         perInstance: true,
-        effectContract: {
-            reads: ['minionBoardState', 'controllerState', 'madnessDeckState', 'baseState'],
-            writes: ['minionBoardState', 'handState', 'madnessDeckState'],
-            opensInteraction: true,
-        },
     });
     // 完成仪式：回合开始时清场并换基地
     registerTrigger('cthulhu_complete_the_ritual', 'onTurnStart', cthulhuCompleteTheRitualTrigger, {
-        effectContract: {
-            reads: ['sourceSelfState', 'minionBoardState', 'baseState', 'baseDeckState'],
-            writes: ['minionBoardState', 'baseState', 'deckState'],
-        },
     });
 }
 

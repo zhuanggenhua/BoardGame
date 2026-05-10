@@ -131,19 +131,11 @@ export function registerZombieAbilities(): void {
     registerRestriction('zombie_overrun', 'play_minion', zombieOverrunRestriction);
     registerAbility('zombie_overrun', 'onPlay', () => []);
     registerTrigger('zombie_overrun', 'onTurnStart', zombieOverrunSelfDestruct, {
-        effectContract: {
-            reads: ['sourceSelfState'],
-            writes: ['sourceSelfState'],
-        },
     });
 
     registerRestriction('zombie_overrun_pod', 'play_minion', zombieOverrunRestriction);
     registerAbility('zombie_overrun_pod', 'onPlay', () => []);
     registerTrigger('zombie_overrun_pod', 'onTurnStart', zombieOverrunSelfDestruct, {
-        effectContract: {
-            reads: ['sourceSelfState'],
-            writes: ['sourceSelfState'],
-        },
     });
 
     // === 弃牌堆出牌能力注册 ===

@@ -43,6 +43,14 @@
 - **执行入口**：
   - `postProcessSystemEvents` 里，处理完一批事件后会调用 `maybeResolveReactionQueue`；
   - 单一触发时直接执行，多触发时为当前决策玩家创建 `smashup_reaction_choose` 交互，由其决定下一触发顺序。
+- **排序冲突判断**：
+  - 新能力优先使用 `domain/effectDsl.ts` 的强类型 Effect primitive。primitive 是单一事实源：同一个定义同时生成执行事件/交互与 `ResourceFootprint`，禁止再为排序另写一份 reads/writes。
+  - 兼容路径使用 `domain/reactionResources.ts` 的 `ResourceFootprint`，从真实产物推导读写：
+    - 触发器/基地能力 probe 产出的 `SmashUpEvent`；
+    - 创建的结构化 `Interaction` option / `continuationContext`；
+    - 触发来源上下文（来源卡、基地、控制者、泰坦 uid 等）。
+  - **禁止新增手写读写抽象桶作为排序依据**。新增能力应通过真实事件、结构化 option value、明确的 `sourceId/targetType/continuationContext` 暴露实际读写字段，让 resource model 自动推导。
+  - 确实无法从事件/交互推导的极少数效果，必须使用带 `fallbackReason` 的 `fallbackFootprint`，并在测试里断言 fallback audit；不得把粗粒度桶重新写回卡牌配置。
 - **编码约定：新增“After X”类持续反应时：**
   - 若是单一来源、单一触发、无同时触发排序争议，可以继续使用现有 `fireTriggers`（非 destroy/move 场景）；
   - 若存在“同时有多个来源/多名玩家都要对 X 做出反应”的场景，应优先建模为：
@@ -165,6 +173,11 @@
    - 需要看“当时力量/当时所在基地/当时是否有某附属”等，就用 `triggerMinion` / `lkiMinion`；
 4. **是否存在多个“After X”同时触发？**
    - 有 → 倾向通过 `collectTriggers` → reaction queue 建模排序，而不是在单一 `fireTriggers` 里硬编码顺序。
+5. **是否已经暴露真实资源读写？**
+   - 新能力优先用 Effect primitive（例如 `moveMinionPrimitive`、`addPowerCounterPrimitive`、`drawCardsPrimitive`）承载实际读写字段；
+   - 事件能表达的效果必须产出明确事件（例如 `MINION_MOVED`、`CARDS_DRAWN`、`VP_AWARDED`）；
+   - 交互能表达的目标必须把真实字段写进 option value / continuationContext（例如 `minionUid`、`baseIndex`、`playerId`、`cardUid`）；
+   - 不得为排序另写一份抽象读写桶；resource footprint 的单一真实来源是 Effect primitive / 实际事件 / 实际交互结构。
 
 > 建议：在实现新的派系/基地前，先在 `rule/wiki-rules-coverage.md` 里对该能力的 Wiki 描述做一条“事件级映射”，再按本文件的规范落代码与测试。
 

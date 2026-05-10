@@ -29,25 +29,21 @@ beforeEach(() => {
 
 describe('Reaction queue: base abilities', () => {
   it('two base abilities same timing -> ordering prompt for current player', () => {
-    // Arrange: register two base abilities that emit different feedback
+    // Arrange: register two base abilities that write the same real player play-limit resource
     registerBaseAbility('base_a', 'onTurnStart', (ctx) => ({
       events: [{
-        type: SU_EVENTS.ABILITY_FEEDBACK,
-        payload: { playerId: ctx.playerId, messageKey: 'a', tone: 'info' },
+        type: SU_EVENTS.LIMIT_MODIFIED,
+        payload: { playerId: ctx.playerId, limitType: 'minion', delta: 1, reason: 'base_a' },
         timestamp: ctx.now,
       }] as any,
-    }), {
-      effectContract: { writes: ['playLimits'] },
-    });
+    }), {});
     registerBaseAbility('base_b', 'onTurnStart', (ctx) => ({
       events: [{
-        type: SU_EVENTS.ABILITY_FEEDBACK,
-        payload: { playerId: ctx.playerId, messageKey: 'b', tone: 'info' },
+        type: SU_EVENTS.LIMIT_MODIFIED,
+        payload: { playerId: ctx.playerId, limitType: 'minion', delta: 1, reason: 'base_b' },
         timestamp: ctx.now,
       }] as any,
-    }), {
-      effectContract: { writes: ['playLimits'] },
-    });
+    }), {});
 
     const core = core2b();
 
@@ -75,7 +71,7 @@ describe('Reaction queue: base abilities', () => {
     expect(r2).toBeDefined();
     const evts = r2!.events as SmashUpEvent[];
     expect(evts[0].type).toBe(SU_EVENTS.TRIGGER_CONSUMED);
-    expect(evts.some(e => e.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
+    expect(evts.some(e => e.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(true);
   });
 
   it('onActionPlayed base ability is queued and resolved via smashup reaction session', () => {
@@ -85,9 +81,7 @@ describe('Reaction queue: base abilities', () => {
         payload: { playerId: ctx.playerId, messageKey: 'base-action', tone: 'info' },
         timestamp: ctx.now,
       }] as any,
-    }), {
-      effectContract: { writes: ['playLimits'] },
-    });
+    }), {});
 
     const core = core2b();
     const matchState = makeMatchState(core);
@@ -112,20 +106,16 @@ describe('Reaction queue: base abilities', () => {
   it('ACTION_PLAYED with multiple mandatory reactions opens one unified ordering interaction', () => {
     registerBaseAbility('base_a', 'onActionPlayed', (ctx) => ({
       events: [{
-        type: SU_EVENTS.ABILITY_FEEDBACK,
-        payload: { playerId: ctx.playerId, messageKey: 'base-action', tone: 'info' },
+        type: SU_EVENTS.LIMIT_MODIFIED,
+        payload: { playerId: ctx.playerId, limitType: 'action', delta: 1, reason: 'base-action' },
         timestamp: ctx.now,
       }] as any,
-    }), {
-      effectContract: { writes: ['playLimits'] },
-    });
+    }), {});
     registerTrigger('test_action_watcher', 'onActionPlayed', (ctx) => ([{
-      type: SU_EVENTS.ABILITY_FEEDBACK,
-      payload: { playerId: ctx.playerId, messageKey: 'minion-action', tone: 'info' },
+      type: SU_EVENTS.LIMIT_MODIFIED,
+      payload: { playerId: ctx.playerId, limitType: 'action', delta: 1, reason: 'minion-action' },
       timestamp: ctx.now,
-    }] as any), {
-      effectContract: { writes: ['playLimits'] },
-    });
+    }] as any), {});
 
     const core = core2b({
       bases: [
@@ -153,25 +143,25 @@ describe('Reaction queue: base abilities', () => {
     expect(current.data.options.some((option: any) => String(option.label).includes('test_action_watcher'))).toBe(true);
   });
 
-  it('queued base ability 未声明 effectContract 时在注册阶段直接报错', () => {
+  it('queued base ability 无手写读写声明时可注册，由 runtime artifacts 推导 footprint', () => {
     expect(() => registerBaseAbility('base_a', 'onTurnStart', () => ({ events: [] })))
-      .toThrowError(/SmashUp trigger 缺少声明: base_a::onTurnStart \(baseAbility.registerQueued\)/);
+      .not.toThrow();
   });
 
-  it('queued extended base ability 未声明 effectContract 时在 collect 阶段直接报错', () => {
+  it('queued extended base ability 无手写读写声明时可收集，由 runtime artifacts 推导 footprint', () => {
     registerExtended('base_a', 'onMinionDestroyed', () => ({ events: [] }), { mandatory: true });
 
     const core = core2b({
       bases: [makeBase('base_a'), makeBase('base_b')],
     });
 
-    expect(() => collectExtendedBaseAbilityTriggers({
+    expect(collectExtendedBaseAbilityTriggers({
       core,
       timing: 'onMinionDestroyed',
       ownerPlayerId: '0',
       baseIndex: 0,
       now: 1,
-    })).toThrowError(/SmashUp trigger 缺少声明: base_a::onMinionDestroyed \(collectTriggers\)/);
+    })).toBeDefined();
   });
 
   it('互不冲突的 mandatory base abilities 若会进入真实交互，应直接进入真实交互而不是先弹排序', () => {
@@ -182,7 +172,7 @@ describe('Reaction queue: base abilities', () => {
         'base_a 真实交互',
         [
           { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
-          { id: 'apply', label: '执行', value: { apply: true }, displayMode: 'button' as const },
+          { id: 'apply', label: '执行', value: { playerId: '1' }, displayMode: 'button' as const },
         ],
         { sourceId: 'base_a_prompt', targetType: 'button' },
       );
@@ -190,24 +180,14 @@ describe('Reaction queue: base abilities', () => {
         events: [],
         matchState: queueInteraction(ctx.matchState, interaction),
       };
-    }, {
-      effectContract: {
-        reads: ['handState'],
-        writes: ['handState', 'discardState'],
-        opensInteraction: true,
-      },
-    });
+    }, {});
     registerBaseAbility('base_b', 'onTurnStart', (ctx) => ({
       events: [{
-        type: SU_EVENTS.ABILITY_FEEDBACK,
-        payload: { playerId: ctx.playerId, messageKey: 'base-b-side-effect', tone: 'info' },
+        type: SU_EVENTS.CARDS_DRAWN,
+        payload: { playerId: ctx.playerId, count: 1, cardUids: ['drawn-1'] },
         timestamp: ctx.now,
       }] as any,
-    }), {
-      effectContract: {
-        writes: ['playLimits'],
-      },
-    });
+    }), {});
 
     const core = core2b();
     const qA = collectBaseAbilityTriggers({ core, timing: 'onTurnStart', ownerPlayerId: '0', baseIndex: 0, now: 1 })!;

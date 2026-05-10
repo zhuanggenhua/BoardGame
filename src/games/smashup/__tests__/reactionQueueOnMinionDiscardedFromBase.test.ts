@@ -4,6 +4,7 @@ import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { makeMatchState, makeState, makeBase, makeMinion } from './helpers';
+import { SU_EVENTS } from '../domain/types';
 
 beforeEach(() => {
   clearOngoingEffectRegistry();
@@ -13,12 +14,16 @@ beforeEach(() => {
 
 describe('reaction queue: onMinionDiscardedFromBase ordering', () => {
   it('multiple mandatory discarded-from-base triggers open ordering interaction', () => {
-    registerTrigger('test_discard_a', 'onMinionDiscardedFromBase', () => [], {
-      effectContract: { writes: ['minionBoardState'] },
-    });
-    registerTrigger('test_discard_b', 'onMinionDiscardedFromBase', () => [], {
-      effectContract: { writes: ['minionBoardState'] },
-    });
+    registerTrigger('test_discard_a', 'onMinionDiscardedFromBase', (ctx) => ([{
+      type: SU_EVENTS.CARDS_DRAWN,
+      payload: { playerId: ctx.playerId, count: 1, cardUids: ['discard-a'] },
+      timestamp: ctx.now,
+    }] as any));
+    registerTrigger('test_discard_b', 'onMinionDiscardedFromBase', (ctx) => ([{
+      type: SU_EVENTS.CARDS_DRAWN,
+      payload: { playerId: ctx.playerId, count: 1, cardUids: ['discard-b'] },
+      timestamp: ctx.now,
+    }] as any));
 
     const core = makeState({
       turnOrder: ['0', '1'],

@@ -87,9 +87,24 @@ function emitLocalAiPerf(stage: string, payload: Record<string, unknown>): void 
 }
 const LOCAL_AI_STALL_RECOVERY_GRACE_MS = 1_200;
 const LOCAL_AI_IDLE_RETRY_MS = 120;
+const NON_RECOVERABLE_REJECTED_COMMAND_ERRORS = new Set([
+    'unauthorized',
+    'match_not_found',
+    'not_connected',
+    'disconnected',
+    'sync_timeout',
+]);
 const aiRuntimeTruthLogger = createScopedLogger('AI_RUNTIME_TRUTH');
 function emitAiRuntimeTruth(stage: string, payload: Record<string, unknown>): void {
     console.log('[AI_RUNTIME_TRUTH]', { stage, ...payload });
+}
+
+export function shouldRecoverFromRejectedCommandError(reason: string): boolean {
+    return !NON_RECOVERABLE_REJECTED_COMMAND_ERRORS.has(reason);
+}
+
+export function shouldForwardOnlineBatchRejectionToError(reason: string): boolean {
+    return !shouldSilentlyRetryOnlineAiBatchRejection(reason);
 }
 
 function summarizeSeatControllerTypes(seatControllers: Record<string, AiSeatController>): Record<string, string> {
@@ -320,19 +335,8 @@ export function GameProvider({
     const onConnectionChangeRef = useRef(onConnectionChange);
     const onStateReadyRef = useRef(onStateReady);
     const hasReportedStateReadyRef = useRef(false);
-    const RECOVERABLE_COMMAND_ERRORS = useMemo(
-        () => new Set([
-            'command_failed',
-            'pipeline_error',
-            'invalid_phase',
-            'cannot_advance_phase',
-            'player_mismatch',
-            'stale_state',
-        ]),
-        [],
-    );
     const recoverFromRejectedCommand = useCallback((reason: string) => {
-        if (!RECOVERABLE_COMMAND_ERRORS.has(reason)) {
+        if (!shouldRecoverFromRejectedCommandError(reason)) {
             return;
         }
 
@@ -346,7 +350,7 @@ export function GameProvider({
         }
 
         clientRef.current?.resync();
-    }, [RECOVERABLE_COMMAND_ERRORS]);
+    }, []);
 
     useEffect(() => {
         onErrorRef.current = onError;
@@ -399,7 +403,7 @@ export function GameProvider({
                     const batchId = `b-${++batchSeqRef.current}`;
                     client.sendBatch(batchId, commands, undefined, (reason) => {
                         recoverFromRejectedCommand(reason);
-                        if (reason !== 'command_failed' && !shouldSilentlyRetryOnlineAiBatchRejection(reason)) {
+                        if (shouldForwardOnlineBatchRejectionToError(reason)) {
                             onErrorRef.current?.(reason);
                         }
                     });

@@ -24,12 +24,19 @@ import {
 } from '../domain/abilityHelpers';
 import {
     createAbilityRuntimeSimpleChoice,
+    createAbilityRuntimeExecutor,
     createEffectProgram,
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import {
+    addPowerCounterPrimitive,
+    createEffectDslProgram,
+    optionalPrimitive,
+} from '../domain/effectDsl';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
+import { registerTriggerProgramExecutor } from '../domain/triggerExecutors';
 import { reduce } from '../domain/reduce';
 import { getCardDef } from '../data/cards';
 import { SU_EVENTS } from '../domain/types';
@@ -762,6 +769,27 @@ const frankensteinBlitzedProgram = createEffectProgram<AbilityContext, SmashUpCo
     nextProgram: frankensteinBlitzedRemovePromptProgram,
 }));
 
+const frankensteinGermanEngineeringDslProgram = createEffectDslProgram<TriggerContext>(
+    optionalPrimitive({
+        when: (ctx) => {
+            const { state, baseIndex, triggerMinionUid, playerId } = ctx;
+            if (baseIndex === undefined || !triggerMinionUid) return false;
+            const base = state.bases[baseIndex];
+            if (!base) return false;
+            return base.ongoingActions.some((action) =>
+                matchesDefId(action.defId, 'frankenstein_german_engineering') && action.ownerId === playerId,
+            );
+        },
+        effect: addPowerCounterPrimitive<TriggerContext>({
+            minionUid: (ctx) => ctx.triggerMinionUid,
+            baseIndex: (ctx) => ctx.baseIndex,
+            amount: 1,
+            reason: 'frankenstein_german_engineering',
+            now: (ctx) => ctx.now,
+        }),
+    }),
+);
+
 function frankensteinTheMonster(ctx: AbilityContext): AbilityResult {
     const found = findMinionOnBases(ctx.state, ctx.cardUid);
     if (!found || (found.minion.powerCounters ?? 0) < 1) {
@@ -837,34 +865,17 @@ function registerFrankensteinOngoingEffects(): void {
             ctx.matchState,
         );
     }, {
-        effectContract: {
-            reads: ['baseState', 'minionBoardState', 'triggerMinionState', 'turnFlags', 'titanBoardState', 'controllerState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
-    registerTrigger('frankenstein_german_engineering', 'onMinionPlayed', (ctx: TriggerContext) => {
-        const { state, baseIndex, triggerMinionUid, playerId, now } = ctx;
-        if (baseIndex === undefined || !triggerMinionUid) return [];
-        const base = state.bases[baseIndex];
-        if (!base) return [];
-        const hasGermanEngineering = base.ongoingActions.some((action) =>
-            matchesDefId(action.defId, 'frankenstein_german_engineering') && action.ownerId === playerId,
-        );
-        if (!hasGermanEngineering) return [];
-        return [addPowerCounter(triggerMinionUid, baseIndex, 1, 'frankenstein_german_engineering', now)];
+    registerTrigger('frankenstein_german_engineering', 'onMinionPlayed', (ctx: TriggerContext) =>
+        executeAbilityProgram(frankensteinGermanEngineeringDslProgram, ctx).events, {
     }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'triggerMinionState'],
-            writes: ['triggerMinionPower'],
-        },
-    }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'triggerMinionState'],
-            writes: ['triggerMinionPower'],
-        },
     });
+    registerTriggerProgramExecutor(
+        'frankenstein_german_engineering',
+        'onMinionPlayed',
+        createAbilityRuntimeExecutor(frankensteinGermanEngineeringDslProgram),
+    );
 
     registerTrigger('frankenstein_grave_situation', 'onMinionDestroyed', (ctx: TriggerContext) => {
         const { state, baseIndex, triggerMinionUid, triggerMinionDefId, playerId, now } = ctx;
@@ -892,10 +903,6 @@ function registerFrankensteinOngoingEffects(): void {
         } as SmashUpEvent];
     }, {
         phase: 'replacement',
-        effectContract: {
-            reads: ['baseState', 'minionBoardState', 'triggerMinionState'],
-            writes: ['minionBoardState', 'handState'],
-        },
     });
 
     registerTrigger('frankenstein_uberserum', 'onTurnStart', (ctx: TriggerContext) => {
@@ -913,15 +920,7 @@ function registerFrankensteinOngoingEffects(): void {
         }
         return events;
     }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'minionBoardState'],
-            writes: ['minionBoardState'],
-        },
     }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'minionBoardState'],
-            writes: ['minionBoardState'],
-        },
     });
 
     registerProtection('frankenstein_uberserum', 'destroy', (ctx) =>

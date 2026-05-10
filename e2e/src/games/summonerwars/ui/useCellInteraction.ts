@@ -358,9 +358,12 @@ export function useCellInteraction({
     const selectedCard = selectedHandCardId
       ? myHand.find((card) => card.id === selectedHandCardId)
       : undefined;
+    const isSelectedInteractiveEvent = !!selectedCard
+      && selectedCard.cardType === 'event'
+      && requiresEventInteraction(selectedCard.id);
     const isArmedNonInteractiveEvent = !!selectedCard
       && selectedCard.cardType === 'event'
-      && !requiresEventInteraction(selectedCard.id)
+      && !isSelectedInteractiveEvent
       && !eventCardModes.hasActiveEventMode
       && !swInteraction;
     if (isArmedNonInteractiveEvent) {
@@ -385,6 +388,7 @@ export function useCellInteraction({
 
     // 事件卡/多步骤模式优先处理
     if (eventCardModes.handleEventModeClick(gameRow, gameCol)) return;
+    if (isSelectedInteractiveEvent) return;
 
     // 技能选卡模式（圣光箭/治疗弃牌选择）：拦截格子点击，防止重复触发
     if (abilityMode && abilityMode.step === 'selectCards') {

@@ -539,6 +539,36 @@ interface ActiveMatch {
         execute: () => Promise<void>;
         resolve: (success: boolean) => void;
     }>;
+    /** 最近一次 executeCommandInternal 失败的真实原因，供 batch 回滚后透传给客户端。 */
+    lastCommandFailureReason: string | null;
+}
+
+const GENERIC_COMMAND_FAILURE_REASON = 'command_failed';
+const PIPELINE_FAILURE_REASON = 'pipeline_error';
+const MAX_COMMAND_FAILURE_REASON_LENGTH = 500;
+
+function truncateCommandFailureReason(reason: string): string {
+    if (reason.length <= MAX_COMMAND_FAILURE_REASON_LENGTH) {
+        return reason;
+    }
+    return `${reason.slice(0, MAX_COMMAND_FAILURE_REASON_LENGTH)}...`;
+}
+
+function formatPipelineFailureReason(error: unknown): string {
+    const message = error instanceof Error ? error.message : String(error);
+    const trimmed = message.trim();
+    if (!trimmed) {
+        return PIPELINE_FAILURE_REASON;
+    }
+    return truncateCommandFailureReason(`${PIPELINE_FAILURE_REASON}: ${trimmed}`);
+}
+
+function normalizeCommandFailureReason(reason: unknown): string {
+    if (typeof reason !== 'string') {
+        return GENERIC_COMMAND_FAILURE_REASON;
+    }
+    const trimmed = reason.trim();
+    return trimmed.length > 0 ? truncateCommandFailureReason(trimmed) : GENERIC_COMMAND_FAILURE_REASON;
 }
 
 /** socket 关联信息 */
@@ -2890,13 +2920,16 @@ export class GameTransportServer {
             }
             // 批次内命令串行执行（抑制中间广播，避免客户端收到中间状态导致动画重播）
             for (const cmd of commands) {
+                match.lastCommandFailureReason = null;
                 const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, { suppressBroadcast: true });
                 if (!success) {
+                    const failureReason = match.lastCommandFailureReason ?? GENERIC_COMMAND_FAILURE_REASON;
                     emitOnlineAiBatchTrace('handle-batch-command-failed', {
                         matchID,
                         playerID,
                         batchId,
                         commandType: cmd.type,
+                        failureReason,
                     });
                     // 命令失败 - 从内存快照恢复到批次开始前的状态
                     match.state = snapshotState;
@@ -2910,7 +2943,7 @@ export class GameTransportServer {
                     };
                     await this.storage.setState(matchID, rollbackStored);
                     this.broadcastState(match);
-                    socket.emit('batch:rejected', matchID, batchId, 'command_failed');
+                    socket.emit('batch:rejected', matchID, batchId, failureReason);
                     return;
                 }
             }
@@ -2961,13 +2994,16 @@ export class GameTransportServer {
 
         // 批次内命令串行执行（抑制中间广播，避免客户端收到中间状态导致动画重播）
         for (const cmd of commands) {
+            match.lastCommandFailureReason = null;
             const success = await this.executeCommandInternal(match, playerID, cmd.type, cmd.payload, { suppressBroadcast: true });
             if (!success) {
+                const failureReason = match.lastCommandFailureReason ?? GENERIC_COMMAND_FAILURE_REASON;
                 emitOnlineAiBatchTrace('execute-batch-command-failed', {
                     matchID,
                     playerID,
                     batchId,
                     commandType: cmd.type,
+                    failureReason,
                 });
                 match.state = snapshotState;
                 match.stateID = snapshotStateID;
@@ -2979,7 +3015,7 @@ export class GameTransportServer {
                 };
                 await this.storage.setState(matchID, rollbackStored);
                 this.broadcastState(match);
-                socket.emit('batch:rejected', matchID, batchId, 'command_failed');
+                socket.emit('batch:rejected', matchID, batchId, failureReason);
                 return;
             }
         }
@@ -3289,6 +3325,7 @@ export class GameTransportServer {
         options?: { suppressBroadcast?: boolean },
     ): Promise<boolean> {
         const startTime = Date.now();
+        match.lastCommandFailureReason = null;
         const { engineConfig, state, random, playerIds } = match;
         const stateIdBefore = match.stateID;
         const preTrainingState = this.stripStateForTraining(this.applyPlayerView(match, playerID)) as MatchState<unknown>;
@@ -3313,6 +3350,8 @@ export class GameTransportServer {
         try {
             result = executePipeline(pipelineConfig, state, command, random, playerIds);
         } catch (error) {
+            const failureReason = formatPipelineFailureReason(error);
+            match.lastCommandFailureReason = failureReason;
             gameLogger.commandFailed(
                 match.matchID,
                 commandType,
@@ -3325,7 +3364,7 @@ export class GameTransportServer {
             const sockets = match.connections.get(playerID);
             if (sockets) {
                 for (const sid of sockets) {
-                    nsp.to(sid).emit('error', match.matchID, 'pipeline_error');
+                    nsp.to(sid).emit('error', match.matchID, failureReason);
                 }
             }
 
@@ -3341,11 +3380,13 @@ export class GameTransportServer {
         const duration = Date.now() - startTime;
 
         if (!result.success) {
+            const failureReason = normalizeCommandFailureReason(result.error);
+            match.lastCommandFailureReason = failureReason;
             gameLogger.commandFailed(
                 match.matchID,
                 commandType,
                 playerID,
-                new Error(result.error ?? 'command_failed')
+                new Error(failureReason)
             );
 
             // 通知发送者
@@ -3353,11 +3394,13 @@ export class GameTransportServer {
             const sockets = match.connections.get(playerID);
             if (sockets) {
                 for (const sid of sockets) {
-                    nsp.to(sid).emit('error', match.matchID, result.error ?? 'command_failed');
+                    nsp.to(sid).emit('error', match.matchID, failureReason);
                 }
             }
             return false;
         }
+
+        match.lastCommandFailureReason = null;
 
         // 记录成功日志
         gameLogger.commandExecuted(match.matchID, commandType, playerID, duration);
@@ -3796,6 +3839,7 @@ export class GameTransportServer {
             lastBroadcastedViews: new Map(),
             executing: false,
             commandQueue: [],
+            lastCommandFailureReason: null,
         };
 
         this.activeMatches.set(matchID, match);

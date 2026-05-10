@@ -1460,8 +1460,5 @@ function registerWizardOngoingEffects(): void {
             timestamp: trigCtx.now,
         }];
     }, {
-        effectContract: {
-            writes: ['playLimits'],
-        },
     });
 }

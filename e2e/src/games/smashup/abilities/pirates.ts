@@ -126,31 +126,16 @@ export function registerPirateAbilities(): void {
     // === ongoing 效果注册 ===
     // 海盗王：基地计分前移动到该基地
     registerTrigger('pirate_king', 'beforeScoring', pirateKingBeforeScoring, {
-        effectContract: {
-            reads: ['baseState', 'minionBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
     // 副官：基地计分后移动到其他基地（而非弃牌堆）
     registerTrigger('pirate_first_mate', 'afterScoring', pirateFirstMateAfterScoring, {
         perInstance: true,
         playerContext: 'sourceController',
         sourceScope: 'triggerBase',
-        effectContract: {
-            reads: ['sourceSelfState', 'baseState', 'minionBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
     // 海盗（海盗）：被消灭时移动到其他基地而非进入弃牌堆
     registerTrigger('pirate_buccaneer', 'onMinionDestroyed', buccaneerOnDestroyed, {
         phase: 'replacement',
-        effectContract: {
-            reads: ['baseState', 'minionBoardState', 'turnFlags'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 }
 

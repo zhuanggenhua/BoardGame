@@ -14,7 +14,7 @@ import {
     upsertResolutionFrame,
 } from '../../../engine/systems/resolutionStack';
 import { createPromptProgram, executeAbilityProgram } from './abilityRuntime';
-import type { SmashUpCore, SmashUpEvent } from './types';
+import type { SmashUpCore, SmashUpEvent, SmashUpReactionResourceFootprint, SmashUpReactionResourceRef } from './types';
 import { reduce } from './reduce';
 
 type PromptDisplayMode = 'card' | 'button';
@@ -28,6 +28,14 @@ export interface BranchingChoiceOption {
     disabled?: boolean;
     disabledReason?: string;
     _ai?: PromptOption['_ai'];
+    /**
+     * 该分支实际可能读写的具体资源。
+     *
+     * 这不是另一套读写抽象桶：分支选项应优先由 Effect DSL primitive
+     * 的 footprint 生成，用于让 OR/optional prompt 在运行时产物里保留真实
+     * minion/base/playerHand/playerPlayLimit 等资源引用。
+     */
+    footprint?: SmashUpReactionResourceFootprint;
 }
 
 export interface BranchingChoiceUpgrade {
@@ -140,8 +148,22 @@ function normalizeBranchingOptions(value: unknown): BranchingChoiceOption[] {
             ...(typeof option.disabled === 'boolean' ? { disabled: option.disabled } : {}),
             ...(typeof option.disabledReason === 'string' ? { disabledReason: option.disabledReason } : {}),
             ...(option._ai ? { _ai: option._ai as PromptOption['_ai'] } : {}),
+            ...(isReactionResourceFootprint(option.footprint) ? { footprint: option.footprint } : {}),
         } satisfies BranchingChoiceOption;
     }).filter((entry): entry is BranchingChoiceOption => !!entry);
+}
+
+function isReactionResourceRef(value: unknown): value is SmashUpReactionResourceRef {
+    return !!value && typeof value === 'object' && typeof (value as { kind?: unknown }).kind === 'string';
+}
+
+function isReactionResourceFootprint(value: unknown): value is SmashUpReactionResourceFootprint {
+    if (!value || typeof value !== 'object') return false;
+    const candidate = value as { reads?: unknown; writes?: unknown };
+    return Array.isArray(candidate.reads)
+        && Array.isArray(candidate.writes)
+        && candidate.reads.every(isReactionResourceRef)
+        && candidate.writes.every(isReactionResourceRef);
 }
 
 function hasPendingInteraction(state: MatchState<SmashUpCore>): boolean {
@@ -278,6 +300,7 @@ function buildPromptOptions(options: BranchingChoiceOption[]): PromptOption[] {
         ...(option.disabled !== undefined ? { disabled: option.disabled } : {}),
         ...(option.disabledReason ? { disabledReason: option.disabledReason } : {}),
         ...(option._ai ? { _ai: option._ai } : {}),
+        ...(option.footprint ? { _resourceFootprint: option.footprint } : {}),
     }));
 }
 

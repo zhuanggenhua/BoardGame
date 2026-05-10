@@ -170,6 +170,13 @@ const HandCard: React.FC<{
   const spriteConfig = getCardSpriteConfig(card);
   const showPlayableHighlight = canPlay && !isSelected;
   const shouldRenderMagnifyButton = Boolean(onMagnify) && !suppressMagnifyButton;
+  const selectedCardClass = compactLayout
+    ? 'border-amber-300 shadow-[0_0_0_1px_rgba(252,211,77,0.72)]'
+    : 'border-amber-400 shadow-lg shadow-amber-400/60 ring-2 ring-amber-400/30';
+  const playableCardClass = compactLayout
+    ? 'border-emerald-300 ring-1 ring-emerald-300/70 shadow-[0_0_0_1px_rgba(167,243,208,0.85)] hover:border-emerald-200'
+    : 'border-emerald-300 ring-2 ring-emerald-300/80 ring-offset-1 ring-offset-black/45 shadow-[0_0_0_1px_rgba(167,243,208,0.95),0_0_18px_rgba(16,185,129,0.5)] hover:border-emerald-200';
+  const unavailableCardClass = compactLayout ? 'opacity-70' : 'grayscale';
   const magnifyButtonSize = MAGNIFY_BUTTON_SIZE_CSS;
   const magnifyButtonOffset = MAGNIFY_BUTTON_OFFSET_CSS;
   const magnifyIconSize = MAGNIFY_ICON_SIZE_CSS;
@@ -200,6 +207,7 @@ const HandCard: React.FC<{
   const selectedLift = compactLayout ? -20 : -30;
   const hoverLift = compactLayout ? -12 : -20;
   const hoverScale = compactLayout ? 1.04 : 1.08;
+  const activeHoverScale = compactLayout ? 1 : hoverScale;
 
   const handleMagnifyClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
@@ -232,7 +240,7 @@ const HandCard: React.FC<{
       initial={false}
       animate={{
         y: isSelected ? selectedLift : isHovered ? hoverLift : 0,
-        scale: isHovered ? hoverScale : 1,
+        scale: isHovered ? activeHoverScale : 1,
       }}
       transition={{ type: 'spring', stiffness: 400, damping: 30 }}
       onHoverStart={() => setIsHovered(true)}
@@ -248,14 +256,14 @@ const HandCard: React.FC<{
           relative w-full rounded-lg overflow-hidden pointer-events-none
           border-2 transition-all duration-150
           ${isSelected
-            ? 'border-amber-400 shadow-lg shadow-amber-400/60 ring-2 ring-amber-400/30'
+            ? selectedCardClass
             : showPlayableHighlight
-              ? 'border-emerald-300 ring-2 ring-emerald-300/80 ring-offset-1 ring-offset-black/45 shadow-[0_0_0_1px_rgba(167,243,208,0.95),0_0_18px_rgba(16,185,129,0.5)] hover:border-emerald-200'
+              ? playableCardClass
               : canAfford
                 ? 'border-slate-500/80 hover:border-slate-400'
                 : 'border-slate-700/60'}
           cursor-pointer
-          ${!canAfford ? 'grayscale' : ''}
+          ${!canAfford ? unavailableCardClass : ''}
         `}
       >
         {spriteConfig ? (

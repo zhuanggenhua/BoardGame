@@ -19,12 +19,9 @@ import type {
     MinionOnBase,
     TriggerInstance,
     TriggerQueuedEvent,
-    PlayerTurnRestrictionType,
-    TriggerEffectContract,
-} from './types';
+    PlayerTurnRestrictionType } from './types';
 import { SU_EVENTS } from './types';
 import { registerTriggerExecutor } from './triggerExecutors';
-import { requireTriggerEffectContract, wrapTriggerCallbackWithEffectContract } from './triggerEffectContract';
 import { getBaseDef, getTitanDef } from '../data/cards';
 import { matchesDefId, mustUseBaseLimitedMinionQuota } from './utils';
 
@@ -259,7 +256,6 @@ interface TriggerEntry {
     global?: boolean;
     /** global 闁荤喐鐟辩粻鎴ｃ亹閸岀偛闂柕濞垮劚鐢帡鎮规担鍦憙妞ゎ偄妫涢幏鐘虫媴閻戞鏆犻梺鍝勵槶閸庤尙鑺遍鈧畷鐘诲传閸曨厼骞嶉梺鎸庣⊕閻╊垳鍒掗婊勫?hand + discard */
     globalZones?: Array<'hand' | 'discard' | 'deck'>;
-    effectContract?: TriggerEffectContract;
     fallbackFootprint?: import('./types').SmashUpReactionResourceFootprint & { fallbackReason: string };
 }
 
@@ -322,23 +318,16 @@ export function registerTrigger(
         baseScoped?: boolean;
         perInstance?: boolean;
         sourceScope?: 'any' | 'triggerBase';
-        effectContract?: TriggerEffectContract;
-        fallbackFootprint?: import('./types').SmashUpReactionResourceFootprint & { fallbackReason: string };
+            fallbackFootprint?: import('./types').SmashUpReactionResourceFootprint & { fallbackReason: string };
     }
 ): void {
     // 闂佸憡锚椤兘宕抽崨濠勨攳婵犻潧娲よ闂佹寧绋掗懝楣冨箖閹惧鈻旈柍?sourceDefId + timing 闂佸憡鐟禍婵嬪极閻愬搫绀冮悘鐐跺亹椤忚鲸绻涢崱蹇旑潐缂佽鲸鐟╁濂稿矗婢舵ê澹?HMR 闂備焦褰冪粔鎾囬幓鎺嗘灃闁靛鍎遍弬鈧梺?
     if (triggerRegistry.some(e => e.sourceDefId === sourceDefId && e.timing === timing)) return;
-    const wrappedCallback = wrapTriggerCallbackWithEffectContract(
-        sourceDefId,
-        timing,
-        callback,
-        options?.effectContract,
-    );
     triggerRegistry.push({
         sourceDefId,
         timing,
         rawCallback: callback,
-        callback: wrappedCallback,
+        callback,
         optional: options?.optional,
         mandatory: options?.mandatory,
         phase: options?.phase ?? 'reaction',
@@ -348,9 +337,7 @@ export function registerTrigger(
         globalZones: options?.globalZones,
         playerContext: options?.playerContext ?? 'eventPlayer',
         baseScoped: options?.baseScoped ?? true,
-        effectContract: options?.effectContract,
-        fallbackFootprint: options?.fallbackFootprint,
-    });
+        fallbackFootprint: options?.fallbackFootprint });
     registerTriggerExecutor(sourceDefId, timing, callback);
 }
 
@@ -377,16 +364,14 @@ function locateSources(state: SmashUpCore, sourceDefId: string): TriggerSourceLo
             uid: titan.uid,
             titanUid: titan.uid,
             baseIndex: titan.location.baseIndex,
-            controllerId: titan.controllerId,
-        });
+            controllerId: titan.controllerId });
     }
     for (const special of state.pendingAfterScoringSpecials ?? []) {
         if (special.sourceDefId !== sourceDefId) continue;
         locations.push({
             uid: special.cardUid,
             baseIndex: special.baseIndex,
-            controllerId: special.playerId,
-        });
+            controllerId: special.playerId });
     }
     return locations;
 }
@@ -497,7 +482,6 @@ function createTriggerInstance(
         inspectionZone: ctx.inspectionZone,
         inspectionTargetPlayerIds: ctx.inspectionTargetPlayerIds,
         inspectionCausePlayerId: ctx.inspectionCausePlayerId,
-        effectContract: entry.effectContract,
         fallbackFootprint: entry.fallbackFootprint,
         lkiMinion: ctx.triggerMinion
             ? {
@@ -511,10 +495,8 @@ function createTriggerInstance(
                 powerModifier: ctx.triggerMinion.powerModifier,
                 tempPowerModifier: ctx.triggerMinion.tempPowerModifier,
                 attachedActionDefIds: ctx.triggerMinion.attachedActions?.map(a => a.defId) ?? [],
-                metadata: ctx.triggerMinion.metadata ? { ...ctx.triggerMinion.metadata } : undefined,
-            }
-            : undefined,
-    };
+                metadata: ctx.triggerMinion.metadata ? { ...ctx.triggerMinion.metadata } : undefined }
+            : undefined };
 }
 
 function shouldSkipTriggerInstance(
@@ -645,8 +627,7 @@ export function collectTriggers(
     return {
         type: SU_EVENTS.TRIGGER_QUEUED,
         payload: { triggers },
-        timestamp: now,
-    } as TriggerQueuedEvent;
+        timestamp: now } as TriggerQueuedEvent;
 }
 
 /** 濠电偛顦崝宀勫船閼恒儳顩查悗锝傛櫆椤愪粙鏌熼崙銈夋闁糕晛鎳樺畷鎶解€﹂幒鏃傤槱闂佸搫娲ら妵姗€宕鍕瀬闁割偆鍠撴禍顖炴煥?*/
@@ -697,7 +678,7 @@ export function registerPodOngoingAliases(): void {
     // 1. 闂佸搫瀚慨鎾儍?Trigger
     const triggersToAdd: TriggerEntry[] = [];
     for (const entry of triggerRegistry) {
-        const { sourceDefId, timing, rawCallback, effectContract, fallbackFootprint } = entry;
+        const { sourceDefId, timing, rawCallback, fallbackFootprint } = entry;
         
         // 闁荤姴鎼悿鍥╂崲閸愵煈鍟呴柤纰卞墰閻ュ懘鏌?_pod 闂?
         if (sourceDefId.endsWith('_pod')) continue;
@@ -723,9 +704,7 @@ export function registerPodOngoingAliases(): void {
             sourceScope: entry.sourceScope,
             global: entry.global,
             globalZones: entry.globalZones,
-            effectContract,
-            fallbackFootprint,
-        });
+            fallbackFootprint });
         mappedCount++;
     }
     
@@ -738,9 +717,7 @@ export function registerPodOngoingAliases(): void {
             sourceScope: entry.sourceScope,
             global: entry.global,
             globalZones: entry.globalZones,
-            effectContract: entry.effectContract,
-            fallbackFootprint: entry.fallbackFootprint,
-        });
+                fallbackFootprint: entry.fallbackFootprint });
     }
     
     // 2. 闂佸搫瀚慨鎾儍?Restriction
@@ -820,8 +797,7 @@ export function getOngoingEffectRegistrySize(): {
         protection: protectionRegistry.length,
         restriction: restrictionRegistry.length,
         trigger: triggerRegistry.length,
-        interceptor: interceptorRegistry.length,
-    };
+        interceptor: interceptorRegistry.length };
 }
 
 /** 闂佸吋鍎抽崲鑼躲亹閸ヮ剙绠ラ柍褜鍓熷鍨緞婵犲倸娈ュ┑鐐差槶閸斿矂宕禒瀣剭?sourceDefId闂佹寧绋戦悧蹇涘极閵堝棛顩查幖娣€曢崢鎾煕閺冣偓缁嬫牠銆侀幋鐐碘枖闁告繂瀚烽崥鈧柣鐘辫濡插嫮妲?*/
@@ -932,8 +908,7 @@ export function getSuppressionFilteredStateForSource(
         return {
             ...base,
             minions,
-            ongoingActions,
-        };
+            ongoingActions };
     });
 
     if (!changed) {
@@ -942,8 +917,7 @@ export function getSuppressionFilteredStateForSource(
 
     return {
         ...state,
-        bases,
-    };
+        bases };
 }
 
 /**
@@ -967,8 +941,7 @@ export function isMinionProtected(
         targetMinion,
         targetBaseIndex,
         sourcePlayerId,
-        protectionType,
-    };
+        protectionType };
 
     for (const entry of protectionRegistry) {
         if (entry.protectionType !== protectionType) continue;
@@ -1001,8 +974,7 @@ export function isMinionProtectedNonConsumable(
         targetMinion,
         targetBaseIndex,
         sourcePlayerId,
-        protectionType,
-    };
+        protectionType };
 
     for (const entry of protectionRegistry) {
         if (entry.protectionType !== protectionType) continue;
@@ -1058,8 +1030,7 @@ export function getConsumableProtectionSource(
         targetMinion,
         targetBaseIndex,
         sourcePlayerId,
-        protectionType,
-    };
+        protectionType };
 
     for (const entry of protectionRegistry) {
         if (entry.protectionType !== protectionType) continue;
@@ -1167,8 +1138,7 @@ export function isOperationRestricted(
             baseIndex,
             playerId,
             restrictionType,
-            extra,
-        };
+            extra };
         for (const entry of restrictionRegistry) {
             if (entry.restrictionType !== restrictionType) continue;
             const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
@@ -1236,7 +1206,6 @@ export function fireTriggers(
 
     for (const entry of triggerRegistry) {
         if (entry.timing !== timing) continue;
-        requireTriggerEffectContract(entry.sourceDefId, timing, entry.effectContract, 'fireTriggers');
         if (options?.phase && (entry.phase ?? 'reaction') !== options.phase) continue;
         
         const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
@@ -1261,8 +1230,7 @@ export function fireTriggers(
                 matchState: getFilteredMatchState(),
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
-                sourceControllerId: located.controllerId,
-            });
+                sourceControllerId: located.controllerId });
             const triggerEvents = Array.isArray(result) ? result : result.events;
             if (triggerEvents.length > 0) {
                 events.push(...triggerEvents);
@@ -1306,8 +1274,7 @@ export function fireTriggers(
                 matchState: getFilteredMatchState(),
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
-                sourceControllerId: located.controllerId,
-            });
+                sourceControllerId: located.controllerId });
             const triggerEvents = Array.isArray(result) ? result : result.events;
             if (triggerEvents.length > 0) {
                 events.push(...triggerEvents);
@@ -1362,7 +1329,6 @@ export function fireTriggerForSource(
     for (const entry of triggerRegistry) {
         if (entry.sourceDefId !== sourceDefId) continue;
         if (entry.timing !== timing) continue;
-        requireTriggerEffectContract(entry.sourceDefId, timing, entry.effectContract, 'fireTriggerForSource');
         if (options?.phase && (entry.phase ?? 'reaction') !== options.phase) continue;
 
         const filteredState = getSuppressionFilteredStateForSource(state, entry.sourceDefId);
@@ -1387,8 +1353,7 @@ export function fireTriggerForSource(
                 matchState: getFilteredMatchState(),
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
-                sourceControllerId: located.controllerId,
-            });
+                sourceControllerId: located.controllerId });
             const triggerEvents = Array.isArray(result) ? result : result.events;
             if (triggerEvents.length > 0) {
                 events.push(...triggerEvents);
@@ -1432,8 +1397,7 @@ export function fireTriggerForSource(
                 matchState: getFilteredMatchState(),
                 sourceCardUid: located.uid,
                 sourceBaseIndex: located.baseIndex,
-                sourceControllerId: located.controllerId,
-            });
+                sourceControllerId: located.controllerId });
             const triggerEvents = Array.isArray(result) ? result : result.events;
             if (triggerEvents.length > 0) {
                 events.push(...triggerEvents);
@@ -1498,8 +1462,7 @@ function locateGlobalSources(
             uid: titan.uid,
             titanUid: titan.uid,
             baseIndex: titan.location.zone === 'base' ? titan.location.baseIndex : undefined,
-            controllerId: titan.location.zone === 'base' ? titan.controllerId : titan.ownerId,
-        });
+            controllerId: titan.location.zone === 'base' ? titan.controllerId : titan.ownerId });
     }
     return locations;
 }
@@ -1646,8 +1609,7 @@ export function getBaseRestrictions(state: SmashUpCore, baseIndex: number): Base
             restrictions.push({
                 type: 'blocked_faction',
                 displayText: blockedFaction,
-                sourceDefId: blockAction.defId,
-            });
+                sourceDefId: blockAction.defId });
         }
     }
 

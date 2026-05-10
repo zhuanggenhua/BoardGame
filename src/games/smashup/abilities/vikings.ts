@@ -176,24 +176,12 @@ export function registerVikingsAbilities(): void {
 
     registerTrigger('vikings_viking_funeral', 'onMinionDestroyed', vikingsVikingFuneralTrigger, {
         perInstance: true,
-        effectContract: {
-            reads: ['triggerMinionState', 'sourceSelfState'],
-            writes: ['vpState', 'discardState'],
-        },
     });
     registerTrigger('vikings_viking_funeral', 'onMinionDiscardedFromBase', vikingsVikingFuneralTrigger, {
         perInstance: true,
-        effectContract: {
-            reads: ['triggerMinionState', 'sourceSelfState'],
-            writes: ['vpState', 'discardState'],
-        },
     });
 
     registerBaseAbility('base_drakkar', 'onMinionPlayed', vikingsBaseDrakkarOnMinionPlayed, {
-        effectContract: {
-            reads: ['deckState'],
-            writes: ['deckState', 'handState'],
-        },
     });
     registerActiveBaseAbility('base_longhouse', vikingsBaseLonghouseDuringTurn, {
         canUse: (ctx) => {

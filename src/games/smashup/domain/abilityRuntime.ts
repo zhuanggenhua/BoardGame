@@ -25,14 +25,18 @@ export type AbilityRuntimeEffect<TContext, TState, TEvent> = (
     context: TContext,
 ) => AbilityRuntimeEffectResult<TContext, TState, TEvent> | TEvent[];
 
+export type AbilityRuntimeFootprintDeriver<TContext> = (context: TContext) => unknown | undefined;
+
 export type AbilityProgram<TContext, TState, TEvent> =
     | {
         kind: 'effect';
         effect: AbilityRuntimeEffect<TContext, TState, TEvent>;
+        deriveFootprint?: AbilityRuntimeFootprintDeriver<TContext>;
     }
     | {
         kind: 'prompt';
         sourceId: string;
+        deriveFootprint?: AbilityRuntimeFootprintDeriver<TContext>;
         buildInteraction: (context: TContext) => InteractionDescriptor;
         queueInteraction: (
             context: TContext,
@@ -313,10 +317,12 @@ function updateInteractionForContinuation<TState>(
 
 export function createEffectProgram<TContext, TState, TEvent>(
     effect: AbilityRuntimeEffect<TContext, TState, TEvent>,
+    options: { deriveFootprint?: AbilityRuntimeFootprintDeriver<TContext> } = {},
 ): AbilityProgram<TContext, TState, TEvent> {
     return registerAbilityProgramNode({
         kind: 'effect',
         effect,
+        ...(options.deriveFootprint ? { deriveFootprint: options.deriveFootprint } : {}),
     }, `effect:${hashStableString(`${getProgramCreationSite()}::${effect.toString()}`)}`);
 }
 
@@ -351,6 +357,7 @@ export function createStopProgram<TContext, TState, TEvent>(): AbilityProgram<TC
 export function createPromptProgram<TContext, TState, TEvent>(params: {
     sourceId: string;
     interactionSourceIds?: string[];
+    deriveFootprint?: AbilityRuntimeFootprintDeriver<TContext>;
     buildInteraction: (context: TContext) => InteractionDescriptor;
     queueInteraction?: (
         context: TContext,
@@ -363,6 +370,7 @@ export function createPromptProgram<TContext, TState, TEvent>(params: {
     const promptProgram: AbilityProgram<TContext, TState, TEvent> = {
         kind: 'prompt',
         sourceId: params.sourceId,
+        ...(params.deriveFootprint ? { deriveFootprint: params.deriveFootprint } : {}),
         buildInteraction: params.buildInteraction,
         queueInteraction: params.queueInteraction ?? ((context, interaction) => {
             const candidate = context as { matchState?: MatchState<TState> };
@@ -437,6 +445,32 @@ export function createAbilityRuntimeExecutor<TContext, TState, TEvent>(
         kind: 'program',
         program,
     };
+}
+
+export function collectAbilityProgramFootprints<TContext, TState, TEvent>(
+    program: AbilityProgram<TContext, TState, TEvent>,
+    context: TContext,
+): unknown[] {
+    switch (program.kind) {
+        case 'effect':
+        case 'prompt': {
+            const footprint = program.deriveFootprint?.(context);
+            return footprint ? [footprint] : [];
+        }
+        case 'sequence':
+            return program.steps.flatMap(step => collectAbilityProgramFootprints(step, context));
+        case 'branch':
+            return collectAbilityProgramFootprints(
+                program.when(context) ? program.then : (program.else ?? createStopProgram()),
+                context,
+            );
+        case 'stop':
+            return [];
+        default: {
+            const exhaustiveCheck: never = program;
+            throw new Error(`未知的 ability program 节点: ${String(exhaustiveCheck)}`);
+        }
+    }
 }
 
 export function registerAbilityRuntimePrompt(

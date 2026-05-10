@@ -539,46 +539,6 @@ export interface BaseLkiSnapshot {
     defId: string;
 }
 
-export type ReactionOrderingAtom =
-    | 'playLimits'
-    | 'triggerMinionPower'
-    | 'minionBoardState'
-    | 'titanBoardState'
-    | 'baseDeckState'
-    | 'handState'
-    | 'deckState'
-    | 'madnessDeckState'
-    | 'discardState'
-    | 'vpState'
-    | 'triggerMinionState'
-    | 'sourceSelfState'
-    | 'baseState'
-    | 'controllerState'
-    | 'scoringState'
-    | 'targetAvailability'
-    | 'turnFlags';
-
-export interface TriggerEffectContract {
-    /**
-     * `sourceSelfState` 表示“当前触发来源实例自身”的状态，
-     * 必须在运行时绑定到具体 source instance，绝不能退回成全局共享桶。
-     */
-    /**
-     * 触发结算期间会读取的状态标签。
-     * 若另一个触发会写入这些标签，则顺序可能影响结果。
-     */
-    reads?: ReactionOrderingAtom[];
-    /**
-     * 触发结算期间会写入的状态标签。
-     * 与其他触发的 reads/writes 冲突时，必须保留玩家排序权。
-     */
-    writes?: ReactionOrderingAtom[];
-    /**
-     * 若会打开新交互链，则默认认为顺序有价值，不自动收口。
-     */
-    opensInteraction?: boolean;
-}
-
 export type SmashUpReactionResourceRef =
     | { kind: 'minion'; uid: string }
     | { kind: 'base'; index: number }
@@ -658,7 +618,6 @@ export interface TriggerInstance {
     inspectionZone?: 'deck' | 'hand';
     inspectionTargetPlayerIds?: PlayerId[];
     inspectionCausePlayerId?: PlayerId;
-    effectContract?: TriggerEffectContract;
     /**
      * Explicit, auditable fallback used only when runtime artifact probing cannot
      * derive a concrete resource footprint. Normal ordering must come from

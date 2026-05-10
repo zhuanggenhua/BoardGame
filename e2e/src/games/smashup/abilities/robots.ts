@@ -675,9 +675,5 @@ function registerRobotOngoingEffects(): void {
             },
         ];
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'controllerState', 'handState', 'deckState', 'discardState'],
-            writes: ['handState', 'deckState', 'discardState'],
-        },
     });
 }

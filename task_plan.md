@@ -17,6 +17,13 @@
 
 ## Current Snapshot
 
+- [x] 2026-05-10 命令执行异常全链路已完成本地修复与聚焦验证
+  - 后端 batch 失败不再固定折叠为 `command_failed`，会透传领域错误码或 `pipeline_error: <message>`
+  - 前端不再静默 `command_failed`，非 `stale_state` 的 batch rejection 会进入错误展示路径
+  - 已补证据：`evidence/transport-command-error-full-chain-fix-2026-05-10.md`
+  - 已通过聚焦 transport / MatchRoom helper 测试与 `npm run typecheck`
+  - `长舟` 已按用户澄清重新定位为 SmashUp `base_drakkar`（德拉卡尔号 / Drakkar），不是 SummonerWars；根因是 2026-05-08 引入的运行时 `effectContract` 漏 `playLimits` / `discardState` / `opensInteraction` 后误拦截合法基地能力
+  - 已补 `PLAY_MINION -> base_drakkar` 真实触发链回归，聚焦 `base_drakkar` 测试 4 passed
 - [x] 审计流程已按“执行层级不够深”的复盘结论升级
   - 已更新 `docs/ai-rules/testing-audit.md`，新增“深度审计流程（强制）”
   - 已把对象清单、完整链路、真实入口、共享根因扩审、旧结论失效回写，改成统一深审门禁

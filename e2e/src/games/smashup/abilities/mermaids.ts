@@ -31,6 +31,7 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
+import { createFootprint, createPromptDslProgram } from '../domain/effectDsl';
 
 type MinionChoice = { minionUid?: string; baseIndex?: number; defId?: string; skip?: boolean };
 type BaseChoice = { baseIndex?: number; skip?: boolean };
@@ -450,8 +451,32 @@ const mermaidsCharmerMovePromptProgram = createPromptProgram<MermaidsCharmerMove
     },
 });
 
-const mermaidsMermaidQueenMovePromptProgram = createPromptProgram<MermaidsMermaidQueenTargetPromptContext, SmashUpCore, SmashUpEvent>({
+const mermaidsMermaidQueenMovePromptProgram = createPromptDslProgram<MermaidsMermaidQueenTargetPromptContext>({
     sourceId: 'mermaids_mermaid_queen_move',
+    footprint: (context) => {
+        const targets = collectMinions(context.matchState.core, (minion, baseIndex) => (
+            minion.controller !== context.playerId && baseIndex !== context.targetBaseIndex
+        ));
+        return createFootprint({
+            reads: [
+                { kind: 'base', index: context.targetBaseIndex },
+                ...targets.flatMap(target => [
+                    { kind: 'minion' as const, uid: target.minion.uid },
+                    { kind: 'base' as const, index: target.baseIndex },
+                ]),
+            ],
+            writes: [
+                { kind: 'base', index: context.targetBaseIndex },
+                { kind: 'targetAvailability', baseIndex: context.targetBaseIndex },
+                ...targets.flatMap(target => [
+                    { kind: 'minion' as const, uid: target.minion.uid },
+                    { kind: 'base' as const, index: target.baseIndex },
+                    { kind: 'targetAvailability' as const, baseIndex: target.baseIndex },
+                ]),
+            ],
+            opensInteraction: true,
+        });
+    },
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `mermaids_mermaid_queen_move_${context.now}`,
         context.playerId,
@@ -1169,18 +1194,10 @@ export function registerMermaidsAbilities(): void {
         optional: true,
         perInstance: true,
         sourceScope: 'triggerBase',
-        effectContract: {
-            reads: ['sourceSelfState', 'baseState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('mermaids_desert_island', 'onTurnStart', mermaidsDesertIslandOnTurnStart, {
         perInstance: true,
         sourceScope: 'triggerBase',
-        effectContract: {
-            reads: ['sourceSelfState'],
-            writes: ['sourceSelfState'],
-        },
     });
 }
 

@@ -31,12 +31,12 @@ beforeEach(() => {
     clearBaseAbilityRegistry();
 });
 
-const emptyEffectContract = { effectContract: {} };
+const emptyBaseOptions = {};
 
 describe('基地能力注册表', () => {
     it('注册后可以解析到能力', () => {
         const executor = (_ctx: BaseAbilityContext) => ({ events: [] });
-        registerBaseAbility('base_test', 'onMinionPlayed', executor, emptyEffectContract);
+        registerBaseAbility('base_test', 'onMinionPlayed', executor, emptyBaseOptions);
 
         expect(hasBaseAbility('base_test', 'onMinionPlayed')).toBe(true);
         expect(hasBaseAbility('base_test', 'beforeScoring')).toBe(false);
@@ -46,15 +46,15 @@ describe('基地能力注册表', () => {
     it('注册表大小正确', () => {
         expect(getBaseAbilityRegistrySize()).toBe(0);
 
-        registerBaseAbility('base_a', 'onMinionPlayed', () => ({ events: [] }), emptyEffectContract);
-        registerBaseAbility('base_a', 'beforeScoring', () => ({ events: [] }), emptyEffectContract);
-        registerBaseAbility('base_b', 'onTurnStart', () => ({ events: [] }), emptyEffectContract);
+        registerBaseAbility('base_a', 'onMinionPlayed', () => ({ events: [] }), emptyBaseOptions);
+        registerBaseAbility('base_a', 'beforeScoring', () => ({ events: [] }), emptyBaseOptions);
+        registerBaseAbility('base_b', 'onTurnStart', () => ({ events: [] }), emptyBaseOptions);
 
         expect(getBaseAbilityRegistrySize()).toBe(3);
     });
 
     it('清空注册表', () => {
-        registerBaseAbility('base_a', 'onMinionPlayed', () => ({ events: [] }), emptyEffectContract);
+        registerBaseAbility('base_a', 'onMinionPlayed', () => ({ events: [] }), emptyBaseOptions);
         expect(getBaseAbilityRegistrySize()).toBe(1);
 
         clearBaseAbilityRegistry();
@@ -69,7 +69,7 @@ describe('基地能力注册表', () => {
         };
         registerBaseAbility('base_test', 'onMinionPlayed', () => ({
             events: [mockEvent],
-        }), emptyEffectContract);
+        }), emptyBaseOptions);
 
         const ctx: BaseAbilityContext = {
             state: { bases: [] } as any,
@@ -102,10 +102,10 @@ describe('基地能力注册表', () => {
         registerBaseAbility('base_a', 'onMinionPlayed', (ctx) => {
             triggeredBaseIndex = ctx.baseIndex;
             return { events: [] };
-        }, emptyEffectContract);
+        }, emptyBaseOptions);
         registerBaseAbility('base_b', 'onMinionPlayed', () => {
             throw new Error('不应触发其他基地');
-        }, emptyEffectContract);
+        }, emptyBaseOptions);
 
         const state = {
             bases: [
@@ -129,11 +129,11 @@ describe('基地能力注册表', () => {
         registerBaseAbility('base_a', 'onTurnStart', (ctx) => {
             triggered.push(ctx.baseIndex);
             return { events: [] };
-        }, emptyEffectContract);
+        }, emptyBaseOptions);
         registerBaseAbility('base_b', 'onTurnStart', (ctx) => {
             triggered.push(ctx.baseIndex);
             return { events: [] };
-        }, emptyEffectContract);
+        }, emptyBaseOptions);
 
         const state = {
             bases: [

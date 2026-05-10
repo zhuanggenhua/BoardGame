@@ -123,28 +123,15 @@ export function registerBearCavalryAbilities(): void {
     registerProtection('bear_cavalry_superiority', 'affect', bearCavalrySuperiorityChecker);
     // 幼熊斥候：对手随从移入时消灭弱?
     registerTrigger('bear_cavalry_cub_scout', 'onMinionMoved', bearCavalryCubScoutTrigger, {
-        effectContract: {
-            reads: ['baseState', 'minionBoardState', 'triggerMinionState', 'turnFlags', 'titanBoardState'],
-            writes: ['minionBoardState'],
-        },
     });
     // 制高点：消灭移入的对手随从
     registerTrigger('bear_cavalry_high_ground', 'onMinionMoved', bearCavalryHighGroundTrigger, {
-        effectContract: {
-            reads: ['baseState', 'minionBoardState', 'triggerMinionState'],
-            writes: ['minionBoardState'],
-        },
     });
 
     // === POD 版本能力注册 ===
     // 伊万将军 POD：保护 + 响应式加成
     registerProtection('bear_cavalry_general_ivan_pod', 'destroy', bearCavalryGeneralIvanPodProtection);
     registerTrigger('bear_cavalry_general_ivan_pod', 'onMinionMoved', bearCavalryGeneralIvanPodTrigger, {
-        effectContract: {
-            reads: ['minionBoardState', 'turnFlags'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
     // 极地突击队员 POD：天赋放置指示物
     registerAbility('bear_cavalry_polar_commando_pod', 'talent', bearCavalryPolarCommandoPodTalent);
@@ -152,11 +139,6 @@ export function registerBearCavalryAbilities(): void {
     registerAbility('bear_cavalry_bear_cavalry_pod', 'onPlay', bearCavalryBearCavalryPodAbility);
     // 幼熊斥候 POD：响应式消灭
     registerTrigger('bear_cavalry_cub_scout_pod', 'onMinionMoved', bearCavalryCubScoutPodTrigger, {
-        effectContract: {
-            reads: ['baseState', 'minionBoardState', 'triggerMinionState', 'turnFlags', 'titanBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
     // 黑熊擒抱 POD：全局最弱消灭（与原版相同，已在上方注册）
     // 你们已经完蛋 POD：降低临界点并提供 +2 力量
@@ -164,10 +146,6 @@ export function registerBearCavalryAbilities(): void {
     // 黑熊口粮 POD：压制天赋 + 回合开始自毁
     registerAbility('bear_cavalry_bear_necessities_pod', 'talent', bearCavalryBearNecessitiesPodTalent);
     registerTrigger('bear_cavalry_bear_necessities_pod', 'onTurnStart', bearCavalryBearNecessitiesPodTurnStart, {
-        effectContract: {
-            reads: ['sourceSelfState'],
-            writes: ['sourceSelfState'],
-        },
     });
     // 你们都是美食 POD: 批量移动（与原版相同，已在上方注册）
     // 与熊同行 POD: 移动 + 压制能力
@@ -195,11 +173,6 @@ export function registerBearCavalryAbilities(): void {
     });
     // 制高点 POD：响应式消灭并抽牌
     registerTrigger('bear_cavalry_high_ground_pod', 'onMinionMoved', bearCavalryHighGroundPodTrigger, {
-        effectContract: {
-            reads: ['baseState', 'minionBoardState', 'triggerMinionState'],
-            writes: ['sourceSelfState', 'minionBoardState'],
-            opensInteraction: true,
-        },
     });
 }
 

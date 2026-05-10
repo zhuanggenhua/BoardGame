@@ -315,7 +315,6 @@ const SUMMONER_WARS_TUTORIAL: TutorialManifest = {
       requireAction: true,
       allowedCommands: [SW_COMMANDS.SELECT_UNIT, SW_COMMANDS.DECLARE_ATTACK],
       advanceOnEvents: [{ type: SW_EVENTS.UNIT_ATTACKED }],
-      waitForAnimation: true,
     },
 
     // 25: 结束攻击阶段

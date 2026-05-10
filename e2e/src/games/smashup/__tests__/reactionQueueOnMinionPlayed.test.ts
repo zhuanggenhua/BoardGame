@@ -33,15 +33,19 @@ function core2p(): SmashUpCore {
 describe('reaction queue: onMinionPlayed ordering', () => {
   it('multiple mandatory onMinionPlayed triggers create ordering interaction for current player', () => {
     registerTrigger('test_on_play_a', 'onMinionPlayed', (ctx) => ([
-      { type: SU_EVENTS.ABILITY_TRIGGERED, payload: { sourceDefId: 'test_on_play_a', timing: ctx.timing, playerId: ctx.playerId }, timestamp: ctx.now } as any,
-    ]), {
-      effectContract: { writes: ['minionBoardState'] },
-    });
+      {
+        type: SU_EVENTS.LIMIT_MODIFIED,
+        payload: { playerId: ctx.playerId, limitType: 'minion', delta: 1, reason: 'test_on_play_a' },
+        timestamp: ctx.now,
+      } as any,
+    ]));
     registerTrigger('test_on_play_b', 'onMinionPlayed', (ctx) => ([
-      { type: SU_EVENTS.ABILITY_TRIGGERED, payload: { sourceDefId: 'test_on_play_b', timing: ctx.timing, playerId: ctx.playerId }, timestamp: ctx.now } as any,
-    ]), {
-      effectContract: { writes: ['minionBoardState'] },
-    });
+      {
+        type: SU_EVENTS.LIMIT_MODIFIED,
+        payload: { playerId: ctx.playerId, limitType: 'minion', delta: 1, reason: 'test_on_play_b' },
+        timestamp: ctx.now,
+      } as any,
+    ]));
 
     const core = core2p();
     // make trigger sources active (in-play minions) and include played minion
@@ -71,9 +75,7 @@ describe('reaction queue: onMinionPlayed ordering', () => {
   });
 
   it('fireMinionPlayedTriggers stamps queued reactions with a stable sourceEventId and frameId', () => {
-    registerTrigger('test_on_play_frame', 'onMinionPlayed', () => [], {
-      effectContract: {},
-    });
+    registerTrigger('test_on_play_frame', 'onMinionPlayed', () => [], {});
 
     const core = core2p();
     core.bases[0].minions.push({ uid: 's1', defId: 'test_on_play_frame', owner: '0', controller: '0', basePower: 1, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [] } as any);

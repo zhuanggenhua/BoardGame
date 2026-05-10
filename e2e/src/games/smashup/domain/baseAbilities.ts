@@ -16,9 +16,7 @@ import type {
     CardToDeckBottomEvent,
     MinionOnBase,
     BaseDeckReorderedEvent,
-    PendingPostScoringAction,
-    TriggerEffectContract,
-} from './types';
+    PendingPostScoringAction } from './types';
 import { SU_EVENTS } from './types';
 import { getEffectivePower } from './ongoingModifiers';
 import {
@@ -32,15 +30,13 @@ import {
     buildValidatedMoveEvents,
     buildValidatedDestroyEvents,
     buildValidatedReturnEvents,
-    buildStandardDrawEvents,
-} from './abilityHelpers';
+    buildStandardDrawEvents } from './abilityHelpers';
 import { getCardDef, getBaseDef } from '../data/cards';
 import {
     createSimpleChoice,
     getCurrentTrackedIdTopSnapshot,
     queueInteraction,
-    type PromptOption,
-} from '../../../engine/systems/InteractionSystem';
+    type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { registerInteractionHandler } from './abilityInteractionHandlers';
 import { registerExpansionBaseAbilities, registerExpansionBaseInteractionHandlers } from './baseAbilities_expansion';
 import { isBaseAbilitySuppressed } from './ongoingEffects';
@@ -49,8 +45,7 @@ import { resolveLiveBaseIndex } from './utils';
 import {
     appendPendingPostScoringActions,
     getDeferredReplacementBaseDefId,
-    isScoringSessionAwaitingDeferredResolution,
-} from './scoringSession';
+    isScoringSessionAwaitingDeferredResolution } from './scoringSession';
 
 // ============================================================================
 // 类型定义
@@ -121,8 +116,6 @@ export type BaseAbilityRegistrationOptions = {
     mandatory?: boolean;
     /** 当前状态下是否应进入 reaction queue；返回 false 时不暴露空触发。 */
     canTrigger?: (ctx: BaseAbilityContext) => boolean;
-    /** 仅用于 reaction queue 自动收口判定；未标注时保持保守排序。 */
-    effectContract?: TriggerEffectContract;
 };
 
 export type ActiveBaseAbilityRegistrationOptions = {
@@ -158,8 +151,7 @@ function buildWizardAcademyOptions(
         return {
             id: `base-${index}`,
             label: def?.name ?? defId,
-            value: { defId, index },
-        };
+            value: { defId, index } };
     });
 }
 
@@ -216,10 +208,7 @@ export function registerBaseAbility(
         executor,
         options: {
             mandatory: options.mandatory ?? true,
-            ...(options.canTrigger ? { canTrigger: options.canTrigger } : {}),
-            effectContract: options.effectContract,
-        },
-    });
+            ...(options.canTrigger ? { canTrigger: options.canTrigger } : {}) } });
     // Make this base ability runnable by the global reaction queue.
     registerBaseAbilityAsQueuedTrigger(baseDefId, timing);
 }
@@ -234,9 +223,7 @@ export function registerActiveBaseAbility(
         executor,
         options: {
             oncePerTurn: options.oncePerTurn ?? false,
-            ...(options.canUse ? { canUse: options.canUse } : {}),
-        },
-    });
+            ...(options.canUse ? { canUse: options.canUse } : {}) } });
 }
 
 /** 触发指定基地在指定时机的能力 */
@@ -292,8 +279,7 @@ export function triggerAllBaseAbilities(
             minionUid: minionContext?.minionUid,
             minionDefId: minionContext?.minionDefId,
             minionPower: minionContext?.minionPower,
-            now,
-        };
+            now };
         const result = triggerBaseAbility(base.defId, timing, ctx);
         events.push(...result.events);
         if (result.matchState) ms = result.matchState;
@@ -358,7 +344,6 @@ export type ExtendedBaseTrigger = BaseTriggerTiming | 'onMinionDestroyed';
 /** 扩展注册表：支持 onMinionDestroyed */
 type ExtendedBaseAbilityRegistrationOptions = {
     mandatory?: boolean;
-    effectContract?: TriggerEffectContract;
 };
 
 type ExtendedBaseAbilityEntry = { executor: BaseAbilityExecutor; options: Required<ExtendedBaseAbilityRegistrationOptions> };
@@ -379,10 +364,7 @@ export function registerExtended(
     timingMap.set(timing, {
         executor,
         options: {
-            mandatory: options.mandatory ?? true,
-            effectContract: options.effectContract,
-        },
-    });
+            mandatory: options.mandatory ?? true } });
 }
 
 /** 触发扩展时机（如 onMinionDestroyed） */
@@ -482,16 +464,11 @@ export function registerBaseAbilities(): void {
                 events.push({
                     type: SU_EVENTS.VP_AWARDED,
                     payload: { playerId: pid, amount: count, reason: '罗德百货商场：每个随从1VP' },
-                    timestamp: ctx.now,
-                } as VpAwardedEvent);
+                    timestamp: ctx.now } as VpAwardedEvent);
             }
         }
         return { events };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'titanBoardState', 'turnFlags'],
-            writes: ['vpState'],
-        },
     });
 
     // base_castle_blood: 血堡 (Castle Blood)
@@ -524,16 +501,14 @@ export function registerBaseAbilities(): void {
         if (!ctx.matchState) {
             // 无交互上下文时保持兼容：默认执行放置
             return {
-                events: [addPowerCounter(ctx.minionUid, ctx.baseIndex, 1, 'base_castle_blood', ctx.now)],
-            };
+                events: [addPowerCounter(ctx.minionUid, ctx.baseIndex, 1, 'base_castle_blood', ctx.now)] };
         }
         const options: PromptOption<{ skip?: boolean; apply?: boolean; minionUid?: string; minionDefId?: string; baseIndex?: number }>[] = [
             {
                 id: 'apply',
                 label: '放置 +1 力量指示物',
                 value: { apply: true, minionUid: ctx.minionUid, minionDefId: minion.defId, baseIndex: ctx.baseIndex },
-                displayMode: 'button' as const,
-            },
+                displayMode: 'button' as const },
             { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
         ];
         const interaction = createSimpleChoice(
@@ -545,16 +520,9 @@ export function registerBaseAbilities(): void {
         );
         return {
             events: [],
-            matchState: queueInteraction(ctx.matchState, interaction),
-        };
+            matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        mandatory: false,
-        effectContract: {
-            reads: ['minionBoardState', 'baseState'],
-            writes: ['triggerMinionPower'],
-            opensInteraction: true,
-        },
-    });
+        mandatory: false });
 
     // base_central_brain: 中央大脑
     // "每个在这里的随从获得+1力量"
@@ -570,15 +538,9 @@ export function registerBaseAbilities(): void {
                 payload: {
                     playerId: ctx.playerId,
                     amount: 1,
-                    reason: '闪光洞穴：随从被消灭获得1VP',
-                },
-                timestamp: ctx.now,
-            } as VpAwardedEvent],
-        };
+                    reason: '闪光洞穴：随从被消灭获得1VP' },
+                timestamp: ctx.now } as VpAwardedEvent] };
     }, {
-        effectContract: {
-            writes: ['vpState'],
-        },
     });
 
     // base_cave_of_shinies_pod: 闪光洞穴（POD）
@@ -593,16 +555,9 @@ export function registerBaseAbilities(): void {
                 payload: {
                     playerId: ctx.playerId,
                     amount: 1,
-                    reason: '闪光洞穴（POD）：每回合一次，己方随从被消灭获得1VP',
-                },
-                timestamp: ctx.now,
-            } as VpAwardedEvent],
-        };
+                    reason: '闪光洞穴（POD）：每回合一次，己方随从被消灭获得1VP' },
+                timestamp: ctx.now } as VpAwardedEvent] };
     }, {
-        effectContract: {
-            reads: ['turnFlags'],
-            writes: ['vpState'],
-        },
     });
 
     // base_the_factory: 436-1337工厂
@@ -629,16 +584,9 @@ export function registerBaseAbilities(): void {
                 payload: {
                     playerId: winnerId,
                     amount: bonusVp,
-                    reason: `工厂：每5力量1VP（${maxPower}力量=${bonusVp}VP）`,
-                },
-                timestamp: ctx.now,
-            } as VpAwardedEvent],
-        };
+                    reason: `工厂：每5力量1VP（${maxPower}力量=${bonusVp}VP）` },
+                timestamp: ctx.now } as VpAwardedEvent] };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'titanBoardState', 'turnFlags'],
-            writes: ['vpState'],
-        },
     });
 
     // base_tar_pits: 焦油坑
@@ -662,10 +610,8 @@ export function registerBaseAbilities(): void {
                 type: SU_EVENTS.CARDS_DISCARDED,
                 payload: {
                     playerId: winnerId,
-                    cardUids: winner.hand.map(c => c.uid),
-                },
-                timestamp: ctx.now,
-            } as CardsDiscardedEvent);
+                    cardUids: winner.hand.map(c => c.uid) },
+                timestamp: ctx.now } as CardsDiscardedEvent);
         }
         // 抽5张牌：需基于“弃手牌后”的临时状态计算，确保牌库为空时可洗入刚弃的手牌
         const drawState = winner.hand.length > 0
@@ -676,18 +622,11 @@ export function registerBaseAbilities(): void {
                     [winnerId]: {
                         ...winner,
                         hand: [],
-                        discard: [...winner.discard, ...winner.hand],
-                    },
-                },
-            }
+                        discard: [...winner.discard, ...winner.hand] } } }
             : ctx.state;
         events.push(...buildStandardDrawEvents(drawState, winnerId, 5, ctx.random, ctx.now));
         return { events };
     }, {
-        effectContract: {
-            reads: ['handState', 'deckState', 'discardState'],
-            writes: ['handState', 'deckState', 'discardState'],
-        },
     });
 
     // base_temple_of_goju: 刚柔流寺庙
@@ -723,10 +662,8 @@ export function registerBaseAbilities(): void {
                         cardUid: strongest[0].uid,
                         defId: strongest[0].defId,
                         ownerId: strongest[0].owner,
-                        reason: '刚柔流寺庙：最高力量随从放入牌库底',
-                    },
-                    timestamp: ctx.now,
-                } as CardToDeckBottomEvent);
+                        reason: '刚柔流寺庙：最高力量随从放入牌库底' },
+                    timestamp: ctx.now } as CardToDeckBottomEvent);
             } else {
                 // 平局：需要拥有者选择
                 tieBreakPlayers.push({ playerId: pid, candidates: strongest, maxPower });
@@ -743,8 +680,7 @@ export function registerBaseAbilities(): void {
                 uid: m.uid,
                 defId: m.defId,
                 owner: m.owner,
-                power: getEffectivePower(ctx.state, m, ctx.baseIndex),
-            }));
+                power: getEffectivePower(ctx.state, m, ctx.baseIndex) }));
             
             const options = firstCandidatesSnapshot.map(m => {
                 const def = getCardDef(m.defId) as MinionCardDef | undefined;
@@ -754,8 +690,7 @@ export function registerBaseAbilities(): void {
                     defId: m.defId, 
                     baseIndex: ctx.baseIndex, 
                     label: `${name} (力量 ${first.maxPower})`,
-                    displayMode: 'card' as const,
-                };
+                    displayMode: 'card' as const };
             });
             const interaction = createSimpleChoice(
                 `base_temple_of_goju_tiebreak_${ctx.now}`, first.playerId,
@@ -769,10 +704,8 @@ export function registerBaseAbilities(): void {
                     uid: c.uid, 
                     defId: c.defId, 
                     owner: c.owner,
-                    power: getEffectivePower(ctx.state, c, ctx.baseIndex),
-                })),
-                maxPower: tb.maxPower,
-            }));
+                    power: getEffectivePower(ctx.state, c, ctx.baseIndex) })),
+                maxPower: tb.maxPower }));
             return { events, matchState: queueInteraction(ctx.matchState, {
                 ...interaction,
                 data: { 
@@ -781,26 +714,16 @@ export function registerBaseAbilities(): void {
                         baseIndex: ctx.baseIndex, 
                         remainingPlayers: remainingData,
                         // 保存第一个玩家的候选随从快照
-                        firstCandidatesSnapshot,
-                    },
-                },
-            }) };
+                        firstCandidatesSnapshot } } }) };
         }
 
         return { events };
     }, {
-        mandatory: true,
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'turnFlags', 'titanBoardState'],
-            writes: ['minionBoardState', 'deckState'],
-            opensInteraction: true,
-        },
-    });
+        mandatory: true });
 
     // base_temple_of_goju_pod: POD 版本为“随从被消灭后置牌库底”，
     // 由 reducer 在 MINION_DESTROYED 阶段处理；因此 afterScoring 无效果。
     registerBaseAbility('base_temple_of_goju_pod', 'afterScoring', () => ({ events: [] }), {
-        effectContract: {},
     });
 
     // base_great_library: 大图书馆
@@ -819,10 +742,6 @@ export function registerBaseAbilities(): void {
         }
         return { events };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'handState', 'deckState', 'discardState', 'controllerState'],
-            writes: ['handState', 'deckState', 'discardState'],
-        },
     });
 
     // === 扩展包 (Awesome Level 9000) ===
@@ -838,9 +757,7 @@ export function registerBaseAbilities(): void {
                 events: [{
                     type: SU_EVENTS.CARDS_DISCARDED,
                     payload: { playerId: ctx.playerId, cardUids: [player.hand[0].uid] },
-                    timestamp: ctx.now,
-                } as CardsDiscardedEvent],
-            };
+                    timestamp: ctx.now } as CardsDiscardedEvent] };
         }
         // 多张手牌→Prompt 选择弃哪张
         if (!ctx.matchState) return { events: [] };
@@ -874,11 +791,6 @@ export function registerBaseAbilities(): void {
         
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        effectContract: {
-            reads: ['handState', 'controllerState'],
-            writes: ['handState', 'discardState'],
-            opensInteraction: true,
-        },
     });
 
     // base_the_field_of_honor: 荣誉之地
@@ -892,15 +804,9 @@ export function registerBaseAbilities(): void {
                 payload: {
                     playerId: destroyerId,
                     amount: 1,
-                    reason: '荣誉之地：消灭随从获得1VP',
-                },
-                timestamp: ctx.now,
-            } as VpAwardedEvent],
-        };
+                    reason: '荣誉之地：消灭随从获得1VP' },
+                timestamp: ctx.now } as VpAwardedEvent] };
     }, {
-        effectContract: {
-            writes: ['vpState'],
-        },
     });
 
     // base_the_workshop: 工坊
@@ -909,12 +815,8 @@ export function registerBaseAbilities(): void {
         const actionTargetType = ctx.actionTargetType ?? (ctx.actionTargetMinionUid ? 'minion' : 'base');
         if (actionTargetType !== 'base') return { events: [] };
         return {
-            events: [grantContextualExtraAction(ctx, '工坊：额外打出一张战斗牌')],
-        };
+            events: [grantContextualExtraAction(ctx, '工坊：额外打出一张战斗牌')] };
     }, {
-        effectContract: {
-            writes: ['playLimits'],
-        },
     });
 
     // base_crypt: 地窖 (Crypt)
@@ -933,8 +835,7 @@ export function registerBaseAbilities(): void {
         if (!ctx.matchState && destroyerMinions.length === 1) {
             // 无交互上下文时保持兼容：默认执行放置
             return {
-                events: [addPowerCounter(destroyerMinions[0].uid, ctx.baseIndex, 1, 'base_crypt', ctx.now)],
-            };
+                events: [addPowerCounter(destroyerMinions[0].uid, ctx.baseIndex, 1, 'base_crypt', ctx.now)] };
         }
         // 可选效果：单目标/多目标都允许跳过
         if (!ctx.matchState) return { events: [] };
@@ -945,8 +846,7 @@ export function registerBaseAbilities(): void {
                 label: def?.name ?? m.defId,
                 value: { minionUid: m.uid, minionDefId: m.defId, baseIndex: ctx.baseIndex, defId: m.defId },
                 _source: 'field' as const,
-                displayMode: 'card' as const,
-            };
+                displayMode: 'card' as const };
         });
         const options: PromptOption<{ skip?: boolean; minionUid?: string; minionDefId?: string; baseIndex?: number; defId?: string }>[] = [
             { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
@@ -959,14 +859,8 @@ export function registerBaseAbilities(): void {
         );
         return {
             events: [],
-            matchState: queueInteraction(ctx.matchState, interaction),
-        };
+            matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        effectContract: {
-            reads: ['minionBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // === Monster Smash 基地能力 ===
@@ -986,15 +880,9 @@ export function registerBaseAbilities(): void {
         ) ?? false;
         if (ignored) return { events: [] };
         return {
-            events: [addPowerCounter(ctx.minionUid, ctx.baseIndex, 1, 'base_laboratorium', ctx.now)],
-        };
+            events: [addPowerCounter(ctx.minionUid, ctx.baseIndex, 1, 'base_laboratorium', ctx.now)] };
     }, {
-        canTrigger: isFirstMinionPlayedAtBaseThisTurn,
-        effectContract: {
-            reads: ['playLimits', 'minionBoardState', 'baseState', 'controllerState'],
-            writes: ['triggerMinionPower'],
-        },
-    });
+        canTrigger: isFirstMinionPlayedAtBaseThisTurn });
 
     // base_golem_schloss: 魔像城堡 (Golem Schloß)
     // "基地计分后，冠军在其每个随从上放置 +1 力量指示物"
@@ -1017,10 +905,6 @@ export function registerBaseAbilities(): void {
         }
         return { events };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState'],
-            writes: ['minionBoardState'],
-        },
     });
 
     // base_moot_site: 集会场 (Moot Site)
@@ -1043,18 +927,10 @@ export function registerBaseAbilities(): void {
                     minionUid: ctx.minionUid,
                     baseIndex: ctx.baseIndex,
                     amount: 2,
-                    reason: '集会场：首个随从 +2 临时力量',
-                },
-                timestamp: ctx.now,
-            } as SmashUpEvent],
-        };
+                    reason: '集会场：首个随从 +2 临时力量' },
+                timestamp: ctx.now } as SmashUpEvent] };
     }, {
-        canTrigger: isFirstMinionPlayedAtBaseThisTurn,
-        effectContract: {
-            reads: ['playLimits', 'minionBoardState', 'baseState', 'controllerState'],
-            writes: ['triggerMinionPower'],
-        },
-    });
+        canTrigger: isFirstMinionPlayedAtBaseThisTurn });
 
     // base_standing_stones: 巨石阵 (Standing Stones)
     // "你的回合中，你在这的一个随从可以使用才能两次"
@@ -1087,8 +963,7 @@ export function registerBaseAbilities(): void {
                     uid: m.uid,
                     defId: m.defId,
                     baseIndex: bi,
-                    label: `${def?.name ?? m.defId} @ ${baseDef?.name ?? base.defId}`,
-                });
+                    label: `${def?.name ?? m.defId} @ ${baseDef?.name ?? base.defId}` });
             }
         }
         if (candidates.length === 0) return { events: [] };
@@ -1100,8 +975,7 @@ export function registerBaseAbilities(): void {
                 label: c.label,
                 value: { minionUid: c.uid, minionDefId: c.defId, baseIndex: c.baseIndex, defId: c.defId },
                 _source: 'field' as const,
-                displayMode: 'card' as const,
-            })),
+                displayMode: 'card' as const })),
         ];
         const interaction = createSimpleChoice(
             `base_the_hill_${ctx.now}`, ctx.playerId,
@@ -1112,15 +986,8 @@ export function registerBaseAbilities(): void {
             events: [],
             matchState: queueInteraction(ctx.matchState, {
                 ...interaction,
-                data: { ...interaction.data, continuationContext: { targetBaseIndex: ctx.baseIndex } },
-            }),
-        };
+                data: { ...interaction.data, continuationContext: { targetBaseIndex: ctx.baseIndex } } }) };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // base_ritual_site: 仪式场所
@@ -1136,17 +1003,11 @@ export function registerBaseAbilities(): void {
                     cardUid: m.uid,
                     defId: m.defId,
                     ownerId: m.owner,
-                    reason: '仪式场所：随从洗回牌库',
-                },
-                timestamp: ctx.now,
-            } as CardToDeckBottomEvent);
+                    reason: '仪式场所：随从洗回牌库' },
+                timestamp: ctx.now } as CardToDeckBottomEvent);
         }
         return { events };
     }, {
-        effectContract: {
-            reads: ['minionBoardState'],
-            writes: ['minionBoardState', 'deckState'],
-        },
     });
 
     // === 克苏鲁扩展基地 ===
@@ -1165,10 +1026,6 @@ export function registerBaseAbilities(): void {
         const evt = drawMadnessCards(ownerId, 1, ctx.state, 'base_mountains_of_madness', ctx.now);
         return { events: evt ? [evt] : [] };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'madnessDeckState'],
-            writes: ['handState', 'madnessDeckState'],
-        },
     });
 
     // base_rlyeh: 拉莱耶
@@ -1186,8 +1043,7 @@ export function registerBaseAbilities(): void {
                 label: `${def?.name ?? m.defId} (力量${getEffectivePower(ctx.state, m, ctx.baseIndex)})`,
                 value: { minionUid: m.uid, minionDefId: m.defId, baseIndex: ctx.baseIndex },
                 _source: 'field' as const,
-                displayMode: 'card' as const,
-            };
+                displayMode: 'card' as const };
         });
         const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; baseIndex: number }>[] = [
             { id: 'skip', label: '不消灭', value: { skip: true }, displayMode: 'button' as const },
@@ -1201,11 +1057,6 @@ export function registerBaseAbilities(): void {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'turnFlags', 'titanBoardState'],
-            writes: ['minionBoardState', 'vpState'],
-            opensInteraction: true,
-        },
     });
 
     // base_rlyeh: 仅当“本基地能力导致的消灭真正发生”时给予 1VP
@@ -1216,13 +1067,8 @@ export function registerBaseAbilities(): void {
             events: [{
                 type: SU_EVENTS.VP_AWARDED,
                 payload: { playerId: ctx.destroyerId, amount: 1, reason: '拉莱耶：消灭随从获得1VP' },
-                timestamp: ctx.now,
-            } as VpAwardedEvent],
-        };
+                timestamp: ctx.now } as VpAwardedEvent] };
     }, {
-        effectContract: {
-            writes: ['vpState'],
-        },
     });
 
     // === 基础版需要 Prompt 的基地 ===
@@ -1232,12 +1078,8 @@ export function registerBaseAbilities(): void {
     // 力量≤2 限制通过 LIMIT_MODIFIED 事件的 powerMax 字段全局生效
     registerBaseAbility('base_the_homeworld', 'onMinionPlayed', (ctx) => {
         return {
-            events: [grantContextualExtraMinion(ctx, '母星：额外打出力量≤2的随从', undefined, { powerMax: 2 })],
-        };
+            events: [grantContextualExtraMinion(ctx, '母星：额外打出力量≤2的随从', undefined, { powerMax: 2 })] };
     }, {
-        effectContract: {
-            writes: ['playLimits'],
-        },
     });
 
     // base_the_mothership: 母舰
@@ -1259,8 +1101,7 @@ export function registerBaseAbilities(): void {
         const minionsSnapshot = eligible.map(m => ({
             uid: m.uid,
             defId: m.defId,
-            power: getEffectivePower(ctx.state, m, ctx.baseIndex),
-        }));
+            power: getEffectivePower(ctx.state, m, ctx.baseIndex) }));
         
         const minionOptions = minionsSnapshot.map((m, i) => {
             const def = getCardDef(m.defId);
@@ -1269,8 +1110,7 @@ export function registerBaseAbilities(): void {
                 label: `${def?.name ?? m.defId} (力量${m.power})`,
                 value: { minionUid: m.uid, minionDefId: m.defId, baseIndex: ctx.baseIndex },
                 _source: 'field' as const,
-                displayMode: 'card' as const,
-            };
+                displayMode: 'card' as const };
         });
         const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string }>[] = [
             { id: 'skip', label: '不收回', value: { skip: true }, displayMode: 'button' as const },
@@ -1291,16 +1131,8 @@ export function registerBaseAbilities(): void {
                     continuationContext: { 
                         baseIndex: ctx.baseIndex,
                         minionsSnapshot, // 保存随从快照
-                    },
-                },
-            }),
-        };
+                    } } }) };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'titanBoardState', 'turnFlags'],
-            writes: ['minionBoardState', 'handState'],
-            opensInteraction: true,
-        },
     });
 
     // base_ninja_dojo: 忍者道场
@@ -1323,8 +1155,7 @@ export function registerBaseAbilities(): void {
                 const def = getCardDef(m.defId);
                 allMinions.push({
                     uid: m.uid, defId: m.defId, baseIndex: i, owner: m.owner, controller: m.controller,
-                    label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${getEffectivePower(ctx.state, m, i)})`,
-                });
+                    label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${getEffectivePower(ctx.state, m, i)})` });
             }
         }
         if (allMinions.length === 0) return { events: [] };
@@ -1334,8 +1165,7 @@ export function registerBaseAbilities(): void {
             label: m.label,
             value: { minionUid: m.uid, baseIndex: m.baseIndex, minionDefId: m.defId, ownerId: m.owner },
             _source: 'field' as const,
-            displayMode: 'card' as const,
-        }));
+            displayMode: 'card' as const }));
         const options: PromptOption<{ skip: true } | { minionUid: string; baseIndex: number; minionDefId: string; ownerId: string }>[] = [
             { id: 'skip', label: '不消灭', value: { skip: true }, displayMode: 'button' as const },
             ...minionOptions,
@@ -1355,17 +1185,10 @@ export function registerBaseAbilities(): void {
 
         return { events: [], matchState: nextMatchState };
     }, {
-        mandatory: false,
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'controllerState', 'turnFlags', 'titanBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
-    });
+        mandatory: false });
 
     // base_ninja_dojo_pod: POD 勘误为无基地能力。
     registerBaseAbility('base_ninja_dojo_pod', 'afterScoring', () => ({ events: [] }), {
-        effectContract: {},
     });
 
     // === 基础版需要 Prompt 的基地（续） ===
@@ -1415,8 +1238,7 @@ export function registerBaseAbilities(): void {
                 uid: m.uid,
                 defId: m.defId,
                 owner: m.owner,
-                power: getEffectivePower(ctx.state, m, ctx.baseIndex),
-            }));
+                power: getEffectivePower(ctx.state, m, ctx.baseIndex) }));
             
             const minionOptions = minionsSnapshot.map((m, i) => {
                 const def = getCardDef(m.defId);
@@ -1425,8 +1247,7 @@ export function registerBaseAbilities(): void {
                     label: `${def?.name ?? m.defId} (力量${m.power})`,
                     value: { minionUid: m.uid, minionDefId: m.defId, owner: m.owner },
                     _source: 'field' as const,
-                    displayMode: 'card' as const,
-                };
+                    displayMode: 'card' as const };
             });
         const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; owner: string }>[] = [
                 { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
@@ -1465,8 +1286,7 @@ export function registerBaseAbilities(): void {
                             label: `${def?.name ?? m.defId} (力量${m.power})`,
                             value: { minionUid: m.uid, minionDefId: m.defId, owner: m.owner },
                             _source: 'field' as const,
-                            displayMode: 'card' as const,
-                        };
+                            displayMode: 'card' as const };
                     });
                     
                     return [
@@ -1482,18 +1302,11 @@ export function registerBaseAbilities(): void {
                         continuationContext: { 
                             baseIndex: ctx.baseIndex,
                             minionsSnapshot, // 保存随从快照
-                        },
-                    },
-                });
+                        } } });
             }
         }
         return { events, matchState: ctx.matchState };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'controllerState', 'turnFlags', 'titanBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // base_tortuga: 托尔图加
@@ -1519,8 +1332,7 @@ export function registerBaseAbilities(): void {
                     defId: m.defId,
                     owner: m.owner,
                     baseIndex: i,
-                    label: `${def?.name ?? m.defId} (${baseDef?.name ?? '基地'}, 力量${getEffectivePower(ctx.state, m, i)})`,
-                });
+                    label: `${def?.name ?? m.defId} (${baseDef?.name ?? '基地'}, 力量${getEffectivePower(ctx.state, m, i)})` });
             }
         }
         if (otherMinions.length === 0) {
@@ -1531,8 +1343,7 @@ export function registerBaseAbilities(): void {
             label: m.label,
             value: { minionUid: m.uid, minionDefId: m.defId, owner: m.owner, fromBaseIndex: m.baseIndex },
             _source: 'field' as const,
-            displayMode: 'card' as const,
-        }));
+            displayMode: 'card' as const }));
         const options = [
             { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
             ...minionOptions,
@@ -1547,15 +1358,8 @@ export function registerBaseAbilities(): void {
             events: [],
             matchState: queueInteraction(ctx.matchState, {
                 ...interaction,
-                data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } },
-            }),
-        };
+                data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex } } }) };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'controllerState', 'titanBoardState', 'turnFlags'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // base_wizard_academy: 巫师学院
@@ -1585,15 +1389,8 @@ export function registerBaseAbilities(): void {
             events: [],
             matchState: queueInteraction(ctx.matchState, {
                 ...interaction,
-                data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex, topCards: wizardAcademyTopCards } },
-            }),
-        };
+                data: { ...interaction.data, continuationContext: { baseIndex: ctx.baseIndex, topCards: wizardAcademyTopCards } } }) };
     }, {
-        effectContract: {
-            reads: ['baseDeckState'],
-            writes: ['baseDeckState'],
-            opensInteraction: true,
-        },
     });
 
     // base_mushroom_kingdom: 蘑菇王国
@@ -1613,8 +1410,7 @@ export function registerBaseAbilities(): void {
                     uid: m.uid,
                     defId: m.defId,
                     baseIndex: i,
-                    label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${(m.basePower ?? 0) + (m.powerCounters ?? 0) + (m.powerModifier ?? 0) + (m.tempPowerModifier ?? 0)})`,
-                });
+                    label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${(m.basePower ?? 0) + (m.powerCounters ?? 0) + (m.powerModifier ?? 0) + (m.tempPowerModifier ?? 0)})` });
             }
         }
         if (opponentMinions.length === 0) return { events: [] };
@@ -1623,8 +1419,7 @@ export function registerBaseAbilities(): void {
             label: m.label,
             value: { minionUid: m.uid, minionDefId: m.defId, fromBaseIndex: m.baseIndex },
             _source: 'field' as const,
-            displayMode: 'card' as const,
-        }));
+            displayMode: 'card' as const }));
         const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; fromBaseIndex: number }>[] = [
             { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
             ...minionOptions,
@@ -1639,15 +1434,8 @@ export function registerBaseAbilities(): void {
             events: [],
             matchState: queueInteraction(ctx.matchState, {
                 ...interaction,
-                data: { ...interaction.data, continuationContext: { mushroomBaseIndex } },
-            }),
-        };
+                data: { ...interaction.data, continuationContext: { mushroomBaseIndex } } }) };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'controllerState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // base_mushroom_kingdom_pod: 蘑菇王国（POD）
@@ -1673,8 +1461,7 @@ export function registerBaseAbilities(): void {
                     uid: m.uid,
                     defId: m.defId,
                     fromBaseIndex: i,
-                    label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${getEffectivePower(ctx.state, m, i)})`,
-                });
+                    label: `${def?.name ?? m.defId} (${bDef?.name ?? '基地'}, 力量${getEffectivePower(ctx.state, m, i)})` });
             }
         }
         if (allMinions.length === 0) return { events: [] };
@@ -1684,8 +1471,7 @@ export function registerBaseAbilities(): void {
             label: m.label,
             value: { minionUid: m.uid, minionDefId: m.defId, fromBaseIndex: m.fromBaseIndex },
             _source: 'field' as const,
-            displayMode: 'card' as const,
-        }));
+            displayMode: 'card' as const }));
         const options: PromptOption<{ skip: true } | { minionUid: string; minionDefId: string; fromBaseIndex: number }>[] = [
             { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
             ...minionOptions,
@@ -1700,15 +1486,8 @@ export function registerBaseAbilities(): void {
             events: [],
             matchState: queueInteraction(ctx.matchState, {
                 ...interaction,
-                data: { ...interaction.data, continuationContext: { mushroomBaseIndex } },
-            }),
-        };
+                data: { ...interaction.data, continuationContext: { mushroomBaseIndex } } }) };
     }, {
-        effectContract: {
-            reads: ['handState', 'minionBoardState', 'baseState', 'controllerState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // === 限制类基地已通过 BaseCardDef.restrictions 数据驱动，isOperationRestricted 自动解析 ===
@@ -1734,8 +1513,7 @@ export function registerBaseInteractionHandlers(): void {
         return { state, events: [{
             type: SU_EVENTS.CARDS_DISCARDED,
             payload: { playerId, cardUids: [cardUid] },
-            timestamp,
-        } as CardsDiscardedEvent] };
+            timestamp } as CardsDiscardedEvent] };
     });
 
     // 拉莱耶：消灭随从+1VP
@@ -1750,8 +1528,7 @@ export function registerBaseInteractionHandlers(): void {
             state,
             events: [
                 destroyMinion(target.uid, target.defId, selected.baseIndex!, target.owner, playerId, 'base_rlyeh', timestamp),
-            ],
-        };
+            ] };
     });
 
     // 血堡：可选在刚打出的随从上放 +1 指示物
@@ -1761,8 +1538,7 @@ export function registerBaseInteractionHandlers(): void {
         if (!selected.minionUid || selected.baseIndex === undefined) return { state, events: [] };
         return {
             state,
-            events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'base_castle_blood', timestamp)],
-        };
+            events: [addPowerCounter(selected.minionUid, selected.baseIndex, 1, 'base_castle_blood', timestamp)] };
     });
 
     // 母舰：收回随从到手牌
@@ -1790,8 +1566,7 @@ export function registerBaseInteractionHandlers(): void {
                 fromBaseIndex: ctx.baseIndex,
                 toPlayerId: playerId,
                 reason: '母舰：冠军收回随从',
-                now: timestamp,
-            });
+                now: timestamp });
             if (returnEvents.length > 0) {
                 events.push(...returnEvents);
             } else {
@@ -1812,10 +1587,8 @@ export function registerBaseInteractionHandlers(): void {
                             minionDefId,
                             fromBaseIndex: ctx.baseIndex,
                             toPlayerId: playerId,
-                            reason: '母舰：冠军收回随从',
-                        },
-                        timestamp,
-                    } as MinionReturnedEvent);
+                            reason: '母舰：冠军收回随从' },
+                        timestamp } as MinionReturnedEvent);
                 }
             }
         }
@@ -1834,8 +1607,7 @@ export function registerBaseInteractionHandlers(): void {
                 minionDefId: selected.minionDefId!,
                 fromBaseIndex: selected.baseIndex!,
                 reason: 'base_ninja_dojo',
-                now: timestamp,
-            }));
+                now: timestamp }));
         }
         
         return { state, events };
@@ -1867,9 +1639,7 @@ export function registerBaseInteractionHandlers(): void {
                     fromBaseIndex: ctx.baseIndex,
                     toBaseIndex: targetBase,
                     reason: '海盗湾：移动随从到其他基地',
-                    now: timestamp,
-                }),
-            };
+                    now: timestamp }) };
         }
         
         // 多个目标基地→链式交互选择
@@ -1888,12 +1658,8 @@ export function registerBaseInteractionHandlers(): void {
                     continuationContext: {
                         minionUid: selected.minionUid,
                         minionDefId: selected.minionDefId,
-                        fromBaseIndex: ctx.baseIndex,
-                    },
-                },
-            }, { urgent: true }), // 链式交互的后续步骤标记为 urgent
-            events: [],
-        };
+                        fromBaseIndex: ctx.baseIndex } } }, { urgent: true }), // 链式交互的后续步骤标记为 urgent
+            events: [] };
     });
 
     // 海盗湾：第二步——选择目标基地后执行移动
@@ -1911,10 +1677,8 @@ export function registerBaseInteractionHandlers(): void {
                     minionDefId: ctx.minionDefId,
                     fromBaseIndex: ctx.fromBaseIndex,
                     toBaseIndex: resolvedTargetBase,
-                    reason: '海盗湾：移动随从到其他基地',
-                },
-                timestamp,
-            };
+                    reason: '海盗湾：移动随从到其他基地' },
+                timestamp };
             return { state, events: [moveEvent] };
         }
 
@@ -1927,9 +1691,7 @@ export function registerBaseInteractionHandlers(): void {
                 toBaseIndex: targetBase,
                 toBaseDefId: baseDefId,
                 reason: '海盗湾：移动随从到其他基地',
-                now: timestamp,
-            }),
-        };
+                now: timestamp }) };
     });
 
     // 托尔图加：将其他基地上的随从移动到替换基地
@@ -1944,8 +1706,7 @@ export function registerBaseInteractionHandlers(): void {
             fromBaseIndex: selected.fromBaseIndex ?? -1,
             toBaseIndex: ctx.baseIndex,
             reason: '托尔图加：亚军移动随从到替换基地',
-            now: timestamp,
-        });
+            now: timestamp });
         if (moveEvents.length === 0) {
             return { state, events: [] };
         }
@@ -1961,17 +1722,14 @@ export function registerBaseInteractionHandlers(): void {
                 fromBaseIndex: selected.fromBaseIndex ?? -1,
                 toBaseIndex: ctx.baseIndex,
                 targetBaseDefId,
-                reason: '托尔图加：亚军移动随从到替换基地',
-            };
+                reason: '托尔图加：亚军移动随从到替换基地' };
             return {
                 state: appendPendingPostScoringActions(state, [pendingAction]),
-                events: [],
-            };
+                events: [] };
         }
         return {
             state,
-            events: moveEvents,
-        };
+            events: moveEvents };
     });
 
     // 巫师学院：重排基地牌库顶
@@ -1989,10 +1747,8 @@ export function registerBaseInteractionHandlers(): void {
             type: SU_EVENTS.BASE_DECK_REORDERED,
             payload: {
                 topDefIds: newOrder,
-                reason: '巫师学院：冠军重排基地牌库顶',
-            },
-            timestamp,
-        } as BaseDeckReorderedEvent] };
+                reason: '巫师学院：冠军重排基地牌库顶' },
+            timestamp } as BaseDeckReorderedEvent] };
     });
 
     // 蘑菇王国：移动对手随从到蘑菇王国
@@ -2010,9 +1766,7 @@ export function registerBaseInteractionHandlers(): void {
                 toBaseIndex: ctx.mushroomBaseIndex,
                 // 规则：基地能力不属于任何玩家；reason 用稳定 id，供保护/归因系统判断
                 reason: 'base_mushroom_kingdom',
-                now: timestamp,
-            }),
-        };
+                now: timestamp }) };
     });
 
     // 蘑菇王国（POD）：第一段选择本基地随从
@@ -2033,17 +1787,14 @@ export function registerBaseInteractionHandlers(): void {
                     fromBaseIndex: selectedBaseIndex,
                     toBaseIndex: ctx.mushroomBaseIndex,
                     reason: 'base_mushroom_kingdom_pod',
-                    now: timestamp,
-                }),
-            };
+                    now: timestamp }) };
         }
 
         // 选择了本基地己方随从：进入二段选基地
         const baseCandidates = state.core.bases
             .map((base, baseIndex) => ({
                 baseIndex,
-                label: getBaseDef(base.defId)?.name ?? base.defId,
-            }))
+                label: getBaseDef(base.defId)?.name ?? base.defId }))
             .filter(candidate => candidate.baseIndex !== ctx.mushroomBaseIndex);
         if (baseCandidates.length === 0) return { state, events: [] };
         const options = buildBaseTargetOptions(baseCandidates, state.core);
@@ -2060,12 +1811,8 @@ export function registerBaseInteractionHandlers(): void {
                     continuationContext: {
                         minionUid: selected.minionUid,
                         minionDefId: selected.minionDefId,
-                        fromBaseIndex: ctx.mushroomBaseIndex,
-                    },
-                },
-            }),
-            events: [],
-        };
+                        fromBaseIndex: ctx.mushroomBaseIndex } } }),
+            events: [] };
     });
 
     // 蘑菇王国（POD）：第二段选择目标基地后移动
@@ -2081,9 +1828,7 @@ export function registerBaseInteractionHandlers(): void {
                 fromBaseIndex: ctx.fromBaseIndex,
                 toBaseIndex: targetBase,
                 reason: 'base_mushroom_kingdom_pod',
-                now: timestamp,
-            }),
-        };
+                now: timestamp }) };
     });
 
     // 刚柔流寺庙：平局时拥有者选择放入牌库底的随从（链式处理多个玩家）
@@ -2105,9 +1850,7 @@ export function registerBaseInteractionHandlers(): void {
                     fromBaseIndex: selected.fromBaseIndex,
                     toBaseIndex: ctx.mushroomBaseIndex,
                     reason: 'base_mushroom_kingdom_pod',
-                    now: timestamp,
-                }),
-            };
+                    now: timestamp }) };
         }
 
         const baseCandidates: { baseIndex: number; label: string }[] = [];
@@ -2126,9 +1869,7 @@ export function registerBaseInteractionHandlers(): void {
                     fromBaseIndex: selected.fromBaseIndex,
                     toBaseIndex: baseCandidates[0].baseIndex,
                     reason: 'base_mushroom_kingdom_pod',
-                    now: timestamp,
-                }),
-            };
+                    now: timestamp }) };
         }
 
         const interaction = createSimpleChoice(
@@ -2145,12 +1886,8 @@ export function registerBaseInteractionHandlers(): void {
                     continuationContext: {
                         minionUid: selected.minionUid,
                         minionDefId: selected.minionDefId,
-                        fromBaseIndex: selected.fromBaseIndex,
-                    },
-                },
-            }),
-            events: [],
-        };
+                        fromBaseIndex: selected.fromBaseIndex } } }),
+            events: [] };
     });
 
     registerInteractionHandler('base_mushroom_kingdom_pod_choose_base', (state, _playerId, value, iData, _random, timestamp) => {
@@ -2165,9 +1902,7 @@ export function registerBaseInteractionHandlers(): void {
                 fromBaseIndex: ctx.fromBaseIndex,
                 toBaseIndex,
                 reason: 'base_mushroom_kingdom_pod',
-                now: timestamp,
-            }),
-        };
+                now: timestamp }) };
     });
 
     registerInteractionHandler('base_temple_of_goju_tiebreak', (state, playerId, value, iData, _random, timestamp) => {
@@ -2182,10 +1917,8 @@ export function registerBaseInteractionHandlers(): void {
                 cardUid: target.uid,
                 defId: target.defId,
                 ownerId: target.owner,
-                reason: '刚柔流寺庙：最高力量随从放入牌库底',
-            },
-            timestamp,
-        } as CardToDeckBottomEvent];
+                reason: '刚柔流寺庙：最高力量随从放入牌库底' },
+            timestamp } as CardToDeckBottomEvent];
 
         // 检查是否有剩余玩家需要平局选择
         const ctx = iData?.continuationContext as { baseIndex: number; remainingPlayers?: { playerId: string; candidateUids: { uid: string; defId: string; owner: string }[]; maxPower: number }[] } | undefined;
@@ -2209,14 +1942,12 @@ export function registerBaseInteractionHandlers(): void {
                     ...interaction, 
                     data: { 
                         ...interaction.data, 
-                        continuationContext: { 
-                            baseIndex: ctx!.baseIndex, 
-                            remainingPlayers: rest,
-                        } 
-                    } 
+                        continuationContext: {
+                            baseIndex: ctx!.baseIndex,
+                            remainingPlayers: rest }
+                    }
                 }, { urgent: true }), // 链式交互的后续步骤标记为 urgent
-                events,
-            };
+                events };
         }
 
         return { state, events };
@@ -2245,9 +1976,7 @@ export function registerBaseInteractionHandlers(): void {
                 fromBaseIndex: selected.baseIndex,
                 toBaseIndex: ctx.targetBaseIndex,
                 reason: 'base_the_hill',
-                now: timestamp,
-            }),
-        };
+                now: timestamp }) };
     });
 
     // === 扩展包基地交互处理函数 ===

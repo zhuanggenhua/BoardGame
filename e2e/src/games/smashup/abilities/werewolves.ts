@@ -697,10 +697,6 @@ function registerWerewolfOngoingEffects(): void {
     }, {
         perInstance: true,
         sourceScope: 'triggerBase',
-        effectContract: {
-            reads: ['minionBoardState', 'sourceSelfState'],
-            writes: ['minionBoardState'],
-        },
     });
 
     // 阿尔法狼群 异能（Special）：基地计分前同基地己方所有随从+1力量直到回合结束
@@ -722,10 +718,6 @@ function registerWerewolfOngoingEffects(): void {
     }, {
         perInstance: true,
         sourceScope: 'triggerBase',
-        effectContract: {
-            reads: ['minionBoardState', 'sourceSelfState'],
-            writes: ['minionBoardState'],
-        },
     });
 
     // 制造恐慌 ongoing：回合开始时若你力量最高，爆破点降到0
@@ -762,10 +754,6 @@ function registerWerewolfOngoingEffects(): void {
         }
         return [];
     }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'minionBoardState', 'scoringState'],
-            writes: ['scoringState'],
-        },
     });
 
     // 势不可挡 ongoing(minion)：本随从不可被消灭

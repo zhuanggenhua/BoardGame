@@ -6,7 +6,7 @@
  * 在 registerBaseInteractionHandlers() 末尾调用 registerExpansionBaseInteractionHandlers()。
  */
 
-import type { MatchState } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import type {
     SmashUpCore,
     SmashUpEvent,
@@ -19,10 +19,8 @@ import { getEffectivePower } from './ongoingModifiers';
 import {
     grantContextualExtraAction,
     grantContextualExtraMinion,
-    grantExtraMinion,
     grantExtraAction,
     addTempPower,
-    returnMadnessCard,
     recoverCardsFromDiscard,
     buildValidatedMoveEvents,
     buildValidatedDestroyEvents,
@@ -52,6 +50,12 @@ import {
     type BranchingChoiceOption,
     type BranchingChoiceUpgrade,
 } from './branchingChoice';
+import { executeAbilityProgram } from './abilityRuntime';
+import {
+    createEffectDslProgram,
+    grantExtraActionPrimitive,
+    grantExtraMinionPrimitive,
+} from './effectDsl';
 
 function getContinuationContext<T>(interactionData: Record<string, unknown> | undefined): T | undefined {
     return interactionData?.continuationContext as T | undefined;
@@ -80,6 +84,7 @@ function createBaseFairyRingBranchOption(
     label: string,
     branchId: string,
     value?: Record<string, unknown>,
+    footprint?: import('./types').SmashUpReactionResourceFootprint,
 ): BranchingChoiceOption {
     return {
         id,
@@ -87,33 +92,72 @@ function createBaseFairyRingBranchOption(
         branchId,
         ...(value ? { value } : {}),
         displayMode: 'button',
+        ...(footprint ? { footprint } : {}),
     };
 }
 
-const runBaseFairyRingBranch: BranchExecutor = ({ state, playerId, selection, planContext, timestamp }) => {
+type BaseFairyRingBranchEffectContext = {
+    matchState: MatchState<SmashUpCore>;
+    playerId: PlayerId;
+    now: number;
+    random: RandomFn;
+    baseIndex: number;
+};
+
+const baseFairyRingExtraMinionPrimitive = grantExtraMinionPrimitive<BaseFairyRingBranchEffectContext>({
+    playerId: (context) => context.playerId,
+    reason: 'base_fairy_ring',
+    now: (context) => context.now,
+    matchState: (context) => context.matchState,
+    restrictToBase: (context) => context.baseIndex,
+});
+
+const baseFairyRingExtraActionPrimitive = grantExtraActionPrimitive<BaseFairyRingBranchEffectContext>({
+    playerId: (context) => context.playerId,
+    reason: 'base_fairy_ring',
+    now: (context) => context.now,
+    matchState: (context) => context.matchState,
+});
+
+const baseFairyRingExtraMinionProgram = createEffectDslProgram(baseFairyRingExtraMinionPrimitive);
+const baseFairyRingExtraActionProgram = createEffectDslProgram(baseFairyRingExtraActionPrimitive);
+
+function createBaseFairyRingBranchEffectContext(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    random: RandomFn,
+    timestamp: number,
+    baseIndex: number,
+): BaseFairyRingBranchEffectContext {
+    return { matchState: state, playerId, random, now: timestamp, baseIndex };
+}
+
+const runBaseFairyRingBranch: BranchExecutor = ({ state, playerId, selection, planContext, random, timestamp }) => {
     const branchId = selection.branchId;
     if (branchId === 'skip') {
         return { state, events: [] };
     }
+    const continuation = planContext as { baseIndex?: number } | undefined;
+    if (continuation?.baseIndex === undefined) return { state, events: [] };
+    const effectContext = createBaseFairyRingBranchEffectContext(
+        state,
+        playerId,
+        random,
+        timestamp,
+        continuation.baseIndex,
+    );
     if (branchId === 'extra_minion') {
-        const continuation = planContext as { baseIndex?: number } | undefined;
-        if (continuation?.baseIndex === undefined) return { state, events: [] };
+        const result = executeAbilityProgram(baseFairyRingExtraMinionProgram, effectContext);
         return {
             state,
-            events: [grantContextualExtraMinion(
-                { playerId, now: timestamp, matchState: state },
-                'base_fairy_ring',
-                continuation.baseIndex,
-            )],
+            events: result.events,
         };
     }
     if (branchId === 'extra_action') {
+        const result = executeAbilityProgram(baseFairyRingExtraActionProgram, effectContext);
         return {
             state,
-            events: [grantContextualExtraAction(
-                { playerId, now: timestamp, matchState: state },
-                'base_fairy_ring',
-            )],
+            events: result.events,
         };
     }
     return { state, events: [] };
@@ -175,11 +219,6 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        effectContract: {
-            reads: ['minionBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 藏骨堂（Ossuary）──────────────────────────────────────
@@ -218,11 +257,6 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        effectContract: {
-            reads: ['discardState'],
-            writes: ['discardState', 'baseState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 竞技场（Arena）───────────────────────────────────────────
@@ -247,11 +281,6 @@ export function registerExpansionBaseAbilities(): void {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        effectContract: {
-            reads: ['playLimits'],
-            writes: ['playLimits', 'handState', 'deckState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 名人堂（Hall of Fame）───────────────────────────────────
@@ -264,10 +293,6 @@ export function registerExpansionBaseAbilities(): void {
         };
     }, {
         canTrigger: isFirstMinionPlayedByPlayerAtBaseThisTurn,
-        effectContract: {
-            reads: ['playLimits', 'controllerState'],
-            writes: ['triggerMinionPower'],
-        },
     });
 
     // ── 疯人院（The Asylum）──────────────────────────────────────
@@ -300,11 +325,6 @@ export function registerExpansionBaseAbilities(): void {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        effectContract: {
-            reads: ['handState', 'minionBoardState', 'controllerState'],
-            writes: ['handState', 'minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 印斯茅斯基地（Innsmouth Base）────────────────────────────
@@ -358,11 +378,6 @@ export function registerExpansionBaseAbilities(): void {
             ) ?? false;
             return !ignoredByOwner && Object.values(ctx.state.players).some(player => player.discard.length > 0);
         },
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'discardState', 'controllerState'],
-            writes: ['discardState', 'deckState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 密斯卡托尼克大学基地（Miskatonic University Base）────────
@@ -410,11 +425,6 @@ export function registerExpansionBaseAbilities(): void {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        effectContract: {
-            reads: ['playLimits', 'handState', 'madnessDeckState', 'controllerState'],
-            writes: ['handState', 'discardState', 'madnessDeckState', 'playLimits'],
-            opensInteraction: true,
-        },
     });
 
     // ── 冷原高地（Plateau of Leng）──────────────────────────────
@@ -441,10 +451,6 @@ export function registerExpansionBaseAbilities(): void {
             ],
         };
     }, {
-        effectContract: {
-            reads: ['playLimits', 'controllerState'],
-            writes: ['playLimits'],
-        },
     });
 
     // ============================================================================
@@ -492,11 +498,6 @@ export function registerExpansionBaseAbilities(): void {
         };
     }, {
         mandatory: false,
-        effectContract: {
-            reads: ['deckState', 'controllerState'],
-            writes: ['deckState', 'minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 神秘花园（Secret Garden）──────────────────────────────
@@ -538,11 +539,6 @@ export function registerExpansionBaseAbilities(): void {
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }, {
-        effectContract: {
-            reads: ['discardState', 'controllerState'],
-            writes: ['discardState', 'handState'],
-            opensInteraction: true,
-        },
     });
 
     // ============================================================================
@@ -589,11 +585,6 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'turnFlags', 'titanBoardState'],
-            writes: ['minionBoardState', 'handState', 'deckState', 'discardState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 魔法林地（Enchanted Glade）──────────────────────────────
@@ -605,10 +596,6 @@ export function registerExpansionBaseAbilities(): void {
 
         return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now) };
     }, {
-        effectContract: {
-            reads: ['deckState'],
-            writes: ['handState', 'deckState'],
-        },
     });
 
     // ── 仙灵之环（Fairy Circle）────────────────────────────────
@@ -622,6 +609,13 @@ export function registerExpansionBaseAbilities(): void {
         // reduce 已执行，minionsPlayedPerBase 包含刚打出的随从，首次打出时值为 1
         const playedAtBase = player.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0;
         if (playedAtBase !== 1) return { events: [] };
+        const branchContext = createBaseFairyRingBranchEffectContext(
+            ctx.matchState,
+            ctx.playerId,
+            ctx.random,
+            ctx.now,
+            ctx.baseIndex,
+        );
 
         return {
             events: [],
@@ -636,18 +630,25 @@ export function registerExpansionBaseAbilities(): void {
                 planContext: { baseIndex: ctx.baseIndex },
                 upgrade: getSpiritOptionalBothUpgradeForBase(ctx.state, ctx.playerId, ctx.now),
                 options: [
-                    createBaseFairyRingBranchOption('extra-minion', '额外打出一个随从到这里', 'extra_minion'),
-                    createBaseFairyRingBranchOption('extra-action', '额外打出一张行动卡', 'extra_action'),
+                    createBaseFairyRingBranchOption(
+                        'extra-minion',
+                        '额外打出一个随从到这里',
+                        'extra_minion',
+                        undefined,
+                        baseFairyRingExtraMinionPrimitive.footprint(branchContext),
+                    ),
+                    createBaseFairyRingBranchOption(
+                        'extra-action',
+                        '额外打出一张行动卡',
+                        'extra_action',
+                        undefined,
+                        baseFairyRingExtraActionPrimitive.footprint(branchContext),
+                    ),
                     createBaseFairyRingBranchOption('skip', '跳过', 'skip', { skip: true }),
                 ],
             }),
         };
     }, {
-        effectContract: {
-            reads: ['playLimits', 'titanBoardState', 'controllerState', 'turnFlags'],
-            writes: ['playLimits', 'titanBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 平衡之地（Land of Balance）──────────────────────────────
@@ -702,11 +703,6 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState', 'turnFlags', 'titanBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 九命之屋（House of Nine Lives）──────────────────────────
@@ -772,11 +768,6 @@ export function registerExpansionBaseAbilities(): void {
         return { events: [], matchState: updatedMS };
     }, {
         phase: 'replacement',
-        effectContract: {
-            reads: ['baseState', 'minionBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 被动保护类基地──────────────────────────────────────────
@@ -885,11 +876,6 @@ export function registerExpansionBaseAbilities(): void {
         return { events: [], matchState: ms };
     }, {
         mandatory: false,
-        effectContract: {
-            reads: ['turnFlags', 'minionBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 
     // ── 牧场（The Pasture）──────────────────────────────────
@@ -947,11 +933,6 @@ export function registerExpansionBaseAbilities(): void {
             }),
         };
     }, {
-        effectContract: {
-            reads: ['turnFlags', 'minionBoardState'],
-            writes: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
 }
 

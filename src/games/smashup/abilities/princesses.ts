@@ -356,37 +356,20 @@ export function registerPrincessesAbilities(): void {
         perInstance: true,
         sourceScope: 'triggerBase',
         playerContext: 'sourceController',
-        effectContract: {
-            writes: ['vpState'],
-        },
     });
     registerTrigger('princesses_woodland_helpers', 'onActionPlayed', princessesWoodlandHelpers, {
         perInstance: true,
         playerContext: 'sourceController',
         baseScoped: false,
-        effectContract: {
-            reads: ['controllerState', 'discardState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('princesses_sleeping_beauty', 'onMinionDestroyed', princessesSleepingBeautyOnDestroyed, {
         phase: 'replacement',
         perInstance: true,
-        effectContract: {
-            reads: ['triggerMinionState', 'sourceSelfState', 'controllerState', 'handState', 'deckState', 'discardState'],
-            writes: ['deckState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('princesses_sleeping_beauty', 'onMinionDiscardedFromBase', princessesSleepingBeautyOnDiscarded, {
         global: true,
         globalZones: ['discard'],
         playerContext: 'eventPlayer',
-        effectContract: {
-            reads: ['controllerState', 'discardState', 'deckState'],
-            writes: ['discardState', 'deckState'],
-            opensInteraction: true,
-        },
     });
     registerInterceptor('princesses_heirloom', princessesHeirloomInterceptor);
 }

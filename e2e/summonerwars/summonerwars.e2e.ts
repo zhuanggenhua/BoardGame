@@ -4192,6 +4192,13 @@ test.describe('SummonerWars', () => {
     await expect(bloodSummonCard).toBeVisible({ timeout: 5000 });
     await bloodSummonCard.click();
 
+    // 回归覆盖：召唤阶段交互事件卡在目标链路同步前，点棋盘也不应误落到普通召唤校验。
+    await hostPage.getByTestId('sw-cell-0-0').click({ force: true });
+    const phaseRoutingError = hostPage.getByText(/无法在该位置召唤|Cannot summon there|无法在该位置建造|Cannot build there|建筑必须|传送门附近/);
+    await expect(phaseRoutingError).toHaveCount(0);
+    await hostPage.waitForTimeout(800);
+    await expect(phaseRoutingError).toHaveCount(0);
+
     // 验证血契召唤模式横幅显示
     const bloodSummonBanner = hostPage.locator('[class*="bg-rose-900"]');
     await expect(bloodSummonBanner).toBeVisible({ timeout: 3000 });
@@ -4521,12 +4528,19 @@ test.describe('SummonerWars', () => {
     await waitForPhase(hostPage, 'build');
 
     const eventCard = hostPage.getByTestId('sw-hand-area')
-      .locator('[data-card-id="necro-hellfire-blade"]')
+      .locator(`[data-card-id="${prepared.cardId}"]`)
       .first();
     await expect(eventCard).toBeVisible({ timeout: 5000 });
 
     // 交互事件牌一次点击直接进入交互（不 armed），但不应立刻结算消耗
     await eventCard.click();
+
+    // 回归覆盖：交互建立前的快速棋盘点击不应落到 BUILD_STRUCTURE 校验并弹建造位置错误。
+    await hostPage.getByTestId('sw-cell-0-0').click({ force: true });
+    const buildPositionError = hostPage.getByText(/无法在该位置建造|Cannot build there|建筑必须|传送门附近/);
+    await expect(buildPositionError).toHaveCount(0);
+    await hostPage.waitForTimeout(800);
+    await expect(buildPositionError).toHaveCount(0);
 
     const targetHighlights = hostPage.locator('[data-valid-event-target="true"]');
     await expect(targetHighlights).toHaveCount(1, { timeout: 5000 });
@@ -4556,6 +4570,37 @@ test.describe('SummonerWars', () => {
     await hostPage.screenshot({
       path: getEvidenceScreenshotPath(testInfo, 'event-interactive-single-target-cancel', {
         filename: 'event-interactive-single-target-cancel.png',
+      }),
+      fullPage: false,
+    });
+
+    await eventCard.click();
+    await expect(targetHighlights).toHaveCount(1, { timeout: 5000 });
+    await clickBoardElement(hostPage, '[data-valid-event-target="true"]');
+
+    await expect.poll(async () => {
+      const core = await readCoreState(hostPage);
+      return core?.players?.['0']?.hand?.some((card: any) => card.id === prepared.cardId) ?? false;
+    }, { timeout: 5000, message: '确认目标后，狱火铸剑应从手牌移除' }).toBe(false);
+
+    await expect.poll(async () => {
+      const core = await readCoreState(hostPage);
+      const rows = core?.board ?? [];
+      for (const row of rows) {
+        for (const cell of row ?? []) {
+          const unit = cell?.unit;
+          if (!unit || unit.owner !== '0' || unit.card?.unitClass !== 'common') continue;
+          if ((unit.attachedCards ?? []).some((card: any) => card.id === prepared.cardId)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }, { timeout: 5000, message: '确认目标后，狱火铸剑应附加到友方士兵底层' }).toBe(true);
+
+    await hostPage.screenshot({
+      path: getEvidenceScreenshotPath(testInfo, 'event-interactive-single-target-attached', {
+        filename: 'event-interactive-single-target-attached.png',
       }),
       fullPage: false,
     });
@@ -6976,7 +7021,7 @@ const prepareInteractiveEventSingleTargetState = (coreState: any): {
   const player = next.players?.['0'];
   if (!player) throw new Error('无法读取玩家0状态');
 
-  const cardId = 'necro-hellfire-blade';
+  const cardId = 'necro-hellfire-blade-0-99';
   const hellfireCard = {
     id: cardId,
     name: '狱火铸剑',

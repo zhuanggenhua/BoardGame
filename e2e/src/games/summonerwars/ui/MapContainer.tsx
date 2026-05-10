@@ -525,7 +525,7 @@ export const MapContainer: React.FC<MapContainerProps> = ({
         style={{
           transform: `translate(${clampedPosition.x}px, ${clampedPosition.y}px) scale(${scale})`,
           transition: isDragging ? 'none' : isAnimating ? 'transform 350ms ease-out' : 'transform 75ms',
-          willChange: 'transform',
+          willChange: isDragging || isAnimating ? 'transform' : 'auto',
           pointerEvents: isDragging ? 'none' : 'auto',
         }}
       >

@@ -1,4 +1,4 @@
-import type { MatchState, PlayerId } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
@@ -12,7 +12,6 @@ import {
     buildActionMinionTargetOptions,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
-    buildStandardDrawEvents,
     buildValidatedReturnEvents,
     buildAbilityFeedback,
     canControllerPlayTitan,
@@ -20,8 +19,6 @@ import {
     findMinionOnBases,
     getAvailableSpiritOfTheForestOrTitan,
     getTitanByController,
-    grantContextualExtraAction,
-    grantContextualExtraMinion,
     markSpiritOfTheForestOrUsed,
     playTitan,
 } from '../domain/abilityHelpers';
@@ -33,8 +30,24 @@ import {
     type BranchingChoiceOption,
     type BranchingChoiceUpgrade,
 } from '../domain/branchingChoice';
+import {
+    createEffectDslProgram,
+    createFootprint,
+    discardRandomCardsPrimitive,
+    drawCardsPrimitive,
+    grantExtraActionPrimitive,
+    grantExtraMinionPrimitive,
+    sequencePrimitives,
+} from '../domain/effectDsl';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpCore, SmashUpEvent, OngoingAttachedEvent, OngoingDetachedEvent } from '../domain/types';
+import type {
+    SmashUpCore,
+    SmashUpEvent,
+    OngoingAttachedEvent,
+    OngoingDetachedEvent,
+    SmashUpReactionResourceFootprint,
+    SmashUpReactionResourceRef,
+} from '../domain/types';
 import { getBaseDef, getCardDef } from '../data/cards';
 
 type MinionChoice = {
@@ -84,6 +97,10 @@ type FairiesPromptContext = {
     matchState: MatchState<SmashUpCore>;
     playerId: PlayerId;
     now: number;
+};
+
+type FairiesBranchEffectContext = FairiesPromptContext & {
+    random: RandomFn;
 };
 
 type FairiesMinionTarget = {
@@ -347,13 +364,123 @@ function createButtonBranchOption(
     id: string,
     label: string,
     branchId: string,
+    footprint?: SmashUpReactionResourceFootprint,
 ): BranchingChoiceOption {
     return {
         id,
         label,
         branchId,
         displayMode: 'button',
+        ...(footprint ? { footprint } : {}),
     };
+}
+
+const fairiesTitaniaExtraMinionPrimitive = grantExtraMinionPrimitive<FairiesPromptContext>({
+    playerId: (context) => context.playerId,
+    reason: 'fairies_titania',
+    now: (context) => context.now,
+    matchState: (context) => context.matchState,
+});
+
+const fairiesTitaniaExtraMinionProgram = createEffectDslProgram(fairiesTitaniaExtraMinionPrimitive);
+
+const fairiesPuckExtraActionPrimitive = grantExtraActionPrimitive<FairiesBranchEffectContext>({
+    playerId: (context) => context.playerId,
+    reason: 'fairies_puck',
+    now: (context) => context.now,
+    matchState: (context) => context.matchState,
+});
+
+const fairiesPuckDrawCardPrimitive = drawCardsPrimitive<FairiesBranchEffectContext>({
+    playerId: (context) => context.playerId,
+    count: 1,
+    now: (context) => context.now,
+    random: (context) => context.random,
+    core: (context) => context.matchState.core,
+});
+
+const fairiesPuckExtraActionProgram = createEffectDslProgram(fairiesPuckExtraActionPrimitive);
+const fairiesPuckDrawCardProgram = createEffectDslProgram(fairiesPuckDrawCardPrimitive);
+
+const fairiesMagicAcornsDiscardOthersPrimitive = discardRandomCardsPrimitive<FairiesBranchEffectContext>({
+    playerIds: (context) => Object.keys(context.matchState.core.players).filter(playerId => playerId !== context.playerId),
+    count: 1,
+    now: (context) => context.now,
+    random: (context) => context.random,
+    core: (context) => context.matchState.core,
+});
+
+const fairiesMagicAcornsDrawOneAndActionPrimitive = sequencePrimitives(
+    drawCardsPrimitive<FairiesBranchEffectContext>({
+        playerId: (context) => context.playerId,
+        count: 1,
+        now: (context) => context.now,
+        random: (context) => context.random,
+        core: (context) => context.matchState.core,
+    }),
+    grantExtraActionPrimitive<FairiesBranchEffectContext>({
+        playerId: (context) => context.playerId,
+        reason: 'fairies_magic_acorns',
+        now: (context) => context.now,
+        matchState: (context) => context.matchState,
+    }),
+);
+
+const fairiesMagicAcornsDiscardOthersProgram = createEffectDslProgram(fairiesMagicAcornsDiscardOthersPrimitive);
+const fairiesMagicAcornsDrawOneAndActionProgram = createEffectDslProgram(fairiesMagicAcornsDrawOneAndActionPrimitive);
+
+const fairiesFairyBalletDrawTwoPrimitive = drawCardsPrimitive<FairiesBranchEffectContext>({
+    playerId: (context) => context.playerId,
+    count: 2,
+    now: (context) => context.now,
+    random: (context) => context.random,
+    core: (context) => context.matchState.core,
+});
+
+const fairiesFairyBalletDrawOneAndActionPrimitive = sequencePrimitives(
+    drawCardsPrimitive<FairiesBranchEffectContext>({
+        playerId: (context) => context.playerId,
+        count: 1,
+        now: (context) => context.now,
+        random: (context) => context.random,
+        core: (context) => context.matchState.core,
+    }),
+    grantExtraActionPrimitive<FairiesBranchEffectContext>({
+        playerId: (context) => context.playerId,
+        reason: 'fairies_fairy_ballet',
+        now: (context) => context.now,
+        matchState: (context) => context.matchState,
+    }),
+);
+
+const fairiesFairyBalletDrawTwoProgram = createEffectDslProgram(fairiesFairyBalletDrawTwoPrimitive);
+const fairiesFairyBalletDrawOneAndActionProgram = createEffectDslProgram(fairiesFairyBalletDrawOneAndActionPrimitive);
+
+function createFairiesBranchEffectContext(
+    state: MatchState<SmashUpCore>,
+    playerId: PlayerId,
+    random: RandomFn,
+    timestamp: number,
+): FairiesBranchEffectContext {
+    return { matchState: state, playerId, random, now: timestamp };
+}
+
+function createTitaniaReturnBranchFootprint(state: SmashUpCore, playerId: PlayerId) {
+    const options = buildTitaniaReturnOptions(state, playerId);
+    const reads: SmashUpReactionResourceRef[] = [];
+    const writes: SmashUpReactionResourceRef[] = [{ kind: 'targetAvailability' }];
+
+    for (const option of options) {
+        const { minionUid, baseIndex } = option.value;
+        if (!minionUid || baseIndex === undefined) continue;
+        reads.push({ kind: 'minion', uid: minionUid }, { kind: 'base', index: baseIndex });
+        writes.push({ kind: 'minion', uid: minionUid }, { kind: 'base', index: baseIndex });
+
+        const owner = state.bases[baseIndex]?.minions.find(minion => minion.uid === minionUid)?.owner;
+        if (owner) writes.push({ kind: 'playerHand', playerId: owner });
+    }
+
+    return createFootprint({ reads, writes, opensInteraction: true });
 }
 
 function runtimeResultToAbilityResult(
@@ -775,9 +902,24 @@ export function registerFairiesAbilities(): void {
 }
 
 function fairiesTitania(ctx: AbilityContext): AbilityResult {
+    const promptContext: FairiesPromptContext = {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+    };
     const options: BranchingChoiceOption[] = [
-        createButtonBranchOption('extra-minion', '额外打出一个随从', 'extra_minion'),
-        createButtonBranchOption('return-minion', '将一个随从移回其拥有者手牌', 'return_minion'),
+        createButtonBranchOption(
+            'extra-minion',
+            '额外打出一个随从',
+            'extra_minion',
+            fairiesTitaniaExtraMinionPrimitive.footprint(promptContext),
+        ),
+        createButtonBranchOption(
+            'return-minion',
+            '将一个随从移回其拥有者手牌',
+            'return_minion',
+            createTitaniaReturnBranchFootprint(ctx.state, ctx.playerId),
+        ),
     ];
 
     return {
@@ -813,6 +955,7 @@ const fairiesGlymmerProgram = createEffectProgram<AbilityContext, SmashUpCore, S
 });
 
 function fairiesPuck(ctx: AbilityContext): AbilityResult {
+    const branchContext = createFairiesBranchEffectContext(ctx.matchState, ctx.playerId, ctx.random, ctx.now);
     return {
         events: [],
         matchState: queueBranchingChoice({
@@ -825,8 +968,18 @@ function fairiesPuck(ctx: AbilityContext): AbilityResult {
             targetType: 'button',
             upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
             options: [
-                createButtonBranchOption('extra-action', '额外打出一张行动卡', 'extra_action'),
-                createButtonBranchOption('draw-card', '抽一张牌', 'draw_card'),
+                createButtonBranchOption(
+                    'extra-action',
+                    '额外打出一张行动卡',
+                    'extra_action',
+                    fairiesPuckExtraActionPrimitive.footprint(branchContext),
+                ),
+                createButtonBranchOption(
+                    'draw-card',
+                    '抽一张牌',
+                    'draw_card',
+                    fairiesPuckDrawCardPrimitive.footprint(branchContext),
+                ),
             ],
         }),
     };
@@ -881,6 +1034,7 @@ const fairiesLeafArmorProgram = createTransferSelfAbilityProgram(
 );
 
 function fairiesMagicAcorns(ctx: AbilityContext): AbilityResult {
+    const branchContext = createFairiesBranchEffectContext(ctx.matchState, ctx.playerId, ctx.random, ctx.now);
     return {
         events: [],
         matchState: queueBranchingChoice({
@@ -893,8 +1047,18 @@ function fairiesMagicAcorns(ctx: AbilityContext): AbilityResult {
             targetType: 'button',
             upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
             options: [
-                createButtonBranchOption('discard-others', '每位其他玩家随机弃一张牌', 'discard_others'),
-                createButtonBranchOption('draw-and-action', '抽一张牌并额外打出一张行动卡', 'draw_one_and_action'),
+                createButtonBranchOption(
+                    'discard-others',
+                    '每位其他玩家随机弃一张牌',
+                    'discard_others',
+                    fairiesMagicAcornsDiscardOthersPrimitive.footprint(branchContext),
+                ),
+                createButtonBranchOption(
+                    'draw-and-action',
+                    '抽一张牌并额外打出一张行动卡',
+                    'draw_one_and_action',
+                    fairiesMagicAcornsDrawOneAndActionPrimitive.footprint(branchContext),
+                ),
             ],
         }),
     };
@@ -960,6 +1124,7 @@ const fairiesEnchantmentProgram = createEffectProgram<AbilityContext, SmashUpCor
 });
 
 function fairiesFairyBallet(ctx: AbilityContext): AbilityResult {
+    const branchContext = createFairiesBranchEffectContext(ctx.matchState, ctx.playerId, ctx.random, ctx.now);
     return {
         events: [],
         matchState: queueBranchingChoice({
@@ -972,8 +1137,18 @@ function fairiesFairyBallet(ctx: AbilityContext): AbilityResult {
             targetType: 'button',
             upgrade: getSpiritOptionalBothUpgrade(ctx.state, ctx.playerId, ctx.now),
             options: [
-                createButtonBranchOption('draw-two', '抽两张牌', 'draw_two'),
-                createButtonBranchOption('draw-one-action', '抽一张牌并额外打出一张行动卡', 'draw_one_and_action'),
+                createButtonBranchOption(
+                    'draw-two',
+                    '抽两张牌',
+                    'draw_two',
+                    fairiesFairyBalletDrawTwoPrimitive.footprint(branchContext),
+                ),
+                createButtonBranchOption(
+                    'draw-one-action',
+                    '抽一张牌并额外打出一张行动卡',
+                    'draw_one_and_action',
+                    fairiesFairyBalletDrawOneAndActionPrimitive.footprint(branchContext),
+                ),
             ],
         }),
     };
@@ -993,10 +1168,10 @@ function fairiesMagicWardRestrictionChecker(ctx: RestrictionCheckContext): boole
 const runFairiesTitaniaBranch: BranchExecutor = ({ state, playerId, selection, timestamp }) => {
     const branchId = selection.branchId;
     if (branchId === 'extra_minion') {
-        return {
-            state,
-            events: [grantContextualExtraMinion({ playerId, now: timestamp, matchState: state }, 'fairies_titania')],
-        };
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesTitaniaExtraMinionProgram,
+            { matchState: state, playerId, now: timestamp } satisfies FairiesPromptContext,
+        ), state);
     }
     if (branchId === 'return_minion') {
         return runtimeResultToBranchResult(executeAbilityProgram(
@@ -1010,16 +1185,16 @@ const runFairiesTitaniaBranch: BranchExecutor = ({ state, playerId, selection, t
 const runFairiesPuckBranch: BranchExecutor = ({ state, playerId, selection, random, timestamp }) => {
     const branchId = selection.branchId;
     if (branchId === 'extra_action') {
-        return {
-            state,
-            events: [grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'fairies_puck')],
-        };
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesPuckExtraActionProgram,
+            createFairiesBranchEffectContext(state, playerId, random, timestamp),
+        ), state);
     }
     if (branchId === 'draw_card') {
-        return {
-            state,
-            events: buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
-        };
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesPuckDrawCardProgram,
+            createFairiesBranchEffectContext(state, playerId, random, timestamp),
+        ), state);
     }
     return { state, events: [] };
 };
@@ -1027,26 +1202,16 @@ const runFairiesPuckBranch: BranchExecutor = ({ state, playerId, selection, rand
 const runFairiesMagicAcornsBranch: BranchExecutor = ({ state, playerId, selection, random, timestamp }) => {
     const branchId = selection.branchId;
     if (branchId === 'discard_others') {
-        const events: SmashUpEvent[] = [];
-        for (const [targetPlayerId, player] of Object.entries(state.core.players)) {
-            if (targetPlayerId === playerId || player.hand.length === 0) continue;
-            const discardIndex = Math.floor(random.random() * player.hand.length);
-            events.push({
-                type: SU_EVENTS.CARDS_DISCARDED,
-                payload: { playerId: targetPlayerId, cardUids: [player.hand[discardIndex].uid] },
-                timestamp,
-            } as SmashUpEvent);
-        }
-        return { state, events };
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesMagicAcornsDiscardOthersProgram,
+            createFairiesBranchEffectContext(state, playerId, random, timestamp),
+        ), state);
     }
     if (branchId === 'draw_one_and_action') {
-        return {
-            state,
-            events: [
-                ...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
-                grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'fairies_magic_acorns'),
-            ],
-        };
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesMagicAcornsDrawOneAndActionProgram,
+            createFairiesBranchEffectContext(state, playerId, random, timestamp),
+        ), state);
     }
     return { state, events: [] };
 };
@@ -1092,19 +1257,16 @@ const runFairiesPlayfulTricksBranch: BranchExecutor = ({ state, playerId, select
 const runFairiesFairyBalletBranch: BranchExecutor = ({ state, playerId, selection, random, timestamp }) => {
     const branchId = selection.branchId;
     if (branchId === 'draw_two') {
-        return {
-            state,
-            events: buildStandardDrawEvents(state.core, playerId, 2, random, timestamp),
-        };
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesFairyBalletDrawTwoProgram,
+            createFairiesBranchEffectContext(state, playerId, random, timestamp),
+        ), state);
     }
     if (branchId === 'draw_one_and_action') {
-        return {
-            state,
-            events: [
-                ...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
-                grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'fairies_fairy_ballet'),
-            ],
-        };
+        return runtimeResultToBranchResult(executeAbilityProgram(
+            fairiesFairyBalletDrawOneAndActionProgram,
+            createFairiesBranchEffectContext(state, playerId, random, timestamp),
+        ), state);
     }
     return { state, events: [] };
 };

@@ -1,3 +1,27 @@
+## Session: 2026-05-10 命令执行异常全链路修复
+- **Status:** in_progress
+- Actions taken:
+  - 已按线上反馈源确认本轮命令异常相关反馈：`6a006a1cd5153682969e5f53`、`6a005f68d5153682969e5c7d`、`6a00549bd5153682969e59d3`。
+  - 已定位传输层根因：`executeCommandInternal()` 真实错误在 batch 回滚时被 `handleBatch()` / `executeBatchInternal()` 折叠成固定 `command_failed`。
+  - 已定位前端展示根因：`MatchRoom.tsx` 将 `command_failed` 归为静默系统错误；`GameProvider` batch rejection 也跳过 `command_failed` 的 `onError`。
+  - 已修复 `src/engine/transport/server.ts`、`src/engine/transport/react.tsx`、`src/pages/MatchRoom.tsx`，并补对应聚焦测试。
+  - 已补证据文档：`evidence/transport-command-error-full-chain-fix-2026-05-10.md`。
+  - 用户确认此前“长舟”应理解为“大杀四方 / SmashUp”，已重新归类到 SmashUp 命令异常链路。
+  - 已定位“长舟”为 SmashUp `base_drakkar`（德拉卡尔号 / Drakkar），不是 SummonerWars；旧归类结论已在 evidence 中修正。
+  - 已确认回归来源：`a4de3636` 引入运行时 `effectContract` 后，`base_drakkar` 手写契约漏 `playLimits` / `discardState` / `opensInteraction`，导致合法能力被 contract 误拦截；transport 再把真实错误折叠为 `command_failed`。
+  - 已新增真实链路回归：`base_drakkar 通过 PLAY_MINION 真实触发链时不会被资源契约误拦截`，同步到 `src` 与 `e2e/src` 镜像。
+- Verification:
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/expansionBaseAbilities.test.ts --configLoader native --maxWorkers 1 --testNamePattern "base_the_asylum|effect contract"`：5 passed。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/baseAbilitiesPrompt.test.ts src/games/smashup/__tests__/baseAbilityIntegration.test.ts src/games/smashup/__tests__/newBaseAbilities.test.ts --configLoader native --maxWorkers 1 --testNamePattern "base_ninja_dojo|base_castle_blood"`：7 passed。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/newBaseAbilities.test.ts --configLoader native --maxWorkers 1 --testNamePattern "base_drakkar"`：4 passed。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/reactionQueueOrdering.test.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts src/games/smashup/__tests__/baseAbilitiesPrompt.test.ts src/games/smashup/__tests__/baseAbilityIntegration.test.ts src/games/smashup/__tests__/newBaseAbilities.test.ts --configLoader native --maxWorkers 1 --testNamePattern "未知结构不靠 legacy contract|effect contract|base_the_asylum|base_ninja_dojo|base_castle_blood|base_drakkar"`：5 files passed，17 tests passed。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --maxWorkers 1 --testNamePattern "batch 内命令验证失败时应透传领域错误码|batch 内 pipeline 异常时应透传异常详情|batch expectedStateID"`：3 passed。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/pages/__tests__/matchSeatValidation.test.ts --configLoader native --maxWorkers 1 --testNamePattern "online command error visibility|shouldSilentlyRetryOnlineAiBatchRejection"`：3 passed。
+  - `npm run typecheck`：passed。
+  - `git diff --check -- src/engine/transport/server.ts src/engine/transport/react.tsx src/pages/MatchRoom.tsx src/engine/transport/__tests__/server.test.ts src/pages/__tests__/matchSeatValidation.test.ts`：无空白错误，仅 LF→CRLF 提示。
+- Remaining:
+  - 当前只跑了单测/领域 pipeline 聚焦验证；本轮没有跑浏览器 E2E，因此最终汇报不得把 E2E 截图作为证据。
+
 ## Addendum: 2026-05-07 审计流程已升级为“深度审计流程”硬门禁
 
 - 已回写并更新审计规范：

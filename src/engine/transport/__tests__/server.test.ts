@@ -2129,6 +2129,114 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(persisted.state?._stateID).toBe(1);
     });
 
+    it('batch 内命令验证失败时应透传领域错误码而不是折叠成 command_failed', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-batch-validation-error-detail', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const engineConfig: GameEngineConfig = {
+            ...createEngineConfig(),
+            domain: {
+                ...createEngineConfig().domain,
+                validate: (_state, command) => {
+                    if (command.type === 'BAD_SUMMON') {
+                        return { valid: false, error: 'summon_position_not_adjacent_to_gate' };
+                    }
+                    return { valid: true };
+                },
+            },
+        };
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [engineConfig],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-batch-validation-error-detail');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-batch-validation-error-detail', '0', 'cred-0');
+        socket.sent.length = 0;
+
+        await socket.clientEmit(
+            'batch',
+            'match-batch-validation-error-detail',
+            'batch-validation-error-detail-1',
+            [{ type: 'BAD_SUMMON', payload: { position: { x: 1, y: 1 } } }],
+            'cred-0',
+        );
+
+        expect(hasEvent(socket, 'batch:rejected', (args) => (
+            args[1] === 'batch-validation-error-detail-1'
+            && args[2] === 'summon_position_not_adjacent_to_gate'
+        ))).toBe(true);
+        expect(hasEvent(socket, 'batch:rejected', (args) => args[2] === 'command_failed')).toBe(false);
+
+        const persisted = await storage.fetch('match-batch-validation-error-detail', { state: true });
+        expect(persisted.state?._stateID).toBe(0);
+    });
+
+    it('batch 内 pipeline 异常时应透传异常详情，避免用户只看到泛化命令失败', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-batch-pipeline-error-detail', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const engineConfig: GameEngineConfig = {
+            ...createEngineConfig(),
+            systems: [{
+                id: 'throw-pipeline-detail',
+                name: 'throw-pipeline-detail',
+                priority: 1,
+                beforeCommand: ({ command }: { command: { type: string } }) => {
+                    if (command.type === 'TRIGGER_PIPELINE_ERROR') {
+                        throw new Error('effect contract missing turnFlags for base_ninja_dojo');
+                    }
+                },
+            } as any],
+        };
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [engineConfig],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-batch-pipeline-error-detail');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-batch-pipeline-error-detail', '0', 'cred-0');
+        socket.sent.length = 0;
+
+        await socket.clientEmit(
+            'batch',
+            'match-batch-pipeline-error-detail',
+            'batch-pipeline-error-detail-1',
+            [{ type: 'TRIGGER_PIPELINE_ERROR', payload: {} }],
+            'cred-0',
+        );
+
+        expect(hasEvent(socket, 'batch:rejected', (args) => (
+            args[1] === 'batch-pipeline-error-detail-1'
+            && args[2] === 'pipeline_error: effect contract missing turnFlags for base_ninja_dojo'
+        ))).toBe(true);
+        expect(hasEvent(socket, 'batch:rejected', (args) => args[2] === 'command_failed')).toBe(false);
+    });
+
     it('成功命令后应采集训练决策样本', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

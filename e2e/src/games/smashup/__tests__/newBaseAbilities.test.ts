@@ -1290,10 +1290,6 @@ describe('base_laboratorium: 实验工坊 - 当前玩家回合内基地全局首
                 ownerPlayerId: '1',
                 witnessRequirement: 'inPlayAtTriggerTime',
                 witnessed: true,
-                effectContract: {
-                    reads: ['playLimits', 'minionBoardState', 'baseState'],
-                    writes: ['triggerMinionPower'],
-                },
                 baseIndex: 0,
                 triggerMinionUid: 'archmage',
                 triggerMinionDefId: 'wizard_archmage',
@@ -1317,7 +1313,6 @@ describe('base_laboratorium: 实验工坊 - 当前玩家回合内基地全局首
                 triggerMinionUid: 'archmage',
                 triggerMinionDefId: 'wizard_archmage',
                 triggerBaseControllersAtTrigger: ['1'],
-                effectContract: { writes: ['playLimits'] },
                 lkiMinion: {
                     uid: 'archmage',
                     defId: 'wizard_archmage',
@@ -1393,10 +1388,6 @@ describe('base_laboratorium: 实验工坊 - 当前玩家回合内基地全局首
                 ownerPlayerId: '1',
                 witnessRequirement: 'inPlayAtTriggerTime',
                 witnessed: true,
-                effectContract: {
-                    reads: ['playLimits', 'minionBoardState', 'baseState'],
-                    writes: ['triggerMinionPower'],
-                },
                 baseIndex: 0,
                 triggerMinionUid: 'archmage',
                 triggerMinionDefId: 'wizard_archmage',
@@ -1420,7 +1411,6 @@ describe('base_laboratorium: 实验工坊 - 当前玩家回合内基地全局首
                 triggerMinionUid: 'archmage',
                 triggerMinionDefId: 'wizard_archmage',
                 triggerBaseControllersAtTrigger: ['1'],
-                effectContract: { writes: ['playLimits'] },
                 lkiMinion: {
                     uid: 'archmage',
                     defId: 'wizard_archmage',
@@ -1720,6 +1710,53 @@ describe('base_crypt: 地窖 - 可选触发', () => {
 });
 
 describe('Oops Vikings bases', () => {
+    it('base_drakkar 通过 PLAY_MINION 真实触发链时不会被资源契约误拦截', () => {
+        const core = makeState({
+            bases: [{
+                defId: 'base_drakkar',
+                minions: [],
+                ongoingActions: [],
+            }],
+            players: {
+                '0': {
+                    id: '0', vp: 0,
+                    hand: [{ uid: 'm1', defId: 'robot_microbot_guard', type: 'minion', owner: '0' }],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    minionsPlayedPerBase: {},
+                    factions: [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.ALIENS],
+                },
+                '1': {
+                    id: '1', vp: 0,
+                    hand: [],
+                    deck: [{ uid: 'd1', defId: 'wizard_summon', type: 'action', owner: '1' }],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    minionsPlayedPerBase: {},
+                    factions: [SMASHUP_FACTION_IDS.WIZARDS, SMASHUP_FACTION_IDS.PIRATES],
+                },
+            } as any,
+        });
+
+        const played = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'm1', baseIndex: 0 } } as any,
+            defaultTestRandom,
+        );
+
+        expect(played.success, (played as any).error).toBe(true);
+        const prompt = getInteractionsFromMS(played.finalState)[0] as any;
+        expect(prompt?.data?.sourceId).toBe('base_drakkar');
+        expect(prompt.data.options.some((entry: any) => entry.value?.targetPlayerId === '1')).toBe(true);
+    });
+
     it('base_drakkar 首次有随从打到这里时会提示选择另一位玩家并把合格牌抽到发动者手里', () => {
         const result = triggerBaseAbilityWithMS('base_drakkar', 'onMinionPlayed', {
             state: makeState({

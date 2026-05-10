@@ -1147,10 +1147,6 @@ function registerTricksterOngoingEffects(): void {
         }
         return [];
     }, {
-        effectContract: {
-            reads: ['minionBoardState', 'triggerMinionState', 'triggerMinionPower', 'turnFlags', 'baseState', 'titanBoardState'],
-            writes: ['triggerMinionState'],
-        },
     });
 
     // 布朗尼：被对手卡牌效果影响时，对手弃两张牌
@@ -1176,10 +1172,6 @@ function registerTricksterOngoingEffects(): void {
             timestamp: trigCtx.now,
         }];
     }, {
-        effectContract: {
-            reads: ['triggerMinionState', 'controllerState', 'handState'],
-            writes: ['handState', 'discardState'],
-        },
     });
 
     // 藏身处：保护同基地己方随从不受对手行动卡影响（消耗型：触发后自毁）
@@ -1237,10 +1229,6 @@ function registerTricksterOngoingEffects(): void {
         }
         return [];
     }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'triggerMinionState'],
-            writes: ['sourceSelfState', 'triggerMinionState'],
-        },
     });
 
     // 封路：指定派系不能打出随从到此基地（描述无"对手"限定，对所有玩家生效）
@@ -1280,25 +1268,13 @@ function registerTricksterOngoingEffects(): void {
         }
         return [];
     }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'handState', 'controllerState'],
-            writes: ['handState', 'discardState'],
-        },
     });
 }
 
 function registerTricksterPodOngoingEffects(): void {
     registerTrigger('trickster_brownie_pod', 'onMinionAffected', () => [], {
-        effectContract: {
-            reads: [],
-            writes: [],
-        },
     });
     registerTrigger('trickster_enshrouding_mist_pod', 'onTurnStart', () => [], {
-        effectContract: {
-            reads: [],
-            writes: [],
-        },
     });
     registerProtection('trickster_hideout_pod', 'action', () => false);
     // Hideout POD：其他玩家不能将随从移动到此基地（用事件拦截器阻止移动）
@@ -1370,10 +1346,6 @@ function registerTricksterPodOngoingEffects(): void {
         }
         return events;
     }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'triggerMinionState', 'triggerMinionPower', 'turnFlags'],
-            writes: ['sourceSelfState', 'triggerMinionState'],
-        },
     });
 
     // Brownie POD：每回合一次，当对手在另一基地打出随从后，你抽 1 张牌
@@ -1410,10 +1382,6 @@ function registerTricksterPodOngoingEffects(): void {
         }
         return events;
     }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'triggerMinionState', 'handState', 'deckState', 'discardState', 'turnFlags', 'controllerState'],
-            writes: ['sourceSelfState', 'handState', 'deckState', 'discardState'],
-        },
     });
 
     // Gremlin POD：被消灭进入弃牌堆后抽 1；若被消灭则每位对手随机弃 1
@@ -1437,10 +1405,6 @@ function registerTricksterPodOngoingEffects(): void {
         }
         return events;
     }, {
-        effectContract: {
-            reads: ['triggerMinionState', 'controllerState', 'handState', 'deckState', 'discardState', 'turnFlags'],
-            writes: ['handState', 'deckState', 'discardState'],
-        },
     });
 
     // Gremlin POD：基地计分清场时进入弃牌堆（非消灭）也抽 1
@@ -1451,10 +1415,6 @@ function registerTricksterPodOngoingEffects(): void {
         if (!player) return [];
         return buildStandardDrawEvents(trigCtx.state, ownerId, 1, trigCtx.random, trigCtx.now);
     }, {
-        effectContract: {
-            reads: ['triggerMinionState', 'controllerState', 'deckState'],
-            writes: ['handState', 'deckState'],
-        },
     });
 
     // Flame Trap POD：对手打出随从到此基地后，先自毁再尝试消灭该随从
@@ -1486,10 +1446,6 @@ function registerTricksterPodOngoingEffects(): void {
             },
         ];
     }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'triggerMinionState'],
-            writes: ['sourceSelfState', 'triggerMinionState'],
-        },
     });
 
     // Flame Trap POD：你回合开始时，可以让此基地本回合 breakpoint -4
@@ -1506,11 +1462,6 @@ function registerTricksterPodOngoingEffects(): void {
         );
     }, {
         perInstance: true,
-        effectContract: {
-            reads: ['sourceSelfState', 'scoringState'],
-            writes: ['scoringState'],
-            opensInteraction: true,
-        },
     });
 
     // Pay the Piper POD：对手在此基地打出随从后，该玩家弃 1 张牌（先按随机实现，后续可升级为选择弃牌）
@@ -1531,10 +1482,6 @@ function registerTricksterPodOngoingEffects(): void {
             timestamp: trigCtx.now,
         } as CardsDiscardedEvent];
     }, {
-        effectContract: {
-            reads: ['sourceSelfState', 'handState'],
-            writes: ['handState', 'discardState'],
-        },
     });
 
     // Block the Path POD：对每个对手指定其拥有的一个派系，阻止该对手派系随从打到此基地

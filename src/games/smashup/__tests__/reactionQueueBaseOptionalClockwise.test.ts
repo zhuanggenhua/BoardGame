@@ -40,11 +40,9 @@ describe('Reaction queue: optional base triggers resolve clockwise', () => {
     // Two optional base abilities, owned by different players.
     registerBaseAbility('base_a', 'onTurnStart', () => ({ events: [] }), {
       mandatory: false,
-      effectContract: {},
     });
     registerBaseAbility('base_b', 'onTurnStart', () => ({ events: [] }), {
       mandatory: false,
-      effectContract: {},
     });
 
     const core = core3p();
@@ -71,11 +69,9 @@ describe('Reaction queue: optional base triggers resolve clockwise', () => {
   it('a player who passed may still act later in the same optional cycle', () => {
     registerBaseAbility('base_a', 'onTurnStart', () => ({ events: [] }), {
       mandatory: false,
-      effectContract: {},
     });
     registerBaseAbility('base_b', 'onTurnStart', () => ({ events: [] }), {
       mandatory: false,
-      effectContract: {},
     });
 
     const core = core3p();

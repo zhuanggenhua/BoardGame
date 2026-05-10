@@ -1,6 +1,7 @@
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { asSimpleChoice, type InteractionDescriptor, type PromptOption, type SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
-import { executeTriggerProgramExecutor } from './triggerExecutors';
+import { collectAbilityProgramFootprints } from './abilityRuntime';
+import { executeTriggerProgramExecutor, requireTriggerProgramExecutor } from './triggerExecutors';
 import type { TitanAwareTriggerTiming } from './ongoingEffects';
 import type {
     SmashUpCore,
@@ -427,6 +428,11 @@ function deriveFootprintFromOption(option: PromptOption, fp: MutableFootprint): 
     if (option.disabled) return;
     if (option.id === 'skip' || option.id === 'pass' || option.value === null || option.value === undefined) return;
     if (typeof option.value === 'object' && 'skip' in (option.value as Record<string, unknown>)) return;
+    const explicitFootprint = (option as PromptOption & { _resourceFootprint?: unknown })._resourceFootprint;
+    if (isReactionResourceFootprint(explicitFootprint)) {
+        mergeFootprint(fp, explicitFootprint);
+        return;
+    }
     addGenericResourcesFromValue(fp, option.value, 'write');
     if (option.value && typeof option.value === 'object') {
         const optionPlayerId = playerId((option.value as Record<string, unknown>).playerId);
@@ -468,6 +474,21 @@ function mergeFootprint(target: MutableFootprint, source: SmashUpReactionResourc
     for (const ref of source.writes) add(target.writes, ref);
     target.opensInteraction = target.opensInteraction || source.opensInteraction;
     target.fallbackReason ??= source.fallbackReason;
+}
+
+function isReactionResourceRef(value: unknown): value is SmashUpReactionResourceRef {
+    if (!value || typeof value !== 'object') return false;
+    const kind = (value as { kind?: unknown }).kind;
+    return typeof kind === 'string';
+}
+
+function isReactionResourceFootprint(value: unknown): value is SmashUpReactionResourceFootprint {
+    if (!value || typeof value !== 'object') return false;
+    const candidate = value as { reads?: unknown; writes?: unknown };
+    return Array.isArray(candidate.reads)
+        && Array.isArray(candidate.writes)
+        && candidate.reads.every(isReactionResourceRef)
+        && candidate.writes.every(isReactionResourceRef);
 }
 
 function makeProbeRandom(random: RandomFn): RandomFn {
@@ -552,10 +573,27 @@ export function deriveFootprintFromTriggerProbe(
 
     try {
         const beforeState = state;
+        const probeContext = buildTriggerProbeContext(state, trigger, random, now) as never;
+        try {
+            const executor = requireTriggerProgramExecutor(trigger.timing, trigger.sourceDefId);
+            const dslFootprints = collectAbilityProgramFootprints(
+                executor.program,
+                probeContext,
+            ).filter(isReactionResourceFootprint);
+            if (dslFootprints.length > 0) {
+                for (const footprint of dslFootprints) {
+                    mergeFootprint(fp, footprint);
+                }
+                return finalizeFootprint(fp);
+            }
+        } catch {
+            // 非 DSL 能力或 footprint derivation 失败时继续走既有 probe 路径。
+        }
+
         const result = executeTriggerProgramExecutor(
             trigger.timing,
             trigger.sourceDefId,
-            buildTriggerProbeContext(state, trigger, random, now) as never,
+            probeContext,
         );
         const events = Array.isArray(result) ? result : result.events;
         for (const event of events) {

@@ -229,7 +229,6 @@ export const SummonerWarsBoard: React.FC<Props> = ({
   const {
     isActive: isTutorialActive,
     currentStep: tutorialStep,
-    isPendingAnimation: isTutorialPendingAnimation,
     animationComplete: tutorialAnimationComplete,
   } = useTutorial();
 
@@ -723,11 +722,12 @@ export const SummonerWarsBoard: React.FC<Props> = ({
       pendingRangedShakeRef.current = false;
       flushPendingDestroys();
     }
-    // 召唤/攻击动画完成时，通知教程系统
-    if (isTutorialPendingAnimation && (cue === SW_FX.SUMMON || cue === SW_FX.COMBAT_SHOCKWAVE)) {
+    // 召唤/攻击动画完成时，通知教程系统。
+    // 这里不依赖当前渲染帧里的 pending 标志，避免动画完成得太快时漏发推进信号。
+    if (cue === SW_FX.SUMMON || cue === SW_FX.COMBAT_SHOCKWAVE) {
       tutorialAnimationComplete();
     }
-  }, [flushPendingDestroys, fxBus, releaseDamageSnapshot, isTutorialPendingAnimation, tutorialAnimationComplete]);
+  }, [flushPendingDestroys, fxBus, releaseDamageSnapshot, tutorialAnimationComplete]);
 
   // 卡牌放大
   const handleMagnifyCard = useCallback((card: Card) => {
@@ -1221,8 +1221,10 @@ export const SummonerWarsBoard: React.FC<Props> = ({
                 <div
                   className="absolute inset-0 pointer-events-none"
                   style={{
-                    background: 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.3) 80%, rgba(0,0,0,0.5) 100%)',
-                    mixBlendMode: 'multiply'
+                    background: isLandscapeMobileViewport
+                      ? 'radial-gradient(circle at center, transparent 42%, rgba(0,0,0,0.14) 82%, rgba(0,0,0,0.24) 100%)'
+                      : 'radial-gradient(circle at center, transparent 30%, rgba(0,0,0,0.3) 80%, rgba(0,0,0,0.5) 100%)',
+                    mixBlendMode: isLandscapeMobileViewport ? undefined : 'multiply'
                   }}
                 />
 

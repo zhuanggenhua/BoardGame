@@ -12,6 +12,8 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { mkdirSync } from 'node:fs';
+import { join } from 'node:path';
 import {
   initContext,
   setChineseLocale,
@@ -19,6 +21,12 @@ import {
 } from './helpers/common';
 
 const MOBILE_LANDSCAPE_VIEWPORT = { width: 936, height: 432 } as const;
+const EVIDENCE_DIR = join(process.cwd(), 'test-results', 'evidence-screenshots', 'summonerwars', 'summonerwars-tutorial-e2e-2026-05-10');
+
+const saveEvidenceScreenshot = async (page: Page, fileName: string) => {
+  mkdirSync(EVIDENCE_DIR, { recursive: true });
+  await page.screenshot({ path: join(EVIDENCE_DIR, fileName), fullPage: false });
+};
 
 const readTutorialHighlightMetrics = async (page: Page, _targetId: string) => page.evaluate((resolvedTargetId) => {
   const target = document.querySelector(`[data-tutorial-id="${resolvedTargetId}"]`) as HTMLElement | null;
@@ -155,46 +163,51 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await expect(page.getByText(/欢迎来到召唤师战争/i)).toBeVisible();
     await clickNext(page);
 
-    // Step 2: summoner-intro — 高亮己方召唤师
+    // Step 2: map-controls — 高亮棋盘全局
+    await waitForTutorialStep(page, 'map-controls', 10000);
+    await expect(page.locator('[data-tutorial-id="sw-map-area"]')).toBeVisible();
+    await clickNext(page);
+
+    // Step 3: summoner-intro — 高亮己方召唤师
     await waitForTutorialStep(page, 'summoner-intro', 10000);
     await expect(page.locator('[data-tutorial-id="sw-my-summoner"]')).toBeVisible();
     await clickNext(page);
 
-    // Step 3: enemy-summoner — 高亮敌方召唤师
+    // Step 4: enemy-summoner — 高亮敌方召唤师
     await waitForTutorialStep(page, 'enemy-summoner', 10000);
     await expect(page.locator('[data-tutorial-id="sw-enemy-summoner"]')).toBeVisible();
     await clickNext(page);
 
-    // Step 4: gate-intro — 高亮己方城门
+    // Step 5: gate-intro — 高亮己方城门
     await waitForTutorialStep(page, 'gate-intro', 10000);
     await expect(page.locator('[data-tutorial-id="sw-my-gate"]')).toBeVisible();
     await clickNext(page);
 
-    // Step 5: hand-intro — 高亮手牌区
+    // Step 6: hand-intro — 高亮手牌区
     await waitForTutorialStep(page, 'hand-intro', 10000);
     await expect(page.locator('[data-tutorial-id="sw-hand-area"]')).toBeVisible();
     await clickNext(page);
 
-    // Step 6: card-anatomy — 高亮第一张手牌
+    // Step 7: card-anatomy — 高亮第一张手牌
     await waitForTutorialStep(page, 'card-anatomy', 10000);
     await expect(page.locator('[data-tutorial-id="sw-first-hand-card"]')).toBeVisible();
     await clickNext(page);
 
-    // Step 7: magic-intro — 高亮魔力条
+    // Step 8: magic-intro — 高亮魔力条
     await waitForTutorialStep(page, 'magic-intro', 10000);
     await expect(page.locator('[data-tutorial-id="sw-player-bar"]')).toBeVisible();
     await clickNext(page);
 
-    // Step 8: phase-intro — 高亮阶段追踪器
+    // Step 9: phase-intro — 高亮阶段追踪器
     await waitForTutorialStep(page, 'phase-intro', 10000);
     await expect(page.locator('[data-tutorial-id="sw-phase-tracker"]')).toBeVisible();
     await clickNext(page);
 
-    // Step 9: summon-explain — 高亮状态横幅
+    // Step 10: summon-explain — 高亮状态横幅
     await waitForTutorialStep(page, 'summon-explain', 10000);
     await clickNext(page);
 
-    // Step 10: summon-action（requireAction: 玩家需要召唤单位）
+    // Step 11: summon-action（requireAction: 玩家需要召唤单位）
     await waitForTutorialStep(page, 'summon-action', 10000);
     await waitForActionPrompt(page);
 
@@ -221,11 +234,11 @@ test.describe('Summoner Wars Tutorial E2E', () => {
       }
     }
 
-    // Step 11: ability-explain — 高亮己方召唤师
+    // Step 12: ability-explain — 高亮己方召唤师
     await waitForTutorialStep(page, 'ability-explain', 15000);
     await clickNext(page);
 
-    // Step 12: ability-action — 高亮弃牌堆（requireAction: 必须使用技能）
+    // Step 13: ability-action — 高亮弃牌堆（requireAction: 必须使用技能）
     await waitForTutorialStep(page, 'ability-action', 10000);
     await waitForActionPrompt(page);
 
@@ -242,23 +255,22 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await discardCard.first().click({ force: true });
     await page.waitForTimeout(500);
 
-    // 选择放置位置（复活死灵需要选择召唤师相邻空格）
-    const reviveCells = page.locator('[data-valid-summon="true"]');
-    if (await reviveCells.first().isVisible({ timeout: 5000 }).catch(() => false)) {
-      await reviveCells.first().click({ force: true });
-      await page.waitForTimeout(500);
-    }
+    // 选择放置位置（复活死灵使用系统能力落点，不是普通召唤落点）
+    const reviveCells = page.locator('[data-valid-ability-pos="true"]');
+    await expect(reviveCells.first()).toBeVisible({ timeout: 5000 });
+    await reviveCells.first().click({ force: true });
+    await page.waitForTimeout(500);
 
-    // Step 13: end-summon
+    // Step 14: end-summon
     await waitForTutorialStep(page, 'end-summon', 15000);
     await waitForActionPrompt(page);
     await clickEndPhase(page);
 
-    // Step 14: move-explain
+    // Step 15: move-explain
     await waitForTutorialStep(page, 'move-explain', 15000);
     await clickNext(page);
 
-    // Step 15: move-action
+    // Step 16: move-action
     await waitForTutorialStep(page, 'move-action', 10000);
     await waitForActionPrompt(page);
 
@@ -272,28 +284,27 @@ test.describe('Summoner Wars Tutorial E2E', () => {
       await moveCells.first().click({ force: true });
     }
 
-    // Step 16: end-move
+    // Step 17: end-move
     await waitForTutorialStep(page, 'end-move', 15000);
     await waitForActionPrompt(page);
     await clickEndPhase(page);
 
-    // Step 17: build-explain
+    // Step 18: build-explain
     await waitForTutorialStep(page, 'build-explain', 15000);
     await clickNext(page);
 
-    // Step 18: event-card-explain — 事件卡说明
+    // Step 19: event-card-explain — 事件卡说明
     await waitForTutorialStep(page, 'event-card-explain', 10000);
     await clickNext(page);
 
-    // Step 19: event-card-action — 施放事件卡（requireAction: 必须施放）
+    // Step 20: event-card-action — 施放事件卡（requireAction: 必须施放）
     await waitForTutorialStep(page, 'event-card-action', 10000);
     await waitForActionPrompt(page);
 
     // 点击手牌中的狱火铸剑事件卡
-    const eventCards = page.locator('[data-card-type="event"][data-can-play="true"]');
-    await expect(eventCards.first()).toBeVisible({ timeout: 10000 });
-    await eventCards.first().click({ force: true });
-    await page.waitForTimeout(500);
+    const hellfireBladeCard = page.locator('[data-card-id*="hellfire-blade"][data-card-type="event"][data-can-play="true"]');
+    await expect(hellfireBladeCard.first()).toBeVisible({ timeout: 10000 });
+    await hellfireBladeCard.first().click({ force: true });
 
     // 选择一个友方士兵作为附着目标
     const eventTargets = page.locator('[data-valid-event-target="true"]');
@@ -309,25 +320,26 @@ test.describe('Summoner Wars Tutorial E2E', () => {
       }
     }
 
-    // Step 20: build-action — 结束建造阶段
+    // Step 21: build-action — 结束建造阶段
     await waitForTutorialStep(page, 'build-action', 15000);
     await waitForActionPrompt(page);
+    await saveEvidenceScreenshot(page, '01-event-card-attached.png');
     await clickEndPhase(page);
 
-    // Step 21: attack-explain
+    // Step 22: attack-explain
     await waitForTutorialStep(page, 'attack-explain', 15000);
     await clickNext(page);
 
-    // Step 22: melee-explain
+    // Step 23: melee-explain
     await waitForTutorialStep(page, 'melee-explain', 10000);
     await clickNext(page);
 
-    // Step 23: ranged-explain — 高亮己方召唤师
+    // Step 24: ranged-explain — 高亮远程单位
     await waitForTutorialStep(page, 'ranged-explain', 10000);
-    await expect(page.locator('[data-tutorial-id="sw-my-summoner"]')).toBeVisible();
+    await expect(page.locator('[data-tutorial-id="sw-start-archer"]').first()).toBeVisible();
     await clickNext(page);
 
-    // Step 24: attack-action（requireAction: 必须攻击）
+    // Step 25: attack-action（requireAction: 必须攻击）
     await waitForTutorialStep(page, 'attack-action', 10000);
     await waitForActionPrompt(page);
     await page.waitForTimeout(500);
@@ -356,11 +368,13 @@ test.describe('Summoner Wars Tutorial E2E', () => {
           await diceConfirm.click();
         }
       }
-    }
 
-    // Step 25: attack-result — 高亮敌方召唤师
-    await waitForTutorialStep(page, 'attack-result', 15000);
-    await clickNext(page);
+      const skipResponse = page.getByRole('button', { name: /^(Skip|跳过)$/i });
+      if (await skipResponse.isVisible({ timeout: 5000 }).catch(() => false)) {
+        await skipResponse.click();
+        await page.waitForTimeout(500);
+      }
+    }
 
     // Step 26: end-attack
     await waitForTutorialStep(page, 'end-attack', 15000);
@@ -385,7 +399,7 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await waitForActionPrompt(page);
     await clickEndPhase(page);
 
-    // Step 31: opponent-turn（AI 自动执行）
+    // Step 31: opponent-turn（AI 自动执行，命中 TURN_CHANGED 后会自动推进）
 
     // Step 32: inaction-penalty — 高亮敌方召唤师
     await waitForTutorialStep(page, 'inaction-penalty', 40000);
@@ -397,6 +411,7 @@ test.describe('Summoner Wars Tutorial E2E', () => {
 
     // Step 34: finish — 高亮棋盘
     await waitForTutorialStep(page, 'finish', 10000);
+    await saveEvidenceScreenshot(page, '02-finish-step-visible.png');
     await clickFinish(page);
 
     await expect(
@@ -444,7 +459,7 @@ test.describe('Summoner Wars Tutorial E2E', () => {
 
     // 验证所有概览步骤都有"下一步"按钮且可点击
     const overviewSteps = [
-      'welcome', 'summoner-intro', 'enemy-summoner', 'gate-intro',
+      'welcome', 'map-controls', 'summoner-intro', 'enemy-summoner', 'gate-intro',
       'hand-intro', 'card-anatomy', 'magic-intro', 'phase-intro',
       'summon-explain',
     ];
@@ -473,6 +488,11 @@ test.describe('Summoner Wars Tutorial E2E', () => {
 
     // welcome: 高亮 sw-map-area
     await waitForTutorialStep(page, 'welcome', 40000);
+    await expect(page.locator('[data-tutorial-id="sw-map-area"]')).toBeVisible();
+    await clickNext(page);
+
+    // map-controls: 高亮 sw-map-area
+    await waitForTutorialStep(page, 'map-controls', 10000);
     await expect(page.locator('[data-tutorial-id="sw-map-area"]')).toBeVisible();
     await clickNext(page);
 
@@ -522,6 +542,7 @@ test.describe('Summoner Wars Tutorial E2E', () => {
 
     const steps: Array<{ stepId: string; targetId: string }> = [
       { stepId: 'welcome', targetId: 'sw-map-area' },
+      { stepId: 'map-controls', targetId: 'sw-map-area' },
       { stepId: 'summoner-intro', targetId: 'sw-my-summoner' },
       { stepId: 'enemy-summoner', targetId: 'sw-enemy-summoner' },
       { stepId: 'gate-intro', targetId: 'sw-my-gate' },
@@ -563,6 +584,8 @@ test.describe('Summoner Wars Tutorial E2E', () => {
     await page.waitForLoadState('domcontentloaded');
 
     await waitForTutorialStep(page, 'welcome', 40000);
+    await clickNext(page);
+    await waitForTutorialStep(page, 'map-controls', 10000);
     await clickNext(page);
     await waitForTutorialStep(page, 'summoner-intro', 10000);
 

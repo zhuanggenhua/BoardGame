@@ -936,7 +936,7 @@ describe('zombie_overrun（泛滥横行）ongoing 效果', () => {
         expect(r2.steps[0]?.success).toBe(true);
     });
 
-    it('与其他 sourceSelfState 自收口 trigger 同时出现时，应自动收口且不弹排序选择', () => {
+    it('与其他 source instance 自收口 trigger 同时出现时，应自动收口且不弹排序选择', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', { factions: ['zombies', 'mermaids'] as [string, string] }),

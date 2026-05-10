@@ -17,6 +17,8 @@ import {
     buildAiProgressMarker,
     LocalGameProvider,
     releaseAiAttemptKeyIfMatches,
+    shouldForwardOnlineBatchRejectionToError,
+    shouldRecoverFromRejectedCommandError,
     shouldRetryLocalAiAttemptAfterDispatch,
     tryReserveAiAttemptKey,
     useGameClient,
@@ -38,6 +40,7 @@ import {
     resolveMissingMatchConfirmationSignal,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
+    shouldShowOnlineGameErrorToast,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from '../MatchRoom';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
@@ -2464,6 +2467,27 @@ describe('shouldSilentlyRetryOnlineAiBatchRejection', () => {
         expect(shouldSilentlyRetryOnlineAiBatchRejection('stale_state')).toBe(true);
         expect(shouldSilentlyRetryOnlineAiBatchRejection('command_failed')).toBe(false);
         expect(shouldSilentlyRetryOnlineAiBatchRejection('unauthorized')).toBe(false);
+    });
+});
+
+describe('online command error visibility', () => {
+    it('命令执行失败和 pipeline 详情不应被 MatchRoom 静默拦截', () => {
+        expect(shouldShowOnlineGameErrorToast('command_failed')).toBe(true);
+        expect(shouldShowOnlineGameErrorToast('pipeline_error: effect contract missing turnFlags')).toBe(true);
+        expect(shouldShowOnlineGameErrorToast('summon_position_not_adjacent_to_gate')).toBe(true);
+        expect(shouldShowOnlineGameErrorToast('stale_state')).toBe(false);
+        expect(shouldShowOnlineGameErrorToast('unauthorized')).toBe(false);
+    });
+
+    it('batch 拒绝除 stale_state 外都应透传给错误展示，同时自定义命令错误也要触发回滚重同步', () => {
+        expect(shouldForwardOnlineBatchRejectionToError('command_failed')).toBe(true);
+        expect(shouldForwardOnlineBatchRejectionToError('pipeline_error: forced detail')).toBe(true);
+        expect(shouldForwardOnlineBatchRejectionToError('summon_position_not_adjacent_to_gate')).toBe(true);
+        expect(shouldForwardOnlineBatchRejectionToError('stale_state')).toBe(false);
+
+        expect(shouldRecoverFromRejectedCommandError('pipeline_error: forced detail')).toBe(true);
+        expect(shouldRecoverFromRejectedCommandError('summon_position_not_adjacent_to_gate')).toBe(true);
+        expect(shouldRecoverFromRejectedCommandError('unauthorized')).toBe(false);
     });
 });
 

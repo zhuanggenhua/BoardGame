@@ -6,6 +6,7 @@ import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { smashUpFlowHooks } from '../domain/index';
 import { getSmashUpReactionSession } from '../domain/reactionSession';
 import { makeMatchState, makeState, makeBase, makeMinion } from './helpers';
+import { SU_EVENTS } from '../domain/types';
 
 beforeEach(() => {
   clearOngoingEffectRegistry();
@@ -15,12 +16,16 @@ beforeEach(() => {
 
 describe('reaction queue: onTurnStart ordering', () => {
   it('multiple mandatory onTurnStart triggers open ordering interaction for current player', () => {
-    registerTrigger('test_turn_start_a', 'onTurnStart', () => [], {
-      effectContract: { writes: ['turnFlags'] },
-    });
-    registerTrigger('test_turn_start_b', 'onTurnStart', () => [], {
-      effectContract: { writes: ['turnFlags'] },
-    });
+    registerTrigger('test_turn_start_a', 'onTurnStart', (ctx) => ([{
+      type: SU_EVENTS.LIMIT_MODIFIED,
+      payload: { playerId: ctx.playerId, limitType: 'action', delta: 1, reason: 'test_turn_start_a' },
+      timestamp: ctx.now,
+    }] as any));
+    registerTrigger('test_turn_start_b', 'onTurnStart', (ctx) => ([{
+      type: SU_EVENTS.LIMIT_MODIFIED,
+      payload: { playerId: ctx.playerId, limitType: 'action', delta: 1, reason: 'test_turn_start_b' },
+      timestamp: ctx.now,
+    }] as any));
 
     const core = makeState({
       turnOrder: ['0', '1'],
@@ -51,12 +56,16 @@ describe('reaction queue: onTurnStart ordering', () => {
   });
 
   it('onTurnEnd uses the same smashup reaction session and halts phase advance until ordering is resolved', () => {
-    registerTrigger('test_turn_end_a', 'onTurnEnd', () => [], {
-      effectContract: { writes: ['turnFlags'] },
-    });
-    registerTrigger('test_turn_end_b', 'onTurnEnd', () => [], {
-      effectContract: { writes: ['turnFlags'] },
-    });
+    registerTrigger('test_turn_end_a', 'onTurnEnd', (ctx) => ([{
+      type: SU_EVENTS.LIMIT_MODIFIED,
+      payload: { playerId: ctx.playerId, limitType: 'action', delta: 1, reason: 'test_turn_end_a' },
+      timestamp: ctx.now,
+    }] as any));
+    registerTrigger('test_turn_end_b', 'onTurnEnd', (ctx) => ([{
+      type: SU_EVENTS.LIMIT_MODIFIED,
+      payload: { playerId: ctx.playerId, limitType: 'action', delta: 1, reason: 'test_turn_end_b' },
+      timestamp: ctx.now,
+    }] as any));
 
     const core = makeState({
       turnOrder: ['0', '1'],

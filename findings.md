@@ -1,5 +1,26 @@
 # Findings & Resources
 
+## 2026-05-10 命令执行异常全链路发现
+
+- `src/engine/transport/server.ts` 的 batch 失败链路原本会丢失真实原因：
+  - `executeCommandInternal()` 能拿到 `result.error` 或 thrown `Error.message`；
+  - `handleBatch()` / `executeBatchInternal()` 失败后固定发送 `batch:rejected(..., 'command_failed')`；
+  - 这会把领域验证错误、pipeline contract 错误全部折叠成泛化失败。
+- `src/pages/MatchRoom.tsx` 原本把 `command_failed` 归入 `SYSTEM_ERRORS`，在线错误处理直接 return。
+- `src/engine/transport/react.tsx` 原本在 batch rejection 中显式跳过 `command_failed` 的 `onError`，导致批处理失败进一步不可见。
+- 生产 SmashUp 日志中“命令执行异常”的真实原因是 effect contract 缺字段：
+  - `base_the_asylum@onMinionPlayed` 缺 `controllerState`；
+  - `base_ninja_dojo@afterScoring` 缺 `turnFlags`；
+  - `base_castle_blood@onMinionPlayed` 缺 `turnFlags`。
+- SummonerWars `长舟` 反馈缺 `matchId/stateSnapshot/actionLog`，源码内没有 `长舟/Longship` 对应实体；不能在没有现场的情况下直接放开召唤规则。
+- 2026-05-10 追加修正：用户澄清“长舟”应按“大杀四方 / SmashUp”理解，已确认对应对象是维京基地 `base_drakkar`（德拉卡尔号 / Drakkar），不是 SummonerWars 地图或召唤入口。
+- `base_drakkar` 回归原因：
+  - `a4de3636` 把 SmashUp 反应排序资源从 `orderingFootprint` 切到运行时 `effectContract`，并把基地能力执行包进 `wrapTriggerCallbackWithEffectContract()`；
+  - `base_drakkar` 旧声明只有 `reads: ['deckState']`、`writes: ['deckState', 'handState']`；
+  - 但真实能力需要读 `players.*.minionsPlayedPerBase`（`playLimits`），可能读对手弃牌堆洗回（`discardState`），并打开 `base_drakkar` 选择玩家交互（缺 `opensInteraction: true`）；
+  - 所以合法的“第一位随从打到德拉卡尔号”会被 contract 当成越权读取/交互误拦截，再被 transport 折叠成泛化 `command_failed`。
+- 当前工作区修复口径不是继续给每张卡补手写 contract，而是移除旧运行时 contract 拦截，资源排序改走 reaction footprint / effect DSL 推导；已补 `PLAY_MINION -> base_drakkar` 真实触发链回归，当前 `base_drakkar` 聚焦测试 4 passed。
+
 ## Addendum（2026-05-07）：漏审主因已确认为“流程层不够深”，已升级审计规范
 
 - 本轮结论不是“审计完全没维度”，而是：

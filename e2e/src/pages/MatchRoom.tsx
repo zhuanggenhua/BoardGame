@@ -101,8 +101,8 @@ import {
 import { resolveLocalAiActionVisibility } from '../engine/ai/actionVisibility';
 import { INTERACTION_COMMANDS } from '../engine/systems';
 
-// 系统级错误（连接/认证），不需要 toast 提示给玩家
-const SYSTEM_ERRORS = new Set(['unauthorized', 'match_not_found', 'sync_timeout', 'command_failed', 'stale_state']);
+// 系统级同步错误，不需要 toast 提示给玩家；命令执行失败必须展示具体原因。
+const SYSTEM_ERRORS = new Set(['stale_state']);
 const ONLINE_TRANSPORT_ERRORS = new Set(['unauthorized', 'match_not_found', 'sync_timeout']);
 // 教程系统正常拦截，不弹 toast（用户跟着教程走时的正常行为）
 const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_step_locked']);
@@ -113,6 +113,12 @@ const ONLINE_AI_SEAT_LOAD_RETRY_MAX_ATTEMPTS = 5;
 export const isTutorialRoutePath = (pathname: string): boolean => (
     /^\/play\/[^/]+\/tutorial(?:\/[^/]+)?\/?$/.test(pathname)
 );
+
+export function shouldShowOnlineGameErrorToast(error: string): boolean {
+    if (ONLINE_TRANSPORT_ERRORS.has(error)) return false;
+    if (SYSTEM_ERRORS.has(error)) return false;
+    return true;
+}
 
 export type MissingMatchConfirmationSignal = 'transport_not_found' | null;
 
@@ -2257,7 +2263,7 @@ export const MatchRoom = () => {
             setOnlineTransportError(error);
             return;
         }
-        if (SYSTEM_ERRORS.has(error)) return; // 其他系统错误由独立逻辑处理
+        if (!shouldShowOnlineGameErrorToast(error)) return; // 其他系统错误由独立逻辑处理
         if (isUiHintOnlyError(error, i18n, gameId)) return;
         playDeniedSound();
         toast.warning(resolveCommandError(i18n, error, gameId), undefined, { dedupeKey: `game.error.${error}` });

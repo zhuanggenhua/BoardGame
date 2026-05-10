@@ -7,12 +7,10 @@ import {
   getBaseAbilityOptions,
   getExtendedBaseAbilityExecutor,
   getExtendedBaseAbilityOptions,
-  hasBaseAbility,
-} from './baseAbilities';
+  hasBaseAbility } from './baseAbilities';
 import { createAbilityRuntimeExecutor, createEffectProgram } from './abilityRuntime';
 import { isBaseAbilitySuppressed } from './ongoingEffects';
 import type { TitanAwareTriggerTiming, TriggerContext } from './ongoingEffects';
-import { wrapTriggerCallbackWithEffectContract } from './triggerEffectContract';
 import { registerTriggerProgramExecutor } from './triggerExecutors';
 
 type BaseTriggerTimingAsTrigger = BaseTriggerTiming;
@@ -33,41 +31,34 @@ export function registerBaseAbilityAsQueuedTrigger(
   baseDefId: string,
   timing: BaseTriggerTimingAsTrigger,
 ): void {
-  const options = getBaseAbilityOptions(baseDefId, timing);
   const triggerTiming = timingToTriggerTiming(timing);
   const executor = getBaseAbilityExecutor(baseDefId, timing);
-  const guardedTriggerCallback = wrapTriggerCallbackWithEffectContract(
-    baseDefId,
-    triggerTiming,
-    (ctx: QueuedBaseTriggerContext) => {
-      const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
-      const baseCtx: BaseAbilityContext = {
-        state: ctx.state,
-        matchState: ctx.matchState,
-        random: ctx.random,
-        baseIndex,
-        baseDefId: baseDefId,
-        playerId: ctx.playerId,
-        minionUid: ctx.triggerMinionUid,
-        minionDefId: ctx.triggerMinionDefId,
-        minionPower: ctx.triggerMinionPower,
-        rankings: ctx.rankings,
-        actionTargetBaseIndex: ctx.actionTargetBaseIndex,
-        actionTargetType: ctx.actionTargetType,
-        actionTargetMinionUid: ctx.actionTargetMinionUid,
-        frameId: ctx.frameId,
-        sourceEventId: ctx.sourceEventId,
-        now: ctx.now,
-      } as BaseAbilityContext;
-      if (!executor) return { events: [] };
-      return executor(baseCtx);
-    },
-    options?.effectContract,
-  );
+  const queuedTriggerCallback = (ctx: QueuedBaseTriggerContext) => {
+    const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
+    const baseCtx: BaseAbilityContext = {
+      state: ctx.state,
+      matchState: ctx.matchState,
+      random: ctx.random,
+      baseIndex,
+      baseDefId: baseDefId,
+      playerId: ctx.playerId,
+      minionUid: ctx.triggerMinionUid,
+      minionDefId: ctx.triggerMinionDefId,
+      minionPower: ctx.triggerMinionPower,
+      rankings: ctx.rankings,
+      actionTargetBaseIndex: ctx.actionTargetBaseIndex,
+      actionTargetType: ctx.actionTargetType,
+      actionTargetMinionUid: ctx.actionTargetMinionUid,
+      frameId: ctx.frameId,
+      sourceEventId: ctx.sourceEventId,
+      now: ctx.now } as BaseAbilityContext;
+    if (!executor) return { events: [] };
+    return executor(baseCtx);
+  };
   const triggerCallback = (ctx: QueuedBaseTriggerContext) => {
     const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
     if (isBaseAbilitySuppressed(ctx.state, baseIndex)) return { events: [] };
-    return guardedTriggerCallback(ctx);
+    return queuedTriggerCallback(ctx);
   };
   registerTriggerProgramExecutor(
     baseDefId,
@@ -110,8 +101,7 @@ export function collectBaseAbilityTriggers(params: {
     actionTargetMinionUid,
     frameId,
     sourceEventId,
-    now,
-  } = params;
+    now } = params;
 
   const base = core.bases[baseIndex];
   if (!base) return undefined;
@@ -130,8 +120,7 @@ export function collectBaseAbilityTriggers(params: {
     actionTargetBaseIndex,
     actionTargetType,
     actionTargetMinionUid,
-    now,
-  })) {
+    now })) {
     return undefined;
   }
   // Witness rule (base as source): it must still be in play when the trigger is queued.
@@ -151,7 +140,6 @@ export function collectBaseAbilityTriggers(params: {
     ownerPlayerId,
     witnessRequirement: 'inPlayAtTriggerTime',
     witnessed: true,
-    effectContract: options?.effectContract,
     baseIndex,
     triggerMinionUid,
     triggerMinionDefId,
@@ -160,53 +148,44 @@ export function collectBaseAbilityTriggers(params: {
     actionTargetBaseIndex,
     actionTargetType,
     actionTargetMinionUid,
-    lkiBase: { baseIndex, defId: base.defId },
-  };
+    lkiBase: { baseIndex, defId: base.defId } };
 
   return {
     type: SU_EVENTS.TRIGGER_QUEUED,
     payload: { triggers: [t] },
-    timestamp: now,
-  } as unknown as TriggerQueuedEvent;
+    timestamp: now } as unknown as TriggerQueuedEvent;
 }
 
 export function registerExtendedBaseAbilityAsQueuedTrigger(
   baseDefId: string,
   timing: string,
 ): void {
-  const options = getExtendedBaseAbilityOptions(baseDefId, timing);
   const triggerTiming = timingToTriggerTiming(timing);
   const executor = getExtendedBaseAbilityExecutor(baseDefId, timing);
-  const guardedTriggerCallback = wrapTriggerCallbackWithEffectContract(
-    baseDefId,
-    triggerTiming,
-    (ctx: QueuedBaseTriggerContext) => {
-      const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
-      const baseCtx: BaseAbilityContext = {
-        state: ctx.state,
-        matchState: ctx.matchState,
-        random: ctx.random,
-        baseIndex,
-        baseDefId,
-        playerId: ctx.playerId,
-        minionUid: ctx.triggerMinionUid,
-        minionDefId: ctx.triggerMinionDefId,
-        minionPower: ctx.triggerMinionPower,
-        rankings: ctx.rankings,
-        actionTargetBaseIndex: ctx.actionTargetBaseIndex,
-        actionTargetType: ctx.actionTargetType,
-        actionTargetMinionUid: ctx.actionTargetMinionUid,
-        now: ctx.now,
-      };
-      if (!executor) return { events: [] };
-      return executor(baseCtx);
-    },
-    options?.effectContract,
-  );
+  const queuedTriggerCallback = (ctx: QueuedBaseTriggerContext) => {
+    const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
+    const baseCtx: BaseAbilityContext = {
+      state: ctx.state,
+      matchState: ctx.matchState,
+      random: ctx.random,
+      baseIndex,
+      baseDefId,
+      playerId: ctx.playerId,
+      minionUid: ctx.triggerMinionUid,
+      minionDefId: ctx.triggerMinionDefId,
+      minionPower: ctx.triggerMinionPower,
+      rankings: ctx.rankings,
+      actionTargetBaseIndex: ctx.actionTargetBaseIndex,
+      actionTargetType: ctx.actionTargetType,
+      actionTargetMinionUid: ctx.actionTargetMinionUid,
+      now: ctx.now };
+    if (!executor) return { events: [] };
+    return executor(baseCtx);
+  };
   const triggerCallback = (ctx: QueuedBaseTriggerContext) => {
     const baseIndex = requireQueuedBaseIndex(ctx.baseIndex as number | undefined, baseDefId, timing);
     if (isBaseAbilitySuppressed(ctx.state, baseIndex)) return { events: [] };
-    return guardedTriggerCallback(ctx);
+    return queuedTriggerCallback(ctx);
   };
   registerTriggerProgramExecutor(
     baseDefId,
@@ -249,14 +228,11 @@ export function collectExtendedBaseAbilityTriggers(params: {
     ownerPlayerId,
     witnessRequirement: 'inPlayAtTriggerTime',
     witnessed: true,
-    effectContract: opts.effectContract,
     baseIndex,
-    lkiBase: { baseIndex, defId: base.defId },
-  };
+    lkiBase: { baseIndex, defId: base.defId } };
 
   return {
     type: SU_EVENTS.TRIGGER_QUEUED,
     payload: { triggers: [t] },
-    timestamp: now,
-  } as unknown as TriggerQueuedEvent;
+    timestamp: now } as unknown as TriggerQueuedEvent;
 }

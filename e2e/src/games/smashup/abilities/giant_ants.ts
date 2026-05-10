@@ -2212,47 +2212,21 @@ function registerGiantAntProtections(): void {
     registerTrigger('giant_ant_we_are_the_champions', 'afterScoring', giantAntWeAreTheChampionsAfterScoring, {
         perInstance: true,
         sourceScope: 'triggerBase',
-        effectContract: {
-            reads: ['scoringState', 'minionBoardState'],
-            writes: ['scoringState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('giant_ant_we_are_the_champions_pod', 'afterScoring', giantAntWeAreTheChampionsAfterScoring, {
         perInstance: true,
         sourceScope: 'triggerBase',
-        effectContract: {
-            reads: ['scoringState', 'minionBoardState'],
-            writes: ['scoringState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('giant_ant_drone', 'onMinionDestroyed', giantAntDronePreventTrigger, {
         phase: 'replacement',
-        effectContract: {
-            reads: ['minionBoardState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('giant_ant_drone_pod', 'onMinionDestroyed', giantAntDronePreventTrigger, {
         phase: 'replacement',
-        effectContract: {
-            reads: ['minionBoardState'],
-            opensInteraction: true,
-        },
     }); // POD 版本复用基础版触发器
     // Worker POD：离场进入弃牌堆（消灭 / 基地计分弃置）且当时无指示物时，可从弃牌堆额外打出到另一基地
     registerTrigger('giant_ant_worker_pod', 'onMinionDestroyed', giantAntWorkerPodReplayTrigger, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState'],
-            opensInteraction: true,
-        },
     });
     registerTrigger('giant_ant_worker_pod', 'onMinionDiscardedFromBase', giantAntWorkerPodReplayTrigger, {
-        effectContract: {
-            reads: ['minionBoardState', 'baseState'],
-            opensInteraction: true,
-        },
     });
 }
 
