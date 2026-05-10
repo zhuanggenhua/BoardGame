@@ -1,0 +1,98 @@
+{
+  "manifestVersion": 1,
+  "scope": "official",
+  "id": "smashup",
+  "basePrefix": "official/smashup/",
+  "files": {
+    "base/base3": {
+      "variants": {
+        "png": {
+          "sha256": "cca1be600566e4212366f405181a6ef8c73fc201fc5973f9119ad0dcef5dbf48",
+          "bytes": 8991232,
+          "mime": "image/png"
+        }
+      }
+    },
+    "base/compressed/base3": {
+      "variants": {
+        "webp": {
+          "sha256": "ed34508db2241fcafc1bac46698964f3359d279b90fc1187ab8ff8bbb56872d4",
+          "bytes": 683480,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/compressed/shayu": {
+      "variants": {
+        "webp": {
+          "sha256": "b07ca572651496a2f3490c43472e26e4e496817abc1ce807ffc012b0853c976f",
+          "bytes": 416934,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "base/shayu": {
+      "variants": {
+        "png": {
+          "sha256": "bce7b42d41111d454117c40b32efad6e13ae512d3f03980757793ca1e6ebd607",
+          "bytes": 17007487,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/compressed/pretty_pretty": {
+      "variants": {
+        "webp": {
+          "sha256": "9acb69320a70f81287570cb7b9b00318192fc4229c90d12016265fcd83776a63",
+          "bytes": 2549084,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/compressed/shayu": {
+      "variants": {
+        "webp": {
+          "sha256": "50af42a5d52a46eb3caa23bdb8df01b7c4d21fb26fe22fbf381269d4cc61c63d",
+          "bytes": 899018,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "cards/pretty_pretty": {
+      "variants": {
+        "png": {
+          "sha256": "360bda45784ff280418ab80a1959e28a66790a11b669ddd758d057e9b4233a1f",
+          "bytes": 25271332,
+          "mime": "image/png"
+        }
+      }
+    },
+    "cards/shayu": {
+      "variants": {
+        "png": {
+          "sha256": "2b8146e44fbd1e7eb79115e848f20ef30d323b8dbb924ab462b8432e64110fac",
+          "bytes": 42559123,
+          "mime": "image/png"
+        }
+      }
+    },
+    "taitan/compressed/taitan1": {
+      "variants": {
+        "webp": {
+          "sha256": "fc1cec26f52d1bde810efd90933e470700536b8fa36b3813837c38b43611d049",
+          "bytes": 2185502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "taitan/taitan1": {
+      "variants": {
+        "png": {
+          "sha256": "0584de5873d93e19292ec60a346ceb4efbe73f42766645f2d34036bcaa60f981",
+          "bytes": 23674169,
+          "mime": "image/png"
+        }
+      }
+    }
+  }
+}

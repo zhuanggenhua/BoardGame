@@ -88,7 +88,7 @@ export interface BaseAbilityContext {
     destroyerId?: PlayerId;
     /** onMinionDestroyed 时：被消灭随从的控制者 */
     controllerId?: PlayerId;
-    /** onMinionDestroyed 时：本次消灭的来源 reason */
+    /** onMinionDestroyed / onMinionMoved 时：本次事件的来源 reason */
     reason?: string;
     /** afterScoring 时：排名信息 */
     rankings?: { playerId: PlayerId; power: number; vp: number }[];

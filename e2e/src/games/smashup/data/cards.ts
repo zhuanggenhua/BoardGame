@@ -56,6 +56,9 @@ import { SKELETONS_CARDS } from './factions/skeletons';
 import { WORLD_CHAMPS_CARDS } from './factions/world_champs';
 import { FAIRIES_CARDS } from './factions/fairies';
 import { PRINCESSES_CARDS } from './factions/princesses';
+import { SHARKS_CARDS } from './factions/sharks';
+import { TORNADOS_CARDS } from './factions/tornados';
+import { MYTHIC_GREEKS_CARDS } from './factions/mythic_greeks';
 
 // ============================================================================
 // 注册表
@@ -182,6 +185,9 @@ registerCards(SKELETONS_CARDS);
 registerCards(WORLD_CHAMPS_CARDS);
 registerCards(FAIRIES_CARDS);
 registerCards(PRINCESSES_CARDS);
+registerCards(SHARKS_CARDS);
+registerCards(TORNADOS_CARDS);
+registerCards(MYTHIC_GREEKS_CARDS);
 // POD 版本阵营（最新英文 POD 版本）
 registerCards(NINJA_POD_CARDS);
 registerCards(TITAN_CARD_DEFS);
@@ -839,6 +845,68 @@ export const BASE_CARDS_10TH_ANNIVERSARY: BaseCardDef[] = [
     },
 ];
 registerBases(BASE_CARDS_10TH_ANNIVERSARY);
+
+// ============================================================================
+// 扩展基地 (It's Your Fault! - shayu)
+// ============================================================================
+export const BASE_CARDS_ITS_YOUR_FAULT: BaseCardDef[] = [
+    {
+        id: 'base_shark_reef',
+        name: '鲨鱼领地',
+        nameEn: 'Shark Reef',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.SHARKS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 2 },
+    },
+    {
+        id: 'base_the_deep',
+        name: '海渊',
+        nameEn: 'The Deep',
+        breakpoint: 16,
+        vpAwards: [3, 2, 2],
+        faction: SMASHUP_FACTION_IDS.SHARKS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 9 },
+    },
+    {
+        id: 'base_trailer_park',
+        name: '拖车公园',
+        nameEn: 'Trailer Park',
+        breakpoint: 20,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.TORNADOS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 6 },
+    },
+    {
+        id: 'base_tornado_alley',
+        name: '龙卷风走廊',
+        nameEn: 'Tornado Alley',
+        breakpoint: 25,
+        vpAwards: [4, 3, 2],
+        faction: SMASHUP_FACTION_IDS.TORNADOS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 11 },
+    },
+    {
+        id: 'base_oracle_at_delphi',
+        name: '特尔斐的神谕',
+        nameEn: 'Oracle at Delphi',
+        breakpoint: 18,
+        vpAwards: [4, 2, 1],
+        faction: SMASHUP_FACTION_IDS.MYTHIC_GREEKS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 5 },
+    },
+    {
+        id: 'base_wooden_horse',
+        name: '特洛伊木马',
+        nameEn: 'Wooden Horse',
+        breakpoint: 21,
+        vpAwards: [3, 2, 1],
+        faction: SMASHUP_FACTION_IDS.MYTHIC_GREEKS,
+        previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.BASE7, index: 8 },
+    },
+];
+registerBases(BASE_CARDS_ITS_YOUR_FAULT);
+
 registerPodBaseSkeletons();
 
 /**

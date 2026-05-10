@@ -1406,7 +1406,7 @@ export function processMoveTriggers(
     const extraEvents: SmashUpEvent[] = [];
     let ms: MatchState<SmashUpCore> | undefined;
     for (const me of moveEvents) {
-        const { minionUid, minionDefId, fromBaseIndex, toBaseIndex } = me.payload;
+        const { minionUid, minionDefId, fromBaseIndex, toBaseIndex, reason } = me.payload;
         const sourceEventId = `minion-moved:${minionUid}:${fromBaseIndex}:${toBaseIndex}:${now}`;
         const frameId = `minion-moved-frame:${minionUid}:${fromBaseIndex}:${toBaseIndex}:${now}`;
 
@@ -1455,6 +1455,7 @@ export function processMoveTriggers(
                 playerId,
                 minionUid,
                 minionDefId,
+                reason,
                 now,
             };
             const baseResult = triggerExtendedBaseAbility(targetBase.defId, 'onMinionMoved', baseCtx);

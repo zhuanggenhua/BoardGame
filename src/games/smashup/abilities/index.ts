@@ -40,6 +40,9 @@ import { registerWorldChampsAbilities, registerWorldChampsInteractionHandlers } 
 import { registerSkeletonAbilities, registerSkeletonInteractionHandlers } from './skeletons';
 import { registerMermaidsAbilities, registerMermaidsInteractionHandlers } from './mermaids';
 import { registerPrincessesAbilities } from './princesses';
+import { registerSharksAbilities } from './sharks';
+import { registerTornadosAbilities } from './tornados';
+import { registerMythicGreeksAbilities } from './mythic_greeks';
 import { registerBuryInteractionHandlers } from '../domain/bury';
 import {
     registerBaseAbilities,
@@ -140,6 +143,9 @@ export function initAllAbilities(): void {
     registerWorldChampsAbilities();
     registerWorldChampsInteractionHandlers();
     registerPrincessesAbilities();
+    registerSharksAbilities();
+    registerTornadosAbilities();
+    registerMythicGreeksAbilities();
     registerTitanAbilities();
     registerTitanInteractionHandlers();
 
