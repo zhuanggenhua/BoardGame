@@ -1,0 +1,532 @@
+import { registerSimpleAbility } from '../domain/abilityRegistry';
+import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
+import {
+    addPowerCounter,
+    addTempPower,
+    buildAbilityFeedback,
+    buildBaseTargetOptions,
+    buildMinionTargetOptions,
+    buildStandardDrawEvents,
+    createSkipOption,
+    grantContextualExtraAction,
+    grantContextualExtraMinion,
+    modifyBreakpoint,
+    peekDeckTop,
+    recoverCardsFromDiscard,
+    revealAndPickFromDeck,
+} from '../domain/abilityHelpers';
+import {
+    createAbilityRuntimeSimpleChoice,
+    createPromptProgram,
+    executeAbilityProgram,
+} from '../domain/abilityRuntime';
+import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
+import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
+import type { CardToDeckTopEvent, DeckReorderedEvent, MinionMetadataUpdatedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
+import { SU_EVENTS } from '../domain/types';
+import { getCardDef } from '../data/cards';
+import {
+    SHAYU_TRIGGER_CONTRACT,
+    type BaseChoice,
+    type CardChoice,
+    type MinionChoice,
+    type MinionTarget,
+    type PromptContext,
+    collectBaseTargets,
+    collectMinionTargets,
+    runtimeToAbilityResult,
+    runtimeToTriggerResult,
+} from './shayu_common';
+
+type GreekMinionPromptContext = PromptContext & {
+    sourceId: string;
+    title: string;
+    targets: MinionTarget[];
+    amount: number;
+    mode: 'counter' | 'temp';
+    optional?: boolean;
+    maxSelections?: number;
+};
+
+type GreekBasePromptContext = PromptContext & {
+    sourceUid?: string;
+    sourceDefId: string;
+    bases: Array<{ baseIndex: number; label: string }>;
+};
+
+type HadesContext = PromptContext & { cards: Array<{ cardUid: string; defId: string; label: string }> };
+type PoseidonContext = PromptContext & { cards: Array<{ cardUid: string; defId: string; label: string }> };
+type DionysusTopContext = PromptContext & { cardUid: string; defId: string };
+type DionysusMinionContext = PromptContext & { targets: MinionTarget[]; cardUid: string; defId: string };
+
+function metadataTurnUsed(uid: string, baseIndex: number, key: string, turnNumber: number, now: number): MinionMetadataUpdatedEvent {
+    return {
+        type: SU_EVENTS.MINION_METADATA_UPDATED,
+        payload: { minionUid: uid, baseIndex, metadataUpdate: { [key]: turnNumber }, reason: key },
+        timestamp: now,
+    };
+}
+
+function ownMinionTargets(state: SmashUpCore, playerId: string): MinionTarget[] {
+    return collectMinionTargets(state, minion => minion.controller === playerId);
+}
+
+const greekMinionPromptProgram = createPromptProgram<GreekMinionPromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mythic_greeks_minion_prompt',
+    interactionSourceIds: ['mythic_greeks_odysseus', 'mythic_greeks_favor_of_ares', 'mythic_greeks_favor_of_dionysus', 'mythic_greeks_favor_of_hera'],
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.sourceId}_${context.now}`,
+        context.playerId,
+        context.title,
+        [
+            ...(context.optional ? [createSkipOption()] : []),
+            ...buildMinionTargetOptions(context.targets, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'buff' }),
+        ],
+        {
+            sourceId: context.sourceId,
+            targetType: 'minion',
+            autoResolveIfSingle: !context.optional,
+            ...(context.maxSelections !== undefined ? { multi: { min: 0, max: context.maxSelections } } : {}),
+        },
+    ),
+    onResolve: ({ context, value, timestamp }) => {
+        const choices = Array.isArray(value) ? value as MinionChoice[] : undefined;
+        if (choices) {
+            return {
+                events: choices
+                    .filter(choice => !choice.skip && choice.minionUid && choice.baseIndex !== undefined)
+                    .map(choice => context.mode === 'counter'
+                        ? addPowerCounter(choice.minionUid!, choice.baseIndex!, context.amount, context.sourceId, timestamp)
+                        : addTempPower(choice.minionUid!, choice.baseIndex!, context.amount, context.sourceId, timestamp)),
+            };
+        }
+        const choice = value as MinionChoice;
+        if (choice.skip || !choice.minionUid || choice.baseIndex === undefined) return { events: [] };
+        const event = context.mode === 'counter'
+            ? addPowerCounter(choice.minionUid, choice.baseIndex, context.amount, context.sourceId, timestamp)
+            : addTempPower(choice.minionUid, choice.baseIndex, context.amount, context.sourceId, timestamp);
+        return { events: [event] };
+    },
+});
+
+function runGreekMinionPrompt(
+    ctx: AbilityContext,
+    sourceId: string,
+    title: string,
+    amount: number,
+    mode: 'counter' | 'temp',
+    targets = ownMinionTargets(ctx.state, ctx.playerId),
+    options: { optional?: boolean; maxSelections?: number } = {},
+): AbilityResult {
+    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    if (targets.length === 1 && !options.optional && options.maxSelections === undefined) {
+        const target = targets[0];
+        return { events: [mode === 'counter'
+            ? addPowerCounter(target.uid, target.baseIndex, amount, sourceId, ctx.now)
+            : addTempPower(target.uid, target.baseIndex, amount, sourceId, ctx.now)] };
+    }
+    return runtimeToAbilityResult(executeAbilityProgram(greekMinionPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId,
+        title,
+        targets,
+        amount,
+        mode,
+        ...options,
+    }));
+}
+
+const greekBasePromptProgram = createPromptProgram<GreekBasePromptContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mythic_greeks_jason_base',
+    interactionSourceIds: ['mythic_greeks_jason', 'mythic_greeks_favor_of_zeus'],
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `${context.sourceDefId}_${context.now}`,
+        context.playerId,
+        context.sourceDefId === 'mythic_greeks_favor_of_zeus' ? '宙斯的恩惠：选择降低爆破点的基地' : '伊阿宋：选择一个基地，你在那里的随从 +1',
+        buildBaseTargetOptions(context.bases, context.matchState.core),
+        { sourceId: context.sourceDefId, targetType: 'base' },
+    ),
+    onResolve: ({ context, state, playerId, value, timestamp }) => {
+        const choice = value as BaseChoice;
+        if (choice.baseIndex === undefined) return { events: [] };
+        if (context.sourceDefId === 'mythic_greeks_favor_of_zeus') {
+            return { events: [modifyBreakpoint(choice.baseIndex, -5, 'mythic_greeks_favor_of_zeus', timestamp)] };
+        }
+        const events: SmashUpEvent[] = [];
+        for (const minion of state.core.bases[choice.baseIndex]?.minions ?? []) {
+            if (minion.controller === playerId) {
+                events.push(addTempPower(minion.uid, choice.baseIndex, 1, 'mythic_greeks_jason', timestamp));
+            }
+        }
+        if (context.sourceUid) {
+            events.push(metadataTurnUsed(context.sourceUid, choice.baseIndex, 'mythicGreeksJasonTriggeredTurn', state.core.turnNumber, timestamp));
+        }
+        return { events };
+    },
+});
+
+const hadesPromptProgram = createPromptProgram<HadesContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mythic_greeks_favor_of_hades',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mythic_greeks_favor_of_hades_${context.now}`,
+        context.playerId,
+        '哈迪斯的恩惠：选择一张弃牌堆行动卡返回手牌',
+        context.cards.map((card, index) => ({ id: `card-${index}`, label: card.label, value: card, displayMode: 'card' as const })),
+        { sourceId: 'mythic_greeks_favor_of_hades', targetType: 'generic' },
+    ),
+    onResolve: ({ playerId, value, timestamp }) => {
+        const choice = value as { cardUid?: string };
+        if (!choice.cardUid) return { events: [] };
+        return { events: [recoverCardsFromDiscard(playerId, [choice.cardUid], 'mythic_greeks_favor_of_hades', timestamp)] };
+    },
+});
+
+function favorOfHades(ctx: AbilityContext): AbilityResult {
+    const cards = ctx.state.players[ctx.playerId].discard
+        .filter(card => card.type === 'action')
+        .map(card => ({ cardUid: card.uid, defId: card.defId, label: getCardDef(card.defId)?.name ?? card.defId }));
+    if (cards.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
+    if (cards.length === 1) return { events: [recoverCardsFromDiscard(ctx.playerId, [cards[0].cardUid], 'mythic_greeks_favor_of_hades', ctx.now)] };
+    return runtimeToAbilityResult(executeAbilityProgram(hadesPromptProgram, { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now, cards }));
+}
+
+function favorOfAres(ctx: AbilityContext): AbilityResult {
+    const targets = ctx.targetMinionUid
+        ? collectMinionTargets(ctx.state, minion => minion.uid === ctx.targetMinionUid && minion.controller === ctx.playerId)
+        : ownMinionTargets(ctx.state, ctx.playerId);
+    return runGreekMinionPrompt(ctx, 'mythic_greeks_favor_of_ares', '阿瑞斯的恩惠：选择你的一个随从 +3 直到回合结束', 3, 'temp', targets);
+}
+
+function favorOfAphrodite(ctx: AbilityContext): AbilityResult {
+    return { events: [grantContextualExtraMinion(ctx, 'mythic_greeks_favor_of_aphrodite')] };
+}
+
+function favorOfDionysus(ctx: AbilityContext): AbilityResult {
+    const targets = ctx.targetMinionUid
+        ? collectMinionTargets(ctx.state, minion => minion.uid === ctx.targetMinionUid && minion.controller === ctx.playerId)
+        : ownMinionTargets(ctx.state, ctx.playerId);
+    if (targets.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    if (targets.length === 1) {
+        const target = targets[0];
+        const topPrompt = executeAbilityProgram(dionysusTopPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            cardUid: ctx.cardUid,
+            defId: ctx.defId,
+        });
+        return {
+            events: [
+                addTempPower(target.uid, target.baseIndex, 1, 'mythic_greeks_favor_of_dionysus', ctx.now),
+                grantContextualExtraAction(ctx, 'mythic_greeks_favor_of_dionysus'),
+            ],
+            ...(topPrompt.matchState ? { matchState: topPrompt.matchState } : {}),
+        };
+    }
+    return runtimeToAbilityResult(executeAbilityProgram(dionysusMinionPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        targets,
+        cardUid: ctx.cardUid,
+        defId: ctx.defId,
+    }));
+}
+
+const dionysusMinionPromptProgram = createPromptProgram<DionysusMinionContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mythic_greeks_favor_of_dionysus_minion',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mythic_greeks_favor_of_dionysus_minion_${context.now}`,
+        context.playerId,
+        '狄俄尼索斯的恩惠：选择你的一个随从 +1 到回合结束',
+        buildMinionTargetOptions(context.targets, {
+            state: context.matchState.core,
+            sourcePlayerId: context.playerId,
+            sourceKind: 'action',
+            effectType: 'buff',
+        }),
+        { sourceId: 'mythic_greeks_favor_of_dionysus_minion', targetType: 'minion' },
+    ),
+    onResolve: ({ context, state, value, timestamp }) => {
+        const choice = value as MinionChoice;
+        if (!choice.minionUid || choice.baseIndex === undefined) return { events: [] };
+        return {
+            events: [
+                addTempPower(choice.minionUid, choice.baseIndex, 1, 'mythic_greeks_favor_of_dionysus', timestamp),
+                grantContextualExtraAction({
+                    matchState: state,
+                    playerId: context.playerId,
+                    now: timestamp,
+                }, 'mythic_greeks_favor_of_dionysus'),
+            ],
+            context: {
+                ...context,
+                matchState: state,
+                now: timestamp,
+            },
+            nextProgram: dionysusTopPromptProgram,
+        };
+    },
+});
+
+const dionysusTopPromptProgram = createPromptProgram<DionysusTopContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mythic_greeks_favor_of_dionysus_top',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mythic_greeks_favor_of_dionysus_top_${context.now}`,
+        context.playerId,
+        '狄俄尼索斯的恩惠：是否将此卡放到牌库顶？',
+        [
+            createSkipOption('放入弃牌堆'),
+            { id: 'deck-top', label: '放到牌库顶', value: { choice: 'deck-top' }, displayMode: 'button' as const },
+        ],
+        { sourceId: 'mythic_greeks_favor_of_dionysus_top', targetType: 'button', autoResolveIfSingle: false },
+    ),
+    onResolve: ({ context, value, timestamp }) => {
+        const choice = value as { choice?: string; skip?: boolean };
+        if (choice.skip || choice.choice !== 'deck-top') return { events: [] };
+        return {
+            events: [{
+                type: SU_EVENTS.CARD_TO_DECK_TOP,
+                payload: {
+                    cardUid: context.cardUid,
+                    defId: context.defId,
+                    ownerId: context.playerId,
+                    reason: 'mythic_greeks_favor_of_dionysus',
+                },
+                timestamp,
+            } as CardToDeckTopEvent],
+        };
+    },
+});
+
+function favorOfHera(ctx: AbilityContext): AbilityResult {
+    const targets = ownMinionTargets(ctx.state, ctx.playerId);
+    return runGreekMinionPrompt(
+        ctx,
+        'mythic_greeks_favor_of_hera',
+        '赫拉的恩惠：选择至多两个你的随从放置 +1 指示物',
+        1,
+        'counter',
+        targets,
+        { optional: true, maxSelections: Math.min(2, targets.length) },
+    );
+}
+
+function favorOfAthena(ctx: AbilityContext): AbilityResult {
+    const result = revealAndPickFromDeck({
+        state: ctx.state,
+        random: ctx.random,
+        playerId: ctx.playerId,
+        count: 5,
+        predicate: card => card.type === 'action',
+        maxPick: 1,
+        missTarget: 'deck_top',
+        revealTo: 'all',
+        reason: 'mythic_greeks_favor_of_athena',
+        now: ctx.now,
+    });
+    return result.events.length > 0 ? { events: result.events } : { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+}
+
+function favorOfApollo(ctx: AbilityContext): AbilityResult {
+    return { events: [...buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now), grantContextualExtraAction(ctx, 'mythic_greeks_favor_of_apollo')] };
+}
+
+function favorOfHermes(ctx: AbilityContext): AbilityResult {
+    return { events: [grantContextualExtraAction(ctx, 'mythic_greeks_favor_of_hermes'), grantContextualExtraAction(ctx, 'mythic_greeks_favor_of_hermes')] };
+}
+
+function favorOfPoseidon(ctx: AbilityContext): AbilityResult {
+    const player = ctx.state.players[ctx.playerId];
+    const cards = player.discard
+        .filter(card => card.uid !== ctx.cardUid)
+        .map(card => ({ cardUid: card.uid, defId: card.defId, label: getCardDef(card.defId)?.name ?? card.defId }));
+    if (cards.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.discard_empty', ctx.now)] };
+    return runtimeToAbilityResult(executeAbilityProgram(poseidonPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        cards,
+    }));
+}
+
+const poseidonPromptProgram = createPromptProgram<PoseidonContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mythic_greeks_favor_of_poseidon',
+    buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
+        `mythic_greeks_favor_of_poseidon_${context.now}`,
+        context.playerId,
+        '波塞冬的恩惠：选择至多 3 张弃牌洗回牌库',
+        context.cards.map((card, index) => ({
+            id: `card-${index}`,
+            label: card.label,
+            value: card,
+            displayMode: 'card' as const,
+        })),
+        {
+            sourceId: 'mythic_greeks_favor_of_poseidon',
+            targetType: 'generic',
+            multi: { min: 0, max: Math.min(3, context.cards.length) },
+            autoResolveIfSingle: false,
+        },
+    ),
+    onResolve: ({ context, state, value, random, timestamp }) => {
+        const choices = (Array.isArray(value) ? value : []) as CardChoice[];
+        const selectedUids = new Set(choices.map(choice => choice.cardUid).filter(Boolean));
+        if (selectedUids.size === 0) return { events: [] };
+        const player = state.core.players[context.playerId];
+        const selectedCards = player.discard.filter(card => selectedUids.has(card.uid));
+        const shuffled = random.shuffle(selectedCards);
+        return { events: [{
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: { playerId: context.playerId, deckUids: [...shuffled.map(card => card.uid), ...player.deck.map(card => card.uid)] },
+            timestamp,
+        } as DeckReorderedEvent] };
+    },
+});
+
+function favorOfZeus(ctx: AbilityContext): AbilityResult {
+    const bases = collectBaseTargets(ctx.state);
+    return runtimeToAbilityResult(executeAbilityProgram(greekBasePromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceDefId: 'mythic_greeks_favor_of_zeus',
+        bases,
+    }));
+}
+
+function heraclesActionTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined) return [];
+    return [addTempPower(ctx.sourceCardUid, ctx.sourceBaseIndex, 1, 'mythic_greeks_heracles', ctx.now)];
+}
+
+function odysseusActionTrigger(ctx: TriggerContext) {
+    if (!ctx.matchState) return { events: [] };
+    if (ctx.sourceControllerId !== ctx.playerId) return { events: [] };
+    const targets = ownMinionTargets(ctx.state, ctx.playerId);
+    if (targets.length === 0) return { events: [] };
+    const abilityCtx: AbilityContext = { state: ctx.state, matchState: ctx.matchState, playerId: ctx.playerId, cardUid: ctx.sourceCardUid ?? '', defId: 'mythic_greeks_odysseus', baseIndex: ctx.sourceBaseIndex ?? 0, random: ctx.random, now: ctx.now };
+    return runtimeToTriggerResult(executeAbilityProgram(greekMinionPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'mythic_greeks_odysseus',
+        title: '奥德修斯：选择你的一个随从放置 +1 指示物',
+        targets,
+        amount: 1,
+        mode: 'counter',
+    }), abilityCtx.matchState);
+}
+
+function spartanActionTrigger(ctx: TriggerContext): SmashUpEvent[] {
+    if (!ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId !== ctx.playerId) return [];
+    const source = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!source) return [];
+    if (Number(source.metadata?.mythicGreeksSpartanTriggeredTurn ?? -1) === ctx.state.turnNumber) return [];
+    return [
+        addPowerCounter(source.uid, ctx.sourceBaseIndex, 1, 'mythic_greeks_spartan', ctx.now),
+        metadataTurnUsed(source.uid, ctx.sourceBaseIndex, 'mythicGreeksSpartanTriggeredTurn', ctx.state.turnNumber, ctx.now),
+    ];
+}
+
+function jasonActionTrigger(ctx: TriggerContext) {
+    if (!ctx.matchState || !ctx.sourceCardUid || ctx.sourceBaseIndex === undefined || ctx.sourceControllerId !== ctx.playerId) return { events: [] };
+    const source = ctx.state.bases[ctx.sourceBaseIndex]?.minions.find(minion => minion.uid === ctx.sourceCardUid);
+    if (!source || Number(source.metadata?.mythicGreeksJasonTriggeredTurn ?? -1) === ctx.state.turnNumber) return { events: [] };
+    const bases = collectBaseTargets(ctx.state, baseIndex => ctx.state.bases[baseIndex].minions.some(minion => minion.controller === ctx.playerId));
+    if (bases.length === 0) return { events: [] };
+    return runtimeToTriggerResult(executeAbilityProgram(greekBasePromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceUid: source.uid,
+        sourceDefId: 'mythic_greeks_jason',
+        bases,
+    }), ctx.matchState);
+}
+
+function argonautOnPlay(ctx: AbilityContext): AbilityResult {
+    const events: SmashUpEvent[] = [];
+    let hasOwnOdysseus = false;
+    for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
+        for (const minion of ctx.state.bases[baseIndex].minions) {
+            if (minion.controller !== ctx.playerId) continue;
+            if (minion.defId === 'mythic_greeks_odysseus') {
+                hasOwnOdysseus = true;
+            }
+            if (minion.defId === 'mythic_greeks_heracles') {
+                events.push(addTempPower(minion.uid, baseIndex, 1, 'mythic_greeks_argonaut_heracles', ctx.now));
+            }
+            if (
+                minion.defId === 'mythic_greeks_spartan'
+                && Number(minion.metadata?.mythicGreeksSpartanTriggeredTurn ?? -1) !== ctx.state.turnNumber
+            ) {
+                events.push(addPowerCounter(minion.uid, baseIndex, 1, 'mythic_greeks_argonaut_spartan', ctx.now));
+                events.push(metadataTurnUsed(minion.uid, baseIndex, 'mythicGreeksSpartanTriggeredTurn', ctx.state.turnNumber, ctx.now));
+            }
+        }
+    }
+    if (!hasOwnOdysseus) return { events };
+
+    const targets = ownMinionTargets(ctx.state, ctx.playerId);
+    if (targets.length === 0) return { events };
+    const odysseusPrompt = executeAbilityProgram(greekMinionPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'mythic_greeks_argonaut_odysseus',
+        title: '阿尔戈英雄：触发奥德修斯，选择你的一个随从放置 +1 指示物',
+        targets,
+        amount: 1,
+        mode: 'counter',
+    });
+    return {
+        events,
+        ...(odysseusPrompt.matchState ? { matchState: odysseusPrompt.matchState } : {}),
+    };
+}
+
+function oracleAtDelphi(ctx: BaseAbilityContext): AbilityResult {
+    if (!ctx.random) return { events: [] };
+    const peek = peekDeckTop(ctx.state, ctx.random, ctx.playerId, 'all', 'base_oracle_at_delphi', ctx.now, ctx.playerId);
+    return peek ? { events: peek.events } : { events: [] };
+}
+
+function woodenHorse(ctx: BaseAbilityContext): AbilityResult {
+    if (!ctx.matchState) return { events: [] };
+    const targets = collectMinionTargets(ctx.state, (_minion, baseIndex) => baseIndex === ctx.baseIndex);
+    if (targets.length === 0) return { events: [] };
+    return runtimeToAbilityResult(executeAbilityProgram(greekMinionPromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'base_wooden_horse',
+        title: '特洛伊木马：你可以选择这里一个随从 +2 到回合结束',
+        targets,
+        amount: 2,
+        mode: 'temp',
+        optional: true,
+    }));
+}
+
+export function registerMythicGreeksAbilities(): void {
+    registerSimpleAbility('mythic_greeks_argonaut', 'onPlay', argonautOnPlay);
+    registerSimpleAbility('mythic_greeks_favor_of_hades', 'onPlay', favorOfHades);
+    registerSimpleAbility('mythic_greeks_favor_of_ares', 'onPlay', favorOfAres);
+    registerSimpleAbility('mythic_greeks_favor_of_aphrodite', 'onPlay', favorOfAphrodite);
+    registerSimpleAbility('mythic_greeks_favor_of_dionysus', 'onPlay', favorOfDionysus);
+    registerSimpleAbility('mythic_greeks_favor_of_hera', 'onPlay', favorOfHera);
+    registerSimpleAbility('mythic_greeks_favor_of_athena', 'onPlay', favorOfAthena);
+    registerSimpleAbility('mythic_greeks_favor_of_apollo', 'onPlay', favorOfApollo);
+    registerSimpleAbility('mythic_greeks_favor_of_hermes', 'onPlay', favorOfHermes);
+    registerSimpleAbility('mythic_greeks_favor_of_poseidon', 'onPlay', favorOfPoseidon);
+    registerSimpleAbility('mythic_greeks_favor_of_zeus', 'onPlay', favorOfZeus);
+    registerTrigger('mythic_greeks_odysseus', 'onActionPlayed', odysseusActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('mythic_greeks_heracles', 'onActionPlayed', heraclesActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('mythic_greeks_spartan', 'onActionPlayed', spartanActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerTrigger('mythic_greeks_jason', 'onActionPlayed', jasonActionTrigger, { perInstance: true, playerContext: 'sourceController', effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerBaseAbility('base_oracle_at_delphi', 'onMinionPlayed', oracleAtDelphi, { effectContract: SHAYU_TRIGGER_CONTRACT });
+    registerBaseAbility('base_wooden_horse', 'onActionPlayed', woodenHorse, { effectContract: SHAYU_TRIGGER_CONTRACT });
+}

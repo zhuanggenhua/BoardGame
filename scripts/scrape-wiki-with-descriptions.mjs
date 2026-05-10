@@ -29,7 +29,10 @@ const FACTION_WIKI_NAMES = {
   'giant-ants': 'Giant_Ants',
   vampires: 'Vampires',
   werewolves: 'Werewolves',
-  frankenstein: 'Mad_Scientists'
+  frankenstein: 'Mad_Scientists',
+  sharks: 'Sharks',
+  tornados: 'Tornados',
+  mythic_greeks: 'Mythic_Greeks'
 };
 
 // 使用 MediaWiki API 抓取页面（避免 Cloudflare JS 挑战）

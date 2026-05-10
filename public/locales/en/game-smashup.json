@@ -500,6 +500,18 @@
       "princesses": {
         "name": "Princesses",
         "description": "Stretch value with extra plays, discard recursion, and sticky boosts while Eliza caps opposing bursts."
+      },
+      "sharks": {
+        "name": "Sharks",
+        "description": "Destroy low-power minions, grow with +1 power counters, and chain predatory effects."
+      },
+      "tornados": {
+        "name": "Tornados",
+        "description": "Move minions around the table, disrupt bases, and reshape scoring windows."
+      },
+      "mythic_greeks": {
+        "name": "Mythic Greeks",
+        "description": "Trigger heroic bonuses from actions and chain divine favors for extra plays and power."
       }
     },
   "tutorial": {
@@ -3763,6 +3775,186 @@
       "princesses_sleeping_beauty": {
         "name": "Sleeping Beauty",
         "abilityText": "Ongoing: If this minion would go to the discard pile, shuffle it into your deck instead."
+      },
+      "sharks_megalodon": {
+        "name": "Megalodon",
+        "abilityText": "You may destroy a minion of power 4 or less here. Special: Before this base scores, you may destroy a minion here of power 3 or less."
+      },
+      "sharks_great_white": {
+        "name": "Great White",
+        "abilityText": "Talent: Move this minion to another base and destroy a minion there of power 2 or less."
+      },
+      "sharks_hammerhead": {
+        "name": "Hammerhead",
+        "abilityText": "Ongoing: After a minion here is destroyed, place a +1 power counter on this minion."
+      },
+      "sharks_mako": {
+        "name": "Mako",
+        "abilityText": "Special: After you destroy a minion on any base, you may play this minion there as an extra minion."
+      },
+      "sharks_blood_in_the_water": {
+        "name": "Blood in the Water",
+        "effectText": "Play on a base. Ongoing: After a minion is destroyed here, you may play a minion here of power 3 or less as an extra minion."
+      },
+      "sharks_week_of_sharks": {
+        "name": "Week of Sharks",
+        "effectText": "Play on a base. Ongoing: If you have a minion here, draw an extra card at the end of your turn. Only use one Week of Sharks ability each turn."
+      },
+      "sharks_torn_apart": {
+        "name": "Torn Apart",
+        "effectText": "Destroy a minion of power 3 or less and draw a card."
+      },
+      "sharks_chum": {
+        "name": "Chum",
+        "effectText": "Play on a minion. Ongoing: After a minion is destroyed, place a +1 power counter on this minion."
+      },
+      "sharks_dangerous_waters": {
+        "name": "Dangerous Waters",
+        "effectText": "Play on a base. Talent: Choose a minion here. It gets -2 power until the end of the turn."
+      },
+      "sharks_feeding_frenzy": {
+        "name": "Feeding Frenzy",
+        "effectText": "Choose a base. Destroy any number of minions there of power 2 or less."
+      },
+      "sharks_air_jaws": {
+        "name": "Air Jaws",
+        "effectText": "Move one of your minions to another base, then destroy a minion there of power 3 or less."
+      },
+      "sharks_freakin_laser_beam": {
+        "name": "Freakin’ Laser Beam",
+        "effectText": "Choose one of your minions. Destroy a minion with equal or lower power at your minion’s base."
+      },
+      "tornados_monster_tornado": {
+        "name": "Monster Tornado",
+        "abilityText": "Talent: Move a minion of power 4 or less from here to another base, or from another base to here."
+      },
+      "tornados_cyclone": {
+        "name": "Cyclone",
+        "abilityText": "Talent: Move this minion to another base."
+      },
+      "tornados_twister": {
+        "name": "Twister",
+        "abilityText": "You may move a minion of power 3 or less from here to another base, or from another base to here."
+      },
+      "tornados_dust_devil": {
+        "name": "Dust Devil",
+        "abilityText": "Special: Before a base scores, you may move this minion to there."
+      },
+      "tornados_trade_winds": {
+        "name": "Trade Winds",
+        "effectText": "Choose two minions of power 3 or less. Move each one to the other’s base."
+      },
+      "tornados_carried_away": {
+        "name": "Carried Away",
+        "effectText": "Move a minion to another base."
+      },
+      "tornados_whirlwinds": {
+        "name": "Whirlwinds",
+        "effectText": "You may move any number of your minions to other bases."
+      },
+      "tornados_gone_with_the_wind": {
+        "name": "Gone with the Wind",
+        "effectText": "Special: Play after a base scores. You may move one of your minions from there to another base instead of the discard pile."
+      },
+      "tornados_ripped_off": {
+        "name": "Ripped Off",
+        "effectText": "Transfer an action played on a base to another base or on a minion to another minion."
+      },
+      "tornados_picked_up": {
+        "name": "Picked Up",
+        "effectText": "Special: Play before a base scores. Move a minion from there to another base."
+      },
+      "tornados_not_in_kansas": {
+        "name": "Not in Kansas",
+        "effectText": "Destroy a base and any actions played on it or on minions there. Replace it with the top card of the base deck. All minions from the original base remain."
+      },
+      "tornados_over_the_rainbow": {
+        "name": "Over the Rainbow",
+        "effectText": "Special: Play before a base scores. Move one of your minions from another base to there."
+      },
+      "mythic_greeks_odysseus": {
+        "name": "Odysseus",
+        "abilityText": "Ongoing: After you play an action, place a +1 power counter on one of your minions."
+      },
+      "mythic_greeks_argonaut": {
+        "name": "Argonaut",
+        "abilityText": "Trigger all abilities that would trigger from you playing an action. Special: Any time you can play an action, you can play this card instead."
+      },
+      "mythic_greeks_jason": {
+        "name": "Jason",
+        "abilityText": "Ongoing: Once per turn, after you play an action, you may choose a base and give your minions there +1 power until the end of the turn."
+      },
+      "mythic_greeks_favor_of_hades": {
+        "name": "Favor of Hades",
+        "effectText": "Place an action card from your discard pile into your hand."
+      },
+      "mythic_greeks_heracles": {
+        "name": "Heracles",
+        "abilityText": "Ongoing: After any player plays an action, this minion gains +1 power until the end of the turn."
+      },
+      "mythic_greeks_favor_of_ares": {
+        "name": "Favor of Ares",
+        "effectText": "One of your minions gains +3 power until the end of the turn."
+      },
+      "mythic_greeks_spartan": {
+        "name": "Spartan",
+        "abilityText": "Ongoing: Once per turn, after you play an action, you may place a +1 power counter on this minion."
+      },
+      "mythic_greeks_favor_of_aphrodite": {
+        "name": "Favor of Aphrodite",
+        "effectText": "Play an extra minion."
+      },
+      "mythic_greeks_favor_of_dionysus": {
+        "name": "Favor of Dionysus",
+        "effectText": "One of your minions gains +1 power until the end of the turn. Play an extra action. You may place this card on top of your deck instead of the discard pile."
+      },
+      "mythic_greeks_favor_of_hera": {
+        "name": "Favor of Hera",
+        "effectText": "Place a +1 power counter on up to two of your minions."
+      },
+      "mythic_greeks_favor_of_athena": {
+        "name": "Favor of Athena",
+        "effectText": "Reveal the top 5 cards of your deck. You may place one of the revealed actions into your hand, and return the rest to the top of your deck in any order."
+      },
+      "mythic_greeks_favor_of_apollo": {
+        "name": "Favor of Apollo",
+        "effectText": "Draw a card and play an extra action."
+      },
+      "mythic_greeks_favor_of_hermes": {
+        "name": "Favor of Hermes",
+        "effectText": "Play two extra actions."
+      },
+      "mythic_greeks_favor_of_poseidon": {
+        "name": "Favor of Poseidon",
+        "effectText": "Shuffle up to three cards from your discard pile into your deck."
+      },
+      "mythic_greeks_favor_of_zeus": {
+        "name": "Favor of Zeus",
+        "effectText": "Reduce the breakpoint of a base by 5 until the end of the turn."
+      },
+      "base_shark_reef": {
+        "name": "Shark Reef",
+        "abilityText": "The player who destroys a minion here may place a +1 power counter on one of their minions."
+      },
+      "base_the_deep": {
+        "name": "The Deep",
+        "abilityText": "After you play a minion of power 4 or more here, you may destroy a minion here of lower power."
+      },
+      "base_trailer_park": {
+        "name": "Trailer Park",
+        "abilityText": "After you move a minion here, place a +1 power counter on it."
+      },
+      "base_tornado_alley": {
+        "name": "Tornado Alley",
+        "abilityText": "Once per turn, after a minion moves here, you may move another minion here."
+      },
+      "base_oracle_at_delphi": {
+        "name": "Oracle at Delphi",
+        "abilityText": "After you play a minion here, reveal the top card of your deck. If it is an action, draw it. Otherwise return it to the top of your deck."
+      },
+      "base_wooden_horse": {
+        "name": "Wooden Horse",
+        "abilityText": "After any player plays an action, they may give a minion here +2 power until the end of the turn."
       }
     },
   "endgame": {
