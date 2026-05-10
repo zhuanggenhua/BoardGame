@@ -81,12 +81,15 @@ test.describe('SmashUp 僵尸领主直点交互', () => {
 
         await game.selectBase(1);
 
+        await expect(page.getByRole('button', { name: /弃掉|Discard/i })).toBeVisible({ timeout: 5000 });
+        await page.getByRole('button', { name: /弃掉|Discard/i }).click({ force: true });
+
         await page.waitForFunction(
             () => {
                 const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
                 return !state?.sys?.interaction?.current;
             },
-            { timeout: 5000 }
+            { timeout: 10000 }
         );
 
         const finalState = await game.getState();

@@ -622,10 +622,12 @@ export function collectTriggers(
             continue;
         }
 
-        const located = locatedSources[0];
-        if (!isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)) continue;
-        if (!isTurnBoundarySourceControllerEligible(entry, timing, located, pid)) continue;
-        if (shouldSkipTriggerInstance(state, entry, timing, located, ctx)) continue;
+        const located = selectSpecificSourceLocation(locatedSources, ctx, candidate => (
+            isTriggerSourceEligible(entry, timing, candidate, ctx.baseIndex)
+            && isTurnBoundarySourceControllerEligible(entry, timing, candidate, pid)
+            && !shouldSkipTriggerInstance(state, entry, timing, candidate, ctx)
+        ));
+        if (!located) continue;
         triggers.push(createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx));
     }
 
@@ -1265,11 +1267,10 @@ export function fireTriggers(
                 isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
                 && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
             ))
-            : [selectSpecificSourceLocation(locatedSources, ctx)].filter(located => (
-                located !== undefined
-                && isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+            : [selectSpecificSourceLocation(locatedSources, ctx, located => (
+                isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
                 && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
-            ));
+            ))].filter(located => located !== undefined);
         if (sourcesToExecute.length === 0) continue;
 
         for (const located of sourcesToExecute) {
@@ -1297,15 +1298,17 @@ export function fireTriggers(
 function selectSpecificSourceLocation(
     locatedSources: TriggerSourceLocation[],
     ctx: Omit<TriggerContext, 'timing'>,
+    isEligible?: (located: TriggerSourceLocation) => boolean,
 ): TriggerSourceLocation | undefined {
     const preferredUid = ctx.sourceCardUid ?? ctx.triggerMinionUid;
     if (preferredUid) {
         const matched = locatedSources.find(located => located.uid === preferredUid);
-        if (matched) {
+        if (matched && (!isEligible || isEligible(matched))) {
             return matched;
         }
+        return undefined;
     }
-    return locatedSources[0];
+    return isEligible ? locatedSources.find(isEligible) : locatedSources[0];
 }
 
 /**
@@ -1375,11 +1378,10 @@ export function fireTriggerForSource(
                 isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
                 && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
             ))
-            : [selectSpecificSourceLocation(locatedSources, ctx)].filter(located => (
-                located !== undefined
-                && isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+            : [selectSpecificSourceLocation(locatedSources, ctx, located => (
+                isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
                 && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
-            ));
+            ))].filter(located => located !== undefined);
         if (sourcesToExecute.length === 0) continue;
 
         for (const located of sourcesToExecute) {

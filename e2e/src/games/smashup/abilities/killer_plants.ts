@@ -771,12 +771,14 @@ export function registerKillerPlantAbilities(): void {
     registerProtection('killer_plant_deep_roots', 'move', killerPlantDeepRootsChecker);
     // water_lily: 回合开始时控制者抽1?
     registerTrigger('killer_plant_water_lily', 'onTurnStart', killerPlantWaterLilyTrigger, {
+        playerContext: 'sourceController',
         effectContract: {
             reads: ['sourceSelfState', 'deckState', 'controllerState'],
             writes: ['handState', 'deckState'],
         },
     });
     registerTrigger('killer_plant_water_lily_pod', 'onTurnStart', killerPlantWaterLilyTrigger, {
+        playerContext: 'sourceController',
         effectContract: {
             reads: ['sourceSelfState', 'deckState', 'controllerState'],
             writes: ['handState', 'deckState'],
@@ -803,6 +805,7 @@ export function registerKillerPlantAbilities(): void {
     });
     // choking_vines: 回合开始时消灭此基地上力量最低的随从
     registerTrigger('killer_plant_choking_vines', 'onTurnStart', killerPlantChokingVinesTrigger, {
+        playerContext: 'sourceController',
         effectContract: {
             reads: ['sourceSelfState', 'minionBoardState'],
             writes: ['minionBoardState'],
@@ -810,6 +813,7 @@ export function registerKillerPlantAbilities(): void {
     });
     // overgrowth: 回合开始时将本基地临界点降低到0（通过 tempBreakpointModifiers，回合结束自动清零）
     registerTrigger('killer_plant_overgrowth', 'onTurnStart', killerPlantOvergrowthTrigger, {
+        playerContext: 'sourceController',
         effectContract: {
             reads: ['sourceSelfState', 'scoringState'],
             writes: ['scoringState'],
@@ -819,12 +823,14 @@ export function registerKillerPlantAbilities(): void {
     registerProtection('killer_plant_entangled', 'move', killerPlantEntangledChecker);
     // entangled: 控制者回合开始时消灭本卡
     registerTrigger('killer_plant_entangled', 'onTurnStart', killerPlantEntangledDestroyTrigger, {
+        playerContext: 'sourceController',
         effectContract: {
             reads: ['sourceSelfState'],
             writes: ['sourceSelfState'],
         },
     });
     registerTrigger('killer_plant_entangled_pod', 'onTurnStart', killerPlantEntangledDestroyTrigger, {
+        playerContext: 'sourceController',
         effectContract: {
             reads: ['sourceSelfState'],
             writes: ['sourceSelfState'],
@@ -833,6 +839,7 @@ export function registerKillerPlantAbilities(): void {
 
     // weed_eater_pod: 控制者回合开始后获得 +2 力量（通过 metadata 标记 + PowerModifier）
     registerTrigger('killer_plant_weed_eater_pod', 'onTurnStart', killerPlantWeedEaterPodTrigger, {
+        playerContext: 'sourceController',
         effectContract: {
             reads: ['sourceSelfState'],
             writes: ['sourceSelfState'],

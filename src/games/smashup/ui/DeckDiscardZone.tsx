@@ -129,6 +129,7 @@ export const DeckDiscardZone: React.FC<Props> = ({
                 selectedUid,
                 onSelect: onSelectCard,
                 selectHint: selectHint || t('ui.click_base_to_deploy', { defaultValue: '点击基地放置随从' }),
+                playableUids: new Set(playableCards.map(c => c.uid)),
                 playableDefIds,
             }),
         };

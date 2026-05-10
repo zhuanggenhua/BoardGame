@@ -53,7 +53,6 @@ type FrankensteinPromptContext = {
 type CounterPromptContext = FrankensteinPromptContext & {
     reasonDefId: string;
     excludeUid?: string;
-    excludeBaseIndex?: number;
 };
 
 type AngryMobCardContext = FrankensteinPromptContext & {
@@ -153,13 +152,11 @@ function buildOwnMinionCandidates(
     core: SmashUpCore,
     playerId: PlayerId,
     excludeUid?: string,
-    excludeBaseIndex?: number,
     filter?: (minion: MinionOnBase, baseIndex: number) => boolean,
 ) {
     return getAllOwnMinions(core, playerId)
         .filter(({ minion, baseIndex }) =>
             minion.uid !== excludeUid
-            && baseIndex !== excludeBaseIndex
             && (!filter || filter(minion, baseIndex)))
         .map(({ minion, baseIndex }) => ({
             uid: minion.uid,
@@ -173,10 +170,9 @@ function buildFriendlyMinionPromptOptions(
     core: SmashUpCore,
     playerId: PlayerId,
     excludeUid?: string,
-    excludeBaseIndex?: number,
     filter?: (minion: MinionOnBase, baseIndex: number) => boolean,
 ): PromptOption<MinionChoiceValue>[] {
-    return buildOwnMinionCandidates(core, playerId, excludeUid, excludeBaseIndex, filter).map((candidate, index) => ({
+    return buildOwnMinionCandidates(core, playerId, excludeUid, filter).map((candidate, index) => ({
         id: `minion-${index}`,
         label: candidate.label,
         value: { minionUid: candidate.uid, minionDefId: candidate.defId, baseIndex: candidate.baseIndex },
@@ -189,9 +185,8 @@ function buildCounterTargetOptions(
     core: SmashUpCore,
     playerId: PlayerId,
     excludeUid?: string,
-    excludeBaseIndex?: number,
 ): PromptOption<MinionChoiceValue>[] {
-    return buildFriendlyMinionPromptOptions(core, playerId, excludeUid, excludeBaseIndex);
+    return buildFriendlyMinionPromptOptions(core, playerId, excludeUid);
 }
 
 function buildAngryMobCardOptions(
@@ -303,7 +298,7 @@ function runtimeResultToTriggerResult(
 function resolveCounterPlacement(
     state: SmashUpCore,
     playerId: PlayerId,
-    context: { reasonDefId: string; excludeUid?: string; excludeBaseIndex?: number },
+    context: { reasonDefId: string; excludeUid?: string },
     selected: Partial<MinionChoiceValue> | undefined,
     timestamp: number,
 ): SmashUpEvent[] {
@@ -313,7 +308,7 @@ function resolveCounterPlacement(
         && minion.controller === playerId
         && minion.uid !== context.excludeUid,
     );
-    if (!liveTarget || selected.baseIndex === context.excludeBaseIndex) return [];
+    if (!liveTarget) return [];
     return [addPowerCounter(selected.minionUid, selected.baseIndex, 1, context.reasonDefId, timestamp)];
 }
 
@@ -362,16 +357,11 @@ const frankensteinIgorPromptProgram = createPromptProgram<CounterPromptContext, 
             `frankenstein_igor_${context.playerId}_${context.now}`,
             context.playerId,
             '选择一个你的随从放置+1力量指示物（科学小怪蛋）',
-            buildCounterTargetOptions(context.matchState.core, context.playerId, context.excludeUid, context.excludeBaseIndex),
+            buildCounterTargetOptions(context.matchState.core, context.playerId, context.excludeUid),
             { sourceId: 'frankenstein_igor', targetType: 'minion', responseValidationMode: 'live' },
         );
         interaction.data.optionsGenerator = (state) =>
-            buildCounterTargetOptions(
-                state.core as SmashUpCore,
-                context.playerId,
-                context.excludeUid,
-                context.excludeBaseIndex,
-            );
+            buildCounterTargetOptions(state.core as SmashUpCore, context.playerId, context.excludeUid);
         return interaction;
     },
     onResolve: ({ context, state, playerId, value, timestamp }) => ({
@@ -823,7 +813,6 @@ function registerFrankensteinOngoingEffects(): void {
             ctx.state,
             controllerId,
             ctx.triggerMinionUid,
-            ctx.baseIndex,
         );
         if (options.length === 0) return [];
 
@@ -843,7 +832,6 @@ function registerFrankensteinOngoingEffects(): void {
                 createPromptContext(ctx.matchState, controllerId, ctx.now, {
                     reasonDefId,
                     excludeUid: ctx.triggerMinionUid,
-                    excludeBaseIndex: ctx.baseIndex,
                 }),
             ),
             ctx.matchState,

@@ -299,7 +299,7 @@ export function registerCthulhuAbilities(): void {
     // 完成仪式：回合开始时清场并换基地
     registerTrigger('cthulhu_complete_the_ritual', 'onTurnStart', cthulhuCompleteTheRitualTrigger, {
         effectContract: {
-            reads: ['sourceSelfState', 'minionBoardState', 'baseState'],
+            reads: ['sourceSelfState', 'minionBoardState', 'baseState', 'baseDeckState'],
             writes: ['minionBoardState', 'baseState', 'deckState'],
         },
     });

@@ -2210,9 +2210,8 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
 
     it('Igor 自身被弃时触发，自动在其他基地己方唯一随从上放指示物', () => {
         const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2, { powerModifier: 0 });
-        const ally = makeMinion('ally1', 'test_minion', '0', 3, { powerModifier: 0 });
         const target = makeMinion('t1', 'test_minion', '0', 4, { powerModifier: 0 });
-        const scoredBase = makeBase({ defId: 'base_a', minions: [igor, ally] });
+        const scoredBase = makeBase({ defId: 'base_a', minions: [igor] });
         const otherBase = makeBase({ defId: 'base_b', minions: [target] });
         const state = makeState({ bases: [scoredBase, otherBase] });
 
@@ -2234,9 +2233,8 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
 
     it('POD 版 Igor 自身被弃时也会触发放置指示物', () => {
         const igor = makeMinion('igor-pod-1', 'frankenstein_igor_pod', '0', 2, { powerModifier: 0 });
-        const ally = makeMinion('ally1', 'test_minion', '0', 3, { powerModifier: 0 });
         const target = makeMinion('t1', 'test_minion', '0', 4, { powerModifier: 0 });
-        const scoredBase = makeBase({ defId: 'base_a', minions: [igor, ally] });
+        const scoredBase = makeBase({ defId: 'base_a', minions: [igor] });
         const otherBase = makeBase({ defId: 'base_b', minions: [target] });
         const state = makeState({ bases: [scoredBase, otherBase] });
 
@@ -2283,23 +2281,25 @@ describe('frankenstein_igor: 基地结算弃置触发', () => {
         expect(current?.data?.options.length).toBe(2);
     });
 
-    it('被弃基地上的己方随从不作为候选目标', () => {
+    it('Igor 自身被弃时，同基地其他己方随从可作为候选目标', () => {
         const igor = makeMinion('igor1', 'frankenstein_igor', '0', 2, { powerModifier: 0 });
         const allyOnSameBase = makeMinion('ally1', 'test_minion', '0', 3, { powerModifier: 0 });
         const scoredBase = makeBase({ defId: 'base_a', minions: [igor, allyOnSameBase] });
         const state = makeState({ bases: [scoredBase] });
 
-        // 只有被弃基地上有己方随从，其他基地无候选，因此不触发
         const result = fireTriggers(state, 'onMinionDiscardedFromBase', {
             state,
             playerId: '0',
             baseIndex: 0,
-            triggerMinionUid: 'ally1',
-            triggerMinionDefId: 'test_minion',
+            triggerMinionUid: 'igor1',
+            triggerMinionDefId: 'frankenstein_igor',
             random: dummyRandom,
             now: 100,
         });
-        expect(result.events.length).toBe(0);
+        expect(result.events.length).toBe(1);
+        expect(result.events[0].type).toBe(SU_EVENTS.POWER_COUNTER_ADDED);
+        expect((result.events[0] as any).payload.minionUid).toBe('ally1');
+        expect((result.events[0] as any).payload.baseIndex).toBe(0);
     });
 
     it('雄蜂 giant_ant_drone 不会被 onMinionDiscardedFromBase 触发', () => {

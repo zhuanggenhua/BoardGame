@@ -41,6 +41,7 @@ interface Props {
         onSelect?: (uid: string | null) => void;
         /** 选中卡牌后的提示文本 */
         selectHint?: string;
+        playableUids?: Set<string>;
         /** 可打出的卡牌 defId 集合（同 defId 的卡功能一样，选哪张都行） */
         playableDefIds?: Set<string>;
     };
@@ -370,7 +371,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
     }, [isSubmitLocked, prompt, dispatch]);
 
     if (displayCards) {
-        const { selectedUid: selUid, onSelect: onSel, playableDefIds } = displayCards;
+        const { selectedUid: selUid, onSelect: onSel, playableDefIds, playableUids } = displayCards;
 
         return (
             <AnimatePresence mode="wait">
@@ -399,7 +400,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 const def = getCardDef(card.defId);
                                 const name = def ? resolveCardName(def, t) : card.defId;
                                 const isSel = card.uid === selUid;
-                                const isPlayable = playableDefIds?.has(card.defId) ?? false;
+                                const isPlayable = playableUids?.has(card.uid) ?? playableDefIds?.has(card.defId) ?? false;
                                 
                                 const handleCardClick = () => {
                                     if (isPlayable && onSel) {
