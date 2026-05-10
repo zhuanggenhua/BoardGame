@@ -25,7 +25,7 @@ import { buildTrainingDecisionSample } from './trainingData';
 import logger, { gameLogger } from '../../../server/logger.js';
 import { GAME_MANIFEST_BY_ID } from '../../games/manifest';
 import * as aiModule from '../ai';
-import { applyPlayerViewToState, buildAiDecisionContext, getAiSeatIds, getGameAiRuntime, resolveOnlineAiDecisionView } from '../ai';
+import { applyPlayerViewToState, buildAiDecisionContext, getAiSeatIds, getGameAiRuntime, resolveOnlineAiDecisionView, resolveSeatPlayerDisplayName } from '../ai';
 import { extractAiInteractionSnapshot, extractAiResponseWindowSnapshot } from '../ai/snapshots';
 import type { AiInteractionSnapshot, AiInteractionOptionSnapshot, AiResponseWindowSnapshot } from '../ai/types';
 import {
@@ -1433,11 +1433,13 @@ export class GameTransportServer {
             const seenMarkers = new Set<string>([progressMarkerBeforeRecovery]);
             let recoverySteps = 0;
             let allowNaturalAiContinuation = false;
-            const initialCandidate = await revalidateRecoveryCandidate(currentCandidate);
-            if (!initialCandidate) {
-                return;
+            if (currentCandidate.legalActionOnly !== true) {
+                const initialCandidate = await revalidateRecoveryCandidate(currentCandidate);
+                if (!initialCandidate) {
+                    return;
+                }
+                currentCandidate = initialCandidate;
             }
-            currentCandidate = initialCandidate;
 
             while (recoverySteps <= this.onlineAiRecoveryMaxAdvanceSteps) {
                 phaseLabel = currentCandidate.requiresConfirmedAdvancePhase ? 'recover-interaction' : 'follow-up-advance';
@@ -1492,11 +1494,6 @@ export class GameTransportServer {
                     const nextCommandType = nextCommand?.type ?? 'UNKNOWN';
                     if (nextCommandType === advancePhaseCommandType
                         && !canExecuteWatchdogAdvancePhase(currentCandidate.playerId)) {
-                        const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
-                        if (!revalidatedCandidate) {
-                            return;
-                        }
-                        currentCandidate = revalidatedCandidate;
                         await this.handleOnlineAiRecoveryFailure(
                             match,
                             tracker,
@@ -3740,9 +3737,14 @@ export class GameTransportServer {
     }
 
     private buildMatchPlayers(match: ActiveMatch): MatchPlayerInfo[] {
+        const seatControllers = extractSetupSeatControllers(match.metadata.setupData);
         return Object.entries(match.metadata.players).map(([id, data]) => ({
             id: Number(id),
-            name: data.name,
+            name: resolveSeatPlayerDisplayName({
+                playerId: id,
+                name: data.name,
+                seatControllers,
+            }),
             isConnected: data.isConnected,
         }));
     }

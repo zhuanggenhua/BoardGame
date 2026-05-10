@@ -2676,11 +2676,18 @@ describe('GameTransportServer（离座与重连）', () => {
         );
     });
 
-    it('online AI watchdog 对 manifest 明确禁用 AI 的 splendor 应忽略残留 seatControllers', async () => {
-        expect(GAME_MANIFEST_BY_ID.splendor?.ai).toMatchObject({
-            localAi: false,
-            remoteAi: false,
-        });
+    it('online AI watchdog 对 manifest 明确禁用 AI 的游戏应忽略残留 seatControllers', async () => {
+        const gameId = 'watchdog-no-ai-game';
+        const previousManifest = GAME_MANIFEST_BY_ID[gameId];
+        GAME_MANIFEST_BY_ID[gameId] = {
+            ...GAME_MANIFEST_BY_ID.tictactoe,
+            id: gameId,
+            ai: {
+                capture: true,
+                localAi: false,
+                remoteAi: false,
+            },
+        };
 
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -2692,7 +2699,7 @@ describe('GameTransportServer（离座与重连）', () => {
                 phase: 'main1',
             }),
             metadata: createOnlineAiRecoveryMetadata({
-                gameName: 'splendor',
+                gameName: gameId,
                 seatControllers: {
                     '0': { type: 'human' },
                     '1': { type: 'local-ai', policyId: 'stale-splendor-ai' },
@@ -2703,7 +2710,7 @@ describe('GameTransportServer（离座与重连）', () => {
         const server = new GameTransportServer({
             io: io as unknown as any,
             storage,
-            games: [createEngineConfigWithId('splendor')],
+            games: [createEngineConfigWithId(gameId)],
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 0,
             onlineAiFeedbackReporter: feedbackReporter,
@@ -2721,15 +2728,24 @@ describe('GameTransportServer（离座与重连）', () => {
             ) => Promise<boolean>;
         };
 
-        await serverInternal.loadMatch('match-watchdog-splendor-manifest-no-ai');
-        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+        try {
+            await serverInternal.loadMatch('match-watchdog-splendor-manifest-no-ai');
+            const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
 
-        await serverInternal.runOnlineAiRecoveryTick();
-        await serverInternal.runOnlineAiRecoveryTick();
-        await nextTick();
+            await serverInternal.runOnlineAiRecoveryTick();
+            await serverInternal.runOnlineAiRecoveryTick();
+            await nextTick();
 
-        expect(executeSpy).not.toHaveBeenCalled();
-        expect(feedbackReporter).not.toHaveBeenCalled();
+            expect(executeSpy).not.toHaveBeenCalled();
+            expect(feedbackReporter).not.toHaveBeenCalled();
+            executeSpy.mockRestore();
+        } finally {
+            if (previousManifest) {
+                GAME_MANIFEST_BY_ID[gameId] = previousManifest;
+            } else {
+                delete GAME_MANIFEST_BY_ID[gameId];
+            }
+        }
     });
 
     it('online AI watchdog fallback 到 ADVANCE_PHASE 前应校验当前仍是 AI 回合，避免误推进 human 回合', async () => {
