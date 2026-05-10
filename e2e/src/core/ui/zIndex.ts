@@ -3,7 +3,7 @@
  *
  * 说明：
  * - 所有游戏与系统的 overlay/hud/tooltip 等层级必须引用这里的常量
- * - 教程层级必须最高，避免被其他浮层遮挡
+ * - 常规提示不应越过 modal；特殊场景需要独立命名的层级常量
  */
 export const UI_Z_INDEX = {
     scene: 0,
@@ -23,4 +23,5 @@ export const UI_Z_INDEX = {
     toast: 2250,
     tutorial: 2300,
     emergencyHud: 2400,
+    cardPreviewTooltip: 2450,
 } as const;

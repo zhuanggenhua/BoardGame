@@ -121,7 +121,7 @@ export const CardPreviewTooltip: React.FC<CardPreviewTooltipProps> = ({
                     style={{
                         left: previewPosition.left,
                         top: previewPosition.top,
-                        zIndex: UI_Z_INDEX.tooltip,
+                        zIndex: UI_Z_INDEX.cardPreviewTooltip,
                         filter: 'drop-shadow(0 4px 12px rgba(0, 0, 0, 0.5))',
                     }}
                 >

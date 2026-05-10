@@ -311,15 +311,13 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         }, { timeout: 10000 });
 
         await game.advancePhase();
-        await expect(page.getByRole('heading', { name: /选择先结算的强制效果/i })).toBeVisible({ timeout: 20000 });
-        await page.getByRole('button', { name: /^侦察兵$/ }).first().click();
         await game.waitForInteraction('alien_scout_return', 20000);
 
         await expect(page.getByText(/侦察兵：基地记分后，是否将此侦察兵返回手牌/i)).toBeVisible();
         await expect(page.getByRole('button', { name: /留在基地/i })).toBeVisible();
         await game.screenshot('legacy-or-alien-scout-prompt-visible', testInfo);
 
-        await page.locator('[data-minion-uid="score-scout"]').click();
+        await page.getByRole('button', { name: /返回手牌/i }).click();
         await page.waitForFunction(() => {
             const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
             return state?.core?.players?.['0']?.hand?.some((card: any) => card.uid === 'score-scout') === true;

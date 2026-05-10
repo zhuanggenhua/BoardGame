@@ -77,6 +77,11 @@ describe('FabMenu helpers', () => {
         expect(GAME_HUD_FAB_Z_INDEX).toBeGreaterThan(UI_Z_INDEX.tutorial);
     });
 
+    it('操作日志卡牌预览层级必须高于悬浮球，且不改变悬浮球层级', () => {
+        expect(GAME_HUD_FAB_Z_INDEX).toBe(UI_Z_INDEX.emergencyHud);
+        expect(UI_Z_INDEX.cardPreviewTooltip).toBeGreaterThan(GAME_HUD_FAB_Z_INDEX);
+    });
+
     it('卫星按钮顺序始终按业务定义靠近主球的一端优先渲染', () => {
         expect(resolveFabSatellitesToRender(['feedback', 'fullscreen', 'action-log', 'settings'])).toEqual([
             'settings',
