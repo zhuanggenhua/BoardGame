@@ -34,6 +34,7 @@ import {
 } from './src/server/duplicateOwnerRooms';
 import { buildUgcServerGames } from './src/server/ugcRegistration';
 import { GameTransportServer } from './src/engine/transport/server';
+import { resolveSeatPlayerDisplayName } from './src/engine/ai';
 import type { GameEngineConfig } from './src/engine/transport/server';
 import type { MatchMetadata, MatchStorage } from './src/engine/transport/storage';
 import { resolveMatchStatus } from './src/engine/transport/storage';
@@ -1157,12 +1158,20 @@ router.get('/games/:name/:matchID', async (ctx) => {
     }
 
     const metadata = result.metadata;
+    const setupDataRecord = metadata.setupData && typeof metadata.setupData === 'object' && !Array.isArray(metadata.setupData)
+        ? metadata.setupData as { seatControllers?: Record<string, unknown> }
+        : undefined;
+    const seatControllers = setupDataRecord?.seatControllers;
     ctx.body = {
         matchID,
         gameName: metadata.gameName,
         players: Object.entries(metadata.players).map(([id, data]) => ({
             id: Number(id),
-            name: data.name,
+            name: resolveSeatPlayerDisplayName({
+                playerId: id,
+                name: data.name,
+                seatControllers,
+            }),
             isConnected: data.isConnected,
         })),
         setupData: metadata.setupData,
@@ -1258,9 +1267,17 @@ const buildLobbyMatch = (
     matchID: string,
     metadata: MatchMetadata,
 ): LobbyMatch => {
+    const setupDataRecord = metadata.setupData && typeof metadata.setupData === 'object' && !Array.isArray(metadata.setupData)
+        ? metadata.setupData as { seatControllers?: Record<string, unknown> }
+        : undefined;
+    const seatControllers = setupDataRecord?.seatControllers;
     const players = Object.entries(metadata.players).map(([id, data]) => ({
         id: Number(id),
-        name: data.name,
+        name: resolveSeatPlayerDisplayName({
+            playerId: id,
+            name: data.name,
+            seatControllers,
+        }),
         isConnected: data.isConnected,
     }));
     const setupData = metadata.setupData as {

@@ -98,24 +98,70 @@ function buildAttemptKey(args: {
     interactionId?: string | null;
     responderIndex?: number | null;
 }): string {
+    const core = args.state.core as {
+        activePlayerId?: unknown;
+        currentPlayerId?: unknown;
+        currentPlayer?: unknown;
+        turnOrder?: unknown;
+        currentPlayerIndex?: unknown;
+        pendingAttack?: unknown;
+    } | undefined;
+    const phase = typeof args.state.sys?.phase === 'string' ? args.state.sys.phase : '';
+    const currentPlayerId = (() => {
+        if (!core) return '';
+        if (phase === 'defensiveRoll') {
+            const pendingAttack = core.pendingAttack as { defenderId?: unknown } | undefined;
+            if (typeof pendingAttack?.defenderId === 'string') {
+                return pendingAttack.defenderId;
+            }
+        }
+        if (typeof core.activePlayerId === 'string') return core.activePlayerId;
+        if (typeof core.currentPlayerId === 'string') return core.currentPlayerId;
+        if (typeof core.currentPlayer === 'string') return core.currentPlayer;
+        if (Array.isArray(core.turnOrder) && typeof core.currentPlayerIndex === 'number') {
+            const current = core.turnOrder[core.currentPlayerIndex];
+            return typeof current === 'string' ? current : '';
+        }
+        return '';
+    })();
     const legalActionIds = args.legalActions.map((item) => item.actionId).join(',');
     const stateTurnNumber = typeof args.state.sys?.turnNumber === 'number'
         ? args.state.sys.turnNumber
         : '';
-    const statePhase = typeof args.state.sys?.phase === 'string'
-        ? args.state.sys.phase
-        : '';
+    const statePhase = phase;
     const eventStreamNextId = typeof args.state.sys?.eventStream?.nextId === 'number'
         ? args.state.sys.eventStream.nextId
+        : '';
+    const decisionEpoch = typeof args.state.sys?.decisionEpoch === 'number'
+        ? args.state.sys.decisionEpoch
+        : 0;
+    const currentInteraction = args.state.sys?.interaction?.current as {
+        id?: unknown;
+        sourceId?: unknown;
+        data?: {
+            sourceId?: unknown;
+            options?: Array<{ id?: unknown; disabled?: unknown }>;
+        };
+    } | undefined;
+    const interactionSourceId = typeof currentInteraction?.sourceId === 'string'
+        ? currentInteraction.sourceId
+        : typeof currentInteraction?.data?.sourceId === 'string'
+            ? currentInteraction.data.sourceId
+            : '';
+    const interactionOptionSignature = Array.isArray(currentInteraction?.data?.options)
+        ? currentInteraction.data.options
+            .map((option) => {
+                const optionId = typeof option?.id === 'string' ? option.id : '';
+                const disabledFlag = option?.disabled === true ? '1' : '0';
+                return `${optionId}:${disabledFlag}`;
+            })
+            .join(',')
         : '';
     const responseWindow = args.state.sys?.responseWindow?.current as {
         id?: unknown;
         sourceId?: unknown;
         windowType?: unknown;
     } | undefined;
-    const responseWindowId = typeof responseWindow?.id === 'string'
-        ? responseWindow.id
-        : '';
     const responseWindowSourceId = typeof responseWindow?.sourceId === 'string'
         ? responseWindow.sourceId
         : '';
@@ -132,11 +178,14 @@ function buildAttemptKey(args: {
         stateTurnNumber,
         statePhase,
         eventStreamNextId,
+        decisionEpoch,
         args.interactionId ?? '',
+        interactionSourceId,
+        interactionOptionSignature,
         responseWindowType,
-        responseWindowId,
         responseWindowSourceId,
         args.responderIndex ?? '',
+        currentPlayerId,
         legalActionIds,
     ].join('|');
 }

@@ -297,6 +297,114 @@ describe('i18n 静态检查工具', () => {
         }));
     });
 
+    it('createSimpleChoice 直接使用英文标题且缺少 titleKey 时会产生告警', () => {
+        const content = `
+            createSimpleChoice(
+                'choice-1',
+                playerId,
+                'The Bride: choose the first effect',
+                options,
+                { sourceId: 'demo', targetType: 'generic' },
+            );
+
+            createSimpleChoice(
+                'choice-2',
+                playerId,
+                'The Bride: choose the second effect',
+                options,
+                { sourceId: 'demo', targetType: 'generic', titleKey: 'ui.titan_the_bride_start_second_effect_title' },
+            );
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'common',
+            knownNamespaces: new Set(['common', 'game-smashup']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-simple-choice-title',
+            key: 'The Bride: choose the first effect',
+        }));
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'raw-simple-choice-title',
+            key: 'The Bride: choose the second effect',
+        }));
+    });
+
+    it('createSimpleChoice 内联英文 label 缺少 labelKey 时会产生告警', () => {
+        const content = `
+            createSimpleChoice(
+                'choice-1',
+                playerId,
+                'Choose a branch',
+                [
+                    { id: 'raw', label: 'Draw 2 cards', value: { draw: true }, displayMode: 'button' },
+                    { id: 'keyed', label: 'Place a +1 counter', labelKey: 'ui.place_counter', value: { place: true }, displayMode: 'button' },
+                ],
+                { sourceId: 'demo', targetType: 'generic', titleKey: 'ui.demo_title' },
+            );
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'common',
+            knownNamespaces: new Set(['common', 'game-smashup']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-simple-choice-option-label',
+            key: 'Draw 2 cards',
+        }));
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'raw-simple-choice-option-label',
+            key: 'Place a +1 counter',
+        }));
+    });
+
+    it('PromptOption 变量中的英文 label 缺少 labelKey 时会产生告警', () => {
+        const content = `
+            const options = [
+                { id: 'raw', label: 'Place it on Ancient Lord', value: { mode: 'store' }, displayMode: 'button' },
+                { id: 'keyed', label: 'Draw 2 cards', labelKey: 'ui.draw_two_cards', value: { draw: true }, displayMode: 'button' },
+                { label: 'Debug only', value: 1 },
+            ];
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'common',
+            knownNamespaces: new Set(['common', 'game-smashup']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-prompt-option-label',
+            key: 'Place it on Ancient Lord',
+        }));
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'raw-prompt-option-label',
+            key: 'Draw 2 cards',
+        }));
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'raw-prompt-option-label',
+            key: 'Debug only',
+        }));
+    });
+
+    it('createSkipOption 直接使用英文 label 时会产生告警', () => {
+        const content = `
+            const options = [createSkipOption('Skip this effect')];
+            const zhOptions = [createSkipOption('跳过')];
+        `;
+        const result = collectReferencesFromContent(content, 'demo.ts', {
+            defaultNamespace: 'common',
+            knownNamespaces: new Set(['common']),
+        });
+
+        expect(result.warnings).toContainEqual(expect.objectContaining({
+            type: 'raw-create-skip-label',
+            key: 'Skip this effect',
+        }));
+        expect(result.warnings).not.toContainEqual(expect.objectContaining({
+            type: 'raw-create-skip-label',
+            key: '跳过',
+        }));
+    });
+
     it('识别 manifest 中的 setupOptions 与基础展示 key', () => {
         const content = `
             const entry = {

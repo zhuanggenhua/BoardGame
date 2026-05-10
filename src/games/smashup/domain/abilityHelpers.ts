@@ -89,6 +89,7 @@ export function createSkipOption(label: string = '跳过'): EnginePromptOption<{
     return {
         id: 'skip',
         label,
+        ...(label === '跳过' ? { labelKey: 'ui.skip' } : {}),
         value: { skip: true },
         displayMode: 'button',
         _ai: OPTIONAL_SKIP_AI_HINT,

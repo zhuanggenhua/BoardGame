@@ -4,7 +4,7 @@
 ## Goals / Non-Goals
 - Goals:
   - Access Token 短期有效（建议 15–30 分钟）
-  - Refresh Token 长期有效（建议 7–30 天）
+  - Refresh Token 长期有效（当前项目采用 180 天，降低低频玩家反复登录）
   - Refresh 轮换与复用检测
   - 401 自动刷新一次并重试请求
 - Non-Goals:
@@ -33,4 +33,4 @@
 ## Open Questions
 - Refresh Token 存储使用 Redis 还是 MongoDB？
 - Cookie SameSite 策略是否统一为 Lax（生产环境是否需要 None + Secure）？
-- Refresh TTL 最终标准（7 天 / 14 天 / 30 天）？
+- Refresh TTL 最终标准：当前采用 180 天；后续若引入“记住我”开关，可再拆分普通会话与长期会话。

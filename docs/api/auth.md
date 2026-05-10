@@ -218,6 +218,11 @@ Authorization: Bearer <token>
 ### 请求体
 无需请求体，Refresh Token 来自 Cookie。
 
+### 说明
+- Access Token 当前有效期为 30 天。
+- Refresh Token 通过 httpOnly Cookie 保存，当前有效期为 180 天。
+- 客户端启动、页面恢复可见、或 Access Token 即将/已经过期时，会优先调用本接口续签；续签失败后才要求重新登录。
+
 ### 成功响应（200）
 ```json
 {

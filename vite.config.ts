@@ -141,6 +141,13 @@ export default defineConfig(({ mode }) => {
   const disableViteWatch = process.env.PW_SERVER_WATCH === 'false'
     || process.env.VITE_DISABLE_WATCH === 'true'
     || env.VITE_DISABLE_WATCH === 'true'
+    || process.env.BG_DEV_DISABLE_HOT_RELOAD === '1'
+    || env.BG_DEV_DISABLE_HOT_RELOAD === '1'
+    || /^(off|false|0)$/i.test(
+      process.env.BG_DEV_HOT_RELOAD?.trim()
+        || env.BG_DEV_HOT_RELOAD?.trim()
+        || '',
+    )
   const cliPort = Number(readCliFlag('port'))
   const cliHost = readCliFlag('host')
   const devPort = Number.isFinite(cliPort) && cliPort > 0
@@ -260,11 +267,9 @@ export default defineConfig(({ mode }) => {
             port: devPort,
             clientPort: devPort,
           },
-      // 单次 E2E 不依赖热更新；禁用监听可避免并发改工作区时触发 Vite 重启。
+      // 稳定测试模式不依赖热更新；禁用监听可避免 AI/脚本并发改工作区时触发刷新。
       watch: disableViteWatch
-        ? {
-            ignored: ['**/*'],
-          }
+        ? null
         : {
             usePolling: true,
             interval: 1000,

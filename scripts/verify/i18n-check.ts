@@ -17,7 +17,17 @@ type I18nReference = {
 };
 
 type I18nWarning = {
-    type: 'dynamic-namespace' | 'ambiguous-namespace' | 'unknown-namespace' | 'dynamic-key' | 'exists-namespace-mismatch' | 'raw-validation-error';
+    type:
+        | 'dynamic-namespace'
+        | 'ambiguous-namespace'
+        | 'unknown-namespace'
+        | 'dynamic-key'
+        | 'exists-namespace-mismatch'
+        | 'raw-validation-error'
+        | 'raw-simple-choice-title'
+        | 'raw-simple-choice-option-label'
+        | 'raw-prompt-option-label'
+        | 'raw-create-skip-label';
     key: string;
     file: string;
     line: number;
@@ -982,6 +992,160 @@ const findCallEnd = (content: string, startIndex: number): number => {
     return Math.min(startIndex + 200, content.length);
 };
 
+const splitTopLevelCallArguments = (
+    content: string,
+    openParenIndex: number,
+): Array<{ expression: string; start: number }> => {
+    const args: Array<{ expression: string; start: number }> = [];
+    let start = openParenIndex + 1;
+    let braceDepth = 0;
+    let bracketDepth = 0;
+    let parenDepth = 0;
+    let angleDepth = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inTemplate = false;
+
+    const pushArg = (end: number) => {
+        const expression = content.slice(start, end).trim();
+        if (expression) {
+            args.push({ expression, start });
+        }
+    };
+
+    for (let i = openParenIndex + 1; i < content.length; i++) {
+        const char = content[i];
+        const prev = i > 0 ? content[i - 1] : '';
+
+        if (inSingleQuote) {
+            if (char === '\'' && prev !== '\\') inSingleQuote = false;
+            continue;
+        }
+        if (inDoubleQuote) {
+            if (char === '"' && prev !== '\\') inDoubleQuote = false;
+            continue;
+        }
+        if (inTemplate) {
+            if (char === '`' && prev !== '\\') inTemplate = false;
+            continue;
+        }
+
+        if (char === '\'') {
+            inSingleQuote = true;
+            continue;
+        }
+        if (char === '"') {
+            inDoubleQuote = true;
+            continue;
+        }
+        if (char === '`') {
+            inTemplate = true;
+            continue;
+        }
+
+        if (char === '{') braceDepth++;
+        else if (char === '}') braceDepth = Math.max(0, braceDepth - 1);
+        else if (char === '[') bracketDepth++;
+        else if (char === ']') bracketDepth = Math.max(0, bracketDepth - 1);
+        else if (char === '(') parenDepth++;
+        else if (char === ')') {
+            if (braceDepth === 0 && bracketDepth === 0 && parenDepth === 0 && angleDepth === 0) {
+                pushArg(i);
+                return args;
+            }
+            parenDepth = Math.max(0, parenDepth - 1);
+        } else if (char === '<') angleDepth++;
+        else if (char === '>') angleDepth = Math.max(0, angleDepth - 1);
+
+        if (
+            char === ','
+            && braceDepth === 0
+            && bracketDepth === 0
+            && parenDepth === 0
+            && angleDepth === 0
+        ) {
+            pushArg(i);
+            start = i + 1;
+        }
+    }
+
+    return args;
+};
+
+const parseStandaloneStringLiteral = (expression: string): { value: string; dynamic: boolean } | null => {
+    const match = expression.trim().match(/^(['"`])((?:\\.|(?!\1)[\s\S])*)\1$/);
+    if (!match) return null;
+    return parseStringLiteral(match[1], match[2]);
+};
+
+const hasObjectLiteralTitleKey = (expression: string | undefined): boolean => {
+    if (!expression) return false;
+    const trimmed = expression.trim();
+    if (!trimmed.startsWith('{') || !trimmed.endsWith('}')) return false;
+    return /\btitleKey\s*:/.test(trimmed);
+};
+
+const findNearestObjectLiteral = (expression: string, position: number): string | null => {
+    const openBraceIndex = expression.lastIndexOf('{', position);
+    if (openBraceIndex < 0) return null;
+
+    let depth = 0;
+    let inSingleQuote = false;
+    let inDoubleQuote = false;
+    let inTemplate = false;
+
+    for (let i = openBraceIndex; i < expression.length; i++) {
+        const char = expression[i];
+        const prev = i > 0 ? expression[i - 1] : '';
+
+        if (inSingleQuote) {
+            if (char === '\'' && prev !== '\\') inSingleQuote = false;
+            continue;
+        }
+        if (inDoubleQuote) {
+            if (char === '"' && prev !== '\\') inDoubleQuote = false;
+            continue;
+        }
+        if (inTemplate) {
+            if (char === '`' && prev !== '\\') inTemplate = false;
+            continue;
+        }
+
+        if (char === '\'') {
+            inSingleQuote = true;
+            continue;
+        }
+        if (char === '"') {
+            inDoubleQuote = true;
+            continue;
+        }
+        if (char === '`') {
+            inTemplate = true;
+            continue;
+        }
+
+        if (char === '{') depth++;
+        else if (char === '}') {
+            depth--;
+            if (depth === 0) {
+                return expression.slice(openBraceIndex, i + 1);
+            }
+        }
+    }
+
+    return expression.slice(openBraceIndex);
+};
+
+const objectLiteralHasProperty = (
+    expression: string,
+    propertyPosition: number,
+    propertyName: string,
+): boolean => {
+    const objectLiteral = findNearestObjectLiteral(expression, propertyPosition);
+    if (!objectLiteral) return false;
+    return new RegExp(`\\b${escapeRegExp(propertyName)}\\s*:`).test(objectLiteral);
+};
+
 export const collectReferencesFromContent = (
     content: string,
     filePath: string,
@@ -1386,6 +1550,108 @@ export const collectReferencesFromContent = (
             line,
             source: 'validation.error',
             detail: '命令校验直接返回了自然语言 error 文案，请改用稳定错误码',
+        });
+    }
+
+    const simpleChoiceRegex = /\bcreateSimpleChoice\s*\(/g;
+    const rawPromptOptionLabelIndices = new Set<number>();
+    let simpleChoiceMatch: RegExpExecArray | null;
+    while ((simpleChoiceMatch = simpleChoiceRegex.exec(content)) !== null) {
+        const openParenIndex = simpleChoiceMatch.index + simpleChoiceMatch[0].length - 1;
+        const args = splitTopLevelCallArguments(content, openParenIndex);
+        const titleArg = args[2];
+        if (!titleArg) continue;
+
+        const literal = parseStandaloneStringLiteral(titleArg.expression);
+        const configArg = args[4]?.expression;
+        if (
+            literal
+            && !literal.dynamic
+            && looksLikeHumanReadableValidationError(literal.value)
+            && !hasObjectLiteralTitleKey(configArg)
+        ) {
+            addWarning({
+                type: 'raw-simple-choice-title',
+                key: literal.value,
+                file: filePath,
+                line: getLineNumber(content, titleArg.start),
+                source: 'createSimpleChoice.title',
+                detail: 'createSimpleChoice 标题直接使用了英文可见文案，请补 titleKey 并同步 locales',
+            });
+        }
+
+        const optionsArg = args[3];
+        if (optionsArg) {
+            const optionLabelRegex = /\blabel\s*:\s*(['"`])((?:\\.|(?!\1)[\s\S])*)\1/g;
+            let optionLabelMatch: RegExpExecArray | null;
+            while ((optionLabelMatch = optionLabelRegex.exec(optionsArg.expression)) !== null) {
+                const labelLiteral = parseStringLiteral(optionLabelMatch[1], optionLabelMatch[2]);
+                if (labelLiteral.dynamic || !looksLikeHumanReadableValidationError(labelLiteral.value)) {
+                    continue;
+                }
+                if (objectLiteralHasProperty(optionsArg.expression, optionLabelMatch.index, 'labelKey')) {
+                    continue;
+                }
+
+                rawPromptOptionLabelIndices.add(optionsArg.start + optionLabelMatch.index);
+                addWarning({
+                    type: 'raw-simple-choice-option-label',
+                    key: labelLiteral.value,
+                    file: filePath,
+                    line: getLineNumber(content, optionsArg.start + optionLabelMatch.index),
+                    source: 'createSimpleChoice.option.label',
+                    detail: 'createSimpleChoice 内联选项 label 直接使用了英文可见文案，请补 labelKey 并同步 locales',
+                });
+            }
+        }
+    }
+
+    const promptOptionLabelRegex = /\blabel\s*:\s*(['"`])((?:\\.|(?!\1)[\s\S])*)\1/g;
+    let promptOptionLabelMatch: RegExpExecArray | null;
+    while ((promptOptionLabelMatch = promptOptionLabelRegex.exec(content)) !== null) {
+        if (rawPromptOptionLabelIndices.has(promptOptionLabelMatch.index)) {
+            continue;
+        }
+
+        const labelLiteral = parseStringLiteral(promptOptionLabelMatch[1], promptOptionLabelMatch[2]);
+        if (labelLiteral.dynamic || !looksLikeHumanReadableValidationError(labelLiteral.value)) {
+            continue;
+        }
+
+        const objectLiteral = findNearestObjectLiteral(content, promptOptionLabelMatch.index);
+        if (!objectLiteral) continue;
+        if (/\blabelKey\s*:/.test(objectLiteral)) continue;
+        const looksLikePromptOption = /\bdisplayMode\s*:/.test(objectLiteral)
+            || (/\bid\s*:/.test(objectLiteral) && /\bvalue\s*:/.test(objectLiteral));
+        if (!looksLikePromptOption) {
+            continue;
+        }
+
+        addWarning({
+            type: 'raw-prompt-option-label',
+            key: labelLiteral.value,
+            file: filePath,
+            line: getLineNumber(content, promptOptionLabelMatch.index),
+            source: 'PromptOption.label',
+            detail: 'PromptOption label 直接使用了英文可见文案，请补 labelKey 并同步 locales',
+        });
+    }
+
+    const skipOptionRegex = /\bcreateSkipOption\s*\(\s*(['"`])((?:\\.|(?!\1)[\s\S])*)\1/g;
+    let skipOptionMatch: RegExpExecArray | null;
+    while ((skipOptionMatch = skipOptionRegex.exec(content)) !== null) {
+        const literal = parseStringLiteral(skipOptionMatch[1], skipOptionMatch[2]);
+        if (literal.dynamic || !looksLikeHumanReadableValidationError(literal.value)) {
+            continue;
+        }
+
+        addWarning({
+            type: 'raw-create-skip-label',
+            key: literal.value,
+            file: filePath,
+            line: getLineNumber(content, skipOptionMatch.index),
+            source: 'createSkipOption.label',
+            detail: 'createSkipOption 直接使用了英文可见文案，请用带 labelKey 的 PromptOption 或补统一 helper',
         });
     }
 
@@ -1810,4 +2076,6 @@ const main = () => {
     }
 };
 
-main();
+if (process.argv[1] && path.resolve(process.argv[1]) === __filename) {
+    main();
+}

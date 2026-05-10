@@ -19,7 +19,7 @@ import type { AiHint } from '../ai/types';
 import { resolveCommandTimestamp } from '../utils';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
-import { getActiveResolutionFrame, syncActiveResolutionWithInteraction } from './resolutionStack';
+import { clearActiveResolutionBlock, getActiveResolutionFrame, syncActiveResolutionWithInteraction } from './resolutionStack';
 
 function isSamePlayerId(a: unknown, b: unknown): boolean {
     if (a === undefined || a === null || b === undefined || b === null) return false;
@@ -74,6 +74,34 @@ function buildInteractionDecisionSignature(interaction?: InteractionDescriptor):
         resolveInteractionSourceId(interaction),
         buildInteractionOptionSignature(interaction),
     ].join('|');
+}
+
+export function getCurrentTrackedIdTopSnapshot<TId extends string | number>(
+    currentIds: readonly TId[],
+    trackedIds: readonly TId[],
+): TId[] {
+    const trackedSet = new Set(trackedIds);
+    const snapshot: TId[] = [];
+    for (const id of currentIds) {
+        if (!trackedSet.has(id)) break;
+        snapshot.push(id);
+    }
+    return snapshot;
+}
+
+export function getCurrentTrackedCardTopSnapshot<TCard extends { uid: string; defId?: string }>(
+    currentCards: readonly { uid: string; defId?: string }[],
+    trackedCards: readonly TCard[],
+): TCard[] {
+    const trackedByUid = new Map(trackedCards.map((card) => [card.uid, card] as const));
+    const snapshot: TCard[] = [];
+    for (const card of currentCards) {
+        const tracked = trackedByUid.get(card.uid);
+        if (!tracked) break;
+        if (tracked.defId !== undefined && card.defId !== tracked.defId) break;
+        snapshot.push(tracked);
+    }
+    return snapshot;
 }
 
 function writeInteractionState<TCore>(
@@ -452,6 +480,7 @@ export const INTERACTION_COMMANDS = {
     CONFIRM: 'SYS_INTERACTION_CONFIRM',
     /** 多步交互取消（P2+） */
     CANCEL: 'SYS_INTERACTION_CANCEL',
+    FORCE_UNLOCK: 'SYS_FORCE_UNLOCK',
 } as const;
 
 export const INTERACTION_EVENTS = {
@@ -465,6 +494,7 @@ export const INTERACTION_EVENTS = {
     CONFIRMED: 'SYS_INTERACTION_CONFIRMED',
     /** 多步交互已取消（P2+） */
     CANCELLED: 'SYS_INTERACTION_CANCELLED',
+    FORCE_UNLOCKED: 'SYS_INTERACTION_FORCE_UNLOCKED',
 } as const;
 
 // ============================================================================
@@ -618,53 +648,6 @@ export function createCompareRollChoice<T>(
     };
 }
 
-export function getCurrentTopSnapshotItems<TCurrent, TTracked, TKey>(
-    currentItems: readonly TCurrent[],
-    trackedItems: readonly TTracked[],
-    getCurrentKey: (currentItem: TCurrent) => TKey,
-    getTrackedKey: (trackedItem: TTracked) => TKey,
-    isCompatible?: (currentItem: TCurrent, trackedItem: TTracked) => boolean,
-): TTracked[] {
-    const trackedByKey = new Map(trackedItems.map((trackedItem) => [getTrackedKey(trackedItem), trackedItem] as const));
-    const snapshot: TTracked[] = [];
-
-    for (const currentItem of currentItems) {
-        const trackedItem = trackedByKey.get(getCurrentKey(currentItem));
-        if (!trackedItem) {
-            break;
-        }
-        if (isCompatible && !isCompatible(currentItem, trackedItem)) {
-            break;
-        }
-        snapshot.push(trackedItem);
-    }
-
-    return snapshot;
-}
-
-export function getCurrentTrackedCardTopSnapshot<
-    TTracked extends { uid: string; defId?: string },
-    TCurrent extends { uid: string; defId?: string },
->(
-    currentCards: readonly TCurrent[],
-    trackedCards: readonly TTracked[],
-): TTracked[] {
-    return getCurrentTopSnapshotItems(
-        currentCards,
-        trackedCards,
-        (currentCard) => currentCard.uid,
-        (trackedCard) => trackedCard.uid,
-        (currentCard, trackedCard) => trackedCard.defId === undefined || currentCard.defId === trackedCard.defId,
-    );
-}
-
-export function getCurrentTrackedIdTopSnapshot<TTracked extends string>(
-    currentIds: readonly string[],
-    trackedIds: readonly TTracked[],
-): TTracked[] {
-    return getCurrentTopSnapshotItems(currentIds, trackedIds, (currentId) => currentId, (trackedId) => trackedId);
-}
-
 /**
  * multistep-choice 专用数据 — 多步调整 → 预览 → 确认
  *
@@ -709,9 +692,6 @@ export interface MultistepChoiceData<TStep = unknown, TResult = unknown> {
     meta?: Record<string, unknown>;
 }
 
-/**
- * 创建 multistep-choice 交互
- */
 export function createMultistepChoice<TStep, TResult>(
     id: string,
     playerId: PlayerId,
@@ -724,7 +704,6 @@ export function createMultistepChoice<TStep, TResult>(
         data,
     };
 }
-
 
 /**
  * 将交互加入队列（替代旧 queuePrompt）
@@ -1176,6 +1155,25 @@ export function createInteractionSystem<TCore>(
         }),
 
         beforeCommand: ({ state, command }): HookResult<TCore> | void => {
+            if (command.type === INTERACTION_COMMANDS.FORCE_UNLOCK) {
+                const ts = resolveCommandTimestamp(command);
+                const current = state.sys.interaction.current;
+                const queue = state.sys.interaction.queue ?? [];
+                const nextState = clearActiveResolutionBlock(
+                    syncActiveResolutionWithInteraction(writeInteractionState(state, { queue: [] })),
+                );
+                const event: GameEvent = {
+                    type: INTERACTION_EVENTS.FORCE_UNLOCKED,
+                    payload: {
+                        playerId: command.playerId,
+                        interactionId: current?.id ?? null,
+                        queueLength: queue.length,
+                    },
+                    timestamp: ts,
+                };
+                return { halt: true, state: nextState, events: [event] };
+            }
+
             // ---- 交互取消（通用，所有 kind 都能用） ----
             if (command.type === INTERACTION_COMMANDS.CANCEL) {
                 const ts = resolveCommandTimestamp(command);

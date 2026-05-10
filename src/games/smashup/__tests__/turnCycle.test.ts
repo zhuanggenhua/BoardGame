@@ -501,6 +501,171 @@ describe('完整回合循环', () => {
         expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
     });
 
+    it('同名 sourceController 回合开始触发应跳过对手来源并选择当前玩家来源', () => {
+        const random = { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any;
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS, SMASHUP_FACTION_IDS.PIRATES] as [string, string],
+                    deck: [makeCard('p0-deck-1', 'pirate_first_mate', 'minion', '0')],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS, SMASHUP_FACTION_IDS.WIZARDS] as [string, string],
+                    deck: [makeCard('p1-deck-1', 'wizard_apprentice', 'minion', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 6,
+            bases: [
+                makeBase('base_ancient_ruins', [
+                    makeMinion('opponent-water-lily', 'killer_plant_water_lily', '1', 2),
+                ]),
+                makeBase('base_great_library', [
+                    makeMinion('current-water-lily', 'killer_plant_water_lily', '0', 2),
+                ]),
+            ],
+        });
+
+        const queued = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core, 'startTurn', '0'),
+            playerId: '0',
+            frameId: 'turn-start:0:6:0',
+            sourceEventId: 'turn-start:0:6:0',
+            random,
+            now: 6,
+        });
+
+        const triggers = (queued as any)?.payload?.triggers ?? [];
+        expect(triggers).toHaveLength(1);
+        expect(triggers[0].sourceDefId).toBe('killer_plant_water_lily');
+        expect(triggers[0].sourceCardUid).toBe('current-water-lily');
+        expect(triggers[0].ownerPlayerId).toBe('0');
+    });
+
+    it('新娘泰坦在对手牌库旁时不应进入当前玩家回合开始排序', () => {
+        const random = { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any;
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.WIZARDS] as [string, string],
+                    hand: [makeCard('bride-hand-minion', 'frankenstein_igor', 'minion', '1')],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 7,
+            bases: [
+                makeBase('base_the_factory', [
+                    makeMinion('p1-minion', 'frankenstein_lab_assistant', '1', 2),
+                ]),
+            ],
+            titans: [{
+                uid: 'opponent-bride',
+                defId: 'frankenstein_the_bride',
+                faction: SMASHUP_FACTION_IDS.FRANKENSTEIN,
+                ownerId: '1',
+                controllerId: '1',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } as any],
+        });
+
+        const queued = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core, 'startTurn', '0'),
+            playerId: '0',
+            frameId: 'turn-start:0:7:0',
+            sourceEventId: 'turn-start:0:7:0',
+            random,
+            now: 7,
+        });
+
+        expect(queued).toBeUndefined();
+    });
+
+    it('自己的新娘泰坦应作为可选回合开始 special，不应和蘑菇王国组成强制排序', () => {
+        const random = { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any;
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.FRANKENSTEIN, SMASHUP_FACTION_IDS.ALIENS] as [string, string],
+                    hand: [makeCard('bride-hand-minion', 'frankenstein_igor', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 8,
+            bases: [
+                makeBase('base_mushroom_kingdom', []),
+                makeBase('base_the_factory', [
+                    makeMinion('enemy-target', 'pirate_buccaneer', '1', 4),
+                ]),
+                makeBase('base_great_library', [
+                    {
+                        ...makeMinion('bride-counter-target', 'frankenstein_lab_assistant', '0', 2),
+                        powerCounters: 1,
+                    },
+                ]),
+            ],
+            titans: [{
+                uid: 'own-bride',
+                defId: 'frankenstein_the_bride',
+                faction: SMASHUP_FACTION_IDS.FRANKENSTEIN,
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            } as any],
+        });
+
+        const frameId = 'turn-start:0:8:0';
+        const queuedBase = collectBaseAbilityTriggers({
+            core,
+            timing: 'onTurnStart',
+            ownerPlayerId: '0',
+            baseIndex: 0,
+            frameId,
+            sourceEventId: frameId,
+            now: 8,
+        });
+        expect(queuedBase).toBeDefined();
+
+        const queuedBride = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core, 'startTurn', '0'),
+            playerId: '0',
+            frameId,
+            sourceEventId: frameId,
+            random,
+            now: 8,
+        });
+
+        const brideTriggers = (queuedBride as any)?.payload?.triggers ?? [];
+        expect(brideTriggers).toHaveLength(1);
+        expect(brideTriggers[0].sourceDefId).toBe('frankenstein_the_bride');
+        expect(brideTriggers[0].resolutionClass).toBe('optional');
+
+        const state = makeMatchState({
+            ...core,
+            triggerQueue: [
+                ...((queuedBase as any).payload.triggers ?? []),
+                ...brideTriggers,
+            ],
+        });
+        state.sys.phase = 'startTurn';
+
+        const resolved = maybeResolveReactionQueue(state, random, 8);
+        expect(resolved).toBeDefined();
+        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).toBe('base_mushroom_kingdom');
+        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
+    });
+
     it('线上反馈 69feede0：场下巨狼之灵不应在回合开始入队询问触发', () => {
         const random = { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any;
         const core = makeState({

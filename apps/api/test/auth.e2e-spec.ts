@@ -149,6 +149,56 @@ describe('AuthModule (e2e)', () => {
             .expect(401);
     });
 
+    it('登录后应下发长期 refresh cookie，并可在 access token 失效后续签', async () => {
+        const email = 'refresh-user@example.com';
+        const code = '123456';
+        await authService.storeEmailCode(email, code);
+        await request(app.getHttpServer())
+            .post('/auth/register')
+            .send({ username: 'refresh-user', email, code, password: 'pass1234' })
+            .expect(201);
+
+        const loginRes = await request(app.getHttpServer())
+            .post('/auth/login')
+            .send({ account: email, password: 'pass1234' })
+            .expect(200);
+
+        const setCookieHeader = loginRes.headers['set-cookie'];
+        expect(Array.isArray(setCookieHeader)).toBe(true);
+        const refreshSetCookie = (setCookieHeader as string[]).find(cookie => cookie.startsWith('refresh_token='));
+        expect(refreshSetCookie).toBeDefined();
+        expect(refreshSetCookie).toContain('HttpOnly');
+
+        const expiresMatch = refreshSetCookie?.match(/Expires=([^;]+)/);
+        expect(expiresMatch?.[1]).toBeDefined();
+        const refreshExpiresAt = new Date(expiresMatch![1]).getTime();
+        expect(refreshExpiresAt - Date.now()).toBeGreaterThan(1000 * 60 * 60 * 24 * 150);
+
+        const refreshCookie = refreshSetCookie!.split(';')[0];
+        const refreshRes = await request(app.getHttpServer())
+            .post('/auth/refresh')
+            .set('Cookie', refreshCookie)
+            .expect(200);
+
+        expect(refreshRes.body.success).toBe(true);
+        expect(refreshRes.body.code).toBe('AUTH_REFRESH_OK');
+        expect(refreshRes.body.data.token).toBeDefined();
+
+        const rotatedSetCookie = refreshRes.headers['set-cookie'];
+        expect(Array.isArray(rotatedSetCookie)).toBe(true);
+        const rotatedRefreshCookie = (rotatedSetCookie as string[]).find(cookie => cookie.startsWith('refresh_token='));
+        expect(rotatedRefreshCookie).toBeDefined();
+        expect(rotatedRefreshCookie!.split(';')[0]).not.toBe(refreshCookie);
+
+        const reusedOldRefreshRes = await request(app.getHttpServer())
+            .post('/auth/refresh')
+            .set('Cookie', refreshCookie)
+            .expect(200);
+
+        expect(reusedOldRefreshRes.body.success).toBe(false);
+        expect(reusedOldRefreshRes.body.code).toBe('AUTH_INVALID_TOKEN');
+    });
+
     it('登录失败触发账号锁定', async () => {
         const email = 'lock-user@example.com';
         const code = '123456';

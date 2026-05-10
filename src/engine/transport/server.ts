@@ -25,7 +25,14 @@ import { buildTrainingDecisionSample } from './trainingData';
 import logger, { gameLogger } from '../../../server/logger.js';
 import { GAME_MANIFEST_BY_ID } from '../../games/manifest';
 import * as aiModule from '../ai';
-import { applyPlayerViewToState, buildAiDecisionContext, getAiSeatIds, getGameAiRuntime, resolveOnlineAiDecisionView, resolveSeatPlayerDisplayName } from '../ai';
+import {
+    applyPlayerViewToState,
+    buildAiDecisionContext,
+    getAiSeatIds,
+    getGameAiRuntime,
+    resolveOnlineAiDecisionView,
+    resolveSeatPlayerDisplayName,
+} from '../ai';
 import { extractAiInteractionSnapshot, extractAiResponseWindowSnapshot } from '../ai/snapshots';
 import type { AiInteractionSnapshot, AiInteractionOptionSnapshot, AiResponseWindowSnapshot } from '../ai/types';
 import {

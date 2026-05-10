@@ -6,10 +6,11 @@
 
 ## 可能原因
 
-### 1. Token 真的过期了（最不可能）
+### 1. Token 真的过期了
 
-虽然配置了 30 天有效期，但如果：
+Access Token 配置为 30 天有效期；Refresh Token 配置为 180 天，用于在用户重新打开页面时无感续签。但如果：
 - 用户 30 天没有登录
+- 用户超过 180 天没有打开页面或 refresh cookie 已失效
 - 服务器时间与客户端时间不同步
 - Token 签发时间有误
 
@@ -65,7 +66,7 @@ console.log('User:', localStorage.getItem('auth_user'));
 ### 5. Token 刷新机制失效
 
 项目使用了 refresh token 机制（`useTokenRefresh.ts`），如果刷新失败：
-- Refresh token 过期（也是 30 天）
+- Refresh token 过期（当前 180 天）
 - Refresh token 被撤销
 - 网络问题导致刷新请求失败
 
@@ -157,11 +158,13 @@ location.reload();
 
 ### 方案 3：实现自动刷新
 
-项目已经实现了 `useTokenRefresh` hook，但可能需要优化：
+项目已经实现了 `useTokenRefresh` hook：
 
 ```typescript
 // src/hooks/useTokenRefresh.ts
-// 当 token 即将过期时（剩余 < 7 天），自动刷新
+// 启动时本地无 token 会尝试 refresh
+// 本地 token 已过期时，先尝试 refresh，失败后才退出登录
+// 当 token 即将过期时（剩余 < 1 天），自动刷新
 ```
 
 ### 方案 4：增加错误提示
@@ -213,10 +216,12 @@ useEffect(() => {
 }, [token]);
 ```
 
-### 2. 优化 refresh token 机制
+### 2. 检查 refresh token 机制
 
 确保 `useTokenRefresh` 正确工作：
 - 在 token 过期前自动刷新
+- 启动时可通过 refresh cookie 恢复登录态
+- 本地 token 过期时先 refresh，失败后再退出
 - 刷新失败时提示用户重新登录
 - 跨标签页同步 token 更新
 

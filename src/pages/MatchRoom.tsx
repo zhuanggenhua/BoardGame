@@ -130,6 +130,77 @@ export function resolveMissingMatchConfirmationSignal(args: {
     return null;
 }
 
+export async function resolveManualOnlineAiRecovery(args: {
+    engineConfig: Pick<GameEngineConfig, 'gameId'>;
+    matchId: string;
+    sharedState: MatchState<unknown>;
+    seatControllers: Record<string, AiSeatController>;
+    seatStates: Record<string, MatchState<unknown> | null | undefined>;
+    resolveDispatchImpl?: typeof resolveNextAiDispatch;
+}): Promise<
+    | {
+        kind: 'force-end-turn';
+        candidate: NonNullable<ReturnType<typeof resolveManualForceEndAiPhase>>;
+    }
+    | {
+        kind: 'legal-action';
+        resolution: Awaited<ReturnType<typeof resolveNextAiDispatch>> extends { kind: 'action'; resolution: infer R } ? R : never;
+    }
+    | {
+        kind: 'blocked';
+        playerId: string;
+        blockedKey: string | null;
+        blockedReason: string;
+    }
+    | {
+        kind: 'unavailable';
+    }
+> {
+    const candidate = resolveManualForceEndAiPhase({
+        sharedState: args.sharedState,
+        seatControllers: args.seatControllers,
+        seatStates: args.seatStates,
+    });
+    if (candidate && candidate.legalActionOnly !== true) {
+        return {
+            kind: 'force-end-turn',
+            candidate,
+        };
+    }
+
+    const dispatchImpl = args.resolveDispatchImpl ?? resolveNextAiDispatch;
+    const aiDispatchResult = await dispatchImpl({
+        engineConfig: args.engineConfig as GameEngineConfig,
+        state: args.sharedState,
+        matchId: args.matchId,
+        seatControllers: args.seatControllers,
+        visibleStateResolver: (playerId) => resolveOnlineAiDecisionView({
+            runtime: getGameImplementation(args.engineConfig.gameId).ai,
+            sharedState: args.sharedState,
+            privateOverlay: args.seatStates[playerId],
+            playerId,
+        }),
+    });
+
+    if (aiDispatchResult.kind === 'action') {
+        return {
+            kind: 'legal-action',
+            resolution: aiDispatchResult.resolution,
+        };
+    }
+
+    if (aiDispatchResult.kind === 'blocked') {
+        return {
+            kind: 'blocked',
+            playerId: aiDispatchResult.playerId,
+            blockedKey: aiDispatchResult.blockedKey,
+            blockedReason: aiDispatchResult.blockedReason,
+        };
+    }
+
+    return { kind: 'unavailable' };
+}
+
 type OnlineAiDebugWindow = Window & {
     __BG_ONLINE_AI_DEBUG__?: {
         getSeatLatestState: (playerId: string) => MatchState<unknown> | null;
@@ -1642,25 +1713,45 @@ const OnlineAiSeatBridge = ({
         }
 
         const seatStates = getEffectiveSeatStates();
-
-        const candidate = resolveManualForceEndAiPhase({
+        const recovery = await resolveManualOnlineAiRecovery({
+            engineConfig: engineConfig as Pick<GameEngineConfig, 'gameId'>,
+            matchId,
             sharedState: state as MatchState<unknown>,
             seatControllers,
             seatStates,
         });
 
-        if (!candidate) {
+        if (recovery.kind === 'unavailable') {
             toast.info(tGame('hud.ai.forceEndPhaseUnavailable', { ns: 'game' }));
             return false;
         }
 
-        const targetClient = clientsRef.current[candidate.playerId];
+        if (recovery.kind === 'blocked') {
+            const blockedClient = clientsRef.current[recovery.playerId];
+            if (blockedClient && recovery.blockedKey) {
+                requestSeatResync({
+                    playerId: recovery.playerId,
+                    client: blockedClient,
+                    reason: 'manual-force-end-blocked',
+                    meta: {
+                        blockedKey: recovery.blockedKey,
+                        blockedReason: recovery.blockedReason,
+                    },
+                });
+            }
+            toast.info(tGame('hud.ai.forceEndPhaseUnavailable', { ns: 'game' }));
+            return false;
+        }
+
+        const candidate = recovery.kind === 'force-end-turn' ? recovery.candidate : null;
+        const resolution = recovery.kind === 'legal-action' ? recovery.resolution : candidate.resolution;
+        const targetClient = clientsRef.current[resolution.playerId];
         if (!targetClient?.isConnected) {
             toast.warning(tGame('hud.ai.forceEndPhaseSeatOffline', { ns: 'game' }));
             return false;
         }
 
-        const attemptKey = candidate.resolution.attemptKey;
+        const attemptKey = resolution.attemptKey;
         toast.info(tGame('hud.ai.forceEndPhaseSubmitting', { ns: 'game' }), undefined, {
             dedupeKey: `game.ai-force-end-turn.manual.submitting.${attemptKey}`,
         });
@@ -1673,26 +1764,54 @@ const OnlineAiSeatBridge = ({
                 resolve(value);
             };
 
-            submitOnlineAiResolutionSequence({
+            if (recovery.kind === 'force-end-turn') {
+                submitOnlineAiResolutionSequence({
+                    client: targetClient,
+                    initialResolution: resolution,
+                    lastAiAttemptKeyRef,
+                    scheduleRetry: () => {
+                        setAiRetryVersion((version) => version + 1);
+                    },
+                    maxSteps: MAX_FORCE_END_TURN_FOLLOW_UP_STEPS + 1,
+                    resolveNextResolution: ({ authoritativeState, stepIndex }) => {
+                        if (stepIndex >= MAX_FORCE_END_TURN_FOLLOW_UP_STEPS) {
+                            return null;
+                        }
+                        return resolveForceEndTurnRecoveryStep({
+                            authoritativeState,
+                            seatControllers,
+                            playerId: candidate.playerId,
+                            allowAdvancePhase: candidate.requiresConfirmedAdvancePhase === true && stepIndex === 0,
+                        });
+                    },
+                    onCompleted: () => {
+                        toast.warning(
+                            tGame('hud.ai.forceEndPhaseSuccess', { ns: 'game' }),
+                            tGame('hud.ai.forceEndPhaseTitle', { ns: 'game' }),
+                            { dedupeKey: `game.ai-force-end-turn.manual.${attemptKey}` },
+                        );
+                        finish(true);
+                    },
+                    onRejected: (reason) => {
+                        toast.warning(
+                            tGame('hud.ai.forceEndPhaseFailed', { ns: 'game', reason }),
+                            tGame('hud.ai.forceEndPhaseTitle', { ns: 'game' }),
+                            { dedupeKey: `game.ai-force-end-turn.manual.${attemptKey}.${reason}` },
+                        );
+                        finish(false);
+                    },
+                });
+                return;
+            }
+
+            submitOnlineAiResolution({
                 client: targetClient,
-                initialResolution: candidate.resolution,
+                resolution,
                 lastAiAttemptKeyRef,
                 scheduleRetry: () => {
                     setAiRetryVersion((version) => version + 1);
                 },
-                maxSteps: MAX_FORCE_END_TURN_FOLLOW_UP_STEPS + 1,
-                resolveNextResolution: ({ authoritativeState, stepIndex }) => {
-                    if (stepIndex >= MAX_FORCE_END_TURN_FOLLOW_UP_STEPS) {
-                        return null;
-                    }
-                    return resolveForceEndTurnRecoveryStep({
-                        authoritativeState,
-                        seatControllers,
-                        playerId: candidate.playerId,
-                        allowAdvancePhase: candidate.requiresConfirmedAdvancePhase === true && stepIndex === 0,
-                    });
-                },
-                onCompleted: () => {
+                onConfirmed: () => {
                     toast.warning(
                         tGame('hud.ai.forceEndPhaseSuccess', { ns: 'game' }),
                         tGame('hud.ai.forceEndPhaseTitle', { ns: 'game' }),
@@ -1710,7 +1829,7 @@ const OnlineAiSeatBridge = ({
                 },
             });
         });
-    }, [getEffectiveSeatStates, seatControllers, state, tGame, toast]);
+    }, [engineConfig, getEffectiveSeatStates, matchId, requestSeatResync, seatControllers, state, tGame, toast]);
 
     useEffect(() => {
         if (!onForceEndAiPhaseReady) return;

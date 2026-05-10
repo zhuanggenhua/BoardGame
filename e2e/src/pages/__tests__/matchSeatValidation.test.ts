@@ -34,6 +34,7 @@ import {
 } from '../onlineAiForceSkip';
 import {
     isTutorialRoutePath,
+    resolveManualOnlineAiRecovery,
     resolveMissingMatchConfirmationSignal,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
@@ -896,6 +897,110 @@ describe('onlineAiSeats', () => {
         expect(candidate?.resolution.action.commands).toEqual([]);
     });
 
+    it('手动强制结束在 visible-interaction 场景应优先返回 force-end-turn，不额外触发 AI dispatch', async () => {
+        const resolveDispatchImpl = vi.fn();
+        const result = await resolveManualOnlineAiRecovery({
+            engineConfig: { gameId: 'smashup' },
+            matchId: 'match-manual-force-end-visible',
+            sharedState: {
+                core: {
+                    activePlayerId: '1',
+                },
+                sys: {
+                    interaction: {
+                        current: {
+                            id: 'stuck-visible',
+                            playerId: '1',
+                            kind: 'simple-choice',
+                            data: {
+                                options: [],
+                            },
+                        },
+                        queue: [],
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                    turnNumber: 3,
+                    phase: 'playCards',
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {},
+            resolveDispatchImpl,
+        });
+
+        expect(result.kind).toBe('force-end-turn');
+        expect(resolveDispatchImpl).not.toHaveBeenCalled();
+    });
+
+    it('手动强制结束在 legalActionOnly 场景应退回 AI 合法动作，而不是直接判 unavailable', async () => {
+        const resolveDispatchImpl = vi.fn().mockResolvedValue({
+            kind: 'action',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'manual-legal-action',
+                source: 'local-ai',
+                action: {
+                    actionId: 'select-faction',
+                    kind: 'select-faction',
+                    label: '选择派系',
+                    commands: [{ type: 'SELECT_FACTION', payload: { factionId: 'pirates' } }],
+                },
+            },
+        });
+
+        const result = await resolveManualOnlineAiRecovery({
+            engineConfig: { gameId: 'smashup' },
+            matchId: 'match-manual-force-end-legal-only',
+            sharedState: {
+                core: {
+                    activePlayerId: '1',
+                    turnOrder: ['0', '1'],
+                    currentPlayerIndex: 1,
+                    factionSelection: {
+                        takenFactions: ['steampunks_pod'],
+                        playerSelections: {
+                            '0': ['steampunks_pod'],
+                            '1': [],
+                        },
+                        completedPlayers: [],
+                    },
+                },
+                sys: {
+                    interaction: {
+                        current: undefined,
+                        queue: [],
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                    turnNumber: 1,
+                    phase: 'factionSelect',
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {
+                '1': buildOnlineAiSeatState({ phase: 'factionSelect', currentPlayerId: '1' }),
+            },
+            resolveDispatchImpl,
+        });
+
+        expect(result).toMatchObject({
+            kind: 'legal-action',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'manual-legal-action',
+            },
+        });
+        expect(resolveDispatchImpl).toHaveBeenCalledTimes(1);
+    });
+
     it('仅凭据有变化时才触发持久化', () => {
         expect(haveAiSeatCredentialsChanged({}, {})).toBe(false);
         expect(haveAiSeatCredentialsChanged({ '1': 'same' }, { '1': 'same' })).toBe(false);
@@ -962,6 +1067,28 @@ describe('resolveOnlineHudPresence', () => {
         expect(result.players.find((player) => player.id === 2)?.isConnected).toBe(true);
         expect(result.opponentName).toBe('AI 2号位');
         expect(result.opponentConnected).toBe(true);
+    });
+
+    it('AI 座位缺少 name 时应回退为 AI 座位名，而不是 P4 之类的通用占位', () => {
+        const result = resolveOnlineHudPresence({
+            fallbackPlayers: [
+                { id: 0, name: '房主', isConnected: true },
+                { id: 3, isConnected: false },
+            ],
+            transportPlayers: [
+                { id: 0, name: '房主', isConnected: true },
+                { id: 3, isConnected: true },
+            ],
+            transportReady: true,
+            myPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '3': { type: 'local-ai', difficulty: 'normal' },
+            },
+        });
+
+        expect(result.players.find((player) => player.id === 3)?.name).toBe('AI 4 号位');
+        expect(result.opponentName).toBe('AI 4 号位');
     });
 });
 
@@ -3173,6 +3300,92 @@ describe('LocalGameProvider AI 重试集成', () => {
         await waitFor(() => {
             expect(decideSpy.mock.calls.length).toBeGreaterThanOrEqual(2);
         }, { timeout: 1000 });
+    });
+
+    it('本地 AI 当前回合没有 legal action 时，不应永久卡住在 AI 半回合', async () => {
+        vi.useFakeTimers();
+        const gameId = '__test_local_ai_stall_watchdog__';
+
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: () => [],
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: vi.fn(() => null),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const engineConfig = {
+            gameId,
+            domain: {
+                gameId,
+                setup: () => ({
+                    turnOrder: ['0', '1'],
+                    currentPlayerIndex: 1,
+                    watchdogRecoveries: 0,
+                }),
+                validate: () => ({ valid: true }),
+                execute: (_state: MatchState<unknown>, command: { type: string }) => (
+                    command.type === 'ADVANCE_PHASE'
+                        ? [{ type: 'AI_TURN_FORCE_ADVANCED' } as const]
+                        : []
+                ),
+                reduce: (
+                    core: {
+                        turnOrder: string[];
+                        currentPlayerIndex: number;
+                        watchdogRecoveries?: number;
+                    },
+                    event: { type: string },
+                ) => (
+                    event.type === 'AI_TURN_FORCE_ADVANCED'
+                        ? {
+                            ...core,
+                            currentPlayerIndex: 0,
+                            watchdogRecoveries: (core.watchdogRecoveries ?? 0) + 1,
+                        }
+                        : core
+                ),
+            },
+            systems: [],
+        } as const;
+
+        const Probe = () => {
+            const { state } = useGameClient<{
+                currentPlayerIndex: number;
+                watchdogRecoveries?: number;
+            }>();
+            return createElement(
+                'div',
+                { 'data-testid': 'local-ai-stall-probe' },
+                JSON.stringify({
+                    currentPlayerIndex: state?.core.currentPlayerIndex ?? null,
+                    watchdogRecoveries: state?.core.watchdogRecoveries ?? null,
+                }),
+            );
+        };
+
+        render(createElement(
+            LocalGameProvider,
+            {
+                config: engineConfig as never,
+                numPlayers: 2,
+                seed: 'local-ai-stall-seed',
+                seatControllers: { '1': { type: 'local-ai', minimumActionDelayMs: 0 } },
+            },
+            createElement(Probe),
+        ));
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(1600);
+        });
+
+        const probe = screen.getByTestId('local-ai-stall-probe');
+        expect(probe.textContent).toContain('"currentPlayerIndex":0');
+        expect(probe.textContent).toContain('"watchdogRecoveries":1');
     });
 
     it('回归：从本地快照恢复到 AI 回合后，AI 应继续自动推进', async () => {

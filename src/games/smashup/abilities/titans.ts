@@ -9,7 +9,7 @@
  */
 
 import type { MatchState } from '../../../engine/types';
-import { createSimpleChoice, queueInteraction } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, queueInteraction, type PromptOption } from '../../../engine/systems/InteractionSystem';
 import { getBaseDef, getCardDef, getMinionLikePower, getTitanDef } from '../data/cards';
 import { registerInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { registerAbility } from '../domain/abilityRegistry';
@@ -486,7 +486,11 @@ function queueWalkingCastleChooseBaseInteraction(
         playerId,
         'Walking Castle: choose a base to move to',
         buildBaseTargetOptions(baseOptions, state),
-        { sourceId: 'titan_magical_girls_walking_castle_choose_base', targetType: 'base' },
+        {
+            sourceId: 'titan_magical_girls_walking_castle_choose_base',
+            targetType: 'base',
+            titleKey: 'ui.titan_walking_castle_choose_base_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = continuationContext;
     return queueInteraction(matchState, interaction);
@@ -513,7 +517,11 @@ function queueWalkingCastleChooseMinionsInteraction(
         playerId,
         'Walking Castle: choose up to 3 of your minions to move with it',
         buildMinionTargetOptions(ownedMinions, { state, sourcePlayerId: playerId, effectType: 'move' }),
-        { sourceId: 'titan_magical_girls_walking_castle_choose_minions', targetType: 'minion' },
+        {
+            sourceId: 'titan_magical_girls_walking_castle_choose_minions',
+            targetType: 'minion',
+            titleKey: 'ui.titan_walking_castle_choose_minions_title',
+        },
         undefined,
         { min: 0, max: Math.min(3, ownedMinions.length) },
     );
@@ -564,7 +572,11 @@ function queueHillGiveMinionInteraction(
         playerId,
         'The Hill That Strolls: choose one of your minions to give away',
         buildMinionTargetOptions(targets, { state, sourcePlayerId: playerId, effectType: 'affect' }),
-        { sourceId: 'titan_ignobles_the_hill_that_strolls_give_minion', targetType: 'minion' },
+        {
+            sourceId: 'titan_ignobles_the_hill_that_strolls_give_minion',
+            targetType: 'minion',
+            titleKey: 'ui.titan_hill_that_strolls_give_minion_title',
+        },
     ));
 }
 
@@ -583,7 +595,11 @@ function queueHillReclaimMinionInteraction(
         playerId,
         'The Hill That Strolls: choose one of your minions here to reclaim',
         buildMinionTargetOptions(targets, { state, sourcePlayerId: playerId, effectType: 'affect' }),
-        { sourceId: 'titan_ignobles_the_hill_that_strolls_reclaim_minion', targetType: 'minion' },
+        {
+            sourceId: 'titan_ignobles_the_hill_that_strolls_reclaim_minion',
+            targetType: 'minion',
+            titleKey: 'ui.titan_hill_that_strolls_reclaim_minion_title',
+        },
     ));
 }
 
@@ -607,10 +623,14 @@ function ignoblesTheHillThatStrollsOnMinionAffected(ctx: TriggerContext): Trigge
         ctx.playerId,
         'The Hill That Strolls: place a +1 power counter on that minion?',
         [
-            { id: 'place', label: '放置标记', value: { place: true }, displayMode: 'button' as const },
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'place', label: '放置标记', labelKey: 'ui.place_counter', value: { place: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
         ],
-        { sourceId: 'titan_ignobles_the_hill_that_strolls_counter', targetType: 'button' },
+        {
+            sourceId: 'titan_ignobles_the_hill_that_strolls_counter',
+            targetType: 'button',
+            titleKey: 'ui.titan_hill_that_strolls_counter_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         minionUid: ctx.triggerMinion.uid,
@@ -660,10 +680,14 @@ function ignoblesTheHillThatStrollsTalent(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         'The Hill That Strolls: choose a talent effect',
         [
-            { id: 'give', label: 'Give one away and draw 1', value: { branch: 'give' }, displayMode: 'button' as const },
-            { id: 'reclaim', label: 'Reclaim one here', value: { branch: 'reclaim' }, displayMode: 'button' as const },
+            { id: 'give', label: 'Give one away and draw 1', labelKey: 'ui.titan_hill_that_strolls_give_option', value: { branch: 'give' }, displayMode: 'button' as const },
+            { id: 'reclaim', label: 'Reclaim one here', labelKey: 'ui.titan_hill_that_strolls_reclaim_option', value: { branch: 'reclaim' }, displayMode: 'button' as const },
         ],
-        { sourceId: 'titan_ignobles_the_hill_that_strolls_choose_branch', targetType: 'button' },
+        {
+            sourceId: 'titan_ignobles_the_hill_that_strolls_choose_branch',
+            targetType: 'button',
+            titleKey: 'ui.titan_hill_that_strolls_branch_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -1142,9 +1166,14 @@ function pecosBillOnDuelStarted(ctx: TriggerContext): TriggerResult | SmashUpEve
                 _source: 'hand' as const,
                 displayMode: 'card' as const,
             })),
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
         ],
-        { sourceId: 'titan_pecos_bill_duel_start', targetType: 'hand', autoRefresh: 'hand' },
+        {
+            sourceId: 'titan_pecos_bill_duel_start',
+            targetType: 'hand',
+            autoRefresh: 'hand',
+            titleKey: 'ui.titan_pecos_bill_duel_start_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -1206,9 +1235,14 @@ function sphinxOnTurnStart(ctx: TriggerContext) {
                 value: choice,
                 displayMode: 'card' as const,
             })),
-            { id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' as const },
+            { id: 'skip', label: '跳过', labelKey: 'ui.skip', value: { skip: true }, displayMode: 'button' as const },
         ],
-        { sourceId: 'titan_sphinx_start_turn', targetType: 'generic', autoResolveIfSingle: false },
+        {
+            sourceId: 'titan_sphinx_start_turn',
+            targetType: 'generic',
+            autoResolveIfSingle: false,
+            titleKey: 'ui.titan_sphinx_start_turn_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -1458,7 +1492,11 @@ function penguinsEmperorPenguinTalent(ctx: AbilityContext): AbilityResult {
             value: { cardUid: option.cardUid, defId: option.defId, zone: option.zone },
             displayMode: 'card' as const,
         })),
-        { sourceId: 'titan_penguins_emperor_penguin_talent', targetType: 'generic' },
+        {
+            sourceId: 'titan_penguins_emperor_penguin_talent',
+            targetType: 'generic',
+            titleKey: 'ui.titan_emperor_penguin_talent_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -1793,7 +1831,11 @@ function changerbotsMergaconTalent(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         'Mergacon: choose a base to move to',
         buildBaseTargetOptions(baseOptions, ctx.state),
-        { sourceId: 'titan_changerbots_mergacon_talent', targetType: 'base' },
+        {
+            sourceId: 'titan_changerbots_mergacon_talent',
+            targetType: 'base',
+            titleKey: 'ui.titan_mergacon_choose_base_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -2185,7 +2227,11 @@ function piratesTheKrakenAfterScoring(ctx: {
             titan.controllerId,
             'The Kraken: move one of your minions here to another base instead of discarding it',
             buildMinionTargetOptions(minionTargets, { state: ctx.state, sourcePlayerId: titan.controllerId, effectType: 'move' }),
-            { sourceId: 'titan_pirates_the_kraken_choose_minion', targetType: 'minion' },
+            {
+                sourceId: 'titan_pirates_the_kraken_choose_minion',
+                targetType: 'minion',
+                titleKey: 'ui.titan_kraken_choose_minion_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             scoringBaseIndex: ctx.baseIndex,
@@ -2214,7 +2260,11 @@ function piratesTheKrakenTalent(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         'The Kraken: choose a base to move to',
         buildBaseTargetOptions(baseOptions, ctx.state),
-        { sourceId: 'titan_pirates_the_kraken_talent', targetType: 'base' },
+        {
+            sourceId: 'titan_pirates_the_kraken_talent',
+            targetType: 'base',
+            titleKey: 'ui.titan_kraken_choose_base_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -2457,12 +2507,14 @@ function queueVampireAncientLordSpecialInteraction(
         {
             id: 'skip',
             label: '保留在随从上',
+            labelKey: 'ui.titan_ancient_lord_keep_counter_option',
             value: { mode: 'skip', minionUid, baseIndex, titanUid: titan.uid },
             displayMode: 'button' as const,
         },
         {
             id: 'store',
             label: 'Place it on Ancient Lord',
+            labelKey: 'ui.titan_ancient_lord_store_counter_option',
             value: { mode: 'store', minionUid, baseIndex, titanUid: titan.uid },
             displayMode: 'button' as const,
         },
@@ -2472,6 +2524,7 @@ function queueVampireAncientLordSpecialInteraction(
         options.push({
             id: 'store-and-play',
             label: 'Place it there and play Ancient Lord',
+            labelKey: 'ui.titan_ancient_lord_store_and_play_option',
             value: { mode: 'storeAndPlay', minionUid, baseIndex, titanUid: titan.uid },
             displayMode: 'button' as const,
         });
@@ -2482,7 +2535,11 @@ function queueVampireAncientLordSpecialInteraction(
         playerId,
         '鲜血领主：选择是否把其中 1 枚 +1 战斗力标记改放到此泰坦上',
         options,
-        { sourceId: 'titan_vampires_ancient_lord_special', targetType: 'generic' },
+        {
+            sourceId: 'titan_vampires_ancient_lord_special',
+            targetType: 'generic',
+            titleKey: 'ui.titan_ancient_lord_special_title',
+        },
     );
     return queueInteraction(matchState, interaction);
 }
@@ -2607,17 +2664,24 @@ function queueDeathOnSixLegsTransferInteraction(
             {
                 id: 'transfer',
                 label: 'Transfer 1 counter',
+                labelKey: 'ui.titan_death_on_six_legs_transfer_option',
                 value: { transfer: true, titanUid: titan.uid, minionUid, baseIndex },
                 displayMode: 'button' as const,
             },
             {
                 id: 'skip',
                 label: '跳过',
+                labelKey: 'ui.skip',
                 value: { skip: true, titanUid: titan.uid, minionUid, baseIndex },
                 displayMode: 'button' as const,
             },
         ],
-        { sourceId: 'titan_giant_ants_death_on_six_legs_transfer', targetType: 'generic' },
+        {
+            sourceId: 'titan_giant_ants_death_on_six_legs_transfer',
+            targetType: 'generic',
+            titleKey: 'ui.titan_death_on_six_legs_transfer_title',
+            titleParams: { minionName },
+        },
     );
     return queueInteraction(matchState, interaction);
 }
@@ -2704,7 +2768,11 @@ function fortTitanosaurusSpecial(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         'Fort Titanosaurus: choose one of your minions to destroy',
         buildMinionTargetOptions(targets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'destroy' }),
-        { sourceId: 'titan_dinosaurs_fort_titanosaurus_special', targetType: 'minion' },
+        {
+            sourceId: 'titan_dinosaurs_fort_titanosaurus_special',
+            targetType: 'minion',
+            titleKey: 'ui.titan_fort_titanosaurus_special_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -3039,10 +3107,14 @@ function killerKudzuOnTitanRemovedFromPlay(ctx: TriggerContext): TriggerResult |
         ctx.playerId,
         'Killer Kudzu：选择效果',
         [
-            { id: 'recycle', label: 'Shuffle up to 2 minions back', value: { recycle: true }, displayMode: 'button' as const },
-            { id: 'draw', label: 'Draw 2 cards', value: { draw: true }, displayMode: 'button' as const },
+            { id: 'recycle', label: 'Shuffle up to 2 minions back', labelKey: 'ui.titan_killer_kudzu_recycle_option', value: { recycle: true }, displayMode: 'button' as const },
+            { id: 'draw', label: 'Draw 2 cards', labelKey: 'ui.titan_killer_kudzu_draw_option', value: { draw: true }, displayMode: 'button' as const },
         ],
-        { sourceId: 'titan_killer_plants_killer_kudzu_removed', targetType: 'generic' },
+        {
+            sourceId: 'titan_killer_plants_killer_kudzu_removed',
+            targetType: 'generic',
+            titleKey: 'ui.titan_killer_kudzu_removed_title',
+        },
     );
     return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
 }
@@ -3089,6 +3161,7 @@ function killerKudzuTalent(ctx: AbilityContext): AbilityResult {
 }
 
 type BrideEffectKind = 'box' | 'destroy' | 'removeCounter';
+type BrideStartBranchValue = { kind: BrideEffectKind } | { skip: true };
 
 function getTheBrideBoxTargets(state: AbilityContext['state'], playerId: string, excludedUid?: string) {
     const player = state.players[playerId];
@@ -3160,19 +3233,22 @@ function buildTheBrideStartBranchOptions(
     usedKinds: BrideEffectKind[],
     excludedUid?: string,
 ) {
-    const options: Array<{ id: string; label: string; value: { kind: BrideEffectKind }; displayMode: 'button' }> = [];
+    const options: PromptOption<BrideStartBranchValue>[] = [];
     const requireSecondChoice = usedKinds.length === 0;
     if (!usedKinds.includes('box') && buildTheBrideStartTargetOptions(state, playerId, 'box', excludedUid, requireSecondChoice).length > 0) {
-        options.push({ id: 'box', label: '放进盒中', value: { kind: 'box' }, displayMode: 'button' });
+        options.push({ id: 'box', label: '放进盒中', labelKey: 'ui.titan_the_bride_effect_box', value: { kind: 'box' }, displayMode: 'button' });
     }
     if (!usedKinds.includes('destroy') && buildTheBrideStartTargetOptions(state, playerId, 'destroy', excludedUid, requireSecondChoice).length > 0) {
-        options.push({ id: 'destroy', label: '消灭己方随从', value: { kind: 'destroy' }, displayMode: 'button' });
+        options.push({ id: 'destroy', label: '消灭己方随从', labelKey: 'ui.titan_the_bride_effect_destroy', value: { kind: 'destroy' }, displayMode: 'button' });
     }
     if (!usedKinds.includes('removeCounter') && buildTheBrideStartTargetOptions(state, playerId, 'removeCounter', excludedUid, requireSecondChoice).length > 0) {
-        options.push({ id: 'removeCounter', label: '移除 +1 指示物', value: { kind: 'removeCounter' }, displayMode: 'button' });
+        options.push({ id: 'removeCounter', label: '移除 +1 指示物', labelKey: 'ui.titan_the_bride_effect_remove_counter', value: { kind: 'removeCounter' }, displayMode: 'button' });
     }
     if (usedKinds.length === 0) {
-        options.push(createSkipOption('跳过（本回合不让 The Bride 进场）'));
+        options.push({
+            ...createSkipOption('跳过（本回合不让 The Bride 进场）'),
+            labelKey: 'ui.titan_the_bride_skip_start',
+        });
     }
     return options;
 }
@@ -3253,7 +3329,11 @@ function theBrideOnTurnStart(ctx: TriggerContext): TriggerResult | SmashUpEvent[
         ctx.playerId,
         'The Bride: choose the first effect',
         branchOptions,
-        { sourceId: 'titan_frankenstein_the_bride_start_choose_branch', targetType: 'generic' },
+        {
+            sourceId: 'titan_frankenstein_the_bride_start_choose_branch',
+            targetType: 'generic',
+            titleKey: 'ui.titan_the_bride_start_first_effect_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanUid: titan.uid,
@@ -3346,7 +3426,11 @@ function theBrideTalent(ctx: AbilityContext): AbilityResult {
             ctx.playerId,
             'The Bride: choose one of your minions here to place a +1 power counter on',
             buildMinionTargetOptions(addCounterTargets, { state: ctx.state, sourcePlayerId: ctx.playerId, effectType: 'affect' }),
-            { sourceId: 'titan_frankenstein_the_bride_talent_add_counter', targetType: 'minion' },
+            {
+                sourceId: 'titan_frankenstein_the_bride_talent_add_counter',
+                targetType: 'minion',
+                titleKey: 'ui.titan_the_bride_talent_add_counter_title',
+            },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
@@ -3357,7 +3441,11 @@ function theBrideTalent(ctx: AbilityContext): AbilityResult {
             ctx.playerId,
             'The Bride: choose a set of counters to remove',
             extraActionOptions,
-            { sourceId: 'titan_frankenstein_the_bride_talent_extra_action', targetType: 'generic' },
+            {
+                sourceId: 'titan_frankenstein_the_bride_talent_extra_action',
+                targetType: 'generic',
+                titleKey: 'ui.titan_the_bride_talent_extra_action_title',
+            },
         );
         return { events: [], matchState: queueInteraction(ctx.matchState, interaction) };
     }
@@ -3367,10 +3455,14 @@ function theBrideTalent(ctx: AbilityContext): AbilityResult {
         ctx.playerId,
         'The Bride: choose a talent effect',
         [
-            { id: 'add-counter', label: 'Place a +1 counter', value: { branch: 'addCounter' }, displayMode: 'button' as const },
-            { id: 'extra-action', label: 'Remove 2 counters for an extra action', value: { branch: 'extraAction' }, displayMode: 'button' as const },
+            { id: 'add-counter', label: 'Place a +1 counter', labelKey: 'ui.titan_the_bride_talent_add_counter_option', value: { branch: 'addCounter' }, displayMode: 'button' as const },
+            { id: 'extra-action', label: 'Remove 2 counters for an extra action', labelKey: 'ui.titan_the_bride_talent_extra_action_option', value: { branch: 'extraAction' }, displayMode: 'button' as const },
         ],
-        { sourceId: 'titan_frankenstein_the_bride_talent_branch', targetType: 'generic' },
+        {
+            sourceId: 'titan_frankenstein_the_bride_talent_branch',
+            targetType: 'generic',
+            titleKey: 'ui.titan_the_bride_talent_branch_title',
+        },
     );
     (interaction.data as { continuationContext?: unknown }).continuationContext = {
         titanBaseIndex: titan.location.baseIndex,
@@ -3505,6 +3597,8 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('frankenstein_the_bride', 'onTurnStart', theBrideOnTurnStart, {
         global: true,
+        optional: true,
+        playerContext: 'sourceController',
         effectContract: {
             reads: ['handState', 'minionBoardState', 'titanBoardState', 'controllerState', 'baseState', 'discardState'],
             writes: ['handState', 'minionBoardState', 'titanBoardState'],
@@ -4306,7 +4400,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             'Killer Kudzu: choose a base to play that minion on',
             baseOptions,
-            { sourceId: 'titan_killer_plants_killer_kudzu_talent_base', targetType: 'base' },
+            {
+                sourceId: 'titan_killer_plants_killer_kudzu_talent_base',
+                targetType: 'base',
+                titleKey: 'ui.titan_killer_kudzu_choose_base_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             titanUid: continuation.titanUid,
@@ -4434,7 +4532,11 @@ export function registerTitanInteractionHandlers(): void {
                 playerId,
                 'The Bride: choose the second effect',
                 buildTheBrideStartBranchOptions(state.core, playerId, usedKinds, selected.targetUid),
-                { sourceId: 'titan_frankenstein_the_bride_start_choose_branch', targetType: 'generic' },
+                {
+                    sourceId: 'titan_frankenstein_the_bride_start_choose_branch',
+                    targetType: 'generic',
+                    titleKey: 'ui.titan_the_bride_start_second_effect_title',
+                },
             );
             (interaction.data as { continuationContext?: unknown; optionsGenerator?: unknown }).continuationContext = {
                 titanUid: continuation.titanUid,
@@ -4452,7 +4554,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             'The Bride：选择要打出的基地',
             getAllBaseOptions(state.core),
-            { sourceId: 'titan_frankenstein_the_bride_start_choose_base', targetType: 'base' },
+            {
+                sourceId: 'titan_frankenstein_the_bride_start_choose_base',
+                targetType: 'base',
+                titleKey: 'ui.titan_the_bride_start_base_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             titanUid: continuation.titanUid,
@@ -4496,7 +4602,11 @@ export function registerTitanInteractionHandlers(): void {
                 playerId,
                 'The Bride: choose one of your minions here to place a +1 power counter on',
                 buildMinionTargetOptions(targets, { state: state.core, sourcePlayerId: playerId, effectType: 'affect' }),
-                { sourceId: 'titan_frankenstein_the_bride_talent_add_counter', targetType: 'minion' },
+                {
+                    sourceId: 'titan_frankenstein_the_bride_talent_add_counter',
+                    targetType: 'minion',
+                    titleKey: 'ui.titan_the_bride_talent_add_counter_title',
+                },
             );
             return { state: queueInteraction(state, interaction), events: [] };
         }
@@ -4506,7 +4616,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             'The Bride：选择要移除的指示物组合',
             buildTheBrideExtraActionOptions(state.core, playerId),
-            { sourceId: 'titan_frankenstein_the_bride_talent_extra_action', targetType: 'generic' },
+            {
+                sourceId: 'titan_frankenstein_the_bride_talent_extra_action',
+                targetType: 'generic',
+                titleKey: 'ui.titan_the_bride_talent_extra_action_title',
+            },
         );
         return { state: queueInteraction(state, interaction), events: [] };
     });
@@ -4750,7 +4864,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             'The Hill That Strolls: choose a player to give control to',
             opponentOptions,
-            { sourceId: 'titan_ignobles_the_hill_that_strolls_choose_player', targetType: 'button' },
+            {
+                sourceId: 'titan_ignobles_the_hill_that_strolls_choose_player',
+                targetType: 'button',
+                titleKey: 'ui.titan_hill_that_strolls_choose_player_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             minionUid: minion.uid,
@@ -5653,7 +5771,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             'Major Ursa: choose a base to move to',
             buildBaseTargetOptions(baseOptions, state.core),
-            { sourceId: 'titan_bear_cavalry_major_ursa_choose_destination', targetType: 'base' },
+            {
+                sourceId: 'titan_bear_cavalry_major_ursa_choose_destination',
+                targetType: 'base',
+                titleKey: 'ui.titan_major_ursa_choose_base_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             titanUid: continuation.titanUid,
@@ -6028,7 +6150,11 @@ export function registerTitanInteractionHandlers(): void {
             playerId,
             'The Kraken: choose a base to move to',
             buildBaseTargetOptions(baseOptions, state.core),
-            { sourceId: 'titan_pirates_the_kraken_choose_base', targetType: 'base' },
+            {
+                sourceId: 'titan_pirates_the_kraken_choose_base',
+                targetType: 'base',
+                titleKey: 'ui.titan_kraken_choose_base_title',
+            },
         );
         (interaction.data as { continuationContext?: unknown }).continuationContext = {
             minionUid: selected.minionUid,

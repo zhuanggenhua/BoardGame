@@ -13,7 +13,7 @@ import type { MatchState, PlayerId, GameEvent, ResponseWindowState, ResponseWind
 import { resolveCommandTimestamp, resolveEventTimestamp } from '../utils';
 import type { EngineSystem, HookResult } from './types';
 import { SYSTEM_IDS } from './types';
-import { INTERACTION_EVENTS } from './InteractionSystem';
+import { INTERACTION_COMMANDS, INTERACTION_EVENTS } from './InteractionSystem';
 import { getActiveResolutionFrame, syncActiveResolutionWithInteraction, syncActiveResolutionWithResponseWindow } from './resolutionStack';
 
 // ============================================================================
@@ -534,6 +534,23 @@ export function createResponseWindowSystem<TCore>(
             }
 
             const currentResponderId = getCurrentResponderId(currentWindow);
+
+            if (command.type === INTERACTION_COMMANDS.FORCE_UNLOCK) {
+                const cmdTimestamp = resolveCommandTimestamp(command);
+                const newState = closeResponseWindow(state);
+                const events: GameEvent[] = [{
+                    type: RESPONSE_WINDOW_EVENTS.CLOSED,
+                    payload: {
+                        windowId: currentWindow.id,
+                        allPassed: false,
+                        forced: true,
+                        forceUnlock: true,
+                        previousResponderId: currentResponderId ?? null,
+                    },
+                    timestamp: cmdTimestamp,
+                }];
+                return { halt: false, state: newState, events };
+            }
 
             if (command.type === RESPONSE_WINDOW_COMMANDS.FORCE_CLOSE) {
                 const cmdTimestamp = resolveCommandTimestamp(command);

@@ -15,9 +15,34 @@ const DEFAULT_DEV_PORTS = Object.freeze({
     gameServer: 18000,
     apiServer: 18001,
 });
+const disableHotReload = isHotReloadDisabled(process.env);
 
 function getBundleOutfile(...segments) {
     return path.join(devBundleDir, ...segments);
+}
+
+function isHotReloadDisabled(env) {
+    if (env.BG_DEV_DISABLE_HOT_RELOAD === '1') {
+        return true;
+    }
+
+    return /^(off|false|0)$/i.test(env.BG_DEV_HOT_RELOAD?.trim() || '');
+}
+
+function createBundleRunnerArgs({ label, entry, outfile, tsconfig }) {
+    const args = [
+        'scripts/infra/dev-bundle-runner.mjs',
+        '--label', label,
+        '--entry', entry,
+        '--outfile', outfile,
+        '--tsconfig', tsconfig,
+    ];
+
+    if (disableHotReload) {
+        args.push('--once', 'true');
+    }
+
+    return args;
 }
 
 function resolveConfiguredPort(value, fallback) {
@@ -157,25 +182,32 @@ async function main() {
         GAME_SERVER_PORT: String(resolvedPorts.gameServer),
         API_SERVER_PORT: String(resolvedPorts.apiServer),
         GAME_SERVER_PROXY_TARGET: `http://127.0.0.1:${resolvedPorts.gameServer}`,
+        ...(disableHotReload
+            ? {
+                PW_SERVER_WATCH: 'false',
+                VITE_DISABLE_WATCH: 'true',
+            }
+            : {}),
     };
 
     console.log('[dev-orchestrator] resolved dev ports:', resolvedPorts);
+    if (disableHotReload) {
+        console.log('[dev-orchestrator] hot reload disabled: game/api run once, Vite HMR/watch disabled');
+    }
     console.log('[dev-orchestrator] starting api and game in parallel');
-    const apiChild = startCommand('dev:api', process.execPath, [
-        'scripts/infra/dev-bundle-runner.mjs',
-        '--label', 'api',
-        '--entry', 'apps/api/src/main.ts',
-        '--outfile', getBundleOutfile('api', 'main.mjs'),
-        '--tsconfig', 'apps/api/tsconfig.json',
-    ], sharedDevEnv, { optional: true });
+    const apiChild = startCommand('dev:api', process.execPath, createBundleRunnerArgs({
+        label: 'api',
+        entry: 'apps/api/src/main.ts',
+        outfile: getBundleOutfile('api', 'main.mjs'),
+        tsconfig: 'apps/api/tsconfig.json',
+    }), sharedDevEnv, { optional: true });
     const gameExtraEnv = resolveLocalDevModeEnv();
-    startCommand('dev:game', process.execPath, [
-        'scripts/infra/dev-bundle-runner.mjs',
-        '--label', 'game',
-        '--entry', 'server.ts',
-        '--outfile', getBundleOutfile('game', 'server.mjs'),
-        '--tsconfig', 'tsconfig.server.json',
-    ], {
+    startCommand('dev:game', process.execPath, createBundleRunnerArgs({
+        label: 'game',
+        entry: 'server.ts',
+        outfile: getBundleOutfile('game', 'server.mjs'),
+        tsconfig: 'tsconfig.server.json',
+    }), {
         ...sharedDevEnv,
         ...gameExtraEnv,
     });

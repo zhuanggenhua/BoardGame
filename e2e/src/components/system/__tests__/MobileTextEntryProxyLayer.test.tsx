@@ -160,6 +160,45 @@ describe('MobileTextEntryProxyLayer', () => {
         expect(secondInput.readOnly).toBe(true);
     });
 
+    it('非文本按钮获得焦点时延迟关闭代理，避免吞掉同一触摸链的点击', async () => {
+        const modalRoot = document.getElementById('modal-root');
+        if (!modalRoot) throw new Error('missing modal root');
+
+        const sourceInput = document.createElement('input');
+        sourceInput.type = 'text';
+        sourceInput.value = 'alpha';
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'discard';
+        modalRoot.appendChild(sourceInput);
+        modalRoot.appendChild(button);
+
+        render(<MobileTextEntryProxyLayer />);
+
+        await act(async () => {
+            sourceInput.focus();
+            fireEvent.focusIn(sourceInput);
+            await vi.advanceTimersByTimeAsync(60);
+        });
+
+        const proxyInput = screen.getByTestId('mobile-text-entry-proxy-input');
+        expect(proxyInput).toBeTruthy();
+
+        await act(async () => {
+            button.focus();
+            fireEvent.focusIn(button);
+            await vi.advanceTimersByTimeAsync(80);
+        });
+
+        expect(screen.getByTestId('mobile-text-entry-proxy-input')).toBe(proxyInput);
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(90);
+        });
+
+        expect(screen.queryByTestId('mobile-text-entry-proxy-input')).toBeNull();
+    });
+
     it('代理输入改值时不应重建节点或丢失焦点', async () => {
         const modalRoot = document.getElementById('modal-root');
         if (!modalRoot) throw new Error('missing modal root');

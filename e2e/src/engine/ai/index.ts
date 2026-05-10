@@ -15,6 +15,7 @@ export * from './localMatchPreferences';
 export * from './providers';
 export * from './noise';
 export * from './actionDelay';
+export * from './seatDisplayName';
 
 import { registerDefaultRemoteAiProviders } from './providers';
 

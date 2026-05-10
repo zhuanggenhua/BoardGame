@@ -58,6 +58,32 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         expect(dispatch).toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, { optionId: 'discard' });
     });
 
+    it('button-only prompts submit on touch pointerdown before mobile click can be lost', () => {
+        const dispatch = vi.fn();
+        const interaction: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'zombie_walker_1',
+            kind: 'simple-choice',
+            playerId: '0',
+            data: {
+                title: '牌库顶是「测试牌」，选择处理方式',
+                sourceId: 'zombie_walker',
+                targetType: 'button',
+                options: [
+                    { id: 'discard', label: '弃掉', value: { action: 'discard' }, displayMode: 'button' },
+                    { id: 'keep', label: '放回牌库顶', value: { action: 'keep' }, displayMode: 'button' },
+                ],
+            },
+        };
+
+        renderPromptOverlay({ interaction, dispatch, playerID: '0' });
+        const discardButton = screen.getByRole('button', { name: '弃掉' });
+        fireEvent.pointerDown(discardButton, { pointerType: 'touch' });
+        fireEvent.click(discardButton);
+
+        expect(dispatch).toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, { optionId: 'discard' });
+        expect(dispatch).toHaveBeenCalledTimes(1);
+    });
+
     it('discard display card mode toggles playable cards by uid', () => {
         const onSelect = vi.fn();
         const dispatch = vi.fn();

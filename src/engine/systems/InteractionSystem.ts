@@ -89,8 +89,8 @@ export function getCurrentTrackedIdTopSnapshot<TId extends string | number>(
     return snapshot;
 }
 
-export function getCurrentTrackedCardTopSnapshot<TCard extends { uid: string }>(
-    currentCards: readonly { uid: string }[],
+export function getCurrentTrackedCardTopSnapshot<TCard extends { uid: string; defId?: string }>(
+    currentCards: readonly { uid: string; defId?: string }[],
     trackedCards: readonly TCard[],
 ): TCard[] {
     const trackedByUid = new Map(trackedCards.map((card) => [card.uid, card] as const));
@@ -98,6 +98,7 @@ export function getCurrentTrackedCardTopSnapshot<TCard extends { uid: string }>(
     for (const card of currentCards) {
         const tracked = trackedByUid.get(card.uid);
         if (!tracked) break;
+        if (tracked.defId !== undefined && card.defId !== tracked.defId) break;
         snapshot.push(tracked);
     }
     return snapshot;
@@ -645,6 +646,50 @@ export function createCompareRollChoice<T>(
         playerId,
         data,
     };
+}
+
+/**
+ * multistep-choice 专用数据 — 多步调整 → 预览 → 确认
+ *
+ * 中间步骤纯本地执行（localReducer），不经过 pipeline，不发网络请求。
+ * 确认时 toCommands() 生成命令列表，依次 dispatch 到引擎。
+ *
+ * 适用场景：骰子修改（多次 +/- 后确认）、资源分配、多目标选择等。
+ */
+export interface MultistepChoiceData<TStep = unknown, TResult = unknown> {
+    /** 弹窗标题（i18n key） */
+    title: string;
+    /** 来源技能/卡牌 ID */
+    sourceId?: string;
+    /** 最大步骤数（达到后自动确认，可选） */
+    maxSteps?: number;
+    /** 最小步骤数（未达到时禁止确认，默认 0） */
+    minSteps?: number;
+    /**
+     * 本地 reducer：处理中间步骤
+     * 纯客户端执行，不经过 pipeline，不发网络请求。
+     * 返回更新后的累积结果。
+     */
+    localReducer: (current: TResult, step: TStep) => TResult;
+    /**
+     * 结果转命令：确认时将累积结果转换为引擎命令列表
+     * 返回的命令会被依次 dispatch 到引擎。
+     */
+    toCommands: (result: TResult) => Array<{ type: string; payload: unknown }>;
+    /** 初始累积结果 */
+    initialResult: TResult;
+    /** 验证函数：判断当前步骤是否合法（可选） */
+    validateStep?: (current: TResult, step: TStep) => boolean;
+    /**
+     * 从累积结果中提取"已完成步骤数"（可选）。
+     * 用于 auto-confirm 判定：当返回值 >= maxSteps 时自动确认。
+     * 未提供时退化为按 step() 调用次数计数。
+     * 典型场景：骰子 any 模式下，每次 +/- 都是一次 step()，
+     * 但只有修改了不同骰子才算"完成一步"。
+     */
+    getCompletedSteps?: (result: TResult) => number;
+    /** 附加元数据（透传给 UI 层，如骰子模式配置） */
+    meta?: Record<string, unknown>;
 }
 
 export function createMultistepChoice<TStep, TResult>(

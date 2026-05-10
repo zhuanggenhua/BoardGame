@@ -92,14 +92,25 @@ async function refreshToken(): Promise<string | null> {
 }
 
 export function useTokenRefresh() {
-    const { token, setTokenDirect, logout } = useAuth();
+    const { token, setTokenDirect, logout, isLoading } = useAuth();
     const timerRef = useRef<number | null>(null);
+    const refreshInFlightRef = useRef<Promise<string | null> | null>(null);
+    const bootstrapRefreshAttemptedRef = useRef(false);
 
     const clearTimer = useCallback(() => {
         if (timerRef.current) {
             clearTimeout(timerRef.current);
             timerRef.current = null;
         }
+    }, []);
+
+    const refreshTokenOnce = useCallback(() => {
+        if (!refreshInFlightRef.current) {
+            refreshInFlightRef.current = refreshToken().finally(() => {
+                refreshInFlightRef.current = null;
+            });
+        }
+        return refreshInFlightRef.current;
     }, []);
 
     /**
@@ -112,9 +123,28 @@ export function useTokenRefresh() {
         setTokenDirect(newToken);
     }, [setTokenDirect]);
 
+    const refreshAndApply = useCallback(async (reason: string) => {
+        console.log(`[TokenRefresh] ${reason}，尝试刷新 token`);
+        const newToken = await refreshTokenOnce();
+        if (!newToken) {
+            return false;
+        }
+        handleRefreshSuccess(newToken);
+        return true;
+    }, [handleRefreshSuccess, refreshTokenOnce]);
+
     useEffect(() => {
+        if (isLoading) {
+            clearTimer();
+            return;
+        }
+
         if (!token) {
             clearTimer();
+            if (!bootstrapRefreshAttemptedRef.current) {
+                bootstrapRefreshAttemptedRef.current = true;
+                void refreshAndApply('启动时未发现本地 token');
+            }
             return;
         }
 
@@ -126,14 +156,23 @@ export function useTokenRefresh() {
             const timeUntilExpiry = getTimeUntilExpiry(currentToken);
             
             if (timeUntilExpiry === null) {
-                console.warn('[TokenRefresh] 无法解析 token 过期时间');
+                void refreshAndApply('无法解析 token 过期时间').then(refreshed => {
+                    if (!refreshed) {
+                        console.warn('[TokenRefresh] 无法解析 token 且刷新失败，退出登录');
+                        logout();
+                    }
+                });
                 return;
             }
 
-            // 已过期，退出登录
+            // 已过期时优先尝试 refresh cookie 续签，失败后才退出登录。
             if (timeUntilExpiry <= 0) {
-                console.log('[TokenRefresh] Token 已过期，退出登录');
-                logout();
+                void refreshAndApply('Token 已过期').then(refreshed => {
+                    if (!refreshed) {
+                        console.log('[TokenRefresh] Token 已过期且刷新失败，退出登录');
+                        logout();
+                    }
+                });
                 return;
             }
 
@@ -153,12 +192,10 @@ export function useTokenRefresh() {
 
             timerRef.current = window.setTimeout(async () => {
                 console.log('[TokenRefresh] 开始刷新 token');
-                const newToken = await refreshToken();
-                
-                if (newToken) {
-                    handleRefreshSuccess(newToken);
-                    // handleRefreshSuccess 更新了 token state，effect 会重新触发 scheduleRefresh
-                } else {
+                const refreshed = await refreshAndApply('定时刷新');
+
+                // handleRefreshSuccess 更新了 token state，effect 会重新触发 scheduleRefresh。
+                if (!refreshed) {
                     // 刷新失败：检查 token 是否仍然有效
                     const latestToken = getCurrentToken();
                     const remaining = latestToken ? getTimeUntilExpiry(latestToken) : null;
@@ -182,25 +219,35 @@ export function useTokenRefresh() {
             
             // 读最新 token，避免闭包捕获旧值
             const currentToken = getCurrentToken();
-            if (!currentToken) return;
+            if (!currentToken) {
+                void refreshAndApply('页面恢复可见且本地 token 缺失');
+                return;
+            }
 
             const timeUntilExpiry = getTimeUntilExpiry(currentToken);
-            if (timeUntilExpiry === null) return;
+            if (timeUntilExpiry === null) {
+                void refreshAndApply('页面恢复可见但无法解析 token').then(refreshed => {
+                    if (!refreshed) {
+                        logout();
+                    }
+                });
+                return;
+            }
 
-            // 已过期
+            // 已过期时优先尝试 refresh cookie 续签，失败后才退出登录。
             if (timeUntilExpiry <= 0) {
-                console.log('[TokenRefresh] 页面恢复可见，token 已过期，退出登录');
-                logout();
+                void refreshAndApply('页面恢复可见且 token 已过期').then(refreshed => {
+                    if (!refreshed) {
+                        logout();
+                    }
+                });
                 return;
             }
 
             // 即将过期，立即刷新
             if (timeUntilExpiry < REFRESH_BEFORE_MS) {
-                console.log('[TokenRefresh] 页面恢复可见，token 即将过期，立即刷新');
-                void refreshToken().then(newToken => {
-                    if (newToken) {
-                        handleRefreshSuccess(newToken);
-                    } else {
+                void refreshAndApply('页面恢复可见且 token 即将过期').then(refreshed => {
+                    if (!refreshed) {
                         // 刷新失败但未过期，不 logout，等定时器重试
                         const remaining = getCurrentToken() ? getTimeUntilExpiry(getCurrentToken()!) : null;
                         if (!remaining || remaining <= 0) {
@@ -222,5 +269,5 @@ export function useTokenRefresh() {
             clearTimer();
             document.removeEventListener('visibilitychange', handleVisibilityChange);
         };
-    }, [token, logout, clearTimer, handleRefreshSuccess]);
+    }, [isLoading, token, logout, clearTimer, refreshAndApply]);
 }

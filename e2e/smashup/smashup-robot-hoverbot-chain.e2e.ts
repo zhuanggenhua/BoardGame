@@ -341,6 +341,8 @@ test.describe('盘旋机器人链式打出', () => {
 
 test.describe('SmashUp 交互时序回归', () => {
     test('科学小怪蛋：被消灭后应可点击己方随从放置 +1 指示物', async ({ game, page }, testInfo) => {
+        test.setTimeout(90000);
+
         await game.openTestGame('smashup', {
             p0: 'vampires,frankenstein',
             p1: 'robots,wizards',

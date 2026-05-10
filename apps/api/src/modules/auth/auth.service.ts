@@ -11,8 +11,8 @@ const JWT_SECRET = process.env.JWT_SECRET || 'boardgame-secret-key-change-in-pro
 // 登录态（JWT）有效期：30 天
 const JWT_EXPIRES_IN = '30d';
 const DEFAULT_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
-// refresh token 作为增强（比如未来做自动续期/风控），同样调整为 30 天，保持心智一致。
-const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 30;
+// Refresh token 承担长期登录态续签，必须长于 Access Token。
+const REFRESH_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 180;
 const REFRESH_TOKEN_PREFIX = 'refresh:token:';
 const REFRESH_TOKEN_USER_PREFIX = 'refresh:user:';
 const EMAIL_CODE_TTL_SECONDS = 5 * 60;

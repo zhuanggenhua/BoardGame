@@ -671,24 +671,6 @@ export const GameHUD = ({
                                 </button>
                             </div>
                         )}
-                        {players && (
-                            <div className="space-y-2 relative">
-                                <span className="text-[10px] text-white/60 uppercase font-bold">{t('hud.labels.players')}</span>
-                                <div className="space-y-2">
-                                    {players.map(p => (
-                                        <div key={p.id} className="flex items-center justify-between bg-black/40 px-3 py-2 rounded border border-white/5">
-                                            <div className="flex items-center gap-2">
-                                                <div className={`w-2 h-2 rounded-full ${p.isConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`} />
-                                                <span className="text-sm font-medium">{p.name || t('hud.status.player', { id: p.id })}</span>
-                                            </div>
-                                            {String(p.id) === String(myPlayerId) && (
-                                                <span className="text-[10px] bg-white/10 px-1.5 py-0.5 rounded text-white/60">{t('hud.status.self')}</span>
-                                            )}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
                     </div>
                 )}
 

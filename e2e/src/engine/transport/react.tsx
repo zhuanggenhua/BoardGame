@@ -57,12 +57,19 @@ import {
     getAiSeatIds,
     getGameAiRuntime,
     startCancelableAiDelay,
+    resolveSeatPlayerDisplayName,
     type AiSeatController,
 } from '../ai';
 import { resolveLocalAiActionVisibility } from '../ai/actionVisibility';
 import { persistLocalMatchSnapshot, readLocalMatchSnapshot } from './localSession';
 import { onAppVisible } from '../../lib/mobile/appVisibility';
-import { buildAiProgressMarker, shouldSilentlyRetryOnlineAiBatchRejection } from './onlineAiRecovery';
+import {
+    buildAiProgressMarker,
+    resolveCurrentPlayerId,
+    resolveForceEndTurnForStalledAi,
+    resolveForceSkippableHiddenAiInteraction,
+    shouldSilentlyRetryOnlineAiBatchRejection,
+} from './onlineAiRecovery';
 import { resolveSetupPlayerIds } from './setupPlayerOrder';
 import { createScopedLogger } from '../../lib/logger';
 
@@ -78,6 +85,8 @@ const localAiPerfLogger = createScopedLogger('LOCAL_AI_PERF');
 function emitLocalAiPerf(stage: string, payload: Record<string, unknown>): void {
     console.log('[LOCAL_AI_PERF]', { stage, ...payload });
 }
+const LOCAL_AI_STALL_RECOVERY_GRACE_MS = 1_200;
+const LOCAL_AI_IDLE_RETRY_MS = 120;
 const aiRuntimeTruthLogger = createScopedLogger('AI_RUNTIME_TRUTH');
 function emitAiRuntimeTruth(stage: string, payload: Record<string, unknown>): void {
     console.log('[AI_RUNTIME_TRUTH]', { stage, ...payload });
@@ -171,6 +180,20 @@ export function releaseAiAttemptKeyIfMatches(
     if (ref.current === attemptKey) {
         ref.current = null;
     }
+}
+
+function buildLocalAiSeatStates(
+    state: MatchState<unknown>,
+    seatControllers: Record<string, AiSeatController>,
+): Record<string, MatchState<unknown>> {
+    const seatStates: Record<string, MatchState<unknown>> = {};
+    for (const [playerId, controller] of Object.entries(seatControllers)) {
+        if (controller.type === 'human') {
+            continue;
+        }
+        seatStates[playerId] = state;
+    }
+    return seatStates;
 }
 
 // ============================================================================
@@ -1224,7 +1247,7 @@ export function LocalGameProvider({
         const runAiTurn = async () => {
             const startedAt = Date.now();
             const progressMarkerBeforeDispatch = buildAiProgressMarker(state);
-            const resolution = await resolveNextAiAction({
+            let resolution = await resolveNextAiAction({
                 engineConfig: config,
                 state,
                 matchId: `local:${config.gameId}:${seed}`,
@@ -1232,19 +1255,66 @@ export function LocalGameProvider({
             });
             const decisionResolvedAt = Date.now();
             const decisionElapsedMs = decisionResolvedAt - startedAt;
+            const activePhaseElapsedMs = aiActivePhaseRef.current
+                ? decisionResolvedAt - aiActivePhaseRef.current.startedAt
+                : null;
 
             if (cancelled) return;
 
             if (!resolution) {
+                const seatStates = buildLocalAiSeatStates(state, seatControllers);
+                const forceSkipCandidate = resolveForceSkippableHiddenAiInteraction({
+                    sharedState: state,
+                    seatControllers,
+                    seatStates,
+                });
+                const stalledCandidate = forceSkipCandidate
+                    ? null
+                    : resolveForceEndTurnForStalledAi({
+                        sharedState: state,
+                        seatControllers,
+                        seatStates,
+                        gameId: config.gameId,
+                    });
+                const canApplyStalledRecovery = stalledCandidate
+                    && stalledCandidate.legalActionOnly !== true
+                    && (
+                        stalledCandidate.reason === 'hidden-interaction'
+                        || stalledCandidate.reason === 'visible-interaction'
+                        || stalledCandidate.reason === 'response-window'
+                        || activePhaseElapsedMs === null
+                        || activePhaseElapsedMs >= LOCAL_AI_STALL_RECOVERY_GRACE_MS
+                    );
+                resolution = forceSkipCandidate?.resolution
+                    ?? (canApplyStalledRecovery ? stalledCandidate?.resolution ?? null : null);
+            }
+
+            if (!resolution) {
+                const currentAiActorId = resolveCurrentPlayerId(state);
+                const shouldPollRetry = Boolean(
+                    currentAiActorId && seatControllers[currentAiActorId]?.type !== 'human',
+                );
+                if (shouldPollRetry) {
+                    delayTimer = setTimeout(() => {
+                        delayTimer = null;
+                        if (cancelled) return;
+                        lastAiAttemptKeyRef.current = null;
+                        setAiRetryVersion((version) => version + 1);
+                    }, LOCAL_AI_IDLE_RETRY_MS);
+                }
                 localAiPerfLogger.debug('idle', {
                     gameId: config.gameId,
                     matchId: `local:${config.gameId}:${seed}`,
                     decisionElapsedMs,
+                    activePhaseElapsedMs,
+                    scheduledRetry: shouldPollRetry,
                 });
                 emitLocalAiPerf('idle', {
                     gameId: config.gameId,
                     matchId: `local:${config.gameId}:${seed}`,
                     decisionElapsedMs,
+                    activePhaseElapsedMs,
+                    scheduledRetry: shouldPollRetry,
                 });
                 lastAiAttemptKeyRef.current = null;
                 return;
@@ -1269,9 +1339,6 @@ export function LocalGameProvider({
                 lastVisibleActionAt: lastVisibleAiActionAtRef.current,
             });
             const commandTypes = resolution.action.commands.map((command) => command.type);
-            const activePhaseElapsedMs = aiActivePhaseRef.current
-                ? decisionResolvedAt - aiActivePhaseRef.current.startedAt
-                : null;
             const turnTimeline = ensureAiTurnTimeline(resolution.playerId, stateRef.current);
             if (turnTimeline) {
                 turnTimeline.decisionReadyAt = decisionResolvedAt;
@@ -1661,8 +1728,15 @@ export function LocalGameProvider({
     }, [aiSeatIds, config, seed, setupData, setupPlayerIds]);
 
     const matchPlayers = useMemo<MatchPlayerInfo[]>(
-        () => playerIds.map((id) => ({ id: Number(id), isConnected: true })),
-        [playerIds],
+        () => playerIds.map((id) => ({
+            id: Number(id),
+            name: resolveSeatPlayerDisplayName({
+                playerId: id,
+                seatControllers,
+            }),
+            isConnected: true,
+        })),
+        [playerIds, seatControllers],
     );
 
     const localBoardPlayerId = useMemo(() => {

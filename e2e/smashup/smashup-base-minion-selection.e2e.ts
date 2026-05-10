@@ -300,6 +300,276 @@ async function injectMushroomInvisibleTurnStartState(matchId: string, page: Page
     await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
 }
 
+async function injectMushroomOpponentSproutTurnStartState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => ({
+        ...state,
+        core: {
+            ...state.core,
+            players: {
+                ...(state.core?.players ?? {}),
+                '0': {
+                    ...(state.core?.players?.['0'] ?? {}),
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['aliens', 'pirates'],
+                    sameNameMinionDefId: null,
+                },
+                '1': {
+                    ...(state.core?.players?.['1'] ?? {}),
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [
+                        makeInjectedCard('sprout-deck-target', 'killer_plant_weed_eater', 'minion', '1'),
+                    ],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['killer_plants', 'wizards'],
+                    sameNameMinionDefId: null,
+                },
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            phase: 'endTurn',
+            bases: [
+                { defId: 'base_mushroom_kingdom', minions: [], ongoingActions: [] },
+                {
+                    defId: 'base_the_factory',
+                    minions: [makeInjectedMinion('enemy-sprout', 'killer_plant_sprout', '1', '1', 2)],
+                    ongoingActions: [],
+                },
+                { defId: 'base_great_library', minions: [], ongoingActions: [] },
+            ],
+            titans: [],
+            enabledExpansions: [],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 8,
+            nextUid: 901,
+            cardsPlayedThisTurn: 0,
+            powerCountersPlacedOnMinionsThisTurn: 0,
+            turnDestroyedMinions: [],
+            triggerQueue: [],
+        },
+        sys: {
+            ...state.sys,
+            phase: 'playCards',
+            currentPlayerIndex: 1,
+            flowHalted: false,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+            resolution: undefined,
+            smashupReactionSession: undefined,
+            smashupReactionStack: undefined,
+            scoredBaseIndices: undefined,
+            smashupScoring: undefined,
+            _smashupStartTurnWindowActive: undefined,
+            _waitForStartTurnInteractionReduce: undefined,
+            _waitForScoreBasesInteractionReduce: undefined,
+            _waitForPostScoringReduce: undefined,
+        },
+    }));
+    await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
+}
+
+async function injectMushroomOpponentBrideTurnStartState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => ({
+        ...state,
+        core: {
+            ...state.core,
+            players: {
+                ...(state.core?.players ?? {}),
+                '0': {
+                    ...(state.core?.players?.['0'] ?? {}),
+                    id: '0',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['aliens', 'pirates'],
+                    sameNameMinionDefId: null,
+                },
+                '1': {
+                    ...(state.core?.players?.['1'] ?? {}),
+                    id: '1',
+                    vp: 0,
+                    hand: [makeInjectedCard('bride-hand-minion', 'frankenstein_igor', 'minion', '1')],
+                    deck: [],
+                    discard: [makeInjectedCard('bride-discard-minion', 'frankenstein_lab_assistant', 'minion', '1')],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['frankenstein', 'wizards'],
+                    sameNameMinionDefId: null,
+                },
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            phase: 'endTurn',
+            bases: [
+                { defId: 'base_mushroom_kingdom', minions: [], ongoingActions: [] },
+                {
+                    defId: 'base_the_factory',
+                    minions: [{
+                        ...makeInjectedMinion('enemy-bride-target', 'frankenstein_igor', '1', '1', 2),
+                        powerCounters: 1,
+                    }],
+                    ongoingActions: [],
+                },
+                { defId: 'base_great_library', minions: [], ongoingActions: [] },
+            ],
+            titans: [{
+                uid: 'opponent-bride-titan',
+                defId: 'frankenstein_the_bride',
+                faction: 'frankenstein',
+                ownerId: '1',
+                controllerId: '1',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            }],
+            enabledExpansions: ['titans'],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 9,
+            nextUid: 902,
+            cardsPlayedThisTurn: 0,
+            powerCountersPlacedOnMinionsThisTurn: 0,
+            turnDestroyedMinions: [],
+            triggerQueue: [],
+        },
+        sys: {
+            ...state.sys,
+            phase: 'playCards',
+            currentPlayerIndex: 1,
+            flowHalted: false,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+            resolution: undefined,
+            smashupReactionSession: undefined,
+            smashupReactionStack: undefined,
+            scoredBaseIndices: undefined,
+            smashupScoring: undefined,
+            _smashupStartTurnWindowActive: undefined,
+            _waitForStartTurnInteractionReduce: undefined,
+            _waitForScoreBasesInteractionReduce: undefined,
+            _waitForPostScoringReduce: undefined,
+        },
+    }));
+    await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
+}
+
+async function injectMushroomOwnBrideTurnStartState(matchId: string, page: Page): Promise<void> {
+    await applySmashUpStatePatch(matchId, page, (state) => ({
+        ...state,
+        core: {
+            ...state.core,
+            players: {
+                ...(state.core?.players ?? {}),
+                '0': {
+                    ...(state.core?.players?.['0'] ?? {}),
+                    id: '0',
+                    vp: 0,
+                    hand: [makeInjectedCard('own-bride-hand-minion', 'frankenstein_igor', 'minion', '0')],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['frankenstein', 'aliens'],
+                    sameNameMinionDefId: null,
+                },
+                '1': {
+                    ...(state.core?.players?.['1'] ?? {}),
+                    id: '1',
+                    vp: 0,
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    minionsPlayed: 0,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    factions: ['pirates', 'wizards'],
+                    sameNameMinionDefId: null,
+                },
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            phase: 'endTurn',
+            bases: [
+                { defId: 'base_mushroom_kingdom', minions: [], ongoingActions: [] },
+                {
+                    defId: 'base_the_factory',
+                    minions: [makeInjectedMinion('enemy-own-bride-target', 'pirate_buccaneer', '1', '1', 4)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_great_library',
+                    minions: [{
+                        ...makeInjectedMinion('own-bride-counter-target', 'frankenstein_lab_assistant', '0', '0', 2),
+                        powerCounters: 1,
+                    }],
+                    ongoingActions: [],
+                },
+            ],
+            titans: [{
+                uid: 'own-bride-titan',
+                defId: 'frankenstein_the_bride',
+                faction: 'frankenstein',
+                ownerId: '0',
+                controllerId: '0',
+                powerCounters: 0,
+                talentUsed: false,
+                location: { zone: 'setaside' },
+            }],
+            enabledExpansions: ['titans'],
+            baseDeck: [],
+            baseDiscard: [],
+            turnNumber: 10,
+            nextUid: 903,
+            cardsPlayedThisTurn: 0,
+            powerCountersPlacedOnMinionsThisTurn: 0,
+            turnDestroyedMinions: [],
+            triggerQueue: [],
+        },
+        sys: {
+            ...state.sys,
+            phase: 'playCards',
+            currentPlayerIndex: 1,
+            flowHalted: false,
+            interaction: { current: undefined, queue: [] },
+            responseWindow: { current: undefined },
+            resolution: undefined,
+            smashupReactionSession: undefined,
+            smashupReactionStack: undefined,
+            scoredBaseIndices: undefined,
+            smashupScoring: undefined,
+            _smashupStartTurnWindowActive: undefined,
+            _waitForStartTurnInteractionReduce: undefined,
+            _waitForScoreBasesInteractionReduce: undefined,
+            _waitForPostScoringReduce: undefined,
+        },
+    }));
+    await page.waitForSelector('[data-testid="base-zone-0"]', { timeout: 5000 });
+}
+
 async function injectSacredCircleSameNameState(matchId: string, page: Page): Promise<void> {
     await applySmashUpStatePatch(matchId, page, (state) => ({
         ...state,
@@ -1408,6 +1678,192 @@ test.describe('SmashUp Base/Minion Selection', () => {
 
         const resolvedShot = getEvidenceScreenshotPath(testInfo, 'mushroom-invisible-resolved', {
             filename: 'smashup-mushroom-invisible-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+    });
+
+    test('反馈复现：蘑菇王国面对对手幼苗时，应走场上选择且不弹结算顺序', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await waitForTestHarness(guestPage);
+        await injectMushroomOpponentSproutTurnStartState(matchId, hostPage);
+
+        await guestPage.bringToFront();
+        const finishButton = guestPage.getByTestId('su-end-turn-action-button');
+        await expect(finishButton).toBeVisible({ timeout: 8000 });
+        await finishButton.click({ force: true });
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return state?.sys?.interaction?.current?.data?.sourceId ?? null;
+        }, { timeout: 12000 }).toBe('base_mushroom_kingdom');
+
+        const promptState = await getMatchState(matchId, hostPage);
+        const triggerQueue = Array.isArray(promptState?.core?.triggerQueue)
+            ? promptState.core.triggerQueue
+            : [];
+        expect(triggerQueue.some((trigger: { sourceDefId?: string }) => trigger?.sourceDefId === 'killer_plant_sprout')).toBe(false);
+        expect(promptState?.sys?.interaction?.current?.data?.sourceId).not.toBe('smashup_reaction_choose');
+        await expect(hostPage.getByText(/选择结算顺序/)).toHaveCount(0);
+        await waitForSelectableMinion(hostPage, 'enemy-sprout', 8000);
+
+        const promptShot = getEvidenceScreenshotPath(testInfo, 'mushroom-opponent-sprout-field-selection', {
+            filename: 'smashup-mushroom-opponent-sprout-field-selection.png',
+        });
+        await hostPage.screenshot({ path: promptShot, fullPage: false });
+
+        await clickMinion(hostPage, 'enemy-sprout');
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                sourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                sproutBaseIndex: state?.core?.bases?.findIndex((base: any) =>
+                    Array.isArray(base?.minions)
+                    && base.minions.some((minion: any) => minion?.uid === 'enemy-sprout'),
+                ) ?? -1,
+                phase: state?.sys?.phase ?? null,
+            };
+        }, { timeout: 8000 }).toEqual({
+            sourceId: null,
+            sproutBaseIndex: 0,
+            phase: 'playCards',
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'mushroom-opponent-sprout-resolved', {
+            filename: 'smashup-mushroom-opponent-sprout-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+    });
+
+    test('反馈复现：蘑菇王国面对对手新娘泰坦时，应走场上选择且不弹结算顺序', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await waitForTestHarness(guestPage);
+        await injectMushroomOpponentBrideTurnStartState(matchId, hostPage);
+
+        await guestPage.bringToFront();
+        const finishButton = guestPage.getByTestId('su-end-turn-action-button');
+        await expect(finishButton).toBeVisible({ timeout: 8000 });
+        await finishButton.click({ force: true });
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return state?.sys?.interaction?.current?.data?.sourceId ?? null;
+        }, { timeout: 12000 }).toBe('base_mushroom_kingdom');
+
+        const promptState = await getMatchState(matchId, hostPage);
+        const triggerQueue = Array.isArray(promptState?.core?.triggerQueue)
+            ? promptState.core.triggerQueue
+            : [];
+        expect(triggerQueue.some((trigger: { sourceDefId?: string }) => trigger?.sourceDefId === 'frankenstein_the_bride')).toBe(false);
+        expect(promptState?.sys?.interaction?.current?.data?.sourceId).not.toBe('smashup_reaction_choose');
+        await expect(hostPage.getByText(/选择结算顺序/)).toHaveCount(0);
+        await waitForSelectableMinion(hostPage, 'enemy-bride-target', 8000);
+
+        const promptShot = getEvidenceScreenshotPath(testInfo, 'mushroom-opponent-bride-field-selection', {
+            filename: 'smashup-mushroom-opponent-bride-field-selection.png',
+        });
+        await hostPage.screenshot({ path: promptShot, fullPage: false });
+
+        await clickMinion(hostPage, 'enemy-bride-target');
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                sourceId: state?.sys?.interaction?.current?.data?.sourceId ?? null,
+                minionBaseIndex: state?.core?.bases?.findIndex((base: any) =>
+                    Array.isArray(base?.minions)
+                    && base.minions.some((minion: any) => minion?.uid === 'enemy-bride-target'),
+                ) ?? -1,
+                phase: state?.sys?.phase ?? null,
+            };
+        }, { timeout: 8000 }).toEqual({
+            sourceId: null,
+            minionBaseIndex: 0,
+            phase: 'playCards',
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'mushroom-opponent-bride-resolved', {
+            filename: 'smashup-mushroom-opponent-bride-resolved.png',
+        });
+        await hostPage.screenshot({ path: resolvedShot, fullPage: false });
+    });
+
+    test('反馈复现：蘑菇王国与自己的新娘泰坦同回合开始时，不应把新娘当强制排序', async ({ browser }, testInfo) => {
+        const smashupMatch = await createOnlineSelectionMatch(browser, testInfo);
+        if (!smashupMatch) {
+            test.skip(true, '游戏服务器不可用或创建房间失败');
+            return;
+        }
+
+        const { hostPage, guestPage, matchId } = smashupMatch;
+        await clearEvidenceScreenshotsForTest(testInfo);
+        await waitForTestHarness(hostPage);
+        await waitForTestHarness(guestPage);
+        await injectMushroomOwnBrideTurnStartState(matchId, hostPage);
+
+        await guestPage.bringToFront();
+        const finishButton = guestPage.getByTestId('su-end-turn-action-button');
+        await expect(finishButton).toBeVisible({ timeout: 8000 });
+        await finishButton.click({ force: true });
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return state?.sys?.interaction?.current?.data?.sourceId ?? null;
+        }, { timeout: 12000 }).toBe('base_mushroom_kingdom');
+
+        const promptState = await getMatchState(matchId, hostPage);
+        const brideTrigger = Array.isArray(promptState?.core?.triggerQueue)
+            ? promptState.core.triggerQueue.find((trigger: { sourceDefId?: string }) => trigger?.sourceDefId === 'frankenstein_the_bride')
+            : undefined;
+        expect(brideTrigger?.resolutionClass).toBe('optional');
+        expect(promptState?.sys?.interaction?.current?.data?.sourceId).not.toBe('smashup_reaction_choose');
+        await expect(hostPage.getByText(/选择结算顺序/)).toHaveCount(0);
+        await waitForSelectableMinion(hostPage, 'enemy-own-bride-target', 8000);
+
+        const promptShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-field-selection', {
+            filename: 'smashup-mushroom-own-bride-field-selection.png',
+        });
+        await hostPage.screenshot({ path: promptShot, fullPage: false });
+
+        await clickMinion(hostPage, 'enemy-own-bride-target');
+
+        await expect.poll(async () => {
+            const state = await getMatchState(matchId, hostPage);
+            return {
+                minionBaseIndex: state?.core?.bases?.findIndex((base: any) =>
+                    Array.isArray(base?.minions)
+                    && base.minions.some((minion: any) => minion?.uid === 'enemy-own-bride-target'),
+                ) ?? -1,
+                brideStillQueuedAsOptional: Array.isArray(state?.core?.triggerQueue)
+                    ? state.core.triggerQueue.some((trigger: any) =>
+                        trigger?.sourceDefId === 'frankenstein_the_bride'
+                        && trigger?.resolutionClass === 'optional',
+                    )
+                    : false,
+            };
+        }, { timeout: 8000 }).toEqual({
+            minionBaseIndex: 0,
+            brideStillQueuedAsOptional: true,
+        });
+
+        const resolvedShot = getEvidenceScreenshotPath(testInfo, 'mushroom-own-bride-mushroom-resolved', {
+            filename: 'smashup-mushroom-own-bride-mushroom-resolved.png',
         });
         await hostPage.screenshot({ path: resolvedShot, fullPage: false });
     });

@@ -1,4 +1,4 @@
-import type { AiSeatController } from '../engine/ai';
+import { resolveSeatPlayerDisplayName, type AiSeatController } from '../engine/ai';
 import type { MatchPlayerInfo } from '../engine/transport/protocol';
 import type { PlayerStatus } from '../hooks/match/useMatchStatus';
 
@@ -45,7 +45,11 @@ export function resolveOnlineHudPresence({
 
         return {
             id: Number(playerId),
-            name: transport?.name ?? fallback?.name,
+            name: resolveSeatPlayerDisplayName({
+                playerId,
+                name: transport?.name ?? fallback?.name,
+                seatControllers,
+            }),
             isConnected: transportReady
                 ? (isAiSeat ? true : (transport?.isConnected ?? fallback?.isConnected ?? false))
                 : undefined,

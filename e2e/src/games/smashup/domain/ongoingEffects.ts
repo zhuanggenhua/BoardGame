@@ -599,8 +599,15 @@ export function collectTriggers(
         // Only queue reaction-phase triggers (replacement effects must remain immediate)
         if (entry.phase === 'replacement') continue;
         if (entry.global) {
-            if (!isSourceInZones(state, entry.sourceDefId, entry.globalZones ?? ['hand', 'discard'])) continue;
-            triggers.push(createTriggerInstance(state, entry, timing, now, triggers.length, pid, {}, ctx));
+            const located = selectGlobalTriggerSourceLocation(
+                state,
+                entry,
+                timing,
+                entry.globalZones ?? ['hand', 'discard'],
+                pid,
+            );
+            if (!located) continue;
+            triggers.push(createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx));
             continue;
         }
 
@@ -1235,8 +1242,22 @@ export function fireTriggers(
         );
 
         if (entry.global) {
-            if (!isSourceInZones(state, entry.sourceDefId, entry.globalZones ?? ['hand', 'discard'])) continue;
-            const result = entry.callback({ ...fullCtx, state: filteredState, matchState: getFilteredMatchState() });
+            const located = selectGlobalTriggerSourceLocation(
+                filteredState,
+                entry,
+                timing,
+                entry.globalZones ?? ['hand', 'discard'],
+                ctx.playerId,
+            );
+            if (!located) continue;
+            const result = entry.callback({
+                ...fullCtx,
+                state: filteredState,
+                matchState: getFilteredMatchState(),
+                sourceCardUid: located.uid,
+                sourceBaseIndex: located.baseIndex,
+                sourceControllerId: located.controllerId,
+            });
             const triggerEvents = Array.isArray(result) ? result : result.events;
             if (triggerEvents.length > 0) {
                 events.push(...triggerEvents);
@@ -1300,13 +1321,14 @@ function selectSpecificSourceLocation(
     ctx: Omit<TriggerContext, 'timing'>,
     isEligible?: (located: TriggerSourceLocation) => boolean,
 ): TriggerSourceLocation | undefined {
-    const preferredUid = ctx.sourceCardUid ?? ctx.triggerMinionUid;
-    if (preferredUid) {
+    const preferredUids = [ctx.sourceCardUid, ctx.triggerMinionUid].filter(
+        (uid): uid is string => typeof uid === 'string' && uid.length > 0,
+    );
+    for (const preferredUid of preferredUids) {
         const matched = locatedSources.find(located => located.uid === preferredUid);
         if (matched && (!isEligible || isEligible(matched))) {
             return matched;
         }
-        return undefined;
     }
     return isEligible ? locatedSources.find(isEligible) : locatedSources[0];
 }
@@ -1346,8 +1368,22 @@ export function fireTriggerForSource(
         );
 
         if (entry.global) {
-            if (!isSourceInZones(state, entry.sourceDefId, entry.globalZones ?? ['hand', 'discard'])) continue;
-            const result = entry.callback({ ...fullCtx, state: filteredState, matchState: getFilteredMatchState() });
+            const located = selectGlobalTriggerSourceLocation(
+                filteredState,
+                entry,
+                timing,
+                entry.globalZones ?? ['hand', 'discard'],
+                ctx.playerId,
+            );
+            if (!located) continue;
+            const result = entry.callback({
+                ...fullCtx,
+                state: filteredState,
+                matchState: getFilteredMatchState(),
+                sourceCardUid: located.uid,
+                sourceBaseIndex: located.baseIndex,
+                sourceControllerId: located.controllerId,
+            });
             const triggerEvents = Array.isArray(result) ? result : result.events;
             if (triggerEvents.length > 0) {
                 events.push(...triggerEvents);
@@ -1420,6 +1456,62 @@ function isSourceInZones(
         return true;
     }
     return false;
+}
+
+function locateGlobalSources(
+    state: SmashUpCore,
+    sourceDefId: string,
+    zones: Array<'hand' | 'discard' | 'deck'>,
+): TriggerSourceLocation[] {
+    const locations: TriggerSourceLocation[] = [];
+    for (const player of Object.values(state.players)) {
+        if (zones.includes('hand')) {
+            for (const card of player.hand ?? []) {
+                if (card.defId === sourceDefId) {
+                    locations.push({ uid: card.uid, controllerId: card.owner ?? player.id });
+                }
+            }
+        }
+        if (zones.includes('discard')) {
+            for (const card of player.discard ?? []) {
+                if (card.defId === sourceDefId) {
+                    locations.push({ uid: card.uid, controllerId: card.owner ?? player.id });
+                }
+            }
+        }
+        if (zones.includes('deck')) {
+            for (const card of player.deck ?? []) {
+                if (card.defId === sourceDefId) {
+                    locations.push({ uid: card.uid, controllerId: card.owner ?? player.id });
+                }
+            }
+        }
+    }
+    for (const titan of state.titans ?? []) {
+        if (titan.defId !== sourceDefId) continue;
+        locations.push({
+            uid: titan.uid,
+            titanUid: titan.uid,
+            baseIndex: titan.location.zone === 'base' ? titan.location.baseIndex : undefined,
+            controllerId: titan.location.zone === 'base' ? titan.controllerId : titan.ownerId,
+        });
+    }
+    return locations;
+}
+
+function selectGlobalTriggerSourceLocation(
+    state: SmashUpCore,
+    entry: TriggerEntry,
+    timing: TitanAwareTriggerTiming,
+    zones: Array<'hand' | 'discard' | 'deck'>,
+    playerId: PlayerId,
+): TriggerSourceLocation | undefined {
+    if (!isSourceInZones(state, entry.sourceDefId, zones)) return undefined;
+    if (entry.playerContext !== 'sourceController') return {};
+    if (timing !== 'onTurnStart' && timing !== 'onTurnEnd') return {};
+    return locateGlobalSources(state, entry.sourceDefId, zones).find(located =>
+        isTurnBoundarySourceControllerEligible(entry, timing, located, playerId),
+    );
 }
 
 // ============================================================================

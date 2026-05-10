@@ -342,6 +342,21 @@ describe('InteractionSystem - 通用刷新', () => {
         ]);
     });
 
+    it('getCurrentTrackedCardTopSnapshot 遇到同 uid 但 defId 变化时不应复用旧揭示牌', () => {
+        const snapshot = getCurrentTrackedCardTopSnapshot(
+            [
+                { uid: 'card-1', defId: 'replacement' },
+                { uid: 'card-2', defId: 'b' },
+            ],
+            [
+                { uid: 'card-1', defId: 'a', tag: 'tracked-1' },
+                { uid: 'card-2', defId: 'b', tag: 'tracked-2' },
+            ],
+        );
+
+        expect(snapshot).toEqual([]);
+    });
+
     it('getCurrentTrackedIdTopSnapshot 只应保留当前仍连续位于顶部的字符串快照', () => {
         const snapshot = getCurrentTrackedIdTopSnapshot(
             ['base-a', 'base-b', 'base-c'],
