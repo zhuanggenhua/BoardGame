@@ -785,6 +785,7 @@ export function registerKillerPlantAbilities(): void {
     // sprout: 回合开始时消灭自身 + 搜索打出随从
     registerTrigger('killer_plant_sprout', 'onTurnStart', killerPlantSproutTrigger, {
         perInstance: true,
+        playerContext: 'sourceController',
         effectContract: {
             reads: ['sourceSelfState', 'minionBoardState', 'deckState', 'controllerState', 'turnFlags'],
             writes: ['minionBoardState', 'deckState', 'handState', 'discardState', 'playLimits'],
@@ -793,6 +794,7 @@ export function registerKillerPlantAbilities(): void {
     });
     registerTrigger('killer_plant_sprout_pod', 'onTurnStart', killerPlantSproutTrigger, {
         perInstance: true,
+        playerContext: 'sourceController',
         effectContract: {
             reads: ['sourceSelfState', 'minionBoardState', 'deckState', 'controllerState', 'turnFlags'],
             writes: ['minionBoardState', 'deckState', 'handState', 'discardState', 'playLimits'],

@@ -34,6 +34,7 @@ import {
 } from '../onlineAiForceSkip';
 import {
     isTutorialRoutePath,
+    resolveMissingMatchConfirmationSignal,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
@@ -171,6 +172,75 @@ describe('isTutorialRoutePath', () => {
     it('不会把普通对局或测试路由误判成教程路由', () => {
         expect(isTutorialRoutePath('/play/dicethrone')).toBe(false);
         expect(isTutorialRoutePath('/play/dicethrone/match/m-1')).toBe(false);
+    });
+});
+
+describe('resolveMissingMatchConfirmationSignal', () => {
+    it('只有联机同步通道明确的 match_not_found 信号才会确认缺房', () => {
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: false,
+            matchId: 'match-1',
+            shouldAutoJoin: false,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            onlineTransportError: 'match_not_found',
+        })).toBe('transport_not_found');
+
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: false,
+            matchId: 'match-1',
+            shouldAutoJoin: false,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            onlineTransportError: null,
+        })).toBeNull();
+    });
+
+    it('网络态、REST 404 或自动加入阶段不会把房间误判成不存在', () => {
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: false,
+            matchId: 'match-1',
+            shouldAutoJoin: false,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            onlineTransportError: 'sync_timeout',
+        })).toBeNull();
+
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: false,
+            matchId: 'match-1',
+            shouldAutoJoin: false,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            onlineTransportError: null,
+        })).toBeNull();
+
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: false,
+            matchId: 'match-1',
+            shouldAutoJoin: true,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            onlineTransportError: 'match_not_found',
+        })).toBeNull();
+
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: false,
+            matchId: 'match-1',
+            shouldAutoJoin: false,
+            isAutoJoining: true,
+            autoJoinGraceActive: false,
+            onlineTransportError: 'match_not_found',
+        })).toBeNull();
+
+        expect(resolveMissingMatchConfirmationSignal({
+            isTutorialRoute: true,
+            matchId: 'match-1',
+            shouldAutoJoin: false,
+            isAutoJoining: false,
+            autoJoinGraceActive: false,
+            onlineTransportError: 'match_not_found',
+        })).toBeNull();
     });
 });
 

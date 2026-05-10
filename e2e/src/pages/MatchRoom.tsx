@@ -45,7 +45,6 @@ import { useToast } from '../contexts/ToastContext';
 import { getGameServerUrl } from '../config/server';
 import { getGameById } from '../config/games.config';
 import { getGamePageDataAttributes, syncGamePageDocumentAttributes } from '../games/mobileSupport';
-import { useLobbyMatchPresence } from '../hooks/useLobbyMatchPresence';
 import { GameHUD } from '../components/game/framework/widgets/GameHUD';
 import { GameModeProvider } from '../contexts/GameModeContext';
 import { SEO } from '../components/common/SEO';
@@ -113,6 +112,22 @@ const ONLINE_AI_SEAT_LOAD_RETRY_MAX_ATTEMPTS = 5;
 export const isTutorialRoutePath = (pathname: string): boolean => (
     /^\/play\/[^/]+\/tutorial(?:\/[^/]+)?\/?$/.test(pathname)
 );
+
+export type MissingMatchConfirmationSignal = 'transport_not_found' | null;
+
+export function resolveMissingMatchConfirmationSignal(args: {
+    isTutorialRoute: boolean;
+    matchId?: string | null;
+    shouldAutoJoin: boolean;
+    isAutoJoining: boolean;
+    autoJoinGraceActive: boolean;
+    onlineTransportError?: string | null;
+}): MissingMatchConfirmationSignal {
+    if (args.isTutorialRoute || !args.matchId) return null;
+    if (args.shouldAutoJoin || args.isAutoJoining || args.autoJoinGraceActive) return null;
+    if (args.onlineTransportError === 'match_not_found') return 'transport_not_found';
+    return null;
+}
 
 type OnlineAiDebugWindow = Window & {
     __BG_ONLINE_AI_DEBUG__?: {
@@ -2056,7 +2071,6 @@ export const MatchRoom = () => {
     const { t: tLobby, i18n } = useTranslation('lobby');
     const { user, token } = useAuth();
     const [onlineTransportError, setOnlineTransportError] = useState<string | null>(null);
-    const [hasEverReceivedOnlineState, setHasEverReceivedOnlineState] = useState(false);
     const renderLogKeyRef = useRef<string | null>(null);
 
     const renderLogKey = `${gameId ?? 'unknown'}:${matchId ?? 'unknown'}:${searchParams.get('playerID') ?? 'no-player'}`;
@@ -2097,10 +2111,6 @@ export const MatchRoom = () => {
     useEffect(() => {
         setOnlineTransportError(null);
     }, [gameId, matchId, isTutorialRoute]);
-    useEffect(() => {
-        setHasEverReceivedOnlineState(false);
-    }, [gameId, matchId, isTutorialRoute]);
-
     // 在线模式：命令被服务端拒绝时的统一反馈
     const handleGameError = useCallback((error: string) => {
         if (ONLINE_TRANSPORT_ERRORS.has(error)) {
@@ -2250,7 +2260,6 @@ export const MatchRoom = () => {
     const [isLeaving, setIsLeaving] = useState(false);
     const [destroyModalId, setDestroyModalId] = useState<string | null>(null);
     const [forceExitModalId, setForceExitModalId] = useState<string | null>(null);
-    const [shouldShowMatchError, setShouldShowMatchError] = useState(false);
     const [localStorageTick, setLocalStorageTick] = useState(0);
     const [onlineAiSeatReloadTick, setOnlineAiSeatReloadTick] = useState(0);
     const [onlineAiSeatControllers, setOnlineAiSeatControllers] = useState<Record<string, AiSeatController>>({});
@@ -2259,8 +2268,6 @@ export const MatchRoom = () => {
     const tutorialStartedRef = useRef(false);
     const lastTutorialStepIdRef = useRef<string | null>(null);
     const tutorialModalIdRef = useRef<string | null>(null);
-    const errorToastRef = useRef<{ key: string; timestamp: number } | null>(null);
-    const handledMissingMatchRef = useRef<string | null>(null);
     const hasOnlineAiSeat = useMemo(
         () => Object.values(onlineAiSeatControllers).some((controller) => controller.type !== 'human'),
         [onlineAiSeatControllers],
@@ -2935,58 +2942,25 @@ export const MatchRoom = () => {
         suppressOwnerActiveMatch(matchId);
     }, [matchId]);
 
-    const lobbyPresence = useLobbyMatchPresence({
-        gameId,
+    const missingMatchConfirmationSignal = resolveMissingMatchConfirmationSignal({
+        isTutorialRoute,
         matchId,
-        enabled: !isTutorialRoute && Boolean(gameId && matchId),
-        // 旧房间可能从未出现在当前大厅快照中，仍需判定为缺失。
-        requireSeen: false,
+        shouldAutoJoin,
+        isAutoJoining,
+        autoJoinGraceActive: autoJoinGraceRef.current,
+        onlineTransportError,
     });
 
     useEffect(() => {
-        if (isTutorialRoute || !matchId || !lobbyPresence.isMissing) return;
-        if (hasEverReceivedOnlineState) return;
-        // 自动加入过程中不检查房间是否缺失（lobby 快照可能尚未包含该房间）
-        if (shouldAutoJoin || isAutoJoining || autoJoinGraceRef.current) return;
-        // 如果 matchStatus 没有报错，说明房间仍然存在（可能只是游戏结束后从大厅列表移除了）
-        // 此时不应该跳转，让玩家看到结果和再来一局按钮
-        if (matchStatus.errorKind !== 'not_found') return;
-        if (handledMissingMatchRef.current === matchId) return;
-        handledMissingMatchRef.current = matchId;
-
-        let cancelled = false;
-        const confirmMissing = async () => {
-            if (!gameId) {
-                handledMissingMatchRef.current = null;
-                return;
-            }
-
-            try {
-                await matchApi.getMatch(gameId, matchId);
-                if (cancelled) return;
-                handledMissingMatchRef.current = null;
-            } catch (err) {
-                if (cancelled) return;
-                if (!isMatchNotFoundError(err)) {
-                    handledMissingMatchRef.current = null;
-                    return;
-                }
-                clearMatchLocalState();
-                toast.warning(
-                    { kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' },
-                    undefined,
-                    { dedupeKey: `matchRoom.missing.${matchId}` }
-                );
-                navigateBackToLobby();
-            }
-        };
-
-        void confirmMissing();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [clearMatchLocalState, gameId, hasEverReceivedOnlineState, isAutoJoining, isTutorialRoute, lobbyPresence.isMissing, matchId, matchStatus.errorKind, navigateBackToLobby, shouldAutoJoin, toast]);
+        if (!missingMatchConfirmationSignal || !gameId || !matchId) return;
+        clearMatchLocalState();
+        toast.warning(
+            { kind: 'i18n', key: 'error.roomDestroyed', ns: 'lobby' },
+            undefined,
+            { dedupeKey: `matchRoom.missing.${matchId}` }
+        );
+        navigateBackToLobby();
+    }, [clearMatchLocalState, gameId, matchId, missingMatchConfirmationSignal, navigateBackToLobby, toast]);
 
     const handleForceExitLocal = () => {
         clearMatchLocalState();
@@ -3106,34 +3080,6 @@ export const MatchRoom = () => {
     };
 
     useEffect(() => {
-        if (isTutorialRoute) {
-            setShouldShowMatchError(false);
-            return;
-        }
-        if (hasEverReceivedOnlineState) {
-            setShouldShowMatchError(false);
-            return;
-        }
-        if (matchStatus.errorKind !== 'not_found') {
-            setShouldShowMatchError(false);
-            return;
-        }
-        // 404 错误立即显示，无需延迟
-        setShouldShowMatchError(true);
-    }, [hasEverReceivedOnlineState, isTutorialRoute, matchStatus.errorKind]);
-
-    // 如果房间不存在，显示错误并自动跳转
-    useEffect(() => {
-        if (shouldShowMatchError) {
-            const timer = setTimeout(() => {
-                navigate('/');
-            }, 1500); // 1.5 秒后自动跳转（从 2.5 秒缩短）
-
-            return () => clearTimeout(timer);
-        }
-    }, [shouldShowMatchError, isTutorialRoute, navigate]);
-
-    useEffect(() => {
         return () => {
             if (destroyModalId) {
                 closeModal(destroyModalId);
@@ -3149,20 +3095,6 @@ export const MatchRoom = () => {
             }
         };
     }, [closeModal, destroyModalId, forceExitModalId]);
-
-    useEffect(() => {
-        if (!shouldShowMatchError) return;
-        const key = `matchRoom.error.${gameId ?? 'unknown'}.${matchId ?? 'unknown'}`;
-        const now = Date.now();
-        const last = errorToastRef.current;
-        if (last && last.key === key && now - last.timestamp < 3000) return;
-        errorToastRef.current = { key, timestamp: now };
-        toast.error(
-            { kind: 'text', text: matchStatus.error ?? tLobby('matchRoom.error.matchMissing') },
-            { kind: 'i18n', key: 'error.serviceUnavailable.title', ns: 'lobby' },
-            { dedupeKey: key }
-        );
-    }, [gameId, matchId, matchStatus.error, shouldShowMatchError, tLobby, toast]);
 
     if (gameNamespaceError) {
         return (
@@ -3235,22 +3167,6 @@ export const MatchRoom = () => {
         );
     }
 
-    if (shouldShowMatchError) {
-        return (
-            <div className="w-full game-page-viewport bg-black flex items-center justify-center">
-                <div className="text-center">
-                    <div className="text-white/60 text-lg mb-4">{matchStatus.error}</div>
-                    <div className="text-white/40 text-sm mb-6 animate-pulse">{tLobby('matchRoom.redirecting')}</div>
-                    <button
-                        onClick={() => navigate('/')}
-                        className="px-6 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors"
-                    >
-                        {tLobby('matchRoom.returnHome')}
-                    </button>
-                </div>
-            </div>
-        );
-    }
     return (
         <div className="relative w-full game-page-viewport bg-black overflow-hidden font-sans" {...gamePageDataAttributes}>
             <SEO
@@ -3342,7 +3258,6 @@ export const MatchRoom = () => {
                                                 latencyConfig={latencyConfig}
                                                 onError={handleGameError}
                                                 onStateReady={() => {
-                                                    setHasEverReceivedOnlineState(true);
                                                     setOnlineTransportError(null);
                                                 }}
                                                 onConnectionChange={(connected) => {

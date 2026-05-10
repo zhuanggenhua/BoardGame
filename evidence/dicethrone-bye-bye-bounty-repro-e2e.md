@@ -36,3 +36,57 @@ node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-simple-start.
 ## 初步定位
 
 从复现现象和代码静态观察看，`bounty` 当前定义为 `passiveTrigger.removable: false`，命令验证中的 `playerHasStatusOrToken()` 会把不可移除状态当作不存在处理，因此确认时返回 `no_status`。这解释了 UI 可选但领域验证拒绝的断层。
+
+## 修复后验证
+
+### 修复要点
+
+- `bounty` 改为可移除负面 token。
+- `REMOVE_STATUS` / `USE_PURIFY` / token 响应判断统一检查 `statusEffects` 与 `tokens`，避免“负面效果以 token 存储时无法被移除”。
+- 状态选择弹窗只展示可移除效果，避免不可移除 token 在 UI 上可选、领域层再拒绝。
+- 新增规则一致性测试：所有 `category: debuff` 的 token 都必须可移除；只有白名单里的特殊非负面 token 可以声明 `removable: false`。
+
+### 同类 token 枚举
+
+运行：
+
+```powershell
+npx tsx -e "import { ALL_TOKEN_DEFINITIONS } from './src/games/dicethrone/domain/characters'; console.log(JSON.stringify(ALL_TOKEN_DEFINITIONS.filter(def => def.passiveTrigger?.removable === false).map(def => ({ id: def.id, category: def.category })), null, 2));"
+```
+
+结果：
+
+```json
+[
+  {
+    "id": "blessing_of_divinity",
+    "category": "consumable"
+  }
+]
+```
+
+结论：不是所有 token 都出问题。修复后显式不可移除的只有圣骑士 `blessing_of_divinity`，它不是负面效果，并已有 `paladin-blessing-removable.test.ts` 与新增 UI 过滤用例防止它被“移除状态效果”链路选择。
+
+### E2E 复跑结果
+
+同一条命令复跑通过：
+
+```powershell
+node scripts/infra/run-e2e-single.mjs ci e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online 2-player Bye Bye: real hand play should remove Bounty from target player"
+```
+
+结果：`1 passed`。
+
+截图核对：
+
+1. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-2-player-Bye-Bye-real-hand-play-should-remove-Bounty-from-target-player\01-bye-bye-bounty-before-play.png`
+   - 看到枪手主阶段，手牌区存在拜拜您，场景进入真实手牌出牌链路。
+
+2. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-2-player-Bye-Bye-real-hand-play-should-remove-Bounty-from-target-player\02-bye-bye-bounty-selectable.png`
+   - “选择要移除的状态效果”弹窗中，敌方玩家的赏金黑色图标可见并可选。
+   - 该截图达到本轮验收的选择位点：赏金作为可移除负面 token 正确进入状态选择列表。
+
+3. `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-simple-start.e2e\Online-2-player-Bye-Bye-real-hand-play-should-remove-Bounty-from-target-player\03-bye-bye-bounty-after-confirm.png`
+   - 确认后弹窗已经关闭，画面回到棋盘。
+   - 敌方头部不再显示赏金图标，也没有“目标没有该状态效果”的错误提示。
+   - 该截图达到本轮验收标准：拜拜您真实出牌后能移除目标玩家身上的赏金，并正常收口。

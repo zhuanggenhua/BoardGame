@@ -85,7 +85,7 @@ export const GUNSLINGER_TOKENS: TokenDef[] = [
         passiveTrigger: {
             timing: 'onDamageReceived',
             damageTriggerScope: 'opponentAttackDamage',
-            removable: false,
+            removable: true,
             actions: [
                 { type: 'modifyStat', target: 'self', value: 1 },
                 { type: 'custom', target: 'self', customActionId: 'gunslinger-bounty-reward' },

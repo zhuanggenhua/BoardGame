@@ -7,6 +7,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import type { InteractionDescriptor, HeroState } from '../domain/types';
+import type { TokenDef } from '../domain/tokenTypes';
 import type { PlayerId } from '../../../engine/types';
 import { SelectableEffectsContainer, type StatusAtlases } from './statusEffects';
 import { GameModal } from './components/GameModal';
@@ -88,6 +89,8 @@ export interface InteractionOverlayProps {
     interaction: InteractionDescriptor;
     /** 所有玩家状态 */
     players: Record<PlayerId, HeroState>;
+    /** 状态 / token 定义，用于过滤不可移除效果 */
+    tokenDefinitions?: TokenDef[];
     /** 当前玩家 ID */
     currentPlayerId: PlayerId;
     /** 玩家显示名 */
@@ -113,6 +116,7 @@ export interface InteractionOverlayProps {
 export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     interaction,
     players,
+    tokenDefinitions,
     currentPlayerId,
     playerNames,
     seatingOrder,
@@ -128,6 +132,15 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const interactionType = interaction.type;
     const selectedItems = interaction.selected ?? [];
     const targetPlayerIds = interaction.targetPlayerIds ?? Object.keys(players);
+    const isRemovableEffect = React.useCallback((effectId: string) => {
+        const definition = tokenDefinitions?.find(def => def.id === effectId);
+        return definition?.passiveTrigger?.removable ?? true;
+    }, [tokenDefinitions]);
+    const getRemovableEntries = React.useCallback((entries: Record<string, number> | undefined) => {
+        return Object.fromEntries(
+            Object.entries(entries ?? {}).filter(([effectId, stacks]) => stacks > 0 && isRemovableEffect(effectId)),
+        );
+    }, [isRemovableEffect]);
 
     // 状态效果选择模式
     const isStatusSelection = interactionType === 'selectStatus' || interactionType === 'selectTargetStatus';
@@ -147,8 +160,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
     const playersWithStatus = targetPlayerIds.filter(pid => {
         const p = players[pid];
         if (!p) return false;
-        const hasEffects = Object.values(p.statusEffects ?? {}).some(v => v > 0);
-        const hasTokens = Object.values(p.tokens ?? {}).some(v => v > 0);
+        const hasEffects = Object.keys(getRemovableEntries(p.statusEffects)).length > 0;
+        const hasTokens = Object.keys(getRemovableEntries(p.tokens)).length > 0;
         return hasEffects || hasTokens;
     });
 
@@ -295,8 +308,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                     >
                                         {/* 显示玩家的状态效果（仅供参考） */}
                                         <SelectableEffectsContainer
-                                            effects={player.statusEffects ?? {}}
-                                            tokens={player.tokens}
+                                            effects={requiresTargetWithStatus ? getRemovableEntries(player.statusEffects) : (player.statusEffects ?? {})}
+                                            tokens={requiresTargetWithStatus ? getRemovableEntries(player.tokens) : player.tokens}
                                             highlightAll={false}
                                             getItemTestId={(statusId) => `dt-status-effect-${pid}-${statusId}`}
                                             size="small"
@@ -334,8 +347,8 @@ export const InteractionOverlay: React.FC<InteractionOverlayProps> = ({
                                 >
                                     {hasStatus ? (
                                         <SelectableEffectsContainer
-                                            effects={player.statusEffects ?? {}}
-                                            tokens={player.tokens}
+                                            effects={getRemovableEntries(player.statusEffects)}
+                                            tokens={getRemovableEntries(player.tokens)}
                                             selectedId={selectedStatusId}
                                             highlightAll={true}
                                             onSelectEffect={(statusId) => onSelectStatus(pid, statusId)}

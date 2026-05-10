@@ -99,6 +99,11 @@ const isRemovableStatusId = (state: DiceThroneCore, statusId: string): boolean =
     return def?.passiveTrigger?.removable ?? true;
 };
 
+const isPurifiableDebuffId = (state: DiceThroneCore, statusId: string): boolean => {
+    const def = (state.tokenDefinitions ?? []).find((definition) => definition.id === statusId);
+    return def?.category === 'debuff' && (def.passiveTrigger?.removable ?? true);
+};
+
 const playerHasStatusOrToken = (
     state: DiceThroneCore,
     playerId: PlayerId,
@@ -1168,7 +1173,10 @@ const validateUsePurify = (
     if (amount <= 0) {
         return fail('no_token');
     }
-    const stacks = p.statusEffects[cmd.payload.statusId] ?? 0;
+    if (!isPurifiableDebuffId(state, cmd.payload.statusId)) {
+        return fail('no_status');
+    }
+    const stacks = (p.statusEffects[cmd.payload.statusId] ?? 0) + (p.tokens[cmd.payload.statusId] ?? 0);
     if (stacks <= 0) {
         return fail('no_status');
     }

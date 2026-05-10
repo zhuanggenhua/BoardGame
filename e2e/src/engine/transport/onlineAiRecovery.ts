@@ -771,9 +771,10 @@ export function resolveManualForceEndAiPhase(args: {
     if (args.sharedState?.sys?.gameover) {
         return null;
     }
+    if (!args.sharedState) {
+        return null;
+    }
 
-    const currentPlayerId = resolveCurrentPlayerId(args.sharedState);
-    const currentController = currentPlayerId ? args.seatControllers[currentPlayerId] : null;
     const currentWindow = (args.sharedState?.sys?.responseWindow as {
         current?: {
             id?: unknown;
@@ -784,7 +785,55 @@ export function resolveManualForceEndAiPhase(args: {
         };
     } | undefined)?.current;
 
-    if (currentPlayerId && currentController?.type !== 'human' && currentWindow) {
+    const visibleCurrent = (args.sharedState.sys?.interaction as { current?: unknown } | undefined)?.current as
+        | HiddenSimpleChoiceInteraction
+        | undefined;
+    if (visibleCurrent?.playerId) {
+        const interactionPlayerId = String(visibleCurrent.playerId);
+        if (args.seatControllers[interactionPlayerId]?.type === 'human') {
+            return null;
+        }
+        const interactionId = typeof visibleCurrent.id === 'string' && visibleCurrent.id.length > 0
+            ? visibleCurrent.id
+            : `${interactionPlayerId}:manual-visible-interaction`;
+        return {
+            playerId: interactionPlayerId,
+            reason: 'visible-interaction',
+            requiresConfirmedAdvancePhase: true,
+            resolution: buildForceEndTurnResolution({
+                playerId: interactionPlayerId,
+                suffix: `manual-visible-interaction:${interactionId}`,
+                commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: {} }],
+            }),
+        };
+    }
+
+    for (const [playerId, controller] of Object.entries(args.seatControllers)) {
+        if (controller.type === 'human') {
+            continue;
+        }
+        const seatCurrent = (args.seatStates[playerId]?.sys?.interaction as { current?: unknown } | undefined)?.current as
+            | HiddenSimpleChoiceInteraction
+            | undefined;
+        if (!seatCurrent || String(seatCurrent.playerId) !== playerId) {
+            continue;
+        }
+        const interactionId = typeof seatCurrent.id === 'string' && seatCurrent.id.length > 0
+            ? seatCurrent.id
+            : `${playerId}:manual-hidden-interaction`;
+        return {
+            playerId,
+            reason: 'hidden-interaction',
+            requiresConfirmedAdvancePhase: true,
+            resolution: buildForceEndTurnResolution({
+                playerId,
+                suffix: `manual-hidden-interaction:${interactionId}`,
+                commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: {} }],
+            }),
+        };
+    }
+
+    if (currentWindow) {
         const responderQueue = Array.isArray(currentWindow.responderQueue)
             ? currentWindow.responderQueue.filter((value): value is string => typeof value === 'string')
             : [];
@@ -792,6 +841,29 @@ export function resolveManualForceEndAiPhase(args: {
 
         if (hasHumanResponder) {
             return null;
+        }
+
+        const responderIndex = typeof currentWindow.currentResponderIndex === 'number'
+            ? currentWindow.currentResponderIndex
+            : 0;
+        const responderId = responderQueue[responderIndex];
+        if (typeof responderId === 'string' && args.seatControllers[responderId]?.type !== 'human') {
+            const windowId = typeof currentWindow.id === 'string' && currentWindow.id.length > 0
+                ? currentWindow.id
+                : `${responderId}:manual-response-window`;
+            const windowType = typeof currentWindow.windowType === 'string' ? currentWindow.windowType : 'unknown-type';
+            const sourceId = typeof currentWindow.sourceId === 'string' ? currentWindow.sourceId : 'unknown-source';
+            return {
+                playerId: responderId,
+                reason: 'response-window',
+                requiresConfirmedAdvancePhase: true,
+                fingerprintHint: `manual-response-window:${responderId}:${windowType}:${sourceId}`,
+                resolution: buildForceEndTurnResolution({
+                    playerId: responderId,
+                    suffix: `manual-response-window:${responderId}:${windowType}:${sourceId}:${windowId}`,
+                    commands: [{ type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE', payload: {} }],
+                }),
+            };
         }
     }
 

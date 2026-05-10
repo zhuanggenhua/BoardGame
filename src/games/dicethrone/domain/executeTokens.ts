@@ -238,6 +238,21 @@ export function executeTokenCommand(
                     sourceCommandType: command.type,
                     timestamp,
                 } as StatusRemovedEvent);
+            } else {
+                const currentTokens = player.tokens[statusId] ?? 0;
+                if (currentTokens > 0) {
+                    events.push({
+                        type: 'TOKEN_CONSUMED',
+                        payload: {
+                            playerId,
+                            tokenId: statusId,
+                            amount: 1,
+                            newTotal: Math.max(0, currentTokens - 1),
+                        },
+                        sourceCommandType: command.type,
+                        timestamp,
+                    } as DiceThroneEvent);
+                }
             }
             break;
         }

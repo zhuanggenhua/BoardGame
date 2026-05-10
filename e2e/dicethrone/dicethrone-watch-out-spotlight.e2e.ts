@@ -3560,7 +3560,7 @@ test('mobile narrow viewport should keep magnify entries visible and clickable',
 
     await game.screenshot('10-mobile-main-board-state', testInfo);
 
-    await playerBoardSurface.click({ position: { x: 44, y: 44 } });
+    await playerBoardMagnifyButton.click();
     await expect(boardMagnifyOverlay).toBeVisible({ timeout: 5000 });
     let overlayCloseButton = boardMagnifyOverlay.getByRole('button', { name: /关闭预览|Close Preview/i }).first();
     await expect(overlayCloseButton).toBeVisible({ timeout: 5000 });
@@ -3612,6 +3612,37 @@ test('mobile narrow viewport should keep magnify entries visible and clickable',
     await expect(overlayCloseButton).toBeVisible({ timeout: 5000 });
     const discardPreviewFrame = overlayCloseButton.locator('xpath=following-sibling::div[1]');
     await expect(discardPreviewFrame).toBeVisible({ timeout: 5000 });
+    const multiCardStrip = boardMagnifyOverlay.getByTestId('dt-multi-card-magnify-strip');
+    await expect(multiCardStrip).toBeVisible({ timeout: 5000 });
+    const multiCardMetrics = await multiCardStrip.evaluate((strip) => {
+        const stripRect = strip.getBoundingClientRect();
+        const clipParentRect = strip.parentElement?.getBoundingClientRect();
+        const cards = Array.from(strip.querySelectorAll('[data-card-atlas-frame="true"]')).map((node) => {
+            const rect = node.getBoundingClientRect();
+            return {
+                width: rect.width,
+                height: rect.height,
+                top: rect.top,
+                bottom: rect.bottom,
+            };
+        });
+        return {
+            strip: { width: stripRect.width, height: stripRect.height, top: stripRect.top, bottom: stripRect.bottom },
+            clipParent: clipParentRect
+                ? { width: clipParentRect.width, height: clipParentRect.height, top: clipParentRect.top, bottom: clipParentRect.bottom }
+                : null,
+            cards,
+        };
+    });
+    expect(multiCardMetrics.clipParent, 'multi-card preview should have a clipping parent').not.toBeNull();
+    expect(multiCardMetrics.cards.length, 'discard preview should render at least one card').toBeGreaterThan(0);
+    expect(multiCardMetrics.strip.height).toBeLessThanOrEqual(multiCardMetrics.clipParent!.height + 2);
+    for (const [index, card] of multiCardMetrics.cards.entries()) {
+        expect(card.height, `multi-card preview card ${index} height should fit inside strip`).toBeLessThanOrEqual(multiCardMetrics.strip.height + 2);
+        expect(card.top, `multi-card preview card ${index} top should stay inside strip`).toBeGreaterThanOrEqual(multiCardMetrics.strip.top - 2);
+        expect(card.bottom, `multi-card preview card ${index} bottom should stay inside strip`).toBeLessThanOrEqual(multiCardMetrics.strip.bottom + 2);
+        expect(card.width / card.height, `multi-card preview card ${index} ratio should stay card-shaped`).toBeCloseTo(0.61, 1);
+    }
     await game.screenshot('14-mobile-discard-pile-inspect-open', testInfo);
 });
 

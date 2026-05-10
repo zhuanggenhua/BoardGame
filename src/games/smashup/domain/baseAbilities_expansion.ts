@@ -57,11 +57,6 @@ function getContinuationContext<T>(interactionData: Record<string, unknown> | un
     return interactionData?.continuationContext as T | undefined;
 }
 
-function isQueuedBaseTriggerContext(ctx: BaseAbilityContext): boolean {
-    return Boolean((ctx as BaseAbilityContext & { frameId?: string; sourceEventId?: string }).frameId
-        || (ctx as BaseAbilityContext & { frameId?: string; sourceEventId?: string }).sourceEventId);
-}
-
 function isFirstMinionPlayedByPlayerAtBaseThisTurn(ctx: BaseAbilityContext): boolean {
     const player = ctx.state.players[ctx.playerId];
     return (player?.minionsPlayedPerBase?.[ctx.baseIndex] ?? 0) === 1;
@@ -263,13 +258,14 @@ export function registerExpansionBaseAbilities(): void {
     // 第一次在此基地打出的随从获得回合内 +2 力量
     registerBaseAbility('base_hall_of_fame', 'onMinionPlayed', (ctx) => {
         if (!ctx.minionUid) return { events: [] };
-        if (!isQueuedBaseTriggerContext(ctx) && !isFirstMinionPlayedByPlayerAtBaseThisTurn(ctx)) return { events: [] };
+        if (!isFirstMinionPlayedByPlayerAtBaseThisTurn(ctx)) return { events: [] };
         return {
             events: [addTempPower(ctx.minionUid, ctx.baseIndex, 2, 'base_hall_of_fame', ctx.now)],
         };
     }, {
         canTrigger: isFirstMinionPlayedByPlayerAtBaseThisTurn,
         effectContract: {
+            reads: ['playLimits', 'controllerState'],
             writes: ['triggerMinionPower'],
         },
     });

@@ -169,10 +169,10 @@ export function hasDebuffs(state: DiceThroneCore, playerId: PlayerId): boolean {
 
     // 可被净化移除的负面状态：由状态定义驱动（支持未来扩展）
     const removableDebuffIds = (state.tokenDefinitions ?? [])
-        .filter(def => def.category === 'debuff' && def.passiveTrigger?.removable)
+        .filter(def => def.category === 'debuff' && (def.passiveTrigger?.removable ?? true))
         .map(def => def.id);
 
-    return removableDebuffIds.some(id => (player.statusEffects[id] ?? 0) > 0);
+    return removableDebuffIds.some(id => (player.statusEffects[id] ?? 0) > 0 || (player.tokens[id] ?? 0) > 0);
 }
 
 // ============================================================================

@@ -170,11 +170,6 @@ function getTurnMinionsPlayedAtBase(state: SmashUpCore, baseIndex: number): numb
     );
 }
 
-function isQueuedBaseTriggerContext(ctx: BaseAbilityContext): boolean {
-    return Boolean((ctx as BaseAbilityContext & { frameId?: string; sourceEventId?: string }).frameId
-        || (ctx as BaseAbilityContext & { frameId?: string; sourceEventId?: string }).sourceEventId);
-}
-
 function isFirstMinionPlayedAtBaseThisTurn(ctx: BaseAbilityContext): boolean {
     return getTurnMinionsPlayedAtBase(ctx.state, ctx.baseIndex) === 1;
 }
@@ -983,7 +978,7 @@ export function registerBaseAbilities(): void {
         if (!base || !ctx.minionUid) return { events: [] };
         // 每个玩家回合开始都会清空全体玩家的 minionsPlayedPerBase，
         // 因此这里统计的是“当前回合里，这个基地全场累计被打出随从的次数”。
-        if (!isQueuedBaseTriggerContext(ctx) && !isFirstMinionPlayedAtBaseThisTurn(ctx)) return { events: [] };
+        if (!isFirstMinionPlayedAtBaseThisTurn(ctx)) return { events: [] };
         const playedMinion = base.minions.find(m => m.uid === ctx.minionUid);
         const controllerId = playedMinion?.controller ?? ctx.playerId;
         const ignored = base.ongoingActions?.some(o =>
@@ -996,7 +991,7 @@ export function registerBaseAbilities(): void {
     }, {
         canTrigger: isFirstMinionPlayedAtBaseThisTurn,
         effectContract: {
-            reads: ['minionBoardState', 'baseState'],
+            reads: ['playLimits', 'minionBoardState', 'baseState', 'controllerState'],
             writes: ['triggerMinionPower'],
         },
     });
@@ -1034,7 +1029,7 @@ export function registerBaseAbilities(): void {
         const base = ctx.state.bases[ctx.baseIndex];
         if (!base || !ctx.minionUid) return { events: [] };
         // 这里需要识别“当前玩家回合内基地全局首次”，而不是当前玩家自己的首次。
-        if (!isQueuedBaseTriggerContext(ctx) && !isFirstMinionPlayedAtBaseThisTurn(ctx)) return { events: [] };
+        if (!isFirstMinionPlayedAtBaseThisTurn(ctx)) return { events: [] };
         const minion = base.minions.find(m => m.uid === ctx.minionUid);
         if (!minion) return { events: [] };
         const ignored = base.ongoingActions?.some(o =>
@@ -1056,7 +1051,7 @@ export function registerBaseAbilities(): void {
     }, {
         canTrigger: isFirstMinionPlayedAtBaseThisTurn,
         effectContract: {
-            reads: ['minionBoardState', 'baseState'],
+            reads: ['playLimits', 'minionBoardState', 'baseState', 'controllerState'],
             writes: ['triggerMinionPower'],
         },
     });

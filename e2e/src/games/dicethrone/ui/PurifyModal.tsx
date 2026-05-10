@@ -36,9 +36,18 @@ export const PurifyModal: React.FC<PurifyModalProps> = ({
     const [selectedStatusId, setSelectedStatusId] = React.useState<string | undefined>(undefined);
     const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
 
-    // 获取玩家当前的负面状态
-    const debuffs = Object.entries(playerState.statusEffects)
-        .filter(([id, stacks]) => purifiableStatusIds.includes(id) && stacks > 0);
+    // 获取玩家当前可净化的负面状态；有些负面状态以 token 形式存储。
+    const debuffs = React.useMemo(() => {
+        const merged = new Map<string, number>();
+        for (const [id, stacks] of [
+            ...Object.entries(playerState.statusEffects ?? {}),
+            ...Object.entries(playerState.tokens ?? {}),
+        ]) {
+            if (!purifiableStatusIds.includes(id) || stacks <= 0) continue;
+            merged.set(id, (merged.get(id) ?? 0) + stacks);
+        }
+        return Array.from(merged.entries());
+    }, [playerState.statusEffects, playerState.tokens, purifiableStatusIds]);
 
     const canConfirm = debuffs.length > 0 && selectedStatusId !== undefined;
 

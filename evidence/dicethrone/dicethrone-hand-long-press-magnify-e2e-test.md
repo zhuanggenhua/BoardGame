@@ -8,6 +8,7 @@
 
 - 文件：`e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
 - 用例：`mobile long press hand card should open magnify without playing card`
+- 同类覆盖：`mobile narrow viewport should keep magnify entries visible and clickable`
 
 ## 断言
 
@@ -15,6 +16,41 @@
 2. 长按后玩家手牌仍包含 `watch-out`（未误出牌）。
 
 ## 执行记录
+
+### 4) 2026-05-10 同类多卡预览裁剪风险回归（通过）
+
+命令：
+
+```bash
+npm run typecheck
+npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "mobile narrow viewport should keep magnify entries visible and clickable"
+npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts "mobile long press hand card should open magnify without playing card"
+```
+
+结果：
+
+- `typecheck` 通过。
+- 窄横屏多入口放大 E2E：`1 passed`。
+- 手牌长按放大 E2E：`1 passed`。
+
+新增/复核断言：
+
+- 弃牌堆多卡放大层必须出现 `dt-multi-card-magnify-strip`。
+- 多卡 strip 高度不得超过裁剪父容器。
+- 每张 atlas 卡面的 `top/bottom/height` 都必须留在 strip 内，防止横屏下只显示上半截或左上角。
+- 每张多卡预览仍保持约 `0.61` 的卡牌宽高比。
+- 玩家面板放大入口改为点击稳定的放大按钮，避免固定坐标受手牌/面板覆盖影响导致误判。
+
+截图（绝对路径）：
+
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-narrow-viewport-should-keep-magnify-entries-visible-and-clickable\14-mobile-discard-pile-inspect-open.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\mobile-long-press-hand-card-should-open-magnify-without-playing-card\13-mobile-hand-long-press-magnify-open.png`
+
+肉眼观察：
+
+- 弃牌堆预览里能看到横向多张卡和中央当前卡，卡面没有只剩左上角或只显示上半截；主内容没有被错误改成窄布局。
+- HUD、技能板、骰子区和放大层仍在同一横屏视觉坐标系内，没有出现整体偏到左上角的问题。
+- 手牌长按后的「看箭！」放大卡面完整居中，标题、插画、攻击修正标签、规则文本和底部边框都可见；长按后手牌仍保留 `watch-out`，没有误出牌。
 
 ### 3) 2026-05-09 修复放大卡面被父容器裁剪（通过）
 
@@ -94,5 +130,5 @@ node scripts/infra/run-e2e-command.mjs ci e2e/dicethrone/dicethrone-watch-out-sp
 
 ## 结论
 
-- 业务行为已通过 dev E2E 证明：手牌长按可打开放大层，且不会误出牌。
-- ci 隔离模式当前被基础环境启动问题阻塞，不是本次长按逻辑断言失败。
+- 最新 ci 隔离模式 E2E 已通过：手牌长按可打开放大层，且不会误出牌。
+- 已补充同类多卡/弃牌堆预览裁剪回归覆盖：横屏下多卡预览不会再只显示左上角或上半截。

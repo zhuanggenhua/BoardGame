@@ -412,6 +412,18 @@ function isTriggerSourceEligible(
     return true;
 }
 
+function isTurnBoundarySourceControllerEligible(
+    entry: TriggerEntry,
+    timing: TitanAwareTriggerTiming,
+    located: TriggerSourceLocation,
+    playerId: PlayerId,
+): boolean {
+    if (entry.playerContext !== 'sourceController') return true;
+    if (timing !== 'onTurnStart' && timing !== 'onTurnEnd') return true;
+    if (!located.controllerId) return true;
+    return located.controllerId === playerId;
+}
+
 function buildTriggerId(
     entry: TriggerEntry,
     timing: TitanAwareTriggerTiming,
@@ -603,6 +615,7 @@ export function collectTriggers(
         if (entry.perInstance) {
             for (const located of locatedSources) {
                 if (!isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)) continue;
+                if (!isTurnBoundarySourceControllerEligible(entry, timing, located, pid)) continue;
                 if (shouldSkipTriggerInstance(state, entry, timing, located, ctx)) continue;
                 triggers.push(createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx));
             }
@@ -611,6 +624,7 @@ export function collectTriggers(
 
         const located = locatedSources[0];
         if (!isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)) continue;
+        if (!isTurnBoundarySourceControllerEligible(entry, timing, located, pid)) continue;
         if (shouldSkipTriggerInstance(state, entry, timing, located, ctx)) continue;
         triggers.push(createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx));
     }
@@ -1247,9 +1261,14 @@ export function fireTriggers(
         }
 
         const sourcesToExecute = entry.perInstance
-            ? locatedSources.filter(located => isTriggerSourceEligible(entry, timing, located, ctx.baseIndex))
+            ? locatedSources.filter(located => (
+                isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+                && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
+            ))
             : [selectSpecificSourceLocation(locatedSources, ctx)].filter(located => (
-                located !== undefined && isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+                located !== undefined
+                && isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+                && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
             ));
         if (sourcesToExecute.length === 0) continue;
 
@@ -1352,9 +1371,14 @@ export function fireTriggerForSource(
         }
 
         const sourcesToExecute = entry.perInstance
-            ? locatedSources.filter(located => isTriggerSourceEligible(entry, timing, located, ctx.baseIndex))
+            ? locatedSources.filter(located => (
+                isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+                && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
+            ))
             : [selectSpecificSourceLocation(locatedSources, ctx)].filter(located => (
-                located !== undefined && isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+                located !== undefined
+                && isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+                && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId)
             ));
         if (sourcesToExecute.length === 0) continue;
 

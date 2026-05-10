@@ -1342,9 +1342,13 @@ describe('base_laboratorium: 实验工坊 - 当前玩家回合内基地全局首
         expect(archmage?.powerCounters).toBe(1);
         expect(resolved!.state.core.players['1'].actionLimit).toBe(2);
         expect(resolved!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
+        expect(resolved!.events.some(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload.reason === 'base_laboratorium'
+        )).toBe(true);
     });
 
-    it('线上反馈 69ff7291：已持久化的旧实验工坊队列也应自动恢复收口', () => {
+    it('旧实验工坊队列若不是本回合基地首次随从，不应因 frameId/sourceEventId 误加力量', () => {
         const core = makeState({
             currentPlayerIndex: 1,
             players: {
@@ -1356,7 +1360,7 @@ describe('base_laboratorium: 实验工坊 - 当前玩家回合内基地全局首
                 '1': {
                     id: '1', vp: 0, hand: [], deck: [], discard: [],
                     minionsPlayed: 1, minionLimit: 1, actionsPlayed: 0, actionLimit: 1,
-                    minionsPlayedPerBase: { 0: 1 },
+                    minionsPlayedPerBase: { 0: 2 },
                     factions: [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.WIZARDS],
                 },
             } as any,
@@ -1438,9 +1442,13 @@ describe('base_laboratorium: 实验工坊 - 当前玩家回合内基地全局首
         expect(resolved!.state.sys.interaction.current).toBeUndefined();
         expect(resolved!.state.core.triggerQueue ?? []).toHaveLength(0);
         const archmage = resolved!.state.core.bases[0].minions.find(minion => minion.uid === 'archmage');
-        expect(archmage?.powerCounters).toBe(1);
+        expect(archmage?.powerCounters).toBe(0);
         expect(resolved!.state.core.players['1'].actionLimit).toBe(2);
         expect(resolved!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
+        expect(resolved!.events.some(event =>
+            event.type === SU_EVENTS.POWER_COUNTER_ADDED
+            && (event as any).payload.reason === 'base_laboratorium'
+        )).toBe(false);
     });
 
     it('当前玩家回合内首次打出到该基地时触发 +1 指示物', () => {

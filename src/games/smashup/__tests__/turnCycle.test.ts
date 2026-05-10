@@ -441,6 +441,66 @@ describe('完整回合循环', () => {
         expect((resumed!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
     });
 
+    it('蘑菇王国面对对手幼苗时不应把对手回合开始触发误入队', () => {
+        const random = { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any;
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS, SMASHUP_FACTION_IDS.WIZARDS] as [string, string],
+                }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            turnNumber: 5,
+            bases: [
+                makeBase('base_ancient_ruins', [
+                    makeMinion('enemy-sprout', 'killer_plant_sprout', '1', 2),
+                ]),
+                makeBase('base_mushroom_kingdom', [
+                    makeMinion('ally-minion', 'pirate_buccaneer', '1', 4),
+                ]),
+            ],
+        });
+
+        const frameId = 'turn-start:0:5:0';
+        const queuedBase = collectBaseAbilityTriggers({
+            core,
+            timing: 'onTurnStart',
+            ownerPlayerId: '0',
+            baseIndex: 1,
+            frameId,
+            sourceEventId: frameId,
+            now: 5,
+        });
+        expect(queuedBase).toBeDefined();
+
+        const queuedTurnStart = collectTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core, 'startTurn', '0'),
+            playerId: '0',
+            frameId,
+            sourceEventId: frameId,
+            random,
+            now: 5,
+        });
+
+        expect(queuedTurnStart).toBeUndefined();
+
+        const state = makeMatchState({
+            ...core,
+            triggerQueue: [
+                ...((queuedBase as any).payload.triggers ?? []),
+            ],
+        });
+        state.sys.phase = 'startTurn';
+
+        const resolved = maybeResolveReactionQueue(state, random, 5);
+        expect(resolved).toBeDefined();
+        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).toBe('base_mushroom_kingdom');
+        expect((resolved!.state.sys.interaction?.current?.data as any)?.sourceId).not.toBe('smashup_reaction_choose');
+    });
+
     it('线上反馈 69feede0：场下巨狼之灵不应在回合开始入队询问触发', () => {
         const random = { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any;
         const core = makeState({

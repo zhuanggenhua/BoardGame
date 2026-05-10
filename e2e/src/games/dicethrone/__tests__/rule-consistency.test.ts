@@ -440,6 +440,24 @@ describe('Property 8: 状态效果叠加', () => {
         expect(violations).toEqual([]);
     });
 
+    it('所有 debuff 类状态效果都可被移除状态效果链路选择', () => {
+        const debuffs = ALL_TOKEN_DEFINITIONS.filter(d => d.category === 'debuff');
+        expect(debuffs.length).toBeGreaterThan(0);
+        const violations = debuffs
+            .filter(def => def.passiveTrigger?.removable === false)
+            .map(def => def.id);
+        expect(violations).toEqual([]);
+        expect(ALL_TOKEN_DEFINITIONS.find(def => def.id === TOKEN_IDS.BOUNTY)?.passiveTrigger?.removable).toBe(true);
+    });
+
+    it('只有明确白名单内的非负面特殊 token 可以声明不可移除', () => {
+        const nonRemovableIds = ALL_TOKEN_DEFINITIONS
+            .filter(def => def.passiveTrigger?.removable === false)
+            .map(def => def.id)
+            .sort();
+        expect(nonRemovableIds).toEqual([TOKEN_IDS.BLESSING_OF_DIVINITY]);
+    });
+
     it('getTokenStackLimit 正确解析 stackLimit=0 为无限', () => {
         const mockState = {
             players: { '0': { tokenStackLimits: {} } },

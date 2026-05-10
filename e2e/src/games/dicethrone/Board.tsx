@@ -1,11 +1,10 @@
 import React from 'react';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 
-import { HAND_LIMIT, type TokenResponsePhase } from './domain/types';
+import { HAND_LIMIT, type InteractionDescriptor, type PendingBonusDiceSettlement, type TokenResponsePhase } from './domain/types';
 import { RESOURCE_IDS } from './domain/resources';
 import { STATUS_IDS, TOKEN_IDS } from './domain/ids';
 import type { DiceThroneCore } from './domain';
-import type { InteractionDescriptor } from './domain/types';
 import { getUsableTokenAmountForTiming, getUsableTokensForTiming } from './domain/tokenResponse';
 import { getPlayableCardsInResponseWindow, getAvailableAbilityIds, getSeatingOrder, getOpponents, areTeammates, getUpgradeTargetAbilityId } from './domain/rules';
 import { useTranslation } from 'react-i18next';
@@ -803,7 +802,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         // 使用 InteractionSystem 的 CANCEL 命令取消当前交互
         dispatch(INTERACTION_COMMANDS.CANCEL, {});
     }, [dispatch, pendingInteraction, setLastUndoCardId]);
-    const handlePendingBonusSettlementClose = React.useCallback((settlement?: typeof G.pendingBonusDiceSettlement) => {
+    const handlePendingBonusSettlementClose = React.useCallback((settlement?: PendingBonusDiceSettlement) => {
         boardBonusDieLogger.info('overlay-close-request', {
             hasSettlement: !!settlement,
             settlementId: settlement?.id,
@@ -854,12 +853,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
 
     // 可被净化移除的负面状态：由定义驱动（支持扩展）
     const purifiableStatusIds = (G.tokenDefinitions ?? [])
-        .filter(def => def.category === 'debuff' && def.passiveTrigger?.removable)
+        .filter(def => def.category === 'debuff' && (def.passiveTrigger?.removable ?? true))
         .map(def => def.id);
 
     // 是否可以使用净化（有净化 Token 且有可移除的负面状态）
     const canUsePurify = !isSpectator && (player.tokens?.[TOKEN_IDS.PURIFY] ?? 0) > 0 &&
-        Object.entries(player.statusEffects ?? {}).some(([id, stacks]) => purifiableStatusIds.includes(id) && stacks > 0);
+        (
+            Object.entries(player.statusEffects ?? {}).some(([id, stacks]) => purifiableStatusIds.includes(id) && stacks > 0)
+            || Object.entries(player.tokens ?? {}).some(([id, stacks]) => purifiableStatusIds.includes(id) && stacks > 0)
+        );
 
     // 是否可以移除击倒（有击倒状态且 CP >= 2 且在 offensiveRoll 前的阶段）
     const canRemoveKnockdown = !isSpectator && isActivePlayer &&
@@ -1189,6 +1191,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             <InteractionOverlay
                 interaction={statusInteraction!}
                 players={G.players}
+                tokenDefinitions={G.tokenDefinitions}
                 currentPlayerId={rootPid}
                 playerNames={playerNames}
                 seatingOrder={G.seatingOrder}
@@ -1205,6 +1208,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         G.players,
         G.seatingOrder,
         G.teamIdByPlayerId,
+        G.tokenDefinitions,
         handleCancelInteraction,
         handleStatusInteractionConfirm,
         handleSelectPlayer,

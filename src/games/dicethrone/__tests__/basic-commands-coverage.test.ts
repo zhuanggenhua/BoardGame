@@ -288,6 +288,31 @@ describe('AI legal actions', () => {
         expect(actions.some((action) => action.kind === 'advance-phase')).toBe(true);
     });
 
+    it('主流程 AI 有净化和 token 形态负面状态时，应生成 USE_PURIFY 动作', () => {
+        const state = createInitializedState(['0', '1'], fixedRandom);
+        state.core.activePlayerId = '0';
+        state.sys.phase = 'main1';
+        state.core.players['0'].tokens[TOKEN_IDS.PURIFY] = 1;
+        state.core.players['0'].tokens[TOKEN_IDS.BOUNTY] = 1;
+
+        const actions = buildDiceThroneAiLegalActions({
+            playerId: '0',
+            state,
+        });
+
+        expect(actions).toContainEqual(expect.objectContaining({
+            kind: 'use-purify',
+            commands: [{
+                type: 'USE_PURIFY',
+                payload: { statusId: TOKEN_IDS.BOUNTY },
+            }],
+            metadata: expect.objectContaining({
+                statusId: TOKEN_IDS.BOUNTY,
+                strategyTags: expect.arrayContaining(['purify-control']),
+            }),
+        }));
+    });
+
     it('本地 AI 不应生成 UNDO_SELL_CARD（避免卖牌↔撤回卖牌循环导致卡死）', () => {
         const state = createInitializedState(['0', '1'], fixedRandom);
         state.core.activePlayerId = '0';

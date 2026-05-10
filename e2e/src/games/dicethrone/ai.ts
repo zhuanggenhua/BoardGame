@@ -681,6 +681,7 @@ const scoreRemoveAllStatusesTarget = (
         ...Object.entries(player.tokens ?? {}),
     ]) {
         if (amount <= 0) continue;
+        if (!isRemovableStatusId(state, effectId)) continue;
         const category = getEffectCategory(state, effectId);
         if (!category) continue;
 
@@ -699,6 +700,7 @@ const scoreRemoveSingleStatusTarget = (
     targetPlayerId: PlayerId,
     effectId: string,
 ): number => {
+    if (!isRemovableStatusId(state, effectId)) return 0;
     const category = getEffectCategory(state, effectId);
     if (!category) return 0;
 
@@ -1685,9 +1687,9 @@ const buildPurifyActions = (state: DiceThroneState, playerId: PlayerId): AiLegal
     }
 
     const removableDebuffs = (state.core.tokenDefinitions ?? [])
-        .filter((definition) => definition.category === 'debuff' && definition.passiveTrigger?.removable)
+        .filter((definition) => definition.category === 'debuff' && (definition.passiveTrigger?.removable ?? true))
         .map((definition) => definition.id)
-        .filter((statusId) => (player.statusEffects[statusId] ?? 0) > 0);
+        .filter((statusId) => (player.statusEffects[statusId] ?? 0) > 0 || (player.tokens[statusId] ?? 0) > 0);
 
     for (const statusId of removableDebuffs) {
         appendAction(actions, state, playerId, {
@@ -2933,7 +2935,9 @@ const statusScorer: LocalAiActionScorer = {
             const statusId = typeof action.metadata?.statusId === 'string'
                 ? action.metadata.statusId
                 : null;
-            const stacks = statusId ? (player.statusEffects[statusId] ?? 0) : 0;
+            const stacks = statusId
+                ? (player.statusEffects[statusId] ?? 0) + (player.tokens[statusId] ?? 0)
+                : 0;
             return {
                 score: 90 + stacks * 20,
                 reason: `优先净化减益 ${statusId ?? ''}`,

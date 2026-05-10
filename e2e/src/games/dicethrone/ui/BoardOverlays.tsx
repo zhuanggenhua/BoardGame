@@ -161,6 +161,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
     const isMultiCardPreview = props.magnifiedCards.length > 0;
     const playerBoardAspectRatio = getPlayerBoardAspectRatio(props.viewCharacterId);
     const magnifiedCardWidth = 'min(54.9vh, 39.65vw, 396px, 60vw, 400px)';
+    const magnifiedMultiCardWidth = 'min(28vw, 350px, calc(54.9vh - 2.44vw))';
     const magnifyContainerClassName = `
         group/modal
         ${isPlayerBoardPreview ? 'h-auto w-auto max-h-[90vh] max-w-[90vw]' : ''}
@@ -183,12 +184,21 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         overlayTestId="board-magnify-overlay"
                     >
                         {isMultiCardPreview ? (
-                            <div ref={multiCardScrollRef} {...multiCardDragProps} className="flex flex-nowrap items-center justify-start gap-[2vw] p-[2vw] overflow-x-auto overflow-y-hidden" style={multiCardDragProps.style}>
+                            <div
+                                ref={multiCardScrollRef}
+                                {...multiCardDragProps}
+                                data-testid="dt-multi-card-magnify-strip"
+                                className="flex flex-nowrap items-center justify-start gap-[2vw] p-[2vw] overflow-x-auto overflow-y-hidden"
+                                style={multiCardDragProps.style}
+                            >
                                 {props.magnifiedCards.map((card) => (
                                     <CardPreview
                                         key={card.id}
-                                        className="w-[28vw] aspect-[0.61] max-w-[350px] max-h-[574px] rounded-xl shadow-2xl border border-white/20 flex-shrink-0"
-                                        style={{ backgroundColor: '#0f172a' }}
+                                        className="aspect-[0.61] rounded-xl shadow-2xl border border-white/20 flex-shrink-0"
+                                        style={{
+                                            backgroundColor: '#0f172a',
+                                            width: magnifiedMultiCardWidth,
+                                        }}
                                         previewRef={card.previewRef}
                                         locale={props.locale}
                                     />

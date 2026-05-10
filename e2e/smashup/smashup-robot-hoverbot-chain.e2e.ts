@@ -340,6 +340,80 @@ test.describe('盘旋机器人链式打出', () => {
 });
 
 test.describe('SmashUp 交互时序回归', () => {
+    test('科学小怪蛋：被消灭后应可点击己方随从放置 +1 指示物', async ({ game, page }, testInfo) => {
+        await game.openTestGame('smashup', {
+            p0: 'vampires,frankenstein',
+            p1: 'robots,wizards',
+            skipFactionSelect: true,
+            skipInitialization: false,
+        });
+
+        await game.setupScene({
+            gameId: 'smashup',
+            player0: {
+                hand: ['vampire_heavy_drinker'],
+                field: [
+                    {
+                        uid: 'igor-target',
+                        defId: 'frankenstein_igor',
+                        owner: '0',
+                        controller: '0',
+                        baseIndex: 0,
+                        powerCounters: 0,
+                    },
+                    {
+                        uid: 'counter-recipient',
+                        defId: 'frankenstein_the_monster',
+                        owner: '0',
+                        controller: '0',
+                        baseIndex: 0,
+                        powerCounters: 0,
+                    },
+                ],
+                factions: ['vampires', 'frankenstein'],
+                minionsPlayed: 0,
+                minionLimit: 1,
+            },
+            player1: {
+                factions: ['robots', 'wizards'],
+            },
+            bases: [
+                { defId: 'base_laboratorium', breakpoint: 20, minions: [] },
+                { defId: 'base_great_library', breakpoint: 20, minions: [] },
+            ],
+            currentPlayer: '0',
+            phase: 'playCards',
+        });
+
+        await game.playCard('vampire_heavy_drinker', { targetBaseIndex: 0 });
+        await game.waitForInteraction('vampire_heavy_drinker', 10000);
+        await game.selectInteractionOptionBy(
+            (option: any) => option?.value?.minionUid === 'igor-target',
+            '选择科学小怪蛋作为渴血鬼消灭目标',
+        );
+
+        await game.waitForInteraction('frankenstein_igor', 10000);
+        await expect(page.locator('[data-minion-uid="counter-recipient"]')).toBeVisible({ timeout: 5000 });
+        await game.screenshot('igor-counter-before-click', testInfo);
+
+        await clickSelectableMinion(page, 'counter-recipient');
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const recipient = state.core.bases[0].minions.find((minion: any) => minion.uid === 'counter-recipient');
+            const sourceId = state.sys.interaction?.current?.data?.sourceId ?? null;
+            return {
+                igorResolved: sourceId === null || sourceId === 'smashup_reaction_choose',
+                counters: recipient?.powerCounters ?? null,
+            };
+        }, { timeout: 8000 }).toEqual({
+            igorResolved: true,
+            counters: 1,
+        });
+
+        await game.screenshot('igor-counter-after-click', testInfo);
+    });
+
     test('无人想要永生：正常流程应完成移除指示物并抽牌', async ({ game, page }, testInfo) => {
         await game.openTestGame('smashup', GIANT_ANT_TEST_QUERY);
 

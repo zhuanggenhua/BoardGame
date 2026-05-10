@@ -295,6 +295,34 @@ describe('10th Anniversary bases', () => {
         const reduced = applyEvents(core, result.events as any);
         expect(reduced.bases[0].minions[0].tempPowerModifier).toBe(2);
     });
+
+    it('base_hall_of_fame 的 queued context 若不是该玩家本回合在此基地首次随从，不应误加临时力量', () => {
+        const core = makeState({
+            bases: [makeBase('base_hall_of_fame', {
+                minions: [makeMinion('m2', '0', 2, 'pirate_first_mate')],
+            })],
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayedPerBase: { 0: 2 },
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = triggerBaseAbilityWithMS('base_hall_of_fame', 'onMinionPlayed', {
+            ...makeCtx({
+                state: core,
+                baseDefId: 'base_hall_of_fame',
+                baseIndex: 0,
+                minionUid: 'm2',
+                minionDefId: 'pirate_first_mate',
+            }),
+            frameId: 'minion-played-frame:m2:0:legacy',
+            sourceEventId: 'minion-played:m2:0:legacy',
+        } as BaseAbilityContext);
+
+        expect(result.events).toHaveLength(0);
+    });
 });
 
 const dummyRandom: RandomFn = {

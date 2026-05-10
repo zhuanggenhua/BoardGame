@@ -137,6 +137,34 @@ describe('InteractionOverlay', () => {
             expect(screen.getByTestId('dt-status-owner-1')).toHaveTextContent('对手');
         });
 
+        it('should hide non-removable tokens from status selection', () => {
+            const players: Record<PlayerId, HeroState> = {
+                '0': {
+                    ...mockPlayers['0'],
+                    statusEffects: { poison: 1 },
+                    tokens: { blessing_of_divinity: 1, bounty: 1 },
+                } as HeroState,
+            };
+
+            render(
+                <InteractionOverlay
+                    interaction={selectStatusInteraction}
+                    players={players}
+                    currentPlayerId="0"
+                    tokenDefinitions={[
+                        { id: 'poison', category: 'debuff', passiveTrigger: { timing: 'onTurnStart', removable: true } },
+                        { id: 'bounty', category: 'debuff', passiveTrigger: { timing: 'onDamageReceived', removable: true } },
+                        { id: 'blessing_of_divinity', category: 'consumable', passiveTrigger: { timing: 'onDamageReceived', removable: false } },
+                    ] as any}
+                    {...mockHandlers}
+                />
+            );
+
+            expect(screen.getByTestId('dt-status-effect-0-poison')).toBeInTheDocument();
+            expect(screen.getByTestId('dt-status-effect-0-bounty')).toBeInTheDocument();
+            expect(screen.queryByTestId('dt-status-effect-0-blessing_of_divinity')).not.toBeInTheDocument();
+        });
+
         it('4人模式下 self-only 状态交互仍只展示自己', () => {
             const fourPlayerMockPlayers: Record<PlayerId, HeroState> = {
                 ...mockPlayers,

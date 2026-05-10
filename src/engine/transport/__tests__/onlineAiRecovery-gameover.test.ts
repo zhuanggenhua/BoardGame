@@ -518,6 +518,147 @@ describe('resolveForceAdvancePhaseAfterRecovery - 游戏结束检查', () => {
 });
 
 describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
+    it('AI 可见交互有 pass 时，手动强制结束应直接硬取消而不是先选 pass', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+                phase: 'scoreBases',
+            },
+            sys: {
+                gameover: undefined,
+                interaction: {
+                    current: {
+                        id: 'manual-ai-visible-choice',
+                        kind: 'simple-choice',
+                        playerId: '1',
+                        data: {
+                            sourceId: 'smashup_reaction_choose',
+                            title: '选择一个反应动作',
+                            options: [
+                                { id: 'trigger-a', label: '触发 A', value: { kind: 'trigger' } },
+                                { id: 'pass', label: 'Pass', value: { kind: 'pass' } },
+                            ],
+                        },
+                    },
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const result = resolveManualForceEndAiPhase({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(result?.reason).toBe('visible-interaction');
+        expect(result?.resolution.action.commands[0]).toEqual({
+            type: 'SYS_INTERACTION_CANCEL',
+            payload: {},
+        });
+    });
+
+    it('AI 隐藏交互有 skip 时，手动强制结束应直接硬取消隐藏交互', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '0',
+                phase: 'main1',
+            },
+            sys: {
+                gameover: undefined,
+                interaction: {
+                    current: undefined,
+                    isBlocked: true,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+        const seatState: MatchState<unknown> = {
+            ...sharedState,
+            sys: {
+                ...sharedState.sys,
+                interaction: {
+                    current: {
+                        id: 'manual-ai-hidden-choice',
+                        kind: 'simple-choice',
+                        playerId: '1',
+                        data: {
+                            sourceId: 'hidden-ai-choice',
+                            title: '隐藏 AI 选择',
+                            options: [
+                                { id: 'skip', label: '跳过', value: { skip: true } },
+                            ],
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        };
+
+        const result = resolveManualForceEndAiPhase({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: { '1': seatState },
+        });
+
+        expect(result?.reason).toBe('hidden-interaction');
+        expect(result?.resolution.action.commands[0]).toEqual({
+            type: 'SYS_INTERACTION_CANCEL',
+            payload: {},
+        });
+    });
+
+    it('纯 AI 响应窗口中，手动强制结束应直接强制关闭响应窗口', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+                phase: 'main1',
+            },
+            sys: {
+                gameover: undefined,
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: {
+                        id: 'rw-ai-response',
+                        windowType: 'afterCardPlayed',
+                        sourceId: 'card-surprise',
+                        responderQueue: ['1'],
+                        currentResponderIndex: 0,
+                    },
+                },
+            },
+        };
+
+        const result = resolveManualForceEndAiPhase({
+            sharedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(result?.reason).toBe('response-window');
+        expect(result?.resolution.action.commands[0]).toEqual({
+            type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE',
+            payload: {},
+        });
+    });
+
     it('AI 当前阶段里若 human 正在响应，手动强制结束不得强制关闭玩家响应窗口', () => {
         const sharedState: MatchState<unknown> = {
             core: {

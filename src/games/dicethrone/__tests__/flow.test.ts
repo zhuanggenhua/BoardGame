@@ -2803,6 +2803,29 @@ describe('王权骰铸流程测试', () => {
             expect(result.assertionErrors).toEqual([]);
         });
 
+        it('净化：可以移除以 token 形式存储的负面状态', () => {
+            const runner = createRunner(fixedRandom);
+            const result = runner.run({
+                name: '净化移除赏金 token',
+                setup: createSetupWithHand([], {
+                    mutate: (core) => {
+                        core.players['0'].tokens[TOKEN_IDS.PURIFY] = 1;
+                        core.players['0'].tokens[TOKEN_IDS.BOUNTY] = 1;
+                    },
+                }),
+                commands: [
+                    cmd('USE_PURIFY', '0', { statusId: TOKEN_IDS.BOUNTY }),
+                ],
+                expect: {
+                    turnPhase: 'main1',
+                    players: {
+                        '0': { tokens: { [TOKEN_IDS.PURIFY]: 0, [TOKEN_IDS.BOUNTY]: 0 } },
+                    },
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
         it('净化：无负面状态不可使用 - no_status', () => {
             const runner = createRunner(fixedRandom);
             const result = runner.run({
@@ -4766,6 +4789,32 @@ describe('王权骰铸流程测试', () => {
                         '0': { discardSize: 1 },
                     },
                     // REMOVE_STATUS 会生成 INTERACTION_COMPLETED 事件清理交互
+                    'sys.interaction.current': null,
+                },
+            });
+            expect(result.assertionErrors).toEqual([]);
+        });
+
+        it('拜拜了您内：可以移除以 token 形式存储的赏金', () => {
+            const runner = createRunner(fixedRandom);
+            const result = runner.run({
+                name: '拜拜了您内 remove bounty token',
+                setup: createSetupWithHand(['card-bye-bye'], {
+                    cp: 10,
+                    mutate: (core) => {
+                        core.players['1'].tokens[TOKEN_IDS.BOUNTY] = 1;
+                    },
+                }),
+                commands: [
+                    ...advanceTo('offensiveRoll'),
+                    cmd('PLAY_CARD', '0', { cardId: 'card-bye-bye' }),
+                    cmd('REMOVE_STATUS', '0', { targetPlayerId: '1', statusId: TOKEN_IDS.BOUNTY }),
+                ],
+                expect: {
+                    players: {
+                        '1': { tokens: { [TOKEN_IDS.BOUNTY]: 0 } },
+                        '0': { discardSize: 1 },
+                    },
                     'sys.interaction.current': null,
                 },
             });
