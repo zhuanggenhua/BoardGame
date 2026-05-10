@@ -99,6 +99,7 @@ import {
     type AiSeatController,
 } from '../engine/ai';
 import { resolveLocalAiActionVisibility } from '../engine/ai/actionVisibility';
+import { INTERACTION_COMMANDS } from '../engine/systems';
 
 // 系统级错误（连接/认证），不需要 toast 提示给玩家
 const SYSTEM_ERRORS = new Set(['unauthorized', 'match_not_found', 'sync_timeout', 'command_failed', 'stale_state']);
@@ -1869,6 +1870,26 @@ const OnlineGameHudBridge = ({
                 dispatch('SKIP_BONUS_DICE_REROLL', {});
                 return true;
             }
+        }
+        const matchState = state as MatchState<unknown> | null | undefined;
+        const interaction = matchState?.sys?.interaction;
+        const responseWindow = matchState?.sys?.responseWindow;
+        const resolution = matchState?.sys?.resolution;
+        const activeFrame = resolution?.frames?.find((frame) => frame.id === resolution.activeFrameId);
+        const hasSystemLock = Boolean(
+            interaction?.current
+            || interaction?.isBlocked
+            || (interaction?.queue?.length ?? 0) > 0
+            || responseWindow?.current
+            || activeFrame?.status === 'blocked'
+            || activeFrame?.blockedBy,
+        );
+        if (hasSystemLock) {
+            dispatch(INTERACTION_COMMANDS.FORCE_UNLOCK, {});
+            if (gameId === 'smashup' && typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent(SMASHUP_FORCE_DISMISS_EVENT));
+            }
+            return true;
         }
         if (gameId === 'smashup' && typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent(SMASHUP_FORCE_DISMISS_EVENT));

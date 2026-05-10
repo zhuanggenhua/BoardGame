@@ -61,7 +61,7 @@ const readCssKeyboardInset = () => {
     return Number.isFinite(parsed) ? Math.max(0, parsed) : 0;
 };
 
-const isProxyUiElement = (candidate: EventTarget | Element | null | undefined): candidate is HTMLElement => {
+const isProxyUiElement = (candidate: EventTarget | Element | null | undefined): boolean => {
     return candidate instanceof HTMLElement
         && (candidate.dataset.testid === 'mobile-text-entry-proxy-input'
             || candidate.dataset.testid === 'mobile-text-entry-proxy-textarea'
@@ -140,12 +140,12 @@ const deriveProxyInputMode = (target: HTMLElement, input: HTMLInputElement | nul
     }
 };
 
-const safeSetInputSelection = (input: HTMLInputElement, selectionStart: number, selectionEnd: number) => {
+const safeSetInputSelection = (input: HTMLInputElement | HTMLTextAreaElement, selectionStart: number, selectionEnd: number) => {
     try {
         input.setSelectionRange(selectionStart, selectionEnd);
     } catch (error) {
         debugProxyEvent('selection-range-skip', {
-            inputType: input.type,
+            inputType: input instanceof HTMLInputElement ? input.type : 'textarea',
             message: error instanceof Error ? error.message : String(error),
         });
     }
@@ -369,22 +369,32 @@ export const MobileTextEntryProxyLayer = () => {
             }
         };
 
+        const scheduleProxyClear = (delayMs: number) => {
+            clearPendingBlurCleanup();
+            blurCleanupTimerRef.current = window.setTimeout(() => {
+                blurCleanupTimerRef.current = null;
+                setProxyState(null);
+            }, delayMs);
+        };
+
         const activateProxy = (target: HTMLElement) => {
             clearPendingBlurCleanup();
             if (isProxyUiElement(target) || target === inputRef.current) {
                 return;
             }
+            const targetTag = target.tagName;
+            const targetTestId = target.getAttribute('data-testid');
             if (!isTextEntryProxyEligible(target)) {
                 debugProxyEvent('activate-skip-ineligible', {
-                    tag: target.tagName,
-                    testId: target.getAttribute('data-testid'),
+                    tag: targetTag,
+                    testId: targetTestId,
                 });
                 setProxyState(null);
                 return;
             }
             debugProxyEvent('activate-proxy', {
-                tag: target.tagName,
-                testId: target.getAttribute('data-testid'),
+                tag: targetTag,
+                testId: targetTestId,
                 placeholder: target.getAttribute('placeholder'),
                 cssInset: readCssKeyboardInset(),
                 keyboardInset: readKeyboardInset(),
@@ -408,35 +418,38 @@ export const MobileTextEntryProxyLayer = () => {
 
         const handleFocusIn = (event: FocusEvent) => {
             const target = event.target;
+            const targetElement = target instanceof HTMLElement ? target : null;
             debugProxyEvent('focusin', {
-                eventTargetTag: target instanceof HTMLElement ? target.tagName : typeof target,
-                eventTargetTestId: target instanceof HTMLElement ? target.getAttribute('data-testid') : null,
+                eventTargetTag: targetElement ? targetElement.tagName : typeof target,
+                eventTargetTestId: targetElement ? targetElement.getAttribute('data-testid') : null,
                 activeTag: document.activeElement instanceof HTMLElement ? document.activeElement.tagName : null,
                 activeTestId: document.activeElement instanceof HTMLElement ? document.activeElement.getAttribute('data-testid') : null,
                 cssInset: readCssKeyboardInset(),
                 keyboardInset: readKeyboardInset(),
             });
-            if (isProxyUiElement(target) || target === inputRef.current) {
+            if (isProxyUiElement(targetElement) || targetElement === inputRef.current) {
                 return;
             }
-            if (!isTextEntryElement(target)) {
+            if (!isTextEntryElement(targetElement)) {
                 debugProxyEvent('focusin-clear-non-text-entry');
-                setProxyState(null);
+                scheduleProxyClear(160);
                 return;
             }
 
-            if (!isTextEntryProxyEligible(target)) {
+            const targetTag = targetElement.tagName;
+            const targetTestId = targetElement.getAttribute('data-testid');
+            if (!isTextEntryProxyEligible(targetElement)) {
                 debugProxyEvent('focusin-clear-ineligible', {
-                    tag: target.tagName,
-                    testId: target.getAttribute('data-testid'),
+                    tag: targetTag,
+                    testId: targetTestId,
                 });
-                setProxyState(null);
+                scheduleProxyClear(160);
                 return;
             }
 
             window.setTimeout(() => {
                 if (readKeyboardInset() >= KEYBOARD_PROXY_MIN_INSET) {
-                    activateProxy(target);
+                    activateProxy(targetElement);
                 }
             }, 40);
         };
@@ -470,6 +483,9 @@ export const MobileTextEntryProxyLayer = () => {
                 if (shouldSkipProxyRestore()) {
                     debugProxyEvent('focusout-skip-restore-after-suppressed-retarget');
                     setProxyState(null);
+                    return;
+                }
+                if (blurCleanupTimerRef.current != null) {
                     return;
                 }
                 if (proxiedTargetRef.current && readKeyboardInset() >= KEYBOARD_PROXY_MIN_INSET) {
@@ -621,7 +637,7 @@ export const MobileTextEntryProxyLayer = () => {
             activeTag: document.activeElement instanceof HTMLElement ? document.activeElement.tagName : null,
             activeTestId: document.activeElement instanceof HTMLElement ? document.activeElement.getAttribute('data-testid') : null,
         });
-        const form = proxyState.target.form;
+        const form = getOwningForm(proxyState.target);
         if (form) {
             const submitter = form.querySelector('button[type="submit"]:not(:disabled), input[type="submit"]:not(:disabled)');
             if (submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement) {
@@ -638,9 +654,14 @@ export const MobileTextEntryProxyLayer = () => {
         }
         dismissProxySession();
     };
+    const setProxyInputRef = (node: HTMLInputElement | null) => {
+        inputRef.current = node;
+    };
+    const setProxyTextareaRef = (node: HTMLTextAreaElement | null) => {
+        inputRef.current = node;
+    };
 
     const sharedProps = {
-        ref: inputRef,
         value: proxyState.value,
         placeholder: proxyState.placeholder,
         inputMode: proxyState.inputMode as HTMLAttributes<HTMLInputElement>['inputMode'],
@@ -797,6 +818,7 @@ export const MobileTextEntryProxyLayer = () => {
                 {proxyState.multiline ? (
                     <textarea
                         {...sharedProps}
+                        ref={setProxyTextareaRef}
                         rows={3}
                         data-testid="mobile-text-entry-proxy-textarea"
                         className={`${sharedProps.className} resize-none`}
@@ -804,6 +826,7 @@ export const MobileTextEntryProxyLayer = () => {
                 ) : (
                     <input
                         {...sharedProps}
+                        ref={setProxyInputRef}
                         type={proxyState.inputType ?? 'text'}
                         data-testid="mobile-text-entry-proxy-input"
                     />

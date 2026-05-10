@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 import { motion, type HTMLMotionProps } from 'framer-motion';
-import { forwardRef, type ReactNode } from 'react';
+import { forwardRef, useRef, type ReactNode } from 'react';
 import { playSound } from '../../../lib/audio/useGameAudio';
 
 /**
@@ -32,8 +32,10 @@ export const GameButton = forwardRef<HTMLButtonElement, GameButtonProps>(({
     disabled,
     clickSoundKey,
     onClick,
+    onPointerDown,
     ...props
 }, ref) => {
+    const skipNextClickRef = useRef(false);
 
     const baseEffects = "relative overflow-hidden transition-all duration-200 active:scale-95 disabled:opacity-50 disabled:pointer-events-none disabled:active:scale-100 disabled:grayscale cursor-pointer";
     const typography = "font-black uppercase tracking-tighter text-center leading-none select-none flex items-center justify-center gap-2";
@@ -55,10 +57,27 @@ export const GameButton = forwardRef<HTMLButtonElement, GameButtonProps>(({
         : clickSoundKey;
 
     const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+        if (skipNextClickRef.current) {
+            skipNextClickRef.current = false;
+            return;
+        }
         if (!disabled && resolvedClickSoundKey) {
             playSound(resolvedClickSoundKey);
         }
         onClick?.(event);
+    };
+
+    const handlePointerDown = (event: React.PointerEvent<HTMLButtonElement>) => {
+        onPointerDown?.(event);
+        if (event.defaultPrevented || disabled || event.pointerType === 'mouse') {
+            return;
+        }
+        skipNextClickRef.current = true;
+        event.preventDefault();
+        if (resolvedClickSoundKey) {
+            playSound(resolvedClickSoundKey);
+        }
+        onClick?.(event as unknown as React.MouseEvent<HTMLButtonElement>);
     };
 
     return (
@@ -78,6 +97,7 @@ export const GameButton = forwardRef<HTMLButtonElement, GameButtonProps>(({
             }}
             whileTap={{ scale: disabled ? 1 : 0.98 }}
             disabled={disabled}
+            onPointerDown={handlePointerDown}
             onClick={handleClick}
             {...props}
         >

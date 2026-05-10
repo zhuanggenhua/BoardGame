@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import type { MatchState, Command, RandomFn } from '../../types';
+import type { MatchState, Command, RandomFn, DomainCore, GameEvent } from '../../types';
+import { executePipeline } from '../../pipeline';
 import { buildTargetAiHint, createInteractionHintScorer, scoreAiHint } from '../../ai';
 import type { AiDecisionContext, AiLegalAction } from '../../ai';
 import {
@@ -8,8 +9,10 @@ import {
     createSimpleChoice,
     INTERACTION_COMMANDS,
 } from '../InteractionSystem';
+import { createResponseWindowSystem } from '../ResponseWindowSystem';
 import { createCompareRollChoiceSystem } from '../CompareRollChoiceSystem';
 import { createSimpleChoiceSystem } from '../SimpleChoiceSystem';
+import { setActiveResolutionBlock, upsertActiveResolutionFrame } from '../resolutionStack';
 
 interface TestCore {
     value: number;
@@ -106,6 +109,139 @@ describe('InteractionSystem', () => {
         expect(result?.halt).toBe(false);
         expect(result?.state?.sys.interaction.current?.id).toBe('interaction-queued');
         expect(result?.state?.sys.interaction.queue).toHaveLength(0);
+    });
+
+    it('SYS_FORCE_UNLOCK 应同时清空交互、响应窗口和阻塞 frame', () => {
+        const current = createSimpleChoice(
+            'interaction-current',
+            '0',
+            '当前选择',
+            [{ id: 'a', label: 'A', value: 'a' }],
+        );
+        const queued = createSimpleChoice(
+            'interaction-queued',
+            '0',
+            '队列选择',
+            [{ id: 'b', label: 'B', value: 'b' }],
+        );
+        let executedByDomain = false;
+        const domain: DomainCore<TestCore, Command, GameEvent> = {
+            gameId: 'force-unlock-test',
+            setup: () => ({ value: 0 }),
+            validate: () => ({ valid: true }),
+            execute: () => {
+                executedByDomain = true;
+                return [];
+            },
+            reduce: (core) => core,
+        };
+        let state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    current,
+                    queue: [queued],
+                },
+                responseWindow: {
+                    current: {
+                        id: 'response-window-1',
+                        responderQueue: ['0', '1'],
+                        currentResponderIndex: 0,
+                        passedPlayers: [],
+                        windowType: 'afterCardPlayed',
+                        sourceId: 'test',
+                        pendingInteractionId: current.id,
+                    },
+                },
+            },
+        } as unknown as MatchState<TestCore>;
+        state = upsertActiveResolutionFrame(state, {
+            id: 'frame-1',
+            kind: 'test:resolution',
+            ordering: 'explicit',
+            status: 'running',
+            phase: 'main',
+            phaseGate: 'block-advance-when-blocked',
+        });
+        state = setActiveResolutionBlock(state, {
+            type: 'interaction',
+            id: current.id,
+            reason: current.kind,
+        });
+
+        const result = executePipeline(
+            {
+                domain,
+                systems: [
+                    createResponseWindowSystem<TestCore>(),
+                    createInteractionSystem<TestCore>(),
+                ],
+            },
+            state,
+            {
+                type: INTERACTION_COMMANDS.FORCE_UNLOCK,
+                playerId: '0',
+                payload: {},
+                timestamp: 123,
+            },
+            mockRandom,
+            ['0', '1'],
+        );
+
+        expect(result.success).toBe(true);
+        expect(executedByDomain).toBe(false);
+        expect(result.state.sys.interaction.current).toBeUndefined();
+        expect(result.state.sys.interaction.queue).toEqual([]);
+        expect(result.state.sys.responseWindow.current).toBeUndefined();
+        expect(result.state.sys.resolution?.frames?.[0]?.status).toBe('running');
+        expect(result.state.sys.resolution?.frames?.[0]?.blockedBy).toBeUndefined();
+        expect(result.events.map((event) => event.type)).toEqual([
+            'RESPONSE_WINDOW_CLOSED',
+            'SYS_INTERACTION_FORCE_UNLOCKED',
+        ]);
+    });
+
+    it('SYS_FORCE_UNLOCK 应清理没有交互或响应窗口的残留 resolution 锁', () => {
+        const system = createInteractionSystem<TestCore>();
+        let state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    queue: [],
+                },
+            },
+        } as unknown as MatchState<TestCore>;
+        state = upsertActiveResolutionFrame(state, {
+            id: 'frame-external-lock',
+            kind: 'test:external-lock',
+            ordering: 'explicit',
+            status: 'running',
+            phase: 'main',
+            phaseGate: 'block-advance-when-blocked',
+        });
+        state = setActiveResolutionBlock(state, {
+            type: 'external',
+            id: 'stale-overlay',
+            reason: 'manual-recovery',
+        });
+
+        const result = system.beforeCommand?.({
+            state,
+            command: {
+                type: INTERACTION_COMMANDS.FORCE_UNLOCK,
+                playerId: '0',
+                payload: {},
+                timestamp: 124,
+            },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result?.state?.sys.resolution?.frames?.[0]?.status).toBe('running');
+        expect(result?.state?.sys.resolution?.frames?.[0]?.blockedBy).toBeUndefined();
+        expect(result?.state?.sys.interaction.queue).toEqual([]);
     });
 
     it('非交互拥有者无法取消交互', () => {
