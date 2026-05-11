@@ -27,6 +27,8 @@ import { MOON_ELF_CARDS } from '../heroes/moon_elf/cards';
 import { SHADOW_THIEF_CARDS } from '../heroes/shadow_thief/cards';
 import { GUNSLINGER_CARDS } from '../heroes/gunslinger/cards';
 import { SAMURAI_CARDS } from '../heroes/samurai/cards';
+import { TREANT_CARDS } from '../heroes/treant/cards';
+import { NINJA_CARDS } from '../heroes/ninja/cards';
 
 // 角色 ID 到卡牌定义的映射
 const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
@@ -38,6 +40,8 @@ const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
     shadow_thief: SHADOW_THIEF_CARDS,
     gunslinger: GUNSLINGER_CARDS,
     samurai: SAMURAI_CARDS,
+    treant: TREANT_CARDS,
+    ninja: NINJA_CARDS,
 };
 
 // 被动能力配置（按角色）
@@ -153,6 +157,28 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         calm: 'masamune',
         meditate: 'stand-tall',
         ultimate: 'samurai-ultimate',
+    },
+    treant: {
+        fist: 'shattering-fist',
+        chi: 'tend-care',
+        sky: 'vengeful-vines',
+        lotus: 'nature-touch',
+        combo: 'quiet-cultivation',
+        lightning: 'wild-growth',
+        calm: 'rooted',
+        meditate: 'rooted',
+        ultimate: 'forest-awakens',
+    },
+    ninja: {
+        fist: 'slash',
+        chi: 'going-forward',
+        sky: 'poison-blade',
+        lotus: 'shadow-step',
+        combo: 'death-blossom',
+        lightning: 'smoke-screen',
+        calm: 'shadow-fang',
+        meditate: 'blink',
+        ultimate: 'ninja-assassinate',
     },
 };
 

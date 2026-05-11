@@ -45,6 +45,37 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 - 运行时代码已接入引用
 - 远端 R2 / CDN 对代表性 URL 返回 `200`
 
+## 禁止提前收口（强制）
+
+只要用户要求“新增角色 / 新增派系 / 两个新角色一起做 / 数据录入、上传、审计、端到端全流程”，不得把“可选角 + 资源能显示 + 少量 smoke 测试通过”误报为完成。
+
+必须同时清空以下门禁，才允许对外说“已完成”：
+
+1. **数据录入门禁**
+   - 每个角色必须有逐项真相源表、技能/Token 录入核对、卡牌录入核对。
+   - 每张卡、每个技能、每个 Token 都必须有“来源定位 + 原文/图文要点 + 结构化字段 + 当前实现结论”。
+   - 如果只录了名称、费用、图片索引或 L1 展示，不得写“卡牌已录完”；必须标成 `L1 静态接入 / L2+ 待实现`。
+2. **机制门禁**
+   - 被动、Token、状态、攻击、防御、延迟结算、可选目标、响应时机必须逐项裁定是否已实现。
+   - 不完整机制必须在 `rule/` 与 `evidence/` 同步列成剩余风险，禁止藏在“复杂精确机制债务”这种泛化句子里。
+   - 若用户要求“彻底完成才停”，存在 L2/L3 未实现项时不得停；只能继续实现或明确硬阻塞。
+3. **资源门禁**
+   - 原始图、正式压缩图、atlas JSON、manifest、运行时代码引用必须逐项对上。
+   - 若 `public/**/*.webp` 被 `.gitignore` 忽略，必须在证据文档里单列“忽略但必须存在/已上传”的资源清单；不得只看 `git status`。
+   - 共享资源（如 `Common/compressed/background.webp`、`character-portraits.webp`）也必须在隔离 worktree 中存在并被截图证明，否则 E2E 图像证据无效。
+4. **上传门禁**
+   - `npm run assets:upload` 成功只是必要条件；必须对本轮新增/依赖的代表性远端 URL 做 `HEAD` 回查。
+   - atlas JSON 若按项目现有规则不上传，必须明确写“本地 `/assets/atlas-configs/**` 加载”，并验证构建产物能引用，不得误报“atlas 已上传”。
+5. **审计门禁**
+   - 审计文档必须写明权威来源、逐项结论、D 维度、测试/截图证据、未覆盖风险。
+   - 如果存在 L1/L2/L3/L4 分层，不得把 L1/L2 说成“发布级完成”。
+6. **E2E 门禁**
+   - 至少覆盖真实在线双玩家：两个新角色都被选择，两个玩家都能进入对局。
+   - 截图必须分别能看到两个新角色的玩家面板、提示板、手牌/卡图和 HUD；只看 host 一边不够。
+   - 只要最终回复说 E2E 通过，必须给出本轮实际核对过的截图绝对路径。
+
+如果任何一项未满足，当前状态只能汇报为“已完成某层 / 未完成全流程”，不得停止长期任务。
+
 补充口径：
 
 - `crops/...` 默认只算录入核对中间产物，不计入“正式资源已完成”。
@@ -66,6 +97,13 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 - 本轮只做录入，还是包含后续机制实现
 
 禁止在根工作树或错误分支下看完素材后，直接对当前任务下结论。
+
+若用户一次给出多个新角色，必须先建立批次矩阵：
+
+| heroId | 素材 | 数据录入 | 机制 | 资源上传 | E2E | 审计 |
+| --- | --- | --- | --- | --- | --- | --- |
+
+每格只能填可验证状态：`pending / in_progress / passed / blocked / scoped-debt`。未跑证据不得填 `passed`。
 
 ### 2. 锁定主真相源与对照源
 
@@ -158,6 +196,20 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 - 原始文本
 - 结构化结论
 - 不确定项 / 冲突项
+
+新增角色的核对契约不得只写高层摘要。最低粒度：
+
+- 玩家面板：每个基础技能、被动、防御技、终极技各一行。
+- 提示板：每个 Token / 状态 / 关键字各一行。
+- 卡牌：每个 `card.id` 各一行，含费用、类型、名称、正文、`previewRef`、当前实现等级。
+
+实现等级统一使用：
+
+- `L0`：仅素材/真相源定位。
+- `L1`：静态数据、文案、图片索引已接入。
+- `L2`：领域行为/数值结算已有单测或等价逻辑验证。
+- `L3`：真实 UI/E2E 正路径验证。
+- `L4`：复杂交互、响应窗、finalState / triggerQueue / reaction session 或等价完整链路验证。
 
 ### 5. 录入静态数据与资源索引
 
@@ -270,12 +322,23 @@ npm run assets:upload
 
 上传后必须至少回查这些代表性 URL：
 
-- 主 atlas 1 个
-- 正式单卡图 1 个（如果本轮新增）
-- `crops/player-board/compressed/` 1 个
-- `crops/tip/compressed/` 1 个
+- `player-board.webp` 1 个
+- `tip.webp` 1 个
+- `ability-cards.webp` 1 个
+- `dice.webp` 1 个
+- `status-icons-atlas.webp` 1 个（如该角色有 Token / 状态图标）
+- 共享 DiceThrone `Common/compressed/background.webp` 与 `character-portraits.webp`（隔离 worktree 中首次跑 E2E 时必须确认）
 
 如果任一代表性 URL 仍是 `404`，本轮资源 intake 不算完成。
+
+注意：当前上传脚本只上传压缩媒体 / SVG / 音频，默认不上传 atlas JSON。若本轮新增 atlas JSON，必须在证据中写清：
+
+- JSON 本地路径
+- 构建是否通过
+- E2E 是否真实消费该 atlas
+- 远端媒体是否已上传
+
+禁止把 JSON 的 404 写成资源上传成功。
 
 ### 9. 进入机制实现前的建模门禁
 
@@ -301,12 +364,38 @@ npm run assets:upload
 
 如果这轮改动触及 UI 展示，必须人工看图，不得只看断言通过。
 
+新增 Dice Throne 角色的最低验证包：
+
+1. `npx eslint -- <本轮修改 ts/tsx>`
+2. `npx tsc --noEmit --pretty false`
+3. `npm run i18n:check`
+4. 角色 intake / registry / criticalImageResolver 相关 Vitest
+5. `npm run assets:manifest`
+6. `npm run assets:validate`
+7. `npm run assets:upload` + 代表性 URL `HEAD`
+8. `npm run build`
+9. 真实在线双玩家 E2E，至少证明：
+   - 两个新角色都能在选角入口选中。
+   - Host 和 Guest 都能进入对局。
+   - Host/Guest 截图分别看到对应新角色玩家面板、提示板、手牌/卡图、HUD。
+
+若机制实现超出 L1/L2，还必须补对应 L3/L4 成功路径截图；不能用“进入对局成功”替代复杂机制验证。
+
 ## 推荐交付物
 
 - `src/games/dicethrone/rule/<角色>真相源表.md`
 - `src/games/dicethrone/rule/<角色>录入核对.md`
 - `src/games/dicethrone/rule/<角色>卡牌录入核对.md`
 - `evidence/<task>-e2e-test.md`
+
+最终证据文档必须包含：
+
+- 批次矩阵最终状态。
+- 每个角色的数据录入覆盖表。
+- 资源本地路径与远端回查表。
+- 测试命令与结果。
+- 每张关键截图的绝对路径与肉眼观察。
+- 明确剩余风险；若无剩余风险，必须逐项说明为什么已清空。
 
 ## 当前可参考的现成样本
 

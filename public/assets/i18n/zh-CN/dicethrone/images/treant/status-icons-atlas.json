@@ -1,0 +1,51 @@
+{
+  "meta": {
+    "image": "status-icons-atlas.png",
+    "size": {
+      "w": 1280,
+      "h": 256
+    }
+  },
+  "frames": {
+    "treant_seedling": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      }
+    },
+    "treant_sapling": {
+      "frame": {
+        "x": 256,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      }
+    },
+    "treant_divine": {
+      "frame": {
+        "x": 512,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      }
+    },
+    "life_sap": {
+      "frame": {
+        "x": 768,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      }
+    },
+    "thorn": {
+      "frame": {
+        "x": 1024,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      }
+    }
+  }
+}

@@ -22,6 +22,8 @@ const CHARACTER_DIR_MAP: Record<SelectableCharacterId, string> = {
     paladin: 'paladin',
     gunslinger: 'gunslinger',
     samurai: 'samurai',
+    treant: 'treant',
+    ninja: 'ninja',
 };
 
 const IMPLEMENTED_CHARACTERS: readonly SelectableCharacterId[] = IMPLEMENTED_DICETHRONE_CHARACTER_IDS;

@@ -21,6 +21,8 @@ import type {
     ChoiceRequestedEvent,
     DefenderSelectionRequestedEvent,
     AttackResolvedEvent,
+    DamageDealtEvent,
+    DamageShieldGrantedEvent,
 } from './types';
 import { STATUS_IDS, TOKEN_IDS } from './ids';
 import {
@@ -165,6 +167,67 @@ function createOffensiveRollEndTokenChoiceEvent(
         sourceCommandType,
         timestamp,
     };
+}
+
+
+function isIncomingDebuffApplication(core: DiceThroneCore, defenderId: string, event: GameEvent): boolean {
+    if (event.type !== 'STATUS_APPLIED' && event.type !== 'TOKEN_GRANTED') return false;
+
+    const payload = event.payload as { targetId?: unknown; statusId?: unknown; tokenId?: unknown };
+    if (payload.targetId !== defenderId) return false;
+
+    const id = typeof payload.statusId === 'string'
+        ? payload.statusId
+        : typeof payload.tokenId === 'string'
+            ? payload.tokenId
+            : undefined;
+    if (!id) return false;
+
+    return core.tokenDefinitions.find(def => def.id === id)?.category === 'debuff';
+}
+
+function preventIncomingDebuffsWithTreantDivine(
+    core: DiceThroneCore,
+    generatedEvents: GameEvent[],
+    sourceCommandType: string,
+    timestamp: number,
+): GameEvent[] {
+    const defenderId = core.pendingAttack?.defenderId;
+    if (!defenderId) return generatedEvents;
+
+    const defender = core.players[defenderId];
+    const divineStacks = defender?.tokens?.[TOKEN_IDS.TREANT_DIVINE] ?? 0;
+    if (divineStacks <= 0) return generatedEvents;
+
+    const hasIncomingDebuff = generatedEvents.some(event => isIncomingDebuffApplication(core, defenderId, event));
+    if (!hasIncomingDebuff) return generatedEvents;
+
+    const filteredEvents = generatedEvents.filter(event => !isIncomingDebuffApplication(core, defenderId, event));
+    return [
+        {
+            type: 'TOKEN_CONSUMED',
+            payload: {
+                playerId: defenderId,
+                tokenId: TOKEN_IDS.TREANT_DIVINE,
+                amount: 1,
+                newTotal: Math.max(0, divineStacks - 1),
+            },
+            sourceCommandType,
+            timestamp,
+        } as DiceThroneEvent,
+        {
+            type: 'DAMAGE_SHIELD_GRANTED',
+            payload: {
+                targetId: defenderId,
+                value: 0,
+                sourceId: TOKEN_IDS.TREANT_DIVINE,
+                preventStatus: true,
+            },
+            sourceCommandType,
+            timestamp: timestamp + 0.001,
+        } as DamageShieldGrantedEvent,
+        ...filteredEvents,
+    ];
 }
 
 function resolvePassivePhaseTriggerEvents(args: {
@@ -598,6 +661,38 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 } as DiceThroneEvent);
             }
 
+            const activePlayer = core.players[core.activePlayerId];
+            const thornStacks = activePlayer?.tokens?.[TOKEN_IDS.THORN] ?? 0;
+            if (thornStacks > 0) {
+                const extraRollAttempts = Math.max(0, core.rollCount - 1);
+                events.push({
+                    type: 'TOKEN_CONSUMED',
+                    payload: {
+                        playerId: core.activePlayerId,
+                        tokenId: TOKEN_IDS.THORN,
+                        amount: thornStacks,
+                        newTotal: 0,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as TokenConsumedEvent);
+
+                if (extraRollAttempts > 0) {
+                    const hp = activePlayer?.resources[RESOURCE_IDS.HP] ?? 0;
+                    events.push({
+                        type: 'DAMAGE_DEALT',
+                        payload: {
+                            targetId: core.activePlayerId,
+                            amount: extraRollAttempts,
+                            actualDamage: Math.min(extraRollAttempts, hp),
+                            sourceAbilityId: TOKEN_IDS.THORN,
+                        },
+                        sourceCommandType: command.type,
+                        timestamp: timestamp + 0.001,
+                    } as DamageDealtEvent);
+                }
+            }
+
             if (core.pendingAttack) {
                 if (pendingAttackNeedsTargetingRoll(core) && !core.pendingAttack.damageResolved && !core.pendingAttack.bonusDiceResolved) {
                     return { events, overrideNextPhase: 'targetingRoll' };
@@ -685,7 +780,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     // 不消耗潜行标记——潜行在回合末自动弃除，触发免伤时不移除
 
                     // 处理 preDefense 效果（攻击方的非伤害效果仍然生效）
-                    const preDefenseEventsSneak = resolveOffensivePreDefenseEffects(core, random, timestamp);
+                    let preDefenseEventsSneak = resolveOffensivePreDefenseEffects(core, random, timestamp);
+                    preDefenseEventsSneak = preventIncomingDebuffsWithTreantDivine(core, preDefenseEventsSneak, command.type, timestamp) as DiceThroneEvent[];
                     events.push(...preDefenseEventsSneak);
 
                     const hasSneakChoice = preDefenseEventsSneak.some(isBlockingInteractionEvent);
@@ -730,7 +826,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 }
 
                 // 处理进攻方的 preDefense 效果
-                const preDefenseEvents = resolveOffensivePreDefenseEffects(core, random, timestamp);
+                let preDefenseEvents = resolveOffensivePreDefenseEffects(core, random, timestamp);
+                preDefenseEvents = preventIncomingDebuffsWithTreantDivine(core, preDefenseEvents, command.type, timestamp) as DiceThroneEvent[];
                 events.push(...preDefenseEvents);
 
                 const hasChoice = preDefenseEvents.some(isBlockingInteractionEvent);
@@ -1022,7 +1119,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 : undefined;
             const sneakStacks = defender?.tokens[TOKEN_IDS.SNEAK] ?? 0;
             if (sneakStacks > 0 && !pendingAttack.isUltimate) {
-                const preDefenseEventsSneak = resolveOffensivePreDefenseEffects(targetingCore, random, timestamp);
+                let preDefenseEventsSneak = resolveOffensivePreDefenseEffects(targetingCore, random, timestamp);
+                preDefenseEventsSneak = preventIncomingDebuffsWithTreantDivine(targetingCore, preDefenseEventsSneak, command.type, timestamp) as DiceThroneEvent[];
                 events.push(...preDefenseEventsSneak);
 
                 const hasSneakChoice = preDefenseEventsSneak.some(isBlockingInteractionEvent);
@@ -1062,7 +1160,8 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 return resolvePostAttackFollowUp(targetingCore, events, command.type, timestamp, from as TurnPhase);
             }
 
-            const preDefenseEvents = resolveOffensivePreDefenseEffects(targetingCore, random, timestamp);
+            let preDefenseEvents = resolveOffensivePreDefenseEffects(targetingCore, random, timestamp);
+            preDefenseEvents = preventIncomingDebuffsWithTreantDivine(targetingCore, preDefenseEvents, command.type, timestamp) as DiceThroneEvent[];
             events.push(...preDefenseEvents);
 
             const hasChoice = preDefenseEvents.some(isBlockingInteractionEvent);
@@ -1206,6 +1305,35 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                         timestamp,
                     } as DiceThroneEvent);
                 }
+            }
+
+            const delayedPoisonStacks = core.players[activeId]?.tokens?.[TOKEN_IDS.DELAYED_POISON] ?? 0;
+            if (delayedPoisonStacks > 0) {
+                events.push({
+                    type: 'TOKEN_CONSUMED',
+                    payload: {
+                        playerId: activeId,
+                        tokenId: TOKEN_IDS.DELAYED_POISON,
+                        amount: delayedPoisonStacks,
+                        newTotal: 0,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp: timestamp + 0.01,
+                } as TokenConsumedEvent);
+
+                const hp = core.players[activeId]?.resources[RESOURCE_IDS.HP] ?? 0;
+                const damageAmount = delayedPoisonStacks * 3;
+                events.push({
+                    type: 'DAMAGE_DEALT',
+                    payload: {
+                        targetId: activeId,
+                        amount: damageAmount,
+                        actualDamage: Math.min(damageAmount, hp),
+                        sourceAbilityId: TOKEN_IDS.DELAYED_POISON,
+                    },
+                    sourceCommandType: command.type,
+                    timestamp: timestamp + 0.011,
+                } as DamageDealtEvent);
             }
 
             events.push(...resolvePassivePhaseTriggerEvents({

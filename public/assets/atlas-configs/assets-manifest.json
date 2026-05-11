@@ -22,6 +22,24 @@
         }
       }
     },
+    "dicethrone/ability-cards-ninja.atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "e5b00d850184f45219040f82513b8036bcf457ab4e980f29f7b3d681bc006c77",
+          "bytes": 3390,
+          "mime": "application/json"
+        }
+      }
+    },
+    "dicethrone/ability-cards-treant.atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "e5b00d850184f45219040f82513b8036bcf457ab4e980f29f7b3d681bc006c77",
+          "bytes": 3390,
+          "mime": "application/json"
+        }
+      }
+    },
     "smashup/2833984701.json": {
       "variants": {
         "json": {

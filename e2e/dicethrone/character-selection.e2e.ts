@@ -31,7 +31,6 @@ import {
 const selectionTitlePattern = /选择你的英雄|Choose your hero|Select Your Hero/i;
 const readyButtonPattern = /准备|Ready/i;
 const closePreviewPattern = /关闭预览|Close Preview/i;
-const playerBoardAltPattern = /玩家面板|Player Board/i;
 const turnPattern = /回合|Turn/i;
 const diceThroneHeadingPattern = /Dice Throne|王权骰铸/i;
 const createRoomPattern = /Create Room|创建房间/i;
@@ -146,6 +145,8 @@ test.describe('角色选择系统', () => {
         await expect(page.locator('[data-character-id="pyromancer"]')).toBeVisible();
         await expect(page.locator('[data-character-id="gunslinger"]')).toBeVisible();
         await expect(page.locator('[data-character-id="samurai"]')).toBeVisible();
+        await expect(page.locator('[data-character-id="treant"]')).toBeVisible();
+        await expect(page.locator('[data-character-id="ninja"]')).toBeVisible();
         await page.screenshot({ path: evidencePath, fullPage: false });
     });
 
@@ -430,6 +431,48 @@ test.describe('角色选择系统', () => {
             await page.setViewportSize({ width: 812, height: 375 });
             await page.screenshot({ path: evidencePath, fullPage: false });
             await page.screenshot({ path: testInfo.outputPath('dicethrone-game-hud-mobile-landscape.png'), fullPage: false });
+        });
+    });
+
+    test('树精和忍者应该能够选角并进入游戏', async ({ page }, testInfo) => {
+        test.setTimeout(60000);
+        const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'character-selection.e2e', '树精和忍者应该能够选角并进入游戏');
+        mkdirSync(evidenceDir, { recursive: true });
+        const selectionEvidencePath = join(evidenceDir, 'treant-ninja-selection.png');
+        const gameplayEvidencePath = join(evidenceDir, 'treant-ninja-gameplay.png');
+        const guestGameplayEvidencePath = join(evidenceDir, 'treant-ninja-guest-gameplay.png');
+
+        await withOnlineMatch(page, async (guestPage) => {
+            await page.click('[data-character-id="treant"]');
+            await expect(page.locator('[data-character-id="treant"]')).toContainText(/P1/i);
+            await expect(page.getByTestId('character-badge-treant-implementation_in_progress')).toContainText('实施中');
+
+            await guestPage.click('[data-character-id="ninja"]');
+            await expect(guestPage.locator('[data-character-id="ninja"]')).toContainText(/P2/i);
+            await expect(guestPage.getByTestId('character-badge-ninja-implementation_in_progress')).toContainText('实施中');
+            await page.screenshot({ path: selectionEvidencePath, fullPage: false });
+            await page.screenshot({ path: testInfo.outputPath('treant-ninja-selection.png'), fullPage: false });
+
+            await guestPage.getByRole('button', { name: readyButtonPattern }).click();
+            const startButton = page.getByRole('button', { name: /开始游戏|Press Start/i });
+            await expect(startButton).toBeEnabled();
+            await startButton.click();
+            await page.waitForTimeout(2000);
+
+            await expect(page.getByText(selectionTitlePattern)).not.toBeVisible();
+            await expect(page.getByText(turnPattern)).toBeVisible();
+            await expect(page.getByTestId('player-board-surface')).toBeVisible({ timeout: 15000 });
+
+            await page.setViewportSize({ width: 812, height: 375 });
+            await page.screenshot({ path: gameplayEvidencePath, fullPage: false });
+            await page.screenshot({ path: testInfo.outputPath('treant-ninja-gameplay.png'), fullPage: false });
+
+            await expect(guestPage.getByText(selectionTitlePattern)).not.toBeVisible();
+            await expect(guestPage.getByText(turnPattern)).toBeVisible();
+            await expect(guestPage.getByTestId('player-board-surface')).toBeVisible({ timeout: 15000 });
+            await guestPage.setViewportSize({ width: 812, height: 375 });
+            await guestPage.screenshot({ path: guestGameplayEvidencePath, fullPage: false });
+            await guestPage.screenshot({ path: testInfo.outputPath('treant-ninja-guest-gameplay.png'), fullPage: false });
         });
     });
 

@@ -7,6 +7,8 @@ import { registerPaladinCustomActions } from './paladin';
 import { registerPyromancerCustomActions } from './pyromancer';
 import { registerSamuraiCustomActions } from './samurai';
 import { registerShadowThiefCustomActions } from './shadow_thief';
+import { registerTreantCustomActions } from './treant';
+import { registerNinjaCustomActions } from './ninja';
 
 let initialized = false;
 
@@ -28,6 +30,8 @@ export function initializeCustomActions(): void {
     registerPaladinCustomActions();
     registerGunslingerCustomActions();
     registerSamuraiCustomActions();
+    registerTreantCustomActions();
+    registerNinjaCustomActions();
 
     initialized = true;
 }
@@ -41,3 +45,5 @@ export { registerShadowThiefCustomActions } from './shadow_thief';
 export { registerPaladinCustomActions } from './paladin';
 export { registerGunslingerCustomActions } from './gunslinger';
 export { registerSamuraiCustomActions } from './samurai';
+export { registerTreantCustomActions } from './treant';
+export { registerNinjaCustomActions } from './ninja';

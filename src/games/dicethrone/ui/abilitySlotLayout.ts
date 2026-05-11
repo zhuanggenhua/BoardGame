@@ -77,6 +77,8 @@ export const DICETHRONE_PLAYER_BOARD_DIMENSIONS: Record<string, PlayerBoardDimen
     pyromancer: { width: 2048, height: 1674 },
     samurai: { width: 2048, height: 1248 },
     shadow_thief: { width: 2048, height: 1686 },
+    treant: { width: 2048, height: 1233 },
+    ninja: { width: 2048, height: 1260 },
 };
 
 export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string, DiceThronePlayerBoardLayoutVersion> = {
@@ -88,6 +90,8 @@ export const DICETHRONE_PLAYER_BOARD_LAYOUT_VERSION_BY_CHARACTER: Record<string,
     paladin: 'v1',
     gunslinger: 'v2',
     samurai: 'v2',
+    treant: 'v2',
+    ninja: 'v2',
 };
 
 export const DICETHRONE_PLAYER_BOARD_UI_TUNING: DiceThroneBoardShellTuningMap = {

@@ -263,6 +263,54 @@
         "Deal half the result, rounded up, back to the attacker.",
         "This does not reduce the damage you take."
       ]
+    },
+    "treant_seedling": {
+      "name": "Seedling Spirit",
+      "description": [
+        "Limit 3. During your roll phase, spend 1 to reroll one of your dice."
+      ]
+    },
+    "treant_sapling": {
+      "name": "Sapling Spirit",
+      "description": [
+        "Limit 2. During your main phase, spend 1 to heal 1 and gain 1 CP; or also spend 1 CP to draw 1 card."
+      ]
+    },
+    "treant_divine": {
+      "name": "Divine Spirit",
+      "description": [
+        "Limit 1. Before dealing damage, spend it to add +3 damage; if an opponent attack would apply a negative status to you, prevent that status."
+      ]
+    },
+    "life_sap": {
+      "name": "Life Sap",
+      "description": [
+        "Limit 1. During your main phase, spend it and roll 1 die, then heal half the value rounded up."
+      ]
+    },
+    "thorn": {
+      "name": "Thorn",
+      "description": [
+        "Limit 1. During offensive roll, each additional roll attempt deals 1 damage to its owner; remove it at the end of the roll phase."
+      ]
+    },
+    "delayed_poison": {
+      "name": "Delayed Poison",
+      "description": [
+        "Limit 2. At the end of your turn, remove all Delayed Poison and take 3 damage per stack."
+      ]
+    },
+    "ninjutsu": {
+      "name": "Ninjutsu",
+      "description": [
+        "Limit 3. Before dealing damage, spend it and roll 1 die: 1-3 adds +1 damage; 4-5 adds +2 damage; 6 lets you choose +2 damage plus Delayed Poison, or +2 damage and make the attack undefendable."
+      ]
+    },
+    "smoke_bomb": {
+      "name": "Smoke Bomb",
+      "description": [
+        "Limit 1. Before receiving damage, spend it and roll 1 die; on 1-3, prevent that damage."
+      ]
     }
   },
   "actionLog": {
@@ -402,7 +450,9 @@
     "moon_elf": "Moon Elf",
     "paladin": "Paladin",
     "gunslinger": "Gunslinger",
-    "samurai": "Samurai"
+    "samurai": "Samurai",
+    "treant": "Treant",
+    "ninja": "Ninja"
   },
   "imageAlt": {
     "deck": "Deck",
@@ -494,7 +544,13 @@
       "bullseye": "Bullseye",
       "katana": "Katana",
       "helm": "Helm",
-      "rising_sun": "Rising Sun"
+      "rising_sun": "Rising Sun",
+      "branch": "Branch",
+      "leaf": "Leaf",
+      "spirit": "Spirit",
+      "ninja_katana": "Ninja Blade",
+      "shuriken": "Shuriken",
+      "mask": "Mask"
     }
   },
   "bonusDie": {
@@ -626,7 +682,11 @@
       "samuraiMasamune.result": "{{katanaCount}} Katana: +{{katanaCount}} damage; {{shameCount}} Helm: inflict {{shameCount}} Shame; {{retributionCount}} Rising Sun: gain {{retributionCount}} Back Strike (extra gains are ignored if you are at the stack limit)",
       "godsGrace.other": "Draw 1 card",
       "totalDamageContribution": "This die's {{value}} counts toward the final damage",
-      "totalDamageContributionThreshold": "This die's {{value}} counts toward the final damage; reaching the threshold also triggers the extra effect"
+      "totalDamageContributionThreshold": "This die's {{value}} counts toward the final damage; reaching the threshold also triggers the extra effect",
+      "treantLifeSap": "Life Sap: rolled {{value}}, healing {{heal}}.",
+      "treantLifeSapResult": "Life Sap heals {{heal}}.",
+      "ninjaNinjutsu": "Ninjutsu: rolled {{value}}.",
+      "ninjaNinjutsuResult": "Ninjutsu adds +{{bonusDamage}} damage."
     },
     "selectToReroll": "Click a die to spend {{cost}} {{token}} to reroll",
     "noTokenToReroll": "No {{token}} tokens available to reroll",
@@ -839,7 +899,12 @@
       "deal3": "Deal 3 undefendable damage",
       "preventHalf": "Prevent half of the incoming damage"
     },
-    "critOrAccuracy": "Choose to gain Crit or Accuracy"
+    "critOrAccuracy": "Choose to gain Crit or Accuracy",
+    "ninjaNinjutsu": {
+      "title": "Ninjutsu 6 result",
+      "poison": "+2 damage and apply Delayed Poison",
+      "undefendable": "+2 damage and make the attack undefendable"
+    }
   },
   "common": {
     "cancel": "Cancel",
@@ -2098,6 +2163,134 @@
     "samurai-ultimate": {
       "name": "Shogun!",
       "description": "Gain 1 Honor, inflict 2 Shame, then deal 13 undefendable damage."
+    },
+    "shattering-fist": {
+      "name": "Shattering Fist",
+      "description": "3/4/5 Branch deal 5/6/7 damage. Upgrades add stronger damage and Thorn support."
+    },
+    "shattering-fist-2": {
+      "name": "Shattering Fist II",
+      "description": "3/4/5 Branch deal 6/7/8 damage."
+    },
+    "shattering-fist-3": {
+      "name": "Shattering Fist III",
+      "description": "3/4/5 Branch deal 6/7/8 damage and apply Thorn."
+    },
+    "tend-care": {
+      "name": "Tend & Care",
+      "description": "Draw 1, cultivate Spirits, gain Life Sap, and apply Thorn."
+    },
+    "tend-care-2": {
+      "name": "Tend & Care II",
+      "description": "Draw 1, cultivate Spirits, gain an extra Sapling Spirit, gain Life Sap, and apply Thorn."
+    },
+    "vengeful-vines": {
+      "name": "Vengeful Vines",
+      "description": "Small Straight: apply Thorn and deal 7 damage."
+    },
+    "vengeful-vines-2": {
+      "name": "Vengeful Vines II",
+      "description": "Small Straight: apply Thorn and deal 8 damage."
+    },
+    "nature-touch": {
+      "name": "Nature Touch",
+      "description": "4 Spirit: cultivate 2 Spirits and deal 5 undefendable damage."
+    },
+    "nature-touch-2": {
+      "name": "Nature Touch II",
+      "description": "4 Spirit: cultivate 2 Spirits and deal 6 undefendable damage."
+    },
+    "quiet-cultivation": {
+      "name": "Quiet Cultivation",
+      "description": "At the start of your Upkeep phase, cultivate 1 Spirit."
+    },
+    "wild-growth": {
+      "name": "Wild Growth",
+      "description": "2 Branch + 3 Leaf: deal 2 damage and heal."
+    },
+    "wild-growth-2": {
+      "name": "Wild Growth II",
+      "description": "2 Branch + 3 Leaf: deal 4 damage and heal."
+    },
+    "rooted": {
+      "name": "Rooted",
+      "description": "Defensive roll 3 dice; Branch, Leaf, and Spirit grant different defensive rewards."
+    },
+    "rooted-2": {
+      "name": "Rooted II",
+      "description": "Defensive roll 4 dice; Branch, Leaf, and Spirit grant different defensive rewards."
+    },
+    "forest-awakens": {
+      "name": "Forest Awakens",
+      "description": "Ultimate: gain Life Sap, cultivate 5 Spirits, apply Thorn, and deal 10 damage."
+    },
+    "slash": {
+      "name": "Slash",
+      "description": "3/4/5 Ninja Blade deal 5/6/7 damage."
+    },
+    "slash-2": {
+      "name": "Slash II",
+      "description": "3/4/5 Ninja Blade deal 6/7/8 damage."
+    },
+    "going-forward": {
+      "name": "Going Forward",
+      "description": "4 Shuriken: deal 7 damage."
+    },
+    "going-forward-2": {
+      "name": "Going Forward II",
+      "description": "4 Shuriken: deal 7 damage."
+    },
+    "poison-blade": {
+      "name": "Poison Blade",
+      "description": "Small Straight: apply Delayed Poison and deal 5 damage."
+    },
+    "poison-blade-2": {
+      "name": "Poison Blade II",
+      "description": "Small Straight: apply Delayed Poison and deal 6 undefendable damage."
+    },
+    "shadow-step": {
+      "name": "Shadow Step",
+      "description": "4 Mask: gain Smoke Bomb, apply Delayed Poison, and deal 6 undefendable damage."
+    },
+    "shadow-step-2": {
+      "name": "Shadow Step II",
+      "description": "4 Mask: gain Smoke Bomb, apply 2 Delayed Poison, and deal 7 undefendable damage."
+    },
+    "death-blossom": {
+      "name": "Death Blossom",
+      "description": "3 Ninja Blade + 2 Shuriken: roll 5 dice and add damage or gain Ninjutsu by result."
+    },
+    "death-blossom-2": {
+      "name": "Death Blossom II",
+      "description": "3 Ninja Blade + 2 Shuriken: roll 5 dice and add damage or gain Ninjutsu by result."
+    },
+    "smoke-screen": {
+      "name": "Smoke Screen",
+      "description": "1 Ninja Blade + 2 Shuriken + 1 Mask: gain Smoke Bomb and 2 Ninjutsu, then apply Delayed Poison."
+    },
+    "smoke-screen-2": {
+      "name": "Smoke Screen II",
+      "description": "Gain Smoke Bomb and 3 Ninjutsu, then apply Delayed Poison."
+    },
+    "shadow-fang": {
+      "name": "Shadow Fang",
+      "description": "Large Straight: gain 2 Ninjutsu and deal 8 damage."
+    },
+    "shadow-fang-2": {
+      "name": "Shadow Fang II",
+      "description": "Large Straight: gain 2 Ninjutsu and deal 9 damage."
+    },
+    "blink": {
+      "name": "Blink",
+      "description": "Defensive roll 3 dice; Ninja Blade/Shuriken counterattack and Mask grants Smoke Bomb."
+    },
+    "blink-2": {
+      "name": "Blink II",
+      "description": "Defensive roll 3 dice; Ninja Blade/Shuriken counterattack and Mask grants Smoke Bomb."
+    },
+    "ninja-assassinate": {
+      "name": "Assassinate",
+      "description": "Ultimate: apply Delayed Poison, gain Smoke Bomb, and deal 10 damage."
     }
   },
   "cards": {
@@ -2670,6 +2863,126 @@
     "card-zanshin": {
       "name": "Zanshin!",
       "description": "Roll 5 additional dice. Each Katana adds 1 damage to this attack, each Helm inflicts 1 Shame, and each Rising Sun grants you 1 Back Strike."
+    },
+    "treant-card-trample": {
+      "name": "Trample!",
+      "description": "Roll 5 dice; each Branch adds +1 attack damage, and Spirit applies Thorn."
+    },
+    "upgrade-tend-care-2": {
+      "name": "Tend & Care II",
+      "description": "Upgrade Tend & Care."
+    },
+    "upgrade-rooted-2": {
+      "name": "Rooted II",
+      "description": "Upgrade Rooted."
+    },
+    "treant-card-drink-deep": {
+      "name": "Drink Deep!",
+      "description": "Gain Life Sap."
+    },
+    "upgrade-shattering-fist-3": {
+      "name": "Shattering Fist III",
+      "description": "Upgrade Shattering Fist to level III."
+    },
+    "treant-card-harvest": {
+      "name": "Harvest!",
+      "description": "Draw 1 and cultivate 1 Spirit."
+    },
+    "treant-card-cultivate": {
+      "name": "Cultivate!",
+      "description": "Cultivate 3 Spirits."
+    },
+    "treant-card-downpour": {
+      "name": "Downpour!",
+      "description": "Heal and cultivate a Spirit."
+    },
+    "upgrade-nature-touch-2": {
+      "name": "Nature Touch II",
+      "description": "Upgrade Nature Touch."
+    },
+    "treant-card-soulfire": {
+      "name": "Soulfire!",
+      "description": "Roll 3 dice and gain attack or resource benefits by result."
+    },
+    "treant-card-mother-tree": {
+      "name": "Mother Tree!",
+      "description": "Roll 1 die; Spirit cultivates, otherwise draw a card."
+    },
+    "upgrade-vengeful-vines-2": {
+      "name": "Vengeful Vines II",
+      "description": "Upgrade Vengeful Vines."
+    },
+    "upgrade-wild-growth-2": {
+      "name": "Wild Growth II",
+      "description": "Upgrade Wild Growth."
+    },
+    "upgrade-shattering-fist-2": {
+      "name": "Shattering Fist II",
+      "description": "Upgrade Shattering Fist to level II."
+    },
+    "treant-card-planting": {
+      "name": "Planting",
+      "description": "Cultivate 4 Spirits."
+    },
+    "ninja-card-training": {
+      "name": "Training!",
+      "description": "Gain 1 Ninjutsu."
+    },
+    "upgrade-blink-2": {
+      "name": "Blink II",
+      "description": "Upgrade Blink."
+    },
+    "upgrade-going-forward-2": {
+      "name": "Going Forward II",
+      "description": "Upgrade Going Forward."
+    },
+    "upgrade-slash-2": {
+      "name": "Slash II",
+      "description": "Upgrade Slash."
+    },
+    "upgrade-shadow-step-2": {
+      "name": "Shadow Step II",
+      "description": "Upgrade Shadow Step."
+    },
+    "ninja-card-shuriken": {
+      "name": "Shuriken!",
+      "description": "Roll 5 dice; each Ninja Blade adds +1 attack damage."
+    },
+    "ninja-card-escape": {
+      "name": "Escape!",
+      "description": "Play after being attacked; reduce damage or gain Smoke Bomb by die result."
+    },
+    "ninja-card-poison-dart": {
+      "name": "Poison Dart!",
+      "description": "Apply 2 Delayed Poison."
+    },
+    "ninja-card-knife-fan": {
+      "name": "Knife Fan!",
+      "description": "Deal 1 undefendable damage."
+    },
+    "upgrade-smoke-screen-2": {
+      "name": "Smoke Screen II",
+      "description": "Upgrade Smoke Screen."
+    },
+    "upgrade-shadow-fang-2": {
+      "name": "Shadow Fang II",
+      "description": "Upgrade Shadow Fang."
+    },
+    "upgrade-poison-blade-2": {
+      "name": "Poison Blade II",
+      "description": "Upgrade Poison Blade."
+    },
+    "upgrade-death-blossom-2": {
+      "name": "Death Blossom II",
+      "description": "Upgrade Death Blossom."
+    },
+    "ninja-card-vanish": {
+      "name": "Vanish!",
+      "description": "Gain Smoke Bomb."
+    },
+    "ninja-card-dojo": {
+      "name": "Dojo!",
+      "description": "Gain Smoke Bomb and 2 Ninjutsu."
     }
   },
   "passive": {
@@ -2690,9 +3003,28 @@
     "action": {
       "reroll": "Reroll",
       "draw": "Draw",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "custom": "Use",
+      "free": "Free"
     },
-    "selectDieHint": "Click a die to reroll"
+    "selectDieHint": "Click a die to reroll",
+  "treantSeedling": {
+    "name": "Seedling Spirit",
+    "rerollShort": "Reroll",
+    "reroll": "Spend Seedling to reroll"
+  },
+  "treantSapling": {
+    "name": "Sapling Spirit",
+    "healCpShort": "Heal+CP",
+    "healCp": "Heal 1 and gain 1 CP",
+    "drawShort": "Draw",
+    "draw": "Spend Sapling and 1 CP to draw 1"
+  },
+  "treantLifeSap": {
+    "name": "Life Sap",
+    "rollHealShort": "Heal",
+    "rollHeal": "Roll to heal half"
+  }
   },
   "cardSpotlight": {
     "playerPlayed": "{{player}} played a card",
@@ -2749,5 +3081,3 @@
     "ariaPanel": "Game Over Panel"
   }
 }
-
-

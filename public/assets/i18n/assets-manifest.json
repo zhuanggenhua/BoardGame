@@ -4000,6 +4000,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/Common/角色头像2": {
+      "variants": {
+        "png": {
+          "sha256": "c72c311c9360b6c019e627cf4c2326db03eeea4a3bf91ef246b6cb0cf1ed2747",
+          "bytes": 21314719,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/Common/compressed/background": {
       "variants": {
         "webp": {
@@ -4276,6 +4285,15 @@
           "sha256": "85882a0e782e061275fab30f86ea016f072d76c9a6ee06650fdd5d6d9dc70c7e",
           "bytes": 35654,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "0f66657f5802b7112bb975eda96f6716facd64d0241ee7ab38548f02f1f7e0b5",
+          "bytes": 526,
+          "mime": "application/json"
         }
       }
     },
@@ -4612,6 +4630,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/treant/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
+          "bytes": 789,
+          "mime": "application/json"
+        }
+      }
+    },
     "zh-CN/dicethrone/thumbnails/compressed/fengm": {
       "variants": {
         "webp": {
@@ -4681,6 +4708,15 @@
           "sha256": "ac6bf989362e14fe01b84c86b3ffefb0d00a2a8e711c1ac6a97d1ca225bfa9ad",
           "bytes": 708688,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/base/shayu": {
+      "variants": {
+        "png": {
+          "sha256": "bce7b42d41111d454117c40b32efad6e13ae512d3f03980757793ca1e6ebd607",
+          "bytes": 17007487,
+          "mime": "image/png"
         }
       }
     },
@@ -4770,6 +4806,15 @@
         "png": {
           "sha256": "360bda45784ff280418ab80a1959e28a66790a11b669ddd758d057e9b4233a1f",
           "bytes": 25271332,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/shayu": {
+      "variants": {
+        "png": {
+          "sha256": "2b8146e44fbd1e7eb79115e848f20ef30d323b8dbb924ab462b8432e64110fac",
+          "bytes": 42559123,
           "mime": "image/png"
         }
       }
