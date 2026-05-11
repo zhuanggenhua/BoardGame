@@ -5,6 +5,8 @@ import { DICETHRONE_CARD_ATLAS_IDS } from '../domain/ids';
 import { ASSETS } from './assets';
 // 直接 import src/ 下的 JSON（同步，Vite 构建时内联）
 import atlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-common.atlas.json';
+import treantAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-treant.atlas.json';
+import ninjaAtlasConfigData from '../../../assets/atlas-configs/dicethrone/ability-cards-ninja.atlas.json';
 
 // 向后兼容类型别名
 export type CardAtlasConfig = SpriteAtlasConfig;
@@ -35,10 +37,14 @@ const SAMURAI_GLOBAL_SHIFT_X = -3.97; // 对应实图约 -4px
 
 const GUNSLINGER_CARD_ATLAS_CONFIG = applyGlobalOffset(COMMON_CARD_ATLAS_CONFIG, GUNSLINGER_GLOBAL_SHIFT_X);
 const SAMURAI_CARD_ATLAS_CONFIG = applyGlobalOffset(COMMON_CARD_ATLAS_CONFIG, SAMURAI_GLOBAL_SHIFT_X);
+const TREANT_CARD_ATLAS_CONFIG = parseAtlasConfig(treantAtlasConfigData, 'ability-cards-treant.atlas.json');
+const NINJA_CARD_ATLAS_CONFIG = parseAtlasConfig(ninjaAtlasConfigData, 'ability-cards-ninja.atlas.json');
 
 const getHeroAtlasConfig = (charId: string) => {
     if (charId === 'gunslinger') return GUNSLINGER_CARD_ATLAS_CONFIG;
     if (charId === 'samurai') return SAMURAI_CARD_ATLAS_CONFIG;
+    if (charId === 'treant') return TREANT_CARD_ATLAS_CONFIG;
+    if (charId === 'ninja') return NINJA_CARD_ATLAS_CONFIG;
     return COMMON_CARD_ATLAS_CONFIG;
 };
 /**

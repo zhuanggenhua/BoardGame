@@ -16,6 +16,8 @@ import { PALADIN_ABILITIES, PALADIN_TOKENS, PALADIN_INITIAL_TOKENS, getPaladinSt
 import { PALADIN_TITHES_BASE } from '../heroes/paladin/abilities';
 import { GUNSLINGER_ABILITIES, GUNSLINGER_TOKENS, GUNSLINGER_INITIAL_TOKENS, getGunslingerStartingDeck } from '../heroes/gunslinger';
 import { SAMURAI_ABILITIES, SAMURAI_TOKENS, SAMURAI_INITIAL_TOKENS, getSamuraiStartingDeck } from '../heroes/samurai';
+import { TREANT_ABILITIES, TREANT_TOKENS, TREANT_INITIAL_TOKENS, TREANT_PASSIVE_ABILITIES, getTreantStartingDeck } from '../heroes/treant';
+import { NINJA_ABILITIES, NINJA_TOKENS, NINJA_INITIAL_TOKENS, getNinjaStartingDeck } from '../heroes/ninja';
 import { createDie } from '../../../engine/primitives';
 import { getDiceDefinition } from './diceRegistry';
 import { resourceSystem } from './resourceSystem';
@@ -206,6 +208,48 @@ export const CHARACTER_DATA_MAP: Record<SelectableCharacterId, CharacterData> = 
         },
         statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.SAMURAI,
         statusAtlasPath: 'dicethrone/images/samurai/status-icons-atlas.json',
+    },
+    treant: {
+        id: 'treant',
+        abilities: TREANT_ABILITIES,
+        tokens: TREANT_TOKENS,
+        initialTokens: TREANT_INITIAL_TOKENS,
+        diceDefinitionId: 'treant-dice',
+        getStartingDeck: getTreantStartingDeck,
+        initialAbilityLevels: {
+            'shattering-fist': 1,
+            'tend-care': 1,
+            'vengeful-vines': 1,
+            'nature-touch': 1,
+            'quiet-cultivation': 1,
+            'wild-growth': 1,
+            'rooted': 1,
+            'forest-awakens': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.TREANT,
+        statusAtlasPath: 'dicethrone/images/treant/status-icons-atlas.json',
+        passiveAbilities: TREANT_PASSIVE_ABILITIES,
+    },
+    ninja: {
+        id: 'ninja',
+        abilities: NINJA_ABILITIES,
+        tokens: NINJA_TOKENS,
+        initialTokens: NINJA_INITIAL_TOKENS,
+        diceDefinitionId: 'ninja-dice',
+        getStartingDeck: getNinjaStartingDeck,
+        initialAbilityLevels: {
+            'slash': 1,
+            'going-forward': 1,
+            'poison-blade': 1,
+            'shadow-step': 1,
+            'death-blossom': 1,
+            'smoke-screen': 1,
+            'shadow-fang': 1,
+            'blink': 1,
+            'ninja-assassinate': 1,
+        },
+        statusAtlasId: DICETHRONE_STATUS_ATLAS_IDS.NINJA,
+        statusAtlasPath: 'dicethrone/images/ninja/status-icons-atlas.json',
     },
 };
 

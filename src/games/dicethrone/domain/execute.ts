@@ -974,13 +974,31 @@ export function execute(
             if (currentCp < action.cpCost) break;
 
             // 扣除 CP
-            const newCp = currentCp - action.cpCost;
-            events.push({
-                type: 'CP_CHANGED',
-                payload: { playerId: command.playerId, delta: -action.cpCost, newValue: newCp, sourceAbilityId: passiveId },
-                sourceCommandType: command.type,
-                timestamp,
-            });
+            if (action.cpCost > 0) {
+                const newCp = currentCp - action.cpCost;
+                events.push({
+                    type: 'CP_CHANGED',
+                    payload: { playerId: command.playerId, delta: -action.cpCost, newValue: newCp, sourceAbilityId: passiveId },
+                    sourceCommandType: command.type,
+                    timestamp,
+                });
+            }
+
+            // 扣除 Token 成本（如树精的幼种/木苗树灵/生命源泉）
+            if (action.tokenCost) {
+                const currentTokenAmount = player.tokens[action.tokenCost.tokenId] ?? 0;
+                events.push({
+                    type: 'TOKEN_CONSUMED',
+                    payload: {
+                        playerId: command.playerId,
+                        tokenId: action.tokenCost.tokenId,
+                        amount: action.tokenCost.amount,
+                        newTotal: Math.max(0, currentTokenAmount - action.tokenCost.amount),
+                    },
+                    sourceCommandType: command.type,
+                    timestamp,
+                } as DiceThroneEvent);
+            }
 
             // 执行动作
             if (action.type === 'rerollDie' && targetDieId !== undefined) {
@@ -1018,6 +1036,28 @@ export function execute(
                 events.push(
                     ...buildDrawEvents(state, command.playerId, 1, random, command.type, timestamp + 1, passiveId)
                 );
+            } else if (action.type === 'custom' && action.customActionId) {
+                const handler = getCustomActionHandler(action.customActionId);
+                if (handler) {
+                    const opponentId = getDefaultOpponentId(state, command.playerId) ?? command.playerId;
+                    events.push(...handler({
+                        ctx: {
+                            attackerId: command.playerId,
+                            defenderId: opponentId,
+                            sourceAbilityId: passiveId,
+                            state,
+                            damageDealt: 0,
+                            timestamp: timestamp + 1,
+                        },
+                        targetId: opponentId,
+                        attackerId: command.playerId,
+                        sourceAbilityId: passiveId,
+                        state,
+                        timestamp: timestamp + 1,
+                        random,
+                        action: { type: 'custom', target: 'self', customActionId: action.customActionId },
+                    }));
+                }
             }
             break;
         }

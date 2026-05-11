@@ -14,6 +14,10 @@ import { GUNSLINGER_CARDS, getGunslingerStartingDeck } from './gunslinger/cards'
 import { GUNSLINGER_ABILITIES } from './gunslinger/abilities';
 import { SAMURAI_CARDS, getSamuraiStartingDeck } from './samurai/cards';
 import { SAMURAI_ABILITIES } from './samurai/abilities';
+import { TREANT_CARDS, getTreantStartingDeck } from './treant/cards';
+import { TREANT_ABILITIES } from './treant/abilities';
+import { NINJA_CARDS, getNinjaStartingDeck } from './ninja/cards';
+import { NINJA_ABILITIES } from './ninja/abilities';
 import type { AbilityCard } from '../types';
 import type { AbilityDef } from '../domain/combat';
 import type { RandomFn } from '../../../engine/types';
@@ -64,6 +68,16 @@ export const HEROES_DATA: Record<string, HeroData> = {
         cards: SAMURAI_CARDS,
         abilities: SAMURAI_ABILITIES,
         getStartingDeck: getSamuraiStartingDeck,
+    },
+    treant: {
+        cards: TREANT_CARDS,
+        abilities: TREANT_ABILITIES,
+        getStartingDeck: getTreantStartingDeck,
+    },
+    ninja: {
+        cards: NINJA_CARDS,
+        abilities: NINJA_ABILITIES,
+        getStartingDeck: getNinjaStartingDeck,
     },
 };
 

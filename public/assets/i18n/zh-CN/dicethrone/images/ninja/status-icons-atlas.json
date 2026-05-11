@@ -1,0 +1,35 @@
+{
+  "meta": {
+    "image": "status-icons-atlas.png",
+    "size": {
+      "w": 768,
+      "h": 256
+    }
+  },
+  "frames": {
+    "delayed_poison": {
+      "frame": {
+        "x": 0,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      }
+    },
+    "ninjutsu": {
+      "frame": {
+        "x": 256,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      }
+    },
+    "smoke_bomb": {
+      "frame": {
+        "x": 512,
+        "y": 0,
+        "w": 256,
+        "h": 256
+      }
+    }
+  }
+}

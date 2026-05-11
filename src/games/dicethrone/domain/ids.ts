@@ -90,6 +90,19 @@ export const TOKEN_IDS = {
     HONOR: 'honor',
     SHAME: 'shame',
     SAMURAI_RETRIBUTION: 'samurai_retribution',
+
+    /** 树精：幼种树灵 / 木苗树灵 / 神性树灵 */
+    TREANT_SEEDLING: 'treant_seedling',
+    TREANT_SAPLING: 'treant_sapling',
+    TREANT_DIVINE: 'treant_divine',
+    /** 树精：生命源泉 / 刺藤 */
+    LIFE_SAP: 'life_sap',
+    THORN: 'thorn',
+
+    /** 忍者：慢性中毒 / 忍术 / 烟雾弹 */
+    DELAYED_POISON: 'delayed_poison',
+    NINJUTSU: 'ninjutsu',
+    SMOKE_BOMB: 'smoke_bomb',
 } as const;
 
 export type TokenId = (typeof TOKEN_IDS)[keyof typeof TOKEN_IDS];
@@ -179,6 +192,22 @@ export const SAMURAI_DICE_FACE_IDS = {
 
 export type SamuraiDiceFaceId = (typeof SAMURAI_DICE_FACE_IDS)[keyof typeof SAMURAI_DICE_FACE_IDS];
 
+export const TREANT_DICE_FACE_IDS = {
+    BRANCH: 'branch',
+    LEAF: 'leaf',
+    SPIRIT: 'spirit',
+} as const;
+
+export type TreantDiceFaceId = (typeof TREANT_DICE_FACE_IDS)[keyof typeof TREANT_DICE_FACE_IDS];
+
+export const NINJA_DICE_FACE_IDS = {
+    KATANA: 'ninja_katana',
+    SHURIKEN: 'shuriken',
+    MASK: 'mask',
+} as const;
+
+export type NinjaDiceFaceId = (typeof NINJA_DICE_FACE_IDS)[keyof typeof NINJA_DICE_FACE_IDS];
+
 // ============================================================================
 // 骰面 ID（影贼）
 // ============================================================================
@@ -244,6 +273,8 @@ export const DICETHRONE_CARD_ATLAS_IDS = {
     PALADIN: 'dicethrone:paladin-cards',
     GUNSLINGER: 'dicethrone:gunslinger-cards',
     SAMURAI: 'dicethrone:samurai-cards',
+    TREANT: 'dicethrone:treant-cards',
+    NINJA: 'dicethrone:ninja-cards',
 } as const;
 
 export const DICETHRONE_HAND_CARD_ATLAS_IDS = {
@@ -260,4 +291,6 @@ export const DICETHRONE_STATUS_ATLAS_IDS = {
     PALADIN: 'dicethrone:paladin-status',
     GUNSLINGER: 'dicethrone:gunslinger-status',
     SAMURAI: 'dicethrone:samurai-status',
+    TREANT: 'dicethrone:treant-status',
+    NINJA: 'dicethrone:ninja-status',
 } as const;

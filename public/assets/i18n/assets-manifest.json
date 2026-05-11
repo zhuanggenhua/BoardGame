@@ -58,12 +58,57 @@
         }
       }
     },
+    "en/smashup/taitan/compressed/taitan1": {
+      "variants": {
+        "webp": {
+          "sha256": "fc1cec26f52d1bde810efd90933e470700536b8fa36b3813837c38b43611d049",
+          "bytes": 2185502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "en/smashup/taitan/taitan1": {
+      "variants": {
+        "png": {
+          "sha256": "0584de5873d93e19292ec60a346ceb4efbe73f42766645f2d34036bcaa60f981",
+          "bytes": 23674169,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/barbarian/status-icons-atlas.json": {
       "variants": {
         "json": {
           "sha256": "baa5a13a59d359c46081928bfa497b0bb1dd39853b497829c6e137d0ebc4dfe1",
           "bytes": 387,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/Common/compressed/background": {
+      "variants": {
+        "webp": {
+          "sha256": "0aa554c2ea095db6762b954f0e98f020a74d87e460705511877af2594f3baef7",
+          "bytes": 98502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/Common/compressed/card-background": {
+      "variants": {
+        "webp": {
+          "sha256": "d048889c409b984858de44dc0c1b866ca776f7a9b93ed9562e70345d9f575688",
+          "bytes": 21170,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/Common/compressed/character-portraits": {
+      "variants": {
+        "webp": {
+          "sha256": "329ed4504c3bf59d31dce7b93be7af951f9277c89aa9931103a0d459bcd325ed",
+          "bytes": 165570,
+          "mime": "image/webp"
         }
       }
     },
@@ -94,6 +139,159 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/ninja/慢性中毒": {
+      "variants": {
+        "png": {
+          "sha256": "c690c58ca28ecb318f93ed15055a476dba8a409ccb3600745988be133ea4a5a4",
+          "bytes": 49098,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/忍术icon": {
+      "variants": {
+        "png": {
+          "sha256": "27962c4a1c81bc2da74865e5d26039507a03a7cfbed4e267cfd5676b1c7cfbbb",
+          "bytes": 34564,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/提示板": {
+      "variants": {
+        "png": {
+          "sha256": "e870eceeec133ab55c90544f761500d737f08418aeb5ef81dbc404cc2b399060",
+          "bytes": 9404983,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "e0f217c0c85b81790eb19fb2fff7c16850f34797752c38bfb255bb96e7322fe0",
+          "bytes": 10431472,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/烟雾弹icon": {
+      "variants": {
+        "png": {
+          "sha256": "1fb5fcabcd1c91370814b49b91157927ce9a67b97c208c9d97218a0eca03befa",
+          "bytes": 42841,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "86e4737226d956f4e5131f07ccbd6f416b3bfac37d07160284d204611ff0251c",
+          "bytes": 3106030,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/Ablilitycards": {
+      "variants": {
+        "png": {
+          "sha256": "2c1605f4b0e8188b5c1ca051cffbe2a81a41c9151ff7f20e94737cef7bb4c66b",
+          "bytes": 14972616,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "663fb66746f4e856f1274dad1487621692aa6163d9a41f603d511400ef0bc5c7",
+          "bytes": 366232,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "df592e2229f68db43c67903c08105cbf41306bd80a04f16e51da794ff62aa752",
+          "bytes": 17402,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "faa5bcfe26aa666438c0a91515378c19f1248bb70c8066212cf7ac785df63c70",
+          "bytes": 433332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "524534b96f15127de8f218bb1620e3abb392610287a0bfdd47faf44a07fcb679",
+          "bytes": 20226,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "0f783bc91187b47a927652c496261313f4cb18bd73fc14ae7f7dd0041fb192ab",
+          "bytes": 344592,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/dice": {
+      "variants": {
+        "png": {
+          "sha256": "85882a0e782e061275fab30f86ea016f072d76c9a6ee06650fdd5d6d9dc70c7e",
+          "bytes": 35654,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "8a8f838e70cf4007cbffa36c8f99811819d162d372ed48956cc9dc1cdf911720",
+          "bytes": 4162819,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/status-icons-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "f9aa90867c3dc92c1e835caf67cfa0cdb2d7789ddcad3d3b344f7a5f4932166d",
+          "bytes": 88297,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "0f66657f5802b7112bb975eda96f6716facd64d0241ee7ab38548f02f1f7e0b5",
+          "bytes": 526,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/tip": {
+      "variants": {
+        "png": {
+          "sha256": "74136e602001f9b96968087e73c4ce7d35822b4971dd882782e621fcc96fe1cf",
+          "bytes": 3950985,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/paladin/status-icons-atlas.json": {
       "variants": {
         "json": {
@@ -115,8 +313,8 @@
     "zh-CN/dicethrone/images/samurai/status-icons-atlas.json": {
       "variants": {
         "json": {
-          "sha256": "aec1b6413c51c921105ad70e33fc216ac736b73c995315353d707ae09e01eb7f",
-          "bytes": 622,
+          "sha256": "8e8512012c12ebb59a77fb9bb8cbeb299ca1622d898a148187e2706312c99f54",
+          "bytes": 627,
           "mime": "application/json"
         }
       }
@@ -127,6 +325,222 @@
           "sha256": "2d4cbca373c695e16c4e46bb6024125db882443ee94ba4a7e55e36f8f3ce955a",
           "bytes": 521,
           "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/木苗树灵": {
+      "variants": {
+        "png": {
+          "sha256": "85d2f782ad9dc81556217b0276bee729e2d2852607e2c3228ea52adceb6792ab",
+          "bytes": 69810,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/神性树灵": {
+      "variants": {
+        "png": {
+          "sha256": "d7396c997b70dbdadbdb3f3bd338146cc6757fae7495bef8bd9ab9be0fb85fd0",
+          "bytes": 63315,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/生命源泉": {
+      "variants": {
+        "png": {
+          "sha256": "84ce3ffdaa8c714c87bda024ad2a0d51ce393d0cf27101c11d4df01ab701293a",
+          "bytes": 64314,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/提示板": {
+      "variants": {
+        "png": {
+          "sha256": "18f048353c8d5b951d59a298d01b4f2a106dbe1a6b935f76fab2cd968a0728f0",
+          "bytes": 9228891,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/玩家面板": {
+      "variants": {
+        "png": {
+          "sha256": "19944a80c701ec6e5d7d49f656ba596a3faa57d705f6e9dd105afe87645b4428",
+          "bytes": 12598188,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/幼种树灵": {
+      "variants": {
+        "png": {
+          "sha256": "9e11bfb6199bcee56ff5b87d64d8d8c83285ebfbf457ae7e0603701ac76bb902",
+          "bytes": 50153,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/ability-cards": {
+      "variants": {
+        "png": {
+          "sha256": "047fac2ef4430d6b6ee30b10237a0c6db13358c4033a7ed322fe2e8cf6983a96",
+          "bytes": 3134925,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/abilitycards": {
+      "variants": {
+        "png": {
+          "sha256": "d7a894a209b8acf4c3d47ee4de693464e2938c7334073508b687d7ef54304a5d",
+          "bytes": 14960145,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "adbdb46798f1a53730e2d9db2524c40eab14a6ad1a1c9ef7bb20ed84f91dc0f9",
+          "bytes": 372972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "4cf6e2e53cad4af5d240a3c8158308bed9667b7994b63629cabbc370d05c7db0",
+          "bytes": 20634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "df02384eab0bea93cf2b490c03308d857fbab5001cd10916adc35986ad165515",
+          "bytes": 546910,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "65fbfb0e1cdddf2d80426d39c2673842efde2dd896b1d13f91d7b9fe2c7cdff6",
+          "bytes": 31972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "e84b5a9a2b0491ac340f2f9c503bee9bcf67792e98b3cd29cee449ea80c9b8a5",
+          "bytes": 416672,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/dice": {
+      "variants": {
+        "png": {
+          "sha256": "ca7df6144dd6323bd9e71f7e57591eeaa6957534337bbf6f47120363e936fcb4",
+          "bytes": 58772,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/player-board": {
+      "variants": {
+        "png": {
+          "sha256": "9361584f791f0dcf4b41077ef7b9c1f1013e0824f49866fb763181042946313b",
+          "bytes": 4851427,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/status-icons-atlas": {
+      "variants": {
+        "png": {
+          "sha256": "e33f09c89f040fd2b735b94fde069eb20ea6470f56198e32f50919d79e91cc09",
+          "bytes": 195998,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/status-icons-atlas.json": {
+      "variants": {
+        "json": {
+          "sha256": "f11a7cc9c2d7e22723e1c1ecfee0d86ddaecbdc4d0d27f47a71ec10411eb5f12",
+          "bytes": 789,
+          "mime": "application/json"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/tip": {
+      "variants": {
+        "png": {
+          "sha256": "4db8cc8974318fd10e9c6fd40da5b4bb4eb18062fe14d05d8d8d2de9898f9af1",
+          "bytes": 4139778,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/base3": {
+      "variants": {
+        "png": {
+          "sha256": "cca1be600566e4212366f405181a6ef8c73fc201fc5973f9119ad0dcef5dbf48",
+          "bytes": 8991232,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/base/compressed/base3": {
+      "variants": {
+        "webp": {
+          "sha256": "ed34508db2241fcafc1bac46698964f3359d279b90fc1187ab8ff8bbb56872d4",
+          "bytes": 683480,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/compressed/pretty_pretty": {
+      "variants": {
+        "webp": {
+          "sha256": "9acb69320a70f81287570cb7b9b00318192fc4229c90d12016265fcd83776a63",
+          "bytes": 2549084,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/pretty_pretty": {
+      "variants": {
+        "png": {
+          "sha256": "360bda45784ff280418ab80a1959e28a66790a11b669ddd758d057e9b4233a1f",
+          "bytes": 25271332,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/taitan/compressed/taitan1": {
+      "variants": {
+        "webp": {
+          "sha256": "fc1cec26f52d1bde810efd90933e470700536b8fa36b3813837c38b43611d049",
+          "bytes": 2185502,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/taitan/taitan1": {
+      "variants": {
+        "png": {
+          "sha256": "0584de5873d93e19292ec60a346ceb4efbe73f42766645f2d34036bcaa60f981",
+          "bytes": 23674169,
+          "mime": "image/png"
         }
       }
     }

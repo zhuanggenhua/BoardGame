@@ -1,3 +1,102 @@
+# Task Plan: DiceThrone 新增 Treant / Ninja 两个英雄（2026-05-09）
+
+> 当前正式计划入口。下方历史计划来自创建 worktree 时的主线文件，仅保留为历史上下文，不作为本轮任务入口。
+
+## Goal
+
+在独立 worktree `.worktrees/dicethrone-treant-ninja` 中，基于用户提供的两组中文图片素材新增 Dice Throne `treant` 与 `ninja` 两个英雄，完成三方图片规格对比、资源接入、静态数据与必要机制实现、审计文档、测试/E2E、截图与资源链路收口。
+
+## Scope
+
+- 主真相源：
+  - `public/assets/i18n/zh-CN/dicethrone/images/treant`
+  - `public/assets/i18n/zh-CN/dicethrone/images/ninja`
+- 参考对象：成熟旧英雄与新英雄 `gunslinger`，必要时对照 `samurai` / `moon_elf` 等复合升级与 atlas 接线。
+- 工作现场：`D:\gongzuo\webgame\BoardGame\.worktrees\dicethrone-treant-ninja`
+- 分支状态：detached HEAD，未新建分支。
+
+## Acceptance Checklist
+
+- [x] S0 合同层：锁定两英雄真相源、素材清单、图片规格差异、可复用项/谨慎项、冲突待裁定项。
+- [x] S0 裁图层：生成单对象可读裁图/核对图，临时图放 `temp/`，正式资源与核对中间产物分层登记。
+- [x] S0 文档层：为两个英雄创建/更新真相源表、录入核对、卡牌录入核对。
+- [x] S1 资源层：压缩正式资源，重建 manifest，确认 `compressed/` 和 atlas 引用合同。
+- [x] S1 配置层：接入英雄注册、骰面、token、能力、卡牌、critical images、locale。
+- [x] S2 机制层：实现无法直接复用的 token / 被动 / 技能 / 卡牌机制，优先复用旧英雄共享逻辑。
+- [x] S2 共享契约对比：至少与 `gunslinger` 和一个成熟复合升级英雄做并排核对。
+- [x] S3 验证层：补/更新现有测试文件，跑相关 Vitest、eslint/typecheck，必要时跑真实入口 E2E。
+- [x] S3 截图层：若涉及 UI/卡图展示，必须实际看截图并写 evidence。
+- [x] S4 审计层：在 `evidence/` 落两个英雄审计与端到端证据文档，结论按 L1-L4 分层。
+- [x] S4 资源远端层：运行资源上传并抽查代表性 URL；若受环境阻塞，明确列未上传资源与影响。
+
+## Current Status
+
+- [x] 已创建 detached worktree：`.worktrees/dicethrone-treant-ninja`
+- [x] 已确认主工作树有大量无关脏改，本轮不在主工作树继续。
+- [x] 已把用户给出的 `treant` / `ninja` 图片目录复制进新 worktree。
+- [x] 已完成 S0-S4：新增 treant/ninja，完成资源、配置、规则文档、审计证据、测试/E2E、R2 回查。
+
+## Reopened Scope（2026-05-10 用户复盘）
+
+- [x] 重新按 `dicethrone-hero-intake` 新门禁复核，不再把选角 E2E 视为全流程完成。
+- [x] 建立 treant/ninja 批次矩阵：数据录入、机制、资源上传、E2E、审计逐格证明。
+- [x] 逐项核对两个角色的技能、Token、卡牌是否只有 L1/L2，列出未实现项。
+- [x] 修订 evidence，明确哪些是真完成、哪些是 scoped-debt。
+- [x] 如果要宣称彻底完成，必须补齐 L2/L3/L4 缺口；否则不得收口。
+
+
+## Restart Contract（2026-05-10 重来口径）
+
+> 用户明确要求“新增派系是通用 skill，没有就加，给我重来”。本节覆盖上方旧 Closeout Snapshot；旧 `S0-S4 已完成` 只能视为上一轮误收口历史，不作为当前完成证明。
+
+### 新增派系/角色通用 skill
+
+| 项 | 状态 | 证据 |
+|---|---|---|
+| 项目通用 skill `.windsurf/skills/add-new-faction/SKILL.md` | passed | `PYTHONUTF8=1 python D:\codex-home\skills\.system\skill-creator\scripts\quick_validate.py .windsurf\skills\add-new-faction` -> `Skill is valid!` |
+| `data-entry-workflow` 路由到通用新增派系 skill | passed | `.windsurf/skills/data-entry-workflow/SKILL.md` 已包含“通用新增派系 / 新增角色 / 新增英雄”路由 |
+| DiceThrone hero intake 门禁补强 | passed | `docs/games/dicethrone/workflows/dicethrone-hero-intake.md` 已增加禁止提前收口、批次矩阵、L0-L4 与资源/E2E/审计门禁 |
+
+### Treant / Ninja 重审批次矩阵（当前真状态）
+
+| objectId | 数据录入 | 资源链 | 机制实现 | 审计 | E2E | 状态 |
+|---|---|---|---|---|---|---|
+| `treant` | passed | passed | passed | passed | passed | passed |
+| `ninja` | passed | passed | passed | passed | passed | passed |
+
+上表已经在 2026-05-10 20:16 +08 全部核销为 `passed`；本轮可以使用“完成/收口”口径，但必须同时引用 evidence、测试命令和截图路径。
+
+### 重审缺口核销结果
+
+以下清单是 2026-05-10 18:49 +08 重新打开时的待审/待修项，20:16 +08 后不再作为阻塞项保留；逐项实现状态、L2/L3 证据与剩余风险以 `evidence/dicethrone/dicethrone-treant-ninja-intake-audit-2026-05-10.md` 为准。
+
+- Treant：`seedling` / `sapling` / `divine` / `life_sap` / `thorn` 已完成机制复核；生命源泉另有真实入口 E2E 截图链证明主阶段奖励骰治疗可触发、可展示、可收口。
+- Ninja：`delayed_poison` / `smoke_bomb` / `ninjutsu` 已完成机制复核；忍术另有真实入口 E2E 截图链证明 beforeDamageDealt 奖励骰加伤可触发、可展示、可收口。
+- 旧问题“按钮可见但 custom 被动不派发命令”已修在 `src/games/dicethrone/Board.tsx`。
+- 旧问题“beforeDamageDealt token 加伤只更新 pendingDamage，不同步 pendingAttack.bonusDamage”已修在 `src/games/dicethrone/domain/reduceCombat.ts`。
+
+## Closeout Snapshot
+
+- 2026-05-10 20:16 +08：按通用新增派系 skill 重来后，Treant / Ninja 的数据录入、资源链、机制 L2、真实入口 E2E、审计 evidence 已全部重新核销为 passed。
+- 旧 16:20 收口只证明选角/静态接入，已在 evidence 中明确标记为失效结论。
+- 证据文档：`evidence/dicethrone/dicethrone-treant-ninja-intake-audit-2026-05-10.md`。
+- 机制 E2E 命令：`PW_PORT=6473 / PW_GAME_SERVER_PORT=20300 / PW_API_SERVER_PORT=21300 / PW_WORKERS=1 npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts` -> 4 passed。
+- 关键截图：
+  - `test-results/evidence-screenshots/dicethrone/dicethrone-treant-ninja-mechanics.e2e/树精生命源泉应在主阶段触发奖励骰治疗并收口/03-life-sap-after-close.png`
+  - `test-results/evidence-screenshots/dicethrone/dicethrone-treant-ninja-mechanics.e2e/忍者忍术应在伤害前掷骰加伤并回到可收口状态/02-ninjutsu-bonus-die-overlay.png`
+  - `test-results/evidence-screenshots/dicethrone/dicethrone-treant-ninja-mechanics.e2e/忍者忍术应在伤害前掷骰加伤并回到可收口状态/03-ninjutsu-after-bonus-closeout.png`
+  - `test-results/evidence-screenshots/dicethrone/dicethrone-treant-ninja-mechanics.e2e/树精木苗树灵两个主阶段按钮应短文案展示并真实结算/01-sapling-short-buttons-before-use.png`
+  - `test-results/evidence-screenshots/dicethrone/dicethrone-treant-ninja-mechanics.e2e/忍者忍术6点应弹出分支选择并能施加慢性中毒/02-ninjutsu-6-choice-modal.png`
+
+
+## Errors Encountered
+
+| 时间 | 错误 | 处置 |
+| --- | --- | --- |
+| 2026-05-09 | 首次复制素材时用 `Copy-Item -LiteralPath ...\*`，PowerShell 将 `*` 当字面量导致找不到路径。 | 改用 `Copy-Item -Path ...\*` 后复制成功。 |
+
+---
+
 # Task Plan: 线上反馈持续修复（2026-05-03）
 
 > 来源：线上反馈源（生产 API + 生产 Mongo）

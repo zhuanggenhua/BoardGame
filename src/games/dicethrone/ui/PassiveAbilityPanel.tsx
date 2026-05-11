@@ -9,7 +9,7 @@
 
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Dices, BookOpen } from 'lucide-react';
+import { Dices, BookOpen, Sparkles } from 'lucide-react';
 import { GameButton } from './components/GameButton';
 import type { PassiveAbilityDef, PassiveActionDef } from '../domain/passiveAbility';
 
@@ -32,6 +32,7 @@ export interface PassiveAbilityPanelProps {
 const ACTION_ICON: Record<string, React.ReactNode> = {
     rerollDie: <Dices className="w-[0.9vw] h-[0.9vw]" />,
     drawCard: <BookOpen className="w-[0.9vw] h-[0.9vw]" />,
+    custom: <Sparkles className="w-[0.9vw] h-[0.9vw]" />,
 };
 
 export const PassiveAbilityPanel: React.FC<PassiveAbilityPanelProps> = ({
@@ -67,6 +68,8 @@ export const PassiveAbilityPanel: React.FC<PassiveAbilityPanelProps> = ({
                                     <PassiveActionButton
                                         key={idx}
                                         action={action}
+                                        passiveId={passive.id}
+                                        actionIndex={idx}
                                         isUsable={isUsable}
                                         isSelecting={isSelecting}
                                         currentCp={currentCp}
@@ -91,21 +94,31 @@ export const PassiveAbilityPanel: React.FC<PassiveAbilityPanelProps> = ({
 /** 单个被动动作按钮 */
 const PassiveActionButton: React.FC<{
     action: PassiveActionDef;
+    passiveId: string;
+    actionIndex: number;
     isUsable: boolean;
     isSelecting: boolean;
     currentCp: number;
     onClick: () => void;
-}> = ({ action, isUsable, isSelecting, currentCp, onClick }) => {
+}> = ({ action, passiveId, actionIndex, isUsable, isSelecting, currentCp, onClick }) => {
     const { t } = useTranslation('game-dicethrone');
     const icon = ACTION_ICON[action.type];
     const notEnoughCp = currentCp < action.cpCost;
     const label = action.type === 'rerollDie'
-        ? t('passive.action.reroll')
-        : t('passive.action.draw');
+        ? t(action.labelKey ?? 'passive.action.reroll')
+        : action.type === 'drawCard'
+            ? t(action.labelKey ?? 'passive.action.draw')
+            : t(action.labelKey ?? action.descriptionKey);
+    const tokenCostLabel = action.tokenCost
+        ? `${action.tokenCost.amount} ${t(`tokens.${action.tokenCost.tokenId}.name`)}`
+        : null;
+    const cpCostLabel = action.cpCost > 0 ? `${action.cpCost} CP` : null;
+    const costLabel = [cpCostLabel, tokenCostLabel].filter(Boolean).join(' + ') || t('passive.action.free');
 
     return (
         <GameButton
             onClick={onClick}
+            data-testid={`passive-action-${passiveId}-${actionIndex}`}
             disabled={!isUsable && !isSelecting}
             variant={isSelecting ? 'danger' : 'glass'}
             size="sm"
@@ -122,7 +135,7 @@ const PassiveActionButton: React.FC<{
                 </span>
             </div>
             <span className={`truncate whitespace-nowrap !text-[0.5vw] ${notEnoughCp ? 'text-red-400' : 'text-amber-300'}`}>
-                {action.cpCost} CP
+                {costLabel}
             </span>
         </GameButton>
     );

@@ -1,3 +1,46 @@
+# Findings: DiceThrone Treant / Ninja 新英雄（2026-05-09）
+
+> 当前正式 findings 入口。下方内容是创建 worktree 时继承的历史记录，本轮只引用本节。
+
+## 已确认事实
+
+- 新 worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\dicethrone-treant-ninja`
+- 当前状态：detached HEAD，未新建分支。
+- 主工作树存在大量与本轮无关的 DiceThrone / SmashUp 改动；本轮必须避免混入。
+- 用户提供的 `treant` / `ninja` 图片目录不是当前 HEAD 跟踪内容，新 worktree 初始没有这些文件，需要从主工作树复制。
+- `treant` 原始素材：
+  - `木苗树灵.png`
+  - `神性树灵.png`
+  - `生命源泉.png`
+  - `提示板.png`
+  - `玩家面板.png`
+  - `幼种树灵.png`
+  - `abilitycards.png`
+  - `dice.png`
+- `ninja` 原始素材：
+  - `慢性中毒.png`
+  - `忍术icon.png`
+  - `提示板.png`
+  - `玩家面板.png`
+  - `烟雾弹icon.png`
+  - `Ablilitycards.png`
+  - `dice.png`
+- 规范门禁：
+  - 必须先建 DiceThrone 录入核对文档，再改运行时代码。
+  - 新角色默认优先复用老英雄共享合同，特别是升级卡、`previewRef`、atlas、同类档位取最高、复合子技能。
+  - `crops/` 只作为核对中间产物；正式运行时默认优先 `ability-cards` atlas。
+  - 修改运行时资源后必须压缩、重建 manifest、上传并远端回查；若不能上传，需要最终说明。
+
+## 待核对
+
+- 两个新英雄的正式英文 canonical 名称、hero id 与 UI 展示名。
+- `abilitycards.png` / `Ablilitycards.png` 的图集行列、与旧英雄 `ability-cards` atlas 是否同合同。
+- treant 的 3 张独立 token/状态图片与提示板中的 token 定义关系。
+- ninja 的 3 张独立状态/icon 图片与提示板中的 token 定义关系。
+- 玩家面板上的技能、骰面、被动、终极技与旧英雄能力模型的复用/新增机制边界。
+
+---
+
 # Findings & Resources
 
 ## Addendum（2026-05-07）：漏审主因已确认为“流程层不够深”，已升级审计规范
@@ -1810,3 +1853,17 @@
   - 人类反馈已清零
   - 系统反馈已清零
   - 全量反馈已清零
+
+
+## 2026-05-10 16:20 +08 Treant / Ninja 关键发现
+
+- 两个新英雄 ability-cards 的运行时规格为 `900x2048`、`5x8` row-major，不可复用旧公共 atlas。
+- 新增角色可复用 v2 玩家面板布局，但必须显式接入 `abilitySlotLayout` / `abilitySlotMapping` / `cardAtlas`。
+- 隔离 worktree 缺少未提交的 DiceThrone Common 压缩资源会导致选角头像与背景黑块；已补入 `Common/compressed`，R2 远端同内容已存在。
+- 游戏内玩家面板不是 `img[alt=玩家面板]`，而是 `data-testid=player-board-surface` 上的 role image；E2E 断言已按真实 UI 出口调整。
+
+
+## 2026-05-10 Treant/Ninja 重来关键发现
+- `e2e/dicethrone` 下通过 `../src/...` 引入的是 `e2e/src` 旧快照，不是项目真实 `src`；新英雄 token ID 在旧快照中不存在，会把注入 token 写成 `undefined: 1`。新增机制 E2E 必须用 `../../src/...` 或直接使用稳定字面量。
+- DiceThrone 被动面板旧点击处理只处理 `rerollDie` / `drawCard`，没有派发 `custom` 被动动作；因此树精生命源泉在 UI 上可用但点击无效。修复点是 Board 的 `handlePassiveActionClick`。
+- Display-only 奖励骰在截图中可能表现为骰子/粒子展示而非完整居中弹窗；证据必须同时看状态变化截图，不能只用 `bonus-die-overlay` locator 断言冒充完成。

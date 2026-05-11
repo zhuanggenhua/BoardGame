@@ -1013,8 +1013,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         if (action.type === 'rerollDie') {
             // 进入骰子选择模式
             setRerollSelectingAction({ passiveId, actionIndex });
-        } else if (action.type === 'drawCard') {
-            // 直接执行抽牌
+        } else if (action.type === 'drawCard' || action.type === 'custom') {
+            // 直接执行抽牌 / 自定义被动动作（如树精生命源泉、木苗树灵）
             engineMoves.usePassiveAbility(passiveId, actionIndex);
         }
     }, [playerPassives, engineMoves]);

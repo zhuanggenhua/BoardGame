@@ -21,7 +21,7 @@ import type {
 } from './types';
 import { HAND_LIMIT, PHASE_ORDER } from './types';
 import { RESOURCE_IDS } from './resources';
-import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS, TOKEN_IDS } from './ids';
+import { DICE_FACE_IDS, BARBARIAN_DICE_FACE_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS, NINJA_DICE_FACE_IDS } from './ids';
 import { getDieFaceByValue } from './diceRegistry';
 import { CHARACTER_DATA_MAP } from './characters';
 import { playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
@@ -91,6 +91,12 @@ export const getFaceCounts = (dice: Die[]): Record<DieFace, number> => {
             [BARBARIAN_DICE_FACE_IDS.SWORD]: 0,
             [BARBARIAN_DICE_FACE_IDS.HEART]: 0,
             [BARBARIAN_DICE_FACE_IDS.STRENGTH]: 0,
+            [TREANT_DICE_FACE_IDS.BRANCH]: 0,
+            [TREANT_DICE_FACE_IDS.LEAF]: 0,
+            [TREANT_DICE_FACE_IDS.SPIRIT]: 0,
+            [NINJA_DICE_FACE_IDS.KATANA]: 0,
+            [NINJA_DICE_FACE_IDS.SHURIKEN]: 0,
+            [NINJA_DICE_FACE_IDS.MASK]: 0,
         } as Record<DieFace, number>
     );
 };
