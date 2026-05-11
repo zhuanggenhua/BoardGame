@@ -4279,6 +4279,51 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/ninja/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "663fb66746f4e856f1274dad1487621692aa6163d9a41f603d511400ef0bc5c7",
+          "bytes": 366232,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "df592e2229f68db43c67903c08105cbf41306bd80a04f16e51da794ff62aa752",
+          "bytes": 17402,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "faa5bcfe26aa666438c0a91515378c19f1248bb70c8066212cf7ac785df63c70",
+          "bytes": 433332,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "524534b96f15127de8f218bb1620e3abb392610287a0bfdd47faf44a07fcb679",
+          "bytes": 20226,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/ninja/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "0f783bc91187b47a927652c496261313f4cb18bd73fc14ae7f7dd0041fb192ab",
+          "bytes": 344592,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/ninja/dice": {
       "variants": {
         "png": {
@@ -4621,6 +4666,51 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/treant/compressed/ability-cards": {
+      "variants": {
+        "webp": {
+          "sha256": "adbdb46798f1a53730e2d9db2524c40eab14a6ad1a1c9ef7bb20ed84f91dc0f9",
+          "bytes": 372972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/compressed/dice": {
+      "variants": {
+        "webp": {
+          "sha256": "4cf6e2e53cad4af5d240a3c8158308bed9667b7994b63629cabbc370d05c7db0",
+          "bytes": 20634,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/compressed/player-board": {
+      "variants": {
+        "webp": {
+          "sha256": "df02384eab0bea93cf2b490c03308d857fbab5001cd10916adc35986ad165515",
+          "bytes": 546910,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/compressed/status-icons-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "65fbfb0e1cdddf2d80426d39c2673842efde2dd896b1d13f91d7b9fe2c7cdff6",
+          "bytes": 31972,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/images/treant/compressed/tip": {
+      "variants": {
+        "webp": {
+          "sha256": "e84b5a9a2b0491ac340f2f9c503bee9bcf67792e98b3cd29cee449ea80c9b8a5",
+          "bytes": 416672,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/treant/dice": {
       "variants": {
         "png": {
@@ -4645,6 +4735,1266 @@
           "sha256": "94ee6fa631ea1e21bab79a031e3f1d9689dad4d23e5232017bbb6da7071ebb90",
           "bytes": 9768,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/compressed/player-aid-jin": {
+      "variants": {
+        "webp": {
+          "sha256": "4ab09ce592effb97360010bdeeade3d24cac2bda54c5c2eee07d712eee9a839b",
+          "bytes": 74732,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/compressed/player-aid-ming": {
+      "variants": {
+        "webp": {
+          "sha256": "01bcf12e21ad29999d421f2c8e686757ec047633d9ab9bdf702ee2b53c2459c1",
+          "bytes": 73682,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/compressed/player-aid-mongol": {
+      "variants": {
+        "webp": {
+          "sha256": "191a255eb5257f49269a3d69495f691cca9c2df365371801265392cb1387c05c",
+          "bytes": 69092,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/compressed/rules-reference-sheet-01": {
+      "variants": {
+        "webp": {
+          "sha256": "398880a9c88c07f24cda029469a495b9591c7cb8a1a41c0b915798e6d2a6605c",
+          "bytes": 159078,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/compressed/rules-reference-sheet-02": {
+      "variants": {
+        "webp": {
+          "sha256": "cc7db04d5df7304714b9f9b2b67fc874161339ed3d383f8ed14bbc7a22710afb",
+          "bytes": 180906,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/compressed/rules-reference-sheet-03": {
+      "variants": {
+        "webp": {
+          "sha256": "fa0dd500c9339169b31f2d1562fb0507308d1a8a60eb8264666b1bd2eeca95c3",
+          "bytes": 211090,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/compressed/scenario-setup-sheet-01": {
+      "variants": {
+        "webp": {
+          "sha256": "7760a4728e99d6138357e4e0389b4045243f138da843ffaf48e750c04ea9854b",
+          "bytes": 97522,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/compressed/scenario-setup-sheet-02": {
+      "variants": {
+        "webp": {
+          "sha256": "59a76a6daa024feb1f5d4b73e6c77da10941b50298be7f70502b086007f431d5",
+          "bytes": 99678,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/compressed/scenario-setup-sheet-03": {
+      "variants": {
+        "webp": {
+          "sha256": "6bbe5016d93ac1aa4c148b52fe3feabaf03f0b5e227f9b0b35ce64a9aeb04e1a",
+          "bytes": 150178,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/player-aid-jin": {
+      "variants": {
+        "jpg": {
+          "sha256": "98b5b7c2f0b26d26375f7e7855f1e2f3db5218e5e9220e96f846115896119c72",
+          "bytes": 1143927,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/player-aid-ming": {
+      "variants": {
+        "jpg": {
+          "sha256": "06e478396c64d82b83c660cf0da25218df284e9523546724b3ab9d30b89d2b2c",
+          "bytes": 1068793,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/player-aid-mongol": {
+      "variants": {
+        "jpg": {
+          "sha256": "62aa338ae95b284946419e8876302d012c40b167b9e63b99b92973ff2bb2068d",
+          "bytes": 1131822,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/rules-reference-sheet-01": {
+      "variants": {
+        "jpg": {
+          "sha256": "961b10531d0fef1352254e69c9dc417bc6105d9e4b302f9a9a357afbee561f55",
+          "bytes": 327847,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/rules-reference-sheet-02": {
+      "variants": {
+        "jpg": {
+          "sha256": "287411ed31f7123de36d4517c133c87b6d9715f313dd080d1736d1084467df87",
+          "bytes": 371059,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/rules-reference-sheet-03": {
+      "variants": {
+        "jpg": {
+          "sha256": "3628b93b60f8fe6d32fa5ae99bbc43aa544fd49b424c67cd4569baba315dceda",
+          "bytes": 434629,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/scenario-setup-sheet-01": {
+      "variants": {
+        "jpg": {
+          "sha256": "c4ad222050b333d726ad8a0f30c18d92471bb3cc05dcdf86b9bd3cc63689c0de",
+          "bytes": 215041,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/scenario-setup-sheet-02": {
+      "variants": {
+        "jpg": {
+          "sha256": "46258f606179ebe1d780df1f580822f6ff26563cae1e6162935d7823fcd28b2d",
+          "bytes": 222194,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/aids/scenario-setup-sheet-03": {
+      "variants": {
+        "jpg": {
+          "sha256": "28e63015a25276e51aaedf7c59751307a36b985bb6cd9f11f75cadb13dceaed9",
+          "bytes": 325260,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/board/action-wheel": {
+      "variants": {
+        "jpg": {
+          "sha256": "11edee429db498edf4af7dbb5e022a9c187b2596780926e21fc57b02067a11f8",
+          "bytes": 193891,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/board/compressed/action-wheel": {
+      "variants": {
+        "webp": {
+          "sha256": "dd1c0977ceb0eee718fe4cd0ce27030d65e5b182018c14b78a9df417c3533901",
+          "bytes": 63220,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/board/compressed/main-board": {
+      "variants": {
+        "webp": {
+          "sha256": "2af87ea9b471ed06161c6cfdbb698dee9b904556e957355796190b78246abe63",
+          "bytes": 302420,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/board/main-board": {
+      "variants": {
+        "png": {
+          "sha256": "c50c1d3cfdf8f2b09ffb403c22e31f90523f7a20c7f051c8432b93490b90ff0e",
+          "bytes": 2959659,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/qidahen/box/box-cover": {
+      "variants": {
+        "png": {
+          "sha256": "019ba850018746b50abe3fc9bd9bd86b573f65486b24171d69fe0ffe8257cbc4",
+          "bytes": 100275,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/qidahen/box/compressed/box-cover": {
+      "variants": {
+        "webp": {
+          "sha256": "deff4dde76e8ef07b3441d9f88e31501344f9d52c7c34cc1d48c77b2a47334f4",
+          "bytes": 43530,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/chronology-cards-atlas": {
+      "variants": {
+        "jpg": {
+          "sha256": "d12d41b03801fb35991bc9891e2aa6d846a4b691b77aabee633e724cdbb3d5c4",
+          "bytes": 4138087,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/compressed/chronology-cards-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "2d607caad2eae3b9a3e2f0830bc0f7cabd0983b7b1c24efa3ff053c4eef86e6a",
+          "bytes": 368140,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/compressed/jin-deck-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "d5c20280921fab17a1fd5be52e519e296225c7acd5f8dfde346c6d65f6e067a0",
+          "bytes": 127970,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/compressed/korea-deck-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "5fb287afcf4593b9309e206a3ed45d6931cad08333d5ffb65f25fd29cf188418",
+          "bytes": 106772,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/compressed/ming-deck-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "1f69b935d1fa073ac99521db0014ec480cd25b5380abeb3dec550d32e5e3e2d5",
+          "bytes": 130956,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/compressed/mongol-deck-atlas": {
+      "variants": {
+        "webp": {
+          "sha256": "cc988db3ce2241b5255a3b758125f8859affece21a4548d6f45fa9555c785d3a",
+          "bytes": 153718,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/jin-deck-atlas": {
+      "variants": {
+        "jpg": {
+          "sha256": "ee23298d46cb229af20d1251986dea301450139dad0275c1bff94f088746e343",
+          "bytes": 1812511,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/korea-deck-atlas": {
+      "variants": {
+        "jpg": {
+          "sha256": "edd735c56b6afd8b7b6c09759d80d26d9e10e9082264701bd6cddf0098389b7a",
+          "bytes": 1160115,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/ming-deck-atlas": {
+      "variants": {
+        "jpg": {
+          "sha256": "6d9ff76fce7df0b586812772d2da2ed689e08143450e0ed2d4d43ee5230baa44",
+          "bytes": 4401088,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/atlases/mongol-deck-atlas": {
+      "variants": {
+        "jpg": {
+          "sha256": "edbad441b175a40904971be908a690d337e11db75bb5f35e346fda1dd53fb80f",
+          "bytes": 2255009,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/backs/compressed/jin-card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "922597e487907e8c0472876289e74c55fd61cf03b5acdd81a2c013d977d2669e",
+          "bytes": 378770,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/backs/compressed/korea-card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "c0a4c68cb4e78e569c46c25f7bda533ef03c773f085c4a3fc6ff1d04d931ae99",
+          "bytes": 46220,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/backs/compressed/ming-card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "2ce770e8e785557cd9226a6be1ef8d54067b5bd53483b06ac9d1baaba2e0cbc1",
+          "bytes": 57588,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/backs/compressed/mongol-card-back": {
+      "variants": {
+        "webp": {
+          "sha256": "1ec7fdaf9618e5ec3521b22b2173efc65aa76f75021653b9f826695340ca2e80",
+          "bytes": 94206,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/backs/compressed/qidahen-cover-card": {
+      "variants": {
+        "webp": {
+          "sha256": "a6e44344796676f734b5c9f4f1a02f1bf3596f3779b2e50d83c9b229abfe40ca",
+          "bytes": 55410,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/backs/jin-card-back": {
+      "variants": {
+        "jpg": {
+          "sha256": "e71a88851501ff9d0252bd2ef77b089bcb11733f176bd36a6cd1cc3a55478a71",
+          "bytes": 4153395,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/backs/korea-card-back": {
+      "variants": {
+        "jpg": {
+          "sha256": "aba8c66441376cd2717ba7cab3735e763ef55b60186732d9a0acf892c40554a1",
+          "bytes": 208358,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/backs/ming-card-back": {
+      "variants": {
+        "jpg": {
+          "sha256": "c5f59b4791ce33be125b4f4709f82dda4dc8d92dae9d78e979b0a5aa9b263e92",
+          "bytes": 132470,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/backs/mongol-card-back": {
+      "variants": {
+        "jpg": {
+          "sha256": "69d31207f2c5fb5f8b69815aed6a364ab5d646e832c624230bda77bfdf9784a4",
+          "bytes": 223992,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/backs/qidahen-cover-card": {
+      "variants": {
+        "jpg": {
+          "sha256": "dd380f07c2f78fce74da8ce26d4347606fa53f877e2b104a261736e757dc68fc",
+          "bytes": 224147,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/characters/compressed/mongol-character-02-taiji": {
+      "variants": {
+        "webp": {
+          "sha256": "487de02a2e432398f23e3e00c1f9294ecf8bf7fce47e87644a20e4539277f8f7",
+          "bytes": 71750,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/characters/compressed/mongol-character-04-noyan": {
+      "variants": {
+        "webp": {
+          "sha256": "ed3822b3f876e328f51659e6fa60ed2f8a4b541eb51191536f4777bfc97b8e33",
+          "bytes": 72362,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/characters/compressed/mongol-character-05-taiji": {
+      "variants": {
+        "webp": {
+          "sha256": "ddeccb403bcfe0b8c8585101bd2550834ec539b119ac64a5c59f3f90fc0b76a3",
+          "bytes": 66960,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/characters/compressed/mongol-lin-dan-hutuktu": {
+      "variants": {
+        "webp": {
+          "sha256": "7e40d2fc7477e8be91b8b7e1c3afd9ac483cad07e8b915392c90d659a7126417",
+          "bytes": 73958,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/characters/compressed/mongol-oba-taiji": {
+      "variants": {
+        "webp": {
+          "sha256": "57be5e3399b2895451588069d6f17d15a3b39329efb39a2e06110f4227810428",
+          "bytes": 74782,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/characters/mongol-character-02-taiji": {
+      "variants": {
+        "jpg": {
+          "sha256": "964dde1cd3ec65b1563c55b810f0c80c347b7cbd9198eb7bc02f7f6021abbf93",
+          "bytes": 180845,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/characters/mongol-character-04-noyan": {
+      "variants": {
+        "jpg": {
+          "sha256": "3a70bb1b5184b747efa494c96dc050df1262277a5b5005ecc234ee577d6da0a1",
+          "bytes": 181264,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/characters/mongol-character-05-taiji": {
+      "variants": {
+        "jpg": {
+          "sha256": "686ad6d760d6cbee4b0f58a05ca4bb8664a94293cf2e25389494b5d7e15383e5",
+          "bytes": 170609,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/characters/mongol-lin-dan-hutuktu": {
+      "variants": {
+        "jpg": {
+          "sha256": "ce58f2e8b31435c130ad99e83307662e9a1c16df9c405b3daa8931349f76777f",
+          "bytes": 185695,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/cards/characters/mongol-oba-taiji": {
+      "variants": {
+        "jpg": {
+          "sha256": "abfdeee280c2356e9c1f713d766c2b637645d2b777d68d6973fa3133d451d9e1",
+          "bytes": 180837,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/blank-rect-marker": {
+      "variants": {
+        "jpg": {
+          "sha256": "cf8114fe1f12d849ae0e85e6be7e64e630b6cd4e795a88413ef66f6606f4793b",
+          "bytes": 17969,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/blank-rect-marker": {
+      "variants": {
+        "webp": {
+          "sha256": "d106db793b48a8991d54c27f26d756833f234dd174b69aeb316825430fdb08d7",
+          "bytes": 884,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/control-jin-round-a": {
+      "variants": {
+        "webp": {
+          "sha256": "8575dfdddaa0abee739c831e60501ee68b97bf9173f607a5479cf11b263e3409",
+          "bytes": 2064,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/control-jin-round-b": {
+      "variants": {
+        "webp": {
+          "sha256": "2622a6d8c42802facf25a5bbd8935e6b661f20a0c696774559393704ea03b2f2",
+          "bytes": 2256,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/control-ming-round-a": {
+      "variants": {
+        "webp": {
+          "sha256": "72e85d070266d550caba18c49c4e9beb753a803b7f2a1a11e58fa6e86ee1b104",
+          "bytes": 2388,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/control-ming-round-b": {
+      "variants": {
+        "webp": {
+          "sha256": "12b477316eb672674c3262d9e4dce1bfba7bafce968a8df161869cae97fe0b37",
+          "bytes": 2352,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/control-mongol-round-a": {
+      "variants": {
+        "webp": {
+          "sha256": "cbc7626c172e1e333a47fa50ff0c0f40c1cd6dad9e2c07740b08ec8abaff7d87",
+          "bytes": 2374,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/control-mongol-round-b": {
+      "variants": {
+        "webp": {
+          "sha256": "b978ce90118c34432c30d72c3b34111d8fdbec5aa49373f44095eeb31cca1e1a",
+          "bytes": 2452,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/defeat-marker": {
+      "variants": {
+        "webp": {
+          "sha256": "3821b8d04f791b9a5c55c4f52f002ef744c92e6eea9a97aebb73828ee447eb1c",
+          "bytes": 1192,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/drought-marker": {
+      "variants": {
+        "webp": {
+          "sha256": "f357710a3d9a3e145724104209b39ea1dbc4e8ac337696f6d6be997718027f21",
+          "bytes": 1852,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/hanseong-vp-marker": {
+      "variants": {
+        "webp": {
+          "sha256": "adecdebb2aea8a5e9a97301882675590ef1f9d8d1c817c91e39e730f42cc36b5",
+          "bytes": 2272,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/homeland-jin": {
+      "variants": {
+        "webp": {
+          "sha256": "352f19cb325a6e6fd85d1b41666ec786f86eddb4fedd444c96b049c90502a5b1",
+          "bytes": 2702,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/homeland-mongol": {
+      "variants": {
+        "webp": {
+          "sha256": "deb2fb6972fbda2c9f88345a38def2c0e9b9bcf9739dbcbf70c683e7f5aaf159",
+          "bytes": 2896,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/imperial-seal-vp-marker": {
+      "variants": {
+        "webp": {
+          "sha256": "af9a5cc558f381fc4334c3a12a947f199de0bd3fbf0eca35a1bbf11d86c8c05f",
+          "bytes": 2342,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/ruin-marker": {
+      "variants": {
+        "webp": {
+          "sha256": "38b885ace877874e2ff354676b18545f95b844081b7fd4fc42c47afbfbf4f73c",
+          "bytes": 996,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/score-jin": {
+      "variants": {
+        "webp": {
+          "sha256": "3ae3bb06d15d8b259f480468e0cb82546d448d7e9b4187aabedc90938411760c",
+          "bytes": 1728,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/score-ming": {
+      "variants": {
+        "webp": {
+          "sha256": "3978023bbefe37d502a44a541974db6000495dc0027fa205b1b21390bbd9335f",
+          "bytes": 2086,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/score-mongol": {
+      "variants": {
+        "webp": {
+          "sha256": "f2086c427fcbb3ebc2d4d97d3c7d4629df775ea41cb5d5cfbd537323a337ddfc",
+          "bytes": 1888,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/compressed/year-marker": {
+      "variants": {
+        "webp": {
+          "sha256": "bc93e842345dce30c62e5152f3898c5e0d8617f3625b65d49489140afd6a529a",
+          "bytes": 2876,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/control-jin-round-a": {
+      "variants": {
+        "jpg": {
+          "sha256": "c47944fe80b82d62acc210e0861b1d6f98dfceaf9d30cbdf1276a262784cf037",
+          "bytes": 24066,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/control-jin-round-b": {
+      "variants": {
+        "jpg": {
+          "sha256": "efa1dbb89e8b56be7252ae7c037b842eff8072158315c35b6471176882b00401",
+          "bytes": 24689,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/control-ming-round-a": {
+      "variants": {
+        "jpg": {
+          "sha256": "90b5353c56974e718fb605f4b5c5c0f4928d20dfc9adfc37d457561adfb1329f",
+          "bytes": 26155,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/control-ming-round-b": {
+      "variants": {
+        "jpg": {
+          "sha256": "fe667cb33cb9399d06dd6fea16949bb8d8681490e1ebe883bcc30e698cd0e063",
+          "bytes": 26127,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/control-mongol-round-a": {
+      "variants": {
+        "jpg": {
+          "sha256": "891d16f83fcfcac1f65b04f21f7d2687f5071ce6ed5f3ef327c1db103d9caec0",
+          "bytes": 26284,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/control-mongol-round-b": {
+      "variants": {
+        "jpg": {
+          "sha256": "29ff43bcf12dc50fbd65dda09dec21d94bfece485b828a903dd40c9528a51a94",
+          "bytes": 26767,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/defeat-marker": {
+      "variants": {
+        "jpg": {
+          "sha256": "185f5a89549dd40c9cdcdb5891f03a4fed58fd425bc6dd0521229b05064fdc7e",
+          "bytes": 18117,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/drought-marker": {
+      "variants": {
+        "jpg": {
+          "sha256": "f7d760facfe1e10e77b6142ba8b431438dcaa5886358edefa78e634ec8bdb388",
+          "bytes": 22776,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/hanseong-vp-marker": {
+      "variants": {
+        "jpg": {
+          "sha256": "567473c2e51e920e7b0f6b0559651e3d713ba3a4ac7a91e2e78e940496d72b5e",
+          "bytes": 26297,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/homeland-jin": {
+      "variants": {
+        "jpg": {
+          "sha256": "5d571ae2d331a692b717f3a41e2488391565f84e3c56785b2a94d70bfe88c0d2",
+          "bytes": 28041,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/homeland-mongol": {
+      "variants": {
+        "jpg": {
+          "sha256": "c0f74877389f1b956365b6f1757f377457b4857dffb0c354d180274b5208d7ac",
+          "bytes": 29922,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/imperial-seal-vp-marker": {
+      "variants": {
+        "jpg": {
+          "sha256": "3229759dbe4d973d6270234c968e0ed452511bf03bef5473fe118211e9c7f085",
+          "bytes": 26266,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/ruin-marker": {
+      "variants": {
+        "jpg": {
+          "sha256": "9caca0a35b3c55f86506733b1921dcda30af1c12a33d6baad2804898699d7079",
+          "bytes": 17547,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/score-jin": {
+      "variants": {
+        "jpg": {
+          "sha256": "b2c4df79b37e67a19dabe9d90cc6581b0244034d43dcf8627a665a29ec367637",
+          "bytes": 20605,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/score-ming": {
+      "variants": {
+        "jpg": {
+          "sha256": "b049dc79eba3436fe100870b12a8cd3ad1ed04b6428e78b5b640f240a32e8a6a",
+          "bytes": 22613,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/score-mongol": {
+      "variants": {
+        "jpg": {
+          "sha256": "21184290c3be004ef2441c9e46a2ddf81a9e9e9592ba9e310c67bde4f55cde74",
+          "bytes": 21746,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/markers/year-marker": {
+      "variants": {
+        "jpg": {
+          "sha256": "c1f73551534c79823dd9ea0b93a3fd192da32a2daa48ad81dcf10b60eb54a6b5",
+          "bytes": 30990,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/color-swatch-blue": {
+      "variants": {
+        "png": {
+          "sha256": "648834e1310b8066a679766b99c95b7f907862ef748041b697beb27ed0abbb8b",
+          "bytes": 4583,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/color-swatch-brown": {
+      "variants": {
+        "png": {
+          "sha256": "acca705609d64075087ea2392e7b8da50b53e8824ce9c6f9a893f6e16bff85a1",
+          "bytes": 4583,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/color-swatch-pink": {
+      "variants": {
+        "png": {
+          "sha256": "747231fb30ec4052ac80dd44a1390f718798d2dd623d1d68c97af467cbf33a77",
+          "bytes": 4583,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/color-swatch-purple": {
+      "variants": {
+        "png": {
+          "sha256": "4b3d7255a34e8260635136c608c8aa2e981c5f9ae115ae0c3ff1d2ad2b29d6de",
+          "bytes": 4582,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/color-swatch-red": {
+      "variants": {
+        "png": {
+          "sha256": "609996c1d95e6f802887fd841fc0f8c9cfcfe416b9d971fa15ec18249ef297ce",
+          "bytes": 4583,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/color-swatch-yellow": {
+      "variants": {
+        "png": {
+          "sha256": "21a42c00769e5d4cbdeaeec9507901bbaea06f4d2d75bd0b47e231947c61acb2",
+          "bytes": 4583,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/compressed/color-swatch-blue": {
+      "variants": {
+        "webp": {
+          "sha256": "c7616366c39e9e422463838d86a87fcb3ac7d7828bd305ab5188c7e57f38a6a7",
+          "bytes": 1354,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/compressed/color-swatch-brown": {
+      "variants": {
+        "webp": {
+          "sha256": "c7111f7646d9c642135e17d017287f24014ae1f8132e9fba74bca0e28a2e00a2",
+          "bytes": 1360,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/compressed/color-swatch-pink": {
+      "variants": {
+        "webp": {
+          "sha256": "725ff642874c0668e08f597344fed2e8188698a143c66f7a18e19de08b60d4ca",
+          "bytes": 1352,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/compressed/color-swatch-purple": {
+      "variants": {
+        "webp": {
+          "sha256": "e5e150e77b7e823efce9833416bebb78c77a801a809e1c7045793e8a150e0d28",
+          "bytes": 1348,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/compressed/color-swatch-red": {
+      "variants": {
+        "webp": {
+          "sha256": "4cde7c3e353669f44e2980764f20b6290725253b163b873d87aa7743c89a70be",
+          "bytes": 1356,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/materials/compressed/color-swatch-yellow": {
+      "variants": {
+        "webp": {
+          "sha256": "93cede636545f08a7f5dee14f5d5e09082e6fa8663823856d3fcccac2a75aa05",
+          "bytes": 1362,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/jin-mercenary-cavalry": {
+      "variants": {
+        "webp": {
+          "sha256": "4feff6e56f2b1470651db4a6421af9cc1c90ec0524f2790d0def7b72bc7efaa6",
+          "bytes": 125756,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/jin-mercenary-infantry": {
+      "variants": {
+        "webp": {
+          "sha256": "16ffd5dd69fafc0e240451e577dcc630f1adfbf340d25f5f6f0b4a0ffa932469",
+          "bytes": 100538,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/jin-regular-artillery": {
+      "variants": {
+        "webp": {
+          "sha256": "ad465297eb0c17ade688e536473b6f613fcb7a2506141c81514211a59c7e08f8",
+          "bytes": 83750,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/jin-regular-cavalry": {
+      "variants": {
+        "webp": {
+          "sha256": "d85b5473da4957a24ce3e6c8199210c6ff8e2916993565d81bdb7164a5fcb6da",
+          "bytes": 76616,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/jin-regular-infantry": {
+      "variants": {
+        "webp": {
+          "sha256": "b2e067a365c2ca093163651ff184dc56a06d106376f91ed5a99749ed2eebc666",
+          "bytes": 68612,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/ming-chuanbing": {
+      "variants": {
+        "webp": {
+          "sha256": "745592a01dd7cdaab4b8d824ab06886056cb503cbb5a8aaf3dec9800cad7eb35",
+          "bytes": 58682,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/ming-mercenary-artillery": {
+      "variants": {
+        "webp": {
+          "sha256": "fdb2ee1c1b61c390d71ae9a4da13a8974fab0e22d44838bca9c014c84834067c",
+          "bytes": 107510,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/ming-mercenary-cavalry": {
+      "variants": {
+        "webp": {
+          "sha256": "76c1dfb0cd007e1332e56ce65fc158e7e98a04b6416cc32b9bbd292836d5e40d",
+          "bytes": 33686,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/ming-mercenary-infantry": {
+      "variants": {
+        "webp": {
+          "sha256": "a692660455578870927280a1c65225dccce17788e61aecafe6e0a81f4a4dc4eb",
+          "bytes": 29558,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/ming-regular-artillery": {
+      "variants": {
+        "webp": {
+          "sha256": "584ddafc2ade2ddf3723591a5e08489932ed3326b4b446f8e15c2a71cb879d12",
+          "bytes": 56088,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/ming-regular-cavalry": {
+      "variants": {
+        "webp": {
+          "sha256": "86737d8b358dd27c7bafb0cfdc054c5c4dd1f56c2d4d9ddfdde67f1b5d5c90de",
+          "bytes": 62660,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/ming-regular-infantry": {
+      "variants": {
+        "webp": {
+          "sha256": "a32d71fba3771f5e9ce5fb901aed88cd9a8bf065eb234dcb8f4143ccf4ae0e19",
+          "bytes": 45104,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/mongol-mercenary-cavalry": {
+      "variants": {
+        "webp": {
+          "sha256": "af6efbeab31078b9f84528a92c6794676d0362225a5e7c39bb6444484ff43a81",
+          "bytes": 107746,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/mongol-mercenary-infantry": {
+      "variants": {
+        "webp": {
+          "sha256": "5a35880f0aec5f1c84abcb5118e6c9d9b11e53bec492d31bacdf33339a3fac9f",
+          "bytes": 115614,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/mongol-regular-artillery": {
+      "variants": {
+        "webp": {
+          "sha256": "3cbb8a5d6a7d33a30bf5948c4030aab618cc00353b24039d8fea30c8a8fbe3bf",
+          "bytes": 80928,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/mongol-regular-cavalry": {
+      "variants": {
+        "webp": {
+          "sha256": "4953ba25586da3d0c3a2745c403ba61a19c6ff11b52820ded3ce8fea142ecea0",
+          "bytes": 67116,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/mongol-regular-infantry": {
+      "variants": {
+        "webp": {
+          "sha256": "c7a47f29a77a5203b6381cacc3a213b1d55c134a1ff6d7d958ba177f28764d87",
+          "bytes": 92924,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/neutral-cavalry": {
+      "variants": {
+        "webp": {
+          "sha256": "096b7fb307fcd004fc0e79641f83f46d94542b18b0e9ef586bc533f6a4a26074",
+          "bytes": 58946,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/compressed/neutral-infantry": {
+      "variants": {
+        "webp": {
+          "sha256": "9c5db197ccb6347c72cde0d47ecf478339a8322160373216e5c6d14b3a7b2d66",
+          "bytes": 49038,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/jin-mercenary-cavalry": {
+      "variants": {
+        "jpg": {
+          "sha256": "617c175e13b00de91c97e68a44a982eaedb49d58639948a3756387fcc5c79bf3",
+          "bytes": 497269,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/jin-mercenary-infantry": {
+      "variants": {
+        "jpg": {
+          "sha256": "b1f311ed9a559ff7150b1867c4d8a25697347eeba1b7cfaf02e20c9867afe89f",
+          "bytes": 456676,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/jin-regular-artillery": {
+      "variants": {
+        "jpg": {
+          "sha256": "b96ce21f355d4b7f664c96da41bfa2329a324438fcb0f145b0ab8c9ed4f41875",
+          "bytes": 430506,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/jin-regular-cavalry": {
+      "variants": {
+        "jpg": {
+          "sha256": "30ddde75861d5d00b6fbd7dab67e72a0b0c1b8fd1d9a8e05bf06ebc6dbf7197c",
+          "bytes": 408550,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/jin-regular-infantry": {
+      "variants": {
+        "jpg": {
+          "sha256": "16fa05d4d6760f555f72bedf4844729d2d072a35ab006e3249fcaa827e135d80",
+          "bytes": 405327,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/ming-chuanbing": {
+      "variants": {
+        "jpg": {
+          "sha256": "1f6d756525a5ed2c7b4999ba9976bb9f95025e4c58077e2c491200b783516573",
+          "bytes": 391641,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/ming-mercenary-artillery": {
+      "variants": {
+        "jpg": {
+          "sha256": "014c83625bc2a5628f290bdd8130eb4ceeaa4fa837e020d703655c9504b7e0fc",
+          "bytes": 492895,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/ming-mercenary-cavalry": {
+      "variants": {
+        "jpg": {
+          "sha256": "eda0d0659188eca96810e29212a09c822d2c78ba0c4b45e1370fcea14619433a",
+          "bytes": 174080,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/ming-mercenary-infantry": {
+      "variants": {
+        "jpg": {
+          "sha256": "3e54d0c89894d7e9effb6392767f32e6cd8ca1e1e2a9cb07f463af41ad03e8f7",
+          "bytes": 142507,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/ming-regular-artillery": {
+      "variants": {
+        "jpg": {
+          "sha256": "314c8acd22d7aa632565b89e943d8784883bea659c85b0db5ab9c60e7ae38f1a",
+          "bytes": 370815,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/ming-regular-cavalry": {
+      "variants": {
+        "jpg": {
+          "sha256": "b4d4f516af5b7a4fadcb573197e8e89b7ffa772ba12080d4984248548d20b5d7",
+          "bytes": 397715,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/ming-regular-infantry": {
+      "variants": {
+        "jpg": {
+          "sha256": "a61e5411cce8386ebf22b04c995c360779a6021dc218f244c36e37d9e45d5010",
+          "bytes": 346939,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/mongol-mercenary-cavalry": {
+      "variants": {
+        "jpg": {
+          "sha256": "8cd4b7800878c0ac4874361dfa85e44b12b7afe2d23e242aab2d25da4fec2f79",
+          "bytes": 500511,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/mongol-mercenary-infantry": {
+      "variants": {
+        "jpg": {
+          "sha256": "53d1814bf6e097c0d0b9cf9a9e7ff355d3ae833cd2fc81b5ee6fe9f1d04e87ee",
+          "bytes": 506998,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/mongol-regular-artillery": {
+      "variants": {
+        "jpg": {
+          "sha256": "390ee876bd4175495dce025ff87da69478c08248b0480ad729c76a53acf9a7ec",
+          "bytes": 421691,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/mongol-regular-cavalry": {
+      "variants": {
+        "jpg": {
+          "sha256": "68a4911601d4190e20c9b487bbde5db2d0852dfbaf7a35b347bd62784fea5c1d",
+          "bytes": 390958,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/mongol-regular-infantry": {
+      "variants": {
+        "jpg": {
+          "sha256": "be1ec0a06534a876d097a0628d17faf90f0dc8c39311d35baf02b28af2954d09",
+          "bytes": 443962,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/neutral-cavalry": {
+      "variants": {
+        "jpg": {
+          "sha256": "cb792b8d0886bd4e1176cb3f8167824bdd0b62def791d5c0869a582e51232a22",
+          "bytes": 354369,
+          "mime": "image/jpeg"
+        }
+      }
+    },
+    "zh-CN/qidahen/units/neutral-infantry": {
+      "variants": {
+        "jpg": {
+          "sha256": "4c0df532a9e08ae0212bdacf5160de343659457e8055da36f09c411bde94e82d",
+          "bytes": 338714,
+          "mime": "image/jpeg"
         }
       }
     },
@@ -4815,6 +6165,15 @@
         "png": {
           "sha256": "2b8146e44fbd1e7eb79115e848f20ef30d323b8dbb924ab462b8432e64110fac",
           "bytes": 42559123,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/cards/yuanhou": {
+      "variants": {
+        "png": {
+          "sha256": "ae666d1c8d215b7dc339cdba062dfc1c397d221daa13dcc752e26cc33ef2b334",
+          "bytes": 44486175,
           "mime": "image/png"
         }
       }
