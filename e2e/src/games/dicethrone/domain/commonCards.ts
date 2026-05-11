@@ -78,6 +78,31 @@ export const GUNSLINGER_COMMON_ATLAS_INDEX: CommonCardAtlasIndexMap = {
 };
 
 /**
+ * 树精 / 忍者新规格图集：通用卡分布在前 17 格与末行 slot-37。
+ * 该顺序来自 900x2048 正式运行时图集逐格核对；不能套旧角色默认映射。
+ */
+export const TREANT_NINJA_COMMON_ATLAS_INDEX: CommonCardAtlasIndexMap = {
+    'card-next-time': 0,
+    'card-i-can-again': 1,
+    'card-me-too': 2,
+    'card-what-status': 3,
+    'card-give-hand': 4,
+    'card-transfer-status': 5,
+    'card-worthy-of-me': 6,
+    'card-one-throw-fortune': 7,
+    'card-play-six': 8,
+    'card-just-this': 9,
+    'card-surprise': 10,
+    'card-get-away': 11,
+    'card-boss-generous': 12,
+    'card-double': 13,
+    'card-bye-bye': 14,
+    'card-flick': 15,
+    'card-super-double': 16,
+    'card-unexpected': 37,
+};
+
+/**
  * 为通用卡注入 previewRef（指向指定英雄的图集）
  * 在各英雄 cards.ts 中 spread COMMON_CARDS 时调用
  */

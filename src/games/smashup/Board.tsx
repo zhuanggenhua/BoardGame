@@ -53,6 +53,7 @@ import { getDiscardSpecialOptions } from './domain/discardSpecialAbilities';
 import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
+    actionLikePlayTargetMinionController,
     actionLikeNeedsResponseWindowBase,
     canCardBePlayedInResponseWindow,
     getResponseWindowPlayableBaseIndicesForCard,
@@ -1373,6 +1374,15 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                     continue;
                 }
                 const actionDef = getCardDef(card.defId) as ActionCardDef | undefined;
+                const controllerConstraint = actionDef ? actionLikePlayTargetMinionController(actionDef) : 'any';
+                const hasControllerValidMinion = core.bases[i].minions.some((minion) => {
+                    if (controllerConstraint === 'self') return minion.controller === playerID;
+                    if (controllerConstraint === 'opponent') return minion.controller !== playerID;
+                    return true;
+                });
+                if (!hasControllerValidMinion) {
+                    continue;
+                }
                 if (actionDef?.playConstraint) {
                     if (checkPlayConstraintUI(actionDef.playConstraint, core, i, playerID)) {
                         indices.add(i);
@@ -1446,16 +1456,20 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         return { deployableBaseIndices: indices, deployBlockReason: null };
     }, [core, getBaseLimitedQuotaMeta, isMeFirstResponse, playerID, t]);
 
-    const collectMinionTargetUids = useCallback((baseIndices: Set<number>) => {
+    const collectMinionTargetUids = useCallback((baseIndices: Set<number>, card?: CardInstance) => {
         const uids = new Set<string>();
+        const actionDef = card ? getCardDef(card.defId) as ActionCardDef | FusionCardDef | undefined : undefined;
+        const controllerConstraint = actionDef ? actionLikePlayTargetMinionController(actionDef) : 'any';
         for (let i = 0; i < coreBases.length; i++) {
             if (!baseIndices.has(i)) continue;
             for (const minion of coreBases[i].minions) {
+                if (controllerConstraint === 'self' && minion.controller !== playerID) continue;
+                if (controllerConstraint === 'opponent' && minion.controller === playerID) continue;
                 uids.add(minion.uid);
             }
         }
         return uids;
-    }, [coreBases]);
+    }, [coreBases, playerID]);
 
     const getCardPlayTargetState = useCallback((card: CardInstance, cardMode: 'action' | 'ongoing' | 'ongoing-minion' | 'action-minion') => {
         if (cardMode === 'action') {
@@ -1469,7 +1483,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
         const { deployableBaseIndices: nextDeployableBaseIndices, deployBlockReason: nextDeployBlockReason } = getDeployableBaseStateForCard(card, cardMode);
         if (cardMode === 'ongoing-minion' || cardMode === 'action-minion') {
-            const minionTargetUids = collectMinionTargetUids(nextDeployableBaseIndices);
+            const minionTargetUids = collectMinionTargetUids(nextDeployableBaseIndices, card);
             return {
                 hasValidTargets: minionTargetUids.size > 0,
                 deployableBaseIndices: nextDeployableBaseIndices,
@@ -1498,8 +1512,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // ongoing-minion 模式下的有效随从 UID 集合（只包含未被限制基地上的随从）
     const ongoingMinionTargetUids = useMemo<Set<string>>(() => {
         if ((selectedCardMode !== 'ongoing-minion' && selectedCardMode !== 'action-minion') || !playerID) return new Set();
-        return collectMinionTargetUids(deployableBaseIndices);
-    }, [collectMinionTargetUids, deployableBaseIndices, playerID, selectedCardMode]);
+        const card = myPlayer?.hand.find(entry => entry.uid === selectedCardUid);
+        return collectMinionTargetUids(deployableBaseIndices, card);
+    }, [collectMinionTargetUids, deployableBaseIndices, myPlayer?.hand, playerID, selectedCardMode, selectedCardUid]);
 
     const usableActiveBaseAbilityIndices = useMemo(() => {
         if (!playerID || !isMyTurn || phase !== 'playCards') return new Set<number>();
@@ -1537,8 +1552,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     const dragOngoingMinionTargetUids = useMemo<Set<string>>(() => {
         if (draggedCardMode !== 'ongoing-minion' && draggedCardMode !== 'action-minion') return new Set();
-        return collectMinionTargetUids(dragDeployableBaseIndices);
-    }, [collectMinionTargetUids, dragDeployableBaseIndices, draggedCardMode]);
+        return collectMinionTargetUids(dragDeployableBaseIndices, draggedCard);
+    }, [collectMinionTargetUids, dragDeployableBaseIndices, draggedCard, draggedCardMode]);
     // 基地 DOM 引用（用于 FX 特效定位）
     const baseRefsMap = useRef<Map<number, HTMLElement>>(new Map());
 

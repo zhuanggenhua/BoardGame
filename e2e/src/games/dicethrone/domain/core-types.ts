@@ -55,7 +55,13 @@ export type DieFace =
     | 'shadow'
     | 'bullet'
     | 'dash'
-    | 'bullseye';
+    | 'bullseye'
+    | 'branch'
+    | 'leaf'
+    | 'spirit'
+    | 'ninja_katana'
+    | 'shuriken'
+    | 'mask';
 
 // ============================================================================
 // 角色编目
@@ -70,6 +76,8 @@ export const IMPLEMENTED_DICETHRONE_CHARACTER_IDS = [
     'paladin',
     'gunslinger',
     'samurai',
+    'treant',
+    'ninja',
 ] as const;
 
 export type SelectableCharacterId = (typeof IMPLEMENTED_DICETHRONE_CHARACTER_IDS)[number];
@@ -91,6 +99,30 @@ export const DICETHRONE_CHARACTER_CATALOG: CharacterDefinition[] = [
     { id: 'paladin', nameKey: 'characters.paladin' },
     { id: 'gunslinger', nameKey: 'characters.gunslinger' },
     { id: 'samurai', nameKey: 'characters.samurai' },
+    {
+        id: 'treant',
+        nameKey: 'characters.treant',
+        badges: [
+            {
+                id: 'implementation_in_progress',
+                labelKey: 'common:status_tags.under_construction',
+                tone: 'warning',
+                variant: 'pill',
+            },
+        ],
+    },
+    {
+        id: 'ninja',
+        nameKey: 'characters.ninja',
+        badges: [
+            {
+                id: 'implementation_in_progress',
+                labelKey: 'common:status_tags.under_construction',
+                tone: 'warning',
+                variant: 'pill',
+            },
+        ],
+    },
 ];
 
 /**

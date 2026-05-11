@@ -910,7 +910,7 @@ describe('立即额外行动交互', () => {
             },
             bases: [{
                 defId: 'b1',
-                minions: [makeMinion('m1', 'test_enemy', '1', 2)],
+                minions: [makeMinion('m1', 'test_ally', '0', 2)],
                 ongoingActions: [],
             }],
         });
@@ -963,7 +963,7 @@ describe('立即额外行动交互', () => {
             },
             bases: [{
                 defId: 'b1',
-                minions: [makeMinion('enemy-1', 'test_enemy', '1', 2)],
+                minions: [makeMinion('ally-1', 'test_ally', '0', 2)],
                 ongoingActions: [],
             }],
         });
@@ -980,7 +980,7 @@ describe('立即额外行动交互', () => {
         );
 
         expect(result.finalState.core.players['0'].hand.some(card => card.uid === 'a1')).toBe(false);
-        expect(result.finalState.core.bases[0].minions.find(minion => minion.uid === 'enemy-1')?.tempPowerModifier).toBe(3);
+        expect(result.finalState.core.bases[0].minions.find(minion => minion.uid === 'ally-1')?.tempPowerModifier).toBe(3);
     });
 });
 

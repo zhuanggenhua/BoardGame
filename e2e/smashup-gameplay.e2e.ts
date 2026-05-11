@@ -323,7 +323,7 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         await game.screenshot('active-base-ability-badge-centered', testInfo);
     });
 
-    test('适者生存应先进入选基地流程；若目标基地最低力量平局，则继续进入平局选择', async ({ page, game }, testInfo) => {
+    test('适者生存无需选择基地；全局结算后若最低力量平局则进入平局选择', async ({ page, game }, testInfo) => {
         test.setTimeout(90000);
 
         await game.openTestGame('smashup', {
@@ -382,21 +382,19 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
         await game.waitForCurrentPlayer('0');
 
         const handCard = page.locator('[data-card-uid="p0-sotf"]');
-        const base0 = page.locator('[data-base-index="0"]');
         const base1 = page.locator('[data-base-index="1"]');
 
         await expect(handCard).toBeVisible();
-        await expect(base0).toBeVisible();
         await expect(base1).toBeVisible();
 
         await handCard.click();
         await page.waitForTimeout(300);
 
-        await expect(handCard, '点卡后应进入选基地态，不能直接弹“场上没有符合条件的目标”').toBeVisible();
+        await expect(handCard, '点卡后应进入无目标行动的确认态，不能直接弹“场上没有符合条件的目标”').toBeVisible();
         await expect(page.getByText('场上没有符合条件的目标')).toHaveCount(0);
-        await game.screenshot('sotf-after-card-click-awaiting-base', testInfo);
+        await game.screenshot('sotf-after-card-click-selected-global-action', testInfo);
 
-        await base0.click();
+        await handCard.click();
 
         await expect.poll(async () => {
             const state = await game.getState();
@@ -417,7 +415,7 @@ test.describe('SmashUp - 核心流程与交互稳定性', () => {
 
         await expect(page.getByText('场上没有符合条件的目标')).toHaveCount(0);
         await expect(page.getByText('选择要消灭的最低力量随从')).toBeVisible();
-        await game.screenshot('sotf-after-base-selection-awaiting-tiebreak', testInfo);
+        await game.screenshot('sotf-after-global-action-awaiting-tiebreak', testInfo);
 
         await expect(page.locator('[data-minion-uid="b0-weak"]')).toBeVisible();
         await expect(page.locator('[data-minion-uid="b0-enemy"]')).toBeVisible();

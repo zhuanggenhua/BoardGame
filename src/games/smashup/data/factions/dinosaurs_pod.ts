@@ -74,7 +74,6 @@ export const DINOSAUR_POD_ACTIONS: ActionCardDef[] = [
         id: 'dino_survival_of_the_fittest_pod',
         type: 'action',
         subtype: 'standard',
-        playNeedsBase: true,
         name: '适者生存',
         nameEn: 'Survival of the Fittest',
         faction: 'dinosaurs_pod',

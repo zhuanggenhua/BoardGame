@@ -1,3 +1,58 @@
+# Findings: SmashUp shayu 三派系通用入口矩阵补强与全量重审（2026-05-12）
+
+## 已确认事实
+
+- 本轮目标不是再补一个飞鲨特例，而是把“描述动作链第一入口”沉淀为通用审计矩阵。
+- 旧 shayu evidence 已经回写过若干失效项：`sharks_air_jaws`、`sharks_freakin_laser_beam`、`mythic_greeks_favor_of_athena`、`base_oracle_at_delphi`。
+- 当前必须避免把 2026-05-11 的“严格抽样审计”冒充成三派系全量重审。
+- shayu 全量范围：`sharks` 12 张卡 + 2 基地，`tornados` 12 张卡 + 2 基地，`mythic_greeks` 15 张卡 + 2 基地。
+
+## 初始风险判断
+
+- P0：所有 `playNeedsBase/playNeedsMinion/ongoingTarget/specialNeedsBase` 与文案第一入口一致性。
+- P0：所有“你的/对手/任意”随从目标必须有 UI/validator/handler 一致的控制者约束。
+- P0：所有“至多/任意数量/可以/任意顺序”必须有 skip/multi/order 语义，不得自动吞掉玩家选择。
+- P1：所有多步交互必须携带前一步上下文，不能靠当前 UI 选中或第一个匹配对象猜。
+- P1：所有 beforeScoring/afterScoring/onActionPlayed/onMinionMoved/onMinionDestroyed/base ability 触发链必须能落到最终权威状态。
+
+---
+
+# Findings: 七大恨新游戏前置 intake（2026-05-11）
+
+## 已确认事实
+
+- 主真相源：
+  - `D:\gongzuo\webgame\gameasset\七大恨 中文mod\七大恨规则.pdf`
+  - `D:\gongzuo\webgame\gameasset\七大恨 中文mod\Images`
+- 项目内已存在本轮前置产物，继续复用而非覆盖：
+  - `src/games/qidahen/rule/七大恨规则.md`
+  - `src/games/qidahen/rule/七大恨素材接入清单.md`
+  - `evidence/qidahen/qidahen-feasibility-2026-05-11.md`
+  - `public/assets/i18n/zh-CN/qidahen/`
+  - `public/assets/qidahen/thumbnails/cover.png`
+- PDF 为原生文字，可通过项目脚本 `npm run pdf:md` 处理；当前规则 MD 已结构化成章节索引与规则正文。
+- 素材目录共已接入 70 张正式中文资源，另有 1 张缩略图。
+- 资源压缩结果：
+  - `public/assets/i18n/zh-CN/qidahen/**/compressed/*.webp`：70 张，约 4.65 MB。
+  - `public/assets/qidahen/thumbnails/compressed/cover.webp`：1 张，约 42.5 KB。
+- 资源远端闭环：
+  - `npm run assets:check` 显示本轮新增 71 个远端缺失资源。
+  - `npm run assets:upload` 上传 71，跳过 1875，删除 0，失败 0。
+  - 远端抽查主地图、明牌库图集、缩略图均为 200。
+
+## 可行性结论
+
+- 七大恨可接入，但属于中重策略游戏，不建议一次性完整自动化。
+- 推荐先做 1619 三人剧本 MVP：轮盘、手牌资源、地图状态、基础移动/征兵/外交/战斗/胜利；人物、事件、战术、纪年例外分批白名单自动化。
+- 最大风险是私有视角木块信息、地图边界结构化、多步战斗 Interaction、卡牌/人物例外量。
+
+## Skill 优化
+
+- 已补强 `.windsurf/skills/create-new-game/SKILL.md`：新增“规则 PDF 转 Markdown 与可行性评估”前置阶段。
+- 新门禁要求 PDF→MD、素材盘点、压缩/manifest/远端检查、可行性分析完成后，才进入正式游戏骨架阶段。
+
+---
+
 # Findings: DiceThrone Treant / Ninja 新英雄（2026-05-09）
 
 > 当前正式 findings 入口。下方内容是创建 worktree 时继承的历史记录，本轮只引用本节。

@@ -251,6 +251,35 @@ function buildUnfathomableGoalsOptions(
     });
 }
 
+function buildUnfathomableGoalsTargetOptions(
+    state: SmashUpCore,
+    targetPlayerId: PlayerId,
+    sourcePlayerId: PlayerId,
+) {
+    return buildMinionTargetOptions(
+        buildUnfathomableGoalsOptions(state, targetPlayerId),
+        {
+            state,
+            sourcePlayerId,
+            sourceDefId: 'elder_thing_unfathomable_goals',
+            effectType: 'destroy',
+        },
+    );
+}
+
+function collectUnfathomableGoalsDestroyableMinions(
+    state: SmashUpCore,
+    targetPlayerId: PlayerId,
+    sourcePlayerId: PlayerId,
+): Array<{ uid: string; defId: string; baseIndex: number; owner: string; power: number }> {
+    const allowedUids = new Set(
+        buildUnfathomableGoalsTargetOptions(state, targetPlayerId, sourcePlayerId)
+            .map((option) => option.value.minionUid),
+    );
+    return collectOpponentMinions(state, targetPlayerId)
+        .filter((minion) => allowedUids.has(minion.uid));
+}
+
 function createElderThingPromptContext<TExtra extends Record<string, unknown>>(
     matchState: MatchState<SmashUpCore>,
     playerId: PlayerId,
@@ -611,7 +640,11 @@ const elderThingUnfathomableGoalsScanProgram = createEffectProgram<ElderThingUnf
 
     while (nextIdx < context.opponents.length) {
         const opponentId = context.opponents[nextIdx];
-        const opponentMinions = collectOpponentMinions(context.matchState.core, opponentId);
+        const opponentMinions = collectUnfathomableGoalsDestroyableMinions(
+            context.matchState.core,
+            opponentId,
+            context.playerId,
+        );
 
         if (opponentMinions.length === 0) {
             nextIdx += 1;
@@ -626,9 +659,10 @@ const elderThingUnfathomableGoalsScanProgram = createEffectProgram<ElderThingUnf
                     target.defId,
                     target.baseIndex,
                     target.owner,
-                    opponentId,
+                    context.playerId,
                     'elder_thing_unfathomable_goals',
                     context.now,
+                    'action',
                 ),
             );
             nextIdx += 1;
@@ -656,18 +690,12 @@ const elderThingUnfathomableGoalsPromptProgram = createPromptProgram<ElderThingU
             `elder_thing_unfathomable_goals_${opponentId}_${context.now}`,
             opponentId,
             '你手中有疯狂卡，必须消灭一个自己的随从',
-            buildMinionTargetOptions(
-                buildUnfathomableGoalsOptions(context.matchState.core, opponentId),
-                { state: context.matchState.core, sourcePlayerId: opponentId },
-            ),
+            buildUnfathomableGoalsTargetOptions(context.matchState.core, opponentId, context.playerId),
             { sourceId: 'elder_thing_unfathomable_goals', targetType: 'minion' },
         );
         return attachOptionsGenerator(
             interaction,
-            (state) => buildMinionTargetOptions(
-                buildUnfathomableGoalsOptions(state.core, opponentId),
-                { state: state.core, sourcePlayerId: opponentId },
-            ),
+            (state) => buildUnfathomableGoalsTargetOptions(state.core, opponentId, context.playerId),
         );
     },
     onResolve: ({ context, value, timestamp }) => {
@@ -689,9 +717,10 @@ const elderThingUnfathomableGoalsPromptProgram = createPromptProgram<ElderThingU
                     target.defId,
                     selected.baseIndex,
                     target.owner,
-                    context.opponents[context.opponentIdx],
+                    context.playerId,
                     'elder_thing_unfathomable_goals',
                     timestamp,
+                    'action',
                 ),
             ],
             context: {

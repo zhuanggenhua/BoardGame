@@ -379,6 +379,23 @@ export const handleBonusDamageAdded: EventHandler<Extract<DiceThroneEvent, { typ
     if (amount === 0) return state;
 
     if (state.pendingAttack && state.pendingAttack.attackerId === playerId) {
+        const pendingDamage = state.pendingDamage?.sourcePlayerId === playerId
+            && state.pendingDamage.responseType === 'beforeDamageDealt'
+            ? {
+                ...state.pendingDamage,
+                currentDamage: state.pendingDamage.currentDamage + amount,
+                modifiers: [
+                    ...(state.pendingDamage.modifiers ?? []),
+                    {
+                        type: 'token' as const,
+                        value: amount,
+                        sourceId: sourceCardId,
+                        sourceName: sourceCardId,
+                    },
+                ],
+            }
+            : state.pendingDamage;
+
         return {
             ...state,
             pendingAttack: {
@@ -388,6 +405,7 @@ export const handleBonusDamageAdded: EventHandler<Extract<DiceThroneEvent, { typ
                     ? (state.pendingAttack.attackModifierBonusDamage ?? 0) + amount
                     : state.pendingAttack.attackModifierBonusDamage,
             },
+            pendingDamage,
         };
     }
     
@@ -593,8 +611,11 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
         };
     }
 
-    // 更新 pendingDamage
+    // 更新 pendingDamage / pendingAttack
+    // beforeDamageDealt 的 token 加伤既要进入当前响应窗的 pendingDamage，
+    // 也要同步回 pendingAttack.bonusDamage，避免后续攻击总伤害查询仍读到旧值。
     let pendingDamage = state.pendingDamage;
+    let pendingAttack = state.pendingAttack;
     if (state.pendingDamage) {
         // 获取 Token 名称用于显示
         const tokenDef = state.tokenDefinitions?.find(t => t.id === tokenId);
@@ -618,6 +639,16 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
                 modifiers,
                 tokenUsageTotals,
             };
+            if (
+                state.pendingDamage.responseType === 'beforeDamageDealt'
+                && pendingAttack
+                && pendingAttack.attackerId === playerId
+            ) {
+                pendingAttack = {
+                    ...pendingAttack,
+                    bonusDamage: (pendingAttack.bonusDamage ?? 0) + damageModifier,
+                };
+            }
         } else if (effectType === 'damageReduction' && damageModifier) {
             const modifiers = [...(state.pendingDamage.modifiers || [])];
             modifiers.push({
@@ -644,7 +675,7 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
         }
     }
 
-    return { ...state, players, pendingDamage };
+    return { ...state, players, pendingDamage, pendingAttack };
 };
 
 /**

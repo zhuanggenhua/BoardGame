@@ -214,7 +214,7 @@ export const applyRuntimeViewportCssVars = (
         ? document.body
         : document.documentElement.dataset.gamePage === 'true'
             ? document.documentElement
-            : null;
+            : document.querySelector<HTMLElement>('[data-game-page="true"]');
     setLayoutEngineDataset(layoutEngineCapabilities.layoutMode, Boolean(gamePageTarget));
     const isLandscapeMobileViewport = viewport.width <= 1023 && viewport.width > viewport.height;
 

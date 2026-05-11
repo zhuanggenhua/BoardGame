@@ -28,6 +28,7 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { getRegisteredOngoingEffectIds } from '../domain/ongoingEffects';
 import { getRegisteredModifierIds } from '../domain/ongoingModifiers';
 import type { CardDef, ActionCardDef, MinionCardDef } from '../domain/types';
+import { actionLikeNeedsPlayBase, actionLikeNeedsPlayMinion, actionLikePlayTargetMinionController } from '../domain/utils';
 import { FACTION_METADATA, getVisibleFactionMetadata } from '../ui/factionMeta';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { hasSpecialSemanticsRegistration } from './helpers/auditUtils';
@@ -71,6 +72,63 @@ function collectPodFactionIdsFromDataFiles(): string[] {
     }
 
     return Array.from(podFactionIds).sort();
+}
+
+type EntrySubject = 'base' | 'minion';
+
+function normalizeAuditText(text: string): string {
+    return text
+        .replace(/\s+/g, '')
+        .replace(/仆从/g, '随从')
+        .replace(/战斗力/g, '战力')
+        .replace(/力量/g, '战力');
+}
+
+function inferInitialEntrySubject(effectText: string): EntrySubject | undefined {
+    const normalized = normalizeAuditText(effectText);
+    const firstClause = normalized.split(/[。；;]/)[0] ?? normalized;
+
+    const minionFirstPatterns = [
+        /^选择[^基地。；，]*随从/,
+        /^将[^。；，]*随从(移动|放到|返回|置于)/,
+        /^移动[^。；，]*随从/,
+        /^消灭[^。；，]*随从/,
+        /^你的一个随从/,
+        /^一个随从/,
+        /^一名随从/,
+        /^至多[^。；，]*随从/,
+        /^任意数量[^。；，]*随从/,
+        /^在至多[^。；，]*随从上/,
+    ];
+    if (minionFirstPatterns.some(pattern => pattern.test(firstClause))) return 'minion';
+
+    const baseFirstPatterns = [
+        /^选择[^。；，]*基地/,
+        /^将一个基地/,
+        /^消灭一个基地/,
+        /^一个基地/,
+        /^在一个基地/,
+        /^将[^。；，]*破坏点/,
+        /^将[^。；，]*爆破点/,
+    ];
+    if (baseFirstPatterns.some(pattern => pattern.test(firstClause))) return 'base';
+
+    return undefined;
+}
+
+function getDeclaredPlayEntrySubject(actionDef: ActionCardDef): EntrySubject | undefined {
+    const needsBase = actionLikeNeedsPlayBase(actionDef);
+    const needsMinion = actionLikeNeedsPlayMinion(actionDef);
+    if (needsBase === needsMinion) return undefined;
+    return needsBase ? 'base' : 'minion';
+}
+
+function inferPlayTargetMinionController(effectText: string): 'self' | 'opponent' | undefined {
+    const normalized = normalizeAuditText(effectText);
+    const firstClause = normalized.split(/[。；;]/)[0] ?? normalized;
+    if (/(其他玩家|另一位玩家|对手|敌方|另一个玩家)[^。；;，,]*随从/.test(firstClause)) return 'opponent';
+    if (/(你的|你控制|己方)[^。；;，,]*随从/.test(firstClause)) return 'self';
+    return undefined;
 }
 
 function buildEntities(): AuditableEntity[] {
@@ -655,6 +713,91 @@ describe('SmashUp 能力行为审计', () => {
             }
 
             expect(violations, '以下 ongoing 行动卡的 ongoingTarget 字段与描述矛盾').toEqual([]);
+        });
+
+        it('standard 行动卡的直接入口字段必须匹配描述动作链的第一选择对象', () => {
+            const allDefs = getAllCardDefs();
+            const violations: string[] = [];
+            const auditedIds: string[] = [];
+            const auditedSubjects = new Set<EntrySubject>();
+
+            for (const def of allDefs) {
+                if (def.type !== 'action') continue;
+                const actionDef = def as ActionCardDef;
+                if (actionDef.subtype !== 'standard') continue;
+
+                const i18n = zhCN.cards?.[def.id];
+                const effectText: string = i18n?.effectText ?? '';
+                if (!effectText) continue;
+
+                const needsBase = actionLikeNeedsPlayBase(actionDef);
+                const needsMinion = actionLikeNeedsPlayMinion(actionDef);
+                if (needsBase && needsMinion) {
+                    violations.push(
+                        `[${def.id}]（${i18n?.name ?? def.id}）` +
+                        `同时声明 playNeedsBase 与 playNeedsMinion，UI 第一入口存在双重真相` +
+                        `\n  effectText: ${effectText.slice(0, 80)}...`,
+                    );
+                    continue;
+                }
+
+                const declaredEntry = getDeclaredPlayEntrySubject(actionDef);
+                if (!declaredEntry) continue;
+
+                const describedEntry = inferInitialEntrySubject(effectText);
+                if (!describedEntry) continue;
+
+                auditedIds.push(def.id);
+                auditedSubjects.add(describedEntry);
+
+                if (declaredEntry !== describedEntry) {
+                    violations.push(
+                        `[${def.id}]（${i18n?.name ?? def.id}）` +
+                        `描述动作链第一入口为 ${describedEntry}，但静态字段声明为 ${declaredEntry}` +
+                        `\n  playNeedsBase=${needsBase} playNeedsMinion=${needsMinion}` +
+                        `\n  effectText: ${effectText.slice(0, 80)}...`,
+                    );
+                }
+            }
+
+            expect(auditedIds.length, '入口语义审计不能退化成空跑或只覆盖极少数 standard 行动卡').toBeGreaterThan(20);
+            expect(Array.from(auditedSubjects).sort(), '入口语义审计必须同时覆盖基地入口与随从入口').toEqual(['base', 'minion']);
+            expect(violations, '以下 standard 行动卡的 UI 第一入口字段与描述动作链不一致').toEqual([]);
+        });
+
+        it('需要直接选择随从的行动卡必须声明目标随从控制者约束', () => {
+            const violations: string[] = [];
+            const auditedIds: string[] = [];
+            const auditedControllers = new Set<string>();
+
+            for (const def of getAllCardDefs()) {
+                if (def.type !== 'action') continue;
+                const actionDef = def as ActionCardDef;
+                if (!actionLikeNeedsPlayMinion(actionDef)) continue;
+
+                const i18n = zhCN.cards?.[def.id];
+                const effectText: string = i18n?.effectText ?? '';
+                if (!effectText) continue;
+
+                const describedController = inferPlayTargetMinionController(effectText);
+                if (!describedController) continue;
+
+                auditedIds.push(def.id);
+                auditedControllers.add(describedController);
+
+                const declaredController = actionLikePlayTargetMinionController(actionDef);
+                if (declaredController !== describedController) {
+                    violations.push(
+                        `[${def.id}]（${i18n?.name ?? def.id}）` +
+                        `描述要求 ${describedController} 随从，但 playTargetMinionController=${declaredController}` +
+                        `\n  effectText: ${effectText.slice(0, 100)}...`,
+                    );
+                }
+            }
+
+            expect(auditedIds.length, '控制者约束审计不能空跑').toBeGreaterThan(0);
+            expect(auditedControllers.has('self'), '控制者约束审计至少要覆盖“你的随从”入口').toBe(true);
+            expect(violations, '以下行动卡的目标随从控制者约束与描述不一致').toEqual([]);
         });
     });
 });

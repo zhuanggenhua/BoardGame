@@ -10,10 +10,11 @@ import {
     createSkipOption,
     grantContextualExtraAction,
     grantContextualExtraMinion,
+    inspectDeck,
     modifyBreakpoint,
     peekDeckTop,
     recoverCardsFromDiscard,
-    revealAndPickFromDeck,
+    revealDeckTop,
 } from '../domain/abilityHelpers';
 import {
     createAbilityRuntimeSimpleChoice,
@@ -22,7 +23,7 @@ import {
 } from '../domain/abilityRuntime';
 import { registerBaseAbility, type BaseAbilityContext } from '../domain/baseAbilities';
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
-import type { CardToDeckTopEvent, DeckReorderedEvent, MinionMetadataUpdatedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
+import type { CardInstance, CardToDeckTopEvent, DeckReorderedEvent, MinionMetadataUpdatedEvent, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { getCardDef } from '../data/cards';
 import {
@@ -58,6 +59,12 @@ type HadesContext = PromptContext & { cards: Array<{ cardUid: string; defId: str
 type PoseidonContext = PromptContext & { cards: Array<{ cardUid: string; defId: string; label: string }> };
 type DionysusTopContext = PromptContext & { cardUid: string; defId: string };
 type DionysusMinionContext = PromptContext & { targets: MinionTarget[]; cardUid: string; defId: string };
+type AthenaRevealedCard = Pick<CardInstance, 'uid' | 'defId' | 'type'>;
+type AthenaPickContext = PromptContext & { revealed: AthenaRevealedCard[] };
+type AthenaOrderContext = PromptContext & {
+    remaining: Array<{ uid: string; defId: string }>;
+    ordered: Array<{ uid: string; defId: string }>;
+};
 
 function metadataTurnUsed(uid: string, baseIndex: number, key: string, turnNumber: number, now: number): MinionMetadataUpdatedEvent {
     return {
@@ -69,6 +76,60 @@ function metadataTurnUsed(uid: string, baseIndex: number, key: string, turnNumbe
 
 function ownMinionTargets(state: SmashUpCore, playerId: string): MinionTarget[] {
     return collectMinionTargets(state, minion => minion.controller === playerId);
+}
+
+function buildAthenaCardOptions(cards: Array<{ uid: string; defId: string }>) {
+    return cards.map((card, index) => ({
+        id: `card-${index}`,
+        label: getCardDef(card.defId)?.name ?? card.defId,
+        value: { cardUid: card.uid, defId: card.defId },
+        displayMode: 'card' as const,
+    }));
+}
+
+function buildAthenaRevealEvents(
+    state: SmashUpCore,
+    playerId: string,
+    random: AbilityContext['random'],
+    now: number,
+): { events: SmashUpEvent[]; revealed: AthenaRevealedCard[] } {
+    const player = state.players[playerId];
+    if (!player) return { events: [], revealed: [] };
+
+    let deckSim = [...player.deck];
+    const revealed: AthenaRevealedCard[] = [];
+    const events: SmashUpEvent[] = [];
+
+    if (deckSim.length < 5 && player.discard.length > 0) {
+        deckSim = [...deckSim, ...random.shuffle([...player.discard])];
+        events.push({
+            type: SU_EVENTS.DECK_REORDERED,
+            payload: {
+                playerId,
+                deckUids: deckSim.map(card => card.uid),
+            },
+            timestamp: now,
+        } as DeckReorderedEvent);
+    }
+
+    for (const card of deckSim.slice(0, 5)) {
+        revealed.push({ uid: card.uid, defId: card.defId, type: card.type });
+    }
+
+    if (revealed.length === 0) return { events, revealed };
+
+    events.push(inspectDeck(playerId, playerId, revealed.length, 'mythic_greeks_favor_of_athena', now));
+    events.push(revealDeckTop(
+        playerId,
+        'all',
+        revealed.map(card => ({ uid: card.uid, defId: card.defId })),
+        revealed.length,
+        'mythic_greeks_favor_of_athena',
+        now,
+        playerId,
+    ));
+
+    return { events, revealed };
 }
 
 const greekMinionPromptProgram = createPromptProgram<GreekMinionPromptContext, SmashUpCore, SmashUpEvent>({
@@ -314,20 +375,138 @@ function favorOfHera(ctx: AbilityContext): AbilityResult {
     );
 }
 
+const athenaOrderPromptProgram = createPromptProgram<AthenaOrderContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mythic_greeks_favor_of_athena_order',
+    buildInteraction: (context) => {
+        const title = context.ordered.length === 0
+            ? '雅典娜的恩惠：选择放回牌库顶的第一张牌（最先选的在最上面）'
+            : `雅典娜的恩惠：选择下一张放回牌库顶的牌（已选 ${context.ordered.length} 张）`;
+        return createAbilityRuntimeSimpleChoice(
+            `mythic_greeks_favor_of_athena_order_${context.now}_${context.ordered.length}`,
+            context.playerId,
+            title,
+            buildAthenaCardOptions(context.remaining),
+            { sourceId: 'mythic_greeks_favor_of_athena_order', targetType: 'generic' },
+        );
+    },
+    onResolve: ({ context, value, timestamp }) => {
+        const choice = value as CardChoice;
+        if (!choice.cardUid || !choice.defId) return { events: [] };
+        const selected = context.remaining.find(card => card.uid === choice.cardUid && card.defId === choice.defId);
+        if (!selected) return { events: [] };
+        const ordered = [...context.ordered, selected];
+        const remaining = context.remaining.filter(card => card.uid !== selected.uid);
+        if (remaining.length <= 1) {
+            const allCards = remaining.length === 1 ? [...ordered, remaining[0]] : ordered;
+            const events: SmashUpEvent[] = [];
+            for (let index = allCards.length - 1; index >= 0; index -= 1) {
+                events.push({
+                    type: SU_EVENTS.CARD_TO_DECK_TOP,
+                    payload: {
+                        cardUid: allCards[index].uid,
+                        defId: allCards[index].defId,
+                        ownerId: context.playerId,
+                        reason: 'mythic_greeks_favor_of_athena',
+                    },
+                    timestamp,
+                } as CardToDeckTopEvent);
+            }
+            return { events };
+        }
+        return {
+            events: [],
+            context: {
+                ...context,
+                now: timestamp,
+                ordered,
+                remaining,
+            },
+            nextProgram: athenaOrderPromptProgram,
+        };
+    },
+});
+
+const athenaPickPromptProgram = createPromptProgram<AthenaPickContext, SmashUpCore, SmashUpEvent>({
+    sourceId: 'mythic_greeks_favor_of_athena_pick',
+    buildInteraction: (context) => {
+        const actionCards = context.revealed.filter(card => card.type === 'action');
+        return createAbilityRuntimeSimpleChoice(
+            `mythic_greeks_favor_of_athena_pick_${context.now}`,
+            context.playerId,
+            '雅典娜的恩惠：你可以选择其中一张行动牌加入手牌',
+            [
+                createSkipOption('不加入手牌'),
+                ...buildAthenaCardOptions(actionCards),
+            ],
+            { sourceId: 'mythic_greeks_favor_of_athena_pick', targetType: 'generic', autoResolveIfSingle: false },
+        );
+    },
+    onResolve: ({ context, value, timestamp }) => {
+        const choice = value as CardChoice;
+        const actionCards = context.revealed.filter(card => card.type === 'action');
+        const picked = choice.skip
+            ? undefined
+            : actionCards.find(card => card.uid === choice.cardUid && card.defId === choice.defId);
+        const events: SmashUpEvent[] = [];
+        if (picked) {
+            events.push({
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: context.playerId, count: 1, cardUids: [picked.uid] },
+                timestamp,
+            } as SmashUpEvent);
+        }
+
+        const remaining = context.revealed
+            .filter(card => card.uid !== picked?.uid)
+            .map(card => ({ uid: card.uid, defId: card.defId }));
+        if (remaining.length <= 1) return { events };
+        return {
+            events,
+            context: {
+                ...context,
+                now: timestamp,
+                remaining,
+                ordered: [],
+            } as AthenaOrderContext,
+            nextProgram: athenaOrderPromptProgram,
+        };
+    },
+});
+
 function favorOfAthena(ctx: AbilityContext): AbilityResult {
-    const result = revealAndPickFromDeck({
-        state: ctx.state,
-        random: ctx.random,
+    const result = buildAthenaRevealEvents(ctx.state, ctx.playerId, ctx.random, ctx.now);
+    if (result.revealed.length === 0) {
+        return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+    }
+
+    const hasAction = result.revealed.some(card => card.type === 'action');
+    if (hasAction) {
+        const promptResult = executeAbilityProgram(athenaPickPromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            revealed: result.revealed,
+        });
+        return runtimeToAbilityResult({
+            events: [...result.events, ...promptResult.events],
+            matchState: promptResult.matchState,
+        });
+    }
+
+    if (result.revealed.length <= 1) {
+        return { events: result.events };
+    }
+    const promptResult = executeAbilityProgram(athenaOrderPromptProgram, {
+        matchState: ctx.matchState,
         playerId: ctx.playerId,
-        count: 5,
-        predicate: card => card.type === 'action',
-        maxPick: 1,
-        missTarget: 'deck_top',
-        revealTo: 'all',
-        reason: 'mythic_greeks_favor_of_athena',
         now: ctx.now,
+        remaining: result.revealed.map(card => ({ uid: card.uid, defId: card.defId })),
+        ordered: [],
     });
-    return result.events.length > 0 ? { events: result.events } : { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+    return runtimeToAbilityResult({
+        events: [...result.events, ...promptResult.events],
+        matchState: promptResult.matchState,
+    });
 }
 
 function favorOfApollo(ctx: AbilityContext): AbilityResult {
@@ -491,7 +670,18 @@ function argonautOnPlay(ctx: AbilityContext): AbilityResult {
 function oracleAtDelphi(ctx: BaseAbilityContext): AbilityResult {
     if (!ctx.random) return { events: [] };
     const peek = peekDeckTop(ctx.state, ctx.random, ctx.playerId, 'all', 'base_oracle_at_delphi', ctx.now, ctx.playerId);
-    return peek ? { events: peek.events } : { events: [] };
+    if (!peek) return { events: [] };
+    if (peek.card.type !== 'action') return { events: peek.events };
+    return {
+        events: [
+            ...peek.events,
+            {
+                type: SU_EVENTS.CARDS_DRAWN,
+                payload: { playerId: ctx.playerId, count: 1, cardUids: [peek.card.uid] },
+                timestamp: ctx.now,
+            } as SmashUpEvent,
+        ],
+    };
 }
 
 function woodenHorse(ctx: BaseAbilityContext): AbilityResult {

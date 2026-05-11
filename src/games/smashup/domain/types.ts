@@ -74,6 +74,8 @@ export type PlayConstraint =
     | 'onlyCardInHand'
     | { type: 'requireOwnPower'; minPower: number };
 
+export type PlayTargetMinionController = 'self' | 'opponent' | 'any';
+
 /** 随从卡定义 */
 export interface MinionCardDef {
     id: string;
@@ -141,6 +143,8 @@ export interface FusionCardDef {
     actionPlayNeedsBase?: boolean;
     /** action 面在正常打出时是否需要显式选择目标随从（并隐含需要目标基地） */
     actionPlayNeedsMinion?: boolean;
+    /** action 面显式选择随从时，该目标随从的控制者约束 */
+    actionPlayTargetMinionController?: PlayTargetMinionController;
     actionSpecialNeedsBase?: boolean;
     actionSpecialLimitGroup?: string;
     actionSpecialTiming?: SpecialTiming;
@@ -213,6 +217,8 @@ export interface ActionCardDef {
     playNeedsBase?: boolean;
     /** 正常打出时是否需要显式选择目标随从（并隐含需要目标基地） */
     playNeedsMinion?: boolean;
+    /** 正常打出时显式选择随从的控制者约束 */
+    playTargetMinionController?: PlayTargetMinionController;
     /** 特殊行动卡是否需要选择目标基地（Me First! 窗口中高亮可选基地） */
     specialNeedsBase?: boolean;
     /**

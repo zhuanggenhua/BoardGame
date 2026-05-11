@@ -7,6 +7,22 @@
 - **不能偷换的范围**：这不是“每张卡都各有一条 E2E”；低风险同类能力按行为测试/结构审计覆盖，高风险多选、移动、消灭、弃牌洗回、额外行动、计分窗口、attach/detach、基地替换与 once/turn 基地触发均已补真实入口 E2E。
 - **残余范围**：仍有少量低风险同类卡未逐卡单独 E2E（如简单额外行动、简单临时 buff、简单 self move），但不再把 `Gone with the Wind`、`Ripped Off`、`Not in Kansas`、`Tornado Alley`、`Dust Devil`、计分前 special 或 `Argonaut` 这类新机制列为未验证专项。
 
+## 2026-05-11 入口语义重审回写
+
+- **旧结论失效项**：`sharks_air_jaws` 原 `L1/L2` 结论曾漏掉“描述动作链第一入口”核对。卡牌文案是“将你的一个仆从移动到另一个基地，然后消灭那里 3- 仆从”，第一用户选择对象应为己方随从；旧数据曾写成 `playNeedsBase: true`，导致 UI 第一入口变成选基地。
+- **失效原因**：旧审计只证明 ability 注册、移动/消灭组合 prompt 与部分行为链，没有把 `effectText -> playNeedsBase/playNeedsMinion -> Board 第一入口 -> PLAY_ACTION payload -> handler 消费字段` 串成同一审计门禁。
+- **修复证据**：
+  - `src/games/smashup/data/factions/sharks.ts`：`sharks_air_jaws` 改为 `playNeedsMinion: true`。
+  - `src/games/smashup/abilities/sharks.ts`：入口改为先消费 `targetMinionUid` / 随从 prompt，再选择“另一个基地”，随后执行移动与低战力消灭。
+  - `src/games/smashup/__tests__/shayuFactionAbilities.test.ts`：补“飞鲨通过真实行动入口先选择己方随从，再选择另一个基地并消灭低力量随从”。
+  - `src/games/smashup/__tests__/abilityBehaviorAudit.test.ts`：新增泛化 standard action 入口审计，不写 `sharks_air_jaws` 单卡特例。
+- **验证记录（2026-05-11）**：
+  - `npx vitest run src/games/smashup/__tests__/shayuFactionAbilities.test.ts -t "飞鲨"` → 1 passed。
+  - `npx vitest run src/games/smashup/__tests__/shayuFactionAbilities.test.ts` → 11 passed。
+  - `npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/abilityBehaviorAudit.test.ts -t "standard 行动卡的直接入口字段"` → 1 passed。
+  - `npx eslint src/games/smashup/__tests__/abilityBehaviorAudit.test.ts src/games/smashup/__tests__/shayuFactionAbilities.test.ts src/games/smashup/abilities/sharks.ts src/games/smashup/data/factions/sharks.ts` → 0 errors。
+- **当前结论**：`sharks_air_jaws` 从“旧 L1/L2 结论失效”恢复为“入口语义结构审计通过 + 领域行为回归通过”。本次没有新增浏览器 E2E 截图，因此不得把本条升级成新的 L3 E2E 证据。
+
 ## 审计范围
 
 - 新增派系：`sharks`、`tornados`、`mythic_greeks`
@@ -54,7 +70,7 @@
 | `sharks_chum` | 打到仆从；任意仆从被消灭后此仆从 +1。 | `abilities/sharks.ts` `sharksDestroyedCounterTrigger` | attached ongoing trigger | L1/L2 | 与 Hammerhead 共享触发实现；未单独 E2E。 |
 | `sharks_dangerous_waters` | 打到基地；天赋使这里一个仆从 -2 到回合结束。 | `abilities/sharks.ts` `sharksDangerousWaters` | temporary modifier | L1 | 静态/注册通过；未专项行为测试。 |
 | `sharks_feeding_frenzy` | 选择基地，消灭那里任意数量 2- 仆从。 | `abilities/sharks.ts` `sharksFeedingFrenzy`、`sharksMultiDestroyPromptProgram` | multi destroy prompt | L2/L3 | 行为测试与 E2E 覆盖多选消灭，已纠正“自动全灭”风险。 |
-| `sharks_air_jaws` | 移动你的一个仆从到另一基地，然后消灭那里 3- 仆从。 | `abilities/sharks.ts` `sharksAirJaws` | move then destroy | L1/L2 | 复用移动后销毁 prompt；未单独 E2E。 |
+| `sharks_air_jaws` | 移动你的一个仆从到另一基地，然后消灭那里 3- 仆从。 | `abilities/sharks.ts` `sharksAirJaws` | move then destroy | L1/L2 | 2026-05-11 已重审入口语义：旧 `playNeedsBase` 结论失效，已改为 `playNeedsMinion`；行为测试证明先选己方随从、再选另一基地并消灭低战力目标。未新增单独 E2E。 |
 | `sharks_freakin_laser_beam` | 选你的仆从，消灭同基地战力不高于该仆从的仆从。 | `abilities/sharks.ts` `sharksFreakinLaserBeam` | threshold destroy by source power | L1 | 静态/注册通过；未专项行为测试。 |
 | `base_shark_reef` | 摧毁这里仆从的玩家，可给自己任意仆从 +1。 | `abilities/sharks.ts` `baseSharkReef` | destroyerId base ability | L1/L2 | 已修正用 `destroyerId`，不是被消灭者 owner；未单独 E2E。 |
 | `base_the_deep` | 打出 4+ 仆从到这里后，可消灭这里更低战力仆从。 | `abilities/sharks.ts` `baseTheDeep` | onMinionPlayed base ability | L1/L2 | 已修正 4+ 阈值并改玩家选择；E2E 场景中基地可见。 |
@@ -128,6 +144,7 @@
 - D18/D21/D49：多步交互、多选、逐目标、response/interaction 由 E2E 与行为测试分层覆盖；未覆盖项明确降级为风险。
 - D31/D36：素材上传与运行时资源链路由 R2 HEAD、manifest、截图可见性共同证明。
 - D50（本轮新增自定义）：外部交付目标必须远端回查；本地 ignored 图不作为交付证明。
+- 2026-05-11 追加通用维度：交互入口语义审计，覆盖 D1/D3/D8/D15/D23/D33 的交叉风险，要求描述动作链第一选择对象与 UI/command/validator/handler 入口字段一致。
 
 ## 当前风险登记
 
@@ -135,3 +152,18 @@
 2. `mythic_greeks_argonaut` 已用 Mythic Greeks 内 Odysseus/Heracles/Spartan 证明 action-trigger 代表链；若未来接入跨派系 action-trigger 组合包，建议另做参数化审计工厂，但本轮新机制 E2E 不再缺口。
 3. 派系选择页截图可见新增素材，但顶部选中槽存在灰底占位；这不是玩法阻塞，但不能把入口截图冒充玩法完成。
 
+
+## 2026-05-11 严格抽样重审追加结论：旧“已审计”结论降级
+
+本轮后续严格抽样审计发现，原 shayu 审计结论对“描述入口 → UI/validator/handler 单一真相”的覆盖仍不够，不能继续按“所有复杂交互已完全收口”理解。
+
+新增失效点：
+
+1. `sharks_freakin_laser_beam` 暴露出通用字段缺口：`playNeedsMinion` 只能表达“要选随从”，不能表达“必须选你的随从”。已新增 `playTargetMinionController` 通用字段并扩到 UI/validator。
+2. `mythic_greeks_favor_of_athena` 旧实现自动选择第一张行动牌并固定回顶顺序，漏掉“你可以选择其中一张行动牌”和“任意顺序回顶”。已改为选择行动牌 + 排序交互链。
+3. `base_oracle_at_delphi` 旧实现只展示牌库顶，未在顶牌为行动牌时加入手牌。已补行动牌入手分支。
+4. 同类扩审命中旧非 shayu 对象 `samurai_way_of_the_warrior` / `samurai_way_of_the_warrior_pod`，说明这是通用入口契约问题，不是鲨鱼单卡特例。
+
+新增证据文档：`evidence/smashup/smashup-shayu-strict-chain-sample-audit-2026-05-11.md`。
+
+当前口径：shayu 三派系已有 L1/L2 代表性链路增强，但仍不能宣称全量 L3 E2E 收口。后续若要发布级全收口，需要继续按对象清单逐项补真实入口 E2E/截图证据。

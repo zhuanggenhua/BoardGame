@@ -138,6 +138,7 @@ export const SAMURAI_POD_ACTIONS: ActionCardDef[] = [
         faction: 'samurai_pod',
         abilityTags: ['onPlay'],
         playNeedsMinion: true,
+        playTargetMinionController: 'self',
         count: 2,
         previewRef: { type: 'atlas', atlasId: SMASHUP_ATLAS_IDS.CARDS6, index: 19 },
     },

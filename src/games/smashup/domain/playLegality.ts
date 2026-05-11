@@ -6,6 +6,7 @@ import { getPlayerEffectivePowerOnBase } from './ongoingModifiers';
 import {
     actionLikeNeedsPlayBase,
     actionLikeNeedsPlayMinion,
+    actionLikePlayTargetMinionController,
     getActionLikeResponseWindowTiming,
     isCardMinionLike,
     mustUseBaseLimitedMinionQuota,
@@ -179,6 +180,13 @@ export function validateActionPlaySemantics(
         const targetMinion = core.bases[targetBaseIndex]?.minions.find(minion => minion.uid === params.targetMinionUid);
         if (!targetMinion) {
             return { valid: false, error: '基地上没有该随从' };
+        }
+        const controllerConstraint = actionLikePlayTargetMinionController(def);
+        if (controllerConstraint === 'self' && targetMinion.controller !== playerId) {
+            return { valid: false, error: '该行动卡需要选择你的随从' };
+        }
+        if (controllerConstraint === 'opponent' && targetMinion.controller === playerId) {
+            return { valid: false, error: '该行动卡需要选择其他玩家的随从' };
         }
     }
 

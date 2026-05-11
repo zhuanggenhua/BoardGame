@@ -140,6 +140,122 @@ describe('shayu 三派系代表性玩法行为', () => {
         expect(minionUids).toContain('high');
     });
 
+    it('鲨鱼：飞鲨通过真实行动入口先选择己方随从，再选择另一个基地并消灭低力量随从', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('a-air', 'sharks_air_jaws', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_the_deep', [makeMinion('own-shark', 'sharks_mako', '0', 2)]),
+                makeBase('base_trailer_park', [makeMinion('victim', 'tornados_dust_devil', '1', 2)]),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-air', targetBaseIndex: 0, targetMinionUid: 'own-shark' },
+        } as any);
+        expect(play.success).toBe(true);
+        expect((play.finalState.sys.interaction?.current?.data as any)?.sourceId).toBe('sharks_air_jaws_destination');
+        expect((play.finalState.sys.interaction?.current?.data as any)?.targetType).toBe('base');
+
+        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+            const targetBase = prompt.data.options.find((option: any) => option.value?.baseIndex === 1);
+            return { optionId: targetBase.id };
+        });
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'own-shark')).toBe(false);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'own-shark')).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'victim')).toBe(false);
+    });
+
+    it('鲨鱼：激光束第一入口只能选择己方随从，合法后再消灭同基地低战力目标', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('a-laser', 'sharks_freakin_laser_beam', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_the_deep', [
+                makeMinion('own-source', 'sharks_hammerhead', '0', 3),
+                makeMinion('enemy-source', 'sharks_mako', '1', 2),
+                makeMinion('victim-low', 'tornados_dust_devil', '1', 2),
+                makeMinion('victim-high', 'tornados_twister', '1', 4),
+            ])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const illegal = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-laser', targetBaseIndex: 0, targetMinionUid: 'enemy-source' },
+        } as any);
+        expect(illegal.success).toBe(false);
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-laser', targetBaseIndex: 0, targetMinionUid: 'own-source' },
+        } as any);
+        expect(play.success).toBe(true);
+        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+            const low = prompt.data.options.find((option: any) => option.value?.minionUid === 'victim-low');
+            const high = prompt.data.options.find((option: any) => option.value?.minionUid === 'victim-high');
+            expect(low).toBeTruthy();
+            expect(high).toBeFalsy();
+            return { optionId: low.id };
+        });
+        const minionUids = resolved.finalState.core.bases[0].minions.map(minion => minion.uid);
+        expect(minionUids).not.toContain('victim-low');
+        expect(minionUids).toContain('victim-high');
+        expect(minionUids).toContain('own-source');
+    });
+
+    it('鲨鱼：鲨鱼周在回合结束只按拥有者触发一次额外抽牌', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('draw-a', 'sharks_mako', 'minion', '0'),
+                        makeCard('draw-b', 'sharks_hammerhead', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase({
+                    defId: 'base_the_deep',
+                    minions: [makeMinion('own-a', 'sharks_mako', '0', 2)],
+                    ongoingActions: [{ uid: 'week-a', defId: 'sharks_week_of_sharks', ownerId: '0' }],
+                }),
+                makeBase({
+                    defId: 'base_trailer_park',
+                    minions: [makeMinion('own-b', 'sharks_mako', '0', 2)],
+                    ongoingActions: [{ uid: 'week-b', defId: 'sharks_week_of_sharks', ownerId: '0' }],
+                }),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const state = makeMatchState(core);
+        state.sys.phase = 'endTurn';
+        const result = runCommand(state, { type: 'ADVANCE_PHASE' as any, playerId: '0', payload: undefined } as any);
+        expect(result.success).toBe(true);
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['draw-a']);
+        expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['draw-b']);
+    });
+
     it('龙卷风：龙卷风怪物可把其他基地低力量随从移入自身基地', () => {
         const core = {
             players: {
@@ -242,6 +358,58 @@ describe('shayu 三派系代表性玩法行为', () => {
         expect(player.discard.map(card => card.uid)).toEqual(['discard-b', 'a-poseidon']);
     });
 
+    it('神话希腊：雅典娜的恩惠展示牌库顶5张，由玩家选择行动牌并决定其余回顶顺序', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a-athena', 'mythic_greeks_favor_of_athena', 'action', '0')],
+                    deck: [
+                        makeCard('top-minion-a', 'mythic_greeks_spartan', 'minion', '0'),
+                        makeCard('top-action-a', 'mythic_greeks_favor_of_ares', 'action', '0'),
+                        makeCard('top-action-pick', 'mythic_greeks_favor_of_apollo', 'action', '0'),
+                        makeCard('top-minion-b', 'sharks_mako', 'minion', '0'),
+                        makeCard('top-action-c', 'sharks_torn_apart', 'action', '0'),
+                        makeCard('deck-rest', 'tornados_dust_devil', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_oracle_at_delphi', [])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-athena' },
+        } as any);
+        expect(play.success).toBe(true);
+        expect((play.finalState.sys.interaction.current?.data as any)?.sourceId).toBe('mythic_greeks_favor_of_athena_pick');
+
+        const resolved = resolveInteractionChain(play.finalState, (prompt, _state, step) => {
+            if (step === 0) {
+                const picked = prompt.data.options.find((option: any) => option.value?.cardUid === 'top-action-pick');
+                return { optionId: picked.id };
+            }
+            const order = ['top-minion-b', 'top-minion-a', 'top-action-a'];
+            const target = prompt.data.options.find((option: any) => option.value?.cardUid === order[step - 1]);
+            return { optionId: target.id };
+        });
+
+        const player = resolved.finalState.core.players['0'];
+        expect(player.hand.map(card => card.uid)).toContain('top-action-pick');
+        expect(player.deck.map(card => card.uid)).toEqual([
+            'top-minion-b',
+            'top-minion-a',
+            'top-action-a',
+            'top-action-c',
+            'deck-rest',
+        ]);
+    });
+
     it('龙卷风：旋风群为每个被选随从分别选择目标基地', () => {
         const core = {
             players: {
@@ -277,6 +445,49 @@ describe('shayu 三派系代表性玩法行为', () => {
         });
         expect(resolved.finalState.core.bases[2].minions.some(minion => minion.uid === 'own-a')).toBe(true);
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'own-b')).toBe(true);
+    });
+
+    it('龙卷风：信风从真实出牌进入两个随从选择，且第二候选必须在另一基地', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('a-trade', 'tornados_trade_winds', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_oracle_at_delphi', [
+                    makeMinion('first', 'sharks_mako', '0', 2),
+                    makeMinion('same-base', 'tornados_dust_devil', '1', 2),
+                ]),
+                makeBase('base_the_deep', [
+                    makeMinion('second', 'mythic_greeks_spartan', '1', 2),
+                    makeMinion('too-big', 'sharks_hammerhead', '1', 4),
+                ]),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'a-trade' },
+        } as any);
+        expect(play.success).toBe(true);
+        expect((play.finalState.sys.interaction.current?.data as any)?.sourceId).toBe('tornados_trade_winds_first');
+        const resolved = resolveInteractionChain(play.finalState, (prompt, _state, step) => {
+            if (step === 0) {
+                const first = prompt.data.options.find((option: any) => option.value?.minionUid === 'first');
+                return { optionId: first.id };
+            }
+            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'same-base')).toBe(false);
+            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'too-big')).toBe(false);
+            const second = prompt.data.options.find((option: any) => option.value?.minionUid === 'second');
+            return { optionId: second.id };
+        });
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'second')).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'first')).toBe(true);
     });
 
     it('神话希腊：狄俄尼索斯的恩惠可选择是否放回牌库顶', () => {
@@ -350,5 +561,56 @@ describe('shayu 三派系代表性玩法行为', () => {
         expect(minions.find(minion => minion.uid === 'odysseus')?.powerCounters).toBe(1);
         expect(minions.find(minion => minion.uid === 'heracles')?.tempPowerModifier).toBe(1);
         expect(minions.find(minion => minion.uid === 'spartan')?.powerCounters).toBe(1);
+    });
+
+    it('神话希腊基地：特尔斐神谕在打出随从后展示牌库顶，行动牌入手，非行动牌留在牌库顶', () => {
+        const actionTopCore = {
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('minion-a', 'mythic_greeks_spartan', 'minion', '0')],
+                    deck: [
+                        makeCard('top-action', 'mythic_greeks_favor_of_apollo', 'action', '0'),
+                        makeCard('next-card', 'sharks_mako', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_oracle_at_delphi', [])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const actionTop = runCommand(makeMatchState(actionTopCore), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'minion-a', baseIndex: 0 },
+        } as any);
+        expect(actionTop.success).toBe(true);
+        expect(actionTop.finalState.core.players['0'].hand.map(card => card.uid)).toContain('top-action');
+        expect(actionTop.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['next-card']);
+
+        const minionTopCore = {
+            ...actionTopCore,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('minion-b', 'mythic_greeks_spartan', 'minion', '0')],
+                    deck: [
+                        makeCard('top-minion', 'sharks_mako', 'minion', '0'),
+                        makeCard('next-action', 'mythic_greeks_favor_of_apollo', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        };
+        const minionTop = runCommand(makeMatchState(minionTopCore), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'minion-b', baseIndex: 0 },
+        } as any);
+        expect(minionTop.success).toBe(true);
+        expect(minionTop.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('top-minion');
+        expect(minionTop.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['top-minion', 'next-action']);
     });
 });

@@ -23,7 +23,6 @@ import {
 import { registerBaseAbility, registerExtended, type BaseAbilityContext } from '../domain/baseAbilities';
 import { registerTrigger, type TriggerContext } from '../domain/ongoingEffects';
 import type { SmashUpCore, SmashUpEvent } from '../domain/types';
-import { getBaseDef } from '../data/cards';
 import {
     SHAYU_TRIGGER_CONTRACT,
     type BaseChoice,
@@ -62,7 +61,6 @@ type SharksDestroyAfterMoveContext = PromptContext & {
 };
 
 type SharksAirJawsContext = PromptContext & {
-    destinationBaseIndex: number;
     candidates: MinionTarget[];
 };
 
@@ -329,7 +327,7 @@ const sharksAirJawsMinionPromptProgram = createPromptProgram<SharksAirJawsContex
     buildInteraction: (context) => createAbilityRuntimeSimpleChoice(
         `sharks_air_jaws_${context.now}`,
         context.playerId,
-        '飞鲨：选择你的一个随从移动到目标基地',
+        '飞鲨：选择你的一个随从移动到另一个基地',
         buildMinionTargetOptions(context.candidates, {
             state: context.matchState.core,
             sourcePlayerId: context.playerId,
@@ -338,9 +336,11 @@ const sharksAirJawsMinionPromptProgram = createPromptProgram<SharksAirJawsContex
         }),
         { sourceId: 'sharks_air_jaws', targetType: 'minion' },
     ),
-    onResolve: ({ context, state, playerId, value, timestamp }) => {
+    onResolve: ({ state, playerId, value, timestamp }) => {
         const choice = value as MinionChoice;
         if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) return { events: [] };
+        const destinationBases = collectBaseTargets(state.core, baseIndex => baseIndex !== choice.baseIndex);
+        if (destinationBases.length === 0) return { events: [] };
         return executeAbilityProgram(sharksMoveThenDestroyBasePromptProgram, {
             matchState: state,
             playerId,
@@ -349,21 +349,36 @@ const sharksAirJawsMinionPromptProgram = createPromptProgram<SharksAirJawsContex
             sourceMinionUid: choice.minionUid,
             sourceMinionDefId: choice.defId,
             sourceBaseIndex: choice.baseIndex,
-            destinationBases: [{ baseIndex: context.destinationBaseIndex, label: getBaseDef(state.core.bases[context.destinationBaseIndex]?.defId)?.name ?? `基地 ${context.destinationBaseIndex + 1}` }],
+            destinationBases,
             destroyPowerMax: 3,
         });
     },
 });
 
 function sharksAirJaws(ctx: AbilityContext): AbilityResult {
-    const destinationBaseIndex = ctx.targetBaseIndex ?? ctx.baseIndex;
-    const candidates = collectMinionTargets(ctx.state, (minion, baseIndex) => minion.controller === ctx.playerId && baseIndex !== destinationBaseIndex);
+    const candidates = collectMinionTargets(ctx.state, (minion, baseIndex) => minion.controller === ctx.playerId && ctx.state.bases.some((_base, otherBaseIndex) => otherBaseIndex !== baseIndex));
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    if (ctx.targetMinionUid) {
+        const selected = candidates.find(candidate => candidate.uid === ctx.targetMinionUid && candidate.baseIndex === ctx.baseIndex);
+        if (!selected) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+        const destinationBases = collectBaseTargets(ctx.state, baseIndex => baseIndex !== selected.baseIndex);
+        if (destinationBases.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+        return runtimeToAbilityResult(executeAbilityProgram(sharksMoveThenDestroyBasePromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            sourceId: 'sharks_air_jaws_destination',
+            sourceMinionUid: selected.uid,
+            sourceMinionDefId: selected.defId,
+            sourceBaseIndex: selected.baseIndex,
+            destinationBases,
+            destroyPowerMax: 3,
+        }));
+    }
     return runtimeToAbilityResult(executeAbilityProgram(sharksAirJawsMinionPromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
         now: ctx.now,
-        destinationBaseIndex,
         candidates,
     }));
 }

@@ -188,6 +188,13 @@ export function actionLikeNeedsPlayMinion(def: ActionLikeDef): boolean {
     return def.playNeedsMinion === true;
 }
 
+export function actionLikePlayTargetMinionController(def: ActionLikeDef): 'self' | 'opponent' | 'any' {
+    if (isFusionActionDef(def)) {
+        return def.actionPlayTargetMinionController ?? 'any';
+    }
+    return def.playTargetMinionController ?? 'any';
+}
+
 export function isActionLikeRespondableInWindow(
     def: ActionLikeDef,
     windowType: ResponseWindowType,

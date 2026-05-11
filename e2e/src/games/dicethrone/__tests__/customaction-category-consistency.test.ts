@@ -696,6 +696,8 @@ describe('CustomAction categories 与 handler 输出一致性审计', () => {
             'paladin-blessing-prevent',
             // 神枪手决斗：当前 handler 只发起比较/选项交互，实际伤害在 choice-resolved handler 中落地
             'gunslinger-duel-resolve',
+            // 忍者忍术：handler 追加 BONUS_DAMAGE_ADDED 到当前攻击，不直接产生 DAMAGE_DEALT
+            'ninja-ninjutsu-use',
         ]);
 
         for (const actionId of registeredIds) {

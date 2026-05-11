@@ -1,4 +1,4 @@
-import { startTransition, useEffect, useState } from 'react';
+import { startTransition, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { GAME_MANIFEST_BY_ID } from '../../games/manifest';
 import type { GameManifestEntry } from '../../games/manifest';
@@ -19,7 +19,12 @@ type GameMobileEntry = Pick<
 const hasCapacitorRuntime = () => {
     if (typeof window === 'undefined') return false;
     const runtime = (window as typeof window & { Capacitor?: { isNativePlatform?: () => boolean } }).Capacitor;
-    return typeof runtime?.isNativePlatform === 'function';
+    if (typeof runtime?.isNativePlatform !== 'function') return false;
+    try {
+        return runtime.isNativePlatform();
+    } catch {
+        return false;
+    }
 };
 
 type CapacitorCoreModule = {
@@ -72,8 +77,10 @@ const isNativeAppShell = async () => {
 
 const lockScreenOrientationFallback = async (orientation: 'landscape' | 'portrait'): Promise<boolean> => {
     if (typeof window === 'undefined') return false;
-    const orientationApi = window.screen?.orientation;
-    if (!orientationApi?.lock) return false;
+    const orientationApi = window.screen?.orientation as (ScreenOrientation & {
+        lock?: (orientation: 'landscape' | 'portrait') => Promise<void>;
+    }) | undefined;
+    if (typeof orientationApi?.lock !== 'function') return false;
     try {
         await orientationApi.lock(orientation);
         return true;
@@ -157,8 +164,10 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     const location = useLocation();
     const viewport = useRuntimeViewport({ syncCssVars: true });
     const [dismissedBannerKey, setDismissedBannerKey] = useState<string | null>(null);
-    const [nativeAppShell, setNativeAppShell] = useState(false);
+    const [nativeAppShell, setNativeAppShell] = useState(() => hasCapacitorRuntime());
+    const nativeAppShellRef = useRef(nativeAppShell);
     const [dynamicGameConfig, setDynamicGameConfig] = useState<GameMobileEntry | undefined>(undefined);
+    nativeAppShellRef.current = nativeAppShell;
 
     const gameId = extractGameIdFromPlayPath(location.pathname);
     const isHomeV2Route = isHomeV2PreviewRoute(location.pathname);
@@ -181,7 +190,6 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     const activeBannerKind = !shouldSuppressBannerInAppShell && bannerKey && dismissedBannerKey !== bannerKey
         ? bannerKind
         : null;
-
     useEffect(() => {
         if (!gameId || builtInGameConfig) {
             setDynamicGameConfig(undefined);
@@ -222,10 +230,12 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     }, [builtInGameConfig, gameId]);
 
     useEffect(() => {
+        if (nativeAppShellRef.current) return;
+
         let disposed = false;
 
         void isNativeAppShell().then((value) => {
-            if (!disposed) {
+            if (!disposed && nativeAppShellRef.current !== value) {
                 setNativeAppShell(value);
             }
         });
@@ -252,8 +262,10 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
             void lockScreenByRoute(targetOrientation);
         };
 
+        lockNow();
+
         // 首屏进入时做多次重试，规避插件桥接尚未就绪导致的首次加锁失败
-        for (const delay of [0, 150, 500, 1200]) {
+        for (const delay of [150, 500, 1200]) {
             const id = window.setTimeout(() => {
                 lockNow();
             }, delay);

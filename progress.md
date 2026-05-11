@@ -1,3 +1,64 @@
+## Session: 2026-05-12 SmashUp shayu 通用入口矩阵补强与全量重审
+
+- **Status:** in_progress
+- 已读取：
+  - `AGENTS.md`
+  - `openspec/AGENTS.md`
+  - `D:/codex-home/skills/task-completion-guard/SKILL.md`
+  - `C:/Users/zhuagenbao/.codex/skills/planning-with-files/SKILL.md`
+  - `.windsurf/skills/game-audit-workflow/SKILL.md`
+  - `.windsurf/skills/add-new-faction/SKILL.md`
+  - `docs/ai-rules/testing-audit.md`
+  - `docs/ai-rules/engine-systems.md`
+  - `docs/testing-best-practices.md`
+  - `docs/automated-testing.md`
+  - `docs/ai-rules/data-entry.md`
+  - `docs/temp-files-management.md`
+- 已创建 guard：`temp/smashup-shayu-full-audit-2026-05-12.json`。
+- 当前动作：补强通用矩阵，随后生成 39 卡 + 6 基地全量清单并逐项 P0/P1 审计。
+
+---
+
+## Session: 2026-05-11 七大恨新游戏前置 intake
+
+- **Status:** completed
+- 已读取：
+  - `AGENTS.md`
+  - `openspec/AGENTS.md`
+  - `C:\Users\zhuagenbao\.codex\skills\planning-with-files\SKILL.md`
+  - `.windsurf/skills/create-new-game/SKILL.md`
+  - `docs/ai-rules/asset-pipeline.md`
+  - `docs/ai-rules/data-entry.md`
+  - `docs/temp-files-management.md`
+  - `D:\codex-home\skills\.system\skill-creator\SKILL.md`
+- 已确认本轮不创建/切换分支，先做规则转档、素材入库、资源闭环、可行性分析与 skill 优化。
+- 已发现项目内已有 `qidahen` 前置产物，选择核验并补齐缺口，不覆盖重做：
+  - 规则 MD：`src/games/qidahen/rule/七大恨规则.md`
+  - 素材清单：`src/games/qidahen/rule/七大恨素材接入清单.md`
+  - 可行性分析：`evidence/qidahen/qidahen-feasibility-2026-05-11.md`
+- 资源处理：
+  - `npm run compress:images -- public/assets/i18n/zh-CN/qidahen` -> 70 张，WebP 输出约 4.65 MB。
+  - `npm run compress:images -- public/assets/qidahen` -> 1 张缩略图，WebP 输出约 42.5 KB。
+  - `npm run assets:manifest && npm run assets:validate` -> 5 个 manifest 校验通过。
+  - `npm run assets:check` -> 发现 71 个 qidahen 新增远端缺失资源。
+  - `npm run assets:upload` -> 上传 71，跳过 1875，删除 0，失败 0。
+  - 远端 HEAD 抽查 `main-board.webp` / `ming-deck-atlas.webp` / `cover.webp` 均返回 200。
+- 已更新：
+  - `task_plan.md`
+  - `findings.md`
+  - `progress.md`
+  - `.windsurf/skills/create-new-game/SKILL.md`
+  - `src/games/qidahen/rule/七大恨素材接入清单.md`
+  - `evidence/qidahen/qidahen-feasibility-2026-05-11.md`
+- 错误记录：
+  - PowerShell 不支持 Bash heredoc：`python - <<'PY'` 失败；后续改用 PowerShell 原生命令。
+  - 一次远端 HEAD 抽查命令因空管道解析失败；修正为先收集 `$rows` 再格式化输出。
+- 收口：
+  - `$env:PYTHONUTF8='1'; python D:\codex-home\skills\.system\skill-creator\scripts\quick_validate.py .windsurf\skills\create-new-game` -> `Skill is valid!`
+  - 已复核本轮相关 git status；仓库仍有大量无关历史脏改，本轮未处理。
+
+---
+
 ## Session: 2026-05-10 命令执行异常全链路修复
 - **Status:** in_progress
 - Actions taken:

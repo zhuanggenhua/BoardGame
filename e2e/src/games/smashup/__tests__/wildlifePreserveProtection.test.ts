@@ -20,7 +20,7 @@ import { filterProtectedAffectEvents } from '../domain/reducer';
 import { runCommand } from './testRunner';
 import { findInteractionOption, makeMinion, makePlayer, makeState, makeMatchState, makeCard, resolveInteractionChain } from './helpers';
 import type { BaseInPlay, OngoingActionOnBase } from '../domain/types';
-import { SU_EVENTS, SU_COMMANDS } from '../domain/types';
+import { MADNESS_CARD_DEF_ID, SU_EVENTS, SU_COMMANDS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 
 // ============================================================================
@@ -333,6 +333,101 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
         const finalBase = respondResult.finalState.core.bases[0];
         const targetMinion = finalBase.minions.find(m => m.uid === 'target_m');
         expect(targetMinion).toBeUndefined(); // 随从已被消灭
+    });
+
+    it('深不可测的目的自动消灭分支会尊重对手野生保护区', () => {
+        const core = makeState({
+            bases: [
+                makeBase('test_base', {
+                    minions: [makeMinion('protected_m', 'test_minion_weak', '1', 2)],
+                    ongoingActions: [makeOngoing('wp1', 'dino_wildlife_preserve', '1')],
+                }),
+            ],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.ELDER_THINGS, SMASHUP_FACTION_IDS.ALIENS],
+                    hand: [makeCard('ug1', 'elder_thing_unfathomable_goals', 'action', '0')],
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.DINOSAURS, SMASHUP_FACTION_IDS.ROBOTS],
+                    hand: [makeCard('mad1', MADNESS_CARD_DEF_ID, 'action', '1')],
+                }),
+            },
+        });
+
+        const result = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'ug1' },
+            timestamp: 1000,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.finalState.core.bases[0].minions.some(m => m.uid === 'protected_m')).toBe(true);
+        expect(result.events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        expect(result.finalState.sys.interaction.current).toBeUndefined();
+    });
+
+    it('深不可测的目的多随从选择分支会过滤野生保护区保护的随从', () => {
+        const core = makeState({
+            bases: [
+                makeBase('protected_base', {
+                    minions: [makeMinion('protected_m', 'test_minion_weak', '1', 2)],
+                    ongoingActions: [makeOngoing('wp1', 'dino_wildlife_preserve', '1')],
+                }),
+                makeBase('open_base', {
+                    minions: [
+                        makeMinion('open_m1', 'test_minion_weak', '1', 2),
+                        makeMinion('open_m2', 'test_minion_weak', '1', 3),
+                    ],
+                    ongoingActions: [],
+                }),
+            ],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.ELDER_THINGS, SMASHUP_FACTION_IDS.ALIENS],
+                    hand: [makeCard('ug1', 'elder_thing_unfathomable_goals', 'action', '0')],
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.DINOSAURS, SMASHUP_FACTION_IDS.ROBOTS],
+                    hand: [makeCard('mad1', MADNESS_CARD_DEF_ID, 'action', '1')],
+                }),
+            },
+        });
+
+        const playResult = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'ug1' },
+            timestamp: 1000,
+        });
+
+        const prompt = playResult.finalState.sys.interaction.current;
+        expect(prompt?.playerId).toBe('1');
+        expect((prompt?.data as any)?.sourceId).toBe('elder_thing_unfathomable_goals');
+        const optionUids = ((prompt?.data as any)?.options ?? []).map((option: any) => option.value?.minionUid);
+        expect(optionUids).toEqual(expect.arrayContaining(['open_m1', 'open_m2']));
+        expect(optionUids).not.toContain('protected_m');
+
+        const targetOption = findInteractionOption(prompt, option => option?.value?.minionUid === 'open_m1');
+        expect(targetOption).toBeDefined();
+        const resolved = runCommand(playResult.finalState, {
+            type: 'SYS_INTERACTION_RESPOND' as any,
+            playerId: '1',
+            payload: { optionId: targetOption!.id },
+            timestamp: 1001,
+        });
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.some(m => m.uid === 'protected_m')).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(m => m.uid === 'open_m1')).toBe(false);
+        expect(resolved.finalState.core.bases[1].minions.some(m => m.uid === 'open_m2')).toBe(true);
     });
 
     it('wildlife_preserve 不应阻止枪手决斗消灭失败的敌方随从', () => {

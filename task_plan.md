@@ -1,3 +1,85 @@
+# Task Plan: SmashUp shayu 三派系通用入口矩阵补强与全量重审（2026-05-12）
+
+> 当前正式计划入口。下方旧计划均为历史上下文，不作为本轮任务入口。
+
+## Goal
+
+把“交互入口语义审计”从一句通用原则补强成可执行的通用审计矩阵，并按新矩阵对 SmashUp shayu 三派系（sharks / tornados / mythic_greeks）39 张卡 + 6 张基地做 P0/P1 全量重审；发现问题必须修复或显式登记，旧 evidence 失效结论必须回写。
+
+## Constraints
+
+- 不创建/切换/删除分支或 worktree；在当前工作树既有脏改基础上推进。
+- 不把抽样审计说成全量；全量必须有对象清单逐项状态。
+- 通用规范只写通用矩阵，不写 shayu / 飞鲨 / 单卡特例。
+- 结论按 L1/L2/L3/L4 分层；没有新增 E2E 截图时不得宣称 L3 已补齐。
+- 使用 completion guard：`temp/smashup-shayu-full-audit-2026-05-12.json`。
+
+## Acceptance Checklist
+
+- [ ] S0 读取规范与项目 skill：game-audit-workflow、add-new-faction、testing-audit、engine-systems、testing-best-practices、automated-testing、data-entry。
+- [ ] S1 补强 `docs/ai-rules/testing-audit.md`：交互入口语义矩阵、目标归属、数量/可选、动作链、上下文携带、自动执行 vs 玩家选择。
+- [ ] S2 建立 shayu 39 卡 + 6 基地对象清单，标 L0-L4 与 P0/P1 风险。
+- [ ] S3 对每个对象做 P0/P1 重审：描述动作链、第一入口、数据字段、UI/validator/handler/reducer 链路、上下文与可选/数量语义。
+- [ ] S4 修复或登记发现项；同步测试与旧 evidence 回写。
+- [ ] S5 运行相关验证并更新 completion guard，不满足则不得宣称完成。
+
+## Current Status
+
+- [x] 已确认根 `task_plan.md` 旧当前任务为七大恨 intake，已 completed；本轮在顶部切换为 shayu 全量重审计划并保留历史。
+- [x] 已创建 completion guard 状态文件。
+- [x] 已读取 OpenSpec 指引：本轮属于现有审计/bug 修复/证据补强，不先创建新 OpenSpec proposal。
+- [ ] 正在补强通用规范与生成全量审计清单。
+
+## Errors Encountered
+
+| 时间 | 错误 | 处置 |
+| --- | --- | --- |
+| 2026-05-12 | planning-with-files session-catchup 提示原生 Codex session 解析未实现。 | 记录为无可同步上下文，继续按当前对话与项目文件推进。 |
+
+---
+
+# Task Plan: 七大恨新游戏前置 intake 与可行性分析（2026-05-11）
+
+> 当前正式计划入口。下方旧计划均为历史上下文，不作为本轮任务入口。
+
+## Goal
+
+基于 `D:\gongzuo\webgame\gameasset\七大恨 中文mod\七大恨规则.pdf` 与 `D:\gongzuo\webgame\gameasset\七大恨 中文mod\Images`，先完成新游戏前置 intake：把规则 PDF 转成易读 Markdown，把需要用到的图片放入项目正式资源目录并规范命名，随后分析“七大恨”接入本项目的实现可行性与风险；同时记录现有 create-new-game skill 的缺口，形成后续 skill 优化建议。
+
+## Constraints
+
+- 不擅自创建、切换、重建或删除分支；`create-new-game` 的正式建游戏分支要求等待用户明确授权。
+- 本轮先做规则/资源/可行性前置，不直接创建完整游戏骨架。
+- 主真相源：用户提供的中文规则 PDF 与中文 mod 图片目录。
+- 图片正式资源必须遵循 `docs/ai-rules/asset-pipeline.md`：运行时资源落 `public/assets/i18n/zh-CN/<gameId>/...` 或过渡期等价路径，路径语义化，后续代码引用不写 `compressed/`。
+- 录入中间产物、OCR/核对图、识别清单放 `temp/`，不混入正式资源树。
+
+## Acceptance Checklist
+
+- [x] S0 规划与规范读取：已读取 AGENTS、OpenSpec、planning-with-files、create-new-game、asset-pipeline、data-entry、temp-files-management。
+- [x] S1 规则转档：将 `七大恨规则.pdf` 转为易读 Markdown，落到项目内新游戏 `rule/` 或前置文档目录，并保留转换方式与质量说明。
+- [x] S2 素材盘点：列出 `Images` 下素材清单、尺寸、文件类型、疑似用途与命名依据。
+- [x] S3 资源入库：把可裁定用途的正式图片复制到项目规范目录，采用语义化命名；不确定用途只登记，不强行命名。
+- [x] S4 资源压缩/清单：对正式入库图片执行最小必要压缩或记录阻塞原因。
+- [x] S5 可行性分析：基于规则文档与素材盘点分析核心机制、引擎映射、UI/资源复杂度、MVP 切分与风险。
+- [x] S6 skill 优化建议：记录 create-new-game 对“PDF 转 MD + 素材 intake + 可行性评估”阶段的可补强点。
+
+## Current Status
+
+- [x] 已确认本轮不创建分支，先执行新游戏前置 intake。
+- [x] 已读取项目根 AGENTS 与 OpenSpec 指引。
+- [x] 已读取 planning-with-files 与 create-new-game skill。
+- [x] 已读取图片资源、数据录入、临时文件管理规范。
+- [x] 已完成规则转档核验、素材规范入库、压缩、manifest 校验、R2 上传、远端抽查、可行性分析与 skill 补强。
+
+## Errors Encountered
+
+| 时间 | 错误 | 处置 |
+| --- | --- | --- |
+| 2026-05-11 | planning-with-files session-catchup 提示原生 Codex session 解析未实现。 | 记录为无可同步上下文，继续按当前对话与项目文件推进。 |
+
+---
+
 # Task Plan: DiceThrone 新增 Treant / Ninja 两个英雄（2026-05-09）
 
 > 当前正式计划入口。下方历史计划来自创建 worktree 时的主线文件，仅保留为历史上下文，不作为本轮任务入口。

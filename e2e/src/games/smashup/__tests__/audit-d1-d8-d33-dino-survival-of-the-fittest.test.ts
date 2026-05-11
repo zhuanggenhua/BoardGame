@@ -70,12 +70,12 @@ function wrapState(core: SmashUpCore) {
 }
 
 describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
-    it('D8: 数据接线 — 适者生存应声明 playNeedsBase，确保 UI 进入选基地流程', () => {
+    it('D8: 数据接线 — 适者生存不应声明 playNeedsBase，避免 UI 误导成只影响一个基地', () => {
         const baseDef = DINOSAUR_ACTIONS.find((card) => card.id === 'dino_survival_of_the_fittest');
         const podDef = DINOSAUR_POD_ACTIONS.find((card) => card.id === 'dino_survival_of_the_fittest_pod');
 
-        expect(baseDef?.playNeedsBase).toBe(true);
-        expect(podDef?.playNeedsBase).toBe(true);
+        expect(baseDef?.playNeedsBase).toBeUndefined();
+        expect(podDef?.playNeedsBase).toBeUndefined();
     });
 
     it('D1: 全局扫描 — 单基地单个最低力量随从自动消灭', () => {
@@ -183,6 +183,43 @@ describe('Audit D1+D33: dino_survival_of_the_fittest（适者生存）', () => {
         // 验证高力量随从存活
         expect(state.core.bases[0].minions.find(m => m.uid === 'm1')).toBeDefined();
         expect(state.core.bases[1].minions.find(m => m.uid === 'm3')).toBeDefined();
+    });
+
+    it('D1: 全局扫描 — 无需选择基地也会处理所有基地，且不会忽略多个己方随从', () => {
+        const runner = createRunner();
+
+        runner.setState(wrapState({
+            players: {
+                '0': { id: '0', vp: 0, hand: [{ uid: 'a1', defId: 'dino_survival_of_the_fittest', type: 'action', subtype: 'standard', owner: '0' }], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['dinosaurs'] },
+                '1': { id: '1', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: [] },
+            },
+            bases: [
+                {
+                    defId: 'test_base_1',
+                    minions: [
+                        { uid: 'own-strong-1', defId: 'test_minion', controller: '0', owner: '0', basePower: 5, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false },
+                        { uid: 'own-weak-1', defId: 'test_minion', controller: '0', owner: '0', basePower: 1, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false },
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'test_base_2',
+                    minions: [
+                        { uid: 'own-strong-2', defId: 'test_minion', controller: '0', owner: '0', basePower: 4, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false },
+                        { uid: 'own-weak-2', defId: 'test_minion', controller: '0', owner: '0', basePower: 2, attachedActions: [], powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false },
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+        }));
+
+        runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1' });
+
+        const state = runner.getState();
+        expect(state.core.bases[0].minions.map(m => m.uid)).toEqual(['own-strong-1']);
+        expect(state.core.bases[1].minions.map(m => m.uid)).toEqual(['own-strong-2']);
     });
 
     it('D1: 边界条件 — 基地无力量差异不触发消灭', () => {

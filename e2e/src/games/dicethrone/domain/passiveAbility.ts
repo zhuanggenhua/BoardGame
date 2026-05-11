@@ -18,13 +18,14 @@ import { RESOURCE_IDS } from './resources';
 // ============================================================================
 
 /** 被动动作类型 */
-export type PassiveActionType = 'rerollDie' | 'drawCard';
+export type PassiveActionType = 'rerollDie' | 'drawCard' | 'custom';
 
 /** 被动动作的使用时机 */
 export type PassiveActionTiming =
     | 'anytime'           // 任意时刻（自己回合的投掷阶段 + 响应窗口）
     | 'ownRollPhase'      // 仅自己的投掷阶段
-    | 'responseWindow';   // 仅响应窗口
+    | 'responseWindow'    // 仅响应窗口
+    | 'ownMainPhase';     // 仅自己的 main1/main2 主阶段
 
 /** 被动触发器条件 */
 export interface PassiveTriggerDef {
@@ -42,12 +43,18 @@ export interface PassiveTriggerDef {
 export interface PassiveActionDef {
     /** 动作类型 */
     type: PassiveActionType;
+    /** 短按钮文案 i18n key；长描述仍放 descriptionKey / 提示板 */
+    labelKey?: string;
     /** CP 消耗 */
     cpCost: number;
+    /** 可选 Token 消耗，用于树精等主阶段消耗资源动作 */
+    tokenCost?: { tokenId: string; amount: number };
     /** 使用时机 */
     timing: PassiveActionTiming;
     /** 描述 i18n key */
     descriptionKey: string;
+    /** custom 动作 ID（type='custom' 时必填） */
+    customActionId?: string;
 }
 
 /** 被动能力定义（一个英雄可有多个被动能力，如教皇税） */
@@ -100,6 +107,7 @@ export function isPassiveActionUsable(
     if (!player) return false;
     const cp = player.resources[RESOURCE_IDS.CP] ?? 0;
     if (cp < action.cpCost) return false;
+    if (action.tokenCost && (player.tokens[action.tokenCost.tokenId] ?? 0) < action.tokenCost.amount) return false;
 
     // rerollDie 额外检查：只能在投掷阶段重掷"自己的骰子"（和 roll 手牌一致）
     if (action.type === 'rerollDie') {
@@ -126,6 +134,9 @@ export function isPassiveActionUsable(
     if (action.timing === 'ownRollPhase') {
         return playerId === state.activePlayerId &&
             (phase === 'offensiveRoll' || phase === 'defensiveRoll');
+    }
+    if (action.timing === 'ownMainPhase') {
+        return playerId === state.activePlayerId && (phase === 'main1' || phase === 'main2');
     }
     return true;
 }
