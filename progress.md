@@ -1806,3 +1806,16 @@
   - `npx tsc --noEmit --pretty false` -> passed
   - `npm run i18n:check` -> passed
   - `PW_PORT=6473 PW_GAME_SERVER_PORT=20300 PW_API_SERVER_PORT=21300 PW_WORKERS=1 npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts` -> 4 passed
+- 已补强 docs/ai-rules/testing-audit.md：新增通用交互入口语义矩阵。
+- 已新增 evidence/smashup/smashup-shayu-full-chain-audit-2026-05-12.md，覆盖 39 张卡 + 6 基地 P0/P1 对象矩阵。
+- 已回写 evidence/smashup/smashup-shayu-faction-audit.md，限定旧结论不能解释为逐对象全量 L3 E2E。
+
+- 验证完成：`shayuFactionAbilities.test.ts` 16 passed；`abilityBehaviorAudit.test.ts -t "直接入口字段|控制者约束"` 2 passed；`npm run typecheck -- --pretty false` passed；`git diff --check` exit 0。
+- completion guard：`python D:/codex-home/skills/task-completion-guard/scripts/check_completion.py --state temp/smashup-shayu-full-audit-2026-05-12.json` -> COMPLETE。
+## 2026-05-12 07:56 +08 Shayu 通用入口矩阵接手复核
+- 接手后重新核对防早停状态：`python D:/codex-home/skills/task-completion-guard/scripts/check_completion.py --state temp/smashup-shayu-full-audit-2026-05-12.json` -> COMPLETE。
+- 重新运行验证：`npx vitest run src/games/smashup/__tests__/shayuFactionAbilities.test.ts` -> 16 passed。
+- 重新运行审计定向验证：`npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/abilityBehaviorAudit.test.ts -t "直接入口字段|控制者约束"` -> 2 passed / 24 skipped。
+- 重新运行类型检查：`npm run typecheck -- --pretty false` -> passed（npm 输出 unknown cli config --pretty 警告，不影响 tsc 结果）。
+- 重新运行 diff 空白检查：相关文件 `git diff --check` exit 0，仅 `progress.md` 保留 LF->CRLF 工作区警告。
+- 当前可宣称范围仍限定为：39 卡 + 6 基地 P0/P1 交互入口矩阵全量重审完成；没有新增浏览器 E2E 截图，不能宣称逐对象全量 L3 E2E 收口。

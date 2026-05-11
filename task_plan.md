@@ -16,19 +16,19 @@
 
 ## Acceptance Checklist
 
-- [ ] S0 读取规范与项目 skill：game-audit-workflow、add-new-faction、testing-audit、engine-systems、testing-best-practices、automated-testing、data-entry。
-- [ ] S1 补强 `docs/ai-rules/testing-audit.md`：交互入口语义矩阵、目标归属、数量/可选、动作链、上下文携带、自动执行 vs 玩家选择。
-- [ ] S2 建立 shayu 39 卡 + 6 基地对象清单，标 L0-L4 与 P0/P1 风险。
-- [ ] S3 对每个对象做 P0/P1 重审：描述动作链、第一入口、数据字段、UI/validator/handler/reducer 链路、上下文与可选/数量语义。
-- [ ] S4 修复或登记发现项；同步测试与旧 evidence 回写。
-- [ ] S5 运行相关验证并更新 completion guard，不满足则不得宣称完成。
+- [x] S0 读取规范与项目 skill：game-audit-workflow、add-new-faction、testing-audit、engine-systems、testing-best-practices、automated-testing、data-entry。
+- [x] S1 补强 `docs/ai-rules/testing-audit.md`：交互入口语义矩阵、目标归属、数量/可选、动作链、上下文携带、自动执行 vs 玩家选择。
+- [x] S2 建立 shayu 39 卡 + 6 基地对象清单，标 L0-L4 与 P0/P1 风险。
+- [x] S3 对每个对象做 P0/P1 重审：描述动作链、第一入口、数据字段、UI/validator/handler/reducer 链路、上下文与可选/数量语义。
+- [x] S4 修复或登记发现项；同步测试与旧 evidence 回写。
+- [x] S5 运行相关验证并更新 completion guard，不满足则不得宣称完成。
 
 ## Current Status
 
 - [x] 已确认根 `task_plan.md` 旧当前任务为七大恨 intake，已 completed；本轮在顶部切换为 shayu 全量重审计划并保留历史。
 - [x] 已创建 completion guard 状态文件。
 - [x] 已读取 OpenSpec 指引：本轮属于现有审计/bug 修复/证据补强，不先创建新 OpenSpec proposal。
-- [ ] 正在补强通用规范与生成全量审计清单。
+- [x] 已补强通用规范、完成全量审计清单与验证。
 
 ## Errors Encountered
 

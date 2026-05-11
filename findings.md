@@ -1943,3 +1943,10 @@
 - `e2e/dicethrone` 下通过 `../src/...` 引入的是 `e2e/src` 旧快照，不是项目真实 `src`；新英雄 token ID 在旧快照中不存在，会把注入 token 写成 `undefined: 1`。新增机制 E2E 必须用 `../../src/...` 或直接使用稳定字面量。
 - DiceThrone 被动面板旧点击处理只处理 `rerollDie` / `drawCard`，没有派发 `custom` 被动动作；因此树精生命源泉在 UI 上可用但点击无效。修复点是 Board 的 `handlePassiveActionClick`。
 - Display-only 奖励骰在截图中可能表现为骰子/粒子展示而非完整居中弹窗；证据必须同时看状态变化截图，不能只用 `bonus-die-overlay` locator 断言冒充完成。
+
+## 2026-05-12 重审结果
+
+- 已把通用入口语义从原则扩展为矩阵门禁。
+- 已建立 shayu 三派系 45 对象全量 P0/P1 审计矩阵。
+- 本轮未发现新的 P0/P1 blocker。
+- 当前残余：未新增浏览器 E2E 截图，因此不得把本轮结论说成全量 L3 E2E 收口；Argonaut 跨派系 action-trigger 泛化仍是后续专项。

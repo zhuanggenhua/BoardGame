@@ -26,6 +26,39 @@
 - **交互语义必须单一真相（强制）**：凡涉及“候选生成 / UI 高亮或置灰 / 用户点击提交 / validator / resolver / reducer 生效”的链路，必须明确唯一权威来源：要么 UI、提交和 resolver 都消费同一份 `PromptOption`/`optionId`，要么全部通过同一个 `validate(...)`/查询 helper 派生。禁止 UI 用一套近似条件高亮、handler/resolver 再用另一套条件拒绝；禁止用 `defId`、`baseIndex`、标签、局部状态等弱标识替代真实 option 的 `uid`/稳定标识；禁止“看起来可选但提交后无效”的双重/多重真相。若确实需要多层校验，后层只能做活体性/权限复核，不能引入与候选来源不一致的新业务口径；测试必须至少覆盖：候选出现、UI/命令选择同一 option、响应成功、最终权威状态变化。修复任一双重真相 bug 时，必须扩审同 targetType / 同 UI 组件 / 同 helper 的其他调用点，不能只修两张牌。
 - **交互入口语义必须审计（强制）**：凡规则、卡牌、技能或按钮描述包含“选择 / 移动 / 打出到 / 从...到... / 另一个 / 你的 / 敌方 / 任意 / 至多 / 可以 / 然后 / instead / then / choose / move / target”等用户动作链，审计时必须拆出**第一用户选择对象**，并核对 UI 入口、command payload、validator、resolver/handler 消费字段是否同一语义。典型检查：① 描述动作链是“选择 A → 对 A 做事 → 再选择 B”，不得把 B 误当前置入口；② 直接入口字段（如 `playNeedsBase` / `playNeedsMinion` / `targetType` / `position` / `targetPlayerId`）必须与第一选择对象一致；③ 第二步及后续选择必须携带第一步上下文（如 `sourceUid`、`sourceBaseIndex`、`originPosition`、`selectedCardUid`、`selectedPlayerId`），不得靠“当前基地 / 第一个匹配对象 / 当前 UI 选中态”猜；④ 若某能力选择“任意数量 / 至多 N / 可选执行”，UI 多选、validator、resolver 的数量与 skip 语义必须一致。该维度是通用审计门禁，不得只按某张卡或某个游戏写特例关键词。
 
+#### 交互入口语义矩阵（强制，通用）
+
+> 本矩阵是上条“交互入口语义必须审计”的执行表。它适用于所有游戏、卡牌、技能、按钮和 UI 动作，不允许写成某个游戏、某张卡、某个字段名的特例。
+
+审计对象只要包含玩家选择、移动、打出、交换、替代、跳过、排序、数量选择或后续连锁，就必须在 evidence 里至少写出下列字段：
+
+| 矩阵项 | 必填问题 | 必查实现层 | 常见错误 |
+| --- | --- | --- | --- |
+| 第一入口对象 | 玩家第一下应该选什么：base / minion / card / player / zone / position / button / none？ | UI 可选态、command payload、validator、handler 首参 | 把“移动 A 到 B”的 B 当第一入口；把目的地当源对象。 |
+| 目标归属 | 目标属于 self / opponent / any / active player / source owner / chosen player？ | 静态字段、候选 helper、validator、handler 二次复核 | UI 允许任意目标，handler 私下只接受己方目标。 |
+| 数量语义 | one / exact N / up to N / any number / all / optional skip？ | Interaction `multi`、确认按钮、skip option、validator 数量检查 | “至多”被实现成必须选满；“任意数量”没有空选/跳过。 |
+| 动作链顺序 | 文案能否拆成 A → B → C？后一步是否依赖前一步？ | `continuationContext`、interaction queue、events 顺序、reducer 最终态 | 后续目标提前成入口；第一步上下文丢失后靠当前状态猜。 |
+| 上下文携带 | 后续步骤需要哪些稳定字段：sourceUid / sourceBaseIndex / sourceDefId / selectedCardUid / selectedPlayerId / originPosition / baseDefId？ | prompt data、handler context、deferred/session/frame | 只存 baseIndex，基地替换/清场后命中错误对象。 |
+| 可选/自动执行 | 文案是“可以/you may/choose”还是强制？是否允许玩家拒绝？ | skip/confirm UI、autoResolveIfSingle、handler 空结果 | 把“你可以”自动执行；把“必须”错误做成可跳过。 |
+| 排序/选择权 | 文案要求“任意顺序/选择其中一张/选择其余”吗？ | order interaction、deck/discard reducer、测试断言最终顺序 | 自动选第一张；按原顺序回顶，吞掉玩家排序权。 |
+| 单一真相 | UI、validator、resolver、reducer 是否消费同一份 option / helper / 字段？ | shared helper、optionId、payload schema、领域校验 | UI 高亮一套条件，提交后 validator/handler 用另一套条件。 |
+| 收口状态 | 交互解决后是否清空 pending，是否进入下一阶段/后续触发？ | `sys.interaction`、triggerQueue、responseWindow、finalState | prompt 关闭但触发队列残留；后续 deferred 丢失。 |
+
+强制输出格式（审计文档逐对象至少要有这些列）：
+
+```markdown
+| 对象 | 动作链 | 第一入口 | 字段/命令 | 目标归属 | 数量/可选 | 上下文携带 | 验证层级 | 结论 |
+```
+
+最低门禁：
+
+1. 任何“移动 A 到 B / 交换 A 和 B / 从 X 到 Y”的对象，必须证明 A 与 B 的入口顺序没有反转。
+2. 任何出现“你的 / 对手 / 其他玩家 / 任意玩家”的对象，必须证明 UI 候选、validator 和 handler 归属一致。
+3. 任何出现“可以 / 至多 / 任意数量 / 任意顺序”的对象，必须证明 skip / multi / order 语义存在；若没有 UI，必须写明自动执行的规则依据。
+4. 任何多步交互必须有上下文携带字段；只靠“当前选中 / 第一个匹配 / 当前基地”的实现不得通过审计。
+5. 只跑静态测试最多算 L1；只有行为测试证明最终权威状态变化才算 L2；只有真实入口 E2E + 看图证据才算 L3。
+
+
 ### 审计结论等级与证据分层（强制）
 
 #### 结论等级
