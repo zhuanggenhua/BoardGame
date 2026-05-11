@@ -97,9 +97,10 @@
 
 ### 待执行
 
-- merge commit 后 `npm run merge:audit -- HEAD`。
+- `npm run merge:audit -- HEAD`（执行于合并提交 `b190b9fe4e4f83c7b3ef861ea2608d3b4a9711e6`）：通过；10 个审计文件均为混合结果，完全等于父1/父2均为 0。
 
 ## 7. 结果
 
-- 提交：待 merge commit 后回填。
+- 合并提交：`b190b9fe4e4f83c7b3ef861ea2608d3b4a9711e6`。
+- 合并后审计：`npm run merge:audit -- HEAD` 通过；完全等于父1/父2均为 0。
 - 推送：未执行。
