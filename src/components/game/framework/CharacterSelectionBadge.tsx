@@ -9,25 +9,20 @@ export interface CharacterSelectionBadgeProps {
     label: string;
     inlineUnit: InlineUnit;
     testId: string;
-    mode?: 'pill' | 'overlay';
 }
 
-const getStandardToneClassName = (badge: CharacterBadgeDef, mode: 'pill' | 'overlay') => {
-    const shapeClassName = mode === 'overlay'
-        ? 'border-y-[2px] px-4 py-1'
-        : 'rounded-full px-3 py-1';
-
+const getStandardToneClassName = (badge: CharacterBadgeDef) => {
     switch (badge.tone) {
         case 'info':
-            return `${shapeClassName} border border-sky-300/55 bg-sky-500/85 text-white`;
+            return 'border-y-[2px] px-4 py-1 border-sky-300/55 bg-sky-500/85 text-white';
         case 'success':
-            return `${shapeClassName} border border-emerald-300/55 bg-emerald-500/85 text-white`;
+            return 'border-y-[2px] px-4 py-1 border-emerald-300/55 bg-emerald-500/85 text-white';
         case 'danger':
-            return `${shapeClassName} border border-rose-300/55 bg-rose-500/85 text-white`;
+            return 'border-y-[2px] px-4 py-1 border-rose-300/55 bg-rose-500/85 text-white';
         case 'neutral':
-            return `${shapeClassName} border border-slate-200/45 bg-slate-500/80 text-white`;
+            return 'border-y-[2px] px-4 py-1 border-slate-200/45 bg-slate-500/80 text-white';
         default:
-            return `${shapeClassName} border border-slate-950 bg-[#f4ecd0] text-slate-950`;
+            return 'border-y-[2px] px-4 py-1 border-slate-950 bg-[#f4ecd0] text-slate-950';
     }
 };
 
@@ -36,20 +31,20 @@ export const CharacterSelectionBadge: React.FC<CharacterSelectionBadgeProps> = (
     label,
     inlineUnit,
     testId,
-    mode = 'pill',
 }) => {
     if (badge.tone !== 'warning') {
         return (
             <span
                 data-testid={testId}
                 className={clsx(
-                    'inline-flex items-center justify-center font-black uppercase shadow-lg backdrop-blur-sm',
-                    getStandardToneClassName(badge, mode),
+                    'absolute left-1/2 top-1/2 inline-flex -translate-x-1/2 -translate-y-1/2 rotate-[-14deg] items-center justify-center font-black uppercase shadow-lg backdrop-blur-sm',
+                    getStandardToneClassName(badge),
                 )}
                 style={{
-                    fontSize: inlineUnit(mode === 'overlay' ? 0.52 : 0.38),
+                    width: '188%',
+                    fontSize: inlineUnit(0.52),
                     lineHeight: 1.1,
-                    letterSpacing: inlineUnit(mode === 'overlay' ? 0.025 : 0.01),
+                    letterSpacing: inlineUnit(0.025),
                 }}
             >
                 {label}
@@ -57,52 +52,13 @@ export const CharacterSelectionBadge: React.FC<CharacterSelectionBadgeProps> = (
         );
     }
 
-    const isOverlay = mode === 'overlay';
-
-    if (!isOverlay) {
-        return (
-            <span
-                data-testid={testId}
-                className="relative inline-flex items-center justify-center overflow-hidden rounded-full border-2 border-black font-black uppercase text-black"
-                style={{
-                    minWidth: inlineUnit(4.95),
-                    minHeight: inlineUnit(0.98),
-                    paddingLeft: inlineUnit(0.7),
-                    paddingRight: inlineUnit(0.7),
-                    paddingTop: inlineUnit(0.11),
-                    paddingBottom: inlineUnit(0.11),
-                    backgroundColor: '#facc15',
-                }}
-            >
-                <span
-                    aria-hidden="true"
-                    className="absolute inset-0"
-                    style={{
-                        backgroundImage:
-                            'repeating-linear-gradient(135deg, rgba(10,10,10,0.92) 0 9px, rgba(10,10,10,0.92) 9px 13px, rgba(250,204,21,0) 13px 24px)',
-                    }}
-                />
-                <span
-                    className="relative z-10 text-center font-black uppercase"
-                    style={{
-                        fontSize: inlineUnit(0.41),
-                        lineHeight: 1,
-                        letterSpacing: inlineUnit(0.018),
-                    }}
-                >
-                    {label}
-                </span>
-            </span>
-        );
-    }
-
     return (
         <span
             data-testid={testId}
-            className="absolute left-1/2 top-1/2 block -translate-x-1/2 -translate-y-1/2"
+            className="absolute left-1/2 top-1/2 block"
             style={{
                 width: '188%',
-                transform: 'rotate(-14deg)',
+                transform: 'translate(-50%, -50%) rotate(-14deg)',
             }}
         >
             <span
@@ -122,19 +78,20 @@ export const CharacterSelectionBadge: React.FC<CharacterSelectionBadgeProps> = (
                     }}
                 />
                 <span
-                    className="absolute inset-0 flex items-center justify-center text-center font-black uppercase"
+                    className="absolute bottom-0 top-0 flex items-center justify-center text-center font-black uppercase"
                     style={{
+                        left: '50%',
+                        width: '54%',
+                        transform: 'translateX(-50%)',
                         paddingLeft: inlineUnit(0.9),
                         paddingRight: inlineUnit(0.9),
-                        fontSize: inlineUnit(0.56),
+                        zIndex: 1,
+                        fontSize: inlineUnit(0.72),
                         lineHeight: 1,
                         letterSpacing: inlineUnit(0.03),
-                        color: 'transparent',
-                        backgroundImage:
-                            'repeating-linear-gradient(135deg, #facc15 0 18px, #facc15 18px 28px, #111111 28px 48px)',
-                        backgroundClip: 'text',
-                        WebkitBackgroundClip: 'text',
-                        WebkitTextFillColor: 'transparent',
+                        color: '#ffffff',
+                        textShadow: '0 1px 3px rgba(0, 0, 0, 0.85)',
+                        WebkitTextStroke: '0.7px rgba(0, 0, 0, 0.75)',
                     }}
                 >
                     {label}

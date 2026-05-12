@@ -28,8 +28,16 @@ const hasFlag = (name: string): boolean => {
     return argv.includes(`--${name}`) || argv.includes(`--${name}=true`);
 };
 
+const requireMongoUri = (): string => {
+    const mongoUri = process.env.MONGO_URI?.trim();
+    if (!mongoUri) {
+        throw new Error('[BackfillFeedback] 缺少 MONGO_URI，禁止回退到本机 Mongo。请显式指定线上或本地数据源。');
+    }
+    return mongoUri;
+};
+
 const run = async () => {
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/boardgame';
+    const mongoUri = requireMongoUri();
     const apply = hasFlag('apply');
     const limit = Math.max(1, Number(readArg('limit') || 20));
     const output = readArg('output') || 'temp/feedback-auto-report-backfill-report.json';

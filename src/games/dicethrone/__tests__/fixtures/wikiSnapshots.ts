@@ -341,7 +341,7 @@ export const MONK_TOKEN_SNAPSHOTS: WikiTokenSnapshot[] = [
 export const PYROMANCER_TOKEN_SNAPSHOTS: WikiTokenSnapshot[] = [
   { heroId: 'pyromancer', tokenId: 'fire_mastery', wikiName: 'Fire Mastery', wikiDescription: 'Used by abilities to increase fire damage. Consumed by abilities automatically.', wikiStackLimit: 5, wikiCategory: 'consumable' },
   { heroId: 'pyromancer', tokenId: 'knockdown', wikiName: 'Knockdown', wikiDescription: 'Skip your next Offensive Roll Phase. You may spend 2 CP to remove this instead.', wikiTiming: 'onPhaseEnter', wikiStackLimit: 1, wikiCategory: 'debuff' },
-  { heroId: 'pyromancer', tokenId: 'burn', wikiName: 'Burn', wikiDescription: 'At the start of your turn, take 2 undefendable damage. Then remove this token.', wikiTiming: 'onTurnStart', wikiStackLimit: 1, wikiCategory: 'debuff' },
+  { heroId: 'pyromancer', tokenId: 'burn', wikiName: 'Burn', wikiDescription: 'Persistent. Does not stack. During Upkeep, take 2 damage.', wikiTiming: 'upkeep', wikiStackLimit: 1, wikiCategory: 'debuff' },
   { heroId: 'pyromancer', tokenId: 'daze', wikiName: 'Stun', wikiDescription: 'Skip your next Offensive Roll Phase. Then remove this token.', wikiTiming: 'onPhaseEnter', wikiStackLimit: 1, wikiCategory: 'debuff' },
 ];
 

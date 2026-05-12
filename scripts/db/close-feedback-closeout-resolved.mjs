@@ -34,6 +34,14 @@ function isNonEmptyString(value) {
     return typeof value === 'string' && value.trim().length > 0;
 }
 
+function requireMongoUri() {
+    const mongoUri = process.env.MONGO_URI?.trim();
+    if (!mongoUri) {
+        throw new Error('[CloseFeedbackCloseout] 缺少 MONGO_URI，禁止回退到本机 Mongo。请显式指定线上或本地数据源。');
+    }
+    return mongoUri;
+}
+
 function hasReviewableBasis(item) {
     const evidence = Array.isArray(item?.evidence) ? item.evidence.filter(isNonEmptyString) : [];
     const verification = Array.isArray(item?.verification) ? item.verification.filter(isNonEmptyString) : [];
@@ -84,7 +92,7 @@ async function main() {
         readArg('output'),
         'temp/feedback-closeout/close-feedback-closeout-resolved-report.json',
     );
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/boardgame';
+    const mongoUri = requireMongoUri();
 
     const board = await readBoard(boardPath);
     const boardByFeedbackId = new Map();

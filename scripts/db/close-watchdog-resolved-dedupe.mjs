@@ -31,6 +31,14 @@ function isNonEmptyString(value) {
     return typeof value === 'string' && value.trim().length > 0;
 }
 
+function requireMongoUri() {
+    const mongoUri = process.env.MONGO_URI?.trim();
+    if (!mongoUri) {
+        throw new Error('[CloseWatchdogDedupe] 缺少 MONGO_URI，禁止回退到本机 Mongo。请显式指定线上或本地数据源。');
+    }
+    return mongoUri;
+}
+
 function normalizePath(rawPath, defaultPath) {
     return path.resolve(rawPath || defaultPath);
 }
@@ -199,7 +207,7 @@ async function main() {
         readArg('output'),
         'temp/feedback-closeout/close-watchdog-resolved-dedupe-report.json',
     );
-    const mongoUri = process.env.MONGO_URI || 'mongodb://localhost:27017/boardgame';
+    const mongoUri = requireMongoUri();
     const windowHours = WATCHDOG_AGGREGATION_WINDOW_MS / (60 * 60 * 1000);
 
     const board = await readBoard(boardPath);

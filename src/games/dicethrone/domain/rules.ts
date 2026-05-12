@@ -140,7 +140,7 @@ export const getTokenStackLimit = (state: DiceThroneCore, playerId: PlayerId, to
         return override === 0 ? Infinity : override;
     }
 
-    const def = state.tokenDefinitions.find(t => t.id === tokenId);
+    const def = (state.tokenDefinitions ?? []).find(t => t.id === tokenId);
     const base = def?.stackLimit;
     if (base === 0) return Infinity;
     return base ?? 99;
@@ -1326,7 +1326,7 @@ export const hasRespondableContent = (
     }
 
     // 检查是否有可消耗的状态效果（passiveTrigger.timing='manual'）
-    for (const tokenDef of state.tokenDefinitions) {
+    for (const tokenDef of (state.tokenDefinitions ?? [])) {
         if (tokenDef.passiveTrigger?.timing !== 'manual') continue;
         const stacks = player.statusEffects[tokenDef.id] ?? 0;
         if (stacks > 0) {

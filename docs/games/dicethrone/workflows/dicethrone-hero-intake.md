@@ -243,6 +243,13 @@ Dice Throne 的资源交付不能只看 `git status`，因为图片目录常被�
 - 因此“升级卡内部有多个档位/子区/子效果”默认解释为能力层复合，不是多张手牌图
 - 只要老角色已有对应模式，新角色必须优先复用老角色模式；禁止为新角色单独重写一套“更适合它”的选择规则或运行时语义。
 - `targetAbilityId` 必须始终指向基础技能 ID，不能指向技能变体、技能子集或临时 UI 槽位
+- 新角色如果还处于“实施中 / 未完整收口”状态，角色目录中的 `implementation_in_progress` 徽标只有一套实现：既有斜向覆盖横幅。
+  - `id: 'implementation_in_progress'`
+  - `labelKey: 'common:status_tags.under_construction'`
+  - `tone: 'warning'`
+  - `variant: 'disabled-overlay'`
+  - 禁止新增第二套实施中样式、第二套实施中组件，或为了单个角色改 `CharacterSelectionBadge` 的视觉样式。
+  - 只有角色完成并关闭实施中状态时，才允许移除该 badge；不得把“换成更小的提示”当成关闭实施中的替代方案。
 - 如果原图出现复合排版，必须先区分“真相源 slot”和“运行时合同”：
   - 共享 `source slot` 只说明源图定位可能共用，不自动等于运行时也该共用同一个 `previewRef.index`
   - 如果真实 UI 已经出现“打出 A 显示成 B”，先核原始图、老角色同位和核对图生成链路，再决定是 atlas 错、裁图错还是 UI 消费错

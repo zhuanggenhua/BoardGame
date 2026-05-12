@@ -132,13 +132,13 @@ export const OptimizedImage = ({
                 return;
             }
 
-            if (index === 1) {
-                pushCandidate(url, 'language-fallback');
+            if (isRemoteUrl(url)) {
+                pushCandidate(url, 'remote-fallback');
                 return;
             }
 
-            if (isRemoteUrl(url)) {
-                pushCandidate(url, 'remote-fallback');
+            if (index === 1) {
+                pushCandidate(url, 'language-fallback');
                 return;
             }
 

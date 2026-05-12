@@ -71,7 +71,7 @@ const resolveStatusNewTotal = (
     amount: number,
 ): number => {
     const currentStacks = state.players[targetPlayerId]?.statusEffects[statusId] ?? 0;
-    const def = state.tokenDefinitions.find(entry => entry.id === statusId);
+    const def = (state.tokenDefinitions ?? []).find(entry => entry.id === statusId);
     const maxStacks = def?.stackLimit || 99;
     return Math.min(currentStacks + amount, maxStacks);
 };

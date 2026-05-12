@@ -515,6 +515,7 @@ function sharksMakoTrigger(ctx: TriggerContext): SmashUpEvent[] {
     const player = ctx.state.players[ctx.destroyerId];
     if (!player?.hand.some(card => card.defId === 'sharks_mako')) return [];
     return [grantExtraMinion(ctx.destroyerId, 'sharks_mako', ctx.now, ctx.baseIndex, {
+        sameNameOnly: true,
         sameNameDefId: 'sharks_mako',
         playTiming: 'immediate',
     })];

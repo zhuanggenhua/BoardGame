@@ -187,7 +187,18 @@ function tornadosCarriedAway(ctx: AbilityContext): AbilityResult {
     }
     const located = collectMinionTargets(ctx.state, minion => minion.uid === ctx.targetMinionUid)[0];
     if (!located) return { events: [] };
-    return runChooseMove(ctx, 'tornados_carried_away', '卷走：选择一个随从移动到另一个基地', [located]);
+    const destinations = collectBaseTargets(ctx.state, baseIndex => baseIndex !== located.baseIndex);
+    if (destinations.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
+    return runtimeToAbilityResult(executeAbilityProgram(moveToBasePromptProgram, {
+        matchState: ctx.matchState,
+        playerId: ctx.playerId,
+        now: ctx.now,
+        sourceId: 'tornados_carried_away_dest',
+        minionUid: located.uid,
+        minionDefId: located.defId,
+        fromBaseIndex: located.baseIndex,
+        destinationBases: destinations,
+    }));
 }
 
 function tornadosPickedUp(ctx: AbilityContext): AbilityResult {

@@ -28,6 +28,13 @@ const getFireMasteryCount = (ctx: CustomActionContext): number => {
     return ctx.state.players[ctx.attackerId]?.tokens[TOKEN_IDS.FIRE_MASTERY] || 0;
 };
 
+const getBurnNewTotal = (ctx: CustomActionContext, targetId: string): number => {
+    const current = ctx.state.players[targetId]?.statusEffects[STATUS_IDS.BURN] ?? 0;
+    const hasDefinition = ctx.state.tokenDefinitions?.some(def => def.id === STATUS_IDS.BURN) ?? false;
+    const max = hasDefinition ? getTokenStackLimit(ctx.state, targetId, STATUS_IDS.BURN) : 1;
+    return Math.min(current + 1, max);
+};
+
 // ============================================================================
 // 处理器实现
 // ============================================================================
@@ -359,7 +366,7 @@ const resolveMagmaArmor = (ctx: CustomActionContext, opts: { dmgPerFire?: number
                 targetId: opponentId,
                 statusId: STATUS_IDS.BURN,
                 stacks: 1,
-                newTotal: (ctx.state.players[opponentId]?.statusEffects[STATUS_IDS.BURN] || 0) + 1,
+                newTotal: getBurnNewTotal(ctx, opponentId),
                 sourceAbilityId: ctx.sourceAbilityId
             },
             sourceCommandType: 'ABILITY_EFFECT',
@@ -422,7 +429,7 @@ const resolveMagmaArmor3 = (ctx: CustomActionContext): DiceThroneEvent[] => {
         const opponentId = ctx.ctx.defenderId;
         events.push({
             type: 'STATUS_APPLIED',
-            payload: { targetId: opponentId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: (ctx.state.players[opponentId]?.statusEffects[STATUS_IDS.BURN] || 0) + 1, sourceAbilityId: ctx.sourceAbilityId },
+            payload: { targetId: opponentId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: getBurnNewTotal(ctx, opponentId), sourceAbilityId: ctx.sourceAbilityId },
             sourceCommandType: 'ABILITY_EFFECT',
             timestamp: ctx.timestamp + 0.05
         } as StatusAppliedEvent);
@@ -481,7 +488,7 @@ const createPyroBlastRollEvents = (ctx: CustomActionContext, config: { diceCount
             dice.forEach((d, idx) => {
                 const eff = getPyroBlastDieEffect(d.face);
                 if (eff.damage) events.push({ type: 'DAMAGE_DEALT', payload: { targetId: opponentId, amount: eff.damage, actualDamage: eff.damage, sourceAbilityId: ctx.sourceAbilityId }, sourceCommandType: 'ABILITY_EFFECT', timestamp: ctx.timestamp + 5 + idx } as DamageDealtEvent);
-                if (eff.burn) events.push({ type: 'STATUS_APPLIED', payload: { targetId: opponentId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: (ctx.state.players[opponentId]?.statusEffects[STATUS_IDS.BURN] || 0) + 1, sourceAbilityId: ctx.sourceAbilityId }, sourceCommandType: 'ABILITY_EFFECT', timestamp: ctx.timestamp + 5 + idx } as StatusAppliedEvent);
+                if (eff.burn) events.push({ type: 'STATUS_APPLIED', payload: { targetId: opponentId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: getBurnNewTotal(ctx, opponentId), sourceAbilityId: ctx.sourceAbilityId }, sourceCommandType: 'ABILITY_EFFECT', timestamp: ctx.timestamp + 5 + idx } as StatusAppliedEvent);
                 if (eff.fm) {
                     rollingFM = Math.min(rollingFM + eff.fm, fmLimit);
                     const newTotal = rollingFM;
@@ -532,12 +539,9 @@ const resolveGetFiredUpRoll = (ctx: CustomActionContext): DiceThroneEvent[] => {
     } else if (face === PYROMANCER_DICE_FACE_IDS.MAGMA) {
         effectKey = 'bonusDie.effect.magma';
         // 施加灼烧给对手
-        const current = state.players[opponentId]?.statusEffects[STATUS_IDS.BURN] ?? 0;
-        const def = state.tokenDefinitions.find(e => e.id === STATUS_IDS.BURN);
-        const max = def?.stackLimit || 99;
         events.push({
             type: 'STATUS_APPLIED',
-            payload: { targetId: opponentId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: Math.min(current + 1, max), sourceAbilityId },
+            payload: { targetId: opponentId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: getBurnNewTotal(ctx, opponentId), sourceAbilityId },
             sourceCommandType: 'ABILITY_EFFECT', timestamp,
         } as StatusAppliedEvent);
     } else if (face === PYROMANCER_DICE_FACE_IDS.FIERY_SOUL) {

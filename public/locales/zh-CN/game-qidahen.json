@@ -1,0 +1,24 @@
+{
+  "title": "七大恨",
+  "description": "三势力非对称历史策略游戏。使用手牌资源、行动轮盘、地图区域控制与多阶段战斗争夺东北亚政治霸权。",
+  "players": "3人",
+  "player": {
+    "ming": "大明",
+    "mongol": "蒙古",
+    "jin": "后金"
+  },
+  "actions": {
+    "selectRegion": "选择区域",
+    "confirm": "确认",
+    "cancel": "取消"
+  },
+  "error": {
+    "unknownCommand": "未知命令",
+    "unknownRegion": "未知区域",
+    "unknownAction": "未知行动"
+  },
+  "actionLog": {
+    "selectRegion": "选择地图区域",
+    "confirmPreviewAction": "确认预览行动"
+  }
+}

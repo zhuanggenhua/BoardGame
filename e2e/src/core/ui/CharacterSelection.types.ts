@@ -28,8 +28,8 @@ export interface CharacterBadgeDef {
     labelKey: string;
     /** 标签视觉语气 */
     tone?: 'neutral' | 'info' | 'warning' | 'success' | 'danger';
-    /** 标签布局样式 */
-    variant?: 'pill' | 'disabled-overlay';
+    /** 标签布局样式；角色选择状态标签只保留斜向覆盖横幅这一套实现 */
+    variant?: 'disabled-overlay';
 }
 
 /**

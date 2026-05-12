@@ -1524,7 +1524,19 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                     });
                     const damageEvents = damageCalc.toEvents();
                     events.push(...damageEvents);
-                    // 持续效果：燃烧不自动移除，需要通过净化等手段移除
+                    // 持续效果：合法的 1 个燃烧不自动移除；旧存档/旧测试注入的非法多层燃烧归一到 1。
+                    if (burnStacks > 1) {
+                        events.push({
+                            type: 'STATUS_REMOVED',
+                            payload: {
+                                targetId: activeId,
+                                statusId: STATUS_IDS.BURN,
+                                stacks: burnStacks - 1,
+                            },
+                            sourceCommandType: command.type,
+                            timestamp: timestamp + 0.01,
+                        } as DiceThroneEvent);
+                    }
                 }
 
                 // 2. 中毒 (poison) — 每层造成 1 点伤害，持续效果（不自动移除层数）

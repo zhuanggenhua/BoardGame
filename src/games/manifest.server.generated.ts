@@ -6,14 +6,16 @@ import manifest0 from './cardia/manifest';
 import { engineConfig as engineConfig0 } from './cardia/game';
 import manifest1 from './dicethrone/manifest';
 import { engineConfig as engineConfig1 } from './dicethrone/game';
-import manifest2 from './smashup/manifest';
-import { engineConfig as engineConfig2 } from './smashup/game';
-import manifest3 from './splendor/manifest';
-import { engineConfig as engineConfig3 } from './splendor/game';
-import manifest4 from './summonerwars/manifest';
-import { engineConfig as engineConfig4 } from './summonerwars/game';
-import manifest5 from './tictactoe/manifest';
-import { engineConfig as engineConfig5 } from './tictactoe/game';
+import manifest2 from './qidahen/manifest';
+import { engineConfig as engineConfig2 } from './qidahen/game';
+import manifest3 from './smashup/manifest';
+import { engineConfig as engineConfig3 } from './smashup/game';
+import manifest4 from './splendor/manifest';
+import { engineConfig as engineConfig4 } from './splendor/game';
+import manifest5 from './summonerwars/manifest';
+import { engineConfig as engineConfig5 } from './summonerwars/game';
+import manifest6 from './tictactoe/manifest';
+import { engineConfig as engineConfig6 } from './tictactoe/game';
 
 const entry0: GameServerManifestEntry = {
     manifest: manifest0,
@@ -45,6 +47,11 @@ const entry5: GameServerManifestEntry = {
     engineConfig: engineConfig5,
 };
 
+const entry6: GameServerManifestEntry = {
+    manifest: manifest6,
+    engineConfig: engineConfig6,
+};
+
 export const GAME_SERVER_MANIFEST: GameServerManifestEntry[] = [
     entry0,
     entry1,
@@ -52,6 +59,7 @@ export const GAME_SERVER_MANIFEST: GameServerManifestEntry[] = [
     entry3,
     entry4,
     entry5,
+    entry6,
 ];
 
 export const GAME_SERVER_MANIFEST_BY_ID: Record<string, GameServerManifestEntry> = Object.fromEntries(

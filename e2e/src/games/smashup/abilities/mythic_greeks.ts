@@ -51,6 +51,7 @@ type GreekMinionPromptContext = PromptContext & {
 
 type GreekBasePromptContext = PromptContext & {
     sourceUid?: string;
+    sourceBaseIndex?: number;
     sourceDefId: string;
     bases: Array<{ baseIndex: number; label: string }>;
 };
@@ -222,7 +223,13 @@ const greekBasePromptProgram = createPromptProgram<GreekBasePromptContext, Smash
             }
         }
         if (context.sourceUid) {
-            events.push(metadataTurnUsed(context.sourceUid, choice.baseIndex, 'mythicGreeksJasonTriggeredTurn', state.core.turnNumber, timestamp));
+            events.push(metadataTurnUsed(
+                context.sourceUid,
+                context.sourceBaseIndex ?? choice.baseIndex,
+                'mythicGreeksJasonTriggeredTurn',
+                state.core.turnNumber,
+                timestamp,
+            ));
         }
         return { events };
     },
@@ -566,14 +573,7 @@ const poseidonPromptProgram = createPromptProgram<PoseidonContext, SmashUpCore, 
 });
 
 function favorOfZeus(ctx: AbilityContext): AbilityResult {
-    const bases = collectBaseTargets(ctx.state);
-    return runtimeToAbilityResult(executeAbilityProgram(greekBasePromptProgram, {
-        matchState: ctx.matchState,
-        playerId: ctx.playerId,
-        now: ctx.now,
-        sourceDefId: 'mythic_greeks_favor_of_zeus',
-        bases,
-    }));
+    return { events: [modifyBreakpoint(ctx.targetBaseIndex ?? ctx.baseIndex, -5, 'mythic_greeks_favor_of_zeus', ctx.now)] };
 }
 
 function heraclesActionTrigger(ctx: TriggerContext): SmashUpEvent[] {
@@ -621,6 +621,7 @@ function jasonActionTrigger(ctx: TriggerContext) {
         playerId: ctx.playerId,
         now: ctx.now,
         sourceUid: source.uid,
+        sourceBaseIndex: ctx.sourceBaseIndex,
         sourceDefId: 'mythic_greeks_jason',
         bases,
     }), ctx.matchState);

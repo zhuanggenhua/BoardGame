@@ -125,7 +125,7 @@ npm run dev:lite
 | `VITE_DEV_PORT` | `5173` | 前端开发端口 |
 | `GAME_SERVER_PORT` | `18000` | 游戏服务端口 |
 | `API_SERVER_PORT` | `18001` | API 服务端口 |
-| `MONGO_URI` | `mongodb://localhost:27017/boardgame` | 数据库连接 |
+| `MONGO_URI` | `mongodb://localhost:27017/boardgame`（本地开发示例，必须显式配置） | 数据库连接 |
 | `JWT_SECRET` | 开发默认值 | JWT 密钥（生产环境必须修改） |
 
 完整说明见 [.env.example](.env.example)。

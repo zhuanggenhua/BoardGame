@@ -1,0 +1,24 @@
+{
+  "title": "Seven Hatreds",
+  "description": "An asymmetric three-faction historical strategy game about card resources, action wheel tempo, area control, and multi-step battles for political dominance in Northeast Asia.",
+  "players": "3 Players",
+  "player": {
+    "ming": "Ming",
+    "mongol": "Mongols",
+    "jin": "Later Jin"
+  },
+  "actions": {
+    "selectRegion": "Select Region",
+    "confirm": "Confirm",
+    "cancel": "Cancel"
+  },
+  "error": {
+    "unknownCommand": "Unknown command",
+    "unknownRegion": "Unknown region",
+    "unknownAction": "Unknown action"
+  },
+  "actionLog": {
+    "selectRegion": "Select map region",
+    "confirmPreviewAction": "Confirm preview action"
+  }
+}

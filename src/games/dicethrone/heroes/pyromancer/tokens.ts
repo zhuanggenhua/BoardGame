@@ -49,7 +49,7 @@ export const PYROMANCER_TOKENS: TokenDef[] = [
     // ============================================
 
     /**
-     * 燃烧 - 回合开始时受到固定 2 点伤害（可移除的持续效果）
+     * 燃烧 - 不可叠加；回合开始时受到固定 2 点伤害（可移除的持续效果）
      */
     {
         id: STATUS_IDS.BURN,
@@ -57,7 +57,7 @@ export const PYROMANCER_TOKENS: TokenDef[] = [
         colorTheme: 'from-orange-600 to-red-500',
         description: statusText(STATUS_IDS.BURN, 'description') as unknown as string[],
         sfxKey: 'magic.general.simple_magic_sound_fx_pack_vol.fire.flame_chain_a',
-        stackLimit: 3,
+        stackLimit: 1,
         category: 'debuff',
         passiveTrigger: {
             timing: 'onTurnStart',

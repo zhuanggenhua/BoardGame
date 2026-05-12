@@ -179,7 +179,7 @@ describe('preloadCriticalImages', () => {
 
         expect(candidates[0]).toBe('http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/smashup/current/assets/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234');
         expect(candidates[1]).toBe('http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/smashup/current/assets/i18n/en/smashup/cards/compressed/cards1.webp');
-        expect(candidates).toContain('https://assets.easyboardgame.top/official/i18n/en/smashup/cards/compressed/cards1.webp');
+        expect(candidates).toContain('https://assets.easyboardgame.top/official/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234');
     });
 
     it('不同资源 base 的同一张图应复用统一缓存键', () => {

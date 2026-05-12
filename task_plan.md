@@ -22,6 +22,7 @@
 - [x] S3 对每个对象做 P0/P1 重审：描述动作链、第一入口、数据字段、UI/validator/handler/reducer 链路、上下文与可选/数量语义。
 - [x] S4 修复或登记发现项；同步测试与旧 evidence 回写。
 - [x] S5 运行相关验证并更新 completion guard，不满足则不得宣称完成。
+- [x] S6 再次抽样调查 L1/残余高风险对象；发现并修复 `mythic_greeks_favor_of_zeus` 二次基地选择缺口，补 L2 行为测试与 evidence。
 
 ## Current Status
 
@@ -29,12 +30,15 @@
 - [x] 已创建 completion guard 状态文件。
 - [x] 已读取 OpenSpec 指引：本轮属于现有审计/bug 修复/证据补强，不先创建新 OpenSpec proposal。
 - [x] 已补强通用规范、完成全量审计清单与验证。
+- [x] 再次抽样调查完成：5 个高风险对象 L2 抽查通过；`favor_of_zeus` 入口重复 prompt 已修复。
 
 ## Errors Encountered
 
 | 时间 | 错误 | 处置 |
 | --- | --- | --- |
 | 2026-05-12 | planning-with-files session-catchup 提示原生 Codex session 解析未实现。 | 记录为无可同步上下文，继续按当前对话与项目文件推进。 |
+| 2026-05-12 | PowerShell `Select-Object -Index 90..120` 写法被当成字符串，读取片段失败。 | 改用 Python 按 UTF-8 读取并输出行号。 |
+| 2026-05-12 | 输出 `domain/index.ts` 时遇到 GBK 无法编码特殊字符。 | 改用 Python `stdout.buffer.write(...encode('utf-8'))` 输出。 |
 
 ---
 
@@ -826,3 +830,83 @@
 - [x] fresh 生产真源清零核对完成。
   - 查询产物：`temp/feedback-closeout/query-open-human-final-20260510.raw.txt`
   - 截至 `2026-05-10 05:35 +08`，生产 Mongo 人工/feedback-modal `open/in_progress`：`count=0`
+
+## Addendum（2026-05-12 08:38 +08）：shayu 第一入口直接消费专项重审
+
+- [x] 承认并修正审计缺口：此前全量矩阵偏静态，没有强制检查“payload/UI 已确定第一入口后 handler 是否直接消费”。
+- [x] 通用规范补强：`docs/ai-rules/testing-audit.md` 新增“第一入口已确定时不得二次创建同 targetType prompt”的最低门禁。
+- [x] 专项全量清单已落地：`evidence/smashup/smashup-shayu-entry-consumption-audit-2026-05-12.md` 覆盖 39 卡 + 6 基地的入口来源、第一入口、handler 消费结论与证据等级。
+- [x] 已修复 3 个本轮发现项：宙斯的恩惠二次 base prompt、卷走二次 minion prompt、不在堪萨斯替换后误触发新基地 onActionPlayed。
+- [x] 已补 L2 验证：新增 `shayuEntryConsumption.test.ts`，并更新 `shayuFactionAbilities.test.ts` 的卷走真实入口用例。
+- [ ] 未完成/不得宣称：本轮追加复跑 3 条高风险真实入口 E2E；仍不能宣称 45 对象逐项 L3 E2E；Argonaut 跨派系 action-trigger 泛化仍是后续专项。
+
+
+## Addendum（2026-05-12 08:46 +08）：shayu 高风险入口 E2E 复跑
+
+- [x] 已修正 `e2e/smashup-shayu-factions.e2e.ts` 中 `tornados_carried_away` 旧流程：不再等待二次 minion prompt，直接等待 `tornados_carried_away_dest` 目标基地 prompt。
+- [x] 已复跑 3 条真实入口 E2E：Carried Away 真实手牌入口、Not in Kansas 基地替换、Tornado Alley 首次/二次移入。
+- [x] 已实际打开截图核对，并回写 `evidence/smashup/smashup-shayu-entry-consumption-audit-2026-05-12.md`。
+- [ ] 仍不得宣称：这不是 45 对象逐项 L3 E2E，只是高风险入口链追加 L3。
+
+## Addendum（2026-05-12）：审计默认口径升级为全面审计
+
+- [x] 已更新 `docs/ai-rules/testing-audit.md`：未限定的“审计”默认等于全面审计；抽样/专项/L1 必须显式标注，不得简称“已审计”。
+- [x] 已建立 shayu 全面审计 guard：`temp/smashup-shayu-comprehensive-audit-2026-05-12.json`。
+- [x] 已建立 45 对象覆盖矩阵：`evidence/smashup/smashup-shayu-comprehensive-audit-coverage-2026-05-12.md`。
+- [ ] 当前仍未完成：全量 L2、全交互 L3、全部时序/窗口/队列 L4 还要继续补。
+
+
+## Addendum（2026-05-12 22:50 +08）：shayu 全面审计 L2 补强批次
+
+- [x] 扩展 `src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` 到 12 条 L2 行为测试。
+- [x] 新增覆盖：`sharks_chum`、`base_the_deep`、`mythic_greeks_favor_of_hades`、`base_trailer_park`、`base_tornado_alley`。
+- [x] 验证：`npx vitest run src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` → 12 passed；`npx eslint src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` → 0 errors。
+- [x] 已回写 comprehensive coverage 矩阵与 guard evidence。
+- [ ] 仍未完成：C3 45 对象逐行 L2 核销、C4 全交互 L3/代表链、C5 全时序/窗口/队列 L4、C6 旧 evidence 全部降级回写。
+
+
+## Addendum（2026-05-12 23:50 +08）：L3 真实入口补强批次
+
+- 已补强并实际看图核对 2 条高风险 E2E：
+  - Sharks：大白鲨结算辅助、飞鲨真实入口、激光束真实入口。
+  - Mythic Greeks / Tornados：哈迪斯、宙斯、雅典娜、信风真实入口。
+- 本批新截图与肉眼结论已回写总入口：`evidence/smashup/smashup-shayu-comprehensive-audit-coverage-2026-05-12.md`。
+- 重要限定：`sharks_great_white` 这次仍由 test harness dispatch 触发天赋，只能算结算辅助证据，不算完整真实 UI 天赋入口 L3。
+- 当前可升级为 L3 的对象：`sharks_air_jaws`、`sharks_freakin_laser_beam`、`mythic_greeks_favor_of_hades`、`mythic_greeks_favor_of_zeus`、`mythic_greeks_favor_of_athena`、`tornados_trade_winds`。
+- 当前仍不得宣称全面审计完成：45 对象全量 L2 核销、全部 L3 代表链、全部 L4 时序治理仍未完成。
+
+
+### 2026-05-13 00:03 +08 全文件 E2E 回归补充
+
+- 补跑整文件：`$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; npm run test:e2e:ci -- e2e/smashup-shayu-factions.e2e.ts` → 14 passed。
+- 说明：第一次整文件复跑被同类 E2E heavy-task guard 拦截；确认使用隔离 runtime 后显式允许并发并通过。
+- 该结果证明 `e2e/smashup-shayu-factions.e2e.ts` 当前 14 条代表性真实入口/时序链没有被本轮测试修正破坏；仍不等于 45 对象全量 L3/L4 完成。
+
+
+## Addendum（2026-05-13 00:16 +08）：C3 全量 L2 核销
+
+- 新增 `tornados_twister` 旋风 push/pull L2 行为测试。
+- `shayuComprehensiveBehavior.test.ts` 当前 13 passed；`npx eslint src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` 0 errors。
+- 已在全面审计总入口逐对象写清 45/45 的 L2 行为证据来源；C3 可标 pass。
+- 仍未完成：C4 全交互 L3/代表链截图归档、C5 全部时序/窗口/队列 L4、C6 最终修复/旧 evidence 全量回写。
+
+
+## Addendum（2026-05-13 00:55 +08）：全面审计 C4/C5/C6 回写
+
+- 总入口仍是 `evidence/smashup/smashup-shayu-comprehensive-audit-coverage-2026-05-12.md`。
+- `sharks_great_white` 已重新用真实 UI 点击随从触发天赋，旧“仅 harness 辅助”结论失效。
+- C4 已逐对象归档：所有真实 UI 交互入口均为独立 L3 或等价代表链；无用户入口对象显式标记 C4 不适用。
+- C5 已逐家族归档：beforeScoring、afterScoring、base replace、once/turn、action-trigger、base trigger、destroy trigger、multi/order/continuationContext 均有 L4 或系统代表链证据。
+- C6 已完成回写；最终是否 COMPLETE 以 `temp/smashup-shayu-comprehensive-audit-2026-05-12.json` 与 guard 检查为准。
+
+
+## 2026-05-13 01:03 +08 最终回归验证
+
+- `npx eslint e2e/smashup-shayu-factions.e2e.ts src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` → 0 errors。
+- `npx vitest run src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` → 13 passed。
+- `$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; npm run test:e2e:ci -- e2e/smashup-shayu-factions.e2e.ts` → 14 passed。
+- 本轮实际核对截图包括：
+  - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口\shayu-sharks-great-white-talent-destination-open.png`
+  - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口\shayu-sharks-great-white-after-move-destroy.png`
+  - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`
+  - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornado-Alley-基地能力在本回合首次移入时触发，第二次移入不重复触发\shayu-tornado-alley-trigger-open.png`

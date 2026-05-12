@@ -24,6 +24,10 @@ type BrowserHarnessState = {
   };
 };
 
+type SkippableInteractionGame = {
+  skip(): Promise<void>;
+};
+
 type BrowserHarnessWindow = Window & {
   __BG_TEST_HARNESS__?: { state?: { get?: () => BrowserHarnessState } };
 };
@@ -79,6 +83,30 @@ async function passOpenReactionOrResponseWindow(page: Page, game: ResponseWindow
   return false;
 }
 
+async function skipCurrentInteractionIfSource(
+  page: Page,
+  game: SkippableInteractionGame,
+  sourceId: string,
+  description: string,
+): Promise<boolean> {
+  const status = await getReactionWindowStatus(page);
+  if (status.sourceId !== sourceId) {
+    return false;
+  }
+  await test.step(description, async () => {
+    await game.skip();
+  });
+  return true;
+}
+
+async function skipWoodenHorseIfPresent(
+  page: Page,
+  game: SkippableInteractionGame,
+  description: string,
+): Promise<void> {
+  await skipCurrentInteractionIfSource(page, game, 'base_wooden_horse', description);
+}
+
 async function respondToCurrentInteraction(page: Page, payload: { optionId?: string; optionIds?: string[] }): Promise<void> {
   await page.evaluate((interactionPayload) => {
     type Harness = {
@@ -117,6 +145,31 @@ async function clickHandCardThenMinion(page: Page, cardUid: string, minionUid: s
   await page.locator(`[data-card-uid="${cardUid}"]`).click({ force: true });
   await page.waitForTimeout(300);
   await page.locator(`[data-minion-uid="${minionUid}"]`).click({ force: true });
+  await page.waitForTimeout(300);
+}
+
+async function dismissRevealOverlayIfPresent(page: Page): Promise<void> {
+  const spotlightQueue = page.getByTestId('card-spotlight-queue');
+  if (await spotlightQueue.isVisible({ timeout: 300 }).catch(() => false)) {
+    await spotlightQueue.click({ force: true });
+    await page.waitForTimeout(200);
+  }
+
+  const dismissHint = page.getByText(/Click anywhere to close|点击关闭|点击任意位置关闭/i).first();
+  if (await dismissHint.isVisible({ timeout: 300 }).catch(() => false)) {
+    await dismissHint.click({ force: true });
+    await page.waitForTimeout(200);
+  }
+}
+
+async function clickCardAtRatio(page: Page, selector: string, xRatio: number, yRatio: number): Promise<void> {
+  const locator = page.locator(selector).first();
+  await expect(locator).toBeVisible({ timeout: 15000 });
+  const box = await locator.boundingBox();
+  if (!box) {
+    throw new Error(`无法取得元素坐标：${selector}`);
+  }
+  await page.mouse.click(box.x + box.width * xRatio, box.y + box.height * yRatio);
   await page.waitForTimeout(300);
 }
 
@@ -214,8 +267,6 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
     await game.screenshot('shayu-sharks-torn-apart-after-destroy', testInfo);
 
     await game.playCard('tornados_carried_away', { targetBaseIndex: 0, targetMinionUid: 'p1-move-me' });
-    await game.waitForInteraction('tornados_carried_away', 10000);
-    await game.selectInteractionOptionBy((option: unknown) => optionHasMinionUid(option, 'p1-move-me'), '选择灰鲭鲨');
     await game.waitForInteraction('tornados_carried_away_dest', 10000);
     await game.selectInteractionOptionBy((option: unknown) => optionHasBaseIndex(option, 1), '移动到第二个基地');
     await game.waitForNoInteraction(10000);
@@ -225,6 +276,104 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
       return state.core.bases[1]?.minions.some((minion: { uid?: string }) => minion.uid === 'p1-move-me');
     }, { timeout: 5000 }).toBe(true);
     await game.screenshot('shayu-tornados-carried-away-after-move', testInfo);
+  });
+
+  test('Sharks 高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', {
+      p0: 'sharks,tornados',
+      p1: 'mythic_greeks,robots',
+      skipFactionSelect: true,
+      skipInitialization: false,
+      seed: 20260512,
+    }, 45000);
+
+    await game.setupScene({
+      gameId: 'smashup',
+      player0: {
+        hand: [
+          { uid: 'p0-air-jaws', defId: 'sharks_air_jaws', type: 'action' },
+          { uid: 'p0-laser', defId: 'sharks_freakin_laser_beam', type: 'action' },
+        ],
+        factions: ['sharks', 'tornados'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 3,
+      },
+      player1: {
+        factions: ['mythic_greeks', 'robots'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+      },
+      bases: [
+        {
+          defId: 'base_the_deep',
+          minions: [
+            { uid: 'great-white', defId: 'sharks_great_white', owner: '0', controller: '0', power: 4 },
+            { uid: 'air-source', defId: 'sharks_mako', owner: '0', controller: '0', power: 2 },
+            { uid: 'laser-source', defId: 'sharks_hammerhead', owner: '0', controller: '0', power: 3 },
+            { uid: 'laser-low', defId: 'tornados_dust_devil', owner: '1', controller: '1', power: 2 },
+          ],
+        },
+        {
+          defId: 'base_wooden_horse',
+          minions: [
+            { uid: 'great-white-target', defId: 'tornados_dust_devil', owner: '1', controller: '1', power: 2 },
+          ],
+        },
+        {
+          defId: 'base_oracle_at_delphi',
+          minions: [
+            { uid: 'air-jaws-target', defId: 'tornados_dust_devil', owner: '1', controller: '1', power: 2 },
+          ],
+        },
+      ],
+      currentPlayer: '0',
+      phase: 'playCards',
+    });
+
+    await game.waitForPhase('playCards');
+
+    await expect(page.locator('[data-minion-uid="great-white"]')).toBeVisible({ timeout: 15000 });
+    await clickCardAtRatio(page, '[data-minion-uid="great-white"]', 0.5, 0.18);
+    await game.waitForInteraction('sharks_great_white', 10000);
+    await game.screenshot('shayu-sharks-great-white-talent-destination-open', testInfo);
+    await game.selectInteractionOptionBy((option: unknown) => optionHasBaseIndex(option, 1), '大白鲨移动到第二个基地');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      return {
+        moved: state.core.bases[1]?.minions.some((minion: { uid?: string }) => minion.uid === 'great-white') ?? false,
+        targetRemoved: !(state.core.bases[1]?.minions.some((minion: { uid?: string }) => minion.uid === 'great-white-target') ?? false),
+      };
+    }, { timeout: 5000 }).toEqual({ moved: true, targetRemoved: true });
+    await game.screenshot('shayu-sharks-great-white-after-move-destroy', testInfo);
+
+    await game.playCard('sharks_air_jaws', { targetBaseIndex: 0, targetMinionUid: 'air-source' });
+    await game.waitForInteraction('sharks_air_jaws_destination', 10000);
+    await game.screenshot('shayu-sharks-air-jaws-destination-open', testInfo);
+    await game.selectInteractionOptionBy((option: unknown) => optionHasBaseIndex(option, 2), '飞鲨移动到第三个基地');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      return {
+        moved: state.core.bases[2]?.minions.some((minion: { uid?: string }) => minion.uid === 'air-source') ?? false,
+        targetRemoved: !(state.core.bases[2]?.minions.some((minion: { uid?: string }) => minion.uid === 'air-jaws-target') ?? false),
+      };
+    }, { timeout: 5000 }).toEqual({ moved: true, targetRemoved: true });
+    await game.screenshot('shayu-sharks-air-jaws-after-move-destroy', testInfo);
+
+    await game.playCard('sharks_freakin_laser_beam', { targetBaseIndex: 0, targetMinionUid: 'laser-source' });
+    await game.waitForInteraction('sharks_freakin_laser_beam', 10000);
+    await game.screenshot('shayu-sharks-laser-beam-target-open', testInfo);
+    await game.selectInteractionOptionBy((option: unknown) => optionHasMinionUid(option, 'laser-low'), '激光束消灭同基地低战力目标');
+    await game.waitForNoInteraction(10000);
+    await expect(page.locator('[data-minion-uid="laser-low"]')).toHaveCount(0);
+    await game.screenshot('shayu-sharks-laser-beam-after-destroy', testInfo);
   });
 
   test('Mythic Greeks 代表行动可从手牌真实打出并改变权威状态', async ({ page, game }, testInfo) => {
@@ -277,6 +426,151 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
       return state.core.players['1'].actionLimit;
     }, { timeout: 5000 }).toBe(2);
     await game.screenshot('shayu-mythic-greeks-apollo-after-action', testInfo);
+  });
+
+  test('Mythic Greeks 与 Tornados 复杂入口覆盖哈迪斯、宙斯、雅典娜和信风', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', {
+      p0: 'mythic_greeks,tornados',
+      p1: 'sharks,robots',
+      skipFactionSelect: true,
+      skipInitialization: false,
+      seed: 20260512,
+    }, 45000);
+
+    await game.setupScene({
+      gameId: 'smashup',
+      player0: {
+        hand: [
+          { uid: 'p0-hades', defId: 'mythic_greeks_favor_of_hades', type: 'action' },
+          { uid: 'p0-zeus', defId: 'mythic_greeks_favor_of_zeus', type: 'action' },
+          { uid: 'p0-athena', defId: 'mythic_greeks_favor_of_athena', type: 'action' },
+          { uid: 'p0-trade', defId: 'tornados_trade_winds', type: 'action' },
+        ],
+        deck: [
+          { uid: 'athena-minion-a', defId: 'mythic_greeks_spartan', type: 'minion' },
+          { uid: 'athena-action-pick', defId: 'mythic_greeks_favor_of_apollo', type: 'action' },
+          { uid: 'athena-action-order', defId: 'sharks_torn_apart', type: 'action' },
+          { uid: 'athena-minion-b', defId: 'sharks_mako', type: 'minion' },
+          { uid: 'athena-minion-c', defId: 'tornados_dust_devil', type: 'minion' },
+          { uid: 'athena-rest', defId: 'tornados_twister', type: 'minion' },
+        ],
+        discard: [
+          { uid: 'hades-recover', defId: 'sharks_torn_apart', type: 'action' },
+          { uid: 'hades-stay', defId: 'mythic_greeks_favor_of_apollo', type: 'action' },
+          { uid: 'hades-minion-ignore', defId: 'mythic_greeks_spartan', type: 'minion' },
+        ],
+        factions: ['mythic_greeks', 'tornados'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 5,
+      },
+      player1: {
+        factions: ['sharks', 'robots'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+      },
+      bases: [
+        {
+          defId: 'base_oracle_at_delphi',
+          minions: [
+            { uid: 'trade-first', defId: 'sharks_mako', owner: '0', controller: '0', power: 2 },
+          ],
+        },
+        {
+          defId: 'base_wooden_horse',
+          minions: [
+            { uid: 'trade-second', defId: 'tornados_dust_devil', owner: '1', controller: '1', power: 2 },
+            { uid: 'trade-too-big', defId: 'sharks_hammerhead', owner: '1', controller: '1', power: 4 },
+          ],
+        },
+      ],
+      currentPlayer: '0',
+      phase: 'playCards',
+    });
+
+    await game.waitForPhase('playCards');
+
+    await game.playCard('mythic_greeks_favor_of_hades');
+    await game.waitForInteraction('mythic_greeks_favor_of_hades', 10000);
+    await game.screenshot('shayu-mythic-greeks-hades-discard-choice-open', testInfo);
+    await game.selectInteractionOptionBy((option: unknown) => {
+      const value = (option as { value?: { cardUid?: string } })?.value;
+      return value?.cardUid === 'hades-recover';
+    }, '哈迪斯选择弃牌堆行动回手');
+    await skipWoodenHorseIfPresent(page, game, '哈迪斯行动后跳过特洛伊木马可选触发');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      return state.core.players['0']?.hand.some((card: { uid?: string }) => card.uid === 'hades-recover') ?? false;
+    }, { timeout: 5000 }).toBe(true);
+    await game.screenshot('shayu-mythic-greeks-hades-after-recover', testInfo);
+
+    await game.playCard('mythic_greeks_favor_of_zeus', { targetBaseIndex: 1 });
+    await skipWoodenHorseIfPresent(page, game, '宙斯行动后跳过特洛伊木马可选触发');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      return state.core.tempBreakpointModifiers?.[1] ?? 0;
+    }, { timeout: 5000 }).toBe(-5);
+    await game.screenshot('shayu-mythic-greeks-zeus-after-breakpoint', testInfo);
+
+    await game.playCard('mythic_greeks_favor_of_athena');
+    await game.waitForInteraction('mythic_greeks_favor_of_athena_pick', 10000);
+    await game.screenshot('shayu-mythic-greeks-athena-pick-open', testInfo);
+    await game.selectInteractionOptionBy((option: unknown) => {
+      const value = (option as { value?: { cardUid?: string } })?.value;
+      return value?.cardUid === 'athena-action-pick';
+    }, '雅典娜选择一张行动牌入手');
+    await game.waitForInteraction('mythic_greeks_favor_of_athena_order', 10000);
+    await game.screenshot('shayu-mythic-greeks-athena-order-open', testInfo);
+    await game.selectInteractionOptionBy((option: unknown) => {
+      const value = (option as { value?: { cardUid?: string } })?.value;
+      return value?.cardUid === 'athena-minion-b';
+    }, '雅典娜第一张回顶牌');
+    await game.waitForInteraction('mythic_greeks_favor_of_athena_order', 10000);
+    await game.selectInteractionOptionBy((option: unknown) => {
+      const value = (option as { value?: { cardUid?: string } })?.value;
+      return value?.cardUid === 'athena-minion-a';
+    }, '雅典娜第二张回顶牌');
+    await game.waitForInteraction('mythic_greeks_favor_of_athena_order', 10000);
+    await game.selectInteractionOptionBy((option: unknown) => {
+      const value = (option as { value?: { cardUid?: string } })?.value;
+      return value?.cardUid === 'athena-action-order';
+    }, '雅典娜第三张回顶牌');
+    await skipWoodenHorseIfPresent(page, game, '雅典娜行动后跳过特洛伊木马可选触发');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      return {
+        picked: state.core.players['0']?.hand.some((card: { uid?: string }) => card.uid === 'athena-action-pick') ?? false,
+        topTwo: state.core.players['0']?.deck.slice(0, 2).map((card: { uid?: string }) => card.uid).join(','),
+      };
+    }, { timeout: 5000 }).toEqual({ picked: true, topTwo: 'athena-minion-b,athena-minion-a' });
+    await dismissRevealOverlayIfPresent(page);
+    await game.screenshot('shayu-mythic-greeks-athena-after-order', testInfo);
+
+    await game.playCard('tornados_trade_winds');
+    await game.waitForInteraction('tornados_trade_winds_first', 10000);
+    await game.screenshot('shayu-tornados-trade-winds-first-open', testInfo);
+    await game.selectInteractionOptionBy((option: unknown) => optionHasMinionUid(option, 'trade-first'), '信风选择第一个随从');
+    await game.waitForInteraction('tornados_trade_winds_second', 10000);
+    await game.screenshot('shayu-tornados-trade-winds-second-open', testInfo);
+    await game.selectInteractionOptionBy((option: unknown) => optionHasMinionUid(option, 'trade-second'), '信风选择另一基地第二个随从');
+    await skipWoodenHorseIfPresent(page, game, '信风行动后跳过特洛伊木马可选触发');
+    await game.waitForNoInteraction(10000);
+    await expect.poll(async () => {
+      const state = await game.getState();
+      return {
+        firstMoved: state.core.bases[1]?.minions.some((minion: { uid?: string }) => minion.uid === 'trade-first') ?? false,
+        secondMoved: state.core.bases[0]?.minions.some((minion: { uid?: string }) => minion.uid === 'trade-second') ?? false,
+      };
+    }, { timeout: 5000 }).toEqual({ firstMoved: true, secondMoved: true });
+    await game.screenshot('shayu-tornados-trade-winds-after-swap', testInfo);
   });
 
   test('Sharks 疯狂进食与 Tornados 旋风群覆盖多选和逐目标移动交互', async ({ page, game }, testInfo) => {
@@ -732,8 +1026,6 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
 
     await game.waitForPhase('playCards');
     await clickHandCardThenMinion(page, 'p0-carried-to-alley-a', 'alley-first-mover');
-    await game.waitForInteraction('tornados_carried_away', 10000);
-    await game.selectInteractionOptionBy((option: unknown) => optionHasMinionUid(option, 'alley-first-mover'), '选择第一个移入走廊的随从');
     await game.waitForInteraction('tornados_carried_away_dest', 10000);
     await game.selectInteractionOptionBy((option: unknown) => optionHasBaseIndex(option, 1), '移动到龙卷风走廊');
 
@@ -755,8 +1047,6 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
     await game.screenshot('shayu-tornado-alley-after-first-trigger', testInfo);
 
     await clickHandCardThenMinion(page, 'p0-carried-to-alley-b', 'alley-second-mover');
-    await game.waitForInteraction('tornados_carried_away', 10000);
-    await game.selectInteractionOptionBy((option: unknown) => optionHasMinionUid(option, 'alley-second-mover'), '选择第二个移入走廊的随从');
     await game.waitForInteraction('tornados_carried_away_dest', 10000);
     await game.selectInteractionOptionBy((option: unknown) => optionHasBaseIndex(option, 1), '第二次移动到龙卷风走廊');
     await game.waitForNoInteraction(10000);

@@ -2270,7 +2270,15 @@ function postProcessSystemEvents(
             const sourceEventId = `action-played:${playedEvt.payload.cardUid}:${event.timestamp}`;
             const frameId = `action-played-frame:${playedEvt.payload.cardUid}:${event.timestamp}`;
 
-            if (playedEvt.payload.targetBaseIndex !== undefined) {
+            const targetBaseWasReplacedByThisAction = playedEvt.payload.targetBaseIndex !== undefined
+                && afterDeckInspection.events.some(candidate => {
+                    if (candidate.type !== SU_EVENTS.BASE_REPLACED) return false;
+                    const replaced = candidate as BaseReplacedEvent;
+                    return replaced.timestamp === event.timestamp
+                        && replaced.payload.baseIndex === playedEvt.payload.targetBaseIndex;
+                });
+
+            if (playedEvt.payload.targetBaseIndex !== undefined && !targetBaseWasReplacedByThisAction) {
                 const queuedBase = collectBaseAbilityTriggers({
                     core: tempCore,
                     timing: 'onActionPlayed',

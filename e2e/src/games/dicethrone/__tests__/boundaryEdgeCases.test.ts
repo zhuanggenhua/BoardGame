@@ -208,19 +208,31 @@ describe('CP 边界', () => {
 // ============================================================================
 
 describe('状态效果移除下溢', () => {
+    it('燃烧重复施加时按 stackLimit=1 钳制，不会叠层', () => {
+        const core = getInitCore();
+        const applied = reduce(core, ev('STATUS_APPLIED', {
+            targetId: '0', statusId: STATUS_IDS.BURN, stacks: 1, newTotal: 1,
+        }));
+        const appliedAgain = reduce(applied, ev('STATUS_APPLIED', {
+            targetId: '0', statusId: STATUS_IDS.BURN, stacks: 1, newTotal: 2,
+        }));
+
+        expect(appliedAgain.players['0'].statusEffects[STATUS_IDS.BURN]).toBe(1);
+    });
+
     it('移除层数 > 当前层数时钳制到 0', () => {
         const core = getInitCore();
-        // 先施加 2 层燃烧
+        // 先施加 2 层中毒
         const applied = reduce(core, ev('STATUS_APPLIED', {
-            targetId: '0', statusId: STATUS_IDS.BURN, newTotal: 2,
+            targetId: '0', statusId: STATUS_IDS.POISON, newTotal: 2,
         }));
-        expect(applied.players['0'].statusEffects[STATUS_IDS.BURN]).toBe(2);
+        expect(applied.players['0'].statusEffects[STATUS_IDS.POISON]).toBe(2);
 
         // 移除 10 层（远超当前 2 层）
         const removed = reduce(applied, ev('STATUS_REMOVED', {
-            targetId: '0', statusId: STATUS_IDS.BURN, stacks: 10,
+            targetId: '0', statusId: STATUS_IDS.POISON, stacks: 10,
         }));
-        expect(removed.players['0'].statusEffects[STATUS_IDS.BURN]).toBe(0);
+        expect(removed.players['0'].statusEffects[STATUS_IDS.POISON]).toBe(0);
     });
 
     it('移除不存在的状态效果时保持 0', () => {

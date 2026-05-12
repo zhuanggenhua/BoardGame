@@ -45,11 +45,19 @@ const fileExists = async (filePath) => {
 };
 
 const parseArgs = (argv) => {
-    const options = { mode: 'generate', id: null, root: null, help: false };
+    const options = { mode: 'generate', manifestMode: 'incremental', id: null, root: null, help: false };
     for (let i = 0; i < argv.length; i += 1) {
         const arg = argv[i];
         if (arg === '--validate' || arg === '-v') {
             options.mode = 'validate';
+            continue;
+        }
+        if (arg === '--full') {
+            options.manifestMode = 'full';
+            continue;
+        }
+        if (arg === '--incremental') {
+            options.manifestMode = 'incremental';
             continue;
         }
         if (arg === '--id') {
@@ -72,9 +80,16 @@ const parseArgs = (argv) => {
 const printHelp = () => {
     console.log(`用法:
   node scripts/assets/generate_asset_manifests.js
+  node scripts/assets/generate_asset_manifests.js --full
   node scripts/assets/generate_asset_manifests.js --validate
+  node scripts/assets/generate_asset_manifests.js --validate --full
   node scripts/assets/generate_asset_manifests.js --id <gameId>
   node scripts/assets/generate_asset_manifests.js --validate --id <gameId>
+
+默认模式为增量合并：
+  - 扫描本地存在的资源并更新/新增对应 manifest 条目
+  - 保留 manifest 中已有但本地缺失的条目，避免要求合作者下载全量 R2 资源
+  - 如需“本地完整镜像 -> 全量重建/严格校验”，显式传入 --full
 `);
 };
 
@@ -186,14 +201,58 @@ const buildManifest = async ({ id, dirPath }) => {
     };
 };
 
-const generateManifest = async (entry) => {
-    const manifest = await buildManifest(entry);
-    const outputPath = path.join(entry.dirPath, MANIFEST_NAME);
-    await fs.writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
-    console.log(`[Manifest] 已生成: ${path.relative(process.cwd(), outputPath)}`);
+const createEmptyManifest = (entry) => ({
+    manifestVersion: MANIFEST_VERSION,
+    scope: DEFAULT_SCOPE,
+    id: entry.id,
+    basePrefix: `official/${entry.id}/`,
+    files: {},
+});
+
+const sortFilesObject = (files) => {
+    const sorted = {};
+    for (const key of Object.keys(files).sort((a, b) => a.localeCompare(b))) {
+        sorted[key] = files[key];
+    }
+    return sorted;
 };
 
-const compareManifest = (entry, actual, expected) => {
+const loadExistingManifest = async (entry) => {
+    const manifestPath = path.join(entry.dirPath, MANIFEST_NAME);
+    if (!(await fileExists(manifestPath))) {
+        return null;
+    }
+    const content = await fs.readFile(manifestPath, 'utf8');
+    return JSON.parse(content);
+};
+
+const buildIncrementalManifest = async (entry) => {
+    const existing = await loadExistingManifest(entry);
+    const local = await buildManifest(entry);
+    const base = existing ?? createEmptyManifest(entry);
+    return {
+        ...base,
+        manifestVersion: MANIFEST_VERSION,
+        scope: DEFAULT_SCOPE,
+        id: entry.id,
+        basePrefix: `official/${entry.id}/`,
+        files: sortFilesObject({
+            ...(base.files && typeof base.files === 'object' ? base.files : {}),
+            ...local.files,
+        }),
+    };
+};
+
+const generateManifest = async (entry, { full }) => {
+    const manifest = full
+        ? await buildManifest(entry)
+        : await buildIncrementalManifest(entry);
+    const outputPath = path.join(entry.dirPath, MANIFEST_NAME);
+    await fs.writeFile(outputPath, `${JSON.stringify(manifest, null, 2)}\n`, 'utf8');
+    console.log(`[Manifest] 已生成(${full ? 'full' : 'incremental'}): ${path.relative(process.cwd(), outputPath)}`);
+};
+
+const compareManifest = (entry, actual, expected, { full }) => {
     const errors = [];
     if (!Number.isInteger(actual.manifestVersion)) {
         errors.push(`[Manifest] manifestVersion 非整数: ${entry.id}`);
@@ -214,8 +273,8 @@ const compareManifest = (entry, actual, expected) => {
 
     const actualKeys = Object.keys(actualFiles);
     const expectedKeys = Object.keys(expectedFiles);
-    const missingKeys = expectedKeys.filter((key) => !(key in actualFiles));
-    const extraKeys = actualKeys.filter((key) => !(key in expectedFiles));
+    const missingKeys = full ? expectedKeys.filter((key) => !(key in actualFiles)) : [];
+    const extraKeys = full ? actualKeys.filter((key) => !(key in expectedFiles)) : [];
 
     if (missingKeys.length) {
         errors.push(`[Manifest] 缺少资源键: ${entry.id} -> ${missingKeys.join(', ')}`);
@@ -225,13 +284,14 @@ const compareManifest = (entry, actual, expected) => {
     }
 
     for (const key of expectedKeys) {
+        if (!actualFiles[key]) continue;
         const expectedVariants = expectedFiles[key]?.variants ?? {};
         const actualVariants = actualFiles[key]?.variants ?? {};
         const expectedExts = Object.keys(expectedVariants);
         const actualExts = Object.keys(actualVariants);
 
-        const missingExts = expectedExts.filter((ext) => !(ext in actualVariants));
-        const extraExts = actualExts.filter((ext) => !(ext in expectedVariants));
+        const missingExts = full ? expectedExts.filter((ext) => !(ext in actualVariants)) : [];
+        const extraExts = full ? actualExts.filter((ext) => !(ext in expectedVariants)) : [];
 
         if (missingExts.length) {
             errors.push(`[Manifest] 缺少变体: ${entry.id}/${key} -> ${missingExts.join(', ')}`);
@@ -259,20 +319,24 @@ const compareManifest = (entry, actual, expected) => {
     return errors;
 };
 
-const validateManifest = async (entry) => {
+const validateManifest = async (entry, { full, required }) => {
     const manifestPath = path.join(entry.dirPath, MANIFEST_NAME);
     if (!(await fileExists(manifestPath))) {
+        if (!full && !required) {
+            console.log(`[Manifest] 跳过未登记资源目录(incremental): ${path.relative(process.cwd(), entry.dirPath)}`);
+            return;
+        }
         throw new Error(`[Manifest] 缺少清单文件: ${manifestPath}`);
     }
     const content = await fs.readFile(manifestPath, 'utf8');
     const actual = JSON.parse(content);
     const expected = await buildManifest(entry);
-    const errors = compareManifest(entry, actual, expected);
+    const errors = compareManifest(entry, actual, expected, { full });
     if (errors.length) {
         const message = errors.join('\n');
         throw new Error(message);
     }
-    console.log(`[Manifest] 校验通过: ${path.relative(process.cwd(), manifestPath)}`);
+    console.log(`[Manifest] 校验通过(${full ? 'full' : 'incremental'}): ${path.relative(process.cwd(), manifestPath)}`);
 };
 
 const run = async () => {
@@ -284,6 +348,7 @@ const run = async () => {
 
     const assetsRoot = args.root ? path.resolve(process.cwd(), args.root) : ASSETS_ROOT;
     const entries = await resolveAssetDirs(assetsRoot, args.id);
+    const full = args.manifestMode === 'full';
     if (!entries.length) {
         console.log('[Manifest] 未发现可处理的资源目录。');
         return;
@@ -291,13 +356,13 @@ const run = async () => {
 
     if (args.mode === 'validate') {
         for (const entry of entries) {
-            await validateManifest(entry);
+            await validateManifest(entry, { full, required: Boolean(args.id) });
         }
         return;
     }
 
     for (const entry of entries) {
-        await generateManifest(entry);
+        await generateManifest(entry, { full });
     }
 };
 

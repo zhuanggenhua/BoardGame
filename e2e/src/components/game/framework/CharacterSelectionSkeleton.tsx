@@ -130,10 +130,6 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
         return badges?.find((badge) => badge.variant === 'disabled-overlay');
     };
 
-    const getPillBadges = (badges?: CharacterBadgeDef[]) => {
-        return badges?.filter((badge) => badge.variant !== 'disabled-overlay') ?? [];
-    };
-
     if (!isOpen) return null;
 
     return (
@@ -191,7 +187,6 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                     {availableCharacters.map((char, index) => {
                         const isSelectedByMe = selectedCharacters[currentPlayerId] === char.id;
                         const overlayBadge = getOverlayBadge(char.badges);
-                        const pillBadges = getPillBadges(char.badges);
 
                         return (
                             <motion.div
@@ -216,28 +211,6 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                                 
                                 <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent opacity-80" />
 
-                                {pillBadges.length ? (
-                                    <div
-                                        className="absolute left-0 z-20 flex flex-col items-start pointer-events-none"
-                                        style={{
-                                            top: inlineUnit(0.34),
-                                            left: inlineUnit(0.34),
-                                            gap: inlineUnit(0.28),
-                                            maxWidth: `calc(100% - ${inlineUnit(1.9)})`,
-                                        }}
-                                    >
-                                        {pillBadges.map((badge) => (
-                                            <CharacterSelectionBadge
-                                                key={badge.id}
-                                                badge={badge}
-                                                label={t(badge.labelKey)}
-                                                inlineUnit={inlineUnit}
-                                                testId={`character-badge-${char.id}-${badge.id}`}
-                                            />
-                                        ))}
-                                    </div>
-                                ) : null}
-
                                 {overlayBadge ? (
                                     <div className="absolute inset-0 z-20 pointer-events-none">
                                         <div className="absolute inset-0 overflow-hidden">
@@ -245,7 +218,6 @@ export const CharacterSelectionSkeleton: React.FC<CharacterSelectionSkeletonProp
                                                 badge={overlayBadge}
                                                 label={t(overlayBadge.labelKey)}
                                                 inlineUnit={inlineUnit}
-                                                mode="overlay"
                                                 testId={`character-badge-${char.id}-${overlayBadge.id}`}
                                             />
                                         </div>

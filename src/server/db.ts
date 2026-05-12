@@ -1,15 +1,21 @@
 import mongoose from 'mongoose';
 import logger from '../../server/logger';
 
-// MongoDB 连接字符串（本地默认值）
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/boardgame';
+function requireMongoUri(): string {
+    const mongoUri = process.env.MONGO_URI?.trim();
+    if (!mongoUri) {
+        throw new Error('[MongoDB] 缺少 MONGO_URI，禁止回退到本机 Mongo。请显式配置目标数据库连接串。');
+    }
+    return mongoUri;
+}
 
 /**
  * 连接到 MongoDB 数据库
  */
 export async function connectDB(): Promise<void> {
+    const mongoUri = requireMongoUri();
     try {
-        await mongoose.connect(MONGO_URI, {
+        await mongoose.connect(mongoUri, {
             // 连接池优化（生产环境标准配置）
             maxPoolSize: 10,              // 最大连接数（默认 100，降低以节省内存）
             minPoolSize: 2,               // 最小连接数（保持 2 个热连接）
@@ -23,7 +29,7 @@ export async function connectDB(): Promise<void> {
         logger.error('❌ MongoDB 连接失败:', error);
         logger.error(
             `[MongoDB] 请确认 MongoDB 已启动且可访问。` +
-            `\n- 当前 MONGO_URI: ${MONGO_URI}` +
+            `\n- 当前 MONGO_URI: ${mongoUri}` +
             `\n- Docker: docker-compose up -d mongodb` +
             `\n- 或本机启动 MongoDB 并监听 27017`
         );

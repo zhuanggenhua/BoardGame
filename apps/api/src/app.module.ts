@@ -21,6 +21,14 @@ import { FeedbackModule } from './modules/feedback/feedback.module';
 import { GameChangelogModule } from './modules/game-changelog/game-changelog.module';
 import { NotificationModule } from './modules/notification/notification.module';
 
+function requireMongoUri(configService: ConfigService): string {
+    const mongoUri = configService.get<string>('MONGO_URI')?.trim();
+    if (!mongoUri) {
+        throw new Error('[API] 缺少 MONGO_URI，禁止回退到本机 Mongo。请显式配置目标数据库连接串。');
+    }
+    return mongoUri;
+}
+
 @Module({
     imports: [
         ConfigModule.forRoot({
@@ -29,7 +37,7 @@ import { NotificationModule } from './modules/notification/notification.module';
         MongooseModule.forRootAsync({
             inject: [ConfigService],
             useFactory: (configService: ConfigService) => ({
-                uri: configService.get<string>('MONGO_URI') || 'mongodb://localhost:27017/boardgame',
+                uri: requireMongoUri(configService),
                 // 连接池优化（生产环境标准配置）
                 maxPoolSize: 10,              // 最大连接数（默认 100，降低以节省内存）
                 minPoolSize: 2,               // 最小连接数（保持 2 个热连接）

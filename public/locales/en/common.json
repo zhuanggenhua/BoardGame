@@ -122,6 +122,7 @@
     "assetslicer": "Asset Slicer",
     "audiobrowser": "Audio Browser",
     "cardia": "Cardia",
+    "qidahen": "Seven Hatreds",
     "tictactoe": "Tic-Tac-Toe",
     "dicethrone": "Dice Throne",
     "fxpreview": "Effect Preview",
@@ -134,6 +135,11 @@
     "matchTitle": "{{game}} - Match"
   },
   "games": {
+    "qidahen": {
+      "title": "Seven Hatreds",
+      "description": "A heavy three-faction strategy game set in 17th-century Northeast Asia, driven by action wheel timing, cards, area control, block units, and multi-step battles.",
+      "players": "3 Players"
+    },
     "summonerwars": {
       "title": "Summoner Wars",
       "description": "Summoner Wars is a fast-paced, tactical 2-player game. Players take on the role of Summoners, leading their faction to conquer the war-torn world of Itharia through the power of mysterious Summoning Stones.",

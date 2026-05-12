@@ -25,8 +25,6 @@ export const ImplementationStatusRibbon: React.FC<ImplementationStatusRibbonProp
             label={label}
             inlineUnit={(value) => `${value}rem`}
             testId={testId ? `${testId}-label` : 'implementation-status-ribbon-label'}
-            mode="overlay"
         />
     </div>
 );
-

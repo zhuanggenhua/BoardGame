@@ -1205,6 +1205,21 @@ const resolveVersionedAssetUrl = (value: string) => {
     return nextQuery ? `${path}?${nextQuery}${hash}` : `${path}${hash}`;
 };
 
+const resolveVersionedRemoteAssetUrl = (value: string, relativeKey: string) => {
+    if (!isString(value) || !value) return value;
+
+    const version = assetHashes[relativeKey];
+    if (!version) return value;
+
+    const { path, query, hash } = splitUrlParts(value);
+    const params = new URLSearchParams(query);
+    if (params.get(VERSION_PARAM) === version) return value;
+    params.set(VERSION_PARAM, version);
+
+    const nextQuery = params.toString();
+    return nextQuery ? `${path}?${nextQuery}${hash}` : `${path}${hash}`;
+};
+
 /**
  * 规范化资源路径，统一添加当前资源基址
  * 支持相对路径转换
@@ -1434,13 +1449,16 @@ export function getLocalizedImageCandidateUrls(src: string, locale: string): str
         const localizedPath = getLocalizedAssetPath(src, candidateLocale);
         const localizedUrl = getOptimizedImageUrls(localizedPath).webp;
         const remoteRelative = toLocalizedCompressedRelativePath(src, candidateLocale);
-        const remoteUrl = /^https?:\/\//i.test(remoteBaseUrl)
-            ? `${remoteBaseUrl}/${remoteRelative}`
-            : '';
+        const remoteBaseUrls = [
+            /^https?:\/\//i.test(remoteBaseUrl) ? remoteBaseUrl : '',
+            DEFAULT_ASSETS_BASE_URL,
+        ].filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index);
         const publicUrl = resolveVersionedAssetUrl(`/assets/${remoteRelative}`);
 
         pushCandidate(localizedUrl);
-        pushCandidate(remoteUrl);
+        remoteBaseUrls.forEach((baseUrl) => {
+            pushCandidate(resolveVersionedRemoteAssetUrl(`${baseUrl}/${remoteRelative}`, remoteRelative));
+        });
         pushCandidate(publicUrl);
     });
 

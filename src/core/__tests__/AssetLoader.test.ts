@@ -96,7 +96,10 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
 
         const candidates = getLocalizedImageCandidateUrls('splendor/picture', 'zh-CN');
 
-        expect(candidates).toEqual(['/assets/i18n/zh-CN/splendor/compressed/picture.webp']);
+        expect(candidates).toEqual([
+            '/assets/i18n/zh-CN/splendor/compressed/picture.webp',
+            'https://assets.easyboardgame.top/official/i18n/zh-CN/splendor/compressed/picture.webp',
+        ]);
     });
 
     it('当前语言缺图但 fallback 语言存在时，应直接使用 fallback 语言', () => {
@@ -106,7 +109,10 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
 
         const candidates = getLocalizedImageCandidateUrls('splendor/picture', 'zh-CN');
 
-        expect(candidates).toEqual(['/assets/i18n/en/splendor/compressed/picture.webp']);
+        expect(candidates).toEqual([
+            '/assets/i18n/en/splendor/compressed/picture.webp',
+            'https://assets.easyboardgame.top/official/i18n/en/splendor/compressed/picture.webp',
+        ]);
     });
 
     it('索引缺失时保留旧行为，同时包含当前语言与 fallback 语言候选', () => {
@@ -114,7 +120,9 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
 
         expect(candidates).toEqual([
             '/assets/i18n/zh-CN/splendor/compressed/picture.webp',
+            'https://assets.easyboardgame.top/official/i18n/zh-CN/splendor/compressed/picture.webp',
             '/assets/i18n/en/splendor/compressed/picture.webp',
+            'https://assets.easyboardgame.top/official/i18n/en/splendor/compressed/picture.webp',
         ]);
     });
 
@@ -133,7 +141,7 @@ describe('AssetLoader.getOptimizedImageUrls', () => {
         expect(candidates).toEqual([
             'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/smashup/current/assets/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234',
             'http://localhost/_capacitor_file_/data/user/0/top.easyboardgame.app/files/game-packages/smashup/current/assets/i18n/en/smashup/cards/compressed/cards1.webp',
-            'https://assets.easyboardgame.top/official/i18n/en/smashup/cards/compressed/cards1.webp',
+            'https://assets.easyboardgame.top/official/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234',
             '/assets/i18n/en/smashup/cards/compressed/cards1.webp?v=hash1234',
         ]);
     });

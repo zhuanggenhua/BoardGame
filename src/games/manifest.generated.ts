@@ -9,11 +9,12 @@ import entry3 from './audiobrowser/manifest';
 import entry4 from './cardia/manifest';
 import entry5 from './dicethrone/manifest';
 import entry6 from './fxpreview/manifest';
-import entry7 from './smashup/manifest';
-import entry8 from './splendor/manifest';
-import entry9 from './summonerwars/manifest';
-import entry10 from './tictactoe/manifest';
-import entry11 from './ugcbuilder/manifest';
+import entry7 from './qidahen/manifest';
+import entry8 from './smashup/manifest';
+import entry9 from './splendor/manifest';
+import entry10 from './summonerwars/manifest';
+import entry11 from './tictactoe/manifest';
+import entry12 from './ugcbuilder/manifest';
 
 export const GAME_MANIFEST: GameManifestEntry[] = [
     entry0,
@@ -28,6 +29,7 @@ export const GAME_MANIFEST: GameManifestEntry[] = [
     entry9,
     entry10,
     entry11,
+    entry12,
 ];
 
 export const GAME_MANIFEST_BY_ID: Record<string, GameManifestEntry> = Object.fromEntries(

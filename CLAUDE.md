@@ -152,7 +152,7 @@ Copy `.env.example` to `.env`. Development works with defaults. Key variables:
 | `VITE_DEV_PORT` | 5173 | Frontend dev port |
 | `GAME_SERVER_PORT` | 18000 | Game server port |
 | `API_SERVER_PORT` | 18001 | API server port |
-| `MONGO_URI` | mongodb://localhost:27017/boardgame | Database |
+| `MONGO_URI` | mongodb://localhost:27017/boardgame (local dev example, must be explicit) | Database |
 | `JWT_SECRET` | dev default | JWT key (change in production) |
 | `REDIS_HOST` / `REDIS_PORT` | localhost / 6379 | Redis cache |
 

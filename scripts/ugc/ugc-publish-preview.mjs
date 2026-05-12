@@ -2,7 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 import mongoose from 'mongoose';
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/boardgame';
+const MONGO_URI = process.env.MONGO_URI?.trim();
+if (!MONGO_URI) {
+    throw new Error('[UGC] 缺少 MONGO_URI，禁止回退到本机 Mongo。请显式配置目标数据库连接串。');
+}
 const PACKAGE_ID = 'doudizhu-preview';
 const OWNER_ID = 'local-draft';
 

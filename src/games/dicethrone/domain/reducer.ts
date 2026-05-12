@@ -320,6 +320,8 @@ const handleStatusApplied: EventHandler<Extract<DiceThroneEvent, { type: 'STATUS
     const { targetId, statusId, newTotal, sourceAbilityId } = event.payload;
     const target = state.players[targetId];
     if (!target) return state;
+    const maxStacks = getTokenStackLimit(state, targetId, statusId);
+    const cappedNewTotal = Math.max(0, Math.min(newTotal, maxStacks));
 
     const isDebuff = state.tokenDefinitions?.find(def => def.id === statusId)?.category === 'debuff';
     const shouldPrevent = Boolean(
@@ -351,7 +353,7 @@ const handleStatusApplied: EventHandler<Extract<DiceThroneEvent, { type: 'STATUS
             ...state.players,
             [targetId]: {
                 ...target,
-                statusEffects: { ...target.statusEffects, [statusId]: newTotal },
+                statusEffects: { ...target.statusEffects, [statusId]: cappedNewTotal },
             },
         },
         lastEffectSourceByPlayerId: sourceAbilityId

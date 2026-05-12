@@ -102,7 +102,7 @@
 | `mythic_greeks_favor_of_apollo` | 抽 1 并额外行动。 | `abilities/mythic_greeks.ts` `favorOfApollo` | draw + extra action | L2/L3 | 行为测试与 E2E 覆盖 `actionLimit=2`。 |
 | `mythic_greeks_favor_of_hermes` | 打出两个额外行动。 | `abilities/mythic_greeks.ts` `favorOfHermes` | extra action x2 | L1 | 简单额外行动路径；未专项行为测试。 |
 | `mythic_greeks_favor_of_poseidon` | 弃牌堆至多 3 张洗回牌库。 | `abilities/mythic_greeks.ts` `favorOfPoseidon` | discard-to-deck multi select | L2/L3 | 行为测试与 E2E 覆盖弃牌多选洗回。 |
-| `mythic_greeks_favor_of_zeus` | 一个基地破坏点 -5 到回合结束。 | `abilities/mythic_greeks.ts` `favorOfZeus` | temporary base modifier | L1 | 结构注册通过；未专项行为测试。 |
+| `mythic_greeks_favor_of_zeus` | 一个基地破坏点 -5 到回合结束。 | `abilities/mythic_greeks.ts` `favorOfZeus` | temporary base modifier | L2 | 2026-05-12 抽样发现并修复二次 base prompt；已补行为测试证明直接消费第一入口并降低目标基地爆破点。 |
 | `base_oracle_at_delphi` | 打出仆从到这里后展示牌库顶；行动入手，否则放回顶。 | `abilities/mythic_greeks.ts` `oracleAtDelphi` | deck peek/reveal | L1 | 结构注册通过；未专项行为测试。 |
 | `base_wooden_horse` | 任意玩家打出行动后，可使这里一个仆从 +2 到回合结束。 | `abilities/mythic_greeks.ts` `woodenHorse` | onActionPlayed base ability | L1/L2 | 已改可选一个目标而非全体；未单独 E2E。 |
 
@@ -175,3 +175,84 @@
 - **本轮审计口径**：按 `docs/ai-rules/testing-audit.md` 新补强的通用交互入口语义矩阵，对 shayu 三派系全部对象做 P0/P1 重审，逐项核对第一入口、目标归属、数量/可选、上下文携带、UI/validator/handler/reducer 单一真相。
 - **新结论**：截至本轮静态 + 行为证据复核，未发现新的 P0/P1 blocker；但本轮未新增浏览器 E2E 截图，因此不能把本轮结论升级为“全量 L3 E2E 收口”。
 - **当前等级**：shayu 三派系可表述为“全量入口矩阵 P0/P1 已审 + 代表性 L2/L3 已验证 + 仍保留非逐对象 L3 残余范围”。
+
+## 2026-05-12 再次抽样调查回写
+
+- 新增证据：`evidence/smashup/smashup-shayu-strict-sample-audit-2026-05-12.md`。
+- 旧结论修订：`mythic_greeks_favor_of_zeus` 不能再保留为“低风险未单独 L2”；抽样发现其 handler 二次弹出基地选择，已修复并补 L2 行为测试。
+- 本次抽样未发现 `sharks_dangerous_waters`、`tornados_cyclone`、`mythic_greeks_favor_of_hermes`、`base_wooden_horse` 新 blocker。
+
+## Addendum（2026-05-12 08:38 +08）：第一入口直接消费专项全量重审
+
+- **旧结论再次降级**：此前“全量矩阵 + 抽样复审”没有逐项验证 handler 是否直接消费第一入口，因此只能作为 L1/L2 部分证据，不能再单独支撑“入口审计完成”。
+- **新增专项证据**：`evidence/smashup/smashup-shayu-entry-consumption-audit-2026-05-12.md`。
+- **本次发现并修复**：
+  1. `mythic_greeks_favor_of_zeus`：`playNeedsBase` 后 handler 又二次 base prompt；已改为直接消费 `targetBaseIndex/baseIndex`。
+  2. `tornados_carried_away`：`playNeedsMinion` 后 handler 又二次 minion prompt；已改为直接弹目标基地 prompt。
+  3. `tornados_not_in_kansas`：替换目标基地后同一 `ACTION_PLAYED` 误触发新基地 `onActionPlayed`；已跳过同 timestamp 同 baseIndex 被替换的新基地触发。
+- **验证**：`shayuFactionAbilities.test.ts + shayuEntryConsumption.test.ts` 共 27 passed；专项 audit 2 passed；`npm run typecheck` passed；相关文件 eslint 0 errors。
+- **当前等级**：第一入口直接消费专项达到 L2；本轮追加复跑 3 条高风险真实入口 E2E 并核对截图；仍不宣称 45 对象全量逐项 L3。
+
+
+## 2026-05-12 22:50 +08 全面审计 L2 补强回写
+
+旧结论继续限定：本文档早期“已审计/已收口”只能作为当时代表链证据，不能替代新的全面审计 guard。当前总入口仍是 `evidence/smashup/smashup-shayu-comprehensive-audit-coverage-2026-05-12.md`。
+
+本轮新增/扩展 L2：
+
+- `sharks_chum`：宿主附着鲨鱼诱饵后，同基地任意随从被消灭会给宿主 +1。
+- `base_the_deep`：4+ 随从打入后，仅同基地更低力量目标可被可选消灭。
+- `mythic_greeks_favor_of_hades`：只从弃牌堆行动牌中选择一张回手，非行动牌不进候选。
+- `base_trailer_park`：随从移入后自动给该随从 +1。
+- `base_tornado_alley`：首次移入触发可选拉入另一个随从，写入 once/turn 标记，且 `reason=base_tornado_alley` 不递归再触发。
+
+验证：`npx vitest run src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` → 12 passed；`npx eslint src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` → 0 errors。
+
+仍未完成：45 对象逐行 L2 核销、全交互 L3/代表链、全部时序/窗口/队列 L4。
+
+
+## Addendum（2026-05-12 23:50 +08）：L3 真实入口补强批次
+
+- 已补强并实际看图核对 2 条高风险 E2E：
+  - Sharks：大白鲨结算辅助、飞鲨真实入口、激光束真实入口。
+  - Mythic Greeks / Tornados：哈迪斯、宙斯、雅典娜、信风真实入口。
+- 本批新截图与肉眼结论已回写总入口：`evidence/smashup/smashup-shayu-comprehensive-audit-coverage-2026-05-12.md`。
+- 重要限定：`sharks_great_white` 这次仍由 test harness dispatch 触发天赋，只能算结算辅助证据，不算完整真实 UI 天赋入口 L3。
+- 当前可升级为 L3 的对象：`sharks_air_jaws`、`sharks_freakin_laser_beam`、`mythic_greeks_favor_of_hades`、`mythic_greeks_favor_of_zeus`、`mythic_greeks_favor_of_athena`、`tornados_trade_winds`。
+- 当前仍不得宣称全面审计完成：45 对象全量 L2 核销、全部 L3 代表链、全部 L4 时序治理仍未完成。
+
+
+### 2026-05-13 00:03 +08 全文件 E2E 回归补充
+
+- 补跑整文件：`$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; npm run test:e2e:ci -- e2e/smashup-shayu-factions.e2e.ts` → 14 passed。
+- 说明：第一次整文件复跑被同类 E2E heavy-task guard 拦截；确认使用隔离 runtime 后显式允许并发并通过。
+- 该结果证明 `e2e/smashup-shayu-factions.e2e.ts` 当前 14 条代表性真实入口/时序链没有被本轮测试修正破坏；仍不等于 45 对象全量 L3/L4 完成。
+
+
+## Addendum（2026-05-13 00:16 +08）：C3 全量 L2 核销
+
+- 新增 `tornados_twister` 旋风 push/pull L2 行为测试。
+- `shayuComprehensiveBehavior.test.ts` 当前 13 passed；`npx eslint src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` 0 errors。
+- 已在全面审计总入口逐对象写清 45/45 的 L2 行为证据来源；C3 可标 pass。
+- 仍未完成：C4 全交互 L3/代表链截图归档、C5 全部时序/窗口/队列 L4、C6 最终修复/旧 evidence 全量回写。
+
+
+## Addendum（2026-05-13 00:55 +08）：全面审计 C4/C5/C6 回写
+
+- 总入口仍是 `evidence/smashup/smashup-shayu-comprehensive-audit-coverage-2026-05-12.md`。
+- `sharks_great_white` 已重新用真实 UI 点击随从触发天赋，旧“仅 harness 辅助”结论失效。
+- C4 已逐对象归档：所有真实 UI 交互入口均为独立 L3 或等价代表链；无用户入口对象显式标记 C4 不适用。
+- C5 已逐家族归档：beforeScoring、afterScoring、base replace、once/turn、action-trigger、base trigger、destroy trigger、multi/order/continuationContext 均有 L4 或系统代表链证据。
+- C6 已完成回写；最终是否 COMPLETE 以 `temp/smashup-shayu-comprehensive-audit-2026-05-12.json` 与 guard 检查为准。
+
+
+## 2026-05-13 01:03 +08 最终回归验证
+
+- `npx eslint e2e/smashup-shayu-factions.e2e.ts src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` → 0 errors。
+- `npx vitest run src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` → 13 passed。
+- `$env:BG_ALLOW_HEAVY_TASK_CONCURRENCY='1'; npm run test:e2e:ci -- e2e/smashup-shayu-factions.e2e.ts` → 14 passed。
+- 本轮实际核对截图包括：
+  - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口\shayu-sharks-great-white-talent-destination-open.png`
+  - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口\shayu-sharks-great-white-after-move-destroy.png`
+  - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`
+  - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornado-Alley-基地能力在本回合首次移入时触发，第二次移入不重复触发\shayu-tornado-alley-trigger-open.png`

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
+import { getEffectiveBreakpoint } from '../domain/ongoingModifiers';
 import { SU_COMMANDS } from '../domain/types';
 import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, resolveInteractionChain } from './helpers';
 import { runCommand } from './testRunner';
@@ -69,11 +70,9 @@ describe('shayu 三派系代表性玩法行为', () => {
             payload: { cardUid: 'a-carried', targetBaseIndex: 0, targetMinionUid: 'move-me' },
         } as any);
         expect(play.success).toBe(true);
-        const resolved = resolveInteractionChain(play.finalState, (prompt, state, step) => {
-            if (step === 0) {
-                const target = prompt.data.options.find((option: any) => option.value?.minionUid === 'move-me');
-                return { optionId: target.id };
-            }
+        const resolved = resolveInteractionChain(play.finalState, (prompt) => {
+            expect(prompt.data.targetType).toBe('base');
+            expect(prompt.data.sourceId).toBe('tornados_carried_away_dest');
             const targetBase = prompt.data.options.find((option: any) => option.value?.baseIndex === 1);
             return { optionId: targetBase.id };
         });
@@ -612,5 +611,181 @@ describe('shayu 三派系代表性玩法行为', () => {
         expect(minionTop.success).toBe(true);
         expect(minionTop.finalState.core.players['0'].hand.map(card => card.uid)).not.toContain('top-minion');
         expect(minionTop.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['top-minion', 'next-action']);
+    });
+
+    it('抽样复审：危险水域天赋只影响其附着基地的随从', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase({
+                    defId: 'base_the_deep',
+                    minions: [makeMinion('same-base-target', 'tornados_dust_devil', '1', 2)],
+                    ongoingActions: [{ uid: 'dangerous', defId: 'sharks_dangerous_waters', ownerId: '0' }],
+                }),
+                makeBase('base_wooden_horse', [makeMinion('other-base-target', 'sharks_mako', '1', 2)]),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { ongoingCardUid: 'dangerous', baseIndex: 0 },
+        } as any);
+        expect(talent.success).toBe(true);
+        expect(talent.finalState.sys.interaction.current?.data?.sourceId).toBe('sharks_dangerous_waters');
+        expect(talent.finalState.sys.interaction.current?.data?.options.some((option: any) => option.value?.minionUid === 'other-base-target')).toBe(false);
+
+        const resolved = resolveInteractionChain(talent.finalState, (prompt) => {
+            const target = prompt.data.options.find((option: any) => option.value?.minionUid === 'same-base-target');
+            return { optionId: target.id };
+        });
+
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'same-base-target')?.tempPowerModifier).toBe(-2);
+        expect(resolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'other-base-target')?.tempPowerModifier ?? 0).toBe(0);
+    });
+
+    it('抽样复审：气旋天赋以自身为源，只选择目标基地并移动自身', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_trailer_park', [makeMinion('cyclone', 'tornados_cyclone', '0', 4)]),
+                makeBase('base_tornado_alley', []),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+        const talent = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'cyclone', baseIndex: 0 },
+        } as any);
+        expect(talent.success).toBe(true);
+        expect(talent.finalState.sys.interaction.current?.data?.sourceId).toBe('tornados_cyclone');
+        expect(talent.finalState.sys.interaction.current?.data?.targetType).toBe('base');
+
+        const resolved = resolveInteractionChain(talent.finalState, (prompt) => {
+            const targetBase = prompt.data.options.find((option: any) => option.value?.baseIndex === 1);
+            return { optionId: targetBase.id };
+        });
+
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'cyclone')).toBe(false);
+        expect(resolved.finalState.core.bases[1].minions.some(minion => minion.uid === 'cyclone')).toBe(true);
+    });
+
+    it('抽样复审：赫尔墨斯的恩惠无目标结算两个额外行动且不创建交互', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('hermes', 'mythic_greeks_favor_of_hermes', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [makeBase('base_oracle_at_delphi', [])],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'hermes' },
+        } as any);
+
+        expect(play.success).toBe(true);
+        expect(play.finalState.sys.interaction.current).toBeUndefined();
+        expect(play.finalState.core.players['0'].actionLimit).toBe(3);
+    });
+
+    it('抽样复审：宙斯的恩惠使用第一入口基地直接降低爆破点，不再二次弹基地选择', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('zeus', 'mythic_greeks_favor_of_zeus', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_oracle_at_delphi', []),
+                makeBase('base_wooden_horse', []),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'zeus', targetBaseIndex: 1 },
+        } as any);
+
+        expect(play.success).toBe(true);
+        expect(play.finalState.sys.interaction.current).toBeUndefined();
+        expect(play.finalState.core.tempBreakpointModifiers?.[1]).toBe(-5);
+        expect(getEffectiveBreakpoint(play.finalState.core, 1)).toBe(16);
+        expect(play.finalState.core.tempBreakpointModifiers?.[0] ?? 0).toBe(0);
+    });
+
+    it('抽样复审：特洛伊木马由行动玩家选择这里一个随从并可给任意归属目标 +2', () => {
+        const core = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1', { hand: [makeCard('dangerous', 'sharks_dangerous_waters', 'action', '1')] }),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            bases: [
+                makeBase('base_wooden_horse', [
+                    makeMinion('p0-minion', 'mythic_greeks_spartan', '0', 2),
+                    makeMinion('p1-minion', 'sharks_mako', '1', 2),
+                ]),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const play = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '1',
+            payload: { cardUid: 'dangerous', targetBaseIndex: 0 },
+        } as any);
+        expect(play.success).toBe(true);
+
+        let woodenHorsePromptPlayer: string | undefined;
+        const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
+            const triggerOption = prompt.data.options.find((option: any) => {
+                const triggerId = option.value?.triggerId;
+                return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
+            });
+            if (triggerOption) return { optionId: triggerOption.id };
+
+            if (prompt.data.sourceId === 'base_wooden_horse') {
+                woodenHorsePromptPlayer = prompt.playerId;
+                const p0 = prompt.data.options.find((option: any) => option.value?.minionUid === 'p0-minion');
+                return { optionId: p0.id };
+            }
+
+            const skip = prompt.data.options.find((option: any) => option.value?.skip);
+            return { optionId: skip.id };
+        });
+
+        expect(woodenHorsePromptPlayer).toBe('1');
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'p0-minion')?.tempPowerModifier).toBe(2);
+        expect(resolved.finalState.core.bases[0].minions.find(minion => minion.uid === 'p1-minion')?.tempPowerModifier ?? 0).toBe(0);
     });
 });

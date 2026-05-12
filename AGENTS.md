@@ -114,6 +114,8 @@ Keep this managed block so 'openspec update' can refresh the instructions.
 - `docs/ai-rules/animation-effects.md` — 动画、特效、粒子效果时必读。
 - `docs/ai-rules/asset-pipeline.md` — 图片或音频资源引用时必读。
 - `docs/ai-rules/data-entry.md` — 按图片/规则书/Wiki/截图录入业务数据时必读。
+  - **图片优先于 Wiki（强制）**：凡清晰图片、截图或扫描件能覆盖当前字段，图片就是当前字段主真相源；Wiki 只能作为对照源。只有用户故事/需求单/当轮用户明确说明要偏离图片时，才允许覆盖图片口径，且必须留档写明覆盖原因、影响范围和验收标准。
+- `docs/user-stories/README.md` — 用户在对话中明确提出、会影响规则裁定/实现口径/验收方式/长期流程的需求留档入口。项目级需求放 `docs/user-stories/project/`，游戏级需求放 `docs/user-stories/<gameId>/`；凡允许偏离图片、规则书或既有实现的用户故事，必须在这里留档。
 - `docs/audio/add-audio.md` — 导入新音效素材时必读；配套参考 `docs/tools.md`、`docs/audio/audio-usage.md`、`docs/audio/audio-catalog.md`。
 - `docs/ai-rules/engine-systems.md` — 引擎系统、框架层、游戏 `move/command` 时必读。
 - `docs/ai-rules/undo-auto-advance.md` — 排查撤回后自动推进问题时必读；引擎层已统一处理，游戏层通常无需额外代码。
@@ -282,6 +284,8 @@ Keep this managed block so 'openspec update' can refresh the instructions.
   - **本地反馈**：默认指**本地 Docker 数据库**中的反馈记录（例如本机容器内的 Mongo/服务库）。当用户说“看本地反馈”“查本地反馈”时，默认先去本地 Docker 库查，不得先拿 `temp/feedback-closeout/**`、`evidence/**`、导出的 `json/md` 当作“本地反馈真相源”。
   - **线上反馈**：指真实线上反馈源（线上接口、生产库、受控生产导出）。只有用户明确要看线上、或当前任务本身就是线上 closeout / 回写状态时，才按线上口径处理。
   - **反馈记录文档**：指仓库里的反馈导出、状态板、诊断包、证据文档，例如 `temp/feedback-closeout/**`、`temp/feedback-online/**`、`evidence/**`。这些文档默认只用于**辅助定位、历史交叉核对、证据留档**，不是“本地反馈”本身，也不是线上真实源。
+- **线上/本地反馈源硬隔离（强制）**：用户说“线上反馈 / 生产反馈 / 线上现在 / 线上关闭列表 / 线上 closeout”时，只允许查询线上接口、生产库、生产容器 Mongo 或受控生产导出；**禁止**查询本地 Mongo、本地 Docker、本地 `.env` fallback、历史导出文档后把结果当线上结论。用户说“本地反馈 / 本机反馈 / 本地库”时，只允许查询本地 Docker/本机服务库；**禁止**默认 SSH 到生产或读取生产库。若确需交叉核对，必须先在回复里明说“以下是对照源，不是本轮真相源”，并在结论中分别标注线上/本地结果，不能合并成一个状态。
+- **反馈查询必须显式证明数据源（强制）**：任何反馈查询命令或脚本在用于结论前，必须能说清并最好打印/记录：环境类别（线上/本地/文档）、连接入口（host/API/容器名/数据库名）、collection 或接口路径、查询时间、反馈 ID 或 matchId。若脚本因 `.env` 缺失而回退到默认连接串，必须视为“来源未确认”，不得用于线上或本地结论；应改用明确连接入口重新查询。
 - **反馈排查前先报来源（强制）**：开始查反馈前，必须先在回复里明确写出本轮依据的来源类别（本地 Docker 库 / 线上反馈源 / 反馈记录文档）。如果用户说的是“本地反馈”，但当前只看了文档或导出包，必须先承认来源不对并切回本地库，不能继续沿错误口径得出结论。
 - **反馈记录文档不得冒充数据库现状（强制）**：`status-board.json`、`summary.json`、诊断包 `*.md`、证据文档 `evidence/*.md` 可以记录“曾经怎样处理过”，但不能单独证明“本地库当前如此”或“线上当前如此”。凡是要回答“本地反馈里是什么”“线上现在是什么状态”，必须回到对应数据库/API/真实源重新核实。
 - **反馈收口证据先于状态（强制）**：`resolved` 必须附至少一条验证记录与证据路径，`closed` 必须写明关闭依据（如重复、误报、建议、已失效）；没有依据不得只改状态不留痕。

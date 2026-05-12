@@ -122,6 +122,7 @@
     "assetslicer": "素材切片机",
     "audiobrowser": "音效浏览器",
     "cardia": "卡迪亚",
+    "qidahen": "七大恨",
     "tictactoe": "井字棋",
     "dicethrone": "王权骰铸",
     "fxpreview": "特效预览",
@@ -134,6 +135,11 @@
     "matchTitle": "{{game}} - 对战"
   },
   "games": {
+    "qidahen": {
+      "title": "七大恨",
+      "description": "17 世纪东北亚三势力中重策略游戏。围绕行动轮盘、手牌资源、地图区域控制、部队木块与多阶段战斗展开。",
+      "players": "3人"
+    },
     "summonerwars": {
       "title": "召唤师战争",
       "description": "召唤师战争是一款快速紧凑的2人游戏。玩家扮演召唤者，通过控制神秘召唤石力量来领导他们的种族征服Itharia这个饱受战争创伤的星球。",

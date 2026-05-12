@@ -95,7 +95,7 @@
     "burn": {
       "name": "Burn",
       "description": [
-        "During Upkeep, take undefendable damage equal to the number of stacks, then remove 1 stack"
+        "Persistent. Does not stack. During Upkeep, take 2 damage."
       ]
     },
     "stun": {

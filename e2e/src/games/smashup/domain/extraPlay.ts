@@ -27,6 +27,7 @@ import {
     actionLikeNeedsPlayMinion,
     isCardActionLike,
     isCardMinionLike,
+    isSameNameDefId,
 } from './utils';
 
 type ImmediateExtraLimitPayload = LimitModifiedEvent['payload'] & { playTiming: 'immediate' };
@@ -41,6 +42,20 @@ type ImmediateBaseChoice = { baseIndex: number };
 type ImmediateMinionTargetChoice = { baseIndex: number; minionUid: string };
 
 let immediateExtraPromptCounter = 0;
+
+function matchesImmediateExtraMinionConstraint(
+    defId: string,
+    power: number,
+    extra: ImmediateExtraMinionPayload,
+): boolean {
+    if (extra.sameNameOnly && extra.sameNameDefId && !isSameNameDefId(defId, extra.sameNameDefId)) {
+        return false;
+    }
+    if (extra.powerMax !== undefined && power > extra.powerMax) {
+        return false;
+    }
+    return true;
+}
 
 function buildValidationState(
     state: MatchState<SmashUpCore>,
@@ -82,6 +97,8 @@ function buildImmediateExtraMinionCardOptions(
     const handOptions = player.hand
         .filter(card => isCardMinionLike(card))
         .flatMap((card, index) => {
+            const power = getMinionLikePower(card.defId) ?? 0;
+            if (!matchesImmediateExtraMinionConstraint(card.defId, power, extra)) return [];
             const validBaseIndices = state.core.bases
                 .map((_, baseIndex) => baseIndex)
                 .filter(baseIndex => validate(validationState, {
@@ -93,7 +110,6 @@ function buildImmediateExtraMinionCardOptions(
             if (validBaseIndices.length === 0) return [];
 
             const def = getCardDef(card.defId);
-            const power = getMinionLikePower(card.defId) ?? 0;
             return [{
                 id: `card-${index}`,
                 label: `${def?.name ?? card.defId} (力量 ${power})`,
@@ -105,6 +121,8 @@ function buildImmediateExtraMinionCardOptions(
 
     const titanOptions = getSetAsideTitansPlayableAs(state.core, extra.playerId, 'minion')
         .flatMap((titan, index) => {
+            const power = getMinionLikePower(titan.defId) ?? 0;
+            if (!matchesImmediateExtraMinionConstraint(titan.defId, power, extra)) return [];
             const validBaseIndices = state.core.bases
                 .map((_, baseIndex) => baseIndex)
                 .filter(baseIndex => validate(validationState, {
@@ -141,6 +159,7 @@ function buildImmediateExtraMinionBaseOptions(
     if ('titanUid' in choice) {
         const candidates = state.core.bases
             .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}` }))
+            .filter(candidate => extra.restrictToBase === undefined || candidate.baseIndex === extra.restrictToBase)
             .filter(candidate => validate(validationState, {
                 type: SU_COMMANDS.ACTIVATE_SPECIAL,
                 playerId: extra.playerId,
@@ -152,6 +171,7 @@ function buildImmediateExtraMinionBaseOptions(
 
     const candidates = state.core.bases
         .map((base, baseIndex) => ({ baseIndex, label: getBaseDef(base.defId)?.name ?? `基地 ${baseIndex + 1}` }))
+        .filter(candidate => extra.restrictToBase === undefined || candidate.baseIndex === extra.restrictToBase)
         .filter(candidate => validate(validationState, {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: extra.playerId,

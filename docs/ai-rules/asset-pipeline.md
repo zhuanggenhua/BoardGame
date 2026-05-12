@@ -223,12 +223,20 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 4. **上传失败必须显式告知用户**：如果因为 `.env` / `.env.example` 缺失、权限不足、脚本报错、网络失败或用户明确要求暂不上传而没有完成上传，最终汇报必须明确写出“未上传资源列表 + 原因 + 当前运行态风险”，禁止省略。
 5. **该规则不分游戏**：`dicethrone`、`smashup`、`summonerwars` 以及后续新游戏都按同一口径执行。
 
+### assets-manifest 生成模式（强制）
+
+1. **默认是增量合并，不要求本地全量资源镜像**：`npm run assets:manifest` 会读取现有 `assets-manifest.json`，只更新/新增本地存在的资源条目，并保留 manifest 中已有但本地缺失的旧条目。禁止把“本地没下载某张 R2 图”解释成“这张图应该从 manifest 删除”。
+2. **默认校验也是增量校验**：`npm run assets:validate` 只校验“manifest 已登记且本地也存在”的资源是否一致；manifest 中已有但本地缺失的远端资源条目允许保留，本地存在但未登记的其他任务资源/目录也不阻断。
+3. **全量重建必须显式使用 full 模式**：只有确认当前工作树已经下载完整资源镜像时，才允许执行 `npm run assets:manifest:full` 或 `npm run assets:validate:full`。full 模式会把 manifest 当成本地目录快照处理，本地缺失的条目会被删除/判错。
+4. **运行时索引必须吃 manifest**：构建/开发注入的语言化图片索引必须同时读取本地文件与 `assets-manifest.json`；本地缺图但 manifest 已登记的远端资源应进入候选链，并在本地 `/assets` 不可用时自动回退官方 R2。
+5. **资源交付仍必须远端回查**：增量 manifest 只解决协作者不必下载全量资源的问题，不替代 R2/CDN 上传和 200/hash 回查。
+
 ### 故障排查
 
 1. **先查对应任务 worktree，不查错工作区**：如果问题来自某个任务分支 / 独立 `git worktree`，必须先到该 worktree 下核对 `public/assets/`、`assets-manifest.json` 与相关代码引用，禁止只在当前根工作区下判断“文件是否存在”。
 2. **先核对运行时真实请求路径**：图片运行时会自动补 `i18n/<locale>/` 与 `compressed/`，排查 404 时必须以最终请求 URL 为准，而不是只看源码里的相对路径。
 3. **裁切图也必须满足 `compressed/` 约定**：凡是运行时通过 `OptimizedImage` / `CardPreview` / `getOptimizedImageUrls()` 加载的裁切图，实际可访问文件必须位于对应目录的 `compressed/` 子目录；仅有 `crops/foo.webp` 而没有 `crops/compressed/foo.webp`，视为资源不完整。
-4. **上传前先重建清单**：资源目录有新增/移动后，先执行 `npm run assets:manifest` 或定向执行 `node scripts/assets/generate_asset_manifests.js --root public/assets/i18n/zh-CN --id <gameId>`，再上传到 R2。
+4. **上传前先重建清单**：资源目录有新增/移动后，先执行默认增量 `npm run assets:manifest`，再上传到 R2；只有完整资源维护任务才使用 full 模式。
 5. **上传脚本环境变量位置**：`scripts/assets/upload-to-r2.js` 会优先读取仓库根目录 `.env`；如果不存在 `.env`，会自动回退读取 `.env.example`。排查“为什么本机能传/不能传”时，必须先确认当前 worktree 根目录这两个文件的实际情况。
 6. **出现“多叠一层整图/四角异常”先查叠层来源（通用规则）**：优先用 DevTools 选中异常区域，检查上层元素是否存在整图覆盖；查看 **计算后** `opacity/visibility/filter/transform` 是否被脚本改写；必要时用 `elementsFromPoint()` 或逐层禁用 DOM 来定位真正的上层来源。该步骤必须在调整裁剪/圆角/纹理之前完成。
 

@@ -223,14 +223,14 @@ export const getBonusFaceLabel = (
 };
 
 const PORTRAIT_ATLAS = {
-    imageW: 3950,
-    imageH: 4096,
+    imageW: 3570,
+    imageH: 2589,
     deckX: 0,
     deckY: 0,
-    deckW: 3934,
-    deckH: 1054,
-    cols: 10,
-    rows: 2,
+    deckW: 3570,
+    deckH: 2589,
+    cols: 6,
+    rows: 3,
 };
 
 const PORTRAIT_CELL_W = PORTRAIT_ATLAS.deckW / PORTRAIT_ATLAS.cols;
@@ -241,20 +241,20 @@ const PORTRAIT_BG_SIZE = {
 };
 
 const CHARACTER_PORTRAIT_INDEX: Record<string, number> = {
-    huntress: 0,
-    gunslinger: 1,
-    treant: 2,
-    monk: 3,
-    moon_elf: 4,
-    paladin: 5,
-    pyromancer: 6,
-    vampire_lord: 11,
-    cursed_pirate: 8,
+    seraph: 0,
+    pyromancer: 1,
+    ninja: 2,
+    barbarian: 3,
+    vampire_lord: 4,
+    cursed_pirate: 5,
+    huntress: 6,
+    moon_elf: 7,
+    samurai: 8,
     shadow_thief: 9,
-    ninja: 10,
-    samurai: 7,
-    barbarian: 13,
-    seraph: 14,
+    paladin: 10,
+    gunslinger: 11,
+    treant: 13,
+    monk: 14,
 };
 
 const getPortraitAtlasPosition = (index: number) => {

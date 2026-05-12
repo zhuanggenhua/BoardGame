@@ -37,7 +37,7 @@ POD 提交（6ea1f9f）只应该添加种族（Property-based Testing），但�
        const opponentId = ctx.ctx.defenderId;
        events.push({
            type: 'STATUS_APPLIED',
-           payload: { targetId: opponentId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: (ctx.state.players[opponentId]?.statusEffects[STATUS_IDS.BURN] || 0) + 1, sourceAbilityId: ctx.sourceAbilityId },
+           payload: { targetId: opponentId, statusId: STATUS_IDS.BURN, stacks: 1, newTotal: getBurnNewTotal(ctx, opponentId), sourceAbilityId: ctx.sourceAbilityId },
            sourceCommandType: 'ABILITY_EFFECT',
            timestamp: ctx.timestamp + 0.05
        } as StatusAppliedEvent);

@@ -2,7 +2,7 @@
  * Token/状态效果 执行逻辑测试
  *
  * 覆盖：
- * - burn（燃烧）upkeep 伤害 + 层数递减
+ * - burn（燃烧）upkeep 固定伤害 + 不叠加
  * - poison（中毒）upkeep 伤害（持续效果，不自动移除层数）
  * - concussion（脑震荡）跳过收入阶段
  * - stun（眩晕）跳过进攻掷骰阶段
@@ -22,6 +22,7 @@ import {
     createRunner,
     createNoResponseSetupWithEmptyHand,
     cmd,
+    advanceTo,
 } from './test-utils';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
 import { RESOURCE_IDS } from '../domain/resources';
@@ -107,10 +108,31 @@ describe('燃烧 (Burn) upkeep 执行', () => {
         expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(1); // 持续效果，不移除
     });
 
-    it('3 层燃烧：upkeep 造成固定 2 点伤害，状态持续不移除', () => {
+    it('1 层燃烧：跨多个自己 upkeep 仍持续存在，不会自然消失', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
-            name: '3层燃烧upkeep',
+            name: '1层燃烧跨多轮upkeep持续',
+            commands: [
+                cmd('ADVANCE_PHASE', '0'), // player 1 第一次 upkeep
+                ...advanceTo('discard', '1'),
+                cmd('ADVANCE_PHASE', '1'), // player 0 upkeep
+                ...advanceTo('discard', '0'),
+                cmd('ADVANCE_PHASE', '0'), // player 1 第二次 upkeep
+            ],
+            setup: createSetupAtPlayer0Discard([
+                { playerId: '1', statusId: STATUS_IDS.BURN, stacks: 1 },
+            ]),
+        });
+
+        const core = result.finalState.core;
+        expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 4);
+        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(1);
+    });
+
+    it('历史脏数据中多层燃烧：upkeep 固定 2 点伤害，并归一为 1 个燃烧', () => {
+        const runner = createRunner(fixedRandom);
+        const result = runner.run({
+            name: '多层燃烧脏数据upkeep归一',
             commands: [
                 cmd('ADVANCE_PHASE', '0'),
             ],
@@ -120,7 +142,7 @@ describe('燃烧 (Burn) upkeep 执行', () => {
         });
         const core = result.finalState.core;
         expect(core.players['1'].resources[RESOURCE_IDS.HP]).toBe(INITIAL_HEALTH - 2); // 固定 2 点伤害
-        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(3); // 持续效果，不移除
+        expect(core.players['1'].statusEffects[STATUS_IDS.BURN] ?? 0).toBe(1);
     });
 });
 

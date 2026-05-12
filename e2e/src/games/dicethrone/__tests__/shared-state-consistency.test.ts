@@ -4,7 +4,7 @@
  * Task 10.3
  *
  * Property 9: 共享 Token 定义（击倒、闪避）在不同英雄间完全一致
- * Property 10: 燃烧/中毒 upkeep 处理正确（燃烧每层1伤害移除1层，中毒持续效果不移除层数）
+ * Property 10: 燃烧/中毒 upkeep 处理正确（燃烧不可叠加且固定2伤害，中毒持续效果不移除层数）
  */
 
 import { describe, it, expect } from 'vitest';
@@ -131,10 +131,10 @@ describe('燃烧 upkeep 处理正确性', () => {
         expect(result.assertionErrors).toEqual([]);
     });
 
-    it('3层燃烧：造成固定2点伤害，状态持续不移除', () => {
+    it('历史脏数据中多层燃烧：固定2点伤害，并归一为1个燃烧', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
-            name: '3层燃烧upkeep',
+            name: '多层燃烧脏数据upkeep归一',
             setup: (playerIds, random) => {
                 const state = createNoResponseSetupWithEmptyHand()(playerIds, random);
                 state.core.players['0'].statusEffects[STATUS_IDS.BURN] = 3;
@@ -142,7 +142,7 @@ describe('燃烧 upkeep 处理正确性', () => {
             },
             commands: advanceToPlayer0Upkeep(),
             expect: {
-                players: { '0': { hp: 48, statusEffects: { [STATUS_IDS.BURN]: 3 } } },
+                players: { '0': { hp: 48, statusEffects: { [STATUS_IDS.BURN]: 1 } } },
             },
         });
         expect(result.assertionErrors).toEqual([]);
@@ -186,13 +186,13 @@ describe('中毒 upkeep 处理正确性', () => {
 });
 
 describe('燃烧+中毒同时存在时 upkeep 处理', () => {
-    it('2层燃烧+1层中毒：总共造成3点伤害', () => {
+    it('1层燃烧+1层中毒：总共造成3点伤害', () => {
         const runner = createRunner(fixedRandom);
         const result = runner.run({
             name: '燃烧+中毒同时',
             setup: (playerIds, random) => {
                 const state = createNoResponseSetupWithEmptyHand()(playerIds, random);
-                state.core.players['0'].statusEffects[STATUS_IDS.BURN] = 2;
+                state.core.players['0'].statusEffects[STATUS_IDS.BURN] = 1;
                 state.core.players['0'].statusEffects[STATUS_IDS.POISON] = 1;
                 return state;
             },
@@ -201,8 +201,8 @@ describe('燃烧+中毒同时存在时 upkeep 处理', () => {
                 players: {
                     '0': {
                         hp: 47, // 燃烧 2 + 中毒 1 = 3 点伤害
-                        // 燃烧持续不变（2→2），毒液持续不变（1→1）
-                        statusEffects: { [STATUS_IDS.BURN]: 2, [STATUS_IDS.POISON]: 1 },
+                        // 燃烧持续不变（1→1），毒液持续不变（1→1）
+                        statusEffects: { [STATUS_IDS.BURN]: 1, [STATUS_IDS.POISON]: 1 },
                     },
                 },
             },

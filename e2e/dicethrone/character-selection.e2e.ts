@@ -439,6 +439,8 @@ test.describe('角色选择系统', () => {
         const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'character-selection.e2e', '树精和忍者应该能够选角并进入游戏');
         mkdirSync(evidenceDir, { recursive: true });
         const selectionEvidencePath = join(evidenceDir, 'treant-ninja-selection.png');
+        const treantCardEvidencePath = join(evidenceDir, 'treant-implementation-card.png');
+        const ninjaCardEvidencePath = join(evidenceDir, 'ninja-implementation-card.png');
         const gameplayEvidencePath = join(evidenceDir, 'treant-ninja-gameplay.png');
         const guestGameplayEvidencePath = join(evidenceDir, 'treant-ninja-guest-gameplay.png');
 
@@ -450,6 +452,8 @@ test.describe('角色选择系统', () => {
             await guestPage.click('[data-character-id="ninja"]');
             await expect(guestPage.locator('[data-character-id="ninja"]')).toContainText(/P2/i);
             await expect(guestPage.getByTestId('character-badge-ninja-implementation_in_progress')).toContainText('实施中');
+            await page.locator('[data-character-id="treant"]').screenshot({ path: treantCardEvidencePath });
+            await guestPage.locator('[data-character-id="ninja"]').screenshot({ path: ninjaCardEvidencePath });
             await page.screenshot({ path: selectionEvidencePath, fullPage: false });
             await page.screenshot({ path: testInfo.outputPath('treant-ninja-selection.png'), fullPage: false });
 
