@@ -25,30 +25,25 @@ scene:
         width: 248
         height: 312
       detail_left_inner:
-        x: 160
-        y: 218
-        width: 244
-        height: 318
+        x: 143
+        y: 146
+        width: 268
+        height: 414
       detail_right_inner:
-        x: 489
-        y: 218
-        width: 244
-        height: 318
+        x: 460
+        y: 146
+        width: 284
+        height: 414
       tab_lobby:
         x: 766
-        y: 223.5
+        y: 243.5
         width: 53.76
-        height: 72
+        height: 32
       tab_rooms:
         x: 766
-        y: 261.5
+        y: 281.5
         width: 53.76
-        height: 72
-      tab_changelog:
-        x: 766
-        y: 299.5
-        width: 53.76
-        height: 72
+        height: 32
       spread_body:
         x: 94
         y: 144
@@ -63,6 +58,12 @@ scene:
         type: slot
         zoneRef: overview_left_page
         slotId: overview_left_page
+        visibleIn:
+          - overview
+      - id: overview_spread_body
+        type: slot
+        zoneRef: spread_body
+        slotId: overview_spread_body
         visibleIn:
           - overview
       - id: overview_right_page
@@ -94,13 +95,6 @@ scene:
         type: button
         zoneRef: tab_rooms
         actionId: openRoomsTab
-        visibleIn:
-          - overview
-          - detail
-      - id: tab_button_changelog
-        type: button
-        zoneRef: tab_changelog
-        actionId: openChangelogTab
         visibleIn:
           - overview
           - detail

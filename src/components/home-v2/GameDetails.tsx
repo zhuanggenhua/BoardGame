@@ -18,16 +18,15 @@ import { getGuestName, getOrCreateGuestId, getOwnerKey, getOwnerType } from '../
 import { useLobbyMatchPresence } from '../../hooks/useLobbyMatchPresence';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
 import { PasswordField } from '../common/PasswordField';
-import { resolveGameDisplayName, resolveGameDescription } from '../lobby/gameDetailsContent';
-
-const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
-const HOME_V2_HOLDER_BG = `${HOME_V2_ASSET_ROOT}/holders/compressed/1.webp`;
+import { OptimizedImage } from '../common/media/OptimizedImage';
+import { resolveGameAuthorName, resolveGameDisplayName, resolveGameDescription } from '../lobby/gameDetailsContent';
 
 type HomeV2Translate = TFunction<['lobby', 'common']>;
 type GameConfigWithDraftMeta = GameConfig & {
     name?: string;
     description?: string;
 };
+type RoomFilterMode = 'all' | 'open' | 'locked' | 'full';
 
 const getDisplayName = (game: GameConfig, t: HomeV2Translate) => {
     const draftMeta = game as GameConfigWithDraftMeta;
@@ -62,6 +61,20 @@ function getDetailBadgeLabels(game: GameConfig, t: HomeV2Translate) {
     }
 
     return badgeLabels.filter(Boolean);
+}
+
+function getRecommendedPlayerCounts(game: GameConfig) {
+    const preferred = Array.isArray(game.bestPlayers) && game.bestPlayers.length > 0
+        ? game.bestPlayers
+        : Array.isArray(game.playerOptions)
+            ? game.playerOptions
+            : [];
+
+    return Array.from(new Set(
+        preferred
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value) && value > 0),
+    )).slice(0, 3);
 }
 
 const getDescription = (game: GameConfig, t: HomeV2Translate) => {
@@ -146,6 +159,7 @@ function getDedupedDescriptionExcerpt(description: string, duplicateAnchors: str
 function BookFrameButton({
     children,
     className,
+    labelClassName,
     size = 'regular',
     onClick,
     disabled = false,
@@ -153,21 +167,17 @@ function BookFrameButton({
 }: {
     children: React.ReactNode;
     className?: string;
+    labelClassName?: string;
     size?: 'regular' | 'compact' | 'tiny';
     onClick?: () => void;
     disabled?: boolean;
     testId?: string;
 }) {
     const sizeClassName = size === 'regular'
-        ? 'min-h-[38px] min-w-[116px] px-[20px] py-[10px] text-[clamp(11px,0.82vw,12px)]'
+        ? 'min-h-[42px] min-w-[132px] px-[22px] py-[11px] text-[clamp(12px,0.9vw,13px)]'
         : size === 'compact'
-            ? 'min-h-[30px] min-w-[92px] px-[13px] py-[6px] text-[clamp(9px,0.72vw,10px)]'
-            : 'min-h-[28px] min-w-[76px] px-[10px] py-[5px] text-[clamp(9px,0.7vw,10px)]';
-    const frameBorderWidth = size === 'tiny'
-        ? '7px 9px'
-        : size === 'compact'
-            ? '9px 12px'
-            : '11px 16px';
+            ? 'min-h-[34px] min-w-[102px] px-[14px] py-[7px] text-[clamp(10px,0.76vw,11px)]'
+            : 'min-h-[32px] min-w-[88px] px-[12px] py-[6px] text-[clamp(10px,0.72vw,10px)]';
 
     return (
         <button
@@ -175,22 +185,118 @@ function BookFrameButton({
             onClick={onClick}
             disabled={disabled}
             data-testid={testId}
-            className={`relative inline-flex items-center justify-center bg-transparent bg-center bg-no-repeat font-bold text-[#5d3923] transition-transform duration-200 hover:-translate-y-[1px] disabled:translate-y-0 ${sizeClassName} ${className ?? ''}`}
+            className={`relative inline-flex items-center justify-center rounded-[10px] border font-bold text-[#f4e0bc] transition-transform duration-200 hover:-translate-y-[1px] disabled:translate-y-0 ${sizeClassName} ${className ?? ''}`}
             style={{
-                borderStyle: 'solid',
-                borderWidth: frameBorderWidth,
-                borderImageSource: `url("${HOME_V2_HOLDER_BG}")`,
-                borderImageSlice: '38 38 38 38 fill',
-                borderImageRepeat: 'round',
+                borderColor: 'rgba(110,72,43,0.9)',
+                background: 'linear-gradient(180deg, rgba(113,76,47,0.96) 0%, rgba(83,53,32,0.98) 100%)',
+                boxShadow: 'inset 0 1px 0 rgba(255,238,212,0.18), 0 8px 18px rgba(69,43,24,0.16)',
                 opacity: disabled ? 0.65 : 1,
                 pointerEvents: disabled ? 'none' : 'auto',
             }}
         >
-            <span className="relative z-10 [text-shadow:0_1px_0_rgba(255,249,235,0.75)]">
+            <span className={`relative z-10 [text-shadow:0_1px_0_rgba(52,31,18,0.72)] ${labelClassName ?? ''}`}>
                 {children}
             </span>
         </button>
     );
+}
+
+function DetailGameThumbnail({ game, title }: { game: GameConfig; title: string }) {
+    const [imgFailed, setImgFailed] = React.useState(false);
+    const manifestThumbnail = React.useMemo(() => {
+        if (!React.isValidElement(game.thumbnail)) {
+            return game.thumbnail;
+        }
+        return React.cloneElement(game.thumbnail);
+    }, [game.thumbnail]);
+
+    return (
+        <div className="relative h-full w-full overflow-hidden rounded-[14px] border border-[#8f6642]/24 bg-[linear-gradient(180deg,_rgba(40,25,18,0.94)_0%,_rgba(20,14,11,0.96)_100%)] shadow-[0_14px_28px_rgba(63,38,20,0.12)]">
+            {game.thumbnailPath && !imgFailed ? (
+                <OptimizedImage
+                    src={game.thumbnailPath}
+                    alt={title}
+                    className="absolute inset-[6%] h-[88%] w-[88%] object-contain"
+                    onError={() => setImgFailed(true)}
+                />
+            ) : manifestThumbnail ? (
+                <div className="absolute inset-[6%] flex items-center justify-center overflow-hidden rounded-[10px]">
+                    <div className="h-full w-full [&>*]:h-full [&>*]:w-full [&>*]:object-contain">
+                        {manifestThumbnail}
+                    </div>
+                </div>
+            ) : (
+                <div className="flex h-full w-full items-center justify-center text-[#f2d19a]">
+                    <span className="text-[clamp(24px,1.6vw,32px)] font-semibold leading-none">
+                        {game.icon || '·'}
+                    </span>
+                </div>
+            )}
+            <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(255,255,255,0.08)_0%,_rgba(255,255,255,0)_34%,_rgba(0,0,0,0.18)_100%)]" />
+        </div>
+    );
+}
+
+function getRoomStateSummary(
+    room: {
+        isLocked?: boolean;
+        totalSeats?: number;
+        players: Array<{ name?: string }>;
+    },
+    t: HomeV2Translate,
+) {
+    const playerCount = room.players.filter((player) => Boolean(player.name)).length;
+    const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
+    const isFull = totalSeats > 0 && playerCount >= totalSeats;
+
+    if (room.isLocked) {
+        return { key: 'locked' as const, label: t('lobby:homeV2.lockedRoomLabel') };
+    }
+    if (isFull) {
+        return { key: 'full' as const, label: t('lobby:homeV2.detailFilters.full') };
+    }
+    return { key: 'open' as const, label: t('lobby:homeV2.detailFilters.open') };
+}
+
+function getRoomSearchHaystack(
+    room: {
+        roomName?: string;
+        matchID: string;
+        players: Array<{ name?: string }>;
+    },
+    fallbackTitle: string,
+) {
+    return [
+        fallbackTitle,
+        room.roomName ?? '',
+        room.matchID,
+        ...room.players.map((player) => player.name ?? ''),
+    ].join(' ').toLowerCase();
+}
+
+function getRoomHeaderMetrics(matches: Array<{
+    isLocked?: boolean;
+    totalSeats?: number;
+    players: Array<{ name?: string }>;
+}>) {
+    return matches.reduce((accumulator, room) => {
+        const playerCount = room.players.filter((player) => Boolean(player.name)).length;
+        const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
+        const isFull = totalSeats > 0 && playerCount >= totalSeats;
+
+        accumulator.players += playerCount;
+        if (room.isLocked) {
+            accumulator.locked += 1;
+        }
+        if (!isFull) {
+            accumulator.open += 1;
+        }
+        return accumulator;
+    }, {
+        players: 0,
+        locked: 0,
+        open: 0,
+    });
 }
 
 export interface LeftProps {
@@ -200,6 +306,7 @@ export interface LeftProps {
 
 export const Left = ({ game, onBack }: LeftProps) => {
     const { t } = useTranslation(['lobby', 'common']);
+    const navigate = useNavigate();
 
     if (!game) return null;
 
@@ -207,6 +314,9 @@ export const Left = ({ game, onBack }: LeftProps) => {
     const categoryLabel = getCategoryLabel(game, t);
     const playerLabel = getPlayerLabel(game, t);
     const detailBadges = getDetailBadgeLabels(game, t);
+    const recommendedPlayerCounts = getRecommendedPlayerCounts(game);
+    const hasRealAuthorName = Boolean(game.authorName?.trim());
+    const gameAuthorName = resolveGameAuthorName(game);
     const description = getDescription(game, t).trim();
     const descriptionExcerpt = getDedupedDescriptionExcerpt(description, [
         displayName,
@@ -221,62 +331,93 @@ export const Left = ({ game, onBack }: LeftProps) => {
     const leadParagraph = editorialParagraphs[0] || descriptionExcerpt;
     const secondaryParagraph = editorialParagraphs[1] || '';
 
+    const handleTutorial = () => {
+        navigate(`/play/${game.id}/tutorial`);
+    };
+
     return (
-        <div className="pointer-events-auto flex h-full w-full min-h-0 flex-col gap-[4.2%] text-[#5b3822]">
-            <div className="flex items-start justify-between gap-[10px]">
-                <BookFrameButton size="tiny" className="shrink-0" onClick={onBack}>
+        <div className="pointer-events-auto flex h-full w-full min-h-0 flex-col text-[#5b3822]">
+            <div className="flex items-start justify-between gap-[10px] pb-[2.2%]">
+                <BookFrameButton size="tiny" className="shrink-0 !rounded-full px-[14px]" onClick={onBack}>
                     ← {t('lobby:actions.backToDirectory', '返回目录')}
                 </BookFrameButton>
             </div>
 
-            <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto pr-[2.2%]">
-                <div className="max-w-[94%] border-b border-[rgba(138,100,68,0.24)] pb-[3.6%]">
-                    <div className="mb-[1.6%] text-[clamp(9px,0.74vw,11px)] font-semibold uppercase tracking-[0.24em] text-[#8b694b]">
-                        {categoryLabel}
+            <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto pr-[1.2%]">
+                <div className="mx-auto w-full max-w-[94%]">
+                    <div className="mx-auto h-[clamp(138px,10.8vw,170px)] w-[clamp(138px,10.8vw,170px)]">
+                        <DetailGameThumbnail game={game} title={displayName} />
                     </div>
-                    <h2 className="text-[clamp(24px,2.1vw,30px)] font-bold leading-[1.02] tracking-[0.01em] text-[#56321f] [text-wrap:balance]">
-                        {displayName}
-                    </h2>
-                    <div className="mt-[2.8%] flex flex-wrap gap-[5px] text-[#6e4a32]">
-                        {detailBadges.map((badgeLabel, index) => (
-                            <span
-                                key={`${badgeLabel}-${index}`}
-                                data-testid="home-v2-detail-meta-tag"
-                                className="inline-flex items-center whitespace-nowrap rounded-full border border-[#c3a07a]/46 bg-[rgba(244,230,206,0.36)] px-[7px] py-[2px] text-[clamp(7px,0.56vw,8px)] font-semibold leading-none"
-                            >
-                                {badgeLabel}
-                            </span>
-                        ))}
+                    <div className="mt-[3.6%] border-b border-[rgba(138,100,68,0.18)] pb-[3.6%] text-center">
+                        <div className="mb-[1.8%] text-[clamp(10px,0.78vw,11px)] font-semibold uppercase tracking-[0.24em] text-[#8b694b]">
+                            {categoryLabel}
+                        </div>
+                        <h2 className="text-[clamp(31px,2.36vw,37px)] font-bold leading-[1.04] tracking-[0.01em] text-[#56321f] [text-wrap:balance]">
+                            {displayName}
+                        </h2>
+                        <div className="mt-[2.8%] flex flex-wrap justify-center gap-[5px] text-[#6e4a32]">
+                            {detailBadges.map((badgeLabel, index) => (
+                                <span
+                                    key={`${badgeLabel}-${index}`}
+                                    data-testid="home-v2-detail-meta-tag"
+                                    className="inline-flex items-center whitespace-nowrap rounded-full border border-[#c3a07a]/40 bg-[rgba(244,230,206,0.26)] px-[8px] py-[2px] text-[clamp(7px,0.58vw,8px)] font-semibold leading-none"
+                                >
+                                    {badgeLabel}
+                                </span>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
                 {leadParagraph ? (
-                    <div className="max-w-[94%] pt-[4.1%] text-[#6d4b33]">
-                        <p className="text-[clamp(11px,0.94vw,13px)] leading-[1.88] indent-[1.8em]">
+                    <div className="mx-auto mt-[3.6%] max-w-[84%] text-[#6d4b33]">
+                        <p className="text-center text-[clamp(11px,0.9vw,13px)] leading-[1.74] text-[#6d4b33]">
                             {leadParagraph}
                         </p>
                         {secondaryParagraph ? (
-                            <p className="mt-[3.4%] text-[clamp(10px,0.88vw,12px)] leading-[1.8] text-[#7a5a41] indent-[1.8em]">
+                            <p className="mt-[2.8%] text-center text-[clamp(10px,0.8vw,12px)] leading-[1.7] text-[#7a5a41]">
                                 {secondaryParagraph}
                             </p>
                         ) : null}
                     </div>
                 ) : null}
 
-                <div className="mt-[5.2%] max-w-[94%] rounded-[12px] border border-[rgba(146,103,67,0.2)] bg-[rgba(247,238,220,0.28)] px-[4.6%] py-[4.2%]">
-                    <div className="text-[clamp(9px,0.72vw,10px)] font-semibold uppercase tracking-[0.18em] text-[#8b694b]">
-                        {t('lobby:homeV2.roomLedgerTitle')}
+                <div className="mx-auto mt-[4.4%] max-w-[95%]">
+                    <div className="flex items-center justify-center gap-[10px]">
+                        {recommendedPlayerCounts.length > 0 ? recommendedPlayerCounts.map((count) => (
+                            <div
+                                key={`recommended-player-${count}`}
+                                className="flex h-[40px] min-w-[40px] items-center justify-center rounded-[10px] border border-[#8b6544]/28 bg-[linear-gradient(180deg,_rgba(102,67,41,0.96)_0%,_rgba(75,49,30,0.98)_100%)] px-[12px] text-[clamp(15px,1.22vw,18px)] font-bold text-[#f6e3c0] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]"
+                            >
+                                {count}
+                            </div>
+                        )) : (
+                            <div className="rounded-[10px] border border-[rgba(146,103,67,0.2)] bg-[rgba(247,238,220,0.28)] px-[14px] py-[10px] text-[clamp(11px,0.92vw,13px)] font-semibold text-[#5b3822]">
+                                {playerLabel}
+                            </div>
+                        )}
                     </div>
-                    <div className="mt-[2.2%] grid grid-cols-2 gap-x-[8px] gap-y-[5px] text-[clamp(10px,0.8vw,11px)] leading-[1.45] text-[#6b4831]">
-                        <div>
-                            <span className="text-[#8b694b]">{t('lobby:homeV2.details.defaultCategory')}：</span>
-                            <span>{categoryLabel}</span>
-                        </div>
-                        <div>
-                            <span className="text-[#8b694b]">{t('common:game_details.people')}：</span>
-                            <span>{playerLabel}</span>
-                        </div>
+                    <div className="mt-[10px] text-center text-[clamp(8px,0.62vw,9px)] font-semibold uppercase tracking-[0.18em] text-[#8b694b]">
+                        {t('common:game_details.recommended_players')}
                     </div>
+                </div>
+
+                <div className="mx-auto mt-[3.8%] flex max-w-[82%] flex-col gap-[8px]">
+                    <BookFrameButton
+                        className="w-full min-h-[50px] shadow-[0_8px_18px_rgba(88,56,34,0.16)]"
+                        labelClassName="text-[clamp(16px,1.22vw,20px)] tracking-[0.04em]"
+                        onClick={handleTutorial}
+                        testId="home-v2-tutorial-button"
+                    >
+                        {t('lobby:actions.tutorial')}
+                    </BookFrameButton>
+                    {hasRealAuthorName ? (
+                        <div className="flex items-center justify-center">
+                            <div className="inline-flex max-w-full items-center rounded-full border border-[#c6a580]/30 bg-[rgba(244,230,206,0.24)] px-[14px] py-[7px] text-[clamp(9px,0.72vw,10px)] font-medium text-[#7b5a40] shadow-[0_6px_14px_rgba(75,49,30,0.05)]">
+                                {t('lobby:authorInfo.button', { author: gameAuthorName })}
+                            </div>
+                        </div>
+                    ) : null}
                 </div>
             </div>
         </div>
@@ -301,11 +442,11 @@ export const Right = ({ game }: RightProps) => {
     const [showCreateRoomModal, setShowCreateRoomModal] = React.useState(false);
     const [pendingPasswordRoom, setPendingPasswordRoom] = React.useState<{ matchID: string } | null>(null);
     const [roomPasswordDraft, setRoomPasswordDraft] = React.useState('');
+    const [roomSearch, setRoomSearch] = React.useState('');
+    const [roomFilter, setRoomFilter] = React.useState<RoomFilterMode>('all');
     const [isLoading, setIsLoading] = React.useState(false);
     const [isPreparingCreateRoom, setIsPreparingCreateRoom] = React.useState(false);
     const [initialCreateRoomPreferences, setInitialCreateRoomPreferences] = React.useState<ReturnType<typeof readLocalMatchPreferences> | null>(null);
-
-    if (!game) return null;
 
     const roomPreviewItems = matches
         .slice()
@@ -324,12 +465,28 @@ export const Right = ({ game }: RightProps) => {
             return (right.updatedAt ?? 0) - (left.updatedAt ?? 0);
         });
 
+    const roomHeaderMetrics = React.useMemo(() => getRoomHeaderMetrics(roomPreviewItems), [roomPreviewItems]);
+    const normalizedRoomSearch = roomSearch.trim().toLowerCase();
+    const filteredRoomPreviewItems = React.useMemo(() => roomPreviewItems.filter((room) => {
+        const roomState = getRoomStateSummary(room, t);
+        if (roomFilter !== 'all' && roomState.key !== roomFilter) {
+            return false;
+        }
+
+        if (!normalizedRoomSearch) {
+            return true;
+        }
+
+        const fallbackTitle = getRoomTitle(room.matchID, t, room.roomName);
+        return getRoomSearchHaystack(room, fallbackTitle).includes(normalizedRoomSearch);
+    }), [normalizedRoomSearch, roomFilter, roomPreviewItems, t]);
+
     const guestId = user?.id ? undefined : getOrCreateGuestId();
     const ownerKey = getOwnerKey(user?.id, guestId);
     const guestName = getGuestName(t, guestId);
 
     const openCreateRoom = async () => {
-        if (isPreparingCreateRoom) return;
+        if (!game || isPreparingCreateRoom) return;
         setIsPreparingCreateRoom(true);
         try {
             const namespace = `game-${game.id}`;
@@ -344,10 +501,12 @@ export const Right = ({ game }: RightProps) => {
     };
 
     const navigateToMatch = (matchID: string, playerID: string, extra?: string) => {
+        if (!game) return;
         navigate(`/play/${game.id}/match/${matchID}?playerID=${playerID}${extra ?? ''}`);
     };
 
     const handleCreateRoom = async (config: RoomConfig) => {
+        if (!game) return;
         setIsLoading(true);
         try {
             writeLocalMatchPreferences(game, {
@@ -407,6 +566,7 @@ export const Right = ({ game }: RightProps) => {
     };
 
     const handleJoinRoom = async (matchID: string, password?: string) => {
+        if (!game) return;
         setIsLoading(true);
         try {
             const summary = matches.find((item) => item.matchID === matchID);
@@ -496,149 +656,253 @@ export const Right = ({ game }: RightProps) => {
         void handleJoinRoom(matchID, password);
     };
 
-    const hasVisibleRooms = roomPreviewItems.length > 0;
+    if (!game) return null;
+
+    const hasVisibleRooms = filteredRoomPreviewItems.length > 0;
+    const filterOptions: Array<{ id: RoomFilterMode; label: string }> = [
+        { id: 'all', label: t('lobby:homeV2.detailFilters.all') },
+        { id: 'open', label: t('lobby:homeV2.detailFilters.open') },
+        { id: 'locked', label: t('lobby:homeV2.detailFilters.locked') },
+        { id: 'full', label: t('lobby:homeV2.detailFilters.full') },
+    ];
+    const detailTabs = [
+        t('lobby:homeV2.details.onlineLobbyLabel'),
+        t('lobby:homeV2.detailTabs.updates', { defaultValue: '更新' }),
+        t('lobby:homeV2.detailTabs.reviews', { defaultValue: '评价' }),
+        t('lobby:homeV2.detailTabs.ranking', { defaultValue: '排行榜' }),
+    ];
 
     return (
         <div className="pointer-events-auto flex h-full w-full min-h-0 flex-col text-[#5b3822]">
-            <div className="mb-[2.4%] flex items-end justify-between gap-[10px]">
-                <div>
-                    <div className="text-[clamp(9px,0.72vw,10px)] font-semibold uppercase tracking-[0.22em] text-[#8b694b]">
-                        {t('lobby:homeV2.details.defaultCategory')}
-                    </div>
-                    <div className="mt-[1.2%] text-[clamp(20px,1.92vw,25px)] font-bold leading-[1.04] text-[#5b3822]">
-                        {t('lobby:homeV2.roomLedgerTitle')}
-                    </div>
+            <div className="flex items-end justify-between gap-[12px] border-b border-[rgba(163,105,63,0.18)] pb-[2.1%]">
+                <div className="flex min-w-0 flex-wrap items-end gap-[13px]">
+                    {detailTabs.map((tabLabel, index) => (
+                        <div
+                            key={`${tabLabel}-${index}`}
+                            className={index === 0
+                                ? 'relative pb-[4px] text-[clamp(17px,1.34vw,20px)] font-bold text-[#5b3822]'
+                                : 'pb-[4px] text-[clamp(11px,0.9vw,13px)] font-semibold text-[#8a6444]'
+                            }
+                        >
+                            {tabLabel}
+                            {index === 0 ? (
+                                <span
+                                    aria-hidden="true"
+                                    className="absolute bottom-0 left-0 h-px w-full bg-[linear-gradient(90deg,rgba(122,90,55,0)_0%,rgba(122,90,55,0.95)_14%,rgba(122,90,55,0.95)_86%,rgba(122,90,55,0)_100%)]"
+                                />
+                            ) : null}
+                        </div>
+                    ))}
+                </div>
+                <BookFrameButton
+                    className="shrink-0"
+                    size="compact"
+                    disabled={isLoading || isPreparingCreateRoom}
+                    onClick={() => void openCreateRoom()}
+                    testId="home-v2-create-room-button"
+                >
+                    {t('lobby:actions.createRoom', '创建房间')}
+                </BookFrameButton>
+            </div>
+
+            <div className="mt-[2.4%] flex items-center gap-[10px]">
+                <label className="relative min-w-0 flex-1">
+                    <input
+                        type="text"
+                        value={roomSearch}
+                        onChange={(event) => setRoomSearch(event.target.value)}
+                        placeholder={t('lobby:homeV2.detailSearchPlaceholder')}
+                        className="h-[34px] w-full rounded-[9px] border border-[#b18962]/28 bg-[rgba(247,238,220,0.34)] px-[13px] pr-[34px] text-[clamp(11px,0.84vw,12px)] text-[#5f3b25] outline-none transition-colors placeholder:text-[#9a7c5d] focus:border-[#8a6444]"
+                    />
+                    <span className="pointer-events-none absolute right-[11px] top-1/2 -translate-y-1/2 text-[14px] text-[#896240]">
+                        ⌕
+                    </span>
+                </label>
+            </div>
+
+            <div className="mt-[1.8%] flex items-center justify-between gap-[12px]">
+                <div className="flex flex-wrap items-center gap-[6px]">
+                    {filterOptions.map((option) => {
+                        const active = roomFilter === option.id;
+                        return (
+                            <button
+                                key={option.id}
+                                type="button"
+                                className={`rounded-full border px-[8px] py-[2px] text-[clamp(8px,0.64vw,9px)] font-semibold transition-colors ${
+                                    active
+                                        ? 'border-[#8f6642]/45 bg-[rgba(117,79,49,0.08)] text-[#5f3b25]'
+                                        : 'border-[#c7ab84]/26 bg-[rgba(247,238,220,0.16)] text-[#8a6444]'
+                                }`}
+                                onClick={() => setRoomFilter(option.id)}
+                            >
+                                {option.label}
+                            </button>
+                        );
+                    })}
                 </div>
                 {hasSnapshot ? (
-                    <div className="shrink-0 text-[clamp(11px,0.86vw,13px)] font-medium text-[#8a6444]">
-                        {t('lobby:homeV2.roomCount', { count: matches.length })}
+                    <div className="shrink-0 text-[clamp(10px,0.78vw,11px)] font-medium text-[#8a6444]">
+                        {t('lobby:homeV2.roomCount', { count: roomPreviewItems.length })}
                     </div>
                 ) : null}
             </div>
 
-            <div className="mb-[2.4%] h-px w-full bg-[rgba(163,105,63,0.28)]" />
+            <div className="mt-[2.2%] flex min-h-0 flex-1 flex-col px-[1%]">
+                <div className="grid grid-cols-[minmax(0,2.1fr)_56px_62px_74px] items-center gap-[10px] border-b border-[rgba(163,105,63,0.18)] pb-[1.8%] text-[clamp(8px,0.66vw,9px)] font-semibold uppercase tracking-[0.12em] text-[#8b694b]">
+                    <div>{t('lobby:homeV2.detailColumns.roomName')}</div>
+                    <div className="text-center">{t('lobby:homeV2.detailColumns.players')}</div>
+                    <div className="text-center">{t('lobby:homeV2.detailColumns.status')}</div>
+                    <div className="text-center">{t('lobby:homeV2.detailColumns.action')}</div>
+                </div>
 
-            <div className="min-h-0 flex-1 px-[2.2%] py-[1.2%]">
-                <div className="flex h-full min-h-0 flex-col">
-                    <div className="min-h-0 flex-1">
-                        {!hasSnapshot ? (
-                            <div className="h-full">
-                                <RoomLedgerSkeleton />
+                <div className="mt-[1.4%] min-h-0 flex-1">
+                    {!hasSnapshot ? (
+                        <RoomLedgerSkeleton />
+                    ) : !hasVisibleRooms ? (
+                        <div className="flex min-h-[164px] flex-col items-center justify-center px-[3%] text-center">
+                            <div className="text-[clamp(14px,1.1vw,16px)] font-semibold text-[#6f4b32]">
+                                {normalizedRoomSearch || roomFilter !== 'all'
+                                    ? t('lobby:homeV2.detailNoMatchTitle')
+                                    : t('lobby:homeV2.emptyRoomTitle')}
                             </div>
-                        ) : !hasVisibleRooms ? (
-                            <div className="flex h-full min-h-[0] flex-col justify-center px-[2%] text-center">
-                                <div className="text-[clamp(16px,1.3vw,18px)] font-semibold text-[#6f4b32]">
-                                    {t('lobby:homeV2.emptyRoomTitle')}
-                                </div>
+                            <div className="mt-[8px] text-[clamp(10px,0.8vw,11px)] leading-[1.6] text-[#8a6444]">
+                                {normalizedRoomSearch || roomFilter !== 'all'
+                                    ? t('lobby:homeV2.detailNoMatchDescription')
+                                    : t('lobby:homeV2.emptyRoomDescription')}
                             </div>
-                        ) : (
-                            <div className="custom-scrollbar h-full overflow-y-auto pr-[0.4%]">
-                                <div className="space-y-[2.8%]">
-                                    {roomPreviewItems.map((room) => {
-                                        const playerCount = room.players.filter((player) => Boolean(player.name)).length;
-                                        const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
-                                        const isFull = totalSeats > 0 && playerCount >= totalSeats;
-                                        const actionLabel = room.isLocked
-                                            ? t('lobby:homeV2.lockedRoomLabel')
-                                            : isFull
-                                                ? t('lobby:actions.spectate')
-                                                : t('lobby:actions.join');
-                                        return (
-                                            <article
-                                                key={room.matchID}
-                                                className="py-[0.8%]"
+                        </div>
+                    ) : (
+                        <div className="custom-scrollbar h-full overflow-y-auto pr-[2px]">
+                            <div className="space-y-[6px]">
+                                {filteredRoomPreviewItems.map((room) => {
+                                    const playerCount = room.players.filter((player) => Boolean(player.name)).length;
+                                    const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
+                                    const roomState = getRoomStateSummary(room, t);
+                                    const actionLabel = roomState.key === 'locked'
+                                        ? t('lobby:homeV2.lockedRoomLabel')
+                                        : roomState.key === 'full'
+                                            ? t('lobby:actions.spectate')
+                                            : t('lobby:actions.join');
+
+                                    return (
+                                        <article
+                                            key={room.matchID}
+                                            className="border-b border-[rgba(163,105,63,0.1)] pb-[3px] last:border-b-0 last:pb-0"
+                                        >
+                                            <button
+                                                type="button"
+                                                className="group grid w-full grid-cols-[minmax(0,2.1fr)_56px_62px_74px] items-center gap-[10px] rounded-[10px] px-[2px] py-[6px] text-left transition-colors duration-200 hover:bg-[rgba(127,88,56,0.05)]"
+                                                disabled={isLoading}
+                                                onClick={() => void handleJoinRoom(room.matchID)}
                                             >
-                                                <button
-                                                    type="button"
-                                                    className="relative block w-full rounded-[10px] px-[4.6%] py-[3.6%] text-left transition-transform duration-200 hover:-translate-y-[1px]"
-                                                    disabled={isLoading}
-                                                    onClick={() => void handleJoinRoom(room.matchID)}
-                                                    style={{
-                                                        borderStyle: 'solid',
-                                                        borderWidth: '10px 14px',
-                                                        borderImageSource: `url("${HOME_V2_HOLDER_BG}")`,
-                                                        borderImageSlice: '38 38 38 38 fill',
-                                                        borderImageRepeat: 'round',
-                                                    }}
-                                                >
-                                                    <div className="flex min-w-0 flex-col gap-[4px]">
-                                                        <div className="min-w-0 text-[clamp(11px,0.9vw,12px)] font-semibold leading-[1.28] text-[#603d27] [word-break:break-word]">
+                                                <div className="flex min-w-0 items-center gap-[8px]">
+                                                    <div className="h-[40px] w-[40px] shrink-0 rounded-[8px] border border-[#8f6642]/16 bg-[rgba(255,255,255,0.04)]">
+                                                        <DetailGameThumbnail game={game} title={getRoomTitle(room.matchID, t, room.roomName)} />
+                                                    </div>
+                                                    <div className="min-w-0">
+                                                        <div className="truncate text-[clamp(11px,0.88vw,12px)] font-semibold leading-[1.24] text-[#603d27]">
                                                             {getRoomTitle(room.matchID, t, room.roomName)}
                                                         </div>
-                                                        <div className="flex min-w-0 items-center justify-between gap-[8px]">
-                                                            <div className="min-w-0 flex-1 truncate text-[clamp(10px,0.78vw,11px)] leading-[1.4] text-[#7a5a41]">
-                                                                {getRoomSeatLine(room, t)}
-                                                            </div>
-                                                            <div data-testid="home-v2-room-action-tag" className="inline-flex shrink-0 items-center whitespace-nowrap rounded-full border border-[#b18359]/32 bg-transparent px-[4px] py-[1px] text-[7px] font-semibold tracking-[0.01em] text-[#6a442a]">
-                                                                {actionLabel}
-                                                            </div>
+                                                        <div className="mt-[1px] truncate text-[clamp(9px,0.72vw,10px)] leading-[1.35] text-[#7a5a41]">
+                                                            {getRoomSeatLine(room, t)}
                                                         </div>
                                                     </div>
-                                                </button>
-                                            </article>
-                                        );
-                                    })}
-                                </div>
+                                                </div>
+                                                <div className="text-center text-[clamp(9px,0.7vw,10px)] font-semibold text-[#67412a]">
+                                                    {playerCount}/{totalSeats || playerCount}
+                                                </div>
+                                                <div className="text-center">
+                                                    <span className={`inline-flex min-w-[42px] items-center justify-center rounded-full border px-[5px] py-[2px] text-[7px] font-semibold leading-none ${
+                                                        roomState.key === 'locked'
+                                                            ? 'border-[#9b774f]/30 bg-[rgba(167,132,90,0.1)] text-[#6f4b32]'
+                                                            : roomState.key === 'full'
+                                                                ? 'border-[#b88a68]/28 bg-[rgba(175,122,73,0.08)] text-[#845236]'
+                                                                : 'border-[#8a6b4f]/26 bg-[rgba(117,79,49,0.08)] text-[#5d3923]'
+                                                    }`}>
+                                                        {roomState.label}
+                                                    </span>
+                                                </div>
+                                                <div className="text-center">
+                                                    <span
+                                                        data-testid="home-v2-room-action-tag"
+                                                        className="inline-flex min-w-[56px] items-center justify-center rounded-[7px] border border-[#5f3d26]/18 bg-[linear-gradient(180deg,_rgba(112,76,48,0.92)_0%,_rgba(81,53,32,0.96)_100%)] px-[8px] py-[6px] text-[clamp(8px,0.64vw,9px)] font-semibold text-[#f4e2c2] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]"
+                                                    >
+                                                        {actionLabel}
+                                                    </span>
+                                                </div>
+                                            </button>
+                                        </article>
+                                    );
+                                })}
                             </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
+                </div>
 
-                    <div className="mt-[4.2%] border-t border-[rgba(163,105,63,0.18)] pt-[4.2%]">
-                        {pendingPasswordRoom ? (
-                            <div
-                                data-testid="home-v2-room-password-panel"
-                                className="mb-[4%] rounded-[10px] border border-[#9d724f]/28 px-[4.4%] py-[3.8%]"
-                            >
-                                <div className="text-[clamp(10px,0.76vw,11px)] font-semibold text-[#6e4a32]">
-                                    {t('lobby:password.modalTitle')}
-                                </div>
-                                <div className="mt-[2.4%]">
-                                    <PasswordField
-                                        data-testid="home-v2-room-password-input"
-                                        name="homeV2RoomPassword"
-                                        value={roomPasswordDraft}
-                                        onChange={(event) => setRoomPasswordDraft(event.target.value)}
-                                        placeholder={t('lobby:password.placeholder')}
-                                        autoComplete="new-password"
-                                        className="w-full rounded-[6px] border border-[#9d724f]/32 bg-transparent px-[10px] py-[8px] pr-[38px] text-[clamp(11px,0.9vw,13px)] text-[#5f3b25] placeholder:text-[clamp(10px,0.78vw,12px)] outline-none focus:border-[#8a6444]"
-                                        toggleButtonTestId="home-v2-room-password-toggle"
-                                        toggleButtonClassName="text-[#8a6444] hover:text-[#5f3b25]"
-                                    />
-                                </div>
-                                <div className="mt-[3%] flex items-center justify-end gap-[8px]">
-                                    <BookFrameButton
-                                        size="tiny"
-                                        onClick={() => {
-                                            setPendingPasswordRoom(null);
-                                            setRoomPasswordDraft('');
-                                        }}
-                                        testId="home-v2-room-password-cancel"
-                                    >
-                                        {t('common:button.cancel')}
-                                    </BookFrameButton>
-                                    <BookFrameButton
-                                        size="tiny"
-                                        onClick={() => handlePasswordConfirm(roomPasswordDraft.trim())}
-                                        disabled={!roomPasswordDraft.trim() || isLoading}
-                                        testId="home-v2-room-password-confirm"
-                                    >
-                                        {t('common:button.confirm')}
-                                    </BookFrameButton>
-                                </div>
-                            </div>
-                        ) : null}
+                {hasSnapshot ? (
+                    <div className="mt-[1.6%] flex items-center justify-between border-t border-[rgba(163,105,63,0.12)] pt-[1.6%] text-[clamp(8px,0.64vw,9px)] text-[#8b694b]">
+                        <div>{t('lobby:homeV2.waitingPlayers')}</div>
+                        <div>
+                            {t('lobby:homeV2.roomCount', { count: filteredRoomPreviewItems.length })}
+                            {' · '}
+                            {t('common:game_details.people')}: {roomHeaderMetrics.players}
+                        </div>
+                    </div>
+                ) : null}
+            </div>
+
+            <div className="mt-[3.4%] flex items-center justify-between gap-[10px] border-t border-[rgba(163,105,63,0.18)] pt-[3.2%] text-[clamp(9px,0.72vw,10px)] text-[#8a6444]">
+                <div>
+                    {t('lobby:homeV2.roomCount', { count: roomPreviewItems.length })} · {t('common:game_details.people')} {roomHeaderMetrics.players}
+                </div>
+                <div>
+                    {t('lobby:homeV2.detailOpenSummary', { open: roomHeaderMetrics.open, locked: roomHeaderMetrics.locked })}
+                </div>
+            </div>
+
+            {pendingPasswordRoom ? (
+                <div
+                    data-testid="home-v2-room-password-panel"
+                    className="mt-[3.2%] rounded-[10px] border border-[#9d724f]/28 px-[4.4%] py-[3.8%]"
+                >
+                    <div className="text-[clamp(10px,0.76vw,11px)] font-semibold text-[#6e4a32]">
+                        {t('lobby:password.modalTitle')}
+                    </div>
+                    <div className="mt-[2.4%]">
+                        <PasswordField
+                            data-testid="home-v2-room-password-input"
+                            name="homeV2RoomPassword"
+                            value={roomPasswordDraft}
+                            onChange={(event) => setRoomPasswordDraft(event.target.value)}
+                            placeholder={t('lobby:password.placeholder')}
+                            autoComplete="new-password"
+                            className="w-full rounded-[6px] border border-[#9d724f]/32 bg-transparent px-[10px] py-[8px] pr-[38px] text-[clamp(11px,0.9vw,13px)] text-[#5f3b25] placeholder:text-[clamp(10px,0.78vw,12px)] outline-none focus:border-[#8a6444]"
+                            toggleButtonTestId="home-v2-room-password-toggle"
+                            toggleButtonClassName="text-[#8a6444] hover:text-[#5f3b25]"
+                        />
+                    </div>
+                    <div className="mt-[3%] flex items-center justify-end gap-[8px]">
                         <BookFrameButton
-                            className="mx-auto w-full max-w-[178px] justify-center"
-                            size="compact"
-                            disabled={isLoading || isPreparingCreateRoom}
-                            onClick={() => void openCreateRoom()}
-                            testId="home-v2-create-room-button"
+                            size="tiny"
+                            onClick={() => {
+                                setPendingPasswordRoom(null);
+                                setRoomPasswordDraft('');
+                            }}
+                            testId="home-v2-room-password-cancel"
                         >
-                            {t('lobby:actions.createRoom', '创建房间')}
+                            {t('common:button.cancel')}
+                        </BookFrameButton>
+                        <BookFrameButton
+                            size="tiny"
+                            onClick={() => handlePasswordConfirm(roomPasswordDraft.trim())}
+                            disabled={!roomPasswordDraft.trim() || isLoading}
+                            testId="home-v2-room-password-confirm"
+                        >
+                            {t('common:button.confirm')}
                         </BookFrameButton>
                     </div>
                 </div>
-            </div>
+            ) : null}
             <CreateRoomModal
                 isOpen={showCreateRoomModal}
                 onClose={() => setShowCreateRoomModal(false)}

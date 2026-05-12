@@ -1,3 +1,147 @@
+## Addendum（2026-05-12）：为什么 turn.js 翻页中不能保留真实 UI
+
+- 当前不是“技术上完全不能把 DOM 放进 page”，而是这套 Home V2 业务 UI 不适合在翻页中作为 live DOM 保留。turn.js 会接管 page DOM，给 `.page-wrapper` 写入绝对定位、overflow、z-index、transform 和内部裁切；这会把原本按整本书舞台定位的目录/详情 UI 改投影到单页局部坐标系。
+- 即使冻结 React 状态也不解决，因为问题不是数据继续变化，而是 DOM 被插件重排和 3D/2D 变换后，业务 UI 的坐标系、滚动容器、按钮层、图片裁切和阴影都跟着页片透视移动。视觉结果会变成 UI 乱飞、镜像到纸背、被裁掉或同时露出两套页面。
+- 本轮保留的取舍是：翻页中间态只显示书壳 + turn.js 纸面材质；真实业务 UI 只在 overview/detail 稳态出现。这牺牲了“UI 贴在纸上翻”的细节，但避免了用户已经指出的“两本书”“两套 UI 同时显示”“书本消失”和“UI 乱飞”。
+
+## Addendum（2026-05-12）：序列帧方案作废，必须使用 turn.js 插件翻页
+
+- 用户明确指出“我让你用序列帧了吗”“不是让你用插件翻页吗”，所以 2026-05-11 的序列帧裁决是错误方向，不能继续当完成证据。
+- 当前正确裁决是：Home V2 翻页中间态必须由 turn.js 插件生成可见折页结构；`page-flip-left/right` 序列图不得再作为最终方案。
+- turn.js 默认 `turnPage` 使用 ease-out，导致按时间抓 25% 时视觉上已经接近翻完，只剩窄边，容易看成“两本书/残边”。本轮通过包裹 jQuery `animatef`，仅对 `turning` 动画补线性 easing，让 25 / 50 / 75 更接近插件视觉进度。
+- 翻页页内容也不能塞业务 UI：当前 turn.js page 使用翻页专用纸面 stage，真实目录/详情 UI 只在稳态恢复，避免把业务界面贴到翻动纸面上。
+- 最新六帧人工复看结论：正反向 25 / 50 / 75 都能看到 turn.js 的折页、页边和阴影；截图日志同时证明插件处于 `animating=true`，不再是序列帧或 CSS 纸片。
+- 后续用户指出“翻页的时候书本消失了”同样成立。根因是 flipping state 只渲染 turn.js 内页 union rect，没有保留完整书本壳。当前已在 turn.js flipbook 下方补目标方向的无业务 UI 书本壳，最新截图确认外层封边、书脊和底部书签在翻页中仍可见。
+
+## Addendum（2026-05-11）：CSS 纸片不达标，必须回到翻页序列帧（已被 2026-05-12 否定）
+
+- 用户指出“明显就不像翻页”是正确的：上一版虽然解决了“两套页面同时平铺”和“业务 UI 贴在纸上”的问题，但可见层本质仍是一块 CSS 纸片在透视/裁切，缺少真实页边、纸堆、阴影和跨书脊的连续动作。
+- 本轮裁决更新为：Home V2 翻页中间态不再接受 `PagePaperCover` 这类单平面 CSS 几何作为最终效果；应使用项目已有 `page-flip-left/right` 序列帧，或未来替换为同等语义的高分辨率序列素材。
+- 正向目录到详情使用 `page-flip-left`，反向详情到目录使用 `page-flip-right`，这与现有 UI scene / runtime 测试里的素材方向一致。
+- 序列帧第一次接入时出现“中间小书盖大书”，根因是素材内容区小于整张 webp 画布；最终通过覆盖层横纵向分开缩放，让翻页帧和当前书本底图回到同一视觉坐标系。
+- 最新六帧人工复看结论：正反向 25 / 50 / 75 都能看到真实页边和阴影推进，不再是平面滑片；但素材本身分辨率偏低，放大后有颗粒感，后续若继续追质感应换高分辨率素材。
+
+## Addendum（2026-05-10）：Home V2 “两边都显示”的根因与最终裁决
+
+- 用户指出“翻页怎么两边都显示了”是结构问题，不是纸张阴影问题。前一版的缺陷是把 source 静态页、target reveal 和额外纸片同时放进 flipping state，导致 25 / 50 / 75 多帧都像两套页面摊平后再盖一张纸。
+- 本轮正确裁决是：翻页态只保留两层语义：
+  1. **底层目标完整 spread**：正向为详情 spread，反向为目录 spread；
+  2. **顶层来源离场页片**：正向为目录页片离场，反向为详情页片离场。
+- `PagePaperCover` 现在不是固定矩形遮挡块，而是随 progress 生成弧形 polygon，并且可承载来源页内容；其可见宽度按 `1 - progress` 收缩，所以 25% / 50% / 75% 有明确连续变化。
+- 最新六帧人工复看结论：不再出现 source 与 target 两整套页面同时平铺；75% 时只剩来源页窄边，目标 spread 已成为主视觉。
+
+## Addendum（2026-05-03）：正向 50% 折页仍偏浅的直接原因
+- 当前 `page-flip-to-detail-50.png` 的缺口不再是“翻页层没有内容”，而是**纸面材质层仍然把源页内容冲淡了**：高光和纸色叠层减弱后有所改善，但正向页片仍没有反向那样扎实。
+- 这说明当前结构方向基本对：顶层折页已经遮住目标 UI，反向 50% 也能看到完整翻回目录；剩下是正向折页材质权重问题，不是页面归属或测试抓帧问题。
+
+## Addendum（2026-05-03）：Home V2 正向 50% 折页当前主要问题
+- 当前 `page-flip-to-detail-50.png` 的首要问题不是布局错位，而是**折起层内容感太弱**：纸张高光/泛白过重，导致翻起页片更像半透明纸片，而不像带着页面内容的真实书页。
+- 同一轮复看的 `page-flip-back-to-catalog-50.png` 相对更接近目标，说明当前几何/裁切大方向可用，主要缺口集中在正向折页层的贴图与材质权重，而不是 steady state 布局。
+- 因此下一刀不该再碰首页 steady state 或详情 steady state，而应继续只收 `FoldLinePageFlipStage.tsx`：减轻正向折页层泛白、增强页内容可见度、保留顶层遮挡关系。
+
+## Addendum（2026-05-02）：Home V2 方案 B 才真正解决“UI 在纸上面”的问题
+
+- 这轮最重要的判断修正是：**“50% 中间帧抓准了”不等于“翻页方向就对了”**。用户继续指出“UI 还在纸上面”是对的，说明上一轮仍然停在“证据口径修正”，没有真正修正可见翻页层语义。
+- 当前应把问题拆成两层：
+  1. **抓帧是否可信**：通过 `window.__BG_HOME_V2_E2E_HOLD_PROGRESS__` 已经解决；
+  2. **翻页层语义是否正确**：必须进一步把翻起层从 live UI 剥离，只剩纸张/阴影/高光。
+- 因此本轮 `FoldLinePageFlipStage.tsx` 的正确裁决不是继续调 curl 参数，而是：
+  - 底层保留真实页面 steady state；
+  - 翻页层只渲染纸张材质；
+  - 让“书页翻起”发生在 UI 上层，而不是让 UI 贴在翻页层里一起飞。
+- 最新人工复看的 4 张图说明：
+  - `page-flip-to-detail-50.png`：右页翻起层不再挂在线大厅房间列表；
+  - `page-flip-back-to-catalog-50.png`：左页翻起层不再挂目录项；
+  - `homepage-catalog.png`：召唤师战争等缩略图仍完整落在书页内，没有白边/黄边回退；
+  - `detail-entry.png`：详情 steady state 仍是实际可交互前端页，不是假页截图。
+- 所以这轮之后，Home V2 首页翻页链路的判断标准应更新为：
+  - 不只看“有没有 50%”；
+  - 还要看“50% 里翻的是不是纸，而不是 UI”。
+
+## Addendum（2026-05-01）：Home V2 翻页真正根因是 page ownership，不是 z-index
+
+- 用户最后一轮判断是对的：上一版真正的错不在“折角参数”本身，而在 **完整 detail UI 先画在底层，再额外挂一层 curl**。这样 25% 中间帧里，视觉上就会像“书页上方漂着一层 UI”，而不是“那张纸自己带着内容在翻”。
+- 这轮补查 turn.js 文档后，结论进一步坐实：官方 flipbook 结构本来就是 **每个 page element 里放自己的 HTML 内容**；翻页时动的是 page 自身，不是底层完整 spread + 上层贴片。
+- 因此当前正确裁决不是继续调 curl 参数，而是把 `FoldLinePageFlipStage` 的可见层重写成：
+  - `shell stage`（只保留书本壳）
+  - `static source/target pages`（只放当前静止页）
+  - `turning sheet front/back`（前面是源页，背面是目标页）
+- 新截图已证明：`page-flip-to-detail-25.png` 不再是一整本 detail 提前露出来再贴一个小角，而是源右页真的在翻、目标右页在底下被揭开。
+
+
+## Addendum（2026-04-30）：Home V2 折角语义修正
+
+- 用户指出得对：上一版虽然有角，也有翻页，但语义上仍是“整页翻 + 角标”，不是“折角带动翻页”。
+- 本轮已经把可见翻页层从“整页从侧边立起”改成“页角起卷”的局部 curl sheet；E2E 25% 中间帧里能直接看到右下角卷起，再露出目标页。
+- 当前这版依然不是 turn.js 原生那种完整 page curl 物理模型，但至少在用户可见语义上，已经从“整页翻”修正到“页角先翻”。
+
+## Addendum（2026-04-30）：Home V2 首页折角 + 翻页最终可见层裁决
+
+- 这轮真正定位到的根因不是“折角参数不对”，而是 **官方 turn.js overlay 直接常驻在这套书本素材上时，会把正文区渲染成中间小册子**；即使脚本接线成功，steady state 和中间帧截图也会明显偏离参考稿。
+- turn.js 接线里还踩到一个 React 集成问题：翻页容器被插件直接改写 DOM 后，下一次模式切换如果复用同一个节点，`turn.js` 会报 `The page 2 does not exist`。当前通过给 flipbook 容器加 mode/size key 重建节点，避免拿到被插件改坏的旧 DOM。
+- 因此本轮最终裁决不是“继续强行把 turn.js 常驻可见”，而是：
+  - **保留官方脚本接线**，作为兼容和后续继续研究的基础；
+  - **steady state 可见层改成前端折角样式**；
+  - **flipping state 可见层改成前端整页折页 sheet**；
+  - 这样才能同时满足“移动端横屏、内容在书里、不是假页面、看图能收口”。
+- 当前 2388x1080 复看结论：
+  - 首页/详情 steady state 都已摆脱 turn.js overlay 的中间小册子问题；
+  - 正反向翻页中间帧都已经有可见整页折起视觉，不再只有中间矩形块或空白壳。
+
+## Addendum（2026-04-30）：Home V2 翻页切到官方 turn.js 运行时
+
+- 用户最终口径已经固定为 `turnjs.com` / `turn.js` 插件路线，因此当前实际运行时不再依赖上一轮自制 `rotateY` 翻页实现；`src/components/home-v2/FoldLinePageFlipStage.tsx` 现在只是一个 React wrapper，内部在翻页态动态挂载官方 turn.js。
+- 直接使用 npm `turn.js` 包不够稳妥：官方站点实际提供的是 `turn.js 4.1.0` 脚本，而 npm 包来源和版本语义不够清晰；本轮最终把官方脚本落到 `public/vendor/turnjs/turn.min.js`，运行时按 `window.jQuery` 路线注入，避免再偏离 `turnjs.com`。
+- `jquery` 已固定到 `1.12.0`，并在加载官方脚本前显式挂到 `window.$ / window.jQuery`；这与官方站点“jQuery 插件初始化”的接线方式一致。
+- `HomeV2.tsx` 现已把首页与详情 steady state 统一到同一个 `bookStageLayout`；之前首页 / 详情舞台大小分叉的问题不再存在，书本整体占画面比例继续保持首页标准。
+- 这轮复跑截图说明：目录页与详情页 steady state 仍是当前真实前端 DOM；翻页中间帧已不再依赖旧 `page-flip-left/right` 序列资源，而是由官方 turn.js 驱动。
+
+## Addendum（2026-04-29）：Home V2 翻页中间帧截图补录
+- 现在缺口已经从“没有翻页证据”变成“翻页证据已齐，但资源风格还可继续收口”。
+- 本轮没有新造第二条 Playwright 测试，而是直接扩展现有 `homeV2Draft 查询参数会切到 V2 首页并可进入详情页`：
+  - 点击 `dicethrone` 后，在 `flippingToDetail` 动画进行中补录 `page-flip-to-detail-mid.png`
+  - 点击“返回目录”后，在 `flippingToOverview` 动画进行中补录 `page-flip-back-to-catalog-mid.png`
+  - 翻页结束回到目录 spread 后，再补 `catalog-return-after-flip.png`
+- 这样当前同一条链路的证据已经覆盖 5 个落点：
+  - `homepage-catalog`
+  - `page-flip-to-detail-mid`
+  - `detail-entry`
+  - `page-flip-back-to-catalog-mid`
+  - `catalog-return-after-flip`
+- 结论上，现在可以明确说：Home V2 的目录 -> 详情 -> 返回目录并不是跳切，而是有真实前端翻页过程，只是翻页中间帧仍沿用旧 `page-flip-left/right` 资产。
+
+## Addendum（2026-04-29）：Home V2 翻页中间帧去空白壳
+- 当前翻页链路的真实问题不是“动画有没有动”，而是 **翻到详情的中间帧目标页曾经是空白 detail 壳**：`FoldLinePageFlipStage` 已经接管了中间态，但 `HomeV2.tsx` 在 `flippingToDetail` 时仍只按 `selectedGameId` 渲染 detail 内容，导致 50% 翻页截图里右页只剩空白纸页。
+- 已修正为 staged detail game 逻辑：在 `flippingToDetail` 期间，detail 舞台优先消费刚点击的 pending game，而不是等动画结束后才第一次拿到目标游戏。
+- 最新 `page-flip-to-detail-50.png` 里，正在翻出的页已经带着王权骰铸的真实详情内容和右页大厅表格，不再是“翻到空白壳再瞬间填内容”。
+- `page-flip-back-to-catalog-50.png` 也已复看：返回目录的中间帧继续保持目录页作为目标页、详情页作为翻出页，说明当前已经具备“目录态 / 详情态 / 中间帧”三段分离，而不是继续共用一张静态壳。
+
+## Addendum（2026-04-29）：Home V2 详情页书本尺寸统一到首页标准
+- 本轮退步根因不在 detail 内容区，而在 `src/pages/HomeV2.tsx` 的舞台基线：首页 `overview` 已经按 `1672x941` fit，但详情 `detail` 仍沿用旧 `896x720`，所以 detail 看起来会比首页整本书更小一圈。
+- 这不是素材本身尺寸差异：当前 `overview-spread/1.png` 与 `book-idle/1.png` 都属于同一套首页标准书本资源，因此继续保留 `896x720` 只会制造错误缩放。
+- 已修正为统一基线：`HomeV2.tsx` 现在让首页与详情都共用 `1672x941` 的 stage width / height / aspect ratio / scale 基线，detail 不再单独按旧 artboard 缩小。
+- 本轮没有扩散去重排 detail 左右页内容区；`HOME_V2_DETAIL_LEFT_RECT / RIGHT_RECT` 保持不变，先只解决“整本书大小不一致”的问题。
+- 最新截图复看结论：
+  - 首页 `homepage-catalog.png` 仍保持原先居中与占画面比例，没有因为 detail 修正而回退；
+  - 详情 `detail-entry.png` 现在整本书的外轮廓占画面比例已和首页一致，不再明显小一圈，内容也仍完整留在书页内。
+
+## Addendum（2026-04-29）：Home V2 详情页参考稿收口（Dice Throne 真实链路）
+- 本轮把详情页演示目标从 `tictactoe` 切到 `dicethrone`，不是为了摆拍，而是因为 Dice Throne 的真实封面、标题、推荐人数和房间表更接近参考稿的视觉结构；这样能在不造假内容的前提下，把 detail 图做得更像参考页。
+- `src/components/home-v2/GameDetails.tsx` 左页已改成编辑式结构：封面图改为 `object-contain`，避免继续裁切出白边/黄边；正文改成大标题 + 正文段落；底部改成推荐人数块 + 教程模式按钮。
+- 右页现在不再是“一个 section 标题 + 稀疏列表”，而是更像账页：顶端有在线大厅主标签、搜索输入、创建房间按钮、筛选 pills；主体是一张固定列宽的房间表。
+- 本轮的 detail 演示房间不是静态文本，而是 6 条真实 Dice Throne 房间：同时注入了 open / locked / full 混合状态，因此右页状态列和操作列终于有真实差异，而不是清一色占位文案。
+- 最新 `detail-entry.png` 肉眼可见 6 行房间全部落在书页内，底部还能看到 `2/2` 已满房；说明这页已经不是“有链路但太空”，而是具备参考稿要求的信息密度。
+- 当前尚未完全收口的只剩翻页资产：detail 现在虽然已经走独立 exact spread，但背景仍复用 `book-idle/1.png`，真正还没统一的是“目录 -> 详情”的翻页中间帧与 detail 终态的资源风格。
+
+## Addendum（2026-04-28）：Home V2 井字棋缩略图去假收口（2388x1080）
+- 当前首页剩余最明显的“假东西”是 `tictactoe`：虽然它不再是 `#` 字符占位，但仍然走 `NeonTicTacToeThumbnail` 前端生成图，不是实际游戏封面链路。
+- 本轮已切到真实截图封面：
+  - 源图使用 `evidence/tictactoe/screenshots/tictactoe.png`，这是实际游戏画面，不是参考页裁片。
+  - 从中裁出标题 + 棋盘主体，生成 `public/assets/i18n/zh-CN/tictactoe/thumbnails/cover.png` 和运行时 `compressed/cover.webp`。
+  - `src/games/tictactoe/manifest.ts` 已补 `thumbnailPath: 'tictactoe/thumbnails/cover'`；`src/games/tictactoe/thumbnail.tsx` 也已切到 `ManifestGameThumbnail`，让首页和大厅其它入口统一吃同一张真实封面。
+- 最新目录截图里，右下角井字棋缩略图已经变成实际游戏截图，不再是前端生成的霓虹占位画。
+- 需要注意：本轮新增的 `png/webp` 位于仓库默认忽略规则下（`**/*.png` 与 `public/**/*.webp`）。如果下一步要提交，这两张资源需要显式纳入提交范围。
+
 ## Addendum（2026-04-28）：Home V2 详情页 + 翻页效果完全重构（起步分析）
 - 参考稿目录已复核，当前至少可以明确分成 4 组：
   - `background.png`：封面/底图基底；
@@ -482,3 +626,128 @@
 - 切到 `2388x1080` 后，书页舞台量测为 `widthRatio=0.798 / heightRatio=0.993 / center=(0.500,0.500)`，说明书页主体已经按真分辨率稳定居中，不存在“缩在左上角”。
 - 真分辨率下比小视口更容易暴露的问题是：顶部导航节奏、右上角入口太小、条目纵向节奏偏散；因此后续精修应优先看 `2388x1080` 图，而不是再盯 `936x432`。
 - 由于共享 single-worker 固定端口 `6273/20100/21100` 被其他任务占用，本轮首页 E2E 最终改用 `PW_E2E_SERVICE_REUSE=shared-single + 37974/30180/30181` 完成验证；下个会话若再次遇到端口冲突，可直接沿用这组共享端口方案。
+
+## Addendum（2026-04-29）：Home V2 steady state 去除旧右侧书签语义
+- 用户最后一轮口径已经明确：当前不是“收右侧书签样式”，而是“右侧书签本来就不该再存在，按设计稿彻底重做”。
+- 真正要拔掉的是 `HomeV2` 运行时的旧 scene tab 语义，而不是只在视觉上把书签藏起来。关键残留点此前在 `sceneContext.showLegacyTabs`、`openLobbyTab/openRoomsTab`、`overview_left_page/overview_right_page` 以及 `HomeSceneRenderer -> tabs` 这条链路上。
+- 这轮确认后的最小正确方案是：`HomeSceneRenderer` 只保留 `open` 开场动画，目录页 / 登录页 / 详情页 steady state 一律走 exact stage；这样既不影响现有翻页资源，也能保证 steady state 彻底不再渲染旧书签节点。
+- `HomeV2.tsx` 现在已经采用这条方案：开场动画结束直接进入 `overview`，不再经过 `tabs`；目录/登录/详情 steady state 都不再挂旧 scene tab。
+- E2E 已补硬断言验证这一点：目录页、登录页、详情页都要求 `home-v2-tab-lobby / home-v2-tab-rooms / tab_button_lobby / tab_button_rooms` 节点数量为 `0`。
+- 首次复跑首页 E2E 时，Playwright 在 `2388x1080` 全页截图阶段触发 Node heap OOM；增加 `NODE_OPTIONS=--max-old-space-size=4096` 后同一条链路稳定通过，因此当前大图截图的已知运行门槛是需要显式加大 Node 堆。
+
+## Addendum（2026-04-29）：Home V2 登录页 / 详情页视觉二次收口
+- 登录页上一轮最明显的问题不是“结构错了”，而是页内表单材质过花、重复标题太多，导致右页虽然是真表单，但看起来像占位层。处理方式是：
+  - 左页改成品牌说明页，承担参考稿中的“易桌游 + 卖点”语义；
+  - 右页顶部只保留一层模式切换条，内嵌 `AuthModal` 隐藏重复标题。
+- 详情页上一轮最明显的问题是顶部按钮和房间表对比度过弱，导致截图里“创建房间 / 返回目录 / 房间列表”像浅色贴纸。处理方式是把操作按钮统一换成深色按钮语义，并提高房间表区域、搜索框和正文的对比度。
+- 当前登录页 `rooms-auth-entry.png` 已经证明：目录页进入账号页后，steady state 不再是旧书签页，而是独立的左右书页登录态。
+
+## Addendum（2026-04-30）：Home V2 登录页 / 详情页二次压稿（移动端横屏）
+- 这轮真正要修的不是交互链路，而是 steady state 视觉口径：rooms/login 之前主要问题是右页一整块高亮白卡太像 modal 残留，detail 之前主要问题是左页纵向节奏过长、教程按钮首屏压不全，右页房间表也偏现代卡片列表。
+- 已改的 rooms/login 方向：
+  - `src/components/home-v2/HomeTabPanels.tsx` 左页底部模式切换改成低存在感文字导航，不再继续用厚按钮卡片；
+  - 右页认证区移除大白卡容器，只保留页内 tabs + 分隔线 + 内嵌真实表单；
+  - `src/components/auth/AuthModal.tsx` embedded 模式下强化了字号、输入框边界、提交按钮尺寸与表单宽度，继续保留真实输入链路和现有测试选择器。
+- 已改的 detail 方向：
+  - `src/components/home-v2/GameDetails.tsx` 左页再次收纵向高度：封面缩一档、标题和正文压紧、教程按钮回到首屏完整可见；
+  - 右页去掉过强表格容器感，改成更轻的账页式表头 / 行分隔 / 小按钮密度，6 行 Dice Throne 真房间仍完整落在书页里。
+- 本轮看图结论：
+  - `detail-entry.png` 已经满足“首屏完整落在书页内”这条底线：左页教程按钮不再被截断，右页房间表仍保持 6 行真实房间。
+  - `rooms-auth-entry.png` 已经摆脱上轮那种大白卡 modal 残留，但右页表单对比度仍弱于参考图 `登录注册.png`，属于“方向已对，仍可继续提对比度”的剩余差距；因此当前更适合表述为**继续收口中**，不应把登录页说成终稿。
+- 关键参考图路径仍固定为：
+  - `D:\gongzuo\webgame\gameasset\v2首页参考\登录注册.png`
+  - `D:\gongzuo\webgame\gameasset\v2首页参考\详情页.png`
+  - `D:\gongzuo\webgame\gameasset\v2首页参考\首页.png`
+
+## Addendum（2026-04-30）：Home V2 翻页结构改为页级 rotateY（按掘金折线翻页思路）
+- 用户这轮指出的问题是对的：旧 `FoldLinePageFlipStage` 的根因不是“曲率不够”，而是**把整张 spread stage 直接塞进单页翻转 rect 里**。这样一翻，目录和详情整页内容会一起被压缩并跟着翻页层动，视觉上就不是“翻一张纸”，而是“拖着整个页面动”。
+- 参考源已核实：掘金文章《怎么实现一个3d翻书效果》核心是“整页 rotateY + 3D 属性 + front/back 页面关系计算”，不是继续拿整张 spread 做假 clip。链接：`https://juejin.cn/post/6844903665216520206`
+- 本轮已改成页级结构：
+  - base layer 改回 source stage，而不是一上来就把整张 target stage 铺满；
+  - revealed layer 只显示目标页被揭开的那一页；
+  - turning layer 拆成 source front / target back 两面，并按 page rect 做真实裁切；
+  - `HomeV2.tsx` 额外传 `overviewStageSize/detailStageSize + leftPageRect/rightPageRect`，不再让翻页组件自己拿整张 stage 硬塞。
+- 看图后的结论：
+  - `page-flip-to-detail-50.png` 现在已经不是“整张内容一起挤着动”，而是左页保留目录、右页显示被揭开的目标页，中间只有单张纸在翻；这是这轮最关键的修复。
+  - `page-flip-back-to-catalog-50.png` 反向翻页也回到同一结构，不再出现整张 detail spread 被一起塞进翻页层的错误。
+- 当前剩余差距不再是结构性错误，而是**折线层数/纸张厚度/阴影质感**仍可继续向参考实现压；但“内容在一起动”的核心 bug 已经被结构重写消掉。
+## Addendum（2026-05-02）：Home V2 50% 半页折页收口
+- 用户这轮把验收口径重新钉死成了三件事：**必须看 50%**、**目标页 UI 不能跟着翻**、**折页必须在 UI 上层且不能只是一个小角**。
+- 因此问题根因已经不再是“是否接了 turn.js”，而是**可见折页层仍然过小/过弱**，50% 时肉眼看不出半页翻起。
+- 当前修法保留了 `turn.js` runtime，但重做了 `FoldLinePageFlipStage.tsx` 的可见层分工：
+  1. 底层始终渲染目标页 steady state；
+  2. 中层只保留 source page 的可见裁切区；
+  3. 顶层新增大面积纸张折页遮挡层，保证折页压在 UI 之上；
+  4. 翻页完成回调增加最短可见动画时长门槛，避免 50% 截图只抓到末帧。
+- 2026-05-02 最新 50% 截图已经显示：正向与反向翻页都不再是小角贴层，而是明确可见的半页折起；首页与详情 steady state 继续保持在书页内。
+## Addendum（2026-05-02）：Home V2 50% 证据冻结修正
+- 我重新主动看图后发现：上一轮 `page-flip-to-detail-50.png` 实际上抓成了 steady state 详情页，说明当时的“50% 证据”并不可信。
+- 根因不是前端翻页本身没到 50%，而是 **Playwright 在 full-page 截图时，动画已经继续跑到收口态**；也就是说，之前的问题已经从“翻页方向错了”升级成“证据抓帧口径错了”。
+- 当前已修正：
+  - `src/components/home-v2/FoldLinePageFlipStage.tsx` 新增测试态 `window.__BG_HOME_V2_E2E_HOLD_PROGRESS__`，到目标进度后先冻结可见层；
+  - `e2e/lobby.e2e.ts` 的 `captureHomeV2FlipFrameAtProgress` 改成“先设置冻结目标 -> 等进度到位 -> 截图 -> 再释放冻结”。
+- 现在最新 `page-flip-to-detail-50.png` / `page-flip-back-to-catalog-50.png` 已经是真正的 50% 中间帧：
+  - 正向图能看到右页 source 内容正在翻走，而不是直接跳成详情稳态；
+  - 反向图能看到左页 detail 内容正在折回目录，而不是只剩书页终态。
+
+## Addendum（2026-05-03）：Home V2 正向 50% 折页继续压实（2388x1080 真移动端横屏）
+- 本轮只继续收 `src/components/home-v2/FoldLinePageFlipStage.tsx`，不碰 steady state 首页/详情布局。
+- 根因判断：正向 `page-flip-to-detail-50.png` 之前已经摆脱“空白纸板”，但折起页片仍偏浅，书页内容感和折痕阴影弱于反向 50%。
+- 这轮实际调整：
+  - `buildFoldGeometry('br')`：减小正向折页的 `rotateY`，略放大 `sheetScaleX`，并加重 `underShadow / outerShadow`，让翻起页片更像一整张纸而不是轻薄透明膜；
+  - `CornerCurlOverlay`：按正向折页单独收紧泛白 screen wash、降低纸张蒙层、提高 source 内容对比度，并补一条更明确的 fold crease 阴影；
+  - 反向 `bl` 分支基本保持原力度，避免把已经较稳的回翻质感带坏。
+- 本轮运行：
+  - `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx e2e/lobby.e2e.ts`
+  - `npm run typecheck`
+  - `PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+- 结果：全部通过；E2E 日志继续明确抓到真实 `raw=0.500` 的正向/反向中间帧。
+- 最新关键截图：
+  - 正向 50%：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+  - 反向 50%：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 我实际看图后的结论：
+  - 正向 50% 已经比上轮更像“带冻结内容的一整张书页”在翻：右页列表缩略图和标题不再只剩一层发白薄膜，折线与落影也更明确。
+  - 反向 50% 没被本轮调坏，仍然是当前更稳的参照。
+  - 但当前仍不应宣称彻底收口：正向 50% 虽然已经明显摆脱“空白纸片感”，整体仍略偏浅，后续仍可继续加厚纸感与折痕立体度。
+
+## Addendum（2026-05-03）：Home V2 正向翻页切到冻结 DOM 克隆
+- 本轮不再继续在“live DOM + 渐变纸片”上死调；已把正向 `flippingToDetail` 的翻起层切成 **steady state DOM 冻结克隆**，目标是不再让活的右页 UI 跟着翻页层跑。
+- 实际落点：`src/components/home-v2/FoldLinePageFlipStage.tsx`
+  - 新增可见 steady stage 捕获根 `visibleStageCaptureRef`；
+  - 在 `mode==='overview' / 'detail'` 时预热克隆 HTML 快照；
+  - 正向翻页时折页层与 flat 层吃冻结克隆；
+  - 反向翻页暂时回退为旧 live 路线，因为克隆版本会在 `page-flip-back-to-catalog-50.png` 顶部打出黑块，当前不值得强推。
+- 本轮命令：
+  - `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx e2e/lobby.e2e.ts`
+  - `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+- 我实际看图后的结论：
+  - 正向 50%：`page-flip-to-detail-50.png` 现在至少已经变成“冻结页内容在翻”，不是之前那种纯 live DOM 互相透；但仍偏浅，纸感还不够实，离“像真书页”仍有差距。
+  - 反向 50%：当前保留旧路线后又回到较稳状态，没有再出现那块黑色矩形。
+  - 因此这轮只能算**方向修正成功，但视觉还没收口**；下一步仍应继续压正向折页的遮挡实感和厚度。
+- 追加一轮正向 50% 收口：把前表面 source 内容重新贴回翻起页，并补一条右侧背页厚度边；同一条 E2E 再次通过。
+- 最新正向截图：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 我实际看到：当前 50% 已经不再是“空白竖板”，而是书脊侧翻出的整页，且目录内容确实贴在翻起层；但背页厚度和遮挡实感仍不足，仍不能收口。
+
+## Addendum（2026-05-08）：Home V2 正向 50% 过线判断
+- 本轮重新实际看图后，当前最关键的判断发生变化：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png` **已经不应再记为“未达标”**。
+- 现在的正向 50% 页片虽然仍有一点中缝偏挺感，但它已经不是早前那种“均匀发白的半透明硬片/厚板”；肉眼第一感受已经变成“单张薄纸在翻”。
+- 反向 `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png` 仍稳，`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png` 与 `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png` 也没有回退，因此当前已不存在阻止本轮收口的核心 blocker。
+- 若后续还有精修，只该算可选 polish：继续软化中缝亮带，而不是再回到大幅改几何/重造翻页结构。
+
+## Addendum（2026-05-08）：反向 50% 的真实根因与当前状态
+- 用户指出 `page-flip-back-to-catalog-50.png` “王权显示了两个、翻页不是这么翻”是对的；根因不是纸感，而是反向链路的**层职责错了**。
+- 旧反向 50% 同时存在：底层 overview、flat detail、turning detail，所以会出现内容重复与画面秩序混乱。
+- 这轮改完后，`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png` 已经去掉重复 source 叠画，当前首先看到的是“单张左页从中缝回翻”，而不是三层内容同时抢画面。
+- 当前剩余如果还要 polish，也应该只做轻量纸感/中缝细节，不该再回到旧方向上磨参数。
+## Addendum（2026-05-08）：反向 50% 泄漏根因最终确认
+- 反向 50% 的“王权显示两个”和窄缝房间列表不是单纯透明度问题，而是两个不同来源叠加：
+  - 可见层曾经混入了 detail source / overview target / turning leaf 多套职责；
+  - 隐藏 turn.js 驱动页内部仍塞着真实 overview/detail DOM，一旦 turn.js 生成的中间结构参与可见画面，就会把 detail 右页房间列表露进反向回目录动画。
+- 最终正确边界：
+  - `baseStage` 承载真实业务页面；
+  - `CornerCurlOverlay` 只承载纸张、折痕、阴影，不承载任何业务 DOM 或截图克隆；
+  - turn.js 隐藏页只保留透明占位页，用来驱动页码/翻页事件，不承载真实内容。
+- 最新截图结论：
+  - `page-flip-back-to-catalog-50.png` 已无重复王权，也无房间列表窄缝泄漏；
+  - `page-flip-to-detail-50.png` 未被带坏，仍保持正向目标详情页与中缝纸边关系；
+  - 当前问题从结构 blocker 降为纸感 polish。

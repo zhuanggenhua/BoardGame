@@ -91,6 +91,7 @@ interface AuthModalProps {
     placement?: 'center' | 'right';
     embedded?: boolean;
     showModeSwitchFooter?: boolean;
+    showTitle?: boolean;
     onModeChange?: (mode: AuthMode) => void;
 }
 
@@ -102,6 +103,7 @@ export const AuthModal = ({
     placement = 'center',
     embedded = false,
     showModeSwitchFooter = true,
+    showTitle = true,
     onModeChange,
 }: AuthModalProps) => {
     const [mode, setMode] = useState<AuthMode>(initialMode);
@@ -130,10 +132,28 @@ export const AuthModal = ({
 
     const { t } = useTranslation('auth');
     const { login, register, sendRegisterCode, sendResetCode, resetPassword: resetPasswordAction } = useAuth();
-    const fieldLabelClassName = 'block text-xs font-bold text-[#8c7b64] uppercase tracking-wider mb-2';
-    const textInputClassName = 'auth-form-input w-full px-0 py-2 bg-transparent border-b-2 border-[#e5e0d0] text-[#433422] caret-[#433422] placeholder-[#c0a080]/50 outline-none focus:border-[#433422] transition-colors text-base sm:text-lg';
-    const codeActionButtonClassName = 'px-3 py-1.5 bg-[#8c7b64] hover:bg-[#6b5d4a] text-white text-xs uppercase tracking-wider transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap cursor-pointer';
-    const secondaryTextButtonClassName = 'text-xs text-[#8c7b64] hover:text-[#433422] transition-colors';
+    const fieldLabelClassName = clsx(
+        'mb-2 block uppercase',
+        embedded
+            ? 'text-[12px] font-semibold tracking-[0.16em] text-[#6b452d]'
+            : 'text-xs font-bold tracking-wider text-[#8c7b64]',
+    );
+    const textInputClassName = clsx(
+        'auth-form-input w-full bg-transparent px-0 outline-none transition-colors',
+        embedded
+            ? 'rounded-[10px] border-[1.5px] border-[#8e6140] bg-[rgba(252,245,230,0.78)] px-[16px] py-[11px] text-[16px] text-[#4b3020] caret-[#4b3020] placeholder-[#7e5f44] shadow-[0_4px_12px_rgba(91,63,41,0.08)] focus:border-[#6f4b32] focus:bg-[rgba(252,245,230,0.9)]'
+            : 'border-b-2 border-[#e5e0d0] py-2 text-base text-[#433422] caret-[#433422] placeholder-[#c0a080]/50 focus:border-[#433422] sm:text-lg',
+    );
+    const codeActionButtonClassName = clsx(
+        'cursor-pointer whitespace-nowrap uppercase transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+        embedded
+            ? 'rounded-[8px] bg-[#7d5738] px-3.5 py-[9px] text-[10px] font-semibold tracking-[0.12em] text-[#f8ead0] hover:bg-[#65432a]'
+            : 'bg-[#8c7b64] px-3 py-1.5 text-xs tracking-wider text-white hover:bg-[#6b5d4a]',
+    );
+    const secondaryTextButtonClassName = clsx(
+        'transition-colors hover:text-[#433422]',
+        embedded ? 'text-[11px] text-[#8a674a]' : 'text-xs',
+    );
     const isRightPlacement = placement === 'right';
     const persistRememberedField = useCallback((key: keyof AuthRememberedFields, value: string) => {
         rememberedFieldsRef.current = {
@@ -400,17 +420,20 @@ export const AuthModal = ({
             className={clsx(
                 'bg-[#fcfbf9] pointer-events-auto relative flex flex-col overflow-hidden border border-[#e5e0d0] shadow-[0_10px_40px_rgba(67,52,34,0.1)]',
                 embedded
-                    ? 'h-full w-full max-h-full max-w-full rounded-[18px] border-[#d8b894]/70 bg-[linear-gradient(180deg,_rgba(252,251,249,0.98)_0%,_rgba(247,240,230,0.96)_100%)] shadow-[0_12px_30px_rgba(67,52,34,0.12)]'
+                    ? 'mx-auto h-full w-full max-h-full max-w-[560px] rounded-none border-transparent bg-transparent shadow-none'
                     : 'w-[calc(100vw-2rem)] max-w-[400px] max-h-[var(--runtime-modal-max-height)] rounded-sm',
                 !embedded && (isRightPlacement ? 'ml-4 mr-2 md:mr-4' : 'mx-4'),
             )}
             data-testid={embedded ? 'auth-embedded-panel' : 'auth-modal'}
         >
-                {/* 装饰边角 */}
-                <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-[#c0a080]" />
-                <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-[#c0a080]" />
-                <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-[#c0a080]" />
-                <div className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-[#c0a080]" />
+                {!embedded ? (
+                    <>
+                        <div className="absolute top-2 left-2 h-3 w-3 border-l border-t border-[#c0a080]" />
+                        <div className="absolute top-2 right-2 h-3 w-3 border-r border-t border-[#c0a080]" />
+                        <div className="absolute bottom-2 left-2 h-3 w-3 border-b border-l border-[#c0a080]" />
+                        <div className="absolute bottom-2 right-2 h-3 w-3 border-b border-r border-[#c0a080]" />
+                    </>
+                ) : null}
 
                 <AnimatePresence>
                     {isLoading && (
@@ -435,31 +458,38 @@ export const AuthModal = ({
                     )}
                 </AnimatePresence>
 
-                <div className="shrink-0 px-6 pt-6 pb-4 sm:px-10 sm:pt-10 sm:pb-6 text-center">
-                    <h2 className="text-2xl font-serif font-bold text-[#433422] tracking-wide mb-2">
-                        {t(mode === 'login' ? 'login.title' : mode === 'register' ? 'register.title' : 'reset.title')}
-                    </h2>
-                    <div className="h-px w-12 bg-[#c0a080] mx-auto opacity-50" />
-                </div>
+                {showTitle ? (
+                    <div className={clsx('shrink-0 text-center', embedded ? 'px-0 pt-0 pb-3' : 'px-6 pt-6 pb-4 sm:px-10 sm:pt-10 sm:pb-6')}>
+                        <h2 className={clsx('font-serif font-bold text-[#433422] tracking-wide', embedded ? 'mb-0 text-[15px]' : 'mb-2 text-2xl')}>
+                            {t(mode === 'login' ? 'login.title' : mode === 'register' ? 'register.title' : 'reset.title')}
+                        </h2>
+                        {!embedded ? <div className="mx-auto h-px w-12 bg-[#c0a080] opacity-50" /> : null}
+                    </div>
+                ) : null}
 
                 <form onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col font-serif">
-                    <div className="scrollbar-thin scrollbar-thumb-[#b48a63]/45 scrollbar-track-transparent min-h-0 flex-1 overflow-y-auto px-6 pb-4 sm:px-10 sm:pb-6">
+                    <div className={clsx('scrollbar-thin scrollbar-thumb-[#b48a63]/45 scrollbar-track-transparent min-h-0 flex-1 overflow-y-auto', embedded ? 'px-0 pb-1' : 'px-6 pb-4 sm:px-10 sm:pb-6')}>
                         {error && (
                             <motion.div
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                className="bg-red-50 border border-red-100 text-red-600 text-sm px-4 py-2 mb-6 font-serif text-center"
+                                className={clsx(
+                                    'font-serif text-center',
+                                    embedded
+                                        ? 'mb-4 rounded-[10px] border border-[#d4ab90] bg-[rgba(164,78,48,0.08)] px-3 py-2 text-[11px] text-[#8d4f35]'
+                                        : 'mb-6 border border-red-100 bg-red-50 px-4 py-2 text-sm text-red-600',
+                                )}
                             >
                                 {error}
                             </motion.div>
                         )}
 
-                        <div className="space-y-5">
+                        <div className={clsx(embedded ? 'space-y-[18px]' : 'space-y-5')}>
                             {mode === 'register' && (
                                 <motion.div
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
-                                    className="space-y-5"
+                                    className={clsx(embedded ? 'space-y-[14px]' : 'space-y-5')}
                                 >
                                     <div>
                                         <label className={fieldLabelClassName}>
@@ -475,7 +505,7 @@ export const AuthModal = ({
                                                     placeholder={t('email.placeholder.address')}
                                                     required
                                                     autoComplete="email"
-                                                    autoFocus
+                                                    autoFocus={!embedded}
                                                     data-testid="auth-register-email-input"
                                                 />
                                             </div>
@@ -521,7 +551,7 @@ export const AuthModal = ({
                                 <motion.div
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
-                                    className="space-y-5"
+                                    className={clsx(embedded ? 'space-y-[14px]' : 'space-y-5')}
                                 >
                                     <div>
                                         <label className={fieldLabelClassName}>
@@ -537,7 +567,7 @@ export const AuthModal = ({
                                                     placeholder={t('email.placeholder.address')}
                                                     required
                                                     autoComplete="email"
-                                                    autoFocus
+                                                    autoFocus={!embedded}
                                                     data-testid="auth-reset-email-input"
                                                 />
                                             </div>
@@ -592,7 +622,7 @@ export const AuthModal = ({
                                         placeholder={t('placeholder.account')}
                                         required
                                         autoComplete="username"
-                                        autoFocus
+                                        autoFocus={!embedded}
                                         data-testid="auth-login-account-input"
                                     />
                                 </div>
@@ -729,11 +759,11 @@ export const AuthModal = ({
                         </div>
                     </div>
 
-                    <div className="shrink-0 border-t border-[#e5e0d0] bg-[#fcfbf9] px-6 py-4 sm:px-10 sm:py-6">
+                    <div className={clsx('shrink-0 bg-[#fcfbf9]', embedded ? 'border-t-0 bg-transparent px-0 py-4' : 'border-t border-[#e5e0d0] px-6 py-4 sm:px-10 sm:py-6')}>
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full py-3 bg-[#433422] hover:bg-[#2b2114] text-[#fcfbf9] font-bold text-sm uppercase tracking-widest shadow-lg hover:shadow-xl transition-all active:transform active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed cursor-pointer"
+                            className={clsx('w-full cursor-pointer bg-[#433422] font-bold uppercase tracking-widest text-[#fcfbf9] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-70 hover:bg-[#2b2114]', embedded ? 'rounded-[10px] py-3 text-[12px] shadow-[0_8px_18px_rgba(67,52,34,0.16)]' : 'py-3 text-sm shadow-lg hover:shadow-xl')}
                             data-testid="auth-submit-button"
                         >
                             {isLoading

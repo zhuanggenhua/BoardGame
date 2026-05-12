@@ -19,7 +19,7 @@
   "homeV2": {
     "waitingPlayers": "等待玩家进入",
     "roomTitleFallback": "房间 {{id}}",
-    "roomLedgerTitle": "房间簿",
+    "roomLedgerTitle": "房间列表",
     "roomCount": "{{count}} 间",
     "emptyRoomTitle": "还没有公开房间",
     "emptyRoomDescription": "暂无可加入房间记录。",
@@ -29,7 +29,43 @@
       "typeLabel": "类型",
       "defaultCategory": "桌游",
       "playerCountLabel": "建议人数",
-      "overviewLabel": "玩法概览"
+      "overviewLabel": "玩法概览",
+      "onlineLobbyLabel": "在线大厅"
+    },
+    "catalog": {
+      "allGames": "全部游戏",
+      "accountSettings": "账号与设置",
+      "playerNickname": "玩家昵称",
+      "help": "筛选"
+    },
+    "referenceCatalog": {
+      "emptyTitle": "该分类暂时为空",
+      "emptyDescription": "先切回其它分类浏览游戏。",
+      "badges": {
+        "strategy": "策略",
+        "collection": "收集",
+        "war": "战争"
+      },
+      "games": {
+        "cardia": {
+          "summary": "在卡牌与魔法的世界中，构筑你的卡组，赢得荣耀。"
+        },
+        "dicethrone": {
+          "summary": "建立王权，争夺荣耀，成为统治者。"
+        },
+        "smashup": {
+          "summary": "在混乱战场中生存，消灭一切敌人！"
+        },
+        "splendor": {
+          "summary": "收集宝石，创造你的传奇帝国。"
+        },
+        "summonerwars": {
+          "summary": "召唤强大的生物，展开史诗对战。"
+        },
+        "tictactoe": {
+          "summary": "经典的 XO 游戏，简单却充满乐趣。"
+        }
+      }
     },
     "sceneTabs": {
       "lobby": "大厅",
@@ -42,6 +78,7 @@
         "eyebrow": "账号",
         "title": "账号登录",
         "description": "查看最近活跃的公开房间。",
+        "accountActionLabel": "账号入口",
         "loading": "正在读取账号状态…",
         "emptyTitle": "还没有公开房间",
         "emptyDescription": "暂无公开房间记录。",
@@ -66,12 +103,28 @@
         "emptyTitle": "暂时没有更新记录",
         "emptyDescription": "暂无更新记录。"
       }
+    },
+    "detailSearchPlaceholder": "搜索房间或玩家",
+    "detailNoMatchTitle": "没有符合筛选的房间",
+    "detailNoMatchDescription": "试试切换筛选条件，或直接创建新房间。",
+    "detailOpenSummary": "可加入 {{open}} · 加密 {{locked}}",
+    "detailFilters": {
+      "all": "全部",
+      "open": "可加入",
+      "locked": "加密",
+      "full": "满员"
+    },
+    "detailColumns": {
+      "roomName": "房间名称",
+      "players": "人数",
+      "status": "状态",
+      "action": "操作"
     }
   },
   "password": {
     "modalTitle": "私密房间",
     "modalDesc": "该房间需要密码才能进入。",
-    "placeholder": "请输入密码..."
+    "placeholder": "输入密码"
   },
   "confirm": {
     "destroy": {

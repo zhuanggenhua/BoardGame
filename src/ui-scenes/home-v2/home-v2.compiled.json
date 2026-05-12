@@ -29,34 +29,28 @@
         "height": 312
       },
       "detail_left_inner": {
-        "x": 160,
-        "y": 218,
-        "width": 244,
-        "height": 318
+        "x": 143,
+        "y": 146,
+        "width": 268,
+        "height": 414
       },
       "detail_right_inner": {
-        "x": 489,
-        "y": 218,
-        "width": 244,
-        "height": 318
+        "x": 460,
+        "y": 146,
+        "width": 284,
+        "height": 414
       },
       "tab_lobby": {
         "x": 766,
-        "y": 223.5,
+        "y": 243.5,
         "width": 53.76,
-        "height": 72
+        "height": 32
       },
       "tab_rooms": {
         "x": 766,
-        "y": 261.5,
+        "y": 281.5,
         "width": 53.76,
-        "height": 72
-      },
-      "tab_changelog": {
-        "x": 766,
-        "y": 299.5,
-        "width": 53.76,
-        "height": 72
+        "height": 32
       },
       "spread_body": {
         "x": 94,
@@ -87,6 +81,23 @@
           "height": 312
         },
         "slotId": "overview_left_page",
+        "children": []
+      },
+      {
+        "id": "overview_spread_body",
+        "type": "slot",
+        "visible": true,
+        "visibleIn": [
+          "overview"
+        ],
+        "zoneRef": "spread_body",
+        "rect": {
+          "x": 94,
+          "y": 144,
+          "width": 620,
+          "height": 405
+        },
+        "slotId": "overview_spread_body",
         "children": []
       },
       {
@@ -151,9 +162,9 @@
         "zoneRef": "tab_lobby",
         "rect": {
           "x": 766,
-          "y": 223.5,
+          "y": 243.5,
           "width": 53.76,
-          "height": 72
+          "height": 32
         },
         "actionId": "openLobbyTab",
         "children": []
@@ -169,29 +180,11 @@
         "zoneRef": "tab_rooms",
         "rect": {
           "x": 766,
-          "y": 261.5,
+          "y": 281.5,
           "width": 53.76,
-          "height": 72
+          "height": 32
         },
         "actionId": "openRoomsTab",
-        "children": []
-      },
-      {
-        "id": "tab_button_changelog",
-        "type": "button",
-        "visible": true,
-        "visibleIn": [
-          "overview",
-          "detail"
-        ],
-        "zoneRef": "tab_changelog",
-        "rect": {
-          "x": 766,
-          "y": 299.5,
-          "width": 53.76,
-          "height": 72
-        },
-        "actionId": "openChangelogTab",
         "children": []
       }
     ],

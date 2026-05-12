@@ -1,3 +1,887 @@
+# Home V2 turn.js 插件翻页修正证据（2026-05-12，2388x1080 真移动端横屏）
+
+## 本轮修正范围
+
+- 用户明确否定上一轮“序列帧”路线，并指出“两本书很怪”。本轮结论更新：**序列帧方案作废，不能作为收口依据。**
+- 当前 `src/components/home-v2/FoldLinePageFlipStage.tsx` 回到 turn.js 插件路线：
+  - 运行时加载 `public/vendor/jquery/jquery-1.12.0.min.js` 与 `public/vendor/turnjs/turn.min.js`；
+  - 翻页态真实挂载 turn.js `display: double` flipbook DOM；
+  - 每个 turn.js page 承载书页切片，不再用 `page-flip-left/right` 序列帧；
+  - 翻页中隐藏业务 UI，只让插件翻纸面，翻完后再回到真实目录/详情 UI；
+  - 对 turn.js `turnPage` 的默认 ease-out 做线性补丁，让 `25 / 50 / 75` 对应插件视觉进度，而不是只对应时间进度。
+- `e2e/lobby.e2e.ts` 现在会在抓帧日志里输出 turn.js 自己的 `page / view / animating / page-wrapper` 状态，避免只看 React 自己的 progress。
+
+## 本轮实际运行
+
+```powershell
+npx ctx7@latest library turn.js "Home V2 use turn.js plugin display double page flip page numbering events turn next previous freeze progress"
+npx ctx7@latest docs /websites/turnjs "turn.js display double page numbering view next previous events turning turned options duration gradients elevation"
+npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx src/pages/HomeV2.tsx e2e/lobby.e2e.ts
+npm run typecheck
+$env:BG_BYPASS_GLOBAL_HEAVY_BUDGET='1'
+$env:BG_HEAVY_WAIT_FOR_BUDGET='1'
+$env:BG_HEAVY_WAIT_TIMEOUT_MS='600000'
+$env:PW_E2E_SERVICE_REUSE='shared-single'
+$env:PW_E2E_FRONTEND_PORT='37974'
+$env:PW_E2E_GAME_SERVER_PORT='30180'
+$env:PW_E2E_API_SERVER_PORT='30181'
+$env:BG_HOME_V2_VIEWPORT='2388x1080'
+npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ctx7：确认 turn.js 的 `display / page / view / next / previous / events / duration / gradients / elevation` 用法；
+  - ESLint：通过；
+  - Typecheck：通过；
+  - E2E：通过，日志确认正反向六帧都在 turn.js `animating=true` 时抓取，并输出插件 `view`。
+
+## 本轮关键截图（绝对路径）
+
+### 1) 目录 -> 详情：25%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-25.png`
+- 我实际看到什么：
+  - 右页由 turn.js 插件折起，能看到宽页面、斜向折线、背页和阴影。
+  - 不是序列帧，也不是 CSS 单片裁切；截图日志里插件处于 `animating=true`。
+  - 业务 UI 没贴在翻动纸面上，避免“两本书 + 两套 UI”叠加。
+- 是否达到本轮验收标准：**达到**。
+
+### 2) 目录 -> 详情：50%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 我实际看到什么：
+  - 翻起页跨过书脊，中心有明显立起的 turn.js 折页面。
+  - 25% / 50% 的页片宽度和位置不同，来自插件动画进度，不是换图序列。
+  - 背景仍是一本文档式书页，没有两本业务书同时展开。
+- 是否达到本轮验收标准：**达到**。
+
+### 3) 目录 -> 详情：75%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-75.png`
+- 我实际看到什么：
+  - 正向后段插件折页已接近落页，画面回到稳定书页。
+  - 75% 不再残留大面积 source/target 双层业务 UI。
+  - 翻页完成后的 `detail-entry.png` 已复看，真实详情 UI 正常恢复。
+- 是否达到本轮验收标准：**达到**。
+
+### 4) 详情 -> 目录：25%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-25.png`
+- 我实际看到什么：
+  - 反向由左页翻回，页片从左侧立起，方向与“返回目录”一致。
+  - 能看到插件生成的页边与阴影，不是反向序列帧。
+  - 底层仍是同一本书页空间，没有业务 UI 混入翻动页。
+- 是否达到本轮验收标准：**达到**。
+
+### 5) 详情 -> 目录：50%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 我实际看到什么：
+  - 回翻页片位于书脊附近，显示 turn.js 插件真实中段折页。
+  - 中间帧不是“两套页面平铺”，也不是提前完成后只剩窄边。
+  - 插件日志显示 `pluginAnimating=true`。
+- 是否达到本轮验收标准：**达到**。
+
+### 6) 详情 -> 目录：75%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-75.png`
+- 我实际看到什么：
+  - 回翻后段接近落页，右侧只有后段书页遮挡。
+  - 25 / 50 / 75 是插件翻页连续过程。
+  - 翻页结束后目录稳态正常恢复。
+- 是否达到本轮验收标准：**达到**。
+
+## 对旧结论的修正
+
+- 2026-05-11 顶部“序列帧修正证据”已经被用户否定，**不再代表当前方案**。
+- 当前以本节为准：**必须使用 turn.js 插件承载可见翻页；不得再把 `page-flip-left/right` 序列帧作为完成口径。**
+
+## 2026-05-12 补充：翻页时书本外壳消失的修正
+
+- 用户指出“翻页的时候书本消失了”，判断成立：上一版 flipping state 只渲染 turn.js 的内页 union rect，外层书壳/封边/书脊没有作为底层保留。
+- 修正：翻页态先渲染目标方向的无业务 UI 书本壳，再把 turn.js flipbook 覆盖在内页区域；turn.js 仍负责可见翻页，不回到序列帧或 CSS 纸片。
+- 本轮重新运行 ESLint、typecheck 和同一条 E2E。
+- 本轮复看：
+  - `page-flip-to-detail-25.png`：书壳、左侧封边、右侧封边、底部书签都保留；turn.js 页片在右页内翻起。
+  - `page-flip-to-detail-50.png`：书壳仍在，翻起页跨过书脊，不再只剩漂浮内页。
+  - `page-flip-back-to-catalog-50.png`：反向中段同样保留完整书壳，内页由插件翻动。
+- 是否达到本轮验收标准：**达到“翻页时书本不消失”的修正目标。**
+
+# Home V2 翻页序列帧修正证据（2026-05-11，已被 2026-05-12 turn.js 插件方案取代）
+
+## 本轮修正范围
+
+- 用户指出上一轮“明显就不像翻页”，判断成立：CSS 透视纸片仍像平面裁切/滑片，不像真实书页翻动。
+- 本轮把 `src/components/home-v2/FoldLinePageFlipStage.tsx` 的翻页可见层改成项目已有序列帧：
+  - 正向目录到详情使用 `public/assets/common/images/home-v2/page-flip-left/compressed/*.webp`；
+  - 反向详情回目录使用 `public/assets/common/images/home-v2/page-flip-right/compressed/*.webp`；
+  - 翻页过程中隐藏业务 UI，只显示书页背景和翻页帧；
+  - 25 / 50 / 75 根据 `progress` 映射到不同序列帧，不再靠单个矩形或 CSS polygon 假装翻页。
+- 序列帧覆盖层做了横纵向分开缩放，避免第一次接入时出现“中间小书盖大书”的比例错误。
+
+## 本轮实际运行
+
+```powershell
+npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx src/pages/HomeV2.tsx e2e/lobby.e2e.ts
+npm run typecheck
+$env:BG_BYPASS_GLOBAL_HEAVY_BUDGET='1'
+$env:BG_HEAVY_WAIT_FOR_BUDGET='1'
+$env:BG_HEAVY_WAIT_TIMEOUT_MS='600000'
+$env:PW_E2E_SERVICE_REUSE='shared-single'
+$env:PW_E2E_FRONTEND_PORT='37974'
+$env:PW_E2E_GAME_SERVER_PORT='30180'
+$env:PW_E2E_API_SERVER_PORT='30181'
+$env:BG_HOME_V2_VIEWPORT='2388x1080'
+npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：通过
+  - Typecheck：通过
+  - E2E：通过，日志确认正反向六帧分别抓到 `raw/progress = 0.250 / 0.500 / 0.750`
+
+## 本轮关键截图（绝对路径）
+
+### 1) 目录 -> 详情：25%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-25.png`
+- 我实际看到什么：
+  - 右页出现序列帧里的页边、背页和阴影，已经不是一块 CSS 裁切平面。
+  - 业务 UI 没有贴在翻页纸面上，翻页阶段只显示书页和纸张材质。
+  - 序列帧与底层书本大体在同一坐标系，但能看出低分辨率素材放大后的像素感。
+- 是否达到本轮验收标准：**达到“像翻页”的语义要求；残余风险是素材清晰度，不是交互语义。**
+
+### 2) 目录 -> 详情：50%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 我实际看到什么：
+  - 翻起页片位于书脊附近，左右页有明确遮挡和投影关系。
+  - 画面语义是“书页翻过中线”，不再是左右两套 UI 或单张滑片。
+  - 翻页素材和底图颜色略有差异，但没有方向错误。
+- 是否达到本轮验收标准：**达到**。
+
+### 3) 目录 -> 详情：75%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-75.png`
+- 我实际看到什么：
+  - 翻页帧已经落到左页侧，右页成为稳定目标页。
+  - 25 / 50 / 75 是连续的翻页路径，不是同一张纸片缩放。
+  - 没有业务内容在翻动页上被镜像或拉伸。
+- 是否达到本轮验收标准：**达到**。
+
+### 4) 详情 -> 目录：25%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-25.png`
+- 我实际看到什么：
+  - 反向使用右翻序列帧，左页已有正在翻回的页片和阴影。
+  - 方向与返回目录一致，没有沿用正向帧造成反向错觉。
+  - 业务 UI 同样不参与翻动层。
+- 是否达到本轮验收标准：**达到**。
+
+### 5) 详情 -> 目录：50%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 我实际看到什么：
+  - 页片跨过书脊，中心有明确立起的翻页形态。
+  - 阴影和页边来自序列帧，不再是人工矩形遮挡。
+  - 未出现“source 和 target 两整套页面平铺”的旧问题。
+- 是否达到本轮验收标准：**达到**。
+
+### 6) 详情 -> 目录：75%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-75.png`
+- 我实际看到什么：
+  - 反向后段只剩接近落页的序列帧效果，目录侧成为主视觉。
+  - 25 / 50 / 75 能看出回翻路径连续推进。
+  - 没有新的缩左上角、窄布局或 UI 贴纸回退。
+- 是否达到本轮验收标准：**达到**。
+
+## 对旧结论的修正
+
+- 2026-05-10 的“目标 spread + 单张来源离场页片”仍不足以代表真实翻页，已被用户反馈否定。
+- 当前以本节为准：**翻页中间态必须使用真实翻页序列帧或等价素材，不再接受单个 CSS 平面裁切/透视纸片作为收口证据。**
+- 已知剩余风险：现有 `page-flip-left/right` 素材分辨率较低，放大到 2388x1080 横屏后会有颗粒感；若后续要继续提高质感，需要替换更高分辨率的同方向序列帧素材，而不是再回到 CSS 纸片。
+
+# Home V2 多帧翻页语义收口证据（2026-05-10，2388x1080 真移动端横屏）
+
+## 本轮修正范围
+
+- 用户指出“只看 50% 不够，25% / 75% 也要看”，并明确指出旧实现的结构性错误：翻页时 source 和 target 两边同时平铺显示，不是可验收的翻页语义。
+- 本轮把 `src/components/home-v2/FoldLinePageFlipStage.tsx` 的翻页态改成：
+  - 底层直接渲染**目标完整 spread**；
+  - 顶层只保留**一张来源离场页片**；
+  - 离场页片随进度从大到小收缩，25% / 50% / 75% 有明确连续变化；
+  - 不再使用“source 静态页 + target reveal + 额外纸片”这种多套语义叠加。
+- 最终清理删除了旧 `CornerCurlOverlay` / `FoldGeometry` / `PageViewport` / shell-stage 接口残留，避免后续误接回旧的双页叠层模型。
+- `e2e/lobby.e2e.ts` 已固定抓取正反向 `25 / 50 / 75` 六张中间帧。
+
+## 本轮实际运行
+
+```powershell
+npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx src/pages/HomeV2.tsx e2e/lobby.e2e.ts
+npm run typecheck
+$env:BG_BYPASS_GLOBAL_HEAVY_BUDGET='1'
+$env:BG_HEAVY_WAIT_FOR_BUDGET='1'
+$env:BG_HEAVY_WAIT_TIMEOUT_MS='600000'
+$env:PW_E2E_SERVICE_REUSE='shared-single'
+$env:PW_E2E_FRONTEND_PORT='37974'
+$env:PW_E2E_GAME_SERVER_PORT='30180'
+$env:PW_E2E_API_SERVER_PORT='30181'
+$env:BG_HOME_V2_VIEWPORT='2388x1080'
+npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：通过
+  - Typecheck：通过
+  - E2E：最终清理后重跑通过，日志确认六帧分别抓到 `raw/progress = 0.250 / 0.500 / 0.750`
+
+## 本轮关键截图（绝对路径）
+
+### 1) 目录 -> 详情：25%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-25.png`
+- 我实际看到什么：
+  - 底层已经是目标详情 spread：左页为王权骰铸详情，右页为在线大厅。
+  - 右页上方只有一张来源目录页片正在离场，不再有 source 整页静态平铺。
+  - 25% 时离场页片仍较宽，符合翻页早段。
+- 是否达到验收标准：**达到**。
+
+### 2) 目录 -> 详情：50%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 我实际看到什么：
+  - 离场页片已经明显变窄，和 25% 不是同一张静态画面。
+  - 底层详情页内容没有被第二套目录页平铺抢占。
+  - 画面语义是“目标详情 spread + 单张目录离场页片”。
+- 是否达到验收标准：**达到**。
+
+### 3) 目录 -> 详情：75%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-75.png`
+- 我实际看到什么：
+  - 离场页片只剩右侧窄边，目标详情 spread 已成为主视觉。
+  - 不再出现“左边目录整页 + 右边详情整页”同时摊开的旧问题。
+  - 75% 有明显接近完成的状态变化。
+- 是否达到验收标准：**达到**。
+
+### 4) 详情 -> 目录：25%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-25.png`
+- 我实际看到什么：
+  - 底层已经是目标目录 spread，左右页目录内容完整存在。
+  - 左页上方只有一张详情页片正在离场，不是详情页静态平铺在另一侧。
+  - 25% 时离场页片仍较宽，和正向早段语义一致。
+- 是否达到验收标准：**达到**。
+
+### 5) 详情 -> 目录：50%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 我实际看到什么：
+  - 详情离场页片缩到中段宽度，目标目录 spread 已经清晰可见。
+  - 不再有“目录 reveal + 详情右页 + 详情翻页”三套语义同时出现。
+  - 回程和正向一样是单张离场页片。
+- 是否达到验收标准：**达到**。
+
+### 6) 详情 -> 目录：75%
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-75.png`
+- 我实际看到什么：
+  - 详情离场页片只剩左侧窄边，目录 spread 成为主视觉。
+  - 没有重复“王权骰铸”详情页，也没有房间列表窄缝泄漏成第二层。
+  - 25 / 50 / 75 连续帧能看出明确收缩过程。
+- 是否达到验收标准：**达到**。
+
+## 对旧结论的修正
+
+- 本文档里此前“只看 50% 已收口”“翻页层只翻纸”的阶段性口径已经不足以代表当前验收标准。
+- 当前以本节为准：**必须同时看正反向 25 / 50 / 75，多帧中不得出现 source 和 target 两整套页面同时平铺；底层是目标 spread，顶层只允许一张来源离场页片。**
+
+## 本轮结论
+
+- 当前 Home V2 首页翻页链路达到本轮最新验收口径：
+  - 真移动端横屏；
+  - 正反向各 25 / 50 / 75 六张截图齐全；
+  - 底层是目标完整 spread；
+  - 顶层只剩单张来源离场页片；
+  - 离场页片随进度连续收缩；
+  - 不再出现用户指出的“两边都显示”结构性问题。
+
+# Home V2 方案 B 收口证据（2026-05-02，2388x1080 真移动端横屏）
+
+## 本轮修正范围
+
+- 上一轮虽然已经把 50% 中间帧抓准了，但用户继续指出一个更高层问题：**翻页层里仍然带着 live UI，视觉上还是像“UI 在纸上面/跟着纸一起飞”**。
+- 因此本轮不再继续调折角参数，而是把 `FoldLinePageFlipStage.tsx` 切到 **方案 B**：
+  - 底层页面内容保持静止；
+  - 顶层只保留纸张、阴影和折页高光；
+  - **翻页层不再承载 live UI 内容**。
+
+## 本轮实际运行
+
+```powershell
+npx eslint .\src\components\home-v2\FoldLinePageFlipStage.tsx .\e2e\lobby.e2e.ts
+npm run typecheck
+$env:PW_E2E_SERVICE_REUSE='shared-single'
+$env:PW_E2E_FRONTEND_PORT='37974'
+$env:PW_E2E_GAME_SERVER_PORT='30180'
+$env:PW_E2E_API_SERVER_PORT='30181'
+$env:BG_HOME_V2_VIEWPORT='2388x1080'
+npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：通过
+  - Typecheck：通过
+  - E2E：通过
+
+## 本轮关键截图（绝对路径）
+
+### 1) 目录 -> 详情：50% 中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 我实际看到什么：
+  - 右页正在翻起的是**纯纸张层**，上面不再挂房间列表或分类导航本体。
+  - 右页在线大厅列表保持在底层静止，可见层级是“UI 在下，纸张在上”，不再是“UI 跟着纸一起翻”。
+  - 这张图仍然是可信 50% 中间帧，不是 steady state 误抓。
+- 是否达到验收标准：**达到**。
+
+### 2) 详情 -> 目录：50% 反向中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 我实际看到什么：
+  - 左页折回目录时，翻起层同样只剩纸张和阴影，没有把目录条目或详情正文贴到翻页面上。
+  - 目录 UI 停在底层书页里，反向链路和正向链路的语义一致。
+  - 折页位置已接近半页，而不是只有小角贴片。
+- 是否达到验收标准：**达到**。
+
+### 3) 首页 steady state
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 我实际看到什么：
+  - 目录内容仍完整落在书页内，没有缩到左上角，也没有被误改成窄布局。
+  - 召唤师战争等缩略图仍完整显示，没有再露出白边/黄边。
+  - 右下角 steady 折角仍保留，但没有压坏目录排版。
+- 是否达到验收标准：**达到**。
+
+### 4) 详情 steady state
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 我实际看到什么：
+  - 左页王权骰铸详情、右页在线大厅房间表都仍留在书页里，没有因为方案 B 回退成空白壳或错位页。
+  - 详情页当前是实际前端可交互布局，不是单独假页面截图。
+- 是否达到验收标准：**达到**。
+
+## 对旧结论的修正
+
+- 本文档里此前多处“50% 已达标”的结论，**在用户指出“UI 还在纸上面”之后已经不再足够**。
+- 现在应以本节这组截图为准：**真正收口点不是“抓到了 50%”，而是“抓到的 50% 里翻起层已经不再承载 live UI”**。
+
+## 本轮结论
+
+- Home V2 首页翻页链路当前已达到本轮收口口径：
+  - 真移动端横屏；
+  - 内容仍在书本里；
+  - 50% 中间帧可信；
+  - **翻的是纸，不是 UI**；
+  - 首页与详情 steady state 未回退；
+  - 同一条首页 E2E 已通过。
+
+# Home V2 50% 冻结抓帧后复核证据（2026-05-02，2388x1080 真移动端横屏）
+
+## 先修正一个旧结论
+
+- 上一轮我主动复看时发现：此前的 `page-flip-to-detail-50.png` 里有一张实际上抓成了详情 steady state，**不能算真正的 50% 中间帧证据**。
+- 所以这轮先修的不是视觉层，而是**抓帧口径**：
+  - 组件增加 `window.__BG_HOME_V2_E2E_HOLD_PROGRESS__` 测试冻结能力；
+  - E2E 改成“冻结到目标进度 -> 截图 -> 再释放”。
+- 下面这批图，才是重新校验后的**可信 50% 中间帧**。
+
+## 本轮关键截图（绝对路径）
+
+### 1) 目录 -> 详情：真实 50% 中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 肉眼结论：
+  - 现在右页折起层里能看到 source 页真实内容正在翻走，不再是之前那种误抓到详情稳态的假 50% 图。
+  - 底层目标页内容保持静止，没有整张 UI 跟着翻页层一起飞。
+  - 纸页是在 UI 上层翻，不是背景在折。
+- 是否达到验收标准：**达到**。
+
+### 2) 详情 -> 目录：真实 50% 反向中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 肉眼结论：
+  - 左页 detail 内容这次确实是在折回目录，不再是终态误抓。
+  - 反向翻页同样保留“底层静止 + 顶层纸页翻动”的关系，前后方向一致。
+  - 当前纸张纹理还可继续抠，但不影响“这是真 50% 折页帧”的判断。
+- 是否达到验收标准：**达到**。
+
+### 3) 首页与详情稳态仍未回退
+- 首页：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 详情：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼结论：
+  - 首页仍完整留在书页中，没有缩回左上角，也没有被误改成窄布局。
+  - 详情 steady state 仍保持完整可用，本轮抓帧修正没有把主态带坏。
+
+## 本轮结论
+
+- 当前这组 50% 图终于是**可信中间帧**，不再是假 steady state 证据。
+- 翻页方向、层级关系、正反向一致性和移动横屏主态都已经达到本轮可验收口径。
+
+
+# Home V2 50% 半页折页收口证据（2026-05-02，2388x1080 真移动端横屏）
+
+## 本轮范围
+
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 用户最新硬口径：
+  - 必须看 **50%** 中间帧，不再接受 25%
+  - 目标页 UI 静止，折页必须压在 UI 上面
+  - 不能再是“小角贴层”，而要像**半页真的翻起来**
+  - 只做首页链路，按移动端横屏真实可用收口
+
+## 本轮实现裁决
+
+- 根因已经重新确认：之前的问题不是“有没有 turn.js”，而是**可见层仍像小角贴片**，50% 时肉眼看不到半页翻起。
+- 当前修法：保留 `turn.js` 作为翻页 runtime 与时序驱动，但把可见层重构成：
+  1. 底层目标页 steady state 保持静止；
+  2. 中层保留 source page 的可见裁切区；
+  3. 顶层改成**大面积纸张折页遮挡层**，并强制位于 UI 之上；
+  4. 为避免 Playwright 只抓到动画末尾，又给翻页完成回调增加了**最短可见动画时长门槛**，保证 50% 中间帧稳定可截图。
+
+## 本轮运行与校验
+
+```bash
+npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx
+npm run typecheck
+PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：通过（0 error）
+  - Typecheck：通过
+  - E2E：通过
+
+## 本轮关键截图（绝对路径）
+
+### 1) 目录 -> 详情：50% 中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 肉眼结论：
+  - 左页详情内容保持静止，没有再跟着翻页层一起飞。
+  - 右页上方现在是**大面积纸张折页层**，已经不是旧的右下角小角贴片；50% 时能直接看出整张纸正在翻起。
+  - 折页层压在房间列表 UI 上方，说明这次不是“背景被折”，而是“纸页在 UI 上面翻”。
+- 是否达到验收标准：**达到**。这张图已经满足“50% 必须看得出半页在翻、目标页 UI 静止、折页在 UI 上层”的本轮核心要求。
+
+### 2) 详情 -> 目录：50% 反向中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 肉眼结论：
+  - 反向翻页同样是大面积纸张折回，不再退化成小角或静态跳切。
+  - 首页目录 UI 保持在书页里，折页层从其上方掠过，前景/背景关系正确。
+  - 当前纸张纹理仍可继续细抠，但已经不影响“这是半页翻起”的判断。
+- 是否达到验收标准：**达到**。
+
+### 3) 详情 steady state
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼结论：
+  - 详情落点仍完整留在书页内，本轮翻页层重构没有把 steady state 带坏。
+  - 左页教程入口、右页房间表都保持真实可用。
+
+### 4) 首页 steady state
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼结论：
+  - 首页仍居中落在书本内，没有缩回左上角，也没有被误改成窄布局。
+  - 缩略图、目录排版与顶部导航仍在书页内，未被本轮翻页改动破坏。
+
+## 旧结论失效说明
+
+- 本文档里此前多处基于 `25%` 中间帧的“折角已达标”结论，**不再能代表当前验收口径**。
+- 用户已经明确要求：必须以 **50% 中间帧** 判断是否真的是折页；因此旧的 `page-flip-to-detail-25.png` / `page-flip-back-to-catalog-25.png` 只能视为历史过程证据，不能再作为本轮收口依据。
+
+## 本轮结论
+
+- 当前 Home V2 首页链路已经完成本轮要求的翻页收口：
+  - 真移动端横屏；
+  - 内容仍在书本里；
+  - 目标页 UI 静止；
+  - 折页位于 UI 上层；
+  - 50% 中间帧能明确看出半页翻起；
+  - 同一条首页 E2E 已通过。
+- 剩余若再迭代，属于**纸张质感/阴影风格微调**，不再是“翻页方向不对”或“端到端不可验收”的阻塞问题。
+
+
+# Home V2 page-owned 翻页修正证据（2026-05-01，2388x1080 真移动端横屏）
+
+> **本节结论覆盖并修正前面“curl 贴层也算完成”的阶段性口径。** 当前验收重点不是“有没有动画”，而是“被翻的那张纸是否真的带着自己的 UI 一起动”。
+
+## 本轮运行命令
+```powershell
+npm run typecheck
+PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：`typecheck 通过`，`1 passed`
+
+## 关键截图与肉眼结论
+
+### 1) 目录 -> 详情 25% 中间帧：被翻的是源页本身，不再是底层 full detail + 贴角
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-25.png`
+- 我实际看到什么：
+  - 右页的目录内容已经附着在那张正在翻动的纸上，顶部分类和卡图一起斜着离开书面。
+  - 右侧底下露出的已经是详情页右页在线大厅，不再像上一版那样一开始就整本 detail 全露出来。
+  - 左下角还能看到卷起的小折角，说明当前不是单纯横向换页。
+- 是否达到验收标准：**达到**。这张图已经能证明“UI 属于被翻的 page”，不是“底层页面 + 上层贴一层 curl”。
+
+### 2) 详情 -> 目录 25% 中间帧：回程同样是 page 自己带着内容翻回去
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-25.png`
+- 我实际看到什么：
+  - 右侧正在翻回去的那张纸上仍带着详情页内容，不是单独一块阴影板。
+  - 书本底下重新显露的是目录页左右分栏内容，而不是空白壳或错页。
+  - 右下角仍保留折角卷边，回程和正向的语义一致。
+- 是否达到验收标准：**达到**。回程链路也已经回到“翻纸”而不是“盖层”。
+
+### 3) 首页稳态：没有为翻页修复引入新的左上角错位或窄布局回退
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 我实际看到什么：
+  - 整本书仍完整居中，没有缩在左上角。
+  - 六张缩略图仍完整留在书页里，右下角 steady fold 仍在。
+- 是否达到验收标准：**达到**。翻页层重写没有把首页 steady state 带坏。
+
+### 4) 详情稳态：翻页结构改写后详情页仍完整落在书页中
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 我实际看到什么：
+  - 左页王权骰铸介绍、按钮和右页房间表仍完整在书页内。
+  - 左下角 steady fold 方向正确，没有因前后页 front/back 重写导致 detail steady state 裂开。
+- 是否达到验收标准：**达到**。
+
+## 本轮结论
+- 当前 Home V2 的关键修正已经从“有动画”推进到“**翻页时 UI 真的属于被翻的那张纸**”。
+- 这轮之后，剩余若继续迭代，优先级应是折页厚度、阴影和材质质感，而不是再回去修 `z-index` 或继续叠 curl 贴层。
+
+
+# Home V2 折角语义修正证据（2026-04-30，2388x1080 真移动端横屏）
+
+## 本轮范围
+- 目标：把上一轮“整页翻 + 小角标”的错误语义，修正成**从页角起卷**的折角翻页；稳态仍保留书页角落的轻折角，中间帧必须能看到角落卷起，而不是整页先立起来。
+
+## 本轮运行命令
+```powershell
+npx eslint src\components\home-v2\FoldLinePageFlipStage.tsx
+npm run typecheck
+PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：`1 passed`
+
+## 关键截图与肉眼结论
+
+### 1) 首页稳态右下折角
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼所见：
+  - 右下角是轻卷起的页角，不再只是一个硬三角贴片。
+  - 目录六张卡片保持完整，折角没有把正文区重新挤成中间小册子。
+- 验收判断：已达到“首页 steady state 有折角语义”的最低要求。
+
+### 2) 目录 -> 详情 25% 中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-25.png`
+- 肉眼所见：
+  - 当前已经不是整页从侧边整体竖起来，而是**右下角先卷起**，形成局部折页。
+  - 目标详情页右页大厅表格已经在卷起页角下方露出，说明这是“角落带动翻页”而不是跳切。
+- 验收判断：已达到“折角是模拟翻页”的核心语义。
+
+### 3) 详情 -> 目录 25% 中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-25.png`
+- 肉眼所见：
+  - 左下/右侧回程中也能看见局部卷页，而不是单纯整页翻回。
+  - 目录页内容在底层重新显露，反向链路同样是真前端过渡。
+- 验收判断：达标。
+
+# Home V2 首页折角 + 首页/详情翻页证据（2026-04-30，2388x1080 真移动端横屏）
+
+## 本轮范围
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 目标：继续围绕首页收口，把**稳态折角**和**首页 <-> 详情翻页中间帧**都压到真实前端可用；首页/详情 steady state 保持真实 DOM，不再出现“中间小册子”或假页面。
+- 说明：官方 `turn.js` 脚本链路已接上，但这套书本素材直接常驻展示 turn.js overlay 会把正文区压成中间小册子，所以当前最终可见层改成：
+  - steady state：前端折角样式；
+  - flipping state：前端整页折页 sheet 动画；
+  - 这样能保留真实页面内容、移动端横屏构图和可验收截图。
+
+## 本轮运行命令
+```powershell
+npx eslint src\components\home-v2\FoldLinePageFlipStage.tsx src\pages\HomeV2.tsx e2e\lobby.e2e.ts
+npm run typecheck
+PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：`1 passed`
+
+## 当前关键截图与肉眼结论
+
+### 1) 首页目录页 steady state
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼所见：
+  - 整本书仍完整居中，没有缩到左上角，也没有被误修成窄布局。
+  - 六张游戏缩略图都完整留在书页内，没有再出现“中间小册子”式重复叠层。
+  - 右下角现在有稳定的轻折角，且折角落在书页内，不会把正文挤歪。
+- 验收判断：达标。
+
+### 2) 目录 -> 详情 翻页中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-25.png`
+- 肉眼所见：
+  - 右页出现了清晰的整页翻起效果，能直接看见折页本体，不再是之前那种正文缩成中间矩形块。
+  - 翻起页下方已经露出目标详情页右页大厅表格，说明当前不是跳切。
+  - 这张图里虽然折页内容仍带着过渡期的混合内容，但“整页折起 + 目标页露出”的主视觉已经成立。
+- 验收判断：当前已达到“有真实翻页中间态、不是静态假页”的要求。
+
+### 3) 详情页 steady state
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼所见：
+  - 左页王权骰铸封面、标题、正文和底部按钮完整保留在书页内。
+  - 右页 6 条房间列表完整可见，没有回到小一圈的旧 detail 舞台。
+  - 左下角稳态折角已经切到 detail 方向。
+- 验收判断：达标。
+
+### 4) 详情 -> 目录 反向翻页中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-25.png`
+- 肉眼所见：
+  - 反向翻页时也能看到一张整页折回目录的可见 sheet，不再只是静态切回首页。
+  - 目录页底层内容已经重新显露，说明回程链路也是真前端动画，不是伪装。
+- 验收判断：达标。
+
+## 本轮结论
+- 首页 steady state、详情 steady state、正反向翻页中间帧都已重新具备**可看图验收**的前端效果。
+- 当前 Home V2 首页链路已经满足本轮“只做首页、移动端横屏、书内内容、端到端验收”的收口要求。
+
+# Home V2 官方 turn.js 翻页接入证据（2026-04-30，2388x1080 真移动端横屏）
+
+## 本轮范围
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 目标：把 Home V2 的 `overview -> detail -> overview` 从自制 `rotateY` 翻页切到 `turnjs.com` 官方插件路线，同时保持首页 / 详情 steady state 继续使用真实前端 DOM。
+- 参考：
+  - `D:\gongzuo\webgame\gameasset\v2首页参考\首页.png`
+  - `D:\gongzuo\webgame\gameasset\v2首页参考\详情页.png`
+  - `http://www.turnjs.com/#`
+  - `https://juejin.cn/post/6844903665216520206`
+
+## 运行命令
+```powershell
+NODE_OPTIONS=--max-old-space-size=4096 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=900000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：`1 passed`
+- 静态门禁：本轮另行执行 `eslint` 与 `typecheck`，均通过。
+
+## 截图与肉眼结论
+
+### 1) 首页目录页基线
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼所见：整本书继续完整居中，双页目录和顶部导航仍留在书页内，没有回到左上角，也没有重新长出旧右侧书签。
+- 验收判断：达标；这说明切翻页运行时后，首页 steady state 没回退。
+
+### 2) 详情页 steady state
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼所见：整本书尺寸与首页一致；左页详情、右页房间列表都仍在书页内，没有出现旧 896x720 那种整本书缩小一圈的退步。
+- 验收判断：达标；说明官方 turn.js 接线没有把详情 steady state 带坏。
+
+### 3) 目录 -> 详情 翻页中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-25.png`
+- 肉眼所见：点击王权骰铸后，不再是旧静态 `page-flip-left/right` 壳图；当前帧已经开始露出目标详情 spread，同时目录 spread 正在退出。
+- 验收判断：达到“已切到官方 turn.js runtime”的目标；该图证明当前不是瞬时跳切。
+
+### 4) 详情 -> 目录 翻页中间帧
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-25.png`
+- 肉眼所见：返回目录时，目标目录 spread 会重新显露，详情 spread 退出；链路不是直接把整个书本整页替换掉。
+- 验收判断：达标；正反向翻页链路都已切到 turn.js runtime。
+
+## 本轮结论
+- Home V2 的首页 / 详情 steady state 继续保持真实前端 DOM。
+- 翻页 runtime 已切到官方 `turn.js 4.1.0` 脚本，不再依赖旧静态 `page-flip-left/right` 资源。
+- 本轮 E2E 通过，可作为下一会话继续细抠翻页观感与详情页细节的基线。
+
+# Home V2 翻页中间帧去空白壳证据（2026-04-29，2388x1080 真移动端横屏）
+
+## 本轮范围（目录 -> 详情 -> 返回目录，中间帧验收）
+
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 本轮目标：确认新版前端折页中间帧不再翻向空白 detail 壳；要求 50% 翻页截图里就能看见目标页真实内容，而不是动画结束后才瞬间填充。
+
+## 本轮运行与校验
+
+```bash
+npx eslint src/pages/HomeV2.tsx
+BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=900000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：0 error
+  - E2E：通过
+  - 首页真分辨率日志：`width=2388, height=1080`
+  - 首页书页舞台日志：`widthRatio=0.798, heightRatio=0.993, center=(0.500,0.500)`
+  - 首页网格日志：`leftColumnDelta=0.00`、`rightColumnDelta=0.00`、`rowDelta=(0.00,0.00,0.00)`
+
+## 本轮关键截图（绝对路径）
+
+### 1) 目录 -> 详情 50% 中间帧：目标页已经是真实详情，不再是空白壳
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 肉眼结论：
+  - 当前 50% 翻页截图里，右页已经能直接看到王权骰铸的在线大厅表格与创建房间按钮，不再是之前那种“翻向空白纸页”的中间态。
+  - 左页也已经带着王权骰铸封面、标题和正文，不是动画结束后才整体闪现详情内容。
+  - 这张图证明当前中间帧已经属于“目录页 -> 详情页”的真实过渡，而不是“目录页 -> 空白壳 -> 详情页”的伪连续动画。
+
+### 2) 详情 -> 目录 50% 中间帧：返回时仍保持目录页作为目标页
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 肉眼结论：
+  - 返回目录的 50% 中间帧里，目标页已经是首页目录页内容，而不是另一张空白壳。
+  - 中间帧能同时看见目录条目和折页折痕，说明当前“返回目录”也已经接到真实目标页，而不是只做一张遮罩。
+
+### 3) 动画结束后详情终态仍然正常
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼结论：
+  - 中间帧改成真实目标页后，详情终态没有退步；左页王权骰铸信息、右页房间表仍完整落在书页内。
+
+## 本轮结论
+
+- 当前 Home V2 的翻页已经不再是“空白 detail 壳”过渡。
+- 现在目录页、详情页、50% 中间帧三者已经是三段真实状态，满足“翻页中间帧不再共用一张静态壳”的最小收口要求。
+
+# Home V2 详情页书本尺寸统一证据（2026-04-29，2388x1080 真移动端横屏）
+
+## 本轮范围（首页 -> 详情，书本整体尺寸统一）
+
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 本轮目标：把详情页整本书的舞台尺寸统一到首页目录页标准，不再让 detail 继续按旧 `896x720` 基线缩小；本轮不扩散去改 detail 左右页内容结构。
+
+## 本轮运行与校验
+
+```bash
+npx eslint src/pages/HomeV2.tsx
+BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=900000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：0 error
+  - E2E：通过
+  - 首页真分辨率日志：`width=2388, height=1080`
+  - 首页书页舞台日志：`widthRatio=0.798, heightRatio=0.993, center=(0.500,0.500)`
+  - 首页网格日志：`leftColumnDelta=0.00`、`rightColumnDelta=0.00`、`rowDelta=(0.00,0.00,0.00)`
+
+## 本轮关键截图（绝对路径）
+
+### 1) 首页目录页维持原标准书本大小
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼结论：
+  - 首页仍保持 `2388x1080` 真移动端横屏口径，书本整体没有缩到左上角，也没有被误改成窄布局。
+  - 这轮只动 detail 舞台基线后，首页书本占画面比例没有回退；说明“统一 detail 尺寸”没有把首页基线带坏。
+
+### 2) 详情页整本书现在和首页使用同一套尺寸标准
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼结论：
+  - 详情页当前整本书的外轮廓占画面比例已经和首页目录页一致，不再明显小一圈；这次修复针对的是整本书舞台，而不是只把左页或右页内容单独放大。
+  - 在书本尺寸统一后，左页封面/标题/正文和右页大厅表格仍完整留在书页内部，没有因为放大 detail 舞台而溢出书页边界。
+  - 当前截图仍然是真前端详情页：左页是王权骰铸真实内容，右页是 6 行真实 Dice Throne 房间，不是摆拍图。
+
+## 新增翻页中间帧证据（2026-04-29 补录）
+
+### 3) 目录 -> 详情 翻页中间帧
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-mid.png`
+- 肉眼结论：
+  - 现在已经能直接看到目录进入详情过程中的翻页中间帧，不再只有“翻前首页”和“翻后详情”两张静态图。
+  - 当前中间帧仍然使用现有 `page-flip-left` 资源，因此这张证据证明的是**翻页链路真实存在且可截图**，不是说翻页资源风格已经最终收口。
+
+### 4) 详情 -> 目录 反向翻页中间帧
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-mid.png`
+- 肉眼结论：
+  - 已补到从详情页返回目录时的反向翻页过程图，后续就能直接对照“正向翻页 / 反向翻页 / 落地目录页”三段证据，不必再靠口头描述。
+
+### 5) 反向翻页后的目录落点
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-catalog-return-after-flip.png`
+- 肉眼结论：
+  - 反向翻页结束后，目录页重新落回首页 spread，说明“返回目录”不是跳切，而是有完整回程链路。
+
+## 本轮结论
+
+- `src/pages/HomeV2.tsx` 已取消 detail 对旧 `896x720` 基线的依赖，首页与详情现在统一使用同一套书本舞台标准。
+- 这轮补录后，首页 -> 详情 -> 返回目录 的**翻页中间帧截图证据已经齐了**；当前剩余问题不再是“缺截图”，而是后续是否继续收口翻页资源风格与状态机语义。
+
+# Home V2 详情页参考稿收口证据（2026-04-29，2388x1080 真移动端横屏）
+
+## 本轮范围（首页 -> 详情主链路，详情页收口）
+
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 本轮目标：在不动首页既有基线的前提下，把详情页继续收口到参考稿方向；左页改成编辑式说明页，右页改成账页式房间表，并把演示链路切到 **Dice Throne + 真实房间**，避免继续用井字棋占位感强的 detail 图。
+
+## 本轮运行与校验
+
+```bash
+npx eslint src/components/home-v2/GameDetails.tsx e2e/lobby.e2e.ts
+npm run typecheck
+PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：0 error
+  - Typecheck：通过
+  - E2E：通过
+  - 首页真分辨率日志：`width=2388, height=1080`
+  - 书页舞台日志：`widthRatio=0.798, heightRatio=0.993, center=(0.500,0.500)`
+  - 首页网格日志：`leftColumnDelta=0.00`、`rightColumnDelta=0.00`、`rowDelta=(0.00,0.00,0.00)`
+
+## 本轮关键截图（绝对路径）
+
+### 1) 首页目录页仍保持既有基线
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼结论：
+  - 首页仍是 `2388x1080` 真移动端横屏口径，书页主体没有缩在左上角，也没有被误改成窄布局。
+  - 双页 6 条目录项仍然完整落在书页内容区内，没有因为详情页收口把首页基线带歪。
+  - 当前详情页演示链路改成点击 `dicethrone`，但首页目录页本身的交互结构没有退化成假热区。
+
+### 2) 详情页现在是 Dice Throne 真实链路，左页/右页都更贴近参考稿
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼结论：
+  - 左页已经不再是轻量标题卡，而是 **大封面 + 大标题 + 正文段落 + 推荐人数块 + 教程模式按钮** 的编辑式书页结构；当前图里能直接看到王权骰铸封面、标题“王权骰铸”、推荐人数 `2 / 4` 和底部教程按钮。
+  - 右页不再是稀疏的几行列表，已经收成 **在线大厅 / 搜索框 / 创建房间 / 筛选 pill / 账页式房间表** 的结构；当前图里 6 条真实 Dice Throne 房间都能在书页内看到，不是静态摆拍文本。
+  - 房间表里已经出现不同真实状态：前几条是可加入的 `1/2` 房间，底部还能看到 `2/2` 已满房；说明这页不是纯视觉占位，而是接了真实 lobby presence 数据。
+  - 详情页所有主要内容仍完整落在书页内部：左页封面和按钮没有跑出版心，右页表格和操作按钮也没有溢出书页边界。
+
+## 本轮结论
+
+- 详情页这一轮已经达到“可收”的状态：内容是真前端、是真房间、是真链路，不再只是旧壳上的轻量占位。
+- 当前真正还没做完的是 **翻页态与详情态之间的统一资源/动画收口**；但详情页本身的主视觉和真实操作区已经可以从本轮任务里单独收口。
+
+# Home V2 井字棋缩略图去假证据（2026-04-28，2388x1080 真移动端横屏）
+
+## 本轮范围（仅首页右下缩略图去假）
+
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 目标：把首页目录页右下 `tictactoe` 的前端生成缩略图换成真实游戏截图封面，不改首页总体布局。
+
+## 本轮运行与校验
+
+```bash
+npx eslint src/games/tictactoe/manifest.ts src/games/tictactoe/thumbnail.tsx src/components/home-v2/LobbyDirectory.tsx
+PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：0 error（保留 1 条既有 fast-refresh warning）
+  - E2E：通过
+  - 首页真分辨率日志：`width=2388, height=1080`
+  - 书页舞台日志：`widthRatio=0.798, heightRatio=0.993, center=(0.500,0.500)`
+
+## 本轮关键截图（绝对路径）
+
+### 1) 首页目录页：井字棋已改成真实截图封面
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼结论：
+  - 右下角井字棋缩略图不再是前端生成的霓虹占位画，而是实际游戏截图内容；能直接看到标题与棋盘主体。
+  - 缩略图本体完整出现在书页内容区里，没有重新出现白块、字符占位或裁切露边。
+  - 这次改动没有带歪其它条目；`splendor` / `summonerwars` 仍保持正常显示。
+
+### 2) 详情入口链路仍然成立
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼结论：
+  - 点击井字棋后仍然可以进入详情页，说明缩略图来源切换没有影响首页进详情链路。
+
+## 本轮结论
+
+- 首页剩余最明显的“假缩略图”已清掉：`tictactoe` 已切到真实游戏截图封面。
+- 目前首页目录页的 6 个游戏条目里，右页不再存在字符占位或前端生成缩略图。
+
 # Home V2 详情页 exact spread 首轮落地证据（2026-04-28，2388x1080 真移动端横屏）
 
 ## 本轮范围（首页 -> 详情主链路）
@@ -306,3 +1190,304 @@ PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER
 - 书页主体仍完整落在屏幕中央，没有出现“缩在左上角”或内容跑出书壳的情况。
 - 顶部导航、右上角账号入口、六个目录条目都已经按真分辨率重新放大和重排，比上一轮更接近参考图节奏。
 - 当前截图仍未完全达到“一模一样”：右上角入口还可继续精修；左右两列条目的纵向节奏还可继续收；`splendor / summonerwars` 缩略图边缘仍值得再做最后一轮清边。
+
+
+---
+
+# Home V2 steady state 去旧右侧书签证据（2026-04-29，2388x1080 真移动端横屏）
+
+## 本轮范围
+
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 本轮目标：确认目录页 / 登录页 / 详情页 steady state 已不再渲染旧右侧书签节点，运行时语义改为“顶部导航 + 页内返回入口”，而不是“把旧书签视觉藏起来”。
+
+## 本轮运行与校验
+
+```bash
+npx eslint src/pages/HomeV2.tsx e2e/lobby.e2e.ts
+NODE_OPTIONS=--max-old-space-size=4096 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=900000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：0 error
+  - E2E：通过
+  - 首页真分辨率日志：`width=2388, height=1080`
+  - 首页书页舞台日志：`widthRatio=0.798, heightRatio=0.993, center=(0.500,0.500)`
+  - 旧节点断言：目录页 / 登录页 / 详情页三段 steady state 下，`home-v2-tab-lobby / home-v2-tab-rooms / tab_button_lobby / tab_button_rooms` 均为 `0`
+
+## 本轮关键截图（绝对路径）
+
+### 1) 目录页 steady state：只剩顶部导航和页内内容，没有右侧书签
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼结论：
+  - 目录页右侧边缘看不到任何旧书签条，也没有旧 tab 的凸出物；页面语义已经只剩顶部分类导航、右上角账号入口和双页目录内容。
+  - 书本仍完整居中，没有因为拔掉旧 scene tab 而把首页布局带回左上角或窄布局。
+
+### 2) 详情页 steady state：返回目录入口留在页内，不再依赖右侧书签
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼结论：
+  - 详情页左上角已有页内“返回目录”入口，右侧边缘同样看不到旧书签。
+  - 左页王权骰铸信息和右页在线大厅表都完整留在书页内部，说明去掉旧书签运行时后，steady state 没有产生新的溢出或错位。
+
+### 3) 翻页中间帧仍保持真实目录 -> 详情链路
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 肉眼结论：
+  - 去掉旧 right-tab steady state 后，前端折页链路没有退步；中间帧仍能直接看到真实目标页内容。
+  - 当前剩下的不是“书签还在”，而是后续是否继续把开场动画资源也完全替换到同一套新版书本语言。
+
+## 本轮结论
+
+- Home V2 当前已经把“右侧书签”从 steady state 语义里拔掉：目录页、登录页、详情页都不再依赖旧 scene tab。
+- 现阶段仍保留的是开场 `open` 动画资源与折页资源，不再是 steady state 的右侧书签问题。
+
+---
+
+# Home V2 登录页 / 详情页视觉继续收口证据（2026-04-29，2388x1080 真移动端横屏）
+
+## 本轮范围
+
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 本轮目标：在已去掉旧右侧书签 steady state 的基础上，继续把登录页和详情页往参考稿方向收：登录页改成“品牌页 + 真实表单页”，详情页继续提高按钮和房间表可读性。
+
+## 本轮运行与校验
+
+```bash
+npx eslint src/components/home-v2/HomeTabPanels.tsx src/components/home-v2/GameDetails.tsx src/components/auth/AuthModal.tsx src/pages/HomeV2.tsx e2e/lobby.e2e.ts
+npm run typecheck
+NODE_OPTIONS=--max-old-space-size=4096 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=900000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：0 error
+  - Typecheck：通过
+  - E2E：通过
+
+## 本轮关键截图（绝对路径）
+
+### 1) 登录页书页态：左页已改成品牌页，右页是页内真实认证表单
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-rooms-auth-entry.png`
+- 肉眼结论：
+  - 左页已经不再是之前那种简单的两三个切换按钮，而是“大标题 + 三条卖点 + 底部模式入口”的品牌页结构。
+  - 右页是页内真实表单，不再依赖弹窗，也没有旧右侧书签。
+  - 当前仍未达到参考图的最终精度：右页输入区对比度还可以继续加，整体留白也还能再收。
+
+### 2) 详情页 steady state：返回目录 / 创建房间 / 房间表都已切成统一深色按钮语义
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼结论：
+  - 顶部“返回目录”和“创建房间”已经不是之前那种浅色小贴片，而是统一的深色操作按钮。
+  - 右页房间表的底色、搜索框和按钮对比度都比上一轮更高，当前图里可以直接读到房间名、人数和操作。
+  - 这张图仍然说明细节页还没最终收口：左页内容排版仍比参考稿更居中，右页表格的密度也还能继续往设计稿靠。
+
+# Home V2 登录页 / 详情页二次压稿证据（2026-04-30，2388x1080 真移动端横屏）
+
+## 本轮范围
+
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 目标：继续按 `D:\gongzuo\webgame\gameasset\v2首页参考\登录注册.png` / `详情页.png` 收 rooms/login 与 detail steady state，重点看右页表单是否还像 modal 残留、detail 左页按钮是否被裁切、右页房间表是否仍留在书页内。
+
+## 本轮运行与校验
+
+```bash
+npx eslint src/components/home-v2/HomeTabPanels.tsx src/components/home-v2/GameDetails.tsx src/components/auth/AuthModal.tsx
+npm run typecheck
+NODE_OPTIONS=--max-old-space-size=4096 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=900000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：0 error
+  - Typecheck：通过
+  - E2E：通过
+  - 首页真分辨率日志：`width=2388, height=1080`
+  - 书页舞台日志：`widthRatio=0.798, heightRatio=0.993, center=(0.500,0.500)`
+  - 首页网格日志：`leftColumnDelta=0.00`、`rightColumnDelta=0.00`、`rowDelta=(0.00,0.00,0.00)`
+
+## 本轮关键截图（绝对路径）
+
+### 1) rooms/login steady state
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-rooms-auth-entry.png`
+- 肉眼结论：
+  - 左页现在是书页文案 + 低存在感账号入口文字导航，不再是上轮那种底部厚按钮卡片。
+  - 右页已经去掉大白卡 modal 残留，输入区回到页内直排结构；登录 tabs、输入框、提交按钮都在书页内，没有溢出版心。
+  - 仍未完全达标的地方是：右页输入区对比度依然弱于参考图 `登录注册.png`，当前可以判定为“方向已对，但可读性仍可继续加强”，因此这张图**不能**作为登录页终稿收口证据。
+
+### 2) detail steady state
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼结论：
+  - 左页教程按钮这次已经完整留在首屏内，不再像前一轮那样被裁掉下半截；这说明 detail 左页纵向节奏修正生效。
+  - 左页封面、标题、正文、推荐人数、教程按钮都仍落在书页内，没有再次缩到左上角或跑出版心。
+  - 右页 6 行 Dice Throne 真房间仍完整可见，说明压缩行高和按钮尺寸后没有破坏真实大厅链路。
+
+### 3) 首页目录基线未回退
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼结论：
+  - 这轮只动 rooms/login 与 detail steady state 后，首页目录仍保持居中，不缩在左上角，也没有被误改成窄布局。
+  - 双页 6 条目录项和顶部导航都继续留在书页内，本轮改动没有把首页基线带坏。
+
+## 本轮结论
+
+- 本轮已经解决的退步：detail 左页按钮首屏被裁切、rooms 右页大白卡 modal 残留。
+- 当前尚未彻底收口的点：登录页右页输入区对比度还弱于参考稿，后续仍应继续提高可读性后再宣称终稿。
+
+# Home V2 翻页结构重写证据（2026-04-30，2388x1080 真移动端横屏）
+
+## 本轮范围
+
+- worktree：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2`
+- 分支：`feat/homepage-v2`
+- 目标：修掉“翻页时内容在一起动”的结构性错误，按用户指定参考《怎么实现一个3d翻书效果》（`https://juejin.cn/post/6844903665216520206`）把翻页改成页级 `rotateY` 结构。
+
+## 本轮运行与校验
+
+```bash
+npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2.tsx e2e/lobby.e2e.ts
+npm run typecheck
+NODE_OPTIONS=--max-old-space-size=4096 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=900000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"
+```
+
+- 结果：
+  - ESLint：0 error
+  - Typecheck：通过
+  - E2E：通过
+  - 首页真分辨率日志：`width=2388, height=1080`
+  - 书页舞台日志：`widthRatio=0.798, heightRatio=0.993, center=(0.500,0.500)`
+  - 首页网格日志：`leftColumnDelta=0.00`、`rightColumnDelta=0.00`、`rowDelta=(0.00,0.00,0.00)`
+
+## 本轮关键截图（绝对路径）
+
+### 1) 目录 -> 详情 50% 中间帧
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 肉眼结论：
+  - 这张图最关键的变化是：左页目录内容静止保留，右页目标内容被揭开，中间只有单张纸在翻；已经不是旧实现那种“整张目录/详情内容一起跟着翻页层动”。
+  - 当前翻页层里能看到单独的纸页 front/back，而不是把整个 spread 压缩进一块小窗口。
+  - 这张图已经能直接证明“内容在一起动”的核心 bug 被消掉。
+
+### 2) 详情 -> 目录 50% 中间帧
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 肉眼结论：
+  - 反向翻页同样回到页级结构：底层仍是 source stage，目标页只在被揭开的页面出现，不再是整张 detail spread 一起被塞进翻页层。
+  - 当前还没完全做到参考实现的地方，是折线层次和纸张厚度仍可继续增强；但这已经属于质感差距，不再是结构错误。
+
+### 3) 详情 steady state 未回退
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- 肉眼结论：
+  - 翻页组件结构重写后，详情 steady state 仍保持正常：左页教程按钮完整，右页 6 行 Dice Throne 真房间仍留在书页内。
+  - 说明这轮不是靠牺牲 detail 页面换来的假翻页，而是在不破坏 steady state 的前提下把翻页层改对了。
+
+## 本轮结论
+
+- 旧问题“内容在一起动”已经被结构重写修掉。
+- 当前若继续迭代，下一步应聚焦折线层数、纸张厚度和阴影质感，向用户给的掘金参考继续压，而不是再回头调旧版整张 stage 翻页参数。
+
+## Addendum（2026-05-08）：Home V2 正向 50% 中间帧过线确认
+
+### 本轮运行
+
+- `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts`
+- `npm run typecheck`
+- `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+
+结果：ESLint 0 error，Typecheck 通过，E2E 通过；日志继续抓到真实 `page-flip-to-detail-50 => raw=0.500`。
+
+### 本轮关键截图（绝对路径）
+
+#### 1) 正向 50%：本轮验收位点
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 肉眼结论：
+  - 翻起页现在已经不是之前那种“均匀发白的半透明硬片/厚板”，而是一张从中缝翻起的窄页，能直接看到真实目录内容贴在页片上。
+  - 中缝附近仍有一点偏挺的亮带，但它已经表现为“纸页立起”的残余质感，不再是旧问题那种整块白板感。
+  - **这张图本轮达到验收标准**：对“正向 50% 还像假纸板”的问题位点，可以据此收口。
+
+#### 2) 反向 50%：未被正向继续收口带坏
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 肉眼结论：
+  - 反向翻页仍保持此前较稳的单页回翻观感，没有被本轮正向继续压窄/降亮度带坏。
+  - 当前图里能看到目录与详情在回翻链路上仍保持真实页面关系，没有新增黑块或多层贴页回归。
+
+#### 3) 稳态页基线未回退
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry.png`
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼结论：
+  - `detail-entry.png` 仍保持左页详情 + 右页房间列表的稳态结构，没有因为继续收正向 50% 而把详情稳态带坏。
+  - `homepage-catalog.png` 仍保持首页目录双页基线，不缩在左上角，也没有误改成窄布局。
+
+### 本轮结论
+
+- 这轮之后，Home V2 当前最棘手的正向 `page-flip-to-detail-50.png` 已经越过“仍像均匀发白硬片/厚板”的验收线。
+- 剩余只有轻微的中缝偏挺感，属于可选精修项，不再是阻止收口的 blocker。
+
+## Addendum（2026-05-08）：Home V2 反向 50% 去重与翻页语义修正
+
+### 本轮运行
+
+- `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts`
+- `npm run typecheck`
+- `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+
+结果：ESLint 0 error，Typecheck 通过，E2E 通过；日志继续抓到真实 `page-flip-back-to-catalog-50 => raw=0.500`。
+
+### 本轮关键截图（绝对路径）
+
+#### 1) 反向 50%：修掉重复王权后的当前验收位点
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 肉眼结论：
+  - 旧图里“王权显示两个”的问题已经消失，说明反向链路的重复内容叠画被切掉了。
+  - 现在主视觉变成一张左页从中缝翻回去，已不是早前那种 overview / detail / turning 三层一起抢画面的乱序状态。
+  - 这张图仍有可继续 polish 的纸感空间，但**用户指出的结构性错误本轮已被修掉**。
+
+#### 2) 正向 50%：未被反向结构修正带坏
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 肉眼结论：
+  - 这轮只收反向结构后，正向 50% 仍保持此前的单张薄纸方向，没有回退成早前那种发白硬片。
+
+## Addendum（2026-05-08）：Home V2 反向 50% 内容泄漏与装饰层收口
+
+### 本轮运行
+
+- `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts`
+- `npm run typecheck`
+- `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+
+结果：ESLint 0 error，Typecheck 通过，E2E 通过；日志明确抓到 `page-flip-to-detail-50 => raw=0.500` 与 `page-flip-back-to-catalog-50 => raw=0.500`。
+
+### 本轮关键截图（绝对路径）
+
+#### 1) 反向 50%：本轮主要验收位点
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`
+- 肉眼结论：
+  - 旧图里“王权显示两个”的问题没有回归，右页现在是目录目标页，反向链路不再同时叠出 detail source。
+  - 之前窄缝里露出的房间列表已经消失；这说明隐藏 turn.js 驱动页已经不再泄漏业务内容。
+  - 中缝处仍有一张翻起纸页与轻阴影，但它现在只承担装饰和运动语义，不再承载重复 UI；这张图达到本轮“可验收”的结构标准。
+
+#### 2) 正向 50%：未被反向泄漏修复带坏
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 肉眼结论：
+  - 正向 50% 仍保持左页目录、右页详情目标页和中缝单张纸边的关系，没有回退成整张 UI 跟着翻。
+  - 中缝纸边较窄，右页详情内容保持在目标页上；它不再依赖翻页层承载业务内容，因此不会重现 source/target 混叠。
+
+### 本轮结论
+
+- 本轮把 `CornerCurlOverlay` 收敛为纯装饰层，去掉了 front/back 内容参数和旧 DOM 克隆承载逻辑。
+- 隐藏 turn.js 页改成透明占位页，只负责页数和翻页时序，不再塞 overview/detail 真实内容；这修掉了反向 50% 窄缝露出房间列表的根因。
+- 当前正反向 50% 已经没有阻止验收的结构性 blocker；剩余只属于纸张质感可选 polish。

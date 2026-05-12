@@ -19,7 +19,7 @@
   "homeV2": {
     "waitingPlayers": "Waiting for players",
     "roomTitleFallback": "Room {{id}}",
-    "roomLedgerTitle": "Room Ledger",
+    "roomLedgerTitle": "Room List",
     "roomCount": "{{count}} rooms",
     "emptyRoomTitle": "No public rooms yet",
     "emptyRoomDescription": "No joinable room records yet.",
@@ -29,7 +29,43 @@
       "typeLabel": "Type",
       "defaultCategory": "Board Game",
       "playerCountLabel": "Recommended Players",
-      "overviewLabel": "Overview"
+      "overviewLabel": "Overview",
+      "onlineLobbyLabel": "Online Lobby"
+    },
+    "catalog": {
+      "allGames": "All Games",
+      "accountSettings": "Account and Settings",
+      "playerNickname": "Player",
+      "help": "Filter"
+    },
+    "referenceCatalog": {
+      "emptyTitle": "Nothing in this category yet",
+      "emptyDescription": "Switch to another category to browse games.",
+      "badges": {
+        "strategy": "Strategy",
+        "collection": "Collection",
+        "war": "War"
+      },
+      "games": {
+        "cardia": {
+          "summary": "Build your deck in a magical card world and fight for glory."
+        },
+        "dicethrone": {
+          "summary": "Claim the throne, battle for honor, and rule the realm."
+        },
+        "smashup": {
+          "summary": "Survive the chaotic battlefield and crush every enemy."
+        },
+        "splendor": {
+          "summary": "Gather gems and forge your own legendary empire."
+        },
+        "summonerwars": {
+          "summary": "Summon mighty creatures and enter an epic battle."
+        },
+        "tictactoe": {
+          "summary": "The classic XO game—simple, clean, and still fun."
+        }
+      }
     },
     "sceneTabs": {
       "lobby": "Lobby",
@@ -42,6 +78,7 @@
         "eyebrow": "Account",
         "title": "Account Login",
         "description": "View recent active public rooms.",
+        "accountActionLabel": "Account",
         "loading": "Checking account status…",
         "emptyTitle": "No public rooms yet",
         "emptyDescription": "No public room records yet.",
@@ -66,12 +103,28 @@
         "emptyTitle": "No updates yet",
         "emptyDescription": "No update records yet."
       }
+    },
+    "detailSearchPlaceholder": "Search rooms or players",
+    "detailNoMatchTitle": "No rooms match this filter",
+    "detailNoMatchDescription": "Try another filter or create a new room.",
+    "detailOpenSummary": "Open {{open}} · Locked {{locked}}",
+    "detailFilters": {
+      "all": "All",
+      "open": "Open",
+      "locked": "Locked",
+      "full": "Full"
+    },
+    "detailColumns": {
+      "roomName": "Room",
+      "players": "Seats",
+      "status": "Status",
+      "action": "Action"
     }
   },
   "password": {
     "modalTitle": "Private Room",
     "modalDesc": "This room requires a password.",
-    "placeholder": "Enter password..."
+    "placeholder": "Password"
   },
   "confirm": {
     "destroy": {

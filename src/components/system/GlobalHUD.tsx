@@ -7,6 +7,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { FabMenu, type FabAction } from './FabMenu';
 import { MessageSquare, Settings, Info, MessageSquareWarning, Maximize, Minimize, Download, RefreshCw } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
+import { isHomeV2DraftRoute, isHomeV2PreviewRoute } from '../../lib/homeV2Routing';
 import {
     readAndroidLiveUpdateActivityState,
     readAndroidLiveUpdateConfig,
@@ -59,6 +60,7 @@ export const GlobalHUD = () => {
 
     // 根据路由判断主题
     const isGamePage = location.pathname.startsWith('/play/');
+    const isHomeV2Route = isHomeV2DraftRoute(location.pathname, location.search) || isHomeV2PreviewRoute(location.pathname);
 
     const isDark = false;
 
@@ -170,7 +172,7 @@ export const GlobalHUD = () => {
         });
     }, [closeByNamespace, isGamePage]);
 
-    if (isGamePage) return null;
+    if (isGamePage || isHomeV2Route) return null;
 
     const isImmediateOtaActive = otaEnabledForCurrentShell && otaActivityState.active;
 

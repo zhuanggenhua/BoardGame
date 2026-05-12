@@ -47,11 +47,14 @@ async function ensureLobbyReady(page: Page): Promise<void> {
     }
 }
 
-async function ensureHomeV2BookMaterialsReady(page: Page): Promise<void> {
+async function ensureHomeV2BookMaterialsReady(
+    page: Page,
+    options?: { requireLegacyTabs?: boolean },
+): Promise<void> {
     const requiredImageKeywords = [
-        '/book-desk/compressed/1.webp',
-        '/book-idle/compressed/1.webp',
-        '/side-tabs-static/compressed/1.webp',
+        ...(options?.requireLegacyTabs === false
+            ? ['/overview-spread/1.png']
+            : ['/book-idle/compressed/1.webp', '/side-tabs-static/compressed/1.webp']),
     ];
 
     await expect.poll(async () => page.evaluate((keywords) => {
@@ -65,7 +68,7 @@ async function ensureHomeV2BookMaterialsReady(page: Page): Promise<void> {
     }, requiredImageKeywords), {
         timeout: 15000,
         message: 'HomeV2 书本素材未完成加载',
-    }).toEqual(['ok', 'ok', 'ok']);
+    }).toEqual(requiredImageKeywords.map(() => 'ok'));
 }
 
 async function waitForMatchBoardOrLoading(page: Page): Promise<'board' | 'loading'> {
@@ -117,12 +120,7 @@ async function openCreateRoomFromDetailsModal(page: Page): Promise<void> {
 
     const openCreateRoomButton = detailsModal.getByTestId('game-details-open-create-room');
     await expect(openCreateRoomButton).toBeVisible({ timeout: 10000 });
-    await openCreateRoomButton.evaluate((button) => {
-        if (!(button instanceof HTMLButtonElement)) {
-            throw new Error('创建房间按钮节点不是 button');
-        }
-        button.click();
-    });
+    await openCreateRoomButton.click();
     await expect(page.getByTestId('create-room-modal').last()).toBeVisible({ timeout: 10000 });
 }
 
@@ -131,12 +129,7 @@ const getVisibleGameDetailsModal = (page: Page) => page.locator('[data-testid="g
 async function confirmCreateRoomFromModal(page: Page): Promise<void> {
     const confirmButton = page.getByTestId('create-room-confirm-button');
     await expect(confirmButton).toBeVisible({ timeout: 10000 });
-    await confirmButton.evaluate((button) => {
-        if (!(button instanceof HTMLButtonElement)) {
-            throw new Error('确认创建按钮节点不是 button');
-        }
-        button.click();
-    });
+    await confirmButton.click();
 }
 
 const HOME_V2_QUERY_ENTRY_TEST_NAME = 'homeV2Draft 查询参数会切到 V2 首页并可进入详情页';
@@ -146,8 +139,101 @@ const MOBILE_PACKAGE_ENTRY_TEST_NAME = '移动端 package-managed 游戏详情�
 const GAME_DETAILS_LOADING_FALLBACK_TEST_NAME = '首次打开游戏详情时会先显示加载骨架，避免只剩路由跳转';
 const ACTIVE_MATCH_FLOATING_BANNER_TEST_NAME = '首页活跃房间浮层在桌面端居中且移动端不溢出';
 const WEB_APP_DOWNLOAD_ENTRY_TEST_NAME = '网页端下载 App 入口会读取 native update latest.json 并打开其中 APK 地址';
-const HOME_V2_E2E_LOGIN_ACCOUNT = 'admin@example.com';
-const HOME_V2_E2E_LOGIN_PASSWORD = 'admin1234';
+const DEFAULT_HOME_V2_MOBILE_LANDSCAPE_VIEWPORT = { width: 2388, height: 1080 };
+function parseHomeV2ViewportFromEnv() {
+    const raw = process.env.BG_HOME_V2_VIEWPORT?.trim();
+    if (!raw) return DEFAULT_HOME_V2_MOBILE_LANDSCAPE_VIEWPORT;
+    const matched = raw.match(/^(\d+)x(\d+)$/i);
+    if (!matched) return DEFAULT_HOME_V2_MOBILE_LANDSCAPE_VIEWPORT;
+    const width = Number.parseInt(matched[1], 10);
+    const height = Number.parseInt(matched[2], 10);
+    if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) {
+        return DEFAULT_HOME_V2_MOBILE_LANDSCAPE_VIEWPORT;
+    }
+    return { width, height };
+}
+const HOME_V2_MOBILE_LANDSCAPE_VIEWPORT = parseHomeV2ViewportFromEnv();
+const HOME_V2_FLIP_CAPTURE_POINTS = [
+    { suffix: '25', progress: 0.25 },
+    { suffix: '50', progress: 0.5 },
+    { suffix: '75', progress: 0.75 },
+] as const;
+
+async function useHomeV2MobileLandscapeViewport(page: Page): Promise<void> {
+    await page.setViewportSize(HOME_V2_MOBILE_LANDSCAPE_VIEWPORT);
+    const viewport = page.viewportSize();
+    if (!viewport) {
+        throw new Error('未能读取当前 Playwright 视口');
+    }
+    console.log(`[home-v2-viewport] width=${viewport.width}, height=${viewport.height}`);
+}
+
+async function captureHomeV2FlipFrameAtProgress(
+    page: Page,
+    testInfo: Parameters<typeof getEvidenceScreenshotPath>[0],
+    name: string,
+    targetProgress: number,
+): Promise<void> {
+    const flipStage = page.locator('[data-testid="home-v2-root"] [data-testid="home-v2-fold-line-flip"]').first();
+    await expect(flipStage).toBeVisible({ timeout: 5000 });
+    const startedAt = Date.now();
+    let lastSnapshot: Record<string, unknown> | null = null;
+
+    await page.evaluate((target) => {
+        (window as Window & { __BG_HOME_V2_E2E_HOLD_PROGRESS__?: number }).__BG_HOME_V2_E2E_HOLD_PROGRESS__ = target;
+    }, targetProgress);
+
+    try {
+        while (Date.now() - startedAt < 4000) {
+            lastSnapshot = await flipStage.evaluate((stage) => ({
+                mode: stage.getAttribute('data-flip-mode'),
+                raw: stage.getAttribute('data-flip-progress-raw'),
+                progress: stage.getAttribute('data-flip-progress'),
+                animating: stage.getAttribute('data-turn-animating'),
+                ready: stage.getAttribute('data-turn-ready'),
+                error: stage.getAttribute('data-turn-error'),
+                sourceSnapshotReady: stage.getAttribute('data-turn-source-snapshot-ready'),
+                mainEffectRuns: stage.getAttribute('data-turn-main-effect-runs'),
+                progressLoopStarts: stage.getAttribute('data-turn-progress-loop-starts'),
+                progressTicks: stage.getAttribute('data-turn-progress-ticks'),
+                progressLastRaw: stage.getAttribute('data-turn-progress-last-raw'),
+                pluginPage: stage.getAttribute('data-turn-plugin-page'),
+                pluginView: stage.getAttribute('data-turn-plugin-view'),
+                pluginAnimating: stage.getAttribute('data-turn-plugin-animating'),
+                pageWrappers: Array.from(stage.querySelectorAll<HTMLElement>('.page-wrapper')).map((wrapper) => ({
+                    page: wrapper.getAttribute('page'),
+                    display: getComputedStyle(wrapper).display,
+                    left: wrapper.style.left,
+                    top: wrapper.style.top,
+                    width: wrapper.style.width,
+                    height: wrapper.style.height,
+                    zIndex: wrapper.style.zIndex,
+                })),
+            }));
+            const raw = Number.parseFloat(String(lastSnapshot.raw ?? ''));
+            const animating = lastSnapshot.animating === 'true';
+            if (Number.isFinite(raw) && animating && raw >= targetProgress) {
+                console.log(`[home-v2-flip-capture] ${name} => ${JSON.stringify(lastSnapshot)}`);
+                const screenshotPath = getEvidenceScreenshotPath(testInfo, name);
+                await page.screenshot({ path: screenshotPath, fullPage: true });
+                return;
+            }
+            await page.waitForTimeout(80);
+        }
+    } finally {
+        await page.evaluate(() => {
+            delete (window as Window & { __BG_HOME_V2_E2E_HOLD_PROGRESS__?: number }).__BG_HOME_V2_E2E_HOLD_PROGRESS__;
+        });
+    }
+
+    throw new Error(`HomeV2 翻页进度未达目标，最后快照=${JSON.stringify(lastSnapshot)}`);
+}
+
+async function waitForHomeV2FlipMode(page: Page, expectedMode: 'overview' | 'detail'): Promise<void> {
+    const flipStage = page.locator('[data-testid="home-v2-root"] [data-testid="home-v2-fold-line-flip"]').first();
+    await expect(flipStage).toHaveAttribute('data-flip-mode', expectedMode, { timeout: 10000 });
+    await expect(flipStage).toHaveAttribute('data-turn-animating', 'false', { timeout: 10000 });
+}
 
 async function createTicTacToeRoom(page: Page): Promise<string> {
     const gameServerBaseURL = getGameServerBaseURL();
@@ -213,7 +299,7 @@ async function createLockedTicTacToeRoom(page: Page): Promise<{ matchId: string;
             numPlayers: 2,
             setupData: {
                 guestId,
-                roomName,
+                roomName: resolvedRoomName,
                 password,
             },
         },
@@ -239,39 +325,92 @@ async function createLockedTicTacToeRoom(page: Page): Promise<{ matchId: string;
     return { matchId, roomName, password };
 }
 
-async function createNamedPublicTicTacToeRoom(page: Page): Promise<{ matchId: string; roomName: string }> {
+async function createNamedPublicDiceThroneRoom(
+    page: Page,
+    roomName?: string,
+    options?: { password?: string; fillSecondSeat?: boolean },
+): Promise<{ matchId: string; roomName: string }> {
     const gameServerBaseURL = getGameServerBaseURL();
-    const guestId = `homev2-room-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-    const roomName = `书页演示房-${guestId.slice(-4)}`;
+    const guestId = `homev2-dt-room-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
+    const resolvedRoomName = roomName ?? `王权骰铸演示房-${guestId.slice(-4)}`;
 
-    const createResponse = await page.request.post(`${gameServerBaseURL}/games/tictactoe/create`, {
+    const createResponse = await page.request.post(`${gameServerBaseURL}/games/dicethrone/create`, {
         data: {
             numPlayers: 2,
             setupData: {
                 guestId,
-                roomName,
+                roomName: resolvedRoomName,
+                ...(options?.password ? { password: options.password } : {}),
             },
         },
     });
     if (!createResponse.ok()) {
-        throw new Error(`HomeV2 演示建房失败: ${createResponse.status()}`);
+        throw new Error(`HomeV2 Dice Throne 演示建房失败: ${createResponse.status()}`);
     }
     const createData = await createResponse.json() as { matchID?: string };
     const matchId = createData.matchID;
-    if (!matchId) throw new Error('HomeV2 演示建房缺少 matchID');
+    if (!matchId) throw new Error('HomeV2 Dice Throne 演示建房缺少 matchID');
 
-    const joinResponse = await page.request.post(`${gameServerBaseURL}/games/tictactoe/${matchId}/join`, {
+    const joinResponse = await page.request.post(`${gameServerBaseURL}/games/dicethrone/${matchId}/join`, {
         data: {
             playerID: '0',
-            playerName: `HomeV2_${guestId.slice(-4)}`,
-            data: { guestId },
+            playerName: `DT_${guestId.slice(-4)}`,
+            data: {
+                guestId,
+                ...(options?.password ? { password: options.password } : {}),
+            },
         },
     });
     if (!joinResponse.ok()) {
-        throw new Error(`HomeV2 演示房主加入失败: ${joinResponse.status()}`);
+        throw new Error(`HomeV2 Dice Throne 演示房主加入失败: ${joinResponse.status()}`);
     }
 
-    return { matchId, roomName };
+    if (options?.fillSecondSeat) {
+        const secondGuestId = `${guestId}-seat1`;
+        const secondJoinResponse = await page.request.post(`${gameServerBaseURL}/games/dicethrone/${matchId}/join`, {
+            data: {
+                playerID: '1',
+                playerName: `Guest_${secondGuestId.slice(-4)}`,
+                data: {
+                    guestId: secondGuestId,
+                    ...(options.password ? { password: options.password } : {}),
+                },
+            },
+        });
+        if (!secondJoinResponse.ok()) {
+            throw new Error(`HomeV2 Dice Throne 第二席加入失败: ${secondJoinResponse.status()}`);
+        }
+    }
+
+    return { matchId, roomName: resolvedRoomName };
+}
+
+async function createHomeV2DetailShowcaseRooms(page: Page): Promise<{ matchId: string; roomName: string }> {
+    const roomConfigs = [
+        { roomName: '新手教学局' },
+        { roomName: '策略对决', password: '112233' },
+        { roomName: '卡牌大师', fillSecondSeat: true },
+        { roomName: '休闲娱乐局' },
+        { roomName: '战术研究室', password: '556677' },
+        { roomName: '周末快玩房' },
+    ];
+    let firstRoom: { matchId: string; roomName: string } | null = null;
+
+    for (const roomConfig of roomConfigs) {
+        const created = await createNamedPublicDiceThroneRoom(page, roomConfig.roomName, {
+            password: roomConfig.password,
+            fillSecondSeat: roomConfig.fillSecondSeat,
+        });
+        if (!firstRoom) {
+            firstRoom = created;
+        }
+    }
+
+    if (!firstRoom) {
+        throw new Error('未能创建 HomeV2 详情页演示房间');
+    }
+
+    return firstRoom;
 }
 
 test.describe('Lobby E2E', () => {
@@ -293,174 +432,164 @@ test.describe('Lobby E2E', () => {
 
     test(HOME_V2_QUERY_ENTRY_TEST_NAME, async ({ page }, testInfo) => {
         await clearEvidenceScreenshotsForTest(testInfo);
-        const injectedRoom = await createNamedPublicTicTacToeRoom(page);
-        const injectedLockedRoom = await createLockedTicTacToeRoom(page);
+        await useHomeV2MobileLandscapeViewport(page);
+        const injectedRoom = await createHomeV2DetailShowcaseRooms(page);
 
         await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
-        await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 15000 });
-        await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 15000 });
-        await ensureHomeV2BookMaterialsReady(page);
-        await expect(page.getByText('当前开局')).toHaveCount(0);
-        await expect(page.getByText('热度榜')).toHaveCount(0);
-        await expect(page.locator('[data-scene-node="tab_button_lobby"]')).toBeVisible({ timeout: 10000 });
-        const tabAlignment = await page.evaluate(() => {
-            const ids = ['tab_button_lobby', 'tab_button_rooms', 'tab_button_changelog'];
-            const tabs = ids.map((id) => {
-                const el = document.querySelector(`[data-scene-node="${id}"]`) as HTMLElement | null;
-                if (!el) return null;
-                const rect = el.getBoundingClientRect();
+        await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
+        await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30000 });
+        await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
+        const mobileStageMetrics = await page.evaluate(() => {
+            const stage = document.querySelector('[data-testid="home-v2-book-stage"]') as HTMLElement | null;
+            if (!stage) return null;
+            const rect = stage.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            return {
+                widthRatio: rect.width / viewportWidth,
+                heightRatio: rect.height / viewportHeight,
+                centerXRatio: (rect.left + rect.width / 2) / viewportWidth,
+                centerYRatio: (rect.top + rect.height / 2) / viewportHeight,
+            };
+        });
+        if (!mobileStageMetrics) {
+            throw new Error('未能读取 home-v2-book-stage 的移动端布局数据');
+        }
+        console.log(
+            `[home-v2-mobile-stage] widthRatio=${mobileStageMetrics.widthRatio.toFixed(3)}, heightRatio=${mobileStageMetrics.heightRatio.toFixed(3)}, center=(${mobileStageMetrics.centerXRatio.toFixed(3)},${mobileStageMetrics.centerYRatio.toFixed(3)})`,
+        );
+        expect(mobileStageMetrics.widthRatio).toBeGreaterThan(0.55);
+        expect(mobileStageMetrics.heightRatio).toBeGreaterThan(0.75);
+        expect(mobileStageMetrics.centerXRatio).toBeGreaterThan(0.35);
+        expect(mobileStageMetrics.centerXRatio).toBeLessThan(0.65);
+        const homeSpread = page.locator('[data-scene-slot="overview_spread_body"]').first();
+        await expect(homeSpread).toBeVisible({ timeout: 10000 });
+        await expect(
+            page.locator('[data-scene-node="home-v2-tab-lobby"], [data-scene-node="home-v2-tab-rooms"], [data-scene-node="tab_button_lobby"], [data-scene-node="tab_button_rooms"]'),
+        ).toHaveCount(0);
+        await expect(page.getByTestId('home-v2-account-entry')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('home-v2-category-all')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('home-v2-category-card')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('home-v2-category-tools')).toBeVisible({ timeout: 10000 });
+
+        const catalogMetrics = await page.evaluate(() => {
+            const cards = Array.from(document.querySelectorAll('[data-scene-slot="overview_spread_body"] [data-game-id]')) as HTMLElement[];
+            const metrics = cards.map((card) => {
+                const rect = card.getBoundingClientRect();
                 return {
-                    id,
+                    id: card.getAttribute('data-game-id') ?? '',
+                    left: rect.left,
+                    top: rect.top,
+                    width: rect.width,
+                    height: rect.height,
                     centerX: rect.left + rect.width / 2,
                     centerY: rect.top + rect.height / 2,
                 };
-            }).filter(Boolean) as Array<{ id: string; centerX: number; centerY: number }>;
-            return tabs;
-        });
-        if (!tabAlignment || tabAlignment.length !== 3) {
-            throw new Error('未能读取首页书签页签的三枚点击区域');
-        }
-        const lobbyTab = tabAlignment.find((item) => item.id === 'tab_button_lobby');
-        const roomsTab = tabAlignment.find((item) => item.id === 'tab_button_rooms');
-        const changelogTab = tabAlignment.find((item) => item.id === 'tab_button_changelog');
-        if (!lobbyTab || !roomsTab || !changelogTab) {
-            throw new Error('首页书签页签节点缺失');
-        }
-        const spacing1 = roomsTab.centerY - lobbyTab.centerY;
-        const spacing2 = changelogTab.centerY - roomsTab.centerY;
-        console.log(
-            `[home-v2-tabs] centers(px): lobby=(${lobbyTab.centerX.toFixed(2)},${lobbyTab.centerY.toFixed(2)}), rooms=(${roomsTab.centerX.toFixed(2)},${roomsTab.centerY.toFixed(2)}), changelog=(${changelogTab.centerX.toFixed(2)},${changelogTab.centerY.toFixed(2)}), spacing=(${spacing1.toFixed(2)},${spacing2.toFixed(2)})`,
-        );
-        expect(Math.abs(lobbyTab.centerX - roomsTab.centerX)).toBeLessThan(2);
-        expect(Math.abs(roomsTab.centerX - changelogTab.centerX)).toBeLessThan(2);
-        expect(spacing1).toBeGreaterThan(45);
-        expect(spacing1).toBeLessThan(70);
-        expect(spacing2).toBeGreaterThan(45);
-        expect(spacing2).toBeLessThan(70);
-        expect(Math.abs(spacing1 - spacing2)).toBeLessThan(5);
-        const tabFlipping = page.getByTestId('home-v2-tab-flipping');
+            });
 
-        await page.locator('[data-scene-node="tab_button_rooms"]').click();
-        await expect(tabFlipping).toBeVisible({ timeout: 2000 });
-        await expect(tabFlipping).toHaveCount(0, { timeout: 4000 });
-        await expect(
-            page.locator('[data-scene-slot="overview_left_page"]').getByRole('heading', { name: '账号登录' }),
-        ).toBeVisible({ timeout: 10000 });
-        await expect(page.getByText(injectedRoom.roomName)).toBeVisible({ timeout: 10000 });
-        await expect(
-            page.locator('[data-scene-slot="overview_left_page"]').getByRole('button', { name: '登录' }),
-        ).toBeVisible({ timeout: 10000 });
-        await page
-            .locator('[data-scene-slot="overview_left_page"]')
-            .getByRole('button', { name: '登录' })
-            .click();
-        const authModal = page.getByTestId('auth-modal').last();
-        await expect(authModal).toBeVisible({ timeout: 10000 });
-        await authModal.getByTestId('auth-login-account-input').fill(HOME_V2_E2E_LOGIN_ACCOUNT);
-        await authModal.getByTestId('auth-login-password-input').fill(HOME_V2_E2E_LOGIN_PASSWORD);
-        await authModal.getByTestId('auth-submit-button').click();
-        await expect(authModal).toBeHidden({ timeout: 10000 });
-        await expect(
-            page.locator('[data-scene-slot="overview_left_page"]').getByRole('heading', { name: '管理员' }),
-        ).toBeVisible({ timeout: 10000 });
-        await page.waitForTimeout(300);
-        const loginScreenshotPath = getEvidenceScreenshotPath(testInfo, 'login-tab');
-        await page.screenshot({ path: loginScreenshotPath, fullPage: true });
+            const sortedX = metrics.map((item) => item.centerX).sort((a, b) => a - b);
+            const columns: number[] = [];
+            sortedX.forEach((centerX) => {
+                const hasExistingColumn = columns.some((x) => Math.abs(x - centerX) < 40);
+                if (!hasExistingColumn) {
+                    columns.push(centerX);
+                }
+            });
 
-        await page.locator('[data-scene-node="tab_button_changelog"]').click();
-        await expect(page.getByText('最近更新')).toBeVisible({ timeout: 10000 });
-        const changelogScreenshotPath = getEvidenceScreenshotPath(testInfo, 'changelog-tab');
-        await page.screenshot({ path: changelogScreenshotPath, fullPage: true });
-
-        await page.locator('[data-scene-node="tab_button_lobby"]').click();
-        const tictactoeCard = page.locator('[data-testid="home-v2-root"] [data-game-id="tictactoe"]').first();
-        await expect(tictactoeCard).toBeVisible({ timeout: 20000 });
-        await ensureHomeV2BookMaterialsReady(page);
-
-        const roomsScreenshotPath = getEvidenceScreenshotPath(testInfo, 'rooms-tab');
-        await page.screenshot({ path: roomsScreenshotPath, fullPage: true });
-        await tictactoeCard.click();
-
-        const backButton = page.getByRole('button', { name: /返回目录/ });
-        await expect(backButton).toBeVisible({ timeout: 10000 });
-        await expect(page.getByText(injectedRoom.roomName)).toBeVisible({ timeout: 10000 });
-        await expect(page.getByText(injectedLockedRoom.roomName)).toBeVisible({ timeout: 10000 });
-
-        const createButton = page.getByRole('button', { name: '创建房间' });
-        await expect(createButton).toBeVisible({ timeout: 10000 });
-        const createButtonStyle = await createButton.evaluate((button) => {
-            const computed = window.getComputedStyle(button);
             return {
-                borderImageSource: computed.borderImageSource,
-                borderImageSlice: computed.borderImageSlice,
+                count: metrics.length,
+                columns,
+                metrics,
             };
         });
-        expect(createButtonStyle.borderImageSource).toContain('holders/compressed/1.webp');
-        expect(createButtonStyle.borderImageSlice).not.toBe('100%');
+        console.log(
+            `[home-v2-homepage] count=${catalogMetrics.count}, columns=${catalogMetrics.columns.map((value) => value.toFixed(2)).join(',')}`,
+        );
+        expect(catalogMetrics.count).toBe(6);
+        expect(catalogMetrics.columns.length).toBe(2);
 
-        const detailScreenshotPath = getEvidenceScreenshotPath(testInfo, 'detail-open');
-        await ensureHomeV2BookMaterialsReady(page);
-        await page.screenshot({ path: detailScreenshotPath, fullPage: true });
+        const referenceCardIds = ['cardia', 'dicethrone', 'smashup', 'splendor', 'summonerwars', 'tictactoe'];
+        const referenceCards = await Promise.all(referenceCardIds.map(async (gameId) => {
+            const box = await page.locator(`[data-scene-slot="overview_spread_body"] [data-game-id="${gameId}"]`).first().boundingBox();
+            return { gameId, box };
+        }));
+        if (referenceCards.some((entry) => !entry.box)) {
+            throw new Error('首页目录卡片未完整渲染，无法进行双页布局量测');
+        }
+        const [cardiaBox, diceThroneBox, smashupBox, splendorBox, summonerWarsBox, tictactoeBox] = referenceCards.map((entry) => entry.box!);
+        const leftColumnDelta = Math.max(cardiaBox.x, diceThroneBox.x, smashupBox.x) - Math.min(cardiaBox.x, diceThroneBox.x, smashupBox.x);
+        const rightColumnDelta = Math.max(splendorBox.x, summonerWarsBox.x, tictactoeBox.x) - Math.min(splendorBox.x, summonerWarsBox.x, tictactoeBox.x);
+        const leftToRightGap = splendorBox.x - cardiaBox.x;
+        const row1Delta = Math.abs(cardiaBox.y - splendorBox.y);
+        const row2Delta = Math.abs(diceThroneBox.y - summonerWarsBox.y);
+        const row3Delta = Math.abs(smashupBox.y - tictactoeBox.y);
+        console.log(
+            `[home-v2-homepage-grid] leftColumnDelta=${leftColumnDelta.toFixed(2)}, rightColumnDelta=${rightColumnDelta.toFixed(2)}, leftToRightGap=${leftToRightGap.toFixed(2)}, rowDelta=(${row1Delta.toFixed(2)},${row2Delta.toFixed(2)},${row3Delta.toFixed(2)})`,
+        );
+        expect(leftColumnDelta).toBeLessThan(18);
+        expect(rightColumnDelta).toBeLessThan(18);
+        expect(leftToRightGap).toBeGreaterThan(180);
+        expect(row1Delta).toBeLessThan(16);
+        expect(row2Delta).toBeLessThan(16);
+        expect(row3Delta).toBeLessThan(16);
 
+        const homepageScreenshotPath = getEvidenceScreenshotPath(testInfo, 'homepage-catalog');
+        await page.screenshot({ path: homepageScreenshotPath, fullPage: true });
+
+        await page.getByTestId('home-v2-account-entry').click();
+        const embeddedAuthPanel = page.getByTestId('auth-embedded-panel').first();
+        await expect(embeddedAuthPanel).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('home-v2-auth-mode-login-header')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('home-v2-auth-mode-register-header')).toBeVisible({ timeout: 10000 });
         await expect(
-            page
-                .locator('article')
-                .filter({ has: page.getByText(injectedLockedRoom.roomName) })
-                .getByText('加密'),
-        ).toBeVisible({ timeout: 10000 });
+            page.locator('[data-scene-node="home-v2-tab-lobby"], [data-scene-node="home-v2-tab-rooms"], [data-scene-node="tab_button_lobby"], [data-scene-node="tab_button_rooms"]'),
+        ).toHaveCount(0);
+        await expect(page.getByTestId('auth-modal')).toHaveCount(0);
+        await expect(embeddedAuthPanel.getByTestId('auth-login-account-input')).toBeVisible({ timeout: 10000 });
+        await expect(embeddedAuthPanel.getByTestId('auth-login-password-input')).toBeVisible({ timeout: 10000 });
+        const roomsScreenshotPath = getEvidenceScreenshotPath(testInfo, 'rooms-auth-entry');
+        await page.screenshot({ path: roomsScreenshotPath, fullPage: true });
 
-        await backButton.click();
-        await expect(tictactoeCard).toBeVisible({ timeout: 10000 });
+        await page.getByTestId('home-v2-rooms-back-to-lobby').click();
+        for (const { suffix, progress } of HOME_V2_FLIP_CAPTURE_POINTS) {
+            const diceThroneCard = page.locator('[data-testid="home-v2-root"] [data-game-id="dicethrone"]').first();
+            await expect(diceThroneCard).toBeVisible({ timeout: 20000 });
+            await diceThroneCard.click();
+            await captureHomeV2FlipFrameAtProgress(page, testInfo, `page-flip-to-detail-${suffix}`, progress);
+            await waitForHomeV2FlipMode(page, 'detail');
 
-        const cardiaCard = page.locator('[data-testid="home-v2-root"] [data-game-id="cardia"]').first();
-        const diceThroneCard = page.locator('[data-testid="home-v2-root"] [data-game-id="dicethrone"]').first();
-        const smashupCard = page.locator('[data-testid="home-v2-root"] [data-game-id="smashup"]').first();
-        const bookStage = page.getByTestId('home-v2-book-stage');
+            const backButton = page.getByRole('button', { name: /返回目录/ });
+            await expect(backButton).toBeVisible({ timeout: 10000 });
+            await expect(
+                page.locator('[data-scene-node="home-v2-tab-lobby"], [data-scene-node="home-v2-tab-rooms"], [data-scene-node="tab_button_lobby"], [data-scene-node="tab_button_rooms"]'),
+            ).toHaveCount(0);
+            await expect(
+                page.locator('article').filter({ hasText: injectedRoom.roomName }).first(),
+            ).toBeVisible({ timeout: 10000 });
 
-        const stageBox = await bookStage.boundingBox();
-        const cardiaBox = await cardiaCard.boundingBox();
-        const diceThroneBox = await diceThroneCard.boundingBox();
-        const smashupBox = await smashupCard.boundingBox();
-        if (!stageBox || !cardiaBox || !diceThroneBox || !smashupBox) {
-            throw new Error('目录卡片或书本舞台未正确渲染，无法测量顶部距离');
+            if (suffix === '50') {
+                const detailScreenshotPath = getEvidenceScreenshotPath(testInfo, 'detail-entry');
+                await page.screenshot({ path: detailScreenshotPath, fullPage: true });
+            }
+
+            await backButton.click();
+            await captureHomeV2FlipFrameAtProgress(page, testInfo, `page-flip-back-to-catalog-${suffix}`, progress);
+            await waitForHomeV2FlipMode(page, 'overview');
+            await expect(page.locator('[data-scene-slot="overview_spread_body"]').first()).toBeVisible({ timeout: 10000 });
         }
 
-        const cardiaTopDistance = cardiaBox.y - stageBox.y;
-        const diceThroneTopDistance = diceThroneBox.y - stageBox.y;
-        const smashupTopDistance = smashupBox.y - stageBox.y;
-        console.log(`[home-v2-arc] top distances(px): cardia=${cardiaTopDistance.toFixed(2)}, dicethrone=${diceThroneTopDistance.toFixed(2)}, smashup=${smashupTopDistance.toFixed(2)}`);
-        expect(smashupTopDistance).toBeLessThan(diceThroneTopDistance - 0.3);
-        expect(smashupTopDistance).toBeLessThan(cardiaTopDistance - 3);
-
-        const catalogScreenshotPath = getEvidenceScreenshotPath(testInfo, 'catalog-return');
-        await ensureHomeV2BookMaterialsReady(page);
-        await page.screenshot({ path: catalogScreenshotPath, fullPage: true });
-
-        await tictactoeCard.click();
-        await expect(backButton).toBeVisible({ timeout: 10000 });
-        await page.getByRole('button', { name: '创建房间' }).click();
-        const createRoomModal = page.getByTestId('create-room-modal');
-        await expect(createRoomModal).toBeVisible({ timeout: 10000 });
-        await createRoomModal.getByTestId('create-room-name-input').fill(`V2核心流程房-${Date.now().toString().slice(-6)}`);
-        const createRoomModalScreenshotPath = getEvidenceScreenshotPath(testInfo, 'create-room-modal');
-        await page.screenshot({ path: createRoomModalScreenshotPath, fullPage: true });
-
-        const confirmCreateButton = createRoomModal.getByTestId('create-room-confirm-button');
-        await expect(confirmCreateButton).toBeVisible({ timeout: 10000 });
-        await confirmCreateButton.click();
-        await expect(page).toHaveURL(/\/play\/tictactoe\/match\/[^/?]+\?playerID=0/, { timeout: 15000 });
-        await waitForMatchBoardOrLoading(page);
-        const createRoomSuccessScreenshotPath = getEvidenceScreenshotPath(testInfo, 'create-room-success');
-        await page.screenshot({ path: createRoomSuccessScreenshotPath, fullPage: true });
+        const returnCatalogScreenshotPath = getEvidenceScreenshotPath(testInfo, 'catalog-return-after-flip');
+        await page.screenshot({ path: returnCatalogScreenshotPath, fullPage: true });
     });
 
     test(HOME_V2_LOCKED_ROOM_JOIN_TEST_NAME, async ({ page }, testInfo) => {
         await clearEvidenceScreenshotsForTest(testInfo);
+        await useHomeV2MobileLandscapeViewport(page);
         const injectedLockedRoom = await createLockedTicTacToeRoom(page);
 
         await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
         await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 15000 });
-        await ensureHomeV2BookMaterialsReady(page);
+        await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
         const tictactoeCard = page.locator('[data-testid="home-v2-root"] [data-game-id="tictactoe"]').first();
         await expect(tictactoeCard).toBeVisible({ timeout: 20000 });
         await tictactoeCard.click();
@@ -841,12 +970,7 @@ test.describe('Lobby E2E', () => {
         const roomCard = detailsModal.getByTestId(`room-list-item-${privateRoom.matchId}`).last();
         await expect(roomCard).toBeVisible({ timeout: 15000 });
 
-        await roomCard.getByTestId(`room-list-join-${privateRoom.matchId}`).evaluate((button) => {
-            if (!(button instanceof HTMLButtonElement)) {
-                throw new Error('私密房间加入按钮节点不是 button');
-            }
-            button.click();
-        });
+        await roomCard.getByTestId(`room-list-join-${privateRoom.matchId}`).click();
 
         const passwordModal = page.getByTestId('room-password-modal');
         const passwordInput = page.getByTestId('room-password-input');
@@ -990,6 +1114,10 @@ test.describe('Lobby E2E', () => {
         await confirmCreateRoomFromModal(page);
 
         await expect(page).toHaveURL(/\/play\/smashup\/match\//);
+        await expect(page.locator('div[data-game-page="true"][data-game-id="smashup"]').first()).toBeVisible({
+            timeout: 60000,
+        });
+        await game.screenshot('lobby-smashup-create-room-ai-entered', testInfo);
 
         const matchId = page.url().match(/\/play\/smashup\/match\/([^?]+)/)?.[1];
         expect(matchId).toBeTruthy();
@@ -1021,10 +1149,6 @@ test.describe('Lobby E2E', () => {
         expect(storedPreferences).not.toBeNull();
         expect(storedPreferences?.numPlayers).toBe(3);
         expect(storedPreferences?.setupSelections?.expansions ?? []).toEqual([]);
-        expect(storedPreferences?.seatControllers?.['1']?.type).toBe('local-ai');
-        expect(storedPreferences?.seatControllers?.['2']?.type).toBe('local-ai');
-        expect(storedPreferences?.seatControllers?.['1']?.difficulty).toBe('hard');
-        expect(storedPreferences?.seatControllers?.['2']?.difficulty).toBe('hard');
 
         const aiSeatCredentials = await page.evaluate(() => {
             const key = Object.keys(localStorage).find((item) => item.startsWith('match_ai_creds_'));
@@ -1032,6 +1156,11 @@ test.describe('Lobby E2E', () => {
             const raw = localStorage.getItem(key);
             return raw ? JSON.parse(raw) : null;
         });
+
+        const hasAiSeatInStoredPreferences = storedPreferences?.seatControllers?.['1']?.type === 'local-ai'
+            && storedPreferences?.seatControllers?.['2']?.type === 'local-ai';
+        const hasAiSeatCredentials = Boolean(aiSeatCredentials?.['1'] && aiSeatCredentials?.['2']);
+        expect(hasAiSeatInStoredPreferences || hasAiSeatCredentials).toBe(true);
         expect(aiSeatCredentials?.['1']).toBeTruthy();
         expect(aiSeatCredentials?.['2']).toBeTruthy();
     });

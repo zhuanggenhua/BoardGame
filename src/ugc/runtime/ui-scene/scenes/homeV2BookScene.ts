@@ -15,6 +15,7 @@ export type HomeV2SceneState =
 const ARTBOARD_WIDTH = 896;
 const ARTBOARD_HEIGHT = 720;
 const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
+const HOME_V2_OVERVIEW_SPREAD = `${HOME_V2_ASSET_ROOT}/overview-homepage/1.png`;
 
 const fullArtboardTransform: LayoutTransform = {
     anchor: { x: 0, y: 0 },
@@ -27,8 +28,8 @@ const fullArtboardTransform: LayoutTransform = {
 export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
     id: 'home-v2-book-scene',
     presentation: {
-        scaleMultiplier: 1.56,
-        offsetYPct: 1,
+        scaleMultiplier: 1.638,
+        offsetYPct: -0.8,
     },
     artboard: {
         id: 'home-v2-book-artboard',
@@ -41,10 +42,9 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             spreadBody: { x: 158, y: 216, width: 577, height: 312, label: '首页总览区域' },
         },
         slots: {
-            tabStrip: { x: 738, y: 96, width: 158, height: 324, label: '书签槽位' },
-            tabLobby: { x: 766, y: 223.5, width: 53.76, height: 72, label: '大厅书签' },
-            tabRooms: { x: 766, y: 261.5, width: 53.76, height: 72, label: '房间书签' },
-            tabChangelog: { x: 766, y: 299.5, width: 53.76, height: 72, label: '更新书签' },
+            tabStrip: { x: 738, y: 96, width: 158, height: 262, label: '书签槽位' },
+            tabLobby: { x: 766, y: 243.5, width: 53.76, height: 32, label: '大厅书签' },
+            tabRooms: { x: 766, y: 281.5, width: 53.76, height: 32, label: '房间书签' },
         },
         hitAreas: {
             prevPage: { x: 44, y: 122, width: 66, height: 472, label: '左页翻页热点' },
@@ -60,10 +60,22 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             prefabId: 'image',
             transform: fullArtboardTransform,
             zIndex: 0,
-            visibleInStates: ['tabs', 'overview', 'flippingTabForward', 'flippingTabBackward', 'flippingToDetail', 'detail', 'flippingToOverview'],
+            visibleInStates: ['tabs', 'flippingTabForward', 'flippingTabBackward', 'flippingToDetail', 'detail', 'flippingToOverview'],
             props: {
                 image: `${HOME_V2_ASSET_ROOT}/book-idle/compressed/1.webp`,
                 fit: 'contain',
+            },
+        },
+        {
+            id: 'book-overview-shell',
+            prefabId: 'image',
+            transform: fullArtboardTransform,
+            zIndex: 0,
+            visibleInStates: ['overview'],
+            props: {
+                image: HOME_V2_OVERVIEW_SPREAD,
+                fit: 'cover',
+                preferRaw: true,
             },
         },
         {
@@ -170,17 +182,6 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             visibleInStates: ['overview', 'detail'],
             props: {
                 tabId: 'rooms',
-                eventId: 'navigation.tab-select',
-            },
-        },
-        {
-            id: 'home-v2-tab-changelog',
-            prefabId: 'book-tab',
-            regionId: 'tabChangelog',
-            zIndex: 30,
-            visibleInStates: ['overview', 'detail'],
-            props: {
-                tabId: 'changelog',
                 eventId: 'navigation.tab-select',
             },
         },

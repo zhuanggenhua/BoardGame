@@ -21,15 +21,32 @@ type ChangelogEntry = {
     pinned?: boolean;
 };
 
-const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
-const HOME_V2_HOLDER_BG = `${HOME_V2_ASSET_ROOT}/holders/compressed/1.webp`;
-const cardSurfaceClassName = 'rounded-[16px] border border-[#8c6644]/45 px-[4.8%] py-[4.5%] shadow-[0_8px_20px_rgba(120,80,36,0.08)]';
+const cardSurfaceClassName = 'px-[4.8%] py-[4.5%]';
 const cardSurfaceStyle = {
-    backgroundImage: `url(${HOME_V2_HOLDER_BG})`,
-    backgroundSize: '100% 100%',
-    backgroundPosition: 'center',
-    backgroundRepeat: 'no-repeat',
+    border: '1px solid rgba(159,111,75,0.28)',
+    borderRadius: '16px',
+    background: 'linear-gradient(180deg, rgba(249,235,210,0.82) 0%, rgba(245,226,194,0.68) 100%)',
+    boxShadow: '0 12px 26px rgba(74,48,29,0.08)',
 } satisfies React.CSSProperties;
+const authPlainSurfaceClassName = 'h-full min-h-0 overflow-hidden';
+
+const authModeTabs: Array<{ mode: HomeV2AuthMode; testId: string }> = [
+    { mode: 'login', testId: 'home-v2-auth-mode-login' },
+    { mode: 'register', testId: 'home-v2-auth-mode-register' },
+    { mode: 'reset', testId: 'home-v2-auth-mode-reset' },
+];
+
+function getAuthModeLabel(t: ReturnType<typeof useTranslation>['t'], mode: HomeV2AuthMode) {
+    switch (mode) {
+        case 'register':
+            return t('auth:menu.register', '注册');
+        case 'reset':
+            return t('auth:login.forgot', '找回密码');
+        case 'login':
+        default:
+            return t('auth:menu.login', '登录');
+    }
+}
 
 function PanelHeader({
     eyebrow,
@@ -48,7 +65,7 @@ function PanelHeader({
                 </div>
             ) : null}
             <div className="space-y-[0.6%]">
-                <h3 className="text-[clamp(22px,2.2vw,32px)] font-bold leading-none text-[#5a3822]">
+                <h3 className="text-[clamp(19px,1.84vw,25px)] font-bold leading-none text-[#5a3822]">
                     {title}
                 </h3>
                 {subtitle ? (
@@ -290,17 +307,31 @@ export function HomeV2LoginPanel({
 }) {
     const { t } = useTranslation(['lobby', 'auth']);
     const { user } = useAuth();
-
-    const modeButtonClassName = `${cardSurfaceClassName} flex items-center justify-between gap-3 text-left transition-transform duration-200 hover:-translate-y-[1px]`;
+    const featureItems = [
+        {
+            title: t('lobby:homeV2.tabs.rooms.brandFeatureStrategyTitle', '丰富策略'),
+            description: t('lobby:homeV2.tabs.rooms.brandFeatureStrategyDescription', '海量卡牌组合，构筑无限可能'),
+        },
+        {
+            title: t('lobby:homeV2.tabs.rooms.brandFeatureBattleTitle', '公平竞技'),
+            description: t('lobby:homeV2.tabs.rooms.brandFeatureBattleDescription', '平衡对战环境，凭实力一决高下'),
+        },
+        {
+            title: t('lobby:homeV2.tabs.rooms.brandFeaturePartyTitle', '好友畅玩'),
+            description: t('lobby:homeV2.tabs.rooms.brandFeaturePartyDescription', '组队开黑，享受桌游乐趣'),
+        },
+    ];
 
     return (
-        <div className="pointer-events-auto flex h-full w-full flex-col gap-[2.8%] px-[5%] py-[4.5%] text-[#5c3a24]">
-            <PanelHeader
-                eyebrow={t('lobby:homeV2.tabs.rooms.eyebrow')}
-                title={user ? user.username : t('auth:menu.login', '登录')}
-                subtitle={user ? t('lobby:homeV2.tabs.rooms.loggedInHint') : t('lobby:homeV2.tabs.rooms.loading')}
+        <div className="pointer-events-auto relative flex h-full w-full flex-col px-[6%] py-[5%] text-[#5c3a24]">
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 top-[18%] h-[42%] w-[58%] -translate-x-1/2 rounded-full opacity-30"
+                style={{
+                    background: 'radial-gradient(circle at center, rgba(112,92,63,0.16) 0%, rgba(112,92,63,0.08) 38%, rgba(112,92,63,0) 74%)',
+                }}
             />
-            <div className="flex-1 min-h-0 overflow-hidden">
+            <div className="relative flex h-full min-h-0 flex-col">
                 {user ? (
                     <div className="flex h-full min-h-0 flex-col justify-center gap-3 text-center">
                         <div className={`${cardSurfaceClassName} flex min-h-[160px] flex-col items-center justify-center gap-3 px-[8%]`} style={cardSurfaceStyle}>
@@ -311,53 +342,59 @@ export function HomeV2LoginPanel({
                         </div>
                     </div>
                 ) : (
-                    <div className="flex h-full min-h-0 flex-col gap-3">
-                        <div className={`${cardSurfaceClassName} flex-1 min-h-0`} style={cardSurfaceStyle}>
-                            <div className="flex h-full min-h-0 flex-col justify-between gap-4">
-                                <div className="space-y-2">
-                                    <div className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#9b7453]">
-                                        {t('auth:menu.login', '登录')} / {t('auth:menu.register', '注册')}
-                                    </div>
-                                    <div className="text-[13px] leading-[1.55] text-[#6f523c]">
-                                        选择左侧入口，右页表单会直接切换；默认展示登录。
+                    <div className="flex h-full min-h-0 flex-col">
+                        <div className="pt-[10%] text-center">
+                            <div className="text-[clamp(46px,4.1vw,68px)] font-bold tracking-[0.08em] text-[#4d3120]">
+                                {t('lobby:homeV2.tabs.rooms.brandTitle', '易桌游')}
+                            </div>
+                            <div className="mt-[2.8%] text-[clamp(12px,1vw,15px)] font-semibold tracking-[0.24em] text-[#7a5a40]">
+                                {t('lobby:homeV2.tabs.rooms.brandSubtitle', '策略 · 卡牌 · 对战')}
+                            </div>
+                        </div>
+
+                        <div className="mt-[15%] flex flex-1 min-h-0 flex-col justify-center gap-[5.4%]">
+                            {featureItems.map((item, index) => (
+                                <div key={`${item.title}-${index}`} className="flex items-start gap-[10px]">
+                                    <div className="mt-[7px] h-[7px] w-[7px] shrink-0 rounded-full bg-[#8b6643]/70 shadow-[0_0_0_3px_rgba(196,161,123,0.15)]" />
+                                    <div className="min-w-0">
+                                        <div className="text-[clamp(16px,1.28vw,19px)] font-semibold text-[#5a3923]">
+                                            {item.title}
+                                        </div>
+                                        <div className="mt-[4px] text-[clamp(11px,0.92vw,13px)] leading-[1.6] text-[#7a5d46]">
+                                            {item.description}
+                                        </div>
                                     </div>
                                 </div>
-                                <div className="flex flex-col gap-2">
+                            ))}
+                        </div>
+
+                        <div className="mt-[7%] border-t border-[rgba(164,118,78,0.16)] pt-[4.4%]">
+                            <div className="mb-[2.2%] text-center text-[clamp(9px,0.76vw,10px)] font-semibold uppercase tracking-[0.22em] text-[#9a7759]">
+                                {t('lobby:homeV2.tabs.rooms.accountActionLabel', '账号入口')}
+                            </div>
+                            <div className="flex items-center justify-center gap-[18px]">
+                            {authModeTabs.map(({ mode: tabMode, testId }) => {
+                                const active = mode === tabMode || (tabMode === 'login' && mode === 'reset');
+                                return (
                                     <button
+                                        key={tabMode}
                                         type="button"
-                                        onClick={() => onModeChange('login')}
-                                        className={modeButtonClassName}
-                                        style={{
-                                            ...cardSurfaceStyle,
-                                            boxShadow: mode === 'login' || mode === 'reset' ? '0 10px 22px rgba(120, 80, 36, 0.16)' : undefined,
-                                            transform: mode === 'login' || mode === 'reset' ? 'translateY(-1px)' : undefined,
-                                        }}
-                                        data-testid="home-v2-auth-mode-login"
+                                        onClick={() => onModeChange(tabMode)}
+                                        className={`relative pb-[4px] text-[clamp(12px,0.96vw,13px)] font-semibold transition-colors ${
+                                            active ? 'text-[#5b3822]' : 'text-[#8d6c50] hover:text-[#6f4b32]'
+                                        }`}
+                                        data-testid={testId}
                                     >
-                                        <span>
-                                            <span className="block text-[13px] font-semibold text-[#5b3822]">{t('auth:menu.login', '登录')}</span>
-                                            <span className="mt-0.5 block text-[11px] text-[#8b6b4e]">账号密码直接填写</span>
-                                        </span>
-                                        <span className="text-[11px] font-semibold text-[#9a6a3c]">{mode === 'login' || mode === 'reset' ? '●' : '○'}</span>
+                                            {getAuthModeLabel(t, tabMode)}
+                                            {active ? (
+                                                <span
+                                                    aria-hidden="true"
+                                                    className="absolute bottom-0 left-1/2 h-px w-[80%] -translate-x-1/2 bg-[linear-gradient(90deg,rgba(122,90,55,0)_0%,rgba(122,90,55,0.95)_20%,rgba(122,90,55,0.95)_80%,rgba(122,90,55,0)_100%)]"
+                                                />
+                                            ) : null}
                                     </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => onModeChange('register')}
-                                        className={modeButtonClassName}
-                                        style={{
-                                            ...cardSurfaceStyle,
-                                            boxShadow: mode === 'register' ? '0 10px 22px rgba(120, 80, 36, 0.16)' : undefined,
-                                            transform: mode === 'register' ? 'translateY(-1px)' : undefined,
-                                        }}
-                                        data-testid="home-v2-auth-mode-register"
-                                    >
-                                        <span>
-                                            <span className="block text-[13px] font-semibold text-[#5b3822]">{t('auth:menu.register', '注册')}</span>
-                                            <span className="mt-0.5 block text-[11px] text-[#8b6b4e]">验证码 + 用户名 + 密码</span>
-                                        </span>
-                                        <span className="text-[11px] font-semibold text-[#9a6a3c]">{mode === 'register' ? '●' : '○'}</span>
-                                    </button>
-                                </div>
+                                );
+                            })}
                             </div>
                         </div>
                     </div>
@@ -375,22 +412,56 @@ export function HomeV2AuthFormPanel({
     onModeChange: (mode: HomeV2AuthMode) => void;
 }) {
     const { user } = useAuth();
+    const { t } = useTranslation(['lobby', 'auth']);
 
     return (
-        <div className="pointer-events-auto h-full w-full px-[5%] py-[4.5%] text-[#5c3a24]">
+        <div className="pointer-events-auto h-full w-full px-[6.2%] py-[5.6%] text-[#5c3a24]">
             {user ? (
-                <div className={`${cardSurfaceClassName} flex h-full min-h-0 flex-col items-center justify-center px-[8%] text-center`} style={cardSurfaceStyle}>
+                <div className={`${authPlainSurfaceClassName} flex h-full min-h-0 flex-col items-center justify-center px-[8%] text-center`} style={cardSurfaceStyle}>
                     <div className="text-[clamp(18px,1.7vw,24px)] font-semibold text-[#634128]">{user.username}</div>
                 </div>
             ) : (
-                <AuthModal
-                    embedded
-                    isOpen
-                    onClose={() => undefined}
-                    initialMode={mode}
-                    onModeChange={onModeChange}
-                    showModeSwitchFooter={false}
-                />
+                <div className={authPlainSurfaceClassName} data-testid="auth-embedded-panel">
+                    <div className="mx-auto flex h-full min-h-0 max-w-[94%] flex-col">
+                        <div className="mb-[4.5%] flex items-center justify-center gap-[34px] pt-[1.4%]">
+                            {authModeTabs.map(({ mode: tabMode, testId }) => {
+                                const active = mode === tabMode;
+                                return (
+                                    <button
+                                        key={`top-${tabMode}`}
+                                        type="button"
+                                        data-testid={`${testId}-header`}
+                                        onClick={() => onModeChange(tabMode)}
+                                        className={`relative pb-[4px] text-[clamp(12px,0.96vw,14px)] font-semibold transition-colors ${active ? 'text-[#5b3822]' : 'text-[#8c7459] hover:text-[#6f4b32]'}`}
+                                    >
+                                        {getAuthModeLabel(t, tabMode)}
+                                        {active ? (
+                                            <span
+                                                aria-hidden="true"
+                                                className="absolute bottom-0 left-1/2 h-px w-[82%] -translate-x-1/2 bg-[linear-gradient(90deg,rgba(122,90,55,0)_0%,rgba(122,90,55,0.95)_18%,rgba(122,90,55,0.95)_82%,rgba(122,90,55,0)_100%)]"
+                                            />
+                                        ) : null}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                        <div
+                            aria-hidden="true"
+                            className="mb-[4.5%] h-px w-full bg-[linear-gradient(90deg,rgba(143,102,66,0)_0%,rgba(143,102,66,0.34)_16%,rgba(143,102,66,0.34)_84%,rgba(143,102,66,0)_100%)]"
+                        />
+                        <div className="min-h-0 flex-1">
+                            <AuthModal
+                                embedded
+                                isOpen
+                                onClose={() => undefined}
+                                initialMode={mode}
+                                onModeChange={onModeChange}
+                                showModeSwitchFooter={false}
+                                showTitle={false}
+                            />
+                        </div>
+                    </div>
+                </div>
             )}
         </div>
     );

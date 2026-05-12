@@ -10,6 +10,8 @@ interface ModalBaseProps {
     overlayStyle?: CSSProperties;
     containerClassName?: string;
     containerStyle?: CSSProperties;
+    contentWrapperClassName?: string;
+    contentWrapperStyle?: CSSProperties;
     children: ReactNode;
 }
 
@@ -44,6 +46,8 @@ export const ModalBase = memo(({
     overlayStyle,
     containerClassName,
     containerStyle,
+    contentWrapperClassName,
+    contentWrapperStyle,
     children,
 }: ModalBaseProps) => {
     const resolvedOverlayStyle: CSSProperties = { zIndex: UI_Z_INDEX.modalOverlay, ...overlayStyle };
@@ -75,7 +79,7 @@ export const ModalBase = memo(({
                 )}
                 style={{ willChange: 'transform, opacity', ...resolvedContainerStyle }}
             >
-                <div className="w-full flex justify-center">
+                <div className={clsx('w-full flex justify-center', contentWrapperClassName)} style={contentWrapperStyle}>
                     {children}
                 </div>
             </motion.div>

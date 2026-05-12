@@ -1,3 +1,229 @@
+## Addendum（2026-05-12）：Home V2 turn.js 翻页 checkpoint 提交
+
+### Goal
+> 在用户确认“效果还行，可以先提交一版”后，先固化当前 turn.js 插件翻页版本。当前提交口径：使用 turn.js 插件生成翻页；翻页中保留完整书本壳；中间态不保留真实业务 UI，避免 UI 乱飞；稳态恢复真实目录/详情 UI。
+
+### Phase
+- [x] **Phase A: 用户反馈确认**
+  - [x] 承认“保留 UI 会乱飞”的视觉反馈成立
+  - [x] 明确当前先提交空白纸面翻页 checkpoint，不继续在本轮追求 live UI 跟纸翻
+
+- [x] **Phase B: 进度与原因留档**
+  - [x] `progress.md` 记录本 checkpoint 取舍
+  - [x] `findings.md` 记录 turn.js page-wrapper 重排导致 UI 乱飞的根因
+
+- [x] **Phase C: 提交**
+  - [x] 仅暂存 Home V2 turn.js 翻页相关代码、E2E、证据/进度文档和 vendor 脚本
+  - [x] 完成 git commit
+
+## Addendum（2026-05-12）：Home V2 翻页改回 turn.js 插件
+
+### Goal
+> 回应用户“不是让你用插件翻页吗”的明确纠偏，废弃 2026-05-11 的序列帧收口口径。完成口径：正反向 `25 / 50 / 75` 六帧必须由 turn.js 插件可见折页生成，截图日志能证明插件处于 animating 状态，画面不能再像两本书/两套 UI 平铺。
+
+### Phase
+- [x] **Phase A: 否定序列帧路线**
+  - [x] 明确 `page-flip-left/right` 序列帧方案作废
+  - [x] 不再把“E2E 通过 + 序列帧六帧”作为收口证据
+
+- [x] **Phase B: 恢复 turn.js 可见翻页**
+  - [x] `FoldLinePageFlipStage.tsx` 使用 `jquery 1.12.0` + `turn.js 4.1.0`
+  - [x] 翻页态挂载真实 `display: double` flipbook
+  - [x] turn.js page 使用翻页专用纸面 stage，避免业务 UI 贴在翻动页上
+  - [x] 对 turn.js `turning` 动画补线性 easing，让 25 / 50 / 75 对应可见折页进度
+  - [x] E2E 抓帧日志补 `pluginPage/pluginView/pluginAnimating/pageWrappers`
+  - [x] 补回 flipping state 的完整书本壳底层，避免翻页时只剩内页、外层书本消失
+
+- [x] **Phase C: 验证与留档**
+  - [x] `npx ctx7@latest library turn.js ...`
+  - [x] `npx ctx7@latest docs /websites/turnjs ...`
+  - [x] `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx src/pages/HomeV2.tsx e2e/lobby.e2e.ts`
+  - [x] `npm run typecheck`
+  - [x] `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+  - [x] 人工复看正反向六张插件翻页截图与 `detail-entry.png`
+  - [x] 回写 `evidence/_shared/home-v2-query-entry-e2e-test.md / findings.md / progress.md / task_plan.md`
+
+## Addendum（2026-05-11）：Home V2 翻页改用真实序列帧（已被 2026-05-12 turn.js 插件方案取代）
+
+### Goal
+> 回应用户“明显就不像翻页”的最新反馈，废弃 CSS 平面纸片作为最终翻页效果，改用项目已有 `page-flip-left/right` 序列帧。完成口径：正反向 `25 / 50 / 75` 六帧里能看到真实书页翻动的页边、阴影和跨书脊推进；翻页过程中不渲染业务 UI 到纸面上。
+
+### Phase
+- [x] **Phase A: 否定上一版 CSS 纸片**
+  - [x] 复看上一版 25 / 50 / 75，确认像平面滑片/裁切片，不足以收口
+  - [x] 保留“翻页期间隐藏业务 UI”的正确方向
+
+- [x] **Phase B: 切到序列帧翻页**
+  - [x] `FoldLinePageFlipStage.tsx` 新增 `PageFlipSequenceOverlay`
+  - [x] 正向使用 `page-flip-left/compressed/*.webp`
+  - [x] 反向使用 `page-flip-right/compressed/*.webp`
+  - [x] 按 `progress` 映射 `1..8` 帧
+  - [x] 修正序列帧覆盖层比例，避免“中间小书盖大书”
+
+- [x] **Phase C: 验证与留档**
+  - [x] `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx src/pages/HomeV2.tsx e2e/lobby.e2e.ts`
+  - [x] `npm run typecheck`
+  - [x] `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+  - [x] 人工复看正反向六张截图
+  - [x] 回写 `evidence/_shared/home-v2-query-entry-e2e-test.md / findings.md / progress.md / task_plan.md`
+
+## Addendum（2026-05-10）：Home V2 多帧翻页语义收口
+
+### Goal
+> 按用户最新反馈，把 Home V2 翻页验收从单张 50% 扩展为正反向 `25 / 50 / 75` 六帧，并修掉“source 和 target 两边同时平铺显示”的结构问题。完成口径：底层是目标完整 spread，顶层只允许单张来源离场页片，且页片随进度连续收缩。
+
+### Phase
+- [x] **Phase A: 多帧证据升级**
+  - [x] `e2e/lobby.e2e.ts` 固定抓取正向 `25 / 50 / 75`
+  - [x] `e2e/lobby.e2e.ts` 固定抓取反向 `25 / 50 / 75`
+  - [x] 每次释放冻结后等待 `data-flip-mode` 回到目标稳态，再进入下一轮
+
+- [x] **Phase B: 翻页分层重判**
+  - [x] 废弃“source 静态页 + target reveal + 纸片”的多语义叠层
+  - [x] 翻页态底层改为目标完整 spread
+  - [x] 顶层改为唯一来源离场页片
+  - [x] `PagePaperCover` 改为随 progress 收缩的弧形页片，不再是固定矩形白板
+
+- [x] **Phase C: 验证与留档**
+  - [x] `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx src/pages/HomeV2.tsx e2e/lobby.e2e.ts`
+  - [x] `npm run typecheck`
+  - [x] `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+  - [x] 人工复看正反向六张截图
+  - [x] 回写 `evidence/_shared/home-v2-query-entry-e2e-test.md / findings.md / progress.md / task_plan.md`
+
+## Addendum（2026-05-02）：Home V2 方案 B 最终收口（翻页层只翻纸）
+
+### Goal
+> 在 `feat/homepage-v2` 工作树内，把 Home V2 首页翻页链路从“50% 虽然抓准了，但 UI 还贴在翻页层上”继续收口到用户要求的最终语义：**UI 不动，翻的是纸**。只处理首页目录 <-> 详情这条链路，并在真移动端横屏口径下重新做端到端验收。
+
+### Phase
+- [x] **Phase A: 重新裁决根因**
+  - [x] 承认上一轮问题不只是抓帧误差，而是翻页层里仍带着 live UI
+  - [x] 停止继续调折角参数，切到方案 B：底层 UI 静止、顶层只翻纸张
+
+- [x] **Phase B: 改写可见翻页层**
+  - [x] `src/components/home-v2/FoldLinePageFlipStage.tsx` 删除本轮可见翻页层对 live stage 的依赖
+  - [x] 翻页中间态改为纯纸张层 + 阴影层 + 高光层
+  - [x] 保留 turn.js runtime 与 50% 冻结抓帧能力，不再让翻页层承载真实 UI 内容
+
+- [x] **Phase C: 真横屏验收与回写**
+  - [x] `npx eslint .\src\components\home-v2\FoldLinePageFlipStage.tsx .\e2e\lobby.e2e.ts`
+  - [x] `npm run typecheck`
+  - [x] `PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+  - [x] 复看 `page-flip-to-detail-50.png / page-flip-back-to-catalog-50.png / homepage-catalog.png / detail-entry.png`
+  - [x] 回写 `evidence/_shared/home-v2-query-entry-e2e-test.md / findings.md / progress.md / task_plan.md`
+
+## Addendum（2026-05-01）：Home V2 翻页改成 page-owned content（修正 UI 挡住折角）
+
+> 用户最后一轮指出的问题是对的：之前不是单纯 z-index，而是 **UI 没有属于被翻的那张纸**。这轮只继续在 `feat/homepage-v2` 工作树内修正翻页层归属，让翻页时移动的是 page 自己的内容，而不是底层完整 UI 上再贴一个 curl。
+
+- [x] **Phase A: 按 turn.js page 结构重判归属**
+  - [x] 复查 turn.js 文档：page HTML 本来就应放在各自 page element 内，翻动的是 page 自身
+  - [x] 确认旧实现的问题是 `baseStage(完整 detail UI) + curl overlay(再贴一层)`，导致 25% 中间帧像“UI 盖在纸上”
+
+- [x] **Phase B: 重写可见翻页层**
+  - [x] `src/components/home-v2/FoldLinePageFlipStage.tsx` 改为 `shell + static pages + turning sheet(front/back)`
+  - [x] 正向翻页：`overview right page -> detail left page(backface)`，`detail right page` 作为底层被揭开页
+  - [x] 反向翻页：`detail left page -> overview right page(backface)`，`overview left page` 作为底层被揭开页
+  - [x] 保留 `turn.js` / `jquery 1.12.0` 官方运行时接线，不再把旧错误的可见层结构当最终实现
+
+- [x] **Phase C: 真移动端横屏验证与回写**
+  - [x] `npm run typecheck`
+  - [x] `PW_E2E_SERVICE_REUSE=shared-single PW_E2E_FRONTEND_PORT=37974 PW_E2E_GAME_SERVER_PORT=30180 PW_E2E_API_SERVER_PORT=30181 BG_HOME_V2_VIEWPORT=2388x1080 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+  - [x] 复看关键截图并回写 `evidence/_shared/home-v2-query-entry-e2e-test.md`、`findings.md`、`progress.md`
+
+
+## Addendum（2026-04-30）：Home V2 首页折角与翻页最终收口
+
+### Goal
+> 在 `feat/homepage-v2` 工作树内继续只收首页，把首页/详情 steady state 的折角与首页 <-> 详情的翻页中间帧一起压到可端到端验收：移动端横屏、内容留在书本里、不再出现 turn.js overlay 那种中间小册子。
+
+### Phase
+- [x] **Phase A: 折角/翻页根因定位**
+  - [x] 确认 turn.js 官方脚本接线已成功落地，但直接常驻 overlay 会把正文区压成中间小册子
+  - [x] 确认 React 复用被 turn.js 改写过的 DOM 会触发 `The page 2 does not exist`
+- [x] **Phase B: 可见层裁决**
+  - [x] 保留官方 `turn.js + jquery 1.12.0` 脚本接线
+  - [x] steady state 改为前端折角样式
+  - [x] flipping state 改为前端整页折页 sheet，可见中间帧不再是小矩形块
+- [x] **Phase C: 验证与留档**
+  - [x] `eslint` + `typecheck` 通过
+  - [x] 首页 -> 详情 -> 返回目录 E2E 通过
+  - [x] 复看 `homepage-catalog / page-flip-to-detail-25 / detail-entry / page-flip-back-to-catalog-25 / catalog-return-after-flip`
+  - [x] 回写 `task_plan.md / findings.md / progress.md / evidence/_shared/home-v2-query-entry-e2e-test.md`
+
+## Addendum（2026-04-30）：Home V2 翻页切到官方 turn.js（移动端横屏）
+
+### Goal
+> 停止继续使用自制 `rotateY` 翻页作为最终实现，把 Home V2 的 `overview -> detail -> overview` 正式切到 `turnjs.com` 官方插件路线；同时保留当前首页/详情真实 DOM 内容，并确保书本舞台继续统一为首页标准尺寸。
+
+### Fixed References
+- 本地参考图：
+  - `D:\gongzuo\webgame\gameasset\v2首页参考\首页.png`
+  - `D:\gongzuo\webgame\gameasset\v2首页参考\详情页.png`
+  - `D:\gongzuo\webgame\gameasset\v2首页参考\登录注册.png`
+  - `D:\gongzuo\webgame\gameasset\v2首页参考\background.png`
+- 官方翻页参考：
+  - `http://www.turnjs.com/#`
+  - `https://juejin.cn/post/6844903665216520206`
+
+### Phase
+- [x] **Phase A: 锁官方插件路线**
+  - [x] 读取 turn.js 官方 / Context7 资料，确认必须走 jQuery 插件初始化路线
+  - [x] 明确不再把自制 `FoldLinePageFlipStage` 视觉参数调优当最终方向
+- [x] **Phase B: 接入官方脚本并替换运行时**
+  - [x] 在 `public/vendor/turnjs/turn.min.js` 落官方 `turn.js 4.1.0` 脚本
+  - [x] 将 Home V2 翻页 runtime 改为 `jquery 1.12.0 + 官方 turn.min.js` 动态注入
+  - [x] 首页与详情 steady state 共用统一 `bookStageLayout`，保持整本书尺寸一致
+- [x] **Phase C: 验证与证据**
+  - [x] 运行 `eslint` / `typecheck`
+  - [x] 复跑 `homeV2Draft 查询参数会切到 V2 首页并可进入详情页`
+  - [x] 回看首页 / 详情 / 正反向翻页截图，并回写 evidence / findings / progress
+
+## Addendum（2026-04-29）：Home V2 详情页书本尺寸统一到首页标准
+
+### Goal
+> 把 Home V2 详情页的书本整体舞台尺寸统一到和首页目录页相同的标准，不再让首页是 `1672x941`、详情页却继续按旧 `896x720` 基线缩放；改完后复跑同一条首页->详情 E2E，并把结果回写计划与证据。
+
+### Phase
+
+- [x] **Phase A: 根因确认**
+  - [x] 确认首页 `overview` 舞台已经按 `1672x941` 基线 fit
+  - [x] 确认详情 `detail` 舞台仍错误使用 `896x720` 基线
+  - [x] 确认 `overview-spread/1.png` 与 `book-idle/1.png` 的实际图尺寸都属于首页同一套书本标准
+
+- [x] **Phase B: 舞台统一**
+  - [x] `src/pages/HomeV2.tsx` 删除 detail 对旧 `896x720` 基线的依赖
+  - [x] detail 舞台切到和首页一致的 `1672x941` 标准比例与缩放基线
+  - [x] 保留详情页左右内容区 rect，不在本轮扩散重排 detail 内容结构
+
+- [x] **Phase C: 验证与留档**
+  - [x] 运行 `npx eslint src/pages/HomeV2.tsx`
+  - [x] 复跑 `homeV2Draft 查询参数会切到 V2 首页并可进入详情页`
+  - [x] 复看 `homepage-catalog.png` 与 `detail-entry.png`，确认首页和详情页书本整体占画面比例已回到同一标准
+  - [x] 回写 `task_plan.md / findings.md / progress.md / evidence/_shared/home-v2-query-entry-e2e-test.md`
+
+## Addendum（2026-04-28）：Home V2 井字棋缩略图去假收口（2388x1080）
+
+### Goal
+> 在首页目录页继续清掉剩余假缩略图，把 `tictactoe` 从前端生成霓虹占位图切到真实游戏截图封面链路，同时不破坏当前首页布局和详情入口。
+
+### Phase
+
+- [x] **Phase A: 真缩略图来源确认**
+  - [x] 确认 `evidence/tictactoe/screenshots/tictactoe.png` 是实际游戏画面截图，可作为封面源
+  - [x] 确认当前 `tictactoe` 仍走 `NeonTicTacToeThumbnail`，不符合“去掉假东西”的收口口径
+
+- [x] **Phase B: Canonical 封面接线**
+  - [x] 生成 `public/assets/i18n/zh-CN/tictactoe/thumbnails/cover.png` 与 `compressed/cover.webp`
+  - [x] `src/games/tictactoe/manifest.ts` 增加 `thumbnailPath: 'tictactoe/thumbnails/cover'`
+  - [x] `src/games/tictactoe/thumbnail.tsx` 改为复用 `ManifestGameThumbnail`
+
+- [x] **Phase C: 回归验证**
+  - [x] ESLint 通过（0 error）
+  - [x] 首页 E2E 通过并复看 `homepage-catalog.png`
+  - [x] 回写 `task_plan.md / findings.md / progress.md / evidence/_shared/home-v2-query-entry-e2e-test.md`
+
 ## Addendum（2026-04-28）：Home V2 详情页 + 翻页效果完全重构（参考图一致）
 
 ### Goal
@@ -7,23 +233,32 @@
 
 - [ ] **Phase A: 参考稿与现状对齐**
   - [x] 锁定参考素材目录，并确认后续不止首页：至少包含详情页、登录注册、建房/密码面板、总览流程稿
+  - [x] 参考图主目录固定为 `D:\gongzuo\webgame\gameasset\v2首页参考\`
+  - [x] 当前对照使用的参考图文件固定为：
+    - `D:\gongzuo\webgame\gameasset\v2首页参考\首页.png`
+    - `D:\gongzuo\webgame\gameasset\v2首页参考\总览首页.png`
+    - `D:\gongzuo\webgame\gameasset\v2首页参考\详情页.png`
+    - `D:\gongzuo\webgame\gameasset\v2首页参考\登录注册.png`
+    - `D:\gongzuo\webgame\gameasset\v2首页参考\创建房间.png`
+    - `D:\gongzuo\webgame\gameasset\v2首页参考\输入密码.png`
+    - `D:\gongzuo\webgame\gameasset\v2首页参考\background.png`
   - [x] 复核移动端 / UI 约束，确保改动只在受限视口条件下压缩，不影响桌面端默认基线
   - [x] 确认当前首页已经切到独立 spread 渲染，但详情页 / 翻页仍主要依赖旧 `book-idle + page-flip-left/right` 壳层
 
-- [ ] **Phase B: 详情页重构**
-  - [ ] 对齐参考稿详情页的信息层级：左页游戏标题/摘要/标签，右页房间列表/操作区/密码区
-  - [ ] 必要时补详情页专用背景或 spread 资源接入，避免继续把首页 spread / 旧 idle 壳混用
-  - [ ] 保持从首页进入详情、加入房间、创建房间的真实链路不退化
+- [x] **Phase B: 详情页重构**
+  - [x] 对齐参考稿详情页的信息层级：左页游戏标题/摘要/标签，右页房间列表/操作区/密码区
+  - [x] 先用独立 exact spread + detail 专用排版收掉主要视觉差距，避免继续把首页 spread / 旧 idle 壳混用
+  - [x] 保持从首页进入详情、加入房间、创建房间的真实链路不退化
 
 - [ ] **Phase C: 翻页体验重构**
   - [ ] 以参考稿“封面 -> 目录 -> 详情”的书本路径重整状态机与动画节点
-  - [ ] 区分首页目录 spread、详情页 spread、翻页中间帧，不再让多个状态共用同一静态壳造成视觉错位
-  - [ ] 评估并收口右侧书签 / 返回目录 / 详情返回时的统一交互语义
+  - [x] 区分首页目录 spread、详情页 spread、翻页中间帧，不再让多个状态共用同一静态壳造成视觉错位
+  - [x] 目录页 / 登录页 / 详情页 steady state 不再渲染右侧书签语义，统一改为顶部导航 + 页内返回入口
 
-- [ ] **Phase D: 验证与留档**
-  - [ ] 跑首页到详情的 E2E，并补翻页关键截图证据
-  - [ ] 若详情页/翻页受移动横屏影响，按 `2388x1080` 真横屏口径复验
-  - [ ] 回写 `task_plan.md / findings.md / progress.md / evidence/_shared/home-v2-query-entry-e2e-test.md`
+- [x] **Phase D: 验证与留档**
+  - [x] 跑首页到详情的 E2E，并补详情关键截图证据
+  - [x] 按 `2388x1080` 真横屏口径复验详情页主链路
+  - [x] 回写 `task_plan.md / findings.md / progress.md / evidence/_shared/home-v2-query-entry-e2e-test.md`
 
 ## Addendum（2026-04-28）：Home V2 首页缩略图退步修复（2388x1080）
 
@@ -321,3 +556,107 @@
   - [ ] 继续收右上角账号/工具入口的最终尺寸与相对位置
   - [ ] 继续收六条目的纵向节奏，让标题/简介/人数更贴近参考图
   - [ ] 对 `splendor / summonerwars` 裁图边缘再做最后一轮清边与构图收口
+
+## Addendum（2026-04-30）：Home V2 登录页 / 详情页二次压稿（移动端横屏）
+
+### Goal
+> 继续沿 `D:\gongzuo\webgame\gameasset\v2首页参考\登录注册.png` 与 `详情页.png` 收 Home V2 的 rooms/login 与 detail 两个 steady state：去掉过强卡片感，提升右页表单可读性，并把详情左页正文/按钮与右页房间表密度继续压回书页稿方向。
+
+### Phase
+
+- [x] **Phase A: rooms/login steady state 改回书页语义**
+  - [x] 左页底部模式切换从厚按钮改成低存在感文字导航
+  - [x] 右页移除大白卡式容器，认证表单改回页内直排结构
+  - [x] 认证区继续保留真实前端输入链路与现有 E2E 选择器
+
+- [x] **Phase B: detail steady state 继续压稿**
+  - [x] 左页缩短纵向节奏，保证封面 / 标题 / 描述 / 推荐人数 / 教程按钮首屏完整落在书页内
+  - [x] 右页房间表压缩列宽、行高与按钮尺寸，降低“现代卡片列表”感
+  - [x] 保留 Dice Throne 真实房间链路，不回退成假数据/假详情
+
+- [x] **Phase C: 回归验证与留档**
+  - [x] `npx eslint src/components/home-v2/HomeTabPanels.tsx src/components/home-v2/GameDetails.tsx src/components/auth/AuthModal.tsx`
+  - [x] `npm run typecheck`
+  - [x] 复跑 `homeV2Draft 查询参数会切到 V2 首页并可进入详情页`
+  - [x] 复看 `rooms-auth-entry.png` / `detail-entry.png` / `homepage-catalog.png`
+  - [x] 回写 `task_plan.md / findings.md / progress.md / evidence/_shared/home-v2-query-entry-e2e-test.md`
+
+## Addendum（2026-04-30）：Home V2 翻页结构改为页级 rotateY（按掘金折线翻页思路）
+
+### Goal
+> 不再让整张 spread 的内容一起跟着翻页层运动；翻页改成“静态底页 + 单张纸 front/back + rotateY 折线翻转”的页级结构，方向参考掘金文章《怎么实现一个3d翻书效果》：https://juejin.cn/post/6844903665216520206
+
+### Phase
+
+- [x] **Phase A: 根因定位**
+  - [x] 确认旧实现把整张 `sourceStage/targetStage` 塞进单页 rect 内做 3D 旋转，导致目录与详情内容一起被压进翻页层运动
+  - [x] 确认目标应改成“单张纸 front/back 裁切 + rotateY”，而不是继续调旧参数
+
+- [x] **Phase B: 结构重写**
+  - [x] `FoldLinePageFlipStage.tsx` 改成页级裁切：base stage、revealed target page、turning source front、turning target back
+  - [x] `HomeV2.tsx` 补 stage size / leftPageRect / rightPageRect 传参，停止把整张 stage 直接塞入单页翻转层
+  - [x] 保留当前首页/详情 steady state 与 E2E 链路，不扩散去改业务状态机
+
+- [x] **Phase C: 验证**
+  - [x] `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2.tsx e2e/lobby.e2e.ts`
+  - [x] `npm run typecheck`
+  - [x] 复跑 `homeV2Draft 查询参数会切到 V2 首页并可进入详情页`
+  - [x] 复看 `page-flip-to-detail-50.png` / `page-flip-back-to-catalog-50.png` / `detail-entry.png`
+
+## Addendum（2026-05-02）：Home V2 50% 半页折页收口
+
+### Goal
+> 以用户最终口径收口 Home V2 首页翻页：50% 中间帧必须看出半页翻起、目标页 UI 静止、折页压在 UI 上层，且首页/详情 steady state 不回退。
+
+### Phase
+
+- [x] **Phase A: 废弃旧 25% 收口口径**
+  - [x] 改以 50% 中间帧作为唯一翻页验收口径
+  - [x] 明确旧“小角贴层”结论失效，不能再作为本轮收口依据
+
+- [x] **Phase B: 半页折页可见层重构**
+  - [x] 保留 `turn.js` runtime 与现有首页/详情状态机
+  - [x] 重做 `FoldLinePageFlipStage.tsx` 的可见层：底层目标页 + 中层 source 裁切 + 顶层大面积纸张折页遮挡层
+  - [x] 增加最短可见动画时长门槛，保证 50% 中间帧稳定可截图
+
+- [x] **Phase C: 真移动端横屏验收**
+  - [x] `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx`
+  - [x] `npm run typecheck`
+  - [x] 复跑 `homeV2Draft 查询参数会切到 V2 首页并可进入详情页`
+  - [x] 复看 `page-flip-to-detail-50.png` / `page-flip-back-to-catalog-50.png` / `homepage-catalog.png` / `detail-entry.png`
+- [ ] 继续收正向 50% 折页层内容感（当前仍过于泛白/半透明，未达可验收）
+
+- [x] **Phase D: 修正 50% 证据抓帧口径**
+  - [x] 识别上一轮 `page-flip-to-detail-50.png` 存在 steady state 误抓
+  - [x] 给 `FoldLinePageFlipStage.tsx` 增加测试态进度冻结能力
+  - [x] 给 `e2e/lobby.e2e.ts` 增加“冻结到目标进度再截图”的抓帧流程
+  - [x] 复跑并重新复看正反向真实 50% 中间帧
+
+## Addendum（2026-05-08）：Home V2 正向 50% 收口状态更新
+
+### Goal
+> 继续把 Home V2 目录 -> 详情的正向 50% 中间帧收过“均匀发白硬片/厚板感”这条验收线，同时不带坏反向回翻与稳态页。
+
+### Phase
+- [x] 复跑 `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts`
+- [x] 复跑 `npm run typecheck`
+- [x] 复跑 `homeV2Draft 查询参数会切到 V2 首页并可进入详情页`
+- [x] 复看 `page-flip-to-detail-50.png` / `page-flip-back-to-catalog-50.png` / `detail-entry.png` / `homepage-catalog.png`
+- [x] 确认正向 50% 已越过“均匀发白硬片/厚板感”验收线
+- [x] 将“继续收正向 50% 折页层内容感（当前仍过于泛白/半透明，未达可验收）”视为已完成，旧口径失效
+
+## Addendum（2026-05-08）：Home V2 反向 50% 最终结构收口
+
+### Goal
+> 修掉反向回目录 50% 中间帧里的重复内容与窄缝详情内容泄漏，让翻页层只承担纸张装饰，真实业务页面只由 baseStage 承载。
+
+### Phase
+- [x] 清理 `CornerCurlOverlay` 的失效内容参数与 DOM 克隆承载逻辑
+- [x] 删除 `HomeV2.tsx` / `HomeV2Draft.tsx` 中不再使用的 `renderDetailShellStage`
+- [x] 将隐藏 turn.js 驱动页改成透明占位页，避免 detail/overview DOM 泄漏进可见 50% 中间帧
+- [x] 复跑 `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts`
+- [x] 复跑 `npm run typecheck`
+- [x] 复跑 `homeV2Draft 查询参数会切到 V2 首页并可进入详情页`
+- [x] 实际复看 `page-flip-back-to-catalog-50.png`：无重复王权、无房间列表窄缝泄漏，右页是目录目标页
+- [x] 实际复看 `page-flip-to-detail-50.png`：正向 50% 未被带坏
+- [x] 回写 `evidence/_shared/home-v2-query-entry-e2e-test.md` / `progress.md` / `findings.md`

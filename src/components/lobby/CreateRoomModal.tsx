@@ -9,6 +9,7 @@
  */
 
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
 import type { GameManifestEntry, GameSetupField, GameSetupSelectOption } from '../../games/manifest.types';
@@ -350,7 +351,7 @@ export const CreateRoomModal = ({
         }
     };
 
-    return (
+    const modalLayer = (
         <AnimatePresence>
             {isOpen && (
                 <>
@@ -369,23 +370,35 @@ export const CreateRoomModal = ({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.98 }}
                         transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className="modal-base-container fixed inset-0 flex items-center justify-center p-4 sm:p-8 pointer-events-none"
+                        className={`modal-base-container fixed inset-0 flex justify-center p-4 sm:p-8 pointer-events-none ${isHomeV2Style ? 'items-start' : 'items-center'}`}
                         style={{
                             zIndex: UI_Z_INDEX.modalContent,
-                            paddingTop: 'max(1rem, var(--safe-area-top))',
-                            paddingRight: 'max(1rem, var(--safe-area-right))',
-                            paddingBottom: 'max(1rem, var(--runtime-modal-bottom-inset))',
-                            paddingLeft: 'max(1rem, var(--safe-area-left))',
+                            paddingTop: isHomeV2Style
+                                ? 'max(0.5rem, var(--safe-area-top))'
+                                : 'max(1rem, var(--safe-area-top))',
+                            paddingRight: isHomeV2Style
+                                ? 'max(0.5rem, var(--safe-area-right))'
+                                : 'max(1rem, var(--safe-area-right))',
+                            paddingBottom: isHomeV2Style
+                                ? 'max(0.75rem, max(var(--runtime-modal-bottom-inset), var(--safe-area-bottom, 0px)))'
+                                : 'max(1rem, var(--runtime-modal-bottom-inset))',
+                            paddingLeft: isHomeV2Style
+                                ? 'max(0.5rem, var(--safe-area-left))'
+                                : 'max(1rem, var(--safe-area-left))',
                         }}
                     >
                         <div
                             className={`pointer-events-auto relative flex w-full max-w-md flex-col overflow-hidden font-serif ${
                                 isHomeV2Style
-                                    ? 'rounded-[10px] border border-[#946743]/45 bg-[#edc193]/[0.98] text-[#5c3a24] shadow-[0_24px_60px_rgba(0,0,0,0.45)]'
+                                    ? 'max-w-[min(24.5rem,100%)] rounded-[10px] border border-[#946743]/45 bg-[#edc193]/[0.98] text-[#5c3a24] shadow-[0_20px_48px_rgba(0,0,0,0.38)]'
                                     : 'rounded-sm border border-parchment-card-border/30 bg-parchment-card-bg shadow-parchment-card-hover'
                             }`}
                             onClick={(event) => event.stopPropagation()}
-                            style={{ maxHeight: 'min(var(--runtime-modal-max-height), 42rem)' }}
+                            style={{
+                                maxHeight: isHomeV2Style
+                                    ? 'min(calc(var(--runtime-viewport-height, 100vh) - var(--safe-area-top, 0px) - max(var(--runtime-modal-bottom-inset), var(--safe-area-bottom, 0px)) - 1rem), 29rem)'
+                                    : 'min(var(--runtime-modal-max-height, 92vh), 42rem)',
+                            }}
                             data-testid="create-room-modal"
                         >
                             {!isHomeV2Style ? (
@@ -397,16 +410,16 @@ export const CreateRoomModal = ({
                                 </>
                             ) : null}
 
-                            <div className="shrink-0 p-6 pb-4">
+                            <div className={`shrink-0 ${isHomeV2Style ? 'p-3.5 pb-2' : 'p-6 pb-4'}`}>
                                 <h2 className={`text-center text-xl font-bold tracking-wide ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
                                     {t('createRoom.title')}
                                 </h2>
                             </div>
 
-                            <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-4 space-y-5">
+                            <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${isHomeV2Style ? 'px-3.5 pb-2.5 space-y-3' : 'px-6 pb-4 space-y-5'}`}>
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <label className={`text-sm font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
+                                        <label className={`${isHomeV2Style ? 'text-[12px]' : 'text-sm'} font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
                                             {t('createRoom.roomName')}
                                         </label>
                                         <span className={`text-xs italic ${isHomeV2Style ? 'text-[#876345]' : 'text-parchment-light-text'}`}>
@@ -421,10 +434,10 @@ export const CreateRoomModal = ({
                                         placeholder={t('createRoom.roomNamePlaceholder')}
                                         maxLength={20}
                                         autoComplete="off"
-                                        className={`w-full rounded-[6px] px-4 py-2.5 text-base sm:text-sm transition-colors focus:outline-none ${
+                                        className={`w-full rounded-[6px] px-3 py-2 transition-colors focus:outline-none ${
                                             isHomeV2Style
-                                                ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/85 text-[#5a3923] placeholder:text-[#8e6a4a] focus:border-[#875b3b]'
-                                                : 'border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text placeholder:text-parchment-light-text/50 focus:border-parchment-base-text'
+                                                ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/85 text-[13px] leading-[1.35] text-[#5a3923] placeholder:text-[12px] placeholder:text-[#8e6a4a] focus:border-[#875b3b]'
+                                                : 'text-base sm:text-sm border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text placeholder:text-parchment-light-text/50 focus:border-parchment-base-text'
                                         }`}
                                         data-testid="create-room-name-input"
                                     />
@@ -432,7 +445,7 @@ export const CreateRoomModal = ({
 
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <label className={`text-sm font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
+                                        <label className={`${isHomeV2Style ? 'text-[12px]' : 'text-sm'} font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
                                             {t('createRoom.password')}
                                         </label>
                                         <span className={`text-xs italic ${isHomeV2Style ? 'text-[#876345]' : 'text-parchment-light-text'}`}>
@@ -446,10 +459,10 @@ export const CreateRoomModal = ({
                                         placeholder={t('createRoom.passwordPlaceholder')}
                                         maxLength={10}
                                         autoComplete="new-password"
-                                        className={`w-full rounded-[6px] px-4 py-2.5 text-base sm:text-sm transition-colors focus:outline-none ${
+                                        className={`w-full rounded-[6px] px-3 py-2 pr-9 transition-colors focus:outline-none ${
                                             isHomeV2Style
-                                                ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/85 text-[#5a3923] placeholder:text-[#8e6a4a] focus:border-[#875b3b]'
-                                                : 'border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text placeholder:text-parchment-light-text/50 focus:border-parchment-base-text'
+                                                ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/85 text-[13px] leading-[1.35] text-[#5a3923] placeholder:text-[12px] placeholder:text-[#8e6a4a] focus:border-[#875b3b]'
+                                                : 'text-base sm:text-sm border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text placeholder:text-parchment-light-text/50 focus:border-parchment-base-text'
                                         }`}
                                         data-testid="create-room-password-input"
                                         toggleButtonTestId="create-room-password-toggle"
@@ -493,10 +506,10 @@ export const CreateRoomModal = ({
                                     <select
                                         value={ttlSeconds}
                                         onChange={(event) => setTtlSeconds(Number(event.target.value))}
-                                        className={`w-full appearance-none rounded-[6px] px-4 py-2.5 text-base sm:text-sm cursor-pointer bg-no-repeat bg-[right_12px_center] ${
+                                        className={`w-full appearance-none rounded-[6px] px-3 py-2 cursor-pointer bg-no-repeat bg-[right_12px_center] ${
                                             isHomeV2Style
-                                                ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/85 text-[#5a3923] focus:border-[#875b3b] focus:outline-none'
-                                                : 'border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text focus:border-parchment-base-text focus:outline-none'
+                                                ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/85 text-[13px] leading-[1.35] text-[#5a3923] focus:border-[#875b3b] focus:outline-none'
+                                                : 'text-base sm:text-sm border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text focus:border-parchment-base-text focus:outline-none'
                                         }`}
                                         style={isHomeV2Style
                                             ? {
@@ -617,7 +630,7 @@ export const CreateRoomModal = ({
                                 )}
                             </div>
 
-                            <div className={`shrink-0 flex gap-3 p-6 pt-4 ${isHomeV2Style ? 'border-t border-[#9f6f4b]/20 bg-transparent' : 'border-t border-parchment-card-border/15 bg-parchment-card-bg/95'}`}>
+                            <div className={`shrink-0 flex gap-3 ${isHomeV2Style ? 'p-3.5 pt-2.5 border-t border-[#9f6f4b]/20 bg-transparent' : 'p-6 pt-4 border-t border-parchment-card-border/15 bg-parchment-card-bg/95'}`}>
                                 <button
                                     type="button"
                                     onClick={onClose}
@@ -650,4 +663,10 @@ export const CreateRoomModal = ({
             )}
         </AnimatePresence>
     );
+
+    if (typeof document === 'undefined') {
+        return null;
+    }
+
+    return createPortal(modalLayer, document.body);
 };
