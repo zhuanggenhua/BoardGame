@@ -4045,6 +4045,15 @@
         }
       }
     },
+    "zh-CN/dicethrone/images/Common/compressed/characterhead2": {
+      "variants": {
+        "webp": {
+          "sha256": "8f06ae83f1aa0004f8f9300d3337b064489a40a0e586194b4e49bed8dbbd1c98",
+          "bytes": 257068,
+          "mime": "image/webp"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/gunslinger/compressed/ability-cards": {
       "variants": {
         "webp": {

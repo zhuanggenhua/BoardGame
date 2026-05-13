@@ -1,3 +1,27 @@
+# Findings: 线上 AI 自动反馈排查与修复（2026-05-13）
+
+## 已确认事实
+
+- 用户本轮点名“线上反馈”和“AI 自动反馈”，按生产真源只读查询处理。
+- 本轮优先查 `reporterType=system`、`source=online-ai-watchdog`、`contactInfo=system:online-ai-watchdog`、`errorContext.source=online-ai-watchdog` 或内容前缀 `[system][online-ai-watchdog]` 的 `open/in_progress` 项。
+- 生产操作入口已确认：`ssh admin@8.148.71.102`，项目目录 `/home/admin/BoardGame`，Mongo 容器 `boardgame-mongodb`。
+- 生产回写/部署/重启不属于当前第一步；先只读。
+
+## 待确认
+
+- 当前是否仍有系统 AI 自动反馈未收口。
+- 未收口项是否包含足够定位字段：`gameId`、`matchId`、`incidentKind`、`reason`、`stateSnapshot`、聚合 key 与时间窗口。
+- 若字段不足，重构目标应优先补“可诊断性”而不是猜业务规则。
+
+## 本轮结论
+
+- 生产当前 `open/in_progress = 7`，其中系统 AI 自动反馈 `6` 条，全部为 `smashup|online-ai-watchdog|force-end-turn-failed`。
+- 6 条最后发生时间均在 `2026-05-10`，集中在 `smashup_reaction_choose`、`elder_thing_*`、`wizard_neophyte` 与 active-turn `ADVANCE_PHASE` 恢复链路。
+- 旧反馈的 `stateSnapshot` 足以归类，但 `command_failed` 不足以定位真实业务拒绝原因；本轮已按用户口径重构诊断链。
+- 证据文档：`evidence/engine/online-ai-watchdog-feedback-diagnostics-2026-05-13.md`。
+
+---
+
 # Findings: SmashUp shayu 三派系通用入口矩阵补强与全量重审（2026-05-12）
 
 ## 已确认事实

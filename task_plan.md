@@ -1,3 +1,44 @@
+# Task Plan: 线上 AI 自动反馈排查与修复（2026-05-13）
+
+> 当前正式计划入口。下方旧计划均为历史上下文，不作为本轮任务入口。
+
+## Goal
+
+只读拉取生产反馈真源，确认当前是否存在 `online-ai-watchdog` / 系统 AI 自动反馈的 `open` 或 `in_progress` 项；若有可定位根因则修复并验证，若单条反馈信息不足以定位，则对对应自动反馈/恢复链路做结构化重构，提升后续可诊断性与收口能力。
+
+## Constraints
+
+- 不创建、切换、删除分支或 worktree。
+- 生产侧先只读查询；不做状态回写、部署、重启或数据修改，除非后续获得明确授权或本轮修复验证已经形成可回写证据。
+- 人类反馈仍高于系统反馈；本轮用户点名 `ai自动反馈`，所以先聚焦系统自动反馈。
+- 如果线上反馈不足以定位，重构方向应落在诊断信息、聚合指纹、恢复链路边界或错误分类，不用猜测性业务补丁冒充修复。
+
+## Acceptance Checklist
+
+- [x] S0 读取根规范、部署/服务器入口、历史反馈处理流程与规划 skill。
+- [x] S1 生产只读拉取当前 `open/in_progress` 自动反馈，保存关键事实。
+- [x] S2 对每条 AI 自动反馈提取 gameId、matchId、incidentKind、reason、stateSnapshot/log 线索并归类。
+- [x] S3 有明确根因时修复；无法从反馈定位时重构反馈诊断/恢复链路。
+- [x] S4 跑相关聚焦验证；涉及 UI 才补 E2E 和截图证据。
+- [x] S5 更新 evidence / progress，说明线上状态与是否需要回写或部署。
+
+## Current Status
+
+- [x] 已读取根 `AGENTS.md`、服务器入口文档、`docs/deploy.md` 与 planning-with-files skill。
+- [x] 已确认现有 `task_plan.md` 顶部 shayu 任务已完成，本轮新建顶部计划。
+- [x] 已拉取生产当前 AI 自动反馈真源并完成归类。
+- [x] 已重构 watchdog 失败诊断：补足 command type 与真实失败原因透传。
+- [x] 已完成聚焦 eslint / vitest 验证。
+- [ ] 生产 `open` 状态如需回写，等待明确授权后再执行。
+
+## Errors Encountered
+
+| 时间 | 错误 | 处置 |
+| --- | --- | --- |
+| 2026-05-13 | `session-catchup.py` 提示 Codex 原生 session 解析未实现。 | 记录为无可同步上下文，继续按当前对话与项目文件推进。 |
+
+---
+
 # Task Plan: SmashUp shayu 三派系通用入口矩阵补强与全量重审（2026-05-12）
 
 > 当前正式计划入口。下方旧计划均为历史上下文，不作为本轮任务入口。

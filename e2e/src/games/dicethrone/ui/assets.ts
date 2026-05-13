@@ -26,6 +26,7 @@ export const ASSETS = {
     EFFECT_ICONS: (charId: string = 'monk') => withExtension(`${getCharacterAssetBase(charId)}/status-icons-atlas`, charId),
     CARD_BG: 'dicethrone/images/Common/card-background',
     AVATAR: 'dicethrone/images/Common/character-portraits',
+    NEW_AVATAR: 'dicethrone/images/Common/characterhead2',
 };
 
 const DIRECT_SPRITE_ASSET_RE = /^(?:https?:|data:|blob:|\/game-data\/)/i;
@@ -222,6 +223,7 @@ export const getBonusFaceLabel = (
     return face ? (t(`dice.face.${face}`) as string) : (t('bonusDie.title') as string);
 };
 
+// @atlas-contract character-portraits.png uses the legacy shared portrait contract for existing heroes.
 const PORTRAIT_ATLAS = {
     imageW: 3950,
     imageH: 4096,
@@ -233,11 +235,16 @@ const PORTRAIT_ATLAS = {
     rows: 2,
 };
 
-const PORTRAIT_CELL_W = PORTRAIT_ATLAS.deckW / PORTRAIT_ATLAS.cols;
-const PORTRAIT_CELL_H = PORTRAIT_ATLAS.deckH / PORTRAIT_ATLAS.rows;
-const PORTRAIT_BG_SIZE = {
-    x: (PORTRAIT_ATLAS.imageW / PORTRAIT_CELL_W) * 100,
-    y: (PORTRAIT_ATLAS.imageH / PORTRAIT_CELL_H) * 100,
+// @atlas-contract characterhead2.png is a separate 6-column portrait source for newer Dice Throne heroes.
+const NEW_PORTRAIT_ATLAS = {
+    imageW: 3570,
+    imageH: 6042,
+    deckX: 0,
+    deckY: 0,
+    deckW: 3570,
+    deckH: 6041,
+    cols: 6,
+    rows: 7,
 };
 
 const CHARACTER_PORTRAIT_INDEX: Record<string, number> = {
@@ -257,24 +264,41 @@ const CHARACTER_PORTRAIT_INDEX: Record<string, number> = {
     seraph: 14,
 };
 
-const getPortraitAtlasPosition = (index: number) => {
-    const safeIndex = index % (PORTRAIT_ATLAS.cols * PORTRAIT_ATLAS.rows);
-    const col = safeIndex % PORTRAIT_ATLAS.cols;
-    const row = Math.floor(safeIndex / PORTRAIT_ATLAS.cols);
-    const x = PORTRAIT_ATLAS.deckX + col * PORTRAIT_CELL_W;
-    const y = PORTRAIT_ATLAS.deckY + row * PORTRAIT_CELL_H;
-    const xPos = (x / (PORTRAIT_ATLAS.imageW - PORTRAIT_CELL_W)) * 100;
-    const yPos = (y / (PORTRAIT_ATLAS.imageH - PORTRAIT_CELL_H)) * 100;
-    return { xPos, yPos };
+const NEW_CHARACTER_PORTRAIT_INDEX: Partial<Record<HeroState['characterId'], number>> = {
+    ninja: 2,
+    treant: 13,
 };
 
-export const getPortraitStyle = (characterId: HeroState['characterId'], locale?: string) => {
-    const index = CHARACTER_PORTRAIT_INDEX[characterId] ?? 0;
-    const { xPos, yPos } = getPortraitAtlasPosition(index);
+const buildPortraitAtlasStyle = (
+    atlas: typeof PORTRAIT_ATLAS,
+    imagePath: string,
+    index: number,
+    locale?: string,
+) => {
+    const cellW = atlas.deckW / atlas.cols;
+    const cellH = atlas.deckH / atlas.rows;
+    const safeIndex = index % (atlas.cols * atlas.rows);
+    const col = safeIndex % atlas.cols;
+    const row = Math.floor(safeIndex / atlas.cols);
+    const x = atlas.deckX + col * cellW;
+    const y = atlas.deckY + row * cellH;
+    const xPos = (x / (atlas.imageW - cellW)) * 100;
+    const yPos = (y / (atlas.imageH - cellH)) * 100;
+
     return {
-        backgroundImage: buildLocalizedImageSet(ASSETS.AVATAR, locale),
-        backgroundSize: `${PORTRAIT_BG_SIZE.x}% ${PORTRAIT_BG_SIZE.y}%`,
+        backgroundImage: buildLocalizedImageSet(imagePath, locale),
+        backgroundSize: `${((atlas.imageW / cellW) * 100).toFixed(4)}% ${((atlas.imageH / cellH) * 100).toFixed(4)}%`,
         backgroundRepeat: 'no-repeat',
         backgroundPosition: `${xPos.toFixed(4)}% ${yPos.toFixed(4)}%`,
     } as CSSProperties;
+};
+
+export const getPortraitStyle = (characterId: HeroState['characterId'], locale?: string) => {
+    const newPortraitIndex = NEW_CHARACTER_PORTRAIT_INDEX[characterId];
+    if (typeof newPortraitIndex === 'number') {
+        return buildPortraitAtlasStyle(NEW_PORTRAIT_ATLAS, ASSETS.NEW_AVATAR, newPortraitIndex, locale);
+    }
+
+    const index = CHARACTER_PORTRAIT_INDEX[characterId] ?? 0;
+    return buildPortraitAtlasStyle(PORTRAIT_ATLAS, ASSETS.AVATAR, index, locale);
 };

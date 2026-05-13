@@ -32,6 +32,7 @@ const COMMON_CRITICAL_PATHS = [
     'dicethrone/images/Common/background',
     'dicethrone/images/Common/card-background',
     'dicethrone/images/Common/character-portraits',
+    'dicethrone/images/Common/characterhead2',
 ] as const;
 
 const HAND_ATLAS_CHARACTER_IDS: ReadonlySet<SelectableCharacterId> = new Set(['gunslinger', 'samurai']);

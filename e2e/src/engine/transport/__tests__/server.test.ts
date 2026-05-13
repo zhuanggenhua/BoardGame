@@ -7270,6 +7270,92 @@ describe('GameTransportServer（离座与重连）', () => {
         }));
     });
 
+    it('online AI watchdog 强制恢复命令失败时，自动反馈应携带命令类型和真实失败原因', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-command-failure-diagnostic', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                phase: 'scoreBases',
+                interaction: {
+                    current: createSimpleChoice(
+                        'reaction-choice-command-failure',
+                        '1',
+                        '选择一个反应动作',
+                        [
+                            {
+                                id: 'trigger-ninja-dojo',
+                                label: '结算 Ninja Dojo',
+                                value: { kind: 'trigger', triggerId: 'afterScoring:base_ninja_dojo:1:0' },
+                            },
+                            {
+                                id: 'pass',
+                                label: 'Pass',
+                                value: { kind: 'pass' },
+                            },
+                        ],
+                        { sourceId: 'smashup_reaction_choose', targetType: 'button' },
+                    ),
+                    queue: [],
+                    isBlocked: false,
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+        });
+
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
+            kind: 'idle',
+            idleReason: 'no-action',
+        } as any);
+
+        try {
+            const server = new GameTransportServer({
+                io: io as unknown as any,
+                storage,
+                games: [createEngineConfigWithId('smashup')],
+                onlineAiRecoveryTickMs: 0,
+                onlineAiRecoveryTimeoutMs: 0,
+                onlineAiRecoveryFailureReportThreshold: 1,
+                onlineAiFeedbackReporter: feedbackReporter,
+            });
+
+            const serverInternal = server as unknown as {
+                loadMatch: (matchID: string) => Promise<any>;
+                runOnlineAiRecoveryTick: () => Promise<void>;
+                executeCommandInternal: (
+                    match: any,
+                    playerID: string,
+                    commandType: string,
+                    payload: unknown,
+                ) => Promise<boolean>;
+            };
+
+            await serverInternal.loadMatch('match-watchdog-command-failure-diagnostic');
+            vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (match, playerID, commandType, payload) => {
+                expect(playerID).toBe('1');
+                expect(commandType).toBe(INTERACTION_COMMANDS.RESPOND);
+                expect(payload).toEqual({ optionId: 'pass' });
+                match.lastCommandFailureReason = 'invalid_interaction_response: stale option';
+                return false;
+            });
+
+            await serverInternal.runOnlineAiRecoveryTick();
+            await serverInternal.runOnlineAiRecoveryTick();
+            await nextTick();
+            await nextTick();
+
+            expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-command-failure-diagnostic',
+                incidentKind: 'force-end-turn-failed',
+                reason: 'visible-interaction:recover-interaction:command_failed:SYS_INTERACTION_RESPOND:invalid_interaction_response: stale option',
+            }));
+        } finally {
+            resolutionSpy.mockRestore();
+        }
+    });
+
     it('online AI watchdog 默认上报链路不应把成功恢复类事件写入反馈库', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();

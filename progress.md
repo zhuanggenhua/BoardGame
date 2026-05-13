@@ -1,3 +1,26 @@
+## Session: 2026-05-13 线上 AI 自动反馈排查与修复
+
+- **Status:** completed
+- 已读取：
+  - `AGENTS.md`
+  - `C:\Users\zhuagenbao\docs\本机环境速查.md`
+  - `C:\Users\zhuagenbao\docs\服务器连接与生产部署入口.md`
+  - `docs/deploy.md`
+  - `C:\Users\zhuagenbao\.codex\skills\planning-with-files\SKILL.md`
+- 已确认当前仓库有既有脏改，暂不触碰无关文件。
+- 已在顶部建立本轮计划，下一步只读查询生产当前 `open/in_progress` AI 自动反馈。
+- 生产只读查询结果：`open/in_progress = 7`，其中系统 AI 自动反馈 6 条，全部为 `smashup` `force-end-turn-failed`。
+- 已修改 `src/engine/transport/server.ts` 与镜像路径 `e2e/src/engine/transport/server.ts`：watchdog 失败 reason 带上 command type 与真实 failure reason，并保留 pipeline 抛错后的原始失败原因。
+- 已新增 `src/engine/transport/__tests__/server.test.ts` 与镜像路径回归：强制恢复命令失败时自动反馈必须包含 `command_failed:SYS_INTERACTION_RESPOND:<真实原因>`。
+- 验证：
+  - `npx eslint src/engine/transport/server.ts src/engine/transport/__tests__/server.test.ts` -> 0 errors
+  - `npx eslint e2e/src/engine/transport/server.ts e2e/src/engine/transport/__tests__/server.test.ts` -> 0 errors
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --maxWorkers 1 -t "watchdog.*命令类型|stale reaction choice|reaction pass 后仍停在同一交互|batch 内命令验证失败"` -> 4 passed
+  - `npm run typecheck` -> passed
+- 证据：`evidence/engine/online-ai-watchdog-feedback-diagnostics-2026-05-13.md`
+
+---
+
 ## Session: 2026-05-12 SmashUp shayu 通用入口矩阵补强与全量重审
 
 - **Status:** in_progress

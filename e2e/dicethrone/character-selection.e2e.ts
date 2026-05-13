@@ -439,6 +439,7 @@ test.describe('角色选择系统', () => {
         const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'character-selection.e2e', '树精和忍者应该能够选角并进入游戏');
         mkdirSync(evidenceDir, { recursive: true });
         const selectionEvidencePath = join(evidenceDir, 'treant-ninja-selection.png');
+        const mobileSelectionEvidencePath = join(evidenceDir, 'treant-ninja-selection-mobile-landscape.png');
         const treantCardEvidencePath = join(evidenceDir, 'treant-implementation-card.png');
         const ninjaCardEvidencePath = join(evidenceDir, 'ninja-implementation-card.png');
         const gameplayEvidencePath = join(evidenceDir, 'treant-ninja-gameplay.png');
@@ -456,6 +457,10 @@ test.describe('角色选择系统', () => {
             await guestPage.locator('[data-character-id="ninja"]').screenshot({ path: ninjaCardEvidencePath });
             await page.screenshot({ path: selectionEvidencePath, fullPage: false });
             await page.screenshot({ path: testInfo.outputPath('treant-ninja-selection.png'), fullPage: false });
+            await page.setViewportSize({ width: 812, height: 375 });
+            await page.screenshot({ path: mobileSelectionEvidencePath, fullPage: false });
+            await page.screenshot({ path: testInfo.outputPath('treant-ninja-selection-mobile-landscape.png'), fullPage: false });
+            await page.setViewportSize({ width: 1280, height: 720 });
 
             await guestPage.getByRole('button', { name: readyButtonPattern }).click();
             const startButton = page.getByRole('button', { name: /开始游戏|Press Start/i });

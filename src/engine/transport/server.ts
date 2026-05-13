@@ -571,6 +571,29 @@ function normalizeCommandFailureReason(reason: unknown): string {
     return trimmed.length > 0 ? truncateCommandFailureReason(trimmed) : GENERIC_COMMAND_FAILURE_REASON;
 }
 
+function formatOnlineAiCommandFailureReason(
+    reason: string,
+    commandType?: string | null,
+    commandFailureReason?: string | null,
+): string {
+    const parts = [reason];
+    const normalizedCommandType = typeof commandType === 'string' && commandType.trim().length > 0
+        ? commandType.trim()
+        : null;
+    if (normalizedCommandType) {
+        parts.push(normalizedCommandType);
+    }
+
+    const normalizedFailureReason = typeof commandFailureReason === 'string' && commandFailureReason.trim().length > 0
+        ? commandFailureReason.trim()
+        : null;
+    if (normalizedFailureReason && normalizedFailureReason !== reason) {
+        parts.push(normalizedFailureReason);
+    }
+
+    return truncateCommandFailureReason(parts.join(':'));
+}
+
 /** socket 关联信息 */
 interface SocketInfo {
     matchID: string;
@@ -1511,7 +1534,13 @@ export class GameTransportServer {
                                 ? 'private_overlay_missing'
                                 : actionRecovery.blockedReason === 'missing-visible-state'
                                     ? 'missing_visible_state'
-                                    : 'legal_action_unavailable';
+                                    : actionRecovery.outcome === 'legal-action-command-failed'
+                                        ? formatOnlineAiCommandFailureReason(
+                                            'legal_action_command_failed',
+                                            actionRecovery.failedCommandType,
+                                            actionRecovery.commandFailureReason,
+                                        )
+                                        : 'legal_action_unavailable';
                         await this.handleOnlineAiRecoveryFailure(
                             match,
                             tracker,
@@ -1548,6 +1577,7 @@ export class GameTransportServer {
                         nextCommand?.payload ?? {},
                     );
                     if (!nextSuccess) {
+                        const commandFailureReason = match.lastCommandFailureReason;
                         const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
                         if (!revalidatedCandidate) {
                             return;
@@ -1559,7 +1589,7 @@ export class GameTransportServer {
                             currentCandidate,
                             phaseLabel,
                             progressMarkerBeforeRecovery,
-                            'command_failed',
+                            formatOnlineAiCommandFailureReason('command_failed', nextCommandType, commandFailureReason),
                         );
                         return;
                     }
@@ -2513,6 +2543,8 @@ export class GameTransportServer {
         blockedReason: 'missing-visible-state' | 'missing-private-overlay' | 'stale-private-overlay' | null;
         executedCommandTypes: string[];
         outcome: 'applied' | 'blocked' | 'no-legal-action' | 'legal-action-command-failed';
+        failedCommandType?: string;
+        commandFailureReason?: string | null;
     }> {
         const seatController = seatControllers[candidate.playerId];
         if (!seatController || seatController.type === 'human') {
@@ -2614,8 +2646,16 @@ export class GameTransportServer {
                 { suppressBroadcast: true },
             );
             if (!success) {
+                const commandFailureReason = match.lastCommandFailureReason;
                 tracker.autoSubmittedAt = null;
-                return { applied: false, blockedReason: null, executedCommandTypes: [], outcome: 'legal-action-command-failed' };
+                return {
+                    applied: false,
+                    blockedReason: null,
+                    executedCommandTypes,
+                    outcome: 'legal-action-command-failed',
+                    failedCommandType: command.type,
+                    commandFailureReason,
+                };
             }
             executedCommandTypes.push(command.type);
         }
@@ -3372,6 +3412,7 @@ export class GameTransportServer {
             // 但如果当前命令本身就是 CANCEL，不能再次递归触发取消.
             if (commandType !== INTERACTION_COMMANDS.CANCEL) {
                 await this.cancelInteractionOnError(match, playerID);
+                match.lastCommandFailureReason = failureReason;
             }
 
             return false;
