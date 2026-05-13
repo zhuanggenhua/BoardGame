@@ -936,6 +936,9 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 };
             }, { timeout: 10000 }).toEqual({ hp: 30, smokeBomb: 0, pendingDamageOpen: false });
             await screenshot(match.guestPage, testName, '02-smoke-bomb-after-use-evaded.png');
+            await match.guestPage.getByRole('button', { name: '继续' }).click();
+            await expect(match.guestPage.getByRole('button', { name: '继续' })).toBeHidden({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '03-smoke-bomb-after-closeout.png');
         } finally {
             await closeMatchContexts(match);
         }

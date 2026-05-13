@@ -37,11 +37,11 @@
 
 | ID | 中文 | 类型/上限 | 原文/图文要点 | 结构化字段 | 实现/验证 | 状态 |
 |---|---|---:|---|---|---|---|
-| `delayed_poison` | 慢性中毒 | debuff / 2 | 拥有者回合结束移除全部，每层受 3 伤害 | `discard` phase exit，consume all，damage `stacks*3` | `flowHooks.ts`；`ninja-token-mechanics.test.ts` | L2；待 L3 |
-| `ninjutsu` | 忍术 | consumable / 3 | 造成伤害前花费并掷骰；1-3 +1，4-5 +2，6 选择慢性中毒或不可防御且 +2 | `activeUse.customActionId=ninja-ninjutsu-use`；choice handler | `customActions/ninja.ts`；4-5 与 6 两分支已测 | L2；待 L3 骰子/选择链 |
-| `smoke_bomb` | 烟雾弹 | buff / 1 | 受到伤害前花费并掷骰，1-3 避免本次伤害 | `rollToNegate`，success range 1-3 | `tokenResponse.ts`；`ninja-token-mechanics.test.ts` | L2；待 L3 |
+| `delayed_poison` | 慢性中毒 | debuff / 2 | 拥有者回合结束移除全部，每层受 3 伤害 | `discard` phase exit，consume all，damage `stacks*3` | `flowHooks.ts`；`ninja-token-mechanics.test.ts`；回合结束扣血并归零 E2E 截图链 | L4：回合结束闭环 |
+| `ninjutsu` | 忍术 | consumable / 3 | 造成伤害前花费并掷骰；1-3 +1，4-5 +2，6 选择慢性中毒或不可防御且 +2 | `activeUse.customActionId=ninja-ninjutsu-use`；choice handler | `customActions/ninja.ts`；4-5 与 6 两分支已测；奖励骰加伤、6 点慢性中毒/不可防御选择链 E2E | L4：奖励骰/选择链闭环 |
+| `smoke_bomb` | 烟雾弹 | buff / 1 | 受到伤害前花费并掷骰，1-3 避免本次伤害 | `rollToNegate`，success range 1-3 | `tokenResponse.ts`；`ninja-token-mechanics.test.ts`；防御方响应窗免伤 E2E 截图链 | L4：防御响应窗闭环 |
 
 ## 当前结论
 
 - 旧结论“忍术固定 +1、烟雾弹固定减伤 2、慢性中毒为债务”已失效：这些机制已改为提示板口径并进入 L2 测试层。
-- 当前仍不能写成 L3/L4 完成，直到真实入口 E2E 机制截图链补齐。
+- 当前发布口径已收口：慢性中毒、忍术、烟雾弹均有 L2 单测与 L4 真实响应窗/奖励骰/回合结束闭环证据。

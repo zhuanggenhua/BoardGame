@@ -35,13 +35,13 @@
 
 | ID | 中文 | 类型/上限 | 原文/图文要点 | 结构化字段 | 实现/验证 | 状态 |
 |---|---|---:|---|---|---|---|
-| `treant_seedling` | 幼种树灵 | consumable / 3 | 自己掷骰阶段花费 1 个，重掷 1 颗自己的骰子 | passive action `rerollDie`，tokenCost 1，`ownRollPhase` | `passiveAbility.ts` + `execute.ts`；`treant-token-mechanics.test.ts` | L2；待 L3 UI 截图 |
-| `treant_sapling` | 木苗树灵 | consumable / 2 | 主阶段花费 1 个治疗 1 并 +1CP；或额外 1CP 抽 1 | passive custom `treant-sapling-heal-cp` / `treant-sapling-draw` | `customActions/treant.ts`；`treant-token-mechanics.test.ts` 覆盖治疗+CP 与额外 1CP 抽牌分支 | L2；待 L3 UI 截图 |
-| `treant_divine` | 神性树灵 | consumable / 1 | 造成伤害前 +3；可防止即将受到的负面状态 | `activeUse.modifyDamageDealt +3`；preDefense debuff filter | `tokens.ts` + `flowHooks.ts`；防 debuff 与 beforeDamageDealt +3 已测 | L2；待 L3 |
-| `life_sap` | 生命源泉 | buff / 1 | 主阶段花费并掷 1 骰，治疗骰值一半向上取整 | passive custom `treant-life-sap-use`；bonus die + display-only settlement | `customActions/treant.ts`；`treant-token-mechanics.test.ts` | L2；待 L3 骰子特写链 |
-| `thorn` | 刺藤 | debuff / 1 | 进攻掷骰结束移除，并按额外投掷次数受伤 | `offensiveRoll` phase exit，damage `rollCount - 1` | `flowHooks.ts`；`treant-token-mechanics.test.ts` | L2；待 L3 |
+| `treant_seedling` | 幼种树灵 | consumable / 3 | 自己掷骰阶段花费 1 个，重掷 1 颗自己的骰子 | passive action `rerollDie`，tokenCost 1，`ownRollPhase` | `passiveAbility.ts` + `execute.ts`；`treant-token-mechanics.test.ts`；`dicethrone-treant-ninja-mechanics.e2e.ts` 真实骰子按钮重掷截图链 | L3：真实 UI 重掷闭环 |
+| `treant_sapling` | 木苗树灵 | consumable / 2 | 主阶段花费 1 个治疗 1 并 +1CP；或额外 1CP 抽 1 | passive custom `treant-sapling-heal-cp` / `treant-sapling-draw` | `customActions/treant.ts`；`treant-token-mechanics.test.ts` 覆盖治疗+CP 与额外 1CP 抽牌分支；真实 UI 短按钮与两分支截图链 | L3：真实 UI 两分支闭环 |
+| `treant_divine` | 神性树灵 | consumable / 1 | 造成伤害前 +3；可防止即将受到的负面状态 | `activeUse.modifyDamageDealt +3`；preDefense debuff filter | `tokens.ts` + `flowHooks.ts`；防 debuff 与 beforeDamageDealt +3 已测；攻击方响应窗 +3 与防负面阶段推进 E2E | L4：响应窗/阶段推进闭环 |
+| `life_sap` | 生命源泉 | buff / 1 | 主阶段花费并掷 1 骰，治疗骰值一半向上取整 | passive custom `treant-life-sap-use`；bonus die + display-only settlement | `customActions/treant.ts`；`treant-token-mechanics.test.ts`；真实奖励骰特写/治疗/收口截图链 | L4：奖励骰特写与收口闭环 |
+| `thorn` | 刺藤 | debuff / 1 | 进攻掷骰结束移除，并按额外投掷次数受伤 | `offensiveRoll` phase exit，damage `rollCount - 1` | `flowHooks.ts`；`treant-token-mechanics.test.ts`；阶段推进反伤并消耗 E2E 截图链 | L4：阶段推进闭环 |
 
 ## 当前结论
 
 - 旧结论“树灵消费重掷、木苗、刺藤为 L2 债务”已失效：这些机制已实现并进入 L2 测试层。
-- 当前 L2 已覆盖新增 token/passive 的关键规则分支；仍不能写成 L3/L4 完成，直到真实入口 E2E 机制截图链补齐。
+- 当前发布口径已收口：新增 token/passive 的关键规则分支均有 L2 单测；幼种树灵、木苗树灵达到 L3 真实 UI 链路；神性树灵、生命源泉、刺藤达到 L4 复杂交互/阶段推进闭环。

@@ -6,8 +6,8 @@
 
 | slot | cardId | 中文 | 类型/费用/时机 | 原文/图文要点 | 结构化字段 | 证据层级 |
 |---:|---|---|---|---|---|---|
-| 17 | `treant-card-trample` | 践踏 | action / 1CP / roll | 攻击修正，投 5 骰；树枝加伤，树灵施加刺藤 | `rollDie diceCount=5`；branch `bonusDamage=1`；spirit grant opponent `thorn` | L1；刺藤后续 L2 |
-| 18 | `upgrade-tend-care-2` | 细心呵护 II | upgrade / 2CP / main | 升级细心呵护 | replace `tend-care` -> `TEND_CARE_2` | L1；木苗后续 L2 |
+| 17 | `treant-card-trample` | 践踏 | action / 1CP / roll | 攻击修正，投 5 骰；树枝加伤，树灵施加刺藤 | `rollDie diceCount=5`；branch `bonusDamage=1`；spirit grant opponent `thorn` | L1 静态接线；刺藤后续 L4 代表链 |
+| 18 | `upgrade-tend-care-2` | 细心呵护 II | upgrade / 2CP / main | 升级细心呵护 | replace `tend-care` -> `TEND_CARE_2` | L1 静态接线；木苗后续 L3 代表链 |
 | 19 | `upgrade-rooted-2` | 扎根 II | upgrade / 3CP / main | 升级扎根 | replace `rooted` -> `ROOTED_2`，防御骰 4 | L1 |
 | 20 | `treant-card-drink-deep` | 痛饮 | action / 1CP / main | 获得生命源泉 | grant self `life_sap=1` | L2：生命源泉消费已测 |
 | 21 | `upgrade-shattering-fist-3` | 破碎之拳 III | upgrade / 2CP / main | 升级破碎之拳到 III | replace `shattering-fist` -> `SHATTERING_FIST_3` | L2：刺藤后续已测 |
@@ -31,4 +31,4 @@
 
 - 专属卡静态数据、i18n 与 atlas 接线达到 L1。
 - 由专属卡产生的新增 token 后续行为已通过代表性 L2 测试覆盖：幼种树灵、木苗树灵治疗+CP、木苗树灵额外 1CP 抽牌、生命源泉、刺藤、神性树灵防负面状态与造成伤害前 +3。
-- 真实入口卡牌 UI/机制 L3 仍待 E2E 截图链补齐。
+- 当前发布口径已收口：本轮未逐张专属卡做真实打出 E2E；专属卡静态/i18n/图集为 L1，全量结构核对完成；由专属卡产生或升级关联的树精专属 token/状态后续机制已通过代表性 L2/L3/L4 链路覆盖。

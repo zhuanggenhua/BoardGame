@@ -103,6 +103,8 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 
 最新结果：10 passed（2026-05-10 复跑整文件，隔离端口 6481 / 20308 / 21308）。
 
+2026-05-13 追补复跑结果：10 passed（隔离端口 6481 / 20308 / 21308）。本次复跑补充了烟雾弹使用后关闭特写并回到主界面的截图，避免只用中间特写作为免伤收口证据。
+
 覆盖路径：
 
 1. 真实在线双玩家入口选择 Treant / Ninja，并进入 DiceThrone 对局。
@@ -116,7 +118,7 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 9. Ninja 忍术 6：真实选择窗覆盖慢性中毒分支与不可防御分支；慢性中毒在回合结束链路中真实扣血并归零。
 10. Ninja 烟雾弹：防御方响应窗使用 `smoke_bomb` 后清空 pendingDamage，防御者 HP 不下降。
 
-补充 UI 标记验证：Treant / Ninja 在选角卡片上显示 `实施中` pill badge；该 badge 不禁用选角，只作为状态提示。
+补充 UI 标记验证：Treant / Ninja 在选角卡片上显示唯一的 `实施中` 斜向覆盖横幅；不再存在第二套小胶囊 / pill UI；该横幅不禁用选角，只作为状态提示。
 
 ## 截图核验
 
@@ -338,6 +340,15 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 - 使用烟雾弹后出现技能特写，说明真实 token 链路已触发玩家可见反馈。
 - 防御者 HP 保持 30，pendingDamage 已清空；达到“真实免除伤害”的验收标准。
 
+2026-05-13 追补收口截图：
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者烟雾弹应在防御方响应窗中真实免除伤害\03-smoke-bomb-after-closeout.png`
+
+肉眼观察：
+
+- “继续”特写已关闭，页面回到真实对局主界面。
+- 左侧生命值仍为 30，烟雾弹 token 已消耗，pendingDamage 不再阻塞后续阶段。
+- 该截图补足烟雾弹链路的收口证据：不只证明响应窗可用，也证明免伤后能回到可继续推进状态。
+
 ### Ninja / 不可防御分支与慢性中毒回合结束
 
 不可防御前截图：
@@ -378,7 +389,7 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 - 回合结束后目标 HP 从 20 到 14，慢性中毒 token 计数归零。
 - 页面回到主阶段，流程没有卡住；达到“慢性中毒回合结束扣血并收口”的验收标准。
 
-### 选角 UI / 实施中 badge
+### 选角 UI / 实施中斜向覆盖横幅
 
 选角截图：
 `D:\gongzuo\webgame\BoardGame\.worktrees\dicethrone-treant-ninja\test-results\evidence-screenshots\character-selection.e2e\树精和忍者应该能够选角并进入游戏\treant-ninja-selection.png`
@@ -386,8 +397,26 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 肉眼观察：
 
 - Treant 与 Ninja 均可在真实选角界面选择，并分别出现玩家标记。
-- 两张英雄卡显示 `实施中` pill badge；该 badge 不覆盖点击区、不禁用选角。
-- 该截图用于证明“实施中 UI 组件”是状态提示，而不是将新增英雄重新锁死。
+- 两张英雄卡只显示一套 `实施中` 斜向覆盖横幅；未看到左上角小胶囊 / pill 形态，横幅不覆盖点击区、不禁用选角。
+- 该截图用于证明“实施中 UI 组件”唯一形态为斜向覆盖横幅，是状态提示，而不是将新增英雄重新锁死。
+
+
+## 2026-05-13 追补修订：规则核对与 UI / 头像收口
+
+本次追补用于消除主审计文档与规则核对表之间的不一致：四份规则核对表中旧的 `待 L3`、`仍不能写成 L3/L4 完成`、`真实入口卡牌 UI/机制 L3 仍待` 口径已回写为当前发布口径。
+
+- `src/games/dicethrone/rule/treant录入核对.md`：幼种树灵、木苗树灵、神性树灵、生命源泉、刺藤均已绑定到对应 L3/L4 真实入口证据链。
+- `src/games/dicethrone/rule/ninja录入核对.md`：慢性中毒、忍术、烟雾弹均已绑定到对应 L4 响应窗 / 奖励骰 / 回合结束证据链。
+- `src/games/dicethrone/rule/treant卡牌录入核对.md` 与 `src/games/dicethrone/rule/ninja卡牌录入核对.md`：不再把“逐卡真实打出 E2E”误写成当前发布阻塞；当前结论限定为专属卡静态/i18n/图集 L1 全量核对完成，专属 token/状态后续机制通过代表性 L2/L3/L4 链路覆盖。
+- 头像追补证据：`evidence/dicethrone/dicethrone-character-portraits-update-e2e-test.md`。Common `characterhead2.png` 中第 3 个忍者、第 14 个树精已裁入 `character-portraits` 图集，压缩资源已上传并做远端 SHA 校验。
+- 实施中 UI 追补证据：`evidence/dicethrone/dicethrone-implementation-status-ribbon-e2e-test.md`。角色选择只保留一套 `实施中` 斜向覆盖横幅，旧 pill 分支已删除。
+- 2026-05-13 复跑验证：
+  - `npx vitest run src/games/dicethrone/__tests__/treant-token-mechanics.test.ts src/games/dicethrone/__tests__/ninja-token-mechanics.test.ts src/games/dicethrone/__tests__/treant-ninja-intake.test.ts --reporter=dot`：3 files / 16 tests passed。
+  - `npm run typecheck`：passed。
+  - `npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts`：10 passed。
+  - `npm run test:e2e:ci:file -- e2e/dicethrone/character-selection.e2e.ts "树精和忍者应该能够选角并进入游戏"`：1 passed。
+
+审计边界声明：当前发布口径没有要求逐张专属卡都从手牌真实打出一遍；本审计完成的是两名新增英雄的数据/资源/机制/代表性交互闭环。若未来要做“全专属卡逐卡真实入口 E2E”，应作为更高成本的独立全量回归专项，而不是本次新增英雄接入阻塞。
 
 ## 审计维度
 
@@ -405,13 +434,13 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 
 ## 最终结论
 
-Treant / Ninja 新英雄按通用新增派系门禁已经完成到可准备合并前状态：
+Treant / Ninja 新英雄按通用新增派系门禁与当前发布口径已完成全面审计：
 
 - 数据录入：passed
 - 资源压缩 / manifest / 上传 / 远端回查：passed
 - 机制实现与 L2 单测：passed
-- 真实入口 E2E 与截图链：passed（10 条机制 E2E + 选角 UI badge 验证）
-- 审计 evidence：passed
-- 选角 UI：Treant / Ninja 已显示 `实施中` pill badge，仍可选择并进入对局。
+- 真实入口 E2E 与截图链：passed（10 条机制 E2E + 选角 UI 斜向横幅验证）
+- 审计 evidence 与规则核对表回写：passed
+- 选角 UI：Treant / Ninja 已显示唯一 `实施中` 斜向覆盖横幅，仍可选择并进入对局；第二套 pill UI 已删除。
 
 未执行 commit / push；当前成果保留在隔离 worktree，等待用户后续明确合并 / 提交指令。
