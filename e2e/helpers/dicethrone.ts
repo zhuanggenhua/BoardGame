@@ -130,12 +130,17 @@ export const seedDTMatchCredentials = async (
 
 export const waitForCharacterSelection = async (page: Page, timeout = 60000) => {
     // NOTE: 角色选择页标题在部分环境下可能出现偶发定位失败（疑似与文本/渲染时序有关）。
-    // 这里改用更稳定的结构锚点：角色卡片的 data-character-id。
-    await expect(page.locator('[data-character-id]').first()).toBeVisible({ timeout });
+    // 这里改用更稳定的结构锚点：新组件使用 data-character-id，旧兼容组件仍使用 data-char-id。
+    const rescueRetryButton = page.getByRole('button', { name: '刷新重试' });
+    if (await rescueRetryButton.isVisible({ timeout: 2000 }).catch(() => false)) {
+        await rescueRetryButton.click();
+        await page.waitForLoadState('domcontentloaded').catch(() => undefined);
+    }
+    await expect(page.locator('[data-character-id], [data-char-id]').first()).toBeVisible({ timeout });
 };
 
 export const selectCharacter = async (page: Page, characterId: string) => {
-    let characterCard = page.locator(`[data-character-id="${characterId}"]`);
+    let characterCard = page.locator(`[data-character-id="${characterId}"], [data-char-id="${characterId}"]`);
     if ((await characterCard.count()) === 0) {
         // 兼容：部分角色卡在某些构建/渲染路径下可能没有挂 `data-character-id`（例如列表虚拟化/禁用态包装）。
         // 这里提供最小 fallback：按可见名称文字点击，以避免 E2E 因 DOM 标识缺失而假失败。

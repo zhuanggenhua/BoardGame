@@ -6,11 +6,10 @@
 
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
-import { grantContextualExtraMinion, grantContextualExtraAction, destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, recoverCardsFromDiscard, buildAbilityFeedback } from '../domain/abilityHelpers';
+import { grantContextualExtraMinion, grantContextualExtraAction, destroyMinion, getMinionPower, buildMinionTargetOptions, buildBaseTargetOptions, recoverCardsFromDiscard, buildAbilityFeedback, buildStandardDrawEvents } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { CardsDrawnEvent, VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, OngoingDetachedEvent, CardsDiscardedEvent, MinionControlChangedEvent, SmashUpCore, CardInstance } from '../domain/types';
+import type { VpAwardedEvent, SmashUpEvent, MinionPlayedEvent, OngoingDetachedEvent, CardsDiscardedEvent, MinionControlChangedEvent, SmashUpCore, CardInstance } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
-import { drawCards } from '../domain/utils';
 import { registerProtection } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext } from '../domain/ongoingEffects';
 import { registerDiscardPlayProvider } from '../domain/discardPlayability';
@@ -451,14 +450,7 @@ function ghostSeance(ctx: AbilityContext): AbilityResult {
     if (handAfterPlay > 2) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
     const drawCount = Math.max(0, 5 - handAfterPlay);
     if (drawCount === 0) return { events: [] };
-    const { drawnUids } = drawCards(player, drawCount, ctx.random);
-    if (drawnUids.length === 0) return { events: [] };
-    const evt: CardsDrawnEvent = {
-        type: SU_EVENTS.CARDS_DRAWN,
-        payload: { playerId: ctx.playerId, count: drawnUids.length, cardUids: drawnUids },
-        timestamp: ctx.now,
-    };
-    return { events: [evt] };
+    return { events: buildStandardDrawEvents(ctx.state, ctx.playerId, drawCount, ctx.random, ctx.now) };
 }
 
 /** 阴暗交易 onPlay：手牌≤2时获得?VP */

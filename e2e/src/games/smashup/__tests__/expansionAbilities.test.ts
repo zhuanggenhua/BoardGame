@@ -277,6 +277,36 @@ describe('幽灵派系能力', () => {
             expect((drawEvents[0] as any).payload.count).toBe(4);
         });
 
+        it('牌库空但弃牌堆有牌时先洗回再抽牌', () => {
+            const discardCards = Array.from({ length: 4 }, (_, i) =>
+                makeCard(`d${i}`, 'discard_card', 'minion', '0')
+            );
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [
+                            makeCard('a1', 'ghost_seance', 'action', '0'),
+                            makeCard('h1', 'test', 'minion', '0'),
+                        ],
+                        deck: [],
+                        discard: discardCards,
+                    }),
+                    '1': makePlayer('1'),
+                },
+            });
+
+            const events = execPlayAction(state, '0', 'a1');
+            const eventTypes = events.map(e => e.type);
+            expect(eventTypes).toContain(SU_EVENTS.DECK_RESHUFFLED);
+            expect(eventTypes).toContain(SU_EVENTS.CARDS_DRAWN);
+            expect(eventTypes.indexOf(SU_EVENTS.DECK_RESHUFFLED)).toBeLessThan(eventTypes.indexOf(SU_EVENTS.CARDS_DRAWN));
+
+            const newState = applyEvents(state, events);
+            expect(newState.players['0'].hand.map(card => card.uid)).toEqual(['h1', 'd0', 'd1', 'd2', 'd3']);
+            expect(newState.players['0'].deck).toHaveLength(0);
+            expect(newState.players['0'].discard.map(card => card.uid)).toEqual(['a1']);
+        });
+
         it('手牌多时不抽牌', () => {
             const state = makeState({
                 players: {

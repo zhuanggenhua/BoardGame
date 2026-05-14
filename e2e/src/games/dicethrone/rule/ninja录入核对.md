@@ -19,17 +19,17 @@
 | `slash-2` | upgrade | 斩击 II，伤害提升 | replace `slash`，damage 6/7/8 | `cards.ts` + `abilities.ts` | L1 |
 | `going-forward` | offensive | 4 手里剑造成 7 伤害 | `shuriken=4`，damage 7 | `abilities.ts` | L1 |
 | `going-forward-2` | upgrade | 一往无前 II | replace `going-forward` | `cards.ts` + `abilities.ts` | L1 |
-| `poison-blade` | offensive | 小顺子，慢性中毒 + 5 伤害 | smallStraight；delayed_poison 1；damage 5 | `abilities.ts` | L2：慢性中毒后续结算已测 |
+| `poison-blade` | offensive | 小顺子，慢性中毒 + 5 伤害 | smallStraight；delayed_poison 1；damage 5；Ninja v2 面板使用 `combo` 视觉槽 | `abilities.ts` / `ui/abilitySlotMapping.ts` | L3：真实 UI 槽位选择已测 |
 | `poison-blade-2` | upgrade | 毒刃 II，慢性中毒 + 不可防御伤害 | delayed_poison 1；unblockable damage 6 | `cards.ts` + `abilities.ts` | L2：神性树灵防 debuff 已测 |
 | `shadow-step` | offensive | 4 面具，烟雾弹、慢性中毒、不可防御伤害 | mask=4；smoke_bomb 1；delayed_poison 1；unblockable damage 6 | `abilities.ts` | L2：烟雾弹/慢性中毒 token 已测 |
 | `shadow-step-2` | upgrade | 暗影步 II，慢性中毒 2、伤害 7 | smoke_bomb 1；delayed_poison 2；unblockable damage 7 | `cards.ts` + `abilities.ts` | L2 |
-| `death-blossom` | offensive | 忍刀/手里剑累计伤害，面具给忍术 | rollDie 5；katana +1，shuriken +2，mask ninjutsu +1 | `abilities.ts` | L1 |
+| `death-blossom` | offensive | 忍刀/手里剑累计伤害，面具给忍术 | rollDie 5；katana +1，shuriken +2，mask ninjutsu +1；Ninja v2 面板使用 `sky` 视觉槽 | `abilities.ts` / `ui/abilitySlotMapping.ts` | L3：真实 UI 槽位选择已测 |
 | `death-blossom-2` | upgrade | 死亡盛放 II | replace `death-blossom` | `cards.ts` + `abilities.ts` | L1 |
 | `smoke-screen` | utility | 获得烟雾弹/忍术并给慢性中毒 | smoke_bomb 1；ninjutsu 2；opponent delayed_poison 1 | `abilities.ts` | L2：token 后续机制已测 |
 | `smoke-screen-2` | upgrade | 烟雾阵 II，忍术 3 | smoke_bomb 1；ninjutsu 3；delayed_poison 1 | `cards.ts` + `abilities.ts` | L2 |
 | `shadow-fang` | offensive | 大顺子，忍术 2 + 8 伤害 | largeStraight；ninjutsu 2；damage 8 | `abilities.ts` | L2：忍术后续机制已测 |
 | `shadow-fang-2` | upgrade | 影牙 II，忍术 2 + 9 伤害 | largeStraight；ninjutsu 2；damage 9 | `cards.ts` + `abilities.ts` | L2 |
-| `blink` | defensive | 防御掷 3 骰，忍刀/手里剑反击，面具烟雾弹 | diceCount 3；katana +1，shuriken +2，mask smoke_bomb | `abilities.ts` | L1 |
+| `blink` | defensive | 防御掷 3 骰，忍刀/手里剑反击，面具烟雾弹 | diceCount 3；katana +1，shuriken +2，mask smoke_bomb；`withDamage` 防御时机 | `abilities.ts` / `domain/attack.ts` | L3：真实防御推进与不可防御跳过防御均已测 |
 | `blink-2` | upgrade | 瞬身 II | replace `blink` | `cards.ts` + `abilities.ts` | L1 |
 | `ninja-assassinate` | ultimate | 终极技：慢性中毒 2、烟雾弹、10 伤害 | ultimate；delayed_poison 2；smoke_bomb 1；damage 10 | `abilities.ts` | L2：慢性中毒/烟雾弹后续机制已测 |
 
@@ -44,4 +44,5 @@
 ## 当前结论
 
 - 旧结论“忍术固定 +1、烟雾弹固定减伤 2、慢性中毒为债务”已失效：这些机制已改为提示板口径并进入 L2 测试层。
-- 当前发布口径已收口：慢性中毒、忍术、烟雾弹均有 L2 单测与 L4 真实响应窗/奖励骰/回合结束闭环证据。
+- 2026-05-14 回归审计又推翻了旧“Ninja 已全面收口”口径：`poison-blade` / `death-blossom` 槽位、`blink` 防御、不可防御跳过防御、`ninja-card-knife-fan` 时机均曾漏审。
+- 当前修订后口径：上述四项已有 L2 合同测试与 L3 真实入口 E2E；Ninja 全量机制是否“全面审计完成”仍必须以后续逐对象矩阵为准，不能再用旧接入审计直接代替。

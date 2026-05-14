@@ -155,6 +155,36 @@ function collectAbilityFileUsage(pattern: RegExp): string[] {
         .sort();
 }
 
+function collectAbilitySourceWindows(sourceId: string, radiusBefore = 1800, radiusAfter = 2600): string[] {
+    const abilitiesDir = resolve(__dirname, '../abilities');
+    const windows: string[] = [];
+    for (const fileName of readdirSync(abilitiesDir).filter((name) => name.endsWith('.ts'))) {
+        const source = readFileSync(resolve(abilitiesDir, fileName), 'utf-8');
+        let index = 0;
+        while ((index = source.indexOf(sourceId, index)) >= 0) {
+            windows.push(source.slice(Math.max(0, index - radiusBefore), index + radiusAfter));
+            index += sourceId.length;
+        }
+    }
+    return windows;
+}
+
+function hasOptionalRejectionImplementationEvidence(sourceId: string): boolean {
+    return collectAbilitySourceWindows(sourceId).some((window) => (
+        /createSkipOption/.test(window)
+        || /optional:\s*true/.test(window)
+        || /autoResolveIfSingle:\s*false/.test(window)
+        || /autoResolveIfSingle:\s*!context\.optional/.test(window)
+        || /multi:\s*\{[^}]*min:\s*0/.test(window)
+        || /\bskip\b/.test(window)
+    ));
+}
+
+function isOptionalChoiceText(effectText: string): boolean {
+    return /(你可以|可以选择|至多|任意数量)/.test(effectText)
+        && /(移动|消灭|选择|加入|洗回|放置|抽|弃|返回)/.test(effectText);
+}
+
 /** 收集所有已注册的 ongoing 效果 ID（合并所有注册表） */
 function collectAllRegisteredIds(): Set<string> {
     const { protectionIds, restrictionIds, triggerIds, interceptorIds, baseAbilitySuppressionIds } = getRegisteredOngoingEffectIds();
@@ -798,6 +828,37 @@ describe('SmashUp 能力行为审计', () => {
             expect(auditedIds.length, '控制者约束审计不能空跑').toBeGreaterThan(0);
             expect(auditedControllers.has('self'), '控制者约束审计至少要覆盖“你的随从”入口').toBe(true);
             expect(violations, '以下行动卡的目标随从控制者约束与描述不一致').toEqual([]);
+        });
+
+        it('已纳入全面审计的新派系可选/至多交互必须有拒绝或空选实现证据', () => {
+            const auditedFactionIds = new Set([
+                SMASHUP_FACTION_IDS.SHARKS,
+                SMASHUP_FACTION_IDS.TORNADOS,
+                SMASHUP_FACTION_IDS.MYTHIC_GREEKS,
+            ]);
+            const auditedIds: string[] = [];
+            const violations: string[] = [];
+
+            for (const def of getAllCardDefs()) {
+                if (!auditedFactionIds.has(def.faction as any)) continue;
+                const i18n = zhCN.cards?.[def.id];
+                const effectText: string = i18n?.abilityText ?? i18n?.effectText ?? '';
+                if (!isOptionalChoiceText(effectText)) continue;
+
+                auditedIds.push(def.id);
+                if (!hasOptionalRejectionImplementationEvidence(def.id)) {
+                    violations.push(
+                        `[${def.id}]（${i18n?.name ?? def.id}）` +
+                        `描述含可选/至多/任意数量交互，但能力实现附近缺少 skip / optional / multi min=0 等拒绝或空选证据` +
+                        `\n  text: ${effectText.slice(0, 100)}...`,
+                    );
+                }
+            }
+
+            expect(auditedIds.length, '可选交互审计不能空跑；新增三派系必须纳入该维度').toBeGreaterThan(10);
+            expect(auditedIds, 'Twister/Monster Tornado 这类有合法目标也可拒绝的移动效果必须纳入审计集合')
+                .toEqual(expect.arrayContaining(['tornados_twister', 'tornados_monster_tornado']));
+            expect(violations, '以下新增派系可选交互缺少拒绝/空选实现证据').toEqual([]);
         });
     });
 });

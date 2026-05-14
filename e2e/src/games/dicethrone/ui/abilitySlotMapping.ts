@@ -13,6 +13,15 @@ export const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] 
     ultimate: { labelKey: 'abilitySlots.ultimate', ids: ['transcendence', 'ultimate-inferno', 'rage', 'unyielding-faith', 'lunar-eclipse', 'shadow-shank', 'fill-em-with-lead', 'samurai-ultimate', 'forest-awakens', 'ninja-assassinate'] },
 };
 
+const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>> = {
+    // Ninja v2 玩家面板的两个视觉槽位与旧共享语义不同：
+    // top-right(combo 坐标) 是毒刃小顺子，bottom-left(sky 坐标) 是死亡盛放。
+    ninja: {
+        sky: ['death-blossom'],
+        combo: ['poison-blade'],
+    },
+};
+
 const ABILITY_BASE_ID_MAP = new Map<string, string>();
 
 function registerAbility(ability: AbilityDef): void {
@@ -48,9 +57,27 @@ export function slotContainsAbilityId(slotId: string, abilityId: string): boolea
     return mapping.ids.includes(getBaseAbilityId(abilityId));
 }
 
+export function slotContainsAbilityIdForCharacter(characterId: string | undefined | null, slotId: string, abilityId: string): boolean {
+    const baseAbilityId = getBaseAbilityId(abilityId);
+    const override = CHARACTER_SLOT_ABILITY_OVERRIDES[characterId ?? '']?.[slotId];
+    if (override) {
+        return override.includes(baseAbilityId);
+    }
+    return slotContainsAbilityId(slotId, abilityId);
+}
+
 export function getAbilitySlotId(abilityId: string): string | null {
     for (const slotId of Object.keys(ABILITY_SLOT_MAP)) {
         if (slotContainsAbilityId(slotId, abilityId)) {
+            return slotId;
+        }
+    }
+    return null;
+}
+
+export function getAbilitySlotIdForCharacter(characterId: string | undefined | null, abilityId: string): string | null {
+    for (const slotId of Object.keys(ABILITY_SLOT_MAP)) {
+        if (slotContainsAbilityIdForCharacter(characterId, slotId, abilityId)) {
             return slotId;
         }
     }

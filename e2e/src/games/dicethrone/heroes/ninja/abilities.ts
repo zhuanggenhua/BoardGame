@@ -217,7 +217,7 @@ const BLINK: AbilityDef = {
                     { face: FACE.MASK, grantToken: { tokenId: TOKEN_IDS.SMOKE_BOMB, value: 1 } },
                 ],
             },
-            timing: 'immediate',
+            timing: 'withDamage',
         },
     ],
 };

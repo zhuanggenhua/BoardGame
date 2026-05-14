@@ -14,7 +14,7 @@
 | 22 | `ninja-card-shuriken` | 手里剑 | action / 1CP / roll | 攻击修正，投 5 骰；每个忍刀 +1 | `rollDie diceCount=5`；katana `bonusDamage=1` | L1 |
 | 23 | `ninja-card-escape` | 脱身 | action / 0CP / instant | 被攻击后打出，按骰面减伤或获得烟雾弹 | pendingDamage target/beforeDamageReceived；rollDie 1；shield/smoke_bomb | L2：烟雾弹后续已测 |
 | 24 | `ninja-card-poison-dart` | 毒镖 | action / 2CP / main | 施加慢性中毒 | grant opponent `delayed_poison=2` | L2：慢性中毒回合结束已测 |
-| 25 | `ninja-card-knife-fan` | 刀扇 | action / 2CP / roll | 不可防御直伤 | direct unblockable damage 1 | L1 |
+| 25 | `ninja-card-knife-fan` | 刀扇 | action / 2CP / main | 主要阶段行动牌；不可在投掷阶段作为攻击修正打出 | direct unblockable damage 1；`timing='main'`；非 `isAttackModifier` | L2：合同测试覆盖 main 可打、offensiveRoll 不可打 |
 | 26 | `upgrade-smoke-screen-2` | 烟雾阵 II | upgrade / 2CP / main | 升级烟雾阵 | replace `smoke-screen` -> `SMOKE_SCREEN_2` | L2：token 后续已测 |
 | 27 | `upgrade-shadow-fang-2` | 影牙 II | upgrade / 2CP / main | 升级影牙 | replace `shadow-fang` -> `SHADOW_FANG_2` | L2：忍术后续已测 |
 | 28 | `upgrade-poison-blade-2` | 毒刃 II | upgrade / 2CP / main | 升级毒刃 | replace `poison-blade` -> `POISON_BLADE_2`，不可防御 | L2：慢性中毒/防 debuff 已测 |
@@ -29,6 +29,6 @@
 
 ## 当前结论
 
-- 专属卡静态数据、i18n 与 atlas 接线达到 L1。
+- 专属卡静态数据、i18n 与 atlas 接线达到 L1；2026-05-14 修正 `ninja-card-knife-fan`，它是主要阶段行动牌，不是投掷阶段攻击修正。
 - 由专属卡产生的新增 token 后续行为已通过代表性 L2 测试覆盖：慢性中毒、忍术、烟雾弹。
 - 当前发布口径已收口：本轮未逐张专属卡做真实打出 E2E；专属卡静态/i18n/图集为 L1，全量结构核对完成；由专属卡产生或升级关联的忍者专属 token/状态后续机制已通过代表性 L2/L4 链路覆盖。

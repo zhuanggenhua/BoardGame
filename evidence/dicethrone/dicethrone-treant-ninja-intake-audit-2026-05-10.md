@@ -1,5 +1,20 @@
 # DiceThrone Treant / Ninja 新英雄接入审计与 E2E 证据（2026-05-10 修订版）
 
+## 2026-05-14 旧结论再次失效
+
+本文件在 2026-05-10 修订版中仍把 Ninja 若干机制写成已收口，但 2026-05-14 用户复核发现四项漏审：
+
+- `poison-blade` 小顺子与 `death-blossom` 左下角技能使用了旧共享槽位语义，未按 Ninja v2 玩家面板真实贴图槽位映射。
+- `blink` 防御技能的 `rollDie` effect 时机错误，导致真实防御结算无效果。
+- 忍术 6 点选择“不可防御”后，攻击结算仍继续执行已挂载防御技能。
+- `ninja-card-knife-fan`（刀扇）被误录为投掷阶段攻击修正，实际应为主要阶段行动牌。
+
+因此，本文件中关于 Ninja 的“当前发布口径已收口 / passed”只能作为 2026-05-10 当时代表链证据，不能再作为 Ninja 全面审计完成证明。新修复与降级证据见：
+
+- `evidence/dicethrone/dicethrone-ninja-regression-audit-2026-05-14.md`
+- `src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts`
+- `e2e/dicethrone/dicethrone-ninja-regression.e2e.ts`
+
 ## 旧结论失效说明
 
 本文件修订前曾把“选角可进入对局 + 静态资源可显示 + 少量 smoke 测试”写成接入完成。该结论现已失效：旧 E2E 只证明 `treant` / `ninja` 可被选择并进入游戏，不证明新增英雄的 token、被动、奖励骰、伤害修正等真实机制在 UI 链路中可触发、可展示、可收口。

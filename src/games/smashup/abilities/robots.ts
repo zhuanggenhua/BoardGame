@@ -14,6 +14,7 @@ import {
     buildBaseTargetOptions,
     peekDeckTop,
     buildAbilityFeedback,
+    buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, MinionPlayedEvent, SmashUpCore, CardInstance } from '../domain/types';
@@ -29,7 +30,7 @@ import {
 } from '../domain/abilityRuntime';
 import type { MatchState, PlayerId } from '../../../engine/types';
 import type { InteractionDescriptor, PromptOption } from '../../../engine/systems/InteractionSystem';
-import { drawCards, isDiscardMicrobot, isMicrobot, matchesDefId, MICROBOT_DEF_IDS } from '../domain/utils';
+import { isDiscardMicrobot, isMicrobot, matchesDefId, MICROBOT_DEF_IDS } from '../domain/utils';
 
 type RobotPromptContext = {
     matchState: MatchState<SmashUpCore>;
@@ -541,15 +542,9 @@ const robotTechCenterPromptProgram = createPromptProgram<RobotTechCenterContext,
         if (!base) return { events: [] };
         const count = base.minions.filter((minion) => minion.controller === playerId).length;
         const player = state.core.players[playerId];
-        if (count === 0 || !player || player.deck.length === 0) return { events: [] };
-        const actualDraw = Math.min(count, player.deck.length);
-        const drawnUids = player.deck.slice(0, actualDraw).map((card) => card.uid);
+        if (count === 0 || !player) return { events: [] };
         return {
-            events: [{
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId, count: actualDraw, cardUids: drawnUids },
-                timestamp,
-            }],
+            events: buildStandardDrawEvents(state.core, playerId, count, random, timestamp),
         };
     },
 });
@@ -660,20 +655,7 @@ function registerRobotOngoingEffects(): void {
         // 5. 抽 1 张牌（按全局抽牌规则处理牌库为空 / 手牌上限）
         // “你的 Microbot” → 被消灭随从必须由 Archive 控制者控制
 
-        const player = trigCtx.state.players[trigCtx.playerId];
-        // “你的 Microbot” → 被消灭随从必须由 Archive 控制者控制
-        if (!player || player.deck.length === 0) return [];
-
-        const { drawnUids } = drawCards(player, archiveCount, trigCtx.random);
-        if (drawnUids.length === 0) return [];
-
-        return [
-            {
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId: trigCtx.playerId, count: drawnUids.length, cardUids: drawnUids },
-                timestamp: trigCtx.now,
-            },
-        ];
+        return buildStandardDrawEvents(trigCtx.state, trigCtx.playerId, archiveCount, trigCtx.random, trigCtx.now);
     }, {
     });
 }

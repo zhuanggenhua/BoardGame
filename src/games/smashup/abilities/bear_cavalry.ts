@@ -23,8 +23,8 @@ import {
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     getTitansOnBase,
+    buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
-import { SU_EVENT_TYPES } from '../domain/events';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, MinionOnBase, OngoingDetachedEvent, MinionPlayedEvent } from '../domain/types';
 import type { MinionCardDef } from '../domain/types';
@@ -267,7 +267,7 @@ const bearCavalrySuperiorityPodPromptProgram = createPromptProgram<BearCavalrySu
         ],
         { sourceId: 'bear_cavalry_superiority_pod_talent', targetType: 'generic' },
     ),
-    onResolve: ({ context, state, value, interactionData, timestamp, playerId }) => {
+    onResolve: ({ context, state, value, interactionData, random, timestamp, playerId }) => {
         const action = typeof value === 'string'
             ? value as 'draw' | 'protect'
             : (value as { action?: 'draw' | 'protect' } | undefined)?.action;
@@ -296,14 +296,7 @@ const bearCavalrySuperiorityPodPromptProgram = createPromptProgram<BearCavalrySu
 
         const events: SmashUpEvent[] = [];
         if (action === 'draw') {
-            const player = state.core.players[playerId];
-            if (player.deck.length > 0) {
-                events.push({
-                    type: SU_EVENT_TYPES.CARDS_DRAWN,
-                    payload: { playerId, count: 1, cardUids: [player.deck[0].uid], reason: 'bear_cavalry_superiority_pod' },
-                    timestamp,
-                });
-            }
+            events.push(...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp));
         }
         return { events, matchState: nextState };
     },
@@ -364,7 +357,7 @@ const bearCavalryHighGroundPodPromptProgram = createPromptProgram<BearCavalryHig
         ],
         { sourceId: 'bear_cavalry_high_ground_pod_trigger', targetType: 'generic' },
     ),
-    onResolve: ({ context, state, value, timestamp, playerId }) => {
+    onResolve: ({ context, state, value, random, timestamp, playerId }) => {
         const action = (value as { action?: 'destroy' | 'draw' } | undefined)?.action;
         if (!action) return { events: [] };
 
@@ -387,14 +380,7 @@ const bearCavalryHighGroundPodPromptProgram = createPromptProgram<BearCavalryHig
             return { events };
         }
 
-        const player = state.core.players[playerId];
-        if (player.deck.length > 0) {
-            events.push({
-                type: SU_EVENT_TYPES.CARDS_DRAWN,
-                payload: { playerId, count: 1, cardUids: [player.deck[0].uid], reason: 'bear_cavalry_high_ground_pod' },
-                timestamp,
-            });
-        }
+        events.push(...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp));
         events.push(grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'bear_cavalry_high_ground_pod'));
         return { events };
     },

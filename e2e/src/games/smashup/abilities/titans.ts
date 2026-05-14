@@ -79,7 +79,7 @@ import type {
     TitanPowerCounterAddedEvent,
 } from '../domain/types';
 import { MADNESS_CARD_DEF_ID, SU_EVENTS } from '../domain/types';
-import { drawCards, getPlayerLabel } from '../domain/utils';
+import { getPlayerLabel } from '../domain/utils';
 
 function getPlayedCardCount(ctx: AbilityContext): number {
     const player = ctx.state.players[ctx.playerId];
@@ -927,23 +927,12 @@ function wizardArcaneProtectorTalent(ctx: AbilityContext): AbilityResult {
         return { events: [] };
     }
 
-    const player = ctx.state.players[ctx.playerId];
-    const { drawnUids } = drawCards(player, 1, ctx.random);
-    if (drawnUids.length === 0) {
+    const events = buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
+    if (events.length === 0) {
         return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
     }
 
-    const drawEvent: CardsDrawnEvent = {
-        type: SU_EVENTS.CARDS_DRAWN,
-        payload: {
-            playerId: ctx.playerId,
-            count: drawnUids.length,
-            cardUids: drawnUids,
-        },
-        timestamp: ctx.now,
-    };
-
-    return { events: [drawEvent] };
+    return { events };
 }
 
 function vampireAncientLordSpecial(ctx: AbilityContext): AbilityResult {
@@ -4506,27 +4495,12 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events: [] };
         }
 
-        const player = state.core.players[playerId];
-        if (!player) {
+        const events = buildStandardDrawEvents(state.core, playerId, 1, random, timestamp);
+        if (events.length === 0) {
             return { state, events: [] };
         }
 
-        const { drawnUids } = drawCards(player, 1, random);
-        if (drawnUids.length === 0) {
-            return { state, events: [] };
-        }
-
-        const drawEvent: CardsDrawnEvent = {
-            type: SU_EVENTS.CARDS_DRAWN,
-            payload: {
-                playerId,
-                count: drawnUids.length,
-                cardUids: drawnUids,
-            },
-            timestamp,
-        };
-
-        return { state, events: [drawEvent] };
+        return { state, events };
     });
 
     registerInteractionHandler('titan_magical_girls_walking_castle_choose_minions', (state, playerId, value, data, _random, timestamp) => {
@@ -4683,7 +4657,6 @@ export function registerTitanInteractionHandlers(): void {
         }
 
         if (opponentOptions.length === 1) {
-            const draw = drawCards(state.core.players[playerId], 1, random);
             const events: SmashUpEvent[] = [
                 changeMinionController(
                     minion.uid,
@@ -4696,14 +4669,8 @@ export function registerTitanInteractionHandlers(): void {
                     'ignobles_the_hill_that_strolls_talent',
                     timestamp,
                 ),
+                ...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
             ];
-            if (draw.drawnUids.length > 0) {
-                events.push({
-                    type: SU_EVENTS.CARDS_DRAWN,
-                    payload: { playerId, count: draw.drawnUids.length, cardUids: draw.drawnUids },
-                    timestamp,
-                } as CardsDrawnEvent);
-            }
             return { state, events };
         }
 
@@ -4741,7 +4708,6 @@ export function registerTitanInteractionHandlers(): void {
             return { state, events: [] };
         }
 
-        const draw = drawCards(state.core.players[playerId], 1, random);
         const events: SmashUpEvent[] = [
             changeMinionController(
                 minion.uid,
@@ -4754,14 +4720,8 @@ export function registerTitanInteractionHandlers(): void {
                 'ignobles_the_hill_that_strolls_talent',
                 timestamp,
             ),
+            ...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
         ];
-        if (draw.drawnUids.length > 0) {
-            events.push({
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId, count: draw.drawnUids.length, cardUids: draw.drawnUids },
-                timestamp,
-            } as CardsDrawnEvent);
-        }
         return { state, events };
     });
 

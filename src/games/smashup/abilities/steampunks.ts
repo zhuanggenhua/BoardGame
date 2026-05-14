@@ -7,10 +7,10 @@
 import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
-import { recoverCardsFromDiscard, grantContextualExtraAction, grantExtraAction, moveMinion, resolveExtraPlayTiming, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, getMinionPower } from '../domain/abilityHelpers';
+import { recoverCardsFromDiscard, grantContextualExtraAction, grantExtraAction, moveMinion, resolveExtraPlayTiming, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, getMinionPower, buildStandardDrawEvents } from '../domain/abilityHelpers';
 import { getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, SmashUpCore, CardsDrawnEvent, MinionReturnedEvent, OngoingDetachedEvent, ActionCardDef } from '../domain/types';
+import type { SmashUpEvent, SmashUpCore, MinionReturnedEvent, OngoingDetachedEvent, ActionCardDef } from '../domain/types';
 import { registerRestriction, registerTrigger, registerInterceptor } from '../domain/ongoingEffects';
 import type { RestrictionCheckContext, TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef, getBaseDef } from '../data/cards';
@@ -390,14 +390,8 @@ export function steampunkDifferenceEngineTrigger(ctx: TriggerContext): SmashUpEv
             // 检查拥有者在此基地是否有随从
             const hasMinion = base.minions.some(m => m.controller === ongoing.ownerId);
             if (!hasMinion) continue;
-            const player = ctx.state.players[ongoing.ownerId];
-            if (!player || player.deck.length === 0) continue;
-            const drawnUid = player.deck[0].uid;
-            return [{
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId: ongoing.ownerId, count: 1, cardUids: [drawnUid] },
-                timestamp: ctx.now,
-            } as CardsDrawnEvent];
+            const events = buildStandardDrawEvents(ctx.state, ongoing.ownerId, 1, ctx.random, ctx.now);
+            if (events.length > 0) return events;
         }
     }
     return [];

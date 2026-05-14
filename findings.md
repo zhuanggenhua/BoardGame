@@ -2059,3 +2059,15 @@
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口\shayu-sharks-great-white-after-move-destroy.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornado-Alley-基地能力在本回合首次移入时触发，第二次移入不重复触发\shayu-tornado-alley-trigger-open.png`
+
+## 2026-05-14 23:38 +08 Twister 反馈复盘：审计维度仍缺“可选否定路径”
+
+- 反馈 `6a055d1429cd213e03bfd3e9` 暴露的根因不是移动方向、阈值或入口字段，而是“你可以”语义只测了成功路径。
+- 原 shayu 全面审计的失误：把 `tornados_twister` / `tornados_monster_tornado` 的 push/pull 成功路径当成完整规则证据，没有要求“合法候选存在但玩家选择跳过”的否定路径。
+- 新增通用不变量：凡文案包含“你可以 / 可以选择 / 至多 / 任意数量 / may / up to / any number”，成功路径与拒绝路径是两个独立验收项；合法候选存在时必须证明 skip/空选后权威状态不变。
+- 已固化位置：
+  - `docs/ai-rules/testing-audit.md`
+  - `.windsurf/skills/add-new-faction/SKILL.md`
+  - `.windsurf/skills/smashup-faction-addition/SKILL.md`
+  - `src/games/smashup/__tests__/abilityBehaviorAudit.test.ts`
+- 后续同类审计禁止只写“能移动/能消灭/能拿牌”，必须同时写“能不做且状态不变”或明确说明该效果是强制效果。

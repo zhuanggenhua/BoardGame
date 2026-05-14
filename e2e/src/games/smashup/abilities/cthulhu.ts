@@ -10,7 +10,6 @@ import { SU_EVENTS } from '../domain/types';
 import { MADNESS_CARD_DEF_ID } from '../domain/types';
 import type {
     SmashUpEvent,
-    CardsDrawnEvent,
     VpAwardedEvent,
     MinionCardDef,
     BaseClearedEvent,
@@ -24,7 +23,9 @@ import {
     returnMadnessCard, getMinionPower,
     addTempPower, revealAndPickFromDeck,
     buildAbilityFeedback, buildActionMinionTargetOptions, buildPlayerTargetOptions,
+    buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
+import { reduce } from '../domain/reduce';
 import { registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import {
@@ -522,7 +523,7 @@ const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessU
             buildMadnessUnleashedOptions(state.core as SmashUpCore, context.playerId, context.sourceCardUid);
         return interaction;
     },
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: ({ state, playerId, value, random, timestamp }) => {
         const madnessUids = normalizeChoiceArray<CardUidSelection>(value)
             .map(entry => entry.cardUid)
             .filter((entry): entry is string => !!entry);
@@ -531,24 +532,14 @@ const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessU
         const player = state.core.players[playerId];
         if (!player) return { events: [] };
 
-        const events: SmashUpEvent[] = [{
+        const discardEvent: SmashUpEvent = {
             type: SU_EVENTS.CARDS_DISCARDED,
             payload: { playerId, cardUids: madnessUids },
             timestamp,
-        }];
-
-        const drawCount = Math.min(madnessUids.length, player.deck.length);
-        if (drawCount > 0) {
-            events.push({
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: {
-                    playerId,
-                    count: drawCount,
-                    cardUids: player.deck.slice(0, drawCount).map(card => card.uid),
-                },
-                timestamp,
-            } as CardsDrawnEvent);
-        }
+        };
+        const events: SmashUpEvent[] = [discardEvent];
+        const drawState = reduce(state.core, discardEvent);
+        events.push(...buildStandardDrawEvents(drawState, playerId, madnessUids.length, random, timestamp));
 
         for (let index = 0; index < madnessUids.length; index += 1) {
             events.push(grantContextualExtraAction(
@@ -864,22 +855,15 @@ const specialMadnessPromptProgram = createPromptProgram<SpecialMadnessPromptCont
             displayCard: { defId: MADNESS_CARD_DEF_ID, cardUid: context.cardUid },
         },
     ),
-    onResolve: ({ context, state, playerId, value, timestamp }) => {
+    onResolve: ({ context, state, playerId, value, random, timestamp }) => {
         const { action } = value as MadnessActionChoiceValue;
         if (action === 'return') {
             return {
                 events: [returnMadnessCard(playerId, context.cardUid, 'special_madness', timestamp)],
             };
         }
-        const player = state.core.players[playerId];
-        const drawCount = Math.min(2, player.deck.length);
-        if (drawCount === 0) return { events: [] };
         return {
-            events: [{
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId, count: drawCount, cardUids: player.deck.slice(0, drawCount).map(card => card.uid) },
-                timestamp,
-            } as CardsDrawnEvent],
+            events: buildStandardDrawEvents(state.core, playerId, 2, random, timestamp),
         };
     },
 });

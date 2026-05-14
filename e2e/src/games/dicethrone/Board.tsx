@@ -21,7 +21,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { UndoProvider } from '../../contexts/UndoContext';
 import { useTutorial, useTutorialBridge } from '../../contexts/TutorialContext';
 import { loadStatusAtlases, type StatusAtlases } from './ui/statusEffects';
-import { ABILITY_SLOT_MAP, getAbilitySlotId } from './ui/abilitySlotMapping';
+import { ABILITY_SLOT_MAP, getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from './ui/abilitySlotMapping';
 import type { AbilityOverlaysHandle } from './ui/AbilityOverlays';
 import { AbilityChoiceModal, type AbilityChoiceOption } from './ui/AbilityChoiceModal';
 import { ConfirmSkipModal } from './ui/ConfirmSkipModal';
@@ -1442,15 +1442,17 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         // 否则防御技能（如 stand-tall / elusive-step / holy-defense / fearless-riposte）
         // 产生伤害时会找不到自己的技能槽位，退回到 opponentHeader。
         let baseAbilityId = abilityId;
+        let ownerCharacterId: string | undefined;
         for (const pid of Object.keys(G.players)) {
             const match = findPlayerAbility(G, pid, abilityId);
             if (match) {
                 baseAbilityId = match.ability.id;
+                ownerCharacterId = G.selectedCharacters?.[pid];
                 break;
             }
         }
 
-        const slotId = getAbilitySlotId(baseAbilityId);
+        const slotId = getAbilitySlotIdForCharacter(ownerCharacterId, baseAbilityId);
         if (!slotId) return getElementCenter(opponentHeaderRef.current);
         const element = document.querySelector(`[data-ability-slot="${slotId}"]`) as HTMLElement | null;
         // 技能槽在 DOM 中存在 → 从技能槽飞出（自己的技能）
@@ -1800,7 +1802,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 // 对于变体 ID（如 incinerate），先通过 findPlayerAbility 获取基础技能 ID
                                 const match = findPlayerAbility(G, rollerId, abilityId);
                                 const baseAbilityId = match?.ability.id ?? abilityId;
-                                const slotId = getAbilitySlotId(baseAbilityId);
+                                const rollerCharacterId = G.selectedCharacters?.[rollerId];
+                                const slotId = getAbilitySlotIdForCharacter(rollerCharacterId, baseAbilityId);
                                 if (slotId) {
                                     const mapping = ABILITY_SLOT_MAP[slotId];
                                     if (mapping) {
@@ -1812,7 +1815,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                             if (!match) {
                                                 return false;
                                             }
-                                            const included = mapping.ids.includes(match.ability.id);
+                                            const included = slotContainsAbilityIdForCharacter(rollerCharacterId, slotId, match.ability.id);
                                             return included;
                                         });
                                         if (slotVariants.length >= 2 && hasDivergentVariants(G, rollerId, slotVariants)) {
@@ -2005,6 +2008,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                                 }}
                                 onMagnifyCard={(card) => setMagnifiedCard(card)}
                                 respondableCardIds={respondableCardIds}
+                                characterId={handOwner.characterId}
                             />
                         </>
                     );

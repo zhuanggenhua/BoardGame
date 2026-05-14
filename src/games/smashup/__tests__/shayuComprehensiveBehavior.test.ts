@@ -539,6 +539,70 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
         expect(pushed.finalState.core.bases[1].minions.some(minion => minion.uid === 'push-low')).toBe(true);
     });
 
+    it('龙卷风：旋风和龙卷风怪物的“你可以移动”效果必须允许跳过', () => {
+        const twisterCore = {
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('twister', 'tornados_twister', 'minion', '0')] }),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_shark_reef', []),
+                makeBase('base_wooden_horse', [makeMinion('pull-low', 'sharks_mako', '1', 2)]),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const twisterPlay = runCommand(makeMatchState(twisterCore), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'twister', baseIndex: 0 },
+        } as any);
+
+        expect(twisterPlay.success).toBe(true);
+        const skippedTwister = resolveInteractionChain(twisterPlay.finalState, (prompt) => {
+            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'pull-low')).toBe(true);
+            return chooseOptionBySource(prompt, 'tornados_twister', option => option.value?.skip === true);
+        });
+        expect(skippedTwister.finalState.core.bases[0].minions.some(minion => minion.uid === 'pull-low')).toBe(false);
+        expect(skippedTwister.finalState.core.bases[1].minions.some(minion => minion.uid === 'pull-low')).toBe(true);
+        expect(skippedTwister.finalState.sys.interaction.current).toBeUndefined();
+
+        const monsterCore = {
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 0,
+            bases: [
+                makeBase('base_shark_reef', [makeMinion('monster', 'tornados_monster_tornado', '0', 5)]),
+                makeBase('base_wooden_horse', [makeMinion('pull-low-4', 'tornados_cyclone', '1', 4)]),
+            ],
+            baseDeck: [],
+            turnNumber: 1,
+            nextUid: 100,
+        };
+
+        const monsterTalent = runCommand(makeMatchState(monsterCore), {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'monster', baseIndex: 0 },
+        } as any);
+
+        expect(monsterTalent.success).toBe(true);
+        const skippedMonster = resolveInteractionChain(monsterTalent.finalState, (prompt) => {
+            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'pull-low-4')).toBe(true);
+            return chooseOptionBySource(prompt, 'tornados_monster_tornado', option => option.value?.skip === true);
+        });
+        expect(skippedMonster.finalState.core.bases[0].minions.some(minion => minion.uid === 'pull-low-4')).toBe(false);
+        expect(skippedMonster.finalState.core.bases[1].minions.some(minion => minion.uid === 'pull-low-4')).toBe(true);
+        expect(skippedMonster.finalState.sys.interaction.current).toBeUndefined();
+    });
+
     it('龙卷风基地：活动房屋公园在随从移入时自动给该随从+1', () => {
         const core = {
             players: {

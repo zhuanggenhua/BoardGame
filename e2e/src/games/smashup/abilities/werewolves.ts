@@ -12,9 +12,9 @@ import {
     findMinionOnBases, findMinionByAttachedCard, buildAbilityFeedback,
     modifyBreakpoint,
     buildValidatedDestroyEvents,
+    buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
-import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, CardsDrawnEvent, SmashUpCore } from '../domain/types';
+import type { SmashUpEvent, SmashUpCore } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { TriggerContext } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
@@ -26,7 +26,7 @@ import {
     createPromptProgram,
 } from '../domain/abilityRuntime';
 import type { InteractionDescriptor } from '../../../engine/systems/InteractionSystem';
-import { drawCards, matchesDefId } from '../domain/utils';
+import { matchesDefId } from '../domain/utils';
 import type { MatchState, PlayerId } from '../../../engine/types';
 
 // ============================================================================
@@ -790,16 +790,8 @@ function registerWerewolfOngoingEffects(): void {
             }
         }
         if (!isHighest) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.not_highest_power', ctx.now)] };
-        const player = ctx.state.players[ctx.playerId];
-        if (!player || player.deck.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
-        const { drawnUids } = drawCards(player, 1, ctx.random);
-        if (drawnUids.length === 0) return { events: [] };
-        return {
-            events: [{
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId: ctx.playerId, count: 1, cardUids: drawnUids },
-                timestamp: ctx.now,
-            } as CardsDrawnEvent],
-        };
+        const events = buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now);
+        if (events.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.deck_empty', ctx.now)] };
+        return { events };
     });
 }

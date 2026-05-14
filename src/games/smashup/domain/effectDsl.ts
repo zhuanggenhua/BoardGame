@@ -18,6 +18,7 @@ import {
     SU_EVENTS,
     type CardsDiscardedEvent,
     type CardsDrawnEvent,
+    type DeckReshuffledEvent,
     type MinionReturnedEvent,
     type SmashUpCore,
     type SmashUpEvent,
@@ -365,6 +366,17 @@ export function drawCardsPrimitive<TContext>(params: {
             if (!player) return { events: [] };
             const draw = drawCardsFromDeck(player, resolveValue(params.count, context), params.random(context));
             if (draw.drawnUids.length === 0) return { events: [] };
+            const events: SmashUpEvent[] = [];
+            if (draw.reshuffledDeckUids && draw.reshuffledDeckUids.length > 0) {
+                events.push({
+                    type: SU_EVENTS.DECK_RESHUFFLED,
+                    payload: {
+                        playerId,
+                        deckUids: draw.reshuffledDeckUids,
+                    },
+                    timestamp: resolveValue(params.now, context),
+                } as DeckReshuffledEvent);
+            }
             const event: CardsDrawnEvent = {
                 type: SU_EVENTS.CARDS_DRAWN,
                 payload: {
@@ -374,7 +386,8 @@ export function drawCardsPrimitive<TContext>(params: {
                 },
                 timestamp: resolveValue(params.now, context),
             };
-            return { events: [event] };
+            events.push(event);
+            return { events };
         },
         (context) => {
             const playerId = resolveValue(params.playerId, context);

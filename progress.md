@@ -1934,3 +1934,18 @@
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口\shayu-sharks-great-white-after-move-destroy.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornado-Alley-基地能力在本回合首次移入时触发，第二次移入不重复触发\shayu-tornado-alley-trigger-open.png`
+
+## 2026-05-14 23:38 +08 线上反馈 6a055d1429：Twister 可选语义修复
+
+- 已确认反馈成立：旧实现证明了 Twister 能移动，但没有证明“你可以”条件下合法候选存在时也能拒绝移动。
+- 已修复 `src/games/smashup/abilities/tornados.ts` 与 `e2e/src/games/smashup/abilities/tornados.ts`：Twister / Monster Tornado push-pull prompt 增加 `skip`，optional 时禁用单候选自动结算，skip 后空事件。
+- 已补验证：
+  - `npx eslint ...` → 0 errors。
+  - `npx vitest run src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts -t "旋风"` → 2 passed。
+  - `npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/abilityBehaviorAudit.test.ts -t "可选/至多交互"` → 1 passed。
+  - `npm run test:e2e:ci:file -- e2e/smashup-shayu-factions.e2e.ts "Tornados 旋风真实入口必须允许跳过可选移动"` → 1 passed。
+- 已实际核对截图：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-旋风真实入口必须允许跳过可选移动\shayu-tornados-twister-skip-open.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-旋风真实入口必须允许跳过可选移动\shayu-tornados-twister-after-skip.png`
+- `temp/feedback-6a055d1429-twister-task.json` guard 已 `COMPLETE`。
+- 未执行提交、push、部署，也未把生产反馈改成 resolved。

@@ -16,7 +16,7 @@ import type { AbilityCard } from '../types';
 import {
     ABILITY_SLOT_MAP as SHARED_ABILITY_SLOT_MAP,
     getAbilitySlotId as getSharedAbilitySlotId,
-    slotContainsAbilityId,
+    slotContainsAbilityIdForCharacter,
 } from './abilitySlotMapping';
 // 导入所有英雄的卡牌定义
 import { MONK_CARDS } from '../heroes/monk/cards';
@@ -172,9 +172,9 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
     ninja: {
         fist: 'slash',
         chi: 'going-forward',
-        sky: 'poison-blade',
+        sky: 'death-blossom',
         lotus: 'shadow-step',
-        combo: 'death-blossom',
+        combo: 'poison-blade',
         lightning: 'smoke-screen',
         calm: 'shadow-fang',
         meditate: 'blink',
@@ -291,7 +291,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         const resolveAbilityId = (slotId: string) => {
             const mapping = ABILITY_SLOT_MAP[slotId];
             if (!mapping) return null;
-            return availableAbilityIds.find(id => slotContainsAbilityId(slotId, id)) ?? null;
+            return availableAbilityIds.find(id => slotContainsAbilityIdForCharacter(characterId, slotId, id)) ?? null;
         };
 
         const handleMouseDown = (e: React.MouseEvent, id: string, type: 'move' | 'resize') => {
@@ -421,6 +421,9 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                         <div
                             key={slot.id}
                             data-ability-slot={slot.id}
+                            data-resolved-ability-id={isResolved ?? ''}
+                            data-base-ability-id={baseAbilityId ?? ''}
+                            data-can-click={canClick ? 'true' : 'false'}
                             onMouseDown={(e) => handleMouseDown(e, slot.id, 'move')}
                             className={`
                             absolute transition-all duration-200 rounded-lg

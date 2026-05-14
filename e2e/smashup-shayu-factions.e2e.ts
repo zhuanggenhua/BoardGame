@@ -668,6 +668,73 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
     await game.screenshot('shayu-tornados-whirlwinds-after-per-minion-destinations', testInfo);
   });
 
+  test('Tornados 旋风真实入口必须允许跳过可选移动', async ({ page, game }, testInfo) => {
+    test.setTimeout(120000);
+    await setChineseLocale(page.context());
+    await game.openTestGame('smashup', {
+      p0: 'tornados,sharks',
+      p1: 'mythic_greeks,robots',
+      skipFactionSelect: true,
+      skipInitialization: false,
+      seed: 20260514,
+    }, 45000);
+
+    await game.setupScene({
+      gameId: 'smashup',
+      player0: {
+        hand: [
+          { uid: 'p0-twister', defId: 'tornados_twister', type: 'minion' },
+        ],
+        factions: ['tornados', 'sharks'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+      },
+      player1: {
+        factions: ['mythic_greeks', 'robots'],
+        minionsPlayed: 0,
+        minionLimit: 1,
+        actionsPlayed: 0,
+        actionLimit: 1,
+      },
+      bases: [
+        { defId: 'base_trailer_park', minions: [] },
+        {
+          defId: 'base_wooden_horse',
+          minions: [
+            { uid: 'twister-pull-candidate', defId: 'sharks_mako', owner: '1', controller: '1', power: 2 },
+          ],
+        },
+      ],
+      currentPlayer: '0',
+      phase: 'playCards',
+    });
+
+    await game.waitForPhase('playCards');
+    await game.playCard('tornados_twister', { targetBaseIndex: 0 });
+    await game.waitForInteraction('tornados_twister', 10000);
+    await expect(page.getByRole('button', { name: /^(跳过|Skip)(?:\s*\(\d+\))?$/i })).toBeVisible();
+    await game.screenshot('shayu-tornados-twister-skip-open', testInfo);
+
+    await game.skip();
+    await game.waitForNoInteraction(10000);
+
+    await expect.poll(async () => {
+      const state = await game.getState();
+      return {
+        twisterPlayedHere: state.core.bases[0]?.minions.some((minion: { uid?: string }) => minion.uid === 'p0-twister') ?? false,
+        candidateStayedThere: state.core.bases[1]?.minions.some((minion: { uid?: string }) => minion.uid === 'twister-pull-candidate') ?? false,
+        candidateNotPulled: state.core.bases[0]?.minions.some((minion: { uid?: string }) => minion.uid === 'twister-pull-candidate') ?? false,
+      };
+    }, { timeout: 5000 }).toEqual({
+      twisterPlayedHere: true,
+      candidateStayedThere: true,
+      candidateNotPulled: false,
+    });
+    await game.screenshot('shayu-tornados-twister-after-skip', testInfo);
+  });
+
   test('Mythic Greeks 赫拉与波塞冬覆盖随从多选和弃牌多选交互', async ({ page, game }, testInfo) => {
     test.setTimeout(120000);
     await setChineseLocale(page.context());

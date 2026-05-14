@@ -45,48 +45,49 @@ export const PassiveAbilityPanel: React.FC<PassiveAbilityPanelProps> = ({
 }) => {
     const { t } = useTranslation('game-dicethrone');
 
-    if (passives.length === 0) return null;
+    const visibleActions = passives.flatMap(passive => {
+        const usability = actionUsability.get(passive.id) ?? [];
+        return passive.actions
+            .map((action, actionIndex) => {
+                const isUsable = usability[actionIndex] ?? false;
+                const isSelecting = rerollSelectingAction?.passiveId === passive.id
+                    && rerollSelectingAction?.actionIndex === actionIndex;
+                return {
+                    passive,
+                    action,
+                    actionIndex,
+                    isUsable,
+                    isSelecting,
+                };
+            })
+            .filter(item => item.isUsable || item.isSelecting);
+    });
+
+    if (visibleActions.length === 0) return null;
 
     return (
-        <div className="w-[10.2vw] min-w-0 flex flex-col gap-[0.3vw]">
-            {passives.map(passive => {
-                const usability = actionUsability.get(passive.id) ?? [];
-                return (
-                    <div key={passive.id} className="flex min-w-0 flex-col gap-[0.25vw]">
-                        {/* 被动能力名称 */}
-                        <div className="truncate text-center text-[0.55vw] font-bold uppercase tracking-wider text-emerald-400/80">
-                            {t(passive.nameKey)}
-                        </div>
-                        {/* 动作按钮 */}
-                        <div className="grid min-w-0 grid-cols-2 gap-[0.3vw]">
-                            {passive.actions.map((action, idx) => {
-                                const isUsable = usability[idx] ?? false;
-                                const isSelecting = rerollSelectingAction?.passiveId === passive.id
-                                    && rerollSelectingAction?.actionIndex === idx;
-
-                                return (
-                                    <PassiveActionButton
-                                        key={idx}
-                                        action={action}
-                                        passiveId={passive.id}
-                                        actionIndex={idx}
-                                        isUsable={isUsable}
-                                        isSelecting={isSelecting}
-                                        currentCp={currentCp}
-                                        onClick={() => {
-                                            if (isSelecting && onCancelRerollSelect) {
-                                                onCancelRerollSelect();
-                                            } else {
-                                                onActionClick(passive.id, idx);
-                                            }
-                                        }}
-                                    />
-                                );
-                            })}
-                        </div>
-                    </div>
-                );
-            })}
+        <div className="w-[10.2vw] min-w-0">
+            <div className="grid min-w-0 grid-cols-2 gap-[0.25vw]">
+                {visibleActions.map(({ passive, action, actionIndex, isUsable, isSelecting }) => (
+                    <PassiveActionButton
+                        key={`${passive.id}-${actionIndex}`}
+                        action={action}
+                        passiveId={passive.id}
+                        actionIndex={actionIndex}
+                        passiveName={t(passive.nameKey)}
+                        isUsable={isUsable}
+                        isSelecting={isSelecting}
+                        currentCp={currentCp}
+                        onClick={() => {
+                            if (isSelecting && onCancelRerollSelect) {
+                                onCancelRerollSelect();
+                            } else {
+                                onActionClick(passive.id, actionIndex);
+                            }
+                        }}
+                    />
+                ))}
+            </div>
         </div>
     );
 };
@@ -96,11 +97,12 @@ const PassiveActionButton: React.FC<{
     action: PassiveActionDef;
     passiveId: string;
     actionIndex: number;
+    passiveName: string;
     isUsable: boolean;
     isSelecting: boolean;
     currentCp: number;
     onClick: () => void;
-}> = ({ action, passiveId, actionIndex, isUsable, isSelecting, currentCp, onClick }) => {
+}> = ({ action, passiveId, actionIndex, passiveName, isUsable, isSelecting, currentCp, onClick }) => {
     const { t } = useTranslation('game-dicethrone');
     const icon = ACTION_ICON[action.type];
     const notEnoughCp = currentCp < action.cpCost;
@@ -113,17 +115,20 @@ const PassiveActionButton: React.FC<{
         ? `${action.tokenCost.amount} ${t(`tokens.${action.tokenCost.tokenId}.name`)}`
         : null;
     const cpCostLabel = action.cpCost > 0 ? `${action.cpCost} CP` : null;
-    const costLabel = [cpCostLabel, tokenCostLabel].filter(Boolean).join(' + ') || t('passive.action.free');
+    const fullCostLabel = [cpCostLabel, tokenCostLabel].filter(Boolean).join(' + ') || t('passive.action.free');
+    const accessibleLabel = `${passiveName}：${isSelecting ? t('passive.action.cancel') : label}${fullCostLabel ? `，${fullCostLabel}` : ''}`;
 
     return (
         <GameButton
             onClick={onClick}
             data-testid={`passive-action-${passiveId}-${actionIndex}`}
+            title={accessibleLabel}
+            aria-label={accessibleLabel}
             disabled={!isUsable && !isSelecting}
             variant={isSelecting ? 'danger' : 'glass'}
             size="sm"
             className={`
-                !px-[0.3vw] !py-[0.35vw] !min-h-0 !rounded-[0.4vw] flex min-w-0 flex-col items-center gap-[0.1vw] overflow-hidden
+                !px-[0.28vw] !py-[0.25vw] !min-h-0 !rounded-[0.4vw] flex min-w-0 flex-col items-center gap-[0.05vw] overflow-hidden
                 ${isSelecting ? 'ring-[0.15vw] ring-amber-400 animate-pulse' : ''}
                 ${isUsable && !isSelecting ? 'hover:!bg-emerald-500/20 hover:border-emerald-400/50' : ''}
             `}
@@ -134,9 +139,11 @@ const PassiveActionButton: React.FC<{
                     {isSelecting ? t('passive.action.cancel') : label}
                 </span>
             </div>
-            <span className={`truncate whitespace-nowrap !text-[0.5vw] ${notEnoughCp ? 'text-red-400' : 'text-amber-300'}`}>
-                {costLabel}
-            </span>
+            {cpCostLabel ? (
+                <span className={`truncate whitespace-nowrap !text-[0.48vw] ${notEnoughCp ? 'text-red-400' : 'text-amber-300'}`}>
+                    {cpCostLabel}
+                </span>
+            ) : null}
         </GameButton>
     );
 };

@@ -172,11 +172,10 @@ export const NINJA_CARDS: AbilityCard[] = [
         name: cardText('ninja-card-knife-fan', 'name'),
         type: 'action',
         cpCost: 2,
-        timing: 'roll',
+        timing: 'main',
         description: cardText('ninja-card-knife-fan', 'description'),
         sfxKey: NINJA_SFX_SLASH,
         ...ninjaCardRef(25),
-        isAttackModifier: true,
         effects: [{
             description: '对目标造成 1 点不可防御伤害。',
             action: { type: 'damage', target: 'opponent', value: 1, unblockable: true, damageScope: 'direct' },

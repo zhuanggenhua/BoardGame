@@ -281,3 +281,30 @@ C5 结论：所有命中时序/窗口/队列/跨阶段/共享根因的 shayu 对
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口\shayu-sharks-great-white-after-move-destroy.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornado-Alley-基地能力在本回合首次移入时触发，第二次移入不重复触发\shayu-tornado-alley-trigger-open.png`
+
+## 2026-05-14 +08 线上反馈 6a055d1429 Twister 可选语义回写降级
+
+来源：线上反馈 `6a055d1429cd213e03bfd3e9`，用户反馈“twister实现完全错误”。本轮复核正式卡图后确认：`tornados_twister` 与 `tornados_monster_tornado` 的 push/pull 方向和阈值并非主要问题，真正漏审的是“你可以”可选合同。
+
+失效/降级结论：
+
+- 本文 2026-05-13 C3 中 `tornados_twister`“已断言出场后可把 3- 随从从本基地移出，或从其他基地移入”只证明成功路径成立，不能证明完整可选语义。
+- 本文 2026-05-13 C4 中 `tornados_twister`“代表链成立”、`tornados_monster_tornado`“代表链成立”缺少“合法候选存在时可跳过”的证据，旧结论降级为：**push/pull 成功路径与入口代表链成立，但可选拒绝路径在当时未审计**。
+- 本文 2026-05-13 C5 的 `multi / order / continuation context` 家族没有覆盖单目标可选 prompt 的 skip 语义，不能作为 Twister/Monster Tornado 可选完整性的证据。
+
+新增修复与证据：
+
+- 修复文件：`src/games/smashup/abilities/tornados.ts`，为 Tornados push/pull prompt 增加 `optional`、`createSkipOption()`、`autoResolveIfSingle: false`，skip 后返回空事件。
+- L2 新增：`src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` 用例“龙卷风：旋风和龙卷风怪物的“你可以移动”效果必须允许跳过”，覆盖 Twister 与 Monster Tornado 合法候选存在时 skip 后状态不变。
+- L3 新增：`e2e/smashup-shayu-factions.e2e.ts` 用例“Tornados 旋风真实入口必须允许跳过可选移动”，覆盖真实手牌入口。
+- 截图：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-旋风真实入口必须允许跳过可选移动\shayu-tornados-twister-skip-open.png`：实际看到合法候选 Mako 存在且 “跳过” 按钮可见。
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-旋风真实入口必须允许跳过可选移动\shayu-tornados-twister-after-skip.png`：实际看到 skip 后 Mako 仍在原基地，未被移动。
+- 新增审计门禁：`src/games/smashup/__tests__/abilityBehaviorAudit.test.ts` 用例“已纳入全面审计的新派系可选/至多交互必须有拒绝或空选实现证据”。
+- 详细反馈收口文档：`evidence/smashup/smashup-feedback-6a055d1429-twister-closeout-2026-05-14.md`。
+
+更新后的当前结论：
+
+- `tornados_twister`：成功路径 + 有合法候选时 skip 否定路径均已覆盖；当前可选 push/pull 语义达到 L2，Twister 真实入口 skip 达到 L3。
+- `tornados_monster_tornado`：共用 helper + L2 skip 行为已覆盖；真实 talent 入口仍沿用既有 talent 代表链，若未来要求逐对象 L3，应单独补 Monster Tornado talent 真实入口 skip 截图。
+- 审计规范更新为通用维度：凡“你可以 / 至多 / 任意数量”的交互，必须证明有合法候选时也可以拒绝或空选；不得再用成功路径冒充可选完整审计。

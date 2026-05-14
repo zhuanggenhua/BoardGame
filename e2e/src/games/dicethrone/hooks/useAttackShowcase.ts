@@ -17,7 +17,7 @@ import type { PlayerId } from '../../../engine/types';
 import type { TurnPhase, CharacterId, PendingAttack, DiceThroneCore } from '../domain/types';
 import type { CardPreviewRef } from '../../../core';
 import { getUpgradeCardPreviewRef } from '../ui/AbilityOverlays';
-import { getAbilitySlotId } from '../ui/abilitySlotMapping';
+import { getAbilitySlotIdForCharacter } from '../ui/abilitySlotMapping';
 import { findPlayerAbility } from '../domain/abilityLookup';
 
 export interface AttackShowcaseData {
@@ -99,7 +99,7 @@ function buildShowcaseData(
     const baseAbilityId = match.ability.id;
     
     // 使用基础ID查找槽位
-    const slotId = getAbilitySlotId(baseAbilityId);
+    const slotId = getAbilitySlotIdForCharacter(attackerCharId, baseAbilityId);
 
     // 使用基础ID查找等级
     const attackerLevels = abilityLevels[pendingAttack.attackerId] ?? {};

@@ -5491,6 +5491,40 @@ describe('米斯卡塔尼克大学派系能力', () => {
             expect(drawEvt).toBeDefined();
         });
 
+        it('牌库空但弃牌堆有牌时弃疯狂卡后先洗回再抽牌', () => {
+            const madnessCard = makeCard('mad1', 'special_madness', 'action', '0');
+            const core = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [madnessCard],
+                        deck: [],
+                        discard: [makeCard('discard-1', 'card_a', 'minion', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    { defId: 'base_a', minions: [
+                        makeMinion('lib1', 'miskatonic_librarian', '0', 4, { powerModifier: 0 }),
+                    ], ongoingActions: [] },
+                ],
+            });
+            const state = makeMatchState(core);
+            const result = runCommand(state,
+                { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'lib1', baseIndex: 0 } },
+                defaultTestRandom
+            );
+
+            const eventTypes = result.events.map(event => event.type);
+            expect(eventTypes).toContain(SU_EVENTS.CARDS_DISCARDED);
+            expect(eventTypes).toContain(SU_EVENTS.DECK_RESHUFFLED);
+            expect(eventTypes).toContain(SU_EVENTS.CARDS_DRAWN);
+            expect(eventTypes.indexOf(SU_EVENTS.CARDS_DISCARDED)).toBeLessThan(eventTypes.indexOf(SU_EVENTS.DECK_RESHUFFLED));
+            expect(eventTypes.indexOf(SU_EVENTS.DECK_RESHUFFLED)).toBeLessThan(eventTypes.indexOf(SU_EVENTS.CARDS_DRAWN));
+            expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['discard-1']);
+            expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['mad1']);
+            expect(result.finalState.core.players['0'].discard).toHaveLength(0);
+        });
+
         it('手中无疯狂卡时不产生事件', () => {
             const core = makeState({
                 players: {
@@ -8798,7 +8832,8 @@ describe('Fairies abilities', () => {
             players: {
                 '0': makePlayer('0', {
                     hand: [makeCard('puck-1', 'fairies_puck', 'minion', '0')],
-                    deck: [makeCard('draw-1', 'robot_microbot_alpha', 'minion', '0')],
+                    deck: [],
+                    discard: [makeCard('draw-1', 'robot_microbot_alpha', 'minion', '0')],
                 }),
                 '1': makePlayer('1'),
             },
@@ -8837,8 +8872,10 @@ describe('Fairies abilities', () => {
             { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: drawOption.id } } as any,
             defaultTestRandom,
         );
+        expect(drewCard.events.some(event => event.type === SU_EVENTS.DECK_RESHUFFLED)).toBe(true);
         expect(drewCard.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
         expect(drewCard.finalState.core.players['0'].hand.length).toBe(1);
+        expect(drewCard.finalState.core.players['0'].discard).toHaveLength(0);
         expect(drewCard.finalState.core.players['0'].actionLimit).toBe(1);
         expect(drewCard.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBeUndefined();
 

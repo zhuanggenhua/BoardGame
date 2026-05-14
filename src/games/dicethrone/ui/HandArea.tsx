@@ -8,7 +8,7 @@ import { ENGINE_NOTIFICATION_EVENT, type EngineNotificationDetail } from '../../
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { useTouchLongPress } from '../../../hooks/ui/useTouchLongPress';
 import { ASSETS } from './assets';
-import { getAbilitySlotId } from './abilitySlotMapping';
+import { getAbilitySlotIdForCharacter } from './abilitySlotMapping';
 
 /** 飞出卡牌信息（成功使用后的动画） */
 type CardOffset = {
@@ -111,6 +111,7 @@ export const HandArea = ({
     onDiscardCard,
     onMagnifyCard,
     respondableCardIds,
+    characterId,
 }: {
     hand: AbilityCard[];
     locale?: string;
@@ -134,6 +135,7 @@ export const HandArea = ({
     onMagnifyCard?: (card: AbilityCard) => void;
     /** 响应窗口中可响应的卡牌 ID 集合（用于高亮） */
     respondableCardIds?: Set<string>;
+    characterId?: string;
 }) => {
     const { t } = useTranslation('game-dicethrone');
     const [draggingCardKey, setDraggingCardKey] = React.useState<string | null>(null);
@@ -374,7 +376,7 @@ export const HandArea = ({
                 // 从卡牌效果中提取目标技能 ID
                 const replaceAction = card.effects?.find(e => e.action?.type === 'replaceAbility')?.action;
                 const targetAbilityId = replaceAction?.type === 'replaceAbility' ? replaceAction.targetAbilityId : undefined;
-                const slotId = targetAbilityId ? getAbilitySlotId(targetAbilityId) : null;
+                const slotId = targetAbilityId ? getAbilitySlotIdForCharacter(characterId, targetAbilityId) : null;
 
                 if (slotId) {
                     setFlyingOutCard(createFlyingOutCard({
@@ -407,7 +409,7 @@ export const HandArea = ({
             }
             clearPendingPlay();
         }
-    }, [clearPendingPlay, createFlyingOutCard, handKeys]);
+    }, [characterId, clearPendingPlay, createFlyingOutCard, handKeys]);
 
     // 监听引擎通知：处理卡牌回弹（错误显示由全局 EngineNotificationListener 处理）
     React.useEffect(() => {

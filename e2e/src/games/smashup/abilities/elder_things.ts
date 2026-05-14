@@ -20,17 +20,17 @@ import {
     revealHand,
     buildAbilityFeedback,
     buildValidatedCardToDeckBottomEvents,
+    buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import type {
     SmashUpCore,
     SmashUpEvent,
-    CardsDrawnEvent,
     CardsDiscardedEvent,
     DeckReshuffledEvent,
     MinionCardDef,
 } from '../domain/types';
-import { drawCards, matchesDefId } from '../domain/utils';
+import { matchesDefId } from '../domain/utils';
 import { getFactionCards, getCardDef, getBaseDef } from '../data/cards';
 import { registerTrigger, registerProtection } from '../domain/ongoingEffects';
 import type { TriggerContext, ProtectionCheckContext } from '../domain/ongoingEffects';
@@ -524,7 +524,7 @@ const elderThingMiGoPromptProgram = createPromptProgram<ElderThingMiGoPromptCont
             { sourceId: 'elder_thing_mi_go', targetType: 'button' },
         );
     },
-    onResolve: ({ context, value, timestamp }) => {
+    onResolve: ({ context, value, random, timestamp }) => {
         const choice = (value as { choice?: string } | undefined)?.choice;
         const currentOpponent = context.opponents[context.opponentIdx];
         const events: SmashUpEvent[] = [];
@@ -533,14 +533,7 @@ const elderThingMiGoPromptProgram = createPromptProgram<ElderThingMiGoPromptCont
             const evt = drawMadnessCards(currentOpponent, 1, context.matchState.core, 'elder_thing_mi_go', timestamp);
             if (evt) events.push(evt);
         } else {
-            const caster = context.matchState.core.players[context.playerId];
-            if (caster && caster.deck.length > 0) {
-                events.push({
-                    type: SU_EVENTS.CARDS_DRAWN,
-                    payload: { playerId: context.playerId, count: 1, cardUids: [caster.deck[0].uid] },
-                    timestamp,
-                } as CardsDrawnEvent);
-            }
+            events.push(...buildStandardDrawEvents(context.matchState.core, context.playerId, 1, random, timestamp));
         }
 
         const nextIdx = context.opponentIdx + 1;
@@ -876,16 +869,7 @@ function elderThingTouchOfMadness(ctx: AbilityContext): AbilityResult {
     }
 
     // 你抽一张牌
-    const player = ctx.state.players[ctx.playerId];
-    const { drawnUids } = drawCards(player, 1, ctx.random);
-    if (drawnUids.length > 0) {
-        const drawEvt: CardsDrawnEvent = {
-            type: SU_EVENTS.CARDS_DRAWN,
-            payload: { playerId: ctx.playerId, count: 1, cardUids: drawnUids },
-            timestamp: ctx.now,
-        };
-        events.push(drawEvt);
-    }
+    events.push(...buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now));
 
     // 额外打出一张行动
     events.push(grantContextualExtraAction(ctx, 'elder_thing_touch_of_madness'));
@@ -1082,15 +1066,7 @@ const elderThingMiGoPodPromptProgram = createPromptProgram<ElderThingMiGoPodProm
             if (evt) events.push(evt);
             nextContext = { ...context, anyDrew: true };
         } else {
-            const caster = state.core.players[context.casterPlayerId];
-            const { drawnUids } = drawCards(caster, 1, random);
-            if (drawnUids.length > 0) {
-                events.push({
-                    type: SU_EVENTS.CARDS_DRAWN,
-                    payload: { playerId: context.casterPlayerId, count: 1, cardUids: drawnUids },
-                    timestamp,
-                } as CardsDrawnEvent);
-            }
+            events.push(...buildStandardDrawEvents(state.core, context.casterPlayerId, 1, random, timestamp));
             nextContext = { ...context, declinedCount: context.declinedCount + 1 };
         }
 
@@ -1911,11 +1887,7 @@ function elderThingTouchOfMadnessPod(ctx: AbilityContext): AbilityResult {
         const evt = drawMadnessCards(pid, 1, ctx.state, 'elder_thing_touch_of_madness_pod', ctx.now);
         if (evt) events.push(evt);
     }
-    const player = ctx.state.players[ctx.playerId];
-    const { drawnUids } = drawCards(player, 1, ctx.random);
-    if (drawnUids.length > 0) {
-        events.push({ type: SU_EVENTS.CARDS_DRAWN, payload: { playerId: ctx.playerId, count: 1, cardUids: drawnUids }, timestamp: ctx.now } as CardsDrawnEvent);
-    }
+    events.push(...buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now));
     events.push(grantContextualExtraAction(ctx, 'elder_thing_touch_of_madness_pod'));
     return { events };
 }

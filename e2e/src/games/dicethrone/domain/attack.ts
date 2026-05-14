@@ -84,7 +84,7 @@ const resolveDefenseEffects = (
     timestamp: number
 ): { defenseEvents: DiceThroneEvent[]; stateAfterDefense: DiceThroneCore } => {
     const pending = state.pendingAttack;
-    if (!pending?.defenseAbilityId || !pending.defenderId || pending.defenseResolved) {
+    if (!pending?.defenseAbilityId || !pending.defenderId || pending.defenseResolved || pending.isDefendable === false) {
         return { defenseEvents: [], stateAfterDefense: state };
     }
 

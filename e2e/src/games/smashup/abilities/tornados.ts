@@ -47,6 +47,7 @@ type ChooseMinionForMoveContext = PromptContext & {
     candidates: MinionTarget[];
     fixedDestinationBaseIndex?: number;
     anchorBaseIndex?: number;
+    optional?: boolean;
 };
 
 type TradeWindsFirstContext = PromptContext & { candidates: MinionTarget[] };
@@ -101,16 +102,24 @@ const chooseMinionForMovePromptProgram = createPromptProgram<ChooseMinionForMove
         `${context.sourceId}_${context.now}`,
         context.playerId,
         context.title,
-        buildMinionTargetOptions(context.candidates, {
-            state: context.matchState.core,
-            sourcePlayerId: context.playerId,
-            sourceKind: 'action',
-            effectType: 'move',
-        }),
-        { sourceId: context.sourceId, targetType: 'minion' },
+        [
+            ...(context.optional ? [createSkipOption()] : []),
+            ...buildMinionTargetOptions(context.candidates, {
+                state: context.matchState.core,
+                sourcePlayerId: context.playerId,
+                sourceKind: 'action',
+                effectType: 'move',
+            }),
+        ],
+        {
+            sourceId: context.sourceId,
+            targetType: 'minion',
+            ...(context.optional ? { autoResolveIfSingle: false } : {}),
+        },
     ),
     onResolve: ({ context, state, playerId, value, timestamp }) => {
         const choice = value as MinionChoice;
+        if ((choice as { skip?: boolean }).skip) return { events: [] };
         if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) return { events: [] };
         if (context.fixedDestinationBaseIndex !== undefined) {
             return { events: moveEvents(state, choice.minionUid, choice.defId, choice.baseIndex, context.fixedDestinationBaseIndex, context.sourceId, timestamp) };
@@ -133,7 +142,7 @@ const chooseMinionForMovePromptProgram = createPromptProgram<ChooseMinionForMove
     },
 });
 
-function runChooseMove(ctx: AbilityContext, sourceId: string, title: string, candidates: MinionTarget[], fixedDestinationBaseIndex?: number, anchorBaseIndex?: number): AbilityResult {
+function runChooseMove(ctx: AbilityContext, sourceId: string, title: string, candidates: MinionTarget[], fixedDestinationBaseIndex?: number, anchorBaseIndex?: number, optional = false): AbilityResult {
     if (candidates.length === 0) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.no_valid_targets', ctx.now)] };
     return runtimeToAbilityResult(executeAbilityProgram(chooseMinionForMovePromptProgram, {
         matchState: ctx.matchState,
@@ -144,6 +153,7 @@ function runChooseMove(ctx: AbilityContext, sourceId: string, title: string, can
         candidates,
         ...(fixedDestinationBaseIndex !== undefined ? { fixedDestinationBaseIndex } : {}),
         ...(anchorBaseIndex !== undefined ? { anchorBaseIndex } : {}),
+        ...(optional ? { optional } : {}),
     }));
 }
 
@@ -169,7 +179,7 @@ function tornadoPushPull(ctx: AbilityContext, sourceId: string, powerMax: number
         if (baseIndex === currentBase) return ctx.state.bases.length > 1;
         return true;
     });
-    return runChooseMove(ctx, sourceId, `${getCardDef(ctx.defId)?.name ?? sourceId}：选择力量≤${powerMax}的随从进行移动`, candidates, undefined, currentBase);
+    return runChooseMove(ctx, sourceId, `${getCardDef(ctx.defId)?.name ?? sourceId}：你可以选择力量≤${powerMax}的随从进行移动`, candidates, undefined, currentBase, true);
 }
 
 function tornadosMonsterTornado(ctx: AbilityContext): AbilityResult {

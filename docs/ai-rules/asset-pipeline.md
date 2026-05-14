@@ -74,6 +74,12 @@ public/assets/
 | 精灵图裁切 | `getOptimizedImageUrls` | `const { webp } = getOptimizedImageUrls('dicethrone/images/foo.png')` |
 | 精灵图 CSS 背景 | `buildLocalizedImageSet` | `backgroundImage: buildLocalizedImageSet('dicethrone/images/atlas', locale)` |
 
+**关键图片加载合同（强制）**：
+- **玩家面板、提示板、地图、角色立绘、卡牌大图等缺失后会破坏主体验的图片，必须使用具备候选链/回退链的加载方式**，优先使用 `OptimizedImage`、`CardPreview` 或等价公共组件。
+- **禁止把关键图片降级成裸 CSS background 单路径**。`buildLocalizedImageSet` / `buildOptimizedImageSet` 只负责生成 URL 字符串，不能像 `OptimizedImage` 一样在运行时从本地包、public 资源、manifest/R2 之间逐级回退；浏览器的多 background URL 也不是可靠的失败回退机制。
+- **CSS background 只适合两类场景**：一是精灵图/图集裁剪、Canvas/特殊渲染等必须依赖 `background-position` 的场景；二是丢失后不影响主流程的纯装饰背景。前者必须明确仍然复用统一 URL 解析工具，并补测试或截图证明裁剪合同正确。
+- **发现移动端或离线包中“PC 正常、手机缺图”时，先查该图片是否绕过了统一图片组件**；不得先把问题归因到缓存、旧素材包或 CDN，除非已经证明运行时请求链本身符合回退合同。
+
 **locale 处理规则**：
 - `OptimizedImage` 默认 `locale="zh-CN"`，自动转换路径为 `i18n/zh-CN/dicethrone/images/foo.png`
 - 符号链接使浏览器能正确加载该路径（实际指向 `../../dicethrone/images/foo.png`）

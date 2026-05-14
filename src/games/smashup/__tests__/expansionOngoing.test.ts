@@ -947,6 +947,32 @@ describe('食人花 ongoing 能力', () => {
             expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
         });
 
+        test('牌库空但弃牌堆有牌时先洗回再抽牌', () => {
+            const lily = makeMinion({ defId: 'killer_plant_water_lily', uid: 'wl-1', controller: '0' });
+            const base = makeBase({ minions: [lily] });
+            const baseState = makeState([base]);
+            const state = makeState([base], {
+                players: {
+                    ...baseState.players,
+                    '0': {
+                        ...baseState.players['0'],
+                        deck: [],
+                        discard: [makeCard('discard-1', 'deck_minion_1', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS)],
+                    },
+                },
+            });
+
+            const { events } = fireTriggers(state, 'onTurnStart', {
+                state, playerId: '0', random: dummyRandom, now: 1000,
+            });
+
+            expect(events.map(event => event.type)).toEqual([
+                SU_EVENTS.DECK_RESHUFFLED,
+                SU_EVENTS.CARDS_DRAWN,
+            ]);
+            expect((events[1] as any).payload.cardUids).toEqual(['discard-1']);
+        });
+
         test('非控制者回合不触发', () => {
             const lily = makeMinion({ defId: 'killer_plant_water_lily', uid: 'wl-1', controller: '0' });
             const base = makeBase({ minions: [lily] });

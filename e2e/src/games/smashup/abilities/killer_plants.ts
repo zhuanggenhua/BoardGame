@@ -9,6 +9,7 @@ import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import {
     grantContextualExtraMinion, grantExtraMinion, destroyMinion,
     buildMinionTargetOptions, buildAbilityFeedback,
+    buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type {
@@ -278,14 +279,7 @@ function killerPlantWaterLilyTrigger(ctx: TriggerContext): SmashUpEvent[] {
             if (!triggeredWaterLily) continue;
             if (triggeredWaterLily.controller !== ctx.playerId) return [];
 
-            const player = ctx.state.players[triggeredWaterLily.controller];
-            if (!player || player.deck.length === 0) return [];
-
-            return [{
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId: triggeredWaterLily.controller, count: 1, cardUids: [player.deck[0].uid] },
-                timestamp: ctx.now,
-            } as CardsDrawnEvent];
+            return buildStandardDrawEvents(ctx.state, triggeredWaterLily.controller, 1, ctx.random, ctx.now);
         }
         return [];
     }
@@ -295,14 +289,8 @@ function killerPlantWaterLilyTrigger(ctx: TriggerContext): SmashUpEvent[] {
         for (const m of base.minions) {
             if (!m.defId.startsWith('killer_plant_water_lily')) continue;
             if (m.controller !== ctx.playerId) continue;
-            const player = ctx.state.players[m.controller];
-            if (!player || player.deck.length === 0) continue;
-            const drawnUid = player.deck[0].uid;
-            return [{
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId: m.controller, count: 1, cardUids: [drawnUid] },
-                timestamp: ctx.now,
-            } as CardsDrawnEvent];
+            const events = buildStandardDrawEvents(ctx.state, m.controller, 1, ctx.random, ctx.now);
+            if (events.length > 0) return events;
         }
     }
     return [];

@@ -12,9 +12,9 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
-import { addTempPower, grantContextualExtraMinion, grantExtraMinion, drawMadnessCards, getMinionPower, revealAndPickFromDeck, buildAbilityFeedback, buildValidatedReturnEvents } from '../domain/abilityHelpers';
+import { addTempPower, grantContextualExtraMinion, grantExtraMinion, drawMadnessCards, getMinionPower, revealAndPickFromDeck, buildAbilityFeedback, buildValidatedReturnEvents, buildStandardDrawEvents } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
-import type { SmashUpEvent, DeckReorderedEvent, CardsDrawnEvent, SmashUpCore } from '../domain/types';
+import type { SmashUpEvent, DeckReorderedEvent, SmashUpCore } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
 import type { ProtectionCheckContext, TriggerContext, TriggerResult } from '../domain/ongoingEffects';
 import { getCardDef } from '../data/cards';
@@ -490,18 +490,13 @@ const innsmouthMysteriesOfTheDeepPromptProgram = createPromptProgram<InnsmouthPr
         ],
         { sourceId: 'innsmouth_mysteries_of_the_deep', targetType: 'button' },
     ),
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: ({ state, playerId, value, random, timestamp }) => {
         const { accept } = value as { accept?: boolean };
         if (!accept) return { events: [] };
         const events: SmashUpEvent[] = [];
         const player = state.core.players[playerId];
-        const topTwo = player.deck.slice(0, 2);
-        if (topTwo.length > 0) {
-            events.push({
-                type: SU_EVENTS.CARDS_DRAWN,
-                payload: { playerId, count: topTwo.length, cardUids: topTwo.map(c => c.uid) },
-                timestamp,
-            } as CardsDrawnEvent);
+        if (player) {
+            events.push(...buildStandardDrawEvents(state.core, playerId, 2, random, timestamp));
         }
         const madnessEvt = drawMadnessCards(playerId, 2, state.core, 'innsmouth_mysteries_of_the_deep', timestamp);
         if (madnessEvt) events.push(madnessEvt);
@@ -530,19 +525,7 @@ const innsmouthMysteriesOfTheDeepProgram = createEffectProgram<AbilityContext, S
     }
     if (!hasTriple) return { events: [buildAbilityFeedback(ctx.playerId, 'feedback.condition_not_met', ctx.now)] };
 
-    const events: SmashUpEvent[] = [];
-    const player = ctx.state.players[ctx.playerId];
-
-    // ?张牌
-    const topThree = player.deck.slice(0, 3);
-    if (topThree.length > 0) {
-        const drawEvt: CardsDrawnEvent = {
-            type: SU_EVENTS.CARDS_DRAWN,
-            payload: { playerId: ctx.playerId, count: topThree.length, cardUids: topThree.map(c => c.uid) },
-            timestamp: ctx.now,
-        };
-        events.push(drawEvt);
-    }
+    const events: SmashUpEvent[] = buildStandardDrawEvents(ctx.state, ctx.playerId, 3, ctx.random, ctx.now);
     return {
         events,
         context: { matchState: ctx.matchState, playerId: ctx.playerId, now: ctx.now },

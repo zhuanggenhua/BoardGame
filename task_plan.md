@@ -31,6 +31,15 @@
 - [x] 已完成聚焦 eslint / vitest 验证。
 - [ ] 生产 `open` 状态如需回写，等待明确授权后再执行。
 
+## Addendum（2026-05-14 23:38 +08）：人类线上反馈 Twister 可选语义
+
+- [x] 已核实生产反馈 `6a055d1429cd213e03bfd3e9`：`twister实现完全错误`，状态仍按生产库实际值处理，本轮未擅自标 resolved。
+- [x] 已以正式 shayu 卡图为真相源复核：Twister / Monster Tornado 是“你可以”移动，合法候选存在时也必须允许跳过。
+- [x] 已修复 `tornados_twister` / `tornados_monster_tornado` 共用 push/pull helper：加入 skip，禁用可选 prompt 单候选自动结算，skip 后不改变权威状态。
+- [x] 已补 L2、审计门禁与 L3 真实入口 E2E，并实际打开截图核对。
+- [x] 已回写 evidence：`evidence/smashup/smashup-feedback-6a055d1429-twister-closeout-2026-05-14.md` 与 shayu 全面审计覆盖矩阵。
+- [ ] 未完成：本地修复尚未提交、push、部署；线上反馈状态尚未回写 resolved。
+
 ## Errors Encountered
 
 | 时间 | 错误 | 处置 |

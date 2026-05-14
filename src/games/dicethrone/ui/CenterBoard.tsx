@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { UI_Z_INDEX, buildLocalizedImageSet } from '../../../core';
+import { UI_Z_INDEX } from '../../../core';
+import { OptimizedImage } from '../../../components/common/media/OptimizedImage';
 import { useCoarsePointer } from '../../../hooks/ui/useCoarsePointer';
 import { AbilityOverlays } from './AbilityOverlays';
 import type { AbilityOverlaysHandle } from './AbilityOverlays';
@@ -77,8 +78,6 @@ export const CenterBoard = ({
 
     const playerBoardPath = ASSETS.PLAYER_BOARD(characterId);
     const tipBoardPath = ASSETS.TIP_BOARD(characterId);
-    const playerBoardBackground = buildLocalizedImageSet(playerBoardPath, locale);
-    const tipBoardBackground = buildLocalizedImageSet(tipBoardPath, locale);
 
     const handleMagnifySurfaceClick = React.useCallback((
         event: React.MouseEvent<HTMLElement>,
@@ -117,20 +116,30 @@ export const CenterBoard = ({
                     }}
                     data-tutorial-id="player-board"
                     data-testid="player-board-surface"
+                    data-character-id={characterId}
                     onClick={(event) => handleMagnifySurfaceClick(event, playerBoardPath)}
                 >
                     <div
                         className="h-full"
-                        role="img"
-                        aria-label={t('imageAlt.playerBoard')}
                         style={{
                             width: `calc(${playerBoardHeightVw}vw * ${playerBoardAspectRatio})`,
-                            backgroundImage: playerBoardBackground,
-                            backgroundRepeat: 'no-repeat',
-                            backgroundPosition: 'center',
-                            backgroundSize: 'contain',
                         }}
-                    />
+                    >
+                        <OptimizedImage
+                            src={playerBoardPath}
+                            locale={locale}
+                            alt={t('imageAlt.playerBoard')}
+                            className="h-full w-full"
+                            placeholder={false}
+                            data-testid="player-board-image"
+                            style={{
+                                display: 'block',
+                                objectFit: 'contain',
+                                width: '100%',
+                                height: '100%',
+                            }}
+                        />
+                    </div>
                     <AbilityOverlays
                         ref={abilityOverlaysRef}
                         isEditing={isLayoutEditing && isSelfView}
@@ -183,15 +192,22 @@ export const CenterBoard = ({
                         >
                             <div
                                 className="w-full h-full"
-                                role="img"
-                                aria-label={t('imageAlt.tipBoard')}
-                                style={{
-                                    backgroundImage: tipBoardBackground,
-                                    backgroundRepeat: 'no-repeat',
-                                    backgroundPosition: 'center',
-                                    backgroundSize: 'contain',
-                                }}
-                            />
+                            >
+                                <OptimizedImage
+                                    src={tipBoardPath}
+                                    locale={locale}
+                                    alt={t('imageAlt.tipBoard')}
+                                    className="h-full w-full"
+                                    placeholder={false}
+                                    data-testid="tip-board-image"
+                                    style={{
+                                        display: 'block',
+                                        objectFit: 'contain',
+                                        width: '100%',
+                                        height: '100%',
+                                    }}
+                                />
+                            </div>
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); onMagnifyImage(tipBoardPath); }}

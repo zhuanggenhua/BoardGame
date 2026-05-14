@@ -10,6 +10,7 @@ import { join } from 'node:path';
 import { test, expect } from '../framework';
 import type { Browser, Page } from '@playwright/test';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
+import '../../src/games/dicethrone/domain';
 import {
     closeDebugPanelIfOpen,
     dispatchDiceThroneCommand,
@@ -283,6 +284,10 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await closeDebugPanelIfOpen(match.hostPage);
 
             await expect(match.hostPage.getByTestId('player-board-surface')).toBeVisible({ timeout: 10000 });
+            await expect(match.hostPage.getByTestId('passive-action-treant-life-sap-0')).toBeVisible({ timeout: 10000 });
+            await expect(match.hostPage.getByTestId('passive-action-treant-seedling-cultivation-0')).toBeHidden();
+            await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-0')).toBeHidden();
+            await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-1')).toBeHidden();
             await screenshot(match.hostPage, testName, '01-life-sap-entry-before-use.png');
 
             await clickLifeSapPassive(match.hostPage);
@@ -346,6 +351,8 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-1')).toBeVisible({ timeout: 10000 });
             await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-0')).toContainText(/治疗\+CP/);
             await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-1')).toContainText(/抽牌/);
+            await expect(match.hostPage.getByTestId('passive-action-treant-seedling-cultivation-0')).toBeHidden();
+            await expect(match.hostPage.getByTestId('passive-action-treant-life-sap-0')).toBeHidden();
             await screenshot(match.hostPage, testName, '01-sapling-short-buttons-before-use.png');
 
             const handCountBeforeDraw = await match.hostPage.evaluate(() => {
@@ -391,6 +398,8 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 sapling: 0,
                 handCount: handCountBeforeDraw + 1,
             });
+            await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-0')).toBeHidden({ timeout: 10000 });
+            await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-1')).toBeHidden({ timeout: 10000 });
             await screenshot(match.hostPage, testName, '03-sapling-draw-after-use.png');
         } finally {
             await closeMatchContexts(match);
@@ -437,6 +446,9 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await closeDebugPanelIfOpen(match.hostPage);
             await expect(match.hostPage.getByTestId('passive-action-treant-seedling-cultivation-0')).toBeVisible({ timeout: 10000 });
             await expect(match.hostPage.getByTestId('passive-action-treant-seedling-cultivation-0')).toContainText(/重掷/);
+            await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-0')).toBeHidden();
+            await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-1')).toBeHidden();
+            await expect(match.hostPage.getByTestId('passive-action-treant-life-sap-0')).toBeHidden();
             await expect(match.hostPage.getByTestId('die-button-0')).toBeVisible({ timeout: 10000 });
             await screenshot(match.hostPage, testName, '01-seedling-reroll-before-select.png');
 
@@ -456,6 +468,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     seedling: tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
                 };
             }, { timeout: 10000 }).toEqual({ die0: 6, seedling: 0 });
+            await expect(match.hostPage.getByTestId('passive-action-treant-seedling-cultivation-0')).toBeHidden({ timeout: 10000 });
             await screenshot(match.hostPage, testName, '03-seedling-reroll-after-die-click.png');
         } finally {
             await closeMatchContexts(match);

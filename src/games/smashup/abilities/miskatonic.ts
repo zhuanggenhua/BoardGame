@@ -16,6 +16,7 @@ import {
     getMinionPower, buildMinionTargetOptions, buildActionMinionTargetOptions, buildBaseTargetOptions,
     buildAbilityFeedback,
     recoverCardsFromDiscard,
+    buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { getCardDef, getBaseDef } from '../data/cards';
 import { reduce } from '../domain/reduce';
@@ -1334,22 +1335,16 @@ function miskatonicLibrarianTalent(ctx: AbilityContext): AbilityResult {
     if (!madnessCard) return { events: [] };
 
     // 弃掉疯狂卡（放入弃牌堆）
-    events.push({
+    const discardEvent: SmashUpEvent = {
         type: SU_EVENTS.CARDS_DISCARDED,
         payload: { playerId: ctx.playerId, cardUids: [madnessCard.uid] },
         timestamp: ctx.now,
-    } as SmashUpEvent);
+    } as SmashUpEvent;
+    events.push(discardEvent);
 
     // 抽1张牌
-    if (player.deck.length > 0) {
-        const drawnUid = player.deck[0].uid;
-        const drawEvt: CardsDrawnEvent = {
-            type: SU_EVENTS.CARDS_DRAWN,
-            payload: { playerId: ctx.playerId, count: 1, cardUids: [drawnUid] },
-            timestamp: ctx.now,
-        };
-        events.push(drawEvt);
-    }
+    const drawState = reduce(ctx.state, discardEvent);
+    events.push(...buildStandardDrawEvents(drawState, ctx.playerId, 1, ctx.random, ctx.now));
 
     return { events };
 }
@@ -1655,20 +1650,8 @@ export function registerMiskatonicAbilities(): void {
             const handCards = ctx.state.players[ctx.playerId].hand
                 .filter((card) => card.uid !== ctx.cardUid);
             if (handCards.length === 0) {
-                const drawCount = Math.min(1, ctx.state.players[ctx.playerId].deck.length);
-                if (drawCount <= 0) {
-                    return { events: [] };
-                }
                 return {
-                    events: [{
-                        type: SU_EVENTS.CARDS_DRAWN,
-                        payload: {
-                            playerId: ctx.playerId,
-                            count: drawCount,
-                            cardUids: ctx.state.players[ctx.playerId].deck.slice(0, drawCount).map((card) => card.uid),
-                        },
-                        timestamp: ctx.now,
-                    } as CardsDrawnEvent],
+                    events: buildStandardDrawEvents(ctx.state, ctx.playerId, 1, ctx.random, ctx.now),
                 };
             }
             return {
