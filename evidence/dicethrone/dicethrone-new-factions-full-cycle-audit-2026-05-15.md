@@ -167,3 +167,17 @@ Rooted 不可防御路径：
 - 本轮发现并修复 Treant `rooted` 防御实现错误。
 - 本轮补强了两条通用审计规范：同类 bug 扩审、多骰 E2E 使用 sequence。
 - 两个新英雄仍不能被描述为“所有技能/专属卡均已逐对象 L3/E2E 全覆盖”；专属卡逐卡真实打出和部分基础/升级技能本体仍按矩阵保留为 L1/L2 残余范围。
+
+## 2026-05-15 追加降级：框架消费合同漏审
+
+用户继续指出基础技能错误不应在“全面审计”后存在。复查确认，本文件此前仍缺少“框架消费合同反向审计”层，不能支撑“全面无遗漏”。
+
+新增证据文档：
+
+- `evidence/dicethrone/dicethrone-framework-contract-deep-audit-2026-05-15.md`
+
+追加结论：
+
+- Rooted / Blink 暴露的不是单点录入问题，而是 DiceThrone 防御 resolver 只消费 `withDamage/postDamage`，但 AbilityDef 类型允许 `immediate/preDefense`，旧审计没有从消费点反查字段合法性。
+- 新增合同测试还命中旧英雄 Pyromancer `magma-armor` I/II/III，说明影响面超出 Treant/Ninja。
+- 本文件所有“重审闭环”结论降级为：已完成一轮新增批次重审与部分共享根因修复；不得解释为 DiceThrone 新旧英雄全部基础技能已无遗漏。
