@@ -1963,3 +1963,11 @@
   - Mythic Greeks / Tornados 复杂入口 → `1 passed`，截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Mythic-Greeks-与-Tornados-复杂入口覆盖哈迪斯、宙斯、雅典娜和信风\shayu-mythic-greeks-athena-order-open.png`。
   - Gone with the Wind afterScoring → `1 passed`，截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-cleanup.png`。
 - 本轮实际看图未发现新的实现错误；未执行提交、push、部署，也未改生产反馈状态。
+
+## 2026-05-15 09:20 +08 shayu 长描述复杂对象抽样全链路审计
+
+- 抽样对象按中文描述长度与动作链复杂度选取：`sharks_megalodon`、`mythic_greeks_argonaut`、`sharks_blood_in_the_water`、`tornados_not_in_kansas`、`mythic_greeks_favor_of_dionysus`。
+- 真实发现：`mythic_greeks_argonaut` 旧实现未支持“任何你可以打出行动的时候，改为打出这张牌”，且 Argonaut 触发 action 后能力时漏掉 Jason。
+- 已修复：新增 `playAsAction` 数据/命令/事件语义，`PLAY_MINION` 可在行动额度可用时替代行动打出 Argonaut；Argonaut onPlay 串联 Odysseus prompt 后继续进入 Jason base prompt。
+- 已补验证：Argonaut L2 聚焦测试、shayu 行为回归、审计门禁、Argonaut 真实入口 E2E 均通过；已实际核对 Argonaut 三张截图链。
+- 已新增证据文档：`evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`。

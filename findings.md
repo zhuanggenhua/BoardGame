@@ -2079,3 +2079,12 @@
 - 三条全链路抽查覆盖不同机制家族：Twister skip、Athena/Trade Winds 多步排序交换、Gone with the Wind afterScoring 延迟清场。
 - 当前未发现新的实现错误；也未发现需要在 Twister 可选否定路径之外再新增规范维度的第二类缺口。
 - 结论边界：这是 post-Twister 完整技能流程再审计和代表性全链路抽查完成，不表示每个对象都新增了一条独立 E2E；逐对象证据等级以 `evidence/smashup/smashup-shayu-post-twister-complete-flow-audit-2026-05-15.md` 矩阵为准。
+
+## 2026-05-15 shayu 长描述复杂对象抽样发现
+
+- 抽样对象：`sharks_megalodon`、`mythic_greeks_argonaut`、`sharks_blood_in_the_water`、`tornados_not_in_kansas`、`mythic_greeks_favor_of_dionysus`。
+- 新发现的真实实现缺口集中在 `mythic_greeks_argonaut`：
+  - 旧入口缺少 `playAsAction`，不能在随从额度耗尽但行动额度可用时按卡面“改为打出这张牌”。
+  - 旧 Argonaut onPlay 手写触发 Odysseus / Heracles / Spartan，漏掉 Jason 的 onActionPlayed 能力。
+- 已修复并补证据：`playAsAction` 贯通类型、校验、reducer、UI dispatch；Argonaut onPlay 可从 Odysseus prompt 继续串 Jason base prompt。
+- 其余抽样对象未发现新的 blocker；本轮证据落在 `evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`。

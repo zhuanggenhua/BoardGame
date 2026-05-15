@@ -40,6 +40,14 @@
 - [x] 已回写 evidence：`evidence/smashup/smashup-feedback-6a055d1429-twister-closeout-2026-05-14.md` 与 shayu 全面审计覆盖矩阵。
 - [ ] 未完成：本地修复尚未提交、push、部署；线上反馈状态尚未回写 resolved。
 
+## Addendum（2026-05-15 09:20 +08）：shayu 长描述复杂对象抽样全链路审计
+
+- [x] 已按中文描述长度与动作链复杂度抽样复核：`sharks_megalodon`、`mythic_greeks_argonaut`、`sharks_blood_in_the_water`、`tornados_not_in_kansas`、`mythic_greeks_favor_of_dionysus`。
+- [x] 已发现并修复 `mythic_greeks_argonaut` 两个真实缺口：缺少替代行动额度打出入口，以及 Argonaut 触发 action 后能力时漏掉 Jason。
+- [x] 已补 L2 行为测试与 L3 真实入口 E2E：随从额度已满、行动额度可用时打出 Argonaut，并串联 Odysseus / Heracles / Spartan / Jason。
+- [x] 已新增 evidence：`evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`。
+- [ ] 未完成：本轮修复尚未提交、push、部署；该抽样不替代 shayu 45 对象全面审计矩阵。
+
 ## Errors Encountered
 
 | 时间 | 错误 | 处置 |
