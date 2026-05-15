@@ -306,7 +306,7 @@ export function validate(
             const player = core.players[command.playerId];
             if (!player) return { valid: false, error: '玩家不存在' };
 
-            const { baseIndex, fromDiscard } = command.payload;
+            const { baseIndex, fromDiscard, playAsAction } = command.payload;
             if (baseIndex < 0 || baseIndex >= core.bases.length) {
                 return { valid: false, error: '无效的基地索引' };
             }
@@ -368,19 +368,33 @@ export function validate(
                 return { valid: true };
             }
 
-            // 正常手牌打出：全局额度 + 同名额度 + 基地限定额度
-            const baseQuota = player.baseLimitedMinionQuota?.[baseIndex] ?? 0;
-            const sameNameRemaining = player.sameNameMinionRemaining ?? 0;
-            const globalQuotaRemaining = player.minionLimit - player.minionsPlayed;
-            if (globalQuotaRemaining <= 0 && sameNameRemaining <= 0 && baseQuota <= 0) {
-                return { valid: false, error: '本回合随从额度已用完' };
-            }
             const card = player.hand.find(c => c.uid === command.payload.cardUid);
             if (!card) return { valid: false, error: '手牌中没有该卡牌' };
             if (!isCardMinionLike(card)) return { valid: false, error: '该卡牌不是随从' };
             const minionDef = getMinionDef(card.defId);
             const fusionDef = getFusionDef(card.defId);
             const basePower = (minionDef?.power ?? fusionDef?.minionPower) ?? 0;
+
+            if (playAsAction === true) {
+                if (!minionDef?.playAsAction) {
+                    return { valid: false, error: '该随从不能替代行动额度打出' };
+                }
+                const actionRestrictionError = getActionPlayRestrictionError(core, command.playerId);
+                if (actionRestrictionError) {
+                    return { valid: false, error: actionRestrictionError };
+                }
+                if (player.actionsPlayed >= player.actionLimit) {
+                    return { valid: false, error: '本回合行动额度已用完' };
+                }
+            }
+
+            // 正常手牌打出：全局额度 + 同名额度 + 基地限定额度
+            const baseQuota = player.baseLimitedMinionQuota?.[baseIndex] ?? 0;
+            const sameNameRemaining = player.sameNameMinionRemaining ?? 0;
+            const globalQuotaRemaining = player.minionLimit - player.minionsPlayed;
+            if (!playAsAction && globalQuotaRemaining <= 0 && sameNameRemaining <= 0 && baseQuota <= 0) {
+                return { valid: false, error: '本回合随从额度已用完' };
+            }
             const blockedByBearNecessitiesPod = hasActiveBearNecessitiesPodRestriction(core, command.playerId)
                 && isExtraMinionPlayAttempt(
                     core,
@@ -410,7 +424,7 @@ export function validate(
             }
             const usesBaseLimitedMinionQuota = mustUseBaseLimitedMinionQuota(core, player, baseIndex, card.defId, basePower);
             // 同名额度检查：全局额度用完后，如果只剩同名额度，必须匹配已锁定的 defId
-            if (globalQuotaRemaining <= 0 && sameNameRemaining > 0 && baseQuota <= 0) {
+            if (!playAsAction && globalQuotaRemaining <= 0 && sameNameRemaining > 0 && baseQuota <= 0) {
                 // 已锁定 defId 时，只能打出同名随从
                 if (
                     player.sameNameMinionDefId !== null
@@ -421,7 +435,7 @@ export function validate(
                 }
             }
             // 基地限定同名额度检查：全局额度和全局同名额度都用完后，使用基地限定额度时检查同名约束
-            if (usesBaseLimitedMinionQuota) {
+            if (!playAsAction && usesBaseLimitedMinionQuota) {
                 if (player.baseLimitedSameNameRequired?.[baseIndex]) {
                     // 必须与触发能力时的随从同名
                     const requiredDefId = player.baseLimitedSameNameDefId?.[baseIndex];
@@ -447,7 +461,7 @@ export function validate(
                 }
             }
             // 全局力量限制检查：额外出牌机会可能有力量上限（如家园：力量≤2）
-            if (mustUseGlobalPowerLimitedMinionQuota(core, player, baseIndex, card.defId, basePower)) {
+            if (!playAsAction && mustUseGlobalPowerLimitedMinionQuota(core, player, baseIndex, card.defId, basePower)) {
                 const maxAllowedPower = getMaxRemainingGlobalPowerLimitedQuota(player);
                 if (maxAllowedPower !== undefined && basePower > maxAllowedPower) {
                     return { valid: false, error: `额外出牌只能打出力量≤${maxAllowedPower}的随从` };

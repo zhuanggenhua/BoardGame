@@ -522,10 +522,16 @@ describe('shayu 三派系代表性玩法行为', () => {
         expect(player.discard.some(card => card.uid === 'a-dionysus')).toBe(false);
     });
 
-    it('神话希腊：阿尔戈英雄触发行动态持续能力', () => {
+    it('神话希腊：阿尔戈英雄可替代行动额度打出，并触发行动态持续能力', () => {
         const core = {
             players: {
-                '0': makePlayer('0', { hand: [makeCard('argonaut-card', 'mythic_greeks_argonaut', 'minion', '0')] }),
+                '0': makePlayer('0', {
+                    hand: [makeCard('argonaut-card', 'mythic_greeks_argonaut', 'minion', '0')],
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                }),
                 '1': makePlayer('1'),
             },
             turnOrder: ['0', '1'],
@@ -533,8 +539,13 @@ describe('shayu 三派系代表性玩法行为', () => {
             bases: [
                 makeBase('base_oracle_at_delphi', [
                     makeMinion('odysseus', 'mythic_greeks_odysseus', '0', 5),
+                    makeMinion('jason', 'mythic_greeks_jason', '0', 4),
                     makeMinion('heracles', 'mythic_greeks_heracles', '0', 4),
                     makeMinion('spartan', 'mythic_greeks_spartan', '0', 2),
+                ]),
+                makeBase('base_wooden_horse', [
+                    makeMinion('jason-target', 'sharks_mako', '0', 2),
+                    makeMinion('enemy-target', 'tornados_dust_devil', '1', 2),
                 ]),
             ],
             baseDeck: [],
@@ -544,22 +555,34 @@ describe('shayu 三派系代表性玩法行为', () => {
         const play = runCommand(makeMatchState(core), {
             type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
-            payload: { cardUid: 'argonaut-card', baseIndex: 0 },
+            payload: { cardUid: 'argonaut-card', baseIndex: 0, playAsAction: true },
         } as any);
         expect(play.success).toBe(true);
-        const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
+        const resolved = resolveInteractionChain(play.finalState, (prompt, state, step) => {
             const triggerOption = prompt.data.options.find((option: any) => {
                 const triggerId = option.value?.triggerId;
                 return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
             });
             if (triggerOption) return { optionId: triggerOption.id };
+            if (step === 1) {
+                expect(prompt.data.sourceId).toBe('mythic_greeks_jason');
+                const jasonBase = prompt.data.options.find((option: any) => option.value?.baseIndex === 1);
+                expect(jasonBase).toBeTruthy();
+                return { optionId: jasonBase.id };
+            }
             const odysseus = prompt.data.options.find((option: any) => option.value?.minionUid === 'odysseus');
             return { optionId: odysseus.id };
         });
         const minions = resolved.finalState.core.bases[0].minions;
+        expect(resolved.finalState.core.players['0'].minionsPlayed).toBe(1);
+        expect(resolved.finalState.core.players['0'].actionsPlayed).toBe(1);
+        expect(minions.some(minion => minion.uid === 'argonaut-card')).toBe(true);
         expect(minions.find(minion => minion.uid === 'odysseus')?.powerCounters).toBe(1);
         expect(minions.find(minion => minion.uid === 'heracles')?.tempPowerModifier).toBe(1);
         expect(minions.find(minion => minion.uid === 'spartan')?.powerCounters).toBe(1);
+        expect(resolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'jason-target')?.tempPowerModifier).toBe(1);
+        expect(resolved.finalState.core.bases[1].minions.find(minion => minion.uid === 'enemy-target')?.tempPowerModifier ?? 0).toBe(0);
+        expect(minions.find(minion => minion.uid === 'jason')?.metadata?.mythicGreeksJasonTriggeredTurn).toBe(1);
     });
 
     it('神话希腊基地：特尔斐神谕在打出随从后展示牌库顶，行动牌入手，非行动牌留在牌库顶', () => {

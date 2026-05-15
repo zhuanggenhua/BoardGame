@@ -47,6 +47,7 @@ type GreekMinionPromptContext = PromptContext & {
     mode: 'counter' | 'temp';
     optional?: boolean;
     maxSelections?: number;
+    nextBasePrompt?: Omit<GreekBasePromptContext, keyof PromptContext>;
 };
 
 type GreekBasePromptContext = PromptContext & {
@@ -151,23 +152,36 @@ const greekMinionPromptProgram = createPromptProgram<GreekMinionPromptContext, S
             ...(context.maxSelections !== undefined ? { multi: { min: 0, max: context.maxSelections } } : {}),
         },
     ),
-    onResolve: ({ context, value, timestamp }) => {
+    onResolve: ({ context, state, value, timestamp }) => {
+        const buildResult = (events: SmashUpEvent[]) => {
+            if (!context.nextBasePrompt) return { events };
+            return {
+                events,
+                context: {
+                    ...context.nextBasePrompt,
+                    matchState: state,
+                    playerId: context.playerId,
+                    now: timestamp,
+                } satisfies GreekBasePromptContext,
+                nextProgram: greekBasePromptProgram,
+            };
+        };
         const choices = Array.isArray(value) ? value as MinionChoice[] : undefined;
         if (choices) {
-            return {
-                events: choices
+            return buildResult(
+                choices
                     .filter(choice => !choice.skip && choice.minionUid && choice.baseIndex !== undefined)
                     .map(choice => context.mode === 'counter'
                         ? addPowerCounter(choice.minionUid!, choice.baseIndex!, context.amount, context.sourceId, timestamp)
                         : addTempPower(choice.minionUid!, choice.baseIndex!, context.amount, context.sourceId, timestamp)),
-            };
+            );
         }
         const choice = value as MinionChoice;
-        if (choice.skip || !choice.minionUid || choice.baseIndex === undefined) return { events: [] };
+        if (choice.skip || !choice.minionUid || choice.baseIndex === undefined) return buildResult([]);
         const event = context.mode === 'counter'
             ? addPowerCounter(choice.minionUid, choice.baseIndex, context.amount, context.sourceId, timestamp)
             : addTempPower(choice.minionUid, choice.baseIndex, context.amount, context.sourceId, timestamp);
-        return { events: [event] };
+        return buildResult([event]);
     },
 });
 
@@ -630,11 +644,18 @@ function jasonActionTrigger(ctx: TriggerContext) {
 function argonautOnPlay(ctx: AbilityContext): AbilityResult {
     const events: SmashUpEvent[] = [];
     let hasOwnOdysseus = false;
+    let jasonSource: { uid: string; baseIndex: number } | undefined;
     for (let baseIndex = 0; baseIndex < ctx.state.bases.length; baseIndex += 1) {
         for (const minion of ctx.state.bases[baseIndex].minions) {
             if (minion.controller !== ctx.playerId) continue;
             if (minion.defId === 'mythic_greeks_odysseus') {
                 hasOwnOdysseus = true;
+            }
+            if (
+                minion.defId === 'mythic_greeks_jason'
+                && Number(minion.metadata?.mythicGreeksJasonTriggeredTurn ?? -1) !== ctx.state.turnNumber
+            ) {
+                jasonSource = { uid: minion.uid, baseIndex };
             }
             if (minion.defId === 'mythic_greeks_heracles') {
                 events.push(addTempPower(minion.uid, baseIndex, 1, 'mythic_greeks_argonaut_heracles', ctx.now));
@@ -648,10 +669,45 @@ function argonautOnPlay(ctx: AbilityContext): AbilityResult {
             }
         }
     }
-    if (!hasOwnOdysseus) return { events };
+    const jasonBases = jasonSource
+        ? collectBaseTargets(ctx.state, baseIndex => ctx.state.bases[baseIndex].minions.some(minion => minion.controller === ctx.playerId))
+        : [];
+    const nextBasePrompt = jasonSource && jasonBases.length > 0
+        ? {
+            sourceUid: jasonSource.uid,
+            sourceBaseIndex: jasonSource.baseIndex,
+            sourceDefId: 'mythic_greeks_jason',
+            bases: jasonBases,
+        }
+        : undefined;
+    if (!hasOwnOdysseus) {
+        if (!nextBasePrompt) return { events };
+        const jasonPrompt = executeAbilityProgram(greekBasePromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            ...nextBasePrompt,
+        });
+        return runtimeToAbilityResult({
+            events: [...events, ...jasonPrompt.events],
+            matchState: jasonPrompt.matchState,
+        });
+    }
 
     const targets = ownMinionTargets(ctx.state, ctx.playerId);
-    if (targets.length === 0) return { events };
+    if (targets.length === 0) {
+        if (!nextBasePrompt) return { events };
+        const jasonPrompt = executeAbilityProgram(greekBasePromptProgram, {
+            matchState: ctx.matchState,
+            playerId: ctx.playerId,
+            now: ctx.now,
+            ...nextBasePrompt,
+        });
+        return runtimeToAbilityResult({
+            events: [...events, ...jasonPrompt.events],
+            matchState: jasonPrompt.matchState,
+        });
+    }
     const odysseusPrompt = executeAbilityProgram(greekMinionPromptProgram, {
         matchState: ctx.matchState,
         playerId: ctx.playerId,
@@ -661,6 +717,7 @@ function argonautOnPlay(ctx: AbilityContext): AbilityResult {
         targets,
         amount: 1,
         mode: 'counter',
+        ...(nextBasePrompt ? { nextBasePrompt } : {}),
     });
     return {
         events,

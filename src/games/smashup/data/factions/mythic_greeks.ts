@@ -24,6 +24,7 @@ export const MYTHIC_GREEKS_MINIONS: MinionCardDef[] = [
         faction: MYTHIC_GREEKS_FACTION,
         power: 2,
         abilityTags: ['onPlay', 'special'],
+        playAsAction: true,
         count: 4,
         previewRef: { type: 'atlas', atlasId: SHAYU_ATLAS, index: 25 },
     },

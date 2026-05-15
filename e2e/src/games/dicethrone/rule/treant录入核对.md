@@ -27,8 +27,8 @@
 | `quiet-cultivation` | passive | 维持阶段养成树灵 | phaseStart upkeep；seedling +1 | `abilities.ts`/`flowHooks.ts` | L1 |
 | `wild-growth` | offensive | 2 树枝 + 3 树叶，伤害并治疗 | damage 2；heal 1 | `abilities.ts` | L1 |
 | `wild-growth-2` | upgrade | 野蛮生长 II，伤害提升 | damage 4；heal 1 | `cards.ts` + `abilities.ts` | L1 |
-| `rooted` | defensive | 防御掷 3 骰，按树枝/树叶/树灵结算 | branch +1 反击，leaf seedling，spirit life_sap | `abilities.ts` | L1 |
-| `rooted-2` | upgrade | 扎根 II，防御掷 4 骰 | defensive diceCount 4 | `cards.ts` + `abilities.ts` | L1 |
+| `rooted` | defensive | 防御掷 3 骰，按树枝/树叶/树灵结算 | branch +1 反击，leaf seedling，spirit life_sap；`withDamage` 防御时机 | `abilities.ts` | L3：真实防御推进与不可防御跳过防御均已测 |
+| `rooted-2` | upgrade | 扎根 II，防御掷 4 骰 | defensive diceCount 4；复用 `withDamage` 防御时机 | `cards.ts` + `abilities.ts` | L2：共享 rooted 防御合同 |
 | `forest-awakens` | ultimate | 终极技：生命源泉、养成、刺藤、10 伤害 | ultimate；life_sap 1；seedling 5；thorn 1；damage 10 | `abilities.ts` | L1 |
 
 ## Token / 状态逐项核对
@@ -44,4 +44,5 @@
 ## 当前结论
 
 - 旧结论“树灵消费重掷、木苗、刺藤为 L2 债务”已失效：这些机制已实现并进入 L2 测试层。
-- 当前发布口径已收口：新增 token/passive 的关键规则分支均有 L2 单测；幼种树灵、木苗树灵达到 L3 真实 UI 链路；神性树灵、生命源泉、刺藤达到 L4 复杂交互/阶段推进闭环。
+- 2026-05-15 完整流程重审发现 `rooted` 曾停留在静态 L1 且防御时机错误，现已修为 `withDamage` 并补 L2/L3 证据。
+- 本文件不再使用“当前发布口径已收口”概括整批对象；Treant 全对象只能按 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 中逐项 L1/L2/L3/L4 矩阵结论判定。

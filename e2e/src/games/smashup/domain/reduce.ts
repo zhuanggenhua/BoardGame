@@ -446,7 +446,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
         }
 
         case SU_EVENTS.MINION_PLAYED: {
-            const { playerId, cardUid, defId, baseIndex, power, fromDiscard, fromDeck, fromBuried, discardPlaySourceId, consumesNormalLimit, allowImplicitSource } = event.payload;
+            const { playerId, cardUid, defId, baseIndex, power, fromDiscard, fromDeck, fromBuried, discardPlaySourceId, consumesNormalLimit, allowImplicitSource, playAsAction } = event.payload;
             const resolvedBaseIndex = resolveLiveBaseIndex(state, baseIndex, event.payload.baseDefId) ?? baseIndex;
             const player = state.players[playerId];
             const cardInHand = player.hand.some(card => card.uid === cardUid);
@@ -593,6 +593,8 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                             ...newExtraMinionPowerCaps.slice(quotaIndex + 1),
                         ];
                     }
+                } else if (playAsAction) {
+                    finalMinionsPlayed = player.minionsPlayed;
                 } else if (shouldIncrementPlayed && (unrestrictedGlobalQuotaRemaining > 0 || player.minionsPlayed < player.minionLimit)) {
                     finalMinionsPlayed = player.minionsPlayed + 1;
                 }
@@ -635,6 +637,7 @@ export function reduce(state: SmashUpCore, event: SmashUpEvent): SmashUpCore {
                         extraMinionPowerMax: quotaResolution.extraMinionPowerMax,
                         sameNameMinionRemaining: quotaResolution.sameNameMinionRemaining,
                         sameNameMinionDefId: quotaResolution.sameNameMinionDefId,
+                        actionsPlayed: playAsAction ? player.actionsPlayed + 1 : player.actionsPlayed,
                         extraCardsPlayedThisTurn: quotaResolution.usedExtraCard
                             ? (player.extraCardsPlayedThisTurn ?? 0) + 1
                             : player.extraCardsPlayedThisTurn,

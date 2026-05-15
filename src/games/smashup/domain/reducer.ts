@@ -181,6 +181,7 @@ function executeCommand(
                     })()
                         ? { consumesNormalLimit: false }
                         : {}),
+                    ...(command.payload.playAsAction ? { consumesNormalLimit: false, playAsAction: true } : {}),
                 },
                 sourceCommandType: command.type,
                 timestamp: now,

@@ -1158,8 +1158,8 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
           { uid: 'p1-argonaut', defId: 'mythic_greeks_argonaut', type: 'minion' },
         ],
         factions: ['mythic_greeks', 'robots'],
-        minionsPlayed: 0,
-        minionLimit: 2,
+        minionsPlayed: 1,
+        minionLimit: 1,
         actionsPlayed: 0,
         actionLimit: 1,
       },
@@ -1168,11 +1168,19 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
           defId: 'base_oracle_at_delphi',
           minions: [
             { uid: 'greek-odysseus', defId: 'mythic_greeks_odysseus', owner: '1', controller: '1', power: 3 },
+            { uid: 'greek-jason', defId: 'mythic_greeks_jason', owner: '1', controller: '1', power: 4 },
             { uid: 'greek-heracles', defId: 'mythic_greeks_heracles', owner: '1', controller: '1', power: 5 },
             { uid: 'greek-spartan', defId: 'mythic_greeks_spartan', owner: '1', controller: '1', power: 2 },
           ],
         },
-        { defId: 'base_the_deep', minions: [], ongoingActions: [] },
+        {
+          defId: 'base_the_deep',
+          minions: [
+            { uid: 'greek-jason-target', defId: 'sharks_mako', owner: '1', controller: '1', power: 2 },
+            { uid: 'greek-enemy-target', defId: 'tornados_dust_devil', owner: '0', controller: '0', power: 2 },
+          ],
+          ongoingActions: [],
+        },
       ],
       currentPlayer: '1',
       phase: 'playCards',
@@ -1183,25 +1191,40 @@ test.describe('SmashUp shayu 三派系真实入口验证', () => {
     await game.waitForInteraction('mythic_greeks_argonaut_odysseus', 10000);
     await game.screenshot('shayu-mythic-greeks-argonaut-odysseus-prompt', testInfo);
     await game.selectInteractionOptionBy((option: unknown) => optionHasMinionUid(option, 'greek-odysseus'), '阿尔戈触发奥德修斯给奥德修斯放 +1 指示物');
+    await game.waitForInteraction('mythic_greeks_jason', 10000);
+    await game.screenshot('shayu-mythic-greeks-argonaut-jason-prompt', testInfo);
+    await game.selectInteractionOptionBy((option: unknown) => optionHasBaseIndex(option, 1), '阿尔戈继续触发伊阿宋选择第二基地');
     await game.waitForNoInteraction(10000);
 
     await expect.poll(async () => {
       const state = await game.getState();
       const minions = state.core.bases[0].minions;
       const byUid = (uid: string) => minions.find((minion: { uid?: string }) => minion.uid === uid);
+      const secondBaseMinions = state.core.bases[1].minions;
+      const secondByUid = (uid: string) => secondBaseMinions.find((minion: { uid?: string }) => minion.uid === uid);
       return {
         argonautInPlay: minions.some((minion: { uid?: string }) => minion.uid === 'p1-argonaut'),
+        minionsPlayed: state.core.players['1'].minionsPlayed,
+        actionsPlayed: state.core.players['1'].actionsPlayed,
         odysseusCounters: byUid('greek-odysseus')?.powerCounters ?? 0,
         heraclesTempPower: byUid('greek-heracles')?.tempPowerModifier ?? 0,
         spartanCounters: byUid('greek-spartan')?.powerCounters ?? 0,
         spartanTurnFlag: byUid('greek-spartan')?.metadata?.mythicGreeksSpartanTriggeredTurn ?? null,
+        jasonTargetTempPower: secondByUid('greek-jason-target')?.tempPowerModifier ?? 0,
+        enemyTargetTempPower: secondByUid('greek-enemy-target')?.tempPowerModifier ?? 0,
+        jasonTurnFlag: byUid('greek-jason')?.metadata?.mythicGreeksJasonTriggeredTurn ?? null,
       };
     }, { timeout: 5000 }).toEqual({
       argonautInPlay: true,
+      minionsPlayed: 1,
+      actionsPlayed: 1,
       odysseusCounters: 1,
       heraclesTempPower: 1,
       spartanCounters: 1,
       spartanTurnFlag: 1,
+      jasonTargetTempPower: 1,
+      enemyTargetTempPower: 0,
+      jasonTurnFlag: 1,
     });
     await game.screenshot('shayu-mythic-greeks-argonaut-after-action-triggers', testInfo);
   });

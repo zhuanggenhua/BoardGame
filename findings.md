@@ -2071,3 +2071,11 @@
   - `.windsurf/skills/smashup-faction-addition/SKILL.md`
   - `src/games/smashup/__tests__/abilityBehaviorAudit.test.ts`
 - 后续同类审计禁止只写“能移动/能消灭/能拿牌”，必须同时写“能不做且状态不变”或明确说明该效果是强制效果。
+
+## 2026-05-15 Twister 后 shayu 再审计发现
+
+- 已按完整技能流程矩阵重新覆盖 shayu 三派系 39 张卡 + 6 张基地，共 45 对象。
+- 本轮重点复核 Twister 反馈暴露的“可选否定路径”不变量：合法候选存在时，玩家仍必须能拒绝执行，且 finalState 不应发生对应移动/消灭/改变。
+- 三条全链路抽查覆盖不同机制家族：Twister skip、Athena/Trade Winds 多步排序交换、Gone with the Wind afterScoring 延迟清场。
+- 当前未发现新的实现错误；也未发现需要在 Twister 可选否定路径之外再新增规范维度的第二类缺口。
+- 结论边界：这是 post-Twister 完整技能流程再审计和代表性全链路抽查完成，不表示每个对象都新增了一条独立 E2E；逐对象证据等级以 `evidence/smashup/smashup-shayu-post-twister-complete-flow-audit-2026-05-15.md` 矩阵为准。

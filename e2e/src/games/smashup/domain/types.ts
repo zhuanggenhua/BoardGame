@@ -103,6 +103,8 @@ export interface MinionCardDef {
      * 如影舞者：基地计分前可从手牌打出到该基地。
      */
     beforeScoringPlayable?: boolean;
+    /** 是否可以替代本回合的普通行动额度打出这张随从牌。 */
+    playAsAction?: boolean;
     /**
      * 打出时的音效 key（可选）。
      * 如果指定，优先使用此音效；否则 fallback 到派系默认音效池。
@@ -932,6 +934,8 @@ export interface PlayMinionCommand extends Command<typeof SU_COMMANDS.PLAY_MINIO
         baseIndex: number;
         /** 从弃牌堆打出（而非手牌）。由"它们为你而来"等持续效果启用 */
         fromDiscard?: boolean;
+        /** 替代普通行动额度打出这张随从牌，不消耗普通随从额度。 */
+        playAsAction?: boolean;
     };
 }
 
@@ -1064,6 +1068,8 @@ export interface MinionPlayedEvent extends GameEvent<'su:minion_played'> {
         discardPlaySourceId?: string;
         /** 是否消耗正常随从额度 */
         consumesNormalLimit?: boolean;
+        /** 是否替代普通行动额度打出 */
+        playAsAction?: boolean;
         /** 允许隐式来源：跳过卡牌位置检查（用于动态牌源如"亡者崛起"的临时牌源） */
         allowImplicitSource?: boolean;
         /** 强制打出但不触发 onPlay（如最后的歌声） */

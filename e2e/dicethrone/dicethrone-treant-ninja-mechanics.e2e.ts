@@ -202,7 +202,7 @@ const forceFixedDieQueue = (sys: JsonRecord, values: number[]): JsonRecord => ({
     tutorial: {
         ...asRecord(sys.tutorial),
         active: true,
-        randomPolicy: { mode: 'fixed', values },
+        randomPolicy: { mode: 'sequence', values, cursor: 0 },
     },
 });
 
@@ -694,6 +694,149 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             }, { timeout: 10000 }).toEqual({ hp: 28, thorn: 0 });
             await match.hostPage.waitForTimeout(1200);
             await screenshot(match.hostPage, testName, '02-thorn-after-resolve-attack.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('树精扎根防御应真实掷骰结算且不可防御时跳过', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '树精扎根防御应真实掷骰结算且不可防御时跳过';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p0Tokens = asRecord(p0.tokens);
+                const p1 = asRecord(players['1']);
+                const p1Resources = asRecord(p1.resources);
+
+                players['0'] = {
+                    ...p0,
+                    tokens: {
+                        ...p0Tokens,
+                        [TOKEN_IDS.TREANT_SEEDLING]: 0,
+                        [TOKEN_IDS.LIFE_SAP]: 0,
+                    },
+                };
+                players['1'] = {
+                    ...p1,
+                    resources: { ...p1Resources, [RESOURCE_IDS.HP]: 30 },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'defensiveRoll',
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: {
+                        attackerId: '1',
+                        defenderId: '0',
+                        sourceAbilityId: undefined,
+                        defenseAbilityId: 'rooted',
+                        isDefendable: true,
+                        damage: 0,
+                    },
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'defensiveRoll',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                }, [1, 4, 6]);
+                return state;
+            });
+            await screenshot(match.hostPage, testName, '01-rooted-before-defense-advance.png');
+
+            await clickAdvancePhase(match.hostPage, '0');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const players = asRecordMap(core.players);
+                const treant = asRecord(players['0']);
+                const ninja = asRecord(players['1']);
+                const treantTokens = asRecord(treant.tokens) as Record<string, number>;
+                const ninjaResources = asRecord(ninja.resources) as Record<string, number>;
+                return {
+                    attackerHp: ninjaResources[RESOURCE_IDS.HP],
+                    seedling: treantTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+                    lifeSap: treantTokens[TOKEN_IDS.LIFE_SAP] ?? 0,
+                };
+            }, { timeout: 10000 }).toEqual({ attackerHp: 29, seedling: 1, lifeSap: 1 });
+            await screenshot(match.hostPage, testName, '02-rooted-after-defense-advance.png');
+
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p0Tokens = asRecord(p0.tokens);
+                const p1 = asRecord(players['1']);
+                const p1Resources = asRecord(p1.resources);
+
+                players['0'] = {
+                    ...p0,
+                    tokens: {
+                        ...p0Tokens,
+                        [TOKEN_IDS.TREANT_SEEDLING]: 0,
+                        [TOKEN_IDS.LIFE_SAP]: 0,
+                    },
+                };
+                players['1'] = {
+                    ...p1,
+                    resources: { ...p1Resources, [RESOURCE_IDS.HP]: 30 },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'defensiveRoll',
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: {
+                        attackerId: '1',
+                        defenderId: '0',
+                        sourceAbilityId: undefined,
+                        defenseAbilityId: 'rooted',
+                        isDefendable: false,
+                        damage: 0,
+                    },
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'defensiveRoll',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                }, [1, 4, 6]);
+                return state;
+            });
+            await screenshot(match.hostPage, testName, '03-rooted-undefendable-before-advance.png');
+
+            await clickAdvancePhase(match.hostPage, '0');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const players = asRecordMap(core.players);
+                const treant = asRecord(players['0']);
+                const ninja = asRecord(players['1']);
+                const treantTokens = asRecord(treant.tokens) as Record<string, number>;
+                const ninjaResources = asRecord(ninja.resources) as Record<string, number>;
+                return {
+                    attackerHp: ninjaResources[RESOURCE_IDS.HP],
+                    seedling: treantTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+                    lifeSap: treantTokens[TOKEN_IDS.LIFE_SAP] ?? 0,
+                };
+            }, { timeout: 10000 }).toEqual({ attackerHp: 30, seedling: 0, lifeSap: 0 });
+            await screenshot(match.hostPage, testName, '04-rooted-undefendable-after-advance.png');
         } finally {
             await closeMatchContexts(match);
         }

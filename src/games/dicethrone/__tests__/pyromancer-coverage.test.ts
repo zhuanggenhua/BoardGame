@@ -108,7 +108,7 @@ describe('炎术士 GTR 技能覆盖', () => {
                     cmd('ADVANCE_PHASE', '0'),       // → defensiveRoll
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
-                    cmd('SELECT_ABILITY', '1', { abilityId: 'flame-shield' }),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'magma-armor' }),
                     cmd('ADVANCE_PHASE', '1'),       // defensiveRoll exit → main2
                 ],
                 expect: {
@@ -119,6 +119,7 @@ describe('炎术士 GTR 技能覆盖', () => {
                     },
                 },
             });
+            expect(result.actualErrors).toEqual([]);
             expect(result.assertionErrors).toEqual([]);
         });
     });
@@ -152,7 +153,7 @@ describe('炎术士 GTR 技能覆盖', () => {
                     cmd('ADVANCE_PHASE', '0'),       // → defensiveRoll
                     cmd('ROLL_DICE', '1'),
                     cmd('CONFIRM_ROLL', '1'),
-                    cmd('SELECT_ABILITY', '1', { abilityId: 'flame-shield' }),
+                    cmd('SELECT_ABILITY', '1', { abilityId: 'magma-armor' }),
                     cmd('ADVANCE_PHASE', '1'),       // defensiveRoll exit → main2
                 ],
                 expect: {
@@ -163,6 +164,7 @@ describe('炎术士 GTR 技能覆盖', () => {
                     },
                 },
             });
+            expect(result.actualErrors).toEqual([]);
             expect(result.assertionErrors).toEqual([]);
         });
     });

@@ -202,7 +202,7 @@ const ROOTED: AbilityDef = {
                     { face: FACE.SPIRIT, grantToken: { tokenId: TOKEN_IDS.LIFE_SAP, value: 1 } },
                 ],
             },
-            timing: 'immediate',
+            timing: 'withDamage',
         },
     ],
 };

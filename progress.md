@@ -1949,3 +1949,17 @@
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-旋风真实入口必须允许跳过可选移动\shayu-tornados-twister-after-skip.png`
 - `temp/feedback-6a055d1429-twister-task.json` guard 已 `COMPLETE`。
 - 未执行提交、push、部署，也未把生产反馈改成 resolved。
+
+## 2026-05-15 08:13 +08 Twister 后 shayu 完整技能流程再审计收口
+
+- 已完成 post-Twister 防早停 guard：`temp/smashup-shayu-post-twister-loop-2026-05-15.json`。
+- 已新增并回写证据：`evidence/smashup/smashup-shayu-post-twister-complete-flow-audit-2026-05-15.md`。
+- 非浏览器验证沿用本轮已执行结果：
+  - `npx eslint src/games/smashup/abilities/tornados.ts src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts src/games/smashup/__tests__/abilityBehaviorAudit.test.ts e2e/smashup-shayu-factions.e2e.ts` → 0 errors。
+  - `npx vitest run src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts src/games/smashup/__tests__/shayuFactionAbilities.test.ts src/games/smashup/__tests__/shayuEntryConsumption.test.ts` → 3 files passed / 41 tests passed。
+  - `npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/abilityBehaviorAudit.test.ts -t "可选/至多交互|直接入口字段|控制者约束"` → 1 file passed / 3 passed / 24 skipped。
+- 已完成 3 条 E2E 全链路抽查：
+  - Twister 可选否定路径 → `1 passed`，截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-旋风真实入口必须允许跳过可选移动\shayu-tornados-twister-skip-open.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-旋风真实入口必须允许跳过可选移动\shayu-tornados-twister-after-skip.png`。
+  - Mythic Greeks / Tornados 复杂入口 → `1 passed`，截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Mythic-Greeks-与-Tornados-复杂入口覆盖哈迪斯、宙斯、雅典娜和信风\shayu-mythic-greeks-athena-order-open.png`。
+  - Gone with the Wind afterScoring → `1 passed`，截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`、`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-cleanup.png`。
+- 本轮实际看图未发现新的实现错误；未执行提交、push、部署，也未改生产反馈状态。

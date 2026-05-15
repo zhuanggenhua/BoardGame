@@ -1770,10 +1770,25 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             playDeniedSound();
             return;
         }
-        dispatch(SU_COMMANDS.PLAY_MINION, { cardUid, baseIndex });
+        const card = myPlayer?.hand.find(entry => entry.uid === cardUid);
+        const canReplaceAction = card?.type === 'minion' && getMinionDef(card.defId)?.playAsAction === true;
+        const normalValidation = validate(G, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: rootPid,
+            payload: { cardUid, baseIndex },
+        });
+        const actionReplacementValidation = canReplaceAction
+            ? validate(G, {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: rootPid,
+                payload: { cardUid, baseIndex, playAsAction: true },
+            })
+            : { valid: false };
+        const playAsAction = canReplaceAction && !normalValidation.valid && actionReplacementValidation.valid;
+        dispatch(SU_COMMANDS.PLAY_MINION, { cardUid, baseIndex, ...(playAsAction ? { playAsAction: true } : {}) });
         setSelectedCardUid(null);
         setSelectedCardMode(null);
-    }, [dispatch, isTutorialCommandAllowed]);
+    }, [G, dispatch, isTutorialCommandAllowed, myPlayer?.hand, rootPid]);
 
     const handlePlayOngoingAction = useCallback((cardUid: string, baseIndex: number) => {
         if (!isTutorialCommandAllowed(SU_COMMANDS.PLAY_ACTION)) {

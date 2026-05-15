@@ -960,3 +960,12 @@
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Sharks-高风险链覆盖大白鲨天赋结算、飞鲨与激光束真实入口\shayu-sharks-great-white-after-move-destroy.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornados-随风而逝从-afterScoring-窗口打出并让随从逃离清场\shayu-tornados-gone-with-the-wind-after-scoring-open.png`
   - `D:\gongzuo\webgame\BoardGame	est-results\evidence-screenshots\_shared\smashup-shayu-factions.e2e\Tornado-Alley-基地能力在本回合首次移入时触发，第二次移入不重复触发\shayu-tornado-alley-trigger-open.png`
+
+## Addendum（2026-05-15 08:13 +08）：Twister 后 shayu 完整技能流程再审计
+
+- [x] 已建立并完成 post-Twister 防早停 guard：`temp/smashup-shayu-post-twister-loop-2026-05-15.json`。
+- [x] 已新增完整技能流程矩阵：`evidence/smashup/smashup-shayu-post-twister-complete-flow-audit-2026-05-15.md`，覆盖 Sharks 12 + Tornados 12 + Mythic Greeks 15 + shayu 基地 6，共 45 对象。
+- [x] 已把 Twister 反馈新增的不变量应用回全集：凡“你可以 / 至多 / 任意数量”必须有拒绝/空选证据，或明确说明可选性由激活入口承载。
+- [x] 已完成 3 条不同机制家族全链路抽查：Twister 可选跳过、Athena/Trade Winds 多步链、Gone with the Wind afterScoring 链。
+- [x] 本轮未发现新的实现错误；因此没有触发 Twister 可选否定路径之外的新规范升级。
+- [ ] 未执行提交、push、部署，也未把生产反馈状态改为 resolved。
