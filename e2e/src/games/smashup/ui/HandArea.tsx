@@ -32,6 +32,14 @@ const DESKTOP_SELECTED_Y_LIFT_VW = 5;
 const MOBILE_SELECTED_Y_LIFT_VW = 3.8;
 const DRAG_START_DISTANCE_PX = 12;
 const DRAG_DROP_SHADOW = '0 0 30px rgba(251, 191, 36, 0.38)';
+
+function handInlineSize(value: number, compactLayout: boolean): string {
+    if (!compactLayout) {
+        return `${value}vw`;
+    }
+    const multiplier = Number.isFinite(value) ? Number(value.toFixed(4)) : 0;
+    return `calc(var(--mobile-layout-inline-unit, 1vw) * ${multiplier})`;
+}
 type Props = {
     hand: CardInstance[];
     selectedCardUid: string | null;
@@ -242,6 +250,13 @@ const HandCard: React.FC<HandCardProps> = ({
     const selectedLiftVw = compactLayout ? MOBILE_SELECTED_Y_LIFT_VW : DESKTOP_SELECTED_Y_LIFT_VW;
     const inspectButtonSizeVw = compactLayout ? 3.2 : 2;
     const inspectIconSizeVw = compactLayout ? 1.55 : 1.1;
+    const cardWidth = handInlineSize(cardWidthVw, compactLayout);
+    const spacing = handInlineSize(spacingVw, compactLayout);
+    const selectedLift = handInlineSize(-selectedLiftVw, compactLayout);
+    const discardLift = handInlineSize(-2, compactLayout);
+    const inspectButtonInset = handInlineSize(compactLayout ? 0.45 : 0.3, compactLayout);
+    const inspectButtonSize = handInlineSize(inspectButtonSizeVw, compactLayout);
+    const inspectIconSize = handInlineSize(inspectIconSizeVw, compactLayout);
 
     // zIndex 用 CSS hover 提升，避免 state 变化触发 layout 重算导致抽搐
     // 弃牌选中时不提升 z-index，避免遮挡其他卡牌选择
@@ -256,9 +271,9 @@ const HandCard: React.FC<HandCardProps> = ({
                 ${isOpponentView ? 'cursor-default' : interactionMode === 'drag' ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}
             `}
             style={{
-                width: `${cardWidthVw}vw`,
+                width: cardWidth,
                 aspectRatio: `${CARD_ASPECT_RATIO}`,
-                marginLeft: index === 0 ? 0 : `${spacingVw}vw`,
+                marginLeft: index === 0 ? 0 : spacing,
                 zIndex: isDragging ? 200 : baseZIndex,
                 boxShadow: isDragging && isDragPlayable ? DRAG_DROP_SHADOW : undefined,
                 touchAction: interactionMode === 'drag' ? 'none' : undefined,
@@ -268,7 +283,7 @@ const HandCard: React.FC<HandCardProps> = ({
             animate={{
                 // 弃牌选中时小幅上移（2vw），普通选中时大幅上移（5vw）
                 x: 0,
-                y: isSelected && !isDiscardSelected ? `-${selectedLiftVw}vw` : isDiscardSelected ? '-2vw' : '0',
+                y: isSelected && !isDiscardSelected ? selectedLift : isDiscardSelected ? discardLift : '0',
                 scale: (isSelected && !isDiscardSelected) ? 1.15 : 1,
                 rotate: isShaking ? [0, -6, 6, -4, 4, 0] : ((isSelected && !isDiscardSelected) ? 0 : rotationSeed),
                 opacity: 1
@@ -313,10 +328,10 @@ const HandCard: React.FC<HandCardProps> = ({
                         data-testid={`su-hand-card-inspect-${card.uid}`}
                         className={`absolute flex items-center justify-center bg-black/70 hover:bg-amber-500/90 text-white rounded-full shadow-xl border-2 border-white/30 z-50 cursor-zoom-in transition-[opacity,background-color] duration-200 ${(showTouchInspectButton || isHovered) ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
                         style={{
-                            top: compactLayout ? '0.45vw' : '0.3vw',
-                            right: compactLayout ? '0.45vw' : '0.3vw',
-                            width: `${inspectButtonSizeVw}vw`,
-                            height: `${inspectButtonSizeVw}vw`,
+                            top: inspectButtonInset,
+                            right: inspectButtonInset,
+                            width: inspectButtonSize,
+                            height: inspectButtonSize,
                         }}
                         onClick={(e) => {
                             e.stopPropagation();
@@ -325,7 +340,7 @@ const HandCard: React.FC<HandCardProps> = ({
                     >
                         <svg
                             className="fill-current"
-                            style={{ width: `${inspectIconSizeVw}vw`, height: `${inspectIconSizeVw}vw` }}
+                            style={{ width: inspectIconSize, height: inspectIconSize }}
                             viewBox="0 0 20 20"
                         >
                             <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />

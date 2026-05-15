@@ -181,3 +181,18 @@ Rooted 不可防御路径：
 - Rooted / Blink 暴露的不是单点录入问题，而是 DiceThrone 防御 resolver 只消费 `withDamage/postDamage`，但 AbilityDef 类型允许 `immediate/preDefense`，旧审计没有从消费点反查字段合法性。
 - 新增合同测试还命中旧英雄 Pyromancer `magma-armor` I/II/III，说明影响面超出 Treant/Ninja。
 - 本文件所有“重审闭环”结论降级为：已完成一轮新增批次重审与部分共享根因修复；不得解释为 DiceThrone 新旧英雄全部基础技能已无遗漏。
+
+## 2026-05-15 追加抽样深审：Token、手牌技能、基础技能
+
+新增证据文档：
+
+- `evidence/dicethrone/dicethrone-treant-ninja-sample-deep-audit-2026-05-15.md`
+
+本轮继续抽查 Treant / Ninja 的 Token、手牌技能和基础技能，发现此前矩阵里仍有消费点漏审：
+
+- `rooted-2`：旧矩阵写作“共享 rooted 合同，缺专属 L3”，该结论不够准确。实际防御 resolver 消费 `effects[0].action.diceCount`，旧实现虽然 `trigger.diceCount=4`，但仍继承基础 3 骰 effects。现已显式定义 4 骰 effects，并补 L2 合同测试。
+- `treant-card-trample`、`treant-card-soulfire`：旧结论不能只写“攻击修正卡 L1/L2，缺专属 E2E”。真实卡牌打出链只解析 `immediate`，旧 `withDamage` 导致打出后奖励骰加伤不会执行。现已改为 `immediate + resolutionMode: 'attackBonus'`，并补 L2 行为测试。
+- `treant-card-mother-tree`：旧“缺行为测试”已升级为 L2，已覆盖树灵分支与否则抽牌分支；仍缺真实打出 E2E。
+- `quiet-cultivation`：旧“缺 L2/L3 专项”已升级为 L2，已覆盖 upkeep 进入时自动养成；仍缺真实流程 E2E。
+
+因此，本文件此前“本轮循环结果”仍只能解释为多轮抽查与部分根因修复，不能升级为 Treant 全对象全端到端完成。

@@ -77,12 +77,14 @@ export const TREANT_CARDS: AbilityCard[] = [
                 type: 'rollDie',
                 target: 'self',
                 diceCount: 5,
+                resolutionMode: 'attackBonus',
+                attackBonusSourceCardId: 'treant-card-trample',
                 conditionalEffects: [
                     { face: TREANT_DICE_FACE_IDS.BRANCH, bonusDamage: 1 },
                     { face: TREANT_DICE_FACE_IDS.SPIRIT, grantToken: { tokenId: TOKEN_IDS.THORN, value: 1, target: 'opponent' } },
                 ],
             },
-            timing: 'withDamage',
+            timing: 'immediate',
         }],
     },
     {
@@ -189,13 +191,15 @@ export const TREANT_CARDS: AbilityCard[] = [
                 type: 'rollDie',
                 target: 'self',
                 diceCount: 3,
+                resolutionMode: 'attackBonus',
+                attackBonusSourceCardId: 'treant-card-soulfire',
                 conditionalEffects: [
                     { face: TREANT_DICE_FACE_IDS.BRANCH, bonusDamage: 1 },
                     { face: TREANT_DICE_FACE_IDS.LEAF, grantToken: { tokenId: TOKEN_IDS.LIFE_SAP, value: 1 } },
                     { face: TREANT_DICE_FACE_IDS.SPIRIT, grantToken: { tokenId: TOKEN_IDS.TREANT_SEEDLING, value: 1 } },
                 ],
             },
-            timing: 'withDamage',
+            timing: 'immediate',
         }],
     },
     {

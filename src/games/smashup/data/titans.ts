@@ -9,7 +9,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.DINOSAURS,
         abilityTags: ['special', 'ongoing'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
         ],
         summonMode: 'explicit',
@@ -22,7 +22,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.NINJAS,
         abilityTags: ['special', 'ongoing'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
         ],
         summonMode: 'explicit',
@@ -35,7 +35,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.BEAR_CAVALRY,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -50,7 +50,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.GHOSTS,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -64,7 +64,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.FAIRIES,
         abilityTags: ['special', 'ongoing'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
         ],
         summonMode: 'insteadOfRegularMinionAndAction',
@@ -77,7 +77,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.CHANGERBOTS,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -91,7 +91,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.EXPLORERS,
         abilityTags: ['special', 'ongoing'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
         ],
         summonMode: 'insteadOfRegularMinion',
@@ -104,7 +104,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.GIANT_ANTS,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -118,7 +118,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.INNSMOUTH,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -132,7 +132,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.IGNOBLES,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -146,7 +146,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.ITTY_CRITTERS,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -160,7 +160,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.KILLER_PLANTS,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -174,7 +174,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.KAIJU,
         abilityTags: ['special', 'ongoing'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
         ],
         summonMode: 'insteadOfRegularMinion',
@@ -187,7 +187,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.MAGICAL_GIRLS,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -201,7 +201,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.MEGA_TROOPERS,
         abilityTags: ['special', 'ongoing'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
         ],
         summonMode: 'insteadOfRegularMinion',
@@ -214,7 +214,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -242,7 +242,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.TRICKSTERS,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -257,7 +257,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.VAMPIRES,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -271,7 +271,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.WEREWOLVES,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -285,7 +285,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.WIZARDS,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -299,7 +299,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.PIRATES,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -313,7 +313,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.FRANKENSTEIN,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -327,7 +327,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.SUPER_SPIES,
         abilityTags: ['special', 'ongoing', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
@@ -341,7 +341,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.TIME_TRAVELERS,
         abilityTags: ['special', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
         summonMode: 'explicit',
@@ -354,7 +354,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.ANCIENT_EGYPTIANS,
         abilityTags: ['special', 'talent'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'talent', zone: 'board', window: 'playCards' },
         ],
         summonMode: 'explicit',
@@ -367,7 +367,7 @@ export const TITAN_CARD_DEFS: TitanCardDef[] = [
         faction: SMASHUP_FACTION_IDS.COWBOYS,
         abilityTags: ['special', 'ongoing'],
         activatableAbilities: [
-            { kind: 'special', zone: 'setaside' },
+            { kind: 'special', zone: 'setaside', window: 'playCards' },
             { kind: 'ongoing', zone: 'board', window: 'playCards' },
         ],
         summonMode: 'explicit',

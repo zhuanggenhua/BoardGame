@@ -175,6 +175,31 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 
 ## 测试策略
 
+### 统一测试标准
+
+本项目测试统一遵循 TDD 行为 seam 原则：测试保护公开行为，不保护实现细节。修 bug 或重构时，如果测试需要大面积同步修改，必须先判断是否存在以下问题：
+
+- 测试直接读取内部系统状态而不是通过测试 helper 表达行为。
+- 测试断言项目自有模块的调用次数/调用顺序。
+- 同一测试在 `src/` 与镜像目录中重复维护。
+- 巨型测试文件继续承载无关行为簇。
+
+默认收敛方向：
+
+- 游戏规则与命令行为优先用 `GameTestRunner` / 游戏专用 `runCommand` / `executePipeline` helper。
+- 交互链优先使用游戏专用 prompt facade，不在用例中散落直读 `sys.interaction`。
+- UI 交互只用 E2E 证明真实入口与可见结果。
+- 审计测试用于批量合同验证，不代替单个 bug 的最小行为回归。
+- 重构导致测试频繁跟改时，先补测试接口/行为端口，再改用例；测试文件不直接适配内部字段形状。
+
+### `e2e/src/games` 镜像目录口径
+
+- `src/games/**/__tests__` 是游戏 Vitest 行为测试的权威来源。
+- `e2e/src/games/**/__tests__` 仅作为历史兼容镜像/质量门禁映射入口，不作为新增测试或手工维护入口。
+- 新增或重构游戏行为测试时，默认只在 `src/games/**/__tests__` 下建立或移动用例；除非正在处理镜像目录迁移本身，不得把 `e2e/src/games` 当成第二份正式测试来源。
+- 质量门禁已将 `e2e/src/` 变更映射回工作区 `src/` 路径；后续治理目标是移除双份维护，而不是继续要求人工同步两份测试。
+- 新增或迁出的游戏行为测试必须可运行，不得携带 `it.skip` / `test.skip` / `describe.skip`。旧 skipped 用例只有在补齐真实行为链路并跑绿后才允许迁入新的聚焦文件。
+
 ### 测试覆盖要求
 
 | 类别 | 覆盖点 |
@@ -228,6 +253,22 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 
 - 正向测试：描述预期行为（`"成功创建用户"`）
 - 错误测试：标注错误码（`"无权限操作 - unauthorized"`）
+
+### 测试文件组织规范
+
+- 文件名必须表达测试对象和行为，例如 `audio/faction-audio-config.test.ts`、`prompts/alien-probe-choice.test.ts`、`abilities/cowboys-duel.test.ts`。
+- 新增游戏行为测试默认放在 `src/games/<gameId>/__tests__/` 下，按能力簇、交互簇、配置合同或页面行为建立子目录。
+- 禁止新增或继续扩写 `new*`、`misc`、`regression`、`feedback`、`fixes` 等泛名测试文件；遇到这类文件时，应先判断能否迁出本轮相关行为簇。
+- 同类覆盖只保留必要代表性路径：至少 1 条正向主路径，必要时 1 条负向/边界路径；重复数据面优先改成数据驱动或审计合同，不用多个近似用例堆在同一文件。
+- `e2e/src/games/**/__tests__` 不作为新增游戏行为测试目录；若历史镜像仍存在，只按兼容债务处理。
+- `quality:changed` 会调用 `scripts/infra/testing-structure-guard.mjs` 检查游戏测试结构；本地也可直接运行 `npm run test:structure`。该门禁同时阻止非系统契约游戏测试新增裸 prompt 内部访问，包括 `getInteractionsFromMS`、`prompt.data.options`、`SYS_INTERACTION_RESPOND`、`sys.interaction.current`；旧泛名文件净删减时只警告，迁出的聚焦测试必须改走 facade。
+
+### 测试接口规范
+
+- 测试接口是测试可持续性的主要边界：实现重构可以改变内部模块、字段和 handler，但不应迫使业务测试逐个改断言。
+- 新增交互能力测试时，优先扩展对应游戏的 prompt facade；测试体只通过 facade 读取 prompt、选择候选和响应交互。
+- 禁止把“直接读内部字段更方便”当作默认理由。只有测试目标就是底层系统契约时，才允许直读内部字段，并应把测试放到对应系统测试文件中。
+- Smash Up 交互测试的默认端口包括 `getSimpleChoicePrompt`、`getPromptOption`、`respondToPrompt`、`respondToPromptOptions`、`expectNoPrompt`、`getReactionPrompt` 与 `getReactionPromptOptionBySourceDefId`；缺少表达力时先补 helper，再改用例。
 
 ### 测试最佳实践
 

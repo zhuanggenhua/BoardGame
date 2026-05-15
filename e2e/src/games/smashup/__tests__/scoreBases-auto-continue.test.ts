@@ -1768,7 +1768,7 @@ describe('scoreBases 阶段自动推进', () => {
         expect(resolved.events).toHaveLength(0);
     });
 
-    it('smashup_reaction_choose 构建反应选项时，应去重重复的泰坦 special 候选', () => {
+    it('smashup_reaction_choose 不应暴露仅限 playCards 的重复泰坦 special 候选', () => {
         registerArcaneProtectorSpecialForTests();
         const initialState = {
             core: makeMinimalCore({
@@ -1871,7 +1871,7 @@ describe('scoreBases 阶段自动推进', () => {
             && option.value.titanUid === 'titan_1_wizards_arcane_protector',
         );
 
-        expect(specialOptions).toHaveLength(1);
+        expect(specialOptions).toHaveLength(0);
         expect(options.filter((option) => option.value.kind === 'pass')).toHaveLength(1);
     });
 
@@ -1976,7 +1976,7 @@ describe('scoreBases 阶段自动推进', () => {
         expect(resolution?.action.kind).toBe('response-pass');
     });
 
-    it('AI 在计分阶段仅存在可激活的泰坦 special 时也不应暴露 advance-phase', () => {
+    it('AI 在计分阶段仅存在 playCards-only 泰坦 special 时应暴露 advance-phase', () => {
         const state: MatchState<SmashUpCore> = {
             core: makeMinimalCore({
                 bases: [makeBase('base_pirate_cove', [
@@ -2013,8 +2013,8 @@ describe('scoreBases 阶段自动推进', () => {
         expect(legalActions.some(action =>
             action.kind === 'activate-special'
             && (action.metadata as any)?.titanUid === 't-megabot-setaside',
-        )).toBe(true);
-        expect(legalActions.some(action => action.kind === 'advance-phase')).toBe(false);
+        )).toBe(false);
+        expect(legalActions.some(action => action.kind === 'advance-phase')).toBe(true);
     });
 
     it('AI 在计分阶段打出泰坦后，若已无后续 special，应恢复暴露 advance-phase 收口', () => {

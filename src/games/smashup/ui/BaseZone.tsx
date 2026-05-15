@@ -18,7 +18,7 @@ import { useSmashUpOverlay } from './SmashUpOverlayContext';
 import { CardPreview } from '../../../components/common/media/CardPreview';
 import { PLAYER_CONFIG } from './playerConfig';
 import { UI_Z_INDEX } from '../../../core';
-import { getLayoutConfig } from './layoutConfig';
+import { getLayoutConfig, layoutInlineSize } from './layoutConfig';
 import {
     buildMinionUidSnapshotByController,
     resolveEnteringMinionUidsByController,
@@ -274,8 +274,8 @@ export const BaseZone: React.FC<{
                 key={oa.uid}
                 className="group relative"
                 style={{
-                    width: `${layout.ongoingCardWidth}vw`,
-                    marginLeft: isFirstInGroup ? '0vw' : `-${ongoingCardOverlap}vw`,
+                    width: layoutInlineSize(layout.ongoingCardWidth, layout),
+                    marginLeft: isFirstInGroup ? '0vw' : layoutInlineSize(-ongoingCardOverlap, layout),
                 }}
             >
                 <motion.div
@@ -425,7 +425,7 @@ export const BaseZone: React.FC<{
                 : `${pConf.border} ${pConf.shadow}`}`;
 
         return (
-            <div className="group relative hover:!z-[999]" style={{ width: `${titanCardWidth}vw` }}>
+            <div className="group relative hover:!z-[999]" style={{ width: layoutInlineSize(titanCardWidth, layout) }}>
             <motion.div
                 key={titan.uid}
                 data-titan-uid={titan.uid}
@@ -575,14 +575,17 @@ export const BaseZone: React.FC<{
     return (
         <div 
             className="relative flex flex-col items-center group/base"
-            style={{ marginLeft: `${layout.baseGap / 2}vw`, marginRight: `${layout.baseGap / 2}vw` }}
+            style={{
+                marginLeft: layoutInlineSize(layout.baseGap / 2, layout),
+                marginRight: layoutInlineSize(layout.baseGap / 2, layout),
+            }}
         >
-            <div className="relative flex flex-col items-center" style={{ width: `${layout.baseCardWidth}vw` }}>
+            <div className="relative flex flex-col items-center" style={{ width: layoutInlineSize(layout.baseCardWidth, layout) }}>
             {/* --- ONGOING EFFECTS (above base card, absolute positioned) --- */}
             {hasOngoingRow && !hasTitanRail && (
                 <div 
                     className="absolute left-0 flex items-end gap-0 z-30"
-                    style={{ top: `-${layout.ongoingTopOffset}vw` }}
+                    style={{ top: layoutInlineSize(-layout.ongoingTopOffset, layout) }}
                 >
                     {ongoingActions.map((oa, idx) => renderOngoingCard(oa, idx, idx === 0))}
                 </div>
@@ -594,8 +597,8 @@ export const BaseZone: React.FC<{
                         <div
                             className="absolute flex items-end gap-0 z-30"
                             style={{
-                                top: `-${layout.ongoingTopOffset}vw`,
-                                left: `calc(50% - ${titanSideContainerAnchorOffset}vw)`,
+                                top: layoutInlineSize(-layout.ongoingTopOffset, layout),
+                                left: `calc(50% - ${layoutInlineSize(titanSideContainerAnchorOffset, layout)})`,
                                 transform: 'translateX(-100%)',
                             }}
                         >
@@ -606,8 +609,8 @@ export const BaseZone: React.FC<{
                         <div
                             className="absolute flex items-end gap-0 z-30"
                             style={{
-                                top: `-${layout.ongoingTopOffset}vw`,
-                                left: `calc(50% + ${titanSideContainerAnchorOffset}vw)`,
+                                top: layoutInlineSize(-layout.ongoingTopOffset, layout),
+                                left: `calc(50% + ${layoutInlineSize(titanSideContainerAnchorOffset, layout)})`,
                             }}
                         >
                             {rightOngoingActions.map((oa, idx) => renderOngoingCard(oa, leftOngoingActions.length + idx, idx === 0))}
@@ -620,8 +623,8 @@ export const BaseZone: React.FC<{
                 <div
                     className="absolute left-1/2 flex items-center z-40"
                     style={{
-                        top: `${titanRowTop}vw`,
-                        gap: `${titanRowGap}vw`,
+                        top: layoutInlineSize(titanRowTop, layout),
+                        gap: layoutInlineSize(titanRowGap, layout),
                         transform: 'translateX(-50%)',
                     }}
                 >
@@ -646,7 +649,7 @@ export const BaseZone: React.FC<{
                 data-testid={`base-zone-${baseIndex}`}
                 className={`relative aspect-[1.43] transition-all duration-300 z-20 ${baseContainerClassName}`}
                 style={{
-                    width: `${layout.baseCardWidth}vw`,
+                    width: layoutInlineSize(layout.baseCardWidth, layout),
                 }}
             >
                 <div
@@ -787,7 +790,7 @@ export const BaseZone: React.FC<{
             {/* --- PLAYER COLUMNS CONTAINER --- */}
             <div 
                 className="flex items-start justify-center w-full pt-[0.5vw]"
-                style={{ gap: `${layout.playerColumnGap}vw` }}
+                style={{ gap: layoutInlineSize(layout.playerColumnGap, layout) }}
             >
                 {turnOrder.map(pid => {
                     const minions = minionsByController[pid] || [];
@@ -809,7 +812,7 @@ export const BaseZone: React.FC<{
                             data-testid={`su-base-player-column-${baseIndex}-${pid}`}
                             data-player-id={pid}
                             className="flex flex-col items-center relative"
-                            style={{ minWidth: `${layout.minionCardWidth}vw` }}
+                            style={{ minWidth: layoutInlineSize(layout.minionCardWidth, layout) }}
                             transition={{ layout: { duration: 0.22, ease: 'easeOut' } }}
                         >
 
@@ -861,8 +864,8 @@ export const BaseZone: React.FC<{
                                                             key={buried.uid}
                                                             className="group relative"
                                                             style={{
-                                                                width: `${buriedCardWidth}vw`,
-                                                                marginBottom: `${index === buriedCards.length - 1 ? buriedToMinionOffset : buriedStackOffset}vw`,
+                                                                width: layoutInlineSize(buriedCardWidth, layout),
+                                                                marginBottom: layoutInlineSize(index === buriedCards.length - 1 ? buriedToMinionOffset : buriedStackOffset, layout),
                                                                 transform: `rotate(${(index % 2 === 0 ? -1 : 1) * 1.5}deg)`,
                                                             }}
                                                         >
@@ -969,7 +972,7 @@ export const BaseZone: React.FC<{
                                     <div
                                         data-testid={`su-base-empty-slot-${baseIndex}-${pid}`}
                                         className={`h-[2vw] rounded-sm border md-2 border-dashed border-slate-300/30 ${isDeployMode && isMyTurn ? 'animate-pulse bg-white/5' : ''}`}
-                                        style={{ width: `${layout.minionCardWidth}vw` }}
+                                        style={{ width: layoutInlineSize(layout.minionCardWidth, layout) }}
                                     >
                                         {isDeployMode && isMyTurn && myPlayerId === pid && minions.length === 0 && (
                                             <div className="w-full h-full flex items-center justify-center text-white/50 text-[0.8vw]">+</div>
@@ -1125,9 +1128,9 @@ const MinionCard: React.FC<{
     const rotation = (seed % 6) - 3;
     const selectionStackOffset = Math.max(layout.minionStackOffset * 0.2, -1.2);
     const stackStyle = {
-        marginTop: index === 0 ? 0 : `${isMinionSelectMode ? selectionStackOffset : layout.minionStackOffset}vw`,
+        marginTop: index === 0 ? 0 : layoutInlineSize(isMinionSelectMode ? selectionStackOffset : layout.minionStackOffset, layout),
         zIndex: isMinionSelectMode ? 100 + index : index + 1,
-        width: `${layout.minionCardWidth}vw`,
+        width: layoutInlineSize(layout.minionCardWidth, layout),
     };
     const {
         showDesktopInspectButton,
@@ -1388,12 +1391,12 @@ const MinionCard: React.FC<{
                     {/* 行动卡选择模式下始终显示（不需要 hover） */}
                     {/* 最右侧基地的最右边玩家：显示在左侧；其他：显示在右侧 */}
                     <div
-                        className={`absolute top-0 flex gap-[0.2vw] ${attachedActionsPositionClass}
+                        className={`absolute top-0 flex ${attachedActionsPositionClass}
                             ${shouldShowAttachedActions
                                 ? 'opacity-100 scale-100 pointer-events-auto'
                                 : 'opacity-0 group-hover:opacity-100 scale-90 group-hover:scale-100 transition-all duration-150 pointer-events-none group-hover:pointer-events-auto'
                             }`}
-                        style={{ zIndex: UI_Z_INDEX.tooltip }}
+                        style={{ zIndex: UI_Z_INDEX.tooltip, gap: layoutInlineSize(0.2, layout) }}
                     >
                         {minion.attachedActions.map((aa) => {
                             const actionDef = getCardDef(aa.defId);
@@ -1430,7 +1433,7 @@ const MinionCard: React.FC<{
                                             onViewAction(aa.defId);
                                         }
                                     }}
-                                    className={`w-[3vw] aspect-[0.714] bg-white rounded-[0.1vw] shadow-lg cursor-pointer
+                                    className={`aspect-[0.714] bg-white rounded-[0.1vw] shadow-lg cursor-pointer
                                         hover:scale-[2] ${shouldShowAttachedLeft ? 'hover:-translate-x-[0.8vw]' : 'hover:translate-x-[0.8vw]'} transition-transform duration-150
                                         border-[0.08vw] ${isDimmedAA
                                             ? 'opacity-40 grayscale cursor-not-allowed border-slate-400'
@@ -1444,6 +1447,7 @@ const MinionCard: React.FC<{
                                             ? USED_STATE_CLASS
                                             : 'border-green-300 ring-1 ring-green-300/65 shadow-[0_0_10px_rgba(134,239,172,0.18)]'
                                         }`}
+                                    style={{ width: layoutInlineSize(3, layout) }}
                                     title={actionTitle}
                                 >
                                     <div className="w-full h-full overflow-hidden rounded-[0.06vw]">

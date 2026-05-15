@@ -6,6 +6,24 @@
 - 当前状态：**final-verification**。C1-C5 已补齐证据矩阵，最终完成态以 guard 与回归验证输出为准。
 - 审计全集：Sharks 12 张 + Tornados 12 张 + Mythic Greeks 15 张 + 新基地 6 张 = **45 个对象**。
 
+## 2026-05-15 失效结论回写：Argonaut 暴露“对象级 pass 未逐子句核销”
+
+后续长描述复杂对象抽样发现 `mythic_greeks_argonaut` 仍存在两个漏项：
+
+1. 卡面第二句“任何你可以打出行动的时候，你可以改为打出这张牌”未被旧矩阵强制映射到命令入口和额度消耗，因此旧实现只能普通随从打出，不能替代行动额度打出。
+2. 卡面第一句“触发所有会因你打出一个行动而触发的能力”旧审计只看了 Odysseus / Heracles / Spartan 代表触发，漏掉 Jason 的 onActionPlayed base prompt。
+
+旧结论失效原因：
+
+- 旧矩阵按“对象行”核销，写了 `mythic_greeks_argonaut` L2/L3/L4 代表链，但没有把真相源文本拆成 `C1 触发所有 action 后能力`、`C2 可替代行动打出`、`C3 Jason once/turn base prompt` 等子句逐项核销。
+- 因此“Argonaut 代表链通过”只能证明部分 action-trigger 已触发，不能证明所有子句都实现。
+
+修复与新增证据：
+
+- 修复证据见 `evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`。
+- 新通用门禁已写入 `docs/ai-rules/testing-audit.md`：所有游戏审计必须先拆规则文本子句，任一子句缺实现/证据时，整对象不得标 `passed`。
+- 本文后续读取时，`mythic_greeks_argonaut` 的旧 L2/L3/L4 结论必须按 2026-05-15 修复后的证据重新理解；不能再引用 2026-05-12 的对象级 pass 作为完整证明。
+
 ## 证据层级定义
 
 - L1：静态/数据/注册/字段/素材/入口结构。

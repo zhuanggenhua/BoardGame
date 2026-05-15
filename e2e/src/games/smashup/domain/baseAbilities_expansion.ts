@@ -19,6 +19,7 @@ import { getEffectivePower } from './ongoingModifiers';
 import {
     grantContextualExtraAction,
     grantContextualExtraMinion,
+    grantExtraMinion,
     grantExtraAction,
     addTempPower,
     recoverCardsFromDiscard,
@@ -501,9 +502,19 @@ export function registerExpansionBaseAbilities(): void {
     });
 
     // ── 神秘花园（Secret Garden）──────────────────────────────
-    // "On your turn" 语义统一在进入 playCards 时发放额度，
-    // 避免把 phase 2 持续许可错误建模为 startTurn 事件。
-    // 发放逻辑见 domain/index.ts 的 collectPhaseTwoOngoingExtraEvents。
+    // "On your turn, you may play an extra minion of power 2 or less here."
+    // 历史正确行为：回合开始授予本回合可暂存的基地限定额度；
+    // power≤2 限制由基地 restrictions.extraPlayMinionPowerMax 统一消费。
+    registerBaseAbility('base_secret_garden', 'onTurnStart', (ctx) => {
+        return {
+            events: [grantExtraMinion(ctx.playerId, '神秘花园：额外打出力量≤2的随从', ctx.now, ctx.baseIndex, { playTiming: 'banked' })],
+        };
+    });
+    registerBaseAbility('base_secret_garden_pod', 'onTurnStart', (ctx) => {
+        return {
+            events: [grantExtraMinion(ctx.playerId, '神秘花园：额外打出力量≤2的随从', ctx.now, ctx.baseIndex, { playTiming: 'banked' })],
+        };
+    });
 
     // ── 发明家沙龙（Inventor's Salon）──────────────────────────
     // "在这个基地计分后，冠军可以从他的弃牌堆中选取一张战术卡将其置入他的手牌堆?

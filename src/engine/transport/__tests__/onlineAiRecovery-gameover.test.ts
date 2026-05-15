@@ -206,6 +206,40 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result?.resolution.action.commands).toEqual([]);
     });
 
+    it('Splendor 未开局时不得触发 active-turn legal-action watchdog', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                currentPlayer: '1',
+                hostStarted: false,
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'main1',
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+            gameId: 'splendor',
+        });
+
+        expect(result).toBeNull();
+    });
+
     it('游戏结束后即使有交互也应该返回 null', () => {
         // 构造一个游戏已结束且有交互的状态
         const sharedState: MatchState<unknown> = {

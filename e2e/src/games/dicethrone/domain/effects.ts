@@ -30,6 +30,7 @@ import type {
     BonusDiceRerollRequestedEvent,
     PendingBonusDiceSettlement,
     DieFace,
+    BonusDamageAddedEvent,
 } from './types';
 import { CP_MAX } from './types';
 import { buildDrawEvents } from './deckEvents';
@@ -765,6 +766,21 @@ function resolveEffectAction(
             // 骰子特写展示（单骰或多骰都显示）
             if (diceCount >= 1) {
                 events.push(createDisplayOnlySettlement(sourceAbilityId, targetId, targetId, rollDice, timestamp));
+            }
+
+            if (action.resolutionMode === 'attackBonus' && ctx.accumulatedBonusDamage && ctx.accumulatedBonusDamage > 0) {
+                events.push({
+                    type: 'BONUS_DAMAGE_ADDED',
+                    payload: {
+                        playerId: attackerId,
+                        amount: ctx.accumulatedBonusDamage,
+                        sourceCardId: action.attackBonusSourceCardId ?? sourceAbilityId,
+                    },
+                    sourceCommandType: 'ABILITY_EFFECT',
+                    timestamp,
+                    sfxKey,
+                } as BonusDamageAddedEvent);
+                ctx.accumulatedBonusDamage = 0;
             }
             break;
         }

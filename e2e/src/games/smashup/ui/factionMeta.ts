@@ -23,7 +23,7 @@ import {
     Wand2,
     type LucideIcon,
 } from 'lucide-react';
-import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { isSmashUpFactionImplementationInProgress, SMASHUP_FACTION_IDS } from '../domain/ids';
 import { AntIcon, CowboyHatIcon, OctopusHeadIcon, ShurikenIcon } from './icons/CustomIcons';
 
 export interface FactionMeta {
@@ -134,15 +134,6 @@ export const FACTION_METADATA: FactionMeta[] = [
     { id: SMASHUP_FACTION_IDS.NINJAS_POD, nameKey: 'factions.ninjas_pod.name', icon: ShurikenIcon, color: '#991b1b', descriptionKey: 'factions.ninjas_pod.description' },
 ];
 
-/**
- * 新增派系“实施中”横幅名单（按 groupId / factionId 均可命中）。
- * 先把入口能力接好，后续新增派系时只需补 metadata 或加入此名单即可展示。
- */
-const IN_PROGRESS_FACTION_IDS = new Set<string>([
-    'fairies',
-    'princesses',
-]);
-
 export const FACTION_VARIANT_GROUPS: FactionVariantGroup[] = (() => {
     const groups = new Map<string, FactionVariantGroup>();
 
@@ -206,8 +197,7 @@ export function getFactionMeta(id: string): FactionMeta | undefined {
 }
 
 export function isFactionImplementationInProgress(factionId: string): boolean {
-    const groupId = toFactionGroupId(factionId);
-    if (IN_PROGRESS_FACTION_IDS.has(factionId) || IN_PROGRESS_FACTION_IDS.has(groupId)) {
+    if (isSmashUpFactionImplementationInProgress(factionId)) {
         return true;
     }
     const meta = getFactionMeta(factionId);

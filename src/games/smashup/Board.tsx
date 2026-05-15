@@ -31,7 +31,7 @@ import { initSmashUpAtlases } from './ui/cardAtlas';
 // 同步注册所有图集（cards1-4 + base1-4，懒解析模式），确保首次渲染时 atlas 注册已就绪
 initSmashUpAtlases();
 import { SMASH_UP_MANIFEST } from './manifest';
-import { getLayoutConfig } from './ui/layoutConfig';
+import { getLayoutConfig, layoutInlineSize } from './ui/layoutConfig';
 import './cursor';
 import { HandArea, type HandAreaDragPreview, type HandAreaDropTarget } from './ui/HandArea';
 
@@ -1562,7 +1562,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
     // 事件流消费 → FX 特效驱动
     const myPid = playerID || '0';
-    const gameEvents = useGameEvents({ G, myPlayerId: myPid, fxBus, baseRefs: baseRefsMap });
+    const gameEvents = useGameEvents({ G, myPlayerId: myPid, fxBus, baseRefs: baseRefsMap, playerNames });
     const { feedbacks: gameFeedbacks, removeFeedback: removeGameFeedback } = gameEvents;
 
     // 行动卡特写队列：
@@ -1689,6 +1689,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // 回合切换提示
     const [showTurnNotice, setShowTurnNotice] = useState(false);
     const [isEndTurnUiHidden, setIsEndTurnUiHidden] = useState(false);
+    const [isScoreboardUiHidden, setIsScoreboardUiHidden] = useState(false);
     const prevCurrentPidRef = useRef(currentPid);
     useEffect(() => {
         let timer: ReturnType<typeof setTimeout> | null = null;
@@ -1720,6 +1721,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             setMeFirstPendingCard(null);
             setIsSubmitting(false);
             setIsEndTurnUiHidden(false);
+            setIsScoreboardUiHidden(false);
             setHandDragPreview(null);
         });
         return () => {
@@ -2701,114 +2703,139 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
 
                     {/* Right: Score Sheet + Player Info */}
                     <div
-                        className="bg-white text-slate-900 p-4 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] rotate-1 max-w-[500px] rounded-sm pointer-events-auto"
+                        className={`relative pointer-events-auto ${isScoreboardUiHidden ? 'h-8 w-8' : ''}`}
                         data-tutorial-id="su-scoreboard"
                         style={scoreboardStyle}
                     >
-                        <div className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-2 border-b border-slate-200">{t('ui.score_sheet')}</div>
-                        {isTeamMode && teamScores && (
-                            <div className="mb-2 flex flex-wrap justify-center gap-2 text-[10px] font-black uppercase tracking-wide">
-                                {SMASHUP_TEAM_IDS.map((teamId) => (
-                                    <div
-                                        key={teamId}
-                                        className="rounded-full border border-slate-300 bg-slate-100 px-2 py-1 text-slate-700"
-                                    >
-                                        {t(teamId === 'team_13' ? 'ui.team_13' : 'ui.team_24')}
-                                        {' · '}
-                                        {t('ui.team_total', {
-                                            score: teamScores[teamId],
-                                            target: victoryTarget,
-                                            defaultValue: '{{score}} / {{target}}',
+                        <AnimatePresence initial={false}>
+                            {!isScoreboardUiHidden && (
+                                <motion.div
+                                    key="scoreboard-panel"
+                                    data-testid="su-scoreboard-panel"
+                                    initial={{ opacity: 0, y: -8, rotate: 1 }}
+                                    animate={{ opacity: 1, y: 0, rotate: 1 }}
+                                    exit={{ opacity: 0, y: -8, scale: 0.96 }}
+                                    transition={{ type: 'spring', stiffness: 360, damping: 28 }}
+                                    className="relative bg-white text-slate-900 p-4 shadow-[3px_4px_10px_rgba(0,0,0,0.3)] max-w-[500px] rounded-sm"
+                                >
+                                    <div className="text-xs font-bold text-slate-400 uppercase tracking-widest text-center mb-2 border-b border-slate-200">{t('ui.score_sheet')}</div>
+                                    {isTeamMode && teamScores && (
+                                        <div className="mb-2 flex flex-wrap justify-center gap-2 text-[10px] font-black uppercase tracking-wide">
+                                            {SMASHUP_TEAM_IDS.map((teamId) => (
+                                                <div
+                                                    key={teamId}
+                                                    className="rounded-full border border-slate-300 bg-slate-100 px-2 py-1 text-slate-700"
+                                                >
+                                                    {t(teamId === 'team_13' ? 'ui.team_13' : 'ui.team_24')}
+                                                    {' · '}
+                                                    {t('ui.team_total', {
+                                                        score: teamScores[teamId],
+                                                        target: victoryTarget,
+                                                        defaultValue: '{{score}} / {{target}}',
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    <div className="flex gap-5">
+                                        {playerDisplayOrder.map(pid => {
+                                            const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
+                                            const isCurrent = pid === currentPid;
+                                            const player = core.players[pid];
+                                            const isMe = pid === playerID;
+                                            const isOpponent = !isMe;
+                                            const displayName = playerNames[pid] ?? `P${Number(pid) + 1}`;
+                                            // 派系图标
+                                            const factionIcons = (player.factions ?? [])
+                                                .map(fid => getFactionMeta(fid))
+                                                .filter(Boolean);
+                                            return (
+                                                <motion.div
+                                                    key={pid}
+                                                    className={`flex flex-col items-center relative group ${isCurrent ? 'scale-110' : 'opacity-60 grayscale'}`}
+                                                    animate={isCurrent ? { scale: 1.1 } : { scale: 1 }}
+                                                    transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                                    onMouseEnter={() => {
+                                                        // 悬浮在对手区域时显示眼睛图标
+                                                    }}
+                                                >
+                                                    <span className="mb-1 max-w-[6rem] truncate text-xs font-black">
+                                                        {displayName}
+                                                    </span>
+                                                    <motion.div
+                                                        key={`vp-${pid}-${core.players[pid]?.vp ?? 0}`}
+                                                        data-testid={`su-score-vp-${pid}`}
+                                                        className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg} ${isOpponent ? 'cursor-pointer relative' : ''}`}
+                                                        initial={{ scale: 1 }}
+                                                        animate={{ scale: [1, 1.3, 1] }}
+                                                        transition={{ duration: 0.4, ease: 'easeOut' }}
+                                                        onPointerUp={(event) => {
+                                                            if (!isOpponent || event.pointerType !== 'touch') {
+                                                                return;
+                                                            }
+                                                            event.preventDefault();
+                                                            event.stopPropagation();
+                                                            triggerAlternateViewFromTouch(pid);
+                                                        }}
+                                                        onTouchEnd={(event) => {
+                                                            if (!isOpponent) {
+                                                                return;
+                                                            }
+                                                            event.preventDefault();
+                                                            event.stopPropagation();
+                                                            triggerAlternateViewFromTouch(pid);
+                                                        }}
+                                                        onClick={() => {
+                                                            if (isOpponent) {
+                                                                if (Date.now() - opponentScoreTouchHandledAtRef.current < 400) {
+                                                                    return;
+                                                                }
+                                                                setViewedPlayerId(pid);
+                                                            }
+                                                        }}
+                                                    >
+                                                        {core.players[pid]?.vp ?? 0}
+                                                        {/* 对手区域悬浮时显示眼睛图标（无背景，直接叠加在圆球上） */}
+                                                        {isOpponent && !isMobileViewport && (
+                                                            <svg
+                                                                viewBox="0 0 24 24"
+                                                                className={`absolute inset-0 m-auto w-5 h-5 fill-white/80 drop-shadow-[0_0_4px_rgba(0,0,0,0.8)] transition-opacity duration-300 pointer-events-none ${displayedDeckPlayerId === pid ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+                                                            >
+                                                                <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                                                            </svg>
+                                                        )}
+                                                    </motion.div>
+                                                    {/* 派系图标 */}
+                                                    <div className="flex gap-0.5 mt-1">
+                                                        {factionIcons.map(meta => {
+                                                            if (!meta) return null;
+                                                            const Icon = meta.icon;
+                                                            return (
+                                                                <span key={meta.id} title={t(meta.nameKey)}>
+                                                                    <Icon className="w-4 h-4" style={{ color: meta.color }} />
+                                                                </span>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    {/* 自己的牌库/弃牌信息已移至下方 DeckDiscardZone */}
+                                                </motion.div>
+                                            );
                                         })}
                                     </div>
-                                ))}
-                            </div>
-                        )}
-                        <div className="flex gap-5">
-                            {playerDisplayOrder.map(pid => {
-                                const conf = PLAYER_CONFIG[parseInt(pid) % PLAYER_CONFIG.length];
-                                const isCurrent = pid === currentPid;
-                                const player = core.players[pid];
-                                const isMe = pid === playerID;
-                                const isOpponent = !isMe;
-                                const displayName = playerNames[pid] ?? `P${Number(pid) + 1}`;
-                                // 派系图标
-                                const factionIcons = (player.factions ?? [])
-                                    .map(fid => getFactionMeta(fid))
-                                    .filter(Boolean);
-                                return (
-                                    <motion.div
-                                        key={pid}
-                                        className={`flex flex-col items-center relative group ${isCurrent ? 'scale-110' : 'opacity-60 grayscale'}`}
-                                        animate={isCurrent ? { scale: 1.1 } : { scale: 1 }}
-                                        transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                                        onMouseEnter={() => {
-                                            // 悬浮在对手区域时显示眼睛图标
-                                        }}
-                                    >
-                                        <span className="mb-1 max-w-[6rem] truncate text-xs font-black">
-                                            {displayName}
-                                        </span>
-                                        <motion.div
-                                            key={`vp-${pid}-${core.players[pid]?.vp ?? 0}`}
-                                            data-testid={`su-score-vp-${pid}`}
-                                            className={`w-10 h-10 rounded-full flex items-center justify-center text-xl font-black text-white shadow-md border-2 border-white ${conf.bg} ${isOpponent ? 'cursor-pointer relative' : ''}`}
-                                            initial={{ scale: 1 }}
-                                            animate={{ scale: [1, 1.3, 1] }}
-                                            transition={{ duration: 0.4, ease: 'easeOut' }}
-                                            onPointerUp={(event) => {
-                                                if (!isOpponent || event.pointerType !== 'touch') {
-                                                    return;
-                                                }
-                                                event.preventDefault();
-                                                event.stopPropagation();
-                                                triggerAlternateViewFromTouch(pid);
-                                            }}
-                                            onTouchEnd={(event) => {
-                                                if (!isOpponent) {
-                                                    return;
-                                                }
-                                                event.preventDefault();
-                                                event.stopPropagation();
-                                                triggerAlternateViewFromTouch(pid);
-                                            }}
-                                            onClick={() => {
-                                                if (isOpponent) {
-                                                    if (Date.now() - opponentScoreTouchHandledAtRef.current < 400) {
-                                                        return;
-                                                    }
-                                                    setViewedPlayerId(pid);
-                                                }
-                                            }}
-                                        >
-                                            {core.players[pid]?.vp ?? 0}
-                                            {/* 对手区域悬浮时显示眼睛图标（无背景，直接叠加在圆球上） */}
-                                            {isOpponent && !isMobileViewport && (
-                                                <svg 
-                                                    viewBox="0 0 24 24" 
-                                                    className={`absolute inset-0 m-auto w-5 h-5 fill-white/80 drop-shadow-[0_0_4px_rgba(0,0,0,0.8)] transition-opacity duration-300 pointer-events-none ${displayedDeckPlayerId === pid ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
-                                                >
-                                                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-2.135-4.695-6.305-7.5-11-7.5zm0 12.5c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
-                                                </svg>
-                                            )}
-                                        </motion.div>
-                                        {/* 派系图标 */}
-                                        <div className="flex gap-0.5 mt-1">
-                                            {factionIcons.map(meta => {
-                                                if (!meta) return null;
-                                                const Icon = meta.icon;
-                                                return (
-                                                    <span key={meta.id} title={t(meta.nameKey)}>
-                                                        <Icon className="w-4 h-4" style={{ color: meta.color }} />
-                                                    </span>
-                                                );
-                                            })}
-                                        </div>
-                                        {/* 自己的牌库/弃牌信息已移至下方 DeckDiscardZone */}
-                                    </motion.div>
-                                );
-                            })}
-                        </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                        <button
+                            type="button"
+                            data-testid="su-scoreboard-visibility-toggle"
+                            aria-label={isScoreboardUiHidden
+                                ? t('ui.show_scoreboard_controls', { defaultValue: '显示记分板' })
+                                : t('ui.hide_scoreboard_controls', { defaultValue: '隐藏记分板' })}
+                            onClick={() => setIsScoreboardUiHidden(prev => !prev)}
+                            className={`absolute right-0 top-0 z-10 flex items-center justify-center rounded-full border-solid border-2 border-white/95 ring-1 ring-slate-950/15 bg-slate-900/95 text-white shadow-[0_6px_14px_rgba(0,0,0,0.45)] transition-all hover:scale-105 active:scale-95 ${isMobileViewport ? 'h-7 w-7 translate-x-[35%] -translate-y-[35%] text-[11px]' : 'h-8 w-8 translate-x-[35%] -translate-y-[35%] text-xs'}`}
+                        >
+                            <span className="font-black leading-none">{isScoreboardUiHidden ? '显' : '隐'}</span>
+                        </button>
                     </div>
                 </div>
 
@@ -3314,7 +3341,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                             data-testid="su-battlefield-zoom-target"
                             data-mobile-battlefield-zoom-target="true"
                             style={{
-                                gap: `${layout.baseGap}vw`,
+                                gap: layoutInlineSize(layout.baseGap, layout),
                                 paddingInline: `${layout.boardHorizontalPadding}px`,
                             }}
                         >

@@ -98,3 +98,17 @@
 ## 本次重审状态
 
 当前状态：重审矩阵已建立，旧“全面审计完成”已降级。Ninja 四项回归已在专项 evidence 中有 L2/L3 证据，但 Ninja 全对象仍存在未覆盖项，因此不能写“全量新机制新交互都已端到端”。
+
+## 2026-05-15 追加抽样深审：Token 与手牌卡消费点
+
+新增证据文档：
+
+- `evidence/dicethrone/dicethrone-treant-ninja-sample-deep-audit-2026-05-15.md`
+
+本轮抽样深审修订本文件部分结论：
+
+- `ninja-card-shuriken`：旧矩阵写“缺专属卡奖励骰 E2E / L1”，但实际问题比“缺 E2E”更严重。旧实现使用 `timing: 'withDamage'`，而 `PLAY_CARD` 只解析 `immediate`，导致卡牌打出后奖励骰加伤不执行。现已改为 `immediate + resolutionMode: 'attackBonus'`，并补 L2 行为测试；仍缺 L3 真实手牌打出 E2E。
+- `ninja-card-escape`：已补 L2 行为覆盖，证明受击响应窗可打，护盾抵消后续结算伤害；仍缺 L3。
+- `smoke_bomb` 失败分支：已补 L2 行为覆盖，证明失败骰面消耗 token 但不关闭 pendingDamage、不提前扣 HP；仍缺失败分支 E2E。
+
+本轮追加结论不改变主口径：Ninja 仍不能被描述为全对象全交互端到端完成。

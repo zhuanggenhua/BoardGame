@@ -32,6 +32,7 @@ import {
 } from './domain/types';
 import {
     buildFactionSelectionIdentitySet,
+    isSmashUpFactionImplementationInProgress,
     normalizeFactionSelectionId,
     SMASHUP_FACTION_IDS,
 } from './domain/ids';
@@ -114,50 +115,10 @@ const isInteractionControlValue = (value: unknown): boolean => {
     return candidate.skip === true || candidate.done === true || candidate.__cancel__ === true;
 };
 
-const SELECTABLE_FACTIONS = Object.values(SMASHUP_FACTION_IDS).filter((factionId) => factionId !== SMASHUP_FACTION_IDS.MADNESS);
-
-const FACTION_PRIORITY = [
-    SMASHUP_FACTION_IDS.ROBOTS,
-    SMASHUP_FACTION_IDS.WIZARDS,
-    SMASHUP_FACTION_IDS.ALIENS,
-    SMASHUP_FACTION_IDS.DINOSAURS,
-    SMASHUP_FACTION_IDS.ZOMBIES,
-    SMASHUP_FACTION_IDS.NINJAS,
-    SMASHUP_FACTION_IDS.PIRATES,
-    SMASHUP_FACTION_IDS.TRICKSTERS,
-    SMASHUP_FACTION_IDS.GHOSTS,
-    SMASHUP_FACTION_IDS.STEAMPUNKS,
-    SMASHUP_FACTION_IDS.KILLER_PLANTS,
-    SMASHUP_FACTION_IDS.BEAR_CAVALRY,
-    SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU,
-    SMASHUP_FACTION_IDS.ELDER_THINGS,
-    SMASHUP_FACTION_IDS.INNSMOUTH,
-    SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY,
-    SMASHUP_FACTION_IDS.FRANKENSTEIN,
-    SMASHUP_FACTION_IDS.WEREWOLVES,
-    SMASHUP_FACTION_IDS.VAMPIRES,
-    SMASHUP_FACTION_IDS.GIANT_ANTS,
-    SMASHUP_FACTION_IDS.ALIENS_POD,
-    SMASHUP_FACTION_IDS.DINOSAURS_POD,
-    SMASHUP_FACTION_IDS.GHOSTS_POD,
-    SMASHUP_FACTION_IDS.NINJAS_POD,
-    SMASHUP_FACTION_IDS.PIRATES_POD,
-    SMASHUP_FACTION_IDS.ROBOTS_POD,
-    SMASHUP_FACTION_IDS.TRICKSTERS_POD,
-    SMASHUP_FACTION_IDS.WIZARDS_POD,
-    SMASHUP_FACTION_IDS.ZOMBIES_POD,
-    SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD,
-    SMASHUP_FACTION_IDS.STEAMPUNKS_POD,
-    SMASHUP_FACTION_IDS.KILLER_PLANTS_POD,
-    SMASHUP_FACTION_IDS.MINIONS_OF_CTHULHU_POD,
-    SMASHUP_FACTION_IDS.ELDER_THINGS_POD,
-    SMASHUP_FACTION_IDS.INNSMOUTH_POD,
-    SMASHUP_FACTION_IDS.MISKATONIC_UNIVERSITY_POD,
-    SMASHUP_FACTION_IDS.FRANKENSTEIN_POD,
-    SMASHUP_FACTION_IDS.WEREWOLVES_POD,
-    SMASHUP_FACTION_IDS.VAMPIRES_POD,
-    SMASHUP_FACTION_IDS.GIANT_ANTS_POD,
-];
+const SELECTABLE_FACTIONS = Object.values(SMASHUP_FACTION_IDS).filter((factionId) => (
+    factionId !== SMASHUP_FACTION_IDS.MADNESS
+    && !isSmashUpFactionImplementationInProgress(factionId)
+));
 
 const EMPTY_CARD_AI_METRICS: SmashUpCardAiMetrics = {
     extraMinion: 0,
@@ -321,11 +282,6 @@ const getBaseLabel = (state: SmashUpState, baseIndex: number): string => {
 const getCardLabel = (card: CardInstance): string => {
     const cardDef = getCardDef(card.defId);
     return cardDef?.name ?? card.defId;
-};
-
-const getFactionPriority = (factionId: string): number => {
-    const index = FACTION_PRIORITY.indexOf(factionId as (typeof FACTION_PRIORITY)[number]);
-    return index >= 0 ? index : FACTION_PRIORITY.length + 10;
 };
 
 const getBasePressureMetrics = (state: SmashUpState, baseIndex: number): {
@@ -1335,7 +1291,6 @@ const buildFactionSelectActions = (state: SmashUpState, playerId: PlayerId): AiL
             }],
             metadata: {
                 factionId,
-                priority: getFactionPriority(factionId),
             },
         });
     }
@@ -1822,19 +1777,16 @@ const actionKindScorer = createActionKindScorer('action-kind', {
 });
 
 const factionScorer: LocalAiActionScorer = {
-    id: 'faction-priority',
+    id: 'setup-faction-composition',
     score(context, action) {
         if (action.kind !== 'select-faction') return null;
-        const priority = typeof action.metadata?.priority === 'number'
-            ? action.metadata.priority
-            : FACTION_PRIORITY.length + 10;
         const factionId = typeof action.metadata?.factionId === 'string' ? action.metadata.factionId : '';
         const state = context.visibleState as SmashUpState;
         const selectedFactionIds = getResolvedPlayerFactionIds(state, context.playerId);
         const synergy = scoreFactionSynergy(selectedFactionIds, factionId);
         return {
-            score: 40 - priority + synergy.score,
-            reason: `优先选择 ${String(action.metadata?.factionId ?? '稳定派系')}：${synergy.reason}`,
+            score: synergy.score,
+            reason: `按派系组合选择 ${String(action.metadata?.factionId ?? '候选派系')}：${synergy.reason}`,
         };
     },
 };
@@ -1843,14 +1795,22 @@ const setupFactionRandomScorer: LocalAiActionScorer = {
     id: 'setup-faction-random',
     score(context, action) {
         if (action.kind !== 'select-faction') return null;
-        const amplitude = Math.max(0, Math.min(12, context.difficulty?.randomness ?? 6));
-        if (amplitude === 0) {
-            return null;
-        }
-        const noise = buildDeterministicAiNoise(context, action, 'setup');
+        const state = context.visibleState as SmashUpState;
+        const selectedFactionIds = getResolvedPlayerFactionIds(state, context.playerId);
+        const factionId = typeof action.metadata?.factionId === 'string' ? action.metadata.factionId : '';
+        const identityAction = selectedFactionIds.length === 0 && factionId
+            ? {
+                ...action,
+                actionId: createAiLegalActionId('select-faction-identity', normalizeFactionSelectionId(factionId)),
+            }
+            : action;
+        const amplitude = 12;
+        const noise = buildDeterministicAiNoise(context, identityAction, 'setup');
         return {
             score: Number((noise * amplitude).toFixed(3)),
-            reason: '派系选择随机扰动',
+            reason: selectedFactionIds.length === 0
+                ? '首个派系从合法身份池中随机选择'
+                : '相近派系组合之间保留可复现变化',
         };
     },
 };

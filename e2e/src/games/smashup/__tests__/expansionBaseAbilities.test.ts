@@ -12,7 +12,7 @@
  *
  * AL9000：
  * - base_greenhouse: afterScoring → Prompt（牌库搜索随从打出）
- * - base_secret_garden: playCards → 额外随从额度
+ * - base_secret_garden: onTurnStart → 基地限定额外随从额度
  * - base_inventors_salon: afterScoring → Prompt（弃牌堆取回行动卡）
  *
  * Pretty Pretty：
@@ -1455,10 +1455,33 @@ describe('base_greenhouse: 温室 - 计分后从牌库打随从', () => {
 });
 
 describe('base_secret_garden: 神秘花园 - phase 2 额外随从', () => {
-    it('onTurnStart 不再直接发额外随从额度', () => {
+    it('onTurnStart 发放仅限本基地的 banked 额外随从额度', () => {
         const { events } = triggerBaseAbility('base_secret_garden', 'onTurnStart', makeCtx({
             state: makeState({ bases: [makeBase('base_secret_garden')] }),
             baseDefId: 'base_secret_garden',
+            baseIndex: 0,
+            playerId: '0',
+        }));
+
+        expect(events).toHaveLength(1);
+        expect(events[0]).toMatchObject({
+            type: SU_EVENTS.LIMIT_MODIFIED,
+            payload: {
+                playerId: '0',
+                limitType: 'minion',
+                delta: 1,
+                restrictToBase: 0,
+                playTiming: 'banked',
+            },
+        });
+    });
+
+    it('onMinionPlayed 不发额度，避免把回合持续许可误建模为打出后触发', () => {
+        const { events } = triggerBaseAbility('base_secret_garden', 'onMinionPlayed', makeCtx({
+            state: makeState({ bases: [makeBase('base_secret_garden')] }),
+            baseDefId: 'base_secret_garden',
+            baseIndex: 0,
+            playerId: '0',
         }));
 
         expect(events).toHaveLength(0);

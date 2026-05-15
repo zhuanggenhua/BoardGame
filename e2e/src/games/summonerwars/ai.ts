@@ -59,6 +59,7 @@ import type {
     SummonerWarsCore,
 } from './domain/types';
 import type { AbilityDef } from './domain/abilities';
+import { FACTION_CATALOG } from './config/factions';
 
 type PlayerId = SummonerWarsPlayerId;
 type SummonerWarsState = MatchState<SummonerWarsCore>;
@@ -80,14 +81,9 @@ type SummonerWarsInteractionOption = {
     _ai?: AiHint;
 };
 
-const FACTION_PRIORITY: FactionId[] = [
-    'necromancer',
-    'paladin',
-    'frost',
-    'goblin',
-    'barbaric',
-    'trickster',
-];
+const SETUP_FACTION_POOL: FactionId[] = FACTION_CATALOG
+    .filter((faction) => faction.selectable)
+    .map((faction) => faction.id);
 
 const INTERACTIVE_EVENT_BASE_IDS = new Set<string>([
     CARD_IDS.NECRO_HELLFIRE_BLADE,
@@ -502,11 +498,6 @@ const getCurrentPhase = (state: SummonerWarsState): SummonerWarsTurnPhase => {
 const isFlowHalted = (state: SummonerWarsState): boolean => {
     const sys = state.sys as { flowHalted?: unknown } | undefined;
     return sys?.flowHalted === true;
-};
-
-const getFactionPriority = (factionId: FactionId): number => {
-    const index = FACTION_PRIORITY.indexOf(factionId);
-    return index >= 0 ? index : FACTION_PRIORITY.length + 10;
 };
 
 const EFFECT_INTENT_PRIORITY: AiEffectIntent[] = [
@@ -1554,8 +1545,8 @@ const buildSetupActions = (
                 takenFactions.add(value as FactionId);
             }
         }
-        const candidates = FACTION_PRIORITY.filter((factionId) => !takenFactions.has(factionId));
-        const availableFactions = candidates.length > 0 ? candidates : FACTION_PRIORITY;
+        const candidates = SETUP_FACTION_POOL.filter((factionId) => !takenFactions.has(factionId));
+        const availableFactions = candidates.length > 0 ? candidates : SETUP_FACTION_POOL;
 
         for (const factionId of availableFactions) {
             appendAction(actions, state, playerId, {
@@ -1568,7 +1559,6 @@ const buildSetupActions = (
                 }],
                 metadata: {
                     factionId,
-                    priority: getFactionPriority(factionId),
                 },
             });
         }
@@ -2624,15 +2614,12 @@ const interactionSemanticScorer: LocalAiActionScorer = {
 };
 
 const setupScorer: LocalAiActionScorer = {
-    id: 'setup-priority',
+    id: 'setup-neutral',
     score(_context, action) {
         if (action.kind === 'setup-select-faction') {
-            const priority = typeof action.metadata?.priority === 'number'
-                ? action.metadata.priority
-                : FACTION_PRIORITY.length + 10;
             return {
-                score: 80 - priority * 8,
-                reason: `优先选择当前 baseline 更稳的阵营 ${String(action.metadata?.factionId ?? '')}`,
+                score: 0,
+                reason: '从可选阵营池中随机选择',
             };
         }
         if (action.kind === 'setup-ready') {
@@ -2651,8 +2638,8 @@ const setupRandomScorer: LocalAiActionScorer = {
         if (action.kind !== 'setup-select-faction') return null;
         const noise = buildDeterministicAiNoise(context, action, 'setup');
         return {
-            score: Number((noise * 10).toFixed(3)),
-            reason: '阵营选择随机扰动',
+            score: Number((noise * 9).toFixed(3)),
+            reason: '可选阵营池内保留可复现随机',
         };
     },
 };

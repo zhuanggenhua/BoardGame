@@ -212,6 +212,22 @@ export const ROOTED_2: AbilityDef = {
     name: abilityText('rooted-2', 'name'),
     description: abilityText('rooted-2', 'description'),
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 4 },
+    effects: [
+        {
+            description: '防御掷 4 骰：树枝/树叶/树灵分别产生不同防御收益。',
+            action: {
+                type: 'rollDie',
+                target: 'self',
+                diceCount: 4,
+                conditionalEffects: [
+                    { face: FACE.BRANCH, bonusDamage: 1 },
+                    { face: FACE.LEAF, grantToken: { tokenId: TOKEN_IDS.TREANT_SEEDLING, value: 1 } },
+                    { face: FACE.SPIRIT, grantToken: { tokenId: TOKEN_IDS.LIFE_SAP, value: 1 } },
+                ],
+            },
+            timing: 'withDamage',
+        },
+    ],
 };
 
 const FOREST_AWAKENS: AbilityDef = {

@@ -1,3 +1,48 @@
+# Findings: TDD 行为 seam 与测试结构重构（2026-05-16）
+
+## 已确认事实
+
+- 用户质疑“这么快，还是只改表象”成立为质量风险：仅拆文件名不能解决“重构实现就要跟着改测试”的根因。
+- 当前根因是旧 SmashUp 交互测试直接依赖 InteractionSystem 内部结构：`sys.interaction`、`prompt.data.options`、手写 `SYS_INTERACTION_RESPOND`。
+- 已有正确方向是把高频交互测试收进 `helpers.ts` 的 prompt facade，再由结构门禁阻止新迁移文件回退到裸内部访问。
+
+## 本轮结论
+
+- Skeletons 迁移不是表象整理：新文件 19 个用例全部通过，并且没有禁用模式或裸内部交互访问。
+- `newFactionAbilities.test.ts` 已进一步收缩；当前旧大文件只剩 Samurai 与巨蚁相关测试债务。
+- `npm run test:structure` 已证明本轮新增/迁出文件符合结构门禁；旧大文件债务仍按 warning 保留，后续迁出时继续消化。
+
+## 后续风险
+
+- 只迁完 Skeletons 还不能宣称整个测试框架重构完成。
+- 剩余 Samurai / 巨蚁测试仍含旧内部耦合；如果不继续迁，它们仍会在后续 InteractionSystem 重构时制造同步改测试成本。
+
+---
+
+# Findings: 反馈真实链路与 AI 自动反馈复核（2026-05-15）
+
+## 已确认事实
+
+- 本地真实用户反馈链路没有坏：E2E 已覆盖反馈弹窗提交、API 写入、后台 API 查询、后台页面列表与详情展示。
+- 生产只读查询显示最近 14 天有 45 条反馈记录；当前未收口项不是 0，而是 2 条。
+- 回写前未收口项：
+  - `6a05e66129cd213e03bfd82f`：`splendor | online-ai-watchdog | open`
+  - `6a005f68d5153682969e5c7d`：`smashup | feedback-modal | in_progress`
+- 最新 open AI 自动反馈的证据足够定位：`legal_action_command_failed:RESERVE_OPEN_CARD:gameNotStarted`，`stateSnapshot` 里已有 `legalActions` 与 `aiDecisionPreview`。
+
+## 本轮结论
+
+- “最近都没有反馈”不是反馈系统断流；更准确是生产仍有反馈，且本地真实提交链路已由 E2E 证明正常。
+- AI 自动反馈 payload 证据不需要重构；问题在 Splendor 未开局状态下 watchdog 仍尝试代 AI 发动作。
+- 已修复 watchdog pregame 边界与 Splendor AI legal actions 未开局门禁。
+- 规范已补强：反馈 `resolved` 不等待生产部署或未来不复发，部署/观察是后续发布状态。
+- 生产状态已回写：`6a05e66129cd213e03bfd82f` -> `resolved`，回写时间 `2026-05-15T15:38:58.914Z`。
+- 证据文档：
+  - `evidence/feedback-real-submission-e2e-2026-05-15.md`
+  - `evidence/engine/online-ai-watchdog-feedback-diagnostics-2026-05-15.md`
+
+---
+
 # Findings: 线上 AI 自动反馈排查与修复（2026-05-13）
 
 ## 已确认事实
@@ -2088,3 +2133,10 @@
   - 旧 Argonaut onPlay 手写触发 Odysseus / Heracles / Spartan，漏掉 Jason 的 onActionPlayed 能力。
 - 已修复并补证据：`playAsAction` 贯通类型、校验、reducer、UI dispatch；Argonaut onPlay 可从 Odysseus prompt 继续串 Jason base prompt。
 - 其余抽样对象未发现新的 blocker；本轮证据落在 `evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`。
+
+## 2026-05-15 审计规范根因升级
+
+- 本次 Argonaut 漏审代表的根因不是单卡特例，而是通用审计方法缺口：旧矩阵按“对象级 pass”核销，没有强制把真相源文本逐句/逐子句拆开验证。
+- 影响边界是所有游戏：任何卡牌、技能、Token、状态、按钮、装备、基地、角色能力只要一段描述里包含多个语义，就可能被主效果测试掩盖掉第二句/例外/替代入口/额外触发。
+- 已固化不变量：规则文本必须拆成 `C1/C2/C3...` 子句；每个子句都要映射到实现入口、共享消费点、状态写入/消耗点和证据。任一子句缺证据，整对象不得写 `passed`。
+- 已更新落点：`docs/ai-rules/testing-audit.md`、`.windsurf/skills/add-new-faction/SKILL.md`、`.windsurf/skills/smashup-faction-addition/SKILL.md`，并回写 shayu 旧 evidence 失效结论。

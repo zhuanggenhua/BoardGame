@@ -253,17 +253,9 @@ export function scoreFactionSynergy(
 ): { score: number; reason: string; profile: SmashUpStrategyProfile } {
     const candidate = getFactionStrategyProfile(candidateFactionId);
     if (selectedFactionIds.length === 0) {
-        const baseScore = Number((
-            candidate.vector.swarm * 14
-            + candidate.vector.actionChain * 14
-            + candidate.vector.engine * 10
-            + candidate.vector.burstScoring * 12
-            + candidate.vector.tempo * 8
-            + candidate.vector.powerSpike * 6
-        ).toFixed(3));
         return {
-            score: baseScore,
-            reason: candidate.summary[0] ?? '按派系牌组风格的基础强度排序',
+            score: 0,
+            reason: '首个派系从合法身份池中随机选择，组合判断留给第二派系',
             profile: candidate,
         };
     }

@@ -118,6 +118,20 @@ export function buildFactionSelectionIdentitySet(factionIds: Iterable<string>): 
     return identities;
 }
 
+export const SMASHUP_IN_PROGRESS_FACTION_IDS = new Set<string>([
+    SMASHUP_FACTION_IDS.FAIRIES,
+    SMASHUP_FACTION_IDS.PRINCESSES,
+    SMASHUP_FACTION_IDS.SHARKS,
+    SMASHUP_FACTION_IDS.TORNADOS,
+    SMASHUP_FACTION_IDS.MYTHIC_GREEKS,
+]);
+
+export function isSmashUpFactionImplementationInProgress(factionId: string): boolean {
+    const normalizedId = normalizeFactionSelectionId(factionId);
+    return SMASHUP_IN_PROGRESS_FACTION_IDS.has(factionId)
+        || SMASHUP_IN_PROGRESS_FACTION_IDS.has(normalizedId);
+}
+
 /** 派系中文显示名（domain 层使用，避免依赖 i18n） */
 export const FACTION_DISPLAY_NAMES: Record<string, string> = {
     [SMASHUP_FACTION_IDS.PIRATES]: '海盗',

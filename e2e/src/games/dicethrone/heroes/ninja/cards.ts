@@ -121,9 +121,11 @@ export const NINJA_CARDS: AbilityCard[] = [
                 type: 'rollDie',
                 target: 'self',
                 diceCount: 5,
+                resolutionMode: 'attackBonus',
+                attackBonusSourceCardId: 'ninja-card-shuriken',
                 conditionalEffects: [{ face: NINJA_DICE_FACE_IDS.KATANA, bonusDamage: 1 }],
             },
-            timing: 'withDamage',
+            timing: 'immediate',
         }],
     },
     {

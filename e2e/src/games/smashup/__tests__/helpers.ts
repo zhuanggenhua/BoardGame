@@ -207,6 +207,7 @@ export function applyEvents(state: SmashUpCore, events: SmashUpEvent[]): SmashUp
 import type { InteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
 import { defaultTestRandom, runCommand } from './testRunner';
+import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 
 /**
  * 旧式 handler 调用桥接：将对象参数转为位置参数
@@ -298,7 +299,236 @@ export function findInteractionOption(
     prompt: any,
     predicate: (option: any) => boolean,
 ): any | undefined {
-    return prompt?.data?.options?.find((option: any) => predicate(option));
+    const options = prompt?.options ?? prompt?.data?.options;
+    return options?.find((option: any) => predicate(option));
+}
+
+/**
+ * 行为级 prompt facade：测试用例不应散落直读 sys.interaction.current。
+ * 若未来 InteractionSystem 内部结构变化，优先改这里，而不是批量改用例。
+ */
+export function getFirstPrompt(ms: MatchState<SmashUpCore>): any | undefined {
+    return getInteractionsFromMS(ms)[0];
+}
+
+export function getSimpleChoicePrompt(
+    ms: MatchState<SmashUpCore>,
+    expectedSourceId?: string,
+): any {
+    const prompt = asSimpleChoice(getFirstPrompt(ms));
+    if (!prompt) {
+        throw new Error('Expected a simple choice prompt, but no prompt was available.');
+    }
+    if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
+        throw new Error(`Expected prompt sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
+    }
+    return prompt;
+}
+
+export function getPromptOptionById(prompt: any, optionId: string): any | undefined {
+    return prompt?.options?.find((option: any) => option.id === optionId);
+}
+
+export function getPromptOptions(prompt: any): any[] {
+    return prompt?.options ?? prompt?.data?.options ?? [];
+}
+
+export function getPromptSourceId(prompt: any): string | undefined {
+    return prompt?.sourceId ?? prompt?.data?.sourceId;
+}
+
+export function getPromptSliderMax(prompt: any): number | undefined {
+    return prompt?.slider?.max ?? prompt?.data?.slider?.max;
+}
+
+export function getPromptRuntimeContinuationContext(prompt: any): any {
+    return prompt?.runtimePrompt?.continuation?.context
+        ?? prompt?.data?.runtimePrompt?.continuation?.context;
+}
+
+export function getCurrentPromptResolutionFrameId(
+    state: MatchState<SmashUpCore>,
+    expectedSourceId?: string,
+): string | undefined {
+    const prompt = getFirstPrompt(state);
+    if (!prompt) {
+        throw new Error('Expected a prompt with a resolution frame, but no prompt was available.');
+    }
+    const sourceId = prompt?.data?.sourceId ?? prompt?.sourceId;
+    if (expectedSourceId !== undefined && sourceId !== expectedSourceId) {
+        throw new Error(`Expected prompt sourceId "${expectedSourceId}", got "${sourceId}".`);
+    }
+    return prompt?.resolutionFrameId;
+}
+
+export function getPromptOption(
+    prompt: any,
+    predicate: (option: any) => boolean,
+    description = 'matching prompt option',
+): any {
+    const option = getPromptOptions(prompt).find((entry: any) => predicate(entry));
+    if (!option) {
+        throw new Error(`Expected ${description}, but it was not available.`);
+    }
+    return option;
+}
+
+export function getPromptOptionByCardUid(prompt: any, cardUid: string): any | undefined {
+    return prompt?.options?.find((option: any) => option.value?.cardUid === cardUid);
+}
+
+export function respondToPrompt(
+    state: MatchState<SmashUpCore>,
+    optionId: string,
+    playerId?: string,
+    random: RandomFn = defaultTestRandom,
+) {
+    const prompt = getFirstPrompt(state);
+    if (!prompt) {
+        throw new Error('Expected a prompt to respond to, but no prompt was available.');
+    }
+    return runCommand(
+        state,
+        {
+            type: INTERACTION_COMMANDS.RESPOND as any,
+            playerId: playerId ?? prompt.playerId,
+            payload: { optionId },
+        } as any,
+        random,
+    );
+}
+
+export function respondToPromptOptions(
+    state: MatchState<SmashUpCore>,
+    optionIds: string[],
+    playerId?: string,
+    random: RandomFn = defaultTestRandom,
+) {
+    const prompt = getFirstPrompt(state);
+    if (!prompt) {
+        throw new Error('Expected a prompt to respond to, but no prompt was available.');
+    }
+    return runCommand(
+        state,
+        {
+            type: INTERACTION_COMMANDS.RESPOND as any,
+            playerId: playerId ?? prompt.playerId,
+            payload: { optionIds },
+        } as any,
+        random,
+    );
+}
+
+export function respondToPromptWithMergedValue(
+    state: MatchState<SmashUpCore>,
+    optionId: string,
+    mergedValue: unknown,
+    playerId?: string,
+    random: RandomFn = defaultTestRandom,
+) {
+    const prompt = getFirstPrompt(state);
+    if (!prompt) {
+        throw new Error('Expected a prompt to respond to, but no prompt was available.');
+    }
+    return runCommand(
+        state,
+        {
+            type: INTERACTION_COMMANDS.RESPOND as any,
+            playerId: playerId ?? prompt.playerId,
+            payload: { optionId, mergedValue },
+        } as any,
+        random,
+    );
+}
+
+export function cancelPrompt(
+    state: MatchState<SmashUpCore>,
+    playerId?: string,
+    reason = 'test-cancel',
+    random: RandomFn = defaultTestRandom,
+) {
+    const prompt = getFirstPrompt(state);
+    if (!prompt) {
+        throw new Error('Expected a prompt to cancel, but no prompt was available.');
+    }
+    return runCommand(
+        state,
+        {
+            type: INTERACTION_COMMANDS.CANCEL as any,
+            playerId: playerId ?? prompt.playerId,
+            payload: { reason },
+        } as any,
+        random,
+    );
+}
+
+export function getPromptCountBySourceId(
+    state: MatchState<SmashUpCore>,
+    sourceId: string,
+): number {
+    return getInteractionsFromMS(state)
+        .filter(prompt => (prompt?.sourceId ?? prompt?.data?.sourceId) === sourceId)
+        .length;
+}
+
+export function expectNoPrompt(state: MatchState<SmashUpCore>): void {
+    const prompts = getInteractionsFromMS(state);
+    if (prompts.length !== 0) {
+        const sourceIds = prompts
+            .map((prompt: any) => prompt?.sourceId ?? prompt?.data?.sourceId ?? 'unknown')
+            .join(', ');
+        throw new Error(`Expected no prompt, but found ${prompts.length}: ${sourceIds}`);
+    }
+}
+
+export function resolveCurrentPromptHandlerWithCore(
+    promptState: MatchState<SmashUpCore>,
+    core: SmashUpCore,
+    handler: (...args: any[]) => any,
+    selectedValue: unknown,
+    now: number,
+    random: RandomFn = defaultTestRandom,
+) {
+    const prompt = getFirstPrompt(promptState);
+    if (!prompt) {
+        throw new Error('Expected a prompt to resolve with a handler, but no prompt was available.');
+    }
+    const handlerState = { ...promptState, core };
+    return handler(
+        handlerState,
+        prompt.playerId,
+        selectedValue,
+        prompt.data,
+        random,
+        now,
+    );
+}
+
+export function getReactionPrompt(state: MatchState<SmashUpCore>): any {
+    return getSimpleChoicePrompt(state, 'smashup_reaction_choose');
+}
+
+export function getReactionPromptOptionBySourceDefId(
+    state: MatchState<SmashUpCore>,
+    prompt: any,
+    sourceDefId: string,
+): any {
+    const queueById = new Map((state.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]));
+    return getPromptOption(
+        prompt,
+        (option: any) => queueById.get(option.value?.triggerId)?.sourceDefId === sourceDefId,
+        `reaction option for ${sourceDefId}`,
+    );
+}
+
+export function getReactionPromptSourceDefIds(
+    state: MatchState<SmashUpCore>,
+    prompt: any,
+): string[] {
+    const queueById = new Map((state.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]));
+    return getPromptOptions(prompt)
+        .map((option: any) => queueById.get(option.value?.triggerId)?.sourceDefId)
+        .filter(Boolean);
 }
 
 export function resolveInteractionChain(
@@ -315,7 +545,7 @@ export function resolveInteractionChain(
     const events: GameEvent[] = [];
 
     for (let step = 0; step < maxSteps; step += 1) {
-        const prompt = getInteractionsFromMS(state)[0];
+        const prompt = getFirstPrompt(state);
         if (!prompt) {
             return { finalState: state, events };
         }

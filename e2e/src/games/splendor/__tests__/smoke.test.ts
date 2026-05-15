@@ -1966,6 +1966,17 @@ describe('splendor smoke', () => {
         expect(actions.every((action) => action.kind === 'discard')).toBe(true);
     });
 
+    test('AI 未开局时不生成会被领域层拒绝的行动', () => {
+        const state = createAiState({
+            hostStarted: false,
+            currentPlayer: '0',
+        });
+
+        const actions = buildSplendorAiLegalActions({ playerId: '0', state });
+
+        expect(actions).toEqual([]);
+    });
+
     test('discard scorer 会把仅存在于 reserved 中的目标颜色算进弃牌偏好', () => {
         const discardScorer = splendorScorers.find((scorer) => scorer.id === 'discard');
         expect(discardScorer).toBeTruthy();

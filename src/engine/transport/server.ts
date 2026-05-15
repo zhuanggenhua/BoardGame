@@ -1099,7 +1099,10 @@ export class GameTransportServer {
 
         const currentPhase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
         const core = match.state.core as { hostStarted?: unknown } | undefined;
-        const isPublicPregameSetup = core?.hostStarted === false;
+        const isPublicPregameSetup = core?.hostStarted === false && (
+            currentPhase === 'factionSelect'
+            || (match.gameId === 'summonerwars' && currentPhase === 'summon')
+        );
         // 通用保护：当真人是当前操作者时，seat-legal-only 仅允许在两类公开场景触发：
         // 1. defensiveRoll / targetingRoll 这类 off-turn 真人阶段；
         // 2. hostStarted=false 的公开预开局 setup，此时 AI 选阵营/准备不会越权代真人推进。

@@ -28,6 +28,49 @@
   - 1 条主路径用例（功能照常可执行）
   - 1 条兜底路径用例（主路径不满足时仍能走替代动作）
 
+### 0.2 TDD 行为 seam 门禁
+
+- 测试必须锁定公开行为，不默认锁内部实现形状。若一次重构导致大量测试跟着改，而用户可见/调用者可见行为没有变化，必须优先判断为“测试 seam 过浅”或“断言耦合内部结构”。
+- 新增或修复测试时，先写清本用例保护的行为入口：命令入口、公开 API、真实 UI 入口、审计工厂或系统边界。禁止只因为某个内部函数方便调用就直接测它。
+- 交互链测试不得散落直读 `sys.interaction.current` / `queue` / `data.options`；应优先通过游戏专用测试 helper/facade 读取 prompt、选择 option、断言 source/候选/禁用状态。只有在测试目标就是 InteractionSystem 内部契约时，才允许直接断言内部字段。
+- `vi.mock` / `spyOn` / `toHaveBeenCalled*` 默认只用于系统边界（网络、时间、随机数、文件系统、外部服务、浏览器 API）。项目自有模块之间的协作应优先通过输出状态、事件、可见 UI 或公开返回值证明。
+- 禁止通过批量修改 expected 来“适配重构”。如果行为确实变化，测试名、证据文档或提交说明必须写清新行为依据；如果行为未变，应调整测试 seam，而不是让测试继续绑定内部实现。
+
+### 0.3 统一测试分层
+
+| 分层 | 默认用途 | 禁区 |
+|------|----------|------|
+| 逻辑/规则行为测试 | 验证领域规则、命令合法性、最终权威状态 | 绕过真实命令链直接调用深层 helper 来证明完整行为 |
+| 集成链路测试 | 验证 `executePipeline` / `execute()` / Interaction 链路 | 只断言某内部函数被调用 |
+| E2E | 验证真实 UI 入口、交互可操作、关键视觉结果 | 重复铺满同类卡牌逻辑或代替业务状态断言 |
+| 审计/属性测试 | 批量验证注册表、引用链、数据契约、规则覆盖 | 作为单个 bug 修复的唯一成功证据 |
+| 调试/临时测试 | 构造最小复现、定位根因 | 长期留在主测试集或作为收口证据 |
+
+### 0.4 镜像测试目录禁写
+
+- `src/games/**/__tests__` 是游戏 Vitest 行为测试的权威来源。
+- `e2e/src/games/**/__tests__` 只按历史镜像/质量门禁兼容处理，禁止作为新增测试入口。
+- 如果一次改动同时触碰 `src/games/**/__tests__` 与 `e2e/src/games/**/__tests__` 的同名文件，汇报时必须明确这是镜像债务，不得把“双份同步”包装成正常测试流程。
+- 后续拆分/迁移测试文件时，目标是减少镜像目录依赖，而不是继续扩写镜像测试。
+
+### 0.5 测试文件组织门禁
+
+- 测试文件必须按行为簇命名和归档：能力簇、交互链、配置合同、页面行为、审计合同分别放到清晰目录或文件中。
+- 禁止继续新增 `new*`、`misc`、`regression`、`feedback`、`fixes` 这类可无限吸纳场景的泛名测试文件；已有泛名文件只能迁出或收敛，不作为新增用例入口。
+- 当一个测试文件已经覆盖多个无关派系、页面、反馈编号、规则簇或系统层，新增用例必须优先落到更聚焦的新文件；只有同一行为簇内的少量补充才允许追加。
+- 拆分不是删除覆盖。迁移用例时必须保留该行为簇至少 1 条代表性路径，并运行迁出后的新文件；若原巨型文件仍保留大量相关场景，应按风险决定是否复跑原文件。
+- 示例：Smash Up 音效配置测试应落到 `src/games/smashup/__tests__/audio/faction-audio-config.test.ts`，不再塞回 `newFactionAbilities.test.ts`。
+- 自动门禁：`npm run test:structure` 会阻止新增泛名测试文件、给旧泛名文件净增加内容、新增 `e2e/src/games/**/__tests__` 镜像测试，以及在非系统契约游戏测试里新增裸 `getInteractionsFromMS` / `prompt.data.options` / `SYS_INTERACTION_RESPOND` / `SYS_INTERACTION_CANCEL` / `sys.interaction.current` 访问。历史债务允许继续收敛；旧泛名文件净删减时只警告，迁出的新文件必须改走 facade。必要豁免必须显式设置 `ALLOW_TEST_STRUCTURE_DEBT=1` 并说明原因。
+- 新增或迁出的游戏行为测试不得使用 `it.skip` / `test.skip` / `describe.skip`。如果旧测试是 skip，迁移时必须先补齐真实行为链路并跑绿；无法补齐时保留为历史债务并记录原因，不得把 skip 带进新的聚焦测试文件。
+
+### 0.6 测试接口 / 行为端口门禁
+
+- 每类高频测试对象都应有稳定的测试接口：游戏命令用 `GameTestRunner` / `runCommand`，交互 prompt 用游戏专用 prompt facade，UI 用真实 E2E 入口。
+- 测试主体不应直接依赖内部结构字段，例如 `sys.interaction.current`、`queue`、`data.options`、内部 handler 调用顺序。确需测试内部契约时，测试文件名或 describe 必须写明它是在测系统契约。
+- 如果一次实现重构导致大量测试改 `option` 读取方式、prompt 字段名、命令 payload 形状或内部 helper 调用，应先新增/调整测试接口层，再迁移用例，禁止在每个测试里重复适配。
+- 新增测试接口要放在对应游戏的 `__tests__/helpers.ts` 或更聚焦的 helper 文件中；测试用例只表达“选择某张牌 / 某玩家 / 某基地 / 某模式”，不表达 InteractionSystem 如何存储这些选项。
+- 示例：Smash Up 交互测试优先使用 `getSimpleChoicePrompt`、`getPromptOption`、`getPromptOptions`、`respondToPrompt`、`respondToPromptOptions`、`cancelPrompt`，而不是在测试体中散落 `prompt.data.options.find(...)` 或手写系统交互命令。
+
 ### 1. 使用正确的测试工具
 
 | 场景 | 推荐工具 | 原因 |

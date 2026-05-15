@@ -123,13 +123,6 @@ function collectPhaseTwoOngoingExtraEvents(
             }
         }
 
-        if (
-            (base.defId === 'base_secret_garden' || base.defId === 'base_secret_garden_pod')
-            && base.minions.some(minion => minion.controller === playerId)
-        ) {
-            // "On your turn" base extras also begin in phase 2, not at startTurn.
-            events.push(grantExtraMinion(playerId, '神秘花园：额外打出力量≤2的随从', now, baseIndex, { playTiming: 'banked' }));
-        }
     }
 
     return events;

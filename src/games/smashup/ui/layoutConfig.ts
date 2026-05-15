@@ -7,20 +7,22 @@
 import { logger } from '../../../lib/logger';
 
 export interface LayoutConfig {
-    /** 基地卡片宽度（vw） */
+    /** 基地卡片宽度（桌面为 vw，移动端为 board-shell 设计宽度百分比） */
     baseCardWidth: number;
-    /** 基地之间的间距（vw） */
+    /** 基地之间的间距（桌面为 vw，移动端为 board-shell 设计宽度百分比） */
     baseGap: number;
-    /** 随从卡片宽度（vw） */
+    /** 随从卡片宽度（桌面为 vw，移动端为 board-shell 设计宽度百分比） */
     minionCardWidth: number;
-    /** 随从卡片堆叠偏移（vw，负值表示重叠） */
+    /** 随从卡片堆叠偏移（桌面为 vw，移动端为 board-shell 设计宽度百分比；负值表示重叠） */
     minionStackOffset: number;
-    /** 玩家列之间的间距（vw） */
+    /** 玩家列之间的间距（桌面为 vw，移动端为 board-shell 设计宽度百分比） */
     playerColumnGap: number;
-    /** 持续行动卡宽度（vw） */
+    /** 持续行动卡宽度（桌面为 vw，移动端为 board-shell 设计宽度百分比） */
     ongoingCardWidth: number;
-    /** 持续行动卡顶部偏移（vw） */
+    /** 持续行动卡顶部偏移（桌面为 vw，移动端为 board-shell 设计宽度百分比） */
     ongoingTopOffset: number;
+    /** 主战区几何是否使用 board-shell 运行时 inline unit */
+    useRuntimeInlineUnit: boolean;
     /** 手牌区域高度（px） */
     handAreaHeight: number;
     /** 顶部提示/横幅偏移（px） */
@@ -35,6 +37,14 @@ export interface LayoutConfig {
     topHudScale: number;
     /** 结束回合区缩放比例 */
     endTurnHudScale: number;
+}
+
+export function layoutInlineSize(value: number, layout: Pick<LayoutConfig, 'useRuntimeInlineUnit'>): string {
+    if (!layout.useRuntimeInlineUnit) {
+        return `${value}vw`;
+    }
+    const multiplier = Number.isFinite(value) ? Number(value.toFixed(4)) : 0;
+    return `calc(var(--mobile-layout-inline-unit, 1vw) * ${multiplier})`;
 }
 
 /**
@@ -63,6 +73,7 @@ export function getLayoutConfig(
                 playerColumnGap: 0.5,
                 ongoingCardWidth: 3.8,
                 ongoingTopOffset: 6,
+                useRuntimeInlineUnit: isMobileViewport,
                 handAreaHeight: isMobileViewport ? 210 : 220,
                 hudTopOffset: isMobileViewport ? 42 : 72,
                 floatingActionBottom: isMobileViewport ? 232 : 280,
@@ -81,6 +92,7 @@ export function getLayoutConfig(
                 playerColumnGap: 0.1,
                 ongoingCardWidth: 3.5,
                 ongoingTopOffset: 5.5,
+                useRuntimeInlineUnit: isMobileViewport,
                 handAreaHeight: isMobileViewport ? 192 : 200,
                 hudTopOffset: isMobileViewport ? 42 : 72,
                 floatingActionBottom: isMobileViewport ? 214 : 260,
@@ -99,6 +111,7 @@ export function getLayoutConfig(
                 playerColumnGap: 0,
                 ongoingCardWidth: 3,
                 ongoingTopOffset: 5,
+                useRuntimeInlineUnit: isMobileViewport,
                 handAreaHeight: isMobileViewport ? 176 : 180,
                 hudTopOffset: isMobileViewport ? 40 : 72,
                 floatingActionBottom: isMobileViewport ? 196 : 240,
@@ -119,6 +132,7 @@ export function getLayoutConfig(
                 playerColumnGap: 0.5,
                 ongoingCardWidth: 3.8,
                 ongoingTopOffset: 6,
+                useRuntimeInlineUnit: isMobileViewport,
                 handAreaHeight: isMobileViewport ? 210 : 220,
                 hudTopOffset: isMobileViewport ? 42 : 72,
                 floatingActionBottom: isMobileViewport ? 232 : 280,

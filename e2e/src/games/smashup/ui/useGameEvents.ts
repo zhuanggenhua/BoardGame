@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import type { MatchState } from '../../../engine/types';
-import type { SmashUpCore, LimitModifiedEvent } from '../domain/types';
+import type { SmashUpCore, LimitModifiedEvent, VpAwardedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import type { AbilityFeedbackEvent } from '../domain/types';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
@@ -48,9 +48,11 @@ interface UseGameEventsParams {
   fxBus: FxBus;
   /** 基地 DOM 引用（用于定位力量浮字） */
   baseRefs: React.RefObject<Map<number, HTMLElement>>;
+  /** 玩家展示名，用于让 VP 获得动画明确显示归属 */
+  playerNames?: Record<string, string>;
 }
 
-export function useGameEvents({ G, myPlayerId, fxBus, baseRefs }: UseGameEventsParams) {
+export function useGameEvents({ G, myPlayerId, fxBus, baseRefs, playerNames }: UseGameEventsParams) {
   const entries = getEventStreamEntries(G);
   const { consumeNew } = useEventStreamCursor({ entries });
 
@@ -78,6 +80,10 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs }: UseGameEventsP
     SU_EVENTS.VP_AWARDED,
     SU_EVENTS.TEMP_POWER_ADDED,  // 临时力量增益（如狼人 beforeScoring）
   ]), []);
+
+  const resolvePlayerName = useCallback((playerId: string) => {
+    return playerNames?.[playerId] ?? `P${Number(playerId) + 1}`;
+  }, [playerNames]);
 
   // 消费事件流 → 推入 FX 系统
   useEffect(() => {
@@ -144,8 +150,26 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs }: UseGameEventsP
           // VP 飞行 → FX
           // 正常播放（阶段切换检测会在独立 effect 中处理）
           fxBus.push(SU_FX.BASE_SCORED, { space: 'screen' }, {
-            rankings: p.rankings,
+            rankings: p.rankings.map(ranking => ({
+              ...ranking,
+              playerName: resolvePlayerName(ranking.playerId),
+            })),
           });
+          break;
+        }
+
+        case SU_EVENTS.VP_AWARDED: {
+          const p = (event as VpAwardedEvent).payload;
+          if (p.amount > 0) {
+            fxBus.push(SU_FX.BASE_SCORED, { space: 'screen' }, {
+              rankings: [{
+                playerId: p.playerId,
+                power: 0,
+                vp: p.amount,
+                playerName: resolvePlayerName(p.playerId),
+              }],
+            });
+          }
           break;
         }
 
@@ -190,7 +214,7 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs }: UseGameEventsP
         }
       }
     }
-  }, [G, consumeNew, myPlayerId, fxBus, baseRefs, triggerDefIds, TRIGGER_CARRIER_EVENTS]);
+  }, [G, consumeNew, myPlayerId, fxBus, baseRefs, triggerDefIds, TRIGGER_CARRIER_EVENTS, resolvePlayerName]);
 
   // 清除已完成的反馈
   const removeFeedback = useCallback((id: string) => {

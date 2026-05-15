@@ -8,7 +8,7 @@ import type { MatchState, PlayerId } from '../../../engine/types';
 import { registerAbilityProgram, registerSimpleAbility } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
 import { recoverCardsFromDiscard, grantContextualExtraAction, grantExtraAction, moveMinion, resolveExtraPlayTiming, buildAbilityFeedback, buildMinionTargetOptions, buildBaseTargetOptions, getMinionPower, buildStandardDrawEvents } from '../domain/abilityHelpers';
-import { getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
+import { appendResolvedActionAbility, getExternalActionEffectiveHandSize } from '../domain/externalActionPlay';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, SmashUpCore, MinionReturnedEvent, OngoingDetachedEvent, ActionCardDef } from '../domain/types';
 import { registerRestriction, registerTrigger, registerInterceptor } from '../domain/ongoingEffects';

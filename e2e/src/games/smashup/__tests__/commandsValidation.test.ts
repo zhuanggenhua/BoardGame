@@ -292,8 +292,7 @@ describe('SmashUp command validation', () => {
         expect(result.valid).toBe(true);
     });
 
-    it('uses smashupReactionSession as the truth source for scoreBases special activation order', () => {
-        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
+    it('frame-backed reaction session 不会把仅限 playCards 的泰坦 special 误放行到 scoreBases', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -333,7 +332,10 @@ describe('SmashUp command validation', () => {
             payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
         } as any);
 
-        expect(result.valid).toBe(true);
+        expect(result).toEqual({
+            valid: false,
+            error: '该泰坦的特殊能力不能手动激活',
+        });
     });
 
     it('frame-backed reaction session 不会把仅限 playCards 的 minion special 误放行到 scoreBases', () => {
@@ -374,8 +376,7 @@ describe('SmashUp command validation', () => {
         });
     });
 
-    it('afterScoring 响应窗口中的 special 只能指向当前正在结算的基地', () => {
-        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
+    it('afterScoring 响应窗口不会放行仅限 playCards 的泰坦 special', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -408,22 +409,15 @@ describe('SmashUp command validation', () => {
             responseWindowType: 'afterScoring',
         });
 
-        const wrongBaseResult = validate(ms, {
-            type: SU_COMMANDS.ACTIVATE_SPECIAL,
-            playerId: '1',
-            payload: { titanUid: 'titan-ghost-1', baseIndex: 1 },
-        } as any);
-        expect(wrongBaseResult).toEqual({
-            valid: false,
-            error: 'afterScoring 只能选择当前正在结算的基地',
-        });
-
-        const correctBaseResult = validate(ms, {
+        const result = validate(ms, {
             type: SU_COMMANDS.ACTIVATE_SPECIAL,
             playerId: '1',
             payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
         } as any);
-        expect(correctBaseResult.valid).toBe(true);
+        expect(result).toEqual({
+            valid: false,
+            error: '该泰坦的特殊能力不能手动激活',
+        });
     });
 
     it('ignores orphaned responseWindow state without a frame-backed reaction session', () => {
@@ -471,10 +465,13 @@ describe('SmashUp command validation', () => {
             payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
         } as any);
 
-        expect(result.valid).toBe(true);
+        expect(result).toEqual({
+            valid: false,
+            error: '该泰坦的特殊能力不能手动激活',
+        });
     });
 
-    it('frame-backed reaction session 已切到 smashup_reaction_choose 时，不应再被 legacy Me First 门禁拦掉 special', () => {
+    it('frame-backed reaction session 已切到 smashup_reaction_choose 时，仍不得绕过泰坦 special 窗口合同', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -493,7 +490,6 @@ describe('SmashUp command validation', () => {
             scoringEligibleBaseIndices: [0],
             currentPlayerIndex: 0,
         });
-        registerAbility('ghosts_creampuff_man', 'special', () => ({ events: [] }));
         const ms = attachReactionSession(makeMatchState(core), {
             frameId: 'score-before:0:test',
             frameKind: 'score-before',
@@ -542,7 +538,10 @@ describe('SmashUp command validation', () => {
             payload: { titanUid: 'titan-ghost-1', baseIndex: 0 },
         } as any);
 
-        expect(result.valid).toBe(true);
+        expect(result).toEqual({
+            valid: false,
+            error: '该泰坦的特殊能力不能手动激活',
+        });
     });
 
     it('rejects deputy special activation because its effect is not a manual on-board special', () => {

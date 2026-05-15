@@ -689,6 +689,12 @@ export function resolveForceEndTurnForStalledAi(args: {
         ? args.sharedState.sys.phase
         : '';
     const currentPlayerId = resolveCurrentPlayerId(args.sharedState);
+    const core = args.sharedState?.core as { hostStarted?: unknown } | undefined;
+    const isFactionSelectPhase = phase === 'factionSelect';
+    const isPublicPregameLegalActionPhase = core?.hostStarted === false && (
+        isFactionSelectPhase
+        || (args.gameId === 'summonerwars' && phase === 'summon')
+    );
     const defensivePendingAttack = (args.sharedState?.core as {
         pendingAttack?: { defenderId?: unknown };
     } | undefined)?.pendingAttack;
@@ -721,22 +727,26 @@ export function resolveForceEndTurnForStalledAi(args: {
     }
 
     if (currentPlayerId && args.seatControllers[currentPlayerId]?.type !== 'human') {
+        if (core?.hostStarted === false && !isPublicPregameLegalActionPhase) {
+            return null;
+        }
+
         const isDiceRollPhase = phase === 'offensiveRoll'
             || phase === 'targetingRoll'
             || phase === 'defensiveRoll';
         const advancePhaseCommandType = resolveWatchdogAdvancePhaseCommandType(args.gameId);
 
-        // 派系选择阶段的 AI 没动作，通常是 seat 凭据/seat state 还没准备好。
+        // 公开预开局选择阶段的 AI 没动作，通常是 seat 凭据/seat state 还没准备好。
         // 这里若强行发 ADVANCE_PHASE，会把 match 非法推进到 startTurn/playCards，
         // 造成双方 factions 仍为空却直接进游戏、手牌/牌库全空的损坏状态。
-        // 因此 factionSelect 只能走“服务端代 AI 执行合法 SELECT_FACTION”这类 legal-action recovery，
+        // 因此只能走“服务端代 AI 执行合法选阵营动作”这类 legal-action recovery，
         // 绝不能 watchdog 自动 ADVANCE_PHASE 跳过。
         //
         // DiceThrone 的 roll 阶段也不能直接 fallback 到裸 ADVANCE_PHASE：
         // offensiveRoll / targetingRoll / defensiveRoll 的真实推进依赖掷骰、确认、
         // 选目标或防御响应。若 seat overlay stale 或 legalActions 暂时为 0，
         // 强发 ADVANCE_PHASE 只会打出 command_failed，并制造高频误导性自动反馈。
-        if (phase === 'factionSelect' || isDiceRollPhase || !advancePhaseCommandType) {
+        if (isFactionSelectPhase || isPublicPregameLegalActionPhase || isDiceRollPhase || !advancePhaseCommandType) {
             return {
                 playerId: currentPlayerId,
                 reason: 'active-turn-legal-only',

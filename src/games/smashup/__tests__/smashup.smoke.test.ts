@@ -1784,7 +1784,10 @@ describe('smashup', () => {
 
         expect(legalActions.some((action) => action.metadata?.factionId === SMASHUP_FACTION_IDS.ROBOTS)).toBe(true);
         expect(legalActions.some((action) => action.metadata?.factionId === SMASHUP_FACTION_IDS.WIZARDS)).toBe(true);
-        expect(chosenAction?.metadata?.factionId).toBe(SMASHUP_FACTION_IDS.WIZARDS);
+        expect(chosenAction).toBeDefined();
+        expect(chosenAction?.metadata?.factionId).not.toBe(SMASHUP_FACTION_IDS.ZOMBIES);
+        expect(chosenAction?.metadata?.factionId).not.toBe(SMASHUP_FACTION_IDS.ZOMBIES_POD);
+        expect(decision?.reasoningSummary).toContain('按派系组合选择');
     });
 
     it('Smash Up AI legal action 会自动附带 strategy tags，供通用风格评分复用', () => {

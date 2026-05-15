@@ -645,6 +645,10 @@ function isGameFile(file) {
   return file.startsWith('src/games/') || file.startsWith('e2e/src/games/');
 }
 
+function isGameVitestTest(file) {
+  return file.startsWith('src/games/') && isTestFile(file);
+}
+
 function isGameSourceFile(file) {
   return isGameFile(file) && !isTestFile(file);
 }
@@ -843,6 +847,15 @@ function collectCommands(files, baseRef, affectsTypecheck) {
   const gameTestFiles = collectRunnableVitestWorkspaceTargets(
     workspaceScopeFiles.filter((file) => isGameFile(file) && isTestFile(file)),
   );
+
+  if (hasAny(files, (file) => isGameVitestTest(file) || file.startsWith('e2e/src/games/'))) {
+    commands.push({
+      label: 'Test structure guard',
+      reason: '存在游戏测试改动，检查测试文件命名、巨型泛名文件净新增与 e2e 镜像目录新增',
+      command: process.execPath,
+      args: ['scripts/infra/testing-structure-guard.mjs', '--base', baseRef, ...files],
+    });
+  }
 
   if (hasAny(files, affectsTypecheck)) {
     commands.push({

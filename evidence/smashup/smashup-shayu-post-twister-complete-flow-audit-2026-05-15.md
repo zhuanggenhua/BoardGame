@@ -4,6 +4,20 @@
 
 本轮不是重新证明“已有测试很多”，而是把 Twister 反馈暴露出的新门禁应用回 shayu 全集：每个可执行对象都必须按完整技能流程矩阵复核，不能只用“可触发 / prompt 出现 / 成功路径”替代完整审计。
 
+## 2026-05-15 失效结论回写：完整流程矩阵仍缺逐子句门禁
+
+后续“长描述复杂对象抽样全链路审计”发现，本文件虽然补了对象级完整流程矩阵，但仍未强制把每张卡/基地的真相源文本拆成独立规则子句逐项核销。`mythic_greeks_argonaut` 因此出现漏审：
+
+- 旧矩阵行写“触发希腊行动后能力”，但没有逐项列出“所有 action 后能力”应包含 Jason。
+- 旧矩阵行写 `PLAY_MINION`，但没有把第二句“可以改为打出这张牌”映射到替代行动额度入口、command payload 与 reducer 消耗。
+
+修复后证据入口：
+
+- `evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`
+- `docs/ai-rules/testing-audit.md` 已新增通用“规则文本逐句/子句覆盖”门禁。
+
+因此本文的对象级 `mythic_greeks_argonaut` pass 结论在 2026-05-15 前是不完整的；后续引用必须同时引用上述修复证据。
+
 全集：
 
 - Sharks：12 张。

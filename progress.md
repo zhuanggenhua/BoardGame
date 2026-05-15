@@ -1,3 +1,64 @@
+## Session: 2026-05-16 TDD 行为 seam 与测试结构重构
+
+- **Status:** in_progress
+- 回应用户“是否只改表象”：本轮按行为 seam 继续推进，不把迁移等同完成。
+- 已把 `Skeletons abilities` 从遗留巨型 `src/games/smashup/__tests__/newFactionAbilities.test.ts` 迁到 `src/games/smashup/__tests__/abilities/skeletons.test.ts`。
+- 迁出时已把交互读取/响应改走 facade：
+  - `getSimpleChoicePrompt`
+  - `getPromptOption`
+  - `getPromptOptions`
+  - `respondToPrompt`
+  - `respondToPromptOptions`
+- 新迁出文件扫描无命中：`it.skip` / `describe.skip` / `test.skip` / `getInteractionsFromMS` / `prompt.data.options` / `SYS_INTERACTION_RESPOND` / `sys.interaction.current`。
+- 验证：
+  - `npm test -- src/games/smashup/__tests__/abilities/skeletons.test.ts` -> 1 file passed / 19 tests passed。
+  - `node scripts/infra/check-file-encoding.mjs src/games/smashup/__tests__/abilities/skeletons.test.ts src/games/smashup/__tests__/newFactionAbilities.test.ts` -> passed。
+  - `npm test -- src/games/smashup/__tests__/newFactionAbilities.test.ts src/games/smashup/__tests__/abilities/skeletons.test.ts src/games/smashup/__tests__/abilities/fairies.test.ts src/games/smashup/__tests__/abilities/mermaids.test.ts src/games/smashup/__tests__/abilities/princesses.test.ts src/games/smashup/__tests__/abilities/werewolves.test.ts src/games/smashup/__tests__/abilities/frankenstein.test.ts src/games/smashup/__tests__/abilities/vampires.test.ts` -> 8 files passed / 118 tests passed。
+  - `npm run test:structure` -> OK；仅 Junction 和旧大文件债务 warning。
+- 当前剩余：`newFactionAbilities.test.ts` 仍保留 `Samurai abilities` 与 `巨蚁派系能力`，其中旧内部耦合债务仍需后续迁出时消化。
+
+---
+
+## Session: 2026-05-15 反馈真实链路与 AI 自动反馈复核
+
+- **Status:** completed
+- 已补真实用户反馈 E2E：`e2e/feedback-real-submission.e2e.ts`。
+- E2E 覆盖：大厅反馈弹窗填写匿名反馈 -> `POST /feedback` 成功 -> `/admin/feedback` API 可读 -> 后台反馈列表出现同一条 -> 详情展开显示内容、联系方式与来源。
+- 已实际查看截图：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\feedback-real-submission\01-feedback-modal-before-submit.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\feedback-real-submission\02-admin-feedback-list-after-submit.png`
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\feedback-real-submission\03-admin-feedback-detail-after-submit.png`
+- 生产只读查询结果：
+  - 最近 14 天反馈记录数：45。
+  - 当前未收口：`splendor|online-ai-watchdog|open = 1`，`smashup|feedback-modal|in_progress = 1`。
+  - 最新 open AI 自动反馈为 `6a05e66129cd213e03bfd82f`，内容带出 `RESERVE_OPEN_CARD:gameNotStarted`。
+- 已修复 AI 自动反馈指向的真实根因：
+  - `src/engine/transport/onlineAiRecovery.ts` 与 `e2e/src/engine/transport/onlineAiRecovery.ts`：未开局且非 `factionSelect` 时不再触发 active-turn legal-action watchdog。
+  - `src/engine/transport/server.ts` 与 `e2e/src/engine/transport/server.ts`：`hostStarted=false` 的 public pregame 只允许 `factionSelect`。
+  - `src/games/splendor/ai.ts` 与 `e2e/src/games/splendor/ai.ts`：未开局或游戏结束时不生成 Splendor AI legal actions。
+- 规范修正：
+  - `AGENTS.md`：补充“部署/复发观察不得卡反馈状态”。
+  - `.windsurf/skills/feedback-closeout/SKILL.md`：补充 `resolved` 不以生产部署或未来复发观察为前置。
+  - `.windsurf/skills/feedback-closeout/references/feedback-open-api.md`：补充状态含义。
+- 生产状态回写：
+  - `6a05e66129cd213e03bfd82f` 已于 `2026-05-15T15:38:58.914Z` 从 `open` 回写为 `resolved`。
+  - 回写后 `open/in_progress` 只剩 `smashup|feedback-modal|in_progress = 1`。
+- 已补回归：
+  - `online AI watchdog 在 Splendor 未开局时不得代 AI 执行动作或写失败反馈`
+  - `Splendor 未开局时不得触发 active-turn legal-action watchdog`
+  - `AI 未开局时不生成会被领域层拒绝的行动`
+- 验证：
+  - `npx eslint src/engine/transport/onlineAiRecovery.ts src/engine/transport/server.ts src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts src/engine/transport/__tests__/server.test.ts src/games/splendor/ai.ts src/games/splendor/__tests__/smoke.test.ts` -> 0 errors
+  - `npx eslint e2e/src/engine/transport/onlineAiRecovery.ts e2e/src/engine/transport/server.ts e2e/src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts e2e/src/engine/transport/__tests__/server.test.ts e2e/src/games/splendor/ai.ts e2e/src/games/splendor/__tests__/smoke.test.ts e2e/feedback-real-submission.e2e.ts` -> 0 errors
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts src/games/splendor/__tests__/smoke.test.ts --configLoader native --maxWorkers 1 --testNamePattern "Splendor 未开局|AI 未开局|Splendor 即使残留"` -> 2 files passed，3 tests passed
+  - `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --maxWorkers 1 --testNamePattern "Splendor 未开局时不得代 AI|强制恢复命令失败时|自动反馈应携带交互选项|自动反馈应携带 AI 决策预览|默认上报链路不应把成功恢复类事件"` -> 1 file passed，5 tests passed
+  - `node scripts/infra/run-e2e-single.mjs ci e2e/feedback-real-submission.e2e.ts "匿名用户从反馈弹窗提交后，应能在后台反馈列表看到同一条记录"` -> 1 passed
+- 证据：
+  - `evidence/feedback-real-submission-e2e-2026-05-15.md`
+  - `evidence/engine/online-ai-watchdog-feedback-diagnostics-2026-05-15.md`
+
+---
+
 ## Session: 2026-05-13 线上 AI 自动反馈排查与修复
 
 - **Status:** completed
@@ -1971,3 +2032,11 @@
 - 已修复：新增 `playAsAction` 数据/命令/事件语义，`PLAY_MINION` 可在行动额度可用时替代行动打出 Argonaut；Argonaut onPlay 串联 Odysseus prompt 后继续进入 Jason base prompt。
 - 已补验证：Argonaut L2 聚焦测试、shayu 行为回归、审计门禁、Argonaut 真实入口 E2E 均通过；已实际核对 Argonaut 三张截图链。
 - 已新增证据文档：`evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`。
+
+## 2026-05-15 09:40 +08 审计规范加强
+
+- 已确认这次漏审的本质是通用审计规范不够强：对象级矩阵没有强制逐句/子句核销，导致主效果通过后掩盖第二句“替代行动打出”和 Jason 子触发。
+- 已更新通用规范：`docs/ai-rules/testing-audit.md` 新增“规则文本逐句/子句覆盖”“漏审默认先归因到审计方法”“一句话多效果不得合并验收”。
+- 已更新项目通用新增派系 workflow：`.windsurf/skills/add-new-faction/SKILL.md` 要求每个对象建立 `C1/C2/C3...` 子句表，任一子句缺证据不得填 `passed`。
+- 已更新 SmashUp 专项 workflow：`.windsurf/skills/smashup-faction-addition/SKILL.md` 要求逐卡/逐基地列规则子句表，并以子句最低层级决定对象状态。
+- 已回写旧 shayu evidence：`smashup-shayu-comprehensive-audit-coverage-2026-05-12.md` 与 `smashup-shayu-post-twister-complete-flow-audit-2026-05-15.md` 标明 Argonaut 旧对象级 pass 不完整。

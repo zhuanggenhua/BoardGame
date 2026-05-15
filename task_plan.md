@@ -1,3 +1,80 @@
+# Task Plan: TDD 行为 seam 与测试结构重构（2026-05-16）
+
+> 当前正式计划入口。下方旧计划均为历史上下文，不作为本轮任务入口。
+
+## Goal
+
+把 SmashUp 遗留巨型派系测试逐步迁到按能力簇命名的聚焦文件，并把交互链测试从 `sys.interaction` / `prompt.data.options` / `SYS_INTERACTION_RESPOND` 这类内部结构耦合迁到稳定 prompt facade，降低实现重构时同步改测试的成本。
+
+## Constraints
+
+- 不创建、切换、删除分支或 worktree。
+- 不清理工作区无关脏改；只处理测试规范、测试门禁、SmashUp 测试 facade 与本轮迁移文件。
+- `src/games/**/__tests__` 是权威测试目录；`e2e/src` 只按 Junction 镜像债务处理，不作为新增测试入口。
+- 新增/迁出的游戏行为测试不得使用 skip，不得裸读 `getInteractionsFromMS`、`prompt.data.options`、`SYS_INTERACTION_RESPOND`、`sys.interaction.current`。
+
+## Acceptance Checklist
+
+- [x] S0 吸收并安装 TDD / grill-with-docs 等必要 skill，补项目 TDD skill。
+- [x] S1 写入测试分层、行为 seam、测试接口门禁与结构守卫。
+- [x] S2 建立 SmashUp prompt facade，并修复 handler resolution 保留原 `sys` 的测试接口。
+- [x] S3 迁出 Vampires / Frankenstein / Werewolves / Princesses / Mermaids / Fairies / Skeletons 到 `src/games/smashup/__tests__/abilities/`。
+- [x] S4 验证迁出文件不含禁用内部耦合模式，并运行聚焦组合回归。
+- [ ] S5 继续迁出剩余 `Samurai abilities` 与 `巨蚁派系能力`，最终让 `newFactionAbilities.test.ts` 退出新增入口。
+
+## Current Status
+
+- [x] `src/games/smashup/__tests__/abilities/skeletons.test.ts` 已迁出，19 tests passed。
+- [x] `src/games/smashup/__tests__/newFactionAbilities.test.ts` 已无 `Skeletons abilities` / `skeletons_` 命中。
+- [x] 迁移相关组合回归：8 files passed / 118 tests passed。
+- [x] `npm run test:structure` 通过；仅保留 Junction 和旧大文件债务 warning。
+
+## Next
+
+- 继续迁出 `Samurai abilities` 或 `巨蚁派系能力`；迁出时必须先补/复用 facade，不把旧内部访问原样搬进新文件。
+
+---
+
+# Task Plan: 反馈真实链路与 AI 自动反馈复核（2026-05-15）
+
+> 当前正式计划入口。下方旧计划均为历史上下文，不作为本轮任务入口。
+
+## Goal
+
+确认“最近都没有反馈”是否来自反馈系统自身故障：用端到端真实链路验证用户反馈从前端弹窗提交到本地 API/Mongo 再到后台反馈页可见；同步复核在线 AI 自动反馈是否仍有足够诊断证据，不足则重构自动反馈诊断 payload，而不是只做 mock 展示测试。
+
+## Constraints
+
+- 不创建、切换、删除分支或 worktree。
+- 当前工作区已有大量历史/用户脏改，本轮只触碰反馈链路、AI 自动反馈诊断、E2E/API 测试与对应 evidence/计划文件。
+- 生产侧默认只读；不部署、不重启、不回写反馈状态，除非用户后续明确授权。
+- 若最终回复声称 E2E 通过，必须给出本轮实际核对过的截图绝对路径。
+
+## Acceptance Checklist
+
+- [x] S0 读取反馈相关规范、历史计划与关键代码，锁定真实链路缺口。
+- [x] S1 只读确认生产当前反馈盘面，判断是否真的是 open/in_progress 为 0。
+- [x] S2 建立并运行真实用户反馈 E2E：前端弹窗提交 -> API 写入 -> 后台反馈页可见。
+- [x] S3 复核 AI 自动反馈测试和 payload 证据字段；证据不足则重构并补回归。
+- [x] S4 运行聚焦验证，实际查看截图并写 evidence。
+- [x] S5 更新 progress/findings，明确是否需要后续部署或生产状态动作。
+
+## Current Status
+
+- [x] 已读取 `diagnose` / `fullstack-dev` / `planning-with-files` workflow。
+- [x] 已确认现有 mock 后台 E2E 不足以证明真实反馈提交链路。
+- [x] 已补真实链路 E2E 并复跑通过。
+- [x] 已只读确认生产并非反馈断流：最近 14 天 45 条记录，当前 `open/in_progress=2`。
+- [x] 已修复最新 open AI 自动反馈指向的 Splendor 未开局 watchdog 误代发动作问题。
+
+## Errors Encountered
+
+| 时间 | 错误 | 处置 |
+| --- | --- | --- |
+| 2026-05-15 | `session-catchup.py` 提示 Codex 原生 session 解析未实现。 | 记录为无可同步上下文，继续按当前对话与项目文件推进。 |
+
+---
+
 # Task Plan: 线上 AI 自动反馈排查与修复（2026-05-13）
 
 > 当前正式计划入口。下方旧计划均为历史上下文，不作为本轮任务入口。
@@ -46,6 +123,7 @@
 - [x] 已发现并修复 `mythic_greeks_argonaut` 两个真实缺口：缺少替代行动额度打出入口，以及 Argonaut 触发 action 后能力时漏掉 Jason。
 - [x] 已补 L2 行为测试与 L3 真实入口 E2E：随从额度已满、行动额度可用时打出 Argonaut，并串联 Odysseus / Heracles / Spartan / Jason。
 - [x] 已新增 evidence：`evidence/smashup/smashup-shayu-long-text-sample-audit-2026-05-15.md`。
+- [x] 已把漏审根因升级为通用规范：审计必须逐句/逐子句核销规则文本，任一子句缺实现或证据时整对象不得标 `passed`；已更新 `docs/ai-rules/testing-audit.md` 和项目 skill，并回写旧 evidence 失效结论。
 - [ ] 未完成：本轮修复尚未提交、push、部署；该抽样不替代 shayu 45 对象全面审计矩阵。
 
 ## Errors Encountered

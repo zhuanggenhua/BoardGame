@@ -298,8 +298,8 @@ describe('隐蔽迷雾 E2E: 进入 playCards 的额外随从', () => {
     });
 });
 
-describe('神秘花园 E2E: 进入 playCards 的额外随从', () => {
-    it('P0 在神秘花园有己方随从时，进入 playCards 后获得基地限定额外随从，不在 startTurn 预发', () => {
+describe('神秘花园 E2E: 回合开始额外随从', () => {
+    it('P0 进入 playCards 后获得神秘花园基地限定额外随从额度', () => {
         const core = makeState({
             currentPlayerIndex: 1,
             turnNumber: 1,
@@ -308,7 +308,7 @@ describe('神秘花园 E2E: 进入 playCards 的额外随从', () => {
                 '1': makePlayer('1'),
             },
             bases: [
-                makeBase('base_secret_garden', [makeMinion('sg-m1', 'robot_microbot_alpha', '0', 1)]),
+                makeBase('base_secret_garden'),
             ],
         });
 

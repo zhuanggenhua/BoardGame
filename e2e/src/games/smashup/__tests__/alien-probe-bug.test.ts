@@ -20,11 +20,19 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { runCommand } from './testRunner';
-import { makeState, makePlayer, makeCard, makeBase, makeMatchState } from './helpers';
+import {
+    getPromptOptionByCardUid,
+    getPromptOptionById,
+    getSimpleChoicePrompt,
+    makeState,
+    makePlayer,
+    makeCard,
+    makeBase,
+    makeMatchState,
+    respondToPrompt,
+} from './helpers';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import { asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { initAllAbilities } from '../abilities';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 describe('Bug: alien_probe（探究）效果错误', () => {
     beforeAll(() => {
@@ -65,24 +73,22 @@ describe('Bug: alien_probe（探究）效果错误', () => {
         expect(result.success).toBe(true);
         
         // 断言：应该创建交互（选择随从）
-        expect(result.finalState.sys.interaction?.current).toBeDefined();
-        const interaction = asSimpleChoice(result.finalState.sys.interaction?.current);
-        expect(interaction?.sourceId).toBe('alien_probe');
+        const interaction = getSimpleChoicePrompt(result.finalState, 'alien_probe');
         
         // 断言：选项应该包含所有手牌（3 张），但只有随从可选
         expect(interaction?.options.length).toBe(3);
         
         // 断言：随从选项应该可选（disabled: false 或 undefined）
-        const minionOptions = interaction?.options.filter(opt => 
+        const minionOptions = interaction.options.filter((opt: any) =>
             opt.value.cardUid === 'h1-1' || opt.value.cardUid === 'h1-2'
         );
-        expect(minionOptions?.length).toBe(2);
-        minionOptions?.forEach(opt => {
+        expect(minionOptions.length).toBe(2);
+        minionOptions.forEach((opt: any) => {
             expect(opt.disabled).toBeFalsy();
         });
         
         // 断言：行动卡选项应该禁用（disabled: true）
-        const actionOption = interaction?.options.find(opt => opt.value.cardUid === 'h1-3');
+        const actionOption = getPromptOptionByCardUid(interaction, 'h1-3');
         expect(actionOption).toBeDefined();
         expect(actionOption?.disabled).toBe(true);
         
@@ -122,13 +128,11 @@ describe('Bug: alien_probe（探究）效果错误', () => {
 
         expect(result.success).toBe(true);
         expect(result.events.some(e => e.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
-        const interaction = asSimpleChoice(result.finalState.sys.interaction?.current);
-        expect(interaction).toBeDefined();
-        expect(interaction?.sourceId).toBe('alien_probe');
-        expect(interaction?.options.length).toBe(3);
-        expect(interaction?.options.find(opt => opt.id === 'h1-1')?.disabled).toBeFalsy();
-        expect(interaction?.options.find(opt => opt.id === 'h1-2')?.disabled).toBe(true);
-        expect(interaction?.options.find(opt => opt.id === 'h1-3')?.disabled).toBe(true);
+        const interaction = getSimpleChoicePrompt(result.finalState, 'alien_probe');
+        expect(interaction.options.length).toBe(3);
+        expect(getPromptOptionById(interaction, 'h1-1')?.disabled).toBeFalsy();
+        expect(getPromptOptionById(interaction, 'h1-2')?.disabled).toBe(true);
+        expect(getPromptOptionById(interaction, 'h1-3')?.disabled).toBe(true);
     });
 
     it('选择随从后，对手应该弃掉那张随从', () => {
@@ -161,14 +165,10 @@ describe('Bug: alien_probe（探究）效果错误', () => {
 
         // 断言：应该创建交互
         expect(result1.success).toBe(true);
-        expect(result1.finalState.sys.interaction?.current).toBeDefined();
+        getSimpleChoicePrompt(result1.finalState, 'alien_probe');
         
         // 玩家 0 选择弃掉 pirate_first_mate
-        const result2 = runCommand(result1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: 'h1-1' },
-        });
+        const result2 = respondToPrompt(result1.finalState, 'h1-1', '0');
 
         // 断言：命令应该成功
         expect(result2.success).toBe(true);
@@ -219,7 +219,7 @@ describe('Bug: alien_probe（探究）效果错误', () => {
         expect(result.success).toBe(true);
         
         // 断言：不应该创建交互（因为没有随从可选）
-        expect(result.finalState.sys.interaction?.current).toBeUndefined();
+        expect(() => getSimpleChoicePrompt(result.finalState)).toThrow();
         
         // 断言：应该有反馈事件
         expect(result.events.some(e => e.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
@@ -263,25 +263,18 @@ describe('Bug: alien_probe（探究）效果错误', () => {
         expect(result.success).toBe(true);
         
         // 断言：应该创建选择对手的交互
-        expect(result.finalState.sys.interaction?.current).toBeDefined();
-        const interaction = asSimpleChoice(result.finalState.sys.interaction?.current);
-        expect(interaction?.sourceId).toBe('alien_probe_choose_target');
-        expect(interaction?.targetType).toBe('player');
+        const interaction = getSimpleChoicePrompt(result.finalState, 'alien_probe_choose_target');
+        expect(interaction.targetType).toBe('player');
         
         // 断言：应该有 2 个对手可选
         expect(interaction?.options.length).toBe(2);
 
-        const result2 = runCommand(result.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: interaction?.options[0]?.id ?? 'player-0' },
-        });
+        const result2 = respondToPrompt(result.finalState, interaction.options[0]?.id ?? 'player-0', '0');
 
         expect(result2.success).toBe(true);
-        const handInteraction = asSimpleChoice(result2.finalState.sys.interaction?.current);
-        expect(handInteraction?.sourceId).toBe('alien_probe');
-        expect(handInteraction?.options.length).toBe(2);
-        expect(handInteraction?.options.find(opt => opt.id === 'h1-1')?.disabled).toBeFalsy();
-        expect(handInteraction?.options.find(opt => opt.id === 'h1-2')?.disabled).toBe(true);
+        const handInteraction = getSimpleChoicePrompt(result2.finalState, 'alien_probe');
+        expect(handInteraction.options.length).toBe(2);
+        expect(getPromptOptionById(handInteraction, 'h1-1')?.disabled).toBeFalsy();
+        expect(getPromptOptionById(handInteraction, 'h1-2')?.disabled).toBe(true);
     });
 });

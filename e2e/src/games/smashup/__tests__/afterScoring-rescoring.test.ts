@@ -631,7 +631,6 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
                         delta: 1,
                         reason: '神秘花园：额外打出力量≤2的随从',
                         playTiming: 'immediate',
-                        restrictToBase: 0,
                     },
                     timestamp: 0,
                 } as any],

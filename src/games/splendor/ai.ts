@@ -1544,6 +1544,7 @@ export function buildSplendorAiLegalActions(
   const core = (state as SplendorState).core;
   const player = core.players[playerId];
   if (!player) return [];
+  if (!core.hostStarted || core.gameResult) return [];
 
   const actions: AiLegalAction[] = [];
 

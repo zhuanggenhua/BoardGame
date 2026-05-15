@@ -53,6 +53,7 @@ import { getCustomActionMeta } from './domain/effects';
 import type { AbilityEffect, TriggerCondition } from './domain/combat';
 import type {
     AbilityCard,
+    CharacterDefinition,
     DiceThroneCore,
     DtResponseWindowType,
     PendingBonusDiceSettlement,
@@ -68,6 +69,14 @@ type DiceThroneStrategyTag =
     | 'dice-setup'
     | 'upgrade-engine'
     | 'purify-control';
+
+const isDiceThroneCharacterReadyForAiSetup = (character: CharacterDefinition): boolean => (
+    !character.badges?.some((badge) => badge.id === 'implementation_in_progress')
+);
+
+const AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG = DICETHRONE_CHARACTER_CATALOG.filter(
+    isDiceThroneCharacterReadyForAiSetup,
+);
 
 type DiceRequirement =
     | { kind: 'faces'; faces: Record<string, number> }
@@ -1446,12 +1455,12 @@ const buildSetupActions = (state: DiceThroneState, playerId: PlayerId): AiLegalA
                 takenCharacters.add(value as SelectableCharacterId);
             }
         }
-        const availableCharacters = DICETHRONE_CHARACTER_CATALOG.filter(
+        const availableCharacters = AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG.filter(
             (character) => !takenCharacters.has(character.id),
         );
         const candidates = availableCharacters.length > 0
             ? availableCharacters
-            : DICETHRONE_CHARACTER_CATALOG;
+            : AI_SELECTABLE_DICETHRONE_CHARACTER_CATALOG;
 
         for (const character of candidates) {
             appendAction(actions, state, playerId, {
@@ -2241,14 +2250,25 @@ const diceThroneKindScorer = createActionKindScorer('kind-weight', {
     'advance-phase': 10,
 });
 
+const setupCharacterProfileScorer: LocalAiActionScorer = {
+    id: 'setup-character-neutral',
+    score(_context, action) {
+        if (action.kind !== 'setup-select-character') return null;
+        return {
+            score: 0,
+            reason: '从已完成角色池中随机选择',
+        };
+    },
+};
+
 const setupCharacterRandomScorer: LocalAiActionScorer = {
     id: 'setup-character-random',
     score(context, action) {
         if (action.kind !== 'setup-select-character') return null;
         const noise = buildDeterministicAiNoise(context, action, 'setup');
         return {
-            score: Number((noise * 20).toFixed(3)),
-            reason: '角色选择随机扰动',
+            score: Number((noise * 8).toFixed(3)),
+            reason: '已完成角色池内保留可复现随机',
             metadata: { noise },
         };
     },
@@ -4076,6 +4096,7 @@ const projectDiceThroneAction = (args: {
 
 const diceThroneLocalPolicyScorers: LocalAiActionScorer[] = [
     diceThroneKindScorer,
+    setupCharacterProfileScorer,
     setupCharacterRandomScorer,
     abilityValueScorer,
     cardValueScorer,

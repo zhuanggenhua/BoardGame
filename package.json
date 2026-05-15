@@ -51,6 +51,7 @@
     "atlas:scan": "node scripts/assets/atlas_grid_scan.js",
     "i18n:check": "npx tsx scripts/verify/i18n-check.ts",
     "check:all": "npm run typecheck && npm run lint",
+    "test:structure": "node scripts/infra/testing-structure-guard.mjs",
     "quality:changed": "node scripts/infra/run-changed-quality-gate.mjs",
     "quality:changed:pre-commit": "cross-env NODE_OPTIONS=--max-old-space-size=8192 node scripts/infra/run-changed-quality-gate.mjs pre-commit",
     "quality:changed:pre-push": "cross-env NODE_OPTIONS=--max-old-space-size=8192 node scripts/infra/run-changed-quality-gate.mjs pre-push",
@@ -135,7 +136,7 @@
     "dev:game:lite": "cross-env NODE_ENV=development USE_PERSISTENT_STORAGE=false node scripts/infra/dev-bundle-runner.mjs --label game-lite --entry server.ts --outfile temp/dev-bundles/game-lite/server.mjs --tsconfig tsconfig.server.json"
   },
   "simple-git-hooks": {
-    "pre-commit": "npx lint-staged --concurrent 1 --no-stash",
+    "pre-commit": "npx lint-staged --concurrent 1 --no-stash && npm run typecheck",
     "pre-push": "npm run quality:changed:pre-push"
   },
   "lint-staged": {
