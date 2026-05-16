@@ -21,9 +21,8 @@ import type {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import {
-    getFirstPrompt,
     getPromptHandlerData,
     getPromptOption,
     getPromptOptions,
@@ -31,6 +30,7 @@ import {
     getPromptSourceId,
     getPromptTargetType,
     getSimpleChoicePrompt,
+    respondToPromptOption,
     respondToPrompt,
 } from './helpers';
 import { runCommand } from './testRunner';
@@ -81,8 +81,6 @@ describe('extra timing regression coverage', () => {
             },
         });
 
-        const handler = getInteractionHandler('miskatonic_those_meddling_kids_pod_mode');
-        expect(handler).toBeDefined();
         const ms = makeMatchState(state);
         ms.sys.phase = 'startTurn';
         const executor = resolveAbility('miskatonic_those_meddling_kids_pod', 'onPlay');
@@ -96,8 +94,16 @@ describe('extra timing regression coverage', () => {
             random: defaultRandom,
             now: 0,
         });
-        const current = (firstStep.matchState?.sys as any)?.interaction?.current;
-        const result = handler!(firstStep.matchState ?? ms, '0', { mode: 'madness' }, current?.data, defaultRandom, 0);
+        const current = getSimpleChoicePrompt(firstStep.matchState ?? ms, 'miskatonic_those_meddling_kids_pod_mode');
+        expect(getPromptSourceId(current)).toBe('miskatonic_those_meddling_kids_pod_mode');
+        const result = respondToPromptOption(
+            firstStep.matchState ?? ms,
+            option => option.value?.mode === 'madness',
+            'Those Meddling Kids POD madness mode option',
+            '0',
+            defaultRandom,
+        );
+        expect(result.success, result.error).toBe(true);
         const limitEvents = result.events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
         expect(limitEvents).toHaveLength(1);
         expect((limitEvents[0] as any).payload.playTiming).toBe('immediate');
@@ -128,9 +134,14 @@ describe('extra timing regression coverage', () => {
         const interaction = getSimpleChoicePrompt(abilityResult.matchState!, 'innsmouth_recruitment');
         expect(getPromptSourceId(interaction)).toBe('innsmouth_recruitment');
 
-        const handler = getInteractionHandler('innsmouth_recruitment');
-        expect(handler).toBeDefined();
-        const result = handler!(abilityResult.matchState!, '0', { count: 2 }, getPromptHandlerData(interaction), defaultRandom, 0);
+        const result = respondToPromptOption(
+            abilityResult.matchState!,
+            option => option.value?.count === 2,
+            'innsmouth recruitment draw 2 option',
+            '0',
+            defaultRandom,
+        );
+        expect(result.success, result.error).toBe(true);
         const limitEvents = result.events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
         expect(limitEvents).toHaveLength(2);
         expect(limitEvents.every(e => (e as any).payload.playTiming === 'immediate')).toBe(true);
@@ -204,40 +215,35 @@ describe('interaction handler regressions', () => {
             random: defaultRandom,
             now: 1999,
         });
-        const current = getFirstPrompt(firstStep.matchState ?? ms);
-        const modeHandler = getInteractionHandler('miskatonic_librarian_pod');
-        expect(modeHandler).toBeDefined();
-        const modeResult = modeHandler!(
+        const modeResult = respondToPromptOption(
             firstStep.matchState ?? ms,
+            option => option.value?.mode === 'extra',
+            'miskatonic librarian pod extra option',
             '0',
-            { mode: 'extra' },
-            getPromptHandlerData(current),
             defaultRandom,
-            2000,
         );
-        const playMadnessHandler = getInteractionHandler('miskatonic_librarian_pod_play_madness');
-        expect(playMadnessHandler).toBeDefined();
+        expect(modeResult.success, modeResult.error).toBe(true);
         const chooseMadness = getSimpleChoicePrompt(
-            modeResult.state ?? ms,
+            modeResult.finalState,
             'miskatonic_librarian_pod_play_madness',
         );
         expect(getPromptSourceId(chooseMadness)).toBe('miskatonic_librarian_pod_play_madness');
 
-        const playMadnessResult = playMadnessHandler!(
-            modeResult.state ?? ms,
+        const playMadnessResult = respondToPromptOption(
+            modeResult.finalState,
+            option => option.value?.cardUid === 'mad1',
+            'miskatonic librarian pod madness mad1 option',
             '0',
-            { cardUid: 'mad1' },
-            getPromptHandlerData(chooseMadness),
             defaultRandom,
-            2001,
         );
+        expect(playMadnessResult.success, playMadnessResult.error).toBe(true);
 
         const actionPlayed = playMadnessResult.events.find(event => event.type === SU_EVENTS.ACTION_PLAYED) as any;
         expect(actionPlayed).toBeDefined();
         expect(actionPlayed.payload?.defId).toBe(MADNESS_CARD_DEF_ID);
         expect(actionPlayed.payload?.isExtraAction).toBe(true);
 
-        expect(getPromptsBySourceId(playMadnessResult.state, 'special_madness').length).toBeGreaterThan(0);
+        expect(getPromptsBySourceId(playMadnessResult.finalState, 'special_madness').length).toBeGreaterThan(0);
     });
 });
 
@@ -702,7 +708,7 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             expect(getPromptTargetType(prompt)).toBe('button');
         });
 
-        it('抽疯狂卡后随从获得力量加成（handler 验证）', () => {
+        it('选择抽 2 张疯狂卡后产生抽牌与力量加成事件', () => {
             const state = makeStateWithMadness({
                 players: {
                     '0': makePlayer('0'),
@@ -715,17 +721,19 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             });
 
             const firstStep = execSpecial(state, '0', 0);
-            const current = getFirstPrompt(firstStep.matchState!);
-            const handler = getInteractionHandler('miskatonic_mandatory_reading_draw');
-            expect(handler).toBeDefined();
-            const result = handler!(
+            const drawPrompt = getSimpleChoicePrompt(
                 firstStep.matchState!,
-                '0',
-                { count: 2 },
-                getPromptHandlerData(current),
-                defaultRandom,
-                0,
+                'miskatonic_mandatory_reading_draw',
             );
+            expect(getPromptSourceId(drawPrompt)).toBe('miskatonic_mandatory_reading_draw');
+            const result = respondToPromptOption(
+                firstStep.matchState!,
+                option => option.value?.count === 2,
+                'mandatory reading draw 2 option',
+                '0',
+                defaultRandom,
+            );
+            expect(result.success, result.error).toBe(true);
             // 一次性抽2张疯狂卡（单个 MADNESS_DRAWN 事件，count=2，避免重复 UID）
             const madnessEvents = result.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
@@ -737,25 +745,23 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             expect((powerEvents[0] as any).payload.amount).toBe(4);
         });
 
-        it('选择跳过时不产生事件', () => {
+        it('选择跳过时不产生业务事件', () => {
             const state = makeStateWithMadness({
                 players: { '0': makePlayer('0'), '1': makePlayer('1') },
                 bases: [{ defId: 'base_test', ongoingActions: [], minions: [makeMinion('m1', 'test_a', '0', 3, { powerModifier: 0 })] }],
             });
 
             const firstStep = execSpecial(state, '0', 0);
-            const current = getFirstPrompt(firstStep.matchState!);
-            const handler = getInteractionHandler('miskatonic_mandatory_reading_draw');
-            expect(handler).toBeDefined();
-            const result = handler!(
+            const result = respondToPromptOption(
                 firstStep.matchState!,
+                option => option.value?.skip === true,
+                'mandatory reading skip option',
                 '0',
-                { skip: true },
-                getPromptHandlerData(current),
                 defaultRandom,
-                0,
             );
-            expect(result.events.length).toBe(0);
+            expect(result.success, result.error).toBe(true);
+            expect(result.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN)).toHaveLength(0);
+            expect(result.events.filter(e => e.type === SU_EVENTS.PERMANENT_POWER_ADDED)).toHaveLength(0);
         });
 
         it('状态正确（reduce 验证）- 抽3张疯狂卡后随从+6力量', () => {
@@ -765,18 +771,15 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             });
 
             const firstStep = execSpecial(state, '0', 0);
-            const current = getFirstPrompt(firstStep.matchState!);
-            const handler = getInteractionHandler('miskatonic_mandatory_reading_draw');
-            expect(handler).toBeDefined();
-            const result = handler!(
+            const result = respondToPromptOption(
                 firstStep.matchState!,
+                option => option.value?.count === 3,
+                'mandatory reading draw 3 option',
                 '0',
-                { count: 3 },
-                getPromptHandlerData(current),
                 defaultRandom,
-                0,
             );
-            const newState = applyEvents(state, result.events);
+            expect(result.success, result.error).toBe(true);
+            const newState = result.finalState.core;
             expect(newState.players['0'].hand.filter(c => c.defId === MADNESS_CARD_DEF_ID).length).toBe(3);
             expect(newState.bases[0].minions[0].powerModifier).toBe(6);
             expect(newState.madnessDeck!.length).toBe(MADNESS_DECK_SIZE - 3);
@@ -789,18 +792,15 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             });
 
             const firstStep = execSpecial(state, '0', 0);
-            const current = getFirstPrompt(firstStep.matchState!);
-            const handler = getInteractionHandler('miskatonic_mandatory_reading_draw');
-            expect(handler).toBeDefined();
-            const result = handler!(
+            const result = respondToPromptOption(
                 firstStep.matchState!,
+                option => option.value?.count === 3,
+                'mandatory reading draw 3 option for unique madness uid',
                 '0',
-                { count: 3 },
-                getPromptHandlerData(current),
                 defaultRandom,
-                0,
             );
-            const newState = applyEvents(state, result.events);
+            expect(result.success, result.error).toBe(true);
+            const newState = result.finalState.core;
             const madnessCards = newState.players['0'].hand.filter(c => c.defId === MADNESS_CARD_DEF_ID);
             expect(madnessCards.length).toBe(3);
             // 所有疯狂牌 UID 必须唯一
@@ -909,9 +909,14 @@ describe('印斯茅斯 - 疯狂卡能力', () => {
             expect(getPromptSourceId(current)).toBe('innsmouth_recruitment');
 
             // 通过 handler 选择抽 3 张
-            const handler = getInteractionHandler('innsmouth_recruitment');
-            expect(handler).toBeDefined();
-            const result = handler!(requireLastMatchState(), '0', { count: 3 }, getPromptHandlerData(current), defaultRandom, 0);
+            const result = respondToPromptOption(
+                requireLastMatchState(),
+                option => option.value?.count === 3,
+                'innsmouth recruitment draw 3 option',
+                '0',
+                defaultRandom,
+            );
+            expect(result.success, result.error).toBe(true);
             const madnessEvents = result.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
             expect((madnessEvents[0] as any).payload.count).toBe(3);
@@ -921,7 +926,7 @@ describe('印斯茅斯 - 疯狂卡能力', () => {
             expect(minionLimits.length).toBe(3);
         });
 
-        it('疯狂牌库不足3张时按实际数量', () => {
+        it('疯狂牌库不足3张时不暴露 count=3 选项，按可用数量结算', () => {
             const state = makeStateWithMadness({
                 players: {
                     '0': makePlayer('0', {
@@ -933,20 +938,30 @@ describe('印斯茅斯 - 疯狂卡能力', () => {
             });
 
             execPlayAction(state, '0', 'a1');
-            // 通过 handler 选择抽 3 张（实际只能抽 2 张）
-            const handler = getInteractionHandler('innsmouth_recruitment');
-            expect(handler).toBeDefined();
             const current = getLastPrompt('innsmouth_recruitment');
-            const liveMs = makeMatchState(state);
-            liveMs.core.madnessDeck = [MADNESS_CARD_DEF_ID, MADNESS_CARD_DEF_ID];
-            const result = handler!(liveMs, '0', { count: 3 }, getPromptHandlerData(current), defaultRandom, 0);
+            expect(getPromptOptions(current).some((option: any) => option.value?.count === 3)).toBe(false);
+            const liveMs = {
+                ...requireLastMatchState(),
+                core: {
+                    ...requireLastMatchState().core,
+                    madnessDeck: [MADNESS_CARD_DEF_ID, MADNESS_CARD_DEF_ID],
+                },
+            } as MatchState<SmashUpCore>;
+            const result = respondToPromptOption(
+                liveMs,
+                option => option.value?.count === 2,
+                'innsmouth recruitment live draw 2 option',
+                '0',
+                defaultRandom,
+            );
+            expect(result.success, result.error).toBe(true);
             const madnessEvents = result.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
-            expect((madnessEvents[0] as any).payload.count).toBe(2); // 只能抽2张
+            expect((madnessEvents[0] as any).payload.count).toBe(2);
 
             const limitEvents = result.events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
             const minionLimits = limitEvents.filter(e => (e as any).payload.limitType === 'minion');
-            expect(minionLimits.length).toBe(2); // 只有2个额外随从
+            expect(minionLimits.length).toBe(2);
         });
 
         it('疯狂牌库为空时无效果', () => {
@@ -980,8 +995,6 @@ describe('印斯茅斯 - 疯狂卡能力', () => {
             });
 
             // 通过 handler 验证 reduce
-            const handler = getInteractionHandler('innsmouth_recruitment');
-            expect(handler).toBeDefined();
             const executor = resolveAbility('innsmouth_recruitment', 'onPlay');
             expect(executor).toBeDefined();
             const ms = makeMatchState(state);
@@ -996,7 +1009,15 @@ describe('印斯茅斯 - 疯狂卡能力', () => {
                 now: 0,
             });
             const interaction = getSimpleChoicePrompt(abilityResult.matchState!, 'innsmouth_recruitment');
-            const result = handler!(abilityResult.matchState!, '0', { count: 3 }, getPromptHandlerData(interaction), defaultRandom, 0);
+            expect(getPromptSourceId(interaction)).toBe('innsmouth_recruitment');
+            const result = respondToPromptOption(
+                abilityResult.matchState!,
+                option => option.value?.count === 3,
+                'innsmouth recruitment reduce draw 3 option',
+                '0',
+                defaultRandom,
+            );
+            expect(result.success, result.error).toBe(true);
             // 先 apply ACTION_PLAYED 事件
             const playEvents: SmashUpEvent[] = [
                 { type: SU_EVENTS.ACTION_PLAYED, payload: { playerId: '0', cardUid: 'a1', defId: 'innsmouth_recruitment' }, timestamp: 0 } as any,

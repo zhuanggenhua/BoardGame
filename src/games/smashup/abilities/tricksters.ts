@@ -1153,7 +1153,12 @@ function registerTricksterOngoingEffects(): void {
     // "影响"包含：消灭、移动、负力量修改、附着对手行动卡（规则术语映射）
     registerTrigger('trickster_brownie', 'onMinionAffected', (trigCtx) => {
         if (trigCtx.triggerMinionDefId !== 'trickster_brownie') return [];
-        const brownieOwner = trigCtx.triggerMinion?.controller;
+        const controlChangeFromController =
+            trigCtx.affectType === 'control_change'
+            && trigCtx.affectEvent?.type === SU_EVENTS.MINION_CONTROL_CHANGED
+                ? (trigCtx.affectEvent as any).payload?.fromControllerId
+                : undefined;
+        const brownieOwner = controlChangeFromController ?? trigCtx.triggerMinion?.controller;
         if (!brownieOwner || brownieOwner === trigCtx.playerId) return [];
         // 对手（触发影响的玩家）弃两张牌
         const opponent = trigCtx.state.players[trigCtx.playerId];

@@ -31,10 +31,9 @@ import type { MatchState } from '../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-import type { RandomFn } from '../../../engine/types';
 import {
     expectNoPrompt,
     getOptionalSimpleChoicePrompt,
@@ -43,6 +42,7 @@ import {
     getPromptOptions,
     getSimpleChoicePrompt,
     respondCommand,
+    withOnlyCurrentPrompt,
 } from './helpers';
 
 // ============================================================================
@@ -50,13 +50,6 @@ import {
 // ============================================================================
 
 const PLAYER_IDS = ['0', '1'];
-
-const handlerRandom: RandomFn = {
-    shuffle: (arr: any[]) => [...arr],
-    random: () => 0.5,
-    d: (_max: number) => 1,
-    range: (min: number, _max: number) => min,
-};
 
 function makeMinion(
     uid: string, defId: string, controller: string, power: number,
@@ -2827,10 +2820,16 @@ describe('stale move regression: bear cavalry interaction chains', () => {
             bases: r4.finalState.core.bases.map((base, index) => index === 0 ? { ...base, minions: base.minions.filter(m => m.uid !== 'enemy-m1') } : base),
         };
 
-        const handler = getInteractionHandler('bear_cavalry_commission_move_dest');
-        expect(handler).toBeDefined();
-        const resolved = handler!(makeFullMatchState(staleCore), '0', { baseIndex: 1 }, (chooseDest as any).data, handlerRandom, 3000);
-        expect(resolved?.events ?? []).toHaveLength(0);
+        const staleState = withOnlyCurrentPrompt(makeFullMatchState(staleCore), chooseDest);
+        const resolved = respond(
+            staleState,
+            '0',
+            findOption(chooseDest, (o: any) => o.value?.baseIndex === 1),
+            'commission stale step5',
+        );
+        expect(resolved.steps[0]?.success).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(m => m.uid === 'enemy-m1')).toBe(false);
+        expect(resolved.finalState.core.players['1'].discard.some(c => c.uid === 'enemy-m1')).toBe(true);
     });
 
     it('bear_cavalry_bear_cavalry_choose_base: 目标已离开来源基地时不再移动', () => {
@@ -2865,10 +2864,16 @@ describe('stale move regression: bear cavalry interaction chains', () => {
             bases: r2.finalState.core.bases.map((base, index) => index === 0 ? { ...base, minions: base.minions.filter(m => m.uid !== 'enemy-m1') } : base),
         };
 
-        const handler = getInteractionHandler('bear_cavalry_bear_cavalry_choose_base');
-        expect(handler).toBeDefined();
-        const resolved = handler!(makeFullMatchState(staleCore), '0', { baseIndex: 1 }, (chooseBase as any).data, handlerRandom, 3001);
-        expect(resolved?.events ?? []).toHaveLength(0);
+        const staleState = withOnlyCurrentPrompt(makeFullMatchState(staleCore), chooseBase);
+        const resolved = respond(
+            staleState,
+            '0',
+            findOption(chooseBase, (o: any) => o.value?.baseIndex === 1),
+            'bear_cavalry stale step3',
+        );
+        expect(resolved.steps[0]?.success).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(m => m.uid === 'enemy-m1')).toBe(false);
+        expect(resolved.finalState.core.players['1'].discard.some(c => c.uid === 'enemy-m1')).toBe(true);
     });
 
     it('bear_cavalry_youre_screwed_choose_dest: 目标已离开来源基地时不再移动', () => {
@@ -2908,10 +2913,16 @@ describe('stale move regression: bear cavalry interaction chains', () => {
             bases: r3.finalState.core.bases.map((base, index) => index === 0 ? { ...base, minions: base.minions.filter(m => m.uid !== 'enemy-m1') } : base),
         };
 
-        const handler = getInteractionHandler('bear_cavalry_youre_screwed_choose_dest');
-        expect(handler).toBeDefined();
-        const resolved = handler!(makeFullMatchState(staleCore), '0', { baseIndex: 1 }, (chooseDest as any).data, handlerRandom, 3002);
-        expect(resolved?.events ?? []).toHaveLength(0);
+        const staleState = withOnlyCurrentPrompt(makeFullMatchState(staleCore), chooseDest);
+        const resolved = respond(
+            staleState,
+            '0',
+            findOption(chooseDest, (o: any) => o.value?.baseIndex === 1),
+            'youre_screwed stale step4',
+        );
+        expect(resolved.steps[0]?.success).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(m => m.uid === 'enemy-m1')).toBe(false);
+        expect(resolved.finalState.core.players['1'].discard.some(c => c.uid === 'enemy-m1')).toBe(true);
     });
 
     it('bear_cavalry_bear_rides_you_choose_base: 目标已离开来源基地时不再移动', () => {
@@ -2946,10 +2957,16 @@ describe('stale move regression: bear cavalry interaction chains', () => {
             bases: r2.finalState.core.bases.map((base, index) => index === 0 ? { ...base, minions: base.minions.filter(m => m.uid !== 'my-m1') } : base),
         };
 
-        const handler = getInteractionHandler('bear_cavalry_bear_rides_you_choose_base');
-        expect(handler).toBeDefined();
-        const resolved = handler!(makeFullMatchState(staleCore), '0', { baseIndex: 1 }, (chooseBase as any).data, handlerRandom, 3003);
-        expect(resolved?.events ?? []).toHaveLength(0);
+        const staleState = withOnlyCurrentPrompt(makeFullMatchState(staleCore), chooseBase);
+        const resolved = respond(
+            staleState,
+            '0',
+            findOption(chooseBase, (o: any) => o.value?.baseIndex === 1),
+            'bear_rides_you stale step3',
+        );
+        expect(resolved.steps[0]?.success).toBe(true);
+        expect(resolved.finalState.core.bases[1].minions.some(m => m.uid === 'my-m1')).toBe(false);
+        expect(resolved.finalState.core.players['0'].discard.some(c => c.uid === 'my-m1')).toBe(true);
     });
 
     it('bear_cavalry_bear_rides_you_pod_choose_base: 压制选项包含新基地上的基地牌与随从牌', () => {

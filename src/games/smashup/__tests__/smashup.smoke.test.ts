@@ -46,19 +46,19 @@ import {
     getPromptsBySourceId,
     getReactionPromptOptionBySourceDefId,
     getSimpleChoicePrompt,
-    withCurrentPrompt,
     makeBase,
     makeCard,
     makeMatchState,
     makeMinion,
     makePlayer,
     makeState,
-    resolveAffectedMinions,
     resolveCardsReturnedToHand,
     resolveDestroyedMinions,
     resolveInteractionChain,
     resolveMovedMinions,
     respondCommand,
+    respondToPromptOption,
+    respondToPromptOptions,
 } from './helpers';
 import { runCommand } from './testRunner';
 import type { TitanState } from '../domain/types';
@@ -932,40 +932,35 @@ describe('smashup', () => {
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const discardPrompt = getSimpleChoicePrompt(state, 'titan_ghosts_creampuff_man_discard');
 
-        const discardHandler = getInteractionHandler('titan_ghosts_creampuff_man_discard');
-        expect(discardHandler).toBeDefined();
-        const discardResolved = discardHandler!(
+        expect(getPromptOption(discardPrompt, entry => entry.value?.cardUid === 'ghost-cost')).toBeDefined();
+        const discardResolved = respondToPromptOption(
             state,
+            entry => entry.value?.cardUid === 'ghost-cost',
+            'Creampuff discard option',
             '0',
-            { cardUid: 'ghost-cost' },
-            getPromptHandlerData(discardPrompt),
             FIXED_RANDOM,
-            65,
         );
-        expect(discardResolved?.events.map(event => event.type)).toContain(SU_EVENTS.CARDS_DISCARDED);
+        expect(discardResolved.events.some(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(true);
 
-        const coreAfterDiscard = (discardResolved?.events ?? []).reduce((acc, event) => SmashUpDomain.reduce(acc, event), preparedCore);
-        const playPrompt = getSimpleChoicePrompt(discardResolved!.state, 'titan_ghosts_creampuff_man_play');
-        const stateAfterDiscard = withCurrentPrompt({ ...discardResolved!.state, core: coreAfterDiscard }, playPrompt);
+        const stateAfterDiscard = discardResolved.finalState;
+        const playPrompt = getSimpleChoicePrompt(stateAfterDiscard, 'titan_ghosts_creampuff_man_play');
+        expect(getPromptOption(playPrompt, entry => entry.value?.cardUid === 'ghost-seance-discard')).toBeDefined();
 
-        const playHandler = getInteractionHandler('titan_ghosts_creampuff_man_play');
-        expect(playHandler).toBeDefined();
-        const playResolved = playHandler!(
+        const playResolved = respondToPromptOption(
             stateAfterDiscard,
+            entry => entry.value?.cardUid === 'ghost-seance-discard',
+            'Creampuff play option',
             '0',
-            { cardUid: 'ghost-seance-discard', defId: 'ghost_seance' },
-            getPromptHandlerData(playPrompt),
             FIXED_RANDOM,
-            66,
         );
 
-        expect(playResolved?.events.map(event => event.type)).toContain(SU_EVENTS.ACTION_PLAYED);
-        expect(playResolved?.events.map(event => event.type)).toContain(SU_EVENTS.CARD_TO_DECK_BOTTOM);
+        expect(playResolved.events.some(event => event.type === SU_EVENTS.ACTION_PLAYED)).toBe(true);
+        expect(playResolved.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(true);
 
-        const drawEvent = playResolved?.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as CardsDrawnEvent | undefined;
+        const drawEvent = playResolved.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as CardsDrawnEvent | undefined;
         expect(drawEvent?.payload.count).toBe(4);
 
-        const resolvedCore = (playResolved?.events ?? []).reduce((acc, event) => SmashUpDomain.reduce(acc, event), coreAfterDiscard);
+        const resolvedCore = playResolved.finalState.core;
         expect(resolvedCore.players['0'].discard.some(card => card.uid === 'ghost-seance-discard')).toBe(false);
         expect(resolvedCore.players['0'].deck[resolvedCore.players['0'].deck.length - 1]?.uid).toBe('ghost-seance-discard');
     });
@@ -1015,13 +1010,14 @@ describe('smashup', () => {
         const option = getPromptOption(prompt, entry => entry.value?.cardUid === 'sphinx-start-buried');
         expect(option.displayMode).toBe('card');
 
-        const handler = getInteractionHandler('titan_sphinx_start_turn');
-        expect(handler).toBeDefined();
-        const resolved = handler!(result.matchState!, '0', option.value, getPromptHandlerData(prompt), FIXED_RANDOM, 81);
-        const finalCore = (resolved?.events ?? []).reduce(
-            (acc, event) => SmashUpDomain.reduce(acc, event),
-            resolved?.state.core ?? result.matchState!.core,
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            entry => entry.value?.cardUid === 'sphinx-start-buried',
+            'Sphinx start-turn buried option',
+            '0',
+            FIXED_RANDOM,
         );
+        const finalCore = resolved.finalState.core;
 
         expect(finalCore.players['0'].hand.some(card => card.uid === 'sphinx-start-buried')).toBe(true);
         expect(finalCore.bases[0].buriedCards?.some(card => card.uid === 'sphinx-start-buried') ?? false).toBe(false);
@@ -1079,13 +1075,14 @@ describe('smashup', () => {
         const option = getPromptOption(prompt, entry => entry.value?.cardUid === 'sphinx-score-buried');
         expect(option.displayMode).toBe('card');
 
-        const handler = getInteractionHandler('titan_sphinx_after_scoring');
-        expect(handler).toBeDefined();
-        const resolved = handler!(result.matchState!, '0', option.value, getPromptHandlerData(prompt), FIXED_RANDOM, 83);
-        const finalCore = (resolved?.events ?? []).reduce(
-            (acc, event) => SmashUpDomain.reduce(acc, event),
-            resolved?.state.core ?? result.matchState!.core,
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            entry => entry.value?.cardUid === 'sphinx-score-buried',
+            'Sphinx after-scoring buried option',
+            '0',
+            FIXED_RANDOM,
         );
+        const finalCore = resolved.finalState.core;
 
         expect(finalCore.players['0'].hand.some(card => card.uid === 'sphinx-score-buried')).toBe(true);
         expect(finalCore.bases[0].buriedCards?.some(card => card.uid === 'sphinx-score-buried') ?? false).toBe(false);
@@ -1128,15 +1125,16 @@ describe('smashup', () => {
         expect(events.map((event) => event.type)).toContain(SU_EVENTS.TALENT_USED);
 
         const prompt = getSimpleChoicePrompt(state, 'titan_sphinx_talent');
-        const option = getPromptOption(prompt, entry => entry.value?.cardUid === 'sphinx-hand-card');
+        expect(getPromptOption(prompt, entry => entry.value?.cardUid === 'sphinx-hand-card')).toBeDefined();
 
-        const handler = getInteractionHandler('titan_sphinx_talent');
-        expect(handler).toBeDefined();
-        const resolved = handler!(state, '0', option.value, getPromptHandlerData(prompt), FIXED_RANDOM, 85);
-        const finalCore = (resolved?.events ?? []).reduce(
-            (acc, event) => SmashUpDomain.reduce(acc, event),
-            resolved?.state.core ?? state.core,
+        const resolved = respondToPromptOption(
+            state,
+            entry => entry.value?.cardUid === 'sphinx-hand-card',
+            'Sphinx talent buried option',
+            '0',
+            FIXED_RANDOM,
         );
+        const finalCore = resolved.finalState.core;
 
         expect(finalCore.players['0'].hand.some(card => card.uid === 'sphinx-hand-card')).toBe(false);
         expect(finalCore.bases[0].buriedCards?.some(card => card.uid === 'sphinx-hand-card')).toBe(true);
@@ -1551,19 +1549,18 @@ describe('smashup', () => {
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const prompt = getSimpleChoicePrompt(state, 'titan_vampires_ancient_lord_talent');
 
-        const handler = getInteractionHandler('titan_vampires_ancient_lord_talent');
-        expect(handler).toBeDefined();
-        const resolvedInteraction = handler!(
+        expect(getPromptOption(prompt, entry => entry.value?.minionUid === minion!.uid && entry.value?.baseIndex === 0)).toBeDefined();
+        const resolvedInteraction = respondToPromptOption(
             state,
+            entry => entry.value?.minionUid === minion!.uid && entry.value?.baseIndex === 0,
+            'Ancient Lord talent target option',
             '0',
-            { minionUid: minion!.uid, baseIndex: 0 },
-            getPromptHandlerData(prompt),
             FIXED_RANDOM,
-            94,
         );
-        expect(resolvedInteraction?.events.map(event => event.type)).toContain(SU_EVENTS.POWER_COUNTER_ADDED);
+        expect(resolvedInteraction.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
 
-        const resolvedCore = (resolvedInteraction?.events ?? []).reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
+        const afterCommand = events.reduce((acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event), core);
+        const resolvedCore = resolvedInteraction.events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), afterCommand);
         const targetMinion = resolvedCore.bases[0].minions.find(candidate => candidate.uid === minion!.uid);
         expect(targetMinion?.powerCounters).toBe(2);
     });
@@ -2913,21 +2910,17 @@ describe('smashup', () => {
 
         const current = getSimpleChoicePrompt(ms, 'titan_cthulhu_cthulhu_titan_talent_target');
 
-        const targetOption = getPromptOption(current, option => option?.value?.targetPlayerId === '1', 'Cthulhu Titan target player option');
-
-        const handler = getInteractionHandler('titan_cthulhu_cthulhu_titan_talent_target');
-        const response = handler!(
+        expect(getPromptOption(current, option => option?.value?.targetPlayerId === '1', 'Cthulhu Titan target player option')).toBeDefined();
+        const response = respondToPromptOption(
             ms,
+            option => option?.value?.targetPlayerId === '1',
+            'Cthulhu Titan target player option',
             '0',
-            targetOption.value,
-            getPromptHandlerData(current),
             FIXED_RANDOM,
-            44,
         );
-        expect(response.events.map(event => event.type)).toEqual([SU_EVENTS.CARD_TRANSFERRED]);
+        expect(response.events.some(event => event.type === SU_EVENTS.CARD_TRANSFERRED)).toBe(true);
 
-        const afterTalent = talentEvents.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
-        const finalCore = response.events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), afterTalent);
+        const finalCore = response.finalState.core;
         const titan = (finalCore.titans ?? []).find(candidate => candidate.uid === 't-cthulhu');
 
         expect(finalCore.players['0'].hand.filter(card => card.defId === MADNESS_CARD_DEF_ID)).toHaveLength(0);
@@ -3360,31 +3353,36 @@ describe('smashup', () => {
             } satisfies TitanState],
         });
 
-        const destinationHandler = getInteractionHandler('titan_bear_cavalry_major_ursa_choose_destination');
-        const minionHandler = getInteractionHandler('titan_bear_cavalry_major_ursa_choose_minion');
-        const baseHandler = getInteractionHandler('titan_bear_cavalry_major_ursa_choose_base');
-        expect(destinationHandler).toBeDefined();
-        expect(minionHandler).toBeDefined();
-        expect(baseHandler).toBeDefined();
+        const state = makeMatchState(core, 'playCards', '0');
+        const command: SmashUpCommand = {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { titanUid: 't-ursa', baseIndex: 0 },
+            timestamp: 62,
+        };
 
-        const destinationResult = destinationHandler!(
-            makeMatchState(core, 'playCards', '0'),
+        const validation = SmashUpDomain.validate(state, command);
+        expect(validation.valid).toBe(true);
+
+        const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
+        expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
+        expect(events.map(event => event.type)).toContain(SU_EVENTS.TITAN_POWER_COUNTER_ADDED);
+
+        expect(getPromptOption(
+            getSimpleChoicePrompt(state, 'titan_bear_cavalry_major_ursa_choose_destination'),
+            entry => entry.value?.baseIndex === 1,
+            'Major Ursa destination option',
+        )).toBeDefined();
+
+        const destinationResult = respondToPromptOption(
+            state,
+            entry => entry.value?.baseIndex === 1,
+            'Major Ursa destination option',
             '0',
-            { baseIndex: 1, baseDefId: core.bases[1].defId },
-            { continuationContext: { titanUid: 't-ursa', fromBaseIndex: 0, titanDefId: 'bear_cavalry_major_ursa' } },
             FIXED_RANDOM,
-            62,
         );
-        expect(destinationResult.events.map(event => event.type)).toEqual([SU_EVENTS.TITAN_MOVED]);
-
-        const post = postProcessSystemEvents(core, destinationResult.events, FIXED_RANDOM, destinationResult.state);
-        const queuedState = post.matchState ?? destinationResult.state;
-        let reactionState = queuedState;
-
-        const reactionPrompt = maybeResolveReactionQueue(queuedState, FIXED_RANDOM, 63);
-        if (reactionPrompt) {
-            reactionState = reactionPrompt.state;
-        }
+        expect(destinationResult.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(true);
+        let reactionState = destinationResult.finalState;
 
         const reactionChoicePrompt = getOptionalSimpleChoicePrompt(reactionState, 'smashup_reaction_choose');
         if (reactionChoicePrompt) {
@@ -3399,31 +3397,34 @@ describe('smashup', () => {
         }
 
         const minionPrompt = getSimpleChoicePrompt(reactionState, 'titan_bear_cavalry_major_ursa_choose_minion');
+        expect(getPromptOption(minionPrompt, entry => entry.value?.minionUid === 'enemy-minion')).toBeDefined();
 
-        const chooseMinionResult = minionHandler!(
+        const chooseMinionResult = respondToPromptOption(
             reactionState,
+            entry => entry.value?.minionUid === 'enemy-minion',
+            'Major Ursa moved-minion option',
             '0',
-            { minionUid: 'enemy-minion', defId: 'ghosts_spectre', baseIndex: 1 },
-            getPromptHandlerData(minionPrompt),
             FIXED_RANDOM,
-            63,
         );
-        const chooseBasePrompt = getSimpleChoicePrompt(chooseMinionResult.state, 'titan_bear_cavalry_major_ursa_choose_base');
+        const chooseBasePrompt = getSimpleChoicePrompt(chooseMinionResult.finalState, 'titan_bear_cavalry_major_ursa_choose_base');
+        expect(getPromptOption(chooseBasePrompt, entry => entry.value?.baseIndex === 2)).toBeDefined();
 
-        const chooseBaseResult = baseHandler!(
-            chooseMinionResult.state,
+        const chooseBaseResult = respondToPromptOption(
+            chooseMinionResult.finalState,
+            entry => entry.value?.baseIndex === 2,
+            'Major Ursa choose-base option',
             '0',
-            { baseIndex: 2, baseDefId: core.bases[2].defId },
-            getPromptHandlerData(chooseBasePrompt),
             FIXED_RANDOM,
-            64,
         );
-        expect(chooseBaseResult.events.map(event => event.type)).toEqual([SU_EVENTS.MINION_MOVED]);
-        expect((chooseBaseResult.events[0] as any).payload).toMatchObject({
+        expect(chooseBaseResult.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(true);
+        expect((chooseBaseResult.events.find(event => event.type === SU_EVENTS.MINION_MOVED) as any)?.payload).toMatchObject({
             minionUid: 'enemy-minion',
             fromBaseIndex: 1,
             toBaseIndex: 2,
         });
+
+        const finalCore = chooseBaseResult.finalState.core;
+        expect(finalCore.bases[2].minions.find(minion => minion.uid === 'enemy-minion')?.controller).toBe('1');
     });
 
     it('合体机器人会在你的回合开始时，为满足条件的 set-aside 泰坦创建进场交互', () => {
@@ -3483,23 +3484,26 @@ describe('smashup', () => {
             } satisfies TitanState],
         });
 
-        const handler = getInteractionHandler('titan_changerbots_mergacon_play');
-        expect(handler).toBeDefined();
-
-        const resolved = handler!(
-            makeMatchState(core, 'startTurn', '0'),
-            '0',
-            { baseIndex: 0, baseDefId: core.bases[0].defId },
-            { continuationContext: { titanUid: 't-mergacon-setaside', titanDefId: 'changerbots_mergacon' } },
+        const triggerResult = fireTriggers(core, 'onTurnStart', {
+            state: core,
+            matchState: makeMatchState(core, 'startTurn', '0'),
+            playerId: '0',
             FIXED_RANDOM,
-            79,
-        );
-        expect(resolved.events.map(event => event.type)).toEqual([SU_EVENTS.TITAN_PLAYED]);
+            now: 79,
+        });
+        const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_changerbots_mergacon_play');
+        expect(getPromptOption(currentInteraction, entry => entry.value?.baseIndex === 0)).toBeDefined();
 
-        const next = resolved.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            core,
+        const resolved = respondToPromptOption(
+            triggerResult.matchState!,
+            entry => entry.value?.baseIndex === 0,
+            'Mergacon play base option',
+            '0',
+            FIXED_RANDOM,
         );
+        expect(resolved.events.some(event => event.type === SU_EVENTS.TITAN_PLAYED)).toBe(true);
+
+        const next = resolved.finalState.core;
         expect(next.titans?.find(candidate => candidate.uid === 't-mergacon-setaside')?.location).toMatchObject({
             zone: 'base',
             baseIndex: 0,
@@ -3568,25 +3572,20 @@ describe('smashup', () => {
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const prompt = getSimpleChoicePrompt(state, 'titan_changerbots_mergacon_talent');
 
-        const handler = getInteractionHandler('titan_changerbots_mergacon_talent');
-        expect(handler).toBeDefined();
-        const resolved = handler!(
+        expect(getPromptOption(prompt, entry => entry.value?.baseIndex === 1)).toBeDefined();
+        const resolved = respondToPromptOption(
             state,
+            entry => entry.value?.baseIndex === 1,
+            'Mergacon talent base option',
             '0',
-            { baseIndex: 1, baseDefId: core.bases[1].defId },
-            getPromptHandlerData(prompt),
             FIXED_RANDOM,
-            83,
         );
-        expect(resolved.events.map(event => event.type)).toEqual([
+        expect(resolved.events.map(event => event.type)).toEqual(expect.arrayContaining([
             SU_EVENTS.TITAN_ONGOING_SUPPRESSED,
             SU_EVENTS.TITAN_MOVED,
-        ]);
+        ]));
 
-        const next = resolved.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            core,
-        );
+        const next = resolved.finalState.core;
         expect(next.titanOngoingSuppressedUntilTurnEnd).toContain('t-mergacon');
         expect(next.titans?.find(candidate => candidate.uid === 't-mergacon')?.location).toMatchObject({
             zone: 'base',
@@ -3789,43 +3788,32 @@ describe('smashup', () => {
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const chooseDiscardPrompt = getSimpleChoicePrompt(state, 'titan_itty_critters_rainboroc_choose_discard');
 
-        const chooseDiscardHandler = getInteractionHandler('titan_itty_critters_rainboroc_choose_discard');
-        const chooseBaseHandler = getInteractionHandler('titan_itty_critters_rainboroc_choose_base');
-        expect(chooseDiscardHandler).toBeDefined();
-        expect(chooseBaseHandler).toBeDefined();
-
-        const chooseDiscardResult = chooseDiscardHandler!(
+        expect(getPromptOption(chooseDiscardPrompt, entry => entry.value?.cardUid === 'rain-discard-minion')).toBeDefined();
+        const chooseDiscardResult = respondToPromptOption(
             state,
+            entry => entry.value?.cardUid === 'rain-discard-minion',
+            'Rainboroc discard option',
             '0',
-            { cardUid: 'rain-discard-minion', defId: 'pirate_first_mate' },
-            getPromptHandlerData(chooseDiscardPrompt),
             FIXED_RANDOM,
-            89,
         );
-        expect(chooseDiscardResult.events.map(event => event.type)).toEqual([SU_EVENTS.DECK_REORDERED]);
-        const chooseBasePrompt = getSimpleChoicePrompt(chooseDiscardResult.state, 'titan_itty_critters_rainboroc_choose_base');
+        expect(chooseDiscardResult.events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
+        const chooseBasePrompt = getSimpleChoicePrompt(chooseDiscardResult.finalState, 'titan_itty_critters_rainboroc_choose_base');
 
-        const afterShuffle = chooseDiscardResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            core,
-        );
+        const afterShuffle = chooseDiscardResult.finalState.core;
         expect(afterShuffle.players['0'].discard.map(card => card.uid)).not.toContain('rain-discard-minion');
         expect(afterShuffle.players['0'].deck.map(card => card.uid)).toContain('rain-discard-minion');
 
-        const chooseBaseResult = chooseBaseHandler!(
-            chooseDiscardResult.state,
+        expect(getPromptOption(chooseBasePrompt, entry => entry.value?.baseIndex === 1)).toBeDefined();
+        const chooseBaseResult = respondToPromptOption(
+            chooseDiscardResult.finalState,
+            entry => entry.value?.baseIndex === 1,
+            'Rainboroc choose-base option',
             '0',
-            { baseIndex: 1, baseDefId: core.bases[1].defId },
-            getPromptHandlerData(chooseBasePrompt),
             FIXED_RANDOM,
-            90,
         );
-        expect(chooseBaseResult.events.map(event => event.type)).toEqual([SU_EVENTS.TITAN_MOVED]);
+        expect(chooseBaseResult.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(true);
 
-        const resolved = chooseBaseResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            afterShuffle,
-        );
+        const resolved = chooseBaseResult.finalState.core;
         expect(resolved.titans?.find(candidate => candidate.uid === 't-rainboroc')?.location).toMatchObject({
             zone: 'base',
             baseIndex: 1,
@@ -3967,25 +3955,20 @@ describe('smashup', () => {
 
         expect(result.success).toBe(true);
         expect(result.events.map(event => event.type)).toContain(SU_EVENTS.TRIGGER_QUEUED);
-        const drawHandler = getInteractionHandler('titan_kaiju_gorgodzolla_draw');
-        expect(drawHandler).toBeDefined();
         const drawPrompt = getSimpleChoicePrompt(result.finalState, 'titan_kaiju_gorgodzolla_draw');
+        expect(getPromptOption(drawPrompt, entry => entry.value?.draw === true)).toBeDefined();
         expect(result.finalState.core.titans?.find(candidate => candidate.uid === 't-gorgodzolla')?.powerCounters).toBe(1);
 
-        const drawResult = drawHandler!(
+        const drawResult = respondToPromptOption(
             result.finalState,
+            entry => entry.value?.draw === true,
+            'Gorgodzolla draw option',
             '0',
-            { draw: true },
-            getPromptHandlerData(drawPrompt),
             FIXED_RANDOM,
-            95,
         );
 
-        expect(drawResult.events.map(event => event.type)).toEqual([SU_EVENTS.CARDS_DRAWN]);
-        const resolved = drawResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            result.finalState.core,
-        );
+        expect(drawResult.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
+        const resolved = drawResult.finalState.core;
         expect(resolved.players['0'].hand.map(card => card.uid)).toContain('gorg-draw-card');
     });
 
@@ -4143,43 +4126,35 @@ describe('smashup', () => {
         expect(getPromptPlayerId(boulderInteraction)).toBe('0');
         expect(reactionResult?.state.core.veryLargeBoulderTriggeredTurnByTitan?.['t-boulder-live']).toBe(4);
 
-        const moveHandler = getInteractionHandler('titan_explorers_very_large_boulder_move');
-        const destroyHandler = getInteractionHandler('titan_explorers_very_large_boulder_destroy');
-        expect(moveHandler).toBeDefined();
-        expect(destroyHandler).toBeDefined();
-
-        const chooseMoveResult = moveHandler!(
+        expect(getPromptOption(boulderInteraction, entry => entry.value?.move === true)).toBeDefined();
+        const chooseMoveResult = respondToPromptOption(
             reactionResult!.state,
+            entry => entry.value?.move === true,
+            'Very Large Boulder move option',
             '0',
-            { move: true },
-            getPromptHandlerData(boulderInteraction),
             FIXED_RANDOM,
-            100,
         );
-        expect(chooseMoveResult.events.map(event => event.type)).toContain(SU_EVENTS.TITAN_MOVED);
+        expect(chooseMoveResult.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(true);
 
         const pendingDestroyInteraction = getOptionalSimpleChoicePrompt(
-            chooseMoveResult.state,
+            chooseMoveResult.finalState,
             'titan_explorers_very_large_boulder_destroy',
         );
-        const destroyEvents =
+        const destroyResult =
             pendingDestroyInteraction
-                ? destroyHandler!(
-                    chooseMoveResult.state,
+                ? respondToPromptOption(
+                    chooseMoveResult.finalState,
+                    entry => entry.value?.minionUid === 'boulder-target',
+                    'Very Large Boulder destroy option',
                     '0',
-                    { minionUid: 'boulder-target' },
-                    getPromptHandlerData(pendingDestroyInteraction),
                     FIXED_RANDOM,
-                    101,
-                ).events
-                : [];
+                )
+                : undefined;
+        const destroyEvents = destroyResult?.events ?? [];
         const allEvents = [...chooseMoveResult.events, ...destroyEvents];
         expect(allEvents.map(event => event.type)).toContain(SU_EVENTS.MINION_DESTROYED);
 
-        const resolved = allEvents.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            reactionResult!.state.core,
-        );
+        const resolved = destroyResult?.finalState.core ?? chooseMoveResult.finalState.core;
         expect(resolved.titans?.find(candidate => candidate.uid === 't-boulder-live')?.location).toMatchObject({
             zone: 'base',
             baseIndex: 1,
@@ -4434,42 +4409,34 @@ describe('smashup', () => {
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const chooseBasePrompt = getSimpleChoicePrompt(state, 'titan_magical_girls_walking_castle_choose_base');
 
-        const chooseMinionsHandler = getInteractionHandler('titan_magical_girls_walking_castle_choose_minions');
-        const chooseBaseHandler = getInteractionHandler('titan_magical_girls_walking_castle_choose_base');
-        expect(chooseMinionsHandler).toBeDefined();
-        expect(chooseBaseHandler).toBeDefined();
-
-        const chooseBaseResult = chooseBaseHandler!(
+        expect(getPromptOption(chooseBasePrompt, entry => entry.value?.baseIndex === 1)).toBeDefined();
+        const chooseBaseResult = respondToPromptOption(
             state,
+            entry => entry.value?.baseIndex === 1,
+            'Walking Castle choose-base option',
             '0',
-            { baseIndex: 1, baseDefId: core.bases[1].defId },
-            getPromptHandlerData(chooseBasePrompt),
             FIXED_RANDOM,
-            103,
         );
-        const chooseMinionsPrompt = getSimpleChoicePrompt(chooseBaseResult.state, 'titan_magical_girls_walking_castle_choose_minions');
+        const chooseMinionsPrompt = getSimpleChoicePrompt(chooseBaseResult.finalState, 'titan_magical_girls_walking_castle_choose_minions');
+        expect(getPromptOption(chooseMinionsPrompt, entry => entry.value?.minionUid === 'castle-move-a')).toBeDefined();
+        expect(getPromptOption(chooseMinionsPrompt, entry => entry.value?.minionUid === 'castle-move-b')).toBeDefined();
 
-        const chooseMinionsResult = chooseMinionsHandler!(
-            chooseBaseResult.state,
-            '0',
+        const chooseMinionsResult = respondToPromptOptions(
+            chooseBaseResult.finalState,
             [
-                { minionUid: 'castle-move-a', baseIndex: 0 },
-                { minionUid: 'castle-move-b', baseIndex: 0 },
+                getPromptOption(chooseMinionsPrompt, entry => entry.value?.minionUid === 'castle-move-a').id,
+                getPromptOption(chooseMinionsPrompt, entry => entry.value?.minionUid === 'castle-move-b').id,
             ],
-            getPromptHandlerData(chooseMinionsPrompt),
+            '0',
             FIXED_RANDOM,
-            104,
         );
-        expect(chooseMinionsResult.events.map(event => event.type)).toEqual([
+        expect(chooseMinionsResult.events.map(event => event.type)).toEqual(expect.arrayContaining([
             SU_EVENTS.TITAN_MOVED,
             SU_EVENTS.MINION_MOVED,
             SU_EVENTS.MINION_MOVED,
-        ]);
+        ]));
 
-        const resolved = chooseMinionsResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            core,
-        );
+        const resolved = chooseMinionsResult.finalState.core;
         expect(resolved.titans?.find(candidate => candidate.uid === 't-walking-castle-live')?.location).toMatchObject({
             zone: 'base',
             baseIndex: 1,
@@ -4574,45 +4541,20 @@ describe('smashup', () => {
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const giveMinionPrompt = getSimpleChoicePrompt(state, 'titan_ignobles_the_hill_that_strolls_give_minion');
 
-        const giveMinionHandler = getInteractionHandler('titan_ignobles_the_hill_that_strolls_give_minion');
-        const counterHandler = getInteractionHandler('titan_ignobles_the_hill_that_strolls_counter');
-        expect(giveMinionHandler).toBeDefined();
-        expect(counterHandler).toBeDefined();
-
-        const giveResult = giveMinionHandler!(
+        expect(getPromptOption(giveMinionPrompt, entry => entry.value?.minionUid === 'hill-give-target')).toBeDefined();
+        const giveResult = respondToPromptOption(
             state,
+            entry => entry.value?.minionUid === 'hill-give-target',
+            'Hill give-minion target option',
             '0',
-            { minionUid: 'hill-give-target', baseIndex: 0, defId: 'ghosts_spectre' },
-            getPromptHandlerData(giveMinionPrompt),
             FIXED_RANDOM,
-            108,
         );
-        expect(giveResult.events.map(event => event.type)).toEqual([
-            SU_EVENTS.MINION_CONTROL_CHANGED,
-            SU_EVENTS.CARDS_DRAWN,
-        ]);
+        expect(giveResult.events.some(event => event.type === SU_EVENTS.MINION_CONTROL_CHANGED)).toBe(true);
+        expect(giveResult.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
 
-        const giveResolvedCore = giveResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            core,
-        );
+        const giveResolvedCore = giveResult.finalState.core;
         expect(giveResolvedCore.bases[0].minions.find(minion => minion.uid === 'hill-give-target')?.controller).toBe('1');
-        const cleanTriggerState = makeMatchState(giveResolvedCore, 'playCards', '0');
-
-        const affectResult = resolveAffectedMinions(
-            cleanTriggerState,
-            '0',
-            giveResult.events,
-            FIXED_RANDOM,
-            108,
-        );
-        const queuedCore = affectResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            giveResolvedCore,
-        );
-        const queuedState = { ...(affectResult.matchState ?? cleanTriggerState), core: queuedCore };
-        const reactionResult = maybeResolveReactionQueue(queuedState, FIXED_RANDOM, 108);
-        let reactionState = reactionResult?.state ?? queuedState;
+        let reactionState = giveResult.finalState;
 
         const hillReactionPrompt = getOptionalSimpleChoicePrompt(reactionState, 'smashup_reaction_choose');
         if (hillReactionPrompt) {
@@ -4628,20 +4570,17 @@ describe('smashup', () => {
 
         const currentInteraction = getSimpleChoicePrompt(reactionState, 'titan_ignobles_the_hill_that_strolls_counter');
 
-        const counterResult = counterHandler!(
+        expect(getPromptOption(currentInteraction, entry => entry.value?.place === true)).toBeDefined();
+        const counterResult = respondToPromptOption(
             reactionState,
+            entry => entry.value?.place === true,
+            'Hill counter option',
             '0',
-            { place: true },
-            getPromptHandlerData(currentInteraction),
             FIXED_RANDOM,
-            109,
         );
-        expect(counterResult.events.map(event => event.type)).toEqual([SU_EVENTS.POWER_COUNTER_ADDED]);
+        expect(counterResult.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
 
-        const finalCore = counterResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            queuedCore,
-        );
+        const finalCore = counterResult.finalState.core;
         const transferredMinion = finalCore.bases[0].minions.find(minion => minion.uid === 'hill-give-target');
         expect(transferredMinion?.controller).toBe('1');
         expect(transferredMinion?.powerCounters).toBe(1);
@@ -4678,23 +4617,17 @@ describe('smashup', () => {
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const reclaimPrompt = getSimpleChoicePrompt(state, 'titan_ignobles_the_hill_that_strolls_reclaim_minion');
 
-        const reclaimHandler = getInteractionHandler('titan_ignobles_the_hill_that_strolls_reclaim_minion');
-        expect(reclaimHandler).toBeDefined();
-
-        const reclaimResult = reclaimHandler!(
+        expect(getPromptOption(reclaimPrompt, entry => entry.value?.minionUid === 'hill-reclaim-target')).toBeDefined();
+        const reclaimResult = respondToPromptOption(
             state,
+            entry => entry.value?.minionUid === 'hill-reclaim-target',
+            'Hill reclaim target option',
             '0',
-            { minionUid: 'hill-reclaim-target', baseIndex: 0, defId: 'pirate_first_mate' },
-            getPromptHandlerData(reclaimPrompt),
             FIXED_RANDOM,
-            111,
         );
-        expect(reclaimResult.events.map(event => event.type)).toEqual([SU_EVENTS.MINION_CONTROL_CHANGED]);
+        expect(reclaimResult.events.some(event => event.type === SU_EVENTS.MINION_CONTROL_CHANGED)).toBe(true);
 
-        const resolved = reclaimResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            core,
-        );
+        const resolved = reclaimResult.finalState.core;
         expect(resolved.bases[0].minions.find(minion => minion.uid === 'hill-reclaim-target')?.controller).toBe('0');
     });
 
@@ -4723,37 +4656,30 @@ describe('smashup', () => {
         });
 
         expect(triggerResult.events.map(event => event.type)).toEqual([SU_EVENTS.TITAN_METADATA_UPDATED]);
-        const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_time_travelers_time_box_play');
-
         const afterCounterCore = triggerResult.events.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
             core,
         );
         expect(afterCounterCore.titans?.find(candidate => candidate.uid === 't-time-box-setaside')?.metadata?.timeBoxCounters).toBe(5);
 
-        const handler = getInteractionHandler('titan_time_travelers_time_box_play');
-        expect(handler).toBeDefined();
-
         const queuedState = { ...(triggerResult.matchState ?? makeMatchState(core)), core: afterCounterCore };
-        const resolved = handler!(
+        const queuedPrompt = getSimpleChoicePrompt(queuedState, 'titan_time_travelers_time_box_play');
+        expect(getPromptOption(queuedPrompt, entry => entry.value?.baseIndex === 1)).toBeDefined();
+        const resolved = respondToPromptOption(
             queuedState,
+            entry => entry.value?.baseIndex === 1,
+            'Time Box play base option',
             '0',
-            { baseIndex: 1, baseDefId: core.bases[1].defId },
-            getPromptHandlerData(currentInteraction),
             FIXED_RANDOM,
-            113,
         );
-        expect(resolved.events.map(event => event.type)).toEqual([
+        expect(resolved.events.map(event => event.type)).toEqual(expect.arrayContaining([
             SU_EVENTS.TITAN_METADATA_UPDATED,
             SU_EVENTS.TITAN_PLAYED,
-        ]);
+        ]));
 
-        const finalCore = resolved.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            afterCounterCore,
-        );
+        const finalCore = resolved.finalState.core;
         expect(finalCore.titans?.find(candidate => candidate.uid === 't-time-box-setaside')).toMatchObject({
-            location: { zone: 'base', baseIndex: 1, enteredAt: 113 },
+            location: { zone: 'base', baseIndex: 1 },
             metadata: { timeBoxCounters: 0 },
         });
     });
@@ -5067,48 +4993,30 @@ describe('smashup', () => {
         expect(commandEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const choosePlayerPrompt = getSimpleChoicePrompt(state, 'titan_super_spies_moon_zero_three_choose_player');
 
-        const choosePlayerHandler = getInteractionHandler('titan_super_spies_moon_zero_three_choose_player');
-        const resolveHandler = getInteractionHandler('titan_super_spies_moon_zero_three_resolve');
-        expect(choosePlayerHandler).toBeDefined();
-        expect(resolveHandler).toBeDefined();
-
-        const chooseResult = choosePlayerHandler!(
+        expect(getPromptOption(choosePlayerPrompt, entry => entry.value?.targetPlayerId === '1')).toBeDefined();
+        const chooseResult = respondToPromptOption(
             state,
+            entry => entry.value?.targetPlayerId === '1',
+            'Moon Zero Three choose-player option',
             '0',
-            { targetPlayerId: '1' },
-            getPromptHandlerData(choosePlayerPrompt),
             FIXED_RANDOM,
-            123,
         );
         expect(chooseResult.events.map(event => event.type)).toContain(SU_EVENTS.DECK_INSPECTED);
         const inspectedEvent = chooseResult.events.find(event => event.type === SU_EVENTS.DECK_INSPECTED) as SmashUpEvent | undefined;
         expect((inspectedEvent as any)?.payload?.inspectorPlayerId).toBe('0');
-        const resolvePrompt = getSimpleChoicePrompt(chooseResult.state, 'titan_super_spies_moon_zero_three_resolve');
+        const resolvePrompt = getSimpleChoicePrompt(chooseResult.finalState, 'titan_super_spies_moon_zero_three_resolve');
+        expect(getPromptOption(resolvePrompt, entry => entry.value?.placement === 'bottom')).toBeDefined();
 
-        const afterCommand = commandEvents.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            core,
-        );
-        const choosePost = postProcessSystemEvents(afterCommand, chooseResult.events, FIXED_RANDOM, chooseResult.state);
-        const afterChoose = choosePost.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            afterCommand,
-        );
-
-        const resolveResult = resolveHandler!(
-            { ...(choosePost.matchState ?? chooseResult.state), core: afterChoose },
+        const resolveResult = respondToPromptOption(
+            chooseResult.finalState,
+            entry => entry.value?.placement === 'bottom',
+            'Moon Zero Three resolve-bottom option',
             '0',
-            { placement: 'bottom' },
-            getPromptHandlerData(resolvePrompt),
             FIXED_RANDOM,
-            124,
         );
-        expect(resolveResult.events.map(event => event.type)).toEqual([SU_EVENTS.CARD_TO_DECK_BOTTOM]);
+        expect(resolveResult.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(true);
 
-        const afterResolve = resolveResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            afterChoose,
-        );
+        const afterResolve = resolveResult.finalState.core;
         expect(afterResolve.players['1'].deck.map(card => card.uid)).toEqual(['moon-target-next', 'moon-target-top']);
     });
 
@@ -5235,24 +5143,17 @@ describe('smashup', () => {
 
         const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_mega_troopers_megabot_move');
         expect(getPromptPlayerId(currentInteraction)).toBe('0');
-
-        const handler = getInteractionHandler('titan_mega_troopers_megabot_move');
-        expect(handler).toBeDefined();
-
-        const moveResult = handler!(
+        expect(getPromptOption(currentInteraction, entry => entry.value?.move === true)).toBeDefined();
+        const moveResult = respondToPromptOption(
             triggerResult.matchState!,
+            entry => entry.value?.move === true,
+            'Megabot move option',
             '0',
-            { move: true },
-            getPromptHandlerData(currentInteraction),
             FIXED_RANDOM,
-            100,
         );
 
-        expect(moveResult.events.map(event => event.type)).toEqual([SU_EVENTS.TITAN_MOVED]);
-        const resolved = moveResult.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            core,
-        );
+        expect(moveResult.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(true);
+        const resolved = moveResult.finalState.core;
         expect(resolved.titans?.find(candidate => candidate.uid === 't-megabot-live')?.location).toMatchObject({
             zone: 'base',
             baseIndex: 1,
@@ -5292,24 +5193,18 @@ describe('smashup', () => {
         });
 
         const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_penguins_emperor_penguin_play');
+        expect(getPromptOption(currentInteraction, entry => entry.value?.baseIndex === 0)).toBeDefined();
 
-        const handler = getInteractionHandler('titan_penguins_emperor_penguin_play');
-        expect(handler).toBeDefined();
-
-        const resolved = handler!(
+        const resolved = respondToPromptOption(
             triggerResult.matchState!,
+            entry => entry.value?.baseIndex === 0,
+            'Emperor Penguin play base option',
             '0',
-            { baseIndex: 0, baseDefId: core.bases[0].defId },
-            getPromptHandlerData(currentInteraction),
             FIXED_RANDOM,
-            102,
         );
-        expect(resolved.events.map(event => event.type)).toEqual([SU_EVENTS.TITAN_PLAYED]);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.TITAN_PLAYED)).toBe(true);
 
-        const next = resolved.events.reduce(
-            (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
-            core,
-        );
+        const next = resolved.finalState.core;
         expect(next.titans?.find(candidate => candidate.uid === 't-emperor-setaside')?.location).toMatchObject({
             zone: 'base',
             baseIndex: 0,
@@ -5409,23 +5304,19 @@ describe('smashup', () => {
         const prompt = getSimpleChoicePrompt(state, 'titan_penguins_emperor_penguin_talent');
         expect(getPromptOptions(prompt).every((option: any) => option.displayMode === 'card')).toBe(true);
 
-        const handler = getInteractionHandler('titan_penguins_emperor_penguin_talent');
-        expect(handler).toBeDefined();
-
-        const resolved = handler!(
+        const resolved = respondToPromptOption(
             state,
+            entry => entry.value?.cardUid === 'penguin-hand-minion' && entry.value?.zone === 'hand',
+            'Emperor Penguin talent hand minion option',
             '0',
-            { cardUid: 'penguin-hand-minion', defId: 'pirate_first_mate', zone: 'hand' },
-            getPromptHandlerData(prompt),
             FIXED_RANDOM,
-            106,
         );
-        expect(resolved.events.map(event => event.type)).toEqual([
+        expect(resolved.events.map(event => event.type)).toEqual(expect.arrayContaining([
             SU_EVENTS.REVEAL_HAND,
             SU_EVENTS.CARD_TO_DECK_TOP,
             SU_EVENTS.DECK_REORDERED,
             SU_EVENTS.TITAN_POWER_COUNTER_ADDED,
-        ]);
+        ]));
 
         const afterCommand = commandEvents.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
@@ -5635,8 +5526,6 @@ describe('smashup', () => {
         const validation = SmashUpDomain.validate(state, command);
         expect(validation.valid).toBe(true);
         expect(getTitanDef('tricksters_big_funny_giant')?.abilityTags).toEqual(['special', 'ongoing', 'talent']);
-        expect(getInteractionHandler('titan_tricksters_big_funny_giant_choose_minion')).toBeDefined();
-        expect(getInteractionHandler('titan_tricksters_big_funny_giant_choose_base')).toBeDefined();
     });
 
     it('交互解决产生的泰坦移动进入已有其他泰坦的标准基地时，会继续触发泰坦冲突', () => {
@@ -5900,19 +5789,18 @@ describe('smashup', () => {
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const prompt = getSimpleChoicePrompt(state, 'titan_werewolves_great_wolf_spirit_talent');
 
-        const handler = getInteractionHandler('titan_werewolves_great_wolf_spirit_talent');
-        expect(handler).toBeDefined();
-        const resolved = handler!(
+        expect(getPromptOption(prompt, entry => entry.value?.minionUid === 'wolf-target' && entry.value?.baseIndex === 0)).toBeDefined();
+        const resolved = respondToPromptOption(
             state,
+            entry => entry.value?.minionUid === 'wolf-target' && entry.value?.baseIndex === 0,
+            'Great Wolf Spirit talent target option',
             '0',
-            { minionUid: 'wolf-target', defId: 'werewolf_teenage_wolf', baseIndex: 0 },
-            getPromptHandlerData(prompt),
             FIXED_RANDOM,
-            70,
         );
-        expect(resolved.events.map(event => event.type)).toEqual([SU_EVENTS.TEMP_POWER_ADDED]);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(true);
 
-        const boosted = resolved.events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
+        const afterCommand = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
+        const boosted = resolved.events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), afterCommand);
         expect(boosted.bases[0].minions.find(candidate => candidate.uid === 'wolf-target')?.tempPowerModifier).toBe(1);
     });
 
@@ -5956,26 +5844,21 @@ describe('smashup', () => {
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
         const prompt = getSimpleChoicePrompt(state, 'titan_pirates_the_kraken_talent');
 
-        const handler = getInteractionHandler('titan_pirates_the_kraken_talent');
-        expect(handler).toBeDefined();
-        const resolved = handler!(
+        expect(getPromptOption(prompt, entry => entry.value?.baseIndex === 1)).toBeDefined();
+        const resolved = respondToPromptOption(
             state,
+            entry => entry.value?.baseIndex === 1,
+            'Kraken talent base option',
             '0',
-            { baseIndex: 1, baseDefId: core.bases[1].defId },
-            getPromptHandlerData(prompt),
             FIXED_RANDOM,
-            71,
         );
 
-        expect(resolved?.events.map(event => event.type)).toEqual([
+        expect(resolved.events.map(event => event.type)).toEqual(expect.arrayContaining([
             SU_EVENTS.TITAN_MOVED,
             SU_EVENTS.PERMANENT_POWER_ADDED,
-        ]);
+        ]));
 
-        const afterTalentCore = (resolved?.events ?? []).reduce(
-            (acc, event) => SmashUpDomain.reduce(acc, event),
-            resolved?.state.core ?? core,
-        );
+        const afterTalentCore = resolved.finalState.core;
         const kraken = (afterTalentCore.titans ?? []).find(candidate => candidate.uid === 't-kraken');
         const enemyMinion = afterTalentCore.bases[1].minions.find(candidate => candidate.uid === 'enemy-on-target');
         const allyMinion = afterTalentCore.bases[1].minions.find(candidate => candidate.uid === 'ally-on-target');
@@ -7166,20 +7049,17 @@ describe('smashup', () => {
         expect(getPromptOptions(currentInteraction).some((option: any) => option.value?.baseIndex === 1)).toBe(true);
         expect(getPromptOptions(currentInteraction).some((option: any) => option.value?.baseIndex === 2)).toBe(false);
 
-        const handler = getInteractionHandler('titan_werewolves_great_wolf_spirit_move');
-        expect(handler).toBeDefined();
-
-        const resolved = handler!(
+        expect(getPromptOption(currentInteraction, entry => entry.value?.baseIndex === 1)).toBeDefined();
+        const resolved = respondToPromptOption(
             triggerResult.matchState!,
+            entry => entry.value?.baseIndex === 1,
+            'Great Wolf Spirit move base option',
             '0',
-            { baseIndex: 1, baseDefId: core.bases[1].defId },
-            getPromptHandlerData(currentInteraction),
             FIXED_RANDOM,
-            72,
         );
-        expect(resolved.events.map(event => event.type)).toEqual([SU_EVENTS.TITAN_MOVED]);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.TITAN_MOVED)).toBe(true);
 
-        const moved = resolved.events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
+        const moved = resolved.finalState.core;
         expect(moved.titans?.find(candidate => candidate.uid === 't-gws')?.location).toMatchObject({
             zone: 'base',
             baseIndex: 1,

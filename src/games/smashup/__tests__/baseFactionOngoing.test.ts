@@ -10,9 +10,6 @@
 
 import { describe, test, expect, beforeEach } from 'vitest';
 import {
-    registerProtection,
-    registerRestriction,
-    registerTrigger,
     clearOngoingEffectRegistry,
     registerPodOngoingAliases,
     interceptEvent,
@@ -31,20 +28,21 @@ import { registerWizardAbilities } from '../abilities/wizards';
 import { registerTricksterAbilities } from '../abilities/tricksters';
 import { resolveAbility } from '../domain/abilityRegistry';
 import { reduce } from '../domain/reduce';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { getMinionDef } from '../data/cards';
 import { buildAffectRecords } from '../domain/affect';
 import { runCommand, defaultTestRandom } from './testRunner';
 import {
     getFirstPrompt,
-    getPromptHandlerData,
     getPromptOption,
     getPromptOptions,
     getPromptSourceId,
     getPromptTargetType,
     getPromptsBySourceId,
     makeMatchState as makePromptMatchState,
+    respondToPromptOption,
     respondToPrompt,
+    withOnlyCurrentPrompt,
 } from './helpers';
 
 // ============================================================================
@@ -303,8 +301,6 @@ describe('忍者 ongoing/special 能力', () => {
                 minions: [minion],
                 ongoingActions: [{ uid: 'ongoing1', defId: 'test_ongoing', ownerId: '1' }],
             });
-            const state = makeState([base]);
-
             // 直接测试 ninjaInfiltrateOnPlay 的逻辑：
             // 它应该只收集 base.ongoingActions，不包括 minion.attachedActions
             const targets: { uid: string; defId: string }[] = [];
@@ -660,41 +656,55 @@ describe('忍者 ongoing/special 能力', () => {
             const limitEvt = result.events.find((e: any) => e.type === SU_EVENTS.LIMIT_MODIFIED);
             expect(limitEvt).toBeUndefined();
             
-            // 模拟交互响应：选择手牌中的随从
             clearInteractionHandlers();
             registerNinjaInteractionHandlers();
-            const handler = getInteractionHandler('ninja_acolyte_play');
-            expect(handler).toBeDefined();
-            const handlerResult = handler!(
-                result.matchState ?? matchState, '0',
-                { cardUid: 'h3', defId: 'test_minion_b', power: 3 },
-                { continuationContext: { baseIndex: 0 } },
-                dummyRandom, 2000,
+            const promptState = result.matchState ?? matchState;
+            const prompt = getFirstPrompt(promptState);
+            expect(getPromptSourceId(prompt)).toBe('ninja_acolyte_play');
+            const option = getPromptOption(
+                prompt,
+                candidate => candidate?.value?.cardUid === 'h3',
+                'Acolyte extra-play minion option',
             );
-            expect(handlerResult).toBeDefined();
-            const playedEvt = handlerResult!.events.find((e: any) => e.type === SU_EVENTS.MINION_PLAYED);
+            const resolved = respondToPrompt(promptState, option.id, '0', defaultTestRandom);
+            expect(resolved.success).toBe(true);
+            const playedEvt = resolved.events.find((e: any) => e.type === SU_EVENTS.MINION_PLAYED);
             expect(playedEvt).toBeDefined();
-            // 新行为：使用 consumesNormalLimit=false（不消耗正常额度）
             expect((playedEvt as any).payload.consumesNormalLimit).toBe(false);
         });
 
         test('ninja_hidden_ninja 交互产生的 MINION_PLAYED 带 consumesNormalLimit=false', () => {
             const base = makeBase({ minions: [] });
             const state = makeState([base]);
-            const matchState = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as any;
-            // 模拟交互响应
+            state.players['0'].hand = [
+                makeCard('hidden', 'ninja_hidden_ninja', 'action', '0', SMASHUP_FACTION_IDS.NINJAS),
+                makeCard('h3', 'test_minion_b', 'minion', '0', SMASHUP_FACTION_IDS.NINJAS),
+            ];
+            const matchState = makeMatchState(state);
             clearInteractionHandlers();
             registerNinjaInteractionHandlers();
-            const handler = getInteractionHandler('ninja_hidden_ninja');
-            expect(handler).toBeDefined();
-            const handlerResult = handler!(
-                matchState, '0',
-                { cardUid: 'h3', defId: 'test_minion_b', power: 3 },
-                { continuationContext: { baseIndex: 0 } },
-                dummyRandom, 2000,
+            const executor = resolveAbility('ninja_hidden_ninja', 'special')!;
+            const result = executor({
+                state,
+                matchState,
+                playerId: '0',
+                cardUid: 'hidden',
+                defId: 'ninja_hidden_ninja',
+                baseIndex: 0,
+                random: dummyRandom,
+                now: 1000,
+            });
+            const promptState = result.matchState ?? matchState;
+            const prompt = getFirstPrompt(promptState);
+            expect(getPromptSourceId(prompt)).toBe('ninja_hidden_ninja');
+            const resolved = respondToPrompt(
+                promptState,
+                getPromptOption(prompt, candidate => candidate?.value?.cardUid === 'h3', 'Hidden Ninja extra-play minion option').id,
+                '0',
+                defaultTestRandom,
             );
-            expect(handlerResult).toBeDefined();
-            const playedEvt = handlerResult!.events.find((e: any) => e.type === SU_EVENTS.MINION_PLAYED);
+            expect(resolved.success).toBe(true);
+            const playedEvt = resolved.events.find((e: any) => e.type === SU_EVENTS.MINION_PLAYED);
             expect(playedEvt).toBeDefined();
             expect((playedEvt as any).payload.consumesNormalLimit).toBe(false);
         });
@@ -1441,39 +1451,36 @@ describe('诡术师 ongoing 能力', () => {
             const prompts = getPromptsBySourceId(promptedState!, 'trickster_flame_trap_pod_bp');
             expect(prompts).toHaveLength(2);
             const [firstPrompt, secondPrompt] = prompts;
+            expect(getPromptOption(firstPrompt, option => option?.value?.yes === true, 'Flame Trap POD first yes option')).toBeDefined();
+            expect(getPromptOption(secondPrompt, option => option?.value?.yes === true, 'Flame Trap POD second yes option')).toBeDefined();
 
-            const handler = getInteractionHandler('trickster_flame_trap_pod_bp');
-            expect(handler).toBeDefined();
-
-            const first = handler!(
-                promptedState!,
+            const first = respondToPromptOption(
+                withOnlyCurrentPrompt(promptedState!, firstPrompt),
+                option => option?.value?.yes === true,
+                'Flame Trap POD first yes option',
                 '0',
-                { yes: true },
-                getPromptHandlerData(firstPrompt),
                 dummyRandom,
-                1001,
             );
-            const second = handler!(
-                promptedState!,
+            const second = respondToPromptOption(
+                withOnlyCurrentPrompt(promptedState!, secondPrompt),
+                option => option?.value?.yes === true,
+                'Flame Trap POD second yes option',
                 '0',
-                { yes: true },
-                getPromptHandlerData(secondPrompt),
                 dummyRandom,
-                1002,
             );
 
-            expect(first?.events).toEqual([
+            expect(first.events).toEqual(expect.arrayContaining([
                 expect.objectContaining({
                     type: SU_EVENTS.BREAKPOINT_MODIFIED,
                     payload: expect.objectContaining({ baseIndex: 0, delta: -4, reason: 'trickster_flame_trap_pod' }),
                 }),
-            ]);
-            expect(second?.events).toEqual([
+            ]));
+            expect(second.events).toEqual(expect.arrayContaining([
                 expect.objectContaining({
                     type: SU_EVENTS.BREAKPOINT_MODIFIED,
                     payload: expect.objectContaining({ baseIndex: 1, delta: -4, reason: 'trickster_flame_trap_pod' }),
                 }),
-            ]);
+            ]));
         });
 
         function makeBrownieState(overrides?: Partial<MinionOnBase>): SmashUpCore {
@@ -1498,7 +1505,15 @@ describe('诡术师 ongoing 能力', () => {
         }
 
         function triggerBrownieFromEvent(state: SmashUpCore, event: any) {
-            const allEvents = buildAffectRecords(state, event, '1').flatMap(record => {
+            const affectRecords = buildAffectRecords(state, event, '1');
+            const affectBatchTargets = affectRecords
+                .filter(record => record.countsForOnMinionAffected && record.triggerMinion && record.baseIndex !== undefined)
+                .map(record => ({
+                    minionUid: record.triggerMinionUid ?? record.triggerMinion!.uid,
+                    baseIndex: record.baseIndex!,
+                    controllerId: record.triggerMinion!.controller,
+                }));
+            const allEvents = affectRecords.flatMap(record => {
                 if (!record.countsForOnMinionAffected || !record.triggerMinion || record.baseIndex === undefined) {
                     return [];
                 }
@@ -1513,6 +1528,8 @@ describe('诡术师 ongoing 能力', () => {
                     triggerMinionDefId: record.triggerMinionDefId,
                     triggerMinion: record.triggerMinion,
                     affectType: record.affectType,
+                    affectEvent: event,
+                    affectBatchTargets,
                     reason: record.reason,
                     random: dummyRandom,
                     now: 1000,

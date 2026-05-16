@@ -14,6 +14,17 @@
 | 状态图集 | `public/assets/i18n/zh-CN/dicethrone/images/treant/status-icons-atlas.png/json` | 5 帧 | 树灵、生命源泉、刺藤 | L1 |
 | 压缩运行时资源 | `public/assets/i18n/zh-CN/dicethrone/images/treant/compressed/*.webp` | player-board/tip/ability-cards/dice/status-icons-atlas | 客户端真实加载 | L1，远端回查见 evidence |
 
+## 玩家板图面合同
+
+| 图面区域 / 槽位 | 图片直接观察结论 | 运行时对象 | 允许状态 | 备注 |
+|---|---|---|---|---|
+| `sky` | 左下紫色独立槽，不属于普通技能列 | `quiet-cultivation` | passive / 非普通技能候选 | 旧共享语义误把它混入普通技能槽，现已纠正 |
+| `lotus` | 下排普通技能槽 | `wild-growth` | offensive | 与 Treant v2 图面一致 |
+| `combo` | 中排普通技能槽 | `vengeful-vines` | offensive | 与 Treant v2 图面一致 |
+| `lightning` | 上排普通技能槽 | `nature-touch` | offensive | 与 Treant v2 图面一致 |
+| `meditate` | 右下独立防御槽 | `rooted` | defensive | 真实防御位，不是旧 `calm` 语义 |
+| `calm` | Treant 图面不承载 `rooted` | 空 / 不命中 `rooted` | empty / 非 `rooted` | 不能再让运行时自动补成“最像的旧防御槽” |
+
 ## 图集合同
 
 - 树精卡图不是旧 `ability-cards-common.atlas.json` 的 `1860x2048` 宽图，不能套旧公共 atlas。

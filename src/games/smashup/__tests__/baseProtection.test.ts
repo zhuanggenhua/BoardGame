@@ -16,12 +16,12 @@ import {
     clearOngoingEffectRegistry,
     isMinionProtected,
 } from '../domain/ongoingEffects';
-import { getInteractionHandler, clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, MinionDestroyedEvent, MinionMovedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { getSimpleChoicePrompt, resolveDestroyedMinions } from './helpers';
+import { getPromptOption, getSimpleChoicePrompt, resolveDestroyedMinions, respondToPromptOption } from './helpers';
 
 // ============================================================================
 // 初始化
@@ -322,8 +322,6 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
     });
 
     it('交互处理：选择移动→产生 MINION_MOVED', () => {
-        const handler = getInteractionHandler('base_nine_lives_intercept');
-        expect(handler).toBeDefined();
         const core = makeState({
             bases: [
                 makeBase('base_house_of_nine_lives'),
@@ -334,48 +332,97 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
             core,
             sys: { interaction: { queue: [] } } as any,
         };
-        const result = handler!(ms, '0', {
-            move: true, minionUid: 'm1', minionDefId: 'd1', fromBaseIndex: 1, houseBaseIndex: 0,
-        }, undefined, dummyRandom, 1000);
-        expect(result).toBeDefined();
-        expect(result!.events).toHaveLength(1);
-        expect(result!.events[0].type).toBe(SU_EVENTS.MINION_MOVED);
-        expect((result!.events[0] as MinionMovedEvent).payload.toBaseIndex).toBe(0);
+        const prompted = resolveDestroyedMinions(ms, '1', [{
+            minionUid: 'm1',
+            minionDefId: 'd1',
+            fromBaseIndex: 1,
+            ownerId: '0',
+            reason: '被消灭',
+            timestamp: 1000,
+        }], dummyRandom, 1000);
+        const nineLivesPrompt = getSimpleChoicePrompt(prompted.matchState!, 'base_nine_lives_intercept');
+        const result = respondToPromptOption(
+            prompted.matchState!,
+            option => option.value?.move === true,
+            'House of Nine Lives move option',
+            undefined,
+            dummyRandom,
+        );
+        expect(result.success, result.error).toBe(true);
+        const moveEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_MOVED);
+        expect(moveEvents).toHaveLength(1);
+        expect((moveEvents[0] as MinionMovedEvent).payload.toBaseIndex).toBe(0);
+        expect(getPromptOption(nineLivesPrompt, option => option.value?.move === true, 'House of Nine Lives move option')).toBeDefined();
     });
 
     it('交互处理：目标随从已失效时不应再移动旧目标', () => {
-        const handler = getInteractionHandler('base_nine_lives_intercept');
-        expect(handler).toBeDefined();
         const core = makeState({
             bases: [
                 makeBase('base_house_of_nine_lives'),
-                makeBase('other', { minions: [makeMinion('m2', '0', 3)] }),
+                makeBase('other', { minions: [makeMinion('m1', '0', 3)] }),
             ],
         });
         const ms: MatchState<SmashUpCore> = {
             core,
             sys: { interaction: { queue: [] } } as any,
         };
-        const result = handler!(ms, '0', {
-            move: true, minionUid: 'stale-minion', minionDefId: 'd1', fromBaseIndex: 1, houseBaseIndex: 0,
-        }, undefined, dummyRandom, 1000);
-        expect(result).toBeDefined();
-        expect(result!.events).toHaveLength(0);
+        const prompted = resolveDestroyedMinions(ms, '1', [{
+            minionUid: 'm1',
+            minionDefId: 'd1',
+            fromBaseIndex: 1,
+            ownerId: '0',
+            reason: '被消灭',
+            timestamp: 1000,
+        }], dummyRandom, 1000);
+        const staleState: MatchState<SmashUpCore> = {
+            ...prompted.matchState!,
+            core: makeState({
+                bases: [
+                    makeBase('base_house_of_nine_lives'),
+                    makeBase('other', { minions: [makeMinion('m2', '0', 3)] }),
+                ],
+            }),
+        };
+        const result = respondToPromptOption(
+            staleState,
+            option => option.value?.move === true,
+            'House of Nine Lives move option',
+            undefined,
+            dummyRandom,
+        );
+        expect(result.success, result.error).toBe(true);
+        const moveEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_MOVED);
+        expect(moveEvents).toHaveLength(0);
     });
 
     it('交互处理：选择不移动→恢复 MINION_DESTROYED', () => {
-        const handler = getInteractionHandler('base_nine_lives_intercept');
-        expect(handler).toBeDefined();
-        const core = makeState({ bases: [makeBase('base_house_of_nine_lives'), makeBase('other')] });
+        const core = makeState({
+            bases: [
+                makeBase('base_house_of_nine_lives'),
+                makeBase('other', { minions: [makeMinion('m1', '0', 3)] }),
+            ],
+        });
         const ms: MatchState<SmashUpCore> = {
             core,
             sys: { interaction: { queue: [] } } as any,
         };
-        const result = handler!(ms, '0', {
-            move: false, minionUid: 'm1', minionDefId: 'd1', fromBaseIndex: 1, ownerId: '0',
-        }, undefined, dummyRandom, 1000);
-        expect(result).toBeDefined();
-        expect(result!.events).toHaveLength(1);
-        expect(result!.events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+        const prompted = resolveDestroyedMinions(ms, '1', [{
+            minionUid: 'm1',
+            minionDefId: 'd1',
+            fromBaseIndex: 1,
+            ownerId: '0',
+            reason: '被消灭',
+            timestamp: 1000,
+        }], dummyRandom, 1000);
+        const result = respondToPromptOption(
+            prompted.matchState!,
+            option => option.value?.move === false,
+            'House of Nine Lives decline option',
+            undefined,
+            dummyRandom,
+        );
+        expect(result.success, result.error).toBe(true);
+        const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(1);
     });
 });

@@ -24,6 +24,12 @@
 
 ## Current Status
 
+- [x] `src/games/smashup/__tests__/baseFactionOngoing.test.ts` 的 `ninja_hidden_ninja consumesNormalLimit` 红灯已收口：不再手工拼 fake prompt current，而是复用真实 `resolveAbility('ninja_hidden_ninja', 'special')` 产出的 prompt，再走 `respondToPrompt(...)`。同时补齐本地 `triggerBrownieFromEvent(...)` helper，对齐 reducer 的 `affectEvent + affectBatchTargets` 传递方式；`trickster_brownie` 针对 `control_change` 改为按 `MINION_CONTROL_CHANGED.payload.fromControllerId` 判断“被对手影响”的受害方。验证：`baseFactionOngoing.test.ts -t "consumesNormalLimit"` 5 passed，整文件 81 passed，`npm run test:structure` OK。
+- [x] `src/games/smashup/__tests__/abilities/bear-cavalry.test.ts` 已把 `bear_cavalry_bear_rides_you_pod_choose_base` 从直调 handler 迁成真实命令链：`PLAY_ACTION` -> 选己方随从 -> 选目标基地 -> 断言 `choose_suppress` prompt 候选。`bear_cavalry_superiority_pod_talent` 两处保留为显式低层合同。验证：整文件 21 passed，eslint 0 errors。
+- [x] 全仓 `getInteractionHandler` / `getAbilityRuntimePromptHandler` 命中已从 `44` 降到 `43`；当前剩余高优先级候选主要是 `baseFactionOngoing.test.ts` 的 `trickster_flame_trap_pod_bp`、`abilities/bear-cavalry.test.ts` 的 2 条 `superiority_pod_talent` 低层合同，以及 `temple-firstmate-afterscore.test.ts` 的 2 条 `pirate_first_mate_choose_base` stale/baseDefId 合同。
+- [x] `src/games/smashup/__tests__/smashup.smoke.test.ts` 的 Hill give-minion -> counter 红灯已收口：测试不再手工 `resolveAffectedMinions(...)` 重放触发链，而是直接消费 `respondToPromptOption(...)` 的真实 `finalState`；同时修复 `src/games/smashup/domain/affect.ts` 对 `MINION_CONTROL_CHANGED` 的 affect 快照，`onMinionAffected(control_change)` 现在会看到变更后的控制者。验证：单测定点 1 passed，整文件 133 passed，`eslint` 0 errors，`npm run test:structure` OK。
+- [x] `src/games/smashup/__tests__/smashup.smoke.test.ts` 的 `major_ursa` 三段链已迁成真实命令链：`USE_TALENT` -> `choose_destination` -> `smashup_reaction_choose` -> `choose_minion` -> `choose_base`，不再手工喂 continuation 或直调 3 个 handler。验证：定点 1 passed，整文件 133 passed，`eslint` 0 errors，`npm run test:structure` OK。当前 `smoke` 剩余 direct handler 只剩 `titan_penguins_emperor_penguin_play` 低层合同 + `big_funny_giant` 注册表断言。
+- [x] `src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts` 已收掉 `smashup_reaction_choose` + `pirate_first_mate_choose_base` 直调：afterScoring 链改为 `resolveSmashUpReactionChoice(...)` 驱动 reaction session，再用 `respondToPromptOption(...)` 响应业务 prompt。验证：整文件 19 passed，`eslint` 0 errors。
 - [x] `src/games/smashup/__tests__/igor-ondestroy-idempotency.test.ts` 的九命之屋 skipped 块已恢复；单文件 4 tests passed，目标模式 0 命中，eslint 0 errors，`npm run test:structure` OK。
 - [x] `src/games/smashup/__tests__/interactionChainE2E.test.ts` 最后一个 `it.skip` 已按当前 Alien Probe 规则恢复；整文件 55 tests passed，eslint 0 errors，`npm run test:structure` OK。
 - [x] `src/games/smashup/__tests__/wizard-archmage-debug.test.ts` 与 `src/games/smashup/__tests__/steampunk-aggromotive-bug.test.ts` 已作为已覆盖的调试/旧 bug skip 文件删除；对应现行测试 3 passed + 8 passed，`npm run test:structure` OK。
@@ -139,6 +145,8 @@
 ## Next
 
 - 继续保持新增/迁出测试复用 prompt/command facade；不允许把旧内部访问原样搬进新文件。
+- `smashup.smoke.test.ts` 里普通业务 direct handler 已基本清空；下一步优先评估 `titan_penguins_emperor_penguin_play` 是否仍应保留为“resolve 时再次检查己方是否已有泰坦在场”的显式低层合同，若保留则转向其它大文件而不是继续硬清 `smoke`。
+- 全仓 `getInteractionHandler` / `getAbilityRuntimePromptHandler` 命中已降到 `43`；`abilities/bear-cavalry.test.ts` 里普通业务链只剩 2 条 `superiority_pod_talent` 低层合同，`temple-firstmate-afterscore.test.ts` 的 `pirate_first_mate_choose_base` 仍应按 stale/baseDefId/index drift 合同审视，避免把系统合同误迁成 facade。
 - 当前目标扫描（排除 `helpers.ts` / `helpers/**`）对旧 `new*` 入口、旧集合文件、裸 prompt seam 与 `.skip` 均为 0 命中；后续工作重点从“清旧入口”转为审查剩余较大文件是否仍有可拆的自然业务边界。
 - 若继续深化，优先审计 `field-of-honor-base.test.ts` 与 `laboratorium-archmage-queue.test.ts`：只有确认一个文件混有多个独立业务对象或行为簇时才拆；不要为了压行数牺牲可读性。
 
@@ -153,6 +161,8 @@
 | 2026-05-16 | 迁移 `query6Abilities.test.ts` 时把“无抽牌事件但应创建排序 prompt”的 `wizard_portal` 用例机械加上 `expectNoPrompt`，导致单文件短暂失败。 | 回到用例语义：保留 `getSimpleChoicePrompt(matchState, 'wizard_portal_order')` 作为正向行为断言，只在真正无交互分支使用 `expectNoPrompt`；复跑后 30 tests passed。 |
 | 2026-05-16 | 清理 `factionAbilities.test.ts` 未使用变量 warning 时，第一次误删了两个仍需要传给 facade 的 `matchState` 绑定，导致 `dino_natural_selection` 两个用例短暂 ReferenceError。 | 按失败行恢复需要的 `matchState`，只清理真正未使用的 swashbuckling/howl/survival 等用例绑定；复跑后 46 tests passed，eslint 0 errors。 |
 | 2026-05-16 | 删除 `auditUtils` 的低层重导出后跑 8 个 audit 入口，4 个文件红灯；失败点是既有业务审计债务：`zombies.ts` 遗留注册白名单、`sharks_mako` special 注册、古埃及 buried special 语义、`werewolf_leader_of_the_pack_pod` ongoing 注册。 | 不把全 audit 说成通过；本轮只用 `rg getInteractionsFromMS` 无外部引用和 `npm run test:structure` 通过证明出口删除本身，四个 audit 红灯登记为后续业务修复候选。 |
+| 2026-05-16 | 迁移 `smashup.smoke.test.ts` 的 Hill give-minion -> counter 链时，第一次沿用 `resolveAffectedMinions(...)` 手工重放触发，导致同一个 `onMinionAffected` trigger 被重复入队；进一步实跑真实链路后又发现 `MINION_CONTROL_CHANGED` 的 affect 快照仍保留旧 controller，第一次 reaction 消费时不会弹出 counter prompt。 | 测试侧改为直接消费 `giveResult.finalState`，不再补跑触发链；领域侧在 `buildAffectRecords()` 的 `MINION_CONTROL_CHANGED` 分支把 `triggerMinion.controller` 修正为 `toControllerId`，让真实反应链看到变更后的控制权。 |
+| 2026-05-16 | 收口 `ninja_hidden_ninja consumesNormalLimit` 后复跑 `baseFactionOngoing.test.ts`，暴露 `trickster_brownie` 的 `control_change` 用例红灯。根因不是新测试本身，而是 Brownie helper 只手工传了 `triggerMinion` / `affectType`，没像 reducer 一样传 `affectEvent + affectBatchTargets`；同时 Brownie 的 `control_change` 语义需要看 `fromControllerId`，不能只看变更后的 `triggerMinion.controller`。 | 测试侧让 `triggerBrownieFromEvent(...)` 对齐 reducer 传参；实现侧在 `trickster_brownie` 的 `onMinionAffected` 对 `control_change` 特判读取 `MINION_CONTROL_CHANGED.payload.fromControllerId`。复跑后 `baseFactionOngoing.test.ts` 81 passed。 |
 
 ---
 
@@ -1428,3 +1438,136 @@
 - [x] stale 第二步使用 `withOnlyCurrentPrompt(makeMatchState(staleCore), chooseBaseInteraction)` 挂旧 destination prompt，再通过真实响应命令验证目标离场时不会产生 `MINION_MOVED`。
 - [x] 验证：`ongoingTalent.test.ts` 首次 4096MB Vitest worker OOM，8192MB 复跑 27 tests passed；eslint 0 errors；扫描确认该文件 `getAbilityRuntimePromptHandler(` 清零，剩余 `getPromptHandlerData` 为其它 handler/contract 点；`npm run test:structure` checked files: 116，OK（仅既有 legacy-root 警告）。
 - [ ] 后续质量债：`ongoingTalent.test.ts` 剩余 `getPromptHandlerData` 集中在 Trickster 等非 runtime prompt handler 直调；下一步应按同样标准判断是否有真实 prompt 可响应。
+
+## Addendum（2026-05-16 18:47 +08）：Expansion ongoing stale/live 断言口径对齐真实响应语义
+
+- [x] `expansionOngoing.test.ts` 中 `steampunk_mechanic` / `steampunk_change_of_venue` 的 4 条 runtime handler 迁移已完成，其中 3 条二段 stale/live 用例补齐了真实命令链下的正确断言口径。
+- [x] `steampunk_mechanic_target` 在对手 `ornate_dome` 封锁后，不再沿用 direct handler 的“空事件”口径；现在先用 `optionsGenerator` 证明 live 刷新后 `base-0` 已失效，再断言 `respondToPromptOption(...)` 返回 `无效的选择`。
+- [x] `steampunk_mechanic_target` / `steampunk_change_of_venue_choose_base` 的“待附着牌已不在手牌”场景，改为断言不会产生 `ACTION_PLAYED` / `ONGOING_ATTACHED` / `LIMIT_MODIFIED` 这些业务事件，并验证最终状态仍未附着、手牌为空；不再把 `SYS_INTERACTION_RESOLVED` 误当成业务副作用。
+- [x] `killer_plant_venus_man_trap_search` 的成功路径也已改为 `respondToPromptOption(...)`；该测试继续验证 `MINION_PLAYED` 带出 `baseIndex/baseDefId`，但不再依赖 runtime handler 参数。
+- [x] 同文件继续迁移 `innsmouth_return_to_the_sea`、`miskatonic_researcher_pod`、`miskatonic_field_trip_pod`、`miskatonic_things_best_not_known_pod_draw`、`miskatonic_librarian_pod` 到 `respondToPromptOption(s)`；目前只剩 `steampunk_mechanic` 两条明显 handler-level 非法值合同保留 direct runtime handler。
+- [x] `killer_plant_sprout_search` / `killer_plant_venus_man_trap_search` 的 stale deck-search 回归也已改看真实命令链：当前公开语义是不重复打出、deck 不变，但旧 prompt 仍留在当前交互里；这与 direct handler 的反馈/洗牌合同不同，已在 findings 单独记录。
+- [x] 验证：`src/games/smashup/__tests__/expansionOngoing.test.ts` 67 tests passed；eslint 0 errors；`npm run test:structure` checked files: 1，OK。
+- [ ] 后续质量债：继续清理剩余 runtime prompt 直调时，要先区分“live 失效应拒绝响应”和“响应可收口但不产生产务事件”两类语义，不能机械把旧 handler 的 `events.length === 0` 搬到命令链测试里。
+
+## Addendum（2026-05-16 19:02 +08）：Madness prompt 业务响应命令链化
+
+- [x] `madnessAbilities.test.ts` 中 `innsmouth_recruitment` 的即时额外随从、抽 3 张、reduce 验证、疯狂牌库不足 3 张等业务响应，已从 direct handler 改为 `respondToPromptOption(...)`。
+- [x] 同文件 `miskatonic_librarian_pod` 的 extra 模式与二段 `play_madness` 响应已改走真实 prompt 链，并继续验证 `special_madness` follow-up prompt 出现。
+- [x] “疯狂牌库不足 3 张” 的测试语义已从非法 value clamp 改为公开行为：prompt 不暴露 `count=3` 选项，用户选择 `count=2` 后按 2 张疯狂卡 / 2 个额外随从结算。
+- [x] 验证：`src/games/smashup/__tests__/madnessAbilities.test.ts` 32 tests passed；eslint 0 errors；`npm run test:structure` checked files: 2，OK。
+- [ ] 后续质量债：继续清点 `madnessAbilities.test.ts` 里剩余低层合同，只保留明确的 off-phase handler / live prompt contract；普通按钮响应不再回退到 direct handler。
+
+## Addendum（2026-05-16 19:06 +08）：Mandatory Reading draw 按钮响应命令链化
+
+- [x] `madnessAbilities.test.ts` 中 `miskatonic_mandatory_reading_draw` 的 4 条普通按钮响应用例，已从 `getInteractionHandler(...)` + `getPromptHandlerData(...)` 改为真实 `respondToPromptOption(...)`。
+- [x] “抽 2 张疯狂卡后产生抽牌与力量加成事件”继续断言 `MADNESS_DRAWN(count=2)` 与 `PERMANENT_POWER_ADDED(amount=4)`，但不再依赖 handler 参数顺序。
+- [x] “跳过”“抽 3 张后最终状态”“多张疯狂卡 UID 唯一”三条用例改为直接观察命令链 `events` 与 `finalState.core`，不再手动 `applyEvents` 模拟调用方职责。
+- [x] 同文件剩余 `getInteractionHandler(...)` 只剩 `miskatonic_those_meddling_kids_pod_mode` 的 off-phase immediate 合同；`getPromptHandlerData(...)` 只剩 live `responseValidationMode` 合同。
+- [x] 验证：`src/games/smashup/__tests__/madnessAbilities.test.ts` 32 tests passed；eslint 0 errors；`npm run test:structure` checked files: 2，OK。
+
+## Addendum（2026-05-16 21:26 +08）：Madness 残留清理与九命之屋真实响应链
+
+- [x] `madnessAbilities.test.ts` 的 `miskatonic_those_meddling_kids_pod_mode` 已从“半迁移”收口为完整命令链测试：删除残留的 `getInteractionHandler(...)` 断言后，off-phase immediate 仍通过真实 prompt 响应证明；文件内 direct handler / runtime prompt handler 命中已为 0。
+- [x] `baseProtection.test.ts` 的 `base_nine_lives_intercept` 三条业务测试已从 direct handler 改为真实 `resolveDestroyedMinions(...)` -> `base_nine_lives_intercept` prompt -> `respondToPromptOption(...)` 链；“选择移动”“目标 stale 不再移动旧目标”“选择不移动恢复销毁”都改为断言真实响应结果，而非 handler 位置参数。
+- [x] 这批迁移后，全仓 `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 命中从 `42` 降到 `38`；`baseProtection.test.ts` 文件内命中已为 0。
+- [x] 验证：`src/games/smashup/__tests__/madnessAbilities.test.ts` 32 tests passed，`src/games/smashup/__tests__/baseProtection.test.ts` 19 tests passed，两个文件 eslint 均为 0 errors，`npm run test:structure` OK。
+
+## Addendum（2026-05-16 21:41 +08）：基地/海盗业务链继续退出 direct handler
+
+- [x] `baseAbilityNeutralProtection.test.ts` 已从直接调用 `base_mushroom_kingdom` handler 改为真实 `onTurnStart` 基地能力触发 -> `base_mushroom_kingdom` prompt -> `respondToPromptOption(...)`；继续验证的是“基地能力归因中立后，Deep Roots / Infiltrate 对 move 保护过滤是否正确”，而不是 handler 位置参数。
+- [x] `igor-rlyeh-double-trigger.test.ts` 已从“直调 `base_rlyeh` handler + 手工 `processDestroyMoveCycle(...)`”改成真实 `triggerBaseAbilityWithMS('base_rlyeh')` -> 选择 Igor -> 检查 `frankenstein_igor` prompt 只出现一次。
+- [x] `elder-thing-choice-goju-tiebreak.test.ts` 的 Goju tie-break 响应已改为真实 `triggerBaseAbility('base_temple_of_goju')` 产出 prompt 后，通过 `respondToPromptOption(...)` 选择并验证 `CARD_TO_DECK_BOTTOM`，不再显式调用 `base_temple_of_goju_tiebreak` handler。
+- [x] `buccaneer-pod-limit.test.ts` 两条 `baseDefId/stale` 合同已改为真实 replacement prompt 响应：先通过 `fireTriggers(..., { phase: 'replacement' })` 产出 `pirate_buccaneer_move`，再在“基地索引漂移后”或“目标基地已失效”的 stale core 上响应 prompt，验证 live `baseDefId` 重定位与失效时不回退旧索引。
+- [x] `abilities/pirates-ongoing.test.ts` 中“`pirate_buccaneer_move` handler 已注册”的冗余断言已删除；注册表存在性继续由专门的 `abilityInteractionRegistry.test.ts` 承担，业务文件只保留行为测试。
+- [x] `smashup.smoke.test.ts` 中 `big_funny_giant` 的两条注册断言已删除；同文件已有多条真实行为链覆盖，保留 `abilityTags` 断言即可。
+- [x] 这批迁移后，全仓 `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 命中从 `38` 降到 `29`；当前剩余主要集中在：
+  - `abilityInteractionRegistry.test.ts` 注册表合同
+  - `promptSystem.test.ts` / `promptResponseChain.test.ts` 系统合同
+  - `expansionOngoing.test.ts` 的 `steampunk_mechanic` runtime prompt 非法值合同
+  - `bear-cavalry.test.ts`、`expansionBaseAbilities.test.ts`、`temple-firstmate-afterscore.test.ts` 的少量低层/score-session/stale 合同
+  - `smashup.smoke.test.ts` 的 `titan_penguins_emperor_penguin_play` resolve-time 二次校验合同
+- [x] 验证：`baseAbilityNeutralProtection.test.ts` 2 passed，`igor-rlyeh-double-trigger.test.ts` 1 passed，`elder-thing-choice-goju-tiebreak.test.ts` 10 passed，`buccaneer-pod-limit.test.ts` 8 passed，`abilities/pirates-ongoing.test.ts` 18 passed，`smashup.smoke.test.ts` 133 passed；对应 eslint 全部 0 errors，`npm run test:structure` OK。
+
+## Addendum（2026-05-16 19:16 +08）：Cthulhu expansion 多步交互链命令链化
+
+- [x] `cthulhuExpansionAbilities.test.ts` 中 `miskatonic_those_meddling_kids` 的 3 条多步点击链，不再手动直调 base-select / card-select handler；现在统一改为 `respondToPromptOption(...)` 按真实 prompt 逐步选择。
+- [x] 同文件 `cthulhu_recruit_by_force` 与 `cthulhu_it_begins_again` 的“选多张”“选跳过”“最终状态”用例，已从 direct handler 改为 `respondToPromptOptions(...)`，并把 reduce 验证收口为直接观察 `finalState.core`。
+- [x] 这批迁移后，文件内不再出现 `getInteractionHandler(...)` / `getPromptHandlerData(...)`；保留的断言集中在 prompt source、多选约束、业务事件与最终权威状态。
+- [x] 验证：`src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts` 32 tests passed；eslint 0 errors；`npm run test:structure` checked files: 3，OK。
+
+## Addendum（2026-05-16 19:17 +08）：Mushroom Kingdom POD 基地能力链收口
+
+- [x] `baseAbilityIntegration.test.ts` 中 `base_mushroom_kingdom_pod` 的“两段选随从 -> 选目标基地”链，已从 direct handler 改为两次 `respondToPromptOption(...)`。
+- [x] 同文件现已清除 `getInteractionHandler(...)` / `getPromptHandlerData(...)` 仅为这条业务链服务的残留，同时顺手删掉未使用的旧测试死代码，恢复 eslint 干净状态。
+- [x] 验证：`src/games/smashup/__tests__/baseAbilityIntegration.test.ts` 25 tests passed；eslint 0 errors；`npm run test:structure` checked files: 4，OK。
+
+## Addendum（2026-05-16 19:21 +08）：Ongoing talent 业务链命令链化
+
+- [x] `ongoingTalent.test.ts` 中 `trickster_hideout_pod_swap` 的手牌/牌库交换链，已从 direct handler 改为 `respondToPromptOption(...)`，并直接观察后续 `trickster_hideout_pod_destroy` prompt。
+- [x] 同文件 `trickster_pixie_pod` 的 minion / destroy / counters 三段 runtime 链，已改为 `respondToPromptOptions(...)` 与 `respondToPromptOption(...)` 的组合；不再手工喂 handler 参数。
+- [x] 这批迁移后，`getInteractionHandler(...)` 清零，只保留 `getPromptHandlerData(...)` 的 prompt 合同断言（`autoResolveIfSingle`）。
+- [x] 验证：`src/games/smashup/__tests__/ongoingTalent.test.ts` 27 tests passed；eslint 0 errors；`npm run test:structure` checked files: 5，OK。
+
+## Addendum（2026-05-16 19:29 +08）：Madness prompt 三段业务链收口
+
+- [x] `madnessPromptAbilities.test.ts` 中 `cthulhu_madness_unleashed` 的“跳过 / 选多张 / POD 版”已从 direct handler 改为 `respondToPromptOption(s)`；“跳过”不再断言 `events.length === 0`，改为断言没有 `MADNESS_RETURNED` / `CARDS_DRAWN` / `LIMIT_MODIFIED` 业务事件，并直接观察 `finalState.core`。
+- [x] 同文件 `miskatonic_book_of_iter_the_unseen` 的“手牌返回 1 张 / 跳过”已改成真实 prompt 响应；不再使用本地 `resolveInteraction(...)` 或手动 `applyEvents(...)` 模拟调用方职责。
+- [x] `miskatonic_thing_on_the_doorstep` 的并列最高力量场景已改用 `getFirstPrompt` / `getPromptOptions` / `respondToPromptOption(...)`；不再裸读 `sys.interaction` 或直调 handler。
+- [x] 当前文件对 `getInteractionHandler(...)` / `getPromptHandlerData(...)` / `resolveInteraction(...)` / `sys.interaction` / `interaction.data.options` 的目标扫描已清零。
+- [x] 验证：`src/games/smashup/__tests__/madnessPromptAbilities.test.ts` 26 tests passed；eslint 0 errors；`npm run test:structure` checked files: 6，OK。
+
+## Addendum（2026-05-16 19:36 +08）：Expansion base abilities 业务 prompt 批量命令链化
+
+- [x] `expansionBaseAbilities.test.ts` 中 `base_mermaid_pool`、`base_ossuary`、`base_arena`、`base_miskatonic_university_base` 的业务响应，已从 direct handler 改为 `respondToPromptOption(...)`。
+- [x] 同文件 `base_the_asylum` 的“两段手牌 -> 随从”链，已改成两次真实 prompt 响应；不再手动把 `option.value` 喂给 `base_the_asylum` / `base_the_asylum_choose_minion` handler。
+- [x] 这批迁移后，原本基于 direct handler 的 `events.length` / 固定事件下标断言，已统一改成按业务事件 `find/filter` 或直接观察 `finalState.core`，避免命令链附带系统事件时出现假红。
+- [x] 当前文件剩余 `getInteractionHandler(...)` 主要集中在 stale 回归、reaction queue、queued prompt follow-up 与少量明确 handler-level 合同；这批保留为下一轮按分层继续判断的低层入口。
+- [x] 验证：`src/games/smashup/__tests__/expansionBaseAbilities.test.ts` 50 tests passed；eslint 0 errors；`npm run test:structure` checked files: 7，OK。
+
+## Addendum（2026-05-16 19:44 +08）：Interaction chain E2E 熊骑兵 stale 回归命令链化
+
+- [x] `interactionChainE2E.test.ts` 中 4 条熊骑兵 stale 回归，已从 direct handler 改为 `withOnlyCurrentPrompt(makeFullMatchState(staleCore), oldPrompt)` + 本地 `respond(...)`，覆盖 `bear_cavalry_commission_move_dest`、`bear_cavalry_bear_cavalry_choose_base`、`bear_cavalry_youre_screwed_choose_dest`、`bear_cavalry_bear_rides_you_choose_base`。
+- [x] 该文件的本地 `respond(...)` 返回 `GameTestRunner` 结构，不是 `success/events` 直返；断言口径统一改看 `steps[0]?.success` 与 `finalState`，避免把别的 helper 结果形状硬套进来。
+- [x] 同轮顺手恢复 `getPromptHandlerData` import，删除未使用的 `handlerRandom` / `RandomFn`，保持文件内部接口干净。
+- [x] 验证：`src/games/smashup/__tests__/interactionChainE2E.test.ts` 55 tests passed；eslint 0 errors；`npm run test:structure` OK；扫描确认该文件 `getInteractionHandler(...)` 已清零，仅保留 prompt contract 读取与 4 处 `withOnlyCurrentPrompt(...)`。
+
+## Addendum（2026-05-16 19:49 +08）：Expansion base stale 回归继续命令链化
+
+- [x] `expansionBaseAbilities.test.ts` 中 `base_land_of_balance`、`base_sheep_shrine`、`base_the_pasture`、`base_innsmouth_base_choose_card`、`base_cat_fanciers_alley`、`base_inventors_salon` 的 stale 回归，已从 direct handler 改为 `withOnlyCurrentPrompt(makeMatchState(staleCore), oldPrompt)` + `respondToPromptOption(...)`。
+- [x] 这批用例不再断言 `events.length === 0`；统一改成“命令链响应成功，但不产生目标业务事件”，分别检查 `MINION_MOVED` / `CARD_TO_DECK_BOTTOM` / `MINION_DESTROYED` / `CARDS_DRAWN` / `CARD_RECOVERED_FROM_DISCARD` 不出现。
+- [x] 当前文件剩余 `getInteractionHandler(...)` 只剩 `base_greenhouse` 2 处，且都明确在测 scoring-session / replacement follow-up 合同，不再把它们误当成普通业务 prompt。
+- [x] 验证：`src/games/smashup/__tests__/expansionBaseAbilities.test.ts` 50 tests passed；eslint 0 errors；`npm run test:structure` checked files: 8，OK。
+
+## Addendum（2026-05-16 19:52 +08）：Smoke 中 Sphinx 业务 prompt 收口
+
+- [x] `smashup.smoke.test.ts` 中 `titan_sphinx_start_turn`、`titan_sphinx_after_scoring`、`titan_sphinx_talent` 三条，已从 direct handler 改为 `respondToPromptOption(...)`，直接断言 `finalState.core`。
+- [x] 这三条都属于“已有真实 prompt、用户只是点一张可见卡牌”的普通业务链，不再保留 `getPromptHandlerData(...)` + 手动 reduce 事件的内部合同。
+- [x] 验证：`src/games/smashup/__tests__/smashup.smoke.test.ts` 133 tests passed；eslint 0 errors；全仓重扫 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 当前剩余 76 条，主要集中在注册表合同、session/stale 例外与 `smashup.smoke.test.ts` 其他 titan 簇。
+
+## Addendum（2026-05-16 20:06 +08）：Smoke 中 Kraken 红灯修复并继续收 Mergacon / Gorgodzolla
+
+- [x] `smashup.smoke.test.ts` 的 `titan_pirates_the_kraken_talent` 已修回绿：这条 prompt 响应不仅产出业务事件，还会在 `state.core` 写入 `timedPowerModifiers`。测试不再用 `response.events.reduce(...)` 手搓后态，而是改用 `resolved.finalState.core` 作为权威状态，再验证 `TURN_STARTED` 时 debuff 会在你下回合开始恢复。
+- [x] 同文件 `titan_changerbots_mergacon_play`、`titan_changerbots_mergacon_talent`、`titan_kaiju_gorgodzolla_draw` 3 条普通 titan prompt，已从 direct handler 改为真实 `respondToPromptOption(...)`。
+- [x] `titan_changerbots_mergacon_play` 现在先走真实 `onTurnStart` trigger 拿 prompt，再点击基地选项；不再手动伪造 continuationContext 直调 handler。
+- [x] `titan_kaiju_gorgodzolla_draw` 改走真实 respond 后，事件流会附带 `SYS_INTERACTION_RESOLVED`；断言口径已从 `toEqual([CARDS_DRAWN])` 调整为“包含 `CARDS_DRAWN` + 最终手牌变化正确”。
+- [x] 验证：`src/games/smashup/__tests__/smashup.smoke.test.ts` 133 tests passed；eslint 0 errors；`npm run test:structure` OK；全仓重扫 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 当前剩余 66 条。
+- [ ] 下一轮优先继续 `smashup.smoke.test.ts` 里“已有真实 prompt、只差一步点击”的 titan 小簇，如 `time_box_play`、`moon_zero_three`、`walking_castle` 等；继续避开明显的 registry / session / replacement 合同。
+
+## Addendum（2026-05-16 20:13 +08）：Smoke 中 Walking Castle / Time Box / Moon Zero Three / Megabot 收口
+
+- [x] `smashup.smoke.test.ts` 中 `titan_magical_girls_walking_castle_choose_base` + `choose_minions` 的二段链，已从 direct handler 改为 `respondToPromptOption(...)` + `respondToPromptOptions(...)`。
+- [x] `titan_time_travelers_time_box_play` 已改走真实 `respondToPromptOption(...)`；断言不再锁 `enteredAt=113` 这种旧 handler 时代手喂 timestamp 的细节，只保留“进到目标基地 + 计数清零”的公开行为。
+- [x] `titan_super_spies_moon_zero_three_choose_player` + `resolve` 两段链，已改走真实 `respondToPromptOption(...)`；不再手动 `postProcessSystemEvents(...)` 拼接中间状态。
+- [x] `titan_mega_troopers_megabot_move` 已从 direct handler 改为真实 `respondToPromptOption(...)`，直接断言 `finalState.core` 中泰坦已移动到计分基地。
+- [x] 验证：`src/games/smashup/__tests__/smashup.smoke.test.ts` 133 tests passed；eslint 0 errors；`npm run test:structure` OK；全仓重扫 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 当前剩余 60 条。
+- [ ] `smashup.smoke.test.ts` 下一批候选缩小为：`creampuff_man` 两段链、`major_ursa` 三段链、`rainboroc` 两段链、`very_large_boulder` 两段链、`hill_that_strolls` 三段链；`big_funny_giant` 当前只剩注册表暴露断言，可保留。
+
+## Addendum（2026-05-16 20:18 +08）：Smoke 中 Creampuff / Rainboroc 再收两条二段链
+
+- [x] `smashup.smoke.test.ts` 中 `titan_ghosts_creampuff_man_discard` + `play` 已从 direct handler 改为两次真实 `respondToPromptOption(...)`。
+- [x] 同文件 `titan_itty_critters_rainboroc_choose_discard` + `choose_base` 已从 direct handler 改为两次真实 `respondToPromptOption(...)`。
+- [x] `creampuff_man` 现在直接从第一次响应的 `finalState` 里拿第二段 prompt；不再需要 `withCurrentPrompt(...)` 手工拼当前交互。
+- [x] `rainboroc` 的“洗回牌库 + 继续移动”断言已改为直接观察 `finalState.core`，不再手动 `reduce(events)` 拼中间 core。
+- [x] 验证：`src/games/smashup/__tests__/smashup.smoke.test.ts` 133 tests passed；eslint 0 errors；`npm run test:structure` OK；全仓重扫 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 当前剩余 56 条。
+- [ ] `smashup.smoke.test.ts` 剩余普通多段链进一步缩小为：`major_ursa`、`very_large_boulder`、`hill_that_strolls`；另有 `titan_penguins_emperor_penguin_play` 与 `big_funny_giant` 两条显式合同断言保留。

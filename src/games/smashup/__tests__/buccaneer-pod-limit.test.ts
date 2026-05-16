@@ -8,13 +8,12 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { getSimpleChoicePrompt, makeState, makeMinion, makePlayer, makeBase, applyEvents, makeMatchState, makeCard } from './helpers';
+import { getSimpleChoicePrompt, makeState, makeMinion, makePlayer, makeBase, makeMatchState, makeCard, respondToPromptOption } from './helpers';
 import { reduce } from '../domain/reducer';
 import { initAllAbilities } from '../abilities';
 import { SU_EVENT_TYPES } from '../domain/events';
-import type { MinionMovedEvent, SmashUpCore } from '../domain/types';
-import { moveMinion, destroyMinion } from '../domain/abilityHelpers';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import type { MinionMovedEvent } from '../domain/types';
+import { moveMinion } from '../domain/abilityHelpers';
 import { fireTriggers } from '../domain/ongoingEffects';
 
 beforeAll(() => {
@@ -142,7 +141,33 @@ describe('私掠者 POD 每回合一次移动限制', () => {
     });
 
     it('BASE_CLEARED 后索引变化时，仍可通过 baseDefId 将海盗移到正确基地', () => {
-        const core = makeState({
+        const promptCore = makeState({
+            bases: [
+                makeBase('base_left', [makeMinion('bucc1', 'pirate_buccaneer_pod', '0', 4)]),
+                makeBase('base_filler'),
+                makeBase('base_target'),
+            ],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const prompted = fireTriggers(promptCore, 'onMinionDestroyed', {
+            state: promptCore,
+            matchState: makeMatchState(promptCore),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'bucc1',
+            triggerMinionDefId: 'pirate_buccaneer_pod',
+            triggerMinion: promptCore.bases[0].minions[0],
+            random: { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
+            now: 7,
+        }, { phase: 'replacement' });
+        const prompt = getSimpleChoicePrompt(prompted.matchState!, 'pirate_buccaneer_move');
+        expect(prompt).toBeDefined();
+
+        const staleCore = makeState({
             bases: [
                 makeBase('base_left'),
                 makeBase('base_target'),
@@ -155,36 +180,53 @@ describe('私掠者 POD 每回合一次移动限制', () => {
             },
         });
 
-        const ms = makeMatchState(core);
-        const handler = getInteractionHandler('pirate_buccaneer_move');
-        expect(handler).toBeDefined();
-
-        const result = handler!(
-            ms,
-            '0',
-            {
-                minionUid: 'bucc1',
-                minionDefId: 'pirate_buccaneer_pod',
-                fromBaseIndex: 0,
-                toBaseIndex: 2,
-                baseDefId: 'base_target',
-            },
+        const result = respondToPromptOption(
+            { ...prompted.matchState!, core: staleCore },
+            option => option.value?.baseDefId === 'base_target',
+            'Buccaneer move target base',
             undefined,
-            {} as any,
-            Date.now(),
+            { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
         );
+        expect(result.success, result.error).toBe(true);
 
-        expect(result.events.length).toBe(1);
-        const moveEvt = result.events[0] as MinionMovedEvent;
+        const moveEvents = result.events.filter(event => event.type === SU_EVENT_TYPES.MINION_MOVED);
+        expect(moveEvents).toHaveLength(1);
+        const moveEvt = moveEvents[0] as MinionMovedEvent;
         expect(moveEvt.payload.toBaseIndex).toBe(1);
 
-        const nextCore = reduce(core, moveEvt);
+        const nextCore = reduce(staleCore, moveEvt);
         expect(nextCore.bases[1].minions.some(m => m.uid === 'bucc1')).toBe(true);
         expect(nextCore.players['0'].discard.some(c => c.uid === 'bucc1')).toBe(false);
     });
 
     it('baseDefId 已失效时，不应回退到旧索引上的错误基地', () => {
-        const core = makeState({
+        const promptCore = makeState({
+            bases: [
+                makeBase('base_left', [makeMinion('bucc1', 'pirate_buccaneer_pod', '0', 4)]),
+                makeBase('base_filler'),
+                makeBase('base_target'),
+            ],
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const prompted = fireTriggers(promptCore, 'onMinionDestroyed', {
+            state: promptCore,
+            matchState: makeMatchState(promptCore),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'bucc1',
+            triggerMinionDefId: 'pirate_buccaneer_pod',
+            triggerMinion: promptCore.bases[0].minions[0],
+            random: { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
+            now: 8,
+        }, { phase: 'replacement' });
+        const prompt = getSimpleChoicePrompt(prompted.matchState!, 'pirate_buccaneer_move');
+        expect(prompt).toBeDefined();
+
+        const staleCore = makeState({
             bases: [
                 makeBase('base_left'),
                 makeBase('base_wrong'),
@@ -197,26 +239,17 @@ describe('私掠者 POD 每回合一次移动限制', () => {
             },
         });
 
-        const ms = makeMatchState(core);
-        const handler = getInteractionHandler('pirate_buccaneer_move');
-        expect(handler).toBeDefined();
-
-        const result = handler!(
-            ms,
-            '0',
-            {
-                minionUid: 'bucc1',
-                minionDefId: 'pirate_buccaneer_pod',
-                fromBaseIndex: 0,
-                toBaseIndex: 1,
-                baseDefId: 'base_target',
-            },
+        const result = respondToPromptOption(
+            { ...prompted.matchState!, core: staleCore },
+            option => option.value?.baseDefId === 'base_target',
+            'Buccaneer missing target base',
             undefined,
-            {} as any,
-            Date.now(),
+            { random: () => 0.5, shuffle: <T>(arr: T[]) => arr, d: () => 1, range: (min: number) => min },
         );
+        expect(result.success, result.error).toBe(true);
 
-        expect(result.events.length).toBe(0);
+        const moveEvents = result.events.filter(event => event.type === SU_EVENT_TYPES.MINION_MOVED);
+        expect(moveEvents).toHaveLength(0);
     });
 
     it('消灭 buccaneer_pod 时会进入 replacement 交互（而不是直接进墓地）', () => {

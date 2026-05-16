@@ -8,6 +8,12 @@
 - 手牌技能 / 专属卡：Ninja `ninja-card-shuriken`、`ninja-card-escape`；Treant `treant-card-trample`、`treant-card-mother-tree`。
 - 基础技能 / 升级基础技能：Treant `quiet-cultivation`、`rooted-2`。
 
+2026-05-16 追加限制：
+
+- 本文件只覆盖“功能消费点 / 行为合同 / 部分 UI 链路”的抽样深审，不覆盖 Treant 玩家板图面合同。
+- 后续已确认：Treant 明明有玩家板图，但旧审计没有逐槽核对 `quiet-cultivation` 与 `rooted` 的图面落点，导致被动/防御槽错位漏审。
+- 因此，凡涉及 Treant 玩家板落点、特殊槽、空槽、display-only 区域的判断，必须改看 `evidence/dicethrone/dicethrone-treant-slot-audit-2026-05-16.md`，不能引用本文件替代。
+
 本轮审计方法不是只看静态定义，而是反查真实消费点：
 
 - 卡牌 `PLAY_CARD` 实际只用 `resolveEffectsToEvents(..., 'immediate')` 解析效果。
@@ -109,3 +115,4 @@ npm run typecheck
 - `treant-card-mother-tree`：旧“缺行为测试”已升级为 L2 抽查覆盖，但仍缺 L3。
 - `quiet-cultivation`：旧“缺 L2/L3 专项”已升级为 L2 抽查覆盖，但仍缺 L3。
 - `ninja-card-escape`、`smoke_bomb` 失败分支：已补 L2 抽查覆盖，但仍缺真实 UI/E2E。
+- Treant 玩家板图面合同：旧“基础技能抽样深审已覆盖 Treant `quiet-cultivation` / `rooted-2`”不能外推成图面落点正确；这部分当时根本不在本文件审计范围内，现已单列专项证据。

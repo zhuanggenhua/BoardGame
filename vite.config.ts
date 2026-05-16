@@ -241,6 +241,7 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(configDir, './src'),
         '@locales': path.resolve(configDir, './public/locales'),
+        'void-elements': path.resolve(configDir, './src/vendor/void-elements.ts'),
       },
     },
     optimizeDeps: {

@@ -1,6 +1,37 @@
 ## Session: 2026-05-16 TDD 行为 seam 与测试结构重构
 
 - **Status:** in_progress
+- 2026-05-16 21:26 +08：先收口 `src/games/smashup/__tests__/madnessAbilities.test.ts` 的半迁移残留。删除 `miskatonic_those_meddling_kids_pod_mode` 里两行遗留的 `getInteractionHandler(...)` 断言后，单文件重新验证 `32 passed`、eslint 0 errors，文件内 direct handler / runtime prompt handler 命中归零；全仓统计从 `42` 降到 `41`。
+- 同批继续处理 `src/games/smashup/__tests__/baseProtection.test.ts` 里九命之屋三条业务测试。把 `base_nine_lives_intercept` 从 direct handler 改成真实 `resolveDestroyedMinions(...)` -> `base_nine_lives_intercept` prompt -> `respondToPromptOption(...)` 链，并额外覆盖“响应时目标 stale 不再移动旧目标”的真实二次校验。验证：整文件 `19 passed`、eslint 0 errors、文件内命中归零；全仓 direct handler / runtime prompt handler 统计进一步从 `41` 降到 `38`。
+- 结构门禁复跑：`npm run test:structure` -> `checked files: 13`，OK。当前剩余命中更集中在注册表合同、runtime prompt 非法值合同、`pirate_buccaneer_move` / `base_greenhouse` / `base_temple_of_goju_tiebreak` 这类 stale/baseDefId/resolution 合同，而不是普通业务按钮响应。
+- 2026-05-16 21:05 +08：继续收口 `baseFactionOngoing.test.ts` 的半成品 seam。先复核发现 `ninja_hidden_ninja consumesNormalLimit` 仍在用 fake prompt current；聚焦跑 `-t "consumesNormalLimit"` 时只有这 1 条红灯。修改为真实 `resolveAbility('ninja_hidden_ninja', 'special')` -> `getFirstPrompt(...)` -> `respondToPrompt(...)` 链后，聚焦验证 `5 passed`。
+- 同批复跑整文件时暴露新的真实后效应：`trickster_brownie` 的“被控制权变化时会让对手弃两张牌”红灯。定位后确认不是 Brownie 行为坏了，而是本地 `triggerBrownieFromEvent(...)` helper 没对齐 reducer，漏传 `affectEvent + affectBatchTargets`；同时 `trickster_brownie` 在 `control_change` 语义上需要看 `MINION_CONTROL_CHANGED.payload.fromControllerId`，不能只看变更后的 `triggerMinion.controller`。修复 helper + `tricksters.ts` 后，`baseFactionOngoing.test.ts` 整文件 `81 passed`，`npm run test:structure` OK。
+- 2026-05-16 21:04 +08：处理 `src/games/smashup/__tests__/abilities/bear-cavalry.test.ts` 的普通业务 direct handler。将 `bear_cavalry_bear_rides_you_pod_choose_base` 从直调 handler 改为真实命令链：`PLAY_ACTION` -> 选己方随从 -> 选目标基地 -> 断言 `choose_suppress` prompt 候选仍包含新基地上的基地/随从/持续行动。验证：整文件 `21 passed`，eslint 0 errors；文件内剩余命中只剩两条 `bear_cavalry_superiority_pod_talent` 低层合同。
+- 统计更新：全仓 `getInteractionHandler` / `getAbilityRuntimePromptHandler` 命中从 `44` 降到 `43`。当前剩余主要是 `smashup.smoke.test.ts` 的 3 处（其中 2 处注册表断言）、`baseFactionOngoing.test.ts` 的 `trickster_flame_trap_pod_bp`、`abilities/bear-cavalry.test.ts` 的 2 条 `superiority_pod_talent`、以及 `temple-firstmate-afterscore.test.ts` 的 2 条 stale/baseDefId 合同。
+- 2026-05-16 20:49 +08：继续清理全仓剩余 direct handler，处理 `src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts`。先扫描全仓当前命中为 `48`，然后挑出 afterScoring 业务链：`smashup_reaction_choose` -> `pirate_first_mate_choose_base`。
+- 第一次误判：我把这条场景当成“当前已有 reaction prompt 的普通链”，直接改成 `getSimpleChoicePrompt(matchState, 'smashup_reaction_choose')` + `runCommand(respondCommand(...))`，结果整文件 1 红灯；失败点说明该场景在构造时只有 reaction session + triggerQueue，没有当前 prompt。
+- 修正：这条测试的本质是“已取得触发资格后，session 仍可继续结算”，所以改用 `resolveSmashUpReactionChoice(matchState, dummyRandom, 102, { kind: 'trigger', triggerId })` 驱动 reaction session，再对后续 `pirate_first_mate_choose_base` 业务 prompt 使用 `respondToPromptOption(...)`。这样去掉了 `getInteractionHandler('smashup_reaction_choose')` 和 `getInteractionHandler('pirate_first_mate_choose_base')`，但保留了 reaction session 合同本身。
+- 验证：
+  - `node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts` -> 19 passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts` -> 0 errors。
+  - 全仓 direct handler / runtime prompt handler 命中重新统计：`47`。
+- 2026-05-16 20:43 +08：继续收 `src/games/smashup/__tests__/smashup.smoke.test.ts` 里剩余普通业务 direct handler，完成 `major_ursa` 三段链迁移。先用一次性脚本确认真实链路：`USE_TALENT` 后 `respondToPromptOption(destination)` 的 `finalState` 已直接带 `smashup_reaction_choose`，响应后自动出现 `titan_bear_cavalry_major_ursa_choose_minion`，再响应后自动出现 `titan_bear_cavalry_major_ursa_choose_base`；说明旧测试里的 handler 直调和 `postProcessSystemEvents(...)` 都是实现耦合，不是业务必需。
+- 修改：`src/games/smashup/__tests__/smashup.smoke.test.ts` 把 `destinationHandler/minionHandler/baseHandler` 三段直调改为真实 `SmashUpDomain.execute(...)` + `respondToPromptOption(...)` + `respondCommand(...)` 链；最终状态直接从 `chooseBaseResult.finalState.core` 断言敌方随从已移到目标基地。
+- 验证：
+  - 定点：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "大熊座移动后可继续选择对手 3 或更低随从并移动到其他基地"` -> 1 passed。
+  - 全文件：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts` -> 133 passed。
+  - 静态检查：`node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/smashup.smoke.test.ts` -> 0 errors。
+  - 结构门禁：`npm run test:structure` -> OK。
+- 结果：`rg -n "getInteractionHandler\\(|getAbilityRuntimePromptHandler\\(" src/games/smashup/__tests__/smashup.smoke.test.ts` 现在只剩 3 处：`titan_penguins_emperor_penguin_play` 低层合同 1 处，`big_funny_giant` 注册表断言 2 处。`major_ursa` 已从剩余普通业务 direct handler 清单移除。
+- 2026-05-16 20:35 +08：收口 `src/games/smashup/__tests__/smashup.smoke.test.ts` 的 Hill give-minion -> counter 红灯。先用一次性脚本复盘真实命令链，确认不是“还要再 `maybeResolveReactionQueue` 一次”，而是测试手工 `resolveAffectedMinions(...)` 把同一个 `onMinionAffected` trigger 重复入队；同时发现真实链路第一次消费 trigger 时，`MINION_CONTROL_CHANGED` 的 affect 快照仍保留旧 controller，导致 `ignobles_the_hill_that_strolls` 不会弹出 counter prompt。
+- 修复：
+  - `src/games/smashup/domain/affect.ts`：`MINION_CONTROL_CHANGED` 分支构造 affect record 时，把 `triggerMinion.controller` 修正为 `payload.toControllerId`，让 `onMinionAffected(control_change)` 看到变更后的控制权。
+  - `src/games/smashup/__tests__/smashup.smoke.test.ts`：Hill 用例不再手工 `resolveAffectedMinions(...)` / `maybeResolveReactionQueue(...)` 补跑实现，而是直接消费 `respondToPromptOption(...)` 的真实 `finalState`，再通过 reaction prompt -> counter prompt 完整响应。
+- 验证：
+  - 单点：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "漫游山岭巨人交出己方随从控制权抽牌后，会通过 ongoing 交互给该随从放置 1 枚力量标记"` -> 1 passed。
+  - 全文件：`node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts` -> 133 passed。
+  - 静态检查：`node node_modules/eslint/bin/eslint.js src/games/smashup/domain/affect.ts src/games/smashup/__tests__/smashup.smoke.test.ts` -> 0 errors。
+  - 结构门禁：`npm run test:structure` -> OK。
 - 2026-05-16 14:01 +08：恢复 `src/games/smashup/__tests__/interactionChainE2E.test.ts` 中最后一个 `it.skip`。旧用例仍在保护过期的 Alien Probe “牌库顶/底”效果；本轮按当前规则改为“单对手自动确定对手 -> 选择对手手牌随从 -> 对手弃掉该随从”，并验证行动卡选项禁用。
 - 中途红灯：首次仅取消 skip 后整文件 54 passed / 1 failed，失败点是没有 prompt。根因不是 sourceId，而是旧测试数据把 Alien Probe 设成旧牌库顶效果且局面没有当前可选手牌随从链路。按当前行为重写后通过。
 - 验证：`npm test -- src/games/smashup/__tests__/interactionChainE2E.test.ts` -> 55 tests passed；`npx eslint src/games/smashup/__tests__/interactionChainE2E.test.ts src/games/smashup/__tests__/igor-ondestroy-idempotency.test.ts` -> 0 errors；`npm run test:structure` -> OK。
@@ -3534,3 +3565,186 @@
   - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/ongoingTalent.test.ts` -> 0 errors。
   - `rg "getAbilityRuntimePromptHandler\\(|getPromptHandlerData\\(|respondToPromptOption\\(" src/games/smashup/__tests__/ongoingTalent.test.ts` -> runtime handler 0 命中；`respondToPromptOption` 4 处；剩余 `getPromptHandlerData` 属于其它 prompt/handler 合同点。
   - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 116，OK，仅既有 legacy-root 警告。
+
+## 2026-05-16 18:47 +08 Expansion ongoing stale/live 断言对齐
+
+- 处理结果：
+  - `expansionOngoing.test.ts` 中已开始但未验证的 `steampunk_mechanic` / `steampunk_change_of_venue` 命令链改造完成收口。
+  - `ornate_dome` 封锁场景不再断言 handler 风格的“响应成功但无事件”，而是改成先验证 live `optionsGenerator` 已移除 `base-0`，再断言真实 `respondToPromptOption(...)` 返回 `无效的选择`。
+  - “待附着的 ongoing 已不在手牌”两条 stale 二段响应改为断言不产生 `ACTION_PLAYED` / `ONGOING_ATTACHED` / `LIMIT_MODIFIED` 业务事件，并校验最终状态未附着、手牌仍为空；避免把 `SYS_INTERACTION_RESOLVED` 当成失败噪音。
+  - `killer_plant_venus_man_trap_search` 的成功路径也改为 `respondToPromptOption(...)`，业务断言仍聚焦 `MINION_PLAYED` 携带的 `baseIndex/baseDefId`。
+- 追加收口：
+  - `innsmouth_return_to_the_sea` 多选回手、`miskatonic_researcher_pod` 二段选择、`miskatonic_field_trip_pod` 空选择、`miskatonic_things_best_not_known_pod_draw` button 响应、`miskatonic_librarian_pod` 二段 extra 模式，全部改为 `respondToPromptOption(s)`。
+  - `killer_plant_sprout_search` / `killer_plant_venus_man_trap_search` stale deck-search 不再直调 runtime handler；现在断言真实命令链下不会重复打出、deck 保持 live 状态不变，而且旧 prompt 仍停留在当前交互。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/expansionOngoing.test.ts` -> 1 file / 67 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/expansionOngoing.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 1，OK。
+
+## 2026-05-16 19:02 +08 Madness prompt 业务响应命令链化
+
+- 处理结果：
+  - `madnessAbilities.test.ts` 中 `innsmouth_recruitment` 的 off-phase immediate、抽 3 张、牌库不足 3 张、reduce 验证等用例从 direct handler 改为 `respondToPromptOption(...)`。
+  - `miskatonic_librarian_pod` 的 extra 模式及二段 `play_madness` 也改走真实 prompt 响应，并继续验证 `special_madness` follow-up prompt。
+  - “疯狂牌库不足 3 张” 不再伪造用户选不到的 `count=3` value；现在显式断言 prompt 不暴露该选项，选 `count=2` 后按 2 张结算。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/madnessAbilities.test.ts` -> 1 file / 32 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/madnessAbilities.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 2，OK。
+
+## 2026-05-16 19:06 +08 Mandatory Reading draw 命令链补收口
+
+- 处理结果：
+  - `madnessAbilities.test.ts` 中 `miskatonic_mandatory_reading_draw` 的 4 条普通按钮响应，已从 direct handler 改为 `respondToPromptOption(...)`。
+  - “抽 2 张疯狂卡后产生抽牌与力量加成事件” 继续断言 `MADNESS_DRAWN(count=2)` 与 `PERMANENT_POWER_ADDED(amount=4)`，但不再直接调用 handler。
+  - “选择跳过时不产生业务事件” 现在明确断言没有 `MADNESS_DRAWN` / `PERMANENT_POWER_ADDED`，避免把命令链系统事件误判成业务副作用。
+  - “抽 3 张后最终状态”和“UID 唯一” 改为直接看 `finalState.core`，不再手动 `applyEvents` 模拟调用方。
+  - 当前文件剩余 `getInteractionHandler(...)` 只剩 `miskatonic_those_meddling_kids_pod_mode` 的 off-phase immediate 合同；`getPromptHandlerData(...)` 只剩 live `responseValidationMode` 合同。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/madnessAbilities.test.ts` -> 1 file / 32 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/madnessAbilities.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 2，OK。
+
+## 2026-05-16 19:16 +08 Cthulhu expansion 多步交互链收口
+
+- 处理结果：
+  - `cthulhuExpansionAbilities.test.ts` 中 `miskatonic_those_meddling_kids` 的“选基地 -> 连续点行动卡”三条用例，已从 direct handler 改为 `respondToPromptOption(...)`。
+  - `cthulhu_recruit_by_force` 与 `cthulhu_it_begins_again` 的多选、跳过、最终状态用例，已改走 `respondToPromptOptions(...)`；不再手动 `applyEvents`，直接看 `finalState.core`。
+  - 当前文件内 `getInteractionHandler(...)` / `getPromptHandlerData(...)` 已清零，业务测试只表达 prompt 选择、多选约束、业务事件与最终状态。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts` -> 1 file / 32 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 3，OK。
+
+## 2026-05-16 19:17 +08 Mushroom Kingdom POD 链收口
+
+- 处理结果：
+  - `baseAbilityIntegration.test.ts` 中 `base_mushroom_kingdom_pod` 的二段 prompt 链，已从 direct handler 改为两次 `respondToPromptOption(...)`。
+  - 同文件顺手清掉了只为这条旧写法残留的未使用 import / helper / 草稿常量，恢复 eslint 干净状态。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/baseAbilityIntegration.test.ts` -> 1 file / 25 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/baseAbilityIntegration.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 4，OK。
+
+## 2026-05-16 19:21 +08 Ongoing talent 业务链收口
+
+- 处理结果：
+  - `ongoingTalent.test.ts` 中 `trickster_hideout_pod_swap` 的 hand / deck 交换链，已从 direct handler 改为 `respondToPromptOption(...)`。
+  - `trickster_pixie_pod` 的 minion 选择、战术 destroy、后续 counters 三段链，已改成 `respondToPromptOptions(...)` / `respondToPromptOption(...)`；命令链额外产出的 `SYS_INTERACTION_RESOLVED` 不再被误判为失败。
+  - 当前文件里 `getInteractionHandler(...)` 已清零；`getPromptHandlerData(...)` 只剩 `autoResolveIfSingle` 的 prompt contract 断言。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/ongoingTalent.test.ts` -> 1 file / 27 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/ongoingTalent.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 5，OK。
+
+## 2026-05-16 19:29 +08 Madness prompt 三段业务链收口
+
+- 处理结果：
+  - `madnessPromptAbilities.test.ts` 中 `cthulhu_madness_unleashed` 的“跳过 / 选 2 张 / POD 版”已改走 `respondToPromptOption(s)`；删除 direct handler、手动 `applyEvents` 和 `events.length === 0` 口径。
+  - `miskatonic_book_of_iter_the_unseen` 的“手牌返回 1 张 / 跳过”已改成真实 prompt 响应；本地 `resolveInteraction(...)` 完全删除。
+  - `miskatonic_thing_on_the_doorstep` 的并列最高力量场景已改用 `getFirstPrompt` / `getPromptOptions` / `respondToPromptOption(...)`，不再裸读 `sys.interaction`。
+  - 中途有 1 次红灯：`cthulhu_madness_unleashed` 的“跳过”仍沿用了 `execPlayAction`，导致后续 `finalState` 断言取到的不是权威 matchState。改成 `execPlayActionWithMatch` 后通过，说明“要看响应后的最终状态”时，入口也必须是完整 matchState。
+- 验证：
+  - `rg -n "getInteractionHandler|getPromptHandlerData|resolveInteraction|sys\\.interaction|\\.data\\.options|INTERACTION_COMMANDS|asSimpleChoice" src/games/smashup/__tests__/madnessPromptAbilities.test.ts` -> 0 命中。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/madnessPromptAbilities.test.ts` -> 1 file / 26 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/madnessPromptAbilities.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 6，OK。
+
+## 2026-05-16 19:36 +08 Expansion base abilities 业务 prompt 批量收口
+
+- 处理结果：
+  - `expansionBaseAbilities.test.ts` 中 `base_mermaid_pool`、`base_ossuary`、`base_arena`、`base_miskatonic_university_base` 的业务响应，已从 direct handler 改为 `respondToPromptOption(...)`。
+  - 同文件 `base_the_asylum` 的“两段手牌 -> 随从”链，已改成两次真实 prompt 响应；不再直调 `base_the_asylum` / `base_the_asylum_choose_minion` handler。
+  - 中途有 1 次红灯：`base_arena` 与 `base_miskatonic_university_base` 仍沿用 direct handler 时代的 `events.length` / 固定下标断言。改成按 `CARDS_DRAWN` / `MADNESS_DRAWN` / `CARDS_DISCARDED` / `LIMIT_MODIFIED` 业务事件 `find` 后通过，说明命令链响应的正确口径应是“包含目标业务事件”，不是“总事件数组长度”。
+  - 本轮刻意没有动 `base_land_of_balance` / `base_sheep_shrine` / `base_the_pasture` / `base_greenhouse` / `base_inventors_salon` / `smashup_reaction_choose` 这些 stale / reaction / queued 合同点，避免把低层例外和普通业务链混在一起。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> 1 file / 50 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 7，OK。
+  - `rg -n "base_mermaid_pool|base_ossuary|base_arena|base_the_asylum|base_miskatonic_university_base|getInteractionHandler\\(|respondToPromptOption\\(" src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> 上述业务链已改走 `respondToPromptOption(...)`；剩余 direct handler 命中集中在 stale / reaction / queued follow-up 例外。
+
+## 2026-05-16 19:44 +08 Interaction chain E2E 熊骑兵 stale 收口补记
+
+- 处理结果：
+  - `interactionChainE2E.test.ts` 中 4 条熊骑兵 stale 回归，已从 direct handler 改为 `withOnlyCurrentPrompt(makeFullMatchState(staleCore), oldPrompt)` + 本地 `respond(...)`。
+  - 覆盖 `bear_cavalry_commission_move_dest`、`bear_cavalry_bear_cavalry_choose_base`、`bear_cavalry_youre_screwed_choose_dest`、`bear_cavalry_bear_rides_you_choose_base`。
+  - 本地 `respond(...)` 返回 `GameTestRunner` 结果，不是 `success/events` 直返；因此断言统一改看 `steps[0]?.success` 与 `finalState`。
+  - 顺手恢复 `getPromptHandlerData` import，删除未使用的 `handlerRandom` 与 `RandomFn`。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/interactionChainE2E.test.ts` -> 1 file / 55 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/interactionChainE2E.test.ts` -> 0 errors。
+  - `rg -n "getInteractionHandler\\(|withOnlyCurrentPrompt\\(|getPromptHandlerData\\(" src/games/smashup/__tests__/interactionChainE2E.test.ts` -> `getInteractionHandler(...)` 0 命中；仅剩 4 处 `withOnlyCurrentPrompt(...)` 与 prompt contract 读取。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> OK。
+
+## 2026-05-16 19:49 +08 Expansion base stale 回归继续命令链化
+
+- 处理结果：
+  - `expansionBaseAbilities.test.ts` 中 `base_land_of_balance`、`base_sheep_shrine`、`base_the_pasture`、`base_innsmouth_base_choose_card`、`base_cat_fanciers_alley`、`base_inventors_salon` 的 stale 回归，已从 direct handler 改为 `withOnlyCurrentPrompt(makeMatchState(staleCore), oldPrompt)` + `respondToPromptOption(...)`。
+  - 每条都不再写 `events.length === 0`，而是改断言“命令链响应成功，但没有目标业务事件”：`MINION_MOVED` / `CARD_TO_DECK_BOTTOM` / `MINION_DESTROYED` / `CARDS_DRAWN` / `CARD_RECOVERED_FROM_DISCARD` 不出现。
+  - `base_greenhouse` 仍保留 2 处 `getInteractionHandler(...)`，因为它们在锁 scoring-session / replacement follow-up 合同，不是普通业务 prompt。
+- 验证：
+  - `rg -n "getInteractionHandler\\(|withOnlyCurrentPrompt\\(|respondToPromptOption\\(" src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> 当前只剩 `base_greenhouse` 两处 direct handler，新增 6 处 `withOnlyCurrentPrompt(...)` stale 命令链。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> 1 file / 50 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 8，OK。
+
+## 2026-05-16 19:52 +08 Smoke 中 Sphinx 业务 prompt 收口
+
+- 处理结果：
+  - `smashup.smoke.test.ts` 中 `titan_sphinx_start_turn`、`titan_sphinx_after_scoring`、`titan_sphinx_talent` 三条，从 `getInteractionHandler(...)` + `getPromptHandlerData(...)` + 手动 `reduce(events)` 改为 `respondToPromptOption(...)`。
+  - 断言口径改为直接看 `resolved.finalState.core`，不再把“handler 只吐事件、测试再手动 reduce”写进合同。
+  - 顺手清掉了 `titan_sphinx_talent` 中 direct handler 删除后留下的未使用局部变量，恢复 eslint 干净。
+- 验证：
+  - `rg -n "titan_sphinx_start_turn|titan_sphinx_after_scoring|titan_sphinx_talent|respondToPromptOption\\(" src/games/smashup/__tests__/smashup.smoke.test.ts` -> Sphinx 三条已改走 `respondToPromptOption(...)`。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts` -> 1 file / 133 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/smashup.smoke.test.ts` -> 0 errors。
+  - `rg -n "getInteractionHandler\\(|getAbilityRuntimePromptHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line` -> 当前剩余 76 条命中。
+
+## 2026-05-16 20:06 +08 Smoke 中 Kraken 红灯修复，并继续收 Mergacon / Gorgodzolla
+
+- 处理结果：
+  - `smashup.smoke.test.ts` 的 `titan_pirates_the_kraken_talent` 首次迁到 `respondToPromptOption(...)` 后出现红灯：`TURN_STARTED` 后 debuff 不恢复。
+  - 根因确认不是实现坏了，而是测试仍沿用 `afterCommand + response.events.reduce(...)` 手搓后态，导致 prompt handler 写进 `finalState.core.timedPowerModifiers` 的回退元状态被丢掉。
+  - 修复方式：`Kraken talent` 改为直接以 `resolved.finalState.core` 作为权威后态，再在这个状态上 reduce `TURN_STARTED`，恢复断言通过。
+  - 顺手继续把 `titan_changerbots_mergacon_play`、`titan_changerbots_mergacon_talent`、`titan_kaiju_gorgodzolla_draw` 3 条普通 titan prompt 从 direct handler 改成真实 `respondToPromptOption(...)`。
+  - `Mergacon play` 不再手动伪造 continuationContext，而是先走真实 `onTurnStart` trigger 创建 prompt，再从 prompt 里选基地。
+  - `Gorgodzolla draw` 首次迁移后有 1 次假红：真实 respond 会额外产出 `SYS_INTERACTION_RESOLVED`，旧断言 `toEqual([CARDS_DRAWN])` 失败。已改成“包含 `CARDS_DRAWN` + 最终手牌包含抽到的牌”。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "海怪克拉肯天赋会移动泰坦，并让目标基地敌方随从直到你下回合开始时 -1 战力"` -> 1 passed / 132 skipped。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "合体机器人的进场交互解决后会把泰坦打到所选基地|合体机器人天赋会移动泰坦并写入本回合 ongoing 压制标记"` -> 2 passed / 131 skipped。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "哥佐拉在你于本基地打出战术后会获得指示物，并可通过交互抽 1 张牌"` -> 首次失败，定位为 `SYS_INTERACTION_RESOLVED` 噪音后修正断言；复跑通过。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts` -> 1 file / 133 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/smashup.smoke.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 9，OK。
+  - `rg -n "getInteractionHandler\\(|getAbilityRuntimePromptHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line` -> 当前剩余 66 条命中。
+
+## 2026-05-16 20:13 +08 Smoke 中 Walking Castle / Time Box / Moon Zero Three / Megabot 收口
+
+- 处理结果：
+  - `titan_magical_girls_walking_castle_choose_base` + `choose_minions` 的二段 prompt 链，已从 direct handler 改为 `respondToPromptOption(...)` + `respondToPromptOptions(...)`；最终直接看 `finalState.core` 中泰坦与被选中的两个随从都移动到目标基地。
+  - `titan_time_travelers_time_box_play` 已改走真实 `respondToPromptOption(...)`。首次迁移时沿用旧断言 `enteredAt: 113` 假红，确认这是旧 handler 时代手传 timestamp 的细节，不属于业务合同；现已降为断言“进到目标基地 + `timeBoxCounters` 清零”。
+  - `titan_super_spies_moon_zero_three_choose_player` + `resolve` 两段链，已改走真实 `respondToPromptOption(...)`，并删除测试里手动 `postProcessSystemEvents(...)` 拼接中间状态的旧写法。
+  - `titan_mega_troopers_megabot_move` 已从 direct handler 改为真实 `respondToPromptOption(...)`，断言收口为“包含 `TITAN_MOVED` + 最终位置正确”。
+  - 中途有 1 次辅助性失败：`walking_castle` 首次改完时漏加 `respondToPromptOptions` import；补齐后通过。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "移动城堡天赋会先选择目标基地，再选择至多 3 个己方随从一起移动过去|时间盒子在回合开始得到第 5 枚计数后会创建进场交互，并在选择基地后清零计数并进场|三号空间站天赋会查看任一牌库顶并可将其放到牌库底"` -> 首次 2 failed / 1 passed；修正 `respondToPromptOptions` import 与 `enteredAt` 断言后复跑 3 passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "超级佐德会在另一基地计分前创建移动交互，并在选择后移动到计分基地"` -> 1 passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts` -> 1 file / 133 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/smashup.smoke.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 9，OK。
+  - `rg -n "getInteractionHandler\\(|getAbilityRuntimePromptHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line` -> 当前剩余 60 条命中。
+
+## 2026-05-16 20:18 +08 Smoke 中 Creampuff / Rainboroc 二段链收口
+
+- 处理结果：
+  - `titan_ghosts_creampuff_man_discard` + `play` 已从 direct handler 改为两次真实 `respondToPromptOption(...)`。
+  - `creampuff_man` 现在直接从第一次响应的 `finalState` 读取第二段 `titan_ghosts_creampuff_man_play` prompt，不再用 `withCurrentPrompt(...)` 手工保活当前 prompt。
+  - `titan_itty_critters_rainboroc_choose_discard` + `choose_base` 已从 direct handler 改为两次真实 `respondToPromptOption(...)`；洗回牌库与后续移动均直接看 `finalState.core`。
+  - 中途有 1 次小噪音：`creampuff_man` 首次迁移后留下未使用的 `coreAfterDiscard` 局部变量；删除后 eslint 恢复 0 warning / 0 error。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "奶油泡芙美人天赋会弃 1 张牌，额外打出弃牌堆标准战术，并改放牌库底"` -> 1 passed / 132 skipped。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "彩虹鸟天赋会把低战力随从从弃牌堆洗回牌库，并可继续移动到其他基地"` -> 1 passed / 132 skipped。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts` -> 1 file / 133 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/smashup.smoke.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 9，OK。
+  - `rg -n "getInteractionHandler\\(|getAbilityRuntimePromptHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line` -> 当前剩余 56 条命中。

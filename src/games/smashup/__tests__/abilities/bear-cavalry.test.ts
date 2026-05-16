@@ -14,7 +14,19 @@ import { clearPowerModifierRegistry, getEffectivePower } from '../../domain/ongo
 import { reduce } from '../../domain/reducer';
 import type { CardInstance, TurnStartedEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
-import { getFirstPrompt, getPromptOptions, makeBase, makeMinion, makePlayer, makeState } from '../helpers';
+import {
+    getFirstPrompt,
+    getPromptOption,
+    getPromptOptions,
+    getSimpleChoicePrompt,
+    makeBase,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    respondToPrompt,
+} from '../helpers';
+import { runCommand } from '../testRunner';
 
 const dummyRandom: RandomFn = {
     random: () => 0.5,
@@ -440,7 +452,14 @@ describe('bear_cavalry_superiority_pod 保护模式', () => {
 
 describe('bear_cavalry_bear_rides_you_pod 交互选项', () => {
     it('移动己方随从后提供新基地上的基地/随从/持续行动压制候选项', () => {
-        const state = makeState({
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'bry-pod-1', defId: 'bear_cavalry_bear_rides_you_pod', type: 'action', owner: '0' } as CardInstance],
+                    factions: ['bear_cavalry', 'miskatonic_university'] as [string, string],
+                }),
+                '1': makePlayer('1'),
+            },
             bases: [
                 makeBase({ minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })] }),
                 makeBase({
@@ -449,19 +468,37 @@ describe('bear_cavalry_bear_rides_you_pod 交互选项', () => {
                 }),
             ],
         });
-        const handler = getInteractionHandler('bear_cavalry_bear_rides_you_pod_choose_base');
-
-        const result = handler!(
-            { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } },
-            '0',
-            { baseIndex: 1 },
-            { continuationContext: { minionUid: 'm1', minionDefId: 'test_minion', fromBase: 0, isMyMinion: true } },
+        const played = runCommand(
+            makeMatchState(core),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'bry-pod-1' },
+            } as any,
             dummyRandom,
-            0,
         );
+        expect(played.success).toBe(true);
+
+        const chooseMinion = getSimpleChoicePrompt(played.finalState);
+        const chooseMinionResult = respondToPrompt(
+            played.finalState,
+            getPromptOption(chooseMinion, option => option?.value?.minionUid === 'm1', 'Bear Rides You POD minion option').id,
+            '0',
+            dummyRandom,
+        );
+        expect(chooseMinionResult.success).toBe(true);
+
+        const chooseBase = getSimpleChoicePrompt(chooseMinionResult.finalState);
+        const result = respondToPrompt(
+            chooseMinionResult.finalState,
+            getPromptOption(chooseBase, option => option?.value?.baseIndex === 1, 'Bear Rides You POD base option').id,
+            '0',
+            dummyRandom,
+        );
+        expect(result.success).toBe(true);
 
         expect(result.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(true);
-        const pendingOptions = getPromptOptions(getFirstPrompt(result.state));
+        const pendingOptions = getPromptOptions(getFirstPrompt(result.finalState));
         const kinds = pendingOptions
             .map(option => option?.value?.kind)
             .filter((kind): kind is string => typeof kind === 'string');

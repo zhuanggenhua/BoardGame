@@ -27,18 +27,17 @@ import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import {
     expectNoPrompt,
     getFirstPrompt,
-    getPromptHandlerData,
     getPromptMulti,
     getPromptOption,
     getPromptOptions,
     getPromptsBySourceId,
     getPromptSourceId,
     getSimpleChoicePrompt,
+    respondToPromptOption,
     respondToPrompt,
     respondToPromptOptions,
 } from './helpers';
 import type { MatchState, RandomFn } from '../../../engine/types';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { runCommand } from './testRunner';
 
 beforeAll(() => {
@@ -127,26 +126,6 @@ function execPlayActionWithMatch(state: SmashUpCore, playerId: string, cardUid: 
     return { state: processed.matchState!.core, events: processed.events, matchState: processed.matchState! };
 }
 
-/** 解决交互（调用 interaction handler） */
-function resolveInteraction(state: SmashUpCore, interactionId: string, value: unknown, timestamp: number): { state: SmashUpCore; events: SmashUpEvent[] } {
-    // interactionId 实际上是 sourceId（handler 注册的 key）
-    const handler = getInteractionHandler(interactionId);
-    if (!handler) {
-        throw new Error(`No interaction handler found for ${interactionId}`);
-    }
-    
-    const interactionData = getPromptHandlerData(getLastPrompt(interactionId));
-    const result = handler(
-        { core: state } as any,
-        state.players[state.turnOrder[state.currentPlayerIndex]].id,
-        value,
-        interactionData,
-        defaultRandom,
-        timestamp,
-    );
-    if (!result) throw new Error(`Handler returned undefined for ${interactionId}`);
-    return { state: result.state?.core ?? state, events: result.events };
-}
 function requireLastMatchState(): MatchState<SmashUpCore> {
     if (!lastMatchState) {
         throw new Error('Expected a saved matchState with prompt data.');
@@ -335,16 +314,21 @@ describe('克苏鲁之仆 - cthulhu_madness_unleashed（疯狂释放）', () => 
                 '1': makePlayer('1'),
             },
         });
-        execPlayAction(state, '0', 'a1');
-        const prompt = getLastPrompt('cthulhu_madness_unleashed');
-        expect(getLastPromptsBySourceId('cthulhu_madness_unleashed').length).toBe(1);
-        // 解决交互：选跳过（空数组）
-        const handler = getInteractionHandler('cthulhu_madness_unleashed');
-        expect(handler).toBeDefined();
-        const result = handler!(requireLastMatchState(), '0', [], getPromptHandlerData(prompt), defaultRandom, 1000);
-        expect(result.events.length).toBe(0);
-        // 疯狂卡仍在手牌（未弃）
-        expect(state.players['0'].hand.some(c => c.uid === 'm1')).toBe(true);
+        const playResult = execPlayActionWithMatch(state, '0', 'a1');
+        const promptState = playResult.matchState;
+        const prompt = getSimpleChoicePrompt(promptState, 'cthulhu_madness_unleashed');
+        expect(getPromptSourceId(prompt)).toBe('cthulhu_madness_unleashed');
+
+        const result = respondToPromptOptions(promptState, [], '0', defaultRandom);
+        expect(result.success).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.MADNESS_RETURNED)).toBe(false);
+        expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+        expect(result.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+
+        const finalCore = result.finalState.core;
+        expect(finalCore.players['0'].hand.some((card) => card.uid === 'm1')).toBe(true);
+        expect(finalCore.players['0'].actionLimit).toBe(1);
+        expect(finalCore.players['0'].actionsPlayed).toBe(1);
     });
 
     it('选2张疯狂卡后：立即弃牌、抽2张并获得2个额外行动额度', () => {
@@ -369,21 +353,19 @@ describe('克苏鲁之仆 - cthulhu_madness_unleashed（疯狂释放）', () => 
         });
 
         const playResult = execPlayActionWithMatch(state, '0', 'a1');
-        const afterPlay = applyEvents(state, playResult.events);
+        const prompt = getSimpleChoicePrompt(playResult.matchState, 'cthulhu_madness_unleashed');
+        const selectedOptionIds = getPromptOptions(prompt)
+            .filter((option: any) => ['m1', 'm2'].includes(option.value?.cardUid))
+            .map((option: any) => option.id);
+        expect(selectedOptionIds).toHaveLength(2);
 
-        const handler = getInteractionHandler('cthulhu_madness_unleashed');
-        expect(handler).toBeDefined();
-        const prompt = (playResult.matchState.sys as any)?.interaction?.current;
-        const result = handler!(
+        const result = respondToPromptOptions(
             playResult.matchState,
+            selectedOptionIds,
             '0',
-            [{ cardUid: 'm1' }, { cardUid: 'm2' }],
-            prompt?.data,
             defaultRandom,
-            1000,
         );
-
-        expect((result as any).matchState).toBeUndefined();
+        expect(result.success).toBe(true);
 
         const discardEvts = result.events.filter(e => e.type === SU_EVENTS.CARDS_DISCARDED);
         expect(discardEvts.length).toBe(1);
@@ -398,12 +380,12 @@ describe('克苏鲁之仆 - cthulhu_madness_unleashed（疯狂释放）', () => 
         expect(limitEvts.length).toBe(2);
         expect(limitEvts.every((e: any) => e.payload.limitType === 'action')).toBe(true);
 
-        const finalState = applyEvents(afterPlay, result.events);
-        expect(finalState.players['0'].actionLimit).toBe(3);
-        expect(finalState.players['0'].actionsPlayed).toBe(1);
-        expect(finalState.players['0'].hand.map(c => c.uid).sort()).toEqual(['d1', 'd2']);
-        expect(finalState.players['0'].discard.map(c => c.uid).sort()).toEqual(['a1', 'm1', 'm2']);
-        expect(finalState.players['0'].actionLimit - finalState.players['0'].actionsPlayed).toBe(2);
+        const finalCore = result.finalState.core;
+        expect(finalCore.players['0'].actionLimit).toBe(3);
+        expect(finalCore.players['0'].actionsPlayed).toBe(1);
+        expect(finalCore.players['0'].hand.map(c => c.uid).sort()).toEqual(['d1', 'd2']);
+        expect(finalCore.players['0'].discard.map(c => c.uid).sort()).toEqual(['a1', 'm1', 'm2']);
+        expect(finalCore.players['0'].actionLimit - finalCore.players['0'].actionsPlayed).toBe(2);
     });
 
     it('POD 版同样会按弃掉的疯狂卡数量立即给予额外行动额度', () => {
@@ -426,26 +408,21 @@ describe('克苏鲁之仆 - cthulhu_madness_unleashed（疯狂释放）', () => 
         });
 
         const playResult = execPlayActionWithMatch(state, '0', 'a1');
-        const afterPlay = applyEvents(state, playResult.events);
-
-        const handler = getInteractionHandler('cthulhu_madness_unleashed');
-        expect(handler).toBeDefined();
-        const prompt = (playResult.matchState.sys as any)?.interaction?.current;
-        const result = handler!(
+        const result = respondToPromptOption(
             playResult.matchState,
+            option => option.value?.cardUid === 'm1',
+            'cthulhu madness unleashed pod option',
             '0',
-            [{ cardUid: 'm1' }],
-            prompt?.data,
             defaultRandom,
-            1000,
         );
+        expect(result.success).toBe(true);
 
-        const finalState = applyEvents(afterPlay, result.events);
-        expect(finalState.players['0'].actionLimit).toBe(2);
-        expect(finalState.players['0'].actionsPlayed).toBe(1);
-        expect(finalState.players['0'].hand.map(c => c.uid)).toEqual(['d1']);
-        expect(finalState.players['0'].discard.map(c => c.uid).sort()).toEqual(['a1', 'm1']);
-        expect(finalState.players['0'].actionLimit - finalState.players['0'].actionsPlayed).toBe(1);
+        const finalCore = result.finalState.core;
+        expect(finalCore.players['0'].actionLimit).toBe(2);
+        expect(finalCore.players['0'].actionsPlayed).toBe(1);
+        expect(finalCore.players['0'].hand.map(c => c.uid)).toEqual(['d1']);
+        expect(finalCore.players['0'].discard.map(c => c.uid).sort()).toEqual(['a1', 'm1']);
+        expect(finalCore.players['0'].actionLimit - finalCore.players['0'].actionsPlayed).toBe(1);
     });
 
     it('弃掉多张疯狂卡后，额外战术额度会被后续打出的疯狂卡逐次消耗', () => {
@@ -727,14 +704,19 @@ describe('米斯卡塔尼克大学 - miskatonic_book_of_iter_the_unseen（金克
         });
 
         const result = execPlayActionWithMatch(state, '0', 'a1');
-        const newState = applyEvents(state, result.events);
-        // 解决交互：从手牌返回1张
-        const resolveResult = resolveInteraction(newState, 'miskatonic_book_of_iter_the_unseen', { source: 'hand', count: 1 }, Date.now());
-        const finalState = applyEvents(resolveResult.state, resolveResult.events);
-        // 手牌中的疯狂卡应被移除
-        expect(finalState.players['0'].hand.some(c => c.uid === 'm1')).toBe(false);
-        // 疯狂牌从手牌返回牌库后，疯狂牌库应在初始基础上 +1
-        expect(finalState.madnessDeck!.length).toBe(MADNESS_DECK_SIZE + 1);
+        const prompt = getSimpleChoicePrompt(result.matchState, 'miskatonic_book_of_iter_the_unseen');
+        const returnFromHandOption = getPromptOption(
+            prompt,
+            option => option.value?.source === 'hand' && option.value?.count === 1,
+            'Book of Iter hand-one option',
+        );
+
+        const resolve = respondToPrompt(result.matchState, returnFromHandOption.id, '0', defaultRandom);
+        expect(resolve.success).toBe(true);
+
+        const finalCore = resolve.finalState.core;
+        expect(finalCore.players['0'].hand.some(c => c.uid === 'm1')).toBe(false);
+        expect(finalCore.madnessDeck!.length).toBe(MADNESS_DECK_SIZE + 1);
     });
 
     it('选择从弃牌堆返回2张疯狂卡时应实际返回2张', () => {
@@ -828,9 +810,20 @@ describe('米斯卡塔尼克大学 - miskatonic_book_of_iter_the_unseen（金克
         });
 
         const result = execPlayActionWithMatch(state, '0', 'a1');
-        const newState = applyEvents(state, result.events);
-        const resolveResult = resolveInteraction(newState, 'miskatonic_book_of_iter_the_unseen', { skip: true }, Date.now());
-        expect(resolveResult.events.length).toBe(0);
+        const prompt = getSimpleChoicePrompt(result.matchState, 'miskatonic_book_of_iter_the_unseen');
+        const skipOption = getPromptOption(
+            prompt,
+            option => option.value?.skip === true,
+            'Book of Iter skip option',
+        );
+
+        const resolve = respondToPrompt(result.matchState, skipOption.id, '0', defaultRandom);
+        expect(resolve.success).toBe(true);
+        expect(resolve.events.some(event => event.type === SU_EVENTS.MADNESS_RETURNED)).toBe(false);
+
+        const finalCore = resolve.finalState.core;
+        expect(finalCore.players['0'].hand.some((card) => card.uid === 'm1')).toBe(true);
+        expect(finalCore.madnessDeck!.length).toBe(MADNESS_DECK_SIZE);
     });
 });
 
@@ -886,13 +879,11 @@ describe('米斯卡塔尼克大学 - miskatonic_thing_on_the_doorstep（老詹�
         const result = execSpecial(state, '0', 0);
         // 并列最高力量，应创建交互让玩家选择
         expect(result.matchState).toBeDefined();
-        const interaction = result.matchState!.sys.interaction;
-        const hasInteraction = !!interaction?.current || (interaction?.queue?.length ?? 0) > 0;
-        expect(hasInteraction).toBe(true);
-        const i = interaction!.current ?? interaction!.queue[0];
-        expect((i.data as any).sourceId).toBe('miskatonic_thing_on_the_doorstep');
+        const prompt = getFirstPrompt(result.matchState!);
+        expect(prompt).toBeDefined();
+        expect(getPromptSourceId(prompt)).toBe('miskatonic_thing_on_the_doorstep');
         // 选项应只包含2个并列最高力量随从
-        expect((i.data as any).options.length).toBe(2);
+        expect(getPromptOptions(prompt)).toHaveLength(2);
     });
 
     it('多个并列最高力量时，交互解决后会真正发出消灭事件', () => {
@@ -912,23 +903,14 @@ describe('米斯卡塔尼克大学 - miskatonic_thing_on_the_doorstep（老詹�
         expect(interaction).toBeDefined();
         expect(getPromptSourceId(interaction)).toBe('miskatonic_thing_on_the_doorstep');
 
-        const handler = getInteractionHandler('miskatonic_thing_on_the_doorstep');
-        expect(handler).toBeDefined();
-
-        const tie2Option = getPromptOption(
-            interaction,
+        const resolved = respondToPromptOption(
+            result.matchState!,
             option => option.value?.minionUid === 'tie2',
             'Thing on the Doorstep tie target option',
-        );
-
-        const resolved = handler!(
-            result.matchState!,
             '0',
-            tie2Option.value,
-            getPromptHandlerData(interaction),
             defaultRandom,
-            456,
         );
+        expect(resolved.success).toBe(true);
 
         const destroyEvts = resolved.events.filter((event: any) => event.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvts).toHaveLength(1);
@@ -939,7 +921,7 @@ describe('米斯卡塔尼克大学 - miskatonic_thing_on_the_doorstep（老詹�
             reason: 'miskatonic_thing_on_the_doorstep',
         });
 
-        const newState = applyEvents(state, resolved.events);
+        const newState = resolved.finalState.core;
         expect(newState.bases[0].minions.map(minion => minion.uid)).toEqual(['tie1', 'weak']);
     });
 

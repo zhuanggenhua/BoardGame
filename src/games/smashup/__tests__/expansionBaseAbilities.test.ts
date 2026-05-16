@@ -39,7 +39,6 @@ import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import {
     applyEvents,
-    getFirstPrompt,
     getInteractionsFromResult,
     getPromptHandlerData,
     getPromptOption,
@@ -50,6 +49,8 @@ import {
     getSimpleChoicePrompt,
     triggerBaseAbilityWithMS,
     makeMatchState,
+    respondToPromptOption,
+    withOnlyCurrentPrompt,
 } from './helpers';
 import type { RandomFn } from '../../../engine/types';
 
@@ -175,21 +176,14 @@ describe('10th Anniversary bases', () => {
         const interactions = getInteractionsFromResult(result);
         expect(interactions).toHaveLength(1);
         expect(getPromptSourceId(interactions[0])).toBe('base_mermaid_pool');
-
-        const handler = getInteractionHandler('base_mermaid_pool');
-        const resolved = handler!(
-            makeMatchState(result.matchState?.core ?? makeState({
-                bases: [
-                    makeBase('base_mermaid_pool', { minions: [makeMinion('ally-1', '0', 3)] }),
-                    makeBase('other_base', { minions: [makeMinion('enemy-1', '1', 4)] }),
-                ],
-            })),
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            (option: any) => option.value?.minionUid === 'enemy-1',
+            'Mermaid Pool enemy minion option',
             '0',
-            { minionUid: 'enemy-1', minionDefId: 'd1', fromBaseIndex: 1 },
-            { continuationContext: { targetBaseIndex: 0 } },
             dummyRandom,
-            1000,
         );
+        expect(resolved.success).toBe(true);
 
         const moveEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_MOVED) as any;
         expect(moveEvent).toBeTruthy();
@@ -216,16 +210,14 @@ describe('10th Anniversary bases', () => {
         const interactions = getInteractionsFromResult(result);
         expect(interactions).toHaveLength(1);
         expect(getPromptSourceId(interactions[0])).toBe('base_ossuary');
-
-        const handler = getInteractionHandler('base_ossuary');
-        const resolved = handler!(
-            makeMatchState(core),
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            (option: any) => option.value?.cardUid === 'minion-1',
+            'Ossuary bury option',
             '0',
-            { cardUid: 'minion-1', defId: 'skeletons_returned_one' },
-            { continuationContext: { targetBaseIndex: 0 } },
             dummyRandom,
-            1000,
         );
+        expect(resolved.success).toBe(true);
 
         expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_BURIED)).toBe(true);
     });
@@ -256,20 +248,18 @@ describe('10th Anniversary bases', () => {
         expect(getPromptOptions(interactions[0]).map((option: any) => option.value?.choice ?? option.value?.skip)).toEqual(
             expect.arrayContaining(['extra_action', 'draw_card', true]),
         );
-
-        const handler = getInteractionHandler('base_arena');
-        const resolved = handler!(
-            makeMatchState(core),
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            (option: any) => option.value?.choice === 'draw_card',
+            'Arena draw-card option',
             '0',
-            { choice: 'draw_card' },
-            getPromptHandlerData(interactions[0]),
             dummyRandom,
-            1000,
         );
+        expect(resolved.success).toBe(true);
 
-        expect(resolved.events).toHaveLength(1);
-        expect(resolved.events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
-        expect((resolved.events[0] as any).payload).toMatchObject({
+        const drawEvent = resolved.events.find((event) => event.type === SU_EVENTS.CARDS_DRAWN) as any;
+        expect(drawEvent).toBeDefined();
+        expect(drawEvent.payload).toMatchObject({
             playerId: '0',
             count: 1,
         });
@@ -462,58 +452,47 @@ describe('base_the_asylum: 疯人院 - 放入盒子并加指示物', () => {
             baseIndex: 0,
             minionUid: 'm1',
         }));
-        const firstInteraction = getInteractionsFromResult(result)[0];
-        const handOption = getPromptOption(firstInteraction, (entry: any) => entry.value?.cardUid === 'h1');
-        const chooseCardHandler = getInteractionHandler('base_the_asylum');
-        const chooseMinionHandler = getInteractionHandler('base_the_asylum_choose_minion');
-
-        expect(handOption).toBeDefined();
-        expect(chooseCardHandler).toBeDefined();
-        expect(chooseMinionHandler).toBeDefined();
-
-        const step1 = chooseCardHandler!(
+        const step1 = respondToPromptOption(
             result.matchState!,
+            (entry: any) => entry.value?.cardUid === 'h1',
+            'Asylum hand option',
             '0',
-            handOption.value,
-            getPromptHandlerData(firstInteraction),
             dummyRandom,
-            1001,
         );
-        const secondInteraction = getSimpleChoicePrompt(step1.state, 'base_the_asylum_choose_minion');
+        expect(step1.success).toBe(true);
+        const secondInteraction = getSimpleChoicePrompt(step1.finalState, 'base_the_asylum_choose_minion');
 
         expect(secondInteraction).toBeDefined();
         expect(getPromptSourceId(secondInteraction)).toBe('base_the_asylum_choose_minion');
         expect(getPromptTargetType(secondInteraction)).toBe('minion');
-        const minionOption = getPromptOption(secondInteraction, (entry: any) => entry.value?.minionUid === 'm2');
-        expect(minionOption).toBeDefined();
-
-        const step2 = chooseMinionHandler!(
-            step1.state,
+        const step2 = respondToPromptOption(
+            step1.finalState,
+            (entry: any) => entry.value?.minionUid === 'm2',
+            'Asylum minion option',
             '0',
-            minionOption.value,
-            getPromptHandlerData(secondInteraction),
             dummyRandom,
-            1002,
         );
+        expect(step2.success).toBe(true);
 
-        expect(step2.events).toHaveLength(2);
-        expect(step2.events[0].type).toBe(SU_EVENTS.CARD_BOXED);
-        expect((step2.events[0] as any).payload).toMatchObject({
+        const boxedEvent = step2.events.find((event) => event.type === SU_EVENTS.CARD_BOXED) as any;
+        expect(boxedEvent).toBeDefined();
+        expect(boxedEvent.payload).toMatchObject({
             playerId: '0',
             cardUid: 'h1',
             defId: 'normal_action',
             from: 'hand',
         });
-        expect(step2.events[1].type).toBe(SU_EVENTS.POWER_COUNTER_ADDED);
-        expect((step2.events[1] as any).payload).toMatchObject({
+        const counterEvent = step2.events.find((event) => event.type === SU_EVENTS.POWER_COUNTER_ADDED) as any;
+        expect(counterEvent).toBeDefined();
+        expect(counterEvent.payload).toMatchObject({
             minionUid: 'm2',
             baseIndex: 1,
             amount: 1,
         });
 
-        const reduced = applyEvents(step1.state.core, step2.events as any);
-        expect(reduced.players['0'].hand.some(card => card.uid === 'h1')).toBe(false);
-        expect((reduced.players['0'].removedFromGame ?? []).some(card => card.uid === 'h1')).toBe(true);
+        const finalCore = step2.finalState.core;
+        expect(finalCore.players['0'].hand.some(card => card.uid === 'h1')).toBe(false);
+        expect((finalCore.players['0'].removedFromGame ?? []).some(card => card.uid === 'h1')).toBe(true);
     });
 
     it('无手牌时不触发', () => {
@@ -550,9 +529,8 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
         }));
         const interaction = getInteractionsFromResult(result)[0];
         const option = getPromptOption(interaction, (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
-        const handler = getInteractionHandler('base_land_of_balance');
         expect(getPromptSourceId(interaction)).toBe('base_land_of_balance');
-        expect(handler).toBeDefined();
+        expect(option).toBeDefined();
 
         const staleCore = makeState({
             bases: [
@@ -569,15 +547,16 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
             },
         });
 
-        const resolved = handler!(
-            makeMatchState(staleCore),
+        const staleState = withOnlyCurrentPrompt(makeMatchState(staleCore), interaction);
+        const resolved = respondToPromptOption(
+            staleState,
+            (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1',
+            'Land of Balance stale option',
             '0',
-            option.value,
-            getPromptHandlerData(interaction),
             dummyRandom,
-            1600,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
     });
 
     it('base_sheep_shrine: 若所选随从已离开原基地则不再移动', () => {
@@ -596,9 +575,8 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
         }));
         const interaction = getInteractionsFromResult(result)[0];
         const option = getPromptOption(interaction, (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
-        const handler = getInteractionHandler('base_sheep_shrine');
         expect(getPromptSourceId(interaction)).toBe('base_sheep_shrine');
-        expect(handler).toBeDefined();
+        expect(option).toBeDefined();
 
         const staleCore = makeState({
             bases: [
@@ -615,15 +593,16 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
             },
         });
 
-        const resolved = handler!(
-            makeMatchState(staleCore),
+        const staleState = withOnlyCurrentPrompt(makeMatchState(staleCore), interaction);
+        const resolved = respondToPromptOption(
+            staleState,
+            (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1',
+            'Sheep Shrine stale option',
             '0',
-            option.value,
-            getPromptHandlerData(interaction),
             dummyRandom,
-            1700,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
     });
 
     it('base_the_pasture: 若所选随从已离开原基地则不再移动', () => {
@@ -648,9 +627,8 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
         }));
         const interaction = getInteractionsFromResult(result)[0];
         const option = getPromptOption(interaction, (entry: any) => entry.value?.minionUid === 'm1');
-        const handler = getInteractionHandler('base_the_pasture');
         expect(getPromptSourceId(interaction)).toBe('base_the_pasture');
-        expect(handler).toBeDefined();
+        expect(option).toBeDefined();
 
         const staleCore = makeState({
             bases: [
@@ -667,15 +645,16 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
             },
         });
 
-        const resolved = handler!(
-            makeMatchState(staleCore),
+        const staleState = withOnlyCurrentPrompt(makeMatchState(staleCore), interaction);
+        const resolved = respondToPromptOption(
+            staleState,
+            (entry: any) => entry.value?.minionUid === 'm1',
+            'The Pasture stale option',
             '0',
-            option.value,
-            getPromptHandlerData(interaction),
             dummyRandom,
-            1800,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
     });
 });
 
@@ -759,16 +738,17 @@ describe('base_innsmouth_base: 印斯茅斯 - 弃牌堆卡入牌库底', () => {
             dummyRandom,
             1001,
         );
-        const current = getFirstPrompt(reaction!.state as any);
-        const option = getPromptOption(current, (entry: any) => entry.id.startsWith('trigger:'));
-        const handler = getInteractionHandler('smashup_reaction_choose');
-
-        expect(option).toBeDefined();
-        expect(handler).toBeDefined();
-        const resolved = handler!(reaction!.state as any, '0', option.value, getPromptHandlerData(current), dummyRandom, 1002);
+        const resolved = respondToPromptOption(
+            reaction!.state as any,
+            (entry: any) => entry.id.startsWith('trigger:'),
+            'Innsmouth reaction trigger option',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success).toBe(true);
 
         expect(resolved?.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
-        expect(getSimpleChoicePrompt(resolved!.state as any, 'base_innsmouth_base_choose_player')).toBeDefined();
+        expect(getSimpleChoicePrompt(resolved.finalState as any, 'base_innsmouth_base_choose_player')).toBeDefined();
     });
 });
 
@@ -788,24 +768,18 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             minionUid: 'm1',
         }));
         const choosePlayer = getInteractionsFromResult(result)[0];
-        const choosePlayerOption = getPromptOption(choosePlayer, (entry: any) => entry.value?.targetPlayerId === '0');
-        const choosePlayerHandler = getInteractionHandler('base_innsmouth_base_choose_player');
-        const chooseCardHandler = getInteractionHandler('base_innsmouth_base_choose_card');
         expect(getPromptSourceId(choosePlayer)).toBe('base_innsmouth_base_choose_player');
         expect(getPromptTargetType(choosePlayer)).toBe('player');
-        expect(choosePlayerOption).toBeDefined();
-        expect(choosePlayerHandler).toBeDefined();
-        expect(chooseCardHandler).toBeDefined();
 
-        const step1 = choosePlayerHandler!(
+        const step1 = respondToPromptOption(
             result.matchState!,
+            (entry: any) => entry.value?.targetPlayerId === '0',
+            'Innsmouth choose-player option',
             '0',
-            choosePlayerOption.value,
-            getPromptHandlerData(choosePlayer),
             dummyRandom,
-            1850,
         );
-        const chooseCard = getSimpleChoicePrompt(step1!.state as any, 'base_innsmouth_base_choose_card');
+        expect(step1.success).toBe(true);
+        const chooseCard = getSimpleChoicePrompt(step1.finalState as any, 'base_innsmouth_base_choose_card');
         const chooseCardOption = getPromptOption(chooseCard, (entry: any) => entry.value?.cardUid === 'd1');
         expect(getPromptSourceId(chooseCard)).toBe('base_innsmouth_base_choose_card');
         expect(chooseCardOption).toBeDefined();
@@ -821,15 +795,16 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             },
         });
 
-        const resolved = chooseCardHandler!(
-            makeMatchState(staleCore),
+        const staleState = withOnlyCurrentPrompt(makeMatchState(staleCore), chooseCard);
+        const resolved = respondToPromptOption(
+            staleState,
+            (entry: any) => entry.value?.cardUid === 'd1',
+            'Innsmouth choose-card stale option',
             '0',
-            chooseCardOption.value,
-            getPromptHandlerData(chooseCard),
             dummyRandom,
-            1851,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(false);
     });
 
     it('base_cat_fanciers_alley: 若所选随从已离开基地则不再消灭也不抽牌', () => {
@@ -850,10 +825,8 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
         }));
         const interaction = getInteractionsFromResult(result)[0];
         const option = getPromptOption(interaction, (entry: any) => entry.value?.minionUid === 'm1');
-        const handler = getInteractionHandler('base_cat_fanciers_alley');
         expect(getPromptSourceId(interaction)).toBe('base_cat_fanciers_alley');
         expect(option).toBeDefined();
-        expect(handler).toBeDefined();
 
         const staleCore = makeState({
             bases: [makeBase('base_cat_fanciers_alley')],
@@ -866,15 +839,17 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             },
         });
 
-        const resolved = handler!(
-            makeMatchState(staleCore),
+        const staleState = withOnlyCurrentPrompt(makeMatchState(staleCore), interaction);
+        const resolved = respondToPromptOption(
+            staleState,
+            (entry: any) => entry.value?.minionUid === 'm1',
+            'Cat Fancier stale option',
             '0',
-            option.value,
-            getPromptHandlerData(interaction),
             dummyRandom,
-            1852,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
     });
 
     it('base_greenhouse: 若所选随从已不在牌库则不再打出', () => {
@@ -1045,10 +1020,8 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
         }));
         const interaction = getInteractionsFromResult(result)[0];
         const option = getPromptOption(interaction, (entry: any) => entry.value?.cardUid === 'd1');
-        const handler = getInteractionHandler('base_inventors_salon');
         expect(getPromptSourceId(interaction)).toBe('base_inventors_salon');
         expect(option).toBeDefined();
-        expect(handler).toBeDefined();
 
         const staleCore = makeState({
             bases: [makeBase('base_inventors_salon')],
@@ -1061,15 +1034,16 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             },
         });
 
-        const resolved = handler!(
-            makeMatchState(staleCore),
+        const staleState = withOnlyCurrentPrompt(makeMatchState(staleCore), interaction);
+        const resolved = respondToPromptOption(
+            staleState,
+            (entry: any) => entry.value?.cardUid === 'd1',
+            'Inventors Salon stale option',
             '0',
-            option.value,
-            getPromptHandlerData(interaction),
             dummyRandom,
-            1854,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.success).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD)).toBe(false);
     });
 
     it('queued reaction 选择温室时不会被 effect contract 拦截', () => {
@@ -1097,16 +1071,17 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             dummyRandom,
             1001,
         );
-        const current = getFirstPrompt(reaction!.state as any);
-        const option = getPromptOption(current, (entry: any) => entry.id.startsWith('trigger:'));
-        const handler = getInteractionHandler('smashup_reaction_choose');
-
-        expect(option).toBeDefined();
-        expect(handler).toBeDefined();
-        const resolved = handler!(reaction!.state as any, '0', option.value, getPromptHandlerData(current), dummyRandom, 1002);
+        const resolved = respondToPromptOption(
+            reaction!.state as any,
+            (entry: any) => entry.id.startsWith('trigger:'),
+            'Greenhouse reaction trigger option',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success).toBe(true);
 
         expect(resolved?.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
-        expect(getSimpleChoicePrompt(resolved!.state as any, 'base_greenhouse')).toBeDefined();
+        expect(getSimpleChoicePrompt(resolved.finalState as any, 'base_greenhouse')).toBeDefined();
     });
 });
 
@@ -1211,60 +1186,76 @@ describe('base_miskatonic_university_base: 密大基地 - POD 版首次打出随
     });
 
     it('选择抓疯狂时产生 MADNESS_DRAWN 事件', () => {
-        const handler = getInteractionHandler('base_miskatonic_university_base');
-        expect(handler).toBeDefined();
-
-        const resolved = handler!(
-            makeMatchState(makeState({
+        const result = triggerBaseAbilityWithMS('base_miskatonic_university_base', 'onMinionPlayed', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_miskatonic_university_base', {
+                    minions: [makeMinion('m1', '0', 3)],
+                })],
                 madnessDeck: Array(10).fill(MADNESS_CARD_DEF_ID),
                 players: {
-                    '0': makePlayer('0'),
+                    '0': makePlayer('0', {
+                        minionsPlayedPerBase: { 0: 1 },
+                    }),
                     '1': makePlayer('1'),
                 },
-            })),
+            }),
+            baseDefId: 'base_miskatonic_university_base',
+            baseIndex: 0,
+            minionUid: 'm1',
+        }));
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            (option: any) => option.value?.choice === 'draw',
+            'Miskatonic University draw madness option',
             '0',
-            { choice: 'draw' },
-            undefined,
             dummyRandom,
-            1200,
         );
+        expect(resolved.success).toBe(true);
 
-        expect(resolved.events).toHaveLength(1);
-        expect(resolved.events[0].type).toBe(SU_EVENTS.MADNESS_DRAWN);
-        expect((resolved.events[0] as any).payload).toMatchObject({
+        const drawEvent = resolved.events.find((event) => event.type === SU_EVENTS.MADNESS_DRAWN) as any;
+        expect(drawEvent).toBeDefined();
+        expect(drawEvent.payload).toMatchObject({
             playerId: '0',
             count: 2,
         });
     });
 
     it('选择弃疯狂换行动时产生弃牌和额外行动事件', () => {
-        const handler = getInteractionHandler('base_miskatonic_university_base');
-        expect(handler).toBeDefined();
-
-        const resolved = handler!(
-            makeMatchState(makeState({
+        const result = triggerBaseAbilityWithMS('base_miskatonic_university_base', 'onMinionPlayed', makeCtx({
+            state: makeState({
+                bases: [makeBase('base_miskatonic_university_base', {
+                    minions: [makeMinion('m1', '0', 3)],
+                })],
                 players: {
                     '0': makePlayer('0', {
                         hand: [makeCard('mad1', MADNESS_CARD_DEF_ID, 'action')],
+                        minionsPlayedPerBase: { 0: 1 },
                     }),
                     '1': makePlayer('1'),
                 },
-            })),
+            }),
+            baseDefId: 'base_miskatonic_university_base',
+            baseIndex: 0,
+            minionUid: 'm1',
+        }));
+        const resolved = respondToPromptOption(
+            result.matchState!,
+            (option: any) => option.value?.choice === 'discard_for_action',
+            'Miskatonic University discard-for-action option',
             '0',
-            { choice: 'discard_for_action' },
-            undefined,
             dummyRandom,
-            1201,
         );
+        expect(resolved.success).toBe(true);
 
-        expect(resolved.events).toHaveLength(2);
-        expect(resolved.events[0].type).toBe(SU_EVENTS.CARDS_DISCARDED);
-        expect((resolved.events[0] as any).payload).toMatchObject({
+        const discardEvent = resolved.events.find((event) => event.type === SU_EVENTS.CARDS_DISCARDED) as any;
+        expect(discardEvent).toBeDefined();
+        expect(discardEvent.payload).toMatchObject({
             playerId: '0',
             cardUids: ['mad1'],
         });
-        expect(resolved.events[1].type).toBe(SU_EVENTS.LIMIT_MODIFIED);
-        expect((resolved.events[1] as any).payload).toMatchObject({
+        const limitEvent = resolved.events.find((event) => event.type === SU_EVENTS.LIMIT_MODIFIED) as any;
+        expect(limitEvent).toBeDefined();
+        expect(limitEvent.payload).toMatchObject({
             playerId: '0',
             limitType: 'action',
             delta: 1,

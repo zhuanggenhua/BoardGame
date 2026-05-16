@@ -16,22 +16,21 @@ import type {
     PlayerState,
     MinionOnBase,
     CardInstance,
-    OngoingActionOnBase,
-    AttachedActionOnMinion,
 } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import {
     expectNoPrompt,
     getFirstPrompt,
-    getPromptHandlerData,
     getPromptMulti,
     getPromptOptions,
     getPromptSourceId,
     getPromptsBySourceId,
     makeMatchState as makeMatchStateFromHelpers,
+    respondToPromptOption,
+    respondToPromptOptions,
 } from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
@@ -350,7 +349,7 @@ describe('米斯卡塔尼克大学派系能力', () => {
             expect(getPromptSourceId(current)).toBe('miskatonic_those_meddling_kids');
         });
 
-        it('消灭基地上所有持续行动卡（通过 interaction handler 逐个点击）', () => {
+        it('消灭基地上所有持续行动卡（通过真实 prompt 逐个点击）', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -370,33 +369,45 @@ describe('米斯卡塔尼克大学派系能力', () => {
 
             // 先打出卡 → 创建 interaction
             const { matchState } = execPlayAction(state, '0', 'a1');
-            const basePrompt = getFirstPrompt(matchState);
             // 第一步：选择基地 0 → 创建点击式行动卡选择
-            const handler = getInteractionHandler('miskatonic_those_meddling_kids');
-            expect(handler).toBeDefined();
-            const step1 = handler!(matchState, '0', { baseIndex: 0 }, getPromptHandlerData(basePrompt), defaultRandom, 1000);
-            expect(step1.events.length).toBe(0); // 不直接产生消灭事件
-            const chooseAction1 = getMeddlingKidsSelectPrompt(step1.state ?? matchState);
+            const step1 = respondToPromptOption(
+                matchState,
+                option => option.value?.baseIndex === 0,
+                'meddling kids base 0 option',
+                '0',
+                defaultRandom,
+            );
+            expect(step1.success, step1.error).toBe(true);
+            expect(step1.events.filter((e: any) => e.type === SU_EVENTS.ONGOING_DETACHED)).toHaveLength(0);
+            getMeddlingKidsSelectPrompt(step1.finalState);
             // 第二步：点击第一张行动卡
-            const selectHandler = getInteractionHandler('miskatonic_those_meddling_kids_select');
-            expect(selectHandler).toBeDefined();
-            const step2 = selectHandler!(step1.state ?? matchState, '0',
-                { cardUid: 'o1', defId: 'test_ongoing', ownerId: '1' },
-                getPromptHandlerData(chooseAction1), defaultRandom, 1001);
+            const step2 = respondToPromptOption(
+                step1.finalState,
+                option => option.value?.cardUid === 'o1',
+                'meddling kids destroy ongoing o1 option',
+                '0',
+                defaultRandom,
+            );
+            expect(step2.success, step2.error).toBe(true);
             const detachEvents1 = step2.events.filter((e: any) => e.type === SU_EVENTS.ONGOING_DETACHED);
             expect(detachEvents1.length).toBe(1);
             expect(detachEvents1[0].payload.cardUid).toBe('o1');
-            const chooseAction2 = getMeddlingKidsSelectPrompt(step2.state ?? matchState);
+            getMeddlingKidsSelectPrompt(step2.finalState);
             // 第三步：点击第二张行动卡
-            const step3 = selectHandler!(step2.state ?? matchState, '0',
-                { cardUid: 'o2', defId: 'test_ongoing2', ownerId: '0' },
-                getPromptHandlerData(chooseAction2), defaultRandom, 1002);
+            const step3 = respondToPromptOption(
+                step2.finalState,
+                option => option.value?.cardUid === 'o2',
+                'meddling kids destroy ongoing o2 option',
+                '0',
+                defaultRandom,
+            );
+            expect(step3.success, step3.error).toBe(true);
             const detachEvents2 = step3.events.filter((e: any) => e.type === SU_EVENTS.ONGOING_DETACHED);
             expect(detachEvents2.length).toBe(1);
             expect(detachEvents2[0].payload.cardUid).toBe('o2');
         });
 
-        it('消灭随从上附着的行动卡（通过 interaction handler 逐个点击）', () => {
+        it('消灭随从上附着的行动卡（通过真实 prompt 逐个点击）', () => {
             const minionWithActions: MinionOnBase = {
                 ...makeMinion('m1', 'test', '1', 3, { powerModifier: 0 }),
                 attachedActions: [
@@ -418,27 +429,39 @@ describe('米斯卡塔尼克大学派系能力', () => {
             });
 
             const { matchState } = execPlayAction(state, '0', 'a1');
-            const basePrompt = getFirstPrompt(matchState);
             // 第一步：选择基地 0 → 创建点击式行动卡选择
-            const handler = getInteractionHandler('miskatonic_those_meddling_kids');
-            expect(handler).toBeDefined();
-            const step1 = handler!(matchState, '0', { baseIndex: 0 }, getPromptHandlerData(basePrompt), defaultRandom, 1000);
-            expect(step1.events.length).toBe(0);
-            const chooseAction1 = getMeddlingKidsSelectPrompt(step1.state ?? matchState);
+            const step1 = respondToPromptOption(
+                matchState,
+                option => option.value?.baseIndex === 0,
+                'meddling kids base 0 option',
+                '0',
+                defaultRandom,
+            );
+            expect(step1.success, step1.error).toBe(true);
+            expect(step1.events.filter((e: any) => e.type === SU_EVENTS.ONGOING_DETACHED)).toHaveLength(0);
+            getMeddlingKidsSelectPrompt(step1.finalState);
             // 第二步：点击第一张行动卡
-            const selectHandler = getInteractionHandler('miskatonic_those_meddling_kids_select');
-            expect(selectHandler).toBeDefined();
-            const step2 = selectHandler!(step1.state ?? matchState, '0',
-                { cardUid: 'o1', defId: 'test_ongoing', ownerId: '1' },
-                getPromptHandlerData(chooseAction1), defaultRandom, 1001);
+            const step2 = respondToPromptOption(
+                step1.finalState,
+                option => option.value?.cardUid === 'o1',
+                'meddling kids destroy ongoing o1 option',
+                '0',
+                defaultRandom,
+            );
+            expect(step2.success, step2.error).toBe(true);
             const detachEvents1 = step2.events.filter((e: any) => e.type === SU_EVENTS.ONGOING_DETACHED);
             expect(detachEvents1.length).toBe(1);
             expect(detachEvents1[0].payload.cardUid).toBe('o1');
-            const chooseAction2 = getMeddlingKidsSelectPrompt(step2.state ?? matchState);
+            getMeddlingKidsSelectPrompt(step2.finalState);
             // 第三步：点击附着的行动卡
-            const step3 = selectHandler!(step2.state ?? matchState, '0',
-                { cardUid: 'att1', defId: 'test_attached', ownerId: '1' },
-                getPromptHandlerData(chooseAction2), defaultRandom, 1002);
+            const step3 = respondToPromptOption(
+                step2.finalState,
+                option => option.value?.cardUid === 'att1',
+                'meddling kids destroy attached action att1 option',
+                '0',
+                defaultRandom,
+            );
+            expect(step3.success, step3.error).toBe(true);
             const detachEvents2 = step3.events.filter((e: any) => e.type === SU_EVENTS.ONGOING_DETACHED);
             expect(detachEvents2.length).toBe(1);
             expect(detachEvents2[0].payload.cardUid).toBe('att1');
@@ -499,7 +522,7 @@ describe('米斯卡塔尼克大学派系能力', () => {
             expectNoPrompt(matchState);
         });
 
-        it('消灭后状态正确（reduce 验证）', () => {
+        it('消灭后状态正确（最终状态验证）', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -517,22 +540,26 @@ describe('米斯卡塔尼克大学派系能力', () => {
             });
 
             // 先打出卡 → 创建基地选择 interaction
-            const { events: playEvents, matchState } = execPlayAction(state, '0', 'a1');
-            const basePrompt = getFirstPrompt(matchState);
+            const { matchState } = execPlayAction(state, '0', 'a1');
             // 第一步：选择基地 0 → 创建点击式行动卡选择
-            const handler = getInteractionHandler('miskatonic_those_meddling_kids');
-            expect(handler).toBeDefined();
-            const step1 = handler!(matchState, '0', { baseIndex: 0 }, getPromptHandlerData(basePrompt), defaultRandom, 1000);
-            expect(step1.events.length).toBe(0);
-            const chooseAction = getMeddlingKidsSelectPrompt(step1.state ?? matchState);
-            const selectHandler = getInteractionHandler('miskatonic_those_meddling_kids_select');
-            expect(selectHandler).toBeDefined();
+            const step1 = respondToPromptOption(
+                matchState,
+                option => option.value?.baseIndex === 0,
+                'meddling kids base 0 option',
+                '0',
+                defaultRandom,
+            );
+            expect(step1.success, step1.error).toBe(true);
             // 第二步：点击消灭 o1
-            const step2 = selectHandler!(step1.state ?? matchState, '0',
-                { cardUid: 'o1', defId: 'test_ongoing', ownerId: '1' },
-                getPromptHandlerData(chooseAction), defaultRandom, 1001);
-            const allEvents = [...playEvents, ...step2.events];
-            const newState = applyEvents(state, allEvents);
+            const step2 = respondToPromptOption(
+                step1.finalState,
+                option => option.value?.cardUid === 'o1',
+                'meddling kids destroy ongoing o1 option',
+                '0',
+                defaultRandom,
+            );
+            expect(step2.success, step2.error).toBe(true);
+            const newState = step2.finalState.core;
             // 基地上不应有持续行动卡
             expect(newState.bases[0].ongoingActions.length).toBe(0);
             // o1 应在 P1 弃牌堆
@@ -571,7 +598,7 @@ describe('克苏鲁之仆派系能力', () => {
             expect(getPromptSourceId(current)).toBe('cthulhu_recruit_by_force');
         });
 
-        it('通过 interaction handler 选择后放牌库顶', () => {
+        it('通过真实 prompt 选择后放牌库顶', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -588,10 +615,12 @@ describe('克苏鲁之仆派系能力', () => {
 
             const { matchState } = execPlayAction(state, '0', 'a1');
             const prompt = getFirstPrompt(matchState);
-            const handler = getInteractionHandler('cthulhu_recruit_by_force');
-            expect(handler).toBeDefined();
+            const optionIds = getPromptOptions(prompt)
+                .filter((option: any) => ['dis1', 'dis3'].includes(option.value?.cardUid))
+                .map((option: any) => option.id);
             // 选择两张随从
-            const result = handler!(matchState, '0', [{ cardUid: 'dis1' }, { cardUid: 'dis3' }], getPromptHandlerData(prompt), defaultRandom, 1000);
+            const result = respondToPromptOptions(matchState, optionIds, '0', defaultRandom);
+            expect(result.success, result.error).toBe(true);
             const reorderEvents = result.events.filter((e: any) => e.type === SU_EVENTS.DECK_REORDERED);
             expect(reorderEvents.length).toBe(1);
             const deckUids = (reorderEvents[0] as any).payload.deckUids;
@@ -623,7 +652,7 @@ describe('克苏鲁之仆派系能力', () => {
             expectNoPrompt(matchState);
         });
 
-        it('状态正确（通过 handler 解决后 reduce 验证）', () => {
+        it('状态正确（最终状态验证）', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -637,13 +666,14 @@ describe('克苏鲁之仆派系能力', () => {
                 },
             });
 
-            const { events: playEvents, matchState } = execPlayAction(state, '0', 'a1');
+            const { matchState } = execPlayAction(state, '0', 'a1');
             const prompt = getFirstPrompt(matchState);
-            const handler = getInteractionHandler('cthulhu_recruit_by_force');
-            expect(handler).toBeDefined();
-            const result = handler!(matchState, '0', [{ cardUid: 'dis1' }], getPromptHandlerData(prompt), defaultRandom, 1000);
-            const allEvents = [...playEvents, ...result.events];
-            const newState = applyEvents(state, allEvents);
+            const optionIds = getPromptOptions(prompt)
+                .filter((option: any) => option.value?.cardUid === 'dis1')
+                .map((option: any) => option.id);
+            const result = respondToPromptOptions(matchState, optionIds, '0', defaultRandom);
+            expect(result.success, result.error).toBe(true);
+            const newState = result.finalState.core;
             // DECK_REORDERED 不清空弃牌堆，只移走被引用的卡
             // dis1 从弃牌堆移入牌库顶；a1（打出的行动卡）留在弃牌堆
             expect(newState.players['0'].discard.length).toBe(1);
@@ -683,14 +713,12 @@ describe('克苏鲁之仆派系能力', () => {
                 },
             });
             const { matchState } = execPlayAction(state, '0', 'a1');
-            const prompt = getFirstPrompt(matchState);
-            const handler = getInteractionHandler('cthulhu_recruit_by_force');
-            expect(handler).toBeDefined();
             // 传空数组模拟跳过（min=0）
-            const result = handler!(matchState, '0', [], getPromptHandlerData(prompt), defaultRandom, 1000);
-            expect(result.events.length).toBe(0);
+            const result = respondToPromptOptions(matchState, [], '0', defaultRandom);
+            expect(result.success, result.error).toBe(true);
+            expect(result.events.filter((e: any) => e.type === SU_EVENTS.DECK_REORDERED)).toHaveLength(0);
             // 弃牌堆中的随从仍在弃牌堆
-            expect(matchState.core.players['0'].discard.some((c: any) => c.uid === 'dis1')).toBe(true);
+            expect(result.finalState.core.players['0'].discard.some((c: any) => c.uid === 'dis1')).toBe(true);
         });
     });
 
@@ -720,10 +748,12 @@ describe('克苏鲁之仆派系能力', () => {
             const options = getPromptOptions(current);
             expect(options.length).toBe(3); // 2张行动卡 + 1个跳过
 
+            const optionIds = getPromptOptions(current)
+                .filter((option: any) => ['dis1', 'dis2'].includes(option.value?.cardUid))
+                .map((option: any) => option.id);
             // 解析交互：选择全部行动卡
-            const handler = getInteractionHandler('cthulhu_it_begins_again');
-            expect(handler).toBeDefined();
-            const result = handler!(matchState, '0', [{ cardUid: 'dis1' }, { cardUid: 'dis2' }], getPromptHandlerData(current), defaultRandom, 0);
+            const result = respondToPromptOptions(matchState, optionIds, '0', defaultRandom);
+            expect(result.success, result.error).toBe(true);
             const reorderEvents = result.events.filter(e => e.type === SU_EVENTS.DECK_REORDERED);
             expect(reorderEvents.length).toBe(1);
             const deckUids = (reorderEvents[0] as any).payload.deckUids;
@@ -750,7 +780,7 @@ describe('克苏鲁之仆派系能力', () => {
             expectNoPrompt(matchState);
         });
 
-        it('状态正确（reduce 验证）', () => {
+        it('状态正确（最终状态验证）', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
@@ -765,12 +795,14 @@ describe('克苏鲁之仆派系能力', () => {
                 },
             });
 
-            const { events: playEvents, matchState } = execPlayAction(state, '0', 'a1');
+            const { matchState } = execPlayAction(state, '0', 'a1');
             const prompt = getFirstPrompt(matchState);
-            const handler = getInteractionHandler('cthulhu_it_begins_again');
-            expect(handler).toBeDefined();
-            const result = handler!(matchState, '0', [{ cardUid: 'dis1' }], getPromptHandlerData(prompt), defaultRandom, 0);
-            const newState = applyEvents(state, [...playEvents, ...result.events]);
+            const optionIds = getPromptOptions(prompt)
+                .filter((option: any) => option.value?.cardUid === 'dis1')
+                .map((option: any) => option.id);
+            const result = respondToPromptOptions(matchState, optionIds, '0', defaultRandom);
+            expect(result.success, result.error).toBe(true);
+            const newState = result.finalState.core;
             // DECK_REORDERED 不清空弃牌堆，只移走被引用的卡
             // 牌库：d1 + dis1（从弃牌堆移入）
             expect(newState.players['0'].deck.length).toBe(2);
@@ -811,14 +843,12 @@ describe('克苏鲁之仆派系能力', () => {
                 },
             });
             const { matchState } = execPlayAction(state, '0', 'a1');
-            const prompt = getFirstPrompt(matchState);
-            const handler = getInteractionHandler('cthulhu_it_begins_again');
-            expect(handler).toBeDefined();
             // 传空数组模拟跳过（min=0）
-            const result = handler!(matchState, '0', [], getPromptHandlerData(prompt), defaultRandom, 1000);
-            expect(result.events.length).toBe(0);
+            const result = respondToPromptOptions(matchState, [], '0', defaultRandom);
+            expect(result.success, result.error).toBe(true);
+            expect(result.events.filter((e: any) => e.type === SU_EVENTS.DECK_REORDERED)).toHaveLength(0);
             // 牌库不变
-            expect(matchState.core.players['0'].deck.some((c: any) => c.uid === 'd1')).toBe(true);
+            expect(result.finalState.core.players['0'].deck.some((c: any) => c.uid === 'd1')).toBe(true);
         });
     });
 

@@ -15,11 +15,10 @@ import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
-import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
-import { SU_COMMANDS, SU_EVENTS, getCurrentPlayerId } from '../domain/types';
+import type { SmashUpCore, SmashUpEvent } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import {
     triggerBaseAbility,
     triggerExtendedBaseAbility,
@@ -27,8 +26,8 @@ import {
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { getEffectivePower } from '../domain/ongoingModifiers';
 import {
-    getPromptHandlerData,
     getPromptOption,
+    respondToPromptOption,
     getSimpleChoicePrompt,
     triggerBaseAbilityWithMS,
     getInteractionsFromResult,
@@ -48,27 +47,6 @@ const dummyRandom: RandomFn = {
 beforeAll(() => {
     initAllAbilities();
 });
-
-function createRunner() {
-    return new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
-        domain: SmashUpDomain,
-        systems: [
-            createFlowSystem<SmashUpCore>({ hooks: smashUpFlowHooks }),
-            ...createBaseSystems<SmashUpCore>(),
-        ],
-        playerIds: PLAYER_IDS,
-        silent: true,
-    });
-}
-
-/** 蛇形选秀 + 推进到 playCards */
-const DRAFT_COMMANDS: SmashUpCommand[] = [
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.ALIENS } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.PIRATES } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '1', payload: { factionId: SMASHUP_FACTION_IDS.NINJAS } },
-    { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
-    { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
-] as any[];
 
 // ============================================================================
 // base_central_brain: 中央大脑 - 持续被动 +1 力量（power modifier）
@@ -982,25 +960,25 @@ describe('POD 基地专项行为', () => {
         });
         const interaction = getInteractionsFromResult(result)[0];
         const selected = getPromptOption(interaction, (o: any) => o.value?.minionUid === 'm1', 'mushroom kingdom minion option');
-        const step1 = getInteractionHandler('base_mushroom_kingdom_pod')!(
+        const step1 = respondToPromptOption(
             result.matchState!,
+            (o: any) => o.value?.minionUid === selected.value.minionUid,
+            'mushroom kingdom minion option',
             '0',
-            selected.value,
-            getPromptHandlerData(interaction),
             dummyRandom,
-            3005,
         );
-        const chooseBaseInteraction = getSimpleChoicePrompt(step1.state, 'base_mushroom_kingdom_pod_choose_base');
+        expect(step1.success, step1.error).toBe(true);
+        const chooseBaseInteraction = getSimpleChoicePrompt(step1.finalState, 'base_mushroom_kingdom_pod_choose_base');
         const destinationOption = getPromptOption(chooseBaseInteraction, (o: any) => o.value?.baseIndex === 1, 'mushroom kingdom destination base option');
 
-        const step2 = getInteractionHandler('base_mushroom_kingdom_pod_choose_base')!(
-            step1.state,
+        const step2 = respondToPromptOption(
+            step1.finalState,
+            (o: any) => o.value?.baseIndex === destinationOption.value.baseIndex,
+            'mushroom kingdom destination base option',
             '0',
-            destinationOption.value,
-            getPromptHandlerData(chooseBaseInteraction),
             dummyRandom,
-            3006,
         );
+        expect(step2.success, step2.error).toBe(true);
         const moveEvent = (step2.events ?? []).find((e: any) => e.type === SU_EVENTS.MINION_MOVED) as any;
         expect(moveEvent.payload.fromBaseIndex).toBe(0);
         expect(moveEvent.payload.toBaseIndex).toBe(1);

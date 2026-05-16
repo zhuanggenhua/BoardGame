@@ -21,19 +21,20 @@ import type { SmashUpCore, MinionOnBase, BaseInPlay, CardInstance, FactionId } f
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import {
-    callHandler,
     expectNoPrompt,
     getFirstPrompt,
     getPromptHandlerData,
     getPromptOption,
     getPromptOptions,
+    getPromptOptionsGenerator,
     getPromptSourceId,
     getPromptTargetType,
     getSimpleChoicePrompt,
     respondToPromptOption,
+    respondToPromptOptions,
     withOnlyCurrentPrompt,
 } from './helpers';
 import { buildAffectRecords } from '../domain/affect';
@@ -650,7 +651,6 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
-            const chooseActionInteraction = getSimpleChoicePrompt(result.matchState!, 'steampunk_mechanic');
             const step1 = respondToPromptOption(
                 result.matchState!,
                 option => option.value?.cardUid === 'dis-1',
@@ -677,6 +677,12 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 },
             } as any;
 
+            const liveOptions = getPromptOptionsGenerator(chooseTargetInteraction)?.(
+                withOnlyCurrentPrompt(blockedState, chooseTargetInteraction),
+                getPromptHandlerData(chooseTargetInteraction),
+            ) ?? [];
+            expect(liveOptions.some(option => option.value?.baseIndex === 0)).toBe(false);
+
             const resolved = respondToPromptOption(
                 withOnlyCurrentPrompt(blockedState, chooseTargetInteraction),
                 option => option.value?.baseIndex === 0,
@@ -684,10 +690,8 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 '0',
                 dummyRandom,
             );
-            expect(resolved.success, resolved.error).toBe(true);
-            const events = resolved.events;
-
-            expect(events).toHaveLength(0);
+            expect(resolved.success).toBe(false);
+            expect(resolved.error).toBe('无效的选择');
         });
 
         test('若所选行动不是可打到基地上的行动牌则不再恢复或打出', () => {
@@ -735,7 +739,6 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
-            const chooseActionInteraction = getSimpleChoicePrompt(result.matchState!, 'steampunk_mechanic');
             const step1 = respondToPromptOption(
                 result.matchState!,
                 option => option.value?.cardUid === 'dis-1',
@@ -770,7 +773,11 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(resolved.success, resolved.error).toBe(true);
             const events = resolved.events;
 
-            expect(events).toHaveLength(0);
+            expect(events.some(event => event.type === SU_EVENTS.ACTION_PLAYED)).toBe(false);
+            expect(events.some(event => event.type === SU_EVENTS.ONGOING_ATTACHED)).toBe(false);
+            expect(events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+            expect(resolved.finalState.core.bases[0].ongoingActions).toHaveLength(0);
+            expect(resolved.finalState.core.players['0'].hand).toHaveLength(0);
         });
     });
 
@@ -792,7 +799,6 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 state, matchState: ms, playerId: '0', cardUid: 'cov-1', defId: 'steampunk_change_of_venue',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
-            const chooseOngoingInteraction = getSimpleChoicePrompt(result.matchState!, 'steampunk_change_of_venue');
             const step1 = respondToPromptOption(
                 result.matchState!,
                 option => option.value?.cardUid === 'ongoing-1',
@@ -827,7 +833,11 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(resolved.success, resolved.error).toBe(true);
             const events = resolved.events;
 
-            expect(events).toHaveLength(0);
+            expect(events.some(event => event.type === SU_EVENTS.ACTION_PLAYED)).toBe(false);
+            expect(events.some(event => event.type === SU_EVENTS.ONGOING_ATTACHED)).toBe(false);
+            expect(events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+            expect(resolved.finalState.core.bases[0].ongoingActions).toHaveLength(0);
+            expect(resolved.finalState.core.players['0'].hand).toHaveLength(0);
         });
     });
 
@@ -1104,9 +1114,6 @@ describe('食人花 ongoing 能力', () => {
         });
 
         test('嫩芽交互在卡已离开牌库后不会再次打出同一 UID', () => {
-            const handler = getAbilityRuntimePromptHandler('killer_plant_sprout_search');
-            expect(handler).toBeDefined();
-
             const initialState = makeState([makeBase({
                 minions: [makeMinion({ defId: 'killer_plant_sprout', uid: 'sp-1', controller: '0', owner: '0' })],
             })]);
@@ -1132,18 +1139,20 @@ describe('食人花 ongoing 能力', () => {
             const prompt = getSimpleChoicePrompt(promptState, 'killer_plant_sprout_search');
             expect(getPromptSourceId(prompt)).toBe('killer_plant_sprout_search');
 
-            const events = handler!(
-                { ...promptState, core: staleState },
+            const resolved = respondToPromptOption(
+                withOnlyCurrentPrompt({ ...promptState, core: staleState } as any, prompt),
+                option => option.value?.cardUid === 'wl-1',
+                'killer plant sprout stale wl-1 option',
                 '0',
-                { cardUid: 'wl-1', defId: 'killer_plant_water_lily' },
-                getPromptHandlerData(prompt),
                 dummyRandom,
-                1000,
-            )?.events ?? [];
+            );
+            expect(resolved.success, resolved.error).toBe(true);
+            const events = resolved.events;
 
             expect(events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
-            expect(events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
-            expect(events.some(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
+            expect(events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+            expect(getPromptSourceId(getFirstPrompt(resolved.finalState))).toBe('killer_plant_sprout_search');
+            expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['wl-2']);
         });
 
     });
@@ -1197,9 +1206,6 @@ describe('食人花 ongoing 能力', () => {
         });
 
         test('venus man trap 交互响应会带上基地信息', () => {
-            const handler = getAbilityRuntimePromptHandler('killer_plant_venus_man_trap_search');
-            expect(handler).toBeDefined();
-
             const base = makeBase({ defId: 'base_crypt' });
             const state = makeState([base]);
             state.players['0'].deck = [
@@ -1224,14 +1230,15 @@ describe('食人花 ongoing 能力', () => {
             const prompt = getSimpleChoicePrompt(promptState, 'killer_plant_venus_man_trap_search');
             expect(getPromptSourceId(prompt)).toBe('killer_plant_venus_man_trap_search');
 
-            const events = handler!(
+            const resolved = respondToPromptOption(
                 promptState,
+                option => option.value?.cardUid === 'sp-1',
+                'venus man trap sp-1 option',
                 '0',
-                { cardUid: 'sp-1', defId: 'killer_plant_sprout' },
-                getPromptHandlerData(prompt),
                 dummyRandom,
-                1000,
-            )?.events ?? [];
+            );
+            expect(resolved.success, resolved.error).toBe(true);
+            const events = resolved.events;
 
             const playedEvent = events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
             expect(playedEvent).toBeDefined();
@@ -1241,9 +1248,6 @@ describe('食人花 ongoing 能力', () => {
         });
 
         test('venus man trap 交互目标已离开牌库时不会重复打出', () => {
-            const handler = getAbilityRuntimePromptHandler('killer_plant_venus_man_trap_search');
-            expect(handler).toBeDefined();
-
             const initialState = makeState([makeBase()]);
             initialState.players['0'].deck = [
                 makeCard('sp-1', 'killer_plant_sprout', 'minion', '0', SMASHUP_FACTION_IDS.KILLER_PLANTS),
@@ -1272,18 +1276,21 @@ describe('食人花 ongoing 能力', () => {
             const prompt = getSimpleChoicePrompt(promptState, 'killer_plant_venus_man_trap_search');
             expect(getPromptSourceId(prompt)).toBe('killer_plant_venus_man_trap_search');
 
-            const events = handler!(
-                { ...promptState, core: staleState },
+            const resolved = respondToPromptOption(
+                withOnlyCurrentPrompt({ ...promptState, core: staleState } as any, prompt),
+                option => option.value?.cardUid === 'sp-1',
+                'venus man trap stale sp-1 option',
                 '0',
-                { cardUid: 'sp-1', defId: 'killer_plant_sprout' },
-                getPromptHandlerData(prompt),
                 dummyRandom,
-                1000,
-            )?.events ?? [];
+            );
+            expect(resolved.success, resolved.error).toBe(true);
+            const events = resolved.events;
 
             expect(events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
-            expect(events.some(event => event.type === SU_EVENTS.DECK_REORDERED)).toBe(true);
-            expect(events.some(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
+            expect(events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+            expect(events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+            expect(getPromptSourceId(getFirstPrompt(resolved.finalState))).toBe('killer_plant_venus_man_trap_search');
+            expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['sp-2', 'wl-2']);
         });
     });
 
@@ -1415,14 +1422,17 @@ describe('印斯茅斯 ongoing 能力', () => {
             );
             expect(firstOption?.value?.baseIndex).toBe(0);
 
-            const handler = getInteractionHandler('innsmouth_return_to_the_sea');
-            expect(handler).toBeDefined();
-
-            const liveResult = handler!(result.matchState as any, '0', [firstOption.value], getPromptHandlerData(interaction), dummyRandom, 1001);
-            const liveEvents = liveResult?.events ?? [];
-            expect(liveEvents).toHaveLength(1);
-            expect(liveEvents[0].type).toBe(SU_EVENTS.MINION_RETURNED);
-            expect((liveEvents[0] as any).payload.fromBaseIndex).toBe(0);
+            const liveResult = respondToPromptOptions(
+                result.matchState!,
+                [firstOption.id],
+                '0',
+                dummyRandom,
+            );
+            expect(liveResult.success, liveResult.error).toBe(true);
+            const liveEvents = liveResult.events;
+            const returnedEvents = liveEvents.filter(event => event.type === SU_EVENTS.MINION_RETURNED);
+            expect(returnedEvents).toHaveLength(1);
+            expect((returnedEvents[0] as any).payload.fromBaseIndex).toBe(0);
 
             const staleState = makeState([makeBase({ minions: [otherMinion] })], {
                 players: {
@@ -1437,8 +1447,14 @@ describe('印斯茅斯 ongoing 能力', () => {
                 },
             });
             const staleMs = { core: staleState, sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } } } as any;
-            const staleResult = handler!(staleMs, '0', [firstOption.value], getPromptHandlerData(interaction), dummyRandom, 1002);
-            const staleEvents = staleResult?.events ?? [];
+            const staleResult = respondToPromptOptions(
+                withOnlyCurrentPrompt(staleMs, interaction),
+                [firstOption.id],
+                '0',
+                dummyRandom,
+            );
+            expect(staleResult.success, staleResult.error).toBe(true);
+            const staleEvents = staleResult.events;
             expect(staleEvents).toHaveLength(0);
         });
     });
@@ -1595,26 +1611,27 @@ describe('米斯卡塔尼克 新增能力', () => {
                 random: dummyRandom,
                 now: 1000,
             });
-            const current = getSimpleChoicePrompt(firstStep.matchState!, 'miskatonic_researcher_pod');
-
-            const step1 = getInteractionHandler('miskatonic_researcher_pod');
-            expect(step1).toBeDefined();
-            const step1Result = step1!(firstStep.matchState as any, '0', { draw: true }, getPromptHandlerData(current), dummyRandom, 1001);
-            const chooseMinion = getSimpleChoicePrompt(step1Result.state as any, 'miskatonic_researcher_pod_choose_minion');
+            const step1Result = respondToPromptOption(
+                firstStep.matchState!,
+                option => option.value?.draw === true,
+                'miskatonic researcher pod draw option',
+                '0',
+                dummyRandom,
+            );
+            expect(step1Result.success, step1Result.error).toBe(true);
+            const chooseMinion = getSimpleChoicePrompt(step1Result.finalState, 'miskatonic_researcher_pod_choose_minion');
             expect(chooseMinion).toBeDefined();
             expect(getPromptSourceId(chooseMinion)).toBe('miskatonic_researcher_pod_choose_minion');
 
-            const step2 = getInteractionHandler('miskatonic_researcher_pod_choose_minion');
-            expect(step2).toBeDefined();
-            const step2Result = step2!(
-                step1Result.state as any,
+            const step2Result = respondToPromptOption(
+                step1Result.finalState,
+                option => option.value?.minionUid === 'm-1' && option.value?.baseIndex === 0,
+                'miskatonic researcher pod target m-1 option',
                 '0',
-                { minionUid: 'm-1', baseIndex: 0 },
-                getPromptHandlerData(chooseMinion),
                 dummyRandom,
-                1002,
             );
-            const events = step2Result?.events ?? [];
+            expect(step2Result.success, step2Result.error).toBe(true);
+            const events = step2Result.events;
 
             expect(events.some(e => e.type === SU_EVENTS.MADNESS_DRAWN)).toBe(true);
             expect(events.some(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
@@ -1694,18 +1711,9 @@ describe('米斯卡塔尼克 新增能力', () => {
                 random: dummyRandom,
                 now: 1002,
             });
-            const current = getSimpleChoicePrompt(firstStep.matchState!, 'miskatonic_field_trip_pod');
-            const handler = getInteractionHandler('miskatonic_field_trip_pod');
-            expect(handler).toBeDefined();
-
-            const events = callHandler(handler!, {
-                state: firstStep.matchState?.core ?? state,
-                playerId: '0',
-                selectedValue: { skip: true },
-                data: getPromptHandlerData(current),
-                random: dummyRandom,
-                now: 1003,
-            });
+            const resolved = respondToPromptOptions(firstStep.matchState!, [], '0', dummyRandom);
+            expect(resolved.success, resolved.error).toBe(true);
+            const events = resolved.events;
             const drawEvt = events.find(e => e.type === SU_EVENTS.CARDS_DRAWN) as any;
             expect(drawEvt).toBeDefined();
             expect(drawEvt.payload?.count).toBe(1);
@@ -1730,19 +1738,15 @@ describe('米斯卡塔尼克 新增能力', () => {
                 random: dummyRandom,
                 now: 1004,
             });
-            const current = getFirstPrompt(firstStep.matchState as any);
-            const handler = getInteractionHandler('miskatonic_things_best_not_known_pod_draw');
-            expect(handler).toBeDefined();
-
-            const result = handler!(
-                (firstStep.matchState ?? matchState) as any,
+            const result = respondToPromptOption(
+                firstStep.matchState!,
+                option => option.value?.count === 2,
+                'miskatonic things best not known draw 2 option',
                 '0',
-                { count: 2 },
-                getPromptHandlerData(current),
                 dummyRandom,
-                1004,
             );
-            const events = result?.events ?? [];
+            expect(result.success, result.error).toBe(true);
+            const events = result.events;
 
             expect(events.some(e => e.type === SU_EVENTS.MADNESS_DRAWN)).toBe(true);
             expect(events.some(e => e.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(true);
@@ -1782,31 +1786,27 @@ describe('米斯卡塔尼克 新增能力', () => {
                 random: dummyRandom,
                 now: 1005,
             });
-            const current = getSimpleChoicePrompt(firstStep.matchState!, 'miskatonic_librarian_pod');
-            const modeHandler = getInteractionHandler('miskatonic_librarian_pod');
-            expect(modeHandler).toBeDefined();
-            const modeResult = modeHandler!(
-                firstStep.matchState as any,
+            const modeResult = respondToPromptOption(
+                firstStep.matchState!,
+                option => option.value?.mode === 'extra',
+                'miskatonic librarian pod extra option',
                 '0',
-                { mode: 'extra' },
-                getPromptHandlerData(current),
                 dummyRandom,
-                1005,
             );
-            const chooseMadness = getSimpleChoicePrompt(modeResult.state as any, 'miskatonic_librarian_pod_play_madness');
+            expect(modeResult.success, modeResult.error).toBe(true);
+            const chooseMadness = getSimpleChoicePrompt(modeResult.finalState, 'miskatonic_librarian_pod_play_madness');
             expect(chooseMadness).toBeDefined();
             expect(getPromptSourceId(chooseMadness)).toBe('miskatonic_librarian_pod_play_madness');
 
-            const playMadnessHandler = getInteractionHandler('miskatonic_librarian_pod_play_madness');
-            expect(playMadnessHandler).toBeDefined();
-            const events = callHandler(playMadnessHandler!, {
-                state: modeResult.state?.core ?? state,
-                playerId: '0',
-                selectedValue: { cardUid: 'mad1' },
-                data: getPromptHandlerData(chooseMadness),
-                random: dummyRandom,
-                now: 1006,
-            });
+            const resolved = respondToPromptOption(
+                modeResult.finalState,
+                option => option.value?.cardUid === 'mad1',
+                'miskatonic librarian pod madness mad1 option',
+                '0',
+                dummyRandom,
+            );
+            expect(resolved.success, resolved.error).toBe(true);
+            const events = resolved.events;
 
             const actionPlayed = events.find(e => e.type === SU_EVENTS.ACTION_PLAYED) as any;
             expect(actionPlayed).toBeDefined();

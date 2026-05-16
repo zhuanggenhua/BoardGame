@@ -16,25 +16,23 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import {
     getPromptSourceId,
+    getSimpleChoicePrompt,
     getPromptsBySourceId,
     makeBase,
-    makeMatchState,
     makeMinion,
     makePlayer,
     makeState,
+    respondToPromptOption,
+    triggerBaseAbilityWithMS,
 } from './helpers';
 import { initAllAbilities } from '../abilities';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { defaultTestRandom } from './testRunner';
-import { processDestroyMoveCycle } from '../domain/reducer';
-import type { SmashUpEvent } from '../domain/types';
 
 describe('Bug: Igor 在 base_rlyeh 被消灭时触发两次', () => {
     beforeAll(() => {
         initAllAbilities();
     });
 
-    it('base_rlyeh handler 产生 MINION_DESTROYED → processDestroyMoveCycle → Igor onDestroy 只触发一次', () => {
+    it('base_rlyeh 真实响应链下，选择消灭 Igor 后 onDestroy 只触发一次', () => {
         // 初始状态：base_rlyeh 上有 Igor + 其他随从
         const core = makeState({
             players: {
@@ -49,45 +47,30 @@ describe('Bug: Igor 在 base_rlyeh 被消灭时触发两次', () => {
                 ]),
             ],
         });
-        
-        const ms = makeMatchState(core);
-        
-        // 第一步：调用 base_rlyeh interaction handler（模拟玩家选择消灭 Igor）
-        const handler = getInteractionHandler('base_rlyeh');
-        expect(handler).toBeDefined();
-        
-        const handlerResult = handler!(
-            ms,
-            '0',
-            { minionUid: 'igor1', baseIndex: 0 },
-            { sourceId: 'base_rlyeh' },
-            defaultTestRandom,
-            1000
+
+        const trigger = triggerBaseAbilityWithMS('base_rlyeh', 'onTurnStart', {
+            state: core,
+            playerId: '0',
+            baseIndex: 0,
+            baseDefId: 'base_rlyeh',
+        } as any);
+        const rlyehPrompt = getSimpleChoicePrompt(trigger.matchState!, 'base_rlyeh');
+        expect(rlyehPrompt).toBeDefined();
+
+        const afterChooseIgor = respondToPromptOption(
+            trigger.matchState!,
+            option => option.value?.minionUid === 'igor1',
+            'Rlyeh choose Igor option',
         );
-        
-        console.log('Handler result events:', handlerResult.events.map((e: any) => e.type));
-        
-        // 第二步：调用 processDestroyMoveCycle（模拟 SmashUpEventSystem.afterEvents）
-        const afterDestroyMove = processDestroyMoveCycle(
-            handlerResult.events as SmashUpEvent[],
-            handlerResult.matchState ?? ms,
-            '0',
-            defaultTestRandom,
-            1000
-        );
-        
-        // 检查：应该只有一个 Igor 交互（onDestroy）
-        const igorInteractions = getPromptsBySourceId(afterDestroyMove.matchState!, 'frankenstein_igor');
-        
-        console.log('Igor interactions:', igorInteractions.map(i => ({
+        expect(afterChooseIgor.success, afterChooseIgor.error).toBe(true);
+
+        const igorInteractions = getPromptsBySourceId(afterChooseIgor.finalState, 'frankenstein_igor');
+
+        expect(igorInteractions.map(i => ({
             id: i.id,
             sourceId: getPromptSourceId(i),
             playerId: i.playerId,
-        })));
-        
-        console.log('Igor interactions:', igorInteractions.length);
-        
-        // ❌ Bug: 这里会失败，因为 Igor 触发了两次
+        }))).toHaveLength(1);
         expect(igorInteractions.length).toBe(1);
     });
 });

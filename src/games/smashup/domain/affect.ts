@@ -3,7 +3,6 @@ import type { AffectType } from './ongoingEffects';
 import type {
     AttachedActionOnMinion,
     BaseAbilitySuppressedEvent,
-    BaseInPlay,
     CardSuppressedEvent,
     CardToDeckBottomEvent,
     CardToDeckTopEvent,
@@ -257,8 +256,12 @@ export function buildAffectRecords(
             const payload = (event as MinionControlChangedEvent).payload;
             const minion = core.bases[payload.baseIndex]?.minions.find(candidate => candidate.uid === payload.minionUid);
             if (!minion) return [];
+            const affectedMinion: MinionOnBase = {
+                ...minion,
+                controller: payload.toControllerId,
+            };
             return [buildMinionAffectRecord(
-                minion,
+                affectedMinion,
                 payload.baseIndex,
                 'control_change',
                 payload.reason,

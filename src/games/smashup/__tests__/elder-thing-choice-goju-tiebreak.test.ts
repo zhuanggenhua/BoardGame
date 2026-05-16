@@ -14,9 +14,9 @@ import type { AbilityContext } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry, triggerBaseAbility } from '../domain/baseAbilities';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
-import { getFirstPrompt, getPromptHandlerData, getPromptSourceId, resolvePromptViaRegisteredHandler, withoutCurrentPrompt } from './helpers';
+import { getFirstPrompt, getPromptHandlerData, getPromptSourceId, resolvePromptViaRegisteredHandler, respondToPromptOption, withoutCurrentPrompt } from './helpers';
 
 function makeMinion(uid: string, defId: string, controller: string, power: number, overrides: Partial<MinionOnBase> = {}): MinionOnBase {
     return {
@@ -290,9 +290,21 @@ describe('刚柔流寺庙：力量并列最高时拥有者选择', () => {
         const state = makeState({ bases: [base] });
         const ms = { core: state, sys: { phase: 'scoring', interaction: { current: undefined, queue: [] } } } as any;
 
-        const handler = getInteractionHandler('base_temple_of_goju_tiebreak')!;
-        const iData = { continuationContext: { baseIndex: 0, remainingPlayers: [] } };
-        const result = handler(ms, '0', { minionUid: 'm-2', baseIndex: 0, defId: 'test_b' }, iData, dummyRandom, 2)!;
+        const triggered = triggerBaseAbility('base_temple_of_goju', 'afterScoring', {
+            state, matchState: ms, playerId: '0', baseIndex: 0, now: 1,
+        });
+        const interaction = getFirstPrompt(triggered.matchState!);
+        expect(interaction).toBeDefined();
+        expect(getPromptSourceId(interaction)).toBe('base_temple_of_goju_tiebreak');
+
+        const result = respondToPromptOption(
+            triggered.matchState!,
+            option => option.value?.minionUid === 'm-2',
+            'Temple of Goju tie-break choose m-2',
+            undefined,
+            dummyRandom,
+        );
+        expect(result.success, result.error).toBe(true);
 
         const deckBottomEvents = result.events.filter((e: any) => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
         expect(deckBottomEvents).toHaveLength(1);

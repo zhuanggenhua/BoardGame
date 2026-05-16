@@ -3,20 +3,17 @@ import type { RandomFn } from '../../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry, resolveAbility } from '../../domain/abilityRegistry';
 import type { AbilityContext } from '../../domain/abilityRegistry';
-import { getInteractionHandler } from '../../domain/abilityInteractionHandlers';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import { reduce } from '../../domain/reducer';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../../domain/scoringSession';
-import { startSmashUpReactionSession } from '../../domain/reactionSession';
+import { resolveSmashUpReactionChoice, startSmashUpReactionSession } from '../../domain/reactionSession';
 import type { MinionMovedEvent } from '../../domain/types';
 import { SU_EVENTS } from '../../domain/types';
 import {
     getOptionalSimpleChoicePrompt,
-    getPromptHandlerData,
-    getPromptOption,
     getPromptOptions,
     getPromptSourceId,
     getSimpleChoicePrompt,
@@ -270,31 +267,25 @@ describe('pirate_first_mate afterScoring', () => {
         );
         matchState.sys.responseWindow = { ...(matchState.sys.responseWindow ?? {}), current: undefined } as any;
 
-        const reactionHandler = getInteractionHandler('smashup_reaction_choose');
-        const resolvedTrigger = reactionHandler!(
+        const resolvedTrigger = resolveSmashUpReactionChoice(
             matchState,
-            '0',
-            { kind: 'trigger', triggerId: trigger!.id },
-            undefined,
             dummyRandom,
             102,
+            { kind: 'trigger', triggerId: trigger!.id },
         );
-        const prompt = getOptionalSimpleChoicePrompt(resolvedTrigger!.state, 'pirate_first_mate_choose_base');
+        const prompt = getOptionalSimpleChoicePrompt(resolvedTrigger.state, 'pirate_first_mate_choose_base');
         let moveEvents: MinionMovedEvent[];
         if (prompt) {
-            const targetOption = getPromptOption(prompt, option => option.value?.baseIndex === 2);
-            const mateHandler = getInteractionHandler('pirate_first_mate_choose_base');
-            const finished = mateHandler!(
-                resolvedTrigger!.state,
+            const finished = respondToPromptOption(
+                resolvedTrigger.state,
+                option => option.value?.baseIndex === 2,
+                'First Mate choose-base option',
                 '0',
-                targetOption.value,
-                getPromptHandlerData(prompt),
                 dummyRandom,
-                103,
             );
-            moveEvents = finished!.events.filter(event => event.type === SU_EVENTS.MINION_MOVED) as MinionMovedEvent[];
+            moveEvents = finished.events.filter(event => event.type === SU_EVENTS.MINION_MOVED) as MinionMovedEvent[];
         } else {
-            moveEvents = resolvedTrigger!.events.filter(event => event.type === SU_EVENTS.MINION_MOVED) as MinionMovedEvent[];
+            moveEvents = resolvedTrigger.events.filter(event => event.type === SU_EVENTS.MINION_MOVED) as MinionMovedEvent[];
         }
 
         expect(moveEvents).toHaveLength(1);
@@ -449,10 +440,6 @@ describe('pirate_buccaneer onMinionDestroyed', () => {
         expect(result.events).toEqual([]);
         const prompt = getSimpleChoicePrompt(result.matchState!, 'pirate_buccaneer_move');
         expect(getPromptSourceId(prompt)).toBe('pirate_buccaneer_move');
-    });
-
-    it('交互处理函数已注册', () => {
-        expect(getInteractionHandler('pirate_buccaneer_move')).toBeDefined();
     });
 
     it('MINION_MOVED reducer 正确移动 Buccaneer', () => {

@@ -2,6 +2,17 @@
 
 ## 已确认事实
 
+- `ninja_hidden_ninja consumesNormalLimit` 这条红灯再次证明：fake prompt 夹具不是“更快的 seam”，而是另一套不受系统合同保护的伪实现。`SimpleChoiceSystem` 现在依赖 runtime prompt 上的 `availableOptions` 语义，手工塞一个只带 `options` / `data.sourceId` 的 current prompt，会在 `respondToPrompt(...)` 时直接炸在系统层。对这类业务交互，最稳的入口仍是能力 executor / 真实命令链产出的 prompt。
+- `trickster_brownie` 和 Hill 这两条一起说明，`control_change` 类 affect 没有单一“永远正确”的 controller 口径：Hill 需要看到变更后的 `toControllerId` 才能判断“现在由谁控制”；Brownie 在“被对手卡牌影响”这个语义上又需要知道受害方是谁，因此 `control_change` 分支应优先消费原始事件里的 `fromControllerId`。正确做法不是回滚全局 affect 修复，而是让具体能力在需要时读取 `affectEvent`。
+- 本地测试 helper 也要对齐真实 reducer。`triggerBrownieFromEvent(...)` 之前只把 `buildAffectRecords(...)` 的结果直接灌进 `fireTriggers(...)`，漏掉了 reducer 实际会传的 `affectEvent` 与 `affectBatchTargets`，导致测试无法覆盖到基于原始影响事件的 trigger 语义。这类 helper 如果比生产链少半截上下文，就会把“实现红灯”和“测试夹具失真”混在一起。
+- `bear_cavalry_bear_rides_you_pod_choose_base` 可以完全走公开行为链：`PLAY_ACTION` 已经会产出选随从 prompt，响应后真实进入选基地 prompt，再响应后真实进入 `choose_suppress`。这说明这条旧 `getInteractionHandler(...)` 并不是系统合同，而只是历史上为了方便断言候选列表留下的直调 seam。
+- `abilities/bear-cavalry.test.ts` 剩下的两条 `bear_cavalry_superiority_pod_talent` 更像低层合同：它们锁的是 runtime prompt 解析后的 `protect/draw` 分支如何写 metadata 与产出抽牌，而不是普通用户链。和 `bear_rides_you_pod_choose_base` 不同，这两条不值得为了“继续降命中数”硬迁。
+- `smashup.smoke.test.ts` 的 `major_ursa` 迁移证明普通业务三段链可以完全收回 prompt facade：`USE_TALENT` 先产出 `choose_destination`，选基地后真实进入 `smashup_reaction_choose`，响应后继续出现 `choose_minion`，最后再出现 `choose_base`。这条链不需要再靠 handler 直调和 continuationContext 手填来“补齐”。
+- 这也说明 `respondToPromptOption(...)` 的 `finalState` 是当前测试 seam 的权威入口；只要实现没坏，测试不应再自己调用 `postProcessSystemEvents(...)` 或手工接管 prompt 队列。
+- `pirates-ongoing.test.ts` 里“已取得触发资格后，即使先被其他 afterScoring 效果移走，仍可继续结算自己的移动”这一类场景，不属于“当前已经有 prompt 的普通 UI 链”，而是显式在测 afterScoring reaction session 的恢复与继续结算。这里用 `resolveSmashUpReactionChoice(...)` 比用 `getInteractionHandler('smashup_reaction_choose')` 更合适，因为它锁的是 reaction session 语义，不是 handler registry 出口。
+- `smashup.smoke.test.ts` 里 Hill give-minion -> counter 这条链暴露出一个真实实现问题，而不只是测试 seam 问题：旧测试手工 `resolveAffectedMinions(...)` 会把 `onMinionAffected` trigger 再排一次队，掩盖了真实命令链第一次消费 trigger 时其实拿到的是“控制权变更前”的随从快照。
+- `MINION_CONTROL_CHANGED` 的 affect 记录如果直接从变更前 `core` 取 `triggerMinion`，像 `ignobles_the_hill_that_strolls` 这种要求“现在由别人控制、但仍归你所有”的 `onMinionAffected(control_change)` 会被错误短路。这里真正该固化的合同是：`control_change` 类 affect trigger 看到的控制者必须是 `toControllerId`，否则公开行为测试只能继续靠手工补状态兜底。
+- 对这类真实反应链测试，`respondToPromptOption(...)` 的 `finalState` 已经包含后处理、trigger queue 与 reaction prompt。测试再自己 `resolveAffectedMinions(...)` / `maybeResolveReactionQueue(...)`，不是“更完整”，而是在重新实现一遍 pipeline，极易制造重复 trigger 或错过真实实现 bug。
 - 用户质疑“这么快，还是只改表象”成立为质量风险：仅拆文件名不能解决“重构实现就要跟着改测试”的根因。
 - 2026-05-16 13:48 复核：`ninja-hidden-ninja-interaction-bug.test.ts` 的价值不在删掉 `it.skip`，而在把旧复现恢复成真实命令入口。测试通过 `PLAY_ACTION` 进入 Me First! 响应窗口，断言业务 prompt 和候选手牌随从，而不是继续读 `sys.interaction.current`。
 - `wizard-archmage-zombie-interaction.test.ts` 进一步证明 skip 恢复不能只“取消 skip”：旧文件的 `autoRespond` 和 console 输出本身没有稳定测试价值；恢复后的不变量是“僵尸行动卡额外打出的弃牌堆大法师仍触发 onMinionPlayed 后处理，并给出额外行动”。这类断言能覆盖真实行为，且不会绑定 InteractionSystem 外壳。
@@ -26,6 +37,8 @@
 
 ## 本轮结论
 
+- `baseFactionOngoing.test.ts` 这轮不是只把一条定点红灯改绿，而是把两层 seam 都收正了：`ninja_hidden_ninja` 改回真实 special executor，Brownie helper 改回真实 reducer 触发形状；因此整文件 81 条现在一起通过，说明不是“改了一个假 prompt 又留下别的伪入口”。
+- `bear_cavalry.test.ts` 已继续减少 1 条普通业务 direct handler 命中；全仓 `getInteractionHandler` / `getAbilityRuntimePromptHandler` 统计从 `44` 降到 `43`。留下来的 `superiority_pod_talent`、`temple-firstmate-afterscore`、`titan_penguins_emperor_penguin_play` 更像应显式保留或谨慎审视的低层合同，而不是同类业务链债务。
 - Skeletons 迁移不是表象整理：新文件 19 个用例全部通过，并且没有禁用模式或裸内部交互访问。
 - `newFactionAbilities.test.ts` 已进一步收缩；当前旧大文件只剩 Samurai 与巨蚁相关测试债务。
 - `npm run test:structure` 已证明本轮新增/迁出文件符合结构门禁；旧大文件债务仍按 warning 保留，后续迁出时继续消化。
@@ -2470,3 +2483,109 @@
 - 改成 `runCommand(PLAY_ACTION)` + `respondToPromptOption` 后，测试仍覆盖同一个用户可见不变量：Big Gulp 消灭 Igor 后，只出现一个 Igor onDestroy prompt。底层 destroy cycle 是否仍叫 `processDestroyMoveCycle` 不再影响测试体。
 - 历史 bug 文件里的 `console.log` 不是证据；能用 prompt facade 和最终 prompt 数量断言表达时，应删掉调试输出，避免把排障痕迹当长期测试接口。
 - 低层后处理函数仍需要合同测试，但应集中在像 `reactionQueueOrdering.test.ts` 这类明确验证 frame/source 的文件，而不是散落在业务 bug 复现里。
+
+## 2026-05-16 18:47 补充发现：live 响应下“无事发生”有两种完全不同的语义
+
+- `expansionOngoing.test.ts` 暴露出一个之前容易混淆的点：从 direct handler 迁到 `SYS_INTERACTION_RESPOND` 后，`events.length === 0` 不再稳定等价于“业务上什么都没发生”。命令链至少可能产出 `SYS_INTERACTION_RESOLVED`，而 live 校验还可能在进入 runtime handler 之前就直接拒绝响应。
+- 具体分层应拆成两类：
+  - `live` 刷新后该选项已经失效：应断言 `optionsGenerator` 刷新结果不再包含该 option，随后 `respondToPromptOption(...)` 返回 `success=false` / `无效的选择`。`steampunk_mechanic_target` 被 `ornate_dome` 封锁就是这种情况。
+  - 该 option 仍可点击，但 runtime 恢复阶段发现权威状态已变化：应断言响应成功收口，但不会产生业务事件，且最终权威状态未发生目标变化。`steampunk_mechanic_target` / `steampunk_change_of_venue_choose_base` 的“手牌已空”就是这种情况。
+- 这意味着后续治理不能机械把旧 handler 测试里的 `expect(events).toHaveLength(0)` 平移过来；需要先判断失效发生在“响应前的 live 候选重验”还是“响应后的 runtime 业务检查”。
+- 对业务测试而言，更稳的断言落点是“关键业务事件是否出现”和 `finalState.core` 是否变化，而不是总事件数组长度。总长度会被系统事件污染，继续拿它做断言只会把新管线的合理行为误判成回归。
+- `killer_plant_venus_man_trap_search` 的成功路径进一步证明：一旦测试目标只是“玩家从 prompt 里选一张牌后发生什么”，即便它是 runtime prompt，也应该直接走 `respondToPromptOption(...)`。测试只关心 `MINION_PLAYED` 的业务载荷，不该知道 `getAbilityRuntimePromptHandler(...)` 的存在。
+
+## 2026-05-16 19:06 补充发现：最终状态断言比手动 applyEvents 更接近真实合同
+
+- `miskatonic_mandatory_reading_draw` 原先两条测试用 `getInteractionHandler(...)` 取事件，再手动 `applyEvents(state, result.events)` 验证结果。这实际上把“handler 只吐事件、调用方再 reduce”也写进了测试合同。
+- 改成 `respondToPromptOption(...)` 后，测试可以直接看 `result.finalState.core`。这更接近真实用户响应后的权威状态，也减少未来 reducer / pipeline 分工调整时的连锁改测成本。
+- “选择跳过” 这类命令链测试不应继续断言 `events.length === 0`。更稳的表达是“不产生目标业务事件”，例如这里明确断言没有 `MADNESS_DRAWN` 与 `PERMANENT_POWER_ADDED`，从而避开 `SYS_INTERACTION_RESOLVED` 一类系统事件噪音。
+- `madnessAbilities.test.ts` 这一批迁完后，文件内剩余 low-level 入口已经更清晰：`miskatonic_those_meddling_kids_pod_mode` 是 off-phase immediate 合同，`responseValidationMode` 是 live prompt contract；`miskatonic_mandatory_reading_draw` 不再伪装成 handler-level 测试。
+
+## 2026-05-16 21:26 补充发现：半迁移残留比旧直调更危险
+
+- `madnessAbilities.test.ts` 这次红灯证明，“已经把主要逻辑改成 prompt 响应，但还留着两行 `getInteractionHandler(...)` 断言”是比纯旧测试更差的状态：它让测试看起来像在走真实链，实际却同时绑定两套 seam，一旦 import 被清掉就直接 ReferenceError。
+- 这类残留必须尽快收成单一入口。对 `miskatonic_those_meddling_kids_pod_mode` 来说，真正要保留的是“off-phase 额外行动仍标成 `immediate`”这个合同，不是“注册表里有个同名 handler 变量”。
+- `base_nine_lives_intercept` 的三条旧测试进一步说明：即使交互本身来自 replacement/保护链，只要玩家最终看到的是业务 prompt，就仍然应该通过“触发真实销毁 -> 产出 prompt -> 响应 prompt”表达。直接敲 handler 会把 continuationContext、位置参数和事件外壳一起锁进测试。
+- “目标随从已失效时不应再移动旧目标” 这种 stale 场景也不需要保留直调。更稳的做法是先走真实 destroy 链拿到 prompt，再替换响应时的 `core` 去模拟目标失效；这样锁住的是“响应时二次校验必须阻止旧目标复活”，不是 handler 的裸输入形状。
+- 这批收口后，全仓 `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 命中从 `42` 降到 `38`。下降本身不是目标，但它说明剩余项更集中在明确的系统合同、注册表合同和 stale/baseDefId 合同，而不是业务链测试伪装成低层测试。
+
+## 2026-05-16 19:16 补充发现：多选 prompt 也应直接表达为 optionIds 响应
+
+- `cthulhu_recruit_by_force` 与 `cthulhu_it_begins_again` 的旧测试把“多选 prompt -> 传 value 数组给 handler”当成合同，这会把选项值形状和 handler 参数顺序一起锁死。
+- 对业务测试来说，更稳的接口是：先从真实 prompt 里拿到候选 option ids，再用 `respondToPromptOptions(...)` 响应。这样测试表达的是“玩家勾选了这些可见选项”，不是“内部 handler 期望什么 value 数组”。
+- 这类用例的“跳过”也不该再靠 direct handler 传空数组推断，而应显式走 `respondToPromptOptions(state, [])`。这样才能覆盖真实命令链里 min=0、多选收口、系统事件附带等行为。
+
+## 2026-05-16 19:17 补充发现：链式基地能力与行动卡链没有本质区别
+
+- `base_mushroom_kingdom_pod` 这条链说明：基地能力产生的 prompt，和行动卡/随从能力产生的 prompt，在测试 seam 上不应区别对待。只要用户真的能看到 prompt，就应该优先走 `respondToPromptOption(...)`，而不是因为它来自 base ability 就保留 direct handler。
+- 同一个文件里残留的未使用 helper、草稿命令数组和未使用 import，也会掩盖真实剩余债务。顺手清掉这些死代码，有助于后续判断“还有哪些 direct handler 是真的必须保留的”。
+
+## 2026-05-16 19:21 补充发现：命令链测试要按业务事件断言，不能假定事件数组只剩业务事件
+
+- `trickster_pixie_pod` 迁到 `respondToPromptOption(s)` 后，测试第一次红灯不是行为错，而是旧断言继续假设 `events` 数组只包含 `POWER_COUNTER_ADDED` / `ONGOING_DETACHED`。真实命令链会附带 `SYS_INTERACTION_RESOLVED`。
+- 这再次证明：对业务测试而言，正确断言应该是“数组包含目标业务事件”或直接看 `finalState.core`，而不是 `toEqual([唯一业务事件])`。否则每次把 direct handler 换回命令链，测试都会因为系统事件噪音假红。
+- `trickster_hideout_pod_swap` 也说明单选 prompt 不需要知道 value 结构如何喂给 handler。测试只要表达“玩家在 swap prompt 里选了 hand/deck 的哪张卡”，其余由 facade 承担。
+
+## 2026-05-16 19:29 补充发现：要断言响应后的最终状态，入口也必须是完整 matchState
+
+- `madnessPromptAbilities.test.ts` 的 `cthulhu_madness_unleashed` “跳过”用例第一次改完后红灯，不是业务错，而是还在用 `execPlayAction(...)` 这类“只适合拿事件”的入口，随后却拿响应结果去断言 `finalState.core`。
+- 这说明测试接口分层不只体现在“怎么 respond prompt”，还体现在“从哪个入口拿 state”。只要测试目标是玩家响应后的权威最终状态，就应从 `execPlayActionWithMatch(...)`、`runCommand(...)` 这类保留完整 matchState 的入口开始。
+- `miskatonic_book_of_iter_the_unseen` 也再次证明：普通业务测试不应该保留“handler 返回事件，再由测试手动 applyEvents”的合同。改成真实 prompt 响应后，测试直接看 `resolve.finalState.core`，更接近真实调用方职责。
+- `miskatonic_thing_on_the_doorstep` 的并列最高力量场景说明，哪怕是 special 触发出来的 prompt，只要用户能看到并点击，就应优先走 `getFirstPrompt` / `getPromptOptions` / `respondToPromptOption(...)`；不需要继续裸读 `sys.interaction` 或直调 handler。
+
+## 2026-05-16 19:36 补充发现：一个文件里也要把“普通业务链”和“低层例外”分开治理
+
+- `expansionBaseAbilities.test.ts` 很适合当样本：同一个文件里同时存在两类 direct handler。
+  - `base_mermaid_pool`、`base_ossuary`、`base_arena`、`base_the_asylum`、`base_miskatonic_university_base` 这类“已有真实 prompt、用户只是点选项”的测试，应该迁到 `respondToPromptOption(...)`。
+  - `base_land_of_balance` / `base_sheep_shrine` / `base_the_pasture` 的 stale 回归，以及 `smashup_reaction_choose` 的 queued reaction 测试，则仍然在验证“旧 prompt + 新 core”或 reaction/session 合同，不能机械一刀切。
+- 同一文件里混着两类入口时，最好按“是否存在真实可点击 prompt”和“测试标题是否在锁 stale/reaction/baseDefId/frame/source 合同”来拆，而不是按文件名整体判断要不要命令链化。
+- `base_arena` 与 `base_miskatonic_university_base` 的红灯再次证明：从 direct handler 迁到命令链后，原先的 `events.length === 1/2` 和固定事件下标几乎都会失效。更稳的写法是按业务事件类型 `find/filter`，因为 `SYS_INTERACTION_RESOLVED` 这类系统事件属于正常副产物。
+- `base_the_asylum` 的两段链说明，多段 prompt 也不该继续用“先拿 option.value，再手动调下一层 handler”的方式写。更稳的合同是“第一次点击哪个可见手牌选项，第二次点击哪个可见随从选项”，最后直接看 `finalState.core` 与关键业务事件。
+
+## 2026-05-16 19:44 补充发现：同一份 stale 回归也可以继续复用真实 respond 语义
+
+- `interactionChainE2E.test.ts` 的熊骑兵 4 条 stale 回归说明，哪怕测试框架是 `GameTestRunner` 本地 `respond(...)`，也仍然可以沿用“旧 prompt + 新 core + 真实响应命令”的治理口径，不需要回退到 direct handler。
+- 这里暴露出的关键差异不是业务语义，而是 helper 返回形状：`GameTestRunner` 的 `run(...)` 结果要看 `steps[0]?.success` 与 `finalState`，不能把别处 `respondToPromptOption(...)` 的 `success/events/finalState` 直返结构照搬过来。
+- 这意味着后续迁 stale 回归时，要先分清“测试语义层”与“测试 runner 结果层”。语义层统一走真实 prompt respond；结果层按文件现有 runner 断言，不要为了统一外观再造一套多余桥接。
+
+## 2026-05-16 19:49 补充发现：stale 回归不等于必须保留 direct handler
+
+- `expansionBaseAbilities.test.ts` 的 `base_land_of_balance`、`base_sheep_shrine`、`base_the_pasture`、`base_innsmouth_base_choose_card`、`base_cat_fanciers_alley`、`base_inventors_salon` 再次证明：只要用户真实会看到旧 prompt，再响应时只是权威 core 已变化，这类 stale 回归就应该优先写成 `withOnlyCurrentPrompt(makeMatchState(staleCore), oldPrompt)` + `respondToPromptOption(...)`。
+- direct handler 只应该留给两类场景：没有可见 prompt 的低层 session/registry 合同，或者像 `base_greenhouse` 这样明确在锁 scoring-session / replacement follow-up / deferred action 写入位置的合同。把普通 stale 也留在 direct handler，只会继续把 handler 参数顺序、`getPromptHandlerData`、时间戳和随机源写死在测试体里。
+- 这一批还进一步确认：命令链版 stale 回归不该再说 `events.length === 0`。正确口径是“响应成功，但目标业务事件没有发生”。这样既保留 stale 不变量，也不会把 `SYS_INTERACTION_RESOLVED` 之类系统事件误报成失败。
+
+## 2026-05-16 19:52 补充发现：冒烟测试里的普通 titan prompt 也不该例外
+
+- `smashup.smoke.test.ts` 的 `titan_sphinx_start_turn`、`titan_sphinx_after_scoring`、`titan_sphinx_talent` 原先虽然在“冒烟测试”里，但本质上仍是普通业务 prompt：真实 trigger 已经创建 prompt，用户只是点一张卡。把这类用例继续写成 `getInteractionHandler(...)` + `getPromptHandlerData(...)` + 手动 reduce，只是在冒烟文件里重复锁死内部执行分工。
+- 改成 `respondToPromptOption(...)` 后，断言直接落到 `finalState.core`，说明“冒烟测试”与“能力专项测试”在 seam 选择上不该双标。只要测试目标是用户点击 prompt 后的权威状态，就应优先走真实响应命令。
+- 当前全仓剩余 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 还有 76 条，但成分已经比前几轮更纯：一部分是注册表/系统合同，一部分是 `smashup.smoke.test.ts` 这类还未分簇的 titan 业务链。下一轮继续推进时，优先拿“已有真实 prompt、只差一步点击”的小簇，而不是先去碰明显的 registry/session 合同。
+
+## 2026-05-16 20:06 补充发现：有些 prompt 响应的关键合同不在 events，而在 finalState.core
+
+- `titan_pirates_the_kraken_talent` 暴露出一个更细的分层点：prompt handler 不只会返回业务事件，还可能同步写入 `state.core` 里的元状态。这条能力在响应时除了发出 `PERMANENT_POWER_ADDED`，还会通过 `schedulePowerModifierUntilNextTurnStart(...)` 把 `timedPowerModifiers` 写进 core。
+- 因此，像 Kraken 这种“当前先加减力量，未来某个 `TURN_STARTED` 再回退”的能力，如果测试只做 `afterCommand + response.events.reduce(...)`，会看到当下 debuff 生效，但会丢失未来回退所需的元状态，随后误判成“不会恢复”。
+- 可复用口径应是：
+  - 若 prompt 响应只吐业务事件、不写额外状态元数据，可以继续根据需要用 `afterCommand + response.events.reduce(...)` 或 `resolved.finalState.core`。
+  - 若 prompt 响应还会写 `timedPowerModifiers`、queued reaction bookkeeping、session / replacement metadata 等状态元数据，测试必须优先以 `resolved.finalState.core` 作为权威后态，再做后续事件推进验证。
+- `titan_kaiju_gorgodzolla_draw` 也再次证明，回到真实 `respond` 命令后，系统层事件 `SYS_INTERACTION_RESOLVED` 会自然进入事件流。业务测试不应再假设“响应事件数组只包含业务事件”，而应改成“包含关键业务事件 + 最终权威状态正确”。
+- 这一轮把 `Mergacon play/talent` 一并收掉后，全仓 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 命中从 72 降到 66，说明 `smashup.smoke.test.ts` 里仍有不少“普通 prompt 冒烟用例”可继续按同样思路收敛。
+
+## 2026-05-16 20:13 补充发现：旧 handler 时代的“手喂 timestamp”通常不是业务合同
+
+- `titan_time_travelers_time_box_play` 改到真实 `respondToPromptOption(...)` 后，`enteredAt` 不再等于旧测试直调 handler 时传进去的 `113`，而是回到命令链自己的时间口径（当前表现为 `0`）。这说明测试原先锁住的是“我给 handler 传了什么 timestamp”，不是用户可见行为。
+- 对这类 prompt 业务测试，更稳的断言应该是：
+  - 泰坦是否到了对的基地；
+  - 计数 / 标记 / 所有权 / 力量修正等公开状态是否正确；
+  - 必要时是否产生了关键业务事件。
+  不应继续把 `enteredAt`、本地手传 `timestamp`、`continuationContext` 细节当成业务合同，除非测试目标明确是底层 frame / session / audit 元数据。
+- `titan_super_spies_moon_zero_three` 这条还进一步说明：两段 prompt 链在走真实 `respond` 后，不必再由测试手动 `postProcessSystemEvents(...)` 拼接中间状态。只要当前链路没有刻意在测底层 post-process 顺序，直接观察每次 `respond` 返回的 `finalState` 更稳。
+- `titan_magical_girls_walking_castle` 的多选链则证明，多段 prompt 也不必保留“拿 option.value 数组喂给 handler”的写法。测试应表达“玩家点了哪几个可见 option id”，而不是“内部 handler 接收什么 value 结构”。
+- 本轮继续把 `walking_castle`、`time_box_play`、`moon_zero_three`、`megabot_move` 收掉后，全仓命中从 66 降到 60；剩余 `smashup.smoke.test.ts` 里的 direct handler 已进一步集中到 `creampuff_man`、`major_ursa`、`rainboroc`、`very_large_boulder`、`hill_that_strolls` 这些多段链和少量显式合同点。
+
+## 2026-05-16 20:18 补充发现：二段 prompt 链不需要手工“保活当前 prompt”
+
+- `titan_ghosts_creampuff_man_discard` -> `titan_ghosts_creampuff_man_play` 这条链原测试在第一段 handler 后，先手工 `reduce(events)` 出新 core，再用 `withCurrentPrompt(...)` 把第二段 prompt 挂回状态。这其实又把“handler 返回什么 state、测试如何把 prompt 挂回 current”写成了合同。
+- 改成真实 `respondToPromptOption(...)` 后，第一段响应返回的 `finalState` 自己就带着第二段 prompt。更稳的表达是直接从 `discardResolved.finalState` 读取下一段 prompt，而不是继续手工拼 `withCurrentPrompt(...)`。
+- `titan_itty_critters_rainboroc` 同样说明：若第一段响应已经在真实命令链里把 deck/discard 和下一段 prompt 都推进好了，就不该再手动 `reduce(events)` 出一个 `afterShuffle` 再拿旧 state 喂给第二段 handler。业务测试应直接观察每段 `finalState.core`。
+- 这类二段链的本质合同是“第一次点击哪个可见候选，第二次点击哪个可见候选，最终公开状态如何变化”，不是“测试如何帮命令链补状态”。继续手工保活 prompt / 手工拼 core，只会让重构时又碎一片测试。
+- 本轮把 `creampuff_man` 与 `rainboroc` 也收掉后，全仓命中从 60 降到 56，`smashup.smoke.test.ts` 内只剩 `major_ursa`、`very_large_boulder`、`hill_that_strolls` 这几簇普通多段链，以及两条显式合同断言。

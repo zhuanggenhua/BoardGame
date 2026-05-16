@@ -1,5 +1,19 @@
 # DiceThrone Treant / Ninja 新英雄接入审计与 E2E 证据（2026-05-10 修订版）
 
+## 2026-05-16 Treant 旧结论再次失效
+
+本文件此前把 `treant` 写成 `passed`，但 2026-05-16 用户实测又发现一组旧漏项：
+
+- `quiet-cultivation` 被错误落在普通技能共享槽语义里，导致被动区出现“可选/高亮”；
+- `rooted` 被错误挂到 `calm`，防御阶段高亮到了倒数第二个技能；
+- 先是数据录入阶段没有把“玩家板槽位合同”建成正式录入口径；随后审计虽然拿到了 Treant 玩家板主图和压缩图，但也没有把这份合同缺口拦下来，而是继续沿用了旧共享槽位语义。
+
+因此，本文件中关于 `treant` 的“数据录入 / 审计 / E2E / 最终 passed”结论已经失效，不能继续作为 Treant 全面审计完成证明。新的失效说明、修复与证据见：
+
+- `evidence/dicethrone/dicethrone-treant-slot-audit-2026-05-16.md`
+- `src/games/dicethrone/__tests__/treant-ability-card-contract.test.ts`
+- `e2e/dicethrone/dicethrone-treant-slot-mapping.e2e.ts`
+
 ## 2026-05-14 旧结论再次失效
 
 本文件在 2026-05-10 修订版中仍把 Ninja 若干机制写成已收口，但 2026-05-14 用户复核发现四项漏审：
@@ -34,8 +48,8 @@
 
 | objectId | 数据录入 | 资源链 | 机制实现 | 审计 | E2E | 状态 |
 |---|---|---|---|---|---|---|
-| `treant` | passed | passed | passed | passed | passed | passed |
-| `ninja` | passed | passed | passed | passed | passed | passed |
+| `treant` | 旧结论失效 | 旧结论失效 | 旧结论失效 | 旧结论失效 | 旧结论失效 | 见 `dicethrone-treant-slot-audit-2026-05-16.md` |
+| `ninja` | 旧结论失效 | 旧结论失效 | 旧结论失效 | 旧结论失效 | 旧结论失效 | 见 `dicethrone-ninja-regression-audit-2026-05-14.md` |
 
 ## 数据录入与真相源文档
 
@@ -446,8 +460,11 @@ npm run test:e2e:ci -- e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts
 - D31：重掷 / 骰子选择链路，幼种树灵通过真实骰子按钮完成重掷。
 - D37 / D40：交互链和显示层深审，旧“按钮可见即完成”结论失效；本轮补足真实点击、状态变化、截图链。
 - D45：资源上传后外部目标回查，远端媒体 SHA 与本地一致。
+- 但该版审计漏掉了后来被单独抽出的通用维度：**权威可视合同一致性**。也就是“有图时，是否逐槽核对玩家板/可交互区/故意留空区/共享语义覆盖风险”。Treant 这次漏审就落在这里。
 
 ## 最终结论
+
+下列“最终结论”已经失效，保留仅作 2026-05-10 当时证据快照，不再代表当前有效收口状态。
 
 Treant / Ninja 新英雄按通用新增派系门禁与当前发布口径已完成全面审计：
 
@@ -458,4 +475,8 @@ Treant / Ninja 新英雄按通用新增派系门禁与当前发布口径已完�
 - 审计 evidence 与规则核对表回写：passed
 - 选角 UI：Treant / Ninja 已显示唯一 `实施中` 斜向覆盖横幅，仍可选择并进入对局；第二套 pill UI 已删除。
 
-未执行 commit / push；当前成果保留在隔离 worktree，等待用户后续明确合并 / 提交指令。
+### 2026-05-16 后的当前有效口径
+
+- `treant`：本文件旧结论失效。原因不是“没测试到 token / 卡牌效果”，而是“录入阶段没先建立玩家板槽位合同，审计阶段也没把这个缺口拦住”。当前应以 `src/games/dicethrone/rule/treant真相源表.md`、`src/games/dicethrone/rule/treant录入核对.md` 与 `dicethrone-treant-slot-audit-2026-05-16.md` 为准。
+- `ninja`：本文件旧结论同样失效，当前应以 `dicethrone-ninja-regression-audit-2026-05-14.md` 为准。
+- 因此，这份 2026-05-10 主审计文档不能再作为 Treant / Ninja 的全面审计完成证明；它只能证明当时已覆盖的那批代表链，不证明后续新增发现的槽位合同、共享语义错位、旧结论降级都已包含在内。

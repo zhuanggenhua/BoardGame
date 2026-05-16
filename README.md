@@ -118,6 +118,14 @@ npm run dev:lite
 
 启动后访问 http://localhost:5173 即可。
 
+### 给 AI 的起步提示词
+
+如果你完全不会编程，可以先把下面这段话直接复制给 AI：
+
+```text
+请先阅读 `https://github.com/zhuanggenhua/BoardGame` 这个仓库里的 `README.md`、`AGENTS.md` 和你认为必要的项目文档，然后一步一步告诉我怎样在本地启动这个项目并成功打开页面。
+```
+
 ### 环境变量
 
 开发环境只需复制 `.env.example` 即可运行。核心变量：
@@ -191,6 +199,7 @@ bash deploy.sh update
 
 ```bash
 npm run dev                # 启动完整开发环境
+npm run dev:lite           # 启动纯内存快速体验模式
 npm run build              # 构建前端
 npm run generate:manifests # 重新生成游戏清单
 npm run generate:locales   # 生成卡牌多语言文件
@@ -248,11 +257,13 @@ npm run test:e2e
 
 欢迎提交 Issue 和 Pull Request！
 
-1. Fork 本仓库
+默认协作方式是 **先 clone 主仓库，再在本地开分支**。这样更适合多人和 AI 共同开发，也更不容易出现 fork 长期漂移、权限判断混乱、PR head 不可写等问题。只有在你**没有主仓库写权限**，或者明确需要账号/权限隔离时，才建议改走 fork 路线。
+
+1. Clone 主仓库：`git clone https://github.com/zhuanggenhua/BoardGame.git`
 2. 创建特性分支：`git checkout -b feature/amazing-feature`
-3. 提交更改：`git commit -m 'Add amazing feature'`
-4. 推送分支：`git push origin feature/amazing-feature`
-5. 提交 Pull Request
+3. 提交更改：`git commit -m "用中文准确描述改动"`
+4. 有主仓库写权限时直接推送：`git push origin feature/amazing-feature`
+5. 没有写权限时，再 fork 到自己账号，改推送到 fork 后提 Pull Request
 
 ## 📜 许可证
 

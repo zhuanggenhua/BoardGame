@@ -17,7 +17,6 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { grantExtraMinion } from '../domain/abilityHelpers';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import {
     makeMinion, makeCard, makePlayer, makeState, makeMatchState,
     applyEvents,
@@ -27,6 +26,7 @@ import {
     getPromptTargetType,
     getSimpleChoicePrompt,
     respondToPromptOption,
+    respondToPromptOptions,
     withOnlyCurrentPrompt,
 } from './helpers';
 import type { RandomFn } from '../../../engine/types';
@@ -752,29 +752,25 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
         } as any, defaultRandom);
 
-        const swapInteraction = getSimpleChoicePrompt(ms, 'trickster_hideout_pod_swap');
-        const swapHandler = getInteractionHandler('trickster_hideout_pod_swap');
-        expect(swapHandler).toBeDefined();
-
-        const result = swapHandler!(
+        getSimpleChoicePrompt(ms, 'trickster_hideout_pod_swap');
+        const result = respondToPromptOption(
             ms,
+            option => option.value?.zone === 'hand' && option.value?.cardUid === 'h-flame',
+            'hideout swap hand flame option',
             '0',
-            { zone: 'hand', cardUid: 'h-flame', defId: 'trickster_flame_trap_pod' },
-            getPromptHandlerData(swapInteraction),
             defaultRandom,
-            3000,
         );
+        expect(result.success, result.error).toBe(true);
 
-        expect(result?.events ?? []).not.toContainEqual(expect.objectContaining({ type: SU_EVENTS.DECK_RESHUFFLED }));
-        expect(result?.state.core.players['0'].hand).toEqual([
+        expect(result.events).not.toContainEqual(expect.objectContaining({ type: SU_EVENTS.DECK_RESHUFFLED }));
+        expect(result.finalState.core.players['0'].hand).toEqual([
             expect.objectContaining({ uid: 'oa1', defId: 'trickster_hideout_pod', type: 'action' }),
         ]);
-        expect(result?.state.core.bases[0].ongoingActions[0]).toEqual(
+        expect(result.finalState.core.bases[0].ongoingActions[0]).toEqual(
             expect.objectContaining({ uid: 'h-flame', defId: 'trickster_flame_trap_pod', ownerId: '0' }),
         );
 
-        expect(result).toBeDefined();
-        const destroyInteraction = getSimpleChoicePrompt(result!.state, 'trickster_hideout_pod_destroy');
+        const destroyInteraction = getSimpleChoicePrompt(result.finalState, 'trickster_hideout_pod_destroy');
         expect(getPromptSourceId(destroyInteraction)).toBe('trickster_hideout_pod_destroy');
         expect(getPromptOptions(destroyInteraction).some((option: any) => option.value?.minionUid === 'm-low')).toBe(true);
     });
@@ -809,26 +805,23 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
         } as any, defaultRandom);
 
-        const swapInteraction = getSimpleChoicePrompt(ms, 'trickster_hideout_pod_swap');
-        const swapHandler = getInteractionHandler('trickster_hideout_pod_swap');
-        expect(swapHandler).toBeDefined();
-
-        const result = swapHandler!(
+        getSimpleChoicePrompt(ms, 'trickster_hideout_pod_swap');
+        const result = respondToPromptOption(
             ms,
+            option => option.value?.zone === 'deck' && option.value?.cardUid === 'd-flame',
+            'hideout swap deck flame option',
             '0',
-            { zone: 'deck', cardUid: 'd-flame', defId: 'trickster_flame_trap_pod' },
-            getPromptHandlerData(swapInteraction),
             shuffleRandom,
-            3001,
         );
+        expect(result.success, result.error).toBe(true);
 
-        expect(result?.state.core.players['0'].hand.some(card => card.uid === 'oa1')).toBe(false);
-        expect(result?.state.core.players['0'].deck.map(card => card.uid)).toEqual(['oa1', 'd-extra']);
-        expect(result?.state.core.bases[0].ongoingActions[0]).toEqual(
+        expect(result.finalState.core.players['0'].hand.some(card => card.uid === 'oa1')).toBe(false);
+        expect(result.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['oa1', 'd-extra']);
+        expect(result.finalState.core.bases[0].ongoingActions[0]).toEqual(
             expect.objectContaining({ uid: 'd-flame', defId: 'trickster_flame_trap_pod', ownerId: '0' }),
         );
 
-        const reorderedEvent = (result?.events ?? []).find(event => event.type === SU_EVENTS.DECK_REORDERED) as any;
+        const reorderedEvent = result.events.find(event => event.type === SU_EVENTS.DECK_REORDERED) as any;
         expect(reorderedEvent).toBeDefined();
         expect(reorderedEvent.payload.deckUids).toEqual(['oa1', 'd-extra']);
     });
@@ -881,23 +874,23 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
         const optionUids = getPromptOptions(interaction).map((option: any) => option.value?.minionUid).filter(Boolean);
         expect(optionUids).toEqual(['pixie-1', 'ally-a']);
 
-        const handler = getInteractionHandler('trickster_pixie_pod_minion');
-        expect(handler).toBeDefined();
-        const resolved = handler!(
+        const selectedOptionIds = getPromptOptions(interaction)
+            .filter((option: any) => option.value?.minionUid === 'ally-a')
+            .map((option: any) => option.id);
+        const resolved = respondToPromptOptions(
             result.matchState!,
+            selectedOptionIds,
             '0',
-            [{ minionUid: 'ally-a', baseIndex: 0 }],
-            getPromptHandlerData(interaction),
             defaultRandom,
-            4001,
         );
+        expect(resolved.success, resolved.error).toBe(true);
 
-        expect(resolved?.events).toEqual([
+        expect(resolved.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: SU_EVENTS.POWER_COUNTER_ADDED,
                 payload: expect.objectContaining({ minionUid: 'ally-a', baseIndex: 0, amount: 1, reason: 'trickster_pixie_pod_minion' }),
             }),
-        ]);
+        ]));
     });
 
     it('作为战术打出时走 destroy -> counters 的 runtime 交互链', () => {
@@ -932,45 +925,42 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
         const destroyInteraction = getSimpleChoicePrompt(result.matchState!, 'trickster_pixie_pod_action_destroy');
         expect(getPromptSourceId(destroyInteraction)).toBe('trickster_pixie_pod_action_destroy');
 
-        const destroyHandler = getInteractionHandler('trickster_pixie_pod_action_destroy');
-        expect(destroyHandler).toBeDefined();
-        const chained = destroyHandler!(
+        const chained = respondToPromptOption(
             result.matchState!,
+            option => option.value?.cardUid === 'target-oa',
+            'pixie action destroy target oa option',
             '0',
-            { cardUid: 'target-oa', defId: 'trickster_flame_trap_pod', ownerId: '1' },
-            getPromptHandlerData(destroyInteraction),
             defaultRandom,
-            4101,
         );
+        expect(chained.success, chained.error).toBe(true);
 
-        expect(chained?.events).toEqual([
+        expect(chained.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: SU_EVENTS.ONGOING_DETACHED,
                 payload: expect.objectContaining({ cardUid: 'target-oa', reason: 'trickster_pixie_pod_action' }),
             }),
-        ]);
+        ]));
 
-        expect(chained).toBeDefined();
-        const counterInteraction = getSimpleChoicePrompt(chained!.state, 'trickster_pixie_pod_action_counters');
+        const counterInteraction = getSimpleChoicePrompt(chained.finalState, 'trickster_pixie_pod_action_counters');
         expect(getPromptSourceId(counterInteraction)).toBe('trickster_pixie_pod_action_counters');
 
-        const counterHandler = getInteractionHandler('trickster_pixie_pod_action_counters');
-        expect(counterHandler).toBeDefined();
-        const counterResolved = counterHandler!(
-            chained!.state,
+        const counterOptionIds = getPromptOptions(counterInteraction)
+            .filter((option: any) => option.value?.minionUid === 'ally-a')
+            .map((option: any) => option.id);
+        const counterResolved = respondToPromptOptions(
+            chained.finalState,
+            counterOptionIds,
             '0',
-            [{ minionUid: 'ally-a', baseIndex: 0 }],
-            getPromptHandlerData(counterInteraction),
             defaultRandom,
-            4102,
         );
+        expect(counterResolved.success, counterResolved.error).toBe(true);
 
-        expect(counterResolved?.events).toEqual([
+        expect(counterResolved.events).toEqual(expect.arrayContaining([
             expect.objectContaining({
                 type: SU_EVENTS.POWER_COUNTER_ADDED,
                 payload: expect.objectContaining({ minionUid: 'ally-a', baseIndex: 0, amount: 2, reason: 'trickster_pixie_pod_action' }),
             }),
-        ]);
+        ]));
     });
 });
 
