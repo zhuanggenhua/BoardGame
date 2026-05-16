@@ -13,17 +13,20 @@ import {
 import { clearPowerModifierRegistry, getEffectiveBreakpoint } from '../../domain/ongoingModifiers';
 import { reduce } from '../../domain/reducer';
 import type { MinionDestroyedEvent } from '../../domain/types';
-import { SU_EVENTS } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
+    makeCard,
     getPromptHandlerData,
     getPromptSourceId,
     getPromptTargetType,
     getSimpleChoicePrompt,
     makeBase,
     makeMinion,
+    makeMatchState,
     makePlayer,
     makeState,
 } from '../helpers';
+import { runCommand } from '../testRunner';
 
 const dummyRandom: RandomFn = {
     random: () => 0.5,
@@ -244,21 +247,18 @@ describe('killer_plant_venus_man_trap 牌库搜索', () => {
                 '1': makePlayer('1'),
             },
         });
-        const matchState = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } };
-        const executor = resolveAbility('killer_plant_venus_man_trap', 'talent');
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'trap', baseIndex: 0 },
+            } as any,
+            dummyRandom,
+        );
 
-        const result = executor!({
-            state,
-            matchState,
-            playerId: '0',
-            cardUid: 'trap',
-            defId: 'killer_plant_venus_man_trap',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
-
-        const prompt = getSimpleChoicePrompt(result.matchState!, 'killer_plant_venus_man_trap_search');
+        expect(result.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'killer_plant_venus_man_trap_search');
         expect(getPromptSourceId(prompt)).toBe('killer_plant_venus_man_trap_search');
         expect(getPromptTargetType(prompt)).toBe('generic');
         expect(prompt?.autoRefresh ?? getPromptHandlerData(prompt).autoRefresh).toBe('deck');
@@ -278,25 +278,26 @@ describe('killer_plant_venus_man_trap 牌库搜索', () => {
                 '1': makePlayer('1'),
             },
         });
-        const executor = resolveAbility('killer_plant_venus_man_trap', 'talent');
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'trap', baseIndex: 0 },
+            } as any,
+            dummyRandom,
+        );
 
-        const result = executor!({
-            state,
-            playerId: '0',
-            cardUid: 'trap',
-            defId: 'killer_plant_venus_man_trap',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
-
+        expect(result.success).toBe(true);
         expect(result.events.map(event => event.type)).toEqual([
+            SU_EVENTS.TALENT_USED,
             SU_EVENTS.CARDS_DRAWN,
             SU_EVENTS.LIMIT_MODIFIED,
             SU_EVENTS.MINION_PLAYED,
             SU_EVENTS.DECK_REORDERED,
         ]);
-        expect(result.events[2]).toEqual(
+        const minionPlayedEvent = result.events.find(event => event.type === SU_EVENTS.MINION_PLAYED);
+        expect(minionPlayedEvent).toEqual(
             expect.objectContaining({
                 type: SU_EVENTS.MINION_PLAYED,
                 payload: expect.objectContaining({ baseIndex: 0 }),
@@ -334,42 +335,52 @@ describe('killer_plant_venus_man_trap 牌库搜索', () => {
 describe('killer_plant_budding 场上随从选择', () => {
     it('场上有随从时创建随从选择 prompt', () => {
         const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('bud-1', 'killer_plant_budding', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
             bases: [makeBase({ minions: [makeMinion('a1', 'test_minion', '0', 3, { powerModifier: 0 })] })],
         });
-        const matchState = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } };
-        const executor = resolveAbility('killer_plant_budding', 'onPlay');
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'bud-1' },
+            } as any,
+            dummyRandom,
+        );
 
-        const result = executor!({
-            state,
-            matchState,
-            playerId: '0',
-            cardUid: 'bud-1',
-            defId: 'killer_plant_budding',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
-
-        const prompt = getSimpleChoicePrompt(result.matchState!, 'killer_plant_budding_choose');
+        expect(result.success).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'killer_plant_budding_choose');
         expect(getPromptSourceId(prompt)).toBe('killer_plant_budding_choose');
         expect(getPromptTargetType(prompt)).toBe('minion');
     });
 
     it('场上无随从时不产生事件', () => {
-        const state = makeState({ bases: [makeBase()] });
-        const executor = resolveAbility('killer_plant_budding', 'onPlay');
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('bud-1', 'killer_plant_budding', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase()],
+        });
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'bud-1' },
+            } as any,
+            dummyRandom,
+        );
 
-        const result = executor!({
-            state,
-            playerId: '0',
-            cardUid: 'bud-1',
-            defId: 'killer_plant_budding',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
-
-        expect(result.events).toEqual([]);
+        expect(result.success).toBe(true);
+        expect(result.events.map(event => event.type)).toEqual([SU_EVENTS.ACTION_PLAYED]);
     });
 });
 

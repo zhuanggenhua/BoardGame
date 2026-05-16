@@ -1,8 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { RandomFn } from '../../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
-import { clearRegistry, resolveAbility } from '../../domain/abilityRegistry';
-import type { AbilityContext } from '../../domain/abilityRegistry';
+import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { countMadnessCards, madnessVpPenalty } from '../../domain/abilityHelpers';
@@ -21,7 +20,7 @@ import type {
     TempPowerAddedEvent,
     TurnStartedEvent,
 } from '../../domain/types';
-import { MADNESS_CARD_DEF_ID, SU_EVENTS } from '../../domain/types';
+import { MADNESS_CARD_DEF_ID, SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
     getPromptHandlerData,
     getPromptOptions,
@@ -30,11 +29,14 @@ import {
     getPromptsBySourceId,
     getSimpleChoicePrompt,
     makeBase,
+    makeCard,
     makeMinion,
+    makeMatchState,
     makePlayer,
     makeState,
-    resolvePromptViaRegisteredHandler,
+    respondToPromptOption,
 } from '../helpers';
+import { runCommand } from '../testRunner';
 
 const dummyRandom: RandomFn = {
     random: () => 0.5,
@@ -441,21 +443,23 @@ describe('cthulhu_complete_the_ritual onTurnStart', () => {
 
 describe('special_madness onPlay 与终局 VP', () => {
     it('打出时创建抽牌 / 返回牌堆二选一 prompt', () => {
-        const state = makeState();
-        const executor = resolveAbility('special_madness', 'onPlay');
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('mad-1', 'special_madness', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
 
-        const result = executor!({
-            state,
-            matchState: { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } },
-            playerId: '0',
-            cardUid: 'mad-1',
-            defId: 'special_madness',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
+        const result = runCommand(
+            makeMatchState(state),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'mad-1' } } as any,
+            dummyRandom,
+        );
+        expect(result.success, result.error).toBe(true);
 
-        const prompt = getSimpleChoicePrompt(result.matchState!, 'special_madness');
+        const prompt = getSimpleChoicePrompt(result.finalState, 'special_madness');
         expect(getPromptSourceId(prompt)).toBe('special_madness');
         expect(getPromptTargetType(prompt)).toBe('button');
         expect(getPromptHandlerData(prompt)?.displayCard).toEqual({ defId: 'special_madness', cardUid: 'mad-1' });
@@ -469,6 +473,7 @@ describe('special_madness onPlay 与终局 VP', () => {
         const state = makeState({
             players: {
                 '0': makePlayer('0', {
+                    hand: [makeCard('mad-1', 'special_madness', 'action', '0')],
                     deck: [
                         { uid: 'd1', defId: 'test_action', type: 'action' },
                         { uid: 'd2', defId: 'test_minion', type: 'minion' },
@@ -477,47 +482,50 @@ describe('special_madness onPlay 与终局 VP', () => {
                 '1': makePlayer('1'),
             },
         });
-        const executor = resolveAbility('special_madness', 'onPlay');
+        const promptResult = runCommand(
+            makeMatchState(state),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'mad-1' } } as any,
+            dummyRandom,
+        );
+        expect(promptResult.success, promptResult.error).toBe(true);
+        const result = respondToPromptOption(
+            promptResult.finalState,
+            option => option.value?.action === 'draw',
+            'special madness draw option',
+            '0',
+            dummyRandom,
+        );
 
-        const promptResult = executor!({
-            state,
-            matchState: { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } },
-            playerId: '0',
-            cardUid: 'mad-1',
-            defId: 'special_madness',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
-        const prompt = getSimpleChoicePrompt(promptResult.matchState!, 'special_madness');
-
-        const result = resolvePromptViaRegisteredHandler(promptResult.matchState as any, prompt, { action: 'draw' }, 0, dummyRandom);
-
-        const drawEvent = result.events[0] as CardsDrawnEvent;
+        const drawEvent = result.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as CardsDrawnEvent;
         expect(drawEvent.type).toBe(SU_EVENTS.CARDS_DRAWN);
         expect(drawEvent.payload.count).toBe(2);
         expect(drawEvent.payload.cardUids).toEqual(['d1', 'd2']);
     });
 
     it('选择返回时产生 MADNESS_RETURNED 事件', () => {
-        const state = makeState();
-        const executor = resolveAbility('special_madness', 'onPlay');
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('mad-1', 'special_madness', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const promptResult = runCommand(
+            makeMatchState(state),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'mad-1' } } as any,
+            dummyRandom,
+        );
+        expect(promptResult.success, promptResult.error).toBe(true);
+        const result = respondToPromptOption(
+            promptResult.finalState,
+            option => option.value?.action === 'return',
+            'special madness return option',
+            '0',
+            dummyRandom,
+        );
 
-        const promptResult = executor!({
-            state,
-            matchState: { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } },
-            playerId: '0',
-            cardUid: 'mad-1',
-            defId: 'special_madness',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
-        const prompt = getSimpleChoicePrompt(promptResult.matchState!, 'special_madness');
-
-        const result = resolvePromptViaRegisteredHandler(promptResult.matchState as any, prompt, { action: 'return' }, 0, dummyRandom);
-
-        const returned = result.events[0] as MadnessReturnedEvent;
+        const returned = result.events.find(event => event.type === SU_EVENTS.MADNESS_RETURNED) as MadnessReturnedEvent;
         expect(returned.type).toBe(SU_EVENTS.MADNESS_RETURNED);
         expect(returned.payload.playerId).toBe('0');
         expect(returned.payload.cardUid).toBe('mad-1');

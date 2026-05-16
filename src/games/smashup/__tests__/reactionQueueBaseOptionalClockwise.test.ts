@@ -1,15 +1,13 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SmashUpCore, TriggerInstance } from '../domain/types';
 import {
-  getPromptOption,
   getPromptOptions,
   getPromptPlayerId,
   getReactionPrompt,
   makeMatchState,
   makeState,
   makeBase,
-  resolvePromptViaRegisteredHandler,
-  withoutCurrentPrompt,
+  respondToPromptOption,
 } from './helpers';
 import { clearBaseAbilityRegistry, registerBaseAbility } from '../domain/baseAbilities';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
@@ -86,33 +84,28 @@ describe('Reaction queue: optional base triggers resolve clockwise', () => {
     const current1 = getReactionPrompt(rq!.state);
     expect(getPromptPlayerId(current1)).toBe('1');
 
-    const afterPass = resolvePromptViaRegisteredHandler(
-      withoutCurrentPrompt(rq!.state) as any,
-      current1,
-      { kind: 'pass' },
-      2,
+    const afterPass = respondToPromptOption(
+      rq!.state,
+      (option: any) => option.id === 'pass',
+      'pass option in optional reaction cycle',
+      '1',
       { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
     );
     expect(afterPass).toBeDefined();
-    const current2 = getReactionPrompt(afterPass!.state);
+    const current2 = getReactionPrompt(afterPass.finalState);
     expect(getPromptPlayerId(current2)).toBe('2');
     expect(getPromptOptions(current2).some((option: any) => String(option.id).includes('base_b'))).toBe(true);
 
-    const triggerB = getPromptOption(
-      current2,
+    const afterPlayerTwoActs = respondToPromptOption(
+      afterPass.finalState,
       (option: any) => String(option.id).includes('base_b'),
       'reaction option for base_b',
-    );
-    const afterPlayerTwoActs = resolvePromptViaRegisteredHandler(
-      withoutCurrentPrompt(afterPass!.state) as any,
-      current2,
-      triggerB.value,
-      3,
+      '2',
       { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
     );
     expect(afterPlayerTwoActs).toBeDefined();
 
-    const current3 = getReactionPrompt(afterPlayerTwoActs!.state);
+    const current3 = getReactionPrompt(afterPlayerTwoActs.finalState);
     expect(getPromptPlayerId(current3)).toBe('1');
     expect(getPromptOptions(current3).filter((option: any) => String(option.id).includes('base_a')).length).toBe(2);
   });

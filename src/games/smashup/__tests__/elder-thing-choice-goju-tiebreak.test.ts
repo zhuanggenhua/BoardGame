@@ -16,7 +16,14 @@ import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
-import { getFirstPrompt, getPromptHandlerData, getPromptSourceId, resolvePromptViaRegisteredHandler, respondToPromptOption, withoutCurrentPrompt } from './helpers';
+import {
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptSourceId,
+    invokeRegisteredInteractionHandlerContract,
+    respondToPromptOption,
+    withOnlyCurrentPrompt,
+} from './helpers';
 
 function makeMinion(uid: string, defId: string, controller: string, power: number, overrides: Partial<MinionOnBase> = {}): MinionOnBase {
     return {
@@ -94,15 +101,20 @@ describe('远古之物：消灭两个随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const initial = triggerElderThingOnPlay(state);
-        const prompt = getFirstPrompt(initial.matchState!);
-        const result = resolvePromptViaRegisteredHandler(withoutCurrentPrompt(initial.matchState!), prompt, { choice: 'destroy' }, 1, dummyRandom)!;
+        const result = respondToPromptOption(
+            initial.matchState!,
+            option => option.value?.choice === 'destroy',
+            'elder thing destroy choice',
+            '0',
+            dummyRandom,
+        );
 
         // 不应直接产生消灭事件
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(0);
 
         // 应产生单选交互让玩家选择第一个要消灭的随从
-        const interaction = getFirstPrompt(result.state!);
+        const interaction = getFirstPrompt(result.finalState);
         expect(interaction).toBeDefined();
         expect(getPromptSourceId(interaction)).toBe('elder_thing_elder_thing_destroy_first');
         expect(interaction?.playerId).toBe('0');
@@ -116,8 +128,13 @@ describe('远古之物：消灭两个随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const initial = triggerElderThingOnPlay(state);
-        const prompt = getFirstPrompt(initial.matchState!);
-        const result = resolvePromptViaRegisteredHandler(withoutCurrentPrompt(initial.matchState!), prompt, { choice: 'destroy' }, 1, dummyRandom)!;
+        const result = respondToPromptOption(
+            initial.matchState!,
+            option => option.value?.choice === 'destroy',
+            'elder thing destroy choice',
+            '0',
+            dummyRandom,
+        );
 
         // 恰好 2 个，直接消灭
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
@@ -132,7 +149,15 @@ describe('远古之物：消灭两个随从选择权', () => {
 
         const initial = triggerElderThingOnPlay(state);
         const prompt = getFirstPrompt(initial.matchState!);
-        const result = resolvePromptViaRegisteredHandler(withoutCurrentPrompt(initial.matchState!), prompt, { choice: 'destroy' }, 1, dummyRandom)!;
+        const result = invokeRegisteredInteractionHandlerContract(
+            getPromptSourceId(prompt),
+            initial.matchState!,
+            '0',
+            { choice: 'destroy' },
+            getPromptHandlerData(prompt),
+            1,
+            dummyRandom,
+        );
 
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(0);
@@ -149,35 +174,38 @@ describe('远古之物：消灭两个随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const initial = triggerElderThingOnPlay(state);
-        const choicePrompt = getFirstPrompt(initial.matchState!);
-        const afterChoice = resolvePromptViaRegisteredHandler(withoutCurrentPrompt(initial.matchState!), choicePrompt, { choice: 'destroy' }, 1, dummyRandom)!;
-        const firstPrompt = getFirstPrompt(afterChoice.state!);
-
-        // 第一步：选择第一个随从
-        const result1 = resolvePromptViaRegisteredHandler(
-            withoutCurrentPrompt(afterChoice.state!),
-            firstPrompt,
-            { minionUid: 'm-1', defId: 'test_a', baseIndex: 0 },
-            2,
+        const afterChoice = respondToPromptOption(
+            initial.matchState!,
+            option => option.value?.choice === 'destroy',
+            'elder thing destroy choice',
+            '0',
             dummyRandom,
-        )!;
+        );
+        // 第一步：选择第一个随从
+        const result1 = respondToPromptOption(
+            afterChoice.finalState,
+            option => option.value?.minionUid === 'm-1',
+            'elder thing destroy first minion m-1',
+            '0',
+            dummyRandom,
+        );
 
         const destroyEvents1 = result1.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents1).toHaveLength(0);
 
         // 应产生第二步交互
-        const interaction2 = getFirstPrompt(result1.state!);
+        const interaction2 = getFirstPrompt(result1.finalState);
         expect(interaction2).toBeDefined();
         expect(getPromptSourceId(interaction2)).toBe('elder_thing_elder_thing_destroy_second');
 
         // 第二步：选择第二个随从
-        const result2 = resolvePromptViaRegisteredHandler(
-            withoutCurrentPrompt(result1.state!),
-            interaction2,
-            { minionUid: 'm-3', defId: 'test_c', baseIndex: 0 },
-            3,
+        const result2 = respondToPromptOption(
+            result1.finalState,
+            option => option.value?.minionUid === 'm-3',
+            'elder thing destroy second minion m-3',
+            '0',
             dummyRandom,
-        )!;
+        );
 
         const destroyEvents2 = result2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents2).toHaveLength(2);
@@ -193,8 +221,13 @@ describe('远古之物：消灭两个随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const initial = triggerElderThingOnPlay(state);
-        const prompt = getFirstPrompt(initial.matchState!);
-        const result = resolvePromptViaRegisteredHandler(withoutCurrentPrompt(initial.matchState!), prompt, { choice: 'deckbottom' }, 1, dummyRandom)!;
+        const result = respondToPromptOption(
+            initial.matchState!,
+            option => option.value?.choice === 'deckbottom',
+            'elder thing deckbottom choice',
+            '0',
+            dummyRandom,
+        );
 
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(0);
@@ -217,18 +250,23 @@ describe('远古之物：消灭两个随从选择权', () => {
             },
         });
         const initial = triggerElderThingOnPlay(state);
-        const prompt = getFirstPrompt(initial.matchState!);
-        const liveResult = resolvePromptViaRegisteredHandler(withoutCurrentPrompt(initial.matchState!), prompt, { choice: 'deckbottom' }, 1, dummyRandom)!;
+        const liveResult = respondToPromptOption(
+            initial.matchState!,
+            option => option.value?.choice === 'deckbottom',
+            'elder thing deckbottom choice',
+            '0',
+            dummyRandom,
+        );
         const liveDeckBottomEvents = liveResult.events.filter((e: any) => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
         expect(liveDeckBottomEvents).toHaveLength(1);
 
-        const staleResult = resolvePromptViaRegisteredHandler(
-            { core: staleState, sys: initial.matchState!.sys } as any,
-            prompt,
-            { choice: 'deckbottom' },
-            2,
+        const staleResult = respondToPromptOption(
+            withOnlyCurrentPrompt({ core: staleState, sys: initial.matchState!.sys } as any, getFirstPrompt(initial.matchState!)),
+            option => option.value?.choice === 'deckbottom',
+            'elder thing stale deckbottom choice',
+            '0',
             dummyRandom,
-        )!;
+        );
         const staleDeckBottomEvents = staleResult.events.filter((e: any) => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
         expect(staleDeckBottomEvents).toHaveLength(0);
     });

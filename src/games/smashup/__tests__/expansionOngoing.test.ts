@@ -22,10 +22,10 @@ import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import {
     expectNoPrompt,
     getFirstPrompt,
+    invokeRegisteredRuntimePromptHandlerContract,
     getPromptHandlerData,
     getPromptOption,
     getPromptOptions,
@@ -562,15 +562,15 @@ describe('蒸汽朋克 ongoing 能力', () => {
             const cardUids = getPromptOptions(current).map((opt: any) => opt.value?.cardUid).filter(Boolean);
             expect(cardUids).toEqual(['dis-base']);
 
-            const handler = getAbilityRuntimePromptHandler('steampunk_mechanic');
-            expect(handler).toBeDefined();
-            const resolved = handler!(
+            // 这里刻意保留 runtime prompt handler：测的是非法 value 在 resolver 层被拒绝的低层合同。
+            const resolved = invokeRegisteredRuntimePromptHandlerContract(
+                'steampunk_mechanic',
                 result.matchState!,
                 '0',
                 { cardUid: 'dis-minion-a', defId: 'ninja_smoke_bomb' },
                 getPromptHandlerData(current),
-                dummyRandom,
                 1000,
+                dummyRandom,
             );
             const events = resolved?.events ?? [];
             expect(events).toHaveLength(0);
@@ -710,16 +710,15 @@ describe('蒸汽朋克 ongoing 能力', () => {
             });
             const current = getSimpleChoicePrompt(result.matchState!, 'steampunk_mechanic');
 
-            const handler = getAbilityRuntimePromptHandler('steampunk_mechanic');
-            expect(handler).toBeDefined();
-
-            const resolved = handler!(
+            // 这里刻意保留 runtime prompt handler：测的是 runtime resolver 的二次合法性检查。
+            const resolved = invokeRegisteredRuntimePromptHandlerContract(
+                'steampunk_mechanic',
                 result.matchState!,
                 '0',
                 { cardUid: 'dis-3', defId: 'steampunk_scrap_diving' },
                 getPromptHandlerData(current),
-                dummyRandom,
                 1001,
+                dummyRandom,
             );
             const events = resolved?.events ?? [];
 

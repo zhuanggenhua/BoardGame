@@ -40,6 +40,7 @@ import {
     getPromptTargetType,
     getPromptsBySourceId,
     makeMatchState as makePromptMatchState,
+    expectNoPrompt,
     respondToPromptOption,
     respondToPrompt,
     withOnlyCurrentPrompt,
@@ -324,23 +325,26 @@ describe('忍者 ongoing/special 能力', () => {
                     { uid: 'ongoing-2', defId: 'ninja_smoke_bomb', ownerId: '0' },
                 ],
             });
-            const state = makeState([base]);
-            const matchState = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as any;
-
-            const executor = resolveAbility('ninja_infiltrate', 'onPlay')!;
-            const result = executor({
-                state,
-                matchState,
-                playerId: '0',
-                cardUid: 'infiltrate-1',
-                defId: 'ninja_infiltrate',
-                baseIndex: 0,
-                random: dummyRandom,
-                now: 1000,
+            const templateState = makeState([base]);
+            const state = makeState([base], {
+                '0': {
+                    ...templateState.players['0'],
+                    hand: [makeCard('infiltrate-1', 'ninja_infiltrate', 'action', '0', SMASHUP_FACTION_IDS.NINJAS)],
+                },
             });
 
-            expect(result.events).toHaveLength(0);
-            const current = getFirstPrompt(result.matchState!);
+            const result = runCommand(
+                makePromptMatchState(state),
+                {
+                    type: 'su:play_action',
+                    playerId: '0',
+                    payload: { cardUid: 'infiltrate-1', targetBaseIndex: 0 },
+                } as any,
+                defaultTestRandom,
+            );
+
+            expect(result.success).toBe(true);
+            const current = getFirstPrompt(result.finalState);
             expect(current).toBeDefined();
             expect(getPromptSourceId(current)).toBe('ninja_infiltrate_destroy');
             expect(getPromptTargetType(current)).toBe('ongoing');
@@ -359,23 +363,26 @@ describe('忍者 ongoing/special 能力', () => {
                 minions: [minion],
                 ongoingActions: [{ uid: 'ongoing-pod-1', defId: 'zombie_overrun', ownerId: '1' }],
             });
-            const state = makeState([base]);
-            const matchState = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as any;
-
-            const executor = resolveAbility('ninja_infiltrate_pod', 'onPlay')!;
-            const result = executor({
-                state,
-                matchState,
-                playerId: '0',
-                cardUid: 'infiltrate-pod-1',
-                defId: 'ninja_infiltrate_pod',
-                baseIndex: 0,
-                random: dummyRandom,
-                now: 1001,
+            const templateState = makeState([base]);
+            const state = makeState([base], {
+                '0': {
+                    ...templateState.players['0'],
+                    hand: [makeCard('infiltrate-pod-1', 'ninja_infiltrate_pod', 'action', '0', SMASHUP_FACTION_IDS.NINJAS)],
+                },
             });
 
-            expect(result.events).toHaveLength(0);
-            const current = getFirstPrompt(result.matchState!);
+            const result = runCommand(
+                makePromptMatchState(state),
+                {
+                    type: 'su:play_action',
+                    playerId: '0',
+                    payload: { cardUid: 'infiltrate-pod-1', targetBaseIndex: 0 },
+                } as any,
+                defaultTestRandom,
+            );
+
+            expect(result.success).toBe(true);
+            const current = getFirstPrompt(result.finalState);
             expect(getPromptSourceId(current)).toBe('ninja_infiltrate_pod_destroy');
             expect(getPromptTargetType(current)).toBe('ongoing');
             expect(getPromptOptions(current)).toHaveLength(2);
@@ -390,46 +397,54 @@ describe('忍者 ongoing/special 能力', () => {
             const base = makeBase({
                 ongoingActions: [{ uid: 'ongoing-1', defId: 'zombie_overrun', ownerId: '1' }],
             });
-            const state = makeState([base]);
-            const matchState = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as any;
-
-            const executor = resolveAbility('ninja_infiltrate', 'onPlay')!;
-            const result = executor({
-                state,
-                matchState,
-                playerId: '0',
-                cardUid: 'infiltrate-1',
-                defId: 'ninja_infiltrate',
-                baseIndex: 0,
-                random: dummyRandom,
-                now: 1000,
+            const templateState = makeState([base]);
+            const state = makeState([base], {
+                '0': {
+                    ...templateState.players['0'],
+                    hand: [makeCard('infiltrate-1', 'ninja_infiltrate', 'action', '0', SMASHUP_FACTION_IDS.NINJAS)],
+                },
             });
 
-            expect(result.matchState).toBeUndefined();
-            expect(result.events).toHaveLength(1);
-            expect(result.events[0].type).toBe(SU_EVENTS.ONGOING_DETACHED);
-            expect((result.events[0] as any).payload.cardUid).toBe('ongoing-1');
+            const result = runCommand(
+                makePromptMatchState(state),
+                {
+                    type: 'su:play_action',
+                    playerId: '0',
+                    payload: { cardUid: 'infiltrate-1', targetBaseIndex: 0 },
+                } as any,
+                defaultTestRandom,
+            );
+
+            expect(result.success).toBe(true);
+            expectNoPrompt(result.finalState);
+            const detached = result.events.find(event => event.type === SU_EVENTS.ONGOING_DETACHED) as any;
+            expect(detached).toBeDefined();
+            expect(detached.payload.cardUid).toBe('ongoing-1');
         });
 
         test('没有基地战术时不创建交互也不额外发事件', () => {
             const base = makeBase({ ongoingActions: [] });
-            const state = makeState([base]);
-            const matchState = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as any;
-
-            const executor = resolveAbility('ninja_infiltrate', 'onPlay')!;
-            const result = executor({
-                state,
-                matchState,
-                playerId: '0',
-                cardUid: 'infiltrate-1',
-                defId: 'ninja_infiltrate',
-                baseIndex: 0,
-                random: dummyRandom,
-                now: 1000,
+            const templateState = makeState([base]);
+            const state = makeState([base], {
+                '0': {
+                    ...templateState.players['0'],
+                    hand: [makeCard('infiltrate-1', 'ninja_infiltrate', 'action', '0', SMASHUP_FACTION_IDS.NINJAS)],
+                },
             });
 
-            expect(result.matchState).toBeUndefined();
-            expect(result.events).toHaveLength(0);
+            const result = runCommand(
+                makePromptMatchState(state),
+                {
+                    type: 'su:play_action',
+                    playerId: '0',
+                    payload: { cardUid: 'infiltrate-1', targetBaseIndex: 0 },
+                } as any,
+                defaultTestRandom,
+            );
+
+            expect(result.success).toBe(true);
+            expectNoPrompt(result.finalState);
+            expect(result.events.some(event => event.type === SU_EVENTS.ONGOING_DETACHED)).toBe(false);
         });
     });
 

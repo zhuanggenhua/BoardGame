@@ -211,6 +211,7 @@ async function main() {
         VITE_DEV_PORT: String(resolvedPorts.frontend),
         GAME_SERVER_PORT: String(resolvedPorts.gameServer),
         API_SERVER_PORT: String(resolvedPorts.apiServer),
+        VITE_DEV_SKIP_API: skipApiMode ? 'true' : 'false',
         GAME_SERVER_PROXY_TARGET: `http://127.0.0.1:${resolvedPorts.gameServer}`,
         ...(resolvedMongoUri ? { MONGO_URI: resolvedMongoUri } : {}),
         ...(disableHotReload

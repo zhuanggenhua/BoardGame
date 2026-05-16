@@ -30,7 +30,6 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { appendScoringFrameDeferredPayload, consumeScoringFrameDeferredPayload, createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import {
     getPromptHandlerData,
-    getPromptOption,
     getPromptOptions,
     getPromptPlayerId,
     getPromptSourceId,
@@ -39,7 +38,8 @@ import {
     triggerBaseAbilityWithMS,
     getInteractionsFromResult,
     makeMatchState,
-    resolvePromptViaRegisteredHandler,
+    respondToPromptOption,
+    withOnlyCurrentPrompt,
 } from './helpers';
 import type { RandomFn } from '../../../engine/types';
 
@@ -319,15 +319,15 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
         const interaction = getInteractionsFromResult(result)[0];
         expect(getPromptSourceId(interaction)).toBe('base_pirate_cove');
 
-        const step1 = resolvePromptViaRegisteredHandler(
+        const step1 = respondToPromptOption(
             result.matchState!,
-            interaction,
-            { minionUid: 'm2', minionDefId: 'd1' },
-            1200,
+            (entry: any) => entry.value?.minionUid === 'm2',
+            'base pirate cove choose minion m2',
+            '1',
             dummyRandom,
         );
         expect(step1).toBeDefined();
-        const nextInteraction = getSimpleChoicePrompt(step1!.state, 'base_pirate_cove_choose_base');
+        const nextInteraction = getSimpleChoicePrompt(step1.finalState, 'base_pirate_cove_choose_base');
 
         const staleCore = makeState({
             bases: [
@@ -345,14 +345,14 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             },
         });
 
-        const step2 = resolvePromptViaRegisteredHandler(
-            makeMatchState(staleCore),
-            nextInteraction,
-            { baseIndex: 1 },
-            1201,
+        const step2 = respondToPromptOption(
+            withOnlyCurrentPrompt(makeMatchState(staleCore), nextInteraction),
+            (entry: any) => entry.value?.baseIndex === 1,
+            'base pirate cove choose base 1',
+            '1',
             dummyRandom,
         );
-        expect(step2?.events ?? []).toHaveLength(0);
+        expect(step2.events).toHaveLength(0);
     });
 
     it('base_tortuga: 若所选随从已离开原基地则不再移动', () => {
@@ -375,7 +375,6 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             ],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = getPromptOption(interaction, (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm3');
         expect(getPromptSourceId(interaction)).toBe('base_tortuga');
 
         const staleCore = makeState({
@@ -395,14 +394,14 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             },
         });
 
-        const resolved = resolvePromptViaRegisteredHandler(
-            makeMatchState(staleCore),
-            interaction,
-            option.value,
-            1300,
+        const resolved = respondToPromptOption(
+            withOnlyCurrentPrompt(makeMatchState(staleCore), interaction),
+            (entry: any) => entry.value?.minionUid === 'm3',
+            'base tortuga choose minion m3',
+            '1',
             dummyRandom,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.events.filter((e: any) => e.type === SU_EVENTS.MINION_MOVED)).toHaveLength(0);
     });
 
     it('base_mushroom_kingdom: 若所选对手随从已离开原基地则不再移动', () => {
@@ -419,7 +418,6 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             baseDefId: 'base_mushroom_kingdom',
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = getPromptOption(interaction, (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
         expect(getPromptSourceId(interaction)).toBe('base_mushroom_kingdom');
 
         const staleCore = makeState({
@@ -437,14 +435,14 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             },
         });
 
-        const resolved = resolvePromptViaRegisteredHandler(
-            makeMatchState(staleCore),
-            interaction,
-            option.value,
-            1400,
+        const resolved = respondToPromptOption(
+            withOnlyCurrentPrompt(makeMatchState(staleCore), interaction),
+            (entry: any) => entry.value?.minionUid === 'm1',
+            'base mushroom kingdom choose minion m1',
+            '0',
             dummyRandom,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.events.filter((e: any) => e.type === SU_EVENTS.MINION_MOVED)).toHaveLength(0);
     });
 
     it('base_the_hill: 若所选随从已离开原基地则不再移动', () => {
@@ -461,7 +459,6 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             baseDefId: 'base_the_hill',
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = getPromptOption(interaction, (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
         expect(getPromptSourceId(interaction)).toBe('base_the_hill');
 
         const staleCore = makeState({
@@ -479,14 +476,14 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             },
         });
 
-        const resolved = resolvePromptViaRegisteredHandler(
-            makeMatchState(staleCore),
-            interaction,
-            option.value,
-            1500,
+        const resolved = respondToPromptOption(
+            withOnlyCurrentPrompt(makeMatchState(staleCore), interaction),
+            (entry: any) => entry.value?.minionUid === 'm1',
+            'base the hill choose minion m1',
+            '0',
             dummyRandom,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.events.filter((e: any) => e.type === SU_EVENTS.MINION_MOVED)).toHaveLength(0);
     });
 });
 
@@ -547,7 +544,6 @@ describe('stale return/destroy regression: 基础基地 Prompt', () => {
             rankings: [{ playerId: '0', power: 2, vp: 4 }],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = getPromptOption(interaction, (entry: any) => entry.value?.minionUid === 'm1');
         expect(getPromptSourceId(interaction)).toBe('base_the_mothership');
 
         const staleCore = makeState({
@@ -560,14 +556,14 @@ describe('stale return/destroy regression: 基础基地 Prompt', () => {
             },
         });
 
-        const resolved = resolvePromptViaRegisteredHandler(
-            makeMatchState(staleCore),
-            interaction,
-            option.value,
-            1450,
+        const resolved = respondToPromptOption(
+            withOnlyCurrentPrompt(makeMatchState(staleCore), interaction),
+            (entry: any) => entry.value?.minionUid === 'm1',
+            'base mothership choose minion m1',
+            '0',
             dummyRandom,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.events.filter((e: any) => e.type === SU_EVENTS.MINION_RETURNED)).toHaveLength(0);
     });
 
     it('base_ninja_dojo: 若所选随从已离开基地则不再消灭', () => {
@@ -587,7 +583,6 @@ describe('stale return/destroy regression: 基础基地 Prompt', () => {
             ],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = getPromptOption(interaction, (entry: any) => entry.value?.minionUid === 'm2');
         expect(getPromptSourceId(interaction)).toBe('base_ninja_dojo');
 
         const staleCore = makeState({
@@ -602,14 +597,14 @@ describe('stale return/destroy regression: 基础基地 Prompt', () => {
             },
         });
 
-        const resolved = resolvePromptViaRegisteredHandler(
-            makeMatchState(staleCore),
-            interaction,
-            option.value,
-            1451,
+        const resolved = respondToPromptOption(
+            withOnlyCurrentPrompt(makeMatchState(staleCore), interaction),
+            (entry: any) => entry.value?.minionUid === 'm2',
+            'base ninja dojo choose minion m2',
+            '0',
             dummyRandom,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
     });
 });
 
@@ -766,7 +761,6 @@ describe('base_tortuga: 计分后亚军移动随从', () => {
         }));
 
         const interaction = getInteractionsFromResult(result)[0];
-        const option = getPromptOption(interaction, (entry: any) => entry.value?.minionUid === 'm3');
         expect(getPromptSourceId(interaction)).toBe('base_tortuga');
 
         let resolvedState = makeMatchState(makeState({
@@ -812,16 +806,16 @@ describe('base_tortuga: 计分后亚军移动随从', () => {
             ],
         });
 
-        const resolved = resolvePromptViaRegisteredHandler(
-            resolvedState,
-            interaction,
-            option.value,
-            2001,
+        const resolved = respondToPromptOption(
+            withOnlyCurrentPrompt(resolvedState, interaction),
+            (entry: any) => entry.value?.minionUid === 'm3',
+            'base tortuga replacement choose minion m3',
+            '1',
             dummyRandom,
         );
 
-        expect(resolved?.events ?? []).toHaveLength(0);
-        const consumed = consumeScoringFrameDeferredPayload(resolved!.state);
+        expect(resolved.events.filter((e: any) => e.type === SU_EVENTS.MINION_MOVED)).toHaveLength(0);
+        const consumed = consumeScoringFrameDeferredPayload(resolved.finalState);
         expect(consumed.deferredActions).toEqual([
             {
                 kind: 'moveMinionToReplacementBase',

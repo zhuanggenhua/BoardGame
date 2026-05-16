@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef, type ReactNode } from 'react';
-import { AUTH_API_URL } from '../config/server';
+import { AUTH_API_URL, IS_DEV_API_DISABLED } from '../config/server';
 import i18n from '../lib/i18n';
 import { normalizeDeveloperGameIds } from '../lib/developerGameAccess';
 
@@ -139,6 +139,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const syncCurrentUser = useCallback(async (tokenToSync: string) => {
+        if (IS_DEV_API_DISABLED) {
+            return;
+        }
+
         try {
             const response = await fetch(`${AUTH_API_URL}/me`, {
                 method: 'GET',

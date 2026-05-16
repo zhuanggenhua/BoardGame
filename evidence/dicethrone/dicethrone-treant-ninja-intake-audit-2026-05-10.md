@@ -478,5 +478,6 @@ Treant / Ninja 新英雄按通用新增派系门禁与当前发布口径已完�
 ### 2026-05-16 后的当前有效口径
 
 - `treant`：本文件旧结论失效。原因不是“没测试到 token / 卡牌效果”，而是“录入阶段没先建立玩家板槽位合同，审计阶段也没把这个缺口拦住”。当前应以 `src/games/dicethrone/rule/treant真相源表.md`、`src/games/dicethrone/rule/treant录入核对.md` 与 `dicethrone-treant-slot-audit-2026-05-16.md` 为准。
+- 2026-05-16 继续全面审计后，Treant 失效范围进一步扩大：不只是槽位合同漏审，还新增命中提示板 / 玩家板 / 专属卡图的批量语义冲突，包括 `养成树灵` 领域合同缺失、`每回合每种树灵仅限花费1次` 未实现、神性树灵防负面自动触发、刺藤上限缺失，以及多张基础技能 / 专属卡错录。Treant 当前总出口应改看 `evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md`。
 - `ninja`：本文件旧结论同样失效，当前应以 `dicethrone-ninja-regression-audit-2026-05-14.md` 为准。
 - 因此，这份 2026-05-10 主审计文档不能再作为 Treant / Ninja 的全面审计完成证明；它只能证明当时已覆盖的那批代表链，不证明后续新增发现的槽位合同、共享语义错位、旧结论降级都已包含在内。

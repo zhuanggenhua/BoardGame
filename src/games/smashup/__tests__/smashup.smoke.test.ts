@@ -20,7 +20,6 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { getCardDef, getTitanDef } from '../data/cards';
 import { TITAN_CARD_DEFS } from '../data/titans';
 import { getPlayerEffectivePowerOnBase, getRegisteredModifierIds, getTitanPowerContribution } from '../domain/ongoingModifiers';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { addPowerCounter, buildPlayerTargetOptions } from '../domain/abilityHelpers';
 import { uncoverBuriedCard } from '../domain/bury';
 import { collectTriggers, fireTriggers, interceptEvent } from '../domain/ongoingEffects';
@@ -484,10 +483,60 @@ describe('smashup', () => {
     });
 
     it('泰坦进场交互在 resolve 时会再次检查己方是否已有泰坦在场', () => {
-        const handler = getInteractionHandler('titan_penguins_emperor_penguin_play');
-        expect(handler).toBeDefined();
+        const promptCore = makeState({
+            bases: [
+                makeBase({
+                    minions: [
+                        makeMinion('prompt-penguin-a', 'ghosts_spectre', '0', 2),
+                        makeMinion('prompt-penguin-b', 'pirate_first_mate', '0', 2),
+                        makeMinion('prompt-penguin-c', 'robot_microbot_alpha', '0', 1),
+                    ],
+                }),
+                makeBase(),
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.WIZARDS, SMASHUP_FACTION_IDS.PENGUINS],
+                }),
+                '1': makePlayer('1', {
+                    factions: [SMASHUP_FACTION_IDS.ALIENS, SMASHUP_FACTION_IDS.GHOSTS],
+                }),
+            },
+            titans: [
+                {
+                    uid: 'emperor-setaside',
+                    defId: 'penguins_emperor_penguin',
+                    faction: SMASHUP_FACTION_IDS.PENGUINS,
+                    ownerId: '0',
+                    controllerId: '0',
+                    powerCounters: 0,
+                    talentUsed: false,
+                    location: { zone: 'setaside' },
+                } satisfies TitanState,
+            ],
+        });
 
-        const state = makeMatchState(makeState({
+        const triggerResult = fireTriggers(promptCore, 'onTurnStart', {
+            state: promptCore,
+            matchState: makeMatchState(promptCore, 'startTurn', '0'),
+            playerId: '0',
+            random: FIXED_RANDOM,
+            now: 31,
+        });
+        const prompt = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_penguins_emperor_penguin_play');
+        expect(prompt).toBeDefined();
+
+        const staleCore = makeState({
+            bases: [
+                makeBase({
+                    minions: [
+                        makeMinion('stale-penguin-a', 'ghosts_spectre', '0', 2),
+                        makeMinion('stale-penguin-b', 'pirate_first_mate', '0', 2),
+                        makeMinion('stale-penguin-c', 'robot_microbot_alpha', '0', 1),
+                    ],
+                }),
+                makeBase(),
+            ],
             players: {
                 '0': makePlayer('0', {
                     factions: [SMASHUP_FACTION_IDS.WIZARDS, SMASHUP_FACTION_IDS.PENGUINS],
@@ -518,24 +567,20 @@ describe('smashup', () => {
                     location: { zone: 'setaside' },
                 } satisfies TitanState,
             ],
-        }));
+        });
 
-        const result = handler!(
-            state,
+        const result = respondToPromptOption(
+            { ...triggerResult.matchState!, core: staleCore },
+            entry => entry.value?.baseIndex === 0,
+            'Emperor Penguin stale play base option',
             '0',
-            { baseIndex: 0, baseDefId: state.core.bases[0].defId },
-            {
-                continuationContext: {
-                    titanUid: 'emperor-setaside',
-                    titanDefId: 'penguins_emperor_penguin',
-                },
-            },
             FIXED_RANDOM,
-            31,
         );
-
-        expect(result.events).toEqual([]);
-        expect(result.state).toBe(state);
+        expect(result.success, result.error).toBe(true);
+        expect(result.events).toEqual(expect.not.arrayContaining([
+            expect.objectContaining({ type: SU_EVENTS.TITAN_PLAYED }),
+        ]));
+        expect(result.finalState.core).toBe(staleCore);
     });
 
     it('丛林之灵输掉 titan clash 时可以改为移动到另一个基地', () => {

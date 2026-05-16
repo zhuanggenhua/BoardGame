@@ -3,7 +3,7 @@ import type { RandomFn } from '../../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { validate } from '../../domain/commands';
 import {
     clearOngoingEffectRegistry,
@@ -16,6 +16,7 @@ import type { CardInstance, TurnStartedEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
     getFirstPrompt,
+    invokeRegisteredInteractionHandlerContract,
     getPromptOption,
     getPromptOptions,
     getSimpleChoicePrompt,
@@ -379,7 +380,7 @@ describe('bear_cavalry_bear_necessities_pod 限制', () => {
     });
 });
 
-describe('bear_cavalry_superiority_pod 保护模式', () => {
+describe('bear_cavalry_superiority_pod 低层合同：保护模式', () => {
     it('protect 分支开启保护，且在拥有者下回合开始后失效', () => {
         const myMinion = makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 });
         const state = makeState({
@@ -392,15 +393,15 @@ describe('bear_cavalry_superiority_pod 保护模式', () => {
                 }),
             ],
         });
-        const handler = getInteractionHandler('bear_cavalry_superiority_pod_talent');
-
-        const protectResult = handler!(
+        // 这里刻意保留 direct handler：测的是 protect/draw 分支如何改写 metadata 合同，不是普通业务 prompt 链。
+        const protectResult = invokeRegisteredInteractionHandlerContract(
+            'bear_cavalry_superiority_pod_talent',
             { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } },
             '0',
             'protect',
             { cardUid: 'sup-1' },
-            dummyRandom,
             0,
+            dummyRandom,
         );
         const afterTurnStart = reduce(protectResult.state.core, {
             type: SU_EVENTS.TURN_STARTED,
@@ -434,15 +435,15 @@ describe('bear_cavalry_superiority_pod 保护模式', () => {
                 }),
             ],
         });
-        const handler = getInteractionHandler('bear_cavalry_superiority_pod_talent');
-
-        const drawResult = handler!(
+        // 这里刻意保留 direct handler：测的是 protect 标记撤销与摸牌分支的低层合同。
+        const drawResult = invokeRegisteredInteractionHandlerContract(
+            'bear_cavalry_superiority_pod_talent',
             { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } },
             '0',
             'draw',
             { cardUid: 'sup-1' },
-            dummyRandom,
             0,
+            dummyRandom,
         );
 
         expect(drawResult.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);

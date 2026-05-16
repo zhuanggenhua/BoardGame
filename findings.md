@@ -2509,6 +2509,15 @@
 - “目标随从已失效时不应再移动旧目标” 这种 stale 场景也不需要保留直调。更稳的做法是先走真实 destroy 链拿到 prompt，再替换响应时的 `core` 去模拟目标失效；这样锁住的是“响应时二次校验必须阻止旧目标复活”，不是 handler 的裸输入形状。
 - 这批收口后，全仓 `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 命中从 `42` 降到 `38`。下降本身不是目标，但它说明剩余项更集中在明确的系统合同、注册表合同和 stale/baseDefId 合同，而不是业务链测试伪装成低层测试。
 
+## 2026-05-16 21:41 补充发现：stale/baseDefId 合同也不等于必须直调 handler
+
+- `base_mushroom_kingdom` 这两条 Deep Roots / Infiltrate 测试再次说明：哪怕你最终想验证的是“保护过滤如何看待基地能力归因”，只要业务上先出现的是 prompt，就应该先走真实 `triggerBaseAbilityWithMS(...)` 和 `respondToPromptOption(...)`。真正的合同是 move 事件的 reason 与保护系统归因，不是 `continuationContext.mushroomBaseIndex` 的位置参数怎么传。
+- `igor-rlyeh-double-trigger.test.ts` 过去把“base_rlyeh 选择消灭 Igor”拆成 `getInteractionHandler('base_rlyeh')` + `processDestroyMoveCycle(...)` 两段，实质是在手工重放真实命令链。改成真实 prompt 响应后，测试更直接表达“选中 Igor 后，只应出现一个 `frankenstein_igor` prompt”，也更不容易因为系统后处理顺序调整而大面积碎裂。
+- `base_temple_of_goju_tiebreak` 的 tie-break 选择也不需要显式碰 handler。对业务测试来说，`triggerBaseAbility('base_temple_of_goju')` 先产出平局 prompt，再通过 `respondToPromptOption(...)` 选中某个并列最强随从，已经足够覆盖“玩家选择后正确放牌库底”。
+- `pirate_buccaneer_move` 是更有代表性的例子：这两条测试确实在锁 `resolveLiveBaseIndex(...)` 的 `baseDefId` 语义，但也可以通过“先让 replacement prompt 真实出现，再在 stale core 上响应”来表达。这样测试保留了 `BASE_CLEARED` / `baseDefId` 漂移的真实语义，却不再把 handler 存在性、value 形状和位置参数顺序写进断言。
+- 冗余的“业务文件里顺手断一下 handler 已注册”现在也更清楚该往哪里删。`abilities/pirates-ongoing.test.ts` 和 `smashup.smoke.test.ts` 的几条注册断言去掉后，没有损失真实行为覆盖；注册存在性本来就该由 `abilityInteractionRegistry.test.ts` 这类专门合同文件承担。
+- 到这一步，全仓 `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 命中已降到 `29`。剩余项的性质比之前清楚很多：注册表合同、prompt 系统合同、runtime prompt 非法值拒绝合同，以及少量明确的 score-session / stale / resolve-time 二次校验合同。
+
 ## 2026-05-16 19:16 补充发现：多选 prompt 也应直接表达为 optionIds 响应
 
 - `cthulhu_recruit_by_force` 与 `cthulhu_it_begins_again` 的旧测试把“多选 prompt -> 传 value 数组给 handler”当成合同，这会把选项值形状和 handler 参数顺序一起锁死。
@@ -2589,3 +2598,105 @@
 - `titan_itty_critters_rainboroc` 同样说明：若第一段响应已经在真实命令链里把 deck/discard 和下一段 prompt 都推进好了，就不该再手动 `reduce(events)` 出一个 `afterShuffle` 再拿旧 state 喂给第二段 handler。业务测试应直接观察每段 `finalState.core`。
 - 这类二段链的本质合同是“第一次点击哪个可见候选，第二次点击哪个可见候选，最终公开状态如何变化”，不是“测试如何帮命令链补状态”。继续手工保活 prompt / 手工拼 core，只会让重构时又碎一片测试。
 - 本轮把 `creampuff_man` 与 `rainboroc` 也收掉后，全仓命中从 60 降到 56，`smashup.smoke.test.ts` 内只剩 `major_ursa`、`very_large_boulder`、`hill_that_strolls` 这几簇普通多段链，以及两条显式合同断言。
+
+## 2026-05-16 22:03 补充发现：真实 prompt 链测试仍然必须满足能力自身的触发资格
+
+- `titan_penguins_emperor_penguin_play` 的 resolve-time recheck 红灯证明了一点：把测试从 direct handler 迁到真实 trigger/response 链后，旧测试里那些“之前被直调 handler 绕过去的前置条件”都会重新变成真门槛。
+- Emperor Penguin 在 `onTurnStart` 创建 special prompt 的真实资格不是“set-aside 有 titan 就行”，而是“当前没有己方 live titan，且至少有一个基地已有 3 个己方随从”。如果测试不摆出这个局面，`fireTriggers(...)` 根本不会产出 `titan_penguins_emperor_penguin_play`。
+- 这类用例的正确写法不是回退到 direct handler，而是分两层状态：
+  - `promptCore` 负责满足真实触发资格，证明 prompt 确实会出现；
+  - `staleCore` 负责在响应前引入状态漂移，证明 resolve-time 的二次合法性检查会把原本可点的旧 prompt 拦下来。
+- 对 Emperor Penguin 来说，真正稳定的合同是：`trigger` 负责基于公开资格创建 prompt，`resolve` 再通过 `canControllerPlayTitan(...)` 拒绝“当前已存在另一只己方 live titan”的 stale 响应。这个合同能抗重构；“测试手动给 handler 喂 continuation/timestamp”不能。
+- 复跑后全仓 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 已降到 24。剩余条目里，`abilityInteractionRegistry.test.ts`、`promptSystem.test.ts`、`promptResponseChain.test.ts` 基本都属于应保留的系统/注册表合同；`bear_cavalry_superiority_pod_talent` 与 `steampunk_mechanic` 更像低层能力合同，是否继续迁要按价值判断，不该为了数字继续硬改。
+
+## 2026-05-16 22:08 补充发现：要防的是“新增回流”，不只是继续手工清旧债
+
+- 这轮重新检查 `scripts/infra/testing-structure-guard.mjs` 后可以确认，之前门禁只拦 prompt 内部结构耦合（`sys.interaction.current`、`prompt.data.options`、手写 `SYS_INTERACTION_RESPOND` 等），还没有拦“业务测试重新写回 `getInteractionHandler/getAbilityRuntimePromptHandler` 直调”。
+- 只继续人工把旧文件改绿，不把这层规则固化进 guard，后面任何新 bugfix 测试都可能再次走最省事的 handler 直调，把 seam 债务写回来。那样数字会反复，规范也等于没落地。
+- 更稳的策略是两层：
+  - 继续把明显的普通业务链迁回真实 `trigger -> prompt -> respond`；
+  - 同时用 `test:structure` 阻止新增业务测试再引入 direct handler 直调。
+- direct handler 不该被全禁。当前复核后，真正合理的保留面有三类：
+  - 注册表合同：例如 `abilityInteractionRegistry.test.ts`
+  - Prompt / response chain 系统合同：例如 `promptSystem.test.ts`、`promptResponseChain.test.ts`
+  - 少量明确登记的低层能力合同：这类合同也不必继续在测试体里直接摸注册表 API，可以再包一层 helper
+- 这说明“测试稳定性”不是把所有底层合同都藏起来，而是把业务 seam 和底层 seam 分层清楚，并用门禁保证新增代码只能走对的那层。
+
+## 2026-05-16 22:21 补充发现：低层合同也应该有稳定入口
+
+- `abilities/bear-cavalry.test.ts` 与 `expansionOngoing.test.ts` 证明了一点：即使测试目标本来就属于低层合同，也没必要在测试体里每次重复 `getInteractionHandler/getAbilityRuntimePromptHandler -> handler!(...)` 这套注册表样板。
+- 更稳的做法是把“按 sourceId 取已注册 handler 并执行”也收进 `helpers.ts`，让测试显式表达自己在走“registered contract helper”，而不是继续散落注册表细节。
+- 这样做有两个直接收益：
+  - 后续如果 handler 获取方式、签名适配或错误消息调整，低层合同测试只需要改 helper，不会再在多个文件碎裂。
+  - 结构门禁可以继续收紧，不再给某些业务文件做文件级 allowlist；只要它们走 helper，就能同时保留低层合同与统一入口。
+- 完成这一步后，SmashUp 测试里 raw `getInteractionHandler/getAbilityRuntimePromptHandler` 已只剩 22 处，全部集中在：注册表合同、prompt 系统合同，以及 `helpers.ts` 自己。说明“业务层 raw handler 查询”已经从文件层面清空。
+
+## 2026-05-16 22:26 补充发现：系统合同也该把“存在性样板”抽到 helper
+
+- `promptResponseChain.test.ts` 和 `promptSystem.test.ts` 里剩下的 raw handler 查询，本质已经不是业务耦合，而是重复的“某 sourceId 是否有已注册 continuation handler/runtime prompt handler”样板。
+- 这类样板继续散在系统合同测试里，问题不在今天会不会红，而在以后如果查找策略、报错文本、fallback 顺序调整，又会同时碎在多处系统合同文件里。
+- 把它们进一步收进 `helpers.ts` 后，系统合同仍然保留自己的测试语义：
+  - 有的场景要断言“interaction handler 一定存在”
+  - 有的场景要断言“runtime prompt handler 一定存在”
+  - 有的场景要断言“任意一种 prompt continuation contract 至少存在一种”
+  但这些语义不再和底层注册表读取样板绑在一起。
+- 完成这一步后，SmashUp 测试里的 raw `getInteractionHandler/getAbilityRuntimePromptHandler` 已降到 11，而且这 11 处全部都合理：
+  - `abilityInteractionRegistry.test.ts` 的 9 处：它本来就在测注册表 API 自己
+  - `helpers.ts` 的 2 处：作为单一查找函数，是系统级唯一出口
+- 这意味着“业务测试直调 handler”与“系统合同散落查找样板”两类债务都已经清掉了，剩下的是应保留的注册表语义本身。
+
+## 2026-05-16 22:35 补充发现：`resolvePromptViaRegisteredHandler(...)` 也是耦合，不该被当成“已经抽象了所以没事”
+
+- 这一轮检查后可以确认，之前只盯 raw `getInteractionHandler/getAbilityRuntimePromptHandler` 仍然不够，因为 `resolvePromptViaRegisteredHandler(...)` 本质上也是“按 prompt.sourceId 找 registered handler 然后直接喂 value/data”。
+- 如果业务测试继续大量依赖这个 helper，那么实现重构时虽然不再碎在注册表 API 名字上，仍然会碎在“registered handler 是真实入口”这个假设上。对用户来说，这和“改代码就要改测试”没有本质区别。
+- 更准确的分层应是：
+  - 真实点击路径：`respondToPromptOption(...)` / `respondToPromptOptions(...)`
+  - 低层合同：`invokeRegisteredInteractionHandlerContract(...)` / `invokeRegisteredRuntimePromptHandlerContract(...)`
+  - 系统/反应队列/注册表合同：允许继续用 `resolvePromptViaRegisteredHandler(...)` 或注册表 API，但文件本身要承担“我在测系统合同”的命名与责任
+- `elder-thing-choice-goju-tiebreak.test.ts` 很能说明这个分层：
+  - 大多数 destroy / deckbottom / 二段选择都是用户真实会点击的链，应迁回 `respondToPromptOption(...)`
+  - 只有“强行提交一个正常 UI 根本不会给出的非法 destroy choice”这种用例，才是真的低层合同，应该显式走 contract helper
+- 迁完这一批后，`resolvePromptViaRegisteredHandler(` 已从分散业务文件收缩到 15 条，而且都集中在 `baseAbilitiesPrompt.test.ts` 与 `reactionQueue*.test.ts` 这类更接近 prompt/base/system contract 的文件。这才是下一轮真正该审的边界。
+
+## 2026-05-16 22:50 补充发现：reaction queue 系统合同里，只要“当前 prompt 已经真实存在”，也不该继续直调 registered handler
+
+- `reactionQueueBaseOptionalClockwise.test.ts`、`reactionQueueOrdering.test.ts`、`reactionQueueBaseAbilities.test.ts` 与 `reactionQueueDestroyerId.test.ts` 这一轮共同证明：即使文件名本身属于 reaction queue / system contract，只要当前状态里已经有真实 `smashup_reaction_choose` prompt，测试就应该优先走 `respondToPromptOption(...)` / `respondToPrompt(...)`，而不是 `resolvePromptViaRegisteredHandler(...)`。
+- 真正需要保留低层入口的，不是“这个文件在测 reaction queue”，而是“当前没有真实 prompt，或测试明确在锁 reaction session / registered continuation 的内部合同”。例如已经存在的 `resolveSmashUpReactionChoice(...)` 场景，仍然是在测 session 继续执行，不应为了表面统一再强行包成普通点击链。
+- 这轮两个红灯也进一步验证了旧断言的问题不在行为，而在测试仍假设 `events[0] === TRIGGER_CONSUMED`。一旦回到真实 respond 命令，`SYS_INTERACTION_RESOLVED` 进入事件流是正常副产物；系统合同同样要按“包含关键系统/业务事件”断言，不能再锁固定下标。
+- `reactionQueueDestroyerId.test.ts` 还补强了一个边界：当 reaction queue 先弹 `smashup_reaction_choose`，后续进入 `vampire_mad_monster_party_pod_play` / `vampire_buffet_pod_play` 这类业务 prompt 时，测试真正想证明的是 destroyerId/预览上下文是否保留，而不是“registered handler 直接返回了什么 state 形状”。
+- 迁完这批后，`resolvePromptViaRegisteredHandler(` 已只剩 `helpers.ts` 里的 helper 定义 1 处。说明这条 seam 已经从“测试体到处可见的执行入口”收缩成“仅保留一个显式低层工具”，后续是否继续保留它，已经变成 helper API 设计问题，而不是业务测试债务。
+
+## 2026-05-16 22:58 补充发现：没有调用方的测试桥接 helper 也属于债务，不该因为“只是 helper”就继续保留
+
+- `resolvePromptViaRegisteredHandler(...)` 清到只剩 helper 定义本体后，继续保留它已经没有测试价值，只会向后续维护者暗示“这里还有一条可接受的 handler 直调捷径”。这种死 helper 会让债务在未来回流，比删掉更危险。
+- `callHandler(...)` 与 `resolveCurrentPromptHandlerWithCore(...)` 也是同类问题。即使它们当前没有直接污染测试体，只要 helper 和文档还在，就会继续把“手工喂 handler / 手工换 core 再跑 continuation”包装成一种被认可的测试方法。
+- 这类死 seam 的正确收口方式不是给它们写“仅限特殊情况”注释，而是直接删除代码出口、删掉转发导出、改掉文档示例。否则测试规范嘴上说“优先真实 trigger -> prompt -> respond”，代码库却还在提供反方向的现成入口。
+- 审计/规范层也要同步收口。`docs/testing-best-practices.md` 如果还把 `callHandler` 写在推荐工具表里，后面再有人照着文档写回旧模式，并不算他个人失误，而是规范本身口径不一致。
+
+## 2026-05-16 23:05 补充发现：`resolveAbility(...)` 里也混着很多本可回到真实命令入口的业务测试
+
+- `ninja_infiltrate_pod talent` 和 `ancient_egyptians_plague_of_locusts onPlay` 这两个样本说明，`resolveAbility(...)` 不是天然就代表“底层合同”。很多时候它只是历史上写测试更省事，于是直接绕过了 `USE_TALENT` / `PLAY_ACTION` 的验证、命令形状和后处理。
+- 这种绕过会漏掉真实命令口径里的门禁与 payload 语义。`ancient_egyptians_plague_of_locusts` 改回 `PLAY_ACTION` 时第一次红灯，暴露的正是旧测试完全绕开的真实约束：行动牌命令需要 `targetBaseIndex`，不是随手塞个 `baseIndex` 就能代表真实入口。
+- 同理，`ninja_infiltrate_pod` 用 `USE_TALENT` 改回真实命令后，测试直接观察 `finalState.core`，不再需要“执行器吐事件，再由测试手工 reduce”。这更接近用户路径，也更能在命令验证/后处理/最终状态任何一层回归时及时暴露真问题。
+- 因此后续治理 `resolveAbility(...)` 时，优先级不该按“这个文件里有多少命中”排，而要先挑那些本质上只是玩家出牌/用天赋/发动 special 的业务样本；系统合同、注册表语义或纯执行器单元边界另算。
+
+## 2026-05-16 23:17 补充发现：`resolveAbility(...)` 的 onPlay prompt 业务链和执行器时序合同要分开看
+
+- `ancient_egyptians_mummy_strength` 与 `special_madness` 这两组继续证明：只要用户真实入口是“打出一张行动卡”，测试就不该从 `resolveAbility(...)` 起步，即使后面还要经历多段 prompt。正确 seam 仍是 `PLAY_ACTION -> prompt -> respond -> finalState`。
+- `ancientEgyptiansMummyStrength.feedback-regression.test.ts` 之前甚至自建了一套 `GameTestRunner + systems` 来模拟 RESPOND 链，这类夹具越重，越说明测试已经偏离公开入口。改回 `runCommand(...)` 后，用例照样能覆盖“目标优先选择 + 最终 tempPowerModifier 生效”，而且系统壳层少了很多。
+- `special_madness` 则补了另一层边界：不是所有 `resolveAbility(...)` 都该一锅端。像 `special_madness` 这种标准 onPlay 行动卡，应迁回真实 `PLAY_ACTION`；但 `wizard_time_loop`、`killer_plant_insta_grow` 这种主要在锁 `off-phase` / `playTiming=immediate` 的用例，更接近执行器/时序合同，不该因为也叫 `onPlay` 就机械替换。
+- 这轮还说明了一个好处：把 `special_madness` 改回 `PLAY_ACTION` 后，能直接证明命令层允许把疯狂牌当行动打出，并继续进入真实 prompt；这比“executor 自己会不会吐出 prompt”更接近用户行为合同。
+
+## 2026-05-16 23:31 补充发现：`reduce` 验证也不该默认豁免旧执行器入口
+
+- `innsmouth_recruitment` 这条补了一个之前容易放过的角落：测试标题写的是“状态正确（reduce 验证）”时，很容易被误当成“那就允许从 `resolveAbility(...)` 起步吧”。这其实不成立。
+- 只要验证的业务事实仍是“玩家打出行动卡 -> 选择 prompt -> 事件流喂给 reducer 后状态正确”，入口就应该是真实 `PLAY_ACTION`。`reduce` 只决定最终断言方式，不决定前半段可以绕过命令层。
+- 这条旧写法里还手工补了一个 `ACTION_PLAYED` 事件，进一步说明测试已经脱离真实管线。改回 `runCommand(PLAY_ACTION)` 后，`ACTION_PLAYED` 与后续 `MADNESS_DRAWN / LIMIT_MODIFIED` 都来自同一条真实事件流，reduce 合同反而更可信。
+- 这也给后续筛选一个更明确的信号：同一 describe 里如果大多数用例已经用 `execPlayAction/runCommand`，只剩个别“状态验证 / reduce 验证”还单独走 `resolveAbility(...)`，这通常就是优先可收的旧 seam。
+
+## 2026-05-16 23:37 补充发现：`onPlay` 里“自动分支”同样应该回到真实命令入口
+
+- `ninja_infiltrate` 这组补了另一个容易被误分类的角落：有些旧用例不是 prompt 点击链，而是“单目标自动执行”或“无目标直接无事发生”。这类场景也不该因此留在 `resolveAbility(...)`。
+- 只要真实用户入口仍然是“打出行动卡”，即使后续没有 prompt，测试入口也应该是 `PLAY_ACTION`。自动分支是否发生、是否产生 `ONGOING_DETACHED`、是否完全无事发生，都应该由真实命令链自己给出答案。
+- 这组红灯也再次说明了分层收益：切回 `PLAY_ACTION` 后没有暴露能力实现 bug，只有测试体自己少引了 `expectNoPrompt`。这种红灯说明迁移方向是对的，问题在测试壳层，不在业务行为。
+- 因此后续筛选时，不要只挑“会弹 prompt”的 `resolveAbility(...)`；像 `ninja_infiltrate` 这种混有 prompt 分支、自动分支、空分支的 onPlay 能力，往往更值得整组一起迁，这样同一能力的三种路径就不会继续分裂在两套入口上。

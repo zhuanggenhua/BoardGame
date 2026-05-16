@@ -16,12 +16,16 @@ import { smashUpFlowHooks } from '../domain/index';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { createSmashUpEventSystem } from '../domain/systems';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { buildSmashUpAiLegalActions } from '../ai';
-import { expectNoPrompt, respondCommand } from './helpers';
+import {
+    expectNoPrompt,
+    expectRegisteredRuntimePromptHandlerContract,
+    findRegisteredPromptContinuationContract,
+    respondCommand,
+} from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -109,13 +113,13 @@ describe('P7: PromptSystem 集成', () => {
 
     describe('Prompt 继续函数注册表', () => {
         it('alien_crop_circles runtime prompt 已注册', () => {
-            const fn = getAbilityRuntimePromptHandler('alien_crop_circles');
+            const fn = expectRegisteredRuntimePromptHandlerContract('alien_crop_circles');
             expect(fn).toBeDefined();
             expect(typeof fn).toBe('function');
         });
 
         it('未注册的 abilityId 返回 undefined', () => {
-            const fn = getInteractionHandler('nonexistent_ability');
+            const fn = findRegisteredPromptContinuationContract('nonexistent_ability');
             expect(fn).toBeUndefined();
         });
     });

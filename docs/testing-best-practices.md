@@ -70,6 +70,10 @@
 
 - 每类高频测试对象都应有稳定的测试接口：游戏命令用 `GameTestRunner` / `runCommand`，交互 prompt 用游戏专用 prompt facade，UI 用真实 E2E 入口。
 - 测试主体不应直接依赖内部结构字段，例如 `sys.interaction.current`、`queue`、`data.options`、内部 handler 调用顺序。确需测试内部契约时，测试文件名或 describe 必须写明它是在测系统契约。
+- 业务/能力测试默认禁止新增 `getInteractionHandler(...)`、`getAbilityRuntimePromptHandler(...)` 直调。优先表达成真实 `trigger -> prompt -> respond`、真实命令入口，或通过 facade 读取 prompt 和选择 option。
+- 只有三类场景允许保留 direct handler / runtime prompt handler：注册表存在性合同、PromptSystem/response chain 系统合同、通过测试 helper 显式封装的低层能力合同（例如 stale/runtime resolver/metadata 合同）。这类测试必须明确说明它锁的不是业务路径，而是底层合同。
+- 即使是低层合同，也优先通过 `helpers.ts` 中的显式 helper（如 `invokeRegisteredInteractionHandlerContract`、`invokeRegisteredRuntimePromptHandlerContract`）进入，不要在测试体里再次直接摸注册表 API。
+- `resolvePromptViaRegisteredHandler(...)` 不视为“真实交互入口”。这类 registered-handler 直调 helper 已作为旧 seam 收口，不应再新增或恢复；需要系统级/低层合同时，优先使用显式 contract helper、`resolveSmashUpReactionChoice(...)`，或真实 `respondToPrompt/respondToPromptOption(s)`。
 - 如果一次实现重构导致大量测试改 `option` 读取方式、prompt 字段名、命令 payload 形状或内部 helper 调用，应先新增/调整测试接口层，再迁移用例，禁止在每个测试里重复适配。
 - 新增测试接口要放在对应游戏的 `__tests__/helpers.ts` 或更聚焦的 helper 文件中；测试用例只表达“选择某张牌 / 某玩家 / 某基地 / 某模式”，不表达 InteractionSystem 如何存储这些选项。
 - 示例：Smash Up 交互测试优先使用 `getSimpleChoicePrompt`、`getPromptOption`、`getPromptOptions`、`respondToPrompt`、`respondToPromptOptions`、`cancelPrompt`，而不是在测试体中散落 `prompt.data.options.find(...)` 或手写系统交互命令。
@@ -81,7 +85,7 @@
 | 游戏逻辑测试 | `GameTestRunner` | 完整模拟引擎管线，自动处理状态初始化 |
 | 单个能力测试 | `runCommand` (testRunner.ts) | 简化的命令执行，自动包装 MatchState |
 | 基地能力测试 | `triggerBaseAbilityWithMS` (helpers.ts) | 自动注入 matchState |
-| 交互处理器测试 | `callHandler` (helpers.ts) | 桥接旧测试到新签名 |
+| 低层合同测试 | `invokeRegisteredInteractionHandlerContract` / `invokeRegisteredRuntimePromptHandlerContract` | 显式锁注册表/非法值/metadata 合同 |
 | UI 集成测试 | Playwright E2E | 端到端验证 |
 
 ### 1.1 E2E 去重与分层
@@ -456,15 +460,16 @@ const newCore = applyEvents(core, events);
 #### 测试桥接工具
 
 ```typescript
-// 旧式 InteractionHandler 调用桥接
-const events = callHandler(handler, {
-    state: core,
-    playerId: '0',
-    selectedValue: { baseIndex: 0 },
-    data: { continuationContext: {...} },
+// 低层合同测试：显式调用已注册的 continuation/runtime handler
+const result = invokeRegisteredInteractionHandlerContract(
+    'test_source',
+    matchState,
+    '0',
+    { baseIndex: 0 },
+    { continuationContext: {...} },
+    Date.now(),
     random,
-    now: Date.now(),
-});
+);
 
 // 基地能力测试桥接（自动注入 matchState）
 const result = triggerBaseAbilityWithMS('base_tortuga', 'afterScoring', {

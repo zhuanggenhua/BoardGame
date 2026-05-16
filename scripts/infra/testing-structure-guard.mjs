@@ -152,7 +152,12 @@ function isInteractionContractTest(file) {
   const baseName = path.basename(normalized);
   return (
     normalized.includes('/interaction') ||
+    normalized.includes('/reactionqueue') ||
     baseName.includes('interaction') ||
+    baseName.includes('reactionqueue') ||
+    baseName.includes('promptsystem') ||
+    baseName.includes('promptresponsechain') ||
+    baseName.includes('abilityinteractionregistry') ||
     baseName.includes('response-window') ||
     baseName.includes('afterscoring-window') ||
     baseName.includes('system-contract')
@@ -183,6 +188,21 @@ const forbiddenPromptCouplingPatterns = [
   {
     pattern: /\bsys\.interaction\.current\b/,
     message: '业务测试不要直读 sys.interaction.current；请通过 prompt facade。',
+  },
+];
+
+const forbiddenDirectHandlerPatterns = [
+  {
+    pattern: /\bgetInteractionHandler\s*\(/,
+    message: '业务测试不要新增 getInteractionHandler(...) 直调；请优先通过真实 trigger/prompt/command 链或 facade 表达行为。只有注册表/系统合同或已登记的低层合同文件允许保留。',
+  },
+  {
+    pattern: /\bgetAbilityRuntimePromptHandler\s*\(/,
+    message: '业务测试不要新增 getAbilityRuntimePromptHandler(...) 直调；请优先通过真实 runtime prompt 响应链表达行为。只有 prompt 系统合同或已登记的低层合同文件允许保留。',
+  },
+  {
+    pattern: /\bresolvePromptViaRegisteredHandler\s*\(/,
+    message: '业务测试不要新增 resolvePromptViaRegisteredHandler(...)；这仍然是 registered handler 直调。优先使用 respondToPrompt/respondToPromptOption(s) 表达真实点击路径。',
   },
 ];
 
@@ -231,6 +251,21 @@ function checkPromptFacadeCoupling(file, existedAtBase) {
     for (const rule of forbiddenPromptCouplingPatterns) {
       if (rule.pattern.test(line)) {
         violations.push(`${file}: 新增测试行继续耦合 InteractionSystem 内部结构（added line ${index + 1}）。${rule.message}`);
+      }
+    }
+  }
+}
+
+function checkDirectHandlerCoupling(file, existedAtBase) {
+  if (!isGameVitestTest(file) || isInteractionContractTest(file)) {
+    return;
+  }
+
+  const lines = addedLinesSinceBase(file, existedAtBase);
+  for (const [index, line] of lines.entries()) {
+    for (const rule of forbiddenDirectHandlerPatterns) {
+      if (rule.pattern.test(line)) {
+        violations.push(`${file}: 新增测试行继续耦合已注册 handler（added line ${index + 1}）。${rule.message}`);
       }
     }
   }
@@ -299,6 +334,7 @@ for (const file of targetFiles) {
   checkE2eStructure(file, existedAtBase);
   checkSkippedTestUsage(file, existedAtBase);
   checkPromptFacadeCoupling(file, existedAtBase);
+  checkDirectHandlerCoupling(file, existedAtBase);
 
   if (!isGameVitestTest(file) || !isGenericSinkName(file)) {
     continue;

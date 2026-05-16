@@ -1,6 +1,13 @@
 ## Session: 2026-05-16 TDD 行为 seam 与测试结构重构
 
 - **Status:** in_progress
+- 2026-05-16 21:41 +08：继续把“业务 prompt + stale 合同”从 direct handler 里拔出来。`src/games/smashup/__tests__/baseAbilityNeutralProtection.test.ts` 改为真实 `triggerBaseAbilityWithMS('base_mushroom_kingdom')` -> `base_mushroom_kingdom` prompt -> `respondToPromptOption(...)`，单文件 `2 passed`、eslint 0 errors，文件内命中归零；全仓统计从 `38` 降到 `36`。
+- 同批把 `src/games/smashup/__tests__/igor-rlyeh-double-trigger.test.ts` 改成真实 `base_rlyeh` prompt 响应链：先触发 `onTurnStart`，再选择 Igor，直接在 `finalState` 上统计 `frankenstein_igor` prompt 只出现一次。验证：单文件 `1 passed`、eslint 0 errors；全仓统计从 `36` 降到 `35`。
+- 同批把 `src/games/smashup/__tests__/elder-thing-choice-goju-tiebreak.test.ts` 的 Goju tie-break 响应从 `base_temple_of_goju_tiebreak` 直调改成真实 `triggerBaseAbility('base_temple_of_goju')` -> `respondToPromptOption(...)`。验证：单文件 `10 passed`、eslint 0 errors；全仓统计从 `35` 降到 `34`。
+- 继续清理混层断言：`src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts` 删除“`pirate_buccaneer_move` handler 已注册”这条冗余断言，注册存在性仍由 `abilityInteractionRegistry.test.ts` 承担。验证：整文件 `18 passed`、eslint 0 errors；全仓统计从 `34` 降到 `33`。
+- 继续处理 `src/games/smashup/__tests__/smashup.smoke.test.ts`：删掉 `big_funny_giant` 的两条纯注册断言，保留 `abilityTags` 与真实行为链。验证：整文件 `133 passed`、eslint 0 errors；全仓统计从 `33` 降到 `31`。
+- 2026-05-16 21:40 +08：`src/games/smashup/__tests__/buccaneer-pod-limit.test.ts` 两条 `pirate_buccaneer_move` stale/baseDefId 合同已改成真实 replacement prompt 响应：先通过 `fireTriggers(..., { phase: 'replacement' })` 产出 `pirate_buccaneer_move`，再在 stale core 上 `respondToPromptOption(...)`。中途第一次红灯暴露“prompt 前态必须保留随从仍在原基地，且断言应只看业务 `MINION_MOVED` 事件”；修正后单文件 `8 passed`、eslint 0 errors，文件内命中归零；全仓 direct handler / runtime prompt handler 统计从 `31` 降到 `29`。
+- 结构门禁复跑：`npm run test:structure` -> `checked files: 17`，OK。当前剩余命中列表已收敛为：注册表合同 `abilityInteractionRegistry.test.ts`、系统合同 `promptSystem.test.ts` / `promptResponseChain.test.ts`、`steampunk_mechanic` runtime prompt 非法值合同、`base_greenhouse` scoring-session/stale 合同、`bear_cavalry_superiority_pod_talent` 低层 talent 合同、`titan_penguins_emperor_penguin_play` resolve-time 二次校验合同，以及 `pirate_first_mate_choose_base` stale/baseDefId 合同。
 - 2026-05-16 21:26 +08：先收口 `src/games/smashup/__tests__/madnessAbilities.test.ts` 的半迁移残留。删除 `miskatonic_those_meddling_kids_pod_mode` 里两行遗留的 `getInteractionHandler(...)` 断言后，单文件重新验证 `32 passed`、eslint 0 errors，文件内 direct handler / runtime prompt handler 命中归零；全仓统计从 `42` 降到 `41`。
 - 同批继续处理 `src/games/smashup/__tests__/baseProtection.test.ts` 里九命之屋三条业务测试。把 `base_nine_lives_intercept` 从 direct handler 改成真实 `resolveDestroyedMinions(...)` -> `base_nine_lives_intercept` prompt -> `respondToPromptOption(...)` 链，并额外覆盖“响应时目标 stale 不再移动旧目标”的真实二次校验。验证：整文件 `19 passed`、eslint 0 errors、文件内命中归零；全仓 direct handler / runtime prompt handler 统计进一步从 `41` 降到 `38`。
 - 结构门禁复跑：`npm run test:structure` -> `checked files: 13`，OK。当前剩余命中更集中在注册表合同、runtime prompt 非法值合同、`pirate_buccaneer_move` / `base_greenhouse` / `base_temple_of_goju_tiebreak` 这类 stale/baseDefId/resolution 合同，而不是普通业务按钮响应。
@@ -3748,3 +3755,167 @@
   - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/smashup.smoke.test.ts` -> 0 errors。
   - `$env:NODE_OPTIONS='--max-old-space-size=8192'; npm run test:structure` -> checked files: 9，OK。
   - `rg -n "getInteractionHandler\\(|getAbilityRuntimePromptHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line` -> 当前剩余 56 条命中。
+
+## 2026-05-16 22:03 +08 Smoke 中 Emperor Penguin stale recheck 修复
+
+- 处理结果：
+  - `smashup.smoke.test.ts` 里“泰坦进场交互在 resolve 时会再次检查己方是否已有泰坦在场”一条，保留真实 `fireTriggers(...)` -> `getSimpleChoicePrompt(...)` -> `respondToPromptOption(...)` 链，没有回退成 direct handler。
+  - 红灯根因确认：测试给的 `promptCore` 没有任何基地满足 Emperor Penguin 的真实 special 资格，所以 `fireTriggers(..., 'onTurnStart')` 根本不会产出 `titan_penguins_emperor_penguin_play` prompt。
+  - 修复方式：为 `promptCore` 与 `staleCore` 都补上“基地 0 有 3 个己方随从”的真实前置；`staleCore` 额外放入一只己方 live titan，用来触发 resolve-time 的 `canControllerPlayTitan(...)` 二次拦截。
+  - 结果恢复为：旧 prompt 可以真实创建，但在 stale core 上响应该 prompt 时不会产生 `TITAN_PLAYED`，且 `finalState.core === staleCore`。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts -t "泰坦进场交互在 resolve 时会再次检查己方是否已有泰坦在场"` -> 1 passed / 132 skipped。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/smashup.smoke.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/smashup.smoke.test.ts` -> 1 file / 133 tests passed。
+  - `npm run test:structure` -> checked files: 3，OK。
+  - `( rg -n "getInteractionHandler\\(|getAbilityRuntimePromptHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line ).Lines` -> 24。
+
+## 2026-05-16 22:08 +08 结构门禁补上 direct handler seam 规则
+
+- 处理结果：
+  - `scripts/infra/testing-structure-guard.mjs` 新增 direct handler 门禁：对 `src/games/**/__tests__` 里的游戏行为测试，新增加的 `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 直调会直接报错。
+  - `isInteractionContractTest(...)` 识别范围补到 `promptSystem`、`promptResponseChain`、`abilityInteractionRegistry`，避免把系统合同/注册表合同误判成业务测试。
+  - 新增显式 allowlist：`src/games/smashup/__tests__/abilities/bear-cavalry.test.ts` 与 `src/games/smashup/__tests__/expansionOngoing.test.ts`，作为当前已确认的低层能力合同保留面。
+  - `docs/testing-best-practices.md` 已同步补充：业务/能力测试默认禁止新增 direct handler / runtime prompt handler，只有注册表、系统合同和明确登记的低层合同例外。
+- 验证：
+  - `npm run test:structure` -> checked files: 3，OK。
+  - `node node_modules/eslint/bin/eslint.js scripts/infra/testing-structure-guard.mjs` -> 0 errors。
+  - `node scripts/infra/testing-structure-guard.mjs --all` -> checked files: 861，OK；仅输出历史 `legacy-root` 与旧泛名测试债务 warning，无新增 violation。
+
+- 补充收口：
+  - `src/games/smashup/__tests__/abilities/bear-cavalry.test.ts` 已把 `bear_cavalry_superiority_pod_talent` 这两条 handler 直调明确标注为“低层合同”，避免后续被误当成普通业务测试入口。
+  - `src/games/smashup/__tests__/expansionOngoing.test.ts` 已在 `steampunk_mechanic` 两条 runtime prompt handler 用例旁补注释，明确它们锁的是 illegal value / resolver 二次校验合同。
+  - `node node_modules/eslint/bin/eslint.js scripts/infra/testing-structure-guard.mjs src/games/smashup/__tests__/abilities/bear-cavalry.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> 0 errors。
+  - `npm run test:structure` 复跑 -> checked files: 5，OK。
+
+## 2026-05-16 22:21 +08 低层合同 helper 化，移除文件级 allowlist
+
+- 处理结果：
+  - `src/games/smashup/__tests__/helpers.ts` 新增 `invokeRegisteredInteractionHandlerContract(...)` 与 `invokeRegisteredRuntimePromptHandlerContract(...)`。
+  - `abilities/bear-cavalry.test.ts` 的 `bear_cavalry_superiority_pod_talent` 两条，已从测试体内 raw `getInteractionHandler(...)` 改为走 `invokeRegisteredInteractionHandlerContract(...)`。
+  - `expansionOngoing.test.ts` 的 `steampunk_mechanic` 两条 runtime resolver 合同，已从测试体内 raw `getAbilityRuntimePromptHandler(...)` 改为走 `invokeRegisteredRuntimePromptHandlerContract(...)`。
+  - 由于这两份文件不再含 raw handler 查询，`scripts/infra/testing-structure-guard.mjs` 已移除这两份文件的 allowlist；guard 现在只对系统合同命名和 helper 出口留口子。
+  - `rg -n "getInteractionHandler\\(|getAbilityRuntimePromptHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line` -> 22；剩余 raw 命中仅在 `abilityInteractionRegistry.test.ts`、`promptSystem.test.ts`、`promptResponseChain.test.ts` 与 `helpers.ts`。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/abilities/bear-cavalry.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> 2 files / 88 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/abilities/bear-cavalry.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts scripts/infra/testing-structure-guard.mjs` -> 0 errors。
+  - `npm run test:structure` -> checked files: 5，OK。
+
+## 2026-05-16 22:26 +08 系统合同存在性样板 helper 化
+
+- 处理结果：
+  - `src/games/smashup/__tests__/helpers.ts` 新增 `findRegisteredPromptContinuationContract(...)`、`expectRegisteredInteractionHandlerContract(...)`、`expectRegisteredRuntimePromptHandlerContract(...)`、`expectRegisteredPromptContinuationContract(...)`。
+  - `promptResponseChain.test.ts` 中“继续函数注册验证”和各能力 existence 断言，已从 raw `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 改为走上述 helper。
+  - `promptSystem.test.ts` 中 `alien_crop_circles runtime prompt 已注册` 与 `nonexistent_ability` negative case，也已改走 helper。
+  - `helpers.ts` 内部继续去重：公开 helper 统一复用 `lookupRegisteredInteractionHandler(...)` / `lookupRegisteredRuntimePromptHandler(...)` 两个底层查找函数。
+  - `rg -n "getInteractionHandler\\(|getAbilityRuntimePromptHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line` -> 11；剩余只在 `abilityInteractionRegistry.test.ts` 9 处和 `helpers.ts` 2 处。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/promptResponseChain.test.ts src/games/smashup/__tests__/promptSystem.test.ts` -> 2 files / 22 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/promptResponseChain.test.ts src/games/smashup/__tests__/promptSystem.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 7，OK。
+
+## 2026-05-16 22:35 +08 开始治理 resolvePromptViaRegisteredHandler 隐性耦合
+
+- 处理结果：
+  - `scripts/infra/testing-structure-guard.mjs` 新增门禁：业务测试新增 `resolvePromptViaRegisteredHandler(...)` 也会失败，避免把 registered handler 直调藏进 helper。
+  - `abilities/cthulhu.test.ts` 的 `special_madness` 两条，已从 `resolvePromptViaRegisteredHandler(...)` 改为真实 `respondToPromptOption(...)`；断言口径同步改为按业务事件类型查找，不再假设 `events[0]` 一定是业务事件。
+  - `elderThingAbilities.test.ts` 的 `elder_thing_mi_go` 两条，已从 `resolvePromptViaRegisteredHandler(...)` 改为真实 `respondToPromptOption(...)`。
+  - `elder-thing-choice-goju-tiebreak.test.ts` 已按语义拆分：
+    - 常规 destroy / deckbottom / 二段选择 / stale old-prompt 场景改为 `respondToPromptOption(...)` + `withOnlyCurrentPrompt(...)`
+    - “强行提交非法 destroy choice 也应兜底”保留为低层合同，但改走 `invokeRegisteredInteractionHandlerContract(...)`
+  - `rg -n "resolvePromptViaRegisteredHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line` -> 15；剩余集中在 `baseAbilitiesPrompt.test.ts`、`reactionQueue*.test.ts` 与 `helpers.ts`。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/elderThingAbilities.test.ts` -> 2 files / 45 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/elder-thing-choice-goju-tiebreak.test.ts` -> 1 file / 10 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/elderThingAbilities.test.ts src/games/smashup/__tests__/elder-thing-choice-goju-tiebreak.test.ts scripts/infra/testing-structure-guard.mjs` -> 0 errors。
+  - `npm run test:structure` -> checked files: 10，OK。
+
+## 2026-05-16 22:50 +08 reaction queue 当前 prompt 改走真实响应
+
+- 处理结果：
+  - `src/games/smashup/__tests__/reactionQueueBaseOptionalClockwise.test.ts` 的 optional cycle 用例，已从 `resolvePromptViaRegisteredHandler(...)` + `withoutCurrentPrompt(...)` 改为真实 `respondToPromptOption(...)`。现在直接通过当前 `smashup_reaction_choose` prompt 点击 `pass`，再由 player 2 点击 `base_b`，最后验证 player 1 仍能看到 2 个 `base_a` option。
+  - `src/games/smashup/__tests__/reactionQueueOrdering.test.ts` 的 mandatory ordering 选择，已从 registered handler 直调改为真实 `respondToPromptOption(...)`；断言同步改掉 `events[0] === TRIGGER_CONSUMED`，改为“事件流包含 `TRIGGER_CONSUMED` + `POWER_COUNTER_REMOVED`”。
+  - `src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` 的基地排序选择，同样改为真实 `respondToPromptOption(...)`，并把固定下标断言改为包含式断言。
+  - `src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts` 的 `smashup_reaction_choose` 分支，已从 `resolvePromptViaRegisteredHandler(...)` 改为真实 `respondToPrompt(...)`；后续仍断言 `vampire_mad_monster_party_pod_play` / `vampire_buffet_pod_play` prompt 上的 `displayCard` 上下文正确保留。
+  - 这批迁移后，`rg -n "resolvePromptViaRegisteredHandler\\(" src/games/smashup/__tests__` 已只剩 `helpers.ts:787` 这 1 处 helper 定义本体；测试文件内命中清零。
+- 中途红灯：
+  - `reactionQueueOrdering.test.ts` 与 `reactionQueueBaseAbilities.test.ts` 首次改完后都只剩 1 条红灯，根因一致：旧断言仍锁 `events[0]` 必须是 `TRIGGER_CONSUMED`，但真实 respond 命令会先发 `SYS_INTERACTION_RESOLVED`。
+  - 修正方式不是回退实现，而是把断言改成“`events` 中包含 `TRIGGER_CONSUMED`”，保留系统事件噪音的真实口径。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/reactionQueueBaseOptionalClockwise.test.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` -> 4 files / 36 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/reactionQueueBaseOptionalClockwise.test.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 15，OK。
+  - `( rg -n "resolvePromptViaRegisteredHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line ).Lines` -> `1`。
+  - `( rg -n "getInteractionHandler\\(|getAbilityRuntimePromptHandler\\(" src/games/smashup/__tests__ | Measure-Object -Line ).Lines` -> `11`。
+
+## 2026-05-16 22:58 +08 删除已无调用方的旧 handler 桥接 helper
+
+- 处理结果：
+  - `src/games/smashup/__tests__/helpers.ts` 中 `resolvePromptViaRegisteredHandler(...)` 已删除。此前它已只剩 helper 定义本体，没有任何测试调用方。
+  - 同文件里的 `callHandler(...)` 与 `resolveCurrentPromptHandlerWithCore(...)` 也一并删除；这两条旧桥接当前在代码里同样没有实际调用，只会继续暴露“手工喂 handler / 手工替换 core”的历史 seam。
+  - `src/games/smashup/__tests__/helpers/auditUtils.ts` 已同步移除 `callHandler` 的转发导出，避免审计工具继续把它当公共接口暴露出去。
+  - `docs/testing-best-practices.md` 的工具表与示例已同步改成 `invokeRegisteredInteractionHandlerContract(...)` / `invokeRegisteredRuntimePromptHandlerContract(...)`，不再教人使用 `callHandler`。
+- 验证：
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/helpers/auditUtils.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 15，OK。
+  - `rg -n "\\bcallHandler\\b|\\bresolveCurrentPromptHandlerWithCore\\b" src/games/smashup/__tests__` -> 无命中。
+  - `rg -n "resolvePromptViaRegisteredHandler\\(" src/games/smashup/__tests__` -> 无命中。
+
+## 2026-05-16 23:05 +08 小样本 `resolveAbility(...)` 回到真实命令入口
+
+- 处理结果：
+  - `src/games/smashup/__tests__/ninja-infiltrate-pod-talent.test.ts` 已从 `resolveAbility('ninja_infiltrate_pod', 'talent')` + `applyEvents(...)` 改为真实 `runCommand(... SU_COMMANDS.USE_TALENT ...)`，并通过 `finalState.core` 断言基地能力抑制生效。
+  - `src/games/smashup/__tests__/abilities/ancient-egyptians.test.ts` 已从 `resolveAbility('ancient_egyptians_plague_of_locusts', 'onPlay')` 改为真实 `runCommand(... SU_COMMANDS.PLAY_ACTION ...)`，继续断言会创建 `ancient_egyptians_plague_of_locusts` 基地选择 prompt。
+- 中途红灯：
+  - `ancient-egyptians.test.ts` 首次改完后红灯，根因不是能力逻辑错，而是旧执行器直调一直绕过了真实命令形状；`PLAY_ACTION` 需要的是 `targetBaseIndex`，不是 `baseIndex`。
+  - 修正后测试恢复通过。这类红灯正说明回到真实命令入口有价值，它能逼测试对齐真实用户路径，而不是继续活在执行器夹具里。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/ninja-infiltrate-pod-talent.test.ts` -> 1 file / 1 test passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/ninja-infiltrate-pod-talent.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/abilities/ancient-egyptians.test.ts` -> 1 file / 1 test passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/abilities/ancient-egyptians.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 17，OK。
+  - `( rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line ).Lines` -> `100`。
+
+## 2026-05-16 23:17 +08 `resolveAbility(...)` 继续回收 4 处普通 onPlay 业务链
+
+- 处理结果：
+  - `src/games/smashup/__tests__/ancientEgyptiansMummyStrength.feedback-regression.test.ts` 已从 `resolveAbility('ancient_egyptians_mummy_strength', 'onPlay')` + 自建 `GameTestRunner/respond`，改为真实 `runCommand(PLAY_ACTION)` + `respondToPromptOption(...)`。
+  - 同文件现在直接走 `mummy-strength` 出牌 -> `ancient_egyptians_mummy_strength_target` prompt -> 选择 `empowered` -> 断言 `tempPowerModifier=4`，不再用 executor 中间态和自建 runner 充当业务入口。
+  - `src/games/smashup/__tests__/abilities/cthulhu.test.ts` 中 `special_madness` 的 3 条 `onPlay` 场景，已统一改为真实 `runCommand(PLAY_ACTION)` 起链，再用 `respondToPromptOption(...)` 选择 `draw` / `return`。
+  - 边界判断：`special_madness` 归类为普通行动卡出牌链，应继续迁；`wizard_time_loop`、`killer_plant_insta_grow` 这种主要断言 `playTiming=immediate` 的 off-phase 用例，当前保留在执行器/时序层。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/ancientEgyptiansMummyStrength.feedback-regression.test.ts` -> 1 file / 1 test passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/abilities/cthulhu.test.ts -t "special_madness onPlay 与终局 VP"` -> 1 file / 5 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/ancientEgyptiansMummyStrength.feedback-regression.test.ts src/games/smashup/__tests__/abilities/cthulhu.test.ts` -> 0 errors / 0 warnings。
+  - `npm run test:structure` -> checked files: 19，OK。
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `92`。
+
+## 2026-05-16 23:31 +08 `innsmouth_recruitment` reduce 验证回到真实命令入口
+
+- 处理结果：
+  - `src/games/smashup/__tests__/madnessAbilities.test.ts` 中 `innsmouth_recruitment（招募）` 的“状态正确（reduce 验证）”，已从 `resolveAbility('innsmouth_recruitment', 'onPlay')` 改为真实 `runCommand(PLAY_ACTION)` 起链。
+  - 该用例现在先走真实出牌得到 `innsmouth_recruitment` prompt，再用 `respondToPromptOption(...)` 选择 `count === 3`，最后用 `applyEvents(state, [...playResult.events, ...result.events])` 验证 reducer 后态。
+  - 旧的“手工补一条 ACTION_PLAYED 事件”已经删除；这条 reduce 验证现在完全依赖真实命令层吐出的事件流。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/madnessAbilities.test.ts -t "状态正确（reduce 验证）"` -> 1 file / 7 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/madnessAbilities.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 20，OK。
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/madnessAbilities.test.ts` -> 剩余 7 处，集中在 off-phase immediate 合同、`miskatonic_librarian_pod` talent、`miskatonic_mandatory_reading` special 与 `miskatonic_lost_knowledge` talent。
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `91`。
+
+## 2026-05-16 23:37 +08 `ninja_infiltrate` 4 条业务 onPlay 用例回到真实 `PLAY_ACTION`
+
+- 处理结果：
+  - `src/games/smashup/__tests__/baseFactionOngoing.test.ts` 中 `ninja_infiltrate / ninja_infiltrate_pod` 的 4 条 onPlay 业务测试，已从 `resolveAbility(...)` 改为真实 `runCommand(PLAY_ACTION)`。
+  - 覆盖的 4 条路径分别是：多目标创建选择交互、POD 版只给基地战术目标、单目标自动消灭、无目标不产生额外效果。
+  - 旧的自建 `matchState = { core, sys: { interaction... } }` 已从这 4 条测试体移除；出牌校验、`ACTION_PLAYED` 和后处理全部重新交给真实命令层。
+- 中途红灯：
+  - 首次迁移后，`只有一个基地战术时自动消灭` 与 `没有基地战术时不创建交互也不额外发事件` 两条失败。
+  - 根因不是行为差异，而是测试文件顶部漏引入 `expectNoPrompt` helper；补齐 import 后整组恢复通过。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/baseFactionOngoing.test.ts -t "渗透"` -> 1 file / 7 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 21，OK。
+  - `rg -n "resolveAbility\\('ninja_infiltrate|resolveAbility\\('ninja_infiltrate_pod" src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> 无命中。
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `87`。

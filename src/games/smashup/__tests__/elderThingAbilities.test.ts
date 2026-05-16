@@ -32,7 +32,7 @@ import {
     getPromptTargetType,
     getSimpleChoicePrompt,
     makeMatchState as makeMatchStateFromHelpers,
-    resolvePromptViaRegisteredHandler,
+    respondToPromptOption,
     respondCommand,
 } from './helpers';
 import { runCommand } from './testRunner';
@@ -351,7 +351,13 @@ describe('远古之物派系能力', () => {
             });
             const prompt = getSimpleChoicePrompt(promptResult.matchState ?? ms, 'elder_thing_mi_go');
             expect(getPromptSourceId(prompt)).toBe('elder_thing_mi_go');
-            const result = resolvePromptViaRegisteredHandler(promptResult.matchState ?? ms, prompt, { choice: 'draw_madness' }, 0, defaultRandom);
+            const result = respondToPromptOption(
+                promptResult.matchState ?? ms,
+                option => option.value?.choice === 'draw_madness',
+                'elder thing mi-go draw madness option',
+                '1',
+                defaultRandom,
+            );
             expect(result).toBeDefined();
             const madnessEvents = result!.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
@@ -383,7 +389,13 @@ describe('远古之物派系能力', () => {
             });
             const prompt = getSimpleChoicePrompt(promptResult.matchState ?? ms, 'elder_thing_mi_go');
             expect(getPromptSourceId(prompt)).toBe('elder_thing_mi_go');
-            const result = resolvePromptViaRegisteredHandler(promptResult.matchState ?? ms, prompt, { choice: 'decline' }, 0, defaultRandom);
+            const result = respondToPromptOption(
+                promptResult.matchState ?? ms,
+                option => option.value?.choice === 'decline',
+                'elder thing mi-go decline option',
+                '1',
+                defaultRandom,
+            );
             expect(result).toBeDefined();
             const drawEvents = result!.events.filter(e => e.type === SU_EVENTS.CARDS_DRAWN);
             const selfDraw = drawEvents.filter(e => (e as any).payload.playerId === '0');

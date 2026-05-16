@@ -28,7 +28,6 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { resolveAbilityRuntimePrompt } from '../domain/abilityRuntime';
 import { clearBaseAbilityRegistry, triggerBaseAbility, triggerExtendedBaseAbility } from '../domain/baseAbilities';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
@@ -868,10 +867,8 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
         }));
         const interaction = getInteractionsFromResult(result)[0];
         const option = getPromptOption(interaction, (entry: any) => entry.value?.cardUid === 'dk1');
-        const handler = getInteractionHandler('base_greenhouse');
         expect(getPromptSourceId(interaction)).toBe('base_greenhouse');
         expect(option).toBeDefined();
-        expect(handler).toBeDefined();
 
         const staleCore = makeState({
             bases: [makeBase('base_greenhouse')],
@@ -908,16 +905,18 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
                 ],
             });
 
-        const resolved = handler!(
-            scoredSessionState,
+        const resolved = respondToPromptOption(
+            withOnlyCurrentPrompt(scoredSessionState, interaction),
+            (entry: any) => entry.value?.cardUid === 'dk1',
+            'Greenhouse stale deck option',
             '0',
-            option.value,
-            getPromptHandlerData(interaction),
             dummyRandom,
-            1853,
         );
-        expect(resolved?.events ?? []).toHaveLength(0);
-        expect(consumeScoringFrameDeferredPayload(resolved!.state).deferredActions).toEqual([]);
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events).toEqual(expect.not.arrayContaining([
+            expect.objectContaining({ type: SU_EVENTS.MINION_PLAYED }),
+        ]));
+        expect(consumeScoringFrameDeferredPayload(resolved.finalState).deferredActions).toEqual([]);
     });
 
     it('base_greenhouse: replacement follow-up 应写入 scoring session，不写 core', () => {
@@ -935,10 +934,7 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             rankings: [{ playerId: '0', power: 5, vp: 4 }],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = getPromptOption(interaction, (entry: any) => entry.value?.cardUid === 'dk1');
-        const handler = getInteractionHandler('base_greenhouse');
-        expect(option).toBeDefined();
-        expect(handler).toBeDefined();
+        expect(getPromptOption(interaction, (entry: any) => entry.value?.cardUid === 'dk1')).toBeDefined();
 
         const scoredState = makeMatchState(makeState({
             bases: [makeBase('base_greenhouse')],
@@ -950,7 +946,7 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             },
         }));
 
-        const resolved = handler!(
+        const stagedState = withOnlyCurrentPrompt(
             appendScoringFrameDeferredPayload(
                 setScoringSession(scoredState, {
                     ...createScoringSession(scoredState.core, [0]),
@@ -976,21 +972,21 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
                     ],
                 },
             ),
-            '0',
-            option.value,
-            {
-                ...getPromptHandlerData(interaction),
-                continuationContext: {
-                    ...getPromptHandlerData(interaction).continuationContext,
-                    baseIndex: 0,
-                },
-            },
-            dummyRandom,
-            1853,
+            interaction,
         );
 
-        expect(resolved?.events ?? []).toHaveLength(0);
-        const consumed = consumeScoringFrameDeferredPayload(resolved!.state);
+        const resolved = respondToPromptOption(
+            stagedState,
+            (entry: any) => entry.value?.cardUid === 'dk1',
+            'Greenhouse replacement follow-up option',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events).toEqual(expect.not.arrayContaining([
+            expect.objectContaining({ type: SU_EVENTS.MINION_PLAYED }),
+        ]));
+        const consumed = consumeScoringFrameDeferredPayload(resolved.finalState);
         expect(consumed.deferredActions).toEqual([
             {
                 kind: 'playMinionOnReplacementBase',

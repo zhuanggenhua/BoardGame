@@ -12,7 +12,7 @@ import {
   makeState,
   makeBase,
   makeMinion,
-  resolvePromptViaRegisteredHandler,
+  respondToPromptOption,
 } from './helpers';
 import { clearBaseAbilityRegistry, registerBaseAbility, registerExtended } from '../domain/baseAbilities';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
@@ -80,10 +80,16 @@ describe('Reaction queue: base abilities', () => {
       (option: any) => (option.label as string).includes('base_b'),
       'reaction option for base_b',
     );
-    const r2 = resolvePromptViaRegisteredHandler(ms1 as any, current, optB.value, 2, { shuffle: (a: any[]) => a } as any);
+    const r2 = respondToPromptOption(
+      ms1,
+      (option: any) => option.id === optB.id,
+      'reaction option for base_b',
+      '0',
+      { shuffle: (a: any[]) => a } as any,
+    );
     expect(r2).toBeDefined();
-    const evts = r2!.events as SmashUpEvent[];
-    expect(evts[0].type).toBe(SU_EVENTS.TRIGGER_CONSUMED);
+    const evts = r2.events as SmashUpEvent[];
+    expect(evts.some(e => e.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
     expect(evts.some(e => e.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(true);
   });
 

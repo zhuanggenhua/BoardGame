@@ -3,10 +3,12 @@ import * as dotenv from 'dotenv';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS } from './scripts/infra/e2e-port-config.js';
+import { assertSafeE2EServerMode, resolveUseDevServers } from './scripts/infra/e2e-mode-config.js';
 import { loadWorkerPorts, reserveAvailablePorts, reservePorts, saveWorkerPorts } from './scripts/infra/port-allocator.js';
 import { ensureSharedTestApiToken } from './src/server/testApiToken';
 
 dotenv.config({ quiet: true });
+assertSafeE2EServerMode(process.env);
 
 const configuredWorkers = Number.parseInt(process.env.PW_WORKERS || '1', 10);
 const isMultiWorker = configuredWorkers > 1;
@@ -15,7 +17,7 @@ const SINGLE_WORKER_PORTS = E2E_SINGLE_WORKER_PORTS;
 const DEV_PORTS = DEV_SERVER_PORTS;
 
 const forceStartServers = process.env.PW_START_SERVERS === 'true';
-const useDevServers = process.env.PW_USE_DEV_SERVERS === 'true';
+const useDevServers = resolveUseDevServers(process.env);
 const shouldStartServers = forceStartServers || !useDevServers;
 const shouldReuseExistingServers = !forceStartServers && !process.env.CI;
 const headedByEnv = process.env.PW_HEADED === 'true' || process.env.PWDEBUG === '1';

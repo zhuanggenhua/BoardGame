@@ -19,11 +19,16 @@ import { smashUpFlowHooks } from '../domain/index';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { createSmashUpEventSystem } from '../domain/systems';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { expectNoPrompt, respondCommand } from './helpers';
+import {
+    expectNoPrompt,
+    expectRegisteredInteractionHandlerContract,
+    expectRegisteredPromptContinuationContract,
+    expectRegisteredRuntimePromptHandlerContract,
+    respondCommand,
+} from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -99,7 +104,7 @@ describe('Prompt 响应链集成测试', () => {
                 'robot_tech_center',
             ];
             for (const id of interactionAbilities) {
-                const handler = getInteractionHandler(id) ?? getAbilityRuntimePromptHandler(id);
+                const handler = expectRegisteredPromptContinuationContract(id);
                 expect(handler, `${id} 交互处理函数或 runtime prompt 应已注册`).toBeDefined();
             }
         });
@@ -198,13 +203,13 @@ describe('能力特定的 Prompt 流程', () => {
 
     describe('pirate_cannon (加农炮)', () => {
         it('第一次选择的交互处理函数存在', () => {
-            const handler = getInteractionHandler('pirate_cannon_choose_first');
+            const handler = expectRegisteredInteractionHandlerContract('pirate_cannon_choose_first');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
 
         it('第二次选择的交互处理函数存在', () => {
-            const handler = getInteractionHandler('pirate_cannon_choose_second');
+            const handler = expectRegisteredInteractionHandlerContract('pirate_cannon_choose_second');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
@@ -212,7 +217,7 @@ describe('能力特定的 Prompt 流程', () => {
 
     describe('zombie_grave_digger (掘墓人)', () => {
         it('runtime prompt 处理函数存在且为函数类型', () => {
-            const handler = getAbilityRuntimePromptHandler('zombie_grave_digger');
+            const handler = expectRegisteredRuntimePromptHandlerContract('zombie_grave_digger');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
@@ -220,13 +225,13 @@ describe('能力特定的 Prompt 流程', () => {
 
     describe('pirate_shanghai (上海)', () => {
         it('选择随从的交互处理函数存在', () => {
-            const handler = getInteractionHandler('pirate_shanghai_choose_minion');
+            const handler = expectRegisteredInteractionHandlerContract('pirate_shanghai_choose_minion');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
 
         it('选择基地的交互处理函数存在', () => {
-            const handler = getInteractionHandler('pirate_shanghai_choose_base');
+            const handler = expectRegisteredInteractionHandlerContract('pirate_shanghai_choose_base');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
@@ -234,7 +239,7 @@ describe('能力特定的 Prompt 流程', () => {
 
     describe('alien_crop_circles (麦田怪圈)', () => {
         it('runtime prompt 处理函数存在且为函数类型', () => {
-            const handler = getAbilityRuntimePromptHandler('alien_crop_circles');
+            const handler = expectRegisteredRuntimePromptHandlerContract('alien_crop_circles');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });
@@ -242,7 +247,7 @@ describe('能力特定的 Prompt 流程', () => {
 
     describe('alien_scout_return (侦察兵回手)', () => {
         it('runtime prompt 处理函数存在且为函数类型', () => {
-            const handler = getAbilityRuntimePromptHandler('alien_scout_return');
+            const handler = expectRegisteredRuntimePromptHandlerContract('alien_scout_return');
             expect(handler).toBeDefined();
             expect(typeof handler).toBe('function');
         });

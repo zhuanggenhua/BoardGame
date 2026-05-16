@@ -9,6 +9,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS } from './e2e-port-config.js';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
+import { isDevServerE2ERequested, isDevServerE2EAllowed, resolveUseDevServers } from './e2e-mode-config.js';
 import { withWindowsHide } from './windows-hide.js';
 
 let windowsNetstatCache = null;
@@ -66,7 +67,9 @@ export async function runE2ESafetyCheck(env = process.env) {
 
   console.log('📳 E2E 测试环境检查...\n');
 
-  const useDevServers = env.PW_USE_DEV_SERVERS === 'true';
+  const requestedDevServers = isDevServerE2ERequested(env);
+  const allowedDevServers = isDevServerE2EAllowed(env);
+  const useDevServers = resolveUseDevServers(env);
   const forceStartServers = env.PW_START_SERVERS === 'true';
   const headedByEnv = env.PW_HEADED === 'true' || env.PWDEBUG === '1';
 
@@ -89,14 +92,20 @@ export async function runE2ESafetyCheck(env = process.env) {
     console.log('   - 或直接使用项目脚本：npm run test:e2e（默认会强制无头运行）\n');
   }
 
-  if (useDevServers) {
+  if (requestedDevServers && !allowedDevServers) {
+    console.log('\n⛔ 检测到 PW_USE_DEV_SERVERS=true，但没有显式授权 PW_ALLOW_DEV_SERVER_TESTS=true');
+    console.log('   项目当前会拒绝这种隐式复用开发服务器的模式，避免误碰 4273/18000/18001。');
+    console.log('   如确实要复用开发服务器，请同时设置：');
+    console.log('   - PW_ALLOW_DEV_SERVER_TESTS=true');
+    console.log('   - PW_START_SERVERS=false');
+  } else if (useDevServers) {
     console.log('\n⚠️ 警告：检测到 PW_USE_DEV_SERVERS=true');
     console.log('   这会导致测试使用开发服务器，而不是独立测试环境');
     console.log(`   测试会连接到开发环境的服务器（${DEV_PORTS.frontend}/${DEV_PORTS.gameServer}/${DEV_PORTS.apiServer}）`);
     console.log('\n   清除方法：');
     console.log('   - PowerShell: $env:PW_USE_DEV_SERVERS = $null');
     console.log('   - Bash: unset PW_USE_DEV_SERVERS');
-    console.log('   - 或运行: npx cross-env PW_USE_DEV_SERVERS=false npm run test:e2e\n');
+    console.log('   - 或运行: npx cross-env PW_USE_DEV_SERVERS=false PW_ALLOW_DEV_SERVER_TESTS=false npm run test:e2e\n');
   } else {
     console.log('\n✅ 测试环境完全隔离');
     console.log(`   测试端口: ${E2E_PORTS.frontend}, ${E2E_PORTS.gameServer}, ${E2E_PORTS.apiServer}`);

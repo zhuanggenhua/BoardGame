@@ -323,51 +323,13 @@ export function applyEvents(state: SmashUpCore, events: SmashUpEvent[]): SmashUp
 }
 
 // ============================================================================
-// InteractionHandler 测试桥接工具
+// 测试 helper / 注册表合同工具
 // ============================================================================
 
-import type { InteractionHandler } from '../domain/abilityInteractionHandlers';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { defaultTestRandom, runCommand } from './testRunner';
 import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
-
-/**
- * 旧式 handler 调用桥接：将对象参数转为位置参数
- *
- * 旧调用：handler({ state, playerId, selectedValue, data, random, now })
- * 新签名：handler(matchState, playerId, value, iData, random, timestamp)
- *
- * 返回 events 数组（兼容旧测试断言）
- */
-export function callHandler(
-    handler: InteractionHandler,
-    args: {
-        state: SmashUpCore;
-        playerId: string;
-        selectedValue: unknown;
-        data?: Record<string, unknown>;
-        random: RandomFn;
-        now: number;
-    },
-): SmashUpEvent[] {
-    const ms = makeMatchState(args.state);
-    const hasRuntimePrompt = !!args.data && typeof args.data === 'object' && 'runtimePrompt' in args.data;
-    // 旧测试的 data 字段对应新 handler 中 iData.continuationContext；runtime prompt 则直接传原始 data
-    const iData = args.data && Object.keys(args.data).length > 0
-        ? (hasRuntimePrompt
-            ? args.data
-            : { continuationContext: args.data } as Record<string, unknown>)
-        : undefined;
-    const result = handler(
-        ms,
-        args.playerId,
-        args.selectedValue,
-        iData,
-        args.random,
-        args.now,
-    );
-    return result?.events ?? [];
-}
 
 import type { BaseAbilityContext, BaseAbilityResult } from '../domain/baseAbilities';
 import { triggerBaseAbility as _triggerBaseAbility } from '../domain/baseAbilities';
@@ -760,52 +722,86 @@ export function withOnlyCurrentPrompt(
     return withoutQueuedPrompts(withCurrentPrompt(state, prompt));
 }
 
-export function resolveCurrentPromptHandlerWithCore(
-    promptState: MatchState<SmashUpCore>,
-    core: SmashUpCore,
-    handler: (...args: any[]) => any,
+export function invokeRegisteredInteractionHandlerContract(
+    sourceId: string,
+    state: MatchState<SmashUpCore>,
+    playerId: string,
     selectedValue: unknown,
+    data: unknown,
     now: number,
     random: RandomFn = defaultTestRandom,
 ) {
-    const prompt = getFirstPrompt(promptState);
-    if (!prompt) {
-        throw new Error('Expected a prompt to resolve with a handler, but no prompt was available.');
+    const handler = lookupRegisteredInteractionHandler(sourceId);
+    if (!handler) {
+        throw new Error(`Expected registered interaction handler for sourceId "${sourceId}".`);
     }
-    const handlerState = { ...promptState, core };
     return handler(
-        handlerState,
-        prompt.playerId,
+        state,
+        playerId,
         selectedValue,
-        prompt.data,
+        data,
         random,
         now,
     );
 }
 
-export function resolvePromptViaRegisteredHandler(
-    promptState: MatchState<SmashUpCore>,
-    prompt: any,
+export function invokeRegisteredRuntimePromptHandlerContract(
+    sourceId: string,
+    state: MatchState<SmashUpCore>,
+    playerId: string,
     selectedValue: unknown,
+    data: unknown,
     now: number,
     random: RandomFn = defaultTestRandom,
 ) {
-    const sourceId = getPromptSourceId(prompt);
-    if (!sourceId) {
-        throw new Error('Expected prompt sourceId before resolving registered handler.');
-    }
-    const handler = getInteractionHandler(sourceId);
+    const handler = lookupRegisteredRuntimePromptHandler(sourceId);
     if (!handler) {
-        throw new Error(`Expected registered interaction handler for prompt sourceId "${sourceId}".`);
+        throw new Error(`Expected registered runtime prompt handler for sourceId "${sourceId}".`);
     }
     return handler(
-        promptState,
-        getPromptPlayerId(prompt),
+        state,
+        playerId,
         selectedValue,
-        getPromptHandlerData(prompt),
+        data,
         random,
         now,
     );
+}
+
+export function findRegisteredPromptContinuationContract(sourceId: string) {
+    return lookupRegisteredInteractionHandler(sourceId) ?? lookupRegisteredRuntimePromptHandler(sourceId);
+}
+
+export function expectRegisteredInteractionHandlerContract(sourceId: string) {
+    const handler = lookupRegisteredInteractionHandler(sourceId);
+    if (!handler) {
+        throw new Error(`Expected registered interaction handler for sourceId "${sourceId}".`);
+    }
+    return handler;
+}
+
+export function expectRegisteredRuntimePromptHandlerContract(sourceId: string) {
+    const handler = lookupRegisteredRuntimePromptHandler(sourceId);
+    if (!handler) {
+        throw new Error(`Expected registered runtime prompt handler for sourceId "${sourceId}".`);
+    }
+    return handler;
+}
+
+export function expectRegisteredPromptContinuationContract(sourceId: string) {
+    const handler = findRegisteredPromptContinuationContract(sourceId);
+    if (!handler) {
+        throw new Error(`Expected registered prompt continuation contract for sourceId "${sourceId}".`);
+    }
+    return handler;
+}
+
+function lookupRegisteredInteractionHandler(sourceId: string) {
+    return getInteractionHandler(sourceId);
+}
+
+function lookupRegisteredRuntimePromptHandler(sourceId: string) {
+    return getAbilityRuntimePromptHandler(sourceId);
 }
 
 export function getReactionPrompt(state: MatchState<SmashUpCore>): any {

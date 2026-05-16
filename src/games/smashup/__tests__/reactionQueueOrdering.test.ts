@@ -11,7 +11,7 @@ import {
   makeMinion,
   makeState,
   makeBase,
-  resolvePromptViaRegisteredHandler,
+  respondToPromptOption,
   withoutCurrentPrompt,
 } from './helpers';
 import { clearOngoingEffectRegistry, registerTrigger, collectTriggers } from '../domain/ongoingEffects';
@@ -290,10 +290,16 @@ describe('Reaction queue ordering (Wiki-style)', () => {
 
     // Choose trigger B first
     const optB = getPromptOption(current, (o: any) => (o.label as string).includes('test_source_b'), 'test_source_b trigger option');
-    const r2 = resolvePromptViaRegisteredHandler(ms1 as any, current, optB.value, 2, { shuffle: (a: any[]) => a } as any);
+    const r2 = respondToPromptOption(
+      ms1,
+      (option: any) => option.id === optB.id,
+      'test_source_b trigger option',
+      '0',
+      { shuffle: (a: any[]) => a } as any,
+    );
     expect(r2).toBeDefined();
-    const evts = r2!.events as SmashUpEvent[];
-    expect(evts[0].type).toBe(SU_EVENTS.TRIGGER_CONSUMED);
+    const evts = r2.events as SmashUpEvent[];
+    expect(evts.some(e => e.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
     // And executor event is produced
     expect(evts.some(e => e.type === SU_EVENTS.POWER_COUNTER_REMOVED)).toBe(true);
   });

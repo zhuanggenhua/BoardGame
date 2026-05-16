@@ -15,7 +15,7 @@ import {
     makeMatchState,
     makePlayer,
     makeState,
-    resolvePromptViaRegisteredHandler,
+    respondToPrompt,
 } from './helpers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 
@@ -70,14 +70,13 @@ describe('reaction queue: preserves destroyerId context', () => {
         if (getPromptSourceId(first) === 'smashup_reaction_choose') {
             const option = getReactionPromptOptionBySourceDefId(after, first, 'vampire_mad_monster_party_pod');
             expect(option).toBeDefined();
-            const resolved = resolvePromptViaRegisteredHandler(
-                after as any,
-                first,
-                option.value,
-                2,
+            const resolved = respondToPrompt(
+                after,
+                option.id,
+                '0',
                 defaultTestRandom as any,
             );
-            const nextState = resolved?.state ?? after;
+            const nextState = resolved.finalState;
             const prompt = getPromptsBySourceId(nextState, 'vampire_mad_monster_party_pod_play')[0];
             expect(prompt).toBeDefined();
             expect(getPromptHandlerData(prompt)?.displayCard).toEqual({ defId: 'vampire_mad_monster_party_pod', cardUid: 'a-mmp' });
@@ -123,14 +122,13 @@ describe('reaction queue: preserves destroyerId context', () => {
         expect(first).toBeDefined();
         if (getPromptSourceId(first) === 'smashup_reaction_choose') {
             const option = getReactionPromptOptionBySourceDefId(rq!.state, first, 'vampire_buffet_pod');
-            const resolved = resolvePromptViaRegisteredHandler(
-                rq!.state as any,
-                first,
-                option.value,
-                2,
+            const resolved = respondToPrompt(
+                rq!.state,
+                option.id,
+                '0',
                 defaultTestRandom as any,
             );
-            const prompt = getPromptsBySourceId(resolved?.state ?? rq!.state, 'vampire_buffet_pod_play')[0];
+            const prompt = getPromptsBySourceId(resolved.finalState, 'vampire_buffet_pod_play')[0];
             expect(getPromptHandlerData(prompt)?.displayCard).toEqual({ defId: 'vampire_buffet_pod', cardUid: 'a-buffet' });
         } else {
             expect(getPromptSourceId(first)).toBe('vampire_buffet_pod_play');

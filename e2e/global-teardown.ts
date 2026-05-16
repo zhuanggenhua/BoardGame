@@ -2,6 +2,7 @@ import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS, toPortArray } from '../scripts/infra/e2e-port-config.js';
+import { assertSafeE2EServerMode, resolveUseDevServers } from '../scripts/infra/e2e-mode-config.js';
 import {
     allocatePorts,
     cleanupAllWorkerPortFiles,
@@ -51,7 +52,8 @@ function killProcessTree(pid: number): void {
 
 export default async function globalTeardown() {
     const workers = Number.parseInt(process.env.PW_WORKERS || '1', 10);
-    const useDevServers = process.env.PW_USE_DEV_SERVERS === 'true';
+    assertSafeE2EServerMode(process.env);
+    const useDevServers = resolveUseDevServers(process.env);
     const forceStartServers = process.env.PW_START_SERVERS === 'true';
     const shouldStartServers = forceStartServers || !useDevServers;
     const singleWorkerPorts = useDevServers ? DEV_SERVER_PORTS : E2E_SINGLE_WORKER_PORTS;

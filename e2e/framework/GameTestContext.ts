@@ -13,6 +13,7 @@
 import { mkdir } from 'node:fs/promises';
 import { dirname } from 'node:path';
 import type { Page, TestInfo } from '@playwright/test';
+import { resolveUseDevServers } from '../../scripts/infra/e2e-mode-config.js';
 import { getCardDef as getSmashUpCardDef, getBaseDef } from '../../src/games/smashup/data/cards';
 import { CHARACTER_DATA_MAP, initHeroState } from '../../src/games/dicethrone/domain/characters';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
@@ -307,7 +308,7 @@ export class GameTestContext {
 
     private async gotoWithRetry(url: string, timeout: number): Promise<void> {
         const maxAttempts = 3;
-        const useDevServers = process.env.PW_USE_DEV_SERVERS === 'true';
+        const useDevServers = resolveUseDevServers(process.env);
         const navigationTimeout = useDevServers
             ? Math.max(timeout, 60000)
             : Math.max(timeout, 15000);

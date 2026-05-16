@@ -1571,3 +1571,100 @@
 - [x] `rainboroc` 的“洗回牌库 + 继续移动”断言已改为直接观察 `finalState.core`，不再手动 `reduce(events)` 拼中间 core。
 - [x] 验证：`src/games/smashup/__tests__/smashup.smoke.test.ts` 133 tests passed；eslint 0 errors；`npm run test:structure` OK；全仓重扫 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 当前剩余 56 条。
 - [ ] `smashup.smoke.test.ts` 剩余普通多段链进一步缩小为：`major_ursa`、`very_large_boulder`、`hill_that_strolls`；另有 `titan_penguins_emperor_penguin_play` 与 `big_funny_giant` 两条显式合同断言保留。
+
+## Addendum（2026-05-16 22:03 +08）：Smoke 中 Emperor Penguin resolve-time recheck 修回真实链
+
+- [x] `smashup.smoke.test.ts` 的 `titan_penguins_emperor_penguin_play` resolve-time recheck 用例已修回绿，并继续保留真实 `fireTriggers(...)` -> `getSimpleChoicePrompt(...)` -> `respondToPromptOption(...)` 链。
+- [x] 根因不是 handler 或 respond 逻辑坏了，而是测试前置局面不满足 Emperor Penguin 的真实 special 资格：`onTurnStart` 只会在你某个基地已有至少 3 个己方随从时产出 `titan_penguins_emperor_penguin_play` prompt。
+- [x] 修复方式是给 `promptCore` 与 `staleCore` 都补上真实可触发的基地场景，再在 stale core 中额外放入另一只己方 live titan，证明 resolve 时 `canControllerPlayTitan(...)` 仍会二次拦截，不产生 `TITAN_PLAYED`。
+- [x] 这条现在锁的是稳定业务合同：`trigger` 侧真实建 prompt，`resolve` 侧真实复验“同一控制者不能同时有第二只 live titan”；不再是直调 handler 的内部参数合同。
+- [x] 验证：`smashup.smoke.test.ts` 定点 1 passed；整文件 133 passed；eslint 0 errors；`npm run test:structure` checked files: 3，OK。
+- [x] 全仓重扫 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 当前剩余 24 条；现存命中主要集中在注册表合同、prompt 系统合同、少量 runtime prompt 合同与明确保留的低层能力合同。
+- [ ] 下一步不再机械追求把 24 清零；先按“系统/注册表/低层合同”与“仍属普通业务链”重新分层，再决定是否继续迁 `bear_cavalry_superiority_pod_talent` / `steampunk_mechanic` 这类剩余项。
+
+## Addendum（2026-05-16 22:08 +08）：把 handler 直调分层固化进结构门禁
+
+- [x] `scripts/infra/testing-structure-guard.mjs` 已新增 direct handler 门禁：游戏行为测试新增 `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 时会失败。
+- [x] 例外范围已显式收窄为三类：`interaction/prompt` 系统合同命名文件、`abilityInteractionRegistry.test.ts` 注册表合同、通过 helper 封装的低层能力合同。
+- [x] `docs/testing-best-practices.md` 已同步写明这条 seam 规范：业务测试默认走真实 `trigger -> prompt -> respond` 或命令入口，不再用 handler 直调兜底。
+- [x] 验证：`npm run test:structure` OK；`node scripts/infra/testing-structure-guard.mjs --all` OK；`eslint scripts/infra/testing-structure-guard.mjs` 0 errors。
+- [x] 这意味着后续重构即使不继续立刻改掉剩余 24 条，新增业务测试也不会再把 direct handler 债务写回来。
+- [ ] 下一步应优先审视“允许列表”是否还存在可继续收回到真实链的普通业务片段，而不是继续放大 allowlist。
+
+## Addendum（2026-05-16 22:21 +08）：低层合同也改走 helper，取消文件级 allowlist
+
+- [x] `helpers.ts` 已新增 `invokeRegisteredInteractionHandlerContract(...)` 与 `invokeRegisteredRuntimePromptHandlerContract(...)`，用于显式承载少量低层合同测试。
+- [x] `abilities/bear-cavalry.test.ts` 与 `expansionOngoing.test.ts` 已从 raw `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 改为走上述 helper；低层合同仍保留，但不再在测试体里直接摸注册表 API。
+- [x] 因为这两份文件已不再含 raw handler 查询，`testing-structure-guard.mjs` 的文件 allowlist 已删除；guard 现在只认系统合同命名文件与 helper 封装这两类出口。
+- [x] 全仓 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 在 `src/games/smashup/__tests__` 中已从 24 降到 22；剩余 raw 命中只在 `abilityInteractionRegistry.test.ts`、`promptSystem.test.ts`、`promptResponseChain.test.ts` 与 `helpers.ts`。
+- [x] 验证：`bear-cavalry.test.ts` + `expansionOngoing.test.ts` 88 tests passed；相关 eslint 0 errors；`npm run test:structure` OK。
+
+## Addendum（2026-05-16 22:26 +08）：系统合同样板 helper 化，raw 命中收口到注册表测试
+
+- [x] `helpers.ts` 已新增 `findRegisteredPromptContinuationContract(...)`、`expectRegisteredInteractionHandlerContract(...)`、`expectRegisteredRuntimePromptHandlerContract(...)`、`expectRegisteredPromptContinuationContract(...)`，把系统合同里的“handler 已注册”样板统一收口。
+- [x] `promptResponseChain.test.ts` 与 `promptSystem.test.ts` 已改用这些 helper，不再在测试体里直接 `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)`。
+- [x] `helpers.ts` 内部也已继续去重：公开 helper 全部复用两处单一查找函数 `lookupRegisteredInteractionHandler(...)` / `lookupRegisteredRuntimePromptHandler(...)`。
+- [x] 全仓 `getInteractionHandler(` / `getAbilityRuntimePromptHandler(` 在 `src/games/smashup/__tests__` 中已从 22 降到 11；现在只剩 `abilityInteractionRegistry.test.ts` 的注册表语义断言，以及 `helpers.ts` 里两处底层查找函数。
+- [x] 验证：`promptResponseChain.test.ts` + `promptSystem.test.ts` 22 tests passed；`helpers.ts` eslint 0 errors；`npm run test:structure` OK。
+
+## Addendum（2026-05-16 22:35 +08）：开始治理 resolvePromptViaRegisteredHandler 隐性耦合
+
+- [x] `testing-structure-guard.mjs` 已新增门禁：业务测试新增 `resolvePromptViaRegisteredHandler(...)` 也会被拦下，不允许再用 helper 把 registered handler 直调藏回测试体。
+- [x] `abilities/cthulhu.test.ts` 与 `elderThingAbilities.test.ts` 中显然属于真实点击路径的场景，已从 `resolvePromptViaRegisteredHandler(...)` 迁为 `respondToPromptOption(...)`。
+- [x] `elder-thing-choice-goju-tiebreak.test.ts` 已按语义拆分：
+  - 真实可点击的 destroy / deckbottom / 二段选择链改为 `respondToPromptOption(...)`
+  - “强行提交非法 destroy choice 也应兜底”这条保留为低层合同，但改走 `invokeRegisteredInteractionHandlerContract(...)`，不再直接依赖 `resolvePromptViaRegisteredHandler(...)`
+- [x] 全仓 `resolvePromptViaRegisteredHandler(` 在 `src/games/smashup/__tests__` 中当前剩余 15 条；已集中到 `baseAbilitiesPrompt.test.ts`、`reactionQueue*.test.ts` 和 `helpers.ts`。这说明剩余问题已从“分散业务测试耦合”收敛成“少量 prompt/base contract 文件待分层”。
+- [x] 验证：`cthulhu.test.ts` + `elderThingAbilities.test.ts` 45 tests passed；`elder-thing-choice-goju-tiebreak.test.ts` 10 tests passed；相关 eslint 0 errors；`npm run test:structure` OK。
+
+## Addendum（2026-05-16 22:50 +08）：reaction queue 当前 prompt 场景改走真实 respond
+
+- [x] `reactionQueueBaseOptionalClockwise.test.ts` 的 optional cycle 场景，已从 `resolvePromptViaRegisteredHandler(...)` 改为真实 `respondToPromptOption(...)`；`pass -> player2 acts -> player1 仍可继续行动` 现在通过真实 prompt 响应推进，而不是手工清 current 后直调 handler。
+- [x] `reactionQueueOrdering.test.ts` 的“当前玩家决定 mandatory simultanous triggers 顺序”，已从 registered handler 直调改为真实 `respondToPromptOption(...)`；断言同步从 `events[0]` 收口为“事件流包含 `TRIGGER_CONSUMED` + 目标业务事件”。
+- [x] `reactionQueueBaseAbilities.test.ts` 的基地反应排序选择，同样改为真实 `respondToPromptOption(...)`，不再把 reaction prompt 的 continuation handler 当成业务入口。
+- [x] `reactionQueueDestroyerId.test.ts` 的 `smashup_reaction_choose -> vampire_*_play` 链，已改为真实 `respondToPrompt(...)`；这样仍能证明 destroyerId 上下文会穿过 reaction queue 保留到后续业务 prompt。
+- [x] 这批迁移后，全仓 `resolvePromptViaRegisteredHandler(` 在 `src/games/smashup/__tests__` 中已从 `15` 降到 `1`；剩余唯一命中只在 `helpers.ts` 的 helper 定义本体。
+- [x] 验证：4 files / 36 tests passed；对应 eslint 0 errors；`npm run test:structure` OK。
+
+## Addendum（2026-05-16 22:58 +08）：删除已无调用方的旧 handler 桥接 helper
+
+- [x] `helpers.ts` 中的 `resolvePromptViaRegisteredHandler(...)` 已删除；它在测试体内已无任何调用方，继续保留只会制造“系统合同还能用这条旧 seam”的错误暗示。
+- [x] 同轮继续删除 `callHandler(...)` 与 `resolveCurrentPromptHandlerWithCore(...)` 两个旧桥接 helper；当前代码里已无测试调用，只剩历史记录和文档示例。
+- [x] `helpers/auditUtils.ts` 已同步取消 `callHandler` 的转发导出，避免审计工具继续暴露这层旧接口。
+- [x] `docs/testing-best-practices.md` 已同步收紧：低层合同示例改为 `invokeRegisteredInteractionHandlerContract(...)` / `invokeRegisteredRuntimePromptHandlerContract(...)`，不再把 `callHandler` 或 registered-handler 直调桥接当成推荐工具。
+- [x] 验证：`helpers.ts` + `helpers/auditUtils.ts` eslint 0 errors；`npm run test:structure` OK；`rg -n "\\bcallHandler\\b|\\bresolveCurrentPromptHandlerWithCore\\b" src/games/smashup/__tests__` 与 `rg -n "resolvePromptViaRegisteredHandler\\(" src/games/smashup/__tests__` 都已无命中。
+
+## Addendum（2026-05-16 23:05 +08）：开始把小样本 `resolveAbility(...)` 直调收回真实命令入口
+
+- [x] `ninja-infiltrate-pod-talent.test.ts` 已从 `resolveAbility('ninja_infiltrate_pod', 'talent') + applyEvents(...)` 改为真实 `runCommand(... SU_COMMANDS.USE_TALENT ...)`；该测试现在直接观察 `finalState.core` 中基地能力抑制状态，而不是测试手工 reduce 事件后的假后态。
+- [x] `abilities/ancient-egyptians.test.ts` 已从 `resolveAbility('ancient_egyptians_plague_of_locusts', 'onPlay')` 改为真实 `runCommand(... SU_COMMANDS.PLAY_ACTION ...)`；验证的仍是“打出后会创建基地选择 prompt”，但不再手工构造 `AbilityContext`。
+- [x] 这两条样本证明：哪怕测试现在还在用 `resolveAbility(...)`，只要目标是用户真实能执行的出牌/天赋链，就应优先回到 `PLAY_ACTION` / `USE_TALENT` / `PLAY_MINION` 这类公开命令端口，而不是继续把执行器当作默认入口。
+- [x] 验证：两个文件定向 vitest 全绿，eslint 0 errors，`npm run test:structure` OK；全仓 `resolveAbility(` 在 `src/games/smashup/__tests__` 中当前为 `100`。
+
+## Addendum（2026-05-16 23:17 +08）：继续把 `resolveAbility(...)` 的普通 onPlay 行为链收回 `PLAY_ACTION`
+
+- [x] `ancientEgyptiansMummyStrength.feedback-regression.test.ts` 已从 `resolveAbility('ancient_egyptians_mummy_strength', 'onPlay') + 自建 runner/respond` 改为真实 `runCommand(... SU_COMMANDS.PLAY_ACTION ...)` + `respondToPromptOption(...)`；测试继续覆盖“先选目标随从，再完成加成”的真实响应链，但不再从 executor 中途插入。
+- [x] `abilities/cthulhu.test.ts` 中 `special_madness` 的 3 条 `onPlay` 场景，已从 `resolveAbility(...)` 改为真实 `PLAY_ACTION`：打出后创建二选一 prompt、选择抽牌、选择返回牌堆，全部通过真实出牌链与真实 prompt 响应完成。
+- [x] 这轮明确了一个新的分层边界：`special_madness` 属于标准行动卡 onPlay，应该回到真实命令入口；`wizard_time_loop` / `killer_plant_insta_grow` 这类 off-phase `playTiming=immediate` 合同仍属于执行器/时序层，不应机械混入同一批“业务出牌链”迁移。
+- [x] 验证：`ancientEgyptiansMummyStrength.feedback-regression.test.ts` 1 passed；`cthulhu.test.ts -t "special_madness onPlay 与终局 VP"` 5 passed；对应 eslint 0 warnings/errors；`npm run test:structure` OK。
+- [x] 全仓 `resolveAbility(` 在 `src/games/smashup/__tests__` 中已从 `96` 降到 `92`。
+
+## Addendum（2026-05-16 23:31 +08）：把 `innsmouth_recruitment` 的 reduce 验证收回真实 `PLAY_ACTION`
+
+- [x] `madnessAbilities.test.ts` 中 `innsmouth_recruitment（招募）` 的“状态正确（reduce 验证）”，已从 `resolveAbility('innsmouth_recruitment', 'onPlay') + 手工补 ACTION_PLAYED` 改为真实 `runCommand(PLAY_ACTION)` 起链，再用 `respondToPromptOption(...)` 选择 `count === 3`。
+- [x] 这条现在仍保留 reducer 合同本身：继续用 `applyEvents(state, [...playResult.events, ...respond.events])` 验证手牌拿到 3 张疯狂卡、`minionLimit` 从 `1 -> 4`、`madnessDeck` 减少 3 张；但测试入口不再绕过真实命令层。
+- [x] 这一轮进一步确认：同一能力簇里，哪怕只有 1 条“状态正确 / reduce 验证”还卡在旧执行器入口，也应该收回到真实 `PLAY_ACTION`，避免同一文件里一半测真实入口、一半测历史夹具。
+- [x] 验证：`madnessAbilities.test.ts -t "状态正确（reduce 验证）"` 7 passed；eslint 0 errors；`npm run test:structure` OK。
+- [x] 全仓 `resolveAbility(` 在 `src/games/smashup/__tests__` 中已从 `92` 降到 `91`。
+
+## Addendum（2026-05-16 23:37 +08）：`ninja_infiltrate` 业务 onPlay 链整组回到 `PLAY_ACTION`
+
+- [x] `baseFactionOngoing.test.ts` 中 `ninja_infiltrate / ninja_infiltrate_pod` 的 4 条业务 onPlay 用例，已从 `resolveAbility(...)` 改为真实 `runCommand(PLAY_ACTION)`：
+  - 多目标时创建 `destroy` prompt
+  - POD 版只暴露基地上的战术目标
+  - 单目标时自动消灭
+  - 无目标时不产生额外效果
+- [x] 这批迁移后，该组测试继续验证原业务语义，但不再自建 `matchState` 把命令层、出牌校验和 `ACTION_PLAYED` 后处理绕开。
+- [x] 同时也验证了一个边界：这组 onPlay 用例走回真实命令后，自动消灭/无目标两条并没有暴露能力逻辑差异；唯一红灯只是测试体漏引入 `expectNoPrompt` helper，补齐后恢复通过，说明真正依赖的是旧入口而不是旧行为。
+- [x] 验证：`baseFactionOngoing.test.ts -t "渗透"` 7 passed；eslint 0 errors；`npm run test:structure` OK。
+- [x] 全仓 `resolveAbility(` 在 `src/games/smashup/__tests__` 中已从 `91` 降到 `87`。

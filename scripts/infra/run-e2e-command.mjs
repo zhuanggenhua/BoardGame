@@ -8,6 +8,7 @@ import { assertChildProcessSupport } from './assert-child-process-support.mjs';
 import { runEncodingCheck } from './check-file-encoding.mjs';
 import { runE2ESafetyCheck } from './check-e2e-safety.js';
 import { cleanupTestConnections } from './cleanup_test_connections.js';
+import { assertSafeE2EServerMode, resolveUseDevServers } from './e2e-mode-config.js';
 import { acquireGlobalHeavyBudget } from './global-heavy-budget.mjs';
 import { acquireTaskGuard } from './heavy-task-guard.mjs';
 
@@ -198,6 +199,9 @@ function createEnv(overrides = {}) {
         ...process.env,
         PW_HEADED: 'false',
         PWDEBUG: '0',
+        PW_USE_DEV_SERVERS: 'false',
+        PW_ALLOW_DEV_SERVER_TESTS: 'false',
+        PW_START_SERVERS: 'false',
         ...overrides,
     };
 }
@@ -292,6 +296,8 @@ function createModeEnv(mode) {
         case 'dev':
             return createEnv({
                 PW_USE_DEV_SERVERS: 'true',
+                PW_ALLOW_DEV_SERVER_TESTS: 'true',
+                PW_START_SERVERS: 'false',
                 PW_WORKERS: '1',
             });
         case 'isolated':
@@ -384,6 +390,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
         ...createModeEnv(mode),
         ...envOverrides,
     };
+    assertSafeE2EServerMode(modeEnv);
     modeEnv.PW_RUNTIME_SCOPE = modeEnv.PW_RUNTIME_SCOPE
         || process.env.PW_RUNTIME_SCOPE
         || '';
@@ -406,8 +413,7 @@ export async function runE2ECommand({ mode, extraArgs = [], envOverrides = {}, e
         && modeEnv.PW_HAS_EXPLICIT_TARGET === 'true'
         && !process.env.PW_WORKERS
         && !envOverrides.PW_WORKERS
-        && !process.env.PW_USE_DEV_SERVERS
-        && !envOverrides.PW_USE_DEV_SERVERS
+        && !resolveUseDevServers(modeEnv)
         && !isListMode
     );
     const bootstrapMode = resolveBootstrapMode({ isListMode, shouldUseManagedSingleRuntime });

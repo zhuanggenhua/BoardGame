@@ -37,7 +37,6 @@ export {
     makeStateWithMadness,
     makeMatchState,
     applyEvents,
-    callHandler,
     triggerBaseAbilityWithMS,
     getInteractionsFromResult,
 } from '../helpers';

@@ -1,5 +1,17 @@
 # DiceThrone Treant / Ninja 抽样深审：Token、手牌技能、基础技能（2026-05-15）
 
+## 2026-05-16 失效补记：抽样结论不能外推 Treant 全量
+
+后续直接对照 Treant `提示板.png` / `玩家面板.png` / `abilitycards.png` 发现，本文件虽然抓到了若干真实消费点问题，但它的抽样对象远不足以覆盖 Treant 全量规则语义。
+
+已经被后续证据推翻或降级的核心点：
+
+- `quiet-cultivation`、`treant-card-mother-tree`、`treant-card-cultivate` 等对象，旧文把“当前写入 seedling 的行为测试通过”当成了可接受的 L2；但提示板已经坐实 `养成树灵 != 直接加幼种`，所以这些 L2 现在只能降级为“旧实现行为存在”，不能再代表规则正确。
+- `treant-card-trample`、`treant-card-soulfire` 虽然本文件曾修过“打牌时机 / attackBonus 消费点”，但卡图本体后来证明其**规则语义本身**还录错了：`trample` 的刺藤触发条件、`soulfire` 的树枝分支都不对。
+- `rooted-2` 旧文只证明了“4 骰消费点修好”，不代表 `rooted` / `rooted-2` 的防御语义正确；玩家板图片后来又坐实了防止值与双叶/双树灵分支都和当前实现不一致。
+
+因此，本文件当前只能证明：这些对象曾命中过一轮“消费点 / 结构”问题并被修过；**不能**再外推为 Treant 深审已覆盖大头。
+
 ## 结论口径
 
 本文件只证明本轮“抽样深审”已完成，不证明 Treant / Ninja 全对象、全分支、全端到端已经无遗漏。抽样覆盖三类对象：

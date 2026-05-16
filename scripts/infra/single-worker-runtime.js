@@ -1,6 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { DEV_SERVER_PORTS, E2E_SINGLE_WORKER_PORTS } from './e2e-port-config.js';
+import { assertSafeE2EServerMode, resolveUseDevServers } from './e2e-mode-config.js';
 import { isPortInUse } from './port-allocator.js';
 import { assertChildProcessSupport } from './assert-child-process-support.mjs';
 import {
@@ -59,7 +60,8 @@ function createRuntimeLogWriter(logFile, logger) {
 }
 
 export function resolveSingleWorkerRuntimeContext(env = process.env, overrides = {}) {
-  const useDevServers = overrides.useDevServers ?? env.PW_USE_DEV_SERVERS === 'true';
+  assertSafeE2EServerMode(env);
+  const useDevServers = overrides.useDevServers ?? resolveUseDevServers(env);
   const bundleWatchEnabled = overrides.bundleWatchEnabled ?? env.PW_SERVER_WATCH !== 'false';
   const selectedRuntime = overrides.selectedRuntime ?? (env.PW_SERVER_RUNTIME?.trim() || 'bundle');
   const useTsxRuntime = selectedRuntime === 'tsx';

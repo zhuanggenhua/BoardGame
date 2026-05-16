@@ -3,9 +3,10 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-import { resolveAbility } from '../domain/abilityRegistry';
-import { applyEvents, makeMatchState, makeStateWithBases } from './helpers';
+import { makeMatchState, makeStateWithBases } from './helpers';
 import { isBaseAbilitySuppressed } from '../domain/ongoingEffects';
+import { runCommand } from './testRunner';
+import { SU_COMMANDS } from '../domain/types';
 
 beforeAll(() => {
     clearRegistry();
@@ -24,22 +25,18 @@ describe('ninja_infiltrate_pod talent', () => {
         } as any]);
         const matchState = makeMatchState(core);
 
-        const exec = resolveAbility('ninja_infiltrate_pod', 'talent');
-        expect(exec).toBeDefined();
-
-        const result = exec!({
-            state: matchState.core,
+        const result = runCommand(
             matchState,
-            playerId: '0',
-            cardUid: 'inf-1',
-            defId: 'ninja_infiltrate_pod',
-            baseIndex: 0,
-            now: 1000,
-            random: { shuffle: <T>(xs: T[]) => xs } as any,
-        } as any);
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { ongoingCardUid: 'inf-1', baseIndex: 0 },
+            } as any,
+            { shuffle: <T>(xs: T[]) => xs } as any,
+        );
 
-        const newCore = applyEvents(core, result.events ?? []);
-        expect(isBaseAbilitySuppressed(newCore, 0)).toBe(true);
+        expect(result.success).toBe(true);
+        expect(isBaseAbilitySuppressed(result.finalState.core, 0)).toBe(true);
     });
 });
 

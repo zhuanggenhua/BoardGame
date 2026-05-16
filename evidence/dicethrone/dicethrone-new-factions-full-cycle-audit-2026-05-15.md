@@ -1,5 +1,23 @@
 # DiceThrone 新派系 Treant / Ninja 全量重审与抽查循环（2026-05-15）
 
+## 2026-05-16 全面审计再降级：Treant 不是“还剩两项”
+
+本文件关于 Treant 的旧矩阵结论需要继续降级。2026-05-16 直接对照 `玩家面板.png`、`提示板.png`、`abilitycards.png` 后，新增命中的不是零散尾项，而是一整簇对象级真错误：
+
+- 树灵 `每回合每种仅限花费1次` 未实现；
+- `养成1树灵` 被系统性简化成 `grant seedling` / `grant sapling`，没有“获得幼种或升级现有树灵”的正式合同；
+- 神性树灵防负面被做成自动消耗，不是可选响应；
+- 刺藤缺少“每回合至多因此受到2伤害”上限；
+- `wild-growth`、`nature-touch`、`rooted`、`tend-care`、`forest-awakens` 的主效果与图片直接冲突；
+- `treant-card-harvest`、`treant-card-downpour`、`treant-card-soulfire`、`upgrade-shattering-fist-3`、`upgrade-wild-growth-2`、`treant-card-planting` 等多张专属卡结构化字段错误；
+- `upgrade-shattering-fist-2` / `treant-card-planting` 还额外命中 atlas 预览索引越界。
+
+因此，本文件里凡是把 Treant 写成“已进入 L2/L3，只差逐卡 E2E”的对象，都必须理解为**旧审计结论失效**。Treant 当前有效的全面审计出口改以：
+
+- `evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md`
+
+为准；本文件只保留为“此前几轮抽查/修复的历史记录”，不再充当 Treant 收口证明。
+
 ## 2026-05-16 Treant 图面合同口径再降级
 
 本文件虽然已经把 Treant `rooted` 的防御时机、`rooted-2` 的 4 骰合同、若干 Token/卡牌流程问题重审了一轮，但 2026-05-16 用户继续指出：

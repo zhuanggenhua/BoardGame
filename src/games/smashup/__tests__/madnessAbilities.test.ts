@@ -994,33 +994,24 @@ describe('印斯茅斯 - 疯狂卡能力', () => {
                 },
             });
 
-            // 通过 handler 验证 reduce
-            const executor = resolveAbility('innsmouth_recruitment', 'onPlay');
-            expect(executor).toBeDefined();
-            const ms = makeMatchState(state);
-            const abilityResult = executor!({
-                state,
-                matchState: ms,
-                playerId: '0',
-                cardUid: 'a1',
-                defId: 'innsmouth_recruitment',
-                baseIndex: 0,
-                random: defaultRandom,
-                now: 0,
-            });
-            const interaction = getSimpleChoicePrompt(abilityResult.matchState!, 'innsmouth_recruitment');
+            const playResult = runCommand(
+                makeMatchState(state),
+                { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } } as any,
+                defaultRandom,
+            );
+            expect(playResult.success, playResult.error).toBe(true);
+            const interaction = getSimpleChoicePrompt(playResult.finalState, 'innsmouth_recruitment');
             expect(getPromptSourceId(interaction)).toBe('innsmouth_recruitment');
             const result = respondToPromptOption(
-                abilityResult.matchState!,
+                playResult.finalState,
                 option => option.value?.count === 3,
                 'innsmouth recruitment reduce draw 3 option',
                 '0',
                 defaultRandom,
             );
             expect(result.success, result.error).toBe(true);
-            // 先 apply ACTION_PLAYED 事件
             const playEvents: SmashUpEvent[] = [
-                { type: SU_EVENTS.ACTION_PLAYED, payload: { playerId: '0', cardUid: 'a1', defId: 'innsmouth_recruitment' }, timestamp: 0 } as any,
+                ...playResult.events as SmashUpEvent[],
                 ...result.events,
             ];
             const newState = applyEvents(state, playEvents);
