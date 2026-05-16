@@ -1,7 +1,7 @@
 import { test, expect } from '../framework';
-import type { CellCoord, SummonerWarsCore, UnitCard } from '../src/games/summonerwars/domain/types';
-import { createDeckByFactionId } from '../src/games/summonerwars/config/factions';
-import { createInitializedCore, placeTestUnit, resetInstanceCounter } from '../src/games/summonerwars/__tests__/test-helpers';
+import type { CellCoord, SummonerWarsCore, UnitCard } from '../../src/games/summonerwars/domain/types';
+import { createDeckByFactionId } from '../../src/games/summonerwars/config/factions';
+import { createInitializedCore, placeTestUnit, resetInstanceCounter } from '../../src/games/summonerwars/__tests__/test-helpers';
 
 const deterministicRandom = {
   shuffle: <T>(arr: T[]) => [...arr],

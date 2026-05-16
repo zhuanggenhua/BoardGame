@@ -29,7 +29,7 @@ const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
 void __ensureThreeAxesMarker;
 
 test.describe('状态注入功能测试', () => {
-    test.beforeEach(async (_fixtures, testInfo) => {
+    test.beforeEach(async ({ page: _page }, testInfo) => {
         await clearEvidenceScreenshotsForTest(testInfo);
     });
 

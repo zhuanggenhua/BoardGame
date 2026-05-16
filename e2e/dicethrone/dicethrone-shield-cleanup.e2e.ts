@@ -1,7 +1,7 @@
 import type { Page, TestInfo } from '@playwright/test';
 import { test, expect } from '../framework';
 import type { GameTestContext } from '../framework';
-import { RESOURCE_IDS } from '../src/games/dicethrone/domain/resources';
+import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
 
 type ScenePlayers = Record<'0' | '1', string>;
 

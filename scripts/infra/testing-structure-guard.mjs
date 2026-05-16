@@ -88,28 +88,57 @@ function getNumstat(file) {
 }
 
 function isTestFile(file) {
-  return /\.(test|spec)\.[tj]sx?$/.test(file);
+  return /\.(test|spec)\.[tj]sx?$/.test(file) || /\.e2e\.[tj]s$/.test(file);
 }
 
 function isGameVitestTest(file) {
   return /^src\/games\/[^/]+\/__tests__\/.+\.(test|spec)\.[tj]sx?$/.test(file);
 }
 
-function isE2eGameMirrorTest(file) {
-  return /^e2e\/src\/games\/[^/]+\/__tests__\/.+\.(test|spec)\.[tj]sx?$/.test(file);
+function isE2eSpec(file) {
+  return /^e2e\/.+\.e2e\.[tj]s$/.test(file);
 }
 
-function getE2eMirrorSourcePath(file) {
-  if (!file.startsWith('e2e/src/')) return null;
-  return file.replace(/^e2e\/src\//, 'src/');
+function isTrackedE2eSrcMirror(file) {
+  return /^e2e\/src\//.test(file);
 }
 
-function isSamePhysicalFile(fileA, fileB) {
-  try {
-    return fs.realpathSync.native(path.join(repoRoot, fileA)) === fs.realpathSync.native(path.join(repoRoot, fileB));
-  } catch {
-    return false;
-  }
+function isForbiddenTempArtifact(file) {
+  return (
+    /^temp\//.test(file) ||
+    /^\.tmp\//.test(file) ||
+    /^test-results\//.test(file) ||
+    /^temp-[^/]+$/.test(file) ||
+    /^test-out\.txt$/.test(file) ||
+    /^scripts\/temp_.*\.py$/.test(file) ||
+    /^e2e\/temp-[^/]+\.e2e\.[tj]s$/.test(file) ||
+    /\.(?:backup|bak|orig|rej)$/.test(file)
+  );
+}
+
+const E2E_GAME_DIRS = new Set(['cardia', 'dicethrone', 'smashup', 'summonerwars', 'tictactoe']);
+
+function getRootE2eGameId(file) {
+  const match = file.match(/^e2e\/([^/]+)\.e2e\.[tj]s$/);
+  if (!match) return null;
+
+  const stem = match[1];
+  if (E2E_GAME_DIRS.has(stem)) return stem;
+
+  const prefix = stem.split('-')[0];
+  return E2E_GAME_DIRS.has(prefix) ? prefix : null;
+}
+
+function getLegacyRootE2eGameId(file) {
+  const match = file.match(/^e2e\/([^/]+)\/legacy-root\/([^/]+\.e2e\.[tj]s)$/);
+  if (!match) return null;
+  return E2E_GAME_DIRS.has(match[1]) ? match[1] : null;
+}
+
+function getLegacyRootSourcePath(file) {
+  const match = file.match(/^e2e\/([^/]+)\/legacy-root\/([^/]+\.e2e\.[tj]s)$/);
+  if (!match) return null;
+  return `e2e/${match[2]}`;
 }
 
 function isGenericSinkName(file) {
@@ -207,8 +236,57 @@ function checkPromptFacadeCoupling(file, existedAtBase) {
   }
 }
 
+function checkE2eStructure(file, existedAtBase) {
+  if (isTrackedE2eSrcMirror(file)) {
+    violations.push(`${file}: 禁止通过 e2e/src 镜像路径入库；E2E 需要引用源码时必须直接指向仓库根 src/。`);
+    return;
+  }
+
+  if (!isE2eSpec(file)) {
+    return;
+  }
+
+  const legacyRootGameId = getLegacyRootE2eGameId(file);
+  if (legacyRootGameId) {
+    const legacySourcePath = getLegacyRootSourcePath(file);
+    if (!existedAtBase && !existsAtRef(baseRef, legacySourcePath)) {
+      violations.push(`${file}: legacy-root 只允许承接历史根级 E2E 迁移；新增用例必须放到 e2e/${legacyRootGameId}/ 的聚焦文件中。`);
+      return;
+    }
+    warnings.push(`${file}: legacy-root 是历史根级 E2E 迁移目录；允许保留覆盖，但新增场景应迁出为聚焦文件。`);
+    return;
+  }
+
+  const rootGameId = getRootE2eGameId(file);
+  if (!rootGameId) {
+    return;
+  }
+
+  const canonicalPrefix = `e2e/${rootGameId}/`;
+  if (!existedAtBase) {
+    violations.push(`${file}: 禁止新增根级游戏 E2E；请放到 ${canonicalPrefix} 下，避免继续制造根目录/子目录双入口。`);
+    return;
+  }
+
+  warnings.push(`${file}: 根级游戏 E2E 是历史入口债务；本次允许既有文件继续收敛，但不要新增场景。迁移目标为 ${canonicalPrefix}。`);
+}
+
+function checkTempArtifact(file, existedAtBase) {
+  if (!isForbiddenTempArtifact(file)) {
+    return;
+  }
+
+  const absolutePath = path.join(repoRoot, file);
+  const existsInWorkingTree = fs.existsSync(absolutePath);
+  if (!existsInWorkingTree && existedAtBase) {
+    return;
+  }
+
+  violations.push(`${file}: 禁止把临时/备份/测试输出文件纳入仓库；请放入 temp/、test-results/ 等已忽略目录，或按 docs/temp-files-management.md 归档为正式证据/文档。`);
+}
+
 const targetFiles = unique((files.length > 0 ? files : collectDefaultFiles()).map(normalizeFile))
-  .filter(file => isTestFile(file) || file.startsWith('e2e/src/games/'));
+  .filter(file => isTestFile(file) || isTrackedE2eSrcMirror(file) || isForbiddenTempArtifact(file));
 
 const violations = [];
 const warnings = [];
@@ -217,22 +295,10 @@ for (const file of targetFiles) {
   const existedAtBase = existsAtRef(baseRef, file);
   const isNew = !existedAtBase;
 
+  checkTempArtifact(file, existedAtBase);
+  checkE2eStructure(file, existedAtBase);
   checkSkippedTestUsage(file, existedAtBase);
   checkPromptFacadeCoupling(file, existedAtBase);
-
-  if (isE2eGameMirrorTest(file)) {
-    const sourcePath = getE2eMirrorSourcePath(file);
-    if (sourcePath && isSamePhysicalFile(file, sourcePath)) {
-      warnings.push(`${file}: e2e/src 是 src 的 Junction 镜像；按 ${sourcePath} 的同一物理文件处理，不作为独立新增测试来源。`);
-      continue;
-    }
-    if (isNew) {
-      violations.push(`${file}: 禁止新增 e2e/src/games 镜像 Vitest 测试；新增游戏行为测试应落到 src/games/**/__tests__。`);
-    } else {
-      warnings.push(`${file}: 触碰了历史镜像测试目录，只能按兼容债务处理，不得作为新增测试来源。`);
-    }
-    continue;
-  }
 
   if (!isGameVitestTest(file) || !isGenericSinkName(file)) {
     continue;

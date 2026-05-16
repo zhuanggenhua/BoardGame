@@ -5,7 +5,7 @@
  * Status: legacy smoke test only; no longer canonical and intentionally not
  * matched by Playwright's `*.e2e.ts` discovery.
  *
- * Replaced by: `e2e/smashup-wizard-portal.e2e.ts`
+ * Replaced by: `e2e/smashup/smashup-wizard-portal.e2e.ts`
  */
 
 /**

@@ -46,21 +46,24 @@
 | 审计/属性测试 | 批量验证注册表、引用链、数据契约、规则覆盖 | 作为单个 bug 修复的唯一成功证据 |
 | 调试/临时测试 | 构造最小复现、定位根因 | 长期留在主测试集或作为收口证据 |
 
-### 0.4 镜像测试目录禁写
+### 0.4 `e2e/src` Junction 禁写
 
 - `src/games/**/__tests__` 是游戏 Vitest 行为测试的权威来源。
-- `e2e/src/games/**/__tests__` 只按历史镜像/质量门禁兼容处理，禁止作为新增测试入口。
-- 如果一次改动同时触碰 `src/games/**/__tests__` 与 `e2e/src/games/**/__tests__` 的同名文件，汇报时必须明确这是镜像债务，不得把“双份同步”包装成正常测试流程。
+- `e2e/src/**` 是本地 Junction 兼容入口，不再作为 Git 跟踪内容；禁止把任何文件通过镜像路径入库。
+- E2E 文件需要引用源码时，必须按相对路径直接指向仓库根 `src/`，不得依赖 `e2e/src` 镜像。
 - 后续拆分/迁移测试文件时，目标是减少镜像目录依赖，而不是继续扩写镜像测试。
 
 ### 0.5 测试文件组织门禁
 
+- 新增游戏 E2E 必须放在 `e2e/<gameId>/` 下；根级 `e2e/*.e2e.ts` 只允许保留跨游戏/共享入口或尚未迁移的历史债务。
+- 禁止为同一游戏继续制造“根级文件 + 子目录文件”双入口；迁移时应收敛到子目录版本，并用 `--list` 或目标 E2E 验证 Playwright 仍能发现规范文件。
+- `e2e/<gameId>/legacy-root/` 仅用于安放从根目录迁出的历史 E2E 独有用例，保留覆盖但标明债务来源；新增用例不得进入该目录。
 - 测试文件必须按行为簇命名和归档：能力簇、交互链、配置合同、页面行为、审计合同分别放到清晰目录或文件中。
 - 禁止继续新增 `new*`、`misc`、`regression`、`feedback`、`fixes` 这类可无限吸纳场景的泛名测试文件；已有泛名文件只能迁出或收敛，不作为新增用例入口。
 - 当一个测试文件已经覆盖多个无关派系、页面、反馈编号、规则簇或系统层，新增用例必须优先落到更聚焦的新文件；只有同一行为簇内的少量补充才允许追加。
 - 拆分不是删除覆盖。迁移用例时必须保留该行为簇至少 1 条代表性路径，并运行迁出后的新文件；若原巨型文件仍保留大量相关场景，应按风险决定是否复跑原文件。
 - 示例：Smash Up 音效配置测试应落到 `src/games/smashup/__tests__/audio/faction-audio-config.test.ts`，不再塞回 `newFactionAbilities.test.ts`。
-- 自动门禁：`npm run test:structure` 会阻止新增泛名测试文件、给旧泛名文件净增加内容、新增 `e2e/src/games/**/__tests__` 镜像测试，以及在非系统契约游戏测试里新增裸 `getInteractionsFromMS` / `prompt.data.options` / `SYS_INTERACTION_RESPOND` / `SYS_INTERACTION_CANCEL` / `sys.interaction.current` 访问。历史债务允许继续收敛；旧泛名文件净删减时只警告，迁出的新文件必须改走 facade。必要豁免必须显式设置 `ALLOW_TEST_STRUCTURE_DEBT=1` 并说明原因。
+- 自动门禁：`npm run test:structure` 会阻止新增根级游戏 E2E、`e2e/src/**` 镜像入库、临时/备份/测试输出文件入库、新增泛名测试文件、给旧泛名文件净增加内容，以及在非系统契约游戏测试里新增裸 `getInteractionsFromMS` / `prompt.data.options` / `SYS_INTERACTION_RESPOND` / `SYS_INTERACTION_CANCEL` / `sys.interaction.current` 访问。历史债务允许继续收敛；旧泛名文件净删减时只警告，迁出的新文件必须改走 facade。必要豁免必须显式设置 `ALLOW_TEST_STRUCTURE_DEBT=1` 并说明原因。
 - 新增或迁出的游戏行为测试不得使用 `it.skip` / `test.skip` / `describe.skip`。如果旧测试是 skip，迁移时必须先补齐真实行为链路并跑绿；无法补齐时保留为历史债务并记录原因，不得把 skip 带进新的聚焦测试文件。
 
 ### 0.6 测试接口 / 行为端口门禁
@@ -472,10 +475,15 @@ const result = triggerBaseAbilityWithMS('base_tortuga', 'afterScoring', {
     now: Date.now(),
 });
 
-// 获取 BaseAbilityResult 中的所有 interaction
+// 获取 BaseAbilityResult 中的所有 interaction（低层兼容工具）
 const interactions = getInteractionsFromResult(result);
 
-// 从 MatchState 中获取所有 interaction
+// 业务测试优先使用 prompt facade，不直接枚举 sys.interaction
+const prompt = getSimpleChoicePrompt(matchState, 'alien_crop_circles');
+const option = getPromptOption(prompt, option => option.value?.baseIndex === 0);
+expectNoPrompt(finalState);
+
+// 只有测试目标就是 InteractionSystem/queue 存储契约时，才直接枚举 interaction
 const interactions = getInteractionsFromMS(matchState);
 ```
 
@@ -581,7 +589,7 @@ import { makeMinion } from './helpers';
 | 单命令测试 | `runCommand` |
 | 创建测试状态 | `makeState` + `makeMatchState` |
 | 创建测试实体 | `makeMinion` / `makePlayer` / `makeCard` |
-| 检查交互 | `getInteractionsFromMS` |
+| 检查交互 | `getSimpleChoicePrompt` / `getPromptOption` / `getPromptOptions` / `expectNoPrompt` |
 | 基地能力测试 | `triggerBaseAbilityWithMS` |
 
 ### 相关文档
@@ -656,11 +664,9 @@ test: {
    npm run test:watch
    ```
 
-3. **跳过慢速测试**（临时）：
-   ```typescript
-   // 使用 .skip 跳过慢速测试
-   it.skip('slow property test', () => { ... });
-   ```
+3. **不要提交新的 skipped 行为测试**：
+   - 开发时只跑相关文件或用例，不要把 `it.skip` / `describe.skip` 当作性能优化手段提交进游戏行为测试。
+   - 确实属于慢速专项的测试，应放入明确的 property/audit/E2E 配置，并通过专用命令运行；临时本地跳过不得入库。
 
 4. **CI/CD 中运行完整测试**：
    ```bash

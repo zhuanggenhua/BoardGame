@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
 import type { GameTestContext } from '../framework';
-import { TOKEN_IDS } from '../src/games/dicethrone/domain/ids';
+import { TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 
 async function waitForCheatDispatch(page: Page): Promise<void> {
     await page.waitForFunction(

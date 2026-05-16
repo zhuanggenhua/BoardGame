@@ -12,7 +12,7 @@
  */
 
 import { test, expect } from '../framework';
-import { STATUS_IDS, TOKEN_IDS } from '../src/games/dicethrone/domain/ids';
+import { STATUS_IDS, TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
 
 type __ThreeAxeGameMarker = {
   openTestGame: (gameId: string) => Promise<void>;

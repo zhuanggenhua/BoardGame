@@ -17,7 +17,7 @@ import {
     waitForPhase,
     applyCoreStateDirect,
 } from '../helpers/cardia';
-import { ABILITY_IDS } from '../src/games/cardia/domain/ids';
+import { ABILITY_IDS } from '../../src/games/cardia/domain/ids';
 
 test.describe('钟表匠延迟效果 E2E 测试', () => {
     test('应该为下一张打出的牌添加 +3 修正标记', async ({ browser }) => {

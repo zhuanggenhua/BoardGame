@@ -1,6 +1,6 @@
 import { test, expect } from '../framework';
-import type { SummonerWarsCore } from '../src/games/summonerwars/domain/types';
-import { createInitializedCore, resetInstanceCounter } from '../src/games/summonerwars/__tests__/test-helpers';
+import type { SummonerWarsCore } from '../../src/games/summonerwars/domain/types';
+import { createInitializedCore, resetInstanceCounter } from '../../src/games/summonerwars/__tests__/test-helpers';
 
 const deterministicRandom = {
   shuffle: <T>(arr: T[]) => [...arr],

@@ -8,10 +8,10 @@ import { dirname } from 'node:path';
 import { test, expect } from '../framework';
 import type { Locator, Page } from '@playwright/test';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
-import { initHeroState } from '../src/games/dicethrone/domain/characters';
-import { BARBARIAN_CARDS } from '../src/games/dicethrone/heroes/barbarian/cards';
-import { GUNSLINGER_CARDS } from '../src/games/dicethrone/heroes/gunslinger/cards';
-import { SAMURAI_CARDS } from '../src/games/dicethrone/heroes/samurai/cards';
+import { initHeroState } from '../../src/games/dicethrone/domain/characters';
+import { BARBARIAN_CARDS } from '../../src/games/dicethrone/heroes/barbarian/cards';
+import { GUNSLINGER_CARDS } from '../../src/games/dicethrone/heroes/gunslinger/cards';
+import { SAMURAI_CARDS } from '../../src/games/dicethrone/heroes/samurai/cards';
 import {
     advanceToOffensiveRoll,
     applyCoreStateDirect,

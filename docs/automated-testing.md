@@ -192,13 +192,20 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 - 审计测试用于批量合同验证，不代替单个 bug 的最小行为回归。
 - 重构导致测试频繁跟改时，先补测试接口/行为端口，再改用例；测试文件不直接适配内部字段形状。
 
-### `e2e/src/games` 镜像目录口径
+### `e2e/src` Junction 口径
 
 - `src/games/**/__tests__` 是游戏 Vitest 行为测试的权威来源。
-- `e2e/src/games/**/__tests__` 仅作为历史兼容镜像/质量门禁映射入口，不作为新增测试或手工维护入口。
-- 新增或重构游戏行为测试时，默认只在 `src/games/**/__tests__` 下建立或移动用例；除非正在处理镜像目录迁移本身，不得把 `e2e/src/games` 当成第二份正式测试来源。
-- 质量门禁已将 `e2e/src/` 变更映射回工作区 `src/` 路径；后续治理目标是移除双份维护，而不是继续要求人工同步两份测试。
+- `e2e/src/**` 是本地 Junction 兼容入口，不再作为 Git 跟踪内容，任何文件都不得通过该镜像路径入库。
+- 新增或重构游戏行为测试时，只在 `src/games/**/__tests__` 下建立或移动用例，不再同步第二份 `e2e/src/games` 镜像。
+- E2E 文件引用源码时，使用从当前文件到仓库根 `src/` 的真实相对路径；不要通过 `e2e/src` 旧镜像绕路。
 - 新增或迁出的游戏行为测试必须可运行，不得携带 `it.skip` / `test.skip` / `describe.skip`。旧 skipped 用例只有在补齐真实行为链路并跑绿后才允许迁入新的聚焦文件。
+
+### E2E 目录入口口径
+
+- 新增游戏 E2E 必须放在 `e2e/<gameId>/` 下；根级 `e2e/*.e2e.ts` 只保留跨游戏/共享入口或尚未迁移的历史债务。
+- 禁止继续为同一游戏维护“根级文件 + 子目录文件”双入口。清理重复入口时，应保留子目录规范文件，并用 Playwright `--list` 或目标用例验证发现规则没有被 `testIgnore` 误伤。
+- `e2e/<gameId>/legacy-root/` 是历史根级用例迁移目录，只用于保留根级独有覆盖；新增测试不得放入该目录。
+- 根级历史债务允许逐步收敛，但不得继续追加新场景；新增场景应进入对应游戏子目录并按行为簇命名。
 
 ### 测试覆盖要求
 
@@ -260,8 +267,8 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 - 新增游戏行为测试默认放在 `src/games/<gameId>/__tests__/` 下，按能力簇、交互簇、配置合同或页面行为建立子目录。
 - 禁止新增或继续扩写 `new*`、`misc`、`regression`、`feedback`、`fixes` 等泛名测试文件；遇到这类文件时，应先判断能否迁出本轮相关行为簇。
 - 同类覆盖只保留必要代表性路径：至少 1 条正向主路径，必要时 1 条负向/边界路径；重复数据面优先改成数据驱动或审计合同，不用多个近似用例堆在同一文件。
-- `e2e/src/games/**/__tests__` 不作为新增游戏行为测试目录；若历史镜像仍存在，只按兼容债务处理。
-- `quality:changed` 会调用 `scripts/infra/testing-structure-guard.mjs` 检查游戏测试结构；本地也可直接运行 `npm run test:structure`。该门禁同时阻止非系统契约游戏测试新增裸 prompt 内部访问，包括 `getInteractionsFromMS`、`prompt.data.options`、`SYS_INTERACTION_RESPOND`、`sys.interaction.current`；旧泛名文件净删减时只警告，迁出的聚焦测试必须改走 facade。
+- `e2e/src/games/**/__tests__` 不作为新增游戏行为测试目录；若本地 Junction 存在，也只能视为兼容入口，不得入库。
+- `quality:changed` 会调用 `scripts/infra/testing-structure-guard.mjs` 检查游戏测试结构；本地也可直接运行 `npm run test:structure`。该门禁会阻止 `e2e/src/**` 镜像入库、新增根级游戏 E2E、新增泛名测试文件、临时/备份/测试输出文件入库，并阻止非系统契约游戏测试新增裸 prompt 内部访问，包括 `getInteractionsFromMS`、`prompt.data.options`、`SYS_INTERACTION_RESPOND`、`sys.interaction.current`；旧泛名文件净删减时只警告，迁出的聚焦测试必须改走 facade。
 
 ### 测试接口规范
 
@@ -528,6 +535,7 @@ test('自定义派系', async ({ browser }, testInfo) => {
   });
   
   if (!setup) {
+    // 仅允许用于测试环境/房间初始化前置失败；不得用来跳过业务断言失败。
     test.skip();
     return;
   }
@@ -581,6 +589,7 @@ import { setupSmashUpOnlineMatch } from './helpers/smashup';
 test('test', async ({ browser }, testInfo) => {
   const setup = await setupSmashUpOnlineMatch(browser, testInfo.project.use.baseURL);
   if (!setup) {
+    // 仅允许用于测试环境/房间初始化前置失败；不得用来跳过业务断言失败。
     test.skip();
     return;
   }

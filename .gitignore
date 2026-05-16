@@ -182,6 +182,8 @@ _*.mjs
 check-*.mjs
 !scripts/infra/check-file-encoding.mjs
 test-*.mjs
+temp-*.mjs
+scripts/temp_*.py
 
 # 临时数据文件（应移到 temp/）
 wiki-*.json
@@ -197,6 +199,7 @@ tmp_*.txt
 _vitest_*.log
 *-failures.txt
 *-output.txt
+test-out.txt
 
 # 其他临时文件
 threshold
