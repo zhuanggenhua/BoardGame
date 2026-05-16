@@ -4,7 +4,7 @@
  * 测试完整流程：
  * 1. 打出能力卡 → CHOICE_REQUESTED 事件
  * 2. 事件系统创建 Interaction
- * 3. 玩家响应 SYS_INTERACTION_RESPOND → SYS_INTERACTION_RESOLVED
+ * 3. 玩家响应交互 → SYS_INTERACTION_RESOLVED
  * 4. 继续函数执行 → 生成后续领域事件（MINION_MOVED/CARDS_DRAWN 等）
  */
 
@@ -13,7 +13,7 @@ import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
-import { INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
+import { INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
 import { smashUpFlowHooks } from '../domain/index';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
@@ -23,6 +23,7 @@ import { clearInteractionHandlers, getInteractionHandler } from '../domain/abili
 import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { createSmashUpEventSystem } from '../domain/systems';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { expectNoPrompt, respondCommand } from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -136,7 +137,7 @@ describe('Prompt 响应链集成测试', () => {
 
             // 如果只有一个基地有随从，麦田怪圈会自动选择，不创建 Interaction
             // 需要两个基地都有随从才会触发 Interaction
-            expect(result1.finalState.sys.interaction.current).toBeUndefined();
+            expectNoPrompt(result1.finalState);
         });
     });
 
@@ -147,7 +148,7 @@ describe('Prompt 响应链集成测试', () => {
                 name: '无 Prompt 时响应',
                 commands: [
                     ...DRAFT_COMMANDS,
-                    { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'test' } },
+                    respondCommand('test', '0'),
                 ],
             });
 
@@ -181,7 +182,7 @@ describe('Prompt 响应链集成测试', () => {
 
             // 游戏初始化成功
             expect(result.finalState.core.turnOrder).toHaveLength(2);
-            expect(result.finalState.sys.interaction.current).toBeUndefined();
+            expectNoPrompt(result.finalState);
             expect(result.finalState.sys.interaction.queue).toEqual([]);
         });
     });
@@ -269,6 +270,6 @@ describe('SYS_PROMPT_RESOLVED 触发继续执行', () => {
             commands: DRAFT_COMMANDS,
         });
 
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 });

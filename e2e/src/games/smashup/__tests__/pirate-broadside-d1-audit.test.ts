@@ -9,7 +9,16 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
-import { makeState, makePlayer, makeCard, makeMinion } from './helpers';
+import {
+    getPromptOptions,
+    getPromptTargetType,
+    getSimpleChoicePrompt,
+    makeState,
+    makePlayer,
+    makeCard,
+    makeMinion,
+    respondCommand,
+} from './helpers';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
 import { SmashUpDomain } from '../domain';
@@ -19,7 +28,6 @@ import { createInitialSystemState } from '../../../engine/pipeline';
 import { createSmashUpEventSystem } from '../domain/systems';
 import { initAllAbilities } from '../abilities';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -96,13 +104,11 @@ describe('pirate_broadside D1 审计：三重条件过滤', () => {
         });
 
         // 验证：创建了交互
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect(interaction?.data?.sourceId).toBe('pirate_broadside_choose_base');
-        expect(interaction?.data?.targetType).toBe('base');
+        const interaction = getSimpleChoicePrompt(result.finalState, 'pirate_broadside_choose_base');
+        expect(getPromptTargetType(interaction)).toBe('base');
 
         // 验证：选项中不包含基地0（没有己方随从）
-        const options = interaction?.data?.options ?? [];
+        const options = getPromptOptions(interaction);
         const baseIndices = options.map((opt: any) => opt.value?.baseIndex);
         expect(baseIndices).not.toContain(0); // 基地0不应出现
         expect(baseIndices).toContain(1); // 基地1应出现
@@ -144,9 +150,9 @@ describe('pirate_broadside D1 审计：三重条件过滤', () => {
             name: '条件2测试',
             commands: [
                 { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'broadside1', baseIndex: 0 } },
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'base-0' } },
+                respondCommand('base-0', '0'),
                 // 第二步选择对手1
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'target-player-1' } },
+                respondCommand('target-player-1', '0'),
             ],
         });
 
@@ -195,9 +201,9 @@ describe('pirate_broadside D1 审计：三重条件过滤', () => {
             name: '条件3测试',
             commands: [
                 { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'broadside1', baseIndex: 0 } },
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'base-0' } },
+                respondCommand('base-0', '0'),
                 // 选择对手1（target-player-0 是己方，target-player-1 是对手）
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'target-player-1' } },
+                respondCommand('target-player-1', '0'),
             ],
         });
 

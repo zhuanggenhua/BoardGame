@@ -289,20 +289,31 @@ export async function claimSeat(
 export async function playAgain(
     gameName: string,
     matchID: string,
-    options: { playerID: string; credentials: string; guestId?: string },
+    options: { playerID: string; credentials: string; guestId?: string; token?: string },
 ): Promise<{ nextMatchID: string }> {
     // 先获取当前对局信息以复用 numPlayers 和 setupData
     const matchInfo = await getMatch(gameName, matchID);
     const numPlayers = matchInfo.players.length || 2;
 
-    // 提取 setupData 中需要保留的字段（ownerKey/ownerType）
     const prevSetupData = (matchInfo.setupData ?? {}) as Record<string, unknown>;
-    const setupData: Record<string, unknown> = {};
-    if (prevSetupData.ownerKey) setupData.ownerKey = prevSetupData.ownerKey;
-    if (prevSetupData.ownerType) setupData.ownerType = prevSetupData.ownerType;
+    const setupData = Object.fromEntries(
+        Object.entries(prevSetupData).filter(([key]) => ![
+            'ownerKey',
+            'ownerType',
+            'guestId',
+            'password',
+            'firstPlayerId',
+            'turnOrder',
+        ].includes(key)),
+    );
+    setupData.prevMatchID = matchID;
     // 匿名用户需要传递 guestId 以通过服务端 owner 验证
     if (options.guestId) setupData.guestId = options.guestId;
 
-    const { matchID: nextMatchID } = await createMatch(gameName, { numPlayers, setupData });
+    const { matchID: nextMatchID } = await createMatch(
+        gameName,
+        { numPlayers, setupData, forceReplaceOwnerRoom: true },
+        options.token ? { headers: { Authorization: `Bearer ${options.token}` } } : undefined,
+    );
     return { nextMatchID };
 }

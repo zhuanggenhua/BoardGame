@@ -13,7 +13,6 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { reduce } from '../domain/reducer';
 import { SU_COMMANDS, SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import type {
@@ -27,10 +26,17 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { applyEvents, makeMatchState as makeMatchStateFromHelpers } from './helpers';
+import {
+    getPromptHandlerData,
+    getPromptOption,
+    getPromptSourceId,
+    getPromptTargetType,
+    getSimpleChoicePrompt,
+    makeMatchState as makeMatchStateFromHelpers,
+    respondCommand,
+} from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
     clearRegistry();
@@ -182,10 +188,6 @@ function getLastInteractions(): any[] {
     return list;
 }
 
-function applyEvents(state: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
-    return events.reduce((s, e) => reduce(s, e), state);
-}
-
 // ============================================================================
 // 拜亚基
 // ============================================================================
@@ -313,14 +315,14 @@ describe('远古之物派系能力', () => {
                 bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
             });
 
-            const events = execPlayMinion(state, '0', 'm1', 0);
+            const _events = execPlayMinion(state, '0', 'm1', 0);
             // 不再直接产生疯狂卡事件，而是创建交互
             const interactions = getLastInteractions();
             expect(interactions.length).toBeGreaterThanOrEqual(1);
-            const miGoInteraction = interactions.find(i => i.data?.sourceId === 'elder_thing_mi_go');
+            const miGoInteraction = interactions.find(i => getPromptSourceId(i) === 'elder_thing_mi_go');
             expect(miGoInteraction).toBeDefined();
             expect(miGoInteraction.playerId).toBe('1'); // 对手选择
-            expect(miGoInteraction?.data?.targetType).toBe('button');
+            expect(getPromptTargetType(miGoInteraction)).toBe('button');
         });
 
         it('对手选择抽疯狂卡时产生疯狂卡事件', () => {
@@ -347,8 +349,9 @@ describe('远古之物派系能力', () => {
                 random: defaultRandom,
                 now: 0,
             });
-            const promptData = promptResult.matchState?.sys.interaction.current?.data as Record<string, unknown> | undefined;
-            expect(promptData?.sourceId).toBe('elder_thing_mi_go');
+            const prompt = getSimpleChoicePrompt(promptResult.matchState ?? ms, 'elder_thing_mi_go');
+            const promptData = getPromptHandlerData(prompt);
+            expect(getPromptSourceId(prompt)).toBe('elder_thing_mi_go');
             const handler = getInteractionHandler('elder_thing_mi_go');
             expect(handler).toBeDefined();
             const result = handler!(promptResult.matchState ?? ms, '1', { choice: 'draw_madness' }, promptData, defaultRandom, 0);
@@ -381,8 +384,9 @@ describe('远古之物派系能力', () => {
                 random: defaultRandom,
                 now: 0,
             });
-            const promptData = promptResult.matchState?.sys.interaction.current?.data as Record<string, unknown> | undefined;
-            expect(promptData?.sourceId).toBe('elder_thing_mi_go');
+            const prompt = getSimpleChoicePrompt(promptResult.matchState ?? ms, 'elder_thing_mi_go');
+            const promptData = getPromptHandlerData(prompt);
+            expect(getPromptSourceId(prompt)).toBe('elder_thing_mi_go');
             const handler = getInteractionHandler('elder_thing_mi_go');
             expect(handler).toBeDefined();
             const result = handler!(promptResult.matchState ?? ms, '1', { choice: 'decline' }, promptData, defaultRandom, 0);
@@ -583,7 +587,7 @@ describe('远古之物派系能力', () => {
                 },
             });
 
-            const events = execPlayAction(state, '0', 'a1');
+            const _events = execPlayAction(state, '0', 'a1');
             // 单个弃牌堆随从时创建 Interaction
             const interactions = getLastInteractions();
             expect(interactions.length).toBe(1);
@@ -630,14 +634,11 @@ describe('远古之物派系能力', () => {
             } as any, defaultRandom);
             expect(playBegin.success).toBe(true);
 
-            const beginPrompt = (playBegin.finalState.sys as any)?.interaction?.current;
-            expect(beginPrompt?.data?.sourceId).toBe('elder_thing_begin_the_summoning');
+            const beginPrompt = getSimpleChoicePrompt(playBegin.finalState, 'elder_thing_begin_the_summoning');
+            expect(getPromptSourceId(beginPrompt)).toBe('elder_thing_begin_the_summoning');
 
-            const resolveBegin = runCommand(playBegin.finalState, {
-                type: INTERACTION_COMMANDS.RESPOND,
-                playerId: '0',
-                payload: { optionId: beginPrompt.data.options[0].id },
-            } as any, defaultRandom);
+            const beginOption = getPromptOption(beginPrompt, () => true, 'begin the summoning option');
+            const resolveBegin = runCommand(playBegin.finalState, respondCommand(beginOption.id, '0'), defaultRandom);
             expect(resolveBegin.success).toBe(true);
             expect(resolveBegin.finalState.core.players['0'].actionsPlayed).toBe(1);
             expect(resolveBegin.finalState.core.players['0'].actionLimit).toBe(2);
@@ -649,16 +650,15 @@ describe('远古之物派系能力', () => {
             } as any, defaultRandom);
             expect(playMadness.success).toBe(true);
 
-            const madnessPrompt = (playMadness.finalState.sys as any)?.interaction?.current;
-            expect(madnessPrompt?.data?.sourceId).toBe('special_madness');
+            const madnessPrompt = getSimpleChoicePrompt(playMadness.finalState, 'special_madness');
+            expect(getPromptSourceId(madnessPrompt)).toBe('special_madness');
 
-            const consumeMadness = runCommand(playMadness.finalState, {
-                type: INTERACTION_COMMANDS.RESPOND,
-                playerId: '0',
-                payload: {
-                    optionId: madnessPrompt.data.options.find((option: any) => option.value?.action === 'return')?.id,
-                },
-            } as any, defaultRandom);
+            const returnMadnessOption = getPromptOption(
+                madnessPrompt,
+                (option: any) => option.value?.action === 'return',
+                'return madness option',
+            );
+            const consumeMadness = runCommand(playMadness.finalState, respondCommand(returnMadnessOption.id, '0'), defaultRandom);
             expect(consumeMadness.success).toBe(true);
             expect(consumeMadness.finalState.core.players['0'].actionsPlayed).toBe(2);
             expect(consumeMadness.finalState.core.players['0'].actionLimit).toBe(2);
@@ -703,7 +703,7 @@ describe('远古之物派系能力', () => {
             // 多个随从 → 创建 Prompt 让对手选择消灭哪个
             const interactions = getLastInteractions();
             expect(interactions.length).toBe(1);
-            expect(interactions[0]?.data?.sourceId).toBe('elder_thing_unfathomable_goals');
+            expect(getPromptSourceId(interactions[0])).toBe('elder_thing_unfathomable_goals');
         });
 
         it('有疯狂卡的对手只有一个随从时直接消灭，且先展示手牌', () => {

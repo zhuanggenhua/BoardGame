@@ -11,6 +11,7 @@ import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../types';
 import { smashUpSystemsForTest } from '../game';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import { getSimpleChoicePrompt } from './helpers';
 
 beforeAll(() => {
     // 系统已在 game.ts 中初始化
@@ -165,8 +166,7 @@ describe('便衣忍者无随从场景', () => {
 
         // 验证：应该停在 scoreBases，统一反应交互已创建
         expect(result.finalState.sys.phase).toBe('scoreBases');
-        expect(result.finalState.sys.interaction?.current).toBeDefined();
-        expect(result.finalState.sys.interaction?.current?.data?.sourceId).toBe('smashup_reaction_choose');
+        expect(getSimpleChoicePrompt(result.finalState, 'smashup_reaction_choose')).toBeDefined();
     });
 
     it('P0 手牌中有便衣忍者和随从时，Me First! 窗口应该保持打开', () => {

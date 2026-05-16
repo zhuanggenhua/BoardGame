@@ -1,6 +1,218 @@
 ## Session: 2026-05-16 TDD 行为 seam 与测试结构重构
 
 - **Status:** in_progress
+- 2026-05-16 09:08 +08：完成 `src/games/smashup/__tests__/specialInteractionChain.test.ts` 小批次：本地 `respond()` helper 不再直接 import `INTERACTION_COMMANDS.RESPOND`，改用共享 `respondCommand(optionId, playerId)`；行为断言和 24 条特殊交互代表链保持不变。
+- 验证：`npm test -- src/games/smashup/__tests__/specialInteractionChain.test.ts` -> 1 file passed / 24 tests passed。
+- 扫描：`specialInteractionChain.test.ts` 对主禁用模式 + `interaction.data|INTERACTION_COMMANDS|asSimpleChoice` 扩展模式当前 0 命中。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/specialInteractionChain.test.ts` -> 0 errors；`npm run test:structure` -> OK。
+- 2026-05-16 09:06 +08：完成 `src/games/smashup/__tests__/duplicateInteractionRespond.test.ts` 小批次：保留“同一个 respond 命令对象重复提交”的回归语义，但命令形状从直接 import `INTERACTION_COMMANDS.RESPOND` 改为 `respondCommand(...)`，避免测试体绑定系统响应常量。
+- 验证：`npm test -- src/games/smashup/__tests__/duplicateInteractionRespond.test.ts` -> 1 file passed / 2 tests passed。
+- 扫描：`duplicateInteractionRespond.test.ts` 对主禁用模式 + `interaction.data|INTERACTION_COMMANDS|asSimpleChoice` 扩展模式当前 0 命中。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/duplicateInteractionRespond.test.ts` -> 0 errors；`npm run test:structure` -> OK。
+- 2026-05-16 09:02 +08：完成 `src/games/smashup/__tests__/robot-hoverbot-button-disabled.test.ts` 小批次：Hoverbot 按钮交互的 title/source/options/optionsGenerator 读取与无 prompt 断言改为 `getSimpleChoicePrompt`、`getPromptTitle`、`getPromptSourceId`、`getPromptOptions`、`getPromptOptionsGenerator`、`getPromptHandlerData`、`expectNoPrompt`。
+- 验证：`npm test -- src/games/smashup/__tests__/robot-hoverbot-button-disabled.test.ts` -> 1 file passed / 3 tests passed。
+- 扫描：`robot-hoverbot-button-disabled.test.ts` 对主禁用模式 + `interaction.data|INTERACTION_COMMANDS|asSimpleChoice` 扩展模式当前 0 命中。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/robot-hoverbot-button-disabled.test.ts` -> 0 errors；`npm run test:structure` -> OK。
+- 2026-05-16 09:00 +08：完成 `src/games/smashup/__tests__/cthulhu-chosen-display-mode.test.ts` 小批次：神选者确认 prompt 的 targetType/sourceId/options 断言改为 `getSimpleChoicePrompt`、`getPromptTargetType`、`getPromptSourceId`、`getPromptOptions`；多实例 queued prompt 改用 `getPromptsBySourceId` + `getPromptPlayerId`。
+- 验证：`npm test -- src/games/smashup/__tests__/cthulhu-chosen-display-mode.test.ts` -> 1 file passed / 4 tests passed。
+- 扫描：`cthulhu-chosen-display-mode.test.ts` 对主禁用模式 + `interaction.data|INTERACTION_COMMANDS|asSimpleChoice` 扩展模式当前 0 命中。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/cthulhu-chosen-display-mode.test.ts` -> 0 errors；`npm run test:structure` -> OK。
+- 2026-05-16 08:58 +08：完成 `src/games/smashup/__tests__/robot-hoverbot-stable.test.ts` 小批次：Hoverbot 稳定性测试保留对 `robot_hoverbot_0` id 的专项断言，但 prompt options、skip/play 响应、无 prompt 与基地选择 options 均改为 `getFirstPrompt`、`getPromptOptions`、`getPromptOption`、`respondToPrompt`、`expectNoPrompt`。
+- 中途失败：第一次迁移用 `getPromptOptionById(interaction, 'play')`，该 helper 未覆盖旧 `data.options`，首个用例失败；改用 `getPromptOption` 后复跑通过。
+- 验证：`npm test -- src/games/smashup/__tests__/robot-hoverbot-stable.test.ts` -> 1 file passed / 3 tests passed。
+- 扫描：`robot-hoverbot-stable.test.ts` 对主禁用模式 + `interaction.data|INTERACTION_COMMANDS|asSimpleChoice` 扩展模式当前 0 命中。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/robot-hoverbot-stable.test.ts` -> 0 errors；`npm run test:structure` -> OK。
+- 2026-05-16 08:54 +08：完成 `src/games/smashup/__tests__/bigGulpDroneIntercept.test.ts` 小批次：Big Gulp 目标选择、Drone 防消灭 prompt 的 player/source/options 读取改为 `getSimpleChoicePrompt`、`getPromptPlayerId`、`getPromptSourceId`、`getPromptOption`；三处手写 `INTERACTION_COMMANDS.RESPOND` 改为 `respondToPrompt`；最终无 prompt 改为 `expectNoPrompt`。
+- 验证：`npm test -- src/games/smashup/__tests__/bigGulpDroneIntercept.test.ts` -> 1 file passed / 2 tests passed。
+- 扫描：`bigGulpDroneIntercept.test.ts` 对主禁用模式 + `interaction.data|INTERACTION_COMMANDS|asSimpleChoice` 扩展模式当前 0 命中。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/bigGulpDroneIntercept.test.ts` -> 0 errors；`npm run test:structure` -> OK。
+- 2026-05-16 08:51 +08：完成 `src/games/smashup/__tests__/baseAbilities.test.ts` 小批次：ability runtime prompt 的 `asSimpleChoice(initial.matchState?.sys.interaction?.current)` 改为 `getFirstPrompt` + `getPromptSourceId`；continuation data 读取改为 `getPromptHandlerData`。同时把两个未使用 `context` 参数改为 `_context` 清掉 eslint warning。
+- 验证：`npm test -- src/games/smashup/__tests__/baseAbilities.test.ts` -> 1 file passed / 11 tests passed。
+- 扫描：`baseAbilities.test.ts` 对主禁用模式 + `interaction.data|INTERACTION_COMMANDS|asSimpleChoice` 扩展模式当前 0 命中。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/baseAbilities.test.ts` -> 0 errors；`npm run test:structure` -> OK。
+- 全 `src/games/smashup/__tests__` 主禁用模式剩余仍为 821；这两批主要清理扩展坏味道，不把计数未降误报成已完成。
+- 2026-05-16 08:49 +08：完成 `src/games/smashup/__tests__/afterScoring-rescoring.test.ts` 小批次：`getCurrentChoice` 从 `asSimpleChoice(state.sys.interaction?.current)` 改为 `getOptionalSimpleChoicePrompt(state)`；测试 setup 中手写 `sys.interaction.current = createSimpleChoice(...)` 改为 `withCurrentPrompt({ sys, core }, createSimpleChoice(...))`，避免业务测试直接绑定 current 存储位置。
+- 扫描：`afterScoring-rescoring.test.ts` 对 `getInteractionsFromMS|prompt.data.options|SYS_INTERACTION_RESPOND|SYS_INTERACTION_CANCEL|sys.interaction.current|.data.sourceId|interaction.data|INTERACTION_COMMANDS|asSimpleChoice` 当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/afterScoring-rescoring.test.ts` -> 1 file passed / 8 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/afterScoring-rescoring.test.ts` -> 0 errors。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 仍只是同一物理文件映射，旧泛名 warning 保持，不是本批新增入口。
+- 全 `src/games/smashup/__tests__` 主禁用模式剩余 821 条命中；本批不改变整体未完成结论。
+- 2026-05-16 02:48 +08：回应“是不是只改表象”，继续用目标文件 0 命中 + 聚焦测试 + 结构门禁证明真实 seam 收敛。
+- `src/games/smashup/__tests__/ui-interaction-manual.test.ts`：已在上一批把 UI 手动验证从 `asSimpleChoice(sys.interaction.current)` 改为 `getSimpleChoicePrompt`；验证 `npm test -- src/games/smashup/__tests__/ui-interaction-manual.test.ts` -> 14 tests passed，`npx eslint ...` -> 0 errors，`npm run test:structure` -> OK。
+- `src/games/smashup/__tests__/helpers.ts`：新增 `getPromptPlayerId`，把 prompt 归属玩家读取也收进 facade。
+- `src/games/smashup/__tests__/igor-big-gulp-two-igors.test.ts`：把 Big Gulp prompt source/options/target option 与 Igor prompt 计数从裸 `sys.interaction.current` / `SYS_INTERACTION_RESPOND` / 手工 current+queue 改为 `getSimpleChoicePrompt`、`getPromptOptions`、`getPromptOption`、`respondToPrompt`、`getPromptsBySourceId`。
+- `src/games/smashup/__tests__/igor-double-trigger-bug.test.ts`：把 Crypt + Igor 双 prompt 统计从手工拼 interaction 列表和 `.data.sourceId` 改为 `getPromptsBySourceId`。
+- `src/games/smashup/__tests__/igor-two-igors-one-destroyed.test.ts`：把 Big Gulp 与 Igor onDestroy 两段 prompt 的 source/options/player/响应改为 `getSimpleChoicePrompt`、`getPromptOptions`、`getPromptPlayerId`、`respondToPrompt`，最终无 prompt 改为 `expectNoPrompt`。
+- 扫描：上述 3 个 Igor 目标文件对禁用模式当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/igor-big-gulp-two-igors.test.ts src/games/smashup/__tests__/igor-double-trigger-bug.test.ts src/games/smashup/__tests__/igor-two-igors-one-destroyed.test.ts` -> 3 files passed / 4 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/igor-big-gulp-two-igors.test.ts src/games/smashup/__tests__/igor-double-trigger-bug.test.ts src/games/smashup/__tests__/igor-two-igors-one-destroyed.test.ts` -> 0 errors。
+- 验证：`npm run test:structure` -> OK，仅 Junction 镜像和旧泛名净删减 warning。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 896 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 02:52 +08：继续处理 `src/games/smashup/__tests__/response-window-skip.test.ts`；改前基线 `npm test -- src/games/smashup/__tests__/response-window-skip.test.ts` -> 1 file / 5 tests passed。
+- `src/games/smashup/__tests__/helpers.ts`：新增 `getOptionalSimpleChoicePrompt`，让“可有可无的 simple choice prompt”也走 facade，避免测试本地继续 `asSimpleChoice(state.sys.interaction?.current)`。
+- `response-window-skip.test.ts`：本地 `getCurrentChoice` 改为 `getOptionalSimpleChoicePrompt`；cancel 路径从手写 `SYS_INTERACTION_CANCEL` 改为 `cancelPrompt`；Hidden Ninja 子交互 source/options 读取改为 `getSimpleChoicePrompt` + `getPromptOption`。
+- 扫描：`response-window-skip.test.ts` 对禁用模式当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/response-window-skip.test.ts` -> 1 file / 5 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/response-window-skip.test.ts` -> 0 errors。
+- 验证：`npm run test:structure` -> OK，仅 Junction 镜像和旧泛名净删减 warning。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 893 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 02:54 +08：继续处理 `src/games/smashup/__tests__/reactionQueueOnTurnStart.test.ts`；改前基线 `npm test -- src/games/smashup/__tests__/reactionQueueOnTurnStart.test.ts` -> 1 file / 2 tests passed。
+- `reactionQueueOnTurnStart.test.ts`：把 onTurnStart/onTurnEnd 的统一反应 prompt 断言从 `state.sys.interaction.current.data.sourceId` 改为 `getReactionPrompt(state)`。
+- 扫描：`reactionQueueOnTurnStart.test.ts` 对禁用模式当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/reactionQueueOnTurnStart.test.ts` -> 1 file / 2 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/reactionQueueOnTurnStart.test.ts` -> 0 errors。
+- 验证：`npm run test:structure` -> OK，仅 Junction 镜像和旧泛名净删减 warning。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 889 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 02:58 +08：跳过 `miskatonic-scout-afterscore.test.ts`，因为它是 `describe.skip`；按规范不为了降命中迁移 skipped 文件，除非先补真实链路跑绿。
+- 继续处理非 skip 文件 `src/games/smashup/__tests__/robot-hoverbot-chain.test.ts`；改前基线 `npm test -- src/games/smashup/__tests__/robot-hoverbot-chain.test.ts` -> 1 file / 3 tests passed。
+- `src/games/smashup/__tests__/helpers.ts`：新增 `respondCommand(optionId, playerId)`，让需要放入 `GameTestRunner.run({ commands })` 的旧测试不再手写 `SYS_INTERACTION_RESPOND` 字符串和 payload 形状。
+- `robot-hoverbot-chain.test.ts`：命令数组中的响应命令改用 `respondCommand('play', '0')`；刷新后的 live prompt 从 `interaction.data.options` 改为 `getOptionalSimpleChoicePrompt`、`getPromptPlayerId`、`getPromptOptions`、`getPromptOption`。
+- 扫描：`robot-hoverbot-chain.test.ts` 对禁用模式当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/robot-hoverbot-chain.test.ts` -> 1 file / 3 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/robot-hoverbot-chain.test.ts` -> 0 errors。
+- 验证：`npm run test:structure` -> OK，仅 Junction 镜像和旧泛名净删减 warning。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 885 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 03:03 +08：继续处理非 skip 文件 `src/games/smashup/__tests__/robotAbilities.test.ts`；改前基线 `npm test -- src/games/smashup/__tests__/robotAbilities.test.ts` -> 1 file / 11 tests passed。
+- `src/games/smashup/__tests__/helpers.ts`：新增 `getPromptMultiMin` 与 `getPromptOptionsGenerator`，把 simple-choice 的 multi 最小值和动态候选刷新入口也收进 prompt facade。
+- `robotAbilities.test.ts`：Microbot Reclaimer 的 prompt source、multi、optionsGenerator、handler data 与 optionIds 响应从 `sys.interaction.current` / `interaction.data` / 手写 `SYS_INTERACTION_RESPOND` 改为 `getSimpleChoicePrompt`、`getOptionalSimpleChoicePrompt`、`getPromptMultiMin`、`getPromptOptionsGenerator`、`getPromptHandlerData`、`respondToPromptOptions`。
+- 扫描：`robotAbilities.test.ts` 对禁用模式当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/robotAbilities.test.ts` -> 1 file / 11 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/robotAbilities.test.ts` -> 0 errors。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 仍只说明 `e2e/src` 是同一物理文件映射，不是新增测试入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 881 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 03:07 +08：继续处理非 skip 文件 `src/games/smashup/__tests__/trickster-mark-of-sleep-self-target.test.ts`；改前基线 `npm test -- src/games/smashup/__tests__/trickster-mark-of-sleep-self-target.test.ts` -> 1 file / 9 tests passed。
+- `src/games/smashup/__tests__/helpers.ts`：新增 `getPromptTitle`，让测试标题读取也走 prompt facade。
+- `trickster-mark-of-sleep-self-target.test.ts`：把 Mark of Sleep / POD 的 current prompt、title、options、source 与 3 处响应命令从 `sys.interaction.current` / `interaction.data` / 手写 `SYS_INTERACTION_RESPOND` 改为 `getSimpleChoicePrompt`、`getPromptTitle`、`getPromptOptions`、`getPromptOption`、`respondToPrompt`。
+- 扫描：`trickster-mark-of-sleep-self-target.test.ts` 对禁用模式与隐式 `sys.interaction`/`interaction.data` 裸读当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/trickster-mark-of-sleep-self-target.test.ts` -> 1 file / 9 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/trickster-mark-of-sleep-self-target.test.ts` -> 0 errors。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 仍只说明 `e2e/src` 是同一物理文件映射，不是新增测试入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 877 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 03:12 +08：最低命中筛查中跳过 skipped 文件：`test-alien-scout-afterscore.test.ts`、`vampireBuffetE2E.test.ts`、`wizard-academy-scout-afterscore.test.ts`、`ninja-hidden-ninja-interaction-bug.test.ts`；按规范不为了降命中迁移 skipped 测试。
+- `src/games/smashup/__tests__/tortuga-pirate-king-flowhalted-fix.test.ts` 基线 2 tests passed；该文件命中主要是注释引用旧 `flowHalted && interaction.current` 条件，且测试目标是 flow hook 内部 halt 合同，本批不做改注释式降计数。
+- `src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts` 改前基线 `npm test -- src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts` -> 1 file / 15 tests passed。
+- `afterscoring-window-skip-base-clear.test.ts`：把 `asSimpleChoice(...sys.interaction?.current)` 的 reaction prompt / immediate extra minion prompt 读取改为 `getReactionPrompt` / `getSimpleChoicePrompt`，把无 prompt 断言改为 `expectNoPrompt`；保留必要的系统状态构造与手工 `createSimpleChoice` setup。
+- 扫描：`afterscoring-window-skip-base-clear.test.ts` 仍有少量 `sys.interaction.current` 命中，当前均属于系统测试 setup / 构造交互，不按业务测试坏味道强行隐藏。
+- 验证：`npm test -- src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts` -> 1 file / 15 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts` -> 0 errors。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 仍只说明 `e2e/src` 是同一物理文件映射，不是新增测试入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 876 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 03:15 +08：继续处理非 skip 文件 `src/games/smashup/__tests__/alien-scout-pod-afterscore.test.ts`；改前基线 `npm test -- src/games/smashup/__tests__/alien-scout-pod-afterscore.test.ts` -> 1 file / 4 tests passed。
+- `alien-scout-pod-afterscore.test.ts`：把 Scout afterScoring 的 prompt source/current/queue/options 与 handler data 从裸 `matchState.sys.interaction` / `interaction.data` 改为 `getSimpleChoicePrompt`、`getPromptsBySourceId`、`getPromptOption`、`getPromptHandlerData`。
+- 扫描：`alien-scout-pod-afterscore.test.ts` 对禁用模式与隐式 `sys.interaction`/`interaction.data` 裸读当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/alien-scout-pod-afterscore.test.ts` -> 1 file / 4 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/alien-scout-pod-afterscore.test.ts` -> 0 errors。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 仍只说明 `e2e/src` 是同一物理文件映射，不是新增测试入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 871 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 08:13 +08：继续处理 `src/games/smashup/__tests__/expansionAbilities.test.ts`；改前基线已确认 32 tests passed。
+- `expansionAbilities.test.ts`：把 Bear Hug 的 prompt source/options/目标 option 与响应命令从 `sys.interaction.current` / `.data.options` / `SYS_INTERACTION_RESPOND` 改为 `getSimpleChoicePrompt`、`getPromptOptions`、`getPromptOption`、`respondToPrompt`。
+- `expansionAbilities.test.ts`：删除本地 `getLastInteractions()`，把 Ghost、Bear Cavalry Commission、Scrap Diving 的 current+queue 查询改为 `getPromptsBySourceId(lastMatchState!, sourceId)`。
+- 扫描：`expansionAbilities.test.ts` 对禁用模式与隐式 `sys.interaction`/`interaction.data` 裸读当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/expansionAbilities.test.ts` -> 1 file / 32 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 0 errors / 0 warnings。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 与旧泛名净删减 warning 保持，不是本批新增入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 中途错误：清理未使用 `events` warning 时误删仍被断言使用的 `events` 赋值，造成临时失败；已定点恢复并复跑通过。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 866 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 08:18 +08：继续处理 `src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts`；改前基线 `npm test -- src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` -> 1 file / 6 tests passed。
+- `reactionQueueBaseAbilities.test.ts`：把统一反应 prompt 的 current/source/options 读取改为 `getReactionPrompt`、`getPromptOptions`、`getPromptOption`。
+- `reactionQueueBaseAbilities.test.ts`：把旧 handler 直调需要的 prompt data 改为 `getPromptHandlerData(current)`，把无 prompt 断言改为 `expectNoPrompt`，把真实基地 prompt 断言改为 `getSimpleChoicePrompt(..., 'base_a_prompt')` + `getPromptSourceId`。
+- 扫描：`reactionQueueBaseAbilities.test.ts` 对禁用模式与隐式 `sys.interaction`/`interaction.data` 裸读当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` -> 1 file / 6 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` -> 0 errors / 0 warnings。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 与旧泛名净删减 warning 保持，不是本批新增入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 861 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 08:21 +08：继续处理 `src/games/smashup/__tests__/frankensteinFaq.test.ts`；改前基线 `npm test -- src/games/smashup/__tests__/frankensteinFaq.test.ts` -> 1 file / 3 tests passed。
+- `frankensteinFaq.test.ts`：把 Blitzed 两段 prompt 的 source/options 读取与两次响应命令从 `sys.interaction.current.data` / `INTERACTION_COMMANDS.RESPOND` 改为 `getSimpleChoicePrompt`、`getPromptOptionById`、`getPromptOption`、`respondToPrompt`。
+- `frankensteinFaq.test.ts`：把 It’s Alive! immediate extra minion prompt 与 skip 响应改为 `getSimpleChoicePrompt`、`getPromptOption`、`respondToPrompt`。
+- 扫描：`frankensteinFaq.test.ts` 对禁用模式与隐式 `sys.interaction`/`interaction.data`/`INTERACTION_COMMANDS` 裸读当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/frankensteinFaq.test.ts` -> 1 file / 3 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/frankensteinFaq.test.ts` -> 0 errors / 0 warnings。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 与旧泛名净删减 warning 保持，不是本批新增入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 855 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 08:24 +08：继续处理 `src/games/smashup/__tests__/reactionQueueBaseOptionalClockwise.test.ts`；改前基线 `npm test -- src/games/smashup/__tests__/reactionQueueBaseOptionalClockwise.test.ts` -> 1 file / 2 tests passed。
+- `reactionQueueBaseOptionalClockwise.test.ts`：把 optional reaction prompt 的 player/source/options 读取从 `sys.interaction.current.data` 改为 `getReactionPrompt`、`getPromptPlayerId`、`getPromptOptions`、`getPromptOption`。
+- `reactionQueueBaseOptionalClockwise.test.ts`：删除本地 `withResolvedInteraction`，改用共享 `withoutCurrentPrompt`；旧 handler 直调 data 改为 `getPromptHandlerData(prompt)`。
+- 扫描：`reactionQueueBaseOptionalClockwise.test.ts` 对禁用模式与隐式 `sys.interaction`/`interaction.data` 裸读当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/reactionQueueBaseOptionalClockwise.test.ts` -> 1 file / 2 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/reactionQueueBaseOptionalClockwise.test.ts` -> 0 errors / 0 warnings。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 与旧泛名净删减 warning 保持，不是本批新增入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 849 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 08:27 +08：继续处理 `src/games/smashup/__tests__/pirate-broadside-self-target.test.ts`；改前基线 `npm test -- src/games/smashup/__tests__/pirate-broadside-self-target.test.ts` -> 1 file / 6 tests passed。
+- `pirate-broadside-self-target.test.ts`：把 Broadside 基地 prompt、玩家 prompt、title/options 与三处响应命令从 `sys.interaction.current.data` / `INTERACTION_COMMANDS.RESPOND` 改为 `getSimpleChoicePrompt`、`getPromptTitle`、`getPromptOptions`、`getPromptOption`、`respondToPrompt`。
+- `pirate-broadside-self-target.test.ts`：把 Saucy Wench 的 prompt source/options 与两处响应命令改为 `getSimpleChoicePrompt`、`getPromptOption`、`respondToPrompt`。
+- 扫描：`pirate-broadside-self-target.test.ts` 对禁用模式与隐式 `sys.interaction`/`interaction.data`/`INTERACTION_COMMANDS` 裸读当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/pirate-broadside-self-target.test.ts` -> 1 file / 6 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/pirate-broadside-self-target.test.ts` -> 0 errors / 0 warnings。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 与旧泛名净删减 warning 保持，不是本批新增入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 842 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 08:35 +08：继续处理 `src/games/smashup/__tests__/wildlifePreserveProtection.test.ts`；把 Seeing Stars / Unfathomable Goals 的 prompt 出现、候选过滤、响应命令、无 prompt 与错误来源读取从 `sys.interaction.current` / `prompt.data` / 手写响应命令改为 `getSimpleChoicePrompt`、`getPromptOptions`、`getPromptPlayerId`、`getPromptSourceId`、`expectNoPrompt`、`respondToPrompt`。
+- 扫描：`wildlifePreserveProtection.test.ts` 对禁用模式与隐式 `interaction.data` 裸读当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/wildlifePreserveProtection.test.ts` -> 1 file / 15 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/wildlifePreserveProtection.test.ts` -> 0 errors / 0 warnings。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 与旧泛名净删减 warning 保持，不是本批新增入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 835 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 08:40 +08：继续处理 `src/games/smashup/__tests__/buryEngine.test.ts`；把埋葬翻开窗口的 prompt source、按 cardUid 找候选、响应命令从 `sys.interaction.current` / `interaction.data.options` / `INTERACTION_COMMANDS.RESPOND` 改为 `getSimpleChoicePrompt`、`getPromptOption`、`respondToPrompt`。
+- 扫描：`buryEngine.test.ts` 对禁用模式与隐式 `interaction.data` 裸读当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/buryEngine.test.ts` -> 1 file / 9 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/buryEngine.test.ts` -> 0 errors / 0 warnings。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 与旧泛名净删减 warning 保持，不是本批新增入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 828 条命中；仍不能宣称整体测试框架重构完成。
+- 2026-05-16 08:45 +08：继续处理 `src/games/smashup/__tests__/pirate-cove-repeat-trigger-bug.test.ts`；把海盗湾 afterScoring prompt 统计从手工 current+queue 与 `(interaction.data as any).sourceId` 改为 `getPromptsBySourceId`，把“冠军不应创建交互”从只看 queue 改为 `expectNoPrompt`。
+- 扫描：`pirate-cove-repeat-trigger-bug.test.ts` 对禁用模式与隐式 `interaction.data` 裸读当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/pirate-cove-repeat-trigger-bug.test.ts` -> 1 file / 3 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/pirate-cove-repeat-trigger-bug.test.ts` -> 0 errors / 0 warnings。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 与旧泛名净删减 warning 保持，不是本批新增入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 828 条命中；本批清的是扩展坏味道，不冒充主计数下降。
+- 2026-05-16 08:52 +08：继续处理 `src/games/smashup/__tests__/pirate-king-afterscoring-window.test.ts`；把海盗王 afterScoring prompt 从 `asSimpleChoice(sys.interaction.current)` 改为 `getSimpleChoicePrompt(..., 'pirate_king_move')`，把响应命令从 `INTERACTION_COMMANDS.RESPOND` 改为 `respondCommand`，最终无 prompt 改为 `expectNoPrompt`。
+- 扫描：`pirate-king-afterscoring-window.test.ts` 对禁用模式与 `INTERACTION_COMMANDS` / `asSimpleChoice` 当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/pirate-king-afterscoring-window.test.ts` -> 1 file / 1 test passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/pirate-king-afterscoring-window.test.ts` -> 0 errors / 0 warnings。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 与旧泛名净删减 warning 保持，不是本批新增入口。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 828 条命中；本批清的是扩展坏味道，不冒充主计数下降。
+- 2026-05-16 08:58 +08：继续处理 `src/games/smashup/__tests__/promptE2E.test.ts`；把 Cannon / Powderkeg / Grave Digger 的 `current.data.sourceId` 断言改为 `getSimpleChoicePrompt`，无 prompt 改为 `expectNoPrompt`，Crop Circles 的手工 current+queue 拼接改为 `getPromptsBySourceId`。
+- 扫描：`promptE2E.test.ts` 对禁用模式与隐式 `interaction.data` / `asSimpleChoice` 当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/promptE2E.test.ts` -> 1 file / 12 tests passed。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/promptE2E.test.ts` -> 0 errors / 0 warnings。
+- 验证：`npm run test:structure` -> OK；Junction 镜像 warning 与旧泛名净删减 warning 保持，不是本批新增入口。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 821 条命中；仍不能宣称整体测试框架重构完成。
+- 继续回应用户“是不是只改表象”：本批没有迁移 skipped 文件，也没有只改注释，选择真实业务复现测试里的 prompt/source/队列耦合。
+- `src/games/smashup/__tests__/helpers.ts` 新增 `getPromptsBySourceId`，让“按业务 sourceId 从 current + queue 查询 prompt”集中到 facade。
+- `src/games/smashup/__tests__/igor-big-gulp-double-trigger.test.ts`：把 Big Gulp prompt 读取、handler data 传递、Igor prompt 计数从裸 `sys.interaction.current` / `data.sourceId` 改为 `getFirstPrompt`、`getPromptSourceId`、`getPromptOptions`、`getPromptHandlerData`、`getPromptsBySourceId`。
+- `src/games/smashup/__tests__/igor-rlyeh-double-trigger.test.ts`：把手工拼接 current + queue 改为 `getPromptsBySourceId`，并清理未使用 import。
+- `src/games/smashup/__tests__/shoggoth-destroy-choice.test.ts`：把 Shoggoth 多步 prompt 的 source/handler data/清 current 逻辑改为 `getFirstPrompt`、`getPromptSourceId`、`getPromptHandlerData`、`withoutCurrentPrompt`。
+- 扫描：上述 3 个目标文件对禁用模式当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/igor-big-gulp-double-trigger.test.ts src/games/smashup/__tests__/igor-rlyeh-double-trigger.test.ts src/games/smashup/__tests__/shoggoth-destroy-choice.test.ts` -> 3 files passed / 8 tests passed。
+- 验证：`npm run test:structure` -> OK，仅 Junction warning 和旧 `pirate-cove-chain-fix.test.ts` 净删减 warning。
+- 验证：`npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/igor-big-gulp-double-trigger.test.ts src/games/smashup/__tests__/igor-rlyeh-double-trigger.test.ts` -> 0 errors；`npx eslint src/games/smashup/__tests__/shoggoth-destroy-choice.test.ts` -> 0 errors。
+- 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警，不阻断。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 926 条命中；仍不能宣称整体测试框架重构完成。
+- `src/games/smashup/__tests__/ancientEgyptiansMummyStrength.feedback-regression.test.ts`：把目标 prompt source/options 与最终无 prompt 断言改为 `getFirstPrompt`、`getPromptSourceId`、`getPromptOptions`、`expectNoPrompt`；旧泛名文件保持净新增 0。
+- `src/games/smashup/__tests__/madMonsterPartyPreventedDestroy.test.ts`：把 `getInteractionsFromMS` + 手工 `sourceIds` 映射改为 `getPromptsBySourceId`。
+- `src/games/smashup/__tests__/audit-d1-d8-d33-dino-survival-of-the-fittest.test.ts`：把平局 prompt source/options 读取改为 `getFirstPrompt`、`getPromptSourceId`、`getPromptOptions`，并用 `vitest.config.audit.ts` 验证。
+- `src/games/smashup/__tests__/choice-audit-fixes.test.ts`：删除本地 `clearCurrentInteraction`，改用 `withoutCurrentPrompt`；多步旧 handler 测试的 prompt data/source 读取改为 `getPromptHandlerData` / `getPromptSourceId`。
+- 扫描：上述 4 个目标文件对禁用模式当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/ancientEgyptiansMummyStrength.feedback-regression.test.ts src/games/smashup/__tests__/madMonsterPartyPreventedDestroy.test.ts` -> 2 files passed / 2 tests passed。
+- 验证：`npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/audit-d1-d8-d33-dino-survival-of-the-fittest.test.ts` -> 1 file passed / 8 tests passed。
+- 验证：`npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/choice-audit-fixes.test.ts` -> 1 file passed / 10 tests passed。
+- 验证：相关 eslint -> 0 errors；`npm run test:structure` -> OK。
+- 全 `src/games/smashup/__tests__` 禁用模式剩余 913 条命中；仍不能宣称整体完成。
 - 回应用户“是否只改表象”：本轮按行为 seam 继续推进，不把迁移等同完成。
 - 已把 `Skeletons abilities` 从遗留巨型 `src/games/smashup/__tests__/newFactionAbilities.test.ts` 迁到 `src/games/smashup/__tests__/abilities/skeletons.test.ts`。
 - 迁出时已把交互读取/响应改走 facade：
@@ -2040,3 +2252,325 @@
 - 已更新项目通用新增派系 workflow：`.windsurf/skills/add-new-faction/SKILL.md` 要求每个对象建立 `C1/C2/C3...` 子句表，任一子句缺证据不得填 `passed`。
 - 已更新 SmashUp 专项 workflow：`.windsurf/skills/smashup-faction-addition/SKILL.md` 要求逐卡/逐基地列规则子句表，并以子句最低层级决定对象状态。
 - 已回写旧 shayu evidence：`smashup-shayu-comprehensive-audit-coverage-2026-05-12.md` 与 `smashup-shayu-post-twister-complete-flow-audit-2026-05-15.md` 标明 Argonaut 旧对象级 pass 不完整。
+
+## 2026-05-16 01:25 +08 TDD 行为 seam 迁移收口
+
+- 不是只拆文件：`newFactionAbilities.test.ts` 中剩余 `Samurai abilities` 已迁到 `src/games/smashup/__tests__/abilities/samurai.test.ts`，并把裸 `getInteractionsFromMS`、`prompt.data.options`、`SYS_INTERACTION_RESPOND`、`sys.interaction.current` 改为 `getSimpleChoicePrompt`、`getPromptOption`、`respondToPrompt`、`expectNoPrompt` 等 facade。
+- 旧巨型入口 `src/games/smashup/__tests__/newFactionAbilities.test.ts` 已从实际文件树删除；结构门禁仍会对删除 diff 中的旧内容给债务 warning，但不再有可继续追加的新文件入口。
+- 验证：
+  - `npm test -- src/games/smashup/__tests__/abilities/samurai.test.ts` -> 1 file passed / 28 tests passed。
+  - 迁出集合组合回归 -> 9 files passed / 118 tests passed。
+  - `npm run test:structure` -> OK，仅 Junction 与删除 diff 债务 warning。
+  - 编码检查 -> 通过；`findings.md` 保留既有 replacement-char 可疑告警，不阻断。
+
+## 2026-05-16 01:28 +08 行为 seam 扩展到旧测试文件
+
+- 对剩余旧测试做禁用模式扫描：`abilities/` 聚焦目录已无命中；`src/games/smashup/__tests__` 其他历史测试仍有大量裸交互结构，不能把整体测试框架重构说成完成。
+- 选取小边界文件 `src/games/smashup/__tests__/archmageE2E.test.ts`，改前先跑基线：9 tests passed。
+- 将 9 处 `expect(result.finalState.sys.interaction.current).toBeUndefined()` 收敛为 `expectNoPrompt(result.finalState)`；这是同一行为断言，但不再依赖 InteractionSystem 内部字段路径。
+- 验证：`npm test -- src/games/smashup/__tests__/archmageE2E.test.ts` -> 1 file passed / 9 tests passed；`npm run test:structure` -> OK。
+
+## 2026-05-16 01:30 +08 turnCycle no-prompt seam 收敛
+
+- 继续同类低风险收敛：`src/games/smashup/__tests__/turnCycle.test.ts` 改前基线 22 tests passed。
+- 将 2 处 `state.sys.interaction.current` / `result.finalState.sys.interaction.current` 的无交互断言改为 `expectNoPrompt(...)`。
+- 验证：`npm test -- src/games/smashup/__tests__/turnCycle.test.ts` -> 1 file passed / 22 tests passed；`npm run test:structure` -> OK。
+
+## 2026-05-16 01:33 +08 specialInteractionChain prompt facade 收敛
+
+- `src/games/smashup/__tests__/specialInteractionChain.test.ts` 改前基线：24 tests passed。
+- 将 `asSimpleChoice(r.finalState.sys.interaction.current)` 改为 `getSimpleChoicePrompt(...)`；可选后续 prompt 使用 `getFirstPrompt(...) ? getSimpleChoicePrompt(...) : undefined`；无 prompt 断言改为 `expectNoPrompt(...)`。
+- 该文件当前不再命中 `sys.interaction.current` / `asSimpleChoice` / `SYS_INTERACTION_RESPOND` / `prompt.data.options` / `getInteractionsFromMS` 扫描。
+- 验证：`npm test -- src/games/smashup/__tests__/specialInteractionChain.test.ts` -> 1 file passed / 24 tests passed；`npm run test:structure` -> OK。
+
+## 2026-05-16 01:35 +08 Killer Plants POD prompt facade 收敛
+
+- `src/games/smashup/__tests__/killer-plant-pod-verification.test.ts` 改前基线：11 tests passed。
+- 将 Sprout 搜索 prompt 的读取与响应从 `sys.interaction.current` / `SYS_INTERACTION_RESPOND` 改为 `getSimpleChoicePrompt`、`getPromptOption`、`respondToPrompt`；无 prompt 断言改为 `expectNoPrompt`。
+- 该文件当前不再命中 `sys.interaction.current` / `SYS_INTERACTION_RESPOND` / `prompt.data.options` / `getInteractionsFromMS` 扫描。
+- 验证：`npm test -- src/games/smashup/__tests__/killer-plant-pod-verification.test.ts` -> 1 file passed / 11 tests passed；`npm run test:structure` -> OK。
+
+## 2026-05-16 01:38 +08 shayuEntryConsumption prompt facade 收敛
+
+- `src/games/smashup/__tests__/shayuEntryConsumption.test.ts` 改前基线：6 tests passed。
+- 将第一入口专项测试里的 prompt 存在性、targetType、sourceId 与 options 断言从 `sys.interaction.current.data` 改为 `getSimpleChoicePrompt`、`getPromptOptions`；无 prompt 断言改为 `expectNoPrompt`。
+- 该文件当前不再命中 `sys.interaction.current` / `SYS_INTERACTION_RESPOND` / `prompt.data.options` / `getInteractionsFromMS` 扫描。
+- 验证：`npm test -- src/games/smashup/__tests__/shayuEntryConsumption.test.ts` -> 1 file passed / 6 tests passed；`npm run test:structure` -> OK。
+
+## 2026-05-16 01:41 +08 promptSystem / promptResponseChain no-prompt 收敛
+
+- `src/games/smashup/__tests__/promptSystem.test.ts` 改前基线：8 tests passed；`promptResponseChain.test.ts` 改前基线：14 tests passed。
+- 两个底层 prompt 测试文件的无交互断言改为 `expectNoPrompt`；`promptResponseChain.test.ts` 注释里的旧 `SYS_INTERACTION_RESPOND` 字符串也改为中性“交互响应”，避免扫描误判。
+- 这两个文件当前不再命中 `sys.interaction.current` / `SYS_INTERACTION_RESPOND` / `prompt.data.options` / `getInteractionsFromMS` 扫描。
+- 验证：`npm test -- src/games/smashup/__tests__/promptSystem.test.ts src/games/smashup/__tests__/promptResponseChain.test.ts` -> 2 files passed / 22 tests passed；`npm run test:structure` -> OK。
+
+## 2026-05-16 01:47 +08 reaction queue prompt facade 收敛
+
+- 回应“是否只改表象”：本批继续改测试行为接口，不是只拆文件或改标题。
+- `src/games/smashup/__tests__/reactionQueueBaseReplaceLki.test.ts`：把 no-prompt 断言改为 `expectNoPrompt`。
+- `src/games/smashup/__tests__/reactionQueueOrdering.test.ts`：把 reaction choice / real prompt 的 sourceId 与 options 读取从 `sys.interaction.current.data` 改为 `getSimpleChoicePrompt`、`getPromptOptions`、`getPromptOption`。
+- `src/games/smashup/__tests__/helpers.ts`：新增 `withoutCurrentPrompt`，让底层 reaction 直调测试不再在业务测试文件里手写清理 `sys.interaction.current` 的结构。
+- 扫描：两个 reaction queue 文件对禁用模式 `sys.interaction.current` / `.data.sourceId` / `prompt.data.options` / `SYS_INTERACTION_RESPOND` / `getInteractionsFromMS` 当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/reactionQueueBaseReplaceLki.test.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts` -> 2 files passed / 27 tests passed；保留既有 `[BASE_REPLACED] newBaseDefId base_new not found in baseDeck` warning。
+- 门禁：`npm run test:structure` -> OK，仅 Junction 与旧大文件债务 warning；编码检查通过，`findings.md` 仍有既有 replacement-char 可疑告警。
+- 剩余：全 `src/games/smashup/__tests__` 仍有旧内部耦合命中，当前不能宣称整体测试框架重构完成。
+
+## 2026-05-16 01:55 +08 afterScoring / mulligan / base integration 小批次 seam 收敛
+
+- `src/games/smashup/__tests__/afterscoring-response-window-execution.test.ts` 改前基线：4 tests passed；迁移后仍 4 passed。
+- `src/games/smashup/__tests__/mulligan.test.ts` 改前基线：7 tests passed；迁移后仍 7 passed。
+- `src/games/smashup/__tests__/baseAbilityIntegration.test.ts` 改前基线：25 tests passed；第一次迁移暴露 facade 只找 first prompt 的缺口，修正后 25 passed。
+- `src/games/smashup/__tests__/helpers.ts`：增强 `getSimpleChoicePrompt(state, sourceId)`，传 sourceId 时在 current + queue 中查找目标 prompt；新增 `getPromptHandlerData` 支持少数仍直调旧 handler 的测试过渡。
+- 组合验证：`reactionQueueBaseReplaceLki.test.ts`、`reactionQueueOrdering.test.ts`、`afterscoring-response-window-execution.test.ts`、`mulligan.test.ts` -> 4 files passed / 38 tests passed。
+- `baseAbilityIntegration.test.ts` 单文件 -> 25 tests passed。
+- 目标文件禁用内部耦合扫描 0 命中；`npm run test:structure` -> OK；编码检查通过，`findings.md` 仍有既有 replacement-char 可疑告警。
+- 全 `src/games/smashup/__tests__` 当前禁用模式剩余 961 条命中，说明还在持续治理中，不能收口为完成。
+
+## 2026-05-16 02:05 +08 ninja / first mate / wizard neophyte 小批次 seam 收敛
+
+- 回应“是不是只改了表象”：本批继续消除测试体对内部 prompt 字段与系统响应命令的耦合。
+- `src/games/smashup/__tests__/ninja-hidden-ninja-no-minions.test.ts`：把统一反应 prompt 的 `sys.interaction.current.data.sourceId` 断言改为 `getSimpleChoicePrompt(..., 'smashup_reaction_choose')`。
+- `src/games/smashup/__tests__/temple-firstmate-afterscore.test.ts`：把 First Mate afterScoring prompt 的 `sys.interaction.current` / `data.sourceId` 断言改为 `getSimpleChoicePrompt(..., 'pirate_first_mate_choose_base')`。
+- `src/games/smashup/__tests__/wizard-neophyte-actionlog.test.ts`：把 Neophyte prompt source 断言改为 `getSimpleChoicePrompt(..., 'wizard_neophyte')`，并把三处手写 `INTERACTION_COMMANDS.RESPOND` 改为 `respondToPrompt`。
+- 扫描：上述 3 个文件对禁用模式 `getInteractionsFromMS` / `prompt.data.options` / `SYS_INTERACTION_RESPOND` / `SYS_INTERACTION_CANCEL` / `sys.interaction.current` / `.data.sourceId` 当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/ninja-hidden-ninja-no-minions.test.ts src/games/smashup/__tests__/temple-firstmate-afterscore.test.ts src/games/smashup/__tests__/wizard-neophyte-actionlog.test.ts` -> 3 files passed / 11 tests passed。
+- 门禁：`npm run test:structure` -> OK，仅 Junction 与旧 `newFactionAbilities` 删除债务 warning；编码检查通过，`findings.md` 仍有既有 replacement-char 可疑告警。
+- 全 `src/games/smashup/__tests__` 当前禁用模式剩余 955 条命中；还在持续治理中，不能宣称整体完成。
+
+## 2026-05-16 02:10 +08 Broadside / scoring eligible 小批次 seam 收敛
+
+- `src/games/smashup/__tests__/helpers.ts` 新增 `getPromptTargetType`，让 targetType 断言也走 prompt facade。
+- `src/games/smashup/__tests__/pirate-broadside-d1-audit.test.ts`：把 Broadside 基地选择 prompt 的 sourceId/targetType/options 从 `interaction.data` 读取改为 `getSimpleChoicePrompt`、`getPromptTargetType`、`getPromptOptions`。
+- `src/games/smashup/__tests__/scoringEligibleLock.test.ts`：把 Under Pressure source/target option 查找改为 `getSimpleChoicePrompt` + `getPromptOption`，把 Dunwich Horror prompt source 断言改为 `getSimpleChoicePrompt(..., 'elder_thing_dunwich_horror_pod_choice')`。
+- 扫描：上述 2 个文件对禁用模式当前 0 命中。
+- 验证：
+  - `npm test -- src/games/smashup/__tests__/scoringEligibleLock.test.ts` -> 1 file passed / 12 tests passed。
+  - `npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/pirate-broadside-d1-audit.test.ts` -> 1 file passed / 3 tests passed。
+  - 普通 `npm test -- src/games/smashup/__tests__/pirate-broadside-d1-audit.test.ts` 会因 audit 文件默认排除而报 `No test files found`，不能作为失败用例处理。
+  - `npm run test:structure` -> OK，仅 Junction warning；编码检查通过，`findings.md` 仍有既有 replacement-char 可疑告警。
+- 全 `src/games/smashup/__tests__` 当前禁用模式剩余 953 条命中；还在持续治理中，不能宣称整体完成。
+
+## 2026-05-16 02:18 +08 Wizard Neophyte ongoing / Hidden Ninja repro seam 收敛
+
+- `src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts`：把 Neophyte prompt、ongoing 目标基地 prompt、选项读取和两次响应从 `sys.interaction.current` / `INTERACTION_COMMANDS.RESPOND` 改为 `getSimpleChoicePrompt`、`getPromptOptions`、`respondToPrompt`。
+- `src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts`：把 Hidden Ninja prompt 断言改为 `getSimpleChoicePrompt(..., 'ninja_hidden_ninja')`，并把注释中的内部字段表述改成“当前 prompt 为空”。
+- 扫描：上述 2 个文件对禁用模式当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts` -> 2 files passed / 3 tests passed。
+- 门禁：`npm run test:structure` -> OK，仅 Junction warning；编码检查通过，`findings.md` 仍有既有 replacement-char 可疑告警。
+- 全 `src/games/smashup/__tests__` 当前禁用模式剩余 949 条命中；还在持续治理中，不能宣称整体完成。
+
+## 2026-05-16 02:24 +08 reaction queue on* 小批次 seam 收敛
+
+- `src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts`、`reactionQueueOnMinionDiscardedFromBase.test.ts`、`reactionQueueOnMinionPlayed.test.ts`：把统一反应选择 prompt 读取从 `rq.state.sys.interaction.current.data.sourceId` 改为 `getReactionPrompt(...)`。
+- 扫描：上述 3 个文件对禁用模式当前 0 命中。
+- 验证：`npm test -- src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts src/games/smashup/__tests__/reactionQueueOnMinionDiscardedFromBase.test.ts src/games/smashup/__tests__/reactionQueueOnMinionPlayed.test.ts` -> 3 files passed / 4 tests passed。
+- 门禁：`npm run test:structure` -> OK，仅 Junction warning；编码检查通过，`findings.md` 仍有既有 replacement-char 可疑告警。
+- 全 `src/games/smashup/__tests__` 当前禁用模式剩余 943 条命中；还在持续治理中，不能宣称整体完成。
+
+## 2026-05-16 02:21 +08 pirate / turn transition / duplicate respond 小批次 seam 收敛
+
+- 回应用户“这么快，还是只改了表象”：本批继续改测试行为 seam，并用全量命中数证明进展，不按“改了几行”收口。
+- `src/games/smashup/__tests__/pirate-cove-chain-fix.test.ts`：把海盗湾计分链的 prompt source 断言从 `sys.interaction.current.data.sourceId` 改为 `getFirstPrompt` + `getPromptSourceId`。结构门禁首次失败，原因是旧泛名文件净新增内容；随后压缩为净删减并复跑通过。
+- `src/games/smashup/__tests__/turnTransitionInteractionBug.test.ts`：把拉莱耶响应从手写 `SYS_INTERACTION_RESPOND` 命令改为 `respondToPrompt`，把 prompt 存在/source 读取改为 `getSimpleChoicePrompt` / `getFirstPrompt` / `getPromptSourceId`，无 prompt 断言改为 `expectNoPrompt`。
+- `src/games/smashup/__tests__/duplicateInteractionRespond.test.ts`：把消费后无交互断言改为 `expectNoPrompt`，并去掉用例标题里的裸系统命令术语。
+- `src/games/smashup/__tests__/elder-thing-multi-select.test.ts`：把 options/source/target 读取改为 `getPromptOptions`、`getPromptSourceId`、`getPromptTargetType`。
+- `src/games/smashup/__tests__/turnCycle.test.ts`：把蘑菇王国 / Invisible Ninja 反应队列段落的 prompt source 与 handler data 读取收进 `getFirstPrompt`、`getPromptSourceId`、`getPromptHandlerData`；相关无 prompt 断言改为 `expectNoPrompt`。
+- 扫描：上述本批目标文件对禁用模式均为 0 命中。
+- 验证：
+  - `npm test -- src/games/smashup/__tests__/pirate-cove-chain-fix.test.ts src/games/smashup/__tests__/turnTransitionInteractionBug.test.ts` -> 2 files passed / 5 tests passed。
+  - `npm test -- src/games/smashup/__tests__/duplicateInteractionRespond.test.ts src/games/smashup/__tests__/elder-thing-multi-select.test.ts src/games/smashup/__tests__/turnCycle.test.ts` -> 3 files passed / 27 tests passed。
+  - `npm test -- src/games/smashup/__tests__/pirate-cove-chain-fix.test.ts` -> 1 file passed / 3 tests passed after reducing old generic-file net additions。
+  - `npm run test:structure` -> OK；仅 Junction warning 和旧泛名净删减 warning。
+  - `node scripts/infra/check-file-encoding.mjs ...` -> 通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+- 全 `src/games/smashup/__tests__` 当前禁用模式剩余 936 条命中；还在持续治理中，不能宣称整体完成。
+
+## 2026-05-16 09:13 +08 prompt system 命令 seam 复核
+
+- 回应用户“是不是只改表象”：本轮先复核 `promptSystem.test.ts` / `promptResponseChain.test.ts` 的剩余命中，区分可迁移的普通响应命令与必须保留的底层系统合同。
+- `promptSystem.test.ts`：把“无 Prompt 时响应”的手写 `{ type: INTERACTION_COMMANDS.RESPOND, payload: { optionId } }` 改为 `respondCommand('test', '0')`；保留 AI fallback 对 `INTERACTION_COMMANDS.RESPOND/CANCEL` 的断言，因为测试目标就是 fallback command type 合同。
+- `promptResponseChain.test.ts`：同样把“无 Prompt 时响应”改为 `respondCommand('test', '0')`，并移除不再使用的 `INTERACTION_COMMANDS` import；保留 `INTERACTION_EVENTS.RESOLVED` 常量断言。
+- 顺手清掉 `promptSystem.test.ts` 中未使用的 `ME_FIRST_PASS`，避免本批 lint 留 warning。
+- 验证：
+  - 改前基线：`npm test -- src/games/smashup/__tests__/promptResponseChain.test.ts src/games/smashup/__tests__/promptSystem.test.ts` -> 2 files passed / 22 tests passed。
+  - 改后聚焦：同命令 -> 2 files passed / 22 tests passed。
+  - 扩展目标扫描：仅剩 `promptSystem.test.ts` 的 AI fallback `INTERACTION_COMMANDS.RESPOND/CANCEL` 合同断言，未再剩普通响应命令手写。
+  - `npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/promptResponseChain.test.ts src/games/smashup/__tests__/promptSystem.test.ts` -> 0 errors。
+  - `npm run test:structure` -> OK；仍只有 Junction 镜像与既有旧泛名债务 warning。
+  - 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+  - `git diff --check` -> 0 errors，仅 Git 的 LF/CRLF 工作区提示。
+- 全 `src/games/smashup/__tests__` 主禁用模式剩余仍为 821 条；本批处理的是扩展扫描中的手写系统响应命令，不能把它当成全局完成。
+
+## 2026-05-16 09:18 +08 小尾巴文件扩展扫描收敛
+
+- 目标选择：从剩余命中最少的文件里跳过已标记谨慎的 skip 文件，选择 `reactionQueueOrdering.test.ts`、`scoringEligibleLock.test.ts`、`tortuga-pirate-king-flowhalted-fix.test.ts` 三个可安全收敛目标。
+- 改前基线：`npm test -- src/games/smashup/__tests__/reactionQueueOrdering.test.ts src/games/smashup/__tests__/scoringEligibleLock.test.ts src/games/smashup/__tests__/tortuga-pirate-king-flowhalted-fix.test.ts` -> 3 files passed / 40 tests passed。
+- `helpers.ts` 新增 `withPromptHandlerData(prompt, handlerData)`，让测试需要给 prompt 补 handler data / continuationContext 时不再裸写 `interaction.data`。
+- `reactionQueueOrdering.test.ts`：把 footprint 测试里的 `(interaction.data as any).continuationContext = ...` 改为 `withPromptHandlerData(...)`。
+- `scoringEligibleLock.test.ts`：删除未使用的 `INTERACTION_COMMANDS` import，消除扩展扫描和 eslint warning。
+- `tortuga-pirate-king-flowhalted-fix.test.ts`：注释不再写内部 `sys.interaction.current` 路径；交互已解决用 `expectNoPrompt`，交互仍在进行用 `getFirstPrompt`。
+- 改后验证：
+  - 聚焦测试 -> 3 files passed / 40 tests passed。
+  - 目标扩展扫描 -> 0 命中。
+  - `npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/reactionQueueOrdering.test.ts src/games/smashup/__tests__/scoringEligibleLock.test.ts src/games/smashup/__tests__/tortuga-pirate-king-flowhalted-fix.test.ts` -> 0 errors。
+  - `npm run test:structure` -> OK；`tortuga-pirate-king-flowhalted-fix.test.ts` 仍作为旧泛名测试债务 warning，但本次没有净新增。
+  - 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+  - `git diff --check` -> 0 errors，仅 Git 的 LF/CRLF 工作区提示。
+- 全 `src/games/smashup/__tests__` 主禁用模式剩余从 821 降到 820；另外两个清理点属于扩展扫描，不体现在主计数里。
+
+## 2026-05-16 09:21 +08 feedback / audit 响应命令 seam 收敛
+
+- 目标选择：`ancientEgyptiansMummyStrength.feedback-regression.test.ts` 与 `pirate-broadside-d1-audit.test.ts` 剩余命中均为手写 `INTERACTION_COMMANDS.RESPOND`，属于应迁到 `respondCommand` 的普通玩家响应命令。
+- 改前基线：
+  - `npm test -- src/games/smashup/__tests__/ancientEgyptiansMummyStrength.feedback-regression.test.ts` -> 1 file passed / 1 test passed。
+  - `npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/pirate-broadside-d1-audit.test.ts` -> 1 file passed / 3 tests passed。
+- 改动：
+  - `ancientEgyptiansMummyStrength.feedback-regression.test.ts` 本地 `respond(...)` helper 改为返回 `respondCommand(optionId, playerId)`。
+  - `pirate-broadside-d1-audit.test.ts` 两个用例的 base / target-player 响应命令改为 `respondCommand(...)`，移除 `INTERACTION_COMMANDS` import。
+- 改后验证：
+  - ancient 单测 -> 1 passed。
+  - pirate broadside audit 专用 vitest -> 3 passed。
+  - 两个目标文件扩展扫描 -> 0 命中。
+  - eslint -> 0 errors。
+  - `npm run test:structure` -> OK；仍只有 Junction 镜像与既有旧泛名债务 warning。
+  - 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+  - `git diff --check` -> 0 errors，仅 Git 的 LF/CRLF 工作区提示。
+- 全 `src/games/smashup/__tests__` 主禁用模式仍为 820；本批处理的是扩展扫描中的响应命令 seam。
+
+## 2026-05-16 09:23 +08 Elder Thing multi prompt seam 收敛
+
+- 目标选择：`elder-thing-multi-select.test.ts` 不是已标记 skip 的 integration 文件，剩余 6 个命中集中在 `interaction.data.title/multi` 直接读取。
+- 改前基线：`npm test -- src/games/smashup/__tests__/elder-thing-multi-select.test.ts` -> 1 file passed / 3 tests passed；eslint 0 errors。
+- `helpers.ts` 新增 `getPromptMulti(prompt)`，补齐 `getPromptMultiMin` 之外的完整 multi 配置读取 facade。
+- `elder-thing-multi-select.test.ts`：标题断言改为 `getPromptTitle`，multi 配置断言改为 `getPromptMulti`；仍保留 `createSimpleChoice` 行为合同测试意图。
+- 改后验证：
+  - 单文件 -> 3 tests passed。
+  - 目标扩展扫描 -> 0 命中。
+  - eslint -> 0 errors。
+  - `npm run test:structure` -> OK；仍只有 Junction 镜像与既有旧泛名债务 warning。
+  - 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+  - `git diff --check` -> 0 errors，仅 Git 的 LF/CRLF 工作区提示。
+- 全 `src/games/smashup/__tests__` 主禁用模式仍为 820；本批处理的是扩展扫描中的 `interaction.data` seam。
+
+## 2026-05-16 09:26 +08 Alien Scout duplicate scoring 响应命令 seam 收敛
+
+- 目标选择：`alien-scout-no-duplicate-scoring.test.ts` 剩余命中均为 afterScoring 链路里的手写 `INTERACTION_COMMANDS.RESPOND`，可迁到 `respondCommand`。
+- 改前基线：`npm test -- src/games/smashup/__tests__/alien-scout-no-duplicate-scoring.test.ts` -> 1 file passed / 2 tests passed；eslint 0 errors。
+- 改动：两个用例中的 Scout trigger / `yes` 响应命令全部改为 `respondCommand(...)`，移除 `INTERACTION_COMMANDS` import。
+- 改后验证：
+  - 单文件 -> 2 tests passed。
+  - 目标扩展扫描 -> 0 命中。
+  - eslint -> 0 errors。
+  - `npm run test:structure` -> OK；仍只有 Junction 镜像与既有旧泛名债务 warning。
+  - 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+  - `git diff --check` -> 0 errors，仅 Git 的 LF/CRLF 工作区提示。
+- 全 `src/games/smashup/__tests__` 主禁用模式仍为 820；本批处理的是扩展扫描中的响应命令 seam。
+
+## 2026-05-16 09:29 +08 Dino Rampage audit prompt seam 收敛
+
+- 目标选择：`audit-d11-d12-d14-dino-rampage.test.ts` 混合了 `state.sys.interaction.current`、`interaction.data.sourceId/options` 与 `runner.dispatch('SYS_INTERACTION_RESPOND')`，适合单独处理。
+- 改前基线：`npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts` -> 1 file passed / 6 tests passed；eslint 有既有 `prefer-const` warning。
+- 改动：
+  - 当前 prompt 读取改为 `getFirstPrompt(state)`。
+  - sourceId 断言改为 `getPromptSourceId(interaction)`。
+  - option 查找改为 `getPromptOption(interaction, predicate)`。
+  - 玩家响应改为 `runner.resolveInteraction('0', { optionId })`，不再手写 `SYS_INTERACTION_RESPOND`。
+- 改后验证：
+  - audit 专用 vitest -> 6 tests passed。
+  - 目标扩展扫描 -> 0 命中。
+  - eslint -> 0 errors。
+  - `npm run test:structure` -> OK；仍只有 Junction 镜像与既有旧泛名债务 warning。
+  - 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+  - `git diff --check` -> 0 errors，仅 Git 的 LF/CRLF 工作区提示。
+- 全 `src/games/smashup/__tests__` 主禁用模式从 820 降到 814。
+
+## 2026-05-16 09:32 +08 Aliens audit fixes prompt seam 收敛
+
+- 目标选择：`alienAuditFixes.test.ts` 不是 skip 文件，剩余命中集中在本地 `respondInteraction` 手写系统响应、prompt source/options 裸读与无 prompt 裸断言。
+- 改前基线：`npx vitest run --config vitest.config.audit.ts src/games/smashup/__tests__/alienAuditFixes.test.ts` -> 1 file passed / 14 tests passed；eslint 0 errors。
+- 改动：
+  - 本地 `respondInteraction` 改为调用 `respondToPrompt(...)`。
+  - no-prompt 断言改为 `expectNoPrompt(...)`。
+  - 当前 prompt 读取改为 `getFirstPrompt(...)`。
+  - sourceId 断言改为 `getPromptSourceId(...)`。
+  - option 查找改为 `getPromptOption(...)`。
+  - stale-state 重放 prompt 使用 `withCurrentPrompt(...)`，不再手写 `sys.interaction.current` 状态结构。
+- 改后验证：
+  - audit 专用 vitest -> 14 tests passed。
+  - 目标扩展扫描 -> 0 命中。
+  - eslint -> 0 errors。
+  - `npm run test:structure` -> OK；仍只有 Junction 镜像与既有旧泛名债务 warning。
+  - 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+  - `git diff --check` -> 0 errors，仅 Git 的 LF/CRLF 工作区提示。
+- 全 `src/games/smashup/__tests__` 主禁用模式从 814 降到 807。
+
+## 2026-05-16 09:35 +08 afterScoring deferred clear prompt seam 收敛
+
+- 目标选择：`afterscoring-window-skip-base-clear.test.ts` 剩余命中包含 current 清理/注入、`interaction.data` continuationContext、`interactionData` 裸取与 `INTERACTION_COMMANDS.RESPOND`。
+- 改前基线：`npm test -- src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts` -> 1 file passed / 15 tests passed；eslint 0 errors。
+- 改动：
+  - `wrapState` 用 `withoutCurrentPrompt(...)` 表达无当前 prompt。
+  - 托尔图加 session prompt 用 `withPromptHandlerData(...)` 注入 `continuationContext`。
+  - 手工挂 current 的 Scout prompt 改为 `withCurrentPrompt(state, createSimpleChoice(...))`。
+  - resolved event 的 `interactionData` 改为 `getPromptHandlerData(interaction)`。
+  - immediate extra minion 的 skip 响应改为 `runner.resolveInteraction('0', { optionId: 'skip' })`。
+- 改后验证：
+  - 单文件 -> 15 tests passed。
+  - 目标扩展扫描 -> 0 命中。
+  - eslint -> 0 errors。
+  - `npm run test:structure` -> OK；仍只有 Junction 镜像与既有旧泛名债务 warning。
+  - 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+  - `git diff --check` -> 0 errors，仅 Git 的 LF/CRLF 工作区提示。
+- 全 `src/games/smashup/__tests__` 主禁用模式从 807 降到 804。
+
+## 2026-05-16 09:44 +08 scoreBases AI/prompt seam 收敛
+
+- 针对“是不是只改表象”继续处理 `src/games/smashup/__tests__/scoreBases-auto-continue.test.ts`，优先清理会在 InteractionSystem/AI command 外壳重构时碎裂的测试耦合。
+- 改前基线：`npm test -- src/games/smashup/__tests__/scoreBases-auto-continue.test.ts` -> 1 file passed / 36 tests passed。
+- 改动：
+  - `helpers.ts` 的 `respondCommand` 支持无 `playerId` 的 AI action command 期望值，并新增 `getRespondCommandOptionId(command)`。
+  - 新增 `withPromptResolutionFrameId(prompt, frameId)`，让特殊 resolution frame setup 不再直接写 `state.sys.interaction.current`。
+  - `scoreBases-auto-continue.test.ts` 移除 `asSimpleChoice` 直读，multi-base scoring prompt 改为 `getSimpleChoicePrompt(updatedState, 'multi_base_scoring')`，option 查找改为 `getPromptOption`。
+  - AI command 断言不再手写 `SYS_INTERACTION_RESPOND` 字符串，改为 `respondCommand(...)` / `getRespondCommandOptionId(...)`。
+- 改后验证：
+  - 目标扩展扫描 -> 0 命中。
+  - 单文件 -> 36 tests passed。
+  - `npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/scoreBases-auto-continue.test.ts` -> 0 errors。
+  - `npm run test:structure` -> OK；仍只有 Junction 镜像与既有旧泛名债务 warning。
+  - 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+  - `git diff --check` -> 0 errors，仅 Git 的 LF/CRLF 工作区提示。
+- 全 `src/games/smashup/__tests__` 主禁用模式从 804 降到 801；仍不能宣称整体完成。
+
+## 2026-05-16 09:54 +08 Elder Thing ability prompt seam 收敛
+
+- 目标选择：跳过 `mothership-scout-afterscore-bug.test.ts` 这类 `describe.skip` 文件，选择非 skip 的 `src/games/smashup/__tests__/elderThingAbilities.test.ts`。
+- 改前基线：`npm test -- src/games/smashup/__tests__/elderThingAbilities.test.ts` -> 1 file passed / 25 tests passed。
+- 改动：
+  - Mi-Go prompt 查找从 `interaction.data.sourceId` 改为 `getPromptSourceId(...)`，targetType 读取改为 `getPromptTargetType(...)`。
+  - 旧 handler 桥接里的 `promptResult.matchState.sys.interaction.current.data` 改为 `getSimpleChoicePrompt(...)` + `getPromptHandlerData(...)`。
+  - Begin the Summoning / Madness 的响应命令从 `INTERACTION_COMMANDS.RESPOND` 改为 `respondCommand(...)`，选项查找改为 `getPromptOption(...)`。
+  - Unfathomable Goals 的 prompt source 断言改为 `getPromptSourceId(...)`。
+- 中途失误：清理 eslint warning 时一度把仍需读取的 `events` 变量误改为 `_events`，导致单文件短暂失败；已按失败行恢复，只保留真正未使用的两处 `_events`。
+- 改后验证：
+  - 单文件 -> 25 tests passed。
+  - 目标扩展扫描 -> 0 命中。
+  - `npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/elderThingAbilities.test.ts` -> 0 errors。
+  - `npm run test:structure` -> OK；仍只有 Junction 镜像与既有旧泛名债务 warning。
+  - 编码检查通过；`findings.md` 仍有既有 replacement-char 可疑告警。
+  - `git diff --check` -> 0 errors，仅 Git 的 LF/CRLF 工作区提示。
+- 全 `src/games/smashup/__tests__` 主禁用模式从 801 降到 795；仍不能宣称整体完成。
+
+## 2026-05-16 10:00 +08 ongoing E2E prompt seam 收敛
+
+- 目标选择：`ongoingE2E.test.ts` 非 skip，剩余命中集中在 Shanghai prompt 链、Pirate POD prompt source 与手写响应命令。
+- 改前基线：`npm test -- src/games/smashup/__tests__/ongoingE2E.test.ts` -> 1 file passed / 14 tests passed；eslint 仅有一个未使用 `events` warning。
+- 改动：
+  - 上海单步 interaction source 断言改为 `getPromptSourceId(...)`。
+  - Shanghai 完整 Prompt 链从 `asSimpleChoice(sys.interaction.current)` 改为 `getSimpleChoicePrompt(...)`，候选读取改为 `getPromptOptions` / `getPromptOption`。
+  - 两处手写 `INTERACTION_COMMANDS.RESPOND` 改为 `respondCommand(...)`。
+  - Buccaneer POD 与 First Mate POD 的 prompt source 断言改为 `getPromptSourceId(...)`。
+- 中途失误：清理未使用变量时先命中还需要读取 `events` 的 entangled 用例，导致单文件短暂失败；已恢复该变量，只把 Shanghai 创建交互用例的未使用结果改为 `_events`。
+- 改后验证：
+  - 单文件 -> 14 tests passed。
+  - 目标扩展扫描 -> 0 命中。
+  - `npx eslint src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/ongoingE2E.test.ts` -> 0 errors。
+- 全 `src/games/smashup/__tests__` 主禁用模式从 795 降到 788；仍不能宣称整体完成。

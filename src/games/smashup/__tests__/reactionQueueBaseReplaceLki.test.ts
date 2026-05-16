@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SmashUpCore, TriggerInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
-import { makeMatchState, makeState, makeBase } from './helpers';
+import { expectNoPrompt, makeMatchState, makeState, makeBase } from './helpers';
 import { clearBaseAbilityRegistry, registerBaseAbility } from '../domain/baseAbilities';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
@@ -58,7 +58,7 @@ describe('Reaction queue: base replacement vs LKI', () => {
     // Even after the base is replaced, the queued trigger should still survive into the same reaction frame.
     const ms2 = makeMatchState({ ...core1, triggerQueue: [t, { ...t, id: `${t.id}:2` }] });
     const rq = maybeResolveReactionQueue(ms2 as any, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1)!;
-    expect(rq.state.sys.interaction.current).toBeUndefined();
+    expectNoPrompt(rq.state);
     expect(rq.state.core.triggerQueue ?? []).toHaveLength(0);
     expect(rq.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
     expect(rq.events.filter(event =>

@@ -7,7 +7,7 @@
  */
 
 import { beforeAll, describe, expect, it } from 'vitest';
-import { asSimpleChoice, createSimpleChoice, INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { createFlowSystem, createBaseSystems } from '../../../engine/systems';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
@@ -28,6 +28,15 @@ import { appendScoringFrameDeferredPayload, createScoringBaseRef, createScoringS
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { getScoringSession } from '../domain/scoringSession';
 import { defaultTestRandom } from './testRunner';
+import {
+    expectNoPrompt,
+    getPromptHandlerData,
+    getReactionPrompt,
+    getSimpleChoicePrompt,
+    withCurrentPrompt,
+    withPromptHandlerData,
+    withoutCurrentPrompt,
+} from './helpers';
 
 beforeAll(() => {
     clearRegistry();
@@ -105,9 +114,8 @@ function wrapState(core: SmashUpCore) {
     ];
     const sys = createInitialSystemState(['0', '1'], systems, undefined);
     sys.phase = 'scoreBases';
-    sys.interaction.current = undefined;
     sys.interaction.queue = [];
-    return { core, sys };
+    return withoutCurrentPrompt({ core, sys });
 }
 
 function withDeferredScoringFrame(
@@ -474,7 +482,7 @@ describe('afterScoring 延迟清场回归', () => {
             ],
         });
 
-        const interaction = createSimpleChoice(
+        const interaction = withPromptHandlerData(createSimpleChoice(
             'i-tortuga-session',
             '1',
             '托尔图加：选择移动一个其他基地上的随从到替换基地',
@@ -487,19 +495,9 @@ describe('afterScoring 延迟清场回归', () => {
                 },
             ],
             { sourceId: 'base_tortuga', targetType: 'minion' },
-        );
-        (interaction.data as any).continuationContext = { baseIndex: 0 };
-        state = {
-            ...state,
-            sys: {
-                ...state.sys,
-                interaction: {
-                    ...state.sys.interaction,
-                    current: interaction,
-                    queue: [],
-                },
-            },
-        };
+        ), { continuationContext: { baseIndex: 0 } });
+        state = withCurrentPrompt(state, interaction);
+        state.sys.interaction.queue = [];
 
         const resolved = system.afterEvents?.({
             state,
@@ -512,14 +510,15 @@ describe('afterScoring 延迟清场回归', () => {
                     optionId: 'minion-0',
                     value: { minionUid: 'm3', minionDefId: 'd1', fromBaseIndex: 1 },
                     sourceId: 'base_tortuga',
-                    interactionData: interaction.data,
+                    interactionData: getPromptHandlerData(interaction),
                 },
                 timestamp: 2300,
             } as any],
         });
 
         expect((resolved?.events as SmashUpEvent[] | undefined) ?? []).toHaveLength(0);
-        expect(resolved?.state.sys.interaction.current).toBeFalsy();
+        expect(resolved?.state).toBeDefined();
+        expectNoPrompt(resolved!.state);
         expect((resolved?.state.sys as any)._waitForScoreBasesInteractionReduce).toBeUndefined();
 
         const finalize = smashUpFlowHooks.onPhaseExit?.({
@@ -581,18 +580,16 @@ describe('afterScoring 延迟清场回归', () => {
         ]);
 
         // 模拟：当前交互（母舰）已被弹出，下一交互（侦察兵）已在 current，queue 为空。
-        state.sys.interaction.current = {
-            id: 'i-scout-next',
-            kind: 'simple-choice',
-            playerId: '0',
-            data: {
-                sourceId: 'alien_scout_return',
-                options: [
-                    { id: 'yes', label: '返回手牌', value: { returnIt: true } },
-                    { id: 'no', label: '留在基地', value: { returnIt: false } },
-                ],
-            },
-        } as any;
+        state = withCurrentPrompt(state, createSimpleChoice(
+            'i-scout-next',
+            '0',
+            '侦察兵：是否返回手牌',
+            [
+                { id: 'yes', label: '返回手牌', value: { returnIt: true } },
+                { id: 'no', label: '留在基地', value: { returnIt: false } },
+            ],
+            { sourceId: 'alien_scout_return' },
+        ));
         state.sys.interaction.queue = [];
 
         const result = system.afterEvents?.({
@@ -657,18 +654,16 @@ describe('afterScoring 延迟清场回归', () => {
         ]);
 
         // 模拟：当前交互（母舰）已被弹出，下一交互（侦察兵）已在 current，queue 为空。
-        state.sys.interaction.current = {
-            id: 'i-scout-next',
-            kind: 'simple-choice',
-            playerId: '0',
-            data: {
-                sourceId: 'alien_scout_return',
-                options: [
-                    { id: 'yes', label: '返回手牌', value: { returnIt: true } },
-                    { id: 'no', label: '留在基地', value: { returnIt: false } },
-                ],
-            },
-        } as any;
+        state = withCurrentPrompt(state, createSimpleChoice(
+            'i-scout-next',
+            '0',
+            '侦察兵：是否返回手牌',
+            [
+                { id: 'yes', label: '返回手牌', value: { returnIt: true } },
+                { id: 'no', label: '留在基地', value: { returnIt: false } },
+            ],
+            { sourceId: 'alien_scout_return' },
+        ));
         state.sys.interaction.queue = [];
 
         const result = system.afterEvents?.({
@@ -996,9 +991,8 @@ describe('afterScoring 延迟清场回归', () => {
         const emittedEvents = result.events as SmashUpEvent[];
         expect(emittedEvents.map(event => event.type)).toContain(SU_EVENTS.BASE_SCORED);
         expect(result.halt).toBe(true);
-        const reactionChoice = asSimpleChoice(result.updatedState?.sys.interaction?.current)!;
+        const reactionChoice = getReactionPrompt(result.updatedState!);
         expect(reactionChoice).toBeTruthy();
-        expect(reactionChoice.sourceId).toBe('smashup_reaction_choose');
         expect(getScoringSession(result.updatedState!)?.currentBaseRef?.slotIndex).toBe(0);
         expect(getScoringSession(result.updatedState!)?.completedBaseRefs.map((ref) => ref.slotIndex)).toEqual([]);
     });
@@ -1173,12 +1167,9 @@ describe('afterScoring 延迟清场回归', () => {
 
         let immediateExtraGuard = 0;
         while (stateBeforePlayer0Turn.sys.phase === 'startTurn') {
-            expect(asSimpleChoice(stateBeforePlayer0Turn.sys.interaction?.current)?.sourceId).toBe('smashup_immediate_extra_minion');
+            expect(getSimpleChoicePrompt(stateBeforePlayer0Turn, 'smashup_immediate_extra_minion')).toBeTruthy();
 
-            const skipImmediateExtra = runner.dispatch(INTERACTION_COMMANDS.RESPOND, {
-                playerId: '0',
-                optionId: 'skip',
-            });
+            const skipImmediateExtra = runner.resolveInteraction('0', { optionId: 'skip' });
             expect(skipImmediateExtra.success).toBe(true);
             expect(skipImmediateExtra.events.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(0);
 
@@ -1187,7 +1178,7 @@ describe('afterScoring 延迟清场回归', () => {
             expect(immediateExtraGuard).toBeLessThanOrEqual(3);
         }
         expect(stateBeforePlayer0Turn.sys.phase).toBe('playCards');
-        expect(stateBeforePlayer0Turn.sys.interaction?.current).toBeUndefined();
+        expectNoPrompt(stateBeforePlayer0Turn);
 
         const player0EndTurn = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
         expect(player0EndTurn.success).toBe(true);
@@ -1198,7 +1189,7 @@ describe('afterScoring 延迟清场回归', () => {
         expect(finalState.core.bases[0].defId).toBe('base_secret_garden');
         expect(['playCards', 'startTurn']).toContain(finalState.sys.phase);
         if (finalState.sys.phase === 'startTurn') {
-            expect(asSimpleChoice(finalState.sys.interaction?.current)?.sourceId).toBe('smashup_immediate_extra_minion');
+            expect(getSimpleChoicePrompt(finalState, 'smashup_immediate_extra_minion')).toBeTruthy();
         }
     });
 });

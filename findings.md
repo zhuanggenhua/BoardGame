@@ -5,17 +5,52 @@
 - 用户质疑“这么快，还是只改表象”成立为质量风险：仅拆文件名不能解决“重构实现就要跟着改测试”的根因。
 - 当前根因是旧 SmashUp 交互测试直接依赖 InteractionSystem 内部结构：`sys.interaction`、`prompt.data.options`、手写 `SYS_INTERACTION_RESPOND`。
 - 已有正确方向是把高频交互测试收进 `helpers.ts` 的 prompt facade，再由结构门禁阻止新迁移文件回退到裸内部访问。
+- UI/手动验证测试也不应直读 current：如果目标是“出现 simple choice prompt”，就走 `getSimpleChoicePrompt`，不要用 `asSimpleChoice(sys.interaction.current)`。
+- Igor 系列回归证明真正的 seam 不只是 source/options：prompt 所属玩家、响应命令、current+queue 查询都应通过 facade 表达，否则 InteractionSystem 改外壳时仍会批量碎裂。
+- 可选 prompt 读取也需要 facade：`getOptionalSimpleChoicePrompt` 让响应窗口这类“可能没有当前 prompt”的测试不用继续绑定 `sys.interaction?.current` 存储位置。
+- 统一反应选择器测试应直接使用 `getReactionPrompt`；同样的 `smashup_reaction_choose` source 断言不应在每个 reaction queue 文件里重复展开内部 interaction 结构。
+- GameTestRunner 命令数组里的响应命令也要有 facade：`respondCommand` 集中系统响应命令形状，避免每个测试手写 `SYS_INTERACTION_RESPOND`。
+- 动态候选和多选约束同样属于测试 seam：`optionsGenerator`、`multi.min`、handler data 不能继续散落在业务测试里裸读 `interaction.data`，否则 prompt 外壳一改仍会批量碎裂。
+- 旧扫描表达式没有覆盖所有坏味道：`state.sys.interaction?.current`、`interaction.data.title` 这类隐式裸读也会造成实现结构重构时测试跟改，迁移时应主动一并收敛。
+- 不能把“降命中数”本身当目标：skipped 文件、注释中的历史实现条件、以及明确测系统内部 halt 合同的 setup，不应为了数字好看而改成 facade。
 
 ## 本轮结论
 
 - Skeletons 迁移不是表象整理：新文件 19 个用例全部通过，并且没有禁用模式或裸内部交互访问。
 - `newFactionAbilities.test.ts` 已进一步收缩；当前旧大文件只剩 Samurai 与巨蚁相关测试债务。
 - `npm run test:structure` 已证明本轮新增/迁出文件符合结构门禁；旧大文件债务仍按 warning 保留，后续迁出时继续消化。
+- 本轮 Igor 小批次不是只改标线：`igor-big-gulp-two-igors.test.ts`、`igor-double-trigger-bug.test.ts`、`igor-two-igors-one-destroyed.test.ts` 已把 prompt source/options/player、响应命令与 current+queue 查询收进 helper；3 个目标文件禁用模式 0 命中，组合 4 tests passed。
+- `response-window-skip.test.ts` 进一步说明系统边界测试也可以降耦合：cancel 行为通过 `cancelPrompt` 表达，Hidden Ninja 子交互通过 prompt facade 读取，单文件 5 tests passed。
+- `reactionQueueOnTurnStart.test.ts` 已把 onTurnStart/onTurnEnd 统一反应 prompt 断言收进 `getReactionPrompt`；单文件 2 tests passed。
+- `robot-hoverbot-chain.test.ts` 已把命令数组响应和 live prompt options 读取收进 facade；单文件 3 tests passed。
+- `robotAbilities.test.ts` 已把 Microbot Reclaimer 的 source、multi、动态 options、handler data 与 optionIds 响应收进 facade；单文件 11 tests passed，目标文件禁用模式 0 命中。
+- `trickster-mark-of-sleep-self-target.test.ts` 已把 Mark of Sleep / POD 的 title/options/source 与响应命令收进 facade；单文件 9 tests passed，目标文件禁用模式和隐式 current 裸读 0 命中。
+- `afterscoring-window-skip-base-clear.test.ts` 已把可迁移的 reaction prompt / immediate extra prompt / no prompt 断言收进 facade；单文件 15 tests passed。该文件剩余内部 current 命中属于系统状态构造，不把这类 setup 伪装成业务 seam。
+- `alien-scout-pod-afterscore.test.ts` 已把 afterScoring prompt 的 current+queue 查询、option 查找和 handler data 传递收进 facade；单文件 4 tests passed，目标文件禁用模式和隐式 current 裸读 0 命中。
+- `expansionAbilities.test.ts` 不是只改表象：Bear Hug 的选择/响应、Ghost/Commission/Scrap Diving 的 prompt 出现性都从本地 current+queue 拼接、`.data.sourceId`、`.data.options`、手写系统响应命令迁到 prompt facade；单文件 32 tests passed，目标文件禁用模式和隐式 current 裸读 0 命中。
+- `reactionQueueBaseAbilities.test.ts` 继续证明底层 reaction queue 测试也能降耦合：统一反应 prompt、options、handler data、无 prompt、真实基地 prompt 都通过 facade 表达；单文件 6 tests passed，目标文件禁用模式和隐式 current 裸读 0 命中。
+- `frankensteinFaq.test.ts` 把 FAQ 行为链的两段 prompt 和响应命令收进 facade；测试仍验证 Blitzed 可移除 0 个指示物再消灭 0 战力随从、It’s Alive! 跳过后不遗留 pending 效果，但不再绑定 InteractionSystem 字段路径。
+- `reactionQueueBaseOptionalClockwise.test.ts` 说明 optional reaction 的 clockwise 轮转也不需要裸读 current：当前玩家、候选项、pass 后再轮转、旧 handler data 和清 current 过渡都可通过 facade/helper 表达。
+- `pirate-broadside-self-target.test.ts` 仍验证 Broadside 可选择自己/对手、基地过滤，以及 Saucy Wench 可消灭弱随从；但所有 prompt source/title/options 和响应命令都已收进 facade，不再裸读 `current.data`。
+- `wildlifePreserveProtection.test.ts` 不是只改描述：Seeing Stars 与 Unfathomable Goals 仍验证野生保护区会过滤/阻止行动卡效果，但测试不再依赖 prompt 存在于 `sys.interaction.current`、候选存在于 `data.options`、响应命令叫 `SYS_INTERACTION_RESPOND`；目标文件旧模式扫描 0 命中。
+- `buryEngine.test.ts` 是更直接的 seam 收敛：埋葬翻开窗口仍验证按 cardUid 选择埋葬牌并执行翻开效果，但测试不再知道系统响应命令常量或候选列表的内部字段路径。
+- `pirate-cove-repeat-trigger-bug.test.ts` 清的是主扫描之外的真实耦合：手工 current+queue 统计与 `(interaction.data as any).sourceId` 被收进 `getPromptsBySourceId`，冠军无交互断言改为同时覆盖 current + queue 的 `expectNoPrompt`。
+- `pirate-king-afterscoring-window.test.ts` 说明完整系统管线测试也不需要 import `InteractionSystem`：prompt 获取、选项查找、响应命令都可通过 facade 表达。
+- `promptE2E.test.ts` 是主债务下降批次：多个 prompt E2E 仍验证同一行为，但不再逐个知道 `interaction.current.data.sourceId` 或 current+queue 的拼接方式。
+- `afterScoring-rescoring.test.ts` 说明本轮不是只改断言文字：可选当前 prompt 读取和测试 setup 中放入 current prompt 的动作都通过 facade/helper 表达，目标文件对主禁用模式与隐式 `interaction.data` 裸读 0 命中，8 个真实链路用例仍通过。
+- `baseAbilities.test.ts` 的 ability runtime 测试现在仍验证 prompt continuation 可恢复 sequence，但断言不再靠 `asSimpleChoice(sys.interaction.current)` 和裸 `current.data`；这属于测试接口 seam，而不是改名。
+- `bigGulpDroneIntercept.test.ts` 清掉的是主计数之外的真实坏味道：直接读 `interaction.data.sourceId/options` 和手写 `INTERACTION_COMMANDS.RESPOND`。该文件仍覆盖 Big Gulp 选 Igor、Drone 防消灭、最终无 prompt，但测试只通过 facade 表达交互。
+- `robot-hoverbot-stable.test.ts` 迁移时暴露 helper 覆盖差异：`getPromptOptionById` 不适合历史 `data.options` 形状，`getPromptOption` 才是更稳的行为 seam。保留对 Hoverbot id 稳定性的专项断言是合理的，因为该文件本来就在锁“不应生成 timestamp id”的回归。
+- `cthulhu-chosen-display-mode.test.ts` 保留了神选者 UI bug 的行为证据：prompt 必须是 generic/button、选项不能带 `baseDefId`、多实例 queued prompt 也必须 button；这些断言现在通过 prompt facade 和 sourceId 查询表达，不再绑定 current/queue 的内部字段路径。
+- `robot-hoverbot-button-disabled.test.ts` 说明 Hoverbot 的“按钮可点” bug 也可以通过测试接口 seam 验证：title/source/options/optionsGenerator 不再从 `interaction.data` 裸读，而是通过 prompt facade 和 `getPromptHandlerData` 表达，行为断言仍保持原样。
+- `duplicateInteractionRespond.test.ts` 是系统边界回归，不应隐藏“重复同一命令对象”的测试意图；本轮只把系统响应命令常量收进 `respondCommand`，保留二次提交被拒绝和无二次副作用的行为断言。
+- `specialInteractionChain.test.ts` 的剩余耦合只在本地响应 helper；迁移到 `respondCommand` 后，24 条特殊交互代表链仍通过，同时业务测试不再知道系统响应命令常量。
 
 ## 后续风险
 
-- 只迁完 Skeletons 还不能宣称整个测试框架重构完成。
-- 剩余 Samurai / 巨蚁测试仍含旧内部耦合；如果不继续迁，它们仍会在后续 InteractionSystem 重构时制造同步改测试成本。
+- 迁完 Skeletons / Giant Ants / Samurai 还不能宣称整个测试框架重构完成；旧大文件退出新增入口只解决了一类测试垃圾桶问题。
+- 其他历史 SmashUp 测试仍含旧内部耦合；如果不继续迁，它们仍会在后续 InteractionSystem 重构时制造同步改测试成本。
+- 当前全 `src/games/smashup/__tests__` 仍有 821 条旧内部耦合命中；后续应继续按小批次推进，不把局部 facade 收敛误报成整体完成。
 
 ---
 
@@ -2140,3 +2175,57 @@
 - 影响边界是所有游戏：任何卡牌、技能、Token、状态、按钮、装备、基地、角色能力只要一段描述里包含多个语义，就可能被主效果测试掩盖掉第二句/例外/替代入口/额外触发。
 - 已固化不变量：规则文本必须拆成 `C1/C2/C3...` 子句；每个子句都要映射到实现入口、共享消费点、状态写入/消耗点和证据。任一子句缺证据，整对象不得写 `passed`。
 - 已更新落点：`docs/ai-rules/testing-audit.md`、`.windsurf/skills/add-new-faction/SKILL.md`、`.windsurf/skills/smashup-faction-addition/SKILL.md`，并回写 shayu 旧 evidence 失效结论。
+
+## 2026-05-16 TDD 行为 seam 发现
+
+- “拆测试文件”本身不是有效重构；有效点是让测试只通过稳定 helper facade 观察 prompt 与响应，避免实现重构时因为 `sys.interaction.current`、`prompt.data.options`、内部 command 字符串变化而批量改业务测试。
+- 旧 `newFactionAbilities.test.ts` 的最后剩余块暴露了同一类耦合：决斗链、Ronin/Yokai/Code of Bushido 等用例直接读取内部 prompt 结构。已迁出到 `abilities/samurai.test.ts` 并改为 `getSimpleChoicePrompt`、`getPromptOption`、`respondToPrompt`、`expectNoPrompt`。
+- `npm run test:structure` 会扫描删除 diff，所以旧大文件被删除后仍能报告“旧内容含债务”的 warning；这不是新入口残留。后续判断是否还有新增入口，应同时看实际文件存在性与聚焦目录扫描。
+- `archmageE2E.test.ts` 这类“没有 prompt”的测试同样不应断言 `sys.interaction.current` 的字段路径；`expectNoPrompt` 才是稳定行为合同。后续可优先批量处理同类纯 no-prompt 断言，风险低、收益明确。
+- `turnCycle.test.ts` 证明同类收敛可以按文件小步推进：先跑基线，再替换 no-prompt 断言，再跑单文件与结构门禁。不要在一个大批次里混改 prompt 响应、无 prompt、队列顺序与业务断言。
+- `specialInteractionChain.test.ts` 暴露另一类低风险收敛：测试已经通过 `asSimpleChoice` 表达“我要一个简单选择”，但仍从 `sys.interaction.current` 取原始字段。应统一改为 `getSimpleChoicePrompt`，把内部存储路径藏进 helper。
+- `killer-plant-pod-verification.test.ts` 说明响应链也可以小步迁移：当测试已经使用 `testRunner.runCommand` 和标准 MatchState 时，优先复用 `respondToPrompt`，不要继续裸写 `SYS_INTERACTION_RESPOND`。
+- `shayuEntryConsumption.test.ts` 属于“审计型行为测试”，也应避免裸读 prompt data；审计结论要落在“有哪个语义 prompt / 没有二次 prompt / options 不含旧入口对象”，这些可通过 facade 表达，不需要绑 InteractionSystem 存储路径。
+- `promptSystem.test.ts` / `promptResponseChain.test.ts` 属于底层集成测试，但“没有活跃交互”仍是行为合同，不是必须裸读 `sys.interaction.current` 的理由；保留 queue 断言可作为额外底层细节，但主合同应走 `expectNoPrompt`。
+- `reactionQueueOrdering.test.ts` 暴露了更底层的一类耦合：测试在验证 reaction choice 时同时知道 prompt sourceId、options 存储位置、以及“清掉 current 后直接调用 resolver”的内部形态。本轮把 source/options 读取迁到 facade，并把清 prompt 细节收进 `withoutCurrentPrompt` helper；这比改断言文案更接近 TDD 规范里的“深模块、小接口”。
+- `baseAbilityIntegration.test.ts` 的二段 Mushroom Kingdom POD 测试证明 facade 不能只包 `current`，因为业务行为经常表现为“当前 prompt + 队列里的后续 prompt”。`getSimpleChoicePrompt(state, sourceId)` 应按 sourceId 在 current + queue 中查找，这样测试表达的是“出现了目标语义 prompt”，不是“它恰好排在 queue[0]”。
+- 少数历史测试仍直接调用旧 interaction handler；过渡期应使用 `getPromptHandlerData(prompt)`，让 handler 所需 data 形状集中在 helper，而不是散落在测试文件里。
+- `wizard-neophyte-actionlog.test.ts` 说明“只把 sourceId 断言换成 helper”还不够；真正会在实现重构时反复碎裂的是测试体手写系统响应命令。应优先把这类 `INTERACTION_COMMANDS.RESPOND` 改为 `respondToPrompt`，让测试只表达“选择 to_hand / play_extra”。
+- `ninja-hidden-ninja-no-minions.test.ts` 与 `temple-firstmate-afterscore.test.ts` 说明低风险 sourceId 收敛也有价值：业务测试不需要知道 prompt 当前存在于 `current` 字段，只需要断言目标业务 prompt 可观察。
+- `pirate-broadside-d1-audit.test.ts` 暴露 audit 文件验证口径差异：普通 `npm test` 会默认排除 `*audit*.test.ts`，这类文件必须用 `vitest.config.audit.ts` 或对应 audit 脚本验证，不能把 “No test files found” 误读成业务失败。
+- `scoringEligibleLock.test.ts` 说明 option 查找也应走 facade；测试要表达“选 source/target 语义选项”，不应依赖 `current.data.options.find(...)` 的存储路径。
+- `wizard-neophyte-ongoing.test.ts` 进一步确认 ongoing 目标基地这类二段 prompt 不应在测试体里暴露“当前交互 + options”形状；二段交互同样可以通过 `getSimpleChoicePrompt` + `respondToPrompt` 表达。
+- `ninja-hidden-ninja-interaction-bug-repro.test.ts` 说明历史复现测试里的注释也会固化内部结构语言；可在不丢失故障语义的前提下改成“当前 prompt 为空/目标 prompt 不存在”。
+- reaction queue 的 onBaseRevealed / onMinionDiscardedFromBase / onMinionPlayed 小文件都只是在证明“出现统一反应选择”；这类测试应直接用 `getReactionPrompt`，不要每个文件重复知道统一反应 prompt 的内部 sourceId 存放路径。
+- `pirate-cove-chain-fix.test.ts` 说明旧泛名文件不只要“改走 facade”，还必须遵守结构门禁的净删减约束；在旧泛名文件里新增本地 helper 即使语义正确，也会继续制造旧入口体量，应优先内联或迁出到聚焦文件。
+- `turnTransitionInteractionBug.test.ts` 说明 `runner.run` 重放命令序列不是必须手写系统响应命令；当上一拍已经拿到真实 MatchState，后续响应应优先用 `respondToPrompt(state, optionId, playerId)`，测试表达“玩家选择 skip”，不表达系统命令 payload 形状。
+- `duplicateInteractionRespond.test.ts` 属于底层防重复响应回归，但消费后“没有活跃 prompt”仍可以用 `expectNoPrompt` 表达；只有“重复同一命令被拒绝”这个行为需要保留命令重放。
+- `elder-thing-multi-select.test.ts` 是底层 simple-choice 多选合同测试，`multi` 本身仍可作为系统合同字段断言；但 options/source/target 这些通用读取应走 facade，避免游戏测试继续依赖 `data` 存储层。
+- `turnCycle.test.ts` 的蘑菇王国 / Invisible Ninja 段落证明“直接调用 handler”的过渡测试也可以减少耦合：handler lookup 用 `getPromptSourceId(prompt)`，handler data 用 `getPromptHandlerData(prompt)`，这样未来 prompt 外壳调整时不用改测试体。
+- `igor-big-gulp-double-trigger.test.ts` / `igor-rlyeh-double-trigger.test.ts` 说明“查某个业务 prompt 是否只出现一次”不应由测试体手工拼 `current + queue` 完成；已新增 `getPromptsBySourceId`，把队列存储形状集中到 helper。
+- `shoggoth-destroy-choice.test.ts` 说明直接调用旧 handler 的多步测试也能降耦合：用 `withoutCurrentPrompt` 表达“引擎调用 handler 前已清 current”，用 `getPromptHandlerData` 传递旧 handler data，不在测试体展开 `sys.interaction.current` 的结构。
+- `ancientEgyptiansMummyStrength.feedback-regression.test.ts` 暴露旧泛名文件的结构门禁风险：即使是正确的 facade 替换，只要净新增内容也会被 `test:structure` 拦截；旧泛名文件只能净删减或等量替换，最终仍应迁入聚焦测试。
+- `madMonsterPartyPreventedDestroy.test.ts` 说明“包含 A prompt、不包含 B prompt”也应直接通过 sourceId facade 表达，不应先暴露完整 interaction 列表再手工 map。
+- `audit-d1-d8-d33-dino-survival-of-the-fittest.test.ts` 与 `choice-audit-fixes.test.ts` 再次确认 audit 文件需要 `vitest.config.audit.ts` 验证；普通 `npm test` 的 `No test files found` 是配置排除，不是业务失败。
+- `choice-audit-fixes.test.ts` 证明旧 handler 桥接测试的本地 `clearCurrentInteraction` 应统一替换为 `withoutCurrentPrompt`，否则同一个内部清理细节会在多个 audit/回归文件重复散落。
+- `wildlifePreserveProtection.test.ts` 补充证明“保护效果测试”也能降耦合：动作卡创建 prompt、选择目标、候选过滤和决斗 skip 错误提示都可通过 facade 表达，不需要测试体知道 InteractionSystem 的字段路径。
+- `buryEngine.test.ts` 进一步确认“响应命令形状”也是高价值 seam：测试只表达玩家选择哪张埋葬牌翻开，不表达 `INTERACTION_COMMANDS.RESPOND` 与 `payload.optionId` 的底层拼装。
+- `pirate-cove-repeat-trigger-bug.test.ts` 说明全量主计数不是唯一指标：`(interaction.data as any).sourceId` 这类隐式裸读也会在 prompt 外壳重构时碎裂，迁移时应主动一起清。
+- `pirate-king-afterscoring-window.test.ts` 进一步把系统响应命令生成集中到 helper；后续 `InteractionSystem` 命令字符串或 payload 结构变化时，不应再逐个改业务测试。
+- `promptE2E.test.ts` 说明历史 “E2E” 命名的 Vitest 行为测试也应使用 prompt facade；测试名称强调完整链路，不代表可以绑定内部 prompt 存储路径。
+- 当前全 `src/games/smashup/__tests__` 仍有 821 条旧内部耦合命中，说明本轮只是持续迁移的一段，不是整体完成。后续应按文件簇推进：先低风险 no-prompt，再 prompt source/options，再响应命令，最后处理确实属于底层 InteractionSystem 合同测试的少数例外。
+- `promptSystem.test.ts` / `promptResponseChain.test.ts` 说明不能机械追求扩展扫描 0 命中：普通“玩家响应某 option”的命令形状应改为 `respondCommand`，但 AI fallback 返回 `RESPOND/CANCEL`、`INTERACTION_EVENTS.RESOLVED` 常量这类测试目标本身就是系统合同，应保留直断言并在计划里标明为有意例外。
+- `reactionQueueOrdering.test.ts` 暴露另一类小而重要的 seam：测试需要构造带 `continuationContext` 的 prompt 时，不应在测试体里直接写 `interaction.data`。`withPromptHandlerData` 把这种注入集中到 helper，后续 prompt 外壳调整时只改一处。
+- `tortuga-pirate-king-flowhalted-fix.test.ts` 说明即便测试对象是 flowHalted 与交互状态守卫，也可以把“无活跃 prompt / 有活跃 prompt”的断言写成 `expectNoPrompt` / `getFirstPrompt`；注释里反复写内部路径会继续固化错误的测试接口习惯。
+- `ancientEgyptiansMummyStrength.feedback-regression.test.ts` 与 `pirate-broadside-d1-audit.test.ts` 继续印证：审计/反馈回归测试也不应手写 `INTERACTION_COMMANDS.RESPOND`。这类测试的稳定接口是“玩家选择某 optionId”，不是系统命令 payload 结构。
+- `elder-thing-multi-select.test.ts` 说明即便测试目标是 `createSimpleChoice` 的 multi 合同，也不需要在测试体里绑定 `data.multi` 的存储路径；`getPromptMulti` 能保留“multi 配置正确”这个行为断言，同时隔离 prompt 外壳变化。
+- `alien-scout-no-duplicate-scoring.test.ts` 是典型“长命令序列回归”：即使命令数组需要精确表达 afterScoring 选择顺序，也应通过 `respondCommand` 表达选择 option 的行为，避免把系统响应命令结构散落在回归脚本里。
+- `audit-d11-d12-d14-dino-rampage.test.ts` 说明 audit 文件里如果已经使用 `GameTestRunner`，响应当前 prompt 可优先用 `runner.resolveInteraction`；测试仍能表达“选择某个 minion/base option”，但不用知道 `SYS_INTERACTION_RESPOND` 命令字符串和 payload 外壳。
+- `alienAuditFixes.test.ts` 说明本地测试 helper 也要一起治理：如果文件内自定义 `respondInteraction` 仍手写系统命令，后续实现重构仍会批量改测试。应让本地 helper 调用共享 facade，例如 `respondToPrompt`。
+- `afterscoring-window-skip-base-clear.test.ts` 说明“构造特殊系统状态”也不必在测试体里反复写 `sys.interaction.current`；`withCurrentPrompt` / `withoutCurrentPrompt` / `withPromptHandlerData` 可以保留测试意图，同时隔离 InteractionSystem 存储形状。
+- `scoreBases-auto-continue.test.ts` 说明 AI 行为测试也不能继续把 command 外壳散在断言里：如果测试目标是“AI 选择了哪个 option”，应通过 `respondCommand` / `getRespondCommandOptionId` 表达，而不是逐个手写 `SYS_INTERACTION_RESPOND`。同一文件的 `multi_base_scoring` prompt 读取也已从 `asSimpleChoice(sys.interaction.current)` 改为按 sourceId 查询的 prompt facade。
+- resolution frame 这类 setup 元数据也应 helper 化；`withPromptResolutionFrameId` 让测试表达“这个 prompt 属于哪个 frame”，不直接依赖 current prompt 的存储路径。
+- `elderThingAbilities.test.ts` 说明“派系能力单测”也不应因为是旧 handler 桥接就裸取 `matchState.sys.interaction.current.data`；handler data 可以通过 `getPromptHandlerData(prompt)` 传递，source/target/option/响应命令都能通过 facade 表达。
+- 清理未使用变量时必须按失败用例回看变量是否后续被断言读取；本轮机械把 `events` 改成 `_events` 曾造成短暂红灯，后续类似 lint cleanup 只能针对真正未使用的局部变量做最小替换。
+- `ongoingE2E.test.ts` 说明“完整 Prompt 链 E2E”也不应裸读 current：链路仍验证 Shanghai 选随从、选基地、移动落地，但测试只通过 `getSimpleChoicePrompt` / `getPromptOption` / `respondCommand` 表达玩家选择，不再绑定 InteractionSystem 的存储字段。
+- POD/afterScoring prompt source 断言同样应走 `getPromptSourceId`；测试目标是“创建了 Buccaneer/First Mate 的业务 prompt”，不是“sourceId 恰好存在 data.sourceId 字段”。

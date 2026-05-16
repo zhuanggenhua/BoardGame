@@ -8,7 +8,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { registerGameAiRuntime, resolveNextLocalAiAction } from '../../../engine/ai';
-import { asSimpleChoice, createSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { resolveForceEndTurnForStalledAi } from '../../../engine/transport/onlineAiRecovery';
 import { postProcessSystemEvents } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
@@ -24,6 +24,14 @@ import { registerAbility } from '../domain/abilityRegistry';
 import { buildReactionOptions, getSmashUpReactionSession, resolveSmashUpReactionChoice, startSmashUpReactionSession } from '../domain/reactionSession';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import { registerTitanSpecialValidator } from '../domain/titanAbilityValidators';
+import {
+    getPromptOption,
+    getPromptSourceId,
+    getRespondCommandOptionId,
+    getSimpleChoicePrompt,
+    respondCommand,
+    withPromptResolutionFrameId,
+} from './helpers';
 
 /** 构造最小 SmashUpCore 用于测试 */
 function makeMinimalCore(overrides: Partial<SmashUpCore> = {}): SmashUpCore {
@@ -244,21 +252,24 @@ describe('scoreBases 阶段自动推进', () => {
             sys: {
                 phase: 'scoreBases',
                 interaction: {
-                    current: createSimpleChoice(
-                        'base_tortuga_1000',
-                        '1',
-                        '托尔图加：选择移动一个其他基地上的随从到替换基地',
-                        [{
-                            id: 'minion-0',
-                            label: 'Wizard Archmage',
-                            value: {
-                                minionUid: 'minion_1',
-                                minionDefId: 'wizard_archmage',
-                                fromBaseIndex: 1,
-                            },
-                            displayMode: 'card',
-                        }] as any,
-                        { sourceId: 'base_tortuga', targetType: 'minion' },
+                    current: withPromptResolutionFrameId(
+                        createSimpleChoice(
+                            'base_tortuga_1000',
+                            '1',
+                            '托尔图加：选择移动一个其他基地上的随从到替换基地',
+                            [{
+                                id: 'minion-0',
+                                label: 'Wizard Archmage',
+                                value: {
+                                    minionUid: 'minion_1',
+                                    minionDefId: 'wizard_archmage',
+                                    fromBaseIndex: 1,
+                                },
+                                displayMode: 'card',
+                            }] as any,
+                            { sourceId: 'base_tortuga', targetType: 'minion' },
+                        ),
+                        'score-after:0:0',
                     ),
                     queue: [],
                 },
@@ -305,7 +316,6 @@ describe('scoreBases 阶段自动推进', () => {
                 },
             } as any,
         };
-        state.sys.interaction.current!.resolutionFrameId = 'score-after:0:0';
 
         const processed = postProcessSystemEvents(
             state.core,
@@ -996,12 +1006,7 @@ describe('scoreBases 阶段自动推进', () => {
 
         expect(withSeatSpecificState?.playerId).toBe('1');
         expect(withSeatSpecificState?.action.kind).toBe('interaction-choice');
-        expect(withSeatSpecificState?.action.commands).toEqual([{
-            type: 'SYS_INTERACTION_RESPOND',
-            payload: {
-                optionId: 'target-shinobi',
-            },
-        }]);
+        expect(withSeatSpecificState?.action.commands).toEqual([respondCommand('target-shinobi')]);
         expect((withSeatSpecificState?.action as any)?.metadata?.optionValue).toEqual({ minionUid: 'c66', baseIndex: 0 });
     });
 
@@ -1085,9 +1090,8 @@ describe('scoreBases 阶段自动推进', () => {
 
         expect(resolution?.playerId).toBe('1');
         expect(resolution?.action.kind).toBe('interaction-choice');
-        expect(resolution?.action.commands[0]?.type).toBe('SYS_INTERACTION_RESPOND');
         expect(['trigger-a', 'trigger-b']).toContain(
-            (resolution?.action.commands[0]?.payload as { optionId?: string } | undefined)?.optionId,
+            getRespondCommandOptionId(resolution?.action.commands[0]),
         );
     });
 
@@ -2259,11 +2263,11 @@ describe('scoreBases 阶段自动推进', () => {
             ? state
             : ((exitResult as { updatedState?: MatchState<SmashUpCore> } | undefined)?.updatedState ?? state);
 
-        const choice = asSimpleChoice(updatedState.sys.interaction?.current);
-        expect(choice?.sourceId).toBe('multi_base_scoring');
+        const choice = getSimpleChoicePrompt(updatedState, 'multi_base_scoring');
+        expect(getPromptSourceId(choice)).toBe('multi_base_scoring');
 
-        const option0 = choice?.options.find((option: any) => option.value?.baseIndex === 0);
-        const option1 = choice?.options.find((option: any) => option.value?.baseIndex === 1);
+        const option0 = getPromptOption(choice, (option: any) => option.value?.baseIndex === 0, 'base 0 scoring option');
+        const option1 = getPromptOption(choice, (option: any) => option.value?.baseIndex === 1, 'base 1 scoring option');
         expect(option0?._ai).toBeDefined();
         expect(option1?._ai).toBeDefined();
         expect((option0?._ai?.estimatedSwing ?? 0)).toBeGreaterThan(option1?._ai?.estimatedSwing ?? 0);

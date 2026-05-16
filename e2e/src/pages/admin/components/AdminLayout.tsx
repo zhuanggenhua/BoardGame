@@ -11,7 +11,6 @@ import {
     LayoutDashboard,
     LogOut,
     MessageSquareWarning,
-    Package,
     ScrollText,
     Users,
 } from 'lucide-react';
@@ -45,7 +44,6 @@ const ADMIN_NAV_ITEMS: NavItem[] = [
     { icon: ScrollText, label: '更新日志', path: '/admin/changelogs' },
     { icon: Gamepad2, label: '对局记录', path: '/admin/matches' },
     { icon: DoorOpen, label: '房间管理', path: '/admin/rooms' },
-    { icon: Package, label: 'UGC 管理', path: '/admin/ugc' },
     { icon: Heart, label: '赞助管理', path: '/admin/sponsors' },
     { icon: MessageSquareWarning, label: '反馈管理', path: '/admin/feedback' },
     { icon: Bell, label: '系统通知', path: '/admin/notifications' },

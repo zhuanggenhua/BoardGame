@@ -5,6 +5,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import { getPromptMulti, getPromptOptions, getPromptSourceId, getPromptTargetType, getPromptTitle } from './helpers';
 
 describe('远古之物多选交互', () => {
     it('应该创建包含 multi 配置的交互', () => {
@@ -24,11 +25,11 @@ describe('远古之物多选交互', () => {
 
         expect(interaction.kind).toBe('simple-choice');
         expect(interaction.playerId).toBe('0');
-        expect(interaction.data.title).toBe('选择两个随从消灭');
-        expect(interaction.data.options).toHaveLength(3);
-        expect(interaction.data.multi).toEqual({ min: 2, max: 2 });
-        expect(interaction.data.sourceId).toBe('elder_thing_elder_thing_destroy_select');
-        expect(interaction.data.targetType).toBe('minion');
+        expect(getPromptTitle(interaction)).toBe('选择两个随从消灭');
+        expect(getPromptOptions(interaction)).toHaveLength(3);
+        expect(getPromptMulti(interaction)).toEqual({ min: 2, max: 2 });
+        expect(getPromptSourceId(interaction)).toBe('elder_thing_elder_thing_destroy_select');
+        expect(getPromptTargetType(interaction)).toBe('minion');
     });
 
     it('multi 配置应该正确传递到 data 中', () => {
@@ -43,9 +44,9 @@ describe('远古之物多选交互', () => {
             { multi: { min: 1, max: 2 } }
         );
 
-        expect(interaction.data.multi).toBeDefined();
-        expect(interaction.data.multi?.min).toBe(1);
-        expect(interaction.data.multi?.max).toBe(2);
+        expect(getPromptMulti(interaction)).toBeDefined();
+        expect(getPromptMulti(interaction)?.min).toBe(1);
+        expect(getPromptMulti(interaction)?.max).toBe(2);
     });
 
     it('没有 multi 配置时应该是单选', () => {
@@ -59,6 +60,6 @@ describe('远古之物多选交互', () => {
             ]
         );
 
-        expect(interaction.data.multi).toBeUndefined();
+        expect(getPromptMulti(interaction)).toBeUndefined();
     });
 });

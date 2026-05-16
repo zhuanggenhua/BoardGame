@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { makeState, makeMinion, makePlayer, makeBase, applyEvents, makeMatchState, makeCard } from './helpers';
+import { getSimpleChoicePrompt, makeState, makeMinion, makePlayer, makeBase, applyEvents, makeMatchState, makeCard } from './helpers';
 import { reduce } from '../domain/reducer';
 import { initAllAbilities } from '../abilities';
 import { SU_EVENT_TYPES } from '../domain/events';
@@ -243,8 +243,6 @@ describe('私掠者 POD 每回合一次移动限制', () => {
         }, { phase: 'replacement' });
 
         expect(result.events.length).toBe(0);
-        const interaction = result.matchState?.sys.interaction.current;
-        expect(interaction).toBeDefined();
-        expect((interaction?.data as any)?.sourceId).toBe('pirate_buccaneer_move');
+        expect(getSimpleChoicePrompt(result.matchState!, 'pirate_buccaneer_move')).toBeDefined();
     });
 });

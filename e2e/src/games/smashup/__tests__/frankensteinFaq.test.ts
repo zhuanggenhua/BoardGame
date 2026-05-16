@@ -3,10 +3,19 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
+import {
+    getPromptOption,
+    getPromptOptionById,
+    getSimpleChoicePrompt,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    respondToPrompt,
+} from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
     clearRegistry();
@@ -36,26 +45,21 @@ describe('frankenstein (base) FAQ alignment', () => {
             defaultTestRandom,
         );
         expect(play.success).toBe(true);
-        expect(play.finalState.sys.interaction.current?.data?.sourceId).toBe('frankenstein_blitzed_remove');
+        const removePrompt = getSimpleChoicePrompt(play.finalState, 'frankenstein_blitzed_remove');
 
-        const doneOpt = (play.finalState.sys.interaction.current as any).data.options.find((o: any) => o.id === 'done');
+        const doneOpt = getPromptOptionById(removePrompt, 'done');
         expect(doneOpt).toBeTruthy();
 
-        const step2 = runCommand(
-            play.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: doneOpt.id } } as any,
-            defaultTestRandom,
-        );
-        expect(step2.finalState.sys.interaction.current?.data?.sourceId).toBe('frankenstein_blitzed_destroy');
+        const step2 = respondToPrompt(play.finalState, doneOpt.id, '0', defaultTestRandom);
+        const destroyPrompt = getSimpleChoicePrompt(step2.finalState, 'frankenstein_blitzed_destroy');
 
-        const destroyOpt = (step2.finalState.sys.interaction.current as any).data.options.find((o: any) => o.value?.minionUid === 'w0');
-        expect(destroyOpt).toBeTruthy();
-
-        const step3 = runCommand(
-            step2.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: destroyOpt.id } } as any,
-            defaultTestRandom,
+        const destroyOpt = getPromptOption(
+            destroyPrompt,
+            (option: any) => option.value?.minionUid === 'w0',
+            'Blitzed destroy option for w0',
         );
+
+        const step3 = respondToPrompt(step2.finalState, destroyOpt.id, '0', defaultTestRandom);
         expect(step3.events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
     });
 
@@ -103,17 +107,15 @@ describe('frankenstein (base) FAQ alignment', () => {
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
             defaultTestRandom,
         );
-        const prompt = play.finalState.sys.interaction.current as any;
-        expect(prompt?.data?.sourceId).toBe('smashup_immediate_extra_minion');
+        const prompt = getSimpleChoicePrompt(play.finalState, 'smashup_immediate_extra_minion');
 
-        const skipOpt = prompt?.data?.options?.find((opt: any) => opt?.value?.skip);
-        expect(skipOpt).toBeTruthy();
-
-        const skipped = runCommand(
-            play.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: skipOpt.id } } as any,
-            defaultTestRandom,
+        const skipOpt = getPromptOption(
+            prompt,
+            (option: any) => option?.value?.skip,
+            'It’s Alive immediate extra minion skip option',
         );
+
+        const skipped = respondToPrompt(play.finalState, skipOpt.id, '0', defaultTestRandom);
 
         const pending = skipped.finalState.core.players['0'].pendingMinionPlayEffects ?? [];
         expect(pending.length).toBe(0);

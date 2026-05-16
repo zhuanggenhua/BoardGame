@@ -4,7 +4,7 @@
  * 场景：
  * 1. onPhaseEnter('startTurn') 中基地能力（如拉莱耶）创建 Interaction
  * 2. onAutoContinueCheck('startTurn') 无条件返回 autoContinue: true，跳过 Interaction
- * 3. 流程推进到 playCards，但 sys.interaction.current 仍有值
+ * 3. 流程推进到 playCards，但当前 prompt 仍存在
  * 4. InteractionSystem 阻塞当前玩家的所有非系统命令 → 卡死
  *
  * 同时测试：
@@ -24,6 +24,13 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import {
+    expectNoPrompt,
+    getFirstPrompt,
+    getPromptSourceId,
+    getSimpleChoicePrompt,
+    respondToPrompt,
+} from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -140,41 +147,34 @@ describe('拉莱耶 onTurnStart Interaction 导致回合切换卡死', () => {
 
         const state1 = result1.finalState;
         console.log('STEP1 phase:', state1.sys.phase);
-        console.log('STEP1 interaction:', state1.sys.interaction?.current?.id);
+        console.log('STEP1 interaction:', getFirstPrompt(state1)?.id);
         console.log('STEP1 playerIndex:', state1.core.currentPlayerIndex);
 
         // 验证：流程应停在 startTurn，有 Interaction
         expect(state1.sys.phase).toBe('startTurn');
-        expect(state1.sys.interaction?.current).toBeDefined();
-        expect(state1.sys.interaction?.current?.id).toBe('base_rlyeh_0');
+        expect(getSimpleChoicePrompt(state1, 'base_rlyeh').id).toBe('base_rlyeh_0');
 
         // 第二步：P1 响应 Interaction
-        const result2 = runner.run({
-            name: '拉莱耶 onTurnStart Interaction - 响应',
-            commands: [
-                { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '1', payload: { optionId: 'skip' } },
-            ] as any[],
-        });
+        const result2 = respondToPrompt(state1, 'skip', '1');
 
         const finalState = result2.finalState;
         const phase = finalState.sys.phase;
         const currentPlayerIndex = finalState.core.currentPlayerIndex;
-        const interactionCurrent = finalState.sys.interaction?.current;
 
         console.log('最终阶段:', phase);
         console.log('当前玩家索引:', currentPlayerIndex);
-        console.log('interaction.current:', interactionCurrent?.id);
+        console.log('interaction.current:', getFirstPrompt(finalState)?.id);
 
-        // 验证所有步骤成功
-        for (const step of result2.steps) {
+        // 验证推进步骤与响应步骤成功
+        for (const step of result1.steps) {
             expect(step.success, `Step ${step.step} (${step.commandType}) 失败: ${step.error}`).toBe(true);
         }
+        expect(result2.success, `响应拉莱耶 prompt 失败: ${result2.error}`).toBe(true);
 
         // 响应后应该推进到 playCards(P1)
         expect(phase).toBe('playCards');
         expect(currentPlayerIndex).toBe(1);
-        expect(interactionCurrent).toBeUndefined();
+        expectNoPrompt(finalState);
     });
 });
 
@@ -244,11 +244,11 @@ describe('托尔图加 afterScoring Interaction 导致计分后流程异常', ()
 
         const finalState = result.finalState;
         const phase = finalState.sys.phase;
-        const interactionCurrent = finalState.sys.interaction?.current;
+        const prompt = getFirstPrompt(finalState);
 
         console.log('最终阶段:', phase);
         console.log('当前玩家索引:', finalState.core.currentPlayerIndex);
-        console.log('interaction.current:', interactionCurrent?.id);
+        console.log('interaction.current:', prompt?.id);
         console.log('flowHalted:', (finalState.sys as any).flowHalted);
 
         // 检查计分事件是否产生
@@ -256,9 +256,9 @@ describe('托尔图加 afterScoring Interaction 导致计分后流程异常', ()
         const hasBaseScored = allEvents.includes(SU_EVENTS.BASE_SCORED);
         console.log('有 BASE_SCORED 事件:', hasBaseScored);
 
-        if (hasBaseScored && interactionCurrent) {
+        if (hasBaseScored && prompt) {
             // 如果有计分且有 Interaction，检查是否是托尔图加的
-            const sourceId = (interactionCurrent.data as any)?.sourceId;
+            const sourceId = getPromptSourceId(prompt);
             console.log('Interaction sourceId:', sourceId);
 
             if (sourceId === 'base_tortuga') {
@@ -268,7 +268,7 @@ describe('托尔图加 afterScoring Interaction 导致计分后流程异常', ()
                     console.error('BUG：托尔图加 Interaction 应该暂停在 scoreBases，但流程已推进到', phase);
                 }
                 // 无论如何，P1 应该能响应
-                expect(interactionCurrent.playerId).toBe('1');
+                expect(prompt.playerId).toBe('1');
             }
         }
     });

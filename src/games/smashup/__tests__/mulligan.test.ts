@@ -21,6 +21,7 @@ import { STARTING_HAND_MULLIGAN_SOURCE_ID } from '../domain/mulliganHandlers';
 import { execute } from '../domain/reducer';
 import type { AllFactionsSelectedEvent, SmashUpCommand, SmashUpCore, SmashUpEvent } from '../domain/types';
 import { STARTING_HAND_SIZE, SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { getSimpleChoicePrompt } from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -136,7 +137,7 @@ describe('SmashUp 起手重抽', () => {
 
             expect(result.finalState.core.factionSelection).toBeUndefined();
             expect(result.finalState.sys.phase).toBe('startTurn');
-            expect(result.finalState.sys.interaction.current?.data?.sourceId).toBe(STARTING_HAND_MULLIGAN_SOURCE_ID);
+            expect(getSimpleChoicePrompt(result.finalState, STARTING_HAND_MULLIGAN_SOURCE_ID)).toBeDefined();
         });
 
         it('重抽后手牌与牌库总数仍为 40', () => {

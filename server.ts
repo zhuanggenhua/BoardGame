@@ -34,7 +34,7 @@ import {
 } from './src/server/duplicateOwnerRooms';
 import { buildUgcServerGames } from './src/server/ugcRegistration';
 import { GameTransportServer } from './src/engine/transport/server';
-import { resolveSeatPlayerDisplayName } from './src/engine/ai';
+import { getAiSeatIds, resolveSeatPlayerDisplayName } from './src/engine/ai';
 import type { GameEngineConfig } from './src/engine/transport/server';
 import type { MatchMetadata, MatchStorage } from './src/engine/transport/storage';
 import { resolveMatchStatus } from './src/engine/transport/storage';
@@ -84,6 +84,55 @@ interface RematchVoteState {
 }
 const rematchStateByMatch = new Map<string, RematchVoteState>();
 const matchSubscribers = new Map<string, Set<string>>();
+
+const normalizeRematchPlayerIds = (value: unknown): string[] => {
+    if (!Array.isArray(value)) return [];
+    return [...new Set(
+        value
+            .filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            .map((item) => item.trim()),
+    )];
+};
+
+const resolveAutoAcceptedRematchPlayerIds = async (
+    matchID: string,
+    requestedPlayerIds: unknown,
+): Promise<string[]> => {
+    const requested = normalizeRematchPlayerIds(requestedPlayerIds);
+    if (requested.length === 0) return [];
+
+    try {
+        const result = await storage.fetch(matchID, { metadata: true });
+        const setupData = result.metadata?.setupData && typeof result.metadata.setupData === 'object' && !Array.isArray(result.metadata.setupData)
+            ? result.metadata.setupData as { seatControllers?: Record<string, { type?: unknown } | undefined> }
+            : undefined;
+        const aiSeatIds = new Set(getAiSeatIds(setupData?.seatControllers));
+        return requested.filter((playerId) => aiSeatIds.has(playerId));
+    } catch (error) {
+        logger.warn('[RematchIO] 自动同意 AI 座位校验失败', {
+            matchID,
+            error: error instanceof Error ? error.message : String(error),
+        });
+        return [];
+    }
+};
+
+const scheduleRematchStateReset = (matchId: string): void => {
+    setTimeout(() => {
+        const currentState = rematchStateByMatch.get(matchId);
+        if (currentState) {
+            currentState.votes = {};
+            currentState.ready = false;
+            currentState.revision += 1;
+            lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, currentState);
+        }
+    }, 1000);
+};
+
+const updateRematchReady = (state: RematchVoteState): void => {
+    const votedPlayers = Object.entries(state.votes).filter(([, v]) => v).map(([p]) => p);
+    state.ready = votedPlayers.length >= 2;
+};
 
 // 对局聊天历史缓存（内存，对局结束后自动清理）
 interface ChatHistoryMessage {
@@ -1765,7 +1814,7 @@ lobbySocketIO.on('connection', (socket) => {
 
     // ========== 重赛投票事件处理 ==========
 
-    socket.on(REMATCH_EVENTS.JOIN_MATCH, (payload?: { matchId?: string; playerId?: string }) => {
+    socket.on(REMATCH_EVENTS.JOIN_MATCH, async (payload?: { matchId?: string; playerId?: string; autoAcceptedPlayerIds?: unknown }) => {
         const { matchId, playerId } = payload || {};
         if (!matchId || !playerId) {
             logger.warn(`[RematchIO] ${socket.id} 加入对局失败：缺少 matchId 或 playerId`);
@@ -1791,6 +1840,26 @@ lobbySocketIO.on('connection', (socket) => {
         }
 
         const state = rematchStateByMatch.get(matchId)!;
+        const wasReady = state.ready;
+        const autoAcceptedPlayerIds = await resolveAutoAcceptedRematchPlayerIds(matchId, payload?.autoAcceptedPlayerIds);
+        let autoAcceptedChanged = false;
+        for (const autoPlayerId of autoAcceptedPlayerIds) {
+            if (state.votes[autoPlayerId] === true) {
+                continue;
+            }
+            state.votes[autoPlayerId] = true;
+            autoAcceptedChanged = true;
+        }
+        if (autoAcceptedChanged) {
+            updateRematchReady(state);
+            state.revision += 1;
+            logger.info(`[RematchIO] AI 自动同意重赛: match=${matchId}, players=${autoAcceptedPlayerIds.join(',')}, ready=${state.ready}`);
+            lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, state);
+            if (!wasReady && state.ready) {
+                lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.TRIGGER_RESET);
+                scheduleRematchStateReset(matchId);
+            }
+        }
         socket.emit(REMATCH_EVENTS.STATE_UPDATE, state);
         logger.info(`[RematchIO] ${socket.id} 加入对局 ${matchId} (玩家 ${playerId})`);
     });
@@ -1828,25 +1897,17 @@ lobbySocketIO.on('connection', (socket) => {
         const currentVote = state.votes[playerId] ?? false;
         state.votes[playerId] = !currentVote;
 
-        const votedPlayers = Object.entries(state.votes).filter(([, v]) => v).map(([p]) => p);
-        state.ready = votedPlayers.length >= 2;
+        const wasReady = state.ready;
+        updateRematchReady(state);
         state.revision += 1;
 
         logger.info(`[RematchIO] ${socket.id} 投票: ${playerId} -> ${state.votes[playerId]}, ready=${state.ready}`);
 
         lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, state);
 
-        if (state.ready) {
+        if (!wasReady && state.ready) {
             lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.TRIGGER_RESET);
-            setTimeout(() => {
-                const currentState = rematchStateByMatch.get(matchId);
-                if (currentState) {
-                    currentState.votes = {};
-                    currentState.ready = false;
-                    currentState.revision += 1;
-                    lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, currentState);
-                }
-            }, 1000);
+            scheduleRematchStateReset(matchId);
         }
     });
 

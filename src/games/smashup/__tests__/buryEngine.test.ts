@@ -3,10 +3,17 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { makeMatchState, makePlayer, makeState, applyEvents } from './helpers';
+import {
+    applyEvents,
+    getPromptOption,
+    getSimpleChoicePrompt,
+    makeMatchState,
+    makePlayer,
+    makeState,
+    respondToPrompt,
+} from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { buildBuryCardEvents, buildBuriedCardReturnedToHandEvent } from '../domain/bury';
 
 beforeAll(() => {
@@ -73,16 +80,10 @@ describe('bury engine', () => {
         const ms0 = makeMatchState(core);
         const enter = runCommand(ms0, { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 1 } as any, defaultTestRandom);
         // onPhaseEnter(startTurn) should queue uncover interaction
-        const interaction = enter.finalState.sys.interaction.current;
-        expect(interaction?.data?.sourceId).toBe('bury_uncover_start_turn');
-        const opt = (interaction as any).data.options.find((o: any) => o.value?.cardUid === 'b1');
-        expect(opt).toBeTruthy();
+        const interaction = getSimpleChoicePrompt(enter.finalState, 'bury_uncover_start_turn');
+        const opt = getPromptOption(interaction, option => option.value?.cardUid === 'b1', 'buried b1 option');
 
-        const res = runCommand(
-            enter.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: opt.id } } as any,
-            defaultTestRandom,
-        );
+        const res = respondToPrompt(enter.finalState, opt.id, '0', defaultTestRandom);
         // buried card removed
         expect(res.finalState.core.bases[0].buriedCards?.length ?? 0).toBe(0);
         // minion now in play
@@ -122,16 +123,10 @@ describe('bury engine', () => {
             defaultTestRandom,
         );
 
-        const interaction = enter.finalState.sys.interaction.current as any;
-        expect(interaction?.data?.sourceId).toBe('bury_uncover_start_turn');
-        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'wl-buried');
-        expect(option).toBeTruthy();
+        const interaction = getSimpleChoicePrompt(enter.finalState, 'bury_uncover_start_turn');
+        const option = getPromptOption(interaction, entry => entry.value?.cardUid === 'wl-buried', 'buried Water Lily option');
 
-        const resolved = runCommand(
-            enter.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: option.id }, timestamp: 11 } as any,
-            defaultTestRandom,
-        );
+        const resolved = respondToPrompt(enter.finalState, option.id, '0', defaultTestRandom);
 
         expect(resolved.success).toBe(true);
         const drawEvents = resolved.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
@@ -171,16 +166,10 @@ describe('bury engine', () => {
             defaultTestRandom,
         );
 
-        const interaction = enter.finalState.sys.interaction.current as any;
-        expect(interaction?.data?.sourceId).toBe('bury_uncover_start_turn');
-        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'curse-1');
-        expect(option).toBeTruthy();
+        const interaction = getSimpleChoicePrompt(enter.finalState, 'bury_uncover_start_turn');
+        const option = getPromptOption(interaction, entry => entry.value?.cardUid === 'curse-1', 'buried Ancient Curse option');
 
-        const resolved = runCommand(
-            enter.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: option.id }, timestamp: 21 } as any,
-            defaultTestRandom,
-        );
+        const resolved = respondToPrompt(enter.finalState, option.id, '0', defaultTestRandom);
 
         expect(resolved.success).toBe(true);
         expect(resolved.finalState.core.bases[0].buriedCards?.length ?? 0).toBe(0);
@@ -247,13 +236,9 @@ describe('bury engine', () => {
         });
 
         const enter = runCommand(makeMatchState(core), { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 1 } as any, defaultTestRandom);
-        const interaction = enter.finalState.sys.interaction.current as any;
-        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'yk');
-        const resolved = runCommand(
-            enter.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: option.id } } as any,
-            defaultTestRandom,
-        );
+        const interaction = getSimpleChoicePrompt(enter.finalState, 'bury_uncover_start_turn');
+        const option = getPromptOption(interaction, entry => entry.value?.cardUid === 'yk', 'buried You Can Take It With You option');
+        const resolved = respondToPrompt(enter.finalState, option.id, '0', defaultTestRandom);
 
         expect(resolved.finalState.core.players['0'].hand).toHaveLength(3);
         expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'yk')).toBe(true);

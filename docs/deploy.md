@@ -51,6 +51,8 @@ bash deploy-image.sh update v1.2.3  # 部署指定 tag
 **强制规则**：生产环境更新必须**等待 CI 镜像构建完成**后再执行（对应 commit/tag 的镜像已推送到仓库）。  
 未确认 CI 构建完成时禁止执行 `update`，避免拉取到旧镜像或半成品镜像。
 
+**默认最新部署口径（强制）**：当目标是“更新部署 / 部署最新 / 发线上”，且没有明确指定版本时，必须执行 `bash deploy-image.sh update`，也就是部署 `latest`。禁止为了“固定版本”临时根据 commit SHA、短 SHA、run number 或猜测格式拼出 `bash deploy-image.sh update <tag>`；如果需要指定 tag，必须先证明 `ghcr.io/zhuanggenhua/boardgame-web:<tag>` 与 `ghcr.io/zhuanggenhua/boardgame-game:<tag>` 都已存在。
+
 ### 回滚 / 状态 / 日志
 
 ```bash
@@ -59,7 +61,7 @@ bash deploy-image.sh status             # 查看状态
 bash deploy-image.sh logs [service]     # 查看日志
 ```
 
-### 固定版本部署（推荐）
+### 固定版本部署（仅明确指定 / 回滚排障）
 
 ```bash
 bash deploy-image.sh deploy v1.2.3  # 首次部署指定 tag
@@ -69,6 +71,7 @@ bash deploy-image.sh update v1.2.3  # 更新到指定 tag
 - 不传 tag 时默认部署 `latest`
 - 传入 tag 时，脚本会统一把 `game-server` 和 `web` 切到同一版本，便于排障与回滚
 - 这些 tag 来自 GitHub Actions 发布的镜像标签（例如推送 Git tag `v1.2.3` 后生成对应镜像）
+- 固定版本部署只适用于“用户明确指定版本”或“已验证精确 tag 存在”的场景；不得把短 commit、`sha-xxxxxx`、GitHub Actions run number 等推测值当作可部署 tag。
 
 ### CI 配置说明
 
@@ -79,6 +82,7 @@ bash deploy-image.sh update v1.2.3  # 更新到指定 tag
   - `ghcr.io/zhuanggenhua/boardgame-game:latest`
   - `ghcr.io/zhuanggenhua/boardgame-web:latest`
 - **版本标签**：`latest`（main 分支）、`v1.2.3`（tag）、`sha-xxxxxx`（commit）
+- **部署注意**：上面的版本标签以 CI 实际输出和 GHCR 实际存在为准；日常生产“最新”部署不需要也不应指定 commit tag，直接使用 `update` 拉取 `latest`。
 
 > **当前自动部署脚本的真实入口**：`boardgame-web` 是基于 `docker/Dockerfile.monolith` 构建的单体镜像，负责静态资源、`/auth`、`/notifications`、`/social-socket` 等 API / WebSocket 入口；`deploy-image.sh` 不会部署独立的 `auth-server`，也不会使用 `docker/Dockerfile.web` / `docker/nginx.conf` 作为生产主链路。
 

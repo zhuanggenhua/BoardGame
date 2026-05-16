@@ -7,15 +7,11 @@
  * 用户确认：实际给两个不同的随从各加了+1力量，说明 Igor 的 onDestroy 确实触发了两次。
  */
 
-import { makeState, makeBase, makeMinion, makeMatchState, makePlayer } from './helpers';
-import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
-import type { SmashUpCore } from '../domain/types';
+import { getPromptsBySourceId, makeState, makeBase, makeMinion, makeMatchState, makePlayer } from './helpers';
 import { SU_EVENTS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { processDestroyTriggers } from '../domain/reducer';
 import { defaultTestRandom } from './testRunner';
-import { triggerBaseAbility } from '../domain/baseAbilities';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 
 describe('Bug: Igor 被 base_rlyeh 消灭时触发两次', () => {
     beforeAll(() => {
@@ -58,21 +54,15 @@ describe('Bug: Igor 被 base_rlyeh 消灭时触发两次', () => {
         // 调用 processDestroyTriggers 处理消灭事件
         const result = processDestroyTriggers([destroyEvent], ms, '0', defaultTestRandom, 1000);
         
-        // 检查：应该有两个交互
+        // 检查：应该有两个业务 prompt
         // 1. Igor 的 onDestroy（选择放置+1指示物的随从）
         // 2. base_crypt 的 onMinionDestroyed（消灭者选择放置+1指示物的随从）
-        const allInteractions = [];
-        if (result.matchState?.sys.interaction.current) {
-            allInteractions.push(result.matchState.sys.interaction.current);
-        }
-        allInteractions.push(...(result.matchState?.sys.interaction.queue ?? []));
+        expect(result.matchState).toBeDefined();
         
         console.log('=== base_crypt + Igor scenario ===');
-        console.log('Total interactions:', allInteractions.length);
-        console.log('Interaction sources:', allInteractions.map(i => i.data.sourceId));
-        
-        const igorInteractions = allInteractions.filter(i => i.data.sourceId === 'frankenstein_igor');
-        const cryptInteractions = allInteractions.filter(i => i.data.sourceId === 'base_crypt');
+        const igorInteractions = getPromptsBySourceId(result.matchState!, 'frankenstein_igor');
+        const cryptInteractions = getPromptsBySourceId(result.matchState!, 'base_crypt');
+        console.log('Total business prompts:', igorInteractions.length + cryptInteractions.length);
         
         console.log('Igor interactions:', igorInteractions.length);
         console.log('Crypt interactions:', cryptInteractions.length);
@@ -80,6 +70,6 @@ describe('Bug: Igor 被 base_rlyeh 消灭时触发两次', () => {
         // 预期：Igor 触发一次，base_crypt 触发一次
         expect(igorInteractions.length).toBe(1);
         expect(cryptInteractions.length).toBe(1);
-        expect(allInteractions.length).toBe(2);
+        expect(igorInteractions.length + cryptInteractions.length).toBe(2);
     });
 });

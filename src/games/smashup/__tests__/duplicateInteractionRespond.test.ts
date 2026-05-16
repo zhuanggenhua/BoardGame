@@ -12,9 +12,8 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { makeState, makeMinion, makePlayer, makeMatchState, makeBase } from './helpers';
+import { expectNoPrompt, makeState, makeMinion, makePlayer, makeMatchState, makeBase, respondCommand } from './helpers';
 import { runCommand } from './testRunner';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
@@ -37,7 +36,7 @@ describe('同一交互重复 respond 防护', () => {
      * - 第一次 respond 选择消耗指示物 → 成功
      * - 第二次 respond 同一 interactionId → 应被拒绝
      */
-    it('第二次 SYS_INTERACTION_RESPOND 对已消费的交互应被拒绝', () => {
+    it('第二次交互响应对已消费的交互应被拒绝', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -99,9 +98,7 @@ describe('同一交互重复 respond 防护', () => {
 
         // 第一次 respond：选择消耗指示物防止消灭
         const respondCmd: SmashUpCommand = {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: 'drone-0' },
+            ...respondCommand('drone-0', '0'),
             timestamp: Date.now(),
         };
 
@@ -121,8 +118,8 @@ describe('同一交互重复 respond 防护', () => {
         expect(droneAfter1).toBeDefined();
         expect(droneAfter1!.powerCounters).toBe(0); // 指示物从 1 → 0
 
-        // 验证交互已被消费（current 应为 null/undefined）
-        expect(result1.finalState.sys.interaction?.current).toBeFalsy();
+        // 验证交互已被消费
+        expectNoPrompt(result1.finalState);
 
         // 目标随从仍在场上（被防止消灭了）
         const targetAfter1 = result1.finalState.core.bases[0]?.minions.find(
@@ -212,9 +209,7 @@ describe('同一交互重复 respond 防护', () => {
 
         // 第一次 respond：跳过（不防止消灭）
         const skipCmd: SmashUpCommand = {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: 'skip' },
+            ...respondCommand('skip', '0'),
             timestamp: Date.now(),
         };
 
@@ -222,7 +217,7 @@ describe('同一交互重复 respond 防护', () => {
         expect(result1.success).toBe(true);
 
         // 跳过后交互已消费
-        expect(result1.finalState.sys.interaction?.current).toBeFalsy();
+        expectNoPrompt(result1.finalState);
 
         // 第二次 respond：应被拒绝，不产生额外 MINION_DESTROYED
         const result2 = runCommand(result1.finalState, skipCmd);

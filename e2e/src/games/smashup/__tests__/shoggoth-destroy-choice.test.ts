@@ -15,6 +15,7 @@ import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
+import { getFirstPrompt, getPromptHandlerData, getPromptSourceId, withoutCurrentPrompt } from './helpers';
 
 function makeMinion(uid: string, defId: string, controller: string, power: number, overrides: Partial<MinionOnBase> = {}): MinionOnBase {
     return {
@@ -81,20 +82,20 @@ describe('修格斯消灭随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const r1 = triggerShoggothOnPlay(state);
-        const i1 = (r1.matchState?.sys as any)?.interaction?.current;
+        const i1 = getFirstPrompt(r1.matchState!);
         expect(i1?.playerId).toBe('1');
 
         // 对手拒绝 → 产生由 P0 选择消灭随从的交互
         const handler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        const ms2 = { ...r1.matchState!, sys: { ...r1.matchState!.sys, interaction: { current: undefined, queue: [] } } };
-        const r2 = handler(ms2, '1', { choice: 'decline' }, i1?.data, dummyRandom, 1)!;
+        const ms2 = withoutCurrentPrompt(r1.matchState!);
+        const r2 = handler(ms2, '1', { choice: 'decline' }, getPromptHandlerData(i1), dummyRandom, 1)!;
 
         // 不应直接产生消灭事件
         expect(r2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
 
         // 应产生由 P0（修格斯控制者）选择的交互
-        const i2 = (r2.state?.sys as any)?.interaction?.current;
-        expect(i2?.data?.sourceId).toBe('elder_thing_shoggoth_destroy');
+        const i2 = getFirstPrompt(r2.state!);
+        expect(getPromptSourceId(i2)).toBe('elder_thing_shoggoth_destroy');
         expect(i2?.playerId).toBe('0');
     });
 
@@ -105,11 +106,11 @@ describe('修格斯消灭随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const r1 = triggerShoggothOnPlay(state);
-        const i1 = (r1.matchState?.sys as any)?.interaction?.current;
+        const i1 = getFirstPrompt(r1.matchState!);
 
         const handler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        const ms2 = { ...r1.matchState!, sys: { ...r1.matchState!.sys, interaction: { current: undefined, queue: [] } } };
-        const r2 = handler(ms2, '1', { choice: 'decline' }, i1?.data, dummyRandom, 1)!;
+        const ms2 = withoutCurrentPrompt(r1.matchState!);
+        const r2 = handler(ms2, '1', { choice: 'decline' }, getPromptHandlerData(i1), dummyRandom, 1)!;
 
         // 只有1个随从，直接消灭
         const destroyEvents = r2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
@@ -124,13 +125,13 @@ describe('修格斯消灭随从选择权', () => {
         const base = makeBase({ minions: [shoggoth, opM1, opM2] });
         const state = makeState({ bases: [base] });
         const first = triggerShoggothOnPlay(state);
-        const firstPrompt = (first.matchState?.sys as any)?.interaction?.current;
+        const firstPrompt = getFirstPrompt(first.matchState!);
         const opponentHandler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        const afterDecline = opponentHandler(first.matchState!, '1', { choice: 'decline' }, firstPrompt?.data, dummyRandom, 1)!;
-        const destroyPrompt = (afterDecline.state?.sys as any)?.interaction?.current;
+        const afterDecline = opponentHandler(withoutCurrentPrompt(first.matchState!), '1', { choice: 'decline' }, getPromptHandlerData(firstPrompt), dummyRandom, 1)!;
+        const destroyPrompt = getFirstPrompt(afterDecline.state!);
 
         const destroyHandler = getInteractionHandler('elder_thing_shoggoth_destroy')!;
-        const result = destroyHandler(afterDecline.state!, '0', { minionUid: 'op-2', baseIndex: 0, defId: 'test_minion_b' }, destroyPrompt?.data, dummyRandom, 2)!;
+        const result = destroyHandler(withoutCurrentPrompt(afterDecline.state!), '0', { minionUid: 'op-2', baseIndex: 0, defId: 'test_minion_b' }, getPromptHandlerData(destroyPrompt), dummyRandom, 2)!;
 
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(1);
@@ -145,11 +146,11 @@ describe('修格斯消灭随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const r1 = triggerShoggothOnPlay(state);
-        const i1 = (r1.matchState?.sys as any)?.interaction?.current;
+        const i1 = getFirstPrompt(r1.matchState!);
 
         const handler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        const ms2 = { ...r1.matchState!, sys: { ...r1.matchState!.sys, interaction: { current: undefined, queue: [] } } };
-        const r2 = handler(ms2, '1', { choice: 'draw_madness' }, i1?.data, dummyRandom, 1)!;
+        const ms2 = withoutCurrentPrompt(r1.matchState!);
+        const r2 = handler(ms2, '1', { choice: 'draw_madness' }, getPromptHandlerData(i1), dummyRandom, 1)!;
 
         expect(r2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
     });
@@ -168,30 +169,30 @@ describe('修格斯消灭随从选择权', () => {
 
         // 1. onPlay → 询问 P1
         const r1 = triggerShoggothOnPlay(state);
-        const i1 = (r1.matchState?.sys as any)?.interaction?.current;
+        const i1 = getFirstPrompt(r1.matchState!);
         expect(i1?.playerId).toBe('1');
 
         // 2. P1 拒绝 → 产生 P0 选择消灭交互
         const opHandler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
         // 模拟引擎清除 current（引擎在调用 handler 前会清除 current）
-        const ms2 = { ...r1.matchState!, sys: { ...r1.matchState!.sys, interaction: { current: undefined, queue: [] } } };
-        const r2 = opHandler(ms2, '1', { choice: 'decline' }, i1?.data, dummyRandom, 1)!;
-        const i2 = (r2.state?.sys as any)?.interaction?.current;
-        expect(i2?.data?.sourceId).toBe('elder_thing_shoggoth_destroy');
+        const ms2 = withoutCurrentPrompt(r1.matchState!);
+        const r2 = opHandler(ms2, '1', { choice: 'decline' }, getPromptHandlerData(i1), dummyRandom, 1)!;
+        const i2 = getFirstPrompt(r2.state!);
+        expect(getPromptSourceId(i2)).toBe('elder_thing_shoggoth_destroy');
         expect(i2?.playerId).toBe('0');
 
         // 3. P0 选择消灭 p1-2 → 继续询问 P2
         const destroyHandler = getInteractionHandler('elder_thing_shoggoth_destroy')!;
-        const ms3 = { ...r2.state, sys: { ...r2.state.sys, interaction: { current: undefined, queue: [] } } };
-        const r3 = destroyHandler(ms3, '0', { minionUid: 'p1-2', baseIndex: 0, defId: 'test_b' }, i2?.data, dummyRandom, 2)!;
+        const ms3 = withoutCurrentPrompt(r2.state!);
+        const r3 = destroyHandler(ms3, '0', { minionUid: 'p1-2', baseIndex: 0, defId: 'test_b' }, getPromptHandlerData(i2), dummyRandom, 2)!;
 
         const destroyEvents = r3.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(1);
         expect((destroyEvents[0] as MinionDestroyedEvent).payload.minionUid).toBe('p1-2');
 
         // 应继续询问 P2
-        const i3 = (r3.state?.sys as any)?.interaction?.current;
-        expect(i3?.data?.sourceId).toBe('elder_thing_shoggoth_opponent');
+        const i3 = getFirstPrompt(r3.state!);
+        expect(getPromptSourceId(i3)).toBe('elder_thing_shoggoth_opponent');
         expect(i3?.playerId).toBe('2');
     });
 
@@ -201,11 +202,11 @@ describe('修格斯消灭随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const r1 = triggerShoggothOnPlay(state);
-        const i1 = (r1.matchState?.sys as any)?.interaction?.current;
+        const i1 = getFirstPrompt(r1.matchState!);
 
         const handler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        const ms2 = { ...r1.matchState!, sys: { ...r1.matchState!.sys, interaction: { current: undefined, queue: [] } } };
-        const r2 = handler(ms2, '1', { choice: 'decline' }, i1?.data, dummyRandom, 1)!;
+        const ms2 = withoutCurrentPrompt(r1.matchState!);
+        const r2 = handler(ms2, '1', { choice: 'decline' }, getPromptHandlerData(i1), dummyRandom, 1)!;
 
         expect(r2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
     });

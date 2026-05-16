@@ -15,7 +15,6 @@ import { describe, expect, it, beforeAll } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { MatchState, RandomFn } from '../../../engine/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { smashUpSystemsForTest } from '../game';
 import { SmashUpDomain } from '../domain';
 import { getScoringEligibleBaseIndices, getTotalEffectivePowerOnBase, getEffectiveBreakpoint } from '../domain/ongoingModifiers';
@@ -24,6 +23,7 @@ import type { SmashUpCore, BaseInPlay, PlayerState, MinionOnBase, SmashUpCommand
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { SU_EVENT_TYPES } from '../domain/events';
 import { initAllAbilities } from '../abilities';
+import { getPromptOption, getSimpleChoicePrompt } from './helpers';
 
 beforeAll(() => {
     initAllAbilities();
@@ -314,15 +314,21 @@ describe('计分阶段 eligible 基地锁定', () => {
             });
             expect(playResult.success, playResult.error).toBe(true);
 
-            const sourcePrompt = runner.getState().sys.interaction?.current;
-            const sourceOption = sourcePrompt?.data?.options?.find((option: any) => option?.value?.minionUid === 'source');
-            expect(sourceOption).toBeDefined();
+            const sourcePrompt = getSimpleChoicePrompt(runner.getState(), 'giant_ant_under_pressure_choose_source');
+            const sourceOption = getPromptOption(
+                sourcePrompt,
+                (option: any) => option?.value?.minionUid === 'source',
+                'Under Pressure source minion option',
+            );
             const chooseSource = runner.resolveInteraction('0', { optionId: sourceOption.id });
             expect(chooseSource.success, chooseSource.error).toBe(true);
 
-            const targetPrompt = runner.getState().sys.interaction?.current;
-            const targetOption = targetPrompt?.data?.options?.find((option: any) => option?.value?.minionUid === 'target');
-            expect(targetOption).toBeDefined();
+            const targetPrompt = getSimpleChoicePrompt(runner.getState(), 'giant_ant_under_pressure_choose_target');
+            const targetOption = getPromptOption(
+                targetPrompt,
+                (option: any) => option?.value?.minionUid === 'target',
+                'Under Pressure target minion option',
+            );
             const chooseTarget = runner.resolveInteraction('0', { optionId: targetOption.id });
             expect(chooseTarget.success, chooseTarget.error).toBe(true);
 
@@ -375,7 +381,7 @@ describe('计分阶段 eligible 基地锁定', () => {
 
             const advanceResult = runner.dispatch('ADVANCE_PHASE', { playerId: '0' });
             expect(advanceResult.success).toBe(true);
-            expect(runner.getState().sys.interaction?.current?.data?.sourceId).toBe('elder_thing_dunwich_horror_pod_choice');
+            expect(getSimpleChoicePrompt(runner.getState(), 'elder_thing_dunwich_horror_pod_choice')).toBeDefined();
 
             const chooseDestroy = runner.resolveInteraction('0', { optionId: 'destroy' });
             expect(chooseDestroy.success).toBe(true);

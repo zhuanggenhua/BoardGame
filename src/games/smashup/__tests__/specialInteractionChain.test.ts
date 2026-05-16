@@ -31,7 +31,6 @@ import {
 } from '../../../engine';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { createSmashUpEventSystem } from '../domain/systems';
-import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { ActionCardDef } from '../domain/types';
 import { getCardDef } from '../data/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
@@ -44,6 +43,7 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry, isMinionProtected } from '../domain/ongoingEffects';
+import { expectNoPrompt, getFirstPrompt, getSimpleChoicePrompt, respondCommand } from './helpers';
 
 // ============================================================================
 // 测试工具（与 interactionChainE2E.test.ts 保持一致）
@@ -145,7 +145,7 @@ function runCommand(state: MatchState<SmashUpCore>, cmd: { type: string; playerI
 }
 
 function respond(state: MatchState<SmashUpCore>, playerId: string, optionId: string, name: string) {
-    return runCommand(state, { type: INTERACTION_COMMANDS.RESPOND, playerId, payload: { optionId } }, name);
+    return runCommand(state, respondCommand(optionId, playerId), name);
 }
 
 function findOption(choice: any, predicate: (opt: any) => boolean): string {
@@ -198,7 +198,7 @@ describe('Protection (destroy): robot_warbot', () => {
             payload: { cardUid: 'cannon1' },
         }, 'cannon vs warbot');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1).toBeDefined();
         // warbot 力量4 > 2，本来就不在加农炮范围内
         // 用激光三角龙（消灭力量≤2）来验证 warbot 保护更直接
@@ -301,7 +301,7 @@ describe('Protection (affect): ghost_incorporeal', () => {
             payload: { cardUid: 'sh1' },
         }, 'shanghai vs incorporeal');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1).toBeDefined();
         
         // 验证：prot1（受保护）不在选项中，normal1（未保护）在选项中
@@ -382,7 +382,7 @@ describe('Laseratops POD printed-power prompt', () => {
         }, 'laseratops_pod printed power prompt');
         expect(r1.steps[0]?.success).toBe(true);
 
-        const choice = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice = getSimpleChoicePrompt(r1.finalState, 'dino_laser_triceratops_pod');
         expect(choice).toBeDefined();
         expect(choice.sourceId).toBe('dino_laser_triceratops_pod');
         expect(choice.title).toBe('你可以消灭这里一个印制力量≤2的随从');
@@ -668,7 +668,7 @@ describe('onMinionPlayed trigger: trickster_pay_the_piper', () => {
         }, 'pay_the_piper: 对手打出随从');
         expect(r1.steps[0]?.success).toBe(true);
         expect(r1.steps[0]?.events).toContain('su:cards_discarded');
-        expect(r1.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r1.finalState);
 
         // P0 手牌减少：打出1张 + 被随机弃1张 = 减少2张
         const p0 = r1.finalState.core.players['0'];
@@ -714,14 +714,14 @@ describe('onMinionMoved trigger: bear_cavalry_cub_scout', () => {
             payload: { cardUid: 'dinghy1' },
         }, 'cub_scout: 打出 dinghy');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1).toBeDefined();
 
         // 选 weak1
         const m1Opt = findOption(choice1, (o: any) => o.value?.minionUid === 'weak1');
         const r2 = respond(r1.finalState, '0', m1Opt, 'cub_scout: 选随从');
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
 
         // 选 base1（有 cub_scout）
         const baseOpt = findOption(choice2, (o: any) => o.value?.baseIndex === 1);
@@ -729,7 +729,7 @@ describe('onMinionMoved trigger: bear_cavalry_cub_scout', () => {
         expect(r3.steps[0]?.success).toBe(true);
 
         // 跳过第二个随从
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current);
+        const choice3 = getFirstPrompt(r3.finalState) ? getSimpleChoicePrompt(r3.finalState) : undefined;
         if (choice3) {
             const r4 = respond(r3.finalState, '0', 'skip', 'cub_scout: 跳过第二个');
             expect(r4.steps[0]?.success).toBe(true);
@@ -957,18 +957,17 @@ describe('beforeScoring trigger: cthulhu_chosen', () => {
         }, '69ff0310: 进入计分触发 cthulhu_chosen');
 
         expect(enterScoring.steps[0]?.success).toBe(true);
-        const choice = asSimpleChoice(enterScoring.finalState.sys.interaction?.current);
-        expect(choice?.sourceId).toBe('cthulhu_chosen_confirm');
-        expect(choice?.targetType).toBe('generic');
-        expect(choice?.playerId).toBe('0');
-        expect(choice?.options?.map(option => option.id)).toEqual(['yes', 'no']);
-        expect(choice?.options?.every(option => option.displayMode === 'button')).toBe(true);
+        const choice = getSimpleChoicePrompt(enterScoring.finalState, 'cthulhu_chosen_confirm');
+        expect(choice.targetType).toBe('generic');
+        expect(choice.playerId).toBe('0');
+        expect(choice.options.map(option => option.id)).toEqual(['yes', 'no']);
+        expect(choice.options.every(option => option.displayMode === 'button')).toBe(true);
 
         const skipOption = findOption(choice, option => option.id === 'no');
         const resolved = respond(enterScoring.finalState, '0', skipOption, '69ff0310: 不触发并收口确认交互');
 
         expect(resolved.steps[0]?.success).toBe(true);
-        expect(resolved.finalState.sys.interaction?.current?.id).not.toBe(choice?.id);
+        expect(getFirstPrompt(resolved.finalState)?.id).not.toBe(choice.id);
     });
 });
 

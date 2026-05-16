@@ -5,7 +5,7 @@ import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueu
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { smashUpFlowHooks } from '../domain/index';
 import { getSmashUpReactionSession } from '../domain/reactionSession';
-import { makeMatchState, makeState, makeBase, makeMinion } from './helpers';
+import { getReactionPrompt, makeMatchState, makeState, makeBase, makeMinion } from './helpers';
 import { SU_EVENTS } from '../domain/types';
 
 beforeEach(() => {
@@ -51,8 +51,7 @@ describe('reaction queue: onTurnStart ordering', () => {
 
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a } as any, 1);
     expect(rq).toBeDefined();
-    const current = rq!.state.sys.interaction.current as any;
-    expect(current?.data?.sourceId).toBe('smashup_reaction_choose');
+    expect(getReactionPrompt(rq!.state)).toBeDefined();
   });
 
   it('onTurnEnd uses the same smashup reaction session and halts phase advance until ordering is resolved', () => {
@@ -94,8 +93,7 @@ describe('reaction queue: onTurnStart ordering', () => {
     expect(Array.isArray(result)).toBe(false);
     const exitResult = result as any;
     expect(exitResult.halt).toBe(true);
-    const current = exitResult.updatedState?.sys.interaction.current as any;
-    expect(current?.data?.sourceId).toBe('smashup_reaction_choose');
+    expect(getReactionPrompt(exitResult.updatedState)).toBeDefined();
     expect(getSmashUpReactionSession(exitResult.updatedState)?.frameKind).toBe('turn-end');
   });
 });

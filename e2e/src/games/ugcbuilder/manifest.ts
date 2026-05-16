@@ -3,7 +3,7 @@ import type { GameManifestEntry } from '../manifest.types';
 const entry: GameManifestEntry = {
     id: 'ugcbuilder',
     type: 'tool',
-    enabled: true,
+    enabled: false,
     titleKey: 'games.ugcbuilder.title',
     descriptionKey: 'games.ugcbuilder.description',
     category: 'tools',

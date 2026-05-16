@@ -208,14 +208,19 @@ CARD_BG: 'dicethrone/images/Common/compressed/card-background'
 
 ### 新增游戏资源检查清单
 
-1. ✅ 原始图片放入 `public/assets/<gameId>/` 对应目录（如果有原始图片）
-2. ✅ 运行 `npm run compress:images -- public/assets/<gameId>`（如果有原始图片）
-3. ✅ 确认 `compressed/` 子目录生成 `.webp` 文件（或直接放入 WebP 文件）
-4. ✅ **图集配置 JSON 放入 `public/assets/atlas-configs/<gameId>/`**（不要放在 `i18n/` 目录）
-5. ✅ 代码中使用 `OptimizedImage` 或 `getOptimizedImageUrls`
-6. ✅ **确认路径中不含 `compressed/` 子目录**
-7. ❌ **禁止**直接写 `<img src="/assets/xxx.png" />`
-8. ❌ **禁止**硬编码 `compressed/` 路径
+1. ✅ 先从规则书、配件表、用户指定素材清单或当前 MVP 需求建立正式资源准入白名单，给每个源文件标记 `runtime/reference/candidate/excluded`
+2. ✅ 只有 `runtime` 或明确 `reference` 的图片允许进入 `public/assets/<gameId>/` 或 `public/assets/i18n/<locale>/<gameId>/`
+3. ✅ TTS/Workshop 材质色块、编辑器占位图、下载站装饰图、无规则对象对应的贴图、重复导出必须标为 `excluded` 或留在 `temp/<gameId>-intake/`，不得压缩、上传或引用
+4. ✅ 正式文件名必须使用稳定语义名（小写 kebab-case），能回溯到图面语义和规则配件表；看不清或无法对应规则表时先留在 `candidate`
+5. ✅ 原始图片放入 `public/assets/<gameId>/` 对应目录（如果有原始图片）
+6. ✅ 运行 `npm run compress:images -- public/assets/<gameId>`（如果有原始图片）
+7. ✅ 确认 `compressed/` 子目录生成 `.webp` 文件（或直接放入 WebP 文件）
+8. ✅ **图集配置 JSON 放入 `public/assets/atlas-configs/<gameId>/`**（不要放在 `i18n/` 目录）
+9. ✅ 代码中使用 `OptimizedImage` 或 `getOptimizedImageUrls`
+10. ✅ **确认路径中不含 `compressed/` 子目录**
+11. ❌ **禁止**直接写 `<img src="/assets/xxx.png" />`
+12. ❌ **禁止**硬编码 `compressed/` 路径
+13. ❌ **禁止**把 `candidate/excluded` 文件混入正式资源树后继续执行 `assets:manifest`、`assets:check`、`assets:upload`
 
 ## R2 / CDN 上传与排查规则（强制）
 

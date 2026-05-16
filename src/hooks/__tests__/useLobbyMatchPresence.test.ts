@@ -301,6 +301,33 @@ describe('matchSocket shared connection', () => {
         unsubscribe();
         matchSocket.disconnect();
     });
+
+    it('includes auto-accepted AI seats when joining rematch channel', async () => {
+        const fakeSocket = {
+            connected: true,
+            active: true,
+            on: vi.fn().mockReturnThis(),
+            off: vi.fn().mockReturnThis(),
+            emit: vi.fn(),
+            connect: vi.fn(),
+            disconnect: vi.fn(),
+        };
+
+        acquireConnectionMock.mockReturnValue(fakeSocket);
+        getSharedSocketMock.mockReturnValue(fakeSocket);
+
+        const { matchSocket, REMATCH_EVENTS } = await import('../../services/matchSocket');
+
+        matchSocket.joinMatch('m-ai', '0', { autoAcceptedPlayerIds: ['1', '1', ' 2 '] });
+
+        expect(fakeSocket.emit).toHaveBeenCalledWith(REMATCH_EVENTS.JOIN_MATCH, {
+            matchId: 'm-ai',
+            playerId: '0',
+            autoAcceptedPlayerIds: ['1', '2'],
+        });
+
+        matchSocket.disconnect();
+    });
 });
 
 describe('useTokenRefresh helpers', () => {

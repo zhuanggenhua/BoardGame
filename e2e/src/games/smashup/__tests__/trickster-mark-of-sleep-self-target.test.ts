@@ -10,7 +10,17 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initAllAbilities } from '../abilities';
 import { runCommand } from './testRunner';
-import { makeState, makePlayer, makeCard, makeMatchState } from './helpers';
+import {
+    getPromptOption,
+    getPromptOptions,
+    getPromptTitle,
+    getSimpleChoicePrompt,
+    makeState,
+    makePlayer,
+    makeCard,
+    makeMatchState,
+    respondToPrompt,
+} from './helpers';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { validate } from '../domain/commands';
 import { reduce } from '../domain/reduce';
@@ -54,13 +64,12 @@ describe('睡眠印记可以选择自己', () => {
         } as any, defaultRandom);
 
         // 验证交互存在
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect(interaction?.data.title).toContain('选择一个玩家');
+        const prompt = getSimpleChoicePrompt(result.finalState);
+        expect(prompt).toBeDefined();
+        expect(getPromptTitle(prompt)).toContain('选择一个玩家');
 
         // 验证选项包含所有玩家（包括自己）
-        const options = (interaction?.data as any)?.options;
-        expect(options).toBeDefined();
+        const options = getPromptOptions(prompt);
         expect(options.length).toBeGreaterThanOrEqual(2); // 至少2个玩家选项（可能有取消选项）
 
         // 验证包含自己（P0）
@@ -98,11 +107,11 @@ describe('睡眠印记可以选择自己', () => {
         ms = result.finalState;
 
         // 验证交互存在
-        const interaction = ms.sys.interaction?.current;
-        expect(interaction).toBeDefined();
+        const prompt = getSimpleChoicePrompt(ms);
+        expect(prompt).toBeDefined();
 
         // 验证选项中包含自己
-        const options = (interaction?.data as any)?.options;
+        const options = getPromptOptions(prompt);
         const selfOption = options.find((opt: any) => opt.value?.pid === '0');
         expect(selfOption).toBeDefined();
         
@@ -133,11 +142,11 @@ describe('睡眠印记可以选择自己', () => {
         } as any, defaultRandom);
 
         // 验证交互存在
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
+        const prompt = getSimpleChoicePrompt(result.finalState);
+        expect(prompt).toBeDefined();
 
         // 验证选项中包含对手
-        const options = (interaction?.data as any)?.options;
+        const options = getPromptOptions(prompt);
         const opponentOption = options.find((opt: any) => opt.value?.pid === '1');
         expect(opponentOption).toBeDefined();
     });
@@ -165,10 +174,9 @@ describe('睡眠印记 POD', () => {
         } as any, defaultRandom);
         ms = played.finalState;
 
-        const interaction = ms.sys.interaction?.current;
-        expect(interaction?.data?.sourceId).toBe('trickster_mark_of_sleep_pod');
+        const prompt = getSimpleChoicePrompt(ms, 'trickster_mark_of_sleep_pod');
 
-        const allOptions = ((interaction?.data as any)?.options ?? []) as any[];
+        const allOptions = getPromptOptions(prompt);
         // autoCancelOption 可能会插入取消项；这里只验证实际组合选项
         const options = allOptions.filter(opt => !(opt?.value as any)?.__cancel__);
         // turnOrder = ['0','1','2'] → 2 位对手 → 4 种组合
@@ -204,18 +212,16 @@ describe('睡眠印记 POD', () => {
         } as any, defaultRandom);
         ms = played.finalState;
 
-        const interaction = ms.sys.interaction?.current;
-        const allOptions = ((interaction?.data as any)?.options ?? []) as any[];
+        const prompt = getSimpleChoicePrompt(ms, 'trickster_mark_of_sleep_pod');
+        const allOptions = getPromptOptions(prompt);
         const options = allOptions.filter(opt => !(opt?.value as any)?.__cancel__);
-        const option = options.find((opt: any) => (opt.value?.noActions ?? []).includes('1'));
-        expect(option).toBeDefined();
+        const option = getPromptOption(
+            { options },
+            (opt: any) => (opt.value?.noActions ?? []).includes('1'),
+            'mark of sleep no-actions option for player 1',
+        );
 
-        const resolved = runCommand(ms, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '0',
-            payload: { optionId: option.id },
-            timestamp: 1101,
-        } as any, defaultRandom);
+        const resolved = respondToPrompt(ms, option.id, '0', defaultRandom);
 
         expect(resolved.finalState.core.sleepMarkedPlayers).toEqual(['1']);
         expect(resolved.finalState.core.sleepMarkExpiresOnTurnNumber).toBeDefined();
@@ -277,18 +283,16 @@ describe('睡眠印记 POD', () => {
             timestamp: 1200,
         } as any, defaultRandom);
 
-        const interaction = played.finalState.sys.interaction?.current;
-        const allOptions = ((interaction?.data as any)?.options ?? []) as any[];
+        const prompt = getSimpleChoicePrompt(played.finalState, 'trickster_mark_of_sleep_pod');
+        const allOptions = getPromptOptions(prompt);
         const options = allOptions.filter(opt => !(opt?.value as any)?.__cancel__);
-        const option = options.find((opt: any) => (opt.value?.noMove ?? []).includes('1'));
-        expect(option).toBeDefined();
+        const option = getPromptOption(
+            { options },
+            (opt: any) => (opt.value?.noMove ?? []).includes('1'),
+            'mark of sleep no-move option for player 1',
+        );
 
-        const resolved = runCommand(played.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '0',
-            payload: { optionId: option.id },
-            timestamp: 1201,
-        } as any, defaultRandom);
+        const resolved = respondToPrompt(played.finalState, option.id, '0', defaultRandom);
 
         expect(resolved.finalState.core.sleepMoveMarkedPlayers).toEqual(['1']);
         expect(resolved.finalState.core.sleepMarkExpiresOnTurnNumber).toBeDefined();
@@ -332,18 +336,16 @@ describe('睡眠印记 POD', () => {
             timestamp: 1300,
         } as any, defaultRandom);
 
-        const interaction = played.finalState.sys.interaction?.current;
-        const allOptions = ((interaction?.data as any)?.options ?? []) as any[];
+        const prompt = getSimpleChoicePrompt(played.finalState, 'trickster_mark_of_sleep_pod');
+        const allOptions = getPromptOptions(prompt);
         const options = allOptions.filter(opt => !(opt?.value as any)?.__cancel__);
-        const option = options.find((opt: any) => (opt.value?.noMove ?? []).includes('1'));
-        expect(option).toBeDefined();
+        const option = getPromptOption(
+            { options },
+            (opt: any) => (opt.value?.noMove ?? []).includes('1'),
+            'mark of sleep no-move option for player 1',
+        );
 
-        const resolved = runCommand(played.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '0',
-            payload: { optionId: option.id },
-            timestamp: 1301,
-        } as any, defaultRandom);
+        const resolved = respondToPrompt(played.finalState, option.id, '0', defaultRandom);
 
         // noActions 为空 → sleepMarkedPlayers 被清空（覆盖旧值）
         expect(resolved.finalState.core.sleepMarkedPlayers).toBeUndefined();

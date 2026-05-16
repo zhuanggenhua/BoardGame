@@ -18,7 +18,7 @@ import { FLOW_COMMANDS } from '../../../engine/systems/FlowSystem';
 import { initAllAbilities } from '../abilities';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
-import { makeMinion, makePlayer, makeState, makeBase, makeCard } from './helpers';
+import { makeMinion, makePlayer, makeState, makeBase, makeCard, expectNoPrompt } from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -78,7 +78,7 @@ describe('大法师 E2E: 回合开始额外行动', () => {
         expect(result.finalState.core.currentPlayerIndex).toBe(0);
         expect(result.finalState.sys.phase).toBe('playCards');
         expect(result.finalState.core.players['0'].actionLimit).toBe(2);
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 
     it('大法师的额外战术不会在 startTurn 形成待处理交互', () => {
@@ -107,7 +107,7 @@ describe('大法师 E2E: 回合开始额外行动', () => {
         expect(result.finalState.core.currentPlayerIndex).toBe(0);
         expect(result.finalState.sys.phase).toBe('playCards');
         expect(result.finalState.core.players['0'].actionLimit).toBe(2);
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 
     it('P1 控制大法师，P0 回合开始时不触发', () => {
@@ -136,7 +136,7 @@ describe('大法师 E2E: 回合开始额外行动', () => {
         expect(result.finalState.sys.phase).toBe('playCards');
         expect(result.finalState.core.currentPlayerIndex).toBe(0);
         expect(result.finalState.core.players['0'].actionLimit).toBe(1);
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 
     it('P0 控制大法师，P1 回合开始时不触发', () => {
@@ -165,7 +165,7 @@ describe('大法师 E2E: 回合开始额外行动', () => {
         expect(result.finalState.sys.phase).toBe('playCards');
         expect(result.finalState.core.currentPlayerIndex).toBe(1);
         expect(result.finalState.core.players['1'].actionLimit).toBe(1);
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 });
 
@@ -197,7 +197,7 @@ describe('大法师 E2E: 打出当回合额外行动', () => {
         expect(result.finalState.core.players['0'].actionLimit).toBe(2);
         expect(result.finalState.sys.phase).toBe('playCards');
 
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 
     it('在名人堂打出大法师时，应自动结算无冲突 trigger 而不是弹排序交互', () => {
@@ -224,7 +224,7 @@ describe('大法师 E2E: 打出当回合额外行动', () => {
         });
 
         expect(result.steps[0]?.success).toBe(true);
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
         expect(result.finalState.core.players['0'].actionLimit).toBe(2);
         const archmage = result.finalState.core.bases[0].minions.find(minion => minion.defId === 'wizard_archmage');
         expect(archmage?.tempPowerModifier ?? 0).toBe(2);
@@ -259,7 +259,7 @@ describe('大法师 E2E: 打出当回合额外行动', () => {
         const archmage = result.finalState.core.bases[0].minions.find(minion => minion.defId === 'wizard_archmage');
 
         expect(result.steps[0]?.success).toBe(true);
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
         expect(result.finalState.core.triggerQueue).toBeUndefined();
         expect(result.finalState.core.players['0'].actionLimit).toBe(2);
         expect(archmage?.powerCounters ?? 0).toBe(1);
@@ -294,7 +294,7 @@ describe('隐蔽迷雾 E2E: 进入 playCards 的额外随从', () => {
         expect(result.finalState.core.currentPlayerIndex).toBe(0);
         expect(result.finalState.sys.phase).toBe('playCards');
         expect(result.finalState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 });
 
@@ -323,6 +323,6 @@ describe('神秘花园 E2E: 回合开始额外随从', () => {
         expect(result.finalState.core.currentPlayerIndex).toBe(0);
         expect(result.finalState.sys.phase).toBe('playCards');
         expect(result.finalState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 });

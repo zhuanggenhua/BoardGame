@@ -1,7 +1,19 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SmashUpCore, SmashUpEvent, TriggerInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
-import { makeMatchState, makeMinion, makeState, makeBase } from './helpers';
+import {
+  expectNoPrompt,
+  getPromptHandlerData,
+  getPromptOption,
+  getPromptOptions,
+  getSimpleChoicePrompt,
+  withPromptHandlerData,
+  makeMatchState,
+  makeMinion,
+  makeState,
+  makeBase,
+  withoutCurrentPrompt,
+} from './helpers';
 import { clearOngoingEffectRegistry, registerTrigger, collectTriggers } from '../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { getInteractionHandler, clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
@@ -130,9 +142,11 @@ describe('Smash Up reaction resource footprint inference', () => {
         targetType: 'minion',
       },
     );
-    (interaction.data as any).continuationContext = { titanUid: 'titan-1', cardUid: 'source-card-1' };
+    const interactionWithContext = withPromptHandlerData(interaction, {
+      continuationContext: { titanUid: 'titan-1', cardUid: 'source-card-1' },
+    });
 
-    const footprint = deriveFootprintFromInteraction(interaction);
+    const footprint = deriveFootprintFromInteraction(interactionWithContext);
     expect(footprint).toBeDefined();
     const writes = new Set(footprint!.writes.map(reactionResourceKey));
     expect(writes).toContain('minion:target-1');
@@ -219,7 +233,7 @@ describe('Smash Up reaction resource footprint inference', () => {
       { shuffle: (a: any[]) => a } as any,
       1,
     );
-    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).toBe('smashup_reaction_choose');
+    expect(getSimpleChoicePrompt(rq!.state, 'smashup_reaction_choose')).toBeDefined();
     expect(getReactionFootprintFallbackAudit()).toContainEqual(expect.objectContaining({
       sourceDefId: 'test_fallback_reader',
       reason: 'test reads hand through non-event query',
@@ -272,14 +286,12 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
     const ms1 = rq!.state;
-    const current = ms1.sys.interaction.current as any;
-    expect(current?.data?.sourceId).toBe('smashup_reaction_choose');
+    const current = getSimpleChoicePrompt(ms1, 'smashup_reaction_choose');
 
     // Choose trigger B first
-    const optB = current.data.options.find((o: any) => (o.label as string).includes('test_source_b'));
-    expect(optB).toBeDefined();
+    const optB = getPromptOption(current, (o: any) => (o.label as string).includes('test_source_b'), 'test_source_b trigger option');
     const handler = getInteractionHandler('smashup_reaction_choose')!;
-    const r2 = handler(ms1 as any, '0', optB.value, current.data, { shuffle: (a: any[]) => a } as any, 2);
+    const r2 = handler(ms1 as any, '0', optB.value, getPromptHandlerData(current), { shuffle: (a: any[]) => a } as any, 2);
     expect(r2).toBeDefined();
     const evts = r2!.events as SmashUpEvent[];
     expect(evts[0].type).toBe(SU_EVENTS.TRIGGER_CONSUMED);
@@ -324,7 +336,7 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     const ms0 = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
-    expect(rq!.state.sys.interaction.current).toBeUndefined();
+    expectNoPrompt(rq!.state);
     expect(rq!.state.core.triggerQueue ?? []).toHaveLength(0);
     expect(rq!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
     expect(rq!.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(true);
@@ -362,7 +374,7 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     const ms0 = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
-    expect(rq!.state.sys.interaction.current).toBeUndefined();
+    expectNoPrompt(rq!.state);
     expect(rq!.state.core.triggerQueue ?? []).toHaveLength(0);
     expect(rq!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
     expect(rq!.events.filter(event => event.type === SU_EVENTS.MINION_METADATA_UPDATED)).toHaveLength(2);
@@ -423,9 +435,8 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     expect(rq).toBeDefined();
     expect(rq!.events.filter(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
 
-    const current = rq!.state.sys.interaction.current as any;
-    expect(current?.data?.sourceId).toBe('smashup_reaction_choose');
-    const optionLabels = current.data.options.map((option: any) => option.label as string);
+    const current = getSimpleChoicePrompt(rq!.state, 'smashup_reaction_choose');
+    const optionLabels = getPromptOptions(current).map((option: any) => option.label as string);
     expect(optionLabels.some((label: string) => label.includes('test_component_singleton_a'))).toBe(false);
     expect(optionLabels.some((label: string) => label.includes('test_component_singleton_b'))).toBe(false);
     expect(optionLabels.some((label: string) => label.includes('test_component_conflict_writer'))).toBe(true);
@@ -474,8 +485,7 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     const ms0 = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
-    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).toBe('test_real_prompt');
-    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).not.toBe('smashup_reaction_choose');
+    expect(getSimpleChoicePrompt(rq!.state, 'test_real_prompt')).toBeDefined();
   });
 
   it('存在读写冲突的 mandatory triggers 仍应保留排序交互', () => {
@@ -515,7 +525,7 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     const ms0 = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
-    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).toBe('smashup_reaction_choose');
+    expect(getSimpleChoicePrompt(rq!.state, 'smashup_reaction_choose')).toBeDefined();
   });
 
   it('witness: onMinionMoved triggers only if source is on destination base at trigger time', () => {
@@ -643,20 +653,10 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
 
-    const current = rq!.state.sys.interaction.current as any;
-    const optA = current.data.options.find((o: any) => (o.label as string).includes('test_after_source_a'));
-    expect(optA).toBeDefined();
+    const current = getSimpleChoicePrompt(rq!.state, 'smashup_reaction_choose');
+    const optA = getPromptOption(current, (o: any) => (o.label as string).includes('test_after_source_a'), 'test_after_source_a trigger option');
 
-    const stateAfterPromptResolved = {
-      ...rq!.state,
-      sys: {
-        ...rq!.state.sys,
-        interaction: {
-          ...rq!.state.sys.interaction,
-          current: undefined,
-        },
-      },
-    } as any;
+    const stateAfterPromptResolved = withoutCurrentPrompt(rq!.state);
     const r2 = resolveSmashUpReactionChoice(
       stateAfterPromptResolved,
       { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
@@ -665,7 +665,7 @@ describe('Reaction queue ordering (Wiki-style)', () => {
     );
     expect(r2.events.filter((event: any) => event.type === SU_EVENTS.TRIGGER_CONSUMED).length).toBeGreaterThanOrEqual(1);
     expect(r2.state.core.triggerQueue ?? []).toHaveLength(0);
-    expect(r2.state.sys.interaction.current).toBeUndefined();
+    expectNoPrompt(r2.state);
   });
 
   it('processMoveTriggers stamps queued onMinionMoved reactions with explicit frame ids', () => {

@@ -12,15 +12,20 @@
  * - 每个测试验证完整链路，从命令发出到最终状态变化
  */
 
-import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
-import { reduce, validate } from '../domain/reducer';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { reduce } from '../domain/reducer';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import type { SmashUpCore, SmashUpEvent, MinionOnBase, CardInstance, BaseInPlay } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { makeMatchState as makeMatchStateFromHelpers } from './helpers';
+import {
+    expectNoPrompt,
+    getPromptsBySourceId,
+    getSimpleChoicePrompt,
+    makeMatchState as makeMatchStateFromHelpers,
+} from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
 
@@ -87,10 +92,6 @@ function execPlayAction(state: SmashUpCore, playerId: string, cardUid: string) {
     return { events: result.events as SmashUpEvent[], matchState: result.finalState };
 }
 
-function applyEvents(state: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
-    return events.reduce((s, e) => reduce(s, e), state);
-}
-
 // ============================================================================
 // 测试套件
 // ============================================================================
@@ -131,9 +132,7 @@ describe('Prompt E2E: 确定性状态测试', () => {
             const { matchState } = execPlayAction(state, '0', 'action1');
 
             // 迁移后直接创建 Interaction
-            const current = (matchState.sys as any).interaction?.current;
-            expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('pirate_cannon_choose_first');
+            getSimpleChoicePrompt(matchState, 'pirate_cannon_choose_first');
         });
 
         it('只有一个力量≤2随从时创建 Prompt', () => {
@@ -161,9 +160,7 @@ describe('Prompt E2E: 确定性状态测试', () => {
             const { matchState } = execPlayAction(state, '0', 'action1');
 
             // 单目标时也创建 Interaction
-            const current = (matchState.sys as any).interaction?.current;
-            expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('pirate_cannon_choose_first');
+            getSimpleChoicePrompt(matchState, 'pirate_cannon_choose_first');
         });
 
         it('无力量≤2随从时无事件', () => {
@@ -193,8 +190,7 @@ describe('Prompt E2E: 确定性状态测试', () => {
             // 不应该有消灭事件或 Interaction
             const destroyEvents = events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
             expect(destroyEvents.length).toBe(0);
-            const current = (matchState.sys as any).interaction?.current;
-            expect(current).toBeUndefined();
+            expectNoPrompt(matchState);
         });
     });
 
@@ -226,9 +222,7 @@ describe('Prompt E2E: 确定性状态测试', () => {
 
             const { matchState } = execPlayAction(state, '0', 'action1');
 
-            const current = (matchState.sys as any).interaction?.current;
-            expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('pirate_powderkeg');
+            getSimpleChoicePrompt(matchState, 'pirate_powderkeg');
         });
 
         it('只有一个己方随从时创建 Prompt', () => {
@@ -259,9 +253,7 @@ describe('Prompt E2E: 确定性状态测试', () => {
             const { matchState } = execPlayAction(state, '0', 'action1');
 
             // 单个己方随从时也创建 Interaction
-            const current = (matchState.sys as any).interaction?.current;
-            expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('pirate_powderkeg');
+            getSimpleChoicePrompt(matchState, 'pirate_powderkeg');
         });
     });
 
@@ -297,9 +289,7 @@ describe('Prompt E2E: 确定性状态测试', () => {
             } as any, defaultRandom);
 
             // 迁移后直接创建 Interaction（不再生成 CHOICE_REQUESTED 事件）
-            const current = (result.finalState.sys as any).interaction?.current;
-            expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('zombie_grave_digger');
+            getSimpleChoicePrompt(result.finalState, 'zombie_grave_digger');
         });
 
         it('弃牌堆只有一张随从时创建 Prompt', () => {
@@ -329,9 +319,7 @@ describe('Prompt E2E: 确定性状态测试', () => {
             } as any, defaultRandom);
 
             // 单张随从时也创建 Interaction
-            const current = (result.finalState.sys as any).interaction?.current;
-            expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('zombie_grave_digger');
+            getSimpleChoicePrompt(result.finalState, 'zombie_grave_digger');
         });
 
         it('弃牌堆没有随从时无回收事件', () => {
@@ -363,8 +351,7 @@ describe('Prompt E2E: 确定性状态测试', () => {
             const recoverEvents = (result.events as SmashUpEvent[]).filter(e => e.type === SU_EVENTS.CARD_RECOVERED_FROM_DISCARD);
             expect(recoverEvents.length).toBe(0);
             // 弃牌堆只有行动卡，不应创建交互
-            const interaction = (result.finalState.sys as any).interaction;
-            expect(interaction?.current).toBeUndefined();
+            expectNoPrompt(result.finalState);
         });
     });
 
@@ -392,13 +379,10 @@ describe('Prompt E2E: 确定性状态测试', () => {
                 ],
             });
 
-            const { events, matchState } = execPlayAction(state, '0', 'action1');
+            const { matchState } = execPlayAction(state, '0', 'action1');
 
             // 迁移后通过 InteractionSystem 创建交互
-            const interaction = (matchState.sys as any).interaction;
-            const interactions = [interaction.current, ...(interaction.queue ?? [])].filter(Boolean);
-            expect(interactions.length).toBe(1);
-            expect(interactions[0].data.sourceId).toBe('alien_crop_circles');
+            expect(getPromptsBySourceId(matchState, 'alien_crop_circles')).toHaveLength(1);
         });
 
         it('只有一个有随从的基地时创建 Prompt', () => {
@@ -424,12 +408,10 @@ describe('Prompt E2E: 确定性状态测试', () => {
                 ],
             });
 
-            const { events, matchState } = execPlayAction(state, '0', 'action1');
+            const { matchState } = execPlayAction(state, '0', 'action1');
 
             // 单个有随从的基地时创建 Interaction
-            const interaction = (matchState.sys as any).interaction;
-            const interactions = [interaction.current, ...(interaction.queue ?? [])].filter(Boolean);
-            expect(interactions.length).toBe(1);
+            expect(getPromptsBySourceId(matchState, 'alien_crop_circles')).toHaveLength(1);
         });
     });
 });

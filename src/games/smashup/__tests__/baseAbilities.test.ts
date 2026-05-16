@@ -7,7 +7,7 @@
  */
 
 import { describe, expect, it, beforeEach, vi } from 'vitest';
-import { asSimpleChoice, createSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import {
     registerBaseAbility,
     triggerBaseAbility,
@@ -26,6 +26,7 @@ import {
     executeAbilityProgram,
     resolveAbilityRuntimePrompt,
 } from '../domain/abilityRuntime';
+import { getFirstPrompt, getPromptHandlerData, getPromptSourceId } from './helpers';
 
 beforeEach(() => {
     clearBaseAbilityRegistry();
@@ -186,7 +187,7 @@ describe('能力运行时骨架', () => {
             SmashUpEvent
         >({
             sourceId: 'runtime_test_prompt',
-            buildInteraction: (context) => createSimpleChoice(
+            buildInteraction: (_context) => createSimpleChoice(
                 'runtime-test-prompt',
                 '0',
                 '测试 prompt',
@@ -238,17 +239,18 @@ describe('能力运行时骨架', () => {
             { matchState: initialState },
         );
 
-        const queuedChoice = asSimpleChoice(initial.matchState?.sys.interaction?.current);
-        expect(initial.suspended).toBe(true);
-        expect(queuedChoice?.sourceId).toBe('runtime_test_prompt');
-        expect((initial.matchState?.sys.interaction?.current.data as {
+        const queuedChoice = getFirstPrompt(initial.matchState!);
+        const queuedHandlerData = getPromptHandlerData(queuedChoice) as {
             runtimePrompt?: {
                 continuation?: {
                     contextHasMatchState?: boolean;
                     nextProgramId?: string;
                 };
             };
-        } | undefined)?.runtimePrompt?.continuation).toMatchObject({
+        };
+        expect(initial.suspended).toBe(true);
+        expect(getPromptSourceId(queuedChoice)).toBe('runtime_test_prompt');
+        expect(queuedHandlerData.runtimePrompt?.continuation).toMatchObject({
             contextHasMatchState: true,
             nextProgramId: expect.any(String),
         });
@@ -257,7 +259,7 @@ describe('能力运行时骨架', () => {
             initial.matchState!,
             '0',
             { chosen: 'yes' },
-            initial.matchState!.sys.interaction.current.data as Record<string, unknown>,
+            getPromptHandlerData(getFirstPrompt(initial.matchState!)) as Record<string, unknown>,
             {
                 random: () => 0.5,
                 d: () => 1,
@@ -286,7 +288,7 @@ describe('能力运行时骨架', () => {
                 SmashUpEvent
             >({
                 sourceId: 'runtime_reload_prompt',
-                buildInteraction: (context) => createSimpleChoice(
+                buildInteraction: (_context) => createSimpleChoice(
                     'runtime-reload-prompt',
                     '0',
                     '测试 reload prompt',
@@ -343,7 +345,7 @@ describe('能力运行时骨架', () => {
 
         const persistedState = structuredClone(initial.matchState!);
         const persistedInteractionData = structuredClone(
-            persistedState.sys.interaction.current.data as Record<string, unknown>,
+            getPromptHandlerData(getFirstPrompt(persistedState)) as Record<string, unknown>,
         );
 
         vi.resetModules();

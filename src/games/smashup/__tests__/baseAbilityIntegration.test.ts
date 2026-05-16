@@ -26,7 +26,14 @@ import {
 } from '../domain/baseAbilities';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { getEffectivePower } from '../domain/ongoingModifiers';
-import { triggerBaseAbilityWithMS, getInteractionsFromResult, makeMatchState } from './helpers';
+import {
+    getPromptHandlerData,
+    getPromptOption,
+    getSimpleChoicePrompt,
+    triggerBaseAbilityWithMS,
+    getInteractionsFromResult,
+    makeMatchState,
+} from './helpers';
 import { reduce } from '../domain/reduce';
 import type { RandomFn } from '../../../engine/types';
 
@@ -974,23 +981,23 @@ describe('POD 基地专项行为', () => {
             now: 3004,
         });
         const interaction = getInteractionsFromResult(result)[0];
-        const selected = interaction.data.options.find((o: any) => o.value?.minionUid === 'm1');
+        const selected = getPromptOption(interaction, (o: any) => o.value?.minionUid === 'm1', 'mushroom kingdom minion option');
         const step1 = getInteractionHandler('base_mushroom_kingdom_pod')!(
             result.matchState!,
             '0',
             selected.value,
-            interaction.data,
+            getPromptHandlerData(interaction),
             dummyRandom,
             3005,
         );
-        const chooseBaseInteraction = (step1.state.sys as any).interaction?.queue?.[0];
-        expect(chooseBaseInteraction?.data?.sourceId).toBe('base_mushroom_kingdom_pod_choose_base');
+        const chooseBaseInteraction = getSimpleChoicePrompt(step1.state, 'base_mushroom_kingdom_pod_choose_base');
+        const destinationOption = getPromptOption(chooseBaseInteraction, (o: any) => o.value?.baseIndex === 1, 'mushroom kingdom destination base option');
 
         const step2 = getInteractionHandler('base_mushroom_kingdom_pod_choose_base')!(
             step1.state,
             '0',
-            { baseIndex: 1 },
-            chooseBaseInteraction.data,
+            destinationOption.value,
+            getPromptHandlerData(chooseBaseInteraction),
             dummyRandom,
             3006,
         );

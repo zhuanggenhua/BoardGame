@@ -10,10 +10,21 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initAllAbilities } from '../abilities';
 import { runCommand } from './testRunner';
-import { makeState, makePlayer, makeCard, makeBase, makeMinion, makeMatchState } from './helpers';
+import {
+    getPromptOption,
+    getPromptOptions,
+    getPromptTitle,
+    getSimpleChoicePrompt,
+    makeState,
+    makePlayer,
+    makeCard,
+    makeBase,
+    makeMinion,
+    makeMatchState,
+    respondToPrompt,
+} from './helpers';
 import { SU_COMMANDS } from '../domain/types';
 import type { RandomFn } from '../../../engine/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
     initAllAbilities();
@@ -57,24 +68,14 @@ describe('侧翼开炮可以选择自己', () => {
         } as any, defaultRandom);
 
         // 验证交互存在
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect(interaction?.data.sourceId).toBe('pirate_broadside_choose_base');
-        expect(interaction?.data.title).toContain('选择一个你有随从的基地');
+        const interaction = getSimpleChoicePrompt(result.finalState, 'pirate_broadside_choose_base');
+        expect(getPromptTitle(interaction)).toContain('选择一个你有随从的基地');
 
-        const baseSelection = runCommand(result.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: 'base-0' },
-            timestamp: 1001,
-        } as any, defaultRandom);
-        const playerInteraction = baseSelection.finalState.sys.interaction?.current;
-        expect(playerInteraction).toBeDefined();
-        expect(playerInteraction?.data.sourceId).toBe('pirate_broadside_choose_player');
+        const baseSelection = respondToPrompt(result.finalState, 'base-0', '0', defaultRandom);
+        const playerInteraction = getSimpleChoicePrompt(baseSelection.finalState, 'pirate_broadside_choose_player');
 
         // 验证选项包含所有玩家（包括自己）
-        const options = (playerInteraction?.data as any)?.options;
-        expect(options).toBeDefined();
+        const options = getPromptOptions(playerInteraction);
         expect(options.length).toBeGreaterThanOrEqual(2); // 至少2个选项（自己+对手）
 
         // 验证包含自己（P0）
@@ -118,30 +119,20 @@ describe('侧翼开炮可以选择自己', () => {
         } as any, defaultRandom);
 
         // 验证交互存在
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
+        getSimpleChoicePrompt(result.finalState, 'pirate_broadside_choose_base');
 
-        const baseSelection = runCommand(result.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: 'base-0' },
-            timestamp: 1001,
-        } as any, defaultRandom);
-        const playerInteraction = baseSelection.finalState.sys.interaction?.current;
-        expect(playerInteraction?.data.sourceId).toBe('pirate_broadside_choose_player');
+        const baseSelection = respondToPrompt(result.finalState, 'base-0', '0', defaultRandom);
+        const playerInteraction = getSimpleChoicePrompt(baseSelection.finalState, 'pirate_broadside_choose_player');
 
         // 验证选项中包含自己
-        const options = (playerInteraction?.data as any)?.options;
-        const selfOption = options.find((opt: any) => opt.value?.targetPlayerId === '0');
-        expect(selfOption).toBeDefined();
+        const selfOption = getPromptOption(
+            playerInteraction,
+            (option: any) => option.value?.targetPlayerId === '0',
+            'Broadside self target option',
+        );
         expect(selfOption.label).toContain('2个弱随从'); // m2 和 m3
 
-        const resolveSelfTarget = runCommand(baseSelection.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: selfOption.id },
-            timestamp: 1002,
-        } as any, defaultRandom);
+        const resolveSelfTarget = respondToPrompt(baseSelection.finalState, selfOption.id, '0', defaultRandom);
 
         const remainingMinions = resolveSelfTarget.finalState.core.bases[0].minions;
         expect(remainingMinions.find(m => m.uid === 'm1')).toBeDefined();
@@ -180,30 +171,20 @@ describe('侧翼开炮可以选择自己', () => {
         } as any, defaultRandom);
 
         // 验证交互存在
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
+        getSimpleChoicePrompt(result.finalState, 'pirate_broadside_choose_base');
 
-        const baseSelection = runCommand(result.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: 'base-0' },
-            timestamp: 1001,
-        } as any, defaultRandom);
-        const playerInteraction = baseSelection.finalState.sys.interaction?.current;
-        expect(playerInteraction?.data.sourceId).toBe('pirate_broadside_choose_player');
+        const baseSelection = respondToPrompt(result.finalState, 'base-0', '0', defaultRandom);
+        const playerInteraction = getSimpleChoicePrompt(baseSelection.finalState, 'pirate_broadside_choose_player');
 
         // 验证选项中包含对手
-        const options = (playerInteraction?.data as any)?.options;
-        const opponentOption = options.find((opt: any) => opt.value?.targetPlayerId === '1');
-        expect(opponentOption).toBeDefined();
+        const opponentOption = getPromptOption(
+            playerInteraction,
+            (option: any) => option.value?.targetPlayerId === '1',
+            'Broadside opponent target option',
+        );
         expect(opponentOption.label).toContain('2个弱随从'); // m2 和 m3
 
-        const resolveOpponentTarget = runCommand(baseSelection.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: opponentOption.id },
-            timestamp: 1002,
-        } as any, defaultRandom);
+        const resolveOpponentTarget = respondToPrompt(baseSelection.finalState, opponentOption.id, '0', defaultRandom);
 
         const remainingMinions = resolveOpponentTarget.finalState.core.bases[0].minions;
         expect(remainingMinions.find(m => m.uid === 'm1')).toBeDefined();
@@ -244,12 +225,10 @@ describe('侧翼开炮可以选择自己', () => {
         } as any, defaultRandom);
 
         // 验证交互存在
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect(interaction?.data.sourceId).toBe('pirate_broadside_choose_base');
+        const interaction = getSimpleChoicePrompt(result.finalState, 'pirate_broadside_choose_base');
 
         // 验证选项中只包含基地1
-        const options = (interaction?.data as any)?.options;
+        const options = getPromptOptions(interaction);
         const base1Options = options.filter((opt: any) => opt.value?.baseIndex === 0);
         const base2Options = options.filter((opt: any) => opt.value?.baseIndex === 1);
         
@@ -284,20 +263,15 @@ describe('侧翼开炮可以选择自己', () => {
             timestamp: 1000,
         } as any, defaultRandom);
 
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect(interaction?.data.sourceId).toBe('pirate_saucy_wench');
+        const interaction = getSimpleChoicePrompt(result.finalState, 'pirate_saucy_wench');
 
-        const options = (interaction?.data as any)?.options ?? [];
-        const targetOption = options.find((opt: any) => opt.value?.minionUid === 'm2');
-        expect(targetOption).toBeDefined();
+        const targetOption = getPromptOption(
+            interaction,
+            (option: any) => option.value?.minionUid === 'm2',
+            'Saucy Wench target option for m2',
+        );
 
-        const resolveTarget = runCommand(result.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: targetOption.id },
-            timestamp: 1001,
-        } as any, defaultRandom);
+        const resolveTarget = respondToPrompt(result.finalState, targetOption.id, '0', defaultRandom);
 
         const remainingMinions = resolveTarget.finalState.core.bases[0].minions;
         expect(remainingMinions.find(m => m.uid === 'm2')).toBeUndefined();
@@ -330,18 +304,14 @@ describe('侧翼开炮可以选择自己', () => {
             timestamp: 2000,
         } as any, defaultRandom);
 
-        const interaction = played.finalState.sys.interaction?.current;
-        expect(interaction?.data.sourceId).toBe('pirate_saucy_wench');
-        const options = (interaction?.data as any)?.options ?? [];
-        const apprenticeOption = options.find((opt: any) => opt.value?.minionUid === 'enemy-apprentice');
-        expect(apprenticeOption).toBeDefined();
+        const interaction = getSimpleChoicePrompt(played.finalState, 'pirate_saucy_wench');
+        const apprenticeOption = getPromptOption(
+            interaction,
+            (option: any) => option.value?.minionUid === 'enemy-apprentice',
+            'Saucy Wench target option for enemy apprentice',
+        );
 
-        const resolved = runCommand(played.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: apprenticeOption.id },
-            timestamp: 2001,
-        } as any, defaultRandom);
+        const resolved = respondToPrompt(played.finalState, apprenticeOption.id, '0', defaultRandom);
 
         const remainingMinions = resolved.finalState.core.bases[0].minions;
         expect(remainingMinions.find((m) => m.uid === 'enemy-apprentice')).toBeUndefined();

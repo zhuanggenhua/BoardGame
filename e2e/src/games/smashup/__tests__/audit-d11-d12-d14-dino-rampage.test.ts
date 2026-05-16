@@ -48,6 +48,7 @@ import type { SmashUpCore } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { getEffectiveBreakpoint } from '../domain/ongoingModifiers';
 import { createSmashUpEventSystem } from '../domain/systems';
+import { getFirstPrompt, getPromptOption, getPromptSourceId } from './helpers';
 
 
 beforeAll(() => {
@@ -139,17 +140,15 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
         runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a1', targetBaseIndex: 0 });
 
         let state = runner.getState();
-        let interaction = state.sys.interaction.current;
+        const interaction = getFirstPrompt(state);
         expect(interaction).toBeDefined();
         expect(interaction?.kind).toBe('simple-choice');
-        expect((interaction?.data as any)?.sourceId).toBe('dino_rampage_choose_minion');
+        expect(getPromptSourceId(interaction)).toBe('dino_rampage_choose_minion');
         expect(state.core.tempBreakpointModifiers ?? {}).toEqual({});
 
-        const data = interaction!.data as any;
-        const option = data.options.find((opt: any) => opt.value.minionUid === 'm2');
-        expect(option).toBeDefined();
+        const option = getPromptOption(interaction, (opt: any) => opt.value.minionUid === 'm2', 'm2 minion option');
 
-        runner.dispatch('SYS_INTERACTION_RESPOND', { playerId: '0', optionId: option.id });
+        runner.resolveInteraction('0', { optionId: option.id });
 
         state = runner.getState();
         expect(state.core.tempBreakpointModifiers?.[0]).toBe(-2);
@@ -228,34 +227,30 @@ describe('Audit D11+D12+D14: dino_rampage（狂暴）', () => {
         
         // 获取当前交互并找到对应的选项ID
         let state = runner.getState();
-        let interaction = state.sys.interaction.current;
+        let interaction = getFirstPrompt(state);
         expect(interaction).toBeDefined();
         expect(interaction?.kind).toBe('simple-choice');
         
         // 找到 baseIndex=0 的选项
-        const data1 = interaction!.data as any;
-        const option1 = data1.options.find((opt: any) => opt.value.baseIndex === 0);
-        expect(option1).toBeDefined();
+        const option1 = getPromptOption(interaction, (opt: any) => opt.value.baseIndex === 0, 'base 0 option');
         
         // 使用正确的 optionId 解决交互
-        runner.dispatch('SYS_INTERACTION_RESPOND', { playerId: '0', optionId: option1.id });
+        runner.resolveInteraction('0', { optionId: option1.id });
 
         // 打出第二张狂暴，选择基地1
         runner.executeCommand(SU_COMMANDS.PLAY_ACTION, { playerId: '0', cardUid: 'a2', targetBaseIndex: 0 });
         
         // 获取当前交互并找到对应的选项ID
         state = runner.getState();
-        interaction = state.sys.interaction.current;
+        interaction = getFirstPrompt(state);
         expect(interaction).toBeDefined();
         expect(interaction?.kind).toBe('simple-choice');
         
         // 找到 baseIndex=1 的选项
-        const data2 = interaction!.data as any;
-        const option2 = data2.options.find((opt: any) => opt.value.baseIndex === 1);
-        expect(option2).toBeDefined();
+        const option2 = getPromptOption(interaction, (opt: any) => opt.value.baseIndex === 1, 'base 1 option');
         
         // 使用正确的 optionId 解决交互
-        runner.dispatch('SYS_INTERACTION_RESPOND', { playerId: '0', optionId: option2.id });
+        runner.resolveInteraction('0', { optionId: option2.id });
 
         state = runner.getState();
         // 验证两个基地的修正独立存储

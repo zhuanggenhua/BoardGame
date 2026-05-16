@@ -6,10 +6,18 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { makeState, makePlayer, makeCard, makeBase, makeMatchState } from './helpers';
+import {
+    getPromptOptions,
+    getSimpleChoicePrompt,
+    makeState,
+    makePlayer,
+    makeCard,
+    makeBase,
+    makeMatchState,
+    respondToPrompt,
+} from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import { SU_COMMANDS } from '../domain/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { registerWizardAbilities } from '../abilities/wizards';
 import { registerZombieAbilities } from '../abilities/zombies';
 import { clearRegistry } from '../domain/abilityRegistry';
@@ -50,35 +58,23 @@ describe('学徒打出 ongoing 行动卡', () => {
         expect(r1.success).toBe(true);
 
         // Step 2: 学徒 onPlay 触发，展示牌库顶（zombie_overrun）
-        const interaction1 = r1.finalState.sys.interaction.current;
-        expect(interaction1).toBeDefined();
-        expect((interaction1?.data as any)?.sourceId).toBe('wizard_neophyte');
+        expect(getSimpleChoicePrompt(r1.finalState, 'wizard_neophyte')).toBeDefined();
 
         // Step 3: 选择 play_extra（作为额外行动打出）
-        const r2 = runCommand(r1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: 'play_extra' },
-        }, defaultTestRandom);
+        const r2 = respondToPrompt(r1.finalState, 'play_extra', '0', defaultTestRandom);
 
         expect(r2.success).toBe(true);
 
         // Step 4: 应该弹出选择基地的交互
-        const interaction2 = r2.finalState.sys.interaction.current;
-        expect(interaction2).toBeDefined();
-        expect((interaction2?.data as any)?.sourceId).toBe('wizard_neophyte_choose_base');
-        expect((interaction2?.data as any)?.title).toContain('泛滥横行');
+        const interaction2 = getSimpleChoicePrompt(r2.finalState, 'wizard_neophyte_choose_base');
+        expect((interaction2 as any)?.title ?? (interaction2 as any)?.data?.title).toContain('泛滥横行');
 
         // 验证选项包含所有基地
-        const options = (interaction2?.data as any)?.options;
+        const options = getPromptOptions(interaction2);
         expect(options).toHaveLength(2);
 
         // Step 5: 选择基地 0
-        const r3 = runCommand(r2.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: options[0].id },
-        }, defaultTestRandom);
+        const r3 = respondToPrompt(r2.finalState, options[0].id, '0', defaultTestRandom);
 
         expect(r3.success).toBe(true);
 
@@ -122,11 +118,8 @@ describe('学徒打出 ongoing 行动卡', () => {
         expect(r1.success).toBe(true);
 
         // Step 2: 选择 play_extra
-        const r2 = runCommand(r1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: 'play_extra' },
-        }, defaultTestRandom);
+        expect(getSimpleChoicePrompt(r1.finalState, 'wizard_neophyte')).toBeDefined();
+        const r2 = respondToPrompt(r1.finalState, 'play_extra', '0', defaultTestRandom);
 
         expect(r2.success).toBe(true);
 

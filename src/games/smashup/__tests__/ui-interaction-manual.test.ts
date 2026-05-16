@@ -18,7 +18,7 @@ import {
 } from '../../../engine';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { createSmashUpEventSystem } from '../domain/systems';
-import { asSimpleChoice, createSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { SmashUpCore, CardInstance, MinionOnBase, BaseInPlay } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
@@ -41,6 +41,7 @@ import {
 import { buildMatchPlayerViewModel } from '../../../components/game/framework/matchPlayerViewModel';
 import { buildPlayerDisplayNameMap, resolveOrderedPlayerIds } from '../../../components/game/framework/playerDisplay';
 import type { TitanState } from '../domain/types';
+import { getSimpleChoicePrompt } from './helpers';
 
 vi.mock('../../../components/common/media/CardPreview', async (importOriginal) => {
     const actual = await importOriginal<typeof import('../../../components/common/media/CardPreview')>();
@@ -448,7 +449,7 @@ describe('SmashUp UI 交互验证', () => {
         });
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice = asSimpleChoice(r1.finalState.sys.interaction.current);
+        const choice = getSimpleChoicePrompt(r1.finalState);
         expect(choice).toBeDefined();
         expect(choice?.sourceId).toBe('zombie_mall_crawl');
 
@@ -502,7 +503,7 @@ describe('SmashUp UI 交互验证', () => {
         });
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice = asSimpleChoice(r1.finalState.sys.interaction.current);
+        const choice = getSimpleChoicePrompt(r1.finalState);
         expect(choice).toBeDefined();
 
         console.log('\n=== zombie_lend_a_hand 多选选项结构 ===');
@@ -546,7 +547,7 @@ describe('SmashUp UI 交互验证', () => {
         });
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current);
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1).toBeDefined();
 
         console.log('\n=== pirate_dinghy 第一步选项结构 ===');

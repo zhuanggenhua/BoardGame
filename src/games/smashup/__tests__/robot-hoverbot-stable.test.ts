@@ -18,8 +18,14 @@ import { SU_COMMANDS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import type { CardInstance, SmashUpCore } from '../domain/types';
 import type { MatchState, SystemState } from '../../../engine/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import { resetRobotHoverbotCounter } from '../abilities/robots';
+import {
+    expectNoPrompt,
+    getFirstPrompt,
+    getPromptOption,
+    getPromptOptions,
+    respondToPrompt,
+} from './helpers';
 
 describe('盘旋机器人交互稳定性', () => {
     beforeAll(() => {
@@ -103,20 +109,20 @@ describe('盘旋机器人交互稳定性', () => {
         });
 
         // 验证：应该只有一个交互（robot_hoverbot_0），不应该有重复的交互
-        expect(result.finalState.sys.interaction?.current).toBeDefined();
-        const interaction = result.finalState.sys.interaction!.current!;
+        const interaction = getFirstPrompt(result.finalState);
+        expect(interaction).toBeDefined();
         
         // 交互 ID 应该是 robot_hoverbot_0（不是 robot_hoverbot_<timestamp>）
         expect(interaction.id).toBe('robot_hoverbot_0');
         
         // 交互应该有两个选项：打出 + 跳过
-        const data = interaction.data as any;
-        expect(data.options).toHaveLength(2);
-        expect(data.options[0].id).toBe('play');
-        expect(data.options[1].id).toBe('skip');
+        const options = getPromptOptions(interaction);
+        expect(options).toHaveLength(2);
+        expect(options[0].id).toBe('play');
+        expect(options[1].id).toBe('skip');
         
         // 验证选项包含正确的卡牌信息
-        const playOption = data.options[0];
+        const playOption = getPromptOption(interaction, (option: any) => option.id === 'play', 'Hoverbot play option');
         expect(playOption.value).toMatchObject({
             cardUid: 'pirate1',
             defId: 'pirate_first_mate',
@@ -137,21 +143,13 @@ describe('盘旋机器人交互稳定性', () => {
             timestamp: Date.now(),
         });
 
-        expect(result1.finalState.sys.interaction?.current).toBeDefined();
+        expect(getFirstPrompt(result1.finalState)).toBeDefined();
 
         // 选择"放回牌库顶"
-        const result2 = runCommand(result1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: 'robot_hoverbot_0',
-                optionId: 'skip',
-            },
-            timestamp: Date.now(),
-        });
+        const result2 = respondToPrompt(result1.finalState, 'skip', '0');
 
         // 验证：交互应该关闭
-        expect(result2.finalState.sys.interaction?.current).toBeUndefined();
+        expectNoPrompt(result2.finalState);
         
         // 验证：牌库顶的卡仍然在牌库中
         expect(result2.finalState.core.players['0'].deck).toHaveLength(1);
@@ -175,26 +173,17 @@ describe('盘旋机器人交互稳定性', () => {
             timestamp: Date.now(),
         });
 
-        expect(result1.finalState.sys.interaction?.current?.id).toBe('robot_hoverbot_0');
+        expect(getFirstPrompt(result1.finalState)?.id).toBe('robot_hoverbot_0');
 
         // 选择"打出"
-        const result2 = runCommand(result1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: {
-                interactionId: 'robot_hoverbot_0',
-                optionId: 'play',
-            },
-            timestamp: Date.now(),
-        });
+        const result2 = respondToPrompt(result1.finalState, 'play', '0');
 
         // 验证：应该创建基地选择交互（robot_hoverbot_base_0）
-        expect(result2.finalState.sys.interaction?.current).toBeDefined();
-        const baseInteraction = result2.finalState.sys.interaction!.current!;
+        const baseInteraction = getFirstPrompt(result2.finalState);
+        expect(baseInteraction).toBeDefined();
         expect(baseInteraction.id).toMatch(/^robot_hoverbot_base_/);
         
         // 验证：基地选择交互应该有 2 个基地选项
-        const data = baseInteraction.data as any;
-        expect(data.options).toHaveLength(2);
+        expect(getPromptOptions(baseInteraction)).toHaveLength(2);
     });
 });

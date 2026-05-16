@@ -1,5 +1,15 @@
 import { describe, it, expect, beforeAll } from 'vitest';
-import { makeMinion, makeState, makePlayer, makeMatchState, makeCard } from './helpers';
+import {
+    makeMinion,
+    makeState,
+    makePlayer,
+    makeMatchState,
+    makeCard,
+    expectNoPrompt,
+    getSimpleChoicePrompt,
+    getPromptOption,
+    respondToPrompt,
+} from './helpers';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { SU_EVENTS } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
@@ -198,7 +208,7 @@ describe('Killer Plants POD Card Logic Verification', () => {
         expect(playResult.success).toBe(true);
         expect(playResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
         expect(playResult.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
-        expect(playResult.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(playResult.finalState);
         expect(playResult.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('sprout-hand');
     });
 
@@ -250,7 +260,7 @@ describe('Killer Plants POD Card Logic Verification', () => {
         expect(drawEvents).toHaveLength(1);
         expect((drawEvents[0] as any).payload.cardUids).toEqual(['sprout-deck']);
         expect(talentResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
-        expect(talentResult.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(talentResult.finalState);
         const finalMinionUids = talentResult.finalState.core.bases[0].minions.map(minion => minion.uid);
         expect(finalMinionUids).toContain('venus-hand');
         expect(finalMinionUids).toContain('sprout-deck');
@@ -332,18 +342,11 @@ describe('Killer Plants POD Card Logic Verification', () => {
 
         expect(result.success).toBe(true);
         expect(result.finalState.sys.phase).toBe('startTurn');
-        const interaction = result.finalState.sys.interaction.current as any;
-        expect(interaction?.data?.sourceId).toBe('killer_plant_sprout_search');
+        const interaction = getSimpleChoicePrompt(result.finalState, 'killer_plant_sprout_search');
 
-        const waterLilyOption = interaction.data.options.find((option: any) => option.value?.cardUid === 'wl-1');
-        expect(waterLilyOption).toBeDefined();
+        const waterLilyOption = getPromptOption(interaction, option => option.value?.cardUid === 'wl-1', 'Water Lily option');
 
-        const respondResult = runCommand(result.finalState, {
-            type: 'SYS_INTERACTION_RESPOND' as any,
-            playerId: '0',
-            payload: { optionId: waterLilyOption.id },
-            timestamp: 1005,
-        });
+        const respondResult = respondToPrompt(result.finalState, waterLilyOption.id, '0');
 
         expect(respondResult.success).toBe(true);
         const drawEvents = respondResult.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
@@ -351,7 +354,7 @@ describe('Killer Plants POD Card Logic Verification', () => {
         expect(drawUids).toEqual(expect.arrayContaining(['wl-1', 'we-1']));
         expect(respondResult.finalState.core.players['0'].hand.map(card => card.uid)).toContain('we-1');
         expect(respondResult.finalState.sys.phase).toBe('playCards');
-        expect(respondResult.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(respondResult.finalState);
         expect((respondResult.finalState.sys as any)._waitForStartTurnInteractionReduce).toBeUndefined();
     });
 
@@ -388,37 +391,23 @@ describe('Killer Plants POD Card Logic Verification', () => {
 
         expect(startTurnResult.success).toBe(true);
         expect(startTurnResult.finalState.sys.phase).toBe('startTurn');
-        expect(startTurnResult.finalState.sys.interaction.current?.data?.sourceId).toBe('killer_plant_sprout_search');
+        const firstInteraction = getSimpleChoicePrompt(startTurnResult.finalState, 'killer_plant_sprout_search');
 
-        const firstInteraction = startTurnResult.finalState.sys.interaction.current as any;
-        const sproutOption = firstInteraction.data.options.find((option: any) => option.value?.cardUid === 'sprout-2');
-        expect(sproutOption).toBeDefined();
+        const sproutOption = getPromptOption(firstInteraction, option => option.value?.cardUid === 'sprout-2', 'Sprout option');
 
-        const firstRespondResult = runCommand(startTurnResult.finalState, {
-            type: 'SYS_INTERACTION_RESPOND' as any,
-            playerId: '0',
-            payload: { optionId: sproutOption.id },
-            timestamp: 1101,
-        });
+        const firstRespondResult = respondToPrompt(startTurnResult.finalState, sproutOption.id, '0');
 
         expect(firstRespondResult.success).toBe(true);
         expect(firstRespondResult.finalState.sys.phase).toBe('startTurn');
-        expect(firstRespondResult.finalState.sys.interaction.current?.data?.sourceId).toBe('killer_plant_sprout_search');
+        const secondInteraction = getSimpleChoicePrompt(firstRespondResult.finalState, 'killer_plant_sprout_search');
 
-        const secondInteraction = firstRespondResult.finalState.sys.interaction.current as any;
-        const waterLilyOption = secondInteraction.data.options.find((option: any) => option.value?.cardUid === 'wl-1');
-        expect(waterLilyOption).toBeDefined();
+        const waterLilyOption = getPromptOption(secondInteraction, option => option.value?.cardUid === 'wl-1', 'Water Lily option');
 
-        const secondRespondResult = runCommand(firstRespondResult.finalState, {
-            type: 'SYS_INTERACTION_RESPOND' as any,
-            playerId: '0',
-            payload: { optionId: waterLilyOption.id },
-            timestamp: 1102,
-        });
+        const secondRespondResult = respondToPrompt(firstRespondResult.finalState, waterLilyOption.id, '0');
 
         expect(secondRespondResult.success).toBe(true);
         expect(secondRespondResult.finalState.sys.phase).toBe('playCards');
-        expect(secondRespondResult.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(secondRespondResult.finalState);
         expect(secondRespondResult.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['wl-1']);
     });
 

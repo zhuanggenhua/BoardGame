@@ -5,7 +5,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing/GameTestRunner';
 import { createInitialSystemState } from '../../../engine/pipeline';
-import { asSimpleChoice, createSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
@@ -15,6 +15,7 @@ import { createScoringBaseRef, createScoringSession, setScoringSession } from '.
 import { smashUpSystemsForTest } from '../game';
 import type { MinionOnBase, SmashUpCommand, SmashUpCore, SmashUpEvent, TitanState } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
+import { getOptionalSimpleChoicePrompt, withCurrentPrompt } from './helpers';
 
 const PLAYER_IDS: PlayerId[] = ['0', '1'];
 
@@ -56,7 +57,7 @@ function getReactionSession(state: MatchState<SmashUpCore>) {
 }
 
 function getCurrentChoice(state: MatchState<SmashUpCore>) {
-    return asSimpleChoice(state.sys.interaction?.current);
+    return getOptionalSimpleChoicePrompt(state);
 }
 
 function findOptionId(
@@ -394,18 +395,18 @@ describe('After Scoring 响应窗口 - 真实链路', () => {
             ];
             core.players['1'].hand = [];
 
-            sys.interaction.current = createSimpleChoice(
+            const existingChoiceState = withCurrentPrompt({ sys, core }, createSimpleChoice(
                 'existing-base-choice',
                 '0',
                 '已有基地选择',
                 [{ id: 'skip', label: '跳过', value: { skip: true }, displayMode: 'button' }],
                 { sourceId: 'existing-base-choice', targetType: 'button' },
-            );
+            ));
             const baseRef = createScoringBaseRef(core, 0);
             if (!baseRef) {
                 throw new Error('无法构造 afterScoring rescoring 测试用 scoring base ref');
             }
-            const scoreState = setScoringSession({ sys, core }, {
+            const scoreState = setScoringSession(existingChoiceState, {
                 ...createScoringSession(core, [0]),
                 currentBaseRef: baseRef,
                 currentStep: 'awaiting-response-window',

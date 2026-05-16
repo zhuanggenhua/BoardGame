@@ -14,9 +14,16 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { makeState, makeBase, makeMinion, makeMatchState, makePlayer } from './helpers';
+import {
+    getPromptSourceId,
+    getPromptsBySourceId,
+    makeBase,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+} from './helpers';
 import { initAllAbilities } from '../abilities';
-import { triggerBaseAbility } from '../domain/baseAbilities';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { defaultTestRandom } from './testRunner';
 import { processDestroyMoveCycle } from '../domain/reducer';
@@ -70,19 +77,11 @@ describe('Bug: Igor 在 base_rlyeh 被消灭时触发两次', () => {
         );
         
         // 检查：应该只有一个 Igor 交互（onDestroy）
-        const allInteractions = [];
-        if (afterDestroyMove.matchState?.sys.interaction.current) {
-            allInteractions.push(afterDestroyMove.matchState.sys.interaction.current);
-        }
-        if (afterDestroyMove.matchState?.sys.interaction.queue) {
-            allInteractions.push(...afterDestroyMove.matchState.sys.interaction.queue);
-        }
+        const igorInteractions = getPromptsBySourceId(afterDestroyMove.matchState!, 'frankenstein_igor');
         
-        const igorInteractions = allInteractions.filter(i => (i.data as any)?.sourceId === 'frankenstein_igor');
-        
-        console.log('All interactions:', allInteractions.map(i => ({
+        console.log('Igor interactions:', igorInteractions.map(i => ({
             id: i.id,
-            sourceId: (i.data as any)?.sourceId,
+            sourceId: getPromptSourceId(i),
             playerId: i.playerId,
         })));
         

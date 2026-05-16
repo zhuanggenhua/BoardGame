@@ -22,7 +22,15 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { applyEvents, makeMatchState as makeMatchStateFromHelpers } from './helpers';
+import {
+    applyEvents,
+    getPromptOption,
+    getPromptOptions,
+    getPromptsBySourceId,
+    getSimpleChoicePrompt,
+    makeMatchState as makeMatchStateFromHelpers,
+    respondToPrompt,
+} from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
 
@@ -57,18 +65,16 @@ describe('bear cavalry interaction regressions', () => {
             payload: { cardUid: 'a1' },
         } as any, defaultRandom);
 
-        const prompt = playResult.finalState.sys.interaction?.current as any;
-        expect(prompt?.data?.sourceId).toBe('bear_cavalry_bear_hug');
-        expect(prompt?.data?.options?.some((option: any) => option?.id === '__cancel__')).toBe(false);
+        const prompt = getSimpleChoicePrompt(playResult.finalState, 'bear_cavalry_bear_hug');
+        expect(getPromptOptions(prompt).some((option: any) => option?.id === '__cancel__')).toBe(false);
 
-        const targetOption = prompt?.data?.options?.find((option: any) => option?.value?.minionUid === 'm1');
-        expect(targetOption).toBeDefined();
+        const targetOption = getPromptOption(
+            prompt,
+            (option: any) => option?.value?.minionUid === 'm1',
+            'bear hug target option for m1',
+        );
 
-        const respondResult = runCommand(playResult.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '1',
-            payload: { optionId: targetOption.id },
-        } as any, defaultRandom);
+        const respondResult = respondToPrompt(playResult.finalState, targetOption.id, '1', defaultRandom);
 
         const destroyEvent = respondResult.events.find(e => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvent).toBeDefined();
@@ -148,17 +154,6 @@ function execPlayAction(state: SmashUpCore, playerId: string, cardUid: string, t
     return result.events as SmashUpEvent[];
 }
 
-/** 从最近一次 execute 的 matchState 中获取 interactions */
-function getLastInteractions(): any[] {
-    if (!lastMatchState) return [];
-    const interaction = (lastMatchState.sys as any)?.interaction;
-    if (!interaction) return [];
-    const list: any[] = [];
-    if (interaction.current) list.push(interaction.current);
-    if (interaction.queue?.length) list.push(...interaction.queue);
-    return list;
-}
-
 function applyEvents(state: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
     return events.reduce((s, e) => reduce(s, e), state);
 }
@@ -184,11 +179,9 @@ describe('幽灵派系能力', () => {
                 bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
             });
 
-            const events = execPlayMinion(state, '0', 'm1', 0);
+            execPlayMinion(state, '0', 'm1', 0);
             // 多张可弃手牌时应创建 Interaction
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
-            expect(interactions[0].data.sourceId).toBe('ghost_ghost');
+            expect(getPromptsBySourceId(lastMatchState!, 'ghost_ghost')).toHaveLength(1);
         });
 
         it('单张手牌时创建 Prompt', () => {
@@ -205,10 +198,9 @@ describe('幽灵派系能力', () => {
                 bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
             });
 
-            const events = execPlayMinion(state, '0', 'm1', 0);
+            execPlayMinion(state, '0', 'm1', 0);
             // 单张手牌时创建 Interaction
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
+            expect(getPromptsBySourceId(lastMatchState!, 'ghost_ghost')).toHaveLength(1);
         });
 
         it('无其他手牌时不弃牌', () => {
@@ -244,8 +236,7 @@ describe('幽灵派系能力', () => {
             const events = execPlayMinion(state, '0', 'm1', 0);
             const newState = applyEvents(state, events);
             // Interaction 已创建（Prompt 待决），h1 仍在手牌
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
+            expect(getPromptsBySourceId(lastMatchState!, 'ghost_ghost')).toHaveLength(1);
             expect(newState.players['0'].hand.some(c => c.uid === 'h1')).toBe(true);
             // m1 应在基地上
             expect(newState.bases[0].minions.some(m => m.uid === 'm1')).toBe(true);
@@ -577,9 +568,7 @@ describe('黑熊骑兵派系能力', () => {
             const limitEvents = events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
             expect(limitEvents.length).toBe(1);
 
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
-            expect(interactions[0].data.sourceId).toBe('bear_cavalry_commission_choose_minion');
+            expect(getPromptsBySourceId(lastMatchState!, 'bear_cavalry_commission_choose_minion')).toHaveLength(1);
         });
 
         it('手上没有随从时仍应给予额外随从额度（不强制创建交互）', () => {
@@ -597,8 +586,7 @@ describe('黑熊骑兵派系能力', () => {
             const limitEvents = events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
             expect(limitEvents.length).toBe(1);
 
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(0);
+            expect(getPromptsBySourceId(lastMatchState!, 'bear_cavalry_commission_choose_minion')).toHaveLength(0);
         });
     });
 });
@@ -624,11 +612,9 @@ describe('蒸汽朋克派系能力', () => {
                 },
             });
 
-            const events = execPlayAction(state, '0', 'a1');
+            execPlayAction(state, '0', 'a1');
             // 多张行动卡时应创建 Interaction
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
-            expect(interactions[0].data.sourceId).toBe('steampunk_scrap_diving');
+            expect(getPromptsBySourceId(lastMatchState!, 'steampunk_scrap_diving')).toHaveLength(1);
         });
 
         it('单张行动卡时创建 Prompt', () => {
@@ -645,10 +631,9 @@ describe('蒸汽朋克派系能力', () => {
                 },
             });
 
-            const events = execPlayAction(state, '0', 'a1');
+            execPlayAction(state, '0', 'a1');
             // 单张行动卡时创建 Interaction
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
+            expect(getPromptsBySourceId(lastMatchState!, 'steampunk_scrap_diving')).toHaveLength(1);
         });
 
         it('弃牌堆无行动卡时不产生事件', () => {
@@ -683,8 +668,7 @@ describe('蒸汽朋克派系能力', () => {
             const events = execPlayAction(state, '0', 'a1');
             const newState = applyEvents(state, events);
             // Interaction 已创建（Prompt 待决），d1 仍在弃牌堆
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
+            expect(getPromptsBySourceId(lastMatchState!, 'steampunk_scrap_diving')).toHaveLength(1);
             expect(newState.players['0'].discard.some(c => c.uid === 'a1')).toBe(true);
             expect(newState.players['0'].discard.some(c => c.uid === 'd1')).toBe(true);
         });

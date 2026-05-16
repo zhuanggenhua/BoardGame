@@ -6,7 +6,7 @@
  * 状态快照显示：
  * - specialLimitUsed: {"ninja_hidden_ninja":[0]} - 能力被执行
  * - 手牌有 2 个随从：ninja_tiger_assassin 和 ninja_acolyte
- * - sys.interaction.current 为 undefined - 没有交互被创建
+ * - 当前 prompt 为空 - 没有交互被创建
  */
 
 import { describe, it, expect } from 'vitest';
@@ -17,6 +17,7 @@ import { smashUpSystemsForTest } from '../game';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { SU_COMMANDS } from '../domain/types';
+import { getSimpleChoicePrompt } from './helpers';
 
 const systems = smashUpSystemsForTest;
 
@@ -193,7 +194,8 @@ describe('便衣忍者交互 Bug 复现', () => {
 
         console.log('=== Final State ===');
         console.log('specialLimitUsed:', result.finalState.core.specialLimitUsed);
-        console.log('interaction.current:', result.finalState.sys.interaction?.current);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'ninja_hidden_ninja');
+        console.log('interaction prompt:', prompt);
         console.log('interaction.queue:', result.finalState.sys.interaction?.queue);
         console.log('hand:', result.finalState.core.players['0'].hand.map(c => ({ uid: c.uid, defId: c.defId, type: c.type })));
 
@@ -201,8 +203,6 @@ describe('便衣忍者交互 Bug 复现', () => {
         expect(result.finalState.core.specialLimitUsed).toEqual({ ninja_hidden_ninja: [0] });
 
         // 验证：应该创建了选择随从的交互
-        expect(result.finalState.sys.interaction?.current).toBeDefined();
-        expect(result.finalState.sys.interaction?.current?.playerId).toBe('0');
-        expect(result.finalState.sys.interaction?.current?.data?.sourceId).toBe('ninja_hidden_ninja');
+        expect(prompt.playerId).toBe('0');
     });
 });

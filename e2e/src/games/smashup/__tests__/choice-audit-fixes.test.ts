@@ -16,6 +16,7 @@ import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
+import { getFirstPrompt, getPromptHandlerData, getPromptSourceId, withoutCurrentPrompt } from './helpers';
 
 function makeMinion(uid: string, defId: string, controller: string, power: number, overrides: Partial<MinionOnBase> = {}): MinionOnBase {
     return {
@@ -69,19 +70,6 @@ function triggerElderThingOnPlay(state: SmashUpCore) {
     } as AbilityContext);
 }
 
-function clearCurrentInteraction(matchState: any) {
-    return {
-        ...matchState,
-        sys: {
-            ...matchState.sys,
-            interaction: {
-                current: undefined,
-                queue: [],
-            },
-        },
-    };
-}
-
 beforeAll(() => {
     clearRegistry();
     clearBaseAbilityRegistry();
@@ -106,18 +94,18 @@ describe('远古之物：消灭两个随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const initial = triggerElderThingOnPlay(state);
-        const prompt = (initial.matchState?.sys as any)?.interaction?.current;
+        const prompt = getFirstPrompt(initial.matchState!);
         const handler = getInteractionHandler('elder_thing_elder_thing_choice')!;
-        const result = handler(clearCurrentInteraction(initial.matchState!), '0', { choice: 'destroy' }, prompt?.data, dummyRandom, 1)!;
+        const result = handler(withoutCurrentPrompt(initial.matchState!), '0', { choice: 'destroy' }, getPromptHandlerData(prompt), dummyRandom, 1)!;
 
         // 不应直接产生消灭事件
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(0);
 
         // 应产生单选交互让玩家选择第一个要消灭的随从
-        const interaction = (result.state?.sys as any)?.interaction?.current;
+        const interaction = getFirstPrompt(result.state!);
         expect(interaction).toBeDefined();
-        expect(interaction?.data?.sourceId).toBe('elder_thing_elder_thing_destroy_first');
+        expect(getPromptSourceId(interaction)).toBe('elder_thing_elder_thing_destroy_first');
         expect(interaction?.playerId).toBe('0');
     });
 
@@ -129,9 +117,9 @@ describe('远古之物：消灭两个随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const initial = triggerElderThingOnPlay(state);
-        const prompt = (initial.matchState?.sys as any)?.interaction?.current;
+        const prompt = getFirstPrompt(initial.matchState!);
         const handler = getInteractionHandler('elder_thing_elder_thing_choice')!;
-        const result = handler(clearCurrentInteraction(initial.matchState!), '0', { choice: 'destroy' }, prompt?.data, dummyRandom, 1)!;
+        const result = handler(withoutCurrentPrompt(initial.matchState!), '0', { choice: 'destroy' }, getPromptHandlerData(prompt), dummyRandom, 1)!;
 
         // 恰好 2 个，直接消灭
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
@@ -145,9 +133,9 @@ describe('远古之物：消灭两个随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const initial = triggerElderThingOnPlay(state);
-        const prompt = (initial.matchState?.sys as any)?.interaction?.current;
+        const prompt = getFirstPrompt(initial.matchState!);
         const handler = getInteractionHandler('elder_thing_elder_thing_choice')!;
-        const result = handler(clearCurrentInteraction(initial.matchState!), '0', { choice: 'destroy' }, prompt?.data, dummyRandom, 1)!;
+        const result = handler(withoutCurrentPrompt(initial.matchState!), '0', { choice: 'destroy' }, getPromptHandlerData(prompt), dummyRandom, 1)!;
 
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(0);
@@ -164,26 +152,26 @@ describe('远古之物：消灭两个随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const initial = triggerElderThingOnPlay(state);
-        const choicePrompt = (initial.matchState?.sys as any)?.interaction?.current;
+        const choicePrompt = getFirstPrompt(initial.matchState!);
         const choiceHandler = getInteractionHandler('elder_thing_elder_thing_choice')!;
-        const afterChoice = choiceHandler(clearCurrentInteraction(initial.matchState!), '0', { choice: 'destroy' }, choicePrompt?.data, dummyRandom, 1)!;
-        const firstPrompt = (afterChoice.state?.sys as any)?.interaction?.current;
+        const afterChoice = choiceHandler(withoutCurrentPrompt(initial.matchState!), '0', { choice: 'destroy' }, getPromptHandlerData(choicePrompt), dummyRandom, 1)!;
+        const firstPrompt = getFirstPrompt(afterChoice.state!);
 
         // 第一步：选择第一个随从
         const handler1 = getInteractionHandler('elder_thing_elder_thing_destroy_first')!;
-        const result1 = handler1(clearCurrentInteraction(afterChoice.state!), '0', { minionUid: 'm-1', defId: 'test_a', baseIndex: 0 }, firstPrompt?.data, dummyRandom, 2)!;
+        const result1 = handler1(withoutCurrentPrompt(afterChoice.state!), '0', { minionUid: 'm-1', defId: 'test_a', baseIndex: 0 }, getPromptHandlerData(firstPrompt), dummyRandom, 2)!;
 
         const destroyEvents1 = result1.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents1).toHaveLength(0);
 
         // 应产生第二步交互
-        const interaction2 = (result1.state?.sys as any)?.interaction?.current;
+        const interaction2 = getFirstPrompt(result1.state!);
         expect(interaction2).toBeDefined();
-        expect(interaction2?.data?.sourceId).toBe('elder_thing_elder_thing_destroy_second');
+        expect(getPromptSourceId(interaction2)).toBe('elder_thing_elder_thing_destroy_second');
 
         // 第二步：选择第二个随从
         const handler2 = getInteractionHandler('elder_thing_elder_thing_destroy_second')!;
-        const result2 = handler2(clearCurrentInteraction(result1.state!), '0', { minionUid: 'm-3', defId: 'test_c', baseIndex: 0 }, interaction2?.data, dummyRandom, 3)!;
+        const result2 = handler2(withoutCurrentPrompt(result1.state!), '0', { minionUid: 'm-3', defId: 'test_c', baseIndex: 0 }, getPromptHandlerData(interaction2), dummyRandom, 3)!;
 
         const destroyEvents2 = result2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents2).toHaveLength(2);
@@ -199,9 +187,9 @@ describe('远古之物：消灭两个随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const initial = triggerElderThingOnPlay(state);
-        const prompt = (initial.matchState?.sys as any)?.interaction?.current;
+        const prompt = getFirstPrompt(initial.matchState!);
         const handler = getInteractionHandler('elder_thing_elder_thing_choice')!;
-        const result = handler(clearCurrentInteraction(initial.matchState!), '0', { choice: 'deckbottom' }, prompt?.data, dummyRandom, 1)!;
+        const result = handler(withoutCurrentPrompt(initial.matchState!), '0', { choice: 'deckbottom' }, getPromptHandlerData(prompt), dummyRandom, 1)!;
 
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(0);
@@ -224,13 +212,13 @@ describe('远古之物：消灭两个随从选择权', () => {
             },
         });
         const initial = triggerElderThingOnPlay(state);
-        const prompt = (initial.matchState?.sys as any)?.interaction?.current;
+        const prompt = getFirstPrompt(initial.matchState!);
         const handler = getInteractionHandler('elder_thing_elder_thing_choice')!;
-        const liveResult = handler(clearCurrentInteraction(initial.matchState!), '0', { choice: 'deckbottom' }, prompt?.data, dummyRandom, 1)!;
+        const liveResult = handler(withoutCurrentPrompt(initial.matchState!), '0', { choice: 'deckbottom' }, getPromptHandlerData(prompt), dummyRandom, 1)!;
         const liveDeckBottomEvents = liveResult.events.filter((e: any) => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
         expect(liveDeckBottomEvents).toHaveLength(1);
 
-        const staleResult = handler({ core: staleState, sys: initial.matchState!.sys } as any, '0', { choice: 'deckbottom' }, prompt?.data, dummyRandom, 2)!;
+        const staleResult = handler({ core: staleState, sys: initial.matchState!.sys } as any, '0', { choice: 'deckbottom' }, getPromptHandlerData(prompt), dummyRandom, 2)!;
         const staleDeckBottomEvents = staleResult.events.filter((e: any) => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM);
         expect(staleDeckBottomEvents).toHaveLength(0);
     });
@@ -261,9 +249,9 @@ describe('刚柔流寺庙：力量并列最高时拥有者选择', () => {
         expect((deckBottomEvents[0] as CardToDeckBottomEvent).payload.cardUid).toBe('p1-1');
 
         // P0 有两个力量5并列，应产生选择交互
-        const interaction = (result.matchState?.sys as any)?.interaction?.current;
+        const interaction = getFirstPrompt(result.matchState!);
         expect(interaction).toBeDefined();
-        expect(interaction?.data?.sourceId).toBe('base_temple_of_goju_tiebreak');
+        expect(getPromptSourceId(interaction)).toBe('base_temple_of_goju_tiebreak');
         expect(interaction?.playerId).toBe('0');
     });
 
@@ -315,12 +303,12 @@ describe('刚柔流寺庙：力量并列最高时拥有者选择', () => {
         });
 
         // 两个玩家都有平局，第一个交互应该是其中一个玩家
-        const interaction = (result.matchState?.sys as any)?.interaction?.current;
+        const interaction = getFirstPrompt(result.matchState!);
         expect(interaction).toBeDefined();
-        expect(interaction?.data?.sourceId).toBe('base_temple_of_goju_tiebreak');
+        expect(getPromptSourceId(interaction)).toBe('base_temple_of_goju_tiebreak');
 
         // continuationContext 应包含剩余玩家
-        const ctx = interaction?.data?.continuationContext;
+        const ctx = getPromptHandlerData(interaction)?.continuationContext;
         expect(ctx?.remainingPlayers).toHaveLength(1);
     });
 });

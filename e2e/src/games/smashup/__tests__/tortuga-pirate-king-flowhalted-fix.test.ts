@@ -4,8 +4,7 @@
  * Bug: 海盗王 beforeScoring 移动后,flowHalted 标志没有清除,
  * 导致托尔图加 afterScoring 永远不会执行,用户卡住。
  * 
- * 修复: onPhaseExit('scoreBases') 的 flowHalted 守卫增加交互状态检查:
- * `if (state.sys.flowHalted && state.sys.interaction.current)`
+ * 修复: onPhaseExit('scoreBases') 的 flowHalted 守卫增加当前交互状态检查。
  * 
  * 注意：PR64 引入 scoringSession 后，计分链路会先返回 `halt: true` +
  * `currentStep='awaiting-post-reduce'`，等待本轮 score/replace 事件被 reduce。
@@ -19,6 +18,7 @@ import { smashUpFlowHooks } from '../domain';
 import type { MatchState } from '../../../engine/types';
 import type { SmashUpCore } from '../domain/types';
 import { getScoringSession } from '../domain/scoringSession';
+import { expectNoPrompt, getFirstPrompt } from './helpers';
 
 describe('托尔图加计分 - 海盗王移动后 flowHalted 清除', () => {
     it('flowHalted=true 且交互已解决时,应该清除 flowHalted 并进入 awaiting-post-reduce', () => {
@@ -103,7 +103,7 @@ describe('托尔图加计分 - 海盗王移动后 flowHalted 清除', () => {
 
         if (typeof result === 'object' && result && 'updatedState' in result && result.updatedState) {
             expect(result.updatedState.sys.flowHalted).toBe(false);
-            expect(result.updatedState.sys.interaction?.current).toBeUndefined();
+            expectNoPrompt(result.updatedState);
             expect(result.updatedState.sys.responseWindow?.current).toBeUndefined();
             expect(getScoringSession(result.updatedState)).toMatchObject({
                 currentStep: 'awaiting-post-reduce',
@@ -172,7 +172,7 @@ describe('托尔图加计分 - 海盗王移动后 flowHalted 清除', () => {
             if (result.updatedState) {
                 expect(result.updatedState.sys.phase).toBe('scoreBases');
                 expect(result.updatedState.sys.flowHalted).toBe(true);
-                expect(result.updatedState.sys.interaction?.current).toBeTruthy();
+                expect(getFirstPrompt(result.updatedState)).toBeTruthy();
                 expect(getScoringSession(result.updatedState)).toMatchObject({
                     currentStep: 'idle',
                     lockedBaseRefs: [{ slotIndex: 0, baseDefId: 'base_tortuga' }],

@@ -18,7 +18,21 @@ import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { startDuel } from '../domain/duel';
 import { filterProtectedAffectEvents } from '../domain/reducer';
 import { runCommand } from './testRunner';
-import { findInteractionOption, makeMinion, makePlayer, makeState, makeMatchState, makeCard, resolveInteractionChain } from './helpers';
+import {
+    expectNoPrompt,
+    findInteractionOption,
+    getPromptOptions,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getSimpleChoicePrompt,
+    makeMinion,
+    makePlayer,
+    makeState,
+    makeMatchState,
+    makeCard,
+    respondToPrompt,
+    resolveInteractionChain,
+} from './helpers';
 import type { BaseInPlay, OngoingActionOnBase } from '../domain/types';
 import { MADNESS_CARD_DEF_ID, SU_EVENTS, SU_COMMANDS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
@@ -224,7 +238,7 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
      *
      * 流程：
      * 1. P1 打出 ninja_seeing_stars（行动卡）→ execute 创建交互
-     * 2. SYS_INTERACTION_RESPOND → SimpleChoiceSystem 解决 → SYS_INTERACTION_RESOLVED
+     * 2. 玩家响应交互 → SimpleChoiceSystem 解决 → 交互完成事件
      * 3. SmashUpEventSystem.afterEvents 调用 handler → 产生 MINION_DESTROYED
      * 4. afterEvents 中的 processDestroyTriggers 应检测到 'action' 保护 → 过滤掉 MINION_DESTROYED
      */
@@ -261,17 +275,10 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
         expect(playResult.success).toBe(true);
 
         // 应创建交互（选择目标随从）
-        const interaction = playResult.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect((interaction!.data as any).sourceId).toBe('ninja_seeing_stars');
+        getSimpleChoicePrompt(playResult.finalState, 'ninja_seeing_stars');
 
         // Step 2: P1 选择 P0 的随从作为目标
-        const respondResult = runCommand(playResult.finalState, {
-            type: 'SYS_INTERACTION_RESPOND' as any,
-            playerId: '1',
-            payload: { optionId: 'minion-0' },
-            timestamp: 1001,
-        });
+        const respondResult = respondToPrompt(playResult.finalState, 'minion-0', '1');
         expect(respondResult.success).toBe(true);
 
         // Step 3: 验证随从未被消灭（wildlife_preserve 保护生效）
@@ -317,16 +324,10 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
             timestamp: 1000,
         });
         expect(playResult.success).toBe(true);
-        const interaction = playResult.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
+        getSimpleChoicePrompt(playResult.finalState, 'ninja_seeing_stars');
 
         // P1 选择目标
-        const respondResult = runCommand(playResult.finalState, {
-            type: 'SYS_INTERACTION_RESPOND' as any,
-            playerId: '1',
-            payload: { optionId: 'minion-0' },
-            timestamp: 1001,
-        });
+        const respondResult = respondToPrompt(playResult.finalState, 'minion-0', '1');
         expect(respondResult.success).toBe(true);
 
         // 随从应被消灭
@@ -368,7 +369,7 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
         expect(result.success).toBe(true);
         expect(result.finalState.core.bases[0].minions.some(m => m.uid === 'protected_m')).toBe(true);
         expect(result.events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 
     it('深不可测的目的多随从选择分支会过滤野生保护区保护的随从', () => {
@@ -408,21 +409,15 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
             timestamp: 1000,
         });
 
-        const prompt = playResult.finalState.sys.interaction.current;
-        expect(prompt?.playerId).toBe('1');
-        expect((prompt?.data as any)?.sourceId).toBe('elder_thing_unfathomable_goals');
-        const optionUids = ((prompt?.data as any)?.options ?? []).map((option: any) => option.value?.minionUid);
+        const prompt = getSimpleChoicePrompt(playResult.finalState, 'elder_thing_unfathomable_goals');
+        expect(getPromptPlayerId(prompt)).toBe('1');
+        const optionUids = getPromptOptions(prompt).map((option: any) => option.value?.minionUid);
         expect(optionUids).toEqual(expect.arrayContaining(['open_m1', 'open_m2']));
         expect(optionUids).not.toContain('protected_m');
 
         const targetOption = findInteractionOption(prompt, option => option?.value?.minionUid === 'open_m1');
         expect(targetOption).toBeDefined();
-        const resolved = runCommand(playResult.finalState, {
-            type: 'SYS_INTERACTION_RESPOND' as any,
-            playerId: '1',
-            payload: { optionId: targetOption!.id },
-            timestamp: 1001,
-        });
+        const resolved = respondToPrompt(playResult.finalState, targetOption!.id, '1');
 
         expect(resolved.success).toBe(true);
         expect(resolved.finalState.core.bases[0].minions.some(m => m.uid === 'protected_m')).toBe(true);
@@ -460,7 +455,7 @@ describe('wildlife_preserve: 交互解决路径中阻止行动卡效果', () => 
         const resolved = resolveInteractionChain(started, (prompt) => {
             const skip = findInteractionOption(prompt, option => option?.value?.skip === true);
             if (!skip) {
-                throw new Error(`未找到可跳过的决斗选项: ${prompt?.data?.sourceId ?? 'unknown'}`);
+                throw new Error(`未找到可跳过的决斗选项: ${getPromptSourceId(prompt) ?? 'unknown'}`);
             }
             return { optionId: skip.id };
         });

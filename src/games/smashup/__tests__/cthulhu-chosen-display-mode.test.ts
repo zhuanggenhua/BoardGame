@@ -11,6 +11,14 @@ import { fireTriggers } from '../domain/ongoingEffects';
 import { initAllAbilities } from '../abilities';
 import type { MatchState } from '../../../engine/types';
 import type { SmashUpCore, MinionOnBase, BaseInPlay, SmashUpPlayer } from '../types';
+import {
+    getPromptOptions,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getPromptTargetType,
+    getPromptsBySourceId,
+    getSimpleChoicePrompt,
+} from './helpers';
 
 // 初始化所有能力（包括神选者的 beforeScoring 触发器）
 beforeAll(() => {
@@ -94,12 +102,12 @@ describe('神选者交互 displayMode 修复', () => {
             now: 1000,
         });
 
-        const interaction = result.matchState?.sys?.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect((interaction?.data as any)?.targetType).toBe('generic');
-        expect((interaction?.data as any)?.sourceId).toBe('cthulhu_chosen_confirm');
-        expect((interaction?.data as any)?.options.map((option: any) => option.id)).toEqual(['yes', 'no']);
-        expect((interaction?.data as any)?.options.every((option: any) => option.displayMode === 'button')).toBe(true);
+        const interaction = getSimpleChoicePrompt(result.matchState!, 'cthulhu_chosen_confirm');
+        const options = getPromptOptions(interaction);
+        expect(getPromptTargetType(interaction)).toBe('generic');
+        expect(getPromptSourceId(interaction)).toBe('cthulhu_chosen_confirm');
+        expect(options.map((option: any) => option.id)).toEqual(['yes', 'no']);
+        expect(options.every((option: any) => option.displayMode === 'button')).toBe(true);
     });
 
     it('选项应该有 displayMode: "button"', () => {
@@ -121,12 +129,10 @@ describe('神选者交互 displayMode 修复', () => {
         });
 
         // 验证交互存在
-        expect(result.matchState?.sys?.interaction?.current).toBeDefined();
-        const interaction = result.matchState?.sys?.interaction?.current;
+        const interaction = getSimpleChoicePrompt(result.matchState!, 'cthulhu_chosen_confirm');
         
         // 验证选项有 displayMode: 'button'
-        const options = (interaction?.data as any)?.options;
-        expect(options).toBeDefined();
+        const options = getPromptOptions(interaction);
         expect(options).toHaveLength(2);
         
         // "是"选项
@@ -159,8 +165,8 @@ describe('神选者交互 displayMode 修复', () => {
             now: 1000,
         });
 
-        const interaction = result.matchState?.sys?.interaction?.current;
-        const options = (interaction?.data as any)?.options;
+        const interaction = getSimpleChoicePrompt(result.matchState!, 'cthulhu_chosen_confirm');
+        const options = getPromptOptions(interaction);
         
         // "是"选项的 value 不应该有 baseDefId
         const yesValue = options[0].value as any;
@@ -193,20 +199,20 @@ describe('神选者交互 displayMode 修复', () => {
         });
 
         // 第一个交互
-        const firstInteraction = result.matchState?.sys?.interaction?.current;
+        const chosenPrompts = getPromptsBySourceId(result.matchState!, 'cthulhu_chosen_confirm');
+        const firstInteraction = chosenPrompts[0];
         expect(firstInteraction).toBeDefined();
         
-        const firstOptions = (firstInteraction?.data as any)?.options;
+        const firstOptions = getPromptOptions(firstInteraction);
         expect(firstOptions[0].displayMode).toBe('button');
         expect(firstOptions[1].displayMode).toBe('button');
 
         // perInstance 触发器会把第二个神选者排进交互队列，而不是挂在 continuationContext 上
-        const queuedInteraction = result.matchState?.sys?.interaction?.queue?.[0];
+        const queuedInteraction = chosenPrompts[1];
         expect(queuedInteraction).toBeDefined();
-        expect(queuedInteraction?.playerId).toBe('1');
+        expect(getPromptPlayerId(queuedInteraction)).toBe('1');
 
-        const queuedOptions = (queuedInteraction?.data as any)?.options;
-        expect(queuedOptions).toBeDefined();
+        const queuedOptions = getPromptOptions(queuedInteraction);
         expect(queuedOptions[0].displayMode).toBe('button');
         expect(queuedOptions[1].displayMode).toBe('button');
 

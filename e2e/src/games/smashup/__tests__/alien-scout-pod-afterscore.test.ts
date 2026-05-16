@@ -2,7 +2,16 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { fireTriggers } from '../domain/ongoingEffects';
-import { makeBase, makeMatchState, makeMinion, makeState } from './helpers';
+import {
+    getPromptHandlerData,
+    getPromptOption,
+    getPromptsBySourceId,
+    getSimpleChoicePrompt,
+    makeBase,
+    makeMatchState,
+    makeMinion,
+    makeState,
+} from './helpers';
 
 beforeAll(() => {
     resetAbilityInit();
@@ -37,7 +46,7 @@ describe('外星侦察兵 afterScoring', () => {
             now: 100,
         });
 
-        expect(result.matchState?.sys.interaction?.current?.data.sourceId).toBe('alien_scout_return');
+        expect(getSimpleChoicePrompt(result.matchState!, 'alien_scout_return')).toBeDefined();
     });
 
     it('alien_scout 基础版也会创建返回手牌交互', () => {
@@ -60,7 +69,7 @@ describe('外星侦察兵 afterScoring', () => {
             now: 100,
         });
 
-        expect(result.matchState?.sys.interaction?.current?.data.sourceId).toBe('alien_scout_return');
+        expect(getSimpleChoicePrompt(result.matchState!, 'alien_scout_return')).toBeDefined();
     });
 
     it('同时存在基础版和 POD 版时会创建两个独立交互', () => {
@@ -84,9 +93,7 @@ describe('外星侦察兵 afterScoring', () => {
             now: 100,
         });
 
-        expect(result.matchState?.sys.interaction?.current?.data.sourceId).toBe('alien_scout_return');
-        expect(result.matchState?.sys.interaction?.queue).toHaveLength(1);
-        expect(result.matchState?.sys.interaction?.queue?.[0]?.data?.sourceId).toBe('alien_scout_return');
+        expect(getPromptsBySourceId(result.matchState!, 'alien_scout_return')).toHaveLength(2);
     });
 
     it('交互解决时若侦察兵已离场，则不会重复返回', () => {
@@ -109,11 +116,14 @@ describe('外星侦察兵 afterScoring', () => {
             now: 101,
         });
 
-        const interaction = result.matchState!.sys.interaction!.current!;
-        const returnOption = interaction.data.options.find((entry: any) => entry.value?.returnIt === true);
+        const interaction = getSimpleChoicePrompt(result.matchState!, 'alien_scout_return');
+        const returnOption = getPromptOption(
+            interaction,
+            (entry: any) => entry.value?.returnIt === true,
+            'alien scout return option',
+        );
         const handler = getAbilityRuntimePromptHandler('alien_scout_return');
 
-        expect(interaction.data.sourceId).toBe('alien_scout_return');
         expect(returnOption).toBeDefined();
         expect(handler).toBeDefined();
 
@@ -139,7 +149,7 @@ describe('外星侦察兵 afterScoring', () => {
             makeMatchState(staleCore),
             '1',
             returnOption.value,
-            interaction.data,
+            getPromptHandlerData(interaction),
             dummyRandom,
             102,
         );

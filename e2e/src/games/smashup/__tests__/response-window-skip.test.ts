@@ -4,13 +4,18 @@
 
 import { beforeAll, describe, expect, it } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
-import { asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
 import { smashUpSystemsForTest } from '../game';
 import type { MinionOnBase, SmashUpCore } from '../domain/types';
+import {
+    cancelPrompt,
+    getOptionalSimpleChoicePrompt,
+    getPromptOption,
+    getSimpleChoicePrompt,
+} from './helpers';
 import {
     advanceSmashUpReactionSession,
     getSmashUpReactionSession,
@@ -22,19 +27,15 @@ function getReactionSession(state: MatchState<SmashUpCore>) {
 }
 
 function getCurrentChoice(state: MatchState<SmashUpCore>) {
-    return asSimpleChoice(state.sys.interaction?.current);
+    return getOptionalSimpleChoicePrompt(state);
 }
 
 function findOptionId(
     choice: NonNullable<ReturnType<typeof getCurrentChoice>>,
-    predicate: (option: NonNullable<ReturnType<typeof getCurrentChoice>>['options'][number]) => boolean,
+    predicate: (option: any) => boolean,
     message: string,
 ) {
-    const option = choice.options.find(predicate);
-    if (!option) {
-        throw new Error(`${message}: ${JSON.stringify(choice.options.map(item => item.id))}`);
-    }
-    return option.id;
+    return getPromptOption(choice, predicate, message).id;
 }
 
 function expectMirroredIndex(state: MatchState<SmashUpCore>, index: number) {
@@ -144,7 +145,7 @@ describe('响应窗口跳过逻辑', () => {
         expect(stateAfterFirstPass.sys.responseWindow?.current).toBeUndefined();
     });
 
-    it('smashup_reaction_choose 被 SYS_INTERACTION_CANCEL 收口时，应按 pass 处理并正常关闭 session', () => {
+    it('smashup_reaction_choose 被 cancelPrompt 收口时，应按 pass 处理并正常关闭 session', () => {
         const runner = createRunner((playerIds, random) => {
             const core = SmashUpDomain.setup(playerIds, random);
             const sys = createInitialSystemState(playerIds, smashUpSystemsForTest, undefined);
@@ -194,13 +195,10 @@ describe('响应窗口跳过逻辑', () => {
         expect(getReactionSession(stateBeforeCancel)?.activePlayerId).toBe('0');
         expect(getCurrentChoice(stateBeforeCancel)?.sourceId).toBe('smashup_reaction_choose');
 
-        const cancelResult = runner.dispatch('SYS_INTERACTION_CANCEL', {
-            playerId: '0',
-            reason: 'watchdog-force-pass',
-        });
+        const cancelResult = cancelPrompt(stateBeforeCancel, '0', 'watchdog-force-pass');
         expect(cancelResult.success).toBe(true);
 
-        const finalState = runner.getState();
+        const finalState = cancelResult.finalState;
         expect(getReactionSession(finalState)).toBeUndefined();
         expect(getCurrentChoice(finalState)).toBeUndefined();
         expect(finalState.sys.responseWindow?.current).toBeUndefined();
@@ -412,14 +410,14 @@ describe('响应窗口跳过逻辑', () => {
         expect(playResult.success).toBe(true);
 
         const stateAfterPlay = runner.getState();
-        expect(stateAfterPlay.sys.interaction?.current?.data?.sourceId).toBe('ninja_hidden_ninja');
-
-        const playOption = stateAfterPlay.sys.interaction!.current!.data.options.find(
+        const hiddenNinjaChoice = getSimpleChoicePrompt(stateAfterPlay, 'ninja_hidden_ninja');
+        const playOption = getPromptOption(
+            hiddenNinjaChoice,
             (option: any) => option.value?.cardUid === 'card-p1-minion',
+            '找不到隐身忍者打出随从选项',
         );
-        expect(playOption).toBeDefined();
 
-        const resolveResult = runner.resolveInteraction('1', { optionId: playOption!.id });
+        const resolveResult = runner.resolveInteraction('1', { optionId: playOption.id });
 
         expect(resolveResult.success).toBe(true);
         const stateAfterResolve = runner.getState();

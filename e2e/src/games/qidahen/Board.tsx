@@ -5,8 +5,8 @@ import { QIDAHEN_COMMANDS } from './domain/commands';
 
 type Props = GameBoardProps<QidahenCore, QidahenCommandMap>;
 
-const boardImage = '/assets/i18n/zh-CN/qidahen/board/compressed/main-board.webp';
-const cardBackImage = '/assets/i18n/zh-CN/qidahen/cards/backs/compressed/qidahen-cover-card.webp';
+const boardImage = '/assets/i18n/zh-CN/qidahen/board/compressed/qidahen-main-map.webp';
+const cardBackImage = '/assets/i18n/zh-CN/qidahen/cards/backs/compressed/qidahen-common-card-back.webp';
 const BOARD_WIDTH = 1265;
 const BOARD_HEIGHT = 893;
 

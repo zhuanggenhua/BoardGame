@@ -20,12 +20,12 @@ const entry: GameManifestEntry = {
         remoteAi: false,
     },
     criticalImages: [
-        'i18n/zh-CN/qidahen/board/main-board',
+        'i18n/zh-CN/qidahen/board/qidahen-main-map',
     ],
     warmImages: [
-        'i18n/zh-CN/qidahen/cards/backs/ming-card-back',
-        'i18n/zh-CN/qidahen/cards/backs/mongol-card-back',
-        'i18n/zh-CN/qidahen/cards/backs/jin-card-back',
+        'i18n/zh-CN/qidahen/cards/backs/ming-deck-back',
+        'i18n/zh-CN/qidahen/cards/backs/mongol-deck-back',
+        'i18n/zh-CN/qidahen/cards/backs/jin-deck-back',
     ],
     mobileProfile: 'landscape-adapted',
     preferredOrientation: 'landscape',

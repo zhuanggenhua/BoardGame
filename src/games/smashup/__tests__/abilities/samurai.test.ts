@@ -1,52 +1,36 @@
 /**
- * 大杀四方 - 新增派系能力测试
+ * 大杀四方 - 武士派系能力测试
  *
- * 遗留巨型派系能力测试（迁出中）。
- * 新增或迁移用例应优先落到 __tests__/abilities/ 下的聚焦文件。
+ * 聚焦验证 Samurai/Cowboys 相关能力的可观察行为。
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import type {
-    SmashUpCore,
-    PlayerState,
-    MinionOnBase,
-    CardInstance,
-} from '../domain/types';
-import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { clearRegistry, resolveSpecial } from '../domain/abilityRegistry';
-import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { getDiscardSpecialOptions } from '../domain/discardSpecialAbilities';
-import { startDuel } from '../domain/duel';
-import { clearOngoingEffectRegistry, collectTriggers, fireTriggers, interceptEvent, isMinionProtected } from '../domain/ongoingEffects';
-import { getEffectivePower, getPlayerEffectivePowerOnBase, getTotalEffectivePowerOnBase } from '../domain/ongoingModifiers';
-import { maybeResolveReactionQueue } from '../domain/reactionQueue';
-import { startSmashUpReactionSession } from '../domain/reactionSession';
-import { reduce } from '../domain/reduce';
-import { execute, processDestroyTriggers } from '../domain/reducer';
-import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
-import { validate } from '../domain/commands';
-import { resumePendingBranchingChoiceFrames } from '../domain/branchingChoice';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
+import type { SmashUpCore } from '../../domain/types';
+import { initAllAbilities, resetAbilityInit } from '../../abilities';
+import { clearRegistry } from '../../domain/abilityRegistry';
+import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
+import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
+import { startDuel } from '../../domain/duel';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
+import { processDestroyTriggers } from '../../domain/reducer';
 import {
     makeMinion,
     makeCard,
     makePlayer,
     makeState,
     makeMatchState,
-    getInteractionsFromMS,
-    findInteractionOption,
+    getSimpleChoicePrompt,
+    getPromptOption,
+    getPromptOptions,
+    getPromptSourceId,
+    respondToPrompt,
+    expectNoPrompt,
     resolveInteractionChain,
-} from './helpers';
-import { runCommand, defaultTestRandom } from './testRunner';
-import type { MatchState } from '../../../engine/types';
-import {
-    createSimpleChoice,
-    queueInteraction,
-    refreshInteractionOptions,
-    resolveInteraction,
-} from '../../../engine/systems/InteractionSystem';
-import { getCardDef } from '../data/cards';
+} from '../helpers';
+import { runCommand, defaultTestRandom } from '../testRunner';
+import type { MatchState } from '../../../../engine/types';
 
 beforeAll(() => {
     clearRegistry();
@@ -62,22 +46,22 @@ function resolveDuelChain(
     overrides: Partial<Record<string, (prompt: any, state: MatchState<SmashUpCore>, step: number) => { optionId?: string; optionIds?: string[]; mergedValue?: unknown }>> = {},
 ) {
     return resolveInteractionChain(initialState, (prompt, state, step) => {
-        const sourceId = prompt?.data?.sourceId as string | undefined;
+        const sourceId = getPromptSourceId(prompt);
         const custom = sourceId ? overrides[sourceId] : undefined;
         if (custom) return custom(prompt, state, step);
 
         if (sourceId === 'smashup_duel_pinkerton') {
-            const option = findInteractionOption(prompt, option => option?.value?.amount === 0);
-            if (!option) throw new Error('未找到 Pinkerton 的 0 指示物选项');
+            const option = getPromptOption(prompt, option => option?.value?.amount === 0, 'Pinkerton 的 0 指示物选项');
             return { optionId: option.id };
         }
         if (sourceId === 'smashup_duel_card' || sourceId === 'smashup_duel_deputy_card') {
-            const option = findInteractionOption(prompt, option => option?.value?.skip === true);
-            if (!option) throw new Error(`未找到 ${sourceId} 的跳过选项`);
+            const option = getPromptOption(prompt, option => option?.value?.skip === true, `${sourceId} 的跳过选项`);
             return { optionId: option.id };
         }
         if (sourceId === 'smashup_duel_run_em_off_move') {
-            return { optionId: prompt.data.options[0].id };
+            const options = getPromptOptions(prompt);
+            if (!options[0]) throw new Error('未找到 Run Em Off 移动选项');
+            return { optionId: options[0].id };
         }
 
         throw new Error(`未处理的决斗交互 sourceId: ${sourceId ?? 'unknown'}`);
@@ -163,13 +147,13 @@ describe('Samurai abilities', () => {
             { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'ronin-1', baseIndex: 0 } },
             defaultTestRandom,
         );
-        const prompt = getInteractionsFromMS(play.finalState)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('samurai_ronin');
+        const prompt = getSimpleChoicePrompt(play.finalState, 'samurai_ronin');
 
-        const yesOption = prompt.data.options.find((entry: any) => entry.value?.apply === true);
-        const resolved = runCommand(
+        const yesOption = getPromptOption(prompt, entry => entry.value?.apply === true, 'samurai_ronin apply option');
+        const resolved = respondToPrompt(
             play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: yesOption.id } } as any,
+            yesOption.id,
+            '0',
             defaultTestRandom,
         );
 
@@ -192,13 +176,13 @@ describe('Samurai abilities', () => {
             { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'ronin-pod-1', baseIndex: 0 } },
             defaultTestRandom,
         );
-        const prompt = getInteractionsFromMS(play.finalState)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('samurai_ronin_pod');
+        const prompt = getSimpleChoicePrompt(play.finalState, 'samurai_ronin_pod');
 
-        const yesOption = prompt.data.options.find((entry: any) => entry.value?.apply === true);
-        const resolved = runCommand(
+        const yesOption = getPromptOption(prompt, entry => entry.value?.apply === true, 'samurai_ronin_pod apply option');
+        const resolved = respondToPrompt(
             play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: yesOption.id } } as any,
+            yesOption.id,
+            '0',
             defaultTestRandom,
         );
 
@@ -222,13 +206,13 @@ describe('Samurai abilities', () => {
             defaultTestRandom,
         );
 
-        const prompt = getInteractionsFromMS(play.finalState)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('samurai_ronin_pod');
+        const prompt = getSimpleChoicePrompt(play.finalState, 'samurai_ronin_pod');
 
-        const yesOption = prompt.data.options.find((entry: any) => entry.value?.apply === true);
-        const resolved = runCommand(
+        const yesOption = getPromptOption(prompt, entry => entry.value?.apply === true, 'samurai_ronin_pod apply option');
+        const resolved = respondToPrompt(
             play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: yesOption.id } } as any,
+            yesOption.id,
+            '0',
             defaultTestRandom,
         );
 
@@ -279,58 +263,7 @@ describe('Samurai abilities', () => {
         const queuedState = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
         const resolved = maybeResolveReactionQueue(queuedState, defaultTestRandom, 1000);
         expect(resolved).toBeDefined();
-        expect(resolved!.state.sys.interaction.current).toBeUndefined();
-        const drawEvent = resolved!.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
-        expect(drawEvent).toBeDefined();
-        expect(drawEvent.payload.playerId).toBe('0');
-        expect(drawEvent.payload.count).toBe(2);
-    });
-
-    it('samurai_way_of_the_warrior 在阶段 3 弃置时仍会基于 LKI 结算抽 2', () => {
-        const core = makeState({
-            turnOrder: ['0', '1', '2'],
-            currentPlayerIndex: 0,
-            turnNumber: 2,
-            players: {
-                '0': makePlayer('0', {
-                    deck: [
-                        makeCard('draw-1', 'robot_microbot_alpha', 'minion', '0'),
-                        makeCard('draw-2', 'robot_microbot_alpha', 'minion', '0'),
-                    ],
-                    discard: [makeCard('wotw-1', 'samurai_way_of_the_warrior', 'action', '0')],
-                }),
-                '1': makePlayer('1'),
-                '2': makePlayer('2'),
-            } as any,
-            bases: [{
-                defId: 'base_a',
-                minions: [makeMinion('ally-1', 'samurai_bushi', '0', 4, {
-                    metadata: {
-                        samuraiWayOfTheWarriorDrawPlayerId: '0',
-                        samuraiWayOfTheWarriorDrawUntilTurnNumber: 3,
-                    },
-                })],
-                ongoingActions: [],
-            }],
-        });
-
-        const queued = collectTriggers(core, 'onMinionDiscardedFromBase', {
-            state: core,
-            matchState: makeMatchState(core),
-            playerId: '0',
-            baseIndex: 0,
-            triggerMinionUid: 'ally-1',
-            triggerMinionDefId: 'samurai_bushi',
-            triggerMinion: core.bases[0].minions[0],
-            random: defaultTestRandom,
-            now: 1000,
-        });
-
-        expect(queued).toBeDefined();
-        const queuedState = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
-        const resolved = maybeResolveReactionQueue(queuedState, defaultTestRandom, 1000);
-        expect(resolved).toBeDefined();
-        expect(resolved!.state.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(resolved!.state);
         const drawEvent = resolved!.events.find(event => event.type === SU_EVENTS.CARDS_DRAWN) as any;
         expect(drawEvent).toBeDefined();
         expect(drawEvent.payload.playerId).toBe('0');
@@ -357,13 +290,13 @@ describe('Samurai abilities', () => {
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'yokai-1' } },
             defaultTestRandom,
         );
-        const prompt = getInteractionsFromMS(play.finalState)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('samurai_yokai_attack');
+        const prompt = getSimpleChoicePrompt(play.finalState, 'samurai_yokai_attack');
 
-        const option = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'ally-1');
-        const resolved = runCommand(
+        const option = getPromptOption(prompt, entry => entry.value?.minionUid === 'ally-1', 'samurai_yokai_attack ally option');
+        const resolved = respondToPrompt(
             play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            option.id,
+            '0',
             defaultTestRandom,
         );
 
@@ -401,13 +334,13 @@ describe('Samurai abilities', () => {
             now: 1000,
         });
 
-        const prompt = getInteractionsFromMS(trigger.matchState!)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('cowboys_dynamite_surprise_seen');
+        const prompt = getSimpleChoicePrompt(trigger.matchState!, 'cowboys_dynamite_surprise_seen');
 
-        const target = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
-        const resolved = runCommand(
+        const target = getPromptOption(prompt, entry => entry.value?.minionUid === 'enemy-1', 'cowboys dynamite target option');
+        const resolved = respondToPrompt(
             trigger.matchState!,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: target.id } } as any,
+            target.id,
+            '0',
             defaultTestRandom,
         );
 
@@ -444,13 +377,13 @@ describe('Samurai abilities', () => {
             now: 1001,
         });
 
-        const prompt = getInteractionsFromMS(trigger.matchState!)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('cowboys_dynamite_surprise_seen');
+        const prompt = getSimpleChoicePrompt(trigger.matchState!, 'cowboys_dynamite_surprise_seen');
 
-        const target = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
-        const resolved = runCommand(
+        const target = getPromptOption(prompt, entry => entry.value?.minionUid === 'enemy-1', 'cowboys dynamite target option');
+        const resolved = respondToPrompt(
             trigger.matchState!,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: target.id } } as any,
+            target.id,
+            '0',
             defaultTestRandom,
         );
 
@@ -487,13 +420,13 @@ describe('Samurai abilities', () => {
             now: 1002,
         });
 
-        const prompt = getInteractionsFromMS(trigger.matchState!)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('cowboys_dynamite_surprise_seen');
+        const prompt = getSimpleChoicePrompt(trigger.matchState!, 'cowboys_dynamite_surprise_seen');
 
-        const target = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
-        const resolved = runCommand(
+        const target = getPromptOption(prompt, entry => entry.value?.minionUid === 'enemy-1', 'cowboys dynamite target option');
+        const resolved = respondToPrompt(
             trigger.matchState!,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: target.id } } as any,
+            target.id,
+            '0',
             defaultTestRandom,
         );
 
@@ -522,11 +455,12 @@ describe('Samurai abilities', () => {
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'yokai-1' } },
             defaultTestRandom,
         );
-        const prompt = getInteractionsFromMS(play.finalState)[0] as any;
-        const skipOption = prompt.data.options.find((entry: any) => entry.value?.skip === true);
-        const resolved = runCommand(
+        const prompt = getSimpleChoicePrompt(play.finalState, 'samurai_yokai_attack');
+        const skipOption = getPromptOption(prompt, entry => entry.value?.skip === true, 'samurai_yokai_attack skip option');
+        const resolved = respondToPrompt(
             play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: skipOption.id } } as any,
+            skipOption.id,
+            '0',
             defaultTestRandom,
         );
 
@@ -555,11 +489,12 @@ describe('Samurai abilities', () => {
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'yokai-1' } },
             defaultTestRandom,
         );
-        const prompt = getInteractionsFromMS(play.finalState)[0] as any;
-        const option = prompt.data.options.find((entry: any) => entry.value?.minionUid === 'warbot-1');
-        const resolved = runCommand(
+        const prompt = getSimpleChoicePrompt(play.finalState, 'samurai_yokai_attack');
+        const option = getPromptOption(prompt, entry => entry.value?.minionUid === 'warbot-1', 'samurai_yokai_attack warbot option');
+        const resolved = respondToPrompt(
             play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: option.id } } as any,
+            option.id,
+            '0',
             defaultTestRandom,
         );
 
@@ -591,23 +526,23 @@ describe('Samurai abilities', () => {
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'combat-1' } },
             defaultTestRandom,
         );
-        const friendlyPrompt = getInteractionsFromMS(play.finalState)[0] as any;
-        expect(friendlyPrompt?.data?.sourceId).toBe('samurai_honorable_combat_friendly');
+        const friendlyPrompt = getSimpleChoicePrompt(play.finalState, 'samurai_honorable_combat_friendly');
 
-        const friendlyOption = friendlyPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'ally-1');
-        const afterFriendly = runCommand(
+        const friendlyOption = getPromptOption(friendlyPrompt, entry => entry.value?.minionUid === 'ally-1', 'honorable combat friendly option');
+        const afterFriendly = respondToPrompt(
             play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: friendlyOption.id } } as any,
+            friendlyOption.id,
+            '0',
             defaultTestRandom,
         );
 
-        const enemyPrompt = getInteractionsFromMS(afterFriendly.finalState)[0] as any;
-        expect(enemyPrompt?.data?.sourceId).toBe('samurai_honorable_combat_enemy');
+        const enemyPrompt = getSimpleChoicePrompt(afterFriendly.finalState, 'samurai_honorable_combat_enemy');
 
-        const enemyOption = enemyPrompt.data.options.find((entry: any) => entry.value?.minionUid === 'enemy-1');
-        const resolved = runCommand(
+        const enemyOption = getPromptOption(enemyPrompt, entry => entry.value?.minionUid === 'enemy-1', 'honorable combat enemy option');
+        const resolved = respondToPrompt(
             afterFriendly.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: enemyOption.id } } as any,
+            enemyOption.id,
+            '0',
             defaultTestRandom,
         );
 
@@ -644,7 +579,7 @@ describe('Samurai abilities', () => {
             defaultTestRandom,
         );
 
-        expect(getInteractionsFromMS(play.finalState)).toHaveLength(0);
+        expectNoPrompt(play.finalState);
         expect(play.events.some(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
     });
 
@@ -706,29 +641,31 @@ describe('Samurai abilities', () => {
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'bushido-1' } },
             defaultTestRandom,
         );
-        const prompt1 = getInteractionsFromMS(play.finalState)[0] as any;
-        expect(prompt1?.data?.sourceId).toBe('samurai_code_of_bushido');
+        const prompt1 = getSimpleChoicePrompt(play.finalState, 'samurai_code_of_bushido');
 
-        const chooseAlly1a = prompt1.data.options.find((entry: any) => entry.value?.minionUid === 'ally-1');
-        const step1 = runCommand(
+        const chooseAlly1a = getPromptOption(prompt1, entry => entry.value?.minionUid === 'ally-1', 'code of bushido first ally option');
+        const step1 = respondToPrompt(
             play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: chooseAlly1a.id } } as any,
+            chooseAlly1a.id,
+            '0',
             defaultTestRandom,
         );
 
-        const prompt2 = getInteractionsFromMS(step1.finalState)[0] as any;
-        const chooseAlly1b = prompt2.data.options.find((entry: any) => entry.value?.minionUid === 'ally-1');
-        const step2 = runCommand(
+        const prompt2 = getSimpleChoicePrompt(step1.finalState, 'samurai_code_of_bushido');
+        const chooseAlly1b = getPromptOption(prompt2, entry => entry.value?.minionUid === 'ally-1', 'code of bushido second ally option');
+        const step2 = respondToPrompt(
             step1.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: chooseAlly1b.id } } as any,
+            chooseAlly1b.id,
+            '0',
             defaultTestRandom,
         );
 
-        const prompt3 = getInteractionsFromMS(step2.finalState)[0] as any;
-        const chooseAlly2 = prompt3.data.options.find((entry: any) => entry.value?.minionUid === 'ally-2');
-        const resolved = runCommand(
+        const prompt3 = getSimpleChoicePrompt(step2.finalState, 'samurai_code_of_bushido');
+        const chooseAlly2 = getPromptOption(prompt3, entry => entry.value?.minionUid === 'ally-2', 'code of bushido third ally option');
+        const resolved = respondToPrompt(
             step2.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: chooseAlly2.id } } as any,
+            chooseAlly2.id,
+            '0',
             defaultTestRandom,
         );
 

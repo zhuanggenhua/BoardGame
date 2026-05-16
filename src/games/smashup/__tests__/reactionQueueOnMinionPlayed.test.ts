@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, SmashUpCore } from '../domain/types';
-import { makeMatchState, makePlayer } from './helpers';
+import { getReactionPrompt, makeMatchState, makePlayer } from './helpers';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { clearOngoingEffectRegistry, registerTrigger, collectTriggers } from '../domain/ongoingEffects';
@@ -70,8 +70,7 @@ describe('reaction queue: onMinionPlayed ordering', () => {
     const ms0 = makeMatchState({ ...core, triggerQueue: triggers });
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a } as any, 10);
     expect(rq).toBeDefined();
-    const current = rq!.state.sys.interaction.current as any;
-    expect(current?.data?.sourceId).toBe('smashup_reaction_choose');
+    expect(getReactionPrompt(rq!.state)).toBeDefined();
   });
 
   it('fireMinionPlayedTriggers stamps queued reactions with a stable sourceEventId and frameId', () => {

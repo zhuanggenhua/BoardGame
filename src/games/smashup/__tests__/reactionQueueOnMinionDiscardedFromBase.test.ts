@@ -3,7 +3,7 @@ import { clearOngoingEffectRegistry, registerTrigger, collectTriggers } from '..
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
-import { makeMatchState, makeState, makeBase, makeMinion } from './helpers';
+import { getReactionPrompt, makeMatchState, makeState, makeBase, makeMinion } from './helpers';
 import { SU_EVENTS } from '../domain/types';
 
 beforeEach(() => {
@@ -54,8 +54,7 @@ describe('reaction queue: onMinionDiscardedFromBase ordering', () => {
 
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a } as any, 1);
     expect(rq).toBeDefined();
-    const current = rq!.state.sys.interaction.current as any;
-    expect(current?.data?.sourceId).toBe('smashup_reaction_choose');
+    expect(getReactionPrompt(rq!.state)).toBeDefined();
   });
 });
 

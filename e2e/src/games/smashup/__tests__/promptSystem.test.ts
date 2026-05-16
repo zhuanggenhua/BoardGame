@@ -21,6 +21,7 @@ import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { createSmashUpEventSystem } from '../domain/systems';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { buildSmashUpAiLegalActions } from '../ai';
+import { expectNoPrompt, respondCommand } from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -44,12 +45,6 @@ const DRAFT_COMMANDS = [
     { type: SU_COMMANDS.SELECT_FACTION, playerId: '0', payload: { factionId: SMASHUP_FACTION_IDS.DINOSAURS } },
 ] as any[];
 
-/** Me First! 响应：两人都让过 */
-const ME_FIRST_PASS = [
-    { type: 'RESPONSE_PASS', playerId: '0', payload: {} },
-    { type: 'RESPONSE_PASS', playerId: '1', payload: {} },
-] as any[];
-
 describe('P7: PromptSystem 集成', () => {
     beforeAll(() => {
         clearRegistry();
@@ -66,7 +61,7 @@ describe('P7: PromptSystem 集成', () => {
                 name: 'SYS_PROMPT_RESPOND 放行',
                 commands: [
                     ...DRAFT_COMMANDS,
-                    { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'test' } },
+                    respondCommand('test', '0'),
                 ],
             });
             // PromptSystem 拦截并返回 "没有待处理的选择"（不是"未知命令"）
@@ -98,7 +93,7 @@ describe('P7: PromptSystem 集成', () => {
                 name: '初始状态检查',
                 commands: DRAFT_COMMANDS,
             });
-            expect(result.finalState.sys.interaction.current).toBeUndefined();
+            expectNoPrompt(result.finalState);
             expect(result.finalState.sys.interaction.queue).toEqual([]);
         });
 
@@ -189,7 +184,7 @@ describe('P7: PromptSystem 集成', () => {
             });
 
             // 只有基地 0 有随从，应自动选择，不创建 Prompt
-            expect(result.finalState.sys.interaction.current).toBeUndefined();
+            expectNoPrompt(result.finalState);
         });
     });
 });

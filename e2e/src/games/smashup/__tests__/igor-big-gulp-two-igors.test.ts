@@ -7,7 +7,18 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { makeState, makePlayer, makeCard, makeMatchState, makeMinion } from './helpers';
+import {
+    getPromptOption,
+    getPromptOptions,
+    getPromptsBySourceId,
+    getSimpleChoicePrompt,
+    makeState,
+    makePlayer,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    respondToPrompt,
+} from './helpers';
 import { runCommand } from './testRunner';
 import { SU_COMMANDS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
@@ -61,27 +72,22 @@ describe('Igor + Big Gulp: 一个 Igor 被消灭', () => {
         });
 
         // 应该创建"一大口"的交互（选择要消灭的随从）
-        const interaction1 = result1.finalState.sys.interaction.current;
-        expect(interaction1).toBeDefined();
-        expect((interaction1?.data as any)?.sourceId).toBe('vampire_big_gulp');
+        const prompt1 = getSimpleChoicePrompt(result1.finalState, 'vampire_big_gulp');
 
         // 选项应该包含 Igor + 咆哮者 + 新生吸血鬼（力量都≤4）
-        const options = (interaction1?.data as any)?.options ?? [];
+        const options = getPromptOptions(prompt1);
         console.log('Big Gulp options:', options.map((o: any) => o.label));
         expect(options.length).toBeGreaterThanOrEqual(3);
 
         console.log('\n=== 步骤2：选择消灭 Igor ===');
         // 步骤2：玩家1选择消灭 igor1
-        const igorOption = options.find((o: any) => o.value?.minionUid === 'igor1');
-        expect(igorOption).toBeDefined();
+        const igorOption = getPromptOption(
+            prompt1,
+            (o: any) => o.value?.minionUid === 'igor1',
+            'Big Gulp target option for Igor',
+        );
         console.log('Selected option:', igorOption.label);
-        
-        const result2 = runCommand(result1.finalState, {
-            type: 'SYS_INTERACTION_RESPOND' as any,
-            playerId: '1',
-            payload: { optionId: igorOption.id },
-            timestamp: 2000,
-        });
+        const result2 = respondToPrompt(result1.finalState, igorOption.id, '1');
 
         console.log('\n=== 步骤3：验证结果 ===');
         // 验证 Igor 确实被消灭了
@@ -104,22 +110,8 @@ describe('Igor + Big Gulp: 一个 Igor 被消灭', () => {
         // Igor onDestroy 只触发一次
         expect(howler?.powerCounters).toBe(2);
         
-        // 收集所有交互（current + queue）
-        const allInteractions = [];
-        if (result2.finalState.sys.interaction.current) {
-            allInteractions.push(result2.finalState.sys.interaction.current);
-        }
-        allInteractions.push(...(result2.finalState.sys.interaction.queue ?? []));
-
         // 应该没有 Igor 的交互（因为只有一个候选，自动执行了）
-        const igorInteractions = allInteractions.filter(i => (i.data as any)?.sourceId === 'frankenstein_igor');
-        
-        console.log('All interactions:', allInteractions.map(i => ({
-            id: i.id,
-            sourceId: (i.data as any)?.sourceId,
-            playerId: i.playerId,
-        })));
-        
+        const igorInteractions = getPromptsBySourceId(result2.finalState, 'frankenstein_igor');
         console.log('Igor interactions count:', igorInteractions.length);
         
         // 因为只有一个候选，Igor onDestroy 自动执行了（没有创建交互）

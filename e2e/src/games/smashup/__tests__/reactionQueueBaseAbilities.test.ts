@@ -1,7 +1,19 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SmashUpCore, SmashUpEvent, TriggerInstance } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
-import { makeMatchState, makeState, makeBase, makeMinion } from './helpers';
+import {
+  expectNoPrompt,
+  getPromptHandlerData,
+  getPromptOption,
+  getPromptOptions,
+  getPromptSourceId,
+  getReactionPrompt,
+  getSimpleChoicePrompt,
+  makeMatchState,
+  makeState,
+  makeBase,
+  makeMinion,
+} from './helpers';
 import { clearBaseAbilityRegistry, registerBaseAbility, registerExtended } from '../domain/baseAbilities';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
@@ -60,14 +72,16 @@ describe('Reaction queue: base abilities', () => {
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
     const ms1 = rq!.state;
-    const current = ms1.sys.interaction.current as any;
-    expect(current?.data?.sourceId).toBe('smashup_reaction_choose');
+    const current = getReactionPrompt(ms1);
 
     // Pick base_b first
-    const optB = current.data.options.find((o: any) => (o.label as string).includes('base_b'));
-    expect(optB).toBeDefined();
+    const optB = getPromptOption(
+      current,
+      (option: any) => (option.label as string).includes('base_b'),
+      'reaction option for base_b',
+    );
     const handler = getInteractionHandler('smashup_reaction_choose')!;
-    const r2 = handler(ms1 as any, '0', optB.value, current.data, { shuffle: (a: any[]) => a } as any, 2);
+    const r2 = handler(ms1 as any, '0', optB.value, getPromptHandlerData(current), { shuffle: (a: any[]) => a } as any, 2);
     expect(r2).toBeDefined();
     const evts = r2!.events as SmashUpEvent[];
     expect(evts[0].type).toBe(SU_EVENTS.TRIGGER_CONSUMED);
@@ -100,7 +114,7 @@ describe('Reaction queue: base abilities', () => {
     expect(result.events.some(event => event.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(true);
     expect(result.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
     expect(result.events.some(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
-    expect(result.matchState?.sys.interaction?.current).toBeUndefined();
+    expectNoPrompt(result.matchState!);
   });
 
   it('ACTION_PLAYED with multiple mandatory reactions opens one unified ordering interaction', () => {
@@ -136,11 +150,9 @@ describe('Reaction queue: base abilities', () => {
       timestamp: 1,
     } as any], { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, matchState);
 
-    const current = result.matchState?.sys.interaction?.current as any;
-    expect(current).toBeDefined();
-    expect(current.data.sourceId).toBe('smashup_reaction_choose');
-    expect(current.data.options.some((option: any) => String(option.label).includes('base_a'))).toBe(true);
-    expect(current.data.options.some((option: any) => String(option.label).includes('test_action_watcher'))).toBe(true);
+    const current = getReactionPrompt(result.matchState!);
+    expect(getPromptOptions(current).some((option: any) => String(option.label).includes('base_a'))).toBe(true);
+    expect(getPromptOptions(current).some((option: any) => String(option.label).includes('test_action_watcher'))).toBe(true);
   });
 
   it('queued base ability 无手写读写声明时可注册，由 runtime artifacts 推导 footprint', () => {
@@ -200,8 +212,8 @@ describe('Reaction queue: base abilities', () => {
     const ms0 = makeMatchState({ ...core, triggerQueue: triggers });
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
-    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).toBe('base_a_prompt');
-    expect((rq!.state.sys.interaction.current as any)?.data?.sourceId).not.toBe('smashup_reaction_choose');
+    const prompt = getSimpleChoicePrompt(rq!.state, 'base_a_prompt');
+    expect(getPromptSourceId(prompt)).not.toBe('smashup_reaction_choose');
   });
 });
 

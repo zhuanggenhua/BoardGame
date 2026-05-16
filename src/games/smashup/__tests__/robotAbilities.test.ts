@@ -19,7 +19,17 @@ import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
-import { makeMatchState as makeMatchStateFromHelpers } from './helpers';
+import {
+    getOptionalSimpleChoicePrompt,
+    getPromptHandlerData,
+    getPromptMultiMin,
+    getPromptOption,
+    getPromptOptions,
+    getPromptOptionsGenerator,
+    getSimpleChoicePrompt,
+    makeMatchState as makeMatchStateFromHelpers,
+    respondToPromptOptions,
+} from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { buildSmashUpAiLegalActions } from '../ai';
@@ -99,9 +109,8 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
             payload: { cardUid: 'r1', baseIndex: 0 },
         } as any, defaultRandom);
         expect(result.success).toBe(true);
-        const interaction = (result.finalState.sys as any)?.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect(interaction?.data?.sourceId).toBe('robot_microbot_reclaimer');
+        const prompt = getSimpleChoicePrompt(result.finalState, 'robot_microbot_reclaimer');
+        expect(prompt).toBeDefined();
     });
 
     it('交互 min=0 时不再注入显式 skip 选项，改由空选择完成跳过', () => {
@@ -119,10 +128,10 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
             type: SU_COMMANDS.PLAY_MINION, playerId: '0',
             payload: { cardUid: 'r1', baseIndex: 0 },
         } as any, defaultRandom);
-        const interaction = (result.finalState.sys as any)?.interaction?.current;
-        expect(interaction?.data?.multi?.min).toBe(0);
-        expect(interaction?.data?.options?.some((o: any) => o.id === 'skip')).toBe(false);
-        expect(typeof interaction?.data?.optionsGenerator).toBe('function');
+        const prompt = getSimpleChoicePrompt(result.finalState, 'robot_microbot_reclaimer');
+        expect(getPromptMultiMin(prompt)).toBe(0);
+        expect(getPromptOptions(prompt).some((o: any) => o.id === 'skip')).toBe(false);
+        expect(typeof getPromptOptionsGenerator(prompt)).toBe('function');
     });
 
     it('选跳过 → 弃牌堆不变', () => {
@@ -143,10 +152,10 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
         expect(r1.success).toBe(true);
 
         // 解决交互：传空数组（跳过）
-        const interaction = (r1.finalState.sys as any)?.interaction?.current;
+        const prompt = getSimpleChoicePrompt(r1.finalState, 'robot_microbot_reclaimer');
         const handler = getAbilityRuntimePromptHandler('robot_microbot_reclaimer');
         expect(handler).toBeDefined();
-        const result = handler!(r1.finalState, '0', [], interaction?.data, defaultRandom, 1000);
+        const result = handler!(r1.finalState, '0', [], getPromptHandlerData(prompt), defaultRandom, 1000);
         expect(result?.events.length).toBe(0);
         // 弃牌堆中的微型机仍在
         expect(r1.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'mb1')).toBe(true);
@@ -173,11 +182,11 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
         } as any, defaultRandom);
         expect(r1.success).toBe(true);
 
-        const interaction = (r1.finalState.sys as any)?.interaction?.current;
+        const prompt = getSimpleChoicePrompt(r1.finalState, 'robot_microbot_reclaimer');
         const handler = getAbilityRuntimePromptHandler('robot_microbot_reclaimer');
         expect(handler).toBeDefined();
         // 选择 mb1 洗回牌库
-        const result = handler!(r1.finalState, '0', [{ cardUid: 'mb1' }], interaction?.data, defaultRandom, 1000);
+        const result = handler!(r1.finalState, '0', [{ cardUid: 'mb1' }], getPromptHandlerData(prompt), defaultRandom, 1000);
         const reorderEvents = result?.events.filter((e: any) => e.type === SU_EVENTS.DECK_REORDERED) ?? [];
         expect(reorderEvents.length).toBe(1);
         const deckUids = (reorderEvents[0] as any).payload.deckUids;
@@ -207,8 +216,8 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
         } as any, defaultRandom);
         expect(played.success).toBe(true);
 
-        const interaction = (played.finalState.sys as any)?.interaction?.current;
-        const optionsGenerator = interaction?.data?.optionsGenerator;
+        const prompt = getSimpleChoicePrompt(played.finalState, 'robot_microbot_reclaimer');
+        const optionsGenerator = getPromptOptionsGenerator(prompt);
         expect(typeof optionsGenerator).toBe('function');
 
         const refreshedState = {
@@ -225,7 +234,7 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
             },
         } as MatchState<SmashUpCore>;
 
-        const refreshedOptions = optionsGenerator(refreshedState, interaction.data);
+        const refreshedOptions = optionsGenerator!(refreshedState, getPromptHandlerData(prompt));
         expect(refreshedOptions.some((option: any) => option.value?.cardUid === 'mb1')).toBe(false);
         expect(refreshedOptions.some((option: any) => option.value?.cardUid === 'mb2')).toBe(true);
         expect(refreshedOptions.some((option: any) => option.id === 'skip')).toBe(false);
@@ -259,9 +268,8 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
             payload: { cardUid: 'r1', baseIndex: 0 },
         } as any, defaultRandom);
         expect(result.success).toBe(true);
-        const interaction = (result.finalState.sys as any)?.interaction?.current;
-        // 无微型机时不创建交互
-        expect(interaction?.data?.sourceId).not.toBe('robot_microbot_reclaimer');
+        // 无微型机时不创建该能力交互
+        expect(getOptionalSimpleChoicePrompt(result.finalState, 'robot_microbot_reclaimer')).toBeUndefined();
     });
 });
 
@@ -381,16 +389,14 @@ describe('robot_microbot_reclaimer（微型机回收者 onPlay 额外出牌）',
         expect(firstPlay.success).toBe(true);
         expect(firstPlay.finalState.core.players['0'].minionLimit).toBe(2);
 
-        const interaction = (firstPlay.finalState.sys as any)?.interaction?.current;
-        expect(interaction?.data?.sourceId).toBe('robot_microbot_reclaimer');
-        const selected = interaction?.data?.options?.find((option: any) => option.value?.cardUid === 'mb1');
-        expect(selected).toBeDefined();
+        const prompt = getSimpleChoicePrompt(firstPlay.finalState, 'robot_microbot_reclaimer');
+        const selected = getPromptOption(
+            prompt,
+            (option: any) => option.value?.cardUid === 'mb1',
+            'microbot option for mb1',
+        );
 
-        const afterRespond = runCommand(firstPlay.finalState, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '0',
-            payload: { optionIds: [selected.id] },
-        } as any, defaultRandom);
+        const afterRespond = respondToPromptOptions(firstPlay.finalState, [selected.id], '0', defaultRandom);
         expect(afterRespond.success).toBe(true);
         expect(afterRespond.finalState.core.players['0'].minionLimit).toBe(2);
         expect(afterRespond.finalState.core.players['0'].minionsPlayed).toBe(1);

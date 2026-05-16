@@ -14,9 +14,8 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initAllAbilities } from '../abilities';
-import { makeState, makeBase, makeMinion, makeMatchState, runCommand } from './helpers';
-import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import type { SmashUpCore, MinionMovedEvent } from '../domain/types';
+import { expectNoPrompt, getPromptsBySourceId, makeState, makeBase, makeMinion, makeMatchState } from './helpers';
+import type { SmashUpCore } from '../domain/types';
 import { triggerBaseAbility } from '../domain/baseAbilities';
 
 describe('海盗湾重复触发 Bug', () => {
@@ -94,21 +93,13 @@ describe('海盗湾重复触发 Bug', () => {
         // 验证：只为玩家1创建了一个交互
         expect(result.matchState).toBeDefined();
         
-        // 交互会被自动设置为 current（如果队列为空）
-        const currentInteraction = result.matchState!.sys.interaction?.current;
-        const queuedInteractions = result.matchState!.sys.interaction?.queue ?? [];
-        
-        console.log('当前交互:', currentInteraction ? { id: currentInteraction.id, playerId: currentInteraction.playerId } : null);
-        console.log('交互队列:', queuedInteractions.map(i => ({ id: i.id, playerId: i.playerId })));
-        
-        // 应该有一个交互（玩家1的移动选择），可能在 current 或 queue 中
-        const totalInteractions = (currentInteraction ? 1 : 0) + queuedInteractions.length;
-        expect(totalInteractions).toBe(1);
-        
+        // 应该有一个语义为海盗湾移动选择的 prompt，可能在 current 或 queue 中
+        const prompts = getPromptsBySourceId(result.matchState!, 'base_pirate_cove');
+        expect(prompts).toHaveLength(1);
+
         // 验证交互属于玩家1
-        const interaction = currentInteraction ?? queuedInteractions[0];
+        const interaction = prompts[0];
         expect(interaction.playerId).toBe('1');
-        expect((interaction.data as any).sourceId).toBe('base_pirate_cove');
     });
 
     it('海盗湾 afterScoring 不应该为冠军创建交互', () => {
@@ -140,8 +131,7 @@ describe('海盗湾重复触发 Bug', () => {
         });
 
         // 验证：没有创建交互（冠军不能移动）
-        const interactions = result.matchState?.sys.interaction?.queue ?? [];
-        expect(interactions.length).toBe(0);
+        expectNoPrompt(result.matchState!);
     });
 
     it('移动随从后不应该触发重新计分', () => {

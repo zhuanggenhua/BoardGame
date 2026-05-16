@@ -18,20 +18,87 @@
 - [x] S0 吸收并安装 TDD / grill-with-docs 等必要 skill，补项目 TDD skill。
 - [x] S1 写入测试分层、行为 seam、测试接口门禁与结构守卫。
 - [x] S2 建立 SmashUp prompt facade，并修复 handler resolution 保留原 `sys` 的测试接口。
-- [x] S3 迁出 Vampires / Frankenstein / Werewolves / Princesses / Mermaids / Fairies / Skeletons 到 `src/games/smashup/__tests__/abilities/`。
+- [x] S3 迁出 Vampires / Frankenstein / Werewolves / Princesses / Mermaids / Fairies / Skeletons / Giant Ants / Samurai 到 `src/games/smashup/__tests__/abilities/`。
 - [x] S4 验证迁出文件不含禁用内部耦合模式，并运行聚焦组合回归。
-- [ ] S5 继续迁出剩余 `Samurai abilities` 与 `巨蚁派系能力`，最终让 `newFactionAbilities.test.ts` 退出新增入口。
+- [x] S5 迁出剩余 `Samurai abilities` 与 `巨蚁派系能力`，并让 `newFactionAbilities.test.ts` 退出新增入口。
 
 ## Current Status
 
 - [x] `src/games/smashup/__tests__/abilities/skeletons.test.ts` 已迁出，19 tests passed。
-- [x] `src/games/smashup/__tests__/newFactionAbilities.test.ts` 已无 `Skeletons abilities` / `skeletons_` 命中。
-- [x] 迁移相关组合回归：8 files passed / 118 tests passed。
-- [x] `npm run test:structure` 通过；仅保留 Junction 和旧大文件债务 warning。
+- [x] `src/games/smashup/__tests__/abilities/giant-ants.test.ts` 已迁出，22 tests passed。
+- [x] `src/games/smashup/__tests__/abilities/samurai.test.ts` 已迁出，28 tests passed。
+- [x] `src/games/smashup/__tests__/newFactionAbilities.test.ts` 已从实际文件树删除，旧泛名入口不再承载新增派系测试。
+- [x] 迁移相关组合回归：9 files passed / 118 tests passed。
+- [x] `npm run test:structure` 通过；仅保留 Junction 和删除 diff 中旧大文件债务 warning。
+- [x] `src/games/smashup/__tests__/archmageE2E.test.ts` 已把“无 prompt”断言从 `sys.interaction.current` 改为 `expectNoPrompt`，单文件 9 tests passed。
+- [x] `src/games/smashup/__tests__/turnCycle.test.ts` 已把“无 prompt”断言从 `sys.interaction.current` 改为 `expectNoPrompt`，单文件 22 tests passed。
+- [x] `src/games/smashup/__tests__/specialInteractionChain.test.ts` 已把 SimpleChoice 读取从 `asSimpleChoice(sys.interaction.current)` 改为 `getSimpleChoicePrompt` / `getFirstPrompt`，单文件 24 tests passed。
+- [x] `src/games/smashup/__tests__/killer-plant-pod-verification.test.ts` 已把 Sprout prompt 与响应链改为 `getSimpleChoicePrompt` / `getPromptOption` / `respondToPrompt`，单文件 11 tests passed。
+- [x] `src/games/smashup/__tests__/shayuEntryConsumption.test.ts` 已把第一入口专项 prompt 断言改为 `getSimpleChoicePrompt` / `getPromptOptions` / `expectNoPrompt`，单文件 6 tests passed。
+- [x] `src/games/smashup/__tests__/promptSystem.test.ts` 与 `promptResponseChain.test.ts` 已把底层 prompt 系统无交互断言改为 `expectNoPrompt`，组合 22 tests passed。
+- [x] `src/games/smashup/__tests__/reactionQueueBaseReplaceLki.test.ts` 与 `reactionQueueOrdering.test.ts` 已把 reaction queue 的 prompt/source/options 读取改为 `getSimpleChoicePrompt` / `getPromptOptions` / `getPromptOption`，并新增 `withoutCurrentPrompt` helper 收起底层清 prompt 细节；组合 27 tests passed。
+- [x] `src/games/smashup/__tests__/afterscoring-response-window-execution.test.ts`、`mulligan.test.ts`、`baseAbilityIntegration.test.ts` 已继续迁移 prompt source/options 读取；`getSimpleChoicePrompt(state, sourceId)` 已增强为可在 current + queue 中按 sourceId 查找，组合验证通过。
+- [x] `src/games/smashup/__tests__/ninja-hidden-ninja-no-minions.test.ts`、`temple-firstmate-afterscore.test.ts`、`wizard-neophyte-actionlog.test.ts` 已继续迁移 prompt source/响应读取；组合 11 tests passed。
+- [x] `src/games/smashup/__tests__/pirate-broadside-d1-audit.test.ts` 与 `scoringEligibleLock.test.ts` 已继续迁移 prompt source/options 读取；audit 文件用 `vitest.config.audit.ts` 验证，scoring 文件单测验证通过。
+- [x] `src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts` 与 `ninja-hidden-ninja-interaction-bug-repro.test.ts` 已继续迁移 prompt source/options/响应读取；组合 3 tests passed。
+- [x] `src/games/smashup/__tests__/reactionQueueOnBaseRevealed.test.ts`、`reactionQueueOnMinionDiscardedFromBase.test.ts`、`reactionQueueOnMinionPlayed.test.ts` 已把统一反应 prompt 读取改为 `getReactionPrompt`；组合 4 tests passed。
+- [x] `src/games/smashup/__tests__/pirate-cove-chain-fix.test.ts` 与 `turnTransitionInteractionBug.test.ts` 已继续收敛 prompt source 与响应命令 seam；组合 5 tests passed。
+- [x] `src/games/smashup/__tests__/duplicateInteractionRespond.test.ts`、`elder-thing-multi-select.test.ts`、`turnCycle.test.ts` 已继续收敛无 prompt 断言、prompt options/source/target 与 handler source 读取；组合 27 tests passed。
+- [x] `npm run test:structure` 已通过；旧泛名 `pirate-cove-chain-fix.test.ts` 本轮保持净删减，未继续给旧泛名文件加体量。
+- [x] `src/games/smashup/__tests__/igor-big-gulp-double-trigger.test.ts`、`igor-rlyeh-double-trigger.test.ts`、`shoggoth-destroy-choice.test.ts` 已继续收敛 prompt source/handler data/队列查询 seam；组合 8 tests passed。
+- [x] `src/games/smashup/__tests__/ancientEgyptiansMummyStrength.feedback-regression.test.ts`、`madMonsterPartyPreventedDestroy.test.ts`、`audit-d1-d8-d33-dino-survival-of-the-fittest.test.ts`、`choice-audit-fixes.test.ts` 已继续收敛 prompt source/options/no-prompt/handler data seam；普通组合 2 tests passed，audit 组合 18 tests passed。
+- [x] `src/games/smashup/__tests__/ui-interaction-manual.test.ts` 已把 UI 手动验证中的 `asSimpleChoice(sys.interaction.current)` 收敛为 `getSimpleChoicePrompt`；单文件 14 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/igor-big-gulp-two-igors.test.ts`、`igor-double-trigger-bug.test.ts`、`igor-two-igors-one-destroyed.test.ts` 已继续收敛 Big Gulp / Crypt / Igor onDestroy prompt source、options、player 与响应命令 seam；组合 3 files / 4 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/response-window-skip.test.ts` 已把响应窗口跳过测试的 current 读取、cancel 命令与 Hidden Ninja 子交互 options 读取改为 prompt facade；单文件 5 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/reactionQueueOnTurnStart.test.ts` 已把 onTurnStart/onTurnEnd 统一反应 prompt 断言改为 `getReactionPrompt`；单文件 2 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/robot-hoverbot-chain.test.ts` 已把 Hoverbot 链式响应命令和刷新后 live prompt options 读取收进 facade；单文件 3 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/robotAbilities.test.ts` 已把 Microbot Reclaimer 的 prompt source、multi 最小值、动态 options、handler data 与 optionIds 响应收进 facade；单文件 11 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/trickster-mark-of-sleep-self-target.test.ts` 已把 Mark of Sleep / POD 的 prompt title、options、source 与三处响应命令改为 prompt facade；单文件 9 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts` 已把可迁移的 reaction prompt、immediate extra minion prompt 与无 prompt 断言改为 facade；单文件 15 tests passed，剩余命中属于系统状态构造暂不硬藏。
+- [x] `src/games/smashup/__tests__/alien-scout-pod-afterscore.test.ts` 已把 Scout afterScoring 的 current/queue/source/options/handler data 改为 prompt facade；单文件 4 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/expansionAbilities.test.ts` 已把 Bear Hug、Ghost、Commission、Scrap Diving 的 prompt source/options、current+queue 查询与响应命令改为 prompt facade；单文件 32 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/reactionQueueBaseAbilities.test.ts` 已把 unified reaction prompt、options、handler data、无 prompt 与真实基地 prompt 断言改为 prompt facade；单文件 6 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/frankensteinFaq.test.ts` 已把 Blitzed / It’s Alive! 的 prompt source/options 与响应命令改为 prompt facade；单文件 3 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/reactionQueueBaseOptionalClockwise.test.ts` 已把 optional reaction prompt 的 player/options/handler data 与清 current 过渡改为 prompt facade；单文件 2 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/pirate-broadside-self-target.test.ts` 已把 Broadside / Saucy Wench 的 prompt source/title/options 与响应命令改为 prompt facade；单文件 6 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/wildlifePreserveProtection.test.ts` 已把 Seeing Stars / Unfathomable Goals 的 prompt 出现、候选过滤、响应命令、无 prompt 与错误来源读取改为 prompt facade；单文件 15 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/buryEngine.test.ts` 已把埋葬翻开 prompt 的 source、cardUid 候选查询与响应命令改为 prompt facade；单文件 9 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/pirate-cove-repeat-trigger-bug.test.ts` 已把海盗湾 afterScoring prompt 统计与无 prompt 断言改为 `getPromptsBySourceId` / `expectNoPrompt`；单文件 3 tests passed，扩展目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/pirate-king-afterscoring-window.test.ts` 已把海盗王 afterScoring prompt 与响应命令改为 `getSimpleChoicePrompt` / `getPromptOption` / `respondCommand`；单文件 1 test passed，扩展目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/promptE2E.test.ts` 已把 Cannon / Powderkeg / Grave Digger / Crop Circles 的 prompt source 与无 prompt 断言改为 prompt facade；单文件 12 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/afterScoring-rescoring.test.ts` 已把当前 simple-choice 读取与测试 setup 中的 current prompt 构造收进 `getOptionalSimpleChoicePrompt` / `withCurrentPrompt`；单文件 8 tests passed，目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/baseAbilities.test.ts` 已把 ability runtime prompt 断言从 `asSimpleChoice(sys.interaction.current)` 改为 `getFirstPrompt` / `getPromptSourceId` / `getPromptHandlerData`；单文件 11 tests passed，扩展目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/bigGulpDroneIntercept.test.ts` 已把 Big Gulp / Drone prompt 的 player/source/options、响应命令和无 prompt 断言改为 prompt facade；单文件 2 tests passed，扩展目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/robot-hoverbot-stable.test.ts` 已把 Hoverbot prompt options、响应命令、无 prompt 与基地选择 prompt 读取改为 prompt facade；单文件 3 tests passed，扩展目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/cthulhu-chosen-display-mode.test.ts` 已把神选者确认 prompt 的 target/source/options、queued prompt player/options 读取改为 prompt facade；单文件 4 tests passed，扩展目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/robot-hoverbot-button-disabled.test.ts` 已把 Hoverbot 按钮交互的 title/source/options/optionsGenerator 与无 prompt 断言改为 prompt facade；单文件 3 tests passed，扩展目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/duplicateInteractionRespond.test.ts` 已把重复 respond 回归的系统响应命令形状改为 `respondCommand`；单文件 2 tests passed，扩展目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/specialInteractionChain.test.ts` 已把本地 `respond()` helper 的系统响应命令形状改为 `respondCommand`；单文件 24 tests passed，扩展目标模式 0 命中。
+- [x] `src/games/smashup/__tests__/promptSystem.test.ts` 与 `promptResponseChain.test.ts` 已把“无 Prompt 时响应”的手写 `INTERACTION_COMMANDS.RESPOND` 命令改为 `respondCommand`；组合 22 tests passed，eslint 0 errors，目标扩展扫描仅保留 AI fallback / event 常量这类底层合同断言。
+- [x] `src/games/smashup/__tests__/reactionQueueOrdering.test.ts`、`scoringEligibleLock.test.ts`、`tortuga-pirate-king-flowhalted-fix.test.ts` 已继续清理小尾巴：handler data 注入改为 `withPromptHandlerData`，无 prompt / 有 prompt 断言改为 facade，未使用 `INTERACTION_COMMANDS` import 删除；组合 40 tests passed，扩展目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/ancientEgyptiansMummyStrength.feedback-regression.test.ts` 与 `pirate-broadside-d1-audit.test.ts` 已把手写 `INTERACTION_COMMANDS.RESPOND` 改为 `respondCommand`；普通单测 1 passed，audit 专用单测 3 passed，目标扩展扫描 0 命中。
+- [x] `src/games/smashup/__tests__/elder-thing-multi-select.test.ts` 已把 `interaction.data.title/multi` 读取改为 `getPromptTitle` / `getPromptMulti`，并新增 `getPromptMulti` helper；单文件 3 tests passed，扩展目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/alien-scout-no-duplicate-scoring.test.ts` 已把 afterScoring 触发与确认的手写 `INTERACTION_COMMANDS.RESPOND` 改为 `respondCommand`；单文件 2 tests passed，扩展目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/audit-d11-d12-d14-dino-rampage.test.ts` 已把 prompt current/source/options 读取改为 `getFirstPrompt` / `getPromptSourceId` / `getPromptOption`，响应命令改为 `runner.resolveInteraction`；audit 专用 6 tests passed，目标扩展扫描 0 命中。
+- [x] `src/games/smashup/__tests__/alienAuditFixes.test.ts` 已把 Aliens 审计回归中的 prompt source/options/no-prompt 与响应 helper 改为 facade；audit 专用 14 tests passed，目标扩展扫描 0 命中。
+- [x] `src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts` 已把 current 清理/注入、continuationContext 注入、interactionData 读取与 immediate extra 响应命令改为 prompt facade；单文件 15 tests passed，目标扩展扫描 0 命中。
+- [x] `src/games/smashup/__tests__/scoreBases-auto-continue.test.ts` 已把 multi-base scoring prompt 读取、AI respond 命令断言与 resolutionFrameId setup 改为 prompt/command facade；单文件 36 tests passed，目标扩展扫描 0 命中。
+- [x] `src/games/smashup/__tests__/elderThingAbilities.test.ts` 已把 Elder Thing prompt source/target/handler data 与响应命令改为 prompt facade；单文件 25 tests passed，目标扩展扫描 0 命中。
+- [x] `src/games/smashup/__tests__/ongoingE2E.test.ts` 已把 Shanghai prompt 链、Buccaneer/First Mate POD prompt source 与响应命令改为 prompt facade；单文件 14 tests passed，目标扩展扫描 0 命中。
+- [x] `src/games/smashup/__tests__/runtimeEvidenceIssues.test.ts` 已把两个 runtime evidence 复现从裸 `getInteractionsFromMS` / `data.options` / `INTERACTION_COMMANDS.RESPOND` 改为 prompt facade；同时补强 Fledgling Vampire POD 链路，旧测试从“跑完但不证明 bury prompt”改为 Big Gulp 目标选择 -> Fledgling 反应选择 -> bury source prompt 出现，单文件 2 tests passed，目标扩展扫描 0 命中。
 
 ## Next
 
-- 继续迁出 `Samurai abilities` 或 `巨蚁派系能力`；迁出时必须先补/复用 facade，不把旧内部访问原样搬进新文件。
+- 继续把同一行为 seam 规范扩展到其他仍含裸交互结构的旧测试文件；新增/迁出测试必须复用 prompt facade，不把旧内部访问原样搬进新文件。
+- 当前全 `src/games/smashup/__tests__` 仍有 780 条旧内部耦合命中；后续按风险簇继续迁移，不得把当前批次误报为整体完成。
+
+## Errors Encountered
+
+| 时间 | 错误 | 处置 |
+| --- | --- | --- |
+| 2026-05-16 | 清理 `expansionAbilities.test.ts` 未使用 `events` warning 时，模糊替换误删了仍被后续断言使用的 `events` 赋值，导致单文件测试短暂失败。 | 改为按具体用例上下文定点恢复需要的 `const events = ...`，只清理 Ghost/Scrap Diving prompt 存在性用例的未使用赋值；复跑后 32 tests passed，eslint 0 warnings。 |
+| 2026-05-16 | 迁移 `robot-hoverbot-stable.test.ts` 时误用 `getPromptOptionById`，该 helper 只覆盖 `prompt.options`，未覆盖历史 `data.options`，导致首个用例找不到 `play` option。 | 改用已兼容两种形状的 `getPromptOption`，保持行为断言不变；复跑后 3 tests passed，eslint 0 errors。 |
+| 2026-05-16 | 补强 `runtimeEvidenceIssues.test.ts` 的 Fledgling Vampire POD bury prompt 断言时，第一次直接断言 bury source prompt 失败，实际当前 prompt 仍是 `smashup_reaction_choose`；第二次用固定玩家 `0` 响应 reaction prompt 又失败为“不是你的选择回合”。 | 改为显式先选择 `vampire_fledgling_vampire_pod` 的 reaction option，并让 `respondToPrompt` 使用 prompt 自身 playerId；复跑后单文件 2 tests passed。 |
 
 ---
 

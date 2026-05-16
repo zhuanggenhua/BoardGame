@@ -57,6 +57,7 @@ class MatchSocketService {
     private currentMatchId: string | null = null;
     private currentPlayerId: string | null = null;
     private currentChatMatchId: string | null = null;
+    private currentAutoAcceptedPlayerIds: string[] = [];
     private stateCallbacks: Set<RematchStateCallback> = new Set();
     private resetCallbacks: Set<RematchResetCallback> = new Set();
     private newRoomCallbacks: Set<NewRoomCallback> = new Set();
@@ -189,10 +190,7 @@ class MatchSocketService {
         }
 
         if (this.currentMatchId && this.currentPlayerId) {
-            this.socket.emit(REMATCH_EVENTS.JOIN_MATCH, {
-                matchId: this.currentMatchId,
-                playerId: this.currentPlayerId,
-            });
+            this.socket.emit(REMATCH_EVENTS.JOIN_MATCH, this.buildJoinMatchPayload(this.currentMatchId, this.currentPlayerId));
         }
 
         if (this.currentChatMatchId) {
@@ -262,9 +260,10 @@ class MatchSocketService {
         });
     }
 
-    joinMatch(matchId: string, playerId: string): void {
+    joinMatch(matchId: string, playerId: string, options?: { autoAcceptedPlayerIds?: string[] }): void {
         this.currentMatchId = matchId;
         this.currentPlayerId = playerId;
+        this.currentAutoAcceptedPlayerIds = this.normalizeAutoAcceptedPlayerIds(options?.autoAcceptedPlayerIds ?? []);
         this.currentState = { votes: {}, ready: false, revision: 0 };
         this.lastAcceptedRevision = 0;
 
@@ -277,7 +276,31 @@ class MatchSocketService {
 
         this.isConnected = true;
         this.isConnecting = false;
-        socket.emit(REMATCH_EVENTS.JOIN_MATCH, { matchId, playerId });
+        socket.emit(REMATCH_EVENTS.JOIN_MATCH, this.buildJoinMatchPayload(matchId, playerId));
+    }
+
+    private normalizeAutoAcceptedPlayerIds(playerIds: string[]): string[] {
+        return [...new Set(
+            playerIds.filter((playerId) => typeof playerId === 'string' && playerId.trim().length > 0).map((playerId) => playerId.trim()),
+        )];
+    }
+
+    private buildJoinMatchPayload(matchId: string, playerId: string): { matchId: string; playerId: string; autoAcceptedPlayerIds?: string[] } {
+        return {
+            matchId,
+            playerId,
+            ...(this.currentAutoAcceptedPlayerIds.length > 0
+                ? { autoAcceptedPlayerIds: this.currentAutoAcceptedPlayerIds }
+                : {}),
+        };
+    }
+
+    setAutoAcceptedPlayerIds(playerIds: string[]): void {
+        this.currentAutoAcceptedPlayerIds = this.normalizeAutoAcceptedPlayerIds(playerIds);
+
+        if (this.socket?.connected && this.currentMatchId && this.currentPlayerId) {
+            this.socket.emit(REMATCH_EVENTS.JOIN_MATCH, this.buildJoinMatchPayload(this.currentMatchId, this.currentPlayerId));
+        }
     }
 
     leaveMatch(): void {
@@ -287,6 +310,7 @@ class MatchSocketService {
 
         this.currentMatchId = null;
         this.currentPlayerId = null;
+        this.currentAutoAcceptedPlayerIds = [];
         this.currentState = { votes: {}, ready: false, revision: 0 };
         this.lastAcceptedRevision = 0;
         this.releaseConnectionIfIdle();
@@ -420,6 +444,7 @@ class MatchSocketService {
         this.socket = null;
         this.isConnected = false;
         this.isConnecting = false;
+        this.currentAutoAcceptedPlayerIds = [];
         this.stateCallbacks.clear();
         this.resetCallbacks.clear();
         this.newRoomCallbacks.clear();

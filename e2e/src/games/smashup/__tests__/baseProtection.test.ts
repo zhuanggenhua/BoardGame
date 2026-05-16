@@ -22,6 +22,7 @@ import type { MatchState, RandomFn } from '../../../engine/types';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, MinionDestroyedEvent, MinionMovedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
+import { getSimpleChoicePrompt } from './helpers';
 
 // ============================================================================
 // 初始化
@@ -264,9 +265,7 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
         expect(destroyEvents).toHaveLength(0);
         // 应创建交互
         expect(result.matchState).toBeDefined();
-        const interaction = result.matchState!.sys.interaction.current;
-        expect(interaction).toBeDefined();
-        expect((interaction!.data as any).sourceId).toBe('base_nine_lives_intercept');
+        expect(getSimpleChoicePrompt(result.matchState!, 'base_nine_lives_intercept')).toBeDefined();
     });
 
     it('九命之屋本身的随从被消灭时不创建交互', () => {

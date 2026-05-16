@@ -8,7 +8,19 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import { initAllAbilities } from '../abilities';
 import { runCommand } from './testRunner';
-import { makeState, makePlayer, makeCard, makeBase, makeMinion, makeMatchState } from './helpers';
+import {
+    expectNoPrompt,
+    getPromptHandlerData,
+    getPromptOptions,
+    getPromptOptionsGenerator,
+    getPromptSourceId,
+    getPromptTitle,
+    getSimpleChoicePrompt,
+    makeState,
+    makePlayer,
+    makeCard,
+    makeMatchState,
+} from './helpers';
 import { SU_COMMANDS } from '../domain/types';
 import type { RandomFn } from '../../../engine/types';
 
@@ -49,15 +61,13 @@ describe('盘旋机器人 - 按钮可点击性', () => {
         } as any, defaultRandom);
 
         // 验证：应该创建交互
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect(interaction?.data.title).toContain('牌库顶是');
+        const interaction = getSimpleChoicePrompt(result.finalState, 'robot_hoverbot');
+        expect(getPromptTitle(interaction)).toContain('牌库顶是');
         // 注意：卡牌名称可能是 i18n key（如 'cards.alien_invader.name'）或实际名称
-        expect(interaction?.data.title).toMatch(/入侵者|alien_invader/);
+        expect(getPromptTitle(interaction)).toMatch(/入侵者|alien_invader/);
         
         // 验证：应该有2个选项
-        const options = (interaction?.data as any)?.options;
-        expect(options).toBeDefined();
+        const options = getPromptOptions(interaction);
         expect(options.length).toBe(2);
         
         // 验证：第一个选项是"打出"
@@ -71,7 +81,7 @@ describe('盘旋机器人 - 按钮可点击性', () => {
         expect(options[1].disabled).toBeUndefined(); // 不应该被禁用
         
         // 验证：sourceId 正确
-        expect((interaction?.data as any).sourceId).toBe('robot_hoverbot');
+        expect(getPromptSourceId(interaction)).toBe('robot_hoverbot');
     });
     
     it('牌库顶是行动卡时不应该创建交互', () => {
@@ -102,7 +112,7 @@ describe('盘旋机器人 - 按钮可点击性', () => {
         expect(result.success).toBe(true);
         
         // 验证：不应该创建交互（行动卡直接放回牌库顶）
-        expect(result.finalState.sys.interaction?.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
         
         // 验证：应该有事件（至少有 MINION_PLAYED 事件）
         expect(result.events.length).toBeGreaterThan(0);
@@ -132,11 +142,10 @@ describe('盘旋机器人 - 按钮可点击性', () => {
             timestamp: 1000,
         } as any, defaultRandom);
 
-        const interaction = result.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
+        const interaction = getSimpleChoicePrompt(result.finalState, 'robot_hoverbot');
 
         // 获取 optionsGenerator
-        const optionsGenerator = (interaction?.data as any)?.optionsGenerator;
+        const optionsGenerator = getPromptOptionsGenerator(interaction);
         expect(optionsGenerator).toBeDefined();
 
         // 模拟牌库顶卡牌变化（被移除或替换）
@@ -155,7 +164,7 @@ describe('盘旋机器人 - 按钮可点击性', () => {
         };
 
         // 调用 optionsGenerator 获取刷新后的选项
-        const refreshedOptions = optionsGenerator(modifiedState, interaction?.data);
+        const refreshedOptions = optionsGenerator!(modifiedState, getPromptHandlerData(interaction));
 
         // 验证：牌库顶变化后必须只保留 skip，避免玩家/AI 点到 stale play 导致 handler throw
         expect(refreshedOptions).toBeDefined();

@@ -62,9 +62,6 @@ const DevToolsSlicer = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pag
 const DevToolsFxPreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/EffectPreview')) : null;
 const DevToolsAudioBrowser = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/AudioBrowser')) : null;
 const DevToolsArchView = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/ArchitectureView')) : null;
-const UgcBuilderPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/builder/pages/UnifiedBuilderWithAudio')) : null;
-const UgcSandboxPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/builder/pages/UGCSandbox')) : null;
-const UgcRuntimeViewPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/runtime/RuntimeViewPage')) : null;
 const HomeV2AuthoringPage = ENABLE_INTERNAL_DEVTOOLS
   ? React.lazy(() => import('./pages/HomeV2Draft').then(m => ({ default: m.HomeV2Draft })))
   : null;
@@ -169,15 +166,6 @@ const AppContent = () => {
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && HomeV2PreviewPage && (
                       <Route path={HOME_V2_PREVIEW_PATH} element={<React.Suspense fallback={null}><HomeV2PreviewPage /></React.Suspense>} />
-                    )}
-                    {ENABLE_INTERNAL_DEVTOOLS && UgcBuilderPage && (
-                      <Route path="/dev/ugc" element={<React.Suspense fallback={null}><UgcBuilderPage /></React.Suspense>} />
-                    )}
-                    {ENABLE_INTERNAL_DEVTOOLS && UgcSandboxPage && (
-                      <Route path="/dev/ugc/sandbox" element={<React.Suspense fallback={null}><UgcSandboxPage /></React.Suspense>} />
-                    )}
-                    {ENABLE_INTERNAL_DEVTOOLS && UgcRuntimeViewPage && (
-                      <Route path="/dev/ugc/runtime-view" element={<React.Suspense fallback={null}><UgcRuntimeViewPage /></React.Suspense>} />
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && SmashUp4PLayoutTest && (
                       <Route path="/dev/smashup-4p-layout" element={<React.Suspense fallback={null}><SmashUp4PLayoutTest /></React.Suspense>} />

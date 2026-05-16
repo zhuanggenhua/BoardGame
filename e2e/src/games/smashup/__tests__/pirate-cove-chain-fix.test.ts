@@ -14,6 +14,7 @@ import type { SmashUpCore, SmashUpCommand, SmashUpEvent } from '../types';
 import { smashUpSystemsForTest } from '../game';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
+import { getFirstPrompt, getPromptSourceId } from './helpers';
 
 beforeAll(() => {
     // 系统已在 game.ts 中初始化
@@ -198,10 +199,9 @@ describe('海盗湾计分链路', () => {
 
         // 验证：应该停在 scoreBases，统一反应交互或具体基地交互已创建
         expect(result.finalState.sys.phase).toBe('scoreBases');
-        expect(result.finalState.sys.interaction?.current).toBeDefined();
-        expect(['smashup_reaction_choose', 'base_pirate_cove']).toContain(
-            result.finalState.sys.interaction?.current?.data?.sourceId,
-        );
+        const prompt = getFirstPrompt(result.finalState);
+        expect(prompt).toBeDefined();
+        expect(['smashup_reaction_choose', 'base_pirate_cove']).toContain(getPromptSourceId(prompt));
     });
 
     it('所有玩家 pass 后，应该创建海盗湾交互', () => {
@@ -228,9 +228,8 @@ describe('海盗湾计分链路', () => {
             expect(mirroredWindowAfterPass.sourceId).toBe('smashup_reaction_choose');
             expect(mirroredWindowAfterPass.windowType).toBe('afterScoring');
         }
-        expect(result.finalState.sys.interaction?.current).toBeDefined();
-        expect(['smashup_reaction_choose', 'base_pirate_cove']).toContain(
-            result.finalState.sys.interaction?.current?.data?.sourceId,
-        );
+        const prompt = getFirstPrompt(result.finalState);
+        expect(prompt).toBeDefined();
+        expect(['smashup_reaction_choose', 'base_pirate_cove']).toContain(getPromptSourceId(prompt));
     });
 });

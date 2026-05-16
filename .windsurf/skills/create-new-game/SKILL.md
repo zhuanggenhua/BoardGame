@@ -134,6 +134,38 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
    - 地图类默认优先 `landscape-adapted + map-shell`；固定牌桌默认优先 `landscape-adapted + board-shell`；天然单列轻游戏才考虑 `portrait-simple`。
    - 如果素材或规则证明该游戏暂不适合手机，也必须在 manifest/UI 规范中写明降级策略，而不是跳过移动端思考。
 
+## 前置 1.3：规则配件表白名单与正式资源准入（强制）
+
+当规则书、PDF、素材包、Workshop/TTS 导出目录或用户素材目录中存在“配件表 / 组件表 / 素材清单 / 起始设置表 / 牌表”时，AI 必须先把它整理成正式资源准入白名单，再移动、压缩、上传任何运行时图片。
+
+### 默认动作
+
+1. **先抽取规则配件表**
+   - 从规则书或用户指定真相源中抽取组件清单，至少记录对象类别、阵营/归属、数量、是否运行时可见、规则出处。
+   - 若规则书没有显式配件表，必须用规则文本和素材图面建立“临时准入表”，并标注为待复核；不得因为来源目录里有文件就默认全部接入。
+2. **给每个源文件做准入裁决**
+   - `runtime`：规则/MVP 运行态需要，允许进入 `public/assets/i18n/<locale>/<gameId>/`。
+   - `reference`：只作为规则、帮助、剧本或人工核对资料，允许进入明确的 `aids/` 或留在 `rule/` / `evidence/`，但不得被当成运行时对象。
+   - `candidate`：可能有用但规则依据不足，只能登记到 `temp/<gameId>-intake/` 或清单里，禁止进正式运行时目录。
+   - `excluded`：TTS/Workshop 材质色块、编辑器占位图、无规则对象对应的贴图、重复导出、下载站装饰图等，必须写排除原因，禁止压缩、上传和引用。
+3. **正式目录只接收白名单资源**
+   - 进入 `public/assets/<gameId>` 或 `public/assets/i18n/<locale>/<gameId>` 的文件，必须在准入表中有 `runtime` 或明确的 `reference` 状态。
+   - 不能用“以免漏资产”“以后可能用到”“目录里有”作为正式接入理由。
+   - 若需要保留原始包的完整快照，只能放在用户原目录、`temp/<gameId>-intake/raw/` 或外部资料目录，不能混入正式运行时资源树。
+4. **命名必须有证据链**
+   - 正式文件名必须是稳定语义名：小写 kebab-case，按 `阵营/类别/对象/序号或批次` 组合，例如 `ming-card-back`、`jin-regular-infantry`、`chronology-cards-atlas`。
+   - 图面无法读清、规则表无法对应、同名对象无法区分时，不得硬塞进正式目录；先标为 `candidate`，等 OCR/人工核对后再命名。
+   - 允许临时序号只用于 `temp/` 或清单；正式资源不得长期使用下载哈希、扫描流水号、`image-01`、`unknown-*`、`misc-*` 这类无法回溯语义的名字。
+5. **上传前复核**
+   - 运行 `assets:manifest`、`assets:check`、`assets:upload` 之前，必须先确认正式目录没有 `candidate/excluded` 文件。
+   - 如果发现已经把排除项放进正式目录，本轮不能继续按“资源闭环已完成”收口；必须先说明对象、依据和最小补救方案，并按删除/降级规则取得用户确认后再处理。
+
+### 准入表最低字段
+
+`sourceFile | sourceSize | visualLabel | ruleRef | requiredComponent | intakeStatus | targetPath | canonicalName | decisionReason | reviewerNotes`
+
+其中 `intakeStatus` 只能是 `runtime`、`reference`、`candidate`、`excluded`。缺少 `ruleRef` 或 `decisionReason` 的文件，默认不能进入正式运行时目录。
+
 ## 前置 1.4：规则 PDF 转 Markdown 与可行性评估（强制前置）
 
 当用户提供的是“规则 PDF + 图片素材目录”，或明确要求先判断新游戏是否可做时，先完成本阶段，**不要直接进入游戏骨架实现**。
@@ -146,9 +178,11 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
    - Markdown 顶部必须写明来源路径、转换日期、转换方式和质量说明；不得在转写时改写规则语义。
 2. **素材盘点**
    - 生成 `temp/<gameId>-intake/image-inventory.tsv` 或等价清单，至少包含原文件名、尺寸、类型、疑似用途。
-   - 能可靠识别用途的图片，按本 skill 的资源目录与语义命名落正式目录；不能可靠识别的只登记为待裁定，不强行命名。
+   - 先按 `前置 1.3` 生成正式资源准入白名单；只有 `runtime` 或明确 `reference` 的图片，才允许按本 skill 的资源目录与语义命名落正式目录。
+   - 不能可靠识别、不能对应规则配件表或当前 MVP 不需要的图片，只登记为 `candidate` / `excluded`，不强行命名，不移动到正式资源树。
 3. **资源闭环**
    - 正式图片落盘后运行最小必要压缩命令。
+   - 压缩前再次确认正式目录没有 `candidate/excluded` 文件。
    - 运行 `npm run assets:manifest` 与 `npm run assets:validate`。
    - 若本轮新增运行时资源，执行 `npm run assets:check`；发现远端缺失时继续 `npm run assets:upload`，并抽查代表性远端 URL 返回 200。
 4. **可行性分析**
@@ -158,7 +192,8 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 ### 验收
 
 - `rule/<游戏名>规则.md` 存在且可读。
-- 素材清单能回溯原始文件与正式目标路径。
+- 素材准入表能回溯原始文件、规则配件表依据、准入状态与正式目标路径。
+- 正式资源目录中不存在 `candidate/excluded` 文件。
 - 正式资源已有 `compressed/*.webp` 或明确说明为何不能压缩。
 - 资源 manifest 已重建并校验通过。
 - 可行性分析已落到 `evidence/<gameId>/`，并能指导后续是否开分支建骨架。
@@ -177,13 +212,14 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 
 ### AI 默认动作
 
-1. 先写素材录入契约：真相源表、切图表、核对合同表、对照表、冲突待裁定表。
+1. 先写素材录入契约：真相源表、规则配件表白名单、切图表、核对合同表、对照表、冲突待裁定表。
 2. 先读图识别对象，再判断现有文件名是否明显随机/无语义：
    - 若是随机名、默认导出名、批量下载残留名，则按**图片内容语义**自动重命名并移动到正式目录。
    - 若现有文件名看起来是用户有意命名的语义名，则默认不改名，只询问是否需要统一为项目规范命名。
-3. 原图落盘后立即运行 `npm run compress:images -- public/assets/<gameId>` 或最小必要子目录。
-4. 若用户给的是“位置/顺序”，则直接建立索引映射和命名合同，不等待后续手工整理。
-5. 若默认运行态依赖远端资源，数据录入或图片 intake 完成后必须跑 `npm run assets:check`；只要本轮新增/变更了运行时资源且远端有缺口，就必须继续执行上传闭环，直到远端对象可访问，不能停留在“本地已落盘”。
+3. 移动正式资源前必须完成 `runtime/reference/candidate/excluded` 裁决；`candidate/excluded` 不得进入 `public/assets/` 正式树。
+4. 原图落盘后立即运行 `npm run compress:images -- public/assets/<gameId>` 或最小必要子目录。
+5. 若用户给的是“位置/顺序”，则直接建立索引映射和命名合同，不等待后续手工整理。
+6. 若默认运行态依赖远端资源，数据录入或图片 intake 完成后必须跑 `npm run assets:check`；只要本轮新增/变更了运行时资源且远端有缺口，就必须继续执行上传闭环，直到远端对象可访问，不能停留在“本地已落盘”。
 
 ### 默认目录与命名约定
 

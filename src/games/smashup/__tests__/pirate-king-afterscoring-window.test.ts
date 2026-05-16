@@ -1,11 +1,19 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { MatchState } from '../../../engine/types';
-import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { executePipeline, createInitialSystemState } from '../../../engine/pipeline';
 import { initAllAbilities } from '../abilities';
 import { SmashUpDomain } from '../domain';
 import type { SmashUpCommand, SmashUpCore } from '../domain/types';
-import { makeBase, makeMinion, makePlayer, makeCard } from './helpers';
+import {
+    expectNoPrompt,
+    getPromptOption,
+    getSimpleChoicePrompt,
+    makeBase,
+    makeMinion,
+    makePlayer,
+    makeCard,
+    respondCommand,
+} from './helpers';
 import { smashUpSystemsForTest } from '../game';
 import { defaultTestRandom } from './testRunner';
 
@@ -31,14 +39,6 @@ function runCommandWithFullSystems(initialState: MatchState<SmashUpCore>, comman
         events: result.events,
         error: result.error,
     };
-}
-
-function findOption(choice: any, predicate: (option: any) => boolean): string {
-    const option = choice.options.find(predicate);
-    if (!option) {
-        throw new Error(`找不到匹配选项: ${JSON.stringify(choice.options.map((item: any) => item.id))}`);
-    }
-    return option.id;
 }
 
 describe('pirate_king afterScoring window', () => {
@@ -82,19 +82,17 @@ describe('pirate_king afterScoring window', () => {
         });
         expect(advance.success).toBe(true);
 
-        const pirateKingChoice = asSimpleChoice(advance.finalState.sys.interaction?.current);
-        expect(pirateKingChoice?.sourceId).toBe('pirate_king_move');
+        const pirateKingChoice = getSimpleChoicePrompt(advance.finalState, 'pirate_king_move');
 
-        const stayOption = findOption(pirateKingChoice, option => option.value?.move === false);
-        const resolvePirateKing = runCommandWithFullSystems(advance.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: stayOption },
-        });
+        const stayOption = getPromptOption(pirateKingChoice, option => option.value?.move === false, 'pirate king stay option');
+        const resolvePirateKing = runCommandWithFullSystems(
+            advance.finalState,
+            respondCommand(stayOption.id, '0') as SmashUpCommand,
+        );
 
         expect(resolvePirateKing.success).toBe(true);
         expect(resolvePirateKing.finalState.sys.responseWindow?.current).toBeFalsy();
-        expect(resolvePirateKing.finalState.sys.interaction?.current).toBeFalsy();
+        expectNoPrompt(resolvePirateKing.finalState);
         expect(resolvePirateKing.finalState.sys.phase).toBe('playCards');
         expect(resolvePirateKing.finalState.core.currentPlayerIndex).toBe(0);
     });

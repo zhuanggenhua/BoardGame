@@ -5,11 +5,18 @@
  */
 
 import { describe, expect, it, beforeAll } from 'vitest';
-import { makeState, makePlayer, makeCard, makeBase, makeMatchState } from './helpers';
+import {
+    getSimpleChoicePrompt,
+    makeState,
+    makePlayer,
+    makeCard,
+    makeBase,
+    makeMatchState,
+    respondToPrompt,
+} from './helpers';
 import { runCommand } from './testRunner';
 import { SU_COMMANDS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 describe('学徒 ActionLog 完整链路', () => {
     beforeAll(() => {
@@ -54,16 +61,8 @@ describe('学徒 ActionLog 完整链路', () => {
         console.log('Step 1 - 展示牌库顶:', revealEntry);
 
         // 2. 选择"放入手牌"
-        const interaction = r1.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-        expect(interaction?.data?.sourceId).toBe('wizard_neophyte');
-
-        const r2 = runCommand(r1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { interactionId: interaction!.id, optionId: 'to_hand' },
-            timestamp: 2000,
-        });
+        expect(getSimpleChoicePrompt(r1.finalState, 'wizard_neophyte')).toBeDefined();
+        const r2 = respondToPrompt(r1.finalState, 'to_hand', '0');
         expect(r2.success).toBe(true);
         if (!r2.success) {
             console.error('Command failed:', r2.error);
@@ -112,15 +111,8 @@ describe('学徒 ActionLog 完整链路', () => {
         console.log('Step 1 - 打出学徒:', log1.map(e => e.kind));
 
         // 2. 选择"作为额外行动打出"
-        const interaction = r1.finalState.sys.interaction?.current;
-        expect(interaction).toBeDefined();
-
-        const r2 = runCommand(r1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { interactionId: interaction!.id, optionId: 'play_extra' },
-            timestamp: 2000,
-        });
+        expect(getSimpleChoicePrompt(r1.finalState, 'wizard_neophyte')).toBeDefined();
+        const r2 = respondToPrompt(r1.finalState, 'play_extra', '0');
         expect(r2.success).toBe(true);
         if (!r2.success) return;
 
@@ -174,13 +166,8 @@ describe('学徒 ActionLog 完整链路', () => {
         if (!r1.success) return;
 
         // 2. 选择"作为额外行动打出"（秘术学习：抽2张）
-        const interaction = r1.finalState.sys.interaction?.current;
-        const r2 = runCommand(r1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { interactionId: interaction!.id, optionId: 'play_extra' },
-            timestamp: 2000,
-        });
+        expect(getSimpleChoicePrompt(r1.finalState, 'wizard_neophyte')).toBeDefined();
+        const r2 = respondToPrompt(r1.finalState, 'play_extra', '0');
         expect(r2.success).toBe(true);
         if (!r2.success) return;
 

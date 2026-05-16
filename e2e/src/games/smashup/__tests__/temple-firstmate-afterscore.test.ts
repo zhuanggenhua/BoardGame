@@ -5,7 +5,7 @@ import { clearBaseAbilityRegistry, triggerBaseAbility } from '../domain/baseAbil
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import type { SmashUpCore } from '../domain/types';
 import type { MatchState } from '../../../engine/types';
-import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
+import { getSimpleChoicePrompt, makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState } from './helpers';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
 import { reduce } from '../domain/reducer';
 import { fireTriggers } from '../domain/ongoingEffects';
@@ -256,8 +256,6 @@ describe('Temple of Goju + First Mate 时序测试', () => {
         });
 
         expect(result.events.length).toBe(0);
-        const interaction = result.matchState?.sys.interaction.current;
-        expect(interaction).toBeDefined();
-        expect((interaction?.data as any)?.sourceId).toBe('pirate_first_mate_choose_base');
+        expect(getSimpleChoicePrompt(result.matchState!, 'pirate_first_mate_choose_base')).toBeDefined();
     });
 });

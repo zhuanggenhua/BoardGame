@@ -9,7 +9,19 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import { makeState, makeBase, makeMinion, makeMatchState, makePlayer, makeCard } from './helpers';
+import {
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptOptions,
+    getPromptSourceId,
+    getPromptsBySourceId,
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+} from './helpers';
 import { initAllAbilities } from '../abilities';
 import { defaultTestRandom } from './testRunner';
 import { execute, processDestroyMoveCycle } from '../domain/reducer';
@@ -56,11 +68,11 @@ describe('Bug: 对手打出"一大口"消灭 Igor 时触发两次', () => {
         const executeResult = { matchState: ms, events };
         
         // 应该创建一个交互（选择要消灭的随从）
-        const interaction1 = executeResult.matchState?.sys.interaction.current;
+        const interaction1 = getFirstPrompt(executeResult.matchState!);
         expect(interaction1).toBeDefined();
-        expect((interaction1?.data as any)?.sourceId).toBe('vampire_big_gulp');
+        expect(getPromptSourceId(interaction1)).toBe('vampire_big_gulp');
         
-        console.log('Big Gulp interaction options:', (interaction1?.data as any)?.options?.map((o: any) => o.label));
+        console.log('Big Gulp interaction options:', getPromptOptions(interaction1).map((o: any) => o.label));
         
         // 步骤2：调用 vampire_big_gulp handler（模拟玩家选择消灭 Igor）
         const handler = getAbilityRuntimePromptHandler('vampire_big_gulp');
@@ -70,7 +82,7 @@ describe('Bug: 对手打出"一大口"消灭 Igor 时触发两次', () => {
             executeResult.matchState!,
             '0',
             { minionUid: 'igor1', defId: 'frankenstein_igor', baseIndex: 0 },
-            interaction1?.data,
+            getPromptHandlerData(interaction1),
             defaultTestRandom,
             1001
         );
@@ -89,16 +101,11 @@ describe('Bug: 对手打出"一大口"消灭 Igor 时触发两次', () => {
         );
         
         // 检查：应该只有一个 Igor 交互（onDestroy）
-        const allInteractions = [
-            ...(afterDestroyMove.matchState?.sys.interaction.current ? [afterDestroyMove.matchState.sys.interaction.current] : []),
-            ...(afterDestroyMove.matchState?.sys.interaction.queue ?? []),
-        ];
+        const igorInteractions = getPromptsBySourceId(afterDestroyMove.matchState!, 'frankenstein_igor');
         
-        const igorInteractions = allInteractions.filter(i => (i.data as any)?.sourceId === 'frankenstein_igor');
-        
-        console.log('All interactions:', allInteractions.map(i => ({
+        console.log('Igor interactions:', igorInteractions.map(i => ({
             id: i.id,
-            sourceId: (i.data as any)?.sourceId,
+            sourceId: getPromptSourceId(i),
             playerId: i.playerId,
         })));
         

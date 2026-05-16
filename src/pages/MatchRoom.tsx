@@ -2418,6 +2418,13 @@ export const MatchRoom = () => {
         () => Object.values(onlineAiSeatControllers).some((controller) => controller.type !== 'human'),
         [onlineAiSeatControllers],
     );
+    const onlineAiRematchAutoAcceptedPlayerIds = useMemo(
+        () => Object.entries(onlineAiSeatControllers)
+            .filter(([, controller]) => controller.type !== 'human')
+            .map(([playerId]) => playerId)
+            .sort((leftId, rightId) => leftId.localeCompare(rightId)),
+        [onlineAiSeatControllers],
+    );
     const aiRuntimeTruthKeyRef = useRef<string | null>(null);
     const onlineAiSeatReloadAttemptRef = useRef(0);
     const handleForceEndAiPhaseReady = useCallback((handler: (() => Promise<boolean>) | null) => {
@@ -3394,6 +3401,7 @@ export const MatchRoom = () => {
                                             matchId={matchId}
                                             playerId={effectivePlayerID ?? undefined}
                                             isMultiplayer={true}
+                                            autoAcceptedPlayerIds={onlineAiRematchAutoAcceptedPlayerIds}
                                         >
                                             <GameProvider
                                                 server={getGameServerUrl()}

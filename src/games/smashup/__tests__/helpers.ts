@@ -311,13 +311,32 @@ export function getFirstPrompt(ms: MatchState<SmashUpCore>): any | undefined {
     return getInteractionsFromMS(ms)[0];
 }
 
+export function getOptionalSimpleChoicePrompt(
+    ms: MatchState<SmashUpCore>,
+    expectedSourceId?: string,
+): any | undefined {
+    const prompts = getInteractionsFromMS(ms);
+    const rawPrompt = expectedSourceId === undefined
+        ? prompts[0]
+        : prompts.find((entry: any) => (entry?.sourceId ?? entry?.data?.sourceId) === expectedSourceId);
+    return asSimpleChoice(rawPrompt) ?? undefined;
+}
+
 export function getSimpleChoicePrompt(
     ms: MatchState<SmashUpCore>,
     expectedSourceId?: string,
 ): any {
-    const prompt = asSimpleChoice(getFirstPrompt(ms));
+    const prompt = getOptionalSimpleChoicePrompt(ms, expectedSourceId);
     if (!prompt) {
-        throw new Error('Expected a simple choice prompt, but no prompt was available.');
+        const prompts = getInteractionsFromMS(ms);
+        const availableSourceIds = prompts
+            .map((entry: any) => entry?.sourceId ?? entry?.data?.sourceId ?? 'unknown')
+            .join(', ');
+        throw new Error(
+            expectedSourceId === undefined
+                ? 'Expected a simple choice prompt, but no prompt was available.'
+                : `Expected a simple choice prompt with sourceId "${expectedSourceId}", available prompts: ${availableSourceIds || 'none'}.`,
+        );
     }
     if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
         throw new Error(`Expected prompt sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
@@ -333,8 +352,53 @@ export function getPromptOptions(prompt: any): any[] {
     return prompt?.options ?? prompt?.data?.options ?? [];
 }
 
+export function getPromptMultiMin(prompt: any): number | undefined {
+    return prompt?.multi?.min ?? prompt?.data?.multi?.min;
+}
+
+export function getPromptMulti(prompt: any): any {
+    return prompt?.multi ?? prompt?.data?.multi;
+}
+
+export function getPromptOptionsGenerator(prompt: any): ((state: MatchState<SmashUpCore>, data: any) => any[]) | undefined {
+    return prompt?.optionsGenerator ?? prompt?.data?.optionsGenerator;
+}
+
+export function getPromptTitle(prompt: any): string | undefined {
+    return prompt?.title ?? prompt?.data?.title;
+}
+
 export function getPromptSourceId(prompt: any): string | undefined {
     return prompt?.sourceId ?? prompt?.data?.sourceId;
+}
+
+export function getPromptPlayerId(prompt: any): string | undefined {
+    return prompt?.playerId ?? prompt?.data?.playerId;
+}
+
+export function getPromptTargetType(prompt: any): string | undefined {
+    return prompt?.targetType ?? prompt?.data?.targetType;
+}
+
+export function getPromptHandlerData(prompt: any): any {
+    return prompt?.data ?? prompt;
+}
+
+export function withPromptHandlerData(prompt: any, handlerData: Record<string, unknown>): any {
+    return {
+        ...prompt,
+        data: {
+            ...(prompt?.data ?? {}),
+            ...handlerData,
+        },
+    };
+}
+
+export function withPromptResolutionFrameId(prompt: any, resolutionFrameId: string): any {
+    return {
+        ...prompt,
+        resolutionFrameId,
+    };
 }
 
 export function getPromptSliderMax(prompt: any): number | undefined {
@@ -396,6 +460,21 @@ export function respondToPrompt(
         } as any,
         random,
     );
+}
+
+export function respondCommand(optionId: string, playerId?: string): any {
+    return {
+        type: INTERACTION_COMMANDS.RESPOND as any,
+        ...(playerId === undefined ? {} : { playerId }),
+        payload: { optionId },
+    };
+}
+
+export function getRespondCommandOptionId(command: any): string | undefined {
+    if (command?.type !== INTERACTION_COMMANDS.RESPOND) {
+        throw new Error(`Expected an interaction respond command, got ${command?.type ?? 'unknown'}.`);
+    }
+    return command?.payload?.optionId;
 }
 
 export function respondToPromptOptions(
@@ -466,9 +545,15 @@ export function getPromptCountBySourceId(
     state: MatchState<SmashUpCore>,
     sourceId: string,
 ): number {
+    return getPromptsBySourceId(state, sourceId).length;
+}
+
+export function getPromptsBySourceId(
+    state: MatchState<SmashUpCore>,
+    sourceId: string,
+): any[] {
     return getInteractionsFromMS(state)
-        .filter(prompt => (prompt?.sourceId ?? prompt?.data?.sourceId) === sourceId)
-        .length;
+        .filter(prompt => (prompt?.sourceId ?? prompt?.data?.sourceId) === sourceId);
 }
 
 export function expectNoPrompt(state: MatchState<SmashUpCore>): void {
@@ -479,6 +564,35 @@ export function expectNoPrompt(state: MatchState<SmashUpCore>): void {
             .join(', ');
         throw new Error(`Expected no prompt, but found ${prompts.length}: ${sourceIds}`);
     }
+}
+
+export function withoutCurrentPrompt(state: MatchState<SmashUpCore>): MatchState<SmashUpCore> {
+    return {
+        ...state,
+        sys: {
+            ...state.sys,
+            interaction: {
+                ...(state.sys as any).interaction,
+                current: undefined,
+            },
+        },
+    } as MatchState<SmashUpCore>;
+}
+
+export function withCurrentPrompt(
+    state: MatchState<SmashUpCore>,
+    prompt: any,
+): MatchState<SmashUpCore> {
+    return {
+        ...state,
+        sys: {
+            ...state.sys,
+            interaction: {
+                ...(state.sys as any).interaction,
+                current: prompt,
+            },
+        },
+    } as MatchState<SmashUpCore>;
 }
 
 export function resolveCurrentPromptHandlerWithCore(

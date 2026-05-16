@@ -14,6 +14,7 @@ import { SU_EVENT_TYPES } from '../domain/events';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
+import { getPromptOptions, getSimpleChoicePrompt } from './helpers';
 
 function attachFrameBackedAfterScoringSession(
     state: { core: SmashUpCore; sys: ReturnType<typeof createInitialSystemState> },
@@ -192,10 +193,8 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
         expect(armedEvent).toBeUndefined();
 
         // 验证：应该立即创建交互，而不是静默无效果
-        const interactionState = (result.finalState?.sys as any)?.interaction;
-        const interaction = interactionState?.current ?? interactionState?.queue?.[0];
-        expect(interaction?.data?.sourceId).toBe('innsmouth_return_to_the_sea');
-        expect(interaction?.data?.options?.some((entry: any) => entry.value?.minionDefId === 'innsmouth_the_locals')).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState!, 'innsmouth_return_to_the_sea');
+        expect(getPromptOptions(prompt).some((entry: any) => entry.value?.minionDefId === 'innsmouth_the_locals')).toBe(true);
     });
 
     it('在 afterScoring 响应窗口中打出"我们乃最强"应该立即执行能力', () => {

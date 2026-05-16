@@ -3,7 +3,6 @@ import { GameTestRunner } from '../../../engine/testing';
 import { createActionLogSystem, createEventStreamSystem, createFlowSystem, createInteractionSystem, createRematchSystem, createResponseWindowSystem, createSimpleChoiceSystem, createTutorialSystem, createUndoSystem } from '../../../engine';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import type { EngineSystem } from '../../../engine/systems/types';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { SmashUpDomain, resolveAbility, smashUpFlowHooks } from '../domain';
 import { createSmashUpEventSystem } from '../domain/systems';
@@ -14,7 +13,7 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-
+import { expectNoPrompt, getFirstPrompt, getPromptOptions, getPromptSourceId, respondCommand } from './helpers';
 const PLAYER_IDS = ['0', '1'];
 
 const dummyRandom: RandomFn = {
@@ -112,7 +111,7 @@ function respond(state: MatchState<SmashUpCore>, playerId: string, optionId: str
   const runner = createRunner(state);
   return runner.run({
     name,
-    commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId, payload: { optionId } }],
+    commands: [respondCommand(optionId, playerId)],
   });
 }
 
@@ -161,17 +160,17 @@ describe('feedback regression: ancient_egyptians_mummy_strength', () => {
       now: 11,
     });
 
-    const targetPrompt = initial.matchState?.sys.interaction.current as any;
-    expect(targetPrompt?.data?.sourceId).toBe('ancient_egyptians_mummy_strength_target');
-    const targetMinions = targetPrompt?.data?.options.map((option: any) => option.value?.minionUid).filter(Boolean).sort();
+    const targetPrompt = getFirstPrompt(initial.matchState!);
+    expect(getPromptSourceId(targetPrompt)).toBe('ancient_egyptians_mummy_strength_target');
+    const targetMinions = getPromptOptions(targetPrompt).map((option: any) => option.value?.minionUid).filter(Boolean).sort();
     expect(targetMinions).toEqual(['empowered', 'other-base']);
 
-    const empoweredOption = targetPrompt!.data.options.find((option: any) => option.value?.minionUid === 'empowered');
+    const empoweredOption = getPromptOptions(targetPrompt).find((option: any) => option.value?.minionUid === 'empowered');
     expect(empoweredOption).toBeTruthy();
 
     const chooseMinion = respond(initial.matchState!, '0', empoweredOption!.id, 'mummy_strength: choose target');
     expect(chooseMinion.error).toBeUndefined();
-    expect(chooseMinion.finalState.sys.interaction.current).toBeFalsy();
+    expectNoPrompt(chooseMinion.finalState);
 
     const empoweredAfter = chooseMinion.finalState.core.bases[0].minions.find((minion: any) => minion.uid === 'empowered');
     expect(empoweredAfter).toBeTruthy();
