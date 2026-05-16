@@ -4,11 +4,26 @@ import { clearRegistry } from '../domain/abilityRegistry';
 import { resolveOnPlay } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { makeCard, makeMatchState, makeMinion, makePlayer, makeState, getInteractionsFromMS, applyEvents } from './helpers';
+import {
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    applyEvents,
+    getFirstPrompt,
+    getSimpleChoicePrompt,
+    getPromptOption,
+    getPromptOptions,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getPromptsBySourceId,
+    respondCommand,
+    expectNoPrompt,
+} from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { getEffectivePower } from '../domain/ongoingModifiers';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
     clearRegistry();
@@ -101,14 +116,16 @@ describe('vampires_pod: Nightstalker POD', () => {
         );
         expect(playBigGulp.success).toBe(true);
 
-        const destroyPrompt: any = getInteractionsFromMS(playBigGulp.finalState)[0];
-        expect(destroyPrompt?.data?.sourceId).toBe('vampire_big_gulp_pod');
-        const fledglingOption = destroyPrompt.data.options.find((o: any) => o.value?.minionUid === 'fv');
-        expect(fledglingOption).toBeTruthy();
+        const destroyPrompt = getSimpleChoicePrompt(playBigGulp.finalState, 'vampire_big_gulp_pod');
+        const fledglingOption = getPromptOption(
+            destroyPrompt,
+            option => option.value?.minionUid === 'fv',
+            'Fledgling Vampire destroy option',
+        );
 
         const afterDestroy = runCommand(
             playBigGulp.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: fledglingOption.id } } as any,
+            respondCommand(fledglingOption.id, '0'),
             defaultTestRandom,
         );
         expect(afterDestroy.success).toBe(true);
@@ -158,23 +175,24 @@ describe('vampires_pod: Nightstalker POD', () => {
         // 这里用一个小循环把“消灭选择 / Drone 拦截 / 搜索置顶 / Fledgling bury”全部跑完，再验证 Nightstalker 的天赋条件。
         let currentState = playWWTLF.finalState;
         for (let step = 0; step < 20; step += 1) {
-            const prompt: any = getInteractionsFromMS(currentState)[0];
+            const prompt = getFirstPrompt(currentState);
             if (!prompt) break;
 
-            const sourceId = prompt?.data?.sourceId as string | undefined;
+            const sourceId = getPromptSourceId(prompt);
             let optionId: string | undefined;
 
             if (sourceId === 'giant_ant_who_wants_to_live_forever_pod_destroy') {
-                optionId = prompt.data.options.find((o: any) => o.value?.minionUid === 'fv')?.id;
+                optionId = getPromptOption(prompt, o => o.value?.minionUid === 'fv', 'WWTLF destroy target fv').id;
             } else if (sourceId === 'giant_ant_drone_prevent_destroy') {
-                optionId = prompt.data.options.find((o: any) => o.value?.skip)?.id;
+                optionId = getPromptOption(prompt, o => o.value?.skip, 'Drone skip option').id;
             } else if (sourceId === 'giant_ant_who_wants_to_live_forever_pod_search') {
-                optionId = prompt.data.options.find((o: any) => o.value?.cardUid === 'top-card')?.id;
+                optionId = getPromptOption(prompt, o => o.value?.cardUid === 'top-card', 'WWTLF top-card search option').id;
             } else if (sourceId === 'vampire_fledgling_vampire_pod_bury_source') {
-                optionId = prompt.data.options.find((o: any) => o.id === 'skip')?.id;
+                optionId = getPromptOption(prompt, o => o.id === 'skip', 'Fledgling bury skip option').id;
             } else if (sourceId === 'smashup_reaction_choose') {
-                optionId = prompt.data.options.find((o: any) => o.id === 'pass' || o.value?.kind === 'pass' || o.value?.pass === true)?.id
-                    ?? prompt.data.options[0]?.id;
+                const options = getPromptOptions(prompt);
+                optionId = options.find((o: any) => o.id === 'pass' || o.value?.kind === 'pass' || o.value?.pass === true)?.id
+                    ?? options[0]?.id;
             } else {
                 throw new Error(`未处理的交互 sourceId: ${sourceId ?? 'unknown'}`);
             }
@@ -182,7 +200,7 @@ describe('vampires_pod: Nightstalker POD', () => {
             expect(optionId).toBeTruthy();
             const next = runCommand(
                 currentState,
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: prompt.playerId, payload: { optionId } } as any,
+                respondCommand(optionId!, getPromptPlayerId(prompt)),
                 defaultTestRandom,
             );
             expect(next.success).toBe(true);
@@ -191,16 +209,17 @@ describe('vampires_pod: Nightstalker POD', () => {
 
         // 若仍残留 reaction 窗口，补一次 pass 收口
         for (let guard = 0; guard < 5; guard += 1) {
-            const prompt: any = getInteractionsFromMS(currentState)[0];
+            const prompt = getFirstPrompt(currentState);
             if (!prompt) break;
-            if (prompt?.data?.sourceId !== 'smashup_reaction_choose') break;
-            const passId = prompt.data.options.find((o: any) =>
+            if (getPromptSourceId(prompt) !== 'smashup_reaction_choose') break;
+            const options = getPromptOptions(prompt);
+            const passId = options.find((o: any) =>
                 o.id === 'pass' || o.value?.kind === 'pass' || o.value?.pass === true,
-            )?.id ?? prompt.data.options[0]?.id;
+            )?.id ?? options[0]?.id;
             if (!passId) break;
             const next = runCommand(
                 currentState,
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: prompt.playerId, payload: { optionId: passId } } as any,
+                respondCommand(passId, getPromptPlayerId(prompt)),
                 defaultTestRandom,
             );
             expect(next.success).toBe(true);
@@ -212,9 +231,9 @@ describe('vampires_pod: Nightstalker POD', () => {
         expect(currentState.core.players['0'].deck[0]?.uid).toBe('top-card');
 
         // 结束交互后应回到正常出牌阶段（若仍残留 reaction 窗口，则允许继续）
-        const remainingInteractions = getInteractionsFromMS(currentState);
-        if (remainingInteractions.length > 0) {
-            expect(remainingInteractions[0]?.data?.sourceId).toBe('smashup_reaction_choose');
+        const remainingPrompt = getFirstPrompt(currentState);
+        if (remainingPrompt) {
+            expect(getPromptSourceId(remainingPrompt)).toBe('smashup_reaction_choose');
         }
         expect(currentState.sys.phase).toBe('playCards');
         expect(currentState.core.turnOrder[currentState.core.currentPlayerIndex]).toBe('0');
@@ -259,26 +278,30 @@ describe('vampires_pod: Nightstalker POD', () => {
         );
         expect(playBigGulp.success).toBe(true);
 
-        const destroyPrompt: any = getInteractionsFromMS(playBigGulp.finalState)[0];
-        expect(destroyPrompt?.data?.sourceId).toBe('vampire_big_gulp_pod');
-        const fledglingOption = destroyPrompt.data.options.find((o: any) => o.value?.minionUid === 'fv');
-        expect(fledglingOption).toBeTruthy();
+        const destroyPrompt = getSimpleChoicePrompt(playBigGulp.finalState, 'vampire_big_gulp_pod');
+        const fledglingOption = getPromptOption(
+            destroyPrompt,
+            option => option.value?.minionUid === 'fv',
+            'Fledgling Vampire destroy option',
+        );
 
         const afterChooseDestroy = runCommand(
             playBigGulp.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: fledglingOption.id } } as any,
+            respondCommand(fledglingOption.id, '0'),
             defaultTestRandom,
         );
         expect(afterChooseDestroy.success).toBe(true);
 
-        const nineLivesPrompt: any = getInteractionsFromMS(afterChooseDestroy.finalState)[0];
-        expect(nineLivesPrompt?.data?.sourceId).toBe('base_nine_lives_intercept');
-        const skipOption = nineLivesPrompt.data.options.find((o: any) => o.value?.move === false);
-        expect(skipOption).toBeTruthy();
+        const nineLivesPrompt = getSimpleChoicePrompt(afterChooseDestroy.finalState, 'base_nine_lives_intercept');
+        const skipOption = getPromptOption(
+            nineLivesPrompt,
+            option => option.value?.move === false,
+            'House of Nine Lives decline option',
+        );
 
         const afterNineLivesSkip = runCommand(
             afterChooseDestroy.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: skipOption.id } } as any,
+            respondCommand(skipOption.id, '0'),
             defaultTestRandom,
         );
         expect(afterNineLivesSkip.success).toBe(true);
@@ -372,25 +395,25 @@ describe('vampires_pod: The Count POD', () => {
         );
         expect(playBigGulp.success).toBe(true);
 
-        const chooseDestroy: any = getInteractionsFromMS(playBigGulp.finalState)[0];
-        expect(chooseDestroy?.data?.sourceId).toBe('vampire_big_gulp_pod');
-        const victimOpt = chooseDestroy.data.options.find((o: any) => o.value?.minionUid === 'victim');
-        expect(victimOpt).toBeTruthy();
+        const chooseDestroy = getSimpleChoicePrompt(playBigGulp.finalState, 'vampire_big_gulp_pod');
+        const victimOpt = getPromptOption(
+            chooseDestroy,
+            option => option.value?.minionUid === 'victim',
+            'Big Gulp victim option',
+        );
 
         const afterDestroy = runCommand(
             playBigGulp.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: victimOpt.id } },
+            respondCommand(victimOpt.id, '0'),
             defaultTestRandom,
         );
         expect(afterDestroy.success).toBe(true);
-        const interactions = getInteractionsFromMS(afterDestroy.finalState);
-        const countPrompt = interactions.find((i: any) => i?.data?.sourceId === 'vampire_the_count_pod_add_counter');
-        if (countPrompt) {
-            expect(countPrompt).toBeTruthy();
+        const countPrompts = getPromptsBySourceId(afterDestroy.finalState, 'vampire_the_count_pod_add_counter');
+        if (countPrompts.length > 0) {
+            expect(countPrompts[0]).toBeTruthy();
         } else {
-            const reactionPrompt = interactions.find((i: any) => i?.data?.sourceId === 'smashup_reaction_choose');
-            expect(reactionPrompt).toBeTruthy();
-            const hasCountTrigger = reactionPrompt?.data?.options?.some((o: any) =>
+            const reactionPrompt = getSimpleChoicePrompt(afterDestroy.finalState, 'smashup_reaction_choose');
+            const hasCountTrigger = getPromptOptions(reactionPrompt).some((o: any) =>
                 String(o.id ?? '').includes('vampire_the_count_pod')
                 || String(o.label ?? '').includes('伯爵'),
             );
@@ -423,14 +446,16 @@ describe('vampires_pod: The Count POD', () => {
             defaultTestRandom,
         );
         expect(useTalent.success).toBe(true);
-        const prompt: any = getInteractionsFromMS(useTalent.finalState)[0];
-        expect(prompt?.data?.sourceId).toBe('vampire_the_count_pod_talent');
-        const targetOpt = prompt.data.options.find((o: any) => o.value?.minionUid === 'target');
-        expect(targetOpt).toBeTruthy();
+        const prompt = getSimpleChoicePrompt(useTalent.finalState, 'vampire_the_count_pod_talent');
+        const targetOpt = getPromptOption(
+            prompt,
+            option => option.value?.minionUid === 'target',
+            'The Count talent target option',
+        );
 
         const afterChoose = runCommand(
             useTalent.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: targetOpt.id } },
+            respondCommand(targetOpt.id, '0'),
             defaultTestRandom,
         );
         expect(afterChoose.success).toBe(true);
@@ -482,14 +507,16 @@ describe('vampires_pod: Dinner Date POD', () => {
             defaultTestRandom,
         );
         expect(play.success).toBe(true);
-        const prompt: any = getInteractionsFromMS(play.finalState)[0];
-        expect(prompt?.data?.sourceId).toBe('vampire_dinner_date_pod');
-        const allyOpt = prompt.data.options.find((o: any) => o.value?.minionUid === 'ally');
-        expect(allyOpt).toBeTruthy();
+        const prompt = getSimpleChoicePrompt(play.finalState, 'vampire_dinner_date_pod');
+        const allyOpt = getPromptOption(
+            prompt,
+            option => option.value?.minionUid === 'ally',
+            'Dinner Date ally option',
+        );
 
         const resolved = runCommand(
             play.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: allyOpt.id } },
+            respondCommand(allyOpt.id, '0'),
             defaultTestRandom,
         );
         expect(resolved.success).toBe(true);
@@ -525,12 +552,16 @@ describe('vampires_pod: Dinner Date POD', () => {
             defaultTestRandom,
         );
         expect(play.success).toBe(true);
-        const prompt: any = getInteractionsFromMS(play.finalState)[0];
-        const allyOpt = prompt.data.options.find((o: any) => o.value?.minionUid === 'ally');
+        const prompt = getSimpleChoicePrompt(play.finalState, 'vampire_dinner_date_pod');
+        const allyOpt = getPromptOption(
+            prompt,
+            option => option.value?.minionUid === 'ally',
+            'Dinner Date ally option',
+        );
 
         const resolved = runCommand(
             play.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: allyOpt.id } },
+            respondCommand(allyOpt.id, '0'),
             defaultTestRandom,
         );
         expect(resolved.success).toBe(true);
@@ -569,7 +600,7 @@ describe('vampires_pod: Wolf Pact POD', () => {
             defaultTestRandom,
         );
         expect(play.success).toBe(true);
-        expect(getInteractionsFromMS(play.finalState).length).toBe(0);
+        expectNoPrompt(play.finalState);
     });
 
     it('战术面应为强制选择，不应出现“跳过”选项', () => {
@@ -599,9 +630,8 @@ describe('vampires_pod: Wolf Pact POD', () => {
             now: 0,
         } as any);
         const ms = result.matchState ?? makeMatchState(core);
-        const prompt: any = getInteractionsFromMS(ms)[0];
-        expect(prompt?.data?.sourceId).toBe('vampire_wolf_pact_pod_action');
-        expect(prompt.data.options.some((o: any) => o.id === 'skip')).toBe(false);
+        const prompt = getSimpleChoicePrompt(ms, 'vampire_wolf_pact_pod_action');
+        expect(getPromptOptions(prompt).some((o: any) => o.id === 'skip')).toBe(false);
     });
 });
 

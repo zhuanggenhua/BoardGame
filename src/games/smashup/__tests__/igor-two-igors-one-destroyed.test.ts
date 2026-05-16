@@ -10,6 +10,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import {
     expectNoPrompt,
+    getPromptsBySourceId,
     getPromptOption,
     getPromptOptions,
     getPromptPlayerId,
@@ -107,7 +108,7 @@ describe('Igor: 场上有两个 Igor，一个被消灭', () => {
         console.log('Igor onDestroy options:', igorOptions.map((o: any) => o.label));
 
         // 关键断言：只应该有一个交互，不应该有第二个 Igor onDestroy 交互
-        expect(result2.finalState.sys.interaction.queue.length).toBe(0);
+        expect(getPromptsBySourceId(result2.finalState, 'frankenstein_igor')).toHaveLength(1);
 
         // 步骤3：玩家1选择给 igor2 +1力量
         const igor2Option = getPromptOption(

@@ -6,6 +6,7 @@
 
 import { test, expect } from '../framework';
 import type { GameTestContext } from '../framework';
+import type { Page } from '@playwright/test';
 
 async function setupPlayCardValidationScene(game: GameTestContext): Promise<void> {
     await game.openTestGame('dicethrone');
@@ -42,6 +43,30 @@ async function setupPlayCardValidationScene(game: GameTestContext): Promise<void
     });
 }
 
+async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
+    const card = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
+    await expect(card).toBeVisible({ timeout: 5000 });
+    const cardBox = await page.evaluate((nextCardId) => {
+        const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    }, cardId);
+    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
+        throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+    }
+
+    const startX = cardBox.x + (cardBox.width / 2);
+    const startY = cardBox.y + (cardBox.height * 0.78);
+    const endY = Math.max(24, startY - 240);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, endY, { steps: 12 });
+    await page.mouse.up();
+    await page.mouse.move(2, 2);
+}
+
 test.describe('DiceThrone - 打牌验证诊断', () => {
     test('诊断：打牌时的验证日志', async ({ page, game }) => {
         const consoleLogs: string[] = [];
@@ -62,7 +87,7 @@ test.describe('DiceThrone - 打牌验证诊断', () => {
             .locator('[data-card-id="card-buddha-light"], [data-card-key^="card-buddha-light-"]')
             .first();
         await expect(buddhaLightCard).toBeVisible({ timeout: 5000 });
-        await buddhaLightCard.click();
+        await dragHandCardToPlay(page, 'card-buddha-light');
 
         await expect.poll(async () => {
             const player0 = await game.getPlayerState('0');

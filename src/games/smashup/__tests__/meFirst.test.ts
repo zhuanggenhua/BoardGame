@@ -21,7 +21,14 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { smashUpSystemsForTest } from '../game';
-import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import {
+    expectNoPrompt,
+    getPromptOption,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getSimpleChoicePrompt,
+    respondCommand,
+} from './helpers';
 
 const PLAYER_IDS = ['0', '1'];
 
@@ -141,8 +148,8 @@ const BREAKPOINT_COMMANDS = [
 
 /** Me First! 响应：两人都让过 */
 const ME_FIRST_PASS_ALL = [
-    { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'pass' } },
-    { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'pass' } },
+    respondCommand('pass', '0'),
+    respondCommand('pass', '1'),
 ] as any[];
 
 beforeAll(() => {
@@ -228,9 +235,9 @@ describe('Me First! 响应窗口', () => {
         expect(window?.responderQueue).toEqual(['0', '1']);
         expect(window?.currentResponderIndex).toBe(1);
         expect(window?.passedPlayers).toEqual([]);
-        const choice = asSimpleChoice(result.finalState.sys.interaction.current);
-        expect(choice?.sourceId).toBe('smashup_reaction_choose');
-        expect(choice?.playerId).toBe('1');
+        const choice = getSimpleChoicePrompt(result.finalState, 'smashup_reaction_choose');
+        expect(getPromptSourceId(choice)).toBe('smashup_reaction_choose');
+        expect(getPromptPlayerId(choice)).toBe('1');
     });
 
     it('有基地达标时所有玩家让过后关闭响应窗口', () => {
@@ -268,7 +275,7 @@ describe('Me First! 响应窗口', () => {
         });
 
         expect(result.finalState.sys.responseWindow.current).toBeUndefined();
-        expect(result.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(result.finalState);
     });
 
     it('loopUntilAllPass：玩家打出 special 后循环重启，全部 pass 才关闭', () => {
@@ -298,13 +305,13 @@ describe('Me First! 响应窗口', () => {
                 // 进入 scoreBases，打开 Me First! 窗口
                 ...BREAKPOINT_COMMANDS,
                 // P0 在统一反应窗口里选择打出 special
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'play_action:special-0:0' } },
+                respondCommand('play_action:special-0:0', '0'),
                 // P1 让过 → 到达队列末尾，但本轮有人出牌 → 循环重启
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'pass' } },
+                respondCommand('pass', '1'),
                 // 新一轮：P0 让过（已无 special 牌）
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'pass' } },
+                respondCommand('pass', '0'),
                 // P1 让过 → 窗口关闭
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'pass' } },
+                respondCommand('pass', '1'),
             ] as any[],
         });
 
@@ -331,7 +338,7 @@ describe('Me First! 响应窗口', () => {
                 ...BREAKPOINT_COMMANDS,
                 // P0 打出第一张 special；P1 无可响应内容，会被自动 skip
                 // 正确行为：窗口应重开到 P0（其手里还有第二张 special）
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'play_action:special-0-a:0' } },
+                respondCommand('play_action:special-0-a:0', '0'),
             ] as any[],
         });
 
@@ -463,46 +470,50 @@ describe('Me First! 响应窗口', () => {
         });
         const r2 = runner2.run({
             name: 'mandatory_reading: P0 打出 special',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'play_action:mandatory-1:0' } }] as any[],
+            commands: [respondCommand('play_action:mandatory-1:0', '0')] as any[],
         });
         expect(r2.steps[0]?.success).toBe(true);
         // 有活跃的 interaction（选随从）
-        const choice1 = asSimpleChoice(r2.finalState.sys.interaction.current);
-        expect(choice1).toBeDefined();
+        const choice1 = getSimpleChoicePrompt(r2.finalState);
 
         // Step 3: 选择随从
         const runner3 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS,
             setup: () => r2.finalState,
         });
-        const minionOpt = choice1!.options.find((o: any) => o.value?.minionUid === 'target-minion');
-        expect(minionOpt).toBeDefined();
+        const minionOpt = getPromptOption(
+            choice1,
+            option => option.value?.minionUid === 'target-minion',
+            'Mandatory Reading target minion option',
+        );
         const r3 = runner3.run({
             name: 'mandatory_reading: 选随从',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: minionOpt!.id } }] as any[],
+            commands: [respondCommand(minionOpt.id, '0')] as any[],
         });
         expect(r3.steps[0]?.success).toBe(true);
         // 现在应该有第二个 interaction（选抽牌数）
-        const choice2 = asSimpleChoice(r3.finalState.sys.interaction.current);
-        expect(choice2).toBeDefined();
+        const choice2 = getSimpleChoicePrompt(r3.finalState);
 
         // Step 4: 选择抽1张疯狂卡
         const runner4 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS,
             setup: () => r3.finalState,
         });
-        const drawOpt = choice2!.options.find((o: any) => o.value?.count === 1);
-        expect(drawOpt).toBeDefined();
+        const drawOpt = getPromptOption(
+            choice2,
+            option => option.value?.count === 1,
+            'Mandatory Reading draw-one option',
+        );
         const r4 = runner4.run({
             name: 'mandatory_reading: 选抽1张',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: drawOpt!.id } }] as any[],
+            commands: [respondCommand(drawOpt.id, '0')] as any[],
         });
         expect(r4.steps[0]?.success).toBe(true);
 
         // 关键断言：交互完成后，统一反应窗口自动推进到 P1
-        const resumedChoice = asSimpleChoice(r4.finalState.sys.interaction.current);
-        expect(resumedChoice?.sourceId).toBe('smashup_reaction_choose');
-        expect(resumedChoice?.playerId).toBe('1');
+        const resumedChoice = getSimpleChoicePrompt(r4.finalState, 'smashup_reaction_choose');
+        expect(getPromptSourceId(resumedChoice)).toBe('smashup_reaction_choose');
+        expect(getPromptPlayerId(resumedChoice)).toBe('1');
         expect(r4.finalState.sys.responseWindow.current?.currentResponderIndex).toBe(1);
         // 疯狂卡已抽到 P0 手牌（defId 为 MADNESS_CARD_DEF_ID = 'special_madness'）
         expect(r4.finalState.core.players['0'].hand.some((c: any) => c.defId === 'special_madness')).toBe(true);
@@ -541,38 +552,43 @@ describe('Me First! 响应窗口', () => {
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS, setup: () => r1.finalState,
         }).run({
             name: 'skip: 打出 special',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'play_action:mandatory-skip:0' } }] as any[],
+            commands: [respondCommand('play_action:mandatory-skip:0', '0')] as any[],
         });
         expect(r2.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r2.finalState.sys.interaction.current);
-        expect(choice1).toBeDefined();
+        const choice1 = getSimpleChoicePrompt(r2.finalState);
 
         // 选随从
-        const minionOpt = choice1!.options.find((o: any) => o.value?.minionUid === 'skip-minion');
+        const minionOpt = getPromptOption(
+            choice1,
+            option => option.value?.minionUid === 'skip-minion',
+            'Mandatory Reading skip target minion option',
+        );
         const r3 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS, setup: () => r2.finalState,
         }).run({
             name: 'skip: 选随从',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: minionOpt!.id } }] as any[],
+            commands: [respondCommand(minionOpt.id, '0')] as any[],
         });
         expect(r3.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r3.finalState.sys.interaction.current);
-        expect(choice2).toBeDefined();
+        const choice2 = getSimpleChoicePrompt(r3.finalState);
 
         // 选择"不抽"（skip）
-        const skipOpt = choice2!.options.find((o: any) => o.value?.skip === true);
-        expect(skipOpt).toBeDefined();
+        const skipOpt = getPromptOption(
+            choice2,
+            option => option.value?.skip === true,
+            'Mandatory Reading skip draw option',
+        );
         const r4 = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
             domain: SmashUpDomain, systems, playerIds: PLAYER_IDS, setup: () => r3.finalState,
         }).run({
             name: 'skip: 选不抽',
-            commands: [{ type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: skipOpt!.id } }] as any[],
+            commands: [respondCommand(skipOpt.id, '0')] as any[],
         });
         expect(r4.steps[0]?.success).toBe(true);
         // 交互完成，响应窗口推进到 P1
-        const resumedChoice = asSimpleChoice(r4.finalState.sys.interaction.current);
-        expect(resumedChoice?.sourceId).toBe('smashup_reaction_choose');
-        expect(resumedChoice?.playerId).toBe('1');
+        const resumedChoice = getSimpleChoicePrompt(r4.finalState, 'smashup_reaction_choose');
+        expect(getPromptSourceId(resumedChoice)).toBe('smashup_reaction_choose');
+        expect(getPromptPlayerId(resumedChoice)).toBe('1');
         expect(r4.finalState.sys.responseWindow.current?.currentResponderIndex).toBe(1);
         // 没有疯狂卡被抽取
         expect(r4.finalState.core.players['0'].hand.some((c: any) => c.defId === 'special_madness')).toBe(false);

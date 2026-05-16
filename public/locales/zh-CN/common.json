@@ -118,7 +118,6 @@
   },
   "game_names": {
     "archview": "架构可视化",
-    "airepoworkbench": "AI 仓库工作台",
     "assetslicer": "素材切片机",
     "audiobrowser": "音效浏览器",
     "cardia": "卡迪亚",
@@ -127,8 +126,7 @@
     "dicethrone": "王权骰铸",
     "fxpreview": "特效预览",
     "smashup": "大杀四方",
-    "summonerwars": "召唤师战争",
-    "ugcbuilder": "UGC 原型制作器"
+    "summonerwars": "召唤师战争"
   },
   "matchRoom": {
     "tutorialTitle": "{{game}} - 教学模式",

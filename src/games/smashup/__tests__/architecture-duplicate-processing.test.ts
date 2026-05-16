@@ -13,10 +13,16 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import { applyEvents, makeState, makePlayer, makeCard, makeBase, makeMinion, makeMatchState } from './helpers';
+import {
+    getFirstPrompt,
+    getPromptOption,
+    getPromptsBySourceId,
+    getPromptSourceId,
+    respondToPrompt,
+} from './helpers';
 import { runCommand } from './testRunner';
 import { SU_COMMANDS, SU_EVENTS } from '../domain';
 import { initAllAbilities } from '../abilities';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 describe('架构测试：防止重复处理', () => {
     beforeAll(() => {
@@ -54,43 +60,29 @@ describe('架构测试：防止重复处理', () => {
         });
 
         expect(result1.success).toBe(true);
-        const interaction1 = result1.finalState.sys.interaction.current;
+        const interaction1 = getFirstPrompt(result1.finalState);
         expect(interaction1).toBeDefined();
 
         // 步骤2：选择消灭 Igor（科学小怪蛋）
-        const options = (interaction1?.data as any)?.options;
-        const igorOption = options.find((o: any) => 
+        const igorOption = getPromptOption(
+            interaction1,
+            o =>
             o.label.includes('科学小怪蛋') || o.value?.defId === 'frankenstein_igor'
+            ,
+            'Big Gulp Igor target option',
         );
-        expect(igorOption).toBeDefined();
 
-        const result2 = runCommand(result1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            interactionId: interaction1!.id,
-            payload: { optionId: igorOption.id },
-        });
+        const result2 = respondToPrompt(result1.finalState, igorOption.id, '0');
 
         expect(result2.success).toBe(true);
 
         // 关键断言：只应该有一个 Igor onDestroy 交互
-        const interaction2 = result2.finalState.sys.interaction.current;
+        const interaction2 = getFirstPrompt(result2.finalState);
         expect(interaction2).toBeDefined();
-        expect((interaction2?.data as any)?.sourceId).toBe('frankenstein_igor');
-
-        // 队列中不应该有第二个 Igor 交互
-        const queue = result2.finalState.sys.interaction.queue;
-        const igorInteractionsInQueue = queue.filter(
-            (i: any) => i.data?.sourceId === 'frankenstein_igor'
-        );
-        expect(igorInteractionsInQueue.length).toBe(0);
+        expect(getPromptSourceId(interaction2)).toBe('frankenstein_igor');
 
         // 总共只有一个 Igor 交互（current）
-        const allInteractions = [interaction2, ...queue];
-        const allIgorInteractions = allInteractions.filter(
-            (i: any) => i?.data?.sourceId === 'frankenstein_igor'
-        );
-        expect(allIgorInteractions.length).toBe(1);
+        expect(getPromptsBySourceId(result2.finalState, 'frankenstein_igor').length).toBe(1);
     });
 
     it('D42: MINION_DESTROYED 事件只被后处理一次', () => {
@@ -122,20 +114,18 @@ describe('架构测试：防止重复处理', () => {
         });
 
         expect(result1.success).toBe(true);
-        const interaction1 = result1.finalState.sys.interaction.current;
+        const interaction1 = getFirstPrompt(result1.finalState);
         expect(interaction1).toBeDefined();
 
-        const options = (interaction1?.data as any)?.options;
-        const igorOption = options.find((o: any) => 
+        const igorOption = getPromptOption(
+            interaction1,
+            o =>
             o.label.includes('科学小怪蛋') || o.value?.defId === 'frankenstein_igor'
+            ,
+            'Big Gulp Igor target option',
         );
 
-        const result2 = runCommand(result1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            interactionId: interaction1!.id,
-            payload: { optionId: igorOption.id },
-        });
+        const result2 = respondToPrompt(result1.finalState, igorOption.id, '0');
 
         expect(result2.success).toBe(true);
 
@@ -144,10 +134,10 @@ describe('架构测试：防止重复处理', () => {
         expect(destroyEvents.length).toBe(1);
 
         // 验证 Igor onDestroy 只触发一次（只有一个交互）
-        const interaction2 = result2.finalState.sys.interaction.current;
+        const interaction2 = getFirstPrompt(result2.finalState);
         expect(interaction2).toBeDefined();
-        expect((interaction2?.data as any)?.sourceId).toBe('frankenstein_igor');
-        expect(result2.finalState.sys.interaction.queue.length).toBe(0);
+        expect(getPromptSourceId(interaction2)).toBe('frankenstein_igor');
+        expect(getPromptsBySourceId(result2.finalState, 'frankenstein_igor').length).toBe(1);
     });
 
     it('D42: 重复 MINION_RETURNED 事件不会把同一 uid 随从复制进手牌', () => {
@@ -219,43 +209,29 @@ describe('架构测试：防止重复处理', () => {
         });
 
         expect(result1.success).toBe(true);
-        const interaction1 = result1.finalState.sys.interaction.current;
+        const interaction1 = getFirstPrompt(result1.finalState);
         expect(interaction1).toBeDefined();
 
         // 步骤2：选择消灭 Igor（科学小怪蛋）
-        const options = (interaction1?.data as any)?.options;
-        const igorOption = options.find((o: any) => 
+        const igorOption = getPromptOption(
+            interaction1,
+            o =>
             o.label.includes('科学小怪蛋') || o.value?.defId === 'frankenstein_igor'
+            ,
+            'Big Gulp Igor target option',
         );
-        expect(igorOption).toBeDefined();
 
-        const result2 = runCommand(result1.finalState, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            interactionId: interaction1!.id,
-            payload: { optionId: igorOption.id },
-        });
+        const result2 = respondToPrompt(result1.finalState, igorOption.id, '0');
 
         expect(result2.success).toBe(true);
 
         // 关键断言：应该只有一个 Igor onDestroy 交互
-        const interaction2 = result2.finalState.sys.interaction.current;
+        const interaction2 = getFirstPrompt(result2.finalState);
         expect(interaction2).toBeDefined();
-        expect((interaction2?.data as any)?.sourceId).toBe('frankenstein_igor');
-
-        // 队列中不应该有第二个 Igor 交互（如果有重复处理，会有两个）
-        const queue = result2.finalState.sys.interaction.queue;
-        const igorInteractionsInQueue = queue.filter(
-            (i: any) => i.data?.sourceId === 'frankenstein_igor'
-        );
-        expect(igorInteractionsInQueue.length).toBe(0);
+        expect(getPromptSourceId(interaction2)).toBe('frankenstein_igor');
 
         // 总共只有一个 Igor 交互（current）
-        const allInteractions = [interaction2, ...queue];
-        const allIgorInteractions = allInteractions.filter(
-            (i: any) => i?.data?.sourceId === 'frankenstein_igor'
-        );
-        expect(allIgorInteractions.length).toBe(1);
+        expect(getPromptsBySourceId(result2.finalState, 'frankenstein_igor').length).toBe(1);
     });
 
     it('D42: ONGOING_ATTACHED 重新附着同一 uid 时应先清理旧挂载位置', () => {

@@ -60,6 +60,7 @@ export interface CardSpotlightState {
         bonusDice?: BonusDieInfo[];
         summaryEffectKey?: string;
         summaryEffectParams?: Record<string, string | number>;
+        presentationKey?: string | number;
         showTotal?: boolean;
         displayOnly?: boolean;
         show: boolean;
@@ -172,6 +173,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
     const [bonusDiceList, setBonusDiceList] = useState<BonusDieInfo[] | undefined>(undefined);
     const [bonusDieSummaryEffectKey, setBonusDieSummaryEffectKey] = useState<string | undefined>(undefined);
     const [bonusDieSummaryEffectParams, setBonusDieSummaryEffectParams] = useState<Record<string, string | number> | undefined>(undefined);
+    const [bonusDiePresentationKey, setBonusDiePresentationKey] = useState<string | number | undefined>(undefined);
     const [bonusDieShowTotal, setBonusDieShowTotal] = useState<boolean | undefined>(undefined);
     const [bonusDieDisplayOnly, setBonusDieDisplayOnly] = useState<boolean | undefined>(undefined);
     const [bonusDieCharacterId, setBonusDieCharacterId] = useState<string | undefined>(undefined);
@@ -186,6 +188,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
         setBonusDiceList(undefined);
         setBonusDieSummaryEffectKey(undefined);
         setBonusDieSummaryEffectParams(undefined);
+        setBonusDiePresentationKey(undefined);
         setBonusDieShowTotal(undefined);
         setBonusDieDisplayOnly(undefined);
         setBonusDieCharacterId(undefined);
@@ -228,12 +231,14 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
             effectKey?: string;
             effectParams?: Record<string, string | number>;
             characterId?: string;
+            presentationKey?: string;
         } | null = null;
         let pendingStandaloneMultiDice: {
             bonusDice: BonusDieInfo[];
             summaryEffectKey?: string;
             summaryEffectParams?: Record<string, string | number>;
             characterId?: string;
+            presentationKey?: string;
             showTotal?: boolean;
             displayOnly?: boolean;
         } | null = null;
@@ -487,9 +492,12 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                             pendingStandaloneMultiDice = {
                                 bonusDice: [],
                                 characterId: resolvedCharacterId,
+                                presentationKey: `${type}:${eventTimestamp}`,
                                 showTotal: false,
                                 displayOnly: true,
                             };
+                        } else {
+                            pendingStandaloneMultiDice.presentationKey = `${type}:${eventTimestamp}`;
                         }
 
                         if (isSummaryEvent && bonusEffectKey && bonusEffectParams) {
@@ -522,6 +530,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                         effectKey: bonusEffectKey,
                         effectParams: bonusEffectParams,
                         characterId: resolvedCharacterId,
+                        presentationKey: `${type}:${eventTimestamp}`,
                     };
                     spotlightLogger.info('bonus-standalone', {
                         eventType: type,
@@ -560,6 +569,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
             setBonusDiceList(pendingStandaloneMultiDice.bonusDice);
             setBonusDieSummaryEffectKey(pendingStandaloneMultiDice.summaryEffectKey);
             setBonusDieSummaryEffectParams(pendingStandaloneMultiDice.summaryEffectParams);
+            setBonusDiePresentationKey(pendingStandaloneMultiDice.presentationKey);
             setBonusDieShowTotal(pendingStandaloneMultiDice.showTotal);
             setBonusDieDisplayOnly(pendingStandaloneMultiDice.displayOnly);
             setBonusDieCharacterId(pendingStandaloneMultiDice.characterId);
@@ -592,6 +602,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
             setBonusDieFace(pendingStandaloneBonusDie.face);
             setBonusDieEffectKey(pendingStandaloneBonusDie.effectKey);
             setBonusDieEffectParams(pendingStandaloneBonusDie.effectParams);
+            setBonusDiePresentationKey(pendingStandaloneBonusDie.presentationKey);
             setBonusDieCharacterId(pendingStandaloneBonusDie.characterId);
             setShowBonusDie(true);
             spotlightLogger.info('bonus-state-commit', {
@@ -648,6 +659,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
             bonusDice: bonusDiceList,
             summaryEffectKey: bonusDieSummaryEffectKey,
             summaryEffectParams: bonusDieSummaryEffectParams,
+            presentationKey: bonusDiePresentationKey,
             showTotal: bonusDieShowTotal,
             displayOnly: bonusDieDisplayOnly,
             show: showBonusDie,

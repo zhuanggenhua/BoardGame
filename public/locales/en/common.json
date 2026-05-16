@@ -118,7 +118,6 @@
   },
   "game_names": {
     "archview": "Architecture View",
-    "airepoworkbench": "AI Repo Workbench",
     "assetslicer": "Asset Slicer",
     "audiobrowser": "Audio Browser",
     "cardia": "Cardia",
@@ -127,8 +126,7 @@
     "dicethrone": "Dice Throne",
     "fxpreview": "Effect Preview",
     "smashup": "Smash Up",
-    "summonerwars": "Summoner Wars",
-    "ugcbuilder": "UGC Prototype Builder"
+    "summonerwars": "Summoner Wars"
   },
   "matchRoom": {
     "tutorialTitle": "{{game}} - Tutorial",

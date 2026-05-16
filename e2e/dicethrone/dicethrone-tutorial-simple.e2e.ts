@@ -169,6 +169,34 @@ const dragHandCardToDiscard = async (
     await page.mouse.move(2, 2);
 };
 
+const dragHandCardToPlay = async (
+    page: Parameters<typeof test>[0]['page'],
+    cardId: string,
+) => {
+    const card = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
+    await expect(card).toBeVisible({ timeout: 10000 });
+
+    const cardBox = await page.evaluate((nextCardId) => {
+        const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    }, cardId);
+    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
+        throw new Error(`未能获取拖拽区域: card=${cardId}`);
+    }
+
+    const startX = cardBox.x + cardBox.width / 2;
+    const startY = cardBox.y + cardBox.height * 0.82;
+    const endY = Math.max(24, startY - 240);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, endY, { steps: 12 });
+    await page.mouse.up();
+    await page.mouse.move(2, 2);
+};
+
 const clickAbilitySlot = async (
     page: Parameters<typeof test>[0]['page'],
     slotId: string,
@@ -385,7 +413,7 @@ test.describe('DiceThrone Tutorial (Simplified)', () => {
 
         const handCard = page.locator('[data-card-id="card-play-six"]').first();
         await expect(handCard).toBeVisible({ timeout: 10000 });
-        await handCard.click();
+        await dragHandCardToPlay(page, 'card-play-six');
 
         await page.waitForFunction(() => {
             return document.body.textContent?.includes('选择要设为6的骰子');

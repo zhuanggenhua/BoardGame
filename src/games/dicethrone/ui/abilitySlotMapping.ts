@@ -20,6 +20,16 @@ const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>>
         sky: ['death-blossom'],
         combo: ['poison-blade'],
     },
+    // Treant v2 玩家面板采用独立被动槽，且右下角防御位在 meditate。
+    // 旧实现曾错误复用共享语义，导致 passive / defense 高亮错位。
+    treant: {
+        sky: ['quiet-cultivation'],
+        lotus: ['wild-growth'],
+        combo: ['vengeful-vines'],
+        lightning: ['nature-touch'],
+        calm: ['__treant-unmapped-calm__'],
+        meditate: ['rooted'],
+    },
 };
 
 const ABILITY_BASE_ID_MAP = new Map<string, string>();

@@ -11,8 +11,6 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import {
     getFirstPrompt,
-    getPromptHandlerData,
-    getPromptOptions,
     getPromptSourceId,
     getPromptsBySourceId,
     makeBase,
@@ -21,19 +19,18 @@ import {
     makeMinion,
     makePlayer,
     makeState,
+    respondToPromptOption,
 } from './helpers';
 import { initAllAbilities } from '../abilities';
-import { defaultTestRandom } from './testRunner';
-import { execute, processDestroyMoveCycle } from '../domain/reducer';
+import { defaultTestRandom, runCommand } from './testRunner';
 import { SU_COMMANDS } from '../domain/types';
-import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 
 describe('Bug: 对手打出"一大口"消灭 Igor 时触发两次', () => {
     beforeAll(() => {
         initAllAbilities();
     });
 
-    it('vampire_big_gulp 消灭 Igor → processDestroyMoveCycle → Igor onDestroy 只触发一次', () => {
+    it('vampire_big_gulp 消灭 Igor 后 Igor onDestroy 只触发一次', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -57,59 +54,32 @@ describe('Bug: 对手打出"一大口"消灭 Igor 时触发两次', () => {
         
         const ms = makeMatchState(core);
 
-        // 步骤1：执行"一大口"能力（跳过命令验证，直接执行）
-        const events = execute(ms, {
+        // 步骤1：执行"一大口"能力，进入选择消灭目标的 prompt
+        const playResult = runCommand(ms, {
             type: SU_COMMANDS.PLAY_ACTION,
             playerId: '0',
             payload: { cardUid: 'bg1' },
             timestamp: 1000,
-        }, defaultTestRandom);
-        
-        const executeResult = { matchState: ms, events };
+        } as any, defaultTestRandom);
+        expect(playResult.success, playResult.error).toBe(true);
         
         // 应该创建一个交互（选择要消灭的随从）
-        const interaction1 = getFirstPrompt(executeResult.matchState!);
+        const interaction1 = getFirstPrompt(playResult.finalState);
         expect(interaction1).toBeDefined();
         expect(getPromptSourceId(interaction1)).toBe('vampire_big_gulp');
         
-        console.log('Big Gulp interaction options:', getPromptOptions(interaction1).map((o: any) => o.label));
-        
-        // 步骤2：调用 vampire_big_gulp handler（模拟玩家选择消灭 Igor）
-        const handler = getAbilityRuntimePromptHandler('vampire_big_gulp');
-        expect(handler).toBeDefined();
-        
-        const handlerResult = handler!(
-            executeResult.matchState!,
-            '0',
-            { minionUid: 'igor1', defId: 'frankenstein_igor', baseIndex: 0 },
-            getPromptHandlerData(interaction1),
-            defaultTestRandom,
-            1001
-        );
-        expect(handlerResult).toBeDefined();
-        if (!handlerResult) return;
-        
-        console.log('Handler result events:', handlerResult.events.map((e: any) => e.type));
-        
-        // 步骤3：调用 processDestroyMoveCycle（模拟 SmashUpEventSystem.afterEvents）
-        const afterDestroyMove = processDestroyMoveCycle(
-            handlerResult.events as any[],
-            handlerResult.state,
+        // 步骤2：通过真实交互响应选择消灭 Igor
+        const resolved = respondToPromptOption(
+            playResult.finalState,
+            option => option.value?.minionUid === 'igor1',
+            'Big Gulp target Igor option',
             '0',
             defaultTestRandom,
-            1001
         );
+        expect(resolved.success, resolved.error).toBe(true);
         
         // 检查：应该只有一个 Igor 交互（onDestroy）
-        const igorInteractions = getPromptsBySourceId(afterDestroyMove.matchState!, 'frankenstein_igor');
-        
-        console.log('Igor interactions:', igorInteractions.map(i => ({
-            id: i.id,
-            sourceId: getPromptSourceId(i),
-            playerId: i.playerId,
-        })));
-        
-        console.log('Igor interactions count:', igorInteractions.length);
+        const igorInteractions = getPromptsBySourceId(resolved.finalState, 'frankenstein_igor');
         
         // ❌ Bug: 如果这里失败，说明 Igor 触发了两次
         expect(igorInteractions.length).toBe(1);

@@ -105,10 +105,12 @@ cp .env.example .env
 npm run dev
 ```
 
+`npm run dev` 会先尝试拉起本地 `mongodb` 容器；如果当前 shell 没有显式配置 `MONGO_URI`，且检测到 `127.0.0.1:27017` 有可用本地 Mongo，则会自动注入开发默认值 `mongodb://127.0.0.1:27017/boardgame`。
+
 #### 方式二：无 Docker（纯内存模式，适合快速体验）
 
-无需安装 Docker 和 MongoDB，对局数据存在内存中，重启后丢失。
-该模式会自动跳过排行榜归档、UGC 动态注册等依赖 Mongo 的能力。
+无需安装 Docker 和 MongoDB。该模式会让游戏服退回纯内存存储，并跳过 API 启动；重启后数据会丢失。
+该模式会自动跳过排行榜归档、UGC 动态注册等依赖游戏服持久化存储的能力；认证、社交、管理后台等依赖 API 的能力在该模式下不可用。
 
 ```bash
 npm run dev:lite
@@ -118,14 +120,14 @@ npm run dev:lite
 
 ### 环境变量
 
-开发环境只需复制 `.env.example` 即可运行，无需额外配置。核心变量：
+开发环境只需复制 `.env.example` 即可运行。核心变量：
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
 | `VITE_DEV_PORT` | `5173` | 前端开发端口 |
 | `GAME_SERVER_PORT` | `18000` | 游戏服务端口 |
 | `API_SERVER_PORT` | `18001` | API 服务端口 |
-| `MONGO_URI` | `mongodb://localhost:27017/boardgame`（本地开发示例，必须显式配置） | 数据库连接 |
+| `MONGO_URI` | `mongodb://127.0.0.1:27017/boardgame`（推荐显式配置；`npm run dev` 在检测到本地 Mongo 时可自动注入） | 数据库连接 |
 | `JWT_SECRET` | 开发默认值 | JWT 密钥（生产环境必须修改） |
 
 完整说明见 [.env.example](.env.example)。

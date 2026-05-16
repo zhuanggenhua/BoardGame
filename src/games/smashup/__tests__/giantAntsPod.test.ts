@@ -3,9 +3,19 @@ import { SU_COMMANDS, SU_EVENTS, type MinionDestroyedEvent, type SmashUpCore } f
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { processDestroyTriggers } from '../domain/reducer';
-import { makeCard, makeMatchState, makeMinion, makePlayer, makeState, getInteractionsFromMS } from './helpers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import {
+    getFirstPrompt,
+    getPromptOption,
+    getPromptSourceId,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    resolveDestroyedMinions,
+    respondToPrompt,
+} from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import type { MatchState } from '../../../engine/types';
 
@@ -80,20 +90,18 @@ describe('giant_ants_pod: Ant Drone (POD)', () => {
             timestamp: 1000,
         };
 
-        const triggerResult = processDestroyTriggers([destroyEvent], ms, '0', defaultTestRandom, 1000);
+        const triggerResult = resolveDestroyedMinions(ms, '0', [destroyEvent], defaultTestRandom, 1000);
         expect(triggerResult.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
-        expect(triggerResult.matchState?.sys.interaction.current).toBeDefined();
-        expect((triggerResult.matchState?.sys.interaction.current?.data as any)?.sourceId).toBe('giant_ant_drone_prevent_destroy');
+        const prompt = getFirstPrompt(triggerResult.matchState!);
+        expect(prompt).toBeDefined();
+        expect(getPromptSourceId(prompt)).toBe('giant_ant_drone_prevent_destroy');
 
-        const prompt: any = triggerResult.matchState?.sys.interaction.current?.data;
-        const droneOption = prompt?.options?.find((o: any) => o?.value?.droneUid === 'dr1');
-        expect(droneOption).toBeDefined();
-
-        const respondResult = runCommand(
-            triggerResult.matchState!,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: droneOption.id } } as any,
-            defaultTestRandom,
+        const droneOption = getPromptOption(
+            prompt,
+            o => o?.value?.droneUid === 'dr1',
+            'Drone POD prevent destroy option',
         );
+        const respondResult = respondToPrompt(triggerResult.matchState!, droneOption.id, '0', defaultTestRandom);
 
         // No destruction event should be emitted when prevented.
         expect(respondResult.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
@@ -129,27 +137,23 @@ describe('giant_ants_pod: Ant Soldier (POD)', () => {
             defaultTestRandom,
         );
 
-        const prompt1: any = getInteractionsFromMS(talentResult.finalState)[0]?.data;
-        expect(prompt1?.sourceId).toBe('giant_ant_soldier_pod_choose_source');
-        const srcOpt = prompt1?.options?.find((o: any) => o?.value?.minionUid === 'src');
-        expect(srcOpt).toBeDefined();
-
-        const chooseSource = runCommand(
-            talentResult.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: srcOpt.id } } as any,
-            defaultTestRandom,
+        const prompt1 = getFirstPrompt(talentResult.finalState);
+        expect(getPromptSourceId(prompt1)).toBe('giant_ant_soldier_pod_choose_source');
+        const srcOpt = getPromptOption(
+            prompt1,
+            o => o?.value?.minionUid === 'src',
+            'Soldier POD source minion option',
         );
+        const chooseSource = respondToPrompt(talentResult.finalState, srcOpt.id, '0', defaultTestRandom);
 
-        const prompt2: any = getInteractionsFromMS(chooseSource.finalState)[0]?.data;
-        expect(prompt2?.sourceId).toBe('giant_ant_soldier_pod_choose_target');
-        const dstOpt = prompt2?.options?.find((o: any) => o?.value?.minionUid === 'dst');
-        expect(dstOpt).toBeDefined();
-
-        const chooseTarget = runCommand(
-            chooseSource.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: dstOpt.id } } as any,
-            defaultTestRandom,
+        const prompt2 = getFirstPrompt(chooseSource.finalState);
+        expect(getPromptSourceId(prompt2)).toBe('giant_ant_soldier_pod_choose_target');
+        const dstOpt = getPromptOption(
+            prompt2,
+            o => o?.value?.minionUid === 'dst',
+            'Soldier POD target minion option',
         );
+        const chooseTarget = respondToPrompt(chooseSource.finalState, dstOpt.id, '0', defaultTestRandom);
 
         const base = chooseTarget.finalState.core.bases[0];
         expect(base.minions.find(m => m.uid === 'src')?.powerCounters).toBe(0);
@@ -184,27 +188,23 @@ describe('giant_ants_pod: Gimme the Prize (POD)', () => {
             defaultTestRandom,
         );
 
-        const prompt1: any = getInteractionsFromMS(play.finalState)[0]?.data;
-        expect(prompt1?.sourceId).toBe('giant_ant_gimme_the_prize_pod_first');
-        const firstOpt = prompt1?.options?.find((o: any) => o?.value?.minionUid === 'm1');
-        expect(firstOpt).toBeDefined();
-
-        const chooseFirst = runCommand(
-            play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: firstOpt.id } } as any,
-            defaultTestRandom,
+        const prompt1 = getFirstPrompt(play.finalState);
+        expect(getPromptSourceId(prompt1)).toBe('giant_ant_gimme_the_prize_pod_first');
+        const firstOpt = getPromptOption(
+            prompt1,
+            o => o?.value?.minionUid === 'm1',
+            'Gimme the Prize first minion option',
         );
+        const chooseFirst = respondToPrompt(play.finalState, firstOpt.id, '0', defaultTestRandom);
 
-        const prompt2: any = getInteractionsFromMS(chooseFirst.finalState)[0]?.data;
-        expect(prompt2?.sourceId).toBe('giant_ant_gimme_the_prize_pod_second');
-        const secondOpt = prompt2?.options?.find((o: any) => o?.value?.minionUid === 'm2');
-        expect(secondOpt).toBeDefined();
-
-        const chooseSecond = runCommand(
-            chooseFirst.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: secondOpt.id } } as any,
-            defaultTestRandom,
+        const prompt2 = getFirstPrompt(chooseFirst.finalState);
+        expect(getPromptSourceId(prompt2)).toBe('giant_ant_gimme_the_prize_pod_second');
+        const secondOpt = getPromptOption(
+            prompt2,
+            o => o?.value?.minionUid === 'm2',
+            'Gimme the Prize second minion option',
         );
+        const chooseSecond = respondToPrompt(chooseFirst.finalState, secondOpt.id, '0', defaultTestRandom);
 
         const base = chooseSecond.finalState.core.bases[0];
         expect(base.minions.find(m => m.uid === 'm1')?.powerCounters).toBe(2);
@@ -246,16 +246,14 @@ describe('giant_ants_pod: We Will Rock You (POD)', () => {
             defaultTestRandom,
         );
 
-        const prompt: any = getInteractionsFromMS(play.finalState)[0]?.data;
-        expect(prompt?.sourceId).toBe('giant_ant_we_will_rock_you_pod_choose_base');
-        const base0Opt = prompt?.options?.find((o: any) => o?.value?.baseIndex === 0);
-        expect(base0Opt).toBeDefined();
-
-        const chooseBase = runCommand(
-            play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: base0Opt.id } } as any,
-            defaultTestRandom,
+        const prompt = getFirstPrompt(play.finalState);
+        expect(getPromptSourceId(prompt)).toBe('giant_ant_we_will_rock_you_pod_choose_base');
+        const base0Opt = getPromptOption(
+            prompt,
+            o => o?.value?.baseIndex === 0,
+            'We Will Rock You base option',
         );
+        const chooseBase = respondToPrompt(play.finalState, base0Opt.id, '0', defaultTestRandom);
 
         const tempEvents = chooseBase.events.filter(e => e.type === SU_EVENTS.TEMP_POWER_ADDED) as any[];
         expect(tempEvents).toHaveLength(2);
@@ -286,16 +284,14 @@ describe('giant_ants_pod: Who Wants to Live Forever? (POD)', () => {
             defaultTestRandom,
         );
 
-        const prompt: any = getInteractionsFromMS(play.finalState)[0]?.data;
-        expect(prompt?.sourceId).toBe('giant_ant_who_wants_to_live_forever_pod_search');
-        const pickC2 = prompt?.options?.find((o: any) => o?.value?.cardUid === 'c2');
-        expect(pickC2).toBeDefined();
-
-        const choose = runCommand(
-            play.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: pickC2.id } } as any,
-            defaultTestRandom,
+        const prompt = getFirstPrompt(play.finalState);
+        expect(getPromptSourceId(prompt)).toBe('giant_ant_who_wants_to_live_forever_pod_search');
+        const pickC2 = getPromptOption(
+            prompt,
+            o => o?.value?.cardUid === 'c2',
+            'Who Wants to Live Forever search option',
         );
+        const choose = respondToPrompt(play.finalState, pickC2.id, '0', defaultTestRandom);
 
         expect(choose.finalState.core.players['0']?.deck[0]?.uid).toBe('c2');
     });

@@ -183,7 +183,6 @@ describe('Prompt 响应链集成测试', () => {
             // 游戏初始化成功
             expect(result.finalState.core.turnOrder).toHaveLength(2);
             expectNoPrompt(result.finalState);
-            expect(result.finalState.sys.interaction.queue).toEqual([]);
         });
     });
 });

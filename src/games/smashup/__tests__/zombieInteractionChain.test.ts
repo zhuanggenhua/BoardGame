@@ -25,7 +25,6 @@ import {
 } from '../../../engine';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { createSmashUpEventSystem } from '../domain/systems';
-import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { ActionCardDef } from '../domain/types';
 import { getCardDef } from '../data/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
@@ -39,6 +38,15 @@ import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry, collectTriggers } from '../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
+import {
+    expectNoPrompt,
+    getPromptMultiMin,
+    getPromptOption,
+    getPromptOptions,
+    getSimpleChoicePrompt,
+    respondCommand,
+    respondOptionsCommand,
+} from './helpers';
 
 // ============================================================================
 // 测试工具（与 interactionChainE2E.test.ts 保持一致）
@@ -140,13 +148,11 @@ function runCommand(state: MatchState<SmashUpCore>, cmd: { type: string; playerI
 }
 
 function respond(state: MatchState<SmashUpCore>, playerId: string, optionId: string, name: string) {
-    return runCommand(state, { type: INTERACTION_COMMANDS.RESPOND, playerId, payload: { optionId } }, name);
+    return runCommand(state, respondCommand(optionId, playerId), name);
 }
 
 function findOption(choice: any, predicate: (opt: any) => boolean): string {
-    const opt = choice.options.find(predicate);
-    if (!opt) throw new Error(`找不到匹配的选项: ${JSON.stringify(choice.options.map((o: any) => o.id))}`);
-    return opt.id;
+    return getPromptOption(choice, predicate, 'zombie interaction option').id;
 }
 
 // ============================================================================
@@ -191,9 +197,7 @@ describe('zombie_grave_digger（掘墓者）1步链', () => {
             payload: { cardUid: 'gd1', baseIndex: 0 },
         }, 'grave_digger: 打出');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1).toBeDefined();
-        expect(choice1.sourceId).toBe('zombie_grave_digger');
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'zombie_grave_digger');
 
         // Step 2: 选弃牌堆随从 → 取回手牌
         const optId = findOption(choice1, (o: any) => o.value?.cardUid === 'disc-m1');
@@ -224,8 +228,7 @@ describe('zombie_grave_digger（掘墓者）1步链', () => {
             playerId: '0',
             payload: { cardUid: 'gd1', baseIndex: 0 },
         }, 'grave_digger: 打出');
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1.sourceId).toBe('zombie_grave_digger');
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'zombie_grave_digger');
 
         // 选跳过
         const skipId = findOption(choice1, (o: any) => o.value?.skip === true);
@@ -266,9 +269,7 @@ describe('zombie_walker（行尸）1步链', () => {
             payload: { cardUid: 'w1', baseIndex: 0 },
         }, 'walker: 打出');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1).toBeDefined();
-        expect(choice1.sourceId).toBe('zombie_walker');
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'zombie_walker');
 
         // 选弃掉
         const discardOpt = findOption(choice1, (o: any) => o.value?.action === 'discard');
@@ -302,7 +303,7 @@ describe('zombie_walker（行尸）1步链', () => {
             playerId: '0',
             payload: { cardUid: 'w1', baseIndex: 0 },
         }, 'walker: 打出');
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'zombie_walker');
 
         // 选保留
         const keepOpt = findOption(choice1, (o: any) => o.value?.action === 'keep');
@@ -343,9 +344,7 @@ describe('zombie_grave_robbing（掘墓）1步链', () => {
             payload: { cardUid: 'gr1' },
         }, 'grave_robbing: 打出');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1).toBeDefined();
-        expect(choice1.sourceId).toBe('zombie_grave_robbing');
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'zombie_grave_robbing');
 
         // 选行动卡取回
         const optId = findOption(choice1, (o: any) => o.value?.cardUid === 'disc-a1');
@@ -386,9 +385,7 @@ describe('zombie_not_enough_bullets（子弹不够）1步链', () => {
             payload: { cardUid: 'neb1' },
         }, 'not_enough_bullets: 打出');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1).toBeDefined();
-        expect(choice1.sourceId).toBe('zombie_not_enough_bullets');
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'zombie_not_enough_bullets');
 
         // 选 zombie_walker 组 → 取回所有同名
         const optId = findOption(choice1, (o: any) => o.value?.defId === 'zombie_walker');
@@ -420,10 +417,10 @@ describe('zombie_lend_a_hand（借把手）1步链', () => {
         });
         const state = makeFullMatchState(core);
         const r1 = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'lah1' } }, 'lend_a_hand: 打出');
-        const choice = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice = getSimpleChoicePrompt(r1.finalState, 'zombie_lend_a_hand');
         // min=0 表示可以不选，不需要额外的 skip 选项
-        expect(choice.multi?.min).toBe(0);
-        expect(choice.options.some((o: any) => o.id === 'skip')).toBe(false);
+        expect(getPromptMultiMin(choice)).toBe(0);
+        expect(getPromptOptions(choice).some((o: any) => o.id === 'skip')).toBe(false);
     });
 
     it('提交空选择 → 弃牌堆不变', () => {
@@ -440,7 +437,7 @@ describe('zombie_lend_a_hand（借把手）1步链', () => {
         const state = makeFullMatchState(core);
         const r1 = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'lah1' } }, 'lend_a_hand: 打出');
         // 提交空选择（optionIds: []）等同于跳过
-        const r2 = runCommand(r1.finalState, { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionIds: [] } }, 'lend_a_hand: 空选择');
+        const r2 = runCommand(r1.finalState, respondOptionsCommand([], '0'), 'lend_a_hand: 空选择');
         expect(r2.steps[0]?.success).toBe(true);
         // 弃牌堆不变
         expect(r2.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'disc-a1')).toBe(true);
@@ -470,9 +467,7 @@ describe('zombie_lend_a_hand（借把手）1步链', () => {
             payload: { cardUid: 'lah1' },
         }, 'lend_a_hand: 打出');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1).toBeDefined();
-        expect(choice1.sourceId).toBe('zombie_lend_a_hand');
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'zombie_lend_a_hand');
 
         // 选第一张弃牌堆卡（多选交互，选一张即可验证链路）
         const optId = findOption(choice1, (o: any) => o.value?.cardUid === 'disc-a1');
@@ -516,9 +511,7 @@ describe('zombie_mall_crawl（进发商场）1步链', () => {
             payload: { cardUid: 'mc1' },
         }, 'mall_crawl: 打出');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1).toBeDefined();
-        expect(choice1.sourceId).toBe('zombie_mall_crawl');
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'zombie_mall_crawl');
 
         // 选 zombie_walker → 所有同名卡进弃牌堆
         const optId = findOption(choice1, (o: any) => o.value?.defId === 'zombie_walker');
@@ -570,9 +563,7 @@ describe('zombie_lord（僵尸领主）循环链', () => {
             payload: { cardUid: 'lord1', baseIndex: 2 },
         }, 'zombie_lord: 打出');
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1).toBeDefined();
-        expect(choice1.sourceId).toBe('zombie_lord_pick');
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'zombie_lord_pick');
 
         // 第一轮：只传 optionId（模拟 AI/自动恢复链路未合并 baseIndex）
         const cardOpt = findOption(choice1, (o: any) => o.value?.cardUid === 'disc-w1');
@@ -583,9 +574,7 @@ describe('zombie_lord（僵尸领主）循环链', () => {
         expect(r2.finalState.core.bases[0].minions.some((m: MinionOnBase) => m.uid === 'disc-w1')).toBe(true);
         expect(Object.prototype.hasOwnProperty.call(p0After.minionsPlayedPerBase ?? {}, 'undefined')).toBe(false);
 
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
-        expect(choice2).toBeDefined();
-        expect(choice2.sourceId).toBe('zombie_lord_pick');
+        getSimpleChoicePrompt(r2.finalState, 'zombie_lord_pick');
     });
 
     it('选完成 → 直接结束', () => {
@@ -610,15 +599,13 @@ describe('zombie_lord（僵尸领主）循环链', () => {
             playerId: '0',
             payload: { cardUid: 'lord1', baseIndex: 1 },
         }, 'zombie_lord: 打出');
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        expect(choice1.sourceId).toBe('zombie_lord_pick');
+        const choice1 = getSimpleChoicePrompt(r1.finalState, 'zombie_lord_pick');
 
         // 选"完成"
         const doneOpt = findOption(choice1, (o: any) => o.value?.done === true);
         const r2 = respond(r1.finalState, '0', doneOpt, 'zombie_lord: 完成');
         expect(r2.steps[0]?.success).toBe(true);
-        // 交互结束（InteractionSystem 清空后为 undefined 或 null）
-        expect(r2.finalState.sys.interaction.current).toBeFalsy();
+        expectNoPrompt(r2.finalState);
     });
 
     it('弃牌堆无力量≤2随从 → 不触发交互', () => {
@@ -641,8 +628,7 @@ describe('zombie_lord（僵尸领主）循环链', () => {
             payload: { cardUid: 'lord1', baseIndex: 0 },
         }, 'zombie_lord: 打出无合格随从');
         expect(r1.steps[0]?.success).toBe(true);
-        // 无交互（InteractionSystem 清空后为 undefined 或 null）
-        expect(r1.finalState.sys.interaction.current).toBeFalsy();
+        expectNoPrompt(r1.finalState);
     });
 });
 
@@ -974,7 +960,7 @@ describe('zombie_overrun（泛滥横行）ongoing 效果', () => {
         );
 
         expect(resolved).toBeDefined();
-        expect(resolved!.state.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(resolved!.state);
         expect(resolved!.events.filter((event: any) => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toHaveLength(2);
         expect(resolved!.state.core.triggerQueue ?? []).toHaveLength(0);
         expect(resolved!.state.core.bases[0].ongoingActions.some(action => action.uid === 'overrun1')).toBe(false);

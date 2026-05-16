@@ -236,8 +236,18 @@ src/lib/
 
 ```
 src/games/
+├── archview/
+│   └── manifest.ts
 ├── assetslicer/
 │   └── manifest.ts
+├── audiobrowser/
+│   └── manifest.ts
+├── cardia/
+│   ├── domain/
+│   ├── Board.tsx
+│   ├── game.ts
+│   ├── manifest.ts
+│   └── tutorial.ts
 ├── dicethrone/
 │   ├── __tests__/
 │   ├── audio.config.ts
@@ -255,6 +265,28 @@ src/games/
 │   ├── thumbnail.tsx
 │   ├── tutorial.ts
 │   └── types.ts
+├── fxpreview/
+│   └── manifest.ts
+├── qidahen/
+│   ├── rule/
+│   ├── Board.tsx
+│   ├── game.ts
+│   └── manifest.ts
+├── smashup/
+│   ├── __tests__/
+│   ├── abilities/
+│   ├── domain/
+│   ├── ui/
+│   ├── Board.tsx
+│   ├── game.ts
+│   └── manifest.ts
+├── splendor/
+│   ├── domain/
+│   ├── ui/
+│   ├── Board.tsx
+│   ├── game.ts
+│   ├── manifest.ts
+│   └── tutorial.ts
 ├── summonerwars/
 │   ├── config/
 │   ├── domain/
@@ -274,8 +306,8 @@ src/games/
 │   ├── manifest.ts
 │   ├── thumbnail.tsx
 │   └── tutorial.ts
-├── ugcbuilder/
-│   └── manifest.ts
+├── ugc-wrapper/
+│   └── game.ts
 ├── manifest.ts
 ├── manifest.client.generated.tsx
 ├── manifest.client.tsx

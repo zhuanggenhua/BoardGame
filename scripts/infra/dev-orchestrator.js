@@ -10,6 +10,9 @@ let shuttingDown = false;
 const repoRoot = process.cwd();
 const devBundleDir = process.env.DEV_BUNDLE_DIR || path.join('temp', 'dev-bundles');
 const devStartupTimeoutMs = Number(process.env.DEV_STARTUP_TIMEOUT_MS) || 300000;
+const defaultLocalDevMongoUri = 'mongodb://127.0.0.1:27017/boardgame';
+const devLiteMode = process.env.BG_DEV_LITE === '1';
+const skipApiMode = process.env.BG_DEV_SKIP_API === '1';
 const DEFAULT_DEV_PORTS = Object.freeze({
     frontend: 4273,
     gameServer: 18000,
@@ -169,19 +172,47 @@ function shutdown(code = 0) {
 process.on('SIGINT', () => shutdown(0));
 process.on('SIGTERM', () => shutdown(0));
 
-function resolveLocalDevModeEnv() {
-    return process.env.MONGO_URI ? {} : { USE_PERSISTENT_STORAGE: 'false' };
+async function resolveLocalDevMongoUri() {
+    const explicitMongoUri = process.env.MONGO_URI?.trim();
+    if (explicitMongoUri) {
+        return explicitMongoUri;
+    }
+
+    if (devLiteMode || process.env.BG_DEV_SKIP_AUTO_MONGO === '1') {
+        return null;
+    }
+
+    const mongoReachable = await probePort(27017, '127.0.0.1', 750);
+    if (!mongoReachable) {
+        return null;
+    }
+
+    return defaultLocalDevMongoUri;
+}
+
+function resolveGameDevEnv(mongoUri) {
+    if (devLiteMode) {
+        return { USE_PERSISTENT_STORAGE: 'false' };
+    }
+
+    if (mongoUri) {
+        return { MONGO_URI: mongoUri };
+    }
+
+    return { USE_PERSISTENT_STORAGE: 'false' };
 }
 
 async function main() {
     removeDevRuntimePorts();
     const resolvedPorts = await resolveDevPortsFromEnv();
+    const resolvedMongoUri = await resolveLocalDevMongoUri();
     saveDevRuntimePorts(resolvedPorts);
     const sharedDevEnv = {
         VITE_DEV_PORT: String(resolvedPorts.frontend),
         GAME_SERVER_PORT: String(resolvedPorts.gameServer),
         API_SERVER_PORT: String(resolvedPorts.apiServer),
         GAME_SERVER_PROXY_TARGET: `http://127.0.0.1:${resolvedPorts.gameServer}`,
+        ...(resolvedMongoUri ? { MONGO_URI: resolvedMongoUri } : {}),
         ...(disableHotReload
             ? {
                 PW_SERVER_WATCH: 'false',
@@ -191,17 +222,27 @@ async function main() {
     };
 
     console.log('[dev-orchestrator] resolved dev ports:', resolvedPorts);
+    if (devLiteMode) {
+        console.log('[dev-orchestrator] dev:lite mode enabled: game uses in-memory storage');
+    }
+    if (skipApiMode) {
+        console.log('[dev-orchestrator] API startup is disabled for this run');
+    } else if (resolvedMongoUri && !process.env.MONGO_URI) {
+        console.log(`[dev-orchestrator] auto-detected local Mongo and injected MONGO_URI=${resolvedMongoUri}`);
+    }
     if (disableHotReload) {
         console.log('[dev-orchestrator] hot reload disabled: game/api run once, Vite HMR/watch disabled');
     }
     console.log('[dev-orchestrator] starting api and game in parallel');
-    const apiChild = startCommand('dev:api', process.execPath, createBundleRunnerArgs({
-        label: 'api',
-        entry: 'apps/api/src/main.ts',
-        outfile: getBundleOutfile('api', 'main.mjs'),
-        tsconfig: 'apps/api/tsconfig.json',
-    }), sharedDevEnv, { optional: true });
-    const gameExtraEnv = resolveLocalDevModeEnv();
+    const apiChild = skipApiMode
+        ? null
+        : startCommand('dev:api', process.execPath, createBundleRunnerArgs({
+            label: 'api',
+            entry: 'apps/api/src/main.ts',
+            outfile: getBundleOutfile('api', 'main.mjs'),
+            tsconfig: 'apps/api/tsconfig.json',
+        }), sharedDevEnv, { optional: true });
+    const gameExtraEnv = resolveGameDevEnv(resolvedMongoUri);
     startCommand('dev:game', process.execPath, createBundleRunnerArgs({
         label: 'game',
         entry: 'server.ts',
@@ -220,26 +261,33 @@ async function main() {
     await waitForPort(gamePort, 'game');
 
     let apiReady = false;
-    try {
-        await waitForPort(apiPort, 'api', 15000);
-        apiReady = true;
-    } catch (error) {
-        console.warn(`[dev-orchestrator] api 未在 15s 内就绪，降级为前端 + game 模式: ${error instanceof Error ? error.message : String(error)}`);
-        if (!apiChild.killed) {
-            try {
-                if (process.platform === 'win32') {
-                    spawn('taskkill', ['/F', '/T', '/PID', String(apiChild.pid)], withWindowsHide({ stdio: 'ignore' }));
-                } else {
-                    apiChild.kill('SIGTERM');
+    if (!skipApiMode) {
+        try {
+            await waitForPort(apiPort, 'api', 15000);
+            apiReady = true;
+        } catch (error) {
+            console.warn(`[dev-orchestrator] api 未在 15s 内就绪，降级为前端 + game 模式: ${error instanceof Error ? error.message : String(error)}`);
+            if (apiChild && !apiChild.killed) {
+                try {
+                    if (process.platform === 'win32') {
+                        spawn('taskkill', ['/F', '/T', '/PID', String(apiChild.pid)], withWindowsHide({ stdio: 'ignore' }));
+                    } else {
+                        apiChild.kill('SIGTERM');
+                    }
+                } catch {
                 }
-            } catch {
             }
+            await wait(250);
         }
-        await wait(250);
     }
 
     console.log('[dev-orchestrator] starting frontend');
     startCommand('dev:frontend', process.execPath, ['scripts/infra/vite-with-logging.js'], sharedDevEnv);
+
+    if (skipApiMode) {
+        console.log('[dev-orchestrator] frontend 已启动；API 已按当前模式跳过');
+        return;
+    }
 
     if (!apiReady) {
         console.log('[dev-orchestrator] frontend 已启动；API 因本地数据库不可用被跳过');

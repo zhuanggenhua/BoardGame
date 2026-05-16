@@ -283,8 +283,7 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
 
         // 验证：应该生成交互（选择转移指示物）
         const state = runner.getState();
-        const hasInteraction = state.sys.interaction?.queue?.length > 0 || !!state.sys.interaction?.current;
-        expect(hasInteraction).toBe(true);
+        expect(getSimpleChoicePrompt(state)).toBeDefined();
     });
 
     it('只有 frame-backed reaction frame 时打出"我们乃最强"也应立即执行能力', () => {
@@ -364,7 +363,6 @@ describe('afterScoring 响应窗口中打出卡牌的执行', () => {
         expect(armedEvent).toBeUndefined();
 
         const state = runner.getState();
-        const hasInteraction = state.sys.interaction?.queue?.length > 0 || !!state.sys.interaction?.current;
-        expect(hasInteraction).toBe(true);
+        expect(getSimpleChoicePrompt(state)).toBeDefined();
     });
 });

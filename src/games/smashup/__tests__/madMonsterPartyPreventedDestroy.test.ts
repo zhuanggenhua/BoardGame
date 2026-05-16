@@ -5,10 +5,9 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { getPromptsBySourceId, makeMatchState, makeMinion, makePlayer } from './helpers';
+import { getPromptsBySourceId, makeMatchState, makeMinion, makePlayer, resolveDestroyedMinions } from './helpers';
 import { defaultTestRandom } from './testRunner';
 import { SU_EVENTS } from '../domain/types';
-import { processDestroyTriggers } from '../domain/reducer';
 
 beforeAll(() => {
     clearRegistry();
@@ -58,7 +57,7 @@ describe('onMinionDestroyed: prevented destroy should not queue reaction trigger
             timestamp: 10,
         } as any;
 
-        const result = processDestroyTriggers([destroyEvent], ms, '0', defaultTestRandom, 10);
+        const result = resolveDestroyedMinions(ms, '0', [destroyEvent], defaultTestRandom, 10);
 
         // The destruction is pending-save (replacement prompt created), so it must not be queued as a real destroy yet.
         expect(result.events.some(e => e.type === SU_EVENTS.TRIGGER_QUEUED)).toBe(false);

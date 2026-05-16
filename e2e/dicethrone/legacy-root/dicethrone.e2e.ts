@@ -366,7 +366,23 @@ test.describe('DiceThrone E2E', () => {
         const clickHandCard = async (cardId: string) => {
             const card = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
             await expect(card).toBeVisible({ timeout: 10000 });
-            await card.click();
+            const box = await page.evaluate((nextCardId) => {
+                const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+                if (!node) return null;
+                const rect = node.getBoundingClientRect();
+                return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+            }, cardId);
+            if (!box || box.width <= 0 || box.height <= 0) {
+                throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+            }
+            const startX = box.x + (box.width / 2);
+            const startY = box.y + (box.height * 0.78);
+            const endY = Math.max(24, startY - 240);
+            await page.mouse.move(startX, startY);
+            await page.mouse.down();
+            await page.mouse.move(startX, endY, { steps: 12 });
+            await page.mouse.up();
+            await page.mouse.move(2, 2);
         };
 
         const clickHandCardArea = async (cardId: string) => {

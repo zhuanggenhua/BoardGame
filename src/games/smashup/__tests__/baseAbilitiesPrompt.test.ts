@@ -18,7 +18,6 @@
 import { describe, expect, it, beforeAll } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
-import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import {
     clearBaseAbilityRegistry,
     triggerBaseAbility,
@@ -29,7 +28,19 @@ import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, CardInstance }
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { appendScoringFrameDeferredPayload, consumeScoringFrameDeferredPayload, createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
-import { triggerBaseAbilityWithMS, getInteractionsFromResult, makeMatchState } from './helpers';
+import {
+    getPromptHandlerData,
+    getPromptOption,
+    getPromptOptions,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getPromptTitle,
+    getSimpleChoicePrompt,
+    triggerBaseAbilityWithMS,
+    getInteractionsFromResult,
+    makeMatchState,
+    resolvePromptViaRegisteredHandler,
+} from './helpers';
 import type { RandomFn } from '../../../engine/types';
 
 // ============================================================================
@@ -211,12 +222,13 @@ describe('base_the_mothership: 计分后冠军收回随从', () => {
         }));
 
         expect(result.events).toHaveLength(0);
-            const interactions = getInteractionsFromResult(result);
-            expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_the_mothership');
-        expect(interactions[0].playerId).toBe('0'); // 冠军
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
+        const prompt = interactions[0];
+        expect(getPromptSourceId(prompt)).toBe('base_the_mothership');
+        expect(getPromptPlayerId(prompt)).toBe('0'); // 冠军
         // 只有 m1 (power=2) 符合条件（≤3且为冠军控制）
-        const options = interactions[0].data.options;
+        const options = getPromptOptions(prompt);
         // 应有 skip + 1 个随从选项
         expect(options.length).toBe(2);
     });
@@ -242,7 +254,7 @@ describe('base_the_mothership: 计分后冠军收回随从', () => {
 
         const interactions = getInteractionsFromResult(result);
         expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_the_mothership');
+        expect(getPromptSourceId(interactions[0])).toBe('base_the_mothership');
     });
 
     it('冠军无力量≤3的随从时不生成 Prompt', () => {
@@ -305,22 +317,17 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             ],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const chooseMinion = getInteractionHandler('base_pirate_cove');
-        const chooseBase = getInteractionHandler('base_pirate_cove_choose_base');
-        expect(interaction?.data?.sourceId).toBe('base_pirate_cove');
-        expect(chooseMinion).toBeDefined();
-        expect(chooseBase).toBeDefined();
+        expect(getPromptSourceId(interaction)).toBe('base_pirate_cove');
 
-        const step1 = chooseMinion!(
+        const step1 = resolvePromptViaRegisteredHandler(
             result.matchState!,
-            '1',
+            interaction,
             { minionUid: 'm2', minionDefId: 'd1' },
-            interaction.data,
-            dummyRandom,
             1200,
+            dummyRandom,
         );
-        const nextInteraction = (step1?.state.sys as any).interaction?.queue?.[0];
-        expect(nextInteraction?.data?.sourceId).toBe('base_pirate_cove_choose_base');
+        expect(step1).toBeDefined();
+        const nextInteraction = getSimpleChoicePrompt(step1!.state, 'base_pirate_cove_choose_base');
 
         const staleCore = makeState({
             bases: [
@@ -338,13 +345,12 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             },
         });
 
-        const step2 = chooseBase!(
+        const step2 = resolvePromptViaRegisteredHandler(
             makeMatchState(staleCore),
-            '1',
+            nextInteraction,
             { baseIndex: 1 },
-            nextInteraction?.data,
-            dummyRandom,
             1201,
+            dummyRandom,
         );
         expect(step2?.events ?? []).toHaveLength(0);
     });
@@ -369,10 +375,8 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             ],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm3');
-        const handler = getInteractionHandler('base_tortuga');
-        expect(interaction?.data?.sourceId).toBe('base_tortuga');
-        expect(handler).toBeDefined();
+        const option = getPromptOption(interaction, (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm3');
+        expect(getPromptSourceId(interaction)).toBe('base_tortuga');
 
         const staleCore = makeState({
             bases: [
@@ -391,13 +395,12 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             },
         });
 
-        const resolved = handler!(
+        const resolved = resolvePromptViaRegisteredHandler(
             makeMatchState(staleCore),
-            '1',
+            interaction,
             option.value,
-            interaction.data,
-            dummyRandom,
             1300,
+            dummyRandom,
         );
         expect(resolved?.events ?? []).toHaveLength(0);
     });
@@ -416,10 +419,8 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             baseDefId: 'base_mushroom_kingdom',
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
-        const handler = getInteractionHandler('base_mushroom_kingdom');
-        expect(interaction?.data?.sourceId).toBe('base_mushroom_kingdom');
-        expect(handler).toBeDefined();
+        const option = getPromptOption(interaction, (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
+        expect(getPromptSourceId(interaction)).toBe('base_mushroom_kingdom');
 
         const staleCore = makeState({
             bases: [
@@ -436,13 +437,12 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             },
         });
 
-        const resolved = handler!(
+        const resolved = resolvePromptViaRegisteredHandler(
             makeMatchState(staleCore),
-            '0',
+            interaction,
             option.value,
-            interaction.data,
-            dummyRandom,
             1400,
+            dummyRandom,
         );
         expect(resolved?.events ?? []).toHaveLength(0);
     });
@@ -461,10 +461,8 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             baseDefId: 'base_the_hill',
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
-        const handler = getInteractionHandler('base_the_hill');
-        expect(interaction?.data?.sourceId).toBe('base_the_hill');
-        expect(handler).toBeDefined();
+        const option = getPromptOption(interaction, (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
+        expect(getPromptSourceId(interaction)).toBe('base_the_hill');
 
         const staleCore = makeState({
             bases: [
@@ -481,13 +479,12 @@ describe('stale move regression: 基础基地 Prompt 移动', () => {
             },
         });
 
-        const resolved = handler!(
+        const resolved = resolvePromptViaRegisteredHandler(
             makeMatchState(staleCore),
-            '0',
+            interaction,
             option.value,
-            interaction.data,
-            dummyRandom,
             1500,
+            dummyRandom,
         );
         expect(resolved?.events ?? []).toHaveLength(0);
     });
@@ -516,12 +513,13 @@ describe('base_ninja_dojo: 计分后冠军消灭随从', () => {
         }));
 
         expect(result.events).toHaveLength(0);
-            const interactions = getInteractionsFromResult(result);
-            expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_ninja_dojo');
-        expect(interactions[0].playerId).toBe('0'); // 冠军
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
+        const prompt = interactions[0];
+        expect(getPromptSourceId(prompt)).toBe('base_ninja_dojo');
+        expect(getPromptPlayerId(prompt)).toBe('0'); // 冠军
         // skip + 2 个随从选项（可消灭任意随从）
-        expect(interactions[0].data.options.length).toBe(3);
+        expect(getPromptOptions(prompt).length).toBe(3);
     });
 
     it('无随从时不生成 Prompt', () => {
@@ -549,11 +547,8 @@ describe('stale return/destroy regression: 基础基地 Prompt', () => {
             rankings: [{ playerId: '0', power: 2, vp: 4 }],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => entry.value?.minionUid === 'm1');
-        const handler = getInteractionHandler('base_the_mothership');
-        expect(interaction?.data?.sourceId).toBe('base_the_mothership');
-        expect(option).toBeDefined();
-        expect(handler).toBeDefined();
+        const option = getPromptOption(interaction, (entry: any) => entry.value?.minionUid === 'm1');
+        expect(getPromptSourceId(interaction)).toBe('base_the_mothership');
 
         const staleCore = makeState({
             bases: [makeBase('base_the_mothership')],
@@ -565,13 +560,12 @@ describe('stale return/destroy regression: 基础基地 Prompt', () => {
             },
         });
 
-        const resolved = handler!(
+        const resolved = resolvePromptViaRegisteredHandler(
             makeMatchState(staleCore),
-            '0',
+            interaction,
             option.value,
-            interaction.data,
-            dummyRandom,
             1450,
+            dummyRandom,
         );
         expect(resolved?.events ?? []).toHaveLength(0);
     });
@@ -593,11 +587,8 @@ describe('stale return/destroy regression: 基础基地 Prompt', () => {
             ],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => entry.value?.minionUid === 'm2');
-        const handler = getInteractionHandler('base_ninja_dojo');
-        expect(interaction?.data?.sourceId).toBe('base_ninja_dojo');
-        expect(option).toBeDefined();
-        expect(handler).toBeDefined();
+        const option = getPromptOption(interaction, (entry: any) => entry.value?.minionUid === 'm2');
+        expect(getPromptSourceId(interaction)).toBe('base_ninja_dojo');
 
         const staleCore = makeState({
             bases: [makeBase('base_ninja_dojo', {
@@ -611,13 +602,12 @@ describe('stale return/destroy regression: 基础基地 Prompt', () => {
             },
         });
 
-        const resolved = handler!(
+        const resolved = resolvePromptViaRegisteredHandler(
             makeMatchState(staleCore),
-            '0',
+            interaction,
             option.value,
-            interaction.data,
-            dummyRandom,
             1451,
+            dummyRandom,
         );
         expect(resolved?.events ?? []).toHaveLength(0);
     });
@@ -647,10 +637,10 @@ describe('base_pirate_cove: 计分后非冠军移动随从', () => {
 
         // 只有玩家1（非冠军）生成 Prompt
         expect(result.events).toHaveLength(0);
-            const interactions = getInteractionsFromResult(result);
-            expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_pirate_cove');
-        expect(interactions[0].playerId).toBe('1');
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
+        expect(getPromptSourceId(interactions[0])).toBe('base_pirate_cove');
+        expect(getPromptPlayerId(interactions[0])).toBe('1');
     });
 
     it('冠军不生成 Prompt', () => {
@@ -718,9 +708,9 @@ describe('base_tortuga: 计分后亚军移动随从', () => {
         expect(result.events).toHaveLength(0);
         const interactions = getInteractionsFromResult(result);
         expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_tortuga');
-        expect(interactions[0].data.title).toBe('托尔图加：选择移动一个其他基地上的随从到替换基地');
-        expect(interactions[0].playerId).toBe('1'); // 亚军
+        expect(getPromptSourceId(interactions[0])).toBe('base_tortuga');
+        expect(getPromptTitle(interactions[0])).toBe('托尔图加：选择移动一个其他基地上的随从到替换基地');
+        expect(getPromptPlayerId(interactions[0])).toBe('1'); // 亚军
     });
 
     it('排名不足2人时不触发', () => {
@@ -776,11 +766,8 @@ describe('base_tortuga: 计分后亚军移动随从', () => {
         }));
 
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => entry.value?.minionUid === 'm3');
-        const handler = getInteractionHandler('base_tortuga');
-        expect(interaction?.data?.sourceId).toBe('base_tortuga');
-        expect(option).toBeDefined();
-        expect(handler).toBeDefined();
+        const option = getPromptOption(interaction, (entry: any) => entry.value?.minionUid === 'm3');
+        expect(getPromptSourceId(interaction)).toBe('base_tortuga');
 
         let resolvedState = makeMatchState(makeState({
             bases: [
@@ -825,13 +812,12 @@ describe('base_tortuga: 计分后亚军移动随从', () => {
             ],
         });
 
-        const resolved = handler!(
+        const resolved = resolvePromptViaRegisteredHandler(
             resolvedState,
-            '1',
+            interaction,
             option.value,
-            interaction.data as any,
-            dummyRandom,
             2001,
+            dummyRandom,
         );
 
         expect(resolved?.events ?? []).toHaveLength(0);
@@ -868,10 +854,11 @@ describe('base_wizard_academy: 计分后冠军重排基地牌库', () => {
         expect(result.events).toHaveLength(0);
         const interactions = getInteractionsFromResult(result);
         expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_wizard_academy');
-        expect(interactions[0].playerId).toBe('0');
+        const prompt = interactions[0];
+        expect(getPromptSourceId(prompt)).toBe('base_wizard_academy');
+        expect(getPromptPlayerId(prompt)).toBe('0');
         // 查看顶部最多 3 张
-        const ctx = (interactions[0].data as any).continuationContext;
+        const ctx = getPromptHandlerData(prompt).continuationContext;
         expect(ctx.topCards).toHaveLength(3);
         expect(ctx.topCards).toEqual(['base_a', 'base_b', 'base_c']);
     });
@@ -925,12 +912,13 @@ describe('base_mushroom_kingdom: 回合开始移动对手随从', () => {
         }));
 
         expect(result.events).toHaveLength(0);
-            const interactions = getInteractionsFromResult(result);
-            expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_mushroom_kingdom');
-        expect(interactions[0].playerId).toBe('0');
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
+        const prompt = interactions[0];
+        expect(getPromptSourceId(prompt)).toBe('base_mushroom_kingdom');
+        expect(getPromptPlayerId(prompt)).toBe('0');
         // skip + 1 个对手随从
-        expect(interactions[0].data.options.length).toBe(2);
+        expect(getPromptOptions(prompt).length).toBe(2);
     });
 
     it('只有己方随从时不生成 Prompt', () => {
@@ -985,12 +973,13 @@ describe('base_rlyeh: 回合开始消灭己方随从获1VP', () => {
         }));
 
         expect(result.events).toHaveLength(0);
-            const interactions = getInteractionsFromResult(result);
-            expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_rlyeh');
-        expect(interactions[0].playerId).toBe('0');
+        const interactions = getInteractionsFromResult(result);
+        expect(interactions).toHaveLength(1);
+        const prompt = interactions[0];
+        expect(getPromptSourceId(prompt)).toBe('base_rlyeh');
+        expect(getPromptPlayerId(prompt)).toBe('0');
         // skip + 己方随从
-        expect(interactions[0].data.options.length).toBe(2);
+        expect(getPromptOptions(prompt).length).toBe(2);
     });
 
     it('无己方随从时不生成 Prompt', () => {

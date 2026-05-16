@@ -11,18 +11,21 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import { execute, reduce } from '../domain/reducer';
 import { SU_COMMANDS, SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { validate } from '../domain/commands';
-import type {
-    SmashUpCore,
-    PlayerState,
-    MinionOnBase,
-    CardInstance,
-} from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { makeMinion, makeCard, makePlayer, makeState, makeMatchState, getInteractionsFromMS } from './helpers';
-import type { MatchState, RandomFn } from '../../../engine/types';
-import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
+import {
+    makeMinion,
+    makeCard,
+    makePlayer,
+    makeState,
+    makeMatchState,
+    getSimpleChoicePrompt,
+    getPromptOptions,
+    getPromptSourceId,
+    respondCommand,
+} from './helpers';
+import type { RandomFn } from '../../../engine/types';
 
 beforeAll(() => {
     clearRegistry();
@@ -174,13 +177,12 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         const types = events.map(e => e.type);
         expect(types).toContain(SU_EVENTS.TALENT_USED);
         // 创建 Interaction（包含玩家选项 + 取消选项）
-        const interactions = getInteractionsFromMS(ms);
-        expect(interactions.length).toBe(1);
-        const prompt = asSimpleChoice(interactions[0]);
-        expect(prompt?.options.length).toBe(2); // 1个对手 + 1个取消选项
+        const prompt = getSimpleChoicePrompt(ms, 'cthulhu_star_spawn');
+        const options = getPromptOptions(prompt);
+        expect(options.length).toBe(2); // 1个对手 + 1个取消选项
         // 验证取消选项使用框架标准 ID 和标记
-        expect(prompt?.options.some(opt => opt.id === '__cancel__')).toBe(true);
-        expect(prompt?.options.some(opt => (opt.value as any)?.__cancel__)).toBe(true);
+        expect(options.some(opt => opt.id === '__cancel__')).toBe(true);
+        expect(options.some(opt => (opt.value as any)?.__cancel__)).toBe(true);
         expect(types).not.toContain(SU_EVENTS.MADNESS_RETURNED);
         expect(types).not.toContain(SU_EVENTS.MADNESS_DRAWN);
     });
@@ -209,10 +211,8 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
 
         // 玩家选择取消（使用框架标准 ID）
         const events = execute(ms, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: '__cancel__' },
-        }, defaultRandom);
+            ...respondCommand('__cancel__', '0'),
+        } as any, defaultRandom);
 
         const types = events.map(e => e.type);
         // 不应有疯狂卡转移事件
@@ -271,8 +271,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         const types = events.map(e => e.type);
         expect(types).toContain(SU_EVENTS.TALENT_USED);
         // 创建 Interaction
-        const interactions2 = getInteractionsFromMS(ms2);
-        expect(interactions2.length).toBe(1);
+        getSimpleChoicePrompt(ms2, 'cthulhu_star_spawn');
         expect(types).not.toContain(SU_EVENTS.MADNESS_RETURNED);
         expect(types).not.toContain(SU_EVENTS.MADNESS_DRAWN);
     });
@@ -308,13 +307,12 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         expect(talentEvents.map(e => e.type)).toContain(SU_EVENTS.TALENT_USED);
         
         // 验证 Prompt 包含 2 个对手 + 1 个取消选项
-        const interactions = getInteractionsFromMS(ms);
-        expect(interactions.length).toBe(1);
-        const prompt = asSimpleChoice(interactions[0]);
-        expect(prompt?.options.length).toBe(3); // 玩家1 + 玩家2 + 取消
+        const prompt = getSimpleChoicePrompt(ms, 'cthulhu_star_spawn');
+        const options = getPromptOptions(prompt);
+        expect(options.length).toBe(3); // 玩家1 + 玩家2 + 取消
         
         // 验证玩家1选项的结构
-        const player1Option = prompt?.options.find(opt => {
+        const player1Option = options.find(opt => {
             const val = opt.value as any;
             return val?.targetPlayerId === '1';
         });
@@ -323,7 +321,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         // 不再检查 cancel 字段（已移除）
         
         // 验证玩家2选项的结构
-        const player2Option = prompt?.options.find(opt => {
+        const player2Option = options.find(opt => {
             const val = opt.value as any;
             return val?.targetPlayerId === '2';
         });
@@ -331,7 +329,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         expect((player2Option?.value as any)?.madnessUid).toBe('mad1');
         
         // 验证取消选项的结构（使用框架标准标记）
-        const cancelOption = prompt?.options.find(opt => opt.id === '__cancel__');
+        const cancelOption = options.find(opt => opt.id === '__cancel__');
         expect(cancelOption).toBeDefined();
         expect(cancelOption?.label).toBe('取消');
         expect((cancelOption?.value as any)?.__cancel__).toBe(true);
@@ -357,19 +355,19 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         const ms = makeMatchState(initialCore);
         
         // 触发天赋
-        const talentEvents = execute(ms, {
+        execute(ms, {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
         }, defaultRandom);
 
         // 验证 Prompt 包含 3 个对手 + 1 个取消选项
-        const interactions = getInteractionsFromMS(ms);
-        const prompt = asSimpleChoice(interactions[0]);
-        expect(prompt?.options.length).toBe(4); // 玩家1 + 玩家2 + 玩家3 + 取消
+        const prompt = getSimpleChoicePrompt(ms, 'cthulhu_star_spawn');
+        const options = getPromptOptions(prompt);
+        expect(options.length).toBe(4); // 玩家1 + 玩家2 + 玩家3 + 取消
         
         // 验证所有对手都在选项中
-        const targetPlayerIds = prompt?.options
+        const targetPlayerIds = options
             .map(opt => (opt.value as any)?.targetPlayerId)
             .filter(Boolean);
         expect(targetPlayerIds).toContain('1');
@@ -378,7 +376,7 @@ describe('cthulhu_star_spawn（星之眷族 talent）', () => {
         expect(targetPlayerIds.length).toBe(3); // 3个对手选项
         
         // 验证取消选项存在（使用框架标准标记）
-        const cancelOption = prompt?.options.find(opt => opt.id === '__cancel__');
+        const cancelOption = options.find(opt => opt.id === '__cancel__');
         expect(cancelOption).toBeDefined();
         expect((cancelOption?.value as any)?.__cancel__).toBe(true);
     });
@@ -421,8 +419,7 @@ describe('cthulhu_servitor（仆人 talent）', () => {
         expect(types).toContain(SU_EVENTS.TALENT_USED);
         expect(types).toContain(SU_EVENTS.MINION_DESTROYED);
         // 单张行动卡时创建 Interaction（不再生成 CHOICE_REQUESTED）
-        const interactions3 = getInteractionsFromMS(ms3);
-        expect(interactions3.length).toBe(1);
+        getSimpleChoicePrompt(ms3, 'cthulhu_servitor');
         expect(types).not.toContain(SU_EVENTS.DECK_RESHUFFLED);
 
         // 消灭的是自身
@@ -501,16 +498,15 @@ describe('cthulhu_servitor（仆人 talent）', () => {
         });
 
         const ms4 = makeMatchState(core);
-        const events = execute(ms4, {
+        execute(ms4, {
             type: SU_COMMANDS.USE_TALENT,
             playerId: '0',
             payload: { minionUid: 'm1', baseIndex: 0 },
         }, defaultRandom);
 
         // 多张行动卡时应创建 Interaction（不再生成 CHOICE_REQUESTED）
-        const interactions4 = getInteractionsFromMS(ms4);
-        expect(interactions4.length).toBe(1);
-        expect(interactions4[0].data.sourceId).toBe('cthulhu_servitor');
+        const prompt = getSimpleChoicePrompt(ms4, 'cthulhu_servitor');
+        expect(getPromptSourceId(prompt)).toBe('cthulhu_servitor');
     });
 });
 

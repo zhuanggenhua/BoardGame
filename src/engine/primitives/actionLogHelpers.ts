@@ -85,7 +85,7 @@ export interface DamageLogPayload {
         sourceId: string;
         sourceName?: string;
     }>;
-    /** 护盾消耗记录（DiceThrone 专用） */
+    /** 防护/减免来源的消耗记录 */
     shieldsConsumed?: Array<{
         sourceId: string;
         value?: number;

@@ -22,7 +22,17 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
-import { applyEvents as _applyEventsHelper } from './helpers';
+import {
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptOption,
+    getPromptOptions,
+    getPromptsBySourceId,
+    getPromptSourceId,
+    getPromptTargetType,
+    getSimpleChoicePrompt,
+    respondToPrompt,
+} from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
 
@@ -115,12 +125,12 @@ describe('extra timing regression coverage', () => {
             random: defaultRandom,
             now: 0,
         });
-        const interaction = abilityResult.matchState?.sys.interaction?.current as any;
-        expect(interaction?.data?.sourceId).toBe('innsmouth_recruitment');
+        const interaction = getSimpleChoicePrompt(abilityResult.matchState!, 'innsmouth_recruitment');
+        expect(getPromptSourceId(interaction)).toBe('innsmouth_recruitment');
 
         const handler = getInteractionHandler('innsmouth_recruitment');
         expect(handler).toBeDefined();
-        const result = handler!(abilityResult.matchState!, '0', { count: 2 }, interaction.data, defaultRandom, 0);
+        const result = handler!(abilityResult.matchState!, '0', { count: 2 }, getPromptHandlerData(interaction), defaultRandom, 0);
         const limitEvents = result.events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
         expect(limitEvents).toHaveLength(2);
         expect(limitEvents.every(e => (e as any).payload.playTiming === 'immediate')).toBe(true);
@@ -149,20 +159,19 @@ describe('interaction handler regressions', () => {
             defaultRandom
         );
 
-        const prompt = playResult.finalState.sys.interaction?.current as any;
-        expect(prompt?.data?.sourceId).toBe('cthulhu_corruption');
-        expect(prompt?.data?.targetType).toBe('minion');
-        expect(prompt?.data?.responseValidationMode).toBe('live');
+        const prompt = getSimpleChoicePrompt(playResult.finalState, 'cthulhu_corruption');
+        expect(getPromptSourceId(prompt)).toBe('cthulhu_corruption');
+        expect(getPromptTargetType(prompt)).toBe('minion');
+        expect(getPromptHandlerData(prompt)?.responseValidationMode).toBe('live');
 
-        const targetOption = prompt?.data?.options?.find((option: any) => option?.value?.minionUid === 'm1');
-        expect(targetOption).toBeDefined();
-        expect(targetOption?.displayMode).toBe('card');
-
-        const respondResult = runCommand(
-            playResult.finalState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: targetOption.id } } as any,
-            defaultRandom
+        const targetOption = getPromptOption(
+            prompt,
+            option => option?.value?.minionUid === 'm1',
+            'cthulhu corruption target option',
         );
+        expect(targetOption.displayMode).toBe('card');
+
+        const respondResult = respondToPrompt(playResult.finalState, targetOption.id, '0', defaultRandom);
 
         const destroyEvent = respondResult.events.find(e => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvent).toBeDefined();
@@ -195,30 +204,30 @@ describe('interaction handler regressions', () => {
             random: defaultRandom,
             now: 1999,
         });
-        const current = (firstStep.matchState?.sys as any)?.interaction?.current;
+        const current = getFirstPrompt(firstStep.matchState ?? ms);
         const modeHandler = getInteractionHandler('miskatonic_librarian_pod');
         expect(modeHandler).toBeDefined();
         const modeResult = modeHandler!(
             firstStep.matchState ?? ms,
             '0',
             { mode: 'extra' },
-            current?.data,
+            getPromptHandlerData(current),
             defaultRandom,
             2000,
         );
         const playMadnessHandler = getInteractionHandler('miskatonic_librarian_pod_play_madness');
         expect(playMadnessHandler).toBeDefined();
-        const modeInteraction = (modeResult.state?.sys as any)?.interaction;
-        const chooseMadness = modeInteraction?.current?.data?.sourceId === 'miskatonic_librarian_pod_play_madness'
-            ? modeInteraction.current
-            : (modeInteraction?.queue ?? []).find((entry: any) => entry?.data?.sourceId === 'miskatonic_librarian_pod_play_madness');
-        expect(chooseMadness?.data?.sourceId).toBe('miskatonic_librarian_pod_play_madness');
+        const chooseMadness = getSimpleChoicePrompt(
+            modeResult.state ?? ms,
+            'miskatonic_librarian_pod_play_madness',
+        );
+        expect(getPromptSourceId(chooseMadness)).toBe('miskatonic_librarian_pod_play_madness');
 
         const playMadnessResult = playMadnessHandler!(
             modeResult.state ?? ms,
             '0',
             { cardUid: 'mad1' },
-            chooseMadness?.data,
+            getPromptHandlerData(chooseMadness),
             defaultRandom,
             2001,
         );
@@ -228,12 +237,7 @@ describe('interaction handler regressions', () => {
         expect(actionPlayed.payload?.defId).toBe(MADNESS_CARD_DEF_ID);
         expect(actionPlayed.payload?.isExtraAction).toBe(true);
 
-        const interaction = playMadnessResult.state.sys.interaction;
-        const queuedInteractions = [
-            ...(interaction.current ? [interaction.current] : []),
-            ...interaction.queue,
-        ];
-        expect(queuedInteractions.some(item => (item.data as any)?.sourceId === 'special_madness')).toBe(true);
+        expect(getPromptsBySourceId(playMadnessResult.state, 'special_madness').length).toBeGreaterThan(0);
     });
 });
 
@@ -302,15 +306,20 @@ function execPlayAction(state: SmashUpCore, playerId: string, cardUid: string, t
     return postProcessSystemEvents(state, events, random ?? defaultRandom).events;
 }
 
-/** 从最近一次 execute 的 matchState 中获取 interactions */
-function getLastInteractions(): any[] {
+function requireLastMatchState(): MatchState<SmashUpCore> {
+    if (!lastMatchState) {
+        throw new Error('Expected a saved matchState with prompt data.');
+    }
+    return lastMatchState;
+}
+
+function getLastPrompt(sourceId: string): any {
+    return getSimpleChoicePrompt(requireLastMatchState(), sourceId);
+}
+
+function getLastPromptsBySourceId(sourceId: string): any[] {
     if (!lastMatchState) return [];
-    const interaction = (lastMatchState.sys as any)?.interaction;
-    if (!interaction) return [];
-    const list: any[] = [];
-    if (interaction.current) list.push(interaction.current);
-    if (interaction.queue?.length) list.push(...interaction.queue);
-    return list;
+    return getPromptsBySourceId(lastMatchState, sourceId);
 }
 
 function applyEvents(state: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
@@ -445,9 +454,9 @@ describe('克苏鲁之仆 - 疯狂卡能力', () => {
             expect(madnessEvents.length).toBe(1);
 
             // 多个对手随从时应创建 Interaction
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
-            expect(interactions[0].data.sourceId).toBe('cthulhu_corruption');
+            const prompts = getLastPromptsBySourceId('cthulhu_corruption');
+            expect(prompts.length).toBe(1);
+            expect(getPromptSourceId(prompts[0])).toBe('cthulhu_corruption');
         });
 
         it('单个对手随从时创建 Prompt', () => {
@@ -471,8 +480,7 @@ describe('克苏鲁之仆 - 疯狂卡能力', () => {
             expect(madnessEvents.length).toBe(1);
 
             // 单个对手随从时创建 Interaction
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
+            expect(getLastPromptsBySourceId('cthulhu_corruption').length).toBe(1);
         });
 
         it('无对手随从时只抽疯狂卡', () => {
@@ -515,9 +523,9 @@ describe('克苏鲁之仆 - 疯狂卡能力', () => {
 
             execPlayAction(state, '0', 'a1');
             // 多个对手随从时应创建 Interaction
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
-            expect(interactions[0].data.sourceId).toBe('cthulhu_corruption');
+            const prompts = getLastPromptsBySourceId('cthulhu_corruption');
+            expect(prompts.length).toBe(1);
+            expect(getPromptSourceId(prompts[0])).toBe('cthulhu_corruption');
         });
 
         it('状态正确（reduce 验证）- 单目标时 Prompt 待决', () => {
@@ -538,8 +546,7 @@ describe('克苏鲁之仆 - 疯狂卡能力', () => {
             const events = execPlayAction(state, '0', 'a1');
             const newState = applyEvents(state, events);
             // 单目标创建 Interaction，m1 未被消灭
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBe(1);
+            expect(getLastPromptsBySourceId('cthulhu_corruption').length).toBe(1);
             expect(newState.bases[0].minions.length).toBe(1);
             // P0 手牌有疯狂卡
             expect(newState.players['0'].hand.filter(c => c.defId === MADNESS_CARD_DEF_ID).length).toBe(1);
@@ -671,12 +678,9 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
 
             const result = execSpecial(state, '0', 0);
             expect(result.matchState).toBeDefined();
-            const interaction = result.matchState!.sys.interaction;
-            const hasInteraction = !!interaction?.current || (interaction?.queue?.length ?? 0) > 0;
-            expect(hasInteraction).toBe(true);
-            const i = interaction!.current ?? interaction!.queue[0];
-            expect((i.data as any).sourceId).toBe('miskatonic_mandatory_reading');
-            expect((i.data as any).options.length).toBe(2);
+            const prompt = getSimpleChoicePrompt(result.matchState!, 'miskatonic_mandatory_reading');
+            expect(getPromptSourceId(prompt)).toBe('miskatonic_mandatory_reading');
+            expect(getPromptOptions(prompt).length).toBe(2);
         });
 
         it('唯一随从时自动选择并创建抽疯狂卡数量交互', () => {
@@ -693,12 +697,9 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
 
             const result = execSpecial(state, '0', 0);
             expect(result.matchState).toBeDefined();
-            const interaction = result.matchState!.sys.interaction;
-            const hasInteraction = !!interaction?.current || (interaction?.queue?.length ?? 0) > 0;
-            expect(hasInteraction).toBe(true);
-            const i = interaction!.current ?? interaction!.queue[0];
-            expect((i.data as any).sourceId).toBe('miskatonic_mandatory_reading_draw');
-            expect((i.data as any).targetType).toBe('button');
+            const prompt = getSimpleChoicePrompt(result.matchState!, 'miskatonic_mandatory_reading_draw');
+            expect(getPromptSourceId(prompt)).toBe('miskatonic_mandatory_reading_draw');
+            expect(getPromptTargetType(prompt)).toBe('button');
         });
 
         it('抽疯狂卡后随从获得力量加成（handler 验证）', () => {
@@ -714,15 +715,14 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             });
 
             const firstStep = execSpecial(state, '0', 0);
-            const interaction = firstStep.matchState!.sys.interaction;
-            const current = interaction!.current ?? interaction!.queue[0];
+            const current = getFirstPrompt(firstStep.matchState!);
             const handler = getInteractionHandler('miskatonic_mandatory_reading_draw');
             expect(handler).toBeDefined();
             const result = handler!(
                 firstStep.matchState!,
                 '0',
                 { count: 2 },
-                current.data as any,
+                getPromptHandlerData(current),
                 defaultRandom,
                 0,
             );
@@ -744,15 +744,14 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             });
 
             const firstStep = execSpecial(state, '0', 0);
-            const interaction = firstStep.matchState!.sys.interaction;
-            const current = interaction!.current ?? interaction!.queue[0];
+            const current = getFirstPrompt(firstStep.matchState!);
             const handler = getInteractionHandler('miskatonic_mandatory_reading_draw');
             expect(handler).toBeDefined();
             const result = handler!(
                 firstStep.matchState!,
                 '0',
                 { skip: true },
-                current.data as any,
+                getPromptHandlerData(current),
                 defaultRandom,
                 0,
             );
@@ -766,15 +765,14 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             });
 
             const firstStep = execSpecial(state, '0', 0);
-            const interaction = firstStep.matchState!.sys.interaction;
-            const current = interaction!.current ?? interaction!.queue[0];
+            const current = getFirstPrompt(firstStep.matchState!);
             const handler = getInteractionHandler('miskatonic_mandatory_reading_draw');
             expect(handler).toBeDefined();
             const result = handler!(
                 firstStep.matchState!,
                 '0',
                 { count: 3 },
-                current.data as any,
+                getPromptHandlerData(current),
                 defaultRandom,
                 0,
             );
@@ -791,15 +789,14 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
             });
 
             const firstStep = execSpecial(state, '0', 0);
-            const interaction = firstStep.matchState!.sys.interaction;
-            const current = interaction!.current ?? interaction!.queue[0];
+            const current = getFirstPrompt(firstStep.matchState!);
             const handler = getInteractionHandler('miskatonic_mandatory_reading_draw');
             expect(handler).toBeDefined();
             const result = handler!(
                 firstStep.matchState!,
                 '0',
                 { count: 3 },
-                current.data as any,
+                getPromptHandlerData(current),
                 defaultRandom,
                 0,
             );
@@ -908,15 +905,13 @@ describe('印斯茅斯 - 疯狂卡能力', () => {
 
             execPlayAction(state, '0', 'a1');
             // 应创建选择交互
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBeGreaterThan(0);
-            const current = interactions[0];
-            expect(current?.data?.sourceId).toBe('innsmouth_recruitment');
+            const current = getLastPrompt('innsmouth_recruitment');
+            expect(getPromptSourceId(current)).toBe('innsmouth_recruitment');
 
             // 通过 handler 选择抽 3 张
             const handler = getInteractionHandler('innsmouth_recruitment');
             expect(handler).toBeDefined();
-            const result = handler!(lastMatchState!, '0', { count: 3 }, current.data, defaultRandom, 0);
+            const result = handler!(requireLastMatchState(), '0', { count: 3 }, getPromptHandlerData(current), defaultRandom, 0);
             const madnessEvents = result.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
             expect((madnessEvents[0] as any).payload.count).toBe(3);
@@ -941,10 +936,10 @@ describe('印斯茅斯 - 疯狂卡能力', () => {
             // 通过 handler 选择抽 3 张（实际只能抽 2 张）
             const handler = getInteractionHandler('innsmouth_recruitment');
             expect(handler).toBeDefined();
-            const current = getLastInteractions()[0] as any;
+            const current = getLastPrompt('innsmouth_recruitment');
             const liveMs = makeMatchState(state);
             liveMs.core.madnessDeck = [MADNESS_CARD_DEF_ID, MADNESS_CARD_DEF_ID];
-            const result = handler!(liveMs, '0', { count: 3 }, current.data, defaultRandom, 0);
+            const result = handler!(liveMs, '0', { count: 3 }, getPromptHandlerData(current), defaultRandom, 0);
             const madnessEvents = result.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
             expect((madnessEvents[0] as any).payload.count).toBe(2); // 只能抽2张
@@ -1000,8 +995,8 @@ describe('印斯茅斯 - 疯狂卡能力', () => {
                 random: defaultRandom,
                 now: 0,
             });
-            const interaction = abilityResult.matchState?.sys.interaction?.current as any;
-            const result = handler!(abilityResult.matchState!, '0', { count: 3 }, interaction.data, defaultRandom, 0);
+            const interaction = getSimpleChoicePrompt(abilityResult.matchState!, 'innsmouth_recruitment');
+            const result = handler!(abilityResult.matchState!, '0', { count: 3 }, getPromptHandlerData(interaction), defaultRandom, 0);
             // 先 apply ACTION_PLAYED 事件
             const playEvents: SmashUpEvent[] = [
                 { type: SU_EVENTS.ACTION_PLAYED, payload: { playerId: '0', cardUid: 'a1', defId: 'innsmouth_recruitment' }, timestamp: 0 } as any,

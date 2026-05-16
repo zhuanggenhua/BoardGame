@@ -47,12 +47,29 @@ const FAB_PANEL_GAP_MOBILE = 14;
 const FAB_PANEL_GAP_DESKTOP = 10;
 const HUD_FAB_POSITION_KEY = 'hud_fab_position';
 const HUD_FAB_LEGACY_OFFSET_KEY = 'hud_fab_offset';
+export const MOBILE_FAB_VISIBLE_ITEM_LIMIT = 7;
 
 export interface FabAction {
     mobilePanelVariant?: 'popover' | 'sheet';
 }
 
 export const resolveFabSatellitesToRender = <T,>(items: T[]) => [...items].reverse();
+
+export const resolveMobileFabOverflowWarning = (
+    items: Array<Pick<FabAction, 'id' | 'label'>>,
+    isMobileViewport: boolean,
+) => {
+    if (!isMobileViewport || items.length <= MOBILE_FAB_VISIBLE_ITEM_LIMIT) {
+        return null;
+    }
+
+    return {
+        count: items.length,
+        limit: MOBILE_FAB_VISIBLE_ITEM_LIMIT,
+        itemIds: items.map((item) => item.id),
+        labels: items.map((item) => item.label),
+    };
+};
 
 export const shouldTrackFabButtonRect = ({
     showTooltip,
@@ -97,6 +114,7 @@ export const FabMenu = ({
     const [liveDragOffset, setLiveDragOffset] = useState({ x: 0, y: 0 });
     const renderButtonSize = isOpen ? expandedButtonSize : dockedButtonSize;
     const renderButtonGap = isOpen ? expandedButtonGap : dockedButtonGap;
+    const lastMobileOverflowWarningKeyRef = useRef<string | null>(null);
 
     // 动态对齐状态
     const [alignment, setAlignment] = useState<FabAlignment>({ v: 'bottom', h: 'right' });
@@ -351,6 +369,25 @@ export const FabMenu = ({
 
         prevActiveItemIdRef.current = activeItemId;
     }, [activeItemId, items]);
+
+    useEffect(() => {
+        const warning = resolveMobileFabOverflowWarning(items, isMobileViewport);
+        if (!warning) {
+            lastMobileOverflowWarningKeyRef.current = null;
+            return;
+        }
+
+        const warningKey = warning.itemIds.join('|');
+        if (lastMobileOverflowWarningKeyRef.current === warningKey) {
+            return;
+        }
+
+        lastMobileOverflowWarningKeyRef.current = warningKey;
+        logger.warn('移动端悬浮球数量超过上限', {
+            event: 'mobile_fab_visible_item_overflow',
+            ...warning,
+        });
+    }, [isMobileViewport, items]);
 
     const getExpandedLayout = useCallback((target: FabPosition) => {
         const rawPosition = normalizePosition(target);

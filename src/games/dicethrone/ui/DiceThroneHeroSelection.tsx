@@ -383,7 +383,8 @@ export const DiceThroneHeroSelection: React.FC<DiceThroneHeroSelectionProps> = (
                     className="flex-1 overflow-y-auto custom-scrollbar grid grid-cols-2 content-start"
                     style={{
                         padding: inlineUnit(1),
-                        gap: inlineUnit(0.8),
+                        columnGap: inlineUnit(0.8),
+                        rowGap: inlineUnit(0.9),
                     }}
                 >
                     {availableCharacters.map((char, index) => {

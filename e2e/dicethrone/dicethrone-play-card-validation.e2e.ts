@@ -40,7 +40,61 @@ async function setupPlayCardValidationScene(
     });
 }
 
+async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
+    const card = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
+    await expect(card).toBeVisible({ timeout: 5000 });
+    const cardBox = await page.evaluate((nextCardId) => {
+        const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    }, cardId);
+    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
+        throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+    }
+
+    const startX = cardBox.x + (cardBox.width / 2);
+    const startY = cardBox.y + (cardBox.height * 0.78);
+    const endY = Math.max(24, startY - 240);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, endY, { steps: 12 });
+    await page.mouse.up();
+    await page.mouse.move(2, 2);
+}
+
 test.describe('DiceThrone - 打牌验证', () => {
+    test('点击手牌应只打开放大层，拖拽上抛才真正打出', async ({ page, game }, testInfo) => {
+        await setupPlayCardValidationScene(page, game);
+
+        const buddhaLightCard = page
+            .locator('[data-card-id="card-buddha-light"], [data-card-key^="card-buddha-light-"]')
+            .first();
+        await expect(buddhaLightCard).toBeVisible({ timeout: 5000 });
+
+        await buddhaLightCard.click();
+
+        const magnifyOverlay = page.getByTestId('board-magnify-overlay');
+        await expect(magnifyOverlay).toBeVisible({ timeout: 5000 });
+        await expect.poll(async () => {
+            const player0 = await game.getPlayerState('0');
+            return player0?.hand?.map((card: any) => card.id) ?? [];
+        }, { timeout: 5000 }).toContain('card-buddha-light');
+        await game.screenshot('hand-click-magnify-open', testInfo);
+
+        await page.getByRole('button', { name: /关闭预览|close preview/i }).click();
+        await expect(magnifyOverlay).toBeHidden({ timeout: 5000 });
+
+        await dragHandCardToPlay(page, 'card-buddha-light');
+
+        await expect.poll(async () => {
+            const player0 = await game.getPlayerState('0');
+            return player0?.hand?.map((card: any) => card.id) ?? [];
+        }, { timeout: 5000 }).toEqual([]);
+        await game.screenshot('hand-drag-play-resolved', testInfo);
+    });
+
     test('手牌中的合法卡牌应通过验证并成功执行', async ({ page, game }) => {
         const consoleLogs: string[] = [];
         page.on('console', (msg) => {
@@ -60,7 +114,7 @@ test.describe('DiceThrone - 打牌验证', () => {
             .locator('[data-card-id="card-buddha-light"], [data-card-key^="card-buddha-light-"]')
             .first();
         await expect(buddhaLightCard).toBeVisible({ timeout: 5000 });
-        await buddhaLightCard.click();
+        await dragHandCardToPlay(page, 'card-buddha-light');
 
         await expect.poll(async () => {
             const state = await game.getState();

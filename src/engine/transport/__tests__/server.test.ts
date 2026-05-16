@@ -22,7 +22,6 @@ import type {
     StoredMatchState,
 } from '../storage';
 import type { TrainingDataRecorder, TrainingDecisionSample } from '../trainingData';
-import { GAME_MANIFEST_BY_ID } from '../../../games/manifest';
 import smashUpEngineConfig, { smashUpSystemsForTest } from '../../../games/smashup/game';
 import { smashUpAiRuntime } from '../../../games/smashup/ai';
 import { startSmashUpReactionSession } from '../../../games/smashup/domain/reactionSession';
@@ -213,6 +212,17 @@ const createEngineConfigWithId = (gameId: string): GameEngineConfig => {
     return {
         ...base,
         gameId,
+        onlineAiRecovery: {
+            allowForceCommandAfterLegalActionExhausted: ({ phase }) => {
+                if (gameId === 'dicethrone') {
+                    return phase === 'defensiveRoll';
+                }
+                if (gameId === 'smashup') {
+                    return phase === 'scoreBases' || phase === 'endTurn';
+                }
+                return false;
+            },
+        },
         domain: {
             ...base.domain,
             gameId,
@@ -2053,6 +2063,36 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(hasEvent(newSocket, 'error', (args) => args[1] === 'unauthorized')).toBe(false);
     });
 
+    it('销毁活跃房间时，应先向房间内连接发送 match_not_found 再断开', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        await storage.createMatch('match-destroyed', {
+            initialState: createStoredState(),
+            metadata: createMetadata('cred-0'),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const socket = new MockSocket('socket-destroyed-room');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-destroyed', '0', 'cred-0');
+        expect(hasEvent(socket, 'state:sync')).toBe(true);
+
+        server.unloadMatch('match-destroyed', { disconnectSockets: true });
+        await nextTick();
+
+        expect(hasEvent(socket, 'error', (args) => args[0] === 'match-destroyed' && args[1] === 'match_not_found')).toBe(true);
+        expect(socket.disconnected).toBe(true);
+    });
+
     it('不应通过 /game socket 暴露 test:injectState', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -2416,68 +2456,59 @@ describe('GameTransportServer（离座与重连）', () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const recorder = new MockTrainingDataRecorder();
-        const previousManifest = GAME_MANIFEST_BY_ID['test-game'];
 
-        GAME_MANIFEST_BY_ID['test-game'] = {
-            ...GAME_MANIFEST_BY_ID.tictactoe,
-            id: 'test-game',
-            ai: {
-                ...GAME_MANIFEST_BY_ID.tictactoe.ai!,
-                capture: true,
-                capturePolicy: 'all-seats',
+        await storage.createMatch('match-train-all-seats', {
+            initialState: createStoredState(),
+            metadata: {
+                ...createMetadata('cred-ai-all'),
+                players: {
+                    '0': { name: '玩家0', credentials: 'cred-ai-all', isConnected: false },
+                    '1': { name: 'AI 玩家1', credentials: 'cred-ai-seat-1', isConnected: false },
+                },
+                setupData: {
+                    seatControllers: {
+                        '0': { type: 'human' },
+                        '1': { type: 'local-ai' },
+                    },
+                },
             },
-        };
+        });
 
-        try {
-            await storage.createMatch('match-train-all-seats', {
-                initialState: createStoredState(),
-                metadata: {
-                    ...createMetadata('cred-ai-all'),
-                    players: {
-                        '0': { name: '玩家0', credentials: 'cred-ai-all', isConnected: false },
-                        '1': { name: 'AI 玩家1', credentials: 'cred-ai-seat-1', isConnected: false },
-                    },
-                    setupData: {
-                        seatControllers: {
-                            '0': { type: 'human' },
-                            '1': { type: 'local-ai' },
-                        },
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithGameOver()],
+            gameManifests: {
+                'test-game': {
+                    ai: {
+                        capture: true,
+                        capturePolicy: 'all-seats',
+                        localAi: true,
+                        remoteAi: true,
                     },
                 },
-            });
+            },
+            trainingDataRecorder: recorder,
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
 
-            const server = new GameTransportServer({
-                io: io as unknown as any,
-                storage,
-                games: [createEngineConfigWithGameOver()],
-                trainingDataRecorder: recorder,
-                authenticate: async (_matchID, playerID, credentials, metadata) => {
-                    return metadata.players[playerID]?.credentials === credentials;
-                },
-            });
-            server.start();
+        const socket = new MockSocket('socket-train-all-seats');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-train-all-seats', '0', 'cred-ai-all');
+        await server.executeCommand('match-train-all-seats', '1', 'AI_CMD', { auto: true });
 
-            const socket = new MockSocket('socket-train-all-seats');
-            io.gameNamespace.connectSocket(socket);
-            await socket.clientEmit('sync', 'match-train-all-seats', '0', 'cred-ai-all');
-            await server.executeCommand('match-train-all-seats', '1', 'AI_CMD', { auto: true });
-
-            expect(recorder.samples).toHaveLength(1);
-            expect(recorder.samples[0]).toMatchObject({
-                playerId: '1',
-                seatControllerType: 'local-ai',
-                command: {
-                    type: 'AI_CMD',
-                    payload: { auto: true },
-                },
-            });
-        } finally {
-            if (previousManifest) {
-                GAME_MANIFEST_BY_ID['test-game'] = previousManifest;
-            } else {
-                delete GAME_MANIFEST_BY_ID['test-game'];
-            }
-        }
+        expect(recorder.samples).toHaveLength(1);
+        expect(recorder.samples[0]).toMatchObject({
+            playerId: '1',
+            seatControllerType: 'local-ai',
+            command: {
+                type: 'AI_CMD',
+                payload: { auto: true },
+            },
+        });
     });
 
     it('online AI watchdog 在 active-turn 卡死时应持续推进直到交还给真人回合（或遇到 blocker/步数上限）', async () => {
@@ -2786,17 +2817,6 @@ describe('GameTransportServer（离座与重连）', () => {
 
     it('online AI watchdog 对 manifest 明确禁用 AI 的游戏应忽略残留 seatControllers', async () => {
         const gameId = 'watchdog-no-ai-game';
-        const previousManifest = GAME_MANIFEST_BY_ID[gameId];
-        GAME_MANIFEST_BY_ID[gameId] = {
-            ...GAME_MANIFEST_BY_ID.tictactoe,
-            id: gameId,
-            ai: {
-                capture: true,
-                localAi: false,
-                remoteAi: false,
-            },
-        };
-
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const feedbackReporter = vi.fn(async () => undefined);
@@ -2819,6 +2839,15 @@ describe('GameTransportServer（离座与重连）', () => {
             io: io as unknown as any,
             storage,
             games: [createEngineConfigWithId(gameId)],
+            gameManifests: {
+                [gameId]: {
+                    ai: {
+                        capture: true,
+                        localAi: false,
+                        remoteAi: false,
+                    },
+                },
+            },
             onlineAiRecoveryTickMs: 0,
             onlineAiRecoveryTimeoutMs: 0,
             onlineAiFeedbackReporter: feedbackReporter,
@@ -2836,24 +2865,16 @@ describe('GameTransportServer（离座与重连）', () => {
             ) => Promise<boolean>;
         };
 
-        try {
-            await serverInternal.loadMatch('match-watchdog-splendor-manifest-no-ai');
-            const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+        await serverInternal.loadMatch('match-watchdog-splendor-manifest-no-ai');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
 
-            await serverInternal.runOnlineAiRecoveryTick();
-            await serverInternal.runOnlineAiRecoveryTick();
-            await nextTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
 
-            expect(executeSpy).not.toHaveBeenCalled();
-            expect(feedbackReporter).not.toHaveBeenCalled();
-            executeSpy.mockRestore();
-        } finally {
-            if (previousManifest) {
-                GAME_MANIFEST_BY_ID[gameId] = previousManifest;
-            } else {
-                delete GAME_MANIFEST_BY_ID[gameId];
-            }
-        }
+        expect(executeSpy).not.toHaveBeenCalled();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+        executeSpy.mockRestore();
     });
 
     it('online AI watchdog 在 Splendor 未开局时不得代 AI 执行动作或写失败反馈', async () => {

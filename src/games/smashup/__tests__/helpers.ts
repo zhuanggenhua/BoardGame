@@ -5,7 +5,7 @@
  * 消除 16+ 个测试文件中的重复定义。
  */
 
-import type { GameEvent, MatchState } from '../../../engine/types';
+import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
 import type {
     SmashUpCore,
     SmashUpEvent,
@@ -13,9 +13,17 @@ import type {
     MinionOnBase,
     BaseInPlay,
     CardInstance,
+    MinionDestroyedEvent,
 } from '../domain/types';
+import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { reduce } from '../domain/reducer';
+import {
+    processAffectTriggers,
+    processDestroyTriggers,
+    processMoveTriggers,
+    processReturnToHandTriggers,
+    reduce,
+} from '../domain/reducer';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { smashUpTestSystems } from './testRunner';
 
@@ -191,6 +199,120 @@ export function makeMatchState(core: SmashUpCore): MatchState<SmashUpCore> {
     return { core, sys };
 }
 
+export interface DestroyedMinionInput {
+    minionUid: string;
+    minionDefId: string;
+    fromBaseIndex?: number;
+    ownerId: string;
+    destroyerId?: string;
+    reason?: string;
+    timestamp?: number;
+}
+
+type DestroyedMinionLike = DestroyedMinionInput | MinionDestroyedEvent;
+
+export function makeMinionDestroyedEvent(input: DestroyedMinionLike): MinionDestroyedEvent {
+    if ('payload' in input) {
+        return input;
+    }
+
+    return {
+        type: 'su:minion_destroyed',
+        payload: {
+            minionUid: input.minionUid,
+            minionDefId: input.minionDefId,
+            fromBaseIndex: input.fromBaseIndex ?? 0,
+            ownerId: input.ownerId,
+            destroyerId: input.destroyerId,
+            reason: input.reason ?? 'test_destroy',
+        },
+        timestamp: input.timestamp ?? 1000,
+    } as MinionDestroyedEvent;
+}
+
+export function resolveDestroyedMinions(
+    state: MatchState<SmashUpCore>,
+    currentPlayerId: string,
+    destroyed: DestroyedMinionLike[],
+    random: RandomFn = defaultTestRandom,
+    now = 1000,
+    options?: { skipDestroyEventKeys?: Set<string> },
+) {
+    return processDestroyTriggers(
+        destroyed.map(makeMinionDestroyedEvent),
+        state,
+        currentPlayerId,
+        random,
+        now,
+        options,
+    );
+}
+
+export interface MovedMinionInput {
+    minionUid: string;
+    minionDefId: string;
+    fromBaseIndex: number;
+    toBaseIndex: number;
+    reason?: string;
+    timestamp?: number;
+}
+
+type MovedMinionLike = MovedMinionInput | SmashUpEvent;
+
+export function makeMinionMovedEvent(input: MovedMinionLike): SmashUpEvent {
+    if ('type' in input) {
+        return input;
+    }
+
+    return {
+        type: SU_EVENTS.MINION_MOVED,
+        payload: {
+            minionUid: input.minionUid,
+            minionDefId: input.minionDefId,
+            fromBaseIndex: input.fromBaseIndex,
+            toBaseIndex: input.toBaseIndex,
+            reason: input.reason ?? 'test_move',
+        },
+        timestamp: input.timestamp ?? 1000,
+    } as SmashUpEvent;
+}
+
+export function resolveMovedMinions(
+    state: MatchState<SmashUpCore>,
+    currentPlayerId: string,
+    moved: MovedMinionLike[],
+    random: RandomFn = defaultTestRandom,
+    now = 1000,
+) {
+    return processMoveTriggers(
+        moved.map(makeMinionMovedEvent),
+        state,
+        currentPlayerId,
+        random,
+        now,
+    );
+}
+
+export function resolveAffectedMinions(
+    state: MatchState<SmashUpCore>,
+    currentPlayerId: string,
+    events: SmashUpEvent[],
+    random: RandomFn = defaultTestRandom,
+    now = 1000,
+) {
+    return processAffectTriggers(events, state, currentPlayerId, random, now);
+}
+
+export function resolveCardsReturnedToHand(
+    state: MatchState<SmashUpCore>,
+    currentPlayerId: string,
+    events: SmashUpEvent[],
+    random: RandomFn = defaultTestRandom,
+    now = 1000,
+) {
+    return processReturnToHandTriggers(events, state, currentPlayerId, random, now);
+}
+
 // ============================================================================
 // 事件应用工具
 // ============================================================================
@@ -205,7 +327,7 @@ export function applyEvents(state: SmashUpCore, events: SmashUpEvent[]): SmashUp
 // ============================================================================
 
 import type { InteractionHandler } from '../domain/abilityInteractionHandlers';
-import type { RandomFn } from '../../../engine/types';
+import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { defaultTestRandom, runCommand } from './testRunner';
 import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 
@@ -462,11 +584,34 @@ export function respondToPrompt(
     );
 }
 
+export function respondToPromptOption(
+    state: MatchState<SmashUpCore>,
+    predicate: (option: any) => boolean,
+    description = 'matching prompt option',
+    playerId?: string,
+    random: RandomFn = defaultTestRandom,
+) {
+    const prompt = getFirstPrompt(state);
+    if (!prompt) {
+        throw new Error('Expected a prompt to respond to, but no prompt was available.');
+    }
+    const option = getPromptOption(prompt, predicate, description);
+    return respondToPrompt(state, option.id, playerId, random);
+}
+
 export function respondCommand(optionId: string, playerId?: string): any {
     return {
         type: INTERACTION_COMMANDS.RESPOND as any,
         ...(playerId === undefined ? {} : { playerId }),
         payload: { optionId },
+    };
+}
+
+export function respondOptionsCommand(optionIds: string[], playerId?: string): any {
+    return {
+        type: INTERACTION_COMMANDS.RESPOND as any,
+        ...(playerId === undefined ? {} : { playerId }),
+        payload: { optionIds },
     };
 }
 
@@ -595,6 +740,26 @@ export function withCurrentPrompt(
     } as MatchState<SmashUpCore>;
 }
 
+export function withoutQueuedPrompts(state: MatchState<SmashUpCore>): MatchState<SmashUpCore> {
+    return {
+        ...state,
+        sys: {
+            ...state.sys,
+            interaction: {
+                ...(state.sys as any).interaction,
+                queue: [],
+            },
+        },
+    } as MatchState<SmashUpCore>;
+}
+
+export function withOnlyCurrentPrompt(
+    state: MatchState<SmashUpCore>,
+    prompt: any,
+): MatchState<SmashUpCore> {
+    return withoutQueuedPrompts(withCurrentPrompt(state, prompt));
+}
+
 export function resolveCurrentPromptHandlerWithCore(
     promptState: MatchState<SmashUpCore>,
     core: SmashUpCore,
@@ -613,6 +778,31 @@ export function resolveCurrentPromptHandlerWithCore(
         prompt.playerId,
         selectedValue,
         prompt.data,
+        random,
+        now,
+    );
+}
+
+export function resolvePromptViaRegisteredHandler(
+    promptState: MatchState<SmashUpCore>,
+    prompt: any,
+    selectedValue: unknown,
+    now: number,
+    random: RandomFn = defaultTestRandom,
+) {
+    const sourceId = getPromptSourceId(prompt);
+    if (!sourceId) {
+        throw new Error('Expected prompt sourceId before resolving registered handler.');
+    }
+    const handler = getInteractionHandler(sourceId);
+    if (!handler) {
+        throw new Error(`Expected registered interaction handler for prompt sourceId "${sourceId}".`);
+    }
+    return handler(
+        promptState,
+        getPromptPlayerId(prompt),
+        selectedValue,
+        getPromptHandlerData(prompt),
         random,
         now,
     );

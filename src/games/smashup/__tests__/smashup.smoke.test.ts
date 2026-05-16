@@ -12,7 +12,7 @@ import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems, createInitialSystemState } from '../../../engine';
 import { resolveNextLocalAiAction } from '../../../engine/ai';
 import { resolveAiDifficultyProfile } from '../../../engine/ai/difficulty';
-import { createSimpleChoice, INTERACTION_COMMANDS, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
+import { createSimpleChoice, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import { executePipeline } from '../../../engine/pipeline';
 import type { CardsDrawnEvent, SmashUpCore, SmashUpCommand, SmashUpEvent, SmashUpReactionSession } from '../domain/types';
 import { MADNESS_CARD_DEF_ID, SU_COMMANDS, SU_EVENTS, TEAM_VP_TO_WIN_2V2, getCurrentPlayerId } from '../domain/types';
@@ -24,7 +24,7 @@ import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { addPowerCounter, buildPlayerTargetOptions } from '../domain/abilityHelpers';
 import { uncoverBuriedCard } from '../domain/bury';
 import { collectTriggers, fireTriggers, interceptEvent } from '../domain/ongoingEffects';
-import { filterProtectedDestroyEvents, filterProtectedMoveEvents, filterProtectedReturnEvents, processAffectTriggers, processDestroyTriggers, processMoveTriggers, processReturnToHandTriggers } from '../domain/reducer';
+import { filterProtectedDestroyEvents, filterProtectedMoveEvents, filterProtectedReturnEvents } from '../domain/reducer';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { startSmashUpReactionSession } from '../domain/reactionSession';
 import { initAllAbilities } from '../abilities';
@@ -35,7 +35,31 @@ import {
     createScoringSession,
     setScoringSession,
 } from '../domain/scoringSession';
-import { findInteractionOption, getInteractionsFromMS, makeBase, makeCard, makeMatchState, makeMinion, makePlayer, makeState, resolveInteractionChain } from './helpers';
+import {
+    expectNoPrompt,
+    getPromptHandlerData,
+    getOptionalSimpleChoicePrompt,
+    getPromptOption,
+    getPromptOptions,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getPromptsBySourceId,
+    getReactionPromptOptionBySourceDefId,
+    getSimpleChoicePrompt,
+    withCurrentPrompt,
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    resolveAffectedMinions,
+    resolveCardsReturnedToHand,
+    resolveDestroyedMinions,
+    resolveInteractionChain,
+    resolveMovedMinions,
+    respondCommand,
+} from './helpers';
 import { runCommand } from './testRunner';
 import type { TitanState } from '../domain/types';
 import { buildSmashUpAiLegalActions, smashUpAiRuntime } from '../ai';
@@ -82,22 +106,20 @@ function resolveDuelChain(
     overrides: Partial<Record<string, (prompt: any, state: ReturnType<typeof makeMatchState>, step: number) => { optionId?: string; optionIds?: string[]; mergedValue?: unknown }>> = {},
 ) {
     return resolveInteractionChain(initialState, (prompt, state, step) => {
-        const sourceId = prompt?.data?.sourceId as string | undefined;
+        const sourceId = getPromptSourceId(prompt);
         const custom = sourceId ? overrides[sourceId] : undefined;
         if (custom) return custom(prompt, state, step);
 
         if (sourceId === 'smashup_duel_pinkerton') {
-            const option = findInteractionOption(prompt, entry => entry?.value?.amount === 0);
-            if (!option) throw new Error('未找到 Pinkerton 的 0 指示物选项');
+            const option = getPromptOption(prompt, entry => entry?.value?.amount === 0, 'Pinkerton 的 0 指示物选项');
             return { optionId: option.id };
         }
         if (sourceId === 'smashup_duel_card' || sourceId === 'smashup_duel_deputy_card') {
-            const option = findInteractionOption(prompt, entry => entry?.value?.skip === true);
-            if (!option) throw new Error(`未找到 ${sourceId} 的跳过选项`);
+            const option = getPromptOption(prompt, entry => entry?.value?.skip === true, `${sourceId} 的跳过选项`);
             return { optionId: option.id };
         }
         if (sourceId === 'smashup_duel_run_em_off_move') {
-            return { optionId: prompt.data.options[0].id };
+            return { optionId: getPromptOptions(prompt)[0].id };
         }
 
         throw new Error(`未处理的决斗交互 sourceId: ${sourceId ?? 'unknown'}`);
@@ -567,15 +589,13 @@ describe('smashup', () => {
         } as SmashUpEvent], FIXED_RANDOM, makeMatchState(core));
 
         expect(post.events.map(event => event.type)).not.toContain(SU_EVENTS.TITAN_REMOVED_FROM_PLAY);
-        const prompt = getInteractionsFromMS(post.matchState!)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('titan_fairies_spirit_of_the_forest_clash_move');
+        const prompt = getSimpleChoicePrompt(post.matchState!, 'titan_fairies_spirit_of_the_forest_clash_move');
 
-        const moveOption = prompt.data.options.find((entry: any) => entry.value?.baseIndex === 1);
-        expect(moveOption).toBeDefined();
+        const moveOption = getPromptOption(prompt, entry => entry.value?.baseIndex === 1);
 
         const moved = runCommand(
             post.matchState!,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: moveOption.id } } as any,
+            respondCommand(moveOption.id, '0'),
             FIXED_RANDOM,
         );
 
@@ -910,7 +930,7 @@ describe('smashup', () => {
 
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect((state.sys.interaction.current?.data as any)?.sourceId).toBe('titan_ghosts_creampuff_man_discard');
+        const discardPrompt = getSimpleChoicePrompt(state, 'titan_ghosts_creampuff_man_discard');
 
         const discardHandler = getInteractionHandler('titan_ghosts_creampuff_man_discard');
         expect(discardHandler).toBeDefined();
@@ -918,27 +938,15 @@ describe('smashup', () => {
             state,
             '0',
             { cardUid: 'ghost-cost' },
-            state.sys.interaction.current?.data as any,
+            getPromptHandlerData(discardPrompt),
             FIXED_RANDOM,
             65,
         );
         expect(discardResolved?.events.map(event => event.type)).toContain(SU_EVENTS.CARDS_DISCARDED);
 
         const coreAfterDiscard = (discardResolved?.events ?? []).reduce((acc, event) => SmashUpDomain.reduce(acc, event), preparedCore);
-        const queuedPlayInteraction = discardResolved?.state.sys.interaction.queue?.[0];
-        expect((queuedPlayInteraction?.data as any)?.sourceId).toBe('titan_ghosts_creampuff_man_play');
-        const stateAfterDiscard = {
-            ...discardResolved!.state,
-            core: coreAfterDiscard,
-            sys: {
-                ...discardResolved!.state.sys,
-                interaction: {
-                    ...discardResolved!.state.sys.interaction,
-                    current: queuedPlayInteraction,
-                    queue: [],
-                },
-            },
-        };
+        const playPrompt = getSimpleChoicePrompt(discardResolved!.state, 'titan_ghosts_creampuff_man_play');
+        const stateAfterDiscard = withCurrentPrompt({ ...discardResolved!.state, core: coreAfterDiscard }, playPrompt);
 
         const playHandler = getInteractionHandler('titan_ghosts_creampuff_man_play');
         expect(playHandler).toBeDefined();
@@ -946,7 +954,7 @@ describe('smashup', () => {
             stateAfterDiscard,
             '0',
             { cardUid: 'ghost-seance-discard', defId: 'ghost_seance' },
-            stateAfterDiscard.sys.interaction.current?.data as any,
+            getPromptHandlerData(playPrompt),
             FIXED_RANDOM,
             66,
         );
@@ -1003,15 +1011,13 @@ describe('smashup', () => {
             now: 80,
         });
 
-        const prompt = result.matchState?.sys.interaction?.current as any;
-        expect(prompt?.data?.sourceId).toBe('titan_sphinx_start_turn');
-        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'sphinx-start-buried');
-        expect(option).toBeDefined();
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'titan_sphinx_start_turn');
+        const option = getPromptOption(prompt, entry => entry.value?.cardUid === 'sphinx-start-buried');
         expect(option.displayMode).toBe('card');
 
         const handler = getInteractionHandler('titan_sphinx_start_turn');
         expect(handler).toBeDefined();
-        const resolved = handler!(result.matchState!, '0', option.value, prompt.data, FIXED_RANDOM, 81);
+        const resolved = handler!(result.matchState!, '0', option.value, getPromptHandlerData(prompt), FIXED_RANDOM, 81);
         const finalCore = (resolved?.events ?? []).reduce(
             (acc, event) => SmashUpDomain.reduce(acc, event),
             resolved?.state.core ?? result.matchState!.core,
@@ -1069,15 +1075,13 @@ describe('smashup', () => {
             now: 82,
         });
 
-        const prompt = result.matchState?.sys.interaction?.current as any;
-        expect(prompt?.data?.sourceId).toBe('titan_sphinx_after_scoring');
-        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'sphinx-score-buried');
-        expect(option).toBeDefined();
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'titan_sphinx_after_scoring');
+        const option = getPromptOption(prompt, entry => entry.value?.cardUid === 'sphinx-score-buried');
         expect(option.displayMode).toBe('card');
 
         const handler = getInteractionHandler('titan_sphinx_after_scoring');
         expect(handler).toBeDefined();
-        const resolved = handler!(result.matchState!, '0', option.value, prompt.data, FIXED_RANDOM, 83);
+        const resolved = handler!(result.matchState!, '0', option.value, getPromptHandlerData(prompt), FIXED_RANDOM, 83);
         const finalCore = (resolved?.events ?? []).reduce(
             (acc, event) => SmashUpDomain.reduce(acc, event),
             resolved?.state.core ?? result.matchState!.core,
@@ -1123,14 +1127,12 @@ describe('smashup', () => {
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map((event) => event.type)).toContain(SU_EVENTS.TALENT_USED);
 
-        const prompt = state.sys.interaction?.current as any;
-        expect(prompt?.data?.sourceId).toBe('titan_sphinx_talent');
-        const option = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'sphinx-hand-card');
-        expect(option).toBeDefined();
+        const prompt = getSimpleChoicePrompt(state, 'titan_sphinx_talent');
+        const option = getPromptOption(prompt, entry => entry.value?.cardUid === 'sphinx-hand-card');
 
         const handler = getInteractionHandler('titan_sphinx_talent');
         expect(handler).toBeDefined();
-        const resolved = handler!(state, '0', option.value, prompt.data, FIXED_RANDOM, 85);
+        const resolved = handler!(state, '0', option.value, getPromptHandlerData(prompt), FIXED_RANDOM, 85);
         const finalCore = (resolved?.events ?? []).reduce(
             (acc, event) => SmashUpDomain.reduce(acc, event),
             resolved?.state.core ?? state.core,
@@ -1230,10 +1232,8 @@ describe('smashup', () => {
             reason: 'test_uncover_cross_base_target',
         });
 
-        const prompt = (uncovered.state.sys.interaction?.current
-            ?? uncovered.state.sys.interaction?.queue?.[0]) as any;
-        expect(prompt?.data?.sourceId).toBe('ancient_egyptians_ancient_curse_confirm');
-        const applyOption = prompt?.data?.options?.find((entry: any) => entry.id === 'apply');
+        const prompt = getSimpleChoicePrompt(uncovered.state, 'ancient_egyptians_ancient_curse_confirm');
+        const applyOption = getPromptOption(prompt, entry => entry.id === 'apply', 'Ancient Curse apply option');
         expect(applyOption?.value).toMatchObject({
             targetMinionUid: 'target-minion',
             baseIndex: 0,
@@ -1305,15 +1305,12 @@ describe('smashup', () => {
             reason: 'test_uncover_multi_target',
         });
 
-        const targetPrompt = (uncovered.state.sys.interaction?.current
-            ?? uncovered.state.sys.interaction?.queue?.[0]) as any;
-        expect(targetPrompt?.data?.sourceId).toBe('bury_uncover_ongoing_target');
-        const targetOption = targetPrompt?.data?.options?.find((entry: any) => entry.value?.minionUid === 'target-minion-b');
-        expect(targetOption).toBeDefined();
+        const targetPrompt = getSimpleChoicePrompt(uncovered.state, 'bury_uncover_ongoing_target');
+        const targetOption = getPromptOption(targetPrompt, entry => entry.value?.minionUid === 'target-minion-b', 'Ancient Curse target minion option');
 
         const resolved = runCommand(
             uncovered.state,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '1', payload: { optionId: targetOption.id } } as any,
+            respondCommand(targetOption.id, '1'),
             FIXED_RANDOM,
         );
 
@@ -1329,10 +1326,8 @@ describe('smashup', () => {
             }),
         }));
 
-        const confirmPrompt = (resolved.finalState.sys.interaction?.current
-            ?? resolved.finalState.sys.interaction?.queue?.[0]) as any;
-        expect(confirmPrompt?.data?.sourceId).toBe('ancient_egyptians_ancient_curse_confirm');
-        const applyOption = confirmPrompt?.data?.options?.find((entry: any) => entry.id === 'apply');
+        const confirmPrompt = getSimpleChoicePrompt(resolved.finalState, 'ancient_egyptians_ancient_curse_confirm');
+        const applyOption = getPromptOption(confirmPrompt, entry => entry.id === 'apply', 'Ancient Curse confirm apply option');
         expect(applyOption?.value).toMatchObject({
             targetMinionUid: 'target-minion-b',
             baseIndex: 0,
@@ -1554,10 +1549,7 @@ describe('smashup', () => {
 
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction.current).toBeDefined();
-
-        const sourceId = (state.sys.interaction.current?.data as any)?.sourceId;
-        expect(sourceId).toBe('titan_vampires_ancient_lord_talent');
+        const prompt = getSimpleChoicePrompt(state, 'titan_vampires_ancient_lord_talent');
 
         const handler = getInteractionHandler('titan_vampires_ancient_lord_talent');
         expect(handler).toBeDefined();
@@ -1565,7 +1557,7 @@ describe('smashup', () => {
             state,
             '0',
             { minionUid: minion!.uid, baseIndex: 0 },
-            state.sys.interaction.current?.data as any,
+            getPromptHandlerData(prompt),
             FIXED_RANDOM,
             94,
         );
@@ -1971,7 +1963,7 @@ describe('smashup', () => {
 
         expect(SmashUpDomain.validate(state, command).valid).toBe(true);
         SmashUpDomain.execute(state, command, FIXED_RANDOM);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('pirate_broadside_choose_base');
+        const broadsideBasePrompt = getSimpleChoicePrompt(state, 'pirate_broadside_choose_base');
 
         const legalActions = buildSmashUpAiLegalActions({
             playerId: '0',
@@ -1995,21 +1987,15 @@ describe('smashup', () => {
         expect(chosenAction?.kind).toBe('interaction-choice');
         expect((chosenAction?.metadata?.optionValue as { baseIndex?: number } | undefined)?.baseIndex).toBe(0);
 
-        const baseOption = findInteractionOption(
-            state.sys.interaction?.current,
-            option => option?.value?.baseIndex === 0,
-        );
-        expect(baseOption).toBeDefined();
+        const baseOption = getPromptOption(broadsideBasePrompt, option => option?.value?.baseIndex === 0);
 
         const baseRespondResult = runCommand(state, {
-            type: INTERACTION_COMMANDS.RESPOND,
-            playerId: '0',
-            payload: { optionId: baseOption!.id },
+            ...respondCommand(baseOption.id, '0'),
             timestamp: 89,
         } as any, FIXED_RANDOM);
         const stateAfterChooseBase = baseRespondResult.finalState;
 
-        expect(stateAfterChooseBase.sys.interaction?.current?.data?.sourceId).toBe('pirate_broadside_choose_player');
+        getSimpleChoicePrompt(stateAfterChooseBase, 'pirate_broadside_choose_player');
 
         const nextLegalActions = buildSmashUpAiLegalActions({
             playerId: '0',
@@ -2402,7 +2388,7 @@ describe('smashup', () => {
             },
             stateForAi,
             {
-                type: 'SYS_INTERACTION_RESPOND',
+                ...respondCommand((resolution?.action.commands[0]?.payload as any)?.optionId, '0'),
                 playerId: '0',
                 payload: resolution?.action.commands[0]?.payload ?? {},
                 timestamp: Date.now(),
@@ -2584,21 +2570,17 @@ describe('smashup', () => {
             } as any,
             FIXED_RANDOM,
         );
-        const step1Current = (played.finalState.sys as any).interaction?.current;
-        const replacementOption = step1Current?.data?.options?.find((entry: any) => entry.value?.newBaseDefId === 'base_new');
-        expect(replacementOption).toBeDefined();
+        const step1Prompt = getSimpleChoicePrompt(played.finalState);
+        const replacementOption = getPromptOption(step1Prompt, entry => entry.value?.newBaseDefId === 'base_new');
         const step2 = runCommand(
             played.finalState,
             {
-                type: 'SYS_INTERACTION_RESPOND',
-                playerId: '0',
-                payload: { optionId: replacementOption.id },
+                ...respondCommand(replacementOption.id, '0'),
             } as any,
             FIXED_RANDOM,
         );
-        const step2Current = (step2.finalState.sys as any).interaction?.current;
-        const titanOption = step2Current?.data?.options?.find((opt: any) => opt.value?.titanUid === 't1');
-        expect(titanOption).toBeDefined();
+        const step2Prompt = getSimpleChoicePrompt(step2.finalState);
+        const titanOption = getPromptOption(step2Prompt, opt => opt.value?.titanUid === 't1');
         expect(titanOption.value).toMatchObject({
             titanUid: 't1',
             defId: 'tricksters_big_funny_giant',
@@ -2608,9 +2590,7 @@ describe('smashup', () => {
         const step3 = runCommand(
             step2.finalState,
             {
-                type: 'SYS_INTERACTION_RESPOND',
-                playerId: '0',
-                payload: { optionId: titanOption.id },
+                ...respondCommand(titanOption.id, '0'),
             } as any,
             FIXED_RANDOM,
         );
@@ -2727,38 +2707,36 @@ describe('smashup', () => {
         }, FIXED_RANDOM);
 
         expect(playResult.success).toBe(true);
-        expect(getInteractionsFromMS(playResult.finalState)[0]?.data?.sourceId).toBe('dino_augmentation');
+        getSimpleChoicePrompt(playResult.finalState, 'dino_augmentation');
 
         const resolved = resolveInteractionChain(playResult.finalState, (prompt) => {
-            const sourceId = prompt?.data?.sourceId as string | undefined;
+            const sourceId = getPromptSourceId(prompt);
             if (sourceId === 'dino_augmentation') {
-                const option = findInteractionOption(prompt, entry => entry?.value?.minionUid === 'dino-target');
-                expect(option).toBeDefined();
+                const option = getPromptOption(prompt, entry => entry?.value?.minionUid === 'dino-target');
                 return { optionId: option.id };
             }
             if (sourceId === 'smashup_reaction_choose') {
                 const triggerById = new Map(
                     (prompt?.state?.core?.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]),
                 );
-                const option = prompt?.data?.options?.find((entry: any) => {
+                const option = getPromptOptions(prompt).find((entry: any) => {
                     const trigger = triggerById.get(entry?.value?.triggerId);
                     return trigger?.sourceDefId === 'dinosaurs_fort_titanosaurus';
-                }) ?? prompt?.data?.options?.[0];
+                }) ?? getPromptOptions(prompt)[0];
                 expect(option).toBeDefined();
                 return { optionId: option.id };
             }
             if (sourceId === 'titan_dinosaurs_fort_titanosaurus_ongoing') {
-                const option = findInteractionOption(
+                const option = getPromptOption(
                     prompt,
                     entry => entry?.value?.mode === 'both' && entry?.value?.targetMinionUid === 'dino-target',
                 );
-                expect(option).toBeDefined();
                 return { optionId: option.id };
             }
             throw new Error(`未处理的 Fort Titanosaurus 交互: ${sourceId ?? 'unknown'}`);
         }, FIXED_RANDOM);
 
-        expect(getInteractionsFromMS(resolved.finalState)).toHaveLength(0);
+        expectNoPrompt(resolved.finalState);
 
         const finalCore = resolved.finalState.core;
         const target = finalCore.bases[0].minions.find(minion => minion.uid === 'dino-target');
@@ -2933,20 +2911,16 @@ describe('smashup', () => {
         const talentEvents = SmashUpDomain.execute(ms, command, FIXED_RANDOM);
         expect(talentEvents.map(event => event.type)).toEqual([SU_EVENTS.TALENT_USED]);
 
-        const interactions = getInteractionsFromMS(ms);
-        expect(interactions).toHaveLength(1);
-        const current = interactions[0];
-        expect(current?.data?.sourceId).toBe('titan_cthulhu_cthulhu_titan_talent_target');
+        const current = getSimpleChoicePrompt(ms, 'titan_cthulhu_cthulhu_titan_talent_target');
 
-        const targetOption = current.data.options.find((option: any) => option?.value?.targetPlayerId === '1');
-        expect(targetOption).toBeDefined();
+        const targetOption = getPromptOption(current, option => option?.value?.targetPlayerId === '1', 'Cthulhu Titan target player option');
 
         const handler = getInteractionHandler('titan_cthulhu_cthulhu_titan_talent_target');
         const response = handler!(
             ms,
             '0',
             targetOption.value,
-            current.data,
+            getPromptHandlerData(current),
             FIXED_RANDOM,
             44,
         );
@@ -3131,7 +3105,7 @@ describe('smashup', () => {
         const events = SmashUpDomain.execute(stateWithCounters, command, FIXED_RANDOM);
         // PR64+：该泰坦 special 需要弃 1 张牌，会创建交互，不会直接打出
         expect(events.map(event => event.type)).toEqual([]);
-        expect((stateWithCounters.sys.interaction?.current?.data as any)?.sourceId)
+        expect(getPromptSourceId(getSimpleChoicePrompt(stateWithCounters, 'titan_giant_ants_death_on_six_legs_special')))
             .toBe('titan_giant_ants_death_on_six_legs_special');
     });
 
@@ -3362,7 +3336,7 @@ describe('smashup', () => {
         const resolved = events.reduce((acc, event) => SmashUpDomain.reduce(acc, event), core);
         const titan = (resolved.titans ?? []).find(candidate => candidate.uid === 't-ursa');
         expect(titan?.powerCounters).toBe(1);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_bear_cavalry_major_ursa_choose_destination');
+        expect(getSimpleChoicePrompt(state, 'titan_bear_cavalry_major_ursa_choose_destination')).toBeDefined();
     });
 
     it('大熊座移动后可继续选择对手 3 或更低随从并移动到其他基地', () => {
@@ -3406,48 +3380,41 @@ describe('smashup', () => {
         const post = postProcessSystemEvents(core, destinationResult.events, FIXED_RANDOM, destinationResult.state);
         const queuedState = post.matchState ?? destinationResult.state;
         let reactionState = queuedState;
-        let currentInteraction = queuedState.sys.interaction?.current;
 
         const reactionPrompt = maybeResolveReactionQueue(queuedState, FIXED_RANDOM, 63);
         if (reactionPrompt) {
             reactionState = reactionPrompt.state;
-            currentInteraction = reactionPrompt.state.sys.interaction?.current ?? currentInteraction;
         }
 
-        if (currentInteraction?.data?.sourceId === 'smashup_reaction_choose') {
-            const triggerById = new Map(reactionState.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
-            const ursaOption = currentInteraction.data.options.find((option: any) => {
-                const trigger = triggerById.get(option.value?.triggerId);
-                return trigger?.sourceDefId === 'bear_cavalry_major_ursa';
-            }) ?? currentInteraction.data.options[0];
+        const reactionChoicePrompt = getOptionalSimpleChoicePrompt(reactionState, 'smashup_reaction_choose');
+        if (reactionChoicePrompt) {
+            const ursaOption = getReactionPromptOptionBySourceDefId(reactionState, reactionChoicePrompt, 'bear_cavalry_major_ursa');
 
             const afterChoose = runCommand(
                 reactionState,
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: ursaOption.id } } as any,
+                respondCommand(ursaOption.id, '0'),
                 FIXED_RANDOM,
             );
             reactionState = afterChoose.finalState;
-            currentInteraction = getInteractionsFromMS(reactionState)[0] as any;
         }
 
-        expect(currentInteraction?.data?.sourceId).toBe('titan_bear_cavalry_major_ursa_choose_minion');
+        const minionPrompt = getSimpleChoicePrompt(reactionState, 'titan_bear_cavalry_major_ursa_choose_minion');
 
         const chooseMinionResult = minionHandler!(
             reactionState,
             '0',
             { minionUid: 'enemy-minion', defId: 'ghosts_spectre', baseIndex: 1 },
-            currentInteraction?.data,
+            getPromptHandlerData(minionPrompt),
             FIXED_RANDOM,
             63,
         );
-        const queuedChooseBase = chooseMinionResult.state.sys.interaction?.queue?.[0];
-        expect(queuedChooseBase?.data?.sourceId).toBe('titan_bear_cavalry_major_ursa_choose_base');
+        const chooseBasePrompt = getSimpleChoicePrompt(chooseMinionResult.state, 'titan_bear_cavalry_major_ursa_choose_base');
 
         const chooseBaseResult = baseHandler!(
             chooseMinionResult.state,
             '0',
             { baseIndex: 2, baseDefId: core.bases[2].defId },
-            queuedChooseBase?.data,
+            getPromptHandlerData(chooseBasePrompt),
             FIXED_RANDOM,
             64,
         );
@@ -3490,8 +3457,7 @@ describe('smashup', () => {
             now: 78,
         });
 
-        const interactions = getInteractionsFromMS(triggerResult.matchState!);
-        expect(interactions.map(interaction => interaction.data?.sourceId)).toContain('titan_changerbots_mergacon_play');
+        expect(getPromptsBySourceId(triggerResult.matchState!, 'titan_changerbots_mergacon_play')).toHaveLength(1);
     });
 
     it('合体机器人的进场交互解决后会把泰坦打到所选基地', () => {
@@ -3600,7 +3566,7 @@ describe('smashup', () => {
 
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_changerbots_mergacon_talent');
+        const prompt = getSimpleChoicePrompt(state, 'titan_changerbots_mergacon_talent');
 
         const handler = getInteractionHandler('titan_changerbots_mergacon_talent');
         expect(handler).toBeDefined();
@@ -3608,7 +3574,7 @@ describe('smashup', () => {
             state,
             '0',
             { baseIndex: 1, baseDefId: core.bases[1].defId },
-            state.sys.interaction?.current?.data as any,
+            getPromptHandlerData(prompt),
             FIXED_RANDOM,
             83,
         );
@@ -3821,7 +3787,7 @@ describe('smashup', () => {
 
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_itty_critters_rainboroc_choose_discard');
+        const chooseDiscardPrompt = getSimpleChoicePrompt(state, 'titan_itty_critters_rainboroc_choose_discard');
 
         const chooseDiscardHandler = getInteractionHandler('titan_itty_critters_rainboroc_choose_discard');
         const chooseBaseHandler = getInteractionHandler('titan_itty_critters_rainboroc_choose_base');
@@ -3832,14 +3798,12 @@ describe('smashup', () => {
             state,
             '0',
             { cardUid: 'rain-discard-minion', defId: 'pirate_first_mate' },
-            state.sys.interaction?.current?.data as any,
+            getPromptHandlerData(chooseDiscardPrompt),
             FIXED_RANDOM,
             89,
         );
         expect(chooseDiscardResult.events.map(event => event.type)).toEqual([SU_EVENTS.DECK_REORDERED]);
-        expect(chooseDiscardResult.state.sys.interaction?.queue?.[0]?.data?.sourceId).toBe(
-            'titan_itty_critters_rainboroc_choose_base',
-        );
+        const chooseBasePrompt = getSimpleChoicePrompt(chooseDiscardResult.state, 'titan_itty_critters_rainboroc_choose_base');
 
         const afterShuffle = chooseDiscardResult.events.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
@@ -3852,7 +3816,7 @@ describe('smashup', () => {
             chooseDiscardResult.state,
             '0',
             { baseIndex: 1, baseDefId: core.bases[1].defId },
-            chooseDiscardResult.state.sys.interaction?.queue?.[0]?.data as any,
+            getPromptHandlerData(chooseBasePrompt),
             FIXED_RANDOM,
             90,
         );
@@ -4005,14 +3969,14 @@ describe('smashup', () => {
         expect(result.events.map(event => event.type)).toContain(SU_EVENTS.TRIGGER_QUEUED);
         const drawHandler = getInteractionHandler('titan_kaiju_gorgodzolla_draw');
         expect(drawHandler).toBeDefined();
-        expect(result.finalState.sys.interaction?.current?.data?.sourceId).toBe('titan_kaiju_gorgodzolla_draw');
+        const drawPrompt = getSimpleChoicePrompt(result.finalState, 'titan_kaiju_gorgodzolla_draw');
         expect(result.finalState.core.titans?.find(candidate => candidate.uid === 't-gorgodzolla')?.powerCounters).toBe(1);
 
         const drawResult = drawHandler!(
             result.finalState,
             '0',
             { draw: true },
-            result.finalState.sys.interaction?.current?.data as any,
+            getPromptHandlerData(drawPrompt),
             FIXED_RANDOM,
             95,
         );
@@ -4151,17 +4115,14 @@ describe('smashup', () => {
         });
 
         const state = makeMatchState(core);
-        const moveResult = processMoveTriggers([{
-                type: SU_EVENTS.MINION_MOVED,
-                payload: {
-                    minionUid: 'moved-away',
-                    minionDefId: 'trickster_gnome',
-                    fromBaseIndex: 0,
-                    toBaseIndex: 1,
-                    reason: 'test_move_from_boulder',
-            },
+        const moveResult = resolveMovedMinions(state, '1', [{
+            minionUid: 'moved-away',
+            minionDefId: 'trickster_gnome',
+            fromBaseIndex: 0,
+            toBaseIndex: 1,
+            reason: 'test_move_from_boulder',
             timestamp: 99,
-        } as SmashUpEvent], state, '1', FIXED_RANDOM, 99);
+        }], FIXED_RANDOM, 99);
 
         const queuedCore = moveResult.events.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
@@ -4172,13 +4133,14 @@ describe('smashup', () => {
             core: queuedCore,
         };
         const reactionResult = maybeResolveReactionQueue(queuedState, FIXED_RANDOM, 99);
-        const boulderInteraction =
-            reactionResult?.state.sys.interaction?.current
-            ?? reactionResult?.state.sys.interaction?.queue?.[0];
+        const boulderInteraction = getSimpleChoicePrompt(
+            reactionResult!.state,
+            'titan_explorers_very_large_boulder_move',
+        );
 
         expect(reactionResult?.events.map(event => event.type)).toEqual([SU_EVENTS.TRIGGER_CONSUMED]);
-        expect((boulderInteraction?.data as any)?.sourceId).toBe('titan_explorers_very_large_boulder_move');
-        expect(boulderInteraction?.playerId).toBe('0');
+        expect(getPromptSourceId(boulderInteraction)).toBe('titan_explorers_very_large_boulder_move');
+        expect(getPromptPlayerId(boulderInteraction)).toBe('0');
         expect(reactionResult?.state.core.veryLargeBoulderTriggeredTurnByTitan?.['t-boulder-live']).toBe(4);
 
         const moveHandler = getInteractionHandler('titan_explorers_very_large_boulder_move');
@@ -4190,22 +4152,23 @@ describe('smashup', () => {
             reactionResult!.state,
             '0',
             { move: true },
-            boulderInteraction?.data as any,
+            getPromptHandlerData(boulderInteraction),
             FIXED_RANDOM,
             100,
         );
         expect(chooseMoveResult.events.map(event => event.type)).toContain(SU_EVENTS.TITAN_MOVED);
 
-        const pendingDestroyInteraction =
-            chooseMoveResult.state.sys.interaction?.current
-            ?? chooseMoveResult.state.sys.interaction?.queue?.[0];
+        const pendingDestroyInteraction = getOptionalSimpleChoicePrompt(
+            chooseMoveResult.state,
+            'titan_explorers_very_large_boulder_destroy',
+        );
         const destroyEvents =
-            (pendingDestroyInteraction?.data as any)?.sourceId === 'titan_explorers_very_large_boulder_destroy'
+            pendingDestroyInteraction
                 ? destroyHandler!(
                     chooseMoveResult.state,
                     '0',
                     { minionUid: 'boulder-target' },
-                    pendingDestroyInteraction.data as any,
+                    getPromptHandlerData(pendingDestroyInteraction),
                     FIXED_RANDOM,
                     101,
                 ).events
@@ -4224,17 +4187,14 @@ describe('smashup', () => {
         expect(resolved.bases[1].minions.map(minion => minion.uid)).not.toContain('boulder-target');
         expect(resolved.bases[1].minions.map(minion => minion.uid)).toContain('boulder-safe');
 
-        const secondMoveResult = processMoveTriggers([{
-            type: SU_EVENTS.MINION_MOVED,
-            payload: {
-                minionUid: 'boulder-safe',
-                minionDefId: 'trickster_gnome',
-                fromBaseIndex: 1,
-                toBaseIndex: 0,
-                reason: 'test_move_same_turn_again',
-            },
+        const secondMoveResult = resolveMovedMinions({ ...reactionResult!.state, core: resolved }, '1', [{
+            minionUid: 'boulder-safe',
+            minionDefId: 'trickster_gnome',
+            fromBaseIndex: 1,
+            toBaseIndex: 0,
+            reason: 'test_move_same_turn_again',
             timestamp: 102,
-        } as SmashUpEvent], { ...reactionResult!.state, core: resolved }, '1', FIXED_RANDOM, 102);
+        }], FIXED_RANDOM, 102);
         expect(secondMoveResult.events.map(event => event.type)).not.toContain(SU_EVENTS.TRIGGER_QUEUED);
     });
 
@@ -4396,40 +4356,33 @@ describe('smashup', () => {
             timestamp: 102,
         };
 
-        const processed = processDestroyTriggers([destroyEvent], matchState, '0', FIXED_RANDOM, 102);
+        const processed = resolveDestroyedMinions(matchState, '0', [destroyEvent], FIXED_RANDOM, 102);
         let reactionState = processed.matchState ?? matchState;
-        let currentInteraction = getInteractionsFromMS(reactionState)[0] as any;
 
-        if (!currentInteraction) {
+        if (!getOptionalSimpleChoicePrompt(reactionState)) {
             const reactionResult = maybeResolveReactionQueue(reactionState, FIXED_RANDOM, 102);
             reactionState = reactionResult?.state ?? reactionState;
-            currentInteraction = getInteractionsFromMS(reactionState)[0] as any;
         }
 
-        if (currentInteraction?.data?.sourceId === 'smashup_reaction_choose') {
-            const queueById = new Map(reactionState.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
-            const ninjaOption = currentInteraction.data.options.find((option: any) => {
-                const trigger = queueById.get(option.value?.triggerId) as any;
-                return trigger?.sourceDefId === 'ninjas_invisible_ninja';
-            }) ?? currentInteraction.data.options[0];
+        const reactionChoicePrompt = getOptionalSimpleChoicePrompt(reactionState, 'smashup_reaction_choose');
+        if (reactionChoicePrompt) {
+            const ninjaOption = getReactionPromptOptionBySourceDefId(reactionState, reactionChoicePrompt, 'ninjas_invisible_ninja');
 
             const afterChooseTrigger = runCommand(
                 reactionState,
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: ninjaOption.id } } as any,
+                respondCommand(ninjaOption.id, '0'),
                 FIXED_RANDOM,
             );
             reactionState = afterChooseTrigger.finalState;
-            currentInteraction = getInteractionsFromMS(reactionState)[0] as any;
         }
 
-        expect(currentInteraction?.data?.sourceId).toBe('titan_ninjas_invisible_ninja_ongoing');
-        expect(currentInteraction?.playerId).toBe('0');
+        const currentInteraction = getSimpleChoicePrompt(reactionState, 'titan_ninjas_invisible_ninja_ongoing');
+        expect(getPromptPlayerId(currentInteraction)).toBe('0');
 
-        const drawOption = currentInteraction.data.options.find((option: any) => option.value?.cardUid === 'ninja-draw-a')
-            ?? currentInteraction.data.options[0];
+        const drawOption = getPromptOption(currentInteraction, option => option.value?.cardUid === 'ninja-draw-a', 'Invisible Ninja draw card option');
         const afterDraw = runCommand(
             reactionState,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: drawOption.id } } as any,
+            respondCommand(drawOption.id, '0'),
             FIXED_RANDOM,
         );
 
@@ -4479,7 +4432,7 @@ describe('smashup', () => {
 
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_magical_girls_walking_castle_choose_base');
+        const chooseBasePrompt = getSimpleChoicePrompt(state, 'titan_magical_girls_walking_castle_choose_base');
 
         const chooseMinionsHandler = getInteractionHandler('titan_magical_girls_walking_castle_choose_minions');
         const chooseBaseHandler = getInteractionHandler('titan_magical_girls_walking_castle_choose_base');
@@ -4490,13 +4443,11 @@ describe('smashup', () => {
             state,
             '0',
             { baseIndex: 1, baseDefId: core.bases[1].defId },
-            state.sys.interaction?.current?.data as any,
+            getPromptHandlerData(chooseBasePrompt),
             FIXED_RANDOM,
             103,
         );
-        expect(chooseBaseResult.state.sys.interaction?.queue?.[0]?.data?.sourceId).toBe(
-            'titan_magical_girls_walking_castle_choose_minions',
-        );
+        const chooseMinionsPrompt = getSimpleChoicePrompt(chooseBaseResult.state, 'titan_magical_girls_walking_castle_choose_minions');
 
         const chooseMinionsResult = chooseMinionsHandler!(
             chooseBaseResult.state,
@@ -4505,7 +4456,7 @@ describe('smashup', () => {
                 { minionUid: 'castle-move-a', baseIndex: 0 },
                 { minionUid: 'castle-move-b', baseIndex: 0 },
             ],
-            chooseBaseResult.state.sys.interaction?.queue?.[0]?.data as any,
+            getPromptHandlerData(chooseMinionsPrompt),
             FIXED_RANDOM,
             104,
         );
@@ -4621,7 +4572,7 @@ describe('smashup', () => {
 
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_ignobles_the_hill_that_strolls_give_minion');
+        const giveMinionPrompt = getSimpleChoicePrompt(state, 'titan_ignobles_the_hill_that_strolls_give_minion');
 
         const giveMinionHandler = getInteractionHandler('titan_ignobles_the_hill_that_strolls_give_minion');
         const counterHandler = getInteractionHandler('titan_ignobles_the_hill_that_strolls_counter');
@@ -4632,7 +4583,7 @@ describe('smashup', () => {
             state,
             '0',
             { minionUid: 'hill-give-target', baseIndex: 0, defId: 'ghosts_spectre' },
-            state.sys.interaction?.current?.data as any,
+            getPromptHandlerData(giveMinionPrompt),
             FIXED_RANDOM,
             108,
         );
@@ -4648,10 +4599,10 @@ describe('smashup', () => {
         expect(giveResolvedCore.bases[0].minions.find(minion => minion.uid === 'hill-give-target')?.controller).toBe('1');
         const cleanTriggerState = makeMatchState(giveResolvedCore, 'playCards', '0');
 
-        const affectResult = processAffectTriggers(
-            giveResult.events,
+        const affectResult = resolveAffectedMinions(
             cleanTriggerState,
             '0',
+            giveResult.events,
             FIXED_RANDOM,
             108,
         );
@@ -4662,33 +4613,26 @@ describe('smashup', () => {
         const queuedState = { ...(affectResult.matchState ?? cleanTriggerState), core: queuedCore };
         const reactionResult = maybeResolveReactionQueue(queuedState, FIXED_RANDOM, 108);
         let reactionState = reactionResult?.state ?? queuedState;
-        let currentInteraction =
-            reactionState.sys.interaction?.current
-            ?? reactionState.sys.interaction?.queue?.[0];
 
-        if (currentInteraction?.data?.sourceId === 'smashup_reaction_choose') {
-            const triggerById = new Map(reactionState.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
-            const hillOption = currentInteraction.data.options.find((option: any) => {
-                const trigger = triggerById.get(option.value?.triggerId);
-                return trigger?.sourceDefId === 'ignobles_the_hill_that_strolls';
-            }) ?? currentInteraction.data.options[0];
+        const hillReactionPrompt = getOptionalSimpleChoicePrompt(reactionState, 'smashup_reaction_choose');
+        if (hillReactionPrompt) {
+            const hillOption = getReactionPromptOptionBySourceDefId(reactionState, hillReactionPrompt, 'ignobles_the_hill_that_strolls');
 
             const afterChoose = runCommand(
                 reactionState,
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: hillOption.id } } as any,
+                respondCommand(hillOption.id, '0'),
                 FIXED_RANDOM,
             );
             reactionState = afterChoose.finalState;
-            currentInteraction = getInteractionsFromMS(reactionState)[0] as any;
         }
 
-        expect(currentInteraction?.data?.sourceId).toBe('titan_ignobles_the_hill_that_strolls_counter');
+        const currentInteraction = getSimpleChoicePrompt(reactionState, 'titan_ignobles_the_hill_that_strolls_counter');
 
         const counterResult = counterHandler!(
             reactionState,
             '0',
             { place: true },
-            currentInteraction?.data as any,
+            getPromptHandlerData(currentInteraction),
             FIXED_RANDOM,
             109,
         );
@@ -4732,7 +4676,7 @@ describe('smashup', () => {
 
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_ignobles_the_hill_that_strolls_reclaim_minion');
+        const reclaimPrompt = getSimpleChoicePrompt(state, 'titan_ignobles_the_hill_that_strolls_reclaim_minion');
 
         const reclaimHandler = getInteractionHandler('titan_ignobles_the_hill_that_strolls_reclaim_minion');
         expect(reclaimHandler).toBeDefined();
@@ -4741,7 +4685,7 @@ describe('smashup', () => {
             state,
             '0',
             { minionUid: 'hill-reclaim-target', baseIndex: 0, defId: 'pirate_first_mate' },
-            state.sys.interaction?.current?.data as any,
+            getPromptHandlerData(reclaimPrompt),
             FIXED_RANDOM,
             111,
         );
@@ -4779,8 +4723,7 @@ describe('smashup', () => {
         });
 
         expect(triggerResult.events.map(event => event.type)).toEqual([SU_EVENTS.TITAN_METADATA_UPDATED]);
-        const currentInteraction = triggerResult.matchState?.sys.interaction?.current;
-        expect(currentInteraction?.data?.sourceId).toBe('titan_time_travelers_time_box_play');
+        const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_time_travelers_time_box_play');
 
         const afterCounterCore = triggerResult.events.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
@@ -4796,7 +4739,7 @@ describe('smashup', () => {
             queuedState,
             '0',
             { baseIndex: 1, baseDefId: core.bases[1].defId },
-            currentInteraction?.data as any,
+            getPromptHandlerData(currentInteraction),
             FIXED_RANDOM,
             113,
         );
@@ -4847,7 +4790,7 @@ describe('smashup', () => {
             timestamp: 114,
         };
         const matchState = makeMatchState(core, 'playCards', '0');
-        const processed = processReturnToHandTriggers([recoveredEvent], matchState, '0', FIXED_RANDOM, 114);
+        const processed = resolveCardsReturnedToHand(matchState, '0', [recoveredEvent], FIXED_RANDOM, 114);
 
         expect(processed.events.map(event => event.type)).toEqual([
             SU_EVENTS.CARD_RECOVERED_FROM_DISCARD,
@@ -4861,29 +4804,24 @@ describe('smashup', () => {
         const reactionResult = maybeResolveReactionQueue(queuedState, FIXED_RANDOM, 114);
         let reactionState = reactionResult?.state ?? queuedState;
         let resolvedEvents = reactionResult?.events ?? [];
-        let currentInteraction = reactionState.sys.interaction?.current;
 
-        if (currentInteraction?.data?.sourceId === 'smashup_reaction_choose') {
-            const triggerById = new Map(reactionState.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
-            const timeBoxOption = currentInteraction.data.options.find((option: any) => {
-                const trigger = triggerById.get(option.value?.triggerId);
-                return trigger?.sourceDefId === 'time_travelers_time_box';
-            }) ?? currentInteraction.data.options[0];
+        const timeBoxReactionPrompt = getOptionalSimpleChoicePrompt(reactionState, 'smashup_reaction_choose');
+        if (timeBoxReactionPrompt) {
+            const timeBoxOption = getReactionPromptOptionBySourceDefId(reactionState, timeBoxReactionPrompt, 'time_travelers_time_box');
 
             const afterChoose = runCommand(
                 reactionState,
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: timeBoxOption.id } } as any,
+                respondCommand(timeBoxOption.id, '0'),
                 FIXED_RANDOM,
             );
             reactionState = afterChoose.finalState;
             resolvedEvents = afterChoose.events;
-            currentInteraction = getInteractionsFromMS(reactionState)[0] as any;
         }
 
         expect(resolvedEvents.map(event => event.type)).toContain(SU_EVENTS.TRIGGER_CONSUMED);
         expect(resolvedEvents.map(event => event.type)).toContain(SU_EVENTS.TITAN_METADATA_UPDATED);
 
-        expect(currentInteraction?.data?.sourceId).toBe('titan_time_travelers_time_box_play');
+        expect(getSimpleChoicePrompt(reactionState, 'titan_time_travelers_time_box_play')).toBeDefined();
 
         const domainEvents = resolvedEvents.filter(event => typeof event.type === 'string' && event.type.startsWith('su:'));
         const finalCore = domainEvents.reduce(
@@ -5127,7 +5065,7 @@ describe('smashup', () => {
 
         const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(commandEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_super_spies_moon_zero_three_choose_player');
+        const choosePlayerPrompt = getSimpleChoicePrompt(state, 'titan_super_spies_moon_zero_three_choose_player');
 
         const choosePlayerHandler = getInteractionHandler('titan_super_spies_moon_zero_three_choose_player');
         const resolveHandler = getInteractionHandler('titan_super_spies_moon_zero_three_resolve');
@@ -5138,15 +5076,14 @@ describe('smashup', () => {
             state,
             '0',
             { targetPlayerId: '1' },
-            state.sys.interaction?.current?.data as any,
+            getPromptHandlerData(choosePlayerPrompt),
             FIXED_RANDOM,
             123,
         );
         expect(chooseResult.events.map(event => event.type)).toContain(SU_EVENTS.DECK_INSPECTED);
         const inspectedEvent = chooseResult.events.find(event => event.type === SU_EVENTS.DECK_INSPECTED) as SmashUpEvent | undefined;
         expect((inspectedEvent as any)?.payload?.inspectorPlayerId).toBe('0');
-        const queuedResolveInteraction = chooseResult.state.sys.interaction?.queue?.at(-1);
-        expect(queuedResolveInteraction?.data?.sourceId).toBe('titan_super_spies_moon_zero_three_resolve');
+        const resolvePrompt = getSimpleChoicePrompt(chooseResult.state, 'titan_super_spies_moon_zero_three_resolve');
 
         const afterCommand = commandEvents.reduce(
             (acc: SmashUpCore, event: SmashUpEvent) => SmashUpDomain.reduce(acc, event),
@@ -5162,7 +5099,7 @@ describe('smashup', () => {
             { ...(choosePost.matchState ?? chooseResult.state), core: afterChoose },
             '0',
             { placement: 'bottom' },
-            queuedResolveInteraction?.data as any,
+            getPromptHandlerData(resolvePrompt),
             FIXED_RANDOM,
             124,
         );
@@ -5296,9 +5233,8 @@ describe('smashup', () => {
             now: 99,
         });
 
-        const currentInteraction = triggerResult.matchState?.sys.interaction?.current;
-        expect(currentInteraction?.data?.sourceId).toBe('titan_mega_troopers_megabot_move');
-        expect(currentInteraction?.playerId).toBe('0');
+        const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_mega_troopers_megabot_move');
+        expect(getPromptPlayerId(currentInteraction)).toBe('0');
 
         const handler = getInteractionHandler('titan_mega_troopers_megabot_move');
         expect(handler).toBeDefined();
@@ -5307,7 +5243,7 @@ describe('smashup', () => {
             triggerResult.matchState!,
             '0',
             { move: true },
-            currentInteraction?.data as any,
+            getPromptHandlerData(currentInteraction),
             FIXED_RANDOM,
             100,
         );
@@ -5355,8 +5291,7 @@ describe('smashup', () => {
             now: 101,
         });
 
-        const currentInteraction = triggerResult.matchState?.sys.interaction?.current;
-        expect(currentInteraction?.data?.sourceId).toBe('titan_penguins_emperor_penguin_play');
+        const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_penguins_emperor_penguin_play');
 
         const handler = getInteractionHandler('titan_penguins_emperor_penguin_play');
         expect(handler).toBeDefined();
@@ -5365,7 +5300,7 @@ describe('smashup', () => {
             triggerResult.matchState!,
             '0',
             { baseIndex: 0, baseDefId: core.bases[0].defId },
-            currentInteraction?.data as any,
+            getPromptHandlerData(currentInteraction),
             FIXED_RANDOM,
             102,
         );
@@ -5471,10 +5406,8 @@ describe('smashup', () => {
 
         const commandEvents = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(commandEvents.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_penguins_emperor_penguin_talent');
-        expect(
-            state.sys.interaction?.current?.data?.options?.every((option: any) => option.displayMode === 'card'),
-        ).toBe(true);
+        const prompt = getSimpleChoicePrompt(state, 'titan_penguins_emperor_penguin_talent');
+        expect(getPromptOptions(prompt).every((option: any) => option.displayMode === 'card')).toBe(true);
 
         const handler = getInteractionHandler('titan_penguins_emperor_penguin_talent');
         expect(handler).toBeDefined();
@@ -5483,7 +5416,7 @@ describe('smashup', () => {
             state,
             '0',
             { cardUid: 'penguin-hand-minion', defId: 'pirate_first_mate', zone: 'hand' },
-            state.sys.interaction?.current?.data as any,
+            getPromptHandlerData(prompt),
             FIXED_RANDOM,
             106,
         );
@@ -5750,10 +5683,9 @@ describe('smashup', () => {
 
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_pirates_the_kraken_talent');
+        const prompt = getSimpleChoicePrompt(state, 'titan_pirates_the_kraken_talent');
 
-        const chooseBaseOption = (state.sys.interaction.current as any).data.options.find((option: any) => option.value?.baseIndex === 1)
-            ?? (state.sys.interaction.current as any).data.options[0];
+        const chooseBaseOption = getPromptOption(prompt, option => option.value?.baseIndex === 1, 'Kraken target base option');
 
         const eventSystem = createSmashUpEventSystem();
         const hook = eventSystem.afterEvents?.({
@@ -5761,12 +5693,12 @@ describe('smashup', () => {
             events: [{
                 type: INTERACTION_EVENTS.RESOLVED,
                 payload: {
-                    interactionId: state.sys.interaction.current?.id,
+                    interactionId: prompt.id,
                     playerId: '0',
                     optionId: chooseBaseOption.id,
                     value: chooseBaseOption.value,
                     sourceId: 'titan_pirates_the_kraken_talent',
-                    interactionData: state.sys.interaction.current?.data,
+                    interactionData: getPromptHandlerData(prompt),
                 },
                 timestamp: 71,
             } as any],
@@ -5966,7 +5898,7 @@ describe('smashup', () => {
 
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_werewolves_great_wolf_spirit_talent');
+        const prompt = getSimpleChoicePrompt(state, 'titan_werewolves_great_wolf_spirit_talent');
 
         const handler = getInteractionHandler('titan_werewolves_great_wolf_spirit_talent');
         expect(handler).toBeDefined();
@@ -5974,7 +5906,7 @@ describe('smashup', () => {
             state,
             '0',
             { minionUid: 'wolf-target', defId: 'werewolf_teenage_wolf', baseIndex: 0 },
-            state.sys.interaction?.current?.data as any,
+            getPromptHandlerData(prompt),
             FIXED_RANDOM,
             70,
         );
@@ -6022,7 +5954,7 @@ describe('smashup', () => {
 
         const events = SmashUpDomain.execute(state, command, FIXED_RANDOM);
         expect(events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
-        expect(state.sys.interaction?.current?.data?.sourceId).toBe('titan_pirates_the_kraken_talent');
+        const prompt = getSimpleChoicePrompt(state, 'titan_pirates_the_kraken_talent');
 
         const handler = getInteractionHandler('titan_pirates_the_kraken_talent');
         expect(handler).toBeDefined();
@@ -6030,7 +5962,7 @@ describe('smashup', () => {
             state,
             '0',
             { baseIndex: 1, baseDefId: core.bases[1].defId },
-            state.sys.interaction.current?.data as any,
+            getPromptHandlerData(prompt),
             FIXED_RANDOM,
             71,
         );
@@ -6092,8 +6024,7 @@ describe('smashup', () => {
             now: 73,
         });
 
-        const interactions = getInteractionsFromMS(triggerResult.matchState!);
-        expect(interactions.map(interaction => interaction.data?.sourceId)).toContain('titan_pirates_the_kraken_play_replacement');
+        expect(getPromptsBySourceId(triggerResult.matchState!, 'titan_pirates_the_kraken_play_replacement')).toHaveLength(1);
     });
 
     it('海怪克拉肯在本基地计分后会创建救出己方随从的交互', () => {
@@ -6127,8 +6058,7 @@ describe('smashup', () => {
             now: 74,
         });
 
-        const interactions = getInteractionsFromMS(triggerResult.matchState!);
-        expect(interactions.map(interaction => interaction.data?.sourceId)).toContain('titan_pirates_the_kraken_choose_minion');
+        expect(getPromptsBySourceId(triggerResult.matchState!, 'titan_pirates_the_kraken_choose_minion')).toHaveLength(1);
     });
 
     it('大副先结算移动后，海怪克拉肯仍应保留替换基地进场交互', () => {
@@ -6170,60 +6100,52 @@ describe('smashup', () => {
         const queuedState = makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers });
         const firstPrompt = maybeResolveReactionQueue(queuedState, FIXED_RANDOM, 75);
         let stateAfterChooseFirstMateTrigger = firstPrompt!.state;
-        if (firstPrompt?.state.sys.interaction.current?.data?.sourceId === 'smashup_reaction_choose') {
-            const firstQueueById = new Map(firstPrompt.state.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
-            const firstMateOption = (firstPrompt.state.sys.interaction.current as any).data.options.find((option: any) => {
-                const trigger = firstQueueById.get(option.value.triggerId) as any;
-                return trigger?.sourceDefId === 'pirate_first_mate';
-            }) ?? (firstPrompt.state.sys.interaction.current as any).data.options[0];
+        const firstReactionPrompt = getOptionalSimpleChoicePrompt(firstPrompt!.state, 'smashup_reaction_choose');
+        if (firstReactionPrompt) {
+            const firstMateOption = getReactionPromptOptionBySourceDefId(firstPrompt!.state, firstReactionPrompt, 'pirate_first_mate');
 
             const afterChooseFirstMateTrigger = runCommand(
                 firstPrompt.state,
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: firstMateOption.id } } as any,
+                respondCommand(firstMateOption.id, '0'),
                 FIXED_RANDOM,
             );
             stateAfterChooseFirstMateTrigger = afterChooseFirstMateTrigger.finalState;
         }
 
-        const firstMatePrompt = getInteractionsFromMS(stateAfterChooseFirstMateTrigger)[0] as any;
-        expect(firstMatePrompt?.data?.sourceId).toBe('pirate_first_mate_choose_base');
+        const firstMatePrompt = getSimpleChoicePrompt(stateAfterChooseFirstMateTrigger, 'pirate_first_mate_choose_base');
 
-        const moveMateOption = firstMatePrompt.data.options.find((option: any) => option.value?.baseIndex === 1)
-            ?? firstMatePrompt.data.options.find((option: any) => option.value?.baseIndex === 2)
-            ?? firstMatePrompt.data.options[0];
+        const moveMateOption = getPromptOption(
+            firstMatePrompt,
+            option => option.value?.baseIndex === 1 || option.value?.baseIndex === 2,
+            'First Mate destination option',
+        );
 
         const afterMoveFirstMate = runCommand(
             stateAfterChooseFirstMateTrigger,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: moveMateOption.id } } as any,
+            respondCommand(moveMateOption.id, '0'),
             FIXED_RANDOM,
         );
 
-        let nextPrompt = getInteractionsFromMS(afterMoveFirstMate.finalState)[0] as any;
         let stateAfterKrakenTrigger = afterMoveFirstMate.finalState;
-        if (!nextPrompt) {
+        if (!getOptionalSimpleChoicePrompt(stateAfterKrakenTrigger)) {
             const reactionPrompt = maybeResolveReactionQueue(stateAfterKrakenTrigger, FIXED_RANDOM, 76);
             if (reactionPrompt) {
                 stateAfterKrakenTrigger = reactionPrompt.state;
-                nextPrompt = getInteractionsFromMS(stateAfterKrakenTrigger)[0] as any;
             }
         }
-        if (nextPrompt?.data?.sourceId === 'smashup_reaction_choose') {
-            const secondQueueById = new Map(stateAfterKrakenTrigger.core.triggerQueue?.map(trigger => [trigger.id, trigger]) ?? []);
-            const krakenOption = nextPrompt.data.options.find((option: any) => {
-                const trigger = secondQueueById.get(option.value.triggerId) as any;
-                return trigger?.sourceDefId === 'pirates_the_kraken';
-            }) ?? nextPrompt.data.options[0];
+        const nextReactionPrompt = getOptionalSimpleChoicePrompt(stateAfterKrakenTrigger, 'smashup_reaction_choose');
+        if (nextReactionPrompt) {
+            const krakenOption = getReactionPromptOptionBySourceDefId(stateAfterKrakenTrigger, nextReactionPrompt, 'pirates_the_kraken');
 
             const afterChooseKrakenTrigger = runCommand(
                 stateAfterKrakenTrigger,
-                { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: krakenOption.id } } as any,
+                respondCommand(krakenOption.id, '0'),
                 FIXED_RANDOM,
             );
             stateAfterKrakenTrigger = afterChooseKrakenTrigger.finalState;
-            nextPrompt = getInteractionsFromMS(stateAfterKrakenTrigger)[0] as any;
         }
 
-        expect(nextPrompt?.data?.sourceId).toBe('titan_pirates_the_kraken_play_replacement');
+        expect(getSimpleChoicePrompt(stateAfterKrakenTrigger, 'titan_pirates_the_kraken_play_replacement')).toBeDefined();
     });
 
     it('全速航行POD 作为标准行动卡，在普通出牌阶段也应允许直接打出', () => {
@@ -6614,10 +6536,9 @@ describe('smashup', () => {
             now: 123,
         });
 
-        const currentInteraction = triggerResult.matchState?.sys.interaction?.current as any;
-        expect(currentInteraction?.data?.sourceId).toBe('titan_frankenstein_the_bride_start_choose_branch');
-        expect(currentInteraction?.data?.options.some((option: any) => option.value?.skip === true)).toBe(true);
-        expect(currentInteraction?.data?.options.map((option: any) => option.label)).toEqual(expect.arrayContaining([
+        const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_frankenstein_the_bride_start_choose_branch');
+        expect(getPromptOptions(currentInteraction).some((option: any) => option.value?.skip === true)).toBe(true);
+        expect(getPromptOptions(currentInteraction).map((option: any) => option.label)).toEqual(expect.arrayContaining([
             '放进盒中',
             '消灭己方随从',
             '移除 +1 指示物',
@@ -6775,9 +6696,9 @@ describe('smashup', () => {
         const runReactionChain = (preferSourceDefId: 'frankenstein_uberserum' | 'frankenstein_the_bride') => {
             const interactionResult = post.matchState
                 ? resolveInteractionChain(post.matchState, (prompt) => {
-                    const sourceId = prompt?.data?.sourceId as string | undefined;
+                    const sourceId = getPromptSourceId(prompt);
                     if (sourceId === 'smashup_reaction_choose') {
-                        const options = prompt?.data?.options ?? [];
+                        const options = getPromptOptions(prompt);
                         const preferredTrigger = options.find((option: any) =>
                             option?.value?.kind === 'trigger'
                             && String(option?.value?.triggerId ?? '').includes(preferSourceDefId),
@@ -6917,13 +6838,12 @@ describe('smashup', () => {
             1000,
         );
 
-        const prompt = getInteractionsFromMS(started)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('titan_pecos_bill_duel_start');
+        const prompt = getSimpleChoicePrompt(started, 'titan_pecos_bill_duel_start');
 
-        const discardOption = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'discard-1');
+        const discardOption = getPromptOption(prompt, entry => entry.value?.cardUid === 'discard-1', 'Pecos Bill duel discard option');
         const deployed = runCommand(
             started,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: discardOption.id } } as any,
+            respondCommand(discardOption.id, '0'),
             FIXED_RANDOM,
         );
 
@@ -7112,11 +7032,11 @@ describe('smashup', () => {
             },
             1004,
         );
-        const pecosPrompt = getInteractionsFromMS(duelStarted)[0] as any;
-        const discardOption = pecosPrompt.data.options.find((entry: any) => entry.value?.cardUid === 'discard-1');
+        const pecosPrompt = getSimpleChoicePrompt(duelStarted, 'titan_pecos_bill_duel_start');
+        const discardOption = getPromptOption(pecosPrompt, entry => entry.value?.cardUid === 'discard-1', 'Pecos Bill clash discard option');
         const deployed = runCommand(
             duelStarted,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: '0', payload: { optionId: discardOption.id } } as any,
+            respondCommand(discardOption.id, '0'),
             FIXED_RANDOM,
         );
 
@@ -7191,7 +7111,7 @@ describe('smashup', () => {
 
         expect(() => resolveDuelChain(started, {
             smashup_duel_card: (prompt) => {
-                const missingActionOption = prompt.data.options.find((entry: any) => entry.value?.cardUid === 'missing-duel-card');
+                const missingActionOption = getPromptOption(prompt, entry => entry.value?.cardUid === 'missing-duel-card', 'missing duel card option');
                 return { optionId: missingActionOption.id };
             },
         })).toThrowError(/SmashUp ability 缺少声明: missing_duel_action::onPlay \(duel\.playActionAsDuelCard\)/);
@@ -7241,11 +7161,10 @@ describe('smashup', () => {
             now: 71,
         });
 
-        const currentInteraction = triggerResult.matchState?.sys.interaction?.current;
-        expect(currentInteraction?.data?.sourceId).toBe('titan_werewolves_great_wolf_spirit_move');
-        expect(currentInteraction?.data?.options.some((option: any) => option.value?.skip === true)).toBe(true);
-        expect(currentInteraction?.data?.options.some((option: any) => option.value?.baseIndex === 1)).toBe(true);
-        expect(currentInteraction?.data?.options.some((option: any) => option.value?.baseIndex === 2)).toBe(false);
+        const currentInteraction = getSimpleChoicePrompt(triggerResult.matchState!, 'titan_werewolves_great_wolf_spirit_move');
+        expect(getPromptOptions(currentInteraction).some((option: any) => option.value?.skip === true)).toBe(true);
+        expect(getPromptOptions(currentInteraction).some((option: any) => option.value?.baseIndex === 1)).toBe(true);
+        expect(getPromptOptions(currentInteraction).some((option: any) => option.value?.baseIndex === 2)).toBe(false);
 
         const handler = getInteractionHandler('titan_werewolves_great_wolf_spirit_move');
         expect(handler).toBeDefined();
@@ -7254,7 +7173,7 @@ describe('smashup', () => {
             triggerResult.matchState!,
             '0',
             { baseIndex: 1, baseDefId: core.bases[1].defId },
-            currentInteraction?.data as any,
+            getPromptHandlerData(currentInteraction),
             FIXED_RANDOM,
             72,
         );
@@ -7303,14 +7222,13 @@ describe('smashup', () => {
         } as any, FIXED_RANDOM);
 
         expect(played.success).toBe(true);
-        const prompts = getInteractionsFromMS(played.finalState);
+        const prompts = getPromptsBySourceId(played.finalState, 'titan_dinosaurs_fort_titanosaurus_ongoing');
         expect(prompts).toHaveLength(1);
 
         const fortPrompt = prompts[0] as any;
-        expect(fortPrompt?.data?.sourceId).toBe('titan_dinosaurs_fort_titanosaurus_ongoing');
-        expect(fortPrompt?.data?.options.filter((option: any) => option?.value?.mode === 'both')).toHaveLength(2);
-        expect(fortPrompt?.data?.options.some((option: any) => option?.value?.targetMinionUid === 'ally-1')).toBe(true);
-        expect(fortPrompt?.data?.options.some((option: any) => option?.value?.targetMinionUid === 'ally-2')).toBe(true);
+        expect(getPromptOptions(fortPrompt).filter((option: any) => option?.value?.mode === 'both')).toHaveLength(2);
+        expect(getPromptOptions(fortPrompt).some((option: any) => option?.value?.targetMinionUid === 'ally-1')).toBe(true);
+        expect(getPromptOptions(fortPrompt).some((option: any) => option?.value?.targetMinionUid === 'ally-2')).toBe(true);
     });
 });
 

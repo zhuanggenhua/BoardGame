@@ -45,12 +45,17 @@ const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
 };
 
 // 被动能力配置（按角色）
-const PASSIVE_ABILITIES: Record<string, { slotId: string; cardId: string }[]> = {
+const PASSIVE_ABILITIES: Record<string, { slotId: string; cardId?: string }[]> = {
     paladin: [
         {
             slotId: 'fist',  // 使用 fist 槽位（左上角）
             cardId: 'card-tithes-2',  // 对应的升级卡
         }
+    ],
+    treant: [
+        {
+            slotId: 'sky',
+        },
     ],
 };
 
@@ -161,11 +166,10 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
     treant: {
         fist: 'shattering-fist',
         chi: 'tend-care',
-        sky: 'vengeful-vines',
-        lotus: 'nature-touch',
-        combo: 'quiet-cultivation',
-        lightning: 'wild-growth',
-        calm: 'rooted',
+        sky: 'quiet-cultivation',
+        lotus: 'wild-growth',
+        combo: 'vengeful-vines',
+        lightning: 'nature-touch',
         meditate: 'rooted',
         ultimate: 'forest-awakens',
     },

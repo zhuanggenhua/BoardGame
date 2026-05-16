@@ -9,13 +9,14 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
+import { getPromptOptions, getPromptPlayerId } from './helpers';
 import { makeState, makeMinion, triggerBaseAbilityWithMS, getInteractionsFromResult } from './helpers/auditUtils';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import type { BaseAbilityContext } from '../domain/baseAbilities';
-import type { BaseInPlay, MinionOnBase } from '../domain/types';
+import type { BaseInPlay } from '../domain/types';
 
 // ============================================================================
 // 初始化
@@ -79,7 +80,7 @@ describe('D1 审计: base_tortuga 范围限定', () => {
 
             const interactions = getInteractionsFromResult(result);
             expect(interactions).toHaveLength(1);
-            expect(interactions[0].playerId).toBe('1'); // 必须是亚军
+            expect(getPromptPlayerId(interactions[0])).toBe('1'); // 必须是亚军
         });
 
         it('冠军不能移动随从（即使有随从在其他基地）', () => {
@@ -111,7 +112,7 @@ describe('D1 审计: base_tortuga 范围限定', () => {
             const interactions = getInteractionsFromResult(result);
             expect(interactions).toHaveLength(1);
             // 验证选项中不包含冠军的随从
-            const options = interactions[0].data.options;
+            const options = getPromptOptions(interactions[0]);
             const minionOptions = options.filter((opt: any) => opt.value.minionUid);
             expect(minionOptions).toHaveLength(1); // 只有亚军的 m4
             expect(minionOptions[0].value.minionUid).toBe('m4');
@@ -146,7 +147,7 @@ describe('D1 审计: base_tortuga 范围限定', () => {
 
             const interactions = getInteractionsFromResult(result);
             expect(interactions).toHaveLength(1);
-            const options = interactions[0].data.options;
+            const options = getPromptOptions(interactions[0]);
             const minionOptions = options.filter((opt: any) => opt.value.minionUid);
             
             // 验证：只有 m3（其他基地的随从），不包含 m2（托尔图加本身的随从）
@@ -187,7 +188,7 @@ describe('D1 审计: base_tortuga 范围限定', () => {
 
             const interactions = getInteractionsFromResult(result);
             expect(interactions).toHaveLength(1);
-            const options = interactions[0].data.options;
+            const options = getPromptOptions(interactions[0]);
             const minionOptions = options.filter((opt: any) => opt.value.minionUid);
             
             // 验证：包含 m3 和 m4，不包含 m2
@@ -286,7 +287,7 @@ describe('D1 审计: base_tortuga 范围限定', () => {
             const interactions = getInteractionsFromResult(result);
             expect(interactions).toHaveLength(1);
             // 关键验证：交互的 playerId 必须是亚军 '1'，而不是 ctx.playerId '0'
-            expect(interactions[0].playerId).toBe('1');
+            expect(getPromptPlayerId(interactions[0])).toBe('1');
         });
     });
 });

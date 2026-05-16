@@ -390,6 +390,11 @@ export async function findAvailablePort(startPort, options = {}) {
     if (reservedPorts.has(port)) {
       continue;
     }
+    // Windows 上某些 127.0.0.1 监听端口仍可能被 createServer(...exclusive) 误判为可绑定；
+    // 端口扫描阶段额外跳过 netstat 已在监听的端口，避免 isolated runtime 又抢回共享固定端口。
+    if (isPortInUse(port)) {
+      continue;
+    }
     if (await canBindPort(port, host)) {
       return port;
     }

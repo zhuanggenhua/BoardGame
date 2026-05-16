@@ -4,7 +4,7 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
 import {
     makeMinion,
     makeCard,
@@ -275,5 +275,77 @@ describe('Vampires abilities', () => {
         );
         expect(counterEvt).toBeDefined();
         expect((counterEvt as any).payload.minionUid).toBe('c1');
+    });
+});
+
+describe('vampire_buffet afterScoring', () => {
+    it('赢家拥有 buffet 时，所有己方随从获得 +1 指示物', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'test_base',
+                    minions: [
+                        makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 }),
+                        makeMinion('m3', 'test_minion', '1', 1, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'test_base2',
+                    minions: [makeMinion('m2', 'test_minion', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+            pendingAfterScoringSpecials: [{ sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0 }],
+        });
+
+        const { events } = fireTriggers(core, 'afterScoring', {
+            state: core,
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [
+                { playerId: '0', power: 3, vp: 4 },
+                { playerId: '1', power: 1, vp: 2 },
+            ],
+            random: defaultTestRandom,
+            now: 100,
+        });
+
+        const counterTargets = events
+            .filter(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)
+            .map(event => (event as any).payload.minionUid);
+
+        expect(counterTargets).toEqual(expect.arrayContaining(['m1', 'm2']));
+        expect(counterTargets).toHaveLength(2);
+    });
+
+    it('非赢家拥有 buffet 时不触发加指示物效果', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'test_base',
+                    minions: [
+                        makeMinion('m1', 'test_minion', '0', 1, { powerModifier: 0 }),
+                        makeMinion('m2', 'test_minion', '1', 5, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+            pendingAfterScoringSpecials: [{ sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0 }],
+        });
+
+        const { events } = fireTriggers(core, 'afterScoring', {
+            state: core,
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [
+                { playerId: '1', power: 5, vp: 4 },
+                { playerId: '0', power: 1, vp: 2 },
+            ],
+            random: defaultTestRandom,
+            now: 100,
+        });
+
+        expect(events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(false);
     });
 });

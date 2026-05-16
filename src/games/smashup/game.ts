@@ -106,7 +106,12 @@ const adapterConfig = {
 };
 
 // 引擎配置
-export const engineConfig = createGameEngine<SmashUpCore, SmashUpCommand, SmashUpEvent>(adapterConfig);
+export const engineConfig = {
+    ...createGameEngine<SmashUpCore, SmashUpCommand, SmashUpEvent>(adapterConfig),
+    onlineAiRecovery: {
+        allowForceCommandAfterLegalActionExhausted: ({ phase }) => phase === 'scoreBases' || phase === 'endTurn',
+    },
+};
 registerGameAiRuntime(smashUpAiRuntime);
 
 export default engineConfig;

@@ -31,18 +31,23 @@ export interface ValidationResult {
     errors: ValidationError[];
 }
 
+export type StateCoreValidator = (core: unknown, errors: ValidationError[]) => void;
+export type StateValidatorRegistry = Record<string, StateCoreValidator | undefined>;
+
 /**
  * 验证对局状态的完整性和正确性
  * 
  * @param matchId 对局 ID
  * @param state 待验证的状态
  * @param storage 存储层（用于获取游戏元数据）
+ * @param validators 游戏状态校验器注册表
  * @returns 验证结果
  */
 export async function validateMatchState(
     matchId: string,
     state: MatchState<unknown>,
-    storage: MatchStorage
+    storage: MatchStorage,
+    validators: StateValidatorRegistry = {},
 ): Promise<ValidationResult> {
     const errors: ValidationError[] = [];
 
@@ -84,18 +89,7 @@ export async function validateMatchState(
         if (metadata.metadata) {
             const gameId = metadata.metadata.gameName;
             
-            // 根据游戏类型进行特定验证
-            switch (gameId) {
-                case 'smashup':
-                    validateSmashUpState(state.core, errors);
-                    break;
-                case 'dicethrone':
-                    validateDiceThroneState(state.core, errors);
-                    break;
-                case 'summonerwars':
-                    validateSummonerWarsState(state.core, errors);
-                    break;
-            }
+            validators[gameId]?.(state.core, errors);
         }
     }
 
@@ -103,59 +97,6 @@ export async function validateMatchState(
         valid: errors.length === 0,
         errors,
     };
-}
-
-/**
- * 验证 SmashUp 状态
- */
-function validateSmashUpState(core: unknown, errors: ValidationError[]): void {
-    const state = core as Record<string, unknown>;
-
-    if (!state.phase || typeof state.phase !== 'string') {
-        errors.push({ field: 'core.phase', message: 'Missing or invalid phase' });
-    }
-
-    if (!state.players || typeof state.players !== 'object') {
-        errors.push({ field: 'core.players', message: 'Missing or invalid players' });
-    }
-
-    if (!state.bases || !Array.isArray(state.bases)) {
-        errors.push({ field: 'core.bases', message: 'Missing or invalid bases' });
-    }
-}
-
-/**
- * 验证 DiceThrone 状态
- */
-function validateDiceThroneState(core: unknown, errors: ValidationError[]): void {
-    const state = core as Record<string, unknown>;
-
-    if (!state.phase || typeof state.phase !== 'string') {
-        errors.push({ field: 'core.phase', message: 'Missing or invalid phase' });
-    }
-
-    if (!state.players || typeof state.players !== 'object') {
-        errors.push({ field: 'core.players', message: 'Missing or invalid players' });
-    }
-}
-
-/**
- * 验证 SummonerWars 状态
- */
-function validateSummonerWarsState(core: unknown, errors: ValidationError[]): void {
-    const state = core as Record<string, unknown>;
-
-    if (!state.phase || typeof state.phase !== 'string') {
-        errors.push({ field: 'core.phase', message: 'Missing or invalid phase' });
-    }
-
-    if (!state.players || typeof state.players !== 'object') {
-        errors.push({ field: 'core.players', message: 'Missing or invalid players' });
-    }
-
-    if (!state.board || typeof state.board !== 'object') {
-        errors.push({ field: 'core.board', message: 'Missing or invalid board' });
-    }
 }
 
 /**

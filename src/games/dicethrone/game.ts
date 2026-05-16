@@ -56,6 +56,7 @@ import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { ASSETS } from './ui/assets';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { diceThroneAiRuntime } from './ai';
+import { resolveDiceThroneLocalPregameControlledPlayerId } from './localPregameControl';
 
 // ============================================================================
 // ActionLog 共享白名单 + 格式化
@@ -1171,7 +1172,13 @@ const adapterConfig = {
 };
 
 // 引擎配置
-export const engineConfig = createGameEngine(adapterConfig);
+export const engineConfig = {
+    ...createGameEngine(adapterConfig),
+    resolveLocalPregameControlledPlayerId: resolveDiceThroneLocalPregameControlledPlayerId,
+    onlineAiRecovery: {
+        allowForceCommandAfterLegalActionExhausted: ({ phase }) => phase === 'defensiveRoll',
+    },
+};
 
 export default engineConfig;
 

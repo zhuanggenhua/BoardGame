@@ -20,6 +20,7 @@ import { sanitizeChatText } from './src/server/chatUtils';
 import { MAX_CHAT_MESSAGES } from './src/shared/chat';
 import { MatchRecord } from './src/server/models/MatchRecord';
 import { GAME_SERVER_MANIFEST } from './src/games/manifest.server';
+import { GAME_STATE_VALIDATORS } from './src/games/stateValidators';
 import { mongoStorage } from './src/server/storage/MongoStorage';
 import { hybridStorage } from './src/server/storage/HybridStorage';
 import { runStartupCleanupTasks, type StartupCleanupTask } from './src/server/storage/startupCleanup';
@@ -366,6 +367,9 @@ if (USE_PERSISTENT_STORAGE) {
     logger.info('[GameServer] 当前以纯内存模式启动，跳过 Mongo / UGC / 排行榜归档');
 }
 const { engines: SERVER_ENGINES, gameIds: SERVER_GAME_IDS } = await buildServerEngines();
+const SERVER_GAME_MANIFEST_BY_ID = Object.fromEntries(
+    GAME_SERVER_MANIFEST.map(({ manifest }) => [manifest.id, manifest]),
+);
 registerSupportedGames(SERVER_GAME_IDS);
 
 // 创建 Koa 应用
@@ -417,6 +421,7 @@ const gameTransport = new GameTransportServer({
     io,
     storage,
     games: SERVER_ENGINES,
+    gameManifests: SERVER_GAME_MANIFEST_BY_ID,
     trainingDataRecorder,
     trainingDataMinMatchDurationMs: TRAINING_DATA_MIN_MATCH_DURATION_MS,
     rulesVersion: process.env.npm_package_version ?? null,
@@ -1237,7 +1242,7 @@ app.use(router.allowedMethods());
 // 测试路由（仅在测试/开发环境启用）
 if (process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'development') {
     const { createTestRoutes } = await import('./src/server/routes/test.js');
-    const testRouter = createTestRoutes(gameTransport, storage);
+    const testRouter = createTestRoutes(gameTransport, storage, GAME_STATE_VALIDATORS);
     app.use(testRouter.routes());
     app.use(testRouter.allowedMethods());
     logger.info('[Server] 测试模式已启用 - Test API endpoints available at /test/*');

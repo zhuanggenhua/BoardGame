@@ -850,7 +850,6 @@ const handleBonusDieRerolled: EventHandler<Extract<DiceThroneEvent, { type: 'BON
             dice: newDice,
             rerollCount: state.pendingBonusDiceSettlement.rerollCount + 1,
             lastRerolledDieIndex: dieIndex,
-            rerollAnimationKey: (state.pendingBonusDiceSettlement.rerollAnimationKey ?? 0) + 1,
         };
     }
 

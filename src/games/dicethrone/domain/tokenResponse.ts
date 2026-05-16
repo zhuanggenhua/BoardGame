@@ -493,6 +493,7 @@ export function processTokenUsage(
             effectType: resolvedEffectType,
             damageModifier: result.damageModifier,
             evasionRoll: result.rollResult,
+            deferredDamageEvents: result.extra?.deferredDamageEvents as PendingDamage['deferredDamageEvents'] | undefined,
         },
         sourceCommandType: 'USE_TOKEN',
         timestamp,
@@ -550,6 +551,21 @@ export function finalizeTokenResponse(
             timestamp,
         };
         events.push(damageEvent);
+    }
+
+    for (const deferredDamage of pendingDamage.deferredDamageEvents ?? []) {
+        events.push({
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: deferredDamage.targetId,
+                amount: deferredDamage.amount,
+                actualDamage: deferredDamage.actualDamage,
+                sourceAbilityId: deferredDamage.sourceAbilityId,
+                sourcePlayerId: deferredDamage.sourcePlayerId,
+            },
+            sourceCommandType: deferredDamage.sourceCommandType ?? 'ABILITY_EFFECT',
+            timestamp,
+        } as DamageDealtEvent);
     }
     
     return events;

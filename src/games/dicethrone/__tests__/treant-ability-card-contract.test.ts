@@ -4,12 +4,26 @@ import { reduce } from '../domain/reducer';
 import { RESOURCE_IDS } from '../domain/resources';
 import { TOKEN_IDS } from '../domain/ids';
 import { resolveAttack } from '../domain/attack';
+import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
 
 describe('DiceThrone Treant 能力与卡牌合同', () => {
+    it('Treant v2 面板槽位应把 passive / defense 绑定到真实槽位', () => {
+        expect(getAbilitySlotIdForCharacter('treant', 'quiet-cultivation')).toBe('sky');
+        expect(getAbilitySlotIdForCharacter('treant', 'wild-growth')).toBe('lotus');
+        expect(getAbilitySlotIdForCharacter('treant', 'vengeful-vines')).toBe('combo');
+        expect(getAbilitySlotIdForCharacter('treant', 'nature-touch')).toBe('lightning');
+        expect(getAbilitySlotIdForCharacter('treant', 'rooted')).toBe('meditate');
+
+        expect(slotContainsAbilityIdForCharacter('treant', 'sky', 'quiet-cultivation')).toBe(true);
+        expect(slotContainsAbilityIdForCharacter('treant', 'sky', 'vengeful-vines')).toBe(false);
+        expect(slotContainsAbilityIdForCharacter('treant', 'calm', 'rooted')).toBe(false);
+        expect(slotContainsAbilityIdForCharacter('treant', 'meditate', 'rooted')).toBe(true);
+    });
+
     it('Rooted 防御应在攻击结算中掷 3 骰并按骰面反击、养成、获得生命源泉', () => {
         const state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].resources[RESOURCE_IDS.HP] = 30;

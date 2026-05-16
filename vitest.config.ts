@@ -4,7 +4,6 @@ import { fileURLToPath } from 'url';
 
 const workspaceRoot = fileURLToPath(new URL('.', import.meta.url));
 const rootSetupFile = path.resolve(workspaceRoot, 'vitest.setup.ts');
-const apiSetupFile = path.resolve(workspaceRoot, 'apps/api/test/vitest.setup.ts');
 
 export default defineConfig({
     server: {
@@ -33,6 +32,10 @@ export default defineConfig({
     test: {
         globals: true,
         environment: 'jsdom',
+        // Windows 下大套件使用 forks 更稳，避免 threads worker 初始化失败连带打断 esbuild service。
+        pool: 'forks',
+        fileParallelism: false,
+        maxWorkers: 1,
         include: [
             'src/core/**/__tests__/**/*.test.{ts,tsx}',
             'src/components/**/__tests__/**/*.test.{ts,tsx}',
@@ -45,8 +48,6 @@ export default defineConfig({
             'src/server/**/__tests__/**/*.test.{ts,tsx}',
             'src/ugc/**/__tests__/**/*.test.{ts,tsx}',
             'src/pages/**/__tests__/**/*.test.{ts,tsx}',
-            'apps/api/test/**/*.test.{ts,tsx}',
-            'apps/api/test/**/*.e2e-spec.ts',
         ],
         exclude: [
             // 排除审计测试（只在 npm run test:games:audit 时运行）
@@ -64,6 +65,6 @@ export default defineConfig({
         ],
         testTimeout: 180000,
         hookTimeout: 180000, // 首次拉起 mongodb-memory-server 可能需要下载/解压二进制，60 秒不够稳定。
-        setupFiles: [rootSetupFile, apiSetupFile],
+        setupFiles: [rootSetupFile],
     },
 });

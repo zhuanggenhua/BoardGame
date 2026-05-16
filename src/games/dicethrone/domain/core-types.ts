@@ -403,6 +403,15 @@ export interface PendingDamage {
     }>;
     /** 当前响应窗口内各 token 已累计消耗的数量 */
     tokenUsageTotals?: Record<string, number>;
+    /** 需要等响应窗口收口后再发出的附加伤害（如武士反击） */
+    deferredDamageEvents?: Array<{
+        targetId: PlayerId;
+        amount: number;
+        actualDamage: number;
+        sourceAbilityId?: string;
+        sourcePlayerId?: PlayerId;
+        sourceCommandType?: string;
+    }>;
 }
 
 /**
@@ -453,10 +462,8 @@ export interface PendingBonusDiceSettlement {
     rerollCostAmount: number;
     /** 已用重掷次数（无上限，消耗 Token 即可） */
     rerollCount: number;
-    /** 最近一次被重掷的奖励骰索引，仅用于 UI 限定重掷动画目标 */
+    /** 最近一次被重掷的奖励骰索引，用于记录本次结算的最后一次重掷目标 */
     lastRerolledDieIndex?: number;
-    /** 最近一次重掷动画序号，仅用于 UI 区分连续重掷 */
-    rerollAnimationKey?: number;
     /** 最大可重掷次数（不填表示无限制） */
     maxRerollCount?: number;
     /** 重掷特写文案 key（用于 UI） */

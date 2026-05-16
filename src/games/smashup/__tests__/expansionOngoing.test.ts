@@ -23,7 +23,19 @@ import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
-import { callHandler, getInteractionsFromMS } from './helpers';
+import {
+    callHandler,
+    expectNoPrompt,
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptOption,
+    getPromptOptions,
+    getPromptSourceId,
+    getPromptTargetType,
+    getSimpleChoicePrompt,
+    respondToPromptOption,
+    withOnlyCurrentPrompt,
+} from './helpers';
 import { buildAffectRecords } from '../domain/affect';
 import { registerGhostAbilities } from '../abilities/ghosts';
 import { registerSteampunkAbilities } from '../abilities/steampunks';
@@ -183,8 +195,9 @@ describe('幽灵 ongoing 能力', () => {
             });
 
             // 不应弹出交互（目标随从已通过 targetMinionUid 在打出时确定）
-            const current = (result.matchState?.sys as any)?.interaction?.current;
-            expect(current).toBeUndefined();
+            if (result.matchState) {
+                expectNoPrompt(result.matchState as any);
+            }
             expect(result.events).toHaveLength(1);
             expect(result.events[0].type).toBe(SU_EVENTS.MINION_CONTROL_CHANGED);
             expect((result.events[0] as any).payload).toMatchObject({
@@ -493,9 +506,9 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
 
-            const current = (result.matchState?.sys as any)?.interaction?.current;
+            const current = getSimpleChoicePrompt(result.matchState!, 'steampunk_mechanic');
             expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('steampunk_mechanic');
+            expect(getPromptSourceId(current)).toBe('steampunk_mechanic');
         });
 
         test('只能选择打出到基地上的行动牌，不包括打到随从上的和普通行动牌', () => {
@@ -515,9 +528,9 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
 
-            const current = (result.matchState?.sys as any)?.interaction?.current;
+            const current = getSimpleChoicePrompt(result.matchState!, 'steampunk_mechanic');
             expect(current).toBeDefined();
-            const options = current?.data?.options || [];
+            const options = getPromptOptions(current);
             
             const cardUids = options.map((opt: any) => opt.value?.cardUid).filter(Boolean);
             expect(cardUids).toEqual(['dis-1']); // 只保留可打到基地上的 ongoing
@@ -543,9 +556,9 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
 
-            const current = (result.matchState?.sys as any)?.interaction?.current;
+            const current = getSimpleChoicePrompt(result.matchState!, 'steampunk_mechanic');
             expect(current).toBeDefined();
-            const cardUids = (current?.data?.options ?? []).map((opt: any) => opt.value?.cardUid).filter(Boolean);
+            const cardUids = getPromptOptions(current).map((opt: any) => opt.value?.cardUid).filter(Boolean);
             expect(cardUids).toEqual(['dis-base']);
 
             const handler = getAbilityRuntimePromptHandler('steampunk_mechanic');
@@ -554,7 +567,7 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 result.matchState!,
                 '0',
                 { cardUid: 'dis-minion-a', defId: 'ninja_smoke_bomb' },
-                current?.data,
+                getPromptHandlerData(current),
                 dummyRandom,
                 1000,
             );
@@ -576,7 +589,9 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
 
-            expect((result.matchState?.sys as any)?.interaction?.current).toBeUndefined();
+            if (result.matchState) {
+                expectNoPrompt(result.matchState as any);
+            }
             expect(result.events.some((event: any) => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
         });
 
@@ -593,10 +608,7 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
-            const current = (result.matchState?.sys as any)?.interaction?.current;
-
-            const handler = getAbilityRuntimePromptHandler('steampunk_mechanic');
-            expect(handler).toBeDefined();
+            const current = getSimpleChoicePrompt(result.matchState!, 'steampunk_mechanic');
 
             const staleState = {
                 ...result.matchState!,
@@ -612,15 +624,15 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 },
             } as any;
 
-            const resolved = handler!(
-                staleState,
+            const resolved = respondToPromptOption(
+                withOnlyCurrentPrompt(staleState, current),
+                option => option.value?.cardUid === 'dis-1',
+                'steampunk mechanic dis-1 option',
                 '0',
-                { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
-                current?.data,
                 dummyRandom,
-                1001,
             );
-            const events = resolved?.events ?? [];
+            expect(resolved.success, resolved.error).toBe(true);
+            const events = resolved.events;
 
             expect(events).toHaveLength(0);
         });
@@ -638,28 +650,23 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
-            const chooseActionInteraction = (result.matchState?.sys as any)?.interaction?.current;
-            const chooseActionHandler = getAbilityRuntimePromptHandler('steampunk_mechanic');
-            const chooseTargetHandler = getAbilityRuntimePromptHandler('steampunk_mechanic_target');
-            expect(chooseActionHandler).toBeDefined();
-            expect(chooseTargetHandler).toBeDefined();
-
-            const step1 = chooseActionHandler!(
+            const chooseActionInteraction = getSimpleChoicePrompt(result.matchState!, 'steampunk_mechanic');
+            const step1 = respondToPromptOption(
                 result.matchState!,
+                option => option.value?.cardUid === 'dis-1',
+                'steampunk mechanic dis-1 option',
                 '0',
-                { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
-                chooseActionInteraction?.data,
                 dummyRandom,
-                1001,
             );
-            const chooseTargetInteraction = getInteractionsFromMS(step1!.state)[0];
+            expect(step1.success, step1.error).toBe(true);
+            const chooseTargetInteraction = getFirstPrompt(step1.finalState);
 
             const blockedState = {
-                ...step1!.state,
+                ...step1.finalState,
                 core: {
-                    ...step1!.state.core,
+                    ...step1.finalState.core,
                     bases: [{
-                        ...step1!.state.core.bases[0],
+                        ...step1.finalState.core.bases[0],
                         ongoingActions: [{
                             uid: 'dome-1',
                             defId: 'steampunk_ornate_dome',
@@ -670,15 +677,15 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 },
             } as any;
 
-            const resolved = chooseTargetHandler!(
-                blockedState,
+            const resolved = respondToPromptOption(
+                withOnlyCurrentPrompt(blockedState, chooseTargetInteraction),
+                option => option.value?.baseIndex === 0,
+                'steampunk mechanic target base 0 option',
                 '0',
-                { baseIndex: 0 },
-                chooseTargetInteraction?.data,
                 dummyRandom,
-                1002,
             );
-            const events = resolved?.events ?? [];
+            expect(resolved.success, resolved.error).toBe(true);
+            const events = resolved.events;
 
             expect(events).toHaveLength(0);
         });
@@ -697,7 +704,7 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
-            const current = (result.matchState?.sys as any)?.interaction?.current;
+            const current = getSimpleChoicePrompt(result.matchState!, 'steampunk_mechanic');
 
             const handler = getAbilityRuntimePromptHandler('steampunk_mechanic');
             expect(handler).toBeDefined();
@@ -706,7 +713,7 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 result.matchState!,
                 '0',
                 { cardUid: 'dis-3', defId: 'steampunk_scrap_diving' },
-                current?.data,
+                getPromptHandlerData(current),
                 dummyRandom,
                 1001,
             );
@@ -728,45 +735,40 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 state, matchState: ms, playerId: '0', cardUid: 'mech-1', defId: 'steampunk_mechanic',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
-            const chooseActionInteraction = (result.matchState?.sys as any)?.interaction?.current;
-            const chooseActionHandler = getAbilityRuntimePromptHandler('steampunk_mechanic');
-            const chooseTargetHandler = getAbilityRuntimePromptHandler('steampunk_mechanic_target');
-            expect(chooseActionHandler).toBeDefined();
-            expect(chooseTargetHandler).toBeDefined();
-
-            const step1 = chooseActionHandler!(
+            const chooseActionInteraction = getSimpleChoicePrompt(result.matchState!, 'steampunk_mechanic');
+            const step1 = respondToPromptOption(
                 result.matchState!,
+                option => option.value?.cardUid === 'dis-1',
+                'steampunk mechanic dis-1 option',
                 '0',
-                { cardUid: 'dis-1', defId: 'steampunk_escape_hatch' },
-                chooseActionInteraction?.data,
                 dummyRandom,
-                1001,
             );
-            const chooseTargetInteraction = getInteractionsFromMS(step1!.state)[0];
+            expect(step1.success, step1.error).toBe(true);
+            const chooseTargetInteraction = getFirstPrompt(step1.finalState);
 
             const staleHandState = {
-                ...step1!.state,
+                ...step1.finalState,
                 core: {
-                    ...step1!.state.core,
+                    ...step1.finalState.core,
                     players: {
-                        ...step1!.state.core.players,
+                        ...step1.finalState.core.players,
                         '0': {
-                            ...step1!.state.core.players['0'],
+                            ...step1.finalState.core.players['0'],
                             hand: [],
                         },
                     },
                 },
             } as any;
 
-            const resolved = chooseTargetHandler!(
-                staleHandState,
+            const resolved = respondToPromptOption(
+                withOnlyCurrentPrompt(staleHandState, chooseTargetInteraction),
+                option => option.value?.baseIndex === 0,
+                'steampunk mechanic target base 0 option',
                 '0',
-                { baseIndex: 0 },
-                chooseTargetInteraction?.data,
                 dummyRandom,
-                1002,
             );
-            const events = resolved?.events ?? [];
+            expect(resolved.success, resolved.error).toBe(true);
+            const events = resolved.events;
 
             expect(events).toHaveLength(0);
         });
@@ -790,46 +792,40 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 state, matchState: ms, playerId: '0', cardUid: 'cov-1', defId: 'steampunk_change_of_venue',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
-            const chooseOngoingInteraction = (result.matchState?.sys as any)?.interaction?.current;
-
-            const chooseOngoingHandler = getAbilityRuntimePromptHandler('steampunk_change_of_venue');
-            const chooseBaseHandler = getAbilityRuntimePromptHandler('steampunk_change_of_venue_choose_base');
-            expect(chooseOngoingHandler).toBeDefined();
-            expect(chooseBaseHandler).toBeDefined();
-
-            const step1 = chooseOngoingHandler!(
+            const chooseOngoingInteraction = getSimpleChoicePrompt(result.matchState!, 'steampunk_change_of_venue');
+            const step1 = respondToPromptOption(
                 result.matchState!,
+                option => option.value?.cardUid === 'ongoing-1',
+                'change of venue ongoing-1 option',
                 '0',
-                { cardUid: 'ongoing-1', defId: 'steampunk_escape_hatch', ownerId: '0' },
-                chooseOngoingInteraction?.data,
                 dummyRandom,
-                1001,
             );
-            const chooseBaseInteraction = getInteractionsFromMS(step1!.state)[0];
+            expect(step1.success, step1.error).toBe(true);
+            const chooseBaseInteraction = getFirstPrompt(step1.finalState);
 
             const staleHandState = {
-                ...step1!.state,
+                ...step1.finalState,
                 core: {
-                    ...step1!.state.core,
+                    ...step1.finalState.core,
                     players: {
-                        ...step1!.state.core.players,
+                        ...step1.finalState.core.players,
                         '0': {
-                            ...step1!.state.core.players['0'],
+                            ...step1.finalState.core.players['0'],
                             hand: [],
                         },
                     },
                 },
             } as any;
 
-            const resolved = chooseBaseHandler!(
-                staleHandState,
+            const resolved = respondToPromptOption(
+                withOnlyCurrentPrompt(staleHandState, chooseBaseInteraction),
+                option => option.value?.baseIndex === 0,
+                'change of venue base 0 option',
                 '0',
-                { baseIndex: 0 },
-                chooseBaseInteraction?.data,
                 dummyRandom,
-                1002,
             );
-            const events = resolved?.events ?? [];
+            expect(resolved.success, resolved.error).toBe(true);
+            const events = resolved.events;
 
             expect(events).toHaveLength(0);
         });
@@ -856,10 +852,10 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
 
-            const current = (result.matchState?.sys as any)?.interaction?.current;
+            const current = getSimpleChoicePrompt(result.matchState!, 'steampunk_captain_ahab');
             expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('steampunk_captain_ahab');
-            expect(current?.data?.targetType).toBe('base');
+            expect(getPromptSourceId(current)).toBe('steampunk_captain_ahab');
+            expect(getPromptTargetType(current)).toBe('base');
         });
 
         test('唯一候选基地时直接移动，不创建 interaction', () => {
@@ -877,7 +873,9 @@ describe('蒸汽朋克 ongoing 能力', () => {
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
 
-            expect((result.matchState?.sys as any)?.interaction?.current).toBeUndefined();
+            if (result.matchState) {
+                expectNoPrompt(result.matchState as any);
+            }
             const moved = result.events.find(event => event.type === SU_EVENTS.MINION_MOVED) as any;
             expect(moved).toBeDefined();
             expect(moved.payload.fromBaseIndex).toBe(0);
@@ -1056,14 +1054,15 @@ describe('食人花 ongoing 能力', () => {
                 now: 1000,
             });
 
-            const current = result.matchState?.sys?.interaction?.current as any;
+            const current = getSimpleChoicePrompt(result.matchState as any, 'killer_plant_sprout_search');
             expect(current).toBeDefined();
-            expect(current.data?.sourceId).toBe('killer_plant_sprout_search');
-            expect(current.data?.targetType).toBe('generic');
-            expect(current.data?.autoRefresh).toBe('deck');
-            expect(current.data?.responseValidationMode).toBe('live');
-            expect(current.data?.options?.some((opt: any) => opt.id === 'skip')).toBe(true);
-            expect(current.data?.options?.filter((opt: any) => opt.displayMode === 'card')).toHaveLength(2);
+            expect(getPromptSourceId(current)).toBe('killer_plant_sprout_search');
+            expect(getPromptTargetType(current)).toBe('generic');
+            const promptData = getPromptHandlerData(current);
+            expect(promptData.autoRefresh).toBe('deck');
+            expect(promptData.responseValidationMode).toBe('live');
+            expect(getPromptOptions(current).some((opt: any) => opt.id === 'skip')).toBe(true);
+            expect(getPromptOptions(current).filter((opt: any) => opt.displayMode === 'card')).toHaveLength(2);
         });
 
         test('多个嫩芽共享唯一候选时不会重复打出同一 UID', () => {
@@ -1130,14 +1129,14 @@ describe('食人花 ongoing 能力', () => {
                 random: dummyRandom,
                 now: 999,
             }).matchState as any;
-            const prompt = promptState?.sys?.interaction?.current;
-            expect(prompt?.data?.sourceId).toBe('killer_plant_sprout_search');
+            const prompt = getSimpleChoicePrompt(promptState, 'killer_plant_sprout_search');
+            expect(getPromptSourceId(prompt)).toBe('killer_plant_sprout_search');
 
             const events = handler!(
                 { ...promptState, core: staleState },
                 '0',
                 { cardUid: 'wl-1', defId: 'killer_plant_water_lily' },
-                prompt.data,
+                getPromptHandlerData(prompt),
                 dummyRandom,
                 1000,
             )?.events ?? [];
@@ -1222,14 +1221,14 @@ describe('食人花 ongoing 能力', () => {
                 random: dummyRandom,
                 now: 999,
             } as any).matchState as any;
-            const prompt = promptState?.sys?.interaction?.current;
-            expect(prompt?.data?.sourceId).toBe('killer_plant_venus_man_trap_search');
+            const prompt = getSimpleChoicePrompt(promptState, 'killer_plant_venus_man_trap_search');
+            expect(getPromptSourceId(prompt)).toBe('killer_plant_venus_man_trap_search');
 
             const events = handler!(
                 promptState,
                 '0',
                 { cardUid: 'sp-1', defId: 'killer_plant_sprout' },
-                prompt.data,
+                getPromptHandlerData(prompt),
                 dummyRandom,
                 1000,
             )?.events ?? [];
@@ -1270,14 +1269,14 @@ describe('食人花 ongoing 能力', () => {
                 random: dummyRandom,
                 now: 999,
             } as any).matchState as any;
-            const prompt = promptState?.sys?.interaction?.current;
-            expect(prompt?.data?.sourceId).toBe('killer_plant_venus_man_trap_search');
+            const prompt = getSimpleChoicePrompt(promptState, 'killer_plant_venus_man_trap_search');
+            expect(getPromptSourceId(prompt)).toBe('killer_plant_venus_man_trap_search');
 
             const events = handler!(
                 { ...promptState, core: staleState },
                 '0',
                 { cardUid: 'sp-1', defId: 'killer_plant_sprout' },
-                prompt.data,
+                getPromptHandlerData(prompt),
                 dummyRandom,
                 1000,
             )?.events ?? [];
@@ -1407,15 +1406,19 @@ describe('印斯茅斯 ongoing 能力', () => {
                 now: 1000,
             });
 
-            const interaction = (result.matchState?.sys as any)?.interaction?.current;
-            expect(interaction?.data?.sourceId).toBe('innsmouth_return_to_the_sea');
-            const firstOption = interaction?.data?.options?.find((entry: any) => entry.value?.minionUid === 'inn-1');
+            const interaction = getSimpleChoicePrompt(result.matchState!, 'innsmouth_return_to_the_sea');
+            expect(getPromptSourceId(interaction)).toBe('innsmouth_return_to_the_sea');
+            const firstOption = getPromptOption(
+                interaction,
+                (entry: any) => entry.value?.minionUid === 'inn-1',
+                'Return to the Sea self-return option',
+            );
             expect(firstOption?.value?.baseIndex).toBe(0);
 
             const handler = getInteractionHandler('innsmouth_return_to_the_sea');
             expect(handler).toBeDefined();
 
-            const liveResult = handler!(result.matchState as any, '0', [firstOption.value], interaction.data, dummyRandom, 1001);
+            const liveResult = handler!(result.matchState as any, '0', [firstOption.value], getPromptHandlerData(interaction), dummyRandom, 1001);
             const liveEvents = liveResult?.events ?? [];
             expect(liveEvents).toHaveLength(1);
             expect(liveEvents[0].type).toBe(SU_EVENTS.MINION_RETURNED);
@@ -1434,7 +1437,7 @@ describe('印斯茅斯 ongoing 能力', () => {
                 },
             });
             const staleMs = { core: staleState, sys: { phase: 'scoreBases', interaction: { current: undefined, queue: [] } } } as any;
-            const staleResult = handler!(staleMs, '0', [firstOption.value], interaction.data, dummyRandom, 1002);
+            const staleResult = handler!(staleMs, '0', [firstOption.value], getPromptHandlerData(interaction), dummyRandom, 1002);
             const staleEvents = staleResult?.events ?? [];
             expect(staleEvents).toHaveLength(0);
         });
@@ -1475,10 +1478,10 @@ describe('米斯卡塔尼克 新增能力', () => {
 
             // 应创建确认交互而非直接抽牌
             expect(result.matchState).toBeDefined();
-            const interaction = (result.matchState as any)?.sys?.interaction;
-            expect(interaction?.current).toBeDefined();
-            expect(interaction?.current?.data?.sourceId).toBe('miskatonic_researcher');
-            expect(interaction?.current?.data?.targetType).toBe('button');
+            const prompt = getSimpleChoicePrompt(result.matchState as any, 'miskatonic_researcher');
+            expect(prompt).toBeDefined();
+            expect(getPromptSourceId(prompt)).toBe('miskatonic_researcher');
+            expect(getPromptTargetType(prompt)).toBe('button');
         });
     });
 
@@ -1500,10 +1503,9 @@ describe('米斯卡塔尼克 新增能力', () => {
             });
 
             // 手牌>0时创建多选 Interaction 让玩家选择放牌库底的手牌
-            const interaction = (result.matchState?.sys as any)?.interaction;
-            const current = interaction?.current;
+            const current = getSimpleChoicePrompt(result.matchState!, 'miskatonic_field_trip');
             expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('miskatonic_field_trip');
+            expect(getPromptSourceId(current)).toBe('miskatonic_field_trip');
         });
 
         test('交互选项不包含疯狂牌', () => {
@@ -1538,11 +1540,10 @@ describe('米斯卡塔尼克 新增能力', () => {
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
 
-            const interaction = (result.matchState?.sys as any)?.interaction;
-            const current = interaction?.current;
+            const current = getSimpleChoicePrompt(result.matchState!, 'miskatonic_field_trip');
             expect(current).toBeDefined();
             // 选项中不应包含疯狂牌（mad1, mad2）
-            const options = current?.data?.options ?? [];
+            const options = getPromptOptions(current);
             const madnessOptions = options.filter((o: any) => o.value?.defId === MADNESS_CARD_DEF_ID);
             expect(madnessOptions.length).toBe(0);
             // 只有 h1 这一张普通牌（skip 选项不算）
@@ -1571,9 +1572,9 @@ describe('米斯卡塔尼克 新增能力', () => {
                 now: 1000,
             });
 
-            const current = (result.matchState?.sys as any)?.interaction?.current;
+            const current = getSimpleChoicePrompt(result.matchState!, 'miskatonic_researcher_pod');
             expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('miskatonic_researcher_pod');
+            expect(getPromptSourceId(current)).toBe('miskatonic_researcher_pod');
         });
 
         test('researcher pod draw flow leads to minion pick and +1 counter', () => {
@@ -1594,17 +1595,14 @@ describe('米斯卡塔尼克 新增能力', () => {
                 random: dummyRandom,
                 now: 1000,
             });
-            const current = (firstStep.matchState?.sys as any)?.interaction?.current;
+            const current = getSimpleChoicePrompt(firstStep.matchState!, 'miskatonic_researcher_pod');
 
             const step1 = getInteractionHandler('miskatonic_researcher_pod');
             expect(step1).toBeDefined();
-            const step1Result = step1!(firstStep.matchState as any, '0', { draw: true }, current?.data, dummyRandom, 1001);
-            const interactionState = (step1Result.state?.sys as any)?.interaction;
-            const chooseMinion = interactionState?.current?.data?.sourceId === 'miskatonic_researcher_pod_choose_minion'
-                ? interactionState.current
-                : (interactionState?.queue ?? []).find((entry: any) => entry?.data?.sourceId === 'miskatonic_researcher_pod_choose_minion');
+            const step1Result = step1!(firstStep.matchState as any, '0', { draw: true }, getPromptHandlerData(current), dummyRandom, 1001);
+            const chooseMinion = getSimpleChoicePrompt(step1Result.state as any, 'miskatonic_researcher_pod_choose_minion');
             expect(chooseMinion).toBeDefined();
-            expect(chooseMinion?.data?.sourceId).toBe('miskatonic_researcher_pod_choose_minion');
+            expect(getPromptSourceId(chooseMinion)).toBe('miskatonic_researcher_pod_choose_minion');
 
             const step2 = getInteractionHandler('miskatonic_researcher_pod_choose_minion');
             expect(step2).toBeDefined();
@@ -1612,7 +1610,7 @@ describe('米斯卡塔尼克 新增能力', () => {
                 step1Result.state as any,
                 '0',
                 { minionUid: 'm-1', baseIndex: 0 },
-                chooseMinion?.data,
+                getPromptHandlerData(chooseMinion),
                 dummyRandom,
                 1002,
             );
@@ -1658,10 +1656,10 @@ describe('米斯卡塔尼克 新增能力', () => {
                 now: 1000,
             });
 
-            const current = (result.matchState?.sys as any)?.interaction?.current;
+            const current = getSimpleChoicePrompt(result.matchState!, 'miskatonic_field_trip_pod');
             expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('miskatonic_field_trip_pod');
-            const options = current?.data?.options ?? [];
+            expect(getPromptSourceId(current)).toBe('miskatonic_field_trip_pod');
+            const options = getPromptOptions(current);
             const madnessOptions = options.filter((o: any) => o.value?.defId === MADNESS_CARD_DEF_ID);
             expect(madnessOptions.length).toBeGreaterThan(0);
         });
@@ -1696,7 +1694,7 @@ describe('米斯卡塔尼克 新增能力', () => {
                 random: dummyRandom,
                 now: 1002,
             });
-            const current = (firstStep.matchState?.sys as any)?.interaction?.current;
+            const current = getSimpleChoicePrompt(firstStep.matchState!, 'miskatonic_field_trip_pod');
             const handler = getInteractionHandler('miskatonic_field_trip_pod');
             expect(handler).toBeDefined();
 
@@ -1704,7 +1702,7 @@ describe('米斯卡塔尼克 新增能力', () => {
                 state: firstStep.matchState?.core ?? state,
                 playerId: '0',
                 selectedValue: { skip: true },
-                data: current?.data,
+                data: getPromptHandlerData(current),
                 random: dummyRandom,
                 now: 1003,
             });
@@ -1732,8 +1730,7 @@ describe('米斯卡塔尼克 新增能力', () => {
                 random: dummyRandom,
                 now: 1004,
             });
-            const interactionState = firstStep.matchState?.sys.interaction;
-            const current = interactionState?.current ?? interactionState?.queue?.[0];
+            const current = getFirstPrompt(firstStep.matchState as any);
             const handler = getInteractionHandler('miskatonic_things_best_not_known_pod_draw');
             expect(handler).toBeDefined();
 
@@ -1741,7 +1738,7 @@ describe('米斯卡塔尼克 新增能力', () => {
                 (firstStep.matchState ?? matchState) as any,
                 '0',
                 { count: 2 },
-                current?.data as any,
+                getPromptHandlerData(current),
                 dummyRandom,
                 1004,
             );
@@ -1785,23 +1782,20 @@ describe('米斯卡塔尼克 新增能力', () => {
                 random: dummyRandom,
                 now: 1005,
             });
-            const current = (firstStep.matchState?.sys as any)?.interaction?.current;
+            const current = getSimpleChoicePrompt(firstStep.matchState!, 'miskatonic_librarian_pod');
             const modeHandler = getInteractionHandler('miskatonic_librarian_pod');
             expect(modeHandler).toBeDefined();
             const modeResult = modeHandler!(
                 firstStep.matchState as any,
                 '0',
                 { mode: 'extra' },
-                current?.data,
+                getPromptHandlerData(current),
                 dummyRandom,
                 1005,
             );
-            const modeInteraction = (modeResult.state?.sys as any)?.interaction;
-            const chooseMadness = modeInteraction?.current?.data?.sourceId === 'miskatonic_librarian_pod_play_madness'
-                ? modeInteraction.current
-                : (modeInteraction?.queue ?? []).find((entry: any) => entry?.data?.sourceId === 'miskatonic_librarian_pod_play_madness');
+            const chooseMadness = getSimpleChoicePrompt(modeResult.state as any, 'miskatonic_librarian_pod_play_madness');
             expect(chooseMadness).toBeDefined();
-            expect(chooseMadness?.data?.sourceId).toBe('miskatonic_librarian_pod_play_madness');
+            expect(getPromptSourceId(chooseMadness)).toBe('miskatonic_librarian_pod_play_madness');
 
             const playMadnessHandler = getInteractionHandler('miskatonic_librarian_pod_play_madness');
             expect(playMadnessHandler).toBeDefined();
@@ -1809,7 +1803,7 @@ describe('米斯卡塔尼克 新增能力', () => {
                 state: modeResult.state?.core ?? state,
                 playerId: '0',
                 selectedValue: { cardUid: 'mad1' },
-                data: chooseMadness?.data,
+                data: getPromptHandlerData(chooseMadness),
                 random: dummyRandom,
                 now: 1006,
             });

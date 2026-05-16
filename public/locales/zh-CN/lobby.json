@@ -261,19 +261,9 @@
       "description": "按分类浏览和试听所有通用音频资源，支持关键词搜索和分类筛选。",
       "players": "单人工具"
     },
-    "ugcbuilder": {
-      "title": "UGC 原型制作器",
-      "description": "快速创建桌游原型。支持卡牌设计、规则配置、AI辅助生成。",
-      "players": "单人工具"
-    },
     "archview": {
       "title": "架构可视化",
       "description": "交互式节点连线图，展示平台分层架构与模块依赖关系。",
-      "players": "单人工具"
-    },
-    "airepoworkbench": {
-      "title": "AI 仓库工作台",
-      "description": "围绕 RepoSession、WorkflowRun、DecisionRequest 和 ArtifactBundle 的 repo-centric AI 工作台。",
       "players": "单人工具"
     },
     "summonerwars": {

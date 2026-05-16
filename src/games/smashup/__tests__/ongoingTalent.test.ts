@@ -16,12 +16,18 @@ import type { OngoingActionOnBase } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { grantExtraMinion } from '../domain/abilityHelpers';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
-import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { getInteractionHandler } from '../domain/abilityInteractionHandlers';
 import {
     makeMinion, makeCard, makePlayer, makeState, makeMatchState,
-    getInteractionsFromMS, applyEvents,
+    applyEvents,
+    getPromptHandlerData,
+    getPromptOptions,
+    getPromptSourceId,
+    getPromptTargetType,
+    getSimpleChoicePrompt,
+    respondToPromptOption,
+    withOnlyCurrentPrompt,
 } from './helpers';
 import type { RandomFn } from '../../../engine/types';
 
@@ -302,13 +308,10 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
         expect(types).toContain(SU_EVENTS.TALENT_USED);
 
         // 应创建第一步交互（选择随从）
-        const interactions = getInteractionsFromMS(ms);
-        expect(interactions.length).toBeGreaterThan(0);
-
-        const interaction = interactions[0];
-        expect(interaction.data?.sourceId).toBe('steampunk_zeppelin_choose_minion');
-        expect(interaction.data?.targetType).toBe('minion');
-        expect(interaction.data?.options?.length).toBeGreaterThan(0);
+        const interaction = getSimpleChoicePrompt(ms, 'steampunk_zeppelin_choose_minion');
+        expect(getPromptSourceId(interaction)).toBe('steampunk_zeppelin_choose_minion');
+        expect(getPromptTargetType(interaction)).toBe('minion');
+        expect(getPromptOptions(interaction).length).toBeGreaterThan(0);
     });
 
     it('无己方随从可移动时返回反馈事件', () => {
@@ -366,24 +369,17 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
         } as any, defaultRandom);
 
-        const chooseMinionInteraction = getInteractionsFromMS(ms)[0];
-        expect(chooseMinionInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_minion');
+        getSimpleChoicePrompt(ms, 'steampunk_zeppelin_choose_minion');
 
-        const chooseMinion = getAbilityRuntimePromptHandler('steampunk_zeppelin_choose_minion');
-        const chooseBase = getAbilityRuntimePromptHandler('steampunk_zeppelin_choose_base');
-        expect(chooseMinion).toBeDefined();
-        expect(chooseBase).toBeDefined();
-
-        const step1 = chooseMinion!(
+        const step1 = respondToPromptOption(
             ms,
+            option => option.value?.minionUid === 'm2',
+            'zeppelin minion m2 option',
             '0',
-            { minionUid: 'm2', baseIndex: 1 },
-            chooseMinionInteraction?.data,
             defaultRandom,
-            2100,
         );
-        const chooseBaseInteraction = (step1?.state.sys as any).interaction?.queue?.[0];
-        expect(chooseBaseInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_base');
+        expect(step1.success, step1.error).toBe(true);
+        const chooseBaseInteraction = getSimpleChoicePrompt(step1.finalState, 'steampunk_zeppelin_choose_base');
 
         const staleCore = makeState({
             ...core,
@@ -404,15 +400,15 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
             ],
         });
 
-        const step2 = chooseBase!(
-            makeMatchState(staleCore),
+        const step2 = respondToPromptOption(
+            withOnlyCurrentPrompt(makeMatchState(staleCore), chooseBaseInteraction),
+            option => option.value?.baseIndex === 0,
+            'zeppelin destination base 0 option',
             '0',
-            { baseIndex: 0 },
-            chooseBaseInteraction?.data,
             defaultRandom,
-            2101,
         );
-        expect(step2?.events ?? []).toHaveLength(0);
+        expect(step2.success, step2.error).toBe(true);
+        expect(step2.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
     });
 
     it('从其他基地选择随从时，第二步只能移动到齐柏林所在基地', () => {
@@ -447,22 +443,19 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
         } as any, defaultRandom);
 
-        const chooseMinionInteraction = getInteractionsFromMS(ms)[0];
-        const chooseMinion = getAbilityRuntimePromptHandler('steampunk_zeppelin_choose_minion');
-        expect(chooseMinion).toBeDefined();
-
-        const result = chooseMinion!(
+        getSimpleChoicePrompt(ms, 'steampunk_zeppelin_choose_minion');
+        const result = respondToPromptOption(
             ms,
+            option => option.value?.minionUid === 'away-minion',
+            'zeppelin away minion option',
             '0',
-            { minionUid: 'away-minion', baseIndex: 1 },
-            chooseMinionInteraction?.data,
             defaultRandom,
-            2200,
         );
-        const chooseBaseInteraction = result ? (result.state.sys as any)?.interaction?.queue?.[0] : undefined;
-        const options = chooseBaseInteraction?.data?.options ?? [];
-        expect(chooseBaseInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_base');
-        expect(chooseBaseInteraction?.data?.autoResolveIfSingle).toBe(true);
+        expect(result.success, result.error).toBe(true);
+        const chooseBaseInteraction = getSimpleChoicePrompt(result.finalState, 'steampunk_zeppelin_choose_base');
+        const options = getPromptOptions(chooseBaseInteraction);
+        expect(getPromptSourceId(chooseBaseInteraction)).toBe('steampunk_zeppelin_choose_base');
+        expect(chooseBaseInteraction?.autoResolveIfSingle ?? getPromptHandlerData(chooseBaseInteraction).autoResolveIfSingle).toBe(true);
         expect(options).toHaveLength(1);
         expect(options[0]?.value?.baseIndex).toBe(0);
     });
@@ -499,21 +492,18 @@ describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent - 分两步交互�
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
         } as any, defaultRandom);
 
-        const chooseMinionInteraction = getInteractionsFromMS(ms)[0];
-        const chooseMinion = getAbilityRuntimePromptHandler('steampunk_zeppelin_choose_minion');
-        expect(chooseMinion).toBeDefined();
-
-        const result = chooseMinion!(
+        getSimpleChoicePrompt(ms, 'steampunk_zeppelin_choose_minion');
+        const result = respondToPromptOption(
             ms,
+            option => option.value?.minionUid === 'home-minion',
+            'zeppelin home minion option',
             '0',
-            { minionUid: 'home-minion', baseIndex: 0 },
-            chooseMinionInteraction?.data,
             defaultRandom,
-            2201,
         );
-        const chooseBaseInteraction = result ? (result.state.sys as any)?.interaction?.queue?.[0] : undefined;
-        const options = chooseBaseInteraction?.data?.options ?? [];
-        expect(chooseBaseInteraction?.data?.sourceId).toBe('steampunk_zeppelin_choose_base');
+        expect(result.success, result.error).toBe(true);
+        const chooseBaseInteraction = getSimpleChoicePrompt(result.finalState, 'steampunk_zeppelin_choose_base');
+        const options = getPromptOptions(chooseBaseInteraction);
+        expect(getPromptSourceId(chooseBaseInteraction)).toBe('steampunk_zeppelin_choose_base');
         expect(options).toHaveLength(2);
         expect(options.map((option: any) => option.value.baseIndex)).toEqual([1, 2]);
     });
@@ -731,10 +721,10 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
         } as any, defaultRandom);
 
-        const interaction = getInteractionsFromMS(ms)[0];
-        expect(interaction?.data?.sourceId).toBe('trickster_hideout_pod_swap');
+        const interaction = getSimpleChoicePrompt(ms, 'trickster_hideout_pod_swap');
+        expect(getPromptSourceId(interaction)).toBe('trickster_hideout_pod_swap');
 
-        const candidateUids = (interaction?.data?.options ?? [])
+        const candidateUids = getPromptOptions(interaction)
             .map((option: any) => option.value?.cardUid)
             .filter((uid: string | undefined) => typeof uid === 'string');
         expect(candidateUids).toEqual(['h-mist', 'd-flame']);
@@ -762,7 +752,7 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
         } as any, defaultRandom);
 
-        const swapInteraction = getInteractionsFromMS(ms)[0];
+        const swapInteraction = getSimpleChoicePrompt(ms, 'trickster_hideout_pod_swap');
         const swapHandler = getInteractionHandler('trickster_hideout_pod_swap');
         expect(swapHandler).toBeDefined();
 
@@ -770,7 +760,7 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
             ms,
             '0',
             { zone: 'hand', cardUid: 'h-flame', defId: 'trickster_flame_trap_pod' },
-            swapInteraction?.data,
+            getPromptHandlerData(swapInteraction),
             defaultRandom,
             3000,
         );
@@ -783,9 +773,10 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
             expect.objectContaining({ uid: 'h-flame', defId: 'trickster_flame_trap_pod', ownerId: '0' }),
         );
 
-        const destroyInteraction = (result?.state.sys as any).interaction?.queue?.[0];
-        expect(destroyInteraction?.data?.sourceId).toBe('trickster_hideout_pod_destroy');
-        expect((destroyInteraction?.data?.options ?? []).some((option: any) => option.value?.minionUid === 'm-low')).toBe(true);
+        expect(result).toBeDefined();
+        const destroyInteraction = getSimpleChoicePrompt(result!.state, 'trickster_hideout_pod_destroy');
+        expect(getPromptSourceId(destroyInteraction)).toBe('trickster_hideout_pod_destroy');
+        expect(getPromptOptions(destroyInteraction).some((option: any) => option.value?.minionUid === 'm-low')).toBe(true);
     });
 
     it('从牌库交换时把藏身处洗回牌库，而不是回手', () => {
@@ -818,7 +809,7 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
             payload: { ongoingCardUid: 'oa1', baseIndex: 0 },
         } as any, defaultRandom);
 
-        const swapInteraction = getInteractionsFromMS(ms)[0];
+        const swapInteraction = getSimpleChoicePrompt(ms, 'trickster_hideout_pod_swap');
         const swapHandler = getInteractionHandler('trickster_hideout_pod_swap');
         expect(swapHandler).toBeDefined();
 
@@ -826,7 +817,7 @@ describe('trickster_hideout_pod（藏身处 POD ongoing talent）', () => {
             ms,
             '0',
             { zone: 'deck', cardUid: 'd-flame', defId: 'trickster_flame_trap_pod' },
-            swapInteraction?.data,
+            getPromptHandlerData(swapInteraction),
             shuffleRandom,
             3001,
         );
@@ -885,9 +876,9 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
             now: 4000,
         });
 
-        const interaction = getInteractionsFromMS(result.matchState!)[0];
-        expect(interaction?.data?.sourceId).toBe('trickster_pixie_pod_minion');
-        const optionUids = (interaction?.data?.options ?? []).map((option: any) => option.value?.minionUid).filter(Boolean);
+        const interaction = getSimpleChoicePrompt(result.matchState!, 'trickster_pixie_pod_minion');
+        expect(getPromptSourceId(interaction)).toBe('trickster_pixie_pod_minion');
+        const optionUids = getPromptOptions(interaction).map((option: any) => option.value?.minionUid).filter(Boolean);
         expect(optionUids).toEqual(['pixie-1', 'ally-a']);
 
         const handler = getInteractionHandler('trickster_pixie_pod_minion');
@@ -896,7 +887,7 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
             result.matchState!,
             '0',
             [{ minionUid: 'ally-a', baseIndex: 0 }],
-            interaction?.data,
+            getPromptHandlerData(interaction),
             defaultRandom,
             4001,
         );
@@ -938,8 +929,8 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
             now: 4100,
         });
 
-        const destroyInteraction = getInteractionsFromMS(result.matchState!)[0];
-        expect(destroyInteraction?.data?.sourceId).toBe('trickster_pixie_pod_action_destroy');
+        const destroyInteraction = getSimpleChoicePrompt(result.matchState!, 'trickster_pixie_pod_action_destroy');
+        expect(getPromptSourceId(destroyInteraction)).toBe('trickster_pixie_pod_action_destroy');
 
         const destroyHandler = getInteractionHandler('trickster_pixie_pod_action_destroy');
         expect(destroyHandler).toBeDefined();
@@ -947,7 +938,7 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
             result.matchState!,
             '0',
             { cardUid: 'target-oa', defId: 'trickster_flame_trap_pod', ownerId: '1' },
-            destroyInteraction?.data,
+            getPromptHandlerData(destroyInteraction),
             defaultRandom,
             4101,
         );
@@ -959,8 +950,9 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
             }),
         ]);
 
-        const counterInteraction = (chained?.state.sys as any).interaction?.queue?.[0];
-        expect(counterInteraction?.data?.sourceId).toBe('trickster_pixie_pod_action_counters');
+        expect(chained).toBeDefined();
+        const counterInteraction = getSimpleChoicePrompt(chained!.state, 'trickster_pixie_pod_action_counters');
+        expect(getPromptSourceId(counterInteraction)).toBe('trickster_pixie_pod_action_counters');
 
         const counterHandler = getInteractionHandler('trickster_pixie_pod_action_counters');
         expect(counterHandler).toBeDefined();
@@ -968,7 +960,7 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
             chained!.state,
             '0',
             [{ minionUid: 'ally-a', baseIndex: 0 }],
-            counterInteraction?.data,
+            getPromptHandlerData(counterInteraction),
             defaultRandom,
             4102,
         );

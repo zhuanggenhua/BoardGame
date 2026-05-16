@@ -354,17 +354,8 @@ function ensurePassWithNoTests(vitestArgs) {
 
 function resolveRunnableVitestWorkspaceTarget(file) {
   const normalized = normalizeFile(file);
-  const candidates = normalized.startsWith('e2e/src/')
-    ? [normalized.slice('e2e/'.length), normalized]
-    : [normalized];
-
-  for (const candidate of candidates) {
-    if (candidate.startsWith('e2e/src/')) continue;
-    if (!isRunnableVitestTestFile(candidate)) continue;
-    if (fileExistsInWorkspace(candidate)) return candidate;
-  }
-
-  return null;
+  if (!isRunnableVitestTestFile(normalized)) return null;
+  return fileExistsInWorkspace(normalized) ? normalized : null;
 }
 
 function collectRunnableVitestWorkspaceTargets(files) {
@@ -642,7 +633,7 @@ function affectsCoreArea(file) {
 }
 
 function isGameFile(file) {
-  return file.startsWith('src/games/') || file.startsWith('e2e/src/games/');
+  return file.startsWith('src/games/');
 }
 
 function isGameVitestTest(file) {
@@ -760,14 +751,7 @@ function collectScopedVitestTargets(files, targets) {
 }
 
 function toWorkspaceScopeFile(file) {
-  const normalized = normalizeFile(file);
-  if (normalized.startsWith('e2e/src/')) {
-    const workspacePath = normalized.slice('e2e/'.length);
-    if (fileExistsInWorkspace(workspacePath)) {
-      return workspacePath;
-    }
-  }
-  return normalized;
+  return normalizeFile(file);
 }
 
 function createScopedGameTestCommands(files, vitestArgs) {
@@ -848,10 +832,10 @@ function collectCommands(files, baseRef, affectsTypecheck) {
     workspaceScopeFiles.filter((file) => isGameFile(file) && isTestFile(file)),
   );
 
-  if (hasAny(files, (file) => isGameVitestTest(file) || file.startsWith('e2e/src/games/'))) {
+  if (hasAny(files, isGameVitestTest)) {
     commands.push({
       label: 'Test structure guard',
-      reason: '存在游戏测试改动，检查测试文件命名、巨型泛名文件净新增与 e2e 镜像目录新增',
+      reason: '存在游戏测试改动，检查测试文件命名与巨型泛名文件净新增',
       command: process.execPath,
       args: ['scripts/infra/testing-structure-guard.mjs', '--base', baseRef, ...files],
     });

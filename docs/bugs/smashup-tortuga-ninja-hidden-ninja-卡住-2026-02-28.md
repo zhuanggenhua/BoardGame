@@ -157,7 +157,7 @@ registerInteractionHandler('ninja_hidden_ninja', (state, playerId, value, iData,
 
 ### 3. 运行 E2E 测试
 
-运行 `e2e/ninja-hidden-ninja-skip-option.e2e.ts` 验证修复是否生效:
+运行 `e2e/smashup/ninja-hidden-ninja-skip-option.e2e.ts` 验证修复是否生效:
 
 ```bash
 npm run test:e2e -- ninja-hidden-ninja-skip-option
@@ -204,7 +204,7 @@ const interaction = createSimpleChoice(
 - `docs/bugs/smashup-ninja-hidden-ninja-interaction-not-visible.md` - 之前的修复（2026/2/27）
 - `docs/bugs/smashup-tortuga-无法结束回合-analysis.md` - 类似问题分析
 - `docs/interaction-ui-modes.md` - UI 渲染模式详解
-- `e2e/ninja-hidden-ninja-skip-option.e2e.ts` - E2E 测试
+- `e2e/smashup/ninja-hidden-ninja-skip-option.e2e.ts` - E2E 测试
 
 ## 教训
 

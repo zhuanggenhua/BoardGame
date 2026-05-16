@@ -598,7 +598,7 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
     state,
     event
 ) => {
-    const { playerId, tokenId, amount, effectType, damageModifier, evasionRoll } = event.payload;
+    const { playerId, tokenId, amount, effectType, damageModifier, evasionRoll, deferredDamageEvents } = event.payload;
 
     // 消耗 Token
     let players = state.players;
@@ -638,6 +638,7 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
                 currentDamage: state.pendingDamage.currentDamage + damageModifier,
                 modifiers,
                 tokenUsageTotals,
+                deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
             };
             if (
                 state.pendingDamage.responseType === 'beforeDamageDealt'
@@ -662,16 +663,34 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
                 currentDamage: Math.max(0, state.pendingDamage.currentDamage + damageModifier),
                 modifiers,
                 tokenUsageTotals,
+                deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
             };
         } else if (effectType === 'evasionAttempt') {
             if (evasionRoll?.success) {
-                pendingDamage = { ...state.pendingDamage, currentDamage: 0, isFullyEvaded: true, lastEvasionRoll: evasionRoll, tokenUsageTotals };
+                pendingDamage = {
+                    ...state.pendingDamage,
+                    currentDamage: 0,
+                    isFullyEvaded: true,
+                    lastEvasionRoll: evasionRoll,
+                    tokenUsageTotals,
+                    deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
+                };
             } else if (evasionRoll) {
                 // 闪避失败：显式设置 isFullyEvaded: false
-                pendingDamage = { ...state.pendingDamage, isFullyEvaded: false, lastEvasionRoll: evasionRoll, tokenUsageTotals };
+                pendingDamage = {
+                    ...state.pendingDamage,
+                    isFullyEvaded: false,
+                    lastEvasionRoll: evasionRoll,
+                    tokenUsageTotals,
+                    deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
+                };
             }
         } else {
-            pendingDamage = { ...state.pendingDamage, tokenUsageTotals };
+            pendingDamage = {
+                ...state.pendingDamage,
+                tokenUsageTotals,
+                deferredDamageEvents: deferredDamageEvents ?? state.pendingDamage.deferredDamageEvents,
+            };
         }
     }
 

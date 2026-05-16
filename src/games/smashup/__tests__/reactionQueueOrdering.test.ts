@@ -3,7 +3,6 @@ import type { SmashUpCore, SmashUpEvent, TriggerInstance } from '../domain/types
 import { SU_EVENTS } from '../domain/types';
 import {
   expectNoPrompt,
-  getPromptHandlerData,
   getPromptOption,
   getPromptOptions,
   getSimpleChoicePrompt,
@@ -12,11 +11,12 @@ import {
   makeMinion,
   makeState,
   makeBase,
+  resolvePromptViaRegisteredHandler,
   withoutCurrentPrompt,
 } from './helpers';
 import { clearOngoingEffectRegistry, registerTrigger, collectTriggers } from '../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
-import { getInteractionHandler, clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
 import { resolveSmashUpReactionChoice } from '../domain/reactionSession';
 import { processAffectTriggers, processDeckInspectionTriggers, processMoveTriggers } from '../domain/reducer';
@@ -290,8 +290,7 @@ describe('Reaction queue ordering (Wiki-style)', () => {
 
     // Choose trigger B first
     const optB = getPromptOption(current, (o: any) => (o.label as string).includes('test_source_b'), 'test_source_b trigger option');
-    const handler = getInteractionHandler('smashup_reaction_choose')!;
-    const r2 = handler(ms1 as any, '0', optB.value, getPromptHandlerData(current), { shuffle: (a: any[]) => a } as any, 2);
+    const r2 = resolvePromptViaRegisteredHandler(ms1 as any, current, optB.value, 2, { shuffle: (a: any[]) => a } as any);
     expect(r2).toBeDefined();
     const evts = r2!.events as SmashUpEvent[];
     expect(evts[0].type).toBe(SU_EVENTS.TRIGGER_CONSUMED);

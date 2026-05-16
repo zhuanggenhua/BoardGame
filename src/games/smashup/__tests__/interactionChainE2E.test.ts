@@ -1,7 +1,7 @@
 /**
  * 大杀四方 - 交互链 E2E 测试
  *
- * 使用 GameTestRunner + INTERACTION_COMMANDS.RESPOND 验证多步交互链的完整闭环。
+ * 使用 GameTestRunner + prompt/command facade 验证多步交互链的完整闭环。
  * 覆盖优先级：P0（4步链）→ P1（3步链）→ P2（2步链）
  *
  * 测试模式：
@@ -22,7 +22,6 @@ import {
 } from '../../../engine';
 import type { EngineSystem } from '../../../engine/systems/types';
 import { createSmashUpEventSystem } from '../domain/systems';
-import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import type { ActionCardDef } from '../domain/types';
 import { getCardDef } from '../data/cards';
 import { createInitialSystemState } from '../../../engine/pipeline';
@@ -36,6 +35,15 @@ import { clearInteractionHandlers, getInteractionHandler } from '../domain/abili
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import type { RandomFn } from '../../../engine/types';
+import {
+    expectNoPrompt,
+    getOptionalSimpleChoicePrompt,
+    getPromptHandlerData,
+    getPromptOption,
+    getPromptOptions,
+    getSimpleChoicePrompt,
+    respondCommand,
+} from './helpers';
 
 // ============================================================================
 // 测试工具
@@ -150,7 +158,7 @@ function runCommand(state: MatchState<SmashUpCore>, cmd: { type: string; playerI
 
 /** 响应交互并返回结果 */
 function respond(state: MatchState<SmashUpCore>, playerId: string, optionId: string, name: string) {
-    return runCommand(state, { type: INTERACTION_COMMANDS.RESPOND, playerId, payload: { optionId } }, name);
+    return runCommand(state, respondCommand(optionId, playerId), name);
 }
 
 function respondWithMergedValue(
@@ -160,8 +168,8 @@ function respondWithMergedValue(
     mergedValue: Record<string, unknown>,
     name: string,
 ) {
-    const choice = asSimpleChoice(state.sys.interaction.current);
-    const selectedOption = choice?.options.find((option: any) => option.id === optionId);
+    const choice = getSimpleChoicePrompt(state);
+    const selectedOption = getPromptOptions(choice).find((option: any) => option.id === optionId);
     const optionValue = selectedOption?.value;
     const finalMergedValue = optionValue && typeof optionValue === 'object' && !Array.isArray(optionValue)
         ? { ...(optionValue as Record<string, unknown>), ...mergedValue }
@@ -169,16 +177,14 @@ function respondWithMergedValue(
 
     return runCommand(
         state,
-        { type: INTERACTION_COMMANDS.RESPOND, playerId, payload: { optionId, mergedValue: finalMergedValue } },
+        { ...respondCommand(optionId, playerId), payload: { optionId, mergedValue: finalMergedValue } },
         name,
     );
 }
 
 /** 从 SimpleChoice 中找到匹配条件的选项 ID */
 function findOption(choice: any, predicate: (opt: any) => boolean): string {
-    const opt = choice.options.find(predicate);
-    if (!opt) throw new Error(`找不到匹配的选项: ${JSON.stringify(choice.options.map((o: any) => o.id))}`);
-    return opt.id;
+    return getPromptOption(choice, predicate).id;
 }
 
 // ============================================================================
@@ -236,7 +242,7 @@ describe('P0: ninja_disguise（伪装）4步链', () => {
         }, 'disguise step1: 打出');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('ninja_disguise_choose_base');
 
         // Step 2: 选择 base0 → 创建多选随从 Interaction
@@ -244,7 +250,7 @@ describe('P0: ninja_disguise（伪装）4步链', () => {
         const r2 = respond(r1.finalState, '0', base0Opt, 'disguise step2: 选基地');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('ninja_disguise_choose_minions');
 
         // Step 3: 选择1个旧随从(old-m1) → 创建选手牌随从 Interaction
@@ -252,7 +258,7 @@ describe('P0: ninja_disguise（伪装）4步链', () => {
         const r3 = respond(r2.finalState, '0', minionOpt, 'disguise step3: 选随从');
 
         expect(r3.steps[0]?.success).toBe(true);
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
         expect(choice3.sourceId).toBe('ninja_disguise_choose_play1');
 
         // Step 4: 选择手牌随从打出 → 旧随从被收回，新随从打出
@@ -261,7 +267,7 @@ describe('P0: ninja_disguise（伪装）4步链', () => {
 
         expect(r4.steps[0]?.success).toBe(true);
         // 交互链结束
-        expect(r4.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r4.finalState);
 
         // 验证最终状态：old-m1 被收回手牌，hand-m1 被打出到 base0
         const finalCore = r4.finalState.core;
@@ -306,7 +312,7 @@ describe('P0: ninja_disguise（伪装）4步链', () => {
         }, 'disguise single-base step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('ninja_disguise_choose_minions');
 
         // Step 2: 选 old-m1 → 选手牌随从
@@ -314,7 +320,7 @@ describe('P0: ninja_disguise（伪装）4步链', () => {
         const r2 = respond(r1.finalState, '0', mOpt, 'disguise single-base step2');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('ninja_disguise_choose_play1');
 
         // Step 3: 选手牌随从 → 链路结束
@@ -322,7 +328,7 @@ describe('P0: ninja_disguise（伪装）4步链', () => {
         const r3 = respond(r2.finalState, '0', handOpt, 'disguise single-base step3');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         const fc = r3.finalState.core;
         expect(fc.bases[0].minions.find(m => m.uid === 'old-m1')).toBeUndefined();
@@ -361,7 +367,7 @@ describe('P0: pirate_dinghy（小艇）4步链', () => {
         }, 'dinghy step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('pirate_dinghy_choose_first');
 
         // Step 2: 选 m1 → 选目标基地
@@ -369,7 +375,7 @@ describe('P0: pirate_dinghy（小艇）4步链', () => {
         const r2 = respond(r1.finalState, '0', m1Opt, 'dinghy step2: 选随从1');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('pirate_dinghy_first_choose_base');
 
         // Step 3: 选 base1 → m1 移动，然后选第二个随从
@@ -377,7 +383,7 @@ describe('P0: pirate_dinghy（小艇）4步链', () => {
         const r3 = respond(r2.finalState, '0', base1Opt, 'dinghy step3: 选基地1');
 
         expect(r3.steps[0]?.success).toBe(true);
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
         expect(choice3.sourceId).toBe('pirate_dinghy_choose_second');
 
         // Step 4: 选 m2 → 选目标基地
@@ -385,7 +391,7 @@ describe('P0: pirate_dinghy（小艇）4步链', () => {
         const r4 = respond(r3.finalState, '0', m2Opt, 'dinghy step4: 选随从2');
 
         expect(r4.steps[0]?.success).toBe(true);
-        const choice4 = asSimpleChoice(r4.finalState.sys.interaction.current)!;
+        const choice4 = getSimpleChoicePrompt(r4.finalState);
         expect(choice4.sourceId).toBe('pirate_dinghy_second_choose_base');
 
         // Step 5: 选 base2 → 链路结束
@@ -393,7 +399,7 @@ describe('P0: pirate_dinghy（小艇）4步链', () => {
         const r5 = respond(r4.finalState, '0', base2Opt, 'dinghy step5: 选基地2');
 
         expect(r5.steps[0]?.success).toBe(true);
-        expect(r5.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r5.finalState);
 
         // 验证：m1 在 base1，m2 在 base2，base0 空
         const fc = r5.finalState.core;
@@ -426,20 +432,21 @@ describe('P0: pirate_dinghy（小艇）4步链', () => {
             payload: { cardUid: 'dinghy1' },
         }, 'dinghy skip step1');
 
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         const m1Opt = findOption(choice1, (o: any) => o.value?.minionUid === 'm1');
         const r2 = respond(r1.finalState, '0', m1Opt, 'dinghy skip step2');
 
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         const baseOpt = findOption(choice2, (o: any) => o.value?.baseIndex === 1);
         const r3 = respond(r2.finalState, '0', baseOpt, 'dinghy skip step3');
 
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
+        expect(getPromptOptions(choice3).some((option: any) => option.id === 'skip')).toBe(true);
         // 选择跳过
         const r4 = respond(r3.finalState, '0', 'skip', 'dinghy skip step4: 跳过');
 
         expect(r4.steps[0]?.success).toBe(true);
-        expect(r4.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r4.finalState);
 
         // m1 移到 base1，m2 留在 base0
         const fc = r4.finalState.core;
@@ -480,7 +487,7 @@ describe('P0: bear_cavalry_commission（委任）4步链', () => {
         }, 'commission step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('bear_cavalry_commission_choose_minion');
 
         // Step 2: 选手牌随从 → 选基地
@@ -488,7 +495,7 @@ describe('P0: bear_cavalry_commission（委任）4步链', () => {
         const r2 = respond(r1.finalState, '0', handOpt, 'commission step2: 选随从');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('bear_cavalry_commission_choose_base');
 
         // Step 3: 选 base0（有对手随从）→ 打出随从 + 选对手随从移动
@@ -496,7 +503,7 @@ describe('P0: bear_cavalry_commission（委任）4步链', () => {
         const r3 = respond(r2.finalState, '0', base0Opt, 'commission step3: 选基地');
 
         expect(r3.steps[0]?.success).toBe(true);
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
         expect(choice3.sourceId).toBe('bear_cavalry_commission_move_minion');
 
         // Step 4: 选对手随从 → 选目标基地
@@ -504,7 +511,7 @@ describe('P0: bear_cavalry_commission（委任）4步链', () => {
         const r4 = respond(r3.finalState, '0', enemyOpt, 'commission step4: 选对手随从');
 
         expect(r4.steps[0]?.success).toBe(true);
-        const choice4 = asSimpleChoice(r4.finalState.sys.interaction.current)!;
+        const choice4 = getSimpleChoicePrompt(r4.finalState);
         expect(choice4.sourceId).toBe('bear_cavalry_commission_move_dest');
 
         // Step 5: 选 base1 → 链路结束
@@ -512,7 +519,7 @@ describe('P0: bear_cavalry_commission（委任）4步链', () => {
         const r5 = respond(r4.finalState, '0', destOpt, 'commission step5: 选目标基地');
 
         expect(r5.steps[0]?.success).toBe(true);
-        expect(r5.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r5.finalState);
 
         // 验证：hand-m1 打出到 base0，enemy-m1 移到 base1
         const fc = r5.finalState.core;
@@ -555,24 +562,24 @@ describe('P0: bear_cavalry_commission（委任）4步链', () => {
         expect(r1.finalState.core.players['0'].minionsPlayed).toBe(1);
         expect(r1.finalState.core.players['0'].minionLimit).toBe(2);
 
-        const chooseMinion = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const chooseMinion = getSimpleChoicePrompt(r1.finalState);
         const handOpt = findOption(chooseMinion, (o: any) => o.value?.cardUid === 'hand-m1');
         const r2 = respond(r1.finalState, '0', handOpt, 'commission pod quota step2');
 
-        const chooseBase = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const chooseBase = getSimpleChoicePrompt(r2.finalState);
         const baseOpt = findOption(chooseBase, (o: any) => o.value?.baseIndex === 1);
         const r3 = respond(r2.finalState, '0', baseOpt, 'commission pod quota step3');
 
-        const chooseMove = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const chooseMove = getSimpleChoicePrompt(r3.finalState);
         const enemyOpt = findOption(chooseMove, (o: any) => o.value?.minionUid === 'enemy-m1');
         const r4 = respond(r3.finalState, '0', enemyOpt, 'commission pod quota step4');
 
-        const chooseDest = asSimpleChoice(r4.finalState.sys.interaction.current)!;
+        const chooseDest = getSimpleChoicePrompt(r4.finalState);
         const destOpt = findOption(chooseDest, (o: any) => o.value?.baseIndex === 0);
         const r5 = respond(r4.finalState, '0', destOpt, 'commission pod quota step5');
 
         expect(r5.steps[0]?.success).toBe(true);
-        expect(r5.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r5.finalState);
         expect(r5.finalState.core.players['0'].minionsPlayed).toBe(2);
         expect(r5.finalState.core.players['0'].minionLimit).toBe(2);
         expect(r5.finalState.core.bases[1].minions.some(m => m.uid === 'hand-m1')).toBe(true);
@@ -615,7 +622,7 @@ describe('P1: pirate_sea_dogs（海狗）3步链', () => {
         }, 'sea_dogs step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('pirate_sea_dogs_choose_faction');
 
         // Step 2: 选 aliens 派系 → 选来源基地
@@ -623,7 +630,7 @@ describe('P1: pirate_sea_dogs（海狗）3步链', () => {
         const r2 = respond(r1.finalState, '0', alienOpt, 'sea_dogs step2: 选派系');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('pirate_sea_dogs_choose_from');
         expect(choice2.subtitle).toBe('已选种族：外星人');
 
@@ -632,7 +639,7 @@ describe('P1: pirate_sea_dogs（海狗）3步链', () => {
         const r3 = respond(r2.finalState, '0', fromOpt, 'sea_dogs step3: 选来源基地');
 
         expect(r3.steps[0]?.success).toBe(true);
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
         expect(choice3.sourceId).toBe('pirate_sea_dogs_choose_to');
         expect(choice3.subtitle).toBe('已选种族：外星人');
 
@@ -641,7 +648,7 @@ describe('P1: pirate_sea_dogs（海狗）3步链', () => {
         const r4 = respond(r3.finalState, '0', toOpt, 'sea_dogs step4: 选目标基地');
 
         expect(r4.steps[0]?.success).toBe(true);
-        expect(r4.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r4.finalState);
 
         // 验证：aliens 随从移到 base1，P0 的随从留在 base0
         const fc = r4.finalState.core;
@@ -683,7 +690,7 @@ describe('P1: bear_cavalry_youre_screwed（你完了）3步链', () => {
         }, 'youre_screwed step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('bear_cavalry_youre_screwed_choose_base');
 
         // Step 2: 选 base0 → 选对手随从
@@ -691,7 +698,7 @@ describe('P1: bear_cavalry_youre_screwed（你完了）3步链', () => {
         const r2 = respond(r1.finalState, '0', baseOpt, 'youre_screwed step2: 选基地');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('bear_cavalry_youre_screwed_choose_minion');
 
         // Step 3: 选 enemy-m1 → 选目标基地
@@ -699,7 +706,7 @@ describe('P1: bear_cavalry_youre_screwed（你完了）3步链', () => {
         const r3 = respond(r2.finalState, '0', minionOpt, 'youre_screwed step3: 选随从');
 
         expect(r3.steps[0]?.success).toBe(true);
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
         expect(choice3.sourceId).toBe('bear_cavalry_youre_screwed_choose_dest');
 
         // Step 4: 选 base1 → 链路结束
@@ -707,7 +714,7 @@ describe('P1: bear_cavalry_youre_screwed（你完了）3步链', () => {
         const r4 = respond(r3.finalState, '0', destOpt, 'youre_screwed step4: 选目标基地');
 
         expect(r4.steps[0]?.success).toBe(true);
-        expect(r4.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r4.finalState);
 
         // 验证：enemy-m1 移到 base1
         const fc = r4.finalState.core;
@@ -751,7 +758,7 @@ describe('P2: pirate_cannon（加农炮）2步链', () => {
         }, 'cannon step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('pirate_cannon_choose_first');
 
         // Step 2: 选 weak1 → 消灭 + 选第二个
@@ -759,7 +766,7 @@ describe('P2: pirate_cannon（加农炮）2步链', () => {
         const r2 = respond(r1.finalState, '0', w1Opt, 'cannon step2: 选第一个');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('pirate_cannon_choose_second');
 
         // Step 3: 选 weak2 → 链路结束
@@ -767,7 +774,7 @@ describe('P2: pirate_cannon（加农炮）2步链', () => {
         const r3 = respond(r2.finalState, '0', w2Opt, 'cannon step3: 选第二个');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         // 验证：weak1 和 weak2 被消灭，strong1 留下
         const fc = r3.finalState.core;
@@ -798,16 +805,17 @@ describe('P2: pirate_cannon（加农炮）2步链', () => {
             payload: { cardUid: 'cannon1' },
         }, 'cannon skip step1');
 
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         const w1Opt = findOption(choice1, (o: any) => o.value?.minionUid === 'weak1');
         const r2 = respond(r1.finalState, '0', w1Opt, 'cannon skip step2');
 
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
+        expect(getPromptOptions(choice2).some((option: any) => option.id === 'skip')).toBe(true);
         // 跳过第二个
         const r3 = respond(r2.finalState, '0', 'skip', 'cannon skip step3');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         // 只消灭了 weak1
         const fc = r3.finalState.core;
@@ -842,14 +850,14 @@ describe('P2: alien_invasion（入侵）2步链', () => {
         }, 'invasion step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('alien_invasion_choose_base');
 
         const baseOpt = findOption(choice1, (o: any) => o.value?.baseIndex === 1);
         const r2 = respond(r1.finalState, '0', baseOpt, 'invasion step2: 选基地');
 
         expect(r2.steps[0]?.success).toBe(true);
-        expect(r2.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r2.finalState);
 
         const fc = r2.finalState.core;
         expect(fc.bases[0].minions.find(m => m.uid === 'm1')).toBeUndefined();
@@ -882,7 +890,7 @@ describe('P2: alien_invasion（入侵）2步链', () => {
         }, 'invasion targeted play');
 
         expect(result.steps[0]?.success).toBe(true);
-        const choice = asSimpleChoice(result.finalState.sys.interaction.current)!;
+        const choice = getSimpleChoicePrompt(result.finalState);
         expect(choice.sourceId).toBe('alien_invasion_choose_base');
     });
 
@@ -919,10 +927,10 @@ describe('P2: alien_invasion（入侵）2步链', () => {
         }, 'invasion protected targeted play');
 
         expect(result.steps[0]?.success).toBe(true);
-        const choice = asSimpleChoice(result.finalState.sys.interaction.current)!;
+        const choice = getSimpleChoicePrompt(result.finalState);
         expect(choice.sourceId).toBe('alien_invasion_choose_minion');
 
-        const optionUids = choice.options.map((option: any) => option.value?.minionUid);
+        const optionUids = getPromptOptions(choice).map((option: any) => option.value?.minionUid);
         expect(optionUids).toContain('legal-m');
         expect(optionUids).not.toContain('protected-m');
     });
@@ -954,21 +962,21 @@ describe('P2: ninja_way_of_deception（欺诈之道）2步链', () => {
         }, 'way_of_deception step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('ninja_way_of_deception_choose_minion');
 
         const mOpt = findOption(choice1, (o: any) => o.value?.minionUid === 'm1');
         const r2 = respond(r1.finalState, '0', mOpt, 'way_of_deception step2: 选随从');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('ninja_way_of_deception_choose_base');
 
         const baseOpt = findOption(choice2, (o: any) => o.value?.baseIndex === 1);
         const r3 = respond(r2.finalState, '0', baseOpt, 'way_of_deception step3: 选基地');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         const fc = r3.finalState.core;
         expect(fc.bases[0].minions.find(m => m.uid === 'm1')).toBeUndefined();
@@ -1005,7 +1013,7 @@ describe('P2: ninja_acolyte（忍者侍从）额外打随从后的 onPlay 链', 
         }, 'ninja_acolyte step1: 激活 special');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('ninja_acolyte_play');
 
         const gunfighterOpt = findOption(choice1, (option: any) => option.value?.defId === 'cowboys_gunfighter');
@@ -1014,7 +1022,7 @@ describe('P2: ninja_acolyte（忍者侍从）额外打随从后的 onPlay 链', 
         expect(r2.steps[0]?.success).toBe(true);
         expect(r2.finalState.core.bases[0].minions.some(minion => minion.uid === 'gun1')).toBe(true);
 
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('cowboys_gunfighter');
         const optionTargets = choice2.options.map((option: any) => option.value?.minionUid);
         expect(optionTargets).toContain('opp1');
@@ -1047,21 +1055,21 @@ describe('P2: dino_natural_selection（自然选择）2步链', () => {
         }, 'natural_selection step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('dino_natural_selection_choose_mine');
 
         const myOpt = findOption(choice1, (o: any) => o.value?.minionUid === 'my-m1');
         const r2 = respond(r1.finalState, '0', myOpt, 'natural_selection step2: 选己方');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('dino_natural_selection_choose_target');
 
         const targetOpt = findOption(choice2, (o: any) => o.value?.minionUid === 'enemy-m1');
         const r3 = respond(r2.finalState, '0', targetOpt, 'natural_selection step3: 选目标');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         // 只有目标被消灭（自然选择只消灭力量更低的目标，己方随从保留）
         const fc = r3.finalState.core;
@@ -1096,21 +1104,21 @@ describe('P2: bear_cavalry_bear_cavalry（黑熊骑兵）2步链', () => {
         }, 'bear_cavalry step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('bear_cavalry_bear_cavalry_choose_minion');
 
         const mOpt = findOption(choice1, (o: any) => o.value?.minionUid === 'enemy-m1');
         const r2 = respond(r1.finalState, '0', mOpt, 'bear_cavalry step2: 选随从');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('bear_cavalry_bear_cavalry_choose_base');
 
         const baseOpt = findOption(choice2, (o: any) => o.value?.baseIndex === 1);
         const r3 = respond(r2.finalState, '0', baseOpt, 'bear_cavalry step3: 选基地');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         const fc = r3.finalState.core;
         expect(fc.bases[0].minions.find(m => m.uid === 'enemy-m1')).toBeUndefined();
@@ -1144,21 +1152,21 @@ describe('P2: bear_cavalry_bear_rides_you（熊骑你）2步链', () => {
         }, 'bear_rides_you step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('bear_cavalry_bear_rides_you_choose_minion');
 
         const mOpt = findOption(choice1, (o: any) => o.value?.minionUid === 'my-m1');
         const r2 = respond(r1.finalState, '0', mOpt, 'bear_rides_you step2: 选随从');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('bear_cavalry_bear_rides_you_choose_base');
 
         const baseOpt = findOption(choice2, (o: any) => o.value?.baseIndex === 1);
         const r3 = respond(r2.finalState, '0', baseOpt, 'bear_rides_you step3: 选基地');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         const fc = r3.finalState.core;
         expect(fc.bases[0].minions.find(m => m.uid === 'my-m1')).toBeUndefined();
@@ -1194,21 +1202,21 @@ describe('P2: bear_cavalry_borscht（罗宋汤）2步链', () => {
         }, 'borscht step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('bear_cavalry_borscht_choose_from');
 
         const fromOpt = findOption(choice1, (o: any) => o.value?.baseIndex === 0);
         const r2 = respond(r1.finalState, '0', fromOpt, 'borscht step2: 选来源');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('bear_cavalry_borscht_choose_dest');
 
         const destOpt = findOption(choice2, (o: any) => o.value?.baseIndex === 1);
         const r3 = respond(r2.finalState, '0', destOpt, 'borscht step3: 选目标');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         // 对手随从移到 base1，己方留在 base0
         const fc = r3.finalState.core;
@@ -1257,7 +1265,7 @@ describe('P2: zombie_outbreak（爆发）授予额度', () => {
         }, 'outbreak step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('zombie_outbreak_choose_base');
 
         // Step 2: 选 base1 → 直接授予额度（限定到 base1）
@@ -1265,7 +1273,7 @@ describe('P2: zombie_outbreak（爆发）授予额度', () => {
         const r2 = respond(r1.finalState, '0', baseOpt, 'outbreak step2: 选基地');
 
         expect(r2.steps[0]?.success).toBe(true);
-        expect(r2.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r2.finalState);
 
         // 验证：授予了基地限定额度
         const player = r2.finalState.core.players['0'];
@@ -1301,7 +1309,7 @@ describe('P2: zombie_outbreak（爆发）授予额度', () => {
         }, 'outbreak: 唯一空基地');
 
         expect(r1.steps[0]?.success).toBe(true);
-        expect(r1.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r1.finalState);
 
         // 验证：授予了基地限定额度
         const player = r1.finalState.core.players['0'];
@@ -1339,7 +1347,7 @@ describe('P2: zombie_they_keep_coming（它们不断来临）弃牌堆直点交�
         }, 'they_keep_coming: 创建交互');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('zombie_they_keep_coming');
         expect(choice1.targetType).toBe('discard_minion');
 
@@ -1353,7 +1361,7 @@ describe('P2: zombie_they_keep_coming（它们不断来临）弃牌堆直点交�
         );
 
         expect(r2.steps[0]?.success).toBe(true);
-        expect(r2.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r2.finalState);
 
         const player = r2.finalState.core.players['0'];
         expect(player.minionsPlayed).toBe(player.minionLimit);
@@ -1386,7 +1394,7 @@ describe('P2: zombie_they_keep_coming（它们不断来临）弃牌堆直点交�
             payload: { cardUid: 'tkc1' },
         }, 'they_keep_coming: create interaction without quota refund');
 
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         const cardOpt = findOption(choice1, (o: any) => o.value?.cardUid === 'disc-m1');
         const r2 = respondWithMergedValue(
             r1.finalState,
@@ -1443,7 +1451,7 @@ describe('P2: zombie_they_keep_coming（它们不断来临）弃牌堆直点交�
             payload: { cardUid: 'tkc1' },
         }, 'they_keep_coming: create interaction for blocked base');
 
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         const cardOpt = findOption(choice1, (o: any) => o.value?.cardUid === 'disc-m1');
         const r2 = respondWithMergedValue(
             r1.finalState,
@@ -1488,7 +1496,7 @@ describe('P2: robot_zapbot（高速机器人）额度模式', () => {
 
         expect(r1.steps[0]?.success).toBe(true);
         // 无交互弹窗
-        expect(r1.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r1.finalState);
         // zapbot 在 base0
         expect(r1.finalState.core.bases[0].minions.some(m => m.defId === 'robot_zapbot')).toBe(true);
         // 额度增加：minionLimit 应该 +1
@@ -1529,7 +1537,7 @@ describe('P2: robot_hoverbot（盘旋机器人）2步链', () => {
         }, 'hoverbot step1: 打出');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('robot_hoverbot');
 
         // Step 2: 确认打出 → 选基地
@@ -1537,7 +1545,7 @@ describe('P2: robot_hoverbot（盘旋机器人）2步链', () => {
         const r2 = respond(r1.finalState, '0', playOpt, 'hoverbot step2: 确认打出');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('robot_hoverbot_base');
 
         // Step 3: 选 base1 → 链路结束
@@ -1545,7 +1553,7 @@ describe('P2: robot_hoverbot（盘旋机器人）2步链', () => {
         const r3 = respond(r2.finalState, '0', baseOpt, 'hoverbot step3: 选基地');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         // 验证：deck-m1 打出到 base1
         const fc = r3.finalState.core;
@@ -1578,10 +1586,10 @@ describe('P2: robot_hoverbot（盘旋机器人）2步链', () => {
             payload: { cardUid: 'hoverbot1', baseIndex: 0 },
         }, 'hoverbot immediate extra step1');
 
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         const playOpt = findOption(choice1, (o: any) => o.value?.cardUid === 'deck-m1');
         const r2 = respond(r1.finalState, '0', playOpt, 'hoverbot immediate extra step2');
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         const baseOpt = findOption(choice2, (o: any) => o.value?.baseIndex === 1);
         const r3 = respond(r2.finalState, '0', baseOpt, 'hoverbot immediate extra step3');
 
@@ -1631,7 +1639,7 @@ describe('P2: ghost_spirit（灵魂）2步链 - 力量=1分支', () => {
         }, 'spirit step1: 打出');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('ghost_spirit');
 
         // Step 2: 选 enemy-m1（力量1）→ 弃牌选择
@@ -1639,7 +1647,7 @@ describe('P2: ghost_spirit（灵魂）2步链 - 力量=1分支', () => {
         const r2 = respond(r1.finalState, '0', targetOpt, 'spirit step2: 选目标');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('ghost_spirit_discard');
 
         // Step 3: 选1张手牌弃掉（min:1, max:1）→ 消灭目标
@@ -1647,7 +1655,7 @@ describe('P2: ghost_spirit（灵魂）2步链 - 力量=1分支', () => {
         const r3 = respond(r2.finalState, '0', card1Opt, 'spirit step3: 弃牌消灭');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         // 验证：enemy-m1 被消灭
         const fc = r3.finalState.core;
@@ -1688,7 +1696,7 @@ describe('P2: ghost_spirit（灵魂）2步链 - 力量=0分支', () => {
         }, 'spirit-zero step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('ghost_spirit');
 
         // Step 2: 选力量0目标 → 确认交互
@@ -1696,14 +1704,14 @@ describe('P2: ghost_spirit（灵魂）2步链 - 力量=0分支', () => {
         const r2 = respond(r1.finalState, '0', targetOpt, 'spirit-zero step2: 选目标');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('ghost_spirit_confirm');
 
         // Step 3: 确认消灭
         const r3 = respond(r2.finalState, '0', 'yes', 'spirit-zero step3: 确认');
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
 
         const fc = r3.finalState.core;
         expect(fc.bases[0].minions.find(m => m.uid === 'weak-m1')).toBeUndefined();
@@ -1738,7 +1746,7 @@ describe('P2: miskatonic_those_meddling_kids（多管闲事的小鬼）点击式
         }, 'meddling_kids step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('miskatonic_those_meddling_kids');
 
         // Step 2: 选 base0 → 显示点击式行动卡选择
@@ -1746,7 +1754,7 @@ describe('P2: miskatonic_those_meddling_kids（多管闲事的小鬼）点击式
         const r2 = respond(r1.finalState, '0', baseOpt, 'meddling_kids step2: 选基地');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('miskatonic_those_meddling_kids_select');
 
         // Step 3: 点击第一张行动卡 → 消灭，显示下一张
@@ -1757,7 +1765,7 @@ describe('P2: miskatonic_those_meddling_kids（多管闲事的小鬼）点击式
         // ongoing1 被消灭
         expect(r3.finalState.core.bases[0].ongoingActions.find(o => o.uid === 'ongoing1')).toBeUndefined();
         // 还有 ongoing2，应该显示下一个选择
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
         expect(choice3.sourceId).toBe('miskatonic_those_meddling_kids_select');
 
         // Step 4: 跳过 → 链路结束
@@ -1765,7 +1773,7 @@ describe('P2: miskatonic_those_meddling_kids（多管闲事的小鬼）点击式
         const r4 = respond(r3.finalState, '0', skipOpt, 'meddling_kids step4: 跳过');
 
         expect(r4.steps[0]?.success).toBe(true);
-        expect(r4.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r4.finalState);
         // ongoing2 仍然存在（跳过了）
         expect(r4.finalState.core.bases[0].ongoingActions.find(o => o.uid === 'ongoing2')).toBeDefined();
     });
@@ -1793,19 +1801,19 @@ describe('P2: miskatonic_those_meddling_kids（多管闲事的小鬼）点击式
             type: SU_COMMANDS.PLAY_ACTION, playerId: '0',
             payload: { cardUid: 'tmk1' },
         }, 'meddling_kids 3-step-1');
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         const baseOpt = findOption(choice1, (o: any) => o.value?.baseIndex === 0);
 
         const r2 = respond(r1.finalState, '0', baseOpt, 'meddling_kids 3-step-2');
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         const firstOpt = findOption(choice2, (o: any) => o.value?.cardUid === 'ongoing1');
 
         const r3 = respond(r2.finalState, '0', firstOpt, 'meddling_kids 3-step-3');
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
         const secondOpt = findOption(choice3, (o: any) => o.value?.cardUid === 'ongoing2');
 
         const r4 = respond(r3.finalState, '0', secondOpt, 'meddling_kids 3-step-4');
-        const choice4 = asSimpleChoice(r4.finalState.sys.interaction.current)!;
+        const choice4 = getSimpleChoicePrompt(r4.finalState);
         const remainingIds = choice4.options
             .filter((o: any) => !o.value?.skip)
             .map((o: any) => o.value?.cardUid)
@@ -1857,7 +1865,7 @@ describe('P1: ghost_the_dead_rise（亡者崛起）3步链', () => {
         }, 'dead_rise step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('ghost_the_dead_rise_discard');
 
         // Step 2: 弃1张牌 → 选弃牌堆随从
@@ -1870,7 +1878,7 @@ describe('P1: ghost_the_dead_rise（亡者崛起）3步链', () => {
         // 但 test_minion 可能没有注册在 cards 数据中，导致 getCardDef 返回 undefined
         // 如果返回 undefined，def.power 为 undefined，不满足 def.power < discardCount
         // 这种情况下链路直接结束
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current);
+        const choice2 = getOptionalSimpleChoicePrompt(r2.finalState);
         if (choice2) {
             expect(choice2.sourceId).toBe('ghost_the_dead_rise_play');
         }
@@ -1907,14 +1915,14 @@ describe('P1: ghost_the_dead_rise（亡者崛起）3步链', () => {
             payload: { cardUid: 'tdr1' },
         }, 'dead_rise merged-base step1');
 
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         const discardOpt = findOption(choice1, (o: any) => o.value?.cardUid === 'dc1');
         const r2 = respond(r1.finalState, '0', discardOpt, 'dead_rise merged-base step2');
 
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('ghost_the_dead_rise_play');
         expect(choice2.targetType).toBe('discard_minion');
-        expect((r2.finalState.sys.interaction.current as any)?.data?.allowedBaseIndices).toEqual([0, 1]);
+        expect(getPromptHandlerData(choice2).allowedBaseIndices).toEqual([0, 1]);
 
         const minionOpt = findOption(choice2, (o: any) => o.value?.cardUid === 'disc-m1');
         const r3 = respondWithMergedValue(
@@ -1926,7 +1934,7 @@ describe('P1: ghost_the_dead_rise（亡者崛起）3步链', () => {
         );
 
         expect(r3.steps[0]?.success).toBe(true);
-        expect(r3.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r3.finalState);
         expect(r3.finalState.core.bases[1].minions.some(m => m.uid === 'disc-m1')).toBe(true);
         expect(r3.finalState.core.players['0'].discard.some(c => c.uid === 'disc-m1')).toBe(false);
         expect(r3.finalState.core.players['0'].minionsPlayed).toBe(1);
@@ -1962,15 +1970,15 @@ describe('P1: ghost_the_dead_rise（亡者崛起）3步链', () => {
             payload: { cardUid: 'tdr1' },
         }, 'dead_rise immediate extra step1');
 
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         const discardOpt = findOption(choice1, (o: any) => o.value?.cardUid === 'dc1');
         const r2 = respond(r1.finalState, '0', discardOpt, 'dead_rise immediate extra step2');
 
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         const minionOpt = findOption(choice2, (o: any) => o.value?.cardUid === 'disc-m1');
         const r3 = respond(r2.finalState, '0', minionOpt, 'dead_rise immediate extra step3');
 
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
         const baseOpt = findOption(choice3, (o: any) => o.value?.baseIndex === 1);
         const r4 = respond(r3.finalState, '0', baseOpt, 'dead_rise immediate extra step4');
 
@@ -2024,7 +2032,7 @@ describe('P3: alien_crop_circles（麦田怪圈）循环链', () => {
         }, 'crop_circles step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('alien_crop_circles');
 
         // Step 2: 选 base0 → 自动返回所有随从（强制效果）
@@ -2032,7 +2040,7 @@ describe('P3: alien_crop_circles（麦田怪圈）循环链', () => {
         const r2 = respond(r1.finalState, '0', baseOpt, 'crop_circles step2: 选基地');
 
         expect(r2.steps[0]?.success).toBe(true);
-        expect(r2.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r2.finalState);
 
         // 验证：所有随从（m1, m2, m3）都返回手牌
         const fc = r2.finalState.core;
@@ -2078,7 +2086,7 @@ describe('P3: pirate_full_sail（全速前进）循环链', () => {
         }, 'full_sail step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('pirate_full_sail_choose_minion');
 
         // Step 2: 选 m1 → 选目标基地
@@ -2086,7 +2094,7 @@ describe('P3: pirate_full_sail（全速前进）循环链', () => {
         const r2 = respond(r1.finalState, '0', m1Opt, 'full_sail step2: 选随从');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('pirate_full_sail_choose_base');
 
         // Step 3: 选 base1 → m1 移动，循环选下一个
@@ -2094,14 +2102,14 @@ describe('P3: pirate_full_sail（全速前进）循环链', () => {
         const r3 = respond(r2.finalState, '0', base1Opt, 'full_sail step3: 选基地');
 
         expect(r3.steps[0]?.success).toBe(true);
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
         expect(choice3.sourceId).toBe('pirate_full_sail_choose_minion');
 
         // Step 4: 完成
         const r4 = respond(r3.finalState, '0', 'done', 'full_sail step4: 完成');
 
         expect(r4.steps[0]?.success).toBe(true);
-        expect(r4.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r4.finalState);
 
         // 验证：m1 移到 base1，m2 留在 base0
         const fc = r4.finalState.core;
@@ -2110,9 +2118,8 @@ describe('P3: pirate_full_sail（全速前进）循环链', () => {
     });
 });
 
-describe('P3: alien_probe（探测）2步链（多对手时）', () => {
-    // 跳过此测试 - sourceId 传递问题需要深入调试
-    it.skip('选对手 → 选放顶/底 → 牌库顶放到底', () => {
+describe('P3: alien_probe（探测）手牌选择链', () => {
+    it('单对手自动确定对手 → 选手牌随从 → 对手弃掉该随从', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0', {
@@ -2120,39 +2127,41 @@ describe('P3: alien_probe（探测）2步链（多对手时）', () => {
                     factions: ['aliens', 'pirates'] as [string, string],
                 }),
                 '1': makePlayer('1', {
-                    deck: [
-                        makeCard('deck-c1', 'test_card', '1', 'action'),
-                        makeCard('deck-c2', 'test_card2', '1', 'action'),
+                    hand: [
+                        makeCard('hand-m1', 'pirate_first_mate', '1', 'minion'),
+                        makeCard('hand-a1', 'pirate_broadside', '1', 'action'),
                     ],
+                    factions: ['pirates', 'ninjas'] as [string, string],
                 }),
             },
         });
 
         const state = makeFullMatchState(core);
 
-        // Step 1: 打出 probe → 单对手自动选择 → 直接到选放置位置
-        // resolveOrPrompt 在单对手时自动执行，所以可能直接跳到 alien_probe
+        // Step 1: 打出 probe → 单对手自动选择 → 直接到对手手牌选择
         const r1 = runCommand(state, {
             type: SU_COMMANDS.PLAY_ACTION, playerId: '0',
             payload: { cardUid: 'probe1' },
         }, 'probe step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
-        // 单对手时 resolveOrPrompt 自动执行，直接到 alien_probe
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('alien_probe');
 
-        // Step 2: 选放到底
-        const bottomOpt = findOption(choice1, (o: any) => o.value?.placement === 'bottom');
-        const r2 = respond(r1.finalState, '0', bottomOpt, 'probe step2: 放底');
+        // Step 2: 选择对手手牌中的随从
+        const minionOpt = getPromptOption(choice1, (o: any) => o.value?.cardUid === 'hand-m1');
+        const actionOpt = getPromptOption(choice1, (o: any) => o.value?.cardUid === 'hand-a1');
+        expect(actionOpt.disabled).toBe(true);
+        const r2 = respond(r1.finalState, '0', minionOpt.id, 'probe step2: 选择随从');
 
         expect(r2.steps[0]?.success).toBe(true);
-        expect(r2.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r2.finalState);
 
-        // 验证：deck-c1 应该在牌库底（最后一张）
+        // 验证：被选随从进入对手弃牌堆，行动卡仍留在手牌
         const fc = r2.finalState.core;
-        const p1Deck = fc.players['1'].deck;
-        expect(p1Deck[p1Deck.length - 1].uid).toBe('deck-c1');
+        expect(fc.players['1'].hand.some(card => card.uid === 'hand-m1')).toBe(false);
+        expect(fc.players['1'].discard.some(card => card.uid === 'hand-m1')).toBe(true);
+        expect(fc.players['1'].hand.some(card => card.uid === 'hand-a1')).toBe(true);
     });
 });
 
@@ -2187,7 +2196,7 @@ describe('P3: alien_terraform（地形改造）3步链', () => {
         }, 'terraform step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('alien_terraform_choose_replacement');
 
         // Step 2: 选替换基地 → 可选打随从
@@ -2197,14 +2206,14 @@ describe('P3: alien_terraform（地形改造）3步链', () => {
         expect(r2.steps[0]?.success).toBe(true);
 
         // 可能有第三步（选是否打随从），也可能直接结束
-        const choice3 = asSimpleChoice(r2.finalState.sys.interaction.current);
+        const choice3 = getSimpleChoicePrompt(r2.finalState);
         let finalState = r2.finalState;
         if (choice3) {
             expect(choice3.sourceId).toBe('alien_terraform_play_minion');
             // 跳过打随从
             const r3 = respond(r2.finalState, '0', 'skip', 'terraform step3: 跳过打随从');
             expect(r3.steps[0]?.success).toBe(true);
-            expect(r3.finalState.sys.interaction.current).toBeUndefined();
+            expectNoPrompt(r3.finalState);
             finalState = r3.finalState;
         }
 
@@ -2243,7 +2252,7 @@ describe('P3: wizard_portal（传送门）循环链', () => {
         }, 'portal step1');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('wizard_portal_pick');
 
         // Step 2: 选 deck-m1 放入手牌 → 进入排序流程（剩余4张：deck-m2 + 3行动卡）
@@ -2251,7 +2260,7 @@ describe('P3: wizard_portal（传送门）循环链', () => {
         const r2 = respond(r1.finalState, '0', m1Opt, 'portal step2: 选随从');
 
         expect(r2.steps[0]?.success).toBe(true);
-        const choice2 = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const choice2 = getSimpleChoicePrompt(r2.finalState);
         expect(choice2.sourceId).toBe('wizard_portal_order');
 
         // Step 3: 排序第一张 → 选 deck-a1
@@ -2259,7 +2268,7 @@ describe('P3: wizard_portal（传送门）循环链', () => {
         const r3 = respond(r2.finalState, '0', a1Opt, 'portal step3: 排序第1张');
 
         expect(r3.steps[0]?.success).toBe(true);
-        const choice3 = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const choice3 = getSimpleChoicePrompt(r3.finalState);
         expect(choice3.sourceId).toBe('wizard_portal_order');
 
         // Step 4: 排序第二张 → 选 deck-m2
@@ -2267,7 +2276,7 @@ describe('P3: wizard_portal（传送门）循环链', () => {
         const r4 = respond(r3.finalState, '0', m2Opt, 'portal step4: 排序第2张');
 
         expect(r4.steps[0]?.success).toBe(true);
-        const choice4 = asSimpleChoice(r4.finalState.sys.interaction.current)!;
+        const choice4 = getSimpleChoicePrompt(r4.finalState);
         expect(choice4.sourceId).toBe('wizard_portal_order');
 
         // Step 5: 排序第三张 → 选 deck-a2（剩余1张自动放回）
@@ -2276,7 +2285,7 @@ describe('P3: wizard_portal（传送门）循环链', () => {
 
         expect(r5.steps[0]?.success).toBe(true);
         // 最后1张自动放回，链路结束
-        expect(r5.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r5.finalState);
     });
 });
 
@@ -2320,7 +2329,7 @@ describe('P3: pirate_king_move（海盗王）触发链', () => {
         const r1 = respond(state, '0', 'yes', 'king_move: 确认移动');
 
         expect(r1.steps[0]?.success).toBe(true);
-        expect(r1.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r1.finalState);
 
         // 验证：king1 从 base0 移到 base1
         const fc = r1.finalState.core;
@@ -2364,7 +2373,7 @@ describe('P3: pirate_king_move（海盗王）触发链', () => {
         const r1 = respond(state, '0', 'no', 'king_move: 留在原地');
 
         expect(r1.steps[0]?.success).toBe(true);
-        expect(r1.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r1.finalState);
 
         // king1 留在 base0
         const fc = r1.finalState.core;
@@ -2429,7 +2438,7 @@ describe('P3: alien_scout_return（侦察兵回手）触发链', () => {
         const r1 = respond(state, '0', 'yes', 'scout_return: 回手');
 
         expect(r1.steps[0]?.success).toBe(true);
-        expect(r1.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r1.finalState);
 
         // 验证：scout1 从 base0 移除，回到手牌
         const fc = r1.finalState.core;
@@ -2540,7 +2549,7 @@ describe('P3: pirate_first_mate（大副）触发链', () => {
         const r1 = respond(state, '0', 'base-1', 'first_mate: 选基地');
 
         expect(r1.steps[0]?.success).toBe(true);
-        expect(r1.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r1.finalState);
         
         // 验证 fm1 移到 base1
         const fc = r1.finalState.core;
@@ -2628,7 +2637,7 @@ describe('P3: elder_thing_unfathomable_goals（深不可测的目的）循环链
         }, 'unfathomable step1: 打出');
 
         expect(r1.steps[0]?.success).toBe(true);
-        const choice1 = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1.sourceId).toBe('elder_thing_unfathomable_goals');
 
         // Step 2: P1 选择消灭 p1-m1 → 链路结束（只有1个对手）
@@ -2636,7 +2645,7 @@ describe('P3: elder_thing_unfathomable_goals（深不可测的目的）循环链
         const r2 = respond(r1.finalState, '1', m1Opt, 'unfathomable step2: P1选消灭');
 
         expect(r2.steps[0]?.success).toBe(true);
-        expect(r2.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r2.finalState);
 
         // 验证：p1-m1 被消灭，p1-m2 留在 base0
         const fc = r2.finalState.core;
@@ -2672,7 +2681,7 @@ describe('P3: elder_thing_unfathomable_goals（深不可测的目的）循环链
 
         expect(r1.steps[0]?.success).toBe(true);
         // 无交互（自动消灭）
-        expect(r1.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r1.finalState);
 
         // 验证：p1-m1 被消灭
         const fc = r1.finalState.core;
@@ -2719,7 +2728,7 @@ describe('P3: pirate_buccaneer_move（海盗被消灭时移动）触发链', () 
         const r1 = respond(state, '0', 'base_1', 'buccaneer: 选基地');
 
         expect(r1.steps[0]?.success).toBe(true);
-        expect(r1.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r1.finalState);
 
         // 验证：buc1 移动到 base1（通过 moveMinion 事件）
         // 注意：由于是手动注入交互，reduce 可能不会直接反映移动
@@ -2800,10 +2809,10 @@ describe('stale move regression: bear cavalry interaction chains', () => {
         });
         const state = makeFullMatchState(core);
         const r1 = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'comm1' } }, 'commission stale step1');
-        const r2 = respond(r1.finalState, '0', findOption(asSimpleChoice(r1.finalState.sys.interaction.current)!, (o: any) => o.value?.cardUid === 'hand-m1'), 'commission stale step2');
-        const r3 = respond(r2.finalState, '0', findOption(asSimpleChoice(r2.finalState.sys.interaction.current)!, (o: any) => o.value?.baseIndex === 0), 'commission stale step3');
-        const r4 = respond(r3.finalState, '0', findOption(asSimpleChoice(r3.finalState.sys.interaction.current)!, (o: any) => o.value?.minionUid === 'enemy-m1'), 'commission stale step4');
-        const chooseDest = asSimpleChoice(r4.finalState.sys.interaction.current)!;
+        const r2 = respond(r1.finalState, '0', findOption(getSimpleChoicePrompt(r1.finalState), (o: any) => o.value?.cardUid === 'hand-m1'), 'commission stale step2');
+        const r3 = respond(r2.finalState, '0', findOption(getSimpleChoicePrompt(r2.finalState), (o: any) => o.value?.baseIndex === 0), 'commission stale step3');
+        const r4 = respond(r3.finalState, '0', findOption(getSimpleChoicePrompt(r3.finalState), (o: any) => o.value?.minionUid === 'enemy-m1'), 'commission stale step4');
+        const chooseDest = getSimpleChoicePrompt(r4.finalState);
         expect(chooseDest.sourceId).toBe('bear_cavalry_commission_move_dest');
 
         const staleCore = {
@@ -2840,8 +2849,8 @@ describe('stale move regression: bear cavalry interaction chains', () => {
         });
         const state = makeFullMatchState(core);
         const r1 = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'bc1' } }, 'bear_cavalry stale step1');
-        const r2 = respond(r1.finalState, '0', findOption(asSimpleChoice(r1.finalState.sys.interaction.current)!, (o: any) => o.value?.minionUid === 'enemy-m1'), 'bear_cavalry stale step2');
-        const chooseBase = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const r2 = respond(r1.finalState, '0', findOption(getSimpleChoicePrompt(r1.finalState), (o: any) => o.value?.minionUid === 'enemy-m1'), 'bear_cavalry stale step2');
+        const chooseBase = getSimpleChoicePrompt(r2.finalState);
         expect(chooseBase.sourceId).toBe('bear_cavalry_bear_cavalry_choose_base');
 
         const staleCore = {
@@ -2882,9 +2891,9 @@ describe('stale move regression: bear cavalry interaction chains', () => {
         });
         const state = makeFullMatchState(core);
         const r1 = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'ys1' } }, 'youre_screwed stale step1');
-        const r2 = respond(r1.finalState, '0', findOption(asSimpleChoice(r1.finalState.sys.interaction.current)!, (o: any) => o.value?.baseIndex === 0), 'youre_screwed stale step2');
-        const r3 = respond(r2.finalState, '0', findOption(asSimpleChoice(r2.finalState.sys.interaction.current)!, (o: any) => o.value?.minionUid === 'enemy-m1'), 'youre_screwed stale step3');
-        const chooseDest = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const r2 = respond(r1.finalState, '0', findOption(getSimpleChoicePrompt(r1.finalState), (o: any) => o.value?.baseIndex === 0), 'youre_screwed stale step2');
+        const r3 = respond(r2.finalState, '0', findOption(getSimpleChoicePrompt(r2.finalState), (o: any) => o.value?.minionUid === 'enemy-m1'), 'youre_screwed stale step3');
+        const chooseDest = getSimpleChoicePrompt(r3.finalState);
         expect(chooseDest.sourceId).toBe('bear_cavalry_youre_screwed_choose_dest');
 
         const staleCore = {
@@ -2921,8 +2930,8 @@ describe('stale move regression: bear cavalry interaction chains', () => {
         });
         const state = makeFullMatchState(core);
         const r1 = runCommand(state, { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'bry1' } }, 'bear_rides_you stale step1');
-        const r2 = respond(r1.finalState, '0', findOption(asSimpleChoice(r1.finalState.sys.interaction.current)!, (o: any) => o.value?.minionUid === 'my-m1'), 'bear_rides_you stale step2');
-        const chooseBase = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const r2 = respond(r1.finalState, '0', findOption(getSimpleChoicePrompt(r1.finalState), (o: any) => o.value?.minionUid === 'my-m1'), 'bear_rides_you stale step2');
+        const chooseBase = getSimpleChoicePrompt(r2.finalState);
         expect(chooseBase.sourceId).toBe('bear_cavalry_bear_rides_you_choose_base');
 
         const staleCore = {
@@ -2964,13 +2973,13 @@ describe('stale move regression: bear cavalry interaction chains', () => {
             playerId: '0',
             payload: { cardUid: 'bry-pod-1' },
         }, 'bear_rides_you_pod step1');
-        const chooseMinion = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const chooseMinion = getSimpleChoicePrompt(r1.finalState);
         const r2 = respond(r1.finalState, '0', findOption(chooseMinion, (o: any) => o.value?.minionUid === 'my-m1'), 'bear_rides_you_pod step2');
-        const chooseBase = asSimpleChoice(r2.finalState.sys.interaction.current)!;
+        const chooseBase = getSimpleChoicePrompt(r2.finalState);
         const r3 = respond(r2.finalState, '0', findOption(chooseBase, (o: any) => o.value?.baseIndex === 1), 'bear_rides_you_pod step3');
 
         expect(r3.steps[0]?.success).toBe(true);
-        const chooseSuppress = asSimpleChoice(r3.finalState.sys.interaction.current)!;
+        const chooseSuppress = getSimpleChoicePrompt(r3.finalState);
         expect(chooseSuppress.sourceId).toBe('bear_cavalry_bear_rides_you_pod_choose_suppress');
 
         const baseOption = chooseSuppress.options.find((o: any) => o.value?.kind === 'base');
@@ -3014,9 +3023,9 @@ describe('stale move regression: bear cavalry interaction chains', () => {
 
         expect(r1.steps[0]?.success).toBe(true);
 
-        const choice = asSimpleChoice(r1.finalState.sys.interaction.current)!;
+        const choice = getSimpleChoicePrompt(r1.finalState);
         expect(choice.sourceId).toBe('trickster_block_the_path_pod');
-        const comboOptions = choice.options.filter((o: any) => o.value?.blocked?.['1']);
+        const comboOptions = getPromptOptions(choice).filter((o: any) => o.value?.blocked?.['1']);
         expect(comboOptions).toHaveLength(2);
 
         const blockedFactions = comboOptions.map((o: any) => o.value?.blocked?.['1']).sort();
@@ -3029,7 +3038,7 @@ describe('stale move regression: bear cavalry interaction chains', () => {
         const r2 = respond(r1.finalState, '0', selectedOption.id, 'block_the_path_pod step2');
 
         expect(r2.steps[0]?.success).toBe(true);
-        expect(r2.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(r2.finalState);
 
         const ongoingAfterResolve = r2.finalState.core.bases[0].ongoingActions.find((o: any) => o.uid === 'block-1');
         expect(ongoingAfterResolve?.metadata?.blockedFactionsByPlayer).toEqual(selectedOption.value.blocked);

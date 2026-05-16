@@ -36,6 +36,9 @@ export const SU_FX = {
   ABILITY_TRIGGERED: 'fx.ability-triggered',
 } as const;
 
+const BASE_SCORED_TOTAL_DURATION_MS = 3000;
+const BASE_SCORED_ITEM_DELAY_S = 0.12;
+
 // ============================================================================
 // 稳定回调 hook
 // ============================================================================
@@ -191,6 +194,8 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
   const rankings = event.params?.rankings as Array<{ playerId: string; power: number; vp: number; playerName?: string }> | undefined;
   const validRankings = (rankings ?? []).filter(r => r.vp > 0);
   const shouldRender = validRankings.length > 0;
+  const lastItemDelayMs = Math.max(0, validRankings.length - 1) * BASE_SCORED_ITEM_DELAY_S * 1000;
+  const perItemDurationS = Math.max(2.2, (BASE_SCORED_TOTAL_DURATION_MS - lastItemDelayMs) / 1000);
 
   const impactFired = useRef(false);
   useEffect(() => {
@@ -202,7 +207,7 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
 
   useEffect(() => {
     if (!shouldRender) return;
-    const timer = setTimeout(stableComplete, 3900);
+    const timer = setTimeout(stableComplete, BASE_SCORED_TOTAL_DURATION_MS);
     return () => clearTimeout(timer);
   }, [shouldRender, stableComplete]);
 
@@ -243,7 +248,12 @@ const BaseScoredRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onIm
           y: [28, 0, -10, -36],
           x: '-50%',
         },
-        transition: { duration: 3.4, ease: 'easeOut', times: [0, 0.16, 0.74, 1], delay: i * 0.22 },
+        transition: {
+          duration: perItemDurationS,
+          ease: 'easeOut',
+          times: [0, 0.16, 0.74, 1],
+          delay: i * BASE_SCORED_ITEM_DELAY_S,
+        },
       },
         React.createElement('div', {
           className: 'flex min-w-[190px] max-w-[min(76vw,380px)] items-center gap-3 rounded-full border-2 border-yellow-700 bg-yellow-300/95 px-4 py-2 text-slate-950 shadow-2xl',

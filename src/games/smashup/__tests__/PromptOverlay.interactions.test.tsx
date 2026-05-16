@@ -2,8 +2,9 @@ import React from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { ToastProvider } from '../../../contexts/ToastContext';
-import { INTERACTION_COMMANDS, type InteractionDescriptor, type SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
+import type { InteractionDescriptor, SimpleChoiceData } from '../../../engine/systems/InteractionSystem';
 import { PromptOverlay } from '../ui/PromptOverlay';
+import { respondCommand } from './helpers';
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -55,7 +56,8 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         renderPromptOverlay({ interaction, dispatch, playerID: '0' });
         fireEvent.click(screen.getByRole('button', { name: '弃掉' }));
 
-        expect(dispatch).toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, { optionId: 'discard' });
+        const response = respondCommand('discard');
+        expect(dispatch).toHaveBeenCalledWith(response.type, response.payload);
     });
 
     it('button-only prompts submit on touch pointerdown before mobile click can be lost', () => {
@@ -80,7 +82,8 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         fireEvent.pointerDown(discardButton, { pointerType: 'touch' });
         fireEvent.click(discardButton);
 
-        expect(dispatch).toHaveBeenCalledWith(INTERACTION_COMMANDS.RESPOND, { optionId: 'discard' });
+        const response = respondCommand('discard');
+        expect(dispatch).toHaveBeenCalledWith(response.type, response.payload);
         expect(dispatch).toHaveBeenCalledTimes(1);
     });
 

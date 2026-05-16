@@ -261,19 +261,9 @@
       "description": "Browse and preview all common audio assets by category, with keyword search and filtering.",
       "players": "Solo Tool"
     },
-    "ugcbuilder": {
-      "title": "UGC Prototype Builder",
-      "description": "Quickly create board game prototypes. Supports card design, rule config, and AI-assisted generation.",
-      "players": "Solo Tool"
-    },
     "archview": {
       "title": "Architecture View",
       "description": "Interactive node-edge diagram showing the platform's layered architecture and module dependencies.",
-      "players": "Solo Tool"
-    },
-    "airepoworkbench": {
-      "title": "AI Repo Workbench",
-      "description": "A repo-centric AI workbench centered on RepoSession, WorkflowRun, DecisionRequest, and ArtifactBundle.",
       "players": "Solo Tool"
     },
     "summonerwars": {

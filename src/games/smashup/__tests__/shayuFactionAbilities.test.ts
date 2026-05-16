@@ -2,7 +2,21 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { getEffectiveBreakpoint } from '../domain/ongoingModifiers';
 import { SU_COMMANDS } from '../domain/types';
-import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, resolveInteractionChain } from './helpers';
+import {
+    expectNoPrompt,
+    getPromptOption,
+    getPromptOptions,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getPromptTargetType,
+    getSimpleChoicePrompt,
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    resolveInteractionChain,
+} from './helpers';
 import { runCommand } from './testRunner';
 
 describe('shayu 三派系代表性玩法行为', () => {
@@ -37,9 +51,9 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            const target = prompt.data.options.find((option: any) => option.value?.minionUid === 'victim');
+            const target = getPromptOptions(prompt).find((option: any) => option.value?.minionUid === 'victim');
             if (target) return { optionId: target.id };
-            const skip = prompt.data.options.find((option: any) => option.value?.skip);
+            const skip = getPromptOptions(prompt).find((option: any) => option.value?.skip);
             return { optionId: skip.id };
         });
         const final = resolved.finalState.core;
@@ -71,9 +85,9 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            expect(prompt.data.targetType).toBe('base');
-            expect(prompt.data.sourceId).toBe('tornados_carried_away_dest');
-            const targetBase = prompt.data.options.find((option: any) => option.value?.baseIndex === 1);
+            expect(getPromptTargetType(prompt)).toBe('base');
+            expect(getPromptSourceId(prompt)).toBe('tornados_carried_away_dest');
+            const targetBase = getPromptOption(prompt, option => option.value?.baseIndex === 1, 'Carried Away destination base option');
             return { optionId: targetBase.id };
         });
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'move-me')).toBe(false);
@@ -130,7 +144,7 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            const lowA = prompt.data.options.find((option: any) => option.value?.minionUid === 'low-a');
+            const lowA = getPromptOption(prompt, option => option.value?.minionUid === 'low-a', 'Feeding Frenzy low minion option');
             return { optionIds: [lowA.id] };
         });
         const minionUids = resolved.finalState.core.bases[0].minions.map(minion => minion.uid);
@@ -161,11 +175,11 @@ describe('shayu 三派系代表性玩法行为', () => {
             payload: { cardUid: 'a-air', targetBaseIndex: 0, targetMinionUid: 'own-shark' },
         } as any);
         expect(play.success).toBe(true);
-        expect((play.finalState.sys.interaction?.current?.data as any)?.sourceId).toBe('sharks_air_jaws_destination');
-        expect((play.finalState.sys.interaction?.current?.data as any)?.targetType).toBe('base');
+        const airJawsPrompt = getSimpleChoicePrompt(play.finalState, 'sharks_air_jaws_destination');
+        expect(getPromptTargetType(airJawsPrompt)).toBe('base');
 
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            const targetBase = prompt.data.options.find((option: any) => option.value?.baseIndex === 1);
+            const targetBase = getPromptOption(prompt, option => option.value?.baseIndex === 1, 'Air Jaws destination base option');
             return { optionId: targetBase.id };
         });
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'own-shark')).toBe(false);
@@ -206,8 +220,8 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            const low = prompt.data.options.find((option: any) => option.value?.minionUid === 'victim-low');
-            const high = prompt.data.options.find((option: any) => option.value?.minionUid === 'victim-high');
+            const low = getPromptOptions(prompt).find((option: any) => option.value?.minionUid === 'victim-low');
+            const high = getPromptOptions(prompt).find((option: any) => option.value?.minionUid === 'victim-high');
             expect(low).toBeTruthy();
             expect(high).toBeFalsy();
             return { optionId: low.id };
@@ -278,7 +292,7 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
         expect(talent.success).toBe(true);
         const resolved = resolveInteractionChain(talent.finalState, (prompt) => {
-            const target = prompt.data.options.find((option: any) => option.value?.minionUid === 'target');
+            const target = getPromptOption(prompt, option => option.value?.minionUid === 'target', 'Monster Tornado target minion option');
             return { optionId: target.id };
         });
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'target')).toBe(true);
@@ -309,7 +323,7 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            const selectable = prompt.data.options.filter((option: any) => option.value?.minionUid);
+            const selectable = getPromptOptions(prompt).filter((option: any) => option.value?.minionUid);
             const a = selectable.find((option: any) => option.value?.minionUid === 'own-a') ?? selectable[0];
             const b = selectable.find((option: any) => option.value?.minionUid === 'own-b') ?? selectable[1];
             return { optionIds: [a.id, b.id] };
@@ -348,8 +362,8 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            const a = prompt.data.options.find((option: any) => option.value?.cardUid === 'discard-a');
-            const c = prompt.data.options.find((option: any) => option.value?.cardUid === 'discard-c');
+            const a = getPromptOption(prompt, option => option.value?.cardUid === 'discard-a', 'Poseidon discard-a option');
+            const c = getPromptOption(prompt, option => option.value?.cardUid === 'discard-c', 'Poseidon discard-c option');
             return { optionIds: [a.id, c.id] };
         });
         const player = resolved.finalState.core.players['0'];
@@ -386,15 +400,15 @@ describe('shayu 三派系代表性玩法行为', () => {
             payload: { cardUid: 'a-athena' },
         } as any);
         expect(play.success).toBe(true);
-        expect((play.finalState.sys.interaction.current?.data as any)?.sourceId).toBe('mythic_greeks_favor_of_athena_pick');
+        expect(getSimpleChoicePrompt(play.finalState, 'mythic_greeks_favor_of_athena_pick')).toBeDefined();
 
         const resolved = resolveInteractionChain(play.finalState, (prompt, _state, step) => {
             if (step === 0) {
-                const picked = prompt.data.options.find((option: any) => option.value?.cardUid === 'top-action-pick');
+                const picked = getPromptOption(prompt, option => option.value?.cardUid === 'top-action-pick', 'Athena picked action option');
                 return { optionId: picked.id };
             }
             const order = ['top-minion-b', 'top-minion-a', 'top-action-a'];
-            const target = prompt.data.options.find((option: any) => option.value?.cardUid === order[step - 1]);
+            const target = getPromptOption(prompt, option => option.value?.cardUid === order[step - 1], 'Athena deck reorder option');
             return { optionId: target.id };
         });
 
@@ -434,12 +448,12 @@ describe('shayu 三派系代表性玩法行为', () => {
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt, _state, step) => {
             if (step === 0) {
-                const ownA = prompt.data.options.find((option: any) => option.value?.minionUid === 'own-a');
-                const ownB = prompt.data.options.find((option: any) => option.value?.minionUid === 'own-b');
+                const ownA = getPromptOption(prompt, option => option.value?.minionUid === 'own-a', 'Whirlwinds own-a option');
+                const ownB = getPromptOption(prompt, option => option.value?.minionUid === 'own-b', 'Whirlwinds own-b option');
                 return { optionIds: [ownA.id, ownB.id] };
             }
             const targetBaseIndex = step === 1 ? 2 : 0;
-            const target = prompt.data.options.find((option: any) => option.value?.baseIndex === targetBaseIndex);
+            const target = getPromptOption(prompt, option => option.value?.baseIndex === targetBaseIndex, 'Whirlwinds destination base option');
             return { optionId: target.id };
         });
         expect(resolved.finalState.core.bases[2].minions.some(minion => minion.uid === 'own-a')).toBe(true);
@@ -474,15 +488,15 @@ describe('shayu 三派系代表性玩法行为', () => {
             payload: { cardUid: 'a-trade' },
         } as any);
         expect(play.success).toBe(true);
-        expect((play.finalState.sys.interaction.current?.data as any)?.sourceId).toBe('tornados_trade_winds_first');
+        expect(getSimpleChoicePrompt(play.finalState, 'tornados_trade_winds_first')).toBeDefined();
         const resolved = resolveInteractionChain(play.finalState, (prompt, _state, step) => {
             if (step === 0) {
-                const first = prompt.data.options.find((option: any) => option.value?.minionUid === 'first');
+                const first = getPromptOption(prompt, option => option.value?.minionUid === 'first', 'Trade Winds first minion option');
                 return { optionId: first.id };
             }
-            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'same-base')).toBe(false);
-            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'too-big')).toBe(false);
-            const second = prompt.data.options.find((option: any) => option.value?.minionUid === 'second');
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'same-base')).toBe(false);
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'too-big')).toBe(false);
+            const second = getPromptOption(prompt, option => option.value?.minionUid === 'second', 'Trade Winds second minion option');
             return { optionId: second.id };
         });
         expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'second')).toBe(true);
@@ -512,7 +526,7 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            const top = prompt.data.options.find((option: any) => option.value?.choice === 'deck-top');
+            const top = getPromptOption(prompt, option => option.value?.choice === 'deck-top', 'Dionysus deck-top option');
             return { optionId: top.id };
         });
         const player = resolved.finalState.core.players['0'];
@@ -559,18 +573,18 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt, state, step) => {
-            const triggerOption = prompt.data.options.find((option: any) => {
+            const triggerOption = getPromptOptions(prompt).find((option: any) => {
                 const triggerId = option.value?.triggerId;
                 return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
             });
             if (triggerOption) return { optionId: triggerOption.id };
             if (step === 1) {
-                expect(prompt.data.sourceId).toBe('mythic_greeks_jason');
-                const jasonBase = prompt.data.options.find((option: any) => option.value?.baseIndex === 1);
+                expect(getPromptSourceId(prompt)).toBe('mythic_greeks_jason');
+                const jasonBase = getPromptOption(prompt, option => option.value?.baseIndex === 1, 'Jason target base option');
                 expect(jasonBase).toBeTruthy();
                 return { optionId: jasonBase.id };
             }
-            const odysseus = prompt.data.options.find((option: any) => option.value?.minionUid === 'odysseus');
+            const odysseus = getPromptOption(prompt, option => option.value?.minionUid === 'odysseus', 'Odysseus counter target option');
             return { optionId: odysseus.id };
         });
         const minions = resolved.finalState.core.bases[0].minions;
@@ -662,11 +676,11 @@ describe('shayu 三派系代表性玩法行为', () => {
             payload: { ongoingCardUid: 'dangerous', baseIndex: 0 },
         } as any);
         expect(talent.success).toBe(true);
-        expect(talent.finalState.sys.interaction.current?.data?.sourceId).toBe('sharks_dangerous_waters');
-        expect(talent.finalState.sys.interaction.current?.data?.options.some((option: any) => option.value?.minionUid === 'other-base-target')).toBe(false);
+        const dangerousPrompt = getSimpleChoicePrompt(talent.finalState, 'sharks_dangerous_waters');
+        expect(getPromptOptions(dangerousPrompt).some((option: any) => option.value?.minionUid === 'other-base-target')).toBe(false);
 
         const resolved = resolveInteractionChain(talent.finalState, (prompt) => {
-            const target = prompt.data.options.find((option: any) => option.value?.minionUid === 'same-base-target');
+            const target = getPromptOption(prompt, option => option.value?.minionUid === 'same-base-target', 'Dangerous Waters same-base target option');
             return { optionId: target.id };
         });
 
@@ -696,11 +710,11 @@ describe('shayu 三派系代表性玩法行为', () => {
             payload: { minionUid: 'cyclone', baseIndex: 0 },
         } as any);
         expect(talent.success).toBe(true);
-        expect(talent.finalState.sys.interaction.current?.data?.sourceId).toBe('tornados_cyclone');
-        expect(talent.finalState.sys.interaction.current?.data?.targetType).toBe('base');
+        const cyclonePrompt = getSimpleChoicePrompt(talent.finalState, 'tornados_cyclone');
+        expect(getPromptTargetType(cyclonePrompt)).toBe('base');
 
         const resolved = resolveInteractionChain(talent.finalState, (prompt) => {
-            const targetBase = prompt.data.options.find((option: any) => option.value?.baseIndex === 1);
+            const targetBase = getPromptOption(prompt, option => option.value?.baseIndex === 1, 'Cyclone target base option');
             return { optionId: targetBase.id };
         });
 
@@ -729,7 +743,7 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
 
         expect(play.success).toBe(true);
-        expect(play.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(play.finalState);
         expect(play.finalState.core.players['0'].actionLimit).toBe(3);
     });
 
@@ -757,7 +771,7 @@ describe('shayu 三派系代表性玩法行为', () => {
         } as any);
 
         expect(play.success).toBe(true);
-        expect(play.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(play.finalState);
         expect(play.finalState.core.tempBreakpointModifiers?.[1]).toBe(-5);
         expect(getEffectiveBreakpoint(play.finalState.core, 1)).toBe(16);
         expect(play.finalState.core.tempBreakpointModifiers?.[0] ?? 0).toBe(0);
@@ -791,19 +805,19 @@ describe('shayu 三派系代表性玩法行为', () => {
 
         let woodenHorsePromptPlayer: string | undefined;
         const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
-            const triggerOption = prompt.data.options.find((option: any) => {
+            const triggerOption = getPromptOptions(prompt).find((option: any) => {
                 const triggerId = option.value?.triggerId;
                 return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
             });
             if (triggerOption) return { optionId: triggerOption.id };
 
-            if (prompt.data.sourceId === 'base_wooden_horse') {
-                woodenHorsePromptPlayer = prompt.playerId;
-                const p0 = prompt.data.options.find((option: any) => option.value?.minionUid === 'p0-minion');
+            if (getPromptSourceId(prompt) === 'base_wooden_horse') {
+                woodenHorsePromptPlayer = getPromptPlayerId(prompt);
+                const p0 = getPromptOption(prompt, option => option.value?.minionUid === 'p0-minion', 'Wooden Horse p0 minion option');
                 return { optionId: p0.id };
             }
 
-            const skip = prompt.data.options.find((option: any) => option.value?.skip);
+            const skip = getPromptOption(prompt, option => option.value?.skip, 'Wooden Horse skip option');
             return { optionId: skip.id };
         });
 

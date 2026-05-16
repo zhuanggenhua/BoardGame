@@ -1,5 +1,9 @@
 # DiceThrone Common 角色头像图集替换证据（2026-05-13）
 
+> 2026-05-16 修订：本证据记录的方案已判定为错误方案，不再作为有效验收依据。
+> 错误点是把 `characterhead2.png` 裁入老角色共享 `character-portraits` 合同，导致老角色头像合同被新图集尺寸污染。
+> 后续有效口径以 `evidence/dicethrone/dicethrone-treant-ninja-portrait-atlas-fix-2026-05-13.md` 的 2026-05-16 修订段为准：老角色恢复旧 `character-portraits`，Treant / Ninja 单独使用 `characterhead2`。
+
 ## 范围
 
 - 来源：`public/assets/i18n/zh-CN/dicethrone/images/Common/characterhead2.png`

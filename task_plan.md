@@ -24,6 +24,12 @@
 
 ## Current Status
 
+- [x] `src/games/smashup/__tests__/igor-ondestroy-idempotency.test.ts` 的九命之屋 skipped 块已恢复；单文件 4 tests passed，目标模式 0 命中，eslint 0 errors，`npm run test:structure` OK。
+- [x] `src/games/smashup/__tests__/interactionChainE2E.test.ts` 最后一个 `it.skip` 已按当前 Alien Probe 规则恢复；整文件 55 tests passed，eslint 0 errors，`npm run test:structure` OK。
+- [x] `src/games/smashup/__tests__/wizard-archmage-debug.test.ts` 与 `src/games/smashup/__tests__/steampunk-aggromotive-bug.test.ts` 已作为已覆盖的调试/旧 bug skip 文件删除；对应现行测试 3 passed + 8 passed，`npm run test:structure` OK。
+- [x] `src/games/smashup/__tests__/vampireBuffetE2E.test.ts` 已作为过期整文件 skip 删除；当前有效覆盖由 `newOngoingAbilities.test.ts`（126 passed）与 `abilities/giant-ants.test.ts`（22 passed）证明，`npm run test:structure` OK。
+- [x] `src/games/smashup/__tests__/wizard-archmage-zombie-interaction.test.ts` 已从历史 `it.skip` 恢复为可运行行为回归；验证 `zombie_they_keep_coming` 从弃牌堆打出大法师后触发额外行动，单文件 1 test passed，eslint 0 errors，`npm run test:structure` OK。
+- [x] `src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug.test.ts` 已从历史 `it.skip` 恢复为可运行行为回归；验证 Me First! 窗口中打出便衣忍者后创建手牌随从选择 prompt，单文件 1 test passed，eslint 0 errors，`npm run test:structure` OK。
 - [x] `src/games/smashup/__tests__/abilities/skeletons.test.ts` 已迁出，19 tests passed。
 - [x] `src/games/smashup/__tests__/abilities/giant-ants.test.ts` 已迁出，22 tests passed。
 - [x] `src/games/smashup/__tests__/abilities/samurai.test.ts` 已迁出，28 tests passed。
@@ -86,11 +92,55 @@
 - [x] `src/games/smashup/__tests__/elderThingAbilities.test.ts` 已把 Elder Thing prompt source/target/handler data 与响应命令改为 prompt facade；单文件 25 tests passed，目标扩展扫描 0 命中。
 - [x] `src/games/smashup/__tests__/ongoingE2E.test.ts` 已把 Shanghai prompt 链、Buccaneer/First Mate POD prompt source 与响应命令改为 prompt facade；单文件 14 tests passed，目标扩展扫描 0 命中。
 - [x] `src/games/smashup/__tests__/runtimeEvidenceIssues.test.ts` 已把两个 runtime evidence 复现从裸 `getInteractionsFromMS` / `data.options` / `INTERACTION_COMMANDS.RESPOND` 改为 prompt facade；同时补强 Fledgling Vampire POD 链路，旧测试从“跑完但不证明 bury prompt”改为 Big Gulp 目标选择 -> Fledgling 反应选择 -> bury source prompt 出现，单文件 2 tests passed，目标扩展扫描 0 命中。
+- [x] `src/games/smashup/__tests__/talentAbilities.test.ts` 已把 Cthulhu Star Spawn / Servitor 天赋 prompt 读取、候选读取与取消响应命令改为 `getSimpleChoicePrompt` / `getPromptOptions` / `respondCommand`；单文件 20 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/baseAbilityIntegrationE2E.test.ts` 已把基地能力完整链路中的 prompt presence、reaction queue 响应、Shoggoth -> Asylum 二段 prompt 读取改为 prompt facade；单文件 23 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/meFirst.test.ts` 已把 Me First! 响应窗口的 pass/play/选随从/选抽牌数链路改为 `respondCommand` / `getSimpleChoicePrompt` / `getPromptOption` / `expectNoPrompt`；单文件 13 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/madnessPromptAbilities.test.ts` 已把 Madness prompt / Book of Iter / Thing on the Doorstep 链路的 source/options/multi/handler data/响应命令改为 prompt facade；单文件 26 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/madnessAbilities.test.ts` 已把 Madness 能力、Librarian POD、Corruption、Mandatory Reading 与 Innsmouth Recruitment 的 prompt/handler data/响应读取改为 prompt facade；单文件 32 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/architecture-duplicate-processing.test.ts` 已把 Big Gulp / Igor 重复触发链中的 current prompt 读取、目标 option 查找、响应命令和 current+queue 统计改为 prompt facade；单文件 7 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/baseFactionOngoing.test.ts` 已把 Infiltrate / Hidden Ninja / Acolyte -> Gunfighter / Flame Trap POD / Mark of Sleep 的 prompt source、target、options、响应命令与同 source prompt 查询改为 prompt facade；单文件 81 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/reactionQueueDestroyerId.test.ts` 已把 reaction prompt 选择、POD play prompt 查询与 displayCard 上下文断言改为 prompt facade；单文件 2 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/zombieWizardAbilities.test.ts` 已把僵尸/巫师能力 prompt source、target、displayCard 与 handler data 传递改为 prompt facade；单文件 23 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts` 已把 Miskatonic 多步选择、Recruit by Force 与 It Begins Again 的 prompt source/options/multi/no-prompt/handler data 改为 prompt facade；单文件 32 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/giantAntsPod.test.ts` 已把巨蚁 POD 的防消灭、转移指示物、双随从加指示物、基地选择与检索链路改为 prompt facade；单文件 6 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/zombieInteractionChain.test.ts` 已把僵尸 22 条交互链从 `asSimpleChoice(sys.interaction.current)`、手写 `INTERACTION_COMMANDS.RESPOND` 与裸 options 读取改为 prompt/command facade；单文件 22 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/elderThingsPod.test.ts` 已把 Elder Things POD / Shoggoth / Price of Power / Spreading Horror / base Elder Thing prompt source、displayCard、options、响应命令与无 prompt 断言改为 prompt/command facade；单文件 13 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/multi-base-afterscoring-bug.test.ts` 已把多基地计分、海盗王/托尔图加/大副/便衣忍者/四人压力 afterScoring 链路的 active prompt 获取、option 查询与响应命令改为 prompt/command facade；单文件 8 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/query6Abilities.test.ts` 已把海盗/忍者/巫师/外星人第 6 批能力测试的 prompt source、options、multi、无 prompt 与 `wizard_scry` 响应命令改为 prompt/command facade；单文件 30 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/baseAbilitiesPrompt.test.ts` 已把基础基地 prompt 的 source/options/title/player 与旧 handler data 传递改为 prompt facade；单文件 33 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/igor-ondestroy-idempotency.test.ts` 已把 3 个实际运行用例的 current+queue 手工拼接与 `data.sourceId` 过滤改为 `getPromptsBySourceId`；单文件 3 passed / 1 skipped，eslint 0 errors。跳过块按历史债务保留未硬改。
+- [x] `src/games/smashup/__tests__/ongoingTalent.test.ts` 已把 Zeppelin 二段移动、Hideout POD 交换链、Pixie POD runtime prompt 链的 prompt 查询、options 与 handler data 传递改为 prompt facade；单文件 27 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/newOngoingAbilities.test.ts` 已把 First Mate/Buccaneer/Elder Thing/Shoggoth/Killer Plant/Full Sail/Madness/基础基地/Igor/Bear Rides You POD 等剩余 prompt 读取、options 与 handler data 传递改为 prompt facade；单文件 126 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/expansionOngoing.test.ts` 已把 Steampunk / Killer Plant / Innsmouth / Miskatonic ongoing prompt source/options/target、二段 prompt、handler data 与无 prompt 分支改为 prompt facade；单文件 67 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/expansionBaseAbilities.test.ts` 已把扩展基地 prompt source/options/target/player、reaction 二段 prompt、stale handler data 与 scoring continuation data 改为 prompt facade；单文件 50 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/factionAbilities.test.ts` 已把 Trickster / Pirates / Ninjas / Dinosaurs / Robots / Wizards / immediate extra action / Aliens 旧 prompt 读取、options/optionsGenerator、响应命令与无 prompt 断言改为 prompt facade；单文件 46 tests passed，目标扩展扫描 0 命中，eslint 0 errors。
+- [x] `src/games/smashup/__tests__/PromptOverlay.interactions.test.tsx` 已把 UI 组件提交响应命令从直接 import `INTERACTION_COMMANDS` 改为复用 `respondCommand('discard')` 的稳定命令 facade；单文件 6 tests passed，eslint 0 errors，目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/vampiresPod.test.ts` 已把 Big Gulp / WWTLF / Drone / Fledgling / Nine Lives / The Count / Dinner Date / Wolf Pact 的 prompt 获取、source/options、响应命令、无 prompt 断言改为 prompt facade；单文件 11 tests passed，eslint 0 errors，目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/newBaseAbilities.test.ts` 已把基础/扩展基地旧大文件中的 Haunted House AL9000、Microbot Guard、Pyramids、Crypt、Castle Blood、Drakkar、Longhouse、Cowboys、Samurai、reaction choose 链路从内部 prompt/current/data/RESPOND 迁到 prompt/command facade；单文件 60 tests passed，eslint 0 errors，目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/interactionChainE2E.test.ts` 已把多步交互链 E2E 从 `asSimpleChoice(sys.interaction.current)`、手写 `INTERACTION_COMMANDS.RESPOND`、无 prompt 裸断言和 prompt data 读取迁到 prompt/command facade；单文件 54 passed / 1 skipped，eslint 0 errors，目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/smashup.smoke.test.ts` 已把泰坦、基地、AI、Pecos Bill、Kraken/First Mate 等 smoke 行为链中的 prompt source/options、reaction choose、handler data 与响应命令从内部 `current/data/RESPOND` 迁到 prompt/command facade；单文件 133 tests passed，eslint 0 errors，目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/shayuFactionAbilities.test.ts` 已把真实入口 shayu 行为测试里的 prompt option 查找、source/target/player 断言与无 prompt 断言迁到 prompt facade；单文件 21 tests passed，eslint 0 errors，目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` 已把 shayu L2 综合审计行为测试中的 prompt source/options/player、trigger option 查询、Hades prompt 读取和无 prompt 断言迁到 prompt facade；单文件 14 tests passed，eslint 0 errors，目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/audit-d1-alien-crop-circles.test.ts` 已把 Crop Circles audit 的 prompt source/options/target/multi、响应命令与无 prompt 断言迁到 prompt/command facade，并把手写随从夹具改为 `makeMinion` 以补齐领域默认字段；audit 专用配置 3 tests passed，eslint 0 errors，目标扫描 0 命中。
+- [x] 剩余目标命中已完成第一轮分类：`mothership-scout-afterscore-bug.test.ts`、`miskatonic-scout-afterscore.test.ts`、`wizard-academy-scout-afterscore.test.ts`、`elder-thing-multi-select-integration.test.ts`、`test-alien-scout-afterscore.test.ts`、`ninja-hidden-ninja-interaction-bug.test.ts`、`wizard-archmage-zombie-interaction.test.ts`、`vampireBuffetE2E.test.ts` 均为全文件或用例级 `.skip` 历史复现；`igor-ondestroy-idempotency.test.ts` 剩余命中也只在 `it.skip` 块；`promptSystem.test.ts` 剩余 `INTERACTION_COMMANDS` 是 AI fallback 的底层合同断言。
+- [x] `docs/testing-best-practices.md` 的测试辅助函数/快速参考已同步 TDD seam 口径：业务交互测试默认使用 prompt facade，`getInteractionsFromMS` 仅作为系统契约/queue 存储测试的低层兼容工具。
+- [x] `docs/testing-best-practices.md` / `docs/automated-testing.md` 已收紧 skip 口径：不再建议用 `it.skip` 优化慢速游戏行为测试；E2E 动态 `test.skip()` 仅限环境/房间初始化前置失败，不得隐藏业务断言失败。
+- [x] `src/games/smashup/__tests__/helpers/auditUtils.ts` 已删除 `getInteractionsFromMS` 兼容重导出；全目录查询确认除核心 `helpers.ts` 本体外无外部引用，防止新 audit 测试继续绕过 prompt facade。
+- [x] `src/games/smashup/__tests__/elder-thing-multi-select-integration.test.ts` 已从无效 `describe.skip` 死代码恢复为真实 `PLAY_MINION` 命令链集成测试：打出远古之物 -> 选择消灭 -> 两步选择己方随从 -> 验证只消灭所选目标；单文件 1 test passed，eslint 0 errors，结构门禁 OK。
+- [x] `src/games/smashup/__tests__/test-alien-scout-afterscore.test.ts` 已从旧 Runner `describe.skip` 恢复为可运行 afterScoring trigger 回归：验证 `alien_scout_return` prompt 出现、选回手后侦察兵进入控制者手牌并离开基地；单文件 2 tests passed，eslint 0 errors，结构门禁 OK。
+- [x] `src/games/smashup/__tests__/newOngoingAbilities.test.ts`、`newBaseAbilities.test.ts`、`bases/base-ability-contracts.test.ts`、`bases/samurai-bases.test.ts`、`bases/base-core-effects.test.ts`、`bases/first-minion-bases.test.ts`、`bases/base-scoring-effects.test.ts` 与 `bases/interaction-base-abilities.test.ts` 均已退出；基地能力测试已按业务对象/行为簇拆到 `bases/` 主题文件。
+- [x] `first-minion-bases.test.ts` 未停留在“相似机制集合”层面，已继续拆为 `laboratorium-base.test.ts` 与 `moot-site-base.test.ts`；聚焦验证 2 files / 9 tests passed，`bases` 目录 22 files / 101 tests passed，结构门禁 OK，禁用 seam 扫描 0 命中。
+- [x] `base-scoring-effects.test.ts` 已拆为 `haunted-house-scoring-base.test.ts`、`temple-of-goju-base.test.ts`、`great-library-base.test.ts`、`ritual-site-base.test.ts`；聚焦验证 4 files / 10 tests passed，结构门禁 OK。
+- [x] `interaction-base-abilities.test.ts` 已拆除；鬼屋 AL9000 交互并入 `haunted-house-al9000-base.test.ts`，其余拆为 `rlyeh-base.test.ts`、`mountains-of-madness-base.test.ts`、`homeworld-base.test.ts`、`mothership-base.test.ts`、`ninja-dojo-base.test.ts`。聚焦验证 6 files / 15 tests passed，`bases` 目录 29 files / 100 tests passed，结构门禁 OK，禁用 seam 扫描 0 命中。
+- [x] `samurai-sakura-garden-bases.test.ts` 已按普通 `base_sakura_garden` 与 POD 版 `base_sakura_garden_pod` 拆为 `sakura-garden-base.test.ts` / `sakura-garden-pod-base.test.ts`；聚焦验证 2 files / 6 tests passed，`bases` 目录 30 files / 100 tests passed，结构门禁 OK，禁用 seam 扫描 0 命中。
+- [x] `laboratorium-base.test.ts` 已进一步按基础首随从合同与大法师/旧持久化队列恢复拆为 `laboratorium-base.test.ts` / `laboratorium-archmage-queue.test.ts`；聚焦验证 2 files / 6 tests passed，`bases/*.ts` 分批精确验证 26 files / 77 tests passed，结构门禁 OK，禁用 seam 扫描 0 命中。
+- [x] `pod-base-reuse.test.ts` 已删除，Cowboys POD 复用合同并入 `cowboys-bases.test.ts`，Vikings POD 复用合同先并入后继续按 `drakkar-base.test.ts` / `longhouse-base.test.ts` 拆分；聚焦验证 2 files / 6 tests passed，`bases/*.ts` 分批精确验证 25 files / 77 tests passed，结构门禁 OK，禁用 seam 扫描 0 命中。
 
 ## Next
 
-- 继续把同一行为 seam 规范扩展到其他仍含裸交互结构的旧测试文件；新增/迁出测试必须复用 prompt facade，不把旧内部访问原样搬进新文件。
-- 当前全 `src/games/smashup/__tests__` 仍有 780 条旧内部耦合命中；后续按风险簇继续迁移，不得把当前批次误报为整体完成。
+- 继续保持新增/迁出测试复用 prompt/command facade；不允许把旧内部访问原样搬进新文件。
+- 当前目标扫描（排除 `helpers.ts` / `helpers/**`）对旧 `new*` 入口、旧集合文件、裸 prompt seam 与 `.skip` 均为 0 命中；后续工作重点从“清旧入口”转为审查剩余较大文件是否仍有可拆的自然业务边界。
+- 若继续深化，优先审计 `field-of-honor-base.test.ts` 与 `laboratorium-archmage-queue.test.ts`：只有确认一个文件混有多个独立业务对象或行为簇时才拆；不要为了压行数牺牲可读性。
 
 ## Errors Encountered
 
@@ -99,6 +149,10 @@
 | 2026-05-16 | 清理 `expansionAbilities.test.ts` 未使用 `events` warning 时，模糊替换误删了仍被后续断言使用的 `events` 赋值，导致单文件测试短暂失败。 | 改为按具体用例上下文定点恢复需要的 `const events = ...`，只清理 Ghost/Scrap Diving prompt 存在性用例的未使用赋值；复跑后 32 tests passed，eslint 0 warnings。 |
 | 2026-05-16 | 迁移 `robot-hoverbot-stable.test.ts` 时误用 `getPromptOptionById`，该 helper 只覆盖 `prompt.options`，未覆盖历史 `data.options`，导致首个用例找不到 `play` option。 | 改用已兼容两种形状的 `getPromptOption`，保持行为断言不变；复跑后 3 tests passed，eslint 0 errors。 |
 | 2026-05-16 | 补强 `runtimeEvidenceIssues.test.ts` 的 Fledgling Vampire POD bury prompt 断言时，第一次直接断言 bury source prompt 失败，实际当前 prompt 仍是 `smashup_reaction_choose`；第二次用固定玩家 `0` 响应 reaction prompt 又失败为“不是你的选择回合”。 | 改为显式先选择 `vampire_fledgling_vampire_pod` 的 reaction option，并让 `respondToPrompt` 使用 prompt 自身 playerId；复跑后单文件 2 tests passed。 |
+| 2026-05-16 | 迁移 `reactionQueueDestroyerId.test.ts` 时第一次误用 `getReactionPromptOptionBySourceDefId`，漏传 prompt 参数，导致两个用例报 “Expected reaction option for undefined”。 | 改为按 helper 签名传入 `(state, prompt, sourceDefId)`；复跑后单文件 2 tests passed。 |
+| 2026-05-16 | 迁移 `query6Abilities.test.ts` 时把“无抽牌事件但应创建排序 prompt”的 `wizard_portal` 用例机械加上 `expectNoPrompt`，导致单文件短暂失败。 | 回到用例语义：保留 `getSimpleChoicePrompt(matchState, 'wizard_portal_order')` 作为正向行为断言，只在真正无交互分支使用 `expectNoPrompt`；复跑后 30 tests passed。 |
+| 2026-05-16 | 清理 `factionAbilities.test.ts` 未使用变量 warning 时，第一次误删了两个仍需要传给 facade 的 `matchState` 绑定，导致 `dino_natural_selection` 两个用例短暂 ReferenceError。 | 按失败行恢复需要的 `matchState`，只清理真正未使用的 swashbuckling/howl/survival 等用例绑定；复跑后 46 tests passed，eslint 0 errors。 |
+| 2026-05-16 | 删除 `auditUtils` 的低层重导出后跑 8 个 audit 入口，4 个文件红灯；失败点是既有业务审计债务：`zombies.ts` 遗留注册白名单、`sharks_mako` special 注册、古埃及 buried special 语义、`werewolf_leader_of_the_pack_pod` ongoing 注册。 | 不把全 audit 说成通过；本轮只用 `rg getInteractionsFromMS` 无外部引用和 `npm run test:structure` 通过证明出口删除本身，四个 audit 红灯登记为后续业务修复候选。 |
 
 ---
 
@@ -1122,3 +1176,255 @@
 - [x] 已完成 3 条不同机制家族全链路抽查：Twister 可选跳过、Athena/Trade Winds 多步链、Gone with the Wind afterScoring 链。
 - [x] 本轮未发现新的实现错误；因此没有触发 Twister 可选否定路径之外的新规范升级。
 - [ ] 未执行提交、push、部署，也未把生产反馈状态改为 resolved。
+
+## Addendum（2026-05-16 14:15 +08）：afterScoring skip 历史治理
+
+- [x] `mothership-scout-afterscore-bug.test.ts` 不再是 `describe.skip`；已重写为 3 条当前规则下的可运行行为回归。
+- [x] 新回归覆盖：母舰 + 侦察兵、母舰 + 两侦察兵 + 大副、巫师学院 + 侦察兵，均通过真实 `ADVANCE_PHASE` / prompt facade / 最终状态断言验证。
+- [x] 删除过期历史文件：`miskatonic-scout-afterscore.test.ts`（当前密大基地是 `onMinionPlayed`，不是 afterScoring）与 `wizard-academy-scout-afterscore.test.ts`（已合并进可运行链式回归）。
+- [x] `audit-d1-base-tortuga.test.ts` 的 `data.options` / `playerId` 裸读已迁到 prompt facade。
+- [x] 验证：母舰链单文件 3 passed；Tortuga audit 专用配置 7 passed；eslint 0 errors；`npm run test:structure` OK。
+- [x] 全 `src/games/smashup/__tests__` skip 扫描 0 命中；内部 prompt 结构 broad scan 只剩 `helpers.ts` 这一层。
+
+## Addendum（2026-05-16 14:25 +08）：旧泛名 ongoing 文件继续拆分
+
+- [x] 从 `newOngoingAbilities.test.ts` 迁出 Bear Cavalry 保护/触发簇到 `abilities/bear-cavalry.test.ts`，15 tests passed。
+- [x] 从 `newOngoingAbilities.test.ts` 迁出 Dinosaurs `dino_upgrade` / `dino_tooth_and_claw` 簇到 `abilities/dinosaurs.test.ts`，3 tests passed。
+- [x] 从 `newOngoingAbilities.test.ts` 迁出 Cthulhu `cthulhu_altar` / `cthulhu_furthering_the_cause` 簇到 `abilities/cthulhu.test.ts`，7 tests passed。
+- [x] `newOngoingAbilities.test.ts` 从 126 条降到 101 条，复跑 101 passed。
+- [x] 迁出文件 + 源文件 eslint 0 errors；`npm run test:structure` OK。
+- [ ] `test:structure` 仍警告 `newOngoingAbilities.test.ts` 与 `newBaseAbilities.test.ts` 是旧泛名债务；后续继续按能力/基地簇迁出。
+
+## Addendum（2026-05-16 14:46 +08）：继续拆 `newOngoingAbilities`，避免只改表象
+
+- [x] 从 `newOngoingAbilities.test.ts` 迁出完整 Killer Plants 簇到 `abilities/killer-plants.test.ts`。
+  - 覆盖 `killer_plant_overgrowth` / POD、`killer_plant_entangled`、`killer_plant_venus_man_trap`、`killer_plant_budding`、`killer_plant_deep_roots`、`killer_plant_choking_vines`。
+  - 迁出时把 `killer_plant_budding` 从裸读 `result.matchState.sys.interaction.current` 改为 `getSimpleChoicePrompt` / `getPromptSourceId` / `getPromptTargetType` facade。
+  - 新文件验证：18 tests passed。
+- [x] 从 `newOngoingAbilities.test.ts` 迁出 Elder Things ongoing / onPlay 簇到 `abilities/elder-things-ongoing.test.ts`。
+  - 覆盖 `elder_thing_dunwich_horror`、`elder_thing_the_price_of_power`、`elder_thing_elder_thing` 保护与 onPlay prompt、`elder_thing_shoggoth` 打出限制与 onPlay prompt。
+  - 新文件验证：16 tests passed。
+- [x] `newOngoingAbilities.test.ts` 已从 101 条继续降到 67 条，使用 `NODE_OPTIONS=--max-old-space-size=4096` 复跑 67 passed。
+- [x] `npx eslint` 针对 `abilities/killer-plants.test.ts`、`abilities/elder-things-ongoing.test.ts` 与 `newOngoingAbilities.test.ts` 0 errors。
+- [x] `npm run test:structure` OK。
+- [ ] `test:structure` 仍警告 `newOngoingAbilities.test.ts` / `newBaseAbilities.test.ts` 是旧泛名债务；该任务仍未完成，后续继续迁出 Pirates / Ancient Egyptians / Bases 等剩余簇。
+
+## Addendum（2026-05-16 14:58 +08）：继续迁出 Cthulhu/Madness 与 Bear Cavalry POD
+
+- [x] 迁出 Cthulhu / Madness 剩余簇到 `abilities/cthulhu.test.ts`。
+  - 新增覆盖：`cthulhu_chosen` beforeScoring、`cthulhu_complete_the_ritual`、`special_madness` onPlay、疯狂卡 VP 统计。
+  - `cthulhu_chosen` 的有 `matchState` 用例已从“只检查 matchState 存在”强化为检查 `cthulhu_chosen_confirm` prompt source/target。
+  - 验证：`abilities/cthulhu.test.ts` 20 tests passed。
+- [x] 迁出 Bear Cavalry POD 尾部簇到 `abilities/bear-cavalry.test.ts`。
+  - 新增覆盖：`bear_necessities_pod` 限制、`superiority_pod` protect/draw、`bear_rides_you_pod` 新基地压制候选项。
+  - 验证：`abilities/bear-cavalry.test.ts` 21 tests passed。
+- [x] `newOngoingAbilities.test.ts` 已继续降到 48 tests，复跑 48 passed。
+- [x] 相关文件 eslint 0 errors；`npm run test:structure` OK；业务测试裸 prompt seam 扫描无命中。
+- [ ] 剩余旧泛名债务：`newOngoingAbilities.test.ts` 还剩 Pirates / Alien Jammed Signal / BASE_REPLACED / Bases / Frankenstein / Vampires；`newBaseAbilities.test.ts` 尚未开始拆。
+
+## Addendum（2026-05-16 15:03 +08）：迁出 Frankenstein / Vampires 剩余簇
+
+- [x] 迁出 `frankenstein_igor` 基地结算弃置触发簇到 `abilities/frankenstein.test.ts`。
+  - 覆盖非 Igor 不触发、Igor/POD 自身被弃、同基地候选、多个候选 prompt、giant_ant_drone 不误触发。
+  - 验证：`abilities/frankenstein.test.ts` 11 tests passed。
+- [x] 迁出 `vampire_buffet afterScoring` 到 `abilities/vampires.test.ts`。
+  - 覆盖赢家获得全场己方 +1 指示物、非赢家不触发加指示物。
+  - 验证：`abilities/vampires.test.ts` 8 tests passed。
+- [x] `newOngoingAbilities.test.ts` 已继续降到 40 tests，复跑 40 passed。
+- [x] 相关文件 eslint 0 errors；`npm run test:structure` OK；业务测试裸 prompt seam 扫描无命中。
+- [ ] 剩余旧泛名债务：`newOngoingAbilities.test.ts` 还剩 Pirates / Alien Jammed Signal / BASE_REPLACED / Ancient Egyptians / Bases；`newBaseAbilities.test.ts` 尚未开始拆。
+
+## Addendum（2026-05-16 15:20 +08）：清空并删除 `newOngoingAbilities`
+
+- [x] 迁出 Pirates ongoing 簇到 `abilities/pirates-ongoing.test.ts`，验证 19 tests passed。
+- [x] 迁出 `alien_jammed_signal` 基地能力压制到 `abilities/aliens.test.ts`，验证 2 tests passed。
+- [x] 迁出 `ancient_egyptians_plague_of_locusts` onPlay prompt 到 `abilities/ancient-egyptians.test.ts`，验证 1 test passed。
+- [x] 迁出 `BASE_REPLACED` keepCards / scoring 标记 / titan 离场合同到 `bases/base-replacement.test.ts`，验证 4 tests passed。
+- [x] 迁出 Haunted House / R'lyeh / Mountains of Madness / Homeworld / Mothership / Ninja Dojo 基地交互到 `bases/interaction-base-abilities.test.ts`，验证 14 tests passed。
+- [x] 迁出时把多条 `getInteractionHandler(...)` 直调改为“触发基地能力 -> prompt facade 找 option -> `respondToPrompt` 响应 -> 断言目标业务事件”，避免测试继续绑定 handler 参数签名。
+- [x] 删除旧泛名文件 `src/games/smashup/__tests__/newOngoingAbilities.test.ts`。
+- [x] 组合验证：4 个新迁出文件 21 tests passed；`npx eslint` 针对 4 个新文件 0 errors；`npm run test:structure` OK。
+- [x] `rg` 扫描确认 `newOngoingAbilities` 引用、业务测试裸 prompt seam 与 skip 模式在 `src/games/smashup/__tests__`（排除 helper 层）无命中。
+- [x] `newBaseAbilities.test.ts` 已移入 `bases/base-ability-contracts.test.ts`，根级 `new*` 旧入口退出；移动后 60 tests passed，eslint 0 errors。
+- [x] `npm run test:structure` 当前 OK 且无旧泛名 warning。
+- [x] 全目录扫描确认 `newOngoingAbilities` / `newBaseAbilities` 引用、skip、业务测试裸 prompt seam 在 `src/games/smashup/__tests__`（排除 helper 层）无命中。
+- [x] `bases/base-ability-contracts.test.ts` 继续拆分并删除，旧 2705 行集合文件不再存在。
+- [x] 现有基地合同覆盖按簇拆为 `base-core-effects.test.ts`、`base-scoring-effects.test.ts`、`ancient-egyptian-bases.test.ts`、`first-minion-bases.test.ts`、`optional-trigger-bases.test.ts`、`vikings-bases.test.ts`、`cowboys-bases.test.ts`、`samurai-bases.test.ts`，共享夹具收敛到 `base-contract-helpers.ts`。
+- [x] 验证：拆分后的 8 个新基地文件 60 tests passed；整个 `src/games/smashup/__tests__/bases` 目录 15 files / 101 tests passed；相关 eslint 0 errors；`npm run test:structure` OK。
+- [x] `samurai-bases.test.ts` 继续拆为 `samurai-shoguns-palace-bases.test.ts`、`samurai-sakura-garden-bases.test.ts` 与 `pod-base-reuse.test.ts`，旧 707 行文件不再存在。
+- [x] 当前 `src/games/smashup/__tests__/bases` 最大测试文件为 `base-core-effects.test.ts`（约 556 行），不再有 700+ 或 2700 行级别基地集合文件。
+- [ ] 后续质量债：`base-core-effects.test.ts` 仍是相对较大的基础效果文件，但已按核心基地效果主题收敛；后续新增场景应优先继续拆分，不回退到集合文件。
+
+## Addendum（2026-05-16 16:25 +08）：Field of Honor / Crypt 消灭管线 seam 收敛
+
+- [x] 复核用户“是不是只改表象”的质疑后，继续审计 `field-of-honor-base.test.ts`：该文件混合了基础基地合同、FAQ batch、真实 `robot_microbot_guard` 命令链和缺 `destroyerId` 管线兜底，不能只用“单一基地对象”理由保留在一起。
+- [x] 新增 `resolveDestroyedMinions` / `makeMinionDestroyedEvent` 到 `bases/base-contract-helpers.ts`，把 `processDestroyTriggers` reducer 细节收进测试 facade；业务测试只表达“这些随从被消灭，由当前玩家结算”。
+- [x] 拆出 `field-of-honor-destroy-processing.test.ts`，保留 `field-of-honor-base.test.ts` 只覆盖 `base_the_field_of_honor` 自身 `onMinionDestroyed` 合同。
+- [x] 同类 `crypt-base-effects.test.ts` 已改走 `resolveDestroyedMinions`，避免 Field of Honor 收敛后 Crypt 仍裸调 reducer。
+- [x] 验证：Field/Crypt 聚焦组合 3 files / 10 tests passed；相关 eslint 0 errors；`bases` 业务测试旧 seam 扫描 0 命中；`npm run test:structure` OK。
+- [x] 分批低并发验证 `bases/*.ts`：27 个业务测试文件均已跑过，合计 77 tests passed。期间一次 Vite/esbuild transform 服务退出，单独复跑 Sakura 两文件后 6 tests passed；不计作业务失败。
+- [ ] 后续质量债：`bases/base-contract-helpers.ts` 仍重导出低层 `processDestroyTriggers` 以兼容目录外旧测试；后续应按能力/派系测试逐步迁到语义 helper，再考虑移除该出口。
+
+## Addendum（2026-05-16 16:40 +08）：消灭后处理 reducer seam 收到全局 helper
+
+- [x] 不再只处理 `bases` 目录：把通用 `src/games/smashup/__tests__/helpers.ts` 也补上 `makeMinionDestroyedEvent` / `resolveDestroyedMinions`，让目录外能力与 smoke 测试可通过稳定语义端口表达“这些随从被消灭，由当前玩家结算”。
+- [x] 已迁移目录外 `processDestroyTriggers` 裸调用：`abilities/giant-ants.test.ts`、`giantAntsPod.test.ts`、`abilities/samurai.test.ts`、`abilities/princesses.test.ts`、`igor-double-trigger-bug.test.ts`、`madMonsterPartyPreventedDestroy.test.ts`、`baseProtection.test.ts`、`igor-ondestroy-idempotency.test.ts`、`onDestroyAbilities.test.ts`、`smashup.smoke.test.ts`。
+- [x] 最新扫描确认业务测试不再直连 `processDestroyTriggers(`；允许剩余仅在 helper 层：`src/games/smashup/__tests__/helpers.ts` 与 `src/games/smashup/__tests__/bases/base-contract-helpers.ts`。
+- [x] 验证：`onDestroyAbilities.test.ts` 14 tests passed；`smashup.smoke.test.ts` 133 tests passed；相关 eslint 0 errors；`npm run test:structure` OK。
+- [ ] 后续质量债：`processAffectTriggers` / `processMoveTriggers` / `processReturnToHandTriggers` 等同类后处理入口仍需分类审计；当前命中集中在 `reactionQueueOrdering.test.ts` 与 `smashup.smoke.test.ts`。不能机械清零，优先把普通业务测试迁到语义 helper，底层系统合同测试可保留低层断言。
+
+## Addendum（2026-05-16 16:50 +08）：move/affect/return 后处理业务 seam 收到 helper
+
+- [x] `helpers.ts` 新增 `makeMinionMovedEvent` / `resolveMovedMinions` / `resolveAffectedMinions` / `resolveCardsReturnedToHand`，让普通业务测试按“移动/受影响/回手”语义表达后处理，而不是直接调 reducer 内部函数。
+- [x] `smashup.smoke.test.ts` 中硕大圆石移动触发、漫游山岭巨人控制变化后 affect 触发、时间盒子弃牌回手触发均已改走上述 facade。
+- [x] 最新扫描确认 `processMoveTriggers(` / `processAffectTriggers(` / `processReturnToHandTriggers(` 的业务 smoke 命中已清零；剩余 4 处全部在 `reactionQueueOrdering.test.ts`，该文件显式验证 frameId/sourceEventId 后处理合同，暂作为有意底层例外保留。
+- [x] 验证：`smashup.smoke.test.ts` 133 tests passed；`reactionQueueOrdering.test.ts` 26 tests passed；helper/smoke eslint 0 errors；`npm run test:structure` OK。
+- [x] `processDeckInspectionTriggers(` 已审计：唯一命中在 `reactionQueueOrdering.test.ts`，直接断言 deck-inspected 的 `sourceEventId` / `frameId`，属于底层后处理合同例外，不迁移到业务 facade。
+- [ ] 后续质量债：当前 `process*Triggers(` 普通业务测试裸调已清零；剩余命中是 helper 层与 `reactionQueueOrdering.test.ts` 后处理合同测试。下一步应转向其他高频耦合形态，例如业务测试裸读 `sys.interaction.current` / `queue` / `data.options`，而不是继续追求后处理入口扫描全清零。
+
+## Addendum（2026-05-16 16:58 +08）：`smashup.smoke` prompt seam 收敛
+
+- [x] `smashup.smoke.test.ts` 继续清理同一批泰坦链路中的裸 prompt 读取：六足死神 special、硕大圆石 move prompt、后续 destroy prompt 已改为 `getSimpleChoicePrompt` / `getOptionalSimpleChoicePrompt` / `getPromptSourceId` / `getPromptPlayerId` / `getPromptHandlerData`。
+- [x] 最新扫描确认 `smashup.smoke.test.ts` 内 `sys.interaction.current` / `sys.interaction.queue` / `data.options` / `asSimpleChoice(` 目标模式 0 命中。
+- [x] 验证：`smashup.smoke.test.ts` 133 tests passed；`npx eslint` 针对 `helpers.ts` 与 `smashup.smoke.test.ts` 0 errors；`npm run test:structure` checked files: 89，OK。
+- [ ] 后续质量债：全 `src/games/smashup/__tests__` 仍有少量裸 prompt 状态读写，下一步应按文件语义分批处理，优先普通业务测试，系统 prompt 合同测试单独分类。
+
+## Addendum（2026-05-16 17:02 +08）：`scoreBases-auto-continue` 局部 sourceId seam
+
+- [x] `scoreBases-auto-continue.test.ts` 中 Hoverbot stale top 用例不再裸读 `played.finalState.sys.interaction.current.data.sourceId`，改为 `getSimpleChoicePrompt(..., 'robot_hoverbot')` + `getPromptSourceId`。
+- [x] 验证：精准用例 `盘旋机器人揭示的牌已不再位于牌库顶时，AI 应只保留 skip，不再尝试 stale play` 1 passed；该文件 eslint 0 errors。
+- [ ] 保留 `resolved.state.sys.interaction?.current === undefined` 原断言：它只证明 current 清空，不等价于 queue 也为空；本轮不机械升级为 `expectNoPrompt`，避免改变测试合同。
+
+## Addendum（2026-05-16 17:05 +08）：afterScoring response window 交互存在断言收敛
+
+- [x] `afterscoring-response-window-execution.test.ts` 两处 `state.sys.interaction?.queue?.length > 0 || !!state.sys.interaction?.current` 已改为 `getSimpleChoicePrompt(state)`，保持“创建了交互”语义但隐藏 current/queue 存储位置。
+- [x] 验证：精准用例名 `我们乃最强` 跑过 2 passed / 2 skipped；该文件 eslint 0 errors；目标裸 prompt 扫描 0 命中；`npm run test:structure` checked files: 97，OK（仅既有 `e2e/dicethrone/legacy-root` 警告）。
+- [ ] 全文件直接跑曾触发 Node memory allocation 失败；当前以精准用例验证本轮改动，不把全文件 OOM 当业务失败或通过。
+
+## Addendum（2026-05-16 17:14 +08）：`turnCycle` 无 prompt 断言收敛
+
+- [x] `turnCycle.test.ts` 中 `endTurn 无冲突 trigger 会自动收口` 用例从 `sys.interaction.current === undefined` 改为文件内既有 `expectNoPrompt(...)`，该文件其他用例已使用同一语义，属于等价收敛。
+- [x] 验证：精准用例 `endTurn 无冲突 trigger 会自动收口` 1 passed / 21 skipped；该文件 eslint 0 errors；`turnCycle.test.ts` 目标裸 prompt 扫描 0 命中。
+- [ ] 全文件直接跑曾触发 Node OOM；当前以精准用例验证本轮改动。
+
+## Addendum（2026-05-16 17:18 +08）：`baseAbilityIntegrationE2E` 无 prompt 断言收敛
+
+- [x] `baseAbilityIntegrationE2E.test.ts` 两处 `sys.interaction.current === undefined` 已改为 `expectNoPrompt`；其中 `maybeResolveReactionQueue` 可能返回 `undefined` 的用例保留原可选语义，只在返回 state 时检查无 prompt。
+- [x] 验证：精准匹配 `base_innsmouth_base|实验工坊` 跑过 3 passed / 20 skipped；该文件 eslint 0 errors；目标裸 prompt 扫描 0 命中。
+
+## Addendum（2026-05-16 17:20 +08）：`igor-two-igors-one-destroyed` prompt 数量断言收敛
+
+- [x] `igor-two-igors-one-destroyed.test.ts` 的 `sys.interaction.queue.length === 0` 已改为 `getPromptsBySourceId(..., 'frankenstein_igor')` 长度为 1；测试目标从“queue 容器为空”回到“只触发一个 Igor prompt”。
+- [x] 验证：单文件 1 test passed；该文件 eslint 0 errors；目标裸 prompt 扫描 0 命中。
+
+## Addendum（2026-05-16 17:30 +08）：普通业务测试 prompt 内部 seam 阶段性清零
+
+- [x] `multi-base-afterscoring-bug.test.ts` 的计分链收口断言从 `sys.interaction.current/queue` 改为 `expectNoPrompt(finalState)`；该文件仍验证阶段、VP、基地替换和大副移动结果，不再绑定 InteractionSystem 存储形状。
+- [x] `helpers.ts` 新增 `withoutQueuedPrompts` / `withOnlyCurrentPrompt`，把“构造只有当前 prompt、无队列 prompt 的边界状态”收进测试 facade；`afterscoring-window-skip-base-clear.test.ts` 不再手写 `state.sys.interaction.queue = []`。
+- [x] `scoreBases-auto-continue.test.ts` 中持久化 stale special 收口用例改为 `withoutQueuedPrompts(withoutCurrentPrompt(...))` 构造运行态，并以 `expectNoPrompt` 断言收口结果。
+- [x] `promptSystem.test.ts` / `promptResponseChain.test.ts` 删除已被 `expectNoPrompt` 覆盖的冗余 `queue === []` 内部断言。
+- [x] 最新扫描确认 `src/games/smashup/__tests__` 普通测试内 `sys.interaction.current` / `sys.interaction.queue` / `data.options` / `asSimpleChoice(` 目标模式已清零；剩余命中仅为 `bases/base-contract-helpers.ts` helper 层和 `reactionQueueOrdering.test.ts` 后处理系统合同。
+- [x] 验证：`multi-base-afterscoring-bug.test.ts` 8 tests passed；`afterscoring-window-skip-base-clear.test.ts` 15 tests passed；`promptSystem.test.ts` + `promptResponseChain.test.ts` 22 tests passed；`scoreBases-auto-continue.test.ts` 精准用例 1 passed / 35 skipped；相关 eslint 0 errors；`npm run test:structure` checked files: 102，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：下一轮不应继续追求 scan 数字绝对清零，而应转向“可运行测试是否仍直接依赖 reducer/handler/private data”的逐类审计；底层合同测试需保留低层断言但应持续与普通业务测试分层。
+
+## Addendum（2026-05-16 17:35 +08）：prompt options 外壳读取收敛
+
+- [x] `afterScoring-rescoring.test.ts` 的本地 `findOptionId` / `findQueuedTriggerOptionId` 从 `choice.options` 改为 `getPromptOptions(choice)`，保留同一业务链路和错误信息。
+- [x] `specialInteractionChain.test.ts` 的 `findOption`、Laseratops POD 目标枚举、Cthulhu Chosen generic 按钮断言均改走 `getPromptOptions`。
+- [x] `interactionChainE2E.test.ts` 中 Alien Invasion 受 action 保护过滤断言、`trickster_block_the_path_pod` 派系组合枚举改走 `getPromptOptions`。
+- [x] 最新扫描确认 `src/games/smashup/__tests__` 普通测试内 `choice.options` / `prompt.options` / `data.options` / `asSimpleChoice(` 目标模式 0 命中。
+- [x] 验证：`afterScoring-rescoring.test.ts` 8 tests passed；`specialInteractionChain.test.ts` 24 tests passed；`interactionChainE2E.test.ts` 精准用例 2 passed / 53 skipped；相关 eslint 0 errors；`npm run test:structure` checked files: 104，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：`getInteractionHandler(...)` 直调仍大量存在，下一步应按“注册表合同测试 / handler 单元测试 / 可替换为真实命令链的业务测试”分层治理，不能一刀切删除。
+
+## Addendum（2026-05-16 17:40 +08）：`baseAbilitiesPrompt` handler 参数签名收拢
+
+- [x] `baseAbilitiesPrompt.test.ts` 新增本地 `resolvePromptAgainstCore(...)`，把 `getInteractionHandler(sourceId)`、`getPromptHandlerData(prompt)`、随机数和 handler 参数顺序集中到一个 facade。
+- [x] 文件内 7 处 stale prompt 回归用例不再分别手写 handler 名与 handler 调用参数；测试体只表达“用当前 prompt 在指定 core 上解析这个选择”。
+- [x] 最新扫描确认 `baseAbilitiesPrompt.test.ts` 内 `getInteractionHandler(` 只剩本地 facade 一处，`getPromptHandlerData(` 只剩 facade 与一处显式检查 continuationContext 的合同断言。
+- [x] 验证：`baseAbilitiesPrompt.test.ts` 33 tests passed；该文件 eslint 0 errors；`npm run test:structure` checked files: 104，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：该文件仍是 handler-level stale 防护测试，不宜直接宣称已变成完整黑盒 E2E；下一步应继续区分哪些 handler 测试可升级为真实命令链，哪些应作为低层合同保留。
+
+## Addendum（2026-05-16 17:45 +08）：注册 handler 响应 facade 上提到共享 helper
+
+- [x] `helpers.ts` 新增 `resolvePromptViaRegisteredHandler(...)`，集中处理 prompt sourceId -> registered handler、prompt playerId、handler data、random 和 timestamp 参数。
+- [x] `baseAbilitiesPrompt.test.ts` 改用共享 `resolvePromptViaRegisteredHandler`，删除本地 `resolvePromptAgainstCore`，避免同类 helper 在不同文件继续复制。
+- [x] `reactionQueueDestroyerId.test.ts` 中两处 `smashup_reaction_choose` 直调改为 `resolvePromptViaRegisteredHandler`；测试仍验证 vampire POD prompt 的 `displayCard` 语义。
+- [x] 最新扫描确认上述两个业务测试文件内不再直接出现 `getInteractionHandler(`；注册表访问只在 `helpers.ts` 的共享 facade 一处。
+- [x] 验证：`baseAbilitiesPrompt.test.ts` + `reactionQueueDestroyerId.test.ts` 2 files / 35 tests passed；相关 eslint 0 errors；`npm run test:structure` checked files: 104，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：剩余 `getInteractionHandler` 命中应优先迁到 `resolvePromptViaRegisteredHandler`，但注册表本身的合同测试与无 prompt 对象的低层 handler 单元测试仍需保留或单独封装。
+
+## Addendum（2026-05-16 17:50 +08）：reaction queue prompt handler 响应收敛
+
+- [x] `reactionQueueBaseAbilities.test.ts`、`reactionQueueBaseOptionalClockwise.test.ts`、`reactionQueueOrdering.test.ts` 中已有 prompt 对象的 `smashup_reaction_choose` handler 直调已改为 `resolvePromptViaRegisteredHandler`。
+- [x] 保留 `reactionQueueOrdering.test.ts` 中 `processMoveTriggers` / `processAffectTriggers` / `processDeckInspectionTriggers` 低层后处理合同；本轮只收 prompt handler 参数 seam，不掩盖 frameId/sourceEventId 合同测试目的。
+- [x] 最新扫描确认上述 3 个 reaction queue 文件不再散落 `getInteractionHandler(` / `getPromptHandlerData(` 直调；只保留 `resolvePromptViaRegisteredHandler` 调用。
+- [x] 验证：3 files / 34 tests passed；相关 eslint 0 errors；`npm run test:structure` checked files: 107，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：继续处理其他“已有 prompt 对象”的 handler 直调；对无 prompt 对象的 handler 边界测试，优先新建/复用更明确的 handler-level facade，而不是强行命令链化。
+
+## Addendum（2026-05-16 17:55 +08）：Cthulhu / Elder Thing prompt handler 响应收敛
+
+- [x] `abilities/cthulhu.test.ts` 中 `special_madness` 两条 prompt 响应用 `resolvePromptViaRegisteredHandler` 替换 handler 直调；仍保留 `displayCard` 合同断言。
+- [x] `elderThingAbilities.test.ts` 中 `elder_thing_mi_go` 的“对手抽疯狂卡 / 拒绝后施法者抽牌”两条 prompt 响应用共享 helper 替换 handler 直调。
+- [x] 最新扫描确认两个文件内不再出现 `getInteractionHandler(`；`getPromptHandlerData(` 只剩 `cthulhu.test.ts` 中验证 prompt displayCard 的合同断言。
+- [x] 验证：直接 Vitest 入口 2 files / 45 tests passed；相关 eslint 0 errors；`npm run test:structure` checked files: 109，OK（仅既有 legacy-root 警告）。曾有一次 `vitest-cli-safe` spawn 检测失败，随后用直接 Vitest CLI 入口完成验证。
+- [ ] 后续质量债：继续迁移小文件中明确已有 prompt 的 handler 响应；大文件如 `smashup.smoke.test.ts` 应分簇处理，避免一次性大改。
+
+## Addendum（2026-05-16 18:00 +08）：选择审计旧泛名文件迁出并收敛 prompt handler
+
+- [x] 旧泛名 `choice-audit-fixes.test.ts` 已迁为聚焦文件 `elder-thing-choice-goju-tiebreak.test.ts`，避免继续往旧“audit fixes”垃圾桶加改动。
+- [x] Elder Thing 选择链中已有 prompt 对象的 handler 直调改为 `resolvePromptViaRegisteredHandler`，覆盖 destroy / deckbottom / 两步 destroy / stale deckbottom 场景。
+- [x] 保留 `base_temple_of_goju_tiebreak` 一处 `getInteractionHandler`：该测试没有 prompt 对象，当前是在直接验证 handler-level 平局处理合同，不属于本轮 prompt handler facade 迁移对象。
+- [x] 验证：`elder-thing-choice-goju-tiebreak.test.ts` 10 tests passed；eslint 0 errors；`npm run test:structure` checked files: 111，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：继续清理旧泛名/审计文件时，若结构门禁提示“旧泛名净新增”，优先迁出为聚焦文件，而不是只在旧文件上做 facade 替换。
+
+## Addendum（2026-05-16 18:08 +08）：交互响应从 handler 直调升级到命令链 facade
+
+- [x] `helpers.ts` 新增 `respondToPromptOption(...)`，用业务 option predicate 找到 prompt 选项后通过 `SYS_INTERACTION_RESPOND` 跑完整 `executePipeline`，避免业务测试直接依赖 handler 位置参数、`getPromptHandlerData` 和手动清理 current。
+- [x] `shoggoth-destroy-choice.test.ts` 6 条用例从 `getInteractionHandler(...)` + `withoutCurrentPrompt(...)` + `getPromptHandlerData(...)` 改为 `respondToPromptOption(...)`；同时 `triggerShoggothOnPlay` 改用 `makeMatchState`，不再手写 `sys.interaction` 结构。
+- [x] `turnCycle.test.ts` 中“蘑菇王国与 Invisible Ninja 同回合开始”用例不再手动调用 handler / `advanceSmashUpReactionSession`；通过真实命令响应后直接断言下一个 `titan_ninjas_invisible_ninja_start_turn` prompt 已出现。
+- [x] 验证：`shoggoth-destroy-choice.test.ts` 6 tests passed；`turnCycle.test.ts` 22 tests passed；3 个修改文件 eslint 0 errors；`rg` 确认这两个测试文件不再出现 `getInteractionHandler(` / `getPromptHandlerData(` / `withoutCurrentPrompt(` / `advanceSmashUpReactionSession` / `resolveInteraction(`；`npm run test:structure` checked files: 113，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：`respondToPromptOption` 应作为普通业务测试的默认 prompt 响应接口；`resolvePromptViaRegisteredHandler` 只用于刻意绕开命令管线的 handler-level / stale 边界合同测试。
+
+## Addendum（2026-05-16 18:14 +08）：runtime prompt 响应继续命令链化
+
+- [x] `test-alien-scout-afterscore.test.ts` 中 Alien Scout 回手响应从 `getAbilityRuntimePromptHandler(...)` + `getPromptHandlerData(prompt)` 改为 `respondToPromptOption(...)`，并直接断言命令管线后的 `finalState.core`。
+- [x] `alien-scout-pod-afterscore.test.ts` 的 stale 离场场景不再直调 runtime handler；现在用 `withOnlyCurrentPrompt(makeMatchState(staleCore), oldPrompt)` 构造“旧 prompt + 新 core”的运行态，再通过 `respondToPromptOption(...)` 验证不会产生 `MINION_RETURNED`。
+- [x] `robotAbilities.test.ts` 中 Microbot Reclaimer 的空选择跳过 / 选择 `mb1` 洗回牌库改为 `respondToPromptOptions(...)`；不再导入 `getAbilityRuntimePromptHandler`，事件断言改为查找业务 `DECK_REORDERED`。
+- [x] 验证：Alien Scout 两文件 6 tests passed；`robotAbilities.test.ts` 11 tests passed；3 个文件 eslint 0 errors（首次低内存 eslint OOM 后用 `NODE_OPTIONS=--max-old-space-size=8192` 复跑通过）；目标扫描只剩 `robotAbilities.test.ts` 一处 `getPromptHandlerData(prompt)`，用于动态 `optionsGenerator` 刷新合同，不是 handler 参数直调；`npm run test:structure` checked files: 115，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：继续清理 runtime prompt handler 直调时，优先区分“真实玩家响应”与“动态候选刷新合同”；前者走 `respondToPromptOption(s)`，后者可保留 `getPromptHandlerData` 作为 prompt contract 数据输入。
+
+## Addendum（2026-05-16 18:18 +08）：Pirates prompt 响应分层试点
+
+- [x] `abilities/pirates-ongoing.test.ts` 中 `pirate_full_sail_choose_minion` 的“完成”响应从无 prompt 的 handler 直调改为真实 `pirate_full_sail` special 触发后通过 `respondToPromptOption(...)` 响应 done option。
+- [x] `pirate_first_mate afterScoring` 的手工 reaction session 尝试命令链化时发现没有可见 prompt 可响应；该用例是在直接验证 `startSmashUpReactionSession` + reaction handler 的低层合同，因此保留 direct handler，并在 findings 记录为不应强行迁移的例外。
+- [x] 保留 `pirate_buccaneer_move` 注册检查：该断言目标就是注册表合同，不属于普通业务 prompt 响应。
+- [x] 验证：`abilities/pirates-ongoing.test.ts` 19 tests passed；eslint 0 errors；`npm run test:structure` 首次 4096MB 进程异常 exit 1 且无门禁错误输出，8192MB 复跑 checked files: 115，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：对 `getInteractionHandler` 命中不能一刀切；先确认是否真的有 prompt 对象/命令入口。没有 prompt 的 session/registry 合同测试应保留低层入口或另建明确的低层 helper。
+
+## Addendum（2026-05-16 18:22 +08）：Zombie/Wizard runtime prompt 响应命令链化
+
+- [x] `zombieWizardAbilities.test.ts` 中 `zombie_outbreak_choose_base` 响应从 `getAbilityRuntimePromptHandler(...)` + `getPromptHandlerData(current)` 改为 `respondToPromptOption(...)`，仍验证选择空基地后产生 `LIMIT_MODIFIED` 且 `restrictToBase` 正确。
+- [x] `zombie_mall_crawl` 选择卡名响应改为 `respondToPromptOption(...)`，最终状态直接取命令管线的 `finalState.core`，不再手动 handler 后 `applyEvents`。
+- [x] 验证：`zombieWizardAbilities.test.ts` 23 tests passed；eslint 0 errors；扫描确认该文件不再有 `getAbilityRuntimePromptHandler(` / `getInteractionHandler(` / `handler!(`，只剩一处 `getPromptHandlerData(current)` 用于 `displayCard` prompt 合同断言；`npm run test:structure` checked files: 115，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：`displayCard`、`continuationContext` 等 prompt 合同断言可保留 `getPromptHandlerData`；传给 handler 的参数读取应继续迁移到命令链或共享 resolver。
+
+## Addendum（2026-05-16 18:25 +08）：Frankenstein stale prompt 回归命令链化
+
+- [x] `abilities/frankenstein.test.ts` 中 `frankenstein_angry_mob` stale 回归删除 `getAbilityRuntimePromptHandler`、`resolveCurrentPromptHandlerWithCore`、`resolveInteraction`，改为通过 `respondToPromptOption(...)` 依次响应选随从与选手牌。
+- [x] stale 分支用 `withOnlyCurrentPrompt(makeMatchState(staleCore), chooseCardPrompt)` 表达“旧二段 prompt 仍存在，但权威 core 中目标手牌已离开”，再通过真实响应命令验证不会产生 `CARD_TO_DECK_BOTTOM` / `POWER_COUNTER_ADDED`。
+- [x] 验证：`abilities/frankenstein.test.ts` 11 tests passed；eslint 0 errors；扫描确认该文件不再有 runtime handler / handler bridge / manual `resolveInteraction` 命中；`npm run test:structure` checked files: 115，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：stale prompt 回归优先复用 “旧 prompt + 新 core + respond” 模式；只有无 prompt 或专测 handler 函数时才保留低层入口。
+
+## Addendum（2026-05-16 18:28 +08）：Big Gulp / Igor bug 复现命令链化
+
+- [x] `igor-big-gulp-double-trigger.test.ts` 从 `execute(...)` + `getAbilityRuntimePromptHandler('vampire_big_gulp')` + 手动 `processDestroyMoveCycle(...)` 改为 `runCommand(PLAY_ACTION)` + `respondToPromptOption(...)`，通过真实管线验证 Igor onDestroy prompt 只出现一次。
+- [x] 移除该文件中的 handler data 传参、手动 destroy cycle 和调试 `console.log`；测试名同步改为“Big Gulp 消灭 Igor 后 Igor onDestroy 只触发一次”，避免继续声明内部函数步骤。
+- [x] 验证：`igor-big-gulp-double-trigger.test.ts` 1 test passed；eslint 0 errors；扫描确认 `getAbilityRuntimePromptHandler` / `getPromptHandlerData` / `processDestroyMoveCycle` / `execute(` / `console.log` / `handler!(` 0 命中；`npm run test:structure` checked files: 116，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：历史 bug 复现文件如果能通过真实命令链覆盖，就应优先移除手动 reducer/handler 分步；只有专测 reducer 后处理合同时才保留 `process*` 低层调用。
+
+## Addendum（2026-05-16 18:33 +08）：Zeppelin runtime prompt 分步响应命令链化
+
+- [x] `ongoingTalent.test.ts` 中 `steampunk_zeppelin_choose_minion` 三处 runtime handler 直调改为 `respondToPromptOption(...)`，分别覆盖 stale 第二步、从其他基地选择随从、从齐柏林所在基地选择随从。
+- [x] stale 第二步使用 `withOnlyCurrentPrompt(makeMatchState(staleCore), chooseBaseInteraction)` 挂旧 destination prompt，再通过真实响应命令验证目标离场时不会产生 `MINION_MOVED`。
+- [x] 验证：`ongoingTalent.test.ts` 首次 4096MB Vitest worker OOM，8192MB 复跑 27 tests passed；eslint 0 errors；扫描确认该文件 `getAbilityRuntimePromptHandler(` 清零，剩余 `getPromptHandlerData` 为其它 handler/contract 点；`npm run test:structure` checked files: 116，OK（仅既有 legacy-root 警告）。
+- [ ] 后续质量债：`ongoingTalent.test.ts` 剩余 `getPromptHandlerData` 集中在 Trickster 等非 runtime prompt handler 直调；下一步应按同样标准判断是否有真实 prompt 可响应。

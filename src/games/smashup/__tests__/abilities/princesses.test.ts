@@ -6,7 +6,6 @@ import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
 import { reduce } from '../../domain/reduce';
-import { processDestroyTriggers } from '../../domain/reducer';
 import { validate } from '../../domain/commands';
 import {
     makeMinion,
@@ -18,6 +17,7 @@ import {
     getPromptOption,
     respondToPrompt,
     expectNoPrompt,
+    resolveDestroyedMinions,
 } from '../helpers';
 import { runCommand, defaultTestRandom } from '../testRunner';
 
@@ -402,7 +402,7 @@ describe('Princesses abilities', () => {
         });
         const ms = makeMatchState(core);
 
-        const triggerResult = processDestroyTriggers([{
+        const triggerResult = resolveDestroyedMinions(ms, '1', [{
             type: SU_EVENTS.MINION_DESTROYED,
             payload: {
                 minionUid: 'sleep-1',
@@ -412,7 +412,7 @@ describe('Princesses abilities', () => {
                 reason: 'test_destroy',
             },
             timestamp: 1000,
-        } as any], ms, '1' as any, defaultTestRandom, 1000);
+        } as any], defaultTestRandom, 1000);
 
         expect(triggerResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
         const finalCore = triggerResult.events.reduce((current, event) => reduce(current, event as any), core);

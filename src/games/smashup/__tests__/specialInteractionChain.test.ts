@@ -43,7 +43,7 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry, isMinionProtected } from '../domain/ongoingEffects';
-import { expectNoPrompt, getFirstPrompt, getSimpleChoicePrompt, respondCommand } from './helpers';
+import { expectNoPrompt, getFirstPrompt, getPromptOptions, getSimpleChoicePrompt, respondCommand } from './helpers';
 
 // ============================================================================
 // 测试工具（与 interactionChainE2E.test.ts 保持一致）
@@ -149,8 +149,9 @@ function respond(state: MatchState<SmashUpCore>, playerId: string, optionId: str
 }
 
 function findOption(choice: any, predicate: (opt: any) => boolean): string {
-    const opt = choice.options.find(predicate);
-    if (!opt) throw new Error(`找不到匹配的选项: ${JSON.stringify(choice.options.map((o: any) => o.id))}`);
+    const options = getPromptOptions(choice);
+    const opt = options.find(predicate);
+    if (!opt) throw new Error(`找不到匹配的选项: ${JSON.stringify(options.map((o: any) => o.id))}`);
     return opt.id;
 }
 
@@ -388,7 +389,7 @@ describe('Laseratops POD printed-power prompt', () => {
         expect(choice.title).toBe('你可以消灭这里一个印制力量≤2的随从');
         expect(choice.subtitle).toContain('按印制力量判断');
 
-        const targetOptionIds = choice.options
+        const targetOptionIds = getPromptOptions(choice)
             .filter((opt) => (opt.value as { minionUid?: string } | undefined)?.minionUid)
             .map((opt) => ({
                 minionUid: (opt.value as { minionUid: string }).minionUid,
@@ -958,10 +959,11 @@ describe('beforeScoring trigger: cthulhu_chosen', () => {
 
         expect(enterScoring.steps[0]?.success).toBe(true);
         const choice = getSimpleChoicePrompt(enterScoring.finalState, 'cthulhu_chosen_confirm');
+        const options = getPromptOptions(choice);
         expect(choice.targetType).toBe('generic');
         expect(choice.playerId).toBe('0');
-        expect(choice.options.map(option => option.id)).toEqual(['yes', 'no']);
-        expect(choice.options.every(option => option.displayMode === 'button')).toBe(true);
+        expect(options.map(option => option.id)).toEqual(['yes', 'no']);
+        expect(options.every(option => option.displayMode === 'button')).toBe(true);
 
         const skipOption = findOption(choice, option => option.id === 'no');
         const resolved = respond(enterScoring.finalState, '0', skipOption, '69ff0310: 不触发并收口确认交互');

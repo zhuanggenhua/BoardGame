@@ -971,12 +971,12 @@ export function LocalGameProvider({
 
     const localPregameControlledPlayerId = useMemo(
         () => resolveLocalPregameControlledPlayerId({
-            gameId: config.gameId,
             state,
             seatControllers,
             localPlayerId: localPlayerId ?? null,
+            resolver: config.resolveLocalPregameControlledPlayerId,
         }),
-        [config.gameId, localPlayerId, seatControllers, state],
+        [config.resolveLocalPregameControlledPlayerId, localPlayerId, seatControllers, state],
     );
 
     useEffect(() => {

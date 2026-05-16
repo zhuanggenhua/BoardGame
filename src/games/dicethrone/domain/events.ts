@@ -805,6 +805,8 @@ export interface TokenUsedEvent extends GameEvent<'TOKEN_USED'> {
             value: number;
             success: boolean;
         };
+        /** 需要等响应窗口关闭后再发出的附加伤害（如武士反击） */
+        deferredDamageEvents?: PendingDamage['deferredDamageEvents'];
     };
 }
 

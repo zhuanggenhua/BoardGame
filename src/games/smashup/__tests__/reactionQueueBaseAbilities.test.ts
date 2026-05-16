@@ -3,7 +3,6 @@ import type { SmashUpCore, SmashUpEvent, TriggerInstance } from '../domain/types
 import { SU_EVENTS } from '../domain/types';
 import {
   expectNoPrompt,
-  getPromptHandlerData,
   getPromptOption,
   getPromptOptions,
   getPromptSourceId,
@@ -13,10 +12,11 @@ import {
   makeState,
   makeBase,
   makeMinion,
+  resolvePromptViaRegisteredHandler,
 } from './helpers';
 import { clearBaseAbilityRegistry, registerBaseAbility, registerExtended } from '../domain/baseAbilities';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { collectBaseAbilityTriggers, collectExtendedBaseAbilityTriggers } from '../domain/baseAbilityQueue';
 import { clearOngoingEffectRegistry, registerTrigger } from '../domain/ongoingEffects';
@@ -80,8 +80,7 @@ describe('Reaction queue: base abilities', () => {
       (option: any) => (option.label as string).includes('base_b'),
       'reaction option for base_b',
     );
-    const handler = getInteractionHandler('smashup_reaction_choose')!;
-    const r2 = handler(ms1 as any, '0', optB.value, getPromptHandlerData(current), { shuffle: (a: any[]) => a } as any, 2);
+    const r2 = resolvePromptViaRegisteredHandler(ms1 as any, current, optB.value, 2, { shuffle: (a: any[]) => a } as any);
     expect(r2).toBeDefined();
     const evts = r2!.events as SmashUpEvent[];
     expect(evts[0].type).toBe(SU_EVENTS.TRIGGER_CONSUMED);

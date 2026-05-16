@@ -37,7 +37,19 @@ const TEST_MONGO_START_RETRIES = 3;
 
 let testMongoServer: TestMongoServerHandle | null = null;
 
-const shouldPrepareTestMongo = () => process.env.NODE_ENV === 'test';
+type MongoBootstrapMode = 'none' | 'test' | 'dev-memory';
+
+const resolveMongoBootstrapMode = (): MongoBootstrapMode => {
+    if (process.env.NODE_ENV === 'test') {
+        return 'test';
+    }
+
+    if (process.env.NODE_ENV === 'development' && process.env.BG_API_USE_MEMORY_MONGO === '1') {
+        return 'dev-memory';
+    }
+
+    return 'none';
+};
 
 const configureMongoMemoryServerEnv = () => {
     process.env.MONGOMS_PREFER_GLOBAL_PATH ??= 'true';
@@ -107,16 +119,23 @@ const resolvePreferredTestMongoUri = async (): Promise<{ mongo: TestMongoServerH
     return { mongo, mongoUri: mongo.getUri() };
 };
 
-const prepareTestMongoIfNeeded = async () => {
-    if (!shouldPrepareTestMongo() || process.env.MONGO_URI?.trim()) {
+const prepareMongoIfNeeded = async () => {
+    const bootstrapMode = resolveMongoBootstrapMode();
+    if (bootstrapMode === 'none' || process.env.MONGO_URI?.trim()) {
         return;
     }
 
-    const { mongo, mongoUri } = await resolvePreferredTestMongoUri();
+    const { mongo, mongoUri } = bootstrapMode === 'test'
+        ? await resolvePreferredTestMongoUri()
+        : await (async () => {
+            const memoryMongo = await createLoopbackMongoMemoryServer();
+            return { mongo: memoryMongo, mongoUri: memoryMongo.getUri() };
+        })();
     process.env.MONGO_URI = mongoUri;
     testMongoServer = mongo;
 
-    logger.info('[API] 测试模式 Mongo 已就绪', {
+    logger.info('[API] 启动期 Mongo 已就绪', {
+        bootstrap_mode: bootstrapMode,
         source: mongo ? 'memory-server' : 'external-or-local',
         mongo_uri: mongo ? 'mongodb-memory-server' : mongoUri,
     });
@@ -155,7 +174,7 @@ const initSentryInBackground = async () => {
 
 async function bootstrap() {
     const bootstrapStartedAt = Date.now();
-    await prepareTestMongoIfNeeded();
+    await prepareMongoIfNeeded();
 
     const webOrigins = process.env.WEB_ORIGINS
         ? process.env.WEB_ORIGINS.split(',').map(s => s.trim()).filter(Boolean)

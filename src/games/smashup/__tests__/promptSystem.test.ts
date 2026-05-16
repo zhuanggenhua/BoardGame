@@ -94,7 +94,6 @@ describe('P7: PromptSystem 集成', () => {
                 commands: DRAFT_COMMANDS,
             });
             expectNoPrompt(result.finalState);
-            expect(result.finalState.sys.interaction.queue).toEqual([]);
         });
 
         it('SmashUp Prompt 桥接系统正常注册', () => {

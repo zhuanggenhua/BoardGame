@@ -25,11 +25,14 @@ import { buildReactionOptions, getSmashUpReactionSession, resolveSmashUpReaction
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../domain/scoringSession';
 import { registerTitanSpecialValidator } from '../domain/titanAbilityValidators';
 import {
+    expectNoPrompt,
     getPromptOption,
     getPromptSourceId,
     getRespondCommandOptionId,
     getSimpleChoicePrompt,
     respondCommand,
+    withoutCurrentPrompt,
+    withoutQueuedPrompts,
     withPromptResolutionFrameId,
 } from './helpers';
 
@@ -1450,7 +1453,7 @@ describe('scoreBases 阶段自动推进', () => {
         } as any);
 
         expect(played.success).toBe(true);
-        expect((played.finalState.sys.interaction?.current?.data as any)?.sourceId).toBe('robot_hoverbot');
+        expect(getPromptSourceId(getSimpleChoicePrompt(played.finalState, 'robot_hoverbot'))).toBe('robot_hoverbot');
 
         const staleTopState: MatchState<SmashUpCore> = {
             ...played.finalState,
@@ -1749,16 +1752,7 @@ describe('scoreBases 阶段自动推进', () => {
     it('smashup_reaction_choose 响应持久化后的失效 special 快照时，应按当前 live 语义正规化并直接收口', () => {
         registerArcaneProtectorSpecialForTests();
         const state = createPersistedStaleReactionChoiceState();
-        const runtimeState: MatchState<SmashUpCore> = {
-            ...state,
-            sys: {
-                ...state.sys,
-                interaction: {
-                    current: undefined,
-                    queue: [],
-                },
-            } as any,
-        };
+        const runtimeState = withoutQueuedPrompts(withoutCurrentPrompt(state));
 
         const resolved = resolveSmashUpReactionChoice(runtimeState, defaultTestRandom, 7, {
             kind: 'activate_special',
@@ -1768,7 +1762,7 @@ describe('scoreBases 阶段自动推进', () => {
         });
 
         expect(getSmashUpReactionSession(resolved.state)).toBeUndefined();
-        expect(resolved.state.sys.interaction?.current).toBeUndefined();
+        expectNoPrompt(resolved.state);
         expect(resolved.events).toHaveLength(0);
     });
 

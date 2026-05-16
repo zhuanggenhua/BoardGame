@@ -16,13 +16,12 @@ import {
     clearOngoingEffectRegistry,
     isMinionProtected,
 } from '../domain/ongoingEffects';
-import { processDestroyTriggers } from '../domain/reducer';
 import { getInteractionHandler, clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { MatchState, RandomFn } from '../../../engine/types';
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, MinionDestroyedEvent, MinionMovedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { getSimpleChoicePrompt } from './helpers';
+import { getSimpleChoicePrompt, resolveDestroyedMinions } from './helpers';
 
 // ============================================================================
 // 初始化
@@ -259,7 +258,7 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
             timestamp: 1000,
         };
 
-        const result = processDestroyTriggers([destroyEvent], ms, '1', dummyRandom, 1000);
+        const result = resolveDestroyedMinions(ms, '1', [destroyEvent], dummyRandom, 1000);
         // MINION_DESTROYED 应被暂缓（pendingSaveMinionUids）
         const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(0);
@@ -290,7 +289,7 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
             timestamp: 1000,
         };
 
-        const result = processDestroyTriggers([destroyEvent], ms, '1', dummyRandom, 1000);
+        const result = resolveDestroyedMinions(ms, '1', [destroyEvent], dummyRandom, 1000);
         const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(1);
     });
@@ -317,7 +316,7 @@ describe('base_house_of_nine_lives: 消灭时创建拯救交互', () => {
             timestamp: 1000,
         };
 
-        const result = processDestroyTriggers([destroyEvent], ms, '1', dummyRandom, 1000);
+        const result = resolveDestroyedMinions(ms, '1', [destroyEvent], dummyRandom, 1000);
         const destroyEvents = result.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(1);
     });

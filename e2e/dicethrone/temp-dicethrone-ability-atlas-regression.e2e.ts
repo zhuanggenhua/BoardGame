@@ -215,7 +215,25 @@ async function setupHeroScene(
 async function clickHandCard(page: Page, cardId: string): Promise<void> {
   const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
   await expect(handCard).toBeVisible({ timeout: 10000 });
-  await handCard.click();
+  const cardBox = await page.evaluate((nextCardId) => {
+    const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+    if (!node) return null;
+    const rect = node.getBoundingClientRect();
+    return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+  }, cardId);
+  if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
+    throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+  }
+
+  const startX = cardBox.x + (cardBox.width / 2);
+  const startY = cardBox.y + (cardBox.height * 0.78);
+  const endY = Math.max(24, startY - 240);
+
+  await page.mouse.move(startX, startY);
+  await page.mouse.down();
+  await page.mouse.move(startX, endY, { steps: 12 });
+  await page.mouse.up();
+  await page.mouse.move(2, 2);
 }
 
 async function openFabPanel(page: Page, panelId: string): Promise<void> {

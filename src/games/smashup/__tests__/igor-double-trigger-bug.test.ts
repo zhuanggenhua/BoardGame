@@ -7,10 +7,9 @@
  * 用户确认：实际给两个不同的随从各加了+1力量，说明 Igor 的 onDestroy 确实触发了两次。
  */
 
-import { getPromptsBySourceId, makeState, makeBase, makeMinion, makeMatchState, makePlayer } from './helpers';
+import { getPromptsBySourceId, makeState, makeBase, makeMinion, makeMatchState, makePlayer, resolveDestroyedMinions } from './helpers';
 import { SU_EVENTS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
-import { processDestroyTriggers } from '../domain/reducer';
 import { defaultTestRandom } from './testRunner';
 
 describe('Bug: Igor 被 base_rlyeh 消灭时触发两次', () => {
@@ -51,8 +50,7 @@ describe('Bug: Igor 被 base_rlyeh 消灭时触发两次', () => {
             timestamp: 1000,
         };
         
-        // 调用 processDestroyTriggers 处理消灭事件
-        const result = processDestroyTriggers([destroyEvent], ms, '0', defaultTestRandom, 1000);
+        const result = resolveDestroyedMinions(ms, '0', [destroyEvent], defaultTestRandom, 1000);
         
         // 检查：应该有两个业务 prompt
         // 1. Igor 的 onDestroy（选择放置+1指示物的随从）

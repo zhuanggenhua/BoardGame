@@ -45,7 +45,7 @@ import { useToast } from '../contexts/ToastContext';
 import { getGameServerUrl } from '../config/server';
 import { getGameById } from '../config/games.config';
 import { getGamePageDataAttributes, syncGamePageDocumentAttributes } from '../games/mobileSupport';
-import { GameHUD } from '../components/game/framework/widgets/GameHUD';
+import { GameHUD, resolveGameHudPhase } from '../components/game/framework/widgets/GameHUD';
 import { GameModeProvider } from '../contexts/GameModeContext';
 import { SEO } from '../components/common/SEO';
 import { LoadingScreen } from '../components/system/LoadingScreen';
@@ -1982,6 +1982,7 @@ const OnlineGameHudBridge = ({
     }), [fallbackPlayers, isConnected, matchPlayers, myPlayerId, seatControllers]);
     const canForceEndAiPhase = Boolean(showForceEndAiPhase && onForceEndAiPhase);
     const canForceDismissPopup = true;
+    const isPregameSetupPhase = resolveGameHudPhase(state as { sys?: { phase?: unknown; flow?: { phase?: unknown } } } | null | undefined) === 'setup';
     const forceDismissPopup = useCallback(async (): Promise<boolean> => {
         if (gameId === 'dicethrone') {
             const pendingBonusDiceSettlement = (state as MatchState<{
@@ -2199,6 +2200,7 @@ const OnlineGameHudBridge = ({
             showSeatSwap={Boolean(seatSwapContext)}
             seatSwapActionActive={Boolean(seatSwapContext?.pendingSeatSwapRequest)}
             seatSwapContent={seatSwapContent}
+            isPregameSetupPhase={isPregameSetupPhase}
             isLoading={isLoading}
         />
     );

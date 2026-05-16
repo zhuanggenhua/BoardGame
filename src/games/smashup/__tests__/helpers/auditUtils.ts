@@ -40,7 +40,6 @@ export {
     callHandler,
     triggerBaseAbilityWithMS,
     getInteractionsFromResult,
-    getInteractionsFromMS,
 } from '../helpers';
 
 // ============================================================================

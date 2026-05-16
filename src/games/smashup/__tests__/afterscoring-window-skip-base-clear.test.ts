@@ -33,8 +33,9 @@ import {
     getPromptHandlerData,
     getReactionPrompt,
     getSimpleChoicePrompt,
-    withCurrentPrompt,
+    withOnlyCurrentPrompt,
     withPromptHandlerData,
+    withoutQueuedPrompts,
     withoutCurrentPrompt,
 } from './helpers';
 
@@ -114,8 +115,7 @@ function wrapState(core: SmashUpCore) {
     ];
     const sys = createInitialSystemState(['0', '1'], systems, undefined);
     sys.phase = 'scoreBases';
-    sys.interaction.queue = [];
-    return withoutCurrentPrompt({ core, sys });
+    return withoutQueuedPrompts(withoutCurrentPrompt({ core, sys }));
 }
 
 function withDeferredScoringFrame(
@@ -496,8 +496,7 @@ describe('afterScoring 延迟清场回归', () => {
             ],
             { sourceId: 'base_tortuga', targetType: 'minion' },
         ), { continuationContext: { baseIndex: 0 } });
-        state = withCurrentPrompt(state, interaction);
-        state.sys.interaction.queue = [];
+        state = withOnlyCurrentPrompt(state, interaction);
 
         const resolved = system.afterEvents?.({
             state,
@@ -580,7 +579,7 @@ describe('afterScoring 延迟清场回归', () => {
         ]);
 
         // 模拟：当前交互（母舰）已被弹出，下一交互（侦察兵）已在 current，queue 为空。
-        state = withCurrentPrompt(state, createSimpleChoice(
+        state = withOnlyCurrentPrompt(state, createSimpleChoice(
             'i-scout-next',
             '0',
             '侦察兵：是否返回手牌',
@@ -590,7 +589,6 @@ describe('afterScoring 延迟清场回归', () => {
             ],
             { sourceId: 'alien_scout_return' },
         ));
-        state.sys.interaction.queue = [];
 
         const result = system.afterEvents?.({
             state,
@@ -654,7 +652,7 @@ describe('afterScoring 延迟清场回归', () => {
         ]);
 
         // 模拟：当前交互（母舰）已被弹出，下一交互（侦察兵）已在 current，queue 为空。
-        state = withCurrentPrompt(state, createSimpleChoice(
+        state = withOnlyCurrentPrompt(state, createSimpleChoice(
             'i-scout-next',
             '0',
             '侦察兵：是否返回手牌',
@@ -664,7 +662,6 @@ describe('afterScoring 延迟清场回归', () => {
             ],
             { sourceId: 'alien_scout_return' },
         ));
-        state.sys.interaction.queue = [];
 
         const result = system.afterEvents?.({
             state,

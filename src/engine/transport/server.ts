@@ -23,7 +23,7 @@ import type {
 import type { TrainingDataRecorder, TrainingDecisionSample } from './trainingData';
 import { buildTrainingDecisionSample } from './trainingData';
 import logger, { gameLogger } from '../../../server/logger.js';
-import { GAME_MANIFEST_BY_ID } from '../../games/manifest';
+import type { GameManifestEntry } from '../../shared/gameManifest.types';
 import * as aiModule from '../ai';
 import {
     applyPlayerViewToState,
@@ -57,6 +57,7 @@ import {
     type HiddenInteractionDescriptor,
     type ForceEndTurnStalledAiResolution,
 } from './onlineAiRecovery';
+import type { LocalPregameControlResolver } from './followCurrentTurnPlayer';
 
 // 离线裁决：按交互 kind 选择最小语义正确的兜底命令
 // - simple-choice: 走通用系统取消
@@ -108,11 +109,14 @@ const shouldTrustOnlineAiSeatControllersForWatchdog = (setupData: unknown): bool
     );
 };
 
+type GameManifestIndex = Record<string, Pick<GameManifestEntry, 'ai'> | undefined>;
+
 const normalizeOnlineAiWatchdogSeatControllerType = (
     gameId: string,
     controller: { type?: unknown } | undefined,
+    gameManifests: GameManifestIndex,
 ): 'human' | 'local-ai' | 'remote-ai' => {
-    const manifestAi = GAME_MANIFEST_BY_ID[gameId]?.ai;
+    const manifestAi = gameManifests[gameId]?.ai;
     if (controller?.type === 'local-ai') {
         return manifestAi?.localAi === false ? 'human' : 'local-ai';
     }
@@ -496,6 +500,17 @@ export interface GameEngineConfig<
     maxPlayers?: number;
     /** 是否禁用撤销 */
     disableUndo?: boolean;
+    /** 本地模式开局阶段由游戏声明是否需要代控某个 seat */
+    resolveLocalPregameControlledPlayerId?: LocalPregameControlResolver;
+    /** 在线 AI watchdog 的游戏级恢复策略 */
+    onlineAiRecovery?: {
+        allowForceCommandAfterLegalActionExhausted?: (args: {
+            state: MatchState<unknown>;
+            phase: string;
+            previousCandidate: ForceEndTurnStalledAiResolution;
+            nextCandidate: ForceEndTurnStalledAiResolution;
+        }) => boolean;
+    };
 }
 
 // ============================================================================
@@ -684,6 +699,7 @@ export interface GameTransportServerConfig {
     trainingDataRecorder?: TrainingDataRecorder;
     trainingDataMinMatchDurationMs?: number;
     rulesVersion?: string | null;
+    gameManifests?: GameManifestIndex;
     onlineAiRecoveryTickMs?: number;
     onlineAiRecoveryTimeoutMs?: number;
     onlineAiRecoveryMaxAdvanceSteps?: number;
@@ -704,6 +720,7 @@ export class GameTransportServer {
     private readonly trainingDataRecorder?: TrainingDataRecorder;
     private readonly trainingDataMinMatchDurationMs: number;
     private readonly rulesVersion: string | null;
+    private readonly gameManifests: GameManifestIndex;
     private readonly onlineAiRecoveryTickMs: number;
     private readonly onlineAiRecoveryTimeoutMs: number;
     private readonly onlineAiRecoveryMaxAdvanceSteps: number;
@@ -732,6 +749,7 @@ export class GameTransportServer {
             ? Math.max(0, config.trainingDataMinMatchDurationMs ?? 0)
             : 0;
         this.rulesVersion = config.rulesVersion ?? null;
+        this.gameManifests = config.gameManifests ?? {};
         this.onlineAiRecoveryTickMs = config.onlineAiRecoveryTickMs ?? DEFAULT_ONLINE_AI_RECOVERY_TICK_MS;
         this.onlineAiRecoveryTimeoutMs = config.onlineAiRecoveryTimeoutMs ?? DEFAULT_ONLINE_AI_RECOVERY_TIMEOUT_MS;
         this.onlineAiRecoveryMaxAdvanceSteps = config.onlineAiRecoveryMaxAdvanceSteps ?? DEFAULT_ONLINE_AI_RECOVERY_MAX_ADVANCE_STEPS;
@@ -1080,7 +1098,10 @@ export class GameTransportServer {
             const nsp = this.io.of('/game');
             void nsp.in(`game:${matchID}`).fetchSockets()
                 .then((sockets) => {
-                    sockets.forEach((s) => s.disconnect(true));
+                    sockets.forEach((s) => {
+                        s.emit('error', matchID, 'match_not_found');
+                        s.disconnect(true);
+                    });
                 })
                 .catch((error) => {
                     logger.warn('[GameTransport] disconnect room sockets failed', { matchID, error });
@@ -1272,7 +1293,11 @@ export class GameTransportServer {
             const seatControllers = Object.fromEntries(
                 Object.keys(match.metadata.players).map((playerId) => {
                     const controller = rawSeatControllers?.[playerId];
-                    const normalizedType = normalizeOnlineAiWatchdogSeatControllerType(match.gameId, controller);
+                    const normalizedType = normalizeOnlineAiWatchdogSeatControllerType(
+                        match.gameId,
+                        controller,
+                        this.gameManifests,
+                    );
                     return [
                         playerId,
                         normalizedType === 'human'
@@ -1710,10 +1735,12 @@ export class GameTransportServer {
                 const currentPhase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
                 const allowAdvancePhaseFallbackAfterLegalExhausted = shouldRestrictFollowUpToLegalActions
                     && !hasHumanResponderInCurrentWindow()
-                    && (
-                        (match.gameId === 'dicethrone' && currentPhase === 'defensiveRoll')
-                        || (match.gameId === 'smashup' && (currentPhase === 'scoreBases' || currentPhase === 'endTurn'))
-                    );
+                    && match.engineConfig.onlineAiRecovery?.allowForceCommandAfterLegalActionExhausted?.({
+                        state: match.state,
+                        phase: currentPhase,
+                        previousCandidate: candidate,
+                        nextCandidate,
+                    }) === true;
                 const normalizedNextCandidate = shouldRestrictFollowUpToLegalActions
                     ? {
                         ...nextCandidate,
@@ -3263,8 +3290,8 @@ export class GameTransportServer {
         gameOver?: unknown;
     }): void {
         if (!this.trainingDataRecorder) return;
-        const manifest = GAME_MANIFEST_BY_ID[args.match.engineConfig.gameId];
-        if (manifest && manifest.ai.capture === false) return;
+        const manifest = this.gameManifests[args.match.engineConfig.gameId];
+        if (manifest?.ai?.capture === false) return;
         const seatControllers = extractSetupSeatControllers(args.match.metadata.setupData);
         const seatControllerType = resolveSeatControllerTypeForTraining(seatControllers, args.playerID);
         const capturePolicy = manifest?.ai?.capturePolicy ?? DEFAULT_TRAINING_CAPTURE_POLICY;

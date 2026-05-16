@@ -25,14 +25,14 @@ import type {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import {
-    getPromptHandlerData,
     getPromptOption,
     getPromptSourceId,
     getPromptTargetType,
     getSimpleChoicePrompt,
     makeMatchState as makeMatchStateFromHelpers,
+    resolvePromptViaRegisteredHandler,
     respondCommand,
 } from './helpers';
 import { runCommand } from './testRunner';
@@ -350,11 +350,8 @@ describe('远古之物派系能力', () => {
                 now: 0,
             });
             const prompt = getSimpleChoicePrompt(promptResult.matchState ?? ms, 'elder_thing_mi_go');
-            const promptData = getPromptHandlerData(prompt);
             expect(getPromptSourceId(prompt)).toBe('elder_thing_mi_go');
-            const handler = getInteractionHandler('elder_thing_mi_go');
-            expect(handler).toBeDefined();
-            const result = handler!(promptResult.matchState ?? ms, '1', { choice: 'draw_madness' }, promptData, defaultRandom, 0);
+            const result = resolvePromptViaRegisteredHandler(promptResult.matchState ?? ms, prompt, { choice: 'draw_madness' }, 0, defaultRandom);
             expect(result).toBeDefined();
             const madnessEvents = result!.events.filter(e => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
@@ -385,11 +382,8 @@ describe('远古之物派系能力', () => {
                 now: 0,
             });
             const prompt = getSimpleChoicePrompt(promptResult.matchState ?? ms, 'elder_thing_mi_go');
-            const promptData = getPromptHandlerData(prompt);
             expect(getPromptSourceId(prompt)).toBe('elder_thing_mi_go');
-            const handler = getInteractionHandler('elder_thing_mi_go');
-            expect(handler).toBeDefined();
-            const result = handler!(promptResult.matchState ?? ms, '1', { choice: 'decline' }, promptData, defaultRandom, 0);
+            const result = resolvePromptViaRegisteredHandler(promptResult.matchState ?? ms, prompt, { choice: 'decline' }, 0, defaultRandom);
             expect(result).toBeDefined();
             const drawEvents = result!.events.filter(e => e.type === SU_EVENTS.CARDS_DRAWN);
             const selfDraw = drawEvents.filter(e => (e as any).payload.playerId === '0');

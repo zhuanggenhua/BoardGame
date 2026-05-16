@@ -85,11 +85,38 @@
         }
       }
     },
+    "images/Common/character-portraits": {
+      "variants": {
+        "png": {
+          "sha256": "f472e4b082cf299ddb4399ce08937bd061ca643fa25a4e73a8ca4080c7144912",
+          "bytes": 10378152,
+          "mime": "image/png"
+        }
+      }
+    },
+    "images/Common/characterhead2": {
+      "variants": {
+        "png": {
+          "sha256": "c72c311c9360b6c019e627cf4c2326db03eeea4a3bf91ef246b6cb0cf1ed2747",
+          "bytes": 21314719,
+          "mime": "image/png"
+        }
+      }
+    },
     "images/Common/compressed/character-portraits": {
       "variants": {
         "webp": {
           "sha256": "329ed4504c3bf59d31dce7b93be7af951f9277c89aa9931103a0d459bcd325ed",
           "bytes": 165570,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/Common/compressed/characterhead2": {
+      "variants": {
+        "webp": {
+          "sha256": "8f06ae83f1aa0004f8f9300d3337b064489a40a0e586194b4e49bed8dbbd1c98",
+          "bytes": 257068,
           "mime": "image/webp"
         }
       }

@@ -126,6 +126,29 @@ const DamageRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact
     startPos,
     endPos,
     intensity: damage,
+    floatingTextPreset: 'dicethrone-damage',
+    onImpact,
+  }, stableComplete);
+};
+
+const DotDamageRenderer: React.FC<FxRendererProps> = ({ event, onComplete, onImpact }) => {
+  const stableComplete = useStableComplete(onComplete);
+
+  const damage = event.params?.damage as number | undefined;
+  const startPos = event.params?.startPos as { x: number; y: number } | undefined;
+  const endPos = event.params?.endPos as { x: number; y: number } | undefined;
+
+  if (!damage || !startPos || !endPos) {
+    stableComplete();
+    return null;
+  }
+
+  return renderSingleFlyingEffect({
+    type: 'damage',
+    content: `-${damage}`,
+    startPos,
+    endPos,
+    intensity: damage,
     onImpact,
   }, stableComplete);
 };
@@ -422,10 +445,10 @@ function createRegistry(): FxRegistry {
   const registry = new FxRegistry();
 
   registry.register(DT_FX.DAMAGE, DamageRenderer, {
-    timeoutMs: 2000,
+    timeoutMs: 2500,
   }, DAMAGE_FEEDBACK);
 
-  registry.register(DT_FX.DOT_DAMAGE, DamageRenderer, {
+  registry.register(DT_FX.DOT_DAMAGE, DotDamageRenderer, {
     timeoutMs: 2000,
   }, DOT_DAMAGE_FEEDBACK);
 

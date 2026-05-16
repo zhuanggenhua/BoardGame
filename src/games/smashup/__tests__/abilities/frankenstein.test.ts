@@ -4,8 +4,7 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
-import { getAbilityRuntimePromptHandler } from '../../domain/abilityRuntime';
+import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
 import { validate } from '../../domain/commands';
 import { execute } from '../../domain/reducer';
 import {
@@ -15,10 +14,13 @@ import {
     makeState,
     makeMatchState,
     getSimpleChoicePrompt,
-    resolveCurrentPromptHandlerWithCore,
+    getPromptsBySourceId,
+    getPromptOptions,
+    getPromptSourceId,
+    respondToPromptOption,
+    withOnlyCurrentPrompt,
 } from '../helpers';
 import { runCommand, defaultTestRandom } from '../testRunner';
-import { resolveInteraction } from '../../../../engine/systems/InteractionSystem';
 
 beforeAll(() => {
     clearRegistry();
@@ -157,11 +159,6 @@ describe('Frankenstein abilities', () => {
     });
 
     it('frankenstein_angry_mob 若所选手牌已离开手牌，不应凭旧交互再塞回牌库', () => {
-        const chooseMinionHandler = getAbilityRuntimePromptHandler('frankenstein_angry_mob');
-        const chooseCardHandler = getAbilityRuntimePromptHandler('frankenstein_angry_mob_choose_card');
-        expect(chooseMinionHandler).toBeDefined();
-        expect(chooseCardHandler).toBeDefined();
-
         const playState = makeMatchState(makeState({
             players: {
                 '0': makePlayer('0', {
@@ -185,27 +182,26 @@ describe('Frankenstein abilities', () => {
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'angry-mob' } },
             defaultTestRandom,
         );
-        getSimpleChoicePrompt(played.finalState, 'frankenstein_angry_mob');
-
-        const afterChooseMinion = resolveCurrentPromptHandlerWithCore(
+        const chooseMinion = respondToPromptOption(
             played.finalState,
-            played.finalState.core,
-            chooseMinionHandler!,
-            { minionUid: 'monster1', minionDefId: 'frankenstein_the_monster', baseIndex: 0 },
-            1000,
+            option => option.value?.minionUid === 'monster1',
+            'Angry Mob target monster option',
+            '0',
+            defaultTestRandom,
         );
-        const afterChooseMinionState = resolveInteraction(afterChooseMinion!.state);
-        getSimpleChoicePrompt(afterChooseMinionState, 'frankenstein_angry_mob_choose_card');
+        expect(chooseMinion.success, chooseMinion.error).toBe(true);
+        const chooseCardPrompt = getSimpleChoicePrompt(chooseMinion.finalState, 'frankenstein_angry_mob_choose_card');
 
-        const liveResult = resolveCurrentPromptHandlerWithCore(
-            afterChooseMinionState,
-            afterChooseMinionState.core,
-            chooseCardHandler!,
-            { cardUid: 'h1', defId: 'test_action_a' },
-            1001,
+        const liveResult = respondToPromptOption(
+            chooseMinion.finalState,
+            option => option.value?.cardUid === 'h1',
+            'Angry Mob card h1 option',
+            '0',
+            defaultTestRandom,
         );
-        expect(liveResult?.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(true);
-        expect(liveResult?.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
+        expect(liveResult.success, liveResult.error).toBe(true);
+        expect(liveResult.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(true);
+        expect(liveResult.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
 
         const staleStateCore = makeState({
             players: {
@@ -222,13 +218,223 @@ describe('Frankenstein abilities', () => {
             }],
         });
 
-        const staleResult = resolveCurrentPromptHandlerWithCore(
-            afterChooseMinionState,
-            staleStateCore,
-            chooseCardHandler!,
-            { cardUid: 'h1', defId: 'test_action_a' },
-            1002,
+        const stalePromptState = withOnlyCurrentPrompt(makeMatchState(staleStateCore), chooseCardPrompt);
+        const staleResult = respondToPromptOption(
+            stalePromptState,
+            option => option.value?.cardUid === 'h1',
+            'stale Angry Mob card h1 option',
+            '0',
+            defaultTestRandom,
         );
-        expect(staleResult?.events ?? []).toHaveLength(0);
+        expect(staleResult.success, staleResult.error).toBe(true);
+        expect(staleResult.events.some(event => event.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(false);
+        expect(staleResult.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(false);
+    });
+});
+
+describe('frankenstein_igor 基地结算弃置触发', () => {
+    it('非 Igor 随从被弃时不触发', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('igor1', 'frankenstein_igor', '0', 2, { powerModifier: 0 }),
+                        makeMinion('enemy1', 'enemy', '1', 5, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('t1', 'test_minion', '0', 3, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const result = fireTriggers(core, 'onMinionDiscardedFromBase', {
+            state: core,
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'enemy1',
+            triggerMinionDefId: 'enemy',
+            random: defaultTestRandom,
+            now: 100,
+        });
+
+        expect(result.events).toEqual([]);
+    });
+
+    it('Igor 自身被弃时自动在其他基地己方唯一随从上放指示物', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('igor1', 'frankenstein_igor', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('t1', 'test_minion', '0', 4, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const result = fireTriggers(core, 'onMinionDiscardedFromBase', {
+            state: core,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'igor1',
+            triggerMinionDefId: 'frankenstein_igor',
+            random: defaultTestRandom,
+            now: 100,
+        });
+
+        expect(result.events).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: expect.objectContaining({ minionUid: 't1', baseIndex: 1 }),
+            }),
+        ]);
+    });
+
+    it('POD 版 Igor 自身被弃时也会触发放置指示物', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('igor-pod-1', 'frankenstein_igor_pod', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('t1', 'test_minion', '0', 4, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const result = fireTriggers(core, 'onMinionDiscardedFromBase', {
+            state: core,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'igor-pod-1',
+            triggerMinionDefId: 'frankenstein_igor_pod',
+            random: defaultTestRandom,
+            now: 100,
+        });
+
+        expect(result.events).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: expect.objectContaining({
+                    minionUid: 't1',
+                    baseIndex: 1,
+                    reason: 'frankenstein_igor_pod',
+                }),
+            }),
+        ]);
+    });
+
+    it('其他基地有多个己方随从时创建选择 prompt', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('igor1', 'frankenstein_igor', '0', 2, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('t1', 'test_a', '0', 3, { powerModifier: 0 }),
+                        makeMinion('t2', 'test_b', '0', 4, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const result = fireTriggers(core, 'onMinionDiscardedFromBase', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'igor1',
+            triggerMinionDefId: 'frankenstein_igor',
+            random: defaultTestRandom,
+            now: 100,
+        });
+
+        expect(result.events).toEqual([]);
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'frankenstein_igor');
+        expect(getPromptSourceId(prompt)).toBe('frankenstein_igor');
+        expect(getPromptOptions(prompt)).toHaveLength(2);
+    });
+
+    it('Igor 自身被弃时，同基地其他己方随从可作为候选目标', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('igor1', 'frankenstein_igor', '0', 2, { powerModifier: 0 }),
+                        makeMinion('ally1', 'test_minion', '0', 3, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const result = fireTriggers(core, 'onMinionDiscardedFromBase', {
+            state: core,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'igor1',
+            triggerMinionDefId: 'frankenstein_igor',
+            random: defaultTestRandom,
+            now: 100,
+        });
+
+        expect(result.events).toEqual([
+            expect.objectContaining({
+                type: SU_EVENTS.POWER_COUNTER_ADDED,
+                payload: expect.objectContaining({ minionUid: 'ally1', baseIndex: 0 }),
+            }),
+        ]);
+    });
+
+    it('giant_ant_drone 不会被 onMinionDiscardedFromBase 触发', () => {
+        const core = makeState({
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('drone1', 'giant_ant_drone', '0', 1, { powerModifier: 0 }),
+                        makeMinion('ally1', 'test_minion', '0', 3, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('t1', 'test_b', '0', 4, { powerModifier: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const result = fireTriggers(core, 'onMinionDiscardedFromBase', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'ally1',
+            triggerMinionDefId: 'test_minion',
+            random: defaultTestRandom,
+            now: 100,
+        });
+
+        expect(getPromptsBySourceId(result.matchState!, 'giant_ant_drone_prevent_destroy')).toHaveLength(0);
     });
 });

@@ -75,10 +75,28 @@ export const onAppVisibilityChange = (callback: AppVisibilityCallback): (() => v
     };
 };
 
-export const onAppVisible = (callback: () => void): (() => void) => (
-    onAppVisibilityChange((isActive) => {
+export const onAppVisible = (callback: () => void): (() => void) => {
+    if (typeof document === 'undefined' || typeof window === 'undefined') {
+        return () => {};
+    }
+
+    const emitIfActive = () => {
+        if (resolveCompositeActiveState()) {
+            callback();
+        }
+    };
+    const cleanupVisibility = onAppVisibilityChange((isActive) => {
         if (isActive) {
             callback();
         }
-    })
-);
+    });
+
+    window.addEventListener('focus', emitIfActive);
+    window.addEventListener('online', emitIfActive);
+
+    return () => {
+        cleanupVisibility();
+        window.removeEventListener('focus', emitIfActive);
+        window.removeEventListener('online', emitIfActive);
+    };
+};

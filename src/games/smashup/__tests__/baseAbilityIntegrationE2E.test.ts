@@ -39,19 +39,26 @@ import type { MatchState, RandomFn, Command } from '../../../engine/types';
 import type { PhaseExitResult, PhaseEnterResult } from '../../../engine/systems/FlowSystem';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import {
+    expectNoPrompt,
     makePlayer,
     makeState,
     makeMatchState,
     makeBase,
     makeMinion,
-    getInteractionsFromMS,
     applyEvents,
+    getFirstPrompt,
+    getPromptOption,
+    getPromptOptions,
+    getPromptSourceId,
+    getPromptsBySourceId,
+    getSimpleChoicePrompt,
+    respondToPrompt,
 } from './helpers';
 import { runCommand } from './testRunner';
 // 确定性随机
 const dummyRandom: RandomFn = {
     random: () => 0.5,
-    d: (max: number) => 1,
+    d: (_max: number) => 1,
     range: (min: number, _max: number) => min,
     shuffle: <T>(arr: T[]) => [...arr],
 };
@@ -147,7 +154,7 @@ function callOnPhaseExitScoreBases(ms: MatchState<SmashUpCore>) {
 
 /** 检查 Interaction 是否包含指定 sourceId */
 function hasInteraction(ms: MatchState<SmashUpCore>, sourceId: string): boolean {
-    return getInteractionsFromMS(ms).some(i => i.data?.sourceId === sourceId);
+    return getPromptsBySourceId(ms, sourceId).length > 0;
 }
 
 function resolveReactionQueueTriggerForSourceDefId(
@@ -158,7 +165,7 @@ function resolveReactionQueueTriggerForSourceDefId(
     let state = initialState;
 
     for (let step = 0; step < 10; step += 1) {
-        const prompt = getInteractionsFromMS(state)[0] as any;
+        const prompt = getFirstPrompt(state);
         if (!prompt) {
             const rq = maybeResolveReactionQueue(state, dummyRandom, now + step);
             if (rq) {
@@ -168,12 +175,12 @@ function resolveReactionQueueTriggerForSourceDefId(
             return state;
         }
 
-        if (prompt?.data?.sourceId !== 'smashup_reaction_choose') {
+        if (getPromptSourceId(prompt) !== 'smashup_reaction_choose') {
             return state;
         }
 
         const triggersById = new Map((state.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]));
-        const options = (prompt.data?.options ?? []) as any[];
+        const options = getPromptOptions(prompt);
         const wanted = options.find((option: any) => {
             const triggerId = option?.value?.triggerId;
             const trigger = triggerId ? triggersById.get(triggerId) : undefined;
@@ -185,9 +192,10 @@ function resolveReactionQueueTriggerForSourceDefId(
         const chosen = wanted ?? fallback;
         if (!chosen) return state;
 
-        const response = runCommand(
+        const response = respondToPrompt(
             state,
-            { type: 'SYS_INTERACTION_RESPOND', playerId: prompt.playerId, payload: { optionId: chosen.id } } as any,
+            chosen.id,
+            undefined,
             dummyRandom,
         );
         state = response.finalState;
@@ -230,7 +238,7 @@ describe('集成: base_haunted_house_al9000 鬼屋 (onMinionPlayed)', () => {
             },
         });
         const ms = makeMatchState(core);
-        const { events, ms: resultMs2 } = executePlayMinion(ms, '0', 'minion-1', 0);
+        const { ms: resultMs2 } = executePlayMinion(ms, '0', 'minion-1', 0);
         // 打出唯一的随从后手牌为空，鬼屋能力无法弃牌
         expect(hasInteraction(resultMs2, 'base_haunted_house_al9000')).toBe(false);
     });
@@ -271,25 +279,19 @@ describe('集成: base_the_asylum 疯人院 (onMinionPlayed)', () => {
         const ms = makeMatchState(core);
         const { ms: playedMs } = executePlayMinion(ms, '0', 'shoggoth-1', 0);
 
-        const shoggothInteraction = getInteractionsFromMS(playedMs).find(i => i.data?.sourceId === 'elder_thing_shoggoth_pod');
-        expect(shoggothInteraction).toBeDefined();
+        const shoggothInteraction = getSimpleChoicePrompt(playedMs, 'elder_thing_shoggoth_pod');
 
-        const yesOption = shoggothInteraction!.data.options.find((option: any) => option.id === 'yes');
+        const yesOption = getPromptOption(shoggothInteraction, (option: any) => option.id === 'yes', 'Shoggoth yes option');
         expect(yesOption).toBeDefined();
 
-        const response = runCommand(playedMs, {
-            type: 'SYS_INTERACTION_RESPOND',
-            playerId: '1',
-            payload: { optionId: yesOption.id },
-        } as SmashUpCommand, dummyRandom);
+        const response = respondToPrompt(playedMs, yesOption.id, '1', dummyRandom);
 
         expect(response.success).toBe(true);
         expect(response.finalState.core.players['0'].hand.filter((card: CardInstance) => card.defId === MADNESS_CARD_DEF_ID)).toHaveLength(2);
 
-        const asylumInteraction = getInteractionsFromMS(response.finalState).find(i => i.data?.sourceId === 'base_the_asylum');
-        expect(asylumInteraction).toBeDefined();
+        const asylumInteraction = getSimpleChoicePrompt(response.finalState, 'base_the_asylum');
 
-        const madnessOptions = asylumInteraction!.data.options.filter((entry: any) => entry.value?.defId === MADNESS_CARD_DEF_ID);
+        const madnessOptions = getPromptOptions(asylumInteraction).filter((entry: any) => entry.value?.defId === MADNESS_CARD_DEF_ID);
         expect(madnessOptions).toHaveLength(2);
     });
 });
@@ -335,7 +337,9 @@ describe('集成: base_innsmouth_base 印斯茅斯 (onMinionPlayed)', () => {
         expect(hasInteraction(afterPlay, 'smashup_reaction_choose')).toBe(false);
 
         const resolved = maybeResolveReactionQueue(afterPlay, dummyRandom, 1);
-        expect(resolved?.state.sys.interaction?.current).toBeUndefined();
+        if (resolved) {
+            expectNoPrompt(resolved.state);
+        }
     });
 });
 
@@ -639,7 +643,7 @@ describe('集成: base_laboratorium 实验工坊 (onMinionPlayed)', () => {
         const { ms: resultMs } = executePlayMinion(ms, '0', 'hoverbot-1', 0);
         const hoverbot = resultMs.core.bases[0].minions.find(minion => minion.uid === 'hoverbot-1');
 
-        expect(resultMs.sys.interaction?.current).toBeUndefined();
+        expectNoPrompt(resultMs);
         expect(resultMs.core.triggerQueue).toBeUndefined();
         expect(hoverbot?.powerCounters ?? 0).toBe(1);
     });

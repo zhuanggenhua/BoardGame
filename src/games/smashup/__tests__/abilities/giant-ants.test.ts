@@ -7,7 +7,6 @@ import { clearInteractionHandlers } from '../../domain/abilityInteractionHandler
 import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { reduce } from '../../domain/reduce';
-import { processDestroyTriggers } from '../../domain/reducer';
 import {
     createSimpleChoice,
     queueInteraction,
@@ -31,6 +30,7 @@ import {
     cancelPrompt,
     getPromptCountBySourceId,
     expectNoPrompt,
+    resolveDestroyedMinions,
 } from '../helpers';
 import { runCommand, defaultTestRandom } from '../testRunner';
 
@@ -749,7 +749,7 @@ describe('巨蚁派系能力', () => {
         expect(discard).toContain('m1');
     });
 
-    it('雄蜂+Igor：pendingSave 时 onDestroy 不触发（单元测试 processDestroyTriggers）', () => {
+    it('雄蜂+Igor：pendingSave 时 onDestroy 不触发（消灭事件管线）', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -772,7 +772,7 @@ describe('巨蚁派系能力', () => {
             payload: { minionUid: 'igor', minionDefId: 'frankenstein_igor', fromBaseIndex: 0, ownerId: '0', reason: 'test' },
             timestamp: 100,
         };
-        const result = processDestroyTriggers([destroyEvt] as any, ms, '0' as any, defaultTestRandom, 100);
+        const result = resolveDestroyedMinions(ms, '0', [destroyEvt] as any, defaultTestRandom, 100);
 
         // 雄蜂创建了防止消灭交互 → pendingSave
         expect(result.matchState).toBeDefined();
@@ -783,7 +783,7 @@ describe('巨蚁派系能力', () => {
         expect(result.events.filter((e: any) => e.type === SU_EVENTS.POWER_COUNTER_ADDED).length).toBe(0);
     });
 
-    it('雄蜂+Igor：reason=drone_skip 时 onDestroy 正常触发且不重复（单元测试 processDestroyTriggers）', () => {
+    it('雄蜂+Igor：reason=drone_skip 时 onDestroy 正常触发且不重复（消灭事件管线）', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -807,7 +807,7 @@ describe('巨蚁派系能力', () => {
             payload: { minionUid: 'igor', minionDefId: 'frankenstein_igor', fromBaseIndex: 0, ownerId: '0', reason: 'giant_ant_drone_skip' },
             timestamp: 100,
         };
-        const result = processDestroyTriggers([destroyEvt] as any, ms, '0' as any, defaultTestRandom, 100);
+        const result = resolveDestroyedMinions(ms, '0', [destroyEvt] as any, defaultTestRandom, 100);
 
         // 雄蜂 trigger 跳过（reason check）→ 无 pendingSave
         // MINION_DESTROYED 应保留
@@ -846,7 +846,7 @@ describe('巨蚁派系能力', () => {
             payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', destroyerId: '1', reason: 'opponent_action' },
             timestamp: 100,
         };
-        const triggerResult = processDestroyTriggers([destroyEvt] as any, ms, '1' as any, defaultTestRandom, 100);
+        const triggerResult = resolveDestroyedMinions(ms, '1', [destroyEvt] as any, defaultTestRandom, 100);
 
         // 交互应属于玩家0（随从所有者），不是玩家1（消灭者）
         expect(triggerResult.matchState).toBeDefined();
@@ -885,7 +885,7 @@ describe('巨蚁派系能力', () => {
         const destroyEvents = [
             { type: SU_EVENTS.MINION_DESTROYED, payload: { minionUid: 'd1', minionDefId: 'giant_ant_drone', fromBaseIndex: 0, ownerId: '0', reason: 'action' }, timestamp: 100 },
         ];
-        const result = processDestroyTriggers(destroyEvents as any, ms, '0' as any, defaultTestRandom, 100);
+        const result = resolveDestroyedMinions(ms, '0', destroyEvents as any, defaultTestRandom, 100);
 
         // 应创建 1 个防止交互（雄蜂阻止自己被消灭）
         expect(result.matchState).toBeDefined();
@@ -932,7 +932,7 @@ describe('巨蚁派系能力', () => {
         ];
         const ms = makeMatchState(core);
         ms.sys.phase = 'scoreBases';
-        const triggerResult = processDestroyTriggers(destroyEvents as any, ms, '0' as any, defaultTestRandom, 100);
+        const triggerResult = resolveDestroyedMinions(ms, '0', destroyEvents as any, defaultTestRandom, 100);
         expect(triggerResult.matchState).toBeDefined();
         const interaction = getSimpleChoicePrompt(triggerResult.matchState!, 'giant_ant_drone_prevent_destroy');
 
@@ -972,7 +972,7 @@ describe('巨蚁派系能力', () => {
             { type: SU_EVENTS.MINION_DESTROYED, payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', reason: 'scoring' }, timestamp: 100 },
             { type: SU_EVENTS.MINION_DESTROYED, payload: { minionUid: 'm2', minionDefId: 'cthulhu_minion', fromBaseIndex: 0, ownerId: '0', reason: 'scoring' }, timestamp: 100 },
         ];
-        const triggerResult = processDestroyTriggers(destroyEvents as any, ms, '0' as any, defaultTestRandom, 100);
+        const triggerResult = resolveDestroyedMinions(ms, '0', destroyEvents as any, defaultTestRandom, 100);
 
         // 应有 2 个防止交互（为 m1 和 m2 各一个）
         expect(triggerResult.matchState).toBeDefined();
@@ -1035,7 +1035,7 @@ describe('巨蚁派系能力', () => {
             payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', reason: 'action' },
             timestamp: 100,
         };
-        const result = processDestroyTriggers([destroyEvt] as any, ms, '1' as any, defaultTestRandom, 100);
+        const result = resolveDestroyedMinions(ms, '1', [destroyEvt] as any, defaultTestRandom, 100);
 
         // 雄蜂创建了防止消灭交互 → pendingSave
         expect(result.matchState).toBeDefined();
@@ -1078,7 +1078,7 @@ describe('巨蚁派系能力', () => {
             payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', reason: 'action' },
             timestamp: 100,
         };
-        const result = processDestroyTriggers([destroyEvt] as any, ms, '1' as any, defaultTestRandom, 100);
+        const result = resolveDestroyedMinions(ms, '1', [destroyEvt] as any, defaultTestRandom, 100);
 
         // pendingSave
         expect(result.matchState).toBeDefined();
@@ -1113,7 +1113,7 @@ describe('巨蚁派系能力', () => {
             payload: { minionUid: 'm1', minionDefId: 'cthulhu_servitor', fromBaseIndex: 0, ownerId: '0', reason: 'giant_ant_drone_skip' },
             timestamp: 100,
         };
-        const result = processDestroyTriggers([destroyEvt] as any, ms, '1' as any, defaultTestRandom, 100);
+        const result = resolveDestroyedMinions(ms, '1', [destroyEvt] as any, defaultTestRandom, 100);
 
         // 雄蜂跳过 → 无 pendingSave → 消灭确认
         expect(result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED).length).toBe(1);

@@ -1377,8 +1377,15 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                 rerollCostAmount={interactiveBonusDiceSettlement?.rerollCostAmount}
                 rerollCostTokenId={interactiveBonusDiceSettlement?.rerollCostTokenId}
                 displayOnly={interactiveBonusDiceSettlement?.displayOnly}
+                presentationKey={interactiveBonusDiceSettlement
+                    ? `${interactiveBonusDiceSettlement.id}:reroll-${interactiveBonusDiceSettlement.rerollCount}`
+                    : undefined}
                 lastRerolledDieIndex={interactiveBonusDiceSettlement?.lastRerolledDieIndex}
-                rerollAnimationKey={interactiveBonusDiceSettlement?.rerollAnimationKey}
+                rerollPresentationKey={
+                    interactiveBonusDiceSettlement && interactiveBonusDiceSettlement.rerollCount > 0
+                        ? `${interactiveBonusDiceSettlement.id}:reroll-${interactiveBonusDiceSettlement.rerollCount}`
+                        : undefined
+                }
                 summaryEffectKey={interactiveBonusDiceSettlement?.summaryEffectKey}
                 summaryEffectParams={interactiveBonusDiceSettlement?.summaryEffectParams}
                 characterId={interactiveBonusDiceSettlement ? G.selectedCharacters[interactiveBonusDiceSettlement.attackerId] : undefined}

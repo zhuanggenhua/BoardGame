@@ -119,7 +119,7 @@ Board.tsx 中的交互渲染逻辑基于以下假设：
 
 ## 测试
 
-创建了 E2E 测试 `e2e/ninja-hidden-ninja-skip-option.e2e.ts`：
+创建了 E2E 测试 `e2e/smashup/ninja-hidden-ninja-skip-option.e2e.ts`：
 
 1. **测试场景1**：验证浮动按钮显示（包含"跳过"选项）
 2. **测试场景2**：验证可以选择手牌中的随从

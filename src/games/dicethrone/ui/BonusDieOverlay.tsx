@@ -69,10 +69,12 @@ interface BonusDieOverlayProps {
     summaryEffectKey?: string;
     /** 多骰汇总文本参数 */
     summaryEffectParams?: Record<string, string | number>;
+    /** 特写展示事件身份；变化时即使点数不变也要重播滚动动画 */
+    presentationKey?: string | number;
     /** 最近一次被重掷的奖励骰索引，仅用于限定动画目标 */
     lastRerolledDieIndex?: number;
-    /** 最近一次重掷动画序号，仅用于区分连续重掷 */
-    rerollAnimationKey?: string | number;
+    /** 最近一次重掷表现事件身份，仅用于区分连续重掷 */
+    rerollPresentationKey?: string | number;
     /** 已由 modal stack 承载时，禁止再次 portal */
     usePortal?: boolean;
 }
@@ -100,8 +102,9 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
     characterId,
     summaryEffectKey,
     summaryEffectParams,
+    presentationKey,
     lastRerolledDieIndex,
-    rerollAnimationKey,
+    rerollPresentationKey,
     usePortal,
 }) => {
     const { t, i18n } = useTranslation('game-dicethrone');
@@ -279,9 +282,12 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                         data-testid={isSingleDieRerollSpotlight ? 'bonus-die-single-reroll-spotlight' : 'bonus-die-multi-reroll-spotlight'}
                     >
                         {bonusDice.map((die) => {
-                            const hasTargetedRerollAnimation = rerollAnimationKey !== undefined
+                            const hasTargetedRerollPresentation = rerollPresentationKey !== undefined
                                 && lastRerolledDieIndex !== undefined;
-                            const shouldAnimateDie = !hasTargetedRerollAnimation || die.index === lastRerolledDieIndex;
+                            const shouldAnimateDie = !hasTargetedRerollPresentation || die.index === lastRerolledDieIndex;
+                            const diePresentationKey = hasTargetedRerollPresentation
+                                ? (shouldAnimateDie ? `${rerollPresentationKey}:${die.index}` : undefined)
+                                : (presentationKey !== undefined ? `${presentationKey}:${die.index}` : undefined);
                             const dieContent = (
                                 <>
                                     <BonusDieSpotlightContent
@@ -293,9 +299,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                                         size={multiDieSize}
                                         rollingDurationMs={600 + die.index * 100}
                                         animateOnMount={shouldAnimateDie}
-                                        rollAnimationKey={shouldAnimateDie && hasTargetedRerollAnimation
-                                            ? `${rerollAnimationKey}:${die.index}`
-                                            : undefined}
+                                        presentationKey={diePresentationKey}
                                         characterId={characterId}
                                         compact={!isSingleDieRerollSpotlight}
                                         hideEffectText={!isSingleDieRerollSpotlight && bonusDice.length > 1}
@@ -444,6 +448,7 @@ export const BonusDieOverlay: React.FC<BonusDieOverlayProps> = ({
                     effectParams={effectParams}
                     locale={locale}
                     size="8vw"
+                    presentationKey={presentationKey}
                     characterId={characterId}
                 />
             </div>

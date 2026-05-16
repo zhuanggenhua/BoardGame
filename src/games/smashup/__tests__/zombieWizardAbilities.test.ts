@@ -18,9 +18,15 @@ import type {
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
-import { applyEvents } from './helpers';
-import { makeMatchState as makeMatchStateFromHelpers } from './helpers';
+import {
+    applyEvents,
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptSourceId,
+    getPromptTargetType,
+    makeMatchState as makeMatchStateFromHelpers,
+    respondToPromptOption,
+} from './helpers';
 import { runCommand } from './testRunner';
 import type { MatchState, RandomFn } from '../../../engine/types';
 
@@ -233,9 +239,9 @@ describe('僵尸派系能力', () => {
 
         const { matchState } = execPlayMinion(state, '0', 'm1', 0);
         // 单张随从时创建 Interaction
-        const current = (matchState.sys as any).interaction?.current;
+        const current = getFirstPrompt(matchState);
         expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('zombie_grave_digger');
+        expect(getPromptSourceId(current)).toBe('zombie_grave_digger');
     });
 
     it('zombie_grave_digger: 弃牌堆无随从时不产生事件', () => {
@@ -268,11 +274,11 @@ describe('僵尸派系能力', () => {
         });
 
         const { matchState } = execPlayMinion(state, '0', 'm1', 0);
-        const current = (matchState.sys as any).interaction?.current;
+        const current = getFirstPrompt(matchState);
         expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('zombie_walker');
-        expect(current?.data?.targetType).toBe('button');
-        expect(current?.data?.displayCard).toEqual({ defId: 'top_card', cardUid: 'd1' });
+        expect(getPromptSourceId(current)).toBe('zombie_walker');
+        expect(getPromptTargetType(current)).toBe('button');
+        expect(getPromptHandlerData(current)?.displayCard).toEqual({ defId: 'top_card', cardUid: 'd1' });
     });
 
     it('zombie_grave_robbing: 多张弃牌时创建 Prompt', () => {
@@ -291,9 +297,9 @@ describe('僵尸派系能力', () => {
 
         const { matchState } = execPlayAction(state, '0', 'a1');
         // 多张弃牌 → 创建 Interaction
-        const current = (matchState.sys as any).interaction?.current;
+        const current = getFirstPrompt(matchState);
         expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('zombie_grave_robbing');
+        expect(getPromptSourceId(current)).toBe('zombie_grave_robbing');
     });
 
     it('zombie_grave_robbing: 单张弃牌时创建 Prompt', () => {
@@ -309,9 +315,9 @@ describe('僵尸派系能力', () => {
 
         const { matchState } = execPlayAction(state, '0', 'a1');
         // 单张弃牌时创建 Interaction
-        const current = (matchState.sys as any).interaction?.current;
+        const current = getFirstPrompt(matchState);
         expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('zombie_grave_robbing');
+        expect(getPromptSourceId(current)).toBe('zombie_grave_robbing');
     });
 
     it('zombie_not_enough_bullets: 多组同名随从时创建 Prompt', () => {
@@ -332,9 +338,9 @@ describe('僵尸派系能力', () => {
 
         const { matchState } = execPlayAction(state, '0', 'a1');
         // 2组不同 defId → 创建 Interaction
-        const current = (matchState.sys as any).interaction?.current;
+        const current = getFirstPrompt(matchState);
         expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('zombie_not_enough_bullets');
+        expect(getPromptSourceId(current)).toBe('zombie_not_enough_bullets');
     });
 
     it('zombie_not_enough_bullets: 单组同名随从时创建 Prompt', () => {
@@ -354,9 +360,9 @@ describe('僵尸派系能力', () => {
 
         const { matchState } = execPlayAction(state, '0', 'a1');
         // 单组同名随从时创建 Interaction
-        const current = (matchState.sys as any).interaction?.current;
+        const current = getFirstPrompt(matchState);
         expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('zombie_not_enough_bullets');
+        expect(getPromptSourceId(current)).toBe('zombie_not_enough_bullets');
     });
 
     it('zombie_lend_a_hand: 弃牌堆有卡时创建多选 Prompt', () => {
@@ -376,9 +382,9 @@ describe('僵尸派系能力', () => {
 
         const { matchState } = execPlayAction(state, '0', 'a1');
         // 弃牌堆有卡 → 创建多选 Prompt
-        const current = (matchState.sys as any).interaction?.current;
+        const current = getFirstPrompt(matchState);
         expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('zombie_lend_a_hand');
+        expect(getPromptSourceId(current)).toBe('zombie_lend_a_hand');
     });
 
     it('zombie_outbreak: 多个空基地时选择基地后直接授予额度', () => {
@@ -403,15 +409,19 @@ describe('僵尸派系能力', () => {
         // onPlay 只创建交互，不立即发放额度
         const immediateLimitEvents = events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
         expect(immediateLimitEvents.length).toBe(0);
-        const current = (matchState.sys as any).interaction?.current;
-        expect(current?.data?.sourceId).toBe('zombie_outbreak_choose_base');
+        const current = getFirstPrompt(matchState);
+        expect(getPromptSourceId(current)).toBe('zombie_outbreak_choose_base');
 
         // 选择基地后直接授予额度（限定到该基地）
-        const chooseBaseHandler = getAbilityRuntimePromptHandler('zombie_outbreak_choose_base');
-        expect(chooseBaseHandler).toBeDefined();
-        const resolved = chooseBaseHandler!(matchState, '0', { baseIndex: 1 }, current?.data, defaultRandom, 1);
-        expect(resolved).toBeDefined();
-        const granted = resolved!.events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
+        const resolved = respondToPromptOption(
+            matchState,
+            option => option.value?.baseIndex === 1,
+            'zombie outbreak base 1 option',
+            '0',
+            defaultRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+        const granted = resolved.events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED);
         expect(granted.length).toBe(1);
         expect((granted[0] as any).payload.limitType).toBe('minion');
         expect((granted[0] as any).payload.restrictToBase).toBe(1);
@@ -476,9 +486,9 @@ describe('僵尸派系能力', () => {
         });
 
         const { matchState } = execPlayAction(state, '0', 'a1');
-        const current = (matchState.sys as any).interaction?.current;
+        const current = getFirstPrompt(matchState);
         expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('zombie_mall_crawl');
+        expect(getPromptSourceId(current)).toBe('zombie_mall_crawl');
     });
 
     it('zombie_mall_crawl: 选择卡名后同名卡进入弃牌堆，牌库重洗', () => {
@@ -503,17 +513,19 @@ describe('僵尸派系能力', () => {
             },
         });
         const { matchState } = execPlayAction(state, '0', 'a1');
-        const current = (matchState.sys as any).interaction?.current;
-        expect(current?.data?.sourceId).toBe('zombie_mall_crawl');
+        const current = getFirstPrompt(matchState);
+        expect(getPromptSourceId(current)).toBe('zombie_mall_crawl');
 
         // 解决交互：选择 zombie_walker
-        const handler = getAbilityRuntimePromptHandler('zombie_mall_crawl');
-        expect(handler).toBeDefined();
-        const result = handler!(matchState, '0', { defId: 'zombie_walker' }, current?.data, defaultRandom, 1);
-        expect(result).toBeDefined();
-
-        // 应用事件
-        const finalState = applyEvents(matchState.core, result!.events);
+        const result = respondToPromptOption(
+            matchState,
+            option => option.value?.defId === 'zombie_walker',
+            'zombie mall crawl zombie_walker option',
+            '0',
+            defaultRandom,
+        );
+        expect(result.success, result.error).toBe(true);
+        const finalState = result.finalState.core;
 
         // 验证：d1, d3 (zombie_walker) 应在弃牌堆中
         const discardUids = finalState.players['0'].discard.map(c => c.uid);
@@ -666,9 +678,9 @@ describe('巫师派系能力（新增）', () => {
         });
 
         const { matchState } = execPlayAction(state, '0', 'a1');
-        const current = (matchState.sys as any).interaction?.current;
+        const current = getFirstPrompt(matchState);
         expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('wizard_sacrifice');
+        expect(getPromptSourceId(current)).toBe('wizard_sacrifice');
     });
 
     it('wizard_sacrifice: 没有己方随从时不产生事件', () => {
@@ -713,8 +725,8 @@ describe('巫师派系能力（新增）', () => {
 
         const { matchState } = execPlayAction(state, '0', 'a1');
         // 单个己方随从时创建 Interaction
-        const current = (matchState.sys as any).interaction?.current;
+        const current = getFirstPrompt(matchState);
         expect(current).toBeDefined();
-        expect(current?.data?.sourceId).toBe('wizard_sacrifice');
+        expect(getPromptSourceId(current)).toBe('wizard_sacrifice');
     });
 });

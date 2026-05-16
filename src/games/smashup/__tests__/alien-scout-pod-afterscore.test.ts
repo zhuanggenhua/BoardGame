@@ -1,16 +1,16 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import { fireTriggers } from '../domain/ongoingEffects';
+import { SU_EVENTS } from '../domain/types';
 import {
-    getPromptHandlerData,
-    getPromptOption,
     getPromptsBySourceId,
     getSimpleChoicePrompt,
     makeBase,
     makeMatchState,
     makeMinion,
     makeState,
+    respondToPromptOption,
+    withOnlyCurrentPrompt,
 } from './helpers';
 
 beforeAll(() => {
@@ -117,15 +117,6 @@ describe('外星侦察兵 afterScoring', () => {
         });
 
         const interaction = getSimpleChoicePrompt(result.matchState!, 'alien_scout_return');
-        const returnOption = getPromptOption(
-            interaction,
-            (entry: any) => entry.value?.returnIt === true,
-            'alien scout return option',
-        );
-        const handler = getAbilityRuntimePromptHandler('alien_scout_return');
-
-        expect(returnOption).toBeDefined();
-        expect(handler).toBeDefined();
 
         const staleCore = makeState({
             bases: [
@@ -145,15 +136,17 @@ describe('外星侦察兵 afterScoring', () => {
             },
         });
 
-        const resolved = handler!(
-            makeMatchState(staleCore),
+        const stalePromptState = withOnlyCurrentPrompt(makeMatchState(staleCore), interaction);
+        const resolved = respondToPromptOption(
+            stalePromptState,
+            option => option.value?.returnIt === true,
+            'alien scout return option',
             '1',
-            returnOption.value,
-            getPromptHandlerData(interaction),
             dummyRandom,
-            102,
         );
 
-        expect(resolved?.events ?? []).toHaveLength(0);
+        expect(resolved.success, resolved.error).toBe(true);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_RETURNED)).toBe(false);
+        expect(resolved.finalState.core.players['1'].hand.some(card => card.uid === 'scout1')).toBe(false);
     });
 });

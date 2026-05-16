@@ -18,7 +18,6 @@ import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-import { getAbilityRuntimePromptHandler } from '../domain/abilityRuntime';
 import {
     getOptionalSimpleChoicePrompt,
     getPromptHandlerData,
@@ -152,13 +151,12 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
         expect(r1.success).toBe(true);
 
         // 解决交互：传空数组（跳过）
-        const prompt = getSimpleChoicePrompt(r1.finalState, 'robot_microbot_reclaimer');
-        const handler = getAbilityRuntimePromptHandler('robot_microbot_reclaimer');
-        expect(handler).toBeDefined();
-        const result = handler!(r1.finalState, '0', [], getPromptHandlerData(prompt), defaultRandom, 1000);
-        expect(result?.events.length).toBe(0);
+        getSimpleChoicePrompt(r1.finalState, 'robot_microbot_reclaimer');
+        const result = respondToPromptOptions(r1.finalState, [], '0', defaultRandom);
+        expect(result.success, result.error).toBe(true);
+        expect(result.events.some((event: any) => event.type === SU_EVENTS.DECK_REORDERED)).toBe(false);
         // 弃牌堆中的微型机仍在
-        expect(r1.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'mb1')).toBe(true);
+        expect(result.finalState.core.players['0'].discard.some((c: CardInstance) => c.uid === 'mb1')).toBe(true);
     });
 
     it('选择微型机 → 洗回牌库', () => {
@@ -183,11 +181,15 @@ describe('robot_microbot_reclaimer（微型机回收者）', () => {
         expect(r1.success).toBe(true);
 
         const prompt = getSimpleChoicePrompt(r1.finalState, 'robot_microbot_reclaimer');
-        const handler = getAbilityRuntimePromptHandler('robot_microbot_reclaimer');
-        expect(handler).toBeDefined();
         // 选择 mb1 洗回牌库
-        const result = handler!(r1.finalState, '0', [{ cardUid: 'mb1' }], getPromptHandlerData(prompt), defaultRandom, 1000);
-        const reorderEvents = result?.events.filter((e: any) => e.type === SU_EVENTS.DECK_REORDERED) ?? [];
+        const selected = getPromptOption(
+            prompt,
+            (option: any) => option.value?.cardUid === 'mb1',
+            'microbot option for mb1',
+        );
+        const result = respondToPromptOptions(r1.finalState, [selected.id], '0', defaultRandom);
+        expect(result.success, result.error).toBe(true);
+        const reorderEvents = result.events.filter((e: any) => e.type === SU_EVENTS.DECK_REORDERED);
         expect(reorderEvents.length).toBe(1);
         const deckUids = (reorderEvents[0] as any).payload.deckUids;
         expect(deckUids).toContain('mb1');

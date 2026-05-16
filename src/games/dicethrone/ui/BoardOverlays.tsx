@@ -62,6 +62,7 @@ export interface BoardOverlaysProps {
         bonusDice?: import('../domain/types').BonusDieInfo[];
         summaryEffectKey?: string;
         summaryEffectParams?: Record<string, string | number>;
+        presentationKey?: string | number;
         showTotal?: boolean;
         displayOnly?: boolean;
         show: boolean;
@@ -251,6 +252,11 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         onClose={props.onBonusDieClose}
                         locale={props.locale}
                         bonusDice={props.pendingBonusDiceSettlement?.dice ?? props.bonusDie.bonusDice}
+                        presentationKey={
+                            props.pendingBonusDiceSettlement
+                                ? `${props.pendingBonusDiceSettlement.id}:reroll-${props.pendingBonusDiceSettlement.rerollCount}`
+                                : props.bonusDie.presentationKey
+                        }
                         canReroll={props.canRerollBonusDie}
                         rerollLimitReached={Boolean(
                             props.pendingBonusDiceSettlement &&
@@ -264,7 +270,11 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                         rerollCostTokenId={props.pendingBonusDiceSettlement?.rerollCostTokenId}
                         displayOnly={props.pendingBonusDiceSettlement?.displayOnly ?? props.bonusDie.displayOnly}
                         lastRerolledDieIndex={props.pendingBonusDiceSettlement?.lastRerolledDieIndex}
-                        rerollAnimationKey={props.pendingBonusDiceSettlement?.rerollAnimationKey}
+                        rerollPresentationKey={
+                            props.pendingBonusDiceSettlement && props.pendingBonusDiceSettlement.rerollCount > 0
+                                ? `${props.pendingBonusDiceSettlement.id}:reroll-${props.pendingBonusDiceSettlement.rerollCount}`
+                                : undefined
+                        }
                         summaryEffectKey={props.pendingBonusDiceSettlement?.summaryEffectKey ?? props.bonusDie.summaryEffectKey}
                         summaryEffectParams={props.pendingBonusDiceSettlement?.summaryEffectParams ?? props.bonusDie.summaryEffectParams}
                         characterId={
@@ -273,7 +283,7 @@ export const BoardOverlays: React.FC<BoardOverlaysProps> = (props) => {
                                 : props.bonusDie.characterId
                         }
                         forceAutoCloseDelay={props.tutorialSpotlightAutoCloseDelayMs}
-                        manualCloseOnly={props.bonusDieManualCloseOnly}
+                        manualCloseOnly={props.bonusDieManualCloseOnly && props.bonusDie.effectKey !== 'bonusDie.effect.samuraiBackStrikeDie'}
                     />
                 )}
 

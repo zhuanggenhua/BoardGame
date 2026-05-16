@@ -4,8 +4,21 @@ import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
-import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
-import { makeCard, makeMatchState, makeMinion, makePlayer, makeState, getInteractionsFromMS } from './helpers';
+import {
+    expectNoPrompt,
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptOption,
+    getPromptOptions,
+    getPromptPlayerId,
+    getPromptSourceId,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+    respondCommand,
+} from './helpers';
 import { runCommand, defaultTestRandom } from './testRunner';
 import { getEffectivePower } from '../domain/ongoingModifiers';
 import { executeTriggerProgramExecutor } from '../domain/triggerExecutors';
@@ -31,10 +44,10 @@ describe('elder_things_pod: Elder Thing POD', () => {
             { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'c1', baseIndex: 0 } },
             defaultTestRandom,
         );
-        const prompt: any = getInteractionsFromMS(play.finalState)[0]?.data;
-        expect(prompt?.sourceId).toBe('elder_thing_elder_thing_pod_mode');
-        expect(prompt?.displayCard).toEqual({ defId: 'elder_thing_elder_thing_pod', cardUid: 'c1' });
-        const destroyOpt = prompt.options.find((o: any) => o.id === 'destroy');
+        const prompt = getFirstPrompt(play.finalState);
+        expect(getPromptSourceId(prompt)).toBe('elder_thing_elder_thing_pod_mode');
+        expect(getPromptHandlerData(prompt)?.displayCard).toEqual({ defId: 'elder_thing_elder_thing_pod', cardUid: 'c1' });
+        const destroyOpt = getPromptOption(prompt, (o: any) => o.id === 'destroy');
         expect(destroyOpt?.disabled).toBe(true);
     });
 });
@@ -55,7 +68,6 @@ describe('elder_things_pod: Unfathomable Goals POD', () => {
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
             defaultTestRandom,
         );
-        const types = res.events.map(e => e.type);
         // Expect both extra minion and extra action limits granted.
         const limits = res.events.filter(e => e.type === SU_EVENTS.LIMIT_MODIFIED) as any[];
         expect(limits.length).toBeGreaterThanOrEqual(2);
@@ -111,8 +123,8 @@ describe('elder_things_pod: Mi-Go POD', () => {
         );
 
         // onPlay 仅应创建对手选择，不应提前发放疯狂牌
-        const prompt: any = getInteractionsFromMS(played.finalState)[0]?.data;
-        expect(prompt?.sourceId).toBe('elder_thing_mi_go_pod');
+        const prompt = getFirstPrompt(played.finalState);
+        expect(getPromptSourceId(prompt)).toBe('elder_thing_mi_go_pod');
         expect(played.events.some(e => e.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
         expect(played.finalState.core.players['1'].hand.some(c => c.defId === MADNESS_CARD_DEF_ID)).toBe(false);
     });
@@ -137,9 +149,9 @@ describe('elder_things_pod: Shoggoth POD', () => {
             defaultTestRandom,
         );
 
-        const current = played.finalState.sys.interaction.current as any;
-        expect(current?.data?.sourceId).toBe('elder_thing_shoggoth_pod');
-        expect(current?.playerId).toBe('1');
+        const current = getFirstPrompt(played.finalState);
+        expect(getPromptSourceId(current)).toBe('elder_thing_shoggoth_pod');
+        expect(getPromptPlayerId(current)).toBe('1');
     });
 
     it('can destroy an opponent minion with power greater than 6', () => {
@@ -169,24 +181,28 @@ describe('elder_things_pod: Shoggoth POD', () => {
             { type: SU_COMMANDS.PLAY_MINION, playerId: '0', payload: { cardUid: 'sho', baseIndex: 0 } },
             defaultTestRandom,
         );
-        const firstPrompt: any = getInteractionsFromMS(played.finalState)[0]?.data;
-        expect(firstPrompt?.sourceId).toBe('elder_thing_shoggoth_pod');
+        const firstPrompt = getFirstPrompt(played.finalState);
+        expect(getPromptSourceId(firstPrompt)).toBe('elder_thing_shoggoth_pod');
 
         // 对手拒绝抽疯狂 -> 施法者应可选择消灭该对手此基地一个随从（不受力量6限制）
         const afterDecline = runCommand(
             played.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'no' } },
+            respondCommand('no', '1'),
             defaultTestRandom,
         );
-        const destroyPrompt: any = getInteractionsFromMS(afterDecline.finalState)[0]?.data;
-        expect(destroyPrompt?.sourceId).toBe('elder_thing_shoggoth_pod_destroy');
-        const optionIds = (destroyPrompt?.options ?? []).map((o: any) => o.value?.minionUid ?? o.value?.uid);
+        const destroyPrompt = getFirstPrompt(afterDecline.finalState);
+        expect(getPromptSourceId(destroyPrompt)).toBe('elder_thing_shoggoth_pod_destroy');
+        const optionIds = getPromptOptions(destroyPrompt).map((o: any) => o.value?.minionUid ?? o.value?.uid);
         expect(optionIds).toContain('big1');
 
-        const targetOption = (destroyPrompt?.options ?? []).find((o: any) => (o.value?.minionUid ?? o.value?.uid) === 'big1');
+        const targetOption = getPromptOption(
+            destroyPrompt,
+            (o: any) => (o.value?.minionUid ?? o.value?.uid) === 'big1',
+            'Shoggoth POD destroy target option',
+        );
         const destroyRes = runCommand(
             afterDecline.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: targetOption.id } },
+            respondCommand(targetOption.id, '0'),
             defaultTestRandom,
         );
         const destroyed = destroyRes.events.find(e => e.type === SU_EVENTS.MINION_DESTROYED) as any;
@@ -301,7 +317,6 @@ describe('elder_things_pod: The Price of Power POD', () => {
 
         const counters = res.events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED) as any[];
         // DEBUG
-        // eslint-disable-next-line no-console
         console.log('[price_of_power_pod] counters', counters.map(c => ({ amount: c.payload.amount, reason: c.payload.reason })));
         expect(counters.length).toBe(2);
         expect(counters.every(e => e.payload.amount === 1)).toBe(true);
@@ -342,13 +357,14 @@ describe('elder_things_pod: The Price of Power POD', () => {
             defaultTestRandom,
         );
 
-        const prompt: any = getInteractionsFromMS(played.finalState)[0]?.data;
-        expect(prompt?.sourceId).toBe('elder_thing_the_price_of_power_pod_choose_base');
-        expect((prompt?.options ?? []).map((option: any) => option.value?.baseIndex)).toEqual([0, 1]);
+        const prompt = getFirstPrompt(played.finalState);
+        expect(getPromptSourceId(prompt)).toBe('elder_thing_the_price_of_power_pod_choose_base');
+        const options = getPromptOptions(prompt);
+        expect(options.map((option: any) => option.value?.baseIndex)).toEqual([0, 1]);
 
         const chooseBase = runCommand(
             played.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: prompt.options[1].id } },
+            respondCommand(options[1].id, '0'),
             defaultTestRandom,
         );
 
@@ -388,24 +404,24 @@ describe('elder_things_pod: Spreading Horror POD', () => {
             { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
             defaultTestRandom,
         );
-        const firstPrompt: any = getInteractionsFromMS(play.finalState)[0]?.data;
-        expect(firstPrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_opponent');
+        const firstPrompt = getFirstPrompt(play.finalState);
+        expect(getPromptSourceId(firstPrompt)).toBe('elder_thing_spreading_horror_pod_opponent');
 
         const afterDecline = runCommand(
             play.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '1', payload: { optionId: 'no' } },
+            respondCommand('no', '1'),
             defaultTestRandom,
         );
-        const mayPrompt: any = getInteractionsFromMS(afterDecline.finalState)[0]?.data;
-        expect(mayPrompt?.sourceId).toBe('elder_thing_spreading_horror_pod_may_play');
+        const mayPrompt = getFirstPrompt(afterDecline.finalState);
+        expect(getPromptSourceId(mayPrompt)).toBe('elder_thing_spreading_horror_pod_may_play');
 
         const afterSkip = runCommand(
             afterDecline.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: 'no' } },
+            respondCommand('no', '0'),
             defaultTestRandom,
         );
 
-        expect(getInteractionsFromMS(afterSkip.finalState).length).toBe(0);
+        expectNoPrompt(afterSkip.finalState);
         expect(afterSkip.finalState.core.players['0'].discard.some(c => c.uid === 'd1')).toBe(true);
     });
 });
@@ -437,18 +453,17 @@ describe('elder_things (base): Elder Thing', () => {
         );
 
         // Choose "destroy" mode
-        const choiceInteraction: any = getInteractionsFromMS(played.finalState)[0];
-        const choicePrompt: any = choiceInteraction?.data;
-        expect(choicePrompt?.sourceId).toBe('elder_thing_elder_thing_choice');
-        expect(choicePrompt?.displayCard).toEqual({ defId: 'elder_thing_elder_thing', cardUid: 'et1' });
-        const destroyOpt = choicePrompt.options.find((o: any) => o.id === 'destroy');
+        const choicePrompt = getFirstPrompt(played.finalState);
+        expect(getPromptSourceId(choicePrompt)).toBe('elder_thing_elder_thing_choice');
+        expect(getPromptHandlerData(choicePrompt)?.displayCard).toEqual({ defId: 'elder_thing_elder_thing', cardUid: 'et1' });
+        const destroyOpt = getPromptOption(choicePrompt, (o: any) => o.id === 'destroy');
         expect(destroyOpt?.disabled).toBe(true);
-        const deckBottomOpt = choicePrompt.options.find((o: any) => o.id === 'deckbottom');
+        const deckBottomOpt = getPromptOption(choicePrompt, (o: any) => o.id === 'deckbottom');
         expect(deckBottomOpt).toBeTruthy();
 
         const afterChoice = runCommand(
             played.finalState,
-            { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: deckBottomOpt.id } },
+            respondCommand(deckBottomOpt.id, '0'),
             defaultTestRandom,
         );
         expect(afterChoice.events.some(e => e.type === SU_EVENTS.CARD_TO_DECK_BOTTOM)).toBe(true);

@@ -152,7 +152,7 @@ export type ActionLogSegment =
       }
     | {
           type: 'i18n';
-          /** i18n namespace（如 'game-dicethrone'） */
+          /** i18n namespace（如 'game-example'） */
           ns: string;
           /** i18n key（如 'actionLog.advancePhase'） */
           key: string;
@@ -170,7 +170,7 @@ export type ActionLogSegment =
       }
     | {
           type: 'diceResult';
-          /** 精灵图资源路径（不含扩展名，如 'dicethrone/images/monk/dice'） */
+          /** 精灵图资源路径（不含扩展名，如 'game/images/asset'） */
           spriteAsset: string;
           /** 精灵图网格列数 */
           spriteCols: number;

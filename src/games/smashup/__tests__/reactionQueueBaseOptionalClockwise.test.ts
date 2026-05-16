@@ -1,7 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import type { SmashUpCore, TriggerInstance } from '../domain/types';
 import {
-  getPromptHandlerData,
   getPromptOption,
   getPromptOptions,
   getPromptPlayerId,
@@ -9,11 +8,12 @@ import {
   makeMatchState,
   makeState,
   makeBase,
+  resolvePromptViaRegisteredHandler,
   withoutCurrentPrompt,
 } from './helpers';
 import { clearBaseAbilityRegistry, registerBaseAbility } from '../domain/baseAbilities';
 import { registerReactionQueueInteractionHandlers } from '../domain/reactionQueueHandlers';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { collectBaseAbilityTriggers } from '../domain/baseAbilityQueue';
 
@@ -83,19 +83,15 @@ describe('Reaction queue: optional base triggers resolve clockwise', () => {
     const ms0 = makeMatchState({ ...core, triggerQueue: triggers });
     const rq = maybeResolveReactionQueue(ms0, { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any, 1);
     expect(rq).toBeDefined();
-    const handler = getInteractionHandler('smashup_reaction_choose');
-    expect(handler).toBeTruthy();
-
     const current1 = getReactionPrompt(rq!.state);
     expect(getPromptPlayerId(current1)).toBe('1');
 
-    const afterPass = handler!(
+    const afterPass = resolvePromptViaRegisteredHandler(
       withoutCurrentPrompt(rq!.state) as any,
-      '1',
+      current1,
       { kind: 'pass' },
-      getPromptHandlerData(current1),
-      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
       2,
+      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
     );
     expect(afterPass).toBeDefined();
     const current2 = getReactionPrompt(afterPass!.state);
@@ -107,13 +103,12 @@ describe('Reaction queue: optional base triggers resolve clockwise', () => {
       (option: any) => String(option.id).includes('base_b'),
       'reaction option for base_b',
     );
-    const afterPlayerTwoActs = handler!(
+    const afterPlayerTwoActs = resolvePromptViaRegisteredHandler(
       withoutCurrentPrompt(afterPass!.state) as any,
-      '2',
+      current2,
       triggerB.value,
-      getPromptHandlerData(current2),
-      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
       3,
+      { shuffle: (a: any[]) => a, random: () => 0.5, d: () => 1, range: (m: number) => m } as any,
     );
     expect(afterPlayerTwoActs).toBeDefined();
 

@@ -396,11 +396,49 @@ describe('BonusDieOverlay', () => {
                 ]}
                 canReroll
                 lastRerolledDieIndex={1}
-                rerollAnimationKey={1}
+                rerollPresentationKey={1}
             />
         );
 
         expect(readRollingStates()).toEqual([false, true, false]);
+    });
+
+    it('单骰特写在结果相同但 presentationKey 变化时也应重播滚动动画', async () => {
+        vi.useFakeTimers();
+
+        const readIsRolling = () => {
+            const cube = screen.getByTestId('dice-3d').firstElementChild as HTMLElement | null;
+            return cube?.className.includes('animate-dice3d-bonus-tumble') ?? false;
+        };
+
+        const { rerender } = render(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                value={4}
+                face="lotus"
+                presentationKey="bonus-1"
+                autoCloseDelay={10000}
+            />
+        );
+
+        await act(async () => {
+            vi.advanceTimersByTime(1200);
+        });
+        expect(readIsRolling()).toBe(false);
+
+        rerender(
+            <BonusDieOverlay
+                isVisible
+                onClose={vi.fn()}
+                value={4}
+                face="lotus"
+                presentationKey="bonus-2"
+                autoCloseDelay={10000}
+            />
+        );
+
+        expect(readIsRolling()).toBe(true);
     });
 
     it('奖励骰展示态特写应保留首次点击保护，0.3 秒后才允许关闭', () => {

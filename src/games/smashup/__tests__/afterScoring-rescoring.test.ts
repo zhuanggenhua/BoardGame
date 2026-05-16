@@ -15,7 +15,7 @@ import { createScoringBaseRef, createScoringSession, setScoringSession } from '.
 import { smashUpSystemsForTest } from '../game';
 import type { MinionOnBase, SmashUpCommand, SmashUpCore, SmashUpEvent, TitanState } from '../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
-import { getOptionalSimpleChoicePrompt, withCurrentPrompt } from './helpers';
+import { getOptionalSimpleChoicePrompt, getPromptOptions, withCurrentPrompt } from './helpers';
 
 const PLAYER_IDS: PlayerId[] = ['0', '1'];
 
@@ -62,12 +62,13 @@ function getCurrentChoice(state: MatchState<SmashUpCore>) {
 
 function findOptionId(
     choice: NonNullable<ReturnType<typeof getCurrentChoice>>,
-    predicate: (option: NonNullable<ReturnType<typeof getCurrentChoice>>['options'][number]) => boolean,
+    predicate: (option: any) => boolean,
     message: string,
 ) {
-    const option = choice.options.find(predicate);
+    const options = getPromptOptions(choice);
+    const option = options.find(predicate);
     if (!option) {
-        throw new Error(`${message}: ${JSON.stringify(choice.options.map(item => item.id))}`);
+        throw new Error(`${message}: ${JSON.stringify(options.map(item => item.id))}`);
     }
     return option.id;
 }
@@ -81,12 +82,13 @@ function findQueuedTriggerOptionId(
     const triggersById = new Map(
         (state.core.triggerQueue ?? []).map((trigger: any) => [trigger.id, trigger]),
     );
-    const option = choice.options.find((candidate: any) => {
+    const options = getPromptOptions(choice);
+    const option = options.find((candidate: any) => {
         const triggerId = candidate?.value?.triggerId;
         return triggerId && triggersById.get(triggerId)?.sourceDefId === sourceDefId;
     });
     if (!option) {
-        throw new Error(`${message}: ${JSON.stringify(choice.options.map(item => item.id))}`);
+        throw new Error(`${message}: ${JSON.stringify(options.map(item => item.id))}`);
     }
     return option.id;
 }

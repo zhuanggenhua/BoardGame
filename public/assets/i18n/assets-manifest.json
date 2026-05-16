@@ -4003,8 +4003,8 @@
     "zh-CN/dicethrone/images/Common/character-portraits": {
       "variants": {
         "png": {
-          "sha256": "019ebea4668466a2f4d8b2b2c4c0c3d82fa81825211baee47187f4e4bed5f963",
-          "bytes": 21058533,
+          "sha256": "f472e4b082cf299ddb4399ce08937bd061ca643fa25a4e73a8ca4080c7144912",
+          "bytes": 10378152,
           "mime": "image/png"
         }
       }
@@ -4039,8 +4039,8 @@
     "zh-CN/dicethrone/images/Common/compressed/character-portraits": {
       "variants": {
         "webp": {
-          "sha256": "3316b86a1ca53be69725ad9a61e31efc2ad9391147fda0aa2999f520a97a86c2",
-          "bytes": 655846,
+          "sha256": "329ed4504c3bf59d31dce7b93be7af951f9277c89aa9931103a0d459bcd325ed",
+          "bytes": 165570,
           "mime": "image/webp"
         }
       }

@@ -1,13 +1,25 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { SU_COMMANDS } from '../domain/types';
-import { makeBase, makeCard, makeMatchState, makeMinion, makePlayer, resolveInteractionChain } from './helpers';
+import {
+    expectNoPrompt,
+    getPromptOption,
+    getPromptOptions,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getSimpleChoicePrompt,
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    resolveInteractionChain,
+} from './helpers';
 import { runCommand } from './testRunner';
 
 function chooseOptionBySource(prompt: any, sourceId: string, predicate: (option: any) => boolean) {
-    expect(prompt.data.sourceId).toBe(sourceId);
-    const option = prompt.data.options.find(predicate);
-    expect(option).toBeTruthy();
+    expect(getPromptSourceId(prompt)).toBe(sourceId);
+    const option = getPromptOption(prompt, predicate, `option for ${sourceId}`);
     return { optionId: option.id };
 }
 
@@ -42,7 +54,7 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
 
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'high-target')).toBe(false);
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'high-target')).toBe(false);
             return chooseOptionBySource(prompt, 'sharks_megalodon', (option) => option.value?.minionUid === 'low-target');
         });
 
@@ -121,21 +133,21 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
         expect(play.success).toBe(true);
         let chosenExtra = false;
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            if (prompt.data.sourceId === 'sharks_torn_apart') {
+            const sourceId = getPromptSourceId(prompt);
+            if (sourceId === 'sharks_torn_apart') {
                 return chooseOptionBySource(prompt, 'sharks_torn_apart', option => option.value?.minionUid === 'victim');
             }
-            if (prompt.data.sourceId === 'smashup_immediate_extra_minion_base') {
-                expect(prompt.data.options.some((option: any) => option.value?.baseIndex === 1)).toBe(false);
+            if (sourceId === 'smashup_immediate_extra_minion_base') {
+                expect(getPromptOptions(prompt).some((option: any) => option.value?.baseIndex === 1)).toBe(false);
                 return chooseOptionBySource(prompt, 'smashup_immediate_extra_minion_base', option => option.value?.baseIndex === 0);
             }
-            expect(prompt.data.sourceId).toBe('smashup_immediate_extra_minion');
+            expect(sourceId).toBe('smashup_immediate_extra_minion');
             if (chosenExtra) {
-                return { optionId: prompt.data.options.find((option: any) => option.value?.skip).id };
+                return { optionId: getPromptOption(prompt, (option: any) => option.value?.skip, 'skip extra minion option').id };
             }
             chosenExtra = true;
-            expect(prompt.data.options.some((option: any) => option.value?.cardUid === 'other-minion')).toBe(false);
-            const mako = prompt.data.options.find((option: any) => option.value?.cardUid === 'mako-extra');
-            expect(mako).toBeTruthy();
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.cardUid === 'other-minion')).toBe(false);
+            const mako = getPromptOption(prompt, (option: any) => option.value?.cardUid === 'mako-extra', 'Mako extra minion option');
             return { optionId: mako.id };
         });
 
@@ -180,21 +192,21 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
         expect(play.success).toBe(true);
         let chosenExtra = false;
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            if (prompt.data.sourceId === 'sharks_torn_apart') {
+            const sourceId = getPromptSourceId(prompt);
+            if (sourceId === 'sharks_torn_apart') {
                 return chooseOptionBySource(prompt, 'sharks_torn_apart', option => option.value?.minionUid === 'victim');
             }
-            if (prompt.data.sourceId === 'smashup_immediate_extra_minion_base') {
-                expect(prompt.data.options.some((option: any) => option.value?.baseIndex === 1)).toBe(false);
+            if (sourceId === 'smashup_immediate_extra_minion_base') {
+                expect(getPromptOptions(prompt).some((option: any) => option.value?.baseIndex === 1)).toBe(false);
                 return chooseOptionBySource(prompt, 'smashup_immediate_extra_minion_base', option => option.value?.baseIndex === 0);
             }
-            expect(prompt.data.sourceId).toBe('smashup_immediate_extra_minion');
+            expect(sourceId).toBe('smashup_immediate_extra_minion');
             if (chosenExtra) {
-                return { optionId: prompt.data.options.find((option: any) => option.value?.skip).id };
+                return { optionId: getPromptOption(prompt, (option: any) => option.value?.skip, 'skip extra minion option').id };
             }
             chosenExtra = true;
-            expect(prompt.data.options.some((option: any) => option.value?.cardUid === 'big-extra')).toBe(false);
-            const small = prompt.data.options.find((option: any) => option.value?.cardUid === 'small-extra');
-            expect(small).toBeTruthy();
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.cardUid === 'big-extra')).toBe(false);
+            const small = getPromptOption(prompt, (option: any) => option.value?.cardUid === 'small-extra', 'small extra minion option');
             return { optionId: small.id };
         });
 
@@ -231,19 +243,19 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
 
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
-            const triggerOption = prompt.data.options.find((option: any) => {
+            const triggerOption = getPromptOptions(prompt).find((option: any) => {
                 const triggerId = option.value?.triggerId;
                 return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
             });
             if (triggerOption) return { optionId: triggerOption.id };
 
-            if (prompt.data.sourceId === 'sharks_torn_apart') {
+            if (getPromptSourceId(prompt) === 'sharks_torn_apart') {
                 return chooseOptionBySource(prompt, 'sharks_torn_apart', option => option.value?.minionUid === 'victim');
             }
 
-            expect(prompt.data.sourceId).toBe('base_shark_reef');
-            expect(prompt.playerId).toBe('0');
-            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'enemy-other')).toBe(false);
+            expect(getPromptSourceId(prompt)).toBe('base_shark_reef');
+            expect(getPromptPlayerId(prompt)).toBe('0');
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'enemy-other')).toBe(false);
             return chooseOptionBySource(prompt, 'base_shark_reef', option => option.value?.minionUid === 'destroyer-minion');
         });
 
@@ -325,7 +337,7 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
 
         expect(firstAction.success).toBe(true);
         const afterJason = resolveInteractionChain(firstAction.finalState, (prompt, state) => {
-            const triggerOption = prompt.data.options.find((option: any) => {
+            const triggerOption = getPromptOptions(prompt).find((option: any) => {
                 const triggerId = option.value?.triggerId;
                 return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
             });
@@ -346,7 +358,7 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
 
         expect(secondAction.success).toBe(true);
         expect(secondAction.finalState.core.triggerQueue ?? []).toEqual([]);
-        expect(secondAction.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(secondAction.finalState);
     });
 
     it('鲨鱼：鲨鱼诱饵附着随从后，该基地任意随从被消灭会给附着随从+1', () => {
@@ -376,10 +388,10 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
 
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt) => {
-            if (prompt.data.sourceId === 'sharks_torn_apart') {
+            if (getPromptSourceId(prompt) === 'sharks_torn_apart') {
                 return chooseOptionBySource(prompt, 'sharks_torn_apart', option => option.value?.minionUid === 'victim');
             }
-            const skip = prompt.data.options.find((option: any) => option.value?.skip);
+            const skip = getPromptOption(prompt, (option: any) => option.value?.skip, 'skip option');
             return { optionId: skip.id };
         });
 
@@ -413,15 +425,15 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
 
         expect(play.success).toBe(true);
         const resolved = resolveInteractionChain(play.finalState, (prompt, state) => {
-            const triggerOption = prompt.data.options.find((option: any) => {
+            const triggerOption = getPromptOptions(prompt).find((option: any) => {
                 const triggerId = option.value?.triggerId;
                 return triggerId && state.core.triggerQueue?.some(trigger => trigger.id === triggerId);
             });
             if (triggerOption) return { optionId: triggerOption.id };
 
-            expect(prompt.data.sourceId).toBe('base_the_deep');
-            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'big')).toBe(false);
-            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'equal-or-higher')).toBe(false);
+            expect(getPromptSourceId(prompt)).toBe('base_the_deep');
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'big')).toBe(false);
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'equal-or-higher')).toBe(false);
             return chooseOptionBySource(prompt, 'base_the_deep', option => option.value?.minionUid === 'lower');
         });
 
@@ -459,8 +471,8 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
         } as any);
 
         expect(play.success).toBe(true);
-        expect(play.finalState.sys.interaction.current?.data?.sourceId).toBe('mythic_greeks_favor_of_hades');
-        expect(play.finalState.sys.interaction.current?.data?.options.some((option: any) => option.value?.cardUid === 'not-action')).toBe(false);
+        const hadesPrompt = getSimpleChoicePrompt(play.finalState, 'mythic_greeks_favor_of_hades');
+        expect(getPromptOptions(hadesPrompt).some((option: any) => option.value?.cardUid === 'not-action')).toBe(false);
 
         const resolved = resolveInteractionChain(play.finalState, (prompt) =>
             chooseOptionBySource(prompt, 'mythic_greeks_favor_of_hades', option => option.value?.cardUid === 'recover-me'));
@@ -500,7 +512,7 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
 
         expect(pullPlay.success).toBe(true);
         const pulled = resolveInteractionChain(pullPlay.finalState, (prompt) => {
-            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'pull-high')).toBe(false);
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'pull-high')).toBe(false);
             return chooseOptionBySource(prompt, 'tornados_twister', option => option.value?.minionUid === 'pull-low');
         });
         expect(pulled.finalState.core.bases[0].minions.some(minion => minion.uid === 'pull-low')).toBe(true);
@@ -564,12 +576,12 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
 
         expect(twisterPlay.success).toBe(true);
         const skippedTwister = resolveInteractionChain(twisterPlay.finalState, (prompt) => {
-            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'pull-low')).toBe(true);
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'pull-low')).toBe(true);
             return chooseOptionBySource(prompt, 'tornados_twister', option => option.value?.skip === true);
         });
         expect(skippedTwister.finalState.core.bases[0].minions.some(minion => minion.uid === 'pull-low')).toBe(false);
         expect(skippedTwister.finalState.core.bases[1].minions.some(minion => minion.uid === 'pull-low')).toBe(true);
-        expect(skippedTwister.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(skippedTwister.finalState);
 
         const monsterCore = {
             players: {
@@ -595,12 +607,12 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
 
         expect(monsterTalent.success).toBe(true);
         const skippedMonster = resolveInteractionChain(monsterTalent.finalState, (prompt) => {
-            expect(prompt.data.options.some((option: any) => option.value?.minionUid === 'pull-low-4')).toBe(true);
+            expect(getPromptOptions(prompt).some((option: any) => option.value?.minionUid === 'pull-low-4')).toBe(true);
             return chooseOptionBySource(prompt, 'tornados_monster_tornado', option => option.value?.skip === true);
         });
         expect(skippedMonster.finalState.core.bases[0].minions.some(minion => minion.uid === 'pull-low-4')).toBe(false);
         expect(skippedMonster.finalState.core.bases[1].minions.some(minion => minion.uid === 'pull-low-4')).toBe(true);
-        expect(skippedMonster.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(skippedMonster.finalState);
     });
 
     it('龙卷风基地：活动房屋公园在随从移入时自动给该随从+1', () => {
@@ -664,7 +676,7 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
             if (step === 0) {
                 return chooseOptionBySource(prompt, 'tornados_cyclone', option => option.value?.baseIndex === 1);
             }
-            expect(prompt.data.sourceId).toBe('base_tornado_alley');
+            expect(getPromptSourceId(prompt)).toBe('base_tornado_alley');
             return chooseOptionBySource(prompt, 'base_tornado_alley', option => option.value?.minionUid === 'pulled-once');
         });
 
@@ -675,6 +687,6 @@ describe('shayu 全面审计补充 L2 行为覆盖', () => {
             baseIndex: 1,
             baseDefId: 'base_tornado_alley',
         });
-        expect(resolved.finalState.sys.interaction.current).toBeUndefined();
+        expectNoPrompt(resolved.finalState);
     });
 });

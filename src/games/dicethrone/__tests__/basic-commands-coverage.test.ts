@@ -30,7 +30,7 @@ import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore } from '../domain/typ
 import type { MatchState, RandomFn } from '../../../engine/types';
 import { executePipeline } from '../../../engine/pipeline';
 import { createInitializedState, injectPendingInteraction } from './test-utils';
-import { resolveLocalPregameControlledPlayerId } from '../../../engine/transport/followCurrentTurnPlayer';
+import { resolveDiceThroneLocalPregameControlledPlayerId } from '../localPregameControl';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { InteractionDescriptor } from '../domain/core-types';
 import { STATUS_IDS, TOKEN_IDS } from '../domain/ids';
@@ -3467,8 +3467,7 @@ describe('本地 AI setup 视角切换', () => {
             } as MatchState<DiceThroneCore>['sys'],
         };
 
-        expect(resolveLocalPregameControlledPlayerId({
-            gameId: 'dicethrone',
+        expect(resolveDiceThroneLocalPregameControlledPlayerId({
             state,
             localPlayerId: '0',
             seatControllers: {
@@ -3478,8 +3477,7 @@ describe('本地 AI setup 视角切换', () => {
         })).toBe('0');
 
         core.selectedCharacters['0'] = 'barbarian';
-        expect(resolveLocalPregameControlledPlayerId({
-            gameId: 'dicethrone',
+        expect(resolveDiceThroneLocalPregameControlledPlayerId({
             state,
             localPlayerId: '0',
             seatControllers: {
@@ -3489,8 +3487,7 @@ describe('本地 AI setup 视角切换', () => {
         })).toBe('1');
 
         core.selectedCharacters['1'] = 'monk';
-        expect(resolveLocalPregameControlledPlayerId({
-            gameId: 'dicethrone',
+        expect(resolveDiceThroneLocalPregameControlledPlayerId({
             state,
             localPlayerId: '0',
             seatControllers: {
@@ -3500,8 +3497,7 @@ describe('本地 AI setup 视角切换', () => {
         })).toBe('1');
 
         core.readyPlayers['1'] = true;
-        expect(resolveLocalPregameControlledPlayerId({
-            gameId: 'dicethrone',
+        expect(resolveDiceThroneLocalPregameControlledPlayerId({
             state,
             localPlayerId: '0',
             seatControllers: {

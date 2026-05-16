@@ -12,6 +12,7 @@ import type { DiceFaceResult, DiceMark } from '../config/dice';
 import { getSpriteAtlasSource, getSpriteAtlasStyle, DICE_FACE_SPRITE_MAP } from './cardAtlas';
 import { swAttackDebugLog } from './attackDebug';
 import { UI_Z_INDEX } from '../../../core';
+import { useResultRevealAnimation } from '../../../hooks/ui/useResultRevealAnimation';
 
 interface DiceResultOverlayProps {
   results: DiceFaceResult[] | null;
@@ -58,15 +59,16 @@ const Dice3D: React.FC<{
   face: DiceFaceResult;
   isHit: boolean;
   index: number;
+  presentationKey?: string | number;
   size?: string;
-}> = ({ face, isHit, index, size = '4vw' }) => {
-  const [isRolling, setIsRolling] = useState(true);
+}> = ({ face, isHit, index, presentationKey, size = '4vw' }) => {
+  const { isRevealing: isRolling } = useResultRevealAnimation({
+    value: face.faceIndex,
+    presentationKey,
+    durationMs: 600 + index * 100,
+    animateOnMount: true,
+  });
   const translateZ = `calc(${size} / 2)`;
-
-  useEffect(() => {
-    const timer = setTimeout(() => setIsRolling(false), 600 + index * 100);
-    return () => clearTimeout(timer);
-  }, [index]);
 
   // 6个立方体面的 transform + 对应精灵图帧
   const cubeTransforms = [
@@ -260,6 +262,7 @@ export const DiceResultOverlay: React.FC<DiceResultOverlayProps> = ({
                     face={face}
                     isHit={face.marks.includes(attackType as DiceMark)}
                     index={index}
+                    presentationKey={`${resultSignature}:${index}`}
                   />
                 ))}
               </div>

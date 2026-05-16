@@ -13,9 +13,15 @@ import type { AbilityContext } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
-import { clearInteractionHandlers, getInteractionHandler } from '../domain/abilityInteractionHandlers';
+import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
-import { getFirstPrompt, getPromptHandlerData, getPromptSourceId, withoutCurrentPrompt } from './helpers';
+import {
+    getFirstPrompt,
+    getPromptPlayerId,
+    getPromptSourceId,
+    makeMatchState,
+    respondToPromptOption,
+} from './helpers';
 
 function makeMinion(uid: string, defId: string, controller: string, power: number, overrides: Partial<MinionOnBase> = {}): MinionOnBase {
     return {
@@ -65,7 +71,7 @@ beforeAll(() => {
 
 /** 触发修格斯 onPlay 并返回第一个对手交互 */
 function triggerShoggothOnPlay(state: SmashUpCore, baseIndex = 0) {
-    const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+    const ms = makeMatchState(state);
     const executor = resolveAbility('elder_thing_shoggoth', 'onPlay')!;
     return executor({
         state, matchState: ms, playerId: '0', cardUid: 'sh-1', defId: 'elder_thing_shoggoth',
@@ -83,20 +89,24 @@ describe('修格斯消灭随从选择权', () => {
 
         const r1 = triggerShoggothOnPlay(state);
         const i1 = getFirstPrompt(r1.matchState!);
-        expect(i1?.playerId).toBe('1');
+        expect(getPromptPlayerId(i1)).toBe('1');
 
         // 对手拒绝 → 产生由 P0 选择消灭随从的交互
-        const handler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        const ms2 = withoutCurrentPrompt(r1.matchState!);
-        const r2 = handler(ms2, '1', { choice: 'decline' }, getPromptHandlerData(i1), dummyRandom, 1)!;
+        const r2 = respondToPromptOption(
+            r1.matchState!,
+            option => option.value?.choice === 'decline',
+            'Shoggoth decline option',
+            '1',
+            dummyRandom,
+        );
 
         // 不应直接产生消灭事件
         expect(r2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
 
         // 应产生由 P0（修格斯控制者）选择的交互
-        const i2 = getFirstPrompt(r2.state!);
+        const i2 = getFirstPrompt(r2.finalState);
         expect(getPromptSourceId(i2)).toBe('elder_thing_shoggoth_destroy');
-        expect(i2?.playerId).toBe('0');
+        expect(getPromptPlayerId(i2)).toBe('0');
     });
 
     it('对手拒绝且只有1个随从时，直接消灭', () => {
@@ -106,11 +116,13 @@ describe('修格斯消灭随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const r1 = triggerShoggothOnPlay(state);
-        const i1 = getFirstPrompt(r1.matchState!);
-
-        const handler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        const ms2 = withoutCurrentPrompt(r1.matchState!);
-        const r2 = handler(ms2, '1', { choice: 'decline' }, getPromptHandlerData(i1), dummyRandom, 1)!;
+        const r2 = respondToPromptOption(
+            r1.matchState!,
+            option => option.value?.choice === 'decline',
+            'Shoggoth decline option',
+            '1',
+            dummyRandom,
+        );
 
         // 只有1个随从，直接消灭
         const destroyEvents = r2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
@@ -125,13 +137,20 @@ describe('修格斯消灭随从选择权', () => {
         const base = makeBase({ minions: [shoggoth, opM1, opM2] });
         const state = makeState({ bases: [base] });
         const first = triggerShoggothOnPlay(state);
-        const firstPrompt = getFirstPrompt(first.matchState!);
-        const opponentHandler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        const afterDecline = opponentHandler(withoutCurrentPrompt(first.matchState!), '1', { choice: 'decline' }, getPromptHandlerData(firstPrompt), dummyRandom, 1)!;
-        const destroyPrompt = getFirstPrompt(afterDecline.state!);
-
-        const destroyHandler = getInteractionHandler('elder_thing_shoggoth_destroy')!;
-        const result = destroyHandler(withoutCurrentPrompt(afterDecline.state!), '0', { minionUid: 'op-2', baseIndex: 0, defId: 'test_minion_b' }, getPromptHandlerData(destroyPrompt), dummyRandom, 2)!;
+        const afterDecline = respondToPromptOption(
+            first.matchState!,
+            option => option.value?.choice === 'decline',
+            'Shoggoth decline option',
+            '1',
+            dummyRandom,
+        );
+        const result = respondToPromptOption(
+            afterDecline.finalState,
+            option => option.value?.minionUid === 'op-2',
+            'Shoggoth destroy target op-2',
+            '0',
+            dummyRandom,
+        );
 
         const destroyEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(1);
@@ -146,11 +165,13 @@ describe('修格斯消灭随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const r1 = triggerShoggothOnPlay(state);
-        const i1 = getFirstPrompt(r1.matchState!);
-
-        const handler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        const ms2 = withoutCurrentPrompt(r1.matchState!);
-        const r2 = handler(ms2, '1', { choice: 'draw_madness' }, getPromptHandlerData(i1), dummyRandom, 1)!;
+        const r2 = respondToPromptOption(
+            r1.matchState!,
+            option => option.value?.choice === 'draw_madness',
+            'Shoggoth draw madness option',
+            '1',
+            dummyRandom,
+        );
 
         expect(r2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
     });
@@ -170,30 +191,37 @@ describe('修格斯消灭随从选择权', () => {
         // 1. onPlay → 询问 P1
         const r1 = triggerShoggothOnPlay(state);
         const i1 = getFirstPrompt(r1.matchState!);
-        expect(i1?.playerId).toBe('1');
+        expect(getPromptPlayerId(i1)).toBe('1');
 
         // 2. P1 拒绝 → 产生 P0 选择消灭交互
-        const opHandler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        // 模拟引擎清除 current（引擎在调用 handler 前会清除 current）
-        const ms2 = withoutCurrentPrompt(r1.matchState!);
-        const r2 = opHandler(ms2, '1', { choice: 'decline' }, getPromptHandlerData(i1), dummyRandom, 1)!;
-        const i2 = getFirstPrompt(r2.state!);
+        const r2 = respondToPromptOption(
+            r1.matchState!,
+            option => option.value?.choice === 'decline',
+            'Shoggoth decline option',
+            '1',
+            dummyRandom,
+        );
+        const i2 = getFirstPrompt(r2.finalState);
         expect(getPromptSourceId(i2)).toBe('elder_thing_shoggoth_destroy');
-        expect(i2?.playerId).toBe('0');
+        expect(getPromptPlayerId(i2)).toBe('0');
 
         // 3. P0 选择消灭 p1-2 → 继续询问 P2
-        const destroyHandler = getInteractionHandler('elder_thing_shoggoth_destroy')!;
-        const ms3 = withoutCurrentPrompt(r2.state!);
-        const r3 = destroyHandler(ms3, '0', { minionUid: 'p1-2', baseIndex: 0, defId: 'test_b' }, getPromptHandlerData(i2), dummyRandom, 2)!;
+        const r3 = respondToPromptOption(
+            r2.finalState,
+            option => option.value?.minionUid === 'p1-2',
+            'Shoggoth destroy target p1-2',
+            '0',
+            dummyRandom,
+        );
 
         const destroyEvents = r3.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED);
         expect(destroyEvents).toHaveLength(1);
         expect((destroyEvents[0] as MinionDestroyedEvent).payload.minionUid).toBe('p1-2');
 
         // 应继续询问 P2
-        const i3 = getFirstPrompt(r3.state!);
+        const i3 = getFirstPrompt(r3.finalState);
         expect(getPromptSourceId(i3)).toBe('elder_thing_shoggoth_opponent');
-        expect(i3?.playerId).toBe('2');
+        expect(getPromptPlayerId(i3)).toBe('2');
     });
 
     it('对手在基地没有随从时，拒绝不产生任何消灭', () => {
@@ -202,11 +230,13 @@ describe('修格斯消灭随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const r1 = triggerShoggothOnPlay(state);
-        const i1 = getFirstPrompt(r1.matchState!);
-
-        const handler = getInteractionHandler('elder_thing_shoggoth_opponent')!;
-        const ms2 = withoutCurrentPrompt(r1.matchState!);
-        const r2 = handler(ms2, '1', { choice: 'decline' }, getPromptHandlerData(i1), dummyRandom, 1)!;
+        const r2 = respondToPromptOption(
+            r1.matchState!,
+            option => option.value?.choice === 'decline',
+            'Shoggoth decline option',
+            '1',
+            dummyRandom,
+        );
 
         expect(r2.events.filter((e: any) => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
     });

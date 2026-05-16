@@ -35,7 +35,17 @@ import { clearInteractionHandlers, getInteractionHandler } from '../domain/abili
 import { getMinionDef } from '../data/cards';
 import { buildAffectRecords } from '../domain/affect';
 import { runCommand, defaultTestRandom } from './testRunner';
-import { makeMatchState as makePromptMatchState } from './helpers';
+import {
+    getFirstPrompt,
+    getPromptHandlerData,
+    getPromptOption,
+    getPromptOptions,
+    getPromptSourceId,
+    getPromptTargetType,
+    getPromptsBySourceId,
+    makeMatchState as makePromptMatchState,
+    respondToPrompt,
+} from './helpers';
 
 // ============================================================================
 // 测试辅助
@@ -334,11 +344,11 @@ describe('忍者 ongoing/special 能力', () => {
             });
 
             expect(result.events).toHaveLength(0);
-            const current = (result.matchState?.sys as any)?.interaction?.current;
+            const current = getFirstPrompt(result.matchState!);
             expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('ninja_infiltrate_destroy');
-            expect(current?.data?.targetType).toBe('ongoing');
-            expect(current?.data?.options).toHaveLength(2);
+            expect(getPromptSourceId(current)).toBe('ninja_infiltrate_destroy');
+            expect(getPromptTargetType(current)).toBe('ongoing');
+            expect(getPromptOptions(current)).toHaveLength(2);
         });
 
         test('POD 版渗透只会给出基地上的战术目标，不会把随从或附着战术当目标', () => {
@@ -369,12 +379,12 @@ describe('忍者 ongoing/special 能力', () => {
             });
 
             expect(result.events).toHaveLength(0);
-            const current = (result.matchState?.sys as any)?.interaction?.current;
-            expect(current?.data?.sourceId).toBe('ninja_infiltrate_pod_destroy');
-            expect(current?.data?.targetType).toBe('ongoing');
-            expect(current?.data?.options).toHaveLength(2);
+            const current = getFirstPrompt(result.matchState!);
+            expect(getPromptSourceId(current)).toBe('ninja_infiltrate_pod_destroy');
+            expect(getPromptTargetType(current)).toBe('ongoing');
+            expect(getPromptOptions(current)).toHaveLength(2);
 
-            const cardOptions = current.data.options.filter((option: any) => option.value?.cardUid);
+            const cardOptions = getPromptOptions(current).filter((option: any) => option.value?.cardUid);
             expect(cardOptions).toHaveLength(1);
             expect(cardOptions[0].value.cardUid).toBe('ongoing-pod-1');
             expect(cardOptions[0].value.defId).toBe('zombie_overrun');
@@ -556,10 +566,10 @@ describe('忍者 ongoing/special 能力', () => {
                 now: 1000,
             });
 
-            const current = result.matchState?.sys.interaction?.current as any;
-            expect(current?.data?.sourceId).toBe('ninja_hidden_ninja');
-            expect(current?.data?.targetType).toBe('hand');
-            expect(current?.data?.options).toEqual(expect.arrayContaining([
+            const current = getFirstPrompt(result.matchState!);
+            expect(getPromptSourceId(current)).toBe('ninja_hidden_ninja');
+            expect(getPromptTargetType(current)).toBe('hand');
+            expect(getPromptOptions(current)).toEqual(expect.arrayContaining([
                 expect.objectContaining({ value: expect.objectContaining({ cardUid: 'acolyte', defId: 'ninja_acolyte' }) }),
                 expect.objectContaining({ value: expect.objectContaining({ cardUid: 'shinobi', defId: 'ninja_shinobi' }) }),
                 expect.objectContaining({ value: expect.objectContaining({ cardUid: 'pirate', defId: 'pirate_first_mate' }) }),
@@ -757,27 +767,22 @@ describe('忍者 ongoing/special 能力', () => {
             );
 
             expect(activated.success).toBe(true);
-            expect((activated.finalState.sys.interaction.current as any)?.data?.sourceId).toBe('ninja_acolyte_play');
+            const acolytePrompt = getFirstPrompt(activated.finalState);
+            expect(getPromptSourceId(acolytePrompt)).toBe('ninja_acolyte_play');
 
-            const acolyteOptions = ((activated.finalState.sys.interaction.current as any)?.data?.options ?? []) as any[];
-            const gunfighterOption = acolyteOptions.find(option => option?.value?.defId === 'cowboys_gunfighter');
-            expect(gunfighterOption).toBeDefined();
-
-            const resolved = runCommand(
-                activated.finalState,
-                {
-                    type: 'SYS_INTERACTION_RESPOND',
-                    playerId: '0',
-                    payload: { optionId: gunfighterOption.id },
-                } as any,
-                defaultTestRandom,
+            const gunfighterOption = getPromptOption(
+                acolytePrompt,
+                option => option?.value?.defId === 'cowboys_gunfighter',
+                'Acolyte Gunfighter play option',
             );
+            const resolved = respondToPrompt(activated.finalState, gunfighterOption.id, '0', defaultTestRandom);
 
             expect(resolved.success).toBe(true);
             expect(resolved.finalState.core.bases[0].minions.some(minion => minion.uid === 'gun-1')).toBe(true);
-            expect((resolved.finalState.sys.interaction.current as any)?.data?.sourceId).toBe('cowboys_gunfighter');
+            const duelPrompt = getFirstPrompt(resolved.finalState);
+            expect(getPromptSourceId(duelPrompt)).toBe('cowboys_gunfighter');
 
-            const duelOptions = ((resolved.finalState.sys.interaction.current as any)?.data?.options ?? []) as any[];
+            const duelOptions = getPromptOptions(duelPrompt);
             expect(duelOptions.some(option => option?.value?.minionUid === 'opp-1')).toBe(true);
         });
     });
@@ -1433,10 +1438,9 @@ describe('诡术师 ongoing 能力', () => {
             });
 
             expect(events).toHaveLength(0);
-            const current = promptedState?.sys.interaction.current;
-            const queued = promptedState?.sys.interaction.queue ?? [];
-            expect((current?.data as any)?.sourceId).toBe('trickster_flame_trap_pod_bp');
-            expect((queued[0]?.data as any)?.sourceId).toBe('trickster_flame_trap_pod_bp');
+            const prompts = getPromptsBySourceId(promptedState!, 'trickster_flame_trap_pod_bp');
+            expect(prompts).toHaveLength(2);
+            const [firstPrompt, secondPrompt] = prompts;
 
             const handler = getInteractionHandler('trickster_flame_trap_pod_bp');
             expect(handler).toBeDefined();
@@ -1445,7 +1449,7 @@ describe('诡术师 ongoing 能力', () => {
                 promptedState!,
                 '0',
                 { yes: true },
-                current?.data as any,
+                getPromptHandlerData(firstPrompt),
                 dummyRandom,
                 1001,
             );
@@ -1453,7 +1457,7 @@ describe('诡术师 ongoing 能力', () => {
                 promptedState!,
                 '0',
                 { yes: true },
-                queued[0]?.data as any,
+                getPromptHandlerData(secondPrompt),
                 dummyRandom,
                 1002,
             );
@@ -1939,11 +1943,10 @@ describe('诡术师 ongoing 能力', () => {
             });
 
             // 迁移后通过 Interaction 而非事件
-            const interaction = (result.matchState?.sys as any)?.interaction;
-            const current = interaction?.current;
+            const current = getFirstPrompt(result.matchState!);
             expect(current).toBeDefined();
-            expect(current?.data?.sourceId).toBe('trickster_mark_of_sleep');
-            expect(current?.data?.targetType).toBe('player');
+            expect(getPromptSourceId(current)).toBe('trickster_mark_of_sleep');
+            expect(getPromptTargetType(current)).toBe('player');
         });
     });
 });

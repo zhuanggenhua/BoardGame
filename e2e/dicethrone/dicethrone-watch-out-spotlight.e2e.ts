@@ -183,6 +183,30 @@ async function waitForHandCardVisualReady(page: Page, cardId: string): Promise<v
     await page.waitForTimeout(900);
 }
 
+async function dragHandCardToPlay(page: Page, cardId: string): Promise<void> {
+    const handCard = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
+    await expect(handCard).toBeVisible({ timeout: 10000 });
+    const cardBox = await page.evaluate((nextCardId) => {
+        const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    }, cardId);
+    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
+        throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+    }
+
+    const startX = cardBox.x + (cardBox.width / 2);
+    const startY = cardBox.y + (cardBox.height * 0.78);
+    const endY = Math.max(24, startY - 240);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, endY, { steps: 12 });
+    await page.mouse.up();
+    await page.mouse.move(2, 2);
+}
+
 async function expectMinBoundingBox(locator: Locator, label: string, minWidth: number, minHeight: number): Promise<void> {
     const box = await locator.boundingBox();
     expect(box, `${label} should have bounding box`).not.toBeNull();
@@ -2132,7 +2156,7 @@ test('attack modifier should show the correct timing prompt after invalid play',
     await injectPyromancerAttackModifierScene(page, { sourceAbilityId: null });
     await waitForPyromancerAttackModifierScene(page, { sourceAbilityId: null });
 
-    await page.locator('[data-card-id="card-red-hot"]').first().click();
+    await dragHandCardToPlay(page, 'card-red-hot');
 
     await page.waitForFunction(() => {
         const reject = (window as any).__BG_LAST_COMMAND_REJECTED__;
@@ -2164,7 +2188,7 @@ test('selected attack should show visible attack-modifier ui above the dice tray
     await waitForTestHarness(page, 40000);
     await injectPyromancerAttackModifierScene(page, { sourceAbilityId: 'meteor' });
     await waitForPyromancerAttackModifierScene(page, { sourceAbilityId: 'meteor' });
-    await page.locator('[data-card-id="card-red-hot"]').first().click();
+    await dragHandCardToPlay(page, 'card-red-hot');
 
     await page.waitForFunction(() => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get();
@@ -2236,7 +2260,7 @@ test.skip('samurai righteousness should resolve a visible bonus-die branch again
     await page.evaluate(() => {
         (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([1]);
     });
-    await page.locator('[data-card-id="card-righteousness"]').first().click();
+    await dragHandCardToPlay(page, 'card-righteousness');
 
     // 攻击修正徽章应在打出卡牌后出现（效果提示，不代表必须延迟到关闭特写才生效）
     const activeBadgeEarly = page.locator('[data-testid="active-modifier-badge"]').first();
@@ -2297,7 +2321,7 @@ test.skip('samurai zanshin should show 5-die settlement and mixed samurai effect
         sourceAbilityId: 'katana-slice-3',
     });
 
-    await page.locator('[data-card-id="card-zanshin"]').first().click();
+    await dragHandCardToPlay(page, 'card-zanshin');
 
     const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
     await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
@@ -2443,7 +2467,7 @@ test('samurai righteousness should resolve a valid branch against monk', async (
     await page.evaluate(() => {
         (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([1]);
     });
-    await page.locator('[data-card-id="card-righteousness"]').first().click();
+    await dragHandCardToPlay(page, 'card-righteousness');
     await closeCardSpotlightByRealClickIfVisible(page);
 
     const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
@@ -2633,7 +2657,7 @@ test('online samurai righteousness bonus-die spotlight should close through forc
 
         const righteousnessCard = guestPage.locator('[data-testid="hand-area"] [data-card-id="card-righteousness"]').first();
         await expect(righteousnessCard).toBeVisible({ timeout: 10000 });
-        await righteousnessCard.click();
+        await dragHandCardToPlay(guestPage, 'card-righteousness');
         await closeCardSpotlightByRealClickIfVisible(guestPage);
 
         const guestBonusDieOverlay = guestPage.locator('[data-testid="bonus-die-overlay"]');
@@ -2715,7 +2739,7 @@ test('samurai zanshin should settle 5 bonus dice and synchronize effects against
     await page.evaluate(() => {
         (window as any).__BG_TEST_HARNESS__?.dice?.setValues?.([1, 4, 6, 6, 1]);
     });
-    await page.locator('[data-card-id="card-zanshin"]').first().click();
+    await dragHandCardToPlay(page, 'card-zanshin');
 
     // 攻击修正徽章应在打出卡牌后出现（效果提示）
     const activeBadgeEarly = page.locator('[data-testid="active-modifier-badge"]').first();
@@ -3174,7 +3198,7 @@ test('opponent lucky card should only show card spotlight for viewer', async ({ 
 
         const luckyCardInHand = guestPage.locator('[data-card-id="card-lucky"]').first();
         await expect(luckyCardInHand).toBeVisible({ timeout: 10000 });
-        await luckyCardInHand.click();
+        await dragHandCardToPlay(guestPage, 'card-lucky');
 
         const hostCardSpotlight = hostPage.locator('[data-testid="card-spotlight-overlay"]');
         await expect(hostCardSpotlight).toBeVisible({ timeout: 15000 });
@@ -3309,7 +3333,7 @@ test('opponent common-card spotlight should match actual effect for samurai and 
             await expect(cardInHand).toBeVisible({ timeout: 10000 });
             await cardInHand.hover();
             await guestPage.waitForTimeout(150);
-            await cardInHand.click({ force: true });
+            await dragHandCardToPlay(guestPage, options.actorCardId);
 
             const firstClickState = await guestPage.evaluate(({ actorCardId }) => {
                 const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
@@ -3326,7 +3350,7 @@ test('opponent common-card spotlight should match actual effect for samurai and 
 
             if (!firstClickState.played && !firstClickState.reject && firstClickState.stillInHand) {
                 await guestPage.waitForTimeout(200);
-                await cardInHand.click({ force: true });
+                await dragHandCardToPlay(guestPage, options.actorCardId);
             }
 
             await guestPage.waitForFunction(({ actorCardId }) => {

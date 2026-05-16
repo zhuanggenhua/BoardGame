@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { MatchChatMessage } from '../../services/matchSocket';
 import { UI_Z_INDEX } from '../../core';
-import { GAME_HUD_FAB_Z_INDEX, getLatestIncomingMessage, isSelfChatMessage, trimChatMessages } from '../game/framework/widgets/GameHUD';
-import { resolveFabSatellitesToRender, shouldTrackFabButtonRect } from '../system/FabMenu';
+import { GAME_HUD_FAB_Z_INDEX, getLatestIncomingMessage, isSelfChatMessage, resolveGameHudPhase, trimChatMessages } from '../game/framework/widgets/GameHUD';
+import { MOBILE_FAB_VISIBLE_ITEM_LIMIT, resolveFabSatellitesToRender, resolveMobileFabOverflowWarning, shouldTrackFabButtonRect } from '../system/FabMenu';
 import { resolveExpandedFabLayout } from '../system/fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from '../system/fabPosition';
 
@@ -68,6 +68,12 @@ describe('GameHUD chat preview helpers', () => {
         const trimmed = trimChatMessages(messages, 3);
         expect(trimmed).toEqual(messages);
     });
+
+    it('resolveGameHudPhase 优先使用 sys.phase，并兼容 flow.phase', () => {
+        expect(resolveGameHudPhase({ sys: { phase: 'setup', flow: { phase: 'main1' } } })).toBe('setup');
+        expect(resolveGameHudPhase({ sys: { flow: { phase: 'setup' } } })).toBe('setup');
+        expect(resolveGameHudPhase({ sys: { phase: 1 } })).toBeNull();
+    });
 });
 
 describe('FabMenu helpers', () => {
@@ -89,6 +95,20 @@ describe('FabMenu helpers', () => {
             'fullscreen',
             'feedback',
         ]);
+    });
+
+    it('移动端悬浮球超过 7 个时生成告警 payload，桌面端不告警', () => {
+        const actions = Array.from({ length: MOBILE_FAB_VISIBLE_ITEM_LIMIT + 1 }, (_, index) => ({
+            id: `action-${index}`,
+            label: `Action ${index}`,
+        }));
+
+        expect(resolveMobileFabOverflowWarning(actions, false)).toBeNull();
+        expect(resolveMobileFabOverflowWarning(actions, true)).toMatchObject({
+            count: MOBILE_FAB_VISIBLE_ITEM_LIMIT + 1,
+            limit: MOBILE_FAB_VISIBLE_ITEM_LIMIT,
+            itemIds: actions.map((action) => action.id),
+        });
     });
 
     it('预览、tooltip 和激活中的内容面板都需要持续追踪按钮锚点位置', () => {

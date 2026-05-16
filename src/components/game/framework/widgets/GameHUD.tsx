@@ -71,8 +71,23 @@ interface GameHUDProps {
     seatSwapActionColor?: string;
     onSeatSwapClick?: () => void;
     seatSwapContent?: FabAction['content'];
+    isPregameSetupPhase?: boolean;
     isLoading?: boolean;
 }
+
+type HudPhaseStateLike = {
+    sys?: {
+        phase?: unknown;
+        flow?: {
+            phase?: unknown;
+        };
+    };
+};
+
+export const resolveGameHudPhase = (state?: HudPhaseStateLike | null) => {
+    const phase = state?.sys?.phase ?? state?.sys?.flow?.phase;
+    return typeof phase === 'string' ? phase : null;
+};
 
 // 判断消息是否来自自己
 export const isSelfChatMessage = (
@@ -132,6 +147,7 @@ export const GameHUD = ({
     seatSwapActionColor,
     onSeatSwapClick,
     seatSwapContent,
+    isPregameSetupPhase,
     isLoading = false,
 }: GameHUDProps) => {
     const navigate = useNavigate();
@@ -168,6 +184,8 @@ export const GameHUD = ({
     const isNativeAndroid = isNativeAndroidRuntime();
     const isSmashUp = _gameId === 'smashup';
     const isSpectator = isOnline && (myPlayerId === null || myPlayerId === undefined);
+    const isSetupPhase = isPregameSetupPhase
+        ?? resolveGameHudPhase(undoState?.G as HudPhaseStateLike | null | undefined) === 'setup';
 
     // 聊天逻辑
     const [chatMessages, setChatMessages] = useState<MatchChatMessage[]>([]);
@@ -881,8 +899,8 @@ export const GameHUD = ({
         });
     }
 
-    // 5. 撤回
-    if (!isSpectator) {
+    // 5. 撤回：setup/选角阶段不展示，避免移动端 FAB 轨道挤占选角与换位入口。
+    if (!isSpectator && !isSetupPhase) {
         if (!undoState) {
             items.push({
                 id: 'undo-loading',
@@ -960,7 +978,7 @@ export const GameHUD = ({
 
     // 5.5 强制操作（将强制结束 AI / 强制去弹窗合并到一个展开面板）
     // 注意：这里要放在撤回之后 push，反转渲染后才会出现在“撤回上面”。
-    if (canForceEndAiPhase || canForceDismissPopup) {
+    if (!isSetupPhase && (canForceEndAiPhase || canForceDismissPopup)) {
         items.push({
             id: 'force-actions',
             icon: <AlertTriangle size={20} />,
@@ -1047,7 +1065,7 @@ export const GameHUD = ({
     }
 
     // 6. 操作日志
-    if (useChatAsMain) {
+    if (useChatAsMain && !isSetupPhase) {
         items.push(actionLogAction);
     }
 

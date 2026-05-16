@@ -24,6 +24,13 @@ import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
 import type { MatchState, RandomFn } from '../../../engine/types';
+import {
+    getPromptOption,
+    getPromptOptions,
+    getPromptSourceId,
+    getSimpleChoicePrompt,
+    respondCommand,
+} from './helpers';
 
 // ============================================================================
 // 测试工具
@@ -227,14 +234,14 @@ describe('E2E: 移动触发链 (cub_scout + processMoveTriggers)', () => {
             ],
         });
 
-        const events = execPlayAction(state, '0', 'action1');
+        const _events = execPlayAction(state, '0', 'action1');
 
         // shanghai 对只有一个对手随从的情况应产生 Interaction
         // 即使最终移动在 Prompt 链中完成，processMoveTriggers 会在 execute() 末尾处理
         // 这里验证 Interaction 创建正确
         const interactions = getLastInteractions();
         expect(interactions.length).toBe(1);
-        expect(interactions[0].data.sourceId).toBe('pirate_shanghai_choose_minion');
+        expect(getPromptSourceId(interactions[0])).toBe('pirate_shanghai_choose_minion');
     });
 
 });
@@ -366,7 +373,6 @@ import { SmashUpDomain } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems } from '../../../engine';
 import { createSmashUpEventSystem } from '../domain/systems';
-import { INTERACTION_COMMANDS, asSimpleChoice } from '../../../engine/systems/InteractionSystem';
 import { createInitialSystemState } from '../../../engine/pipeline';
 
 const PLAYER_IDS = ['0', '1'];
@@ -429,38 +435,33 @@ describe('E2E Prompt 链: shanghai → cub_scout 移动触发', () => {
 
         expect(result1.steps[0]?.success).toBe(true);
         // 打出后应有 Interaction（选随从）
-        expect(result1.finalState.sys.interaction.current).toBeDefined();
-        const choice1 = asSimpleChoice(result1.finalState.sys.interaction.current)!;
-        expect(choice1.sourceId).toBe('pirate_shanghai_choose_minion');
-        expect(choice1.options.length).toBe(1); // 只有一个对手随从
+        const choice1 = getSimpleChoicePrompt(result1.finalState, 'pirate_shanghai_choose_minion');
+        expect(getPromptSourceId(choice1)).toBe('pirate_shanghai_choose_minion');
+        expect(getPromptOptions(choice1).length).toBe(1); // 只有一个对手随从
 
         // Step 2: 响应选择随从 → 创建选基地 Interaction
         const runner2 = createCustomRunner(result1.finalState);
         const result2 = runner2.run({
             name: 'shanghai step2 - choose minion',
             commands: [
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: choice1.options[0].id } },
+                respondCommand(getPromptOptions(choice1)[0].id, '0'),
             ],
         });
 
         expect(result2.steps[0]?.success).toBe(true);
         // 应有新 Interaction（选基地）
-        expect(result2.finalState.sys.interaction.current).toBeDefined();
-        const choice2 = asSimpleChoice(result2.finalState.sys.interaction.current)!;
-        expect(choice2.sourceId).toBe('pirate_shanghai_choose_base');
+        const choice2 = getSimpleChoicePrompt(result2.finalState, 'pirate_shanghai_choose_base');
+        expect(getPromptSourceId(choice2)).toBe('pirate_shanghai_choose_base');
 
         // 选 base0（cub_scout 所在基地）
-        const base0Option = choice2.options.find(
-            (o: any) => o.value?.baseIndex === 0
-        );
-        expect(base0Option).toBeDefined();
+        const base0Option = getPromptOption(choice2, (option: any) => option.value?.baseIndex === 0, 'base 0 option');
 
         // Step 3: 响应选择基地 → MINION_MOVED 生成，随从移动到 base0
         const runner3 = createCustomRunner(result2.finalState);
         const result3 = runner3.run({
             name: 'shanghai step3 - choose base',
             commands: [
-                { type: INTERACTION_COMMANDS.RESPOND, playerId: '0', payload: { optionId: base0Option!.id } },
+                respondCommand(base0Option.id, '0'),
             ],
         });
 
@@ -640,7 +641,7 @@ describe('E2E: 海盗 POD 关键交互链路', () => {
         const post = postProcessSystemEvents(state, [destroyedEvt], defaultRandom, ms);
         const interaction = (post.matchState?.sys as any)?.interaction?.current;
         expect(interaction).toBeDefined();
-        expect(interaction?.data?.sourceId).toBe('pirate_buccaneer_move');
+        expect(getPromptSourceId(interaction)).toBe('pirate_buccaneer_move');
 
         const hasDestroy = post.events.some(
             e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload?.minionUid === 'bucc1',
@@ -668,6 +669,6 @@ describe('E2E: 海盗 POD 关键交互链路', () => {
         const scored = scoreOneBase(state, 0, [...state.baseDeck], '0', 4000, defaultRandom, ms);
         const interaction = (scored.matchState?.sys as any)?.interaction?.current;
         expect(interaction).toBeDefined();
-        expect(interaction?.data?.sourceId).toBe('pirate_first_mate_choose_base');
+        expect(getPromptSourceId(interaction)).toBe('pirate_first_mate_choose_base');
     });
 });

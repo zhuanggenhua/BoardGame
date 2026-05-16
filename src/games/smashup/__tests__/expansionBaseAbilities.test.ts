@@ -37,7 +37,20 @@ import { appendScoringFrameDeferredPayload, consumeScoringFrameDeferredPayload, 
 import type { SmashUpCore, PlayerState, BaseInPlay, MinionOnBase, CardInstance } from '../domain/types';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
-import { applyEvents, triggerBaseAbilityWithMS, getInteractionsFromResult, getInteractionsFromMS, makeMatchState } from './helpers';
+import {
+    applyEvents,
+    getFirstPrompt,
+    getInteractionsFromResult,
+    getPromptHandlerData,
+    getPromptOption,
+    getPromptOptions,
+    getPromptPlayerId,
+    getPromptSourceId,
+    getPromptTargetType,
+    getSimpleChoicePrompt,
+    triggerBaseAbilityWithMS,
+    makeMatchState,
+} from './helpers';
 import type { RandomFn } from '../../../engine/types';
 
 // ============================================================================
@@ -104,31 +117,31 @@ describe('expansion base extra timing regression coverage', () => {
 
         expect(result.events).toHaveLength(0);
         const prompt = getInteractionsFromResult(result)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('base_fairy_ring');
+        expect(getPromptSourceId(prompt)).toBe('base_fairy_ring');
 
         const minionTrigger = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
         const minionPrompt = getInteractionsFromResult(minionTrigger)[0] as any;
-        const minionOption = minionPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
+        const minionOption = getPromptOption(minionPrompt, (entry: any) => entry.value?.branchId === 'extra_minion');
         expect(minionOption).toBeDefined();
 
         const minionResolved = resolveAbilityRuntimePrompt(
             minionTrigger.matchState!,
             '0',
             minionOption.value,
-            minionPrompt.data,
+            getPromptHandlerData(minionPrompt),
             dummyRandom,
             1000,
         );
 
         const actionTrigger = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
         const actionPrompt = getInteractionsFromResult(actionTrigger)[0] as any;
-        const actionOption = actionPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
+        const actionOption = getPromptOption(actionPrompt, (entry: any) => entry.value?.branchId === 'extra_action');
         expect(actionOption).toBeDefined();
         const actionResolved = resolveAbilityRuntimePrompt(
             actionTrigger.matchState!,
             '0',
             actionOption.value,
-            actionPrompt.data,
+            getPromptHandlerData(actionPrompt),
             dummyRandom,
             1000,
         );
@@ -161,7 +174,7 @@ describe('10th Anniversary bases', () => {
 
         const interactions = getInteractionsFromResult(result);
         expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_mermaid_pool');
+        expect(getPromptSourceId(interactions[0])).toBe('base_mermaid_pool');
 
         const handler = getInteractionHandler('base_mermaid_pool');
         const resolved = handler!(
@@ -202,7 +215,7 @@ describe('10th Anniversary bases', () => {
 
         const interactions = getInteractionsFromResult(result);
         expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_ossuary');
+        expect(getPromptSourceId(interactions[0])).toBe('base_ossuary');
 
         const handler = getInteractionHandler('base_ossuary');
         const resolved = handler!(
@@ -239,8 +252,8 @@ describe('10th Anniversary bases', () => {
 
         const interactions = getInteractionsFromResult(result);
         expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_arena');
-        expect(interactions[0].data.options.map((option: any) => option.value?.choice ?? option.value?.skip)).toEqual(
+        expect(getPromptSourceId(interactions[0])).toBe('base_arena');
+        expect(getPromptOptions(interactions[0]).map((option: any) => option.value?.choice ?? option.value?.skip)).toEqual(
             expect.arrayContaining(['extra_action', 'draw_card', true]),
         );
 
@@ -249,7 +262,7 @@ describe('10th Anniversary bases', () => {
             makeMatchState(core),
             '0',
             { choice: 'draw_card' },
-            interactions[0].data,
+            getPromptHandlerData(interactions[0]),
             dummyRandom,
             1000,
         );
@@ -422,9 +435,9 @@ describe('base_the_asylum: 疯人院 - 放入盒子并加指示物', () => {
         expect(result.events).toHaveLength(0);
         const interactions = getInteractionsFromResult(result);
         expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_the_asylum');
-        expect(interactions[0].data.targetType).toBe('hand');
-        expect(interactions[0].data.options.some((entry: any) => entry.value?.cardUid === 'h1')).toBe(true);
+        expect(getPromptSourceId(interactions[0])).toBe('base_the_asylum');
+        expect(getPromptTargetType(interactions[0])).toBe('hand');
+        expect(getPromptOptions(interactions[0]).some((entry: any) => entry.value?.cardUid === 'h1')).toBe(true);
     });
 
     it('选择手牌后会进入选择随从的第二步，并产生 boxed 与加指示物事件', () => {
@@ -450,7 +463,7 @@ describe('base_the_asylum: 疯人院 - 放入盒子并加指示物', () => {
             minionUid: 'm1',
         }));
         const firstInteraction = getInteractionsFromResult(result)[0];
-        const handOption = firstInteraction.data.options.find((entry: any) => entry.value?.cardUid === 'h1');
+        const handOption = getPromptOption(firstInteraction, (entry: any) => entry.value?.cardUid === 'h1');
         const chooseCardHandler = getInteractionHandler('base_the_asylum');
         const chooseMinionHandler = getInteractionHandler('base_the_asylum_choose_minion');
 
@@ -462,24 +475,23 @@ describe('base_the_asylum: 疯人院 - 放入盒子并加指示物', () => {
             result.matchState!,
             '0',
             handOption.value,
-            firstInteraction.data,
+            getPromptHandlerData(firstInteraction),
             dummyRandom,
             1001,
         );
-        const secondInteraction = getInteractionsFromMS(step1.state)
-            .find((interaction: any) => interaction.data?.sourceId === 'base_the_asylum_choose_minion')!;
+        const secondInteraction = getSimpleChoicePrompt(step1.state, 'base_the_asylum_choose_minion');
 
         expect(secondInteraction).toBeDefined();
-        expect(secondInteraction.data.sourceId).toBe('base_the_asylum_choose_minion');
-        expect(secondInteraction.data.targetType).toBe('minion');
-        const minionOption = secondInteraction.data.options.find((entry: any) => entry.value?.minionUid === 'm2');
+        expect(getPromptSourceId(secondInteraction)).toBe('base_the_asylum_choose_minion');
+        expect(getPromptTargetType(secondInteraction)).toBe('minion');
+        const minionOption = getPromptOption(secondInteraction, (entry: any) => entry.value?.minionUid === 'm2');
         expect(minionOption).toBeDefined();
 
         const step2 = chooseMinionHandler!(
             step1.state,
             '0',
             minionOption.value,
-            secondInteraction.data,
+            getPromptHandlerData(secondInteraction),
             dummyRandom,
             1002,
         );
@@ -537,9 +549,9 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
             minionUid: 'just-played',
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
+        const option = getPromptOption(interaction, (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
         const handler = getInteractionHandler('base_land_of_balance');
-        expect(interaction?.data?.sourceId).toBe('base_land_of_balance');
+        expect(getPromptSourceId(interaction)).toBe('base_land_of_balance');
         expect(handler).toBeDefined();
 
         const staleCore = makeState({
@@ -561,7 +573,7 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
             makeMatchState(staleCore),
             '0',
             option.value,
-            interaction.data,
+            getPromptHandlerData(interaction),
             dummyRandom,
             1600,
         );
@@ -583,9 +595,9 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
             playerId: '0',
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
+        const option = getPromptOption(interaction, (entry: any) => !entry.value?.skip && entry.value?.minionUid === 'm1');
         const handler = getInteractionHandler('base_sheep_shrine');
-        expect(interaction?.data?.sourceId).toBe('base_sheep_shrine');
+        expect(getPromptSourceId(interaction)).toBe('base_sheep_shrine');
         expect(handler).toBeDefined();
 
         const staleCore = makeState({
@@ -607,7 +619,7 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
             makeMatchState(staleCore),
             '0',
             option.value,
-            interaction.data,
+            getPromptHandlerData(interaction),
             dummyRandom,
             1700,
         );
@@ -635,9 +647,9 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
             minionUid: 'just-moved',
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => entry.value?.minionUid === 'm1');
+        const option = getPromptOption(interaction, (entry: any) => entry.value?.minionUid === 'm1');
         const handler = getInteractionHandler('base_the_pasture');
-        expect(interaction?.data?.sourceId).toBe('base_the_pasture');
+        expect(getPromptSourceId(interaction)).toBe('base_the_pasture');
         expect(handler).toBeDefined();
 
         const staleCore = makeState({
@@ -659,7 +671,7 @@ describe('stale move regression: 扩展基地 Prompt 移动', () => {
             makeMatchState(staleCore),
             '0',
             option.value,
-            interaction.data,
+            getPromptHandlerData(interaction),
             dummyRandom,
             1800,
         );
@@ -700,10 +712,10 @@ describe('base_innsmouth_base: 印斯茅斯 - 弃牌堆卡入牌库底', () => {
             const interactions = getInteractionsFromResult(result);
             expect(interactions).toHaveLength(1);
         // 修正：印斯茅斯基地现在是两步交互，第一步选择玩家
-        expect(interactions[0].data.sourceId).toBe('base_innsmouth_base_choose_player');
-        expect(interactions[0].data.targetType).toBe('player');
+        expect(getPromptSourceId(interactions[0])).toBe('base_innsmouth_base_choose_player');
+        expect(getPromptTargetType(interactions[0])).toBe('player');
         // 拥有者（1）获得选择权
-        expect(interactions[0].playerId).toBe('1');
+        expect(getPromptPlayerId(interactions[0])).toBe('1');
     });
 
     it('所有弃牌堆为空时不触发', () => {
@@ -747,16 +759,16 @@ describe('base_innsmouth_base: 印斯茅斯 - 弃牌堆卡入牌库底', () => {
             dummyRandom,
             1001,
         );
-        const current = reaction!.state.sys.interaction.current as any;
-        const option = current.data.options.find((entry: any) => entry.id.startsWith('trigger:'));
+        const current = getFirstPrompt(reaction!.state as any);
+        const option = getPromptOption(current, (entry: any) => entry.id.startsWith('trigger:'));
         const handler = getInteractionHandler('smashup_reaction_choose');
 
         expect(option).toBeDefined();
         expect(handler).toBeDefined();
-        const resolved = handler!(reaction!.state as any, '0', option.value, current.data, dummyRandom, 1002);
+        const resolved = handler!(reaction!.state as any, '0', option.value, getPromptHandlerData(current), dummyRandom, 1002);
 
         expect(resolved?.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
-        expect((resolved?.state.sys.interaction.queue?.[0] as any)?.data?.sourceId).toBe('base_innsmouth_base_choose_player');
+        expect(getSimpleChoicePrompt(resolved!.state as any, 'base_innsmouth_base_choose_player')).toBeDefined();
     });
 });
 
@@ -776,11 +788,11 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             minionUid: 'm1',
         }));
         const choosePlayer = getInteractionsFromResult(result)[0];
-        const choosePlayerOption = choosePlayer.data.options.find((entry: any) => entry.value?.targetPlayerId === '0');
+        const choosePlayerOption = getPromptOption(choosePlayer, (entry: any) => entry.value?.targetPlayerId === '0');
         const choosePlayerHandler = getInteractionHandler('base_innsmouth_base_choose_player');
         const chooseCardHandler = getInteractionHandler('base_innsmouth_base_choose_card');
-        expect(choosePlayer?.data?.sourceId).toBe('base_innsmouth_base_choose_player');
-        expect(choosePlayer?.data?.targetType).toBe('player');
+        expect(getPromptSourceId(choosePlayer)).toBe('base_innsmouth_base_choose_player');
+        expect(getPromptTargetType(choosePlayer)).toBe('player');
         expect(choosePlayerOption).toBeDefined();
         expect(choosePlayerHandler).toBeDefined();
         expect(chooseCardHandler).toBeDefined();
@@ -789,13 +801,13 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             result.matchState!,
             '0',
             choosePlayerOption.value,
-            choosePlayer.data,
+            getPromptHandlerData(choosePlayer),
             dummyRandom,
             1850,
         );
-        const chooseCard = (step1?.state.sys as any).interaction?.queue?.[0];
-        const chooseCardOption = chooseCard?.data?.options?.find((entry: any) => entry.value?.cardUid === 'd1');
-        expect(chooseCard?.data?.sourceId).toBe('base_innsmouth_base_choose_card');
+        const chooseCard = getSimpleChoicePrompt(step1!.state as any, 'base_innsmouth_base_choose_card');
+        const chooseCardOption = getPromptOption(chooseCard, (entry: any) => entry.value?.cardUid === 'd1');
+        expect(getPromptSourceId(chooseCard)).toBe('base_innsmouth_base_choose_card');
         expect(chooseCardOption).toBeDefined();
 
         const staleCore = makeState({
@@ -813,7 +825,7 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             makeMatchState(staleCore),
             '0',
             chooseCardOption.value,
-            chooseCard.data,
+            getPromptHandlerData(chooseCard),
             dummyRandom,
             1851,
         );
@@ -837,9 +849,9 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             baseIndex: 0,
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => entry.value?.minionUid === 'm1');
+        const option = getPromptOption(interaction, (entry: any) => entry.value?.minionUid === 'm1');
         const handler = getInteractionHandler('base_cat_fanciers_alley');
-        expect(interaction?.data?.sourceId).toBe('base_cat_fanciers_alley');
+        expect(getPromptSourceId(interaction)).toBe('base_cat_fanciers_alley');
         expect(option).toBeDefined();
         expect(handler).toBeDefined();
 
@@ -858,7 +870,7 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             makeMatchState(staleCore),
             '0',
             option.value,
-            interaction.data,
+            getPromptHandlerData(interaction),
             dummyRandom,
             1852,
         );
@@ -880,9 +892,9 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             rankings: [{ playerId: '0', power: 5, vp: 4 }],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'dk1');
+        const option = getPromptOption(interaction, (entry: any) => entry.value?.cardUid === 'dk1');
         const handler = getInteractionHandler('base_greenhouse');
-        expect(interaction?.data?.sourceId).toBe('base_greenhouse');
+        expect(getPromptSourceId(interaction)).toBe('base_greenhouse');
         expect(option).toBeDefined();
         expect(handler).toBeDefined();
 
@@ -925,7 +937,7 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             scoredSessionState,
             '0',
             option.value,
-            interaction.data,
+            getPromptHandlerData(interaction),
             dummyRandom,
             1853,
         );
@@ -948,7 +960,7 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             rankings: [{ playerId: '0', power: 5, vp: 4 }],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'dk1');
+        const option = getPromptOption(interaction, (entry: any) => entry.value?.cardUid === 'dk1');
         const handler = getInteractionHandler('base_greenhouse');
         expect(option).toBeDefined();
         expect(handler).toBeDefined();
@@ -992,9 +1004,9 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             '0',
             option.value,
             {
-                ...interaction.data,
+                ...getPromptHandlerData(interaction),
                 continuationContext: {
-                    ...interaction.data.continuationContext,
+                    ...getPromptHandlerData(interaction).continuationContext,
                     baseIndex: 0,
                 },
             },
@@ -1032,9 +1044,9 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             rankings: [{ playerId: '0', power: 5, vp: 4 }],
         }));
         const interaction = getInteractionsFromResult(result)[0];
-        const option = interaction.data.options.find((entry: any) => entry.value?.cardUid === 'd1');
+        const option = getPromptOption(interaction, (entry: any) => entry.value?.cardUid === 'd1');
         const handler = getInteractionHandler('base_inventors_salon');
-        expect(interaction?.data?.sourceId).toBe('base_inventors_salon');
+        expect(getPromptSourceId(interaction)).toBe('base_inventors_salon');
         expect(option).toBeDefined();
         expect(handler).toBeDefined();
 
@@ -1053,7 +1065,7 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             makeMatchState(staleCore),
             '0',
             option.value,
-            interaction.data,
+            getPromptHandlerData(interaction),
             dummyRandom,
             1854,
         );
@@ -1085,16 +1097,16 @@ describe('stale destroy/deck-bottom regression: 扩展基地 Prompt', () => {
             dummyRandom,
             1001,
         );
-        const current = reaction!.state.sys.interaction.current as any;
-        const option = current.data.options.find((entry: any) => entry.id.startsWith('trigger:'));
+        const current = getFirstPrompt(reaction!.state as any);
+        const option = getPromptOption(current, (entry: any) => entry.id.startsWith('trigger:'));
         const handler = getInteractionHandler('smashup_reaction_choose');
 
         expect(option).toBeDefined();
         expect(handler).toBeDefined();
-        const resolved = handler!(reaction!.state as any, '0', option.value, current.data, dummyRandom, 1002);
+        const resolved = handler!(reaction!.state as any, '0', option.value, getPromptHandlerData(current), dummyRandom, 1002);
 
         expect(resolved?.events.some(event => event.type === SU_EVENTS.TRIGGER_CONSUMED)).toBe(true);
-        expect((resolved?.state.sys.interaction.queue?.[0] as any)?.data?.sourceId).toBe('base_greenhouse');
+        expect(getSimpleChoicePrompt(resolved!.state as any, 'base_greenhouse')).toBeDefined();
     });
 });
 
@@ -1167,11 +1179,11 @@ describe('base_miskatonic_university_base: 密大基地 - POD 版首次打出随
         expect(result.events).toHaveLength(0);
         const interactions = getInteractionsFromResult(result);
         expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_miskatonic_university_base');
-        expect(interactions[0].data.targetType).toBe('button');
-        expect(interactions[0].playerId).toBe('0');
-        expect(interactions[0].data.options.some((entry: any) => entry.value?.choice === 'draw')).toBe(true);
-        expect(interactions[0].data.options.some((entry: any) => entry.value?.choice === 'discard_for_action')).toBe(true);
+        expect(getPromptSourceId(interactions[0])).toBe('base_miskatonic_university_base');
+        expect(getPromptTargetType(interactions[0])).toBe('button');
+        expect(getPromptPlayerId(interactions[0])).toBe('0');
+        expect(getPromptOptions(interactions[0]).some((entry: any) => entry.value?.choice === 'draw')).toBe(true);
+        expect(getPromptOptions(interactions[0]).some((entry: any) => entry.value?.choice === 'discard_for_action')).toBe(true);
     });
 
     it('不是本回合第一次打出到这里时不触发', () => {
@@ -1431,8 +1443,8 @@ describe('base_greenhouse: 温室 - 计分后从牌库打随从', () => {
         expect(result.events).toHaveLength(0);
             const interactions = getInteractionsFromResult(result);
             expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_greenhouse');
-        expect(interactions[0].playerId).toBe('0');
+        expect(getPromptSourceId(interactions[0])).toBe('base_greenhouse');
+        expect(getPromptPlayerId(interactions[0])).toBe('0');
     });
 
     it('冠军牌库无随从时不触发', () => {
@@ -1507,7 +1519,7 @@ describe('base_inventors_salon: 发明家沙龙 - 计分后取回行动卡', () 
         expect(result.events).toHaveLength(0);
             const interactions = getInteractionsFromResult(result);
             expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_inventors_salon');
+        expect(getPromptSourceId(interactions[0])).toBe('base_inventors_salon');
     });
 
     it('冠军弃牌堆无行动卡时不触发', () => {
@@ -1548,7 +1560,7 @@ describe('base_cat_fanciers_alley: 诡猫巷 - 消灭己方随从抽牌', () => 
         expect(result.events).toHaveLength(0);
             const interactions = getInteractionsFromResult(result);
             expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_cat_fanciers_alley');
+        expect(getPromptSourceId(interactions[0])).toBe('base_cat_fanciers_alley');
     });
 
     it('无己方随从时不触发', () => {
@@ -1646,31 +1658,31 @@ describe('base_fairy_ring: 仙灵圈 - 首次打随从额外额度', () => {
 
         expect(result.events).toHaveLength(0);
         const prompt = getInteractionsFromResult(result)[0] as any;
-        expect(prompt?.data?.sourceId).toBe('base_fairy_ring');
+        expect(getPromptSourceId(prompt)).toBe('base_fairy_ring');
 
         const minionTrigger = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
         const minionPrompt = getInteractionsFromResult(minionTrigger)[0] as any;
-        const minionOption = minionPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_minion');
+        const minionOption = getPromptOption(minionPrompt, (entry: any) => entry.value?.branchId === 'extra_minion');
         expect(minionOption).toBeDefined();
 
         const minionResolved = resolveAbilityRuntimePrompt(
             minionTrigger.matchState!,
             '0',
             minionOption.value,
-            minionPrompt.data,
+            getPromptHandlerData(minionPrompt),
             dummyRandom,
             1000,
         );
 
         const actionTrigger = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
         const actionPrompt = getInteractionsFromResult(actionTrigger)[0] as any;
-        const actionOption = actionPrompt.data.options.find((entry: any) => entry.value?.branchId === 'extra_action');
+        const actionOption = getPromptOption(actionPrompt, (entry: any) => entry.value?.branchId === 'extra_action');
         expect(actionOption).toBeDefined();
         const actionResolved = resolveAbilityRuntimePrompt(
             actionTrigger.matchState!,
             '0',
             actionOption.value,
-            actionPrompt.data,
+            getPromptHandlerData(actionPrompt),
             dummyRandom,
             1000,
         );
@@ -1759,9 +1771,9 @@ describe('base_land_of_balance: 平衡之地 - 移动己方随从到此', () => 
         expect(result.events).toHaveLength(0);
             const interactions = getInteractionsFromResult(result);
             expect(interactions).toHaveLength(1);
-        expect(interactions[0].data.sourceId).toBe('base_land_of_balance');
+        expect(getPromptSourceId(interactions[0])).toBe('base_land_of_balance');
         // skip + 1 个己方随从
-        expect(interactions[0].data.options.length).toBe(2);
+        expect(getPromptOptions(interactions[0]).length).toBe(2);
     });
 
     it('其他基地无己方随从时不触发', () => {

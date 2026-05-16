@@ -43,10 +43,19 @@ src/
 │   ├── notifications.ts      # 事件/通知
 │   ├── pipeline.ts           # 执行管线
 │   └── types.ts              # 引擎类型
-├── games/                   # 具体游戏实现
-│   ├── assetslicer/                 # 工具型模块
+├── games/                   # 具体游戏实现与工具入口 manifest
+│   ├── archview/                    # 架构可视化工具入口
+│   ├── assetslicer/                 # 素材切片工具入口
+│   ├── audiobrowser/                # 音效浏览工具入口
+│   ├── cardia/                      # Cardia 实现
 │   ├── dicethrone/                  # DiceThrone 实现
+│   ├── fxpreview/                   # 特效预览工具入口
+│   ├── qidahen/                     # 七大恨实现
+│   ├── smashup/                     # Smash Up 实现
+│   ├── splendor/                    # 璀璨宝石实现
+│   ├── summonerwars/                # Summoner Wars 实现
 │   ├── tictactoe/                   # 井字棋实现
+│   ├── ugc-wrapper/                 # UGC 运行时包装
 │   ├── manifest.client.tsx          # 客户端清单入口
 │   ├── manifest.client.generated.tsx# 客户端清单（生成）
 │   ├── manifest.client.types.ts     # 客户端清单类型

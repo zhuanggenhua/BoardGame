@@ -2,7 +2,7 @@
  * 大杀四方 - onDestroy 能力测试
  *
  * 覆盖：
- * - onDestroy 基础设施（processDestroyTriggers）
+ * - onDestroy 消灭事件后处理管线
  * - 机器人：robot_nukebot（核弹机器人 onDestroy）
  * - 诡术师：trickster_gremlin（小妖精 onDestroy）
  * - 基地扩展时机 onMinionDestroyed 联动
@@ -13,17 +13,13 @@ import { runCommand } from './testRunner';
 import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import type {
     SmashUpCore,
-    PlayerState,
-    MinionOnBase,
-    CardInstance,
 } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
-import { processDestroyTriggers } from '../domain/reducer';
 import { reduce } from '../domain/reduce';
-import { makeMinion, makeCard, makePlayer, makeState, makeMatchState } from './helpers';
-import type { MatchState, RandomFn } from '../../../engine/types';
+import { makeMinion, makeCard, makePlayer, makeState, makeMatchState, resolveDestroyedMinions } from './helpers';
+import type { RandomFn } from '../../../engine/types';
 
 beforeAll(() => {
     clearRegistry();
@@ -376,7 +372,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
         expect((drawEvents[0] as any).payload.count).toBe(1);
 
         // 小妖精 onDestroy：玩家0弃1张牌
-        // processDestroyTriggers 使用原始 core 状态，玩家0有2张手牌
+        // 消灭后处理使用触发前 core 快照，玩家0有2张手牌
         const discardEvents = events.filter(
             e => e.type === SU_EVENTS.CARDS_DISCARDED && (e as any).payload.playerId === '0'
         );
@@ -455,12 +451,12 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
         );
         expect(drawEvents.length).toBe(1);
 
-        // 对手（玩家0）在消灭前有1张手牌（c1），但 processDestroyTriggers 用的是原始 core
+        // 对手（玩家0）在消灭前有1张手牌（c1），但消灭后处理用的是原始 core
         // 所以玩家0手牌有 c1 → 会弃1张
-        // 等等...玩家0打出 c1 后手牌为空，但 processDestroyTriggers 用的是打出前的 core
+        // 等等...玩家0打出 c1 后手牌为空，但消灭后处理用的是打出前的 core
         // 所以玩家0手牌还有 c1 → 会产生弃牌事件
         // 这个测试需要调整：让玩家0在打出前就没有其他手牌
-        // 但 processDestroyTriggers 用的是原始 core，所以玩家0手牌有 c1
+        // 但消灭后处理用的是原始 core，所以玩家0手牌有 c1
         // 要测试"对手手牌为空"，需要对手不是当前玩家
         // 换：三人游戏，玩家2手牌为空
         const discardP0 = events.filter(
@@ -570,7 +566,7 @@ describe('trickster_gremlin（小妖精 onDestroy）', () => {
             },
         ] as any;
 
-        const processed = processDestroyTriggers(destroyEvents, makeMatchState(core), '0', defaultRandom, 1000);
+        const processed = resolveDestroyedMinions(makeMatchState(core), '0', destroyEvents, defaultRandom, 1000);
         const drawEvents = processed.events.filter(
             e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '1',
         ) as any[];

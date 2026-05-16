@@ -14,7 +14,6 @@ import { clearInteractionHandlers } from '../../domain/abilityInteractionHandler
 import { startDuel } from '../../domain/duel';
 import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
-import { processDestroyTriggers } from '../../domain/reducer';
 import {
     makeMinion,
     makeCard,
@@ -28,6 +27,7 @@ import {
     respondToPrompt,
     expectNoPrompt,
     resolveInteractionChain,
+    resolveDestroyedMinions,
 } from '../helpers';
 import { runCommand, defaultTestRandom } from '../testRunner';
 import type { MatchState } from '../../../../engine/types';
@@ -984,7 +984,7 @@ describe('Samurai abilities', () => {
             timestamp: 1010,
         } as any;
 
-        const processed = processDestroyTriggers([destroyEvent], state, '1', defaultTestRandom, 1010);
+        const processed = resolveDestroyedMinions(state, '1', [destroyEvent], defaultTestRandom, 1010);
         const queuedEvent = processed.events.find(event => event.type === SU_EVENTS.TRIGGER_QUEUED) as any;
         expect(queuedEvent).toBeDefined();
 
