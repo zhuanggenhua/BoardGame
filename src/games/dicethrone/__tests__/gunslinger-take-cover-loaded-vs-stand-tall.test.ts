@@ -4,7 +4,7 @@ import { DiceThroneDomain } from '../domain';
 import type { PlayerId, RandomFn } from '../../../engine/types';
 import { GameTestRunner } from '../../../engine/testing';
 import { RESOURCE_IDS } from '../domain/resources';
-import { cmd, createHeroMatchup, createQueuedRandom, testSystems, assertState } from './test-utils';
+import { cmd, createHeroMatchup, createQueuedRandom, testSystems, assertState, interactionRespondCommandType } from './test-utils';
 
 describe('gunslinger take-cover vs samurai stand-tall', () => {
     it('Loaded 奖励骰加伤不应在 Stand Tall 防御后被吞成 0', () => {
@@ -31,7 +31,7 @@ describe('gunslinger take-cover vs samurai stand-tall', () => {
                 cmd('RESPONSE_PASS', '1'),
                 cmd('SELECT_ABILITY', '0', { abilityId: 'take-cover' }),
                 cmd('ADVANCE_PHASE', '0'),
-                cmd('SYS_INTERACTION_RESPOND', '0', { optionId: 'option-0' }),
+                cmd(interactionRespondCommandType, '0', { optionId: 'option-0' }),
                 cmd('ROLL_DICE', '1'),
                 cmd('CONFIRM_ROLL', '1'),
                 cmd('RESPONSE_PASS', '0'),

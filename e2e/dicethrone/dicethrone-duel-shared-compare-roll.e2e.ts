@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
-import { setChineseLocale, waitForTestHarness } from '../helpers/common';
+import { injectSkipImageGate, setChineseLocale, waitForTestHarness } from '../helpers/common';
 import { setupDTOnlineMatch } from '../helpers/dicethrone';
 import { getMatchState, injectMatchState } from '../helpers/state-injection';
 import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
@@ -178,6 +178,8 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
     const { hostPage, guestPage, hostContext, guestContext, matchId } = setup;
 
     try {
+        await injectSkipImageGate(hostContext, true);
+        await injectSkipImageGate(guestContext, true);
         await setChineseLocale(hostContext);
         await setChineseLocale(guestContext);
         await hostPage.reload({ waitUntil: 'domcontentloaded' });

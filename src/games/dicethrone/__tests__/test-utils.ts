@@ -11,7 +11,12 @@ import {
     diceModifyReducer, diceModifyToCommands, diceSelectReducer, diceSelectToCommands,
     type DiceModifyStep, type DiceSelectStep, type DiceModifyResult, type DiceSelectResult,
 } from '../domain/systems';
-import type { MultistepChoiceData } from '../../../engine/systems/InteractionSystem';
+import {
+    INTERACTION_COMMANDS,
+    asCompareRollChoice,
+    asSimpleChoice,
+    type MultistepChoiceData,
+} from '../../../engine/systems/InteractionSystem';
 import { RESOURCE_IDS } from '../domain/resources';
 import type { AbilityCard } from '../types';
 import { GameTestRunner, type StateExpectation } from '../../../engine/testing';
@@ -76,6 +81,40 @@ export const cmd = (type: string, playerId: PlayerId, payload: Record<string, un
     playerId,
     payload,
 });
+
+export const interactionRespondCommandType = INTERACTION_COMMANDS.RESPOND;
+
+export const getCurrentInteractionId = (state: MatchState<DiceThroneCore>): string | undefined => (
+    state.sys.interaction.current?.id
+);
+
+export const getSimpleChoicePrompt = (
+    state: MatchState<DiceThroneCore>,
+    expectedSourceId?: string,
+) => {
+    const prompt = asSimpleChoice(state.sys.interaction.current as any);
+    if (!prompt) {
+        throw new Error('Expected a simple-choice prompt, but none was active.');
+    }
+    if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
+        throw new Error(`Expected simple-choice sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
+    }
+    return prompt;
+};
+
+export const getCompareRollChoicePrompt = (
+    state: MatchState<DiceThroneCore>,
+    expectedSourceId?: string,
+) => {
+    const prompt = asCompareRollChoice(state.sys.interaction.current as any);
+    if (!prompt) {
+        throw new Error('Expected a compare-roll-choice prompt, but none was active.');
+    }
+    if (expectedSourceId !== undefined && prompt.sourceId !== expectedSourceId) {
+        throw new Error(`Expected compare-roll-choice sourceId "${expectedSourceId}", got "${prompt.sourceId}".`);
+    }
+    return prompt;
+};
 
 // ============================================================================
 // Setup 函数

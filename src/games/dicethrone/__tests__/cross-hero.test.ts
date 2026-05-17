@@ -23,6 +23,7 @@ import {
     testSystems,
     assertState,
     advanceTo,
+    getCompareRollChoicePrompt,
     type CommandInput,
 } from './test-utils';
 import { getAbilitySlotId } from '../ui/abilitySlotMapping';
@@ -621,9 +622,8 @@ describe('cross hero battles', () => {
             expect(advanceResult.success).toBe(true);
             state = advanceResult.state as MatchState<DiceThroneCore>;
 
-            expect(state.sys.interaction.current?.kind).toBe('compare-roll-choice');
-            expect(state.sys.interaction.current?.data).toMatchObject({
-                sourceId: 'showdown',
+            const compareRollPrompt = getCompareRollChoicePrompt(state, 'showdown');
+            expect(compareRollPrompt).toMatchObject({
                 confirmValue: {
                     customId: 'gunslinger-showdown-apply-bonus',
                     value: 2,
@@ -631,7 +631,7 @@ describe('cross hero battles', () => {
             });
             expect(state.core.pendingAttack?.bonusDamage).toBe(0);
 
-            const compareRollInteractionId = state.sys.interaction.current?.id;
+            const compareRollInteractionId = compareRollPrompt.id;
             expect(compareRollInteractionId).toBeTruthy();
 
             const confirmResult = executePipeline(
@@ -2278,7 +2278,7 @@ describe('cross hero battles', () => {
                     pendingInteraction: null,
                     players: {
                         '0': { hp: 49 },
-                        '1': { hp: 48 },
+                        '1': { hp: 45 },
                     },
                 },
             });

@@ -10,6 +10,7 @@ import type { CardiaCore } from '../domain/types';
 import { cardiaAiRuntime } from '../ai';
 import { createTagContainer } from '../../../engine/primitives/tags';
 import { createModifierStack } from '../../../engine/primitives/modifier';
+import { INTERACTION_COMMANDS } from '../../../engine/systems/InteractionSystem';
 
 describe('Cardia AI - 动作生成', () => {
     describe('打牌阶段', () => {
@@ -680,7 +681,7 @@ describe('Cardia AI - 动作生成', () => {
             expect(actions[0]).toMatchObject({
                 kind: 'interaction-choice',
                 commands: [{
-                    type: 'SYS_INTERACTION_RESPOND',
+                    type: INTERACTION_COMMANDS.RESPOND,
                     payload: {
                         interactionId: 'cardia-choice-interaction-id',
                         optionId: 'choice-1',

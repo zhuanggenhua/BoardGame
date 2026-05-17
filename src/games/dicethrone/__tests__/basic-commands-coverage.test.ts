@@ -25,6 +25,7 @@ import {
     createHeroMatchup,
     getCardById,
     advanceTo,
+    getCurrentInteractionId,
 } from './test-utils';
 import { DICETHRONE_CHARACTER_CATALOG, type DiceThroneCore } from '../domain/types';
 import type { MatchState, RandomFn } from '../../../engine/types';
@@ -613,7 +614,7 @@ describe('AI legal actions', () => {
             playerId: '0',
             state,
         });
-        const currentInteractionId = state.sys.interaction.current?.id;
+        const currentInteractionId = getCurrentInteractionId(state);
 
         expect(actions).toEqual([expect.objectContaining({
             kind: 'interaction-cancel',
