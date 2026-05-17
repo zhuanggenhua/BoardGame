@@ -15,6 +15,7 @@ import {
     addTempPower,
     addPermanentPower,
     revealAndPickFromDeck,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
     createSkipOption,
 } from '../domain/abilityHelpers';
@@ -597,8 +598,10 @@ const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinion
                     label: `消灭 ${target.label}`,
                     value: {
                         minionUid: target.uid,
+                        minionDefId: target.defId,
                         defId: target.defId,
                         baseIndex: target.baseIndex,
+                        baseDefId: context.matchState.core.bases[target.baseIndex]?.defId,
                     },
                     _source: 'field' as const,
                     displayMode: 'card' as const,
@@ -610,11 +613,17 @@ const vampireHeavyDrinkerPromptProgram = createPromptProgram<VampireSourceMinion
     },
     onResolve: ({ state, context, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
-        const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
-        if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const selected = value as {
+            minionUid?: string;
+            minionDefId?: string;
+            defId?: string;
+            baseIndex?: number;
+        } | undefined;
+        const selectedMinionDefId = selected?.minionDefId ?? selected?.defId;
+        if (!selected?.minionUid || !selectedMinionDefId || selected.baseIndex === undefined) return { events: [] };
         const destroyEvents = buildValidatedDestroyEvents(state, {
             minionUid: selected.minionUid,
-            minionDefId: selected.defId,
+            minionDefId: selectedMinionDefId,
             fromBaseIndex: selected.baseIndex,
             destroyerId: context.playerId,
             reason: 'vampire_heavy_drinker',
@@ -731,7 +740,13 @@ const vampireDinnerDatePromptProgram = createPromptProgram<VampirePromptContext,
                 .map((minion, index) => ({
                     id: `minion-${baseIndex}-${index}`,
                     label: getCardDef(minion.defId)?.name ?? minion.defId,
-                    value: { minionUid: minion.uid, baseIndex },
+                    value: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        defId: minion.defId,
+                        baseIndex,
+                        baseDefId: base.defId,
+                    },
                     _source: 'field' as const,
                     displayMode: 'card' as const,
                 })),
@@ -856,7 +871,13 @@ const vampireCullTheWeakPromptProgram = createPromptProgram<VampirePromptContext
                 .map((minion, index) => ({
                     id: `minion-${baseIndex}-${index}`,
                     label: getCardDef(minion.defId)?.name ?? minion.defId,
-                    value: { minionUid: minion.uid, baseIndex },
+                    value: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        defId: minion.defId,
+                        baseIndex,
+                        baseDefId: base.defId,
+                    },
                     _source: 'field' as const,
                     displayMode: 'card' as const,
                 })),
@@ -977,7 +998,13 @@ const vampireCountPodAddCounterPromptProgram = createPromptProgram<VampireCountP
         const options = (base?.minions ?? []).map((minion, index) => ({
             id: `minion-${index}`,
             label: getCardDef(minion.defId)?.name ?? minion.defId,
-            value: { minionUid: minion.uid, baseIndex: context.targetBaseIndex },
+            value: {
+                minionUid: minion.uid,
+                minionDefId: minion.defId,
+                defId: minion.defId,
+                baseIndex: context.targetBaseIndex,
+                baseDefId: base?.defId,
+            },
             _source: 'field' as const,
             displayMode: 'card' as const,
         }));
@@ -1014,12 +1041,13 @@ const vampireBuffetPodPlayPromptProgram = createPromptProgram<VampireBuffetPodPl
         ] as any[],
         { sourceId: 'vampire_buffet_pod_play', targetType: 'button', displayCard: { defId: context.defId, cardUid: context.cardUid } },
     ),
-    onResolve: ({ state, context, value, playerId, random, timestamp }) => {
+    onResolve: (args) => {
+        const { state, context, value, playerId, timestamp } = args;
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
         const events: SmashUpEvent[] = [
             buildActionPlayedEvent({ playerId, cardUid: context.cardUid, defId: context.defId, isExtraAction: true, timestamp }) as any,
         ];
-        events.push(...buildStandardDrawEvents(state.core, playerId, 2, random, timestamp));
+        events.push(...buildStandardDrawEventsFromRuntimeContext(args, playerId, 2));
         return { events };
     },
 });
@@ -1098,7 +1126,7 @@ const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePr
                 .map((card, index) => ({
                     id: `hand-${index}`,
                     label: '从手牌埋葬',
-                    value: { cardUid: card.uid, fromDiscard: false },
+                    value: { cardUid: card.uid, defId: card.defId, fromDiscard: false },
                     _source: 'hand' as const,
                     displayMode: 'card' as const,
                 })),
@@ -1107,7 +1135,7 @@ const vampireFledglingPodBurySourcePromptProgram = createPromptProgram<VampirePr
                 .map((card, index) => ({
                     id: `discard-${index}`,
                     label: '从弃牌堆埋葬',
-                    value: { cardUid: card.uid, fromDiscard: true },
+                    value: { cardUid: card.uid, defId: card.defId, fromDiscard: true },
                     _source: 'discard' as const,
                     displayMode: 'card' as const,
                 })),
@@ -1177,7 +1205,13 @@ const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMin
                 ...otherOwnTargets.map((target, index) => ({
                     id: `own-${index}`,
                     label: `消灭：${target.label}`,
-                    value: { minionUid: target.uid, defId: target.defId, baseIndex: target.baseIndex },
+                    value: {
+                        minionUid: target.uid,
+                        minionDefId: target.defId,
+                        defId: target.defId,
+                        baseIndex: target.baseIndex,
+                        baseDefId: context.matchState.core.bases[target.baseIndex]?.defId,
+                    },
                     _source: 'field' as const,
                     displayMode: 'card' as const,
                 })),
@@ -1188,11 +1222,17 @@ const vampireHeavyDrinkerPodPromptProgram = createPromptProgram<VampireSourceMin
     },
     onResolve: ({ state, context, value, timestamp }) => {
         if ((value as { skip?: boolean } | undefined)?.skip) return { events: [] };
-        const selected = value as { minionUid?: string; defId?: string; baseIndex?: number } | undefined;
-        if (!selected?.minionUid || !selected.defId || selected.baseIndex === undefined) return { events: [] };
+        const selected = value as {
+            minionUid?: string;
+            minionDefId?: string;
+            defId?: string;
+            baseIndex?: number;
+        } | undefined;
+        const selectedMinionDefId = selected?.minionDefId ?? selected?.defId;
+        if (!selected?.minionUid || !selectedMinionDefId || selected.baseIndex === undefined) return { events: [] };
         const destroyEvents = buildValidatedDestroyEvents(state, {
             minionUid: selected.minionUid,
-            minionDefId: selected.defId,
+            minionDefId: selectedMinionDefId,
             fromBaseIndex: selected.baseIndex,
             destroyerId: context.playerId,
             reason: 'vampire_heavy_drinker_pod',
@@ -1421,7 +1461,13 @@ const vampireDinnerDatePodPromptProgram = createPromptProgram<VampireDinnerDateP
                 .map((minion, index) => ({
                     id: `minion-${baseIndex}-${index}`,
                     label: getCardDef(minion.defId)?.name ?? minion.defId,
-                    value: { minionUid: minion.uid, baseIndex },
+                    value: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        defId: minion.defId,
+                        baseIndex,
+                        baseDefId: base.defId,
+                    },
                     _source: 'field' as const,
                     displayMode: 'card' as const,
                 })),
@@ -1478,7 +1524,13 @@ const vampireWolfPactPodMinionTargetPromptProgram = createPromptProgram<VampireW
             .map((minion, index) => ({
                 id: `recipient-${index}`,
                 label: getCardDef(minion.defId)?.name ?? minion.defId,
-                value: { minionUid: minion.uid, baseIndex: context.wolfBaseIndex },
+                value: {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    defId: minion.defId,
+                    baseIndex: context.wolfBaseIndex,
+                    baseDefId: base?.defId,
+                },
                 _source: 'field' as const,
                 displayMode: 'card' as const,
             }));
@@ -1555,7 +1607,7 @@ const vampireWolfPactPodActionPromptProgram = createPromptProgram<VampirePromptC
         const options = (player?.discard ?? []).map((card, index) => ({
             id: `card-${index}`,
             label: getCardDef(card.defId)?.name ?? card.defId,
-            value: { cardUid: card.uid },
+            value: { cardUid: card.uid, defId: card.defId },
             _source: 'discard' as const,
             displayMode: 'card' as const,
         }));

@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import { motion, type Variants } from 'framer-motion';
 import { memo, type ReactNode, type CSSProperties } from 'react';
 import { UI_Z_INDEX } from '../../../core';
+import { OverlayLayerProvider } from './OverlayLayerContext';
 
 interface ModalBaseProps {
     onClose?: () => void;
@@ -90,7 +91,9 @@ export const ModalBase = memo(({
                 style={{ willChange: 'transform, opacity', ...resolvedContainerStyle }}
             >
                 <div className="w-full flex justify-center">
-                    {children}
+                    <OverlayLayerProvider tooltipZIndex={UI_Z_INDEX.modalTooltip}>
+                        {children}
+                    </OverlayLayerProvider>
                 </div>
             </motion.div>
         </>

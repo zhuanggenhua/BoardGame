@@ -19,6 +19,7 @@ import {
     findCardInPlayerZone,
     resolveExtraPlayTiming,
     peekDeckTop,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
@@ -1188,7 +1189,8 @@ const wizardSacrificePromptProgram = createPromptProgram<WizardPromptContext, Sm
         ),
         (nextState) => buildWizardSacrificeOptions(nextState.core, context.playerId, context.sourceDefId),
     ),
-    onResolve: ({ context, state, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { context, state, value, timestamp } = args;
         if (isWizardCancelChoice(value)) {
             return { events: [], matchState: state };
         }
@@ -1201,7 +1203,7 @@ const wizardSacrificePromptProgram = createPromptProgram<WizardPromptContext, Sm
         const power = getMinionPower(state.core, minion, choice.baseIndex);
         const events: SmashUpEvent[] = [];
         if (power > 0) {
-            events.push(...buildStandardDrawEvents(state.core, context.playerId, power, random, timestamp));
+            events.push(...buildStandardDrawEventsFromRuntimeContext(args, context.playerId, power));
         }
         events.push(destroyMinion(minion.uid, minion.defId, choice.baseIndex, minion.owner, context.playerId, 'wizard_sacrifice', timestamp));
         return { events, matchState: state };

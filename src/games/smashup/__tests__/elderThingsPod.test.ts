@@ -1,12 +1,13 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { SU_COMMANDS, SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
+import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import {
     expectNoPrompt,
     getFirstPrompt,
+    invokeRegisteredAbilityContract,
     getPromptHandlerData,
     getPromptOption,
     getPromptOptions,
@@ -316,8 +317,6 @@ describe('elder_things_pod: The Price of Power POD', () => {
         expect(revealEvt.payload.targetPlayerId).toBe('1');
 
         const counters = res.events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED) as any[];
-        // DEBUG
-        console.log('[price_of_power_pod] counters', counters.map(c => ({ amount: c.payload.amount, reason: c.payload.reason })));
         expect(counters.length).toBe(2);
         expect(counters.every(e => e.payload.amount === 1)).toBe(true);
         expect(counters.every(e => e.payload.reason === 'elder_thing_the_price_of_power_pod')).toBe(true);
@@ -490,10 +489,7 @@ describe('elder_things_pod extra timing regression coverage', () => {
         });
         const ms = makeMatchState(core);
         ms.sys.phase = 'startTurn';
-        const executor = resolveAbility('elder_thing_touch_of_madness_pod', 'onPlay');
-        expect(executor).toBeDefined();
-
-        const result = executor!({
+        const result = invokeRegisteredAbilityContract('elder_thing_touch_of_madness_pod', 'onPlay', {
             state: core,
             matchState: ms,
             playerId: '0',

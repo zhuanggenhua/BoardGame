@@ -384,7 +384,13 @@ function buildTricksterControlledMinionOptions(
             options.push({
                 id: `minion-${options.length}`,
                 label: `${name} (力量 ${power})`,
-                value: { minionUid: minion.uid, baseIndex },
+                value: {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    defId: minion.defId,
+                    baseIndex,
+                    baseDefId: base.defId,
+                },
                 _source: 'minion',
                 displayMode: 'card',
             });
@@ -411,7 +417,13 @@ function buildTricksterBaseControlledMinionOptions(
             return {
                 id: `minion-${index}`,
                 label: `${name} (力量 ${power})`,
-                value: { minionUid: minion.uid, baseIndex },
+                value: {
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    defId: minion.defId,
+                    baseIndex,
+                    baseDefId: base.defId,
+                },
                 _source: 'minion' as const,
                 displayMode: 'card' as const,
             };
@@ -435,7 +447,13 @@ function buildHideoutPodDestroyOptions(
                 return {
                     id: `minion-${index}`,
                     label: `${name} (战斗力 ${power})`,
-                    value: { minionUid: minion.uid, baseIndex },
+                    value: {
+                        minionUid: minion.uid,
+                        minionDefId: minion.defId,
+                        defId: minion.defId,
+                        baseIndex,
+                        baseDefId: base.defId,
+                    },
                     _source: 'minion' as const,
                     displayMode: 'card' as const,
                 };

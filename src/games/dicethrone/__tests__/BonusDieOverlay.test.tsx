@@ -1295,7 +1295,74 @@ describe('BonusDieOverlay', () => {
             const state = JSON.parse(screen.getByTestId('opponent-lucky-state').textContent ?? '{}');
             expect(state.cardSpotlightQueue).toHaveLength(1);
             expect(state.cardSpotlightQueue[0].bonusDice).toHaveLength(3);
+            expect(state.cardSpotlightQueue[0].bonusDice[0].presentationKey).toBe('BONUS_DIE_ROLLED:1100');
+            expect(state.cardSpotlightQueue[0].bonusDice[1].presentationKey).toBe('BONUS_DIE_ROLLED:1101');
+            expect(state.cardSpotlightQueue[0].bonusDice[2].presentationKey).toBe('BONUS_DIE_ROLLED:1102');
             expect(state.cardSpotlightQueue[0].summaryText?.effectKey).toBe('bonusDie.effect.luckyRoll.result');
+            expect(state.bonusDie.show).toBe(false);
+        });
+    });
+
+    it('对手打出一掷千金时，卡牌特写骰子应携带可重放的 presentationKey', async () => {
+        const entries: EventStreamEntry[] = [
+            {
+                id: 1,
+                event: {
+                    type: 'CARD_PLAYED',
+                    payload: {
+                        playerId: '1',
+                        cardId: 'card-one-throw-fortune',
+                    },
+                    timestamp: 1000,
+                },
+            },
+            {
+                id: 2,
+                event: {
+                    type: 'BONUS_DIE_ROLLED',
+                    payload: {
+                        playerId: '1',
+                        targetPlayerId: '1',
+                        value: 6,
+                        face: 'lotus',
+                        effectKey: 'bonusDie.effect.gainCp',
+                        effectParams: { cp: 3 },
+                    },
+                    timestamp: 1100,
+                },
+            },
+        ];
+
+        function HookProbe({ streamEntries }: { streamEntries: EventStreamEntry[] }) {
+            const state = useCardSpotlight({
+                eventStreamEntries: streamEntries,
+                currentPlayerId: '0',
+                opponentName: '对手',
+                selectedCharacters: {
+                    '0': 'barbarian',
+                    '1': 'monk',
+                },
+            });
+
+            return (
+                <pre data-testid="opponent-one-throw-fortune-state">
+                    {JSON.stringify({
+                        cardSpotlightQueue: state.cardSpotlightQueue,
+                        bonusDie: state.bonusDie,
+                    })}
+                </pre>
+            );
+        }
+
+        const { rerender } = render(<HookProbe streamEntries={[]} />);
+        rerender(<HookProbe streamEntries={entries} />);
+
+        await waitFor(() => {
+            const state = JSON.parse(screen.getByTestId('opponent-one-throw-fortune-state').textContent ?? '{}');
+            expect(state.cardSpotlightQueue).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].bonusDice).toHaveLength(1);
+            expect(state.cardSpotlightQueue[0].bonusDice[0].presentationKey).toBe('BONUS_DIE_ROLLED:1100');
+            expect(state.cardSpotlightQueue[0].bonusDice[0].index).toBe(0);
             expect(state.bonusDie.show).toBe(false);
         });
     });
@@ -1614,6 +1681,8 @@ describe('BonusDieOverlay', () => {
             expect(state.cardSpotlightQueue[0].bonusDice[0].value).toBe(4);
             expect(state.cardSpotlightQueue[0].bonusDice[1].value).toBe(6);
             expect(state.cardSpotlightQueue[0].bonusDice[1].index).toBe(1);
+            expect(state.cardSpotlightQueue[0].bonusDice[0].presentationKey).toBe('BONUS_DIE_ROLLED:1100');
+            expect(state.cardSpotlightQueue[0].bonusDice[1].presentationKey).toBe('BONUS_DIE_REROLLED:1200');
         });
     });
 

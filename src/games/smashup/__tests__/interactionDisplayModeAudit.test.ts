@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import * as ts from 'typescript';
-import { readFileSync, readdirSync } from 'fs';
+import { readdirSync } from 'fs';
 import { resolve, join } from 'path';
 import {
     collectOptionObjectLiterals,
@@ -26,21 +26,82 @@ interface OptionValueIssue {
 const BUTTON_OPTION_IDS = new Set(['skip', 'done', 'confirm', 'cancel', 'yes', 'no', 'apply', 'stop']);
 const BUTTON_LABEL_HINTS = ['跳过', '取消', '确认', '完成', '留在原地', '不触发', '不返回', '不移动', '不消灭', '放置'];
 
+const FILES_TO_SCAN = getFilesToScan();
+const AUDIT_PROGRAM = ts.createProgram(FILES_TO_SCAN, {
+    target: ts.ScriptTarget.Latest,
+    module: ts.ModuleKind.ESNext,
+    moduleResolution: ts.ModuleResolutionKind.NodeJs,
+    skipLibCheck: true,
+});
+const AUDIT_CHECKER = AUDIT_PROGRAM.getTypeChecker();
+
+function unwrapExpression(expr: ts.Expression | undefined): ts.Expression | undefined {
+    let current = expr;
+    while (current) {
+        if (
+            ts.isParenthesizedExpression(current)
+            || ts.isAsExpression(current)
+            || ts.isTypeAssertionExpression(current)
+            || ts.isSatisfiesExpression(current)
+            || ts.isNonNullExpression(current)
+        ) {
+            current = current.expression;
+            continue;
+        }
+        return current;
+    }
+    return current;
+}
+
+function extractTypeProps(type: ts.Type, valueProps: Set<string>, seenTypeIds: Set<number>): void {
+    const typeId = type.id;
+    if (typeId !== undefined && seenTypeIds.has(typeId)) return;
+    if (typeId !== undefined) seenTypeIds.add(typeId);
+
+    for (const prop of AUDIT_CHECKER.getPropertiesOfType(type)) {
+        valueProps.add(prop.getName());
+    }
+
+    if (type.isUnionOrIntersection()) {
+        for (const subType of type.types) {
+            extractTypeProps(subType, valueProps, seenTypeIds);
+        }
+    }
+
+    const constraint = AUDIT_CHECKER.getBaseConstraintOfType(type);
+    if (constraint && constraint !== type) {
+        extractTypeProps(constraint, valueProps, seenTypeIds);
+    }
+}
+
+function extractPropsFromExpression(expr: ts.Expression | undefined, valueProps: Set<string>): void {
+    const unwrapped = unwrapExpression(expr);
+    if (!unwrapped) return;
+
+    if (ts.isObjectLiteralExpression(unwrapped)) {
+        for (const prop of unwrapped.properties) {
+            if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name)) {
+                valueProps.add(prop.name.text);
+            } else if (ts.isShorthandPropertyAssignment(prop)) {
+                valueProps.add(prop.name.text);
+            }
+        }
+        return;
+    }
+
+    const type = AUDIT_CHECKER.getTypeAtLocation(unwrapped);
+    extractTypeProps(type, valueProps, new Set<number>());
+}
+
 function extractObjectValueProps(optionNode: ts.ObjectLiteralExpression): Set<string> {
     const valueProp = optionNode.properties.find(
         prop => ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name) && prop.name.text === 'value'
     ) as ts.PropertyAssignment | undefined;
 
-    if (!valueProp || !ts.isObjectLiteralExpression(valueProp.initializer)) return new Set<string>();
-
     const valueProps = new Set<string>();
-    for (const prop of valueProp.initializer.properties) {
-        if (ts.isPropertyAssignment(prop) && ts.isIdentifier(prop.name)) {
-            valueProps.add(prop.name.text);
-        } else if (ts.isShorthandPropertyAssignment(prop)) {
-            valueProps.add(prop.name.text);
-        }
-    }
+    if (!valueProp) return valueProps;
+
+    extractPropsFromExpression(valueProp.initializer, valueProps);
     return valueProps;
 }
 
@@ -313,6 +374,14 @@ function getFilesToScan(): string[] {
     return [...abilityFiles, ...baseAbilityFiles];
 }
 
+function getAuditSourceFile(filePath: string): ts.SourceFile {
+    const sourceFile = AUDIT_PROGRAM.getSourceFile(filePath);
+    if (!sourceFile) {
+        throw new Error(`无法从 TypeScript Program 读取审计文件: ${filePath}`);
+    }
+    return sourceFile;
+}
+
 function dedupeIssues(issues: OptionValueIssue[]): OptionValueIssue[] {
     const seen = new Set<string>();
     return issues.filter(issue => {
@@ -327,9 +396,8 @@ describe('SmashUp Interaction 选项展示模式审计', () => {
     it('所有卡牌选项都包含 defId 字段', () => {
         const allIssues: OptionValueIssue[] = [];
 
-        for (const filePath of getFilesToScan()) {
-            const content = readFileSync(filePath, 'utf-8');
-            const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+        for (const filePath of FILES_TO_SCAN) {
+            const sourceFile = getAuditSourceFile(filePath);
             const issues = analyzeSimpleChoiceOptions(sourceFile, filePath);
             allIssues.push(...issues);
         }
@@ -349,9 +417,8 @@ describe('SmashUp Interaction 选项展示模式审计', () => {
     it('按钮语义选项必须显式声明 button displayMode', () => {
         const allIssues: OptionValueIssue[] = [];
 
-        for (const filePath of getFilesToScan()) {
-            const content = readFileSync(filePath, 'utf-8');
-            const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+        for (const filePath of FILES_TO_SCAN) {
+            const sourceFile = getAuditSourceFile(filePath);
             for (const { sourceId, node } of collectAllPromptOptionNodes(sourceFile)) {
                 analyzeButtonDisplayMode(node, sourceId, filePath, allIssues);
             };
@@ -372,9 +439,8 @@ describe('SmashUp Interaction 选项展示模式审计', () => {
     it('实体卡牌/基地选项必须显式声明 card displayMode', () => {
         const allIssues: OptionValueIssue[] = [];
 
-        for (const filePath of getFilesToScan()) {
-            const content = readFileSync(filePath, 'utf-8');
-            const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+        for (const filePath of FILES_TO_SCAN) {
+            const sourceFile = getAuditSourceFile(filePath);
             for (const { sourceId, node } of collectAllPromptOptionNodes(sourceFile)) {
                 analyzeCardDisplayMode(node, sourceId, filePath, allIssues);
             }
@@ -395,9 +461,8 @@ describe('SmashUp Interaction 选项展示模式审计', () => {
     it('显式 card displayMode 的选项必须提供可渲染 defId', () => {
         const allIssues: OptionValueIssue[] = [];
 
-        for (const filePath of getFilesToScan()) {
-            const content = readFileSync(filePath, 'utf-8');
-            const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+        for (const filePath of FILES_TO_SCAN) {
+            const sourceFile = getAuditSourceFile(filePath);
             for (const { sourceId, node } of collectAllPromptOptionNodes(sourceFile)) {
                 analyzeRenderableDefForCardMode(node, sourceId, filePath, allIssues);
             }
@@ -418,9 +483,8 @@ describe('SmashUp Interaction 选项展示模式审计', () => {
     it('displayMode 只能声明在选项顶层，不能写入 value', () => {
         const allIssues: OptionValueIssue[] = [];
 
-        for (const filePath of getFilesToScan()) {
-            const content = readFileSync(filePath, 'utf-8');
-            const sourceFile = ts.createSourceFile(filePath, content, ts.ScriptTarget.Latest, true, ts.ScriptKind.TS);
+        for (const filePath of FILES_TO_SCAN) {
+            const sourceFile = getAuditSourceFile(filePath);
             for (const { sourceId, node } of collectAllPromptOptionNodes(sourceFile)) {
                 analyzeValueDisplayModeLeak(node, sourceId, filePath, allIssues);
             };

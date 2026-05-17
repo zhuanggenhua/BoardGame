@@ -266,19 +266,19 @@
     "treant_seedling": {
       "name": "幼种树灵",
       "description": [
-        "上限 3。可在自己的掷骰阶段花费 1 个，重掷 1 颗你的骰子。"
+        "上限 3。可在自己的掷骰阶段花费 1 个，重掷 1 颗你的骰子。每回合每种树灵仅限花费 1 次。"
       ]
     },
     "treant_sapling": {
       "name": "木苗树灵",
       "description": [
-        "上限 2。主要阶段可花费 1 个治疗 1 并获得 1CP；或额外支付 1CP 抽 1 张牌。"
+        "上限 2。主要阶段可花费 1 个治疗 1 并获得 1CP；或额外支付 1CP 抽 1 张牌。每回合每种树灵仅限花费 1 次。"
       ]
     },
     "treant_divine": {
       "name": "神性树灵",
       "description": [
-        "上限 1。造成伤害前可花费，使本次攻击 +3；若对手攻击即将对你施加负面状态，会防止该状态。"
+        "上限 1。造成伤害前可花费，使本次攻击 +3；对手进攻掷骰阶段结束时，若即将对你施加负面状态，你可以花费以防止该状态。每回合每种树灵仅限花费 1 次。"
       ]
     },
     "life_sap": {
@@ -290,7 +290,7 @@
     "thorn": {
       "name": "刺藤",
       "description": [
-        "上限 1。拥有者在进攻掷骰阶段每次额外投掷尝试受到 1 点伤害；掷骰阶段结束时移除。"
+        "上限 1。拥有者在进攻掷骰阶段每次额外投掷尝试受到 1 点伤害，每回合至多因此受到 2 点伤害；掷骰阶段结束时移除。"
       ]
     },
     "delayed_poison": {
@@ -718,8 +718,35 @@
       "totalDamageContributionThreshold": "本骰点数 {{value}} 计入最终伤害；总和达阈值会触发额外效果",
       "treantLifeSap": "生命源泉：掷出 {{value}}，将治疗 {{heal}}。",
       "treantLifeSapResult": "生命源泉治疗 {{heal}}。",
+      "treantRooted": {
+        "branch": "扎根：树枝防止 1 伤害",
+        "leaf": "扎根：树叶用于双树叶养成",
+        "spirit": "扎根：树灵防止 1 伤害；双树灵可获得生命源泉"
+      },
+      "treantTrample": {
+        "branch": "践踏：树枝使本次攻击 +1",
+        "leaf": "践踏：树叶无额外效果",
+        "spirit": "践踏：树灵无额外效果",
+        "other": "践踏：无额外效果",
+        "result": "践踏：{{branchCount}} 个树枝，本次攻击 +{{branchCount}} 伤害；若至少 +3 则施加刺藤"
+      },
+      "treantSoulfire": {
+        "branch": "魂火：树枝对所有对手造成 1 附属伤害",
+        "leaf": "魂火：树叶获得生命源泉",
+        "spirit": "魂火：树灵养成 1 树灵",
+        "other": "魂火：无额外效果",
+        "result": "魂火：{{branchCount}} 树枝 / {{leafCount}} 树叶 / {{spiritCount}} 树灵"
+      },
+      "treantMotherTree": {
+        "branch": "母树：非树灵，抽 1",
+        "leaf": "母树：非树灵，抽 1",
+        "spirit": "母树：树灵，养成 4 树灵",
+        "other": "母树：非树灵，抽 1"
+      },
       "ninjaNinjutsu": "忍术：掷出 {{value}}。",
-      "ninjaNinjutsuResult": "忍术使本次攻击伤害 +{{bonusDamage}}。"
+      "ninjaNinjutsuResult": "忍术使本次攻击伤害 +{{bonusDamage}}。",
+      "ninjaDojoMask": "道场：面具，获得烟雾弹和 2 忍术",
+      "ninjaDojoOther": "道场：否则抽 1"
     },
     "selectToReroll": "点击骰子花费{{cost}}{{token}}重掷",
     "noTokenToReroll": "没有{{token}}标记可用于重掷",
@@ -937,6 +964,132 @@
       "title": "忍术 6 点效果",
       "poison": "伤害 +2，并施加慢性中毒",
       "undefendable": "伤害 +2，并使攻击不可防御"
+    },
+    "treantWildGrowth": {
+      "title": "野蛮生长：选择树灵与生命源泉",
+      "none": "不移除树灵",
+      "none_life": "弃掉生命源泉：不可防御",
+      "seedling1": "移除 1 幼种树灵：伤害 +4",
+      "seedling1_life": "移除 1 幼种树灵并弃生命源泉：伤害 +4，不可防御",
+      "seedling2": "移除 2 幼种树灵：伤害 +8",
+      "seedling2_life": "移除 2 幼种树灵并弃生命源泉：伤害 +8，不可防御",
+      "sapling1": "移除 1 木苗树灵：伤害 +4",
+      "sapling1_life": "移除 1 木苗树灵并弃生命源泉：伤害 +4，不可防御",
+      "sapling2": "移除 2 木苗树灵：伤害 +8",
+      "sapling2_life": "移除 2 木苗树灵并弃生命源泉：伤害 +8，不可防御",
+      "divine1": "移除 1 神性树灵：伤害 +4",
+      "divine1_life": "移除 1 神性树灵并弃生命源泉：伤害 +4，不可防御",
+      "seedling1_sapling1": "移除 1 幼种 + 1 木苗树灵：伤害 +8",
+      "seedling1_sapling1_life": "移除 1 幼种 + 1 木苗树灵并弃生命源泉：伤害 +8，不可防御",
+      "seedling1_divine1": "移除 1 幼种 + 1 神性树灵：伤害 +8",
+      "seedling1_divine1_life": "移除 1 幼种 + 1 神性树灵并弃生命源泉：伤害 +8，不可防御",
+      "sapling1_divine1": "移除 1 木苗 + 1 神性树灵：伤害 +8",
+      "sapling1_divine1_life": "移除 1 木苗 + 1 神性树灵并弃生命源泉：伤害 +8，不可防御"
+    },
+    "treantShatteringFist": {
+      "title": "破碎之拳：是否移除 1 树灵施加刺藤？",
+      "cultivateTitle": "破碎之拳 III：选择养成后的树灵",
+      "none": "不移除树灵",
+      "seedling": "移除 1 幼种树灵并施加刺藤",
+      "sapling": "移除 1 木苗树灵并施加刺藤",
+      "divine": "移除 1 神性树灵并施加刺藤"
+    },
+    "treantDivinePreventDebuff": {
+      "title": "神性树灵：是否防止即将受到的负面状态？",
+      "prevent": "花费神性树灵：防止该状态",
+      "skip": "不花费"
+    },
+    "treantQuietCultivation": {
+      "title": "默默耕耘：选择养成后的树灵"
+    },
+    "treantTendCare": {
+      "title": "细心呵护：选择树灵与目标",
+      "option": "结算后：幼种 {{seedling}} / 木苗 {{sapling}} / 神性 {{divine}}；{{lifeSapTarget}} 获得生命源泉；{{thornTarget}} 获得刺藤"
+    },
+    "treantForestAwakens": {
+      "title": "森林觉醒：选择养成后的树灵"
+    },
+    "treantDrinkDeep": {
+      "title": "痛饮：选择获得生命源泉的玩家",
+      "option": "{{player}} 获得生命源泉"
+    },
+    "treantHarvest": {
+      "title": "丰收：选择移除树灵与生命源泉目标",
+      "option": "移除：幼种 {{seedling}} / 木苗 {{sapling}} / 神性 {{divine}}；获得 {{cp}} CP；生命源泉目标：{{targets}}"
+    },
+    "treantDownpour": {
+      "title": "大雨倾盆：选择养成后的树灵"
+    },
+    "treantSoulfire": {
+      "title": "魂火：选择养成后的树灵"
+    },
+    "treantMotherTree": {
+      "title": "母树：选择养成后的树灵"
+    },
+    "treantCultivate": {
+      "title": "自然之触：选择养成后的树灵",
+      "s0_a0_d0": "结算后：无树灵",
+      "s1_a0_d0": "结算后：幼种 1",
+      "s2_a0_d0": "结算后：幼种 2",
+      "s3_a0_d0": "结算后：幼种 3",
+      "s0_a1_d0": "结算后：木苗 1",
+      "s1_a1_d0": "结算后：幼种 1，木苗 1",
+      "s2_a1_d0": "结算后：幼种 2，木苗 1",
+      "s3_a1_d0": "结算后：幼种 3，木苗 1",
+      "s0_a2_d0": "结算后：木苗 2",
+      "s1_a2_d0": "结算后：幼种 1，木苗 2",
+      "s2_a2_d0": "结算后：幼种 2，木苗 2",
+      "s3_a2_d0": "结算后：幼种 3，木苗 2",
+      "s0_a0_d1": "结算后：神性 1",
+      "s1_a0_d1": "结算后：幼种 1，神性 1",
+      "s2_a0_d1": "结算后：幼种 2，神性 1",
+      "s3_a0_d1": "结算后：幼种 3，神性 1",
+      "s0_a1_d1": "结算后：木苗 1，神性 1",
+      "s1_a1_d1": "结算后：幼种 1，木苗 1，神性 1",
+      "s2_a1_d1": "结算后：幼种 2，木苗 1，神性 1",
+      "s3_a1_d1": "结算后：幼种 3，木苗 1，神性 1",
+      "s0_a2_d1": "结算后：木苗 2，神性 1",
+      "s1_a2_d1": "结算后：幼种 1，木苗 2，神性 1",
+      "s2_a2_d1": "结算后：幼种 2，木苗 2，神性 1",
+      "s3_a2_d1": "结算后：幼种 3，木苗 2，神性 1"
+    },
+    "treantRooted": {
+      "title": "扎根：选择额外效果",
+      "s0_a0_d0_none": "养成后：无树灵",
+      "s1_a0_d0_none": "养成后：幼种 1",
+      "s2_a0_d0_none": "养成后：幼种 2",
+      "s3_a0_d0_none": "养成后：幼种 3",
+      "s0_a1_d0_none": "养成后：木苗 1",
+      "s1_a1_d0_none": "养成后：幼种 1，木苗 1",
+      "s2_a1_d0_none": "养成后：幼种 2，木苗 1",
+      "s0_a2_d0_none": "养成后：木苗 2",
+      "s0_a0_d1_none": "养成后：神性 1",
+      "s1_a0_d1_none": "养成后：幼种 1，神性 1",
+      "s0_a1_d1_none": "养成后：木苗 1，神性 1",
+      "none_p0": "自己获得生命源泉",
+      "none_p1": "对手获得生命源泉",
+      "s0_a0_d0_p0": "养成后无树灵；自己获得生命源泉",
+      "s1_a0_d0_p0": "养成后幼种 1；自己获得生命源泉",
+      "s2_a0_d0_p0": "养成后幼种 2；自己获得生命源泉",
+      "s3_a0_d0_p0": "养成后幼种 3；自己获得生命源泉",
+      "s0_a1_d0_p0": "养成后木苗 1；自己获得生命源泉",
+      "s1_a1_d0_p0": "养成后幼种 1，木苗 1；自己获得生命源泉",
+      "s2_a1_d0_p0": "养成后幼种 2，木苗 1；自己获得生命源泉",
+      "s0_a2_d0_p0": "养成后木苗 2；自己获得生命源泉",
+      "s0_a0_d1_p0": "养成后神性 1；自己获得生命源泉",
+      "s1_a0_d1_p0": "养成后幼种 1，神性 1；自己获得生命源泉",
+      "s0_a1_d1_p0": "养成后木苗 1，神性 1；自己获得生命源泉",
+      "s0_a0_d0_p1": "养成后无树灵；对手获得生命源泉",
+      "s1_a0_d0_p1": "养成后幼种 1；对手获得生命源泉",
+      "s2_a0_d0_p1": "养成后幼种 2；对手获得生命源泉",
+      "s3_a0_d0_p1": "养成后幼种 3；对手获得生命源泉",
+      "s0_a1_d0_p1": "养成后木苗 1；对手获得生命源泉",
+      "s1_a1_d0_p1": "养成后幼种 1，木苗 1；对手获得生命源泉",
+      "s2_a1_d0_p1": "养成后幼种 2，木苗 1；对手获得生命源泉",
+      "s0_a2_d0_p1": "养成后木苗 2；对手获得生命源泉",
+      "s0_a0_d1_p1": "养成后神性 1；对手获得生命源泉",
+      "s1_a0_d1_p1": "养成后幼种 1，神性 1；对手获得生命源泉",
+      "s0_a1_d1_p1": "养成后木苗 1，神性 1；对手获得生命源泉"
     }
   },
   "common": {
@@ -2222,23 +2375,23 @@
     },
     "shattering-fist": {
       "name": "破碎之拳",
-      "description": "3/4/5 个树枝分别造成 5/6/7 点伤害；可通过升级追加刺藤。"
+      "description": "3/4/5 个树枝分别造成 5/6/7 点伤害；你可以移除 1 树灵施加刺藤。"
     },
     "shattering-fist-2": {
       "name": "破碎之拳 II",
-      "description": "3/4/5 个树枝分别造成 6/7/8 点伤害。"
+      "description": "3/4/5 个树枝分别造成 5/6/7 点伤害，并施加刺藤。"
     },
     "shattering-fist-3": {
       "name": "破碎之拳 III",
-      "description": "3/4/5 个树枝分别造成 6/7/8 点伤害，并施加刺藤。"
+      "description": "3/4/5 个树枝分别造成 5/6/7 点伤害；若投出 3 个相同数字，养成 1 树灵；并施加刺藤。"
     },
     "tend-care": {
       "name": "细心呵护",
-      "description": "抽 1，养成 3 树灵，获得生命源泉，并对对手施加刺藤。"
+      "description": "抽 1，养成 3 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。"
     },
     "tend-care-2": {
       "name": "细心呵护 II",
-      "description": "抽 1，养成树灵并额外获得木苗树灵，获得生命源泉并施加刺藤。"
+      "description": "抽 1，养成 4 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。"
     },
     "vengeful-vines": {
       "name": "复仇枝蔓",
@@ -2250,11 +2403,11 @@
     },
     "nature-touch": {
       "name": "自然之触",
-      "description": "4 个树灵：养成 2 树灵并造成 5 点不可防御伤害。"
+      "description": "4 个树灵：养成 2 树灵，然后造成 5 点不可防御伤害；每有 1 树灵 +1 伤害。"
     },
     "nature-touch-2": {
       "name": "自然之触 II",
-      "description": "4 个树灵：养成 2 树灵并造成 6 点不可防御伤害。"
+      "description": "4 个树灵：养成 2 树灵，然后造成 6 点不可防御伤害；每有 1 树灵 +1 伤害。"
     },
     "quiet-cultivation": {
       "name": "默默耕耘",
@@ -2262,23 +2415,23 @@
     },
     "wild-growth": {
       "name": "野蛮生长",
-      "description": "2 树枝 + 3 树叶：造成 2 点伤害并治疗。"
+      "description": "2 树枝 + 3 树叶：造成 2 点伤害。可移除至多 2 树灵，每移除 1 树灵 +4 伤害；可弃掉生命源泉使此次攻击不可防御。"
     },
     "wild-growth-2": {
       "name": "野蛮生长 II",
-      "description": "2 树枝 + 3 树叶：造成 4 点伤害并治疗。"
+      "description": "2 树枝 + 3 树叶：造成 4 点伤害。可移除至多 2 树灵，每移除 1 树灵 +4 伤害；可弃掉生命源泉使此次攻击不可防御。"
     },
     "rooted": {
       "name": "扎根",
-      "description": "防御掷 3 骰；按树枝/树叶/树灵获得反击或资源。"
+      "description": "防御掷 3 骰；防止 1×树枝 + 1×树灵 伤害。若投出两树叶，养成 1 树灵；若投出两树灵，1 名玩家获得生命源泉。"
     },
     "rooted-2": {
       "name": "扎根 II",
-      "description": "防御掷 4 骰；按树枝/树叶/树灵获得反击或资源。"
+      "description": "防御掷 4 骰；防止 1×树枝 + 1×树灵 伤害。若投出两树叶，养成 1 树灵；若投出两树灵，1 名玩家获得生命源泉。"
     },
     "forest-awakens": {
       "name": "森林觉醒",
-      "description": "终极：获得生命源泉，养成 5 树灵，施加刺藤并造成 10 点伤害。"
+      "description": "终极：你和 1 名队友获得生命源泉；养成 5 树灵；施加刺藤；造成 10 点伤害。"
     },
     "slash": {
       "name": "斩击",
@@ -2922,27 +3075,27 @@
     },
     "treant-card-trample": {
       "name": "践踏！",
-      "description": "投掷 5 骰；每个树枝使本次攻击 +1，若掷出树灵则施加刺藤。"
+      "description": "投掷 5 骰；每个树枝使本次攻击 +1。若本卡至少增加 3 点伤害，则施加刺藤。"
     },
     "upgrade-tend-care-2": {
       "name": "细心呵护 II",
-      "description": "升级细心呵护。"
+      "description": "升级细心呵护：抽 1；养成 4 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。"
     },
     "upgrade-rooted-2": {
       "name": "扎根 II",
-      "description": "升级扎根。"
+      "description": "升级扎根：防御掷 4 骰；防止 1×树枝 + 1×树灵 伤害。若投出两树叶，养成 1 树灵；若投出两树灵，选择 1 名玩家获得生命源泉。"
     },
     "treant-card-drink-deep": {
       "name": "痛饮！",
-      "description": "获得生命源泉。"
+      "description": "选择 1 名玩家获得生命源泉。"
     },
     "upgrade-shattering-fist-3": {
       "name": "破碎之拳 III",
-      "description": "升级破碎之拳至 III。"
+      "description": "升级破碎之拳：3/4/5 树枝造成 5/6/7 伤害；若投出 3 个相同数字，养成 1 树灵；施加刺藤。"
     },
     "treant-card-harvest": {
       "name": "丰收！",
-      "description": "抽 1 并养成 1 树灵。"
+      "description": "移除至多 3 树灵，每移除 1 树灵获得 1 CP。若至少移除 2 树灵，至多 2 名玩家获得生命源泉。"
     },
     "treant-card-cultivate": {
       "name": "培育！",
@@ -2950,35 +3103,35 @@
     },
     "treant-card-downpour": {
       "name": "大雨倾盆！",
-      "description": "治疗并养成树灵。"
+      "description": "你可以养成所有现有树灵各一次，以任意顺序。"
     },
     "upgrade-nature-touch-2": {
       "name": "自然之触 II",
-      "description": "升级自然之触。"
+      "description": "升级自然之触：4 树灵；养成 2 树灵，然后造成 6 点不可防御伤害；每有 1 树灵 +1 伤害。"
     },
     "treant-card-soulfire": {
       "name": "魂火！",
-      "description": "投掷 3 骰并按结果强化攻击或资源。"
+      "description": "投掷 3 骰：树枝对所有对手造成 1 附属伤害；树叶获得生命源泉；树灵养成 1 树灵。"
     },
     "treant-card-mother-tree": {
       "name": "母树！",
-      "description": "投掷 1 骰，树灵结果养成，否则抽牌。"
+      "description": "投掷 1 骰；若投出树灵，养成 4 树灵。否则抽 1。"
     },
     "upgrade-vengeful-vines-2": {
       "name": "复仇枝蔓 II",
-      "description": "升级复仇枝蔓。"
+      "description": "升级复仇枝蔓：小顺子；施加刺藤；造成 8 点伤害。"
     },
     "upgrade-wild-growth-2": {
       "name": "野蛮生长 II",
-      "description": "升级野蛮生长。"
+      "description": "升级野蛮生长：2 树枝 + 3 树叶；造成 4 点伤害。可移除至多 2 树灵，每移除 1 树灵 +4 伤害；可弃掉生命源泉使此次攻击不可防御。"
     },
     "upgrade-shattering-fist-2": {
       "name": "破碎之拳 II",
-      "description": "升级破碎之拳至 II。"
+      "description": "升级破碎之拳：3/4/5 树枝造成 5/6/7 伤害，并施加刺藤。"
     },
     "treant-card-planting": {
       "name": "种植",
-      "description": "养成 4 树灵。"
+      "description": "养成 3 树灵。"
     },
     "ninja-card-training": {
       "name": "训练！",
@@ -3038,7 +3191,7 @@
     },
     "ninja-card-dojo": {
       "name": "道场！",
-      "description": "获得烟雾弹和 2 忍术。"
+      "description": "投掷 1 骰；如果掷出面具，获得烟雾弹和 2 忍术。否则抽 1。"
     }
   },
   "passive": {

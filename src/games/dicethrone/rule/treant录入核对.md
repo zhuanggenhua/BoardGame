@@ -1,97 +1,67 @@
 # Dice Throne 树精录入核对
 
-> 主真相源：`public/assets/i18n/zh-CN/dicethrone/images/treant/**`。实现入口：`src/games/dicethrone/heroes/treant/**`、`src/games/dicethrone/domain/customActions/treant.ts`、`flowHooks.ts`、`passiveAbility.ts`。状态等级：L0 素材定位；L1 静态/i18n/资源；L2 领域行为测试；L3 真实 UI/E2E；L4 复杂交互闭环。
+> 主真相源：`public/assets/i18n/zh-CN/dicethrone/images/treant/**`
 
-## 2026-05-16 口径修订
+## 当前口径
 
-- 旧版本虽然已经覆盖了树灵、生命源泉、刺藤、`rooted` 防御时机等流程问题，但在**数据录入阶段**漏掉了“玩家板图面合同”。
-- 具体失效点：
-  - `quiet-cultivation` 曾被错误落入普通技能共享槽语义；
-  - `rooted` 曾被错误挂到 `calm`，导致防御高亮落到倒数第二个技能；
-- 根因不是“没有图片”，而是“有图却没有逐槽按图核对玩家板合同”。
-- 因此，本文件必须先把 Treant 玩家板图面合同补成正式录入口径；`evidence/dicethrone/dicethrone-treant-slot-audit-2026-05-16.md` 只负责验证实现是否符合这份录入合同，不再承担“替代录入建合同”的职责。
-
-## 2026-05-16 深审追加：提示板 / 玩家板语义重打
-
-本轮不是只补槽位。直接对照 `提示板.png` 与 `玩家面板.png` 后，Treant 还有一整簇已经坐实的规则语义错误；旧表里把这些对象写成 `L1/L2` 的部分结论已经失效。
-
-### 提示板硬合同
-
-| 对象 | 图片直接结论 | 当前实现 | 审计结论 |
-|---|---|---|---|
-| 树灵通则 | `你可以花费1树灵以获得以下1种对应效果，每回合每种树灵仅限花费1次。` | `passiveAbility.ts` / `commandValidation.ts` / `execute.ts` 只校验 token 数量、CP、阶段 | **未实现每回合每种 1 次限制** |
-| 养成 1 树灵 | `获得1个幼种，或升级1个现有的树灵（幼种→木苗，木苗→神性）` | `abilities.ts` / `cards.ts` 多处直接 `grantToken(... TREANT_SEEDLING ...)`，甚至直接送 `TREANT_SAPLING` | **整套养成语义被系统性做错** |
-| 神性树灵防负面 | `你可以在他的进攻投掷阶段结束时花费神性树灵，以防止该即将受到的状态效果。` | `flowHooks.ts` 的 `preventIncomingDebuffsWithTreantDivine(...)` 自动过滤 debuff 并自动消耗 | **可选响应被做成自动触发** |
-| 刺藤 | `每回合至多因此受到 2 伤害。` | `flowHooks.ts` 直接按 `rollCount - 1` 结算，没有上限 | **上限 2 未实现** |
-
-### 玩家板技能 / 防御追加 finding
-
-| 对象 | 图片直接结论 | 当前实现 | 审计结论 |
-|---|---|---|---|
-| `quiet-cultivation` | `在你的维持阶段，养成1树灵。` | upkeep 时直接 `grantToken(seedling, 1)` | **仍然误写成“加 1 幼种”** |
-| `shattering-fist` | `你可以弃掉1树灵以施加刺藤。` | 代码没有这条可选消费分支 | **基础技能漏子句** |
-| `tend-care` | `抽取1。养成3树灵。1名玩家获得生命源泉。选择1名对手施加刺藤。` | 代码写成 `draw1 + seedling3 + self lifeSap + opponent thorn` | **养成 / 目标 / 交互都不对** |
-| `nature-touch` | `养成2树灵。然后造成5不可防御伤害，每有1树灵 +1 伤害。` | 代码写成 `seedling2 + 5 点固定不可防御伤害` | **树灵加伤完全没做** |
-| `wild-growth` | `造成2伤害。你可以移除至多2树灵，每移除1树灵，增加4伤害。你可以弃掉生命源泉使此次攻击变为不可防御。` | 代码写成 `damage 2 + heal 1` | **技能主体做错了，不是小偏差** |
-| `rooted` | `防止 1×树枝 + 1×树灵 伤害；若投出两树叶则养成1树灵；若投出两树灵则1名玩家获得生命源泉。` | 代码写成“每个树枝 +1 反击，每个树叶 +1 幼种，每个树灵 +1 生命源泉” | **防御语义整体错位** |
-| `forest-awakens` | `你和1名队友获得生命源泉。养成5树灵。施加刺藤。然后造成10伤害。` | 代码只给自己 `life_sap` | **2v2 目标语义缺失** |
-
-## 角色基础
-
-| 项 | 结构化字段 | 来源定位 | 状态 | 疑点 |
-|---|---|---|---|---|
-| 角色 ID | `treant` | 目录名/代码注册 | L3：选角进局 E2E | 无 |
-| 中文名 | 树精 | 玩家面板/选角文案 | L3：选角截图可见 | 无 |
-| 骰面 | 1/2/3=`branch`，4/5=`leaf`，6=`spirit` | `dice.png`/`diceConfig.ts` | L1 | 无 |
-| 面板规格 | v2 宽屏面板，`2048x1233` | `player-board.png` | L3：进局截图可见 | 无 |
+- 这份表只记录**图片可直接判定的录入合同**，不替代实现审计。
+- 以 2026-05-17 当前工作区计，Treant 的基础技能与被动主效果已经全部对齐到 L2。
+- 当前剩下的录入层重点不在基础技能本体，而在：
+  - 树灵共享通则与神性树灵防负面已有代表性真实 UI/L3；
+  - 玩家板槽位与高亮消费链已有真实 UI/L3 证据，仍需作为回归证据长期保留，避免被动槽/防御槽再次被旧共享语义带偏；
+  - 专属卡已有主阶段与攻击修正/掷骰代表链，仍缺逐卡全集 L3。
 
 ## 玩家板图面合同
 
-| 图面区域/槽位 | 图片直接观察结论 | 运行时应绑定对象 | 允许状态 | 当前证据 |
-|---|---|---|---|---|
-| 左下紫色独立槽 | 独立被动区，不属于普通技能列 | `quiet-cultivation` | passive / 非普通技能候选 | 见 `dicethrone-treant-slot-audit-2026-05-16.md` 的 Vitest + E2E |
-| 右上中间普通技能槽 | 普通技能区 | `wild-growth` | offensive | 同上 |
-| 中右普通技能槽 | 普通技能区 | `vengeful-vines` / `nature-touch` | offensive | 同上 |
-| 右下防御槽 | 独立防御区 | `rooted` | defensive | 同上 |
-| `calm` 旧共享槽语义 | Treant 图面不应再把它当成 `rooted` 承载位 | 空 / 不命中 `rooted` | empty / 非 `rooted` | 同上 |
+| 图面区域/槽位 | 图片直接结论 | 运行时应绑定对象 |
+|---|---|---|
+| 左下紫色独立槽 | 被动区 | `quiet-cultivation` |
+| 上排左侧槽 | 普通技能区 | `shattering-fist` |
+| 上排中间槽 | 普通技能区 | `tend-care` |
+| 上排右侧槽 | 普通技能区 | `vengeful-vines` |
+| 中排右上槽 | 普通技能区 | `nature-touch` |
+| 中排中间槽 | 普通技能区 | `wild-growth` |
+| 右下独立槽 | 防御区 | `rooted` |
 
-- 结论：Treant 不能继续沿用旧共享 `combo/lightning/lotus/calm` 语义直接反推整张面板；至少 `quiet-cultivation` 和 `rooted` 已证明必须按图面 override。
+结论：Treant 不能继续沿用旧共享 `calm` 语义去放 `rooted`，也不能把被动区当普通技能区。
 
-## 技能 / 被动 / 防御逐项核对
+## 提示板共享合同
 
-| ID | 类型 | 原文/图文要点 | 结构化字段 | 实现入口 | 状态 |
-|---|---|---|---|---|---|
-| `shattering-fist` | offensive | 3/4/5 树枝造成 5/6/7 伤害 | `diceSet branch=3/4/5`，damage 5/6/7 | `abilities.ts` | L1 |
-| `shattering-fist-2` | upgrade | 破碎之拳 II，伤害提升 | replace `shattering-fist`，damage 6/7/8 | `cards.ts` + `abilities.ts` | L1 |
-| `shattering-fist-3` | upgrade | 破碎之拳 III，施加刺藤并伤害 | replace `shattering-fist`，grant `thorn` + damage 6/7/8 | `cards.ts` + `abilities.ts` | L2：刺藤后续伤害已测 |
-| `tend-care` | utility | 抽牌、养成树灵、生命源泉、刺藤 | draw 1；seedling 3；life_sap 1；opponent thorn 1 | `abilities.ts` | L1 |
-| `tend-care-2` | upgrade | 细心呵护 II，额外木苗树灵 | draw 1；seedling 3；sapling 1；life_sap 1；thorn 1 | `cards.ts` + `abilities.ts` | L2：木苗主动消费已测 |
-| `vengeful-vines` | offensive | 小顺子，刺藤 + 7 伤害 | smallStraight；thorn 1；damage 7 | `abilities.ts` | L1 |
-| `vengeful-vines-2` | upgrade | 复仇枝蔓 II，刺藤 + 8 伤害 | smallStraight；thorn 1；damage 8 | `cards.ts` + `abilities.ts` | L2：刺藤后续伤害已测 |
-| `nature-touch` | offensive | 4 树灵，养成并不可防御伤害 | spirit=4；seedling 2；unblockable damage 5 | `abilities.ts` | L1 |
-| `nature-touch-2` | upgrade | 自然之触 II，不可防御伤害提升 | seedling 2；unblockable damage 6 | `cards.ts` + `abilities.ts` | L1 |
-| `quiet-cultivation` | passive | 维持阶段养成树灵；图面位于左下独立被动槽 | phaseStart upkeep；seedling +1；图面合同见上表 | `abilities.ts`/`flowHooks.ts`/`ui/abilitySlotMapping.ts`；`treant-ninja-sample-deep-check.test.ts` | L2 + 图面合同专项；缺真实流程 L3 |
-| `wild-growth` | offensive | 2 树枝 + 3 树叶，伤害并治疗 | damage 2；heal 1 | `abilities.ts` | L1 |
-| `wild-growth-2` | upgrade | 野蛮生长 II，伤害提升 | damage 4；heal 1 | `cards.ts` + `abilities.ts` | L1 |
-| `rooted` | defensive | 防御掷 3 骰，按树枝/树叶/树灵结算；图面位于右下独立防御槽 | branch +1 反击，leaf seedling，spirit life_sap；`withDamage` 防御时机；图面合同见上表 | `abilities.ts`/`ui/abilitySlotMapping.ts` | L3：真实防御推进与不可防御跳过防御已测；图面合同专项见 `dicethrone-treant-slot-audit-2026-05-16.md` |
-| `rooted-2` | upgrade | 扎根 II，防御掷 4 骰 | defensive diceCount 4；复用 `withDamage` 防御时机 | `cards.ts` + `abilities.ts` | L2：共享 rooted 防御合同 |
-| `forest-awakens` | ultimate | 终极技：生命源泉、养成、刺藤、10 伤害 | ultimate；life_sap 1；seedling 5；thorn 1；damage 10 | `abilities.ts` | L1 |
+| 对象 | 图片直接结论 | 当前状态 | 判定 |
+|---|---|---|---|
+| 树灵通则 | `每回合每种树灵仅限花费1次` | `treantSpiritSpentThisTurn` 已记录每玩家每 token 本回合花费；`passiveAbility.ts`、`commandValidation.ts`、`execute.ts`、`tokenResponse.ts` 均消费同一字段 | **L2 已补；缺 UI/L3** |
+| 养成 1 树灵 | `获得1个幼种，或升级1个现有树灵` | 当前基础技能/卡牌/自定义动作已普遍改为正式养成选择 | **主流程已收敛** |
+| 神性树灵防负面 | `你可以在他的进攻投掷阶段结束时花费...` | `flowHooks.ts` 已改为先弹选择；选择跳过会保留 debuff，选择防止才消耗神性树灵并过滤 debuff | **L2 已补；缺真实响应 UI/L3** |
+| 刺藤 | `每回合至多因此受到2伤害` | 代码和 locale 已补上限子句 | **L2 已补；缺 UI/L3** |
 
-## Token / 状态逐项核对
+## 技能 / 被动 / 终极（8）
 
-| ID | 中文 | 类型/上限 | 原文/图文要点 | 结构化字段 | 实现/验证 | 状态 |
-|---|---|---:|---|---|---|---|
-| `treant_seedling` | 幼种树灵 | consumable / 3 | 自己掷骰阶段花费 1 个，重掷 1 颗自己的骰子 | passive action `rerollDie`，tokenCost 1，`ownRollPhase` | `passiveAbility.ts` + `execute.ts`；`treant-token-mechanics.test.ts`；`dicethrone-treant-ninja-mechanics.e2e.ts` 真实骰子按钮重掷截图链 | L3：真实 UI 重掷闭环 |
-| `treant_sapling` | 木苗树灵 | consumable / 2 | 主阶段花费 1 个治疗 1 并 +1CP；或额外 1CP 抽 1 | passive custom `treant-sapling-heal-cp` / `treant-sapling-draw` | `customActions/treant.ts`；`treant-token-mechanics.test.ts` 覆盖治疗+CP 与额外 1CP 抽牌分支；真实 UI 短按钮与两分支截图链 | L3：真实 UI 两分支闭环 |
-| `treant_divine` | 神性树灵 | consumable / 1 | 造成伤害前 +3；可防止即将受到的负面状态 | `activeUse.modifyDamageDealt +3`；preDefense debuff filter | `tokens.ts` + `flowHooks.ts`；防 debuff 与 beforeDamageDealt +3 已测；攻击方响应窗 +3 与防负面阶段推进 E2E | L4：响应窗/阶段推进闭环 |
-| `life_sap` | 生命源泉 | buff / 1 | 主阶段花费并掷 1 骰，治疗骰值一半向上取整 | passive custom `treant-life-sap-use`；bonus die + display-only settlement | `customActions/treant.ts`；`treant-token-mechanics.test.ts`；真实奖励骰特写/治疗/收口截图链 | L4：奖励骰特写与收口闭环 |
-| `thorn` | 刺藤 | debuff / 1 | 进攻掷骰结束移除，并按额外投掷次数受伤 | `offensiveRoll` phase exit，damage `rollCount - 1` | `flowHooks.ts`；`treant-token-mechanics.test.ts`；阶段推进反伤并消耗 E2E 截图链 | L4：阶段推进闭环 |
+| ID | 图片真相源 | 当前状态 |
+|---|---|---|
+| `shattering-fist` | `5/6/7伤害；你可以弃掉1树灵施加刺藤` | 主效果对齐，L2 已测 |
+| `tend-care` | `抽1；养成3；1名玩家得生命源泉；选择1名对手施加刺藤` | 主效果对齐，L2 已测 |
+| `vengeful-vines` | `小顺子：施加刺藤；造成7伤害` | 主效果对齐 |
+| `nature-touch` | `养成2；5不可防御；每有1树灵 +1伤害` | 主效果对齐，L2 已测 |
+| `quiet-cultivation` | `维持阶段养成1树灵` | 主效果对齐，L2 已测 |
+| `wild-growth` | `2伤害；至多移除2树灵各+4；可弃生命源泉变不可防御` | 主效果对齐，L2 已测 |
+| `rooted` | `防止 1×树枝 + 1×树灵；双树叶养成1；双树灵给生命源泉` | 主效果对齐，L2 已测 |
+| `forest-awakens` | `你和1名队友得生命源泉；养成5；刺藤；10伤害` | 主效果对齐，L2 已测 |
+
+## Token / 状态（5）
+
+| ID | 图片真相源 | 当前状态 |
+|---|---|---|
+| `treant_seedling` | 花费幼种重掷 1 骰 | 主动作与每回合限 1 次均已 L2 覆盖 |
+| `treant_sapling` | 花费木苗治疗1并+1CP；或再付1CP抽1 | 主动作对齐；每回合限 1 次与幼种共享门禁已 L2 覆盖 |
+| `treant_divine` | `+3伤害`；可选防负面 | `+3` 对齐；防负面已改为可选选择链，L2 覆盖跳过/防止两条路径 |
+| `life_sap` | 主阶段掷1骰并治疗一半向上取整 | 对齐 |
+| `thorn` | 每次额外投掷受1伤；每回合至多2；阶段末移除 | 代码和 locale 对齐 |
 
 ## 当前结论
 
-- 旧结论“树灵消费重掷、木苗、刺藤为 L2 债务”已失效：这些机制已实现并进入 L2 测试层。
-- 2026-05-15 完整流程重审发现 `rooted` 曾停留在静态 L1 且防御时机错误，现已修为 `withDamage` 并补 L2/L3 证据。
-- 2026-05-16 又追加发现：Treant 图面合同不能靠共享旧槽位语义推断。`quiet-cultivation`/`rooted` 的图面落点必须直接按玩家板图片核对，当前专项证据见 `dicethrone-treant-slot-audit-2026-05-16.md`。
-- 2026-05-16 再追加：Treant 并不只是“槽位有两处错”。提示板、玩家板与当前实现之间还存在一整簇高优先级语义冲突，至少包括：树灵每回合限 1 次未实现、养成语义整体错误、神性树灵防负面被做成自动、刺藤缺少每回合至多 2 伤害上限、`wild-growth` / `nature-touch` / `rooted` / `tend-care` / `forest-awakens` 多条主效果错误。
-- Treant 远未达到“全对象已修好”：当前只有 `rooted` 达到明确 L3，Token/状态链路大体已进 L3/L4，但多数基础/升级技能仍停在 L1/L2，尚未逐技能证明真实入口链路。
-- 本文件不再使用“当前发布口径已收口”概括整批对象；Treant 全对象只能按 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 中逐项 L1/L2/L3/L4 矩阵结论判定。
+- Treant 基础技能与被动本体目前已经不是主要录入风险点。
+- 5 张升级卡描述当前**已经**按图片重录到 `game-dicethrone.json`，不再是录入层残余。
+- 当前录入残余集中在 2 个地方：
+  - token 共享提示板合同已有 L2 与代表性真实 UI/L3，但不是每个树灵动作全集 L3；
+  - 玩家板槽位合同已在 `abilitySlotMapping.ts` / `AbilityOverlays.tsx` 修正，并已有真实 UI 证据；后续必须持续保留这类证据，防止被动槽与防御槽再次错绑；
+  - 专属卡已有主阶段与攻击修正/掷骰代表链，仍缺逐卡全集 L3。

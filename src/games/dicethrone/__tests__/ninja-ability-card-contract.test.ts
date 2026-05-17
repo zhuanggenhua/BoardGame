@@ -4,6 +4,7 @@ import { reduce } from '../domain/reducer';
 import { RESOURCE_IDS } from '../domain/resources';
 import { TOKEN_IDS } from '../domain/ids';
 import { resolveAttack } from '../domain/attack';
+import { resolveEffectsToEvents } from '../domain/effects';
 import { checkPlayCard } from '../domain/rules';
 import { getAbilitySlotIdForCharacter } from '../ui/abilitySlotMapping';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
@@ -79,5 +80,48 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
             ok: false,
             reason: 'wrongPhaseForMain',
         });
+    });
+
+    it('道场应按卡图投 1 骰：面具获得烟雾弹和 2 忍术，否则抽 1', () => {
+        const dojo = NINJA_CARDS.find(item => item.id === 'ninja-card-dojo');
+        expect(dojo).toBeDefined();
+
+        let state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+
+        let events = resolveEffectsToEvents(
+            dojo?.effects ?? [],
+            'immediate',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'ninja-card-dojo', state: state.core, damageDealt: 0, timestamp: 100 },
+            { random: createQueuedRandom([6]) },
+        );
+        let next = applyEvents(state.core, events);
+
+        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(1);
+        expect(events.some(event => event.type === 'CARD_DRAWN')).toBe(false);
+        expect(next.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(2);
+
+        state = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.players['0'].tokens[TOKEN_IDS.NINJUTSU] = 0;
+        const handBefore = state.core.players['0'].hand.length;
+        const deckBefore = state.core.players['0'].deck.length;
+
+        events = resolveEffectsToEvents(
+            dojo?.effects ?? [],
+            'immediate',
+            { attackerId: '0', defenderId: '1', sourceAbilityId: 'ninja-card-dojo', state: state.core, damageDealt: 0, timestamp: 200 },
+            { random: createQueuedRandom([1]) },
+        );
+        next = applyEvents(state.core, events);
+
+        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(1);
+        expect(events.filter(event => event.type === 'CARD_DRAWN')).toHaveLength(1);
+        expect(next.players['0'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(0);
+        expect(next.players['0'].tokens[TOKEN_IDS.NINJUTSU]).toBe(0);
+        expect(next.players['0'].hand).toHaveLength(handBefore + 1);
+        expect(next.players['0'].deck).toHaveLength(deckBefore - 1);
     });
 });

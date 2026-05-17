@@ -23,7 +23,7 @@ import type {
     CardInstance,
 } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
+import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import {
@@ -31,6 +31,7 @@ import {
     getPromptSourceId,
     getPromptTargetType,
     getSimpleChoicePrompt,
+    invokeRegisteredAbilityContract,
     makeMatchState as makeMatchStateFromHelpers,
     respondToPromptOption,
     respondCommand,
@@ -58,10 +59,7 @@ describe('elder thing extra timing regression coverage', () => {
         });
         const ms = makeMatchState(state);
         ms.sys.phase = 'startTurn';
-        const executor = resolveAbility('elder_thing_touch_of_madness', 'onPlay');
-        expect(executor).toBeDefined();
-
-        const result = executor!({
+        const result = invokeRegisteredAbilityContract('elder_thing_touch_of_madness', 'onPlay', {
             state,
             matchState: ms,
             playerId: '0',
@@ -88,10 +86,7 @@ describe('elder thing extra timing regression coverage', () => {
         });
         const ms = makeMatchState(state);
         ms.sys.phase = 'startTurn';
-        const executor = resolveAbility('elder_thing_begin_the_summoning', 'onPlay');
-        expect(executor).toBeDefined();
-
-        const result = executor!({
+        const result = invokeRegisteredAbilityContract('elder_thing_begin_the_summoning', 'onPlay', {
             state,
             matchState: ms,
             playerId: '0',
@@ -315,14 +310,17 @@ describe('远古之物派系能力', () => {
                 bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
             });
 
-            const _events = execPlayMinion(state, '0', 'm1', 0);
-            // 不再直接产生疯狂卡事件，而是创建交互
-            const interactions = getLastInteractions();
-            expect(interactions.length).toBeGreaterThanOrEqual(1);
-            const miGoInteraction = interactions.find(i => getPromptSourceId(i) === 'elder_thing_mi_go');
-            expect(miGoInteraction).toBeDefined();
-            expect(miGoInteraction.playerId).toBe('1'); // 对手选择
-            expect(getPromptTargetType(miGoInteraction)).toBe('button');
+            const played = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: '0',
+                payload: { cardUid: 'm1', baseIndex: 0 },
+            } as any, defaultRandom);
+
+            expect(played.success, played.error).toBe(true);
+            const prompt = getSimpleChoicePrompt(played.finalState, 'elder_thing_mi_go');
+            expect(getPromptSourceId(prompt)).toBe('elder_thing_mi_go');
+            expect(prompt.playerId).toBe('1'); // 对手选择
+            expect(getPromptTargetType(prompt)).toBe('button');
         });
 
         it('对手选择抽疯狂卡时产生疯狂卡事件', () => {
@@ -336,23 +334,17 @@ describe('远古之物派系能力', () => {
                 },
                 bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
             });
-            const ms = makeMatchState(state);
-            const executor = resolveAbility('elder_thing_mi_go', 'onPlay');
-            expect(executor).toBeDefined();
-            const promptResult = executor!({
-                state,
-                matchState: ms,
+            const played = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_MINION,
                 playerId: '0',
-                cardUid: 'm1',
-                defId: 'elder_thing_mi_go',
-                baseIndex: 0,
-                random: defaultRandom,
-                now: 0,
-            });
-            const prompt = getSimpleChoicePrompt(promptResult.matchState ?? ms, 'elder_thing_mi_go');
+                payload: { cardUid: 'm1', baseIndex: 0 },
+            } as any, defaultRandom);
+
+            expect(played.success, played.error).toBe(true);
+            const prompt = getSimpleChoicePrompt(played.finalState, 'elder_thing_mi_go');
             expect(getPromptSourceId(prompt)).toBe('elder_thing_mi_go');
             const result = respondToPromptOption(
-                promptResult.matchState ?? ms,
+                played.finalState,
                 option => option.value?.choice === 'draw_madness',
                 'elder thing mi-go draw madness option',
                 '1',
@@ -368,29 +360,24 @@ describe('远古之物派系能力', () => {
             const state = makeState({
                 players: {
                     '0': makePlayer('0', {
+                        hand: [makeCard('m1', 'elder_thing_mi_go', 'minion', '0')],
                         deck: [makeCard('d1', 'test', 'minion', '0')],
                     }),
                     '1': makePlayer('1'),
                 },
                 bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
             });
-            const ms = makeMatchState(state);
-            const executor = resolveAbility('elder_thing_mi_go', 'onPlay');
-            expect(executor).toBeDefined();
-            const promptResult = executor!({
-                state,
-                matchState: ms,
+            const played = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_MINION,
                 playerId: '0',
-                cardUid: 'm1',
-                defId: 'elder_thing_mi_go',
-                baseIndex: 0,
-                random: defaultRandom,
-                now: 0,
-            });
-            const prompt = getSimpleChoicePrompt(promptResult.matchState ?? ms, 'elder_thing_mi_go');
+                payload: { cardUid: 'm1', baseIndex: 0 },
+            } as any, defaultRandom);
+
+            expect(played.success, played.error).toBe(true);
+            const prompt = getSimpleChoicePrompt(played.finalState, 'elder_thing_mi_go');
             expect(getPromptSourceId(prompt)).toBe('elder_thing_mi_go');
             const result = respondToPromptOption(
-                promptResult.matchState ?? ms,
+                played.finalState,
                 option => option.value?.choice === 'decline',
                 'elder thing mi-go decline option',
                 '1',

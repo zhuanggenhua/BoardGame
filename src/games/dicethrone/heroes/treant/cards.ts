@@ -2,7 +2,7 @@ import type { CardPreviewRef } from '../../../../core';
 import type { RandomFn } from '../../../../engine/types';
 import type { AbilityDef, AbilityEffect } from '../../domain/combat';
 import { COMMON_CARDS, TREANT_NINJA_COMMON_ATLAS_INDEX, injectCommonCardPreviewRefs } from '../../domain/commonCards';
-import { DICETHRONE_CARD_ATLAS_IDS, TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../../domain/ids';
+import { DICETHRONE_CARD_ATLAS_IDS } from '../../domain/ids';
 import type { AbilityCard } from '../../types';
 import {
     NATURE_TOUCH_2,
@@ -37,21 +37,9 @@ const replaceAbility = (
     timing: 'immediate',
 });
 
-const grantToken = (target: 'self' | 'opponent', tokenId: string, value: number, description: string): AbilityEffect => ({
+const custom = (customActionId: string, description: string, params: Record<string, unknown> = {}): AbilityEffect => ({
     description,
-    action: { type: 'grantToken', target, tokenId, value },
-    timing: 'immediate',
-});
-
-const drawCard = (count: number, description: string): AbilityEffect => ({
-    description,
-    action: { type: 'drawCard', target: 'self', drawCount: count },
-    timing: 'immediate',
-});
-
-const heal = (value: number, description: string): AbilityEffect => ({
-    description,
-    action: { type: 'heal', target: 'self', value },
+    action: { type: 'custom', target: 'self', customActionId, ...params },
     timing: 'immediate',
 });
 
@@ -71,21 +59,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         sfxKey: TREANT_SFX_HEAVY,
         ...treantCardRef(17),
         isAttackModifier: true,
-        effects: [{
-            description: '投掷 5 骰；每个树枝使本次攻击 +1，若掷出树灵则施加刺藤。',
-            action: {
-                type: 'rollDie',
-                target: 'self',
-                diceCount: 5,
-                resolutionMode: 'attackBonus',
-                attackBonusSourceCardId: 'treant-card-trample',
-                conditionalEffects: [
-                    { face: TREANT_DICE_FACE_IDS.BRANCH, bonusDamage: 1 },
-                    { face: TREANT_DICE_FACE_IDS.SPIRIT, grantToken: { tokenId: TOKEN_IDS.THORN, value: 1, target: 'opponent' } },
-                ],
-            },
-            timing: 'immediate',
-        }],
+        effects: [custom('treant-card-trample-roll', '投掷 5 骰；每个树枝使本次攻击 +1，若至少增加 3 伤害则施加刺藤。')],
     },
     {
         id: 'upgrade-tend-care-2',
@@ -118,7 +92,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-drink-deep', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(20),
-        effects: [grantToken('self', TOKEN_IDS.LIFE_SAP, 1, '获得 1 个生命源泉。')],
+        effects: [custom('treant-card-drink-deep', '选择 1 名玩家获得生命源泉。')],
     },
     {
         id: 'upgrade-shattering-fist-3',
@@ -140,7 +114,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-harvest', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(22),
-        effects: [drawCard(1, '抽 1 张牌。'), grantToken('self', TOKEN_IDS.TREANT_SEEDLING, 1, '养成 1 树灵。')],
+        effects: [custom('treant-card-harvest', '移除至多 3 树灵获得 CP；若至少移除 2 树灵，至多 2 名玩家获得生命源泉。')],
     },
     {
         id: 'treant-card-cultivate',
@@ -151,7 +125,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-cultivate', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(23),
-        effects: [grantToken('self', TOKEN_IDS.TREANT_SEEDLING, 3, '养成 3 树灵。')],
+        effects: [custom('treant-card-cultivate', '养成 3 树灵。', { cultivateAmount: 3 })],
     },
     {
         id: 'treant-card-downpour',
@@ -162,7 +136,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-downpour', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(24),
-        effects: [heal(2, '治疗 2 点。'), grantToken('self', TOKEN_IDS.TREANT_SEEDLING, 1, '养成 1 树灵。')],
+        effects: [custom('treant-card-downpour', '你可以养成所有现有树灵各一次。')],
     },
     {
         id: 'upgrade-nature-touch-2',
@@ -185,22 +159,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         sfxKey: TREANT_SFX_LIGHT,
         ...treantCardRef(26),
         isAttackModifier: true,
-        effects: [{
-            description: '投掷 3 骰；按结果追加树灵、生命源泉或养成。',
-            action: {
-                type: 'rollDie',
-                target: 'self',
-                diceCount: 3,
-                resolutionMode: 'attackBonus',
-                attackBonusSourceCardId: 'treant-card-soulfire',
-                conditionalEffects: [
-                    { face: TREANT_DICE_FACE_IDS.BRANCH, bonusDamage: 1 },
-                    { face: TREANT_DICE_FACE_IDS.LEAF, grantToken: { tokenId: TOKEN_IDS.LIFE_SAP, value: 1 } },
-                    { face: TREANT_DICE_FACE_IDS.SPIRIT, grantToken: { tokenId: TOKEN_IDS.TREANT_SEEDLING, value: 1 } },
-                ],
-            },
-            timing: 'immediate',
-        }],
+        effects: [custom('treant-card-soulfire-roll', '投掷 3 骰；树枝对所有对手造成 1 附属伤害，树叶获得生命源泉，树灵养成 1 树灵。')],
     },
     {
         id: 'treant-card-mother-tree',
@@ -211,17 +170,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         description: cardText('treant-card-mother-tree', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
         ...treantCardRef(27),
-        effects: [{
-            description: '投掷 1 骰；树灵结果养成，否则抽牌。',
-            action: {
-                type: 'rollDie',
-                target: 'self',
-                diceCount: 1,
-                conditionalEffects: [{ face: TREANT_DICE_FACE_IDS.SPIRIT, grantToken: { tokenId: TOKEN_IDS.TREANT_SEEDLING, value: 4 } }],
-                defaultEffect: { drawCard: 1 },
-            },
-            timing: 'immediate',
-        }],
+        effects: [custom('treant-card-mother-tree-roll', '投掷 1 骰；若投出树灵，养成 4 树灵，否则抽 1。')],
     },
     {
         id: 'upgrade-vengeful-vines-2',
@@ -253,7 +202,7 @@ export const TREANT_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('upgrade-shattering-fist-2', 'description'),
         sfxKey: TREANT_SFX_HEAVY,
-        ...treantCardRef(35),
+        ...treantCardRef(30),
         effects: [replaceAbility('shattering-fist', SHATTERING_FIST_2, 2, '升级破碎之拳至 II 级。')],
     },
     {
@@ -264,8 +213,8 @@ export const TREANT_CARDS: AbilityCard[] = [
         timing: 'main',
         description: cardText('treant-card-planting', 'description'),
         sfxKey: TREANT_SFX_GROWTH,
-        ...treantCardRef(36),
-        effects: [grantToken('self', TOKEN_IDS.TREANT_SEEDLING, 4, '养成 4 树灵。')],
+        ...treantCardRef(31),
+        effects: [custom('treant-card-cultivate', '养成 3 树灵。', { cultivateAmount: 3 })],
     },
     ...injectCommonCardPreviewRefs(
         COMMON_CARDS,

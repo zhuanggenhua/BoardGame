@@ -8,18 +8,21 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
+import { GameTestRunner } from '../../../engine/testing';
 import { execute, reduce } from '../domain/reducer';
+import { SmashUpDomain } from '../domain';
 import { postProcessSystemEvents } from '../domain';
 import { SU_COMMANDS, SU_EVENTS, MADNESS_CARD_DEF_ID, MADNESS_DECK_SIZE } from '../domain/types';
 import type {
     SmashUpCore,
+    SmashUpCommand,
     SmashUpEvent,
     PlayerState,
     MinionOnBase,
     CardInstance,
 } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
+import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import {
@@ -30,11 +33,15 @@ import {
     getPromptSourceId,
     getPromptTargetType,
     getSimpleChoicePrompt,
+    invokeRegisteredAbilityContract,
+    respondCommand,
     respondToPromptOption,
     respondToPrompt,
 } from './helpers';
 import { runCommand } from './testRunner';
-import type { MatchState, RandomFn } from '../../../engine/types';
+import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
+import { createInitialSystemState } from '../../../engine/pipeline';
+import { smashUpSystemsForTest } from '../game';
 
 beforeAll(() => {
     clearRegistry();
@@ -44,6 +51,9 @@ beforeAll(() => {
     initAllAbilities();
 });
 
+const ME_FIRST_PLAYER_IDS: PlayerId[] = ['0', '1'];
+const meFirstSystems = smashUpSystemsForTest;
+
 describe('extra timing regression coverage', () => {
     it('cthulhu_whispers_in_darkness marks off-phase extra actions as immediate', () => {
         const state = makeStateWithMadness({
@@ -52,12 +62,10 @@ describe('extra timing regression coverage', () => {
                 '1': makePlayer('1'),
             },
         });
-        const executor = resolveAbility('cthulhu_whispers_in_darkness', 'onPlay');
-        expect(executor).toBeDefined();
         const ms = makeMatchState(state);
         ms.sys.phase = 'startTurn';
 
-        const result = executor!({
+        const result = invokeRegisteredAbilityContract('cthulhu_whispers_in_darkness', 'onPlay', {
             state,
             matchState: ms,
             playerId: '0',
@@ -83,9 +91,7 @@ describe('extra timing regression coverage', () => {
 
         const ms = makeMatchState(state);
         ms.sys.phase = 'startTurn';
-        const executor = resolveAbility('miskatonic_those_meddling_kids_pod', 'onPlay');
-        expect(executor).toBeDefined();
-        const firstStep = executor!({
+        const firstStep = invokeRegisteredAbilityContract('miskatonic_those_meddling_kids_pod', 'onPlay', {
             state,
             matchState: ms,
             playerId: '0',
@@ -117,11 +123,9 @@ describe('extra timing regression coverage', () => {
             },
         });
 
-        const executor = resolveAbility('innsmouth_recruitment', 'onPlay');
-        expect(executor).toBeDefined();
         const ms = makeMatchState(state);
         ms.sys.phase = 'startTurn';
-        const abilityResult = executor!({
+        const abilityResult = invokeRegisteredAbilityContract('innsmouth_recruitment', 'onPlay', {
             state,
             matchState: ms,
             playerId: '0',
@@ -191,7 +195,7 @@ describe('interaction handler regressions', () => {
     });
 
     it('miskatonic_librarian_pod extra mode queues the Madness onPlay interaction', () => {
-        const ms = makeMatchState(makeStateWithMadness({
+        const initialState = makeStateWithMadness({
             players: {
                 '0': makePlayer('0', {
                     hand: [
@@ -202,21 +206,23 @@ describe('interaction handler regressions', () => {
                 '1': makePlayer('1'),
             },
             bases: [{ defId: 'b1', minions: [], ongoingActions: [] }],
-        }));
-
-        const talentExecutor = resolveAbility('miskatonic_librarian_pod', 'talent');
-        expect(talentExecutor).toBeDefined();
-        const firstStep = talentExecutor!({
-            state: ms.core,
-            matchState: ms,
-            playerId: '0',
-            cardUid: 'librarian',
-            defId: 'miskatonic_librarian_pod',
-            random: defaultRandom,
-            now: 1999,
         });
+
+        const played = runCommand(makeMatchState(initialState), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'librarian', baseIndex: 0 },
+        } as any, defaultRandom);
+        expect(played.success, played.error).toBe(true);
+
+        const firstStep = runCommand(played.finalState, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'librarian', baseIndex: 0 },
+        } as any, defaultRandom);
+        expect(firstStep.success, firstStep.error).toBe(true);
         const modeResult = respondToPromptOption(
-            firstStep.matchState ?? ms,
+            firstStep.finalState,
             option => option.value?.mode === 'extra',
             'miskatonic librarian pod extra option',
             '0',
@@ -251,11 +257,29 @@ describe('interaction handler regressions', () => {
 // 辅助函数
 // ============================================================================
 
-function makeMinion(uid: string, defId: string, controller: string, power: number, owner?: string): MinionOnBase {
-    return {
-        uid, defId, controller, owner: owner ?? controller,
-        basePower: power, powerCounters: 0, powerModifier: 0, tempPowerModifier: 0, talentUsed: false, attachedActions: [],
+function makeMinion(
+    uid: string,
+    defId: string,
+    controller: string,
+    power: number,
+    ownerOrOverrides?: string | Partial<MinionOnBase>,
+): MinionOnBase {
+    const base: MinionOnBase = {
+        uid,
+        defId,
+        controller,
+        owner: typeof ownerOrOverrides === 'string' ? ownerOrOverrides : controller,
+        basePower: power,
+        powerCounters: 0,
+        powerModifier: 0,
+        tempPowerModifier: 0,
+        talentUsed: false,
+        attachedActions: [],
     };
+    if (typeof ownerOrOverrides === 'object') {
+        return { ...base, ...ownerOrOverrides };
+    }
+    return base;
 }
 
 function makeCard(uid: string, defId: string, type: 'minion' | 'action', owner: string): CardInstance {
@@ -326,6 +350,67 @@ function getLastPrompt(sourceId: string): any {
 function getLastPromptsBySourceId(sourceId: string): any[] {
     if (!lastMatchState) return [];
     return getPromptsBySourceId(lastMatchState, sourceId);
+}
+
+function createMandatoryReadingSetup(
+    cardUid: string,
+    minions: MinionOnBase[],
+    madnessDeck?: string[],
+) {
+    return (ids: PlayerId[], random: RandomFn): MatchState<SmashUpCore> => {
+        const core = SmashUpDomain.setup(ids, random);
+        const sys = createInitialSystemState(ids, meFirstSystems, undefined);
+        core.factionSelection = undefined;
+        sys.phase = 'playCards';
+        core.bases[0] = {
+            defId: 'base_the_mothership',
+            minions,
+            ongoingActions: [],
+        };
+        const p0 = core.players['0'];
+        if (p0) {
+            p0.hand = [{ uid: cardUid, defId: 'miskatonic_mandatory_reading', type: 'action', owner: '0' }];
+        }
+        const p1 = core.players['1'];
+        if (p1) {
+            p1.hand = [
+                { uid: 'special-1', defId: 'ninja_hidden_ninja', type: 'action', owner: '1' },
+                { uid: 'minion-1', defId: 'ninja_shinobi', type: 'minion', owner: '1' },
+            ];
+        }
+        core.madnessDeck = madnessDeck ?? Array.from({ length: MADNESS_DECK_SIZE }, () => MADNESS_CARD_DEF_ID);
+        return { core, sys };
+    };
+}
+
+function playMandatoryReading(
+    cardUid: string,
+    minions: MinionOnBase[],
+    madnessDeck?: string[],
+) {
+    const runner = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+        domain: SmashUpDomain,
+        systems: meFirstSystems,
+        playerIds: ME_FIRST_PLAYER_IDS,
+        setup: createMandatoryReadingSetup(cardUid, minions, madnessDeck),
+    });
+    const advanced = runner.run({
+        name: `mandatory_reading:${cardUid}:advance`,
+        commands: [{ type: 'ADVANCE_PHASE', playerId: '0', payload: undefined }] as any[],
+    });
+    expect(advanced.finalState.sys.responseWindow.current?.windowType).toBe('meFirst');
+
+    const played = new GameTestRunner<SmashUpCore, SmashUpCommand, SmashUpEvent>({
+        domain: SmashUpDomain,
+        systems: meFirstSystems,
+        playerIds: ME_FIRST_PLAYER_IDS,
+        setup: () => advanced.finalState,
+    }).run({
+        name: `mandatory_reading:${cardUid}:play`,
+        commands: [respondCommand(`play_action:${cardUid}:0`, '0')] as any[],
+    });
+    expect(played.steps[0]?.success).toBe(true);
+    return played.finalState;
 }
 
 function applyEvents(state: SmashUpCore, events: SmashUpEvent[]): SmashUpCore {
@@ -654,80 +739,36 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
     });
 
     describe('miskatonic_mandatory_reading（最好不知道的事：special，选随从+抽疯狂卡+力量加成）', () => {
-        /** 直接调用 special 执行器 */
-        function execSpecial(state: SmashUpCore, playerId: string, baseIndex: number) {
-            const executor = resolveAbility('miskatonic_mandatory_reading', 'special');
-            expect(executor).toBeDefined();
-            const ms = makeMatchState(state);
-            lastMatchState = ms;
-            return executor!({
-                state, matchState: ms, playerId,
-                cardUid: 'special-card', defId: 'miskatonic_mandatory_reading',
-                baseIndex, random: defaultRandom, now: Date.now(),
-            });
-        }
-
         it('基地有多个随从时创建选择随从的交互', () => {
-            const state = makeStateWithMadness({
-                players: {
-                    '0': makePlayer('0'),
-                    '1': makePlayer('1'),
-                },
-                bases: [{
-                    defId: 'base_test', ongoingActions: [],
-                    minions: [
-                        makeMinion('m1', 'test_a', '0', 3, { powerModifier: 0 }),
-                        makeMinion('m2', 'test_b', '1', 5),
-                    ],
-                }],
-            });
-
-            const result = execSpecial(state, '0', 0);
-            expect(result.matchState).toBeDefined();
-            const prompt = getSimpleChoicePrompt(result.matchState!, 'miskatonic_mandatory_reading');
+            const promptState = playMandatoryReading('mandatory-multi', [
+                makeMinion('m1', 'test_a', '0', 10, { powerModifier: 0 }),
+                makeMinion('m2', 'test_b', '1', 11),
+            ]);
+            const prompt = getSimpleChoicePrompt(promptState, 'miskatonic_mandatory_reading');
             expect(getPromptSourceId(prompt)).toBe('miskatonic_mandatory_reading');
             expect(getPromptOptions(prompt).length).toBe(2);
         });
 
         it('唯一随从时自动选择并创建抽疯狂卡数量交互', () => {
-            const state = makeStateWithMadness({
-                players: {
-                    '0': makePlayer('0'),
-                    '1': makePlayer('1'),
-                },
-                bases: [{
-                    defId: 'base_test', ongoingActions: [],
-                    minions: [makeMinion('m1', 'test_a', '0', 3, { powerModifier: 0 })],
-                }],
-            });
-
-            const result = execSpecial(state, '0', 0);
-            expect(result.matchState).toBeDefined();
-            const prompt = getSimpleChoicePrompt(result.matchState!, 'miskatonic_mandatory_reading_draw');
+            const promptState = playMandatoryReading('mandatory-single', [
+                makeMinion('m1', 'test_a', '0', 21, { powerModifier: 0 }),
+            ]);
+            const prompt = getSimpleChoicePrompt(promptState, 'miskatonic_mandatory_reading_draw');
             expect(getPromptSourceId(prompt)).toBe('miskatonic_mandatory_reading_draw');
             expect(getPromptTargetType(prompt)).toBe('button');
         });
 
         it('选择抽 2 张疯狂卡后产生抽牌与力量加成事件', () => {
-            const state = makeStateWithMadness({
-                players: {
-                    '0': makePlayer('0'),
-                    '1': makePlayer('1'),
-                },
-                bases: [{
-                    defId: 'base_test', ongoingActions: [],
-                    minions: [makeMinion('m1', 'test_a', '0', 3, { powerModifier: 0 })],
-                }],
-            });
-
-            const firstStep = execSpecial(state, '0', 0);
+            const firstStep = playMandatoryReading('mandatory-draw2', [
+                makeMinion('m1', 'test_a', '0', 21, { powerModifier: 0 }),
+            ]);
             const drawPrompt = getSimpleChoicePrompt(
-                firstStep.matchState!,
+                firstStep,
                 'miskatonic_mandatory_reading_draw',
             );
             expect(getPromptSourceId(drawPrompt)).toBe('miskatonic_mandatory_reading_draw');
             const result = respondToPromptOption(
-                firstStep.matchState!,
+                firstStep,
                 option => option.value?.count === 2,
                 'mandatory reading draw 2 option',
                 '0',
@@ -746,14 +787,11 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
         });
 
         it('选择跳过时不产生业务事件', () => {
-            const state = makeStateWithMadness({
-                players: { '0': makePlayer('0'), '1': makePlayer('1') },
-                bases: [{ defId: 'base_test', ongoingActions: [], minions: [makeMinion('m1', 'test_a', '0', 3, { powerModifier: 0 })] }],
-            });
-
-            const firstStep = execSpecial(state, '0', 0);
+            const firstStep = playMandatoryReading('mandatory-skip', [
+                makeMinion('m1', 'test_a', '0', 21, { powerModifier: 0 }),
+            ]);
             const result = respondToPromptOption(
-                firstStep.matchState!,
+                firstStep,
                 option => option.value?.skip === true,
                 'mandatory reading skip option',
                 '0',
@@ -765,14 +803,11 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
         });
 
         it('状态正确（reduce 验证）- 抽3张疯狂卡后随从+6力量', () => {
-            const state = makeStateWithMadness({
-                players: { '0': makePlayer('0'), '1': makePlayer('1') },
-                bases: [{ defId: 'base_test', ongoingActions: [], minions: [makeMinion('m1', 'test_a', '0', 3, { powerModifier: 0 })] }],
-            });
-
-            const firstStep = execSpecial(state, '0', 0);
+            const firstStep = playMandatoryReading('mandatory-draw3', [
+                makeMinion('m1', 'test_a', '0', 21, { powerModifier: 0 }),
+            ]);
             const result = respondToPromptOption(
-                firstStep.matchState!,
+                firstStep,
                 option => option.value?.count === 3,
                 'mandatory reading draw 3 option',
                 '0',
@@ -786,14 +821,11 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
         });
 
         it('多张疯狂卡 UID 唯一（无重复 key）', () => {
-            const state = makeStateWithMadness({
-                players: { '0': makePlayer('0'), '1': makePlayer('1') },
-                bases: [{ defId: 'base_test', ongoingActions: [], minions: [makeMinion('m1', 'test_a', '0', 3)] }],
-            });
-
-            const firstStep = execSpecial(state, '0', 0);
+            const firstStep = playMandatoryReading('mandatory-unique', [
+                makeMinion('m1', 'test_a', '0', 21),
+            ]);
             const result = respondToPromptOption(
-                firstStep.matchState!,
+                firstStep,
                 option => option.value?.count === 3,
                 'mandatory reading draw 3 option for unique madness uid',
                 '0',
@@ -811,26 +843,26 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
     });
 
     describe('miskatonic_lost_knowledge（通往超凡的门：ongoing talent，抽疯狂卡+额外随从到此基地）', () => {
-        /** 直接调用 talent 执行器 */
         function execTalent(state: SmashUpCore, playerId: string, baseIndex: number) {
-            const executor = resolveAbility('miskatonic_lost_knowledge', 'talent');
-            expect(executor).toBeDefined();
-            const ms = makeMatchState(state);
-            lastMatchState = ms;
-            return executor!({
-                state, matchState: ms, playerId,
-                cardUid: 'ongoing-card', defId: 'miskatonic_lost_knowledge',
-                baseIndex, random: defaultRandom, now: Date.now(),
-            });
+            return runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId,
+                payload: { ongoingCardUid: 'ongoing-card', baseIndex },
+            } as any, defaultRandom);
         }
 
         it('抽1张疯狂卡并获得额外随从到此基地', () => {
             const state = makeStateWithMadness({
                 players: { '0': makePlayer('0'), '1': makePlayer('1') },
-                bases: [{ defId: 'base_test', ongoingActions: [], minions: [makeMinion('m1', 'test', '0', 3)] }],
+                bases: [{
+                    defId: 'base_test',
+                    ongoingActions: [{ uid: 'ongoing-card', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false }],
+                    minions: [makeMinion('m1', 'test', '0', 3)],
+                }],
             });
 
             const result = execTalent(state, '0', 0);
+            expect(result.success, result.error).toBe(true);
             const madnessEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(1);
             expect((madnessEvents[0] as any).payload.count).toBe(1);
@@ -842,11 +874,16 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
         it('疯狂牌库为空时仍给额外随从', () => {
             const state = makeStateWithMadness({
                 players: { '0': makePlayer('0'), '1': makePlayer('1') },
-                bases: [{ defId: 'base_test', ongoingActions: [], minions: [] }],
+                bases: [{
+                    defId: 'base_test',
+                    ongoingActions: [{ uid: 'ongoing-card', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false }],
+                    minions: [],
+                }],
                 madnessDeck: [],
             });
 
             const result = execTalent(state, '0', 0);
+            expect(result.success, result.error).toBe(true);
             const madnessEvents = result.events.filter((e: any) => e.type === SU_EVENTS.MADNESS_DRAWN);
             expect(madnessEvents.length).toBe(0);
             const limitEvents = result.events.filter((e: any) => e.type === SU_EVENTS.LIMIT_MODIFIED);
@@ -856,10 +893,15 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
         it('状态正确（reduce 验证）', () => {
             const state = makeStateWithMadness({
                 players: { '0': makePlayer('0', { minionLimit: 1 }), '1': makePlayer('1') },
-                bases: [{ defId: 'base_test', ongoingActions: [], minions: [] }],
+                bases: [{
+                    defId: 'base_test',
+                    ongoingActions: [{ uid: 'ongoing-card', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false }],
+                    minions: [],
+                }],
             });
 
             const result = execTalent(state, '0', 0);
+            expect(result.success, result.error).toBe(true);
             const newState = applyEvents(state, result.events);
             expect(newState.players['0'].hand.filter(c => c.defId === MADNESS_CARD_DEF_ID).length).toBe(1);
             // 额外随从限定到基地0（baseLimitedMinionQuota），minionLimit 不变
@@ -869,14 +911,12 @@ describe('米斯卡塔尼克大学 - 疯狂卡能力', () => {
         });
 
         it('无 baseIndex 时仍给额外随从（不限定基地）', () => {
-            const executor = resolveAbility('miskatonic_lost_knowledge', 'talent');
-            expect(executor).toBeDefined();
             const state = makeStateWithMadness({
                 players: { '0': makePlayer('0'), '1': makePlayer('1') },
                 bases: [],
             });
             const ms = makeMatchState(state);
-            const result = executor!({
+            const result = invokeRegisteredAbilityContract('miskatonic_lost_knowledge', 'talent', {
                 state, matchState: ms, playerId: '0',
                 cardUid: 'ongoing-card', defId: 'miskatonic_lost_knowledge',
                 baseIndex: undefined as any, random: defaultRandom, now: Date.now(),

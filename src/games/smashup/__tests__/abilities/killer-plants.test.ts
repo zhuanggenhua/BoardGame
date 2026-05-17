@@ -1,7 +1,8 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { RandomFn } from '../../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
-import { clearRegistry, resolveAbility } from '../../domain/abilityRegistry';
+import { registerKillerPlantAbilities } from '../../abilities/killer_plants';
+import { clearRegistry } from '../../domain/abilityRegistry';
 import type { AbilityContext } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
@@ -15,16 +16,22 @@ import { reduce } from '../../domain/reducer';
 import type { MinionDestroyedEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
+    expectNoPrompt,
+    getFirstPrompt,
     makeCard,
     getPromptHandlerData,
+    getPromptOptions,
     getPromptSourceId,
     getPromptTargetType,
     getSimpleChoicePrompt,
+    invokeRegisteredAbilityContract,
     makeBase,
     makeMinion,
     makeMatchState,
     makePlayer,
     makeState,
+    respondToPromptOption,
+    withOnlyCurrentPrompt,
 } from '../helpers';
 import { runCommand } from '../testRunner';
 
@@ -316,9 +323,7 @@ describe('killer_plant_venus_man_trap 牌库搜索', () => {
                 '1': makePlayer('1'),
             },
         });
-        const executor = resolveAbility('killer_plant_venus_man_trap', 'talent');
-
-        const result = executor!({
+        const result = invokeRegisteredAbilityContract('killer_plant_venus_man_trap', 'talent', {
             state,
             playerId: '0',
             cardUid: 'trap',
@@ -329,6 +334,437 @@ describe('killer_plant_venus_man_trap 牌库搜索', () => {
         } as AbilityContext);
 
         expect(result.events.map(event => event.type)).toEqual([SU_EVENTS.DECK_REORDERED, SU_EVENTS.ABILITY_FEEDBACK]);
+    });
+
+    it('交互响应会带上基地信息', () => {
+        const state = makeState({
+            bases: [
+                makeBase({
+                    defId: 'base_crypt',
+                    minions: [makeMinion('vmt-1', 'killer_plant_venus_man_trap', '0', 3, { powerModifier: 0 })],
+                }),
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('sp-1', 'killer_plant_sprout', 'minion', '0'),
+                        makeCard('sp-2', 'killer_plant_sprout', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const firstStep = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'vmt-1', baseIndex: 0 },
+            } as any,
+            dummyRandom,
+        );
+        expect(firstStep.success, firstStep.error).toBe(true);
+        const resolved = respondToPromptOption(
+            firstStep.finalState,
+            option => option.value?.cardUid === 'sp-1',
+            'venus man trap sp-1 option',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+
+        const playedEvent = resolved.events.find(event => event.type === SU_EVENTS.MINION_PLAYED) as any;
+        expect(playedEvent).toBeDefined();
+        expect(playedEvent.payload.cardUid).toBe('sp-1');
+        expect(playedEvent.payload.baseIndex).toBe(0);
+        expect(playedEvent.payload.baseDefId).toBe('base_crypt');
+    });
+
+    it('交互目标已离开牌库时不会重复打出', () => {
+        const initialState = makeState({
+            bases: [
+                makeBase({
+                    minions: [makeMinion('vmt-1', 'killer_plant_venus_man_trap', '0', 3, { powerModifier: 0 })],
+                }),
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('sp-1', 'killer_plant_sprout', 'minion', '0'),
+                        makeCard('sp-3', 'killer_plant_sprout', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const staleState = makeState({
+            bases: [
+                makeBase({
+                    minions: [makeMinion('vmt-1', 'killer_plant_venus_man_trap', '0', 3, { powerModifier: 0 })],
+                }),
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('sp-2', 'killer_plant_sprout', 'minion', '0'),
+                        makeCard('wl-2', 'killer_plant_water_lily', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const firstStep = runCommand(
+            makeMatchState(initialState),
+            {
+                type: SU_COMMANDS.USE_TALENT,
+                playerId: '0',
+                payload: { minionUid: 'vmt-1', baseIndex: 0 },
+            } as any,
+            dummyRandom,
+        );
+        expect(firstStep.success, firstStep.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(firstStep.finalState, 'killer_plant_venus_man_trap_search');
+
+        const resolved = respondToPromptOption(
+            withOnlyCurrentPrompt({ ...firstStep.finalState, core: staleState } as any, prompt),
+            option => option.value?.cardUid === 'sp-1',
+            'venus man trap stale sp-1 option',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toBe(false);
+        expect(getPromptSourceId(getFirstPrompt(resolved.finalState))).toBe('killer_plant_venus_man_trap_search');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['sp-2', 'wl-2']);
+    });
+});
+
+describe('killer_plant_water_lily 回合开始抽牌', () => {
+    beforeEach(() => {
+        clearRegistry();
+        clearBaseAbilityRegistry();
+        clearPowerModifierRegistry();
+        clearOngoingEffectRegistry();
+        clearInteractionHandlers();
+        registerKillerPlantAbilities();
+    });
+
+    const makeWaterLilyState = (
+        minions: Array<ReturnType<typeof makeMinion>>,
+        playerZeroOverrides: Parameters<typeof makePlayer>[1] = {},
+    ) => makeState({
+        bases: [makeBase({ minions })],
+        players: {
+            '0': makePlayer('0', {
+                deck: [makeCard('draw-1', 'deck_minion_1', 'minion', '0')],
+                ...playerZeroOverrides,
+            }),
+            '1': makePlayer('1'),
+        },
+    });
+
+    it('控制者回合开始时抽 1 牌', () => {
+        const state = makeWaterLilyState([
+            makeMinion('wl-1', 'killer_plant_water_lily', '0', 3, { powerModifier: 0 }),
+        ]);
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        expect(events).toHaveLength(1);
+        expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
+    });
+
+    it('POD 版控制者回合开始时也抽 1 牌', () => {
+        const state = makeWaterLilyState([
+            makeMinion('wl-pod-1', 'killer_plant_water_lily_pod', '0', 3, { powerModifier: 0 }),
+        ]);
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        expect(events).toHaveLength(1);
+        expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
+    });
+
+    it('牌库空但弃牌堆有牌时先洗回再抽牌', () => {
+        const state = makeWaterLilyState(
+            [makeMinion('wl-1', 'killer_plant_water_lily', '0', 3, { powerModifier: 0 })],
+            {
+                deck: [],
+                discard: [makeCard('discard-1', 'deck_minion_1', 'minion', '0')],
+            },
+        );
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        expect(events.map(event => event.type)).toEqual([SU_EVENTS.DECK_RESHUFFLED, SU_EVENTS.CARDS_DRAWN]);
+        expect((events[1] as any).payload.cardUids).toEqual(['discard-1']);
+    });
+
+    it('非控制者回合不触发', () => {
+        const state = makeWaterLilyState([
+            makeMinion('wl-1', 'killer_plant_water_lily', '0', 3, { powerModifier: 0 }),
+        ]);
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '1',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        expect(events).toHaveLength(0);
+    });
+
+    it('多张睡莲在场每回合也只触发一次', () => {
+        const state = makeWaterLilyState([
+            makeMinion('wl-1', 'killer_plant_water_lily', '0', 3, { powerModifier: 0 }),
+            makeMinion('wl-2', 'killer_plant_water_lily', '0', 3, { powerModifier: 0 }),
+            makeMinion('wl-3', 'killer_plant_water_lily', '0', 3, { powerModifier: 0 }),
+        ]);
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        expect(events).toHaveLength(1);
+        expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
+    });
+});
+
+describe('killer_plant_sprout 回合开始自毁与检索', () => {
+    it('控制者回合开始时消灭自身并搜索随从', () => {
+        const state = makeState({
+            bases: [makeBase({ minions: [makeMinion('sp-1', 'killer_plant_sprout', '0', 2, { owner: '0', powerModifier: 0 })] })],
+        });
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        expect(events.length).toBeGreaterThanOrEqual(1);
+        expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+        expect((events[0] as any).payload.minionUid).toBe('sp-1');
+        if (events.length > 1) {
+            expect([SU_EVENTS.CARDS_DRAWN, SU_EVENTS.DECK_REORDERED]).toContain(events[1].type);
+        }
+    });
+
+    it('POD 版控制者回合开始时也会消灭自身并搜索随从', () => {
+        const state = makeState({
+            bases: [makeBase({ minions: [makeMinion('sp-pod-1', 'killer_plant_sprout_pod', '0', 2, { owner: '0', powerModifier: 0 })] })],
+        });
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        expect(events.length).toBeGreaterThanOrEqual(1);
+        expect(events[0].type).toBe(SU_EVENTS.MINION_DESTROYED);
+        expect((events[0] as any).payload.minionUid).toBe('sp-pod-1');
+    });
+
+    it('多个候选时创建 generic 牌库检索交互', () => {
+        const state = makeState({
+            bases: [makeBase({ minions: [makeMinion('sp-1', 'killer_plant_sprout', '0', 2, { owner: '0', powerModifier: 0 })] })],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('d1', 'killer_plant_sprout', 'minion', '0'),
+                        makeCard('d2', 'wizard_neophyte', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const matchState = {
+            core: state,
+            sys: { phase: 'startTurn', interaction: { current: undefined, queue: [] } },
+        } as any;
+
+        const result = fireTriggers(state, 'onTurnStart', {
+            state,
+            matchState,
+            playerId: '0',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        const current = getSimpleChoicePrompt(result.matchState as any, 'killer_plant_sprout_search');
+        expect(getPromptSourceId(current)).toBe('killer_plant_sprout_search');
+        expect(getPromptTargetType(current)).toBe('generic');
+        const promptData = getPromptHandlerData(current);
+        expect(promptData.autoRefresh).toBe('deck');
+        expect(promptData.responseValidationMode).toBe('live');
+        expect(getPromptOptions(current).some((opt: any) => opt.id === 'skip')).toBe(true);
+        expect(getPromptOptions(current).filter((opt: any) => opt.displayMode === 'card')).toHaveLength(2);
+    });
+
+    it('多个嫩芽共享唯一候选时不会重复打出同一 UID', () => {
+        const state = makeState({
+            bases: [
+                makeBase({ minions: [makeMinion('sp-1', 'killer_plant_sprout', '0', 2, { owner: '0', powerModifier: 0 })] }),
+                makeBase({ minions: [makeMinion('sp-2', 'killer_plant_sprout', '0', 2, { owner: '0', powerModifier: 0 })] }),
+            ],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('wl-1', 'killer_plant_water_lily', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        const playedEvents = events.filter(event => event.type === SU_EVENTS.MINION_PLAYED);
+        expect(playedEvents).toHaveLength(1);
+        expect((playedEvents[0] as any).payload.cardUid).toBe('wl-1');
+    });
+
+    it('多个嫩芽在不同基地会分别消灭自身', () => {
+        const state = makeState({
+            bases: [
+                makeBase({ minions: [makeMinion('sp-1', 'killer_plant_sprout', '0', 2, { owner: '0', powerModifier: 0 })] }),
+                makeBase({ minions: [makeMinion('sp-2', 'killer_plant_sprout', '0', 2, { owner: '0', powerModifier: 0 })] }),
+            ],
+        });
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: dummyRandom,
+            now: 1000,
+        });
+
+        const destroyedEvents = events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyedEvents).toHaveLength(2);
+        const destroyedUids = destroyedEvents.map(event => (event as any).payload.minionUid).sort();
+        expect(destroyedUids).toEqual(['sp-1', 'sp-2']);
+    });
+
+    it('交互在卡已离开牌库后不会再次打出同一 UID', () => {
+        const initialState = makeState({
+            bases: [makeBase({ minions: [makeMinion('sp-1', 'killer_plant_sprout', '0', 2, { owner: '0', powerModifier: 0 })] })],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [
+                        makeCard('wl-1', 'killer_plant_water_lily', 'minion', '0'),
+                        makeCard('sp-1-deck', 'killer_plant_sprout', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const staleState = makeState({
+            bases: [makeBase()],
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('wl-2', 'killer_plant_water_lily', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = {
+            core: initialState,
+            sys: { phase: 'startTurn', interaction: { current: undefined, queue: [] } },
+        } as any;
+
+        const promptState = fireTriggers(initialState, 'onTurnStart', {
+            state: initialState,
+            matchState,
+            playerId: '0',
+            random: dummyRandom,
+            now: 999,
+        }).matchState as any;
+        const prompt = getSimpleChoicePrompt(promptState, 'killer_plant_sprout_search');
+
+        const resolved = respondToPromptOption(
+            withOnlyCurrentPrompt({ ...promptState, core: staleState } as any, prompt),
+            option => option.value?.cardUid === 'wl-1',
+            'killer plant sprout stale wl-1 option',
+            '0',
+            dummyRandom,
+        );
+        expect(resolved.success, resolved.error).toBe(true);
+
+        expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_PLAYED)).toBe(false);
+        expect(resolved.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+        expect(getPromptSourceId(getFirstPrompt(resolved.finalState))).toBe('killer_plant_sprout_search');
+        expect(resolved.finalState.core.players['0'].deck.map(card => card.uid)).toEqual(['wl-2']);
+    });
+});
+
+describe('killer_plant_blossom 同名额外随从额度', () => {
+    it('打出后给予 3 个同名额外随从额度', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('bl-1', 'killer_plant_blossom', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase()],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'bl-1' },
+            } as any,
+            dummyRandom,
+        );
+
+        expect(result.success, result.error).toBe(true);
+        expectNoPrompt(result.finalState);
+
+        const limitEvents = result.events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED);
+        expect(result.events.some(event => event.type === SU_EVENTS.ACTION_PLAYED)).toBe(true);
+        expect(limitEvents).toHaveLength(3);
+        limitEvents.forEach(event => {
+            expect((event as any).payload.limitType).toBe('minion');
+            expect((event as any).payload.sameNameOnly).toBe(true);
+        });
+        expect(result.finalState.core.players['0'].sameNameMinionRemaining).toBe(3);
+        expect(result.finalState.core.players['0'].sameNameMinionDefId).toBeNull();
+        expect(result.finalState.core.players['0'].actionsPlayed).toBe(1);
+        expect(result.finalState.core.players['0'].hand).toHaveLength(0);
+        expect(result.finalState.core.players['0'].discard.map(card => card.uid)).toContain('bl-1');
     });
 });
 
@@ -381,6 +817,161 @@ describe('killer_plant_budding 场上随从选择', () => {
 
         expect(result.success).toBe(true);
         expect(result.events.map(event => event.type)).toEqual([SU_EVENTS.ACTION_PLAYED]);
+    });
+});
+
+describe('killer_plant_insta_grow 额外随从额度', () => {
+    it('给予额外随从额度', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'killer_plant_insta_grow', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const limitEvents = result.events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED);
+        expect(limitEvents).toHaveLength(1);
+        expect(limitEvents[0]).toEqual(
+            expect.objectContaining({
+                payload: expect.objectContaining({
+                    limitType: 'minion',
+                    delta: 1,
+                }),
+            }),
+        );
+    });
+
+    it('off-phase 额外随从应标记为 immediate', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'killer_plant_insta_grow', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase()],
+        });
+
+        const matchState = makeMatchState(state);
+        matchState.sys.phase = 'startTurn';
+
+        const result = invokeRegisteredAbilityContract('killer_plant_insta_grow', 'onPlay', {
+            state,
+            matchState,
+            playerId: '0',
+            cardUid: 'a1',
+            defId: 'killer_plant_insta_grow',
+            baseIndex: 0,
+            random: dummyRandom,
+            now: 1000,
+        } as AbilityContext);
+
+        const limitEvents = result.events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED);
+        expect(limitEvents).toHaveLength(1);
+        expect(limitEvents[0]).toEqual(
+            expect.objectContaining({
+                payload: expect.objectContaining({
+                    playTiming: 'immediate',
+                }),
+            }),
+        );
+    });
+
+    it('额度正确累加到最终状态', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'killer_plant_insta_grow', 'action', '0')],
+                    minionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        expect(result.finalState.core.players['0'].minionLimit).toBe(2);
+    });
+});
+
+describe('killer_plant_weed_eater 打出回合力量修正', () => {
+    it('打出时获得 -2 力量修正事件', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'killer_plant_weed_eater', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase()],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: '0',
+                payload: { cardUid: 'm1', baseIndex: 0 },
+            } as any,
+            dummyRandom,
+        );
+
+        const powerEvents = result.events.filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED);
+        expect(powerEvents).toHaveLength(1);
+        expect(powerEvents[0]).toEqual(
+            expect.objectContaining({
+                payload: expect.objectContaining({
+                    minionUid: 'm1',
+                    amount: -2,
+                }),
+            }),
+        );
+    });
+
+    it('力量修正正确应用到最终状态', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'killer_plant_weed_eater', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase()],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_MINION,
+                playerId: '0',
+                payload: { cardUid: 'm1', baseIndex: 0 },
+            } as any,
+            dummyRandom,
+        );
+
+        const minion = result.finalState.core.bases[0].minions.find(candidate => candidate.uid === 'm1');
+        expect(minion).toBeDefined();
+        expect(minion?.tempPowerModifier).toBe(-2);
     });
 });
 

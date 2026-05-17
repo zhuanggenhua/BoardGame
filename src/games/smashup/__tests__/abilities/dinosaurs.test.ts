@@ -5,8 +5,20 @@ import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, interceptEvent, isMinionProtected } from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry, getEffectivePower } from '../../domain/ongoingModifiers';
-import { SU_EVENTS } from '../../domain/types';
-import { makeBase, makeMinion, makeState } from '../helpers';
+import type { SmashUpCore, SmashUpEvent } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
+import {
+    expectNoPrompt,
+    getPromptOptions,
+    getSimpleChoicePrompt,
+    makeBase,
+    makeCard,
+    makeMatchState,
+    makeMinion,
+    makePlayer,
+    makeState,
+} from '../helpers';
+import { defaultTestRandom, runCommand } from '../testRunner';
 
 beforeAll(() => {
     clearRegistry();
@@ -17,6 +29,25 @@ beforeAll(() => {
     resetAbilityInit();
     initAllAbilities();
 });
+
+function execPlayAction(
+    state: SmashUpCore,
+    playerId: string,
+    cardUid: string,
+    targetBaseIndex?: number,
+    targetMinionUid?: string,
+) {
+    const result = runCommand(
+        makeMatchState(state),
+        {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId,
+            payload: { cardUid, targetBaseIndex, targetMinionUid },
+        } as any,
+        defaultTestRandom,
+    );
+    return { events: result.events as SmashUpEvent[], matchState: result.finalState };
+}
 
 describe('dino_upgrade 力量修正', () => {
     it('附着 upgrade 的随从不提供消灭保护（仅 +2 力量）', () => {
@@ -64,5 +95,220 @@ describe('dino_tooth_and_claw 保护', () => {
         );
         expect(isMinionProtected(state, minion, 0, '1', 'affect')).toBe(true);
         expect(isMinionProtected(state, minion, 0, '0', 'affect')).toBe(false);
+    });
+});
+
+describe('恐龙派系行动能力', () => {
+    it('dino_rampage: 多个基地时先创建基地选择', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_rampage', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'b1', minions: [makeMinion('m0', 'test', '0', 3)] }),
+                makeBase({ defId: 'b2', minions: [makeMinion('m1', 'test', '0', 2, { powerModifier: 0 })] }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        getSimpleChoicePrompt(matchState, 'dino_rampage');
+    });
+
+    it('dino_rampage: 单基地多个己方随从时应创建随从选择', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_rampage', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test', '0', 3),
+                        makeMinion('m1', 'test', '0', 2, { powerModifier: 0 }),
+                    ],
+                }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        const prompt = getSimpleChoicePrompt(matchState, 'dino_rampage_choose_minion');
+        expect(getPromptOptions(prompt)).toHaveLength(2);
+    });
+
+    it('dino_augmentation: 多个己方随从时创建 Prompt 选择', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_augmentation', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test', '0', 3),
+                        makeMinion('m1', 'test', '0', 5, { powerModifier: 0 }),
+                    ],
+                }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        getSimpleChoicePrompt(matchState, 'dino_augmentation');
+    });
+
+    it('dino_augmentation: 单个己方随从时创建 Prompt', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_augmentation', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'b1', minions: [makeMinion('m1', 'test', '0', 5, { powerModifier: 0 })] }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        getSimpleChoicePrompt(matchState, 'dino_augmentation');
+    });
+
+    it('dino_howl: 所有己方随从+1力量（临时，回合结束清零）', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_howl', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [makeMinion('m0', 'test', '0', 3), makeMinion('m1', 'test', '1', 2)],
+                }),
+            ],
+        });
+
+        const { events } = execPlayAction(state, '0', 'a1', 0);
+        const powerEvents = events.filter(e => e.type === SU_EVENTS.TEMP_POWER_ADDED);
+        expect(powerEvents).toHaveLength(1);
+        expect((powerEvents[0] as any).payload.minionUid).toBe('m0');
+    });
+
+    it('dino_natural_selection: 单个己方随从+单个目标时创建 Prompt', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_natural_selection', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test', '0', 5),
+                        makeMinion('m1', 'test', '1', 4),
+                        makeMinion('m2', 'test', '1', 6),
+                    ],
+                }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1', 0);
+        getSimpleChoicePrompt(matchState, 'dino_natural_selection_choose_mine');
+    });
+
+    it('dino_natural_selection: 多个可消灭目标时创建 Prompt', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_natural_selection', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test', '0', 5),
+                        makeMinion('m1', 'test', '1', 3),
+                        makeMinion('m2', 'test', '1', 4),
+                    ],
+                }),
+            ],
+        });
+
+        const { events, matchState } = execPlayAction(state, '0', 'a1', 0);
+        const destroyEvents = events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(0);
+        getSimpleChoicePrompt(matchState, 'dino_natural_selection_choose_mine');
+    });
+
+    it('dino_natural_selection: 无合法目标时无事件', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_natural_selection', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test', '0', 3),
+                        makeMinion('m1', 'test', '1', 5),
+                    ],
+                }),
+            ],
+        });
+
+        const { events, matchState } = execPlayAction(state, '0', 'a1', 0);
+        const destroyEvents = events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(0);
+        expectNoPrompt(matchState);
+    });
+
+    it('dino_survival_of_the_fittest: 每个基地消灭一个最低力量随从', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'dino_survival_of_the_fittest', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test', '0', 5),
+                        makeMinion('m1', 'test', '1', 2),
+                    ],
+                }),
+                makeBase({
+                    defId: 'b2',
+                    minions: [
+                        makeMinion('m2', 'test', '1', 2),
+                        makeMinion('m3', 'test', '0', 3),
+                    ],
+                }),
+            ],
+        });
+
+        const { events } = execPlayAction(state, '0', 'a1', 0);
+        const destroyEvents = events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(2);
+        const destroyedUids = destroyEvents.map(e => (e as any).payload.minionUid);
+        expect(destroyedUids).toContain('m1');
+        expect(destroyedUids).toContain('m2');
     });
 });

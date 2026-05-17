@@ -1,14 +1,16 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
-import { UI_Z_INDEX } from '../../../core';
 import type { BreakdownLine } from '../../../engine/types';
+import { useResolvedOverlayTooltipZIndex } from './overlayLayer';
 
 interface BreakdownTooltipProps {
     /** 显示的数值文本 */
     displayText: string;
     /** 分解明细行 */
     lines: BreakdownLine[];
+    /** 自定义 z-index，父级浮层需要抬高时传入 */
+    zIndex?: number;
 }
 
 /** 单行明细（独立组件以支持 i18n） */
@@ -45,11 +47,14 @@ const BreakdownLineItem: React.FC<{ line: BreakdownLine }> = ({ line }) => {
 export const BreakdownTooltip: React.FC<BreakdownTooltipProps> = ({
     displayText,
     lines,
+    zIndex,
 }) => {
     const [isHovered, setIsHovered] = useState(false);
     const [anchorRect, setAnchorRect] = useState<DOMRect | null>(null);
+    const [tooltipHeight, setTooltipHeight] = useState(80);
     const anchorRef = useRef<HTMLSpanElement>(null);
     const tooltipRef = useRef<HTMLDivElement>(null);
+    const resolvedZIndex = useResolvedOverlayTooltipZIndex(zIndex);
 
     const portalRoot = useMemo(() => {
         if (typeof document === 'undefined') return null;
@@ -72,14 +77,20 @@ export const BreakdownTooltip: React.FC<BreakdownTooltipProps> = ({
         };
     }, [isHovered, updateAnchorRect]);
 
+    useLayoutEffect(() => {
+        if (!isHovered || !tooltipRef.current) return;
+        const nextHeight = tooltipRef.current.getBoundingClientRect().height;
+        setTooltipHeight((prevHeight) => (
+            Math.abs(prevHeight - nextHeight) < 0.5 ? prevHeight : nextHeight
+        ));
+    }, [anchorRect, isHovered, lines]);
+
     // 计算 tooltip 位置（优先上方，空间不足则下方）
     const tooltipPosition = useMemo(() => {
         if (!anchorRect || typeof window === 'undefined') return null;
         const gap = 6;
         const padding = 8;
         const tooltipWidth = 180;
-        const measured = tooltipRef.current?.getBoundingClientRect();
-        const tooltipHeight = measured ? measured.height : 80;
 
         // 水平居中对齐锚点
         let left = anchorRect.left + anchorRect.width / 2 - tooltipWidth / 2;
@@ -92,7 +103,7 @@ export const BreakdownTooltip: React.FC<BreakdownTooltipProps> = ({
             : anchorRect.bottom + gap;
 
         return { left, top, above: canPlaceAbove, tooltipWidth };
-    }, [anchorRect]);
+    }, [anchorRect, tooltipHeight]);
 
     // 没有明细行时不显示 tooltip 效果
     if (!lines || lines.length === 0) {
@@ -121,7 +132,7 @@ export const BreakdownTooltip: React.FC<BreakdownTooltipProps> = ({
                         left: tooltipPosition.left,
                         top: tooltipPosition.top,
                         width: tooltipPosition.tooltipWidth,
-                        zIndex: UI_Z_INDEX.tooltip,
+                        zIndex: resolvedZIndex,
                     }}
                 >
                     <div className="bg-slate-900/95 border border-white/15 rounded-lg px-3 py-2 shadow-lg backdrop-blur-sm">

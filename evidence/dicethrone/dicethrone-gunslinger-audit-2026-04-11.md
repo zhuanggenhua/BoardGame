@@ -65,7 +65,7 @@
 ### 4. `Bounty` 的“当受此指示物影响的玩家遭到对手攻击时”
 - **触发动作**：应限定为**持有赏金的一方遭到对手攻击来伤**，而不是任意 `DAMAGE_DEALT`。
 - **触发时点**：应在攻击伤害计算时加 1 伤害并给攻击者 +1 CP；按规则/Wiki 补充，**防御反击伤害不应触发**。
-- **消耗发生点**：无消耗；是持续性被动，直到游戏结束。
+- **消耗发生点**：触发加伤/给 CP 本身无消耗；“持续到游戏结束”只表示不会自然过期或因触发自动消耗，不表示免疫移除状态类卡牌/效果。
 - **范围与持续**：仅影响“对手攻击”这类来伤，不能把 `duel` 的防御反击也算进去。
 - **补审结论**：实现侧已通过 `damageTriggerScope: 'opponentAttackDamage'` 将触发范围收紧为“对手攻击来伤”，从而天然排除 `duel` 这类防御反击伤害；并已有负路径测试覆盖（`duel` 反伤不触发）。因此旧“门禁未闭环/待补回归”结论失效，当前可标为 **✅ 已闭环**（剩余仅为证据文档同步问题）。
 
@@ -89,7 +89,7 @@
 | 状态 | 权威描述要点（汉化图） | 实现入口 | 维度 | 结论 |
 | --- | --- | --- | --- | --- |
 | 装填（loaded） | 消耗 1 装填掷 1 骰，额外伤害=半值向上取整；`Wild West / Quick Draw` 等文本可显式重掷该奖励骰 | `tokens.ts` + `customActions/gunslinger.ts` + `flowHooks.ts` + `choiceEffects.ts` + `effects.ts` + `BonusDieOverlay.tsx` | D1/D3/D7/D8 | ⚠️ 行为一致，但 flow→choice→effect→UI 证据链未完全闭合 |
-| 赏金（bounty） | 受伤+1，攻击者额外获得 1CP；补充裁定为“防御伤害不触发” | `tokens.ts` + `reduceCombat.ts` + `damageCalculation.ts` | D1/D3/D8/D22 | ✅ 已通过 `damageTriggerScope: 'opponentAttackDamage'` 收紧为“对手攻击来伤”，并由 `duel` 负路径测试覆盖（防御反击不触发） |
+| 赏金（bounty） | 受攻击伤害 +1，攻击者额外获得 1CP；补充裁定为“防御伤害不触发”；不会自然过期但可被移除状态类效果移除 | `tokens.ts` + `reduceCombat.ts` + `damageCalculation.ts` + `execute.ts` | D1/D3/D8/D22 | ✅ 已通过 `damageTriggerScope: 'opponentAttackDamage'` 收紧为“对手攻击来伤”，由 `duel` 负路径测试覆盖；当前 `removable: true`，`Bye Bye` 真实手牌链路可移除 |
 | 骰面说明 | 1-3 子弹 / 4-5 冲刺 / 6 准星 | `diceConfig.ts` | D1/D3 | ✅ 一致 |
 
 ### 升级卡（专属手牌对象）
@@ -174,6 +174,11 @@
    - 旧问题：此前文档把 `Bounty` 写成“待补回归/静态风险”，但这是漏读了 token 定义里的触发范围门禁。
    - 新证据路径：`src/games/dicethrone/heroes/gunslinger/tokens.ts`（`damageTriggerScope: 'opponentAttackDamage'`）+ `src/engine/primitives/damageCalculation.ts`（scope 判定）+ `src/games/dicethrone/__tests__/cross-hero.test.ts:404-455`（`duel` 防御反击不触发的负路径）。
    - 新结论：`Bounty` 已严格限定为“对手攻击来伤”触发，`duel` 防御反击被排除；可标记为 **✅ 已闭环**（剩余仅是证据文档同步）。
+7. **`Bounty` 的“持续到游戏结束 = 不可移除”旧外推失效**（2026-05-17 回写）
+   - 旧问题：早期文档和 `dicethrone-paladin-blessing-removable-fix.md` 曾把枪手 `Bounty` 与圣骑士 `Blessing of Divinity` 一起列为 `removable: false`，并写成“只能通过触发效果自动消耗，不能被玩家主动移除或转移”。
+   - 失效原因：`Bounty` 是负面 token；卡图“持续到游戏结束”只代表不会自然过期/不会触发后自动消耗，不代表免疫移除状态类卡牌或效果。后续 `Bye Bye` 真实手牌 E2E 已证明旧口径会导致赏金可见但确认失败。
+   - 新证据路径：`src/games/dicethrone/heroes/gunslinger/tokens.ts`（当前 `passiveTrigger.removable: true`）+ `evidence/dicethrone-bye-bye-bounty-repro-e2e.md`（复现与修复后截图链）+ `src/games/dicethrone/__tests__/paladin-blessing-removable.test.ts`（不可移除白名单仍保护圣骑士神圣祝福）。
+   - 新结论：`Bounty` 不会自然清理，但可被 `Bye Bye` 等移除状态链路移除；“生命周期”与“removable 门禁”必须分开审计。
 
 ## D1–D49 全量审计表（2026-04-12 补审）
 - **D1 语义保真**：⚠️ 主要能力、专属手牌、复合升级下半区变体与汉化图主语义基本一致；当前剩余未完全收口的重点是 `Quick Draw II / Fill'Em With Lead` 的“花费装填时可重掷”仍依赖隐式分支承接（结构层不自解释）。
@@ -253,3 +258,7 @@
   - 下调 `quick-draw / upgrade-quick-draw / fill-em-with-lead` 的收口口径为“行为已验证、结构未完全收口”。
   - 将 `Bounty` 的结论回写为“attack-only 门禁已闭环”，并补充引用负路径测试与实现门禁，避免再次误报为待补回归。
   - 移除已过期的“枪手规则文档 merge conflict 残留”残余风险。
+- 2026-05-17（Bounty 可移除性回写）：
+  - 旧结论：“持续到游戏结束”被外推为 `removable: false / 不可被移除状态类效果移除`。
+  - 失效原因：后续真实手牌 `Bye Bye` 复现显示该外推会造成 UI 可选但领域验证拒绝；当前项目口径是负面 token 必须可移除，除非有明确白名单。
+  - 新结论：`Bounty` 当前 `removable: true`；不自动过期但可被移除状态链路移除。

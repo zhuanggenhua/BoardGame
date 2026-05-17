@@ -508,7 +508,7 @@ function resolveEffectAction(
                     passiveTriggerHandler: createDTPassiveTriggerHandler(ctx, random),
                     timestamp,
                     // bonusDamage 作为显式修正传入（而非直接加到 baseDamage）
-                    additionalModifiers: bonusDmg > 0 ? [{
+                    additionalModifiers: bonusDmg !== 0 ? [{
                         id: '__bonus_damage_from_config__',
                         type: 'flat',
                         value: bonusDmg,

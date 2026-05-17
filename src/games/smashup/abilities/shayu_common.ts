@@ -69,6 +69,11 @@ export type BaseTarget = {
     label: string;
 };
 
+export type RenderableCardChoiceValue =
+    | { defId: string }
+    | { minionDefId: string }
+    | { baseDefId: string };
+
 export function runtimeToAbilityResult(
     result: { events: SmashUpEvent[]; matchState?: MatchState<SmashUpCore> },
 ): AbilityResult {
@@ -119,13 +124,13 @@ export function collectBaseTargets(
         .filter(target => predicate(target.baseIndex));
 }
 
-export function asCardOptions<T extends Record<string, unknown>>(
+export function asCardOptions<T extends Record<string, unknown> & RenderableCardChoiceValue>(
     targets: Array<{ uid?: string; id?: string; label: string; value: T }>,
 ): PromptOption<T>[] {
     return targets.map((target, index) => ({
         id: target.id ?? target.uid ?? `option-${index}`,
         label: target.label,
-        value: target.value,
+        value: target.value as T & RenderableCardChoiceValue,
         displayMode: 'card' as const,
     }));
 }

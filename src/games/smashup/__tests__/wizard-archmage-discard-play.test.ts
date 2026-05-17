@@ -21,9 +21,20 @@ import { registerDiscardPlayProvider } from '../domain/discardPlayability';
 import { initAllAbilities } from '../abilities';
 import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
-import { makeMinion, makePlayer, makeState, makeBase, makeCard } from './helpers';
+import { makePlayer, makeState, makeBase, makeCard } from './helpers';
 
 const PLAYER_IDS = ['0', '1'] as const;
+
+function expectSingleCommandSucceeded(
+    result: { steps: Array<{ success: boolean; error?: string; events?: string[] }> },
+    message: string,
+): asserts result is { steps: [{ success: true; error?: string; events?: string[] }] } {
+    const firstStep = result.steps[0];
+    expect(firstStep?.success, firstStep?.error ? `${message}: ${firstStep.error}` : message).toBe(true);
+    if (!firstStep?.success) {
+        throw new Error(firstStep?.error ? `${message}: ${firstStep.error}` : message);
+    }
+}
 
 describe('大法师从弃牌堆打出触发额外行动', () => {
     beforeAll(() => {
@@ -112,21 +123,23 @@ describe('大法师从弃牌堆打出触发额外行动', () => {
             ] as any[],
         });
 
-        // 验证命令执行成功
-        if (!result.steps[0]?.success) {
-            console.error('命令执行失败:', result.steps[0]?.error);
-            console.error('完整结果:', JSON.stringify(result, null, 2));
-        }
-        expect(result.steps[0]?.success).toBe(true);
+        expectSingleCommandSucceeded(result, '从弃牌堆打出大法师失败');
+        expect(result.steps).toHaveLength(1);
+        expect(result.steps[0]?.events).toEqual(
+            expect.arrayContaining([SU_EVENTS.MINION_PLAYED, SU_EVENTS.LIMIT_MODIFIED]),
+        );
         
         // 验证大法师已经在场上
         const finalBase = result.finalState.core.bases[0];
         expect(finalBase.minions.length).toBe(1);
         expect(finalBase.minions[0].defId).toBe('wizard_archmage');
+        expect(finalBase.minions[0].uid).toBe('archmage-1');
         
         // 关键验证：P0 的 actionLimit 应该增加 1（从 1 变成 2）
         const finalPlayer = result.finalState.core.players['0'];
         expect(finalPlayer.actionLimit).toBe(2);
+        expect(finalPlayer.discard).toEqual([]);
+        expect(finalPlayer.minionsPlayed).toBe(1);
         
         // 测试通过说明：从弃牌堆打出大法师时，onMinionPlayed 触发器正确触发，增加了额外行动
     });
@@ -164,13 +177,16 @@ describe('大法师从弃牌堆打出触发额外行动', () => {
             ] as any[],
         });
 
-        if (!result.steps[0]?.success) {
-            console.error('命令执行失败:', result.steps[0]?.error);
-        }
-        expect(result.steps[0]?.success).toBe(true);
+        expectSingleCommandSucceeded(result, '从手牌打出大法师失败');
+        expect(result.steps).toHaveLength(1);
+        expect(result.steps[0]?.events).toEqual(
+            expect.arrayContaining([SU_EVENTS.MINION_PLAYED, SU_EVENTS.LIMIT_MODIFIED]),
+        );
         
         // 验证从手牌打出也能获得额外行动
         const finalPlayer = result.finalState.core.players['0'];
         expect(finalPlayer.actionLimit).toBe(2);
+        expect(finalPlayer.hand).toEqual([]);
+        expect(finalPlayer.minionsPlayed).toBe(1);
     });
 });

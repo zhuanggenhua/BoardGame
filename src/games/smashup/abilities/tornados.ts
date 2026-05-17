@@ -52,7 +52,7 @@ type ChooseMinionForMoveContext = PromptContext & {
 
 type TradeWindsFirstContext = PromptContext & { candidates: MinionTarget[] };
 type TradeWindsSecondContext = PromptContext & { first: MinionTarget; candidates: MinionTarget[] };
-type RippedOffContext = PromptContext & { actions: Array<{ cardUid: string; defId: string; ownerId: string; targetType: 'base' | 'minion'; baseIndex: number; minionUid?: string; label: string }> };
+type RippedOffContext = PromptContext & { actions: Array<{ cardUid: string; defId: string; ownerId: string; targetType: 'base' | 'minion'; baseIndex: number; minionUid?: string; minionDefId?: string; label: string }> };
 type RippedOffTargetContext = PromptContext & { cardUid: string; defId: string; ownerId: string; targetType: 'base' | 'minion'; fromBaseIndex: number; fromMinionUid?: string };
 type WhirlwindsContext = PromptContext & { candidates: MinionTarget[] };
 type WhirlwindsTargetContext = PromptContext & { current: MinionTarget; remaining: MinionTarget[] };
@@ -381,7 +381,16 @@ function collectTransferableActions(state: SmashUpCore): RippedOffContext['actio
         }
         for (const minion of base.minions) {
             for (const action of minion.attachedActions) {
-                actions.push({ cardUid: action.uid, defId: action.defId, ownerId: action.ownerId, targetType: 'minion', baseIndex, minionUid: minion.uid, label: `${getCardDef(action.defId)?.name ?? action.defId} @ ${getCardDef(minion.defId)?.name ?? minion.defId}` });
+                actions.push({
+                    cardUid: action.uid,
+                    defId: action.defId,
+                    ownerId: action.ownerId,
+                    targetType: 'minion',
+                    baseIndex,
+                    minionUid: minion.uid,
+                    minionDefId: minion.defId,
+                    label: `${getCardDef(action.defId)?.name ?? action.defId} @ ${getCardDef(minion.defId)?.name ?? minion.defId}`,
+                });
             }
         }
     }
@@ -423,7 +432,7 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
                 context.playerId,
                 '扯走：选择新的基地',
                 buildBaseTargetOptions(collectBaseTargets(context.matchState.core, baseIndex => baseIndex !== context.fromBaseIndex), context.matchState.core),
-                { sourceId: 'tornados_ripped_off_target', targetType: 'base' },
+                { sourceId: 'tornados_ripped_off_target_base', targetType: 'base' },
             );
         }
         const targets = collectMinionTargets(context.matchState.core, (minion) => minion.uid !== context.fromMinionUid);
@@ -432,7 +441,7 @@ const rippedOffTargetPromptProgram = createPromptProgram<RippedOffTargetContext,
             context.playerId,
             '扯走：选择新的随从',
             buildMinionTargetOptions(targets, { state: context.matchState.core, sourcePlayerId: context.playerId, sourceKind: 'action', effectType: 'affect' }),
-            { sourceId: 'tornados_ripped_off_target', targetType: 'minion' },
+            { sourceId: 'tornados_ripped_off_target_minion', targetType: 'minion' },
         );
     },
     onResolve: ({ context, value, timestamp }) => {

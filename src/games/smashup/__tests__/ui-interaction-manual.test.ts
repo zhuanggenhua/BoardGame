@@ -453,30 +453,33 @@ describe('SmashUp UI 交互验证', () => {
         expect(choice).toBeDefined();
         expect(choice?.sourceId).toBe('zombie_mall_crawl');
 
-        // 验证选项结构
-        console.log('\n=== zombie_mall_crawl 选项结构 ===');
-        console.log('标题:', choice?.title);
-        console.log('选项数量:', choice?.options.length);
-        choice?.options.forEach((opt, i) => {
-            console.log(`选项 ${i}:`, {
-                id: opt.id,
-                label: opt.label,
-                value: opt.value,
-                displayMode: opt.displayMode,
-            });
-        });
-
-        // 验证选项可见性
-        expect(choice?.options.length).toBeGreaterThan(0);
-        expect(choice?.options[0]).toHaveProperty('id');
-        expect(choice?.options[0]).toHaveProperty('label');
-        expect(choice?.options[0]).toHaveProperty('value');
-
-        // 验证选项内容
-        const firstOption = choice?.options[0];
-        expect(firstOption?.value).toHaveProperty('defId');
-        expect(typeof firstOption?.label).toBe('string');
-        expect(firstOption?.label.length).toBeGreaterThan(0);
+        expect(choice?.title).toBe('选择一个卡名，将牌库中所有同名卡放入弃牌堆');
+        expect(choice?.options).toHaveLength(3);
+        expect(choice?.options.map(opt => ({
+            id: opt.id,
+            label: opt.label,
+            value: opt.value,
+            displayMode: opt.displayMode,
+        }))).toEqual([
+            {
+                id: 'group-0',
+                label: '行尸 (×2)',
+                value: { defId: 'zombie_walker' },
+                displayMode: undefined,
+            },
+            {
+                id: 'group-1',
+                label: '掘墓者 (×1)',
+                value: { defId: 'zombie_grave_digger' },
+                displayMode: undefined,
+            },
+            {
+                id: 'group-2',
+                label: '加农炮 (×1)',
+                value: { defId: 'pirate_cannon' },
+                displayMode: undefined,
+            },
+        ]);
     });
 
     it('zombie_lend_a_hand: 验证多选选项结构', () => {
@@ -506,17 +509,9 @@ describe('SmashUp UI 交互验证', () => {
         const choice = getSimpleChoicePrompt(r1.finalState);
         expect(choice).toBeDefined();
 
-        console.log('\n=== zombie_lend_a_hand 多选选项结构 ===');
-        console.log('标题:', choice?.title);
-        console.log('是否多选:', choice?.multi);
-        console.log('最小选择数:', choice?.multi?.min);
-        console.log('最大选择数:', choice?.multi?.max);
-        console.log('选项数量:', choice?.options.length);
-
-        // 验证多选配置
-        expect(choice?.multi).toBeDefined();
-        expect(choice?.multi?.min).toBeGreaterThanOrEqual(0);
-        expect(choice?.options.length).toBe(3); // 弃牌堆有 3 张牌
+        expect(choice?.title).toBe('借把手：选择要洗回牌库的卡牌（任意数量，可不选）');
+        expect(choice?.multi).toEqual({ min: 0, max: 3 });
+        expect(choice?.options).toHaveLength(3); // 弃牌堆有 3 张牌
     });
 
     it('pirate_dinghy: 验证多步链选项结构', () => {
@@ -550,19 +545,15 @@ describe('SmashUp UI 交互验证', () => {
         const choice1 = getSimpleChoicePrompt(r1.finalState);
         expect(choice1).toBeDefined();
 
-        console.log('\n=== pirate_dinghy 第一步选项结构 ===');
-        console.log('标题:', choice1?.title);
-        console.log('sourceId:', choice1?.sourceId);
-        console.log('选项数量:', choice1?.options.length);
-        choice1?.options.forEach((opt, i) => {
-            console.log(`选项 ${i}:`, {
-                id: opt.id,
-                label: opt.label,
-                hasValue: !!opt.value,
-            });
-        });
-
-        // 验证第一步选项
-        expect(choice1?.options.length).toBeGreaterThan(0);
+        expect(choice1?.title).toBe('选择要移动的己方随从（至多2个，第1个）');
+        expect(choice1?.sourceId).toBe('pirate_dinghy_choose_first');
+        expect(choice1?.options.map(opt => ({
+            id: opt.id,
+            label: opt.label,
+            hasValue: !!opt.value,
+        }))).toEqual([
+            { id: 'minion-0', label: 'test_minion (力量 3) @ 基地 1', hasValue: true },
+            { id: 'minion-1', label: 'test_minion (力量 2) @ 基地 2', hasValue: true },
+        ]);
     });
 });

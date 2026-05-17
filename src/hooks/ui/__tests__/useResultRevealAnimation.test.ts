@@ -1,3 +1,4 @@
+import React from 'react';
 import { act, renderHook } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -73,6 +74,35 @@ describe('useResultRevealAnimation', () => {
 
         rerender({ value: 2, isActive: true });
 
+        expect(result.current.isRevealing).toBe(false);
+    });
+
+    it('StrictMode 下首次挂载揭示不会被 effect replay 立即吞掉', () => {
+        vi.useFakeTimers();
+
+        const strictWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+            React.createElement(React.StrictMode, null, children)
+        );
+
+        const { result } = renderHook(
+            () => useResultRevealAnimation({
+                value: 6,
+                durationMs: 500,
+                animateOnMount: true,
+            }),
+            { wrapper: strictWrapper }
+        );
+
+        expect(result.current.isRevealing).toBe(true);
+
+        act(() => {
+            vi.advanceTimersByTime(499);
+        });
+        expect(result.current.isRevealing).toBe(true);
+
+        act(() => {
+            vi.advanceTimersByTime(1);
+        });
         expect(result.current.isRevealing).toBe(false);
     });
 });

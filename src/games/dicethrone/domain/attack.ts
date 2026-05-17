@@ -175,8 +175,8 @@ export const resolveAttack = (
     }
 
     const { attackerId, defenderId, sourceAbilityId, defenseAbilityId } = pending;
-    const bonusDamage = pending.bonusDamage ?? 0;
     const { defenseEvents, stateAfterDefense } = resolveDefenseEffects(stateAfterPreDefense, random, timestamp);
+    const bonusDamage = stateAfterDefense.pendingAttack?.bonusDamage ?? pending.bonusDamage ?? 0;
     events.push(...defenseEvents);
     const hasDefenseChoice = defenseEvents.some(e => e.type === 'CHOICE_REQUESTED');
     const hasDefenseTokenResponse = defenseEvents.some(e => e.type === 'TOKEN_RESPONSE_REQUESTED');

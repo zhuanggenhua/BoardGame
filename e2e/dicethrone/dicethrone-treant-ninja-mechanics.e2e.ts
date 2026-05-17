@@ -20,8 +20,10 @@ import {
     waitForDiceThroneHarness,
     waitForGameBoard,
 } from '../helpers/dicethrone';
-import { TOKEN_IDS } from '../../src/games/dicethrone/domain/ids';
+import { TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../../src/games/dicethrone/domain/ids';
 import { RESOURCE_IDS } from '../../src/games/dicethrone/domain/resources';
+import { NINJA_CARDS } from '../../src/games/dicethrone/heroes/ninja/cards';
+import { TREANT_CARDS } from '../../src/games/dicethrone/heroes/treant/cards';
 
 type JsonRecord = Record<string, unknown>;
 
@@ -46,6 +48,18 @@ const screenshot = async (page: Page, testName: string, fileName: string) => {
     mkdirSync(dir, { recursive: true });
     const path = join(dir, fileName);
     await page.screenshot({ path, fullPage: false });
+    return path;
+};
+
+const screenshotLocator = async (
+    locator: ReturnType<Page['locator']>,
+    testName: string,
+    fileName: string,
+) => {
+    const dir = join(evidenceRoot, testName);
+    mkdirSync(dir, { recursive: true });
+    const path = join(dir, fileName);
+    await locator.screenshot({ path });
     return path;
 };
 
@@ -180,6 +194,17 @@ const closeCardSpotlightIfOpen = async (page: Page) => {
     }
 };
 
+const closeBonusDieOverlay = async (page: Page) => {
+    const confirmDamageButton = page.getByRole('button', { name: /^(确认伤害|Confirm Damage)$/i }).first();
+    if (await confirmDamageButton.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await confirmDamageButton.click();
+        return;
+    }
+    const closeButton = page.getByLabel(/关闭|Close/i).first();
+    await expect(closeButton).toBeVisible({ timeout: 5000 });
+    await closeButton.click();
+};
+
 const clickLifeSapPassive = async (page: Page) => {
     await closeDebugPanelIfOpen(page);
     const passiveButton = page.getByTestId('passive-action-treant-life-sap-0');
@@ -225,6 +250,42 @@ const clickPassiveAction = async (
         playerId: '0',
         payload: fallbackCommand,
     });
+};
+
+const cloneNinjaCard = (cardId: string): JsonRecord => {
+    const card = NINJA_CARDS.find(item => item.id === cardId);
+    if (!card) throw new Error(`Unknown Ninja card: ${cardId}`);
+    return structuredClone(card) as JsonRecord;
+};
+
+const cloneTreantCard = (cardId: string): JsonRecord => {
+    const card = TREANT_CARDS.find(item => item.id === cardId);
+    if (!card) throw new Error(`Unknown Treant card: ${cardId}`);
+    return structuredClone(card) as JsonRecord;
+};
+
+const dragHandCardToPlay = async (page: Page, cardId: string): Promise<void> => {
+    const card = page.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
+    await expect(card).toBeVisible({ timeout: 10000 });
+    const cardBox = await page.evaluate((nextCardId) => {
+        const node = document.querySelector(`[data-testid="hand-area"] [data-card-id="${nextCardId}"]`) as HTMLElement | null;
+        if (!node) return null;
+        const rect = node.getBoundingClientRect();
+        return { x: rect.x, y: rect.y, width: rect.width, height: rect.height };
+    }, cardId);
+    if (!cardBox || cardBox.width <= 0 || cardBox.height <= 0) {
+        throw new Error(`未能获取手牌 ${cardId} 的拖拽区域`);
+    }
+
+    const startX = cardBox.x + (cardBox.width / 2);
+    const startY = cardBox.y + (cardBox.height * 0.78);
+    const endY = Math.max(24, startY - 240);
+
+    await page.mouse.move(startX, startY);
+    await page.mouse.down();
+    await page.mouse.move(startX, endY, { steps: 12 });
+    await page.mouse.up();
+    await page.mouse.move(2, 2);
 };
 
 test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
@@ -312,11 +373,11 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
         }
     });
 
-    test('树精木苗树灵两个主阶段按钮应短文案展示并真实结算', async ({ browser }, testInfo) => {
+    test('树精木苗树灵主阶段按钮应短文案展示且同回合同类仅能花费一次', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const match = await setupTreantNinjaMatch(browser, baseURL);
-        const testName = '树精木苗树灵两个主阶段按钮应短文案展示并真实结算';
+        const testName = '树精木苗树灵主阶段按钮应短文案展示且同回合同类仅能花费一次';
 
         try {
             await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
@@ -355,12 +416,6 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await expect(match.hostPage.getByTestId('passive-action-treant-life-sap-0')).toBeHidden();
             await screenshot(match.hostPage, testName, '01-sapling-short-buttons-before-use.png');
 
-            const handCountBeforeDraw = await match.hostPage.evaluate(() => {
-                const state = (window as Window).__BG_TEST_HARNESS__!.state.get();
-                const core = state?.core ?? state?.G?.core;
-                return core?.players?.['0']?.hand?.length ?? 0;
-            });
-
             await clickPassiveAction(match.hostPage, 'passive-action-treant-sapling-cultivation-0', {
                 passiveId: 'treant-sapling-cultivation',
                 actionIndex: 0,
@@ -374,33 +429,12 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     hp: resources[RESOURCE_IDS.HP],
                     cp: resources[RESOURCE_IDS.CP],
                     sapling: tokens[TOKEN_IDS.TREANT_SAPLING],
+                    spentSapling: asRecord(asRecord(core.treantSpiritSpentThisTurn)['0'])?.[TOKEN_IDS.TREANT_SAPLING],
                 };
-            }, { timeout: 10000 }).toEqual({ hp: 36, cp: 2, sapling: 1 });
-            await screenshot(match.hostPage, testName, '02-sapling-heal-cp-after-use.png');
-
-            await clickPassiveAction(match.hostPage, 'passive-action-treant-sapling-cultivation-1', {
-                passiveId: 'treant-sapling-cultivation',
-                actionIndex: 1,
-            });
-            await expect.poll(async () => {
-                const core = await readHarnessCoreState(match.hostPage);
-                const p0 = asRecord(asRecordMap(core.players)['0']);
-                const resources = asRecord(p0.resources) as Record<string, number>;
-                const tokens = asRecord(p0.tokens) as Record<string, number>;
-                const hand = Array.isArray(p0.hand) ? p0.hand : [];
-                return {
-                    cp: resources[RESOURCE_IDS.CP],
-                    sapling: tokens[TOKEN_IDS.TREANT_SAPLING] ?? 0,
-                    handCount: hand.length,
-                };
-            }, { timeout: 10000 }).toEqual({
-                cp: 1,
-                sapling: 0,
-                handCount: handCountBeforeDraw + 1,
-            });
+            }, { timeout: 10000 }).toEqual({ hp: 36, cp: 2, sapling: 1, spentSapling: true });
             await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-0')).toBeHidden({ timeout: 10000 });
             await expect(match.hostPage.getByTestId('passive-action-treant-sapling-cultivation-1')).toBeHidden({ timeout: 10000 });
-            await screenshot(match.hostPage, testName, '03-sapling-draw-after-use.png');
+            await screenshot(match.hostPage, testName, '02-sapling-after-one-use-same-type-hidden.png');
         } finally {
             await closeMatchContexts(match);
         }
@@ -470,6 +504,80 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             }, { timeout: 10000 }).toEqual({ die0: 6, seedling: 0 });
             await expect(match.hostPage.getByTestId('passive-action-treant-seedling-cultivation-0')).toBeHidden({ timeout: 10000 });
             await screenshot(match.hostPage, testName, '03-seedling-reroll-after-die-click.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('树精小顺子高亮应落在复仇枝蔓而不是被动槽', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '树精小顺子高亮应落在复仇枝蔓而不是被动槽';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const dice = Array.isArray(core.dice) ? [...core.dice] : [];
+                const values = [2, 3, 4, 5, 6];
+                const symbols = [
+                    TREANT_DICE_FACE_IDS.BRANCH,
+                    TREANT_DICE_FACE_IDS.BRANCH,
+                    TREANT_DICE_FACE_IDS.LEAF,
+                    TREANT_DICE_FACE_IDS.LEAF,
+                    TREANT_DICE_FACE_IDS.SPIRIT,
+                ];
+
+                for (let index = 0; index < 5; index += 1) {
+                    dice[index] = {
+                        ...asRecord(dice[index]),
+                        id: index,
+                        value: values[index],
+                        symbol: symbols[index],
+                        ownerId: '0',
+                        isKept: false,
+                    };
+                }
+
+                root.core = {
+                    ...core,
+                    dice,
+                    activePlayerId: '0',
+                    rollDiceCount: 5,
+                    phase: 'offensiveRoll',
+                    rollCount: 2,
+                    rollConfirmed: false,
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'offensiveRoll',
+                    currentPlayerIndex: 0,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                };
+                return state;
+            });
+
+            await closeDebugPanelIfOpen(match.hostPage);
+            const confirmButton = match.hostPage.locator('[data-tutorial-id="dice-confirm-button"]');
+            await expect(confirmButton).toBeVisible({ timeout: 10000 });
+            await confirmButton.click();
+
+            await expect.poll(async () => {
+                const slots = await match.hostPage
+                    .locator('[data-ability-slot]')
+                    .filter({ has: match.hostPage.locator('div.animate-pulse[class*="border-"]') })
+                    .evaluateAll(elements => elements.map(element => element.getAttribute('data-ability-slot')));
+                return slots;
+            }, { timeout: 10000 }).toEqual(['combo']);
+            await expect(
+                match.hostPage.locator('[data-ability-slot="sky"][data-passive-ability="true"]').locator('div.animate-pulse[class*="border-"]')
+            ).toHaveCount(0);
+            await screenshot(match.hostPage, testName, '01-vengeful-vines-highlight-on-combo-slot.png');
         } finally {
             await closeMatchContexts(match);
         }
@@ -565,11 +673,11 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
     });
 
 
-    test('树精神圣应在阶段推进中阻止负面状态', async ({ browser }, testInfo) => {
+    test('树精神圣防负面应在阶段推进中弹出可选响应窗', async ({ browser }, testInfo) => {
         test.setTimeout(120000);
         const baseURL = testInfo.project.use.baseURL as string | undefined;
         const match = await setupTreantNinjaMatch(browser, baseURL);
-        const testName = '树精神圣应在阶段推进中阻止负面状态';
+        const testName = '树精神圣防负面应在阶段推进中弹出可选响应窗';
 
         try {
             await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
@@ -608,15 +716,14 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await screenshot(match.guestPage, testName, '01-divine-prevent-debuff-before-advance.png');
 
             await clickAdvancePhase(match.guestPage, '1');
-            await match.guestPage.waitForTimeout(500);
-            const phaseAfterDivineAdvanceClick = await readHarnessState(match.guestPage).then(root => asRecord(root.sys).phase);
-            if (phaseAfterDivineAdvanceClick === 'offensiveRoll') {
-                await dispatchDiceThroneCommand(match.guestPage, {
-                    type: 'ADVANCE_PHASE',
-                    playerId: '1',
-                    payload: {},
-                });
-            }
+            await expect(match.hostPage.getByText('神性树灵：是否防止即将受到的负面状态？')).toBeVisible({ timeout: 10000 });
+            await expect(match.hostPage.getByRole('button', { name: /花费神性树灵/ })).toBeVisible({ timeout: 10000 });
+            await expect(match.hostPage.getByRole('button', { name: /不花费/ })).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '02-divine-choice-modal-skip-branch.png');
+
+            await match.hostPage.getByRole('button', { name: /不花费/ }).click();
+            await expect(match.hostPage.getByText('神性树灵：是否防止即将受到的负面状态？')).toBeHidden({ timeout: 10000 });
+            await clickAdvancePhase(match.guestPage, '1');
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
                 const root = await readHarnessState(match.guestPage);
@@ -629,8 +736,68 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     divine: tokens[TOKEN_IDS.TREANT_DIVINE] ?? 0,
                     poison: tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
                 };
-            }, { timeout: 10000 }).toEqual({ phase: 'defensiveRoll', divine: 0, poison: 0 });
-            await screenshot(match.guestPage, testName, '02-divine-prevent-debuff-after-advance.png');
+            }, { timeout: 10000 }).toEqual({ phase: 'defensiveRoll', divine: 1, poison: 1 });
+            await screenshot(match.hostPage, testName, '03-divine-skip-keeps-debuff-and-token.png');
+
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p0Tokens = asRecord(p0.tokens);
+                const p1 = asRecord(players['1']);
+                const p1Tokens = asRecord(p1.tokens);
+
+                players['0'] = { ...p0, tokens: { ...p0Tokens, [TOKEN_IDS.TREANT_DIVINE]: 1, [TOKEN_IDS.DELAYED_POISON]: 0 } };
+                players['1'] = { ...p1, tokens: { ...p1Tokens, [TOKEN_IDS.NINJUTSU]: 0 } };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'offensiveRoll',
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: {
+                        attackerId: '1',
+                        defenderId: '0',
+                        sourceAbilityId: 'poison-blade',
+                        isDefendable: true,
+                        damage: 6,
+                        offensiveRollEndTokenResolved: true,
+                    },
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                    treantSpiritSpentThisTurn: {},
+                };
+                root.sys = { ...sys, phase: 'offensiveRoll', currentPlayerIndex: 1, interaction: { ...asRecord(sys.interaction), current: undefined } };
+                return state;
+            });
+            await screenshot(match.guestPage, testName, '04-divine-prevent-branch-before-advance.png');
+
+            await clickAdvancePhase(match.guestPage, '1');
+            await expect(match.hostPage.getByText('神性树灵：是否防止即将受到的负面状态？')).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '05-divine-choice-modal-prevent-branch.png');
+
+            await match.hostPage.getByRole('button', { name: /花费神性树灵/ }).click();
+            await expect(match.hostPage.getByText('神性树灵：是否防止即将受到的负面状态？')).toBeHidden({ timeout: 10000 });
+            await clickAdvancePhase(match.guestPage, '1');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const root = await readHarnessState(match.guestPage);
+                const players = asRecordMap(core.players);
+                const defender = asRecord(players['0']);
+                const tokens = asRecord(defender.tokens) as Record<string, number>;
+                const spent = asRecord(asRecord(core.treantSpiritSpentThisTurn)['0']);
+                const sys = asRecord(root.sys);
+                return {
+                    phase: sys.phase,
+                    divine: tokens[TOKEN_IDS.TREANT_DIVINE] ?? 0,
+                    poison: tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
+                    spentDivine: spent[TOKEN_IDS.TREANT_DIVINE],
+                };
+            }, { timeout: 10000 }).toEqual({ phase: 'defensiveRoll', divine: 0, poison: 0, spentDivine: true });
+            await screenshot(match.hostPage, testName, '06-divine-prevent-consumes-token-and-blocks-debuff.png');
         } finally {
             await closeMatchContexts(match);
         }
@@ -738,7 +905,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     pendingAttack: {
                         attackerId: '1',
                         defenderId: '0',
-                        sourceAbilityId: undefined,
+                        sourceAbilityId: 'slash-3',
                         defenseAbilityId: 'rooted',
                         isDefendable: true,
                         damage: 0,
@@ -751,11 +918,33 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     phase: 'defensiveRoll',
                     currentPlayerIndex: 1,
                     interaction: { ...asRecord(sys.interaction), current: undefined },
-                }, [1, 4, 6]);
+                }, [4, 5, 1]);
                 return state;
             });
             await screenshot(match.hostPage, testName, '01-rooted-before-defense-advance.png');
 
+            await match.hostPage.getByRole('button', { name: '开始防御' }).click();
+            await expect(match.hostPage.getByRole('button', { name: '开始防御' })).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const slots = await match.hostPage
+                    .locator('[data-ability-slot]')
+                    .filter({ has: match.hostPage.locator('div.border-red-500') })
+                    .evaluateAll(elements => elements.map(element => element.getAttribute('data-ability-slot')));
+                return slots;
+            }, { timeout: 10000 }).toEqual(['meditate']);
+            await expect(
+                match.hostPage.locator('[data-ability-slot="sky"][data-passive-ability="true"]').locator('div.border-red-500, div.border-rose-400')
+            ).toHaveCount(0);
+            await expect(
+                match.hostPage.locator('[data-ability-slot="calm"]').locator('div.border-red-500, div.border-rose-400')
+            ).toHaveCount(0);
+            await screenshot(match.hostPage, testName, '02-rooted-defense-slot-highlight-after-showcase-dismissed.png');
+
+            await clickAdvancePhase(match.hostPage, '0');
+            await expect(match.hostPage.getByText('扎根：选择额外效果')).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '03-rooted-choice-modal-after-defense-roll.png');
+            await match.hostPage.getByRole('button', { name: '养成后：幼种 1' }).click();
+            await expect(match.hostPage.getByText('扎根：选择额外效果')).toBeHidden({ timeout: 10000 });
             await clickAdvancePhase(match.hostPage, '0');
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.hostPage);
@@ -763,14 +952,16 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 const treant = asRecord(players['0']);
                 const ninja = asRecord(players['1']);
                 const treantTokens = asRecord(treant.tokens) as Record<string, number>;
+                const treantResources = asRecord(treant.resources) as Record<string, number>;
                 const ninjaResources = asRecord(ninja.resources) as Record<string, number>;
                 return {
                     attackerHp: ninjaResources[RESOURCE_IDS.HP],
+                    defenderHp: treantResources[RESOURCE_IDS.HP],
                     seedling: treantTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
                     lifeSap: treantTokens[TOKEN_IDS.LIFE_SAP] ?? 0,
                 };
-            }, { timeout: 10000 }).toEqual({ attackerHp: 29, seedling: 1, lifeSap: 1 });
-            await screenshot(match.hostPage, testName, '02-rooted-after-defense-advance.png');
+            }, { timeout: 10000 }).toEqual({ attackerHp: 30, defenderHp: 46, seedling: 1, lifeSap: 0 });
+            await screenshot(match.hostPage, testName, '04-rooted-after-choice-and-resolve.png');
 
             await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
                 const root = asRecord(state.G ?? state);
@@ -784,6 +975,10 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
 
                 players['0'] = {
                     ...p0,
+                    resources: {
+                        ...asRecord(p0.resources),
+                        [RESOURCE_IDS.HP]: 50,
+                    },
                     tokens: {
                         ...p0Tokens,
                         [TOKEN_IDS.TREANT_SEEDLING]: 0,
@@ -804,7 +999,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                     pendingAttack: {
                         attackerId: '1',
                         defenderId: '0',
-                        sourceAbilityId: undefined,
+                        sourceAbilityId: 'slash-3',
                         defenseAbilityId: 'rooted',
                         isDefendable: false,
                         damage: 0,
@@ -820,7 +1015,7 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 }, [1, 4, 6]);
                 return state;
             });
-            await screenshot(match.hostPage, testName, '03-rooted-undefendable-before-advance.png');
+            await screenshot(match.hostPage, testName, '05-rooted-undefendable-before-advance.png');
 
             await clickAdvancePhase(match.hostPage, '0');
             await expect.poll(async () => {
@@ -829,14 +1024,727 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 const treant = asRecord(players['0']);
                 const ninja = asRecord(players['1']);
                 const treantTokens = asRecord(treant.tokens) as Record<string, number>;
-                const ninjaResources = asRecord(ninja.resources) as Record<string, number>;
+                const treantResources = asRecord(treant.resources) as Record<string, number>;
                 return {
-                    attackerHp: ninjaResources[RESOURCE_IDS.HP],
+                    defenderHp: treantResources[RESOURCE_IDS.HP],
                     seedling: treantTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
                     lifeSap: treantTokens[TOKEN_IDS.LIFE_SAP] ?? 0,
                 };
-            }, { timeout: 10000 }).toEqual({ attackerHp: 30, seedling: 0, lifeSap: 0 });
-            await screenshot(match.hostPage, testName, '04-rooted-undefendable-after-advance.png');
+            }, { timeout: 10000 }).toEqual({ defenderHp: 45, seedling: 0, lifeSap: 0 });
+            await screenshot(match.hostPage, testName, '06-rooted-undefendable-after-advance.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('树精专属主阶段卡应通过真实手牌完成升级与选择结算代表链', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '树精专属主阶段卡应通过真实手牌完成升级与选择结算代表链';
+
+        const prepareTreantMainCard = async (
+            cardId: string,
+            options: { cp?: number; seedling?: number; sapling?: number; divine?: number; lifeSap?: number } = {},
+        ) => {
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const resources = asRecord(p0.resources);
+                const tokens = asRecord(p0.tokens);
+
+                players['0'] = {
+                    ...p0,
+                    resources: {
+                        ...resources,
+                        [RESOURCE_IDS.CP]: options.cp ?? 5,
+                    },
+                    tokens: {
+                        ...tokens,
+                        [TOKEN_IDS.TREANT_SEEDLING]: options.seedling ?? 0,
+                        [TOKEN_IDS.TREANT_SAPLING]: options.sapling ?? 0,
+                        [TOKEN_IDS.TREANT_DIVINE]: options.divine ?? 0,
+                        [TOKEN_IDS.LIFE_SAP]: options.lifeSap ?? 0,
+                    },
+                    hand: [cloneTreantCard(cardId)],
+                    discard: [],
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '0',
+                    phase: 'main1',
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 0,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                };
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.hostPage);
+            await closeCardSpotlightIfOpen(match.hostPage);
+            await expect(match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first()).toBeVisible({ timeout: 10000 });
+        };
+
+        try {
+            await prepareTreantMainCard('upgrade-rooted-2', { cp: 5 });
+            await screenshot(match.hostPage, testName, '01-upgrade-rooted-2-before-drag.png');
+            await dragHandCardToPlay(match.hostPage, 'upgrade-rooted-2');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const resources = asRecord(p0.resources) as Record<string, number>;
+                const abilityLevels = asRecord(p0.abilityLevels) as Record<string, number>;
+                const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    rootedLevel: abilityLevels.rooted,
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 2, rootedLevel: 2, handCount: 0 });
+            await screenshot(match.hostPage, testName, '02-upgrade-rooted-2-after-play.png');
+
+            await prepareTreantMainCard('treant-card-drink-deep', { cp: 5, lifeSap: 0 });
+            await screenshot(match.hostPage, testName, '03-drink-deep-before-drag.png');
+            await dragHandCardToPlay(match.hostPage, 'treant-card-drink-deep');
+            await expect(match.hostPage.getByText('痛饮：选择获得生命源泉的玩家')).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '04-drink-deep-choice-modal.png');
+            await match.hostPage.getByRole('button', { name: /获得生命源泉/ }).first().click();
+            await expect(match.hostPage.getByText('痛饮：选择获得生命源泉的玩家')).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const resources = asRecord(p0.resources) as Record<string, number>;
+                const tokens = asRecord(p0.tokens) as Record<string, number>;
+                const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    lifeSap: tokens[TOKEN_IDS.LIFE_SAP] ?? 0,
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 4, lifeSap: 1, handCount: 0 });
+            await screenshot(match.hostPage, testName, '05-drink-deep-after-resolve.png');
+
+            await prepareTreantMainCard('treant-card-cultivate', { cp: 5, seedling: 0, sapling: 0, divine: 0 });
+            await screenshot(match.hostPage, testName, '06-cultivate-before-drag.png');
+            await dragHandCardToPlay(match.hostPage, 'treant-card-cultivate');
+            await expect(match.hostPage.getByText(/选择养成后的树灵/)).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '07-cultivate-choice-modal.png');
+            await match.hostPage.getByRole('button', { name: '结算后：幼种 3' }).click();
+            await expect(match.hostPage.getByText(/选择养成后的树灵/)).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const resources = asRecord(p0.resources) as Record<string, number>;
+                const tokens = asRecord(p0.tokens) as Record<string, number>;
+                const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    seedling: tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+                    sapling: tokens[TOKEN_IDS.TREANT_SAPLING] ?? 0,
+                    divine: tokens[TOKEN_IDS.TREANT_DIVINE] ?? 0,
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 2, seedling: 3, sapling: 0, divine: 0, handCount: 0 });
+            await screenshot(match.hostPage, testName, '08-cultivate-after-resolve.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('树精践踏应通过真实手牌打出并在奖励骰收口后计入攻击修正', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '树精践踏应通过真实手牌打出并在奖励骰收口后计入攻击修正';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const p0Resources = asRecord(p0.resources);
+                const p1Tokens = asRecord(p1.tokens);
+
+                players['0'] = {
+                    ...p0,
+                    resources: { ...p0Resources, [RESOURCE_IDS.CP]: 3 },
+                    hand: [cloneTreantCard('treant-card-trample')],
+                };
+                players['1'] = {
+                    ...p1,
+                    tokens: { ...p1Tokens, [TOKEN_IDS.THORN]: 0 },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '0',
+                    phase: 'offensiveRoll',
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: {
+                        attackerId: '0',
+                        defenderId: '1',
+                        sourceAbilityId: 'shattering-fist-3',
+                        isDefendable: true,
+                        damage: 5,
+                        bonusDamage: 0,
+                        attackModifierBonusDamage: 0,
+                    },
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'offensiveRoll',
+                    currentPlayerIndex: 0,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                }, [1, 2, 3, 4, 5]);
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.hostPage);
+            await closeCardSpotlightIfOpen(match.hostPage);
+            await expect(match.hostPage.locator('[data-testid="hand-area"] [data-card-id="treant-card-trample"]').first()).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '01-trample-before-drag.png');
+
+            await dragHandCardToPlay(match.hostPage, 'treant-card-trample');
+            await expect(match.hostPage.getByTestId('bonus-die-overlay')).toBeVisible({ timeout: 10000 });
+            await expect(match.hostPage.getByTestId('bonus-die-reroll-option-0')).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '02-trample-bonus-dice-overlay.png');
+
+            await closeBonusDieOverlay(match.hostPage);
+            await expect(match.hostPage.getByTestId('bonus-die-overlay')).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const resources = asRecord(p0.resources) as Record<string, number>;
+                const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                const pendingAttack = asRecord(core.pendingAttack);
+                const defenderTokens = asRecord(p1.tokens) as Record<string, number>;
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    handCount: hand.length,
+                    bonusDamage: pendingAttack.bonusDamage ?? 0,
+                    attackModifierBonusDamage: pendingAttack.attackModifierBonusDamage ?? 0,
+                    thorn: defenderTokens[TOKEN_IDS.THORN] ?? 0,
+                    pendingBonusOpen: Boolean(core.pendingBonusDiceSettlement),
+                };
+            }, { timeout: 10000 }).toEqual({
+                cp: 2,
+                handCount: 0,
+                bonusDamage: 3,
+                attackModifierBonusDamage: 3,
+                thorn: 1,
+                pendingBonusOpen: false,
+            });
+            await screenshot(match.hostPage, testName, '03-trample-after-closeout-bonus-damage-and-thorn.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('忍者道场应通过真实手牌打出并按骰面分支结算', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '忍者道场应通过真实手牌打出并按骰面分支结算';
+
+        const prepareDojoScenario = async (rollValue: number, handSize = 1) => {
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p1.resources);
+                const tokens = asRecord(p1.tokens);
+                const deck = Array.isArray(p1.deck) ? p1.deck : [];
+
+                players['1'] = {
+                    ...p1,
+                    resources: { ...resources, [RESOURCE_IDS.CP]: 2 },
+                    tokens: { ...tokens, [TOKEN_IDS.SMOKE_BOMB]: 0, [TOKEN_IDS.NINJUTSU]: 0 },
+                    hand: Array.from({ length: handSize }, () => cloneNinjaCard('ninja-card-dojo')),
+                    deck,
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'main1',
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                }, [rollValue]);
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.guestPage);
+            await closeCardSpotlightIfOpen(match.guestPage);
+            await expect(match.guestPage.locator('[data-testid="hand-area"] [data-card-id="ninja-card-dojo"]').first()).toBeVisible({ timeout: 10000 });
+        };
+
+        try {
+            await prepareDojoScenario(6);
+            await screenshot(match.guestPage, testName, '01-dojo-mask-before-drag.png');
+
+            await dragHandCardToPlay(match.guestPage, 'ninja-card-dojo');
+            await expect(match.guestPage.getByTestId('bonus-die-overlay')).toBeVisible({ timeout: 10000 });
+            await expect(match.guestPage.getByText(/道场|Dojo|烟雾弹|忍术/i).first()).toBeVisible({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '02-dojo-mask-bonus-die-overlay.png');
+
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const tokens = asRecord(p1.tokens) as Record<string, number>;
+                const hand = Array.isArray(p1.hand) ? p1.hand : [];
+                return {
+                    smokeBomb: tokens[TOKEN_IDS.SMOKE_BOMB] ?? 0,
+                    ninjutsu: tokens[TOKEN_IDS.NINJUTSU] ?? 0,
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ smokeBomb: 1, ninjutsu: 2, handCount: 0 });
+
+            await match.guestPage.getByLabel(/关闭|Close/i).first().click();
+            await expect(match.guestPage.getByTestId('bonus-die-overlay')).toBeHidden({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '03-dojo-mask-after-closeout.png');
+
+            await prepareDojoScenario(1);
+            const beforeOther = await readHarnessCoreState(match.guestPage);
+            const p1Before = asRecord(asRecordMap(beforeOther.players)['1']);
+            const deckBefore = Array.isArray(p1Before.deck) ? p1Before.deck.length : 0;
+            await screenshot(match.guestPage, testName, '04-dojo-other-before-drag.png');
+
+            await dragHandCardToPlay(match.guestPage, 'ninja-card-dojo');
+            await expect(match.guestPage.getByTestId('bonus-die-overlay')).toBeVisible({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '05-dojo-other-bonus-die-overlay.png');
+
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const tokens = asRecord(p1.tokens) as Record<string, number>;
+                const hand = Array.isArray(p1.hand) ? p1.hand : [];
+                const deck = Array.isArray(p1.deck) ? p1.deck : [];
+                return {
+                    smokeBomb: tokens[TOKEN_IDS.SMOKE_BOMB] ?? 0,
+                    ninjutsu: tokens[TOKEN_IDS.NINJUTSU] ?? 0,
+                    handCount: hand.length,
+                    deckDelta: deckBefore - deck.length,
+                };
+            }, { timeout: 10000 }).toEqual({ smokeBomb: 0, ninjutsu: 0, handCount: 1, deckDelta: 1 });
+
+            await match.guestPage.getByLabel(/关闭|Close/i).first().click();
+            await expect(match.guestPage.getByTestId('bonus-die-overlay')).toBeHidden({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '06-dojo-other-after-closeout.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('忍者雾隐应通过真实手牌打出并获得烟雾弹', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '忍者雾隐应通过真实手牌打出并获得烟雾弹';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p1.resources);
+                const tokens = asRecord(p1.tokens);
+
+                players['1'] = {
+                    ...p1,
+                    resources: { ...resources, [RESOURCE_IDS.CP]: 2 },
+                    tokens: { ...tokens, [TOKEN_IDS.SMOKE_BOMB]: 0 },
+                    hand: [cloneNinjaCard('ninja-card-vanish')],
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'main1',
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                };
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.guestPage);
+            await closeCardSpotlightIfOpen(match.guestPage);
+            await expect(match.guestPage.locator('[data-testid="hand-area"] [data-card-id="ninja-card-vanish"]').first()).toBeVisible({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '01-vanish-before-drag.png');
+
+            await dragHandCardToPlay(match.guestPage, 'ninja-card-vanish');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const tokens = asRecord(p1.tokens) as Record<string, number>;
+                const hand = Array.isArray(p1.hand) ? p1.hand : [];
+                return {
+                    smokeBomb: tokens[TOKEN_IDS.SMOKE_BOMB] ?? 0,
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ smokeBomb: 1, handCount: 0 });
+            await screenshot(match.guestPage, testName, '02-vanish-after-play-smoke-bomb.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('忍者训练毒镖刀扇应通过真实手牌主阶段打出并结算', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '忍者训练毒镖刀扇应通过真实手牌主阶段打出并结算';
+
+        const prepareNinjaMainCard = async (cardId: string, cp = 3) => {
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const p0Resources = asRecord(p0.resources);
+                const p0Tokens = asRecord(p0.tokens);
+                const p1Resources = asRecord(p1.resources);
+                const p1Tokens = asRecord(p1.tokens);
+
+                players['0'] = {
+                    ...p0,
+                    resources: { ...p0Resources, [RESOURCE_IDS.HP]: 30 },
+                    tokens: { ...p0Tokens, [TOKEN_IDS.DELAYED_POISON]: 0 },
+                    damageShields: [],
+                };
+                players['1'] = {
+                    ...p1,
+                    resources: { ...p1Resources, [RESOURCE_IDS.CP]: cp },
+                    tokens: { ...p1Tokens, [TOKEN_IDS.NINJUTSU]: 0 },
+                    hand: [cloneNinjaCard(cardId)],
+                    damageShields: [],
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'main1',
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = {
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                    responseWindow: { ...asRecord(sys.responseWindow), current: undefined },
+                };
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.guestPage);
+            await closeCardSpotlightIfOpen(match.guestPage);
+            const card = match.guestPage.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first();
+            await expect(card).toBeVisible({ timeout: 10000 });
+            await expect(card).toHaveAttribute('data-can-drag', 'true', { timeout: 10000 });
+        };
+
+        try {
+            await prepareNinjaMainCard('ninja-card-training', 3);
+            await screenshot(match.guestPage, testName, '01-training-before-drag.png');
+            await dragHandCardToPlay(match.guestPage, 'ninja-card-training');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const resources = asRecord(p1.resources) as Record<string, number>;
+                const tokens = asRecord(p1.tokens) as Record<string, number>;
+                const hand = Array.isArray(p1.hand) ? p1.hand : [];
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    ninjutsu: tokens[TOKEN_IDS.NINJUTSU] ?? 0,
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 3, ninjutsu: 1, handCount: 0 });
+            await screenshot(match.guestPage, testName, '02-training-after-play-ninjutsu.png');
+
+            await prepareNinjaMainCard('ninja-card-poison-dart', 3);
+            await screenshot(match.guestPage, testName, '03-poison-dart-before-drag.png');
+            await dragHandCardToPlay(match.guestPage, 'ninja-card-poison-dart');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const p0Tokens = asRecord(p0.tokens) as Record<string, number>;
+                const p1Resources = asRecord(p1.resources) as Record<string, number>;
+                const p1Hand = Array.isArray(p1.hand) ? p1.hand : [];
+                return {
+                    cp: p1Resources[RESOURCE_IDS.CP],
+                    handCount: p1Hand.length,
+                    delayedPoison: p0Tokens[TOKEN_IDS.DELAYED_POISON] ?? 0,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 1, handCount: 0, delayedPoison: 2 });
+            await screenshot(match.guestPage, testName, '04-poison-dart-after-play-delayed-poison.png');
+
+            await prepareNinjaMainCard('ninja-card-knife-fan', 3);
+            await screenshot(match.guestPage, testName, '05-knife-fan-before-drag.png');
+            await dragHandCardToPlay(match.guestPage, 'ninja-card-knife-fan');
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const p0Resources = asRecord(p0.resources) as Record<string, number>;
+                const p1Resources = asRecord(p1.resources) as Record<string, number>;
+                const p1Hand = Array.isArray(p1.hand) ? p1.hand : [];
+                return {
+                    cp: p1Resources[RESOURCE_IDS.CP],
+                    handCount: p1Hand.length,
+                    opponentHp: p0Resources[RESOURCE_IDS.HP],
+                    pendingDamageOpen: Boolean(core.pendingDamage),
+                };
+            }, { timeout: 10000 }).toEqual({
+                cp: 1,
+                handCount: 0,
+                opponentHp: 29,
+                pendingDamageOpen: false,
+            });
+            await screenshot(match.guestPage, testName, '06-knife-fan-after-play-direct-damage.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('忍者手里剑应通过真实手牌打出并在奖励骰收口后计入攻击修正', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '忍者手里剑应通过真实手牌打出并在奖励骰收口后计入攻击修正';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p1.resources);
+
+                players['1'] = {
+                    ...p1,
+                    resources: { ...resources, [RESOURCE_IDS.CP]: 3 },
+                    hand: [cloneNinjaCard('ninja-card-shuriken')],
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '1',
+                    phase: 'offensiveRoll',
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: {
+                        attackerId: '1',
+                        defenderId: '0',
+                        sourceAbilityId: 'slash',
+                        isDefendable: true,
+                        damage: 6,
+                        bonusDamage: 0,
+                        attackModifierBonusDamage: 0,
+                    },
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'offensiveRoll',
+                    currentPlayerIndex: 1,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                }, [1, 2, 3, 4, 6]);
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.guestPage);
+            await closeCardSpotlightIfOpen(match.guestPage);
+            await expect(match.guestPage.locator('[data-testid="hand-area"] [data-card-id="ninja-card-shuriken"]').first()).toBeVisible({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '01-shuriken-before-drag.png');
+
+            await dragHandCardToPlay(match.guestPage, 'ninja-card-shuriken');
+            await expect(match.guestPage.getByTestId('bonus-die-overlay')).toBeVisible({ timeout: 10000 });
+            await expect(match.guestPage.getByTestId('bonus-die-reroll-option-0')).toBeVisible({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '02-shuriken-bonus-dice-overlay.png');
+
+            await closeBonusDieOverlay(match.guestPage);
+            await expect(match.guestPage.getByTestId('bonus-die-overlay')).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const resources = asRecord(p1.resources) as Record<string, number>;
+                const hand = Array.isArray(p1.hand) ? p1.hand : [];
+                const pendingAttack = asRecord(core.pendingAttack);
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    handCount: hand.length,
+                    bonusDamage: pendingAttack.bonusDamage ?? 0,
+                    attackModifierBonusDamage: pendingAttack.attackModifierBonusDamage ?? 0,
+                    pendingBonusOpen: Boolean(core.pendingBonusDiceSettlement),
+                };
+            }, { timeout: 10000 }).toEqual({
+                cp: 2,
+                handCount: 0,
+                bonusDamage: 3,
+                attackModifierBonusDamage: 3,
+                pendingBonusOpen: false,
+            });
+            await screenshot(match.guestPage, testName, '03-shuriken-after-closeout-bonus-damage.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('忍者脱身应通过受击响应窗真实手牌打出并结算减伤奖励骰', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '忍者脱身应通过受击响应窗真实手牌打出并结算减伤奖励骰';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p1.resources);
+                const tokens = asRecord(p1.tokens);
+
+                players['1'] = {
+                    ...p1,
+                    resources: { ...resources, [RESOURCE_IDS.HP]: 30, [RESOURCE_IDS.CP]: 2 },
+                    tokens: { ...tokens, [TOKEN_IDS.SMOKE_BOMB]: 0 },
+                    hand: [cloneNinjaCard('ninja-card-escape')],
+                    damageShields: [],
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '0',
+                    phase: 'offensiveRoll',
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: {
+                        attackerId: '0',
+                        defenderId: '1',
+                        sourceAbilityId: 'shattering-fist',
+                        isDefendable: true,
+                        damage: 7,
+                    },
+                    pendingDamage: {
+                        id: 'e2e-ninja-escape-before-damage',
+                        sourcePlayerId: '0',
+                        targetPlayerId: '1',
+                        originalDamage: 7,
+                        currentDamage: 7,
+                        sourceAbilityId: 'shattering-fist',
+                        responseType: 'beforeDamageReceived',
+                        responderId: '1',
+                        isFullyEvaded: false,
+                    },
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'offensiveRoll',
+                    currentPlayerIndex: 0,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                    responseWindow: {
+                        ...asRecord(sys.responseWindow),
+                        current: {
+                            id: 'e2e-ninja-escape-response-window',
+                            sourceId: 'e2e-ninja-escape-before-damage',
+                            windowType: 'afterAttackResolved',
+                            responderQueue: ['1'],
+                            currentResponderIndex: 0,
+                            passedPlayers: [],
+                        },
+                    },
+                }, [4]);
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.guestPage);
+            await closeCardSpotlightIfOpen(match.guestPage);
+            const attackShowcaseContinue = match.guestPage.getByRole('button', { name: /^(继续|Continue)$/i }).first();
+            if (await attackShowcaseContinue.isVisible({ timeout: 1000 }).catch(() => false)) {
+                await attackShowcaseContinue.click();
+                await expect(attackShowcaseContinue).toBeHidden({ timeout: 10000 });
+            }
+            const escapeCard = match.guestPage.locator('[data-testid="hand-area"] [data-card-id="ninja-card-escape"]').first();
+            await expect(escapeCard).toBeVisible({ timeout: 10000 });
+            await expect(escapeCard).toHaveAttribute('data-can-drag', 'true', { timeout: 10000 });
+            await screenshot(match.guestPage, testName, '01-escape-before-drag-pending-damage.png');
+
+            await dragHandCardToPlay(match.guestPage, 'ninja-card-escape');
+            const bonusDieOverlay = match.guestPage.getByTestId('bonus-die-overlay');
+            await expect(bonusDieOverlay).toBeVisible({ timeout: 10000 });
+            await expect(match.guestPage.getByTestId('bonus-die-reroll-option-0')).toBeVisible({ timeout: 10000 });
+            await screenshotLocator(bonusDieOverlay, testName, '02-escape-bonus-die-overlay-detail.png');
+            await screenshot(match.guestPage, testName, '02-escape-bonus-die-overlay.png');
+
+            await closeBonusDieOverlay(match.guestPage);
+            await expect(match.guestPage.getByTestId('bonus-die-overlay')).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const hand = Array.isArray(p1.hand) ? p1.hand : [];
+                const shields = Array.isArray(p1.damageShields) ? p1.damageShields as JsonRecord[] : [];
+                return {
+                    handCount: hand.length,
+                    shieldValue: shields[0]?.value ?? 0,
+                    pendingDamage: asRecord(core.pendingDamage).currentDamage,
+                };
+            }, { timeout: 10000 }).toEqual({ handCount: 0, shieldValue: 2, pendingDamage: 7 });
+            await screenshot(match.guestPage, testName, '03-escape-after-closeout-shield-granted.png');
+
+            await dispatchDiceThroneCommand(match.guestPage, {
+                type: 'SKIP_TOKEN_RESPONSE',
+                playerId: '1',
+                payload: {},
+            });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const resources = asRecord(p1.resources) as Record<string, number>;
+                return {
+                    hp: resources[RESOURCE_IDS.HP],
+                    pendingDamageOpen: Boolean(core.pendingDamage),
+                };
+            }, { timeout: 10000 }).toEqual({ hp: 25, pendingDamageOpen: false });
+            await screenshot(match.guestPage, testName, '04-escape-after-end-attack-damage-resolved.png');
         } finally {
             await closeMatchContexts(match);
         }

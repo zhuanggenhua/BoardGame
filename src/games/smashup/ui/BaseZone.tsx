@@ -9,7 +9,7 @@ import { Paperclip } from 'lucide-react';
 import type { SmashUpCore, BaseInPlay, MinionOnBase } from '../domain/types';
 import { SU_COMMANDS } from '../domain/types';
 import { SMASHUP_CARD_BACK } from '../domain/ids';
-import { getTotalEffectivePowerOnBase, getEffectivePower, getEffectivePowerBreakdown, getEffectiveBreakpoint, getOngoingCardPowerContribution, getBasePowerModifiers, getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
+import { getTotalEffectivePowerOnBase, getEffectivePower, getEffectivePowerBreakdown, getEffectiveBreakpoint, getOngoingCardPowerContribution, getPlayerEffectivePowerOnBase } from '../domain/ongoingModifiers';
 import { getBaseDef, getBasePodVariantId, getMinionDef, getCardDef, getTitanDef, resolveCardName, resolveCardText } from '../data/cards';
 import { getTitansOnBase } from '../domain/abilityHelpers';
 import { getBaseRestrictions } from '../domain/ongoingEffects';
@@ -425,9 +425,8 @@ export const BaseZone: React.FC<{
                 : `${pConf.border} ${pConf.shadow}`}`;
 
         return (
-            <div className="group relative hover:!z-[999]" style={{ width: layoutInlineSize(titanCardWidth, layout) }}>
+            <div key={titan.uid} className="group relative hover:!z-[999]" style={{ width: layoutInlineSize(titanCardWidth, layout) }}>
             <motion.div
-                key={titan.uid}
                 data-titan-uid={titan.uid}
                 data-testid={`su-base-titan-${titan.uid}`}
                 {...getTitanTouchInspectProps(`titan-${titan.uid}`, { defId: titan.defId })}
@@ -796,7 +795,6 @@ export const BaseZone: React.FC<{
                     const minions = minionsByController[pid] || [];
 
                     // 个人总力量口径必须走统一计算入口，避免漏掉“只影响控制者总力量、不影响基地总力量”的持续效果。
-                    const minionTotal = minions.reduce((sum, m) => sum + getEffectivePower(core, m, baseIndex), 0);
                     const total = getPlayerEffectivePowerOnBase(core, base, baseIndex, pid);
                     const basePowerTotal = minions.reduce((sum, m) => sum + m.basePower, 0);
                     const modifierDelta = total - basePowerTotal;

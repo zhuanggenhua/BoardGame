@@ -573,22 +573,28 @@ describe('多基地同时计分 afterScoring 触发问题', () => {
         // 验证：应该有 BASE_SCORED 事件
         const allEvents = result.steps.flatMap(step => step.events);
         const scoredEvents = allEvents.filter((e: string) => e === 'su:base_scored');
-        
-        console.log('=== Handler 测试结果 ===');
-        console.log('BASE_SCORED 事件数量:', scoredEvents.length);
-        console.log('所有事件:', allEvents);
-        console.log('玩家分数:', {
-            p0: result.finalState.core.players['0'].vp,
-            p1: result.finalState.core.players['1'].vp,
-        });
-        
-        // 至少应该有 1 个基地被计分
-        expect(scoredEvents.length).toBeGreaterThanOrEqual(1);
-        
-        // 验证：玩家应该获得了分数
-        const p0Score = result.finalState.core.players['0'].vp;
-        const p1Score = result.finalState.core.players['1'].vp;
-        expect(p0Score + p1Score).toBeGreaterThan(0);
+
+        expect(scoredEvents).toHaveLength(1);
+        expect(allEvents).toEqual([
+            'SYS_PHASE_CHANGED',
+            'su:before_scoring_cleared',
+            'su:when_scoring_cleared',
+            'su:after_scoring_cleared',
+            'su:scoring_eligible_bases_locked',
+            'SYS_INTERACTION_RESOLVED',
+            'su:before_scoring_triggered',
+            'su:when_scoring_triggered',
+            'su:base_scored',
+            'su:after_scoring_triggered',
+            'su:base_cleared',
+            'su:base_replaced',
+        ]);
+
+        expect(result.finalState.core.players['0'].vp).toBe(2);
+        expect(result.finalState.core.players['1'].vp).toBe(0);
+        const nextPrompt = getActiveSimpleChoice(result.finalState);
+        expect(nextPrompt?.sourceId).toBe('multi_base_scoring');
+        expect(getPromptOptions(nextPrompt).map((option: any) => option.value.baseIndex).sort()).toEqual([1, 2]);
     });
 
     it('三个基地同时计分时，第二次选择后最后一个基地只会自动结算一次', () => {

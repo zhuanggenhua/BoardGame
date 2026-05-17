@@ -20,6 +20,7 @@ import {
     revealHand,
     buildAbilityFeedback,
     buildValidatedCardToDeckBottomEvents,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
@@ -524,7 +525,8 @@ const elderThingMiGoPromptProgram = createPromptProgram<ElderThingMiGoPromptCont
             { sourceId: 'elder_thing_mi_go', targetType: 'button' },
         );
     },
-    onResolve: ({ context, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { context, value, timestamp } = args;
         const choice = (value as { choice?: string } | undefined)?.choice;
         const currentOpponent = context.opponents[context.opponentIdx];
         const events: SmashUpEvent[] = [];
@@ -533,7 +535,7 @@ const elderThingMiGoPromptProgram = createPromptProgram<ElderThingMiGoPromptCont
             const evt = drawMadnessCards(currentOpponent, 1, context.matchState.core, 'elder_thing_mi_go', timestamp);
             if (evt) events.push(evt);
         } else {
-            events.push(...buildStandardDrawEvents(context.matchState.core, context.playerId, 1, random, timestamp));
+            events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: context.matchState }, context.playerId, 1));
         }
 
         const nextIdx = context.opponentIdx + 1;
@@ -1055,7 +1057,8 @@ const elderThingMiGoPodPromptProgram = createPromptProgram<ElderThingMiGoPodProm
         ],
         { sourceId: 'elder_thing_mi_go_pod', targetType: 'button' },
     ),
-    onResolve: ({ context, state, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { context, state, value, timestamp } = args;
         const choice = (value as PodYesNoChoiceValue | undefined)?.choice;
         const opponent = context.opponents[context.opponentIdx];
         const events: SmashUpEvent[] = [];
@@ -1066,7 +1069,7 @@ const elderThingMiGoPodPromptProgram = createPromptProgram<ElderThingMiGoPodProm
             if (evt) events.push(evt);
             nextContext = { ...context, anyDrew: true };
         } else {
-            events.push(...buildStandardDrawEvents(state.core, context.casterPlayerId, 1, random, timestamp));
+            events.push(...buildStandardDrawEventsFromRuntimeContext(args, context.casterPlayerId, 1));
             nextContext = { ...context, declinedCount: context.declinedCount + 1 };
         }
 

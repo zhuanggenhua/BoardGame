@@ -14,6 +14,7 @@ import {
     buildMinionTargetOptions,
     buildPlayerTargetOptions,
     buildValidatedMoveEvents,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
     createSkipOption,
     getMinionPower,
@@ -451,13 +452,14 @@ const worldChampsAkyeCardPromptProgram = createPromptProgram<WorldChampsAkyeCard
             { sourceId: 'world_champs_akye_the_turtle_card', targetType: 'hand' },
         );
     },
-    onResolve: ({ state, context, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { state, context, value, timestamp } = args;
         const selected = value as CardChoice;
         if (!selected.cardUid || !selected.defId || !context.targetPlayerId) return { events: [] };
         return {
             events: [
                 transferCard(selected.cardUid, selected.defId, context.playerId, context.targetPlayerId, 'world_champs_akye_the_turtle', timestamp),
-                ...buildStandardDrawEvents(state.core, context.playerId, 2, random, timestamp),
+                ...buildStandardDrawEventsFromRuntimeContext(args, context.playerId, 2),
             ],
         };
     },

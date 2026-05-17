@@ -382,6 +382,7 @@ export interface TokenConsumedEvent extends GameEvent<'TOKEN_CONSUMED'> {
         tokenId: string;
         amount: number;
         newTotal: number;
+        sourceAbilityId?: string;
     };
 }
 
@@ -645,6 +646,8 @@ export interface ChoiceRequestedEvent extends GameEvent<'CHOICE_REQUESTED'> {
             customId?: string;
             /** 选项显示文案 key（i18n）。若不提供，将根据 statusId/tokenId 自动推导 */
             labelKey?: string;
+            /** labelKey 对应的插值参数 */
+            labelParams?: Record<string, string | number>;
             /** true 时仅展示，不允许点击 */
             disabled?: boolean;
         }>;

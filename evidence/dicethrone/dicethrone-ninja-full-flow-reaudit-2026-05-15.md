@@ -65,33 +65,35 @@
 
 | 对象 | 真相源 | 静态定义 | 候选/入口 | 命令/执行 | 消耗/限制 | 主效果 | 分支/否定 | 后续清理 | 证据层级 | 结论 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `ninja-card-training` | 卡图：0CP 主要阶段，获得忍术 | main action，grant ninjutsu 1 | main 阶段手牌候选未逐卡 E2E | 通用打牌 | 0CP | token +1 | 无 | 通用打牌清理 | L1/L2 | token 后续有覆盖，逐卡打出缺 L3 |
+| `ninja-card-training` | 卡图：0CP 主要阶段，获得忍术 | main action，grant ninjutsu 1 | main 阶段真实手牌 E2E 已覆盖 | 通用打牌 | 0CP | token +1 | 无 | 通用打牌清理 | L3 | 真实手牌打出、手牌消耗、`ninjutsu=1` 已覆盖 |
 | `upgrade-blink-2` | 卡图：升级瞬身 | upgrade 2CP replace blink | main 阶段手牌候选未逐卡 E2E | 通用打牌 | 2CP | replaceAbility | 无 | 升级后能力表更新 | L1 | 缺逐卡执行验证 |
 | `upgrade-going-forward-2` | 卡图：升级一往无前 | upgrade 2CP replace | 同上 | 通用打牌 | 2CP | replaceAbility | 无 | 能力表更新 | L1 | 缺逐卡执行验证 |
 | `upgrade-slash-2` | 卡图：升级斩击 | upgrade 2CP replace | 同上 | 通用打牌 | 2CP | replaceAbility | 无 | 能力表更新 | L1 | 缺逐卡执行验证 |
 | `upgrade-shadow-step-2` | 卡图：升级暗影步 | upgrade 2CP replace | 同上 | 通用打牌 | 2CP | replaceAbility | 无 | 能力表更新 | L1/L2 | 后续 token 代表覆盖，逐卡缺 L3 |
-| `ninja-card-shuriken` | 卡图：攻击修正，投 5 骰，每忍刀 +1 | roll action，isAttackModifier | roll 阶段手牌候选未逐卡 E2E | 通用打牌 + reward dice | 1CP | bonusDamage | 骰面分支 | 特写收口 | L1 | 缺专属卡奖励骰 E2E |
-| `ninja-card-escape` | 卡图：被攻击后即时，减伤/烟雾弹 | instant，pendingDamage target | beforeDamageReceived 候选未逐卡 E2E | 通用打牌 + rollDie | 0CP | shield 或 smoke | 骰面分支 | 响应窗收口 | L1/L2 | smoke 后续覆盖，卡牌本体缺 L3 |
-| `ninja-card-poison-dart` | 卡图：2CP 主要阶段，给慢性中毒 | main，grant poison 2 | main 候选未逐卡 E2E | 通用打牌 | 2CP | poison +2 | 上限 2 | 回合结束 poison 清理 | L1/L2 | poison 后续覆盖，卡牌本体缺 L3 |
-| `ninja-card-knife-fan` | 卡图：2CP 主要阶段，1 不可防御伤害 | main action，direct unblockable damage 1 | 合同测试 main 可打、offensiveRoll 不可打 | 通用打牌 | 2CP | direct damage | roll 阶段否定已测 | 通用打牌清理 | L2 | 四项回归内已审，缺真实打出 E2E |
+| `ninja-card-shuriken` | 卡图：攻击修正，投 5 骰，每忍刀 +1 | roll action，isAttackModifier | roll 阶段真实手牌 E2E 已覆盖 | 通用打牌 + reward dice | 1CP | bonusDamage / attackModifierBonusDamage | 5 骰中 3 忍刀分支已测 | 特写收口后 `pendingBonusDiceSettlement` 清空 | L3 | 真实手牌、奖励骰特写、CP/手牌消耗、收口后攻击修正 +3 已覆盖 |
+| `ninja-card-escape` | 卡图：被攻击后即时，减伤/烟雾弹 | instant，pendingDamage target | 受击 afterAttackResolved 响应窗真实手牌 E2E 已覆盖 | 通用打牌 + rollDie | 0CP | 手里剑骰面授 2 点护盾 | 手里剑减伤分支已测；烟雾弹分支由 smoke 后续代表覆盖 | `SKIP_TOKEN_RESPONSE` 后伤害收口 | L3 | 真实响应窗手牌、奖励骰本体、手牌消耗、护盾写入与伤害收口已覆盖 |
+| `ninja-card-poison-dart` | 卡图：2CP 主要阶段，给慢性中毒 | main，grant poison 2 | main 阶段真实手牌 E2E 已覆盖 | 通用打牌 | 2CP | poison +2 | 上限 2 | 回合结束 poison 清理 | L3 | 真实手牌打出、CP 3->1、对手 `delayed_poison=2` 已覆盖 |
+| `ninja-card-knife-fan` | 卡图：2CP 主要阶段，1 不可防御伤害 | main action，direct unblockable damage 1 | main 阶段真实手牌 E2E 已覆盖；offensiveRoll 否定由合同测试覆盖 | 通用打牌 | 2CP | direct damage | roll 阶段否定已测 | 通用打牌清理 | L3 | 真实手牌打出、CP 3->1、对手 HP 30->29、`pendingDamage` 未打开已覆盖 |
 | `upgrade-smoke-screen-2` | 卡图：升级烟雾阵 | upgrade 2CP replace | main 候选未逐卡 E2E | 通用打牌 | 2CP | replaceAbility | 无 | 能力表更新 | L1/L2 | 后续 token 代表覆盖，逐卡缺 L3 |
 | `upgrade-shadow-fang-2` | 卡图：升级影牙 | upgrade 2CP replace | main 候选未逐卡 E2E | 通用打牌 | 2CP | replaceAbility | 无 | 能力表更新 | L1/L2 | 后续 token 代表覆盖，逐卡缺 L3 |
 | `upgrade-poison-blade-2` | 卡图：升级毒刃 | upgrade 2CP replace | main 候选未逐卡 E2E | 通用打牌 | 2CP | replaceAbility | 无 | 能力表更新 | L1/L2 | 后续 poison/不可防御代表覆盖，逐卡缺 L3 |
 | `upgrade-death-blossom-2` | 卡图：升级死亡盛放 | upgrade 2CP replace | main 候选未逐卡 E2E | 通用打牌 | 2CP | replaceAbility | 无 | 能力表更新 | L1 | 缺逐卡执行验证 |
-| `ninja-card-vanish` | 卡图：0CP 即时，获得烟雾弹 | instant，grant smoke 1 | instant 候选未逐卡 E2E | 通用打牌 | 0CP | smoke +1 | 无 | 通用打牌清理 | L1/L2 | smoke 后续覆盖，卡牌本体缺 L3 |
-| `ninja-card-dojo` | 卡图：0CP 主要阶段，烟雾弹 + 忍术 | main，grant smoke 1/ninjutsu 2 | main 候选未逐卡 E2E | 通用打牌 | 0CP | token grant | 上限 | 通用打牌清理 | L1/L2 | token 后续覆盖，卡牌本体缺 L3 |
+| `ninja-card-vanish` | 卡图：0CP 即时，获得烟雾弹 | instant，grant smoke 1 | 真实手牌 E2E 已覆盖 | 通用打牌 | 0CP | smoke +1 | 无 | 通用打牌清理 | L3 | 真实手牌打出、手牌消耗、烟雾弹写入已覆盖 |
+| `ninja-card-dojo` | 卡图：0CP 主要阶段，投 1 骰；面具=>烟雾弹+2 忍术；否则抽 1 | main，rollDie 1；mask 分支 grant smoke/ninjutsu；default draw 1 | main 阶段真实手牌 E2E 已覆盖 | 通用打牌后解析 immediate rollDie | 0CP | mask 分支 token grant；非 mask 抽牌 | 骰面成功/失败分支均有截图链 | 奖励骰 settlement 后通用打牌清理 | L3 | 2026-05-17 修复旧“直接给 token”假阳性；两分支 L2 + 真实手牌 L3 已补 |
 
 ## 当前可确认的已覆盖项
 
 - 四项用户指出回归已有独立审计：`evidence/dicethrone/dicethrone-ninja-regression-audit-2026-05-14.md`。
 - Token 复杂链路已有代表覆盖：`ninjutsu` 奖励骰与 6 点选择、`smoke_bomb` 成功免伤、`delayed_poison` 回合结束。
-- `ninja-card-knife-fan` 时机合同已有 L2 覆盖：main 可打，offensiveRoll 不可打。
+- `ninja-card-knife-fan` 时机合同已有 L2 覆盖：main 可打，offensiveRoll 不可打；2026-05-17 又补真实主阶段手牌 L3，证明 direct unblockable damage 1 会扣对手 HP。
 
 ## 仍不能宣称完成的范围
 
 - 大多数基础攻击技能只有静态定义与通用能力执行假设，未逐技能真实入口 L3。
 - 多张升级卡只有 replaceAbility 静态合同，未逐卡真实打出验证升级后能力表变化。
-- `ninja-card-shuriken`、`ninja-card-escape` 这类带奖励骰/响应窗的专属卡缺专属 E2E 截图链。
+- `ninja-card-escape` 已补受击响应窗真实手牌 L3 截图链。
+- `ninja-card-dojo` 已补真实手牌打出、奖励骰、面具成功、非面具抽牌和收口截图链，但该单卡 L3 不能外推升级卡或基础/升级技能本体。
+- `ninja-card-training`、`ninja-card-poison-dart`、`ninja-card-knife-fan`、`ninja-card-shuriken`、`ninja-card-vanish` 与 `ninja-card-escape` 已补真实手牌 L3，但不能外推升级卡或其它未逐卡验证对象。
 - `smoke_bomb` 失败骰面分支缺 E2E；当前只证明成功免伤。
 - 若后续要宣称 Ninja 全量收口，必须补齐上述对象或明确按发布范围冻结；不能再用代表路径替代。
 
@@ -107,8 +109,22 @@
 
 本轮抽样深审修订本文件部分结论：
 
-- `ninja-card-shuriken`：旧矩阵写“缺专属卡奖励骰 E2E / L1”，但实际问题比“缺 E2E”更严重。旧实现使用 `timing: 'withDamage'`，而 `PLAY_CARD` 只解析 `immediate`，导致卡牌打出后奖励骰加伤不执行。现已改为 `immediate + resolutionMode: 'attackBonus'`，并补 L2 行为测试；仍缺 L3 真实手牌打出 E2E。
-- `ninja-card-escape`：已补 L2 行为覆盖，证明受击响应窗可打，护盾抵消后续结算伤害；仍缺 L3。
+- `ninja-card-shuriken`：旧矩阵写“缺专属卡奖励骰 E2E / L1”，但实际问题比“缺 E2E”更严重。旧实现使用 `timing: 'withDamage'`，而 `PLAY_CARD` 只解析 `immediate`，导致卡牌打出后奖励骰加伤不执行。现已改为 `immediate + resolutionMode: 'attackBonus'`，并补 L2 行为测试；2026-05-17 追加真实手牌 L3，覆盖打出、奖励骰特写、CP/手牌消耗、收口后 `bonusDamage=3` 与 `attackModifierBonusDamage=3`。
+  - 真实入口命令：`npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者手里剑应通过真实手牌打出并在奖励骰收口后计入攻击修正"`，2026-05-17 实测 `1 passed`。
+  - 截图证据：`evidence/dicethrone/dicethrone-ninja-shuriken-vanish-real-hand-e2e-2026-05-17.md`。
+- `ninja-card-escape`：已补 L2 行为覆盖，证明受击响应窗可打，护盾抵消后续结算伤害；2026-05-17 追加真实受击响应窗手牌 L3，覆盖可拖拽态、奖励骰本体、手牌消耗、护盾写入与 `SKIP_TOKEN_RESPONSE` 后 HP=25 / `pendingDamage` 清空。
+  - 真实入口命令：`npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者脱身应通过受击响应窗真实手牌打出并结算减伤奖励骰"`，2026-05-17 实测 `1 passed`。
+  - 截图证据：`evidence/dicethrone/dicethrone-ninja-escape-real-hand-e2e-2026-05-17.md`。
 - `smoke_bomb` 失败分支：已补 L2 行为覆盖，证明失败骰面消耗 token 但不关闭 pendingDamage、不提前扣 HP；仍缺失败分支 E2E。
+- `ninja-card-dojo`：2026-05-17 重审发现旧矩阵和实现把卡图/Wiki 的“投 1 骰；面具成功，否则抽 1”误录成直接获得烟雾弹与 2 忍术。现已改为 `rollDie + conditionalEffects/defaultEffect`，并补 L2 覆盖 mask 成功分支与非 mask 抽牌分支；随后补 L3 真实手牌 E2E，覆盖打出、奖励骰特写、面具成功、非面具抽牌和收口。
+  - 验证命令：`npx vitest run src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts --configLoader native --maxWorkers 1`，2026-05-17 实测 `5/5` 通过。
+  - 真实入口命令：`npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者道场应通过真实手牌打出并按骰面分支结算"`，2026-05-17 实测 `1 passed`。
+  - 截图证据：`evidence/dicethrone/dicethrone-ninja-dojo-real-hand-e2e-2026-05-17.md`。
+- `ninja-card-vanish`：2026-05-17 追加真实手牌 L3，覆盖打出、手牌消耗和 `smoke_bomb=1`。
+  - 真实入口命令：`npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者雾隐应通过真实手牌打出并获得烟雾弹"`，2026-05-17 实测 `1 passed`。
+  - 截图证据：`evidence/dicethrone/dicethrone-ninja-shuriken-vanish-real-hand-e2e-2026-05-17.md`。
+- `ninja-card-training` / `ninja-card-poison-dart` / `ninja-card-knife-fan`：2026-05-17 追加真实主阶段手牌 L3，覆盖可拖拽态、打出、手牌消耗、CP 消耗与权威状态写入。训练写入 `ninjutsu=1`；毒镖写入对手 `delayed_poison=2`；刀扇造成 1 点直接不可防御伤害且不打开 `pendingDamage`。
+  - 真实入口命令：`npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者训练毒镖刀扇应通过真实手牌主阶段打出并结算"`，2026-05-17 实测 `1 passed`。
+  - 截图证据：`evidence/dicethrone/dicethrone-ninja-main-action-real-hand-e2e-2026-05-17.md`。
 
 本轮追加结论不改变主口径：Ninja 仍不能被描述为全对象全交互端到端完成。

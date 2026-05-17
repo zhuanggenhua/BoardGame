@@ -14,6 +14,7 @@ import {
     buildBaseTargetOptions,
     peekDeckTop,
     buildAbilityFeedback,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
@@ -534,7 +535,8 @@ const robotTechCenterPromptProgram = createPromptProgram<RobotTechCenterContext,
             return buildBaseTargetOptions(candidates, state.core);
         },
     ),
-    onResolve: ({ state, playerId, value, timestamp }) => {
+    onResolve: (args) => {
+        const { state, playerId, value } = args;
         if ((value as { __cancel__?: boolean }).__cancel__) return { events: [] };
         const choice = value as { baseIndex?: number };
         if (choice.baseIndex === undefined) return { events: [] };
@@ -544,7 +546,7 @@ const robotTechCenterPromptProgram = createPromptProgram<RobotTechCenterContext,
         const player = state.core.players[playerId];
         if (count === 0 || !player) return { events: [] };
         return {
-            events: buildStandardDrawEvents(state.core, playerId, count, random, timestamp),
+            events: buildStandardDrawEventsFromRuntimeContext(args, playerId, count),
         };
     },
 });

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { MatchChatMessage } from '../../services/matchSocket';
 import { UI_Z_INDEX } from '../../core';
 import { GAME_HUD_FAB_Z_INDEX, getLatestIncomingMessage, isSelfChatMessage, resolveGameHudPhase, trimChatMessages } from '../game/framework/widgets/GameHUD';
-import { MOBILE_FAB_VISIBLE_ITEM_LIMIT, resolveFabSatellitesToRender, resolveMobileFabOverflowWarning, shouldTrackFabButtonRect } from '../system/FabMenu';
+import { MOBILE_FAB_VISIBLE_ITEM_LIMIT, resolveFabLayerZIndex, resolveFabSatellitesToRender, resolveMobileFabOverflowWarning, shouldTrackFabButtonRect } from '../system/FabMenu';
 import { resolveExpandedFabLayout } from '../system/fabLayout';
 import { resolveFabStoredPosition, serializeFabPositionPercent } from '../system/fabPosition';
 
@@ -86,6 +86,15 @@ describe('FabMenu helpers', () => {
     it('操作日志卡牌预览层级必须高于悬浮球，且不改变悬浮球层级', () => {
         expect(GAME_HUD_FAB_Z_INDEX).toBe(UI_Z_INDEX.emergencyHud);
         expect(UI_Z_INDEX.cardPreviewTooltip).toBeGreaterThan(GAME_HUD_FAB_Z_INDEX);
+    });
+
+    it('FAB 内部浮层层级必须由同一个基准层级派生', () => {
+        const layers = resolveFabLayerZIndex(GAME_HUD_FAB_Z_INDEX);
+
+        expect(layers.panel).toBeGreaterThan(GAME_HUD_FAB_Z_INDEX);
+        expect(layers.root).toBeGreaterThan(layers.panel);
+        expect(layers.floatingText).toBeGreaterThan(layers.root);
+        expect(layers.floatingText).toBeLessThan(UI_Z_INDEX.cardPreviewTooltip);
     });
 
     it('卫星按钮顺序始终按业务定义靠近主球的一端优先渲染', () => {

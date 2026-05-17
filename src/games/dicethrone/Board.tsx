@@ -1745,7 +1745,8 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     bus={fxBus}
                     getCellPosition={() => ({ left: 0, top: 0, width: 0, height: 0 })}
                     onEffectImpact={(id) => {
-                        // 飞行动画到达目标：释放对应 HP 冻结 + 触发受击反馈
+                        // 飞行动画到达目标：释放对应 HP 冻结 + 触发受击反馈。
+                        // DiceThrone 伤害现已允许在 impact 时推进下一段，避免 3 秒飘字把后续伤害/HP 更新卡死。
                         const info = fxImpactMapRef.current.get(id);
                         if (info) {
                             // CP 步骤 bufferKey 为空，无需释放缓冲
@@ -1763,9 +1764,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                             }
                             fxImpactMapRef.current.delete(id);
                         }
+                        advanceQueue(id);
                     }}
                     onEffectComplete={(id) => {
-                        // 动画完成：推进队列中的下一步（伤害→治疗序列化）
+                        // 动画完成：兜底推进队列中的下一步（正常情况下会在 impact 时已推进）
                         advanceQueue(id);
                     }}
                 />

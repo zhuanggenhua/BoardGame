@@ -318,6 +318,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             value: number;
                             customId?: string;
                             labelKey?: string;
+                            labelParams?: Record<string, string | number>;
                             disabled?: boolean;
                         }>[] = payload.options.map((opt, index) => {
                             const label = opt.labelKey
@@ -330,6 +331,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                                 value: opt,
                                 disabled: opt.disabled,
                                 labelKey: opt.labelKey,
+                                labelParams: opt.labelParams,
                             };
                         });
 
@@ -364,6 +366,7 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                         value: number;
                         customId?: string;
                         labelKey?: string;
+                        labelParams?: Record<string, string | number>;
                         disabled?: boolean;
                     }>[] = payload.options.map((opt, index) => {
                         const label = opt.labelKey
@@ -375,6 +378,8 @@ export function createDiceThroneEventSystem(): EngineSystem<DiceThroneCore> {
                             label,
                             value: opt,
                             disabled: opt.disabled,
+                            labelKey: opt.labelKey,
+                            labelParams: opt.labelParams,
                         };
                     });
 

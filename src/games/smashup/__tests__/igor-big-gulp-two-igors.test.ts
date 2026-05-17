@@ -22,17 +22,10 @@ import {
 import { runCommand } from './testRunner';
 import { SU_COMMANDS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
-import { resolveOnDestroy } from '../domain/index';
 
 describe('Igor + Big Gulp: 一个 Igor 被消灭', () => {
     beforeAll(() => {
         initAllAbilities();
-    });
-
-    it('验证 Igor onDestroy 已注册', () => {
-        const executor = resolveOnDestroy('frankenstein_igor');
-        console.log('Igor onDestroy executor:', executor ? 'REGISTERED' : 'NOT REGISTERED');
-        expect(executor).toBeDefined();
     });
 
     it('一大口消灭一个 Igor → 只触发一次 onDestroy', () => {
@@ -62,7 +55,6 @@ describe('Igor + Big Gulp: 一个 Igor 被消灭', () => {
             currentPlayerIndex: 1,
         });
 
-        console.log('\n=== 步骤1：打出"一大口" ===');
         // 步骤1：玩家1打出"一大口"（需要指定目标基地）
         const result1 = runCommand(makeMatchState(core), {
             type: SU_COMMANDS.PLAY_ACTION,
@@ -76,44 +68,35 @@ describe('Igor + Big Gulp: 一个 Igor 被消灭', () => {
 
         // 选项应该包含 Igor + 咆哮者 + 新生吸血鬼（力量都≤4）
         const options = getPromptOptions(prompt1);
-        console.log('Big Gulp options:', options.map((o: any) => o.label));
         expect(options.length).toBeGreaterThanOrEqual(3);
 
-        console.log('\n=== 步骤2：选择消灭 Igor ===');
         // 步骤2：玩家1选择消灭 igor1
         const igorOption = getPromptOption(
             prompt1,
             (o: any) => o.value?.minionUid === 'igor1',
             'Big Gulp target option for Igor',
         );
-        console.log('Selected option:', igorOption.label);
         const result2 = respondToPrompt(result1.finalState, igorOption.id, '1');
 
-        console.log('\n=== 步骤3：验证结果 ===');
         // 验证 Igor 确实被消灭了
         const base = result2.finalState.core.bases[0];
         const igorStillOnBase = base.minions.some(m => m.uid === 'igor1');
-        console.log('Igor still on base:', igorStillOnBase);
         expect(igorStillOnBase).toBe(false);
 
         // 验证 Igor 在弃牌堆
         const player0 = result2.finalState.core.players['0'];
         const igorInDiscard = player0.discard.some(c => c.uid === 'igor1');
-        console.log('Igor in discard:', igorInDiscard);
         expect(igorInDiscard).toBe(true);
 
         // 验证 howler 的 powerCounters
         const howler = base.minions.find(m => m.uid === 'howler');
-        console.log('Howler powerCounters:', howler?.powerCounters);
-        console.log('Expected: 2 (initial 1 + Igor onDestroy +1), Got:', howler?.powerCounters);
-        
+
         // Igor onDestroy 只触发一次
         expect(howler?.powerCounters).toBe(2);
-        
+
         // 应该没有 Igor 的交互（因为只有一个候选，自动执行了）
         const igorInteractions = getPromptsBySourceId(result2.finalState, 'frankenstein_igor');
-        console.log('Igor interactions count:', igorInteractions.length);
-        
+
         // 因为只有一个候选，Igor onDestroy 自动执行了（没有创建交互）
         expect(igorInteractions.length).toBe(0);
     });

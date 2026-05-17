@@ -7,6 +7,7 @@ import {
     buildAbilityFeedback,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
     buildValidatedCardToDeckBottomEvents,
     buildValidatedDestroyEvents,
@@ -534,7 +535,8 @@ const princessesDestroyMinionPromptProgram = createPromptProgram<
             autoResolveIfSingle: false,
         },
     ),
-    onResolve: ({ context, state, playerId, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { context, state, playerId, value, timestamp } = args;
         const selected = value as MinionChoice | undefined;
         if (!selected?.minionUid || selected.baseIndex === undefined || !selected.defId) {
             return { matchState: state, events: [] };
@@ -550,7 +552,7 @@ const princessesDestroyMinionPromptProgram = createPromptProgram<
                     reason: context.reason,
                     now: timestamp,
                 }),
-                ...(context.drawCount ? buildStandardDrawEvents(state.core, playerId, context.drawCount, random, timestamp) : []),
+                ...(context.drawCount ? buildStandardDrawEventsFromRuntimeContext(args, playerId, context.drawCount) : []),
             ],
         };
     },
@@ -965,12 +967,13 @@ const princessesFairyGodmotherPromptProgram = createPromptProgram<
             autoResolveIfSingle: false,
         },
     ),
-    onResolve: ({ context, state, playerId, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { context, state, playerId, value } = args;
         const selected = value as ButtonChoice | undefined;
         if (selected?.choice === 'draw') {
             return {
                 matchState: state,
-                events: buildStandardDrawEvents(state.core, playerId, 1, random, timestamp),
+                events: buildStandardDrawEventsFromRuntimeContext(args, playerId, 1),
             };
         }
         if (selected?.choice !== 'buff') {

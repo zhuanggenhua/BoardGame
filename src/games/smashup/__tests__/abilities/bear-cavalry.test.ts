@@ -19,6 +19,7 @@ import {
     invokeRegisteredInteractionHandlerContract,
     getPromptOption,
     getPromptOptions,
+    getPromptsBySourceId,
     getSimpleChoicePrompt,
     makeBase,
     makeMatchState,
@@ -517,5 +518,290 @@ describe('bear_cavalry_bear_rides_you_pod 交互选项', () => {
         expect(
             pendingOptions.find(option => option?.value?.kind === 'ongoing' && option?.value?.cardUid === 'oa1')?.value?.defId,
         ).toBe('bear_cavalry_superiority_pod');
+    });
+});
+
+describe('bear_cavalry_bear_hug 行为', () => {
+    it('平局最弱随从时创建不可取消的目标选择，并按所选目标消灭', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_hug', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m1', 'test_minion', '1', 2, { powerModifier: 0 }),
+                        makeMinion('m2', 'test_minion', '1', 2, { powerModifier: 0 }),
+                    ],
+                }),
+            ],
+        });
+
+        const playResult = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(playResult.finalState, 'bear_cavalry_bear_hug');
+        expect(getPromptOptions(prompt).some(option => option?.id === '__cancel__')).toBe(false);
+
+        const respondResult = respondToPrompt(
+            playResult.finalState,
+            getPromptOption(prompt, option => option?.value?.minionUid === 'm1', 'bear hug target option for m1').id,
+            '1',
+            dummyRandom,
+        );
+
+        const destroyEvent = respondResult.events.find(event => event.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvent).toEqual(
+            expect.objectContaining({
+                payload: expect.objectContaining({ minionUid: 'm1' }),
+            }),
+        );
+        expect(respondResult.finalState.core.bases[0].minions.some(minion => minion.uid === 'm1')).toBe(false);
+    });
+
+    it('每位对手消灭自己最弱随从', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_hug', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test_minion', '0', 5, { powerModifier: 0 }),
+                        makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 }),
+                        makeMinion('m2', 'test_minion', '1', 6, { powerModifier: 0 }),
+                    ],
+                }),
+                makeBase({
+                    defId: 'b2',
+                    minions: [makeMinion('m3', 'test_minion', '1', 1, { powerModifier: 0 })],
+                }),
+            ],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const destroyEvents = result.events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(1);
+        expect(destroyEvents[0]).toEqual(
+            expect.objectContaining({
+                payload: expect.objectContaining({ minionUid: 'm3' }),
+            }),
+        );
+    });
+
+    it('多个对手各消灭一个', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_hug', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+                '2': makePlayer('2'),
+            },
+            turnOrder: ['0', '1', '2'],
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m1', 'test_minion', '1', 2, { powerModifier: 0 }),
+                        makeMinion('m2', 'test_minion', '2', 4, { powerModifier: 0 }),
+                    ],
+                }),
+            ],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const destroyEvents = result.events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED);
+        const destroyedUids = destroyEvents.map(event => (event as any).payload.minionUid);
+        expect(destroyEvents).toHaveLength(2);
+        expect(destroyedUids).toEqual(expect.arrayContaining(['m1', 'm2']));
+    });
+
+    it('对手无随从时不产生消灭事件', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_hug', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [makeMinion('m0', 'test_minion', '0', 5, { powerModifier: 0 })],
+                }),
+            ],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        expect(result.events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
+    });
+
+    it('消灭后最终状态正确', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_hug', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m1', 'test_minion', '1', 2, { powerModifier: 0 }),
+                        makeMinion('m2', 'test_minion', '1', 5, { powerModifier: 0 }),
+                    ],
+                }),
+            ],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        expect(result.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['m2']);
+        expect(result.finalState.core.players['1'].discard.some(card => card.uid === 'm1')).toBe(true);
+    });
+
+    it('不消灭己方随从', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_bear_hug', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test_minion', '0', 1, { powerModifier: 0 }),
+                        makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 }),
+                    ],
+                }),
+            ],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        const destroyEvents = result.events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED);
+        expect(destroyEvents).toHaveLength(1);
+        expect(destroyEvents[0]).toEqual(
+            expect.objectContaining({
+                payload: expect.objectContaining({ minionUid: 'm1' }),
+            }),
+        );
+    });
+});
+
+describe('bear_cavalry_commission 额外随从交互', () => {
+    it('立即创建额外随从选择交互，而不是留下可暂存额度', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [
+                        { uid: 'a1', defId: 'bear_cavalry_commission', type: 'action', owner: '0' } as CardInstance,
+                        { uid: 'm1', defId: 'robot_microbot_guard', type: 'minion', owner: '0' } as CardInstance,
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({ defId: 'b1' })],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        expect(result.events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toHaveLength(1);
+        expect(getPromptsBySourceId(result.finalState, 'bear_cavalry_commission_choose_minion')).toHaveLength(1);
+    });
+
+    it('手上没有随从时仍给予额外随从额度，但不强制创建交互', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'a1', defId: 'bear_cavalry_commission', type: 'action', owner: '0' } as CardInstance],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({ defId: 'b1' })],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1' },
+            } as any,
+            dummyRandom,
+        );
+
+        expect(result.events.filter(event => event.type === SU_EVENTS.LIMIT_MODIFIED)).toHaveLength(1);
+        expect(getPromptsBySourceId(result.finalState, 'bear_cavalry_commission_choose_minion')).toHaveLength(0);
     });
 });

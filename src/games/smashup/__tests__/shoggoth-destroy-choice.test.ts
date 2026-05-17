@@ -8,7 +8,7 @@ import { describe, it, expect, beforeAll } from 'vitest';
 import type { SmashUpCore, PlayerState, MinionOnBase, BaseInPlay, MinionDestroyedEvent } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
+import { clearRegistry } from '../domain/abilityRegistry';
 import type { AbilityContext } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
@@ -17,6 +17,7 @@ import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
 import {
     getFirstPrompt,
+    invokeRegisteredAbilityContract,
     getPromptPlayerId,
     getPromptSourceId,
     makeMatchState,
@@ -72,8 +73,7 @@ beforeAll(() => {
 /** 触发修格斯 onPlay 并返回第一个对手交互 */
 function triggerShoggothOnPlay(state: SmashUpCore, baseIndex = 0) {
     const ms = makeMatchState(state);
-    const executor = resolveAbility('elder_thing_shoggoth', 'onPlay')!;
-    return executor({
+    return invokeRegisteredAbilityContract('elder_thing_shoggoth', 'onPlay', {
         state, matchState: ms, playerId: '0', cardUid: 'sh-1', defId: 'elder_thing_shoggoth',
         baseIndex, random: dummyRandom, now: 0,
     } as AbilityContext);

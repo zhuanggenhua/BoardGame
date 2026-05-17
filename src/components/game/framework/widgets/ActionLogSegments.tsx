@@ -13,6 +13,8 @@ interface ActionLogSegmentsProps {
     getCardPreviewRef?: (cardId: string) => CardPreviewRef | null;
     /** 卡牌预览最大尺寸（像素） */
     cardPreviewMaxDim?: number;
+    /** breakdown tooltip 层级，父级浮层需要抬高时传入 */
+    breakdownZIndex?: number;
 }
 
 /**
@@ -116,6 +118,7 @@ export const ActionLogSegments: React.FC<ActionLogSegmentsProps> = ({
     locale,
     getCardPreviewRef,
     cardPreviewMaxDim,
+    breakdownZIndex,
 }) => {
     if (!Array.isArray(segments) || segments.length === 0) {
         return null;
@@ -158,6 +161,7 @@ export const ActionLogSegments: React.FC<ActionLogSegmentsProps> = ({
                             key={index}
                             displayText={segment.displayText}
                             lines={segment.lines}
+                            zIndex={breakdownZIndex}
                         />
                     );
                 }

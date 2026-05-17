@@ -200,7 +200,11 @@ export function registerExpansionBaseAbilities(): void {
             ...candidates.map((candidate, index) => ({
                 id: `minion-${index}`,
                 label: candidate.label,
-                value: candidate,
+                value: {
+                    minionUid: candidate.minionUid,
+                    minionDefId: candidate.minionDefId,
+                    fromBaseIndex: candidate.fromBaseIndex,
+                },
                 _source: 'field' as const,
                 displayMode: 'card' as const,
             })),
@@ -1045,7 +1049,13 @@ export function registerExpansionBaseInteractionHandlers(): void {
                     minionOptions.push({
                         id: `minion-${baseIndex}-${index}`,
                         label: `${minionDef?.name ?? minion.defId} (${baseDef?.name ?? '基地'})`,
-                        value: { minionUid: minion.uid, baseIndex },
+                        value: {
+                            minionUid: minion.uid,
+                            minionDefId: minion.defId,
+                            defId: minion.defId,
+                            baseIndex,
+                            baseDefId: base.defId,
+                        },
                         _source: 'field' as const,
                         displayMode: 'card' as const,
                     });

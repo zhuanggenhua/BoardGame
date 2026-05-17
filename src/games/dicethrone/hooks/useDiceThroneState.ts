@@ -197,23 +197,25 @@ export function useCurrentChoice(access: DiceThroneStateAccess): {
     hasChoice: boolean;
     playerId: PlayerId | undefined;
     title: string | undefined;
-    options: Array<{ id: string; label: string; statusId?: string; tokenId?: string; customId?: string; value?: number; disabled?: boolean }>;
+    options: Array<{ id: string; label: string; labelParams?: Record<string, string | number>; statusId?: string; tokenId?: string; customId?: string; value?: number; disabled?: boolean }>;
     sourceAbilityId?: string;
     /** slider 模式配置（存在时渲染滑动条） */
     slider?: SliderConfig;
 } {
+    const prompt = access.prompt;
     return useMemo(() => {
-        if (access.prompt) {
-            const promptData = access.prompt as typeof access.prompt & { slider?: SliderConfig };
+        if (prompt) {
+            const promptData = prompt as typeof prompt & { slider?: SliderConfig };
             return {
                 hasChoice: true,
-                playerId: access.prompt.playerId,
-                title: access.prompt.title,
-                options: access.prompt.options.map(opt => {
+                playerId: prompt.playerId,
+                title: prompt.title,
+                options: prompt.options.map(opt => {
                     const rawValue = opt.value as { statusId?: string; tokenId?: string; customId?: string; value?: number; disabled?: boolean } | undefined;
                     return {
                         id: opt.id,
                         label: opt.label,
+                        labelParams: opt.labelParams,
                         statusId: rawValue?.statusId,
                         tokenId: rawValue?.tokenId,
                         customId: rawValue?.customId,
@@ -221,7 +223,7 @@ export function useCurrentChoice(access: DiceThroneStateAccess): {
                         disabled: opt.disabled ?? rawValue?.disabled,
                     };
                 }),
-                sourceAbilityId: access.prompt.sourceId,
+                sourceAbilityId: prompt.sourceId,
                 slider: promptData.slider,
             };
         }
@@ -233,7 +235,7 @@ export function useCurrentChoice(access: DiceThroneStateAccess): {
             options: [],
             sourceAbilityId: undefined,
         };
-    }, [access.prompt]);
+    }, [prompt]);
 }
 
 export function useCurrentDefenderChoice(

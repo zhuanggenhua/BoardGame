@@ -134,6 +134,7 @@
       "success": "Feedback submitted. Thanks for the support!",
       "errors": {
         "loginRequired": "Login for better feedback tracking experience",
+        "apiDisabled": "The dev:lite mode does not start the API service, so feedback submission is disabled. Your draft stays on this device.",
         "submitFailed": "Submission failed. Please try again later."
       },
       "type": {

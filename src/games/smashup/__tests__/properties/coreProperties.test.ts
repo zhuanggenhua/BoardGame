@@ -20,7 +20,7 @@ import {
 import { SMASHUP_FACTION_IDS } from '../../domain/ids';
 import type {
     SmashUpCore, PlayerState, CardInstance,
-    MinionOnBase, BaseInPlay, SmashUpEvent, AbilityTag,
+    MinionOnBase, BaseInPlay, AbilityTag,
 } from '../../domain/types';
 import type { MatchState, RandomFn } from '../../../../engine/types';
 import { ALL_FACTIONS } from './arbitraries';
@@ -902,7 +902,6 @@ describe('Property 18: Me First 窗口协议', () => {
 
     test('非当前响应者不能在 Me First 窗口中打牌', () => {
         const specialCard = makeCard('s-1', 'ninja_hidden_ninja', 'action');
-        const followupMinion = makeCard('m-2', 'ninja_shinobi', 'minion');
         const state: SmashUpCore = {
             players: {
                 '0': makePlayer('0', [SMASHUP_FACTION_IDS.GHOSTS, SMASHUP_FACTION_IDS.NINJAS]),
@@ -1273,13 +1272,6 @@ describe('Property 5: onPlay 能力触发', () => {
         'zombie_grave_digger',
         'trickster_gnome',
     ];
-
-    test('所有已知 onPlay 随从都已注册能力', () => {
-        for (const defId of minionsWithOnPlay) {
-            const executor = resolveAbility(defId, 'onPlay');
-            expect(executor, `${defId} 应注册 onPlay 能力`).toBeDefined();
-        }
-    });
 
     test('带 onPlay 的随从打出后事件序列包含 MINION_PLAYED', () => {
         fc.assert(

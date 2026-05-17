@@ -27,6 +27,7 @@ import type {
 import { getMaxTokenUseAmount, getTokenEffectValue } from './tokenTypes';
 import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
+import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
 
 // ============================================================================
 // Token 可用性检查
@@ -44,6 +45,7 @@ export function getUsableTokenAmountForTiming(
 
     const tokenDef = (state.tokenDefinitions ?? []).find(def => def.id === tokenId);
     if (!tokenDef?.activeUse?.timing?.includes(timing)) return 0;
+    if (hasSpentTreantTreeSpiritThisTurn(state, playerId, tokenDef.id)) return 0;
 
     const damageScope = options?.damageScope ?? 'attack';
     const hasAttackContext = !!state.pendingAttack;

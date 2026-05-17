@@ -188,6 +188,7 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 
 - 游戏规则与命令行为优先用 `GameTestRunner` / 游戏专用 `runCommand` / `executePipeline` helper。
 - 交互链优先使用游戏专用 prompt facade，不在用例中散落直读 `sys.interaction`。
+- 确实需要保留 low-level ability / interaction / runtime resolver 合同时，优先通过 `__tests__/helpers.ts` 里的显式 contract helper 进入，不在测试体里直接 `resolveAbility(...)` 或手摸 handler registry。
 - UI 交互只用 E2E 证明真实入口与可见结果。
 - 审计测试用于批量合同验证，不代替单个 bug 的最小行为回归。
 - 重构导致测试频繁跟改时，先补测试接口/行为端口，再改用例；测试文件不直接适配内部字段形状。
@@ -268,7 +269,7 @@ npm test -- src/games/tictactoe/__tests__/flow.test.ts  # 单文件
 - 禁止新增或继续扩写 `new*`、`misc`、`regression`、`feedback`、`fixes` 等泛名测试文件；遇到这类文件时，应先判断能否迁出本轮相关行为簇。
 - 同类覆盖只保留必要代表性路径：至少 1 条正向主路径，必要时 1 条负向/边界路径；重复数据面优先改成数据驱动或审计合同，不用多个近似用例堆在同一文件。
 - `e2e/src/games/**/__tests__` 不作为新增游戏行为测试目录；若本地 Junction 存在，也只能视为兼容入口，不得入库。
-- `quality:changed` 会调用 `scripts/infra/testing-structure-guard.mjs` 检查游戏测试结构；本地也可直接运行 `npm run test:structure`。该门禁会阻止 `e2e/src/**` 镜像入库、新增根级游戏 E2E、新增泛名测试文件、临时/备份/测试输出文件入库，并阻止非系统契约游戏测试新增裸 prompt 内部访问，包括 `getInteractionsFromMS`、`prompt.data.options`、`SYS_INTERACTION_RESPOND`、`sys.interaction.current`；旧泛名文件净删减时只警告，迁出的聚焦测试必须改走 facade。
+- `quality:changed` 会调用 `scripts/infra/testing-structure-guard.mjs` 检查游戏测试结构；本地也可直接运行 `npm run test:structure`。该门禁会阻止 `e2e/src/**` 镜像入库、新增根级游戏 E2E、新增泛名测试文件、临时/备份/测试输出文件入库，并阻止非系统契约游戏测试新增裸 prompt 内部访问，包括 `getInteractionsFromMS`、`prompt.data.options`、`SYS_INTERACTION_RESPOND`、`sys.interaction.current`、`resolveAbility(...)`、`getInteractionHandler(...)`、`getAbilityRuntimePromptHandler(...)`，同时阻止新增测试调试日志 `console.log/warn/error/debug`；旧泛名文件净删减时只警告，迁出的聚焦测试必须改走 facade。
 
 ### 测试接口规范
 

@@ -21,7 +21,6 @@ import type {
 } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
-import { resolveAbility } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import {
@@ -33,6 +32,7 @@ import {
     getPromptsBySourceId,
     getPromptSourceId,
     getSimpleChoicePrompt,
+    invokeRegisteredAbilityContract,
     respondToPromptOption,
     respondToPrompt,
     respondToPromptOptions,
@@ -835,10 +835,8 @@ describe('米斯卡塔尼克大学 - miskatonic_book_of_iter_the_unseen（金克
 describe('米斯卡塔尼克大学 - miskatonic_thing_on_the_doorstep（老詹金斯!?）', () => {
     /** 直接调用 special 执行器（special 不走 execPlayAction） */
     function execSpecial(state: SmashUpCore, playerId: string, baseIndex: number) {
-        const executor = resolveAbility('miskatonic_thing_on_the_doorstep', 'special');
-        expect(executor).toBeDefined();
         const ms = makeMatchState(state);
-        return executor!({
+        return invokeRegisteredAbilityContract('miskatonic_thing_on_the_doorstep', 'special', {
             state, matchState: ms, playerId,
             cardUid: 'special-card', defId: 'miskatonic_thing_on_the_doorstep',
             baseIndex, random: defaultRandom, now: Date.now(),

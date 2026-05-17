@@ -47,7 +47,7 @@ import { DICETHRONE_COMMANDS } from './ids';
 import { CHARACTER_DATA_MAP } from './characters';
 import { executeCardCommand } from './executeCards';
 import { executeTokenCommand } from './executeTokens';
-import { getPlayerPassiveAbilities } from './passiveAbility';
+import { getPlayerPassiveAbilities, isPassiveActionUsable } from './passiveAbility';
 import { buildDrawEvents } from './deckEvents';
 import { RESOURCE_IDS } from './resources';
 import { getCustomActionHandler } from './effects';
@@ -967,6 +967,7 @@ export function execute(
             if (!passive) break;
             const action = passive.actions[actionIndex];
             if (!action) break;
+            if (!isPassiveActionUsable(state, command.playerId, passiveId, actionIndex, phase)) break;
 
             const player = state.players[command.playerId];
             if (!player) break;
@@ -994,6 +995,7 @@ export function execute(
                         tokenId: action.tokenCost.tokenId,
                         amount: action.tokenCost.amount,
                         newTotal: Math.max(0, currentTokenAmount - action.tokenCost.amount),
+                        sourceAbilityId: passiveId,
                     },
                     sourceCommandType: command.type,
                     timestamp,

@@ -222,26 +222,17 @@ npm test -- paladin-blessing-removable.test.ts
 
 ## 影响范围
 
-- 所有 `removable: false` 的 token 都会受到保护
-- 目前只有圣骑士的神圣祝福 token 和枪手的赏金 token 设置了 `removable: false`
-- 其他可移除的 token 不受影响
+- 所有 `removable: false` 的 token 都会受到保护。
+- **2026-05-17 修订**：本文早期把枪手 `Bounty / 赏金` 列为 `removable: false` 的结论已经失效；当前只有圣骑士 `Blessing of Divinity / 神圣祝福` 属于本文件确认保护的不可移除 token。
+- 其他可移除的 token 不受影响；负面 token 默认不得因“持续到游戏结束 / 不会自动移除”被外推成不可被移除状态效果移除。
 
-## 其他不可移除的 Token
+## 旧结论失效：枪手 Bounty
 
-搜索代码发现，除了圣骑士的神圣祝福，还有枪手的赏金 token 也设置了 `removable: false`：
+本文旧版曾写道“枪手的赏金 token 也设置了 `removable: false`，这个修复同时保护了这两个 token”。该结论已被后续证据推翻：
 
-```typescript
-// src/games/dicethrone/heroes/gunslinger/tokens.ts
-{
-    id: TOKEN_IDS.BOUNTY,
-    passiveTrigger: {
-        timing: 'onDamageReceived',
-        removable: false,  // ← 也不可移除
-    },
-}
-```
-
-这个修复同时保护了这两个 token。
+- 当前实现：`src/games/dicethrone/heroes/gunslinger/tokens.ts` 中 `bounty.passiveTrigger.removable` 为 `true`。
+- 规则口径：`Bounty` 是负面 token；“不会自动移除/持续到游戏结束”只表示不会自然过期或因触发自动消耗，不表示免疫 `Bye Bye` 等移除状态类效果。
+- 证据：`evidence/dicethrone-bye-bye-bounty-repro-e2e.md` 记录了旧口径导致真实手牌 `Bye Bye` 无法移除赏金的复现，以及修复后可移除并正常收口的截图链。
 
 ## 总结
 
@@ -249,4 +240,4 @@ npm test -- paladin-blessing-removable.test.ts
 1. 标记为 `removable: false` 的 token 不能被移除
 2. 标记为 `removable: false` 的 token 不能被转移（因为转移本质上是移除+添加）
 
-这确保了圣骑士的神圣祝福和枪手的赏金 token 的特殊性：它们只能通过触发效果自动消耗，不能被玩家主动移除或转移。
+这确保了圣骑士神圣祝福这类明确 `removable: false` 的 token 不会被玩家主动移除或转移。枪手赏金不再归入本文件的不可移除范围；它不会自动消耗，但可以被移除状态类卡牌或效果移除。

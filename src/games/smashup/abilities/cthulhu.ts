@@ -23,6 +23,7 @@ import {
     returnMadnessCard, getMinionPower,
     addTempPower, revealAndPickFromDeck,
     buildAbilityFeedback, buildActionMinionTargetOptions, buildPlayerTargetOptions,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { reduce } from '../domain/reduce';
@@ -523,7 +524,8 @@ const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessU
             buildMadnessUnleashedOptions(state.core as SmashUpCore, context.playerId, context.sourceCardUid);
         return interaction;
     },
-    onResolve: ({ state, playerId, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { state, playerId, value } = args;
         const madnessUids = normalizeChoiceArray<CardUidSelection>(value)
             .map(entry => entry.cardUid)
             .filter((entry): entry is string => !!entry);
@@ -539,11 +541,11 @@ const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessU
         };
         const events: SmashUpEvent[] = [discardEvent];
         const drawState = reduce(state.core, discardEvent);
-        events.push(...buildStandardDrawEvents(drawState, playerId, madnessUids.length, random, timestamp));
+        events.push(...buildStandardDrawEventsFromRuntimeContext({ ...args, state: drawState }, playerId, madnessUids.length));
 
         for (let index = 0; index < madnessUids.length; index += 1) {
             events.push(grantContextualExtraAction(
-                { playerId, now: timestamp, matchState: state },
+                { playerId, now: args.timestamp, matchState: state },
                 'cthulhu_madness_unleashed',
             ));
         }
@@ -855,7 +857,8 @@ const specialMadnessPromptProgram = createPromptProgram<SpecialMadnessPromptCont
             displayCard: { defId: MADNESS_CARD_DEF_ID, cardUid: context.cardUid },
         },
     ),
-    onResolve: ({ context, state, playerId, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { context, state, playerId, value, timestamp } = args;
         const { action } = value as MadnessActionChoiceValue;
         if (action === 'return') {
             return {
@@ -863,7 +866,7 @@ const specialMadnessPromptProgram = createPromptProgram<SpecialMadnessPromptCont
             };
         }
         return {
-            events: buildStandardDrawEvents(state.core, playerId, 2, random, timestamp),
+            events: buildStandardDrawEventsFromRuntimeContext(args, playerId, 2),
         };
     },
 });

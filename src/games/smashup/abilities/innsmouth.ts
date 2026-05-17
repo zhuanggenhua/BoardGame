@@ -12,7 +12,7 @@ import {
     createPromptProgram,
     executeAbilityProgram,
 } from '../domain/abilityRuntime';
-import { addTempPower, grantContextualExtraMinion, grantExtraMinion, drawMadnessCards, getMinionPower, revealAndPickFromDeck, buildAbilityFeedback, buildValidatedReturnEvents, buildStandardDrawEvents } from '../domain/abilityHelpers';
+import { addTempPower, grantContextualExtraMinion, grantExtraMinion, drawMadnessCards, getMinionPower, revealAndPickFromDeck, buildAbilityFeedback, buildValidatedReturnEvents, buildStandardDrawEvents, buildStandardDrawEventsFromRuntimeContext } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
 import type { SmashUpEvent, DeckReorderedEvent, SmashUpCore } from '../domain/types';
 import { registerProtection, registerTrigger } from '../domain/ongoingEffects';
@@ -32,6 +32,7 @@ type ReturnToSeaChoiceValue = {
 
 type ReturnToSeaNameChoiceValue = {
     cardUid: string;
+    defId: string;
     baseIndex: number;
     baseDefId: string;
     minionDefId: string;
@@ -45,6 +46,7 @@ type InnsmouthPromptContext = {
 
 type InnsmouthReturnToSeaNamePromptContext = InnsmouthPromptContext & {
     cardUid: string;
+    defId: string;
     baseIndex: number;
     baseDefId: string;
 };
@@ -321,6 +323,7 @@ const innsmouthReturnToTheSeaChooseNamePromptProgram = createPromptProgram<Innsm
                 label: `${name} x${count}`,
                 value: {
                     cardUid: context.cardUid,
+                    defId: context.defId,
                     baseIndex: resolvedBaseIndex ?? context.baseIndex,
                     baseDefId: base?.defId ?? context.baseDefId,
                     minionDefId,
@@ -414,6 +417,7 @@ const innsmouthReturnToTheSeaProgram = createEffectProgram<AbilityContext, Smash
             playerId: ctx.playerId,
             now: ctx.now,
             cardUid: ctx.cardUid,
+            defId: ctx.defId,
             baseIndex,
             baseDefId: base.defId,
         } satisfies InnsmouthReturnToSeaNamePromptContext,
@@ -490,13 +494,14 @@ const innsmouthMysteriesOfTheDeepPromptProgram = createPromptProgram<InnsmouthPr
         ],
         { sourceId: 'innsmouth_mysteries_of_the_deep', targetType: 'button' },
     ),
-    onResolve: ({ state, playerId, value, random, timestamp }) => {
+    onResolve: (args) => {
+        const { state, playerId, value, timestamp } = args;
         const { accept } = value as { accept?: boolean };
         if (!accept) return { events: [] };
         const events: SmashUpEvent[] = [];
         const player = state.core.players[playerId];
         if (player) {
-            events.push(...buildStandardDrawEvents(state.core, playerId, 2, random, timestamp));
+            events.push(...buildStandardDrawEventsFromRuntimeContext(args, playerId, 2));
         }
         const madnessEvt = drawMadnessCards(playerId, 2, state.core, 'innsmouth_mysteries_of_the_deep', timestamp);
         if (madnessEvt) events.push(madnessEvt);

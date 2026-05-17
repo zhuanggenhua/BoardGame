@@ -1,6 +1,34 @@
 ## Session: 2026-05-16 TDD 行为 seam 与测试结构重构
 
 - **Status:** in_progress
+- 2026-05-17 08:26 +08：继续收 `src/games/smashup/__tests__/expansionOngoing.test.ts` 已迁出的 `Killer Plants` 段，先修 `abilities/killer-plants.test.ts` 的 `killer_plant_water_lily` 3 条红灯。
+- 定位结果：不是实现坏了，而是迁移后测试夹具变了。旧 `expansionOngoing.test.ts` 本地 `makeState(...)` 默认给玩家牌库放了牌；新文件改用共享 `helpers.makeState(...)` 后默认牌库为空，`buildStandardDrawEvents(...)` 因无牌可抽而合法返回空事件，所以只有“应该抽牌”的 3 条用例红，`非控制者回合不触发` 和“弃牌堆洗回后抽牌”仍绿。
+- 修复动作：
+  - 在 `src/games/smashup/__tests__/abilities/killer-plants.test.ts` 的 `killer_plant_water_lily` describe 内新增 `makeWaterLilyState(...)`，显式提供可抽牌牌库。
+  - 让“控制者抽牌 / POD 抽牌 / 非控制者不触发 / 多张睡莲只触发一次 / 弃牌堆洗回后抽牌”都走同一行为前提构造，避免继续依赖旧本地 helper 的隐藏默认值。
+- 验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> `2 files / 73 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> `0 errors`
+  - `npm run test:structure -- --all` -> `checked files: 66, OK`
+- 2026-05-17 07:53 +08：继续处理 `src/games/smashup/__tests__/expansionAbilities.test.ts` 的扩展包双入口问题，先收 `Ghost`。动作是把 `ghost_ghost / ghost_seance / ghost_shady_deal / ghost_ghostly_arrival` 全部并入现有 `src/games/smashup/__tests__/abilities/ghosts.test.ts`，并从 `expansionAbilities.test.ts` 删除整段幽灵派系业务测试。
+- 验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/ghosts.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> `2 files / 40 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/ghosts.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> `0 errors`
+  - `npm run test:structure -- --all` -> `checked files: 61, OK`
+  - `rg -n "幽灵派系能力|ghost_ghostly_arrival|ghost_shady_deal|ghost_seance" src/games/smashup/__tests__/expansionAbilities.test.ts` 只剩文件头注释，随后已同步清理
+- 2026-05-17 07:47 +08：继续处理 shayu 第二层混装入口 `src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts`。先复核文件边界：14 条用例同时混有鲨鱼、神话希腊、龙卷风与 3 个基地行为，不是共享机制文件，而是按扩展批次挂着的多派系/多基地混装入口。
+- 拆分动作：
+  - 鲨鱼 L2 行为并入 `src/games/smashup/__tests__/abilities/sharks.test.ts`
+  - 龙卷风 L2 行为并入 `src/games/smashup/__tests__/abilities/tornados.test.ts`
+  - 神话希腊 L2 行为并入 `src/games/smashup/__tests__/abilities/mythic-greeks.test.ts`
+  - 基地行为拆到 `src/games/smashup/__tests__/bases/the-deep-base.test.ts`、`trailer-park-base.test.ts`、`tornado-alley-base.test.ts`
+  - 删除 `src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts`
+- 验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/sharks.test.ts src/games/smashup/__tests__/abilities/tornados.test.ts src/games/smashup/__tests__/abilities/mythic-greeks.test.ts src/games/smashup/__tests__/bases/the-deep-base.test.ts src/games/smashup/__tests__/bases/trailer-park-base.test.ts src/games/smashup/__tests__/bases/tornado-alley-base.test.ts` -> `6 files / 35 tests passed`
+  - `npx eslint ...上述 6 个文件...` -> `0 errors`
+  - `npm run test:structure -- --all` -> `checked files: 61, OK`
+  - `Test-Path src\\games\\smashup\\__tests__\\shayuComprehensiveBehavior.test.ts` -> `False`
+- 2026-05-17 07:40 +08：接手后先验证上一轮刚做的 `shayuFactionAbilities.test.ts` 拆分，再决定是否继续下刀。聚焦验证 `src/games/smashup/__tests__/abilities/sharks.test.ts`、`tornados.test.ts`、`mythic-greeks.test.ts` -> `3 files / 21 tests passed`；eslint 0 errors；`npm run test:structure -- --all` -> `checked files: 57, OK`；`Test-Path src\\games\\smashup\\__tests__\\shayuFactionAbilities.test.ts` -> `False`。
 - 2026-05-16 21:41 +08：继续把“业务 prompt + stale 合同”从 direct handler 里拔出来。`src/games/smashup/__tests__/baseAbilityNeutralProtection.test.ts` 改为真实 `triggerBaseAbilityWithMS('base_mushroom_kingdom')` -> `base_mushroom_kingdom` prompt -> `respondToPromptOption(...)`，单文件 `2 passed`、eslint 0 errors，文件内命中归零；全仓统计从 `38` 降到 `36`。
 - 同批把 `src/games/smashup/__tests__/igor-rlyeh-double-trigger.test.ts` 改成真实 `base_rlyeh` prompt 响应链：先触发 `onTurnStart`，再选择 Igor，直接在 `finalState` 上统计 `frankenstein_igor` prompt 只出现一次。验证：单文件 `1 passed`、eslint 0 errors；全仓统计从 `36` 降到 `35`。
 - 同批把 `src/games/smashup/__tests__/elder-thing-choice-goju-tiebreak.test.ts` 的 Goju tie-break 响应从 `base_temple_of_goju_tiebreak` 直调改成真实 `triggerBaseAbility('base_temple_of_goju')` -> `respondToPromptOption(...)`。验证：单文件 `10 passed`、eslint 0 errors；全仓统计从 `35` 降到 `34`。
@@ -3919,3 +3947,718 @@
   - `npm run test:structure` -> checked files: 21，OK。
   - `rg -n "resolveAbility\\('ninja_infiltrate|resolveAbility\\('ninja_infiltrate_pod" src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> 无命中。
   - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `87`。
+
+## 2026-05-16 23:55:56 +08:00
+
+- 继续处理 `resolveAbility(...)` 的业务 onPlay 债务，这轮收口两个点：
+  - `src/games/smashup/__tests__/ongoingTalent.test.ts`
+    - `trickster_pixie_pod` 两条测试已从 `resolveAbility('trickster_pixie_pod', 'onPlay')` 改为真实命令链。
+    - 随从面：`runCommand(PLAY_MINION)`
+    - 战术面：`runCommand(PLAY_ACTION)`
+    - 同步把手牌卡实例改成真实 `fusion`，并把候选断言从固定顺序改成业务集合。
+  - `src/games/smashup/__tests__/baseFactionOngoing.test.ts`
+    - `trickster_mark_of_sleep` 的“单目标时创建 Interaction”已从手工 `matchState` + `resolveAbility(onPlay)` 改为 `runCommand(PLAY_ACTION)`。
+    - 中途命中 `player.discard is not iterable`，根因是旧 `extraPlayers` 覆盖把默认玩家壳层打残；已改成先建完整 state 再局部覆盖手牌。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/ongoingTalent.test.ts -t "trickster_pixie_pod"` -> 1 file / 2 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/baseFactionOngoing.test.ts -t "trickster_mark_of_sleep"` -> 1 file / 2 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/baseFactionOngoing.test.ts src/games/smashup/__tests__/ongoingTalent.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 2，OK。
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/ongoingTalent.test.ts src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> `ongoingTalent.test.ts` 已清零；`baseFactionOngoing.test.ts` 仅剩 Ninja special / `trickster_enshrouding_mist` / `trickster_mark_of_sleep` 注册表存在性。
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `84`。
+
+## 2026-05-17 00:01:13 +08:00
+
+- 继续处理 `resolveAbility(...)` 的业务 talent 债务，这轮收口 `madnessAbilities.test.ts` 中 `miskatonic_lost_knowledge`：
+  - 3 条业务测试已从 `resolveAbility('miskatonic_lost_knowledge', 'talent')` 改为真实 `runCommand(USE_TALENT)`。
+  - 测试数据已同步改成真实 ongoing 卡实例：基地上显式挂 `uid = ongoing-card`、`defId = miskatonic_lost_knowledge` 的 ongoing action，再通过 `ongoingCardUid` 走公开命令。
+  - `baseIndex: undefined` 那条保留为低层合同，未混进业务链。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/madnessAbilities.test.ts -t "miskatonic_lost_knowledge"` -> 1 file / 4 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/madnessAbilities.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 3，OK。
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/madnessAbilities.test.ts` -> 剩余 6 处，集中在 off-phase immediate、`miskatonic_librarian_pod` talent、`miskatonic_mandatory_reading` special 与 `baseIndex: undefined` 的低层 talent 合同。
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `83`。
+
+## 2026-05-17 00:06:37 +08:00
+
+- 继续处理 `resolveAbility(...)` 的业务 talent 债务，这轮再收 `madnessAbilities.test.ts` 中 `miskatonic_librarian_pod extra mode queues the Madness onPlay interaction`：
+  - 已从手牌直喂 `resolveAbility('miskatonic_librarian_pod', 'talent')`，改为真实 `PLAY_MINION -> USE_TALENT -> respond`。
+  - 现在测试会先把 `librarian` 打到基地 0，再通过 `minionUid = librarian` 触发 talent，之后选择 `extra` 并指定手里的疯狂卡。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/madnessAbilities.test.ts -t "miskatonic_librarian_pod extra mode queues the Madness onPlay interaction|miskatonic_lost_knowledge"` -> 1 file / 5 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/madnessAbilities.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 3，OK。
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/madnessAbilities.test.ts` -> 剩余 5 处，集中在 off-phase immediate、`miskatonic_mandatory_reading` special 与 `baseIndex: undefined` 的低层 talent 合同。
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `82`。
+
+## 2026-05-17 00:25:14 +08:00
+
+- 继续处理 `resolveAbility(...)` 的 special 债务，这轮优先收 `baseFactionOngoing.test.ts` 里的 Ninja special：
+  - `ninja_acolyte` 的成功链、shared-limit 阻止链、`consumesNormalLimit=false` 链，已从直调 `resolveAbility('ninja_acolyte', 'special')` 改为真实 `runCommand(ACTIVATE_SPECIAL)`。
+  - `ninja_hidden_ninja` 试迁到 `ACTIVATE_SPECIAL` 时命中真实命令校验失败：`基地上没有该随从`。确认该卡当前没有可用公开命令入口后，已回退为显式执行器合同，而不是继续硬套命令链。
+  - `ninja_acolyte` 的两条“同基地已用过 special”测试，也已同步改成公开接口语义：断言 `success=false`、错误消息包含“已使用过同组特殊能力”、且无业务事件。
+- 中途红灯与结论：
+  - 第一次迁移后 5 红灯，其中 3 条来自把 `ninja_hidden_ninja` 错分为 `ACTIVATE_SPECIAL`，2 条来自沿用旧执行器语义去断言 special-limit 阻止。
+  - 修正后，这组测试对外层接口的分层更清楚：`Acolyte -> 命令入口`，`Hidden Ninja -> 执行器合同`。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/baseFactionOngoing.test.ts -t "ninja_acolyte|ninja_hidden_ninja|consumesNormalLimit|specialLimitGroup"` -> 1 file / 15 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 8，OK。
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> 剩余 7 处。
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `76`。
+
+## 2026-05-17 00:36:41 +08:00
+
+- 继续处理 `resolveAbility(...)` 的标准 onPlay 债务，这轮转向 `expansionOngoing.test.ts`：
+  - `ghost_make_contact` / `ghost_make_contact_pod` 的 3 条业务 onPlay 测试，已从 `resolveAbility(...)` 改为真实 `runCommand(PLAY_ACTION)`。
+  - `miskatonic_researcher`、`miskatonic_field_trip`、`miskatonic_researcher_pod` 的 5 条业务 onPlay 测试，已分别改为真实 `PLAY_MINION` / `PLAY_ACTION`。
+- 中途红灯与修正：
+  - 第一次改 `ghost_make_contact` 时连着踩到两层旧假设：文件没导入 `makeMatchState`，以及旧测试错误地把事件数量锁成 `1`。修正为真实 `runCommand` + 在事件流中查找 `MINION_CONTROL_CHANGED` 后恢复。
+  - `ghost_make_contact_pod` 第一次改完还暴露“牌根本不在手里”的旧夹具假设；补回手牌卡实例后通过。这说明旧执行器测试确实绕过了真实出牌前置。
+  - `miskatonic_field_trip` 第一次改完后没有 prompt，根因不是实现坏了，而是打出 `field_trip` 后手里已经空了；补回一张额外手牌后，真实 prompt 才出现。这证明 prompt 出现性必须基于 live hand state，而不是旧执行器假壳。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/expansionOngoing.test.ts -t "ghost_make_contact|miskatonic_researcher|miskatonic_field_trip|researcher pod"` -> 1 file / 11 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/expansionOngoing.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 12，OK。
+  - `rg -n "resolveAbility\\('ghost_make_contact|resolveAbility\\('ghost_make_contact_pod|resolveAbility\\('miskatonic_researcher'|resolveAbility\\('miskatonic_field_trip'|resolveAbility\\('miskatonic_researcher_pod'" src/games/smashup/__tests__/expansionOngoing.test.ts` -> 只剩注册断言 2 处。
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `68`。
+
+## 2026-05-17 01:00:34 +08:00
+
+- 继续处理 `expansionOngoing.test.ts` 里剩余的 `resolveAbility(...)` 债务，这轮收口 5 组：
+  - `steampunk_mechanic`
+    - 8 条业务/运行时测试已从 `resolveAbility('steampunk_mechanic', 'onPlay')` 改为真实 `runCommand(PLAY_MINION)` 起链。
+    - 两条 runtime 非法值断言继续保留 `invokeRegisteredRuntimePromptHandlerContract(...)`，但 prompt 前置已改为真实出牌链。
+    - 同步修正 1 条旧测试语义：原“无合法基地”断言依赖“机械师本人尚未上场”的假世界；切回真实 `PLAY_MINION` 后，`requireOwnMinion` 约束会因为机械师已在基地而成立，因此已改写为“真实出牌后该 ongoing 成为合法候选”。
+  - `steampunk_change_of_venue`
+    - stale-hand 用例已从 `resolveAbility('steampunk_change_of_venue', 'onPlay')` 改为真实 `runCommand(PLAY_ACTION)` 起链。
+  - `innsmouth_return_to_the_sea`
+    - stale/live 用例已从 `resolveAbility('innsmouth_return_to_the_sea', 'special')` 改为真实 afterScoring 响应窗口中的 `PLAY_ACTION`。
+    - 中途首次红灯暴露：`canCardBePlayedInResponseWindow()` 依赖 `scoringEligibleBaseIndices`；补上真实达标基地前置后恢复通过。
+  - `miskatonic_things_best_not_known_pod`
+    - 已从 `resolveAbility('miskatonic_things_best_not_known_pod', 'special')` 改为真实 beforeScoring 响应窗口中的 `PLAY_ACTION`。
+  - `miskatonic_librarian_pod`
+    - `extra mode only plays Madness and marks extra action` 已从 `resolveAbility('miskatonic_librarian_pod', 'talent')` 改为真实 `PLAY_MINION -> USE_TALENT -> respond`。
+- 验证：
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/expansionOngoing.test.ts` -> 0 errors
+  - `node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/expansionOngoing.test.ts -t "steampunk_mechanic|steampunk_change_of_venue|innsmouth_return_to_the_sea|things best not known pod|librarian pod extra mode"` -> 13 passed
+  - `node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/expansionOngoing.test.ts` -> 67 passed
+  - `npm run test:structure` -> OK
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/expansionOngoing.test.ts` -> 剩余 6 处
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `49`
+
+## 2026-05-17 01:06:52 +08:00
+
+- 继续收口 `expansionOngoing.test.ts` 最后一条明显还在走业务 executor 的用例：
+  - `killer_plant_blossom` 已从 `resolveAbility('killer_plant_blossom', 'onPlay')` 改为真实 `runCommand(PLAY_ACTION)`。
+  - 断言从“只看 3 条 `LIMIT_MODIFIED`”升级为：
+    - `ACTION_PLAYED` 存在
+    - 无 prompt
+    - `sameNameMinionRemaining === 3`
+    - `sameNameMinionDefId === null`
+    - `actionsPlayed === 1`
+    - 牌已离手并进入弃牌堆
+- 这轮后 `expansionOngoing.test.ts` 剩余的 `resolveAbility(` 全部都是注册存在性合同，不再有同类业务行为 seam 债务。
+- 验证：
+  - `node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/expansionOngoing.test.ts -t "killer_plant_blossom"` -> 1 passed
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/expansionOngoing.test.ts` -> 0 errors
+  - `node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/expansionOngoing.test.ts` -> 67 passed
+  - `npm run test:structure` -> OK
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/expansionOngoing.test.ts` -> 剩余 5 处
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `48`
+
+## 2026-05-17 01:19:34 +08:00
+
+- 继续处理 `src/games/smashup/__tests__/abilities/elder-things-ongoing.test.ts` 中 `elder_thing_the_price_of_power` 的 3 条 beforeScoring special 业务测试：
+  - 已从 `resolveAbility('elder_thing_the_price_of_power', 'special')` 改为真实 `runCommand(PLAY_ACTION)`。
+  - 新增 `attachBeforeScoringWindow(...)`，通过 `startSmashUpReactionSession(...)` 构造真实 Me First! beforeScoring response window。
+  - 中途第一次红灯不是能力逻辑坏了，而是测试仍在用默认 `test_base`；真实入口结束后 `FlowSystem` 继续推进 `scoreOneBase`，因此直接炸在 `baseDef.vpAwards`。修正为真实基地 `base_the_jungle` 后恢复。
+  - 同轮还把对手手牌夹具收紧为真实已注册卡定义，并把“对手在此基地无随从”从旧 executor 语义修正为真实公开行为：允许打出，但不产生额外 reveal / 加指示物效果。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/abilities/elder-things-ongoing.test.ts -t "elder_thing_the_price_of_power special"` -> 1 file / 3 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/abilities/elder-things-ongoing.test.ts` -> 1 file / 16 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/abilities/elder-things-ongoing.test.ts` -> 0 errors。
+  - `npm run test:structure` -> checked files: 14，OK。
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/abilities/elder-things-ongoing.test.ts` -> 无命中。
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `41`。
+
+## 2026-05-17 01:26:58 +08:00
+
+- 继续收两组 Elder Things 相关的普通 onPlay 业务链：
+  - `src/games/smashup/__tests__/elderThingAbilities.test.ts`
+    - `elder_thing_mi_go` 的 3 条业务测试已从 `resolveAbility('elder_thing_mi_go', 'onPlay')` 改为真实 `runCommand(PLAY_MINION)`。
+    - 现在统一通过 `played.finalState` 上的 live prompt 做后续 `respondToPromptOption(...)`，不再混用“第一条走真实入口、后两条走 executor”。
+  - `src/games/smashup/__tests__/elder-thing-choice-goju-tiebreak.test.ts`
+    - 共享 helper `triggerElderThingOnPlay(...)` 已从 fake `matchState + resolveAbility(...)` 改为真实 `runCommand(PLAY_MINION)`。
+    - helper 内部会把测试里用于描述“打出后局面”的 `et-1` 预置状态收敛成真实出牌前置：从基地移除该随从、回填到手牌，再走公开命令。
+    - 这使同文件 6 条 `elder_thing_elder_thing_choice` 行为测试一起回到真实入口，包括 destroy 两步选择、自动消灭、deckbottom live/stale 场景。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/elderThingAbilities.test.ts -t "elder_thing_mi_go（米-格：对手抽疯狂卡或你抽牌）"` -> 1 file / 3 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/elderThingAbilities.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/elderThingAbilities.test.ts` -> 1 file / 25 tests passed。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/elder-thing-choice-goju-tiebreak.test.ts -t "远古之物：消灭两个随从选择权"` -> 1 file / 6 tests passed。
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/elder-thing-choice-goju-tiebreak.test.ts` -> 0 errors。
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/elder-thing-choice-goju-tiebreak.test.ts` -> 1 file / 10 tests passed。
+  - `npm run test:structure` -> checked files: 16，OK。
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/elderThingAbilities.test.ts` -> 剩余 2 处（仅 off-phase extra-timing 合同）。
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/elder-thing-choice-goju-tiebreak.test.ts` -> 无命中。
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `38`。
+
+## 2026-05-17 01:39:21 +08:00
+
+- 继续处理“剩余 `resolveAbility(...)` 里本来就该保留的低层合同”，这轮不再把它们当成业务链硬迁，而是补统一接口：
+  - 在 `src/games/smashup/__tests__/helpers.ts` 新增 `expectRegisteredAbilityContract(...)` / `invokeRegisteredAbilityContract(...)`
+  - 统一把“注册表里取 executor 再直接执行”的模式收进 helper
+- 已迁到新 helper 的文件：
+  - `src/games/smashup/__tests__/madnessAbilities.test.ts`
+  - `src/games/smashup/__tests__/elderThingAbilities.test.ts`
+  - `src/games/smashup/__tests__/factionAbilities.test.ts`
+  - `src/games/smashup/__tests__/zombieWizardAbilities.test.ts`
+  - `src/games/smashup/__tests__/abilities/killer-plants.test.ts`
+  - `src/games/smashup/__tests__/madnessPromptAbilities.test.ts`
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/madnessAbilities.test.ts` -> 1 file / 32 tests passed
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/elderThingAbilities.test.ts src/games/smashup/__tests__/factionAbilities.test.ts src/games/smashup/__tests__/zombieWizardAbilities.test.ts src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/madnessPromptAbilities.test.ts` -> 5 files / 138 tests passed
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/helpers.ts src/games/smashup/__tests__/madnessAbilities.test.ts src/games/smashup/__tests__/elderThingAbilities.test.ts src/games/smashup/__tests__/factionAbilities.test.ts src/games/smashup/__tests__/zombieWizardAbilities.test.ts src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/madnessPromptAbilities.test.ts` -> 0 errors
+  - `npm run test:structure` -> checked files: 21，OK
+- 统计：
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/madnessAbilities.test.ts src/games/smashup/__tests__/elderThingAbilities.test.ts src/games/smashup/__tests__/factionAbilities.test.ts src/games/smashup/__tests__/zombieWizardAbilities.test.ts src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/madnessPromptAbilities.test.ts` -> 0 命中
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `25`
+  - 剩余分布：
+    - `7` `src/games/smashup/__tests__/baseFactionOngoing.test.ts`
+    - `5` `src/games/smashup/__tests__/abilityRegistry.test.ts`
+    - `5` `src/games/smashup/__tests__/expansionOngoing.test.ts`
+    - `4` `src/games/smashup/__tests__/properties/coreProperties.test.ts`
+    - `1` `src/games/smashup/__tests__/elderThingsPod.test.ts`
+    - `1` `src/games/smashup/__tests__/expansionAbilities.test.ts`
+    - `1` `src/games/smashup/__tests__/helpers.ts`
+    - `1` `src/games/smashup/__tests__/shoggoth-destroy-choice.test.ts`
+
+## 2026-05-17 01:46:52 +08:00
+
+- 继续处理“剩余业务/能力文件里的裸 `resolveAbility(...)`”，这轮分两类收口：
+  - 删除局部重复的能力已注册断言
+  - 把确实保留的 low-level ability 合同统一改成 `invokeRegisteredAbilityContract(...)`
+- 已修改：
+  - `src/games/smashup/__tests__/baseFactionOngoing.test.ts`
+    - 删除 `ninja_acolyte` / `ninja_hidden_ninja` / `trickster_mark_of_sleep` 的局部存在性断言
+    - `ninja_hidden_ninja` 3 条 low-level special 合同改 helper
+    - `trickster_enshrouding_mist` off-phase immediate 合同改 helper
+  - `src/games/smashup/__tests__/expansionOngoing.test.ts`
+    - 删除 `steampunk_captain_ahab` / `killer_plant_venus_man_trap` / `innsmouth_return_to_the_sea` / `miskatonic_researcher` / `miskatonic_field_trip` 的局部存在性断言
+  - `src/games/smashup/__tests__/elderThingsPod.test.ts`
+  - `src/games/smashup/__tests__/expansionAbilities.test.ts`
+  - `src/games/smashup/__tests__/shoggoth-destroy-choice.test.ts`
+  - `docs/testing-best-practices.md`
+  - `docs/automated-testing.md`
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/baseFactionOngoing.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts src/games/smashup/__tests__/elderThingsPod.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts src/games/smashup/__tests__/shoggoth-destroy-choice.test.ts` -> 5 files / 191 tests passed
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/baseFactionOngoing.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts src/games/smashup/__tests__/elderThingsPod.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts src/games/smashup/__tests__/shoggoth-destroy-choice.test.ts` -> 0 errors
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/expansionOngoing.test.ts` -> 0 errors
+  - `npm run test:structure` -> checked files: 24，OK
+- 最新统计：
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `10`
+  - 剩余分布：
+    - `5` `src/games/smashup/__tests__/abilityRegistry.test.ts`
+    - `4` `src/games/smashup/__tests__/properties/coreProperties.test.ts`
+    - `1` `src/games/smashup/__tests__/helpers.ts`
+
+## 2026-05-17 01:50:31 +08:00
+
+- 继续审计最后 4 处 `coreProperties.test.ts` 命中，逐条分层后确认：
+  - `253/254/263` 属于 `Property 4: 能力注册表往返一致性`，应保留。
+  - `1279` 那条“所有已知 onPlay 随从都已注册能力”只是局部重复存在性断言，应删除，不再混在 `Property 5` 里。
+- 同轮顺手清掉同文件的 2 条 eslint warning：
+  - 删除未使用的 `SmashUpEvent` 类型导入
+  - 删除 `非当前响应者不能在 Me First 窗口中打牌` 用例里未使用的 `followupMinion`
+- 验证：
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/properties/coreProperties.test.ts` -> 0 errors / 0 warnings
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/properties/coreProperties.test.ts` -> 1 file / 53 tests passed
+  - `npm run test:structure` -> checked files: 25，OK
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__` -> 仅剩 `abilityRegistry.test.ts` 5、`helpers.ts` 1、`properties/coreProperties.test.ts` 3
+  - `(rg -n "resolveAbility\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `9`
+
+## 2026-05-17 01:56:42 +08:00
+
+- 继续把“统一测试标准”从文档落到脚本：
+  - `scripts/infra/testing-structure-guard.mjs` 新增 `resolveAbility(...)` 门禁。
+  - 当前仅允许 `abilityRegistry.test.ts` 与 `properties/coreProperties.test.ts` 新增/保留这类命中；其它业务/能力测试新增裸 `resolveAbility(...)` 将直接失败。
+- 文档同步：
+  - `docs/testing-best-practices.md`
+  - `docs/automated-testing.md`
+  - 两处都补上“业务/能力测试默认禁止新增裸 `resolveAbility(...)`，low-level 合同改走 `invokeRegisteredAbilityContract(...)`”。
+- 顺手清理两处近期残留调试日志：
+  - `src/games/smashup/__tests__/elderThingsPod.test.ts`
+  - `src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts`
+- 验证：
+  - `npm run test:structure` -> checked files: 26，OK
+  - `node scripts/infra/testing-structure-guard.mjs src/games/smashup/__tests__/properties/coreProperties.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts src/games/smashup/__tests__/baseFactionOngoing.test.ts src/games/smashup/__tests__/abilityRegistry.test.ts` -> checked files: 4，OK
+  - `node node_modules/eslint/bin/eslint.js scripts/infra/testing-structure-guard.mjs src/games/smashup/__tests__/elderThingsPod.test.ts src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts` -> 0 errors
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/elderThingsPod.test.ts src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts` -> 2 files / 14 tests passed
+  - `rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__/elderThingsPod.test.ts src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts` -> 0 命中
+
+## 2026-05-17 02:02:11 +08:00
+
+- 继续收业务测试里的调试壳层，这轮处理两份窗口回归：
+  - `src/games/smashup/__tests__/afterScoring-window-multi-round.test.ts`
+    - 删除 setup/收尾 `console.log`
+    - 把 `result.steps.reverse()` 改为 `[...result.steps].reverse()`，避免原地变异步骤数组
+  - `src/games/smashup/__tests__/beforeScoring-window-stuck.test.ts`
+    - 删除 setup/状态打印日志
+    - 改为直接断言 `result.finalState.sys.phase === 'scoreBases'`
+    - 若窗口存在，再继续断言它停在 `meFirst` 且当前响应者是 `P0`，并证明 `P0` 手牌中确实没有 beforeScoring 可响应内容
+- 中途红灯：
+  - 第一次把 `beforeScoring-window-stuck` 收得过死，错误假设“窗口一定已存在”；实际当前实现只保证相位停在 `scoreBases`，窗口未必已经挂出。随后把断言改成“相位必须停住；若窗口存在则继续验证其内容”后恢复通过。
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/afterScoring-window-multi-round.test.ts src/games/smashup/__tests__/beforeScoring-window-stuck.test.ts` -> 2 files / 2 tests passed
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/afterScoring-window-multi-round.test.ts src/games/smashup/__tests__/beforeScoring-window-stuck.test.ts` -> 0 errors
+  - `npm run test:structure` -> checked files: 28，OK
+  - `rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__/afterScoring-window-multi-round.test.ts src/games/smashup/__tests__/beforeScoring-window-stuck.test.ts src/games/smashup/__tests__/elderThingsPod.test.ts src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts` -> 0 命中
+  - `(rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `123`
+
+## 2026-05-17 02:07:45 +08:00
+
+- 继续按“业务回归优先、系统/审计文件后置”清测试调试壳层：
+  - `src/games/smashup/__tests__/igor-double-trigger-bug.test.ts`
+    - 删除 base_crypt + Igor 场景的 `console.log`
+  - `src/games/smashup/__tests__/igor-big-gulp-two-igors.test.ts`
+    - 删除所有步骤日志
+    - 删除局部“`resolveOnDestroy('frankenstein_igor')` 已注册”断言，避免继续制造局部注册噪音
+  - `src/games/smashup/__tests__/igor-two-igors-one-destroyed.test.ts`
+    - 删除状态/选项日志
+    - 把 `console.error + return` 改为直接 `throw`，避免命令失败时假绿
+  - `src/games/smashup/__tests__/baseScoreCheck.test.ts`
+    - 删除纯调试输出，保留 `BASE_SCORED` 合同断言
+  - `src/games/smashup/__tests__/baseScoredOptimistic.test.ts`
+    - 删除乐观引擎排障日志
+    - 收掉 1 个清日志后遗留的未使用局部变量
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/igor-double-trigger-bug.test.ts src/games/smashup/__tests__/igor-big-gulp-two-igors.test.ts src/games/smashup/__tests__/igor-two-igors-one-destroyed.test.ts` -> 3 files / 3 tests passed
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/igor-double-trigger-bug.test.ts src/games/smashup/__tests__/igor-big-gulp-two-igors.test.ts src/games/smashup/__tests__/igor-two-igors-one-destroyed.test.ts` -> 0 errors
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/baseScoreCheck.test.ts src/games/smashup/__tests__/baseScoredOptimistic.test.ts` -> 2 files / 2 tests passed
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/baseScoreCheck.test.ts src/games/smashup/__tests__/baseScoredOptimistic.test.ts` -> 0 errors
+  - `npm run test:structure` -> checked files: 31，OK
+  - `rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__/igor-double-trigger-bug.test.ts src/games/smashup/__tests__/igor-big-gulp-two-igors.test.ts src/games/smashup/__tests__/igor-two-igors-one-destroyed.test.ts src/games/smashup/__tests__/baseScoreCheck.test.ts src/games/smashup/__tests__/baseScoredOptimistic.test.ts` -> 0 命中
+  - `(rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `76`
+
+## 2026-05-17 02:11:12 +08:00
+
+- 继续清理同一批计分调试回归：
+  - `src/games/smashup/__tests__/baseScoredNormalFlow.test.ts`
+    - 删除所有 `console.log`
+    - 把“命令被预测了/没被预测”从打印改为真实断言：`processResult.stateToRender` 必须存在，且预测态 `BASE_SCORED` 必须存在
+  - `src/games/smashup/__tests__/baseScoredRaceCondition.test.ts`
+    - 删除所有 `console.log`
+    - 同样把预测态/最终态的关键打印收成断言
+    - 清掉日志删除后暴露出的未使用 `RandomFn` 类型导入
+- 验证：
+  - `$env:NODE_OPTIONS='--max-old-space-size=8192'; node node_modules/vitest/vitest.mjs run --configLoader native --maxWorkers 1 src/games/smashup/__tests__/baseScoredNormalFlow.test.ts src/games/smashup/__tests__/baseScoredRaceCondition.test.ts` -> 2 files / 2 tests passed
+  - `node node_modules/eslint/bin/eslint.js src/games/smashup/__tests__/baseScoredNormalFlow.test.ts src/games/smashup/__tests__/baseScoredRaceCondition.test.ts` -> 0 errors
+  - `npm run test:structure` -> checked files: 35，OK
+  - `rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__/baseScoredNormalFlow.test.ts src/games/smashup/__tests__/baseScoredRaceCondition.test.ts` -> 0 命中
+  - `(rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `52`
+
+## 2026-05-17 02:25:46 +08:00
+
+- 继续按“业务回归优先”清理剩余调试壳层，并把弱日志位改成真实行为断言：
+  - `src/games/smashup/__tests__/wizard-neophyte-actionlog.test.ts`
+    - 删除全部 `console.log/error`
+    - 把 ActionLog 验证从“打印 kind”改成精确序列断言
+    - 补充最终手牌 / 牌库结果断言，避免只看日志不看真实状态
+  - `src/games/smashup/__tests__/turnTransitionInteractionBug.test.ts`
+    - 删除全部 `console.log/error`
+    - 拉莱耶链路改为显式断言 `startTurn -> prompt -> respond -> playCards`
+    - 托尔图加链路不再停留在“打印 phase”，而是改成真实有合法目标的 afterScoring 场景，断言 `scoreBases` 暂停、亚军 prompt、响应后换基地并移动随从到替换基地
+  - `src/games/smashup/__tests__/multi-base-afterscoring-bug.test.ts`
+    - 删除 handler 结果打印
+    - 改为精确断言事件序列、计分结果，以及后续 `multi_base_scoring` 剩余候选
+  - `src/games/smashup/__tests__/sleep-spores-e2e.test.ts`
+    - 删除 Mi-go 力量分析打印
+    - 清掉日志删除后暴露出的未使用导入
+- 验证：
+  - `npx vitest run src/games/smashup/__tests__/wizard-neophyte-actionlog.test.ts` -> 3 tests passed
+  - `npx vitest run src/games/smashup/__tests__/turnTransitionInteractionBug.test.ts` -> 2 tests passed
+  - `npx vitest run src/games/smashup/__tests__/multi-base-afterscoring-bug.test.ts -t "multi_base_scoring handler 应该执行计分逻辑"` -> 1 test passed
+  - `npx vitest run src/games/smashup/__tests__/sleep-spores-e2e.test.ts` -> 2 tests passed
+  - `npx eslint src/games/smashup/__tests__/wizard-neophyte-actionlog.test.ts src/games/smashup/__tests__/turnTransitionInteractionBug.test.ts src/games/smashup/__tests__/multi-base-afterscoring-bug.test.ts src/games/smashup/__tests__/sleep-spores-e2e.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure` -> checked files: 37，OK
+  - `rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__/wizard-neophyte-actionlog.test.ts src/games/smashup/__tests__/turnTransitionInteractionBug.test.ts src/games/smashup/__tests__/multi-base-afterscoring-bug.test.ts src/games/smashup/__tests__/sleep-spores-e2e.test.ts` -> 0 命中
+  - `(rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__ | Measure-Object -Line).Lines` -> `22`
+
+## 2026-05-17 02:38:24 +08:00
+
+- 继续处理 `src/games/smashup/__tests__/interactionDefIdAudit.test.ts` 里最后 4 处 `console.log`：
+  - 新增本地 helper `expectNoViolations(violations, summary)`
+  - 把两条 audit 的“先打印清单再 `expect([])`”改成“失败时直接 `throw new Error(summary + 明细)`”
+  - 结果是失败输出仍保留完整违规清单，但 `src/games/smashup/__tests__` 目录里不再残留测试文件级 `console.*`
+- 验证：
+  - `npx eslint src/games/smashup/__tests__/interactionDefIdAudit.test.ts` -> 0 errors
+  - `rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__` -> 0 命中
+  - `npm run test:games:audit -- src/games/smashup/__tests__/interactionDefIdAudit.test.ts` -> 触发整套 audit；确认此脚本不适合作为单文件定点验证，且仓内还存在与本次改动无关的既有 audit 红灯
+  - `node scripts/infra/vitest-cli-safe.mjs run --config vitest.config.audit.ts --configLoader native src/games/smashup/__tests__/interactionDefIdAudit.test.ts` -> 仅跑目标文件，结果为 2 tests / 1 failed / 1 passed
+    - passed：`所有 createSimpleChoice 的 value shorthand 字段都必须引用已定义变量`
+    - failed：`所有 createSimpleChoice 的卡牌选项必须包含 defId`
+    - 当前真实违规明细：
+    - `vampires.ts:594 — 选项包含 minionUid 但缺少 minionDefId`
+    - `vampires.ts:594 — 选项包含 baseIndex 但缺少 baseDefId`
+    - `vampires.ts:1168 — 选项包含 minionUid 但缺少 minionDefId`
+    - `vampires.ts:1168 — 选项包含 baseIndex 但缺少 baseDefId`
+
+## 2026-05-17 02:41:38 +08:00
+
+- 沿着 `interactionDefIdAudit.test.ts` 暴露出的真实红灯继续修 `src/games/smashup/abilities/vampires.ts`：
+  - `vampire_heavy_drinker` 与 `vampire_heavy_drinker_pod` 的自定义 option value 都补上了
+    - `minionDefId`
+    - `baseDefId`
+  - 同时保留原 `defId/baseIndex` 字段，避免一次性打断现有消费端
+  - 两处 `onResolve` 统一改成 `selected.minionDefId ?? selected.defId`
+- 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run --config vitest.config.audit.ts --configLoader native src/games/smashup/__tests__/interactionDefIdAudit.test.ts` -> 1 file / 2 tests passed
+  - `npx vitest run src/games/smashup/__tests__/abilities/vampires.test.ts -t "vampire_heavy_drinker|海量酒鬼|Heavy Drinker"` -> 1 passed / 7 skipped
+  - `npx eslint src/games/smashup/__tests__/interactionDefIdAudit.test.ts` -> 0 errors
+  - `npx eslint src/games/smashup/abilities/vampires.ts` -> 0 errors / 41 warnings（均为文件既有 `no-explicit-any` 基线，不是本轮新增）
+  - `rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__` -> 0 命中
+
+## 2026-05-17 02:59:26 +08:00
+
+- 继续推进 interaction metadata 审计，而不是停留在 `defId` 一条：
+  - `src/games/smashup/abilities/bear_cavalry.ts`
+    - `bear_cavalry_superiority_pod_talent`
+    - `bear_cavalry_general_ivan_pod_trigger`
+    - `bear_cavalry_high_ground_pod_trigger`
+    - 三处按钮分支统一改成 `targetType: 'button'`
+    - 同时补齐 `cub_scout` / `commission` 等按钮 skip 选项的 `displayMode: 'button'`
+  - `src/games/smashup/abilities/tornados.ts`
+    - `tornados_ripped_off_target` 拆成 `tornados_ripped_off_target_base` / `tornados_ripped_off_target_minion`
+  - `src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts`
+    - 删除 3 条已不再需要的 generic 理由登记
+    - 新增 `mythic_greeks_favor_of_athena_order/pick`、`tornados_ripped_off`、`vampire_crack_of_dusk_pod` 的 generic 理由
+- `interactionTargetTypeAudit` 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run --config vitest.config.audit.ts --configLoader native src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts` -> 1 file / 7 tests passed
+  - `node scripts/infra/vitest-cli-safe.mjs run --config vitest.config.audit.ts --configLoader native src/games/smashup/__tests__/interactionDefIdAudit.test.ts src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts` -> 2 files / 9 tests passed
+- 继续压 `interactionDisplayModeAudit`：
+  - `src/games/smashup/abilities/ghosts.ts`：`ghost_spirit_confirm` 按钮显式补 `displayMode`
+  - `src/games/smashup/abilities/pirates.ts`：`pirate_first_mate_choose_base` 基地选项显式补 `displayMode: 'card'`
+  - `src/games/smashup/domain/abilityHelpers.ts`：`buildMinionTargetOptions(...)` 统一补齐 `minionDefId/baseDefId`
+  - `src/games/smashup/abilities/vampires.ts`：补齐 Dinner Date / Cull the Weak / The Count / Fledgling / Wolf Pact 一批 card option 的 `defId/minionDefId/baseDefId`
+  - `src/games/smashup/abilities/fairies.ts`、`innsmouth.ts`、`tricksters.ts`、`titans.ts`、`domain/baseAbilities_expansion.ts`：继续补齐直接字面量 value shape
+- `interactionDisplayModeAudit` 阶段性结果：
+  - 先从 `4 failed` 压到 `3 failed`
+  - 再压到 `2 failed`
+  - 当前最新：只剩 `1 failed`
+  - 最新失败只剩 `显式 card displayMode 的选项必须提供可渲染 defId`
+  - 剩余点位从 `23` 压到 `15`，再压到 `9`
+- 行为回归：
+  - `npx vitest run src/games/smashup/__tests__/abilities/bear-cavalry.test.ts -t "superiority_pod_talent|General Ivan|High Ground|全面优势|伊万将军|制高点"` -> 3 passed
+  - `npx vitest run src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts -t "first mate|大副"` -> 2 passed
+  - `npx vitest run src/games/smashup/__tests__/abilities/vampires.test.ts` -> 8 passed
+  - `npx vitest run src/games/smashup/__tests__/expansionOngoing.test.ts -t "innsmouth_return_to_the_sea|回归大海"` -> 1 passed
+  - `npx vitest run src/games/smashup/__tests__/expansionBaseAbilities.test.ts -t "base_mermaid_pool|base_the_asylum_choose_minion|人鱼水池|庇护所"` -> 1 passed
+- 静态检查：
+  - 本轮涉及文件 `eslint` 均为 `0 errors`
+  - 仍有大量既有 warnings（主要 `no-explicit-any` / unused），不是本轮新增问题
+
+## 2026-05-17 03:11:45 +08:00
+
+- 继续把 `interactionDisplayModeAudit` 从“AST 表象清零”推进到“真实类型合同收口”：
+  - `src/games/smashup/__tests__/interactionDisplayModeAudit.test.ts`
+    - 不再重新 `readFileSync + createSourceFile` 每个文件，而是改用共享 `TypeScript Program`
+    - 新增 `unwrapExpression(...)`，显式识别 `satisfies` / `as` / `non-null`
+    - `extractObjectValueProps(...)` 现在会对 `value` initializer 走 `TypeChecker`，因此 `value: card` / `value: choice` / `value: action` 这类真实已带 `defId` 的 option 不再被误判
+  - `src/games/smashup/abilities/aliens.ts`
+    - `alien_scout_return` 的 yes 选项从错误的 `displayMode: 'card'` 改回 `button`
+  - `src/games/smashup/abilities/bear_cavalry.ts`
+    - `bear_cavalry_bear_necessities` 候选补 `displayMode: 'card'`
+    - `bear_cavalry_commission_move_minion` 的 POD skip 选项改成 `{ skip: true }` button payload
+    - 对应 handler 改为显式识别 `skip`，不再把 skip 伪装成 `minionUid === '__skip__'`
+  - `src/games/smashup/abilities/tornados.ts`
+    - `tornados_ripped_off` 对挂在随从上的持续行动补齐 `minionDefId`
+  - `src/games/smashup/abilities/shayu_common.ts`
+    - `asCardOptions` 明确收紧为 `RenderableCardChoiceValue` 合同，避免“card displayMode helper 却不要求 renderable def”
+- 验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run --config vitest.config.audit.ts --configLoader native src/games/smashup/__tests__/interactionDisplayModeAudit.test.ts` -> 1 file / 5 tests passed
+  - `npx vitest run src/games/smashup/__tests__/abilities/bear-cavalry.test.ts -t "bear_necessities|Commission|委任|Bear Necessities"` -> 3 passed
+  - `npx vitest run src/games/smashup/__tests__/interactionChainE2E.test.ts -t "commission|委任"` -> 3 passed
+  - `npx vitest run src/games/smashup/__tests__/alien-scout-pod-afterscore.test.ts` -> 4 passed
+  - `npx vitest run src/games/smashup/__tests__/promptResponseChain.test.ts -t "alien_scout_return|侦察兵回手"` -> 1 passed
+  - `npx eslint src/games/smashup/__tests__/interactionDisplayModeAudit.test.ts src/games/smashup/abilities/aliens.ts src/games/smashup/abilities/bear_cavalry.ts src/games/smashup/abilities/tornados.ts src/games/smashup/abilities/shayu_common.ts` -> 0 errors；仍有文件既有 warnings（主要 `no-explicit-any` / unused），不是本轮新增
+
+## 2026-05-17 03:22:30 +08:00
+
+- 继续把“统一测试标准”固化成门禁，而不是只靠当前仓状态：
+  - `scripts/infra/testing-structure-guard.mjs`
+    - 新增 `console.log/warn/error/debug` 调试壳层门禁，阻止游戏行为测试再把控制台当事实载体
+    - 新增 direct import 门禁：阻止业务测试继续直接导入 `resolveAbility`、`getInteractionHandler`、`getAbilityRuntimePromptHandler`
+    - 全量扫描时发现“禁止任何 `abilityRegistry` 导入”会误伤 `clearRegistry` / 类型导入等合法场景，因此已收窄为只拦真正的问题入口，而不是整模块一刀切
+  - 文档同步：
+    - `docs/testing-best-practices.md`
+    - `docs/automated-testing.md`
+    - 补充门禁清单，明确写入“禁止新增测试调试日志”和“禁止业务测试直摸原始 registry/handler”
+- 验证：
+  - `npm run test:structure -- --all` -> checked files: 45，OK
+  - `rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__` -> 0 命中
+
+## 2026-05-17 03:31:18 +08:00
+
+- 继续把“以后改代码不用频繁改测试”的目标落到文件结构，而不是只停在 metadata/audit：
+  - `src/games/smashup/__tests__/abilities/aliens.test.ts`
+    - 在既有 `alien_jammed_signal` 两条基地压制回归上，追加迁入完整 `Aliens` 能力簇：
+      - `alien_invader`
+      - `alien_collector`（prompt 创建 + runtime prompt 返回）
+      - `alien_supreme_overlord`
+      - `alien_disintegrator`
+      - `alien_crop_circles`
+    - 新增本地 `execPlayMinion(...)` / `execPlayAction(...)`，统一走真实出牌命令而不是历史内部入口。
+  - `src/games/smashup/__tests__/factionAbilities.test.ts`
+    - 删除整段 `describe('外星人派系能力', ...)`
+    - 清理迁移后残留的 `respondCommand` 无用 import
+- 验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/aliens.test.ts` -> 1 file / 8 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/aliens.test.ts` -> 0 errors
+  - `npx vitest run src/games/smashup/__tests__/abilities/aliens.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 2 files / 37 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/aliens.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 48，OK
+- 备注：
+  - 运行中仍能看到运行时既有 `[DEBUG] PLAY_ACTION validation` 输出，以及 `alien_disintegrator` 缺目标时的预期验证失败日志；它们来自业务管线本身，不是测试文件新增 `console.*`，因此不构成这轮结构门禁回退。
+
+## 2026-05-17 03:37:22 +08:00
+
+- 继续沿“能力簇迁移”这条线推进，这次不新开文件，而是优先并到已有专项文件：
+  - `src/games/smashup/__tests__/abilities/dinosaurs.test.ts`
+    - 吸收原 `factionAbilities.test.ts` 的恐龙 action 回归：
+      - `dino_rampage`
+      - `dino_augmentation`
+      - `dino_howl`
+      - `dino_natural_selection`
+      - `dino_survival_of_the_fittest`
+    - 新增本地 `execPlayAction(...)`，统一走真实 `PLAY_ACTION`
+  - `src/games/smashup/__tests__/factionAbilities.test.ts`
+    - 删除整段 `describe('恐龙派系能力', ...)`
+    - 清理迁移后残留的 `getPromptOptions` / `expectNoPrompt` 无用 import
+- 验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/dinosaurs.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 2 files / 32 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/dinosaurs.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 49，OK
+- 结果：
+  - `factionAbilities.test.ts` 从上一轮去掉 Aliens 后的 29 tests，再降到 20 tests
+  - `dinosaurs.test.ts` 从 3 个 ongoing/保护回归扩成 12 tests，但主题仍保持单一，没有重新长成泛名垃圾桶
+
+## 2026-05-17 03:49:41 +08:00
+
+- 继续把 `factionAbilities.test.ts` 往“只剩尾项”推进，这一轮连续迁出 4 组：
+  - `src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts`
+    - 吸收 `pirate_broadside`
+    - `pirate_cannon`
+    - `pirate_swashbuckling`
+    - 新增本地 `execPlayAction(...)`
+  - 新建 `src/games/smashup/__tests__/abilities/wizards.test.ts`
+    - 迁入 `wizard_neophyte`
+    - `wizard_neophyte_pod`
+    - `wizard_enchantress`
+    - `wizard_mystic_studies`
+  - 新建 `src/games/smashup/__tests__/abilities/robots.test.ts`
+    - 迁入 `robot_zapbot`
+    - `robot_tech_center`
+    - `robot_microbot_fixer + base_the_homeworld`
+  - 新建 `src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts`
+    - 迁出共享“立即额外行动”交互组
+- 同步瘦身 `src/games/smashup/__tests__/factionAbilities.test.ts`：
+  - 删除海盗整段
+  - 删除巫师整段
+  - 删除机器人整段
+  - 删除“立即额外行动”整段
+  - 顺手清理残留的 helper/import 壳层
+- 分批验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 2 files / 38 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npx vitest run src/games/smashup/__tests__/abilities/wizards.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 2 files / 16 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/wizards.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npx vitest run src/games/smashup/__tests__/abilities/robots.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 2 files / 11 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/robots.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npx vitest run src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 2 files / 6 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` 最新 -> checked files: 52，OK
+- 当前状态：
+  - `factionAbilities.test.ts` 现在只剩 `ghost extra timing audit` + `ninja_seeing_stars`
+  - 泛名文件已经从最初大杂烩收缩成“待归宿尾项文件”
+
+## 2026-05-17 03:54:12 +08:00
+
+- 收掉 `factionAbilities.test.ts` 最后两个尾项：
+  - 新建 `src/games/smashup/__tests__/abilities/ninjas.test.ts`
+    - 接走 `ninja_seeing_stars`
+  - `src/games/smashup/__tests__/expansionAbilities.test.ts`
+    - 在 `ghost_ghostly_arrival（悄然而至）` 块内补入 off-phase `playTiming === 'immediate'` 断言
+  - 删除 `src/games/smashup/__tests__/factionAbilities.test.ts`
+- 验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/ninjas.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 2 files / 34 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/ninjas.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 52，OK
+- 结果：
+  - `factionAbilities.test.ts` 已彻底退场
+  - 原来挂在这份历史泛名文件里的派系/共享交互/时机断言，现已分别回归更准确的专项文件
+
+## 2026-05-17 04:04:31 +08:00
+
+- 继续回应“是不是只改了表象”，这轮处理的不是 grep 清零，而是另一份历史混装壳：
+  - `src/games/smashup/__tests__/query6Abilities.test.ts`
+- 先完成忍者尾项迁移并验证：
+  - `src/games/smashup/__tests__/abilities/ninjas.test.ts`
+    - 接走 `ninja_way_of_deception`
+    - `ninja_disguise`
+  - `npx vitest run src/games/smashup/__tests__/abilities/ninjas.test.ts src/games/smashup/__tests__/query6Abilities.test.ts` -> 2 files / 31 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/ninjas.test.ts src/games/smashup/__tests__/query6Abilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 53，OK
+- 然后把 `query6Abilities.test.ts` 剩余三簇一次性归位：
+  - `src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts`
+    - 吸收 `pirate_dinghy`
+    - `pirate_shanghai`
+    - `pirate_sea_dogs`
+    - `pirate_powderkeg`
+  - `src/games/smashup/__tests__/abilities/wizards.test.ts`
+    - 吸收 `wizard_mass_enchantment`
+    - `wizard_portal`
+    - `wizard_portal_order`
+    - `wizard_scry`
+    - `wizard_sacrifice`
+    - `wizard_winds_of_change`
+  - `src/games/smashup/__tests__/abilities/aliens.test.ts`
+    - 吸收 `alien_scout`
+  - 删除 `src/games/smashup/__tests__/query6Abilities.test.ts`
+- 定点验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts src/games/smashup/__tests__/abilities/wizards.test.ts src/games/smashup/__tests__/abilities/aliens.test.ts` -> 3 files / 59 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts src/games/smashup/__tests__/abilities/wizards.test.ts src/games/smashup/__tests__/abilities/aliens.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 52，OK
+  - `Test-Path src\\games\\smashup\\__tests__\\query6Abilities.test.ts` -> False
+- 结果：
+  - `query6Abilities.test.ts` 已彻底退场
+  - SmashUp 里“按历史批次混装”的两个明显旧壳 `factionAbilities.test.ts`、`query6Abilities.test.ts` 都已经被拆掉
+  - 这轮新增/迁入的测试仍统一走真实出牌命令、prompt facade 和现有专项文件边界，没有再引入新的测试入口分叉
+
+## 2026-05-17 04:09:18 +08:00
+
+- 继续扫描 SmashUp 剩余历史壳时，先挑了一个更低风险但很典型的目标：
+  - `src/games/smashup/__tests__/robotAbilities.test.ts`
+  - 这个文件不属于“多派系混装”，但已经和 `src/games/smashup/__tests__/abilities/robots.test.ts` 形成同主题双入口
+- 基线核对：
+  - `npx vitest run src/games/smashup/__tests__/robotAbilities.test.ts src/games/smashup/__tests__/abilities/robots.test.ts` -> 2 files / 16 tests passed
+  - `npx eslint src/games/smashup/__tests__/robotAbilities.test.ts src/games/smashup/__tests__/abilities/robots.test.ts` -> 0 errors / 0 warnings
+- 收口动作：
+  - `src/games/smashup/__tests__/abilities/robots.test.ts`
+    - 吸收 `robot_microbot_reclaimer` 多选/空选择/洗回牌库/动态 optionsGenerator 刷新/AI legal actions 过期候选防线
+    - 吸收 `robot_microbot_fixer` 第一个随从额外额度合同
+    - 吸收 `robot_microbot_reclaimer` onPlay 额外额度与“先解交互再打荣誉之地额外随从”的真实链路
+  - 删除 `src/games/smashup/__tests__/robotAbilities.test.ts`
+- 定点验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/robots.test.ts` -> 1 file / 16 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/robots.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 52，OK
+  - `Test-Path src\\games\\smashup\\__tests__\\robotAbilities.test.ts` -> False
+- 结果：
+  - 机器人普通行为测试只剩一个专项入口 `abilities/robots.test.ts`
+  - 这说明“测试去耦”的下一个层次不只是拆多派系壳，也包括消除同一派系的双入口并存
+
+## 2026-05-17 04:19:28 +08:00
+
+- 继续沿“不是只改表象，而是收口长期稳定入口”这条线推进，这一轮处理的是根目录单派系旧入口：
+  - `src/games/smashup/__tests__/ghostsAbilities.test.ts`
+- 收口动作：
+  - 新建 `src/games/smashup/__tests__/abilities/ghosts.test.ts`
+    - 接走 `ghost_make_contact`
+    - `ghost_make_contact_pod`
+    - 统一走真实 `PLAY_ACTION` 命令链与现有 `helpers.ts`
+  - 删除 `src/games/smashup/__tests__/ghostsAbilities.test.ts`
+- 验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/ghosts.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 2 files / 41 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/ghosts.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 54，OK
+  - `Test-Path src\\games\\smashup\\__tests__\\ghostsAbilities.test.ts` -> False
+- 备注：
+  - 运行输出里仍有若干 `[DEBUG] PLAY_ACTION validation` 和预期的验证失败日志，但它们来自业务管线既有输出，不是这轮新增测试 `console.*`
+  - 当前新的结构性经验已经补齐：除了混装壳、双入口壳，还要继续清掉“根目录单派系旧入口”这类历史入口分裂
+
+## 2026-05-17 07:40:32 +08:00
+
+- 继续沿“测试入口按稳定行为边界收口”推进，这一轮处理的是另一种更隐蔽的混装壳：
+  - `src/games/smashup/__tests__/shayuFactionAbilities.test.ts`
+  - 它不是按批次命名，但把鲨鱼 / 龙卷风 / 神话希腊三派系代表性玩法混在同一文件
+- 收口动作：
+  - 新建 `src/games/smashup/__tests__/abilities/sharks.test.ts`
+    - 接走鲨鱼代表性行为与相关抽样复审
+  - 新建 `src/games/smashup/__tests__/abilities/tornados.test.ts`
+    - 接走龙卷风代表性行为
+  - 新建 `src/games/smashup/__tests__/abilities/mythic-greeks.test.ts`
+    - 接走神话希腊代表性行为与基地相关复审
+  - 删除 `src/games/smashup/__tests__/shayuFactionAbilities.test.ts`
+- 定点验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/sharks.test.ts src/games/smashup/__tests__/abilities/tornados.test.ts src/games/smashup/__tests__/abilities/mythic-greeks.test.ts` -> 3 files / 21 tests passed
+  - `npx eslint src/games/smashup/__tests__/abilities/sharks.test.ts src/games/smashup/__tests__/abilities/tornados.test.ts src/games/smashup/__tests__/abilities/mythic-greeks.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 57，OK
+  - `Test-Path src\\games\\smashup\\__tests__\\shayuFactionAbilities.test.ts` -> False
+- 备注：
+  - `vitest` 输出里仍可见既有 `[DEBUG] PLAY_ACTION validation` 与预期的命令验证失败日志；这是旧管线输出，不是本轮新增噪音
+  - 现在 SmashUp 已经连续清掉四类历史壳：批次混装、同派系双入口、根目录单派系旧入口、跨多派系“代表性玩法”混装文件
+
+## 2026-05-17 08:01:29 +08:00
+
+- 继续处理 `src/games/smashup/__tests__/expansionAbilities.test.ts`，这次优先选已有专项归宿的 `Killer Plants`：
+  - `src/games/smashup/__tests__/abilities/killer-plants.test.ts`
+    - 吸收 `killer_plant_insta_grow`
+    - 吸收 `killer_plant_weed_eater`
+    - 新增断言优先直接看真实 `finalState`，不再为了状态结论手工重放 `applyEvents`
+  - `src/games/smashup/__tests__/expansionAbilities.test.ts`
+    - 删除整段 `食人花派系能力`
+    - 顺手把仍残留的两条 `applyEvents` 状态测试改为直接消费 `runCommand(...).finalState`
+- 中途一次定点验证红灯不是业务失败，而是旧文件残留的 `applyEvents` 调用：
+  - `消灭后状态正确（reduce 验证）`
+  - `单张行动卡时 Prompt 待决（reduce 验证）`
+  - 这正好说明当前收口不只是挪文件，还在拔掉旧的事件回放 seam。
+- 最终验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> `2 files / 38 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 61, OK`
+
+## 2026-05-17 08:06:13 +08:00
+
+- 继续压 `src/games/smashup/__tests__/expansionAbilities.test.ts`，这次处理已有专项归宿的 `Bear Cavalry`：
+  - `src/games/smashup/__tests__/abilities/bear-cavalry.test.ts`
+    - 吸收 `bear_cavalry_bear_hug`
+    - 吸收 `bear_cavalry_commission`
+    - 连同 tie-choice 的 interaction regression 一起并回专项文件，不再留在扩展聚合入口
+  - `src/games/smashup/__tests__/expansionAbilities.test.ts`
+    - 删除 `bear cavalry interaction regressions`
+    - 删除整段 `黑熊骑兵派系能力`
+    - 清理迁移后残留废 import
+- 结果：
+  - `expansionAbilities.test.ts` 当前已从之前的多派系聚合，压到只剩 `Steampunk` + `cthulhu_complete_the_ritual`
+  - `Bear Cavalry` 普通行为现在只保留一个专项入口 `abilities/bear-cavalry.test.ts`
+- 验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/bear-cavalry.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> `2 files / 36 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/bear-cavalry.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 62, OK`
+
+## 2026-05-17 08:14:49 +08:00
+
+- 继续收 `expansionAbilities.test.ts` 的最后尾项：
+  - 新建 `src/games/smashup/__tests__/abilities/steampunks.test.ts`
+    - 承接 `steampunk_scrap_diving`
+  - `src/games/smashup/__tests__/abilities/cthulhu.test.ts`
+    - 补入 `cthulhu_complete_the_ritual` 的打出约束
+  - 删除 `src/games/smashup/__tests__/expansionAbilities.test.ts`
+- 定点验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/steampunks.test.ts src/games/smashup/__tests__/abilities/cthulhu.test.ts` -> `2 files / 27 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/steampunks.test.ts src/games/smashup/__tests__/abilities/cthulhu.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 64, OK`
+  - `Test-Path src\\games\\smashup\\__tests__\\expansionAbilities.test.ts` -> `False`
+- 随后继续处理 `expansionOngoing.test.ts` 里已有专项归宿的幽灵段：
+  - `src/games/smashup/__tests__/abilities/ghosts.test.ts`
+    - 吸收 `ghost_incorporeal`
+    - 吸收 `ghost_make_contact` 的显式 `MINION_CONTROL_CHANGED` 合同与 detach affect 记录合同
+  - `src/games/smashup/__tests__/expansionOngoing.test.ts`
+    - 删除整段 `幽灵 ongoing 能力`
+    - 清理迁移后残留的 `buildAffectRecords` / `registerGhostAbilities` / `fireTriggers` 等废 import
+- 验证：
+  - `npx vitest run src/games/smashup/__tests__/abilities/ghosts.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> `2 files / 81 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/ghosts.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 65, OK`

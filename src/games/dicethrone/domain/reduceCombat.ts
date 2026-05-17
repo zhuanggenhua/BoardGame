@@ -7,6 +7,7 @@ import type { DiceThroneCore, DiceThroneEvent } from './types';
 import { resourceSystem } from './resourceSystem';
 import { RESOURCE_IDS } from './resources';
 import { getFaceCounts, getActiveDice, getTeamId, isTeamMode } from './rules';
+import { isTreantTreeSpiritToken } from './passiveAbility';
 
 type EventHandler<E extends DiceThroneEvent> = (
     state: DiceThroneCore,
@@ -611,6 +612,16 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
         };
     }
 
+    const treantSpiritSpentThisTurn = isTreantTreeSpiritToken(tokenId)
+        ? {
+            ...(state.treantSpiritSpentThisTurn ?? {}),
+            [playerId]: {
+                ...(state.treantSpiritSpentThisTurn?.[playerId] ?? {}),
+                [tokenId]: true,
+            },
+        }
+        : state.treantSpiritSpentThisTurn;
+
     // 更新 pendingDamage / pendingAttack
     // beforeDamageDealt 的 token 加伤既要进入当前响应窗的 pendingDamage，
     // 也要同步回 pendingAttack.bonusDamage，避免后续攻击总伤害查询仍读到旧值。
@@ -694,7 +705,7 @@ export const handleTokenUsed: EventHandler<Extract<DiceThroneEvent, { type: 'TOK
         }
     }
 
-    return { ...state, players, pendingDamage, pendingAttack };
+    return { ...state, players, pendingDamage, pendingAttack, treantSpiritSpentThisTurn };
 };
 
 /**

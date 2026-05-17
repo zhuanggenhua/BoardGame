@@ -18,7 +18,7 @@ import {
     fireTriggers,
 } from '../domain/ongoingEffects';
 import type { SmashUpCore, MinionOnBase, BaseInPlay, CardInstance, FactionId } from '../domain/types';
-import { SU_EVENTS } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { clearRegistry } from '../domain/abilityRegistry';
 import { registerNinjaAbilities, registerNinjaInteractionHandlers } from '../abilities/ninjas';
@@ -26,7 +26,6 @@ import { registerCowboysAbilities, registerCowboysInteractionHandlers } from '..
 import { registerRobotAbilities } from '../abilities/robots';
 import { registerWizardAbilities } from '../abilities/wizards';
 import { registerTricksterAbilities } from '../abilities/tricksters';
-import { resolveAbility } from '../domain/abilityRegistry';
 import { reduce } from '../domain/reduce';
 import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import { getMinionDef } from '../data/cards';
@@ -39,6 +38,7 @@ import {
     getPromptSourceId,
     getPromptTargetType,
     getPromptsBySourceId,
+    invokeRegisteredAbilityContract,
     makeMatchState as makePromptMatchState,
     expectNoPrompt,
     respondToPromptOption,
@@ -474,22 +474,17 @@ describe('忍者 ongoing/special 能力', () => {
     });
 
     describe('ninja_acolyte: 忍者侍从 special 能力（点击激活）', () => {
-        test('special 能力已注册', () => {
-            const executor = resolveAbility('ninja_acolyte', 'special');
-            expect(executor).toBeDefined();
-        });
-
         test('基地上有侍从时激活返回手牌并给额外随从额度', () => {
             const base = makeBase({
                 minions: [makeMinion({ defId: 'ninja_acolyte', uid: 'ac-1', controller: '0' })],
             });
             const state = makeState([base]);
-            const matchState = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as any;
-            const executor = resolveAbility('ninja_acolyte', 'special')!;
-            const result = executor({
-                state, matchState, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
-                baseIndex: 0, random: dummyRandom, now: 1000,
-            });
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { minionUid: 'ac-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+            expect(result.success, result.error).toBe(true);
 
             const acolyteEvents = result.events.filter(e =>
                 e.type === SU_EVENTS.MINION_RETURNED ||
@@ -499,7 +494,7 @@ describe('忍者 ongoing/special 能力', () => {
             expect(acolyteEvents[0].type).toBe(SU_EVENTS.SPECIAL_LIMIT_USED);
             expect(acolyteEvents[1].type).toBe(SU_EVENTS.MINION_RETURNED);
             // 应创建交互（选择手牌中的随从）
-            expect(result.matchState).toBeDefined();
+            expect(getFirstPrompt(result.finalState)).toBeDefined();
         });
 
         test('同基地已使用忍者 special 时被阻止', () => {
@@ -508,16 +503,14 @@ describe('忍者 ongoing/special 能力', () => {
             });
             const state = makeState([base]);
             state.specialLimitUsed = { ninja_acolyte: [0] };
-            const matchState = makeMatchState(state);
-            const executor = resolveAbility('ninja_acolyte', 'special')!;
-            const result = executor({
-                state, matchState, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
-                baseIndex: 0, random: dummyRandom, now: 1000,
-            });
-            const acolyteEvents = result.events.filter(e =>
-                e.type === SU_EVENTS.MINION_RETURNED && (e as any).payload?.minionDefId === 'ninja_acolyte'
-            );
-            expect(acolyteEvents).toHaveLength(0);
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { minionUid: 'ac-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('已使用过同组特殊能力');
+            expect(result.events).toHaveLength(0);
         });
 
         test('本回合已打出随从时被阻止', () => {
@@ -526,22 +519,17 @@ describe('忍者 ongoing/special 能力', () => {
             });
             const state = makeState([base]);
             state.players['0'].minionsPlayed = 1;
-            const matchState = makeMatchState(state);
-            const executor = resolveAbility('ninja_acolyte', 'special')!;
-            const result = executor({
-                state, matchState, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
-                baseIndex: 0, random: dummyRandom, now: 1000,
-            });
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { minionUid: 'ac-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+            expect(result.success, result.error).toBe(true);
             expect(result.events).toHaveLength(0);
         });
     });
 
     describe('ninja_hidden_ninja: 隐忍 special', () => {
-        test('special 能力已注册', () => {
-            const executor = resolveAbility('ninja_hidden_ninja', 'special');
-            expect(executor).toBeDefined();
-        });
-
         test('会把手牌中所有随从都放入选择交互', () => {
             const state = makeState([makeBase({ minions: [] })], {
                 '0': {
@@ -564,9 +552,7 @@ describe('忍者 ongoing/special 能力', () => {
                 },
             });
             const matchState = makeMatchState(state);
-            const executor = resolveAbility('ninja_hidden_ninja', 'special')!;
-
-            const result = executor({
+            const result = invokeRegisteredAbilityContract('ninja_hidden_ninja', 'special', {
                 state,
                 matchState,
                 playerId: '0',
@@ -592,8 +578,7 @@ describe('忍者 ongoing/special 能力', () => {
             const state = makeState([base]);
             state.specialLimitUsed = { ninja_hidden_ninja: [0] };
             const matchState = makeMatchState(state);
-            const executor = resolveAbility('ninja_hidden_ninja', 'special')!;
-            const result = executor({
+            const result = invokeRegisteredAbilityContract('ninja_hidden_ninja', 'special', {
                 state, matchState, playerId: '0', cardUid: 'hn-1', defId: 'ninja_hidden_ninja',
                 baseIndex: 0, random: dummyRandom, now: 1000,
             });
@@ -609,16 +594,14 @@ describe('忍者 ongoing/special 能力', () => {
             const state = makeState([base]);
             // 模拟 ninja_acolyte 已使用
             state.specialLimitUsed = { ninja_acolyte: [0] };
-            const matchState = makeMatchState(state);
-            const executor = resolveAbility('ninja_acolyte', 'special')!;
-            const result = executor({
-                state, matchState, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
-                baseIndex: 0, random: dummyRandom, now: 1000,
-            });
-            const acolyteEvents = result.events.filter(e =>
-                e.type === SU_EVENTS.MINION_RETURNED && (e as any).payload?.minionDefId === 'ninja_acolyte'
-            );
-            expect(acolyteEvents).toHaveLength(0);
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { minionUid: 'ac-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('已使用过同组特殊能力');
+            expect(result.events).toHaveLength(0);
         });
 
         test('SPECIAL_LIMIT_USED 事件正确更新 reducer 状态', () => {
@@ -659,12 +642,12 @@ describe('忍者 ongoing/special 能力', () => {
             const state = makeState([base]);
             state.players['0'].hand = [makeCard('h3', 'test_minion_b', 'minion', '0')];
             state.players['0'].minionsPlayed = 0;
-            const matchState = { core: state, sys: { interaction: { current: undefined, queue: [] } } } as any;
-            const executor = resolveAbility('ninja_acolyte', 'special')!;
-            const result = executor({
-                state, matchState, playerId: '0', cardUid: 'ac-1', defId: 'ninja_acolyte',
-                baseIndex: 0, random: dummyRandom, now: 1000,
-            });
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.ACTIVATE_SPECIAL,
+                playerId: '0',
+                payload: { minionUid: 'ac-1', baseIndex: 0 },
+            } as any, defaultTestRandom);
+            expect(result.success, result.error).toBe(true);
             // 应该有 MINION_RETURNED 事件，但不应该有 LIMIT_MODIFIED 事件
             const returnEvt = result.events.find((e: any) => e.type === SU_EVENTS.MINION_RETURNED);
             expect(returnEvt).toBeDefined();
@@ -673,7 +656,7 @@ describe('忍者 ongoing/special 能力', () => {
             
             clearInteractionHandlers();
             registerNinjaInteractionHandlers();
-            const promptState = result.matchState ?? matchState;
+            const promptState = result.finalState;
             const prompt = getFirstPrompt(promptState);
             expect(getPromptSourceId(prompt)).toBe('ninja_acolyte_play');
             const option = getPromptOption(
@@ -698,8 +681,7 @@ describe('忍者 ongoing/special 能力', () => {
             const matchState = makeMatchState(state);
             clearInteractionHandlers();
             registerNinjaInteractionHandlers();
-            const executor = resolveAbility('ninja_hidden_ninja', 'special')!;
-            const result = executor({
+            const result = invokeRegisteredAbilityContract('ninja_hidden_ninja', 'special', {
                 state,
                 matchState,
                 playerId: '0',
@@ -1881,8 +1863,7 @@ describe('诡术师 ongoing 能力', () => {
             const ms = makeMatchState(state);
             ms.sys.phase = 'startTurn';
 
-            const executor = resolveAbility('trickster_enshrouding_mist', 'onPlay')!;
-            const result = executor({
+            const result = invokeRegisteredAbilityContract('trickster_enshrouding_mist', 'onPlay', {
                 state,
                 matchState: ms,
                 playerId: '0',
@@ -1952,30 +1933,23 @@ describe('诡术师 ongoing 能力', () => {
     });
 
     describe('trickster_mark_of_sleep: 沉睡印记', () => {
-        test('onPlay 能力已注册', () => {
-            const executor = resolveAbility('trickster_mark_of_sleep', 'onPlay');
-            expect(executor).toBeDefined();
-        });
-
         test('单目标时创建 Interaction', () => {
             const base = makeBase();
             const state = makeState([base]);
-            const ms = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
+            state.players['0'] = {
+                ...state.players['0'],
+                hand: [makeCard('ms-1', 'trickster_mark_of_sleep', 'action', '0', SMASHUP_FACTION_IDS.TRICKSTERS)],
+            };
 
-            const executor = resolveAbility('trickster_mark_of_sleep', 'onPlay')!;
-            const result = executor({
-                state,
-                matchState: ms,
+            const result = runCommand(makePromptMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
                 playerId: '0',
-                cardUid: 'ms-1',
-                defId: 'trickster_mark_of_sleep',
-                baseIndex: 0,
-                random: dummyRandom,
-                now: 1000,
-            });
+                payload: { cardUid: 'ms-1', targetBaseIndex: 0 },
+            } as any, defaultTestRandom);
+            expect(result.success, result.error).toBe(true);
 
             // 迁移后通过 Interaction 而非事件
-            const current = getFirstPrompt(result.matchState!);
+            const current = getFirstPrompt(result.finalState);
             expect(current).toBeDefined();
             expect(getPromptSourceId(current)).toBe('trickster_mark_of_sleep');
             expect(getPromptTargetType(current)).toBe('player');

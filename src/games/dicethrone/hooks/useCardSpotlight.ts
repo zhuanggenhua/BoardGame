@@ -83,6 +83,10 @@ const CARD_BONUS_BIND_THRESHOLD_MS = 1500;
 const spotlightLogger = createScopedLogger('DT_SPOTLIGHT');
 type SpotlightBonusDie = NonNullable<CardSpotlightItem['bonusDice']>[number];
 
+function buildBonusDiePresentationKey(type: string, eventTimestamp: number): string {
+    return `${type}:${eventTimestamp}`;
+}
+
 function buildCardSpotlightDedupKey(cardId: string, playerId: PlayerId, eventTimestamp: number): string {
     return `${normalizePlayerId(playerId)}|${cardId}|${eventTimestamp}`;
 }
@@ -443,6 +447,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                             value: bonusValue,
                             face: bonusFace,
                             timestamp: eventTimestamp,
+                            presentationKey: buildBonusDiePresentationKey(type, eventTimestamp),
                             effectKey: bonusEffectKey,
                             effectParams: bonusEffectParams,
                             characterId: resolvedCharacterId,
@@ -492,12 +497,12 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                             pendingStandaloneMultiDice = {
                                 bonusDice: [],
                                 characterId: resolvedCharacterId,
-                                presentationKey: `${type}:${eventTimestamp}`,
+                                presentationKey: buildBonusDiePresentationKey(type, eventTimestamp),
                                 showTotal: false,
                                 displayOnly: true,
                             };
                         } else {
-                            pendingStandaloneMultiDice.presentationKey = `${type}:${eventTimestamp}`;
+                            pendingStandaloneMultiDice.presentationKey = buildBonusDiePresentationKey(type, eventTimestamp);
                         }
 
                         if (isSummaryEvent && bonusEffectKey && bonusEffectParams) {
@@ -530,7 +535,7 @@ export function useCardSpotlight(config: CardSpotlightConfig): CardSpotlightStat
                         effectKey: bonusEffectKey,
                         effectParams: bonusEffectParams,
                         characterId: resolvedCharacterId,
-                        presentationKey: `${type}:${eventTimestamp}`,
+                        presentationKey: buildBonusDiePresentationKey(type, eventTimestamp),
                     };
                     spotlightLogger.info('bonus-standalone', {
                         eventType: type,

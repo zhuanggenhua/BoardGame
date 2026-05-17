@@ -532,8 +532,8 @@ const ghostSpiritConfirmPromptProgram = createPromptProgram<GhostSpiritConfirmCo
         context.playerId,
         '是否消灭该随从？（力量 0，无需弃牌）',
         [
-            { id: 'yes', label: '消灭', value: { confirm: true } },
-            { id: 'no', label: '跳过', value: { confirm: false } },
+            { id: 'yes', label: '消灭', value: { confirm: true }, displayMode: 'button' as const },
+            { id: 'no', label: '跳过', value: { confirm: false }, displayMode: 'button' as const },
         ],
         {
             sourceId: 'ghost_spirit_confirm',

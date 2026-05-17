@@ -731,7 +731,7 @@ const alienScoutReturnPromptProgram = createPromptProgram<
                 id: 'yes',
                 label: '返回手牌',
                 value: { returnIt: true },
-                displayMode: 'card' as const,
+                displayMode: 'button' as const,
             },
             {
                 id: 'no',

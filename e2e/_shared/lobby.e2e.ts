@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
+import { getEvidenceScreenshotPath } from '../framework/evidenceScreenshots';
 import { getGameServerBaseURL, setChineseLocale } from '../helpers/common';
 
 function isRetryableNavigationError(error: unknown): boolean {
@@ -891,6 +892,50 @@ test.describe('Lobby E2E', () => {
         await expect(detailsModal.getByTestId('game-details-open-create-room')).toBeVisible();
         await expect(detailsModal.getByRole('button', { name: '教程模式' })).toBeVisible();
         await expect(detailsModal.getByRole('button', { name: /对战AI|Play AI/i })).toHaveCount(0);
+    });
+
+    test('桌面端悬浮球面板与悬浮文本使用同一层级族', async ({ page }, testInfo) => {
+        await setChineseLocale(page.context());
+        await ensureLobbyReady(page);
+
+        await page.locator('[data-fab-id="settings"]').click();
+        const settingsPanel = page.getByTestId('fab-panel-settings');
+        await expect(settingsPanel).toBeVisible({ timeout: 10000 });
+
+        await page.locator('[data-fab-id="feedback"]').hover();
+        const feedbackTooltip = page.getByTestId('fab-tooltip-feedback');
+        await expect(feedbackTooltip).toBeVisible({ timeout: 10000 });
+
+        const layerMetrics = await page.evaluate(() => {
+            const panel = document.querySelector('[data-testid="fab-panel-settings"]') as HTMLElement | null;
+            const tooltip = document.querySelector('[data-testid="fab-tooltip-feedback"]') as HTMLElement | null;
+            const menu = document.querySelector('[data-testid="fab-menu"]') as HTMLElement | null;
+            const resolveZIndex = (element: HTMLElement | null) => {
+                let current: HTMLElement | null = element;
+                while (current) {
+                    const parsed = Number.parseInt(window.getComputedStyle(current).zIndex || '0', 10);
+                    if (Number.isFinite(parsed)) return parsed;
+                    current = current.parentElement;
+                }
+                return 0;
+            };
+            return {
+                panelZIndex: resolveZIndex(panel),
+                menuZIndex: resolveZIndex(menu),
+                tooltipZIndex: resolveZIndex(tooltip),
+            };
+        });
+
+        expect(layerMetrics.panelZIndex).toBeGreaterThan(0);
+        expect(layerMetrics.menuZIndex).toBeGreaterThan(layerMetrics.panelZIndex);
+        expect(layerMetrics.tooltipZIndex).toBeGreaterThan(layerMetrics.menuZIndex);
+
+        await page.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'fab-layer-tooltip-over-panel', {
+                filename: 'fab-layer-tooltip-over-panel.png',
+            }),
+            fullPage: false,
+        });
     });
 
     test('Dice Throne 更新日志 tab 会渲染接口返回的已发布内容', async ({ page, game }, testInfo) => {

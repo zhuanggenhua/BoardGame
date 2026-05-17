@@ -63,7 +63,7 @@
 - 当一个测试文件已经覆盖多个无关派系、页面、反馈编号、规则簇或系统层，新增用例必须优先落到更聚焦的新文件；只有同一行为簇内的少量补充才允许追加。
 - 拆分不是删除覆盖。迁移用例时必须保留该行为簇至少 1 条代表性路径，并运行迁出后的新文件；若原巨型文件仍保留大量相关场景，应按风险决定是否复跑原文件。
 - 示例：Smash Up 音效配置测试应落到 `src/games/smashup/__tests__/audio/faction-audio-config.test.ts`，不再塞回 `newFactionAbilities.test.ts`。
-- 自动门禁：`npm run test:structure` 会阻止新增根级游戏 E2E、`e2e/src/**` 镜像入库、临时/备份/测试输出文件入库、新增泛名测试文件、给旧泛名文件净增加内容，以及在非系统契约游戏测试里新增裸 `getInteractionsFromMS` / `prompt.data.options` / `SYS_INTERACTION_RESPOND` / `SYS_INTERACTION_CANCEL` / `sys.interaction.current` 访问。历史债务允许继续收敛；旧泛名文件净删减时只警告，迁出的新文件必须改走 facade。必要豁免必须显式设置 `ALLOW_TEST_STRUCTURE_DEBT=1` 并说明原因。
+- 自动门禁：`npm run test:structure` 会阻止新增根级游戏 E2E、`e2e/src/**` 镜像入库、临时/备份/测试输出文件入库、新增泛名测试文件、给旧泛名文件净增加内容，以及在非系统契约游戏测试里新增裸 `getInteractionsFromMS` / `prompt.data.options` / `SYS_INTERACTION_RESPOND` / `SYS_INTERACTION_CANCEL` / `sys.interaction.current` / `resolveAbility(...)` / `getInteractionHandler(...)` / `getAbilityRuntimePromptHandler(...)` 访问，也会阻止新增测试里的 `console.log/warn/error/debug` 调试输出。历史债务允许继续收敛；旧泛名文件净删减时只警告，迁出的新文件必须改走 facade。必要豁免必须显式设置 `ALLOW_TEST_STRUCTURE_DEBT=1` 并说明原因。
 - 新增或迁出的游戏行为测试不得使用 `it.skip` / `test.skip` / `describe.skip`。如果旧测试是 skip，迁移时必须先补齐真实行为链路并跑绿；无法补齐时保留为历史债务并记录原因，不得把 skip 带进新的聚焦测试文件。
 
 ### 0.6 测试接口 / 行为端口门禁
@@ -71,12 +71,21 @@
 - 每类高频测试对象都应有稳定的测试接口：游戏命令用 `GameTestRunner` / `runCommand`，交互 prompt 用游戏专用 prompt facade，UI 用真实 E2E 入口。
 - 测试主体不应直接依赖内部结构字段，例如 `sys.interaction.current`、`queue`、`data.options`、内部 handler 调用顺序。确需测试内部契约时，测试文件名或 describe 必须写明它是在测系统契约。
 - 业务/能力测试默认禁止新增 `getInteractionHandler(...)`、`getAbilityRuntimePromptHandler(...)` 直调。优先表达成真实 `trigger -> prompt -> respond`、真实命令入口，或通过 facade 读取 prompt 和选择 option。
+- 业务/能力测试默认禁止新增裸 `resolveAbility(...)`。公开行为请走真实命令入口；确需保留 low-level ability executor 合同时，优先通过 `invokeRegisteredAbilityContract(...)` 进入，而不是在测试体中直接摸 ability registry。
+- 业务/能力测试默认禁止新增原始 `resolveAbility` / `getInteractionHandler` / `getAbilityRuntimePromptHandler` 导入。若确实在测系统合同或低层注册表合同，也优先通过 `helpers.ts` 中的显式 contract helper 暴露测试入口。
 - 只有三类场景允许保留 direct handler / runtime prompt handler：注册表存在性合同、PromptSystem/response chain 系统合同、通过测试 helper 显式封装的低层能力合同（例如 stale/runtime resolver/metadata 合同）。这类测试必须明确说明它锁的不是业务路径，而是底层合同。
-- 即使是低层合同，也优先通过 `helpers.ts` 中的显式 helper（如 `invokeRegisteredInteractionHandlerContract`、`invokeRegisteredRuntimePromptHandlerContract`）进入，不要在测试体里再次直接摸注册表 API。
+- 即使是低层合同，也优先通过 `helpers.ts` 中的显式 helper（如 `invokeRegisteredAbilityContract`、`invokeRegisteredInteractionHandlerContract`、`invokeRegisteredRuntimePromptHandlerContract`）进入，不要在测试体里再次直接摸注册表 API。
+- 测试默认禁止新增 `console.log` / `console.warn` / `console.error` / `console.debug` 作为调试壳层。需要保留失败上下文时，应改成更强的断言、`expect.fail(...)` 消息或证据文档，而不是把控制台当事实载体。
 - `resolvePromptViaRegisteredHandler(...)` 不视为“真实交互入口”。这类 registered-handler 直调 helper 已作为旧 seam 收口，不应再新增或恢复；需要系统级/低层合同时，优先使用显式 contract helper、`resolveSmashUpReactionChoice(...)`，或真实 `respondToPrompt/respondToPromptOption(s)`。
 - 如果一次实现重构导致大量测试改 `option` 读取方式、prompt 字段名、命令 payload 形状或内部 helper 调用，应先新增/调整测试接口层，再迁移用例，禁止在每个测试里重复适配。
 - 新增测试接口要放在对应游戏的 `__tests__/helpers.ts` 或更聚焦的 helper 文件中；测试用例只表达“选择某张牌 / 某玩家 / 某基地 / 某模式”，不表达 InteractionSystem 如何存储这些选项。
 - 示例：Smash Up 交互测试优先使用 `getSimpleChoicePrompt`、`getPromptOption`、`getPromptOptions`、`respondToPrompt`、`respondToPromptOptions`、`cancelPrompt`，而不是在测试体中散落 `prompt.data.options.find(...)` 或手写系统交互命令。
+
+### 0.2.1 runtime callback seam 门禁
+
+- 只要实现经过 `prompt -> onResolve -> helper`、`reaction choose -> resolver`、`branching choice -> handler` 这类分段 callback seam，测试最少要覆盖一条“入口触发 + resolve 结算 + 最终 reduce 状态”的完整链，不能只测 prompt 创建或 options 生成。
+- 当一次重构把内联事件改为 shared helper 时，必须新增或升级测试，打到 helper 真正执行的那一层。只看入口、不看最终 `CARDS_DRAWN` / `DECK_RESHUFFLED` / 伤害 / 资源变化，默认视为测试链路不完整。
+- 对于卡牌层本身不拥有随机语义、只是声明“抽牌/摸牌/结算”的场景，优先使用接受整份 runtime args/context 的 helper，避免每个 `onResolve` 手写解构 `random`。只有卡牌规则真的要自己洗牌、随机选牌、掷骰时，才在 callback 层显式消费 `random`。
 
 ### 1. 使用正确的测试工具
 
@@ -85,7 +94,7 @@
 | 游戏逻辑测试 | `GameTestRunner` | 完整模拟引擎管线，自动处理状态初始化 |
 | 单个能力测试 | `runCommand` (testRunner.ts) | 简化的命令执行，自动包装 MatchState |
 | 基地能力测试 | `triggerBaseAbilityWithMS` (helpers.ts) | 自动注入 matchState |
-| 低层合同测试 | `invokeRegisteredInteractionHandlerContract` / `invokeRegisteredRuntimePromptHandlerContract` | 显式锁注册表/非法值/metadata 合同 |
+| 低层合同测试 | `invokeRegisteredAbilityContract` / `invokeRegisteredInteractionHandlerContract` / `invokeRegisteredRuntimePromptHandlerContract` | 显式锁能力注册表、prompt resolver、非法值、metadata 等底层合同 |
 | UI 集成测试 | Playwright E2E | 端到端验证 |
 
 ### 1.1 E2E 去重与分层

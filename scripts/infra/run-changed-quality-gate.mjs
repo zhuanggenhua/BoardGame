@@ -665,6 +665,14 @@ function affectsPlayRouteEntry(file) {
   return PLAY_ROUTE_ENTRY_GUARD_PATTERNS.has(normalizeFile(file));
 }
 
+function affectsSmashUpRuntimeRandomSeam(file) {
+  const normalized = normalizeFile(file);
+  return normalized === 'src/games/smashup/domain/abilityHelpers.ts'
+    || normalized === 'src/games/smashup/domain/abilityRuntime.ts'
+    || normalized === 'src/games/smashup/__tests__/runtimePromptRandomAudit.test.ts'
+    || normalized.startsWith('src/games/smashup/abilities/');
+}
+
 function isNonGameTestFile(file) {
   return isTestFile(file) && !isGameFile(file);
 }
@@ -955,6 +963,23 @@ function collectCommands(files, baseRef, affectsTypecheck) {
         'ci',
         'e2e/dicethrone-simple-start.e2e.ts',
         'Online match: Can start a game successfully',
+      ],
+    });
+  }
+
+  if (hasAny(workspaceScopeFiles, affectsSmashUpRuntimeRandomSeam)) {
+    commands.push({
+      label: 'SmashUp runtime random audit',
+      reason: 'SmashUp runtime prompt / draw seam 改动，执行定向审计防止 random 依赖再次泄漏到 onResolve',
+      command: process.execPath,
+      args: [
+        ...VITEST_SAFE_ENTRY,
+        'run',
+        'src/games/smashup/__tests__/runtimePromptRandomAudit.test.ts',
+        '--config',
+        'vitest.config.audit.ts',
+        '--configLoader',
+        'native',
       ],
     });
   }

@@ -5,12 +5,12 @@ import { GameButton } from './components/GameButton';
 import { TOKEN_META, getStatusEffectIconNode } from './statusEffects';
 import type { StatusAtlases } from './statusEffects';
 import { InfoTooltip } from '../../../components/common/overlays/InfoTooltip';
-import { UI_Z_INDEX } from '../../../core';
 import { resolveI18nList } from './utils';
 
 interface ChoiceOption {
     id: string;
     label: string;
+    labelParams?: Record<string, string | number>;
     statusId?: string;
     tokenId?: string;
     customId?: string;
@@ -75,14 +75,14 @@ export const ChoiceModal = ({
     const skipOption = isSlider && choice!.options.length > 1 ? choice!.options[choice!.options.length - 1] : undefined;
     const maxValue = confirmOption?.value ?? 1;
 
-    const resolveOptionLabel = (option: Pick<ChoiceOption, 'label'>) => {
+    const resolveOptionLabel = (option: Pick<ChoiceOption, 'label' | 'labelParams'>) => {
         if (option.label.startsWith('choices.option-')) {
             const index = Number(option.label.replace('choices.option-', ''));
             if (!Number.isNaN(index)) {
                 return t('choices.option', { index: index + 1 });
             }
         }
-        return translateRuntimeKey(t, option.label, { defaultValue: option.label });
+        return translateRuntimeKey(t, option.label, { ...option.labelParams, defaultValue: option.label });
     };
 
     const handleSliderConfirm = (selectedValue: number) => {
@@ -285,7 +285,6 @@ const TokenChoiceIcon = ({
                 content={description}
                 isVisible={isHovered}
                 position="bottom"
-                zIndex={UI_Z_INDEX.modalTooltip}
             />
         </div>
     );

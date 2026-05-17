@@ -7,6 +7,7 @@
 
 import type { GameEvent, MatchState, RandomFn } from '../../../engine/types';
 import type {
+    AbilityTag,
     SmashUpCore,
     SmashUpEvent,
     PlayerState,
@@ -24,6 +25,8 @@ import {
     processReturnToHandTriggers,
     reduce,
 } from '../domain/reducer';
+import { resolveAbility } from '../domain/abilityRegistry';
+import type { AbilityContext, AbilityResult } from '../domain/abilityRegistry';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import { smashUpTestSystems } from './testRunner';
 
@@ -720,6 +723,25 @@ export function withOnlyCurrentPrompt(
     prompt: any,
 ): MatchState<SmashUpCore> {
     return withoutQueuedPrompts(withCurrentPrompt(state, prompt));
+}
+
+export function invokeRegisteredAbilityContract(
+    defId: string,
+    tag: AbilityTag,
+    ctx: AbilityContext,
+): AbilityResult {
+    return expectRegisteredAbilityContract(defId, tag)(ctx);
+}
+
+export function expectRegisteredAbilityContract(
+    defId: string,
+    tag: AbilityTag,
+) {
+    const executor = resolveAbility(defId, tag);
+    if (!executor) {
+        throw new Error(`Expected registered Smash Up ability contract for ${defId}::${tag}.`);
+    }
+    return executor;
 }
 
 export function invokeRegisteredInteractionHandlerContract(

@@ -365,6 +365,8 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
         const defenderTitle = page.getByText(/响应（防御方）|defender/i).first();
         const retributionLabel = page.getByText(/^反击$|^Back Strike$|^Retribution$/).first();
         const useButton = page.getByRole('button', { name: /^(使用|Use|Use Token)(?: x\d+)?$/i }).first();
+        const selfHealth = page.locator('[data-player-id="player-0"][role="region"] [data-resource="health"]').first();
+        const attackerHeader = page.locator('[data-testid="dt-top-header-1"][data-player-id="1"]').first();
         await expect(defenderTitle).toBeVisible({ timeout: 5000 });
         await expect(retributionLabel).toBeVisible({ timeout: 5000 });
         await expect(useButton).toBeVisible({ timeout: 5000 });
@@ -389,6 +391,8 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
         const incomingFloats = await readVisibleDamageFloatCenters(page);
         const viewport = page.viewportSize();
         expect(incomingFloats.some((entry) => entry.y > ((viewport?.height ?? 720) * 0.55))).toBeTruthy();
+        await expect(selfHealth).toContainText('45');
+        await expect(attackerHeader).toContainText('50');
         await saveEvidenceScreenshot(page, testInfo, '02-retribution-incoming-damage');
 
         await page.waitForFunction(() => {
@@ -408,6 +412,7 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
         }, undefined, { timeout: 5000, polling: 50 });
 
         await page.waitForTimeout(80);
+        await expect(attackerHeader).toContainText('49');
         await saveEvidenceScreenshot(page, testInfo, '03-retribution-reflect-damage');
 
         await page.waitForFunction(() => {
@@ -452,6 +457,18 @@ test.describe('DiceThrone - 手牌费用和伤害数字显示', () => {
                 backStrikeRoll: latestBackStrikePayload?.value ?? null,
             };
         });
+
+        await page.waitForFunction(() => {
+            const floats = Array.from(document.querySelectorAll('[data-floating-text-preset="dicethrone-damage"]'));
+            return floats.every((element) => {
+                const htmlElement = element as HTMLElement;
+                const rect = htmlElement.getBoundingClientRect();
+                const style = window.getComputedStyle(htmlElement);
+                const hidden = style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0';
+                return hidden || rect.width === 0 || rect.height === 0;
+            });
+        }, undefined, { timeout: 6000, polling: 100 });
+        await saveEvidenceScreenshot(page, testInfo, '04-retribution-final-hp');
 
         expect(finalState.pendingDamage).toBeNull();
         expect(finalState.retribution).toBe(0);

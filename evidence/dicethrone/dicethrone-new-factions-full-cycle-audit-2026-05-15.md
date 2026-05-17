@@ -7,8 +7,8 @@
 - 树灵 `每回合每种仅限花费1次` 未实现；
 - `养成1树灵` 被系统性简化成 `grant seedling` / `grant sapling`，没有“获得幼种或升级现有树灵”的正式合同；
 - 神性树灵防负面被做成自动消耗，不是可选响应；
-- 刺藤缺少“每回合至多因此受到2伤害”上限；
-- `wild-growth`、`nature-touch`、`rooted`、`tend-care`、`forest-awakens` 的主效果与图片直接冲突；
+- 刺藤“每回合至多因此受到2伤害”上限已在 2026-05-17 修复，见 `treant-token-mechanics.test.ts`；
+- `wild-growth`（2026-05-17 已修复）、`nature-touch`（2026-05-17 已修复到 L2）、`rooted`（2026-05-17 已修复到 L2）、`tend-care`（2026-05-17 已修复到 L2）、`forest-awakens`（2026-05-17 已修复到 L2） 的主效果曾与图片直接冲突；
 - `treant-card-harvest`、`treant-card-downpour`、`treant-card-soulfire`、`upgrade-shattering-fist-3`、`upgrade-wild-growth-2`、`treant-card-planting` 等多张专属卡结构化字段错误；
 - `upgrade-shattering-fist-2` / `treant-card-planting` 还额外命中 atlas 预览索引越界。
 
@@ -61,8 +61,8 @@
 
 - `rooted` effect timing 改为 `withDamage`。
 - 新增 `src/games/dicethrone/__tests__/treant-ability-card-contract.test.ts`：
-  - 可防御时 Rooted 掷 3 骰，按 1/4/6 产生反击、幼种树灵、生命源泉。
-  - 不可防御时 Rooted 不执行。
+  - 历史版本曾按旧错语义断言“1/4/6 产生反击、幼种树灵、生命源泉”；该结论已在 2026-05-17 失效。
+  - 当前测试已改为覆盖 Rooted 按树枝 + 树灵防止伤害、双树叶养成、双树灵选择生命源泉目标、Rooted II 4 骰，以及不可防御时 Rooted 不执行。
 - 新增 E2E：`树精扎根防御应真实掷骰结算且不可防御时跳过`。
 
 规范补强：
@@ -72,31 +72,31 @@
 
 ### 循环 1 复审结论
 
-Rooted 已从 L1 静态定义升级到 L2/L3：
+Rooted 当前从旧错语义降级后重新进入 L2；旧 L3 截图只证明防御入口会触发，不再证明当前完整语义：
 
 - L2：Vitest 权威状态证明。
-- L3：真实在线对局 E2E 阶段推进截图链。
+- L3：待按 2026-05-17 新语义补真实在线对局 E2E 阶段推进截图链。
 - 否定路径：`isDefendable=false` 时 Rooted 不执行。
 
 ## Treant 完整流程矩阵
 
 | 对象 | 真相源 | 静态定义 | 候选/入口 | 命令/执行 | 消耗/限制 | 主效果 | 分支/否定 | 后续清理 | 证据层级 | 结论 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `shattering-fist` | 3/4/5 树枝伤害 | variants 5/6/7 | 通用骰面候选 | 通用 ability activate | N/A | damage | 无 | 通用攻击流程 | L1 | 仅静态矩阵 |
-| `shattering-fist-2` | 升级伤害 | variants 6/7/8 | 升级后候选 | 通用 ability activate | 升级卡替换 | damage | 无 | 通用攻击流程 | L1 | 仅静态矩阵 |
-| `shattering-fist-3` | 升级施加刺藤 + 伤害 | grant thorn + damage 6/7/8 | 升级后候选 | 通用 ability activate | 升级卡替换 | thorn + damage | 刺藤后续代表覆盖 | 通用攻击流程 | L1/L2 | 缺逐技能 L3 |
-| `tend-care` | 抽牌、树灵、生命源泉、刺藤 | draw + seedling + lifeSap + thorn | 通用候选 | 通用 ability activate | N/A | 多效果 | token 后续代表覆盖 | 通用流程 | L1/L2 | 缺技能本体 L3 |
-| `tend-care-2` | 额外木苗树灵 | draw + seedling + sapling + lifeSap + thorn | 升级后候选 | 通用 ability activate | 升级卡替换 | 多效果 | 木苗后续覆盖 | 通用流程 | L1/L2 | 缺技能本体 L3 |
+| `shattering-fist` | 3/4/5 树枝伤害；可移除 1 树灵施加刺藤 | choice + damage 5/6/7 | 通用骰面候选 | 通用 ability activate | 可消耗 1 树灵 | thorn choice + damage | 无树灵时无选择 | 通用攻击流程 | L2 | 2026-05-17 已修；缺逐技能 L3 |
+| `shattering-fist-2` | 升级施加刺藤 + 5/6/7 伤害 | grant thorn + damage 5/6/7 | 升级后候选 | 通用 ability activate | 升级卡替换 | thorn + damage | 刺藤后续代表覆盖 | 通用攻击流程 | L2 | 2026-05-17 已修；缺升级卡 L3 |
+| `shattering-fist-3` | 升级施加刺藤 + 三同点养成 1 + 5/6/7 伤害 | grant thorn + cultivate choice + damage 5/6/7 | 升级后候选 | 通用 ability activate | 升级卡替换 | thorn + cultivate + damage | 非三同点不养成 | 通用攻击流程 | L2 | 2026-05-17 已修；缺升级卡 L3 |
+| `tend-care` | 抽 1；养成 3 树灵；1 名玩家得生命源泉；1 名对手得刺藤 | draw + `treant-tend-care-choice(cultivateAmount=3)` | 通用候选 | 通用 ability activate | N/A | 组合选择写回树灵最终分布、生命源泉目标、刺藤目标 | token 后续代表覆盖 | 通用流程 | L2 | 2026-05-17 已修；缺技能本体 L3 |
+| `tend-care-2` | 抽 1；养成 4 树灵；1 名玩家得生命源泉；1 名对手得刺藤 | draw + `treant-tend-care-choice(cultivateAmount=4)` | 升级后候选 | 通用 ability activate | 升级卡替换 | 组合选择写回树灵最终分布、生命源泉目标、刺藤目标 | token 后续代表覆盖 | 通用流程 | L2 | 2026-05-17 已修；缺升级卡打出 L3 |
 | `vengeful-vines` | 小顺子，刺藤 + 7 伤害 | smallStraight + thorn + damage | 通用候选 | 通用 ability activate | N/A | thorn + damage | 刺藤后续覆盖 | 通用攻击流程 | L1/L2 | 缺技能本体 L3 |
 | `vengeful-vines-2` | 刺藤 + 8 伤害 | smallStraight + thorn + damage 8 | 升级后候选 | 通用 ability activate | 升级卡替换 | thorn + damage | 刺藤后续覆盖 | 通用攻击流程 | L1/L2 | 缺技能本体 L3 |
-| `nature-touch` | 4 树灵，不可防御伤害 | seedling 2 + unblockable damage 5 | 通用候选 | 通用 ability activate | N/A | token + unblockable damage | 防御跳过代表覆盖 | 通用攻击流程 | L1/L2 | 缺技能本体 L3 |
-| `nature-touch-2` | 不可防御伤害 6 | seedling 2 + unblockable damage 6 | 升级后候选 | 通用 ability activate | 升级卡替换 | token + damage | 防御跳过代表覆盖 | 通用攻击流程 | L1/L2 | 缺技能本体 L3 |
+| `nature-touch` | 4 树灵，养成 2 后按树灵数加不可防御伤害 | preDefense 养成选择 + unblockable damage 5 + 养成后树灵数 | 通用候选 | 通用 ability activate | N/A | token final state + bonusDamage + damage | 不进入防御 | 通用攻击流程 | L2 | 2026-05-17 已修；缺技能本体 L3 |
+| `nature-touch-2` | 养成 2 后按树灵数加不可防御伤害，基础 6 | preDefense 养成选择 + unblockable damage 6 + 养成后树灵数 | 升级后候选 | 通用 ability activate | 升级卡替换 | token final state + bonusDamage + damage | 不进入防御 | 通用攻击流程 | L2 | 2026-05-17 已修；缺技能本体 L3 |
 | `quiet-cultivation` | 维持阶段养成 | phaseStart upkeep + seedling 1 | 无玩家入口 | flowHooks phaseStart | N/A | seedling +1 | 自动被动，无 skip | 阶段进入后继续 | L1 | 缺 L2/L3 专项 |
-| `wild-growth` | 伤害并治疗 | damage 2 + heal 1 | 通用候选 | 通用 ability activate | N/A | damage + heal | 无 | 通用攻击流程 | L1 | 仅静态矩阵 |
-| `wild-growth-2` | 伤害 4 + 治疗 | damage 4 + heal 1 | 升级后候选 | 通用 ability activate | 升级卡替换 | damage + heal | 无 | 通用攻击流程 | L1 | 仅静态矩阵 |
-| `rooted` | 防御掷 3 骰 | defensiveRoll diceCount 3，withDamage | 防御阶段 | resolveAttack / resolveDefenseEffects | N/A | 反击、seedling、lifeSap | 不可防御跳过 | 防御结算后继续 | L2/L3 | 本轮发现并修复 |
-| `rooted-2` | 防御掷 4 骰 | diceCount 4，复用 rooted effects | 升级后防御入口 | resolveAttack / resolveDefenseEffects | 升级卡替换 | 同 rooted，多 1 骰 | 不可防御跳过 | 防御结算后继续 | L1/L2 | 共享 rooted 合同，缺专属 L3 |
-| `forest-awakens` | 终极：lifeSap、seedling、thorn、10 伤害 | mask 5，多效果 | 通用候选 | 通用 ability activate | N/A | token + damage | token 后续代表覆盖 | 通用攻击流程 | L1/L2 | 缺终极本体 L3 |
+| `wild-growth` | 伤害 + 可移除树灵加伤 + 可弃生命源泉不可防御 | preDefense choice + damage 2 | 通用候选 | 通用 ability activate | 可消耗至多 2 树灵 / 1 生命源泉 | damage + bonusDamage | 不再治疗；生命源泉使不可防御 | 通用攻击流程 | L2 | 2026-05-17 已修 |
+| `wild-growth-2` | 伤害 4 + 同 wild-growth 可选分支 | preDefense choice + damage 4 | 升级后候选 | 通用 ability activate | 升级卡替换；可消耗至多 2 树灵 / 1 生命源泉 | damage + bonusDamage | 不再治疗；生命源泉使不可防御 | 通用攻击流程 | L2 | 2026-05-17 已修 |
+| `rooted` | 防止 1×树枝 + 1×树灵；双树叶养成；双树灵生命源泉 | defensive custom `treant-rooted-defense` diceCount 3 | 防御阶段 | resolveAttack / resolveDefenseEffects | N/A | prevent + cultivate choice + lifeSap target choice | 不可防御跳过 | 防御结算后继续 | L2 | 2026-05-17 已按图片修正；缺新语义 L3 |
+| `rooted-2` | 同 rooted，防御掷 4 骰 | defensive custom `treant-rooted-defense` diceCount 4 | 升级后防御入口 | resolveAttack / resolveDefenseEffects | 升级卡替换 | 同 rooted，多 1 骰 | 不可防御跳过 | 防御结算后继续 | L2 | 共享 rooted 合同，缺专属 L3 |
+| `forest-awakens` | 终极：自己和队友生命源泉、养成 5、刺藤、10 伤害 | `treant-forest-awakens-choice` + damage 10 | 通用候选 | 通用 ability activate | N/A | 组合选择写回树灵最终分布、自己/队友 lifeSap、防御目标 thorn | 终极跳过防御方响应 | 通用攻击流程 | L2 | 2026-05-17 已修；缺终极本体 L3 |
 
 ## Treant Token / 被动矩阵
 
@@ -108,7 +108,7 @@ Rooted 已从 L1 静态定义升级到 L2/L3：
 | `treant_divine` 加伤 | 造成伤害前 +3 | activeUse beforeDamageDealt | 攻击方响应窗 | `USE_TOKEN` | token -1 | pendingDamage 与 pendingAttack +3 | 无 token 无入口 | 响应窗收口 | L2/L4 | 已覆盖 |
 | `treant_divine` 防负面 | 阻止即将受到负面状态 | flowHooks debuff filter | 无主动入口 | 阶段推进 | token -1 | 过滤 debuff | 仅 incoming debuff 触发 | 阶段继续 | L2/L4 | 已覆盖 |
 | `life_sap` | 主阶段掷 1 骰治疗半值向上 | passive custom | 主阶段按钮 | custom action | token -1 | bonus die + heal | 无 token 隐藏 | 特写收口 | L2/L4 | 已覆盖 |
-| `thorn` | 进攻掷骰结束按额外投掷受伤 | phaseExit offensiveRoll | 无主动入口 | 阶段推进 | token 清空 | HP - (rollCount - 1) | rollCount=1 应为 0 | 阶段继续 | L2/L4 | 已覆盖正向，0 伤害边界未专项 E2E |
+| `thorn` | 进攻掷骰结束按额外投掷受伤，每回合最多 2 伤害 | phaseExit offensiveRoll | 无主动入口 | 阶段推进 | token 清空 | HP - min(rollCount - 1, 2) | rollCount=1 应为 0 | 阶段继续 | L2/L4 | 2026-05-17 已补上限 2 回归 |
 
 ## Treant 专属卡矩阵
 
@@ -118,7 +118,7 @@ Rooted 已从 L1 静态定义升级到 L2/L3：
 | `upgrade-tend-care-2` | 升级细心呵护 | replaceAbility | main 候选未逐卡 E2E | 通用打牌 | 2CP | replace | 无 | 能力表更新 | L1/L2 | 缺逐卡 E2E |
 | `upgrade-rooted-2` | 升级扎根 | replace rooted | main 候选未逐卡 E2E | 通用打牌 | 3CP | replace | 防御共享 Rooted | 能力表更新 | L1/L2 | 缺升级后 L3 |
 | `treant-card-drink-deep` | 获得生命源泉 | main grant lifeSap | main 候选未逐卡 E2E | 通用打牌 | 1CP | lifeSap +1 | 上限 | 打牌清理 | L1/L2 | token 后续覆盖，卡本体缺 L3 |
-| `upgrade-shattering-fist-3` | 升级破碎之拳 III | replace | main 候选未逐卡 E2E | 通用打牌 | 2CP | replace | 后续 thorn 代表覆盖 | 能力表更新 | L1/L2 | 缺逐卡 E2E |
+| `upgrade-shattering-fist-3` | 升级破碎之拳 III | replace | main 候选未逐卡 E2E | 通用打牌 | 2CP | replace 到 `5/6/7 + 三同点养成1 + thorn` | 后续 thorn 代表覆盖 | 能力表更新 | L2 | 2026-05-17 目标能力已修；缺逐卡 E2E |
 | `treant-card-harvest` | 抽牌 + 树灵 | main draw + seedling | main 候选未逐卡 E2E | 通用打牌 | 0CP | hand +1，seedling +1 | 牌库洗牌边界未审 | 打牌清理 | L1/L2 | 缺卡本体 L3 |
 | `treant-card-cultivate` | 树灵 +3 | main grant seedling | main 候选未逐卡 E2E | 通用打牌 | 3CP | seedling +3 | 上限 | 打牌清理 | L1/L2 | 缺卡本体 L3 |
 | `treant-card-downpour` | 治疗 + 树灵 | main heal + seedling | main 候选未逐卡 E2E | 通用打牌 | 2CP | heal +2，seedling +1 | 上限 | 打牌清理 | L1/L2 | 缺卡本体 L3 |
@@ -127,7 +127,7 @@ Rooted 已从 L1 静态定义升级到 L2/L3：
 | `treant-card-mother-tree` | 掷 1 骰，树灵或抽牌 | roll action immediate | main 候选未逐卡 E2E | 通用打牌 | 0CP | spirit seedling 4，否则 draw | 默认分支 | 特写收口 | L1 | 缺行为测试 |
 | `upgrade-vengeful-vines-2` | 升级复仇枝蔓 | replace | main 候选未逐卡 E2E | 通用打牌 | 2CP | replace | thorn 后续覆盖 | 能力表更新 | L1/L2 | 缺逐卡 E2E |
 | `upgrade-wild-growth-2` | 升级野蛮生长 | replace | main 候选未逐卡 E2E | 通用打牌 | 2CP | replace | 无 | 能力表更新 | L1 | 缺逐卡 E2E |
-| `upgrade-shattering-fist-2` | 升级破碎之拳 II | replace | main 候选未逐卡 E2E | 通用打牌 | 1CP | replace | 无 | 能力表更新 | L1 | 缺逐卡 E2E |
+| `upgrade-shattering-fist-2` | 升级破碎之拳 II | replace | main 候选未逐卡 E2E | 通用打牌 | 1CP | replace 到 `5/6/7 + thorn`；卡图索引 30 | 无 | 能力表更新 | L2 | 2026-05-17 目标能力已修；缺逐卡 E2E |
 | `treant-card-planting` | 树灵 +4 | main grant seedling | main 候选未逐卡 E2E | 通用打牌 | 1CP | seedling +4 | 上限 | 打牌清理 | L1/L2 | 缺卡本体 L3 |
 
 ## Ninja 重审矩阵
@@ -140,16 +140,16 @@ Ninja 已在 `evidence/dicethrone/dicethrone-ninja-full-flow-reaudit-2026-05-15.
   - 不可防御跳过防御 resolver。
   - `ninja-card-knife-fan` 主阶段行动牌时机。
 - Token 复杂链路已有 L2/L4：`ninjutsu`、`smoke_bomb` 成功免伤、`delayed_poison` 回合结束。
-- 仍不能宣称 Ninja 全对象全量 E2E：`ninja-card-shuriken`、`ninja-card-escape`、多张升级卡和部分基础/升级技能缺专属 L3。
+- 仍不能宣称 Ninja 全对象全量 E2E：`ninja-card-training`、`ninja-card-poison-dart`、`ninja-card-knife-fan`、`ninja-card-shuriken`、`ninja-card-vanish`、`ninja-card-escape`、`ninja-card-dojo` 已于 2026-05-17 追加真实手牌 L3（见 `dicethrone-ninja-main-action-real-hand-e2e-2026-05-17.md`、`dicethrone-ninja-shuriken-vanish-real-hand-e2e-2026-05-17.md`、`dicethrone-ninja-escape-real-hand-e2e-2026-05-17.md`、`dicethrone-ninja-dojo-real-hand-e2e-2026-05-17.md`），但多张升级卡和部分基础/升级技能仍缺专属 L3。
 
 ## 抽查全链路
 
 | 抽查对象 | 审查链 | 结果 |
 |---|---|---|
-| Treant `rooted` | 真相源防御掷骰 → 静态 timing → defense resolver → phase advance → 反击/token → 不可防御否定路径 | 发现实现 bug，已修并补 L2/L3 |
+| Treant `rooted` | 真相源防御掷骰 → 静态 timing → defense resolver → phase advance → 防止伤害 / 双树叶养成 / 双树灵生命源泉目标 → 不可防御否定路径 | 旧反击/token 结论失效；2026-05-17 已修到 L2，缺新语义 L3 |
 | Treant `life_sap` | token 主阶段入口 → passive custom → bonus die → heal → display-only settlement → 收口 | 既有 L2/L4 与截图链仍有效 |
 | Ninja `ninjutsu` | beforeDamageDealt 响应窗 → token 消耗 → bonus die → 4/5 加伤或 6 点选择 → pendingDamage/pendingAttack 更新 → 收口 | 既有 L2/L4 与截图链仍有效 |
-| Ninja `knife-fan` | 卡图主阶段语义 → `timing='main'` → offensiveRoll 否定 → direct unblockable damage 定义 | L2 合同已覆盖；缺真实打出 E2E，不能写 L3 |
+| Ninja `knife-fan` | 卡图主阶段语义 → `timing='main'` → offensiveRoll 否定 → direct unblockable damage 定义 → 主阶段真实手牌拖拽打出 → 对手 HP 30->29 且不打开 `pendingDamage` | 2026-05-17 已补真实打出 L3；offensiveRoll 否定仍由合同测试覆盖 |
 
 ## 验证
 
@@ -180,7 +180,7 @@ Rooted 可防御结算后：
 肉眼观察：
 
 - 仍在真实 Treant/Ninja 在线对局界面，不是孤立预览。
-- 顶部 Ninja HP 显示为 29，证明树枝反击已生效。
+- 顶部 Ninja HP 显示为 29，只能证明历史旧语义下的树枝反击曾生效；2026-05-17 后该截图不能再证明 Rooted 当前语义。
 - Treant 状态区可见幼种/生命源泉图标；E2E 同时断言 `seedling=1`、`lifeSap=1`。
 
 Rooted 不可防御路径：
@@ -196,9 +196,9 @@ Rooted 不可防御路径：
 ## 当前结论
 
 - Treant/Ninja 已完成本轮“重审 + 抽查 + 发现问题后补规范再重审”的一个闭环。
-- 本轮发现并修复 Treant `rooted` 防御实现错误。
+- 本轮曾发现并修复 Treant `rooted` 防御时机错误；2026-05-17 又进一步修正了 Rooted 的图片语义（防止伤害 / 双树叶 / 双树灵），旧反击结论不再有效。
 - 本轮补强了两条通用审计规范：同类 bug 扩审、多骰 E2E 使用 sequence。
-- 两个新英雄仍不能被描述为“所有技能/专属卡均已逐对象 L3/E2E 全覆盖”；专属卡逐卡真实打出和部分基础/升级技能本体仍按矩阵保留为 L1/L2 残余范围。
+- 两个新英雄仍不能被描述为“所有技能/专属卡均已逐对象 L3/E2E 全覆盖”；Ninja 已补 7 张专属行动卡真实手牌 L3，但多张升级卡、Treant 专属卡逐卡真实打出和部分基础/升级技能本体仍按矩阵保留为 L1/L2 残余范围。
 - 追加降级：Treant 玩家板图面合同未被本文件逐槽覆盖，因此本文件不能再作为 Treant “有图对象全部收口”的证明。
 
 ## 2026-05-15 追加降级：框架消费合同漏审
@@ -223,7 +223,7 @@ Rooted 不可防御路径：
 
 本轮继续抽查 Treant / Ninja 的 Token、手牌技能和基础技能，发现此前矩阵里仍有消费点漏审：
 
-- `rooted-2`：旧矩阵写作“共享 rooted 合同，缺专属 L3”，该结论不够准确。实际防御 resolver 消费 `effects[0].action.diceCount`，旧实现虽然 `trigger.diceCount=4`，但仍继承基础 3 骰 effects。现已显式定义 4 骰 effects，并补 L2 合同测试。
+- `rooted-2`：旧矩阵写作“共享 rooted 合同，缺专属 L3”，该结论不够准确。实际防御 resolver 消费 `effects[0].action.diceCount`，旧实现虽然 `trigger.diceCount=4`，但仍继承基础 3 骰 effects。2026-05-17 后 Rooted / Rooted II 已改为共享 `treant-rooted-defense` custom action，并分别传入 3/4 骰合同，L2 合同测试覆盖 Rooted II 4 骰与双树灵生命源泉选择。
 - `treant-card-trample`、`treant-card-soulfire`：旧结论不能只写“攻击修正卡 L1/L2，缺专属 E2E”。真实卡牌打出链只解析 `immediate`，旧 `withDamage` 导致打出后奖励骰加伤不会执行。现已改为 `immediate + resolutionMode: 'attackBonus'`，并补 L2 行为测试。
 - `treant-card-mother-tree`：旧“缺行为测试”已升级为 L2，已覆盖树灵分支与否则抽牌分支；仍缺真实打出 E2E。
 - `quiet-cultivation`：旧“缺 L2/L3 专项”已升级为 L2，已覆盖 upkeep 进入时自动养成；仍缺真实流程 E2E。

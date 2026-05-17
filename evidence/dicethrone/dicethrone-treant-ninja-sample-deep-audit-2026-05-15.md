@@ -113,8 +113,8 @@ npm run typecheck
 
 ## 未覆盖与不能外推的范围
 
-- 本轮没有新增真实 UI E2E 截图链；因此上述对象只能升级到 L2，不能写 L3/L4。
-- `ninja-card-shuriken`、`treant-card-trample`、`treant-card-soulfire` 已有领域行为证明，但仍缺真实手牌打出 E2E。
+- 本轮原始抽样没有新增真实 UI E2E 截图链；因此上述对象在 2026-05-15 当时只能升级到 L2，不能写 L3/L4。
+- `ninja-card-shuriken` 已于 2026-05-17 追加真实手牌 L3；`treant-card-trample`、`treant-card-soulfire` 已有领域行为证明，但仍缺真实手牌打出 E2E。
 - `rooted-2` 已证明防御骰数合同修复，但仍缺升级卡真实打出后进入防御的 E2E。
 - 本轮只抽查了部分 Token、专属卡和基础技能；Treant / Ninja 仍不能被描述为“全部新机制新交互均已端到端”。
 
@@ -126,5 +126,6 @@ npm run typecheck
 - `ninja-card-shuriken`、`treant-card-trample`、`treant-card-soulfire`：旧“L1/L2 静态/代表覆盖”不足；实际卡牌打出链路存在 timing 消费错误，已在本轮修复并补 L2。
 - `treant-card-mother-tree`：旧“缺行为测试”已升级为 L2 抽查覆盖，但仍缺 L3。
 - `quiet-cultivation`：旧“缺 L2/L3 专项”已升级为 L2 抽查覆盖，但仍缺 L3。
-- `ninja-card-escape`、`smoke_bomb` 失败分支：已补 L2 抽查覆盖，但仍缺真实 UI/E2E。
+- `ninja-card-escape`：已于 2026-05-17 追加真实受击响应窗手牌 L3，见 `evidence/dicethrone/dicethrone-ninja-escape-real-hand-e2e-2026-05-17.md`；`smoke_bomb` 失败分支仍缺真实 UI/E2E。
+- `ninja-card-training` / `ninja-card-poison-dart` / `ninja-card-knife-fan`：已于 2026-05-17 追加真实主阶段手牌 L3，见 `evidence/dicethrone/dicethrone-ninja-main-action-real-hand-e2e-2026-05-17.md`；该补充不改变本文件“抽样不能外推全量”的主结论。
 - Treant 玩家板图面合同：旧“基础技能抽样深审已覆盖 Treant `quiet-cultivation` / `rooted-2`”不能外推成图面落点正确；这部分当时根本不在本文件审计范围内，现已单列专项证据。

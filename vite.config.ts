@@ -1,4 +1,5 @@
 import { defineConfig, loadEnv } from 'vite'
+import type { ViteDevServer } from 'vite'
 import react from '@vitejs/plugin-react'
 import fs from 'node:fs'
 import path from 'path'
@@ -25,6 +26,19 @@ const ANDROID_BUILD_PRUNE_PATHS = [
   'assets/common/audio/registry.json',
   'assets/common/audio/phrase-mappings.zh-CN.json',
 ]
+const API_DISABLED_PREFIXES = [
+  '/auth',
+  '/feedback',
+  '/sponsors',
+  '/notifications',
+  '/game-changelogs',
+  '/ugc',
+  '/assets/ugc',
+  '/assets/avatars',
+  '/layout',
+  '/devtools/ai-repo-workbench',
+]
+const isTruthyFlag = (value: string | undefined) => /^(1|true|yes|on)$/i.test(value?.trim() || '')
 
 const readCliFlag = (flagName: string): string | undefined => {
   const prefix = `--${flagName}=`
@@ -133,6 +147,41 @@ const createAndroidDistPrunePlugin = (mode: string) => ({
   },
 })
 
+const createDevApiDisabledPlugin = (enabled: boolean) => ({
+  name: 'dev-api-disabled-guard',
+  enforce: 'pre' as const,
+  configureServer(server: ViteDevServer) {
+    if (!enabled) return
+
+    server.middlewares.use((req, res, next) => {
+      const rawUrl = req.url || '/'
+      const pathname = rawUrl.split('?')[0] || '/'
+      const accept = Array.isArray(req.headers.accept)
+        ? req.headers.accept.join(',')
+        : (req.headers.accept || '')
+      const isAdminSpaNavigation = req.method === 'GET'
+        && (pathname === '/admin' || pathname.startsWith('/admin/'))
+        && accept.includes('text/html')
+      const isApiOnlyPath = pathname === '/admin'
+        || pathname.startsWith('/admin/')
+        || API_DISABLED_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`))
+
+      if (!isApiOnlyPath || isAdminSpaNavigation) {
+        next()
+        return
+      }
+
+      res.statusCode = 503
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      res.end(JSON.stringify({
+        error: 'dev_api_disabled',
+        message: 'API server is disabled in dev:lite mode.',
+        path: pathname,
+      }))
+    })
+  },
+})
+
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
@@ -158,6 +207,7 @@ export default defineConfig(({ mode }) => {
   const gameServerPort = Number(env.GAME_SERVER_PORT) || 18000
   const apiServerPort = Number(env.API_SERVER_PORT) || 18001
   const suppressE2EProxyNoise = env.E2E_PROXY_QUIET === 'true'
+  const devApiDisabled = isTruthyFlag(env.VITE_DEV_SKIP_API || process.env.VITE_DEV_SKIP_API)
   const backendUrl = env.VITE_BACKEND_URL || ''
 
   const isIgnorableProxyError = (err: Error & NodeJS.ErrnoException) => {
@@ -198,6 +248,7 @@ export default defineConfig(({ mode }) => {
           }
         },
       },
+      createDevApiDisabledPlugin(devApiDisabled),
       ...(forceInlineVite ? [] : [react()]),
       createInlineTypeScriptFallbackPlugin(forceInlineVite),
       localeHashPlugin(),

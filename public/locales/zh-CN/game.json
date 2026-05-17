@@ -134,6 +134,7 @@
       "success": "反馈已提交，感谢支持！",
       "errors": {
         "loginRequired": "登录后可获得更好的反馈跟进体验",
+        "apiDisabled": "当前 dev:lite 轻量模式未启动 API 服务，反馈提交已禁用；草稿会保留在本机。",
         "submitFailed": "提交失败，请稍后再试"
       },
       "type": {

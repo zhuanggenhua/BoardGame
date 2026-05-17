@@ -248,10 +248,27 @@ export const NINJA_CARDS: AbilityCard[] = [
         description: cardText('ninja-card-dojo', 'description'),
         sfxKey: NINJA_SFX_SMOKE,
         ...ninjaCardRef(36),
-        effects: [
-            grantToken('self', TOKEN_IDS.SMOKE_BOMB, 1, '获得 1 个烟雾弹。'),
-            grantToken('self', TOKEN_IDS.NINJUTSU, 2, '获得 2 个忍术。'),
-        ],
+        effects: [{
+            description: '投掷 1 骰；若投出面具，获得烟雾弹与 2 忍术，否则抽 1。',
+            action: {
+                type: 'rollDie',
+                target: 'self',
+                diceCount: 1,
+                conditionalEffects: [{
+                    face: NINJA_DICE_FACE_IDS.MASK,
+                    grantTokens: [
+                        { tokenId: TOKEN_IDS.SMOKE_BOMB, value: 1 },
+                        { tokenId: TOKEN_IDS.NINJUTSU, value: 2 },
+                    ],
+                    effectKey: 'bonusDie.effect.ninjaDojoMask',
+                }],
+                defaultEffect: {
+                    drawCard: 1,
+                    effectKey: 'bonusDie.effect.ninjaDojoOther',
+                },
+            },
+            timing: 'immediate',
+        }],
     },
     ...injectCommonCardPreviewRefs(
         COMMON_CARDS,

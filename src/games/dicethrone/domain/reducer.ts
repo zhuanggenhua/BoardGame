@@ -18,6 +18,7 @@ import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { initHeroState, createCharacterDice } from './characters';
 import { registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
 import { removeCard } from './utils';
+import { isTreantTreeSpiritToken } from './passiveAbility';
 import {
     handlePreventDamage, handleAttackPreDefenseResolved, handleAttackDefenseResolved, handleDamageDealt,
     handleHealApplied, handleAttackInitiated, handleBonusDamageAdded, handleAttackResolved,
@@ -432,7 +433,7 @@ const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_
     state,
     event
 ) => {
-    const { playerId, tokenId, newTotal } = event.payload;
+    const { playerId, tokenId, newTotal, sourceAbilityId } = event.payload;
     const player = state.players[playerId];
     if (!player) return state;
 
@@ -443,6 +444,23 @@ const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_
         delete sneakGainedTurn[playerId];
     }
 
+    let treantSpiritSpentThisTurn = state.treantSpiritSpentThisTurn;
+    if (
+        isTreantTreeSpiritToken(tokenId)
+        && (
+            event.sourceCommandType === 'USE_PASSIVE_ABILITY'
+            || sourceAbilityId === TOKEN_IDS.TREANT_DIVINE
+        )
+    ) {
+        treantSpiritSpentThisTurn = {
+            ...(treantSpiritSpentThisTurn ?? {}),
+            [playerId]: {
+                ...(treantSpiritSpentThisTurn?.[playerId] ?? {}),
+                [tokenId]: true,
+            },
+        };
+    }
+
     return {
         ...state,
         players: {
@@ -450,6 +468,7 @@ const handleTokenConsumed: EventHandler<Extract<DiceThroneEvent, { type: 'TOKEN_
             [playerId]: { ...player, tokens: { ...player.tokens, [tokenId]: newTotal } },
         },
         sneakGainedTurn,
+        treantSpiritSpentThisTurn,
     };
 };
 
@@ -637,6 +656,7 @@ const handleTurnChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TURN_CHA
         turnNumber,
         lastResolvedAttackDamage: undefined,
         taijiGainedThisTurn: undefined, // 清除太极本回合获得量追踪
+        treantSpiritSpentThisTurn: undefined,
         offensiveRollAttemptsThisTurn: undefined,
         lastSoldCardId: undefined,
     };

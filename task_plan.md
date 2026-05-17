@@ -24,6 +24,10 @@
 
 ## Current Status
 
+- [x] `expansionOngoing.test.ts` 中已迁出的 `Killer Plants` 段完成实质收口：`killer_plant_water_lily` 的 3 条红灯并非实现回归，而是迁移到共享 `helpers.makeState` 后默认牌库变空，导致“抽牌”前提被隐式拿掉。现已在 `src/games/smashup/__tests__/abilities/killer-plants.test.ts` 为 `water_lily` 用例补上显式牌库夹具 `makeWaterLilyState(...)`，让测试锁定公开行为前提而不是依赖旧本地 helper 的隐藏默认值；组合验证 `abilities/killer-plants.test.ts + expansionOngoing.test.ts` 为 `73 passed`，eslint 0 errors，`npm run test:structure -- --all` OK。
+- [x] `scripts/infra/testing-structure-guard.mjs` 已补强为“测试接口门禁”而不只是 prompt field 门禁：新增阻止游戏行为测试继续引入 `console.log/warn/error/debug` 调试壳层，并阻止新增测试直接导入/调用 `resolveAbility`、`getInteractionHandler`、`getAbilityRuntimePromptHandler` 这类原始 registry/handler 入口。中途验证发现“禁止任何 `abilityRegistry` 导入”会误伤 `clearRegistry` 等合法用法，已收窄为只拦真正的问题入口；`npm run test:structure -- --all` 再次通过。文档也已同步到 `docs/testing-best-practices.md` 与 `docs/automated-testing.md`，把“禁止调试日志、禁止业务测试直摸 registry/handler”的规则写成公开规范。
+- [x] `src/games/smashup/__tests__/interactionDisplayModeAudit.test.ts` 已从“只看字面量 object”提升为“按真实 TypeScript value shape 审计”：现在会识别 `satisfies/as`、`value: card/choice/action` 这类已带类型信息的选项，避免为了让 audit 绿而扭曲业务代码。与此同时收掉 4 个真实缺口：`alien_scout_return` 的 yes 分支改回 `displayMode: 'button'`；`bear_cavalry_bear_necessities` 显式补 `displayMode: 'card'`；`bear_cavalry_commission_move_minion` 的 skip 选项改成纯 button payload，不再伪装成随从目标；`tornados_ripped_off` 为挂在随从上的持续行动补齐 `minionDefId`；`shayu_common.ts` 的 `asCardOptions` 补上可渲染卡面 value 合同。验证：`interactionDisplayModeAudit.test.ts` 5 passed；`bear-cavalry.test.ts -t "bear_necessities|Commission|委任|Bear Necessities"` 3 passed；`interactionChainE2E.test.ts -t "commission|委任"` 3 passed；`alien-scout-pod-afterscore.test.ts` 4 passed；`promptResponseChain.test.ts -t "alien_scout_return|侦察兵回手"` 1 passed。
+- [x] 继续把“业务回归里的调试壳层”改成真实合同，而不是只删日志：`wizard-neophyte-actionlog.test.ts` 现已精确断言 ActionLog 序列 + 最终手牌/牌库；`turnTransitionInteractionBug.test.ts` 已把托尔图加场景改成有合法目标的真实 afterScoring 暂停/响应/恢复链；`multi-base-afterscoring-bug.test.ts` 已把 handler 打印改成事件序列 + 后续多基地候选断言；`sleep-spores-e2e.test.ts` 已去掉力量分析打印。验证：4 个文件定点 `vitest` 通过，`eslint` 0 errors / 0 warnings，`npm run test:structure` OK。全仓 `console.*` 命中已从 `52` 进一步降到 `22`。
 - [x] `src/games/smashup/__tests__/baseFactionOngoing.test.ts` 的 `ninja_hidden_ninja consumesNormalLimit` 红灯已收口：不再手工拼 fake prompt current，而是复用真实 `resolveAbility('ninja_hidden_ninja', 'special')` 产出的 prompt，再走 `respondToPrompt(...)`。同时补齐本地 `triggerBrownieFromEvent(...)` helper，对齐 reducer 的 `affectEvent + affectBatchTargets` 传递方式；`trickster_brownie` 针对 `control_change` 改为按 `MINION_CONTROL_CHANGED.payload.fromControllerId` 判断“被对手影响”的受害方。验证：`baseFactionOngoing.test.ts -t "consumesNormalLimit"` 5 passed，整文件 81 passed，`npm run test:structure` OK。
 - [x] `src/games/smashup/__tests__/abilities/bear-cavalry.test.ts` 已把 `bear_cavalry_bear_rides_you_pod_choose_base` 从直调 handler 迁成真实命令链：`PLAY_ACTION` -> 选己方随从 -> 选目标基地 -> 断言 `choose_suppress` prompt 候选。`bear_cavalry_superiority_pod_talent` 两处保留为显式低层合同。验证：整文件 21 passed，eslint 0 errors。
 - [x] 全仓 `getInteractionHandler` / `getAbilityRuntimePromptHandler` 命中已从 `44` 降到 `43`；当前剩余高优先级候选主要是 `baseFactionOngoing.test.ts` 的 `trickster_flame_trap_pod_bp`、`abilities/bear-cavalry.test.ts` 的 2 条 `superiority_pod_talent` 低层合同，以及 `temple-firstmate-afterscore.test.ts` 的 2 条 `pirate_first_mate_choose_base` stale/baseDefId 合同。
@@ -127,6 +131,9 @@
 - [x] `src/games/smashup/__tests__/smashup.smoke.test.ts` 已把泰坦、基地、AI、Pecos Bill、Kraken/First Mate 等 smoke 行为链中的 prompt source/options、reaction choose、handler data 与响应命令从内部 `current/data/RESPOND` 迁到 prompt/command facade；单文件 133 tests passed，eslint 0 errors，目标扫描 0 命中。
 - [x] `src/games/smashup/__tests__/shayuFactionAbilities.test.ts` 已把真实入口 shayu 行为测试里的 prompt option 查找、source/target/player 断言与无 prompt 断言迁到 prompt facade；单文件 21 tests passed，eslint 0 errors，目标扫描 0 命中。
 - [x] `src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` 已把 shayu L2 综合审计行为测试中的 prompt source/options/player、trigger option 查询、Hades prompt 读取和无 prompt 断言迁到 prompt facade；单文件 14 tests passed，eslint 0 errors，目标扫描 0 命中。
+- [x] `src/games/smashup/__tests__/shayuFactionAbilities.test.ts` 已按派系边界退场：鲨鱼 / 龙卷风 / 神话希腊代表性玩法分别归入 `src/games/smashup/__tests__/abilities/sharks.test.ts`、`tornados.test.ts`、`mythic-greeks.test.ts`；聚焦验证 `21 passed`、eslint 0 errors、`npm run test:structure -- --all` OK，旧入口 `Test-Path ...\\shayuFactionAbilities.test.ts` -> `False`。
+- [x] `src/games/smashup/__tests__/shayuComprehensiveBehavior.test.ts` 已按真实归宿拆除，而不是继续保留 “shayu 综合行为” 混装入口：派系 L2 行为并入 `abilities/sharks.test.ts`、`abilities/tornados.test.ts`、`abilities/mythic-greeks.test.ts`，基地行为拆到 `bases/the-deep-base.test.ts`、`bases/trailer-park-base.test.ts`、`bases/tornado-alley-base.test.ts`；聚焦验证 `35 passed`、eslint 0 errors、`npm run test:structure -- --all` OK，旧入口 `Test-Path ...\\shayuComprehensiveBehavior.test.ts` -> `False`。
+- [x] `src/games/smashup/__tests__/expansionAbilities.test.ts` 的幽灵段已退到单一派系入口：`ghost_ghost / ghost_seance / ghost_shady_deal / ghost_ghostly_arrival` 已并入 `src/games/smashup/__tests__/abilities/ghosts.test.ts`，`expansionAbilities.test.ts` 不再同时承担幽灵业务簇与其它扩展派系；聚焦验证 `abilities/ghosts.test.ts + expansionAbilities.test.ts` 为 `40 passed`、eslint 0 errors、`npm run test:structure -- --all` OK。
 - [x] `src/games/smashup/__tests__/audit-d1-alien-crop-circles.test.ts` 已把 Crop Circles audit 的 prompt source/options/target/multi、响应命令与无 prompt 断言迁到 prompt/command facade，并把手写随从夹具改为 `makeMinion` 以补齐领域默认字段；audit 专用配置 3 tests passed，eslint 0 errors，目标扫描 0 命中。
 - [x] 剩余目标命中已完成第一轮分类：`mothership-scout-afterscore-bug.test.ts`、`miskatonic-scout-afterscore.test.ts`、`wizard-academy-scout-afterscore.test.ts`、`elder-thing-multi-select-integration.test.ts`、`test-alien-scout-afterscore.test.ts`、`ninja-hidden-ninja-interaction-bug.test.ts`、`wizard-archmage-zombie-interaction.test.ts`、`vampireBuffetE2E.test.ts` 均为全文件或用例级 `.skip` 历史复现；`igor-ondestroy-idempotency.test.ts` 剩余命中也只在 `it.skip` 块；`promptSystem.test.ts` 剩余 `INTERACTION_COMMANDS` 是 AI fallback 的底层合同断言。
 - [x] `docs/testing-best-practices.md` 的测试辅助函数/快速参考已同步 TDD seam 口径：业务交互测试默认使用 prompt facade，`getInteractionsFromMS` 仅作为系统契约/queue 存储测试的低层兼容工具。
@@ -145,6 +152,8 @@
 ## Next
 
 - 继续保持新增/迁出测试复用 prompt/command facade；不允许把旧内部访问原样搬进新文件。
+- `shayuFactionAbilities.test.ts` 与 `shayuComprehensiveBehavior.test.ts` 都已退场；下一步优先看根目录剩余测试里是否还有“按历史来源/扩展批次/多派系混装”的旧入口，避免新增回归继续找不到自然归宿。
+- `expansionAbilities.test.ts` 已先收掉 `Ghost` 双入口；下一步继续评估其中 `黑熊骑兵 / 蒸汽朋克 / 食人花` 是否已有稳定专项文件可继续迁出，优先消除“已有专项文件但仍保留扩展包双入口”的情况。
 - `smashup.smoke.test.ts` 里普通业务 direct handler 已基本清空；下一步优先评估 `titan_penguins_emperor_penguin_play` 是否仍应保留为“resolve 时再次检查己方是否已有泰坦在场”的显式低层合同，若保留则转向其它大文件而不是继续硬清 `smoke`。
 - 全仓 `getInteractionHandler` / `getAbilityRuntimePromptHandler` 命中已降到 `43`；`abilities/bear-cavalry.test.ts` 里普通业务链只剩 2 条 `superiority_pod_talent` 低层合同，`temple-firstmate-afterscore.test.ts` 的 `pirate_first_mate_choose_base` 仍应按 stale/baseDefId/index drift 合同审视，避免把系统合同误迁成 facade。
 - 当前目标扫描（排除 `helpers.ts` / `helpers/**`）对旧 `new*` 入口、旧集合文件、裸 prompt seam 与 `.skip` 均为 0 命中；后续工作重点从“清旧入口”转为审查剩余较大文件是否仍有可拆的自然业务边界。
@@ -1668,3 +1677,627 @@
 - [x] 同时也验证了一个边界：这组 onPlay 用例走回真实命令后，自动消灭/无目标两条并没有暴露能力逻辑差异；唯一红灯只是测试体漏引入 `expectNoPrompt` helper，补齐后恢复通过，说明真正依赖的是旧入口而不是旧行为。
 - [x] 验证：`baseFactionOngoing.test.ts -t "渗透"` 7 passed；eslint 0 errors；`npm run test:structure` OK。
 - [x] 全仓 `resolveAbility(` 在 `src/games/smashup/__tests__` 中已从 `91` 降到 `87`。
+
+## Addendum（2026-05-16 23:55 +08）：继续把双形态 onPlay 与手工假壳测试收回真实命令链
+
+- [x] `ongoingTalent.test.ts` 中 `trickster_pixie_pod` 的两条 onPlay 业务链，已从 `resolveAbility('trickster_pixie_pod', 'onPlay')` 改为真实命令入口：
+  - 随从形态：`runCommand(PLAY_MINION)`
+  - 战术形态：`runCommand(PLAY_ACTION)`
+- [x] 这轮迁移不只是换成 `runCommand(...)`。测试夹具已同步改成真实 `fusion` 手牌卡，而不是把 executor 当成“已打出后”的假入口；同时把“可选随从顺序”断言从固定数组顺序收敛为业务集合，避免继续锁内部遍历顺序。
+- [x] `baseFactionOngoing.test.ts` 中 `trickster_mark_of_sleep` 的“单目标时创建 Interaction”，已从手工捏 `matchState` + `resolveAbility(onPlay)` 改为真实 `runCommand(PLAY_ACTION)`；这条同时暴露并修掉了旧 `extraPlayers` 夹具会把玩家对象打残的问题。
+- [x] 这说明更深的治理价值不只是“把 helper 名称换掉”，而是让测试数据本身重新满足真实出牌前置：牌要真的在手里，融合牌要真的以 `fusion` 形态进手牌，玩家状态也要能走完整 reducer/pipeline。
+- [x] 验证：
+  - `ongoingTalent.test.ts -t "trickster_pixie_pod"` -> 2 passed
+  - `baseFactionOngoing.test.ts -t "trickster_mark_of_sleep"` -> 2 passed
+  - `eslint baseFactionOngoing.test.ts ongoingTalent.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+  - 全仓 `resolveAbility(` 已从 `87` 降到 `84`
+
+## Addendum（2026-05-17 00:01 +08）：把 `miskatonic_lost_knowledge` 的业务 talent 测试收回 `USE_TALENT`
+
+- [x] `madnessAbilities.test.ts` 中 `miskatonic_lost_knowledge` 的 3 条业务测试，已从 `resolveAbility('miskatonic_lost_knowledge', 'talent')` 改为真实 `runCommand(USE_TALENT)`。
+- [x] 这轮同步把测试数据收紧到真实入口所需形状：基地上显式放入 `uid = ongoing-card` 的 ongoing action 实例，而不是只给 executor 一个 `defId` 假上下文。
+- [x] 保留 1 条低层边界测试：`baseIndex: undefined` 时仍给额外随从。这条没有稳定公开命令入口，继续显式作为执行器合同保留，不和业务 talent 链混写。
+- [x] 验证：
+  - `madnessAbilities.test.ts -t "miskatonic_lost_knowledge"` -> 4 passed
+  - `eslint madnessAbilities.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/madnessAbilities.test.ts` -> 从 7 处降到 6 处
+  - 全仓 `resolveAbility(` 已从 `84` 降到 `83`
+
+## Addendum（2026-05-17 00:06 +08）：把 `miskatonic_librarian_pod` 的业务 talent 链收回 `PLAY_MINION -> USE_TALENT`
+
+- [x] `madnessAbilities.test.ts` 中 `miskatonic_librarian_pod extra mode queues the Madness onPlay interaction`，已从 `resolveAbility('miskatonic_librarian_pod', 'talent')` 改为真实两步公开链：
+  - `runCommand(PLAY_MINION)` 先把图书管理员打到基地
+  - `runCommand(USE_TALENT)` 再触发 talent
+  - 后续继续用真实 prompt 响应选择 `extra` 与指定疯狂卡
+- [x] 这条迁移把一个旧假设清掉了：之前测试默认“图书管理员不用先在场上也能直接点 talent”。真实链要求它先上场，这正是公开接口要保护的业务前置。
+- [x] 验证：
+  - `madnessAbilities.test.ts -t "miskatonic_librarian_pod extra mode queues the Madness onPlay interaction|miskatonic_lost_knowledge"` -> 5 passed
+  - `eslint madnessAbilities.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/madnessAbilities.test.ts` -> 从 6 处降到 5 处
+  - 全仓 `resolveAbility(` 已从 `83` 降到 `82`
+
+## Addendum（2026-05-17 00:25 +08）：把 `ninja_acolyte` special 收回 `ACTIVATE_SPECIAL`，并明确 `hidden_ninja` 仍无公开命令入口
+
+- [x] `baseFactionOngoing.test.ts` 中 `ninja_acolyte` 的业务 special 测试，已从 `resolveAbility('ninja_acolyte', 'special')` 改为真实 `runCommand(ACTIVATE_SPECIAL)`：
+  - 成功激活时返回手牌并创建 `ninja_acolyte_play` prompt
+  - `consumesNormalLimit=false` 的 extra-play 链继续通过真实 prompt 响应验证
+- [x] 这轮不是单纯替换 helper，而是把“阻止路径”的合同也收回公开命令层：
+  - 当同基地本回合已使用同组 special 时，`ACTIVATE_SPECIAL` 会在命令校验阶段直接失败
+  - 因此原来“success=true 且 events=[]”的旧执行器断言，已改为“`success=false` + 明确错误消息 + 无事件”
+- [x] 同时确认了一个需要保留的边界：`ninja_hidden_ninja` 目前没有可用的公开命令入口，`ACTIVATE_SPECIAL` 只接受场上随从/泰坦，拿手牌 action special 会触发“基地上没有该随从”校验失败；因此该组测试继续显式保留在执行器 special 合同层，不强行伪装成命令链。
+- [x] 这轮之后，`baseFactionOngoing.test.ts` 里剩余 `resolveAbility(` 已收敛为：
+  - 注册断言：`ninja_acolyte` / `ninja_hidden_ninja` / `trickster_mark_of_sleep`
+  - 无公开命令入口的 `ninja_hidden_ninja` special 合同
+  - off-phase immediate 合同：`trickster_enshrouding_mist`
+- [x] 验证：
+  - `baseFactionOngoing.test.ts -t "ninja_acolyte|ninja_hidden_ninja|consumesNormalLimit|specialLimitGroup"` -> 15 passed
+  - `eslint baseFactionOngoing.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> 从 12 处降到 7 处
+  - 全仓 `resolveAbility(` 已从 `82` 降到 `76`
+
+## Addendum（2026-05-17 00:36 +08）：继续把标准 onPlay 链从执行器收回真实出牌命令
+
+- [x] `expansionOngoing.test.ts` 中 `ghost_make_contact / ghost_make_contact_pod` 的 3 条业务 onPlay 测试，已从 `resolveAbility(...)` 改为真实 `runCommand(PLAY_ACTION)`：
+  - 唯一手牌时控制权转移
+  - 非唯一手牌时命令校验失败
+  - POD 版正常打出时也保留控制权转移合同
+- [x] 这轮把旧测试里两个假前置清掉了：
+  - 旧测试把“真实出牌会同时产生 `ACTION_PLAYED` 等系统事件”简化成“只有 1 个业务事件”；现在改为在真实事件流中定位 `MINION_CONTROL_CHANGED`
+  - 旧 POD 测试甚至把牌从手牌里拿掉后还直调 executor；改回 `PLAY_ACTION` 后，测试必须让牌真的在手里
+- [x] `expansionOngoing.test.ts` 中 `miskatonic_researcher`、`miskatonic_field_trip`、`miskatonic_researcher_pod` 的 5 条业务 onPlay 测试，已分别改为真实 `PLAY_MINION` / `PLAY_ACTION`：
+  - `researcher`：先在手牌放入真实随从实例，再通过 `PLAY_MINION` 创建确认 prompt
+  - `field_trip`：先在手牌放入真实行动卡，再通过 `PLAY_ACTION` 创建手牌选择 prompt
+  - `researcher_pod`：通过 `PLAY_MINION` 驱动 draw -> choose minion -> +1 counter 链
+- [x] 这轮进一步确认：很多旧执行器测试不只绕过了命令层，还绕过了“打出这张牌后手里是否还剩其他候选牌”这个公开行为前置。`field_trip` 第一次迁移红灯正是因为把自己打出去后，手里已经没有可选牌了；补回额外手牌后，prompt 才真实出现。
+- [x] 这轮之后，`expansionOngoing.test.ts` 里剩余 `resolveAbility(` 已收敛为：
+  - 注册断言：`miskatonic_researcher` / `miskatonic_field_trip`
+  - 更复杂的 runtime/stale/low-level 合同：`steampunk_mechanic`、`venus_man_trap`、`return_to_the_sea`、`things_best_not_known_pod` 等
+- [x] 验证：
+  - `expansionOngoing.test.ts -t "ghost_make_contact|miskatonic_researcher|miskatonic_field_trip|researcher pod"` -> 11 passed
+  - `eslint expansionOngoing.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+  - `rg -n "resolveAbility\\('ghost_make_contact|resolveAbility\\('ghost_make_contact_pod|resolveAbility\\('miskatonic_researcher'|resolveAbility\\('miskatonic_field_trip'|resolveAbility\\('miskatonic_researcher_pod'" src/games/smashup/__tests__/expansionOngoing.test.ts` -> 只剩注册断言 2 处
+  - 全仓 `resolveAbility(` 已从 `76` 降到 `68`
+
+## Addendum（2026-05-17 00:44 +08）：继续收 `expansionOngoing` 的公开 talent / pod 行为链
+
+- [x] `expansionOngoing.test.ts` 中 `steampunk_captain_ahab` 的 2 条业务 talent 测试，已从 `resolveAbility('steampunk_captain_ahab', 'talent')` 改为真实 `runCommand(USE_TALENT)`：
+  - 多候选基地时创建 `steampunk_captain_ahab` base prompt
+  - 唯一候选基地时直接移动且无 prompt
+- [x] `miskatonic_field_trip_pod` 的 2 条业务 onPlay 测试，已从 `resolveAbility(...)` 改为真实 `runCommand(PLAY_ACTION)`：
+  - 选项中保留 Madness 卡
+  - 空选择时仍抽 1 张
+- [x] `killer_plant_venus_man_trap` 的 3 条业务 talent 测试，已从 `resolveAbility(...)` 改为真实 `runCommand(USE_TALENT)`：
+  - 唯一候选时自动抽牌/加额外随从/打出随从
+  - 多候选时 prompt 响应继续保留基地上下文
+  - stale deck 场景下，不会把已离开牌库的旧目标重复打出
+- [x] 这轮进一步确认：真实 talent / action 命令会稳定带出 `TALENT_USED`、`DECK_REORDERED` 等系统事件，旧执行器测试如果继续锁“只有业务事件”或“固定事件条数”，仍然是在测旧壳层而不是公开行为。
+- [x] 这轮之后，`expansionOngoing.test.ts` 里剩余 `resolveAbility(` 继续收敛为：
+  - 注册断言：`steampunk_captain_ahab`、`miskatonic_researcher`、`miskatonic_field_trip`
+  - 复杂 runtime/stale/afterScoring 合同：`steampunk_mechanic`、`steampunk_change_of_venue`、`innsmouth_return_to_the_sea`、`miskatonic_things_best_not_known_pod`、`miskatonic_librarian_pod`
+- [x] 验证：
+  - `expansionOngoing.test.ts -t "steampunk_captain_ahab|miskatonic_field_trip_pod"` -> 3 passed
+  - `expansionOngoing.test.ts -t "venus man trap|力量≤2随从时产生搜索结果"` -> 3 passed
+  - `eslint expansionOngoing.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+  - `rg -n "resolveAbility\\('steampunk_captain_ahab|resolveAbility\\('miskatonic_field_trip_pod|resolveAbility\\('killer_plant_venus_man_trap" src/games/smashup/__tests__/expansionOngoing.test.ts` -> 只剩各自的注册断言
+  - 全仓 `resolveAbility(` 已从 `68` 降到 `61`
+
+## Addendum（2026-05-17 01:00 +08）：继续把 `expansionOngoing` 的真实出牌/响应窗口入口收回公开命令
+
+- [x] `steampunk_mechanic` 的 8 条业务/运行时测试已不再从 `resolveAbility('steampunk_mechanic', 'onPlay')` 起步：
+  - 普通业务链统一改为真实 `runCommand(PLAY_MINION)` 产出 prompt
+  - 两条非法值/二次合法性检查继续保留 runtime prompt handler 合同，但前置 prompt 改由真实出牌链创建
+- [x] `steampunk_change_of_venue` 的 stale-hand 用例已从执行器改为真实 `runCommand(PLAY_ACTION)` 起链，再走 live prompt 响应
+- [x] `miskatonic_librarian_pod extra mode only plays Madness and marks extra action` 已从 talent executor 改为真实 `PLAY_MINION -> USE_TALENT -> respond`
+- [x] `miskatonic_things_best_not_known_pod` 已确认存在稳定公开入口：在 beforeScoring 响应窗口里走真实 `PLAY_ACTION`，不再手工直喂 `special` executor
+- [x] `innsmouth_return_to_the_sea` 已确认存在稳定 afterScoring 公开入口：通过真实 afterScoring response window `PLAY_ACTION` 打出后立即进入 `innsmouth_return_to_the_sea` prompt，不再手工直喂 `special` executor
+- [x] 这轮同时修正了一条旧测试语义：`steampunk_mechanic` 下原“无合法基地”断言其实依赖“机械师本人尚未真正上场”的假世界。切回真实 `PLAY_MINION` 后，`requireOwnMinion` 约束会因为机械师已在基地而变真，因此该用例已改写为真实公开行为断言，而不是继续保护旧 executor 壳层
+- [x] 这轮之后，`expansionOngoing.test.ts` 里的剩余 `resolveAbility(` 已收敛到 6 处：
+  - 注册断言：`steampunk_captain_ahab`、`killer_plant_venus_man_trap`、`innsmouth_return_to_the_sea`、`miskatonic_researcher`、`miskatonic_field_trip`
+  - 仍待判断的业务 onPlay：`killer_plant_blossom`
+- [x] 验证：
+  - `expansionOngoing.test.ts -t "steampunk_mechanic|steampunk_change_of_venue|innsmouth_return_to_the_sea|things best not known pod|librarian pod extra mode"` -> 13 passed
+  - `expansionOngoing.test.ts` -> 67 passed
+  - `eslint expansionOngoing.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/expansionOngoing.test.ts` -> 6
+  - 全仓 `resolveAbility(` 已从 `61` 降到 `49`
+
+## Addendum（2026-05-17 01:06 +08）：`expansionOngoing` 的业务型 executor seam 已收干净
+
+- [x] `killer_plant_blossom` 已从 `resolveAbility('killer_plant_blossom', 'onPlay')` 改为真实 `runCommand(PLAY_ACTION)`：
+  - 不再只锁内部返回的 3 条 `LIMIT_MODIFIED`
+  - 改为锁公开行为：`ACTION_PLAYED` 存在、无 prompt、`sameNameMinionRemaining === 3`、`sameNameMinionDefId === null`、行动已离手进弃牌、`actionsPlayed === 1`
+- [x] 这轮后 `expansionOngoing.test.ts` 中剩余 `resolveAbility(` 已全部收敛为“注册表存在性合同”：
+  - `steampunk_captain_ahab`
+  - `killer_plant_venus_man_trap`
+  - `innsmouth_return_to_the_sea`
+  - `miskatonic_researcher`
+  - `miskatonic_field_trip`
+- [x] 因此该文件下一步不该再机械追求 `resolveAbility(` 归零；应转去别的测试文件继续收割“业务行为却直调 executor”的剩余热点，把纯注册合同单独视为低层存在性断言。
+- [x] 验证：
+  - `expansionOngoing.test.ts -t "killer_plant_blossom"` -> 1 passed
+  - `eslint expansionOngoing.test.ts` -> 0 errors
+  - `expansionOngoing.test.ts` -> 67 passed
+  - `npm run test:structure` -> OK
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/expansionOngoing.test.ts` -> 5
+  - 全仓 `resolveAbility(` 已从 `49` 降到 `48`
+
+## Addendum（2026-05-17 01:19 +08）：`elder-things-ongoing` 的 beforeScoring special 已收回真实公开入口
+
+- [x] `src/games/smashup/__tests__/abilities/elder-things-ongoing.test.ts` 中 `elder_thing_the_price_of_power` 的 3 条 special 测试，已从 `resolveAbility('elder_thing_the_price_of_power', 'special')` 改为真实 `runCommand(PLAY_ACTION)` + Me First! beforeScoring response window：
+  - 新增 `attachBeforeScoringWindow(...)`，用真实 `startSmashUpReactionSession(...)` 构造 `score-before` 窗口。
+  - 基地夹具从默认 `test_base` 改成真实 `base_the_jungle`，避免真实 `scoreOneBase` 继续推进时因缺少 `vpAwards` 崩掉。
+  - 对手手牌夹具同步改成真实已注册行动卡 / Madness 定义，不再用不存在的 `test_card`。
+- [x] 这轮还暴露并纠正了 1 条旧语义：`对手在此基地无随从` 不是“命令层拒绝打出”，而是“可以打出，但没有额外 reveal / 加指示物效果”。测试现已改为锁公开结果，而不是继续保护旧 executor 预过滤。
+- [x] 这轮后 `elder-things-ongoing.test.ts` 中 `resolveAbility(` 已归零；该文件当前不再保留业务型 executor seam。
+- [x] 验证：
+  - `elder-things-ongoing.test.ts -t "elder_thing_the_price_of_power special"` -> 3 passed
+  - `elder-things-ongoing.test.ts` -> 16 passed
+  - `eslint elder-things-ongoing.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+  - `rg -n "resolveAbility\\(" src/games/smashup/__tests__/abilities/elder-things-ongoing.test.ts` -> 0 命中
+  - 全仓 `resolveAbility(` 已从 `48` 降到 `41`
+
+## Addendum（2026-05-17 01:26 +08）：继续收掉 `elderThing` 系列的普通 onPlay 行为测试
+
+- [x] `src/games/smashup/__tests__/elderThingAbilities.test.ts` 中 `elder_thing_mi_go` 的 3 条业务 onPlay 测试，已从 `resolveAbility('elder_thing_mi_go', 'onPlay')` 改为真实 `runCommand(PLAY_MINION)`：
+  - 打出后创建对手选择 prompt
+  - 对手选择抽 Madness
+  - 对手拒绝后施法者抽牌
+- [x] `src/games/smashup/__tests__/elder-thing-choice-goju-tiebreak.test.ts` 中复用的 `triggerElderThingOnPlay(...)` helper 已从 fake `matchState + resolveAbility(...)` 改为真实 `runCommand(PLAY_MINION)`，整组 `elder_thing_elder_thing_choice` 行为测试随之回到公开入口：
+  - 选择 destroy 后的第一步/第二步多段选择
+  - 仅 2 个目标时的自动消灭
+  - 选择 deckbottom 的 live / stale 合同
+- [x] 这轮后：
+  - `elderThingAbilities.test.ts` 只剩 2 条 off-phase extra-timing 合同
+  - `elder-thing-choice-goju-tiebreak.test.ts` 的 `resolveAbility(` 已归零
+  - 全仓 `resolveAbility(` 已从 `41` 降到 `38`
+- [x] 验证：
+  - `elderThingAbilities.test.ts -t "elder_thing_mi_go（米-格：对手抽疯狂卡或你抽牌）"` -> 3 passed
+  - `elderThingAbilities.test.ts` -> 25 passed
+  - `elder-thing-choice-goju-tiebreak.test.ts -t "远古之物：消灭两个随从选择权"` -> 6 passed
+  - `elder-thing-choice-goju-tiebreak.test.ts` -> 10 passed
+  - `eslint elderThingAbilities.test.ts elder-thing-choice-goju-tiebreak.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+
+## Addendum（2026-05-17 01:39 +08）：把低层 ability executor 合同也收进统一 helper，而不是继续裸露 `resolveAbility(...)`
+
+- [x] 在 [src/games/smashup/__tests__/helpers.ts](D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/helpers.ts) 新增：
+  - `expectRegisteredAbilityContract(defId, tag)`
+  - `invokeRegisteredAbilityContract(defId, tag, ctx)`
+- [x] 这轮不把剩余 off-phase / 无公开入口场景硬改成业务命令链，而是把它们显式标记为“低层能力合同测试入口”。
+- [x] 已切换到新 helper 的文件：
+  - `madnessAbilities.test.ts`
+  - `elderThingAbilities.test.ts`
+  - `factionAbilities.test.ts`
+  - `zombieWizardAbilities.test.ts`
+  - `abilities/killer-plants.test.ts`
+  - `madnessPromptAbilities.test.ts`
+- [x] 这使测试分层更清楚：
+  - 真实玩家业务链继续优先 `runCommand(...)`
+  - 只有确实要测 off-phase extra-timing / special 无公开命令入口 / 低层能力边界时，才走 `invokeRegisteredAbilityContract(...)`
+  - 测试体不再直接从注册表拿 executor 再手调
+- [x] 最新统计：`src/games/smashup/__tests__` 中裸 `resolveAbility(` 已收敛到 `25` 处，且最新分布只剩：
+  - `baseFactionOngoing.test.ts` 7
+  - `abilityRegistry.test.ts` 5
+  - `expansionOngoing.test.ts` 5
+  - `properties/coreProperties.test.ts` 4
+  - `elderThingsPod.test.ts` 1
+  - `expansionAbilities.test.ts` 1
+  - `helpers.ts` 1
+  - `shoggoth-destroy-choice.test.ts` 1
+- [x] 验证：
+  - `madnessAbilities.test.ts` -> 32 passed
+  - `elderThingAbilities.test.ts factionAbilities.test.ts zombieWizardAbilities.test.ts abilities/killer-plants.test.ts madnessPromptAbilities.test.ts` -> 138 passed
+  - `eslint helpers.ts madnessAbilities.test.ts elderThingAbilities.test.ts factionAbilities.test.ts zombieWizardAbilities.test.ts abilities/killer-plants.test.ts madnessPromptAbilities.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+
+## Addendum（2026-05-17 01:46 +08）：把剩余业务/能力文件中的裸 `resolveAbility(...)` 清到只剩注册表/属性合同
+
+- [x] `baseFactionOngoing.test.ts`
+  - 删除 3 条局部冗余的能力已注册断言：`ninja_acolyte` / `ninja_hidden_ninja` / `trickster_mark_of_sleep`
+  - `ninja_hidden_ninja` 的 3 条 low-level special 合同统一改走 `invokeRegisteredAbilityContract(...)`
+  - `trickster_enshrouding_mist` 的 off-phase immediate 合同改走 `invokeRegisteredAbilityContract(...)`
+- [x] `expansionOngoing.test.ts`
+  - 删除 5 条局部冗余的能力已注册断言：`steampunk_captain_ahab` / `killer_plant_venus_man_trap` / `innsmouth_return_to_the_sea` / `miskatonic_researcher` / `miskatonic_field_trip`
+  - 该文件内裸 `resolveAbility(` 已归零
+- [x] 单点 low-level ability 合同统一改 helper：
+  - `elderThingsPod.test.ts`：`elder_thing_touch_of_madness_pod`
+  - `expansionAbilities.test.ts`：`killer_plant_insta_grow`
+  - `shoggoth-destroy-choice.test.ts`：`elder_thing_shoggoth`
+- [x] 测试规范已同步补强：
+  - [docs/testing-best-practices.md](D:/gongzuo/webgame/BoardGame/docs/testing-best-practices.md)
+  - [docs/automated-testing.md](D:/gongzuo/webgame/BoardGame/docs/automated-testing.md)
+  - 明确 low-level ability / interaction / runtime resolver 合同应优先通过 `__tests__/helpers.ts` 的显式 contract helper 进入
+- [x] 最新分布已收敛到只剩 3 个预期文件：
+  - `abilityRegistry.test.ts` 5
+  - `properties/coreProperties.test.ts` 4
+  - `helpers.ts` 1
+- [x] 验证：
+  - `baseFactionOngoing.test.ts expansionOngoing.test.ts elderThingsPod.test.ts expansionAbilities.test.ts shoggoth-destroy-choice.test.ts` -> 191 passed
+  - `eslint baseFactionOngoing.test.ts expansionOngoing.test.ts elderThingsPod.test.ts expansionAbilities.test.ts shoggoth-destroy-choice.test.ts` -> 0 errors
+  - `npm run test:structure` -> OK
+  - 全仓 `resolveAbility(` -> `10`
+
+## Addendum（2026-05-17 01:50 +08）：删掉 `coreProperties` 里的局部 onPlay 注册噪音，剩余命中全部变成预期低层合同
+
+- [x] `src/games/smashup/__tests__/properties/coreProperties.test.ts`
+  - 删除 `Property 5` 中“所有已知 onPlay 随从都已注册能力”这条局部重复断言。
+  - 保留 `Property 4` 的 3 处 `resolveAbility(...)`，因为它们本身就在测注册表往返一致性与未注册返回 `undefined`。
+- [x] 这一步把最后边界彻底拉清：
+  - `abilityRegistry.test.ts`：注册表本体合同
+  - `properties/coreProperties.test.ts`：注册表属性合同
+  - `helpers.ts`：统一 low-level ability contract 入口
+- [x] 同步收掉 `coreProperties.test.ts` 的 2 条 eslint warning（未使用类型导入、未使用局部变量），避免留下“测试绿了但文件仍脏”的尾巴。
+- [x] 最新统计：
+  - 全仓 `resolveAbility(` -> `9`
+  - 剩余分布：
+    - `abilityRegistry.test.ts` 5
+    - `properties/coreProperties.test.ts` 3
+    - `helpers.ts` 1
+- [x] 验证：
+  - `coreProperties.test.ts` -> 53 passed
+  - `eslint coreProperties.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure` -> OK
+
+## Addendum（2026-05-17 01:56 +08）：把 `resolveAbility(...)` 的 seam 约束固化进结构门禁，并顺手清理近期测试日志残留
+
+- [x] `scripts/infra/testing-structure-guard.mjs`
+  - 新增 `resolveAbility(...)` 门禁：非白名单游戏测试文件不得新增裸 `resolveAbility(...)`。
+  - 当前白名单只保留：
+    - `src/games/smashup/__tests__/abilityRegistry.test.ts`
+    - `src/games/smashup/__tests__/properties/coreProperties.test.ts`
+  - 统一要求业务/能力测试改走真实命令入口，low-level ability 合同改走 `invokeRegisteredAbilityContract(...)`。
+- [x] 规范文档同步：
+  - [docs/testing-best-practices.md](D:/gongzuo/webgame/BoardGame/docs/testing-best-practices.md)
+  - [docs/automated-testing.md](D:/gongzuo/webgame/BoardGame/docs/automated-testing.md)
+- [x] 清掉两处近期已经不再需要的测试调试日志：
+  - `src/games/smashup/__tests__/elderThingsPod.test.ts`
+  - `src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts`
+- [x] 验证：
+  - `npm run test:structure` -> OK
+  - `node scripts/infra/testing-structure-guard.mjs coreProperties.test.ts expansionOngoing.test.ts baseFactionOngoing.test.ts abilityRegistry.test.ts` -> OK
+  - `eslint scripts/infra/testing-structure-guard.mjs elderThingsPod.test.ts ninja-hidden-ninja-interaction-bug-repro.test.ts` -> 0 errors
+  - `elderThingsPod.test.ts ninja-hidden-ninja-interaction-bug-repro.test.ts` -> 14 passed
+
+## Addendum（2026-05-17 02:38 +08）：收掉 SmashUp 测试目录最后 4 处 `console.*`，并把 audit 失败信息直接提升为断言消息
+
+- [x] `src/games/smashup/__tests__/interactionDefIdAudit.test.ts`
+  - 删除 4 处 `console.log(...)`。
+  - 新增 `expectNoViolations(...)`，把违规清单直接拼进失败消息，不再先打印再失败。
+  - 审计逻辑本身不变，仍然逐项检查 `defId/minionDefId/baseDefId` 与 shorthand 变量解析。
+- [x] `src/games/smashup/__tests__` 中测试文件级 `console.*` 已降到 `0`：
+  - `rg -n "console\\.(log|warn|error|debug)\\(" src/games/smashup/__tests__` -> 0 命中
+- [x] 验证口径已拆开：
+  - `npm run test:games:audit -- src/games/smashup/__tests__/interactionDefIdAudit.test.ts` 会把整套 audit 一起跑起，当前存在大量仓内既有红灯，不能用来判断本次单文件改动是否正确。
+  - `node scripts/infra/vitest-cli-safe.mjs run --config vitest.config.audit.ts --configLoader native src/games/smashup/__tests__/interactionDefIdAudit.test.ts` 已定点验证目标文件。
+- [x] 当前定点结果：
+  - `interactionDefIdAudit.test.ts` 共 2 条，`value shorthand` 审计通过。
+  - `defId` 审计仍按预期失败，但失败信息已直接带出当前真实违规清单：
+    - `vampires.ts:594` 缺 `minionDefId/baseDefId`
+    - `vampires.ts:1168` 缺 `minionDefId/baseDefId`
+- [ ] 下一步不再是清日志，而是判断是否继续修 `vampires.ts` 这 4 个真实审计红灯，以及是否顺带收敛其它 SmashUp interaction audit 红灯。
+
+## Addendum（2026-05-17 02:41 +08）：把 `interactionDefIdAudit` 的真实红灯一并收口
+
+- [x] `src/games/smashup/abilities/vampires.ts`
+  - `vampire_heavy_drinker`
+  - `vampire_heavy_drinker_pod`
+  - 两处选项 value 现已显式补齐 `minionDefId` 与 `baseDefId`，同时保留 `defId/baseIndex` 兼容当前 `onResolve`。
+  - `onResolve` 已改为优先消费 `minionDefId`，并回退兼容旧 `defId`。
+- [x] `src/games/smashup/__tests__/interactionDefIdAudit.test.ts` 已从“输出更干净但仍红”推进到真正定点转绿：
+  - `node scripts/infra/vitest-cli-safe.mjs run --config vitest.config.audit.ts --configLoader native src/games/smashup/__tests__/interactionDefIdAudit.test.ts` -> 2 passed
+- [x] 行为回归：
+  - `npx vitest run src/games/smashup/__tests__/abilities/vampires.test.ts -t "vampire_heavy_drinker|海量酒鬼|Heavy Drinker"` -> 1 passed / 7 skipped
+- [x] 当前状态：
+  - `src/games/smashup/__tests__` 中 `console.*` 仍保持 `0`
+  - `interactionDefIdAudit` 已收口
+- [ ] 下一步候选：
+  - 继续处理更大范围的 `interactionDisplayModeAudit.test.ts`
+  - 或 `interactionTargetTypeAudit.test.ts`
+  - 这两批已不再是“测试壳层清理”，而是统一 interaction option 元数据规范的另一条收口线
+
+## Addendum（2026-05-17 02:59 +08）：继续把 interaction metadata audit 从“局部绿”推进到结构化收口
+
+- [x] `interactionTargetTypeAudit.test.ts` 已定点收口：
+  - `bear_cavalry_superiority_pod_talent`
+  - `bear_cavalry_general_ivan_pod_trigger`
+  - `bear_cavalry_high_ground_pod_trigger`
+  - 三处按钮分支从 `targetType: 'generic'` 改为 `button`
+  - `tornados_ripped_off_target` 拆成 `tornados_ripped_off_target_base` / `tornados_ripped_off_target_minion`，解除一号多义
+  - `APPROVED_GENERIC_SOURCE_REASONS` 已补齐 `mythic_greeks_favor_of_athena_order/pick`、`tornados_ripped_off`、`vampire_crack_of_dusk_pod`，并删掉已不再 generic 的熊骑兵登记项
+  - 验证：`node scripts/infra/vitest-cli-safe.mjs run --config vitest.config.audit.ts --configLoader native src/games/smashup/__tests__/interactionTargetTypeAudit.test.ts` -> 7 passed
+- [x] `interactionDisplayModeAudit.test.ts` 已从 4 个失败项压到只剩 1 个失败项：
+  - 已收口：
+    - `按钮语义选项必须显式声明 button displayMode`
+    - `实体卡牌/基地选项必须显式声明 card displayMode`
+  - 本轮改动：
+    - `bear_cavalry.ts`：补齐多处按钮 skip/yes/no 的 `displayMode: 'button'`
+    - `ghosts.ts`：`ghost_spirit_confirm` 补齐按钮 `displayMode`
+    - `pirates.ts`：`pirate_first_mate_choose_base` 基地选项补齐 `displayMode: 'card'`
+    - `abilityHelpers.ts`：`buildMinionTargetOptions(...)` 统一补齐 `minionDefId/baseDefId`
+    - `vampires.ts`：补齐 Dinner Date / Cull the Weak / The Count / Fledgling / Wolf Pact 等直接卡面选项的 `defId/minionDefId/baseDefId`
+    - `fairies.ts`、`innsmouth.ts`、`tricksters.ts`、`titans.ts`、`baseAbilities_expansion.ts`：继续补齐直接字面量 option value 的可渲染 id 字段
+  - 当前定点结果：
+    - `所有卡牌选项都包含 defId 字段` -> 已通过
+    - `显式 card displayMode 的选项必须提供可渲染 defId` -> 仍失败，剩余 9 个点位
+- [x] 行为回归已覆盖这批 metadata 改动的真实链路：
+  - `src/games/smashup/__tests__/abilities/bear-cavalry.test.ts` -> 3 passed（聚焦熊骑兵相关 prompt 分支）
+  - `src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts` -> 2 passed（聚焦大副基地选择）
+  - `src/games/smashup/__tests__/abilities/vampires.test.ts` -> 8 passed
+  - `src/games/smashup/__tests__/expansionOngoing.test.ts -t "innsmouth_return_to_the_sea|回归大海"` -> 1 passed
+  - `src/games/smashup/__tests__/expansionBaseAbilities.test.ts -t "base_mermaid_pool|base_the_asylum_choose_minion|人鱼水池|庇护所"` -> 1 passed
+- [ ] 当前下一步最合理：
+  - 继续清 `interactionDisplayModeAudit.test.ts` 最后剩余 9 个点位
+  - 剩余主要集中在：
+    - `aliens.ts`
+    - `mythic_greeks.ts`
+    - `shayu_common.ts`
+    - `titans.ts`（Sphinx）
+    - `tornados.ts`
+
+## Addendum（2026-05-17 03:31 +08）：继续把巨型派系测试按能力簇迁出，先收掉 Aliens
+
+- [x] `src/games/smashup/__tests__/abilities/aliens.test.ts` 已从“只有 `alien_jammed_signal` 基地压制”扩成完整 `Aliens` 能力簇入口文件：
+  - 保留原有 `alien_jammed_signal` 基地/扩展基地压制回归。
+  - 新迁入 `alien_invader`、`alien_collector`、`alien_supreme_overlord`、`alien_disintegrator`、`alien_crop_circles`。
+  - 新测试统一走真实 `PLAY_MINION` / `PLAY_ACTION` + prompt facade / `respondCommand(...)`，不回退到旧执行器入口。
+- [x] `src/games/smashup/__tests__/factionAbilities.test.ts` 已删除整段 `外星人派系能力`：
+  - 泛名大文件继续瘦身，只保留尚未拆出的能力簇。
+  - 同时清理迁出后残留的 `respondCommand` 无用 import，避免“逻辑拆走了，壳层垃圾还留着”。
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/aliens.test.ts` -> 8 passed
+  - `npx vitest run src/games/smashup/__tests__/abilities/aliens.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 37 passed
+  - `npx eslint src/games/smashup/__tests__/abilities/aliens.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 48，OK
+- [ ] 下一步继续按同一原则处理剩余巨型派系簇：
+  - 优先选同一 describe 内仍混有真实出牌链 + 历史夹具入口的能力簇。
+  - 目标不是把 `factionAbilities.test.ts` 机械拆小，而是让每个能力簇都收口到更稳定的公开行为 seam。
+
+## Addendum（2026-05-17 03:37 +08）：继续收掉恐龙 action 簇，并优先并入现有专项文件
+
+- [x] `src/games/smashup/__tests__/abilities/dinosaurs.test.ts` 已吸收原 `factionAbilities.test.ts` 的恐龙 action 回归：
+  - 新迁入 `dino_rampage`
+  - `dino_augmentation`
+  - `dino_howl`
+  - `dino_natural_selection`
+  - `dino_survival_of_the_fittest`
+  - 仍统一走真实 `PLAY_ACTION` + prompt facade，不回退旧执行器入口。
+- [x] `src/games/smashup/__tests__/factionAbilities.test.ts` 已删除整段 `恐龙派系能力`：
+  - 泛名大文件从 29 tests 进一步降到 20 tests。
+  - 同时清理迁移后残留的 `getPromptOptions` / `expectNoPrompt` 无用 import。
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/dinosaurs.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 32 passed
+  - `npx eslint src/games/smashup/__tests__/abilities/dinosaurs.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 49，OK
+- [ ] 下一步候选：
+  - 继续挑 `factionAbilities.test.ts` 中剩余且自然成簇的派系段落。
+  - 优先级上，已有专项文件可吸收的，优先并到现有文件；只有没有稳定归宿时才新开文件。
+
+## Addendum（2026-05-17 03:49 +08）：连续迁出海盗 / 巫师 / 机器人 / 立即额外行动，`factionAbilities.test.ts` 基本只剩尾项
+
+- [x] `src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts` 已吸收原 `factionAbilities.test.ts` 的海盗 action 回归：
+  - `pirate_broadside`
+  - `pirate_cannon`
+  - `pirate_swashbuckling`
+  - 虽然文件名还是 `pirates-ongoing`，但内容本来就已含 `pirate_full_sail special`，继续作为单一海盗专项边界是合理的。
+- [x] 新增 `src/games/smashup/__tests__/abilities/wizards.test.ts`：
+  - 迁入 `wizard_neophyte`
+  - `wizard_neophyte_pod`
+  - `wizard_enchantress`
+  - `wizard_mystic_studies`
+  - 作为巫师通用能力簇入口，和已有更窄的 `wizard-neophyte-actionlog.test.ts` / `wizard-neophyte-ongoing.test.ts` / `wizard-archmage-*.test.ts` 并存，不互相吞职责。
+- [x] 新增 `src/games/smashup/__tests__/abilities/robots.test.ts`：
+  - 迁入 `robot_zapbot`
+  - `robot_tech_center`
+  - `robot_microbot_fixer + base_the_homeworld`
+- [x] 新增 `src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts`：
+  - 迁出原本混在派系文件中的共享“立即额外行动”交互组
+  - 这个块本质不是某个派系，而是跨能力共享交互，不应继续留在 `factionAbilities.test.ts`
+- [x] `src/games/smashup/__tests__/factionAbilities.test.ts` 当前只剩 2 条尾项：
+  - `ghost extra timing audit`
+  - `ninja_seeing_stars`
+  - 说明这份历史泛名文件已经从“能力大杂烩”压到“待归宿的零散尾项”。
+- [x] 验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 38 passed
+  - `npx vitest run src/games/smashup/__tests__/abilities/wizards.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 16 passed
+  - `npx vitest run src/games/smashup/__tests__/abilities/robots.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 11 passed
+  - `npx vitest run src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts src/games/smashup/__tests__/factionAbilities.test.ts` -> 6 passed
+  - 上述对应 `eslint` 均为 `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` 最新为 checked files: 52，OK
+- [ ] 下一步候选：
+  - 给 `ninja_seeing_stars` 找归宿，评估是否新开 `abilities/ninjas.test.ts`
+  - 重新安置 `ghost extra timing audit`，避免它继续挂在“派系能力”旧壳里
+  - 然后再评估是否可以彻底删除或改名 `factionAbilities.test.ts`
+
+## Addendum（2026-05-17 03:54 +08）：`factionAbilities.test.ts` 已完成退场
+
+- [x] 新增 `src/games/smashup/__tests__/abilities/ninjas.test.ts`
+  - 承接原尾项 `ninja_seeing_stars`
+- [x] `src/games/smashup/__tests__/expansionAbilities.test.ts`
+  - 已把 `ghost_ghostly_arrival` 的 off-phase `playTiming === 'immediate'` 合同断言并入幽灵专项块
+- [x] `src/games/smashup/__tests__/factionAbilities.test.ts`
+  - 已删除文件本体，不再保留这份历史泛名壳
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/ninjas.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 34 passed
+  - `npx eslint src/games/smashup/__tests__/abilities/ninjas.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 52，OK
+- [ ] 下一步候选：
+  - 扫描 SmashUp 里剩余仍承担“多能力簇 / 多语义壳层”的历史测试文件
+  - 优先挑那些还在混放行为回归、prompt 链、contract 断言的老文件继续拆
+
+## Addendum（2026-05-17 04:04 +08）：`query6Abilities.test.ts` 已完成退场
+
+- [x] `src/games/smashup/__tests__/abilities/ninjas.test.ts`
+  - 已继续吸收原 `query6Abilities.test.ts` 的忍者簇：
+  - `ninja_way_of_deception`
+  - `ninja_disguise`
+- [x] `src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts`
+  - 已吸收原 `query6Abilities.test.ts` 的海盗 action/prompt 回归：
+  - `pirate_dinghy`
+  - `pirate_shanghai`
+  - `pirate_sea_dogs`
+  - `pirate_powderkeg`
+  - 文件名虽然保留 `pirates-ongoing`，但该文件现在已稳定承担“海盗专项行为入口”，比继续留在“第6批混装文件”更准确。
+- [x] `src/games/smashup/__tests__/abilities/wizards.test.ts`
+  - 已吸收原 `query6Abilities.test.ts` 的巫师簇：
+  - `wizard_mass_enchantment`
+  - `wizard_portal`
+  - `wizard_portal_order`
+  - `wizard_scry`
+  - `wizard_sacrifice`
+  - `wizard_winds_of_change`
+  - 这些用例继续统一走真实 `PLAY_ACTION` / `PLAY_MINION`、prompt facade 与 `refreshInteractionOptions`，不是回退到旧 helper 形状。
+- [x] `src/games/smashup/__tests__/abilities/aliens.test.ts`
+  - 已吸收原 `query6Abilities.test.ts` 的 `alien_scout`
+- [x] `src/games/smashup/__tests__/query6Abilities.test.ts`
+  - 已删除文件本体，不再保留这份按“第6批”混装的历史壳
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/ninjas.test.ts src/games/smashup/__tests__/query6Abilities.test.ts` -> 31 passed（忍者迁移完成后、文件删除前）
+  - `npx eslint src/games/smashup/__tests__/abilities/ninjas.test.ts src/games/smashup/__tests__/query6Abilities.test.ts` -> 0 errors / 0 warnings（文件删除前）
+  - `npx vitest run src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts src/games/smashup/__tests__/abilities/wizards.test.ts src/games/smashup/__tests__/abilities/aliens.test.ts` -> 59 passed
+  - `npx eslint src/games/smashup/__tests__/abilities/pirates-ongoing.test.ts src/games/smashup/__tests__/abilities/wizards.test.ts src/games/smashup/__tests__/abilities/aliens.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 52，OK
+- [ ] 下一步候选：
+  - 继续扫描 SmashUp 中仍然按“批次 / 杂项 / 大而泛”组织的历史测试文件
+  - 优先选择那些还混着多个派系行为、prompt 链与合同断言的文件继续拆
+
+## Addendum（2026-05-17 04:09 +08）：`robotAbilities.test.ts` 已完成退场
+
+- [x] `src/games/smashup/__tests__/abilities/robots.test.ts`
+  - 已继续吸收原 `robotAbilities.test.ts` 的机器人簇：
+  - `robot_microbot_reclaimer`
+  - `robot_microbot_fixer`
+  - `robot_microbot_reclaimer onPlay extra play`
+  - 包括动态 `optionsGenerator` 刷新、AI legal actions 过期候选防线，以及“先解交互再使用额外随从额度”的真实链路。
+- [x] `src/games/smashup/__tests__/robotAbilities.test.ts`
+  - 已删除文件本体，不再保留“根目录机器人旧入口”和 `abilities/robots.test.ts` 双入口并存状态
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/robotAbilities.test.ts src/games/smashup/__tests__/abilities/robots.test.ts` -> 16 passed（删除前基线）
+  - `npx eslint src/games/smashup/__tests__/robotAbilities.test.ts src/games/smashup/__tests__/abilities/robots.test.ts` -> 0 errors / 0 warnings（删除前基线）
+  - `npx vitest run src/games/smashup/__tests__/abilities/robots.test.ts` -> 16 passed
+  - `npx eslint src/games/smashup/__tests__/abilities/robots.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 52，OK
+  - `Test-Path src\\games\\smashup\\__tests__\\robotAbilities.test.ts` -> False
+- [ ] 下一步候选：
+  - 优先检查 `zombieWizardAbilities.test.ts` 这类仍把 reducer 合同、僵尸能力和巫师能力混在一起的文件
+  - 判断是继续拆到 `abilities/wizards.test.ts` / 新建 `abilities/zombies.test.ts`，还是把 reducer 合同先独立出去
+
+## Addendum（2026-05-17 04:19 +08）：`ghostsAbilities.test.ts` 已完成退场
+
+- [x] 新增 `src/games/smashup/__tests__/abilities/ghosts.test.ts`
+  - 已承接原 `ghostsAbilities.test.ts` 的幽灵普通行为入口：
+  - `ghost_make_contact`
+  - `ghost_make_contact_pod`
+  - 继续统一走真实 `PLAY_ACTION` 命令链，而不是保留根目录旧入口壳层。
+- [x] `src/games/smashup/__tests__/ghostsAbilities.test.ts`
+  - 已删除文件本体，不再保留“根目录幽灵旧入口”和其它幽灵专项文件并存的状态
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/ghosts.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 41 passed
+  - `npx eslint src/games/smashup/__tests__/abilities/ghosts.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 54，OK
+  - `Test-Path src\\games\\smashup\\__tests__\\ghostsAbilities.test.ts` -> False
+- [ ] 下一步候选：
+  - 优先继续扫描根目录仍按旧口径挂着的单派系/临时整合入口，例如 `shayuFactionAbilities.test.ts`
+  - `zombieInteractionChain.test.ts` 虽然体量大，但已经更接近“派系 + 交互链”专项文件，优先级低于明显旧入口
+  - `expansionAbilities.test.ts` / `expansionOngoing.test.ts` 体量仍大，但属于扩展包聚合文件，后续要按行为边界谨慎拆，不急着硬切
+
+## Addendum（2026-05-17 07:40 +08）：`shayuFactionAbilities.test.ts` 已完成按三派系拆分并退场
+
+- [x] 新增 `src/games/smashup/__tests__/abilities/sharks.test.ts`
+  - 已承接原 `shayuFactionAbilities.test.ts` 的鲨鱼代表性行为：
+  - `sharks_torn_apart`
+  - `sharks_feeding_frenzy`
+  - `sharks_air_jaws`
+  - `sharks_freakin_laser_beam`
+  - `sharks_week_of_sharks`
+  - `sharks_dangerous_waters`
+- [x] 新增 `src/games/smashup/__tests__/abilities/tornados.test.ts`
+  - 已承接龙卷风代表性行为：
+  - `tornados_carried_away`
+  - `tornados_monster_tornado`
+  - `tornados_whirlwinds`
+  - `tornados_trade_winds`
+  - `tornados_cyclone`
+- [x] 新增 `src/games/smashup/__tests__/abilities/mythic-greeks.test.ts`
+  - 已承接神话希腊代表性行为与基地抽样复审：
+  - `mythic_greeks_favor_of_apollo / hera / poseidon / athena / dionysus / hermes / zeus`
+  - `mythic_greeks_argonaut`
+  - `base_oracle_at_delphi`
+  - `base_wooden_horse`
+- [x] `src/games/smashup/__tests__/shayuFactionAbilities.test.ts`
+  - 已删除文件本体，不再保留“三派系混装代表性玩法”旧入口
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/sharks.test.ts src/games/smashup/__tests__/abilities/tornados.test.ts src/games/smashup/__tests__/abilities/mythic-greeks.test.ts` -> 21 passed
+  - `npx eslint src/games/smashup/__tests__/abilities/sharks.test.ts src/games/smashup/__tests__/abilities/tornados.test.ts src/games/smashup/__tests__/abilities/mythic-greeks.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 57，OK
+  - `Test-Path src\\games\\smashup\\__tests__\\shayuFactionAbilities.test.ts` -> False
+- [ ] 下一步候选：
+  - 继续扫描仍按“扩展包聚合 / 代表性混装 / 根目录旧入口”组织的 SmashUp 测试文件
+  - 优先评估 `expansionAbilities.test.ts`、`expansionOngoing.test.ts` 是否已有可安全拆出的单一行为簇
+
+## Addendum（2026-05-17 08:01 +08）：`expansionAbilities.test.ts` 已继续瘦身，`Killer Plants` 双入口退场
+
+- [x] `src/games/smashup/__tests__/abilities/killer-plants.test.ts`
+  - 已吸收原 `expansionAbilities.test.ts` 的 `Killer Plants` 普通行为簇：
+  - `killer_plant_insta_grow`
+  - `killer_plant_weed_eater`
+  - 同时把新增断言优先落到真实 `finalState`，减少对本地 `applyEvents/reduce` 回放的依赖。
+- [x] `src/games/smashup/__tests__/expansionAbilities.test.ts`
+  - 已删除整段 `食人花派系能力`
+  - 并顺手把仍残留的两条“手工 `applyEvents` 看状态”旧测试改为直接断言真实 `runCommand(...).finalState`
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 38 passed
+  - `npx eslint src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 61，OK
+- [ ] 下一步候选：
+  - 优先处理 `expansionAbilities.test.ts` 中剩余已有专项归宿的 `Bear Cavalry`，消掉同派系双入口
+  - 再评估 `Steampunk` 是否应新开稳定专项文件，还是暂留在扩展聚合入口
+
+## Addendum（2026-05-17 08:06 +08）：`Bear Cavalry` 已并回专项，`expansionAbilities.test.ts` 只剩明确尾项
+
+- [x] `src/games/smashup/__tests__/abilities/bear-cavalry.test.ts`
+  - 已吸收原 `expansionAbilities.test.ts` 的 `Bear Cavalry` 普通行为与交互回归：
+  - `bear_cavalry_bear_hug`（含 tie-choice 回归）
+  - `bear_cavalry_commission`
+- [x] `src/games/smashup/__tests__/expansionAbilities.test.ts`
+  - 已删除 `bear cavalry interaction regressions`
+  - 已删除整段 `黑熊骑兵派系能力`
+  - 当前只剩 `Steampunk` 与 `cthulhu_complete_the_ritual` 这类仍未迁走的明确尾项
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/bear-cavalry.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 36 passed
+  - `npx eslint src/games/smashup/__tests__/abilities/bear-cavalry.test.ts src/games/smashup/__tests__/expansionAbilities.test.ts` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 62，OK
+- [ ] 下一步候选：
+  - 评估是否为 `Steampunk` 新开单一专项文件，把 `steampunk_scrap_diving` 从扩展聚合入口迁走
+  - 继续扫描 `expansionOngoing.test.ts` 是否也存在“已有归宿却仍挂聚合文件”的段落
+
+## Addendum（2026-05-17 08:14 +08）：`expansionAbilities.test.ts` 已彻底退场，`expansionOngoing.test.ts` 开始继续拆壳
+
+- [x] 新增 `src/games/smashup/__tests__/abilities/steampunks.test.ts`
+  - 承接 `steampunk_scrap_diving`
+- [x] `src/games/smashup/__tests__/abilities/cthulhu.test.ts`
+  - 已吸收 `cthulhu_complete_the_ritual` 的打出约束
+- [x] `src/games/smashup/__tests__/expansionAbilities.test.ts`
+  - 文件本体已删除，旧扩展聚合入口完成退场
+- [x] `src/games/smashup/__tests__/abilities/ghosts.test.ts`
+  - 已继续吸收 `expansionOngoing.test.ts` 中的幽灵 ongoing/低层合同：
+  - `ghost_incorporeal`
+  - `ghost_make_contact` 的显式控制权事件与 detach affect 记录合同
+- [x] `src/games/smashup/__tests__/expansionOngoing.test.ts`
+  - 已删除整段 `幽灵 ongoing 能力`
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/steampunks.test.ts src/games/smashup/__tests__/abilities/cthulhu.test.ts` -> 27 passed
+  - `Test-Path src\\games\\smashup\\__tests__\\expansionAbilities.test.ts` -> False
+  - `npx vitest run src/games/smashup/__tests__/abilities/ghosts.test.ts src/games/smashup/__tests__/expansionOngoing.test.ts` -> 81 passed
+  - `npx eslint ...上述文件...` -> 0 errors / 0 warnings
+  - `npm run test:structure -- --all` -> checked files: 65，OK
+- [ ] 下一步候选：
+  - 优先评估 `expansionOngoing.test.ts` 中 `Killer Plants` 是否继续并回 `abilities/killer-plants.test.ts`
+  - 其次再看 `Innsmouth` / `Miskatonic` 是否已有足够明确的专项归宿

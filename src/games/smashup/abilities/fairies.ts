@@ -125,7 +125,7 @@ type FairiesGlymmerPromptContext = FairiesPromptContext & {
 type FairiesTinxPromptContext = FairiesPromptContext & {
     targetBaseIndex: number;
     targetMinionUid: string;
-    options: Array<{ cardUid: string; label: string }>;
+    options: Array<{ cardUid: string; defId: string; label: string }>;
 };
 
 type FairiesPlayfulTricksDestroyPromptContext = FairiesPromptContext & {
@@ -685,7 +685,7 @@ const fairiesTinxPromptProgram = createPromptProgram<FairiesTinxPromptContext, S
             ...context.options.map((option, index) => ({
                 id: `attached-${index}`,
                 label: option.label,
-                value: { cardUid: option.cardUid },
+                value: { cardUid: option.cardUid, defId: option.defId },
                 _source: 'field' as const,
                 displayMode: 'card' as const,
             })),
@@ -1000,6 +1000,7 @@ const fairiesTinxProgram = createEffectProgram<AbilityContext, SmashUpCore, Smas
                 const actionName = getCardDef(attached.defId)?.name ?? attached.defId;
                 options.push({
                     cardUid: attached.uid,
+                    defId: attached.defId,
                     label: `${actionName} @ ${minionName} @ ${baseName}`,
                 });
             }

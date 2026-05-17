@@ -23,6 +23,7 @@ import {
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
     getTitansOnBase,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { SU_EVENTS } from '../domain/types';
@@ -265,9 +266,10 @@ const bearCavalrySuperiorityPodPromptProgram = createPromptProgram<BearCavalrySu
             { id: 'draw', label: '摸一张牌', value: { action: 'draw' as const }, displayMode: 'button' as const },
             { id: 'protect', label: '保护随从直到下回合', value: { action: 'protect' as const }, displayMode: 'button' as const },
         ],
-        { sourceId: 'bear_cavalry_superiority_pod_talent', targetType: 'generic' },
+        { sourceId: 'bear_cavalry_superiority_pod_talent', targetType: 'button' },
     ),
-    onResolve: ({ context, state, value, interactionData, random, timestamp, playerId }) => {
+    onResolve: (args) => {
+        const { context, state, value, interactionData, playerId } = args;
         const action = typeof value === 'string'
             ? value as 'draw' | 'protect'
             : (value as { action?: 'draw' | 'protect' } | undefined)?.action;
@@ -296,7 +298,7 @@ const bearCavalrySuperiorityPodPromptProgram = createPromptProgram<BearCavalrySu
 
         const events: SmashUpEvent[] = [];
         if (action === 'draw') {
-            events.push(...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp));
+            events.push(...buildStandardDrawEventsFromRuntimeContext(args, playerId, 1));
         }
         return { events, matchState: nextState };
     },
@@ -312,7 +314,7 @@ const bearCavalryGeneralIvanPodPromptProgram = createPromptProgram<BearCavalryGe
             { id: 'yes', label: '是（给己方随从 +1 力量）', value: { action: 'yes' as const }, displayMode: 'button' as const },
             { id: 'no', label: '否', value: { action: 'no' as const }, displayMode: 'button' as const },
         ],
-        { sourceId: 'bear_cavalry_general_ivan_pod_trigger', targetType: 'generic' },
+        { sourceId: 'bear_cavalry_general_ivan_pod_trigger', targetType: 'button' },
     ),
     onResolve: ({ context, state, value, timestamp }) => {
         const action = (value as { action?: 'yes' | 'no' } | undefined)?.action;
@@ -355,9 +357,10 @@ const bearCavalryHighGroundPodPromptProgram = createPromptProgram<BearCavalryHig
             { id: 'destroy', label: '消灭制高点并消灭该随从', value: { action: 'destroy' as const }, displayMode: 'button' as const },
             { id: 'draw', label: '摸一张牌并打出一张战术', value: { action: 'draw' as const }, displayMode: 'button' as const },
         ],
-        { sourceId: 'bear_cavalry_high_ground_pod_trigger', targetType: 'generic' },
+        { sourceId: 'bear_cavalry_high_ground_pod_trigger', targetType: 'button' },
     ),
-    onResolve: ({ context, state, value, random, timestamp, playerId }) => {
+    onResolve: (args) => {
+        const { context, state, value, timestamp, playerId } = args;
         const action = (value as { action?: 'destroy' | 'draw' } | undefined)?.action;
         if (!action) return { events: [] };
 
@@ -380,7 +383,7 @@ const bearCavalryHighGroundPodPromptProgram = createPromptProgram<BearCavalryHig
             return { events };
         }
 
-        events.push(...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp));
+        events.push(...buildStandardDrawEventsFromRuntimeContext(args, playerId, 1));
         events.push(grantContextualExtraAction({ playerId, now: timestamp, matchState: state }, 'bear_cavalry_high_ground_pod'));
         return { events };
     },
@@ -396,6 +399,7 @@ const bearCavalryBearNecessitiesPromptProgram = createPromptProgram<BearCavalryP
             value: ('owner' in target
                 ? { type: 'minion' as const, uid: target.uid, defId: target.defId, baseIndex: target.baseIndex, owner: target.owner }
                 : { type: 'action' as const, uid: target.uid, defId: target.defId, ownerId: target.ownerId }) as BearNecessitiesValue,
+            displayMode: 'card' as const,
         }));
         return createAbilityRuntimeSimpleChoice(
             `bear_cavalry_bear_necessities_${context.now}`,
@@ -862,8 +866,8 @@ function bearCavalryCubScoutPodTrigger(ctx: TriggerContext): SmashUpEvent[] | { 
                 scout.controller,
                 `幼熊斥候：是否消灭 ${getCardDef(movedMinion.defId)?.name ?? movedMinion.defId}？`,
                 [
-                    { id: 'yes', label: '是（消灭并移动己方小随从）', value: 'yes' as any },
-                    { id: 'no', label: '否', value: 'no' as any },
+                    { id: 'yes', label: '是（消灭并移动己方小随从）', value: 'yes' as any, displayMode: 'button' as const },
+                    { id: 'no', label: '否', value: 'no' as any, displayMode: 'button' as const },
                 ],
                 { sourceId: 'bear_cavalry_cub_scout_pod_destroy', targetType: 'generic' },
             );
@@ -1411,7 +1415,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             }
             // POD 版文本为 “you may move”，允许跳过；基础版则必须移动（若有合法目标）
             if (isPod) {
-                moveOptions.unshift({ id: 'skip', label: '跳过（不移动）', value: { minionUid: '__skip__', baseIndex } as any });
+                moveOptions.unshift({ id: 'skip', label: '跳过（不移动）', value: { skip: true }, displayMode: 'button' as const });
             }
             const next = createSimpleChoice(
                 `bear_cavalry_commission_move_minion_${timestamp}`, playerId,
@@ -1475,7 +1479,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             return { state, events: [playedEvt] };
         }
         if (isPod) {
-            moveOptions.unshift({ id: 'skip', label: '跳过（不移动）', value: { minionUid: '__skip__', baseIndex } as any });
+            moveOptions.unshift({ id: 'skip', label: '跳过（不移动）', value: { skip: true }, displayMode: 'button' as const });
         }
         const next = createSimpleChoice(
             `bear_cavalry_commission_move_minion_${timestamp}`, playerId,
@@ -1493,9 +1497,10 @@ export function registerBearCavalryInteractionHandlers(): void {
 
     // 委任第三步：选择对手随从后→选择目标基地
     registerInteractionHandler('bear_cavalry_commission_move_minion', (state, playerId, value, iData, _random, timestamp) => {
-        const { minionUid, baseIndex: fromBase } = value as { minionUid: string; baseIndex: number };
+        const { minionUid, baseIndex: fromBase, skip } = value as { minionUid?: string; baseIndex?: number; skip?: boolean };
         const isPod = (iData as any)?.isPod === true;
-        if (minionUid === '__skip__') return { state, events: [] };
+        if (skip) return { state, events: [] };
+        if (!minionUid || fromBase === undefined) return undefined;
         const base = state.core.bases[fromBase];
         if (!base) return undefined;
         const target = base.minions.find(m => m.uid === minionUid);
@@ -1790,7 +1795,7 @@ export function registerBearCavalryInteractionHandlers(): void {
             '幼熊斥候：选择一个牌面战力≤3的己方随从移动到本基地（可跳过）',
             [
                 ...buildMinionTargetOptions(candidates, { state: state.core, sourcePlayerId: playerId, effectType: 'move' }),
-                { id: 'skip', label: '跳过', value: 'skip' as any }
+                { id: 'skip', label: '跳过', value: 'skip' as any, displayMode: 'button' as const }
             ],
             { sourceId: 'bear_cavalry_cub_scout_pod_chain_move', targetType: 'minion' }
         );

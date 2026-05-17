@@ -15,7 +15,7 @@ import { SU_COMMANDS, SU_EVENTS, MADNESS_CARD_DEF_ID } from '../domain/types';
 import type { OngoingActionOnBase } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { grantExtraMinion } from '../domain/abilityHelpers';
-import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
+import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../domain/baseAbilities';
 import {
     makeMinion, makeCard, makePlayer, makeState, makeMatchState,
@@ -29,6 +29,7 @@ import {
     respondToPromptOptions,
     withOnlyCurrentPrompt,
 } from './helpers';
+import { runCommand } from './testRunner';
 import type { RandomFn } from '../../../engine/types';
 
 beforeAll(() => {
@@ -833,6 +834,7 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
             players: {
                 '0': makePlayer('0', {
                     hand: [
+                        { uid: 'pixie-1', defId: 'trickster_pixie_pod', type: 'fusion', owner: '0' } as any,
                         makeCard('h1', 'pirate_first_mate', 'minion', '0'),
                         makeCard('h2', 'wizard_archmage', 'minion', '0'),
                         makeCard('h3', 'robot_microbot_alpha', 'minion', '0'),
@@ -845,7 +847,6 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
             bases: [{
                 defId: 'base_a',
                 minions: [
-                    makeMinion('pixie-1', 'trickster_pixie_pod', '0', 2),
                     makeMinion('ally-a', 'pirate_saucy_wench', '0', 2),
                     makeMinion('opp-a', 'alien_invader', '1', 3),
                 ],
@@ -857,28 +858,23 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
             }],
         });
 
-        const executor = resolveAbility('trickster_pixie_pod', 'onPlay')!;
-        const result = executor({
-            state: core,
-            matchState: makeMatchState(core),
+        const result = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_MINION,
             playerId: '0',
-            cardUid: 'pixie-1',
-            defId: 'trickster_pixie_pod',
-            baseIndex: 0,
-            random: defaultRandom,
-            now: 4000,
-        });
+            payload: { cardUid: 'pixie-1', baseIndex: 0 },
+        } as any, defaultRandom);
+        expect(result.success, result.error).toBe(true);
 
-        const interaction = getSimpleChoicePrompt(result.matchState!, 'trickster_pixie_pod_minion');
+        const interaction = getSimpleChoicePrompt(result.finalState, 'trickster_pixie_pod_minion');
         expect(getPromptSourceId(interaction)).toBe('trickster_pixie_pod_minion');
         const optionUids = getPromptOptions(interaction).map((option: any) => option.value?.minionUid).filter(Boolean);
-        expect(optionUids).toEqual(['pixie-1', 'ally-a']);
+        expect(optionUids.sort()).toEqual(['ally-a', 'pixie-1']);
 
         const selectedOptionIds = getPromptOptions(interaction)
             .filter((option: any) => option.value?.minionUid === 'ally-a')
             .map((option: any) => option.id);
         const resolved = respondToPromptOptions(
-            result.matchState!,
+            result.finalState,
             selectedOptionIds,
             '0',
             defaultRandom,
@@ -896,7 +892,9 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
     it('作为战术打出时走 destroy -> counters 的 runtime 交互链', () => {
         const core = makeState({
             players: {
-                '0': makePlayer('0'),
+                '0': makePlayer('0', {
+                    hand: [{ uid: 'pixie-action', defId: 'trickster_pixie_pod', type: 'fusion', owner: '0' } as any],
+                }),
                 '1': makePlayer('1'),
             },
             bases: [{
@@ -910,23 +908,18 @@ describe('trickster_pixie_pod（小精灵 POD runtime prompt）', () => {
             }],
         });
 
-        const executor = resolveAbility('trickster_pixie_pod', 'onPlay')!;
-        const result = executor({
-            state: core,
-            matchState: makeMatchState(core),
+        const result = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_ACTION,
             playerId: '0',
-            cardUid: 'pixie-action',
-            defId: 'trickster_pixie_pod',
-            baseIndex: 0,
-            random: defaultRandom,
-            now: 4100,
-        });
+            payload: { cardUid: 'pixie-action' },
+        } as any, defaultRandom);
+        expect(result.success, result.error).toBe(true);
 
-        const destroyInteraction = getSimpleChoicePrompt(result.matchState!, 'trickster_pixie_pod_action_destroy');
+        const destroyInteraction = getSimpleChoicePrompt(result.finalState, 'trickster_pixie_pod_action_destroy');
         expect(getPromptSourceId(destroyInteraction)).toBe('trickster_pixie_pod_action_destroy');
 
         const chained = respondToPromptOption(
-            result.matchState!,
+            result.finalState,
             option => option.value?.cardUid === 'target-oa',
             'pixie action destroy target oa option',
             '0',

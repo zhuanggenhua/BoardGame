@@ -95,32 +95,19 @@ describe('BASE_SCORED 乐观引擎传递验证', () => {
         // 模拟客户端首次收到服务端状态（P0 已 PASS，等待 P1 PASS）
         const firstReconcile = engine.reconcile(serverState);
         const clientStateBeforeP1Pass = firstReconcile.stateToRender;
-        const entriesBefore = getEventStreamEntries(clientStateBeforeP1Pass as MatchState<SmashUpCore>);
-        console.log('reconcile 后 entries 数量（P1 PASS 前）:', entriesBefore.length);
 
         // ── Step 3: 客户端 dispatch P1 RESPONSE_PASS ──
         const processResult = engine.processCommand('RESPONSE_PASS', undefined, '1');
-        console.log('processCommand 结果:', {
-            stateToRender: processResult.stateToRender ? '有预测' : 'null（未预测）',
-            shouldSend: processResult.shouldSend,
-            animationMode: processResult.animationMode,
-        });
 
         // 当前实现口径：RESPONSE_PASS 走 optimistic。
         // 在测试环境中 rng 是确定性的，因此命令会被预测；
         // 真实游戏若发生随机探测失败，仍可能退回 wait-confirm/null。
-        console.log('预测状态是否为 null:', processResult.stateToRender === null);
-        console.log('animationMode:', processResult.animationMode);
-
         expect(processResult.animationMode).toBe('optimistic');
 
         // 如果被预测了，检查预测状态的 EventStream（optimistic 模式保留新事件）
         if (processResult.stateToRender) {
             const predictedEntries = getEventStreamEntries(processResult.stateToRender as MatchState<SmashUpCore>);
             const predictedScored = predictedEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-            console.log('预测状态 EventStream entries:', predictedEntries.length);
-            console.log('预测状态 BASE_SCORED 数量:', predictedScored.length);
-            console.log('预测状态 BASE_SCORED 是否保留（optimistic）:', predictedScored.length > 0);
             expect(predictedScored.length).toBeGreaterThan(0);
         }
 
@@ -136,22 +123,14 @@ describe('BASE_SCORED 乐观引擎传递验证', () => {
         // 验证服务端状态包含 BASE_SCORED
         const serverEntries = getEventStreamEntries(serverResult.state);
         const serverScored = serverEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        console.log('服务端 EventStream entries:', serverEntries.length);
-        console.log('服务端 BASE_SCORED 数量:', serverScored.length);
         expect(serverScored.length).toBeGreaterThan(0);
 
         // ── Step 5: 客户端 reconcile 服务端状态 ──
         const reconcileResult = engine.reconcile(serverResult.state);
-        console.log('reconcile 结果:', {
-            didRollback: reconcileResult.didRollback,
-            optimisticEventWatermark: reconcileResult.optimisticEventWatermark,
-        });
 
         // 验证 reconcile 返回的状态包含 BASE_SCORED
         const clientEntries = getEventStreamEntries(reconcileResult.stateToRender as MatchState<SmashUpCore>);
         const clientScored = clientEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        console.log('客户端 reconcile 后 entries:', clientEntries.length);
-        console.log('客户端 BASE_SCORED 数量:', clientScored.length);
 
         // 核心断言：客户端 reconcile 后能看到 BASE_SCORED 事件
         expect(clientScored.length).toBeGreaterThan(0);
@@ -163,14 +142,10 @@ describe('BASE_SCORED 乐观引擎传递验证', () => {
         if (entriesBeforeCommand.length > 0) {
             cursor = entriesBeforeCommand[entriesBeforeCommand.length - 1].id;
         }
-        console.log('cursor 初始值（跳过历史后）:', cursor);
 
         // 模拟 reconcile 后的消费
         const newEntries = clientEntries.filter(e => e.id > cursor);
         const newScored = newEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        console.log('新事件数量:', newEntries.length);
-        console.log('新 BASE_SCORED 数量:', newScored.length);
-        console.log('新事件类型:', [...new Set(newEntries.map(e => e.event.type))]);
 
         // 核心断言：BASE_SCORED 必须存在（可能在 P0 PASS 后已进入 EventStream）
         if (newScored.length === 0) {

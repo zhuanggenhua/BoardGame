@@ -441,6 +441,93 @@ describe('cthulhu_complete_the_ritual onTurnStart', () => {
     });
 });
 
+describe('cthulhu_complete_the_ritual 打出约束', () => {
+    it('目标基地有自己随从时可以打出', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'cthulhu_complete_the_ritual', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })],
+                }),
+            ],
+            baseDeck: ['b2'],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1', targetBaseIndex: 0 },
+            } as any,
+            dummyRandom,
+        );
+
+        expect(result.success).toBe(true);
+    });
+
+    it('目标基地没有自己随从时被拒绝', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'cthulhu_complete_the_ritual', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [makeMinion('m1', 'test_minion', '1', 3, { powerModifier: 0 })],
+                }),
+            ],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1', targetBaseIndex: 0 },
+            } as any,
+            dummyRandom,
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('随从');
+    });
+
+    it('目标基地无随从时被拒绝', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'cthulhu_complete_the_ritual', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({ defId: 'b1' })],
+        });
+
+        const result = runCommand(
+            makeMatchState(state),
+            {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'a1', targetBaseIndex: 0 },
+            } as any,
+            dummyRandom,
+        );
+
+        expect(result.success).toBe(false);
+        expect(result.error).toContain('随从');
+    });
+});
+
 describe('special_madness onPlay 与终局 VP', () => {
     it('打出时创建抽牌 / 返回牌堆二选一 prompt', () => {
         const state = makeState({

@@ -7,10 +7,9 @@
 
 import { describe, it, expect, beforeAll } from 'vitest';
 import type { SmashUpCore, PlayerState, MinionOnBase, BaseInPlay, CardToDeckBottomEvent } from '../domain/types';
-import { SU_EVENTS } from '../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../domain/types';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { clearRegistry, resolveAbility } from '../domain/abilityRegistry';
-import type { AbilityContext } from '../domain/abilityRegistry';
+import { clearRegistry } from '../domain/abilityRegistry';
 import { clearBaseAbilityRegistry, triggerBaseAbility } from '../domain/baseAbilities';
 import { clearPowerModifierRegistry } from '../domain/ongoingModifiers';
 import { clearOngoingEffectRegistry } from '../domain/ongoingEffects';
@@ -18,12 +17,14 @@ import { clearInteractionHandlers } from '../domain/abilityInteractionHandlers';
 import type { RandomFn } from '../../../engine/types';
 import {
     getFirstPrompt,
+    makeMatchState,
     getPromptHandlerData,
     getPromptSourceId,
     invokeRegisteredInteractionHandlerContract,
     respondToPromptOption,
     withOnlyCurrentPrompt,
 } from './helpers';
+import { runCommand } from './testRunner';
 
 function makeMinion(uid: string, defId: string, controller: string, power: number, overrides: Partial<MinionOnBase> = {}): MinionOnBase {
     return {
@@ -62,19 +63,28 @@ function makeState(overrides?: Partial<SmashUpCore>): SmashUpCore {
 const dummyRandom: RandomFn = { random: () => 0.5, shuffle: <T>(arr: T[]) => [...arr], d: () => 1, range: (min: number) => min };
 
 function triggerElderThingOnPlay(state: SmashUpCore) {
-    const matchState = { core: state, sys: { phase: 'playCards', interaction: { current: undefined, queue: [] } } } as any;
-    const executor = resolveAbility('elder_thing_elder_thing', 'onPlay');
-    expect(executor).toBeDefined();
-    return executor!({
-        state,
-        matchState,
+    const playState: SmashUpCore = {
+        ...state,
+        players: {
+            ...state.players,
+            '0': {
+                ...state.players['0'],
+                hand: [
+                    ...state.players['0'].hand.filter(card => card.uid !== 'et-1'),
+                    { uid: 'et-1', defId: 'elder_thing_elder_thing', type: 'minion', owner: '0' },
+                ],
+            },
+        },
+        bases: state.bases.map((base, index) => index === 0
+            ? { ...base, minions: base.minions.filter(minion => minion.uid !== 'et-1') }
+            : base),
+    };
+
+    return runCommand(makeMatchState(playState), {
+        type: SU_COMMANDS.PLAY_MINION,
         playerId: '0',
-        cardUid: 'et-1',
-        defId: 'elder_thing_elder_thing',
-        baseIndex: 0,
-        random: dummyRandom,
-        now: 0,
-    } as AbilityContext);
+        payload: { cardUid: 'et-1', baseIndex: 0 },
+    } as any, dummyRandom);
 }
 
 beforeAll(() => {
@@ -102,7 +112,7 @@ describe('远古之物：消灭两个随从选择权', () => {
 
         const initial = triggerElderThingOnPlay(state);
         const result = respondToPromptOption(
-            initial.matchState!,
+            initial.finalState,
             option => option.value?.choice === 'destroy',
             'elder thing destroy choice',
             '0',
@@ -129,7 +139,7 @@ describe('远古之物：消灭两个随从选择权', () => {
 
         const initial = triggerElderThingOnPlay(state);
         const result = respondToPromptOption(
-            initial.matchState!,
+            initial.finalState,
             option => option.value?.choice === 'destroy',
             'elder thing destroy choice',
             '0',
@@ -148,10 +158,10 @@ describe('远古之物：消灭两个随从选择权', () => {
         const state = makeState({ bases: [base] });
 
         const initial = triggerElderThingOnPlay(state);
-        const prompt = getFirstPrompt(initial.matchState!);
+        const prompt = getFirstPrompt(initial.finalState);
         const result = invokeRegisteredInteractionHandlerContract(
             getPromptSourceId(prompt),
-            initial.matchState!,
+            initial.finalState,
             '0',
             { choice: 'destroy' },
             getPromptHandlerData(prompt),
@@ -175,7 +185,7 @@ describe('远古之物：消灭两个随从选择权', () => {
 
         const initial = triggerElderThingOnPlay(state);
         const afterChoice = respondToPromptOption(
-            initial.matchState!,
+            initial.finalState,
             option => option.value?.choice === 'destroy',
             'elder thing destroy choice',
             '0',
@@ -222,7 +232,7 @@ describe('远古之物：消灭两个随从选择权', () => {
 
         const initial = triggerElderThingOnPlay(state);
         const result = respondToPromptOption(
-            initial.matchState!,
+            initial.finalState,
             option => option.value?.choice === 'deckbottom',
             'elder thing deckbottom choice',
             '0',
@@ -251,7 +261,7 @@ describe('远古之物：消灭两个随从选择权', () => {
         });
         const initial = triggerElderThingOnPlay(state);
         const liveResult = respondToPromptOption(
-            initial.matchState!,
+            initial.finalState,
             option => option.value?.choice === 'deckbottom',
             'elder thing deckbottom choice',
             '0',
@@ -261,7 +271,7 @@ describe('远古之物：消灭两个随从选择权', () => {
         expect(liveDeckBottomEvents).toHaveLength(1);
 
         const staleResult = respondToPromptOption(
-            withOnlyCurrentPrompt({ core: staleState, sys: initial.matchState!.sys } as any, getFirstPrompt(initial.matchState!)),
+            withOnlyCurrentPrompt({ core: staleState, sys: initial.finalState.sys } as any, getFirstPrompt(initial.finalState)),
             option => option.value?.choice === 'deckbottom',
             'elder thing stale deckbottom choice',
             '0',

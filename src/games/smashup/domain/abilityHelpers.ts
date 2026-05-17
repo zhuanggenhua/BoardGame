@@ -1115,6 +1115,18 @@ export function buildStandardDrawEvents(
     return events;
 }
 
+export function buildStandardDrawEventsFromRuntimeContext(
+    runtime: {
+        state: SmashUpCore | MatchState<SmashUpCore>;
+        random: RandomFn;
+        timestamp: number;
+    },
+    playerId: PlayerId,
+    count: number,
+): SmashUpEvent[] {
+    return buildStandardDrawEvents(runtime.state, playerId, count, runtime.random, runtime.timestamp);
+}
+
 export function resolveExtraPlayTiming(matchState?: Pick<MatchState<SmashUpCore>, 'sys'>): 'banked' | 'immediate' {
     return matchState?.sys?.phase === 'playCards' ? 'banked' : 'immediate';
 }
@@ -1604,7 +1616,13 @@ export function buildMinionTargetOptions(
         /** 是否额外尊重“行动卡保护”（如烟雾弹） */
         respectActionProtection?: boolean;
     }
-): EnginePromptOption<{ minionUid: string; baseIndex: number; defId: string }>[] {
+): EnginePromptOption<{
+    minionUid: string;
+    baseIndex: number;
+    defId: string;
+    minionDefId: string;
+    baseDefId?: string;
+}>[] {
     const {
         state,
         sourcePlayerId,
@@ -1643,7 +1661,13 @@ export function buildMinionTargetOptions(
             return {
                 id: `minion-${i}`,
                 label: c.label,
-                value: { minionUid: c.uid, baseIndex: c.baseIndex, defId: c.defId },
+                value: {
+                    minionUid: c.uid,
+                    baseIndex: c.baseIndex,
+                    defId: c.defId,
+                    minionDefId: c.defId,
+                    baseDefId: state.bases[c.baseIndex]?.defId,
+                },
                 _source: 'field' as const,
             };
         }
@@ -1651,7 +1675,13 @@ export function buildMinionTargetOptions(
         return {
             id: `minion-${i}`,
             label: c.label,
-            value: { minionUid: c.uid, baseIndex: c.baseIndex, defId: c.defId },
+            value: {
+                minionUid: c.uid,
+                baseIndex: c.baseIndex,
+                defId: c.defId,
+                minionDefId: c.defId,
+                baseDefId: state.bases[c.baseIndex]?.defId,
+            },
             _source: 'field' as const,
             _ai: buildMinionTargetAiHint({
                 minion,

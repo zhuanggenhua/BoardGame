@@ -56,15 +56,10 @@ describe('Bug: Igor 被 base_rlyeh 消灭时触发两次', () => {
         // 1. Igor 的 onDestroy（选择放置+1指示物的随从）
         // 2. base_crypt 的 onMinionDestroyed（消灭者选择放置+1指示物的随从）
         expect(result.matchState).toBeDefined();
-        
-        console.log('=== base_crypt + Igor scenario ===');
+
         const igorInteractions = getPromptsBySourceId(result.matchState!, 'frankenstein_igor');
         const cryptInteractions = getPromptsBySourceId(result.matchState!, 'base_crypt');
-        console.log('Total business prompts:', igorInteractions.length + cryptInteractions.length);
-        
-        console.log('Igor interactions:', igorInteractions.length);
-        console.log('Crypt interactions:', cryptInteractions.length);
-        
+
         // 预期：Igor 触发一次，base_crypt 触发一次
         expect(igorInteractions.length).toBe(1);
         expect(cryptInteractions.length).toBe(1);

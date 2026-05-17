@@ -248,6 +248,8 @@ export interface PendingAttack {
     attackDiceValues?: number[];
     /** 攻击掷骰阶段结束时的 Token 选择是否已完成（暴击/精准） */
     offensiveRollEndTokenResolved?: boolean;
+    /** 树精神圣防止即将受到的负面状态的可选响应决定。 */
+    treantDivinePreventDebuffChoice?: 'prevent' | 'skip';
     /**
      * Loaded 奖励骰的临时加成（由攻击修正卡在本次攻击内挂载）
      * 例：Wild West 在你花费 Loaded 时允许重掷一次，并在奖励骰收口后追加 +1。
@@ -656,6 +658,11 @@ export interface DiceThroneCore {
      * 额外攻击产生的 offensiveRoll 不覆盖该值。
      */
     offensiveRollAttemptsThisTurn?: number;
+    /**
+     * 树精树灵主动效果每回合每种限用一次。
+     * key: playerId -> tokenId -> true。
+     */
+    treantSpiritSpentThisTurn?: Record<PlayerId, Record<string, true>>;
 }
 
 // ============================================================================

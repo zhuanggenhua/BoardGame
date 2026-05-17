@@ -95,7 +95,6 @@ describe('BASE_SCORED 正常流程验证（isRandomSynced=true）', () => {
         const serverEntries = getEventStreamEntries(afterP1Pass.state);
         const serverScored = serverEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
         expect(serverScored.length).toBeGreaterThan(0);
-        console.log('服务端 BASE_SCORED 数量:', serverScored.length, 'IDs:', serverScored.map(e => e.id));
 
         // ── 创建 P1 的乐观引擎（模拟 isRandomSynced = true）──
         const engine = createOptimisticEngine({
@@ -118,56 +117,37 @@ describe('BASE_SCORED 正常流程验证（isRandomSynced=true）', () => {
 
         // ── state:update: P0 RESPONSE_PASS 确认（stateID: 3）──
         const afterP0Reconcile = engine.reconcile(afterP0Pass.state, { stateID: 3, lastCommandPlayerId: '0' });
-        console.log('P0 PASS reconcile:', { didRollback: afterP0Reconcile.didRollback });
 
         // 记录 P0 PASS 后的 EventStream maxId（模拟 useEventStreamCursor 的 cursor）
         const entriesAfterP0 = getEventStreamEntries(afterP0Reconcile.stateToRender as MatchState<SmashUpCore>);
         const cursorAfterP0 = entriesAfterP0.length > 0 ? entriesAfterP0[entriesAfterP0.length - 1].id : -1;
-        console.log('P0 PASS 后 cursor:', cursorAfterP0, 'entries:', entriesAfterP0.length);
 
         // ── P1 dispatch RESPONSE_PASS（isRandomSynced=true，应该被预测）──
         const processResult = engine.processCommand('RESPONSE_PASS', undefined, '1');
-        console.log('P1 processCommand:', {
-            stateToRender: processResult.stateToRender ? '有预测' : 'null',
-            animationMode: processResult.animationMode,
-            shouldSend: processResult.shouldSend,
-        });
 
         // 关键：isRandomSynced=true 时，RESPONSE_PASS 应该被预测（useProbe=false）
         // 且 animationMode = 'optimistic'（已在 animationMode 配置中声明）
-        if (processResult.stateToRender) {
-            console.log('✅ 命令被预测了（isRandomSynced=true）');
-            const predictedEntries = getEventStreamEntries(processResult.stateToRender as MatchState<SmashUpCore>);
-            const predictedScored = predictedEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-            console.log('预测状态 entries:', predictedEntries.length, 'BASE_SCORED:', predictedScored.length);
-            // optimistic 模式下，预测状态保留了 EventStream，BASE_SCORED 应该存在
-            expect(processResult.animationMode).toBe('optimistic');
-            expect(predictedScored.length).toBeGreaterThan(0); // optimistic 保留了新事件
-        } else {
-            console.log('❌ 命令未被预测（可能 pipeline 失败）');
-        }
+        expect(processResult.stateToRender).toBeTruthy();
+        const predictedEntries = getEventStreamEntries(processResult.stateToRender as MatchState<SmashUpCore>);
+        const predictedScored = predictedEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
+        // optimistic 模式下，预测状态保留了 EventStream，BASE_SCORED 应该存在
+        expect(processResult.animationMode).toBe('optimistic');
+        expect(predictedScored.length).toBeGreaterThan(0); // optimistic 保留了新事件
 
         // ── 服务端确认 P1 RESPONSE_PASS（stateID: 4）──
         const finalReconcile = engine.reconcile(afterP1Pass.state, {
             stateID: 4,
             lastCommandPlayerId: '1',
         });
-        console.log('P1 PASS reconcile:', {
-            didRollback: finalReconcile.didRollback,
-            watermark: finalReconcile.optimisticEventWatermark,
-            hasPending: engine.hasPendingCommands(),
-        });
 
         // 应用 filterPlayedEvents（如果需要）
         let finalState = finalReconcile.stateToRender as MatchState<SmashUpCore>;
         if (finalReconcile.didRollback && finalReconcile.optimisticEventWatermark !== null) {
-            console.log('⚠️ 应用 filterPlayedEvents，watermark:', finalReconcile.optimisticEventWatermark);
             finalState = filterPlayedEvents(finalState, finalReconcile.optimisticEventWatermark) as MatchState<SmashUpCore>;
         }
 
         const finalEntries = getEventStreamEntries(finalState);
         const finalScored = finalEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        console.log('最终 entries:', finalEntries.length, 'BASE_SCORED:', finalScored.length);
 
         // 核心断言：BASE_SCORED 必须存在
         expect(finalScored.length).toBeGreaterThan(0);
@@ -175,7 +155,6 @@ describe('BASE_SCORED 正常流程验证（isRandomSynced=true）', () => {
         // 模拟 useEventStreamCursor 消费
         const newEntries = finalEntries.filter(e => e.id > cursorAfterP0);
         const newScored = newEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        console.log('cursor 消费后新事件:', newEntries.length, '新 BASE_SCORED:', newScored.length);
 
         // 核心断言：BASE_SCORED 必须存在（可能在 P0 PASS 后已进入 EventStream）
         if (newScored.length === 0) {

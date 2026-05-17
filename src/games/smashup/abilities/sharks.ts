@@ -6,6 +6,7 @@ import {
     buildAbilityFeedback,
     buildBaseTargetOptions,
     buildMinionTargetOptions,
+    buildStandardDrawEventsFromRuntimeContext,
     buildStandardDrawEvents,
     buildValidatedDestroyEvents,
     buildValidatedMoveEvents,
@@ -129,7 +130,8 @@ const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, Sma
         ],
         { sourceId: context.sourceId, targetType: 'minion', autoResolveIfSingle: !context.optional },
     ),
-    onResolve: ({ context, state, playerId, value, timestamp, random }) => {
+    onResolve: (args) => {
+        const { context, state, playerId, value, timestamp } = args;
         const choice = value as MinionChoice;
         if (choice.skip) return { events: [] };
         if (!choice.minionUid || choice.baseIndex === undefined || !choice.defId) return { events: [] };
@@ -139,7 +141,7 @@ const sharksDestroyPromptProgram = createPromptProgram<SharksDestroyContext, Sma
             baseIndex: choice.baseIndex,
         }, context.destroyerId ?? playerId, context.sourceId, timestamp);
         if (context.sourceId === 'sharks_torn_apart') {
-            events.push(...buildStandardDrawEvents(state.core, playerId, 1, random, timestamp));
+            events.push(...buildStandardDrawEventsFromRuntimeContext(args, playerId, 1));
         }
         return { events };
     },

@@ -112,7 +112,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
     damageBuffer: UseVisualStateBufferReturn;
     /** FX 事件 ID → { bufferKey, damage } 映射，供 onEffectImpact 释放 + 触发受击反馈 */
     fxImpactMapRef: React.RefObject<Map<string, { bufferKey: string; damage: number }>>;
-    /** 推进动画队列：Board 层在 onEffectComplete 中调用，播放下一步 */
+    /** 推进动画队列：优先在 impact 时推进，onEffectComplete 仅作兜底 */
     advanceQueue: (completedFxId: string) => void;
 } {
     const {
@@ -365,7 +365,8 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
     }, [fxBus]);
 
     /**
-     * Board 层在 onEffectComplete 中调用：当前步骤动画完成后推进下一步。
+     * Board 层在 onEffectImpact 中优先调用：当前步骤命中后立即推进下一步。
+     * onEffectComplete 仍会调用一次作为兜底。
      * 只在 completedFxId 匹配当前活跃步骤时才推进（避免状态/Token 特效误触发）。
      */
     const advanceQueue = useCallback((completedFxId: string) => {

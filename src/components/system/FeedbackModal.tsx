@@ -7,7 +7,7 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { cn } from '../../lib/utils';
-import { FEEDBACK_API_URL as API_URL } from '../../config/server';
+import { FEEDBACK_API_URL as API_URL, IS_DEV_API_DISABLED } from '../../config/server';
 import { UI_Z_INDEX } from '../../core';
 import { GAME_MANIFEST } from '../../games/manifest.generated';
 import { getLastErrorContext } from '../../lib/feedback/errorContext';
@@ -323,6 +323,10 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
         e.preventDefault();
         if (!content.trim() && !pastedImage) return;
 
+        if (IS_DEV_API_DISABLED) {
+            return;
+        }
+
         setSubmitting(true);
         try {
             // Append image to content as Markdown if present
@@ -630,6 +634,15 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                         />
                     </div>
 
+                    {IS_DEV_API_DISABLED ? (
+                        <div
+                            className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-5 text-amber-900"
+                            data-testid="feedback-api-disabled-banner"
+                        >
+                            {t('hud.feedback.errors.apiDisabled')}
+                        </div>
+                    ) : null}
+
                     </div>
 
                     {/* 提交按钮固定在底部，不随内容滚动 */}
@@ -639,7 +652,7 @@ export const FeedbackModal = ({ onClose, actionLogText, stateSnapshot, runtimeCo
                     )}>
                         <button
                             type="submit"
-                            disabled={submitting || (!content.trim() && !pastedImage)}
+                            disabled={submitting || IS_DEV_API_DISABLED || (!content.trim() && !pastedImage)}
                             className="flex items-center gap-2 px-6 py-2 bg-parchment-brown hover:bg-parchment-brown/90 text-parchment-cream rounded-lg font-bold text-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg"
                         >
                             {submitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}

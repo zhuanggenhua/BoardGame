@@ -33,10 +33,45 @@ const drawCard = (count: number, description: string): AbilityEffect => ({
     timing: 'preDefense',
 });
 
-const heal = (value: number, description: string): AbilityEffect => ({
+const natureTouchCultivate = (description: string): AbilityEffect => ({
     description,
-    action: { type: 'heal', target: 'self', value },
+    action: { type: 'custom', target: 'self', customActionId: 'treant-nature-touch-cultivate' },
     timing: 'preDefense',
+});
+
+const tendCareResolve = (cultivateAmount: number, description: string): AbilityEffect => ({
+    description,
+    action: {
+        type: 'custom',
+        target: 'self',
+        customActionId: 'treant-tend-care-choice',
+        cultivateAmount,
+    },
+    timing: 'preDefense',
+});
+
+const forestAwakensResolve = (description: string): AbilityEffect => ({
+    description,
+    action: { type: 'custom', target: 'self', customActionId: 'treant-forest-awakens-choice' },
+    timing: 'preDefense',
+});
+
+const shatteringFistChoice = (description: string): AbilityEffect => ({
+    description,
+    action: { type: 'custom', target: 'self', customActionId: 'treant-shattering-fist-choice' },
+    timing: 'preDefense',
+});
+
+const shatteringFistCultivate = (description: string): AbilityEffect => ({
+    description,
+    action: { type: 'custom', target: 'self', customActionId: 'treant-shattering-fist-3-cultivate' },
+    timing: 'preDefense',
+});
+
+const quietCultivationResolve = (description: string): AbilityEffect => ({
+    description,
+    action: { type: 'custom', target: 'self', customActionId: 'treant-quiet-cultivation' },
+    timing: 'immediate',
 });
 
 const SHATTERING_FIST: AbilityDef = {
@@ -46,9 +81,9 @@ const SHATTERING_FIST: AbilityDef = {
     description: abilityText('shattering-fist', 'description'),
     sfxKey: TREANT_SFX_HEAVY,
     variants: [
-        { id: 'shattering-fist-3', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 3 } }, effects: [damage(5, '造成 5 点伤害。')], priority: 1 },
-        { id: 'shattering-fist-4', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 4 } }, effects: [damage(6, '造成 6 点伤害。')], priority: 2 },
-        { id: 'shattering-fist-5', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 5 } }, effects: [damage(7, '造成 7 点伤害。')], priority: 3 },
+        { id: 'shattering-fist-3', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 3 } }, effects: [shatteringFistChoice('可弃掉 1 树灵施加刺藤。'), damage(5, '造成 5 点伤害。')], priority: 1 },
+        { id: 'shattering-fist-4', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 4 } }, effects: [shatteringFistChoice('可弃掉 1 树灵施加刺藤。'), damage(6, '造成 6 点伤害。')], priority: 2 },
+        { id: 'shattering-fist-5', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 5 } }, effects: [shatteringFistChoice('可弃掉 1 树灵施加刺藤。'), damage(7, '造成 7 点伤害。')], priority: 3 },
     ],
 };
 
@@ -57,9 +92,9 @@ export const SHATTERING_FIST_2: AbilityDef = {
     name: abilityText('shattering-fist-2', 'name'),
     description: abilityText('shattering-fist-2', 'description'),
     variants: [
-        { id: 'shattering-fist-2-3', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 3 } }, effects: [damage(6, '造成 6 点伤害。')], priority: 1 },
-        { id: 'shattering-fist-2-4', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 4 } }, effects: [damage(7, '造成 7 点伤害。')], priority: 2 },
-        { id: 'shattering-fist-2-5', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 5 } }, effects: [damage(8, '造成 8 点伤害。')], priority: 3 },
+        { id: 'shattering-fist-2-3', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 3 } }, effects: [grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'), damage(5, '造成 5 点伤害。')], priority: 1 },
+        { id: 'shattering-fist-2-4', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 4 } }, effects: [grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'), damage(6, '造成 6 点伤害。')], priority: 2 },
+        { id: 'shattering-fist-2-5', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 5 } }, effects: [grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'), damage(7, '造成 7 点伤害。')], priority: 3 },
     ],
 };
 
@@ -68,9 +103,9 @@ export const SHATTERING_FIST_3: AbilityDef = {
     name: abilityText('shattering-fist-3', 'name'),
     description: abilityText('shattering-fist-3', 'description'),
     variants: [
-        { id: 'shattering-fist-3-3', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 3 } }, effects: [grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'), damage(6, '造成 6 点伤害。')], priority: 1 },
-        { id: 'shattering-fist-3-4', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 4 } }, effects: [grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'), damage(7, '造成 7 点伤害。')], priority: 2 },
-        { id: 'shattering-fist-3-5', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 5 } }, effects: [grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'), damage(8, '造成 8 点伤害。')], priority: 3 },
+        { id: 'shattering-fist-3-3', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 3 } }, effects: [grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'), shatteringFistCultivate('若投出 3 个相同数字，养成 1 树灵。'), damage(5, '造成 5 点伤害。')], priority: 1 },
+        { id: 'shattering-fist-3-4', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 4 } }, effects: [grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'), shatteringFistCultivate('若投出 3 个相同数字，养成 1 树灵。'), damage(6, '造成 6 点伤害。')], priority: 2 },
+        { id: 'shattering-fist-3-5', trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 5 } }, effects: [grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'), shatteringFistCultivate('若投出 3 个相同数字，养成 1 树灵。'), damage(7, '造成 7 点伤害。')], priority: 3 },
     ],
 };
 
@@ -83,9 +118,7 @@ const TEND_CARE: AbilityDef = {
     trigger: { type: 'diceSet', faces: { [FACE.LEAF]: 2, [FACE.SPIRIT]: 2 } },
     effects: [
         drawCard(1, '抽 1 张牌。'),
-        grantToken('self', TOKEN_IDS.TREANT_SEEDLING, 3, '养成 3 树灵。'),
-        grantToken('self', TOKEN_IDS.LIFE_SAP, 1, '获得 1 个生命源泉。'),
-        grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'),
+        tendCareResolve(3, '养成 3 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。'),
     ],
 };
 
@@ -95,10 +128,7 @@ export const TEND_CARE_2: AbilityDef = {
     description: abilityText('tend-care-2', 'description'),
     effects: [
         drawCard(1, '抽 1 张牌。'),
-        grantToken('self', TOKEN_IDS.TREANT_SEEDLING, 3, '养成 3 树灵。'),
-        grantToken('self', TOKEN_IDS.TREANT_SAPLING, 1, '额外养成 1 个木苗树灵。'),
-        grantToken('self', TOKEN_IDS.LIFE_SAP, 1, '获得 1 个生命源泉。'),
-        grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'),
+        tendCareResolve(4, '养成 4 树灵；选择 1 名玩家获得生命源泉；选择 1 名对手施加刺藤。'),
     ],
 };
 
@@ -134,7 +164,7 @@ const NATURE_TOUCH: AbilityDef = {
     sfxKey: TREANT_SFX_GROWTH,
     trigger: { type: 'diceSet', faces: { [FACE.SPIRIT]: 4 } },
     effects: [
-        grantToken('self', TOKEN_IDS.TREANT_SEEDLING, 2, '养成 2 树灵。'),
+        natureTouchCultivate('养成 2 树灵，并按养成后的树灵数量增加伤害。'),
         damage(5, '造成 5 点不可防御伤害。', { unblockable: true }),
     ],
 };
@@ -144,7 +174,7 @@ export const NATURE_TOUCH_2: AbilityDef = {
     name: abilityText('nature-touch-2', 'name'),
     description: abilityText('nature-touch-2', 'description'),
     effects: [
-        grantToken('self', TOKEN_IDS.TREANT_SEEDLING, 2, '养成 2 树灵。'),
+        natureTouchCultivate('养成 2 树灵，并按养成后的树灵数量增加伤害。'),
         damage(6, '造成 6 点不可防御伤害。', { unblockable: true }),
     ],
 };
@@ -155,7 +185,7 @@ const QUIET_CULTIVATION: AbilityDef = {
     type: 'passive',
     description: abilityText('quiet-cultivation', 'description'),
     trigger: { type: 'phaseStart', phase: 'upkeep' },
-    effects: [grantToken('self', TOKEN_IDS.TREANT_SEEDLING, 1, '维持阶段养成 1 树灵。', 'immediate')],
+    effects: [quietCultivationResolve('维持阶段养成 1 树灵。')],
 };
 
 const WILD_GROWTH: AbilityDef = {
@@ -166,8 +196,12 @@ const WILD_GROWTH: AbilityDef = {
     sfxKey: TREANT_SFX_GROWTH,
     trigger: { type: 'diceSet', faces: { [FACE.BRANCH]: 2, [FACE.LEAF]: 3 } },
     effects: [
+        {
+            description: '可移除至多 2 树灵加伤，并可弃生命源泉使攻击不可防御。',
+            action: { type: 'custom', target: 'self', customActionId: 'treant-wild-growth-choice' },
+            timing: 'preDefense',
+        },
         damage(2, '造成 2 点伤害。'),
-        heal(1, '获得 1 点治疗。'),
     ],
 };
 
@@ -176,8 +210,12 @@ export const WILD_GROWTH_2: AbilityDef = {
     name: abilityText('wild-growth-2', 'name'),
     description: abilityText('wild-growth-2', 'description'),
     effects: [
+        {
+            description: '可移除至多 2 树灵加伤，并可弃生命源泉使攻击不可防御。',
+            action: { type: 'custom', target: 'self', customActionId: 'treant-wild-growth-choice' },
+            timing: 'preDefense',
+        },
         damage(4, '造成 4 点伤害。'),
-        heal(1, '获得 1 点治疗。'),
     ],
 };
 
@@ -191,16 +229,12 @@ const ROOTED: AbilityDef = {
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 3 },
     effects: [
         {
-            description: '防御掷骰：树枝/树叶/树灵分别产生不同防御收益。',
+            description: '防御掷骰：树枝与树灵防止伤害；双树叶养成；双树灵选择玩家获得生命源泉。',
             action: {
-                type: 'rollDie',
+                type: 'custom',
                 target: 'self',
                 diceCount: 3,
-                conditionalEffects: [
-                    { face: FACE.BRANCH, bonusDamage: 1 },
-                    { face: FACE.LEAF, grantToken: { tokenId: TOKEN_IDS.TREANT_SEEDLING, value: 1 } },
-                    { face: FACE.SPIRIT, grantToken: { tokenId: TOKEN_IDS.LIFE_SAP, value: 1 } },
-                ],
+                customActionId: 'treant-rooted-defense',
             },
             timing: 'withDamage',
         },
@@ -214,16 +248,12 @@ export const ROOTED_2: AbilityDef = {
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 4 },
     effects: [
         {
-            description: '防御掷 4 骰：树枝/树叶/树灵分别产生不同防御收益。',
+            description: '防御掷 4 骰：树枝与树灵防止伤害；双树叶养成；双树灵选择玩家获得生命源泉。',
             action: {
-                type: 'rollDie',
+                type: 'custom',
                 target: 'self',
                 diceCount: 4,
-                conditionalEffects: [
-                    { face: FACE.BRANCH, bonusDamage: 1 },
-                    { face: FACE.LEAF, grantToken: { tokenId: TOKEN_IDS.TREANT_SEEDLING, value: 1 } },
-                    { face: FACE.SPIRIT, grantToken: { tokenId: TOKEN_IDS.LIFE_SAP, value: 1 } },
-                ],
+                customActionId: 'treant-rooted-defense',
             },
             timing: 'withDamage',
         },
@@ -239,9 +269,7 @@ const FOREST_AWAKENS: AbilityDef = {
     sfxKey: TREANT_SFX_ULTIMATE,
     trigger: { type: 'diceSet', faces: { [FACE.SPIRIT]: 5 } },
     effects: [
-        grantToken('self', TOKEN_IDS.LIFE_SAP, 1, '获得 1 个生命源泉。'),
-        grantToken('self', TOKEN_IDS.TREANT_SEEDLING, 5, '养成 5 树灵。'),
-        grantToken('opponent', TOKEN_IDS.THORN, 1, '对手获得 1 个刺藤。'),
+        forestAwakensResolve('你和 1 名队友获得生命源泉；养成 5 树灵；施加刺藤。'),
         damage(10, '造成 10 点伤害。'),
     ],
 };

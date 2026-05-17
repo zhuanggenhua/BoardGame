@@ -53,6 +53,31 @@ import { getUsableTokensForOffensiveRollEnd } from './tokenResponse';
 import { getPlayerAbilityBaseDamage, playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
 import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
+import { registerChoiceEffectHandler } from './choiceEffects';
+import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
+
+const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
+const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
+
+registerChoiceEffectHandler(TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID, ({ state }) => {
+    if (!state.pendingAttack) return undefined;
+    return {
+        pendingAttack: {
+            ...state.pendingAttack,
+            treantDivinePreventDebuffChoice: 'prevent',
+        },
+    };
+});
+
+registerChoiceEffectHandler(TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID, ({ state }) => {
+    if (!state.pendingAttack) return undefined;
+    return {
+        pendingAttack: {
+            ...state.pendingAttack,
+            treantDivinePreventDebuffChoice: 'skip',
+        },
+    };
+});
 
 const pendingAttackNeedsTargetingRoll = (core: DiceThroneCore): boolean => {
     const pendingAttack = core.pendingAttack;
@@ -120,6 +145,21 @@ function resolvedOffensiveRollEndTokenChoiceThisRound(events: GameEvent[]): bool
 
         return resolvedChoice.customIds.some((customId) => customId.startsWith('use-'))
             && resolvedChoice.customIds.includes('skip');
+    });
+}
+
+function resolvedTreantDivinePreventDebuffChoiceThisRound(events: GameEvent[]): boolean {
+    return events.some((event) => {
+        const resolvedChoice = extractResolvedInteractionChoiceShape(event);
+        if (!resolvedChoice) {
+            return false;
+        }
+
+        return resolvedChoice.sourceId === TOKEN_IDS.TREANT_DIVINE
+            && resolvedChoice.customIds.some((customId) =>
+                customId === TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID
+                || customId === TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID
+            );
     });
 }
 
@@ -192,15 +232,46 @@ function preventIncomingDebuffsWithTreantDivine(
     sourceCommandType: string,
     timestamp: number,
 ): GameEvent[] {
-    const defenderId = core.pendingAttack?.defenderId;
+    const pendingAttack = core.pendingAttack;
+    const defenderId = pendingAttack?.defenderId;
     if (!defenderId) return generatedEvents;
 
     const defender = core.players[defenderId];
     const divineStacks = defender?.tokens?.[TOKEN_IDS.TREANT_DIVINE] ?? 0;
     if (divineStacks <= 0) return generatedEvents;
+    if (hasSpentTreantTreeSpiritThisTurn(core, defenderId, TOKEN_IDS.TREANT_DIVINE)) return generatedEvents;
 
     const hasIncomingDebuff = generatedEvents.some(event => isIncomingDebuffApplication(core, defenderId, event));
     if (!hasIncomingDebuff) return generatedEvents;
+
+    if (pendingAttack?.treantDivinePreventDebuffChoice === 'skip') {
+        return generatedEvents;
+    }
+
+    if (pendingAttack?.treantDivinePreventDebuffChoice !== 'prevent') {
+        return [{
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                playerId: defenderId,
+                sourceAbilityId: TOKEN_IDS.TREANT_DIVINE,
+                titleKey: 'choices.treantDivinePreventDebuff.title',
+                options: [
+                    {
+                        value: 1,
+                        customId: TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID,
+                        labelKey: 'choices.treantDivinePreventDebuff.prevent',
+                    },
+                    {
+                        value: 0,
+                        customId: TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID,
+                        labelKey: 'choices.treantDivinePreventDebuff.skip',
+                    },
+                ],
+            },
+            sourceCommandType,
+            timestamp,
+        } as ChoiceRequestedEvent];
+    }
 
     const filteredEvents = generatedEvents.filter(event => !isIncomingDebuffApplication(core, defenderId, event));
     return [
@@ -211,6 +282,7 @@ function preventIncomingDebuffsWithTreantDivine(
                 tokenId: TOKEN_IDS.TREANT_DIVINE,
                 amount: 1,
                 newTotal: Math.max(0, divineStacks - 1),
+                sourceAbilityId: TOKEN_IDS.TREANT_DIVINE,
             },
             sourceCommandType,
             timestamp,
@@ -664,7 +736,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const activePlayer = core.players[core.activePlayerId];
             const thornStacks = activePlayer?.tokens?.[TOKEN_IDS.THORN] ?? 0;
             if (thornStacks > 0) {
-                const extraRollAttempts = Math.max(0, core.rollCount - 1);
+                const extraRollAttempts = Math.min(Math.max(0, core.rollCount - 1), 2);
                 events.push({
                     type: 'TOKEN_CONSUMED',
                     payload: {
@@ -1424,6 +1496,7 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
             const hasSysInteractionResolved = events.some(e => e.type === 'SYS_INTERACTION_RESOLVED');
             const resolvedDefenderSelectionThisRound = events.some(e => e.type === 'DEFENDER_SELECTION_RESOLVED');
             const resolvedOffensiveRollEndChoice = resolvedOffensiveRollEndTokenChoiceThisRound(events);
+            const resolvedTreantDivinePreventDebuffChoice = resolvedTreantDivinePreventDebuffChoiceThisRound(events);
             // 时序保护：当 SYS_INTERACTION_RESOLVED 在 events 里，且 offensiveRoll 阶段有
             // pendingAttack 时，说明本轮 DiceThroneEventSystem 可能产生了 CHOICE_RESOLVED，
             // 但该事件还没有被 reduce 进 core（reduce 在所有系统 afterEvents 执行完后才发生）。
@@ -1447,13 +1520,19 @@ export const diceThroneFlowHooks: FlowHooks<DiceThroneCore> = {
                 && core.pendingAttack !== undefined
                 && core.pendingAttack.targetingSelectionPending === true;
 
+            const pendingTreantDivinePreventDebuffChoice = hasSysInteractionResolved
+                && phase === 'offensiveRoll'
+                && resolvedTreantDivinePreventDebuffChoice
+                && core.pendingAttack !== null
+                && core.pendingAttack !== undefined;
+
             const shouldAttemptAutoContinue = state.sys.flowHalted
                 || hasSysInteractionResolved
                 || resolvedDefenderSelectionThisRound
                 || hasTokenResponseClosed;
             if (!shouldAttemptAutoContinue) return undefined;
             
-            if (!hasActiveInteraction && !hasActiveResponseWindow && !hasPendingDamage && !hasPendingBonusDice && !pendingOffensiveTokenChoice && !pendingTargetingChoice) {
+            if (!hasActiveInteraction && !hasActiveResponseWindow && !hasPendingDamage && !hasPendingBonusDice && !pendingOffensiveTokenChoice && !pendingTargetingChoice && !pendingTreantDivinePreventDebuffChoice) {
                 // autoContinue 的 playerId 必须与 getCurrentPlayerId 返回值一致，
                 // 否则 FlowSystem.afterEvents 中的 player_mismatch 校验会拒绝推进。
                 // defensiveRoll 阶段由防御方（getRollerId）推进，offensiveRoll 由进攻方推进。

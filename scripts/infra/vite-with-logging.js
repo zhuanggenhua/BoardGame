@@ -162,8 +162,8 @@ if (shouldForceInline) {
       env: {
         ...process.env,
         FORCE_COLOR: '1',
-        // 在 Playwright global-setup 的 detached 启动链里没有可交互 stdin；给 Vite 标记 CI，避免它因 stdin 结束而立刻退出。
-        CI: process.env.CI || '1',
+        // Vite v7 只把 CI === "true" 视为禁用 stdin end 关服；"1" 仍会被当作非 CI。
+        CI: 'true',
       },
     }));
   } catch (error) {

@@ -192,12 +192,7 @@ describe('便衣忍者交互 Bug 复现', () => {
             ],
         });
 
-        console.log('=== Final State ===');
-        console.log('specialLimitUsed:', result.finalState.core.specialLimitUsed);
         const prompt = getSimpleChoicePrompt(result.finalState, 'ninja_hidden_ninja');
-        console.log('interaction prompt:', prompt);
-        console.log('interaction.queue:', result.finalState.sys.interaction?.queue);
-        console.log('hand:', result.finalState.core.players['0'].hand.map(c => ({ uid: c.uid, defId: c.defId, type: c.type })));
 
         // 验证：specialLimitUsed 应该被记录
         expect(result.finalState.core.specialLimitUsed).toEqual({ ninja_hidden_ninja: [0] });

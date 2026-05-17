@@ -2,6 +2,8 @@
 
 ## 已确认事实
 
+- `killer_plant_water_lily` 这轮把一个很典型的测试脆弱点钉死了：旧 `expansionOngoing.test.ts` 自带的本地 `makeState` 默认塞了牌库，所以“控制者回合开始抽 1 牌”在旧文件里天然满足前提；迁到共享 `helpers.makeState` 后，默认牌库是空的，测试却没有显式声明“牌库里有可抽卡”，于是看起来像实现坏了，实际是测试夹具把业务前提藏在旧 helper 里。
+- 这类问题不能只通过“把 expected 改绿”处理。真正该固化的不变量是：**凡是验证 draw/draw-if-available 这类行为的测试，都要显式写出牌库/弃牌堆前提，而不是依赖某个局部工厂函数的隐式默认值。** 这正是用户抱怨“每次重构都要改测试”的根因之一。
 - `ninja_hidden_ninja consumesNormalLimit` 这条红灯再次证明：fake prompt 夹具不是“更快的 seam”，而是另一套不受系统合同保护的伪实现。`SimpleChoiceSystem` 现在依赖 runtime prompt 上的 `availableOptions` 语义，手工塞一个只带 `options` / `data.sourceId` 的 current prompt，会在 `respondToPrompt(...)` 时直接炸在系统层。对这类业务交互，最稳的入口仍是能力 executor / 真实命令链产出的 prompt。
 - `trickster_brownie` 和 Hill 这两条一起说明，`control_change` 类 affect 没有单一“永远正确”的 controller 口径：Hill 需要看到变更后的 `toControllerId` 才能判断“现在由谁控制”；Brownie 在“被对手卡牌影响”这个语义上又需要知道受害方是谁，因此 `control_change` 分支应优先消费原始事件里的 `fromControllerId`。正确做法不是回滚全局 affect 修复，而是让具体能力在需要时读取 `affectEvent`。
 - 本地测试 helper 也要对齐真实 reducer。`triggerBrownieFromEvent(...)` 之前只把 `buildAffectRecords(...)` 的结果直接灌进 `fireTriggers(...)`，漏掉了 reducer 实际会传的 `affectEvent` 与 `affectBatchTargets`，导致测试无法覆盖到基于原始影响事件的 trigger 语义。这类 helper 如果比生产链少半截上下文，就会把“实现红灯”和“测试夹具失真”混在一起。
@@ -86,12 +88,26 @@
 - `multi-base-afterscoring-bug.test.ts` 说明复杂 afterScoring 链路也不能例外：多基地计分、海盗王移动、托尔图加、海盗大副、便衣忍者、四人压力链都能用“当前业务 prompt + 业务 option + respondCommand”表达；测试仍覆盖重复计分防线，但不再把 `asSimpleChoice(current)` 和 `SYS_INTERACTION_RESPOND` 写进每个步骤。
 - `factionAbilities.test.ts` 这轮不是只改表象：Trickster / Pirates / Ninjas / Dinosaurs / Robots / Wizards / immediate extra action / Aliens 的旧测试仍验证原业务行为，但 prompt 获取、候选读取、动态 optionsGenerator、响应命令与无 prompt 断言已经统一走 prompt facade；目标文件旧内部耦合扫描 0 命中，46 条用例仍通过。
 - 清理 warning 时短暂删错 `matchState` 也反向证明了门禁价值：facade 迁移后测试失败点会集中在“是否有公开行为状态可传入 facade”，而不是到处追 `current.data` 字段；这类失败必须按语义恢复状态输入，不能为了 eslint 把行为断言削掉。
+- `shayuFactionAbilities.test.ts` 进一步暴露出另一类高维护成本结构：**按扩展包/组合包命名的多派系混装文件**。它虽然不是 `new*` / `misc` 这种显眼垃圾桶，但把鲨鱼、龙卷风、神话希腊三个完全独立的派系行为挂在一个 shayu 入口下，本质上仍然在冲淡行为边界。
+- `shayuComprehensiveBehavior.test.ts` 说明“综合审计补充”也不能天然豁免结构约束。文件里的 14 条用例可以清晰归到 3 个派系行为入口和 3 个基地行为入口，并不存在一个必须跨派系共住的共享机制；继续保留 shayu 入口，只会让后续补测试的人继续在“该进哪儿”上摇摆。
+- 这两类 shayu 文件的正确收口方式已经验证出来：
+  - 派系行为归位到 `abilities/sharks.test.ts`、`abilities/tornados.test.ts`、`abilities/mythic-greeks.test.ts`
+  - 基地行为归位到 `bases/the-deep-base.test.ts`、`bases/trailer-park-base.test.ts`、`bases/tornado-alley-base.test.ts`
+  - 删除 `shayuFactionAbilities.test.ts` 与 `shayuComprehensiveBehavior.test.ts` 旧入口，避免形成“已拆一部分，但旧入口还在”的双入口债务
+- 这次收口不是只换文件名。验证证据是：新增归宿组合 `vitest` 为 `35 passed`，eslint 0 errors，`npm run test:structure -- --all` OK，且两个旧入口 `Test-Path` 都为 `False`。也就是说，现在不是“旧文件还在，只是又复制了一份新文件”，而是行为边界和入口层级一起收正了。
+- `expansionAbilities.test.ts` 的 `Ghost` 段则暴露了另一种双入口债务：同一派系已经有 `abilities/ghosts.test.ts`，却还在扩展包聚合文件里保留完整业务簇。这样的结构会让后续改幽灵时再次面临“该改专项文件还是改扩展包文件”的分裂入口。
+- 这类双入口的正确处理不是新旧并存，而是把完整业务簇彻底并到现有专项入口，再让聚合文件只保留还没有自然归宿的扩展派系。`Ghost` 这步已经验证成立：`abilities/ghosts.test.ts` 现在承接 `ghost_ghost / ghost_seance / ghost_shady_deal / ghost_ghostly_arrival`，而 `expansionAbilities.test.ts` 不再混放幽灵业务测试。
+- 这一步的有效证据也不是“文件更整洁了”，而是：
+  - `npx vitest run abilities/ghosts.test.ts expansionAbilities.test.ts` -> `40 passed`
+  - `npx eslint ...` -> `0 errors`
+  - `npm run test:structure -- --all` -> `OK`
+  - `expansionAbilities.test.ts` 中已无 `Ghost` 业务 describe，只剩文件头注释曾经提到幽灵，随后也已同步清理
 
 ## 后续风险
 
 - 迁完 Skeletons / Giant Ants / Samurai 还不能宣称整个测试框架重构完成；旧大文件退出新增入口只解决了一类测试垃圾桶问题。
 - 其他历史 SmashUp 测试仍含旧内部耦合；如果不继续迁，它们仍会在后续 InteractionSystem 重构时制造同步改测试成本。
-- 当前全 `src/games/smashup/__tests__` 仍有 131 条旧内部耦合命中；后续应继续按小批次推进，不把局部 facade 收敛误报成整体完成。剩余主要集中在 shayu 行为测试、少量 audit/专项文件和历史 skip/系统合同区域。
+- 当前全 `src/games/smashup/__tests__` 仍有残余历史债务；虽然后续重点已不再是 shayu 入口，但仍要继续按小批次推进，不把局部 facade 收敛误报成整体完成。
 
 ## 2026-05-16 15:20 补充发现：`newOngoingAbilities` 清空不是改表象
 
@@ -2700,3 +2716,448 @@
 - 只要真实用户入口仍然是“打出行动卡”，即使后续没有 prompt，测试入口也应该是 `PLAY_ACTION`。自动分支是否发生、是否产生 `ONGOING_DETACHED`、是否完全无事发生，都应该由真实命令链自己给出答案。
 - 这组红灯也再次说明了分层收益：切回 `PLAY_ACTION` 后没有暴露能力实现 bug，只有测试体自己少引了 `expectNoPrompt`。这种红灯说明迁移方向是对的，问题在测试壳层，不在业务行为。
 - 因此后续筛选时，不要只挑“会弹 prompt”的 `resolveAbility(...)`；像 `ninja_infiltrate` 这种混有 prompt 分支、自动分支、空分支的 onPlay 能力，往往更值得整组一起迁，这样同一能力的三种路径就不会继续分裂在两套入口上。
+
+## 2026-05-16 23:55 补充发现：真实命令链会把“卡型假设”和“玩家壳层假设”一起揪出来
+
+- `trickster_pixie_pod` 这一轮证明，很多旧 `resolveAbility(...)` 测试不只是绕过了命令层，还顺手绕过了“这张牌在真实世界里到底是什么卡型”。旧测试把 Pixie 直接塞给 executor，看不出它作为融合牌在手里必须是 `type: 'fusion'`，也看不出随从面与战术面的公开入口其实不同。
+- 把 Pixie 改回真实命令后，两个红灯都不是能力实现 bug：
+  - 第一条红灯是牌根本不在手里，说明旧测试把“已打出后状态”冒充成了“出牌入口”。
+  - 第二条红灯是把融合牌当普通 minion 去走 `PLAY_MINION + playAsAction`，而真实公开入口应该是 `PLAY_ACTION`。
+- 同时，旧断言里把可选随从顺序写死成 `['pixie-1', 'ally-a']` 也暴露了另一个内部耦合：真实命令链插入已打出随从后，候选顺序变成实现细节，业务上真正该锁的是“这两个目标都出现”，不是数组顺序。
+- `trickster_mark_of_sleep` 这条则补了另一类深层问题：只要还在手工拼 `matchState` 或用半残缺的 player override，很多 reducer/pipeline 必经字段问题就永远不会暴露。切到真实 `runCommand(PLAY_ACTION)` 后，`player.discard is not iterable` 这种夹具缺损立刻浮出来，说明旧测试连完整玩家壳层都没走到。
+- 这进一步说明“以后改代码不用频繁改测试”的关键不只是 facade 名字统一，而是：
+  - 业务测试入口必须是真实命令
+  - 测试数据必须满足真实出牌前置
+  - 断言必须锁业务集合/最终状态，而不是内部顺序或 executor 中间形状
+
+## 2026-05-17 00:01 补充发现：同一个能力在不同文件重复出现，也不能拿“别处已经测过”当继续保留旧 seam 的理由
+
+- `miskatonic_lost_knowledge` 在 `ongoingTalent.test.ts` 里其实早就有一套更接近真实 `USE_TALENT` 的测试，但 `madnessAbilities.test.ts` 里仍保留了 `resolveAbility(...)` 版本。这个状态本身就是风险：同一能力一半文件走公开入口，一半文件走旧执行器入口，后续重构时照样会碎。
+- 这说明测试治理不能只看“这个行为是否已经 somewhere 被覆盖”。如果当前文件里的测试目标也是普通玩家业务链，就仍然应该回到同一条公开入口，否则重复覆盖只是在重复旧 seam。
+- 这轮把 `miskatonic_lost_knowledge` 收回 `USE_TALENT` 后，留下的 `baseIndex: undefined` 反而更清楚地暴露成“没有稳定公开入口的低层合同”。这种场景可以保留，但要显式地让它成为例外，而不是混在业务 talent 测试里假装同层。
+- 因此后续筛选剩余 `resolveAbility(...)` 时，一个实用判断标准是：
+  - 如果这个用例描述的是“玩家打牌 / 点 talent / 激活 special 后发生什么”，即使别的文件已经覆盖过，也应该收回公开入口。
+  - 只有当用例刻意制造真实 UI/命令层不会给出的上下文时，才保留为低层合同。
+
+## 2026-05-17 00:06 补充发现：很多旧 talent 测试连“对象必须先上场”这个公开前置都绕过了
+
+- `miskatonic_librarian_pod` 这条说明，旧 `resolveAbility(...)` 测试还有一种隐形耦合：它跳过的不只是命令壳层，而是整个“卡必须先进入合法区域才能激活能力”的业务前置。
+- 旧写法里，图书管理员还在手牌里，就直接把 `cardUid/defId` 喂给 talent executor；真实接口里这根本不成立，正确流程必须是 `PLAY_MINION -> USE_TALENT -> prompt -> respond`。
+- 这种前置如果继续被测试绕开，后续无论是：
+  - `talent` 只能对场上对象开放
+  - 先上场才有 `baseIndex / controller / suppression / response window` 等上下文
+  - 卡离场后不能再点 `talent`
+  都很难被及时测出。
+- 所以后续处理剩余 `resolveAbility(...)` 时，要额外问一句：这个测试有没有把“对象已在正确 zone”也一起绕开？如果答案是有，那它比普通 seam 更应该优先收回公开入口。
+
+## 2026-05-17 00:25 补充发现：同样叫 `special`，也要先分清“有没有公开命令入口”
+
+- `ninja_acolyte` 这一轮证明，`special` 不是天然只能留在执行器层。领域层已经提供了 `ACTIVATE_SPECIAL`，而且它覆盖了成功路径、prompt 链和一部分阻止路径；这类测试继续直调 `resolveAbility(...)`，本质上就是绕开公开接口。
+- 但 `ninja_hidden_ninja` 同时证明，不能机械把所有 `special` 都改成 `ACTIVATE_SPECIAL`。当前公开命令的校验前提是“场上存在该随从/泰坦”，而 Hidden Ninja 是手牌 action special，直接喂 `ACTIVATE_SPECIAL` 只会稳定得到“基地上没有该随从”。
+- 这说明 `special` 也要分层：
+  - 有公开命令的：优先锁 `ACTIVATE_SPECIAL`
+  - 没公开命令的：显式保留为执行器/时序合同
+  - 不能因为它们共享一个 ability tag，就假装属于同一层测试入口
+- `ninja_acolyte` 的阻止路径还暴露了另一个重要区别：切回公开命令后，“同基地已使用同组 special”不再表现为“执行成功但 0 事件”，而是更靠前的命令校验失败。对测试治理来说，这反而更稳定，因为它锁的是调用者真正能观察到的接口行为。
+- 因此后续看剩余 `resolveAbility(...)` 不能只问“是不是业务行为”，还要再问一层：**这个行为在领域层是否已有稳定公开命令/API？** 有就收回，没有就保留，并把原因写清。
+
+## 2026-05-17 00:36 补充发现：真实出牌命令会揭穿“牌已经不在手里”与“打出后还剩不剩候选牌”的假设
+
+- `ghost_make_contact_pod` 的旧测试说明，直调执行器很容易制造一种假的业务世界：牌明明已经不在手里，测试仍然能“打出”。一旦回到 `PLAY_ACTION`，这种假设会立刻暴露成命令层失败。
+- `ghost_make_contact` 还补了另一点：真实命令链不会只给你“那 1 个业务事件”，它还会带上 `ACTION_PLAYED` 等系统事件。测试如果继续断言固定事件数量，锁的就不是用户行为，而是旧执行器壳层。
+- `miskatonic_field_trip` 的第一次迁移红灯更有代表性：旧测试默认“打出这张牌后还能继续从手里选牌”，但真实世界里如果手牌只剩它自己，打出后手里就空了，根本不会出现选择 prompt。也就是说，**prompt 是否出现本身依赖于真实出牌后的 live hand state**，不能靠 executor 预先假定。
+- 这把后续筛选标准又收紧了一层：
+  - 不仅要问“有没有公开命令入口”
+  - 还要问“这个测试是否偷偷绕过了卡必须先在手里/场上、以及执行后 live state 会变化”这类真实前置
+- 对 TDD 而言，这是更有价值的 seam：测试不是去保护“执行器被怎么调”，而是保护“调用者从真实入口进入后，系统是否还能看到该看到的 live 状态和 prompt”。
+
+## 2026-05-17 01:00 补充发现：真实出牌入口会改变合法性本身，旧 executor 测试不能继续拿来当业务事实
+
+- `steampunk_mechanic` 这轮证明，旧 `resolveAbility('...onPlay')` 测试不只是绕过命令层，还绕过了“机械师本人已经上场”这个事实。`cthulhu_complete_the_ritual` 的 `requireOwnMinion` 约束在旧 executor 测试里不成立，但切回真实 `PLAY_MINION` 后立刻成立，因为机械师自己就是那个己方随从。
+- 这类差异不能靠“继续保留旧断言”糊过去。只要真实用户入口会让合法性变化，测试就必须改写为公开行为断言，否则它保护的是旧夹具世界，不是游戏规则。
+- `innsmouth_return_to_the_sea` 进一步说明，afterScoring special action 的公开入口不只是“phase=scoreBases + 有 response window”这么简单；`canCardBePlayedInResponseWindow()` 还依赖 `scoringEligibleBaseIndices`。旧 executor 直调完全绕开了这层门禁，所以看不出少了这份真实前置。
+- `miskatonic_things_best_not_known_pod` 也坐实了同一原则：beforeScoring special action 已有稳定公开入口，正确 seam 不是 `resolveAbility('special')`，而是 Me First! 响应窗口里的 `PLAY_ACTION`。切回真实入口后，测试能同时覆盖响应窗口合法性、目标基地门禁和后续疯狂卡/临时战力链。
+- `miskatonic_librarian_pod` 则补了另一层前置：旧 talent executor 测试把“图书管理员必须先上场”绕没了。真实 `PLAY_MINION -> USE_TALENT` 会让“对象所在 zone 是否正确”也纳入保护范围，这比直接喂 `talent` executor 更接近真正稳定的测试接口。
+
+## 2026-05-17 01:06 补充发现：当真实公开入口已经稳定时，测试应优先锁“额度沉淀后的公开状态”，不是内部事件裸数组
+
+- `killer_plant_blossom` 这条把另一类浅 seam 暴露得很清楚：旧测试虽然没有 mock，但它仍然只锁了 executor 返回的 3 条 `LIMIT_MODIFIED`，本质上还是把测试绑在“内部能力函数直接吐什么事件”上。
+- 切回真实 `PLAY_ACTION` 后，更稳定的行为断言其实是两层：
+  - 命令真的成功把这张行动打出：`ACTION_PLAYED`、手牌移除、进入弃牌、`actionsPlayed` 增加
+  - 额外同名随从额度真的沉淀进公开玩家状态：`sameNameMinionRemaining === 3`、`sameNameMinionDefId === null`
+- 这比只看事件数组更接近调用者会依赖的合同。后续如果 `grantContextualExtraMinion` 的内部拼装方式重构了，但公开额度状态和出牌行为不变，这类测试就不该跟着改。
+- 同时，这轮也把 `expansionOngoing.test.ts` 的边界划清了：剩下 5 处 `resolveAbility(` 都只是“能力已注册”的存在性合同，不再属于“业务行为 seam 过浅”的同类问题。后续继续治理时，不应该为了清零 grep 结果去硬改这些注册断言。
+
+## 2026-05-17 01:19 补充发现：beforeScoring special 回到真实入口后，会把“假基地 fixture”和“旧失败语义”一起揭穿
+
+- `elder_thing_the_price_of_power` 这轮证明，beforeScoring special 虽然早就有稳定公开入口，但只把测试从 `resolveAbility(...)` 换成 `PLAY_ACTION` 还不够；测试夹具也必须满足真实计分链前置。默认 `makeBase()` 产出的 `test_base` 没有合法 `vpAwards`，一旦 `FlowSystem` 在 response window 结束后继续推进 `scoreOneBase`，测试就会炸在 `buildBaseRankings(baseDef.vpAwards)`。
+- 这说明 beforeScoring / afterScoring 响应窗口测试不该再把“假基地也能跑完整 scoreBases”当默认前提。只要真实链路会继续进入计分，base fixture 就必须是实际注册过、可计分的 base def，例如 `base_the_jungle`、`base_temple_of_goju`。
+- 同一轮还暴露出另一条更重要的分层事实：`对手在此基地无随从` 不是命令层非法。真实公开行为是“卡可以在达标基地被打出，但能力本身结算为空”；也就是 `ACTION_PLAYED` 仍发生，只是没有 `REVEAL_HAND` 和 `POWER_COUNTER_ADDED`。旧 executor 测试把这条场景误写成“没有可执行的响应目标”，本质上是在保护旧壳层的预过滤，不是在保护玩家能观察到的规则结果。
+- 因此后续治理剩余 `resolveAbility(...)` 时，要额外问两句：
+  - 真实入口结束后会不会继续推进到更深的 pipeline（计分、reaction queue、afterEvents）？如果会，fixture 必须一并升级。
+  - 旧测试断言的“失败”到底是规则真失败，还是旧 helper/executor 提前帮它挡掉了？如果是后者，就应该改成公开行为断言，而不是把真实命令重新改坏去迎合旧测试。
+
+## 2026-05-17 01:26 补充发现：一旦某个文件里同时存在“真实出牌链”和“旧 onPlay executor 链”，就应该优先把同一能力簇整组收回同一入口
+
+- `elderThingAbilities.test.ts` 这轮很典型：`elder_thing_mi_go` 的第一条测试已经在走 `PLAY_MINION`，但后两条“对手选抽 Madness / 对手拒绝后我方抽牌”还停在 `resolveAbility('elder_thing_mi_go', 'onPlay')`。这种半迁移状态本身就是债务，因为同一能力簇被拆成两套入口，后续重构时还是会碎。
+- 把这两条补齐后，测试真正锁住的是同一条公开链：`PLAY_MINION -> elder_thing_mi_go prompt -> 对手响应 -> 最终事件/状态`。这样无论 prompt 如何继续由 runtime program 驱动，业务测试都不再依赖 executor 直接返回的中间壳。
+- `elder-thing-choice-goju-tiebreak.test.ts` 则补了另一个模式：哪怕测试文件主目标是历史 bug 回归，只要其中那条 helper 本质上是在模拟“打出这张随从后的 onPlay 选择链”，也不该继续保留 fake `matchState + resolveAbility(...)`。把共享 helper 收回真实 `PLAY_MINION`，比单改某 1 条断言更值，因为整组 6 条行为测试一起摆脱了旧入口。
+- 这也说明筛剩余 `resolveAbility(...)` 时，不只看单个命中条数。若某文件里已经存在同能力的真实命令样本，而剩余命中还在测同一能力的后续分支，这种“半迁移簇”应该优先处理，收益通常比新开一个完全陌生的文件更高。
+
+## 2026-05-17 01:39 补充发现：低层 ability 合同也需要统一测试接口，否则“保留例外”本身会继续碎
+
+- 这轮证明，问题不只在“哪些业务测试还没回到真实命令链”，还在于那些**确实不该走公开命令**的 low-level/off-phase 合同，如果继续在测试体里裸写：
+  - `const executor = resolveAbility(...)`
+  - `expect(executor).toBeDefined()`
+  - `executor!({...})`
+  仍然是在把注册表 API 暴露给每个测试文件。
+- 对这类例外场景，正确做法不是继续散着写 `resolveAbility(...)`，而是集中到一个显式 helper。这样测试语义会从“我自己去注册表摸执行器”变成“我刻意调用一个低层能力合同入口”。
+- 因此新增 `invokeRegisteredAbilityContract(...)` 的价值不是改名字，而是补了一层稳定测试接口：
+  - 业务链：`runCommand(...)`
+  - prompt continuation/runtime metadata：`respondToPrompt...` / `invokeRegisteredInteractionHandlerContract(...)` / `invokeRegisteredRuntimePromptHandlerContract(...)`
+  - 低层 ability executor 合同：`invokeRegisteredAbilityContract(...)`
+- 这层分工能减少下一轮重构的测试 churn。后续如果 `abilityRegistry` 的内部查找、program 包装或 executor 形状调整，低层合同测试只需要在 helper 层适配，不必继续批量扫每个测试文件。
+- 最新裸 `resolveAbility(` 分布也因此更干净：剩下的主要是注册表存在性断言、少量未迁移的低层合同，以及 `helpers.ts` 自己的唯一查找点；“每个文件都各自摸一次 executor”的模式已经明显收敛。
+
+## 2026-05-17 01:46 补充发现：局部“能力已注册”断言是另一类噪音，应优先删除而不是继续换壳保留
+
+- `baseFactionOngoing.test.ts` 和 `expansionOngoing.test.ts` 这轮进一步说明，很多残余 `resolveAbility(` 已经不是“测试接口不统一”，而是单纯的**局部重复存在性断言**。
+- 这类断言的问题不只是 grep 数字难看，而是会制造错误信号：看起来像“这个文件还在测 low-level executor”，实际上它只是重复了一遍 `abilityRegistry.test.ts` 已经覆盖的存在性合同。
+- 对这类重复断言，正确动作通常是删除，而不是：
+  - 把 `resolveAbility(...)` 换成另一种存在性 helper
+  - 或者在每个业务文件里继续保留一条“顺手测一下已注册”
+- 这样做的好处有两层：
+  - 业务文件只留下真正属于该行为簇的不变量
+  - 剩余裸 `resolveAbility(` 的分布就更接近“真实还需要保留的注册表/属性合同”，不再混入局部噪音
+- 这轮之后，全仓裸 `resolveAbility(` 只剩：
+  - `abilityRegistry.test.ts`：注册表本体合同
+  - `properties/coreProperties.test.ts`：属性/一致性合同
+  - `helpers.ts`：唯一的 low-level contract 入口查找点
+- 这比“把所有地方都改成某个 helper 但仍然到处做存在性断言”更符合 TDD seam 收敛目标，因为它减少的是测试资产噪音本身，而不是只换一个调用壳。
+
+## 2026-05-17 01:50 补充发现：属性测试里的“局部已注册断言”也属于噪音，除非它本身就在测注册表属性
+
+- `coreProperties.test.ts` 里最后那条 `resolveAbility('...','onPlay')` 业务外观上看像“Property 5: onPlay 能力触发”的前置保护，实质上仍是局部重复存在性断言。
+- 它和 `abilityRegistry.test.ts` 的区别不在文件名，而在合同焦点：
+  - `abilityRegistry.test.ts` 测的是“注册/解析 API 本身是否一致”，所以保留 `resolveAbility(...)` 是合理的。
+  - `coreProperties.test.ts` 的 `Property 5` 真正该测的是“从公开出牌命令进入后是否产生公开事件/行为”，不是“这些 defId 有没有注册”。
+- 因此同样是 `resolveAbility(...)`，不能一刀切全删，也不能因为写在 property 文件里就自动合理。判断标准应回到测试正在保护的合同是不是“注册表本体/属性”。
+- 这也补强了筛选规则：如果一条断言只是为了让本文件“顺手确认能力存在”，但真正行为断言已经通过 `PLAY_MINION` / `PLAY_ACTION` / `USE_TALENT` 覆盖，那么这条断言优先删除，而不是换壳保留。
+- 到这一步后，裸 `resolveAbility(` 的剩余 9 处终于都落在了明确合理的位置：
+  - `abilityRegistry.test.ts`：5
+  - `coreProperties.test.ts`：3
+  - `helpers.ts`：1
+
+## 2026-05-17 01:56 补充发现：统一测试标准如果只写文档，不写门禁，回归速度会很快
+
+- 这轮把 `resolveAbility(...)` 的分层口径继续往前推了一步：不再只是“当前仓里已经收干净”，而是通过 `testing-structure-guard.mjs` 明确禁止**未来新增**的业务测试回退到裸 `resolveAbility(...)`。
+- 这个门禁的价值不在于追求 grep 清零，而在于固定一条稳定路径：
+  - 公开行为：真实命令入口
+  - low-level ability executor 合同：`invokeRegisteredAbilityContract(...)`
+  - 注册表/属性合同：少量白名单测试文件
+- 如果不把这层固化成脚本，后续任何新 bug 修复都可能因为“直调 executor 最快”而重新把旧 seam 带回来；文档很难抵抗这种短期便利。
+- 同一原则也适用于调试日志：一旦回归测试已经稳定，`console.log` 留在业务测试里就是噪音。它不会增加合同强度，只会污染输出、掩盖真正的失败信号。
+
+## 2026-05-17 02:25 补充发现：去掉调试日志不等于“只改表象”，关键在于把打印承载的信息升格为合同
+
+- `wizard-neophyte-actionlog.test.ts` 这轮说明，很多日志表面上在“看 ActionLog”，实质上只是把链路信息打印出来让人肉判断。
+- 真正的收口方式不是删日志后留一句 `expect(success).toBe(true)`，而是把日志里承载的关键观察点提炼成合同：
+  - ActionLog kind 序列
+  - 响应后的手牌/牌库结果
+  - 交互暂停点与恢复点
+  - afterScoring 响应后基地替换与随从迁移结果
+- `turnTransitionInteractionBug.test.ts` 还暴露了另一类假象：旧测试名说“托尔图加 prompt 会出现”，但原场景里根本没有合法的其他基地目标，所以即使打印很多 phase / prompt 信息，也锁不住真正的 afterScoring 暂停合同。
+- 把这种场景改成“确实有合法目标”的真实链路后，测试保护的就不再是“某次打印看起来合理”，而是：
+  - `scoreBases` 必须暂停
+  - prompt sourceId / playerId 必须正确
+  - 响应后才允许进入下一回合
+  - 替换基地与移动结果必须正确落地
+- 这类改法比单纯清 grep 更重要，因为它直接减少了“重构一下测试就全碎”的根因：测试不再依赖人工阅读日志或偶然的中间状态。
+
+## 2026-05-17 02:38 补充发现：audit 测试也要区分“失败信息载体”和“真实业务红灯”，不能把两者混为一谈
+
+- `interactionDefIdAudit.test.ts` 这轮最后 4 处 `console.log` 的本质不是“普通调试日志”，而是拿控制台当失败清单载体。把它们删掉后，如果只是改成 `expect(violations).toEqual([])`，可读性会倒退；正确做法是把违规明细直接提升为断言消息。
+- audit 文件的稳定接口应是：
+  - 成功时静默通过
+  - 失败时直接给出可复制的违规清单
+  - 不依赖额外控制台输出让人肉拼装信息
+- `npm run test:games:audit -- <file>` 在这个仓里不能当“单文件定点验证”使用，因为脚本本身固定带 `run src/games --config vitest.config.audit.ts`，追加文件参数后依然会把整套 audit include 跑起来。要隔离目标文件，必须改用更窄入口：`node scripts/infra/vitest-cli-safe.mjs run --config vitest.config.audit.ts --configLoader native <file>`。
+- 这次定点验证还说明，日志清理完成后暴露出的红灯是**真实审计结果**，不是改造副作用：
+  - `src/games/smashup/__tests__/interactionDefIdAudit.test.ts` 当前仍稳定报出 `vampires.ts` 两处 option 组缺 `minionDefId/baseDefId`
+  - 说明原来 `console.log` 只是把这些问题打印出来，不是测试逻辑的一部分
+- 因此后续处理 audit 文件时，也要沿用同一原则：
+  - “去掉 `console`”不是终点
+  - 要把控制台承载的信息升格成失败消息、结构化断言或证据文本
+  - 然后把剩下的红灯当成真实代码问题逐条处理
+
+## 2026-05-17 02:41 补充发现：interaction option 的可渲染元数据不能再只靠通用 `defId/baseIndex` 猜出来
+
+- `vampire_heavy_drinker` 这两组红灯说明，旧 option value 里虽然已经有 `defId` 和 `baseIndex`，但这对新的统一审计口径还不够。
+- 现在的 interaction 元数据分层已经更明确：
+  - `defId` 适合保留作历史兼容或通用 card identity
+  - `minionDefId` / `baseDefId` 才是明确告诉 UI 和审计“这里展示的是随从/基地本体”
+- 这类补字段不是表面修饰，因为它直接影响两件事：
+  - Prompt/UI 是否能稳定判断该按哪种实体卡模式渲染
+  - 审计脚本是否能在不猜测上下文的前提下验证 option shape
+- 同时，这轮也证明对老链路的兼容策略应该是“补强 shape，再让 resolver 向前兼容”，而不是一次性把所有消费端都改成只认新字段：
+  - option value 新增 `minionDefId/baseDefId`
+  - `onResolve` 先读 `minionDefId`，读不到再 fallback `defId`
+- 这类过渡方式更适合当前仓的治理节奏：可以先把交互 option 合同收紧，再逐步清理下游对旧字段名的依赖，而不用一口气改完所有能力文件。
+
+## 2026-05-17 02:59 补充发现：interaction metadata audit 里最值得优先收的，不是文件最多的那批，而是“规则已经很清楚但代码没写准”的那批
+
+- `interactionTargetTypeAudit` 这轮证明，一个 audit 批次是否值得先收，不看命中数大小，先看规则是否单义：
+  - 纯按钮分支却写成 `generic`
+  - 同一 `sourceId` 同时充当 `base` 和 `minion`
+  - 确实保留 `generic` 却没有登记理由
+  这三类都属于“规范已经明确，代码只是没写准”，因此投入小、收益高。
+- `interactionDisplayModeAudit` 这轮也出现了同样的分层：
+  - “按钮缺 `displayMode` / 基地卡面缺 `displayMode`”是纯声明错误，适合先收
+  - “显式 card displayMode 但 value 缺可渲染 id”则是更深一层的数据 shape 约束，适合按文件簇推进
+- `buildMinionTargetOptions(...)` 的统一补强收益很高，因为它不是为了 grep 好看，而是把“任何场上随从直选 option 都应该显式带 `minionDefId/baseDefId`”固化进共享出口。这样后面修 `aliens`、`titans`、`tricksters` 时，不必每次重新发明一套 value shape。
+- `base_mermaid_pool` 这类 `value: candidate` 还暴露了另一个事实：AST 审计不是运行时。只要 option value 不是字面量，审计就可能看不到实际字段，即使运行时对象已经有 `minionDefId`。这类场景要么改成字面量对象，要么调整审计器；两者不是一回事，不能混着算“都修过了”。
+- 当前 `interactionDisplayModeAudit` 只剩 1 条失败、9 个点位，说明这一批已经从“规则散乱”进入“剩余个别文件还没跟上统一 shape”的阶段。下一步再打，就该按剩余文件簇收，不该回头再修已经绿掉的声明类问题。
+
+## 2026-05-17 03:11 补充发现：interaction metadata audit 想长期稳，不该只认“value 必须是字面量对象”
+
+- 这轮把 `interactionDisplayModeAudit.test.ts` 接到共享 `TypeScript Program + TypeChecker` 后，之前剩余 9 个红点里大部分直接消失，证明它们不是业务 shape 真缺，而是审计器只会看 `value: { ... }` 的表面结构。
+- 最典型的几类误判源已经明确：
+  - `value: { ... } satisfies SomeChoiceValue`
+  - `value: card` / `value: choice` / `value: action`
+  - helper 返回的 card option，但 helper 自己没有把 renderable contract 写进类型
+- 这里的本质不是“让测试更聪明一点”，而是把审计口径改成真正接近 UI/runtime 的合同层：
+  - 如果 `TypeScript` 已经能证明该 value 带 `defId/minionDefId/baseDefId`，audit 不该继续把它判红
+  - 如果 value 只是按钮 payload，哪怕 prompt `targetType` 是 `minion`，也不该为了“看起来像某个实体交互”去硬标 `card`
+- 同时这轮也暴露出另一条反模式：**skip/yes/no 这类控制分支不应伪装成实体 target shape**。
+  - `bear_cavalry_commission_move_minion` 之前拿 `{ minionUid: '__skip__', baseIndex }` 冒充跳过分支，会把 button 语义污染进 minion contract
+  - 正确做法是显式 `skip: true`，handler 直接识别控制语义
+- 因而后续统一测试标准可以更明确：
+  - 审计器优先识别真实类型合同，而不是鼓励到处把 `value` 改写成更丑的字面量
+  - 真正的业务修复只针对 shape 漏洞本身，例如漏 `minionDefId`、错把按钮写成 `card`、helper 没声明 renderable contract
+
+## 2026-05-17 03:22 补充发现：测试结构门禁也要避免“禁得太宽”，否则会反过来鼓励绕规则
+
+- 这轮给 `testing-structure-guard.mjs` 增加“禁止业务测试直接导入 registry/handler”时，第一次实现把 `from '../domain/abilityRegistry'` 整体判成违规，结果立即误伤了很多只是在做：
+  - `clearRegistry()`
+  - 类型导入
+  - 其它合法 setup/contract API
+- 这说明测试门禁本身也要遵守和业务规则一样的原则：**只固化真正的不变量，不要把模块表象直接写成禁令。**
+- 真正该拦的是：
+  - `resolveAbility`
+  - `getInteractionHandler`
+  - `getAbilityRuntimePromptHandler`
+  - `console.log/warn/error/debug`
+- 不该拦的是“任何碰过这个模块的人”。否则结果会变成：
+  - 工程师为了绕门禁改 import 写法
+  - 或者把合法 setup 搬到更隐蔽的位置
+  - 而不是减少测试对实现细节的耦合
+- 这条经验后面值得继续沿用：凡是给测试体系加 guard，都要优先按**具体坏入口**下刀，而不是按整个文件、整个模块或整个目录一刀切。
+
+## 2026-05-17 03:31 补充发现：把能力簇从巨型泛名文件迁到独立文件，价值不在“文件更小”，而在“同一簇只保留一套行为入口”
+
+- `Aliens` 这轮迁移后更清楚地证明了一点：**同一个派系能力簇，最好在同一文件里统一走一套公开行为 seam。**
+  - `alien_invader` / `alien_collector` / `alien_supreme_overlord` / `alien_disintegrator` / `alien_crop_circles` 全部收进 `abilities/aliens.test.ts` 后，这个文件只需要理解：
+    - 真实出牌命令
+    - prompt facade
+    - 响应命令
+  - 不再需要在 `factionAbilities.test.ts` 这种巨型文件里跨很多派系上下文切换。
+- 这类迁移减少 churn 的关键，不是“describe 被挪了位置”，而是下面两个结构变化：
+  - 同一能力簇的 helper 可以本地化，例如 `execPlayMinion(...)` / `execPlayAction(...)`
+  - 同一能力簇的业务词汇、前置状态、prompt 断言都能收在一个边界里，不必跟别的派系共用一团越来越泛的上下文
+- 反过来说，巨型测试文件真正危险的地方也更明确了：
+  - 某一簇逻辑想改成真实 `PLAY_ACTION`
+  - 另一簇还停在旧 helper 或历史入口
+  - 最后同一个文件里同时出现 3 套入口、4 套夹具口径
+  这样就算 grep 命中清零，后续重构照样会碎。
+- 因此后续继续拆 `factionAbilities.test.ts` 时，优先级不该按“哪段最短最好搬”排，而该按：
+  - 哪个能力簇已经能自然收敛到单一公开行为入口
+  - 哪个能力簇当前仍混用真实出牌链和历史夹具
+  - 哪个能力簇拆出来后能立刻减少上下文切换与重复 helper
+
+## 2026-05-17 03:37 补充发现：并不是每次都该新开一个专项文件，已有“单主题文件”通常是更好的吸收点
+
+- `Dinosaurs` 这一轮和 `Aliens` 不同：`abilities/dinosaurs.test.ts` 早就存在，而且它已经是一个主题明确的恐龙专项文件。
+- 这说明“降低测试 churn”的正确动作不总是“把某段从大文件挪到一个新文件”，而是先判断有没有现成的稳定归宿：
+  - 如果已有文件本身主题单一、边界清楚，就优先并进去
+  - 只有在没有合适归宿时，才新开 `abilities/<faction>.test.ts`
+- 这样做的好处比机械新建文件更实际：
+  - 避免同一派系被拆成 `dinosaurs.test.ts`、`dino-actions.test.ts`、`dino-ongoing.test.ts` 三四份，最后又形成新的碎片化
+  - 让“同一派系的行为 seam”尽量集中，后续找测试、补回归、读上下文都更稳定
+- 这也给后面的迁移提供了一个更明确的判断标准：
+  - 先看是否已有单主题专项文件
+  - 再看迁入后会不会破坏它的单主题边界
+  - 只有两者都不满足时，才考虑新开文件
+
+## 2026-05-17 03:49 补充发现：当历史泛名文件被压到只剩 1-2 个尾项时，剩下的问题已经不再是“拆不拆”，而是“这些尾项各自应该归哪类文件”
+
+- 这轮连续迁出海盗、巫师、机器人和“立即额外行动”后，`factionAbilities.test.ts` 只剩：
+  - `ghost extra timing audit`
+  - `ninja_seeing_stars`
+- 这说明一个阶段已经切换了：
+  - 之前的问题是“巨型泛名文件太大，很多能力簇混在一起”
+  - 现在的问题是“只剩极少数没有自然归宿的尾项”
+- 这两类问题的处理策略不一样：
+  - 在“大杂烩阶段”，优先按能力簇批量迁出
+  - 在“尾项阶段”，优先判断测试本质是什么，再决定归宿
+- 这轮里最典型的是“立即额外行动”：
+  - 它虽然历史上挂在 `factionAbilities.test.ts`
+  - 但本质上根本不是某个派系，而是一个跨能力共享交互
+  - 正确做法不是把它塞到某个派系文件里，而是单独起一个语义准确的文件
+- 因此后续收尾时，判断维度应该进一步从“按派系拆”升级为“按行为类别归位”：
+  - 派系能力 -> `abilities/<faction>.test.ts`
+  - 共享交互链 / 共用能力机制 -> 语义化的 cross-cutting 文件
+  - audit / contract / metadata 断言 -> audit 或 contract 文件
+- 这也解释了为什么 `ghost extra timing audit` 不该机械塞进某个派系能力文件：它更像一条额外回合/额外出牌时机合同审计，而不是普通 faction ability 示例。
+
+## 2026-05-17 03:54 补充发现：删除历史泛名文件的前提，不是“内容变少了”，而是“每一条残留都已经找到语义更准确的归宿”
+
+- `factionAbilities.test.ts` 这一轮能真正删除，不是因为它只剩两条测试，而是因为这两条已经都能明确回答“我到底属于什么”：
+  - `ninja_seeing_stars` -> 忍者派系专项文件
+  - `ghost_ghostly_arrival off-phase immediate` -> 幽灵能力块里的时机合同断言
+- 这个判断很关键。否则很容易出现另一种假收口：
+  - 先把大文件拆薄
+  - 剩几条“不好归类”的尾项
+  - 然后为了追求“文件数变少”直接删掉或随便塞进某个不太相关的文件
+  - 结果是表面上整理了，真实语义反而更乱
+- 所以“能不能删历史壳文件”的最低标准应该是：
+  - 原文件中的每一类测试都已经在别处有更准确的归位
+  - 新归位后的文件名、上下文、helper 和断言语义比原来更清晰
+  - 删除后不会让人失去查找入口，只会让入口更准确
+
+## 2026-05-17 04:04 补充发现：`第N批` 这类命名本身就是测试脆弱性的信号，它按迁移历史分组，而不是按行为边界分组
+
+- `query6Abilities.test.ts` 这一轮被彻底删除后，这个问题更清楚了：
+  - 文件里原来同时混着海盗、忍者、巫师、外星人
+  - 它们唯一的共同点不是共享行为、共享夹具或共享合同
+  - 而只是“曾经在同一批次被补进去”
+- 这种按历史批次分组的文件会自然制造三种 churn：
+  - 改某个派系能力时，需要先在一个和它没语义关系的大杂烩里找上下文
+  - 同一文件里会慢慢并存多套 helper、不同入口风格和不同断言口径
+  - 后续重构某个派系的公开 seam 时，容易顺手牵动别的无关派系用例
+- 所以判断“这个文件是不是该退场”时，可以再加一条很硬的信号：
+  - 如果文件名或组织方式主要描述的是“迁移批次 / 历史来源 / 杂项集合”
+  - 而不是“派系 / 行为类别 / 合同边界”
+  - 那它大概率就不是长期稳定的测试归宿
+- `query6Abilities.test.ts` 的正确收口方式也印证了前面的原则：
+  - 忍者 -> `abilities/ninjas.test.ts`
+  - 海盗 -> `abilities/pirates-ongoing.test.ts`
+  - 巫师 -> `abilities/wizards.test.ts`
+  - 外星人 -> `abilities/aliens.test.ts`
+  - 真正减少未来重构成本的，不是“把测试挪走”，而是“让每份专项文件只维护一套可复用的行为入口和业务词汇”
+
+## 2026-05-17 04:09 补充发现：即使不是“多派系混装”，同一派系的双入口并存也会制造测试 churn
+
+- `robotAbilities.test.ts` 这一轮删除后，暴露出的不是“批次混装”问题，而是另一种更隐蔽的坏结构：
+  - 根目录已经有 `robotAbilities.test.ts`
+  - 同时又已经存在 `abilities/robots.test.ts`
+  - 两个文件都在维护机器人派系的真实出牌行为
+- 这种“双入口同主题”会带来另一类维护成本：
+  - 改机器人行为时，不确定该去哪个文件补回归
+  - 两边容易长出不同的 helper 口径和不同的断言风格
+  - 后续重构同一派系时，经常需要同步改两边，哪怕它们测的是相近合同
+- 所以判断“要不要继续收口”时，不能只看是不是多派系混装；还要看有没有：
+  - 同一派系在两个位置各维护一部分普通行为测试
+  - 其中一个位置已经明显是更准确、更长期的专项入口
+- 这轮机器人的正确动作不是“保留两个入口各管一半”，而是：
+  - 把 `robot_microbot_reclaimer / fixer` 统一并回 `abilities/robots.test.ts`
+  - 删除旧的根目录 `robotAbilities.test.ts`
+  - 让机器人派系重新只保留一个普通行为入口
+
+## 2026-05-17 04:19 补充发现：除了“多派系混装”和“同派系双入口”，还要继续清理“根目录单派系旧入口”
+
+- `ghostsAbilities.test.ts` 这轮说明，测试 churn 的另一种来源不是内容混装，而是**入口层级不一致**：
+  - 一部分幽灵测试已经在更准确的专项或扩展文件里
+  - 另一部分普通行为还挂在根目录 `ghostsAbilities.test.ts`
+  - 结果就是同一派系的测试入口分散在“根目录旧命名”和“语义更准确的专项文件”两套层级
+- 这种结构的坏处和双入口类似，但更隐蔽：
+  - 读代码的人会先误以为根目录文件仍是当前主入口
+  - 后续补幽灵回归时，不容易第一时间判断该进 `abilities/ghosts.test.ts` 还是继续往旧根目录文件里堆
+  - 即使行为 seam 没变，文件层级分裂也会放大“改一次要同步找两三处”的维护成本
+- 所以现在筛选旧测试入口时，应该至少看三种信号，而不是只看“大不大”：
+  - 是否是按批次/杂项组织的历史混装文件
+  - 是否是同一派系双入口并存
+  - 是否是根目录单派系旧入口，而专项目录里其实已经存在更长期的归宿
+- `ghostsAbilities.test.ts` 的正确收口方式不是继续挂一个“幽灵旧入口”，而是：
+  - 普通派系行为 -> `abilities/ghosts.test.ts`
+  - 时机/扩展合同 -> 继续留在更准确的专项文件，例如 `expansionAbilities.test.ts`
+  - 这样后续重构 `ghost_make_contact` 一类普通行为时，只需要维护一个清晰入口
+
+## 2026-05-17 07:40 补充发现：`代表性玩法` 这类跨多派系抽样文件，本质上仍是混装壳，只是名字比“第 N 批”更像业务
+
+- `shayuFactionAbilities.test.ts` 这轮说明，混装文件不一定写着“第6批 / 杂项 / 临时”才算坏结构：
+  - 它表面上写的是“三派系代表性玩法”
+  - 但内部仍同时维护鲨鱼、龙卷风、神话希腊三套不同业务词汇、不同触发链和不同基地合同
+  - 这和按批次混装的根因一致：共享的不是行为边界，只是“当时顺手放在一起”
+- 这类文件比 `query6Abilities.test.ts` 更隐蔽，因为名字听起来像“业务聚合”：
+  - 容易让人误以为这是一个合理的长期入口
+  - 但后续改任一派系时，仍会被迫进入一份跨派系上下文的大文件
+  - 单派系重构也更容易顺手碰坏别的派系抽样
+- 所以现在判断一个测试文件是否该退场，信号应再补一条：
+  - 如果文件通过“代表性玩法 / 抽样复审 / 综合行为”把多个派系揉在一起
+  - 但这些派系之间并无共同 seam、共同夹具或共同合同
+  - 那它仍然属于应该拆回派系专项文件的历史壳
+- `shayuFactionAbilities.test.ts` 的正确收口方式验证了这一点：
+  - 鲨鱼 -> `abilities/sharks.test.ts`
+  - 龙卷风 -> `abilities/tornados.test.ts`
+  - 神话希腊 -> `abilities/mythic-greeks.test.ts`
+  - 真正长期稳定的入口，仍然应该按派系或明确行为边界组织，而不是按“代表性抽样集合”组织
+
+## 2026-05-17 08:01 补充发现：从聚合文件迁测试时，真正该一起迁走的往往不只是 `describe`，还包括“本地事件回放 seam”
+
+- `Killer Plants` 这轮暴露出另一个容易被忽略的脆弱点：
+  - 表面上是 `expansionAbilities.test.ts` 和 `abilities/killer-plants.test.ts` 双入口并存
+  - 更深一层是旧段落里还在靠本地 `applyEvents(state, events)` 手推 reducer，再去验证最终状态
+- 这种写法的问题不只是“helper 多一层”：
+  - 业务命令链已经给了 `result.finalState`
+  - 测试却再自己重放一遍事件
+  - 后续只要 reducer 顺序、补充事件或中间实现细节变动，测试就会比真实用户链更早碎掉
+- 所以迁移专项文件时，判断是否真的减少 churn，应该同时看两件事：
+  - 是否消掉了“聚合文件 + 专项文件”双入口
+  - 是否把能直接用 `finalState` 表达的不变量，从本地事件回放迁回真实命令结果
+- 这轮里 `killer_plant_insta_grow` / `killer_plant_weed_eater` 并入 `abilities/killer-plants.test.ts` 后，顺手把相关状态断言都优先写成：
+  - `PLAY_ACTION` / `PLAY_MINION`
+  - 直接看 `runCommand(...).finalState`
+  - 只在确实需要锁低层合同（例如 off-phase immediate metadata）时保留能力合同入口
+- 这比单纯“文件换地方”更接近用户要的目标：以后重构实现时，测试更依赖公开行为结果，而不是事件回放细节。
+
+## 2026-05-17 08:06 补充发现：扩展聚合文件一旦只剩单个派系尾项，就应该继续追到“同派系只留一个普通行为入口”
+
+- `Bear Cavalry` 这轮证明，`expansionAbilities.test.ts` 的问题不只是“大”，而是它还在和 `abilities/bear-cavalry.test.ts` 并行维护同一派系的普通行为。
+- 这类双入口即使文件都不算大，也会继续制造 churn：
+  - 改 `bear_cavalry_bear_hug` 时不知道该先进哪个文件
+  - tie-choice 回归、额外随从交互和其它熊骑兵保护/移动回归被拆在两套上下文里
+  - 后续只要 helper 或断言风格调整，同一派系就要跨两个文件同步
+- 所以扩展聚合文件进入“尾项阶段”后，优先级应该变成：
+  - 先看尾项是否已经有现成专项归宿
+  - 如果有，就继续并回专项文件
+  - 只有没有稳定归宿时，才保留在聚合入口或考虑新开专项文件
+- 这轮把 `bear_cavalry_bear_hug` 和 `bear_cavalry_commission` 并回 `abilities/bear-cavalry.test.ts` 后，`expansionAbilities.test.ts` 明显变得更接近“真正没归宿的剩余项”，而不是继续承担同派系双入口。
+
+## 2026-05-17 08:14 补充发现：当聚合文件已经只剩“每个尾项都有明确归宿”时，最干净的动作就是整文件退场
+
+- `expansionAbilities.test.ts` 这一轮已经走到这个阶段：
+  - `steampunk_scrap_diving` 有明确的 Steampunks 行为归宿
+  - `cthulhu_complete_the_ritual` 也已经有 `abilities/cthulhu.test.ts` 这个专项文件，只是之前少了一段打出约束
+- 这种情况下继续保留一个只剩 1-2 个 describe 的历史聚合文件，没有长期价值：
+  - 它不再提供真正的共享上下文
+  - 只会让“应该去哪个文件补回归”再次变模糊
+- 所以这里的正确动作不是把旧文件压到更小，而是：
+  - 给缺少专项归宿的能力补上专项文件或补齐现有专项文件
+  - 然后直接删除旧聚合入口
+- 这也进一步说明，测试整理的终点不该是“所有旧文件都还在，只是更短”，而应该是：
+  - 同一能力/派系/行为边界只保留一个自然入口
+  - 历史聚合壳在不再承载独特价值时直接退场
+
+## 2026-05-17 08:14 补充发现：`ongoing` 聚合文件也要区分“共享机制合集”与“其实已经有专项归宿的派系段落”
+
+- `expansionOngoing.test.ts` 这一轮的幽灵段证明，`ongoing` 聚合文件并不天然合理。
+- 关键要看里面的段落是否已经满足两件事：
+  - 该派系已经有自己的专项文件
+  - 这些 ongoing/低层合同仍然属于同一派系的自然语义边界，而不是跨派系共享机制
+- `Ghosts` 就符合这个条件：
+  - `ghosts.test.ts` 已经是当前幽灵专项入口
+  - `ghost_incorporeal`、`ghost_make_contact` 的显式控制权事件与 detach affect 合同，本质上都仍是幽灵派系语义
+  - 继续留在 `expansionOngoing.test.ts` 只会制造第二入口
+- 所以下一步拆 `expansionOngoing` 时，优先级也不该按“哪段最短”排，而该按：
+  - 哪些段落已经有稳定专项文件可承接
+  - 哪些段落仍然只是在历史聚合文件里寄居，没有独特的跨派系理由

@@ -1306,7 +1306,13 @@ const pirateFirstMateChooseBasePromptProgram = createPromptProgram<PirateFirstMa
         const baseOptions = otherBases.map((b) => {
             const baseDef = getBaseDef(b.defId);
             const baseName = baseDef?.name ?? `基地 ${b.index + 1}`;
-            return { id: `base-${b.index}`, label: baseName, value: { baseIndex: b.index, baseDefId: b.defId }, _source: 'base' as const };
+            return {
+                id: `base-${b.index}`,
+                label: baseName,
+                value: { baseIndex: b.index, baseDefId: b.defId },
+                _source: 'base' as const,
+                displayMode: 'card' as const,
+            };
         });
         return createAbilityRuntimeSimpleChoice(
             `pirate_first_mate_choose_base_${context.mateUid}_${context.now}`,

@@ -35,45 +35,55 @@ export function useResultRevealAnimation<TValue>({
     isEqual = Object.is,
 }: UseResultRevealAnimationOptions<TValue>): ResultRevealAnimationState {
     const [isRevealing, setIsRevealing] = React.useState(animateOnMount && isActive);
+    const [revealSequence, setRevealSequence] = React.useState(() => (
+        animateOnMount && isActive ? 1 : 0
+    ));
     const mountedRef = React.useRef(false);
     const previousValueRef = React.useRef(value);
     const previousPresentationKeyRef = React.useRef(presentationKey);
 
     React.useEffect(() => {
-        let shouldStartReveal = false;
-
         if (!isActive) {
             mountedRef.current = true;
             previousValueRef.current = value;
             previousPresentationKeyRef.current = presentationKey;
             setIsRevealing(false);
-            return undefined;
+            return;
         }
 
         if (!mountedRef.current) {
             mountedRef.current = true;
-            shouldStartReveal = animateOnMount;
-        } else if (presentationKey !== undefined) {
-            shouldStartReveal = previousPresentationKeyRef.current !== presentationKey;
-        } else {
-            shouldStartReveal = !isEqual(previousValueRef.current, value);
+            previousValueRef.current = value;
+            previousPresentationKeyRef.current = presentationKey;
+            return;
         }
+
+        const shouldStartReveal = presentationKey !== undefined
+            ? previousPresentationKeyRef.current !== presentationKey
+            : !isEqual(previousValueRef.current, value);
 
         previousValueRef.current = value;
         previousPresentationKeyRef.current = presentationKey;
 
         if (!shouldStartReveal) {
-            setIsRevealing(false);
-            return undefined;
+            return;
         }
 
         setIsRevealing(true);
+        setRevealSequence((previous) => previous + 1);
+    }, [isActive, isEqual, presentationKey, value]);
+
+    React.useEffect(() => {
+        if (!isActive || !isRevealing) {
+            return undefined;
+        }
+
         const stopReveal = window.setTimeout(() => {
             setIsRevealing(false);
         }, durationMs);
 
         return () => window.clearTimeout(stopReveal);
-    }, [animateOnMount, durationMs, isActive, isEqual, presentationKey, value]);
+    }, [durationMs, isActive, isRevealing, revealSequence]);
 
     return { isRevealing };
 }

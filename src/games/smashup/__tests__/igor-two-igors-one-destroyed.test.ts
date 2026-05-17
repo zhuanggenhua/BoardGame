@@ -53,13 +53,6 @@ describe('Igor: 场上有两个 Igor，一个被消灭', () => {
             currentPlayerIndex: 0,
         });
 
-        console.log('[TEST] Initial state:', {
-            bases: core.bases.map(b => ({
-                defId: b.defId,
-                minions: b.minions.map(m => ({ uid: m.uid, defId: m.defId, controller: m.controller, power: m.power }))
-            }))
-        });
-
         // 步骤1：玩家0打出 vampire_big_gulp
         const result1 = runCommand(makeMatchState(core), {
             type: SU_COMMANDS.PLAY_ACTION,
@@ -67,16 +60,9 @@ describe('Igor: 场上有两个 Igor，一个被消灭', () => {
             payload: { cardUid: 'bg1' },
         });
 
-        console.log('[TEST] After PLAY_ACTION:', {
-            success: result1.success,
-            error: result1.error,
-            events: result1.events.map(e => e.type),
-        });
-
         expect(result1.success).toBe(true);
         if (!result1.success) {
-            console.error('PLAY_ACTION failed:', result1.error);
-            return;
+            throw new Error(`PLAY_ACTION failed: ${result1.error ?? 'unknown error'}`);
         }
 
         // 应该创建一个交互：选择要消灭的随从
@@ -85,8 +71,6 @@ describe('Igor: 场上有两个 Igor，一个被消灭', () => {
         // 选项应该包含两个 Igor + 一个 howler
         const options = getPromptOptions(prompt1);
         expect(options.length).toBe(4);  // 3 minions + skip option
-
-        console.log('Big Gulp options:', options.map((o: any) => o.label));
 
         // 步骤2：玩家0选择消灭第一个 Igor（igor1）
         const igor1Option = getPromptOption(
@@ -102,10 +86,6 @@ describe('Igor: 场上有两个 Igor，一个被消灭', () => {
         // 应该创建一个交互：Igor onDestroy 让玩家1选择目标
         const prompt2 = getSimpleChoicePrompt(result2.finalState, 'frankenstein_igor');
         expect(getPromptPlayerId(prompt2)).toBe('1');  // Igor 属于玩家1
-
-        // 检查候选列表：应该只包含场上剩余的己方随从（igor2 + howler）
-        const igorOptions = getPromptOptions(prompt2);
-        console.log('Igor onDestroy options:', igorOptions.map((o: any) => o.label));
 
         // 关键断言：只应该有一个交互，不应该有第二个 Igor onDestroy 交互
         expect(getPromptsBySourceId(result2.finalState, 'frankenstein_igor')).toHaveLength(1);

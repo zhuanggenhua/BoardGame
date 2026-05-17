@@ -1,5 +1,5 @@
 import React from 'react';
-import { UI_Z_INDEX } from '../../../core';
+import { useResolvedOverlayTooltipZIndex } from './overlayLayer';
 
 interface InfoTooltipProps {
     title: React.ReactNode;
@@ -23,6 +23,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
     className = '',
     zIndex,
 }) => {
+    const resolvedZIndex = useResolvedOverlayTooltipZIndex(zIndex);
     if (!isVisible) return null;
 
     return (
@@ -36,7 +37,7 @@ export const InfoTooltip: React.FC<InfoTooltipProps> = ({
                 ${position === 'right' ? 'left-full ml-[0.8vw]' : 'right-full mr-[0.8vw]'}
                 ${className}
             `}
-            style={{ zIndex: zIndex ?? UI_Z_INDEX.tooltip }}
+            style={{ zIndex: resolvedZIndex }}
         >
             {/* 箭头 */}
             <div

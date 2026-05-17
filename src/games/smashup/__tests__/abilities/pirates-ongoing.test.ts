@@ -1,8 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import type { RandomFn } from '../../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
-import { clearRegistry, resolveAbility } from '../../domain/abilityRegistry';
-import type { AbilityContext } from '../../domain/abilityRegistry';
+import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
@@ -10,19 +9,24 @@ import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import { reduce } from '../../domain/reducer';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../../domain/scoringSession';
 import { resolveSmashUpReactionChoice, startSmashUpReactionSession } from '../../domain/reactionSession';
-import type { MinionMovedEvent } from '../../domain/types';
-import { SU_EVENTS } from '../../domain/types';
+import type { MinionMovedEvent, SmashUpCore, SmashUpEvent } from '../../domain/types';
+import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
+    expectNoPrompt,
     getOptionalSimpleChoicePrompt,
+    getPromptTargetType,
     getPromptOptions,
     getPromptSourceId,
     getSimpleChoicePrompt,
     makeBase,
+    makeCard,
     makeMatchState,
     makeMinion,
+    makePlayer,
     makeState,
     respondToPromptOption,
 } from '../helpers';
+import { runCommand } from '../testRunner';
 
 const dummyRandom: RandomFn = {
     random: () => 0.5,
@@ -40,6 +44,59 @@ beforeAll(() => {
     resetAbilityInit();
     initAllAbilities();
 });
+
+function execPlayAction(
+    state: SmashUpCore,
+    playerId: string,
+    cardUid: string,
+    targetBaseIndex?: number,
+    targetMinionUid?: string,
+) {
+    const result = runCommand(
+        makeMatchState(state),
+        {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId,
+            payload: { cardUid, targetBaseIndex, targetMinionUid },
+        } as any,
+        dummyRandom,
+    );
+    return { events: result.events as SmashUpEvent[], matchState: result.finalState };
+}
+
+function attachBeforeScoringWindow(core: ReturnType<typeof makeState>, sourceBaseIndex = 0, activePlayerId = '0') {
+    const scoringBaseState = {
+        core,
+        sys: {
+            ...makeMatchState(core).sys,
+            phase: 'scoreBases',
+            responseWindow: { current: undefined },
+        },
+    } as any;
+    const baseRef = createScoringBaseRef(core, sourceBaseIndex);
+    if (!baseRef) {
+        throw new Error('无法构造 pirate_full_sail 测试用 scoring base ref');
+    }
+    const matchState = startSmashUpReactionSession(
+        setScoringSession(scoringBaseState, {
+            ...createScoringSession(core, [sourceBaseIndex]),
+            currentBaseRef: baseRef,
+            currentStep: 'awaiting-response-window',
+        }),
+        {
+            frameId: `score-before:${sourceBaseIndex}:test`,
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId,
+            currentPlayerId: activePlayerId,
+            consecutivePasses: 0,
+            sourceBaseIndex,
+            responseWindowType: 'meFirst',
+        },
+    );
+    matchState.sys.responseWindow = { ...(matchState.sys.responseWindow ?? {}), current: undefined } as any;
+    return matchState;
+}
 
 describe('pirate_king beforeScoring', () => {
     it('计分前将不在计分基地的海盗王移过去', () => {
@@ -470,66 +527,72 @@ describe('pirate_buccaneer onMinionDestroyed', () => {
 describe('pirate_full_sail special', () => {
     it('有己方随从时产生含完成选项的 prompt', () => {
         const state = makeState({
-            bases: [makeBase({ minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })] }), makeBase()],
+            scoringEligibleBaseIndices: [0],
+            bases: [
+                makeBase({ defId: 'base_the_jungle', minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })] }),
+                makeBase('base_temple_of_goju'),
+            ],
+            players: {
+                '0': { ...makeState().players['0'], hand: [{ uid: 'fs-1', defId: 'pirate_full_sail', type: 'action', owner: '0' }] },
+                '1': makeState().players['1'],
+            },
         });
-        const executor = resolveAbility('pirate_full_sail', 'special');
-
-        const result = executor!({
-            state,
-            matchState: { core: state, sys: { phase: 'playCards', interaction: { queue: [] } } },
+        const result = runCommand(attachBeforeScoringWindow(state, 0, '0'), {
+            type: SU_COMMANDS.PLAY_ACTION,
             playerId: '0',
-            cardUid: 'fs-1',
-            defId: 'pirate_full_sail',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
+            payload: { cardUid: 'fs-1' },
+        } as any, dummyRandom);
 
-        const prompt = getSimpleChoicePrompt(result.matchState!, 'pirate_full_sail_choose_minion');
+        expect(result.success, result.error).toBe(true);
+        const prompt = getSimpleChoicePrompt(result.finalState, 'pirate_full_sail_choose_minion');
         expect(getPromptSourceId(prompt)).toBe('pirate_full_sail_choose_minion');
         expect(getPromptOptions(prompt).some(option => option.value.done === true)).toBe(true);
     });
 
-    it('无己方随从时不产生事件或 prompt', () => {
+    it('无己方随从时打出后不产生额外效果', () => {
         const state = makeState({
-            bases: [makeBase({ minions: [makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 })] }), makeBase()],
+            scoringEligibleBaseIndices: [0],
+            bases: [
+                makeBase({ defId: 'base_the_jungle', minions: [makeMinion('e1', 'test_minion', '1', 3, { powerModifier: 0 })] }),
+                makeBase('base_temple_of_goju'),
+            ],
+            players: {
+                '0': { ...makeState().players['0'], hand: [{ uid: 'fs-1', defId: 'pirate_full_sail', type: 'action', owner: '0' }] },
+                '1': makeState().players['1'],
+            },
         });
-        const executor = resolveAbility('pirate_full_sail', 'special');
-
-        const result = executor!({
-            state,
-            matchState: { core: state, sys: { phase: 'playCards', interaction: { queue: [] } } },
+        const result = runCommand(attachBeforeScoringWindow(state, 0, '0'), {
+            type: SU_COMMANDS.PLAY_ACTION,
             playerId: '0',
-            cardUid: 'fs-1',
-            defId: 'pirate_full_sail',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
+            payload: { cardUid: 'fs-1' },
+        } as any, dummyRandom);
 
-        expect(result.events).toEqual([]);
-        expect(result.matchState).toBeUndefined();
+        expect(result.success, result.error).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.ACTION_PLAYED)).toBe(true);
+        expect(getOptionalSimpleChoicePrompt(result.finalState, 'pirate_full_sail_choose_minion')).toBeUndefined();
     });
 
     it('选择完成时不产生移动事件', () => {
         const state = makeState({
-            bases: [makeBase({ minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })] }), makeBase()],
+            scoringEligibleBaseIndices: [0],
+            bases: [
+                makeBase({ defId: 'base_the_jungle', minions: [makeMinion('m1', 'test_minion', '0', 3, { powerModifier: 0 })] }),
+                makeBase('base_temple_of_goju'),
+            ],
+            players: {
+                '0': { ...makeState().players['0'], hand: [{ uid: 'fs-1', defId: 'pirate_full_sail', type: 'action', owner: '0' }] },
+                '1': makeState().players['1'],
+            },
         });
-        const executor = resolveAbility('pirate_full_sail', 'special');
-
-        const result = executor!({
-            state,
-            matchState: makeMatchState(state),
+        const result = runCommand(attachBeforeScoringWindow(state, 0, '0'), {
+            type: SU_COMMANDS.PLAY_ACTION,
             playerId: '0',
-            cardUid: 'fs-1',
-            defId: 'pirate_full_sail',
-            baseIndex: 0,
-            random: dummyRandom,
-            now: 0,
-        } as AbilityContext);
+            payload: { cardUid: 'fs-1' },
+        } as any, dummyRandom);
 
+        expect(result.success, result.error).toBe(true);
         const resolved = respondToPromptOption(
-            result.matchState!,
+            result.finalState,
             option => option.value?.done === true,
             'full sail done option',
             '0',
@@ -538,5 +601,257 @@ describe('pirate_full_sail special', () => {
 
         expect(resolved.success, resolved.error).toBe(true);
         expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+    });
+});
+
+describe('pirate action play flows', () => {
+    it('pirate_dinghy: 多个己方随从时创建 Prompt 选择', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_dinghy', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test', '0', 2, { powerModifier: 0 }),
+                        makeMinion('m1', 'test', '0', 3, { powerModifier: 0 }),
+                    ],
+                }),
+                makeBase({ defId: 'b2', minions: [] }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        getSimpleChoicePrompt(matchState, 'pirate_dinghy_choose_first');
+    });
+
+    it('pirate_dinghy: 只有一个己方随从时创建 Prompt', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_dinghy', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [makeMinion('m0', 'test', '0', 2, { powerModifier: 0 })],
+                }),
+                makeBase({ defId: 'b2', minions: [] }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        getSimpleChoicePrompt(matchState, 'pirate_dinghy_choose_first');
+    });
+
+    it('pirate_dinghy: 没有己方随从时无事件', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_dinghy', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [makeMinion('m1', 'test', '1', 3, { powerModifier: 0 })],
+                }),
+                makeBase({ defId: 'b2', minions: [] }),
+            ],
+        });
+
+        const { events, matchState } = execPlayAction(state, '0', 'a1');
+        expect(events.filter(event => event.type === SU_EVENTS.MINION_MOVED)).toHaveLength(0);
+        expectNoPrompt(matchState);
+    });
+
+    it('pirate_shanghai: 多目标时创建 Prompt 选择随从', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_shanghai', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m1', 'test', '1', 5),
+                        makeMinion('m2', 'test', '1', 3, { powerModifier: 0 }),
+                    ],
+                }),
+                makeBase({
+                    defId: 'b2',
+                    minions: [
+                        makeMinion('m3', 'test', '0', 4),
+                        makeMinion('m4', 'test', '0', 2, { powerModifier: 0 }),
+                    ],
+                }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        getSimpleChoicePrompt(matchState, 'pirate_shanghai_choose_minion');
+    });
+
+    it('pirate_sea_dogs: 多目标时创建 Prompt 选择派系', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_sea_dogs', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m1', 'robot_zapbot', '1', 5),
+                        makeMinion('m2', 'robot_hoverbot', '1', 2, { powerModifier: 0 }),
+                    ],
+                }),
+                makeBase({ defId: 'b2', minions: [] }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        getSimpleChoicePrompt(matchState, 'pirate_sea_dogs_choose_faction');
+    });
+
+    it('pirate_powderkeg: 单个己方随从时创建 Prompt', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_powderkeg', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'b1',
+                minions: [
+                    makeMinion('m0', 'test', '0', 2, { powerModifier: 0 }),
+                    makeMinion('m1', 'test', '1', 2),
+                    makeMinion('m2', 'test', '1', 5),
+                ],
+            })],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        getSimpleChoicePrompt(matchState, 'pirate_powderkeg');
+    });
+
+    it('pirate_powderkeg: 没有己方随从时无事件', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_powderkeg', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'b1',
+                minions: [makeMinion('m1', 'test', '1', 3, { powerModifier: 0 })],
+            })],
+        });
+
+        const { events, matchState } = execPlayAction(state, '0', 'a1');
+        expect(events.filter(event => event.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
+        expectNoPrompt(matchState);
+    });
+
+    it('pirate_broadside: 单个有己方随从的基地时先创建基地直点交互', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_broadside', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_test',
+                minions: [
+                    makeMinion('m0', 'test', '0', 5),
+                    makeMinion('m1', 'test', '1', 2, { powerModifier: 0 }),
+                    makeMinion('m2', 'test', '1', 1),
+                    makeMinion('m3', 'test', '1', 4),
+                ],
+            })],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1', 0);
+        const prompt = getSimpleChoicePrompt(matchState, 'pirate_broadside_choose_base');
+        expect(getPromptTargetType(prompt)).toBe('base');
+    });
+
+    it('pirate_cannon: 多目标时创建 Prompt 选择', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_cannon', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'b1', minions: [makeMinion('m1', 'test', '1', 1, { powerModifier: 0 })] }),
+                makeBase({ defId: 'b2', minions: [makeMinion('m2', 'test', '1', 2), makeMinion('m3', 'test', '1', 5, { powerModifier: 0 })] }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        getSimpleChoicePrompt(matchState, 'pirate_cannon_choose_first');
+    });
+
+    it('pirate_cannon: 单目标时创建 Prompt', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_cannon', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ defId: 'b1', minions: [makeMinion('m1', 'test', '1', 1, { powerModifier: 0 })] }),
+                makeBase({ defId: 'b2', minions: [makeMinion('m3', 'test', '1', 5, { powerModifier: 0 })] }),
+            ],
+        });
+
+        const { matchState } = execPlayAction(state, '0', 'a1');
+        getSimpleChoicePrompt(matchState, 'pirate_cannon_choose_first');
+    });
+
+    it('pirate_swashbuckling: 所有己方随从+1力量', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'pirate_swashbuckling', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({
+                    defId: 'b1',
+                    minions: [
+                        makeMinion('m0', 'test', '0', 3, { powerModifier: 0 }),
+                        makeMinion('m1', 'test', '1', 2, { powerModifier: 0 }),
+                    ],
+                }),
+                makeBase({ defId: 'b2', minions: [makeMinion('m2', 'test', '0', 4, { powerModifier: 0 })] }),
+            ],
+        });
+
+        const { events } = execPlayAction(state, '0', 'a1', 0);
+        const powerEvents = events.filter(e => e.type === SU_EVENTS.TEMP_POWER_ADDED);
+        expect(powerEvents).toHaveLength(2);
+        const boostedUids = powerEvents.map(e => (e as any).payload.minionUid);
+        expect(boostedUids).toContain('m0');
+        expect(boostedUids).toContain('m2');
     });
 });

@@ -164,6 +164,14 @@ function isInteractionContractTest(file) {
   );
 }
 
+function allowsDirectResolveAbility(file) {
+  const normalized = normalizeFile(file);
+  return (
+    normalized === 'src/games/smashup/__tests__/abilityRegistry.test.ts' ||
+    normalized === 'src/games/smashup/__tests__/properties/coreProperties.test.ts'
+  );
+}
+
 const forbiddenPromptCouplingPatterns = [
   {
     pattern: /\bgetInteractionsFromMS\s*\(/,
@@ -193,6 +201,14 @@ const forbiddenPromptCouplingPatterns = [
 
 const forbiddenDirectHandlerPatterns = [
   {
+    pattern: /import\s*\{[^}]*\bgetInteractionHandler\b[^}]*\}\s*from\s+['"][^'"]*domain\/abilityInteractionHandlers['"]/,
+    message: '业务测试不要直接导入 getInteractionHandler；请通过 helpers.ts 提供的 facade 或真实命令/交互链表达行为。',
+  },
+  {
+    pattern: /import\s*\{[^}]*\bgetAbilityRuntimePromptHandler\b[^}]*\}\s*from\s+['"][^'"]*domain\/abilityRuntime['"]/,
+    message: '业务测试不要直接导入 getAbilityRuntimePromptHandler；请通过 helpers.ts 提供的 facade 或真实 runtime prompt 响应链表达行为。',
+  },
+  {
     pattern: /\bgetInteractionHandler\s*\(/,
     message: '业务测试不要新增 getInteractionHandler(...) 直调；请优先通过真实 trigger/prompt/command 链或 facade 表达行为。只有注册表/系统合同或已登记的低层合同文件允许保留。',
   },
@@ -203,6 +219,24 @@ const forbiddenDirectHandlerPatterns = [
   {
     pattern: /\bresolvePromptViaRegisteredHandler\s*\(/,
     message: '业务测试不要新增 resolvePromptViaRegisteredHandler(...)；这仍然是 registered handler 直调。优先使用 respondToPrompt/respondToPromptOption(s) 表达真实点击路径。',
+  },
+];
+
+const forbiddenDirectAbilityRegistryPatterns = [
+  {
+    pattern: /import\s*\{[^}]*\bresolveAbility\b[^}]*\}\s*from\s+['"][^'"]*domain\/abilityRegistry['"]/,
+    message: '业务/能力测试不要直接导入 resolveAbility；公开行为请走真实命令入口，low-level ability 合同请走 helpers.ts 中的 invokeRegisteredAbilityContract(...)。只有注册表/属性合同文件允许保留。',
+  },
+  {
+    pattern: /\bresolveAbility\s*\(/,
+    message: '业务/能力测试不要新增裸 resolveAbility(...)；公开行为请走真实命令入口，low-level ability 合同请走 helpers.ts 中的 invokeRegisteredAbilityContract(...)。只有注册表/属性合同文件允许保留。',
+  },
+];
+
+const forbiddenDebugConsolePatterns = [
+  {
+    pattern: /\bconsole\.(?:log|warn|error|debug)\s*\(/,
+    message: '测试不要新增 console 调试输出；请把关键信息提升为结构化断言、失败消息或证据文档。',
   },
 ];
 
@@ -266,6 +300,36 @@ function checkDirectHandlerCoupling(file, existedAtBase) {
     for (const rule of forbiddenDirectHandlerPatterns) {
       if (rule.pattern.test(line)) {
         violations.push(`${file}: 新增测试行继续耦合已注册 handler（added line ${index + 1}）。${rule.message}`);
+      }
+    }
+  }
+}
+
+function checkDirectAbilityRegistryCoupling(file, existedAtBase) {
+  if (!isGameVitestTest(file) || allowsDirectResolveAbility(file)) {
+    return;
+  }
+
+  const lines = addedLinesSinceBase(file, existedAtBase);
+  for (const [index, line] of lines.entries()) {
+    for (const rule of forbiddenDirectAbilityRegistryPatterns) {
+      if (rule.pattern.test(line)) {
+        violations.push(`${file}: 新增测试行继续直接访问 ability registry（added line ${index + 1}）。${rule.message}`);
+      }
+    }
+  }
+}
+
+function checkDebugConsoleUsage(file, existedAtBase) {
+  if (!isGameVitestTest(file)) {
+    return;
+  }
+
+  const lines = addedLinesSinceBase(file, existedAtBase);
+  for (const [index, line] of lines.entries()) {
+    for (const rule of forbiddenDebugConsolePatterns) {
+      if (rule.pattern.test(line)) {
+        violations.push(`${file}: 新增测试行继续依赖调试控制台输出（added line ${index + 1}）。${rule.message}`);
       }
     }
   }
@@ -335,6 +399,8 @@ for (const file of targetFiles) {
   checkSkippedTestUsage(file, existedAtBase);
   checkPromptFacadeCoupling(file, existedAtBase);
   checkDirectHandlerCoupling(file, existedAtBase);
+  checkDirectAbilityRegistryCoupling(file, existedAtBase);
+  checkDebugConsoleUsage(file, existedAtBase);
 
   if (!isGameVitestTest(file) || !isGenericSinkName(file)) {
     continue;

@@ -16,7 +16,7 @@ import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
 import { smashUpSystemsForTest } from '../game';
 import type { SmashUpCore, SmashUpCommand, SmashUpEvent, MinionOnBase, PlayerState, CardInstance } from '../domain/types';
-import { SU_EVENTS, SU_COMMANDS } from '../domain/types';
+import { SU_EVENTS } from '../domain/types';
 import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
 import { clearRegistry } from '../domain/abilityRegistry';
@@ -26,7 +26,7 @@ import type { MatchState, PlayerId, RandomFn } from '../../../engine/types';
 import { createInitialSystemState } from '../../../engine/pipeline';
 import {
     expectNoPrompt,
-    getFirstPrompt,
+    getPromptOption,
     getPromptSourceId,
     getSimpleChoicePrompt,
     respondToPrompt,
@@ -87,6 +87,22 @@ function createRunner(setup: (ids: PlayerId[], random: RandomFn) => MatchState<S
     });
 }
 
+function expectSuccessfulResult<T extends { success: boolean; error?: string }>(
+    result: T,
+    message: string,
+): asserts result is T & { success: true } {
+    expect(result.success, result.error ? `${message}: ${result.error}` : message).toBe(true);
+    if (!result.success) {
+        throw new Error(result.error ? `${message}: ${result.error}` : message);
+    }
+}
+
+function expectAllStepsSucceeded(result: { steps: Array<{ success: boolean; step: number; commandType: string; error?: string }> }) {
+    for (const step of result.steps) {
+        expect(step.success, `Step ${step.step} (${step.commandType}) 失败: ${step.error}`).toBe(true);
+    }
+}
+
 // ============================================================================
 // 场景1：拉莱耶 onTurnStart 创建 Interaction → 回合切换卡死
 // ============================================================================
@@ -144,32 +160,24 @@ describe('拉莱耶 onTurnStart Interaction 导致回合切换卡死', () => {
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
             ] as any[],
         });
+        expectAllStepsSucceeded(result1);
 
         const state1 = result1.finalState;
-        console.log('STEP1 phase:', state1.sys.phase);
-        console.log('STEP1 interaction:', getFirstPrompt(state1)?.id);
-        console.log('STEP1 playerIndex:', state1.core.currentPlayerIndex);
 
         // 验证：流程应停在 startTurn，有 Interaction
         expect(state1.sys.phase).toBe('startTurn');
-        expect(getSimpleChoicePrompt(state1, 'base_rlyeh').id).toBe('base_rlyeh_0');
+        expect(state1.core.currentPlayerIndex).toBe(1);
+        const rlyehPrompt = getSimpleChoicePrompt(state1, 'base_rlyeh');
+        expect(rlyehPrompt.id).toBe('base_rlyeh_0');
+        expect(getPromptSourceId(rlyehPrompt)).toBe('base_rlyeh');
 
         // 第二步：P1 响应 Interaction
         const result2 = respondToPrompt(state1, 'skip', '1');
+        expectSuccessfulResult(result2, '响应拉莱耶 prompt 失败');
 
         const finalState = result2.finalState;
         const phase = finalState.sys.phase;
         const currentPlayerIndex = finalState.core.currentPlayerIndex;
-
-        console.log('最终阶段:', phase);
-        console.log('当前玩家索引:', currentPlayerIndex);
-        console.log('interaction.current:', getFirstPrompt(finalState)?.id);
-
-        // 验证推进步骤与响应步骤成功
-        for (const step of result1.steps) {
-            expect(step.success, `Step ${step.step} (${step.commandType}) 失败: ${step.error}`).toBe(true);
-        }
-        expect(result2.success, `响应拉莱耶 prompt 失败: ${result2.error}`).toBe(true);
 
         // 响应后应该推进到 playCards(P1)
         expect(phase).toBe('playCards');
@@ -211,7 +219,7 @@ describe('托尔图加 afterScoring Interaction 导致计分后流程异常', ()
                         ],
                         ongoingActions: [],
                     },
-                    { defId: 'base_tar_pits', minions: [], ongoingActions: [] },
+                    { defId: 'base_tar_pits', minions: [makeMinion('reserve_p1', '1', 2)], ongoingActions: [] },
                     { defId: 'base_central_brain', minions: [], ongoingActions: [] },
                 ],
                 baseDeck: ['base_castle_blood', 'base_the_homeworld'],
@@ -226,7 +234,7 @@ describe('托尔图加 afterScoring Interaction 导致计分后流程异常', ()
         };
     }
 
-    it('托尔图加达标 → 计分 → afterScoring Interaction → 流程应暂停等待响应', () => {
+    it('托尔图加达标 → 计分 → afterScoring Interaction → 流程应暂停等待亚军选择并在响应后恢复', () => {
         const runner = createRunner(createTortugaScoringSetup());
 
         // P0 推进到 scoreBases → 托尔图加达标
@@ -235,41 +243,41 @@ describe('托尔图加 afterScoring Interaction 导致计分后流程异常', ()
             commands: [
                 // playCards → scoreBases（托尔图加达标，Me First! 因无 special 卡自动关闭）
                 { type: 'ADVANCE_PHASE', playerId: '0', payload: undefined },
-                // P0 PASS Me First!（如果窗口打开的话）
+                // P0 PASS Me First!；随后应直接停在托尔图加的 afterScoring prompt
                 { type: 'RESPONSE_PASS', playerId: '0', payload: undefined },
-                // P1 PASS Me First!
-                { type: 'RESPONSE_PASS', playerId: '1', payload: undefined },
             ] as any[],
         });
+        expectAllStepsSucceeded(result);
 
         const finalState = result.finalState;
         const phase = finalState.sys.phase;
-        const prompt = getFirstPrompt(finalState);
-
-        console.log('最终阶段:', phase);
-        console.log('当前玩家索引:', finalState.core.currentPlayerIndex);
-        console.log('interaction.current:', prompt?.id);
-        console.log('flowHalted:', (finalState.sys as any).flowHalted);
+        const prompt = getSimpleChoicePrompt(finalState, 'base_tortuga');
 
         // 检查计分事件是否产生
         const allEvents = result.steps.flatMap(s => s.events);
         const hasBaseScored = allEvents.includes(SU_EVENTS.BASE_SCORED);
-        console.log('有 BASE_SCORED 事件:', hasBaseScored);
+        expect(hasBaseScored).toBe(true);
+        expect(phase).toBe('scoreBases');
+        expect(finalState.core.currentPlayerIndex).toBe(0);
+        expect((finalState.sys as any).flowHalted).toBe(true);
+        expect(getPromptSourceId(prompt)).toBe('base_tortuga');
+        expect(prompt.playerId).toBe('1');
 
-        if (hasBaseScored && prompt) {
-            // 如果有计分且有 Interaction，检查是否是托尔图加的
-            const sourceId = getPromptSourceId(prompt);
-            console.log('Interaction sourceId:', sourceId);
+        const moveReserveMinion = getPromptOption(
+            prompt,
+            option => option.value?.minionUid === 'reserve_p1' && option.value?.fromBaseIndex === 1,
+            '托尔图加应提供其他基地的亚军随从',
+        );
 
-            if (sourceId === 'base_tortuga') {
-                // 托尔图加的 afterScoring Interaction
-                // 正确行为：流程应该暂停在 scoreBases，等待 P1 响应
-                if (phase !== 'scoreBases') {
-                    console.error('BUG：托尔图加 Interaction 应该暂停在 scoreBases，但流程已推进到', phase);
-                }
-                // 无论如何，P1 应该能响应
-                expect(prompt.playerId).toBe('1');
-            }
-        }
+        const resolvePrompt = respondToPrompt(finalState, moveReserveMinion.id, '1');
+        expectSuccessfulResult(resolvePrompt, '响应托尔图加 prompt 失败');
+
+        const resolvedState = resolvePrompt.finalState;
+        expect(resolvedState.sys.phase).toBe('playCards');
+        expect(resolvedState.core.currentPlayerIndex).toBe(1);
+        expectNoPrompt(resolvedState);
+        expect(resolvedState.core.bases[0].defId).toBe('base_castle_blood');
+        expect(resolvedState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['reserve_p1']);
+        expect(resolvedState.core.bases[1].minions).toHaveLength(0);
     });
 });

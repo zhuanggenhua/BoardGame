@@ -25,8 +25,6 @@ beforeAll(() => { initAllAbilities(); });
 
 describe('baseScoreCheck', () => {
     it('produces BASE_SCORED in EventStream', () => {
-        console.log('=== baseScoreCheck START ===');
-
         const core: SmashUpCore = {
             players: {
                 '0': { id: '0', vp: 0, hand: [], deck: [], discard: [], minionsPlayed: 0, minionLimit: 1, actionsPlayed: 0, actionLimit: 1, factions: ['aliens', 'dinosaurs'] },
@@ -54,8 +52,6 @@ describe('baseScoreCheck', () => {
         sys.phase = 'playCards';
         const state: MatchState<SmashUpCore> = { core, sys };
 
-        console.log('phase before pipeline:', state.sys.phase);
-
         // Step 1: ADVANCE_PHASE from playCards → scoreBases
         // 这会打开 Me First! 响应窗口
         let current = executePipeline(
@@ -65,8 +61,6 @@ describe('baseScoreCheck', () => {
             rng,
             PLAYER_IDS,
         );
-        console.log('after ADVANCE_PHASE - phase:', current.state.sys.phase);
-        console.log('responseWindow:', current.state.sys.responseWindow?.current ? 'OPEN' : 'closed');
 
         // Step 2: 两位玩家都 PASS Me First! 响应窗口
         current = executePipeline(
@@ -76,7 +70,6 @@ describe('baseScoreCheck', () => {
             rng,
             PLAYER_IDS,
         );
-        console.log('after P0 PASS - phase:', current.state.sys.phase, 'responseWindow:', current.state.sys.responseWindow?.current ? 'OPEN' : 'closed');
 
         current = executePipeline(
             { domain: SmashUpDomain, systems },
@@ -85,18 +78,11 @@ describe('baseScoreCheck', () => {
             rng,
             PLAYER_IDS,
         );
-        console.log('after P1 PASS - phase:', current.state.sys.phase, 'responseWindow:', current.state.sys.responseWindow?.current ? 'OPEN' : 'closed');
 
         const result = current;
 
-        console.log('pipeline success:', result.success);
-        console.log('final phase:', result.state.sys.phase);
-
         const entries = getEventStreamEntries(result.state);
         const scored = entries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        console.log('total entries:', entries.length);
-        console.log('BASE_SCORED count:', scored.length);
-        console.log('event types:', [...new Set(entries.map(e => e.event.type))]);
 
         expect(scored.length).toBeGreaterThan(0);
     });

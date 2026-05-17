@@ -1,14 +1,556 @@
 import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
+import { registerChoiceEffectHandler } from '../choiceEffects';
 import { RESOURCE_IDS } from '../resources';
 import { buildDrawEvents } from '../deckEvents';
-import { getPlayerDieFace } from '../rules';
+import {
+    getActiveDice,
+    getMaxDuplicateValueCount,
+    getOpponents,
+    getPlayerDieFace,
+    getSeatingOrder,
+    getTeammateId,
+    getTokenStackLimit,
+} from '../rules';
 import { CP_MAX } from '../types';
 import type {
+    BonusDamageAddedEvent,
     BonusDieRolledEvent,
     CpChangedEvent,
+    DamageDealtEvent,
     DiceThroneEvent,
     HealAppliedEvent,
+    PendingAttackUpdatedEvent,
+    ChoiceRequestedEvent,
+    TokenConsumedEvent,
+    TokenGrantedEvent,
 } from '../events';
+import { TOKEN_IDS, TREANT_DICE_FACE_IDS } from '../ids';
+
+const WILD_GROWTH_CHOICE_ID = 'treant-wild-growth-resolve';
+const SHATTERING_FIST_CHOICE_ID = 'treant-shattering-fist-resolve';
+const SHATTERING_FIST_3_CULTIVATE_CHOICE_ID = 'treant-shattering-fist-3-cultivate-resolve';
+const QUIET_CULTIVATION_CHOICE_ID = 'treant-quiet-cultivation-resolve';
+const NATURE_TOUCH_CULTIVATE_CHOICE_ID = 'treant-nature-touch-cultivate-resolve';
+const ROOTED_CHOICE_ID = 'treant-rooted-resolve';
+const FOREST_AWAKENS_CHOICE_ID = 'treant-forest-awakens-resolve';
+const DRINK_DEEP_CHOICE_ID = 'treant-card-drink-deep-resolve';
+const HARVEST_CHOICE_ID = 'treant-card-harvest-resolve';
+const DOWNPOUR_CHOICE_ID = 'treant-card-downpour-resolve';
+const CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT: Record<number, string> = {
+    1: 'treant-card-cultivate-1-resolve',
+    2: 'treant-card-cultivate-2-resolve',
+    3: 'treant-card-cultivate-3-resolve',
+    4: 'treant-card-cultivate-4-resolve',
+};
+const TEND_CARE_CHOICE_ID_BY_AMOUNT: Record<number, string> = {
+    3: 'treant-tend-care-3-resolve',
+    4: 'treant-tend-care-4-resolve',
+};
+const NATURE_TOUCH_CULTIVATE_AMOUNT = 2;
+const FOREST_AWAKENS_CULTIVATE_AMOUNT = 5;
+
+type WildGrowthChoice = {
+    seedling: number;
+    sapling: number;
+    divine: number;
+    lifeSap: boolean;
+};
+
+type ShatteringFistChoice = {
+    seedling: number;
+    sapling: number;
+    divine: number;
+};
+
+type SpiritCounts = {
+    seedling: number;
+    sapling: number;
+    divine: number;
+};
+
+type SpiritLimits = SpiritCounts;
+type TreantSpiritContext = Pick<CustomActionContext, 'attackerId' | 'state'>;
+
+type RootedChoice = {
+    seedling: number;
+    sapling: number;
+    divine: number;
+    lifeSapTargetIndex: number;
+};
+
+type TendCareChoice = {
+    seedling: number;
+    sapling: number;
+    divine: number;
+    lifeSapTargetIndex: number;
+    thornTargetIndex: number;
+};
+
+type HarvestChoice = {
+    seedling: number;
+    sapling: number;
+    divine: number;
+    lifeSapTargetMask: number;
+};
+
+function encodeWildGrowthChoice(choice: WildGrowthChoice): number {
+    return choice.seedling + choice.sapling * 10 + choice.divine * 100 + (choice.lifeSap ? 1000 : 0);
+}
+
+function decodeWildGrowthChoice(value?: number): WildGrowthChoice {
+    const raw = Math.max(0, Math.floor(value ?? 0));
+    return {
+        seedling: raw % 10,
+        sapling: Math.floor(raw / 10) % 10,
+        divine: Math.floor(raw / 100) % 10,
+        lifeSap: Math.floor(raw / 1000) % 10 > 0,
+    };
+}
+
+function getWildGrowthChoiceLabelKey(choice: WildGrowthChoice): string {
+    const parts: string[] = [];
+    if (choice.seedling > 0) parts.push(`seedling${choice.seedling}`);
+    if (choice.sapling > 0) parts.push(`sapling${choice.sapling}`);
+    if (choice.divine > 0) parts.push(`divine${choice.divine}`);
+    const tokenKey = parts.length > 0 ? parts.join('_') : 'none';
+    return `choices.treantWildGrowth.${tokenKey}${choice.lifeSap ? '_life' : ''}`;
+}
+
+function encodeShatteringFistChoice(choice: ShatteringFistChoice): number {
+    return encodeSpiritCounts(choice);
+}
+
+function decodeShatteringFistChoice(value?: number): ShatteringFistChoice {
+    return decodeSpiritCounts(value);
+}
+
+function getShatteringFistChoiceLabelKey(choice: ShatteringFistChoice): string {
+    if (choice.seedling > 0) return 'choices.treantShatteringFist.seedling';
+    if (choice.sapling > 0) return 'choices.treantShatteringFist.sapling';
+    if (choice.divine > 0) return 'choices.treantShatteringFist.divine';
+    return 'choices.treantShatteringFist.none';
+}
+
+function encodeSpiritCounts(counts: SpiritCounts): number {
+    return counts.seedling + counts.sapling * 10 + counts.divine * 100;
+}
+
+function decodeSpiritCounts(value?: number): SpiritCounts {
+    const raw = Math.max(0, Math.floor(value ?? 0));
+    return {
+        seedling: raw % 10,
+        sapling: Math.floor(raw / 10) % 10,
+        divine: Math.floor(raw / 100) % 10,
+    };
+}
+
+function getSpiritCounts({ attackerId, state }: TreantSpiritContext): SpiritCounts {
+    const tokens = state.players[attackerId]?.tokens ?? {};
+    return {
+        seedling: tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+        sapling: tokens[TOKEN_IDS.TREANT_SAPLING] ?? 0,
+        divine: tokens[TOKEN_IDS.TREANT_DIVINE] ?? 0,
+    };
+}
+
+function getSpiritLimits({ attackerId, state }: TreantSpiritContext): SpiritLimits {
+    return {
+        seedling: getTokenStackLimit(state, attackerId, TOKEN_IDS.TREANT_SEEDLING),
+        sapling: getTokenStackLimit(state, attackerId, TOKEN_IDS.TREANT_SAPLING),
+        divine: getTokenStackLimit(state, attackerId, TOKEN_IDS.TREANT_DIVINE),
+    };
+}
+
+function totalSpirits(counts: SpiritCounts): number {
+    return counts.seedling + counts.sapling + counts.divine;
+}
+
+function nextCultivateStates(current: SpiritCounts, limits: SpiritLimits): SpiritCounts[] {
+    const next: SpiritCounts[] = [];
+    if (current.seedling < limits.seedling) {
+        next.push({ ...current, seedling: current.seedling + 1 });
+    }
+    if (current.seedling > 0 && current.sapling < limits.sapling) {
+        next.push({ seedling: current.seedling - 1, sapling: current.sapling + 1, divine: current.divine });
+    }
+    if (current.sapling > 0 && current.divine < limits.divine) {
+        next.push({ seedling: current.seedling, sapling: current.sapling - 1, divine: current.divine + 1 });
+    }
+    return next;
+}
+
+function enumerateCultivateOutcomes(current: SpiritCounts, limits: SpiritLimits, amount: number): SpiritCounts[] {
+    const outcomes = new Map<number, SpiritCounts>();
+
+    const visit = (counts: SpiritCounts, remaining: number): void => {
+        if (remaining <= 0) {
+            outcomes.set(encodeSpiritCounts(counts), counts);
+            return;
+        }
+
+        const nextStates = nextCultivateStates(counts, limits);
+        if (nextStates.length === 0) {
+            outcomes.set(encodeSpiritCounts(counts), counts);
+            return;
+        }
+
+        for (const next of nextStates) {
+            visit(next, remaining - 1);
+        }
+    };
+
+    visit(current, amount);
+    return Array.from(outcomes.values()).sort((a, b) => {
+        const totalDiff = totalSpirits(b) - totalSpirits(a);
+        if (totalDiff !== 0) return totalDiff;
+        if (a.divine !== b.divine) return b.divine - a.divine;
+        if (a.sapling !== b.sapling) return b.sapling - a.sapling;
+        return b.seedling - a.seedling;
+    });
+}
+
+function enumerateDownpourOutcomes(current: SpiritCounts, limits: SpiritLimits): SpiritCounts[] {
+    const outcomes = new Map<number, SpiritCounts>();
+
+    for (let seedlingUp = 0; seedlingUp <= current.seedling; seedlingUp += 1) {
+        for (let saplingUp = 0; saplingUp <= current.sapling; saplingUp += 1) {
+            const target: SpiritCounts = {
+                seedling: current.seedling - seedlingUp,
+                sapling: current.sapling - saplingUp + seedlingUp,
+                divine: current.divine + saplingUp,
+            };
+            if (target.seedling > limits.seedling || target.sapling > limits.sapling || target.divine > limits.divine) {
+                continue;
+            }
+            outcomes.set(encodeSpiritCounts(target), target);
+        }
+    }
+
+    return Array.from(outcomes.values()).sort((a, b) => {
+        if (a.divine !== b.divine) return b.divine - a.divine;
+        if (a.sapling !== b.sapling) return b.sapling - a.sapling;
+        return b.seedling - a.seedling;
+    });
+}
+
+function getCultivateLabelKey(counts: SpiritCounts): string {
+    return `choices.treantCultivate.s${counts.seedling}_a${counts.sapling}_d${counts.divine}`;
+}
+
+function buildSpiritTransitionEvents(
+    ctx: TreantSpiritContext & { sourceAbilityId: string; timestamp: number },
+    target: SpiritCounts,
+): DiceThroneEvent[] {
+    const current = getSpiritCounts(ctx);
+    const transitions: Array<{ tokenId: string; current: number; target: number }> = [
+        { tokenId: TOKEN_IDS.TREANT_SEEDLING, current: current.seedling, target: target.seedling },
+        { tokenId: TOKEN_IDS.TREANT_SAPLING, current: current.sapling, target: target.sapling },
+        { tokenId: TOKEN_IDS.TREANT_DIVINE, current: current.divine, target: target.divine },
+    ];
+
+    return transitions.flatMap(({ tokenId, current: currentAmount, target: targetAmount }, index) => {
+        const delta = targetAmount - currentAmount;
+        if (delta === 0) return [];
+        if (delta > 0) {
+            return [{
+                type: 'TOKEN_GRANTED',
+                payload: {
+                    targetId: ctx.attackerId,
+                    tokenId,
+                    amount: delta,
+                    newTotal: targetAmount,
+                    sourceAbilityId: ctx.sourceAbilityId,
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: ctx.timestamp + index * 0.001,
+            } as TokenGrantedEvent];
+        }
+
+        return [{
+            type: 'TOKEN_CONSUMED',
+            payload: {
+                playerId: ctx.attackerId,
+                tokenId,
+                amount: Math.abs(delta),
+                newTotal: targetAmount,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: ctx.timestamp + index * 0.001,
+        } as TokenConsumedEvent];
+    });
+}
+
+function encodeRootedChoice(choice: RootedChoice): number {
+    return encodeSpiritCounts(choice) + (choice.lifeSapTargetIndex + 1) * 1000;
+}
+
+function decodeRootedChoice(value?: number): RootedChoice {
+    const raw = Math.max(0, Math.floor(value ?? 0));
+    return {
+        ...decodeSpiritCounts(raw % 1000),
+        lifeSapTargetIndex: Math.floor(raw / 1000) - 1,
+    };
+}
+
+function getRootedChoiceLabelKey(choice: RootedChoice, needsCultivate: boolean, needsLifeSap: boolean): string {
+    const cultivateKey = needsCultivate
+        ? `s${choice.seedling}_a${choice.sapling}_d${choice.divine}`
+        : 'none';
+    const targetKey = needsLifeSap
+        ? `p${choice.lifeSapTargetIndex}`
+        : 'none';
+    return `choices.treantRooted.${cultivateKey}_${targetKey}`;
+}
+
+function getRootedLifeSapTargetIds(state: CustomActionContext['state'], playerId: string): string[] {
+    return [playerId, ...Object.keys(state.players).filter(id => id !== playerId)];
+}
+
+function encodeTendCareChoice(choice: TendCareChoice): number {
+    return encodeSpiritCounts(choice) + (choice.lifeSapTargetIndex + 1) * 1000 + (choice.thornTargetIndex + 1) * 10000;
+}
+
+function encodeHarvestChoice(choice: HarvestChoice): number {
+    return encodeSpiritCounts(choice) + choice.lifeSapTargetMask * 1000;
+}
+
+function decodeHarvestChoice(value?: number): HarvestChoice {
+    const raw = Math.max(0, Math.floor(value ?? 0));
+    return {
+        ...decodeSpiritCounts(raw % 1000),
+        lifeSapTargetMask: Math.floor(raw / 1000),
+    };
+}
+
+function decodeTendCareChoice(value?: number): TendCareChoice {
+    const raw = Math.max(0, Math.floor(value ?? 0));
+    return {
+        ...decodeSpiritCounts(raw % 1000),
+        lifeSapTargetIndex: Math.floor(raw / 1000) % 10 - 1,
+        thornTargetIndex: Math.floor(raw / 10000) % 10 - 1,
+    };
+}
+
+function getTendCareCultivateAmount(action: CustomActionContext['action']): number {
+    const amount = Number(action.cultivateAmount);
+    return amount === 4 ? 4 : 3;
+}
+
+function getTendCareChoiceId(amount: number): string {
+    return TEND_CARE_CHOICE_ID_BY_AMOUNT[amount] ?? TEND_CARE_CHOICE_ID_BY_AMOUNT[3];
+}
+
+function getTendCareLifeSapTargetIds(state: CustomActionContext['state']): string[] {
+    return getSeatingOrder(state);
+}
+
+function getChoicePlayerLabel(state: CustomActionContext['state'], playerId: string): string {
+    const seatIndex = getSeatingOrder(state).indexOf(playerId);
+    return seatIndex >= 0 ? `P${seatIndex + 1}` : playerId;
+}
+
+function getChoicePlayerListLabel(state: CustomActionContext['state'], playerIds: string[]): string {
+    if (playerIds.length === 0) return 'none';
+    return playerIds.map(id => getChoicePlayerLabel(state, id)).join(', ');
+}
+
+function buildWildGrowthChoices({ attackerId, state }: CustomActionContext): ChoiceRequestedEvent['payload']['options'] {
+    const tokens = state.players[attackerId]?.tokens ?? {};
+    const maxSeedling = Math.min(tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0, 2);
+    const maxSapling = Math.min(tokens[TOKEN_IDS.TREANT_SAPLING] ?? 0, 2);
+    const maxDivine = Math.min(tokens[TOKEN_IDS.TREANT_DIVINE] ?? 0, 2);
+    const hasLifeSap = (tokens[TOKEN_IDS.LIFE_SAP] ?? 0) > 0;
+    const choices: WildGrowthChoice[] = [];
+
+    for (let seedling = 0; seedling <= maxSeedling; seedling += 1) {
+        for (let sapling = 0; sapling <= maxSapling; sapling += 1) {
+            for (let divine = 0; divine <= maxDivine; divine += 1) {
+                const treeCount = seedling + sapling + divine;
+                if (treeCount > 2) continue;
+                choices.push({ seedling, sapling, divine, lifeSap: false });
+                if (hasLifeSap) {
+                    choices.push({ seedling, sapling, divine, lifeSap: true });
+                }
+            }
+        }
+    }
+
+    return choices
+        .sort((a, b) => {
+            const countA = a.seedling + a.sapling + a.divine;
+            const countB = b.seedling + b.sapling + b.divine;
+            if (countA !== countB) return countA - countB;
+            if (a.lifeSap !== b.lifeSap) return a.lifeSap ? 1 : -1;
+            if (a.seedling !== b.seedling) return a.seedling - b.seedling;
+            if (a.sapling !== b.sapling) return a.sapling - b.sapling;
+            return a.divine - b.divine;
+        })
+        .map(choice => ({
+            value: encodeWildGrowthChoice(choice),
+            customId: WILD_GROWTH_CHOICE_ID,
+            labelKey: getWildGrowthChoiceLabelKey(choice),
+        }));
+}
+
+function buildShatteringFistChoices({ attackerId, state }: CustomActionContext): ChoiceRequestedEvent['payload']['options'] {
+    const tokens = state.players[attackerId]?.tokens ?? {};
+    const choices: ShatteringFistChoice[] = [
+        { seedling: 0, sapling: 0, divine: 0 },
+    ];
+    if ((tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0) > 0) {
+        choices.push({ seedling: 1, sapling: 0, divine: 0 });
+    }
+    if ((tokens[TOKEN_IDS.TREANT_SAPLING] ?? 0) > 0) {
+        choices.push({ seedling: 0, sapling: 1, divine: 0 });
+    }
+    if ((tokens[TOKEN_IDS.TREANT_DIVINE] ?? 0) > 0) {
+        choices.push({ seedling: 0, sapling: 0, divine: 1 });
+    }
+
+    return choices.map(choice => ({
+        value: encodeShatteringFistChoice(choice),
+        customId: SHATTERING_FIST_CHOICE_ID,
+        labelKey: getShatteringFistChoiceLabelKey(choice),
+    }));
+}
+
+function hasThreeMatchingDieValues(ctx: CustomActionContext): boolean {
+    return getMaxDuplicateValueCount(getActiveDice(ctx.state)) >= 3;
+}
+
+function buildNatureTouchCultivateChoices(ctx: CustomActionContext): ChoiceRequestedEvent['payload']['options'] {
+    const outcomes = enumerateCultivateOutcomes(
+        getSpiritCounts(ctx),
+        getSpiritLimits(ctx),
+        NATURE_TOUCH_CULTIVATE_AMOUNT,
+    );
+
+    return outcomes.map(outcome => ({
+        value: encodeSpiritCounts(outcome),
+        customId: NATURE_TOUCH_CULTIVATE_CHOICE_ID,
+        labelKey: getCultivateLabelKey(outcome),
+    }));
+}
+
+function buildTendCareChoices(ctx: CustomActionContext): ChoiceRequestedEvent['payload']['options'] {
+    const cultivateAmount = getTendCareCultivateAmount(ctx.action);
+    const outcomes = enumerateCultivateOutcomes(
+        getSpiritCounts(ctx),
+        getSpiritLimits(ctx),
+        cultivateAmount,
+    );
+    const lifeSapTargetIds = getTendCareLifeSapTargetIds(ctx.state);
+    const thornTargetIds = getOpponents(ctx.state, ctx.attackerId);
+
+    return outcomes.flatMap((outcome) => lifeSapTargetIds.flatMap((lifeSapTargetId, lifeSapTargetIndex) =>
+        thornTargetIds.map((thornTargetId, thornTargetIndex) => ({
+            value: encodeTendCareChoice({
+                ...outcome,
+                lifeSapTargetIndex,
+                thornTargetIndex,
+            }),
+            customId: getTendCareChoiceId(cultivateAmount),
+            labelKey: 'choices.treantTendCare.option',
+            labelParams: {
+                seedling: outcome.seedling,
+                sapling: outcome.sapling,
+                divine: outcome.divine,
+                lifeSapTarget: getChoicePlayerLabel(ctx.state, lifeSapTargetId),
+                thornTarget: getChoicePlayerLabel(ctx.state, thornTargetId),
+            },
+        }))
+    ));
+}
+
+function buildForestAwakensChoices(ctx: CustomActionContext): ChoiceRequestedEvent['payload']['options'] {
+    const outcomes = enumerateCultivateOutcomes(
+        getSpiritCounts(ctx),
+        getSpiritLimits(ctx),
+        FOREST_AWAKENS_CULTIVATE_AMOUNT,
+    );
+
+    return outcomes.map(outcome => ({
+        value: encodeSpiritCounts(outcome),
+        customId: FOREST_AWAKENS_CHOICE_ID,
+        labelKey: getCultivateLabelKey(outcome),
+    }));
+}
+
+function getCardCultivateAmount(action: CustomActionContext['action']): number {
+    const amount = Number(action.cultivateAmount);
+    if (amount === 1 || amount === 2 || amount === 4) return amount;
+    return 3;
+}
+
+function getCardCultivateChoiceId(amount: number): string {
+    return CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[amount] ?? CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[3];
+}
+
+function buildCardCultivateChoices(ctx: CustomActionContext, amount: number): ChoiceRequestedEvent['payload']['options'] {
+    return enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), amount).map(outcome => ({
+        value: encodeSpiritCounts(outcome),
+        customId: getCardCultivateChoiceId(amount),
+        labelKey: getCultivateLabelKey(outcome),
+    }));
+}
+
+function bitCount(value: number): number {
+    let count = 0;
+    let remaining = Math.max(0, Math.floor(value));
+    while (remaining > 0) {
+        count += remaining & 1;
+        remaining >>= 1;
+    }
+    return count;
+}
+
+function getMaskPlayerIds(playerIds: string[], mask: number): string[] {
+    return playerIds.filter((_, index) => (mask & (1 << index)) !== 0);
+}
+
+function buildHarvestChoices(ctx: CustomActionContext): ChoiceRequestedEvent['payload']['options'] {
+    const current = getSpiritCounts(ctx);
+    const playerIds = getSeatingOrder(ctx.state);
+    const choices: HarvestChoice[] = [];
+
+    for (let seedling = 0; seedling <= Math.min(current.seedling, 3); seedling += 1) {
+        for (let sapling = 0; sapling <= Math.min(current.sapling, 3); sapling += 1) {
+            for (let divine = 0; divine <= Math.min(current.divine, 3); divine += 1) {
+                const removed = seedling + sapling + divine;
+                if (removed > 3) continue;
+
+                if (removed < 2) {
+                    choices.push({ seedling, sapling, divine, lifeSapTargetMask: 0 });
+                    continue;
+                }
+
+                const maxMask = 1 << playerIds.length;
+                for (let mask = 0; mask < maxMask; mask += 1) {
+                    if (bitCount(mask) <= 2) {
+                        choices.push({ seedling, sapling, divine, lifeSapTargetMask: mask });
+                    }
+                }
+            }
+        }
+    }
+
+    return choices.map(choice => {
+        const selectedPlayerIds = getMaskPlayerIds(playerIds, choice.lifeSapTargetMask);
+        const removed = choice.seedling + choice.sapling + choice.divine;
+        return {
+            value: encodeHarvestChoice(choice),
+            customId: HARVEST_CHOICE_ID,
+            labelKey: 'choices.treantHarvest.option',
+            labelParams: {
+                seedling: choice.seedling,
+                sapling: choice.sapling,
+                divine: choice.divine,
+                cp: removed,
+                targets: getChoicePlayerListLabel(ctx.state, selectedPlayerIds),
+            },
+        };
+    });
+}
 
 function handleSaplingHealCp({ attackerId, sourceAbilityId, state, timestamp }: CustomActionContext): DiceThroneEvent[] {
     const currentCp = state.players[attackerId]?.resources[RESOURCE_IDS.CP] ?? 0;
@@ -79,8 +621,1113 @@ function handleLifeSapUse({ attackerId, sourceAbilityId, state, timestamp, rando
     ];
 }
 
+function handleWildGrowthChoice(ctx: CustomActionContext): DiceThroneEvent[] {
+    const options = buildWildGrowthChoices(ctx);
+    if (options.length <= 1) return [];
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantWildGrowth.title',
+            options,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleShatteringFistChoice(ctx: CustomActionContext): DiceThroneEvent[] {
+    const options = buildShatteringFistChoices(ctx);
+    if (options.length <= 1) return [];
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantShatteringFist.title',
+            options,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleShatteringFist3Cultivate(ctx: CustomActionContext): DiceThroneEvent[] {
+    if (!hasThreeMatchingDieValues(ctx)) return [];
+    const outcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), 1);
+    if (outcomes.length === 0) return [];
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantShatteringFist.cultivateTitle',
+            options: outcomes.map(outcome => ({
+                value: encodeSpiritCounts(outcome),
+                customId: SHATTERING_FIST_3_CULTIVATE_CHOICE_ID,
+                labelKey: getCultivateLabelKey(outcome),
+            })),
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleQuietCultivation(ctx: CustomActionContext): DiceThroneEvent[] {
+    const outcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), 1);
+    if (outcomes.length === 0) return [];
+    if (outcomes.length === 1) {
+        return buildSpiritTransitionEvents(ctx, outcomes[0]);
+    }
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantQuietCultivation.title',
+            options: outcomes.map(outcome => ({
+                value: encodeSpiritCounts(outcome),
+                customId: QUIET_CULTIVATION_CHOICE_ID,
+                labelKey: getCultivateLabelKey(outcome),
+            })),
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleNatureTouchCultivate(ctx: CustomActionContext): DiceThroneEvent[] {
+    const options = buildNatureTouchCultivateChoices(ctx);
+    if (options.length === 0) return [];
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantCultivate.title',
+            options,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleTendCareChoice(ctx: CustomActionContext): DiceThroneEvent[] {
+    const options = buildTendCareChoices(ctx);
+    if (options.length === 0) return [];
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantTendCare.title',
+            options,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleForestAwakensChoice(ctx: CustomActionContext): DiceThroneEvent[] {
+    const options = buildForestAwakensChoices(ctx);
+    if (options.length === 0) return [];
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantForestAwakens.title',
+            options,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleCardCultivate(ctx: CustomActionContext): DiceThroneEvent[] {
+    const amount = getCardCultivateAmount(ctx.action);
+    const outcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), amount);
+    if (outcomes.length === 0) return [];
+    if (outcomes.length === 1) {
+        return buildSpiritTransitionEvents(ctx, outcomes[0]);
+    }
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantCultivate.title',
+            options: buildCardCultivateChoices(ctx, amount),
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleDrinkDeep(ctx: CustomActionContext): DiceThroneEvent[] {
+    const playerIds = getSeatingOrder(ctx.state);
+    if (playerIds.length === 0) return [];
+    if (playerIds.length === 1) {
+        const currentLifeSap = ctx.state.players[playerIds[0]]?.tokens[TOKEN_IDS.LIFE_SAP] ?? 0;
+        const maxLifeSap = getTokenStackLimit(ctx.state, playerIds[0], TOKEN_IDS.LIFE_SAP);
+        return [{
+            type: 'TOKEN_GRANTED',
+            payload: {
+                targetId: playerIds[0],
+                tokenId: TOKEN_IDS.LIFE_SAP,
+                amount: Math.max(0, Math.min(currentLifeSap + 1, maxLifeSap) - currentLifeSap),
+                newTotal: Math.min(currentLifeSap + 1, maxLifeSap),
+                sourceAbilityId: ctx.sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: ctx.timestamp,
+        } as TokenGrantedEvent];
+    }
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantDrinkDeep.title',
+            options: playerIds.map((playerId, index) => ({
+                value: index,
+                customId: DRINK_DEEP_CHOICE_ID,
+                labelKey: 'choices.treantDrinkDeep.option',
+                labelParams: { player: getChoicePlayerLabel(ctx.state, playerId) },
+            })),
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleHarvest(ctx: CustomActionContext): DiceThroneEvent[] {
+    const options = buildHarvestChoices(ctx);
+    if (options.length === 0) return [];
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantHarvest.title',
+            options,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleDownpour(ctx: CustomActionContext): DiceThroneEvent[] {
+    const outcomes = enumerateDownpourOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx));
+    if (outcomes.length === 0) return [];
+    if (outcomes.length === 1) {
+        return buildSpiritTransitionEvents(ctx, outcomes[0]);
+    }
+
+    return [{
+        type: 'CHOICE_REQUESTED',
+        payload: {
+            playerId: ctx.attackerId,
+            sourceAbilityId: ctx.sourceAbilityId,
+            titleKey: 'choices.treantDownpour.title',
+            options: outcomes.map(outcome => ({
+                value: encodeSpiritCounts(outcome),
+                customId: DOWNPOUR_CHOICE_ID,
+                labelKey: getCultivateLabelKey(outcome),
+            })),
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp: ctx.timestamp,
+    } as ChoiceRequestedEvent];
+}
+
+function handleTrample(ctx: CustomActionContext): DiceThroneEvent[] {
+    const { attackerId, sourceAbilityId, state, timestamp, random } = ctx;
+    if (!random) return [];
+
+    const dice: Array<{ index: number; value: number; face: string; effectKey: string; effectParams: Record<string, number> }> = [];
+    const events: DiceThroneEvent[] = [];
+    let branchCount = 0;
+
+    for (let i = 0; i < 5; i += 1) {
+        const value = random.d(6);
+        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        if (face === TREANT_DICE_FACE_IDS.BRANCH) branchCount += 1;
+        const effectKey = `bonusDie.effect.treantTrample.${face || 'other'}`;
+        const effectParams = { value, index: i };
+        dice.push({ index: i, value, face, effectKey, effectParams });
+        events.push({
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId: attackerId,
+                targetPlayerId: ctx.targetId,
+                effectKey,
+                effectParams,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + i,
+        } as BonusDieRolledEvent);
+    }
+
+    events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, ctx.targetId, dice, timestamp + 5, {
+        summaryEffectKey: 'bonusDie.effect.treantTrample.result',
+        summaryEffectParams: { branchCount },
+    }));
+
+    if (branchCount > 0) {
+        events.push({
+            type: 'BONUS_DAMAGE_ADDED',
+            payload: {
+                playerId: attackerId,
+                amount: branchCount,
+                sourceCardId: 'treant-card-trample',
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 6,
+        } as BonusDamageAddedEvent);
+    }
+
+    if (branchCount >= 3) {
+        const thornTargetId = state.pendingAttack?.defenderId ?? getOpponents(state, attackerId)[0];
+        if (thornTargetId) {
+            const currentThorn = state.players[thornTargetId]?.tokens[TOKEN_IDS.THORN] ?? 0;
+            const maxThorn = getTokenStackLimit(state, thornTargetId, TOKEN_IDS.THORN);
+            events.push({
+                type: 'TOKEN_GRANTED',
+                payload: {
+                    targetId: thornTargetId,
+                    tokenId: TOKEN_IDS.THORN,
+                    amount: Math.max(0, Math.min(currentThorn + 1, maxThorn) - currentThorn),
+                    newTotal: Math.min(currentThorn + 1, maxThorn),
+                    sourceAbilityId,
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: timestamp + 7,
+            } as TokenGrantedEvent);
+        }
+    }
+
+    return events;
+}
+
+function handleSoulfire(ctx: CustomActionContext): DiceThroneEvent[] {
+    const { attackerId, sourceAbilityId, state, timestamp, random } = ctx;
+    if (!random) return [];
+
+    const dice: Array<{ index: number; value: number; face: string; effectKey: string; effectParams: Record<string, number> }> = [];
+    const events: DiceThroneEvent[] = [];
+    let branchCount = 0;
+    let leafCount = 0;
+    let spiritCount = 0;
+
+    for (let i = 0; i < 3; i += 1) {
+        const value = random.d(6);
+        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        if (face === TREANT_DICE_FACE_IDS.BRANCH) branchCount += 1;
+        if (face === TREANT_DICE_FACE_IDS.LEAF) leafCount += 1;
+        if (face === TREANT_DICE_FACE_IDS.SPIRIT) spiritCount += 1;
+        const effectKey = `bonusDie.effect.treantSoulfire.${face || 'other'}`;
+        const effectParams = { value, index: i };
+        dice.push({ index: i, value, face, effectKey, effectParams });
+        events.push({
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId: attackerId,
+                targetPlayerId: ctx.targetId,
+                effectKey,
+                effectParams,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + i,
+        } as BonusDieRolledEvent);
+    }
+
+    events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, ctx.targetId, dice, timestamp + 3, {
+        summaryEffectKey: 'bonusDie.effect.treantSoulfire.result',
+        summaryEffectParams: { branchCount, leafCount, spiritCount },
+    }));
+
+    for (const opponentId of getOpponents(state, attackerId)) {
+        if (branchCount <= 0) continue;
+        const currentHp = state.players[opponentId]?.resources[RESOURCE_IDS.HP] ?? 0;
+        events.push({
+            type: 'DAMAGE_DEALT',
+            payload: {
+                targetId: opponentId,
+                amount: branchCount,
+                actualDamage: Math.min(branchCount, currentHp),
+                sourceAbilityId,
+                unblockable: true,
+                damageScope: 'direct',
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 4,
+        } as DamageDealtEvent);
+    }
+
+    if (leafCount > 0) {
+        const currentLifeSap = state.players[attackerId]?.tokens[TOKEN_IDS.LIFE_SAP] ?? 0;
+        const maxLifeSap = getTokenStackLimit(state, attackerId, TOKEN_IDS.LIFE_SAP);
+        events.push({
+            type: 'TOKEN_GRANTED',
+            payload: {
+                targetId: attackerId,
+                tokenId: TOKEN_IDS.LIFE_SAP,
+                amount: Math.max(0, Math.min(currentLifeSap + leafCount, maxLifeSap) - currentLifeSap),
+                newTotal: Math.min(currentLifeSap + leafCount, maxLifeSap),
+                sourceAbilityId,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 5,
+        } as TokenGrantedEvent);
+    }
+
+    if (spiritCount > 0) {
+        const outcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), spiritCount);
+        if (outcomes.length === 1) {
+            events.push(...buildSpiritTransitionEvents({ ...ctx, timestamp: timestamp + 6 }, outcomes[0]));
+        } else if (outcomes.length > 1) {
+            events.push({
+                type: 'CHOICE_REQUESTED',
+                payload: {
+                    playerId: attackerId,
+                    sourceAbilityId,
+                    titleKey: 'choices.treantSoulfire.title',
+                    options: outcomes.map(outcome => ({
+                        value: encodeSpiritCounts(outcome),
+                        customId: getCardCultivateChoiceId(Math.min(spiritCount, 4)),
+                        labelKey: getCultivateLabelKey(outcome),
+                    })),
+                },
+                sourceCommandType: 'ABILITY_EFFECT',
+                timestamp: timestamp + 6,
+            } as ChoiceRequestedEvent);
+        }
+    }
+
+    return events;
+}
+
+function handleMotherTree(ctx: CustomActionContext): DiceThroneEvent[] {
+    const { attackerId, sourceAbilityId, state, timestamp, random } = ctx;
+    if (!random) return [];
+
+    const value = random.d(6);
+    const face = getPlayerDieFace(state, attackerId, value) ?? '';
+    const die = {
+        index: 0,
+        value,
+        face,
+        effectKey: `bonusDie.effect.treantMotherTree.${face || 'other'}`,
+        effectParams: { value },
+    };
+    const events: DiceThroneEvent[] = [{
+        type: 'BONUS_DIE_ROLLED',
+        payload: {
+            value,
+            face,
+            playerId: attackerId,
+            targetPlayerId: attackerId,
+            effectKey: die.effectKey,
+            effectParams: die.effectParams,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as BonusDieRolledEvent, createDisplayOnlySettlement(sourceAbilityId, attackerId, attackerId, [die], timestamp + 1)];
+
+    if (face !== TREANT_DICE_FACE_IDS.SPIRIT) {
+        events.push(...buildDrawEvents(state, attackerId, 1, random, 'ABILITY_EFFECT', timestamp + 2, sourceAbilityId));
+        return events;
+    }
+
+    const outcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), 4);
+    if (outcomes.length === 1) {
+        events.push(...buildSpiritTransitionEvents({ ...ctx, timestamp: timestamp + 2 }, outcomes[0]));
+        return events;
+    }
+    if (outcomes.length > 1) {
+        events.push({
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                playerId: attackerId,
+                sourceAbilityId,
+                titleKey: 'choices.treantMotherTree.title',
+                options: outcomes.map(outcome => ({
+                    value: encodeSpiritCounts(outcome),
+                    customId: CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[4],
+                    labelKey: getCultivateLabelKey(outcome),
+                })),
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp: timestamp + 2,
+        } as ChoiceRequestedEvent);
+    }
+
+    return events;
+}
+
+function handleRootedDefense(ctx: CustomActionContext): DiceThroneEvent[] {
+    const { attackerId, sourceAbilityId, state, timestamp, random, action } = ctx;
+    if (!random) return [];
+
+    const diceCount = Math.max(1, Math.floor(action.diceCount ?? 3));
+    const rollDice: Array<{ index: number; value: number; face: string; effectKey: string }> = [];
+    let branchCount = 0;
+    let leafCount = 0;
+    let spiritCount = 0;
+    const events: DiceThroneEvent[] = [];
+
+    for (let i = 0; i < diceCount; i += 1) {
+        const value = random.d(6);
+        const face = getPlayerDieFace(state, attackerId, value) ?? '';
+        if (face === TREANT_DICE_FACE_IDS.BRANCH) branchCount += 1;
+        if (face === TREANT_DICE_FACE_IDS.LEAF) leafCount += 1;
+        if (face === TREANT_DICE_FACE_IDS.SPIRIT) spiritCount += 1;
+
+        rollDice.push({ index: i, value, face, effectKey: `bonusDie.effect.treantRooted.${face}` });
+        events.push({
+            type: 'BONUS_DIE_ROLLED',
+            payload: {
+                value,
+                face,
+                playerId: attackerId,
+                targetPlayerId: attackerId,
+                effectKey: `bonusDie.effect.treantRooted.${face}`,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as BonusDieRolledEvent);
+    }
+
+    events.push(createDisplayOnlySettlement(sourceAbilityId, attackerId, attackerId, rollDice, timestamp));
+
+    const preventAmount = branchCount + spiritCount;
+    const originalAttackerId = state.pendingAttack?.attackerId;
+    if (preventAmount > 0 && originalAttackerId) {
+        events.push({
+            type: 'PENDING_ATTACK_UPDATED',
+            payload: {
+                attackerId: originalAttackerId,
+                patch: {
+                    bonusDamage: (state.pendingAttack?.bonusDamage ?? 0) - preventAmount,
+                },
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as PendingAttackUpdatedEvent);
+    }
+
+    const needsCultivate = leafCount >= 2;
+    const needsLifeSap = spiritCount >= 2;
+    if (!needsCultivate && !needsLifeSap) return events;
+
+    const cultivateOutcomes = needsCultivate
+        ? enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), 1)
+        : [getSpiritCounts(ctx)];
+    const playerIds = needsLifeSap
+        ? getRootedLifeSapTargetIds(state, attackerId)
+        : [attackerId];
+
+    const options = cultivateOutcomes.flatMap((outcome) => playerIds.map((_, targetIndex) => {
+        const choice = {
+            ...outcome,
+            lifeSapTargetIndex: needsLifeSap ? targetIndex : -1,
+        };
+        return {
+            value: encodeRootedChoice(choice),
+            customId: ROOTED_CHOICE_ID,
+            labelKey: getRootedChoiceLabelKey(choice, needsCultivate, needsLifeSap),
+        };
+    }));
+
+    if (options.length > 0) {
+        events.push({
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                playerId: attackerId,
+                sourceAbilityId,
+                titleKey: 'choices.treantRooted.title',
+                options,
+            },
+            sourceCommandType: 'ABILITY_EFFECT',
+            timestamp,
+        } as ChoiceRequestedEvent);
+    }
+
+    return events;
+}
+
+registerChoiceEffectHandler(WILD_GROWTH_CHOICE_ID, ({ state, playerId, value }) => {
+    const player = state.players[playerId];
+    if (!player || !state.pendingAttack || state.pendingAttack.attackerId !== playerId) return undefined;
+
+    const choice = decodeWildGrowthChoice(value);
+    const currentTokens = player.tokens ?? {};
+    if (
+        choice.seedling > (currentTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0)
+        || choice.sapling > (currentTokens[TOKEN_IDS.TREANT_SAPLING] ?? 0)
+        || choice.divine > (currentTokens[TOKEN_IDS.TREANT_DIVINE] ?? 0)
+        || (choice.lifeSap && (currentTokens[TOKEN_IDS.LIFE_SAP] ?? 0) <= 0)
+    ) {
+        return undefined;
+    }
+
+    const removedTreeCount = choice.seedling + choice.sapling + choice.divine;
+    const nextTokens = {
+        ...currentTokens,
+        [TOKEN_IDS.TREANT_SEEDLING]: (currentTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0) - choice.seedling,
+        [TOKEN_IDS.TREANT_SAPLING]: (currentTokens[TOKEN_IDS.TREANT_SAPLING] ?? 0) - choice.sapling,
+        [TOKEN_IDS.TREANT_DIVINE]: (currentTokens[TOKEN_IDS.TREANT_DIVINE] ?? 0) - choice.divine,
+        [TOKEN_IDS.LIFE_SAP]: (currentTokens[TOKEN_IDS.LIFE_SAP] ?? 0) - (choice.lifeSap ? 1 : 0),
+    };
+
+    return {
+        players: {
+            ...state.players,
+            [playerId]: {
+                ...player,
+                tokens: nextTokens,
+            },
+        },
+        pendingAttack: {
+            ...state.pendingAttack,
+            bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + removedTreeCount * 4,
+            isDefendable: choice.lifeSap ? false : state.pendingAttack.isDefendable,
+            offensiveRollEndTokenResolved: true,
+        },
+    };
+});
+
+registerChoiceEffectHandler(SHATTERING_FIST_CHOICE_ID, ({ state, playerId, value }) => {
+    const player = state.players[playerId];
+    const thornTargetId = state.pendingAttack?.defenderId ?? getOpponents(state, playerId)[0];
+    if (!player || !thornTargetId) return undefined;
+
+    const choice = decodeShatteringFistChoice(value);
+    const removedSpiritCount = choice.seedling + choice.sapling + choice.divine;
+    if (removedSpiritCount === 0) return {};
+    if (removedSpiritCount !== 1) return undefined;
+
+    const currentTokens = player.tokens ?? {};
+    if (
+        choice.seedling > (currentTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0)
+        || choice.sapling > (currentTokens[TOKEN_IDS.TREANT_SAPLING] ?? 0)
+        || choice.divine > (currentTokens[TOKEN_IDS.TREANT_DIVINE] ?? 0)
+    ) {
+        return undefined;
+    }
+
+    const nextPlayers = {
+        ...state.players,
+        [playerId]: {
+            ...player,
+            tokens: {
+                ...currentTokens,
+                [TOKEN_IDS.TREANT_SEEDLING]: (currentTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0) - choice.seedling,
+                [TOKEN_IDS.TREANT_SAPLING]: (currentTokens[TOKEN_IDS.TREANT_SAPLING] ?? 0) - choice.sapling,
+                [TOKEN_IDS.TREANT_DIVINE]: (currentTokens[TOKEN_IDS.TREANT_DIVINE] ?? 0) - choice.divine,
+            },
+        },
+    };
+
+    const thornTarget = nextPlayers[thornTargetId];
+    if (thornTarget) {
+        const currentThorn = thornTarget.tokens[TOKEN_IDS.THORN] ?? 0;
+        const maxThorn = getTokenStackLimit(state, thornTargetId, TOKEN_IDS.THORN);
+        nextPlayers[thornTargetId] = {
+            ...thornTarget,
+            tokens: {
+                ...thornTarget.tokens,
+                [TOKEN_IDS.THORN]: Math.min(currentThorn + 1, maxThorn),
+            },
+        };
+    }
+
+    return { players: nextPlayers };
+});
+
+registerChoiceEffectHandler(NATURE_TOUCH_CULTIVATE_CHOICE_ID, ({ state, playerId, value }) => {
+    const player = state.players[playerId];
+    if (!player || !state.pendingAttack || state.pendingAttack.attackerId !== playerId) return undefined;
+
+    const choice = decodeSpiritCounts(value);
+    const ctx: TreantSpiritContext = { attackerId: playerId, state };
+    const legalOutcomes = enumerateCultivateOutcomes(
+        getSpiritCounts(ctx),
+        getSpiritLimits(ctx),
+        NATURE_TOUCH_CULTIVATE_AMOUNT,
+    );
+    const isLegal = legalOutcomes.some(outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice));
+    if (!isLegal) return undefined;
+
+    return {
+        players: {
+            ...state.players,
+            [playerId]: {
+                ...player,
+                tokens: {
+                    ...player.tokens,
+                    [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
+                    [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
+                    [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
+                },
+            },
+        },
+        pendingAttack: {
+            ...state.pendingAttack,
+            bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + totalSpirits(choice),
+        },
+    };
+});
+
+registerChoiceEffectHandler(SHATTERING_FIST_3_CULTIVATE_CHOICE_ID, ({ state, playerId, value }) => {
+    const player = state.players[playerId];
+    if (!player) return undefined;
+
+    const choice = decodeSpiritCounts(value);
+    const ctx: TreantSpiritContext = { attackerId: playerId, state };
+    const legalOutcomes = enumerateCultivateOutcomes(
+        getSpiritCounts(ctx),
+        getSpiritLimits(ctx),
+        1,
+    );
+    const isLegal = legalOutcomes.some(outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice));
+    if (!isLegal) return undefined;
+
+    return {
+        players: {
+            ...state.players,
+            [playerId]: {
+                ...player,
+                tokens: {
+                    ...player.tokens,
+                    [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
+                    [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
+                    [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
+                },
+            },
+        },
+    };
+});
+
+registerChoiceEffectHandler(QUIET_CULTIVATION_CHOICE_ID, ({ state, playerId, value }) => {
+    const player = state.players[playerId];
+    if (!player) return undefined;
+
+    const choice = decodeSpiritCounts(value);
+    const ctx: TreantSpiritContext = { attackerId: playerId, state };
+    const legalOutcomes = enumerateCultivateOutcomes(
+        getSpiritCounts(ctx),
+        getSpiritLimits(ctx),
+        1,
+    );
+    const isLegal = legalOutcomes.some(outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice));
+    if (!isLegal) return undefined;
+
+    return {
+        players: {
+            ...state.players,
+            [playerId]: {
+                ...player,
+                tokens: {
+                    ...player.tokens,
+                    [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
+                    [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
+                    [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
+                },
+            },
+        },
+    };
+});
+
+registerChoiceEffectHandler(ROOTED_CHOICE_ID, ({ state, playerId, value }) => {
+    const player = state.players[playerId];
+    if (!player) return undefined;
+
+    const choice = decodeRootedChoice(value);
+    const ctx: TreantSpiritContext = { attackerId: playerId, state };
+    const legalCultivateOutcomes = enumerateCultivateOutcomes(
+        getSpiritCounts(ctx),
+        getSpiritLimits(ctx),
+        1,
+    );
+    const currentCounts = getSpiritCounts(ctx);
+    const isCultivateOutcome = legalCultivateOutcomes.some(
+        outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice),
+    );
+    const keepsCurrentCounts = encodeSpiritCounts(currentCounts) === encodeSpiritCounts(choice);
+    if (!isCultivateOutcome && !keepsCurrentCounts) return undefined;
+
+    const playerIds = getRootedLifeSapTargetIds(state, playerId);
+    const lifeSapTargetId = playerIds[choice.lifeSapTargetIndex];
+    const nextPlayers = {
+        ...state.players,
+        [playerId]: {
+            ...player,
+            tokens: {
+                ...player.tokens,
+                [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
+                [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
+                [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
+            },
+        },
+    };
+
+    if (choice.lifeSapTargetIndex >= 0 && lifeSapTargetId) {
+        const target = nextPlayers[lifeSapTargetId];
+        const currentLifeSap = target.tokens[TOKEN_IDS.LIFE_SAP] ?? 0;
+        const maxLifeSap = getTokenStackLimit(state, lifeSapTargetId, TOKEN_IDS.LIFE_SAP);
+        nextPlayers[lifeSapTargetId] = {
+            ...target,
+            tokens: {
+                ...target.tokens,
+                [TOKEN_IDS.LIFE_SAP]: Math.min(currentLifeSap + 1, maxLifeSap),
+            },
+        };
+    }
+
+    return { players: nextPlayers };
+});
+
+registerChoiceEffectHandler(FOREST_AWAKENS_CHOICE_ID, ({ state, playerId, value }) => {
+    const player = state.players[playerId];
+    if (!player) return undefined;
+
+    const choice = decodeSpiritCounts(value);
+    const ctx: TreantSpiritContext = { attackerId: playerId, state };
+    const legalOutcomes = enumerateCultivateOutcomes(
+        getSpiritCounts(ctx),
+        getSpiritLimits(ctx),
+        FOREST_AWAKENS_CULTIVATE_AMOUNT,
+    );
+    const isLegal = legalOutcomes.some(outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice));
+    if (!isLegal) return undefined;
+
+    const teammateId = getTeammateId(state, playerId);
+    const thornTargetId = state.pendingAttack?.defenderId ?? getOpponents(state, playerId)[0];
+    if (!thornTargetId) return undefined;
+
+    const nextPlayers = {
+        ...state.players,
+        [playerId]: {
+            ...player,
+            tokens: {
+                ...player.tokens,
+                [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
+                [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
+                [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
+            },
+        },
+    };
+
+    for (const targetId of [playerId, teammateId].filter((id): id is string => !!id)) {
+        const target = nextPlayers[targetId];
+        if (!target) continue;
+        const currentLifeSap = target.tokens[TOKEN_IDS.LIFE_SAP] ?? 0;
+        const maxLifeSap = getTokenStackLimit(state, targetId, TOKEN_IDS.LIFE_SAP);
+        nextPlayers[targetId] = {
+            ...target,
+            tokens: {
+                ...target.tokens,
+                [TOKEN_IDS.LIFE_SAP]: Math.min(currentLifeSap + 1, maxLifeSap),
+            },
+        };
+    }
+
+    const thornTarget = nextPlayers[thornTargetId];
+    if (thornTarget) {
+        const currentThorn = thornTarget.tokens[TOKEN_IDS.THORN] ?? 0;
+        const maxThorn = getTokenStackLimit(state, thornTargetId, TOKEN_IDS.THORN);
+        nextPlayers[thornTargetId] = {
+            ...thornTarget,
+            tokens: {
+                ...thornTarget.tokens,
+                [TOKEN_IDS.THORN]: Math.min(currentThorn + 1, maxThorn),
+            },
+        };
+    }
+
+    return { players: nextPlayers };
+});
+
+function resolveCardCultivateChoice(amount: number) {
+    return ({ state, playerId, value }: { state: CustomActionContext['state']; playerId: string; value?: number }) => {
+        const player = state.players[playerId];
+        if (!player) return undefined;
+
+        const choice = decodeSpiritCounts(value);
+        const ctx: TreantSpiritContext = { attackerId: playerId, state };
+        const legalOutcomes = enumerateCultivateOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx), amount);
+        const isLegal = legalOutcomes.some(outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice));
+        if (!isLegal) return undefined;
+
+        return {
+            players: {
+                ...state.players,
+                [playerId]: {
+                    ...player,
+                    tokens: {
+                        ...player.tokens,
+                        [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
+                        [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
+                        [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
+                    },
+                },
+            },
+        };
+    };
+}
+
+registerChoiceEffectHandler(DRINK_DEEP_CHOICE_ID, ({ state, value }) => {
+    const playerIds = getSeatingOrder(state);
+    const targetId = playerIds[Math.max(0, Math.floor(value ?? 0))];
+    const target = targetId ? state.players[targetId] : undefined;
+    if (!targetId || !target) return undefined;
+
+    const currentLifeSap = target.tokens[TOKEN_IDS.LIFE_SAP] ?? 0;
+    const maxLifeSap = getTokenStackLimit(state, targetId, TOKEN_IDS.LIFE_SAP);
+    return {
+        players: {
+            ...state.players,
+            [targetId]: {
+                ...target,
+                tokens: {
+                    ...target.tokens,
+                    [TOKEN_IDS.LIFE_SAP]: Math.min(currentLifeSap + 1, maxLifeSap),
+                },
+            },
+        },
+    };
+});
+
+registerChoiceEffectHandler(HARVEST_CHOICE_ID, ({ state, playerId, value }) => {
+    const player = state.players[playerId];
+    if (!player) return undefined;
+
+    const choice = decodeHarvestChoice(value);
+    const current = getSpiritCounts({ attackerId: playerId, state });
+    const removed = choice.seedling + choice.sapling + choice.divine;
+    const playerIds = getSeatingOrder(state);
+    if (
+        choice.seedling > current.seedling
+        || choice.sapling > current.sapling
+        || choice.divine > current.divine
+        || removed > 3
+        || (removed < 2 && choice.lifeSapTargetMask !== 0)
+        || bitCount(choice.lifeSapTargetMask) > 2
+    ) {
+        return undefined;
+    }
+
+    const selectedTargetIds = getMaskPlayerIds(playerIds, choice.lifeSapTargetMask);
+    const currentCp = player.resources[RESOURCE_IDS.CP] ?? 0;
+    const nextPlayers = {
+        ...state.players,
+        [playerId]: {
+            ...player,
+            resources: {
+                ...player.resources,
+                [RESOURCE_IDS.CP]: Math.min(currentCp + removed, CP_MAX),
+            },
+            tokens: {
+                ...player.tokens,
+                [TOKEN_IDS.TREANT_SEEDLING]: current.seedling - choice.seedling,
+                [TOKEN_IDS.TREANT_SAPLING]: current.sapling - choice.sapling,
+                [TOKEN_IDS.TREANT_DIVINE]: current.divine - choice.divine,
+            },
+        },
+    };
+
+    for (const targetId of selectedTargetIds) {
+        const target = nextPlayers[targetId];
+        if (!target) return undefined;
+        const currentLifeSap = target.tokens[TOKEN_IDS.LIFE_SAP] ?? 0;
+        const maxLifeSap = getTokenStackLimit(state, targetId, TOKEN_IDS.LIFE_SAP);
+        nextPlayers[targetId] = {
+            ...target,
+            tokens: {
+                ...target.tokens,
+                [TOKEN_IDS.LIFE_SAP]: Math.min(currentLifeSap + 1, maxLifeSap),
+            },
+        };
+    }
+
+    return { players: nextPlayers };
+});
+
+registerChoiceEffectHandler(DOWNPOUR_CHOICE_ID, ({ state, playerId, value }) => {
+    const player = state.players[playerId];
+    if (!player) return undefined;
+
+    const choice = decodeSpiritCounts(value);
+    const ctx: TreantSpiritContext = { attackerId: playerId, state };
+    const legalOutcomes = enumerateDownpourOutcomes(getSpiritCounts(ctx), getSpiritLimits(ctx));
+    const isLegal = legalOutcomes.some(outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice));
+    if (!isLegal) return undefined;
+
+    return {
+        players: {
+            ...state.players,
+            [playerId]: {
+                ...player,
+                tokens: {
+                    ...player.tokens,
+                    [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
+                    [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
+                    [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
+                },
+            },
+        },
+    };
+});
+
+function resolveTendCareChoice(amount: number) {
+    return ({ state, playerId, value }: { state: CustomActionContext['state']; playerId: string; value?: number }) => {
+        const player = state.players[playerId];
+        if (!player) return undefined;
+
+        const choice = decodeTendCareChoice(value);
+        const ctx: TreantSpiritContext = { attackerId: playerId, state };
+        const legalOutcomes = enumerateCultivateOutcomes(
+            getSpiritCounts(ctx),
+            getSpiritLimits(ctx),
+            amount,
+        );
+        const isLegal = legalOutcomes.some(outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice));
+        if (!isLegal) return undefined;
+
+        const lifeSapTargetIds = getTendCareLifeSapTargetIds(state);
+        const thornTargetIds = getOpponents(state, playerId);
+        const lifeSapTargetId = lifeSapTargetIds[choice.lifeSapTargetIndex];
+        const thornTargetId = thornTargetIds[choice.thornTargetIndex];
+        if (!lifeSapTargetId || !thornTargetId) return undefined;
+
+        const nextPlayers = {
+            ...state.players,
+            [playerId]: {
+                ...player,
+                tokens: {
+                    ...player.tokens,
+                    [TOKEN_IDS.TREANT_SEEDLING]: choice.seedling,
+                    [TOKEN_IDS.TREANT_SAPLING]: choice.sapling,
+                    [TOKEN_IDS.TREANT_DIVINE]: choice.divine,
+                },
+            },
+        };
+
+        const lifeSapTarget = nextPlayers[lifeSapTargetId];
+        if (lifeSapTarget) {
+            const currentLifeSap = lifeSapTarget.tokens[TOKEN_IDS.LIFE_SAP] ?? 0;
+            const maxLifeSap = getTokenStackLimit(state, lifeSapTargetId, TOKEN_IDS.LIFE_SAP);
+            nextPlayers[lifeSapTargetId] = {
+                ...lifeSapTarget,
+                tokens: {
+                    ...lifeSapTarget.tokens,
+                    [TOKEN_IDS.LIFE_SAP]: Math.min(currentLifeSap + 1, maxLifeSap),
+                },
+            };
+        }
+
+        const thornTarget = nextPlayers[thornTargetId];
+        if (thornTarget) {
+            const currentThorn = thornTarget.tokens[TOKEN_IDS.THORN] ?? 0;
+            const maxThorn = getTokenStackLimit(state, thornTargetId, TOKEN_IDS.THORN);
+            nextPlayers[thornTargetId] = {
+                ...thornTarget,
+                tokens: {
+                    ...thornTarget.tokens,
+                    [TOKEN_IDS.THORN]: Math.min(currentThorn + 1, maxThorn),
+                },
+            };
+        }
+
+        return { players: nextPlayers };
+    };
+}
+
+registerChoiceEffectHandler(CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[1], resolveCardCultivateChoice(1));
+registerChoiceEffectHandler(CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[2], resolveCardCultivateChoice(2));
+registerChoiceEffectHandler(CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[3], resolveCardCultivateChoice(3));
+registerChoiceEffectHandler(CARD_CULTIVATE_CHOICE_ID_BY_AMOUNT[4], resolveCardCultivateChoice(4));
+registerChoiceEffectHandler(TEND_CARE_CHOICE_ID_BY_AMOUNT[3], resolveTendCareChoice(3));
+registerChoiceEffectHandler(TEND_CARE_CHOICE_ID_BY_AMOUNT[4], resolveTendCareChoice(4));
+
 export function registerTreantCustomActions(): void {
     registerCustomActionHandler('treant-sapling-heal-cp', handleSaplingHealCp, { categories: ['resource', 'token'] });
     registerCustomActionHandler('treant-sapling-draw', handleSaplingDraw, { categories: ['card', 'token'] });
     registerCustomActionHandler('treant-life-sap-use', handleLifeSapUse, { categories: ['dice', 'resource', 'token'] });
+    registerCustomActionHandler('treant-shattering-fist-choice', handleShatteringFistChoice, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-shattering-fist-3-cultivate', handleShatteringFist3Cultivate, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-quiet-cultivation', handleQuietCultivation, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-rooted-defense', handleRootedDefense, {
+        categories: ['dice', 'defense', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-nature-touch-cultivate', handleNatureTouchCultivate, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-tend-care-choice', handleTendCareChoice, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-forest-awakens-choice', handleForestAwakensChoice, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-wild-growth-choice', handleWildGrowthChoice, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-card-cultivate', handleCardCultivate, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-card-drink-deep', handleDrinkDeep, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-card-harvest', handleHarvest, {
+        categories: ['choice', 'resource', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-card-downpour', handleDownpour, {
+        categories: ['choice', 'token'],
+        requiresInteraction: true,
+    });
+    registerCustomActionHandler('treant-card-trample-roll', handleTrample, {
+        categories: ['dice', 'token'],
+        requiresSelectedDefender: true,
+    });
+    registerCustomActionHandler('treant-card-soulfire-roll', handleSoulfire, {
+        categories: ['dice', 'token'],
+    });
+    registerCustomActionHandler('treant-card-mother-tree-roll', handleMotherTree, {
+        categories: ['dice', 'card', 'choice', 'token'],
+        requiresInteraction: true,
+    });
 }

@@ -31,7 +31,7 @@ import type { SmashUpCore, SmashUpCommand } from '../domain/types';
 import { SU_EVENTS } from '../domain/types';
 import { initAllAbilities } from '../abilities';
 import { getEventStreamEntries } from '../../../engine/systems/EventStreamSystem';
-import type { RandomFn, MatchState } from '../../../engine/types';
+import type { MatchState } from '../../../engine/types';
 import { createInitialSystemState, executePipeline, createSeededRandom } from '../../../engine/pipeline';
 import { createOptimisticEngine, filterPlayedEvents } from '../../../engine/transport/latency/optimisticEngine';
 import { smashUpLatencyConfig } from '../latencyConfig';
@@ -117,46 +117,29 @@ describe('BASE_SCORED 竞态条件验证', () => {
             },
         };
         engine.syncRandom('test-seed', 0);
-        const syncResult = engine.reconcile(syncState, { stateID: 1 });
-        console.log('state:sync reconcile:', { didRollback: syncResult.didRollback });
+        engine.reconcile(syncState, { stateID: 1 });
 
         // ── 模拟 state:update: ADVANCE_PHASE 确认（stateID: 2）──
-        const reconcile1 = engine.reconcile(stateAfterAdvance, {
+        engine.reconcile(stateAfterAdvance, {
             stateID: 2,
             lastCommandPlayerId: '0',
         });
-        console.log('ADVANCE_PHASE reconcile:', {
-            didRollback: reconcile1.didRollback,
-            watermark: reconcile1.optimisticEventWatermark,
-        });
-        const entriesAfterAdvance = getEventStreamEntries(reconcile1.stateToRender as MatchState<SmashUpCore>);
-        console.log('ADVANCE_PHASE 后 entries:', entriesAfterAdvance.length, 'maxId:', entriesAfterAdvance.length > 0 ? entriesAfterAdvance[entriesAfterAdvance.length - 1].id : 'N/A');
 
         // ── 竞态：P1 在收到 P0 PASS 之前 dispatch RESPONSE_PASS ──
         // 此时 P1 的 confirmedStateID = 2（ADVANCE_PHASE 确认后）
         const processResult = engine.processCommand('RESPONSE_PASS', undefined, '1');
-        console.log('P1 processCommand:', {
-            stateToRender: processResult.stateToRender ? '有预测' : 'null',
-            animationMode: processResult.animationMode,
-        });
+        expect(processResult.stateToRender).toBeTruthy();
 
         // 检查预测状态是否包含 BASE_SCORED（wait-confirm 应该剥离）
-        if (processResult.stateToRender) {
-            const predictedEntries = getEventStreamEntries(processResult.stateToRender as MatchState<SmashUpCore>);
-            const predictedScored = predictedEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-            console.log('预测状态 entries:', predictedEntries.length, 'BASE_SCORED:', predictedScored.length);
-        }
+        const predictedEntries = getEventStreamEntries(processResult.stateToRender as MatchState<SmashUpCore>);
+        const predictedScored = predictedEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
+        expect(predictedScored.length).toBeGreaterThan(0);
 
         // ── P0 RESPONSE_PASS 的 state:update 到达（stateID: 3）──
         // 此时 P1 有 pending RESPONSE_PASS，但这是 P0 的命令
         const reconcile2 = engine.reconcile(stateAfterP0Pass, {
             stateID: 3,
             lastCommandPlayerId: '0', // P0 的命令
-        });
-        console.log('P0 PASS reconcile:', {
-            didRollback: reconcile2.didRollback,
-            watermark: reconcile2.optimisticEventWatermark,
-            hasPending: engine.hasPendingCommands(),
         });
 
         // ── 服务端执行 P1 RESPONSE_PASS（stateID: 3 → 4）──
@@ -172,7 +155,6 @@ describe('BASE_SCORED 竞态条件验证', () => {
         // 验证服务端状态包含 BASE_SCORED
         const serverEntries = getEventStreamEntries(stateAfterP1Pass);
         const serverScored = serverEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        console.log('服务端 entries:', serverEntries.length, 'BASE_SCORED:', serverScored.length);
         expect(serverScored.length).toBeGreaterThan(0);
 
         // ── P1 RESPONSE_PASS 的 state:update 到达（stateID: 4）──
@@ -180,24 +162,17 @@ describe('BASE_SCORED 竞态条件验证', () => {
             stateID: 4,
             lastCommandPlayerId: '1', // P1 的命令
         });
-        console.log('P1 PASS reconcile:', {
-            didRollback: reconcile3.didRollback,
-            watermark: reconcile3.optimisticEventWatermark,
-        });
 
         // 核心断言：reconcile 后的状态包含 BASE_SCORED
         let finalState = reconcile3.stateToRender as MatchState<SmashUpCore>;
 
         // 如果有回滚和水位线，应用 filterPlayedEvents
         if (reconcile3.didRollback && reconcile3.optimisticEventWatermark !== null) {
-            console.log('应用 filterPlayedEvents，watermark:', reconcile3.optimisticEventWatermark);
             finalState = filterPlayedEvents(finalState, reconcile3.optimisticEventWatermark) as MatchState<SmashUpCore>;
         }
 
         const finalEntries = getEventStreamEntries(finalState);
         const finalScored = finalEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        console.log('最终 entries:', finalEntries.length, 'BASE_SCORED:', finalScored.length);
-        console.log('所有事件类型:', [...new Set(finalEntries.map(e => e.event.type))]);
 
         // 核心断言：BASE_SCORED 必须存在
         expect(finalScored.length).toBeGreaterThan(0);
@@ -208,11 +183,9 @@ describe('BASE_SCORED 竞态条件验证', () => {
         const cursorAfterP0Pass = entriesAfterP0Pass.length > 0
             ? entriesAfterP0Pass[entriesAfterP0Pass.length - 1].id
             : -1;
-        console.log('cursor after P0 PASS:', cursorAfterP0Pass);
 
         const newEntries = finalEntries.filter(e => e.id > cursorAfterP0Pass);
         const newScored = newEntries.filter(e => e.event.type === SU_EVENTS.BASE_SCORED);
-        console.log('新事件:', newEntries.length, '新 BASE_SCORED:', newScored.length);
 
         // 核心断言：BASE_SCORED 必须存在（可能在 P0 PASS 后已进入 EventStream）
         if (newScored.length === 0) {
