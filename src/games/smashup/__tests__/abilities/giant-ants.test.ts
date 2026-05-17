@@ -8,10 +8,7 @@ import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEf
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { reduce } from '../../domain/reduce';
 import {
-    createSimpleChoice,
-    queueInteraction,
     refreshInteractionOptions,
-    resolveInteraction,
 } from '../../../../engine/systems/InteractionSystem';
 import type { MatchState } from '../../../../engine/types';
 import {
@@ -22,7 +19,6 @@ import {
     makeMatchState,
     getSimpleChoicePrompt,
     getPromptOption,
-    getPromptOptions,
     getPromptSliderMax,
     getPromptRuntimeContinuationContext,
     respondToPrompt,
@@ -87,7 +83,7 @@ describe('巨蚁派系能力', () => {
         expect(removeResult.events.some(e => e.type === SU_EVENTS.POWER_COUNTER_REMOVED)).toBe(true);
 
         const prompt2 = getSimpleChoicePrompt(removeResult.finalState);
-        const confirmOption = getPromptOption(prompt2, o => o.id === 'confirm', 'confirmOption');
+        getPromptOption(prompt2, o => o.id === 'confirm', 'confirmOption');
 
         const confirmResult = respondToPrompt(
             removeResult.finalState,
@@ -655,7 +651,7 @@ describe('巨蚁派系能力', () => {
         expect(skip.events.some(e => e.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
 
         const distributePrompt = getSimpleChoicePrompt(skip.finalState, 'frankenstein_body_shop_distribute');
-        const chooseMonster = getPromptOption(distributePrompt, entry => entry.value?.minionUid === 'monster', 'chooseMonster');
+        getPromptOption(distributePrompt, entry => entry.value?.minionUid === 'monster', 'chooseMonster');
         expect(skip.finalState.core.bases[0].minions.some(m => m.uid === 'dok')).toBe(false);
     });
 
@@ -1161,5 +1157,235 @@ describe('巨蚁派系能力', () => {
         );
 
         expect(resolveResult.events.filter(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED).length).toBe(2);
+    });
+});
+
+describe('巨蚁 POD 行为', () => {
+    it('Ant Drone（POD）talent：移除 1 个指示物后抽 1 张牌', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('d1', 'test_card_1', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('dr1', 'giant_ant_drone_pod', '0', 3, { powerCounters: 1, powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const result = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 'dr1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        expect(result.events.map(e => e.type)).toContain(SU_EVENTS.CARDS_DRAWN);
+        expect(result.finalState.core.players['0']?.hand.length).toBe(1);
+        expect(result.finalState.core.bases[0].minions.find(m => m.uid === 'dr1')?.powerCounters).toBe(0);
+    });
+
+    it('Ant Drone（POD）ongoing replacement：可移除 1 个指示物防止消灭', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('dr1', 'giant_ant_drone_pod', '0', 3, { powerCounters: 1, powerModifier: 0 }),
+                        makeMinion('m1', 'test_minion', '0', 2, { powerCounters: 0, powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const triggerResult = resolveDestroyedMinions(
+            makeMatchState(core),
+            '0',
+            [{
+                type: SU_EVENTS.MINION_DESTROYED,
+                payload: {
+                    minionUid: 'm1',
+                    minionDefId: 'test_minion',
+                    fromBaseIndex: 0,
+                    ownerId: '0',
+                    reason: 'test_destroy',
+                },
+                timestamp: 1000,
+            }] as any,
+            defaultTestRandom,
+            1000,
+        );
+        expect(triggerResult.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
+
+        const prompt = getSimpleChoicePrompt(triggerResult.matchState!, 'giant_ant_drone_prevent_destroy');
+        const droneOption = getPromptOption(
+            prompt,
+            option => option?.value?.droneUid === 'dr1',
+            'Drone POD prevent destroy option',
+        );
+        const respondResult = respondToPrompt(triggerResult.matchState!, droneOption.id, '0', defaultTestRandom);
+
+        expect(respondResult.events.filter(e => e.type === SU_EVENTS.MINION_DESTROYED)).toHaveLength(0);
+        expect(respondResult.finalState.core.bases[0].minions.some(m => m.uid === 'm1')).toBe(true);
+        expect(respondResult.finalState.core.bases[0].minions.find(m => m.uid === 'dr1')?.powerCounters).toBe(0);
+    });
+
+    it('Ant Soldier（POD）talent：在己方两个随从之间转移 1 个指示物', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('s1', 'giant_ant_soldier_pod', '0', 3, { powerCounters: 0, powerModifier: 0 }),
+                        makeMinion('src', 'test_src', '0', 2, { powerCounters: 1, powerModifier: 0 }),
+                        makeMinion('dst', 'test_dst', '0', 2, { powerCounters: 0, powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const talentResult = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.USE_TALENT, playerId: '0', payload: { minionUid: 's1', baseIndex: 0 } },
+            defaultTestRandom,
+        );
+
+        const prompt1 = getSimpleChoicePrompt(talentResult.finalState, 'giant_ant_soldier_pod_choose_source');
+        const srcOpt = getPromptOption(prompt1, option => option?.value?.minionUid === 'src', 'Soldier POD source minion option');
+        const chooseSource = respondToPrompt(talentResult.finalState, srcOpt.id, '0', defaultTestRandom);
+
+        const prompt2 = getSimpleChoicePrompt(chooseSource.finalState, 'giant_ant_soldier_pod_choose_target');
+        const dstOpt = getPromptOption(prompt2, option => option?.value?.minionUid === 'dst', 'Soldier POD target minion option');
+        const chooseTarget = respondToPrompt(chooseSource.finalState, dstOpt.id, '0', defaultTestRandom);
+
+        const base = chooseTarget.finalState.core.bases[0];
+        expect(base.minions.find(m => m.uid === 'src')?.powerCounters).toBe(0);
+        expect(base.minions.find(m => m.uid === 'dst')?.powerCounters).toBe(1);
+    });
+
+    it('Gimme the Prize（POD）：通过 prompt 链给两个己方随从分别加 2 和加 1', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'giant_ant_gimme_the_prize_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('m1', 'test_m1', '0', 2, { powerCounters: 0, powerModifier: 0 }),
+                        makeMinion('m2', 'test_m2', '0', 2, { powerCounters: 0, powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt1 = getSimpleChoicePrompt(play.finalState, 'giant_ant_gimme_the_prize_pod_first');
+        const firstOpt = getPromptOption(prompt1, option => option?.value?.minionUid === 'm1', 'Gimme the Prize first minion option');
+        const chooseFirst = respondToPrompt(play.finalState, firstOpt.id, '0', defaultTestRandom);
+
+        const prompt2 = getSimpleChoicePrompt(chooseFirst.finalState, 'giant_ant_gimme_the_prize_pod_second');
+        const secondOpt = getPromptOption(prompt2, option => option?.value?.minionUid === 'm2', 'Gimme the Prize second minion option');
+        const chooseSecond = respondToPrompt(chooseFirst.finalState, secondOpt.id, '0', defaultTestRandom);
+
+        const base = chooseSecond.finalState.core.bases[0];
+        expect(base.minions.find(m => m.uid === 'm1')?.powerCounters).toBe(2);
+        expect(base.minions.find(m => m.uid === 'm2')?.powerCounters).toBe(1);
+    });
+
+    it('We Will Rock You（POD）：选基地后，该基地己方随从按现有指示物数获得临时力量', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'giant_ant_we_will_rock_you_pod', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('m1', 'test_m1', '0', 2, { powerCounters: 2, powerModifier: 0 }),
+                        makeMinion('m2', 'test_m2', '0', 2, { powerCounters: 1, powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [
+                        makeMinion('m3', 'test_m3', '0', 2, { powerCounters: 3, powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(play.finalState, 'giant_ant_we_will_rock_you_pod_choose_base');
+        const base0Opt = getPromptOption(prompt, option => option?.value?.baseIndex === 0, 'We Will Rock You base option');
+        const chooseBase = respondToPrompt(play.finalState, base0Opt.id, '0', defaultTestRandom);
+
+        const tempEvents = chooseBase.events.filter(e => e.type === SU_EVENTS.TEMP_POWER_ADDED) as any[];
+        expect(tempEvents).toHaveLength(2);
+        expect(tempEvents.some(event => event.payload.minionUid === 'm1' && event.payload.amount === 2)).toBe(true);
+        expect(tempEvents.some(event => event.payload.minionUid === 'm2' && event.payload.amount === 1)).toBe(true);
+    });
+
+    it('Who Wants to Live Forever?（POD）：无可消灭随从时仍可检索并放回牌库顶', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('a1', 'giant_ant_who_wants_to_live_forever_pod', 'action', '0')],
+                    deck: [
+                        makeCard('c1', 'test_card_1', 'action', '0'),
+                        makeCard('c2', 'test_card_2', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+
+        const prompt = getSimpleChoicePrompt(play.finalState, 'giant_ant_who_wants_to_live_forever_pod_search');
+        const pickC2 = getPromptOption(prompt, option => option?.value?.cardUid === 'c2', 'Who Wants to Live Forever search option');
+        const choose = respondToPrompt(play.finalState, pickC2.id, '0', defaultTestRandom);
+
+        expect(choose.finalState.core.players['0']?.deck[0]?.uid).toBe('c2');
     });
 });

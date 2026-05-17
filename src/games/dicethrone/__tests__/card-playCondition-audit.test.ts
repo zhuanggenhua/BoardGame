@@ -25,6 +25,12 @@ import { PYROMANCER_CARDS } from '../heroes/pyromancer/cards';
 import { PALADIN_CARDS } from '../heroes/paladin/cards';
 import { MOON_ELF_CARDS } from '../heroes/moon_elf/cards';
 import { SHADOW_THIEF_CARDS } from '../heroes/shadow_thief/cards';
+import { GUNSLINGER_CARDS } from '../heroes/gunslinger/cards';
+import { SAMURAI_CARDS } from '../heroes/samurai/cards';
+import { TREANT_CARDS } from '../heroes/treant/cards';
+import { NINJA_CARDS } from '../heroes/ninja/cards';
+import { checkPlayCard } from '../domain/rules';
+import type { DiceThroneCore } from '../domain/core-types';
 import type { AbilityCard } from '../types';
 
 /** 判断卡牌效果是否操作已有骰子（非自带投掷） */
@@ -73,6 +79,47 @@ const isAttackModifier = (card: AbilityCard): boolean => {
     ) ?? false;
 };
 
+const makeRuleCheckCore = (card: AbilityCard): DiceThroneCore => ({
+    activePlayerId: '0',
+    turnNumber: 1,
+    turnPhase: 'offensiveRoll',
+    dice: [1, 2, 3, 4, 5] as any,
+    rollCount: 1,
+    rollConfirmed: true,
+    rollsRemaining: 0,
+    pendingAttack: null as any,
+    pendingInteraction: null as any,
+    lastResolvedAttackDamage: null as any,
+    players: {
+        '0': {
+            heroId: 'monk',
+            health: 50,
+            resources: { cp: 10 },
+            hand: [card],
+            deck: [],
+            discard: [],
+            statusEffects: {},
+            tokens: {},
+            abilityLevels: {},
+            abilities: [],
+            upgradeCardByAbilityId: {},
+        } as any,
+        '1': {
+            heroId: 'barbarian',
+            health: 50,
+            resources: { cp: 10 },
+            hand: [],
+            deck: [],
+            discard: [],
+            statusEffects: {},
+            tokens: {},
+            abilityLevels: {},
+            abilities: [],
+            upgradeCardByAbilityId: {},
+        } as any,
+    } as any,
+});
+
 describe('卡牌 playCondition 一致性审计', () => {
     // 收集所有非升级卡
     const allHeroCards: { hero: string; cards: AbilityCard[] }[] = [
@@ -83,6 +130,10 @@ describe('卡牌 playCondition 一致性审计', () => {
         { hero: 'paladin', cards: PALADIN_CARDS.filter(c => !COMMON_CARDS.some(cc => cc.id === c.id)) },
         { hero: 'moon_elf', cards: MOON_ELF_CARDS.filter(c => !COMMON_CARDS.some(cc => cc.id === c.id)) },
         { hero: 'shadow_thief', cards: SHADOW_THIEF_CARDS.filter(c => !COMMON_CARDS.some(cc => cc.id === c.id)) },
+        { hero: 'gunslinger', cards: GUNSLINGER_CARDS.filter(c => !COMMON_CARDS.some(cc => cc.id === c.id)) },
+        { hero: 'samurai', cards: SAMURAI_CARDS.filter(c => !COMMON_CARDS.some(cc => cc.id === c.id)) },
+        { hero: 'treant', cards: TREANT_CARDS.filter(c => !COMMON_CARDS.some(cc => cc.id === c.id)) },
+        { hero: 'ninja', cards: NINJA_CARDS.filter(c => !COMMON_CARDS.some(cc => cc.id === c.id)) },
     ];
 
     const actionCards = allHeroCards.flatMap(({ hero, cards }) =>
@@ -116,6 +167,21 @@ describe('卡牌 playCondition 一致性审计', () => {
             const c = card as AbilityCard;
             expect(c.playCondition?.requireDiceExists).toBe(true);
             expect(c.playCondition?.requireHasRolled).toBe(true);
+        });
+    });
+
+    describe('非攻击修正卡不得误触发“先选择攻击技能”门禁', () => {
+        const nonAttackModifierCards = actionCards.filter(({ card }) => card.isAttackModifier !== true);
+
+        it.each(nonAttackModifierCards.map(({ hero, card }) => [
+            `[${hero}] ${card.id}`, card,
+        ]))('%s', (_label, card) => {
+            const c = card as AbilityCard;
+            const result = checkPlayCard(makeRuleCheckCore(c), '0', c, 'offensiveRoll');
+
+            if (!result.ok) {
+                expect(result.reason).not.toBe('attackModifierRequiresSelectedAttack');
+            }
         });
     });
 

@@ -388,6 +388,14 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
         dispatch(type, payload);
     }, [isSubmitLocked, prompt, dispatch]);
 
+    const lockedPromptRespond = useCallback((payload: Record<string, unknown>) => {
+        if (!prompt?.id) return;
+        lockedDispatch(INTERACTION_COMMANDS.RESPOND, {
+            interactionId: prompt.id,
+            ...payload,
+        });
+    }, [lockedDispatch, prompt?.id]);
+
     if (displayCards) {
         const { selectedUid: selUid, onSelect: onSel } = displayCards;
         const playableUids = onSel ? displayCards.playableUids : undefined;
@@ -587,15 +595,15 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
 
                             {isMyPrompt && sliderConfirmOption && (
                                 <div className="flex items-center justify-center gap-3">
-                                    <GameButton
-                                        variant="primary"
-                                        size="md"
-                                        disabled={isSubmitLocked}
-                                        onClick={() => lockedDispatch(INTERACTION_COMMANDS.RESPOND, {
-                                            optionId: sliderConfirmOption.id,
-                                            mergedValue: { value: sliderValue, amount: sliderValue },
-                                        })}
-                                    >
+                                        <GameButton
+                                            variant="primary"
+                                            size="md"
+                                            disabled={isSubmitLocked}
+                                            onClick={() => lockedPromptRespond({
+                                                optionId: sliderConfirmOption.id,
+                                                mergedValue: { value: sliderValue, amount: sliderValue },
+                                            })}
+                                        >
                                         {confirmLabel}
                                     </GameButton>
                                     {sliderSkipOption && (
@@ -603,7 +611,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                             variant="secondary"
                                             size="md"
                                             disabled={isSubmitLocked}
-                                            onClick={() => lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionId: sliderSkipOption.id })}
+                                            onClick={() => lockedPromptRespond({ optionId: sliderSkipOption.id })}
                                             className="opacity-80 hover:opacity-100"
                                         >
                                             {skipLabel}
@@ -626,7 +634,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
             setSubmittingInteractionId(prompt.id);
         }
         
-        dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
+        lockedPromptRespond({ optionId });
     };
 
     const handleToggle = (optionId: string, disabled?: boolean) => {
@@ -890,7 +898,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                                 variant="primary"
                                                 size="sm"
                                                 onClick={() => {
-                                                    lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: selectedIds });
+                                                    lockedPromptRespond({ optionIds: selectedIds });
                                                 }}
                                                 disabled={!canSubmitMulti || isSubmitLocked}
                                             >
@@ -909,7 +917,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                     onClick={() => {
                                         if (isMulti) {
                                             // 多选模式下跳过直接提交，不走 toggle 流程
-                                            lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: [skipOption.id] });
+                                            lockedPromptRespond({ optionIds: [skipOption.id] });
                                         } else {
                                             handleAction(skipOption.id, skipOption.disabled);
                                         }
@@ -1029,7 +1037,7 @@ export const PromptOverlay: React.FC<Props> = ({ interaction, dispatch, playerID
                                 variant="primary"
                                 size="sm"
                                 onClick={() => {
-                                    lockedDispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: selectedIds });
+                                    lockedPromptRespond({ optionIds: selectedIds });
                                 }}
                                 disabled={!canSubmitMulti || isSubmitLocked}
                             >

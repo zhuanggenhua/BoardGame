@@ -959,6 +959,48 @@ test.describe('Lobby E2E', () => {
         await game.screenshot('lobby-home-active-match-leave-network-toast', testInfo);
     });
 
+    test('首页活跃房间房主销毁遇到 500 时提供强制清理并清空本地记录', async ({ page, game }, testInfo) => {
+        const matchId = await createTicTacToeRoom(page);
+        let interceptedDestroy = false;
+
+        await page.route(new RegExp(`/games/tictactoe/${matchId}/destroy(?:\\?.*)?$`), async (route) => {
+            interceptedDestroy = true;
+            await route.fulfill({
+                status: 500,
+                contentType: 'text/plain; charset=utf-8',
+                body: 'server error',
+            });
+        });
+
+        await ensureLobbyReady(page);
+
+        const banner = page.getByTestId('home-active-match-banner');
+        const actions = page.getByTestId('home-active-match-actions');
+        await expect(banner).toBeVisible({ timeout: 15000 });
+
+        await actions.getByRole('button', { name: '销毁' }).click();
+        await expect(page.getByText('销毁房间').last()).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText('确定要销毁房间吗？').last()).toBeVisible({ timeout: 10000 });
+        await page.getByRole('button', { name: '确定' }).last().evaluate((button) => {
+            if (!(button instanceof HTMLButtonElement)) {
+                throw new Error('销毁确认按钮节点不是 button');
+            }
+            button.click();
+        });
+
+        await expect.poll(() => interceptedDestroy).toBeTruthy();
+        await expect(page.getByText('销毁房间失败：网络或服务异常，请稍后重试。').last()).toBeVisible({ timeout: 10000 });
+        await expect(page.getByText('无法销毁房间').last()).toBeVisible({ timeout: 10000 });
+
+        await game.screenshot('lobby-home-active-match-destroy-network-force-exit-modal', testInfo);
+
+        await page.getByRole('button', { name: '强制清理' }).last().click();
+        await expect(banner).toHaveCount(0, { timeout: 10000 });
+        await page.waitForFunction((mid) => localStorage.getItem(`match_creds_${mid}`) === null, matchId);
+
+        await game.screenshot('lobby-home-active-match-destroy-network-force-exit-cleared', testInfo);
+    });
+
     test(MOBILE_AUTHOR_ENTRY_TEST_NAME, async ({ page, game }, testInfo) => {
         await page.setViewportSize({ width: 390, height: 844 });
         await page.goto('/?game=tictactoe', { waitUntil: 'domcontentloaded' });

@@ -5,7 +5,7 @@
 - 本轮触发问题：Treant `wild-growth` / `wild-growth-2`（中文 UI 为“野蛮生长 / 野蛮生长 II”，用户口径“野性怒吼2”疑似指同一升级技能）在 2 树枝 + 3 树叶骰面下，升级后不能按图面选择“移除树灵加伤 / 弃生命源泉不可防御”。
 - 主真相源：`src/games/dicethrone/rule/treant录入核对.md` 与 `src/games/dicethrone/rule/treant卡牌录入核对.md` 中记录的玩家板/卡图核对结论；清晰图片优先于 Wiki。
 - Wiki 仅作差异记录：本轮读取 Dice Throne Wiki 的 Treant 页面（https://dice-throne.fandom.com/wiki/Treant），确认 Wiki 提供 Treant 精灵/生命源泉/树灵通则说明，但页面正文没有列出 Wild Growth 的完整玩家板技能文本；因此本轮不使用 Wiki 覆盖图片口径。
-- 新派系全集重审对象暂列为：`gunslinger`、`samurai`、`treant`、`ninja`。当前 Treant 基础技能/被动/终极与 15 张专属卡主效果已局部修到 L2，树灵每回合限用与神性树灵防负面可选响应已补代表链；Ninja `Training` / `Poison Dart` / `Knife Fan` / `Dojo` / `Shuriken` / `Vanish` / `Escape` 已补真实手牌 L3。其余升级卡和基础/升级技能本体不得据此宣称已重审完成。
+- 新派系全集重审对象暂列为：`gunslinger`、`samurai`、`treant`、`ninja`。当前 Treant 基础技能/被动/终极主效果已修到 L2，15 张专属卡已补逐卡真实手牌 L3，树灵每回合限用与神性树灵防负面可选响应已补代表链；Ninja `Training` / `Poison Dart` / `Knife Fan` / `Dojo` / `Shuriken` / `Vanish` / `Escape`、8 张升级卡，以及一组技能本体真实玩家板入口已补 L3。Treant/Ninja 不得据此宣称所有组合分支 L4 完成。
 
 ## 已确认旧结论失效
 
@@ -28,10 +28,10 @@
 
 | heroId | 对象范围 | 本轮结论 | 当前最高证据 | 不得外推的缺口 |
 | --- | --- | --- | --- | --- |
-| `treant` | 玩家板技能、树灵/生命源泉/刺藤、15 张专属卡主效果 | 已修复 Wild Growth II 触发与主效果；多条技能/卡牌从旧错误语义修到图片口径 | L2 为主；树灵限用与神性树灵响应有代表性 L3 截图链 | 专属卡真实手牌逐卡 L3 未补齐，不能写 Treant 全量端到端收口 |
-| `ninja` | 玩家板技能、三种 token、专属卡与升级卡 | 已修 Dojo 漏骰分支；`training/poison-dart/knife-fan/shuriken/escape/vanish/dojo` 已补真实手牌 L3；四项回归有专项证据 | Token 复杂链路 L4；7 张专属行动卡真实手牌 L3；多张升级卡仍仅 L1/L2 | 多数升级卡和部分基础/升级技能本体缺真实入口 L3 截图链 |
-| `gunslinger` | 玩家板、Loaded/Bounty、专属卡与复合升级 | 本轮静态重扫未发现新增运行时代码 bug；修正文档漂移：`Bounty` 不自动过期但可被移除状态链路移除 | 既有 L2/L3 证据复用；`Bye Bye` 移除 Bounty 有真实手牌 E2E 文档 | `Loaded` 基础奖励骰、Quick Draw II / 终极技 Loaded 重掷仍有结构层未完全收口风险 |
-| `samurai` | 玩家板、Honor/Shame/Back Strike、专属卡与复合升级 | 本轮静态重扫未发现新增运行时代码 bug；本地文档显示 Masamune II、复合升级、行动/攻击修正卡已回到本地合同 | 既有 L2 为主，部分真实入口/E2E 证据复用 | 本轮未新增逐对象 L3；不能把历史“无角色级 residual”改写成新一轮全面审计完成 |
+| `treant` | 玩家板技能、树灵/生命源泉/刺藤、15 张专属卡主效果 | 已修复 Wild Growth II 触发与主效果；多条技能/卡牌从旧错误语义修到图片口径；15 张专属卡已补逐卡真实手牌入口 L3 | 主效果 L2；15 张专属卡真实手牌 L3；树灵限用与神性树灵响应有代表性 L3 截图链 | 基础技能/token/多目标多骰面组合仍不能外推为全分支 L4 |
+| `ninja` | 玩家板技能、三种 token、专属卡与升级卡 | 已修 Dojo 漏骰分支；7 张专属行动卡与 8 张升级卡已补真实手牌 L3；技能本体已补 `slash-2`、`going-forward-2`、`shadow-step-2`、`smoke-screen-2`、`shadow-fang-2`、`poison-blade-2`、`death-blossom-2`、终极技真实玩家板代表链；烟雾弹失败分支已补真实 UI/E2E | Token 复杂链路 L4；专属行动卡/升级卡真实手牌 L3；技能本体代表 L3 | 仍不能外推每个基础版/升级版、每种骰面组合和所有防御/响应/减伤分支 L4 |
+| `gunslinger` | 玩家板、Loaded/Bounty、专属卡与复合升级 | 本轮静态重扫发现 `Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷仍有结构层残余，已收敛为 `tokenBonusDieReroll` 定义层 hook；并修正文档漂移：`Bounty` 不自动过期但可被移除状态链路移除；`Quick Draw II / Fill'Em With Lead` Loaded 可重掷、`Spin the Chamber`、`Eat My Lead` 与 The Law 单选均已补真实 UI 证据 | 既有 L2/L3 证据复用；`Bye Bye` 移除 Bounty 有真实手牌 E2E 文档；Loaded 重掷本轮有定义层合同测试和行为回归；多条枪手 UI 链路通过 L3 | `mark-the-target` 仍不能写成 UI L3 |
+| `samurai` | 玩家板、Honor/Shame/Back Strike、专属卡与复合升级 | 本轮静态重扫未发现新增运行时代码 bug；本地文档显示 Masamune II、复合升级、行动/攻击修正卡已回到本地合同；`Zanshin` 多骰攻击修正已复跑真实 UI 链路 | 既有 L2 为主；`Zanshin` 攻击修正本轮复跑 L3；Honor/Back Strike 等仍复用历史 E2E | 仍未新增逐对象全集 L3；不能把历史“无角色级 residual”改写成新一轮全面审计完成 |
 
 ## 本轮修复
 
@@ -65,6 +65,16 @@
   - `ninja-card-dojo` 从错误的直接授予 `smoke_bomb=1` 与 `ninjutsu=2` 改为：投 1 骰；面具分支获得烟雾弹和 2 忍术；否则抽 1。
 - `public/locales/zh-CN/game-dicethrone.json` / `public/locales/en/game-dicethrone.json`
   - 补齐 Ninja `ninja-card-dojo` 的真实卡图描述，以及道场奖励骰成功/失败分支展示文案。
+- `src/games/dicethrone/domain/execute.ts` / `src/games/dicethrone/domain/commandValidation.ts`
+  - 修复 Ninja `shadow-step` 被全局兼容别名误改成 Moon Elf `elusive-step` 的入口 bug；现在只有当前玩家没有 `shadow-step` 且拥有 `elusive-step` 时才走旧兼容别名。
+- `src/games/dicethrone/domain/rules.ts`
+  - `offensiveRoll` 可用技能筛选允许 `utility` 类型，修复 Ninja `smoke-screen` / Treant `tend-care` 这类非伤害骰面技能无法从真实玩家板槽位选择的问题。
+- `e2e/dicethrone/dicethrone-ninja-ability-real-entry.e2e.ts`
+  - 新增 Ninja 技能本体真实玩家板 E2E：覆盖 `slash-2`、`going-forward-2`、`shadow-step-2`、`smoke-screen-2`、`shadow-fang-2`、`poison-blade-2`、`death-blossom-2`、`ninja-assassinate` 的槽位入口、代表结算、奖励骰特写与收口。
+- `src/games/dicethrone/domain/combat/types.ts` / `src/games/dicethrone/heroes/gunslinger/abilities.ts` / `src/games/dicethrone/domain/customActions/gunslinger.ts`
+  - 新增 `tokenBonusDieReroll` 定义层 hook；`Quick Draw II` 声明为 `scope: allTokenUses`，`Fill'Em With Lead` 声明为来源技能级 Loaded 重掷 hook；`handleLoadedUse()` 改为读取能力定义，不再用 `sourceAbilityId === 'fill-em-with-lead' || quickDrawLevel >= 2` 硬编码承接。
+- `src/games/dicethrone/__tests__/gunslinger-loaded-contract.test.ts`
+  - 新增 Gunslinger Loaded 重掷定义层合同测试，防止 `Quick Draw II / Fill'Em With Lead` 的 hook 回退为隐式分支。
 - `e2e/dicethrone/dicethrone-treant-ninja-mechanics.e2e.ts`
   - 新增 `ninja-card-dojo` 真实手牌 E2E：从 Ninja 主阶段手牌打出，分别覆盖面具成功分支与非面具抽牌分支，并验证奖励骰特写和收口状态。
   - 新增 `ninja-card-shuriken` 真实手牌 E2E：投掷阶段打出攻击修正牌，5 骰中 3 忍刀，收口后 `bonusDamage=3`、`attackModifierBonusDamage=3`。
@@ -78,6 +88,23 @@
   - 记录 Escape L3 截图链与逐张肉眼观察结论。
 - `evidence/dicethrone/dicethrone-ninja-main-action-real-hand-e2e-2026-05-17.md`
   - 记录 Training / Poison Dart / Knife Fan 主阶段真实手牌 L3 截图链与逐张肉眼观察结论。
+- `evidence/dicethrone/dicethrone-ninja-upgrade-real-hand-e2e-2026-05-17.md`
+  - 记录 8 张 Ninja 升级卡主阶段真实手牌 L3 截图链、`abilityLevels` 与 `upgradeCardByAbilityId` 断言。
+- `evidence/dicethrone/dicethrone-ninja-smoke-bomb-failure-e2e-2026-05-17.md`
+  - 记录 Smoke Bomb 失败骰面真实响应窗 E2E、失败后保留伤害与跳过响应后扣伤害的闭环。
+- `evidence/dicethrone/dicethrone-ninja-ability-real-entry-e2e-2026-05-17.md`
+  - 记录 Ninja 技能本体真实玩家板入口 L3 证据、`shadow-step` 别名修复、`utility` 入口修复、奖励骰特写与逐张截图肉眼观察。
+- `evidence/dicethrone/dicethrone-treant-full-audit-2026-05-16.md`
+  - 回写 Treant 15 张专属卡逐卡真实手牌 L3 证据链；本轮复跑 `树精专属主阶段卡...`、`树精践踏...`、`树精剩余升级卡...`、`树精剩余主阶段动作卡...`、`树精魂火...` 共 5 条 E2E 均通过。
+- `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md` / `src/games/dicethrone/rule/枪手录入核对.md`
+  - 回写 `Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷结构层 finding 已收敛；新增两者花费 Loaded 后可重掷单骰特写的真实 UI 证据，同时保留其他枪手对象 UI 独立 evidence 缺口。
+- `evidence/dicethrone/dicethrone-gunslinger-the-law-multiselect-e2e-test.md`
+  - 补齐 The Law “至多 2 名目标”场景中只选 1 名目标后的最终态截图，证明弹窗关闭、只给被选 P2 施加 `bounty + knockdown`，未误伤未选 P3。
+- `e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`
+  - 新增 `Spin the Chamber` 真实手牌 UI 链路：主阶段打出后获得 1 个 Loaded，手牌移除并进入弃牌。
+  - 新增 `Eat My Lead` 真实手牌 UI 链路：攻击掷骰阶段打出后出现 5 骰奖励结果、`攻击修正 +5` 与击倒，并可关闭奖励骰特写。
+- `evidence/dicethrone/samurai-attack-modifier-e2e-test.md`
+  - 2026-05-17 复跑 `Zanshin` 5 骰攻击修正真实 UI 链路，并回写新截图路径与肉眼观察。
 
 ## 验证证据
 
@@ -124,6 +151,62 @@
 - `npx vitest run src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts src/games/dicethrone/__tests__/treant-ability-card-contract.test.ts src/games/dicethrone/__tests__/treant-token-mechanics.test.ts src/games/dicethrone/__tests__/card-cross-audit.test.ts src/games/dicethrone/__tests__/cross-hero.test.ts --configLoader native --maxWorkers 1`
   - 2026-05-17 实测通过，`4` 个 test files / `99` tests passed。
   - 覆盖面：Ninja Dojo + Treant 能力/卡牌合同 + Treant token 机制 + 共享卡图/升级合同 + Gunslinger/Samurai 既有交叉行为回归。
+- `node node_modules/eslint/bin/eslint.js e2e/dicethrone/dicethrone-ninja-ability-real-entry.e2e.ts src/games/dicethrone/domain/execute.ts src/games/dicethrone/domain/commandValidation.ts src/games/dicethrone/domain/rules.ts`
+  - 2026-05-17 实测通过。
+- `npx vitest run src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts src/games/dicethrone/__tests__/moon-elf-abilities.test.ts --configLoader native --maxWorkers 1`
+  - 2026-05-17 实测通过，`2` 个 test files / `40` tests passed。
+- `npm run test:e2e:ci -- e2e/dicethrone/dicethrone-ninja-ability-real-entry.e2e.ts`
+  - 2026-05-17 实测通过，`3 passed`。
+  - 关键截图：
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-ability-real-entry.e2e\基础与升级技能应从真实玩家板槽位进入正确 sourceAbilityId\03-shadow-step-2-before-click.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-ability-real-entry.e2e\不可防御、utility 与终极技能应从真实槽位结算到权威状态\06-smoke-screen-2-after-resolve.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-ability-real-entry.e2e\死亡盛放 II 应从真实槽位触发奖励骰特写并收口\03-death-blossom-2-bonus-dice-overlay-detail.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-ninja-ability-real-entry.e2e\不可防御、utility 与终极技能应从真实槽位结算到权威状态\08-assassinate-after-resolve.png`
+- `node node_modules/eslint/bin/eslint.js src/games/dicethrone/__tests__/gunslinger-loaded-contract.test.ts src/games/dicethrone/domain/combat/types.ts src/games/dicethrone/heroes/gunslinger/abilities.ts src/games/dicethrone/domain/customActions/gunslinger.ts`
+  - 2026-05-17 实测通过。
+- `npx vitest run src/games/dicethrone/__tests__/gunslinger-loaded-contract.test.ts --configLoader native --maxWorkers 1`
+  - 2026-05-17 实测通过，`2 tests passed`。
+- `npx vitest run src/games/dicethrone/__tests__/cross-hero.test.ts --configLoader native --maxWorkers 1 -t "fill-em-with-lead can reroll|upgrade quick-draw makes loaded|wild west keeps fixed|base loaded choice"`
+  - 2026-05-17 实测通过，`5 passed / 61 skipped`。
+- `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "gunslinger quick draw II should make loaded spotlight rerollable after real choice click"`
+  - 2026-05-17 实测通过，`1 passed`。
+  - 关键截图：
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-quick-draw-II-should-make-loaded-spotlight-rerollable-after-real-choice-click\23-gunslinger-quick-draw-2-loaded-choice-before-use.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-quick-draw-II-should-make-loaded-spotlight-rerollable-after-real-choice-click\24-gunslinger-quick-draw-2-loaded-rerollable-spotlight.png`
+  - 肉眼观察：第一张图为真实战斗页面上的“技能结算选择”弹窗，能看到“装填”选项；第二张图为单骰奖励骰特写，能看到右侧骰面列表与“点击骰子花费 0 装填重投”提示，顶部装填 token 已扣为 0。该截图链证明 `Quick Draw II` 的全局 Loaded 重掷 hook 已进入真实 UI。
+- `node scripts/infra/check-file-encoding.mjs --quiet`
+  - 2026-05-17 实测通过；用于排除一次 E2E 启动前编码候选文件 ENOENT 的瞬态问题。
+- `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "gunslinger fill em with lead should make sourced loaded spotlight rerollable"`
+  - 2026-05-17 实测通过，`1 passed`。
+  - 关键截图：
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-fill-em-with-lead-should-make-sourced-loaded-spotlight-rerollable\25-gunslinger-fill-em-with-lead-loaded-choice-before-use.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-fill-em-with-lead-should-make-sourced-loaded-spotlight-rerollable\26-gunslinger-fill-em-with-lead-loaded-rerollable-spotlight.png`
+  - 肉眼观察：第一张图为真实战斗页面上的“技能结算选择”弹窗，能看到“装填”选项；第二张图为单骰奖励骰特写，能看到右侧骰面列表与“点击骰子花费 0 装填重投”提示，顶部装填 token 已扣为 0。用例同时断言 `sourceAbilityId=fill-em-with-lead` 与 `maxRerollCount=1`，证明来源技能级 Loaded 重掷 hook 已进入真实 UI。
+- `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "should allow confirming after selecting only one target"`
+  - 2026-05-17 首次执行在 `openTestGame` 等测试 harness 时命中页面启动保护页，重试通过，`1 passed`。
+  - 关键截图：
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-allow-confirming-after-selecting-only-one-target\14-the-law-single-target-selected.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-allow-confirming-after-selecting-only-one-target\14-the-law-single-target-resolved.png`
+  - 肉眼观察：选择态截图中只选 P2 后确认按钮可用；结算态截图中弹窗已关闭，P2 有赏金与击倒，P3 无对应新增图标，证明 The Law 单选最终态已闭环。
+- `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "gunslinger spin the chamber should grant loaded from real hand play"`
+  - 2026-05-17 实测通过，`1 passed`。
+  - 关键截图：
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-spin-the-chamber-should-grant-loaded-from-real-hand-play\27-gunslinger-spin-the-chamber-before-play.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-spin-the-chamber-should-grant-loaded-from-real-hand-play\28-gunslinger-spin-the-chamber-after-play-loaded.png`
+  - 肉眼观察：打出前真实手牌区可见 `转动弹槽！`；打出后左侧状态区出现 Loaded 图标，CP 从 2 扣到 1，卡牌进入弃牌区。
+- `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "gunslinger eat my lead should roll five bonus dice from real hand play"`
+  - 2026-05-17 实测通过，`1 passed`。
+  - 关键截图：
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-eat-my-lead-should-roll-five-bonus-dice-from-real-hand-play\29-gunslinger-eat-my-lead-before-play.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-eat-my-lead-should-roll-five-bonus-dice-from-real-hand-play\30-gunslinger-eat-my-lead-bonus-dice-overlay.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-eat-my-lead-should-roll-five-bonus-dice-from-real-hand-play\31-gunslinger-eat-my-lead-after-closeout.png`
+  - 肉眼观察：打出前真实手牌区可见 `吃我的铅弹！`；奖励骰阶段可见 5 个子弹骰、`攻击修正 +5` 与目标击倒；关闭后奖励骰特写消失，结果仍保留。
+- `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "samurai zanshin should settle 5 bonus dice and synchronize effects against paladin"`
+  - 2026-05-17 实测通过，`1 passed`。
+  - 关键截图：
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-bonus-die-overlay.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-bonus-die-closed.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-settled.png`
 - `npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者道场应通过真实手牌打出并按骰面分支结算"`
   - 2026-05-17 实测通过，`1 passed`。
   - 关键截图：
@@ -157,6 +240,32 @@
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者训练毒镖刀扇应通过真实手牌主阶段打出并结算\02-training-after-play-ninjutsu.png`
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者训练毒镖刀扇应通过真实手牌主阶段打出并结算\04-poison-dart-after-play-delayed-poison.png`
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者训练毒镖刀扇应通过真实手牌主阶段打出并结算\06-knife-fan-after-play-direct-damage.png`
+- `npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者升级卡应通过真实手牌逐张升级到正确技能"`
+  - 2026-05-17 实测通过，`1 passed`。
+  - 关键截图：
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者升级卡应通过真实手牌逐张升级到正确技能\01-upgrade-blink-2-before-drag.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者升级卡应通过真实手牌逐张升级到正确技能\01-upgrade-blink-2-after-play.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者升级卡应通过真实手牌逐张升级到正确技能\08-upgrade-death-blossom-2-after-play.png`
+- `npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者烟雾弹失败骰面应消耗 token 但保留伤害并可继续结算"`
+  - 2026-05-17 首次执行被 CPU 重任务门禁拦截；等待后重跑通过，`1 passed`。
+  - 关键截图：
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者烟雾弹失败骰面应消耗token但保留伤害并可继续结算\01-smoke-bomb-failure-token-response-before-use.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者烟雾弹失败骰面应消耗token但保留伤害并可继续结算\02-smoke-bomb-failure-after-use-pending-damage.png`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\忍者烟雾弹失败骰面应消耗token但保留伤害并可继续结算\03-smoke-bomb-failure-after-damage-resolved.png`
+- `npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "树精专属主阶段卡应通过真实手牌完成升级与选择结算代表链"`
+  - 2026-05-17 本轮复跑通过，`1 passed`。
+- `npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "树精践踏应通过真实手牌打出并在奖励骰收口后计入攻击修正"`
+  - 2026-05-17 本轮补奖励骰局部截图后复跑通过，`1 passed`。
+  - 关键截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精践踏应通过真实手牌打出并在奖励骰收口后计入攻击修正\02-trample-bonus-dice-overlay-detail.png`
+- `npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "树精剩余升级卡应通过真实手牌逐张升级到正确技能"`
+  - 2026-05-17 本轮实测通过，`1 passed`。
+  - 关键截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精剩余升级卡应通过真实手牌逐张升级到正确技能\05-upgrade-wild-growth-2-after-play.png`
+- `npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "树精剩余主阶段动作卡应通过真实手牌逐张结算"`
+  - 2026-05-17 本轮实测通过，`1 passed`。
+  - 关键截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精剩余主阶段动作卡应通过真实手牌逐张结算\11-mother-tree-spirit-after-resolve.png`
+- `npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "树精魂火应通过真实手牌打出并结算三种骰面分支"`
+  - 2026-05-17 本轮实测通过，`1 passed`。
+  - 关键截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-treant-ninja-mechanics.e2e\树精魂火应通过真实手牌打出并结算三种骰面分支\02-soulfire-bonus-dice-overlay-detail.png`
 
 ## Completion audit（2026-05-17）
 
@@ -164,18 +273,23 @@
 | --- | --- | --- | --- |
 | Wild Growth II 在 `2 Branch + 3 Leaf` 下可选 | 已修 | `treant-ability-card-contract.test.ts` 中 `Wild Growth II 升级后仍应在 2 树枝 + 3 树叶骰面下可选择` | 通过 L2 |
 | Wild Growth / II 图面效果 | 已修 | 同文件覆盖移除至多 2 树灵、每个 +4、弃生命源泉不可防御、无治疗事件 | 通过 L2 |
-| Treant 树灵/生命源泉/刺藤关键机制 | 局部修复并有代表链 | `treant-token-mechanics.test.ts` 与 Treant E2E 截图链 | 代表覆盖，不是全卡 L3 |
+| Treant 15 张专属卡真实手牌入口 | 已补逐卡入口 | `dicethrone-treant-ninja-mechanics.e2e.ts` 五条 Treant 专属卡用例；`dicethrone-treant-full-audit-2026-05-16.md` | 通过逐卡入口 L3；不外推所有组合分支 L4 |
+| Treant 树灵/生命源泉/刺藤关键机制 | 局部修复并有代表链 | `treant-token-mechanics.test.ts` 与 Treant E2E 截图链 | 代表覆盖，不是所有 token 组合 L4 |
 | Ninja Dojo | 已修 | `ninja-ability-card-contract.test.ts` 两分支；`dicethrone-treant-ninja-mechanics.e2e.ts` 真实手牌两分支截图链 | 通过 L3 |
 | Ninja Shuriken / Vanish / Escape | 已补真实入口 | `dicethrone-treant-ninja-mechanics.e2e.ts` 真实手牌截图链；`dicethrone-ninja-shuriken-vanish-real-hand-e2e-2026-05-17.md`；`dicethrone-ninja-escape-real-hand-e2e-2026-05-17.md` | 通过 L3 |
 | Ninja Training / Poison Dart / Knife Fan | 已补真实入口 | `dicethrone-treant-ninja-mechanics.e2e.ts` 主阶段真实手牌截图链；`dicethrone-ninja-main-action-real-hand-e2e-2026-05-17.md` | 通过 L3 |
+| Ninja 8 张升级卡 | 已补真实入口 | `dicethrone-treant-ninja-mechanics.e2e.ts` 主阶段真实手牌截图链；`dicethrone-ninja-upgrade-real-hand-e2e-2026-05-17.md` | 通过升级卡打出 L3；不外推技能本体所有分支 |
+| Ninja 技能本体真实玩家板入口 | 已补代表链 | `dicethrone-ninja-ability-real-entry.e2e.ts`；`dicethrone-ninja-ability-real-entry-e2e-2026-05-17.md` | 通过技能本体代表 L3；`slash-2`/`going-forward-2`/`shadow-fang-2` 只证明入口，不外推所有防御后分支 |
+| Ninja Smoke Bomb 失败分支 | 已补真实入口 | `dicethrone-treant-ninja-mechanics.e2e.ts` 响应窗截图链；`dicethrone-ninja-smoke-bomb-failure-e2e-2026-05-17.md` | 通过 L4 |
 | Gunslinger Bounty 文档漂移 | 已回写 | `枪手录入核对.md`、`dicethrone-gunslinger-audit-2026-04-11.md`、`dicethrone-paladin-blessing-removable-fix.md` | 文档漂移已处理 |
-| Samurai 本轮重扫 | 未发现新增代码 bug | `武士录入核对.md`、`武士卡牌录入核对.md`、`cross-hero.test.ts` 既有覆盖 | 只能写静态/既有证据复用 |
+| Gunslinger Loaded 重掷结构层与主要 UI | 已收敛一部分 | `tokenBonusDieReroll` 定义层 hook；`gunslinger-loaded-contract.test.ts`；`cross-hero.test.ts` 定向行为回归；`dicethrone-watch-out-spotlight.e2e.ts` 的 Quick Draw II / Fill'Em With Lead 单骰特写、The Law 单选最终态、Spin the Chamber、Eat My Lead 截图链 | Loaded 结构层通过定义层合同 + L2 行为；多条 UI 通过 L3；不外推 `mark-the-target` UI |
+| Samurai 本轮重扫 | 未发现新增代码 bug；补一条真实 UI 复跑 | `武士录入核对.md`、`武士卡牌录入核对.md`、`samurai-attack-modifier-e2e-test.md`、`Zanshin` E2E 复跑 | `Zanshin` 通过 L3；其余对象仍以静态/既有证据复用为主 |
 | Wiki 差异记录 | 已补本轮对照 | 本节 Treant/Ninja/Bounty/Samurai Wiki 链接 | Wiki 不覆盖本地图 |
-| 全部新派系全面审计完成 | 未完成 | 仍缺 Ninja/Treant 多张专属卡真实打出 L3、Gunslinger/ Samurai 部分 UI/evidence 缺口 | 不得宣称完成 |
+| 全部新派系全面审计完成 | 未完成 | Treant/Ninja 专属卡入口已补到 L3，Ninja 技能本体已有代表 L3，Gunslinger Loaded 重掷结构层、多条代表 UI 与 The Law 单选最终态已补；但 Treant/Ninja 全组合 L4、Gunslinger `mark-the-target` UI、Samurai 部分 UI/evidence 缺口仍未全量补齐 | 不得宣称完成 |
 
 ## 未完成与风险
 
-- Treant 全量仍未收口：本轮只代表基础技能/被动/终极与 15 张专属卡主效果已局部接入正确养成/防御/目标选择语义，树灵每回合限用与神性树灵防负面可选只补了代表性真实入口链，不代表专属卡真实打出 L3 已完成，也不代表 Treant 可发布收口。
-- Ninja 全量仍未收口：Training、Poison Dart、Knife Fan、Dojo、Shuriken、Vanish、Escape 已补真实手牌 L3；多数升级卡和部分基础/升级技能本体仍缺真实入口 L3。
-- Gunslinger / Samurai 本轮已补 Wiki 差异与静态重扫结论，但没有新增逐对象 L3，因此不能把“未发现新增 bug”写成“全面审计完成”。
+- Treant 全量仍未收口：15 张专属卡逐卡真实手牌入口 L3 已补，但基础技能/token/多目标多骰面组合仍是 L2 + 代表性 L3，不代表所有组合分支 L4 都已完成。
+- Ninja 全量仍未收口：Training、Poison Dart、Knife Fan、Dojo、Shuriken、Vanish、Escape 与 8 张升级卡已补真实手牌 L3，`smoke_bomb` 成功/失败分支已补真实 UI/E2E；技能本体也已补一组真实玩家板代表 L3，但不能外推为每个基础版/升级版、每种骰面组合和所有防御/响应/减伤分支 L4。
+- Gunslinger 本轮已补 `Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷结构层 hook、行为回归与两条独立 UI/E2E 截图链，并补齐 The Law 单选最终态、Spin the Chamber、Eat My Lead；但 `mark-the-target` 仍缺真实 UI/E2E。Samurai 本轮只复跑 `Zanshin` 多骰攻击修正真实 UI 链路，其余对象仍以静态/既有证据复用为主。两者都不能写成“全面审计完成”。
 - Wild Growth 当前支持精确选择被移除的幼种/木苗/神性树灵；每回合每种树灵只能花费一次的通则已接入共享状态门禁，但仍需后续扩展更多真实入口覆盖。

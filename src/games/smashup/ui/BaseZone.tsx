@@ -288,11 +288,8 @@ export const BaseZone: React.FC<{
                             clearArmedActivation();
                             onOngoingSelect(oa.uid);
                         } else if (canUseOngoingTalent) {
-                            armOrActivate(ongoingActivationKey, {
-                                onActivate: () => {
-                                    dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: oa.uid, baseIndex });
-                                },
-                            });
+                            clearArmedActivation();
+                            dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: oa.uid, baseIndex });
                         } else {
                             clearArmedActivation();
                             onViewAction(oa.defId);
@@ -1421,11 +1418,8 @@ const MinionCard: React.FC<{
                                             clearArmedActivation();
                                             onOngoingSelect(aa.uid);
                                         } else if (canUseAATalent) {
-                                            armOrActivate(attachedActivationKey, {
-                                                onActivate: () => {
-                                                    dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: aa.uid, baseIndex });
-                                                },
-                                            });
+                                            clearArmedActivation();
+                                            dispatch(SU_COMMANDS.USE_TALENT, { ongoingCardUid: aa.uid, baseIndex });
                                         } else {
                                             clearArmedActivation();
                                             onViewAction(aa.defId);

@@ -88,13 +88,9 @@ const defaultRandom: RandomFn = {
     range: (_min: number) => _min,
 };
 
-/** 保存最近一次 execute 调用的 matchState 引用 */
-let lastMatchState: MatchState<SmashUpCore> | null = null;
-
 /** 执行打出行动卡命令，返回事件列表 */
 function execPlayAction(state: SmashUpCore, playerId: string, cardUid: string): SmashUpEvent[] {
     const ms = makeMatchState(state);
-    lastMatchState = ms;
     const events = execute(ms, {
         type: SU_COMMANDS.PLAY_ACTION, playerId,
         payload: { cardUid },
@@ -107,7 +103,6 @@ function execPlayAction(state: SmashUpCore, playerId: string, cardUid: string): 
 /** 执行打出随从命令，返回事件列表 */
 function execPlayMinion(state: SmashUpCore, playerId: string, cardUid: string, baseIndex: number): SmashUpEvent[] {
     const ms = makeMatchState(state);
-    lastMatchState = ms;
     const events = execute(ms, {
         type: SU_COMMANDS.PLAY_MINION, playerId,
         payload: { cardUid, baseIndex },
@@ -117,15 +112,14 @@ function execPlayMinion(state: SmashUpCore, playerId: string, cardUid: string, b
     return postProcessSystemEvents(state, events, defaultRandom).events;
 }
 
-/** 从最近一次 execute 的 matchState 中获取 interactions */
-function getLastInteractions(): any[] {
-    if (!lastMatchState) return [];
-    const interaction = (lastMatchState.sys as any)?.interaction;
-    if (!interaction) return [];
-    const list: any[] = [];
-    if (interaction.current) list.push(interaction.current);
-    if (interaction.queue?.length) list.push(...interaction.queue);
-    return list;
+function runPlayAction(state: SmashUpCore, playerId: string, cardUid: string) {
+    const matchState = makeMatchState(state);
+    const events = execute(matchState, {
+        type: SU_COMMANDS.PLAY_ACTION,
+        playerId,
+        payload: { cardUid },
+    } as any, defaultRandom);
+    return postProcessSystemEvents(state, events, defaultRandom, matchState);
 }
 
 // ============================================================================
@@ -234,14 +228,12 @@ describe('E2E: 移动触发链 (cub_scout + processMoveTriggers)', () => {
             ],
         });
 
-        const _events = execPlayAction(state, '0', 'action1');
+        const result = runPlayAction(state, '0', 'action1');
 
-        // shanghai 对只有一个对手随从的情况应产生 Interaction
+        // shanghai 对只有一个对手随从的情况应产生 Prompt
         // 即使最终移动在 Prompt 链中完成，processMoveTriggers 会在 execute() 末尾处理
-        // 这里验证 Interaction 创建正确
-        const interactions = getLastInteractions();
-        expect(interactions.length).toBe(1);
-        expect(getPromptSourceId(interactions[0])).toBe('pirate_shanghai_choose_minion');
+        const prompt = getSimpleChoicePrompt(result.matchState!, 'pirate_shanghai_choose_minion');
+        expect(getPromptSourceId(prompt)).toBe('pirate_shanghai_choose_minion');
     });
 
 });

@@ -58,6 +58,7 @@ import {
     type ForceEndTurnStalledAiResolution,
 } from './onlineAiRecovery';
 import type { LocalPregameControlResolver } from './followCurrentTurnPlayer';
+import { injectTutorialInteractionId } from './tutorialAiCommand';
 
 // 离线裁决：按交互 kind 选择最小语义正确的兜底命令
 // - simple-choice: 走通用系统取消
@@ -818,7 +819,17 @@ export class GameTransportServer {
                         return rest;
                     })()
                     : payload;
-                await this.handleCommand(matchID, resolvedPlayerId, commandType, normalizedPayload);
+                const isTutorialAiCommand = payloadRecord?.__tutorialAiCommand === true;
+                const tutorialInjectedPayload = match
+                    ? injectTutorialInteractionId({
+                        state: match.state,
+                        commandType,
+                        payload: normalizedPayload,
+                        tutorialPlayerId: tutorialOverrideId ?? resolvedPlayerId,
+                        isTutorialAiCommand,
+                    })
+                    : normalizedPayload;
+                await this.handleCommand(matchID, resolvedPlayerId, commandType, tutorialInjectedPayload);
             });
 
             socket.on('batch', async (
@@ -1269,6 +1280,24 @@ export class GameTransportServer {
         return candidate;
     }
 
+    private resolveOnlineAiRecoveryTimeoutMs(
+        match: ActiveMatch,
+        candidate: ForceEndTurnStalledAiResolution,
+    ): number {
+        const liveSeatConnectionCount = match.connections.get(candidate.playerId)?.size ?? 0;
+        // 商业口径：在线 AI 不应依赖宿主页保持前台/存活。
+        // 一旦对应 AI seat 没有 live socket，watchdog 立即接管真正的“对局中 AI 回合/交互”。
+        // pregame 的 legal-only 选阵营链仍保留原有时序，避免改变既有恢复/反馈语义。
+        const shouldImmediateTakeover = candidate.reason === 'active-turn'
+            || candidate.reason === 'response-window'
+            || candidate.reason === 'visible-interaction'
+            || candidate.reason === 'hidden-interaction';
+        if (liveSeatConnectionCount === 0 && shouldImmediateTakeover) {
+            return 0;
+        }
+        return this.onlineAiRecoveryTimeoutMs;
+    }
+
     private async runOnlineAiRecoveryTick(): Promise<void> {
         const now = Date.now();
         for (const [key, expiresAt] of this.onlineAiRecoveryFeedbackCooldown.entries()) {
@@ -1325,20 +1354,24 @@ export class GameTransportServer {
             const progressMarker = buildAiProgressMarker(match.state);
             const recoveryFingerprint = this.buildOnlineAiRecoveryFingerprint(match, candidate, progressMarker);
             const trackerKey = `${candidate.playerId}:${candidate.reason}:${recoveryFingerprint}`;
-            const currentTracker = this.onlineAiRecoveryTrackers.get(match.matchID);
+            const recoveryTimeoutMs = this.resolveOnlineAiRecoveryTimeoutMs(match, candidate);
+            let currentTracker = this.onlineAiRecoveryTrackers.get(match.matchID);
 
             if (!currentTracker || currentTracker.key !== trackerKey) {
-                this.onlineAiRecoveryTrackers.set(match.matchID, {
+                currentTracker = {
                     key: trackerKey,
                     firstSeenAt: now,
                     autoSubmittedAt: null,
                     lastReportedFailureReason: null,
                     failureCount: 0,
-                });
-                continue;
+                };
+                this.onlineAiRecoveryTrackers.set(match.matchID, currentTracker);
+                if (recoveryTimeoutMs > 0) {
+                    continue;
+                }
             }
 
-            if (currentTracker.autoSubmittedAt || now - currentTracker.firstSeenAt < this.onlineAiRecoveryTimeoutMs) {
+            if (currentTracker.autoSubmittedAt || now - currentTracker.firstSeenAt < recoveryTimeoutMs) {
                 continue;
             }
 
@@ -1512,7 +1545,9 @@ export class GameTransportServer {
                 match,
                 candidateToCancel.playerId,
                 INTERACTION_COMMANDS.CANCEL,
-                {},
+                {
+                    interactionId: typeof currentInteraction.id === 'string' ? currentInteraction.id : undefined,
+                },
             );
             return success;
         };
@@ -1521,6 +1556,12 @@ export class GameTransportServer {
             const seenMarkers = new Set<string>([progressMarkerBeforeRecovery]);
             let recoverySteps = 0;
             let allowNaturalAiContinuation = false;
+            let lastUnreportedLegalActionRecovery: {
+                candidateReason: ForceEndTurnStalledAiResolution['reason'];
+                playerId: string;
+                actionKind: string;
+                actionId: string;
+            } | null = null;
             if (currentCandidate.legalActionOnly !== true) {
                 const initialCandidate = await revalidateRecoveryCandidate(currentCandidate);
                 if (!initialCandidate) {
@@ -1540,10 +1581,35 @@ export class GameTransportServer {
                     seatControllers,
                 );
                 const actionRecoveryApplied = actionRecovery.applied;
+                if (actionRecovery.applied && actionRecovery.reportedAction) {
+                    lastUnreportedLegalActionRecovery = actionRecovery.resolved
+                        ? null
+                        : actionRecovery.reportedAction;
+                }
                 const executedCommandTypes = new Set<string>(actionRecovery.executedCommandTypes);
 
                 if (!actionRecoveryApplied) {
                     const recoveryCommands = currentCandidate.resolution.action.commands;
+                    if (actionRecovery.outcome === 'legal-action-command-failed') {
+                        const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
+                        if (!revalidatedCandidate) {
+                            return;
+                        }
+                        currentCandidate = revalidatedCandidate;
+                        await this.handleOnlineAiRecoveryFailure(
+                            match,
+                            tracker,
+                            currentCandidate,
+                            phaseLabel,
+                            progressMarkerBeforeRecovery,
+                            formatOnlineAiCommandFailureReason(
+                                'legal_action_command_failed',
+                                actionRecovery.failedCommandType,
+                                actionRecovery.commandFailureReason,
+                            ),
+                        );
+                        return;
+                    }
                     const canFallbackToRecoveryCommandAfterLegalActionAttempt =
                         currentCandidate.allowForceCommandAfterLegalActionExhausted === true
                         && currentCandidate.legalActionOnly === true
@@ -1816,6 +1882,31 @@ export class GameTransportServer {
             });
 
             this.onlineAiRecoveryTrackers.delete(match.matchID);
+            if (!usedForcedRecoveryCommand && lastUnreportedLegalActionRecovery) {
+                await this.reportOnlineAiRecoveryFeedback({
+                    matchId: match.matchID,
+                    gameId: match.gameId,
+                    playerId: lastUnreportedLegalActionRecovery.playerId,
+                    incidentKind: 'legal-action-recovered',
+                    severity: 'medium',
+                    status: 'resolved',
+                    reason: `${lastUnreportedLegalActionRecovery.candidateReason}:legal-action:${lastUnreportedLegalActionRecovery.actionKind}:${lastUnreportedLegalActionRecovery.actionId}`,
+                    trackerKey: tracker.key,
+                    progressMarker: progressMarkerBeforeRecovery,
+                    stateSnapshot: await this.buildOnlineAiRecoveryStateSnapshot(
+                        match,
+                        candidate,
+                        tracker.key,
+                        progressMarkerBeforeRecovery,
+                    ),
+                    actionLog: this.buildOnlineAiRecoveryActionLog(
+                        match,
+                        candidate,
+                        tracker.key,
+                        progressMarkerBeforeRecovery,
+                    ),
+                });
+            }
             if (!usedForcedRecoveryCommand) {
                 return;
             }
@@ -2570,15 +2661,24 @@ export class GameTransportServer {
         seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
     ): Promise<{
         applied: boolean;
+        resolved: boolean;
         blockedReason: 'missing-visible-state' | 'missing-private-overlay' | 'stale-private-overlay' | null;
         executedCommandTypes: string[];
         outcome: 'applied' | 'blocked' | 'no-legal-action' | 'legal-action-command-failed';
         failedCommandType?: string;
         commandFailureReason?: string | null;
+        reportedAction?:
+            | {
+                candidateReason: ForceEndTurnStalledAiResolution['reason'];
+                playerId: string;
+                actionKind: string;
+                actionId: string;
+            }
+            | null;
     }> {
         const seatController = seatControllers[candidate.playerId];
         if (!seatController || seatController.type === 'human') {
-            return { applied: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action' };
+            return { applied: false, resolved: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action', reportedAction: null };
         }
 
         const resolveStrictOnlineDecisionView = (playerId: string) => resolveOnlineAiDecisionView({
@@ -2652,17 +2752,19 @@ export class GameTransportServer {
                 }
                 return {
                     applied: false,
+                    resolved: false,
                     blockedReason: aiDispatchResult.blockedReason,
                     executedCommandTypes: [],
                     outcome: 'blocked',
+                    reportedAction: null,
                 };
             }
-            return { applied: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action' };
+            return { applied: false, resolved: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action', reportedAction: null };
         }
 
         const resolution = aiDispatchResult.resolution;
         if (resolution.playerId !== candidate.playerId || resolution.action.commands.length === 0) {
-            return { applied: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action' };
+            return { applied: false, resolved: false, blockedReason: null, executedCommandTypes: [], outcome: 'no-legal-action', reportedAction: null };
         }
 
         const markerBefore = buildAiProgressMarker(match.state);
@@ -2680,11 +2782,13 @@ export class GameTransportServer {
                 tracker.autoSubmittedAt = null;
                 return {
                     applied: false,
+                    resolved: false,
                     blockedReason: null,
                     executedCommandTypes,
                     outcome: 'legal-action-command-failed',
                     failedCommandType: command.type,
                     commandFailureReason,
+                    reportedAction: null,
                 };
             }
             executedCommandTypes.push(command.type);
@@ -2693,7 +2797,14 @@ export class GameTransportServer {
         const markerAfter = buildAiProgressMarker(match.state);
         if (markerAfter === markerBefore) {
             tracker.autoSubmittedAt = null;
-            return { applied: false, blockedReason: null, executedCommandTypes: [], outcome: 'legal-action-command-failed' };
+            return {
+                applied: false,
+                resolved: false,
+                blockedReason: null,
+                executedCommandTypes: [],
+                outcome: 'legal-action-command-failed',
+                reportedAction: null,
+            };
         }
 
         // legal-action recovery 会串行执行 1..N 条命令，前面用 suppressBroadcast 合并中间态；
@@ -2746,7 +2857,19 @@ export class GameTransportServer {
             });
         }
 
-        return { applied: true, blockedReason: null, executedCommandTypes, outcome: 'applied' };
+        return {
+            applied: true,
+            resolved,
+            blockedReason: null,
+            executedCommandTypes,
+            outcome: 'applied',
+            reportedAction: {
+                candidateReason: candidate.reason,
+                playerId: resolution.playerId,
+                actionKind: resolution.action.kind,
+                actionId: resolution.action.actionId,
+            },
+        };
     }
 
     private maybeTriggerOnlineAiOverlayResync(args: {
@@ -3659,7 +3782,7 @@ export class GameTransportServer {
     private async cancelInteractionOnError(match: ActiveMatch, playerID: string): Promise<void> {
         const interaction = (match.state.sys as {
             interaction?: {
-                current?: { kind?: string; playerId?: string };
+                current?: { id?: string; kind?: string; playerId?: string };
             };
         })?.interaction?.current;
 
@@ -3669,7 +3792,9 @@ export class GameTransportServer {
 
         // 递归调用 executeCommandInternal 执行取消命令
         // 注意：这里不会无限递归，因为 CANCEL 命令不会抛出异常
-        await this.executeCommandInternal(match, playerID, commandType, {});
+        await this.executeCommandInternal(match, playerID, commandType, {
+            interactionId: typeof interaction.id === 'string' ? interaction.id : undefined,
+        });
 
         logger.warn('[GameTransport] Auto-cancelled interaction after command error', {
             matchID: match.matchID,

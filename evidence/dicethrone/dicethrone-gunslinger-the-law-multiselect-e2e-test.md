@@ -14,6 +14,14 @@
 npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts "Online 4-player The Law variant: upgraded Deadeye offers all target players in 2v2 and resolves on two selected targets"
 ```
 
+2026-05-17 追加复跑：
+
+```bash
+npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "should allow confirming after selecting only one target"
+```
+
+结果：`1 passed`。首次尝试在 `openTestGame` 等测试 harness 时命中“页面没有正常显示”的启动保护页，未进入业务断言；重试通过。
+
 ## Addendum（2026-04-12）：补齐“真实触发入口 + 多模式目标集合”证据（已修订旧结论）
 
 > **修订原因**：早期证据曾把 `The Law` 的目标集合简化成“敌方 only”。但权威卡面用的是“目标玩家 / up to 2 target players”的表述，本轮已统一裁决为：
@@ -34,6 +42,12 @@ npm run test:e2e:ci:file -- e2e/dicethrone/dicethrone-simple-start.e2e.ts "Onlin
 ### 2) 3 人：多目标弹窗可选至多 2 名目标玩家并完成结算
 
 截图（成功路径连续证据链）：
+- `14` 只选 1 名目标（确认按钮 enabled）：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-allow-confirming-after-selecting-only-one-target\14-the-law-single-target-selected.png`
+  - 肉眼观察：弹窗标题写“选择至多 2 名目标玩家”，P2/P3 两个目标都可见；只选 P2 后确认按钮可用，证明单选可确认。
+- `14` 单选确认后结算：
+  - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-allow-confirming-after-selecting-only-one-target\14-the-law-single-target-resolved.png`
+  - 肉眼观察：弹窗关闭，P2 头像区可见赏金与击倒图标，P3 没有新增对应图标；配套断言确认 P2 `bounty=1/knockdown=1`、P3 保持 0。
 - `24` 已选 2 名目标（确认按钮 enabled）：
   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-open-multi-target-interaction-after-selecting-the-upgraded-variant-in-3-player-scene\24-the-law-variant-3p-selected-targets.png`
 - `25` 确认后原子化结算（交互关闭）：

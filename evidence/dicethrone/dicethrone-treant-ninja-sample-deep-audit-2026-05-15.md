@@ -86,7 +86,7 @@
 
 | 类别 | 对象 | 真相/规则要点 | 真实消费点 | 本轮结论 | 证据层级 |
 |---|---|---|---|---|---|
-| Token | Ninja `smoke_bomb` 失败分支 | 失败时消耗烟雾弹但不免伤 | `USE_TOKEN` / token handler / `pendingDamage` | 已证明失败骰面消耗 token，保留待结算伤害，不提前扣 HP | L2 |
+| Token | Ninja `smoke_bomb` 失败分支 | 失败时消耗烟雾弹但不免伤 | `USE_TOKEN` / token handler / `pendingDamage` | 已证明失败骰面消耗 token，保留待结算伤害，不提前扣 HP；2026-05-17 补真实 UI/E2E 后证明跳过响应会正常结算伤害 | L4 |
 | 手牌卡 | Ninja `ninja-card-shuriken` | 攻击修正，投 5 骰，每忍刀 +1 | `PLAY_CARD` immediate effect / `BONUS_DAMAGE_ADDED` | 已修复并证明加伤写入 `pendingAttack`，不直接扣 HP | L2 |
 | 手牌卡 | Ninja `ninja-card-escape` | 受击响应窗可打，护盾抵伤 | `checkPlayCard` / `PLAY_CARD` / `SKIP_TOKEN_RESPONSE` | 已证明响应窗可打，护盾抵消后续结算伤害 | L2 |
 | 手牌卡 | Treant `treant-card-trample` | 攻击修正投 5 骰，加伤并施加刺藤 | `PLAY_CARD` immediate effect / `BONUS_DAMAGE_ADDED` | 已修复并证明加伤与刺藤同时进入权威状态 | L2 |
@@ -114,7 +114,7 @@ npm run typecheck
 ## 未覆盖与不能外推的范围
 
 - 本轮原始抽样没有新增真实 UI E2E 截图链；因此上述对象在 2026-05-15 当时只能升级到 L2，不能写 L3/L4。
-- `ninja-card-shuriken` 已于 2026-05-17 追加真实手牌 L3；`treant-card-trample`、`treant-card-soulfire` 已有领域行为证明，但仍缺真实手牌打出 E2E。
+- `ninja-card-shuriken` 已于 2026-05-17 追加真实手牌 L3；`treant-card-trample`、`treant-card-soulfire` 已于 2026-05-17 追加真实手牌 L3，分别覆盖奖励骰加伤/刺藤与三种骰面分支。
 - `rooted-2` 已证明防御骰数合同修复，但仍缺升级卡真实打出后进入防御的 E2E。
 - 本轮只抽查了部分 Token、专属卡和基础技能；Treant / Ninja 仍不能被描述为“全部新机制新交互均已端到端”。
 
@@ -124,8 +124,10 @@ npm run typecheck
 
 - `rooted-2`：旧“共享 rooted 合同”结论不充分；实际消费点仍按 3 骰，已在本轮修复。
 - `ninja-card-shuriken`、`treant-card-trample`、`treant-card-soulfire`：旧“L1/L2 静态/代表覆盖”不足；实际卡牌打出链路存在 timing 消费错误，已在本轮修复并补 L2。
-- `treant-card-mother-tree`：旧“缺行为测试”已升级为 L2 抽查覆盖，但仍缺 L3。
+- `treant-card-mother-tree`：旧“缺行为测试”已升级为 L2 抽查覆盖；2026-05-17 已补真实手牌 L3，覆盖树灵养成分支与非树灵抽牌分支。
 - `quiet-cultivation`：旧“缺 L2/L3 专项”已升级为 L2 抽查覆盖，但仍缺 L3。
-- `ninja-card-escape`：已于 2026-05-17 追加真实受击响应窗手牌 L3，见 `evidence/dicethrone/dicethrone-ninja-escape-real-hand-e2e-2026-05-17.md`；`smoke_bomb` 失败分支仍缺真实 UI/E2E。
+- `ninja-card-escape`：已于 2026-05-17 追加真实受击响应窗手牌 L3，见 `evidence/dicethrone/dicethrone-ninja-escape-real-hand-e2e-2026-05-17.md`；`smoke_bomb` 失败分支已在下一条补真实 UI/E2E。
+- `smoke_bomb` 失败分支：已于 2026-05-17 追加真实响应窗 E2E，见 `evidence/dicethrone/dicethrone-ninja-smoke-bomb-failure-e2e-2026-05-17.md`；证明失败骰面消耗 token、保留伤害、跳过响应后 HP 30->23。
 - `ninja-card-training` / `ninja-card-poison-dart` / `ninja-card-knife-fan`：已于 2026-05-17 追加真实主阶段手牌 L3，见 `evidence/dicethrone/dicethrone-ninja-main-action-real-hand-e2e-2026-05-17.md`；该补充不改变本文件“抽样不能外推全量”的主结论。
+- Ninja 8 张升级卡：已于 2026-05-17 追加真实主阶段手牌 L3，见 `evidence/dicethrone/dicethrone-ninja-upgrade-real-hand-e2e-2026-05-17.md`；该补充只证明升级卡打出与替换合同，不证明升级后技能本体所有骰面/分支均已 L3。
 - Treant 玩家板图面合同：旧“基础技能抽样深审已覆盖 Treant `quiet-cultivation` / `rooted-2`”不能外推成图面落点正确；这部分当时根本不在本文件审计范围内，现已单列专项证据。

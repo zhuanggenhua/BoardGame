@@ -24,7 +24,6 @@ import {
     addTempPower, revealAndPickFromDeck,
     buildAbilityFeedback, buildActionMinionTargetOptions, buildPlayerTargetOptions,
     buildStandardDrawEventsFromRuntimeContext,
-    buildStandardDrawEvents,
 } from '../domain/abilityHelpers';
 import { reduce } from '../domain/reduce';
 import { registerTrigger } from '../domain/ongoingEffects';
@@ -525,7 +524,7 @@ const cthulhuMadnessUnleashedPromptProgram = createPromptProgram<CthulhuMadnessU
         return interaction;
     },
     onResolve: (args) => {
-        const { state, playerId, value } = args;
+        const { state, playerId, value, timestamp } = args;
         const madnessUids = normalizeChoiceArray<CardUidSelection>(value)
             .map(entry => entry.cardUid)
             .filter((entry): entry is string => !!entry);
@@ -858,7 +857,7 @@ const specialMadnessPromptProgram = createPromptProgram<SpecialMadnessPromptCont
         },
     ),
     onResolve: (args) => {
-        const { context, state, playerId, value, timestamp } = args;
+        const { context, playerId, value, timestamp } = args;
         const { action } = value as MadnessActionChoiceValue;
         if (action === 'return') {
             return {

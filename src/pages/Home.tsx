@@ -259,6 +259,7 @@ export const Home = () => {
         credentials: string;
         isHost: boolean;
     } | null>(null);
+    const forceExitModalIdRef = useRef<string | null>(null);
 
     const refreshOtaSnapshot = useCallback(() => {
         if (!isNativeAndroid) {
@@ -957,6 +958,47 @@ export const Home = () => {
         });
     };
 
+    const handleForceExitLocal = useCallback((matchID: string) => {
+        clearMatchCredentials(matchID);
+        clearOwnerActiveMatch(matchID);
+        setActiveMatch(null);
+        setMyMatchRole(null);
+        setPendingAction(null);
+        setLocalStorageTick((t) => t + 1);
+        toastWarning({ kind: 'i18n', key: 'error.localStateCleared', ns: 'lobby' });
+    }, [toastWarning]);
+
+    const openForceExitModal = useCallback((matchID: string) => {
+        if (forceExitModalIdRef.current) {
+            return;
+        }
+
+        forceExitModalIdRef.current = openModal({
+            closeOnBackdrop: true,
+            closeOnEsc: true,
+            lockScroll: true,
+            onClose: () => {
+                forceExitModalIdRef.current = null;
+            },
+            render: ({ close, closeOnBackdrop: stackCloseOnBackdrop }) => (
+                <ConfirmModal
+                    title={t('lobby:matchRoom.destroy.forceExitTitle')}
+                    description={t('lobby:matchRoom.destroy.forceExitDescription')}
+                    confirmText={t('lobby:matchRoom.destroy.forceExitConfirm')}
+                    onConfirm={() => {
+                        close();
+                        handleForceExitLocal(matchID);
+                    }}
+                    onCancel={() => {
+                        close();
+                    }}
+                    tone="cool"
+                    closeOnBackdrop={stackCloseOnBackdrop}
+                />
+            ),
+        });
+    }, [handleForceExitLocal, openModal, t]);
+
     const handleConfirmAction = useCallback(async () => {
         if (!pendingAction) return;
 
@@ -977,6 +1019,14 @@ export const Home = () => {
         );
         if (!result.success) {
             notifyExitMatchErrorToast(toastError, result.error, pendingAction.isHost);
+            if (pendingAction.isHost) {
+                if (confirmModalIdRef.current) {
+                    closeModal(confirmModalIdRef.current);
+                    confirmModalIdRef.current = null;
+                }
+                setPendingAction(null);
+                openForceExitModal(pendingAction.matchID);
+            }
             return;
         }
 
@@ -991,8 +1041,10 @@ export const Home = () => {
         setLocalStorageTick(t => t + 1);
     }, [
         activeMatch,
+        closeModal,
         myMatchRole,
         pendingAction,
+        openForceExitModal,
         toastError,
         toastWarning,
     ]);
@@ -1033,6 +1085,15 @@ export const Home = () => {
             confirmModalIdRef.current = null;
         }
     }, [closeModal, handleCancelAction, handleConfirmAction, openModal, pendingAction, t]);
+
+    useEffect(() => {
+        return () => {
+            if (forceExitModalIdRef.current) {
+                closeModal(forceExitModalIdRef.current);
+                forceExitModalIdRef.current = null;
+            }
+        };
+    }, [closeModal]);
 
     return (
         <div className="min-h-[100dvh] bg-parchment-base-bg text-parchment-base-text font-serif overflow-y-scroll flex flex-col items-center pb-[env(safe-area-inset-bottom)]">

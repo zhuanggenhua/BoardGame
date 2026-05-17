@@ -5,8 +5,9 @@ import { GameModal } from './components/GameModal';
 import { GameButton } from './components/GameButton';
 import type { PendingDamage, HeroState, TokenResponsePhase } from '../domain/types';
 import { getTokenEffectValue, getTokenUseOptions, type TokenDef } from '../domain/tokenTypes';
-import { type StatusAtlases, TOKEN_META, getStatusEffectIconNode } from './statusEffects';
+import { type StatusAtlases, getStatusEffectIconNode } from './statusEffects';
 import { TOKEN_IDS } from '../domain/ids';
+import { getVisualMetaById } from '../domain/statusEffects';
 
 interface TokenResponseModalProps {
     pendingDamage: PendingDamage;
@@ -194,7 +195,7 @@ export const TokenResponseModal: React.FC<TokenResponseModalProps> = ({
     const isOpen = Boolean(pendingDamage && responsePhase);
 
     const renderTokenIcon = (tokenId: string) => {
-        const meta = TOKEN_META[tokenId];
+        const meta = getVisualMetaById(tokenId);
         if (meta && statusIconAtlas) {
             return (
                 <div className="w-8 h-8 flex-shrink-0">

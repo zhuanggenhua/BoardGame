@@ -526,9 +526,25 @@ const validateConfirmRoll = (
 /**
  * 验证选择技能命令
  */
-const normalizeSelectedAbilityId = (abilityId: string): string => {
+const playerHasAbility = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): boolean => {
+    if (!playerId) return false;
+    const player = state.players[playerId];
+    if (!player) return false;
+    return player.abilities.some(ability => {
+        if (ability.id === abilityId) return true;
+        return ability.variants?.some(variant => variant.id === abilityId) ?? false;
+    });
+};
+
+const normalizeSelectedAbilityId = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): string => {
     if (abilityId === 'shadow-guard') return 'shadow-defense';
-    if (abilityId === 'shadow-step') return 'elusive-step';
+    if (
+        abilityId === 'shadow-step'
+        && !playerHasAbility(state, playerId, 'shadow-step')
+        && playerHasAbility(state, playerId, 'elusive-step')
+    ) {
+        return 'elusive-step';
+    }
     return abilityId;
 };
 
@@ -538,7 +554,10 @@ const validateSelectAbility = (
     playerId: PlayerId,
     phase: TurnPhase
 ): ValidationResult => {
-    const abilityId = normalizeSelectedAbilityId(cmd.payload.abilityId);
+    const selectingPlayerId = phase === 'defensiveRoll'
+        ? state.pendingAttack?.defenderId
+        : state.activePlayerId;
+    const abilityId = normalizeSelectedAbilityId(state, selectingPlayerId, cmd.payload.abilityId);
     
     if (phase === 'defensiveRoll') {
         if (!state.pendingAttack) {
@@ -1315,6 +1334,9 @@ const validateUsePassiveAbility = (
     const passive = passives.find(p => p.id === cmd.payload.passiveId);
     if (!passive) return fail('passive_not_found');
 
+    if (!Number.isInteger(cmd.payload.actionIndex)) {
+        return fail('action_not_found');
+    }
     const action = passive.actions[cmd.payload.actionIndex];
     if (!action) return fail('action_not_found');
 
@@ -1333,14 +1355,15 @@ const validateUsePassiveAbility = (
         return fail('custom_action_missing');
     }
 
-    // rerollDie 需要 targetDieId
-    if (action.type === 'rerollDie' && cmd.payload.targetDieId === undefined) {
+    // rerollDie 需要合法且处于当前投掷池内的 targetDieId
+    if (action.type === 'rerollDie' && !Number.isInteger(cmd.payload.targetDieId)) {
         return fail('target_die_required');
     }
 
     // rerollDie 需要在投掷阶段且有骰子
-    if (action.type === 'rerollDie' && cmd.payload.targetDieId !== undefined) {
-        const die = state.dice.find(d => d.id === cmd.payload.targetDieId);
+    if (action.type === 'rerollDie' && Number.isInteger(cmd.payload.targetDieId)) {
+        const dieIndex = state.dice.findIndex(d => d.id === cmd.payload.targetDieId);
+        const die = dieIndex >= 0 ? state.dice[dieIndex] : undefined;
         if (!die) {
             console.warn('[validateUsePassiveAbility] 骰子不存在:', {
                 playerId,
@@ -1348,6 +1371,9 @@ const validateUsePassiveAbility = (
                 diceIds: state.dice.map(d => d.id),
             });
             return fail('die_not_found');
+        }
+        if (dieIndex >= state.rollDiceCount) {
+            return fail('die_not_active');
         }
         // 必须已投掷过至少一次才能重掷
         if (state.rollCount === 0) {

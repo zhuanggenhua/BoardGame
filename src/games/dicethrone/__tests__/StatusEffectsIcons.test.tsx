@@ -16,7 +16,7 @@ import {
     getDiceSpriteUrls,
     resolveSpriteAssetUrls,
 } from '../ui/assets';
-import { getStatusEffectIconNode, loadStatusAtlases, type StatusIconAtlasConfig } from '../ui/statusEffects';
+import { TokenBadge, getStatusEffectIconNode, loadStatusAtlases, type StatusIconAtlasConfig } from '../ui/statusEffects';
 import { getAssetsBaseUrl, markImageLoaded, setAssetsBaseUrl } from '../../../core';
 
 registerDiceDefinition(moonElfDiceDefinition);
@@ -82,6 +82,30 @@ describe('StatusEffectsIcons', () => {
 
         expect(html).toContain('icons/compressed/');
         expect(html).toContain('background-size:contain');
+    });
+
+    it('players.tokens 中的 debuff token 应复用视觉元数据，不再误显示加载态', () => {
+        const html = renderToStaticMarkup(
+            <TokenBadge
+                tokenId={TOKEN_IDS.BOUNTY}
+                amount={1}
+                locale="zh-CN"
+                atlas={{
+                    [DICETHRONE_STATUS_ATLAS_IDS.GUNSLINGER]: {
+                        imageW: 800,
+                        imageH: 400,
+                        imagePath: 'dicethrone/images/gunslinger/status-icons-atlas.png',
+                        frames: {
+                            loaded: { x: 0, y: 0, w: 400, h: 400 },
+                            bounty: { x: 402, y: 0, w: 400, h: 400 },
+                        },
+                    },
+                }}
+            />
+        );
+
+        expect(html).toContain('/assets/i18n/zh-CN/dicethrone/images/gunslinger/compressed/status-icons-atlas.webp');
+        expect(html).not.toContain('atlas-shimmer');
     });
 
     it('会把 game-data 骰图路径折算成 dice-sprite 资源 key', () => {

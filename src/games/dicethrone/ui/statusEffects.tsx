@@ -120,7 +120,7 @@ export const loadStatusAtlases = async (locale?: string): Promise<StatusAtlases>
     }, {} as StatusAtlases);
 };
 
-import { STATUS_EFFECT_META, TOKEN_META, type StatusEffectMeta } from '../domain/statusEffects';
+import { STATUS_EFFECT_META, TOKEN_META, getVisualMetaById, type StatusEffectMeta } from '../domain/statusEffects';
 
 // Re-export for consumers that import from ui/statusEffects
 export { STATUS_EFFECT_META, TOKEN_META, type StatusEffectMeta };
@@ -352,7 +352,7 @@ export const TokenBadge = ({
     clickable?: boolean;
 }) => {
     const { t } = useTranslation('game-dicethrone');
-    const meta = TOKEN_META[tokenId] || { color: 'from-gray-500 to-gray-600' };
+    const meta = getVisualMetaById(tokenId) || { color: 'from-gray-500 to-gray-600' };
 
     let hasSprite = false;
     if (atlas && meta.frameId) {

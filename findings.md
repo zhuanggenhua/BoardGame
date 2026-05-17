@@ -2,6 +2,39 @@
 
 ## 已确认事实
 
+- `expansionBaseAbilities.test.ts` 仍是典型的“按扩展来源聚合”的旧入口。里面原本把 `10th Anniversary`、Cthulhu 扩展、AL9000、Pretty Pretty 以及多条 stale regression 混在一起。现在至少 `10th Anniversary` 这块已经拆成 [bases/anniversary-bases.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/bases/anniversary-bases.test.ts:1>)，说明这个旧壳还能继续按基地簇收缩，而不是只能整体保留。
+- `scoreBases-auto-continue.test.ts` 里还有一层明显的混层：它原本不仅测 `scoreBases` 自动推进，还塞了多条与 AI 候选枚举相关的通用交互测试。现在已经把 `optional multi / ordered multi / required empty / exact multi` 这 5 条迁到 [ai-interaction-choice-enumeration.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/ai-interaction-choice-enumeration.test.ts:1>)，因此 `scoreBases-auto-continue.test.ts` 不再承担泛 AI 交互枚举职责。
+- `afterscoring-window-skip-base-clear.test.ts` 不是一个自然的单文件边界。里面原本混着 `base_greenhouse` / `base_tortuga` 的重复 happy-path、`base_the_mothership` / `base_pirate_cove` 的延迟清场链、`base_temple_of_goju_tiebreak` 的 finalize 语义，以及一组 `scoreBases` 收尾门禁。现在已经收成 [scoreBases-deferred-finalization.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/scoreBases-deferred-finalization.test.ts:1>)，并删掉了重复 happy-path 入口，说明这次处理的是系统最终化边界，不是改标题。
+- `afterScoring-rescoring.test.ts` 里那两条 `smashup_immediate_extra_minion` 其实不是 afterScoring 响应窗口合同，它们属于“立即额外打出”这条系统入口。把它们继续放在 afterScoring 响应窗口文件里，会让后续维护者误以为它们和 `smashup_reaction_choose` 是同一层边界。现在这两条已经并回 `abilities/immediate-extra-action.test.ts`，说明应该按“额外打出类型”而不是按“出现时机”来归类。
+- `turnTransitionInteractionBug.test.ts` 这次被拆开后，边界更清楚了：它原来混着两条不同的系统链，`startTurn/base_rlyeh` 和 `scoreBases/base_tortuga`。前者锁的是回合切换时 `base_rlyeh` prompt 能否被响应并恢复到 `playCards`，后者锁的是计分阶段 `base_tortuga afterScoring` 是否会暂停链路、等待亚军响应并在响应后恢复。把这两条链混在一份 `bug` 文件里，只会让后续继续把不同系统边界写进同一个入口。
+- `multi-base-afterscoring-bug.test.ts` 这轮确认了一个很容易误判的边界：名字里带 `bug`，内容却不是一次性复现壳。它真正锁的是 `scoreBases` 的多基地恢复语义: 当前基地进入 `afterScoring / Me First!` 交互后，后续基地计分不能丢；复杂链路里也不能重复计分、重复清场或提前结束。所以它的正确收口不是删，也不是并回派系，而是改成明确系统入口 `scoreBases-multi-base-chain-recovery.test.ts`。
+- `igor-rlyeh-double-trigger.test.ts` 也不是 `destroy-trigger-prompt-coexistence.test.ts` 的重复。后者锁的是“基地 prompt 与 Igor prompt 并存时不要伪装成双触发”，而这份锁的是更具体的 `base_rlyeh onTurnStart -> MINION_DESTROYED -> frankenstein_igor onDestroy` 真实链幂等性。对这类文件，真正的不变量是“某条系统链只触发一次”，不是“某次 bug 名字保留下来”。
+- `elder-things-ongoing.test.ts` 这轮证明了“ongoing”标签本身不能当边界。它内部同时放了：
+  - `elder_thing_dunwich_horror` 附着行动
+  - `elder_thing_the_price_of_power` 计分 special
+  - `elder_thing_elder_thing` 保护与 onPlay prompt
+  - `elder_thing_shoggoth` 打出限制与 onPlay
+  这些都不是跨派系共享机制，而是远古之物自己的一组能力合同。
+- 所以保留 `elder-things.test.ts` + `elder-things-ongoing.test.ts` 这对双入口，只会继续制造“远古之物的行为到底写回哪份”的维护分裂。正确动作是并回单一派系入口，而不是再给 ongoing 壳找理由。
+- `onDestroyAbilities.test.ts` 同样不是一个自然边界。它把：
+  - 共享 `onDestroy` 基础设施
+  - `robot_nukebot`
+  - `trickster_gremlin`
+  - `trickster_gremlin_pod`
+  - `bear_cavalry_general_ivan` 的弱 destroy 保护回归
+  全部挂在一个旧入口里。
+- 更糟的是，`General Ivan destroy 保护` 那两条里有一条实际上依赖非法目标 payload，另一条断言的也不是“没有 Ivan 时应被消灭”，而是“因为 Bear Necessities 本就不能打自己人，所以不会消灭”。这种测试不是稳定行为合同，继续机械搬运只会把噪声扩散到新文件里。
+- 这轮把 `onDestroy` 共享基础设施拆到 `abilities/on-destroy-mechanics.test.ts`，把机器人/诡术师 onDestroy 行为并回各自专项，并让 `onDestroyAbilities.test.ts` 退场，说明正确方向不是“给旧根目录文件换个名字”，而是：
+  - 共享机制留机制专项
+  - 派系行为回派系专项
+  - 弱测试直接淘汰，不为了凑数量继续保留假合同
+- `baseFactionOngoing.test.ts` 里的 `机器人 ongoing` 与 `巫师 ongoing` 也证明了另一个根因：旧大文件经常自带本地夹具前提。比如机器人 `Archive` 测试原先默认带着“机器人派系 + 非空牌库”，一旦并回 `robots.test.ts` 改用通用 helper，就会合法地抽不到牌。这个红灯不是实现坏了，而是旧大文件把业务前提藏在自己的状态工厂里。
+- 所以这类迁移不能只复制 `describe`。必须同时把旧文件里真正有意义的前提显式化，比如：
+  - `Archive` 相关测试需要显式给对应玩家提供牌库
+  - 需要依赖派系判定的测试要显式声明机器人派系，而不是吃 helper 默认的 `pirates/aliens`
+- 机器人这段迁移后，`baseFactionOngoing` 里还暴露出明显的历史复制噪声：`robot_microbot_archive` 的 Alpha/remote/enemy/self 几组测试在旧文件里重复了一遍。并回专项时只保留唯一语义版本，能直接减少未来“同一行为修两处”的测试碎裂。
+- `expansionOngoing.test.ts` 这轮也证明了“只把测试从一个文件搬到另一个文件”还不够。真正应该固化的是**每个派系只有一个自然入口**。只要 `Steampunks / Innsmouth / Miskatonic` 这种已经能按派系命名的簇还挂在扩展包聚合文件里，后续改实现时就还会出现“我该改专项文件还是改聚合文件”的双维护分裂。
+- 这次把 `Steampunks` 并回既有专项、再为 `Innsmouth` 与 `Miskatonic` 补建专项文件，最后删除 `expansionOngoing.test.ts`，说明正确的收口动作不是保留一个越来越短的旧壳，而是在每个尾项都有明确归宿后直接让旧壳退场。
 - `killer_plant_water_lily` 这轮把一个很典型的测试脆弱点钉死了：旧 `expansionOngoing.test.ts` 自带的本地 `makeState` 默认塞了牌库，所以“控制者回合开始抽 1 牌”在旧文件里天然满足前提；迁到共享 `helpers.makeState` 后，默认牌库是空的，测试却没有显式声明“牌库里有可抽卡”，于是看起来像实现坏了，实际是测试夹具把业务前提藏在旧 helper 里。
 - 这类问题不能只通过“把 expected 改绿”处理。真正该固化的不变量是：**凡是验证 draw/draw-if-available 这类行为的测试，都要显式写出牌库/弃牌堆前提，而不是依赖某个局部工厂函数的隐式默认值。** 这正是用户抱怨“每次重构都要改测试”的根因之一。
 - `ninja_hidden_ninja consumesNormalLimit` 这条红灯再次证明：fake prompt 夹具不是“更快的 seam”，而是另一套不受系统合同保护的伪实现。`SimpleChoiceSystem` 现在依赖 runtime prompt 上的 `availableOptions` 语义，手工塞一个只带 `options` / `data.sourceId` 的 current prompt，会在 `respondToPrompt(...)` 时直接炸在系统层。对这类业务交互，最稳的入口仍是能力 executor / 真实命令链产出的 prompt。
@@ -38,6 +71,29 @@
 - `baseAbilityIntegrationE2E.test.ts` 说明“完整链路测试”也不等于可以裸读 InteractionSystem；它要证明的是从真实 trigger 路径最终出现某个业务 prompt，适合用 `getPromptsBySourceId` / `getSimpleChoicePrompt` 表达，而不是手工拼 current + queue。
 
 ## 本轮结论
+
+- `ninja-hidden-ninja-interaction-bug-repro.test.ts` 证明了“复现壳”和“现行回归”要按不变量去重，而不是按文件名区分。它虽然用了另一套 `GameTestRunner + makeTestCore` 壳，但锁的仍然只是：Me First! 窗口打出 `ninja_hidden_ninja` 后要创建 prompt，并记录 `specialLimitUsed`。这个不变量已经被 `ninja-hidden-ninja-interaction-bug.test.ts` 承接，所以正确动作是删壳，不是并回 `abilities/ninjas.test.ts` 再制造第三入口。
+- `pirate-cove-repeat-trigger-bug.test.ts` 则说明“看起来像 bug 修复文件”也可能只是基地专项的第二入口。它前两条都只是 `base_pirate_cove afterScoring` prompt 合同：非冠军有随从时生成 1 个 prompt、冠军不生成 prompt；这些已被 `baseAbilitiesPrompt.test.ts` 覆盖。第三条还是空 `TODO`，不能当有效资产。对这类文件，继续保留只会制造“好像还多一层保护”的假象。
+- 这两份删除共同强化了一条筛选标准：**如果旧文件不提供新的公开行为矩阵、只是在另一套夹具里重复现有合同，或者只剩空 TODO / 注释意图，就应直接删壳。** 否则后续重构时仍会出现“行为没变，但两三个地方都得同步修测试”的重复维护。
+- `mothership-scout-afterscore-bug.test.ts` 则落在另一类。它虽然名字像 bug 壳，但内容并不是“再测一次母舰 prompt 存在”这么浅，而是在锁 afterScoring 多段链的顺序不变量：基地 prompt 先结算，`alien_scout_return` / `pirate_first_mate_choose_base` 后续继续弹出，整条链收口前不提前清场换基地。这类用例不能因为文件名不好看就删；正确动作是把它改名成系统合同入口，而不是和前两份一样直接删除。
+- `ninja-special-limit-fix.test.ts` 进一步确认：**元数据合同也有归宿，不该单独漂在根目录。** 这 4 条用例锁的都是忍者特殊能力自己的 `specialLimitGroup` 声明和“不能再用共享 `ninja_special`”这一不变量，真实边界就在 `abilities/ninjas.test.ts` 的 `specialLimitGroup` 段，而不是另开一个根目录 `*-fix.test.ts`。
+- `alien-probe-bug.test.ts` 则是典型的“派系行为被历史 bug 名字掩盖”。它测的是 `alien_probe` 的公开行为矩阵：单对手直接看手牌并选随从、多对手先选对手、非随从卡禁用、无随从时直接结束、选中后对手弃牌。这个边界显然属于 `abilities/aliens.test.ts`，继续留根目录只会让“外星人能力改动到底去哪里补测试”再次分裂成两处。
+- 这两份收口共同强化了一个标准：**如果文件锁的是某张卡/某派系的公开行为，不管名字里叫 bug 还是 fix，都优先并回该派系专项；只有在它锁的是跨卡牌/跨基地/跨交互阶段的系统顺序不变量时，才保留为独立系统合同文件。**
+- `afterscoring-timing-verification.test.ts` 说明另一种应该直接删除的债：**占位壳**。文件名看起来像“时序验证”，实际内容只有 `expect(true).toBe(true)`，没有任何行为断言。像这种文件即使 CI 绿，也不能算覆盖；真正的时序不变量必须在已有真实链路测试里找到对应证据，否则就是假资产。
+- `pirate-cove-chain-fix.test.ts` 则再次证明，系统合同应该按“阶段边界”命名，而不是沿用某次 bug 名称。它真正锁的是 `scoreBases -> Me First! 窗口 -> afterScoring` 的门禁链：窗口打开时阻止 ADVANCE_PHASE、无人可响应时自动关闭、所有人 pass 后进入 afterScoring 交互。这个边界属于阶段/窗口系统，不属于海盗湾业务本身，所以正确动作不是删，也不是并回派系，而是改名成正式系统入口。
+
+- `madness-mechanics.test.ts` 证明了另一种高维护成本旧壳：它看起来像“疯狂机制”文件，实际上混着两类完全不同的不变量。
+  - 一类是跨派系共享合同：`cthulhu_whispers_in_darkness`、`miskatonic_those_meddling_kids_pod`、`innsmouth_recruitment` 这几个能力都在锁“离阶段额外行动/额外随从必须标成 `playTiming: immediate`”。
+  - 另一类是派系自己的业务行为：`cthulhu_seal_is_broken`、`cthulhu_corruption`、`miskatonic_psychological_profiling`、`miskatonic_mandatory_reading`、`innsmouth_recruitment` 的真实出牌/结算链。
+  把这两类混在一个旧入口里，后续改实现时就会再次遇到“这是共享机制，还是某个派系自己的行为”的归属摇摆。
+- 这批正确的收口方式已经验证成立：共享时序合同单列成 `abilities/extra-play-timing-mechanics.test.ts`，派系行为并回 `abilities/cthulhu.test.ts`、`abilities/miskatonic.test.ts`、`abilities/innsmouth.test.ts`。这不是按文件名分类，而是按“不变量属于共享机制还是属于某个业务对象”分类。
+- `miskatonic_lost_knowledge` 也说明迁移时不能为了“全搬完”重复制造合同。ongoing talent 的 `TALENT_USED payload`、`TURN_STARTED reset` 之类基础设施，`talent-mechanics.test.ts` 已经有共享覆盖；专项文件只该保留它自己的行为入口，比如“抽疯狂卡 + 获得额外随从额度”。否则同一个底层合同又会分散到共享文件和派系文件里双维护。
+- 这批 seam 收口不是停在“把旧 helper 名字换一遍”。迁移后的关键链路已经改成：
+  - 真实 `PLAY_ACTION` / `runCommand(...)`
+  - 真实 prompt facade：`getSimpleChoicePrompt`、`getPromptOption`、`respondToPromptOption(s)`
+  - 真实 `finalState` / 业务事件断言
+  而不是 `postProcessSystemEvents(...)`、`lastMatchState`、局部 fake state 壳、手工后处理。
+- 本批最后一个红灯也再次说明“测试碎裂”和“实现坏了”要区分开：`cthulhu_corruption` 的失败不是行为回归，而是新测试里用到了 facade helper `getPromptOption(...)`，但文件顶部漏了 import。补齐 import 后，`cthulhu.test.ts` 单文件 `60 passed`，组合 `extra-play-timing-mechanics.test.ts + cthulhu.test.ts + miskatonic.test.ts + innsmouth.test.ts` 为 `110 passed`。这类收口值得记账，因为它说明拆层方案本身已经稳定，剩下的是普通接线错误，不是设计方向错了。
 
 - `baseFactionOngoing.test.ts` 这轮不是只把一条定点红灯改绿，而是把两层 seam 都收正了：`ninja_hidden_ninja` 改回真实 special executor，Brownie helper 改回真实 reducer 触发形状；因此整文件 81 条现在一起通过，说明不是“改了一个假 prompt 又留下别的伪入口”。
 - `bear_cavalry.test.ts` 已继续减少 1 条普通业务 direct handler 命中；全仓 `getInteractionHandler` / `getAbilityRuntimePromptHandler` 统计从 `44` 降到 `43`。留下来的 `superiority_pod_talent`、`temple-firstmate-afterscore`、`titan_penguins_emperor_penguin_play` 更像应显式保留或谨慎审视的低层合同，而不是同类业务链债务。
@@ -3161,3 +3217,369 @@
 - 所以下一步拆 `expansionOngoing` 时，优先级也不该按“哪段最短”排，而该按：
   - 哪些段落已经有稳定专项文件可承接
   - 哪些段落仍然只是在历史聚合文件里寄居，没有独特的跨派系理由
+
+## 2026-05-17 09:00 补充发现：按“扩展包”把多个派系普通行为混在一起，本质上和按批次混装没有区别
+
+- `cthulhuExpansionAbilities.test.ts` 这轮再次说明，文件名里带不带“expansion”不重要，关键还是它是不是稳定行为边界。
+- 这份文件内部同时维护：
+  - 印斯茅斯普通行动
+  - 米斯卡塔尼克普通行动
+  - 克苏鲁之仆普通行动
+  它们共享的并不是同一套 prompt 机制、同一套夹具或同一条业务链，只是“都来自同一个扩展盒”。
+- 这种组织方式会继续制造和 `query6Abilities.test.ts` 一样的 churn：
+  - 改 `innsmouth_new_acolytes` 时还得进一个混有另外两派系语义的大文件
+  - 同一派系已经有专项文件时，会出现“普通行为到底写回专项还是写回扩展包壳”的第二入口
+  - 后续想统一某个派系的 helper 或断言风格时，不得不跨文件同步
+- 所以“扩展包聚合”不能自动视为合理边界。只要其中的测试已经能自然归到：
+  - `abilities/cthulhu.test.ts`
+  - `abilities/innsmouth.test.ts`
+  - `abilities/miskatonic.test.ts`
+  那就应该直接并回各自专项，而不是继续保留一个“因为同扩展所以先混着”的旧壳。
+
+## 2026-05-17 09:45 补充发现：`ongoing` 大文件迁到共享 helper 后，最容易漏掉的是“手牌/牌库存在性”这类旧默认前提
+
+- 这轮把 `baseFactionOngoing.test.ts` 的整段 `诡术师 ongoing` 并回 `abilities/tricksters.test.ts` 后，第一波红灯不是实现行为坏了，而是测试状态工厂换了：
+  - `trickster_brownie_pod` 期待“抽 1 张牌”
+  - `trickster_pay_the_piper` 期待“对手弃 1 张牌”
+  - 但共享 `helpers.makeState(...)` 默认不给玩家手牌/牌库，而旧 `baseFactionOngoing.test.ts` 的本地 `makeState(...)` 默认两边都塞了牌。
+- 这说明旧大文件的脆弱性不只在“用了内部 prompt 字段”，还在于**它把资源存在性前提偷偷烘焙进本地状态工厂**：
+  - 抽牌测试其实依赖“牌库非空”
+  - 弃牌测试其实依赖“对手手牌非空”
+  - 这些如果不显式写出来，后续只要统一 helper、统一玩家默认派系、统一最小状态，测试就会看起来像“实现回归”
+- 因而后续的统一测试标准应再补一条更具体的不变量：
+  - 凡测试标题声称“抽牌 / 弃牌 / 随机弃牌 / 洗回后抽牌 / 手牌不足时弃全部”
+  - 测试体内必须显式提供对应的 `deck` / `hand` 前提
+  - 不能继续依赖某个旧文件局部 `makeState(...)` 的隐藏默认值。
+- 这类迁移的价值也因此更明确：真正降低 churn 的不是“把 `trickster_*` 从一个文件挪到另一个文件”，而是**让专项文件自己完整声明业务前提**，以后重构测试 helper 时不会再被旧默认值牵着走。
+
+## 2026-05-17 09:54 补充发现：当历史壳文件已经只剩单一派系合同时，正确动作通常不是保留“技术主题名”，而是直接并回派系专项并删壳
+
+- `baseFactionOngoing.test.ts` 这轮最后剩下的内容，表面上还叫“基础派系 ongoing/special”，但实质已经只剩：
+  - 忍者 ongoing / special 合同
+  - `ninja_acolyte` 额外打出 `cowboys_gunfighter` 的续链
+- 这说明“技术主题名”本身也可能变成历史噪音：
+  - 文件名看起来像 shared mechanism
+  - 但实际测试边界已经收缩成单一派系
+  - 继续保留只会制造“忍者 special 到底看专项还是看旧技术壳”的第二入口
+- 这类文件的处理标准可以更明确：
+  - 如果它里面已经不再承载多个派系共享机制
+  - 也不再承载一个真正跨派系的 contract 集合
+  - 那就应该并回派系专项，而不是因为名字里有 `ongoing` / `special` / `baseFaction` 就继续保留
+- 这轮 `ninjas.test.ts` 也进一步验证了另一个点：
+  - 把旧文件测试并回专项时，不必拘泥于“必须全改成共享 helper”
+  - 更重要的是把原本分散在旧文件里的默认手牌、默认牌库、默认派系、默认 turn meta 变成专项文件自己可读、可改、可验证的显式 helper
+  - 这样以后重构的是“一个派系的一套显式前提”，不是“很多文件各自藏着一点默认值”
+
+## 2026-05-17 09:54 补充发现：`pirates-ongoing.test.ts` 当前更像命名遗留，不像优先级最高的混装壳
+
+- 快速复核 `pirates-ongoing.test.ts` 的开头后，当前看到的是：
+  - `pirate_king beforeScoring`
+  - `pirate_first_mate afterScoring`
+  - 以及同一派系相关的 action / response 行为
+- 这和之前的 `query6Abilities.test.ts`、`factionAbilities.test.ts`、`baseFactionOngoing.test.ts` 不一样：
+  - 至少从当前结构看，它还没有明显把多派系或多种无关共享机制揉在一起
+  - 问题更像“文件名仍带 ongoing”，而不是“内容边界已经错了”
+- 因此后续优先级应该继续坚持“先拆真混装壳，再处理纯命名遗留”：
+  - 只因为名字旧，不足以成为下一刀
+  - 只有当文件内容也证明它在混放多个不该共存的行为边界时，才值得继续拆
+
+## 2026-05-17 10:05 补充发现：`talent` 不是一个天然测试边界，真正稳定的边界是“派系行为”与“共享机制合同”
+
+- `talentAbilities.test.ts` 这轮证明，按能力类型统一收口也会形成新的混层壳。文件里原本同时放着：
+  - `miskatonic_professor`
+  - `cthulhu_star_spawn`
+  - `cthulhu_servitor`
+  - `standing stones` 双天赋名额
+  - 压制下的手动发动
+  - `execute` 与 `validate` 的 talentUsed 边界
+- 这些内容共享的只是一层“都和 talent 有关”的技术标签，不共享同一套业务词汇、同一条用户入口，也不共享同一类断言目标。
+- 真正长期稳定的拆法是两层：
+  - 派系 talent 行为 -> 回到对应 `abilities/<faction>.test.ts`
+  - `execute/validate/base rule` 这类共享合同 -> 单独放 `talent-mechanics.test.ts`
+- 这样做比保留一个 `talentAbilities` 总入口更稳，因为以后重构 talent 运行时：
+  - 改教授或星之眷族的业务效果，只会动派系专项
+  - 改 `talentUsed`、`standing stones`、压制规则，只会动机制合同
+  - 不再出现“实现改一层，三个不相干派系测试一起抖”的情况
+- 这轮还进一步说明一个判断标准：
+  - 像 `execute 层不负责 talentUsed 校验` 这种断言，不该挂在某个派系文件里冒充派系行为
+  - 但也不该继续和多个派系行为混放在技术主题总入口里
+  - 最准确的落点是显式机制文件，因为它锁的是系统边界，不是牌面业务
+
+## 2026-05-17 10:19 补充发现：`ongoing talent` 也不是天然边界，真正稳定的是“共享合同”和“派系专项”两层
+
+- `ongoingTalent.test.ts` 这轮把另一个相同问题暴露得更彻底：文件名听起来像一个合理专题，但里面同时放着：
+  - `miskatonic_lost_knowledge`
+  - `steampunk_zeppelin`
+  - `innsmouth_sacred_circle`
+  - `trickster_hideout_pod`
+  - `trickster_pixie_pod`
+  - 以及一层 ongoing talent validate / reset / payload 合同
+- 这说明“按能力实现形态命名”本身不等于稳定边界。只要测试里还混着不同派系业务词汇和共享系统规则，它仍然是旧壳。
+- 这轮还确认了一个更重要的 seam 判断：
+  - 旧文件里像 `zeppelin 无目标 -> ABILITY_FEEDBACK`、`sacred_circle 无同名 -> ABILITY_FEEDBACK` 这类断言，其实是锁 `execute` 内层路径
+  - 一旦回到真实 `runCommand` / validate 入口，公开合同是“直接拒绝”
+  - 对这类场景，稳定测试应优先保护公开入口结果，而不是内层事件长相
+- 所以后续筛文件时，除了看“是否多派系混装”，还要额外看：
+  - 文件是否把一批原本应由 `runCommand`/公开命令入口定义的行为，写成了 `execute` 层的技术主题断言
+  - 如果是，就要把共享 validate/reduce 合同提纯出来，把派系行为并回专项，并顺手把旧 seam 收正到真实公开入口
+
+## 2026-05-17 11:01 补充发现：`prompt` 主题文件最容易制造“看起来在测交互，其实在测测试壳”的假边界
+
+- `madness-prompt-mechanics.test.ts` 这轮把这个问题暴露得很直接：
+  - 文件名像是在测“疯狂 prompt 机制”
+  - 但内容其实是 `cthulhu_madness_unleashed`、`miskatonic_it_might_just_work`、`miskatonic_book_of_iter_the_unseen`、`miskatonic_thing_on_the_doorstep`
+  - 它们并不共享一套稳定的业务边界，只是历史上都碰到了 prompt
+- 这类文件的真正问题不是“跨派系”四个字本身，而是它会把测试入口偷偷换成壳层 helper：
+  - `postProcessSystemEvents(...)`
+  - `lastMatchState`
+  - `getLastPrompt(...)`
+  - `getLastPromptsBySourceId(...)`
+  - 这些都不是用户行为入口，而是旧测试为了追 prompt 方便自己搭出来的旁门
+- 一旦把业务测试绑到这些壳层入口，后续重构 prompt 队列、后处理时序、matchState 包装或 interaction 存储位置时，测试就会先碎；这正是“改代码就得顺手改测试”的根因之一。
+- 这轮的正确收口不是“把 prompt 文件拆散”，而是把测试重新钉回公开行为：
+  - 打牌仍从 `PLAY_ACTION / runCommand(...)` 进入
+  - prompt 只通过 facade 读取：`getSimpleChoicePrompt`、`respondToPromptOption(...)`、`respondToPromptOptions(...)`
+  - 最终状态只通过 `finalState` 或特定合同的真实事件归约验证
+- `miskatonic_thing_on_the_doorstep` 还补了一条很关键的细化：
+  - special 合同的最终状态不能偷懒读 `result.matchState?.core`
+  - 必须看该合同实际发出的事件如何归约到 `state`
+  - 这次显式改成 `result.events.reduce((core, event) => reduce(core, event), state)`，说明“真状态出口”也要按合同类型选对，不能继续吃旧壳默认值
+- 因此后续统一测试标准可以更硬一些：
+  - 只要文件名或段落名主要描述的是 `prompt / interaction / dialog` 这类表现层壳，而不是派系行为或共享系统合同，就要先怀疑它是不是历史测试壳
+  - 只要业务测试还在读 `lastMatchState / postProcessSystemEvents` 这种二次包装，就说明 seam 还没真正收回公开入口
+
+## 2026-05-17 11:03 补充发现：`postProcessSystemEvents` 不能一概视为坏味道，关键要区分“业务借壳”还是“系统合同”
+
+- 这轮继续扫剩余命中后，边界已经更清楚了：
+  - `elder-things.test.ts` 里的 `lastMatchState + getLastInteractions()` 明显属于业务借壳
+  - `ongoingE2E.test.ts` 里 `pirate_shanghai` 那一小段也属于业务借壳，因为它只是想证明业务 prompt 出现
+  - 但同文件后半段的 `buccaneer_pod replacement`、`first_mate_pod afterScoring`，以及 `wizard-portal-d45.test.ts`、`reactionQueueBaseAbilities.test.ts` 这类场景，本身就在锁后处理/队列/去重/response window 合同
+- 这说明后续不能把“还在用 `postProcessSystemEvents`”当成统一整改信号。
+- 更准确的判断标准应该是：
+  - 如果测试真正想证明的是“某张牌/某个派系行为会产生 prompt / 目标选择 / 最终状态变化”，那它不该再借 `lastMatchState` 或手搓 interaction 壳，应该回到 `runCommand(...).finalState` 或 `post.matchState` 上的 facade
+  - 如果测试真正想证明的是“后处理器本身如何派生事件、如何去重、如何恢复 reaction session、如何在 replacement/afterScoring 中接管状态”，那保留 `postProcessSystemEvents(...)` 是合理的，因为它就是被测对象
+- 因此现在的优先级不再是“继续把所有 `postProcessSystemEvents` 命中消灭掉”，而是：
+  - 先继续拔掉业务测试里的借壳 seam
+  - 明确保留系统合同测试对 `postProcessSystemEvents` 的直测入口
+  - 避免为了数字好看，把系统测试也硬改成业务 facade，反而丢失真正的基础设施覆盖
+
+## 2026-05-17 11:09 补充发现：`prompt.data.options` 这种残留壳即使只剩一处，也值得清掉，因为它会把“选第一个合法项”重新绑回内部结构
+
+- `smashup.smoke.test.ts` 这轮剩下的最后一处 `prompt?.data?.options?.[0]?.id` 很小，但问题性质和之前一样：
+  - 测试真正想表达的是“对当前 prompt 取默认首项继续反应链”
+  - 它并不关心 prompt 底层字段名、存储位置或未来是否继续挂在 `data.options`
+- 只要这种兜底还在，后续一旦 facade/helper 已经演进，但某处业务测试还偷偷绕回裸字段，重构 prompt 外壳时就会留下零散脆点。
+- 所以统一标准可以再明确一条：
+  - 即使测试只是“随手拿第一个选项”
+  - 也应该通过 `getPromptOptions(prompt)` 这种 facade 表达
+  - 不应该因为逻辑简单就回退到 `prompt.data.options`
+- 这条清掉后，当前 `src/games/smashup/__tests__`（排除 helper）里已经没有裸 `prompt.data.options` 读取命中，说明这条 seam 至少在业务测试层面已经基本收净了。
+
+## 2026-05-17 11:17 补充发现：`<Faction>Pod.test.ts` 这类根目录单派系旧入口，本质上和之前的 `ghostsAbilities.test.ts` / `robotAbilities.test.ts` 是同一类双入口债务
+
+- `giantAntsPod.test.ts` 这轮再次证明，测试 churn 不只来自“跨派系混装”，也来自“同一派系的 POD 行为还挂在根目录旧入口，而普通/专项行为已经在 `abilities/` 里继续演化”。
+- 这种结构会制造几个具体问题：
+  - 改巨蚁 POD 行为时，不确定该补在 `abilities/giant-ants.test.ts` 还是继续往 `giantAntsPod.test.ts` 堆
+  - 同一派系的 helper、命名、断言风格会在两个文件里继续漂移
+  - 后续如果要统一这个派系的前提工厂、prompt facade、反应链断言，仍然得跨两个入口同步改
+- 这轮还确认了一个更细的迁移原则：
+  - 当专项文件已经承接了同派系的一部分 POD/非 POD 行为时，不应该把旧根目录文件整份机械复制过去
+  - 应先核对专项文件里已经有什么，再只补缺失的行为簇
+  - 否则“并回专项”会退化成“把重复测试从一个文件复制到另一个文件”
+- 所以后续筛这类文件时，判断标准可以更明确：
+  - 只要根目录文件本质上仍是单派系业务入口
+  - 且 `abilities/<faction>.test.ts` 已经存在并正在承担该派系的长期专项职责
+  - 就应优先考虑并回专项并删掉旧根目录入口，而不是保留两份“一个测 POD、一个测别的”分治结构
+
+## 2026-05-17 11:27 补充发现：`elderThingsPod.test.ts` 进一步证明，POD 旧入口不是天然独立边界，关键仍要看专项文件是否已经存在且能承接
+
+- `elderThingsPod.test.ts` 这轮和 `giantAntsPod.test.ts` 属于同一类问题：
+  - 文件名看起来像“POD 专项”
+  - 但它并不在锁一套跨派系共享 POD 机制
+  - 本质上仍是在测远古之物自己的业务行为，只是历史上挂在根目录旧入口
+- 更关键的是，它还夹了一段 `elder_things (base): Elder Thing`：
+  - 这不是 POD 独特合同
+  - 只是基础版 FAQ 的重复覆盖
+  - 如果机械整份并回，只会把重复合同一起复制到专项文件里
+- 因此判断“该不该并回专项”时，不能按旧文件名或 `describe` 分组机械迁：
+  - 先看 `abilities/elder-things.test.ts` 是否已经是远古之物的长期自然入口
+  - 再看旧文件里哪些段是真正缺失的 POD 行为
+  - 对已经被基础版或专项现有用例覆盖的 FAQ/重复段，不应再搬第二遍
+- 删除旧文件后 `elder-things.test.ts` 单文件 `53 passed`，说明现在不是靠根目录旧文件托底；远古之物派系已经真正收成单入口。
+
+## 2026-05-17 11:33 补充发现：`vampiresPod.test.ts` 说明并回专项时不必把“低层合同”误判成“必须保留旧入口”
+
+- `vampiresPod.test.ts` 主体仍然是吸血鬼 POD 业务行为，和 `elderThingsPod/giantAntsPod` 一样，本质是第二入口债。
+- 但它比前两份多一处容易误判的内容：`resolveOnPlay('vampire_wolf_pact_pod_action')`。
+  - 这确实是低层合同
+  - 但它依然是吸血鬼 Wolf Pact POD 自己的专项合同
+  - 并不因此需要继续把整份文件留在根目录
+- 这说明后续筛文件时，判断标准要再细一层：
+  - “含有少量低层合同” 不等于 “必须保留旧入口文件”
+  - 真正要看的是这些低层合同是否仍属于同一派系/同一专项边界
+  - 如果属于，就应跟该派系其它行为一起收进单一专项文件，而不是让旧文件靠少量低层断言继续存活
+- `vampiresPod.test.ts` 删除后 `abilities/vampires.test.ts` 单文件 `19 passed`，进一步证明吸血鬼现在已经能在一个入口里同时承接普通行为、afterScoring 合同和 POD 合同。
+
+## 2026-05-17 11:42 补充发现：`interactionChain` 这类旧文件名也可能只是“业务第二入口 + 自建运行壳”，并不天然代表系统合同
+
+- `zombieInteractionChain.test.ts` 这轮把另一个误判源钉死了：
+  - 文件名里带 `interactionChain`
+  - 文件内部也确实有一套自建 `GameTestRunner` / `buildSystems` / `makeFullMatchState`
+  - 但主体内容并不是在锁通用 InteractionSystem 合同，而是在逐条验证僵尸派系自己的业务链
+- 这说明“看起来很底层”不等于“应该保留成独立旧文件”。
+  - 如果测试真正关注的是 `zombie_grave_digger`、`zombie_lord`、`zombie_tenacious_z`、`zombie_theyre_coming_to_get_you` 这些牌面行为
+  - 那么旧的自建 runner/系统壳只是历史测试入口，不是稳定边界
+- 正确动作不是继续留一个 `interactionChain` 旧壳，而是把业务链收回派系专项：
+  - 普通命令链回 `runCommand + makeMatchState`
+  - prompt 继续走 facade
+  - 只有确实属于该派系的低层 queue 合同，例如 `zombie_overrun` 的 onTurnStart 自收口，才一起留在同一专项文件里
+- 这个判断标准比“只要用了 `collectTriggers/maybeResolveReactionQueue` 就算系统合同”更准确。关键看它锁的是共享基础设施，还是某个派系自己的业务不变量。
+
+## 2026-05-17 11:47 补充发现：`FAQ` 标签也不是天然边界，很多时候只是“同派系历史补丁入口”
+
+- `frankensteinFaq.test.ts` 这轮进一步确认，文件名里带 `Faq` 不等于它就是一个该独立存在的知识库文件。
+- 它里面的三条合同：
+  - `frankenstein_blitzed`
+  - `frankenstein_uberserum`
+  - `frankenstein_its_alive`
+  都是弗兰肯斯坦派系自己的行为边界，没有跨派系共享的 FAQ 基础设施可言。
+- 这类文件长期保留的坏处和之前那些 `Pod / InteractionChain / ExpansionAbilities` 一样：
+  - 同一派系行为继续分散在两个入口
+  - 后续改实现时，不知道该先改专项还是改 FAQ 壳
+  - 测试风格和 helper 使用会继续分叉
+- 所以后续遇到 `*Faq.test.ts` 时，判断标准也应统一：
+  - 看它是在维护共享 FAQ 规则，还是只是在堆某一派系的历史补丁回归
+  - 如果是后者，就应并回对应专项，而不是因为“FAQ”三个字继续让旧入口存活
+
+## 2026-05-17 11:51 补充发现：`verification` 小壳也不该因为“只剩两条低层测试”就单独保留
+
+- `steampunk-pod-verification.test.ts` 这轮证明，根目录历史壳不一定体量大才有问题。
+- 即使只剩 2 条测试，如果它们本质上仍属于：
+  - `steampunk_ornate_dome`
+  - `steampunk_escape_hatch`
+  这类现成专项边界，就不该继续让一个 `verification` 壳单独活着。
+- 否则长期后果还是一样：
+  - 同一派系/同一能力的低层合同分散在两个文件
+  - 改实现时得同时想“专项改哪边，验证壳改哪边”
+  - 文件命名还会误导人以为这是独立的通用验证层
+- 所以后续筛文件时，还应补一条细化标准：
+  - 根目录里那种只剩 1-3 条派系低层合同的小文件，并不会因为“很短”就天然合理
+  - 只要它们已经有明确专项归宿，就应继续并回专项，避免长期留着一堆历史小壳
+
+## 2026-05-17 11:54 补充发现：历史文件名与当前卡牌名脱节时，更应尽快并回专项
+
+- `bearCavalry-youre-screwed-pod-breakpoint.test.ts` 这轮暴露了另一类维护风险：
+  - 文件名还是旧历史口径
+  - 实际测的却是 `bear_cavalry_bearing_down_pod`
+  - 这种“名字和被测对象都脱节”的小壳，比普通第二入口更容易误导后续维护
+- 它的长期坏处不只是双入口：
+  - 新人或后续 agent 很难从文件名猜到真正被测卡牌
+  - 想补 `bearing_down_pod` 合同时，不容易想到这个历史文件
+  - 结果就是专项文件和旧壳继续分裂演化
+- 因而后续筛文件时，还可以再加一条优先级规则：
+  - 如果根目录历史文件名已经不能准确反映当前被测卡牌/能力
+  - 但内容又只是某个派系现有专项里的少量合同
+  - 那它应比普通第二入口更优先被并回专项
+
+## 2026-05-17 12:01 补充发现：带跨派系场景素材的测试，也可能仍然只是单派系第二入口
+
+- `wizard-neophyte-ongoing.test.ts` 这轮说明，不能因为测试里用了别派系卡牌，就误判成“跨派系共享机制文件”。
+- 它的两条测试虽然借了：
+  - `zombie_overrun` 这个 ongoing 行动卡
+  - `wizard_summon` 这个 standard 行动卡
+  来构造对比场景，但真正想锁定的不是僵尸行为，也不是 ongoing 通用系统，而是 `wizard_neophyte` 自己这条业务不变量：
+  - 额外打出牌库顶行动卡时，如果是 ongoing，要先出现基地选择
+  - 如果是普通 action，则不该额外出现基地选择
+- 这类文件如果继续挂在根目录，会制造一种假象：
+  - 看起来像“ongoing 交互 bug 专题”
+  - 实际上只是巫师学徒的两条派系行为合同
+  - 后续改学徒实现时，仍然得在 `abilities/wizards.test.ts` 和这个根目录 bug 壳之间来回找
+- 因此筛文件标准还应再补一条：
+  - **场景里出现跨派系素材，不等于边界就是跨派系**
+- 判断归属时要看“是谁的公开行为在变”，而不是看测试里借了谁做陪衬
+- 如果真正变化的是某张牌/某个派系自己的行为分支，就应并回那个专项入口
+
+## 2026-05-17 12:04 补充发现：`display-mode` 这类 UI 标签文件，很多时候只是既有专项块的尾部显示合同
+
+- `cthulhu-chosen-display-mode.test.ts` 这轮说明，文件名里带 `display-mode`，不等于它应该长期独立存在。
+- 这份文件锁的并不是一套跨派系 UI 框架规则，而是 `cthulhu_chosen_confirm` 这一条已存在于 `cthulhu.test.ts` 专项块中的具体交互合同：
+  - target type 是 `generic`
+  - yes/no 选项是 `displayMode: 'button'`
+  - option value 里不能带 `baseDefId`
+  - 多实例排队时第二个 prompt 也保持同样的显示约束
+- 这说明后续筛 `display-mode` / `target-type` / `button` 这类文件时，要先问：
+  - 它是在锁一个共享渲染规则，还是只是在给某张牌现有专项块补 UI 选项合同？
+  - 如果后者对应的业务专项已经存在，就应把显示合同并回那个专项块，而不是再留一个根目录 bug 壳
+- 更深一层的判断标准是：
+- **显示合同的归属，仍然取决于“哪个业务 sourceId 在产生这些选项”**
+- 不是取决于它看起来更像 UI 还是更像 gameplay
+- 对 `cthulhu_chosen_confirm` 这种明确 sourceId，最稳的入口仍是 `cthulhu.test.ts` 自己
+
+## 2026-05-17 12:12 补充发现：不是所有根目录旧壳都该“并回专项”，有些应该直接删除
+
+- `wizard-archmage-discard-play.test.ts` 这轮确认了另一种历史测试债：
+  - 文件名看起来像业务回归
+  - 但文件体内其实是临时注册一个 `test_archmage_discard_play` 的 `DiscardPlayProvider`
+  - 再用自建 `GameTestRunner` 去喂 `fromDiscard: true`
+- 这类文件的核心问题不是“它属于哪个派系专项”，而是：
+  - 它锁的不是现行公开入口
+  - 而是一条测试为了模拟场景自己搭出来的 provider 壳
+  - 一旦真实业务已经有等价覆盖，这类文件继续存在只会让维护者误以为它还在保护某个独立合同
+- 这轮可以提炼出一个新的筛选标准：
+  - 如果旧文件的业务语义已经被真实现行链路覆盖
+  - 而它额外提供的只是“测试专用 provider / runner / fake source”
+  - 那正确动作往往不是“并回某个专项”，而是直接删除这个壳
+- 对应到这次具体证据：
+  - “从弃牌堆打出大法师应获得额外行动”已有真实 `zombie_they_keep_coming` 链路覆盖
+- “从手牌打出大法师应获得额外行动”已有 `archmageE2E` 覆盖
+- 所以 `wizard-archmage-discard-play.test.ts` 不再提供独立业务价值，只是在重复一份测试内临时 provider
+
+## 2026-05-17 12:13 补充发现：跨派系真实链路回归，仍然可以并回“被验证的那张牌”的专项
+
+- `wizard-archmage-zombie-interaction.test.ts` 和 `wizard-neophyte-ongoing.test.ts` 一起把一个标准钉得更清楚了：
+  - 场景里借用了别派系真实能力，不代表这条测试就必须挂在根目录或做成“跨派系专题”
+  - 关键要看真正被验证的是谁的公开行为
+- 这次 `wizard-archmage-zombie-interaction` 里：
+  - 僵尸行动卡 `zombie_they_keep_coming` 只是触发路径
+  - 真正要锁的是 `wizard_archmage` 在 `MINION_PLAYED` 后是否获得额外行动
+  - 所以它更适合落回 `wizards.test.ts` 的 `wizard_archmage` 专项块
+- 同时也要和上一条发现配套看：
+- 若测试只是借测试专用 provider / runner 去伪造“从弃牌堆打出”，那种壳应直接删
+- 若测试走的是真实现行链路，只是跨派系触发了另一张牌的行为，那么仍然应优先并回“被验证那张牌”的专项文件
+
+## 2026-05-17 12:20 补充发现：专项文件变大后，测试隔离污染会伪装成“迁移后红灯”
+
+- `killer-plant-pod-verification.test.ts` 这轮给了一个新的经验教训：
+  - 文件能不能并回，不只要看业务边界对不对
+  - 还要看目标专项文件里有没有局部 `beforeEach` / 注册表重置，把后续新增段带进半初始化状态
+- 这次第一次并回后出现的 3 条红灯，不是行为合同错，也不是实现坏了：
+  - 根因是 `killer-plants.test.ts` 前半段的 `beforeEach` 只执行 `registerKillerPlantAbilities()`
+  - 后面新加的 POD 段需要的是完整 `initAllAbilities()` 环境
+  - 结果就是 `General Ivan POD`、部分 POD 回合开始增益、以及 `venus_man_trap_pod` 相关链路看起来像“迁移后坏了”，实质是测试夹具被前面段落污染
+- 这可以沉淀成一条更具体的测试标准：
+  - 当把一批测试并回大型专项文件后，如果红灯只集中在新段，先查专项文件内是否存在局部注册表/能力初始化收窄
+  - 不要第一时间把它当实现回归或把并回动作回滚
+  - 先把新段自己的初始化边界补齐，再判断剩余红灯是否真是实现问题
+
+## 2026-05-17 14:08 补充发现：`AL9000` 是可以整段抽离的自然边界
+
+- `base_greenhouse` / `base_secret_garden` / `base_inventors_salon` 三段原本就在 `expansionBaseAbilities.test.ts` 里连续出现
+- 它们共享同一类 afterScoring / scoring-session seam，所以不需要再人为拆成三个散文件，也不该继续挂在“expansion”大壳里
+- 抽到 `bases/al9000-bases.test.ts` 后，旧文件可以整段删除，不需要保留过渡 wrapper
+- 同时，`base_mountains_of_madness` 证明了另一条标准：
+  - 如果已经有现成专项文件，只是覆盖过浅，就优先补深现有文件
+  - 不要再在大壳里保留第二份同基地合同
+
+## 2026-05-17 14:45 补充发现：基地类测试继续按 helper 合同和专项归宿收口
+
+- `makeBase(defId, minions)` 的 shared helper 合同是固定的；把对象当第二参传入会把 `minions` 当成数组以外的值，直接炸成 `base.minions is not iterable`。这说明测试迁移时不能只“长得像以前能跑”，要同时校准 helper 签名。
+- `base_plateau_of_leng` 适合独立成 `bases/plateau-of-leng-base.test.ts`：它的即时分支和同名随从额度本身就是一组稳定基地合同，不需要继续挂在 `expansionBaseAbilities.test.ts` 里混测。
+- `base_fairy_ring` 的非首次打出回归不需要继续占用 `expansionBaseAbilities.test.ts`，因为 `abilities/fairies.test.ts` 已经有更完整的上位覆盖；旧段应该删除而不是并回两个入口。
+- 这轮证明“有更好的上位替代就不用考虑旧壳”不是口号，而是可以直接落到文件裁剪上的规则：重复段删掉，独立合同落到自己的专项文件里。
+
+## 2026-05-17 14:53 补充发现：`expansionBaseAbilities.test.ts` 可以整体退场
+
+- `base_the_asylum`、`base_innsmouth_base`、`base_miskatonic_university_base` 都有了自己的基地专项文件，说明 `expansionBaseAbilities.test.ts` 不再是“唯一入口”，只是历史聚合壳。
+- `base_mountains_of_madness`、`base_plateau_of_leng` 也已经在独立基地文件里有更清晰的专项合同，所以旧聚合入口没有剩余独占价值。
+- 将 `expansionBaseAbilities.test.ts` 整体删除，比继续保留一个只剩尾部注释的聚合壳更符合当前测试结构：新行为进专项，旧聚合入口直接退场。
+- 这一轮也验证了一个简单原则：只要各子簇已经有更好的上位替代，旧聚合测试就不要为了“看起来完整”而继续存活。

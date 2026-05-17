@@ -625,17 +625,17 @@ export const getAvailableAbilityIds = (
 
 
     // 根据阶段过滤技能类型
-    const expectedType = phase === 'defensiveRoll'
-        ? 'defensive'
+    const expectedTypes = phase === 'defensiveRoll'
+        ? ['defensive']
         : phase === 'offensiveRoll'
-            ? 'offensive'
+            ? ['offensive', 'utility']
             : undefined;
 
     // 注意：必须基于玩家当前 abilities（升级卡会替换此处定义）进行判定
     const available: string[] = [];
 
     for (const def of player.abilities) {
-        if (expectedType && def.type !== expectedType) continue;
+        if (expectedTypes && !expectedTypes.includes(def.type)) continue;
 
         if (def.variants?.length) {
             // 收集满足条件的变体，按 priority 降序排列后加入
@@ -708,7 +708,7 @@ const getAttackModifierPlayFailureReason = (
     state: DiceThroneCore,
     playerId: PlayerId,
     card: AbilityCard,
-    phase?: TurnPhase
+    _phase?: TurnPhase
 ): CardPlayFailReason | null => {
     if (!card.isAttackModifier) return null;
     const pendingAttack = state.pendingAttack;

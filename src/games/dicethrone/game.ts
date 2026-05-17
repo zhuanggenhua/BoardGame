@@ -195,6 +195,41 @@ function formatDiceThroneActionEntry({
         return rawName;
     };
 
+    const buildCompareRollParticipantLabelSegment = (participant: {
+        label?: string;
+        labelKey?: string;
+        labelParams?: Record<string, string | number>;
+    }): ActionLogSegment => {
+        if (participant.labelKey) {
+            return i18nSeg(participant.labelKey, participant.labelParams);
+        }
+        return { type: 'text', text: participant.label ?? '' };
+    };
+
+    const buildCompareRollDiceSegment = (participant: {
+        characterId?: string;
+        roll: number;
+    }): ActionLogSegment | null => {
+        if (!participant.characterId) return null;
+        const spriteAsset = getDiceDefinition(`${participant.characterId}-dice`)?.assets?.spriteSheet
+            ?? ASSETS.DICE_SPRITE(participant.characterId);
+        const SPRITE_COLS = 3;
+        const SPRITE_ROWS = 2;
+        const value = Math.max(1, Math.min(6, participant.roll));
+        const zeroBased = value - 1;
+        return {
+            type: 'diceResult',
+            spriteAsset,
+            spriteCols: SPRITE_COLS,
+            spriteRows: SPRITE_ROWS,
+            dice: [{
+                value,
+                col: zeroBased % SPRITE_COLS,
+                row: Math.floor(zeroBased / SPRITE_COLS),
+            }],
+        };
+    };
+
     if (command.type === 'PLAY_CARD' || command.type === 'PLAY_UPGRADE_CARD') {
         const cardId = (command.payload as { cardId: string }).cardId;
         const card = findDiceThroneCard(core, cardId, command.playerId);
@@ -558,6 +593,76 @@ function formatDiceThroneActionEntry({
                             paramI18nKeys,
                         ),
                     ],
+                });
+                return;
+            }
+        }
+
+        if (event.type === 'CHOICE_REQUESTED') {
+            const choiceRequestedEvent = event as GameEvent & {
+                payload?: {
+                    playerId?: PlayerId;
+                    titleKey?: string;
+                    compareRoll?: {
+                        contestants?: Array<{
+                            label?: string;
+                            labelKey?: string;
+                            labelParams?: Record<string, string | number>;
+                            roll: number;
+                            characterId?: string;
+                        }>;
+                        resultText?: string;
+                        resultTextKey?: string;
+                        resultTextParams?: Record<string, string | number>;
+                    };
+                };
+            };
+            const compareRoll = choiceRequestedEvent.payload?.compareRoll;
+            const contestants = compareRoll?.contestants;
+            if (Array.isArray(contestants) && contestants.length === 2) {
+                const first = contestants[0];
+                const second = contestants[1];
+                const firstDice = buildCompareRollDiceSegment(first);
+                const secondDice = buildCompareRollDiceSegment(second);
+                const segments: ActionLogSegment[] = [];
+
+                if (choiceRequestedEvent.payload?.titleKey) {
+                    segments.push(i18nSeg('actionLog.compareRollPrefix'));
+                    segments.push(i18nSeg(choiceRequestedEvent.payload.titleKey));
+                    segments.push({ type: 'text', text: ' ' });
+                }
+
+                segments.push(buildCompareRollParticipantLabelSegment(first));
+                segments.push({ type: 'text', text: ': ' });
+                if (firstDice) {
+                    segments.push(firstDice);
+                } else {
+                    segments.push({ type: 'text', text: String(first.roll) });
+                }
+                segments.push({ type: 'text', text: ' vs ' });
+                segments.push(buildCompareRollParticipantLabelSegment(second));
+                segments.push({ type: 'text', text: ': ' });
+                if (secondDice) {
+                    segments.push(secondDice);
+                } else {
+                    segments.push({ type: 'text', text: String(second.roll) });
+                }
+
+                if (compareRoll.resultTextKey || compareRoll.resultText) {
+                    segments.push({ type: 'text', text: ' ' });
+                    if (compareRoll.resultTextKey) {
+                        segments.push(i18nSeg(compareRoll.resultTextKey, compareRoll.resultTextParams));
+                    } else if (compareRoll.resultText) {
+                        segments.push({ type: 'text', text: compareRoll.resultText });
+                    }
+                }
+
+                entries.push({
+                    id: `COMPARE_ROLL-${choiceRequestedEvent.payload?.playerId ?? command.playerId}-${entryTimestamp}-${index}`,
+                    timestamp: entryTimestamp,
+                    actorId: choiceRequestedEvent.payload?.playerId ?? command.playerId,
+                    kind: 'COMPARE_ROLL',
+                    segments,
                 });
                 return;
             }

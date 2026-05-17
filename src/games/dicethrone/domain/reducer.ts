@@ -16,7 +16,7 @@ import { RESOURCE_IDS } from './resources';
 import { TOKEN_IDS } from './ids';
 import { FLOW_EVENTS } from '../../../engine/systems/FlowSystem';
 import { initHeroState, createCharacterDice } from './characters';
-import { registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
+import { hasCurrentChoiceAnchor, registerChoiceEffectHandler, resolveChoiceEffect } from './choiceEffects';
 import { removeCard } from './utils';
 import { isTreantTreeSpiritToken } from './passiveAbility';
 import {
@@ -502,11 +502,12 @@ const handleTokenLimitChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TO
  */
 const handleChoiceRequested: EventHandler<Extract<DiceThroneEvent, { type: 'CHOICE_REQUESTED' }>> = (
     state,
-    _event
-) => {
-    // 不修改核心状态，prompt 由系统层管理
-    return state;
-};
+    event
+) => ({
+    ...state,
+    activatingAbilityId: event.payload.sourceAbilityId,
+    currentChoiceSourceAbilityId: event.payload.sourceAbilityId,
+});
 
 const handleDefenderSelectionRequested: EventHandler<Extract<DiceThroneEvent, { type: 'DEFENDER_SELECTION_REQUESTED' }>> = (
     state,
@@ -558,6 +559,9 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
 ) => {
     const { playerId, statusId, tokenId, value, customId, sourceAbilityId } = event.payload;
     let resultState = state;
+    const hasValidChoiceDelta = typeof value === 'number' && Number.isFinite(value) && Number.isInteger(value);
+    const hasChoiceAnchor = hasCurrentChoiceAnchor(state, sourceAbilityId);
+    const allowGenericChoiceDelta = !sourceAbilityId || hasChoiceAnchor;
 
     const player = state.players[playerId];
     if (player) {
@@ -572,12 +576,12 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
                 || (Array.isArray(tokenActiveUseTiming) && tokenActiveUseTiming.includes('onOffensiveRollEnd'))
             );
 
-        if (tokenId && !shouldSkipGenericTokenDelta) {
+        if (tokenId && !shouldSkipGenericTokenDelta && hasValidChoiceDelta && allowGenericChoiceDelta) {
             const maxStacks = getTokenStackLimit(state, playerId, tokenId);
             const currentAmount = player.tokens[tokenId] || 0;
             const nextAmount = Math.max(0, Math.min(currentAmount + value, maxStacks));
             playerUpdates = { tokens: { ...player.tokens, [tokenId]: nextAmount } };
-        } else if (statusId) {
+        } else if (statusId && hasValidChoiceDelta && allowGenericChoiceDelta) {
             const def = state.tokenDefinitions.find(e => e.id === statusId);
             const maxStacks = def?.stackLimit || 99;
             const currentStacks = player.statusEffects[statusId] || 0;
@@ -605,6 +609,7 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
 
     if (
         sourceAbilityId
+        && hasCurrentChoiceAnchor(resultState, sourceAbilityId)
         && resultState.pendingAttack?.sourceAbilityId === sourceAbilityId
         && resultState.pendingAttack.offensiveRollEndTokenResolved !== true
     ) {
@@ -621,6 +626,20 @@ const handleChoiceResolved: EventHandler<Extract<DiceThroneEvent, { type: 'CHOIC
         resultState = {
             ...resultState,
             lastEffectSourceByPlayerId: { ...(resultState.lastEffectSourceByPlayerId || {}), [playerId]: sourceAbilityId },
+        };
+    }
+
+    if (sourceAbilityId && resultState.activatingAbilityId === sourceAbilityId) {
+        resultState = {
+            ...resultState,
+            activatingAbilityId: undefined,
+        };
+    }
+
+    if (sourceAbilityId && resultState.currentChoiceSourceAbilityId === sourceAbilityId) {
+        resultState = {
+            ...resultState,
+            currentChoiceSourceAbilityId: undefined,
         };
     }
 
@@ -655,6 +674,7 @@ const handleTurnChanged: EventHandler<Extract<DiceThroneEvent, { type: 'TURN_CHA
         activePlayerId: nextPlayerId,
         turnNumber,
         lastResolvedAttackDamage: undefined,
+        currentChoiceSourceAbilityId: undefined,
         taijiGainedThisTurn: undefined, // 清除太极本回合获得量追踪
         treantSpiritSpentThisTurn: undefined,
         offensiveRollAttemptsThisTurn: undefined,
@@ -834,6 +854,8 @@ const handleInteractionCancelled: EventHandler<Extract<DiceThroneEvent, { type: 
     return {
         ...state,
         players,
+        activatingAbilityId: undefined,
+        currentChoiceSourceAbilityId: undefined,
     };
 };
 

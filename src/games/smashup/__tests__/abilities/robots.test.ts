@@ -1,10 +1,16 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import type { RandomFn } from '../../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
+import { SMASHUP_FACTION_IDS } from '../../domain/ids';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
+import {
+    clearOngoingEffectRegistry,
+    fireTriggers,
+    isMinionProtected,
+    registerPodOngoingAliases,
+} from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import type { SmashUpCore, SmashUpEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
@@ -70,6 +76,12 @@ function execPlayAction(state: SmashUpCore, playerId: string, cardUid: string, t
         defaultRandom,
     );
     return { events: result.events as SmashUpEvent[], matchState: result.finalState };
+}
+
+function runAction(core: SmashUpCore, command: { type: string; playerId: string; payload: any }) {
+    const result = runCommand(makeMatchState(core), command as any, defaultRandom);
+    expect(result.success, result.error).toBe(true);
+    return result.events as SmashUpEvent[];
 }
 
 describe('机器人派系能力', () => {
@@ -538,5 +550,481 @@ describe('机器人派系能力', () => {
         expect(secondPlay.success).toBe(true);
         expect(secondPlay.finalState.core.players['0'].minionsPlayed).toBe(2);
         expect(secondPlay.finalState.core.bases[0].minions.some(minion => minion.uid === 'p1')).toBe(true);
+    });
+});
+
+describe('robot_nukebot（核弹机器人 onDestroy）', () => {
+    it('被消灭后消灭同基地其他玩家所有随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('c1', 'bear_cavalry_bear_necessities', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('m0a', 'test_a', '0', 1),
+                    makeMinion('m0b', 'test_b', '0', 2),
+                    makeMinion('m0c', 'test_c', '0', 3),
+                    makeMinion('nukebot', 'robot_nukebot', '1', 5),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const events = runAction(core, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'c1' },
+        });
+
+        const nukebotDestroy = events.find(
+            e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.minionUid === 'nukebot'
+        );
+        expect(nukebotDestroy).toBeDefined();
+
+        const chainDestroys = events.filter(
+            e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.reason === 'robot_nukebot'
+        );
+        expect(chainDestroys.length).toBe(3);
+    });
+
+    it('同基地只有自己人的随从时不产生额外消灭', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('c1', 'bear_cavalry_bear_necessities', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('nukebot', 'robot_nukebot', '1', 5),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const events = runAction(core, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'c1' },
+        });
+
+        const nukebotDestroy = events.find(
+            e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.minionUid === 'nukebot'
+        );
+        expect(nukebotDestroy).toBeDefined();
+
+        const chainDestroys = events.filter(
+            e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.reason === 'robot_nukebot'
+        );
+        expect(chainDestroys.length).toBe(0);
+    });
+
+    it('核弹机器人所在基地无其他玩家随从时无额外效果', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('c1', 'bear_cavalry_bear_necessities', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('nukebot', 'robot_nukebot', '1', 5),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const events = runAction(core, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'c1' },
+        });
+
+        const nukebotDestroy = events.find(
+            e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.minionUid === 'nukebot'
+        );
+        expect(nukebotDestroy).toBeDefined();
+
+        const chainDestroys = events.filter(
+            e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.reason === 'robot_nukebot'
+        );
+        expect(chainDestroys.length).toBe(0);
+    });
+
+    it('核弹机器人链式消灭会被 destroy 保护拦截', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('c1', 'bear_cavalry_bear_necessities', 'action', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [
+                    makeMinion('warbot', 'robot_warbot', '0', 5),
+                    makeMinion('ally', 'test_a', '0', 1),
+                    makeMinion('nukebot', 'robot_nukebot', '1', 6),
+                ],
+                ongoingActions: [],
+            }],
+        });
+
+        const events = runAction(core, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'c1' },
+        });
+
+        const destroyedByNukebot = events.filter(
+            e => e.type === SU_EVENTS.MINION_DESTROYED && (e as any).payload.reason === 'robot_nukebot'
+        );
+        const destroyedIds = destroyedByNukebot.map(e => (e as any).payload.minionUid);
+        expect(destroyedIds).toContain('ally');
+        expect(destroyedIds).not.toContain('warbot');
+    });
+});
+
+describe('机器人 ongoing 能力', () => {
+    beforeEach(() => {
+        clearRegistry();
+        clearInteractionHandlers();
+        clearOngoingEffectRegistry();
+        clearPowerModifierRegistry();
+        clearBaseAbilityRegistry();
+        resetAbilityInit();
+        initAllAbilities();
+        registerPodOngoingAliases();
+    });
+
+    function makeRobotPlayer(id: string, overrides?: Parameters<typeof makePlayer>[1]) {
+        return makePlayer(id, {
+            deck: [
+                makeCard(`${id}-d1`, 'deck_card_1', 'minion', id),
+                makeCard(`${id}-d2`, 'deck_card_2', 'action', id),
+                makeCard(`${id}-d3`, 'deck_card_3', 'minion', id),
+            ],
+            factions: [SMASHUP_FACTION_IDS.ROBOTS, SMASHUP_FACTION_IDS.NINJAS] as [string, string],
+            ...overrides,
+        });
+    }
+
+    it('双方都有 Archive 时，只触发被消灭微型机所属玩家的 Archive', () => {
+        const archive0 = makeMinion('ma-p0', 'robot_microbot_archive', '0', 1);
+        const guard0 = makeMinion('mg-p0', 'robot_microbot_guard', '0', 1);
+        const base0 = makeBase({ defId: 'base_a', minions: [archive0, guard0] });
+
+        const archive1 = makeMinion('ma-p1', 'robot_microbot_archive', '1', 1, { owner: '1' } as any);
+        const base1 = makeBase({ defId: 'base_b', minions: [archive1] });
+        const state = makeState({
+            bases: [base0, base1],
+            players: {
+                '0': makeRobotPlayer('0'),
+                '1': makeRobotPlayer('1'),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'mg-p0',
+            triggerMinionDefId: 'robot_microbot_guard',
+            triggerMinion: guard0,
+            random: defaultRandom,
+            now: 1000,
+        } as any);
+
+        const drawEvents = events.filter(e => e.type === SU_EVENTS.CARDS_DRAWN) as any[];
+        expect(drawEvents).toHaveLength(1);
+        expect(drawEvents[0].payload.playerId).toBe('0');
+    });
+
+    it('同一玩家有两个 Archive 时，应各自触发一次抽牌', () => {
+        const archiveA = makeMinion('ma-double-a', 'robot_microbot_archive', '0', 1);
+        const archiveB = makeMinion('ma-double-b', 'robot_microbot_archive', '0', 1);
+        const guard = makeMinion('mg-double', 'robot_microbot_guard', '0', 1);
+        const base = makeBase({ minions: [archiveA, archiveB, guard] });
+        const state = makeState({
+            bases: [base],
+            players: {
+                '0': makeRobotPlayer('0'),
+                '1': makeRobotPlayer('1'),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'mg-double',
+            triggerMinionDefId: 'robot_microbot_guard',
+            triggerMinion: guard,
+            random: defaultRandom,
+            now: 1000,
+        } as any);
+
+        const drawEvent = events.find(e => e.type === SU_EVENTS.CARDS_DRAWN) as any;
+        expect(drawEvent).toBeTruthy();
+        expect(drawEvent.payload.playerId).toBe('0');
+        expect(drawEvent.payload.count).toBe(2);
+        expect(drawEvent.payload.cardUids).toHaveLength(2);
+    });
+
+    it('warbot 受 destroy 保护', () => {
+        const warbot = makeMinion('wb-1', 'robot_warbot', '0', 5);
+        const base = makeBase({ minions: [warbot] });
+        const state = makeState({ bases: [base] });
+
+        expect(isMinionProtected(state, warbot, 0, '1', 'destroy')).toBe(true);
+    });
+
+    it('POD 版 warbot 也受 destroy 保护', () => {
+        const warbot = makeMinion('wb-pod-1', 'robot_warbot_pod', '0', 5);
+        const base = makeBase({ minions: [warbot] });
+        const state = makeState({ bases: [base] });
+
+        expect(isMinionProtected(state, warbot, 0, '1', 'destroy')).toBe(true);
+    });
+
+    it('非 warbot 不受保护', () => {
+        const warbot = makeMinion('wb-1', 'robot_warbot', '0', 5);
+        const normal = makeMinion('zb-1', 'robot_zapbot', '0', 2);
+        const base = makeBase({ minions: [warbot, normal] });
+        const state = makeState({ bases: [base] });
+
+        expect(isMinionProtected(state, normal, 0, '1', 'destroy')).toBe(false);
+    });
+
+    it('微型机被消灭时 archive 控制者抽牌', () => {
+        const archive = makeMinion('ma-1', 'robot_microbot_archive', '0', 1);
+        const base = makeBase({ minions: [archive] });
+        const state = makeState({
+            bases: [base],
+            players: {
+                '0': makeRobotPlayer('0'),
+                '1': makeRobotPlayer('1'),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'mg-1',
+            triggerMinionDefId: 'robot_microbot_guard',
+            random: defaultRandom,
+            now: 1000,
+        } as any);
+
+        expect(events).toHaveLength(1);
+        expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
+        expect((events[0] as any).payload.playerId).toBe('0');
+    });
+
+    it('POD 版档案馆也会对 POD 微型机的消灭触发抽牌', () => {
+        const archive = makeMinion('ma-pod-1', 'robot_microbot_archive_pod', '0', 1);
+        const base = makeBase({ minions: [archive] });
+        const state = makeState({
+            bases: [base],
+            players: {
+                '0': makeRobotPlayer('0'),
+                '1': makeRobotPlayer('1'),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'mg-pod-1',
+            triggerMinionDefId: 'robot_microbot_guard_pod',
+            random: defaultRandom,
+            now: 1000,
+        } as any);
+
+        expect(events).toHaveLength(1);
+        expect(events[0].type).toBe(SU_EVENTS.CARDS_DRAWN);
+        expect((events[0] as any).payload.playerId).toBe('0');
+    });
+
+    it('非微型机被消灭时不触发', () => {
+        const archive = makeMinion('ma-1', 'robot_microbot_archive', '0', 1);
+        const base = makeBase({ minions: [archive] });
+        const state = makeState({
+            bases: [base],
+            players: {
+                '0': makeRobotPlayer('0'),
+                '1': makeRobotPlayer('1'),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'big-1',
+            triggerMinionDefId: 'robot_hoverbot',
+            random: defaultRandom,
+            now: 1000,
+        } as any);
+
+        expect(events).toHaveLength(0);
+    });
+
+    it('有 Alpha 时普通随从被视为微型机并触发抽牌', () => {
+        const archive = makeMinion('ma-alpha-1', 'robot_microbot_archive', '0', 1);
+        const alpha = makeMinion('alpha-1', 'robot_microbot_alpha', '0', 1);
+        const normal = makeMinion('nm-1', 'test_normal_minion', '0', 3);
+        const base = makeBase({ minions: [archive, alpha, normal] });
+        const state = makeState({
+            bases: [base],
+            players: {
+                '0': makeRobotPlayer('0'),
+                '1': makeRobotPlayer('1'),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'nm-1',
+            triggerMinionDefId: 'test_normal_minion',
+            triggerMinion: normal,
+            random: defaultRandom,
+            now: 1000,
+        } as any);
+
+        const drawEvents = events.filter(
+            e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '0'
+        );
+        expect(drawEvents.length).toBe(1);
+    });
+
+    it('Alpha + 普通随从在不同基地时 Archive 仍对己方普通随从触发', () => {
+        const archive = makeMinion('ma-alpha-remote', 'robot_microbot_archive', '0', 1);
+        const base0 = makeBase({ defId: 'base_a', minions: [archive] });
+        const alpha = makeMinion('alpha-remote', 'robot_microbot_alpha', '0', 1);
+        const normal = makeMinion('nm-remote', 'test_normal_minion', '0', 3);
+        const base1 = makeBase({ defId: 'base_b', minions: [alpha, normal] });
+        const state = makeState({
+            bases: [base0, base1],
+            players: {
+                '0': makeRobotPlayer('0'),
+                '1': makeRobotPlayer('1'),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            playerId: '0',
+            baseIndex: 1,
+            triggerMinionUid: 'nm-remote',
+            triggerMinionDefId: 'test_normal_minion',
+            triggerMinion: normal,
+            random: defaultRandom,
+            now: 1000,
+        } as any);
+
+        const drawEvents = events.filter(
+            e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '0'
+        );
+        expect(drawEvents.length).toBe(1);
+    });
+
+    it('对手的微型机（含 Alpha 视为）被消灭时不触发', () => {
+        const archive = makeMinion('ma-enemy', 'robot_microbot_archive', '0', 1);
+        const base0 = makeBase({ defId: 'base_a', minions: [archive] });
+
+        const alphaEnemy = makeMinion('alpha-enemy', 'robot_microbot_alpha', '1', 1, { owner: '1' } as any);
+        const normalEnemy = makeMinion('nm-enemy', 'test_normal_minion', '1', 3, { owner: '1' } as any);
+        const base1 = makeBase({ defId: 'base_b', minions: [alphaEnemy, normalEnemy] });
+
+        const state = makeState({
+            bases: [base0, base1],
+            players: {
+                '0': makeRobotPlayer('0'),
+                '1': makeRobotPlayer('1', {
+                    hand: [],
+                }),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            playerId: '1',
+            baseIndex: 1,
+            triggerMinionUid: 'nm-enemy',
+            triggerMinionDefId: 'test_normal_minion',
+            triggerMinion: normalEnemy,
+            random: defaultRandom,
+            now: 1000,
+        } as any);
+
+        const drawEventsP0 = events.filter(
+            e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '0',
+        );
+        expect(drawEventsP0.length).toBe(0);
+    });
+
+    it('对手的微型机被消灭时不触发（你的限定）', () => {
+        const archive = makeMinion('ma-1', 'robot_microbot_archive', '0', 1);
+        const base = makeBase({ minions: [archive] });
+        const state = makeState({
+            bases: [base],
+            players: {
+                '0': makeRobotPlayer('0'),
+                '1': makeRobotPlayer('1'),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'mg-opp',
+            triggerMinionDefId: 'robot_microbot_guard',
+            random: defaultRandom,
+            now: 1000,
+        } as any);
+
+        expect(events).toHaveLength(0);
+    });
+
+    it('Archive 自身作为微型机被消灭时也会触发抽牌', () => {
+        const archive = makeMinion('ma-self', 'robot_microbot_archive', '0', 1);
+        const base = makeBase({ minions: [archive] });
+        const state = makeState({
+            bases: [base],
+            players: {
+                '0': makeRobotPlayer('0'),
+                '1': makeRobotPlayer('1'),
+            },
+        });
+
+        const { events } = fireTriggers(state, 'onMinionDestroyed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'ma-self',
+            triggerMinionDefId: 'robot_microbot_archive',
+            triggerMinion: archive,
+            random: defaultRandom,
+            now: 1000,
+        } as any);
+
+        const drawEvents = events.filter(
+            e => e.type === SU_EVENTS.CARDS_DRAWN && (e as any).payload.playerId === '0',
+        );
+        expect(drawEvents.length).toBe(1);
     });
 });

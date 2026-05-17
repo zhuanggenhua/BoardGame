@@ -979,7 +979,7 @@ const buildEmergencyInteractionCancelAction = (
     label: '跳过（无可用选项）',
     commands: [{
         type: 'SYS_INTERACTION_CANCEL',
-        payload: { reason },
+        payload: { interactionId, reason },
     }],
     metadata: {
         interactionId,
@@ -1018,7 +1018,7 @@ const buildInteractionActions = (
                     label: '不选择任何项',
                     commands: [{
                         type: 'SYS_INTERACTION_RESPOND',
-                        payload: { optionIds: [] },
+                        payload: { interactionId: current.id, optionIds: [] },
                     }],
                     aiHints: [OPTIONAL_SKIP_AI_HINT],
                     metadata: {
@@ -1042,7 +1042,10 @@ const buildInteractionActions = (
                         label: emergencySkipOption.label ?? '跳过（当前无可执行选项）',
                         commands: [{
                             type: 'SYS_INTERACTION_RESPOND',
-                            payload: buildSimpleChoicePayload([emergencySkipOption.id], data.multi),
+                            payload: {
+                                interactionId: current.id,
+                                ...buildSimpleChoicePayload([emergencySkipOption.id], data.multi),
+                            },
                         }],
                         aiHints: [OPTIONAL_SKIP_AI_HINT],
                         metadata: {
@@ -1060,10 +1063,13 @@ const buildInteractionActions = (
                     label: combination.map((option) => option.label ?? option.id).join(' + ') || `选择 ${index + 1}`,
                     commands: [{
                         type: 'SYS_INTERACTION_RESPOND',
-                        payload: buildSimpleChoicePayload(
-                            combination.map((option) => option.id),
-                            data.multi,
-                        ),
+                        payload: {
+                            interactionId: current.id,
+                            ...buildSimpleChoicePayload(
+                                combination.map((option) => option.id),
+                                data.multi,
+                            ),
+                        },
                     }],
                     ...(aiHints.length > 0 ? { aiHints } : {}),
                     metadata: {
@@ -1083,7 +1089,10 @@ const buildInteractionActions = (
                 label: option.label ?? `选择 ${index + 1}`,
                 commands: [{
                     type: 'SYS_INTERACTION_RESPOND',
-                    payload: buildSimpleChoicePayload([option.id], data.multi),
+                    payload: {
+                        interactionId: current.id,
+                        ...buildSimpleChoicePayload([option.id], data.multi),
+                    },
                 }],
                 ...(aiHints.length > 0 ? { aiHints } : {}),
                 metadata: {
@@ -1108,8 +1117,8 @@ const buildInteractionActions = (
                 kind: 'interaction-choice',
                 label: '确认比较结果',
                 commands: [{
-                    type: 'SYS_INTERACTION_CONFIRM',
-                    payload: {},
+                type: 'SYS_INTERACTION_CONFIRM',
+                    payload: { interactionId: current.id },
                 }],
                 metadata: {
                     interactionId: current.id,
@@ -1123,7 +1132,7 @@ const buildInteractionActions = (
             label: option.label ?? `选择 ${index + 1}`,
             commands: [{
                 type: 'SYS_INTERACTION_RESPOND',
-                payload: { optionId: option.id },
+                payload: { interactionId: current.id, optionId: option.id },
             }],
             metadata: {
                 interactionId: current.id,
@@ -1913,6 +1922,12 @@ const buildPhaseActions = (state: DiceThroneState, playerId: PlayerId, phase: Tu
     }
 
     if (phase === 'main1' || phase === 'main2') {
+        // 主阶段出牌/卖牌只属于当前行动玩家。
+        // 若让非当前玩家先枚举候选，再依赖最终 validate 拒绝，会制造大量误导性 player_mismatch 日志。
+        if (playerId !== state.core.activePlayerId) {
+            return actions;
+        }
+
         for (const card of player.hand) {
             if (card.type === 'upgrade') {
                 const targetAbilityId = card.effects?.find((effect) => effect.action?.type === 'replaceAbility')?.action?.targetAbilityId;

@@ -529,6 +529,14 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
             playerId: myPlayerId,
         });
     };
+
+    const respondCurrentInteraction = React.useCallback((payload: Record<string, unknown>) => {
+        if (!currentInteraction?.id) return;
+        dispatch(INTERACTION_COMMANDS.RESPOND, {
+            interactionId: currentInteraction.id,
+            ...payload,
+        });
+    }, [currentInteraction?.id, dispatch]);
     
     // 处理卡牌选择确认
     const handleCardSelectionConfirm = (selectedCardUids: string[]) => {
@@ -567,9 +575,9 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
             }
             
             // 使用 optionIds（用于验证）+ mergedValue（用于传递给 handler）
-            dispatch(INTERACTION_COMMANDS.RESPOND, { 
+            respondCurrentInteraction({
                 optionIds,
-                mergedValue: { cardUids: selectedCardUids }
+                mergedValue: { cardUids: selectedCardUids },
             });
         } else {
             // 单选模式：找到对应的选项
@@ -579,7 +587,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                 logger.debug('[CardiaBoard] Single-select mode: dispatching with optionId', {
                     optionId: selectedCard.optionId,
                 });
-                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: selectedCard.optionId });
+                respondCurrentInteraction({ optionId: selectedCard.optionId });
             } else {
                 logger.error('[CardiaBoard] No optionId found for selected card');
             }
@@ -608,7 +616,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
                 optionId: selectedOption.id,
                 faction: factionId,
             });
-            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: selectedOption.id });
+            respondCurrentInteraction({ optionId: selectedOption.id });
         } else {
             logger.error('[CardiaBoard] No optionId found for selected faction', { factionId });
         }
@@ -627,7 +635,7 @@ export const CardiaBoard: React.FC<Props> = ({ G, dispatch, playerID, reset, mat
         if (!currentInteraction) return;
         
         logger.debug('[CardiaBoard] Choice selected, dispatching RESPOND', { optionId });
-        dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
+        respondCurrentInteraction({ optionId });
         
         setShowChoice(false);
     };

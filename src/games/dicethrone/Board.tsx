@@ -61,7 +61,11 @@ import { useActiveModifiers } from './hooks/useActiveModifiers';
 import { useUIState } from './hooks/useUIState';
 import { useDiceThroneAudio } from './hooks/useDiceThroneAudio';
 import { playDeniedSound } from '../../lib/audio/useGameAudio';
-import { computeViewModeState, getResponseViewSuggestionKey, shouldSuggestOpponentViewOnResponseChange } from './ui/viewMode';
+import {
+    computeViewModeState,
+    getResponseViewSuggestionKey,
+    resolveResponseAutoViewTransition,
+} from './ui/viewMode';
 import { isDirectDiceInterferenceActor } from './domain/responseWindowGuards';
 import { resolveMoves, type DiceThroneMoveMap } from './ui/resolveMoves';
 import { LayoutSaveButton } from './ui/LayoutSaveButton';
@@ -637,22 +641,25 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
         pendingDamage,
         isTeamDirectActor: isDirectDiceActor,
     });
-    const prevResponseSuggestionKeyRef = React.useRef<string | null>(null);
+    const responseAutoViewSessionRef = React.useRef<{
+        suggestionKey: string;
+        restoreMode: 'self' | 'opponent';
+    } | null>(null);
 
     React.useEffect(() => {
-        const previousSuggestionKey = prevResponseSuggestionKeyRef.current;
-        prevResponseSuggestionKeyRef.current = responseViewSuggestionKey;
-
-        if (!shouldSuggestOpponentViewOnResponseChange({
-            previousSuggestionKey,
+        const transition = resolveResponseAutoViewTransition({
             currentSuggestionKey: responseViewSuggestionKey,
             autoResponseEnabled,
-        })) {
-            return;
-        }
+            manualViewMode,
+            session: responseAutoViewSessionRef.current,
+        });
 
-        setViewMode('opponent');
-    }, [responseViewSuggestionKey, autoResponseEnabled, setViewMode]);
+        responseAutoViewSessionRef.current = transition.nextSession;
+
+        if (transition.nextViewMode && transition.nextViewMode !== manualViewMode) {
+            setViewMode(transition.nextViewMode);
+        }
+    }, [responseViewSuggestionKey, autoResponseEnabled, manualViewMode, setViewMode]);
 
     const isFourPlayerView = otherPids.length > 1;
     const handleOpponentHeaderSelect = React.useCallback((targetPid: string) => {
@@ -800,7 +807,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             setLastUndoCardId(pendingInteraction.sourceCardId);
         }
         // 使用 InteractionSystem 的 CANCEL 命令取消当前交互
-        dispatch(INTERACTION_COMMANDS.CANCEL, {});
+        dispatch(INTERACTION_COMMANDS.CANCEL, { interactionId: pendingInteraction?.id });
     }, [dispatch, pendingInteraction, setLastUndoCardId]);
     const handlePendingBonusSettlementClose = React.useCallback((settlement?: PendingBonusDiceSettlement) => {
         boardBonusDieLogger.info('overlay-close-request', {
@@ -1249,10 +1256,10 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     : null}
                 canResolve={canResolveChoice}
                 onResolve={(optionId) => {
-                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
+                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, interactionId: sysInteraction?.id });
                 }}
                 onResolveWithValue={(optionId, mergedValue) => {
-                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, mergedValue });
+                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, mergedValue, interactionId: sysInteraction?.id });
                 }}
                 locale={locale}
                 statusIconAtlas={statusIconAtlas}
@@ -1308,12 +1315,13 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             <CompareRollOverlay
                 compareRoll={compareRollInteraction}
                 isVisible={true}
+                canResolve={Boolean(compareRollInteraction && compareRollInteraction.playerId === rootPid && !isSpectator)}
                 locale={locale}
                 onResolveOption={(optionId) => {
-                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
+                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId, interactionId: sysInteraction?.id });
                 }}
                 onConfirm={() => {
-                    dispatch(INTERACTION_COMMANDS.CONFIRM, {});
+                    dispatch(INTERACTION_COMMANDS.CONFIRM, { interactionId: compareRollInteraction.id });
                 }}
                 usePortal={false}
             />
@@ -1563,7 +1571,6 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
             return;
         }
         // 防御阶段结束后（进入 main2/discard 等阶段），如果是自己的回合，切换回自己视角
-        // 修复：防御阶段结束后没有自动切换回自己视角的问题
         if (isActivePlayer && (currentPhase === 'main2' || currentPhase === 'discard')) {
             setViewMode('self');
         }
@@ -1893,6 +1900,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                         characterId={viewPlayer.characterId}
                         locale={locale}
                         onMagnifyImage={(image) => setMagnifiedImage(image)}
+                        onMagnifyCard={(card) => setMagnifiedCard(card)}
                         abilityOverlaysRef={abilityOverlaysRef}
                         playerTokens={viewPlayer.tokens}
                     />

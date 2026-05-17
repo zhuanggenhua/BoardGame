@@ -3,6 +3,7 @@ import type { PendingAttack, PendingDamage, TurnPhase } from '../domain/types';
 import {
     computeViewModeState,
     getResponseViewSuggestionKey,
+    resolveResponseAutoViewTransition,
     shouldSuggestOpponentViewOnResponseChange,
 } from '../ui/viewMode';
 
@@ -45,6 +46,74 @@ const runCase = (params: {
 });
 
 describe('DiceThrone 视角逻辑', () => {
+    it('响应窗口自动切到对方视角后，窗口关闭时应恢复原视角', () => {
+        const enter = resolveResponseAutoViewTransition({
+            currentSuggestionKey: 'window:1:0',
+            autoResponseEnabled: true,
+            manualViewMode: 'self',
+            session: null,
+        });
+
+        expect(enter.nextSession).toEqual({
+            suggestionKey: 'window:1:0',
+            restoreMode: 'self',
+        });
+        expect(enter.nextViewMode).toBe('opponent');
+
+        const exit = resolveResponseAutoViewTransition({
+            currentSuggestionKey: null,
+            autoResponseEnabled: true,
+            manualViewMode: 'opponent',
+            session: enter.nextSession,
+        });
+
+        expect(exit.nextSession).toBeNull();
+        expect(exit.nextViewMode).toBe('self');
+    });
+
+    it('如果原本就在对方视角，被动切换结束后应恢复到原本视角', () => {
+        const enter = resolveResponseAutoViewTransition({
+            currentSuggestionKey: 'token:pending-damage-1',
+            autoResponseEnabled: true,
+            manualViewMode: 'opponent',
+            session: null,
+        });
+
+        expect(enter.nextSession).toEqual({
+            suggestionKey: 'token:pending-damage-1',
+            restoreMode: 'opponent',
+        });
+        expect(enter.nextViewMode).toBe('opponent');
+
+        const exit = resolveResponseAutoViewTransition({
+            currentSuggestionKey: null,
+            autoResponseEnabled: true,
+            manualViewMode: 'opponent',
+            session: enter.nextSession,
+        });
+
+        expect(exit.nextSession).toBeNull();
+        expect(exit.nextViewMode).toBe('opponent');
+    });
+
+    it('响应窗口 key 变化但被动切换原因仍存在时，不应提前恢复视角', () => {
+        const transition = resolveResponseAutoViewTransition({
+            currentSuggestionKey: 'window:1:1',
+            autoResponseEnabled: true,
+            manualViewMode: 'opponent',
+            session: {
+                suggestionKey: 'window:1:0',
+                restoreMode: 'self',
+            },
+        });
+
+        expect(transition.nextSession).toEqual({
+            suggestionKey: 'window:1:1',
+            restoreMode: 'self',
+        });
+        expect(transition.nextViewMode).toBeUndefined();
+    });
+
     it('防御阶段 pendingAttack 为空时不强制观战', () => {
         const result = runCase({
             currentPhase: 'defensiveRoll',

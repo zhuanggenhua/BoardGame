@@ -24,6 +24,7 @@ import type {
 import type { TrainingDataRecorder, TrainingDecisionSample } from '../trainingData';
 import smashUpEngineConfig, { smashUpSystemsForTest } from '../../../games/smashup/game';
 import { smashUpAiRuntime } from '../../../games/smashup/ai';
+import { splendorAiRuntime } from '../../../games/splendor/ai';
 import { startSmashUpReactionSession } from '../../../games/smashup/domain/reactionSession';
 
 type EventHandler = (...args: unknown[]) => void | Promise<void>;
@@ -653,6 +654,121 @@ describe('online decision view（epoch 硬约束）', () => {
         expect(result.canDecide).toBe(true);
         expect(result.blockedReason).toBeNull();
         expect(result.visibleState).toBe(sharedState);
+    });
+
+    it('Splendor 主动回合在无 interaction / responseWindow 时应允许走 shared 视图，避免 stale overlay 卡住 watchdog', () => {
+        const sharedState = {
+            core: {
+                hostStarted: true,
+                currentPlayer: '1',
+                pendingResolution: undefined,
+                players: {
+                    '0': {
+                        reservedCardIds: ['t1-white-1'],
+                    },
+                    '1': {
+                        reservedCardIds: ['t1-blue-1'],
+                    },
+                },
+                decks: {
+                    1: ['t1-green-1', 't1-red-1'],
+                    2: ['t2-blue-1'],
+                    3: ['t3-black-1'],
+                },
+            },
+            sys: {
+                phase: 'main1',
+                turnNumber: 4,
+                eventStream: { nextId: 10 },
+                interaction: {
+                    current: undefined,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        } as any;
+
+        const privateOverlay = {
+            ...sharedState,
+            core: {
+                ...sharedState.core,
+                players: {
+                    ...sharedState.core.players,
+                    '0': {
+                        reservedCardIds: ['hidden-reserved-0-0'],
+                    },
+                },
+                decks: {
+                    1: ['hidden-deck-1-0', 'hidden-deck-1-1'],
+                    2: ['hidden-deck-2-0'],
+                    3: ['hidden-deck-3-0'],
+                },
+            },
+            sys: {
+                ...sharedState.sys,
+                eventStream: { nextId: 9 },
+            },
+        } as any;
+
+        const result = resolveOnlineAiDecisionView({
+            runtime: splendorAiRuntime,
+            sharedState,
+            privateOverlay,
+            playerId: '1',
+        });
+
+        expect(result.visibility).toBe('shared');
+        expect(result.canDecide).toBe(true);
+        expect(result.blockedReason).toBeNull();
+        expect(result.visibleState).toBe(sharedState);
+    });
+
+    it('Splendor 若存在 responseWindow 仍应维持 private-required，不得绕过 stale overlay 门禁', () => {
+        const sharedState = {
+            core: {
+                hostStarted: true,
+                currentPlayer: '1',
+            },
+            sys: {
+                phase: 'main1',
+                turnNumber: 4,
+                eventStream: { nextId: 10 },
+                interaction: {
+                    current: undefined,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: {
+                        id: 'splendor-response-window',
+                        windowType: 'afterPlay',
+                        sourceId: 'splendor:test',
+                        responderQueue: ['1'],
+                        currentResponderIndex: 0,
+                    },
+                },
+            },
+        } as any;
+
+        const privateOverlay = {
+            ...sharedState,
+            sys: {
+                ...sharedState.sys,
+                eventStream: { nextId: 9 },
+            },
+        } as any;
+
+        const result = resolveOnlineAiDecisionView({
+            runtime: splendorAiRuntime,
+            sharedState,
+            privateOverlay,
+            playerId: '1',
+        });
+
+        expect(result.visibility).toBe('private-required');
+        expect(result.canDecide).toBe(false);
+        expect(result.blockedReason).toBe('stale-private-overlay');
     });
 });
 
@@ -1353,7 +1469,7 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
         expect(candidate?.requiresConfirmedAdvancePhase).toBe(true);
         expect(candidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'pass' },
+            payload: { interactionId: 'reaction-order-choice', optionId: 'pass' },
         });
     });
 
@@ -1401,7 +1517,7 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
         expect(candidate?.requiresConfirmedAdvancePhase).toBe(true);
         expect(candidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'trigger-base-arena' },
+            payload: { interactionId: 'mandatory-reaction-order-choice', optionId: 'trigger-base-arena' },
         });
     });
 
@@ -1531,7 +1647,7 @@ describe('resolveForceEndTurnForStalledAi（action-loop）', () => {
         expect(candidate?.requiresConfirmedAdvancePhase).toBe(true);
         expect(candidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'skip' },
+            payload: { interactionId: 'card-bye-bye-1777601349600', optionId: 'skip' },
         });
     });
 
@@ -2323,6 +2439,84 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(recorder.samples[0].postState).toBeTruthy();
     });
 
+    it('教程 AI 裸 RESPOND 经过 socket command 入口时，应自动补当前 interactionId', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-tutorial-ai-command-inject', {
+            initialState: {
+                G: {
+                    core: { currentPlayer: '0' },
+                    sys: {
+                        phase: 'main',
+                        turnNumber: 1,
+                        tutorial: { active: true },
+                        interaction: {
+                            current: {
+                                id: 'tutorial-choice-1',
+                                playerId: '1',
+                            },
+                            queue: [],
+                            isBlocked: false,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata(),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            authenticate: async (_matchID, playerID, credentials, metadata) => {
+                return metadata.players[playerID]?.credentials === credentials;
+            },
+        });
+        server.start();
+
+        const serverInternal = server as unknown as {
+            handleCommand: (
+                matchID: string,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+        const handleCommandSpy = vi.spyOn(serverInternal, 'handleCommand').mockResolvedValue(true);
+
+        const socket = new MockSocket('socket-tutorial-ai-command-inject');
+        io.gameNamespace.connectSocket(socket);
+        await socket.clientEmit('sync', 'match-tutorial-ai-command-inject', '0', 'cred-0');
+        socket.sent.length = 0;
+
+        await socket.clientEmit(
+            'command',
+            'match-tutorial-ai-command-inject',
+            'SYS_INTERACTION_RESPOND',
+            {
+                optionId: 'skip',
+                __tutorialPlayerId: '1',
+                __tutorialAiCommand: true,
+            },
+            'cred-0',
+        );
+
+        expect(handleCommandSpy).toHaveBeenCalledTimes(1);
+        expect(handleCommandSpy).toHaveBeenCalledWith(
+            'match-tutorial-ai-command-inject',
+            '1',
+            'SYS_INTERACTION_RESPOND',
+            {
+                interactionId: 'tutorial-choice-1',
+                optionId: 'skip',
+            },
+        );
+    });
+
     it('training recorder 失败不应影响命令执行', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -2601,6 +2795,156 @@ describe('GameTransportServer（离座与重连）', () => {
             playerId: '1',
             incidentKind: 'force-end-turn-success',
         }));
+    });
+
+    it('online AI watchdog 在 AI seat 已离线时应立即接管 active-turn，而不是继续等待宿主页恢复', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-watchdog-offline-ai-immediate-takeover', {
+            initialState: createOnlineAiRecoveryState(),
+            metadata: createOnlineAiRecoveryMetadata({
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'remote-ai' },
+                },
+            }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-offline-ai-immediate-takeover');
+        expect(match).toBeTruthy();
+        expect(match.connections.get('1')?.size ?? 0).toBe(0);
+
+        const executed: string[] = [];
+        vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType) => {
+            executed.push(commandType);
+            expect(playerID).toBe('1');
+
+            if (commandType === 'ADVANCE_PHASE') {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    core: {
+                        ...activeMatch.state.core,
+                        activePlayerId: '0',
+                        currentPlayerIndex: 0,
+                    },
+                    sys: {
+                        ...activeMatch.state.sys,
+                        phase: 'main1',
+                        turnNumber: 5,
+                    },
+                };
+                return true;
+            }
+
+            return false;
+        });
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        for (let i = 0; i < 5; i += 1) {
+            await nextTick();
+        }
+
+        expect(executed).toEqual(['ADVANCE_PHASE']);
+        expect(match.state.core.activePlayerId).toBe('0');
+        expect(match.state.sys.phase).toBe('main1');
+    });
+
+    it('online AI watchdog 在 remote-ai seat 已离线时应立即接管 response-window，而不是继续等待宿主页恢复', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+
+        await storage.createMatch('match-watchdog-offline-remote-ai-response-window', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '0',
+                phase: 'defensiveRoll',
+                responseWindow: {
+                    current: {
+                        id: 'response-window-offline-remote-ai-1',
+                        windowType: 'afterRollConfirmed',
+                        sourceId: 'attack-1',
+                        responderQueue: ['1'],
+                        currentResponderIndex: 0,
+                    },
+                },
+            }),
+            metadata: createOnlineAiRecoveryMetadata({
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'remote-ai' },
+                },
+            }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfig()],
+            onlineAiRecoveryTickMs: 0,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+            ) => Promise<boolean>;
+        };
+
+        const match = await serverInternal.loadMatch('match-watchdog-offline-remote-ai-response-window');
+        expect(match).toBeTruthy();
+        expect(match.connections.get('1')?.size ?? 0).toBe(0);
+
+        const executed: string[] = [];
+        vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType) => {
+            executed.push(commandType);
+            expect(playerID).toBe('1');
+
+            if (commandType === 'RESPONSE_PASS') {
+                activeMatch.state = {
+                    ...activeMatch.state,
+                    sys: {
+                        ...activeMatch.state.sys,
+                        responseWindow: {
+                            ...(activeMatch.state.sys?.responseWindow ?? {}),
+                            current: undefined,
+                        },
+                    },
+                };
+                return true;
+            }
+
+            return false;
+        });
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        for (let i = 0; i < 5; i += 1) {
+            await nextTick();
+        }
+
+        expect(executed).toEqual(['RESPONSE_PASS']);
+        expect(match.state.sys.responseWindow?.current).toBeUndefined();
     });
 
     it('online AI watchdog 完成 legal action 恢复后也应写入系统反馈', async () => {
@@ -2933,6 +3277,72 @@ describe('GameTransportServer（离座与重连）', () => {
         };
 
         await serverInternal.loadMatch('match-watchdog-splendor-pregame-noop');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+
+        expect(executeSpy).not.toHaveBeenCalled();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+        executeSpy.mockRestore();
+    });
+
+    it('online AI watchdog 在 Splendor turn0 / unknown-phase 残态下不得写 legal_action_unavailable 反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-splendor-unknown-phase-noop', {
+            initialState: {
+                G: {
+                    core: {
+                        currentPlayer: '1',
+                    },
+                    sys: {
+                        phase: '',
+                        turnNumber: 0,
+                        eventStream: { nextId: 94 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'splendor' }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId('splendor')],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: { suppressBroadcast?: boolean },
+            ) => Promise<boolean>;
+        };
+
+        await serverInternal.loadMatch('match-watchdog-splendor-unknown-phase-noop');
         const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
 
         await serverInternal.runOnlineAiRecoveryTick();
@@ -3638,7 +4048,10 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(executed.map((item) => item.commandType)).toEqual([
                 INTERACTION_COMMANDS.RESPOND,
             ]);
-            expect(executed[0]?.payload).toEqual({ optionId: 'card-0' });
+            expect(executed[0]?.payload).toEqual({
+                interactionId: 'smashup-extra-action-choice',
+                optionId: 'card-0',
+            });
             expect(match.state.core.activePlayerId).toBe('1');
             expect(match.state.sys.phase).toBe('playCards');
             expect(match.state.sys.turnNumber).toBe(4);
@@ -3786,7 +4199,10 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(executed.map((item) => item.commandType)).toEqual([
                 INTERACTION_COMMANDS.RESPOND,
             ]);
-            expect(executed[0]?.payload).toEqual({ optionId: 'skip' });
+            expect(executed[0]?.payload).toEqual({
+                interactionId: 'smashup-extra-action-choice-stale-overlay',
+                optionId: 'skip',
+            });
             expect(match.state.core.activePlayerId).toBe('1');
             expect(match.state.sys.turnNumber).toBe(4);
             expect(broadcastSpy).toHaveBeenCalled();
@@ -3860,7 +4276,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         label: '放弃这次额外战术',
                         commands: [{
                             type: INTERACTION_COMMANDS.RESPOND,
-                            payload: { optionId: 'skip' },
+                            payload: { interactionId: 'smashup-extra-action-choice-stale-overlay', optionId: 'skip' },
                         }],
                     },
                     attemptKey: 'watchdog-emergency-player-view',
@@ -4374,7 +4790,7 @@ describe('GameTransportServer（离座与重连）', () => {
                     label: 'Pass',
                     commands: [{
                         type: INTERACTION_COMMANDS.RESPOND,
-                        payload: { optionId: 'pass' },
+                        payload: { interactionId: 'reaction-choice-1', optionId: 'pass' },
                     }],
                 },
                 attemptKey: 'watchdog-ai-action',
@@ -4517,7 +4933,7 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(resolutionSpy).toHaveBeenCalled();
             expect(executed[0]).toEqual({
                 commandType: INTERACTION_COMMANDS.RESPOND,
-                payload: { optionId: 'trigger-base-arena' },
+                payload: { interactionId: 'reaction-choice-mandatory-order', optionId: 'trigger-base-arena' },
             });
             expect(match.state.sys.interaction?.current).toBeUndefined();
         } finally {
@@ -4619,7 +5035,10 @@ describe('GameTransportServer（离座与重连）', () => {
                 executed.push({ commandType, payload });
                 expect(playerID).toBe('3');
                 if (commandType === INTERACTION_COMMANDS.RESPOND) {
-                    expect(payload).toEqual({ optionId: 'trigger:onTurnEnd:steampunk_difference_engine:0:0' });
+                    expect(payload).toEqual({
+                        interactionId: 'smashup_reaction_turn-end:3:2:0_3_0',
+                        optionId: 'trigger:onTurnEnd:steampunk_difference_engine:0:0',
+                    });
                     match.state = {
                         ...match.state,
                         core: {
@@ -4683,7 +5102,10 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(executed).toEqual([
                 {
                     commandType: INTERACTION_COMMANDS.RESPOND,
-                    payload: { optionId: 'trigger:onTurnEnd:steampunk_difference_engine:0:0' },
+                    payload: {
+                        interactionId: 'smashup_reaction_turn-end:3:2:0_3_0',
+                        optionId: 'trigger:onTurnEnd:steampunk_difference_engine:0:0',
+                    },
                 },
                 {
                     commandType: 'ADVANCE_PHASE',
@@ -6026,7 +6448,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         label: 'Pass',
                         commands: [{
                             type: INTERACTION_COMMANDS.RESPOND,
-                            payload: { optionId: 'pass' },
+                            payload: { interactionId: 'dt-response-choice-1', optionId: 'pass' },
                         }],
                     },
                 },
@@ -6060,7 +6482,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         label: 'Pass again',
                         commands: [{
                             type: INTERACTION_COMMANDS.RESPOND,
-                            payload: { optionId: 'pass' },
+                            payload: { interactionId: 'dt-response-choice-2', optionId: 'pass' },
                         }],
                     },
                 },
@@ -6103,7 +6525,7 @@ describe('GameTransportServer（离座与重连）', () => {
             if (commandType === 'SYS_INTERACTION_RESPOND') {
                 const currentInteractionId = (activeMatch.state.sys?.interaction?.current as { id?: string } | undefined)?.id;
                 if (currentInteractionId === 'dt-response-choice-1') {
-                    expect(payload).toEqual({ optionId: 'pass' });
+                    expect(payload).toEqual({ interactionId: 'dt-response-choice-1', optionId: 'pass' });
                     activeMatch.state = {
                         ...activeMatch.state,
                         sys: {
@@ -6129,7 +6551,7 @@ describe('GameTransportServer（离座与重连）', () => {
                 }
 
                 if (currentInteractionId === 'dt-response-choice-2') {
-                    expect(payload).toEqual({ optionId: 'pass' });
+                    expect(payload).toEqual({ interactionId: 'dt-response-choice-2', optionId: 'pass' });
                     activeMatch.state = {
                         ...activeMatch.state,
                         sys: {
@@ -6774,7 +7196,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         label: 'Pass',
                         commands: [{
                             type: INTERACTION_COMMANDS.RESPOND,
-                            payload: { optionId: 'pass' },
+                            payload: { interactionId: 'reaction-choice-1', optionId: 'pass' },
                         }],
                     },
                     attemptKey: 'watchdog-chain-step-1',
@@ -6791,7 +7213,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         label: 'Pass',
                         commands: [{
                             type: INTERACTION_COMMANDS.RESPOND,
-                            payload: { optionId: 'pass' },
+                            payload: { interactionId: 'reaction-choice-2', optionId: 'pass' },
                         }],
                     },
                     attemptKey: 'watchdog-chain-step-2',
@@ -6836,7 +7258,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
             const currentInteractionId = (activeMatch.state.sys?.interaction?.current as { id?: string } | undefined)?.id;
             if (currentInteractionId === 'reaction-choice-1') {
-                expect(payload).toEqual({ optionId: 'pass' });
+                expect(payload).toEqual({ interactionId: 'reaction-choice-1', optionId: 'pass' });
                 activeMatch.state = createOnlineAiRecoveryState({
                     activePlayerId: '1',
                     phase: 'scoreBases',
@@ -6874,7 +7296,7 @@ describe('GameTransportServer（离座与重连）', () => {
             }
 
             if (currentInteractionId === 'reaction-choice-2') {
-                expect(payload).toEqual({ optionId: 'pass' });
+                expect(payload).toEqual({ interactionId: 'reaction-choice-2', optionId: 'pass' });
                 activeMatch.state = createOnlineAiRecoveryState({
                     activePlayerId: '0',
                     phase: 'draw',
@@ -6969,7 +7391,7 @@ describe('GameTransportServer（离座与重连）', () => {
                         label: 'Pass',
                         commands: [{
                             type: INTERACTION_COMMANDS.RESPOND,
-                            payload: { optionId: 'pass' },
+                            payload: { interactionId: 'reaction-choice-followup', optionId: 'pass' },
                         }],
                     },
                     attemptKey: 'watchdog-followup-step-1',
@@ -7011,7 +7433,7 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(playerID).toBe('1');
 
             if (commandType === 'SYS_INTERACTION_RESPOND') {
-                expect(payload).toEqual({ optionId: 'pass' });
+                expect(payload).toEqual({ interactionId: 'reaction-choice-followup', optionId: 'pass' });
                 activeMatch.state = createOnlineAiRecoveryState({
                     activePlayerId: '1',
                     phase: 'scoreBases',
@@ -7424,7 +7846,7 @@ describe('GameTransportServer（离座与重连）', () => {
             vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (match, playerID, commandType, payload) => {
                 expect(playerID).toBe('1');
                 expect(commandType).toBe(INTERACTION_COMMANDS.RESPOND);
-                expect(payload).toEqual({ optionId: 'pass' });
+                expect(payload).toEqual({ interactionId: 'reaction-choice-command-failure', optionId: 'pass' });
                 match.lastCommandFailureReason = 'invalid_interaction_response: stale option';
                 return false;
             });
@@ -7438,6 +7860,94 @@ describe('GameTransportServer（离座与重连）', () => {
                 matchId: 'match-watchdog-command-failure-diagnostic',
                 incidentKind: 'force-end-turn-failed',
                 reason: 'visible-interaction:recover-interaction:command_failed:SYS_INTERACTION_RESPOND:invalid_interaction_response: stale option',
+            }));
+        } finally {
+            resolutionSpy.mockRestore();
+        }
+    });
+
+    it('online AI watchdog 的 legal-action 若已命令失败，不应再用同一条 ADVANCE_PHASE 重试并吞成裸 command_failed', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-active-turn-advance-legal-action-failure', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                currentPlayerIndex: 1,
+                turnOrder: ['0', '1'],
+                phase: 'playCards',
+                turnNumber: 0,
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+                eventStreamNextId: 554,
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+        });
+
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
+            kind: 'action',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'watchdog-active-turn-advance-phase',
+                source: 'local-ai',
+                action: {
+                    actionId: 'advance-phase:playCards:1',
+                    kind: 'advance-phase',
+                    label: '结束当前阶段',
+                    commands: [{ type: 'ADVANCE_PHASE', payload: {} }],
+                },
+            },
+        });
+
+        try {
+            const server = new GameTransportServer({
+                io: io as unknown as any,
+                storage,
+                games: [createEngineConfigWithId('smashup')],
+                onlineAiRecoveryTickMs: 0,
+                onlineAiRecoveryTimeoutMs: 0,
+                onlineAiRecoveryFailureReportThreshold: 1,
+                onlineAiFeedbackReporter: feedbackReporter,
+            });
+
+            const serverInternal = server as unknown as {
+                loadMatch: (matchID: string) => Promise<any>;
+                runOnlineAiRecoveryTick: () => Promise<void>;
+                executeCommandInternal: (
+                    match: any,
+                    playerID: string,
+                    commandType: string,
+                    payload: unknown,
+                    options?: { suppressBroadcast?: boolean },
+                ) => Promise<boolean>;
+            };
+
+            await serverInternal.loadMatch('match-watchdog-active-turn-advance-legal-action-failure');
+            const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (match, playerID, commandType, payload) => {
+                expect(playerID).toBe('1');
+                expect(commandType).toBe('ADVANCE_PHASE');
+                expect(payload).toEqual({});
+                match.lastCommandFailureReason = 'pipeline_error: test advance denied';
+                return false;
+            });
+
+            await serverInternal.runOnlineAiRecoveryTick();
+            await serverInternal.runOnlineAiRecoveryTick();
+            await nextTick();
+            await nextTick();
+
+            expect(executeSpy).toHaveBeenCalledTimes(1);
+            expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-active-turn-advance-legal-action-failure',
+                incidentKind: 'force-end-turn-failed',
+                reason: 'active-turn:follow-up-advance:legal_action_command_failed:ADVANCE_PHASE:pipeline_error: test advance denied',
             }));
         } finally {
             resolutionSpy.mockRestore();
@@ -7780,7 +8290,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
         expect(firstCommand).toEqual({
             type: 'SYS_INTERACTION_CANCEL',
-            payload: {},
+            payload: { interactionId: 'dt-interaction-empty' },
         });
     });
 
@@ -7788,6 +8298,7 @@ describe('GameTransportServer（离座与重连）', () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
         const executedCommandTypes: string[] = [];
+        const executedCommands: Array<{ type: string; payload?: unknown }> = [];
 
         const guardedEngineConfig: GameEngineConfig = {
             ...createEngineConfig(),
@@ -7796,8 +8307,9 @@ describe('GameTransportServer（离座与重连）', () => {
                     id: 'throw-on-command',
                     name: 'throw-on-command',
                     priority: 1,
-                    beforeCommand: ({ command }: { command: { type: string } }) => {
+                    beforeCommand: ({ command }: { command: { type: string; payload?: unknown } }) => {
                         executedCommandTypes.push(command.type);
+                        executedCommands.push({ type: command.type, payload: command.payload });
                         if (command.type === 'TRIGGER_ERROR' || command.type === INTERACTION_COMMANDS.CANCEL) {
                             throw new Error(`forced-${command.type}`);
                         }
@@ -7855,6 +8367,10 @@ describe('GameTransportServer（离座与重连）', () => {
 
         expect(success).toBe(false);
         expect(executedCommandTypes).toEqual(['TRIGGER_ERROR', INTERACTION_COMMANDS.CANCEL]);
+        expect(executedCommands[1]).toEqual({
+            type: INTERACTION_COMMANDS.CANCEL,
+            payload: { interactionId: 'interaction-cancel-recursion-guard' },
+        });
     });
 
     it('online AI watchdog 响应循环时应强制关闭响应窗口', async () => {
@@ -8386,7 +8902,7 @@ describe('GameTransportServer（离座与重连）', () => {
 
             if (commandType === 'SYS_INTERACTION_RESPOND') {
                 expect(playerID).toBe('1');
-                expect(payload).toEqual({ optionId: 'skip' });
+                expect(payload).toEqual({ interactionId: 'card-bye-bye-1777601349600', optionId: 'skip' });
                 hiddenResolved = true;
                 match.state = {
                     ...match.state,

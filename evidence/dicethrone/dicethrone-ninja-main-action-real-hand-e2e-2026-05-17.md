@@ -94,6 +94,6 @@ npm run test:e2e:ci:file -- dicethrone-treant-ninja-mechanics.e2e.ts "忍者训�
 
 残余范围：
 
-- Ninja 升级卡 `upgrade-blink-2`、`upgrade-going-forward-2`、`upgrade-slash-2`、`upgrade-shadow-step-2`、`upgrade-smoke-screen-2`、`upgrade-shadow-fang-2`、`upgrade-poison-blade-2`、`upgrade-death-blossom-2` 仍缺真实手牌 L3。
+- Ninja 升级卡真实手牌 L3 已另见 `evidence/dicethrone/dicethrone-ninja-upgrade-real-hand-e2e-2026-05-17.md`；升级后技能本体所有骰面/分支仍不能由本文件外推。
 - Ninja 多个基础/升级技能本体仍只有静态/代表链证据，不能宣称 Ninja 全量完成。
-- `smoke_bomb` 失败骰面分支仍缺真实 UI/E2E。
+- `smoke_bomb` 失败骰面分支已另见 `evidence/dicethrone/dicethrone-ninja-smoke-bomb-failure-e2e-2026-05-17.md`；该 token 分支证据不改变本文件只覆盖三张主阶段行动卡的范围。

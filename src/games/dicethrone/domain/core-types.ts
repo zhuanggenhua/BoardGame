@@ -580,6 +580,7 @@ export interface DiceThroneCore {
     /** Token 定义（包含状态效果和可消耗道具） */
     tokenDefinitions: TokenDef[];
     activatingAbilityId?: string;
+    currentChoiceSourceAbilityId?: string;
     lastEffectSourceByPlayerId?: Record<PlayerId, string | undefined>;
     lastSoldCardId?: string;
     /** 待处理的伤害（等待 Token 响应） */

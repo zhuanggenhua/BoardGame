@@ -16,17 +16,23 @@ import {
 import {
     makeMinion,
     makeCard,
+    makeBase,
     makePlayer,
     makeState,
     makeMatchState,
+    getInteractionsFromResult,
+    getPromptHandlerData,
     getSimpleChoicePrompt,
     getCurrentPromptResolutionFrameId,
     getPromptOption,
     getPromptOptions,
+    getPromptSourceId,
     respondToPrompt,
     expectNoPrompt,
+    triggerBaseAbilityWithMS,
 } from '../helpers';
 import { runCommand, defaultTestRandom } from '../testRunner';
+import { resolveAbilityRuntimePrompt } from '../../domain/abilityRuntime';
 
 beforeAll(() => {
     clearRegistry();
@@ -36,6 +42,19 @@ beforeAll(() => {
     clearInteractionHandlers();
     initAllAbilities();
 });
+
+function makeCtx(overrides: Partial<BaseAbilityContext>): BaseAbilityContext {
+    const state = overrides.state ?? makeState();
+    return {
+        state,
+        matchState: makeMatchState(state),
+        baseIndex: 0,
+        baseDefId: 'test_base',
+        playerId: '0',
+        now: 1000,
+        ...overrides,
+    };
+}
 
 describe('Fairies abilities', () => {
     it('fairies_titania 可以先选择回手分支，再选择具体随从移回其拥有者手牌', () => {
@@ -573,5 +592,116 @@ describe('Fairies abilities', () => {
         expect(resolved.finalState.core.players['0'].minionLimit).toBe(1);
         expect(resolved.finalState.core.players['0'].baseLimitedMinionQuota?.[0]).toBe(1);
         expect(resolved.finalState.core.titans?.find(titan => titan.uid === 'spirit-1')?.metadata?.spiritOfTheForestUsedTurn).toBe(1);
+    });
+
+    it('base_fairy_ring 在非行动阶段会把额外分支标为 immediate', () => {
+        const core = makeState({
+            bases: [makeBase('base_fairy_ring', [makeMinion('m1', 'robot_microbot_alpha', '0', 3)])],
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayedPerBase: { 0: 1 },
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const ms = makeMatchState(core);
+        ms.sys.phase = 'startTurn';
+
+        const triggerCtx = makeCtx({
+            state: core,
+            matchState: ms,
+            baseDefId: 'base_fairy_ring',
+            baseIndex: 0,
+            playerId: '0',
+            minionUid: 'm1',
+        });
+        const result = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
+
+        expect(result.events).toHaveLength(0);
+        const prompt = getInteractionsFromResult(result)[0] as any;
+        expect(getPromptSourceId(prompt)).toBe('base_fairy_ring');
+
+        const minionTrigger = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
+        const minionPrompt = getInteractionsFromResult(minionTrigger)[0] as any;
+        const minionOption = getPromptOption(minionPrompt, (entry: any) => entry.value?.branchId === 'extra_minion');
+        expect(minionOption).toBeDefined();
+
+        const minionResolved = resolveAbilityRuntimePrompt(
+            minionTrigger.matchState!,
+            '0',
+            minionOption.value,
+            getPromptHandlerData(minionPrompt),
+            defaultTestRandom,
+            1000,
+        );
+
+        const actionTrigger = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', triggerCtx);
+        const actionPrompt = getInteractionsFromResult(actionTrigger)[0] as any;
+        const actionOption = getPromptOption(actionPrompt, (entry: any) => entry.value?.branchId === 'extra_action');
+        expect(actionOption).toBeDefined();
+        const actionResolved = resolveAbilityRuntimePrompt(
+            actionTrigger.matchState!,
+            '0',
+            actionOption.value,
+            getPromptHandlerData(actionPrompt),
+            defaultTestRandom,
+            1000,
+        );
+
+        const minionEvent = minionResolved?.events.find(e => e.type === SU_EVENTS.LIMIT_MODIFIED) as any;
+        const actionEvent = actionResolved?.events.find(e => e.type === SU_EVENTS.LIMIT_MODIFIED) as any;
+        expect(minionEvent?.payload.playTiming).toBe('immediate');
+        expect(actionEvent?.payload.playTiming).toBe('immediate');
+    });
+
+    it('base_fairy_ring 非首次打出时不触发', () => {
+        const core = makeState({
+            bases: [makeBase('base_fairy_ring', [
+                makeMinion('m1', 'robot_microbot_alpha', '0', 3),
+                makeMinion('m2', 'robot_microbot_beta', '0', 2),
+            ])],
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayedPerBase: { 0: 2 },
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', makeCtx({
+            state: core,
+            matchState: makeMatchState(core),
+            baseDefId: 'base_fairy_ring',
+            baseIndex: 0,
+            minionUid: 'm2',
+        }));
+
+        expect(result.events).toHaveLength(0);
+        expect(getInteractionsFromResult(result)).toHaveLength(0);
+    });
+
+    it('base_fairy_ring 之前有随从被消灭后再打出仍不触发', () => {
+        const core = makeState({
+            bases: [makeBase('base_fairy_ring', [
+                makeMinion('m2', 'robot_microbot_beta', '0', 2),
+            ])],
+            players: {
+                '0': makePlayer('0', {
+                    minionsPlayedPerBase: { 0: 2 },
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = triggerBaseAbilityWithMS('base_fairy_ring', 'onMinionPlayed', makeCtx({
+            state: core,
+            matchState: makeMatchState(core),
+            baseDefId: 'base_fairy_ring',
+            baseIndex: 0,
+            minionUid: 'm2',
+        }));
+
+        expect(result.events).toHaveLength(0);
+        expect(getInteractionsFromResult(result)).toHaveLength(0);
     });
 });

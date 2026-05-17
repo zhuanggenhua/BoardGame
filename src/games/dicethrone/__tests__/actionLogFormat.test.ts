@@ -395,6 +395,55 @@ describe('formatDiceThroneActionEntry', () => {
         expect(seg?.paramI18nKeys).toContain('effectLabel');
     });
 
+    it('compare-roll-choice 应生成对决结果日志，方便双方追踪对掷发生了什么', () => {
+        const state = createState();
+        const command: Command = {
+            type: 'ADVANCE_PHASE',
+            playerId: '1',
+            payload: {},
+            timestamp: 41,
+        };
+        const compareRollEvent: GameEvent = {
+            type: 'CHOICE_REQUESTED',
+            payload: {
+                playerId: '1',
+                sourceAbilityId: 'duel',
+                titleKey: 'compareRoll.gunslingerDuel.title',
+                compareRoll: {
+                    contestants: [
+                        {
+                            playerId: '1',
+                            labelKey: 'compareRoll.gunslingerDuel.defender',
+                            roll: 6,
+                            characterId: 'gunslinger',
+                        },
+                        {
+                            playerId: '0',
+                            labelKey: 'compareRoll.gunslingerDuel.attacker',
+                            roll: 1,
+                            characterId: 'monk',
+                        },
+                    ],
+                    resultTextKey: 'compareRoll.gunslingerDuel.win',
+                },
+            },
+            timestamp: 41,
+        };
+
+        const result = formatDiceThroneActionEntry({
+            command,
+            state,
+            events: [compareRollEvent],
+        });
+        const entries = normalizeEntries(result);
+
+        const compareRollEntry = entries.find((entry) => entry.kind === 'COMPARE_ROLL');
+        expect(compareRollEntry).toBeTruthy();
+        expect(compareRollEntry?.segments.some((seg) => seg.type === 'i18n' && (seg as { key: string }).key === 'actionLog.compareRollPrefix')).toBe(true);
+        expect(compareRollEntry?.segments.some((seg) => seg.type === 'i18n' && (seg as { key: string }).key === 'compareRoll.gunslingerDuel.win')).toBe(true);
+        expect(compareRollEntry?.segments.some((seg) => seg.type === 'diceResult')).toBe(true);
+    });
+
     it('效果 entries 的 timestamp 严格大于命令 entry（newest-first 排序正确）', () => {
         const state = createState();
         const command: Command = {

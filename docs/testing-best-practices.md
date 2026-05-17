@@ -60,6 +60,7 @@
 - `e2e/<gameId>/legacy-root/` 仅用于安放从根目录迁出的历史 E2E 独有用例，保留覆盖但标明债务来源；新增用例不得进入该目录。
 - 测试文件必须按行为簇命名和归档：能力簇、交互链、配置合同、页面行为、审计合同分别放到清晰目录或文件中。
 - 禁止继续新增 `new*`、`misc`、`regression`、`feedback`、`fixes` 这类可无限吸纳场景的泛名测试文件；已有泛名文件只能迁出或收敛，不作为新增用例入口。
+- Smash Up 的基地能力合同默认优先放到 `src/games/smashup/__tests__/bases/` 下的专项目文件；根级仅保留系统/集成/保护类白名单文件，禁止继续新增类似 `baseAbilitiesPrompt` 这种把多个基地合同塞在一起的聚合壳。
 - 当一个测试文件已经覆盖多个无关派系、页面、反馈编号、规则簇或系统层，新增用例必须优先落到更聚焦的新文件；只有同一行为簇内的少量补充才允许追加。
 - 拆分不是删除覆盖。迁移用例时必须保留该行为簇至少 1 条代表性路径，并运行迁出后的新文件；若原巨型文件仍保留大量相关场景，应按风险决定是否复跑原文件。
 - 示例：Smash Up 音效配置测试应落到 `src/games/smashup/__tests__/audio/faction-audio-config.test.ts`，不再塞回 `newFactionAbilities.test.ts`。
@@ -83,9 +84,10 @@
 
 ### 0.2.1 runtime callback seam 门禁
 
-- 只要实现经过 `prompt -> onResolve -> helper`、`reaction choose -> resolver`、`branching choice -> handler` 这类分段 callback seam，测试最少要覆盖一条“入口触发 + resolve 结算 + 最终 reduce 状态”的完整链，不能只测 prompt 创建或 options 生成。
-- 当一次重构把内联事件改为 shared helper 时，必须新增或升级测试，打到 helper 真正执行的那一层。只看入口、不看最终 `CARDS_DRAWN` / `DECK_RESHUFFLED` / 伤害 / 资源变化，默认视为测试链路不完整。
-- 对于卡牌层本身不拥有随机语义、只是声明“抽牌/摸牌/结算”的场景，优先使用接受整份 runtime args/context 的 helper，避免每个 `onResolve` 手写解构 `random`。只有卡牌规则真的要自己洗牌、随机选牌、掷骰时，才在 callback 层显式消费 `random`。
+- 只要实现经过 `prompt -> onResolve -> helper`、`reaction choose -> resolver`、`branching choice -> handler`、`custom action -> resolve` 这类分段 callback seam，测试最少要覆盖一条“入口触发 + resolve 结算 + 最终 reduce 状态”的完整链，不能只测 prompt 创建或 options 生成。
+- 当一次重构把内联事件改为 shared helper / primitive 时，必须新增或升级测试，打到 helper 真正执行的那一层。只看入口、不看最终 `CARDS_DRAWN` / `DECK_RESHUFFLED` / 伤害 / 资源变化 / 阶段推进，默认视为测试链路不完整。
+- 对于声明层本身不拥有随机或时序语义、只是声明“抽牌/摸牌/结算/造成伤害/重掷/目标选择”的场景，优先使用接受整份 runtime args/context 的 helper，避免每个 `onResolve` / `resolve` 手写解构 `random`、`timestamp`、`matchState`。只有规则本身真的拥有随机、洗牌、排序、多次消费顺序等语义时，才在 callback 层显式消费这些 runtime 依赖。
+- 职责边界统一约束为三层：声明层只表达意图与业务参数；runtime seam 层负责携带本次交互上下文；primitive / helper 层负责消费运行时依赖并产出权威结果。测试应该优先保护这个边界，而不是默许声明层直接手拼底层依赖。
 
 ### 1. 使用正确的测试工具
 
@@ -740,12 +742,15 @@ test: {
 13. **尺寸类 UI 回归必须断言最终包围盒**：按钮、入口、面板、卡槽等“看起来过大/过小”的问题，E2E 必须对最终 `boundingBox()` 或等价尺寸做断言；不要只看 className、设计稿尺寸或截图主观判断
 14. **必要时同时断言最小值和最大值**：只断言“至少可点”不够，像“按钮被做肥”这类回归必须补最大尺寸约束，避免额外 padding、默认 `min-height`、浏览器按钮样式兜底蒙混过关
 15. **先查最终样式，再怪文本或自适应**：文本按钮异常变大时，优先检查 `padding`、`gap`、`min-height`、默认 button 样式和父容器约束；禁止未经验证就把问题归因于“文本自适应”
-16. **isolated 启动超时先看 bootstrap 日志**：`global-setup` 已支持 fail-fast；若出现 `/games`、`/health`、`/__ready` 就绪超时，优先查看 `.tmp/playwright-bootstrap-<scope>-worker-<id>.log` 和错误里附带的日志尾部内容，不要先改业务代码
+16. **时序/重复挂载/动画是否播出这类问题，截图不是充分证据**：凡用户反馈“弹窗半开后重开 / 动画没播 / 浮字丢了 / 只播结果没播过程 / 一闪而过 / 打开两次”这类生命周期问题，E2E 必须补机器可复查的时序证据（例如交互 id 轨迹、modal/overlay 挂载次数、可见段数、事件流与最终 DOM 消费日志、关键元素 `boundingBox`/opacity/transform 采样）。截图仍然要看，但只能证明“画面长什么样”，不能单独证明“中间没有重开/没有丢事件/动画确实播过”。
+17. **isolated 启动超时先看 bootstrap 日志**：`global-setup` 已支持 fail-fast；若出现 `/games`、`/health`、`/__ready` 就绪超时，优先查看 `.tmp/playwright-bootstrap-<scope>-worker-<id>.log` 和错误里附带的日志尾部内容，不要先改业务代码
 
 ### E2E 截图结论约束（补充）
 
 1. 必须先“看图并对照需求”再“下结论”：没有人工核对截图，或虽已看图但尚未确认其满足本轮需求，不得说“正常”或“已修复”。
 2. 必须先“看图并确认符合需求”再“写文档”：证据文档中的结论段不得早于人工看图和需求核对产生，禁止先写结论再回头补观察。
+2.1. 对用户症状的文字复述必须与用户原话等价：用户说“两次缩放”“弹两次”“没播动画”，就按这个症状原样记录；没有证据前不要自行改写成“像重开”“像二段”“像卡了一下”。
+2.2. 若当前证据只支持相近现象，不得写成“已复现原问题”；必须明确标注“仅复现到相近现象”或“未复现原症状”。
 3. 若失败产物目录无图，结论必须显式标注“无图可核对”，并说明为什么无图。
 4. 向他人汇报时必须提供已核对截图的完整工作区绝对路径和可见证据点，路径必须可直接复制使用（不是只贴文件夹名、相对路径或目录名）。
 5. 打开截图所在文件夹时，每轮只打开 1 个目标文件夹；不要连续列出或打开多个兄弟目录刷屏。

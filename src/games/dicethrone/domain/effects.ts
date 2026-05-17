@@ -503,7 +503,8 @@ function resolveEffectAction(
                     damageScope: action.damageScope ?? 'attack',
                     autoCollectTokens: true,
                     autoCollectStatus: true,
-                    autoCollectShields: true,
+                    // 护盾统一由 reducer 消耗，避免在计算管线与 reducer 间被重复扣减。
+                    autoCollectShields: false,
                     autoCollectBonusDamage: false,
                     passiveTriggerHandler: createDTPassiveTriggerHandler(ctx, random),
                     timestamp,

@@ -266,7 +266,7 @@ function buildForceEndTurnFromInteractionState(
         resolution: buildForceEndTurnResolution({
             playerId,
             suffix: `${reason}:${fallbackInteractionId}`,
-            commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: {} }],
+            commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: { interactionId: fallbackInteractionId } }],
         }),
     };
 }
@@ -382,7 +382,7 @@ function buildForceSkipPayloadFromSeatState(
     options?: { allowWhenHasNonControl?: boolean },
 ): {
     interactionId: string;
-    payload: { optionId?: string; optionIds?: string[] };
+    payload: { interactionId: string; optionId?: string; optionIds?: string[] };
     sourceId?: string;
     title?: string;
 } | null {
@@ -415,7 +415,7 @@ function buildForceSkipPayloadFromSeatState(
     if (skipOption?.id) {
         return {
             interactionId: current.id,
-            payload: { optionId: skipOption.id },
+            payload: { interactionId: current.id, optionId: skipOption.id },
             sourceId,
             title,
         };
@@ -432,7 +432,7 @@ function buildForceSkipPayloadFromSeatState(
     if (cancelOption?.id) {
         return {
             interactionId: current.id,
-            payload: { optionId: cancelOption.id },
+            payload: { interactionId: current.id, optionId: cancelOption.id },
             sourceId,
             title,
         };
@@ -441,7 +441,7 @@ function buildForceSkipPayloadFromSeatState(
     if (minCount === 0) {
         return {
             interactionId: current.id,
-            payload: { optionIds: [] },
+            payload: { interactionId: current.id, optionIds: [] },
             sourceId,
             title,
         };
@@ -453,7 +453,7 @@ function buildForceSkipPayloadFromSeatState(
     if (doneOption?.id) {
         return {
             interactionId: current.id,
-            payload: { optionId: doneOption.id },
+            payload: { interactionId: current.id, optionId: doneOption.id },
             sourceId,
             title,
         };
@@ -469,7 +469,7 @@ function buildForceSkipPayloadFromSeatState(
         && enabledTriggerOptions.length === enabledOptions.length) {
         return {
             interactionId: current.id,
-            payload: { optionId: enabledTriggerOptions[0].id },
+            payload: { interactionId: current.id, optionId: enabledTriggerOptions[0].id },
             sourceId,
             title,
         };
@@ -690,11 +690,17 @@ export function resolveForceEndTurnForStalledAi(args: {
         : '';
     const currentPlayerId = resolveCurrentPlayerId(args.sharedState);
     const core = args.sharedState?.core as { hostStarted?: unknown } | undefined;
+    const turnNumber = typeof args.sharedState?.sys?.turnNumber === 'number'
+        ? args.sharedState.sys.turnNumber
+        : null;
     const isFactionSelectPhase = phase === 'factionSelect';
     const isPublicPregameLegalActionPhase = core?.hostStarted === false && (
         isFactionSelectPhase
         || (args.gameId === 'summonerwars' && phase === 'summon')
     );
+    const isSplendorPregameResidualState = args.gameId === 'splendor'
+        && core?.hostStarted !== true
+        && (!phase || turnNumber === 0);
     const defensivePendingAttack = (args.sharedState?.core as {
         pendingAttack?: { defenderId?: unknown };
     } | undefined)?.pendingAttack;
@@ -727,6 +733,12 @@ export function resolveForceEndTurnForStalledAi(args: {
     }
 
     if (currentPlayerId && args.seatControllers[currentPlayerId]?.type !== 'human') {
+        // Splendor 线上残态曾出现 turn=0 + phase='' + currentPlayerId 已写入，
+        // 但 hostStarted 丢失/未对齐的开局前快照。这里不能把它误当成 active AI 卡死，
+        // 否则只会写出 legal_action_unavailable 噪音反馈。
+        if (isSplendorPregameResidualState) {
+            return null;
+        }
         if (core?.hostStarted === false && !isPublicPregameLegalActionPhase) {
             return null;
         }
@@ -813,7 +825,7 @@ export function resolveManualForceEndAiPhase(args: {
             resolution: buildForceEndTurnResolution({
                 playerId: interactionPlayerId,
                 suffix: `manual-visible-interaction:${interactionId}`,
-                commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: {} }],
+                commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: { interactionId } }],
             }),
         };
     }
@@ -838,7 +850,7 @@ export function resolveManualForceEndAiPhase(args: {
             resolution: buildForceEndTurnResolution({
                 playerId,
                 suffix: `manual-hidden-interaction:${interactionId}`,
-                commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: {} }],
+                commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: { interactionId } }],
             }),
         };
     }

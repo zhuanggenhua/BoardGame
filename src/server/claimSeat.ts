@@ -118,7 +118,10 @@ export const createClaimSeatHandler = ({
             return;
         }
 
-        const playerCredentials = await auth.generateCredentials(ctx);
+        const existingCredentials = typeof player.credentials === 'string' && player.credentials.trim()
+            ? player.credentials
+            : undefined;
+        const playerCredentials = existingCredentials ?? await auth.generateCredentials(ctx);
         player.credentials = playerCredentials;
         if (!player.name) {
             const resolvedName = requestedName || payload?.username;

@@ -598,6 +598,99 @@ describe('Cardia AI - 动作生成', () => {
         });
     });
 
+    describe('交互阶段', () => {
+        it('simple-choice 交互动作应把当前 interactionId 带进响应 payload', () => {
+            const state: MatchState<CardiaCore> = {
+                core: {
+                    players: {
+                        '0': {
+                            id: '0',
+                            name: 'Player 1',
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: true,
+                            cardRevealed: true,
+                        },
+                        '1': {
+                            id: '1',
+                            name: 'Player 2',
+                            hand: [],
+                            deck: [],
+                            discard: [],
+                            playedCards: [],
+                            signets: 0,
+                            tags: createTagContainer(),
+                            hasPlayed: true,
+                            cardRevealed: true,
+                        },
+                    },
+                    playerOrder: ['0', '1'],
+                    currentPlayerId: '0',
+                    turnNumber: 1,
+                    phase: 'ability',
+                    encounterHistory: [],
+                    ongoingAbilities: [],
+                    modifierTokens: [],
+                    delayedEffects: [],
+                    revealFirstNextEncounter: null,
+                    forcedPlayOrderNextEncounter: null,
+                    mechanicalSpiritActive: null,
+                    deckVariant: 'deck1',
+                    targetSignets: 5,
+                },
+                sys: {
+                    flow: { phase: 'ability' },
+                    interaction: {
+                        current: {
+                            id: 'cardia-choice-interaction-id',
+                            playerId: '0',
+                            kind: 'simple-choice',
+                            data: {
+                                options: [
+                                    {
+                                        id: 'choice-1',
+                                        label: '选项一',
+                                        value: { branch: 'a' },
+                                    },
+                                ],
+                            },
+                        },
+                        queue: [],
+                    },
+                    actionLog: { entries: [] },
+                    undo: { snapshots: [], aiSeatIds: [] },
+                    rematch: { requests: {} },
+                    responseWindow: null,
+                    tutorial: null,
+                    eventStream: { entries: [] },
+                    gameover: null,
+                },
+            } as MatchState<CardiaCore>;
+
+            const actions = cardiaAiRuntime.buildLegalActions({
+                state,
+                playerId: '0',
+            });
+
+            expect(actions).toHaveLength(1);
+            expect(actions[0]).toMatchObject({
+                kind: 'interaction-choice',
+                commands: [{
+                    type: 'SYS_INTERACTION_RESPOND',
+                    payload: {
+                        interactionId: 'cardia-choice-interaction-id',
+                        optionId: 'choice-1',
+                        branch: 'a',
+                    },
+                }],
+            });
+        });
+    });
+
     describe('结束阶段', () => {
         it('当前玩家在结束阶段应该生成结束回合动作', () => {
             const state: MatchState<CardiaCore> = {

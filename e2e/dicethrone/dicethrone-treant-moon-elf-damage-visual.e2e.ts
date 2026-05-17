@@ -80,7 +80,10 @@ const dispatchHarnessCommand = async (
         }).__BG_TEST_HARNESS__?.command?.dispatch?.({
             type: commandType,
             playerId: commandPlayerId,
-            payload: commandPayload,
+            payload: {
+                ...commandPayload,
+                __tutorialPlayerId: commandPlayerId,
+            },
         });
     }, {
         commandType: type,
@@ -165,13 +168,36 @@ const prepareTreantMoonElfScene = async (page: Page) => {
             throw new Error('TestHarness state not ready');
         }
 
+        const [{ initHeroState, createCharacterDice, ALL_TOKEN_DEFINITIONS }] = await Promise.all([
+            import('/src/games/dicethrone/domain/characters.ts'),
+        ]);
+        const random = {
+            random: () => 0.5,
+            d: (max: number) => Math.min(max, 1),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array],
+        };
+        const treant = initHeroState('0', 'treant', random as never);
+        const moonElf = initHeroState('1', 'moon_elf', random as never);
+
         harness.state.patch({
             core: {
+                activePlayerId: '0',
+                selectedCharacters: { '0': 'treant', '1': 'moon_elf' },
+                tokenDefinitions: ALL_TOKEN_DEFINITIONS,
+                dice: createCharacterDice('treant'),
                 players: {
                     '0': {
+                        ...treant,
                         hand: [],
                         discard: [],
+                        resources: {
+                            ...treant.resources,
+                            cp: 12,
+                            hp: 50,
+                        },
                         tokens: {
+                            ...treant.tokens,
                             treant_seedling: 0,
                             treant_sapling: 0,
                             treant_divine: 0,
@@ -180,9 +206,16 @@ const prepareTreantMoonElfScene = async (page: Page) => {
                         },
                     },
                     '1': {
+                        ...moonElf,
                         hand: [],
                         discard: [],
+                        resources: {
+                            ...moonElf.resources,
+                            cp: 12,
+                            hp: 50,
+                        },
                         tokens: {
+                            ...moonElf.tokens,
                             evasive: 0,
                             blinded: 0,
                             entangle: 0,

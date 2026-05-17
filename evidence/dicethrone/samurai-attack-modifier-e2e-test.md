@@ -26,12 +26,24 @@ npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "samurai z
 
 执行结果：通过
 
+2026-05-17 复跑：
+
+```bash
+npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "samurai zanshin should settle 5 bonus dice and synchronize effects against paladin"
+```
+
+执行结果：通过，`1 passed`。本次产物位于：
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\`
+
 ## 关键截图
 
 ### 1. 多骰奖励骰特写出现
 
 截图：
 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-bonus-die-overlay.png`
+
+2026-05-17 复跑截图：
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-bonus-die-overlay.png`
 
 我实际看到什么：
 - 特写标题为“投掷结果”。
@@ -51,6 +63,9 @@ npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "samurai z
 截图：
 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-bonus-die-closed.png`
 
+2026-05-17 复跑截图：
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-bonus-die-closed.png`
+
 我实际看到什么：
 - 5 骰特写已经关闭，不再遮挡主棋盘。
 - 战斗界面恢复可见，右上角“攻击修正 +2”徽章仍在，说明攻击修正结果已进入战斗状态。
@@ -63,6 +78,10 @@ npm run test:e2e:ci:file -- e2e/dicethrone-watch-out-spotlight.e2e.ts "samurai z
 
 截图：
 `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-vs-paladin.png`
+
+2026-05-17 复跑截图：
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-settled.png`
+`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-zanshin-should-settle-5-bonus-dice-and-synchronize-effects-against-paladin\10-samurai-zanshin-vs-paladin.png`
 
 我实际看到什么：
 - 奖励骰特写维持关闭状态。

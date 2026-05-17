@@ -70,6 +70,7 @@ import {
     resolveForceSkippableHiddenAiInteraction,
     shouldSilentlyRetryOnlineAiBatchRejection,
 } from './onlineAiRecovery';
+import { injectTutorialInteractionId } from './tutorialAiCommand';
 import { resolveSetupPlayerIds } from './setupPlayerOrder';
 import { createScopedLogger } from '../../lib/logger';
 
@@ -1093,12 +1094,19 @@ export function LocalGameProvider({
                 ?? localPregameControlledPlayerId
                 ?? coreCurrentPlayer
                 ?? '0';
+            const tutorialInjectedPayload = injectTutorialInteractionId({
+                state: prev,
+                commandType: type,
+                payload: normalizedPayload,
+                tutorialPlayerId: tutorialOverrideId ?? resolvedPlayerId,
+                isTutorialAiCommand,
+            });
 
             const command: Command = {
                 type,
                 // 系统命令从对应系统状态推导 playerId；普通命令使用当前回合玩家；教程 AI 可通过 __tutorialPlayerId 强制指定。
                 playerId: resolvedPlayerId,
-                payload: normalizedPayload,
+                payload: tutorialInjectedPayload,
                 timestamp: Date.now(),
                 skipValidation: true,
             };

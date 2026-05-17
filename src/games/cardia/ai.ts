@@ -442,17 +442,20 @@ function buildInteractionActions(
  * @returns payload 对象
  */
 function buildSimpleChoicePayload(
+    interactionId: string | undefined,
     optionIds: string[],
     multi: { min?: number; max?: number } | undefined,
     mergedValue?: unknown,
 ): unknown {
     if (multi) {
         return { 
+            ...(interactionId ? { interactionId } : {}),
             optionIds, 
             ...(mergedValue && typeof mergedValue === 'object' ? mergedValue : {}) 
         };
     }
     return { 
+        ...(interactionId ? { interactionId } : {}),
         optionId: optionIds[0], 
         ...(mergedValue && typeof mergedValue === 'object' ? mergedValue : {}) 
     };
@@ -526,7 +529,7 @@ function buildSimpleChoiceActions(
             label: option.label ?? `选择 ${index + 1}`,
             commands: [{
                 type: 'SYS_INTERACTION_RESPOND',
-                payload: buildSimpleChoicePayload([option.id], data.multi, option.value),
+                payload: buildSimpleChoicePayload(interactionObj.id, [option.id], data.multi, option.value),
             }],
             metadata: {
                 interactionId: interactionObj.id,

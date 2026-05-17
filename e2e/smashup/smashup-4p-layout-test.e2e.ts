@@ -617,12 +617,14 @@ function buildFourPlayerMobileScene() {
                         talentUsed: false,
                         attachedActions: [
                             { uid: 'p0-b0-armor-stego-upgrade', defId: 'dino_tooth_and_claw_pod', ownerId: '0' },
+                            { uid: 'p0-b0-armor-stego-attached-talent', defId: 'werewolf_leader_of_the_pack', ownerId: '0', talentUsed: false },
                         ],
                     },
                     ...scene.bases[0].minions.filter((minion) => minion.controller !== '0'),
                 ],
                 ongoingActions: [
                     { uid: 'p0-b0-base-ongoing', defId: 'zombie_overrun', ownerId: '0', talentUsed: false },
+                    { uid: 'p0-b0-base-ongoing-talent-mobile', defId: 'miskatonic_lost_knowledge', ownerId: '0', talentUsed: false },
                 ],
             },
             ...scene.bases.slice(1),
@@ -1151,7 +1153,9 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         const inspectButton = page.locator('[data-testid="su-hand-card-inspect-p0-mobile-hand-terraform"]');
         const talentMinion = page.locator('[data-minion-uid="p0-b0-armor-stego"]');
         const baseOngoingCard = page.locator('[data-ongoing-uid="p0-b0-base-ongoing"]');
+        const baseOngoingTalentCard = page.locator('[data-ongoing-uid="p0-b0-base-ongoing-talent-mobile"]');
         const attachedActionCard = page.locator('[data-attached-action-uid="p0-b0-armor-stego-upgrade"]');
+        const attachedActionTalentCard = page.locator('[data-attached-action-uid="p0-b0-armor-stego-attached-talent"]');
         const magnifyOverlay = page.locator('[data-testid="su-card-magnify-overlay"]');
         const exitFabButton = page.locator('[data-fab-id="exit"]').first();
         const exitFabVisual = page.locator('[data-fab-visual-id="exit"]').first();
@@ -1182,6 +1186,7 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expect(inspectButton).toHaveCSS('opacity', '1');
         await expect(talentMinion).toBeVisible({ timeout: 15000 });
         await expect(baseOngoingCard).toBeVisible({ timeout: 15000 });
+        await expect(baseOngoingTalentCard).toBeVisible({ timeout: 15000 });
         await expect(talentMinion).toHaveAttribute('data-attached-actions-visible', 'false');
 
         await waitForSmashUpMainUiReady(page);
@@ -1398,6 +1403,7 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
         await expect(talentMinion).toHaveAttribute('data-attached-actions-visible', 'true');
         await expect(talentMinion).toHaveAttribute('data-activation-armed', 'true');
         await expect(attachedActionCard).toBeVisible({ timeout: 5000 });
+        await expect(attachedActionTalentCard).toBeVisible({ timeout: 5000 });
         const mobileTalentMinionBox = await talentMinion.boundingBox();
         const mobileAttachedActionBox = await attachedActionCard.boundingBox();
         expect(mobileTalentMinionBox, '移动端宿主随从应提供尺寸').not.toBeNull();
@@ -1424,9 +1430,35 @@ test.describe('大杀四方四人局五基地布局与多基地计分', () => {
 
         await game.screenshot('06-mobile-second-tap-uses-talent', testInfo);
 
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state.core.bases[0].ongoingActions.find((action: any) => action.uid === 'p0-b0-base-ongoing-talent-mobile')?.talentUsed ?? false;
+        }, { timeout: 5000 }).toBe(false);
+        await clickCenter(baseOngoingTalentCard, page);
+        await expect.poll(async () => {
+            const state = await game.getState();
+            return state.core.bases[0].ongoingActions.find((action: any) => action.uid === 'p0-b0-base-ongoing-talent-mobile')?.talentUsed ?? false;
+        }, { timeout: 5000 }).toBe(true);
+        await expect(magnifyOverlay).toHaveCount(0);
+        await game.screenshot('06a-mobile-base-ongoing-talent-single-tap-uses-talent', testInfo);
+
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const host = state.core.bases[0].minions.find((minion: any) => minion.uid === 'p0-b0-armor-stego');
+            return host?.attachedActions?.find((action: any) => action.uid === 'p0-b0-armor-stego-attached-talent')?.talentUsed ?? false;
+        }, { timeout: 5000 }).toBe(false);
+        await clickCenter(attachedActionTalentCard, page);
+        await expect.poll(async () => {
+            const state = await game.getState();
+            const host = state.core.bases[0].minions.find((minion: any) => minion.uid === 'p0-b0-armor-stego');
+            return host?.attachedActions?.find((action: any) => action.uid === 'p0-b0-armor-stego-attached-talent')?.talentUsed ?? false;
+        }, { timeout: 5000 }).toBe(true);
+        await expect(magnifyOverlay).toHaveCount(0);
+        await game.screenshot('06aa-mobile-attached-action-talent-single-tap-uses-talent', testInfo);
+
         await clickCenter(baseOngoingCard, page);
         await waitForMagnifyPreviewReady(page);
-        await game.screenshot('06a-mobile-base-ongoing-single-tap-magnify', testInfo);
+        await game.screenshot('06ab-mobile-base-ongoing-single-tap-magnify', testInfo);
         await closeMagnifyOverlay(page);
 
         await clickCenter(attachedActionCard, page);

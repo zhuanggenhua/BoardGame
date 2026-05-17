@@ -537,7 +537,7 @@ describe('AI legal actions', () => {
                 kind: 'interaction-choice',
                 commands: [{
                     type: 'SYS_INTERACTION_RESPOND',
-                    payload: { optionIds: ['__emergency_skip__'] },
+                    payload: { interactionId: 'unsat-multi-choice', optionIds: ['__emergency_skip__'] },
                 }],
             }),
         ]));
@@ -554,7 +554,7 @@ describe('AI legal actions', () => {
         expect(resolution?.playerId).toBe('0');
         expect(resolution?.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionIds: ['__emergency_skip__'] },
+            payload: { interactionId: 'unsat-multi-choice', optionIds: ['__emergency_skip__'] },
         });
     });
 
@@ -591,7 +591,7 @@ describe('AI legal actions', () => {
             kind: 'interaction-cancel',
             commands: [{
                 type: 'SYS_INTERACTION_CANCEL',
-                payload: { reason: 'no-legal-actions' },
+                payload: { interactionId: 'unsat-multi-choice-no-fallback-option', reason: 'no-legal-actions' },
             }],
         })]);
     });
@@ -613,12 +613,13 @@ describe('AI legal actions', () => {
             playerId: '0',
             state,
         });
+        const currentInteractionId = state.sys.interaction.current?.id;
 
         expect(actions).toEqual([expect.objectContaining({
             kind: 'interaction-cancel',
             commands: [{
                 type: 'SYS_INTERACTION_CANCEL',
-                payload: { reason: 'no-legal-actions' },
+                payload: { interactionId: currentInteractionId, reason: 'no-legal-actions' },
             }],
         })]);
     });
@@ -677,7 +678,7 @@ describe('AI legal actions', () => {
 
         expect(resolution?.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'option-0' },
+            payload: { interactionId: 'ai-choice-token', optionId: 'option-0' },
         });
     });
 

@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen, cleanup, act } from '@testing-library/react';
+import { render, screen, cleanup, act, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { GameTestRunner } from '../../../engine/testing';
 import { SmashUpDomain } from '../domain';
@@ -418,6 +418,43 @@ describe('SmashUp UI 交互验证', () => {
             type: 'renderer',
             rendererId: 'smashup-card-renderer',
             payload: { defId: 'wizard_summon' },
+        });
+    });
+
+    it('PromptOverlay 响应 simple-choice 时应带上当前 interactionId', () => {
+        const dispatch = vi.fn();
+        const interaction = createSimpleChoice(
+            'prompt-interaction-id-check',
+            '0',
+            '选择一个选项',
+            [
+                {
+                    id: 'pick-1',
+                    label: '选项一',
+                    value: { branch: 'a' },
+                    displayMode: 'button' as const,
+                },
+            ],
+            { sourceId: 'test_prompt', targetType: 'generic' },
+        );
+
+        render(
+            React.createElement(
+                ToastProvider,
+                null,
+                React.createElement(PromptOverlay, {
+                    interaction,
+                    dispatch,
+                    playerID: '0',
+                }),
+            ),
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: '选项一' }));
+
+        expect(dispatch).toHaveBeenCalledWith('SYS_INTERACTION_RESPOND', {
+            interactionId: 'prompt-interaction-id-check',
+            optionId: 'pick-1',
         });
     });
 

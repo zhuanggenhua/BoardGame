@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it, test } from 'vitest';
 import type { RandomFn } from '../../../../engine/types';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
+import { steampunkEscapeHatchTrigger, steampunkOrnateDomeOnPlay } from '../../abilities/steampunks';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
@@ -84,6 +85,18 @@ function makeState(
 
 function makeMatchState(core: SmashUpCore) {
     return makeSharedMatchState(core);
+}
+
+function useOngoingTalent(state: SmashUpCore, playerId: string, ongoingCardUid: string, baseIndex: number) {
+    return runCommand(
+        makeMatchState(state),
+        {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId,
+            payload: { ongoingCardUid, baseIndex },
+        } as any,
+        defaultTestRandom,
+    );
 }
 
 function makeMinion(overrides: Record<string, unknown> = {}) {
@@ -320,6 +333,32 @@ describe('蒸汽朋克 ongoing 能力', () => {
 
             expect(isOperationRestricted(state, 0, '0', 'play_action')).toBe(false);
         });
+
+        test('POD 版打出时只移除对手持续行动，不应把自己一起拆掉', () => {
+            const myDome = { uid: 'dome-pod', defId: 'steampunk_ornate_dome_pod', ownerId: '0' } as any;
+            const opponentAction = { uid: 'opp-act', defId: 'some_action', ownerId: '1' } as any;
+
+            const base = makeBase({
+                ongoingActions: [myDome, opponentAction],
+            });
+            const state = makeState([base]);
+
+            const result = steampunkOrnateDomeOnPlay({
+                state,
+                matchState: makeMatchState(state),
+                playerId: '0',
+                cardUid: 'dome-pod',
+                defId: 'steampunk_ornate_dome_pod',
+                baseIndex: 0,
+                random: defaultTestRandom,
+                now: 1,
+            } as any);
+
+            const detachedEvents = result.events.filter(event => event.type === SU_EVENTS.ONGOING_DETACHED) as any[];
+            expect(detachedEvents).toHaveLength(1);
+            expect(detachedEvents[0].payload.cardUid).toBe('opp-act');
+            expect(detachedEvents.find(event => event.payload.cardUid === 'dome-pod')).toBeUndefined();
+        });
     });
 
     describe('steampunk_difference_engine: 差分机', () => {
@@ -428,6 +467,27 @@ describe('蒸汽朋克 ongoing 能力', () => {
             });
 
             expect(events).toHaveLength(0);
+        });
+
+        test('POD 版在己方随从被消灭时同样回手牌', () => {
+            const myMinion = makeMinion({ defId: 'minion1', uid: 'm1', controller: '0', owner: '0' });
+            const base = makeBase({
+                minions: [myMinion],
+                ongoingActions: [{ uid: 'hatch-pod', defId: 'steampunk_escape_hatch_pod', ownerId: '0' } as any],
+            });
+            const state = makeState([base]);
+
+            const events = steampunkEscapeHatchTrigger({
+                state,
+                playerId: '0',
+                baseIndex: 0,
+                triggerMinionUid: 'm1',
+                now: 1,
+            } as any) as any[];
+
+            expect(events).toHaveLength(1);
+            expect(events[0].type).toBe(SU_EVENTS.MINION_RETURNED);
+            expect(events[0].payload.minionUid).toBe('m1');
         });
     });
 
@@ -854,6 +914,170 @@ describe('蒸汽朋克 ongoing 能力', () => {
             expect(moved).toBeDefined();
             expect(moved.payload.fromBaseIndex).toBe(0);
             expect(moved.payload.toBaseIndex).toBe(1);
+        });
+    });
+
+    describe('steampunk_zeppelin（齐柏林飞艇 ongoing talent）', () => {
+        test('触发天赋后创建第一步交互：选择要移动的随从', () => {
+            const state = makeState([
+                makeBase({
+                    minions: [makeMinion({ uid: 'm1', defId: 'pirate_first_mate', controller: '0', owner: '0', basePower: 3 })],
+                    ongoingActions: [{ uid: 'oa1', defId: 'steampunk_zeppelin', ownerId: '0', talentUsed: false } as any],
+                }),
+                makeBase({
+                    minions: [makeMinion({ uid: 'm2', defId: 'pirate_saucy_wench', controller: '0', owner: '0', basePower: 2 })],
+                }),
+            ]);
+
+            const result = useOngoingTalent(state, '0', 'oa1', 0);
+            expect(result.success, result.error).toBe(true);
+            expect(result.events.map(event => event.type)).toContain(SU_EVENTS.TALENT_USED);
+
+            const prompt = getSimpleChoicePrompt(result.finalState, 'steampunk_zeppelin_choose_minion');
+            expect(getPromptSourceId(prompt)).toBe('steampunk_zeppelin_choose_minion');
+            expect(getPromptTargetType(prompt)).toBe('minion');
+            expect(getPromptOptions(prompt).length).toBeGreaterThan(0);
+        });
+
+        test('无己方随从可移动时公开命令入口直接拒绝', () => {
+            const state = makeState([
+                makeBase({
+                    minions: [],
+                    ongoingActions: [{ uid: 'oa1', defId: 'steampunk_zeppelin', ownerId: '0', talentUsed: false } as any],
+                }),
+            ]);
+
+            const result = useOngoingTalent(state, '0', 'oa1', 0);
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('当前没有可选择的目标');
+        });
+
+        test('第二步若目标已离开来源基地则不再移动', () => {
+            const core = makeState([
+                makeBase({
+                    minions: [makeMinion({ uid: 'm1', defId: 'pirate_first_mate', controller: '0', owner: '0', basePower: 3 })],
+                    ongoingActions: [{ uid: 'oa1', defId: 'steampunk_zeppelin', ownerId: '0', talentUsed: false } as any],
+                }),
+                makeBase({
+                    minions: [makeMinion({ uid: 'm2', defId: 'pirate_saucy_wench', controller: '0', owner: '0', basePower: 2 })],
+                }),
+            ]);
+
+            const firstStep = useOngoingTalent(core, '0', 'oa1', 0);
+            expect(firstStep.success, firstStep.error).toBe(true);
+            const step1 = respondToPromptOption(
+                firstStep.finalState,
+                option => option.value?.minionUid === 'm2',
+                'zeppelin minion m2 option',
+                '0',
+                dummyRandom,
+            );
+            expect(step1.success, step1.error).toBe(true);
+            const chooseBasePrompt = getSimpleChoicePrompt(step1.finalState, 'steampunk_zeppelin_choose_base');
+
+            const staleCore = makeState({
+                ...core,
+                players: {
+                    ...core.players,
+                    '0': makePlayer('0', {
+                        ...core.players['0'],
+                        discard: [makeCard('m2', 'pirate_saucy_wench', 'minion', '0')],
+                    }),
+                    '1': makePlayer('1'),
+                },
+                bases: [
+                    core.bases[0],
+                    {
+                        ...core.bases[1],
+                        minions: [],
+                    },
+                ],
+            });
+
+            const step2 = respondToPromptOption(
+                withOnlyCurrentPrompt(makeMatchState(staleCore), chooseBasePrompt),
+                option => option.value?.baseIndex === 0,
+                'zeppelin destination base 0 option',
+                '0',
+                dummyRandom,
+            );
+            expect(step2.success, step2.error).toBe(true);
+            expect(step2.events.some(event => event.type === SU_EVENTS.MINION_MOVED)).toBe(false);
+        });
+
+        test('从其他基地选择随从时，第二步只能移动到齐柏林所在基地', () => {
+            const state = makeState([
+                makeBase({
+                    minions: [makeMinion({ uid: 'home-minion', defId: 'pirate_first_mate', controller: '0', owner: '0', basePower: 3 })],
+                    ongoingActions: [{ uid: 'oa1', defId: 'steampunk_zeppelin', ownerId: '0', talentUsed: false } as any],
+                }),
+                makeBase({
+                    minions: [makeMinion({ uid: 'away-minion', defId: 'pirate_saucy_wench', controller: '0', owner: '0', basePower: 2 })],
+                }),
+                makeBase(),
+            ]);
+
+            const result = useOngoingTalent(state, '0', 'oa1', 0);
+            expect(result.success, result.error).toBe(true);
+            const resolved = respondToPromptOption(
+                result.finalState,
+                option => option.value?.minionUid === 'away-minion',
+                'zeppelin away minion option',
+                '0',
+                dummyRandom,
+            );
+            expect(resolved.success, resolved.error).toBe(true);
+
+            const chooseBasePrompt = getSimpleChoicePrompt(resolved.finalState, 'steampunk_zeppelin_choose_base');
+            const options = getPromptOptions(chooseBasePrompt);
+            expect(getPromptSourceId(chooseBasePrompt)).toBe('steampunk_zeppelin_choose_base');
+            expect(chooseBasePrompt?.autoResolveIfSingle ?? getPromptHandlerData(chooseBasePrompt).autoResolveIfSingle).toBe(true);
+            expect(options).toHaveLength(1);
+            expect(options[0]?.value?.baseIndex).toBe(0);
+        });
+
+        test('从齐柏林所在基地选择随从时，只能移动到其他基地', () => {
+            const state = makeState([
+                makeBase({
+                    minions: [makeMinion({ uid: 'home-minion', defId: 'pirate_first_mate', controller: '0', owner: '0', basePower: 3 })],
+                    ongoingActions: [{ uid: 'oa1', defId: 'steampunk_zeppelin', ownerId: '0', talentUsed: false } as any],
+                }),
+                makeBase({
+                    minions: [makeMinion({ uid: 'away-minion', defId: 'pirate_saucy_wench', controller: '0', owner: '0', basePower: 2 })],
+                }),
+                makeBase(),
+            ]);
+
+            const result = useOngoingTalent(state, '0', 'oa1', 0);
+            expect(result.success, result.error).toBe(true);
+            const resolved = respondToPromptOption(
+                result.finalState,
+                option => option.value?.minionUid === 'home-minion',
+                'zeppelin home minion option',
+                '0',
+                dummyRandom,
+            );
+            expect(resolved.success, resolved.error).toBe(true);
+
+            const chooseBasePrompt = getSimpleChoicePrompt(resolved.finalState, 'steampunk_zeppelin_choose_base');
+            const options = getPromptOptions(chooseBasePrompt);
+            expect(getPromptSourceId(chooseBasePrompt)).toBe('steampunk_zeppelin_choose_base');
+            expect(options).toHaveLength(2);
+            expect(options.map((option: any) => option.value.baseIndex)).toEqual([1, 2]);
+        });
+
+        test('结算后 ongoing 卡 talentUsed 标记为 true', () => {
+            const state = makeState([
+                makeBase({
+                    minions: [makeMinion({ uid: 'm1', defId: 'pirate_first_mate', controller: '0', owner: '0', basePower: 3 })],
+                    ongoingActions: [{ uid: 'oa1', defId: 'steampunk_zeppelin', ownerId: '0', talentUsed: false } as any],
+                }),
+                makeBase(),
+            ]);
+
+            const result = useOngoingTalent(state, '0', 'oa1', 0);
+            expect(result.success, result.error).toBe(true);
+            expect(result.finalState.core.bases[0].ongoingActions[0]?.talentUsed).toBe(true);
         });
     });
 });

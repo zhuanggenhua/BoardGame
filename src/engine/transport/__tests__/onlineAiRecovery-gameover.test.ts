@@ -240,6 +240,40 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result).toBeNull();
     });
 
+    it('Splendor turn0 / unknown-phase 残态不得触发 active-turn legal-action watchdog', () => {
+        const sharedState: MatchState<unknown> = {
+            core: {
+                currentPlayer: '1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: '',
+                turnNumber: 0,
+                interaction: {
+                    current: null,
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+            },
+        };
+
+        const seatControllers: Record<string, AiSeatController> = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', policyId: 'baseline' },
+        };
+
+        const result = resolveForceEndTurnForStalledAi({
+            sharedState,
+            seatControllers,
+            seatStates: {},
+            gameId: 'splendor',
+        });
+
+        expect(result).toBeNull();
+    });
+
     it('游戏结束后即使有交互也应该返回 null', () => {
         // 构造一个游戏已结束且有交互的状态
         const sharedState: MatchState<unknown> = {
@@ -375,7 +409,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result?.requiresConfirmedAdvancePhase).toBe(true);
         expect(result?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'pass' },
+            payload: { interactionId: 'reaction-order-choice', optionId: 'pass' },
         });
     });
 
@@ -436,7 +470,7 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(result?.reason).toBe('hidden-interaction');
         expect(result?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'pass' },
+            payload: { interactionId: 'reaction-order-choice', optionId: 'pass' },
         });
     });
 
@@ -594,7 +628,7 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
         expect(result?.reason).toBe('visible-interaction');
         expect(result?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_CANCEL',
-            payload: {},
+            payload: { interactionId: 'manual-ai-visible-choice' },
         });
     });
 
@@ -649,7 +683,7 @@ describe('resolveManualForceEndAiPhase - human 响应窗口场景', () => {
         expect(result?.reason).toBe('hidden-interaction');
         expect(result?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_CANCEL',
-            payload: {},
+            payload: { interactionId: 'manual-ai-hidden-choice' },
         });
     });
 

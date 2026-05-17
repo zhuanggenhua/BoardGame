@@ -470,6 +470,26 @@ export function stripNonSerializable(interaction: InteractionDescriptor | undefi
     return { ...interaction, data: stripNonSerializableFromData(interaction.data) };
 }
 
+function canPlayerViewCompareRollInteraction(
+    interaction: InteractionDescriptor | undefined,
+    playerId: PlayerId,
+): boolean {
+    if (!interaction || interaction.kind !== 'compare-roll-choice') {
+        return false;
+    }
+
+    if (isSamePlayerId(interaction.playerId, playerId)) {
+        return true;
+    }
+
+    const contestants = (interaction.data as { contestants?: Array<{ playerId?: PlayerId }> } | undefined)?.contestants;
+    if (!Array.isArray(contestants)) {
+        return false;
+    }
+
+    return contestants.some((contestant) => isSamePlayerId(contestant?.playerId, playerId));
+}
+
 // ============================================================================
 // 命令 & 事件常量
 // ============================================================================
@@ -1188,11 +1208,14 @@ export function createInteractionSystem<TCore>(
             // ---- 交互取消（通用，所有 kind 都能用） ----
             if (command.type === INTERACTION_COMMANDS.CANCEL) {
                 const ts = resolveCommandTimestamp(command);
-                const reason = (() => {
-                    const payload = command.payload as { reason?: unknown } | undefined;
-                    return typeof payload?.reason === 'string' ? payload.reason : undefined;
+                const { reason, interactionId } = (() => {
+                    const payload = command.payload as { reason?: unknown; interactionId?: unknown } | undefined;
+                    return {
+                        reason: typeof payload?.reason === 'string' ? payload.reason : undefined,
+                        interactionId: typeof payload?.interactionId === 'string' ? payload.interactionId : undefined,
+                    };
                 })();
-                return handleInteractionCancel(state, command.playerId, ts, reason);
+                return handleInteractionCancel(state, command.playerId, ts, reason, interactionId);
             }
 
             // ---- 通用阻塞：有交互时阻塞 ADVANCE_PHASE ----
@@ -1218,8 +1241,9 @@ export function createInteractionSystem<TCore>(
                 }
             }
 
-            const filteredCurrent =
-                isSamePlayerId(processedCurrent?.playerId, playerId) ? stripNonSerializable(processedCurrent) : undefined;
+            const canViewCurrent = isSamePlayerId(processedCurrent?.playerId, playerId)
+                || canPlayerViewCompareRollInteraction(processedCurrent, playerId);
+            const filteredCurrent = canViewCurrent ? stripNonSerializable(processedCurrent) : undefined;
 
             // 同样处理 queue 中的交互
             const processedQueue = queue
@@ -1256,6 +1280,7 @@ function handleInteractionCancel<TCore>(
     playerId: PlayerId,
     timestamp: number,
     reason?: string,
+    interactionId?: string,
 ): HookResult<TCore> {
     const current = state.sys.interaction.current;
 
@@ -1264,6 +1289,9 @@ function handleInteractionCancel<TCore>(
     }
     if (!isSamePlayerId(current.playerId, playerId)) {
         return { halt: true, error: '不是你的交互' };
+    }
+    if (typeof interactionId === 'string' && interactionId !== current.id) {
+        return { halt: true, error: '交互已过期' };
     }
 
     const sourceId = (() => {

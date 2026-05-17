@@ -29,6 +29,12 @@ export type ChoiceEffectHandler = (context: ChoiceEffectContext) => Partial<Dice
  */
 const choiceEffectHandlers: Map<string, ChoiceEffectHandler> = new Map();
 
+export function hasCurrentChoiceAnchor(state: DiceThroneCore, sourceAbilityId?: string): boolean {
+    return typeof sourceAbilityId === 'string'
+        && sourceAbilityId.length > 0
+        && state.currentChoiceSourceAbilityId === sourceAbilityId;
+}
+
 /**
  * 注册 Choice Effect 处理器
  */
@@ -46,6 +52,9 @@ export function getChoiceEffectHandler(customId: string): ChoiceEffectHandler | 
 
 export function resolveChoiceEffect(context: ChoiceEffectContext): Partial<DiceThroneCore> | undefined {
     if (context.customId.startsWith('select-target:')) {
+        if (!hasCurrentChoiceAnchor(context.state, context.sourceAbilityId)) {
+            return undefined;
+        }
         const defenderId = context.customId.slice('select-target:'.length);
         if (!defenderId || !context.state.pendingAttack || !context.state.players[defenderId]) {
             return undefined;
@@ -61,7 +70,10 @@ export function resolveChoiceEffect(context: ChoiceEffectContext): Partial<DiceT
     }
 
     const handler = getChoiceEffectHandler(context.customId);
-    return handler?.(context);
+    if (!handler || !hasCurrentChoiceAnchor(context.state, context.sourceAbilityId)) {
+        return undefined;
+    }
+    return handler(context);
 }
 
 // ============================================================================
@@ -159,6 +171,23 @@ registerChoiceEffectHandler('skip', ({ state }) => {
         pendingAttack: {
             ...state.pendingAttack,
             offensiveRollEndTokenResolved: true,
+        },
+    };
+});
+
+registerChoiceEffectHandler('gunslinger-showdown-apply-bonus', ({ state, sourceAbilityId, value }) => {
+    if (!state.pendingAttack) return undefined;
+    if (sourceAbilityId && state.pendingAttack.sourceAbilityId !== sourceAbilityId) {
+        return undefined;
+    }
+    if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+        return undefined;
+    }
+
+    return {
+        pendingAttack: {
+            ...state.pendingAttack,
+            bonusDamage: (state.pendingAttack.bonusDamage ?? 0) + value,
         },
     };
 });

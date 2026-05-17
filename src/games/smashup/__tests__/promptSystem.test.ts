@@ -153,6 +153,10 @@ describe('P7: PromptSystem 集成', () => {
             } else {
                 expect(actions[0]?.kind).toBe('interaction-cancel');
                 expect(commandType).toBe(INTERACTION_COMMANDS.CANCEL);
+                expect(actions[0]?.commands?.[0]?.payload).toMatchObject({
+                    interactionId: 'smashup-ai-empty-options',
+                    reason: 'empty-options',
+                });
             }
         });
     });

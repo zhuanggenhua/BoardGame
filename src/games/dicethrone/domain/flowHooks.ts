@@ -53,14 +53,17 @@ import { getUsableTokensForOffensiveRollEnd } from './tokenResponse';
 import { getPlayerAbilityBaseDamage, playerAbilityHasDamage, playerAbilityNeedsSingleOpponentTarget } from './abilityLookup';
 import { evaluateTriggerCondition } from './combat';
 import { findHeroCard } from '../heroes';
-import { registerChoiceEffectHandler } from './choiceEffects';
+import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from './choiceEffects';
 import { hasSpentTreantTreeSpiritThisTurn } from './passiveAbility';
 
 const TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID = 'treant-divine-prevent-debuff';
 const TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID = 'treant-divine-skip-debuff';
 
-registerChoiceEffectHandler(TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID, ({ state }) => {
+registerChoiceEffectHandler(TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID, ({ state, playerId, sourceAbilityId }) => {
+    if (sourceAbilityId !== TOKEN_IDS.TREANT_DIVINE) return undefined;
+    if (!hasCurrentChoiceAnchor(state, sourceAbilityId)) return undefined;
     if (!state.pendingAttack) return undefined;
+    if (state.pendingAttack.defenderId !== playerId) return undefined;
     return {
         pendingAttack: {
             ...state.pendingAttack,
@@ -69,8 +72,11 @@ registerChoiceEffectHandler(TREANT_DIVINE_PREVENT_DEBUFF_CHOICE_ID, ({ state }) 
     };
 });
 
-registerChoiceEffectHandler(TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID, ({ state }) => {
+registerChoiceEffectHandler(TREANT_DIVINE_SKIP_DEBUFF_CHOICE_ID, ({ state, playerId, sourceAbilityId }) => {
+    if (sourceAbilityId !== TOKEN_IDS.TREANT_DIVINE) return undefined;
+    if (!hasCurrentChoiceAnchor(state, sourceAbilityId)) return undefined;
     if (!state.pendingAttack) return undefined;
+    if (state.pendingAttack.defenderId !== playerId) return undefined;
     return {
         pendingAttack: {
             ...state.pendingAttack,

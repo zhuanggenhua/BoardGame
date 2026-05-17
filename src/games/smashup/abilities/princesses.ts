@@ -969,6 +969,7 @@ const princessesFairyGodmotherPromptProgram = createPromptProgram<
     ),
     onResolve: (args) => {
         const { context, state, playerId, value } = args;
+        const { timestamp } = args;
         const selected = value as ButtonChoice | undefined;
         if (selected?.choice === 'draw') {
             return {

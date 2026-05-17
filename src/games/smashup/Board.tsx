@@ -536,6 +536,20 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
     // - overlay: 多选 hand prompt，继续走 PromptOverlay
     const currentInteraction = G?.sys?.interaction?.current;
     const currentPrompt = useMemo(() => asSimpleChoice(currentInteraction), [currentInteraction]);
+    const respondCurrentPrompt = useCallback((payload: Record<string, unknown>) => {
+        if (!currentPrompt?.id) return;
+        dispatch(INTERACTION_COMMANDS.RESPOND, {
+            interactionId: currentPrompt.id,
+            ...payload,
+        });
+    }, [currentPrompt?.id, dispatch]);
+    const cancelCurrentPrompt = useCallback((reason?: string) => {
+        if (!currentPrompt?.id) return;
+        dispatch(INTERACTION_COMMANDS.CANCEL, {
+            interactionId: currentPrompt.id,
+            ...(reason ? { reason } : {}),
+        });
+    }, [currentPrompt?.id, dispatch]);
     const currentPromptTargetType = (currentInteraction?.data as Record<string, unknown> | undefined)?.targetType;
     const shouldRenderPromptInOverlay = useMemo(() => shouldForceSmashUpPromptOverlay(currentPrompt), [currentPrompt]);
     const isCurrentPromptForPlayer = useMemo(() => {
@@ -1902,8 +1916,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             playDeniedSound();
             return;
         }
-        dispatch(INTERACTION_COMMANDS.RESPOND, { optionId });
-    }, [dispatch, reactionTitanTriggerOptionIdsByUid]);
+        respondCurrentPrompt({ optionId });
+    }, [reactionTitanTriggerOptionIdsByUid, respondCurrentPrompt]);
 
     const handleSetAsideTitanSelect = useCallback((titanUid: string) => {
         if (!playerID) return;
@@ -1920,7 +1934,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 opt => (opt.value as CardOrTitanChoiceValue | undefined)?.titanUid === titanUid,
             );
             if (option) {
-                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+                respondCurrentPrompt({ optionId: option.id });
             } else {
                 playDeniedSound();
             }
@@ -1971,7 +1985,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             // interaction 驱动模式（僵尸领主等）：合并 cardUid + baseIndex 响应
             if (isDiscardMinionPrompt && currentPrompt) {
                 if (discardCard.optionId) {
-                    dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: discardCard.optionId, mergedValue: { ...discardCard.optionValue as Record<string, unknown>, baseIndex: index } });
+                    respondCurrentPrompt({ optionId: discardCard.optionId, mergedValue: { ...discardCard.optionValue as Record<string, unknown>, baseIndex: index } });
                 }
                 setDiscardStripSelectedUid(null);
                 return;
@@ -2007,7 +2021,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             if (option) {
                 setSelectedCardUid(null);
                 setSelectedCardMode(null);
-                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+                respondCurrentPrompt({ optionId: option.id });
             }
             return;
         }
@@ -2081,7 +2095,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             return;
         }
 
-        dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: optionMeta.optionId });
+        respondCurrentPrompt({ optionId: optionMeta.optionId });
     }, [buriedPromptOptionsByUid, currentPrompt, dispatch, isBuriedSelectPrompt, isMultiBuriedSelect, multiMinionConstraints.max]);
 
     const handleCardClick = useCallback((card: CardInstance) => {
@@ -2097,7 +2111,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                 opt => (opt.value as { cardUid?: string })?.cardUid === card.uid
             );
             if (option) {
-                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+                respondCurrentPrompt({ optionId: option.id });
             } else {
                 playDeniedSound();
                 toast(t('ui.card_not_in_options', { defaultValue: '该卡牌不在当前可选范围内' }));
@@ -2343,7 +2357,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
             // 单选模式：立即提交
             setSelectedCardUid(null);
             setSelectedCardMode(null);
-            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+            respondCurrentPrompt({ optionId: option.id });
             return;
         }
         // 需要随从目标的行动卡：点击随从后直接打出
@@ -2363,7 +2377,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
         if (option) {
             setSelectedCardUid(null);
             setSelectedCardMode(null);
-            dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: option.id });
+            respondCurrentPrompt({ optionId: option.id });
         }
     }, [currentPrompt, dispatch, isOngoingSelectPrompt, selectableOngoingUids, setSelectedCardMode, setSelectedCardUid]);
 
@@ -3128,7 +3142,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id })}
+                                        onClick={() => respondCurrentPrompt({ optionId: opt.id })}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -3161,7 +3175,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             variant="primary"
                                             size="md"
                                             disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
-                                            onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: Array.from(multiSelectedOptionIds) })}
+                                            onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
                                         >
                                             确认选择
                                         </SmashUpGameButton>
@@ -3174,9 +3188,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         size="md"
                                         onClick={() => {
                                             if (isMultiMinionSelect) {
-                                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: [opt.id] });
+                                                respondCurrentPrompt({ optionIds: [opt.id] });
                                             } else {
-                                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id });
+                                                respondCurrentPrompt({ optionId: opt.id });
                                             }
                                         }}
                                     >
@@ -3211,7 +3225,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                             variant="primary"
                                             size="md"
                                             disabled={multiSelectedOptionIds.size < multiMinionConstraints.min}
-                                            onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: Array.from(multiSelectedOptionIds) })}
+                                            onClick={() => respondCurrentPrompt({ optionIds: Array.from(multiSelectedOptionIds) })}
                                         >
                                             确认选择
                                         </SmashUpGameButton>
@@ -3224,9 +3238,9 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         size="md"
                                         onClick={() => {
                                             if (isMultiBuriedSelect) {
-                                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionIds: [opt.id] });
+                                                respondCurrentPrompt({ optionIds: [opt.id] });
                                             } else {
-                                                dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id });
+                                                respondCurrentPrompt({ optionId: opt.id });
                                             }
                                         }}
                                     >
@@ -3254,7 +3268,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id })}
+                                        onClick={() => respondCurrentPrompt({ optionId: opt.id })}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -3280,7 +3294,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id })}
+                                        onClick={() => respondCurrentPrompt({ optionId: opt.id })}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -3306,7 +3320,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                         key={opt.id}
                                         variant="secondary"
                                         size="md"
-                                        onClick={() => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: opt.id })}
+                                        onClick={() => respondCurrentPrompt({ optionId: opt.id })}
                                     >
                                         {opt.label}
                                     </SmashUpGameButton>
@@ -3607,8 +3621,8 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                     : undefined}
                                 onClosePanel={isDiscardMinionPrompt
                                     ? (discardStripDoneOption
-                                        ? () => dispatch(INTERACTION_COMMANDS.RESPOND, { optionId: discardStripDoneOption!.id })
-                                        : () => dispatch(INTERACTION_COMMANDS.CANCEL, {}))
+                                        ? () => respondCurrentPrompt({ optionId: discardStripDoneOption!.id })
+                                        : () => cancelCurrentPrompt())
                                     : () => { setDiscardStripSelectedUid(null); }
                                 }
                                 setAsideTitans={setAsideTitansForDisplay}

@@ -1,4 +1,5 @@
 import net from 'node:net';
+import os from 'node:os';
 import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -18,18 +19,42 @@ const DEFAULT_DEV_PORTS = Object.freeze({
     gameServer: 18000,
     apiServer: 18001,
 });
-const disableHotReload = isHotReloadDisabled(process.env);
+let disableHotReload = false;
+const LOW_MEMORY_DEFAULT_MIN_FREE_GB = 4;
+
+function isTruthyFlag(value) {
+    return /^(1|true|yes|on)$/i.test((value || '').trim());
+}
 
 function getBundleOutfile(...segments) {
     return path.join(devBundleDir, ...segments);
 }
 
 function isHotReloadDisabled(env) {
+    if (isTruthyFlag(env.BG_DEV_HOT_RELOAD)) {
+        return false;
+    }
+
     if (env.BG_DEV_DISABLE_HOT_RELOAD === '1') {
         return true;
     }
 
-    return /^(off|false|0)$/i.test(env.BG_DEV_HOT_RELOAD?.trim() || '');
+    if (/^(off|false|0)$/i.test(env.BG_DEV_HOT_RELOAD?.trim() || '')) {
+        return true;
+    }
+
+    const threshold = Number(env.BG_DEV_AUTO_DISABLE_HOT_RELOAD_MIN_FREE_GB || LOW_MEMORY_DEFAULT_MIN_FREE_GB);
+    if (process.platform === 'win32' && Number.isFinite(threshold) && threshold > 0) {
+        const freeMemoryGb = os.freemem() / (1024 ** 3);
+        if (freeMemoryGb < threshold) {
+            console.warn(
+                `[dev-orchestrator] free memory ${freeMemoryGb.toFixed(2)}GB < ${threshold}GB; auto-disabling hot reload for this run`,
+            );
+            return true;
+        }
+    }
+
+    return false;
 }
 
 function createBundleRunnerArgs({ label, entry, outfile, tsconfig }) {
@@ -203,6 +228,7 @@ function resolveGameDevEnv(mongoUri) {
 }
 
 async function main() {
+    disableHotReload = isHotReloadDisabled(process.env);
     removeDevRuntimePorts();
     const resolvedPorts = await resolveDevPortsFromEnv();
     const resolvedMongoUri = await resolveLocalDevMongoUri();

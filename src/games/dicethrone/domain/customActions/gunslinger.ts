@@ -5,6 +5,7 @@ import { getActiveDice, getMaxDuplicateValueCount, getOpponents, getPlayerDieFac
 import { RESOURCE_IDS } from '../resources';
 import { CP_MAX } from '../types';
 import type { PendingInteraction } from '../core-types';
+import type { AbilityDef, AbilityVariantDef } from '../combat';
 import type {
     BonusDamageAddedEvent,
     ChoiceRequestedEvent,
@@ -46,17 +47,48 @@ function createLoadedChoiceContext(
     };
 }
 
+const abilityMatchesId = (ability: AbilityDef, abilityId: string): boolean =>
+    ability.id === abilityId || ability.variants?.some((variant: AbilityVariantDef) => variant.id === abilityId) === true;
+
+const getLoadedRerollCount = (ability: AbilityDef | AbilityVariantDef | undefined, scope: 'sourceAbility' | 'allTokenUses'): number => {
+    const hook = ability?.tokenBonusDieReroll;
+    const isMatchingHook = hook?.tokenId === TOKEN_IDS.LOADED
+        && hook.maxRerollCount > 0
+        && (hook.scope ?? 'sourceAbility') === scope;
+    return isMatchingHook ? hook.maxRerollCount : 0;
+};
+
+const getSourceAbilityLoadedRerollCount = (
+    state: CustomActionContext['state'],
+    attackerId: string,
+    sourceAbilityId: string,
+): number => {
+    const ability = state.players[attackerId]?.abilities.find(def => abilityMatchesId(def, sourceAbilityId));
+    const variant = ability?.variants?.find(def => def.id === sourceAbilityId);
+    return Math.max(
+        getLoadedRerollCount(variant, 'sourceAbility'),
+        getLoadedRerollCount(ability, 'sourceAbility'),
+    );
+};
+
+const getGlobalLoadedRerollCount = (state: CustomActionContext['state'], attackerId: string): number =>
+    Math.max(
+        0,
+        ...((state.players[attackerId]?.abilities ?? []).map(ability => getLoadedRerollCount(ability, 'allTokenUses'))),
+    );
+
 function handleLoadedUse({ attackerId, sourceAbilityId, state, timestamp, random }: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
 
-    const quickDrawLevel = state.players[attackerId]?.abilityLevels?.['quick-draw'] ?? 1;
     const loadedBoost = state.pendingAttack?.loadedBonusDieBoost;
     const opponentId = getSelectedCombatOpponentId(state, attackerId, state.turnPhase)
         ?? state.pendingAttack?.defenderId
         ?? attackerId;
-    const canReroll = sourceAbilityId === 'fill-em-with-lead'
-        || quickDrawLevel >= 2
-        || loadedBoost?.allowReroll;
+    const maxRerollCount = Math.max(
+        getSourceAbilityLoadedRerollCount(state, attackerId, sourceAbilityId),
+        getGlobalLoadedRerollCount(state, attackerId),
+        loadedBoost?.allowReroll ? 1 : 0,
+    );
     const clearLoadedBoostEvent = loadedBoost
         ? ({
             type: 'PENDING_ATTACK_UPDATED',
@@ -69,7 +101,7 @@ function handleLoadedUse({ attackerId, sourceAbilityId, state, timestamp, random
         } as DiceThroneEvent)
         : null;
 
-    if (canReroll) {
+    if (maxRerollCount > 0) {
         const events: DiceThroneEvent[] = [];
         if (clearLoadedBoostEvent) {
             events.push(clearLoadedBoostEvent);
@@ -80,7 +112,7 @@ function handleLoadedUse({ attackerId, sourceAbilityId, state, timestamp, random
                 diceCount: 1,
                 rerollCostTokenId: TOKEN_IDS.LOADED,
                 rerollCostAmount: 0,
-                maxRerollCount: 1,
+                maxRerollCount,
                 dieEffectKey: 'bonusDie.effect.gunslingerLoadedDie',
                 rerollEffectKey: 'bonusDie.effect.gunslingerLoadedReroll',
                 showTotal: false,
@@ -166,29 +198,63 @@ function handleBountyReward({ attackerId, sourceAbilityId, state, timestamp }: C
     } as CpChangedEvent];
 }
 
-function handleShowdownBonus({ attackerId, sourceAbilityId, timestamp, random, action }: CustomActionContext): DiceThroneEvent[] {
+function handleShowdownBonus({ attackerId, sourceAbilityId, state, timestamp, random, action }: CustomActionContext): DiceThroneEvent[] {
     if (!random) return [];
 
     const attackerRoll = random.d(6);
     const defenderRoll = random.d(6);
-    if (attackerRoll < defenderRoll) {
-        return [];
-    }
+    const resolvedDefenderId = getSelectedCombatOpponentId(
+        state,
+        attackerId,
+        state.turnPhase,
+    ) ?? state.pendingAttack?.defenderId ?? attackerId;
 
     const amount = typeof action.params?.bonusDamageOnWin === 'number'
         ? action.params.bonusDamageOnWin
         : 2;
+    const showdownWon = attackerRoll >= defenderRoll;
+    const attackerFace = getPlayerDieFace(state, attackerId, attackerRoll);
+    const defenderFace = getPlayerDieFace(state, resolvedDefenderId, defenderRoll);
 
     return [{
-        type: 'BONUS_DAMAGE_ADDED',
+        type: 'CHOICE_REQUESTED',
         payload: {
             playerId: attackerId,
-            amount,
-            sourceCardId: sourceAbilityId,
+            sourceAbilityId,
+            titleKey: 'compareRoll.gunslingerShowdown.title',
+            options: [],
+            compareRoll: {
+                contestants: [
+                    {
+                        playerId: attackerId,
+                        labelKey: 'compareRoll.gunslingerShowdown.attacker',
+                        roll: attackerRoll,
+                        face: attackerFace,
+                        characterId: state.players[attackerId]?.characterId,
+                    },
+                    {
+                        playerId: resolvedDefenderId,
+                        labelKey: 'compareRoll.gunslingerShowdown.defender',
+                        roll: defenderRoll,
+                        face: defenderFace,
+                        characterId: state.players[resolvedDefenderId]?.characterId,
+                    },
+                ],
+                resultTextKey: showdownWon
+                    ? 'compareRoll.gunslingerShowdown.win'
+                    : 'compareRoll.gunslingerShowdown.lose',
+                resultTextParams: showdownWon ? { amount } : undefined,
+                resultTone: showdownWon ? 'success' : 'neutral',
+                confirmValue: {
+                    value: showdownWon ? amount : 0,
+                    customId: 'gunslinger-showdown-apply-bonus',
+                },
+                autoConfirmDelayMs: 1300,
+            },
         },
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
-    } as BonusDamageAddedEvent];
+    } as ChoiceRequestedEvent];
 }
 
 function handleDuelResolve({ sourceAbilityId, state, timestamp, random, action }: CustomActionContext): DiceThroneEvent[] {

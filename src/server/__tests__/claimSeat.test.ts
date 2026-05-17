@@ -92,4 +92,44 @@ describe('claim-seat handler', () => {
         expect(savedPlayer?.name).toBe('游客001');
         expect(savedPlayer?.credentials).toBe('guest-cred');
     });
+
+    it('重复 claim-seat 已占座位时返回既有凭据，避免并发补领覆盖 AI 座位凭据', async () => {
+        const jwtSecret = 'test-secret';
+        const metadata = buildMetadata('guest:g1');
+        metadata.players['1'] = {
+            name: 'AI-1',
+            credentials: 'existing-ai-cred',
+        };
+        const state = buildState('guest:g1');
+        let savedPlayers: SavedMatchData['players'];
+
+        const handler = createClaimSeatHandler({
+            db: {
+                fetch: async () => ({ metadata, state }),
+                setMetadata: async (_id, nextMetadata) => {
+                    savedPlayers = (nextMetadata as SavedMatchData).players;
+                },
+            },
+            auth: {
+                generateCredentials: () => {
+                    throw new Error('重复 claim 不应重新签发凭据');
+                },
+            },
+            jwtSecret,
+        });
+
+        const ctx: ClaimSeatContext = {
+            get: () => '',
+            request: { body: { playerID: '1', guestId: 'g1', playerName: 'AI-1' } },
+            throw: (status: number, message: string) => {
+                throw new Error(`${status}:${message}`);
+            },
+            body: undefined,
+        };
+
+        await handler(ctx, 'match-ai-race');
+
+        expect((ctx.body as { playerCredentials?: string })?.playerCredentials).toBe('existing-ai-cred');
+        expect(savedPlayers?.['1']?.credentials).toBe('existing-ai-cred');
+    });
 });

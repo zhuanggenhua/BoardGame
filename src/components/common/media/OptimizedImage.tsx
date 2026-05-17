@@ -1,7 +1,13 @@
 import React from 'react';
 import type { ImgHTMLAttributes } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getLocalizedImageCandidateUrls, isImagePreloaded, markImageLoaded } from '../../../core/AssetLoader';
+import {
+    getResolvedImageCacheUrl,
+    getRuntimeImageCandidateUrls,
+    isImagePreloaded,
+    markImageCandidateFailed,
+    markImageLoaded,
+} from '../../../core/AssetLoader';
 
 type OptimizedImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, 'src'> & {
     /** 原始资源路径（相对于游戏目录，如 dicethrone/images/...） */
@@ -115,7 +121,7 @@ export const OptimizedImage = ({
     }, []);
 
     const candidateUrls = React.useMemo(() => {
-        return getLocalizedImageCandidateUrls(src, effectiveLocale);
+        return getRuntimeImageCandidateUrls(src, effectiveLocale);
     }, [src, effectiveLocale]);
 
     const fallbackCandidates = React.useMemo(() => {
@@ -154,7 +160,12 @@ export const OptimizedImage = ({
     }, [candidateUrls]);
 
     const currentCandidate = fallbackCandidates[Math.min(fallbackLevel, Math.max(fallbackCandidates.length - 1, 0))];
-    const currentSrc = currentCandidate?.url ?? candidateUrls[0] ?? '';
+    const defaultCurrentSrc = currentCandidate?.url ?? candidateUrls[0] ?? '';
+    const restoredLoadedSrc = React.useMemo(
+        () => getResolvedImageCacheUrl(src, effectiveLocale),
+        [src, effectiveLocale],
+    );
+    const currentSrc = restoredLoadedSrc || defaultCurrentSrc;
     const isLocalFallback = currentCandidate != null
         && currentCandidate.label !== 'primary'
         && !isRemoteUrl(currentCandidate.url);
@@ -162,12 +173,21 @@ export const OptimizedImage = ({
     const renderedSrc = objectUrl ?? currentSrc;
 
     const isSvg = isSvgSource(renderedSrc);
+    const rememberEarlierCandidateFailures = React.useCallback((successfulUrl: string) => {
+        const successfulIndex = candidateUrls.indexOf(successfulUrl);
+        if (successfulIndex <= 0) return;
+        candidateUrls
+            .slice(0, successfulIndex)
+            .forEach((candidateUrl) => markImageCandidateFailed(src, effectiveLocale, candidateUrl));
+    }, [candidateUrls, effectiveLocale, src]);
     
     // 同步修正：如果 loaded 为 false 但缓存已就绪，立即同步为 true，
     // 避免 useLayoutEffect 异步更新导致的一帧 shimmer 闪烁
     const effectiveLoaded = loaded || preloaded;
 
-    // src 或 locale 变化时完全重置
+    // 只有逻辑资源或语言切换时才完全重置。
+    // 不能把 currentSrc（候选 URL 切换）放进依赖里，否则切到 fallback 后会立刻
+    // 把 fallbackLevel 清回 0，重新回到已失败的 primary，形成无限重试环。
     React.useLayoutEffect(() => {
         setFallbackLevel(0);
         setErrored(false);
@@ -183,7 +203,7 @@ export const OptimizedImage = ({
         } else {
             setLoaded(false);
         }
-    }, [src, effectiveLocale, currentSrc]);
+    }, [src, effectiveLocale]);
 
     // currentSrc 变化时（fallbackLevel 切换导致）检查新 URL 是否已缓存
     const prevSrcRef = React.useRef(currentSrc);
@@ -272,10 +292,9 @@ export const OptimizedImage = ({
             if (cancelled) return;
             const img = imgRef.current;
             if (img?.complete && img.naturalWidth > 0) {
-                markImageLoaded(currentSrc, undefined, img);
-                if (currentCandidate?.label === 'primary') {
-                    markImageLoaded(src, effectiveLocale, img);
-                }
+                rememberEarlierCandidateFailures(currentSrc);
+                markImageLoaded(currentSrc, undefined, img, currentSrc);
+                markImageLoaded(src, effectiveLocale, img, currentSrc);
                 setLoaded(true);
                 return;
             }
@@ -289,15 +308,14 @@ export const OptimizedImage = ({
                 window.cancelAnimationFrame(frameId);
             }
         };
-    }, [currentCandidate, currentSrc, effectiveLocale, errored, loaded, renderedSrc, src]);
+    }, [currentCandidate, currentSrc, effectiveLocale, errored, loaded, rememberEarlierCandidateFailures, renderedSrc, src]);
 
     const handleLoad: React.ReactEventHandler<HTMLImageElement> = (event) => {
         setLoaded(true);
         autoRetryRef.current = 0; // 加载成功，重置重试计数
-        markImageLoaded(currentSrc, undefined, event.currentTarget);
-        if (currentCandidate?.label === 'primary') {
-            markImageLoaded(src, effectiveLocale, event.currentTarget);
-        }
+        rememberEarlierCandidateFailures(currentSrc);
+        markImageLoaded(currentSrc, undefined, event.currentTarget, currentSrc);
+        markImageLoaded(src, effectiveLocale, event.currentTarget, currentSrc);
         if (isLocalFallback) {
             console.warn('[OptimizedImage] CDN 不可用，已降级到本地资源:', src);
         }
@@ -305,6 +323,7 @@ export const OptimizedImage = ({
     };
 
     const handleError: React.ReactEventHandler<HTMLImageElement> = (event) => {
+        markImageCandidateFailed(src, effectiveLocale, currentSrc);
         console.error('[OptimizedImage] ❌ 图片加载失败:', {
             src,
             currentSrc,

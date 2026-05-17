@@ -191,7 +191,30 @@ const closeCardSpotlightIfOpen = async (page: Page) => {
     if (await closeButton.isVisible({ timeout: 1000 }).catch(() => false)) {
         await closeButton.click();
         await page.waitForTimeout(200);
+        return;
     }
+    const cardSpotlight = page.getByTestId('card-spotlight-overlay');
+    if (await cardSpotlight.isVisible({ timeout: 1000 }).catch(() => false)) {
+        await page.waitForTimeout(250);
+        await cardSpotlight.click();
+        await expect(cardSpotlight).toBeHidden({ timeout: 5000 });
+    }
+};
+
+const screenshotCardSpotlightIfVisible = async (
+    page: Page,
+    testName: string,
+    fileName: string,
+    expectedDiceCount?: number,
+) => {
+    const cardSpotlight = page.getByTestId('card-spotlight-overlay');
+    if (!await cardSpotlight.isVisible({ timeout: 1500 }).catch(() => false)) return false;
+    if (typeof expectedDiceCount === 'number') {
+        await expect(cardSpotlight.getByTestId('card-spotlight-die')).toHaveCount(expectedDiceCount);
+    }
+    await screenshot(page, testName, fileName);
+    await closeCardSpotlightIfOpen(page);
+    return true;
 };
 
 const closeBonusDieOverlay = async (page: Page) => {
@@ -950,7 +973,6 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 const core = await readHarnessCoreState(match.hostPage);
                 const players = asRecordMap(core.players);
                 const treant = asRecord(players['0']);
-                const ninja = asRecord(players['1']);
                 const treantTokens = asRecord(treant.tokens) as Record<string, number>;
                 const treantResources = asRecord(treant.resources) as Record<string, number>;
                 const ninjaResources = asRecord(ninja.resources) as Record<string, number>;
@@ -1022,7 +1044,6 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 const core = await readHarnessCoreState(match.hostPage);
                 const players = asRecordMap(core.players);
                 const treant = asRecord(players['0']);
-                const ninja = asRecord(players['1']);
                 const treantTokens = asRecord(treant.tokens) as Record<string, number>;
                 const treantResources = asRecord(treant.resources) as Record<string, number>;
                 return {
@@ -1219,8 +1240,10 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await screenshot(match.hostPage, testName, '01-trample-before-drag.png');
 
             await dragHandCardToPlay(match.hostPage, 'treant-card-trample');
-            await expect(match.hostPage.getByTestId('bonus-die-overlay')).toBeVisible({ timeout: 10000 });
+            const trampleBonusDieOverlay = match.hostPage.getByTestId('bonus-die-overlay');
+            await expect(trampleBonusDieOverlay).toBeVisible({ timeout: 10000 });
             await expect(match.hostPage.getByTestId('bonus-die-reroll-option-0')).toBeVisible({ timeout: 10000 });
+            await screenshotLocator(trampleBonusDieOverlay, testName, '02-trample-bonus-dice-overlay-detail.png');
             await screenshot(match.hostPage, testName, '02-trample-bonus-dice-overlay.png');
 
             await closeBonusDieOverlay(match.hostPage);
@@ -1250,6 +1273,360 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 pendingBonusOpen: false,
             });
             await screenshot(match.hostPage, testName, '03-trample-after-closeout-bonus-damage-and-thorn.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('树精剩余升级卡应通过真实手牌逐张升级到正确技能', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '树精剩余升级卡应通过真实手牌逐张升级到正确技能';
+        const upgradeCases = [
+            { cardId: 'upgrade-tend-care-2', abilityId: 'tend-care', cpBefore: 5, cpAfter: 3, level: 2 },
+            { cardId: 'upgrade-shattering-fist-3', abilityId: 'shattering-fist', cpBefore: 5, cpAfter: 3, level: 3 },
+            { cardId: 'upgrade-nature-touch-2', abilityId: 'nature-touch', cpBefore: 5, cpAfter: 3, level: 2 },
+            { cardId: 'upgrade-vengeful-vines-2', abilityId: 'vengeful-vines', cpBefore: 5, cpAfter: 3, level: 2 },
+            { cardId: 'upgrade-wild-growth-2', abilityId: 'wild-growth', cpBefore: 5, cpAfter: 3, level: 2 },
+            { cardId: 'upgrade-shattering-fist-2', abilityId: 'shattering-fist', cpBefore: 5, cpAfter: 4, level: 2 },
+        ];
+
+        try {
+            const baselineCore = await readHarnessCoreState(match.hostPage);
+            const baselineTreant = structuredClone(asRecord(asRecordMap(baselineCore.players)['0']));
+            for (let index = 0; index < upgradeCases.length; index += 1) {
+                const item = upgradeCases[index];
+                await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                    const root = asRecord(state.G ?? state);
+                    const core = asRecord(root.core);
+                    const sys = asRecord(root.sys);
+                    const players = asRecordMap(core.players);
+                    const resources = asRecord(baselineTreant.resources);
+
+                    players['0'] = {
+                        ...baselineTreant,
+                        resources: { ...resources, [RESOURCE_IDS.CP]: item.cpBefore },
+                        hand: [cloneTreantCard(item.cardId)],
+                    };
+                    root.core = {
+                        ...core,
+                        players,
+                        activePlayerId: '0',
+                        phase: 'main1',
+                        pendingAttack: null,
+                        pendingDamage: null,
+                        pendingBonusDiceSettlement: undefined,
+                    };
+                    root.sys = {
+                        ...sys,
+                        phase: 'main1',
+                        currentPlayerIndex: 0,
+                        interaction: { ...asRecord(sys.interaction), current: undefined },
+                    };
+                    return state;
+                });
+                await closeDebugPanelIfOpen(match.hostPage);
+                await closeCardSpotlightIfOpen(match.hostPage);
+                await expect(match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${item.cardId}"]`).first()).toBeVisible({ timeout: 10000 });
+                await screenshot(match.hostPage, testName, `${String(index + 1).padStart(2, '0')}-${item.cardId}-before-drag.png`);
+
+                await dragHandCardToPlay(match.hostPage, item.cardId);
+                await expect.poll(async () => {
+                    const core = await readHarnessCoreState(match.hostPage);
+                    const p0 = asRecord(asRecordMap(core.players)['0']);
+                    const resources = asRecord(p0.resources) as Record<string, number>;
+                    const abilityLevels = asRecord(p0.abilityLevels) as Record<string, number>;
+                    const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                    return {
+                        cp: resources[RESOURCE_IDS.CP],
+                        level: abilityLevels[item.abilityId],
+                        handCount: hand.length,
+                    };
+                }, { timeout: 10000 }).toEqual({ cp: item.cpAfter, level: item.level, handCount: 0 });
+                await screenshot(match.hostPage, testName, `${String(index + 1).padStart(2, '0')}-${item.cardId}-after-play.png`);
+            }
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('树精剩余主阶段动作卡应通过真实手牌逐张结算', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '树精剩余主阶段动作卡应通过真实手牌逐张结算';
+
+        const prepareMainAction = async (
+            cardId: string,
+            options: { cp?: number; seedling?: number; sapling?: number; divine?: number; lifeSap?: number } = {},
+            fixedDice: number[] = [],
+        ) => {
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p0.resources);
+                const tokens = asRecord(p0.tokens);
+                const p1Tokens = asRecord(p1.tokens);
+                const deck = Array.isArray(p0.deck) ? p0.deck : [];
+
+                players['0'] = {
+                    ...p0,
+                    resources: { ...resources, [RESOURCE_IDS.CP]: options.cp ?? 5 },
+                    tokens: {
+                        ...tokens,
+                        [TOKEN_IDS.TREANT_SEEDLING]: options.seedling ?? 0,
+                        [TOKEN_IDS.TREANT_SAPLING]: options.sapling ?? 0,
+                        [TOKEN_IDS.TREANT_DIVINE]: options.divine ?? 0,
+                        [TOKEN_IDS.LIFE_SAP]: options.lifeSap ?? 0,
+                    },
+                    hand: [cloneTreantCard(cardId)],
+                    deck,
+                };
+                players['1'] = {
+                    ...p1,
+                    tokens: { ...p1Tokens, [TOKEN_IDS.LIFE_SAP]: 0 },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '0',
+                    phase: 'main1',
+                    pendingAttack: null,
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                const nextSys = {
+                    ...sys,
+                    phase: 'main1',
+                    currentPlayerIndex: 0,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                };
+                root.sys = fixedDice.length > 0 ? forceFixedDieQueue(nextSys, fixedDice) : nextSys;
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.hostPage);
+            await closeCardSpotlightIfOpen(match.hostPage);
+            await expect(match.hostPage.locator(`[data-testid="hand-area"] [data-card-id="${cardId}"]`).first()).toBeVisible({ timeout: 10000 });
+        };
+
+        try {
+            await prepareMainAction('treant-card-harvest', { cp: 1, seedling: 2 });
+            await screenshot(match.hostPage, testName, '01-harvest-before-drag.png');
+            await dragHandCardToPlay(match.hostPage, 'treant-card-harvest');
+            await expect(match.hostPage.getByText('丰收：选择移除树灵与生命源泉目标')).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '02-harvest-choice-modal.png');
+            await match.hostPage.getByRole('button', {
+                name: '移除：幼种 2 / 木苗 0 / 神性 0；获得 2 CP；生命源泉目标：P1',
+                exact: true,
+            }).click();
+            await expect(match.hostPage.getByText('丰收：选择移除树灵与生命源泉目标')).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const resources = asRecord(p0.resources) as Record<string, number>;
+                const tokens = asRecord(p0.tokens) as Record<string, number>;
+                const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    seedling: tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+                    lifeSap: tokens[TOKEN_IDS.LIFE_SAP] ?? 0,
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 3, seedling: 0, lifeSap: 1, handCount: 0 });
+            await screenshot(match.hostPage, testName, '03-harvest-after-resolve.png');
+
+            await prepareMainAction('treant-card-downpour', { cp: 5, seedling: 2, sapling: 0, divine: 0 });
+            await screenshot(match.hostPage, testName, '04-downpour-before-drag.png');
+            await dragHandCardToPlay(match.hostPage, 'treant-card-downpour');
+            await expect(match.hostPage.getByText('大雨倾盆：选择养成后的树灵')).toBeVisible({ timeout: 10000 });
+            await match.hostPage.getByRole('button', { name: '结算后：木苗 2' }).click();
+            await expect(match.hostPage.getByText('大雨倾盆：选择养成后的树灵')).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const resources = asRecord(p0.resources) as Record<string, number>;
+                const tokens = asRecord(p0.tokens) as Record<string, number>;
+                const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    seedling: tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+                    sapling: tokens[TOKEN_IDS.TREANT_SAPLING] ?? 0,
+                    divine: tokens[TOKEN_IDS.TREANT_DIVINE] ?? 0,
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 3, seedling: 0, sapling: 2, divine: 0, handCount: 0 });
+            await screenshot(match.hostPage, testName, '05-downpour-after-resolve.png');
+
+            await prepareMainAction('treant-card-planting', { cp: 5, seedling: 0, sapling: 0, divine: 0 });
+            await screenshot(match.hostPage, testName, '06-planting-before-drag.png');
+            await dragHandCardToPlay(match.hostPage, 'treant-card-planting');
+            await expect(match.hostPage.getByText(/选择养成后的树灵/)).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '07-planting-choice-modal.png');
+            await match.hostPage.getByRole('button', { name: '结算后：幼种 3' }).click();
+            await expect(match.hostPage.getByText(/选择养成后的树灵/)).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const resources = asRecord(p0.resources) as Record<string, number>;
+                const tokens = asRecord(p0.tokens) as Record<string, number>;
+                const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                return {
+                    cp: resources[RESOURCE_IDS.CP],
+                    seedling: tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 4, seedling: 3, handCount: 0 });
+            await screenshot(match.hostPage, testName, '08-planting-after-resolve.png');
+
+            await prepareMainAction('treant-card-mother-tree', { cp: 5, seedling: 0, sapling: 0, divine: 0 }, [6]);
+            await screenshot(match.hostPage, testName, '09-mother-tree-spirit-before-drag.png');
+            await dragHandCardToPlay(match.hostPage, 'treant-card-mother-tree');
+            await screenshotCardSpotlightIfVisible(
+                match.hostPage,
+                testName,
+                '10-mother-tree-spirit-die-result-spotlight.png',
+                1,
+            );
+            await expect(match.hostPage.getByText('母树：选择养成后的树灵')).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '10-mother-tree-spirit-choice-modal.png');
+            await match.hostPage.getByRole('button', { name: '结算后：幼种 2，木苗 1' }).click();
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const tokens = asRecord(p0.tokens) as Record<string, number>;
+                const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                return {
+                    seedling: tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+                    sapling: tokens[TOKEN_IDS.TREANT_SAPLING] ?? 0,
+                    handCount: hand.length,
+                };
+            }, { timeout: 10000 }).toEqual({ seedling: 2, sapling: 1, handCount: 0 });
+            await screenshot(match.hostPage, testName, '11-mother-tree-spirit-after-resolve.png');
+
+            await prepareMainAction('treant-card-mother-tree', { cp: 5, seedling: 0, sapling: 0, divine: 0 }, [1]);
+            const beforeNonSpirit = await readHarnessCoreState(match.hostPage);
+            const p0Before = asRecord(asRecordMap(beforeNonSpirit.players)['0']);
+            const deckBefore = Array.isArray(p0Before.deck) ? p0Before.deck.length : 0;
+            await screenshot(match.hostPage, testName, '12-mother-tree-non-spirit-before-drag.png');
+            await dragHandCardToPlay(match.hostPage, 'treant-card-mother-tree');
+            await screenshotCardSpotlightIfVisible(
+                match.hostPage,
+                testName,
+                '13-mother-tree-non-spirit-die-result-spotlight.png',
+                1,
+            );
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                const deck = Array.isArray(p0.deck) ? p0.deck : [];
+                return {
+                    handCount: hand.length,
+                    deckDelta: deckBefore - deck.length,
+                };
+            }, { timeout: 10000 }).toEqual({ handCount: 1, deckDelta: 1 });
+            await screenshot(match.hostPage, testName, '14-mother-tree-non-spirit-after-draw.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('树精魂火应通过真实手牌打出并结算三种骰面分支', async ({ browser }, testInfo) => {
+        test.setTimeout(150000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '树精魂火应通过真实手牌打出并结算三种骰面分支';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.hostPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p0 = asRecord(players['0']);
+                const p1 = asRecord(players['1']);
+                const p0Resources = asRecord(p0.resources);
+                const p0Tokens = asRecord(p0.tokens);
+                const p1Resources = asRecord(p1.resources);
+
+                players['0'] = {
+                    ...p0,
+                    resources: { ...p0Resources, [RESOURCE_IDS.CP]: 3 },
+                    tokens: {
+                        ...p0Tokens,
+                        [TOKEN_IDS.TREANT_SEEDLING]: 0,
+                        [TOKEN_IDS.TREANT_SAPLING]: 0,
+                        [TOKEN_IDS.TREANT_DIVINE]: 0,
+                        [TOKEN_IDS.LIFE_SAP]: 0,
+                    },
+                    hand: [cloneTreantCard('treant-card-soulfire')],
+                };
+                players['1'] = {
+                    ...p1,
+                    resources: { ...p1Resources, [RESOURCE_IDS.HP]: 50 },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '0',
+                    phase: 'offensiveRoll',
+                    rollCount: 1,
+                    rollConfirmed: true,
+                    pendingAttack: {
+                        attackerId: '0',
+                        defenderId: '1',
+                        sourceAbilityId: 'shattering-fist-3',
+                        isDefendable: true,
+                        damage: 5,
+                        bonusDamage: 0,
+                        attackModifierBonusDamage: 0,
+                    },
+                    pendingDamage: null,
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'offensiveRoll',
+                    currentPlayerIndex: 0,
+                    interaction: { ...asRecord(sys.interaction), current: undefined },
+                }, [1, 4, 6]);
+                return state;
+            });
+            await closeDebugPanelIfOpen(match.hostPage);
+            await closeCardSpotlightIfOpen(match.hostPage);
+            await expect(match.hostPage.locator('[data-testid="hand-area"] [data-card-id="treant-card-soulfire"]').first()).toBeVisible({ timeout: 10000 });
+            await screenshot(match.hostPage, testName, '01-soulfire-before-drag.png');
+
+            await dragHandCardToPlay(match.hostPage, 'treant-card-soulfire');
+            const soulfireBonusDieOverlay = match.hostPage.getByTestId('bonus-die-overlay');
+            await expect(soulfireBonusDieOverlay).toBeVisible({ timeout: 10000 });
+            await expect(soulfireBonusDieOverlay).toContainText('魂火：1 树枝 / 1 树叶 / 1 树灵', { timeout: 10000 });
+            await screenshot(match.hostPage, testName, '02-soulfire-bonus-dice-overlay.png');
+            await screenshotLocator(soulfireBonusDieOverlay, testName, '02-soulfire-bonus-dice-overlay-detail.png');
+            await closeBonusDieOverlay(match.hostPage);
+            await expect(soulfireBonusDieOverlay).toBeHidden({ timeout: 10000 });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.hostPage);
+                const p0 = asRecord(asRecordMap(core.players)['0']);
+                const p1 = asRecord(asRecordMap(core.players)['1']);
+                const p0Resources = asRecord(p0.resources) as Record<string, number>;
+                const p0Tokens = asRecord(p0.tokens) as Record<string, number>;
+                const p1Resources = asRecord(p1.resources) as Record<string, number>;
+                const hand = Array.isArray(p0.hand) ? p0.hand : [];
+                return {
+                    cp: p0Resources[RESOURCE_IDS.CP],
+                    handCount: hand.length,
+                    opponentHp: p1Resources[RESOURCE_IDS.HP],
+                    lifeSap: p0Tokens[TOKEN_IDS.LIFE_SAP] ?? 0,
+                    seedling: p0Tokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0,
+                };
+            }, { timeout: 10000 }).toEqual({ cp: 2, handCount: 0, opponentHp: 49, lifeSap: 1, seedling: 1 });
+            await screenshot(match.hostPage, testName, '03-soulfire-after-resolve.png');
         } finally {
             await closeMatchContexts(match);
         }
@@ -1537,6 +1914,91 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
                 pendingDamageOpen: false,
             });
             await screenshot(match.guestPage, testName, '06-knife-fan-after-play-direct-damage.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('忍者升级卡应通过真实手牌逐张升级到正确技能', async ({ browser }, testInfo) => {
+        test.setTimeout(180000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '忍者升级卡应通过真实手牌逐张升级到正确技能';
+        const upgradeCases = [
+            { cardId: 'upgrade-blink-2', abilityId: 'blink', level: 2 },
+            { cardId: 'upgrade-going-forward-2', abilityId: 'going-forward', level: 2 },
+            { cardId: 'upgrade-slash-2', abilityId: 'slash', level: 2 },
+            { cardId: 'upgrade-shadow-step-2', abilityId: 'shadow-step', level: 2 },
+            { cardId: 'upgrade-smoke-screen-2', abilityId: 'smoke-screen', level: 2 },
+            { cardId: 'upgrade-shadow-fang-2', abilityId: 'shadow-fang', level: 2 },
+            { cardId: 'upgrade-poison-blade-2', abilityId: 'poison-blade', level: 2 },
+            { cardId: 'upgrade-death-blossom-2', abilityId: 'death-blossom', level: 2 },
+        ];
+
+        try {
+            const baselineCore = await readHarnessCoreState(match.guestPage);
+            const baselineNinja = structuredClone(asRecord(asRecordMap(baselineCore.players)['1']));
+            for (let index = 0; index < upgradeCases.length; index += 1) {
+                const item = upgradeCases[index];
+                await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                    const root = asRecord(state.G ?? state);
+                    const core = asRecord(root.core);
+                    const sys = asRecord(root.sys);
+                    const players = asRecordMap(core.players);
+                    const resources = asRecord(baselineNinja.resources);
+
+                    players['1'] = {
+                        ...baselineNinja,
+                        resources: { ...resources, [RESOURCE_IDS.CP]: 5 },
+                        hand: [cloneNinjaCard(item.cardId)],
+                    };
+                    root.core = {
+                        ...core,
+                        players,
+                        activePlayerId: '1',
+                        phase: 'main1',
+                        pendingAttack: null,
+                        pendingDamage: null,
+                        pendingBonusDiceSettlement: undefined,
+                    };
+                    root.sys = {
+                        ...sys,
+                        phase: 'main1',
+                        currentPlayerIndex: 1,
+                        interaction: { ...asRecord(sys.interaction), current: undefined },
+                        responseWindow: { ...asRecord(sys.responseWindow), current: undefined },
+                    };
+                    return state;
+                });
+                await closeDebugPanelIfOpen(match.guestPage);
+                await closeCardSpotlightIfOpen(match.guestPage);
+                const card = match.guestPage.locator(`[data-testid="hand-area"] [data-card-id="${item.cardId}"]`).first();
+                await expect(card).toBeVisible({ timeout: 10000 });
+                await expect(card).toHaveAttribute('data-can-drag', 'true', { timeout: 10000 });
+                await screenshot(match.guestPage, testName, `${String(index + 1).padStart(2, '0')}-${item.cardId}-before-drag.png`);
+
+                await dragHandCardToPlay(match.guestPage, item.cardId);
+                await expect.poll(async () => {
+                    const core = await readHarnessCoreState(match.guestPage);
+                    const p1 = asRecord(asRecordMap(core.players)['1']);
+                    const resources = asRecord(p1.resources) as Record<string, number>;
+                    const abilityLevels = asRecord(p1.abilityLevels) as Record<string, number>;
+                    const upgradeCardByAbilityId = asRecord(p1.upgradeCardByAbilityId);
+                    const hand = Array.isArray(p1.hand) ? p1.hand : [];
+                    return {
+                        cp: resources[RESOURCE_IDS.CP],
+                        level: abilityLevels[item.abilityId],
+                        upgradeCardId: asRecord(upgradeCardByAbilityId[item.abilityId]).cardId,
+                        handCount: hand.length,
+                    };
+                }, { timeout: 10000 }).toEqual({
+                    cp: 3,
+                    level: item.level,
+                    upgradeCardId: item.cardId,
+                    handCount: 0,
+                });
+                await screenshot(match.guestPage, testName, `${String(index + 1).padStart(2, '0')}-${item.cardId}-after-play.png`);
+            }
         } finally {
             await closeMatchContexts(match);
         }
@@ -2003,6 +2465,114 @@ test.describe('DiceThrone Treant / Ninja 新英雄机制', () => {
             await match.guestPage.getByRole('button', { name: '继续' }).click();
             await expect(match.guestPage.getByRole('button', { name: '继续' })).toBeHidden({ timeout: 10000 });
             await screenshot(match.guestPage, testName, '03-smoke-bomb-after-closeout.png');
+        } finally {
+            await closeMatchContexts(match);
+        }
+    });
+
+    test('忍者烟雾弹失败骰面应消耗 token 但保留伤害并可继续结算', async ({ browser }, testInfo) => {
+        test.setTimeout(120000);
+        const baseURL = testInfo.project.use.baseURL as string | undefined;
+        const match = await setupTreantNinjaMatch(browser, baseURL);
+        const testName = '忍者烟雾弹失败骰面应消耗token但保留伤害并可继续结算';
+
+        try {
+            await applyOnlineMatchState(match.matchId, match.guestPage, (state) => {
+                const root = asRecord(state.G ?? state);
+                const core = asRecord(root.core);
+                const sys = asRecord(root.sys);
+                const players = asRecordMap(core.players);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p1.resources);
+                const tokens = asRecord(p1.tokens);
+
+                players['1'] = {
+                    ...p1,
+                    resources: { ...resources, [RESOURCE_IDS.HP]: 30 },
+                    tokens: { ...tokens, [TOKEN_IDS.SMOKE_BOMB]: 1 },
+                };
+                root.core = {
+                    ...core,
+                    players,
+                    activePlayerId: '0',
+                    phase: 'offensiveRoll',
+                    pendingAttack: {
+                        attackerId: '0',
+                        defenderId: '1',
+                        sourceAbilityId: 'shattering-fist',
+                        isDefendable: true,
+                        damage: 7,
+                    },
+                    pendingDamage: {
+                        id: 'e2e-smoke-bomb-failure-before-damage',
+                        sourcePlayerId: '0',
+                        targetPlayerId: '1',
+                        originalDamage: 7,
+                        currentDamage: 7,
+                        sourceAbilityId: 'shattering-fist',
+                        responseType: 'beforeDamageReceived',
+                        responderId: '1',
+                        isFullyEvaded: false,
+                    },
+                    pendingBonusDiceSettlement: undefined,
+                };
+                root.sys = forceFixedDieQueue({
+                    ...sys,
+                    phase: 'offensiveRoll',
+                    currentPlayerIndex: 0,
+                    interaction: {
+                        ...asRecord(sys.interaction),
+                        current: {
+                            id: 'dt-token-response-e2e-smoke-bomb-failure-before-damage',
+                            kind: 'dt:token-response',
+                            playerId: '1',
+                            data: { pendingDamageId: 'e2e-smoke-bomb-failure-before-damage' },
+                        },
+                    },
+                }, [5]);
+                return state;
+            });
+
+            await expect(match.guestPage.getByTestId('token-response-modal')).toBeVisible({ timeout: 10000 });
+            await screenshot(match.guestPage, testName, '01-smoke-bomb-failure-token-response-before-use.png');
+
+            await clickTokenUseButton(match.guestPage);
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const players = asRecordMap(core.players);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p1.resources) as Record<string, number>;
+                const tokens = asRecord(p1.tokens) as Record<string, number>;
+                return {
+                    hp: resources[RESOURCE_IDS.HP],
+                    smokeBomb: tokens[TOKEN_IDS.SMOKE_BOMB] ?? 0,
+                    pendingDamageOpen: Boolean(core.pendingDamage),
+                    currentDamage: asRecord(core.pendingDamage).currentDamage,
+                };
+            }, { timeout: 10000 }).toEqual({
+                hp: 30,
+                smokeBomb: 0,
+                pendingDamageOpen: true,
+                currentDamage: 7,
+            });
+            await screenshot(match.guestPage, testName, '02-smoke-bomb-failure-after-use-pending-damage.png');
+
+            await dispatchDiceThroneCommand(match.guestPage, {
+                type: 'SKIP_TOKEN_RESPONSE',
+                playerId: '1',
+                payload: {},
+            });
+            await expect.poll(async () => {
+                const core = await readHarnessCoreState(match.guestPage);
+                const players = asRecordMap(core.players);
+                const p1 = asRecord(players['1']);
+                const resources = asRecord(p1.resources) as Record<string, number>;
+                return {
+                    hp: resources[RESOURCE_IDS.HP],
+                    pendingDamageOpen: Boolean(core.pendingDamage),
+                };
+            }, { timeout: 10000 }).toEqual({ hp: 23, pendingDamageOpen: false });
+            await screenshot(match.guestPage, testName, '03-smoke-bomb-failure-after-damage-resolved.png');
         } finally {
             await closeMatchContexts(match);
         }

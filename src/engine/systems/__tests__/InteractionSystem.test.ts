@@ -265,6 +265,30 @@ describe('InteractionSystem', () => {
         expect(result?.error).toBe('不是你的交互');
     });
 
+    it('SYS_INTERACTION_CANCEL 携带旧 interactionId 时不应误取消当前交互', () => {
+        const system = createInteractionSystem<TestCore>();
+        const state = createTestState();
+        const command: Command = {
+            type: INTERACTION_COMMANDS.CANCEL,
+            playerId: '0',
+            payload: { interactionId: 'interaction-stale-cancel' },
+            timestamp: 102,
+        };
+
+        const result = system.beforeCommand?.({
+            state,
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result?.error).toBe('交互已过期');
+        expect(result && 'events' in result ? result.events : undefined).toBeUndefined();
+        expect(result && 'state' in result ? result.state : undefined).toBeUndefined();
+    });
+
     it('playerView should match player ids even when number/string types differ', () => {
         const system = createInteractionSystem<TestCore>();
         const state: MatchState<TestCore> = {
@@ -331,6 +355,47 @@ describe('InteractionSystem', () => {
 
         expect(option?.displayMode).toBe('card');
         expect(option?.value?.defId).toBe('test-card-1');
+    });
+
+    it('compare-roll-choice 应对双方参战者可见，但仍对其他玩家保持隐藏', () => {
+        const system = createInteractionSystem<TestCore>();
+        const state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    current: createCompareRollChoice(
+                        'interaction-compare-roll',
+                        '1',
+                        {
+                            title: 'compareRoll.gunslingerDuel.title',
+                            sourceId: 'duel',
+                            contestants: [
+                                { playerId: '1', labelKey: 'compareRoll.gunslingerDuel.defender', roll: 6, characterId: 'gunslinger' },
+                                { playerId: '0', labelKey: 'compareRoll.gunslingerDuel.attacker', roll: 1, characterId: 'monk' },
+                            ],
+                            resultTextKey: 'compareRoll.gunslingerDuel.win',
+                            options: [
+                                { id: 'option-0', label: 'choices.gunslingerDuel.deal3', value: { value: 3, customId: 'gunslinger-duel-deal-3' } },
+                            ],
+                        },
+                    ),
+                    queue: [],
+                },
+            },
+        } as unknown as MatchState<TestCore>;
+
+        const viewForOwner = system.playerView?.(state, '1') as any;
+        expect(viewForOwner?.interaction?.current?.id).toBe('interaction-compare-roll');
+        expect(viewForOwner?.interaction?.isBlocked).toBe(false);
+
+        const viewForOpponent = system.playerView?.(state, '0') as any;
+        expect(viewForOpponent?.interaction?.current?.id).toBe('interaction-compare-roll');
+        expect(viewForOpponent?.interaction?.current?.data?.contestants?.[1]?.playerId).toBe('0');
+        expect(viewForOpponent?.interaction?.isBlocked).toBe(true);
+
+        const viewForOther = system.playerView?.(state, '2') as any;
+        expect(viewForOther?.interaction?.current).toBeUndefined();
+        expect(viewForOther?.interaction?.isBlocked).toBe(true);
     });
 
     it('非 slider simple-choice 允许追加 mergedValue 字段，但不允许覆盖原字段', () => {
@@ -470,6 +535,46 @@ describe('InteractionSystem', () => {
         });
     });
 
+    it('simple-choice respond 携带旧 interactionId 时不应误响应当前交互', () => {
+        const system = createSimpleChoiceSystem<TestCore>();
+        const current = createSimpleChoice(
+            'interaction-simple-current',
+            '0',
+            '当前选择',
+            [{ id: 'a', label: 'A', value: { customId: 'safe-choice', value: 1 } }],
+        );
+        const state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    current,
+                    queue: [],
+                },
+            },
+        } as unknown as MatchState<TestCore>;
+        const command: Command = {
+            type: INTERACTION_COMMANDS.RESPOND,
+            playerId: '0',
+            payload: {
+                interactionId: 'interaction-simple-stale',
+                optionId: 'a',
+            },
+            timestamp: 100,
+        };
+
+        const result = system.beforeCommand?.({
+            state,
+            command,
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result && 'events' in result ? result.events : undefined).toBeUndefined();
+        expect(result && 'state' in result ? result.state : undefined).toBeUndefined();
+    });
+
     it('slider simple-choice 只允许覆盖数值字段，保留原选项元数据', () => {
         const system = createSimpleChoiceSystem<TestCore>();
         const current = createSimpleChoice(
@@ -574,6 +679,51 @@ describe('InteractionSystem', () => {
         });
     });
 
+    it('compare-roll-choice respond 携带旧 interactionId 时不应误响应当前交互', () => {
+        const system = createCompareRollChoiceSystem<TestCore>();
+        const current = createCompareRollChoice(
+            'interaction-compare-roll-current',
+            '0',
+            {
+                title: '对比掷骰',
+                sourceId: 'duel',
+                contestants: [
+                    { label: '我方', roll: 6 },
+                    { label: '对手', roll: 1 },
+                ],
+                options: [
+                    { id: 'deal-3', label: '造成 3 伤害', value: { customId: 'deal-3', value: 3 } },
+                ],
+            },
+        );
+        const state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    current,
+                    queue: [],
+                },
+            },
+        } as unknown as MatchState<TestCore>;
+
+        const result = system.beforeCommand?.({
+            state,
+            command: {
+                type: INTERACTION_COMMANDS.RESPOND,
+                playerId: '0',
+                payload: { interactionId: 'interaction-compare-roll-stale', optionId: 'deal-3' },
+                timestamp: 100,
+            },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result && 'events' in result ? result.events : undefined).toBeUndefined();
+        expect(result && 'state' in result ? result.state : undefined).toBeUndefined();
+    });
+
     it('compare-roll-choice 无选项确认时应复用 confirmValue 发出 RESOLVED 事件', () => {
         const system = createCompareRollChoiceSystem<TestCore>();
         const current = createCompareRollChoice(
@@ -621,6 +771,49 @@ describe('InteractionSystem', () => {
                 value: { customId: 'showdown-win', value: 2 },
             },
         });
+    });
+
+    it('compare-roll-choice confirm 携带旧 interactionId 时不应误确认当前交互', () => {
+        const system = createCompareRollChoiceSystem<TestCore>();
+        const current = createCompareRollChoice(
+            'interaction-compare-roll-current',
+            '0',
+            {
+                title: '摊到牌面',
+                sourceId: 'showdown',
+                contestants: [
+                    { label: '我方', roll: 6 },
+                    { label: '对手', roll: 1 },
+                ],
+                confirmValue: { customId: 'showdown-win', value: 2 },
+            },
+        );
+        const state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    current,
+                    queue: [],
+                },
+            },
+        } as unknown as MatchState<TestCore>;
+
+        const result = system.beforeCommand?.({
+            state,
+            command: {
+                type: INTERACTION_COMMANDS.CONFIRM,
+                playerId: '0',
+                payload: { interactionId: 'interaction-compare-roll-stale' },
+                timestamp: 101,
+            },
+            events: [],
+            random: mockRandom,
+            playerIds: ['0', '1'],
+        });
+
+        expect(result?.halt).toBe(true);
+        expect(result && 'events' in result ? result.events : undefined).toBeUndefined();
+        expect(result && 'state' in result ? result.state : undefined).toBeUndefined();
     });
 
     it('buildTargetAiHint 会为 inspect 目标推导 relation / intent / target tags', () => {

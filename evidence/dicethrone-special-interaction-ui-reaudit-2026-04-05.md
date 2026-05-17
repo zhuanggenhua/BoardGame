@@ -26,7 +26,7 @@
 
 ## 逐项结论
 
-### 1. 枪手 `Showdown / 摊到牌面` 命中 UI 语义缺口
+### 1. 枪手 `Showdown / 枪战决斗` 命中 UI 语义缺口
 
 - 描述语义：
   - `src/games/dicethrone/heroes/gunslinger/abilities.ts` 明确写的是“双方各掷 1 颗骰子。若你的结果不小于对手，改为造成 X 点伤害；否则造成 Y 点伤害。”

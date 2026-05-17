@@ -53,7 +53,7 @@ cmd /c npm run test:e2e:ci:file -- e2e/dicethrone-defense-selection.e2e.ts "枪�
 
 肉眼观察：
 
-1. 标题直接显示“摊到牌面”，中央同屏展示双方骰子，说明这条 pre-defense 比较也已进入统一 compare-roll 承载层。
+1. 标题直接显示“枪战决斗”，中央同屏展示双方骰子，说明这条 pre-defense 比较也已进入统一 compare-roll 承载层。
 2. 棋盘仍保持在攻击流程上下文里，没有被降级成脱离战局的普通提示框；比较结果是覆盖在真实战局上的。
 3. 这张图同样偏过程帧，主要证明“双骰比较 UI 已出现”；自动确认提示与结果文案由 E2E 文本断言补足。
 

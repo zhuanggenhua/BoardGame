@@ -31,6 +31,7 @@ vi.mock('react-i18next', () => ({
             if (key === 'createRoom.retention') return '保留时长';
             if (key === 'createRoom.retentionHint') return '可选';
             if (key.startsWith('createRoom.retentionOptions.')) return key;
+            if (key === 'createRoom.playerCountUnit') return `${options?.count}人`;
             if (key === 'createRoom.occupiedSeats') return 'AI 占位';
             if (key === 'createRoom.occupiedSeatsHint') return '选择 AI 座位';
             if (key === 'createRoom.ownerSeatUnit') return `seat-${options?.seat}-owner`;
@@ -180,6 +181,38 @@ describe('CreateRoomModal AI default state', () => {
             seatControllers: expect.objectContaining({
                 '1': { type: 'local-ai', difficulty: 'hard' },
             }),
+        }));
+    });
+
+    it('四人房开启 AI 时会保留显式真人空座，不把第三座补成 AI', () => {
+        const onConfirm = vi.fn();
+        const fourPlayerManifest: GameManifestEntry = {
+            ...gameManifest,
+            playerOptions: [2, 4],
+        };
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest: fourPlayerManifest,
+            initialPreferences: null,
+        }));
+
+        fireEvent.click(screen.getByRole('button', { name: '4人' }));
+        fireEvent.click(screen.getByRole('button', { name: /加入 AI/i }));
+        fireEvent.click(screen.getByRole('button', { name: 'seat-4' }));
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            enableAi: true,
+            numPlayers: 4,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', difficulty: 'normal' },
+                '2': { type: 'human' },
+                '3': { type: 'local-ai', difficulty: 'normal' },
+            },
         }));
     });
 

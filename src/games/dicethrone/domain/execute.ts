@@ -76,9 +76,20 @@ const resolveStatusNewTotal = (
     return Math.min(currentStacks + amount, maxStacks);
 };
 
-const normalizeSelectedAbilityId = (abilityId: string): string => {
+const playerHasAbility = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): boolean => {
+    if (!playerId) return false;
+    return findPlayerAbility(state, playerId, abilityId) !== null;
+};
+
+const normalizeSelectedAbilityId = (state: DiceThroneCore, playerId: PlayerId | undefined, abilityId: string): string => {
     if (abilityId === 'shadow-guard') return 'shadow-defense';
-    if (abilityId === 'shadow-step') return 'elusive-step';
+    if (
+        abilityId === 'shadow-step'
+        && !playerHasAbility(state, playerId, 'shadow-step')
+        && playerHasAbility(state, playerId, 'elusive-step')
+    ) {
+        return 'elusive-step';
+    }
     return abilityId;
 };
 
@@ -446,7 +457,10 @@ export function execute(
 
         case 'SELECT_ABILITY': {
             const { abilityId: rawAbilityId } = command.payload as { abilityId: string };
-            const abilityId = normalizeSelectedAbilityId(rawAbilityId);
+            const selectingPlayerId = phase === 'defensiveRoll'
+                ? state.pendingAttack?.defenderId
+                : state.activePlayerId;
+            const abilityId = normalizeSelectedAbilityId(state, selectingPlayerId, rawAbilityId);
 
             if (phase === 'defensiveRoll') {
                 // 防御技能选择
@@ -965,9 +979,16 @@ export function execute(
             const passives = getPlayerPassiveAbilities(state, command.playerId);
             const passive = passives.find(p => p.id === passiveId);
             if (!passive) break;
+            if (!Number.isInteger(actionIndex)) break;
             const action = passive.actions[actionIndex];
             if (!action) break;
             if (!isPassiveActionUsable(state, command.playerId, passiveId, actionIndex, phase)) break;
+            if (action.type === 'rerollDie') {
+                if (!Number.isInteger(targetDieId)) break;
+                const dieIndex = state.dice.findIndex(d => d.id === targetDieId);
+                const die = dieIndex >= 0 ? state.dice[dieIndex] : undefined;
+                if (!die || dieIndex >= state.rollDiceCount || state.rollCount === 0 || die.isKept) break;
+            }
 
             const player = state.players[command.playerId];
             if (!player) break;
@@ -1003,8 +1024,9 @@ export function execute(
             }
 
             // 执行动作
-            if (action.type === 'rerollDie' && targetDieId !== undefined) {
+            if (action.type === 'rerollDie') {
                 const die = state.dice.find(d => d.id === targetDieId);
+                if (!die) break;
                 const newValue = random.d(6);
                 events.push({
                     type: 'DIE_REROLLED',

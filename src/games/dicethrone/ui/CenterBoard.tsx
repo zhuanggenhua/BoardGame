@@ -7,6 +7,7 @@ import { AbilityOverlays } from './AbilityOverlays';
 import type { AbilityOverlaysHandle } from './AbilityOverlays';
 import { ASSETS } from './assets';
 import { getPlayerBoardAspectRatio, getPlayerBoardUiTuning } from './abilitySlotLayout';
+import type { AbilityCard } from '../types';
 
 export interface CenterBoardProps {
     coreAreaHighlighted: boolean;
@@ -25,6 +26,7 @@ export interface CenterBoardProps {
     characterId?: string;
     locale?: string;
     onMagnifyImage: (image: string) => void;
+    onMagnifyCard: (card: AbilityCard) => void;
     abilityOverlaysRef?: React.Ref<AbilityOverlaysHandle>;
     playerTokens?: Record<string, number>;
 }
@@ -46,6 +48,7 @@ export const CenterBoard = ({
     characterId = 'monk',
     locale,
     onMagnifyImage,
+    onMagnifyCard,
     abilityOverlaysRef,
     playerTokens,
 }: CenterBoardProps) => {
@@ -153,6 +156,7 @@ export const CenterBoard = ({
                         abilityLevels={abilityLevels}
                         characterId={characterId}
                         locale={locale}
+                        onMagnifyCard={onMagnifyCard}
                         playerTokens={playerTokens}
                     />
                     <button

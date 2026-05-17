@@ -30,7 +30,7 @@ import type { CpChangedEvent, AttackResolvedEvent } from '../domain/events';
 import type { PlayerId } from '../../../engine/types';
 import type { StatusAtlases } from '../ui/statusEffects';
 import { getStatusEffectIconNode } from '../ui/statusEffects';
-import { STATUS_EFFECT_META, TOKEN_META } from '../domain/statusEffects';
+import { STATUS_EFFECT_META, getVisualMetaById } from '../domain/statusEffects';
 import { getElementCenter } from '../../../components/common/animations/FlyingEffect';
 import type { FxBus, FxParams } from '../../../engine/fx';
 import {
@@ -580,7 +580,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         Object.entries(currentTokens).forEach(([tokenId, stacks]) => {
             const prevStacks = prevTokens[tokenId] ?? 0;
             if (stacks > prevStacks) {
-                const info = TOKEN_META[tokenId] || { color: 'from-slate-500 to-slate-600' };
+                const info = getVisualMetaById(tokenId) || { color: 'from-slate-500 to-slate-600' };
                 fxBus.push(DT_FX.TOKEN, {}, {
                     content: getStatusEffectIconNode(info, locale, 'fly', statusIconAtlas),
                     color: info.color,
@@ -594,7 +594,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         Object.entries(prevTokens).forEach(([tokenId, prevStacks]) => {
             const currentStacks = currentTokens[tokenId] ?? 0;
             if (prevStacks > 0 && currentStacks < prevStacks) {
-                const info = TOKEN_META[tokenId] || { color: 'from-slate-500 to-slate-600' };
+                const info = getVisualMetaById(tokenId) || { color: 'from-slate-500 to-slate-600' };
                 fxBus.push(DT_FX.TOKEN, {}, {
                     content: getStatusEffectIconNode(info, locale, 'fly', statusIconAtlas),
                     color: 'from-slate-400 to-slate-600',
@@ -618,7 +618,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         Object.entries(currentTokens).forEach(([tokenId, stacks]) => {
             const prevStacks = prevTokens[tokenId] ?? 0;
             if (stacks > prevStacks) {
-                const info = TOKEN_META[tokenId] || { color: 'from-slate-500 to-slate-600' };
+                const info = getVisualMetaById(tokenId) || { color: 'from-slate-500 to-slate-600' };
                 fxBus.push(DT_FX.TOKEN, {}, {
                     content: getStatusEffectIconNode(info, locale, 'fly', statusIconAtlas),
                     color: info.color,
@@ -632,7 +632,7 @@ export function useAnimationEffects(config: AnimationEffectsConfig): {
         Object.entries(prevTokens).forEach(([tokenId, prevStacks]) => {
             const currentStacks = currentTokens[tokenId] ?? 0;
             if (prevStacks > 0 && currentStacks < prevStacks) {
-                const info = TOKEN_META[tokenId] || { color: 'from-slate-500 to-slate-600' };
+                const info = getVisualMetaById(tokenId) || { color: 'from-slate-500 to-slate-600' };
                 fxBus.push(DT_FX.TOKEN, {}, {
                     content: getStatusEffectIconNode(info, locale, 'fly', statusIconAtlas),
                     color: 'from-slate-400 to-slate-600',

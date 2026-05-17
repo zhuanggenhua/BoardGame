@@ -336,10 +336,10 @@ export function initHeroState(
         tokens: { ...data.initialTokens },
         tokenStackLimits: Object.fromEntries(data.tokens.map(t => [t.id, t.stackLimit])),
         damageShields: [],
-        abilities: data.abilities,
+        abilities: JSON.parse(JSON.stringify(data.abilities)),
         abilityLevels: { ...data.initialAbilityLevels },
         upgradeCardByAbilityId: {},
-        passiveAbilities: data.passiveAbilities ? [...data.passiveAbilities] : undefined,
+        passiveAbilities: data.passiveAbilities ? JSON.parse(JSON.stringify(data.passiveAbilities)) : undefined,
     };
 }
 

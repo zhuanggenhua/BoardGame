@@ -402,6 +402,7 @@
     "confirmRollWithAbility": "Confirmed roll ({{abilityName}}):",
     "confirmRollDefense": "Confirmed defense roll:",
     "confirmRollDefenseWithAbility": "Confirmed defense roll ({{abilityName}}):",
+    "compareRollPrefix": "Roll-off result:",
     "cardRollResult": "Roll result:",
     "dieModified": "Modified die #{{dieId}}: {{oldValue}} → {{newValue}}",
     "dieModifiedSource": "({{source}})",
@@ -3185,6 +3186,7 @@
   },
   "compareRoll": {
     "confirming": "Confirming...",
+    "waitingForOwnerChoice": "Waiting for the other player to choose...",
     "rolled": "Rolled {{value}}",
     "gunslingerDuel": {
       "title": "Duel Roll-Off",
@@ -3193,6 +3195,13 @@
       "win": "You won the duel. Choose the resolution.",
       "lose": "You lost the duel: deal 1 undefendable damage to the attacker.",
       "tieLose": "Tie does not win this duel: deal 1 undefendable damage to the attacker."
+    },
+    "gunslingerShowdown": {
+      "title": "Showdown",
+      "attacker": "Gunslinger",
+      "defender": "Opponent",
+      "win": "Attack damage +{{amount}}",
+      "lose": "You did not win the roll-off. Keep base damage."
     }
   },
   "selection": {

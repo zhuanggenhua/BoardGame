@@ -101,7 +101,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-showdown-2', 'description'),
         sfxKey: GUNSLINGER_SFX_HEAVY,
         ...gunslingerAtlasRef(20),
-        effects: [replaceAbility('showdown', SHOWDOWN_2, 2, '升级摊到牌面至 II 级。')],
+        effects: [replaceAbility('showdown', SHOWDOWN_2, 2, '升级枪战决斗至 II 级。')],
     },
     {
         id: 'upgrade-showdown-3',
@@ -112,7 +112,7 @@ export const GUNSLINGER_CARDS: AbilityCard[] = [
         description: cardText('upgrade-showdown-3', 'description'),
         sfxKey: GUNSLINGER_SFX_HEAVY,
         ...gunslingerAtlasRef(21),
-        effects: [replaceAbility('showdown', SHOWDOWN_3, 3, '升级摊到牌面至 III 级。')],
+        effects: [replaceAbility('showdown', SHOWDOWN_3, 3, '升级枪战决斗至 III 级。')],
     },
     {
         id: 'upgrade-fan-the-hammer-2',

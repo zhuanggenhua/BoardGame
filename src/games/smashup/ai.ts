@@ -1083,16 +1083,17 @@ const appendAction = (
 };
 
 const buildSimpleChoicePayload = (
+    interactionId: string,
     optionIds: string[],
     multi: PromptMultiConfig | undefined,
 ): Record<string, unknown> => {
     if (optionIds.length <= 1 && !multi) {
-        return { optionId: optionIds[0] };
+        return { interactionId, optionId: optionIds[0] };
     }
     if (optionIds.length <= 1 && (multi?.min ?? 0) <= 1) {
-        return { optionId: optionIds[0] };
+        return { interactionId, optionId: optionIds[0] };
     }
-    return { optionIds };
+    return { interactionId, optionIds };
 };
 
 const enumerateInteractionOptionCombinations = <T extends { id: string }>(
@@ -1176,11 +1177,11 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
         actions.push({
             actionId: createAiLegalActionId('interaction', current.id, 'empty-selection'),
             kind: 'interaction-choice',
-            label: '不选择任何项',
-            commands: [{
-                type: 'SYS_INTERACTION_RESPOND',
-                payload: { optionIds: [] },
-            }],
+                label: '不选择任何项',
+                commands: [{
+                    type: 'SYS_INTERACTION_RESPOND',
+                    payload: { interactionId: current.id, optionIds: [] },
+                }],
             aiHints: [OPTIONAL_SKIP_AI_HINT],
             metadata: {
                 interactionId: current.id,
@@ -1201,7 +1202,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
                 label: '取消交互（无可用选项）',
                 commands: [{
                     type: 'SYS_INTERACTION_CANCEL',
-                    payload: { reason: 'empty-options' },
+                    payload: { interactionId: current.id, reason: 'empty-options' },
                 }],
                 aiHints: [OPTIONAL_SKIP_AI_HINT],
                 metadata: {
@@ -1231,7 +1232,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
                 label: combination.map((option) => option.label ?? option.id).join(' + ') || `交互多选 ${index + 1}`,
                 commands: [{
                     type: 'SYS_INTERACTION_RESPOND',
-                    payload: buildSimpleChoicePayload(optionIds, data.multi),
+                    payload: buildSimpleChoicePayload(current.id, optionIds, data.multi),
                 }],
                 aiHints,
                 metadata: {
@@ -1255,7 +1256,7 @@ const buildInteractionActions = (state: SmashUpState, playerId: PlayerId): AiLeg
             label: option.label ?? `交互选择 ${index + 1}`,
             commands: [{
                 type: 'SYS_INTERACTION_RESPOND',
-                payload: buildSimpleChoicePayload([option.id], data.multi),
+                payload: buildSimpleChoicePayload(current.id, [option.id], data.multi),
             }],
             aiHints,
             metadata: {

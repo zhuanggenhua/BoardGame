@@ -1,5 +1,6 @@
 import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
-import { registerChoiceEffectHandler } from '../choiceEffects';
+import { hasCurrentChoiceAnchor, registerChoiceEffectHandler } from '../choiceEffects';
+import { getPlayerAbilityEffects } from '../abilityLookup';
 import { RESOURCE_IDS } from '../resources';
 import { buildDrawEvents } from '../deckEvents';
 import {
@@ -46,6 +47,29 @@ const TEND_CARE_CHOICE_ID_BY_AMOUNT: Record<number, string> = {
     3: 'treant-tend-care-3-resolve',
     4: 'treant-tend-care-4-resolve',
 };
+const WILD_GROWTH_SOURCE_IDS = ['wild-growth'] as const;
+const SHATTERING_FIST_SOURCE_IDS = ['shattering-fist-3', 'shattering-fist-4', 'shattering-fist-5'] as const;
+const NATURE_TOUCH_SOURCE_IDS = ['nature-touch'] as const;
+const SHATTERING_FIST_3_CULTIVATE_SOURCE_IDS = ['shattering-fist-3-3', 'shattering-fist-3-4', 'shattering-fist-3-5'] as const;
+const QUIET_CULTIVATION_SOURCE_IDS = ['quiet-cultivation'] as const;
+const ROOTED_SOURCE_IDS = ['rooted'] as const;
+const FOREST_AWAKENS_SOURCE_IDS = ['forest-awakens'] as const;
+const DRINK_DEEP_SOURCE_IDS = ['treant-card-drink-deep'] as const;
+const HARVEST_SOURCE_IDS = ['treant-card-harvest'] as const;
+const DOWNPOUR_SOURCE_IDS = ['treant-card-downpour'] as const;
+const CARD_CULTIVATE_SOURCE_IDS = [
+    'treant-card-cultivate',
+    'treant-card-planting',
+    'treant-card-soulfire',
+    'treant-card-mother-tree',
+] as const;
+const CARD_CULTIVATE_ALLOWED_AMOUNTS_BY_SOURCE: Record<(typeof CARD_CULTIVATE_SOURCE_IDS)[number], readonly number[]> = {
+    'treant-card-cultivate': [3],
+    'treant-card-planting': [3],
+    'treant-card-soulfire': [1, 2, 3],
+    'treant-card-mother-tree': [4],
+};
+const TEND_CARE_SOURCE_IDS = ['tend-care'] as const;
 const NATURE_TOUCH_CULTIVATE_AMOUNT = 2;
 const FOREST_AWAKENS_CULTIVATE_AMOUNT = 5;
 
@@ -76,6 +100,8 @@ type RootedChoice = {
     sapling: number;
     divine: number;
     lifeSapTargetIndex: number;
+    requiresCultivate: boolean;
+    requiresLifeSap: boolean;
 };
 
 type TendCareChoice = {
@@ -93,12 +119,38 @@ type HarvestChoice = {
     lifeSapTargetMask: number;
 };
 
+function normalizeChoiceValue(value?: number): number {
+    return Number.isFinite(value) ? Math.max(0, Math.floor(value as number)) : 0;
+}
+
+function isExpectedChoiceSource(sourceAbilityId: string | undefined, expectedSourceIds: readonly string[]): boolean {
+    return typeof sourceAbilityId === 'string' && expectedSourceIds.includes(sourceAbilityId);
+}
+
+function matchesCurrentPendingAttackSource(
+    state: CustomActionContext['state'],
+    playerId: string,
+    sourceAbilityId: string | undefined,
+): sourceAbilityId is string {
+    return typeof sourceAbilityId === 'string'
+        && hasCurrentChoiceAnchor(state, sourceAbilityId)
+        && state.pendingAttack?.attackerId === playerId
+        && state.pendingAttack.sourceAbilityId === sourceAbilityId;
+}
+
+function matchesCurrentChoiceSource(
+    state: CustomActionContext['state'],
+    sourceAbilityId: string | undefined,
+): sourceAbilityId is string {
+    return hasCurrentChoiceAnchor(state, sourceAbilityId);
+}
+
 function encodeWildGrowthChoice(choice: WildGrowthChoice): number {
     return choice.seedling + choice.sapling * 10 + choice.divine * 100 + (choice.lifeSap ? 1000 : 0);
 }
 
 function decodeWildGrowthChoice(value?: number): WildGrowthChoice {
-    const raw = Math.max(0, Math.floor(value ?? 0));
+    const raw = normalizeChoiceValue(value);
     return {
         seedling: raw % 10,
         sapling: Math.floor(raw / 10) % 10,
@@ -136,7 +188,7 @@ function encodeSpiritCounts(counts: SpiritCounts): number {
 }
 
 function decodeSpiritCounts(value?: number): SpiritCounts {
-    const raw = Math.max(0, Math.floor(value ?? 0));
+    const raw = normalizeChoiceValue(value);
     return {
         seedling: raw % 10,
         sapling: Math.floor(raw / 10) % 10,
@@ -211,20 +263,17 @@ function enumerateCultivateOutcomes(current: SpiritCounts, limits: SpiritLimits,
 
 function enumerateDownpourOutcomes(current: SpiritCounts, limits: SpiritLimits): SpiritCounts[] {
     const outcomes = new Map<number, SpiritCounts>();
+    outcomes.set(encodeSpiritCounts(current), current);
 
-    for (let seedlingUp = 0; seedlingUp <= current.seedling; seedlingUp += 1) {
-        for (let saplingUp = 0; saplingUp <= current.sapling; saplingUp += 1) {
-            const target: SpiritCounts = {
-                seedling: current.seedling - seedlingUp,
-                sapling: current.sapling - saplingUp + seedlingUp,
-                divine: current.divine + saplingUp,
-            };
-            if (target.seedling > limits.seedling || target.sapling > limits.sapling || target.divine > limits.divine) {
-                continue;
-            }
-            outcomes.set(encodeSpiritCounts(target), target);
-        }
-    }
+    const saplingsToDivine = Math.min(current.sapling, Math.max(0, limits.divine - current.divine));
+    const remainingSapling = current.sapling - saplingsToDivine;
+    const seedlingsToSapling = Math.min(current.seedling, Math.max(0, limits.sapling - remainingSapling));
+    const allExistingOnce: SpiritCounts = {
+        seedling: current.seedling - seedlingsToSapling,
+        sapling: remainingSapling + seedlingsToSapling,
+        divine: current.divine + saplingsToDivine,
+    };
+    outcomes.set(encodeSpiritCounts(allExistingOnce), allExistingOnce);
 
     return Array.from(outcomes.values()).sort((a, b) => {
         if (a.divine !== b.divine) return b.divine - a.divine;
@@ -281,14 +330,23 @@ function buildSpiritTransitionEvents(
 }
 
 function encodeRootedChoice(choice: RootedChoice): number {
-    return encodeSpiritCounts(choice) + (choice.lifeSapTargetIndex + 1) * 1000;
+    return encodeSpiritCounts(choice)
+        + (choice.lifeSapTargetIndex + 1) * 1000
+        + (choice.requiresCultivate ? 10000 : 0)
+        + (choice.requiresLifeSap ? 20000 : 0);
 }
 
 function decodeRootedChoice(value?: number): RootedChoice {
-    const raw = Math.max(0, Math.floor(value ?? 0));
+    let raw = normalizeChoiceValue(value);
+    const requiresLifeSap = raw >= 20000;
+    if (requiresLifeSap) raw -= 20000;
+    const requiresCultivate = raw >= 10000;
+    if (requiresCultivate) raw -= 10000;
     return {
         ...decodeSpiritCounts(raw % 1000),
         lifeSapTargetIndex: Math.floor(raw / 1000) - 1,
+        requiresCultivate,
+        requiresLifeSap,
     };
 }
 
@@ -315,7 +373,7 @@ function encodeHarvestChoice(choice: HarvestChoice): number {
 }
 
 function decodeHarvestChoice(value?: number): HarvestChoice {
-    const raw = Math.max(0, Math.floor(value ?? 0));
+    const raw = normalizeChoiceValue(value);
     return {
         ...decodeSpiritCounts(raw % 1000),
         lifeSapTargetMask: Math.floor(raw / 1000),
@@ -323,7 +381,7 @@ function decodeHarvestChoice(value?: number): HarvestChoice {
 }
 
 function decodeTendCareChoice(value?: number): TendCareChoice {
-    const raw = Math.max(0, Math.floor(value ?? 0));
+    const raw = normalizeChoiceValue(value);
     return {
         ...decodeSpiritCounts(raw % 1000),
         lifeSapTargetIndex: Math.floor(raw / 1000) % 10 - 1,
@@ -334,6 +392,49 @@ function decodeTendCareChoice(value?: number): TendCareChoice {
 function getTendCareCultivateAmount(action: CustomActionContext['action']): number {
     const amount = Number(action.cultivateAmount);
     return amount === 4 ? 4 : 3;
+}
+
+function getCurrentTendCareCultivateAmount(
+    state: CustomActionContext['state'],
+    playerId: string,
+): number | undefined {
+    const effect = getPlayerAbilityEffects(state, playerId, 'tend-care').find(currentEffect => (
+        currentEffect.action.type === 'custom'
+        && currentEffect.action.customActionId === 'treant-tend-care-choice'
+    ));
+    const amount = Number(effect?.action?.cultivateAmount);
+    if (amount === 4) return 4;
+    if (amount === 3) return 3;
+    return undefined;
+}
+
+function getCurrentCardCultivateAmount(
+    state: CustomActionContext['state'],
+    playerId: string,
+    sourceAbilityId: string | undefined,
+): number | undefined {
+    if (sourceAbilityId === 'treant-card-cultivate' || sourceAbilityId === 'treant-card-planting') {
+        return 3;
+    }
+
+    const settlement = state.pendingBonusDiceSettlement;
+    if (!settlement || settlement.sourceAbilityId !== sourceAbilityId || settlement.attackerId !== playerId) {
+        return undefined;
+    }
+
+    if (sourceAbilityId === 'treant-card-soulfire') {
+        const spiritCount = settlement.dice.reduce(
+            (count, die) => count + (die.face === TREANT_DICE_FACE_IDS.SPIRIT ? 1 : 0),
+            0,
+        );
+        return spiritCount > 0 ? spiritCount : undefined;
+    }
+
+    if (sourceAbilityId === 'treant-card-mother-tree') {
+        return settlement.dice.some(die => die.face === TREANT_DICE_FACE_IDS.SPIRIT) ? 4 : undefined;
+    }
+
+    return undefined;
 }
 
 function getTendCareChoiceId(amount: number): string {
@@ -1147,6 +1248,8 @@ function handleRootedDefense(ctx: CustomActionContext): DiceThroneEvent[] {
         const choice = {
             ...outcome,
             lifeSapTargetIndex: needsLifeSap ? targetIndex : -1,
+            requiresCultivate: needsCultivate,
+            requiresLifeSap: needsLifeSap,
         };
         return {
             value: encodeRootedChoice(choice),
@@ -1172,22 +1275,24 @@ function handleRootedDefense(ctx: CustomActionContext): DiceThroneEvent[] {
     return events;
 }
 
-registerChoiceEffectHandler(WILD_GROWTH_CHOICE_ID, ({ state, playerId, value }) => {
+registerChoiceEffectHandler(WILD_GROWTH_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
-    if (!player || !state.pendingAttack || state.pendingAttack.attackerId !== playerId) return undefined;
+    if (!isExpectedChoiceSource(sourceAbilityId, WILD_GROWTH_SOURCE_IDS)) return undefined;
+    if (!player || !matchesCurrentPendingAttackSource(state, playerId, sourceAbilityId)) return undefined;
 
     const choice = decodeWildGrowthChoice(value);
     const currentTokens = player.tokens ?? {};
+    const removedTreeCount = choice.seedling + choice.sapling + choice.divine;
     if (
         choice.seedling > (currentTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0)
         || choice.sapling > (currentTokens[TOKEN_IDS.TREANT_SAPLING] ?? 0)
         || choice.divine > (currentTokens[TOKEN_IDS.TREANT_DIVINE] ?? 0)
+        || removedTreeCount > 2
         || (choice.lifeSap && (currentTokens[TOKEN_IDS.LIFE_SAP] ?? 0) <= 0)
     ) {
         return undefined;
     }
 
-    const removedTreeCount = choice.seedling + choice.sapling + choice.divine;
     const nextTokens = {
         ...currentTokens,
         [TOKEN_IDS.TREANT_SEEDLING]: (currentTokens[TOKEN_IDS.TREANT_SEEDLING] ?? 0) - choice.seedling,
@@ -1213,8 +1318,10 @@ registerChoiceEffectHandler(WILD_GROWTH_CHOICE_ID, ({ state, playerId, value }) 
     };
 });
 
-registerChoiceEffectHandler(SHATTERING_FIST_CHOICE_ID, ({ state, playerId, value }) => {
+registerChoiceEffectHandler(SHATTERING_FIST_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
+    if (!isExpectedChoiceSource(sourceAbilityId, SHATTERING_FIST_SOURCE_IDS)) return undefined;
+    if (!matchesCurrentPendingAttackSource(state, playerId, sourceAbilityId)) return undefined;
     const thornTargetId = state.pendingAttack?.defenderId ?? getOpponents(state, playerId)[0];
     if (!player || !thornTargetId) return undefined;
 
@@ -1261,9 +1368,10 @@ registerChoiceEffectHandler(SHATTERING_FIST_CHOICE_ID, ({ state, playerId, value
     return { players: nextPlayers };
 });
 
-registerChoiceEffectHandler(NATURE_TOUCH_CULTIVATE_CHOICE_ID, ({ state, playerId, value }) => {
+registerChoiceEffectHandler(NATURE_TOUCH_CULTIVATE_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
-    if (!player || !state.pendingAttack || state.pendingAttack.attackerId !== playerId) return undefined;
+    if (!isExpectedChoiceSource(sourceAbilityId, NATURE_TOUCH_SOURCE_IDS)) return undefined;
+    if (!player || !matchesCurrentPendingAttackSource(state, playerId, sourceAbilityId)) return undefined;
 
     const choice = decodeSpiritCounts(value);
     const ctx: TreantSpiritContext = { attackerId: playerId, state };
@@ -1295,8 +1403,10 @@ registerChoiceEffectHandler(NATURE_TOUCH_CULTIVATE_CHOICE_ID, ({ state, playerId
     };
 });
 
-registerChoiceEffectHandler(SHATTERING_FIST_3_CULTIVATE_CHOICE_ID, ({ state, playerId, value }) => {
+registerChoiceEffectHandler(SHATTERING_FIST_3_CULTIVATE_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
+    if (!isExpectedChoiceSource(sourceAbilityId, SHATTERING_FIST_3_CULTIVATE_SOURCE_IDS)) return undefined;
+    if (!matchesCurrentPendingAttackSource(state, playerId, sourceAbilityId)) return undefined;
     if (!player) return undefined;
 
     const choice = decodeSpiritCounts(value);
@@ -1325,8 +1435,11 @@ registerChoiceEffectHandler(SHATTERING_FIST_3_CULTIVATE_CHOICE_ID, ({ state, pla
     };
 });
 
-registerChoiceEffectHandler(QUIET_CULTIVATION_CHOICE_ID, ({ state, playerId, value }) => {
+registerChoiceEffectHandler(QUIET_CULTIVATION_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
+    if (!isExpectedChoiceSource(sourceAbilityId, QUIET_CULTIVATION_SOURCE_IDS)) return undefined;
+    if (!matchesCurrentChoiceSource(state, sourceAbilityId)) return undefined;
+    if (state.activePlayerId !== playerId) return undefined;
     if (!player) return undefined;
 
     const choice = decodeSpiritCounts(value);
@@ -1355,10 +1468,27 @@ registerChoiceEffectHandler(QUIET_CULTIVATION_CHOICE_ID, ({ state, playerId, val
     };
 });
 
-registerChoiceEffectHandler(ROOTED_CHOICE_ID, ({ state, playerId, value }) => {
+registerChoiceEffectHandler(ROOTED_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
     if (!player) return undefined;
+    if (!isExpectedChoiceSource(sourceAbilityId, ROOTED_SOURCE_IDS)) return undefined;
+    if (!matchesCurrentChoiceSource(state, sourceAbilityId)) return undefined;
+    if (!state.pendingAttack || state.pendingAttack.defenderId !== playerId) return undefined;
 
+    const rootedSettlement = state.pendingBonusDiceSettlement;
+    if (rootedSettlement?.sourceAbilityId !== 'rooted') return undefined;
+    if (rootedSettlement.attackerId !== playerId || rootedSettlement.targetId !== playerId) return undefined;
+    const summaryLeafCount = rootedSettlement.dice.reduce(
+        (count, die) => count + (die.face === TREANT_DICE_FACE_IDS.LEAF ? 1 : 0),
+        0,
+    );
+    const summarySpiritCount = rootedSettlement.dice.reduce(
+        (count, die) => count + (die.face === TREANT_DICE_FACE_IDS.SPIRIT ? 1 : 0),
+        0,
+    );
+
+    const needsCultivate = summaryLeafCount >= 2;
+    const needsLifeSap = summarySpiritCount >= 2;
     const choice = decodeRootedChoice(value);
     const ctx: TreantSpiritContext = { attackerId: playerId, state };
     const legalCultivateOutcomes = enumerateCultivateOutcomes(
@@ -1371,9 +1501,20 @@ registerChoiceEffectHandler(ROOTED_CHOICE_ID, ({ state, playerId, value }) => {
         outcome => encodeSpiritCounts(outcome) === encodeSpiritCounts(choice),
     );
     const keepsCurrentCounts = encodeSpiritCounts(currentCounts) === encodeSpiritCounts(choice);
-    if (!isCultivateOutcome && !keepsCurrentCounts) return undefined;
+    if (choice.requiresCultivate !== needsCultivate) return undefined;
+    if (choice.requiresLifeSap !== needsLifeSap) return undefined;
+    if (choice.requiresCultivate) {
+        if (!isCultivateOutcome) return undefined;
+    } else if (!keepsCurrentCounts) {
+        return undefined;
+    }
 
     const playerIds = getRootedLifeSapTargetIds(state, playerId);
+    if (choice.requiresLifeSap) {
+        if (choice.lifeSapTargetIndex < 0 || choice.lifeSapTargetIndex >= playerIds.length) return undefined;
+    } else if (choice.lifeSapTargetIndex !== -1) {
+        return undefined;
+    }
     const lifeSapTargetId = playerIds[choice.lifeSapTargetIndex];
     const nextPlayers = {
         ...state.players,
@@ -1404,8 +1545,10 @@ registerChoiceEffectHandler(ROOTED_CHOICE_ID, ({ state, playerId, value }) => {
     return { players: nextPlayers };
 });
 
-registerChoiceEffectHandler(FOREST_AWAKENS_CHOICE_ID, ({ state, playerId, value }) => {
+registerChoiceEffectHandler(FOREST_AWAKENS_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
+    if (!isExpectedChoiceSource(sourceAbilityId, FOREST_AWAKENS_SOURCE_IDS)) return undefined;
+    if (!matchesCurrentPendingAttackSource(state, playerId, sourceAbilityId)) return undefined;
     if (!player) return undefined;
 
     const choice = decodeSpiritCounts(value);
@@ -1466,9 +1609,24 @@ registerChoiceEffectHandler(FOREST_AWAKENS_CHOICE_ID, ({ state, playerId, value 
 });
 
 function resolveCardCultivateChoice(amount: number) {
-    return ({ state, playerId, value }: { state: CustomActionContext['state']; playerId: string; value?: number }) => {
+    return ({
+        state,
+        playerId,
+        value,
+        sourceAbilityId,
+    }: {
+        state: CustomActionContext['state'];
+        playerId: string;
+        value?: number;
+        sourceAbilityId?: string;
+    }) => {
         const player = state.players[playerId];
+        if (!isExpectedChoiceSource(sourceAbilityId, CARD_CULTIVATE_SOURCE_IDS)) return undefined;
+        if (!matchesCurrentChoiceSource(state, sourceAbilityId)) return undefined;
+        if (!CARD_CULTIVATE_ALLOWED_AMOUNTS_BY_SOURCE[sourceAbilityId].includes(amount)) return undefined;
+        if (state.activePlayerId !== playerId) return undefined;
         if (!player) return undefined;
+        if (getCurrentCardCultivateAmount(state, playerId, sourceAbilityId) !== amount) return undefined;
 
         const choice = decodeSpiritCounts(value);
         const ctx: TreantSpiritContext = { attackerId: playerId, state };
@@ -1493,9 +1651,14 @@ function resolveCardCultivateChoice(amount: number) {
     };
 }
 
-registerChoiceEffectHandler(DRINK_DEEP_CHOICE_ID, ({ state, value }) => {
+registerChoiceEffectHandler(DRINK_DEEP_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
+    if (!isExpectedChoiceSource(sourceAbilityId, DRINK_DEEP_SOURCE_IDS)) return undefined;
+    if (!matchesCurrentChoiceSource(state, sourceAbilityId)) return undefined;
+    if (state.activePlayerId !== playerId) return undefined;
     const playerIds = getSeatingOrder(state);
-    const targetId = playerIds[Math.max(0, Math.floor(value ?? 0))];
+    const targetIndex = Number.isFinite(value) ? Math.floor(value as number) : -1;
+    if (targetIndex < 0 || targetIndex >= playerIds.length) return undefined;
+    const targetId = playerIds[targetIndex];
     const target = targetId ? state.players[targetId] : undefined;
     if (!targetId || !target) return undefined;
 
@@ -1515,14 +1678,18 @@ registerChoiceEffectHandler(DRINK_DEEP_CHOICE_ID, ({ state, value }) => {
     };
 });
 
-registerChoiceEffectHandler(HARVEST_CHOICE_ID, ({ state, playerId, value }) => {
+registerChoiceEffectHandler(HARVEST_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
+    if (!isExpectedChoiceSource(sourceAbilityId, HARVEST_SOURCE_IDS)) return undefined;
+    if (!matchesCurrentChoiceSource(state, sourceAbilityId)) return undefined;
+    if (state.activePlayerId !== playerId) return undefined;
     if (!player) return undefined;
 
     const choice = decodeHarvestChoice(value);
     const current = getSpiritCounts({ attackerId: playerId, state });
     const removed = choice.seedling + choice.sapling + choice.divine;
     const playerIds = getSeatingOrder(state);
+    const maxMask = 1 << playerIds.length;
     if (
         choice.seedling > current.seedling
         || choice.sapling > current.sapling
@@ -1530,6 +1697,7 @@ registerChoiceEffectHandler(HARVEST_CHOICE_ID, ({ state, playerId, value }) => {
         || removed > 3
         || (removed < 2 && choice.lifeSapTargetMask !== 0)
         || bitCount(choice.lifeSapTargetMask) > 2
+        || choice.lifeSapTargetMask >= maxMask
     ) {
         return undefined;
     }
@@ -1570,8 +1738,11 @@ registerChoiceEffectHandler(HARVEST_CHOICE_ID, ({ state, playerId, value }) => {
     return { players: nextPlayers };
 });
 
-registerChoiceEffectHandler(DOWNPOUR_CHOICE_ID, ({ state, playerId, value }) => {
+registerChoiceEffectHandler(DOWNPOUR_CHOICE_ID, ({ state, playerId, value, sourceAbilityId }) => {
     const player = state.players[playerId];
+    if (!isExpectedChoiceSource(sourceAbilityId, DOWNPOUR_SOURCE_IDS)) return undefined;
+    if (!matchesCurrentChoiceSource(state, sourceAbilityId)) return undefined;
+    if (state.activePlayerId !== playerId) return undefined;
     if (!player) return undefined;
 
     const choice = decodeSpiritCounts(value);
@@ -1597,9 +1768,23 @@ registerChoiceEffectHandler(DOWNPOUR_CHOICE_ID, ({ state, playerId, value }) => 
 });
 
 function resolveTendCareChoice(amount: number) {
-    return ({ state, playerId, value }: { state: CustomActionContext['state']; playerId: string; value?: number }) => {
+    return ({
+        state,
+        playerId,
+        value,
+        sourceAbilityId,
+    }: {
+        state: CustomActionContext['state'];
+        playerId: string;
+        value?: number;
+        sourceAbilityId?: string;
+    }) => {
         const player = state.players[playerId];
+        if (!isExpectedChoiceSource(sourceAbilityId, TEND_CARE_SOURCE_IDS)) return undefined;
+        if (!matchesCurrentChoiceSource(state, sourceAbilityId)) return undefined;
+        if (state.activePlayerId !== playerId) return undefined;
         if (!player) return undefined;
+        if (getCurrentTendCareCultivateAmount(state, playerId) !== amount) return undefined;
 
         const choice = decodeTendCareChoice(value);
         const ctx: TreantSpiritContext = { attackerId: playerId, state };

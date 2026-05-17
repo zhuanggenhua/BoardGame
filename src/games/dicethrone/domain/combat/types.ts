@@ -79,6 +79,12 @@ export interface DamageModifier {
     cost?: { type: 'status' | 'resource'; id: string; amount: number };
 }
 
+export interface TokenBonusDieRerollHook {
+    tokenId: string;
+    maxRerollCount: number;
+    scope?: 'sourceAbility' | 'allTokenUses';
+}
+
 /**
  * 技能变体（同一技能的不同等级/触发条件）
  */
@@ -98,6 +104,8 @@ export interface AbilityVariantDef {
     priority?: number;
     /** 变体特有标签（如不可防御） */
     tags?: AbilityTag[];
+    /** 花费指定 token 触发奖励骰时的可重掷规则 */
+    tokenBonusDieReroll?: TokenBonusDieRerollHook;
 }
 
 /**
@@ -135,6 +143,9 @@ export interface AbilityDef {
 
     /** 可用的伤害修改器 */
     modifiers?: DamageModifier[];
+
+    /** 花费指定 token 触发奖励骰时的可重掷规则 */
+    tokenBonusDieReroll?: TokenBonusDieRerollHook;
 }
 
 // ============================================================================

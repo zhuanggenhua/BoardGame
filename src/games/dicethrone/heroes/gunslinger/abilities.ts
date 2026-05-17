@@ -169,6 +169,7 @@ export const QUICK_DRAW_UPGRADED: AbilityDef = {
     name: '快速拔枪 II',
     type: 'passive',
     description: '维持阶段开始时，获得 1 个装填。每当你花费装填时，可以将该投掷重掷 1 次。',
+    tokenBonusDieReroll: { tokenId: TOKEN_IDS.LOADED, maxRerollCount: 1, scope: 'allTokenUses' },
     trigger: { type: 'phaseStart', phase: 'upkeep' },
     effects: [
         grantToken('self', TOKEN_IDS.LOADED, 1, '获得 1 个装填。'),
@@ -222,7 +223,7 @@ export const TAKE_COVER_2: AbilityDef = {
 
 const SHOWDOWN: AbilityDef = {
     id: 'showdown',
-    name: '摊到牌面',
+    name: '枪战决斗',
     type: 'offensive',
     description: '双方各掷 1 颗骰子。若你的结果不小于对手，改为造成 7 点伤害；否则造成 5 点伤害。',
     sfxKey: GUNSLINGER_SFX_HEAVY,
@@ -240,7 +241,7 @@ const SHOWDOWN: AbilityDef = {
 
 export const SHOWDOWN_2: AbilityDef = {
     id: 'showdown',
-    name: '摊到牌面 II',
+    name: '枪战决斗 II',
     type: 'offensive',
     description: '双方各掷 1 颗骰子。若你的结果不小于对手，改为造成 8 点伤害；否则造成 6 点伤害。',
     sfxKey: GUNSLINGER_SFX_HEAVY,
@@ -258,7 +259,7 @@ export const SHOWDOWN_2: AbilityDef = {
 
 export const SHOWDOWN_3: AbilityDef = {
     id: 'showdown',
-    name: '摊到牌面 III',
+    name: '枪战决斗 III',
     type: 'offensive',
     description: '双方各掷 1 颗骰子。若你的结果不小于对手，改为造成 9 点伤害；否则造成 6 点伤害。',
     sfxKey: GUNSLINGER_SFX_HEAVY,
@@ -408,6 +409,7 @@ const FILL_EM_WITH_LEAD: AbilityDef = {
     type: 'offensive',
     tags: ['ultimate'],
     description: '获得 1 个闪避，对手获得赏金与击倒，然后造成 10 点不可防御伤害。若你花费装填来增加伤害，可以重掷该骰 1 次。',
+    tokenBonusDieReroll: { tokenId: TOKEN_IDS.LOADED, maxRerollCount: 1 },
     sfxKey: GUNSLINGER_SFX_ULTIMATE,
     trigger: { type: 'diceSet', faces: { [FACE.BULLSEYE]: 5 } },
     effects: [

@@ -4,6 +4,7 @@ import { CardPreview } from '../../../components/common/media/CardPreview';
 import { saveDiceThroneAbilityLayout } from '../../../api/layout';
 import { UI_Z_INDEX } from '../../../core';
 import { playSound } from '../../../lib/audio/useGameAudio';
+import { useTouchInspectGesture } from '../../../hooks/ui/useTouchInspectGesture';
 import {
     DICETHRONE_ABILITY_SLOT_LAYOUTS,
     DICETHRONE_PLAYER_BOARD_UI_TUNING,
@@ -198,7 +199,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
      * @param level 升级后的等级
      * @returns 对应升级卡的预览引用，未找到返回 undefined
      */
-    export const getUpgradeCardPreviewRef = (characterId: string, abilityId: string, level: number): CardPreviewRef | undefined => {
+    export const getUpgradeCardForAbilityLevel = (characterId: string, abilityId: string, level: number): AbilityCard | undefined => {
         // 根据角色 ID 获取对应的卡牌定义
         const heroCards = HERO_CARDS_MAP[characterId];
         if (!heroCards) return undefined;
@@ -212,11 +213,15 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                     action.targetAbilityId === abilityId &&
                     action.newAbilityLevel === level
                 ) {
-                    return card.previewRef;
+                    return card;
                 }
             }
         }
         return undefined;
+    };
+
+    export const getUpgradeCardPreviewRef = (characterId: string, abilityId: string, level: number): CardPreviewRef | undefined => {
+        return getUpgradeCardForAbilityLevel(characterId, abilityId, level)?.previewRef;
     };
 
     /** AbilityOverlays 通过 ref 暴露的方法 */
@@ -237,6 +242,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         abilityLevels?: Record<string, number>;
         characterId?: string;
         locale?: string;
+        onMagnifyCard?: (card: AbilityCard) => void;
         playerTokens?: Record<string, number>;  // 新增：玩家的 token 状态（用于显示被动能力激活状态）
     }
 
@@ -252,9 +258,20 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         abilityLevels,
         characterId = 'monk', // 用于查找对应角色的升级卡定义
         locale,
+        onMagnifyCard,
         playerTokens: _playerTokens,
     }, ref) => {
         const { t } = useTranslation('game-dicethrone');
+        const {
+            showDesktopInspectButton,
+            getTouchInspectProps,
+            shouldBlockInspectClick,
+        } = useTouchInspectGesture<string, AbilityCard>({
+            enabled: Boolean(onMagnifyCard) && !isEditing,
+            onInspect: (_key, card) => {
+                onMagnifyCard?.(card);
+            },
+        });
 
         const layoutVersion = React.useMemo<DiceThronePlayerBoardLayoutVersion>(
             () => getPlayerBoardLayoutVersion(characterId),
@@ -272,6 +289,7 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
         const editingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-slate-950/65 pointer-events-none';
         const activeEditingGuideClassName = 'absolute inset-0 rounded-lg border-[2.5px] border-emerald-300 bg-emerald-400/12 shadow-[0_0_0_1px_rgba(6,95,70,0.95),0_0_18px_rgba(52,211,153,0.55)] pointer-events-none';
         const activeEditingGuideInnerClassName = 'absolute inset-[3px] rounded-[10px] border border-dashed border-emerald-950/80 pointer-events-none';
+        const inspectButtonClassName = 'absolute right-[0.2vw] top-[0.2vw] z-20 flex h-[1.15vw] w-[1.15vw] min-h-[14px] min-w-[14px] items-center justify-center rounded-full border border-white/18 bg-black/68 text-white/92 shadow-[0_0.18vw_0.42vw_rgba(0,0,0,0.45)] transition-[background-color,border-color,opacity] duration-200 hover:border-amber-300/45 hover:bg-amber-500/78';
 
         // 通过 ref 暴露保存方法，供调试面板调用
         React.useImperativeHandle(ref, () => ({
@@ -355,6 +373,8 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                         const isUpgraded = passiveBaseId
                             ? (abilityLevels?.[passiveBaseId] ?? 1) > 1
                             : false;
+                        const passiveUpgradeCard = isUpgraded ? passiveCard : undefined;
+                        const passiveInspectKey = `passive-${characterId}-${slot.id}-${passiveUpgradeCard?.id ?? 'none'}`;
                         const mapping = ABILITY_SLOT_MAP[slot.id];
                         const slotLabel = mapping ? t(mapping.labelKey) : slot.id;
                         
@@ -363,13 +383,19 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                                 key={slot.id}
                                 data-ability-slot={slot.id}
                                 data-passive-ability="true"
+                                data-upgrade-card-interactive={passiveUpgradeCard ? 'true' : 'false'}
                                 onMouseDown={(e) => isEditing ? handleMouseDown(e, slot.id, 'move') : undefined}
                                 className={`
                                     absolute transition-all duration-200 rounded-lg
-                                    ${isEditing ? 'pointer-events-auto cursor-move' : 'pointer-events-none'}
+                                    ${isEditing ? 'pointer-events-auto cursor-move' : passiveUpgradeCard ? 'pointer-events-auto cursor-zoom-in' : 'pointer-events-none'}
                                     ${isEditing && editingId === slot.id ? 'z-50' : ''}
                                 `}
                                 style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }}
+                                {...(passiveUpgradeCard ? getTouchInspectProps(passiveInspectKey, passiveUpgradeCard) : {})}
+                                onClick={() => {
+                                    if (!passiveUpgradeCard || shouldBlockInspectClick(passiveInspectKey)) return;
+                                    onMagnifyCard?.(passiveUpgradeCard);
+                                }}
                             >
                                 {isEditing && (
                                     <>
@@ -410,9 +436,10 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                     const isResolved = resolveAbilityId(slot.id);
                     const baseAbilityId = getSlotAbilityId(characterId, slot.id);
                     const level = baseAbilityId ? (abilityLevels?.[baseAbilityId] ?? 1) : 1;
-                    const upgradePreviewRef = baseAbilityId && level > 1
-                        ? getUpgradeCardPreviewRef(characterId, baseAbilityId, level)
+                    const upgradeCard = baseAbilityId && level > 1
+                        ? getUpgradeCardForAbilityLevel(characterId, baseAbilityId, level)
                         : undefined;
+                    const upgradePreviewRef = upgradeCard?.previewRef;
                     const mapping = ABILITY_SLOT_MAP[slot.id];
                     const slotLabel = mapping ? t(mapping.labelKey) : slot.id;
                     const isAbilitySelected = !isEditing && selectedAbilityId === isResolved;
@@ -420,6 +447,8 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                     const canClick = !isEditing && canSelect && isAvailable;
                     const isActivating = !isEditing && activatingAbilityId === isResolved;
                     const shouldHighlight = !isEditing && canHighlight && isAvailable;
+                    const hasPrimarySlotClick = canClick || (!isEditing && shouldHighlight && !canSelect && Boolean(onHighlightedAbilityClick));
+                    const slotInspectKey = `upgrade-${characterId}-${slot.id}-${upgradeCard?.id ?? 'none'}`;
                     const isUltimate = slot.id === 'ultimate';
                     return (
                         <div
@@ -428,16 +457,23 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                             data-resolved-ability-id={isResolved ?? ''}
                             data-base-ability-id={baseAbilityId ?? ''}
                             data-can-click={canClick ? 'true' : 'false'}
+                            data-upgrade-card-interactive={upgradeCard ? 'true' : 'false'}
                             onMouseDown={(e) => handleMouseDown(e, slot.id, 'move')}
                             className={`
                             absolute transition-all duration-200 rounded-lg
-                            ${isEditing ? 'pointer-events-auto cursor-move' : 'pointer-events-auto cursor-pointer group'}
+                            ${isEditing ? 'pointer-events-auto cursor-move' : `pointer-events-auto ${upgradeCard && !hasPrimarySlotClick ? 'cursor-zoom-in' : 'cursor-pointer'} group`}
                             ${isEditing && editingId === slot.id ? 'z-50' : ''}
                             ${canClick ? 'hover:border-2 hover:border-amber-400 hover:shadow-[0_0_15px_rgba(251,191,36,0.5)] hover:z-30' : ''}
                             ${isActivating ? 'animate-ability-activate z-50' : ''}
                         `}
                             style={{ left: `${slot.x}%`, top: `${slot.y}%`, width: `${slot.w}%`, height: `${slot.h}%` }}
+                            {...(upgradeCard ? getTouchInspectProps(slotInspectKey, upgradeCard) : {})}
                             onClick={() => {
+                                if (upgradeCard && !hasPrimarySlotClick) {
+                                    if (shouldBlockInspectClick(slotInspectKey)) return;
+                                    onMagnifyCard?.(upgradeCard);
+                                    return;
+                                }
                                 if (canClick && isResolved) {
                                     // DiceThrone：选择技能统一使用 dialog_choice 点击音效
                                     playSound('ui.general.khron_studio_rpg_interface_essentials_inventory_dialog_ucs_system_192khz.dialog.dialog_choice.uiclick_dialog_choice_01_krst_none');
@@ -473,6 +509,22 @@ const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
                                 <div className="absolute inset-0 rounded-lg border-[3px] border-red-500 shadow-[0_0_25px_rgba(239,68,68,0.9),0_0_50px_rgba(239,68,68,0.5)] pointer-events-none z-10">
                                     <div className="absolute -inset-[2px] rounded-lg border-2 border-white/60 animate-pulse" />
                                 </div>
+                            )}
+                            {upgradeCard && hasPrimarySlotClick && showDesktopInspectButton && !isEditing && (
+                                <button
+                                    type="button"
+                                    className={inspectButtonClassName}
+                                    aria-label={`查看${slotLabel}升级卡`}
+                                    data-testid={`dt-upgrade-magnify-button-${slot.id}`}
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        onMagnifyCard?.(upgradeCard);
+                                    }}
+                                >
+                                    <svg className="h-[0.44vw] w-[0.44vw] min-h-[8px] min-w-[8px] fill-current" viewBox="0 0 20 20" aria-hidden="true">
+                                        <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
                             )}
                             {isEditing && (
                                 <>

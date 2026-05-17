@@ -13,6 +13,7 @@ import {
     makePlayer,
     makeState,
     makeMatchState,
+    getPromptOptionById,
     getSimpleChoicePrompt,
     getPromptsBySourceId,
     getPromptOptions,
@@ -32,6 +33,105 @@ beforeAll(() => {
 });
 
 describe('Frankenstein abilities', () => {
+    it('frankenstein_blitzed 可以移除 0 个指示物后仍消灭力量 0 随从', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('b1', 'frankenstein_blitzed', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('w0', 'giant_ant_worker', '1', 0)],
+                ongoingActions: [],
+            }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'b1' } },
+            defaultTestRandom,
+        );
+        expect(play.success).toBe(true);
+        const removePrompt = getSimpleChoicePrompt(play.finalState, 'frankenstein_blitzed_remove');
+        const doneOpt = getPromptOptionById(removePrompt, 'done');
+        expect(doneOpt).toBeTruthy();
+
+        const step2 = respondToPromptOption(
+            play.finalState,
+            option => option.id === doneOpt.id,
+            'frankenstein blitzed done option',
+            '0',
+            defaultTestRandom,
+        );
+        expect(step2.success, step2.error).toBe(true);
+
+        const step3 = respondToPromptOption(
+            step2.finalState,
+            option => option.value?.minionUid === 'w0',
+            'frankenstein blitzed destroy option',
+            '0',
+            defaultTestRandom,
+        );
+        expect(step3.success, step3.error).toBe(true);
+        expect(step3.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+    });
+
+    it('frankenstein_uberserum 在行动拥有者回合开始放置指示物，即使附着在对手随从上', () => {
+        const core = makeState({
+            turnOrder: ['0', '1'],
+            currentPlayerIndex: 1,
+            turnNumber: 1,
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [{
+                    ...makeMinion('m1', 'robot_warbot', '1', 1),
+                    attachedActions: [{ uid: 'u1', defId: 'frankenstein_uberserum', ownerId: '0' }],
+                }],
+                ongoingActions: [],
+            }],
+        });
+
+        const ms0 = makeMatchState(core);
+        ms0.sys.phase = 'endTurn' as any;
+        const enter = runCommand(
+            ms0,
+            { type: 'ADVANCE_PHASE' as any, playerId: '1', payload: {}, timestamp: 1 } as any,
+            defaultTestRandom,
+        );
+        expect(enter.events.some(event => event.type === SU_EVENTS.POWER_COUNTER_ADDED)).toBe(true);
+    });
+
+    it('frankenstein_its_alive 放弃额外随从时不应遗留 pending 指示物效果', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0', { hand: [makeCard('a1', 'frankenstein_its_alive', 'action', '0')] }),
+                '1': makePlayer('1'),
+            },
+            bases: [{ defId: 'base_a', minions: [], ongoingActions: [] }],
+        });
+
+        const play = runCommand(
+            makeMatchState(core),
+            { type: SU_COMMANDS.PLAY_ACTION, playerId: '0', payload: { cardUid: 'a1' } },
+            defaultTestRandom,
+        );
+        const skipped = respondToPromptOption(
+            play.finalState,
+            option => option?.value?.skip,
+            'frankenstein its alive immediate extra minion skip option',
+            '0',
+            defaultTestRandom,
+        );
+        expect(skipped.success, skipped.error).toBe(true);
+
+        const pending = skipped.finalState.core.players['0'].pendingMinionPlayEffects ?? [];
+        expect(pending).toHaveLength(0);
+    });
+
     it('frankenstein_german_engineering 在该基地打出随从后给该随从 +1 指示物', () => {
         const core = makeState({
             players: {

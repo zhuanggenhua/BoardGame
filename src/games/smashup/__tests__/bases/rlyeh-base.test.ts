@@ -76,6 +76,24 @@ describe('base_rlyeh 拉莱耶 onTurnStart', () => {
         expect(result.matchState).toBeUndefined();
     });
 
+    it('基地为空时不产生事件或交互', () => {
+        const state = makeState({
+            players: makePlayers(),
+            bases: [{ defId: 'base_rlyeh', minions: [], ongoingActions: [] }],
+        });
+        const result = triggerBaseAbility('base_rlyeh', 'onTurnStart', {
+            state,
+            matchState: makeMatchState(state),
+            baseIndex: 0,
+            baseDefId: 'base_rlyeh',
+            playerId: '0',
+            now: 0,
+        });
+
+        expect(result.events).toHaveLength(0);
+        expect(result.matchState).toBeUndefined();
+    });
+
     it('响应交互选择消灭时产生 MINION_DESTROYED', () => {
         const minion = makeMinion('m1', '0', 3, 'test_minion');
         const state = makeState({

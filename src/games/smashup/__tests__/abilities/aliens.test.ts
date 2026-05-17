@@ -10,6 +10,7 @@ import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
 import {
     expectNoPrompt,
     getPromptOption,
+    getPromptOptions,
     getSimpleChoicePrompt,
     makeBase,
     makeCard,
@@ -18,6 +19,7 @@ import {
     makePlayer,
     makeState,
     respondCommand,
+    respondToPrompt,
 } from '../helpers';
 import { defaultTestRandom, runCommand } from '../testRunner';
 
@@ -287,6 +289,200 @@ describe('外星人派系能力', () => {
         expect((deckBottom as any).payload).toMatchObject({
             cardUid: 'm1',
             reason: 'alien_disintegrator',
+        });
+    });
+
+    describe('alien_probe: 探究', () => {
+        it('单对手场景会创建展示整手牌的选择交互，并只允许选择随从', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('probe1', 'alien_probe', 'action', '0')],
+                        factions: ['aliens', 'dinosaurs'] as [string, string],
+                    }),
+                    '1': makePlayer('1', {
+                        hand: [
+                            makeCard('h1-1', 'pirate_first_mate', 'minion', '1'),
+                            makeCard('h1-2', 'pirate_buccaneer', 'minion', '1'),
+                            makeCard('h1-3', 'pirate_broadside', 'action', '1'),
+                        ],
+                        factions: ['pirates', 'minions_of_cthulhu'] as [string, string],
+                    }),
+                },
+                bases: [makeBase('base_the_mothership'), makeBase('base_tar_pits')],
+            });
+
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'probe1' },
+            } as any, defaultTestRandom);
+
+            expect(result.success).toBe(true);
+            const prompt = getSimpleChoicePrompt(result.finalState, 'alien_probe');
+            expect(getPromptOptions(prompt)).toHaveLength(3);
+            expect(getPromptOption(prompt, option => option.value?.cardUid === 'h1-1', 'probe minion h1-1').disabled).toBeFalsy();
+            expect(getPromptOption(prompt, option => option.value?.cardUid === 'h1-2', 'probe minion h1-2').disabled).toBeFalsy();
+            expect(getPromptOption(prompt, option => option.value?.cardUid === 'h1-3', 'probe action h1-3').disabled).toBe(true);
+
+            expect(result.finalState.core.players['0'].hand.find(card => card.uid === 'probe1')).toBeUndefined();
+            expect(result.finalState.core.players['0'].discard.find(card => card.uid === 'probe1')).toBeDefined();
+        });
+
+        it('即使只有一张可选随从，也应保留交互而不是自动默认弃掉', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('probe1', 'alien_probe', 'action', '0')],
+                        factions: ['aliens', 'dinosaurs'] as [string, string],
+                    }),
+                    '1': makePlayer('1', {
+                        hand: [
+                            makeCard('h1-1', 'pirate_first_mate', 'minion', '1'),
+                            makeCard('h1-2', 'pirate_broadside', 'action', '1'),
+                            makeCard('h1-3', 'alien_crop_circles', 'action', '1'),
+                        ],
+                        factions: ['pirates', 'minions_of_cthulhu'] as [string, string],
+                    }),
+                },
+                bases: [makeBase('base_the_mothership')],
+            });
+
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'probe1' },
+            } as any, defaultTestRandom);
+
+            expect(result.success).toBe(true);
+            expect(result.events.some(event => event.type === SU_EVENTS.CARDS_DISCARDED)).toBe(false);
+            const prompt = getSimpleChoicePrompt(result.finalState, 'alien_probe');
+            expect(getPromptOptions(prompt)).toHaveLength(3);
+            expect(getPromptOption(prompt, option => option.value?.cardUid === 'h1-1', 'single probe minion').disabled).toBeFalsy();
+            expect(getPromptOption(prompt, option => option.value?.cardUid === 'h1-2', 'single probe action h1-2').disabled).toBe(true);
+            expect(getPromptOption(prompt, option => option.value?.cardUid === 'h1-3', 'single probe action h1-3').disabled).toBe(true);
+        });
+
+        it('选择随从后，对手弃掉那张随从', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('probe1', 'alien_probe', 'action', '0')],
+                        factions: ['aliens', 'dinosaurs'] as [string, string],
+                    }),
+                    '1': makePlayer('1', {
+                        hand: [
+                            makeCard('h1-1', 'pirate_first_mate', 'minion', '1'),
+                            makeCard('h1-2', 'pirate_buccaneer', 'minion', '1'),
+                        ],
+                        factions: ['pirates', 'minions_of_cthulhu'] as [string, string],
+                    }),
+                },
+                bases: [makeBase('base_the_mothership')],
+            });
+
+            const playResult = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'probe1' },
+            } as any, defaultTestRandom);
+
+            const resolved = respondToPrompt(
+                playResult.finalState,
+                getPromptOption(
+                    getSimpleChoicePrompt(playResult.finalState, 'alien_probe'),
+                    option => option.value?.cardUid === 'h1-1',
+                    'probe discard target h1-1',
+                ).id,
+                '0',
+                defaultTestRandom,
+            );
+
+            expect(resolved.success).toBe(true);
+            const discardEvent = resolved.events.find(event => event.type === SU_EVENTS.CARDS_DISCARDED);
+            expect(discardEvent).toBeDefined();
+            expect((discardEvent as any).payload).toMatchObject({
+                playerId: '1',
+                cardUids: ['h1-1'],
+            });
+            expect(resolved.finalState.core.players['1'].hand.find(card => card.uid === 'h1-1')).toBeUndefined();
+            expect(resolved.finalState.core.players['1'].discard.find(card => card.uid === 'h1-1')).toBeDefined();
+        });
+
+        it('对手手牌没有随从时直接结束并给出反馈，不创建交互', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('probe1', 'alien_probe', 'action', '0')],
+                        factions: ['aliens', 'dinosaurs'] as [string, string],
+                    }),
+                    '1': makePlayer('1', {
+                        hand: [
+                            makeCard('h1-1', 'pirate_broadside', 'action', '1'),
+                            makeCard('h1-2', 'pirate_powderkeg', 'action', '1'),
+                        ],
+                        factions: ['pirates', 'minions_of_cthulhu'] as [string, string],
+                    }),
+                },
+                bases: [makeBase('base_the_mothership')],
+            });
+
+            const result = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'probe1' },
+            } as any, defaultTestRandom);
+
+            expect(result.success).toBe(true);
+            expectNoPrompt(result.finalState);
+            expect(result.events.some(event => event.type === SU_EVENTS.ABILITY_FEEDBACK)).toBe(true);
+        });
+
+        it('多对手场景会先选择对手，再进入目标手牌选择', () => {
+            const state = makeState({
+                players: {
+                    '0': makePlayer('0', {
+                        hand: [makeCard('probe1', 'alien_probe', 'action', '0')],
+                        factions: ['aliens', 'dinosaurs'] as [string, string],
+                    }),
+                    '1': makePlayer('1', {
+                        hand: [
+                            makeCard('h1-1', 'pirate_first_mate', 'minion', '1'),
+                            makeCard('h1-2', 'pirate_broadside', 'action', '1'),
+                        ],
+                        factions: ['pirates', 'minions_of_cthulhu'] as [string, string],
+                    }),
+                    '2': makePlayer('2', {
+                        hand: [makeCard('h2-1', 'ninja_tiger_assassin', 'minion', '2')],
+                        factions: ['ninjas', 'wizards'] as [string, string],
+                    }),
+                },
+                bases: [makeBase('base_the_mothership'), makeBase('base_tar_pits')],
+                turnOrder: ['0', '1', '2'],
+            });
+
+            const playResult = runCommand(makeMatchState(state), {
+                type: SU_COMMANDS.PLAY_ACTION,
+                playerId: '0',
+                payload: { cardUid: 'probe1' },
+            } as any, defaultTestRandom);
+
+            const chooseTargetPrompt = getSimpleChoicePrompt(playResult.finalState, 'alien_probe_choose_target');
+            expect(chooseTargetPrompt.targetType).toBe('player');
+            expect(getPromptOptions(chooseTargetPrompt)).toHaveLength(2);
+
+            const targetResolved = respondToPrompt(
+                playResult.finalState,
+                getPromptOptions(chooseTargetPrompt)[0]?.id ?? 'player-0',
+                '0',
+                defaultTestRandom,
+            );
+
+            expect(targetResolved.success).toBe(true);
+            const handPrompt = getSimpleChoicePrompt(targetResolved.finalState, 'alien_probe');
+            expect(getPromptOptions(handPrompt)).toHaveLength(2);
+            expect(getPromptOption(handPrompt, option => option.value?.cardUid === 'h1-1', 'target player minion').disabled).toBeFalsy();
+            expect(getPromptOption(handPrompt, option => option.value?.cardUid === 'h1-2', 'target player action').disabled).toBe(true);
         });
     });
 

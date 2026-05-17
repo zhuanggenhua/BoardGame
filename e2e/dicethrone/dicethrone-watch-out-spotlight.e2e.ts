@@ -679,6 +679,143 @@ async function waitForSamuraiAttackModifierScene(
     }, options, { timeout: 30000, polling: 200 });
 }
 
+async function injectGunslingerHandCardScene(
+    page: Page,
+    options: {
+        cardId: 'card-spin-the-chamber' | 'card-eat-my-lead';
+        phase: 'main1' | 'offensiveRoll';
+        diceValues?: number[];
+    },
+): Promise<void> {
+    await page.evaluate(async ({ cardId, phase, diceValues }) => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!harness || !state) {
+            throw new Error('TestHarness state not ready');
+        }
+
+        if (Array.isArray(diceValues) && diceValues.length > 0) {
+            harness.dice.setValues(diceValues);
+        }
+
+        const random = {
+            random: () => 0.5,
+            d: (max: number) => Math.min(max, 1),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array],
+        };
+
+        const [{ initHeroState }, { GUNSLINGER_CARDS }] = await Promise.all([
+            import('/src/games/dicethrone/domain/characters.ts'),
+            import('/src/games/dicethrone/heroes/gunslinger/cards.ts'),
+        ]);
+
+        const gunslingerBase = initHeroState('0', 'gunslinger', random as any);
+        const monkBase = initHeroState('1', 'monk', random as any);
+        const card = GUNSLINGER_CARDS.find((item: any) => item.id === cardId);
+        if (!card) {
+            throw new Error(`${cardId} not found`);
+        }
+
+        const values = Array.isArray(diceValues) && diceValues.length > 0
+            ? diceValues
+            : [1, 2, 3, 4, 5];
+        const isOffensiveRoll = phase === 'offensiveRoll';
+
+        const nextState = {
+            ...state,
+            sys: {
+                ...state.sys,
+                phase,
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                },
+            },
+            core: {
+                ...state.core,
+                activePlayerId: '0',
+                hostStarted: true,
+                selectedCharacters: {
+                    ...(state.core.selectedCharacters ?? {}),
+                    '0': 'gunslinger',
+                    '1': 'monk',
+                },
+                readyPlayers: {
+                    ...(state.core.readyPlayers ?? {}),
+                    '0': true,
+                    '1': true,
+                },
+                players: {
+                    ...state.core.players,
+                    '0': {
+                        ...gunslingerBase,
+                        hand: [JSON.parse(JSON.stringify(card))],
+                        discard: [],
+                        resources: {
+                            ...gunslingerBase.resources,
+                            cp: 2,
+                            hp: 50,
+                        },
+                    },
+                    '1': {
+                        ...monkBase,
+                        hand: [],
+                        discard: [],
+                        resources: {
+                            ...monkBase.resources,
+                            cp: 2,
+                            hp: 50,
+                        },
+                    },
+                },
+                pendingAttack: isOffensiveRoll
+                    ? {
+                        attackerId: '0',
+                        defenderId: '1',
+                        isDefendable: true,
+                        sourceAbilityId: 'showdown',
+                        damage: 6,
+                        bonusDamage: 0,
+                        attackModifierBonusDamage: 0,
+                        damageResolved: false,
+                        resolvedDamage: 0,
+                        preDefenseResolved: false,
+                        offensiveRollEndTokenResolved: false,
+                    }
+                    : null,
+                pendingDamage: null,
+                pendingBonusDiceSettlement: undefined,
+                rollCount: isOffensiveRoll ? 1 : 0,
+                rollConfirmed: isOffensiveRoll,
+                dice: values.map((value: number, index: number) => ({
+                    id: index,
+                    value,
+                    isKept: false,
+                    playerId: '0',
+                })),
+            },
+        };
+
+        harness.state.set(nextState);
+        (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    }, options);
+}
+
+async function waitForGunslingerHandCardScene(
+    page: Page,
+    options: { cardId: 'card-spin-the-chamber' | 'card-eat-my-lead'; phase: 'main1' | 'offensiveRoll' },
+): Promise<void> {
+    await page.waitForFunction(({ cardId, phase }) => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return state?.sys?.phase === phase
+            && state?.core?.activePlayerId === '0'
+            && state?.core?.selectedCharacters?.['0'] === 'gunslinger'
+            && state?.core?.selectedCharacters?.['1'] === 'monk'
+            && state?.core?.players?.['0']?.hand?.some((card: any) => card.id === cardId);
+    }, options, { timeout: 30000, polling: 200 });
+}
+
 async function openForceActionsPanel(page: Page): Promise<void> {
     const mainFabButton = page.locator('[data-fab-id="chat"]');
     await expect(mainFabButton).toBeVisible({ timeout: 10000 });
@@ -844,8 +981,11 @@ async function waitForSamuraiTokenResponseScene(
     }, options, { timeout: 30000, polling: 200 });
 }
 
-async function injectGunslingerLoadedChoiceScene(page: Page): Promise<void> {
-    await page.evaluate(async () => {
+async function injectGunslingerLoadedChoiceScene(
+    page: Page,
+    options: { quickDrawUpgraded?: boolean; sourceAbilityId?: string } = {},
+): Promise<void> {
+    await page.evaluate(async ({ quickDrawUpgraded, sourceAbilityId = 'revolver-3' }) => {
         const harness = (window as any).__BG_TEST_HARNESS__;
         const state = harness?.state?.get?.();
         if (!harness || !state) {
@@ -861,13 +1001,17 @@ async function injectGunslingerLoadedChoiceScene(page: Page): Promise<void> {
             shuffle: <T,>(array: T[]) => [...array],
         };
 
-        const [{ initHeroState, ALL_TOKEN_DEFINITIONS }, { TOKEN_IDS }] = await Promise.all([
+        const [{ initHeroState, ALL_TOKEN_DEFINITIONS }, { TOKEN_IDS }, { QUICK_DRAW_UPGRADED }] = await Promise.all([
             import('/src/games/dicethrone/domain/characters.ts'),
             import('/src/games/dicethrone/domain/ids.ts'),
+            import('/src/games/dicethrone/heroes/gunslinger/abilities.ts'),
         ]);
 
         const gunslingerBase = initHeroState('0', 'gunslinger', random as any);
         const monkBase = initHeroState('1', 'monk', random as any);
+        const gunslingerAbilities = quickDrawUpgraded
+            ? gunslingerBase.abilities.map((ability: any) => ability.id === 'quick-draw' ? QUICK_DRAW_UPGRADED : ability)
+            : gunslingerBase.abilities;
 
         const currentInteraction = {
             id: 'dt-interaction-gunslinger-loaded-scene',
@@ -875,7 +1019,7 @@ async function injectGunslingerLoadedChoiceScene(page: Page): Promise<void> {
             playerId: '0',
             data: {
                 title: 'offensiveRollEndToken.title',
-                sourceId: 'revolver-3',
+                sourceId: sourceAbilityId,
                 options: [
                     {
                         id: 'loaded-option',
@@ -928,6 +1072,11 @@ async function injectGunslingerLoadedChoiceScene(page: Page): Promise<void> {
                             cp: 2,
                             hp: 50,
                         },
+                        abilityLevels: {
+                            ...gunslingerBase.abilityLevels,
+                            ...(quickDrawUpgraded ? { 'quick-draw': 2 } : {}),
+                        },
+                        abilities: gunslingerAbilities,
                         tokens: {
                             ...gunslingerBase.tokens,
                             [TOKEN_IDS.LOADED]: 1,
@@ -948,7 +1097,7 @@ async function injectGunslingerLoadedChoiceScene(page: Page): Promise<void> {
                     attackerId: '0',
                     defenderId: '1',
                     isDefendable: true,
-                    sourceAbilityId: 'revolver-3',
+                    sourceAbilityId,
                     damage: 4,
                     bonusDamage: 0,
                     attackModifierBonusDamage: 0,
@@ -972,17 +1121,17 @@ async function injectGunslingerLoadedChoiceScene(page: Page): Promise<void> {
 
         harness.state.set(nextState);
         (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
-    });
+    }, options);
 }
 
-async function waitForGunslingerLoadedChoiceScene(page: Page): Promise<void> {
-    await page.waitForFunction(() => {
+async function waitForGunslingerLoadedChoiceScene(page: Page, options: { sourceAbilityId?: string } = {}): Promise<void> {
+    await page.waitForFunction(({ sourceAbilityId }) => {
         const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
         return state?.core?.players?.['0']?.characterId === 'gunslinger'
             && state?.core?.players?.['0']?.tokens?.loaded === 1
             && state?.sys?.interaction?.current?.id === 'dt-interaction-gunslinger-loaded-scene'
-            && state?.core?.pendingAttack?.sourceAbilityId === 'revolver-3';
-    }, undefined, { timeout: 30000, polling: 200 });
+            && state?.core?.pendingAttack?.sourceAbilityId === (sourceAbilityId ?? 'revolver-3');
+    }, options, { timeout: 30000, polling: 200 });
 }
 
 async function injectGunslingerTheLawInteractionScene(page: Page): Promise<void> {
@@ -1244,6 +1393,156 @@ async function waitForGunslingerTheLawPlayScene(
             && state?.core?.selectedCharacters?.['1'] === 'monk'
             && (multiplayer ? state?.core?.selectedCharacters?.['2'] === 'paladin' : !state?.core?.players?.['2']);
     }, options, { timeout: 30000, polling: 200 });
+}
+
+async function injectGunslingerMarkTheTargetPlayScene(page: Page): Promise<void> {
+    await page.evaluate(async () => {
+        const harness = (window as any).__BG_TEST_HARNESS__;
+        const state = harness?.state?.get?.();
+        if (!harness || !state) {
+            throw new Error('TestHarness state not ready');
+        }
+
+        const random = {
+            random: () => 0.5,
+            d: (max: number) => Math.min(max, 1),
+            range: (min: number) => min,
+            shuffle: <T,>(array: T[]) => [...array],
+        };
+
+        const [
+            { initHeroState, createCharacterDice },
+            { TAKE_COVER_2 },
+            { GUNSLINGER_CARDS },
+            { GUNSLINGER_DICE_FACE_IDS, TOKEN_IDS },
+        ] = await Promise.all([
+            import('/src/games/dicethrone/domain/characters.ts'),
+            import('/src/games/dicethrone/heroes/gunslinger/abilities.ts'),
+            import('/src/games/dicethrone/heroes/gunslinger/cards.ts'),
+            import('/src/games/dicethrone/domain/ids.ts'),
+        ]);
+
+        const takeCoverUpgrade = GUNSLINGER_CARDS.find((card: any) => card.id === 'upgrade-take-cover-2');
+        if (!takeCoverUpgrade) {
+            throw new Error('upgrade-take-cover-2 not found');
+        }
+
+        const faceByValue: Record<number, string> = {
+            1: GUNSLINGER_DICE_FACE_IDS.BULLET,
+            2: GUNSLINGER_DICE_FACE_IDS.BULLET,
+            3: GUNSLINGER_DICE_FACE_IDS.BULLET,
+            4: GUNSLINGER_DICE_FACE_IDS.DASH,
+            5: GUNSLINGER_DICE_FACE_IDS.DASH,
+            6: GUNSLINGER_DICE_FACE_IDS.BULLSEYE,
+        };
+        const values = [4, 4, 4, 1, 1];
+        const gunslingerBase = initHeroState('0', 'gunslinger', random as any);
+        const monkBase = initHeroState('1', 'monk', random as any);
+        const paladinBase = initHeroState('2', 'paladin', random as any);
+        const gunslinger = {
+            ...gunslingerBase,
+            nickname: '枪手',
+            hand: [],
+            discard: [],
+            resources: {
+                ...gunslingerBase.resources,
+                cp: 2,
+                hp: 50,
+            },
+            tokens: {
+                ...gunslingerBase.tokens,
+                [TOKEN_IDS.EVASIVE]: 0,
+            },
+            abilityLevels: {
+                ...gunslingerBase.abilityLevels,
+                'take-cover': 2,
+            },
+            abilities: gunslingerBase.abilities.map((ability: any) =>
+                ability?.id === 'take-cover' ? JSON.parse(JSON.stringify(TAKE_COVER_2)) : ability
+            ),
+            upgradeCardByAbilityId: {
+                ...gunslingerBase.upgradeCardByAbilityId,
+                'take-cover': { cardId: takeCoverUpgrade.id, cpCost: takeCoverUpgrade.cpCost },
+            },
+        };
+
+        const nextState = {
+            ...state,
+            sys: {
+                ...state.sys,
+                phase: 'offensiveRoll',
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                },
+            },
+            core: {
+                ...state.core,
+                activePlayerId: '0',
+                hostStarted: true,
+                selectedCharacters: {
+                    ...(state.core.selectedCharacters ?? {}),
+                    '0': 'gunslinger',
+                    '1': 'monk',
+                    '2': 'paladin',
+                },
+                readyPlayers: {
+                    ...(state.core.readyPlayers ?? {}),
+                    '0': true,
+                    '1': true,
+                    '2': true,
+                },
+                players: {
+                    ...state.core.players,
+                    '0': gunslinger,
+                    '1': {
+                        ...monkBase,
+                        nickname: '僧侣-A',
+                        resources: { ...monkBase.resources, cp: 2, hp: 50 },
+                    },
+                    '2': {
+                        ...paladinBase,
+                        nickname: '圣骑士-B',
+                        resources: { ...paladinBase.resources, cp: 2, hp: 50 },
+                    },
+                },
+                pendingAttack: null,
+                pendingDamage: undefined,
+                phase: 'offensiveRoll',
+                rollConfirmed: true,
+                rollCount: 1,
+                rollLimit: 3,
+                rollDiceCount: 5,
+                dice: createCharacterDice('gunslinger').map((die: any, index: number) => {
+                    const value = values[index];
+                    const face = faceByValue[value];
+                    return {
+                        ...die,
+                        value,
+                        symbol: face,
+                        symbols: [face],
+                        isKept: false,
+                    };
+                }),
+            },
+        };
+
+        harness.state.set(nextState);
+        (window as any).__BG_LAST_COMMAND_REJECTED__ = null;
+    });
+}
+
+async function waitForGunslingerMarkTheTargetPlayScene(page: Page): Promise<void> {
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return state?.sys?.phase === 'offensiveRoll'
+            && state?.core?.activePlayerId === '0'
+            && state?.core?.selectedCharacters?.['0'] === 'gunslinger'
+            && state?.core?.selectedCharacters?.['1'] === 'monk'
+            && state?.core?.selectedCharacters?.['2'] === 'paladin'
+            && state?.core?.players?.['0']?.upgradeCardByAbilityId?.['take-cover']?.cardId === 'upgrade-take-cover-2'
+            && (state?.core?.players?.['0']?.abilityLevels?.['take-cover'] ?? 0) === 2;
+    }, { timeout: 30000, polling: 200 });
 }
 
 async function dispatchHarnessCommand(
@@ -2955,6 +3254,225 @@ test('gunslinger loaded token should open single-die spotlight after real choice
     await game.screenshot('22-gunslinger-loaded-single-die-spotlight', testInfo);
 });
 
+test('gunslinger quick draw II should make loaded spotlight rerollable after real choice click', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectGunslingerLoadedChoiceScene(page, { quickDrawUpgraded: true });
+    await waitForGunslingerLoadedChoiceScene(page);
+
+    await ensureDebugPanelClosed(page);
+    await disableFabMenu(page);
+
+    const loadedLabel = page.getByText(/^装填$|^Loaded$/i).first();
+    await expect(loadedLabel).toBeVisible({ timeout: 5000 });
+    await game.screenshot('23-gunslinger-quick-draw-2-loaded-choice-before-use', testInfo);
+
+    await loadedLabel.locator('..').click();
+
+    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
+    const singleDieSpotlight = page.locator('[data-testid="bonus-die-single-reroll-spotlight"]');
+    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+    await expect(singleDieSpotlight).toBeVisible({ timeout: 5000 });
+
+    const stateAfterUse = await page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const settlement = state?.core?.pendingBonusDiceSettlement;
+        return {
+            loaded: state?.core?.players?.['0']?.tokens?.loaded ?? 0,
+            quickDrawLevel: state?.core?.players?.['0']?.abilityLevels?.['quick-draw'] ?? null,
+            settlement: settlement
+                ? {
+                    diceCount: settlement.dice?.length ?? 0,
+                    displayOnly: settlement.displayOnly ?? false,
+                    rerollCostTokenId: settlement.rerollCostTokenId ?? null,
+                    rerollCostAmount: settlement.rerollCostAmount ?? null,
+                    maxRerollCount: settlement.maxRerollCount ?? null,
+                    dieValue: settlement.dice?.[0]?.value ?? null,
+                    effectKey: settlement.dice?.[0]?.effectKey ?? null,
+                }
+                : null,
+        };
+    });
+
+    expect(stateAfterUse.loaded).toBe(0);
+    expect(stateAfterUse.quickDrawLevel).toBe(2);
+    expect(stateAfterUse.settlement?.diceCount).toBe(1);
+    expect(stateAfterUse.settlement?.displayOnly).toBe(false);
+    expect(stateAfterUse.settlement?.rerollCostTokenId).toBe('loaded');
+    expect(stateAfterUse.settlement?.rerollCostAmount).toBe(0);
+    expect(stateAfterUse.settlement?.maxRerollCount).toBe(1);
+    expect(stateAfterUse.settlement?.dieValue).toBe(1);
+    expect(stateAfterUse.settlement?.effectKey).toBe('bonusDie.effect.gunslingerLoadedDie');
+
+    await game.screenshot('24-gunslinger-quick-draw-2-loaded-rerollable-spotlight', testInfo);
+});
+
+test('gunslinger fill em with lead should make sourced loaded spotlight rerollable', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectGunslingerLoadedChoiceScene(page, { sourceAbilityId: 'fill-em-with-lead' });
+    await waitForGunslingerLoadedChoiceScene(page, { sourceAbilityId: 'fill-em-with-lead' });
+
+    await ensureDebugPanelClosed(page);
+    await disableFabMenu(page);
+
+    const loadedLabel = page.getByText(/^装填$|^Loaded$/i).first();
+    await expect(loadedLabel).toBeVisible({ timeout: 5000 });
+    await game.screenshot('25-gunslinger-fill-em-with-lead-loaded-choice-before-use', testInfo);
+
+    await loadedLabel.locator('..').click();
+
+    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
+    const singleDieSpotlight = page.locator('[data-testid="bonus-die-single-reroll-spotlight"]');
+    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+    await expect(singleDieSpotlight).toBeVisible({ timeout: 5000 });
+
+    const stateAfterUse = await page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const settlement = state?.core?.pendingBonusDiceSettlement;
+        return {
+            loaded: state?.core?.players?.['0']?.tokens?.loaded ?? 0,
+            sourceAbilityId: state?.core?.pendingAttack?.sourceAbilityId ?? null,
+            settlement: settlement
+                ? {
+                    diceCount: settlement.dice?.length ?? 0,
+                    displayOnly: settlement.displayOnly ?? false,
+                    rerollCostTokenId: settlement.rerollCostTokenId ?? null,
+                    rerollCostAmount: settlement.rerollCostAmount ?? null,
+                    maxRerollCount: settlement.maxRerollCount ?? null,
+                    dieValue: settlement.dice?.[0]?.value ?? null,
+                    effectKey: settlement.dice?.[0]?.effectKey ?? null,
+                }
+                : null,
+        };
+    });
+
+    expect(stateAfterUse.loaded).toBe(0);
+    expect(stateAfterUse.sourceAbilityId).toBe('fill-em-with-lead');
+    expect(stateAfterUse.settlement?.diceCount).toBe(1);
+    expect(stateAfterUse.settlement?.displayOnly).toBe(false);
+    expect(stateAfterUse.settlement?.rerollCostTokenId).toBe('loaded');
+    expect(stateAfterUse.settlement?.rerollCostAmount).toBe(0);
+    expect(stateAfterUse.settlement?.maxRerollCount).toBe(1);
+    expect(stateAfterUse.settlement?.dieValue).toBe(1);
+    expect(stateAfterUse.settlement?.effectKey).toBe('bonusDie.effect.gunslingerLoadedDie');
+
+    await game.screenshot('26-gunslinger-fill-em-with-lead-loaded-rerollable-spotlight', testInfo);
+});
+
+test('gunslinger spin the chamber should grant loaded from real hand play', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectGunslingerHandCardScene(page, { cardId: 'card-spin-the-chamber', phase: 'main1' });
+    await waitForGunslingerHandCardScene(page, { cardId: 'card-spin-the-chamber', phase: 'main1' });
+
+    await ensureDebugPanelClosed(page);
+    await disableFabMenu(page);
+    await waitForHandCardVisualReady(page, 'card-spin-the-chamber');
+
+    await game.screenshot('27-gunslinger-spin-the-chamber-before-play', testInfo);
+    await dragHandCardToPlay(page, 'card-spin-the-chamber');
+
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return (state?.core?.players?.['0']?.tokens?.loaded ?? 0) === 1
+            && !(state?.core?.players?.['0']?.hand ?? []).some((card: any) => card.id === 'card-spin-the-chamber')
+            && (state?.core?.players?.['0']?.discard ?? []).some((card: any) => card.id === 'card-spin-the-chamber');
+    }, { timeout: 10000, polling: 200 });
+
+    const stateAfterPlay = await page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return {
+            loaded: state?.core?.players?.['0']?.tokens?.loaded ?? 0,
+            handIds: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
+            discardIds: (state?.core?.players?.['0']?.discard ?? []).map((card: any) => card.id),
+        };
+    });
+
+    expect(stateAfterPlay.loaded).toBe(1);
+    expect(stateAfterPlay.handIds).not.toContain('card-spin-the-chamber');
+    expect(stateAfterPlay.discardIds).toContain('card-spin-the-chamber');
+    await game.screenshot('28-gunslinger-spin-the-chamber-after-play-loaded', testInfo);
+});
+
+test('gunslinger eat my lead should roll five bonus dice from real hand play', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await waitForTestHarness(page, 40000);
+    await injectGunslingerHandCardScene(page, {
+        cardId: 'card-eat-my-lead',
+        phase: 'offensiveRoll',
+        diceValues: [1, 1, 1, 1, 1],
+    });
+    await waitForGunslingerHandCardScene(page, { cardId: 'card-eat-my-lead', phase: 'offensiveRoll' });
+
+    await ensureDebugPanelClosed(page);
+    await disableFabMenu(page);
+    await waitForHandCardVisualReady(page, 'card-eat-my-lead');
+
+    await game.screenshot('29-gunslinger-eat-my-lead-before-play', testInfo);
+    await dragHandCardToPlay(page, 'card-eat-my-lead');
+
+    const bonusDieOverlay = page.locator('[data-testid="bonus-die-overlay"]');
+    await expect(bonusDieOverlay).toBeVisible({ timeout: 5000 });
+
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const settlement = state?.core?.pendingBonusDiceSettlement;
+        return settlement?.displayOnly === true
+            && settlement?.dice?.length === 5
+            && (state?.core?.pendingAttack?.attackModifierBonusDamage ?? 0) === 5
+            && (state?.core?.players?.['1']?.statusEffects?.knockdown ?? 0) === 1;
+    }, { timeout: 15000, polling: 200 });
+
+    await game.screenshot('30-gunslinger-eat-my-lead-bonus-dice-overlay', testInfo);
+
+    const stateAfterPlay = await page.evaluate(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return {
+            handIds: (state?.core?.players?.['0']?.hand ?? []).map((card: any) => card.id),
+            discardIds: (state?.core?.players?.['0']?.discard ?? []).map((card: any) => card.id),
+            settlement: state?.core?.pendingBonusDiceSettlement
+                ? {
+                    diceCount: state.core.pendingBonusDiceSettlement.dice?.length ?? 0,
+                    displayOnly: state.core.pendingBonusDiceSettlement.displayOnly,
+                    diceValues: state.core.pendingBonusDiceSettlement.dice?.map((die: any) => die.value ?? null) ?? [],
+                }
+                : null,
+            attackModifierBonusDamage: state?.core?.pendingAttack?.attackModifierBonusDamage ?? 0,
+            totalBonusDamage: state?.core?.pendingAttack?.bonusDamage ?? 0,
+            knockdown: state?.core?.players?.['1']?.statusEffects?.knockdown ?? 0,
+        };
+    });
+
+    expect(stateAfterPlay.handIds).not.toContain('card-eat-my-lead');
+    expect(stateAfterPlay.discardIds).toContain('card-eat-my-lead');
+    expect(stateAfterPlay.settlement?.diceCount).toBe(5);
+    expect(stateAfterPlay.settlement?.displayOnly).toBe(true);
+    expect(stateAfterPlay.settlement?.diceValues).toEqual([1, 1, 1, 1, 1]);
+    expect(stateAfterPlay.attackModifierBonusDamage).toBe(5);
+    expect(stateAfterPlay.totalBonusDamage).toBe(5);
+    expect(stateAfterPlay.knockdown).toBe(1);
+
+    const closeButton = bonusDieOverlay.getByLabel(/关闭特写|Close Spotlight/i);
+    await expect(closeButton).toBeVisible({ timeout: 5000 });
+    await closeButton.click();
+    await expect(bonusDieOverlay).toBeHidden({ timeout: 5000 });
+
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return !state?.core?.pendingBonusDiceSettlement;
+    }, { timeout: 5000, polling: 200 });
+    await game.screenshot('31-gunslinger-eat-my-lead-after-closeout', testInfo);
+});
+
 test('samurai retribution token should retaliate through real click flow', async ({ page, game }, testInfo) => {
     test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
 
@@ -3841,6 +4359,80 @@ test('mobile long press hand card should open magnify without playing card', asy
     expect(stateAfterLongPress.handIds).toContain('watch-out');
 });
 
+test('mobile player board image should survive one view switch without remount blanking', async ({ page, game }, testInfo) => {
+    test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+    await setChineseLocale(page.context());
+    await page.setViewportSize({ width: 812, height: 375 });
+    await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+    await game.setupScene({
+        gameId: 'dicethrone',
+        player0: {
+            resources: { CP: 3, HP: 50 },
+            discard: ['card-play-six'],
+        },
+        player1: {
+            resources: { HP: 50 },
+        },
+        currentPlayer: '0',
+        phase: 'offensiveRoll',
+        extra: {
+            selectedCharacters: { '0': 'samurai', '1': 'gunslinger' },
+            hostStarted: true,
+            rollCount: 1,
+            rollConfirmed: false,
+            dice: [
+                { id: 0, value: 1, isKept: false },
+                { id: 1, value: 2, isKept: false },
+                { id: 2, value: 3, isKept: false },
+                { id: 3, value: 4, isKept: false },
+                { id: 4, value: 5, isKept: false },
+            ],
+        },
+    });
+
+    await page.waitForFunction(() => {
+        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        return window.innerWidth === 812
+            && state?.sys?.phase === 'offensiveRoll'
+            && state?.core?.selectedCharacters?.['0'] === 'samurai'
+            && state?.core?.selectedCharacters?.['1'] === 'gunslinger';
+    }, { timeout: 10000, polling: 200 });
+
+    await ensureDebugPanelClosed(page);
+    await disableFabMenu(page);
+
+    const board = page.getByTestId('player-board-surface').first();
+    const boardImage = page.getByTestId('player-board-image').first();
+    const opponentHeader = page.getByTestId('dt-top-header-1').first();
+
+    await expect(board).toHaveAttribute('data-character-id', 'samurai', { timeout: 5000 });
+    await expect(board).toBeVisible({ timeout: 5000 });
+    await expect(boardImage).toBeVisible({ timeout: 5000 });
+    await expect.poll(async () => boardImage.evaluate((node) => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+    await expect(boardImage).toHaveAttribute('data-debug-current-src', /samurai/);
+
+    await game.screenshot('16-mobile-board-view-switch-before', testInfo);
+
+    await opponentHeader.click();
+    await expect(board).toHaveAttribute('data-character-id', 'gunslinger', { timeout: 10000 });
+    await expect(board).toBeVisible({ timeout: 5000 });
+    await expect(boardImage).toBeVisible({ timeout: 5000 });
+    await expect.poll(async () => boardImage.evaluate((node) => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+    await expect(boardImage).toHaveAttribute('data-debug-current-src', /gunslinger/);
+
+    await game.screenshot('17-mobile-board-view-switch-after', testInfo);
+
+    await opponentHeader.click();
+    await expect(board).toHaveAttribute('data-character-id', 'samurai', { timeout: 10000 });
+    await expect(board).toBeVisible({ timeout: 5000 });
+    await expect(boardImage).toBeVisible({ timeout: 5000 });
+    await expect.poll(async () => boardImage.evaluate((node) => (node as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+    await expect(boardImage).toHaveAttribute('data-debug-current-src', /samurai/);
+
+    await game.screenshot('18-mobile-board-view-switch-restored', testInfo);
+});
+
 test.describe('枪手 The Law 多目标交互', () => {
     test('should allow confirming after selecting only one target', async ({ page, game }, testInfo) => {
         test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
@@ -3880,6 +4472,7 @@ test.describe('枪手 The Law 多目标交互', () => {
         expect(stateAfter.core.players['1'].statusEffects.knockdown).toBe(1);
         expect(stateAfter.core.players['2'].tokens.bounty ?? 0).toBe(0);
         expect(stateAfter.core.players['2'].statusEffects.knockdown ?? 0).toBe(0);
+        await game.screenshot('14-the-law-single-target-resolved', testInfo);
     });
 
     test('should resolve two selected targets in one confirmation', async ({ page, game }, testInfo) => {
@@ -4010,5 +4603,58 @@ test.describe('枪手 The Law 升级变体真实触发', () => {
         expect(stateAfter.core.players['1'].statusEffects.knockdown).toBe(1);
         expect(stateAfter.core.players['2'].statusEffects.knockdown).toBe(1);
         await game.screenshot('25-the-law-variant-3p-resolved', testInfo);
+    });
+});
+
+test.describe('枪手 Mark the Target 升级变体真实触发', () => {
+    test('should open target selection and apply bounty after selecting upgraded take cover variant', async ({ page, game }, testInfo) => {
+        test.setTimeout(DICETHRONE_TEST_TIMEOUT_MS);
+
+        await game.openTestGame('dicethrone', {}, DICETHRONE_OPEN_TIMEOUT_MS);
+        await waitForTestHarness(page, 40000);
+        await injectGunslingerMarkTheTargetPlayScene(page);
+        await waitForGunslingerMarkTheTargetPlayScene(page);
+
+        await ensureDebugPanelClosed(page);
+        await disableFabMenu(page);
+
+        await game.screenshot('32-mark-the-target-before-select', testInfo);
+
+        await dispatchHarnessCommand(page, 'SELECT_ABILITY', '0', { abilityId: 'mark-the-target' });
+        await dispatchHarnessCommand(page, 'ADVANCE_PHASE', '0');
+
+        await page.waitForFunction(() => {
+            const interaction = (window as any).__BG_TEST_HARNESS__?.state?.get?.()?.sys?.interaction?.current;
+            return interaction?.data?.sourceCardId === 'mark-the-target'
+                || interaction?.data?.resolveCustomActionId === 'gunslinger-card-mark-the-target-resolve';
+        }, { timeout: 10000, polling: 200 });
+
+        const targetOne = page.getByTestId('dt-player-target-1');
+        const targetTwo = page.getByTestId('dt-player-target-2');
+        const confirmButton = page.getByRole('button', { name: /^(确认|Confirm)(?:\s*\(\d+\))?$/i }).last();
+
+        await expect(targetOne).toBeVisible({ timeout: 5000 });
+        await expect(targetTwo).toBeVisible({ timeout: 5000 });
+        await expect(confirmButton).toBeDisabled();
+
+        await targetOne.click();
+        await expect(confirmButton).toBeEnabled();
+        await game.screenshot('33-mark-the-target-selected-target', testInfo);
+
+        await confirmButton.click();
+        await page.waitForFunction(() => {
+            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            return !state?.sys?.interaction?.current
+                && (state?.core?.players?.['0']?.tokens?.evasive ?? 0) === 2
+                && (state?.core?.players?.['1']?.tokens?.bounty ?? 0) === 1
+                && (state?.core?.players?.['2']?.tokens?.bounty ?? 0) === 0;
+        }, { timeout: 10000, polling: 200 });
+
+        const stateAfter = await game.getState();
+        expect(stateAfter.sys?.interaction?.current ?? null).toBeNull();
+        expect(stateAfter.core.players['0'].tokens.evasive).toBe(2);
+        expect(stateAfter.core.players['1'].tokens.bounty).toBe(1);
+        expect(stateAfter.core.players['2'].tokens.bounty ?? 0).toBe(0);
+        await game.screenshot('34-mark-the-target-resolved', testInfo);
     });
 });

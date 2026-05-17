@@ -401,6 +401,7 @@
     "confirmRollWithAbility": "确认投掷（{{abilityName}}）：",
     "confirmRollDefense": "确认防御投掷：",
     "confirmRollDefenseWithAbility": "确认防御投掷（{{abilityName}}）：",
+    "compareRollPrefix": "对掷结果：",
     "cardRollResult": "投掷结果：",
     "dieModified": "修改骰子 #{{dieId}}：{{oldValue}} → {{newValue}}",
     "dieModifiedSource": "（{{source}}）",
@@ -2560,12 +2561,12 @@
       "description": "升级你的赏金猎人。施加 1 个赏金，并造成 2 点不可防御伤害。"
     },
     "upgrade-showdown-2": {
-      "name": "摊到牌面 II",
-      "description": "升级你的摊到牌面。双方各掷 1 颗骰子；若你的结果不小于对手，造成 8 点伤害，否则造成 6 点伤害。"
+      "name": "枪战决斗 II",
+      "description": "升级你的枪战决斗。双方各掷 1 颗骰子；若你的结果不小于对手，造成 8 点伤害，否则造成 6 点伤害。"
     },
     "upgrade-showdown-3": {
-      "name": "摊到牌面 III",
-      "description": "升级你的摊到牌面。双方各掷 1 颗骰子；若你的结果不小于对手，造成 9 点伤害，否则造成 6 点伤害。"
+      "name": "枪战决斗 III",
+      "description": "升级你的枪战决斗。双方各掷 1 颗骰子；若你的结果不小于对手，造成 9 点伤害，否则造成 6 点伤害。"
     },
     "upgrade-fan-the-hammer-2": {
       "name": "左轮速射 II",
@@ -3241,6 +3242,7 @@
   },
   "compareRoll": {
     "confirming": "确认中...",
+    "waitingForOwnerChoice": "等待对方选择...",
     "rolled": "掷出 {{value}}",
     "gunslingerDuel": {
       "title": "对决比骰",
@@ -3249,6 +3251,13 @@
       "win": "你赢得了对决，可选择后续效果。",
       "lose": "你输掉了对决：对攻击方造成 1 点不可防御伤害。",
       "tieLose": "平手不算获胜：对攻击方造成 1 点不可防御伤害。"
+    },
+    "gunslingerShowdown": {
+      "title": "枪战决斗",
+      "attacker": "枪手",
+      "defender": "对手",
+      "win": "本次攻击伤害 +{{amount}}",
+      "lose": "未赢得比骰，维持基础伤害。"
     }
   },
   "endgame": {

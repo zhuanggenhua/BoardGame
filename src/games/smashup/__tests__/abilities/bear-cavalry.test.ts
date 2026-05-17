@@ -10,7 +10,7 @@ import {
     fireTriggers,
     isMinionProtected,
 } from '../../domain/ongoingEffects';
-import { clearPowerModifierRegistry, getEffectivePower } from '../../domain/ongoingModifiers';
+import { clearPowerModifierRegistry, getEffectiveBreakpoint, getEffectivePower } from '../../domain/ongoingModifiers';
 import { reduce } from '../../domain/reducer';
 import type { CardInstance, TurnStartedEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
@@ -265,6 +265,74 @@ describe('bear_cavalry_high_ground 触发', () => {
         });
 
         expect(events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(true);
+    });
+});
+
+describe('bear_cavalry_bearing_down_pod 动态爆破点修正', () => {
+    it('默认：每个在此基地有随从的玩家 +2 爆破点', () => {
+        const base = makeBase({
+            defId: 'base_the_jungle',
+            minions: [
+                makeMinion('m0', 'test_minion', '0', 3),
+                makeMinion('m1', 'test_minion', '1', 3),
+            ],
+            ongoingActions: [{ uid: 'oa1', defId: 'bear_cavalry_bearing_down_pod', ownerId: '0' } as any],
+        });
+
+        const state = makeState([base]);
+        const baseBreakpoint = getEffectiveBreakpoint(
+            makeState([makeBase({ defId: 'base_the_jungle' })]),
+            0,
+        );
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint + 4);
+    });
+
+    it('若本回合曾把对手随从移动到此基地：改为每个玩家 -2 爆破点', () => {
+        const base = makeBase({
+            defId: 'base_the_jungle',
+            minions: [
+                makeMinion('m0', 'test_minion', '0', 3),
+                makeMinion('m1', 'test_minion', '1', 3),
+            ],
+            ongoingActions: [{ uid: 'oa1', defId: 'bear_cavalry_bearing_down_pod', ownerId: '0' } as any],
+        });
+
+        const state = makeState([base], {
+            movedToBasesThisTurn: { 0: true },
+        });
+        const baseBreakpoint = getEffectiveBreakpoint(
+            makeState([makeBase({ defId: 'base_the_jungle' })]),
+            0,
+        );
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint - 4);
+    });
+
+    it('被压制的 bearing_down_pod 不再修改爆破点', () => {
+        const base = makeBase({
+            defId: 'base_the_jungle',
+            minions: [
+                makeMinion('m0', 'test_minion', '0', 3),
+                makeMinion('m1', 'test_minion', '1', 3),
+            ],
+            ongoingActions: [{ uid: 'oa1', defId: 'bear_cavalry_bearing_down_pod', ownerId: '0' } as any],
+        });
+
+        const state = makeState([base], {
+            suppressedCardsUntilTurnStart: [{
+                cardUid: 'oa1',
+                baseIndex: 0,
+                suppressorPlayerId: '0',
+                cardType: 'ongoing',
+            }],
+        } as any);
+        const baseBreakpoint = getEffectiveBreakpoint(
+            makeState([makeBase({ defId: 'base_the_jungle' })]),
+            0,
+        );
+
+        expect(getEffectiveBreakpoint(state, 0)).toBe(baseBreakpoint);
     });
 });
 

@@ -621,6 +621,35 @@ describe('cross hero battles', () => {
             expect(advanceResult.success).toBe(true);
             state = advanceResult.state as MatchState<DiceThroneCore>;
 
+            expect(state.sys.interaction.current?.kind).toBe('compare-roll-choice');
+            expect(state.sys.interaction.current?.data).toMatchObject({
+                sourceId: 'showdown',
+                confirmValue: {
+                    customId: 'gunslinger-showdown-apply-bonus',
+                    value: 2,
+                },
+            });
+            expect(state.core.pendingAttack?.bonusDamage).toBe(0);
+
+            const compareRollInteractionId = state.sys.interaction.current?.id;
+            expect(compareRollInteractionId).toBeTruthy();
+
+            const confirmResult = executePipeline(
+                pipelineConfig,
+                state,
+                {
+                    type: 'SYS_INTERACTION_CONFIRM',
+                    playerId: '0',
+                    payload: { interactionId: compareRollInteractionId },
+                    timestamp: Date.now() + 1,
+                } as DiceThroneCommand,
+                random,
+                playerIds,
+            );
+
+            expect(confirmResult.success).toBe(true);
+            state = confirmResult.state as MatchState<DiceThroneCore>;
+
             expect(state.sys.interaction.current).toBeUndefined();
             expect(state.core.pendingAttack?.bonusDamage).toBe(2);
         });

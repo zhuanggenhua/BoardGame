@@ -23,7 +23,9 @@ import {
     finalizeTokenResponse,
     hasDefensiveTokens,
     createTokenResponseRequestedEvent,
+    getUsableTokenAmountForTiming,
 } from './tokenResponse';
+import { getTokenUseOptions } from './tokenTypes';
 import { getCustomActionHandler } from './effects';
 import { applyEvents } from './utils';
 
@@ -64,11 +66,39 @@ export function executeTokenCommand(
             }
             
             const playerId = pendingDamage.responderId;
+            if (command.playerId !== playerId) {
+                console.warn('[DiceThrone] USE_TOKEN: player mismatch');
+                break;
+            }
             
             // 获取 Token 定义（由 state.tokenDefinitions 驱动，避免与具体英雄耦合）
             const tokenDef = state.tokenDefinitions.find(t => t.id === tokenId);
             if (!tokenDef) {
                 console.warn(`[DiceThrone] USE_TOKEN: unknown token ${tokenId}`);
+                break;
+            }
+            if (!Number.isInteger(amount) || amount <= 0) {
+                console.warn('[DiceThrone] USE_TOKEN: invalid amount');
+                break;
+            }
+            if (!tokenDef.activeUse?.timing?.includes(pendingDamage.responseType)) {
+                console.warn('[DiceThrone] USE_TOKEN: invalid token timing');
+                break;
+            }
+            if (tokenDef.activeUse.requiresAttackDamage && !state.pendingAttack) {
+                console.warn('[DiceThrone] USE_TOKEN: missing attack context');
+                break;
+            }
+            const availableAmount = getUsableTokenAmountForTiming(
+                state,
+                playerId,
+                tokenId,
+                pendingDamage.responseType,
+                { damageScope: pendingDamage.damageScope },
+            );
+            const allowedConsumeAmounts = getTokenUseOptions(tokenDef, availableAmount);
+            if (!allowedConsumeAmounts.includes(amount)) {
+                console.warn('[DiceThrone] USE_TOKEN: amount not allowed');
                 break;
             }
             
@@ -195,6 +225,10 @@ export function executeTokenCommand(
             
             if (!pendingDamage) {
                 console.warn('[DiceThrone] SKIP_TOKEN_RESPONSE: no pending damage');
+                break;
+            }
+            if (command.playerId !== pendingDamage.responderId) {
+                console.warn('[DiceThrone] SKIP_TOKEN_RESPONSE: player mismatch');
                 break;
             }
             

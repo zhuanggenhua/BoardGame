@@ -95,6 +95,10 @@ function isGameVitestTest(file) {
   return /^src\/games\/[^/]+\/__tests__\/.+\.(test|spec)\.[tj]sx?$/.test(file);
 }
 
+function isSmashUpRootTest(file) {
+  return /^src\/games\/smashup\/__tests__\/[^/]+\.(test|spec)\.[tj]sx?$/.test(file);
+}
+
 function isE2eSpec(file) {
   return /^e2e\/.+\.e2e\.[tj]s$/.test(file);
 }
@@ -162,6 +166,45 @@ function isInteractionContractTest(file) {
     baseName.includes('afterscoring-window') ||
     baseName.includes('system-contract')
   );
+}
+
+const smashUpRootBaseAbilityWhitelist = new Set([
+  'src/games/smashup/__tests__/baseAbilities.test.ts',
+  'src/games/smashup/__tests__/baseAbilityIntegration.test.ts',
+  'src/games/smashup/__tests__/baseAbilityIntegrationE2E.test.ts',
+  'src/games/smashup/__tests__/baseAbilityNeutralProtection.test.ts',
+  'src/games/smashup/__tests__/baseAbilitySuppressionState.test.ts',
+  'src/games/smashup/__tests__/baseProtection.test.ts',
+  'src/games/smashup/__tests__/baseRestrictions.test.ts',
+  'src/games/smashup/__tests__/base-rlyeh-destroy-trigger-idempotency.test.ts',
+]);
+
+function isSmashUpRootBaseAbilityAggregator(file) {
+  if (!isSmashUpRootTest(file)) {
+    return false;
+  }
+
+  const normalized = normalizeFile(file);
+  const baseName = path.basename(normalized);
+  return /^base.*(?:ability|abilities|prompt).*\.(test|spec)\.[tj]sx?$/i.test(baseName);
+}
+
+function checkSmashUpRootBaseAbilityStructure(file, existedAtBase) {
+  if (!isSmashUpRootBaseAbilityAggregator(file)) {
+    return;
+  }
+
+  const normalized = normalizeFile(file);
+  if (smashUpRootBaseAbilityWhitelist.has(normalized)) {
+    return;
+  }
+
+  if (existedAtBase) {
+    warnings.push(`${file}: Smash Up 根级 baseAbility/basePrompt 聚合壳是历史债务；本次允许保留，但不要继续扩写，优先迁到 src/games/smashup/__tests__/bases/。`);
+    return;
+  }
+
+  violations.push(`${file}: 禁止新增 Smash Up 根级 baseAbility/basePrompt 聚合壳；请迁入 src/games/smashup/__tests__/bases/ 下的专项目文件，或落到允许的系统/集成白名单文件。`);
 }
 
 function allowsDirectResolveAbility(file) {
@@ -396,6 +439,7 @@ for (const file of targetFiles) {
 
   checkTempArtifact(file, existedAtBase);
   checkE2eStructure(file, existedAtBase);
+  checkSmashUpRootBaseAbilityStructure(file, existedAtBase);
   checkSkippedTestUsage(file, existedAtBase);
   checkPromptFacadeCoupling(file, existedAtBase);
   checkDirectHandlerCoupling(file, existedAtBase);

@@ -12,14 +12,29 @@ beforeAll(() => {
     initAllAbilities();
 });
 
-describe('base_mountains_of_madness 疯狂之山', () => {
-    it('随从入场后抽疯狂卡（有疯狂牌库时）', () => {
+describe('base_mountains_of_madness: 疯狂山脉 - 抽疯狂卡', () => {
+    it('有疯狂牌库时生成 MADNESS_DRAWN 事件', () => {
         const state = makeState({
-            bases: [{ defId: 'base_mountains_of_madness', minions: [], ongoingActions: [] }],
-            madnessDeck: ['madness_1', 'madness_2'],
-            nextUid: 100,
+            bases: [{
+                defId: 'base_mountains_of_madness',
+                minions: [{
+                    uid: 'm1',
+                    defId: 'test_minion',
+                    controller: '0',
+                    owner: '1',
+                    basePower: 3,
+                    powerCounters: 0,
+                    powerModifier: 0,
+                    tempPowerModifier: 0,
+                    talentUsed: false,
+                    attachedActions: [],
+                }],
+                ongoingActions: [],
+            }],
+            madnessDeck: Array(10).fill('madness_1'),
         });
-        const result = triggerBaseAbility('base_mountains_of_madness', 'onMinionPlayed', {
+
+        const { events } = triggerBaseAbility('base_mountains_of_madness', 'onMinionPlayed', {
             state,
             matchState: makeMatchState(state),
             baseIndex: 0,
@@ -29,9 +44,10 @@ describe('base_mountains_of_madness 疯狂之山', () => {
             now: 0,
         });
 
-        expect(result.events).toHaveLength(1);
-        expect(result.events[0].type).toBe(SU_EVENTS.MADNESS_DRAWN);
-        expect((result.events[0] as MadnessDrawnEvent).payload.count).toBe(1);
+        expect(events).toHaveLength(1);
+        expect(events[0].type).toBe(SU_EVENTS.MADNESS_DRAWN);
+        expect((events[0] as MadnessDrawnEvent).payload.playerId).toBe('1');
+        expect((events[0] as MadnessDrawnEvent).payload.count).toBe(1);
     });
 
     it('无疯狂牌库时不产生事件', () => {

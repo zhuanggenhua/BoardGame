@@ -60,7 +60,7 @@
 - **触发时点**：发生在装填奖励骰链路开启时，而非 `phaseStart` 本体或终极技本身的 10 点伤害结算瞬间。
 - **消耗发生点**：`Loaded` 的实际扣减统一走通用 token 使用链；两条例外只是让该奖励骰获得“可重掷 1 次”。
 - **范围与持续**：都是**该次装填奖励骰仅可重掷 1 次**，不应外溢成整回合常驻 buff。
-- **补审结论**：运行时行为已有 `cross-hero.test.ts` 覆盖，但定义层仍靠 `handleLoadedUse()` 内 `sourceAbilityId === 'fill-em-with-lead' || quickDrawLevel >= 2` 的隐式特判承接；因此旧“D3 闭环 ✅ 一致”结论失效，当前只能写成“**行为已验证，结构未完全收口**”。
+- **补审结论（2026-05-17 更新）**：运行时行为仍由 `cross-hero.test.ts` 覆盖；定义层已新增 `tokenBonusDieReroll` 元数据，`Quick Draw II` 声明为 `scope: allTokenUses`，`Fill'Em With Lead` 声明为来源技能级 Loaded 重掷 hook，`handleLoadedUse()` 读取能力定义而不是硬编码 `sourceAbilityId` / `quickDrawLevel`。结构层 D3/D8/D23 finding 已收敛；`Quick Draw II` 已补独立 UI 证据，`Fill'Em With Lead` 与其余枪手 UI 缺口仍按 D47 保留。
 
 ### 4. `Bounty` 的“当受此指示物影响的玩家遭到对手攻击时”
 - **触发动作**：应限定为**持有赏金的一方遭到对手攻击来伤**，而不是任意 `DAMAGE_DEALT`。
@@ -77,13 +77,13 @@
 | 左轮（revolver） | 3/4/5 个子弹分别造成 3/4/5 伤害 | `abilities.ts` + `customActions/gunslinger.ts` | D1/D3 | ✅ 一致 |
 | 左轮 II（revolver-2） | 3/4/5 个子弹分别造成 4/5/6 伤害；若至少 4 颗同点数，再施加击倒 | `abilities.ts` + `customActions/gunslinger.ts` | D1/D3/D8 | ✅ 已对齐 |
 | 赏金猎人（bounty-hunter） | 施加赏金并造成不可防御伤害 | `abilities.ts` | D1/D3 | ✅ 一致 |
-| 快枪手（quick-draw） | 维持阶段获得装填；升级后每次花费装填可重掷该奖励骰一次 | `abilities.ts` + `customActions/gunslinger.ts` | D1/D3/D8/D23 | ⚠️ 运行时已验证；但升级后的“花费装填时可重掷”仍依赖 `handleLoadedUse()` 的等级特判，定义层未完全闭环 |
+| 快枪手（quick-draw） | 维持阶段获得装填；升级后每次花费装填可重掷该奖励骰一次 | `abilities.ts` + `customActions/gunslinger.ts` | D1/D3/D8/D23 | ✅ 运行时已验证；升级后的“花费装填时可重掷”已通过 `tokenBonusDieReroll: { scope: 'allTokenUses' }` 显式建模，handler 读取定义层 hook |
 | 掩护射击（take-cover） | 获得闪避并造成伤害；升级后下半区解锁 `mark-the-target` | `abilities.ts` | D1/D3 | ✅ 一致 |
 | 枪战决斗（showdown） | 双方比点；赢/平时提升总伤害 | `abilities.ts` + `customActions/gunslinger.ts` | D1/D8 | ✅ 一致 |
 | 死亡之眼（deadeye） | 施加击倒并造成不可防御伤害；升级后下半区解锁 `the-law` | `abilities.ts` + `customActions/gunslinger.ts` | D1/D3 | ✅ 一致 |
 | 左轮速射（fan-the-hammer） | 获得 2 闪避并造成伤害；升级后下半区解锁 `pistol-whip` | `abilities.ts` | D1/D3 | ✅ 一致 |
 | 对决（duel） | 防御阶段双方投骰比较；赢时二选一，输时造成 1 点不可防御伤害 | `abilities.ts` + `customActions/gunslinger.ts` | D1/D5 | ✅ 一致 |
-| 终极技（fill-em-with-lead） | 获得闪避、对手获得赏金与击倒，再造成 10 点不可防御伤害；花费装填时可重掷奖励骰 | `abilities.ts` + `customActions/gunslinger.ts` | D1/D3/D8/D23 | ⚠️ 行为测试已覆盖；但“花费装填时重掷”并未显式建模在能力 effects/trigger 中，仍由通用 `handleLoadedUse()` 特判承接 |
+| 终极技（fill-em-with-lead） | 获得闪避、对手获得赏金与击倒，再造成 10 点不可防御伤害；花费装填时可重掷奖励骰 | `abilities.ts` + `customActions/gunslinger.ts` | D1/D3/D8/D23 | ✅ 行为测试已覆盖；“花费装填时重掷”已显式建模为来源技能级 `tokenBonusDieReroll` hook |
 
 ### 提示板状态 / 骰面说明
 | 状态 | 权威描述要点（汉化图） | 实现入口 | 维度 | 结论 |
@@ -103,7 +103,7 @@
 | `upgrade-take-cover-2` | 掩护射击 II / 复合升级 | 整张物理升级牌；下半区为 `mark-the-target` 变体 | `cards.ts` + `abilities.ts` + `card-cross-audit.test.ts` | D1/D3/D33 | ✅ 已按复合升级合同接线 |
 | `upgrade-deadeye-2` | 死亡之眼 II / 复合升级 | 整张物理升级牌；下半区为 `the-law` 变体 | `cards.ts` + `abilities.ts` + `card-cross-audit.test.ts` | D1/D3/D33 | ✅ 已按复合升级合同接线 |
 | `upgrade-duel-2` | 对决 II / 升级 | 平手也算赢；赢时可选 3 点不可防御伤害或抵挡一半进攻伤害 | `cards.ts` + `abilities.ts` + `customActions/gunslinger.ts` | D1/D3/D5 | ✅ 一致 |
-| `upgrade-quick-draw` | 快速拔枪 / 升级 | 维持阶段获得装填；此后每次花费装填都可重掷该奖励骰一次 | `cards.ts` + `abilities.ts` + `customActions/gunslinger.ts` | D1/D3/D8/D23 | ⚠️ 行为链已覆盖；但升级卡文本对应的“花费装填时”触发仍未在定义层显式落点，只能通过 `quickDrawLevel >= 2` 旁路识别 |
+| `upgrade-quick-draw` | 快速拔枪 / 升级 | 维持阶段获得装填；此后每次花费装填都可重掷该奖励骰一次 | `cards.ts` + `abilities.ts` + `customActions/gunslinger.ts` | D1/D3/D8/D23 | ✅ 行为链已覆盖；升级后的“花费装填时”触发已落到 `QUICK_DRAW_UPGRADED.tokenBonusDieReroll.scope = allTokenUses` |
 
 ### 复合升级下半区技能变体（非独立手牌）
 | 变体ID | 所属升级牌 | 权威描述要点 | 实现入口 | 维度 | 结论 |
@@ -131,7 +131,7 @@
 - The Law 既有多目标证据：`evidence/dicethrone/dicethrone-gunslinger-the-law-multiselect-e2e-test.md`
 - 枪手 / 武士变体链路既有证据：`evidence/dicethrone/dicethrone-gunslinger-samurai-variant-e2e-test.md`
 - 4 人目标集合（Wanted / High Noon / Pistol Whip）：`evidence/dicethrone/dicethrone-gunslinger-samurai-4p-targeted-cards-e2e-test.md`
-- 已有 Loaded 奖励骰特写 E2E 文件：`e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts:2237-2293`（尚未形成独立 evidence 文档）
+- 已有 Loaded 奖励骰特写 E2E 文件：`e2e/dicethrone/dicethrone-watch-out-spotlight.e2e.ts`（基础 Loaded 已有真实选择到单骰特写覆盖；2026-05-17 新增 `Quick Draw II` 与 `Fill'Em With Lead` 可重掷单骰特写覆盖）
 - 静态实现核对：
   - `src/games/dicethrone/domain/customActions/gunslinger.ts:46-140,227-250,446-460,531-651,654-699,709-796`
   - `src/games/dicethrone/domain/flowHooks.ts:661-699`
@@ -151,6 +151,39 @@
   - `src/games/dicethrone/__tests__/cross-hero.test.ts:915-1046`（`wanted / high-noon` 的 4 人目标集合）
   - `src/games/dicethrone/__tests__/cross-hero.test.ts:1205-1471`（`spin-the-chamber / wanted / high-noon` 行为链）
   - `src/games/dicethrone/__tests__/cross-hero.test.ts:1886-1936`（`upgrade-quick-draw` 的 Loaded 重掷行为）
+  - `src/games/dicethrone/__tests__/gunslinger-loaded-contract.test.ts`（`Quick Draw II` / `Fill'Em With Lead` 的 `tokenBonusDieReroll` 定义层合同）
+- 2026-05-17 本轮实测：
+  - `node node_modules/eslint/bin/eslint.js src/games/dicethrone/__tests__/gunslinger-loaded-contract.test.ts src/games/dicethrone/domain/combat/types.ts src/games/dicethrone/heroes/gunslinger/abilities.ts src/games/dicethrone/domain/customActions/gunslinger.ts`
+  - `npx vitest run src/games/dicethrone/__tests__/gunslinger-loaded-contract.test.ts --configLoader native --maxWorkers 1`，`2 tests passed`
+  - `npx vitest run src/games/dicethrone/__tests__/cross-hero.test.ts --configLoader native --maxWorkers 1 -t "fill-em-with-lead can reroll|upgrade quick-draw makes loaded|wild west keeps fixed|base loaded choice"`，`5 passed / 61 skipped`
+  - `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "gunslinger quick draw II should make loaded spotlight rerollable after real choice click"`，`1 passed`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-quick-draw-II-should-make-loaded-spotlight-rerollable-after-real-choice-click\23-gunslinger-quick-draw-2-loaded-choice-before-use.png`
+      - 肉眼观察：真实页面上出现“技能结算选择”弹窗，选项中可见“装填”，背景是枪手玩家板与当前战斗 UI；这证明用例不是只读静态状态，而是从结算选择入口进入 Loaded 花费链路。
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-quick-draw-II-should-make-loaded-spotlight-rerollable-after-real-choice-click\24-gunslinger-quick-draw-2-loaded-rerollable-spotlight.png`
+      - 肉眼观察：真实页面显示单骰奖励骰特写，右侧可见骰面列表与“投掷/已确认”区域，中间提示“点击骰子花费 0 装填重投”；顶部 token 区装填已从 1 扣到 0。该截图达到 `Quick Draw II` 花费 Loaded 后可重掷一次的 UI 证据要求。
+  - `node scripts/infra/check-file-encoding.mjs --quiet`，通过（用于排除一次 E2E 启动前编码候选文件 ENOENT 的瞬态问题）
+  - `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "gunslinger fill em with lead should make sourced loaded spotlight rerollable"`，`1 passed`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-fill-em-with-lead-should-make-sourced-loaded-spotlight-rerollable\25-gunslinger-fill-em-with-lead-loaded-choice-before-use.png`
+      - 肉眼观察：真实战斗页面上出现“技能结算选择”弹窗，选项中可见“装填”，背景为枪手玩家板与攻击掷骰阶段 UI；这证明终极技来源的 Loaded 花费链路仍从真实选择入口进入。
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-fill-em-with-lead-should-make-sourced-loaded-spotlight-rerollable\26-gunslinger-fill-em-with-lead-loaded-rerollable-spotlight.png`
+      - 肉眼观察：真实页面显示单骰奖励骰特写，右侧骰面列表可见，中央提示“点击骰子花费 0 装填重投”；顶部装填 token 已扣到 0。用例状态断言 `sourceAbilityId=fill-em-with-lead`、`maxRerollCount=1`、`displayOnly=false`，该截图链达到 `Fill'Em With Lead` 来源技能级 Loaded 重掷 UI 证据要求。
+  - `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "should allow confirming after selecting only one target"`，`1 passed`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-allow-confirming-after-selecting-only-one-target\14-the-law-single-target-selected.png`
+      - 肉眼观察：The Law 交互弹窗显示“选择至多 2 名目标玩家”，P2/P3 两个目标都可见；只选择 P2 后确认按钮可用，证明“至多 2 名”不是必须选满 2 名。
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-allow-confirming-after-selecting-only-one-target\14-the-law-single-target-resolved.png`
+      - 肉眼观察：确认后弹窗已关闭，P2 头像区可见赏金与击倒图标，P3 头像区没有对应新增图标；用例状态断言也确认 P2 `bounty=1/knockdown=1`、P3 保持 0。该截图补齐 The Law 单选最终态证据。
+  - `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "gunslinger spin the chamber should grant loaded from real hand play"`，`1 passed`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-spin-the-chamber-should-grant-loaded-from-real-hand-play\27-gunslinger-spin-the-chamber-before-play.png`
+      - 肉眼观察：主阶段真实手牌区可见 `转动弹槽！`，顶部枪手装填为 0、CP 为 2，证明从真实手牌入口开始。
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-spin-the-chamber-should-grant-loaded-from-real-hand-play\28-gunslinger-spin-the-chamber-after-play-loaded.png`
+      - 肉眼观察：打出后左侧状态区出现 Loaded 图标，CP 从 2 扣到 1，卡牌进入弃牌区；用例断言 `loaded=1` 且手牌不再包含该卡。
+  - `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "gunslinger eat my lead should roll five bonus dice from real hand play"`，`1 passed`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-eat-my-lead-should-roll-five-bonus-dice-from-real-hand-play\29-gunslinger-eat-my-lead-before-play.png`
+      - 肉眼观察：攻击掷骰阶段真实手牌区可见 `吃我的铅弹！`，攻击结算按钮与主骰盘均在真实战斗 UI 中。
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-eat-my-lead-should-roll-five-bonus-dice-from-real-hand-play\30-gunslinger-eat-my-lead-bonus-dice-overlay.png`
+      - 肉眼观察：右侧可见 5 个奖励骰均为子弹面，顶部可见 `攻击修正 +5`，目标头像区可见击倒图标；用例状态断言 `attackModifierBonusDamage=5`、`bonusDamage=5`、`knockdown=1`。
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-eat-my-lead-should-roll-five-bonus-dice-from-real-hand-play\31-gunslinger-eat-my-lead-after-closeout.png`
+      - 肉眼观察：奖励骰特写已关闭，5 个骰面、`攻击修正 +5` 与击倒结果仍保留，证明该链路可收口。
   - `src/games/dicethrone/__tests__/ability-customaction-audit.test.ts:239-242`（枪手 resolve handler 已接线）
 
 ## 旧结论失效与本轮补审回写（2026-04-12）
@@ -166,10 +199,10 @@
    - 失效原因：当前 `src/games/dicethrone/rule/枪手*.md` 已无 `<<<<<<< / ======= / >>>>>>>` 冲突标记，旧 finding 没有及时回写失效。
    - 新证据路径：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\rule\枪手录入核对.md`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\rule\枪手卡牌录入核对.md`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\rule\枪手真相源表.md`
    - 新结论：merge conflict 风险已失效；不再作为枪手残余风险保留。
-5. **旧审计把 `quick-draw / upgrade-quick-draw / fill-em-with-lead` 的“花费装填时可重掷”写成 `D3` 闭环已收口，这一结论失效。**
-   - 失效原因：按“时机四问”回查后，真正触发动作是后续 `use-loaded`，而不是升级卡/终极技本体；当前定义层只有描述文本，执行仍依赖 `handleLoadedUse()` 中 `sourceAbilityId === 'fill-em-with-lead' || quickDrawLevel >= 2` 的隐式特判。
-   - 新证据路径：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\gunslinger\abilities.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\customActions\gunslinger.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\cross-hero.test.ts`
-   - 新结论：运行时行为已验证，但结构层仍命中 `D3 / D8 / D23`；只能写“行为正确、结构未完全收口”。
+5. **旧审计把 `quick-draw / upgrade-quick-draw / fill-em-with-lead` 的“花费装填时可重掷”写成 `D3` 闭环已收口，这一结论曾失效；2026-05-17 已重新收敛。**
+   - 失效原因：按“时机四问”回查后，真正触发动作是后续 `use-loaded`，而不是升级卡/终极技本体；当时定义层只有描述文本，执行仍依赖 `handleLoadedUse()` 中 `sourceAbilityId === 'fill-em-with-lead' || quickDrawLevel >= 2` 的隐式特判。
+   - 新证据路径：`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\heroes\gunslinger\abilities.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\combat\types.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\domain\customActions\gunslinger.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\gunslinger-loaded-contract.test.ts`、`D:\gongzuo\webgame\BoardGame\src\games\dicethrone\__tests__\cross-hero.test.ts`
+   - 新结论：`Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷已回到定义层 `tokenBonusDieReroll` hook，运行时读取 hook 并保留既有行为回归；结构层 finding 已收敛。
 6. **`Bounty` 的“仅对手攻击来伤触发”门禁**（旧结论失效，已闭环）
    - 旧问题：此前文档把 `Bounty` 写成“待补回归/静态风险”，但这是漏读了 token 定义里的触发范围门禁。
    - 新证据路径：`src/games/dicethrone/heroes/gunslinger/tokens.ts`（`damageTriggerScope: 'opponentAttackDamage'`）+ `src/engine/primitives/damageCalculation.ts`（scope 判定）+ `src/games/dicethrone/__tests__/cross-hero.test.ts:404-455`（`duel` 防御反击不触发的负路径）。
@@ -181,29 +214,29 @@
    - 新结论：`Bounty` 不会自然清理，但可被 `Bye Bye` 等移除状态链路移除；“生命周期”与“removable 门禁”必须分开审计。
 
 ## D1–D49 全量审计表（2026-04-12 补审）
-- **D1 语义保真**：⚠️ 主要能力、专属手牌、复合升级下半区变体与汉化图主语义基本一致；当前剩余未完全收口的重点是 `Quick Draw II / Fill'Em With Lead` 的“花费装填时可重掷”仍依赖隐式分支承接（结构层不自解释）。
+- **D1 语义保真**：✅ 主要能力、专属手牌、复合升级下半区变体与汉化图主语义基本一致；`Quick Draw II / Fill'Em With Lead` 的“花费装填时可重掷”已回到定义层显式 hook。
 - **D2 边界完整**：✅ 装填/赏金/最多 2 目标等限定条件在主流程 handler 与规则中基本一致。
-- **D3 数据流闭环**：⚠️ 复合升级/目标牌闭环已对齐；但 `Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷仍靠 `handleLoadedUse()` 的隐式特判，不满足定义层自解释。
+- **D3 数据流闭环**：✅ 复合升级/目标牌闭环已对齐；`Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷已由能力定义 `tokenBonusDieReroll` 驱动，`handleLoadedUse()` 只消费 hook。
 - **D4 查询一致性**：✅ 未发现可变属性直读绕过统一入口。
-- **D5 交互完整**：✅ `Wanted / The Law / High Noon / mark-the-target` 均有对应交互入口；`The Law` 在 UI 与领域层都允许“选 1 人即可确认”，但单选落地证据仍待补完整链。
+- **D5 交互完整**：✅ `Wanted / The Law / High Noon / mark-the-target` 均有对应交互入口；`The Law` 在 UI 与领域层都允许“选 1 人即可确认”，并已补单选最终态截图链。
 - **D6 副作用传播**：✅ 赏金与装填的额外收益可触发既有资源机制。
 - **D7 资源守恒**：✅ `Wild West` 在**花费 Loaded 时**消耗装填并追加 +1；`spin-the-chamber` 正确授予装填；装填消耗不越界。
-- **D8 时序正确**：⚠️ `Wild West` 触发时点已对齐；`Bounty` 的 attack-only 门禁已闭环；仍需收口的是 `Quick Draw II / Fill'Em With Lead` 的装填例外是否继续由隐藏分支承接（结构层）。
+- **D8 时序正确**：✅ `Wild West` 触发时点已对齐；`Bounty` 的 attack-only 门禁已闭环；`Quick Draw II / Fill'Em With Lead` 的装填例外在后续 `use-loaded` 链路触发，并由定义层 hook 描述。
 - **D9 幂等与重入**：⚠️ 已覆盖 Wild West/High Noon 特写链路，但未新增专项重入回归。
 - **D10 元数据一致**：✅ `High Noon / duel / pistol-whip / the-law` 等 handler categories 与实际事件类型一致；`Wild West` 现为“挂载触发条件 → Loaded 花费时生效”，未误报为直接伤害 handler。
 - **D11 Reducer 消耗路径**：✅ 攻击修正伤害走 `attackModifierBonusDamage`。
 - **D12 写入-消耗对称**：✅ 赏金/装填写入与主流程消耗基本对称；`The Law` 交互 resolve 只消费已选目标。
 - **D13 多来源竞争**：⚠️ 装填与其他攻击修正叠加未做组合回归。
 - **D14 回合清理完整**：✅ 攻击修正结算后自动清理。
-- **D15 UI 状态同步**：⚠️ Wild West 与 High Noon 特写链路已覆盖，主骰盘不改动已验证；攻击修正加伤通过统一 attack-modifier 区域可观测，但 `Loaded` 基础奖励骰尚缺独立 UI 证据闭环。
+- **D15 UI 状态同步**：⚠️ Wild West、High Noon、Eat My Lead 特写链路已覆盖，主骰盘不改动已验证；攻击修正加伤通过统一 attack-modifier 区域可观测；`Quick Draw II` 与 `Fill'Em With Lead` 的 Loaded 可重掷单骰特写均已补真实 UI 证据；Spin the Chamber 真实手牌授 Loaded 已补 UI 证据；`mark-the-target` 仍未补齐真实 UI。
 - **D16 条件优先级**：✅ Revolver/升级变体判定顺序正确。
-- **D17 隐式依赖**：⚠️ `Quick Draw II / Fill'Em With Lead` 的装填例外仍隐式依赖 `handleLoadedUse()` 中 `quickDrawLevel / sourceAbilityId` 分支；规则文档 merge conflict 风险已消除。
+- **D17 隐式依赖**：✅ `Quick Draw II / Fill'Em With Lead` 的装填例外已从 `quickDrawLevel / sourceAbilityId` 硬编码分支收敛到 `tokenBonusDieReroll` 定义层 hook；规则文档 merge conflict 风险已消除。
 - **D18 否定路径**：✅ Wild West 奖励骰重掷后进入“达到重掷上限不可再次重掷”的否定路径，已由 E2E 截图链路覆盖（见 `dicethrone-wild-west-e2e-test.md` 第 2 张截图）。
 - **D19 组合场景**：⚠️ 赏金+装填叠加未做组合回归。
-- **D20 状态可观测性**：⚠️ UI 证据已覆盖 Wild West / High Noon / The Law 的关键交互阶段；`Loaded` 基础奖励骰仍缺独立 evidence，且个别单选收口仍缺最终态截图。
+- **D20 状态可观测性**：⚠️ UI 证据已覆盖 Wild West / High Noon / The Law / Spin the Chamber / Eat My Lead 的关键交互阶段；基础 Loaded、`Quick Draw II` 与 `Fill'Em With Lead` 单骰特写已有 E2E 截图入口；The Law 单选收口已有最终态截图。剩余风险集中在 `mark-the-target`。
 - **D21 触发频率门控**：✅ 装填消耗与奖励骰仅触发一次。
 - **D22 伤害计算管线配置**：✅ `Bounty` 通过 `damageTriggerScope: 'opponentAttackDamage'` 明确限定触发范围；其余主线伤害事件仍由统一管线输出。
-- **D23 架构假设一致性**：⚠️ 特写与复合升级合同一致；但装填例外语义仍分散在能力文本与通用 loaded handler 之间，存在共享假设分叉。
+- **D23 架构假设一致性**：✅ 特写与复合升级合同一致；装填例外语义已由能力定义层声明、通用 loaded handler 消费，避免共享假设分叉。
 - **D24 Handler 共返状态一致性**：N/A。
 - **D25 MatchState 传播完整性**：N/A。
 - **D26 事件设计完整性**：✅ `High Noon / Wild West / Eat My Lead` 的 bonus die 事件保留 `attacker/target/face` 等展示所需上下文。
@@ -225,19 +258,17 @@
 - **D41 系统职责重叠检测**：N/A。
 - **D42 事件流全链路审计**：N/A。
 - **D43 重构完整性检查**：N/A。
-- **D44 测试设计反模式检测**：⚠️ 旧审计漏项已补，但当前仍存在“行为测试已绿、定义层语义仍靠隐藏特判”的结构性盲区。
+- **D44 测试设计反模式检测**：✅ 旧审计漏项已补；本轮新增定义层合同测试，避免只靠行为测试掩盖 hook 漏建。
 - **D45 Pipeline 多阶段调用去重**：N/A。
 - **D46 交互选项 UI 渲染模式声明完整性**：N/A。
-- **D47 E2E 覆盖完整性**：⚠️ Wild West / High Noon / Wanted / Pistol Whip / The Law 已有既有 UI 证据；`Loaded` 基础奖励骰、`Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷仍缺独立 UI/evidence；`spin-the-chamber / mark-the-target / eat-my-lead` 仍缺真实 UI/E2E，且 `The Law` “单选后最终结算”仍缺完整截图链。
+- **D47 E2E 覆盖完整性**：⚠️ Wild West / High Noon / Wanted / Pistol Whip / The Law / Spin the Chamber / Eat My Lead 已有 UI 证据；`Quick Draw II` 与 `Fill'Em With Lead` 的 Loaded 可重掷单骰特写已补真实 UI/E2E；`mark-the-target` 仍缺真实 UI/E2E。
 - **D48 UI 交互渲染模式完整性**：N/A。
 - **D49 abilityTags 与触发机制一致性**：N/A。
 
 ## 未覆盖风险 / 待确认
-1. **`Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷仍依赖隐式分支**：行为已覆盖，但结构层不自解释（见前文 D3/D8/D23 Finding）。
-2. **`Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷合同仍未回到定义层显式建模。** 运行时可用，但后续若再新增“花费 Loaded”的入口，仍有漏接风险。
-3. **`Loaded` 基础奖励骰特写仍缺独立 evidence 文档与 flow→choice→effect→UI 的闭环证据。** 目前仅能引用已有 E2E 文件与静态实现路径。
-4. **`The Law` 的“多人局单选后直接结算”只有部分既有证据。** 当前有 3 人场景“已选 1 人且确认按钮可点”的截图，也有 1v1 fallback/4 人双选落地证据，但缺“3/4 人单选后最终态”截图或状态断言。
-5. **`spin-the-chamber / mark-the-target / eat-my-lead` 仍缺真实 UI/E2E 截图链。** 目前只有静态或行为测试证据，不能把这些对象写成 UI 侧已完全验收。
+1. **`Loaded` 基础奖励骰特写已有 E2E 文件覆盖，但仍缺单独 evidence 文档承载 flow→choice→effect→UI 的完整叙述。** 当前可引用既有 E2E 文件、截图产物与静态实现路径，但不能写成枪手 Loaded 全对象 UI 已完成。
+2. **`Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷结构层与 UI 单骰特写已补。** 当前仍不得外推到 `spin-the-chamber / mark-the-target / eat-my-lead` 等未逐项补 UI 的对象。
+3. **`mark-the-target` 仍缺真实 UI/E2E 截图链。** 目前只有静态或行为测试证据，不能把该对象写成 UI 侧已完全验收。
 
 ## 修订记录
 - 2026-04-11：补审枪手派系并记录已修复项（Revolver II 四同点、Wanted/The Law 目标范围、High Noon 骰面归属）。
@@ -255,10 +286,14 @@
   - 更新 D47 与未覆盖风险，明确 `Loaded / Quick Draw II / Fill'Em With Lead` 的 UI 证据缺口。
   - 将“本轮复跑”与“历史证据复用”口径拆开，避免把本次文档回写误写成新增动态验证。
 - 2026-04-12（时机四问补审）：
-  - 下调 `quick-draw / upgrade-quick-draw / fill-em-with-lead` 的收口口径为“行为已验证、结构未完全收口”。
+  - 当时下调 `quick-draw / upgrade-quick-draw / fill-em-with-lead` 的收口口径为“行为已验证、结构未完全收口”（2026-05-17 已重新收敛到定义层 hook）。
   - 将 `Bounty` 的结论回写为“attack-only 门禁已闭环”，并补充引用负路径测试与实现门禁，避免再次误报为待补回归。
   - 移除已过期的“枪手规则文档 merge conflict 残留”残余风险。
 - 2026-05-17（Bounty 可移除性回写）：
   - 旧结论：“持续到游戏结束”被外推为 `removable: false / 不可被移除状态类效果移除`。
   - 失效原因：后续真实手牌 `Bye Bye` 复现显示该外推会造成 UI 可选但领域验证拒绝；当前项目口径是负面 token 必须可移除，除非有明确白名单。
   - 新结论：`Bounty` 当前 `removable: true`；不自动过期但可被移除状态链路移除。
+- 2026-05-17（Loaded 重掷结构收敛）：
+  - 将 `Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷从 `handleLoadedUse()` 内硬编码 id/等级分支迁移到 `tokenBonusDieReroll` 定义层 hook。
+  - 新增 `gunslinger-loaded-contract.test.ts` 锁定 hook 合同，并复跑相关 `cross-hero.test.ts` 行为链。
+  - 补充 `Quick Draw II` 与 `Fill'Em With Lead` 花费 Loaded 后的独立真实 UI/E2E 截图链；保留若干专属卡真实 UI/E2E 缺口。

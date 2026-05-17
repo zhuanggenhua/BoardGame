@@ -6635,7 +6635,8 @@ describe('smashup', () => {
                         const fallback = preferredTrigger ?? genericTrigger ?? options[0];
                         return { optionId: fallback.id };
                     }
-                    return { optionId: prompt?.data?.options?.[0]?.id };
+                    const options = getPromptOptions(prompt);
+                    return { optionId: options[0]?.id };
                 }, FIXED_RANDOM)
                 : { finalState: makeMatchState(coreWithQueued, 'startTurn', '0'), events: [] };
 

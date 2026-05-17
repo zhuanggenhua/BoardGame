@@ -1,9 +1,9 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, fireTriggers, registerPodOngoingAliases } from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import type { SmashUpCore, SmashUpEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
@@ -11,9 +11,11 @@ import {
     applyEvents,
     expectNoPrompt,
     getPromptMulti,
+    getPromptOption,
     getPromptOptions,
     getSimpleChoicePrompt,
     getPromptTargetType,
+    getPromptTitle,
     invokeRegisteredAbilityContract,
     makeBase,
     makeCard,
@@ -22,6 +24,8 @@ import {
     makePlayer,
     makeState,
     respondCommand,
+    respondToPrompt,
+    respondToPromptWithMergedValue,
 } from '../helpers';
 import { defaultTestRandom, runCommand } from '../testRunner';
 import { refreshInteractionOptions } from '../../../../engine/systems/InteractionSystem';
@@ -170,6 +174,71 @@ describe('巫师派系能力', () => {
         const { events } = execPlayMinion(state, '0', 'm1', 0);
         const drawEvents = events.filter(e => e.type === SU_EVENTS.CARDS_DRAWN);
         expect(drawEvents).toHaveLength(0);
+    });
+
+    it('wizard_neophyte: 打出 zombie_overrun 时应该先选择目标基地', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'wizard_neophyte', 'minion', '0')],
+                    deck: [
+                        makeCard('overrun', 'zombie_overrun', 'action', '0'),
+                        makeCard('d2', 'test_minion', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase(), makeBase()],
+        });
+
+        const { matchState } = execPlayMinion(state, '0', 'm1', 0);
+        expect(getSimpleChoicePrompt(matchState, 'wizard_neophyte')).toBeDefined();
+
+        const playExtraResult = respondToPrompt(matchState, 'play_extra', '0', defaultTestRandom);
+        expect(playExtraResult.success).toBe(true);
+
+        const chooseBasePrompt = getSimpleChoicePrompt(playExtraResult.finalState, 'wizard_neophyte_choose_base');
+        expect(getPromptTitle(chooseBasePrompt)).toContain('泛滥横行');
+
+        const options = getPromptOptions(chooseBasePrompt);
+        expect(options).toHaveLength(2);
+
+        const attachResult = respondToPrompt(playExtraResult.finalState, options[0].id, '0', defaultTestRandom);
+        expect(attachResult.success).toBe(true);
+
+        const finalState = attachResult.finalState.core;
+        expect(finalState.bases[0].ongoingActions).toHaveLength(1);
+        expect(finalState.bases[0].ongoingActions[0].defId).toBe('zombie_overrun');
+        expect(finalState.bases[0].ongoingActions[0].ownerId).toBe('0');
+        expect(finalState.players['0'].hand.find(card => card.uid === 'overrun')).toBeUndefined();
+        expect(finalState.players['0'].actionsPlayed).toBe(0);
+    });
+
+    it('wizard_neophyte: 打出 standard 行动卡时不需要选择基地', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0', {
+                    hand: [makeCard('m1', 'wizard_neophyte', 'minion', '0')],
+                    deck: [
+                        makeCard('summon', 'wizard_summon', 'action', '0'),
+                        makeCard('d2', 'test_minion', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase()],
+        });
+
+        const { matchState } = execPlayMinion(state, '0', 'm1', 0);
+        expect(getSimpleChoicePrompt(matchState, 'wizard_neophyte')).toBeDefined();
+
+        const playExtraResult = respondToPrompt(matchState, 'play_extra', '0', defaultTestRandom);
+        expect(playExtraResult.success).toBe(true);
+
+        const finalState = playExtraResult.finalState.core;
+        expect(finalState.players['0'].discard.find(card => card.uid === 'summon')).toBeDefined();
+        expect(finalState.players['0'].minionLimit).toBe(2);
+        expect(finalState.players['0'].actionsPlayed).toBe(0);
     });
 
     it('wizard_mass_enchantment: 单个对手时创建 Prompt', () => {
@@ -636,5 +705,128 @@ describe('巫师派系能力', () => {
         const newState = applyEvents(state, events);
         expect(newState.players['0'].hand).toHaveLength(2);
         expect(newState.players['0'].deck).toHaveLength(0);
+    });
+});
+
+describe('wizard_archmage ongoing 时机', () => {
+    beforeEach(() => {
+        clearRegistry();
+        clearBaseAbilityRegistry();
+        clearPowerModifierRegistry();
+        clearOngoingEffectRegistry();
+        clearInteractionHandlers();
+        resetAbilityInit();
+        initAllAbilities();
+        registerPodOngoingAliases();
+    });
+
+    it('onTurnStart 不再直接发额外行动事件', () => {
+        const archmage = makeMinion('am-1', 'wizard_archmage', '0', 4);
+        const base = makeBase({ minions: [archmage] });
+        const state = makeState({ bases: [base] });
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(events).toHaveLength(0);
+    });
+
+    it('POD 版不在 onTurnStart 触发（POD 为 talent）', () => {
+        const archmage = makeMinion('am-pod-1', 'wizard_archmage_pod', '0', 4);
+        const base = makeBase({ minions: [archmage] });
+        const state = makeState({ bases: [base] });
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '0',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(events).toHaveLength(0);
+    });
+
+    it('非控制者回合同样不触发 onTurnStart 事件', () => {
+        const archmage = makeMinion('am-1', 'wizard_archmage', '0', 4);
+        const base = makeBase({ minions: [archmage] });
+        const state = makeState({ bases: [base] });
+
+        const { events } = fireTriggers(state, 'onTurnStart', {
+            state,
+            playerId: '1',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(events).toHaveLength(0);
+    });
+
+    it('POD 版不在 onMinionPlayed 触发（POD 为 talent）', () => {
+        const archmage = makeMinion('am-pod-1', 'wizard_archmage_pod', '0', 4);
+        const base = makeBase({ minions: [archmage] });
+        const state = makeState({ bases: [base] });
+
+        const { events } = fireTriggers(state, 'onMinionPlayed', {
+            state,
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinionUid: 'am-pod-1',
+            triggerMinionDefId: 'wizard_archmage_pod',
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(events).toHaveLength(0);
+    });
+
+    it('通过 zombie_they_keep_coming 从弃牌堆打出时，仍应按 onMinionPlayed 授予额外行动', () => {
+        const core = makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    factions: ['zombies', 'wizards'] as [string, string],
+                    hand: [makeCard('tkc-1', 'zombie_they_keep_coming', 'action', '0')],
+                    discard: [makeCard('archmage-1', 'wizard_archmage', 'minion', '0')],
+                    actionsPlayed: 0,
+                    actionLimit: 1,
+                    minionsPlayed: 1,
+                    minionLimit: 1,
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase('base_tar_pits', [])],
+        });
+        const state = makeMatchState(core);
+
+        const playedAction = runCommand(state, {
+            type: SU_COMMANDS.PLAY_ACTION,
+            playerId: '0',
+            payload: { cardUid: 'tkc-1' },
+        } as any);
+
+        expect(playedAction.success).toBe(true);
+
+        const prompt = getSimpleChoicePrompt(playedAction.finalState, 'zombie_they_keep_coming');
+        const archmageOption = getPromptOption(
+            prompt,
+            option => option.value?.cardUid === 'archmage-1',
+            'archmage discard option',
+        );
+
+        const resolved = respondToPromptWithMergedValue(
+            playedAction.finalState,
+            archmageOption.id,
+            { baseIndex: 0 },
+            '0',
+        );
+
+        expect(resolved.success).toBe(true);
+        expect(resolved.finalState.core.bases[0].minions.some(minion => minion.defId === 'wizard_archmage')).toBe(true);
+        expect(resolved.finalState.core.players['0'].discard.some(card => card.uid === 'archmage-1')).toBe(false);
+        expect(resolved.finalState.core.players['0'].actionLimit).toBe(2);
     });
 });

@@ -4,6 +4,7 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { registerKillerPlantAbilities } from '../../abilities/killer_plants';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import type { AbilityContext } from '../../domain/abilityRegistry';
+import { getMinionPower } from '../../domain/abilityHelpers';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import {
@@ -15,11 +16,14 @@ import { clearPowerModifierRegistry, getEffectiveBreakpoint } from '../../domain
 import { reduce } from '../../domain/reducer';
 import type { MinionDestroyedEvent } from '../../domain/types';
 import { SU_COMMANDS, SU_EVENTS } from '../../domain/types';
+import { SMASHUP_FACTION_IDS } from '../../domain/ids';
+import { getCardDef, getMinionDef } from '../../data/cards';
 import {
     expectNoPrompt,
     getFirstPrompt,
     makeCard,
     getPromptHandlerData,
+    getPromptOption,
     getPromptOptions,
     getPromptSourceId,
     getPromptTargetType,
@@ -30,6 +34,7 @@ import {
     makeMatchState,
     makePlayer,
     makeState,
+    respondToPrompt,
     respondToPromptOption,
     withOnlyCurrentPrompt,
 } from '../helpers';
@@ -1063,5 +1068,385 @@ describe('killer_plant_choking_vines 回合开始触发', () => {
                 payload: expect.objectContaining({ minionUid: 'm1' }),
             } as Partial<MinionDestroyedEvent>),
         );
+    });
+});
+
+describe('killer_plants POD 数据与特殊回归', () => {
+    beforeEach(() => {
+        clearRegistry();
+        clearBaseAbilityRegistry();
+        clearPowerModifierRegistry();
+        clearOngoingEffectRegistry();
+        clearInteractionHandlers();
+        resetAbilityInit();
+        initAllAbilities();
+    });
+
+    it('Sleep Spores POD 与 Budding POD 使用 POD 牌表数量', () => {
+        const sleepSporesDef = getCardDef('killer_plant_sleep_spores_pod');
+        const buddingDef = getCardDef('killer_plant_budding_pod');
+
+        expect(sleepSporesDef?.count).toBe(2);
+        expect(buddingDef?.count).toBe(1);
+    });
+
+    it('Weed Eater POD 使用 POD 卡面，不再继承原版进场 debuff', () => {
+        const weedEaterDef = getMinionDef('killer_plant_weed_eater_pod');
+        expect(weedEaterDef?.power).toBe(3);
+        expect(weedEaterDef?.abilityTags).toContain('ongoing');
+
+        const core = makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD],
+                    hand: [makeCard('we-card', 'killer_plant_weed_eater_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+
+        const result = runCommand(makeMatchState(core), {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'we-card', baseIndex: 0 },
+            timestamp: 1000,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)).toBe(false);
+
+        const playedWeedEater = result.finalState.core.bases[0].minions.find(minion => minion.uid === 'we-card');
+        expect(playedWeedEater).toBeDefined();
+        expect(playedWeedEater?.basePower).toBe(3);
+        expect(getMinionPower(result.finalState.core, playedWeedEater!, 0)).toBe(3);
+    });
+
+    it('Weed Eater POD 在控制者回合开始时获得 +2 力量', () => {
+        const weedEater = makeMinion('we-1', 'killer_plant_weed_eater_pod', '0', 3);
+        const core = makeState({
+            bases: [makeBase({ defId: 'base1', minions: [weedEater] })],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'endTurn';
+
+        expect(getMinionPower(core, core.bases[0].minions[0], 0)).toBe(3);
+
+        const result = runCommand(matchState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '1',
+            payload: undefined,
+            timestamp: 1001,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_METADATA_UPDATED)).toBe(true);
+
+        const empowered = result.finalState.core.bases[0].minions.find(minion => minion.uid === 'we-1');
+        expect(empowered).toBeDefined();
+        expect((empowered?.metadata as any)?.weedEaterEmpowered).toBe(true);
+        expect(getMinionPower(result.finalState.core, empowered!, 0)).toBe(5);
+    });
+
+    it('Sprout POD 被 General Ivan 保护时，仍应继续完成检索', () => {
+        const core = makeState({
+            bases: [makeBase({
+                defId: 'base1',
+                minions: [
+                    makeMinion('ivan-1', 'bear_cavalry_general_ivan_pod', '0', 5),
+                    makeMinion('sprout-1', 'killer_plant_sprout_pod', '0', 2),
+                ],
+            })],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD],
+                    deck: [makeCard('wl-1', 'killer_plant_water_lily_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'endTurn';
+
+        const result = runCommand(matchState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '1',
+            payload: undefined,
+            timestamp: 1002,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+
+        const minionUids = result.finalState.core.bases[0].minions.map(minion => minion.uid);
+        expect(minionUids).toContain('sprout-1');
+        expect(minionUids).toContain('wl-1');
+    });
+
+    it('进入 playCards 后再手打 Sprout POD 时，不应误当作 startTurn 自动触发', () => {
+        const core = makeState({
+            currentPlayerIndex: 1,
+            bases: [makeBase({ defId: 'base1' })],
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD],
+                    hand: [makeCard('sprout-hand', 'killer_plant_sprout_pod', 'minion', '0')],
+                    deck: [makeCard('wl-1', 'killer_plant_water_lily_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'playCards';
+
+        const turnResult = runCommand(matchState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '1',
+            payload: undefined,
+            timestamp: 1002,
+        });
+
+        expect(turnResult.success).toBe(true);
+        expect(turnResult.finalState.sys.phase).toBe('playCards');
+        expect((turnResult.finalState.sys as any)._smashupStartTurnWindowActive).toBeUndefined();
+
+        const playResult = runCommand(turnResult.finalState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'sprout-hand', baseIndex: 0 },
+            timestamp: 1003,
+        });
+
+        expect(playResult.success).toBe(true);
+        expect(playResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        expect(playResult.events.some(event => event.type === SU_EVENTS.CARDS_DRAWN)).toBe(false);
+        expectNoPrompt(playResult.finalState);
+        expect(playResult.finalState.core.bases[0].minions.map(minion => minion.uid)).toContain('sprout-hand');
+    });
+
+    it('进入 playCards 后通过 Venus Man Trap POD 打出 Sprout POD，也不应回补 startTurn 触发', () => {
+        const core = makeState({
+            currentPlayerIndex: 1,
+            bases: [makeBase({ defId: 'base1' })],
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD],
+                    hand: [makeCard('venus-hand', 'killer_plant_venus_man_trap_pod', 'minion', '0')],
+                    deck: [makeCard('sprout-deck', 'killer_plant_sprout_pod', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'playCards';
+
+        const turnResult = runCommand(matchState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '1',
+            payload: undefined,
+            timestamp: 1004,
+        });
+
+        expect(turnResult.success).toBe(true);
+        expect(turnResult.finalState.sys.phase).toBe('playCards');
+
+        const playVenusResult = runCommand(turnResult.finalState, {
+            type: SU_COMMANDS.PLAY_MINION,
+            playerId: '0',
+            payload: { cardUid: 'venus-hand', baseIndex: 0 },
+            timestamp: 1005,
+        });
+
+        expect(playVenusResult.success).toBe(true);
+
+        const talentResult = runCommand(playVenusResult.finalState, {
+            type: SU_COMMANDS.USE_TALENT,
+            playerId: '0',
+            payload: { minionUid: 'venus-hand', baseIndex: 0 },
+            timestamp: 1006,
+        });
+
+        expect(talentResult.success).toBe(true);
+        const drawEvents = talentResult.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
+        expect(drawEvents).toHaveLength(1);
+        expect((drawEvents[0] as any).payload.cardUids).toEqual(['sprout-deck']);
+        expect(talentResult.events.some(event => event.type === SU_EVENTS.MINION_DESTROYED)).toBe(false);
+        expectNoPrompt(talentResult.finalState);
+        const finalMinionUids = talentResult.finalState.core.bases[0].minions.map(minion => minion.uid);
+        expect(finalMinionUids).toContain('venus-hand');
+        expect(finalMinionUids).toContain('sprout-deck');
+    });
+
+    it('Sprout POD 在同一个 startTurn 窗口打出 Water Lily POD 时应立即继续抽牌', () => {
+        const core = makeState({
+            bases: [makeBase({
+                defId: 'base1',
+                minions: [makeMinion('sprout-1', 'killer_plant_sprout_pod', '0', 2)],
+            })],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD],
+                    deck: [
+                        makeCard('wl-1', 'killer_plant_water_lily_pod', 'minion', '0'),
+                        makeCard('bud-1', 'killer_plant_budding_pod', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'endTurn';
+
+        const result = runCommand(matchState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '1',
+            payload: undefined,
+            timestamp: 1003,
+        });
+
+        expect(result.success).toBe(true);
+        const drawEvents = result.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
+        expect(drawEvents).toHaveLength(2);
+        expect((drawEvents[0] as any).payload.cardUids).toEqual(['wl-1']);
+        expect((drawEvents[1] as any).payload.cardUids).toEqual(['bud-1']);
+
+        const finalBaseMinionUids = result.finalState.core.bases[0].minions.map(minion => minion.uid);
+        expect(finalBaseMinionUids).toContain('wl-1');
+        expect(finalBaseMinionUids).not.toContain('sprout-1');
+        expect(result.finalState.core.players['0'].hand.map(card => card.uid)).toEqual(['bud-1']);
+        expect(result.finalState.core.players['0'].deck).toHaveLength(0);
+    });
+
+    it('Sprout POD 交互响应打出 Water Lily POD 时，仍应留在同一个 startTurn 窗口内继续抽牌', () => {
+        const core = makeState({
+            bases: [makeBase({
+                defId: 'base1',
+                minions: [makeMinion('sprout-1', 'killer_plant_sprout_pod', '0', 2)],
+            })],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD],
+                    deck: [
+                        makeCard('wl-1', 'killer_plant_water_lily_pod', 'minion', '0'),
+                        makeCard('we-1', 'killer_plant_weed_eater_pod', 'minion', '0'),
+                        makeCard('bud-1', 'killer_plant_budding_pod', 'action', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'endTurn';
+
+        const result = runCommand(matchState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '1',
+            payload: undefined,
+            timestamp: 1004,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.finalState.sys.phase).toBe('startTurn');
+        const interaction = getSimpleChoicePrompt(result.finalState, 'killer_plant_sprout_search');
+        const waterLilyOption = getPromptOption(interaction, option => option.value?.cardUid === 'wl-1', 'Water Lily option');
+
+        const respondResult = respondToPrompt(result.finalState, waterLilyOption.id, '0');
+
+        expect(respondResult.success).toBe(true);
+        const drawEvents = respondResult.events.filter(event => event.type === SU_EVENTS.CARDS_DRAWN);
+        const drawUids = drawEvents.flatMap(event => (event as any).payload.cardUids ?? []);
+        expect(drawUids).toEqual(expect.arrayContaining(['wl-1', 'we-1']));
+        expect(respondResult.finalState.core.players['0'].hand.map(card => card.uid)).toContain('we-1');
+        expect(respondResult.finalState.sys.phase).toBe('playCards');
+        expectNoPrompt(respondResult.finalState);
+        expect((respondResult.finalState.sys as any)._waitForStartTurnInteractionReduce).toBeUndefined();
+    });
+
+    it('Sprout POD 连锁打出另一个 Sprout POD 时，应保持在 startTurn 直到整条链结束', () => {
+        const core = makeState({
+            bases: [makeBase({
+                defId: 'base_ninja_dojo',
+                minions: [makeMinion('sprout-1', 'killer_plant_sprout_pod', '0', 2)],
+            })],
+            currentPlayerIndex: 1,
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD],
+                    deck: [
+                        makeCard('sprout-2', 'killer_plant_sprout_pod', 'minion', '0'),
+                        makeCard('sprout-3', 'killer_plant_sprout_pod', 'minion', '0'),
+                        makeCard('wl-1', 'killer_plant_water_lily_pod', 'minion', '0'),
+                    ],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'endTurn';
+
+        const startTurnResult = runCommand(matchState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '1',
+            payload: undefined,
+            timestamp: 1100,
+        });
+
+        expect(startTurnResult.success).toBe(true);
+        expect(startTurnResult.finalState.sys.phase).toBe('startTurn');
+        const firstInteraction = getSimpleChoicePrompt(startTurnResult.finalState, 'killer_plant_sprout_search');
+        const sproutOption = getPromptOption(firstInteraction, option => option.value?.cardUid === 'sprout-2', 'Sprout option');
+
+        const firstRespondResult = respondToPrompt(startTurnResult.finalState, sproutOption.id, '0');
+
+        expect(firstRespondResult.success).toBe(true);
+        expect(firstRespondResult.finalState.sys.phase).toBe('startTurn');
+        const secondInteraction = getSimpleChoicePrompt(firstRespondResult.finalState, 'killer_plant_sprout_search');
+        const waterLilyOption = getPromptOption(secondInteraction, option => option.value?.cardUid === 'wl-1', 'Water Lily option');
+
+        const secondRespondResult = respondToPrompt(firstRespondResult.finalState, waterLilyOption.id, '0');
+
+        expect(secondRespondResult.success).toBe(true);
+        expect(secondRespondResult.finalState.sys.phase).toBe('playCards');
+        expectNoPrompt(secondRespondResult.finalState);
+        expect(secondRespondResult.finalState.core.bases[0].minions.map(minion => minion.uid)).toEqual(['wl-1']);
+    });
+
+    it('爆破点被压到 0 后进入计分阶段时，只应产生一次 BASE_SCORED', () => {
+        const core = makeState({
+            tempBreakpointModifiers: { 0: -999 },
+            bases: [makeBase({
+                defId: 'base_the_jungle',
+                minions: [makeMinion('m1', 'killer_plant_weed_eater_pod', '0', 3)],
+            })],
+            players: {
+                '0': makePlayer('0', {
+                    factions: [SMASHUP_FACTION_IDS.KILLER_PLANTS_POD, SMASHUP_FACTION_IDS.BEAR_CAVALRY_POD],
+                }),
+                '1': makePlayer('1'),
+            },
+        });
+        const matchState = makeMatchState(core);
+        matchState.sys.phase = 'playCards';
+
+        const result = runCommand(matchState, {
+            type: 'ADVANCE_PHASE' as any,
+            playerId: '0',
+            payload: undefined,
+            timestamp: 1200,
+        });
+
+        expect(result.success).toBe(true);
+        expect(result.events.filter(event => event.type === SU_EVENTS.BASE_SCORED)).toHaveLength(1);
+        expect(result.events.filter(event => event.type === SU_EVENTS.BASE_CLEARED)).toHaveLength(1);
     });
 });

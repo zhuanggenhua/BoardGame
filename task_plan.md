@@ -24,6 +24,19 @@
 
 ## Current Status
 
+- [x] `src/games/smashup/__tests__/expansionBaseAbilities.test.ts` 已拆出 `10th Anniversary bases` 到 [bases/anniversary-bases.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/bases/anniversary-bases.test.ts:1>)。这一步不是机械搬运：`base_mermaid_pool` / `base_ossuary` / `base_arena` / `base_hall_of_fame` 不再和 Cthulhu / AL9000 / Pretty Pretty / stale 回归混在一个旧聚合入口里。验证：`anniversary-bases.test.ts` 5 passed，`expansionBaseAbilities.test.ts` 45 passed，eslint 0 errors，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/scoreBases-auto-continue.test.ts` 已抽出一组独立 AI 枚举合同到 [ai-interaction-choice-enumeration.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/ai-interaction-choice-enumeration.test.ts:1>)。这一步不是按文件名拆：迁出的 5 条都在锁 `optional multi / ordered multi / exact multi / emergency skip` 的 AI 候选枚举，不属于 `scoreBases` 自动推进本身。验证：`scoreBases-auto-continue.test.ts` 31 passed，`ai-interaction-choice-enumeration.test.ts` 5 passed，eslint 0 errors，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/afterscoring-window-skip-base-clear.test.ts` 已收成 [scoreBases-deferred-finalization.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/scoreBases-deferred-finalization.test.ts:1>)。这不是单纯改名：已经删掉 `base_greenhouse` / `base_tortuga` 的重复 happy-path 入口，保留的是延迟清场、替换后基地落点、`base_the_mothership` / `base_pirate_cove` 链式最终化、`base_temple_of_goju_tiebreak` 以及 `scoreBases` 收尾门禁的系统合同。验证：`scoreBases-deferred-finalization.test.ts` 11 passed，`scoreBases-flowHalted-recovery.test.ts` 2 passed，`scoreBases-auto-continue.test.ts` 36 passed，eslint 0 errors，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/afterScoring-rescoring.test.ts` 里两条 `smashup_immediate_extra_minion` 测试已并回 [abilities/immediate-extra-action.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/immediate-extra-action.test.ts:1>)。它们本质上是“立即额外打出”系统合同，不属于 afterScoring 统一反应入口；现在 `afterScoring-rescoring.test.ts` 只保留统一反应入口与 afterScoring 响应窗口语义。验证：`afterScoring-rescoring.test.ts + abilities/immediate-extra-action.test.ts` 为 `12 passed`，eslint 0 errors，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/turnTransitionInteractionBug.test.ts` 已拆成两个正式系统入口：[startTurn-base-rlyeh-recovery.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/startTurn-base-rlyeh-recovery.test.ts:1>) 与 [scoreBases-base-tortuga-recovery.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/scoreBases-base-tortuga-recovery.test.ts:1>)。这不是改表象：前者只锁 `startTurn -> base_rlyeh prompt -> playCards` 的回合切换恢复，后者只锁 `scoreBases -> base_tortuga afterScoring prompt -> playCards` 的计分恢复。验证：这 2 个新文件共 `2 passed`，与 `architecture-duplicate-processing.test.ts` / 相关系统入口一起 `9 passed`，eslint 0 errors，旧路径 `False` / 新路径 `True`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/multi-base-afterscoring-bug.test.ts` 已确认为真实系统合同并改名为 [scoreBases-multi-base-chain-recovery.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/scoreBases-multi-base-chain-recovery.test.ts:1>)。这一步不是表面换标签：文件锁的是 `scoreBases` 在多基地同时达到 breakpoint 时，遇到 `afterScoring / Me First!` 链式交互后如何恢复后续基地计分、避免重复计分与提前清场。验证：`scoreBases-multi-base-chain-recovery.test.ts + scoreBases-auto-continue.test.ts` 为 `44 passed`，eslint 0 errors，旧路径 `False` / 新路径 `True`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/igor-rlyeh-double-trigger.test.ts` 已确认为真实系统合同并改名为 [base-rlyeh-destroy-trigger-idempotency.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/base-rlyeh-destroy-trigger-idempotency.test.ts:1>)。它和 `destroy-trigger-prompt-coexistence.test.ts` 不是一回事：这里锁的是 `base_rlyeh onTurnStart -> destroy -> frankenstein_igor onDestroy` 这条真实链的幂等性，而不是基地 prompt 与 Igor prompt 并存。验证：`base-rlyeh-destroy-trigger-idempotency.test.ts + destroy-trigger-prompt-coexistence.test.ts + architecture-duplicate-processing.test.ts` 为 `9 passed`，eslint 0 errors，旧路径 `False` / 新路径 `True`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/baseFactionOngoing.test.ts` 中的 `机器人 ongoing 回归 / 机器人 ongoing 能力` 已并回 [robots.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/robots.test.ts:1>)，大文件里的机器人段已删除。迁移过程中已把旧大文件隐藏的关键前提显式化：`Archive` 测试现在不再依赖本地默认夹具，而是显式提供机器人派系与非空牌库。验证：`robots.test.ts + baseFactionOngoing.test.ts` 为 `95 passed`，eslint 0 errors，`test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/baseFactionOngoing.test.ts` 中的 `wizard_archmage` ongoing 时机段已并回 [wizards.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/wizards.test.ts:1>)，大文件里的巫师段已删除。验证：`wizards.test.ts + baseFactionOngoing.test.ts` 为 `83 passed`，eslint 0 errors，`test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/onDestroyAbilities.test.ts` 已退场。共享 `onDestroy` 基础设施已拆到 [on-destroy-mechanics.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/on-destroy-mechanics.test.ts:1>)，`robot_nukebot` 已并回 [robots.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/robots.test.ts:1>)，`trickster_gremlin` / `trickster_gremlin_pod` 已并回 [tricksters.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/tricksters.test.ts:1>)。`bear_cavalry_general_ivan destroy 保护` 两条弱测试未机械迁移，因为它们不是稳定行为合同。验证：3 files / 40 tests passed，eslint 0 errors，`Test-Path src\games\smashup\__tests__\onDestroyAbilities.test.ts` -> `False`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/abilities/elder-things.test.ts` 已收成远古之物单一行为入口；`elder-things-ongoing.test.ts` 已删除。关键不是“ongoing 改名”，而是把 Dunwich Horror 附着、Price of Power special、Elder Thing 保护/onPlay、Shoggoth 打出限制这些本来就属于同一派系合同的测试并回单入口，避免远古之物后续继续在两个文件里分裂维护。验证：`elder-things.test.ts` 为 `41 passed`，eslint 0 errors，`Test-Path ...\\elder-things-ongoing.test.ts` -> `False`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/expansionOngoing.test.ts` 已彻底退场，不再作为扩展派系 ongoing 聚合入口。先把 `Steampunks` 并回现有 [steampunks.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/steampunks.test.ts:1>)，再把剩余 `Innsmouth` / `Miskatonic` 拆成新增专项文件 [innsmouth.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/innsmouth.test.ts:1>) 与 [miskatonic.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/miskatonic.test.ts:1>)，最后删除旧文件。聚焦验证 `steampunks.test.ts + innsmouth.test.ts + miskatonic.test.ts` 为 `40 passed`，eslint 0 errors，`Test-Path src\games\smashup\__tests__\expansionOngoing.test.ts` -> `False`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/abilities/madness-mechanics.test.ts` 已退场，而且不是表面改名。这个旧壳同时混放了跨派系 `extra play timing` 合同、`Cthulhu / Miskatonic / Innsmouth` 业务行为，以及一部分旧 helper/seam。现已按真实边界拆成：共享时序合同落到 [extra-play-timing-mechanics.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/extra-play-timing-mechanics.test.ts:1>)，派系行为分别并回 [cthulhu.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/cthulhu.test.ts:1>)、[miskatonic.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/miskatonic.test.ts:1>)、[innsmouth.test.ts](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/abilities/innsmouth.test.ts:1>)。迁移后的行为测试继续走真实 `PLAY_ACTION -> prompt facade -> respondToPrompt(Option)` / `finalState`，不再保留 `postProcessSystemEvents(...)`、`lastMatchState`、手工后处理这类旧壳入口。最后一处红灯只是 `cthulhu.test.ts` 漏引 `getPromptOption`，补齐后 `4 files / 110 tests passed`，eslint 0 errors，`Test-Path src\games\smashup\__tests__\abilities\madness-mechanics.test.ts` -> `False`，`npm run test:structure -- --all` OK。
 - [x] `expansionOngoing.test.ts` 中已迁出的 `Killer Plants` 段完成实质收口：`killer_plant_water_lily` 的 3 条红灯并非实现回归，而是迁移到共享 `helpers.makeState` 后默认牌库变空，导致“抽牌”前提被隐式拿掉。现已在 `src/games/smashup/__tests__/abilities/killer-plants.test.ts` 为 `water_lily` 用例补上显式牌库夹具 `makeWaterLilyState(...)`，让测试锁定公开行为前提而不是依赖旧本地 helper 的隐藏默认值；组合验证 `abilities/killer-plants.test.ts + expansionOngoing.test.ts` 为 `73 passed`，eslint 0 errors，`npm run test:structure -- --all` OK。
 - [x] `scripts/infra/testing-structure-guard.mjs` 已补强为“测试接口门禁”而不只是 prompt field 门禁：新增阻止游戏行为测试继续引入 `console.log/warn/error/debug` 调试壳层，并阻止新增测试直接导入/调用 `resolveAbility`、`getInteractionHandler`、`getAbilityRuntimePromptHandler` 这类原始 registry/handler 入口。中途验证发现“禁止任何 `abilityRegistry` 导入”会误伤 `clearRegistry` 等合法用法，已收窄为只拦真正的问题入口；`npm run test:structure -- --all` 再次通过。文档也已同步到 `docs/testing-best-practices.md` 与 `docs/automated-testing.md`，把“禁止调试日志、禁止业务测试直摸 registry/handler”的规则写成公开规范。
 - [x] `src/games/smashup/__tests__/interactionDisplayModeAudit.test.ts` 已从“只看字面量 object”提升为“按真实 TypeScript value shape 审计”：现在会识别 `satisfies/as`、`value: card/choice/action` 这类已带类型信息的选项，避免为了让 audit 绿而扭曲业务代码。与此同时收掉 4 个真实缺口：`alien_scout_return` 的 yes 分支改回 `displayMode: 'button'`；`bear_cavalry_bear_necessities` 显式补 `displayMode: 'card'`；`bear_cavalry_commission_move_minion` 的 skip 选项改成纯 button payload，不再伪装成随从目标；`tornados_ripped_off` 为挂在随从上的持续行动补齐 `minionDefId`；`shayu_common.ts` 的 `asCardOptions` 补上可渲染卡面 value 合同。验证：`interactionDisplayModeAudit.test.ts` 5 passed；`bear-cavalry.test.ts -t "bear_necessities|Commission|委任|Bear Necessities"` 3 passed；`interactionChainE2E.test.ts -t "commission|委任"` 3 passed；`alien-scout-pod-afterscore.test.ts` 4 passed；`promptResponseChain.test.ts -t "alien_scout_return|侦察兵回手"` 1 passed。
@@ -148,6 +161,13 @@
 - [x] `samurai-sakura-garden-bases.test.ts` 已按普通 `base_sakura_garden` 与 POD 版 `base_sakura_garden_pod` 拆为 `sakura-garden-base.test.ts` / `sakura-garden-pod-base.test.ts`；聚焦验证 2 files / 6 tests passed，`bases` 目录 30 files / 100 tests passed，结构门禁 OK，禁用 seam 扫描 0 命中。
 - [x] `laboratorium-base.test.ts` 已进一步按基础首随从合同与大法师/旧持久化队列恢复拆为 `laboratorium-base.test.ts` / `laboratorium-archmage-queue.test.ts`；聚焦验证 2 files / 6 tests passed，`bases/*.ts` 分批精确验证 26 files / 77 tests passed，结构门禁 OK，禁用 seam 扫描 0 命中。
 - [x] `pod-base-reuse.test.ts` 已删除，Cowboys POD 复用合同并入 `cowboys-bases.test.ts`，Vikings POD 复用合同先并入后继续按 `drakkar-base.test.ts` / `longhouse-base.test.ts` 拆分；聚焦验证 2 files / 6 tests passed，`bases/*.ts` 分批精确验证 25 files / 77 tests passed，结构门禁 OK，禁用 seam 扫描 0 命中。
+- [x] `src/games/smashup/__tests__/ninja-hidden-ninja-interaction-bug-repro.test.ts` 已删除。它不是新的行为入口，只是重复 `ninja-hidden-ninja-interaction-bug.test.ts` 已覆盖的不变量：Me First! 窗口打出 `ninja_hidden_ninja` 后必须创建手牌随从选择 prompt，并记录 `specialLimitUsed`。验证：删除前 `npx vitest run ninja-hidden-ninja-interaction-bug.test.ts ninja-hidden-ninja-interaction-bug-repro.test.ts` -> `2 files / 2 tests passed`；删除后 `ninja-hidden-ninja-interaction-bug.test.ts + baseAbilitiesPrompt.test.ts` 仍为 `2 files / 34 tests passed`，eslint 0 errors，`Test-Path ...\\ninja-hidden-ninja-interaction-bug-repro.test.ts` -> `False`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/pirate-cove-repeat-trigger-bug.test.ts` 已删除。它前两条合同已被 `baseAbilitiesPrompt.test.ts` 的 `base_pirate_cove` 专项承接：非冠军有随从时只生成 1 个 prompt，冠军不生成 prompt；第三条仍是空 `TODO`，不是有效测试资产。验证：删除前 `npx vitest run baseAbilitiesPrompt.test.ts pirate-cove-repeat-trigger-bug.test.ts` -> `2 files / 36 tests passed`；删除后 `baseAbilitiesPrompt.test.ts` 继续通过，eslint 0 errors，`Test-Path ...\\pirate-cove-repeat-trigger-bug.test.ts` -> `False`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/mothership-scout-afterscore-bug.test.ts` 未被机械删除，而是重命名为 `src/games/smashup/__tests__/afterScoring-chain-propagation.test.ts`。原因是它锁的不是“母舰又出 bug 了”这种一次性复现，而是 `基地 afterScoring -> 后续 scout/first mate prompt -> 延迟清场` 的系统顺序合同。验证：`npx vitest run src/games/smashup/__tests__/afterScoring-chain-propagation.test.ts` -> `1 file / 3 tests passed`，eslint 0 errors，`Test-Path ...\\mothership-scout-afterscore-bug.test.ts` -> `False`，`Test-Path ...\\afterScoring-chain-propagation.test.ts` -> `True`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/ninja-special-limit-fix.test.ts` 已并回 `src/games/smashup/__tests__/abilities/ninjas.test.ts` 并退场。它锁的是忍者卡牌自己的 `specialLimitGroup` 元数据合同，不是系统修复入口。验证：删除前 `npx vitest run abilities/ninjas.test.ts ninja-special-limit-fix.test.ts` -> `2 files / 39 tests passed`；删除后 `abilities/ninjas.test.ts` -> `1 file / 37 tests passed`，eslint 0 errors，`Test-Path ...\\ninja-special-limit-fix.test.ts` -> `False`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/alien-probe-bug.test.ts` 已并回 `src/games/smashup/__tests__/abilities/aliens.test.ts` 并退场。它锁的不是一个独立 bug 框架，而是 `alien_probe` 的完整公开行为矩阵：单/多对手选择、禁用非随从、无随从直接结束、选中后弃牌。验证：删除前 `npx vitest run abilities/aliens.test.ts alien-probe-bug.test.ts` -> `2 files / 16 tests passed`；删除后 `abilities/aliens.test.ts` -> `1 file / 16 tests passed`，eslint 0 errors，`Test-Path ...\\alien-probe-bug.test.ts` -> `False`，`npm run test:structure -- --all` OK。
+- [x] `src/games/smashup/__tests__/afterscoring-timing-verification.test.ts` 已删除。它不是测试资产，只是一个 `expect(true).toBe(true)` 的占位壳；真正的 afterScoring 时序不变量已由 `afterScoring-rescoring.test.ts` 和 `afterscoring-window-skip-base-clear.test.ts` 这类真实链路文件承接。验证：对照跑 `3 files / 24 tests passed`，删除后结构门禁继续 OK。
+- [x] `src/games/smashup/__tests__/pirate-cove-chain-fix.test.ts` 未被删除，而是重命名为 `src/games/smashup/__tests__/scoreBases-mefirst-window.test.ts`。原因是它锁的不是海盗湾业务细节，而是 `scoreBases / Me First! / afterScoring` 的窗口门禁链。验证：重命名前与 `scoreBases-auto-continue.test.ts` 组合为 `2 files / 39 tests passed`；重命名后同组合仍为 `2 files / 39 tests passed`，eslint 0 errors，`Test-Path` 证明旧文件已退场、新文件存在，`npm run test:structure -- --all` OK。
 
 ## Next
 
@@ -158,6 +178,8 @@
 - 全仓 `getInteractionHandler` / `getAbilityRuntimePromptHandler` 命中已降到 `43`；`abilities/bear-cavalry.test.ts` 里普通业务链只剩 2 条 `superiority_pod_talent` 低层合同，`temple-firstmate-afterscore.test.ts` 的 `pirate_first_mate_choose_base` 仍应按 stale/baseDefId/index drift 合同审视，避免把系统合同误迁成 facade。
 - 当前目标扫描（排除 `helpers.ts` / `helpers/**`）对旧 `new*` 入口、旧集合文件、裸 prompt seam 与 `.skip` 均为 0 命中；后续工作重点从“清旧入口”转为审查剩余较大文件是否仍有可拆的自然业务边界。
 - 若继续深化，优先审计 `field-of-honor-base.test.ts` 与 `laboratorium-archmage-queue.test.ts`：只有确认一个文件混有多个独立业务对象或行为簇时才拆；不要为了压行数牺牲可读性。
+- 下一步优先审查其余仍带 `bug/fix/repro` 语义的根目录文件，继续按三类分流：重复壳直接删、真实业务回专项、系统顺序合同改成明确的系统入口。
+- 下一步优先继续复核剩余根目录里的系统合同候选，如 `tortuga-pirate-king-flowhalted-fix.test.ts`、`multi-base-afterscoring-bug.test.ts`、`igor-double-trigger-bug.test.ts`。它们更可能走“保留/改名为系统入口”而不是并回派系。
 
 ## Errors Encountered
 
@@ -2301,3 +2323,561 @@
 - [ ] 下一步候选：
   - 优先评估 `expansionOngoing.test.ts` 中 `Killer Plants` 是否继续并回 `abilities/killer-plants.test.ts`
   - 其次再看 `Innsmouth` / `Miskatonic` 是否已有足够明确的专项归宿
+
+## Addendum（2026-05-17 09:00 +08）：`cthulhuExpansionAbilities.test.ts` 已按派系并回专项并退场
+
+- [x] `src/games/smashup/__tests__/abilities/cthulhu.test.ts`
+  - 已吸收原 `cthulhuExpansionAbilities.test.ts` 的克苏鲁之仆普通行为：
+  - `cthulhu_recruit_by_force`
+  - `cthulhu_it_begins_again`
+  - `cthulhu_fhtagn`
+- [x] `src/games/smashup/__tests__/abilities/innsmouth.test.ts`
+  - 已吸收原混装文件中的印斯茅斯普通行为：
+  - `innsmouth_the_deep_ones`
+  - `innsmouth_new_acolytes`
+  - `innsmouth_mysteries_of_the_deep`
+- [x] `src/games/smashup/__tests__/abilities/miskatonic.test.ts`
+  - 已吸收原混装文件中的米斯卡塔尼克普通行为：
+  - `miskatonic_those_meddling_kids`
+- [x] `src/games/smashup/__tests__/cthulhuExpansionAbilities.test.ts`
+  - 文件本体已删除，不再保留“按扩展包把三个派系普通行为混在一起”的旧入口
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/abilities/innsmouth.test.ts src/games/smashup/__tests__/abilities/miskatonic.test.ts` -> `3 files / 69 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/abilities/innsmouth.test.ts src/games/smashup/__tests__/abilities/miskatonic.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\cthulhuExpansionAbilities.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 6, OK`
+- [ ] 下一步候选：
+  - 优先拆 `baseFactionOngoing.test.ts` 中剩余的 `诡术师 ongoing 能力`
+  - 再评估 `忍者 ongoing/special 能力` 是否已适合拆回 `ninjas.test.ts`，还是仍需保留一段 shared special/ongoing 合同
+  - 再扫描 `pirates-ongoing.test.ts` 是否只是历史命名问题，还是还混着多个应回专项的行为簇
+
+## Addendum（2026-05-17 09:45 +08）：`baseFactionOngoing.test.ts` 的 `诡术师 ongoing` 已并回专项并退场
+
+- [x] `src/games/smashup/__tests__/abilities/tricksters.test.ts`
+  - 已吸收原 `baseFactionOngoing.test.ts` 的整段 `诡术师 ongoing 能力`：
+  - `trickster_flame_trap`
+  - `trickster_brownie`
+  - `trickster_block_the_path`
+  - `trickster_hideout`
+  - `trickster_pay_the_piper`
+  - `trickster_enshrouding_mist`
+  - `trickster_leprechaun`
+  - `trickster_mark_of_sleep`
+- [x] 这次不是机械搬 `describe`：
+  - 迁移后先暴露出 `makeBase` 漏 import，说明专项文件确实脱离了旧大文件局部作用域，必须自己站稳。
+  - 随后两条红灯 `trickster_brownie_pod` / `trickster_pay_the_piper` 证明旧 `baseFactionOngoing.test.ts` 本地 `makeState(...)` 的默认手牌/牌库前提曾被隐式依赖；现已在专项文件中把“玩家 0 有牌可抽、玩家 1 有手牌可弃”显式写进测试状态。
+- [x] `src/games/smashup/__tests__/baseFactionOngoing.test.ts`
+  - 已删除整段 `诡术师 ongoing 能力`
+  - 并清理退场后残留的 `registerTricksterAbilities`、`interceptEvent`、`isOperationRestricted`、`buildAffectRecords`、`getPromptsBySourceId`、`respondToPromptOption`、`withOnlyCurrentPrompt` 等废 import
+  - 文件头说明也已改成只描述仍保留的忍者/牛仔覆盖，避免旧口径继续误导
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/tricksters.test.ts` -> `1 file / 46 tests passed`
+  - `npx vitest run src/games/smashup/__tests__/abilities/tricksters.test.ts src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> `2 files / 74 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/tricksters.test.ts src/games/smashup/__tests__/baseFactionOngoing.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 13, OK`
+- [ ] 下一步候选：
+  - 优先评估 `baseFactionOngoing.test.ts` 剩余的忍者 / 牛仔段，判断是否还能继续按派系专项收口
+  - 再检查 `pirates-ongoing.test.ts` 是否只是历史命名问题，还是仍混着多个不该共存的行为簇
+
+## Addendum（2026-05-17 09:54 +08）：`baseFactionOngoing.test.ts` 已整体退场，剩余忍者/牛仔段并回 `ninjas.test.ts`
+
+- [x] `src/games/smashup/__tests__/abilities/ninjas.test.ts`
+  - 已继续吸收原 `baseFactionOngoing.test.ts` 剩余的忍者 ongoing/special 合同：
+  - `ninja_smoke_bomb`
+  - `ninja_assassination`
+  - `ninja_infiltrate`
+  - `ninja_shinobi`
+  - `ninja_acolyte`
+  - `ninja_hidden_ninja`
+  - `specialLimitGroup`
+  - `consumesNormalLimit`
+  - 以及 `ninja_acolyte` 额外打出 `cowboys_gunfighter` 后继续接管交互的跨派系续链
+- [x] 这次不是把旧文件局部 helper 原封不动搬过去：
+  - 在 `ninjas.test.ts` 新增显式 `makeNinjaOngoingState(...)` / `makeNinjaOngoingMinion(...)`
+  - 把旧 `baseFactionOngoing.test.ts` 本地默认的手牌、牌库、派系和 turn meta 收口成专项文件自己的显式前提
+  - 避免以后再因为共享 `helpers.makeState(...)` 默认值变化而让这批忍者测试集体误红
+- [x] `src/games/smashup/__tests__/baseFactionOngoing.test.ts`
+  - 文件本体已删除
+  - 说明这份历史“基础派系 ongoing/special”壳已经没有保留价值，SmashUp 不再通过第二入口维护忍者 special/ongoing
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/ninjas.test.ts` -> `1 file / 35 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/ninjas.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\baseFactionOngoing.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 13, OK`
+- [ ] 下一步候选：
+  - `pirates-ongoing.test.ts` 初看更像“文件名遗留”而不是多语义混装，优先级下调
+  - 继续扫描根目录仍按泛化技术主题或历史阶段组织的 SmashUp 测试文件，优先找真正还在混放多个行为边界的旧壳
+
+## Addendum（2026-05-17 10:05 +08）：`talentAbilities.test.ts` 已按“派系 talent / 共享 talent 机制”拆分并退场
+
+- [x] `src/games/smashup/__tests__/abilities/miskatonic.test.ts`
+  - 已吸收 `miskatonic_professor` 的派系 talent 行为：
+  - `手中有疯狂卡时：弃疯狂卡 + 额外行动 + 额外随从`
+  - `手中无疯狂卡时无效果`
+- [x] `src/games/smashup/__tests__/abilities/cthulhu.test.ts`
+  - 已吸收克苏鲁系 talent 行为：
+  - `cthulhu_star_spawn`
+  - `cthulhu_servitor`
+  - 其中保留真实 `USE_TALENT -> prompt -> respond` 链，而不是继续挂在“talent 总入口”里测 prompt 外壳。
+- [x] 新增 `src/games/smashup/__tests__/talent-mechanics.test.ts`
+  - 承接共享 talent 合同：
+  - `无注册 talent 时只生成 TALENT_USED`
+  - `目标不存在时返回空事件`
+  - `execute 层不负责 talentUsed 校验`
+  - `standing stones` 双天赋名额与 `ongoingCardUid` 分支
+  - `被压制随从仍可手动发动天赋`
+- [x] `src/games/smashup/__tests__/talentAbilities.test.ts`
+  - 文件本体已删除，不再保留“米斯卡塔尼克 + 克苏鲁 + 巨石阵 + 压制规则”混在一起的旧壳
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/miskatonic.test.ts` -> `1 file / 17 tests passed`
+  - `npx vitest run src/games/smashup/__tests__/abilities/cthulhu.test.ts` -> `1 file / 51 tests passed`
+  - `npx vitest run src/games/smashup/__tests__/talent-mechanics.test.ts` -> `1 file / 8 tests passed`
+  - `npx vitest run src/games/smashup/__tests__/abilities/miskatonic.test.ts src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/talent-mechanics.test.ts` -> `3 files / 76 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/miskatonic.test.ts src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/talent-mechanics.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\talentAbilities.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 16, OK`
+- [ ] 下一步候选：
+  - 继续扫描仍按“技术主题总入口 / 历史聚合”承载多派系行为与共享合同的旧文件
+  - 对已经只剩单派系行为的旧文件，优先并回现有专项，不再新建多余壳层
+
+## Addendum（2026-05-17 10:19 +08）：`ongoingTalent.test.ts` 已按“共享 ongoing talent 合同 / 各派系专项”拆分并退场
+
+- [x] `src/games/smashup/__tests__/talent-mechanics.test.ts`
+  - 已吸收共享 ongoing talent 合同：
+  - `ongoingCardUid` 的 validate 规则
+  - `ongoing talentUsed` / `TURN_STARTED` 重置
+  - `minionUid vs ongoingCardUid` 的 TALENT_USED 记录边界
+- [x] `src/games/smashup/__tests__/abilities/steampunks.test.ts`
+  - 已吸收 `steampunk_zeppelin` 的 ongoing talent 交互链
+  - 并把“无可移动目标”收正为公开命令入口的真实拒绝合同，而不是继续锁 execute 内层反馈
+- [x] `src/games/smashup/__tests__/abilities/innsmouth.test.ts`
+  - 已吸收 `innsmouth_sacred_circle` 的 ongoing talent 行为与额度消费合同
+  - 同样把“无同名目标”收正为公开命令入口拒绝合同
+- [x] `src/games/smashup/__tests__/abilities/tricksters.test.ts`
+  - 已吸收 `trickster_hideout_pod`
+  - 已吸收 `trickster_pixie_pod`
+- [x] `src/games/smashup/__tests__/ongoingTalent.test.ts`
+  - 文件本体已删除，不再保留“米大 + 蒸汽朋克 + 印斯茅斯 + 诡术师 + talent 基础设施”混装入口
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/talent-mechanics.test.ts src/games/smashup/__tests__/abilities/steampunks.test.ts src/games/smashup/__tests__/abilities/innsmouth.test.ts src/games/smashup/__tests__/abilities/tricksters.test.ts` -> `4 files / 118 tests passed`
+  - `npx eslint src/games/smashup/__tests__/talent-mechanics.test.ts src/games/smashup/__tests__/abilities/steampunks.test.ts src/games/smashup/__tests__/abilities/innsmouth.test.ts src/games/smashup/__tests__/abilities/tricksters.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\ongoingTalent.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 18, OK`
+- [ ] 下一步候选：
+  - `actionAndTalent.test.ts` 当前更像共享生命周期合同，优先级下调
+  - `abilities/madness-mechanics.test.ts` 明显仍混放 `Cthulhu/Miskatonic/Innsmouth` 业务与 timing/handler 合同，作为下一批真混装壳优先评估
+  - 继续优先处理那些仍混放多派系业务与共享机制、且没有单一自然入口的文件
+
+## Addendum（2026-05-17 11:01 +08）：`madness-prompt-mechanics.test.ts` 已并回 `cthulhu / miskatonic` 专项并退场
+
+- [x] `src/games/smashup/__tests__/abilities/cthulhu.test.ts`
+  - 已吸收 `cthulhu_madness_unleashed` 的整组行为合同：
+  - 多选/单选 prompt 创建
+  - `min=0` + skip
+  - 待决阶段不提前弃牌或改额度
+  - 弃多张疯狂卡后的即时抽牌与额外行动额度
+  - POD 版分支
+  - 额外行动额度被后续疯狂卡逐次消耗
+- [x] `src/games/smashup/__tests__/abilities/miskatonic.test.ts`
+  - 已吸收 `miskatonic_it_might_just_work`
+  - 已吸收 `miskatonic_book_of_iter_the_unseen`
+  - 已吸收 `miskatonic_thing_on_the_doorstep`
+- [x] `src/games/smashup/__tests__/abilities/madness-prompt-mechanics.test.ts`
+  - 文件本体已删除，不再保留“Cthulhu + Miskatonic + prompt 壳层”混装旧入口
+- [x] 这次不是只删旧文件名：
+  - 旧 seam `postProcessSystemEvents(...)`、`lastMatchState`、`getLastPrompt(...)`、`getLastPromptsBySourceId(...)` 已从这批迁移后的专项文件里退场
+  - 新用例统一走真实 `PLAY_ACTION / runCommand(...)`
+  - 真实 prompt facade：`getSimpleChoicePrompt`、`respondToPromptOption(...)`、`respondToPromptOptions(...)`
+  - 真实结果入口：`finalState`
+  - `miskatonic_thing_on_the_doorstep` 的 special 最终状态明确按 `result.events.reduce(reduce, state)` 验证，不再借旧壳读错状态出口
+- [x] 本阶段验证完成：
+  - `Test-Path src\\games\\smashup\\__tests__\\abilities\\madness-prompt-mechanics.test.ts` -> `False`
+  - `rg -n "postProcessSystemEvents|lastMatchState|getLastPrompt|getLastPromptsBySourceId" src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/abilities/miskatonic.test.ts` -> `0 命中`
+  - `npx vitest run src/games/smashup/__tests__/abilities/extra-play-timing-mechanics.test.ts src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/abilities/miskatonic.test.ts src/games/smashup/__tests__/abilities/innsmouth.test.ts` -> `4 files / 136 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/extra-play-timing-mechanics.test.ts src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/abilities/miskatonic.test.ts src/games/smashup/__tests__/abilities/innsmouth.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 20, OK`
+- [ ] 下一步候选：
+  - 继续扫描仍残留 `lastMatchState / postProcessSystemEvents` 的旧文件，但先区分“共享系统合同”与“普通业务回归”
+  - `abilities/elder-things.test.ts`、`ongoingE2E.test.ts` 是下一批高概率候选，但不能机械迁；先判断它们是在锁公开行为，还是在锁系统内层合同
+
+## Addendum（2026-05-17 11:03 +08）：`elder-things.test.ts` 与 `ongoingE2E.test.ts` 已继续拔掉业务测试里的旧 interaction 壳
+
+- [x] `src/games/smashup/__tests__/abilities/elder-things.test.ts`
+  - `elder_thing_begin_the_summoning` 的“单个弃牌堆随从时创建 Prompt”
+  - `elder_thing_unfathomable_goals` 的“多随从时创建 Prompt”
+  - 已从 `lastMatchState + getLastInteractions()` 改为直接断言 `runCommand(...).finalState` 上的 `getSimpleChoicePrompt(...)`
+- [x] `src/games/smashup/__tests__/ongoingE2E.test.ts`
+  - `pirate_shanghai` 业务链已从 `lastMatchState + getLastInteractions()` 改为直接消费 `postProcessSystemEvents(...).matchState`
+  - 只收业务 prompt 链；后面显式在测 `replacement / afterScoring / postProcessSystemEvents` 的系统合同暂不机械迁
+- [x] 这次不是为了降命中乱改：
+  - `elder-things.test.ts` 扫描后已无 `lastMatchState|getLastInteractions|interaction.current|interaction.queue`
+  - `ongoingE2E.test.ts` 扫描后已无 `lastMatchState|getLastInteractions`
+  - 但文件内保留了明确在锁系统后处理链的 `postProcessSystemEvents(...)` 调用
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/elder-things.test.ts` -> `1 file / 41 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/elder-things.test.ts` -> `0 errors / 0 warnings`
+  - `npx vitest run src/games/smashup/__tests__/ongoingE2E.test.ts` -> `1 file / 14 tests passed`
+  - `npx eslint src/games/smashup/__tests__/ongoingE2E.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 22, OK`
+- [ ] 下一步候选：
+  - 剩余 `postProcessSystemEvents` 命中主要集中在 `smashup.smoke.test.ts`、`reactionQueueBaseAbilities.test.ts`、`afterscoring-window-skip-base-clear.test.ts`、`wizard-portal-d45.test.ts`
+  - 下一步先判定这些命中里哪些仍是普通业务测试借系统壳，哪些已经是明确的系统合同；优先继续拔前者
+
+## Addendum（2026-05-17 11:09 +08）：`smashup.smoke.test.ts` 已清掉最后一处裸 `prompt.data.options` 兜底
+
+- [x] `src/games/smashup/__tests__/smashup.smoke.test.ts`
+  - `身体改造在回合开始给己方随从加指示物时应触发 The Bride 抽 1（线上反馈 69ec35a1）`
+  - reaction chain fallback 已从 `prompt?.data?.options?.[0]?.id` 改为 facade `getPromptOptions(prompt)[0]?.id`
+- [x] 这次不是功能改写，只是把最后一处业务测试的 prompt 选项读取收回 facade
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/smashup.smoke.test.ts -t "身体改造在回合开始给己方随从加指示物时应触发 The Bride 抽 1"` -> `1 passed`
+  - `npx eslint src/games/smashup/__tests__/smashup.smoke.test.ts` -> `0 errors / 0 warnings`
+  - `rg -n "prompt\\?\\.data\\?\\.options|prompt\\.data\\.options" src/games/smashup/__tests__ --glob '!**/helpers.ts' --glob '!**/helpers/**'` -> `0 命中`
+  - `npm run test:structure -- --all` -> `checked files: 24, OK`
+- [ ] 下一步候选：
+  - 继续从 `smashup.smoke.test.ts` 和其它混合文件里找“业务借 `postProcessSystemEvents` 壳”的具体段落
+  - 对 `reactionQueueBaseAbilities.test.ts`、`wizard-portal-d45.test.ts` 这类更明显的系统合同保持谨慎，不为了降命中乱迁
+
+## Addendum（2026-05-17 11:17 +08）：`giantAntsPod.test.ts` 已并回 `abilities/giant-ants.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/giant-ants.test.ts`
+  - 已吸收原 `giantAntsPod.test.ts` 中专项文件还未承接的巨蚁 POD 行为：
+  - `giant_ant_drone_pod` talent 抽牌
+  - `giant_ant_drone_pod` 防止消灭
+  - `giant_ant_soldier_pod`
+  - `giant_ant_gimme_the_prize_pod`
+  - `giant_ant_we_will_rock_you_pod`
+  - `giant_ant_who_wants_to_live_forever_pod`
+- [x] `src/games/smashup/__tests__/giantAntsPod.test.ts`
+  - 文件本体已删除，不再保留“根目录巨蚁 POD 旧入口 + abilities/giant-ants.test.ts”双入口并存状态
+- [x] 这次不是机械搬整份：
+  - 先确认 `abilities/giant-ants.test.ts` 已经存在 `drone_pod` 相关覆盖，避免把已有段落再复制一遍
+  - 只补专项文件里缺的 POD 行为簇
+  - 顺手清理专项文件里的废 import / 废变量，确保新的单一入口本身是干净的
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/giant-ants.test.ts src/games/smashup/__tests__/giantAntsPod.test.ts` -> `2 files / 34 tests passed`（删除前组合基线）
+  - `npx eslint src/games/smashup/__tests__/abilities/giant-ants.test.ts src/games/smashup/__tests__/giantAntsPod.test.ts` -> `0 errors / 0 warnings`（删除前组合基线）
+  - `npx vitest run src/games/smashup/__tests__/abilities/giant-ants.test.ts` -> `1 file / 28 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/giant-ants.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\giantAntsPod.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 26, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录仍残留的“单派系旧入口 + abilities 专项已存在”双入口文件
+  - 候选优先看 `elderThingsPod.test.ts`、`vampiresPod.test.ts`、`zombieInteractionChain.test.ts` 这类是否仍在制造第二入口，再区分是否真该并回专项
+
+## Addendum（2026-05-17 11:27 +08）：`elderThingsPod.test.ts` 已并回 `abilities/elder-things.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/elder-things.test.ts`
+  - 已吸收原 `elderThingsPod.test.ts` 中应由远古之物专项承接的 POD 行为：
+  - `elder_thing_elder_thing_pod`
+  - `elder_thing_unfathomable_goals_pod`
+  - `elder_thing_insanity_pod`
+  - `elder_thing_mi_go_pod`
+  - `elder_thing_shoggoth_pod`
+  - `elder_thing_dunwich_horror_pod`
+  - `elder_thing_the_price_of_power_pod`
+  - `elder_thing_spreading_horror_pod`
+  - `elder_thing_touch_of_madness_pod`
+- [x] `src/games/smashup/__tests__/elderThingsPod.test.ts`
+  - 文件本体已删除，不再保留“根目录远古之物 POD 旧入口 + abilities/elder-things.test.ts”双入口并存状态
+- [x] 这次不是机械搬整份：
+  - 旧文件里的 `elder_things (base): Elder Thing` 只是基础版 FAQ 重复覆盖，没有再搬进专项文件制造重复合同
+  - 本轮只保留真正缺失、且应由远古之物长期专项入口维护的 POD 行为簇
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/elder-things.test.ts` -> `1 file / 53 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/elder-things.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\elderThingsPod.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 26, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录仍残留的“单派系旧入口 + abilities 专项已存在”双入口文件
+  - 优先评估 `vampiresPod.test.ts` 是否同样只是业务第二入口；`zombieInteractionChain.test.ts` 先判断是否仍承载独特交互链合同，再决定是否并回专项
+
+## Addendum（2026-05-17 11:33 +08）：`vampiresPod.test.ts` 已并回 `abilities/vampires.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/vampires.test.ts`
+  - 已吸收原 `vampiresPod.test.ts` 的吸血鬼 POD 行为：
+  - `vampire_nightstalker_pod`
+  - `vampire_buffet_pod`
+  - `vampire_the_count_pod`
+  - `vampire_dinner_date_pod`
+  - `vampire_wolf_pact_pod`
+- [x] `src/games/smashup/__tests__/vampiresPod.test.ts`
+  - 文件本体已删除，不再保留“根目录吸血鬼 POD 旧入口 + abilities/vampires.test.ts”双入口并存状态
+- [x] 这次不是机械改名：
+  - 先验证 `abilities/vampires.test.ts + vampiresPod.test.ts` 组合基线为 `2 files / 30 tests passed`
+  - 再把 POD 行为并到吸血鬼专项，删除后单跑专项确认 `1 file / 19 tests passed`
+  - 保留 `vampire_wolf_pact_pod_action` 的低层 `resolveOnPlay(...)` 合同，但它现在归吸血鬼专项，不再挂在旧根目录入口
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/vampires.test.ts src/games/smashup/__tests__/vampiresPod.test.ts` -> `2 files / 30 tests passed`（删除前组合基线）
+  - `npx eslint src/games/smashup/__tests__/abilities/vampires.test.ts src/games/smashup/__tests__/vampiresPod.test.ts` -> `0 errors / 0 warnings`（删除前组合基线）
+  - `npx vitest run src/games/smashup/__tests__/abilities/vampires.test.ts` -> `1 file / 19 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/vampires.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\vampiresPod.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 27, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录仍残留的“单派系旧入口 + abilities 专项已存在”双入口文件
+  - `zombieInteractionChain.test.ts` 先判断是否还在锁独特交互链合同；如果不是，再考虑并回专项
+
+## Addendum（2026-05-17 11:42 +08）：`zombieInteractionChain.test.ts` 已并回 `abilities/zombies.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/zombies.test.ts`
+  - 已吸收原 `zombieInteractionChain.test.ts` 的僵尸交互链业务行为：
+  - `zombie_grave_digger` 取回 / 跳过
+  - `zombie_walker` 弃掉 / 保留牌库顶
+  - `zombie_grave_robbing` 取回弃牌堆卡
+  - `zombie_not_enough_bullets` 取回同名组
+  - `zombie_lend_a_hand` 空提交 / 洗回牌库
+  - `zombie_lord` 循环选择 / 完成
+  - `zombie_tenacious_z` 从弃牌堆打出、每回合一次、不消耗正常额度
+  - `zombie_theyre_coming_to_get_you` 只允许打到附着基地且消耗正常额度
+  - `zombie_overrun` 限制对手打随从 + onTurnStart 自收口 reactionQueue 合同
+- [x] `src/games/smashup/__tests__/zombieInteractionChain.test.ts`
+  - 文件本体已删除，不再保留“根目录僵尸交互链旧入口 + abilities/zombies.test.ts”双入口并存状态
+- [x] 这次不是只删文件名：
+  - 旧文件主体是僵尸业务交互链，不是共享系统合同文件
+  - 迁移后不再依赖旧文件里的自建 `GameTestRunner` 壳，而是收回到专项文件现有的 `runCommand`、prompt facade、`collectTriggers` / `maybeResolveReactionQueue`
+  - 唯一偏低层的 `zombie_overrun` reactionQueue 自收口合同也已并回僵尸专项，不再作为旧根目录文件的存活理由
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/zombies.test.ts src/games/smashup/__tests__/zombieInteractionChain.test.ts` -> `2 files / 46 tests passed`（删除前组合基线）
+  - `npx eslint src/games/smashup/__tests__/abilities/zombies.test.ts src/games/smashup/__tests__/zombieInteractionChain.test.ts` -> `0 errors / 0 warnings`（删除前组合基线）
+  - `npx vitest run src/games/smashup/__tests__/abilities/zombies.test.ts` -> `1 file / 24 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/zombies.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\zombieInteractionChain.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 27, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录仍残留的“单派系旧入口 + abilities 专项已存在”双入口文件
+  - 对残留历史文件先区分“共享系统合同”与“派系业务第二入口”，再决定是否并回专项
+
+## Addendum（2026-05-17 11:47 +08）：`frankensteinFaq.test.ts` 已并回 `abilities/frankenstein.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/frankenstein.test.ts`
+  - 已吸收原 `frankensteinFaq.test.ts` 的 FAQ/行为合同：
+  - `frankenstein_blitzed`
+  - `frankenstein_uberserum`
+  - `frankenstein_its_alive`
+- [x] `src/games/smashup/__tests__/frankensteinFaq.test.ts`
+  - 文件本体已删除，不再保留“根目录弗兰肯斯坦 FAQ 旧入口 + abilities/frankenstein.test.ts”双入口并存状态
+- [x] 这次不是机械搬 FAQ 标签：
+  - 三条测试都属于弗兰肯斯坦派系业务合同，不是共享 FAQ 机制文件
+  - 迁移后继续走专项文件自己的 `runCommand`、prompt facade 与事件断言，而不是保留第二入口
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/frankenstein.test.ts src/games/smashup/__tests__/frankensteinFaq.test.ts` -> `2 files / 17 tests passed`（删除前组合基线）
+  - `npx eslint src/games/smashup/__tests__/abilities/frankenstein.test.ts src/games/smashup/__tests__/frankensteinFaq.test.ts` -> `0 errors / 0 warnings`（删除前组合基线）
+  - `npx vitest run src/games/smashup/__tests__/abilities/frankenstein.test.ts` -> `1 file / 14 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/frankenstein.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\frankensteinFaq.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 28, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录残留历史文件，优先找“单派系旧入口 + abilities 专项已存在”的下一份候选
+  - 对文件名带 `interaction/faq/abilities` 的历史入口先判断其主体是否仍是业务第二入口，而不是仅凭名字下刀
+
+## Addendum（2026-05-17 11:51 +08）：`steampunk-pod-verification.test.ts` 已并回 `abilities/steampunks.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/steampunks.test.ts`
+  - 已吸收原 `steampunk-pod-verification.test.ts` 的 POD 低层合同：
+  - `steampunk_ornate_dome_pod`
+  - `steampunk_escape_hatch_pod`
+- [x] `src/games/smashup/__tests__/steampunk-pod-verification.test.ts`
+  - 文件本体已删除，不再保留“根目录蒸汽朋克 POD 验证壳 + abilities/steampunks.test.ts”双入口并存状态
+- [x] 这次不是机械复制：
+  - 两条测试都落回现有 `steampunk_ornate_dome` / `steampunk_escape_hatch` 专项块
+  - 继续保留为蒸汽朋克专项自己的低层合同，而不是让根目录验证壳靠两条 POD 测试单独存活
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/steampunks.test.ts src/games/smashup/__tests__/steampunk-pod-verification.test.ts` -> `2 files / 36 tests passed`（删除前组合基线）
+  - `npx eslint src/games/smashup/__tests__/abilities/steampunks.test.ts src/games/smashup/__tests__/steampunk-pod-verification.test.ts` -> `0 errors / 0 warnings`（删除前组合基线）
+  - `npx vitest run src/games/smashup/__tests__/abilities/steampunks.test.ts` -> `1 file / 34 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/steampunks.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\steampunk-pod-verification.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 28, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录残留历史文件，优先找“单派系旧入口 + abilities 专项已存在”的下一份候选
+  - 重点筛那些只剩 1-3 条派系专项合同、却还挂在根目录验证壳上的文件
+
+## Addendum（2026-05-17 11:54 +08）：`bearCavalry-youre-screwed-pod-breakpoint.test.ts` 已并回 `abilities/bear-cavalry.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/bear-cavalry.test.ts`
+  - 已吸收原 `bearCavalry-youre-screwed-pod-breakpoint.test.ts` 的 3 条 POD 爆破点合同：
+  - 默认每个玩家 `+2 breakpoint`
+  - 本回合曾把对手随从移动到此基地时改为每个玩家 `-2 breakpoint`
+  - 被压制时不再修改爆破点
+- [x] `src/games/smashup/__tests__/bearCavalry-youre-screwed-pod-breakpoint.test.ts`
+  - 文件本体已删除，不再保留“根目录熊骑兵 POD breakpoint 旧入口 + abilities/bear-cavalry.test.ts”双入口并存状态
+- [x] 这次不是只收文件名：
+  - 这 3 条都属于 `bear_cavalry_bearing_down_pod` 自己的专项合同
+  - 迁移后直接落回熊骑兵专项，而不是继续放在一个历史命名与当前卡牌名都不对齐的小壳里
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/bear-cavalry.test.ts src/games/smashup/__tests__/bearCavalry-youre-screwed-pod-breakpoint.test.ts` -> `2 files / 35 tests passed`（删除前组合基线）
+  - `npx eslint src/games/smashup/__tests__/abilities/bear-cavalry.test.ts src/games/smashup/__tests__/bearCavalry-youre-screwed-pod-breakpoint.test.ts` -> `0 errors / 0 warnings`（删除前组合基线）
+  - `npx vitest run src/games/smashup/__tests__/abilities/bear-cavalry.test.ts` -> `1 file / 32 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/bear-cavalry.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\bearCavalry-youre-screwed-pod-breakpoint.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 29, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录残留历史文件，优先找“单派系旧入口 + abilities 专项已存在”的下一份候选
+  - 重点看那些名字仍带 `verification / faq / interaction / breakpoint`、但主体只剩派系专项合同的小壳
+
+## Addendum（2026-05-17 12:01 +08）：`wizard-neophyte-ongoing.test.ts` 已并回 `abilities/wizards.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/wizards.test.ts`
+  - 已吸收原 `wizard-neophyte-ongoing.test.ts` 的 2 条学徒行为合同：
+  - `wizard_neophyte` 打出 `zombie_overrun` 时先选基地再附着 ongoing 行动
+  - `wizard_neophyte` 打出 `wizard_summon` 这类 standard 行动时不需要基地选择，并正确增加随从额度
+- [x] `src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts`
+  - 文件本体已删除，不再保留“根目录学徒 ongoing bug 壳 + abilities/wizards.test.ts”双入口并存状态
+- [x] 这次不是机械搬到专项：
+  - 旧文件虽然用了 `zombie_overrun` 这个跨派系 ongoing 行动做场景，但真正锁的是 `wizard_neophyte` 自己“额外打出牌库顶行动卡”的行为边界
+  - 因此它不是共享 ongoing 机制文件，也不是僵尸专项文件，而是巫师专项里的学徒行为合同
+  - 迁移后继续走 `execPlayMinion -> getSimpleChoicePrompt -> respondToPrompt` 的真实行为链，不再保留单独的局部注册/夹具入口
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/wizards.test.ts src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts` -> `2 files / 28 tests passed`（删除前组合基线）
+  - `npx eslint src/games/smashup/__tests__/abilities/wizards.test.ts src/games/smashup/__tests__/wizard-neophyte-ongoing.test.ts` -> `0 errors / 0 warnings`（删除前组合基线）
+  - `npx vitest run src/games/smashup/__tests__/abilities/wizards.test.ts` -> `1 file / 28 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/wizards.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\wizard-neophyte-ongoing.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 29, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录残留历史文件，优先找“单派系旧入口 + abilities 专项已存在”的下一份候选
+  - 优先复核 `cthulhu-chosen-display-mode.test.ts`、`wizard-archmage-discard-play.test.ts` 这类名字像历史 bug 壳、但可能只剩单派系专项合同的小文件
+
+## Addendum（2026-05-17 12:04 +08）：`cthulhu-chosen-display-mode.test.ts` 已并回 `abilities/cthulhu.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/cthulhu.test.ts`
+  - 已吸收原 `cthulhu-chosen-display-mode.test.ts` 的显示合同：
+  - `cthulhu_chosen_confirm` 选项应是 `displayMode: 'button'`
+  - 选项 value 不应携带 `baseDefId`
+  - 多实例排队时第二个 `cthulhu_chosen_confirm` 也保持 button displayMode 与正确玩家归属
+- [x] `src/games/smashup/__tests__/cthulhu-chosen-display-mode.test.ts`
+  - 文件本体已删除，不再保留“根目录神选者 display bug 壳 + abilities/cthulhu.test.ts”双入口并存状态
+- [x] 这次不是只收 bug 文件名：
+  - `cthulhu.test.ts` 原本就已经有 `cthulhu_chosen beforeScoring` 主体块
+  - 根目录旧文件剩下的只是同一能力的 UI 选项合同与排队显示合同
+  - 迁移后这些断言直接附着在现有 `cthulhu_chosen` 专项块，不再保留一份本地手搓 `makeMS` / `makePlayer` 的独立壳层
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/cthulhu-chosen-display-mode.test.ts` -> `2 files / 74 tests passed`（删除前组合基线）
+  - `npx eslint src/games/smashup/__tests__/abilities/cthulhu.test.ts src/games/smashup/__tests__/cthulhu-chosen-display-mode.test.ts` -> `0 errors / 0 warnings`（删除前组合基线）
+  - `npx vitest run src/games/smashup/__tests__/abilities/cthulhu.test.ts` -> `1 file / 71 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/cthulhu.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\cthulhu-chosen-display-mode.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 29, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录残留历史文件，优先找“单派系旧入口 + abilities 专项已存在”的下一份候选
+  - `wizard-archmage-discard-play.test.ts` 需要先判断它到底是巫师专项第二入口，还是在锁自定义 discard provider / runner 壳的特殊合同
+
+## Addendum（2026-05-17 12:12 +08）：`wizard-archmage-discard-play.test.ts` 已判定为历史自定义 provider 壳并退场
+
+- [x] `src/games/smashup/__tests__/wizard-archmage-discard-play.test.ts`
+  - 文件本体已删除，不再保留“根目录大法师 discard-play 测试壳”
+- [x] 这次不是并回专项，而是直接退场：
+  - 旧文件的两条合同分别是：
+  - “从弃牌堆打出大法师应获得额外行动”
+  - “从手牌打出大法师应获得额外行动（对照组）”
+  - 但它们本身不是通过真实现行业务入口覆盖，而是靠测试内临时 `registerDiscardPlayProvider({ id: 'test_archmage_discard_play', ... })` + 自建 `GameTestRunner` 壳去喂 `fromDiscard: true`
+  - 当前真实覆盖已经存在：
+  - [`wizard-archmage-zombie-interaction.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/wizard-archmage-zombie-interaction.test.ts:1>) 已用真实 `zombie_they_keep_coming` 链路覆盖“从弃牌堆打出大法师应获得额外行动”
+  - [`archmageE2E.test.ts`](</D:/gongzuo/webgame/BoardGame/src/games/smashup/__tests__/archmageE2E.test.ts:172>) 已覆盖“从手牌打出大法师当回合仍可获得额外行动”
+  - 因此保留旧文件只是在重复维护一份测试专用 provider 壳，而不是保护新的业务不变量
+- [x] 本阶段轻量验证完成：
+  - `Test-Path src\\games\\smashup\\__tests__\\wizard-archmage-discard-play.test.ts` -> `False`
+  - `npx eslint src/games/smashup/__tests__/wizard-archmage-zombie-interaction.test.ts src/games/smashup/__tests__/archmageE2E.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 30, OK`
+- [ ] 额外说明：
+  - 本轮尝试对 `wizard-archmage-discard-play.test.ts + wizard-archmage-zombie-interaction.test.ts + archmageE2E.test.ts` 做组合 `vitest` 基线时，运行环境因剩余可用内存仅约 `1.23 GB` 发生 Node / PowerShell OOM，当前不把这类 OOM 当作代码红灯
+  - 等环境内存恢复后，可再补一次这组三文件的定点回归，作为删除冗余壳后的强验证
+- [ ] 下一步候选：
+  - 继续扫描根目录残留历史文件，优先找“真正的业务第二入口”与“仅剩测试壳/临时 provider 壳”这两类对象
+  - `wizard-archmage-zombie-interaction.test.ts` 需要继续判断是否应并回 `abilities/wizards.test.ts`，还是保留为跨派系真实链路回归
+
+## Addendum（2026-05-17 12:13 +08）：`wizard-archmage-zombie-interaction.test.ts` 已并回 `abilities/wizards.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/wizards.test.ts`
+  - 已吸收原 `wizard-archmage-zombie-interaction.test.ts` 的真实链路合同：
+  - `wizard_archmage` 通过 `zombie_they_keep_coming` 从弃牌堆打出时，仍按 `onMinionPlayed` 授予额外行动
+- [x] `src/games/smashup/__tests__/wizard-archmage-zombie-interaction.test.ts`
+  - 文件本体已删除，不再保留“根目录大法师 + 僵尸交互 bug 壳”
+- [x] 这次不是机械删壳：
+  - 这条测试虽然场景用了僵尸行动卡，但真正变化的行为是 `wizard_archmage` 自己“被真实打出后是否获得额外行动”
+  - 因此它更适合并到 `wizards.test.ts` 现有 `wizard_archmage` 专项块，而不是继续挂在根目录 bug 文件里
+  - 同时，之前已删掉的 `wizard-archmage-discard-play.test.ts` 属于测试专用 provider 壳；本轮保留的是走真实 `zombie_they_keep_coming -> prompt -> 从弃牌堆打出` 链路的现行业务覆盖
+- [x] 本阶段验证完成：
+  - `npx eslint src/games/smashup/__tests__/abilities/wizards.test.ts` -> `0 errors / 0 warnings`
+  - `npx vitest run src/games/smashup/__tests__/abilities/wizards.test.ts` -> `1 file / 29 tests passed`
+  - `Test-Path src\\games\\smashup\\__tests__\\wizard-archmage-zombie-interaction.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 30, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录残留历史文件，优先找“单派系业务行为已经有专项入口，但根目录仍保留历史 bug/interaction/pod 壳”的下一份候选
+  - `killer-plant-pod-verification.test.ts` 仍需谨慎复核边界，不能因为名字像小壳就机械处理
+
+## Addendum（2026-05-17 12:20 +08）：`killer-plant-pod-verification.test.ts` 已并回 `abilities/killer-plants.test.ts` 并退场
+
+- [x] `src/games/smashup/__tests__/abilities/killer-plants.test.ts`
+  - 已吸收原 `killer-plant-pod-verification.test.ts` 中专项文件尚未承接的 POD 合同：
+  - POD 牌表数量：`killer_plant_sleep_spores_pod` / `killer_plant_budding_pod`
+  - `killer_plant_weed_eater_pod` 不继承原版进场 debuff，且控制者回合开始获得 +2 力量
+  - `killer_plant_sprout_pod` 被 `General Ivan POD` 保护时仍继续完成检索
+  - `playCards` 阶段不应回补 `sprout_pod` 的 `startTurn` 触发
+  - `sprout_pod -> water_lily_pod` 同窗口立即抽牌、链式 `sprout_pod` 保持 `startTurn` 直到链结束
+  - 爆破点压到 0 后进入计分阶段只产生一次 `BASE_SCORED`
+- [x] `src/games/smashup/__tests__/killer-plant-pod-verification.test.ts`
+  - 文件本体已删除，不再保留“根目录 Killer Plants POD verification 壳 + abilities/killer-plants.test.ts”双入口并存状态
+- [x] 这次不是机械整份复制：
+  - `killer_plant_overgrowth_pod` 降爆破点这类已在专项文件中存在等价覆盖的内容没有重复搬运
+  - 只把专项文件尚未承接、且仍属于杀人植物 POD 行为边界的合同并回
+  - 同时把旧文件里乱码/临时说明风格的标题收回成可维护的专项语义
+- [x] 迁移中的真实问题已收口：
+  - 第一次单跑 `killer-plants.test.ts` 出现 3 条红灯，不是实现回归，而是本文件前半段 `beforeEach` 把全局注册表收窄到 `registerKillerPlantAbilities()`，导致新增 POD 段吃到半初始化状态
+  - 已为 `killer_plants POD 数据与特殊回归` 补独立 `beforeEach`：`clearRegistry/clearBaseAbilityRegistry/clearPowerModifierRegistry/clearOngoingEffectRegistry/clearInteractionHandlers/resetAbilityInit/initAllAbilities`
+  - 补完后专项单文件恢复全绿
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/killer-plant-pod-verification.test.ts` -> `2 files / 48 tests passed`（删除前组合基线）
+  - `npx eslint src/games/smashup/__tests__/abilities/killer-plants.test.ts src/games/smashup/__tests__/killer-plant-pod-verification.test.ts` -> `0 errors / 0 warnings`（删除前组合基线）
+  - `npx vitest run src/games/smashup/__tests__/abilities/killer-plants.test.ts` -> `1 file / 47 tests passed`
+  - `npx eslint src/games/smashup/__tests__/abilities/killer-plants.test.ts` -> `0 errors / 0 warnings`
+  - `Test-Path src\\games\\smashup\\__tests__\\killer-plant-pod-verification.test.ts` -> `False`
+  - `npm run test:structure -- --all` -> `checked files: 31, OK`
+- [ ] 下一步候选：
+  - 继续扫描根目录残留历史文件，优先找“内容仍属于单派系专项，但测试名仍挂着 bug/verification/pod 壳”的下一份候选
+  - 重点复核 `ninja-hidden-ninja-interaction-bug-repro.test.ts`、`pirate-cove-repeat-trigger-bug.test.ts`、`mothership-scout-afterscore-bug.test.ts` 这类文件是专项第二入口，还是应保留的跨系统/跨派系真实链路回归
+
+## Addendum（2026-05-17 14:08 +08）：`expansionBaseAbilities.test.ts` 继续按基地簇瘦身
+
+- [x] `src/games/smashup/__tests__/bases/mountains-of-madness-base.test.ts`
+  - 已吸收 `base_mountains_of_madness` 的更完整合同，明确 Trade 场景下疯狂卡归随从拥有者
+- [x] `src/games/smashup/__tests__/bases/al9000-bases.test.ts`
+  - 已承接 `base_greenhouse` / `base_secret_garden` / `base_inventors_salon` 三个 AL9000 基地合同
+- [x] `src/games/smashup/__tests__/expansionBaseAbilities.test.ts`
+  - 已删掉整段 AL9000 测试入口，当前保留 35 条非 AL9000 合同
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/bases/mountains-of-madness-base.test.ts src/games/smashup/__tests__/bases/al9000-bases.test.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> `3 files / 46 tests passed`
+  - `npx eslint src/games/smashup/__tests__/bases/mountains-of-madness-base.test.ts src/games/smashup/__tests__/bases/al9000-bases.test.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 55, OK`
+
+## Addendum（2026-05-17 14:45 +08）：继续收缩基地测试入口
+
+- [x] `src/games/smashup/__tests__/bases/move-minion-bases.test.ts`
+  - 已修正 `makeBase` 调用合同，`other_base` 统一改成 `makeBase({ defId, minions })`
+  - 6 条 move-minion 基地合同通过
+- [x] `src/games/smashup/__tests__/bases/plateau-of-leng-base.test.ts`
+  - 已新增独立专项文件，承接 `base_plateau_of_leng` 的即时分支与同名随从额度合同
+  - 6 条用例通过
+- [x] `src/games/smashup/__tests__/abilities/fairies.test.ts`
+  - 已吸收 `base_fairy_ring` 的非首次打出回归
+  - `expansionBaseAbilities.test.ts` 中对应的重复旧段已删除
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/bases/move-minion-bases.test.ts src/games/smashup/__tests__/bases/plateau-of-leng-base.test.ts src/games/smashup/__tests__/abilities/fairies.test.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> `4 files / 45 tests passed`
+  - `npx eslint src/games/smashup/__tests__/bases/plateau-of-leng-base.test.ts src/games/smashup/__tests__/abilities/fairies.test.ts src/games/smashup/__tests__/expansionBaseAbilities.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 60, OK`
+
+## Addendum（2026-05-17 14:53 +08）：`expansionBaseAbilities.test.ts` 整体退场
+
+- [x] `src/games/smashup/__tests__/bases/the-asylum-base.test.ts`
+  - 新增独立基地专项，承接疯人院的手牌放盒子 / 选随从加指示物合同
+- [x] `src/games/smashup/__tests__/bases/innsmouth-base.test.ts`
+  - 新增独立基地专项，承接印斯茅斯的两步交互与 stale 卡底合同
+- [x] `src/games/smashup/__tests__/bases/miskatonic-university-base.test.ts`
+  - 新增独立基地专项，承接密大基地的首次打出分支合同
+- [x] `src/games/smashup/__tests__/expansionBaseAbilities.test.ts`
+  - 文件本体已删除，不再作为基地能力聚合入口
+- [x] 本阶段验证完成：
+  - `npx vitest run src/games/smashup/__tests__/bases/the-asylum-base.test.ts src/games/smashup/__tests__/bases/innsmouth-base.test.ts src/games/smashup/__tests__/bases/miskatonic-university-base.test.ts src/games/smashup/__tests__/bases/mountains-of-madness-base.test.ts src/games/smashup/__tests__/bases/plateau-of-leng-base.test.ts` -> `5 files / 19 tests passed`
+  - `npx eslint src/games/smashup/__tests__/bases/the-asylum-base.test.ts src/games/smashup/__tests__/bases/innsmouth-base.test.ts src/games/smashup/__tests__/bases/miskatonic-university-base.test.ts src/games/smashup/__tests__/bases/mountains-of-madness-base.test.ts src/games/smashup/__tests__/bases/plateau-of-leng-base.test.ts` -> `0 errors / 0 warnings`
+  - `npm run test:structure -- --all` -> `checked files: 62, OK`

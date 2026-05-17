@@ -16,6 +16,10 @@ const outfile = requireArg(args, 'outfile');
 const tsconfig = requireArg(args, 'tsconfig');
 const onceMode = args.once === 'true';
 const absOutfile = path.resolve(repoRoot, outfile);
+const nodeBundleSourceMapMode = (process.env.BG_NODE_BUNDLE_SOURCEMAP ?? 'false').trim().toLowerCase();
+const enableNodeBundleSourceMap = nodeBundleSourceMapMode === '1'
+    || nodeBundleSourceMapMode === 'true'
+    || nodeBundleSourceMapMode === 'on';
 
 let currentBuildStartedAt = 0;
 let child = null;
@@ -193,7 +197,11 @@ async function restartRuntime(reason) {
     }
 
     console.log(`[bundle-runner] ${label} ${reason} -> starting ${outfile}`);
-    child = spawn(process.execPath, ['--enable-source-maps', absOutfile], withWindowsHide({
+    const runtimeArgs = [
+        ...(enableNodeBundleSourceMap ? ['--enable-source-maps'] : []),
+        absOutfile,
+    ];
+    child = spawn(process.execPath, runtimeArgs, withWindowsHide({
         cwd: repoRoot,
         env: process.env,
         stdio: ['ignore', 'pipe', 'pipe'],
@@ -270,7 +278,7 @@ const sharedBuildOptions = {
     platform: 'node',
     format: 'esm',
     packages: 'external',
-    sourcemap: true,
+    sourcemap: enableNodeBundleSourceMap,
     logLevel: 'info',
     tsconfig,
 };

@@ -428,6 +428,13 @@ export function processTokenUsage(
     const events: DiceThroneEvent[] = [];
     const player = state.players[playerId];
     const currentAmount = player?.tokens[tokenDef.id] ?? 0;
+    if (hasSpentTreantTreeSpiritThisTurn(state, playerId, tokenDef.id)) {
+        return {
+            events,
+            result: { success: false },
+            newTokenAmount: currentAmount,
+        };
+    }
     const usedInWindow = state.pendingDamage?.tokenUsageTotals?.[tokenDef.id] ?? 0;
     const maxWindowUsage = getMaxTokenUseAmount(tokenDef);
     const hasExplicitWindowCap = (tokenDef.activeUse?.allowedConsumeAmounts?.length ?? 0) > 0;
