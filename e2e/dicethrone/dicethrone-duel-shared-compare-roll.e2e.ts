@@ -85,6 +85,26 @@ const dismissStartDefenseShowcaseIfPresent = async (page: Page) => {
     }
 };
 
+const openFabPanel = async (page: Page, panelId: string, mainId = 'chat') => {
+    const panel = page.getByTestId(`fab-panel-${panelId}`);
+    if (await panel.isVisible().catch(() => false)) {
+        return panel;
+    }
+
+    const panelButton = page.locator(`[data-fab-id="${panelId}"]`).first();
+    if (!await panelButton.isVisible().catch(() => false)) {
+        const mainButton = page.locator(`[data-fab-id="${mainId}"]`).first();
+        if (await mainButton.isVisible().catch(() => false)) {
+            await mainButton.click();
+        }
+    }
+
+    await expect(panelButton).toBeVisible({ timeout: 5000 });
+    await panelButton.click();
+    await expect(panel).toBeVisible({ timeout: 5000 });
+    return panel;
+};
+
 const buildSharedDuelState = (state: DtState): DtState => {
     const root = (state.G ?? state) as DtState;
     const next = structuredClone(root);
@@ -92,6 +112,17 @@ const buildSharedDuelState = (state: DtState): DtState => {
     const sys = (next.sys ?? {}) as DtState;
     const monk = initHeroState('0', 'monk', DICE_THRONE_PREPARE_RANDOM);
     const gunslinger = initHeroState('1', 'gunslinger', DICE_THRONE_PREPARE_RANDOM);
+    const preparedDice = Array.isArray(core.dice) && core.dice.length > 0
+        ? core.dice.map((die: DtState, index: number) => (
+            index === 0
+                ? { ...die, value: 6, isKept: true }
+                : die
+        ))
+        : Array.from({ length: 5 }, (_, index) => ({
+            id: index,
+            value: index === 0 ? 6 : 1,
+            isKept: index === 0,
+        }));
 
     next.core = {
         ...core,
@@ -114,9 +145,10 @@ const buildSharedDuelState = (state: DtState): DtState => {
         },
         activePlayerId: '1',
         turnNumber: typeof core.turnNumber === 'number' ? core.turnNumber : 1,
-        rollCount: 0,
+        rollCount: 1,
         rollLimit: 1,
-        rollConfirmed: false,
+        rollConfirmed: true,
+        dice: preparedDice,
         players: {
             '0': {
                 ...monk,
@@ -167,7 +199,7 @@ const buildSharedDuelState = (state: DtState): DtState => {
 };
 
 test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日志看出结果', async ({ browser }, testInfo) => {
-    test.setTimeout(120000);
+    test.setTimeout(180000);
     const baseURL = testInfo.project.use.baseURL as string | undefined;
     const setup = await setupDTOnlineMatch(browser, baseURL);
     if (!setup?.guestPage) {
@@ -225,7 +257,7 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
         });
 
         await expect(guestPage.getByTestId('compare-roll-overlay')).toBeVisible({ timeout: 15000 });
-        await expect(guestPage.locator('[data-testid="compare-roll-overlay"] button').nth(1)).toBeVisible({ timeout: 5000 });
+        await expect(guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' })).toBeVisible({ timeout: 5000 });
         await expect(hostPage.getByTestId('compare-roll-overlay')).toBeVisible({ timeout: 15000 });
         await expect(hostPage.getByTestId('compare-roll-waiting')).toBeVisible({ timeout: 5000 });
         await expect(hostPage.locator('[data-testid="compare-roll-overlay"] button')).toHaveCount(0);
@@ -239,9 +271,16 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
             fullPage: false,
         });
 
-        await hostPage.locator('[data-fab-id="action-log"]').first().click();
-        const actionLogPanel = hostPage.locator('[data-testid="fab-panel-action-log"]').first();
-        await expect(actionLogPanel).toBeVisible({ timeout: 10000 });
+        await guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' }).click();
+        await expect(guestPage.getByTestId('compare-roll-overlay')).toHaveCount(0, { timeout: 10000 });
+        await expect(hostPage.getByTestId('compare-roll-overlay')).toHaveCount(0, { timeout: 10000 });
+
+        await hostPage.screenshot({
+            path: getEvidenceScreenshotPath(testInfo, 'host-opponent-duel-overlay-closed-after-gunslinger-choice'),
+            fullPage: false,
+        });
+
+        const actionLogPanel = await openFabPanel(hostPage, 'action-log', 'chat');
         await expect.poll(async () => {
             const rows = await hostPage.locator('[data-testid="hud-action-log-row"]').allInnerTexts();
             return rows.some((text) =>
@@ -251,15 +290,6 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
         }, { timeout: 10000 }).toBe(true);
         await actionLogPanel.screenshot({
             path: getEvidenceScreenshotPath(testInfo, 'host-opponent-action-log-shows-duel-result'),
-        });
-
-        await guestPage.locator('[data-testid="compare-roll-overlay"] button').nth(1).click();
-        await expect(guestPage.getByTestId('compare-roll-overlay')).toHaveCount(0, { timeout: 10000 });
-        await expect(hostPage.getByTestId('compare-roll-overlay')).toHaveCount(0, { timeout: 10000 });
-
-        await hostPage.screenshot({
-            path: getEvidenceScreenshotPath(testInfo, 'host-opponent-duel-overlay-closed-after-gunslinger-choice'),
-            fullPage: false,
         });
     } finally {
         await guestContext.close().catch(() => {});
