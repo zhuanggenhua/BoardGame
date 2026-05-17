@@ -86,6 +86,8 @@
 - 回归：
   - `src/engine/transport/__tests__/onlineAiRecovery-gameover.test.ts`
     - `Splendor turn0 / unknown-phase 残态不得触发 active-turn legal-action watchdog`
+  - `src/engine/transport/__tests__/onlineAiRecovery-splendor-pregame-residual.test.ts`
+    - 独立覆盖 Splendor `turn0 / unknown-phase` 残态不得进入 active-turn watchdog
   - `src/engine/transport/__tests__/server.test.ts`
     - `online AI watchdog 在 Splendor turn0 / unknown-phase 残态下不得写 legal_action_unavailable 反馈`
 - 验证：
@@ -103,6 +105,9 @@
 - TypeScript：
   - `npm run typecheck`
   - 结果：通过
+- 本轮最小复跑：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/gunslinger-take-cover-loaded-vs-stand-tall.test.ts src/games/smashup/__tests__/baseZone-mobile-ongoing-actions.test.tsx src/engine/transport/__tests__/onlineAiRecovery-splendor-pregame-residual.test.ts --configLoader native --maxWorkers 1`
+  - 结果：`3 files / 4 tests passed`
 - 生产依赖：
   - `npm run check:prod-deps`
   - 当前在 Windows + CRLF 环境下，bash 入口会先被 `\r` 影响，脚本本体不能直接作为结果依据。
