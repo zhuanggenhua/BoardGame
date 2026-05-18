@@ -1,3 +1,49 @@
+## 2026-05-13 进度：Home V2 首页按 ig_0623 设计稿重做
+- **Status:** implemented_verified
+- **Action:** 用户明确指定 `D:\codex-home\generated_images\019e1cd3-23b2-7152-9efa-4a032bbc7295\ig_0623cd92f8bdcbc0016a034df8b4c88199ae0c1276fee29f85.png` 才是目标首页稿。已保存到 `artifacts/home-v2-design/home-v2-mobile-book-catalog-target.png`，并按该图重做真实 DOM 布局。
+- **Result:** 最新 `homepage-catalog.png` 中首页仍是移动横屏书本主轴；当前显示 6 个真实游戏，左右 3+3；顶部为左页分类索引和右页账号/语言；底部为左页分页和右页继续对局。没有搜索框、帮助、Logo、大段说明、“100 游戏说明”或在线大厅第二按钮。`全部游戏` 只显示 `type === 'game'`，工具只留给 `工具` 分类。
+- **Follow-up visual fix:** 用户指出“对齐都没做好，下面两个垂直位置没对齐，左手选中效果不对”后，新增设计稿逐项对齐规范和 E2E 量测。当前已纠正命名：目标图里的绿色线不是贴着文字的文本下划线，而是落在页眉分割线上的 active rule；量测改为 `bottomControlCenterDelta`、`activeRuleWidthRatio`、`activeRuleHeaderTopDelta`、`activeTextToRuleGap`、`activeMarkerCenterDelta`、`activeRuleMarkerCenterDelta`，避免用 `underline` 误导实现。
+- **Design generation guard:** 用户指出“看实际内容”后，已读取真实 `AuthModal.tsx` 与 `auth.json`：登录只有邮箱/密码/忘记密码/登录注册切换；注册有邮箱、发送验证码、验证码、昵称、密码、确认密码；重置有邮箱、发送验证码、验证码、新密码、确认密码。已更新 `docs/ai-rules/ui-ux.md`，后续生图必须先盘点真实 UI 内容，禁止无中生有第三方登录、协议勾选、帮助说明等控件。
+- **Auth modal target:** 已基于真实 AuthModal 重新生成登录弹窗目标稿，项目内路径为 `artifacts/home-v2-design/home-v2-auth-modal-target.png`；原始生成图为 `D:\codex-home\generated_images\019e1cd3-23b2-7152-9efa-4a032bbc7295\ig_0913e0fb41b8bed6016a05264c6160819686f35def731606da.png`。复看结论：前景只含邮箱、密码、忘记密码、登录按钮、登录/注册切换；背景书本大厅已压暗虚化，避免可读假游戏名污染设计稿。
+- **Auth modal implementation:** 账号入口现在打开覆盖层 `AuthModal`，不再翻到书页内嵌登录页；非 embedded `AuthModal` 已改为羊皮纸 modal，登录态只保留邮箱、密码、忘记密码、登录按钮、登录/注册切换。用户指出上一版“不合理/弹窗太小”后，已补目标稿量测：目标 modal 图片量测 `0.2808w / 0.6275h`，当前截图图片量测 `0.2768w / 0.6120h`；E2E DOM 量测为 `0.266w / 0.588h`，并已把门禁改成参考图比例区间。同时加宽弹窗、补内外边框/角线、标题和底部装饰分割线、小菱形、深绿主按钮，并降低遮罩模糊。
+- **Generated design workflow fix:** 用户指出“规范加错地方，应该是生图设计稿 -> 实现设计稿流程”。判断成立：已新增 `docs/ai-rules/generated-design-implementation.md`，把真实内容盘点、目标稿复看、目标稿几何量测、实现门禁、截图证据和同名截图缓存处理放到专项流程；`docs/ai-rules/ui-ux.md` 只保留入口提醒，`docs/ai-rules/doc-index.md` 已加入该场景索引。
+- **Generated design implementation skill:** 已新增 `.windsurf/skills/generated-design-implementation/SKILL.md`。后续按生成图实现 UI 时，必须同时校验外框比例和内部节奏，不能只因为字段正确或弹窗整体大小接近就收口。
+- **Auth modal inner rhythm fix:** 用户指出“间隙很大”成立。根因是只对齐了弹窗整体，未校验内容内部位置；`AuthModal` 之前让表单 body 吃满剩余高度，按钮被 footer 推到底部。当前已改为登录态按内容节奏排布，并补 E2E 内部量测：`forgotToSubmitGapRatio=0.057`，`submitTopRatio=0.685`。
+- **Generated detail target correction:** 用户指出上一版详情/大厅设计稿“主次不分”的理解错误成立。已修正通用抽象：主次不是打破既有左右平衡，也不是把推荐人数、筛选胶囊、底部统计等低价值元素放大；主次只能在真实必要元素内调整注意力顺序。已更新 `.windsurf/skills/generated-design-implementation/SKILL.md` 和 `docs/ai-rules/generated-design-implementation.md`，重新生成前必须先剔除非必要控件。
+- **Generated detail target correction 2:** 用户进一步指出“看实际内容”不是要求与 V1 载体一模一样，而是确认内容与主次关系。已补充：内容盘点只锁定字段/状态/动作和信息职责，空间组织必须适配书本载体；同级 tab 必须共用同一视觉语法，禁止 active tab 大标题化、其它 tab 小链接化。该规则已写入 `.windsurf/skills/generated-design-implementation/SKILL.md`、`docs/ai-rules/generated-design-implementation.md` 和 `docs/ai-rules/ui-ux.md`。
+- **Generated detail target correction 3:** 用户指出左页被弱化到太空，判断成立。已补充通用规则：辅助区域不能等于空白区域；次级只表示动作优先级较低，不表示信息密度、排版节奏和视觉收口可以缺失。左页游戏详情必须完整成立，右页房间操作也要成立。
+- **Generated detail target correction 4:** 用户指出“这么搞注定左右不平衡，所以要重构布局”。判断成立：此前规则仍停留在“保留平衡”，没有强制先为书本载体重建布局网格。已补充：载体变化时必须基于内容模型重新决定模块分组、阅读路径、密度分布和视觉收口；平衡是构图结果，不是机械 50/50 填充，也不是保留旧版分区。
+- **Detail layout implementation:** 已停止继续生详情页生成图，直接重构真实 `GameDetails.tsx`。左页不再把封面/标题/正文/教程按钮竖向压在中线，改为横向封面 + 标题信息 + 简介区 + 推荐人数/教程行动的书页节奏；右页删除非必要的 `全部/可加入/加密/满员` 筛选胶囊和底部统计摘要，tab 统一字号/基线，保留搜索、创建房间和房间账本主流程。用户指出“到底看没看设计稿和 UIUX 规范”后，已重新按同尺度并排图对照目标稿，修正根因：详情页不能继续使用窄高 `book-idle` 舞台，必须回到宽书本比例；右页必须是账本表格而非普通列表。最新 E2E 量测：`stageWidthRatio=0.99`、`stageAspectRatio=2.21`、`descriptionTopRatio=0.46`、`recommendedTopRatio=0.74`、`tutorialTopRatio=0.82`、`rightLedgerTopRatio=0.19`、`firstRoomRowHeight=82.00`、`firstRoomThumbnailHeight=64.00`、`firstRoomActionHeight=44.00`、`headerDividerCount=3`、`firstRowDividerCount=3`、`filterButtonCount=0`。最新截图：`test-results/evidence-screenshots/_shared/lobby.e2e/homeV2Draft-查询参数会切到-V2-首页并可进入详情页/homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260515-wide-ledger.png`；同尺度并排图：`artifacts/home-v2-design/compare-crops/detail-target-current-side-by-side-final.png`。
+- **Detail micro-fix:** 用户指出“返回按钮不对”和“人数用 V1 的那种方框”后，`GameDetails.tsx` 已把返回入口改成轻量 `← 返回目录` 文本，透明背景，不再是深色胶囊按钮；推荐人数从横向长条改成 V1 风格数字方框，`bestPlayers` 高亮。最新量测：`backButtonBackgroundAlpha=0.00`、`backButtonWidthRatio=0.15`、`playerCountBoxCount=2`、`firstPlayerCountBoxAspectRatio=1.00`。复看截图：`test-results/evidence-screenshots/_shared/lobby.e2e/homeV2Draft-查询参数会切到-V2-首页并可进入详情页/homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260515-back-player-boxes.png`。
+- **Detail action-weight fix:** 用户继续指出“返回尤其是创建房间的按钮这么小”后，判断成立：上一版只满足触控下限，没有按书页/目标稿比例缩放动作控件；但把返回改成深色按钮背景同样不符合目标稿语义。`GameDetails.tsx` 当前已把返回入口修回透明轻量导航，同时保留足够热区和字号；最新 E2E 量测 `backButtonBackgroundAlpha=0.00`、`backButtonBorderWidth=0.00`、`backButtonBackgroundImage=none`、`backButtonHeight=64.00`、`backButtonWidthRatio=0.24`、`backButtonFontSize=24.00`。创建房间仍作为右页主操作使用随书页比例放大的 prominent 按钮，量测 `createRoomButtonHeight=72.00`、`createRoomButtonWidthRatio=0.27`、`createRoomButtonFontSize=24.00`；最新复看图 `detail-entry-20260516-back-transparent-create-prominent.png` 和局部裁图 `artifacts/home-v2-design/compare-crops/detail-actions-current-transparent-back.png`。
+- **Detail remaining tabs audit:** 当前目标“创建房间弹窗、排行榜那些其他标签页并截图，切换标签页不需要翻页效果”已按实物审计：`CreateRoomModal` 仍是通用组件，Home V2 通过 `visualStyle="home-v2"` 使用羊皮纸/书本风格；`更新 / 评价 / 排行榜` 三个 tab 已生成 2026-05-16 09:54 最新截图。E2E 对每次 tab 切换都断言 `home-v2-fold-line-flip` 保持 `data-flip-mode="detail"` 且 `data-turn-animating="false"`，确认没有触发翻页。
+- **Generated design implementation skill update:** 针对本次“左页太空 / 右页小而淡”的真实根因，已补强 `.windsurf/skills/generated-design-implementation/SKILL.md` 与 `docs/ai-rules/generated-design-implementation.md`：实现阶段必须量支持区域占位、剩余空白预算、列表/表格行高、缩略图尺寸、操作按钮尺寸、起始位置和列分割节奏；如果有效内容只压成一条窄带或表格只是“小而淡的列表”，不能靠外框或字段正确收口。
+- **2026-05-16 residual audit:** V2 首页主链路遗漏已补齐：`继续对局` 使用真实 match credentials / owner active match，语言入口可真实切换，账号入口打开 `AuthModal` 覆盖层，详情页加密房密码输入改成右页居中浮层，注册/重置态已补真实截图验收。最新目标 E2E 单独复跑通过；整 `e2e/lobby.e2e.ts` 在 Home V2 环境下仍有 5 条旧大厅断言失败，这是测试套件拆分/迁移债，不是当前 V2 首页主链路视觉阻塞。
+- **2026-05-16 residual audit correction correction:** 对 `GameDetails.tsx` 和专项 E2E 复核后，Home V2 的 package-managed 包管理链路已经证明“技术上可接入”，但用户随后明确要求 `V2 先隐藏`。当前产品口径已改为：旧 V1 `GameDetailsModal` 继续保留包管理下载能力，Home V2 书页详情不显示下载卡片、绿色版本徽记和安装确认弹窗；专项用例同步改成 `homeV2Draft package-managed 游戏详情暂不显示移动包管理入口` 的隐藏态保护。
+- **2026-05-17 auth modal original-target收敛:** 登录与创建房间共享纸面 modal 已继续往原始 `home-v2-auth-modal-target.png` 收敛，不再沿“可实现目标稿”方向放大弹窗。当前登录专项 E2E 量测为 `widthRatio=0.261`、`heightRatio=0.537`、`passwordInputHeight=17.89`、`passwordToForgotGap=11.36`、`forgotToSubmitGap=12.16`；加密房密码专项为 `surfaceWidthRatio=0.29`、`surfaceHeightRatio=0.48`、`inputHeight=17.89`、`confirmHeight=19.58`，均在输入聚焦后保持 `topDelta=0 / centerYDelta=0`。最新截图已复看，登录、创建房间、密码面板都回到居中小纸面 modal，而不是上一轮的大号网页卡片。
+- **2026-05-17 paper frame / detail cleanup:** 针对用户标注的角饰和无意义灰层，`HomeV2PaperModalFrame` 已从机械镜像角饰改为四角同家族但非镜像的独立路径，并去掉第二层不明内框；`FoldLinePageFlipStage` 删除静态详情页左下角的 steady fold 三角装饰，避免详情页继续出现无法命名的灰色折角。`npm run typecheck` 通过；隔离端口 `6283/20110/21110` 下重新跑通 `homeV2Draft 登录与创建房间弹窗统一使用纸面 modal` 与 `homeV2Draft 查询参数会切到 V2 首页并可进入详情页`。最新截图已复看：登录/创建房间角饰不再机械复制，详情页左下灰三角已消失，返回入口保持透明轻量导航。
+- **2026-05-17 detail ledger compact correction:** 按用户继续反馈把详情页作为当前主问题继续压稿：`GameDetails.tsx` 在真实移动横屏 compact 下保留左页简介与推荐人数，右页房间账本行高从 50px 继续压到 36px、缩略图从 38px 压到 29px、active tab 改为目标稿的绿色规则线 + 中央菱形，hero 封面补金色书页框。专项 E2E 在 `BG_HOME_V2_VIEWPORT=852x393` 下通过，最新量测 `visibleRoomRowCount=6`、`firstRoomRowHeight=36.00`、`firstRoomThumbnailHeight=29.00`、`firstRoomActionHeight=19.89`，截图已复看，不再是 3 行多的大卡片列表。
+- **2026-05-17 Home V2 design spec / detail button pass:** 新增 `docs/ai-rules/home-v2-design.md`，限定 Home V2 移动横屏首页/详情/弹窗的目标稿来源、书页构图、详情页缩略图/描述/账本密度和按钮语法。`GameDetails.tsx` 继续按该规范收：左页详情缩略图从 `96px` 缩到 `78px`，描述宽度提升到 `0.83`，教程/创建房间按钮改为带图标、内描边、金色角标和上下细线的书本控件。`BG_HOME_V2_VIEWPORT=852x393` 专项 E2E 通过，截图已复看。
+- **2026-05-17 detail search / button rebuild:** 继续按用户反馈重构右页搜索和按钮语法：`GameDetails.tsx` 将创建房间从顶栏孤立大按钮下沉到搜索行，搜索框改为无填充的窄幅书页线框并使用 lucide `Search` 图标；`BookFrameButton` 降低圆角、阴影和胶囊感，房间行内操作改为同家族的 `RoomLedgerActionTag`。`npm run typecheck`、`npx eslint src/components/home-v2/GameDetails.tsx e2e/lobby.e2e.ts` 和 `BG_HOME_V2_VIEWPORT=852x393` 专项 E2E 均通过；最新量测 `createRoomButtonHeight=32.00`、`createRoomButtonWidthRatio=0.30`、`rightLedgerTopRatio=0.23`、`firstRoomActionHeight=20.00`、`visibleRoomRowCount=6`，截图已复看：搜索不再撑满右页，也不再是一块浅色网页输入背景；创建/加入/加密/观战按钮不再是普通网页胶囊。
+- **2026-05-18 detail action polish after visual review:** 用户继续指出“所有按钮叠层、教程不显眼、人数用 V1 方块、搜索图标歪/输入框怪”后，重新按局部截图审查并收敛：`GameDetails.tsx` 将 `BookFrameButton` / `BookLineButton` / `RoomLedgerActionTag` 改成单层书本动作语法，去掉多层内描边和重阴影；教程模式改为明确深色动作按钮，推荐人数保持 V1 风格数字方块；房间状态从伪按钮改为非按钮状态戳；搜索框改为单底线账本搜索，并用 E2E 量测锁住底线和 `Search` 图标垂直居中。`npm run typecheck`、`npx eslint src/components/home-v2/GameDetails.tsx e2e/lobby.e2e.ts` 和 `BG_HOME_V2_VIEWPORT=852x393` 专项 E2E 均通过；最新量测 `createRoomButtonHeight=31.00`、`createRoomButtonWidthRatio=0.31`、`playerCountBoxCount=2`、`firstPlayerCountBoxAspectRatio=1.00`、`tutorialTopRatio=0.85`、`tutorialBottomRatio=0.96`、`tutorialWidthRatio=0.41`、`roomSearchFieldBorderBottomWidth=1.00`、`roomSearchIconCenterYDelta=0.50`、`firstRoomActionHeight=19.00`，截图已复看：教程不再像灰色遮罩或隐形入口，房间状态不再伪装成按钮，搜索图标不再漂在输入框外侧。
+- **Screenshot directory:** 已重新打开截图目录，并将最新 `auth-modal-overlay.png` 复制为唯一命名 `auth-modal-overlay-20260514-inner-rhythm.png`，避免图片查看器继续显示同名旧缓存。源文件和副本 `LastWriteTime` 均为 `2026/5/14 23:40:25`。
+- **Detail screenshot directory:** 已打开详情截图目录，并把最新详情页截图复制为唯一命名 `detail-entry-20260515-table-readable.png`，避免同名截图缓存误判。副本 `LastWriteTime=2026/5/15 21:02:36`。
+- **Verification:** `npx eslint src/components/home-v2/GameDetails.tsx e2e/lobby.e2e.ts` 0 error；`npm run typecheck` 通过；同一条 Home V2 E2E 通过。
+- **Screenshot reviewed:** `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`。肉眼结论：当前实现按 `ig_0623` 方向改成真实书页目录，不是贴图；主要 UI 已限制在书本页内。
+- **Auth modal screenshot reviewed:** `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-auth-modal-overlay.png`。肉眼结论：登录弹窗覆盖在压暗虚化的书本大厅上；弹窗本体只含真实登录态字段，没有第三方登录、协议勾选、Logo 或说明区。相比上一版，弹窗尺寸已接近目标稿比例，并从普通浅色表单卡片修到书本羊皮纸浮层方向；仍不是完全复刻生成稿的复杂角饰纹理。
+- **2026-05-16 modal unification correction:** 用户明确指出“方向完全错了”后，已停止沿“大弹窗/参数微调”路线继续改，改为抽共享 `HomeV2PaperModalFrame` + `homeV2PaperModalTheme`，让 `AuthModal` 与 `CreateRoomModal` 复用同一纸面壳层、标题/分割线、输入框和主按钮语法，并按目标稿恢复压暗 + 轻 blur 背景。专项 E2E `homeV2Draft 登录与创建房间弹窗统一使用纸面 modal` 已通过；按真实移动横屏 context 复量后，登录量测 `widthRatio=0.286 / heightRatio=0.601`、`passwordInputHeight=32.39`，创建房间量测 `widthRatio=0.329 / heightRatio=0.784`，两者键盘聚焦后 `topDelta=0 / centerYDelta=0`。最新截图：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-登录与创建房间弹窗统一使用纸面-modal\homeV2Draft-登录与创建房间弹窗统一使用纸面-modal-auth-modal-unified-20260516.png`、`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-登录与创建房间弹窗统一使用纸面-modal\homeV2Draft-登录与创建房间弹窗统一使用纸面-modal-create-room-modal-unified-20260516.png`。
+- **2026-05-17 original auth target correction:** 用户否定“可实现目标稿”后，已改为直接以原始 `artifacts/home-v2-design/home-v2-auth-modal-target.png` 为真相源继续实现。`AuthModal` 紧凑移动横屏态恢复 `欢迎回来` 标题，压薄输入框/按钮，收窄边框和角饰，去掉占位感斜线；`CreateRoomModal` 与加密房密码弹窗继续复用同一通用纸面壳层。最新专项 E2E 通过：登录 `widthRatio=0.286 / heightRatio=0.631 / passwordInputHeight=26.39 / passwordToForgotGap=9.00 / forgotToSubmitGap=10.00`，创建房间 `widthRatio=0.315 / heightRatio=0.763`，加密房密码 `surfaceWidthRatio=0.29 / surfaceHeightRatio=0.48 / inputHeight=26.39 / confirmHeight=23.75`，三者中心稳定且键盘模拟后 `topDelta=0 / centerYDelta=0`。关键截图仍使用同一路径：`auth-modal-unified-20260516.png`、`create-room-modal-unified-20260516.png`、`locked-room-password-panel.png`。
+- **2026-05-17 locked-room modal true-mobile verification:** `homeV2Draft 详情页输入房间密码后可加入加密房间` 已在真实移动横屏 context 下单独复跑通过；密码弹窗量测 `centerXRatio=0.50 / centerYRatio=0.50 / surfaceWidthRatio=0.29 / surfaceHeightRatio=0.48 / inputHeight=26.39 / confirmHeight=23.75`，并在模拟键盘抬起后保持 `topDelta=0 / centerYDelta=0`，证明“输入时不改变弹窗位置”成立。截图：`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-详情页输入房间密码后可加入加密房间\homeV2Draft-详情页输入房间密码后可加入加密房间-locked-room-password-panel.png`、`D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-详情页输入房间密码后可加入加密房间\homeV2Draft-详情页输入房间密码后可加入加密房间-locked-room-join-success.png`。
+- **Detail screenshot reviewed:** `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260515-table-readable.png`。肉眼结论：左页内容已上移并放大，简介区有明确标题；右页 tab、搜索、表头和房间行比上一版更接近目标稿的可读账本，不再是小而淡的列表。
+- **Supersedes:** 2026-05-13 早先“按新图贴图基线实现”的口径已作废；当前口径是“真实 DOM 按参考图布局实现”。
+
+## 2026-05-12 进度：Home V2 移动横屏首页目录重构
+- **Status:** implemented_verified
+- **Action:** 按用户最新纠偏，不再生成设计图，直接重构 `LobbyDirectory.tsx`。已保存新图基线到 `artifacts/home-v2-design/home-v2-mobile-book-catalog-reference.png`，并按该图实现书签分类、左页搜索、右上账号设置、条框目录、底部分页和在线大厅入口。
+- **Result:** 首页稳态仍是一整本打开的书；`全部游戏` 纳入现有启用条目，首屏按左右各四条的 8 槽目录展示；支持分类过滤、搜索过滤和分页切片；不再出现“帮助”“100 游戏说明”或无中生有的 UI 说明。
+- **Verification:** `npx eslint src/components/home-v2/LobbyDirectory.tsx src/pages/HomeV2.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts` 0 error（保留既有 fast-refresh warning）；`npm run typecheck` 通过；同一条 Home V2 E2E 通过。
+- **Screenshots reviewed:** `homepage-catalog.png` 与 `catalog-return-after-flip.png`。肉眼结论：书本没有缩到左上角，没有变普通 dashboard；首页已经从旧裸条目变为新图方向的搜索 + 条框目录 + 底部动作区；没有帮助入口/说明段落/100 游戏说明；翻页返回后目录布局稳定。
+
 ## 2026-05-12 进度：Home V2 turn.js 翻页先提交 checkpoint
 - **Status:** committed_checkpoint
 - **Action:** 用户确认当前插件翻页“效果还行，可以先提交一版”。本 checkpoint 保留 turn.js 插件方案、完整书本壳底层、翻页专用空白纸面 stage，不再回到序列帧或自制 CSS 纸片。
@@ -967,3 +1013,82 @@
   - 反向 50% `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-back-to-catalog-50.png`：重复王权没有回归，窄缝房间列表泄漏消失，右页是目录目标页；达到本轮可验收线。
   - 正向 50% `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`：未被反向修复带坏，仍是目标详情页 + 中缝单张纸边。
 - 当前剩余：只有轻微纸张质感 polish 空间，不再是阻止验收的结构性 blocker。
+
+## Addendum（2026-05-16）：Home V2 弹窗统一居中并恢复目标稿遮罩
+- `src/components/home-v2/GameDetails.tsx` 的加密房密码浮层已从右页内部覆盖层改为 `createPortal(..., document.body)` 的全局居中弹窗，并复用 `HomeV2PaperModalFrame` 与 `homeV2PaperModalTheme`；不再使用之前那块手写 panel + `BookFrameButton`。
+- `AuthModal`、`CreateRoomModal` 的 Home V2 分支按目标稿恢复深色压暗 + 轻 blur 背景；透明层只负责交互拦截，不再作为视觉目标。`AuthModal` 非 embedded 通过 `createPortal(..., document.body)` 渲染，避免继承书本/翻页舞台透明度。
+- 对应用例 `homeV2Draft 登录与创建房间弹窗统一使用纸面 modal` 已在 852x393 真移动横屏 context 复跑通过；`homeV2Draft 详情页输入房间密码后可加入加密房间` 本轮复跑被 Windows E2E 动态端口串扰阻断，未用失败结果判断产品状态。
+- 最新量测：
+  - 登录：`widthRatio=0.286`、`heightRatio=0.601`、`centerXRatio=0.500`、`centerYRatio=0.500`、`passwordInputHeight=32.39`、`passwordToForgotGap=11.00`、`forgotToSubmitGap=6.00`
+  - 创建房间：`widthRatio=0.329`、`heightRatio=0.784`、`centerXRatio=0.500`、`centerYRatio=0.500`
+  - 密码：上一轮通过量测为 `centerXRatio=0.50`、`centerYRatio=0.50`、`surfaceWidthRatio=0.29`、`surfaceHeightRatio=0.60`；本轮未重新生成有效通过日志
+- 最新截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-登录与创建房间弹窗统一使用纸面-modal\homeV2Draft-登录与创建房间弹窗统一使用纸面-modal-auth-modal-unified-20260516.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-登录与创建房间弹窗统一使用纸面-modal\homeV2Draft-登录与创建房间弹窗统一使用纸面-modal-create-room-modal-unified-20260516.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-详情页输入房间密码后可加入加密房间\homeV2Draft-详情页输入房间密码后可加入加密房间-locked-room-password-panel.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-详情页输入房间密码后可加入加密房间\homeV2Draft-详情页输入房间密码后可加入加密房间-locked-room-join-success.png`
+- 当前结论：
+  - 登录 / 创建房间 / 密码三类弹窗现在都居中在整本书/视口中心；
+  - Home V2 主链路不再使用深色遮罩或 blur 来压背景；
+  - 密码弹窗不再是右页内局部浮层，已跟其它弹窗统一到同一套通用纸面 modal。
+
+## Addendum（2026-05-16）：Home V2 主链路风格复查完成
+- 新补并复看了当前主链路缺少的新截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\home-v2-language-menu-open-20260516.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\home-v2-detail-tabs-audit-20260516\detail-tab-changelog-open.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\home-v2-detail-tabs-audit-20260516\detail-tab-reviews-open.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\home-v2-detail-tabs-audit-20260516\detail-tab-leaderboard-open.png`
+- 复查看图结论：
+  - 首页语言菜单保持轻量下拉语法，没有跳成后台/网页菜单；
+  - 右页 `更新 / 评价 / 排行榜` tab 仍是同级同语法，active 态只做状态差异；
+  - 三个 tab 的内容区保持同一张书页 panel，不存在新的白板/网页卡片风格回退。
+- 已明确剔除的非 Home V2 主链路证据：
+  - `MOBILE_AUTHOR_ENTRY_TEST_NAME` 走 `/?game=tictactoe` 旧详情页；
+  - `GAME_DETAILS_LOADING_FALLBACK_TEST_NAME` 断言 `home-game-details-loading-fallback`，也是旧详情 fallback，不属于 Home V2 书本详情。
+
+## Addendum（2026-05-18）：Android 真机首页落到 V1 的根因与修复
+- 根因拆成两层：
+  - 手机上实际运行的仍是旧包：`adb shell dumpsys package top.easyboardgame.app` 显示安装版本还是 `versionName=0.5.59` / `versionCode=559`，说明之前 release 覆盖安装没有真正完成，所以用户看到的 V1 首页本质上是旧 App。
+  - 新包构建元数据也有口径漂移：`dist/android-build-meta.json` 与 `android/app/src/main/assets/public/android-build-meta.json` 原本都写成 `"homeV2DraftEnabled": false`，和 Android 壳根路由默认进 Home V2 的实现不一致。
+- 本轮修复：
+  - `vite.config.ts` 的 Android build meta 生成逻辑改为在 `mode === 'android'` 时强制把 `homeV2DraftEnabled` 写成 `true`，让 Android 包内元数据和首页路由口径一致。
+  - 新增 `src/lib/__tests__/homeV2Routing.test.ts`，锁住三条回归：Android shell build 默认进 Home V2、原生 Android runtime 默认进 Home V2、普通网页根路由默认仍停留在 V1。
+- 验证结果：
+  - `npm run typecheck` 通过。
+  - `npx vitest run src/lib/__tests__/homeV2Routing.test.ts` 通过（3/3）。
+  - `npm run mobile:android:build:release` 通过；新的 `dist/android-build-meta.json` 与同步后的 `android/app/src/main/assets/public/android-build-meta.json` 都已变成 `"homeV2DraftEnabled": true`。
+  - 真机 `10ADAU063C0010U` 已成功覆盖安装到 `versionName=0.5.61` / `versionCode=561`。
+  - 真机启动后已抓到首页截图：`C:\Users\zhuagenbao\AppData\Local\Temp\easyboardgame-home-20260518.png`。肉眼可见当前落点是 Home V2 书页首页，不是 V1 首页。
+
+## Addendum（2026-05-19）：Home V2 详情页移动横屏继续收按钮、对齐与 scale
+
+- 本轮继续只收移动横屏详情页与创建房间 modal，不动 V1 入口路线。
+- 已改：
+  - `src/components/home-v2/GameDetails.tsx`
+    - 推荐人数改成“标签在左、数字方块在右”，但整组不再整块贴左；
+    - 搜索图标重新绑回输入框垂直中线；创建房间按钮、教程按钮、房间行内动作按钮统一收成更薄的单层书页按钮；
+    - 房间账本 header 与 row 去掉横向错位，列分隔线重新对齐；
+    - 评价页 compact 分支把 `0%`、`0/0`、进度条和空态字级压回移动横屏语义。
+  - `src/components/lobby/CreateRoomModal.tsx`
+    - compact 分支的人数按钮、AI 开关块、AI 难度/座位按钮、底部确认/取消按钮整体缩紧；
+    - 表单区节奏和 footer 高度继续压薄，减少“桌面控件硬缩”感。
+  - `src/components/home-v2/FoldLinePageFlipStage.tsx`
+    - 默认翻页时长从 `760ms` 收到 `380ms`。
+  - `src/pages/HomeV2Draft.tsx`
+    - 移动横屏展示 scale 从 `1.36` 微调到 `1.40`，`offsetYPct` 从 `1.5` 到 `0.9`，超宽横屏 shell scale 从 `1.14` 到 `1.17`，减少书本四周空隙。
+- 验证：
+  - `npm run typecheck` 通过。
+  - `npx eslint src/components/home-v2/GameDetails.tsx src/components/lobby/CreateRoomModal.tsx src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts` 通过（仅保留 `CreateRoomModal.tsx` 既有 effect warning）。
+  - `BG_HOME_V2_VIEWPORT=852x393 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` 通过。
+- 关键量测：
+  - `createRoomButtonHeight=31.00`
+  - `createRoomButtonWidthRatio=0.29`
+  - `tutorialWidthRatio=0.46`
+  - `roomSearchIconCenterYDelta=0.50`
+  - `firstRoomRowHeight=36.00`
+  - `firstRoomActionHeight=19.00`
+  - `visibleRoomRowCount=6`
+- 最新复看截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260516-action-buttons.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-create-room-modal-20260516.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-tab-reviews-20260516.png`

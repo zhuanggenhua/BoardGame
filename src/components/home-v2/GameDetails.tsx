@@ -302,12 +302,14 @@ function HomeV2ReviewsPanel({
     loading,
     error,
     t,
+    compact = false,
 }: {
     stats: ReviewStats | null;
     reviews: Review[];
     loading: boolean;
     error: boolean;
     t: HomeV2Translate;
+    compact?: boolean;
 }) {
     return (
         <HomeV2PaperPanel eyebrow={t('lobby:tabs.reviews', { defaultValue: '评价' })}>
@@ -316,17 +318,17 @@ function HomeV2ReviewsPanel({
             ) : loading ? (
                 <HomeV2EmptyNote>{t('common:loading', { defaultValue: '加载中...' })}</HomeV2EmptyNote>
             ) : (
-                <div className="space-y-[14px]">
-                    <div className="border-y border-[rgba(105,66,37,0.28)] py-[14px]">
-                        <div className="flex items-end justify-between gap-[20px]">
-                            <div className="text-[clamp(36px,2.4vw,46px)] font-bold leading-none text-[#3f2718]">
+                <div className={compact ? 'space-y-[8px]' : 'space-y-[14px]'}>
+                    <div className={`border-y border-[rgba(105,66,37,0.28)] ${compact ? 'py-[8px]' : 'py-[14px]'}`}>
+                        <div className={`flex items-end justify-between ${compact ? 'gap-[10px]' : 'gap-[20px]'}`}>
+                            <div className={compact ? 'text-[21px] font-bold leading-none text-[#3f2718]' : 'text-[clamp(36px,2.4vw,46px)] font-bold leading-none text-[#3f2718]'}>
                                 {stats ? `${stats.rate}%` : '--'}
                             </div>
-                            <div className="text-right text-[clamp(12px,0.9vw,14px)] font-semibold text-[#6e4a32]">
+                            <div className={compact ? 'text-right text-[8.8px] font-semibold leading-[1.1] text-[#6e4a32]' : 'text-right text-[clamp(12px,0.9vw,14px)] font-semibold text-[#6e4a32]'}>
                                 {stats ? `${stats.positive}/${stats.total}` : t('lobby:homeV2.reviews.empty', { defaultValue: '暂无评论' })}
                             </div>
                         </div>
-                        <div className="mt-[10px] h-[7px] overflow-hidden rounded-full bg-[rgba(105,66,37,0.16)]">
+                        <div className={compact ? 'mt-[6px] h-[5px] overflow-hidden rounded-full bg-[rgba(105,66,37,0.16)]' : 'mt-[10px] h-[7px] overflow-hidden rounded-full bg-[rgba(105,66,37,0.16)]'}>
                             <div className="h-full rounded-full bg-[#315c27]" style={{ width: `${stats?.rate ?? 0}%` }} />
                         </div>
                     </div>
@@ -334,15 +336,15 @@ function HomeV2ReviewsPanel({
                         <HomeV2EmptyNote>{t('lobby:homeV2.reviews.empty', { defaultValue: '暂无评论' })}</HomeV2EmptyNote>
                     ) : (
                         reviews.map((review) => (
-                            <article key={review._id} className="border-b border-[rgba(105,66,37,0.24)] pb-[12px]">
-                                <div className="flex items-center justify-between gap-[16px]">
-                                    <div className="truncate text-[clamp(15px,1.06vw,18px)] font-bold text-[#3f2718]">{review.user.username}</div>
-                                    <div className={`shrink-0 text-[clamp(12px,0.88vw,14px)] font-semibold ${review.isPositive ? 'text-[#315c27]' : 'text-[#8a3f2a]'}`}>
+                            <article key={review._id} className={`border-b border-[rgba(105,66,37,0.24)] ${compact ? 'pb-[8px]' : 'pb-[12px]'}`}>
+                                <div className={`flex items-center justify-between ${compact ? 'gap-[10px]' : 'gap-[16px]'}`}>
+                                    <div className={compact ? 'truncate text-[10px] font-bold text-[#3f2718]' : 'truncate text-[clamp(15px,1.06vw,18px)] font-bold text-[#3f2718]'}>{review.user.username}</div>
+                                    <div className={`${compact ? 'text-[8.5px]' : 'text-[clamp(12px,0.88vw,14px)]'} shrink-0 font-semibold ${review.isPositive ? 'text-[#315c27]' : 'text-[#8a3f2a]'}`}>
                                         {review.isPositive ? '推荐' : '不推荐'}
                                     </div>
                                 </div>
                                 {review.content ? (
-                                    <p className="mt-[7px] text-[clamp(13px,0.92vw,15px)] leading-[1.55] text-[#5e3d27]">{review.content}</p>
+                                    <p className={compact ? 'mt-[4px] text-[8.8px] leading-[1.4] text-[#5e3d27]' : 'mt-[7px] text-[clamp(13px,0.92vw,15px)] leading-[1.55] text-[#5e3d27]'}>{review.content}</p>
                                 ) : null}
                             </article>
                         ))
@@ -405,8 +407,8 @@ function BookFrameButton({
         ? 'min-h-[clamp(52px,2.7vw,60px)] min-w-[clamp(196px,9.2vw,232px)] px-[clamp(30px,1.9vw,42px)] py-[clamp(12px,0.72vw,15px)] text-[clamp(18px,1.16vw,21px)]'
         : size === 'regular'
             ? 'min-h-[38px] min-w-[124px] px-[20px] py-[9px] text-[clamp(12px,0.86vw,13px)]'
-            : size === 'compact'
-                ? 'min-h-[30px] min-w-[96px] px-[13px] py-[5px] text-[clamp(10px,0.72vw,11px)]'
+        : size === 'compact'
+                ? 'min-h-[28px] min-w-[92px] px-[10px] py-[4px] text-[8.8px]'
                 : 'min-h-[24px] min-w-[74px] px-[9px] py-[3px] text-[clamp(8.5px,0.62vw,9.5px)]';
 
     return (
@@ -419,7 +421,7 @@ function BookFrameButton({
             style={{
                 borderColor: 'rgba(174, 122, 60, 0.84)',
                 background: 'linear-gradient(180deg, rgba(79, 46, 25, 0.98) 0%, rgba(52, 30, 17, 0.99) 100%)',
-                boxShadow: '0 1px 2px rgba(63,38,20,0.16)',
+                boxShadow: '0 1px 2px rgba(63,38,20,0.12)',
                 opacity: disabled ? 0.65 : 1,
                 pointerEvents: disabled ? 'none' : 'auto',
             }}
@@ -437,7 +439,7 @@ function RoomLedgerActionTag({ children, compact }: { children: React.ReactNode;
         <span
             data-testid="home-v2-room-action-tag"
             className={`inline-flex items-center justify-center rounded-[2px] border border-[#a5743c]/78 bg-[#472916] font-bold leading-none text-[#f2dbb4] shadow-none ${
-                compact ? 'min-h-[19px] min-w-[34px] px-[5px] text-[8px]' : 'min-h-[34px] min-w-[78px] px-[12px] text-[clamp(12px,0.88vw,14px)]'
+                compact ? 'min-h-[19px] min-w-[32px] px-[4px] text-[7.6px]' : 'min-h-[34px] min-w-[78px] px-[12px] text-[clamp(12px,0.88vw,14px)]'
             }`}
         >
             {children}
@@ -463,7 +465,7 @@ function BookLineButton({
             type="button"
             onClick={onClick}
             data-testid={testId}
-            className={`inline-flex items-center justify-center gap-[7px] rounded-[2px] border border-[#a5743c]/78 bg-[#4b2c18] font-bold text-[#f1dab3] shadow-[0_1px_2px_rgba(63,38,20,0.13)] transition-colors hover:text-[#fff0ce] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/22 ${className ?? ''}`}
+            className={`inline-flex items-center justify-center gap-[7px] rounded-[2px] border border-[#a5743c]/74 bg-[#4b2c18] font-bold text-[#f1dab3] shadow-[0_1px_2px_rgba(63,38,20,0.10)] transition-colors hover:text-[#fff0ce] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/22 ${className ?? ''}`}
         >
             <span className="inline-flex items-center justify-center gap-[7px]">
                 {icon}
@@ -711,12 +713,12 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
 
                 <div className={`mt-auto ${isCompactLandscape ? 'pb-[4.2%]' : 'flex flex-col items-center gap-[14px] pb-[8.6%]'}`}>
                     {isCompactLandscape ? (
-                        <div className="flex items-end justify-between gap-[10px]">
+                        <div className="grid grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] items-end gap-[14px]">
                             <div
                                 data-testid="home-v2-recommended-player-band"
-                                className="flex w-[50%] items-center justify-start gap-[7px] text-[#4d301e]"
+                                className="flex w-full items-center justify-center gap-[7px] text-[#4d301e]"
                             >
-                                <span className="shrink-0 text-[8.6px] font-semibold tracking-[0.08em] text-[#6f4b32]/78">
+                                <span className="min-w-[38px] shrink-0 text-right text-[8.6px] font-semibold tracking-[0.08em] text-[#6f4b32]/78">
                                     {t('common:game_details.recommended_players')}
                                 </span>
                                 <div className="flex items-center justify-start gap-[6px]">
@@ -740,7 +742,7 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
                                 </div>
                             </div>
                             <BookLineButton
-                                className="min-h-[32px] w-[42%] px-[14px] text-[10.6px] tracking-[0.06em]"
+                                className="min-h-[31px] w-[92%] justify-self-end px-[14px] text-[10.2px] tracking-[0.05em]"
                                 icon={<BookOpen aria-hidden="true" className="h-[13px] w-[13px]" strokeWidth={2.1} />}
                                 onClick={handleTutorial}
                                 testId="home-v2-tutorial-button"
@@ -1270,7 +1272,7 @@ export const Right = ({ game }: RightProps) => {
         { id: 'leaderboard', label: t('lobby:homeV2.detailTabs.ranking', { defaultValue: '排行榜' }), compactLabel: t('lobby:homeV2.detailTabs.rankingCompact', { defaultValue: '排行' }) },
     ];
     const roomLedgerGridClassName = isCompactLandscape
-        ? 'grid-cols-[minmax(0,2.9fr)_42px_58px_58px]'
+        ? 'grid-cols-[minmax(0,3.06fr)_44px_60px_56px]'
         : 'grid-cols-[minmax(0,2.2fr)_112px_132px_132px]';
     const showRoomThumbnail = !isCompactLandscape;
 
@@ -1324,7 +1326,7 @@ export const Right = ({ game }: RightProps) => {
                     <div className={`flex items-center justify-end border-b border-[rgba(105,66,37,0.30)] ${isCompactLandscape ? 'mt-[4px] gap-[9px] pb-[4px]' : 'mt-[0.7%] gap-[18px] pb-[1.0%]'}`}>
                         <label
                             data-testid="home-v2-room-search-field"
-                            className={`relative block min-w-0 rounded-none border-b border-[#6f4b32]/54 bg-transparent ${isCompactLandscape ? 'h-[27px] w-[48%]' : 'h-[42px] w-[42%]'}`}
+                            className={`relative block min-w-0 rounded-none border-b border-[#6f4b32]/54 bg-transparent ${isCompactLandscape ? 'h-[27px] w-[49%]' : 'h-[42px] w-[42%]'}`}
                             style={{ borderBottom: '1px solid rgba(111, 75, 50, 0.54)' }}
                         >
                             <input
@@ -1332,17 +1334,17 @@ export const Right = ({ game }: RightProps) => {
                                 value={roomSearch}
                                 onChange={(event) => setRoomSearch(event.target.value)}
                                 placeholder={t('lobby:homeV2.detailSearchPlaceholder')}
-                                className={`${isCompactLandscape ? 'h-[25px] px-[8px] pr-[24px] text-[9.2px]' : 'h-[40px] px-[12px] pr-[42px] text-[clamp(14px,0.98vw,16px)]'} w-full border-0 bg-transparent text-[#3f2718] outline-none placeholder:font-medium placeholder:text-[#7e5d43]/74`}
+                                className={`${isCompactLandscape ? 'h-[25px] px-[7px] pr-[22px] text-[9px]' : 'h-[40px] px-[12px] pr-[42px] text-[clamp(14px,0.98vw,16px)]'} w-full border-0 bg-transparent text-[#3f2718] outline-none placeholder:font-medium placeholder:text-[#7e5d43]/74`}
                             />
                             <span
                                 data-testid="home-v2-room-search-icon"
-                                className={`pointer-events-none absolute inset-y-0 flex items-center text-[#3f2718] ${isCompactLandscape ? 'right-[7px]' : 'right-[12px]'}`}
+                                className={`pointer-events-none absolute inset-y-0 flex items-center leading-none text-[#3f2718] ${isCompactLandscape ? 'right-[7px]' : 'right-[12px]'}`}
                             >
-                                <Search aria-hidden="true" className={isCompactLandscape ? 'h-[10px] w-[10px]' : 'h-[18px] w-[18px]'} strokeWidth={2.05} />
+                                <Search aria-hidden="true" className={isCompactLandscape ? 'block h-[9px] w-[9px]' : 'block h-[18px] w-[18px]'} strokeWidth={1.95} />
                             </span>
                         </label>
                         <BookFrameButton
-                            className={`${isCompactLandscape ? 'min-h-[31px] min-w-[100px] px-[10px] py-[4px] text-[9.4px]' : ''} shrink-0`}
+                            className={`${isCompactLandscape ? 'min-h-[31px] min-w-[94px] px-[9px] py-[4px] text-[10.1px]' : ''} shrink-0`}
                             size={isCompactLandscape ? 'compact' : 'prominent'}
                             icon={<Plus aria-hidden="true" className={isCompactLandscape ? 'h-[10px] w-[10px]' : 'h-[18px] w-[18px]'} strokeWidth={2.2} />}
                             disabled={isLoading || isPreparingCreateRoom}
@@ -1359,10 +1361,10 @@ export const Right = ({ game }: RightProps) => {
                             className={`grid items-center gap-0 border-b border-t border-[rgba(105,66,37,0.42)] font-bold tracking-[0.06em] text-[#3f2718] ${
                                 isCompactLandscape
                                     ? `${roomLedgerGridClassName} py-[2px] text-[9.3px]`
-                                    : `${roomLedgerGridClassName} py-[2.0%] text-[clamp(14px,0.98vw,16px)]`
+                                : `${roomLedgerGridClassName} py-[2.0%] text-[clamp(14px,0.98vw,16px)]`
                             }`}
                         >
-                            <div>{t('lobby:homeV2.detailColumns.roomName')}</div>
+                            <div className={isCompactLandscape ? 'pl-[4px]' : ''}>{t('lobby:homeV2.detailColumns.roomName')}</div>
                             <div className="text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.34)' }}>{t('lobby:homeV2.detailColumns.players')}</div>
                             <div className="text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.34)' }}>{t('lobby:homeV2.detailColumns.status')}</div>
                             <div className="text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.34)' }}>{t('lobby:homeV2.detailColumns.action')}</div>
@@ -1405,7 +1407,7 @@ export const Right = ({ game }: RightProps) => {
                                                 >
                                                     <button
                                                         type="button"
-                                                        className={`group grid w-full items-center gap-0 px-[4px] text-left transition-colors duration-200 hover:bg-[rgba(127,88,56,0.05)] ${
+                                                        className={`group grid w-full items-center gap-0 text-left transition-colors duration-200 hover:bg-[rgba(127,88,56,0.05)] ${
                                                             isCompactLandscape
                                                                 ? `min-h-[36px] ${roomLedgerGridClassName} py-[2px]`
                                                                 : `min-h-[82px] ${roomLedgerGridClassName} py-[9px]`
@@ -1413,7 +1415,7 @@ export const Right = ({ game }: RightProps) => {
                                                         disabled={isLoading}
                                                         onClick={() => void handleJoinRoom(room.matchID)}
                                                     >
-                                                        <div className={`flex min-w-0 ${showRoomThumbnail ? 'items-center' : 'items-start'} ${isCompactLandscape ? 'pr-[8px]' : 'gap-[15px] pr-[12px]'}`}>
+                                                        <div className={`flex min-w-0 ${showRoomThumbnail ? 'items-center' : 'items-start'} ${isCompactLandscape ? 'pl-[4px] pr-[8px]' : 'gap-[15px] pr-[12px]'}`}>
                                                             {showRoomThumbnail ? (
                                                                 <div
                                                                     data-testid="home-v2-room-thumbnail"
@@ -1470,7 +1472,7 @@ export const Right = ({ game }: RightProps) => {
                     ) : activeTab === 'changelog' ? (
                         <HomeV2ChangelogPanel items={changelogItems} loading={changelogLoading} error={changelogError} t={t} />
                     ) : (
-                        <HomeV2ReviewsPanel stats={reviewStats} reviews={reviewItems} loading={reviewsLoading} error={reviewsError} t={t} />
+                        <HomeV2ReviewsPanel stats={reviewStats} reviews={reviewItems} loading={reviewsLoading} error={reviewsError} t={t} compact={isCompactLandscape} />
                     )}
                 </div>
             )}

@@ -12,8 +12,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useTranslation } from 'react-i18next';
 import { AnimatePresence, motion } from 'framer-motion';
+import clsx from 'clsx';
 import type { GameManifestEntry, GameSetupField, GameSetupSelectOption } from '../../games/manifest.types';
 import { UI_Z_INDEX } from '../../core';
+import { useHomeV2CompactLandscape } from '../../hooks/ui/useHomeV2CompactLandscape';
 import type { AiDifficultyLevel, AiSeatController } from '../../engine/ai';
 import {
     DEFAULT_LOCAL_AI_DIFFICULTY,
@@ -27,6 +29,19 @@ import {
 } from '../../games/setupOptions';
 import { SetupOptionsFields } from './SetupOptionsFields';
 import { PasswordField } from '../common/PasswordField';
+import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
+import {
+    homeV2PaperCompactHintClassName,
+    homeV2PaperCompactInputClassName,
+    homeV2PaperCompactPrimaryButtonClassName,
+    homeV2PaperCompactSecondaryButtonClassName,
+    homeV2PaperCompactTextButtonClassName,
+    homeV2PaperHintClassName,
+    homeV2PaperInputClassName,
+    homeV2PaperLabelClassName,
+    homeV2PaperPrimaryButtonClassName,
+    homeV2PaperSecondaryButtonClassName,
+} from '../common/overlays/homeV2PaperModalTheme';
 
 /** 保存时间选项（秒） */
 const RETENTION_OPTIONS = [
@@ -186,7 +201,14 @@ export const CreateRoomModal = ({
         [gameManifest.setupOptions],
     );
     const hasPlayerOptions = playerOptions.length > 1;
+    const isCompactLandscape = useHomeV2CompactLandscape();
     const isHomeV2Style = visualStyle === 'home-v2';
+    const isCompactHomeV2Layout = isHomeV2Style && isCompactLandscape;
+    const fieldLabelClassName = isCompactHomeV2Layout ? 'mb-[3px] block text-[7.2px] font-semibold tracking-[0.04em] text-[#3f2616]' : homeV2PaperLabelClassName;
+    const fieldHintClassName = isCompactHomeV2Layout ? homeV2PaperCompactHintClassName : homeV2PaperHintClassName;
+    const inputClassName = isCompactHomeV2Layout ? homeV2PaperCompactInputClassName : homeV2PaperInputClassName;
+    const primaryButtonClassName = isCompactHomeV2Layout ? homeV2PaperCompactPrimaryButtonClassName : homeV2PaperPrimaryButtonClassName;
+    const secondaryButtonClassName = isCompactHomeV2Layout ? homeV2PaperCompactSecondaryButtonClassName : homeV2PaperSecondaryButtonClassName;
 
     const [roomName, setRoomName] = useState('');
     const [numPlayers, setNumPlayers] = useState(playerOptions[0]);
@@ -361,68 +383,318 @@ export const CreateRoomModal = ({
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.2 }}
                         onClick={handleBackdropClick}
-                        className={`fixed inset-0 ${isHomeV2Style ? 'bg-[rgba(20,12,8,0.45)] backdrop-blur-[1px]' : 'bg-black/50 backdrop-blur-sm'}`}
+                        className={`fixed inset-0 ${isHomeV2Style ? 'bg-[rgba(18,13,9,0.56)] backdrop-blur-[2px]' : 'bg-black/50 backdrop-blur-sm'}`}
                         style={{ zIndex: UI_Z_INDEX.modalOverlay }}
                     />
 
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: 10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.98 }}
-                        transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                        className={`modal-base-container fixed inset-0 flex justify-center p-4 sm:p-8 pointer-events-none ${isHomeV2Style ? 'items-start' : 'items-center'}`}
+                        initial={isHomeV2Style ? { opacity: 0 } : { opacity: 0, scale: 0.95, y: 10 }}
+                        animate={isHomeV2Style ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+                        exit={isHomeV2Style ? { opacity: 0 } : { opacity: 0, scale: 0.98 }}
+                        transition={isHomeV2Style
+                            ? { duration: 0.18, ease: 'easeOut' }
+                            : { type: 'spring', stiffness: 300, damping: 30 }}
+                        className={`fixed inset-0 flex justify-center p-4 sm:p-8 pointer-events-none ${isHomeV2Style ? 'items-center' : 'modal-base-container items-center'}`}
                         style={{
                             zIndex: UI_Z_INDEX.modalContent,
+                            ...(isHomeV2Style ? {
+                                top: 0,
+                                right: 0,
+                                bottom: 0,
+                                left: 0,
+                                height: '100vh',
+                                maxHeight: '100vh',
+                                overflowY: 'visible',
+                            } : {}),
                             paddingTop: isHomeV2Style
-                                ? 'max(0.5rem, var(--safe-area-top))'
+                                ? 'max(1rem, var(--safe-area-top))'
                                 : 'max(1rem, var(--safe-area-top))',
                             paddingRight: isHomeV2Style
-                                ? 'max(0.5rem, var(--safe-area-right))'
+                                ? 'max(1rem, var(--safe-area-right))'
                                 : 'max(1rem, var(--safe-area-right))',
                             paddingBottom: isHomeV2Style
-                                ? 'max(0.75rem, max(var(--runtime-modal-bottom-inset), var(--safe-area-bottom, 0px)))'
+                                ? 'max(1rem, var(--safe-area-bottom, 0px))'
                                 : 'max(1rem, var(--runtime-modal-bottom-inset))',
                             paddingLeft: isHomeV2Style
-                                ? 'max(0.5rem, var(--safe-area-left))'
+                                ? 'max(1rem, var(--safe-area-left))'
                                 : 'max(1rem, var(--safe-area-left))',
                         }}
                     >
-                        <div
-                            className={`pointer-events-auto relative flex w-full max-w-md flex-col overflow-hidden font-serif ${
-                                isHomeV2Style
-                                    ? 'max-w-[min(24.5rem,100%)] rounded-[10px] border border-[#946743]/45 bg-[#edc193]/[0.98] text-[#5c3a24] shadow-[0_20px_48px_rgba(0,0,0,0.38)]'
-                                    : 'rounded-sm border border-parchment-card-border/30 bg-parchment-card-bg shadow-parchment-card-hover'
-                            }`}
-                            onClick={(event) => event.stopPropagation()}
-                            style={{
-                                maxHeight: isHomeV2Style
-                                    ? 'min(calc(var(--runtime-viewport-height, 100vh) - var(--safe-area-top, 0px) - max(var(--runtime-modal-bottom-inset), var(--safe-area-bottom, 0px)) - 1rem), 29rem)'
-                                    : 'min(var(--runtime-modal-max-height, 92vh), 42rem)',
-                            }}
-                            data-testid="create-room-modal"
-                        >
-                            {!isHomeV2Style ? (
+                        {isHomeV2Style ? (
+                            <HomeV2PaperModalFrame
+                                title={t('createRoom.title')}
+                                onClick={(event) => event.stopPropagation()}
+                                dataTestId="create-room-modal"
+                                dataTextEntryAutoscroll="off"
+                                surfaceClassName={clsx(
+                                    'font-serif',
+                                    isCompactHomeV2Layout && 'home-v2-paper-modal-compact',
+                                    isCompactHomeV2Layout ? 'w-[min(16.75rem,calc(100vw-1rem))]' : 'w-[min(34rem,calc(100vw-2rem))]',
+                                )}
+                                surfaceStyle={{
+                                    height: isCompactHomeV2Layout
+                                        ? 'min(calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 0.5rem), 18.75rem)'
+                                        : undefined,
+                                    maxHeight: isCompactHomeV2Layout
+                                        ? undefined
+                                        : 'min(calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 2rem), 42rem)',
+                                }}
+                                headerClassName={isCompactHomeV2Layout ? 'px-[22px] pb-[9px] pt-[13px]' : undefined}
+                                titleClassName={isCompactHomeV2Layout ? 'text-[11.8px] tracking-[0.075em]' : undefined}
+                                dividerClassName={isCompactHomeV2Layout ? 'mt-[7px] w-[72%] gap-1.5' : undefined}
+                            >
+                                <div className={clsx(
+                                    'relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain',
+                                    isCompactHomeV2Layout ? 'space-y-[5px] px-[20px] pb-[7px]' : 'space-y-4 px-7 pb-5',
+                                )}>
+                                    <div>
+                                        <div className="mb-2 flex items-center justify-between gap-3">
+                                            <label className={fieldLabelClassName}>
+                                                {t('createRoom.roomName')}
+                                            </label>
+                                            <span className={fieldHintClassName}>
+                                                {t('createRoom.roomNameHint')}
+                                            </span>
+                                        </div>
+                                        <input
+                                            type="text"
+                                            name="roomName"
+                                            value={roomName}
+                                            onChange={(event) => setRoomName(event.target.value)}
+                                            placeholder={t('createRoom.roomNamePlaceholder')}
+                                            maxLength={20}
+                                            autoComplete="off"
+                                            className={inputClassName}
+                                            data-testid="create-room-name-input"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <div className="mb-2 flex items-center justify-between gap-3">
+                                            <label className={fieldLabelClassName}>
+                                                {t('createRoom.password')}
+                                            </label>
+                                            <span className={fieldHintClassName}>
+                                                {t('createRoom.passwordHint')}
+                                            </span>
+                                        </div>
+                                        <PasswordField
+                                            name="roomPassword"
+                                            value={password}
+                                            onChange={(event) => setPassword(event.target.value)}
+                                            placeholder={t('createRoom.passwordPlaceholder')}
+                                            maxLength={10}
+                                            autoComplete="new-password"
+                                            className={clsx(inputClassName, isCompactHomeV2Layout ? 'pr-10' : 'pr-11')}
+                                            data-testid="create-room-password-input"
+                                            toggleButtonTestId="create-room-password-toggle"
+                                            toggleButtonClassName={isCompactHomeV2Layout ? homeV2PaperCompactTextButtonClassName : 'text-[#8b6646] hover:text-[#5a3923]'}
+                                            iconSize={isCompactHomeV2Layout ? 9 : undefined}
+                                        />
+                                    </div>
+
+                                    {hasPlayerOptions && (
+                                        <div>
+                                            <label className={fieldLabelClassName}>
+                                                {t('createRoom.playerCount')}
+                                            </label>
+                                            <div className={isCompactHomeV2Layout ? 'flex flex-wrap gap-[6px]' : 'flex flex-wrap gap-2'}>
+                                                {playerOptions.map((count) => (
+                                                    <button
+                                                        key={count}
+                                                        type="button"
+                                                        onClick={() => setNumPlayers(count)}
+                                                        className={`${isCompactHomeV2Layout ? 'min-w-[52px] rounded-[5px] px-[9px] py-[5px] text-[8.1px]' : 'rounded-[8px] px-4 py-2 text-sm'} cursor-pointer font-bold transition-all ${
+                                                            numPlayers === count
+                                                                ? 'border border-[#875b3b] bg-[#875b3b] text-[#f6e6cd]'
+                                                                : 'border border-[#b6905e] bg-[rgba(247,227,191,0.64)] text-[#5b3822] hover:bg-[rgba(240,212,164,0.82)]'
+                                                        }`}
+                                                    >
+                                                        {t('createRoom.playerCountUnit', { count })}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div>
+                                        <div className="mb-2 flex items-center justify-between gap-3">
+                                            <label className={fieldLabelClassName}>
+                                                {t('createRoom.retention')}
+                                            </label>
+                                            <span className={fieldHintClassName}>
+                                                {t('createRoom.retentionHint')}
+                                            </span>
+                                        </div>
+                                        <select
+                                            value={ttlSeconds}
+                                            onChange={(event) => setTtlSeconds(Number(event.target.value))}
+                                            className={clsx(inputClassName, 'cursor-pointer appearance-none bg-[right_12px_center] bg-no-repeat')}
+                                            style={{
+                                                backgroundImage: "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23624630%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')",
+                                            }}
+                                        >
+                                            {RETENTION_OPTIONS.map((option) => (
+                                                <option key={option.value} value={option.value}>
+                                                    {t(`createRoom.retentionOptions.${option.key}`)}
+                                                </option>
+                                            ))}
+                                        </select>
+                                    </div>
+
+                                    <SetupOptionsFields
+                                        gameManifest={gameManifest}
+                                        selections={setupSelections}
+                                        onSelectionsChange={setSetupSelections}
+                                        t={t}
+                                        gameNamespace={gameNamespace}
+                                        numPlayers={numPlayers}
+                                    />
+
+                                    {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
+                                        <div className={isCompactHomeV2Layout ? 'space-y-[7px] rounded-[5px] border border-[#b6905e]/36 bg-[rgba(247,227,191,0.20)] px-[10px] py-[8px]' : 'space-y-3 rounded-[8px] border border-[#b6905e]/40 bg-[rgba(247,227,191,0.22)] px-4 py-3'}>
+                                            <button
+                                                type="button"
+                                                onClick={handleToggleAiEnabled}
+                                                aria-pressed={enableAi}
+                                                className={`${isCompactHomeV2Layout ? 'gap-[8px] rounded-[5px] px-[8px] py-[6px]' : 'gap-3 rounded-[8px] px-3 py-2'} flex w-full cursor-pointer items-center justify-between border text-left transition-colors ${
+                                                    enableAi
+                                                        ? 'border-[#875b3b] bg-[#f1d4ad]/65'
+                                                        : 'border-[#b6905e] bg-[rgba(248,226,194,0.5)] hover:bg-[rgba(243,214,175,0.74)]'
+                                                }`}
+                                            >
+                                                <span className={isCompactHomeV2Layout ? 'text-[8.3px] font-bold text-[#4f2f1c]' : 'text-sm font-bold text-[#4f2f1c]'}>
+                                                    {t('createRoom.enableRoomAi')}
+                                                </span>
+                                                <span
+                                                    className={`${isCompactHomeV2Layout ? 'px-[8px] py-[3px] text-[7px]' : 'px-3 py-1 text-xs'} shrink-0 rounded-full font-bold ${
+                                                        enableAi
+                                                            ? 'bg-[#875b3b] text-[#f5e4cb]'
+                                                            : 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/75 text-[#7a573d]'
+                                                    }`}
+                                                >
+                                                    {enableAi ? t('createRoom.enabled') : t('createRoom.disabled')}
+                                                </span>
+                                            </button>
+
+                                            {enableAi && (
+                                                <>
+                                                    {gameManifest.ai?.localAi && (
+                                                        <div className={isCompactHomeV2Layout ? 'flex flex-wrap items-center gap-[6px]' : 'flex flex-wrap items-center gap-2'}>
+                                                            <span className={isCompactHomeV2Layout ? 'text-[7.6px] font-bold text-[#5b3822]' : 'text-xs font-bold text-[#5b3822]'}>
+                                                                {t('ai.difficulty')}
+                                                            </span>
+                                                            {LOCAL_AI_DIFFICULTY_OPTIONS.map((difficulty) => {
+                                                                const active = aiDifficulty === difficulty;
+                                                                return (
+                                                            <button
+                                                                key={difficulty}
+                                                                type="button"
+                                                                onClick={() => handleDifficultyChange(difficulty)}
+                                                                aria-pressed={active}
+                                                                className={`${isCompactHomeV2Layout ? 'rounded-[4px] px-[7px] py-[3px] text-[7.2px]' : 'rounded-[8px] px-3 py-1.5 text-xs'} border font-bold transition-all ${
+                                                                    active
+                                                                        ? 'cursor-pointer border-[#875b3b] bg-[#875b3b] text-[#f6e6cd]'
+                                                                        : 'cursor-pointer border-[#b6905e] bg-[rgba(247,227,191,0.64)] text-[#5b3822] hover:bg-[rgba(240,212,164,0.82)]'
+                                                                }`}
+                                                            >
+                                                                        {t(`ai.difficulties.${difficulty}`)}
+                                                                    </button>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    )}
+
+                                                    <div className={isCompactHomeV2Layout ? 'flex flex-wrap items-center gap-[6px]' : 'flex flex-wrap items-center gap-2'}>
+                                                        <span className={isCompactHomeV2Layout ? 'text-[7.6px] font-bold text-[#5b3822]' : 'text-xs font-bold text-[#5b3822]'}>
+                                                            {t('createRoom.occupiedSeats')}
+                                                        </span>
+                                                        {Array.from({ length: numPlayers }, (_, index) => {
+                                                            const playerId = String(index);
+                                                            const isOwnerSeat = playerId === OWNER_PLAYER_ID;
+                                                            const isAiSeat = seatControllers[playerId]?.type !== 'human';
+                                                            const label = isOwnerSeat
+                                                                ? t('createRoom.ownerSeatUnit', { seat: index + 1 })
+                                                                : t('createRoom.occupiedSeatUnit', { seat: index + 1 });
+
+                                                            return (
+                                                                <button
+                                                                    key={playerId}
+                                                                    type="button"
+                                                                    onClick={() => handleToggleAiSeat(playerId)}
+                                                                    disabled={isOwnerSeat}
+                                                                    aria-pressed={isOwnerSeat ? false : isAiSeat}
+                                                                    className={`${isCompactHomeV2Layout ? 'rounded-[4px] px-[7px] py-[3px] text-[7.2px]' : 'rounded-[8px] px-3 py-1.5 text-xs'} border font-bold transition-all ${
+                                                                        isOwnerSeat
+                                                                            ? 'cursor-not-allowed border-[#a37a55]/25 bg-[#f2d9b8]/50 text-[#8a6649]/80'
+                                                                            : isAiSeat
+                                                                                ? 'cursor-pointer border-[#875b3b] bg-[#875b3b] text-[#f6e6cd]'
+                                                                                : 'cursor-pointer border-[#b6905e] bg-[rgba(247,227,191,0.64)] text-[#5b3822] hover:bg-[rgba(240,212,164,0.82)]'
+                                                                    }`}
+                                                                >
+                                                                    {label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className={clsx(
+                                    'relative z-10 shrink-0 flex gap-3 border-t border-[#8c5f3e]/24 bg-transparent',
+                                    isCompactHomeV2Layout ? 'px-[20px] pb-[9px] pt-[5px]' : 'px-7 pb-6 pt-4',
+                                )}>
+                                    <button
+                                        type="button"
+                                        onClick={onClose}
+                                        data-testid="create-room-cancel-button"
+                                        className={clsx('flex-1', secondaryButtonClassName, isCompactHomeV2Layout && 'min-h-[27px]')}
+                                        disabled={isLoading}
+                                    >
+                                        {t('actions.cancel')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleConfirm}
+                                        className={clsx('flex-1', primaryButtonClassName, 'tracking-[0.14em]', isCompactHomeV2Layout && 'min-h-[27px]')}
+                                        disabled={isLoading}
+                                        data-testid="create-room-confirm-button"
+                                    >
+                                        {isLoading ? t('button.processing') : t('createRoom.confirm')}
+                                    </button>
+                                </div>
+                            </HomeV2PaperModalFrame>
+                        ) : (
+                            <div
+                                className="pointer-events-auto relative flex w-full max-w-md flex-col overflow-hidden rounded-sm border border-parchment-card-border/30 bg-parchment-card-bg font-serif shadow-parchment-card-hover"
+                                onClick={(event) => event.stopPropagation()}
+                                style={{
+                                    maxHeight: 'min(var(--runtime-modal-max-height, 92vh), 42rem)',
+                                }}
+                                data-testid="create-room-modal"
+                            >
                                 <>
                                     <div className="absolute top-2 left-2 w-3 h-3 border-t border-l border-parchment-card-border/60" />
                                     <div className="absolute top-2 right-2 w-3 h-3 border-t border-r border-parchment-card-border/60" />
                                     <div className="absolute bottom-2 left-2 w-3 h-3 border-b border-l border-parchment-card-border/60" />
                                     <div className="absolute bottom-2 right-2 w-3 h-3 border-b border-r border-parchment-card-border/60" />
                                 </>
-                            ) : null}
-
-                            <div className={`shrink-0 ${isHomeV2Style ? 'p-3.5 pb-2' : 'p-6 pb-4'}`}>
-                                <h2 className={`text-center text-xl font-bold tracking-wide ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
+                            <div className="relative z-10 shrink-0 p-6 pb-4">
+                                <h2 className="text-center text-xl font-bold tracking-wide text-parchment-base-text">
                                     {t('createRoom.title')}
                                 </h2>
                             </div>
 
-                            <div className={`min-h-0 flex-1 overflow-y-auto overscroll-contain ${isHomeV2Style ? 'px-3.5 pb-2.5 space-y-3' : 'px-6 pb-4 space-y-5'}`}>
+                            <div className="relative z-10 min-h-0 flex-1 overflow-y-auto overscroll-contain space-y-5 px-6 pb-4">
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <label className={`${isHomeV2Style ? 'text-[12px]' : 'text-sm'} font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
+                                        <label className="text-sm font-bold text-parchment-base-text">
                                             {t('createRoom.roomName')}
                                         </label>
-                                        <span className={`text-xs italic ${isHomeV2Style ? 'text-[#876345]' : 'text-parchment-light-text'}`}>
+                                        <span className="text-xs italic text-parchment-light-text">
                                             {t('createRoom.roomNameHint')}
                                         </span>
                                     </div>
@@ -434,21 +706,17 @@ export const CreateRoomModal = ({
                                         placeholder={t('createRoom.roomNamePlaceholder')}
                                         maxLength={20}
                                         autoComplete="off"
-                                        className={`w-full rounded-[6px] px-3 py-2 transition-colors focus:outline-none ${
-                                            isHomeV2Style
-                                                ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/85 text-[13px] leading-[1.35] text-[#5a3923] placeholder:text-[12px] placeholder:text-[#8e6a4a] focus:border-[#875b3b]'
-                                                : 'text-base sm:text-sm border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text placeholder:text-parchment-light-text/50 focus:border-parchment-base-text'
-                                        }`}
+                                        className="w-full rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-parchment-base-text transition-colors placeholder:text-parchment-light-text/50 focus:border-parchment-base-text focus:outline-none sm:text-sm"
                                         data-testid="create-room-name-input"
                                     />
                                 </div>
 
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <label className={`${isHomeV2Style ? 'text-[12px]' : 'text-sm'} font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
+                                        <label className="text-sm font-bold text-parchment-base-text">
                                             {t('createRoom.password')}
                                         </label>
-                                        <span className={`text-xs italic ${isHomeV2Style ? 'text-[#876345]' : 'text-parchment-light-text'}`}>
+                                        <span className="text-xs italic text-parchment-light-text">
                                             {t('createRoom.passwordHint')}
                                         </span>
                                     </div>
@@ -459,20 +727,16 @@ export const CreateRoomModal = ({
                                         placeholder={t('createRoom.passwordPlaceholder')}
                                         maxLength={10}
                                         autoComplete="new-password"
-                                        className={`w-full rounded-[6px] px-3 py-2 pr-9 transition-colors focus:outline-none ${
-                                            isHomeV2Style
-                                                ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/85 text-[13px] leading-[1.35] text-[#5a3923] placeholder:text-[12px] placeholder:text-[#8e6a4a] focus:border-[#875b3b]'
-                                                : 'text-base sm:text-sm border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text placeholder:text-parchment-light-text/50 focus:border-parchment-base-text'
-                                        }`}
+                                        className="w-full rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 pr-9 text-base text-parchment-base-text transition-colors placeholder:text-parchment-light-text/50 focus:border-parchment-base-text focus:outline-none sm:text-sm"
                                         data-testid="create-room-password-input"
                                         toggleButtonTestId="create-room-password-toggle"
-                                        toggleButtonClassName={isHomeV2Style ? 'text-[#8b6646] hover:text-[#5a3923]' : 'text-parchment-light-text hover:text-parchment-base-text'}
+                                        toggleButtonClassName="text-parchment-light-text hover:text-parchment-base-text"
                                     />
                                 </div>
 
                                 {hasPlayerOptions && (
                                     <div>
-                                        <label className={`mb-2 block text-sm font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
+                                        <label className="mb-2 block text-sm font-bold text-parchment-base-text">
                                             {t('createRoom.playerCount')}
                                         </label>
                                         <div className="flex gap-2 flex-wrap">
@@ -483,8 +747,8 @@ export const CreateRoomModal = ({
                                                     onClick={() => setNumPlayers(count)}
                                                     className={`cursor-pointer rounded-[6px] px-4 py-2 text-sm font-bold transition-all ${
                                                         numPlayers === count
-                                                            ? (isHomeV2Style ? 'border border-[#875b3b] bg-[#875b3b] text-[#f6e6cd]' : 'bg-parchment-base-text text-parchment-card-bg border border-parchment-base-text')
-                                                            : (isHomeV2Style ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/70 text-[#5b3822] hover:bg-[#f0d1a8]' : 'bg-parchment-card-bg text-parchment-base-text border border-parchment-card-border/30 hover:bg-parchment-base-bg')
+                                                            ? 'bg-parchment-base-text text-parchment-card-bg border border-parchment-base-text'
+                                                            : 'bg-parchment-card-bg text-parchment-base-text border border-parchment-card-border/30 hover:bg-parchment-base-bg'
                                                     }`}
                                                 >
                                                     {t('createRoom.playerCountUnit', { count })}
@@ -496,26 +760,17 @@ export const CreateRoomModal = ({
 
                                 <div>
                                     <div className="flex justify-between items-center mb-2">
-                                        <label className={`text-sm font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
+                                        <label className="text-sm font-bold text-parchment-base-text">
                                             {t('createRoom.retention')}
                                         </label>
-                                        <span className={`text-xs italic ${isHomeV2Style ? 'text-[#876345]' : 'text-parchment-light-text'}`}>
+                                        <span className="text-xs italic text-parchment-light-text">
                                             {t('createRoom.retentionHint')}
                                         </span>
                                     </div>
                                     <select
                                         value={ttlSeconds}
                                         onChange={(event) => setTtlSeconds(Number(event.target.value))}
-                                        className={`w-full appearance-none rounded-[6px] px-3 py-2 cursor-pointer bg-no-repeat bg-[right_12px_center] ${
-                                            isHomeV2Style
-                                                ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/85 text-[13px] leading-[1.35] text-[#5a3923] focus:border-[#875b3b] focus:outline-none'
-                                                : 'text-base sm:text-sm border border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text focus:border-parchment-base-text focus:outline-none'
-                                        }`}
-                                        style={isHomeV2Style
-                                            ? {
-                                                backgroundImage: "url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2012%2012%22%3E%3Cpath%20fill%3D%22%23624630%22%20d%3D%22M2%204l4%204%204-4%22%2F%3E%3C%2Fsvg%3E')",
-                                            }
-                                            : undefined}
+                                        className="w-full appearance-none rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-3 py-2 text-base text-parchment-base-text cursor-pointer focus:border-parchment-base-text focus:outline-none sm:text-sm"
                                     >
                                         {RETENTION_OPTIONS.map((option) => (
                                             <option key={option.value} value={option.value}>
@@ -535,29 +790,25 @@ export const CreateRoomModal = ({
                                 />
 
                                 {(gameManifest.ai?.localAi || gameManifest.ai?.remoteAi) && (
-                                    <div className={`rounded-[6px] px-4 py-3 space-y-3 ${
-                                        isHomeV2Style
-                                            ? 'border border-[#9f6f4b]/30 bg-transparent'
-                                            : 'border border-parchment-card-border/20 bg-parchment-base-bg/25'
-                                    }`}>
+                                    <div className="rounded-[6px] border border-parchment-card-border/20 bg-parchment-base-bg/25 px-4 py-3 space-y-3">
                                         <button
                                             type="button"
                                             onClick={handleToggleAiEnabled}
                                             aria-pressed={enableAi}
                                             className={`flex w-full items-center justify-between gap-3 rounded-[6px] border px-3 py-2 text-left transition-colors cursor-pointer ${
                                                 enableAi
-                                                    ? (isHomeV2Style ? 'border-[#875b3b] bg-[#f1d4ad]/65' : 'border-emerald-700/20 bg-emerald-50/60')
-                                                    : (isHomeV2Style ? 'border-[#9f6f4b]/35 bg-[#f8e2c2]/45 hover:bg-[#f3d6af]/65' : 'border-parchment-card-border/30 bg-parchment-base-bg/35 hover:bg-parchment-base-bg/60')
+                                                    ? 'border-emerald-700/20 bg-emerald-50/60'
+                                                    : 'border-parchment-card-border/30 bg-parchment-base-bg/35 hover:bg-parchment-base-bg/60'
                                             }`}
                                         >
-                                            <span className={`text-sm font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
+                                            <span className="text-sm font-bold text-parchment-base-text">
                                                 {t('createRoom.enableRoomAi')}
                                             </span>
                                             <span
                                                 className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${
                                                     enableAi
-                                                        ? (isHomeV2Style ? 'bg-[#875b3b] text-[#f5e4cb]' : 'bg-emerald-600 text-white')
-                                                        : (isHomeV2Style ? 'border border-[#9f6f4b]/35 bg-[#f7dfbf]/75 text-[#7a573d]' : 'bg-parchment-card-bg text-parchment-light-text border border-parchment-card-border/30')
+                                                        ? 'bg-emerald-600 text-white'
+                                                        : 'bg-parchment-card-bg text-parchment-light-text border border-parchment-card-border/30'
                                                 }`}
                                             >
                                                 {enableAi ? t('createRoom.enabled') : t('createRoom.disabled')}
@@ -568,7 +819,7 @@ export const CreateRoomModal = ({
                                             <>
                                                 {gameManifest.ai?.localAi && (
                                                     <div className="flex flex-wrap items-center gap-2">
-                                                        <span className={`text-xs font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
+                                                        <span className="text-xs font-bold text-parchment-base-text">
                                                             {t('ai.difficulty')}
                                                         </span>
                                                         {LOCAL_AI_DIFFICULTY_OPTIONS.map((difficulty) => {
@@ -578,13 +829,13 @@ export const CreateRoomModal = ({
                                                                     key={difficulty}
                                                                     type="button"
                                                                     onClick={() => handleDifficultyChange(difficulty)}
-                                                                    aria-pressed={active}
-                                                                    className={`rounded-[4px] border px-3 py-1.5 text-xs font-bold transition-all ${
-                                                                        active
-                                                                            ? (isHomeV2Style ? 'cursor-pointer border-[#875b3b] bg-[#875b3b] text-[#f6e6cd]' : 'cursor-pointer border-emerald-600 bg-emerald-600 text-white shadow-sm')
-                                                                            : (isHomeV2Style ? 'cursor-pointer border-[#9f6f4b]/35 bg-[#f7dfbf]/75 text-[#5b3822] hover:bg-[#f0d1a8]' : 'cursor-pointer border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text hover:bg-parchment-base-bg')
-                                                                    }`}
-                                                                >
+                                                                        aria-pressed={active}
+                                                                        className={`rounded-[4px] border px-3 py-1.5 text-xs font-bold transition-all ${
+                                                                            active
+                                                                                ? 'cursor-pointer border-emerald-600 bg-emerald-600 text-white shadow-sm'
+                                                                                : 'cursor-pointer border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text hover:bg-parchment-base-bg'
+                                                                        }`}
+                                                                    >
                                                                     {t(`ai.difficulties.${difficulty}`)}
                                                                 </button>
                                                             );
@@ -593,7 +844,7 @@ export const CreateRoomModal = ({
                                                 )}
 
                                                 <div className="flex flex-wrap items-center gap-2">
-                                                    <span className={`text-xs font-bold ${isHomeV2Style ? 'text-[#5b3822]' : 'text-parchment-base-text'}`}>
+                                                    <span className="text-xs font-bold text-parchment-base-text">
                                                         {t('createRoom.occupiedSeats')}
                                                     </span>
                                                     {Array.from({ length: numPlayers }, (_, index) => {
@@ -613,10 +864,10 @@ export const CreateRoomModal = ({
                                                                 aria-pressed={isOwnerSeat ? false : isAiSeat}
                                                                 className={`rounded-[4px] border px-3 py-1.5 text-xs font-bold transition-all ${
                                                                     isOwnerSeat
-                                                                        ? (isHomeV2Style ? 'cursor-not-allowed border-[#a37a55]/25 bg-[#f2d9b8]/50 text-[#8a6649]/80' : 'cursor-not-allowed border-parchment-card-border/25 bg-parchment-base-bg/55 text-parchment-light-text/80')
+                                                                        ? 'cursor-not-allowed border-parchment-card-border/25 bg-parchment-base-bg/55 text-parchment-light-text/80'
                                                                         : isAiSeat
-                                                                            ? (isHomeV2Style ? 'cursor-pointer border-[#875b3b] bg-[#875b3b] text-[#f6e6cd]' : 'cursor-pointer border-emerald-600 bg-emerald-600 text-white shadow-sm')
-                                                                            : (isHomeV2Style ? 'cursor-pointer border-[#9f6f4b]/35 bg-[#f7dfbf]/75 text-[#5b3822] hover:bg-[#f0d1a8]' : 'cursor-pointer border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text hover:bg-parchment-base-bg')
+                                                                            ? 'cursor-pointer border-emerald-600 bg-emerald-600 text-white shadow-sm'
+                                                                            : 'cursor-pointer border-parchment-card-border/30 bg-parchment-card-bg text-parchment-base-text hover:bg-parchment-base-bg'
                                                                 }`}
                                                             >
                                                                 {label}
@@ -630,15 +881,12 @@ export const CreateRoomModal = ({
                                 )}
                             </div>
 
-                            <div className={`shrink-0 flex gap-3 ${isHomeV2Style ? 'p-3.5 pt-2.5 border-t border-[#9f6f4b]/20 bg-transparent' : 'p-6 pt-4 border-t border-parchment-card-border/15 bg-parchment-card-bg/95'}`}>
+                            <div className="relative z-10 shrink-0 flex gap-3 border-t border-parchment-card-border/15 bg-parchment-card-bg/95 p-6 pt-4">
                                 <button
                                     type="button"
                                     onClick={onClose}
-                                    className={`flex-1 rounded-[6px] px-4 py-2.5 font-bold transition-all cursor-pointer ${
-                                        isHomeV2Style
-                                            ? 'border border-[#9f6f4b]/35 bg-[#f8e2c2]/55 text-[#5d3923] hover:bg-[#f0d1a8]'
-                                            : 'bg-parchment-card-bg border border-parchment-card-border/30 text-parchment-base-text hover:bg-parchment-base-bg'
-                                    }`}
+                                    data-testid="create-room-cancel-button"
+                                    className="flex-1 cursor-pointer rounded-[6px] border border-parchment-card-border/30 bg-parchment-card-bg px-4 py-2.5 font-bold text-parchment-base-text transition-all hover:bg-parchment-base-bg"
                                     disabled={isLoading}
                                 >
                                     {t('actions.cancel')}
@@ -646,11 +894,7 @@ export const CreateRoomModal = ({
                                 <button
                                     type="button"
                                     onClick={handleConfirm}
-                                    className={`flex-1 rounded-[6px] px-4 py-2.5 font-bold transition-all cursor-pointer disabled:opacity-50 ${
-                                        isHomeV2Style
-                                            ? 'border border-[#875b3b] bg-[#875b3b] text-[#f6e6cd] hover:bg-[#734a2d]'
-                                            : 'bg-parchment-base-text text-parchment-card-bg hover:bg-parchment-brown'
-                                    }`}
+                                    className="flex-1 cursor-pointer rounded-[6px] bg-parchment-base-text px-4 py-2.5 font-bold text-parchment-card-bg transition-all hover:bg-parchment-brown disabled:opacity-50"
                                     disabled={isLoading}
                                     data-testid="create-room-confirm-button"
                                 >
@@ -658,6 +902,7 @@ export const CreateRoomModal = ({
                                 </button>
                             </div>
                         </div>
+                        )}
                     </motion.div>
                 </>
             )}

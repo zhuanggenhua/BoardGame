@@ -23,7 +23,7 @@ type ParsedRect = {
     height: number;
 };
 
-const DEFAULT_DURATION_MS = 760;
+const DEFAULT_DURATION_MS = 380;
 const TURNJS_OVERVIEW_PAGE = 2;
 const TURNJS_DETAIL_PAGE = 4;
 const JQUERY_SCRIPT_PATH = '/vendor/jquery/jquery-1.12.0.min.js';
@@ -243,54 +243,6 @@ function TurnJsPageSlice({
                 }}
             >
                 {stage}
-            </div>
-        </div>
-    );
-}
-
-function SteadyFoldDecoration({
-    rect,
-    corner,
-}: {
-    rect: PageRect;
-    corner: PeelCorner;
-}) {
-    const clipPath = corner === 'br'
-        ? 'polygon(100% 0, 0 100%, 100% 100%)'
-        : 'polygon(0 0, 0 100%, 100% 100%)';
-    const containerStyle = createRectStyleFromParsedRect(parseRect(rect));
-
-    return (
-        <div
-            className="pointer-events-none absolute"
-            style={containerStyle}
-            aria-hidden="true"
-        >
-            <div
-                className="absolute bottom-[1.4%] h-[11.5%] w-[12.5%]"
-                style={corner === 'br' ? { right: '1.2%' } : { left: '1.2%' }}
-            >
-                <div
-                    className="absolute inset-0 opacity-80"
-                    style={{
-                        clipPath,
-                        background: corner === 'br'
-                            ? 'linear-gradient(135deg, rgba(255,252,240,0.98) 0%, rgba(230,208,174,0.96) 56%, rgba(138,103,67,0.95) 100%)'
-                            : 'linear-gradient(225deg, rgba(255,252,240,0.98) 0%, rgba(230,208,174,0.96) 56%, rgba(138,103,67,0.95) 100%)',
-                        boxShadow: corner === 'br'
-                            ? '-8px -8px 18px rgba(80,56,34,0.18)'
-                            : '8px -8px 18px rgba(80,56,34,0.18)',
-                    }}
-                />
-                <div
-                    className="absolute inset-0"
-                    style={{
-                        clipPath,
-                        background: corner === 'br'
-                            ? 'linear-gradient(180deg, rgba(120,90,55,0) 0%, rgba(120,90,55,0.14) 100%)'
-                            : 'linear-gradient(180deg, rgba(120,90,55,0) 0%, rgba(120,90,55,0.14) 100%)',
-                    }}
-                />
             </div>
         </div>
     );
@@ -737,17 +689,6 @@ export function FoldLinePageFlipStage({
                     </div>
                 </StageFrame>
             </StageCanvas>
-
-            {!isFlipping ? (
-                <StageCanvas>
-                    <StageFrame stageSize={activeStageSize}>
-                        <SteadyFoldDecoration
-                            rect={mode === 'detail' ? leftPageRect : rightPageRect}
-                            corner={idlePeelCorner}
-                        />
-                    </StageFrame>
-                </StageCanvas>
-            ) : null}
 
         </div>
     );
