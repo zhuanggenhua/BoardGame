@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Browser, BrowserContext, Page } from '@playwright/test';
 import { test, expect } from './framework';
 import { clearEvidenceScreenshotsForTest, getEvidenceScreenshotPath } from './framework/evidenceScreenshots';
 import { getGameServerBaseURL, setChineseLocale } from './helpers/common';
@@ -53,7 +53,7 @@ async function ensureHomeV2BookMaterialsReady(
 ): Promise<void> {
     const requiredImageKeywords = [
         ...(options?.requireLegacyTabs === false
-            ? ['/overview-spread/1.png']
+            ? ['/book-catalog-wide/1.png']
             : ['/book-idle/compressed/1.webp', '/side-tabs-static/compressed/1.webp']),
     ];
 
@@ -134,12 +134,15 @@ async function confirmCreateRoomFromModal(page: Page): Promise<void> {
 
 const HOME_V2_QUERY_ENTRY_TEST_NAME = 'homeV2Draft 查询参数会切到 V2 首页并可进入详情页';
 const HOME_V2_LOCKED_ROOM_JOIN_TEST_NAME = 'homeV2Draft 详情页输入房间密码后可加入加密房间';
+const HOME_V2_PACKAGE_ENTRY_TEST_NAME = 'homeV2Draft package-managed 游戏详情暂不显示移动包管理入口';
+const HOME_V2_MODAL_UNIFIED_TEST_NAME = 'homeV2Draft 登录与创建房间弹窗统一使用纸面 modal';
 const MOBILE_AUTHOR_ENTRY_TEST_NAME = '移动端游戏详情隐藏描述和推荐人数，作者入口位于右上角且无包围框';
 const MOBILE_PACKAGE_ENTRY_TEST_NAME = '移动端 package-managed 游戏详情在左下角显示包管理入口';
 const GAME_DETAILS_LOADING_FALLBACK_TEST_NAME = '首次打开游戏详情时会先显示加载骨架，避免只剩路由跳转';
 const ACTIVE_MATCH_FLOATING_BANNER_TEST_NAME = '首页活跃房间浮层在桌面端居中且移动端不溢出';
 const WEB_APP_DOWNLOAD_ENTRY_TEST_NAME = '网页端下载 App 入口会读取 native update latest.json 并打开其中 APK 地址';
-const DEFAULT_HOME_V2_MOBILE_LANDSCAPE_VIEWPORT = { width: 2388, height: 1080 };
+const DEFAULT_HOME_V2_MOBILE_LANDSCAPE_VIEWPORT = { width: 852, height: 393 };
+const HOME_V2_MOBILE_USER_AGENT = 'Mozilla/5.0 (Linux; Android 13; Pixel 7 Build/TQ3A.230805.001; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/124.0.0.0 Mobile Safari/537.36';
 function parseHomeV2ViewportFromEnv() {
     const raw = process.env.BG_HOME_V2_VIEWPORT?.trim();
     if (!raw) return DEFAULT_HOME_V2_MOBILE_LANDSCAPE_VIEWPORT;
@@ -159,6 +162,12 @@ const HOME_V2_FLIP_CAPTURE_POINTS = [
     { suffix: '75', progress: 0.75 },
 ] as const;
 
+type HomeV2WorkerPorts = {
+    frontend: number;
+    gameServer: number;
+    apiServer: number;
+};
+
 async function useHomeV2MobileLandscapeViewport(page: Page): Promise<void> {
     await page.setViewportSize(HOME_V2_MOBILE_LANDSCAPE_VIEWPORT);
     const viewport = page.viewportSize();
@@ -166,6 +175,35 @@ async function useHomeV2MobileLandscapeViewport(page: Page): Promise<void> {
         throw new Error('未能读取当前 Playwright 视口');
     }
     console.log(`[home-v2-viewport] width=${viewport.width}, height=${viewport.height}`);
+}
+
+async function createHomeV2MobileLandscapeContext(
+    browser: Browser,
+    workerPorts: HomeV2WorkerPorts,
+): Promise<BrowserContext> {
+    const context = await browser.newContext({
+        baseURL: `http://127.0.0.1:${workerPorts.frontend}`,
+        viewport: HOME_V2_MOBILE_LANDSCAPE_VIEWPORT,
+        screen: HOME_V2_MOBILE_LANDSCAPE_VIEWPORT,
+        isMobile: true,
+        hasTouch: true,
+        deviceScaleFactor: 3,
+        userAgent: HOME_V2_MOBILE_USER_AGENT,
+        colorScheme: 'light',
+    });
+
+    await context.addInitScript(() => {
+        (window as Window & { __E2E_TEST_MODE__?: boolean }).__E2E_TEST_MODE__ = true;
+        (window as Window & { __E2E_SKIP_IMAGE_GATE__?: boolean }).__E2E_SKIP_IMAGE_GATE__ = true;
+    });
+    await context.addInitScript((ports) => {
+        (window as Window & { __E2E_WORKER_PORTS__?: HomeV2WorkerPorts }).__E2E_WORKER_PORTS__ = ports;
+        (window as Window & { __FORCE_GAME_SERVER_URL__?: string }).__FORCE_GAME_SERVER_URL__ = `http://127.0.0.1:${ports.gameServer}`;
+        (window as Window & { __FORCE_API_SERVER_URL__?: string }).__FORCE_API_SERVER_URL__ = `http://127.0.0.1:${ports.apiServer}`;
+    }, workerPorts);
+    await setChineseLocale(context);
+
+    return context;
 }
 
 async function captureHomeV2FlipFrameAtProgress(
@@ -299,7 +337,7 @@ async function createLockedTicTacToeRoom(page: Page): Promise<{ matchId: string;
             numPlayers: 2,
             setupData: {
                 guestId,
-                roomName: resolvedRoomName,
+                roomName,
                 password,
             },
         },
@@ -421,6 +459,8 @@ test.describe('Lobby E2E', () => {
         if (
             testInfo.title === HOME_V2_QUERY_ENTRY_TEST_NAME
             || testInfo.title === HOME_V2_LOCKED_ROOM_JOIN_TEST_NAME
+            || testInfo.title === HOME_V2_PACKAGE_ENTRY_TEST_NAME
+            || testInfo.title === HOME_V2_MODAL_UNIFIED_TEST_NAME
             || testInfo.title === MOBILE_AUTHOR_ENTRY_TEST_NAME
             || testInfo.title === MOBILE_PACKAGE_ENTRY_TEST_NAME
             || testInfo.title === GAME_DETAILS_LOADING_FALLBACK_TEST_NAME
@@ -430,16 +470,20 @@ test.describe('Lobby E2E', () => {
         await ensureLobbyReady(page);
     });
 
-    test(HOME_V2_QUERY_ENTRY_TEST_NAME, async ({ page }, testInfo) => {
+    test(HOME_V2_QUERY_ENTRY_TEST_NAME, async ({ browser, workerPorts }, testInfo) => {
         await clearEvidenceScreenshotsForTest(testInfo);
-        await useHomeV2MobileLandscapeViewport(page);
-        const injectedRoom = await createHomeV2DetailShowcaseRooms(page);
+        const context = await createHomeV2MobileLandscapeContext(browser, workerPorts);
+        const page = await context.newPage();
+        try {
+            await useHomeV2MobileLandscapeViewport(page);
+            const continueMatchId = await createTicTacToeRoom(page);
+            const injectedRoom = await createHomeV2DetailShowcaseRooms(page);
 
-        await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
-        await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
-        await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30000 });
-        await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
-        const mobileStageMetrics = await page.evaluate(() => {
+            await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
+            await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
+            await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30000 });
+            await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
+            const mobileStageMetrics = await page.evaluate(() => {
             const stage = document.querySelector('[data-testid="home-v2-book-stage"]') as HTMLElement | null;
             if (!stage) return null;
             const rect = stage.getBoundingClientRect();
@@ -452,25 +496,49 @@ test.describe('Lobby E2E', () => {
                 centerYRatio: (rect.top + rect.height / 2) / viewportHeight,
             };
         });
-        if (!mobileStageMetrics) {
-            throw new Error('未能读取 home-v2-book-stage 的移动端布局数据');
-        }
-        console.log(
-            `[home-v2-mobile-stage] widthRatio=${mobileStageMetrics.widthRatio.toFixed(3)}, heightRatio=${mobileStageMetrics.heightRatio.toFixed(3)}, center=(${mobileStageMetrics.centerXRatio.toFixed(3)},${mobileStageMetrics.centerYRatio.toFixed(3)})`,
-        );
-        expect(mobileStageMetrics.widthRatio).toBeGreaterThan(0.55);
-        expect(mobileStageMetrics.heightRatio).toBeGreaterThan(0.75);
-        expect(mobileStageMetrics.centerXRatio).toBeGreaterThan(0.35);
-        expect(mobileStageMetrics.centerXRatio).toBeLessThan(0.65);
-        const homeSpread = page.locator('[data-scene-slot="overview_spread_body"]').first();
-        await expect(homeSpread).toBeVisible({ timeout: 10000 });
-        await expect(
-            page.locator('[data-scene-node="home-v2-tab-lobby"], [data-scene-node="home-v2-tab-rooms"], [data-scene-node="tab_button_lobby"], [data-scene-node="tab_button_rooms"]'),
-        ).toHaveCount(0);
-        await expect(page.getByTestId('home-v2-account-entry')).toBeVisible({ timeout: 10000 });
-        await expect(page.getByTestId('home-v2-category-all')).toBeVisible({ timeout: 10000 });
-        await expect(page.getByTestId('home-v2-category-card')).toBeVisible({ timeout: 10000 });
-        await expect(page.getByTestId('home-v2-category-tools')).toBeVisible({ timeout: 10000 });
+            if (!mobileStageMetrics) {
+                throw new Error('未能读取 home-v2-book-stage 的移动端布局数据');
+            }
+            console.log(
+                `[home-v2-mobile-stage] widthRatio=${mobileStageMetrics.widthRatio.toFixed(3)}, heightRatio=${mobileStageMetrics.heightRatio.toFixed(3)}, center=(${mobileStageMetrics.centerXRatio.toFixed(3)},${mobileStageMetrics.centerYRatio.toFixed(3)})`,
+            );
+            expect(mobileStageMetrics.widthRatio).toBeGreaterThan(0.55);
+            expect(mobileStageMetrics.heightRatio).toBeGreaterThan(0.75);
+            expect(mobileStageMetrics.centerXRatio).toBeGreaterThan(0.35);
+            expect(mobileStageMetrics.centerXRatio).toBeLessThan(0.65);
+            const homeSpread = page.locator('[data-scene-slot="overview_spread_body"]').first();
+            await expect(homeSpread).toBeVisible({ timeout: 10000 });
+            await expect(
+                page.locator('[data-scene-node="home-v2-tab-lobby"], [data-scene-node="home-v2-tab-rooms"], [data-scene-node="tab_button_lobby"], [data-scene-node="tab_button_rooms"]'),
+            ).toHaveCount(0);
+            await expect(page.getByTestId('home-v2-account-entry')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByTestId('home-v2-account-entry')).toContainText('登录');
+            await expect(page.getByTestId('home-v2-category-all')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByTestId('home-v2-category-card')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByTestId('home-v2-category-tools')).toBeVisible({ timeout: 10000 });
+            await expect(page.getByTestId('home-v2-continue-entry')).toContainText('井字棋');
+            await expect(page.getByTestId('home-v2-continue-entry')).not.toContainText('#A12F');
+            await page.getByTestId('home-v2-language-entry').click();
+            await expect(page.getByTestId('home-v2-language-menu')).toBeVisible({ timeout: 10000 });
+            await page.getByTestId('home-v2-language-option-en').click();
+            await expect(page.getByTestId('home-v2-language-entry')).toContainText('English');
+            await page.getByTestId('home-v2-language-entry').click();
+            await page.getByTestId('home-v2-language-option-zh-CN').click();
+            await expect(page.getByTestId('home-v2-language-entry')).toContainText('中文');
+
+        await page.getByTestId('home-v2-category-tools').click();
+        await captureHomeV2FlipFrameAtProgress(page, testInfo, 'category-flip-to-tools-50', 0.5);
+        await waitForHomeV2FlipMode(page, 'overview');
+        await expect(page.locator('[data-scene-slot="overview_spread_body"] [data-game-id="assetslicer"]').first()).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-scene-slot="overview_spread_body"] [data-game-id="dicethrone"]')).toHaveCount(0);
+        await expect(page.locator('[data-scene-slot="overview_spread_body"] [data-game-id="tictactoe"]')).toHaveCount(0);
+        const toolsCatalogScreenshotPath = getEvidenceScreenshotPath(testInfo, 'homepage-catalog-tools-after-flip');
+        await page.screenshot({ path: toolsCatalogScreenshotPath, fullPage: true });
+
+        await page.getByTestId('home-v2-category-all').click();
+        await waitForHomeV2FlipMode(page, 'overview');
+        await expect(page.locator('[data-scene-slot="overview_spread_body"] [data-game-id="dicethrone"]').first()).toBeVisible({ timeout: 10000 });
+        await expect(page.locator('[data-scene-slot="overview_spread_body"] [data-game-id="tictactoe"]').first()).toBeVisible({ timeout: 10000 });
 
         const catalogMetrics = await page.evaluate(() => {
             const cards = Array.from(document.querySelectorAll('[data-scene-slot="overview_spread_body"] [data-game-id]')) as HTMLElement[];
@@ -516,41 +584,229 @@ test.describe('Lobby E2E', () => {
         if (referenceCards.some((entry) => !entry.box)) {
             throw new Error('首页目录卡片未完整渲染，无法进行双页布局量测');
         }
-        const [cardiaBox, diceThroneBox, smashupBox, splendorBox, summonerWarsBox, tictactoeBox] = referenceCards.map((entry) => entry.box!);
-        const leftColumnDelta = Math.max(cardiaBox.x, diceThroneBox.x, smashupBox.x) - Math.min(cardiaBox.x, diceThroneBox.x, smashupBox.x);
-        const rightColumnDelta = Math.max(splendorBox.x, summonerWarsBox.x, tictactoeBox.x) - Math.min(splendorBox.x, summonerWarsBox.x, tictactoeBox.x);
-        const leftToRightGap = splendorBox.x - cardiaBox.x;
-        const row1Delta = Math.abs(cardiaBox.y - splendorBox.y);
-        const row2Delta = Math.abs(diceThroneBox.y - summonerWarsBox.y);
-        const row3Delta = Math.abs(smashupBox.y - tictactoeBox.y);
-        console.log(
-            `[home-v2-homepage-grid] leftColumnDelta=${leftColumnDelta.toFixed(2)}, rightColumnDelta=${rightColumnDelta.toFixed(2)}, leftToRightGap=${leftToRightGap.toFixed(2)}, rowDelta=(${row1Delta.toFixed(2)},${row2Delta.toFixed(2)},${row3Delta.toFixed(2)})`,
+        const [firstColumnX, secondColumnX] = catalogMetrics.columns;
+        const leftItems = catalogMetrics.metrics
+            .filter((item) => Math.abs(item.centerX - firstColumnX) < 40)
+            .sort((left, right) => left.top - right.top);
+        const rightItems = catalogMetrics.metrics
+            .filter((item) => Math.abs(item.centerX - secondColumnX) < 40)
+            .sort((left, right) => left.top - right.top);
+        const leftColumnDelta = Math.max(...leftItems.map((item) => item.left)) - Math.min(...leftItems.map((item) => item.left));
+        const rightColumnDelta = Math.max(...rightItems.map((item) => item.left)) - Math.min(...rightItems.map((item) => item.left));
+        const leftToRightGap = Math.min(...rightItems.map((item) => item.left)) - Math.min(...leftItems.map((item) => item.left));
+        const minRowGap = Math.min(
+            ...[leftItems, rightItems].flatMap((items) => items.slice(1).map((item, index) => item.top - items[index].top)),
         );
+        console.log(
+            `[home-v2-homepage-grid] leftCount=${leftItems.length}, rightCount=${rightItems.length}, leftColumnDelta=${leftColumnDelta.toFixed(2)}, rightColumnDelta=${rightColumnDelta.toFixed(2)}, leftToRightGap=${leftToRightGap.toFixed(2)}, minRowGap=${minRowGap.toFixed(2)}`,
+        );
+        expect(leftItems.length).toBe(3);
+        expect(rightItems.length).toBe(3);
         expect(leftColumnDelta).toBeLessThan(18);
         expect(rightColumnDelta).toBeLessThan(18);
         expect(leftToRightGap).toBeGreaterThan(180);
-        expect(row1Delta).toBeLessThan(16);
-        expect(row2Delta).toBeLessThan(16);
-        expect(row3Delta).toBeLessThan(16);
+        expect(minRowGap).toBeGreaterThan(64);
+
+        const visualAlignmentMetrics = await page.evaluate(() => {
+            const pageLabel = document.querySelector('[data-testid="home-v2-catalog-page-label"]') as HTMLElement | null;
+            const continueEntry = document.querySelector('[data-testid="home-v2-continue-entry"]') as HTMLElement | null;
+            const activeCategory = document.querySelector('[data-testid="home-v2-category-all"]') as HTMLElement | null;
+            const activeRule = document.querySelector('[data-testid="home-v2-category-active-rule"]') as HTMLElement | null;
+            const activeMarker = document.querySelector('[data-testid="home-v2-category-active-marker"]') as HTMLElement | null;
+            const headerRule = document.querySelector('[data-testid="home-v2-left-header-rule"]') as HTMLElement | null;
+            if (!pageLabel || !continueEntry || !activeCategory || !activeRule || !activeMarker || !headerRule) {
+                return null;
+            }
+            const pageLabelRect = pageLabel.getBoundingClientRect();
+            const continueRect = continueEntry.getBoundingClientRect();
+            const activeCategoryRect = activeCategory.getBoundingClientRect();
+            const activeRuleRect = activeRule.getBoundingClientRect();
+            const activeMarkerRect = activeMarker.getBoundingClientRect();
+            const headerRuleRect = headerRule.getBoundingClientRect();
+            return {
+                bottomControlCenterDelta: Math.abs(
+                    (pageLabelRect.top + pageLabelRect.height / 2)
+                    - (continueRect.top + continueRect.height / 2),
+                ),
+                activeRuleWidthRatio: activeRuleRect.width / activeCategoryRect.width,
+                activeRuleHeaderTopDelta: Math.abs(activeRuleRect.top - headerRuleRect.top),
+                activeTextToRuleGap: activeRuleRect.top - activeCategoryRect.bottom,
+                activeMarkerCenterDelta: Math.abs(
+                    (activeMarkerRect.left + activeMarkerRect.width / 2)
+                    - (activeCategoryRect.left + activeCategoryRect.width / 2),
+                ),
+                activeRuleMarkerCenterDelta: Math.abs(
+                    (activeMarkerRect.left + activeMarkerRect.width / 2)
+                    - (activeRuleRect.left + activeRuleRect.width / 2),
+                ),
+            };
+        });
+        if (!visualAlignmentMetrics) {
+            throw new Error('首页设计稿对齐量测节点缺失');
+        }
+        console.log(
+            `[home-v2-reference-alignment] bottomControlCenterDelta=${visualAlignmentMetrics.bottomControlCenterDelta.toFixed(2)}, activeRuleWidthRatio=${visualAlignmentMetrics.activeRuleWidthRatio.toFixed(2)}, activeRuleHeaderTopDelta=${visualAlignmentMetrics.activeRuleHeaderTopDelta.toFixed(2)}, activeTextToRuleGap=${visualAlignmentMetrics.activeTextToRuleGap.toFixed(2)}, activeMarkerCenterDelta=${visualAlignmentMetrics.activeMarkerCenterDelta.toFixed(2)}, activeRuleMarkerCenterDelta=${visualAlignmentMetrics.activeRuleMarkerCenterDelta.toFixed(2)}`,
+        );
+        expect(visualAlignmentMetrics.bottomControlCenterDelta).toBeLessThan(10);
+        expect(visualAlignmentMetrics.activeRuleWidthRatio).toBeGreaterThan(1.0);
+        expect(visualAlignmentMetrics.activeRuleWidthRatio).toBeLessThan(1.25);
+        expect(visualAlignmentMetrics.activeRuleHeaderTopDelta).toBeLessThan(3);
+        expect(visualAlignmentMetrics.activeTextToRuleGap).toBeGreaterThan(0);
+        expect(visualAlignmentMetrics.activeTextToRuleGap).toBeLessThan(24);
+        expect(visualAlignmentMetrics.activeMarkerCenterDelta).toBeLessThan(6);
+        expect(visualAlignmentMetrics.activeRuleMarkerCenterDelta).toBeLessThan(3);
 
         const homepageScreenshotPath = getEvidenceScreenshotPath(testInfo, 'homepage-catalog');
         await page.screenshot({ path: homepageScreenshotPath, fullPage: true });
 
         await page.getByTestId('home-v2-account-entry').click();
-        const embeddedAuthPanel = page.getByTestId('auth-embedded-panel').first();
-        await expect(embeddedAuthPanel).toBeVisible({ timeout: 10000 });
-        await expect(page.getByTestId('home-v2-auth-mode-login-header')).toBeVisible({ timeout: 10000 });
-        await expect(page.getByTestId('home-v2-auth-mode-register-header')).toBeVisible({ timeout: 10000 });
+        const authModal = page.getByTestId('auth-modal').first();
+        await expect(authModal).toBeVisible({ timeout: 10000 });
         await expect(
             page.locator('[data-scene-node="home-v2-tab-lobby"], [data-scene-node="home-v2-tab-rooms"], [data-scene-node="tab_button_lobby"], [data-scene-node="tab_button_rooms"]'),
         ).toHaveCount(0);
-        await expect(page.getByTestId('auth-modal')).toHaveCount(0);
-        await expect(embeddedAuthPanel.getByTestId('auth-login-account-input')).toBeVisible({ timeout: 10000 });
-        await expect(embeddedAuthPanel.getByTestId('auth-login-password-input')).toBeVisible({ timeout: 10000 });
-        const roomsScreenshotPath = getEvidenceScreenshotPath(testInfo, 'rooms-auth-entry');
-        await page.screenshot({ path: roomsScreenshotPath, fullPage: true });
+        await expect(page.getByTestId('auth-embedded-panel')).toHaveCount(0);
+        await expect(authModal.getByTestId('auth-login-account-input')).toBeVisible({ timeout: 10000 });
+        await expect(authModal.getByTestId('auth-login-password-input')).toBeVisible({ timeout: 10000 });
+        await expect(authModal.getByTestId('auth-submit-button')).toContainText('登 录');
+        await expect(authModal.getByTestId('auth-switch-login')).toBeVisible();
+        await expect(authModal.getByTestId('auth-switch-register')).toBeVisible();
+        await expect(authModal.getByText(/微信|QQ|Google|协议|记住我|Logo|帮助说明|功能介绍|策略 · 卡牌/)).toHaveCount(0);
+        const authModalMetrics = await page.evaluate(() => {
+            const modal = document.querySelector('[data-testid="auth-modal"]') as HTMLElement | null;
+            const bookStage = document.querySelector('[data-testid="home-v2-book-stage"]') as HTMLElement | null;
+            const forgotButton = document.querySelector('[data-testid="auth-login-forgot-button"]') as HTMLElement | null;
+            const submitButton = document.querySelector('[data-testid="auth-submit-button"]') as HTMLElement | null;
+            if (!modal || !bookStage || !forgotButton || !submitButton) return null;
+            const modalRect = modal.getBoundingClientRect();
+            const bookRect = bookStage.getBoundingClientRect();
+            const forgotRect = forgotButton.getBoundingClientRect();
+            const submitRect = submitButton.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            return {
+                modalWidthRatio: modalRect.width / window.innerWidth,
+                modalHeightRatio: modalRect.height / window.innerHeight,
+                modalCenterXRatio: (modalRect.left + modalRect.width / 2) / window.innerWidth,
+                forgotToSubmitGapRatio: (submitRect.top - forgotRect.bottom) / modalRect.height,
+                submitTopRatio: (submitRect.top - modalRect.top) / modalRect.height,
+                modalBookCenterDelta: Math.abs(
+                    (modalRect.left + modalRect.width / 2)
+                    - (bookRect.left + bookRect.width / 2),
+                ),
+                bookStageVisibleWidth: bookRect.width,
+                bookStageVisibleHeight: bookRect.height,
+                viewportWidth,
+                viewportHeight,
+            };
+        });
+        if (!authModalMetrics) {
+            throw new Error('登录弹窗或书本大厅节点缺失，无法验证 modal 覆盖结构');
+        }
+        console.log(
+            `[home-v2-auth-modal] widthRatio=${authModalMetrics.modalWidthRatio.toFixed(3)}, heightRatio=${authModalMetrics.modalHeightRatio.toFixed(3)}, centerXRatio=${authModalMetrics.modalCenterXRatio.toFixed(3)}, forgotToSubmitGapRatio=${authModalMetrics.forgotToSubmitGapRatio.toFixed(3)}, submitTopRatio=${authModalMetrics.submitTopRatio.toFixed(3)}, modalBookCenterDelta=${authModalMetrics.modalBookCenterDelta.toFixed(2)}, bookStage=${authModalMetrics.bookStageVisibleWidth.toFixed(2)}x${authModalMetrics.bookStageVisibleHeight.toFixed(2)}`,
+        );
+        expect(authModalMetrics.modalWidthRatio).toBeGreaterThan(0.26);
+        expect(authModalMetrics.modalWidthRatio).toBeLessThan(0.30);
+        expect(authModalMetrics.modalHeightRatio).toBeGreaterThan(0.58);
+        expect(authModalMetrics.modalHeightRatio).toBeLessThan(0.68);
+        expect(authModalMetrics.modalCenterXRatio).toBeGreaterThan(0.42);
+        expect(authModalMetrics.modalCenterXRatio).toBeLessThan(0.62);
+        expect(authModalMetrics.forgotToSubmitGapRatio).toBeGreaterThan(0.02);
+        expect(authModalMetrics.forgotToSubmitGapRatio).toBeLessThan(0.10);
+        expect(authModalMetrics.submitTopRatio).toBeGreaterThan(0.60);
+        expect(authModalMetrics.submitTopRatio).toBeLessThan(0.74);
+        expect(authModalMetrics.bookStageVisibleWidth / authModalMetrics.viewportWidth).toBeGreaterThan(0.97);
+        expect(authModalMetrics.bookStageVisibleHeight / authModalMetrics.viewportHeight).toBeGreaterThan(0.94);
+        const authModalScreenshotPath = getEvidenceScreenshotPath(testInfo, 'auth-modal-overlay');
+        await page.screenshot({ path: authModalScreenshotPath, fullPage: true });
 
-        await page.getByTestId('home-v2-rooms-back-to-lobby').click();
+        const authModalStableBefore = await authModal.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+                height: rect.height,
+            };
+        });
+        await authModal.getByTestId('auth-login-account-input').click();
+        await applyKeyboardViewportSimulation(page, {
+            runtimeViewportHeight: 320,
+            keyboardInsetHeight: 260,
+        });
+        await page.waitForTimeout(150);
+        const authModalStableAfter = await authModal.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+                height: rect.height,
+            };
+        });
+        const authModalKeyboardTopDelta = Math.abs(authModalStableAfter.top - authModalStableBefore.top);
+        const authModalKeyboardCenterDelta = Math.abs(authModalStableAfter.centerY - authModalStableBefore.centerY);
+        console.log(
+            `[home-v2-auth-modal-stable] topDelta=${authModalKeyboardTopDelta.toFixed(2)}, centerYDelta=${authModalKeyboardCenterDelta.toFixed(2)}, beforeHeight=${authModalStableBefore.height.toFixed(2)}, afterHeight=${authModalStableAfter.height.toFixed(2)}`,
+        );
+        expect(authModalKeyboardTopDelta).toBeLessThan(4);
+        expect(authModalKeyboardCenterDelta).toBeLessThan(4);
+        const authModalStableScreenshotPath = getEvidenceScreenshotPath(testInfo, 'auth-modal-keyboard-stable-20260516');
+        await page.screenshot({ path: authModalStableScreenshotPath, fullPage: true });
+        await page.evaluate(() => {
+            const root = document.documentElement;
+            root.style.removeProperty('--runtime-viewport-height');
+            root.style.removeProperty('--keyboard-inset-height');
+            delete root.dataset.keyboardVisible;
+        });
+
+        await authModal.getByTestId('auth-switch-register').click();
+        await page.waitForTimeout(250);
+        await authModal.evaluate((modal) => {
+            modal.querySelectorAll('*').forEach((node) => {
+                if (node instanceof HTMLElement) node.scrollTop = 0;
+            });
+        });
+        const authRegisterTopScreenshotPath = getEvidenceScreenshotPath(testInfo, 'auth-modal-register-top-overlay-20260516');
+        await page.screenshot({ path: authRegisterTopScreenshotPath, fullPage: true });
+        await expect(authModal.getByTestId('auth-register-email-input')).toBeVisible({ timeout: 10000 });
+        await expect(authModal.getByTestId('auth-register-send-code')).toBeVisible();
+        await expect(authModal.getByTestId('auth-register-code-input')).toBeVisible();
+        await expect(authModal.getByTestId('auth-register-username-input')).toBeVisible();
+        await expect(authModal.getByTestId('auth-register-password-input')).toBeVisible();
+        await expect(authModal.getByTestId('auth-register-confirm-password-input')).toBeVisible();
+        await authModal.evaluate((modal) => {
+            modal.querySelectorAll('*').forEach((node) => {
+                if (node instanceof HTMLElement) node.scrollTop = node.scrollHeight;
+            });
+        });
+        const authRegisterBottomScreenshotPath = getEvidenceScreenshotPath(testInfo, 'auth-modal-register-bottom-overlay-20260516');
+        await page.screenshot({ path: authRegisterBottomScreenshotPath, fullPage: true });
+
+        await authModal.getByTestId('auth-switch-login').click();
+        await authModal.getByTestId('auth-login-forgot-button').click();
+        await page.waitForTimeout(250);
+        await authModal.evaluate((modal) => {
+            modal.querySelectorAll('*').forEach((node) => {
+                if (node instanceof HTMLElement) node.scrollTop = 0;
+            });
+        });
+        const authResetTopScreenshotPath = getEvidenceScreenshotPath(testInfo, 'auth-modal-reset-top-overlay-20260516');
+        await page.screenshot({ path: authResetTopScreenshotPath, fullPage: true });
+        await expect(authModal.getByTestId('auth-reset-email-input')).toBeVisible({ timeout: 10000 });
+        await expect(authModal.getByTestId('auth-reset-send-code')).toBeVisible();
+        await expect(authModal.getByTestId('auth-reset-code-input')).toBeVisible();
+        await expect(authModal.getByTestId('auth-reset-new-password-input')).toBeVisible();
+        await expect(authModal.getByTestId('auth-reset-confirm-password-input')).toBeVisible();
+        await authModal.evaluate((modal) => {
+            modal.querySelectorAll('*').forEach((node) => {
+                if (node instanceof HTMLElement) node.scrollTop = node.scrollHeight;
+            });
+        });
+        const authResetBottomScreenshotPath = getEvidenceScreenshotPath(testInfo, 'auth-modal-reset-bottom-overlay-20260516');
+        await page.screenshot({ path: authResetBottomScreenshotPath, fullPage: true });
+
+        await page.mouse.click(12, 12);
+        await expect(page.getByTestId('auth-modal')).toHaveCount(0);
         for (const { suffix, progress } of HOME_V2_FLIP_CAPTURE_POINTS) {
             const diceThroneCard = page.locator('[data-testid="home-v2-root"] [data-game-id="dicethrone"]').first();
             await expect(diceThroneCard).toBeVisible({ timeout: 20000 });
@@ -568,8 +824,271 @@ test.describe('Lobby E2E', () => {
             ).toBeVisible({ timeout: 10000 });
 
             if (suffix === '50') {
-                const detailScreenshotPath = getEvidenceScreenshotPath(testInfo, 'detail-entry');
+                const detailLayoutMetrics = await page.evaluate(() => {
+                    const leftPage = document.querySelector('[data-testid="home-v2-detail-left-page"]') as HTMLElement | null;
+                    const rightPage = document.querySelector('[data-testid="home-v2-detail-right-page"]') as HTMLElement | null;
+                    const bookStage = document.querySelector('[data-testid="home-v2-book-stage"]') as HTMLElement | null;
+                    const backButton = document.querySelector('[data-testid="home-v2-detail-back-button"]') as HTMLElement | null;
+                    const createRoomButton = document.querySelector('[data-testid="home-v2-create-room-button"]') as HTMLElement | null;
+                    const leftHero = document.querySelector('[data-testid="home-v2-detail-left-hero"]') as HTMLElement | null;
+                    const detailThumbnail = document.querySelector('[data-testid="home-v2-detail-thumbnail"]') as HTMLElement | null;
+                    const description = document.querySelector('[data-testid="home-v2-detail-description"]') as HTMLElement | null;
+                    const recommendedBand = document.querySelector('[data-testid="home-v2-recommended-player-band"]') as HTMLElement | null;
+                    const playerCountBoxes = Array.from(document.querySelectorAll('[data-testid="home-v2-player-count-box"]')) as HTMLElement[];
+                    const tutorialButton = document.querySelector('[data-testid="home-v2-tutorial-button"]') as HTMLElement | null;
+                    const roomSearchField = document.querySelector('[data-testid="home-v2-room-search-field"]') as HTMLElement | null;
+                    const roomSearchIcon = document.querySelector('[data-testid="home-v2-room-search-icon"]') as HTMLElement | null;
+                    const tabItems = Array.from(document.querySelectorAll('[data-testid="home-v2-detail-tab"]')) as HTMLElement[];
+                    const ledger = document.querySelector('[data-testid="home-v2-room-ledger"]') as HTMLElement | null;
+                    const ledgerHeader = document.querySelector('[data-testid="home-v2-room-ledger-header"]') as HTMLElement | null;
+                    const roomRows = Array.from(document.querySelectorAll('[data-testid="home-v2-room-ledger-row"]')) as HTMLElement[];
+                    const firstRoomRow = roomRows[0] ?? null;
+                    const firstRoomThumbnail = document.querySelector('[data-testid="home-v2-room-thumbnail"]') as HTMLElement | null;
+                    const firstRoomAction = document.querySelector('[data-testid="home-v2-room-action-tag"]') as HTMLElement | null;
+                    const isCompactLayout = window.innerWidth > window.innerHeight
+                        && window.innerHeight <= 520
+                        && (
+                            window.matchMedia('(pointer: coarse)').matches
+                            || window.matchMedia('(hover: none)').matches
+                            || (navigator.maxTouchPoints ?? 0) > 0
+                        );
+                    if (!leftPage || !rightPage || !bookStage || !backButton || !createRoomButton || !leftHero || !tutorialButton || !roomSearchField || !roomSearchIcon || tabItems.length < 4 || !ledger || !ledgerHeader) {
+                        return null;
+                    }
+
+                    const bookRect = bookStage.getBoundingClientRect();
+                    const backButtonRect = backButton.getBoundingClientRect();
+                    const createRoomButtonRect = createRoomButton.getBoundingClientRect();
+                    const leftRect = leftPage.getBoundingClientRect();
+                    const rightRect = rightPage.getBoundingClientRect();
+                    const heroRect = leftHero.getBoundingClientRect();
+                    const detailThumbnailRect = detailThumbnail?.getBoundingClientRect();
+                    const tutorialRect = tutorialButton.getBoundingClientRect();
+                    const ledgerRect = ledger.getBoundingClientRect();
+                    const ledgerHeaderRect = ledgerHeader.getBoundingClientRect();
+                    const firstRoomRowRect = firstRoomRow?.getBoundingClientRect();
+                    const firstRoomThumbnailRect = firstRoomThumbnail?.getBoundingClientRect();
+                    const firstRoomActionRect = firstRoomAction?.getBoundingClientRect();
+                    const firstPlayerCountBoxRect = playerCountBoxes[0]?.getBoundingClientRect();
+                    const roomSearchFieldRect = roomSearchField.getBoundingClientRect();
+                    const roomSearchIconRect = roomSearchIcon.getBoundingClientRect();
+                    const backButtonStyle = window.getComputedStyle(backButton);
+                    const createRoomButtonStyle = window.getComputedStyle(createRoomButton);
+                    const roomSearchFieldStyle = window.getComputedStyle(roomSearchField);
+                    const backButtonFontSize = Number.parseFloat(backButtonStyle.fontSize);
+                    const backButtonBorderWidth = Number.parseFloat(backButtonStyle.borderTopWidth);
+                    const backButtonBackgroundAlpha = backButtonStyle.backgroundColor.includes('rgba')
+                        ? Number.parseFloat(backButtonStyle.backgroundColor.split(',').at(-1)?.replace(')', '').trim() ?? '1')
+                        : backButtonStyle.backgroundColor === 'transparent'
+                            ? 0
+                            : 1;
+                    const tabRects = tabItems.map((tab) => tab.getBoundingClientRect());
+                    const tabFontSizes = tabItems.map((tab) => Number.parseFloat(window.getComputedStyle(tab).fontSize));
+                    const filterButtonCount = Array.from(rightPage.querySelectorAll('button')).filter((button) => {
+                        const label = button.textContent?.replace(/\s+/g, '') ?? '';
+                        return ['全部', '可加入', '加密', '满员'].includes(label);
+                    }).length;
+                    const headerDividerCount = Array.from(ledgerHeader.children).filter((child) => {
+                        const style = window.getComputedStyle(child as Element);
+                        return Number.parseFloat(style.borderLeftWidth) > 0;
+                    }).length;
+                    const firstRowDividerCount = firstRoomRow
+                        ? Array.from(firstRoomRow.querySelector('button')?.children ?? []).filter((child) => {
+                            const style = window.getComputedStyle(child as Element);
+                            return Number.parseFloat(style.borderLeftWidth) > 0;
+                        }).length
+                        : 0;
+                    const visibleRoomRowCount = roomRows.filter((row) => {
+                        const rowRect = row.getBoundingClientRect();
+                        return rowRect.top < ledgerRect.bottom && rowRect.bottom > ledgerHeaderRect.bottom;
+                    }).length;
+
+                    return {
+                        stageWidthRatio: bookRect.width / window.innerWidth,
+                        stageAspectRatio: bookRect.width / bookRect.height,
+                        backButtonTopRatio: (backButtonRect.top - leftRect.top) / leftRect.height,
+                        backButtonBackgroundAlpha,
+                        backButtonBorderWidth,
+                        backButtonBackgroundImage: backButtonStyle.backgroundImage,
+                        backButtonHeight: backButtonRect.height,
+                        backButtonWidthRatio: backButtonRect.width / leftRect.width,
+                        backButtonFontSize,
+                        createRoomButtonHeight: createRoomButtonRect.height,
+                        createRoomButtonWidthRatio: createRoomButtonRect.width / rightRect.width,
+                        createRoomButtonFontSize: Number.parseFloat(createRoomButtonStyle.fontSize),
+                        leftHeroWidthRatio: heroRect.width / leftRect.width,
+                        leftHeroTopRatio: (heroRect.top - leftRect.top) / leftRect.height,
+                        detailThumbnailHeight: detailThumbnailRect?.height ?? 0,
+                        detailThumbnailWidthRatio: detailThumbnailRect ? detailThumbnailRect.width / leftRect.width : 0,
+                        descriptionVisible: Boolean(description && description.offsetParent),
+                        descriptionWidthRatio: description ? description.getBoundingClientRect().width / leftRect.width : 0,
+                        descriptionTopRatio: description ? (description.getBoundingClientRect().top - leftRect.top) / leftRect.height : 0,
+                        recommendedVisible: Boolean(recommendedBand && recommendedBand.offsetParent),
+                        recommendedTopRatio: recommendedBand ? (recommendedBand.getBoundingClientRect().top - leftRect.top) / leftRect.height : 0,
+                        recommendedWidthRatio: recommendedBand ? recommendedBand.getBoundingClientRect().width / leftRect.width : 0,
+                        playerCountBoxCount: playerCountBoxes.length,
+                        firstPlayerCountBoxAspectRatio: firstPlayerCountBoxRect ? firstPlayerCountBoxRect.width / firstPlayerCountBoxRect.height : 0,
+                        tutorialTopRatio: (tutorialRect.top - leftRect.top) / leftRect.height,
+                        tutorialBottomRatio: (tutorialRect.bottom - leftRect.top) / leftRect.height,
+                        tutorialWidthRatio: tutorialRect.width / leftRect.width,
+                        roomSearchFieldHeight: roomSearchFieldRect.height,
+                        roomSearchFieldWidthRatio: roomSearchFieldRect.width / rightRect.width,
+                        roomSearchFieldBorderBottomWidth: Number.parseFloat(roomSearchFieldStyle.borderBottomWidth),
+                        roomSearchIconCenterYDelta: Math.abs(
+                            (roomSearchIconRect.top + roomSearchIconRect.height / 2)
+                            - (roomSearchFieldRect.top + roomSearchFieldRect.height / 2),
+                        ),
+                        rightLedgerTopRatio: (ledgerRect.top - rightRect.top) / rightRect.height,
+                        ledgerHeaderHeight: ledgerHeaderRect.height,
+                        tabFontDelta: Math.max(...tabFontSizes) - Math.min(...tabFontSizes),
+                        tabTopDelta: Math.max(...tabRects.map((rect) => rect.top)) - Math.min(...tabRects.map((rect) => rect.top)),
+                        tabHeightDelta: Math.max(...tabRects.map((rect) => rect.height)) - Math.min(...tabRects.map((rect) => rect.height)),
+                        firstRoomRowHeight: firstRoomRowRect?.height ?? 0,
+                        firstRoomThumbnailHeight: firstRoomThumbnailRect?.height ?? 0,
+                        firstRoomActionHeight: firstRoomActionRect?.height ?? 0,
+                        visibleRoomRowCount,
+                        headerDividerCount,
+                        firstRowDividerCount,
+                        filterButtonCount,
+                        isCompactLayout,
+                    };
+                });
+                if (!detailLayoutMetrics) {
+                    throw new Error('详情页布局节点缺失，无法验证书本双页网格');
+                }
+                console.log(
+                    `[home-v2-detail-layout] stageWidthRatio=${detailLayoutMetrics.stageWidthRatio.toFixed(2)}, stageAspectRatio=${detailLayoutMetrics.stageAspectRatio.toFixed(2)}, backButtonTopRatio=${detailLayoutMetrics.backButtonTopRatio.toFixed(2)}, backButtonBackgroundAlpha=${detailLayoutMetrics.backButtonBackgroundAlpha.toFixed(2)}, backButtonBorderWidth=${detailLayoutMetrics.backButtonBorderWidth.toFixed(2)}, backButtonBackgroundImage=${detailLayoutMetrics.backButtonBackgroundImage}, backButtonHeight=${detailLayoutMetrics.backButtonHeight.toFixed(2)}, backButtonWidthRatio=${detailLayoutMetrics.backButtonWidthRatio.toFixed(2)}, backButtonFontSize=${detailLayoutMetrics.backButtonFontSize.toFixed(2)}, createRoomButtonHeight=${detailLayoutMetrics.createRoomButtonHeight.toFixed(2)}, createRoomButtonWidthRatio=${detailLayoutMetrics.createRoomButtonWidthRatio.toFixed(2)}, createRoomButtonFontSize=${detailLayoutMetrics.createRoomButtonFontSize.toFixed(2)}, leftHeroWidthRatio=${detailLayoutMetrics.leftHeroWidthRatio.toFixed(2)}, leftHeroTopRatio=${detailLayoutMetrics.leftHeroTopRatio.toFixed(2)}, detailThumbnailHeight=${detailLayoutMetrics.detailThumbnailHeight.toFixed(2)}, detailThumbnailWidthRatio=${detailLayoutMetrics.detailThumbnailWidthRatio.toFixed(2)}, descriptionWidthRatio=${detailLayoutMetrics.descriptionWidthRatio.toFixed(2)}, descriptionTopRatio=${detailLayoutMetrics.descriptionTopRatio.toFixed(2)}, recommendedTopRatio=${detailLayoutMetrics.recommendedTopRatio.toFixed(2)}, recommendedWidthRatio=${detailLayoutMetrics.recommendedWidthRatio.toFixed(2)}, playerCountBoxCount=${detailLayoutMetrics.playerCountBoxCount}, firstPlayerCountBoxAspectRatio=${detailLayoutMetrics.firstPlayerCountBoxAspectRatio.toFixed(2)}, tutorialTopRatio=${detailLayoutMetrics.tutorialTopRatio.toFixed(2)}, tutorialBottomRatio=${detailLayoutMetrics.tutorialBottomRatio.toFixed(2)}, tutorialWidthRatio=${detailLayoutMetrics.tutorialWidthRatio.toFixed(2)}, roomSearchFieldHeight=${detailLayoutMetrics.roomSearchFieldHeight.toFixed(2)}, roomSearchFieldWidthRatio=${detailLayoutMetrics.roomSearchFieldWidthRatio.toFixed(2)}, roomSearchFieldBorderBottomWidth=${detailLayoutMetrics.roomSearchFieldBorderBottomWidth.toFixed(2)}, roomSearchIconCenterYDelta=${detailLayoutMetrics.roomSearchIconCenterYDelta.toFixed(2)}, rightLedgerTopRatio=${detailLayoutMetrics.rightLedgerTopRatio.toFixed(2)}, ledgerHeaderHeight=${detailLayoutMetrics.ledgerHeaderHeight.toFixed(2)}, tabFontDelta=${detailLayoutMetrics.tabFontDelta.toFixed(2)}, tabTopDelta=${detailLayoutMetrics.tabTopDelta.toFixed(2)}, tabHeightDelta=${detailLayoutMetrics.tabHeightDelta.toFixed(2)}, firstRoomRowHeight=${detailLayoutMetrics.firstRoomRowHeight.toFixed(2)}, firstRoomThumbnailHeight=${detailLayoutMetrics.firstRoomThumbnailHeight.toFixed(2)}, firstRoomActionHeight=${detailLayoutMetrics.firstRoomActionHeight.toFixed(2)}, visibleRoomRowCount=${detailLayoutMetrics.visibleRoomRowCount}, headerDividerCount=${detailLayoutMetrics.headerDividerCount}, firstRowDividerCount=${detailLayoutMetrics.firstRowDividerCount}, filterButtonCount=${detailLayoutMetrics.filterButtonCount}`,
+                );
+                expect(detailLayoutMetrics.stageWidthRatio).toBeGreaterThan(0.96);
+                expect(detailLayoutMetrics.stageAspectRatio).toBeGreaterThan(2.08);
+                expect(detailLayoutMetrics.stageAspectRatio).toBeLessThan(2.28);
+                expect(detailLayoutMetrics.backButtonTopRatio).toBeLessThan(0.08);
+                expect(detailLayoutMetrics.backButtonBackgroundAlpha).toBeLessThan(0.05);
+                expect(detailLayoutMetrics.backButtonBorderWidth).toBeLessThan(1);
+                expect(detailLayoutMetrics.backButtonBackgroundImage).toBe('none');
+                expect(detailLayoutMetrics.isCompactLayout).toBe(true);
+                expect(detailLayoutMetrics.backButtonHeight).toBeGreaterThan(24);
+                expect(detailLayoutMetrics.backButtonWidthRatio).toBeGreaterThan(0.20);
+                expect(detailLayoutMetrics.backButtonWidthRatio).toBeLessThan(0.34);
+                expect(detailLayoutMetrics.backButtonFontSize).toBeGreaterThan(9);
+                expect(detailLayoutMetrics.createRoomButtonHeight).toBeGreaterThan(30);
+                expect(detailLayoutMetrics.createRoomButtonWidthRatio).toBeGreaterThan(0.26);
+                expect(detailLayoutMetrics.createRoomButtonWidthRatio).toBeLessThan(0.36);
+                expect(detailLayoutMetrics.createRoomButtonFontSize).toBeGreaterThanOrEqual(10);
+                expect(detailLayoutMetrics.leftHeroWidthRatio).toBeGreaterThan(0.82);
+                expect(detailLayoutMetrics.leftHeroTopRatio).toBeLessThan(0.18);
+                expect(detailLayoutMetrics.detailThumbnailHeight).toBeGreaterThan(70);
+                expect(detailLayoutMetrics.detailThumbnailHeight).toBeLessThan(86);
+                expect(detailLayoutMetrics.detailThumbnailWidthRatio).toBeLessThan(0.25);
+                expect(detailLayoutMetrics.descriptionVisible).toBe(true);
+                expect(detailLayoutMetrics.descriptionWidthRatio).toBeGreaterThan(0.52);
+                expect(detailLayoutMetrics.recommendedVisible).toBe(true);
+                expect(detailLayoutMetrics.recommendedTopRatio).toBeGreaterThan(0.60);
+                expect(detailLayoutMetrics.recommendedTopRatio).toBeLessThan(0.92);
+                expect(detailLayoutMetrics.recommendedWidthRatio).toBeGreaterThan(0.42);
+                expect(detailLayoutMetrics.recommendedWidthRatio).toBeLessThan(0.82);
+                expect(detailLayoutMetrics.playerCountBoxCount).toBeGreaterThanOrEqual(1);
+                expect(detailLayoutMetrics.firstPlayerCountBoxAspectRatio).toBeGreaterThan(0.88);
+                expect(detailLayoutMetrics.firstPlayerCountBoxAspectRatio).toBeLessThan(1.12);
+                expect(detailLayoutMetrics.tutorialTopRatio).toBeGreaterThan(0.70);
+                expect(detailLayoutMetrics.tutorialBottomRatio).toBeGreaterThan(0.92);
+                expect(detailLayoutMetrics.tutorialBottomRatio).toBeLessThan(1.02);
+                expect(detailLayoutMetrics.tutorialWidthRatio).toBeGreaterThan(0.28);
+                expect(detailLayoutMetrics.tutorialWidthRatio).toBeLessThan(0.48);
+                expect(detailLayoutMetrics.roomSearchFieldHeight).toBeGreaterThan(24);
+                expect(detailLayoutMetrics.roomSearchFieldHeight).toBeLessThan(32);
+                expect(detailLayoutMetrics.roomSearchFieldWidthRatio).toBeGreaterThan(0.40);
+                expect(detailLayoutMetrics.roomSearchFieldWidthRatio).toBeLessThan(0.58);
+                expect(detailLayoutMetrics.roomSearchFieldBorderBottomWidth).toBeGreaterThan(0);
+                expect(detailLayoutMetrics.roomSearchIconCenterYDelta).toBeLessThan(1.2);
+                expect(detailLayoutMetrics.rightLedgerTopRatio).toBeLessThan(0.34);
+                expect(detailLayoutMetrics.ledgerHeaderHeight).toBeGreaterThan(16);
+                expect(detailLayoutMetrics.ledgerHeaderHeight).toBeLessThan(28);
+                expect(detailLayoutMetrics.tabFontDelta).toBeLessThan(2);
+                expect(detailLayoutMetrics.tabTopDelta).toBeLessThan(3);
+                expect(detailLayoutMetrics.tabHeightDelta).toBeLessThan(4);
+                expect(detailLayoutMetrics.firstRoomRowHeight).toBeGreaterThan(34);
+                expect(detailLayoutMetrics.firstRoomRowHeight).toBeLessThan(44);
+                expect(detailLayoutMetrics.firstRoomThumbnailHeight).toBe(0);
+                expect(detailLayoutMetrics.firstRoomActionHeight).toBeGreaterThan(18);
+                expect(detailLayoutMetrics.firstRoomActionHeight).toBeLessThan(28);
+                expect(detailLayoutMetrics.visibleRoomRowCount).toBeGreaterThanOrEqual(5);
+                expect(detailLayoutMetrics.headerDividerCount).toBeGreaterThanOrEqual(3);
+                expect(detailLayoutMetrics.firstRowDividerCount).toBeGreaterThanOrEqual(3);
+                expect(detailLayoutMetrics.filterButtonCount).toBe(0);
+                const detailScreenshotPath = getEvidenceScreenshotPath(testInfo, 'detail-entry-20260516-action-buttons');
                 await page.screenshot({ path: detailScreenshotPath, fullPage: true });
+
+                await page.getByTestId('home-v2-create-room-button').click();
+                const createRoomModal = page.getByTestId('create-room-modal').last();
+                await expect(createRoomModal).toBeVisible({ timeout: 10000 });
+                const createRoomModalMetrics = await createRoomModal.evaluate((element) => {
+                    const rect = element.getBoundingClientRect();
+                    return {
+                        widthRatio: rect.width / window.innerWidth,
+                        heightRatio: rect.height / window.innerHeight,
+                        centerXRatio: (rect.left + rect.width / 2) / window.innerWidth,
+                        centerYRatio: (rect.top + rect.height / 2) / window.innerHeight,
+                    };
+                });
+                console.log(
+                    `[home-v2-create-room-modal] widthRatio=${createRoomModalMetrics.widthRatio.toFixed(3)}, heightRatio=${createRoomModalMetrics.heightRatio.toFixed(3)}, centerXRatio=${createRoomModalMetrics.centerXRatio.toFixed(3)}, centerYRatio=${createRoomModalMetrics.centerYRatio.toFixed(3)}`,
+                );
+                expect(createRoomModalMetrics.widthRatio).toBeGreaterThan(0.24);
+                expect(createRoomModalMetrics.widthRatio).toBeLessThan(0.34);
+                expect(createRoomModalMetrics.heightRatio).toBeGreaterThan(0.42);
+                expect(createRoomModalMetrics.centerXRatio).toBeGreaterThan(0.42);
+                expect(createRoomModalMetrics.centerXRatio).toBeLessThan(0.58);
+                const createRoomModalStableBefore = await createRoomModal.evaluate((element) => {
+                    const rect = element.getBoundingClientRect();
+                    return {
+                        top: rect.top,
+                        centerY: rect.top + rect.height / 2,
+                    };
+                });
+                await page.getByTestId('create-room-name-input').click();
+                await applyKeyboardViewportSimulation(page, {
+                    runtimeViewportHeight: 320,
+                    keyboardInsetHeight: 260,
+                });
+                await page.waitForTimeout(150);
+                const createRoomModalStableAfter = await createRoomModal.evaluate((element) => {
+                    const rect = element.getBoundingClientRect();
+                    return {
+                        top: rect.top,
+                        centerY: rect.top + rect.height / 2,
+                    };
+                });
+                const createRoomModalTopDelta = Math.abs(createRoomModalStableAfter.top - createRoomModalStableBefore.top);
+                const createRoomModalCenterDelta = Math.abs(createRoomModalStableAfter.centerY - createRoomModalStableBefore.centerY);
+                console.log(
+                    `[home-v2-create-room-modal-stable] topDelta=${createRoomModalTopDelta.toFixed(2)}, centerYDelta=${createRoomModalCenterDelta.toFixed(2)}`,
+                );
+                expect(createRoomModalTopDelta).toBeLessThan(4);
+                expect(createRoomModalCenterDelta).toBeLessThan(4);
+                const createRoomModalScreenshotPath = getEvidenceScreenshotPath(testInfo, 'detail-create-room-modal-20260516');
+                await page.screenshot({ path: createRoomModalScreenshotPath, fullPage: true });
+                await page.evaluate(() => {
+                    const root = document.documentElement;
+                    root.style.removeProperty('--runtime-viewport-height');
+                    root.style.removeProperty('--keyboard-inset-height');
+                    delete root.dataset.keyboardVisible;
+                });
+                await page.getByTestId('create-room-cancel-button').click();
+                await expect(createRoomModal).toBeHidden({ timeout: 10000 });
+
+                for (const tabId of ['changelog', 'reviews', 'leaderboard'] as const) {
+                    await page.locator(`[data-testid="home-v2-detail-tab"][data-tab-id="${tabId}"]`).click();
+                    await expect(page.getByTestId(`home-v2-detail-panel-${tabId}`)).toBeVisible({ timeout: 10000 });
+                    await expect(page.getByTestId('home-v2-fold-line-flip')).toHaveAttribute('data-flip-mode', 'detail');
+                    await expect(page.getByTestId('home-v2-fold-line-flip')).toHaveAttribute('data-turn-animating', 'false');
+                    await page.waitForTimeout(300);
+                    const tabScreenshotPath = getEvidenceScreenshotPath(testInfo, `detail-tab-${tabId}-20260516`);
+                    await page.screenshot({ path: tabScreenshotPath, fullPage: true });
+                }
+
+                await page.locator('[data-testid="home-v2-detail-tab"][data-tab-id="lobby"]').click();
+                await expect(page.getByTestId('home-v2-room-ledger')).toBeVisible({ timeout: 10000 });
             }
 
             await backButton.click();
@@ -580,19 +1099,207 @@ test.describe('Lobby E2E', () => {
 
         const returnCatalogScreenshotPath = getEvidenceScreenshotPath(testInfo, 'catalog-return-after-flip');
         await page.screenshot({ path: returnCatalogScreenshotPath, fullPage: true });
+
+        await expect(page.getByTestId('home-v2-continue-entry')).toContainText('井字棋');
+        await page.getByTestId('home-v2-continue-entry').click();
+        await expect(page).toHaveURL(new RegExp(`/play/tictactoe/match/${continueMatchId}\\?playerID=0`), { timeout: 15000 });
+        await waitForMatchBoardOrLoading(page);
+            const continueMatchScreenshotPath = getEvidenceScreenshotPath(testInfo, 'continue-match-entry-20260516');
+            await page.screenshot({ path: continueMatchScreenshotPath, fullPage: true });
+        } finally {
+            await context.close();
+        }
     });
 
-    test(HOME_V2_LOCKED_ROOM_JOIN_TEST_NAME, async ({ page }, testInfo) => {
+    test(HOME_V2_MODAL_UNIFIED_TEST_NAME, async ({ browser, workerPorts }, testInfo) => {
         await clearEvidenceScreenshotsForTest(testInfo);
-        await useHomeV2MobileLandscapeViewport(page);
-        const injectedLockedRoom = await createLockedTicTacToeRoom(page);
+        const context = await createHomeV2MobileLandscapeContext(browser, workerPorts);
+        const page = await context.newPage();
+        try {
+            await useHomeV2MobileLandscapeViewport(page);
 
-        await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
-        await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 15000 });
-        await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
+            await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
+            await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 15000 });
+            await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
+
+        await page.getByTestId('home-v2-account-entry').click();
+        const authModal = page.getByTestId('auth-modal').first();
+        await expect(authModal).toBeVisible({ timeout: 10000 });
+        await expect(authModal.getByTestId('auth-login-account-input')).toBeVisible({ timeout: 10000 });
+        await expect(authModal.getByTestId('auth-login-password-input')).toBeVisible({ timeout: 10000 });
+        await expect(authModal.getByTestId('auth-login-forgot-button')).toBeVisible({ timeout: 10000 });
+        await expect(authModal.getByTestId('auth-submit-button')).toContainText('登 录');
+        await expect.poll(() => page.evaluate(() => (document.activeElement as HTMLElement | null)?.dataset?.testid ?? ''))
+            .not.toBe('auth-login-account-input');
+
+        const authModalMetrics = await authModal.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                widthRatio: rect.width / window.innerWidth,
+                heightRatio: rect.height / window.innerHeight,
+                centerXRatio: (rect.left + rect.width / 2) / window.innerWidth,
+                centerYRatio: (rect.top + rect.height / 2) / window.innerHeight,
+            };
+        });
+        console.log(
+            `[home-v2-modal-audit-auth] widthRatio=${authModalMetrics.widthRatio.toFixed(3)}, heightRatio=${authModalMetrics.heightRatio.toFixed(3)}, centerXRatio=${authModalMetrics.centerXRatio.toFixed(3)}, centerYRatio=${authModalMetrics.centerYRatio.toFixed(3)}`,
+        );
+        expect(authModalMetrics.widthRatio).toBeGreaterThan(0.22);
+        expect(authModalMetrics.widthRatio).toBeLessThan(0.34);
+        expect(authModalMetrics.heightRatio).toBeGreaterThan(0.40);
+        expect(authModalMetrics.heightRatio).toBeLessThan(0.76);
+        expect(authModalMetrics.centerXRatio).toBeGreaterThan(0.42);
+        expect(authModalMetrics.centerXRatio).toBeLessThan(0.58);
+
+        const authModalInnerMetrics = await page.evaluate(() => {
+            const passwordInput = document.querySelector('[data-testid="auth-login-password-input"]') as HTMLElement | null;
+            const forgotButton = document.querySelector('[data-testid="auth-login-forgot-button"]') as HTMLElement | null;
+            const submitButton = document.querySelector('[data-testid="auth-submit-button"]') as HTMLElement | null;
+            if (!passwordInput || !forgotButton || !submitButton) return null;
+            const passwordRect = passwordInput.getBoundingClientRect();
+            const forgotRect = forgotButton.getBoundingClientRect();
+            const submitRect = submitButton.getBoundingClientRect();
+            return {
+                passwordInputHeight: passwordRect.height,
+                passwordToForgotGap: forgotRect.top - passwordRect.bottom,
+                forgotToSubmitGap: submitRect.top - forgotRect.bottom,
+            };
+        });
+        if (!authModalInnerMetrics) {
+            throw new Error('Home V2 登录弹窗内部字段量测节点缺失');
+        }
+        console.log(
+            `[home-v2-modal-audit-auth-inner] passwordInputHeight=${authModalInnerMetrics.passwordInputHeight.toFixed(2)}, passwordToForgotGap=${authModalInnerMetrics.passwordToForgotGap.toFixed(2)}, forgotToSubmitGap=${authModalInnerMetrics.forgotToSubmitGap.toFixed(2)}`,
+        );
+        expect(authModalInnerMetrics.passwordInputHeight).toBeGreaterThan(17);
+        expect(authModalInnerMetrics.passwordInputHeight).toBeLessThan(25);
+        expect(authModalInnerMetrics.passwordToForgotGap).toBeGreaterThan(4);
+        expect(authModalInnerMetrics.forgotToSubmitGap).toBeGreaterThan(4);
+
+        const authModalStableBefore = await authModal.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+            };
+        });
+        await authModal.getByTestId('auth-login-account-input').click();
+        await applyKeyboardViewportSimulation(page, {
+            runtimeViewportHeight: 320,
+            keyboardInsetHeight: 260,
+        });
+        await page.waitForTimeout(150);
+        const authModalStableAfter = await authModal.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+            };
+        });
+        const authModalTopDelta = Math.abs(authModalStableAfter.top - authModalStableBefore.top);
+        const authModalCenterYDelta = Math.abs(authModalStableAfter.centerY - authModalStableBefore.centerY);
+        console.log(
+            `[home-v2-modal-audit-auth-stable] topDelta=${authModalTopDelta.toFixed(2)}, centerYDelta=${authModalCenterYDelta.toFixed(2)}`,
+        );
+        expect(authModalTopDelta).toBeLessThan(4);
+        expect(authModalCenterYDelta).toBeLessThan(4);
+        const authModalScreenshotPath = getEvidenceScreenshotPath(testInfo, 'auth-modal-unified-20260516');
+        await page.screenshot({ path: authModalScreenshotPath, fullPage: true });
+        await page.evaluate(() => {
+            const root = document.documentElement;
+            root.style.removeProperty('--runtime-viewport-height');
+            root.style.removeProperty('--keyboard-inset-height');
+            delete root.dataset.keyboardVisible;
+        });
+
+        await page.mouse.click(12, 12);
+        await expect(authModal).toHaveCount(0);
+
         const tictactoeCard = page.locator('[data-testid="home-v2-root"] [data-game-id="tictactoe"]').first();
-        await expect(tictactoeCard).toBeVisible({ timeout: 20000 });
+        await expect(tictactoeCard).toBeVisible({ timeout: 10000 });
         await tictactoeCard.click();
+        await waitForHomeV2FlipMode(page, 'detail');
+
+        await page.getByTestId('home-v2-create-room-button').click();
+        const createRoomModal = page.getByTestId('create-room-modal').last();
+        await expect(createRoomModal).toBeVisible({ timeout: 10000 });
+        await expect(createRoomModal.getByTestId('create-room-name-input')).toBeVisible();
+        await expect(createRoomModal.getByTestId('create-room-confirm-button')).toContainText('创建');
+
+        const createRoomMetrics = await createRoomModal.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                widthRatio: rect.width / window.innerWidth,
+                heightRatio: rect.height / window.innerHeight,
+                centerXRatio: (rect.left + rect.width / 2) / window.innerWidth,
+                centerYRatio: (rect.top + rect.height / 2) / window.innerHeight,
+            };
+        });
+        console.log(
+            `[home-v2-modal-audit-create-room] widthRatio=${createRoomMetrics.widthRatio.toFixed(3)}, heightRatio=${createRoomMetrics.heightRatio.toFixed(3)}, centerXRatio=${createRoomMetrics.centerXRatio.toFixed(3)}, centerYRatio=${createRoomMetrics.centerYRatio.toFixed(3)}`,
+        );
+        expect(createRoomMetrics.widthRatio).toBeGreaterThan(0.22);
+        expect(createRoomMetrics.widthRatio).toBeLessThan(0.36);
+        expect(createRoomMetrics.heightRatio).toBeGreaterThan(0.34);
+        expect(createRoomMetrics.heightRatio).toBeLessThan(0.82);
+        expect(Math.abs(createRoomMetrics.widthRatio - authModalMetrics.widthRatio)).toBeLessThan(0.06);
+        expect(Math.abs(createRoomMetrics.centerXRatio - authModalMetrics.centerXRatio)).toBeLessThan(0.04);
+        const createRoomScreenshotPath = getEvidenceScreenshotPath(testInfo, 'create-room-modal-unified-20260516');
+        await page.screenshot({ path: createRoomScreenshotPath, fullPage: true });
+
+        const createRoomStableBefore = await createRoomModal.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+            };
+        });
+        await createRoomModal.getByTestId('create-room-name-input').click();
+        await applyKeyboardViewportSimulation(page, {
+            runtimeViewportHeight: 320,
+            keyboardInsetHeight: 260,
+        });
+        await page.waitForTimeout(150);
+        const createRoomStableAfter = await createRoomModal.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+            };
+        });
+        const createRoomTopDelta = Math.abs(createRoomStableAfter.top - createRoomStableBefore.top);
+        const createRoomCenterYDelta = Math.abs(createRoomStableAfter.centerY - createRoomStableBefore.centerY);
+        console.log(
+            `[home-v2-modal-audit-create-room-stable] topDelta=${createRoomTopDelta.toFixed(2)}, centerYDelta=${createRoomCenterYDelta.toFixed(2)}`,
+        );
+        expect(createRoomTopDelta).toBeLessThan(4);
+        expect(createRoomCenterYDelta).toBeLessThan(4);
+            await page.evaluate(() => {
+                const root = document.documentElement;
+                root.style.removeProperty('--runtime-viewport-height');
+                root.style.removeProperty('--keyboard-inset-height');
+                delete root.dataset.keyboardVisible;
+            });
+        } finally {
+            await context.close();
+        }
+    });
+
+    test(HOME_V2_LOCKED_ROOM_JOIN_TEST_NAME, async ({ browser, workerPorts }, testInfo) => {
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const context = await createHomeV2MobileLandscapeContext(browser, workerPorts);
+        const page = await context.newPage();
+        try {
+            await useHomeV2MobileLandscapeViewport(page);
+            const injectedLockedRoom = await createLockedTicTacToeRoom(page);
+
+            await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
+            await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
+            await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30000 });
+            await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
+            const tictactoeCard = page.locator('[data-testid="home-v2-root"] [data-game-id="tictactoe"]').first();
+            await expect(tictactoeCard).toBeVisible({ timeout: 20000 });
+            await tictactoeCard.click();
 
         await expect(page.getByText(injectedLockedRoom.roomName)).toBeVisible({ timeout: 10000 });
         const lockedRoomCard = page
@@ -603,17 +1310,123 @@ test.describe('Lobby E2E', () => {
         await lockedRoomCard.click();
 
         const passwordPanel = page.getByTestId('home-v2-room-password-panel');
+        const passwordSurface = page.getByTestId('home-v2-room-password-surface');
         await expect(passwordPanel).toBeVisible({ timeout: 10000 });
+        await expect(passwordSurface).toBeVisible({ timeout: 10000 });
+        const passwordPanelMetrics = await page.evaluate(() => {
+            const panelSurface = document.querySelector('[data-testid="home-v2-room-password-surface"]') as HTMLElement | null;
+            const bookStage = document.querySelector('[data-testid="home-v2-book-stage"]') as HTMLElement | null;
+            const input = document.querySelector('[data-testid="home-v2-room-password-input"]') as HTMLElement | null;
+            const confirm = document.querySelector('[data-testid="home-v2-room-password-confirm"]') as HTMLElement | null;
+            if (!panelSurface || !bookStage || !input || !confirm) return null;
+            const surfaceRect = panelSurface.getBoundingClientRect();
+            const bookRect = bookStage.getBoundingClientRect();
+            const inputRect = input.getBoundingClientRect();
+            const confirmRect = confirm.getBoundingClientRect();
+            return {
+                centerXRatio: (surfaceRect.left + surfaceRect.width / 2) / window.innerWidth,
+                centerYRatio: (surfaceRect.top + surfaceRect.height / 2) / window.innerHeight,
+                bookCenterXDelta: Math.abs((surfaceRect.left + surfaceRect.width / 2) - (bookRect.left + bookRect.width / 2)),
+                surfaceWidthRatio: surfaceRect.width / window.innerWidth,
+                surfaceHeightRatio: surfaceRect.height / window.innerHeight,
+                inputHeight: inputRect.height,
+                confirmHeight: confirmRect.height,
+                confirmWidthRatio: confirmRect.width / window.innerWidth,
+            };
+        });
+        if (!passwordPanelMetrics) {
+            throw new Error('加密房密码面板节点缺失，无法验证新版浮层');
+        }
+        console.log(
+            `[home-v2-password-panel] centerXRatio=${passwordPanelMetrics.centerXRatio.toFixed(2)}, centerYRatio=${passwordPanelMetrics.centerYRatio.toFixed(2)}, bookCenterXDelta=${passwordPanelMetrics.bookCenterXDelta.toFixed(2)}, surfaceWidthRatio=${passwordPanelMetrics.surfaceWidthRatio.toFixed(2)}, surfaceHeightRatio=${passwordPanelMetrics.surfaceHeightRatio.toFixed(2)}, inputHeight=${passwordPanelMetrics.inputHeight.toFixed(2)}, confirmHeight=${passwordPanelMetrics.confirmHeight.toFixed(2)}, confirmWidthRatio=${passwordPanelMetrics.confirmWidthRatio.toFixed(2)}`,
+        );
+        expect(passwordPanelMetrics.centerXRatio).toBeGreaterThan(0.47);
+        expect(passwordPanelMetrics.centerXRatio).toBeLessThan(0.53);
+        expect(passwordPanelMetrics.centerYRatio).toBeGreaterThan(0.46);
+        expect(passwordPanelMetrics.centerYRatio).toBeLessThan(0.54);
+        expect(passwordPanelMetrics.bookCenterXDelta).toBeLessThan(24);
+        expect(passwordPanelMetrics.surfaceWidthRatio).toBeGreaterThan(0.18);
+        expect(passwordPanelMetrics.surfaceWidthRatio).toBeLessThan(0.30);
+        expect(passwordPanelMetrics.surfaceHeightRatio).toBeGreaterThan(0.34);
+        expect(passwordPanelMetrics.surfaceHeightRatio).toBeLessThan(0.54);
+        expect(passwordPanelMetrics.inputHeight).toBeGreaterThan(17);
+        expect(passwordPanelMetrics.inputHeight).toBeLessThan(25);
+        expect(passwordPanelMetrics.confirmHeight).toBeGreaterThan(18);
+        expect(passwordPanelMetrics.confirmHeight).toBeLessThan(26);
+        expect(passwordPanelMetrics.confirmWidthRatio).toBeGreaterThan(0.10);
+
+        const passwordStableBefore = await passwordSurface.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+            };
+        });
+        await page.getByTestId('home-v2-room-password-input').click();
+        await applyKeyboardViewportSimulation(page, {
+            runtimeViewportHeight: 320,
+            keyboardInsetHeight: 260,
+        });
+        await page.waitForTimeout(150);
+        const passwordStableAfter = await passwordSurface.evaluate((element) => {
+            const rect = element.getBoundingClientRect();
+            return {
+                top: rect.top,
+                centerY: rect.top + rect.height / 2,
+            };
+        });
+        const passwordTopDelta = Math.abs(passwordStableAfter.top - passwordStableBefore.top);
+        const passwordCenterYDelta = Math.abs(passwordStableAfter.centerY - passwordStableBefore.centerY);
+        console.log(
+            `[home-v2-password-panel-stable] topDelta=${passwordTopDelta.toFixed(2)}, centerYDelta=${passwordCenterYDelta.toFixed(2)}`,
+        );
+        expect(passwordTopDelta).toBeLessThan(4);
+        expect(passwordCenterYDelta).toBeLessThan(4);
         const passwordPanelScreenshotPath = getEvidenceScreenshotPath(testInfo, 'locked-room-password-panel');
         await page.screenshot({ path: passwordPanelScreenshotPath, fullPage: true });
+        await page.evaluate(() => {
+            const root = document.documentElement;
+            root.style.removeProperty('--runtime-viewport-height');
+            root.style.removeProperty('--keyboard-inset-height');
+            delete root.dataset.keyboardVisible;
+        });
 
         await page.getByTestId('home-v2-room-password-input').fill(injectedLockedRoom.password);
         await page.getByTestId('home-v2-room-password-confirm').click();
         await expect(page).toHaveURL(new RegExp(`/play/tictactoe/match/${injectedLockedRoom.matchId}\\?playerID=\\d+`), { timeout: 15000 });
         await waitForMatchBoardOrLoading(page);
 
-        const joinSuccessScreenshotPath = getEvidenceScreenshotPath(testInfo, 'locked-room-join-success');
-        await page.screenshot({ path: joinSuccessScreenshotPath, fullPage: true });
+            const joinSuccessScreenshotPath = getEvidenceScreenshotPath(testInfo, 'locked-room-join-success');
+            await page.screenshot({ path: joinSuccessScreenshotPath, fullPage: true });
+        } finally {
+            await context.close();
+        }
+    });
+
+    test(HOME_V2_PACKAGE_ENTRY_TEST_NAME, async ({ browser, workerPorts }, testInfo) => {
+        await clearEvidenceScreenshotsForTest(testInfo);
+        const context = await createHomeV2MobileLandscapeContext(browser, workerPorts);
+        const page = await context.newPage();
+        try {
+            await useHomeV2MobileLandscapeViewport(page);
+            await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
+            await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
+            await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30000 });
+            await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
+            const tictactoeCard = page.locator('[data-testid="home-v2-root"] [data-game-id="tictactoe"]').first();
+            await expect(tictactoeCard).toBeVisible({ timeout: 20000 });
+            await tictactoeCard.click();
+            await waitForHomeV2FlipMode(page, 'detail');
+
+            await expect(page.getByTestId('home-v2-mobile-package-region')).toHaveCount(0);
+            await expect(page.getByTestId('home-v2-mobile-package-version-badge')).toHaveCount(0);
+            await expect(page.getByTestId('game-details-mobile-package-install-confirm-modal')).toHaveCount(0);
+
+            const detailScreenshotPath = getEvidenceScreenshotPath(testInfo, 'home-v2-mobile-package-hidden');
+            await page.screenshot({ path: detailScreenshotPath, fullPage: true });
+        } finally {
+            await context.close();
+        }
     });
 
     test('分类筛选会显示对应的中文游戏列表', async ({ page }) => {

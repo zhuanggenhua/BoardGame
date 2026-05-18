@@ -1,8 +1,11 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { BookOpen, Plus, Search } from 'lucide-react';
 import { type GameConfig } from '../../config/games.config';
+import { UI_Z_INDEX } from '../../core';
 import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import {
@@ -14,19 +17,39 @@ import {
 } from '../../hooks/match/useMatchStatus';
 import { readLocalMatchPreferences, writeLocalMatchPreferences } from '../../engine/ai/localMatchPreferences';
 import * as matchApi from '../../services/matchApi';
+import { fetchReviews, fetchReviewStats, type Review, type ReviewStats } from '../../api/review';
+import { GAME_CHANGELOG_API_URL, GAME_SERVER_URL } from '../../config/server';
 import { getGuestName, getOrCreateGuestId, getOwnerKey, getOwnerType } from '../../hooks/match/ownerIdentity';
 import { useLobbyMatchPresence } from '../../hooks/useLobbyMatchPresence';
+import { useHomeV2CompactLandscape } from '../../hooks/ui/useHomeV2CompactLandscape';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
 import { PasswordField } from '../common/PasswordField';
 import { OptimizedImage } from '../common/media/OptimizedImage';
-import { resolveGameAuthorName, resolveGameDisplayName, resolveGameDescription } from '../lobby/gameDetailsContent';
+import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
+import {
+    homeV2PaperCompactHintClassName,
+    homeV2PaperCompactInputClassName,
+    homeV2PaperCompactPrimaryButtonClassName,
+    homeV2PaperCompactSecondaryButtonClassName,
+    homeV2PaperHintClassName,
+    homeV2PaperInputClassName,
+    homeV2PaperPrimaryButtonClassName,
+    homeV2PaperSecondaryButtonClassName,
+} from '../common/overlays/homeV2PaperModalTheme';
+import {
+    type GameChangelogItem,
+    resolveGameAuthorName,
+    resolveGameDisplayName,
+    resolveGameDescription,
+} from '../lobby/gameDetailsContent';
+import { logger } from '../../lib/logger';
 
 type HomeV2Translate = TFunction<['lobby', 'common']>;
 type GameConfigWithDraftMeta = GameConfig & {
     name?: string;
     description?: string;
 };
-type RoomFilterMode = 'all' | 'open' | 'locked' | 'full';
+type HomeV2DetailTab = 'lobby' | 'changelog' | 'reviews' | 'leaderboard';
 
 const getDisplayName = (game: GameConfig, t: HomeV2Translate) => {
     const draftMeta = game as GameConfigWithDraftMeta;
@@ -127,6 +150,209 @@ function RoomLedgerSkeleton() {
     );
 }
 
+function HomeV2PaperPanel({
+    eyebrow,
+    children,
+    testId,
+}: {
+    eyebrow: string;
+    children: React.ReactNode;
+    testId?: string;
+}) {
+    return (
+        <section data-testid={testId} className="flex h-full min-h-0 flex-col">
+            <div className="border-b border-[rgba(105,66,37,0.38)] pb-[1.4%] text-[clamp(13px,0.92vw,15px)] font-bold tracking-[0.14em] text-[#6c4a32]">
+                {eyebrow}
+            </div>
+            <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto pr-[6px] pt-[1.6%]">
+                {children}
+            </div>
+        </section>
+    );
+}
+
+function HomeV2EmptyNote({ children }: { children: React.ReactNode }) {
+    return (
+        <div className="flex min-h-[156px] items-center justify-center px-[10px] text-center text-[clamp(16px,1.08vw,19px)] font-semibold text-[#8a6444]">
+            {children}
+        </div>
+    );
+}
+
+function HomeV2LeaderboardPanel({
+    leaderboardData,
+    error,
+    t,
+    compact = false,
+}: {
+    leaderboardData: { leaderboard: { name: string; wins: number; matches: number }[] } | null;
+    error: boolean;
+    t: HomeV2Translate;
+    compact?: boolean;
+}) {
+    const entries = leaderboardData?.leaderboard ?? [];
+
+    return (
+        <HomeV2PaperPanel eyebrow={t('lobby:leaderboard.title', { defaultValue: '胜场排行' })}>
+            {error ? (
+                <HomeV2EmptyNote>{t('lobby:leaderboard.error', { defaultValue: '排行榜加载失败' })}</HomeV2EmptyNote>
+            ) : !leaderboardData ? (
+                <HomeV2EmptyNote>{t('lobby:leaderboard.loading', { defaultValue: '加载排行榜中...' })}</HomeV2EmptyNote>
+            ) : entries.length === 0 ? (
+                <HomeV2EmptyNote>{t('lobby:leaderboard.empty', { defaultValue: '暂无数据' })}</HomeV2EmptyNote>
+            ) : (
+                <div className="border-b border-[rgba(105,66,37,0.28)]">
+                    {entries.map((player, index) => {
+                        const rankLabel = String(index + 1).padStart(2, '0');
+                        return (
+                            <div
+                                key={`${player.name}-${index}`}
+                                className={`grid items-center border-t border-[rgba(105,66,37,0.28)] text-[#3f2718] ${
+                                    compact
+                                        ? 'min-h-[44px] grid-cols-[40px_minmax(0,1fr)_74px] gap-[6px] py-[4px]'
+                                        : 'min-h-[66px] grid-cols-[66px_minmax(0,1fr)_148px] gap-[14px]'
+                                }`}
+                            >
+                                <div className="flex justify-center">
+                                    <span
+                                        className={`inline-flex items-center justify-center rounded-[2px] border border-[#a5743c]/54 bg-[rgba(79,46,25,0.06)] font-bold tabular-nums text-[#5b351d] ${
+                                            compact
+                                                ? 'h-[24px] min-w-[24px] px-[4px] text-[10px]'
+                                                : 'h-[34px] min-w-[34px] px-[8px] text-[clamp(18px,1.18vw,22px)]'
+                                        }`}
+                                    >
+                                        {rankLabel}
+                                    </span>
+                                </div>
+                                <div
+                                    className={`min-w-0 font-bold text-[#3f2718] ${
+                                        compact
+                                            ? 'pr-[4px] text-[10.6px] leading-[1.16] [display:-webkit-box] overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
+                                            : 'truncate pr-[12px] text-[clamp(17px,1.16vw,20px)]'
+                                    }`}
+                                >
+                                    {player.name}
+                                </div>
+                                <div className={`justify-self-end text-right font-semibold text-[#6e4a32] ${compact ? 'text-[8.5px] leading-[1.08]' : 'text-[clamp(13px,0.94vw,15px)]'}`}>
+                                    {compact ? (
+                                        <>
+                                            <div>
+                                                <span className="tabular-nums">{player.wins}</span>
+                                                <span className="ml-[1px] text-[#8a6444]">胜</span>
+                                            </div>
+                                            <div className="mt-[2px]">
+                                                <span className="tabular-nums">{player.matches}</span>
+                                                <span className="ml-[1px] text-[#8a6444]">局</span>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        t('lobby:leaderboard.record', { wins: player.wins, matches: player.matches })
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+        </HomeV2PaperPanel>
+    );
+}
+
+function HomeV2ChangelogPanel({
+    items,
+    loading,
+    error,
+    t,
+}: {
+    items: GameChangelogItem[];
+    loading: boolean;
+    error: boolean;
+    t: HomeV2Translate;
+}) {
+    return (
+        <HomeV2PaperPanel eyebrow={t('lobby:changelog.title', { defaultValue: '最近更新' })}>
+            {error ? (
+                <HomeV2EmptyNote>{t('lobby:changelog.error', { defaultValue: '更新日志加载失败' })}</HomeV2EmptyNote>
+            ) : loading ? (
+                <HomeV2EmptyNote>{t('lobby:changelog.loading', { defaultValue: '加载更新日志中...' })}</HomeV2EmptyNote>
+            ) : items.length === 0 ? (
+                <HomeV2EmptyNote>{t('lobby:leaderboard.changelogEmpty', { defaultValue: '暂无日志' })}</HomeV2EmptyNote>
+            ) : (
+                <div className="space-y-[10px]">
+                    {items.map((item) => (
+                        <article key={item.id} className="border-b border-[rgba(105,66,37,0.28)] pb-[14px]">
+                            <div className="flex items-start justify-between gap-[18px]">
+                                <h4 className="text-[clamp(18px,1.22vw,22px)] font-bold leading-tight text-[#3f2718]">{item.title}</h4>
+                                <span className="shrink-0 text-[clamp(11px,0.78vw,13px)] font-semibold tracking-[0.08em] text-[#8a6444]">
+                                    {item.versionLabel || item.publishedAt || item.updatedAt || item.createdAt}
+                                </span>
+                            </div>
+                            <p className="mt-[8px] whitespace-pre-wrap text-[clamp(13px,0.94vw,15px)] leading-[1.65] text-[#5e3d27]">{item.content}</p>
+                        </article>
+                    ))}
+                </div>
+            )}
+        </HomeV2PaperPanel>
+    );
+}
+
+function HomeV2ReviewsPanel({
+    stats,
+    reviews,
+    loading,
+    error,
+    t,
+}: {
+    stats: ReviewStats | null;
+    reviews: Review[];
+    loading: boolean;
+    error: boolean;
+    t: HomeV2Translate;
+}) {
+    return (
+        <HomeV2PaperPanel eyebrow={t('lobby:tabs.reviews', { defaultValue: '评价' })}>
+            {error ? (
+                <HomeV2EmptyNote>{t('lobby:homeV2.reviews.error', { defaultValue: '加载评价失败，请稍后重试' })}</HomeV2EmptyNote>
+            ) : loading ? (
+                <HomeV2EmptyNote>{t('common:loading', { defaultValue: '加载中...' })}</HomeV2EmptyNote>
+            ) : (
+                <div className="space-y-[14px]">
+                    <div className="border-y border-[rgba(105,66,37,0.28)] py-[14px]">
+                        <div className="flex items-end justify-between gap-[20px]">
+                            <div className="text-[clamp(36px,2.4vw,46px)] font-bold leading-none text-[#3f2718]">
+                                {stats ? `${stats.rate}%` : '--'}
+                            </div>
+                            <div className="text-right text-[clamp(12px,0.9vw,14px)] font-semibold text-[#6e4a32]">
+                                {stats ? `${stats.positive}/${stats.total}` : t('lobby:homeV2.reviews.empty', { defaultValue: '暂无评论' })}
+                            </div>
+                        </div>
+                        <div className="mt-[10px] h-[7px] overflow-hidden rounded-full bg-[rgba(105,66,37,0.16)]">
+                            <div className="h-full rounded-full bg-[#315c27]" style={{ width: `${stats?.rate ?? 0}%` }} />
+                        </div>
+                    </div>
+                    {reviews.length === 0 ? (
+                        <HomeV2EmptyNote>{t('lobby:homeV2.reviews.empty', { defaultValue: '暂无评论' })}</HomeV2EmptyNote>
+                    ) : (
+                        reviews.map((review) => (
+                            <article key={review._id} className="border-b border-[rgba(105,66,37,0.24)] pb-[12px]">
+                                <div className="flex items-center justify-between gap-[16px]">
+                                    <div className="truncate text-[clamp(15px,1.06vw,18px)] font-bold text-[#3f2718]">{review.user.username}</div>
+                                    <div className={`shrink-0 text-[clamp(12px,0.88vw,14px)] font-semibold ${review.isPositive ? 'text-[#315c27]' : 'text-[#8a3f2a]'}`}>
+                                        {review.isPositive ? '推荐' : '不推荐'}
+                                    </div>
+                                </div>
+                                {review.content ? (
+                                    <p className="mt-[7px] text-[clamp(13px,0.92vw,15px)] leading-[1.55] text-[#5e3d27]">{review.content}</p>
+                                ) : null}
+                            </article>
+                        ))
+                    )}
+                </div>
+            )}
+        </HomeV2PaperPanel>
+    );
+}
+
 function getDescriptionExcerpt(description: string) {
     const normalized = description.replace(/\s+/g, ' ').trim();
     const firstSentence = normalized.split(/(?<=[。！？!?.])/)[0]?.trim();
@@ -159,6 +385,7 @@ function getDedupedDescriptionExcerpt(description: string, duplicateAnchors: str
 function BookFrameButton({
     children,
     className,
+    icon,
     labelClassName,
     size = 'regular',
     onClick,
@@ -167,17 +394,20 @@ function BookFrameButton({
 }: {
     children: React.ReactNode;
     className?: string;
+    icon?: React.ReactNode;
     labelClassName?: string;
-    size?: 'regular' | 'compact' | 'tiny';
+    size?: 'prominent' | 'regular' | 'compact' | 'tiny';
     onClick?: () => void;
     disabled?: boolean;
     testId?: string;
 }) {
-    const sizeClassName = size === 'regular'
-        ? 'min-h-[42px] min-w-[132px] px-[22px] py-[11px] text-[clamp(12px,0.9vw,13px)]'
-        : size === 'compact'
-            ? 'min-h-[34px] min-w-[102px] px-[14px] py-[7px] text-[clamp(10px,0.76vw,11px)]'
-            : 'min-h-[32px] min-w-[88px] px-[12px] py-[6px] text-[clamp(10px,0.72vw,10px)]';
+    const sizeClassName = size === 'prominent'
+        ? 'min-h-[clamp(52px,2.7vw,60px)] min-w-[clamp(196px,9.2vw,232px)] px-[clamp(30px,1.9vw,42px)] py-[clamp(12px,0.72vw,15px)] text-[clamp(18px,1.16vw,21px)]'
+        : size === 'regular'
+            ? 'min-h-[38px] min-w-[124px] px-[20px] py-[9px] text-[clamp(12px,0.86vw,13px)]'
+            : size === 'compact'
+                ? 'min-h-[30px] min-w-[96px] px-[13px] py-[5px] text-[clamp(10px,0.72vw,11px)]'
+                : 'min-h-[24px] min-w-[74px] px-[9px] py-[3px] text-[clamp(8.5px,0.62vw,9.5px)]';
 
     return (
         <button
@@ -185,23 +415,65 @@ function BookFrameButton({
             onClick={onClick}
             disabled={disabled}
             data-testid={testId}
-            className={`relative inline-flex items-center justify-center rounded-[10px] border font-bold text-[#f4e0bc] transition-transform duration-200 hover:-translate-y-[1px] disabled:translate-y-0 ${sizeClassName} ${className ?? ''}`}
+            className={`relative inline-flex items-center justify-center rounded-[2px] border font-bold text-[#f5dfb9] transition-colors duration-150 hover:text-[#fff1ce] disabled:translate-y-0 ${sizeClassName} ${className ?? ''}`}
             style={{
-                borderColor: 'rgba(110,72,43,0.9)',
-                background: 'linear-gradient(180deg, rgba(113,76,47,0.96) 0%, rgba(83,53,32,0.98) 100%)',
-                boxShadow: 'inset 0 1px 0 rgba(255,238,212,0.18), 0 8px 18px rgba(69,43,24,0.16)',
+                borderColor: 'rgba(174, 122, 60, 0.84)',
+                background: 'linear-gradient(180deg, rgba(79, 46, 25, 0.98) 0%, rgba(52, 30, 17, 0.99) 100%)',
+                boxShadow: '0 1px 2px rgba(63,38,20,0.16)',
                 opacity: disabled ? 0.65 : 1,
                 pointerEvents: disabled ? 'none' : 'auto',
             }}
         >
-            <span className={`relative z-10 [text-shadow:0_1px_0_rgba(52,31,18,0.72)] ${labelClassName ?? ''}`}>
+            <span className={`inline-flex items-center justify-center gap-[6px] ${labelClassName ?? ''}`}>
+                {icon}
                 {children}
             </span>
         </button>
     );
 }
 
-function DetailGameThumbnail({ game, title }: { game: GameConfig; title: string }) {
+function RoomLedgerActionTag({ children, compact }: { children: React.ReactNode; compact: boolean }) {
+    return (
+        <span
+            data-testid="home-v2-room-action-tag"
+            className={`inline-flex items-center justify-center rounded-[2px] border border-[#a5743c]/78 bg-[#472916] font-bold leading-none text-[#f2dbb4] shadow-none ${
+                compact ? 'min-h-[19px] min-w-[34px] px-[5px] text-[8px]' : 'min-h-[34px] min-w-[78px] px-[12px] text-[clamp(12px,0.88vw,14px)]'
+            }`}
+        >
+            {children}
+        </span>
+    );
+}
+
+function BookLineButton({
+    children,
+    className,
+    icon,
+    onClick,
+    testId,
+}: {
+    children: React.ReactNode;
+    className?: string;
+    icon?: React.ReactNode;
+    onClick?: () => void;
+    testId?: string;
+}) {
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            data-testid={testId}
+            className={`inline-flex items-center justify-center gap-[7px] rounded-[2px] border border-[#a5743c]/78 bg-[#4b2c18] font-bold text-[#f1dab3] shadow-[0_1px_2px_rgba(63,38,20,0.13)] transition-colors hover:text-[#fff0ce] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/22 ${className ?? ''}`}
+        >
+            <span className="inline-flex items-center justify-center gap-[7px]">
+                {icon}
+                {children}
+            </span>
+        </button>
+    );
+}
+
+function DetailGameThumbnail({ game, title, framed = false }: { game: GameConfig; title: string; framed?: boolean }) {
     const [imgFailed, setImgFailed] = React.useState(false);
     const manifestThumbnail = React.useMemo(() => {
         if (!React.isValidElement(game.thumbnail)) {
@@ -211,16 +483,25 @@ function DetailGameThumbnail({ game, title }: { game: GameConfig; title: string 
     }, [game.thumbnail]);
 
     return (
-        <div className="relative h-full w-full overflow-hidden rounded-[14px] border border-[#8f6642]/24 bg-[linear-gradient(180deg,_rgba(40,25,18,0.94)_0%,_rgba(20,14,11,0.96)_100%)] shadow-[0_14px_28px_rgba(63,38,20,0.12)]">
+        <div
+            className={`relative h-full w-full overflow-hidden bg-[linear-gradient(180deg,_rgba(40,25,18,0.94)_0%,_rgba(20,14,11,0.96)_100%)] shadow-[0_14px_28px_rgba(63,38,20,0.12)] ${
+                framed
+                    ? 'rounded-[4px] border border-[#e1b86e]/88 ring-2 ring-[#3a2314]/82'
+                    : 'rounded-[14px] border border-[#8f6642]/24'
+            }`}
+            style={framed ? {
+                boxShadow: 'inset 0 0 0 1px rgba(86, 49, 24, 0.86), inset 0 0 0 4px rgba(214, 164, 83, 0.20), 0 12px 22px rgba(63,38,20,0.16)',
+            } : undefined}
+        >
             {game.thumbnailPath && !imgFailed ? (
                 <OptimizedImage
                     src={game.thumbnailPath}
                     alt={title}
-                    className="absolute inset-[6%] h-[88%] w-[88%] object-contain"
+                    className={`${framed ? 'absolute inset-[3.5%] h-[93%] w-[93%]' : 'absolute inset-[6%] h-[88%] w-[88%]'} object-contain`}
                     onError={() => setImgFailed(true)}
                 />
             ) : manifestThumbnail ? (
-                <div className="absolute inset-[6%] flex items-center justify-center overflow-hidden rounded-[10px]">
+                <div className={`${framed ? 'absolute inset-[3.5%] rounded-[1px]' : 'absolute inset-[6%] rounded-[10px]'} flex items-center justify-center overflow-hidden`}>
                     <div className="h-full w-full [&>*]:h-full [&>*]:w-full [&>*]:object-contain">
                         {manifestThumbnail}
                     </div>
@@ -233,6 +514,14 @@ function DetailGameThumbnail({ game, title }: { game: GameConfig; title: string 
                 </div>
             )}
             <div className="absolute inset-0 bg-[linear-gradient(180deg,_rgba(255,255,255,0.08)_0%,_rgba(255,255,255,0)_34%,_rgba(0,0,0,0.18)_100%)]" />
+            {framed ? (
+                <>
+                    <span aria-hidden="true" className="absolute left-[4px] top-[4px] h-[15px] w-[15px] border-l-2 border-t-2 border-[#f0c979]" />
+                    <span aria-hidden="true" className="absolute right-[4px] top-[4px] h-[15px] w-[15px] border-r-2 border-t-2 border-[#f0c979]" />
+                    <span aria-hidden="true" className="absolute bottom-[4px] left-[4px] h-[15px] w-[15px] border-b-2 border-l-2 border-[#f0c979]" />
+                    <span aria-hidden="true" className="absolute bottom-[4px] right-[4px] h-[15px] w-[15px] border-b-2 border-r-2 border-[#f0c979]" />
+                </>
+            ) : null}
         </div>
     );
 }
@@ -274,47 +563,26 @@ function getRoomSearchHaystack(
     ].join(' ').toLowerCase();
 }
 
-function getRoomHeaderMetrics(matches: Array<{
-    isLocked?: boolean;
-    totalSeats?: number;
-    players: Array<{ name?: string }>;
-}>) {
-    return matches.reduce((accumulator, room) => {
-        const playerCount = room.players.filter((player) => Boolean(player.name)).length;
-        const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
-        const isFull = totalSeats > 0 && playerCount >= totalSeats;
-
-        accumulator.players += playerCount;
-        if (room.isLocked) {
-            accumulator.locked += 1;
-        }
-        if (!isFull) {
-            accumulator.open += 1;
-        }
-        return accumulator;
-    }, {
-        players: 0,
-        locked: 0,
-        open: 0,
-    });
-}
-
 export interface LeftProps {
     game: GameConfig | null;
     onBack: () => void;
 }
 
-export const Left = ({ game, onBack }: LeftProps) => {
+const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: () => void }) => {
     const { t } = useTranslation(['lobby', 'common']);
     const navigate = useNavigate();
-
-    if (!game) return null;
+    const isCompactLandscape = useHomeV2CompactLandscape();
 
     const displayName = getDisplayName(game, t);
     const categoryLabel = getCategoryLabel(game, t);
     const playerLabel = getPlayerLabel(game, t);
     const detailBadges = getDetailBadgeLabels(game, t);
     const recommendedPlayerCounts = getRecommendedPlayerCounts(game);
+    const bestPlayerCountSet = new Set(
+        (game.bestPlayers ?? [])
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value) && value > 0),
+    );
     const hasRealAuthorName = Boolean(game.authorName?.trim());
     const gameAuthorName = resolveGameAuthorName(game);
     const description = getDescription(game, t).trim();
@@ -336,31 +604,61 @@ export const Left = ({ game, onBack }: LeftProps) => {
     };
 
     return (
-        <div className="pointer-events-auto flex h-full w-full min-h-0 flex-col text-[#5b3822]">
-            <div className="flex items-start justify-between gap-[10px] pb-[2.2%]">
-                <BookFrameButton size="tiny" className="shrink-0 !rounded-full px-[14px]" onClick={onBack}>
-                    ← {t('lobby:actions.backToDirectory', '返回目录')}
-                </BookFrameButton>
+        <div data-testid="home-v2-detail-left-page" className="pointer-events-auto flex h-full w-full min-h-0 flex-col text-[#3f2718]">
+            <div className={`flex items-start justify-between ${isCompactLandscape ? 'pb-[3px]' : 'pb-[1.2%]'}`}>
+                <button
+                    type="button"
+                    data-testid="home-v2-detail-back-button"
+                    aria-label={t('lobby:actions.backToDirectory', '返回目录')}
+                    className={`inline-flex items-center justify-center border border-transparent bg-transparent font-bold leading-none text-[#2f1b10] shadow-none transition-colors hover:text-[#6b4328] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6b4328]/25 ${
+                        isCompactLandscape
+                            ? 'h-[28px] min-w-[86px] rounded-full text-[10.5px] tracking-[0.02em]'
+                            : 'h-[54px] min-w-[156px] rounded-full text-[24px]'
+                    }`}
+                    onClick={onBack}
+                >
+                    <span aria-hidden="true" className={`${isCompactLandscape ? 'mr-[5px]' : 'mr-[10px]'} leading-none`}>←</span>
+                    <span aria-hidden="true">{t('lobby:actions.backToDirectory', '返回目录')}</span>
+                    <span className="sr-only">{t('lobby:actions.backToDirectory', '返回目录')}</span>
+                </button>
             </div>
 
-            <div className="custom-scrollbar min-h-0 flex-1 overflow-y-auto pr-[1.2%]">
-                <div className="mx-auto w-full max-w-[94%]">
-                    <div className="mx-auto h-[clamp(138px,10.8vw,170px)] w-[clamp(138px,10.8vw,170px)]">
-                        <DetailGameThumbnail game={game} title={displayName} />
+            <div className="flex min-h-0 flex-1 flex-col overflow-hidden pr-[1.2%]">
+                <div
+                    data-testid="home-v2-detail-left-hero"
+                    className={`grid w-full items-start ${
+                        isCompactLandscape
+                            ? 'grid-cols-[78px_minmax(0,1fr)] gap-[12px]'
+                            : 'grid-cols-[clamp(210px,12.4vw,294px)_minmax(0,1fr)] gap-[clamp(28px,2.1vw,42px)]'
+                    }`}
+                >
+                    <div
+                        data-testid="home-v2-detail-thumbnail"
+                        className={isCompactLandscape
+                            ? 'h-[78px] w-[78px] max-w-full'
+                            : 'h-[clamp(210px,12.4vw,294px)] w-[clamp(210px,12.4vw,294px)]'}
+                    >
+                        <DetailGameThumbnail game={game} title={displayName} framed />
                     </div>
-                    <div className="mt-[3.6%] border-b border-[rgba(138,100,68,0.18)] pb-[3.6%] text-center">
-                        <div className="mb-[1.8%] text-[clamp(10px,0.78vw,11px)] font-semibold uppercase tracking-[0.24em] text-[#8b694b]">
-                            {categoryLabel}
+                    <div className="min-w-0">
+                        <div className={`${isCompactLandscape ? 'mb-[3px] flex items-center gap-[7px] text-[9px]' : 'mb-[9px] flex items-center gap-[10px] text-[clamp(11px,0.82vw,13px)]'} font-semibold uppercase tracking-[0.18em] text-[#8b694b]`}>
+                            <span aria-hidden="true" className="text-[#9a7443]">◆</span>
+                            <span>{categoryLabel}</span>
+                            <span aria-hidden="true" className="text-[#9a7443]">◆</span>
                         </div>
-                        <h2 className="text-[clamp(31px,2.36vw,37px)] font-bold leading-[1.04] tracking-[0.01em] text-[#56321f] [text-wrap:balance]">
+                        <h2 className={`${isCompactLandscape ? 'break-keep text-[24px] leading-[1.02]' : 'text-[clamp(42px,3.1vw,58px)] leading-[1.04] [text-wrap:balance]'} font-bold tracking-[0.01em] text-[#3f2718]`}>
                             {displayName}
                         </h2>
-                        <div className="mt-[2.8%] flex flex-wrap justify-center gap-[5px] text-[#6e4a32]">
+                        <div className={`${isCompactLandscape ? 'mt-[6px] gap-[4px]' : 'mt-[14px] gap-[7px]'} flex flex-wrap text-[#6e4a32]`}>
                             {detailBadges.map((badgeLabel, index) => (
                                 <span
                                     key={`${badgeLabel}-${index}`}
                                     data-testid="home-v2-detail-meta-tag"
-                                    className="inline-flex items-center whitespace-nowrap rounded-full border border-[#c3a07a]/40 bg-[rgba(244,230,206,0.26)] px-[8px] py-[2px] text-[clamp(7px,0.58vw,8px)] font-semibold leading-none"
+                                    className={`inline-flex items-center whitespace-nowrap rounded-[4px] border border-[#9d7a54]/45 bg-[rgba(244,230,206,0.32)] font-semibold leading-none text-[#4f301d] ${
+                                        isCompactLandscape
+                                            ? 'px-[7px] py-[4px] text-[9px]'
+                                            : 'px-[13px] py-[7px] text-[clamp(11px,0.82vw,13px)]'
+                                    }`}
                                 >
                                     {badgeLabel}
                                 </span>
@@ -369,51 +667,132 @@ export const Left = ({ game, onBack }: LeftProps) => {
                     </div>
                 </div>
 
-                {leadParagraph ? (
-                    <div className="mx-auto mt-[3.6%] max-w-[84%] text-[#6d4b33]">
-                        <p className="text-center text-[clamp(11px,0.9vw,13px)] leading-[1.74] text-[#6d4b33]">
+                {leadParagraph && isCompactLandscape ? (
+                    <div
+                        data-testid="home-v2-detail-description"
+                        className="ml-[5%] mt-[7px] w-[84%] text-[#54341f]"
+                    >
+                        <div aria-hidden="true" className="mb-[7px] flex items-center gap-[6px] text-[#9a7443]">
+                            <span className="h-px flex-1 bg-[rgba(138,100,68,0.26)]" />
+                            <span className="text-[9px] leading-none">◆</span>
+                            <span className="h-px flex-1 bg-[rgba(138,100,68,0.26)]" />
+                        </div>
+                        <div className="mb-[5px] flex items-center gap-[8px] text-[10px] font-bold tracking-[0.08em] text-[#4b2d1a]">
+                            <span className="text-[#8b6a3f]">◆</span>
+                            <span>{t('common:game_details.description', '游戏简介')}</span>
+                            <span className="text-[#8b6a3f]">◆</span>
+                        </div>
+                        <p className="line-clamp-3 text-[10.5px] leading-[1.38]">
+                            {leadParagraph}
+                        </p>
+                    </div>
+                ) : null}
+
+                {leadParagraph && !isCompactLandscape ? (
+                    <div
+                        data-testid="home-v2-detail-description"
+                        className="mt-[1.4%] w-[68%] border-y border-[rgba(138,100,68,0.24)] py-[3.4%] text-[#54341f]"
+                    >
+                        <div className="mb-[3.0%] flex items-center gap-[8px] text-[clamp(14px,0.96vw,16px)] font-bold tracking-[0.08em] text-[#4b2d1a]">
+                            <span className="text-[#8b6a3f]">◆</span>
+                            <span>{t('common:game_details.description', '游戏简介')}</span>
+                            <span className="text-[#8b6a3f]">◆</span>
+                        </div>
+                        <p className="text-[clamp(14px,1.02vw,16px)] leading-[1.82] text-[#54341f]">
                             {leadParagraph}
                         </p>
                         {secondaryParagraph ? (
-                            <p className="mt-[2.8%] text-center text-[clamp(10px,0.8vw,12px)] leading-[1.7] text-[#7a5a41]">
+                            <p className="mt-[2.6%] text-[clamp(13px,0.94vw,15px)] leading-[1.76] text-[#65472e]">
                                 {secondaryParagraph}
                             </p>
                         ) : null}
                     </div>
                 ) : null}
 
-                <div className="mx-auto mt-[4.4%] max-w-[95%]">
-                    <div className="flex items-center justify-center gap-[10px]">
-                        {recommendedPlayerCounts.length > 0 ? recommendedPlayerCounts.map((count) => (
+                <div className={`mt-auto ${isCompactLandscape ? 'pb-[4.2%]' : 'flex flex-col items-center gap-[14px] pb-[8.6%]'}`}>
+                    {isCompactLandscape ? (
+                        <div className="flex items-end justify-between gap-[10px]">
                             <div
-                                key={`recommended-player-${count}`}
-                                className="flex h-[40px] min-w-[40px] items-center justify-center rounded-[10px] border border-[#8b6544]/28 bg-[linear-gradient(180deg,_rgba(102,67,41,0.96)_0%,_rgba(75,49,30,0.98)_100%)] px-[12px] text-[clamp(15px,1.22vw,18px)] font-bold text-[#f6e3c0] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]"
+                                data-testid="home-v2-recommended-player-band"
+                                className="flex w-[50%] items-center justify-start gap-[7px] text-[#4d301e]"
                             >
-                                {count}
+                                <span className="shrink-0 text-[8.6px] font-semibold tracking-[0.08em] text-[#6f4b32]/78">
+                                    {t('common:game_details.recommended_players')}
+                                </span>
+                                <div className="flex items-center justify-start gap-[6px]">
+                                    {recommendedPlayerCounts.map((count) => {
+                                        const isBest = bestPlayerCountSet.size === 0 || bestPlayerCountSet.has(count);
+                                        return (
+                                            <span
+                                                key={count}
+                                                data-testid="home-v2-player-count-box"
+                                                title={isBest ? t('common:game_details.best_recommendation') : undefined}
+                                                className={`flex h-[24px] w-[24px] items-center justify-center rounded-[3px] border font-bold leading-none text-[10px] ${
+                                                    isBest
+                                                        ? 'border-[#3f2718] bg-[#3f2718] text-[#f4e6ce] shadow-[0_2px_4px_rgba(63,38,20,0.14)]'
+                                                        : 'border-[#8d6a46]/52 bg-transparent text-[#6f4b32]/76'
+                                                }`}
+                                            >
+                                                {count}
+                                            </span>
+                                        );
+                                    })}
+                                </div>
                             </div>
-                        )) : (
-                            <div className="rounded-[10px] border border-[rgba(146,103,67,0.2)] bg-[rgba(247,238,220,0.28)] px-[14px] py-[10px] text-[clamp(11px,0.92vw,13px)] font-semibold text-[#5b3822]">
-                                {playerLabel}
-                            </div>
-                        )}
+                            <BookLineButton
+                                className="min-h-[32px] w-[42%] px-[14px] text-[10.6px] tracking-[0.06em]"
+                                icon={<BookOpen aria-hidden="true" className="h-[13px] w-[13px]" strokeWidth={2.1} />}
+                                onClick={handleTutorial}
+                                testId="home-v2-tutorial-button"
+                            >
+                                {t('lobby:actions.tutorial')}
+                            </BookLineButton>
+                        </div>
+                    ) : null}
+                    {!isCompactLandscape ? (
+                        <>
+                    <div
+                        data-testid="home-v2-recommended-player-band"
+                        className={`flex flex-col items-center justify-center gap-[5px] text-[#4d301e] ${isCompactLandscape ? 'w-[46%]' : 'w-[52%]'}`}
+                    >
+                        <div className={`flex items-center justify-center ${isCompactLandscape ? 'gap-[6px]' : 'gap-[9px]'}`}>
+                            {recommendedPlayerCounts.map((count) => {
+                                const isBest = bestPlayerCountSet.size === 0 || bestPlayerCountSet.has(count);
+                                return (
+                                    <span
+                                        key={count}
+                                        data-testid="home-v2-player-count-box"
+                                        title={isBest ? t('common:game_details.best_recommendation') : undefined}
+                                        className={`flex items-center justify-center rounded-[4px] border font-bold leading-none ${
+                                            isCompactLandscape ? 'h-[24px] w-[24px] text-[10px]' : 'h-[34px] w-[34px] text-[14px]'
+                                        } ${
+                                            isBest
+                                                ? 'border-[#3f2718] bg-[#3f2718] text-[#f4e6ce] shadow-[0_2px_4px_rgba(63,38,20,0.14)]'
+                                                : 'border-[#8d6a46]/52 bg-transparent text-[#6f4b32]/76'
+                                        }`}
+                                    >
+                                        {count}
+                                    </span>
+                                );
+                            })}
+                        </div>
+                        <span className={`${isCompactLandscape ? 'text-[8.6px]' : 'text-[10px]'} font-semibold tracking-[0.08em] text-[#6f4b32]/72`}>
+                            {t('common:game_details.recommended_players')}
+                        </span>
                     </div>
-                    <div className="mt-[10px] text-center text-[clamp(8px,0.62vw,9px)] font-semibold uppercase tracking-[0.18em] text-[#8b694b]">
-                        {t('common:game_details.recommended_players')}
-                    </div>
-                </div>
-
-                <div className="mx-auto mt-[3.8%] flex max-w-[82%] flex-col gap-[8px]">
-                    <BookFrameButton
-                        className="w-full min-h-[50px] shadow-[0_8px_18px_rgba(88,56,34,0.16)]"
-                        labelClassName="text-[clamp(16px,1.22vw,20px)] tracking-[0.04em]"
+                    <BookLineButton
+                        className="min-h-[48px] w-[52%] px-[24px] text-[clamp(16px,1.08vw,20px)] tracking-[0.06em]"
+                        icon={<BookOpen aria-hidden="true" className="h-[18px] w-[18px]" strokeWidth={2.1} />}
                         onClick={handleTutorial}
                         testId="home-v2-tutorial-button"
                     >
                         {t('lobby:actions.tutorial')}
-                    </BookFrameButton>
+                    </BookLineButton>
+                        </>
+                    ) : null}
                     {hasRealAuthorName ? (
                         <div className="flex items-center justify-center">
-                            <div className="inline-flex max-w-full items-center rounded-full border border-[#c6a580]/30 bg-[rgba(244,230,206,0.24)] px-[14px] py-[7px] text-[clamp(9px,0.72vw,10px)] font-medium text-[#7b5a40] shadow-[0_6px_14px_rgba(75,49,30,0.05)]">
+                            <div className={`${isCompactLandscape ? 'text-[10px]' : 'text-[clamp(9px,0.72vw,10px)]'} inline-flex max-w-full items-center rounded-full border border-[#c6a580]/30 bg-[rgba(244,230,206,0.24)] px-[14px] py-[7px] font-medium text-[#7b5a40] shadow-[0_6px_14px_rgba(75,49,30,0.05)]`}>
                                 {t('lobby:authorInfo.button', { author: gameAuthorName })}
                             </div>
                         </div>
@@ -424,6 +803,10 @@ export const Left = ({ game, onBack }: LeftProps) => {
     );
 };
 
+export const Left = ({ game, onBack }: LeftProps) => (
+    game ? <GameDetailsLeftContent game={game} onBack={onBack} /> : null
+);
+
 export interface RightProps {
     game: GameConfig | null;
 }
@@ -433,6 +816,7 @@ export const Right = ({ game }: RightProps) => {
     const navigate = useNavigate();
     const { user, token } = useAuth();
     const toast = useToast();
+    const isCompactLandscape = useHomeV2CompactLandscape();
     const gameId = game?.id ?? null;
     const { matches, hasSnapshot } = useLobbyMatchPresence({
         gameId,
@@ -440,13 +824,28 @@ export const Right = ({ game }: RightProps) => {
         requireSeen: false,
     });
     const [showCreateRoomModal, setShowCreateRoomModal] = React.useState(false);
-    const [pendingPasswordRoom, setPendingPasswordRoom] = React.useState<{ matchID: string } | null>(null);
+    const [pendingPasswordRoom, setPendingPasswordRoom] = React.useState<{ matchID: string; roomName?: string } | null>(null);
     const [roomPasswordDraft, setRoomPasswordDraft] = React.useState('');
     const [roomSearch, setRoomSearch] = React.useState('');
-    const [roomFilter, setRoomFilter] = React.useState<RoomFilterMode>('all');
     const [isLoading, setIsLoading] = React.useState(false);
     const [isPreparingCreateRoom, setIsPreparingCreateRoom] = React.useState(false);
     const [initialCreateRoomPreferences, setInitialCreateRoomPreferences] = React.useState<ReturnType<typeof readLocalMatchPreferences> | null>(null);
+    const [activeTab, setActiveTab] = React.useState<HomeV2DetailTab>('lobby');
+    const [leaderboardData, setLeaderboardData] = React.useState<{
+        leaderboard: { name: string; wins: number; matches: number }[];
+    } | null>(null);
+    const [leaderboardError, setLeaderboardError] = React.useState(false);
+    const [changelogItems, setChangelogItems] = React.useState<GameChangelogItem[]>([]);
+    const [changelogLoading, setChangelogLoading] = React.useState(false);
+    const [changelogError, setChangelogError] = React.useState(false);
+    const [reviewStats, setReviewStats] = React.useState<ReviewStats | null>(null);
+    const [reviewItems, setReviewItems] = React.useState<Review[]>([]);
+    const [reviewsLoading, setReviewsLoading] = React.useState(false);
+    const [reviewsError, setReviewsError] = React.useState(false);
+    const passwordHintClassName = isCompactLandscape ? homeV2PaperCompactHintClassName : homeV2PaperHintClassName;
+    const passwordInputClassName = isCompactLandscape ? homeV2PaperCompactInputClassName : homeV2PaperInputClassName;
+    const passwordPrimaryButtonClassName = isCompactLandscape ? homeV2PaperCompactPrimaryButtonClassName : homeV2PaperPrimaryButtonClassName;
+    const passwordSecondaryButtonClassName = isCompactLandscape ? homeV2PaperCompactSecondaryButtonClassName : homeV2PaperSecondaryButtonClassName;
 
     const roomPreviewItems = matches
         .slice()
@@ -465,25 +864,145 @@ export const Right = ({ game }: RightProps) => {
             return (right.updatedAt ?? 0) - (left.updatedAt ?? 0);
         });
 
-    const roomHeaderMetrics = React.useMemo(() => getRoomHeaderMetrics(roomPreviewItems), [roomPreviewItems]);
     const normalizedRoomSearch = roomSearch.trim().toLowerCase();
     const filteredRoomPreviewItems = React.useMemo(() => roomPreviewItems.filter((room) => {
-        const roomState = getRoomStateSummary(room, t);
-        if (roomFilter !== 'all' && roomState.key !== roomFilter) {
-            return false;
-        }
-
         if (!normalizedRoomSearch) {
             return true;
         }
 
         const fallbackTitle = getRoomTitle(room.matchID, t, room.roomName);
         return getRoomSearchHaystack(room, fallbackTitle).includes(normalizedRoomSearch);
-    }), [normalizedRoomSearch, roomFilter, roomPreviewItems, t]);
+    }), [normalizedRoomSearch, roomPreviewItems, t]);
 
     const guestId = user?.id ? undefined : getOrCreateGuestId();
     const ownerKey = getOwnerKey(user?.id, guestId);
     const guestName = getGuestName(t, guestId);
+
+    React.useEffect(() => {
+        setActiveTab('lobby');
+        setRoomSearch('');
+        setPendingPasswordRoom(null);
+        setRoomPasswordDraft('');
+    }, [gameId]);
+
+    React.useEffect(() => {
+        if (!gameId || activeTab !== 'leaderboard') {
+            return;
+        }
+
+        let cancelled = false;
+        setLeaderboardError(false);
+        setLeaderboardData(null);
+
+        fetch(`${GAME_SERVER_URL}/games/${encodeURIComponent(gameId)}/leaderboard`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json() as Promise<{ leaderboard?: { name: string; wins: number; matches: number }[]; error?: unknown }>;
+            })
+            .then((payload) => {
+                if (cancelled) return;
+                if (payload && !payload.error) {
+                    setLeaderboardData({
+                        leaderboard: Array.isArray(payload.leaderboard) ? payload.leaderboard : [],
+                    });
+                    return;
+                }
+                setLeaderboardError(true);
+            })
+            .catch((error: unknown) => {
+                if (cancelled) return;
+                logger.error('[HomeV2Detail] 获取排行榜失败', {
+                    gameId,
+                    error,
+                });
+                setLeaderboardError(true);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeTab, gameId]);
+
+    React.useEffect(() => {
+        if (!gameId || activeTab !== 'changelog') {
+            return;
+        }
+
+        let cancelled = false;
+        setChangelogLoading(true);
+        setChangelogError(false);
+        setChangelogItems([]);
+
+        fetch(`${GAME_CHANGELOG_API_URL}/${encodeURIComponent(gameId)}`)
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                return response.json() as Promise<{ changelogs?: GameChangelogItem[] }>;
+            })
+            .then((payload) => {
+                if (cancelled) return;
+                setChangelogItems(Array.isArray(payload.changelogs) ? payload.changelogs : []);
+            })
+            .catch((error: unknown) => {
+                if (cancelled) return;
+                logger.error('[HomeV2Detail] 获取更新日志失败', {
+                    gameId,
+                    error,
+                });
+                setChangelogError(true);
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setChangelogLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeTab, gameId]);
+
+    React.useEffect(() => {
+        if (!gameId || activeTab !== 'reviews') {
+            return;
+        }
+
+        let cancelled = false;
+        setReviewsLoading(true);
+        setReviewsError(false);
+        setReviewStats(null);
+        setReviewItems([]);
+
+        Promise.all([
+            fetchReviewStats(gameId),
+            fetchReviews(gameId, 1, 5),
+        ])
+            .then(([stats, reviewList]) => {
+                if (cancelled) return;
+                setReviewStats(stats);
+                setReviewItems(reviewList.items ?? []);
+            })
+            .catch((error: unknown) => {
+                if (cancelled) return;
+                logger.error('[HomeV2Detail] 获取评价失败', {
+                    gameId,
+                    error,
+                });
+                setReviewsError(true);
+            })
+            .finally(() => {
+                if (!cancelled) {
+                    setReviewsLoading(false);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [activeTab, gameId]);
 
     const openCreateRoom = async () => {
         if (!game || isPreparingCreateRoom) return;
@@ -572,7 +1091,7 @@ export const Right = ({ game }: RightProps) => {
             const summary = matches.find((item) => item.matchID === matchID);
             if (summary?.isLocked) {
                 if (!password) {
-                    setPendingPasswordRoom({ matchID });
+                    setPendingPasswordRoom({ matchID, roomName: summary.roomName });
                     setRoomPasswordDraft('');
                     return;
                 }
@@ -658,251 +1177,305 @@ export const Right = ({ game }: RightProps) => {
 
     if (!game) return null;
 
-    const hasVisibleRooms = filteredRoomPreviewItems.length > 0;
-    const filterOptions: Array<{ id: RoomFilterMode; label: string }> = [
-        { id: 'all', label: t('lobby:homeV2.detailFilters.all') },
-        { id: 'open', label: t('lobby:homeV2.detailFilters.open') },
-        { id: 'locked', label: t('lobby:homeV2.detailFilters.locked') },
-        { id: 'full', label: t('lobby:homeV2.detailFilters.full') },
-    ];
-    const detailTabs = [
-        t('lobby:homeV2.details.onlineLobbyLabel'),
-        t('lobby:homeV2.detailTabs.updates', { defaultValue: '更新' }),
-        t('lobby:homeV2.detailTabs.reviews', { defaultValue: '评价' }),
-        t('lobby:homeV2.detailTabs.ranking', { defaultValue: '排行榜' }),
-    ];
-
-    return (
-        <div className="pointer-events-auto flex h-full w-full min-h-0 flex-col text-[#5b3822]">
-            <div className="flex items-end justify-between gap-[12px] border-b border-[rgba(163,105,63,0.18)] pb-[2.1%]">
-                <div className="flex min-w-0 flex-wrap items-end gap-[13px]">
-                    {detailTabs.map((tabLabel, index) => (
-                        <div
-                            key={`${tabLabel}-${index}`}
-                            className={index === 0
-                                ? 'relative pb-[4px] text-[clamp(17px,1.34vw,20px)] font-bold text-[#5b3822]'
-                                : 'pb-[4px] text-[clamp(11px,0.9vw,13px)] font-semibold text-[#8a6444]'
-                            }
-                        >
-                            {tabLabel}
-                            {index === 0 ? (
-                                <span
-                                    aria-hidden="true"
-                                    className="absolute bottom-0 left-0 h-px w-full bg-[linear-gradient(90deg,rgba(122,90,55,0)_0%,rgba(122,90,55,0.95)_14%,rgba(122,90,55,0.95)_86%,rgba(122,90,55,0)_100%)]"
-                                />
-                            ) : null}
-                        </div>
-                    ))}
-                </div>
-                <BookFrameButton
-                    className="shrink-0"
-                    size="compact"
-                    disabled={isLoading || isPreparingCreateRoom}
-                    onClick={() => void openCreateRoom()}
-                    testId="home-v2-create-room-button"
+    const passwordModal = activeTab === 'lobby' && pendingPasswordRoom && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+                data-testid="home-v2-room-password-panel"
+                className="fixed inset-0 flex items-center justify-center bg-[rgba(18,13,9,0.56)] p-4 pointer-events-auto backdrop-blur-[2px]"
+                style={{ zIndex: UI_Z_INDEX.modalContent }}
+            >
+                <HomeV2PaperModalFrame
+                    title={t('lobby:password.modalTitle')}
+                    dataTestId="home-v2-room-password-surface"
+                    dataTextEntryAutoscroll="off"
+                    surfaceClassName={`font-serif ${isCompactLandscape ? 'home-v2-paper-modal-compact w-[min(15.25rem,calc(100vw-1rem))]' : 'w-[min(31rem,calc(100vw-2rem))]'}`}
+                    surfaceStyle={{
+                        height: isCompactLandscape
+                            ? 'min(calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 0.5rem), 11.75rem)'
+                            : undefined,
+                        maxHeight: isCompactLandscape
+                            ? undefined
+                            : 'min(calc(100vh - var(--safe-area-top, 0px) - var(--safe-area-bottom, 0px) - 2rem), 25rem)',
+                    }}
+                    headerClassName={isCompactLandscape ? 'px-[22px] pb-[9px] pt-[13px]' : 'px-7 pb-3 pt-6'}
+                    titleClassName={isCompactLandscape ? 'text-[11.8px] tracking-[0.075em]' : undefined}
+                    dividerClassName={isCompactLandscape ? 'mt-[7px] w-[72%] gap-1.5' : undefined}
                 >
-                    {t('lobby:actions.createRoom', '创建房间')}
-                </BookFrameButton>
-            </div>
-
-            <div className="mt-[2.4%] flex items-center gap-[10px]">
-                <label className="relative min-w-0 flex-1">
-                    <input
-                        type="text"
-                        value={roomSearch}
-                        onChange={(event) => setRoomSearch(event.target.value)}
-                        placeholder={t('lobby:homeV2.detailSearchPlaceholder')}
-                        className="h-[34px] w-full rounded-[9px] border border-[#b18962]/28 bg-[rgba(247,238,220,0.34)] px-[13px] pr-[34px] text-[clamp(11px,0.84vw,12px)] text-[#5f3b25] outline-none transition-colors placeholder:text-[#9a7c5d] focus:border-[#8a6444]"
-                    />
-                    <span className="pointer-events-none absolute right-[11px] top-1/2 -translate-y-1/2 text-[14px] text-[#896240]">
-                        ⌕
-                    </span>
-                </label>
-            </div>
-
-            <div className="mt-[1.8%] flex items-center justify-between gap-[12px]">
-                <div className="flex flex-wrap items-center gap-[6px]">
-                    {filterOptions.map((option) => {
-                        const active = roomFilter === option.id;
-                        return (
-                            <button
-                                key={option.id}
-                                type="button"
-                                className={`rounded-full border px-[8px] py-[2px] text-[clamp(8px,0.64vw,9px)] font-semibold transition-colors ${
-                                    active
-                                        ? 'border-[#8f6642]/45 bg-[rgba(117,79,49,0.08)] text-[#5f3b25]'
-                                        : 'border-[#c7ab84]/26 bg-[rgba(247,238,220,0.16)] text-[#8a6444]'
-                                }`}
-                                onClick={() => setRoomFilter(option.id)}
-                            >
-                                {option.label}
-                            </button>
-                        );
-                    })}
-                </div>
-                {hasSnapshot ? (
-                    <div className="shrink-0 text-[clamp(10px,0.78vw,11px)] font-medium text-[#8a6444]">
-                        {t('lobby:homeV2.roomCount', { count: roomPreviewItems.length })}
-                    </div>
-                ) : null}
-            </div>
-
-            <div className="mt-[2.2%] flex min-h-0 flex-1 flex-col px-[1%]">
-                <div className="grid grid-cols-[minmax(0,2.1fr)_56px_62px_74px] items-center gap-[10px] border-b border-[rgba(163,105,63,0.18)] pb-[1.8%] text-[clamp(8px,0.66vw,9px)] font-semibold uppercase tracking-[0.12em] text-[#8b694b]">
-                    <div>{t('lobby:homeV2.detailColumns.roomName')}</div>
-                    <div className="text-center">{t('lobby:homeV2.detailColumns.players')}</div>
-                    <div className="text-center">{t('lobby:homeV2.detailColumns.status')}</div>
-                    <div className="text-center">{t('lobby:homeV2.detailColumns.action')}</div>
-                </div>
-
-                <div className="mt-[1.4%] min-h-0 flex-1">
-                    {!hasSnapshot ? (
-                        <RoomLedgerSkeleton />
-                    ) : !hasVisibleRooms ? (
-                        <div className="flex min-h-[164px] flex-col items-center justify-center px-[3%] text-center">
-                            <div className="text-[clamp(14px,1.1vw,16px)] font-semibold text-[#6f4b32]">
-                                {normalizedRoomSearch || roomFilter !== 'all'
-                                    ? t('lobby:homeV2.detailNoMatchTitle')
-                                    : t('lobby:homeV2.emptyRoomTitle')}
-                            </div>
-                            <div className="mt-[8px] text-[clamp(10px,0.8vw,11px)] leading-[1.6] text-[#8a6444]">
-                                {normalizedRoomSearch || roomFilter !== 'all'
-                                    ? t('lobby:homeV2.detailNoMatchDescription')
-                                    : t('lobby:homeV2.emptyRoomDescription')}
+                    <div className={`relative z-10 flex flex-col ${isCompactLandscape ? 'gap-[6px] px-[22px] pb-[11px]' : 'gap-4 px-7 pb-6'}`}>
+                        <div className="text-center">
+                            <div className={passwordHintClassName}>
+                                {getRoomTitle(pendingPasswordRoom.matchID, t, pendingPasswordRoom.roomName)}
                             </div>
                         </div>
-                    ) : (
-                        <div className="custom-scrollbar h-full overflow-y-auto pr-[2px]">
-                            <div className="space-y-[6px]">
-                                {filteredRoomPreviewItems.map((room) => {
-                                    const playerCount = room.players.filter((player) => Boolean(player.name)).length;
-                                    const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
-                                    const roomState = getRoomStateSummary(room, t);
-                                    const actionLabel = roomState.key === 'locked'
-                                        ? t('lobby:homeV2.lockedRoomLabel')
-                                        : roomState.key === 'full'
-                                            ? t('lobby:actions.spectate')
-                                            : t('lobby:actions.join');
-
-                                    return (
-                                        <article
-                                            key={room.matchID}
-                                            className="border-b border-[rgba(163,105,63,0.1)] pb-[3px] last:border-b-0 last:pb-0"
-                                        >
-                                            <button
-                                                type="button"
-                                                className="group grid w-full grid-cols-[minmax(0,2.1fr)_56px_62px_74px] items-center gap-[10px] rounded-[10px] px-[2px] py-[6px] text-left transition-colors duration-200 hover:bg-[rgba(127,88,56,0.05)]"
-                                                disabled={isLoading}
-                                                onClick={() => void handleJoinRoom(room.matchID)}
-                                            >
-                                                <div className="flex min-w-0 items-center gap-[8px]">
-                                                    <div className="h-[40px] w-[40px] shrink-0 rounded-[8px] border border-[#8f6642]/16 bg-[rgba(255,255,255,0.04)]">
-                                                        <DetailGameThumbnail game={game} title={getRoomTitle(room.matchID, t, room.roomName)} />
-                                                    </div>
-                                                    <div className="min-w-0">
-                                                        <div className="truncate text-[clamp(11px,0.88vw,12px)] font-semibold leading-[1.24] text-[#603d27]">
-                                                            {getRoomTitle(room.matchID, t, room.roomName)}
-                                                        </div>
-                                                        <div className="mt-[1px] truncate text-[clamp(9px,0.72vw,10px)] leading-[1.35] text-[#7a5a41]">
-                                                            {getRoomSeatLine(room, t)}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div className="text-center text-[clamp(9px,0.7vw,10px)] font-semibold text-[#67412a]">
-                                                    {playerCount}/{totalSeats || playerCount}
-                                                </div>
-                                                <div className="text-center">
-                                                    <span className={`inline-flex min-w-[42px] items-center justify-center rounded-full border px-[5px] py-[2px] text-[7px] font-semibold leading-none ${
-                                                        roomState.key === 'locked'
-                                                            ? 'border-[#9b774f]/30 bg-[rgba(167,132,90,0.1)] text-[#6f4b32]'
-                                                            : roomState.key === 'full'
-                                                                ? 'border-[#b88a68]/28 bg-[rgba(175,122,73,0.08)] text-[#845236]'
-                                                                : 'border-[#8a6b4f]/26 bg-[rgba(117,79,49,0.08)] text-[#5d3923]'
-                                                    }`}>
-                                                        {roomState.label}
-                                                    </span>
-                                                </div>
-                                                <div className="text-center">
-                                                    <span
-                                                        data-testid="home-v2-room-action-tag"
-                                                        className="inline-flex min-w-[56px] items-center justify-center rounded-[7px] border border-[#5f3d26]/18 bg-[linear-gradient(180deg,_rgba(112,76,48,0.92)_0%,_rgba(81,53,32,0.96)_100%)] px-[8px] py-[6px] text-[clamp(8px,0.64vw,9px)] font-semibold text-[#f4e2c2] shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]"
-                                                    >
-                                                        {actionLabel}
-                                                    </span>
-                                                </div>
-                                            </button>
-                                        </article>
-                                    );
-                                })}
-                            </div>
-                        </div>
-                    )}
-                </div>
-
-                {hasSnapshot ? (
-                    <div className="mt-[1.6%] flex items-center justify-between border-t border-[rgba(163,105,63,0.12)] pt-[1.6%] text-[clamp(8px,0.64vw,9px)] text-[#8b694b]">
-                        <div>{t('lobby:homeV2.waitingPlayers')}</div>
                         <div>
-                            {t('lobby:homeV2.roomCount', { count: filteredRoomPreviewItems.length })}
-                            {' · '}
-                            {t('common:game_details.people')}: {roomHeaderMetrics.players}
+                            <div className="mb-2 flex items-center justify-between gap-3">
+                                <label
+                                    htmlFor="home-v2-room-password-input"
+                                    className={isCompactLandscape ? 'block text-[7.2px] font-semibold tracking-[0.04em] text-[#3f2616]' : 'block text-[12px] font-semibold tracking-[0.06em] text-[#3f2616]'}
+                                >
+                                    {t('lobby:createRoom.password')}
+                                </label>
+                                <span className={passwordHintClassName}>
+                                    {t('lobby:password.modalDesc')}
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                ) : null}
-            </div>
-
-            <div className="mt-[3.4%] flex items-center justify-between gap-[10px] border-t border-[rgba(163,105,63,0.18)] pt-[3.2%] text-[clamp(9px,0.72vw,10px)] text-[#8a6444]">
-                <div>
-                    {t('lobby:homeV2.roomCount', { count: roomPreviewItems.length })} · {t('common:game_details.people')} {roomHeaderMetrics.players}
-                </div>
-                <div>
-                    {t('lobby:homeV2.detailOpenSummary', { open: roomHeaderMetrics.open, locked: roomHeaderMetrics.locked })}
-                </div>
-            </div>
-
-            {pendingPasswordRoom ? (
-                <div
-                    data-testid="home-v2-room-password-panel"
-                    className="mt-[3.2%] rounded-[10px] border border-[#9d724f]/28 px-[4.4%] py-[3.8%]"
-                >
-                    <div className="text-[clamp(10px,0.76vw,11px)] font-semibold text-[#6e4a32]">
-                        {t('lobby:password.modalTitle')}
-                    </div>
-                    <div className="mt-[2.4%]">
                         <PasswordField
                             data-testid="home-v2-room-password-input"
+                            id="home-v2-room-password-input"
                             name="homeV2RoomPassword"
                             value={roomPasswordDraft}
                             onChange={(event) => setRoomPasswordDraft(event.target.value)}
                             placeholder={t('lobby:password.placeholder')}
                             autoComplete="new-password"
-                            className="w-full rounded-[6px] border border-[#9d724f]/32 bg-transparent px-[10px] py-[8px] pr-[38px] text-[clamp(11px,0.9vw,13px)] text-[#5f3b25] placeholder:text-[clamp(10px,0.78vw,12px)] outline-none focus:border-[#8a6444]"
+                            className={`${passwordInputClassName} ${isCompactLandscape ? 'pr-10' : 'pr-11'}`}
                             toggleButtonTestId="home-v2-room-password-toggle"
                             toggleButtonClassName="text-[#8a6444] hover:text-[#5f3b25]"
+                            iconSize={isCompactLandscape ? 9 : undefined}
                         />
+                        <div className="flex items-center justify-end gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setPendingPasswordRoom(null);
+                                    setRoomPasswordDraft('');
+                                }}
+                                data-testid="home-v2-room-password-cancel"
+                                className={`${passwordSecondaryButtonClassName} min-w-[6.75rem]`}
+                            >
+                                {t('common:button.cancel')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handlePasswordConfirm(roomPasswordDraft.trim())}
+                                disabled={!roomPasswordDraft.trim() || isLoading}
+                                data-testid="home-v2-room-password-confirm"
+                                className={`${passwordPrimaryButtonClassName} min-w-[7.5rem]`}
+                            >
+                                {t('common:button.confirm')}
+                            </button>
+                        </div>
                     </div>
-                    <div className="mt-[3%] flex items-center justify-end gap-[8px]">
-                        <BookFrameButton
-                            size="tiny"
-                            onClick={() => {
-                                setPendingPasswordRoom(null);
-                                setRoomPasswordDraft('');
-                            }}
-                            testId="home-v2-room-password-cancel"
+                </HomeV2PaperModalFrame>
+            </div>,
+            document.body,
+        )
+        : null;
+
+    const hasVisibleRooms = filteredRoomPreviewItems.length > 0;
+    const detailTabs: Array<{ id: HomeV2DetailTab; label: string; compactLabel: string }> = [
+        { id: 'lobby', label: t('lobby:homeV2.details.onlineLobbyLabel'), compactLabel: t('lobby:homeV2.details.onlineLobbyCompactLabel', { defaultValue: '大厅' }) },
+        { id: 'changelog', label: t('lobby:homeV2.detailTabs.updates', { defaultValue: '更新' }), compactLabel: t('lobby:homeV2.detailTabs.updatesCompact', { defaultValue: '更新' }) },
+        { id: 'reviews', label: t('lobby:homeV2.detailTabs.reviews', { defaultValue: '评价' }), compactLabel: t('lobby:homeV2.detailTabs.reviewsCompact', { defaultValue: '评价' }) },
+        { id: 'leaderboard', label: t('lobby:homeV2.detailTabs.ranking', { defaultValue: '排行榜' }), compactLabel: t('lobby:homeV2.detailTabs.rankingCompact', { defaultValue: '排行' }) },
+    ];
+    const roomLedgerGridClassName = isCompactLandscape
+        ? 'grid-cols-[minmax(0,2.9fr)_42px_58px_58px]'
+        : 'grid-cols-[minmax(0,2.2fr)_112px_132px_132px]';
+    const showRoomThumbnail = !isCompactLandscape;
+
+    return (
+        <div data-testid="home-v2-detail-right-page" className="pointer-events-auto relative flex h-full w-full min-h-0 flex-col text-[#3f2718]">
+            <div className={`flex items-end justify-between border-b border-[rgba(105,66,37,0.38)] ${isCompactLandscape ? 'gap-[8px] pb-[4px]' : 'gap-[18px] pb-[0.8%]'}`}>
+                <div
+                    data-testid="home-v2-detail-tabs"
+                    className={isCompactLandscape
+                        ? 'grid min-w-0 flex-1 grid-cols-4 items-end gap-[6px]'
+                        : 'flex min-w-0 items-end flex-wrap gap-[clamp(34px,2.7vw,54px)]'}
+                >
+                    {detailTabs.map((tab) => (
+                        <button
+                            key={tab.id}
+                            type="button"
+                            data-testid="home-v2-detail-tab"
+                            data-tab-id={tab.id}
+                            aria-pressed={activeTab === tab.id}
+                            onClick={() => setActiveTab(tab.id)}
+                            className={`relative min-w-0 leading-none transition-colors ${
+                                isCompactLandscape ? 'pb-[6px] text-[11px] tracking-[0.02em]' : 'shrink-0 pb-[8px] text-[clamp(24px,1.78vw,32px)]'
+                            } ${
+                                activeTab === tab.id
+                                    ? 'font-bold text-[#2f1b10]'
+                                    : 'font-semibold text-[#4e311f] hover:text-[#2f1b10]'
+                            }`}
                         >
-                            {t('common:button.cancel')}
-                        </BookFrameButton>
-                        <BookFrameButton
-                            size="tiny"
-                            onClick={() => handlePasswordConfirm(roomPasswordDraft.trim())}
-                            disabled={!roomPasswordDraft.trim() || isLoading}
-                            testId="home-v2-room-password-confirm"
-                        >
-                            {t('common:button.confirm')}
-                        </BookFrameButton>
-                    </div>
+                            <span className="block whitespace-nowrap text-center">
+                                {isCompactLandscape ? tab.compactLabel : tab.label}
+                            </span>
+                            {activeTab === tab.id ? (
+                                <>
+                                    <span
+                                        aria-hidden="true"
+                                        className={`${isCompactLandscape ? 'bottom-[1px] left-[6%] w-[88%]' : 'bottom-0 left-[-8%] w-[116%]'} absolute h-[2px] bg-[linear-gradient(90deg,rgba(49,92,39,0)_0%,rgba(49,92,39,0.95)_14%,rgba(49,92,39,0.95)_86%,rgba(49,92,39,0)_100%)]`}
+                                    />
+                                    <span
+                                        aria-hidden="true"
+                                        className={`${isCompactLandscape ? 'bottom-[-2px] h-[6px] w-[6px]' : 'bottom-[-4px] h-[8px] w-[8px]'} absolute left-1/2 -translate-x-1/2 rotate-45 bg-[#315c27]`}
+                                    />
+                                </>
+                            ) : null}
+                        </button>
+                    ))}
                 </div>
-            ) : null}
+            </div>
+
+            {activeTab === 'lobby' ? (
+                <>
+                    <div className={`flex items-center justify-end border-b border-[rgba(105,66,37,0.30)] ${isCompactLandscape ? 'mt-[4px] gap-[9px] pb-[4px]' : 'mt-[0.7%] gap-[18px] pb-[1.0%]'}`}>
+                        <label
+                            data-testid="home-v2-room-search-field"
+                            className={`relative block min-w-0 rounded-none border-b border-[#6f4b32]/54 bg-transparent ${isCompactLandscape ? 'h-[27px] w-[48%]' : 'h-[42px] w-[42%]'}`}
+                            style={{ borderBottom: '1px solid rgba(111, 75, 50, 0.54)' }}
+                        >
+                            <input
+                                type="text"
+                                value={roomSearch}
+                                onChange={(event) => setRoomSearch(event.target.value)}
+                                placeholder={t('lobby:homeV2.detailSearchPlaceholder')}
+                                className={`${isCompactLandscape ? 'h-[25px] px-[8px] pr-[24px] text-[9.2px]' : 'h-[40px] px-[12px] pr-[42px] text-[clamp(14px,0.98vw,16px)]'} w-full border-0 bg-transparent text-[#3f2718] outline-none placeholder:font-medium placeholder:text-[#7e5d43]/74`}
+                            />
+                            <span
+                                data-testid="home-v2-room-search-icon"
+                                className={`pointer-events-none absolute inset-y-0 flex items-center text-[#3f2718] ${isCompactLandscape ? 'right-[7px]' : 'right-[12px]'}`}
+                            >
+                                <Search aria-hidden="true" className={isCompactLandscape ? 'h-[10px] w-[10px]' : 'h-[18px] w-[18px]'} strokeWidth={2.05} />
+                            </span>
+                        </label>
+                        <BookFrameButton
+                            className={`${isCompactLandscape ? 'min-h-[31px] min-w-[100px] px-[10px] py-[4px] text-[9.4px]' : ''} shrink-0`}
+                            size={isCompactLandscape ? 'compact' : 'prominent'}
+                            icon={<Plus aria-hidden="true" className={isCompactLandscape ? 'h-[10px] w-[10px]' : 'h-[18px] w-[18px]'} strokeWidth={2.2} />}
+                            disabled={isLoading || isPreparingCreateRoom}
+                            onClick={() => void openCreateRoom()}
+                            testId="home-v2-create-room-button"
+                        >
+                            {t('lobby:actions.createRoom', '创建房间')}
+                        </BookFrameButton>
+                    </div>
+
+                    <div data-testid="home-v2-room-ledger" className={`${isCompactLandscape ? 'mt-[3px]' : 'mt-[0.8%]'} flex min-h-0 flex-1 flex-col px-[0.6%]`}>
+                        <div
+                            data-testid="home-v2-room-ledger-header"
+                            className={`grid items-center gap-0 border-b border-t border-[rgba(105,66,37,0.42)] font-bold tracking-[0.06em] text-[#3f2718] ${
+                                isCompactLandscape
+                                    ? `${roomLedgerGridClassName} py-[2px] text-[9.3px]`
+                                    : `${roomLedgerGridClassName} py-[2.0%] text-[clamp(14px,0.98vw,16px)]`
+                            }`}
+                        >
+                            <div>{t('lobby:homeV2.detailColumns.roomName')}</div>
+                            <div className="text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.34)' }}>{t('lobby:homeV2.detailColumns.players')}</div>
+                            <div className="text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.34)' }}>{t('lobby:homeV2.detailColumns.status')}</div>
+                            <div className="text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.34)' }}>{t('lobby:homeV2.detailColumns.action')}</div>
+                        </div>
+
+                        <div className="min-h-0 flex-1">
+                            {!hasSnapshot ? (
+                                <RoomLedgerSkeleton />
+                            ) : !hasVisibleRooms ? (
+                                <div className="flex min-h-[164px] flex-col items-center justify-center px-[3%] text-center">
+                                    <div className="text-[clamp(15px,1.1vw,17px)] font-semibold text-[#6f4b32]">
+                                            {normalizedRoomSearch
+                                                ? t('lobby:homeV2.detailNoMatchTitle')
+                                                : t('lobby:homeV2.emptyRoomTitle')}
+                                    </div>
+                                    <div className="mt-[8px] text-[clamp(12px,0.9vw,14px)] leading-[1.6] text-[#8a6444]">
+                                        {normalizedRoomSearch
+                                            ? t('lobby:homeV2.detailNoMatchDescription')
+                                            : t('lobby:homeV2.emptyRoomDescription')}
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="custom-scrollbar h-full overflow-y-auto pr-[2px]">
+                                    <div data-testid="home-v2-room-ledger-table" className="space-y-0 border-b border-[rgba(105,66,37,0.28)]">
+                                        {filteredRoomPreviewItems.map((room) => {
+                                            const playerCount = room.players.filter((player) => Boolean(player.name)).length;
+                                            const totalSeats = Math.max(room.totalSeats ?? 0, room.players.length);
+                                            const roomState = getRoomStateSummary(room, t);
+                                            const actionLabel = roomState.key === 'locked'
+                                                ? t('lobby:homeV2.lockedRoomLabel')
+                                                : roomState.key === 'full'
+                                                    ? t('lobby:actions.spectate')
+                                                    : t('lobby:actions.join');
+
+                                            return (
+                                                <article
+                                                    key={room.matchID}
+                                                    data-testid="home-v2-room-ledger-row"
+                                                    className="border-b border-[rgba(105,66,37,0.28)] last:border-b-0"
+                                                >
+                                                    <button
+                                                        type="button"
+                                                        className={`group grid w-full items-center gap-0 px-[4px] text-left transition-colors duration-200 hover:bg-[rgba(127,88,56,0.05)] ${
+                                                            isCompactLandscape
+                                                                ? `min-h-[36px] ${roomLedgerGridClassName} py-[2px]`
+                                                                : `min-h-[82px] ${roomLedgerGridClassName} py-[9px]`
+                                                        }`}
+                                                        disabled={isLoading}
+                                                        onClick={() => void handleJoinRoom(room.matchID)}
+                                                    >
+                                                        <div className={`flex min-w-0 ${showRoomThumbnail ? 'items-center' : 'items-start'} ${isCompactLandscape ? 'pr-[8px]' : 'gap-[15px] pr-[12px]'}`}>
+                                                            {showRoomThumbnail ? (
+                                                                <div
+                                                                    data-testid="home-v2-room-thumbnail"
+                                                                    className="h-[64px] w-[82px] shrink-0 overflow-hidden rounded-[4px] border border-[#6f4b32]/34 bg-[rgba(255,255,255,0.04)]"
+                                                                >
+                                                                    <DetailGameThumbnail game={game} title={getRoomTitle(room.matchID, t, room.roomName)} />
+                                                                </div>
+                                                            ) : null}
+                                                            <div className="min-w-0">
+                                                                <div className={`${isCompactLandscape ? 'text-[10px]' : 'text-[clamp(16px,1.12vw,18px)]'} truncate font-bold leading-[1.12] text-[#3f2718]`}>
+                                                                    {getRoomTitle(room.matchID, t, room.roomName)}
+                                                                </div>
+                                                                <div className={`${isCompactLandscape ? 'mt-[1px] text-[7.7px]' : 'mt-[5px] text-[clamp(12px,0.9vw,14px)]'} truncate leading-[1.2] text-[#5e3d27]`}>
+                                                                    {getRoomSeatLine(room, t)}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className={`${isCompactLandscape ? 'text-[11px]' : 'text-[clamp(20px,1.36vw,24px)]'} flex h-full items-center justify-center text-center font-semibold text-[#2f1b10]`} style={{ borderLeft: '1px solid rgba(105,66,37,0.26)' }}>
+                                                            {playerCount}/{totalSeats || playerCount}
+                                                        </div>
+                                                        <div className="flex h-full items-center justify-center text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.26)' }}>
+                                                            <span className={`inline-flex items-center justify-center border-b font-semibold leading-none ${isCompactLandscape ? 'min-w-[34px] px-[3px] py-[1px] text-[8.4px]' : 'min-w-[68px] px-[8px] py-[5px] text-[clamp(13px,0.92vw,15px)]'} ${
+                                                                roomState.key === 'locked'
+                                                                    ? 'border-[#9d773f]/42 bg-transparent text-[#4e321f]'
+                                                                    : roomState.key === 'full'
+                                                                        ? 'border-[#7d6a58]/34 bg-transparent text-[#5f5144]'
+                                                                        : 'border-[#526d3d]/38 bg-transparent text-[#314625]'
+                                                            }`}>
+                                                                {roomState.label}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex h-full items-center justify-center text-center" style={{ borderLeft: '1px solid rgba(105,66,37,0.26)' }}>
+                                                            <RoomLedgerActionTag compact={isCompactLandscape}>
+                                                                {actionLabel}
+                                                            </RoomLedgerActionTag>
+                                                        </div>
+                                                    </button>
+                                                </article>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </>
+            ) : (
+                <div
+                    data-testid={`home-v2-detail-panel-${activeTab}`}
+                    className="mt-[2.1%] min-h-0 flex-1 overflow-hidden border-t border-[rgba(105,66,37,0.30)] pt-[2.0%]"
+                >
+                    {activeTab === 'leaderboard' ? (
+                        <HomeV2LeaderboardPanel leaderboardData={leaderboardData} error={leaderboardError} t={t} compact={isCompactLandscape} />
+                    ) : activeTab === 'changelog' ? (
+                        <HomeV2ChangelogPanel items={changelogItems} loading={changelogLoading} error={changelogError} t={t} />
+                    ) : (
+                        <HomeV2ReviewsPanel stats={reviewStats} reviews={reviewItems} loading={reviewsLoading} error={reviewsError} t={t} />
+                    )}
+                </div>
+            )}
+
+            {passwordModal}
             <CreateRoomModal
                 isOpen={showCreateRoomModal}
                 onClose={() => setShowCreateRoomModal(false)}
