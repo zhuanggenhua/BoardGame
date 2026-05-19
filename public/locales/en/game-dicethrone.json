@@ -2436,11 +2436,11 @@
     },
     "blink": {
       "name": "Blink",
-      "description": "Defensive roll 3 dice; Ninja Blade/Shuriken counterattack and Mask grants Smoke Bomb."
+      "description": "Defensive roll 3 dice; if you roll a Ninja Blade, deal 1 damage; if you roll a Shuriken, deal 2 damage; if you roll a Mask, gain 1 Smoke Bomb."
     },
     "blink-2": {
       "name": "Blink II",
-      "description": "Defensive roll 3 dice; Ninja Blade/Shuriken counterattack and Mask grants Smoke Bomb."
+      "description": "Defensive roll 3 dice; deal damage equal to the number of Ninja Blades rolled; if you roll a Shuriken, deal 2 damage; if you roll 2 Masks, gain 1 Smoke Bomb."
     },
     "ninja-assassinate": {
       "name": "Assassinate",

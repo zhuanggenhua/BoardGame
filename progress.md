@@ -5502,3 +5502,877 @@
   - `npx vitest run src/games/smashup/__tests__/bases/the-asylum-base.test.ts src/games/smashup/__tests__/bases/innsmouth-base.test.ts src/games/smashup/__tests__/bases/miskatonic-university-base.test.ts src/games/smashup/__tests__/bases/mountains-of-madness-base.test.ts src/games/smashup/__tests__/bases/plateau-of-leng-base.test.ts` -> `5 files / 19 tests passed`
   - `npx eslint src/games/smashup/__tests__/bases/the-asylum-base.test.ts src/games/smashup/__tests__/bases/innsmouth-base.test.ts src/games/smashup/__tests__/bases/miskatonic-university-base.test.ts src/games/smashup/__tests__/bases/mountains-of-madness-base.test.ts src/games/smashup/__tests__/bases/plateau-of-leng-base.test.ts` -> `0 errors / 0 warnings`
   - `npm run test:structure -- --all` -> `checked files: 62, OK`
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Monkey See, Monkey Do 空选 / 无行动自动分支补 scoped L3
+
+- 本轮目标只收紧 `cyborg_apes_monkey_see_monkey_do.reveal_top_five_and_choose_actions` 的旧 residual，不扩散到别的对象：
+  - `0 张选择` 真实浏览器链
+  - `顶五没有行动` 的真实自动分支
+- 已完成动作：
+  - 在 `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\e2e\smashup-yuanhou-factions.e2e.ts` 新增两条 E2E：
+    - `电子猿-Monkey See Monkey Do-真实入口空选行动后应直接收口且不把任何展示行动加入手牌`
+    - `电子猿-Monkey See Monkey Do-展示顶五没有行动时真实入口不创建选择 prompt并进入展示队列`
+  - 将 `dismissSmashUpSpotlightQueueIfVisible()` 从“只点一次”改成最多循环点击 8 次后再断言隐藏，避免 spotlight 队列残留把后续点击挡住
+  - 实际打开并核对 4 张关键截图，确认：
+    - 空选分支里 `确认` 可在 0 勾选时直接点击
+    - 空选收口后没有任何展示行动进入手牌
+    - 无行动自动分支不创建 `cyborg_apes_monkey_see_monkey_do_choose` prompt
+    - 但真实 UI 会进入公开展示队列/spotlight overlay，不能误写成“完全无浮层自动收口”
+- 本轮验证：
+  - `BG_ALLOW_HEAVY_TASK_CONCURRENCY=1 NODE_OPTIONS=--max-old-space-size=8192 PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4284 PW_PORT=4284 PW_E2E_GAME_SERVER_PORT=20310 PW_GAME_SERVER_PORT=20310 GAME_SERVER_PORT=20310 PW_E2E_API_SERVER_PORT=21310 PW_API_SERVER_PORT=21310 API_SERVER_PORT=21310 PW_RUNTIME_SCOPE=smashup-yuanhou-monkey-see-branches BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "电子猿-Monkey See Monkey Do-真实入口空选行动后应直接收口且不把任何展示行动加入手牌|电子猿-Monkey See Monkey Do-展示顶五没有行动时真实入口不创建选择 prompt并进入展示队列"` -> `2 passed`
+- 结果：
+  - `Monkey See, Monkey Do` 的浏览器 scoped L3 已不再只停在“有行动候选时选 1 张”
+  - 当前本地浏览器证据已覆盖：
+    - 有行动候选的真实多选分支
+    - `0` 张选择直接确认分支
+    - 无行动自动分支的“无选择 prompt + 进入展示队列”分支
+  - 剩余 residual 只保留重复 uid 与 forged late-deck payload，这两条继续由 L2/shared contract 守门
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Portal Room extra-turn queue shared 边界补 L2
+
+- 本轮目标不再新增 Portal Room 浏览器链，只收紧 `base_portal_room.queue_extra_turn_after_current_turn` 的 shared extra-turn queue 边界：
+  - 3 人顺位下 `returnToPlayerIndex` 是否会回到原本下一位玩家
+  - 多条 `pendingExtraTurns` 并存时是否按队列顺序消费
+- 已完成动作：
+  - 在 `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\src\games\smashup\__tests__\yuanhouFactionAbilities.test.ts` 新增两条 Portal Room 定向 L2：
+    - `时间旅行者基地：传送门室在三人顺位下应于额外回合结束后回到原本下一位玩家`
+    - `时间旅行者基地：传送门室存在多条待执行额外回合时应按队列顺序消费`
+  - 同步回写 `evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md`：
+    - atom 行补明 3P `returnToPlayerIndex` 与多队列 FIFO 已锁定
+    - 对象行补明这两条不再作为隐性 residual
+    - 新增 finding #134，明确这是 shared/L2 收紧，不冒充新的浏览器 scoped L3
+- 本轮验证：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "传送门室|Portal Room"` -> `5 passed`
+- 结果：
+  - `Portal Room` 现在不再只靠 2P 主链证明 extra turn queue 正确
+  - 更长 turnOrder 的原顺位返回，以及多 `pendingExtraTurns` 的 FIFO 消费，已经有明确 L2 锚点
+  - 浏览器 scoped L3 口径保持不变：仍只认 2P `winner=currentPlayer` 单页接受并走完整个额外回合，以及 `winner!=currentPlayer` 多客户端选择权归属
+- 2026-05-18：
+  - 为 `Missing Uplink` 追加“额外回合结束仍按拥有者实例数抽牌” L2 回归：`电子猿：丢失中继在额外回合结束时也应按拥有者实例数抽牌`
+  - 定向验证 `node scripts/infra/vitest-cli-safe.mjs run src/games/smashup/__tests__/yuanhouFactionAbilities.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "丢失中继|Missing Uplink"` -> `6 passed`
+  - 审计口径已回写到 `evidence/smashup/smashup-in-progress-effect-atom-audit-2026-05-15.md`，额外回合结束不再算 Missing Uplink residual
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Monkey on Your Back 敌方宿主附着入口补 scoped L3
+
+- 本轮目标只收紧 `cyborg_apes_monkey_on_your_back.attach_to_any_minion`，不重复天赋 destroy/bottom 链：
+  - 旧对象级 scoped L3 只证明了附着后的天赋选择链
+  - 但“本行动可附着任意随从”本身还缺真实手牌入口能贴到敌方宿主的浏览器证据
+- 已完成动作：
+  - 在 `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\e2e\smashup-yuanhou-factions.e2e.ts` 新增 E2E：
+    - `电子猿-Monkey on Your Back-真实入口可附着到敌方随从`
+  - 复用隔离端口组 `4274 / 20210 / 21210` 定向复跑并通过：
+    - `PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4274 PW_PORT=4274 PW_E2E_GAME_SERVER_PORT=20210 PW_GAME_SERVER_PORT=20210 GAME_SERVER_PORT=20210 PW_E2E_API_SERVER_PORT=21210 PW_API_SERVER_PORT=21210 API_SERVER_PORT=21210 PW_RUNTIME_SCOPE=smashup-yuanhou-monkey-back-attach-enemy BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "电子猿-Monkey on Your Back-真实入口可附着到敌方随从"` -> `1 passed`
+  - 已实际打开并核对两张关键截图：
+    - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Monkey-on-Your-Back-真实入口可附着到敌方随从\yuanhou-monkey-on-your-back-enemy-host-before-attach.png`
+    - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Monkey-on-Your-Back-真实入口可附着到敌方随从\yuanhou-monkey-on-your-back-attached-to-enemy-host.png`
+- 本轮肉眼验收结论：
+  - `before` 图同屏可见左侧己方 `Jumper`、右侧敌方宿主和底部手牌里的 `Monkey on Your Back`
+  - `after` 图右侧敌方宿主出现紫色附着图标且力量 `2 -> 3`，左侧己方 `Jumper` 仍是 `2` 且无附着图标
+  - 配合状态断言 `interaction.current==null`、`P0 hand` 不含 `monkey-attach-hand`、敌方宿主 `attachedActions` 含该 uid、己方宿主不含该 uid，可确认真实入口确实把本行动附着到敌方宿主
+- 结果：
+  - `cyborg_apes_monkey_on_your_back.attach_to_any_minion` 已从纯 `L2` 提升到 `L2 / scoped L3`
+  - `cyborg_apes_monkey_on_your_back` 对象级说明已补明：现在同时具备“敌方宿主附着入口”与“附着后天赋 destroy/bottom 链”的 scoped L3
+  - 当前仍不外推宿主离场、多客户端视角或 forged target payload
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Cyberback 负例真实入口补 scoped L3
+
+- 本轮目标是收紧 `cyborg_apes_cyberback` 里之前仍停在纯 `L2` 的两条负例：
+  - `reject_non_ongoing_or_non_minion_action`
+  - `reject_enemy_or_non_cyberback_target`
+- 已完成动作：
+  - 在 `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\e2e\smashup-yuanhou-factions.e2e.ts` 新增 E2E：
+    - `电子猿 Cyberback 真实入口会隐藏非法弃牌并拒绝非法宿主点击`
+  - 使用隔离端口组 `4274 / 20210 / 21210` 定向复跑并通过：
+    - `PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4274 PW_PORT=4274 PW_E2E_GAME_SERVER_PORT=20210 PW_GAME_SERVER_PORT=20210 GAME_SERVER_PORT=20210 PW_E2E_API_SERVER_PORT=21210 PW_API_SERVER_PORT=21210 API_SERVER_PORT=21210 PW_RUNTIME_SCOPE=smashup-yuanhou-cyberback-negative BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "电子猿 Cyberback 真实入口会隐藏非法弃牌并拒绝非法宿主点击"` -> `1 passed`
+  - 已实际打开并核对三张关键截图：
+    - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Cyberback-真实入口会隐藏非法弃牌并拒绝非法宿主点击\yuanhou-cyberback-discard-panel-shows-valid-and-invalid-actions.png`
+    - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Cyberback-真实入口会隐藏非法弃牌并拒绝非法宿主点击\yuanhou-cyberback-only-own-cyberback-should-be-valid-target.png`
+    - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Cyberback-真实入口会隐藏非法弃牌并拒绝非法宿主点击\yuanhou-cyberback-invalid-targets-rejected-and-own-cyberback-attached.png`
+- 本轮肉眼验收结论：
+  - 第一张图证明真实弃牌面板会同时显示 `Going Bananas` 与 `Cyberevolution`，因此旧口径“非法牌不会出现在 UI 中”是错的
+  - 第二张图里选中 `Cyberevolution` 后，只有己方 `Cyberback` 所在的 `Monkey Lab` 保持高亮，另外两座基地都被置灰
+  - 第三张图里最终只有左侧己方 `Cyberback` 获得 `Cyberevolution` 附着和绿色 `+4`，己方普通随从与敌方 `Cyberback` 都没有被附着
+  - 配合状态断言可确认：点击 `Going Bananas` 后服务端权威状态完全不变；选中 `Cyberevolution` 后点击敌方 `Cyberback` / 己方普通随从也不结算，直到点击己方 `Cyberback` 才真正附着
+- 结果：
+  - `cyborg_apes_cyberback.reject_non_ongoing_or_non_minion_action` 与 `reject_enemy_or_non_cyberback_target` 都已从纯 `L2` 提升到 `L2 / scoped L3`
+  - `cyborg_apes_cyberback` 对象级说明已补明：正向附着链与两条本地浏览器负例现在都已有 scoped L3
+  - 当前只继续把 forged discard / forged target payload 留在 L2/shared contract
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Baboom 真实分支证据补齐到长期状态
+
+- 本轮目标不是再改 `Baboom` 实现，而是把已经闭合的浏览器分支证据同步到长期状态，避免后续误以为它还只停在最早那条“唯一合法行动自动附着”的 scoped L3。
+- 已确认的现状：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\evidence\smashup\smashup-in-progress-effect-atom-audit-2026-05-15.md` 里的 atom/object 行已经写明：
+    - 显式 `skip` 会直接收口
+    - 多张合法行动时可以真实选择第二张，并且只执行所选项
+  - 但根仓库 `progress.md / findings.md` 与 long-term state 先前还只记到最早那条 `电子猿-Baboom-真实天赋给出可跳过的立即额外行动并只能打到自己身上`
+- 已复用并同步的已验证证据：
+  - `电子猿-Baboom-真实点击跳过额外行动后应直接收口且不强制打出任何行动`
+  - `电子猿-Baboom-真实入口有多张合法额外行动时应允许选择第二张并只打出所选行动`
+  - 其中多合法行动分支本轮再次用隔离端口 `4274 / 20210 / 21210` 定向复跑并通过：
+    - `PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4274 PW_PORT=4274 PW_E2E_GAME_SERVER_PORT=20210 PW_GAME_SERVER_PORT=20210 GAME_SERVER_PORT=20210 PW_E2E_API_SERVER_PORT=21210 PW_API_SERVER_PORT=21210 API_SERVER_PORT=21210 PW_RUNTIME_SCOPE=smashup-yuanhou-baboom-multi-refresh BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "电子猿-Baboom-真实入口有多张合法额外行动时应允许选择第二张并只打出所选行动"` -> `1 passed`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Baboom-真实入口有多张合法额外行动时应允许选择第二张并只打出所选行动\yuanhou-baboom-multi-action-choice-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Baboom-真实入口有多张合法额外行动时应允许选择第二张并只打出所选行动\yuanhou-baboom-multi-action-second-selected.png`
+- 本轮肉眼验收结论：
+  - prompt 图里顶部确实是 `立刻打出一张额外战术，或放弃这次机会`，底部 `Cyberevolution / Juiced Up` 两张合法候选同屏可见，且 `Juiced Up` 已被真实选中
+  - resolved 图里中央是带“已打出！”标记的 `Juiced Up`，Baboom 旁出现紫色附着图标和绿色 `+3`，底部 `Cyberevolution` 仍留在手牌区
+  - 配合状态断言，能确认多合法候选分支不会后台默认第一张，只会执行玩家真实选择的第二张；而 `skip` 分支也已经在既有证据里闭合为“直接收口且不强制打出任何行动”
+- 结果：
+  - `cyborg_apes_baboom.grant_immediate_extra_action_on_self` 的长期状态口径已补齐到当前真实边界：`skip`、单合法自动附着、以及多合法行动选择第二张三条浏览器分支都已闭合
+  - `cyborg_apes_baboom` 当前 residual 只剩审计文档里已经写明的多 `Baboom`、多 target prompt 与多客户端视角，不应再把它误记成“只覆盖最早那条单合法行动分支”
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Baboom twin 身份分支补到 scoped L3
+
+- 本轮继续收紧 `cyborg_apes_baboom.grant_immediate_extra_action_on_self` 的 twin 身份边界：
+  - 同基地存在另一只同名 `Baboom` 时，额外行动必须只附着到发动天赋的那一只
+- 已完成动作：
+  - 复跑既有真实入口 E2E：
+    - `电子猿-Baboom-同基地两只 Baboom 时真实入口应只把额外行动附着到发动天赋的那一只`
+  - 使用隔离端口组 `4274 / 20210 / 21210` 定向复跑并通过：
+    - `PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4274 PW_PORT=4274 PW_E2E_GAME_SERVER_PORT=20210 PW_GAME_SERVER_PORT=20210 GAME_SERVER_PORT=20210 PW_E2E_API_SERVER_PORT=21210 PW_API_SERVER_PORT=21210 API_SERVER_PORT=21210 PW_RUNTIME_SCOPE=smashup-yuanhou-baboom-twin BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup-yuanhou-factions.e2e.ts "电子猿-Baboom-同基地两只 Baboom 时真实入口应只把额外行动附着到发动天赋的那一只"` -> `1 passed`
+  - 已实际打开并核对两张关键截图：
+    - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Baboom-同基地两只-Baboom-时真实入口应只把额外行动附着到发动天赋的那一只\yuanhou-baboom-twin-before-attach.png`
+    - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Baboom-同基地两只-Baboom-时真实入口应只把额外行动附着到发动天赋的那一只\yuanhou-baboom-twin-attached-to-source-only.png`
+- 本轮肉眼验收结论：
+  - 第一张图里同一基地两只 `Baboom` 同屏可见，下方这只带高亮和“已用”标记，说明当前 prompt 绑定的是具体 source 宿主，不是模糊地“任意一只 Baboom”
+  - 第二张图里只有下方发动天赋的 `Baboom` 旁出现紫色附着图标和绿色 `+4`；上方另一只同名 `Baboom` 没有附着图标
+  - 配合状态断言 `baboom-twin-source.attachedActions=['baboom-twin-boost-hand']`、`baboom-twin-other.attachedActions=[]`，可确认 twin 分支不会串到另一只同名 Baboom
+- 结果：
+  - `cyborg_apes_baboom.grant_immediate_extra_action_on_self` 的“多 Baboom 身份分支”已从 residual 提升到 `L2 / scoped L3`
+  - `cyborg_apes_baboom` 当前只继续保留多 target prompt 与多客户端视角，不再把“多 Baboom”继续挂作 residual
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Baboom 多客户端 prompt 归属同步到根状态
+
+- 本轮继续做 completion-audit 式补齐，不改 `Baboom` 实现，只把 evidence 已闭合的“prompt 只在发动者页面出现，skip 后两页一起收口”这条多客户端对象级主链同步到根状态。
+- 已重新核对的既有浏览器证据：
+  - `电子猿-Baboom-真实多客户端下额外行动 prompt 应只出现在发动者页面`
+- 本轮实际同步的关键真相：
+  - `cyborg_apes_baboom.grant_immediate_extra_action_on_self` 不应再只停在 `skip`、多合法行动第二张选择、以及 twin 身份不串台这三条单页浏览器分支；多客户端下这条链也已经证明：
+    - 只有发动者页面会出现 `立刻打出一张额外战术，或放弃这次机会` prompt、合法候选卡面与 `放弃这次额外战术` 按钮；
+    - 非发动者页面不会被错误拉进同一条 `smashup_immediate_extra_action` prompt，也没有 waiting overlay；
+    - 发动者点击 skip 后，Host/Guest 两页都会一起收口，权威状态不会偷偷把任何行动附着到 `Baboom` 或同基地其他随从。
+- 结果：
+  - `cyborg_apes_baboom.grant_immediate_extra_action_on_self` 的根状态现在应显式承认：
+    - 单合法自动附着；
+    - 显式 skip 收口；
+    - 多合法行动选择第二张；
+    - twin 身份不串台；
+    - 多客户端下 prompt 只归属发动者页面并在 skip 后双页收口。
+  - 后续队列不应再把 `Baboom` 误记成“当前 residual 还剩多客户端视角”；当前对象本地 residual 已清空，只继续保留更广多人局 transport/shared 边界作为全局层面的非本对象承诺。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Copycat 复制 Jumper 的 discard trigger 证据同步到长期状态
+
+- 本轮目标不是再改 `Copycat` 实现，而是把审计文档里已经闭合的 `trigger-surface scoped L3` 同步到根状态文件，避免后续还按“只验证过 talent/power surface”理解它。
+- 已确认的现状：
+  - 审计文档已经写明 `shapeshifters_copycat.proxy_current_supported_surfaces` 现已覆盖：
+    - `Baboom` talent surface
+    - `Furious George` power surface
+    - `Jumper` discard trigger surface
+  - 但根 `progress.md / findings.md` 与 long-term state 还没有把 `Copycat -> Jumper optional recover` 这条真实浏览器链补成显式事实
+- 已复用并同步的已验证证据：
+  - `变形者-Copycat-真实复制 Jumper 后被 Bacta 摧毁时应先给额外随从再给 optional recover 回手`
+  - 审计文档里对应的 L2 + E2E 命令、状态断言与三张关键截图都已存在，本轮只做长期状态回写，不重复改实现
+- 本轮同步的关键真相：
+  - `Copycat` 复制 `Jumper` 后被 `Bacta` 摧毁时，真实顺序是先出现 `Bacta immediate extra minion`，再进入 `Copycat` 代理出来的 `optional recover` 反应窗口
+  - 最终 `Copycat` 会回到 owner 手牌，且不会把额外随从机会、原生 `Jumper` 的 owner/controller 语义或其它已闭合 surface 带歪
+- 结果：
+  - `shapeshifters_copycat.proxy_current_supported_surfaces` 的 `trigger-surface` 已明确同步到根长期状态
+  - 后续不应再把 `Copycat` 误记成“只审过 choose/metadata/talent/power，discard trigger 仍待补”
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Do Over / Doctor When skip-extra 与 Time Box discard-recover 边界同步到根状态
+
+- 本轮不新增实现或测试，只把审计文档里已闭合、且本轮重新看图确认过的两组时间旅行者边界回写到根状态，避免后续重复审同一条浏览器链。
+- 已重新核对的既有浏览器证据：
+  - `时间旅行者-Do-Over-真实入口放弃额外随从后应直接收口并保留刚返回的那张牌`
+  - `时间旅行者-Doctor-When-真实入口放弃额外随从后应直接收口并保留刚返回的那张牌`
+  - `时间旅行者-Time-Box-真实多客户端下-Jumper-从弃牌堆回-owner-手牌后应由-owner-页面获得第5枚计数进场选择`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-time-travelers-specific-extra.e2e\时间旅行者-Do-Over-真实入口放弃额外随从后应直接收口并保留刚返回的那张牌\yuanhou-do-over-skip-extra-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-time-travelers-specific-extra.e2e\时间旅行者-Doctor-When-真实入口放弃额外随从后应直接收口并保留刚返回的那张牌\yuanhou-doctor-when-skip-extra-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\时间旅行者-Time-Box-真实多客户端下-Jumper-从弃牌堆回-owner-手牌后应由-owner-页面获得第5枚计数进场选择\yuanhou-time-box-play-prompt-after-jumper-recover-host.png`
+- 本轮肉眼验收结论：
+  - `Do Over skip-extra` 收口图里 `Portal Room` 仍为空，returned `Jumper` 继续留在手牌，说明点击“放弃这次额外随从”后没有被误自动打回基地。
+  - `Doctor When skip-extra` 收口图里场上只剩 `Doctor When`，returned `Time Raider` 继续留在手牌，而且中央已没有残留 extra prompt。
+  - `Time Box discard-recover` 多客户端图里 owner 页中央直接出现 `时间盒子：是否移除全部计数器并打出到一个基地？`，左下仍能看到 setaside 的 `Time Box`，说明 `Bacta -> stolen Jumper recover -> owner 页第 5 枚计数 prompt` 真链已闭合到正确页面。
+- 结果：
+  - `time_travelers_do_over.may_play_returned_minion_again` 与 `time_travelers_doctor_when.may_play_returned_minion_again` 不应再被误记成“只验证过 specific returned card 会回手/会重打”；它们的 `skip extra` 真实收口分支也已在浏览器 scoped L3 闭合。
+  - `time_travelers_time_box.counter_from_card_returned_to_hand` 不应再只靠 `Primate Park -> CARD_TRANSFERRED from play` 那条本地链代表全部浏览器证据；`discard -> owner hand` 的 owner/controller split 多客户端链也已补到 scoped L3。
+  - 后续队列不应再重复把 `Do Over / Doctor When skip-extra` 与 `Time Box discard-recover owner/controller split` 当成本地 residual 回头再审。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：From Q With Love 短候选与空投影手牌边界同步到根状态
+
+- 本轮继续补“evidence 已闭合、根状态还没跟上”的对象，不改 `From Q With Love` 实现，只把 2026-05-18 新增的两条浏览器端点同步到根状态。
+- 已重新核对的既有浏览器证据：
+  - `超级间谍-From Q With Love-短牌库时真实入口只要求弃掉唯一剩余投影手牌`
+  - `超级间谍-From Q With Love-投影手牌为空时真实入口不应创建弃牌 prompt`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-From-Q-With-Love-短牌库时真实入口只要求弃掉唯一剩余投影手牌\yuanhou-from-q-with-love-short-deck-single-discard-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-From-Q-With-Love-短牌库时真实入口只要求弃掉唯一剩余投影手牌\yuanhou-from-q-with-love-short-deck-single-discard-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-From-Q-With-Love-投影手牌为空时真实入口不应创建弃牌-prompt\yuanhou-from-q-with-love-empty-projected-resolved.png`
+- 本轮肉眼验收结论：
+  - 短候选 prompt 图里中央只剩 1 张可弃候选卡，右下仍能看到本牌 `From Q With Love` 本体，说明真实入口没有把 discard prompt 错保留成“还要再弃两张”。
+  - 短候选 resolved 图里中央 prompt 已完全消失，右下弃牌堆角标变成 `弃牌(2)`，说明唯一剩余投影手牌被真实弃掉后直接收口。
+  - 空投影手牌 resolved 图里中央没有任何 discard prompt、按钮或候选卡，右下弃牌堆角标为 `弃牌(1)`，说明没有剩余投影手牌时不会创建空选择窗，而是本行动自己正常进弃牌堆。
+- 结果：
+  - `super_spies_from_q_with_love.draw_three_then_discard_two_from_projected_hand` 不应再只被根状态描述成“exact-2 的主链已绿”；`projectedHand.length===1` 与 `projectedHand.length===0` 两个浏览器端点也都已闭合。
+  - 后续队列不应再把 `From Q With Love` 的短候选或空投影手牌本地浏览器边界挂回 residual；只剩 forged late-hand 或更广多客户端/inspect 共享边界继续由 L2/shared contract 承接。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Flying Monkey skip 与 Portal Room 生命周期边界同步到根状态
+
+- 本轮继续补“审计文档已闭合、根状态还停在旧口径”的两条链：
+  - `Flying Monkey` 旧根状态还把 `skip` 继续挂在 residual。
+  - `Portal Room` 旧根状态虽然记了“额外回合能启动”，但还没把“额外回合结束后回到原顺位玩家”写进根状态。
+- 已重新核对的既有浏览器证据：
+  - `电子猿-Flying Monkey-真实计分后跳过移动时应按正常计分清场进入弃牌堆`
+  - `时间旅行者-Portal Room-真实计分后赢家接受额外回合并在结束后恢复到原顺位玩家`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Flying-Monkey-真实计分后跳过移动时应按正常计分清场进入弃牌堆\yuanhou-flying-monkey-skip-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Flying-Monkey-真实计分后跳过移动时应按正常计分清场进入弃牌堆\yuanhou-flying-monkey-skipped-and-discarded.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Portal-Room-真实计分后赢家接受额外回合并在结束后恢复到原顺位玩家\yuanhou-portal-room-extra-turn-started-after-current-turn.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Portal-Room-真实计分后赢家接受额外回合并在结束后恢复到原顺位玩家\yuanhou-portal-room-extra-turn-finished-returned-to-next-player.png`
+- 本轮肉眼验收结论：
+  - `Flying Monkey skip` prompt 图里中央能直接看到 `飞猴：选择要移动到的另一基地`、合法目的地 `秘密火山总部` 和 `跳过（照常进入弃牌堆）` 按钮，说明这条 skip 分支来自真实 afterScoring 入口。
+  - `Flying Monkey skip` 收口图里中央已没有残留 prompt，`Portal Room / Secret Volcano Headquarters` 都回到新回合常态布局；虽然右下弃牌堆角标为 `弃牌(0)`，但结合状态断言可确认这是 draw 后 reshuffle 结果，不是宿主或本行动留场。
+  - `Portal Room` 启动图左上已经切到 `回合2 / 出牌阶段`，说明当前回合结束后 extra turn 已真实启动。
+  - `Portal Room` 最终图里当前玩家高亮已切回原顺位玩家，中央没有残留 prompt，左侧仍是 `Faceless City`，说明这条链不只“起了额外回合”，还真实走完并回到了原本顺位。
+- 结果：
+  - `cyborg_apes_flying_monkey.after_scoring_move_instead_discard` 与 `destroy_attached_action_after_move` 不应再把 `skip` 继续挂成根状态 residual；move/skip 两条本地浏览器链都已 scoped L3。
+  - `base_portal_room.queue_extra_turn_after_current_turn` 不应再只被根状态描述成“接受后会启动额外回合”；`pending -> active -> completed -> returnToPlayerIndex` 的浏览器生命周期也已闭合。
+  - 后续队列不应再重复把 `Flying Monkey skip` 或 `Portal Room 2P 生命周期走到底` 当成本地缺口回头再审；更长 turnOrder、多 pending queue 等边界仍按 shared/L2 口径看待。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Portal Room 赢家页独占选择权同步到根状态
+
+- 本轮继续做 completion-audit 式补齐，不改 `base_portal_room` 实现，只把 `optional_choice_owner_is_winner` 这条已经在审计文档与长期 JSON 闭合的多客户端对象级主链，显式同步回根状态。
+- 已重新对齐并承认的现成证据：
+  - `时间旅行者-Portal Room-真实多客户端下赢家不是当前回合玩家时应只给赢家页面额外回合选择权`
+- 结果：
+  - `base_portal_room.optional_choice_owner_is_winner` 的根状态不应再只停在“P0 赢家单页可点传送门”或“shared queue/afterScoring owner 合同已修”；当前对象级真相已经同时承认：
+    - `winner != currentPlayer` 时，只有赢家页面会出现 `传送门 / 跳过` 选择与可交互的 `传送门` 按钮；
+    - 当前回合玩家页面只会显示等待赢家响应，不会错误拿到同一条 afterScoring 选择权，也不会因为点击同基地而偷消费这条选择；
+    - 这条“谁来响应”的真实浏览器归属链，与后续 `pending -> active -> completed -> returnToPlayerIndex` 的额外回合生命周期，是 `Portal Room` 两条独立但都已闭合的对象级事实。
+  - 后续队列不应再把 `Portal Room winner!=currentPlayer` 的赢家页归属，误记成只有长期 JSON/evidence 留档、根状态仍未承认的缺口；当前 residual 只继续保留多人房间、更广 transport 恢复态与 shared queue 外层边界。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Into the Time Slip 的 in-play card family 扩展同步到根状态
+
+- 本轮继续补根状态落后于审计文档的对象：`Into the Time Slip` 在 long-term state 里还停在“borrowed minion 回 owner hand”的早期 scoped L3，但审计文档已经补到了 base ongoing 与 attached action 两类场上行动牌。
+- 已重新核对的既有浏览器证据：
+  - `时间旅行者-Into the Time Slip-真实入口可选择场上的持续行动并回到其拥有者手牌`
+  - `时间旅行者-Into the Time Slip-真实入口可选择附着行动并回到其拥有者手牌`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Into-the-Time-Slip-真实入口可选择场上的持续行动并回到其拥有者手牌\yuanhou-into-the-time-slip-ongoing-action-choice-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Into-the-Time-Slip-真实入口可选择场上的持续行动并回到其拥有者手牌\yuanhou-into-the-time-slip-ongoing-action-returned-to-owner-hand.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Into-the-Time-Slip-真实入口可选择附着行动并回到其拥有者手牌\yuanhou-into-the-time-slip-attached-action-choice-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Into-the-Time-Slip-真实入口可选择附着行动并回到其拥有者手牌\yuanhou-into-the-time-slip-attached-action-returned-to-owner-hand.png`
+- 本轮肉眼验收结论：
+  - ongoing-action prompt 图里 `Portal Room` 上方能直接看到场上的 `Stasis Field` 本体，说明真实入口没有把 base ongoing 行动漏出 `a card in play` 候选。
+  - ongoing-action 收口图里 `Stasis Field` 已完全消失，中央也没有残留 prompt，说明这张场上持续行动牌已经真实离场并收口。
+  - attached-action prompt 图里宿主 `Jumper` 身上仍明确挂着一张带紫色附着角标的行动牌，说明真实入口同样覆盖到了 attached action family。
+  - attached-action 收口图里宿主上的白色行动牌本体与紫色角标都已消失，中央无残留 prompt，说明附着行动已从宿主身上真实摘下并完成收口。
+- 结果：
+  - `time_travelers_into_the_time_slip.choose_one_in_play_card` 与 `return_to_owner_hand` 不应再只被根状态描述成“borrowed minion 的 owner/controller 分离已绿”；base ongoing 与 attached action 两类 in-play card family 也都已补到浏览器 scoped L3。
+  - 后续队列不应再把 `Into the Time Slip` 的 base ongoing / attached action 本地浏览器边界挂回 residual；只剩更多多客户端视角或更广 shared transport 边界继续留在 L2/shared contract。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：1.21 Gigawatts 空弃牌堆 feedback 边界同步到根状态
+
+- 本轮继续补根状态落后于审计文档的时间旅行者对象：`1.21 Gigawatts` 在 long-term state 里已经同步了双按钮主链和单一牌种自动分支，但还没把“空弃牌堆时真实入口 toast + 不建按钮 prompt”的浏览器端点写回根状态。
+- 已重新核对的既有浏览器证据：
+  - `时间旅行者-1.21-Gigawatts-弃牌堆为空时真实入口应提示无可选牌种且不弹按钮 prompt`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-1.21-Gigawatts-弃牌堆为空时真实入口应提示无可选牌种且不弹按钮-prompt\yuanhou-gigawatts-empty-discard-before-play.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-1.21-Gigawatts-弃牌堆为空时真实入口应提示无可选牌种且不弹按钮-prompt\yuanhou-gigawatts-empty-discard-feedback-toast-locator.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-1.21-Gigawatts-弃牌堆为空时真实入口应提示无可选牌种且不弹按钮-prompt\yuanhou-gigawatts-empty-discard-feedback-without-prompt.png`
+- 本轮肉眼验收结论：
+  - 起始图里手牌区能直接看到 `1.21 Gigawatts` 本体，说明入口确实来自真实手牌打出，不是伪造 prompt。
+  - toast locator 图里能直接看到文案 `弃牌堆中没有符合条件的卡牌`，说明 feedback 没有丢在 reducer 或事件流里，而是真送到了玩家界面。
+  - 收口图里顶部 toast 仍在，中央没有任何“行动 / 仆从”按钮 prompt，右下弃牌堆里已经能看到本行动本体，说明空弃牌堆边界是真实 `toast + 不建 prompt + 本行动自己正常进弃牌堆`。
+- 结果：
+  - `time_travelers_1_21_gigawatts.choose_card_type` 与 `shuffle_selected_type_to_deck` 不应再只被根状态描述成“主链双按钮”和“单一牌种自动分支”；空弃牌堆 feedback 的浏览器端点也已闭合。
+  - 后续队列不应再把 `1.21 Gigawatts` 的空弃牌堆本地浏览器边界挂回 residual；只剩更广随机顺序可视性或共享 inspect/feedback 收口边界继续留在 L2/shared contract。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Moon Zero Three vs Time Box rail 切换竞争同步到根状态
+
+- 本轮继续补“evidence 已闭合、根状态仍停在旧口径”的对象，不改 `Moon Zero Three / Time Box` 实现，只把本地 rail 切换竞争链回写到根状态。
+- 已重新核对的既有浏览器证据：
+  - `超级间谍-Moon Zero Three-与 Time Box 同时可用时切换 rail 选择后应由 Time Box 真实进场`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Moon-Zero-Three-与-Time-Box-同时可用时切换-rail-选择后应由-Time-Box-真实进场\yuanhou-moon-zero-time-box-moon-zero-armed.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Moon-Zero-Three-与-Time-Box-同时可用时切换-rail-选择后应由-Time-Box-真实进场\yuanhou-moon-zero-time-box-switched-to-time-box.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Moon-Zero-Three-与-Time-Box-同时可用时切换-rail-选择后应由-Time-Box-真实进场\yuanhou-moon-zero-time-box-time-box-played-after-switch.png`
+- 本轮肉眼验收结论：
+  - 第一张图里 `Moon Zero Three` armed 后只有 `Monkey Lab` 高亮、带敌方 `Jumper` 的 `Portal Room` 被置灰，说明当前合法落点仍按 `Moon Zero Three` 自身规则过滤。
+  - 第二张图里切到 `Time Box` 后两座基地都恢复成合法落点，且 rail 上两张 Titan 本体都仍可见，说明 UI 已真实刷新为新的 special 选择，而不是沿用旧的高亮集合。
+  - 第三张图里 `Time Box` 已真实落到原本对 `Moon Zero Three` 非法的 `Portal Room`，而 `Moon Zero Three` 仍留在牌库旁；结合状态断言 `timeBox.location.baseIndex===1`、`moonZero.location.zone==='setaside'`、`interaction.current==null`，可确认这不是单纯视觉切换，而是整条 rail 切换竞争链已真实收口。
+- 结果：
+  - `super_spies_moon_zero_three.special_summon_condition` 的根状态不应再只停在“单合法/单非法基地、armed cancel、多合法基地 L2”；本地 `Moon Zero Three vs Time Box` rail 切换竞争也已 scoped L3。
+  - 后续队列不应再把这条本地 Titan rail 切换链挂回 residual；`Moon Zero Three` 当前只继续保留更广 shared contract 的跨窗口 / 跨来源 special 排序问题。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Secret Volcano Headquarters 旧 scoped L3 失效与 overlay 修订同步到根状态
+
+- 本轮继续补根状态落后于审计文档的旧结论纠偏，不改 `Secret Volcano Headquarters` 实现，只把“旧 E2E 场景真值失效、现由新截图和 overlay 修订替代”的口径同步到根状态。
+- 已重新核对的既有审计事实：
+  - 审计文档已明确写明 2026-05-17 的旧 scoped L3 证据失效：当时夹具实际误配成 `base_monkey_lab / breakpoint 20`，不能再作为 `Secret Volcano Headquarters` 的真实入口证明。
+  - 当前有效证据已由 finding #125 替代，并同时补上 `RevealOverlay` 在自动计分链中的 `queueMicrotask` 竞态修复与新截图/新断言。
+- 本轮同步的关键真相：
+  - `base_secret_volcano_headquarters.reveal_one_each_player_then_play_revealed_minions_here` 的当前 scoped L3 不能再引用那条旧的 `before-end-turn / scored-with-revealed-minion-only` 口径。
+  - 新口径明确要求同时满足 scene truth、`eventStream` 里两条 `REVEAL_DECK_TOP(viewerPlayerId='all')`、浏览器 `reveal-overlay` 可见与两次 dismiss 后收口。
+  - 这条对象当前不再保留 residual；根状态也不应继续留着“旧 scoped L3 已通过”却不标注失效来源的记录。
+- 结果：
+  - `Secret Volcano Headquarters` 的根状态已从“单纯记过一条旧 scoped L3”收紧为“旧证据失效，当前以 finding #125 的 scene-truth + overlay 修订 + 新截图/断言为准”。
+  - 后续队列不应再回头拿那条旧夹具 E2E 充当完成证明；若再引用 `Secret Volcano Headquarters scoped L3`，必须以审计文档当前修订后的证据口径为准。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：变形者 optional search/choice 的 skip 分支同步到根状态
+
+- 本轮继续补“长期状态 JSON 已承认、根 `progress.md / findings.md` 仍落后”的一批对象，不改变形者实现，只把同一类 `may/optional search/choice -> skip 直接收口` 浏览器端点同步到根状态：
+  - `Faceless City`
+  - `G.E.L.F.`
+  - `Really?`
+  - `Transmogrify`
+  - `Doppelganger`
+  - `Mitosis`
+- 已重新核对并确认在长期状态 JSON 中已有的既有浏览器证据：
+  - `变形者基地-Faceless City-真实入口跳过搜寻后应直接收口并保留原牌库顺序`
+  - `变形者-GELF-真实入口跳过搜寻后应直接收口且不额外打出候选随从`
+  - `变形者-Really-真实入口跳过弃牌堆搜寻后应直接收口且不额外打出候选随从`
+  - `变形者-Transmogrify-真实入口跳过牌库搜寻后应直接收口且不额外打出候选随从`
+  - `变形者-Doppelganger-真实入口跳过牌库搜寻后应直接收口且不额外打出候选随从`
+  - `变形者-Mitosis-真实入口跳过同名手牌选择后应直接收口且不额外打出候选随从`
+- 本轮同步的关键真相：
+  - `Faceless City` 不再只靠“选择第二张同名牌加入手牌”支撑 `may_choose_or_skip_same_name_card`；真实点击 `跳过搜寻` 后，prompt 会直接消失，手牌不增，牌库顺序保持 `same-skip-a, other-skip-card, same-skip-b`。
+  - `G.E.L.F.` 不再只靠“选第二张候选打回原基地”支撑 `extra_play_here`；真实点击 `放弃这次选择` 后，`The Vats` 仍为空，不会偷偷补进候选随从。
+  - `Really?` 不再只靠“选第二张弃牌堆候选并选基地”支撑 optional extra-play；真实点击 `放弃这次选择` 后，两座基地都保持空场，不会进入第二层基地选择。
+  - `Transmogrify` 不再只靠“选第二张牌库候选打回原基地”支撑 optional extra-play；真实点击 `放弃这次选择` 后，`The Vats` 仍为空，没有牌库候选被偷偷打回原基地。
+  - `Doppelganger` 不再只靠“Bacta 摧毁后选第二张牌库候选打回原基地”支撑 discard trigger 的 optional search；真实点击 `放弃这次选择` 后，搜索层直接收口，原基地保持空场。
+  - `Mitosis` 不再只靠“从两张同名手牌里选择第二张打回目标基地”支撑 same-name hand choice；真实点击 `放弃这次选择` 后，目标基地仍只保留原目标，两张同名手牌都继续留手。
+- 结果：
+  - 这批对象的根状态不应再停在“只有选择候选那一半有 scoped L3”；对应的 `skip` 分支也都已有真实浏览器证据。
+  - 后续队列不应再把 `Faceless City / G.E.L.F. / Really? / Transmogrify / Doppelganger / Mitosis` 的本地 `skip` 浏览器边界挂回 residual；只继续把更广的随机顺序、forged late-deck/discard、POD alias 或 shared search 合同留在 L2/shared contract。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：自动分支与空选分支同步到根状态
+
+- 本轮继续补“长期状态 JSON 已闭合、根 `progress.md / findings.md` 还没跟上”的另一批对象，不改实现，只把自动分支与空选分支的浏览器端点同步到根状态：
+  - `Operative` 的第一层空选玩家与第二层空选展示牌
+  - `Repeater Perfect` 的单行动自动顶牌
+  - `Time Raider` 的单候选自动沉底
+  - `Spy` 的单卡自动查看与空牌库无 prompt
+  - `For My Eyes Only` 的单卡自动查看与空牌库无 prompt
+- 已重新核对并确认在长期状态 JSON 中已有的既有浏览器证据：
+  - `超级间谍-Operative-真实入口空选玩家后应直接收口且不展示任何牌库顶牌`
+  - `超级间谍-Operative-真实入口空选展示牌后应保持各牌库顶顺序并直接收口`
+  - `时间旅行者-Repeater Perfect-弃牌堆只剩一张行动时真实入口应自动放到牌库顶且不弹 prompt`
+  - `时间旅行者-Time Raider-弃牌堆只剩一张牌时真实入口应自动放到牌库底且不弹 prompt`
+  - `超级间谍-Spy-牌库只剩一张时真实入口应自动查看且不弹重排 prompt`
+  - `超级间谍-For My Eyes Only-牌库只剩一张时真实入口应自动查看且不弹重排 prompt`
+  - `超级间谍-Spy-牌库为空时真实入口不应创建重排 prompt`
+  - `超级间谍-For My Eyes Only-牌库为空时真实入口不应创建重排 prompt`
+- 本轮同步的关键真相：
+  - `Operative` 不再只靠“正常选择玩家/展示牌”的主链支撑 optional 多选语义；第一层 0 勾选时会直接收口且不 reveal 任意玩家，第二层 0 勾选时也会直接收口且不改任一牌库顶顺序。
+  - `Repeater Perfect` 不再只靠“混合弃牌堆里选择第二张行动”的主链；弃牌堆只剩 1 张行动时，真实入口会自动把它放到牌库顶，不创建 `time_travelers_repeater_perfect_choose` prompt。
+  - `Time Raider` 不再只靠“多候选里选择 Time Walk”的主链；弃牌堆只剩 1 张牌时，真实入口会自动把它放到牌库底，不创建 `time_travelers_time_raider_choose` prompt。
+  - `Spy` 不再只靠“顶三张重排”的浏览器主链；牌库只剩 1 张时会自动查看且不弹 reorder prompt，牌库为空时也不会创建空的 reorder overlay。
+  - `For My Eyes Only` 不再只靠“顶五张重排”的浏览器主链；牌库只剩 1 张时会自动查看且不弹 reorder prompt，牌库为空时也不会创建空的 reorder overlay。
+- 结果：
+  - 这批对象的根状态不应再停在“只有主链选择分支已绿”；对应的自动分支与空选/空牌库分支也都已有真实浏览器证据。
+  - 后续队列不应再把 `Operative` 的两条空选边界、`Repeater Perfect / Time Raider` 的单候选自动边界、以及 `Spy / For My Eyes Only` 的单卡自动与空牌库无 prompt 边界挂回本地 residual；只继续把更广 inspect 来源、多人视角、随机顺序或 shared transport/overlay 合同留在 L2/shared contract。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Spy 多客户端私有重排归属同步到根状态
+
+- 本轮继续做 completion-audit 式补齐，不改 `Spy` 实现，只把 evidence 已闭合的“私有顶三 inspect/reorder prompt 只出现在行动玩家页面”这条多客户端对象级主链同步到根状态。
+- 已重新核对的既有浏览器证据：
+  - `超级间谍-Spy-真实多客户端下私有顶三重排 prompt 应只出现在行动玩家页面`
+- 本轮实际同步的关键真相：
+  - `super_spies_spy.inspect_self_top_three` / `super_spies_spy.reorder_top_bottom_inspected_cards` 不应再只停在单页“顶三张重排”主链，或单卡自动/空牌库无 prompt 端点；多客户端下这条链也已经证明：
+    - 行动玩家从手牌真实打出 `Spy` 后，只有该页面会出现 `间谍：将这几张牌按任意顺序放回牌库顶/底` prompt，并私有展示 `Spy / Operative / Mole` 顶三信息；
+    - 非行动玩家页面不会镜像出同一条 inspect/reorder prompt，也不会泄露这三张私有顶牌信息；
+    - 行动玩家选择非默认 top/bottom 后，Host/Guest 两页都会一起收口，且只改写行动玩家自己本次 inspected 的顶三。
+- 结果：
+  - `Spy` 的根状态现在应显式承认三层对象级浏览器事实：
+    - 单页顶三 inspect/reorder 主链；
+    - 单卡自动与空牌库无 prompt 端点；
+    - 多客户端下私有 inspect/reorder prompt 只归属行动玩家页面，并在重排后双页一起收口。
+  - 后续队列不应再把 `Spy` 误记成“当前只补了单页主链和单卡/空牌库端点，多客户端私有归属仍待补”；当前 residual 只继续保留更广多人局、其它 inspect 来源与 shared transport/恢复态边界。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Time Box 第 5 枚计数进场并清零链同步到根状态
+
+- 本轮继续补“审计文档已闭合、根状态还停在旧口径”的对象，不改 `Time Box` 实现，只把 `play_at_five_and_clear` 在 yuanhou 自身 counter source 下的真实进场清零链回写到根状态。
+- 已重新核对的既有浏览器证据：
+  - `时间旅行者-Time Box-真实第5枚计数进场 prompt 可把 Titan 打到基地并清零计数`
+- 本轮实际同步的关键真相：
+  - 这条链证明的不只是 `titan_time_travelers_time_box_play` prompt 本身能把 Titan 打出去，而是 `Primate Park -> attached action 回手 -> 第 5 枚计数 -> 反应窗口选择 Time Box -> 选基地 -> Titan 真落场并清零 -> 原计分链收口` 整条 yuanhou 自身 counter source 真实连通。
+  - 审计文档已明确记下这次测试层误判修正：`smashup_reaction_choose` 里的 `时间盒子` 选项与 rail 上同名 Titan 卡会重名，直接点 DOM 容易误中 rail 弹详情；现行证据以 `interaction option id` 响应当前 reaction 的链路为准，不能再把旧选择器碰巧命中误当作真链无问题。
+  - 当前有效截图结论是：
+    - `yuanhou-time-box-counter-hit-five-play-prompt-before-base-choice.png` 里中央明确可见 `时间盒子：是否移除全部计数器并打到一个基地？`，左下 rail 上还能看到 `Time Box` 本体，说明第 5 枚计数后的进场 prompt 已真实接到 yuanhou 回手链。
+    - `yuanhou-time-box-played-from-counter-prompt-and-cleared.png` 里 prompt 已完全消失，`Time Box` 本体真实落在 `The Nexus` 上方；配合状态断言 `titan.location.baseIndex===1`、`timeBoxCounters===0`、`timeBoxPlayArmed===false`、原回手行动已在 P0 手牌、原计分基地已替换为 `Portal Room`，可确认这是“进场并清零”的真实收口，而不是只在 alien/shared 图集旁证里出现过。
+- 结果：
+  - `time_travelers_time_box.play_at_five_and_clear` 的根状态不应再只停在更早那条 alien 侧 special 进场浏览器链，或只停在 `turn-start skip` / `discard-recover owner-controller split` 的兄弟 atom。
+  - 后续队列不应再把 `Time Box` 的 yuanhou 自身 counter source 进场清零链挂回 residual；当前只继续把更广 counter 来源、多人局与 Titan special 竞争窗口留在 shared/L2 口径。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Time Box 回合开始 owner-only 反应链同步到根状态
+
+- 本轮继续补“审计文档已闭合、根状态还停在旧口径”的对象，不改 `Time Box` 实现，只把 `counter_from_turn_start` 的多客户端 owner-only 真实链回写到根状态。
+- 已重新核对的既有浏览器证据：
+  - `时间旅行者-Time Box-真实多客户端下回合开始应只给 owner 页面第5枚计数反应与进场选择`
+- 本轮实际同步的关键真相：
+  - `time_travelers_time_box.counter_from_turn_start` 不应再只停在旧单页 `P1 end turn -> P0 startTurn -> Moon Zero Three 已在场 -> Time Box 4->5 -> rail 入口 -> skip` 那条 scoped L3；多客户端下这条链也已经证明：
+    - 只有 owner 页面会在回合开始拿到 `smashup_reaction_choose` 对应的 Time Box 反应链，左下 rail 上出现带 `可触发` badge 的 `Time Box` 本体；
+    - 非 owner 页面不会镜像出同一条 startTurn 选择权，也没有 waiting overlay 或假 prompt；
+    - owner 页响应后，中央会真实进入 `时间盒子：是否移除全部计数器并打出到一个基地？` 的第 5 枚计数进场 prompt，点击 skip 后 Host/Guest 两页都会一起收口回 `playCards`。
+  - 审计文档还已明确纠偏旧测试误判：这条真实入口不是点一个文本叫“时间盒子”的普通按钮，而是 rail/Titan 可触发语义；测试层必须按 live `interaction option id` 响应当前 `smashup_reaction_choose`，不能再把旧 DOM 文本定位当成真链。
+- 结果：
+  - `time_travelers_time_box.counter_from_turn_start` 的根状态现在应显式承认两条对象级浏览器事实：
+    - 单页 `Moon Zero Three 已在场 / 4->5 / rail 入口 / skip` 主链；
+    - 多客户端 owner-only `startTurn -> reaction choose -> 第 5 枚计数进场 prompt -> skip` 主链。
+  - 后续队列不应再把 `Time Box counter_from_turn_start` 的“谁来响应 startTurn 第 5 枚计数 prompt”继续挂成根状态缺口；当前 residual 只继续保留更广 onTurnStart 兄弟 trigger、多人局排序与 transport/恢复态边界。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Live and Let Chum 受保护宿主计分分支同步到根状态
+
+- 本轮继续补“审计文档与长期状态 JSON 已闭合、根 `progress.md / findings.md` 还没承认”的对象，不改 `Live and Let Chum / Shell Game` 实现，只把受保护宿主上的 protected-no-op 计分链同步到根状态。
+- 已重新核对并确认在长期状态 JSON 中已有的既有浏览器证据：
+  - `超级间谍-Live and Let Chum-真实计分前选择受Shell Game保护的低力量宿主时不应被摧毁且本次计分继续按原力量结算`
+- 本轮同步的关键真相：
+  - 这条链证明的不只是 `Shell Game` 会挡掉 destroy，而是 beforeScoring 真实入口里：
+    - 玩家确实可以在合法候选里点到受保护的低力量宿主；
+    - destroy 会被保护过滤，不发 `MINION_DESTROYED(shell-host)`；
+    - 基地不会因为这次 protected-no-op 被错误降力，而是继续按原 `4 vs 11` 计分；
+    - 计分后仍会正常翻新到 `The Nexus` 并收口。
+  - 这使得 `super_spies_live_and_let_chum.destroy_selected_minion` 与 `shapeshifters_shell_game.protect_attached_host_from_destroy` 的根状态，都不应再只停在 `Bacta` 保护分支或未受保护 destroy 主链。
+- 结果：
+  - `Live and Let Chum` 的根状态不应再只承认“选择低力量随从并真实摧毁到 owner discard”的分支；受 `Shell Game` 保护时的 destroy-no-op 且按原力量继续计分，也已 scoped L3。
+  - `Shell Game` 的根状态不应再只承认 `Bacta` 来源的 protected-continue；`Live and Let Chum` 来源的 protected-no-op scoring 也已是当前真相。
+  - 后续队列不应再把 `Live and Let Chum` 的受保护宿主分支或 `Shell Game` 的这条 source-family 浏览器边界挂回 residual；只继续把更广 destroy family 的死亡触发连锁与 shared L4 时序留在 L2/shared contract。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：The Base Is Not Enough / Time Is Fleeting / Wormhole / Mindraker 根状态同步
+
+- 本轮继续做 completion-audit 式对齐，不改 `super_spies / time_travelers` 实现，只把审计文档和长期 JSON 里已经闭合、但根状态还没显式承认的 4 组对象同步回来。
+- 本轮重新对齐并承认的现成证据：
+  - `超级间谍-The Base Is Not Enough-真实计分前可选择低力量随从并写入临时控制`
+  - `时间旅行者-Time Is Fleeting-真实计分后可选择弃牌堆基地代替抽新基地`
+  - `时间旅行者-Time Is Fleeting-真实多客户端下赢家不是当前回合玩家时应只给赢家页面弃牌堆基地选择权`
+  - `时间旅行者-Wormhole-真实计分后可选择任意数量己方随从洗入牌库`
+  - `超级间谍-Mindraker-真实计分窗口会禁止其他玩家通过Mole打行动到这里`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-The-Base-Is-Not-Enough-真实计分前可选择低力量随从并写入临时控制\yuanhou-the-base-is-not-enough-low-power-choice-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-The-Base-Is-Not-Enough-真实计分前可选择低力量随从并写入临时控制\yuanhou-the-base-is-not-enough-scoring-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Time-Is-Fleeting-真实计分后可选择弃牌堆基地代替抽新基地\yuanhou-time-is-fleeting-base-discard-choice-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\时间旅行者-Time-Is-Fleeting-真实多客户端下赢家不是当前回合玩家时应只给赢家页面弃牌堆基地选择权\yuanhou-time-is-fleeting-winner-prompt-guest.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Wormhole-真实计分后可选择任意数量己方随从洗入牌库\yuanhou-wormhole-minion-multi-select-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Wormhole-真实计分后可选择任意数量己方随从洗入牌库\yuanhou-wormhole-selected-minion-shuffled-and-others-discarded.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Mindraker-真实计分窗口会禁止其他玩家通过Mole打行动到这里\yuanhou-mindraker-scoring-ready-before-end-turn.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Mindraker-真实计分窗口会禁止其他玩家通过Mole打行动到这里\yuanhou-mindraker-scoring-resolved-without-mole-action.png`
+- 本轮肉眼验收结论：
+  - `The Base Is Not Enough` 的低力量选择 prompt 里只出现 `Jumper / Time Raider`，不出现 5 力 `Silverback`；收口图里记分板已到 `3:2` 且基地翻新为 `The Nexus`，说明 beforeScoring 临时控制确实写进了本次计分。
+  - `Time Is Fleeting` 的单页图里能看到弃牌堆基地选择 prompt，说明主链不只是 L2 handler；多客户端图里只有赢家页出现弃牌堆基地选择权，当前回合玩家页没有错误响应入口。
+  - `Wormhole` 的真实入口已经覆盖“任意数量己方随从”多选链；收口图与状态断言一起证明被选 `Time Raider` 洗回 owner 牌库，未选 `Jumper` 与敌方 `Cyberback` 继续按原计分链清场。
+  - `Mindraker` 的 before 图明确同时出现 `Mindraker`、同基地 `Mole` 与手牌 `Going Bananas`；收口图已直接进入下一玩家出牌阶段、`Primate Park` 替换成 `The Nexus` 且没有多余交互，说明 restriction 把唯一候选行动封死后，真实入口直接计分收口。
+- 结果：
+  - `super_spies_the_base_is_not_enough` 的根状态不应再停在 L2 或“只知道会给临时控制”；`choose_low_power_here` 已 scoped L3，且 `control_until_turn_end` 至少已覆盖“控制影响本次计分”的浏览器边界。
+  - `time_travelers_time_is_fleeting` 的根状态不应再漏掉主链、赢家非当前玩家的多客户端响应权，以及“单候选自动 / 多 special 排序已由 L2 收紧、不再是对象级 residual”这三层口径。
+  - `time_travelers_wormhole` 的根状态不应再停在“多选主链已过、空选仍像 bug”；空选口径已经在审计文档和长期 JSON 中纠偏，不应再把 `optionIds: []` 误挂回 residual。
+  - `super_spies_mindraker.block_other_players_actions_here` 与 `super_spies_mole.respect_mindraker` 的根状态不应再缺席；真实计分窗口 restriction 已 scoped L3。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：It's Astounding / Time Box talent / Mimic 根状态同步
+
+- 本轮继续补“evidence 与长期 JSON 已闭合、根状态仍落后”的另一批对象，不改实现，只把浏览器 scoped L3 事实同步回根状态：
+  - `时间旅行者-It's Astounding-真实入口可选择弃牌堆行动并继续该行动目标链`
+  - `时间旅行者-Time Box-真实天赋可在正常额度用尽后额外打低战力随从与额外行动`
+  - `变形者-Mimic-真实入口只跟随场上最高印刷力量并在真正5力随从进场后动态跳到+5`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Its-Astounding-真实入口可选择弃牌堆行动并继续该行动目标链\yuanhou-its-astounding-discard-action-choice-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Its-Astounding-真实入口可选择弃牌堆行动并继续该行动目标链\yuanhou-its-astounding-going-bananas-target-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Its-Astounding-真实入口可选择弃牌堆行动并继续该行动目标链\yuanhou-its-astounding-going-bananas-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Time-Box-真实天赋可在正常额度用尽后额外打低战力随从与额外行动\yuanhou-time-box-talent-ready.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Time-Box-真实天赋可在正常额度用尽后额外打低战力随从与额外行动\yuanhou-time-box-talent-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\变形者-Mimic-真实入口只跟随场上最高印刷力量并在真正-5-力随从进场后动态跳到-+5\yuanhou-mimic-printed-power-before-real-five-enters.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\变形者-Mimic-真实入口只跟随场上最高印刷力量并在真正-5-力随从进场后动态跳到-+5\yuanhou-mimic-printed-power-after-real-five-enters.png`
+- 本轮肉眼验收结论：
+  - `It's Astounding` 的第一张图先看到弃牌堆行动选择，第二张图继续进入 `Going Bananas` 的基地目标 prompt，第三张图在目标按钮隐藏后才真正收口；说明这条链不是“弃牌堆行动已打出”就算完，而是已把被选行动的后续目标链真实走完。
+  - `Time Box talent` 的 ready / resolved 图已经来自 yuanhou 自身图集，而不是旧 `alien-terraform` 白卡图；额外低战力随从和额外行动额度都在真实 `Portal Room` 天赋链里完成过一次闭合。
+  - `Mimic` 的 before 图里旁边对照体虽然有效力量已到 5，但 `Mimic` 只显示 `+2`；after 图在真正印刷 5 力随从进场后才跳到 `+5`，说明它跟随的是最高印刷力量，不是有效力量。
+- 结果：
+  - `time_travelers_its_astounding` 的根状态不应再缺席；`Time Walk / Going Bananas` 这类从弃牌堆继续接目标链的真实入口，以及“旧收口截图有残留按钮、后来已按 finding #44 修正等待条件”的证据门禁，都已是当前真相。
+  - `time_travelers_time_box.talent_extra_low_power_minion_and_action` 的根状态不应再只停在旧套件主链或其它兄弟 atom；yuanhou 自身图集下的真实 talent 分支已经 scoped L3。
+  - `shapeshifters_mimic.equal_highest_printed_power_in_play` 的根状态不应再只停在对象级 `clean L2`；真实页面上的 printed-power 动态重算已经 scoped L3。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Permit to Kill / Discards Are Forever / Clyde 2.0 / The Nexus 根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `super_spies / cyborg_apes / time_travelers` 实现，只把长期 JSON 已记住、但根状态还没显式承认的 4 组对象同步回来。
+- 本轮重新对齐并承认的现成证据：
+  - `超级间谍-Permit to Kill-真实入口会展示其他玩家顶二、弃随从并让施放者重排非随从`
+  - `超级间谍-Permit to Kill-四人局真实入口会依次处理每位其他玩家的非随从排序 prompt`
+  - `超级间谍-Discards Are Forever-真实入口会对每位玩家展示到首个随从为止并弃掉所有展示牌`
+  - `电子猿-Clyde 2.0-真实多客户端下离场行动选择权在Clyde控制者页面并可收入手牌或正常弃牌`
+  - `时间旅行者-The Nexus-真实计分后赢家可选择基地弃牌堆基地代替抽新基地`
+  - `时间旅行者-The Nexus-真实计分后让过响应应继续按正常牌库顶替换基地`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Permit-to-Kill-真实入口会展示其他玩家顶二、弃随从并让施放者重排非随从\yuanhou-permit-to-kill-before-play.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Permit-to-Kill-真实入口会展示其他玩家顶二、弃随从并让施放者重排非随从\yuanhou-permit-to-kill-order-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Permit-to-Kill-四人局真实入口会依次处理每位其他玩家的非随从排序-prompt\yuanhou-permit-to-kill-four-player-p1-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Permit-to-Kill-四人局真实入口会依次处理每位其他玩家的非随从排序-prompt\yuanhou-permit-to-kill-four-player-p3-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Discards-Are-Forever-真实入口会对每位玩家展示到首个随从为止并弃掉所有展示牌\yuanhou-discards-are-forever-before-play.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Discards-Are-Forever-真实入口会对每位玩家展示到首个随从为止并弃掉所有展示牌\yuanhou-discards-are-forever-resolved.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\电子猿-Clyde-2.0-真实多客户端下离场行动选择权在Clyde控制者页面并可收入手牌或正常弃牌\yuanhou-clyde-detach-choice-prompt-return-branch-host.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\电子猿-Clyde-2.0-真实多客户端下离场行动选择权在Clyde控制者页面并可收入手牌或正常弃牌\yuanhou-clyde-detach-choice-waiting-guest.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-The-Nexus-真实计分后赢家可选择基地弃牌堆基地代替抽新基地\yuanhou-the-nexus-base-discard-choice-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-The-Nexus-真实计分后让过响应应继续按正常牌库顶替换基地\yuanhou-the-nexus-skipped-and-replaced-by-base-deck-top.png`
+- 本轮肉眼验收结论：
+  - `Permit to Kill` 的三人局图先看到真实手牌入口，再看到 `Going Bananas / Time is Fleeting` 两张非随从行动进入回顶顺序选择；四人局图里 `P1 -> P3` 的排序 prompt 会依次出现，说明它不是“只处理第一个其他玩家”的半链。
+  - `Discards Are Forever` 的起始图来自真实手牌打出，收口图没有残留 prompt；结合长期 JSON 里的状态断言，可以确认每位玩家都只展示到首个随从为止，并把所有展示牌一起弃掉。
+  - `Clyde 2.0` 的 Host 图里只有控制者页拿到 `收入手牌 / 进入弃牌堆` 选择，Guest 图只显示等待；这条多客户端链已经覆盖“选择权归 Clyde 控制者”而不是行动拥有者或当前回合玩家。
+  - `The Nexus` 的主链图明确给出基地弃牌堆候选，skip 图则证明点击 `跳过（照常抽新基地）` 后会按 `baseDeck[0]` 正常翻新，不会残留在响应窗口。
+- 结果：
+  - `super_spies_permit_to_kill` 的根状态不应再缺席；三人局主链和四人局 `P1 -> P2 -> P3` 串行排序 prompt 都已由真实浏览器链承认。
+  - `super_spies_discards_are_forever.reveal_until_first_minion_then_mill_seen_cards` 的根状态不应再只停在长期 JSON；双人真实入口 scoped L3 与空牌库/首张即随从/三人 turnOrder 的 L2 收紧都应视为当前真相。
+  - `cyborg_apes_clyde_2_0` 的根状态不应再只在长期 JSON 里存在；多客户端下选择权归 Clyde 控制者、可收入手牌或正常弃牌的对象级边界已经闭合。
+  - `base_the_nexus` 的根状态不应再只在审计文档和长期 JSON 中保留；选择基地弃牌堆基地与显式 skip 后按牌库顶翻新这两条浏览器分支都已闭合。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Juiced Up / Monkey Lab / The Vats / Time Raider / Repeater Perfect / Monkey on Your Back 根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `cyborg_apes / shapeshifters / time_travelers` 实现，只把长期 JSON 已承认、但根状态还没显式承认的对象级主链 scoped L3 同步回来。
+- 本轮重新对齐并承认的现成证据：
+  - `电子猿-Juiced Up-真实入口会按宿主全部附着行动数量给予持续+2倍增`
+  - `电子猿基地-猴子实验室-真实入口会按每个随从自己的附着行动数量持续加力量`
+  - `变形者基地-The Vats-真实入口会把同名随从所在基地置灰并只允许打到别的基地`
+  - `时间旅行者-Time Raider-真实天赋可选择弃牌堆任意牌放到牌库底`
+  - `时间旅行者-Repeater Perfect-真实入口可从混合弃牌堆选择非第一张行动放到牌库顶`
+  - `电子猿-Monkey on Your Back-真实附着行动天赋选择另一玩家低力量随从并把本行动放到底`
+  - `电子猿-Monkey on Your Back-真实入口可附着到敌方随从`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Juiced-Up-真实入口会按宿主全部附着行动数量给予持续-+2-倍增\yuanhou-juiced-up-host-before-attach.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Juiced-Up-真实入口会按宿主全部附着行动数量给予持续-+2-倍增\yuanhou-juiced-up-host-after-attach-plus-four.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿基地-猴子实验室-真实入口会按每个随从自己的附着行动数量持续加力量\yuanhou-monkey-lab-host-before-second-attach.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿基地-猴子实验室-真实入口会按每个随从自己的附着行动数量持续加力量\yuanhou-monkey-lab-host-after-second-attach-plus-two.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\变形者基地-The-Vats-真实入口会把同名随从所在基地置灰并只允许打到别的基地\yuanhou-the-vats-same-name-base-blocked-other-base-still-legal.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\变形者基地-The-Vats-真实入口会把同名随从所在基地置灰并只允许打到别的基地\yuanhou-the-vats-same-name-minion-played-to-other-base.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Time-Raider-真实天赋可选择弃牌堆任意牌放到牌库底\yuanhou-time-raider-discard-choice-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Time-Raider-真实天赋可选择弃牌堆任意牌放到牌库底\yuanhou-time-raider-selected-card-bottomed.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Repeater-Perfect-真实入口可从混合弃牌堆选择非第一张行动放到牌库顶\yuanhou-repeater-perfect-discard-action-choice-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\时间旅行者-Repeater-Perfect-真实入口可从混合弃牌堆选择非第一张行动放到牌库顶\yuanhou-repeater-perfect-selected-action-topped.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Monkey-on-Your-Back-真实附着行动天赋选择另一玩家低力量随从并把本行动放到底\yuanhou-monkey-on-your-back-target-choice-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Monkey-on-Your-Back-真实附着行动天赋选择另一玩家低力量随从并把本行动放到底\yuanhou-monkey-on-your-back-target-destroyed-action-bottomed.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Monkey-on-Your-Back-真实入口可附着到敌方随从\yuanhou-monkey-on-your-back-enemy-host-before-attach.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\电子猿-Monkey-on-Your-Back-真实入口可附着到敌方随从\yuanhou-monkey-on-your-back-attached-to-enemy-host.png`
+- 本轮肉眼验收结论：
+  - `Juiced Up` 的 before/after 图明确看到宿主先有 1 张附着行动，真实贴上 `Juiced Up` 后直接出现绿色 `+4`，说明它把本卡也计入宿主上的行动总数。
+  - `Monkey Lab` 的 before/after 图明确看到同一宿主的基地加成从绿色 `+1` 动态跳到 `+2`，说明它按“该随从自己身上的 attached action 数量”实时重算，而不是静态写死。
+  - `The Vats` 的两张图一起证明：同名随从所在基地会在真实普通出牌入口中被阻断，但同一张手牌仍可改打到别的基地并正常收口。
+  - `Time Raider` 的 prompt 图能看到弃牌堆里同时存在 minion 与 action 候选，收口图说明所选 `Time Walk` 真实进了牌库底，未选 `Doctor When` 继续留在弃牌堆。
+  - `Repeater Perfect` 的主链图能看到混合弃牌堆里只列行动候选，并且可以真实选择第二张 `Time Walk` 放到牌库顶，不会把弃牌随从混进来。
+  - `Monkey on Your Back` 的天赋链图证明“另一玩家低力量随从”选择 prompt 与“本行动沉底”收口都已闭合；敌方宿主附着图则补齐了 `attach_to_any_minion` 的真实手牌入口，不再只靠附着后天赋链旁证。
+- 结果：
+  - `cyborg_apes_juiced_up.count_all_actions_on_host_plus_two_each` 的根状态不应再只停在长期 JSON；单宿主先有 1 张附着行动、再贴 1 张 Juiced Up 后出现 `+4` 的对象级主链已闭合。
+  - `base_monkey_lab.each_minion_here_plus_one_per_own_attached_action_count` 的根状态不应再只停在长期 JSON；宿主 attached action 从 1 到 2 时基地加成从 `+1` 动态跳到 `+2` 的真实入口已经 scoped L3。
+  - `base_the_vats.block_same_name_minion_here` 的根状态不应再只靠共享 restriction 合同或长期 JSON；真实普通出牌入口中的“置灰/拒绝 + 改打另一基地”已经闭合。
+  - `time_travelers_time_raider` 与 `time_travelers_repeater_perfect` 的根状态不应再只记录后补的自动/空弃牌边界；多候选主链 scoped L3 也已显式闭合。
+  - `cyborg_apes_monkey_on_your_back` 的根状态不应再只停在“敌方宿主附着入口”或只停在长期 JSON；对象级主链现在同时承认 `attach_to_any_minion` 与附着后天赋选择/沉底两条 scoped L3。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Cellular Bonding 根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `shapeshifters` 实现，只把 `Cellular Bonding` 已经写在审计文档和长期 JSON 里的对象级事实，同步回根状态。
+- 已确认的现状：
+  - 审计文档已明确把 `shapeshifters_cellular_bonding` 拆成三层：
+    - `choose_other_action_on_same_minion`
+    - `write_metadata_only_when_bonding_attached_to_host`
+    - `proxy_current_supported_surfaces`
+  - 长期 JSON 已明确记住它当前不是“只做过一个 trigger-surface”：
+    - 2026-05-16 已有复制 `Missing Uplink` 的 trigger-surface scoped L3
+    - 2026-05-17 已有复制 `Monkey on Your Back` 的 talent-surface scoped L3
+    - 同日还已把复制 `Flying Monkey` 的 afterScoring、复制 `Shielding` 的 protection、复制 `Splice as Nice` 的 power 收紧到对象级真相
+- 本轮重新对齐并承认的现成证据：
+  - `变形者-Cellular Bonding-真实入口可选择同宿主附着行动并触发复制的回合结束抽牌`
+  - `变形者-Cellular Bonding-真实代理 Monkey on Your Back 天赋可选择另一玩家低力量随从并把本卡放到底`
+  - `变形者-Cellular Bonding-真实计分后可代理 Flying Monkey 移动宿主并摧毁本行动`
+  - `变形者-Cellular Bonding-真实复制 Shielding 后在原护盾离场时仍保护宿主其他行动且自己不会错误自保`
+  - `变形者-Cellular Bonding-真实复制 Splice as Nice 后在原行动离场时仍提供持续 +2 力量`
+- 结果：
+  - `shapeshifters_cellular_bonding.choose_other_action_on_same_minion` 与 `write_metadata_only_when_bonding_attached_to_host` 的根状态不应再缺席；对象级前置链已经至少覆盖“真实附着到宿主后，只能从同宿主旧附着行动里选另一张，且 metadata 只写回真实宿主”。
+  - `shapeshifters_cellular_bonding.proxy_current_supported_surfaces` 的根状态不应再只停在某一条旧 surface 或零散 finding；当前对象级真相已经同时承认：
+    - trigger-surface：复制 `Missing Uplink` 后真实结束回合抽牌
+    - talent-surface：复制 `Monkey on Your Back` 后真实选另一玩家低力量随从并把本卡放到底
+    - afterScoring-surface：复制 `Flying Monkey` 后真实移动宿主并摧毁本行动
+    - protection-surface：复制 `Shielding` 后能继续保护宿主其他行动且自己不会错误自保
+    - power-surface：复制 `Splice as Nice` 后在原行动离场时仍由 copied metadata 保留 `+2`
+  - 当前 residual 只该继续保留审计文档已经写明的完整动态复制 runtime 与更广跨派系 surface，不应再把 `Cellular Bonding` 误记成“根状态只承认了一条 talent 或 trigger 边界”。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Genetic Shift 根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `shapeshifters` 实现，只把 `Genetic Shift` 已经写进审计文档和长期 JSON 的对象级 scoped L3 同步回根状态。
+- 已确认的现状：
+  - 审计文档已把 `shapeshifters_genetic_shift` 拆成三个 atom：
+    - `choose_mode`
+    - `all_own_minions_plus_one`
+    - `single_own_minion_plus_three`
+  - 长期 JSON 已明确记住：
+    - 真实无目标入口需要“先选中手牌、再二次点击确认”才会进入 `基因转变：选择强化模式`
+    - all 分支只给己方随从 +1
+    - single 分支只允许选己方单体，敌方 `Baboom` 不进候选也不获加成
+- 本轮重新对齐并承认的现成证据：
+  - `变形者-Genetic Shift-真实入口可在全体加一与单体加三之间二选一`
+- 结果：
+  - `shapeshifters_genetic_shift.choose_mode` 的根状态不应再缺席；当前对象级真相已明确承认“无目标行动真实入口不是点一次就结算，而是二次点击后进入模式选择 prompt”，不应再把第一次失败的旧 E2E 真值误挂回 residual。
+  - `shapeshifters_genetic_shift.all_own_minions_plus_one` 的根状态不应再只停在 L2；当前对象级真相已经承认 all 分支下只有己方 `Mimic / G.E.L.F.` 获得 `tempPowerModifier=1`，敌方 `Baboom` 不会被误加成。
+  - `shapeshifters_genetic_shift.single_own_minion_plus_three` 的根状态也不应再缺席；当前对象级真相已经承认 single 分支只会把 `+3` 写到玩家真实所选的己方单体目标，敌方 `Baboom` 不进入 prompt、也不会获得任何临时加成。
+  - 当前 residual 只该继续保留审计文档已写明的 direct target 快捷入口与 forged/late target 负例，这两条仍由 L2 守门；不应再把 `Genetic Shift` 整体误记成“根状态没有对象级浏览器主链”。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Shielding / Furious George / Splice as Nice / Missing Uplink 根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `cyborg_apes / shapeshifters` 实现，只把这四个对象已写在审计文档和长期 JSON 里的对象级主链 scoped L3，同步回根状态。
+- 已重新对齐并承认的现成证据：
+  - `电子猿-Shielding-真实入口会清理对手行动并持续保护宿主上的其他行动`
+  - `电子猿-Furious George-真实入口会按自己身上的行动数量给予持续 +1 叠加`
+  - `变形者-Splice as Nice-真实入口会附着到目标随从并给予持续 +2 力量`
+  - `电子猿-Missing Uplink-真实回合结束每张实例各抽一张额外牌`
+- 结果：
+  - `cyborg_apes_shielding` 的根状态不应再只停在 atom 行或和 `Going Bananas` 的组合细节里；当前对象级真相已经同时承认：
+    - onPlay 真实打出后会清掉宿主上的对手旧行动；
+    - 后续对手 `Going Bananas` 真实结算时，宿主本体不会被错误 affect；
+    - `Shielding` 自身可以离场，但宿主上的其他己方行动会继续被保护留下。
+  - `cyborg_apes_furious_george.attached_actions_plus_one_each` 的根状态不应再缺席；当前对象级真相已经承认“宿主先有 1 张不直接加力行动时显示绿色 `+1`，再真实贴第 2 张后动态跳到 `+2`”，说明加成来自自身 `attachedActions` 数量实时重算，而不是别的直接加力来源。
+  - `shapeshifters_splice_as_nice.attached_host_plus_two` 的根状态也不应再缺席；当前对象级真相已经承认“真实手牌入口附着到宿主后，宿主左上立即出现绿色 `+2` 徽章，且本卡真实进入 `attachedActions`”，不应再把它压成纯 `ongoing-power-modifier` 共享合同。
+  - `cyborg_apes_missing_uplink.owner_turn_end_draw_one_per_instance` 的根状态不应再只停在 2026-05-18 那条 extra-turn L2 补强；当前对象级真相已经承认“真实结束回合双实例额外抽牌并叠加正常回合结束抽牌”的 scoped L3，而牌库不足洗弃牌、多 owner 混挂、额外回合结束继续按 owner 聚合，则继续由后补 L2 锁定。
+  - 当前 residual 只该继续保留审计文档已写明的更广多人视角、更多来源或更复杂组合边界；不应再把这四个对象误记成“根状态只有共享合同、没有对象级浏览器主链”。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Bacta / Going Bananas / Primate Park / Copycat choose+metadata 根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `shapeshifters / cyborg_apes / base` 实现，只把这四组对象已写在审计文档和长期 JSON 里的对象级主链 scoped L3，同步回根状态。
+- 已重新对齐并承认的现成证据：
+  - `变形者-Bacta the Future-真实入口目标受Shell Game保护时仍给其拥有者立即额外随从机会`
+  - `变形者-Bacta the Future-真实入口摧毁敌方随从后由目标拥有者决定额外随从机会`
+  - `电子猿-Going Bananas-真实入口只清理所选基地其他玩家行动`
+  - `时间旅行者基地-灵长类公园` 的真实 afterScoring 响应入口
+  - `Copycat` 从手牌真实打出后选择 `Furious George` 并只给本体写 copied metadata
+- 结果：
+  - `shapeshifters_bacta_the_future` 的根状态不应再只停在受保护分支或 owner prompt 修补点；当前对象级真相已经同时承认：
+    - 目标受 `Shell Game` 保护时，destroy 会被过滤，但被摧毁目标的拥有者仍拿到 immediate extra minion 机会；
+    - 未保护己方目标时，随从真实离场进 owner discard，额外随从链也真实收口；
+    - 未保护敌方目标时，额外随从机会真实归目标 owner，而不是当前回合玩家或施放者。
+  - `cyborg_apes_going_bananas` 的根状态不应再只散落在 `Shielding` 组合链或 `It's Astounding` 的后续目标链里；当前对象级真相已经承认：
+    - 真实手牌入口需要先选基地；
+    - 所选基地上的其他玩家 `base ongoing` 与 `attached action` 会被清理；
+    - 己方行动与另一基地的对手行动不会被误清，且 `Shielding` 保护分支已由同对象证据闭合。
+  - `base_primate_park` 的根状态不应再只在长期 JSON 里保留；当前对象级真相已经承认赢家真实点击 `灵长类公园` 响应入口后，prompt 只列“这里”的 attached action，多选后会把所选行动分别送回各自 owner 手牌，而跨基地 `other-base-action` 不会进入候选。
+  - `shapeshifters_copycat.choose_other_player_minion` 与 `write_metadata_only_to_copycat_self` 的根状态也不应继续只被 `Copycat -> Jumper trigger` 间接代表；当前对象级真相已经承认：
+    - 真实入口选择链是从手牌打出后进入 PromptOverlay，只允许选择另一玩家随从；
+    - 最终 copied metadata 只写到 `Copycat` 本体，不会写到候选敌方随从或其他 live minion。
+  - 当前 residual 只该继续保留审计文档已写明的 forged/late payload、更广 destroy family、更多 afterScoring 排序与完整复制 runtime 边界；不应再把这四组对象误记成“根状态只有零散事实，没有对象级浏览器主链”。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Faceless City / G.E.L.F. / Really? / Transmogrify / Doppelganger 主链根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `shapeshifters` 实现，只把这五组对象已写在审计文档和长期 JSON 里的主链 scoped L3，同步回根状态，避免根状态只承认它们的 `skip` 端点。
+- 已重新对齐并承认的现成证据：
+  - `变形者基地-Faceless City-真实入口会列出同名随从候选并将所选牌加入手牌`
+  - `变形者-GELF` 天赋主链
+  - `变形者-Really-真实入口摧毁己方随从后可从弃牌堆选择非第一张合格随从打到别的基地`
+  - `变形者-Transmogrify-真实入口摧毁己方随从后可从牌库选择非第一张合格随从打到同基地`
+  - `变形者-Doppelganger-真实摧毁进弃牌后触发牌库搜随从并打回原基地`
+- 结果：
+  - `base_faceless_city` 的根状态不应再只停在 `skip`；当前对象级真相已经同时承认：
+    - 刚打出的随从会真实触发同名牌库搜索链；
+    - 多候选时玩家可真实选择第二张同名随从收入手牌；
+    - 收牌后剩余牌库会按搜索链真实收口。
+  - `shapeshifters_gelf` 的根状态不应再只停在 `放弃这次选择`；当前对象级真相已经承认：
+    - 天赋会先把 `G.E.L.F.` 自身真实洗回牌库；
+    - 搜索层只列力量 4 或以下且非 `G.E.L.F.` 的候选；
+    - 选择候选后会直接额外打回原基地，而不会残留第二个 immediate extra prompt。
+  - `shapeshifters_really` 的根状态不应再只停在 `skip`；当前对象级真相已经承认：
+    - 真实手牌入口先摧毁己方随从；
+    - 弃牌堆搜索层可真实选择第二张候选；
+    - 随后还能在合法基地里选择非原基地并把该随从额外打出。
+  - `shapeshifters_transmogrify` 的根状态不应再只停在 `skip`；当前对象级真相已经承认：
+    - 真实手牌入口先摧毁己方随从；
+    - 牌库搜索层只列等/低于被摧毁随从力量的候选并隐藏过大候选；
+    - 选择候选后会直接额外打回原基地并完成洗牌收口。
+  - `shapeshifters_doppelganger` 的根状态不应再只停在 `skip`；当前对象级真相已经承认：
+    - `Bacta immediate extra skip` 之后，会真实进入 `Doppelganger` 自己的 search 链；
+    - 搜索层可真实选择第二张牌库候选；
+    - 该候选会直接额外打回 `Doppelganger` 原来的基地，而不会残留第二个 immediate extra prompt。
+  - 当前 residual 只该继续保留审计文档已写明的随机顺序、forged late-deck/discard、destroy source family 与 shared search 合同；不应再把这五组对象误记成“根状态只承认 skip，没有对象级主链”。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Mitosis / Operative / Spy / For My Eyes Only / 1.21 Gigawatts 主链根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `shapeshifters / super_spies / time_travelers` 实现，只把这五组对象已写在审计文档和长期 JSON 里的主链 scoped L3，同步回根状态，避免根状态只承认 `skip / 空选 / 单卡自动 / 空牌库` 端点。
+- 已重新对齐并承认的现成证据：
+  - `变形者-Mitosis-真实入口从同名手牌中选择候选并直接额外打回目标基地`
+  - `超级间谍-Operative-真实入口先选择玩家再选择展示牌并把所选顶牌放到底`
+  - `超级间谍-Spy-真实入口可查看自己牌库顶三张并按非默认顶底顺序放回`
+  - `超级间谍-For My Eyes Only-真实入口可查看自己牌库顶五张并按非默认顶底顺序放回`
+  - `时间旅行者-1.21-Gigawatts-真实入口可选择行动或仆从并将该类弃牌洗入牌库`
+- 结果：
+  - `shapeshifters_mitosis` 的根状态不应再只停在 `skip`；当前对象级真相已经承认：
+    - 真实手牌入口先选择己方目标随从；
+    - same-name prompt 会真实列出两张同名手牌并隐藏非同名候选；
+    - 选择候选后会直接额外打回目标所在基地，而不会残留第二个 immediate extra prompt。
+  - `super_spies_operative` 的根状态不应再只停在第一层/第二层空选端点；当前对象级真相已经承认：
+    - 第一层会真实多选要查看牌库顶牌的玩家；
+    - 第二层只显示这些玩家刚展示出来的顶牌；
+    - 选择其中一张后，只会把该玩家的该张顶牌放到底，其余玩家牌库顶保持不变并正常收口。
+  - `super_spies_spy` 的根状态不应再只停在单卡自动与空牌库无 prompt；当前对象级真相已经承认：
+    - 真实手牌入口把 `Spy` 打进场后会进入顶三张 inspect/reorder prompt；
+    - prompt 会直接展示三张牌库顶卡面本体；
+    - 选择非默认 top/bottom 顺序后，牌库会按真实顺序收口。
+  - `super_spies_for_my_eyes_only` 的根状态也不应再只停在单卡自动与空牌库无 prompt；当前对象级真相已经承认：
+    - 无目标行动二次点击打出后会进入顶五张 inspect/reorder prompt；
+    - prompt 直接展示五张牌库顶卡面本体，不夹带第六张；
+    - 选择非默认 top/bottom 顺序后，本行动自己进入弃牌堆并完成真实收口。
+  - `time_travelers_1_21_gigawatts` 的根状态不应再只停在单一牌种自动与空弃牌堆 feedback；当前对象级真相已经承认：
+    - 当弃牌堆同时有行动与随从时，真实入口会出现“行动 / 仆从”按钮 prompt；
+    - 选择其一后，只会把该牌种的弃牌与现有 deck 一起真实洗回牌库；
+    - 未选择的另一牌种与本行动本体会继续留在 discard。
+  - 当前 residual 只该继续保留审计文档已写明的更广随机顺序、多客户端、inspect 来源与 shared search/feedback 合同；不应再把这五组对象误记成“根状态只有边界端点，没有对象级主链”。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：ISI / Secret Agent / The Spy Who Ditched Me 根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `super_spies / base_isis_swingin_pad` 实现，只把这三组对象在审计文档和长期 JSON 已经闭合的对象级 scoped L3 / shared 纠偏口径同步回根状态。
+- 已重新对齐并承认的现成证据：
+  - `超级间谍-ISI摇摆据点-真实计分后赢家可重排自己牌库顶三张`
+  - `超级间谍-ISI摇摆据点-真实计分后跳过响应仍应完成收口并保留赢家牌库顺序`
+  - `超级间谍-ISI摇摆据点-真实多客户端下赢家不是当前回合玩家时应只给赢家页面重排牌库`
+  - `超级间谍-Secret Agent-真实入口会让行动玩家自己选择弃掉剩余手牌`
+  - `超级间谍-Secret Agent-真实多客户端下应只在行动玩家页面给出弃手牌选择权`
+  - `超级间谍-Secret Agent-真实多客户端下若只剩一张手牌应自动弃掉且不弹 prompt`
+  - `超级间谍-Secret Agent-真实多客户端下若打完后已无剩余手牌则不应创建弃牌 prompt`
+  - `超级间谍-The Spy Who Ditched Me-真实多客户端下应只在目标玩家页面给出弃随从选择权`
+  - `超级间谍-The Spy Who Ditched Me-真实入口会私有展示没有随从的其他玩家手牌且不吞掉弃随从 prompt`
+- 结果：
+  - `base_isis_swingin_pad` 的根状态不应再只停在最早那条“P0 赢家顶三张非默认 top/bottom”浏览器链；当前对象级真相已经同时承认：
+    - 真实入口来自计分后的 `smashup_reaction_choose` 响应窗口，而不是直调 reorder handler；
+    - `winner != currentPlayer` 时，重排选择权只落在赢家页面，非赢家页面不拿 prompt；
+    - `让过` 分支点击后会真实清掉 `smashup_reaction_choose`，并回到下一位玩家正常 `playCards`；
+    - 短牌库只剩 2 张时仍可重排这条边界已由同对象 L2 锁定，不应再被误记成对象级主链缺口。
+  - `super_spies_secret_agent.other_player_action_discards_one` 的根状态不应再只停在 shared queue 真链修复、单页二选一，或“短手牌自动分支只是 L2”；当前对象级真相已经同时承认：
+    - 行动玩家真实打出 `Stasis Field` 后，弃手牌选择权会回到行动玩家本人，且候选只来自剩余手牌；
+    - 多客户端下只有行动玩家页面出现 prompt，非目标页没有错误 waiting overlay；
+    - 多客户端 `2/1/0` 剩余手牌三条真实浏览器分支都已闭合，且 `Stasis Field` 会继续留在 `Portal Room` 附着区，不会被误移走。
+  - `super_spies_the_spy_who_ditched_me` 的根状态不应再只停在 shared overlay residual 或单条 reveal finding；当前对象级真相已经同时承认：
+    - `each_other_player_discards_minion` 的多客户端主链里，目标玩家只会在自己页面得到弃随从选择权，Host 非目标页不再残留 stale waiting overlay；
+    - `reveal_no_minion_hand` 的真实入口里，没有随从的其他玩家只会向施放者页私有 reveal 手牌，且 reveal 关闭后另一位有随从玩家的 discard prompt 仍能继续收口；
+    - 旧 Host/非目标页 overlay 事故现已明确归类为 shared optimistic transport/playerView 根因，不应再被当成这张卡自己的未闭合 residual。
+  - 后续队列不应再把 `ISI / Secret Agent / The Spy Who Ditched Me` 误记成“只有长期 JSON 有承认、根状态还没补对象级主链”，也不应把 `The Spy Who Ditched Me` 那条已闭合的 shared overlay 继续挂回单卡待办。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：From Q With Love / Secret Volcano Headquarters 主链根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `super_spies / base_secret_volcano_headquarters` 实现，只把这两组对象在审计文档和长期 JSON 已经闭合的当前有效主链，同步回根状态，避免根状态只剩边界补丁或旧证据纠偏。
+- 已重新对齐并承认的现成证据：
+  - `超级间谍-From Q With Love-真实入口会抽三张并从投影手牌中准确弃两张`
+  - `超级间谍-秘密火山总部-真实计分前会让每位玩家展示牌库顶一张，并只把展示出的随从打到这里`
+- 结果：
+  - `super_spies_from_q_with_love.draw_three_then_discard_two_from_projected_hand` 的根状态不应再只停在“短候选 / 空投影手牌边界已同步”；当前对象级真相已经显式承认：
+    - 真实入口会先抽 3 张，再基于“旧手牌 + 新抽牌 - 本牌”形成投影手牌；
+    - discard prompt 会同时列出旧手牌与新抽三张中的合法候选，但不会把本牌自身重新混回候选；
+    - 选择两张后，真实收口结果是只把所选两张送入 discard，其余未选新抽牌继续留在手牌。
+  - `base_secret_volcano_headquarters.reveal_one_each_player_then_play_revealed_minions_here` 的根状态也不应再只停在“旧 scoped L3 失效、现以新 scene-truth 为准”的纠偏口径；当前对象级真相已经显式承认：
+    - 真实结束回合后会按 turnOrder 发出 `REVEAL_DECK_TOP(viewerPlayerId='all')`，而不是只在服务端状态里静默 reveal；
+    - 中央 `reveal-overlay` 会真实出现，并与计分后的 VP / 换基地状态并存；
+    - 两次 dismiss 后 overlay 会完全消失，桌面真实收口到替换后的 `Portal Room`，只把展示出的随从带进这次计分链，展示出的行动仍留在原牌库链路中。
+  - 后续队列不应再把 `From Q With Love` 误记成“根状态只补了短候选/空投影手牌，主链还没显式承认”，也不应再把 `Secret Volcano Headquarters` 误记成“只有旧证据失效修订，没有当前有效主链承认”。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Time Walk / Stasis Field 主链根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `time_travelers` 实现，只把这两组对象在审计文档和长期 JSON 已经闭合的对象级 scoped L3，同步回根状态，避免它们继续只以别的链路里的卡名形式出现。
+- 已重新对齐并承认的现成证据：
+  - `时间旅行者-Time Walk-真实入口会抽两张、把本牌沉到底并授予本回合额外随从与额外行动额度`
+  - `时间旅行者-Stasis Field-真实入口可贴到基地、阻止本该发生的计分，并在拥有者回合开始自动离场`
+- 结果：
+  - `time_travelers_time_walk` 的根状态不应再只停在别的对象里的辅助卡名、shared `banked-extra-play` 合同，或“额外额度数字对了”的抽象口径；当前对象级真相已经显式承认：
+    - 真实入口会先抽 2 张牌；
+    - 本牌会沉到底牌库，而不是正常进弃牌堆；
+    - 授予的是本回合 banked extra minion / extra action 额度，不会额外弹出 `immediate` prompt；
+    - 这些额度会在同一回合里被真实消费到 `Jumper + Juiced Up` 链上，并完整收口。
+  - `time_travelers_stasis_field` 的根状态也不应再只作为 `Into the Time Slip`、`Secret Agent` 或 `Portal Room` 相关链里的旁证存在；当前对象级真相已经显式承认：
+    - 真实手牌入口可以把 `Stasis Field` 贴到基地，进入该基地 `ongoingActions`；
+    - 在基地已达断点的情况下，它会真实阻止这次本该发生的计分与换基地；
+    - 到拥有者自己下一个回合开始时，它会自动从该基地离场并进入 owner discard。
+  - 后续队列不应再把 `Time Walk / Stasis Field` 误记成“长期 JSON 有 scoped L3、根状态却还没对象级承认”；当前根状态已明确承认 `Time Walk` 的 draw-two / banked-extra / bottom-self 主链，以及 `Stasis Field` 的 attach / suppress-scoring / owner-turn-start-detach 主链。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Do Over / Doctor When returned-card 主链根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `time_travelers` 实现，只把 `Do Over / Doctor When` 已在审计文档和长期 JSON 闭合的 returned-card 主链同步回根状态，避免根状态只承认 `skip extra` 这条后补边界。
+- 已重新对齐并承认的现成证据：
+  - `时间旅行者-Do Over-真实入口只能重新打出刚返回手牌的那张随从`
+  - `时间旅行者-Doctor When-真实入口可选择另一个己方随从回手并可额外打回`
+  - `时间旅行者-Doctor When-真实入口只允许额外打回刚返回的另一随从`
+- 结果：
+  - `time_travelers_do_over` 的根状态不应再只停在“放弃这次额外随从后会收口”；当前对象级真相已经显式承认：
+    - `return_own_minion` 这半段真实入口会先把 `Jumper` 从基地回到手牌；
+    - 随后进入 specific-card extra minion prompt，而且候选只允许刚返回的那张 `jumper-a`，不会把同名手牌诱饵混进来；
+    - 选择该候选后，会把它真实打回原基地并完整收口。
+  - `time_travelers_doctor_when` 的根状态也不应再只停在 `skip extra`；当前对象级真相已经显式承认：
+    - 第一层 prompt 会真实列出“另一个己方随从”候选，且 `Doctor When` 自身不会混进候选；
+    - 选择 `Time Raider` 回手后，会进入 returned-card extra prompt；
+    - extra prompt 只允许刚返回的 `raider-a`，不允许同名手牌诱饵，选择后会把 `Time Raider` 真实打回 `Portal Room` 并收口。
+  - 后续队列不应再把 `Do Over / Doctor When` 误记成“只有 returned-card specific 合同或 skip-extra 边界已进根状态”；当前根状态已明确承认 `Do Over` 的 return + replay 主链，以及 `Doctor When` 的 another/your/may return + returned-card replay 主链。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Mole 正向 special 主链根状态同步
+
+- 本轮继续做 completion-audit 式补齐，不改 `super_spies` 实现，只把 evidence finding #131 已经纠偏并重新跑通的 `Mole` 正向 special 主链同步回根状态，避免根状态继续只承认 `Mindraker` 封死这条负链。
+- 已重新对齐并承认的现成证据：
+  - `超级间谍-Mole-真实计分窗口可通过特技把同基地行动作为特殊行动打出`
+  - `超级间谍-Mindraker-真实计分窗口会禁止其他玩家通过Mole打行动到这里`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Mole-真实计分窗口可通过特技把同基地行动作为特殊行动打出\yuanhou-mole-reaction-choice-before-special.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Mole-真实计分窗口可通过特技把同基地行动作为特殊行动打出\yuanhou-mole-extra-action-prompt-with-going-bananas.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Mole-真实计分窗口可通过特技把同基地行动作为特殊行动打出\yuanhou-mole-auto-resolved-without-extra-base-prompt.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-factions.e2e\超级间谍-Mole-真实计分窗口可通过特技把同基地行动作为特殊行动打出\yuanhou-mole-special-action-resolved-on-scoring-base.png`
+- 本轮肉眼验收结论：
+  - 第一张图中央明确给出 `选择一个反应动作`，并同时出现 `内鬼特殊能力` 与 `让过`，说明这条链确实从真实计分响应窗口起步，而不是直接伪造 extra-action prompt。
+  - 第二张图中央 prompt 是 `立刻打出一张额外战术，或放弃这次机会`，底部只剩 `Going Bananas` 一张真实候选，说明 `Mole` 的 special 已把同基地 / 计分窗口限制真实传递到了 extra action 候选层。
+  - 第三张图在点击 `Going Bananas` 后没有再出现第二层基地选择 prompt，说明这条链已按“唯一合法基地自动收口”的合同真实前进，不是半路卡在多余交互上。
+  - 收口图里 `The Vats` 已被 `The Nexus` 替换、记分板为 `3:1`，配合状态断言 `P0 discard` 含 `mole-bananas-hand/mole-p0-anchor/mole-special-a`、`P1 discard` 含 `mole-target-action/mole-p1-target`，可以确认这次 special 打出的 `Going Bananas` 真实改写了计分结果，而不是只弹了 prompt。
+- 结果：
+  - `super_spies_mole.grant_special_action` 的根状态不应再只停在“对象行写过 scoped L3，但正文只有 skip / restriction 负链”。当前对象级真相已经显式承认：
+    - 真实计分窗口会先给出 `Mole` 的 response choice；
+    - 选择 `内鬼特殊能力` 后会进入受同基地限制的 extra-action prompt；
+    - 当唯一合法行动是 `Going Bananas` 时，点击后会自动走完唯一合法基地，不再额外弹第二层基地选择；
+    - 最终该行动会真实结算、改变本次计分结果并完整收口。
+  - `super_spies_mole.respect_mindraker` 仍保留同组对象里的负向 scoped L3：当 `Mindraker` 把唯一候选行动全部封死时，真实入口不会错误弹出 Mole special/extra-action prompt，而是直接计分收口。
+  - 后续队列不应再把 `Mole` 误记成“当前只有 restriction 负链已回根状态，正向 special 主链仍只在 evidence 里”；当前根状态已明确承认 `grant_special_action` 的正向主链，以及 `respect_mindraker` 的负向 restriction 主链。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：For My Eyes Only 多客户端私有顶五重排归属同步到根状态
+
+- 本轮继续做 completion-audit 式补齐，不改 `super_spies` 实现，只把 evidence finding #149 已经闭合的 `For My Eyes Only` 多客户端私有 inspect/reorder 主链同步回根状态，避免根状态继续只承认单页顶五主链和单卡/空牌库端点。
+- 已重新对齐并承认的现成证据：
+  - `超级间谍-For My Eyes Only-真实入口可查看自己牌库顶五张并按非默认顶底顺序放回`
+  - `超级间谍-For My Eyes Only-真实多客户端下私有顶五重排 prompt 应只出现在行动玩家页面`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\超级间谍-For-My-Eyes-Only-真实多客户端下私有顶五重排-prompt-应只出现在行动玩家页面\yuanhou-for-my-eyes-only-multiplayer-reorder-prompt-host.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\超级间谍-For-My-Eyes-Only-真实多客户端下私有顶五重排-prompt-应只出现在行动玩家页面\yuanhou-for-my-eyes-only-multiplayer-no-reorder-prompt-guest.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\超级间谍-For-My-Eyes-Only-真实多客户端下私有顶五重排-prompt-应只出现在行动玩家页面\yuanhou-for-my-eyes-only-multiplayer-reordered-host.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\超级间谍-For-My-Eyes-Only-真实多客户端下私有顶五重排-prompt-应只出现在行动玩家页面\yuanhou-for-my-eyes-only-multiplayer-reordered-guest.png`
+- 本轮肉眼验收结论：
+  - Host 图中央明确出现 `只为我的眼睛：选择牌库顶/牌库底顺序`，并直接展示 `Spy / Operative / Mole / Secret Agent / Jumper` 五张 inspected 顶牌卡面，以及非默认的顶/底顺序按钮，说明这条链是从真实双击打出 `For My Eyes Only` 进入的私有顶五重排 prompt。
+  - Guest 图只保留公共 `For My Eyes Only 已打出!` spotlight，看不到 `只为我的眼睛` 私有 prompt、五张 inspected 顶牌卡面或任何顶/底顺序按钮，说明公共出牌展示没有把私有 inspect 信息泄露给另一页。
+  - Host 收口图里在点击非默认顶/底顺序后已回到普通 `你自己 / 出牌阶段`，中央没有残留私有 prompt；Guest 收口图也没有 waiting overlay 或私有按钮残影。
+  - 配合状态断言 `serverState.sys.interaction.current==null`、`hostState.sys.interaction.current==null`、`guestState.sys.interaction.current==null`，以及 `P0 deck=[eyes-mp-deck-c,eyes-mp-deck-a,eyes-mp-deck-f,eyes-mp-deck-e,eyes-mp-deck-b,eyes-mp-deck-d]`、`P0 discard` 含 `eyes-mp-hand`，可以确认这条链已真实走完 `Host 双击打出 -> Host 独占私有顶五 inspect/reorder prompt -> 选择非默认 top/bottom -> Host/Guest 双页收口`。
+- 结果：
+  - `super_spies_for_my_eyes_only.inspect_self_top_five` / `reorder_top_bottom_inspected_cards` 的根状态不应再只停在：
+    - 单页顶五重排主链；
+    - 单卡自动查看；
+    - 空牌库无 prompt。
+  - 当前对象级真相已经显式承认：多客户端下只有行动玩家页面拿到私有顶五 inspect/reorder prompt，另一页只看到公共已打出 spotlight，不会镜像出私有卡面、顺序按钮或 waiting overlay；重排收口后双页都回到正常继续出牌态。
+  - 后续队列不应再把 `For My Eyes Only` 误记成“当前只有单页主链与短牌库/空牌库端点已回根状态，多客户端私有归属仍只在 evidence 里”；当前根状态已明确承认这条 owner-only 顶五重排主链。
+
+## 2026-05-18 继续推进 SmashUp yuanhou 长期审计：Operative 多客户端两层 prompt 归属同步到根状态
+
+- 本轮继续做 completion-audit 式补齐，不改 `super_spies` 实现，只把 evidence finding #144 已经闭合的 `Operative` 双人联机页归属主链同步回根状态，避免根状态继续只承认单页主链与两层空选端点。
+- 已重新对齐并承认的现成证据：
+  - `超级间谍-Operative-真实入口可多选玩家并只把选中展示牌放到对应牌库底`
+  - `超级间谍-Operative-真实入口空选玩家后应直接收口且不展示任何牌库顶牌`
+  - `超级间谍-Operative-真实入口空选展示牌后应保持各牌库顶顺序并直接收口`
+  - `超级间谍-Operative-真实多客户端下两层 prompt 都应只出现在行动玩家页面`
+- 本轮实际重新打开并核对的关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\超级间谍-Operative-真实多客户端下两层-prompt-都应只出现在行动玩家页面\yuanhou-operative-multiplayer-player-choice-host.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\超级间谍-Operative-真实多客户端下两层-prompt-都应只出现在行动玩家页面\yuanhou-operative-multiplayer-no-player-choice-guest.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\超级间谍-Operative-真实多客户端下两层-prompt-都应只出现在行动玩家页面\yuanhou-operative-multiplayer-top-bottom-host.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\超级间谍-Operative-真实多客户端下两层-prompt-都应只出现在行动玩家页面\yuanhou-operative-multiplayer-resolved-host.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\smashup-yuanhou-factions\test-results\evidence-screenshots\_shared\smashup-yuanhou-jumper-multiplayer.e2e\超级间谍-Operative-真实多客户端下两层-prompt-都应只出现在行动玩家页面\yuanhou-operative-multiplayer-resolved-guest.png`
+- 本轮肉眼验收结论：
+  - 第一张图里 Host 页中央明确出现第一层 `密探：选择要查看牌库顶牌的玩家` prompt，说明联机场景里玩家多选入口真实落在行动玩家页。
+  - 第二张图里 Guest 页中央没有任何 prompt 或 waiting overlay，说明第一层玩家选择权没有错误镜像到非行动玩家页。
+  - 第三张图里 Host 在只勾选 `玩家1` 后，第二层只出现 Guest 的 `Jumper` 顶牌本体，不夹带 Host 顶牌，说明第二层 `top/bottom` prompt 仍只归行动玩家页，且展示集合没有串台。
+  - 两张收口图里 Host/Guest 都已回到普通出牌态，没有残留 prompt。配合状态断言 `serverState.sys.interaction.current==null`、`guestState.sys.interaction.current==null`、`P0 deck='operative-mp-p0-top,operative-mp-p0-second'`、`P1 deck='operative-mp-p1-second,operative-mp-p1-top'`，可以确认这条链真实完成了“只改 Guest 顶牌到底，不误改 Host 顶牌”的双页收口。
+- 结果：
+  - `super_spies_operative.choose_players_to_reveal` / `bottom_any_revealed_cards` 的根状态不应再只停在：
+    - 单页正常多选两位玩家并选择 1 张展示牌放底；
+    - 第一层 0 勾选玩家；
+    - 第二层 0 勾选展示牌。
+  - 当前对象级真相已经显式承认：双人联机下两层 prompt 都只归行动玩家页面，Guest 页既不会拿到第一层玩家选择 prompt，也不会拿到第二层 `top/bottom` prompt；Host 在第二层只选 Guest 顶牌后，只会改 Guest 牌库而不会误改 Host 牌库。
+  - 后续队列不应再把 `Operative` 误记成“当前只有单页主链与空选端点已回根状态，多客户端页归属仍只在 evidence 里”；当前根状态已明确承认这条 2P owner-only 双层 prompt 主链。

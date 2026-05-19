@@ -266,9 +266,8 @@ test('枪手 Duel compare-roll 应对双方同时可见，且对手侧能从日�
             path: getEvidenceScreenshotPath(testInfo, 'host-opponent-sees-duel-compare-roll'),
             fullPage: false,
         });
-        await guestPage.screenshot({
+        await guestPage.getByTestId('compare-roll-overlay').screenshot({
             path: getEvidenceScreenshotPath(testInfo, 'guest-gunslinger-sees-duel-compare-roll'),
-            fullPage: false,
         });
 
         await guestPage.getByRole('button', { name: '抵挡 1/2 进攻伤害' }).click();

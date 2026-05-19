@@ -875,6 +875,100 @@ describe('Feature: incremental-state-sync', () => {
       client.disconnect();
     });
 
+    it('resyncs when render-only filtered state strips owner-only queued prompts from patch base', () => {
+      const onStateUpdate = vi.fn();
+      const { client } = createConnectedClient({ onStateUpdate });
+
+      const authoritativeState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: undefined,
+            queue: [
+              {
+                id: 'owner-only-queued-a',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                  title: '继续选择要弃掉的手牌',
+                  sourceId: 'super_spies_secret_agent_discard_queue',
+                  targetType: 'hand',
+                  options: [{ id: 'hand-a', label: '手牌 A', value: { cardUid: 'hand-a' } }],
+                },
+              },
+            ],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      simulateSync(authoritativeState);
+      simulateUpdate(authoritativeState, { stateID: 1, randomCursor: 0 });
+
+      onStateUpdate.mockClear();
+      mockSocket.clearEmitted();
+
+      const renderFilteredState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: undefined,
+            queue: [],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      client.updateLatestState(renderFilteredState);
+
+      const nextAuthoritativeState = {
+        core: { hp: 10 },
+        sys: {
+          interaction: {
+            current: undefined,
+            queue: [
+              {
+                id: 'owner-only-queued-a',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                  title: '继续选择要弃掉的手牌',
+                  sourceId: 'super_spies_secret_agent_discard_queue',
+                  targetType: 'hand',
+                  options: [{ id: 'hand-a', label: '手牌 A', value: { cardUid: 'hand-a' } }],
+                },
+              },
+              {
+                id: 'owner-only-queued-b',
+                kind: 'simple-choice',
+                playerId: '0',
+                data: {
+                  title: '继续选择另一张手牌',
+                  sourceId: 'super_spies_secret_agent_discard_queue',
+                  targetType: 'hand',
+                  options: [{ id: 'hand-b', label: '手牌 B', value: { cardUid: 'hand-b' } }],
+                },
+              },
+            ],
+            isBlocked: false,
+          },
+          eventStream: { entries: [], nextId: 1 },
+        },
+      };
+      const diff = computeDiff(authoritativeState, nextAuthoritativeState, Infinity);
+      expect(diff.type).toBe('patch');
+      expect(diff.patches).toBeDefined();
+      expect(diff.patches!.some((patch) => patch.path === '/sys/interaction/queue/1')).toBe(true);
+
+      simulatePatch(diff.patches!, { stateID: 2, randomCursor: 0 });
+
+      expect(onStateUpdate).not.toHaveBeenCalled();
+      expect(mockSocket.findEmitted('sync').length).toBeGreaterThan(0);
+      expect(client.latestState).toEqual(renderFilteredState);
+
+      client.disconnect();
+    });
+
     it('resyncs when batch-confirmed stripEventStream state pollutes patch base', () => {
       const onStateUpdate = vi.fn();
       const { client } = createConnectedClient({ onStateUpdate });

@@ -494,6 +494,7 @@
     "ownerSeatUnit": "Seat {{seat}} (Host)",
     "occupiedSeatUnit": "Seat {{seat}}",
     "aiPlayerName": "AI Seat {{seat}}",
+    "aiManualFactionSelection": "Player chooses AI factions",
     "confirm": "Create Room"
   },
   "socket": {

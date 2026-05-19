@@ -1,4 +1,28 @@
-# DiceThrone 新派系 Treant / Ninja 全量重审与抽查循环（2026-05-15）
+# DiceThrone 新英雄全量重审与抽查循环（2026-05-15）
+
+## 2026-05-19 范围口径更正：补审范围是所有新英雄，不只 Treant / Ninja
+
+用户已明确更正：当前这轮“补审”任务的总范围不是只看 Treant / Ninja，而是 **DiceThrone 全部新英雄**。
+
+当前批次总范围统一以这四位为准：
+
+- `gunslinger`
+- `samurai`
+- `treant`
+- `ninja`
+
+因此，本文件现在必须按两层理解：
+
+1. **整批总范围**：四个新英雄都在补审范围内，不能再把“两个新英雄”写成当前任务的总口径。
+2. **本文件实际深审子范围**：本文件历史上主要承载 Treant / Ninja 这两位在 2026-05-15 ~ 2026-05-17 期间的深审循环、共享根因修复和矩阵回写。
+
+Gunslinger / Samurai 当前不应被排除在总范围外；它们的当前有效补审落点改看：
+
+- `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md`
+- `evidence/dicethrone/dicethrone-gunslinger-audit-2026-04-11.md`
+- `evidence/dicethrone/dicethrone-samurai-audit-2026-04-11.md`
+
+据此，本文件后文凡出现“两个新英雄”“本轮目标是重审两个新英雄”之类表述，都应理解为**当时这份深审文档的子范围**，不再代表当前整批补审范围。
 
 ## 2026-05-16 全面审计再降级：Treant 不是“还剩两项”
 
@@ -34,7 +58,7 @@
 
 ## 范围与完成定义
 
-本轮目标不是新增功能，而是按补强后的审计规范重审两个新英雄：
+本轮目标不是新增功能，而是按补强后的审计规范重审**当前深审子范围内**的两个新英雄：
 
 - `treant` / 树精
 - `ninja` / 忍者

@@ -396,6 +396,14 @@ describe('InteractionSystem', () => {
         const viewForOther = system.playerView?.(state, '2') as any;
         expect(viewForOther?.interaction?.current).toBeUndefined();
         expect(viewForOther?.interaction?.isBlocked).toBe(true);
+
+        viewForOpponent.interaction.current.data.title = 'mutated-title';
+        viewForOpponent.interaction.current.data.contestants[0].roll = 1;
+
+        expect(state.sys.interaction.current.data.title).toBe('compareRoll.gunslingerDuel.title');
+        expect(state.sys.interaction.current.data.contestants[0].roll).toBe(6);
+        expect(viewForOwner?.interaction?.current?.data?.title).toBe('compareRoll.gunslingerDuel.title');
+        expect(viewForOwner?.interaction?.current?.data?.contestants?.[0]?.roll).toBe(6);
     });
 
     it('非 slider simple-choice 允许追加 mergedValue 字段，但不允许覆盖原字段', () => {

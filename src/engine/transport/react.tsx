@@ -240,6 +240,33 @@ export function useGameClient<
     };
 }
 
+export function GameClientOverrideProvider({
+    children,
+    playerId,
+    dispatch,
+}: {
+    children: ReactNode;
+    playerId?: string | null;
+    dispatch?: (type: string, payload: unknown) => void;
+}) {
+    const ctx = useContext(GameClientContext);
+    if (!ctx) {
+        throw new Error('GameClientOverrideProvider 必须在 GameProvider 或 LocalGameProvider 内部使用');
+    }
+
+    const value = useMemo<GameClientContextValue>(() => ({
+        ...ctx,
+        ...(playerId !== undefined ? { playerId } : {}),
+        ...(dispatch ? { dispatch } : {}),
+    }), [ctx, dispatch, playerId]);
+
+    return (
+        <GameClientContext.Provider value={value}>
+            {children}
+        </GameClientContext.Provider>
+    );
+}
+
 // ============================================================================
 // useBoardProps — 兼容层 Hook
 // ============================================================================

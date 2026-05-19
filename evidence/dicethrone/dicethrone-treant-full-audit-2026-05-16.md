@@ -1,5 +1,7 @@
 # DiceThrone Treant 全面审计 2026-05-16
 
+> 2026-05-19 范围澄清：本文件只覆盖 `treant` 单英雄补审。当前整批“新英雄补审”总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解；总范围与跨英雄汇总口径请以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 和 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
+
 ## 范围
 
 - 角色：`treant`

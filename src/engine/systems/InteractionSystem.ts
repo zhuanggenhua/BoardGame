@@ -456,10 +456,23 @@ function ensureResolvableSimpleChoiceOptions<T>(
  * 用于事件 payload 和 playerView 输出。
  */
 export function stripNonSerializableFromData(data: unknown): unknown {
+    if (typeof data === 'function') return undefined;
     if (!data || typeof data !== 'object') return data;
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { optionsGenerator, ...rest } = data as Record<string, unknown>;
-    return rest;
+    if (Array.isArray(data)) {
+        return data
+            .map((item) => stripNonSerializableFromData(item))
+            .filter((item) => item !== undefined);
+    }
+
+    const cloned: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+        if (key === 'optionsGenerator' || typeof value === 'function') continue;
+        const sanitized = stripNonSerializableFromData(value);
+        if (sanitized !== undefined) {
+            cloned[key] = sanitized;
+        }
+    }
+    return cloned;
 }
 
 /**

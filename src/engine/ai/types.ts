@@ -58,6 +58,7 @@ export type AiSeatController =
         fallbackPolicyId?: string;
         difficulty?: AiDifficultyLevel;
         minimumActionDelayMs?: number;
+        manualFactionSelection?: boolean;
     }
     | {
         type: 'remote-ai';
@@ -66,6 +67,7 @@ export type AiSeatController =
         timeoutMs?: number;
         retryCount?: number;
         minimumActionDelayMs?: number;
+        manualFactionSelection?: boolean;
     };
 
 export interface AiInteractionOptionSnapshot {

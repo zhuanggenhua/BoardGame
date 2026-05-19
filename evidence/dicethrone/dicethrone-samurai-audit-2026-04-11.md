@@ -1,5 +1,7 @@
 # Dice Throne 武士（Samurai）D1–D49 补审记录（2026-04-11，2026-04-12 回写）
 
+> 2026-05-19 范围澄清：本文件只覆盖 `samurai` 单英雄补审。当前整批“新英雄补审”总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解；总范围与跨英雄汇总口径请以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 和 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
+
 ## 审计范围
 - 角色板能力 / 终极技：太刀斩、胁差、武士道、肃穆之仪、武道、叶隐之心、正宗、昂首无畏、征夷大将军！
 - 提示板状态 / 骰面说明：耻辱、荣誉、反击、骰面说明

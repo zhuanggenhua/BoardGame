@@ -2442,6 +2442,90 @@ describe('smashup', () => {
         expect(followUp.success).toBe(true);
     });
 
+    it('smashup_reaction_choose 只剩 legacy 空壳 mirror 时，AI 仍应暴露 advance-phase', () => {
+        const stateForAi = makeMatchState(makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.DINOSAURS],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase()],
+        }), 'playCards', '0');
+
+        stateForAi.sys.responseWindow = {
+            current: {
+                id: 'legacy-empty-shell-window',
+                sourceId: 'smashup_reaction_choose',
+                windowType: 'afterScoring',
+                responderQueue: [],
+                currentResponderIndex: 0,
+            },
+            history: [],
+        } as any;
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: stateForAi,
+        });
+
+        expect(legalActions.some((action) => action.kind === 'advance-phase')).toBe(true);
+        expect(legalActions.some((action) => action.kind === 'response-pass')).toBe(false);
+    });
+
+    it('smashup_reaction_choose mirror 的 responderQueue 被 ghost 污染时，AI 仍应按 live reaction session 暴露 response-pass', () => {
+        const core = makeState({
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    hand: [],
+                    deck: [],
+                    discard: [],
+                    factions: [SMASHUP_FACTION_IDS.PIRATES, SMASHUP_FACTION_IDS.DINOSAURS],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [makeBase({
+                defId: 'base_pirate_cove',
+                minions: [],
+            })],
+        });
+        const stateForAi = attachReactionSession(makeMatchState(core), {
+            frameId: 'score-before:0:smoke-ghost-mirror-response-pass',
+            frameKind: 'score-before',
+            phase: 'optional',
+            activePlayerId: '0',
+            currentPlayerId: '0',
+            consecutivePasses: 0,
+            sourceBaseIndex: 0,
+            responseWindowType: 'afterScoring',
+        });
+
+        stateForAi.sys.responseWindow = {
+            current: {
+                id: 'ghost-polluted-mirror-window',
+                sourceId: 'smashup_reaction_choose',
+                windowType: 'afterScoring',
+                responderQueue: ['ghost', '0', '1'],
+                currentResponderIndex: 0,
+                passedPlayers: [],
+            },
+            history: [],
+        } as any;
+
+        const legalActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: stateForAi,
+        });
+
+        expect(legalActions.some((action) => action.kind === 'response-pass')).toBe(true);
+        expect(legalActions.some((action) => action.kind === 'advance-phase')).toBe(false);
+    });
+
     it('Smash Up baseline AI 在非紧急响应窗口会选择 response-pass，避免空耗响应牌', async () => {
         const core = makeState({
             currentPlayerIndex: 0,

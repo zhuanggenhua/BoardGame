@@ -1426,7 +1426,14 @@ export class GameTransportServer {
                 && latestCandidate.reason === expectedCandidate.reason
                 && latestCandidate.requiresConfirmedAdvancePhase === expectedCandidate.requiresConfirmedAdvancePhase
                 && latestCandidate.legalActionOnly === expectedCandidate.legalActionOnly;
-            if (!stillSameCandidate) {
+            const latestProgressMarker = buildAiProgressMarker(match.state);
+            const latestRecoveryFingerprint = this.buildOnlineAiRecoveryFingerprint(
+                match,
+                latestCandidate,
+                latestProgressMarker,
+            );
+            const latestTrackerKey = `${latestCandidate.playerId}:${latestCandidate.reason}:${latestRecoveryFingerprint}`;
+            if (!stillSameCandidate || latestTrackerKey !== tracker.key) {
                 this.onlineAiRecoveryTrackers.delete(match.matchID);
                 tracker.autoSubmittedAt = null;
                 return null;

@@ -39,21 +39,26 @@ export const CompareRollOverlay: React.FC<CompareRollOverlayProps> = ({
     const hasTranslation = React.useCallback((key?: string) => {
         return Boolean(key && i18n.exists(key, { ns: 'game-dicethrone' }));
     }, [i18n]);
+    const onConfirmRef = React.useRef(onConfirm);
+
+    React.useEffect(() => {
+        onConfirmRef.current = onConfirm;
+    }, [onConfirm]);
 
     const options = compareRoll?.options ?? [];
     const hasOptions = options.length > 0;
     const contestants = compareRoll?.contestants ?? [];
     const compareRollId = compareRoll?.id ?? null;
-    const autoConfirmDelayMs = compareRoll?.autoConfirmDelayMs ?? 1500;
+    const autoConfirmDelayMs = compareRoll?.autoConfirmDelayMs ?? 3000;
 
     React.useEffect(() => {
         if (!canResolve || !isVisible || !compareRollId || hasOptions) return;
 
         const timer = window.setTimeout(() => {
-            onConfirm();
+            onConfirmRef.current();
         }, autoConfirmDelayMs);
         return () => window.clearTimeout(timer);
-    }, [autoConfirmDelayMs, canResolve, compareRollId, hasOptions, isVisible, onConfirm]);
+    }, [autoConfirmDelayMs, canResolve, compareRollId, hasOptions, isVisible]);
 
     if (!isVisible || !compareRoll || contestants.length !== 2) {
         return null;

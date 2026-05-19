@@ -12,6 +12,7 @@ import {
 const DEFAULT_REMOTE_PROVIDER_ID = 'astrbot';
 export const DEFAULT_AI_MINIMUM_ACTION_DELAY_MS = 1000;
 const MAX_AI_MINIMUM_ACTION_DELAY_MS = 5000;
+const MANUAL_FACTION_SEARCH_VALUE = '1';
 
 function sanitizeOptionalId(value: string | undefined): string | undefined {
     const trimmed = value?.trim();
@@ -22,6 +23,10 @@ function sanitizeMinimumActionDelayMs(value: number | undefined): number | undef
     if (value === undefined) return undefined;
     if (!Number.isFinite(value)) return undefined;
     return Math.max(0, Math.min(Math.round(value), MAX_AI_MINIMUM_ACTION_DELAY_MS));
+}
+
+function isManualFactionSelectionEnabled(value: string | null): boolean {
+    return value === MANUAL_FACTION_SEARCH_VALUE || value === 'true';
 }
 
 export function resolveAiMinimumActionDelayMs(controller: AiSeatController): number {
@@ -77,6 +82,7 @@ export function normalizeSeatController(
                 : {}),
             ...(normalizeAiDifficultyLevel(controller.difficulty) ? { difficulty: normalizeAiDifficultyLevel(controller.difficulty) } : {}),
             ...(minimumActionDelayMs !== undefined ? { minimumActionDelayMs } : {}),
+            ...(controller.manualFactionSelection === true ? { manualFactionSelection: true } : {}),
         };
     }
 
@@ -93,6 +99,7 @@ export function normalizeSeatController(
         providerId,
         ...(fallbackPolicyId ? { fallbackPolicyId } : {}),
         ...(minimumActionDelayMs !== undefined ? { minimumActionDelayMs } : {}),
+        ...(controller.manualFactionSelection === true ? { manualFactionSelection: true } : {}),
     };
 }
 
@@ -172,14 +179,20 @@ export function resolveSeatControllersFromSearchParams(args: {
         const explicitDifficulty = normalizeAiDifficultyLevel(
             args.searchParams.get(`seat${index}Difficulty`) ?? undefined,
         );
+        const manualFactionSelection = isManualFactionSelectionEnabled(
+            args.searchParams.get(`seat${index}ManualFaction`),
+        );
         const fallback = getDefaultSeatController(index, args.numPlayers, args.aiSupport);
-        controllers[playerId] = args.searchParams.has(`seat${index}`)
+        const controller = args.searchParams.has(`seat${index}`)
             ? (
                 explicit.type === 'local-ai' && explicitDifficulty
                     ? normalizeSeatController({ ...explicit, difficulty: explicitDifficulty }, args.aiSupport)
                     : explicit
             )
             : fallback;
+        controllers[playerId] = controller.type === 'human' || !manualFactionSelection
+            ? controller
+            : normalizeSeatController({ ...controller, manualFactionSelection: true }, args.aiSupport);
     }
 
     return controllers;
@@ -219,6 +232,9 @@ export function buildLocalMatchSearchParams(args: {
             )
         ) {
             search.set(`seat${index}Difficulty`, controller.difficulty);
+        }
+        if (controller.type !== 'human' && controller.manualFactionSelection === true) {
+            search.set(`seat${index}ManualFaction`, MANUAL_FACTION_SEARCH_VALUE);
         }
     }
 

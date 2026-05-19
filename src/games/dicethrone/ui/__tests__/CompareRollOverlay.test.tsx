@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CompareRollOverlay } from '../CompareRollOverlay';
 
@@ -28,6 +28,14 @@ vi.mock('../BonusDieSpotlightContent', () => ({
 }));
 
 describe('CompareRollOverlay', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
     const compareRoll = {
         id: 'compare-roll-1',
         playerId: '1',
@@ -56,6 +64,46 @@ describe('CompareRollOverlay', () => {
             },
         ],
     };
+
+    it('无选项时应在 3 秒后自动确认，且重渲染不会重置计时器', () => {
+        const initialConfirm = vi.fn();
+        const latestConfirm = vi.fn();
+        const compareRollWithoutOptions = {
+            ...compareRoll,
+            options: [],
+        };
+        const { rerender } = render(
+            <CompareRollOverlay
+                compareRoll={compareRollWithoutOptions}
+                isVisible={true}
+                canResolve={true}
+                onResolveOption={vi.fn()}
+                onConfirm={initialConfirm}
+                usePortal={false}
+            />,
+        );
+
+        vi.advanceTimersByTime(1000);
+
+        rerender(
+            <CompareRollOverlay
+                compareRoll={{ ...compareRollWithoutOptions }}
+                isVisible={true}
+                canResolve={true}
+                onResolveOption={vi.fn()}
+                onConfirm={latestConfirm}
+                usePortal={false}
+            />,
+        );
+
+        vi.advanceTimersByTime(1999);
+        expect(initialConfirm).not.toHaveBeenCalled();
+        expect(latestConfirm).not.toHaveBeenCalled();
+
+        vi.advanceTimersByTime(1);
+        expect(initialConfirm).not.toHaveBeenCalled();
+        expect(latestConfirm).toHaveBeenCalledTimes(1);
+    });
 
     it('非拥有者应看到等待文案而不是可点击按钮', () => {
         render(

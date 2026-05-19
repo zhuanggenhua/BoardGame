@@ -1,12 +1,14 @@
 import { createDisplayOnlySettlement, registerCustomActionHandler, type CustomActionContext } from '../effects';
 import { registerChoiceResolvedEventHandler } from '../choiceResolvedEvents';
-import { TOKEN_IDS } from '../ids';
-import { getPlayerDieFace } from '../rules';
+import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../ids';
+import { getActiveDice, getFaceCounts, getPlayerDieFace, getTokenStackLimit } from '../rules';
+import { createDamageCalculation } from '../../../../engine/primitives/damageCalculation';
 import type {
     AttackMadeUndefendableEvent,
     BonusDamageAddedEvent,
     BonusDieRolledEvent,
     ChoiceRequestedEvent,
+    DamageDealtEvent,
     DiceThroneEvent,
     TokenGrantedEvent,
 } from '../events';
@@ -37,6 +39,109 @@ function delayedPoisonEvent(ctx: CustomActionContext, targetId: string, timestam
         sourceCommandType: 'ABILITY_EFFECT',
         timestamp,
     } as TokenGrantedEvent;
+}
+
+function grantTokenEvent(
+    ctx: CustomActionContext,
+    targetId: string,
+    tokenId: string,
+    amount: number,
+    timestamp: number,
+): TokenGrantedEvent | null {
+    if (amount <= 0) return null;
+
+    const current = ctx.state.players[targetId]?.tokens[tokenId]
+        ?? ctx.state.players[targetId]?.statusEffects[tokenId]
+        ?? 0;
+    const maxStacks = getTokenStackLimit(ctx.state, targetId, tokenId);
+    const newTotal = Math.min(current + amount, maxStacks);
+    const granted = newTotal - current;
+    if (granted <= 0) return null;
+
+    return {
+        type: 'TOKEN_GRANTED',
+        payload: {
+            targetId,
+            tokenId,
+            amount: granted,
+            newTotal,
+            sourceAbilityId: ctx.sourceAbilityId,
+        },
+        sourceCommandType: 'ABILITY_EFFECT',
+        timestamp,
+    } as TokenGrantedEvent;
+}
+
+function createBlinkDamageEvents(
+    ctx: CustomActionContext,
+    targetId: string,
+    amount: number,
+    timestamp: number,
+): DiceThroneEvent[] {
+    if (amount <= 0) return [];
+
+    const damageCalc = createDamageCalculation({
+        source: { playerId: ctx.targetId, abilityId: ctx.sourceAbilityId },
+        target: { playerId: targetId },
+        baseDamage: amount,
+        state: ctx.state,
+        timestamp,
+    });
+    const damageEvents = damageCalc.toEvents();
+    damageEvents.forEach((event) => {
+        if (event.type === 'DAMAGE_DEALT') {
+            (event as DamageDealtEvent).payload.unblockable = true;
+        }
+    });
+    return damageEvents;
+}
+
+function handleBlinkBase(ctx: CustomActionContext): DiceThroneEvent[] {
+    const originalAttackerId = ctx.ctx.defenderId;
+    if (!originalAttackerId) return [];
+
+    const faceCounts = getFaceCounts(getActiveDice(ctx.state));
+    const katanaCount = faceCounts[NINJA_DICE_FACE_IDS.KATANA] ?? 0;
+    const shurikenCount = faceCounts[NINJA_DICE_FACE_IDS.SHURIKEN] ?? 0;
+    const maskCount = faceCounts[NINJA_DICE_FACE_IDS.MASK] ?? 0;
+
+    const events: DiceThroneEvent[] = [];
+    let reflectedDamage = 0;
+    if (katanaCount > 0) reflectedDamage += 1;
+    if (shurikenCount > 0) reflectedDamage += 2;
+    events.push(...createBlinkDamageEvents(ctx, originalAttackerId, reflectedDamage, ctx.timestamp + 10));
+
+    if (maskCount > 0) {
+        const smokeEvent = grantTokenEvent(ctx, ctx.targetId, TOKEN_IDS.SMOKE_BOMB, 1, ctx.timestamp + 20);
+        if (smokeEvent) {
+            events.push(smokeEvent);
+        }
+    }
+
+    return events;
+}
+
+function handleBlink2(ctx: CustomActionContext): DiceThroneEvent[] {
+    const originalAttackerId = ctx.ctx.defenderId;
+    if (!originalAttackerId) return [];
+
+    const faceCounts = getFaceCounts(getActiveDice(ctx.state));
+    const katanaCount = faceCounts[NINJA_DICE_FACE_IDS.KATANA] ?? 0;
+    const shurikenCount = faceCounts[NINJA_DICE_FACE_IDS.SHURIKEN] ?? 0;
+    const maskCount = faceCounts[NINJA_DICE_FACE_IDS.MASK] ?? 0;
+
+    const events: DiceThroneEvent[] = [];
+    const reflectedDamage = katanaCount + (shurikenCount > 0 ? 2 : 0);
+    events.push(...createBlinkDamageEvents(ctx, originalAttackerId, reflectedDamage, ctx.timestamp + 10));
+
+    if (maskCount >= 2) {
+        const smokeEvent = grantTokenEvent(ctx, ctx.targetId, TOKEN_IDS.SMOKE_BOMB, 1, ctx.timestamp + 20);
+        if (smokeEvent) {
+            events.push(smokeEvent);
+        }
+    }
+
+    return events;
 }
 
 function handleNinjutsuUse(ctx: CustomActionContext): DiceThroneEvent[] {
@@ -97,6 +202,8 @@ function handleNinjutsuUse(ctx: CustomActionContext): DiceThroneEvent[] {
 }
 
 export function registerNinjaCustomActions(): void {
+    registerCustomActionHandler('ninja-blink', handleBlinkBase, { categories: ['dice', 'damage', 'defense', 'token'] });
+    registerCustomActionHandler('ninja-blink-2', handleBlink2, { categories: ['dice', 'damage', 'defense', 'token'] });
     registerCustomActionHandler('ninja-ninjutsu-use', handleNinjutsuUse, { categories: ['dice', 'damage', 'token', 'choice'], requiresInteraction: true });
 
     registerChoiceResolvedEventHandler('ninja-ninjutsu-poison', ({ state, playerId, sourceAbilityId, timestamp }) => {

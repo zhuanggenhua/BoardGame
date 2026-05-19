@@ -14,6 +14,7 @@ import { createScopedLogger } from '../../lib/logger';
 
 const DEFAULT_REMOTE_AI_TIMEOUT_MS = 3000;
 const FAST_PASS_ACTION_KINDS = new Set(['advance-phase', 'response-pass']);
+const SETUP_FACTION_ACTION_KINDS = new Set(['select-faction', 'setup-select-faction']);
 const aiRunnerLogger = createScopedLogger('AI_RUNNER_PERF');
 function emitAiRunnerPerf(stage: string, payload: Record<string, unknown>): void {
     console.log('[AI_RUNNER_PERF]', { stage, ...payload });
@@ -72,6 +73,15 @@ export interface AiActionResolution {
 }
 
 export type AiDispatchResult = AiActionResolution | AiBlockedResolution | AiIdleResolution;
+
+function shouldPlayerManuallyResolveFactionSelection(
+    seatController: AiSeatController,
+    action: AiLegalAction,
+): boolean {
+    return seatController.type !== 'human'
+        && seatController.manualFactionSelection === true
+        && SETUP_FACTION_ACTION_KINDS.has(action.kind);
+}
 
 function shouldUseRemoteDecision(args: {
     runtime: ReturnType<typeof getGameAiRuntime>;
@@ -472,6 +482,17 @@ export async function resolveNextAiDispatch(
             source: seatController.type === 'remote-ai' ? 'online' : 'local',
             seatController,
         });
+        if (seatController.manualFactionSelection === true) {
+            const autoActions = context.legalActions.filter((action) => (
+                !shouldPlayerManuallyResolveFactionSelection(seatController, action)
+            ));
+            if (autoActions.length !== context.legalActions.length) {
+                if (autoActions.length === 0) {
+                    continue;
+                }
+                context.legalActions = autoActions;
+            }
+        }
 
         if (context.legalActions.length === 0) {
             const fallbackAction = resolveResponsePassFallback(context);

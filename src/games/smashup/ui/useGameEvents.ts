@@ -87,7 +87,13 @@ export function useGameEvents({ G, myPlayerId, fxBus, baseRefs, playerNames }: U
 
   // 消费事件流 → 推入 FX 系统
   useEffect(() => {
-    const { entries: newEntries } = consumeNew();
+    const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
+
+    // Undo 回退 / reconnect-resync 乐观回滚：清空本地反馈，避免旧 toast 残留或重播。
+    if (didReset || didOptimisticRollback) {
+      setFeedbacks([]);
+      if (newEntries.length === 0) return;
+    }
 
     if (newEntries.length === 0) return;
 

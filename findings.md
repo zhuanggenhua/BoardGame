@@ -3583,3 +3583,813 @@
 - `base_mountains_of_madness`、`base_plateau_of_leng` 也已经在独立基地文件里有更清晰的专项合同，所以旧聚合入口没有剩余独占价值。
 - 将 `expansionBaseAbilities.test.ts` 整体删除，比继续保留一个只剩尾部注释的聚合壳更符合当前测试结构：新行为进专项，旧聚合入口直接退场。
 - 这一轮也验证了一个简单原则：只要各子簇已经有更好的上位替代，旧聚合测试就不要为了“看起来完整”而继续存活。
+
+## 2026-05-18 补充发现：`无候选自动分支` 不等于 `完全无浮层收口`
+
+- `Monkey See, Monkey Do` 这轮把一个很容易写错的证据口径暴露得很清楚：
+  - 业务语义是“没有行动候选时，不创建选择 prompt”
+  - 但真实 UI 仍可能进入公开展示队列 / spotlight overlay
+- 这两件事不能混成一句“自动收口且无浮层”：
+  - `choice prompt` 是否创建，决定的是候选选择合同有没有被误实现
+  - `spotlight/reveal overlay` 是否出现，属于展示链路本身的真实 UI 行为
+- 如果把两者混写，会产生两个风险：
+  - 把一个正确的 reveal overlay 误报成实现缺陷
+  - 反过来，也可能因为看到 overlay 消失，就误以为“没有错误创建选择 prompt”
+- 这轮可以沉淀出一个更稳的截图/证据标准：
+  - 对“无候选自动分支”，要分别写清
+  - 有没有该分支专属的选择 prompt
+  - 有没有进入其它合法的展示态/公开态/队列态
+  - 最终权威状态有没有误产生候选副作用（例如多摸牌、多进手牌、残留 interaction）
+- 换句话说：
+  - “没有选择 prompt” 只是一个局部结论
+  - 不是“整个页面完全没有任何浮层/队列/UI 动效”的同义词
+
+## 2026-05-18 补充发现：Portal Room 的 shared extra-turn queue 不能只靠 2P 浏览器链外推
+
+- `Portal Room` 之前最容易被误读成“已经彻底收口”的地方，是 `queue_extra_turn_after_current_turn`：
+  - 浏览器 scoped L3 已经证明了 2P 下赢家接受后，额外回合会真实开始并结束，再回到原顺位
+  - 但这并不能自然推出 3P 及以上顺位下的 `returnToPlayerIndex` 也一定正确
+  - 也不能自然推出多条 `pendingExtraTurns` 并存时会严格按队列顺序消费
+- 这类边界本质上是 shared extra-turn queue 合同，不是新的浏览器问题位点：
+  - 风险点在 `TURN_ENDED` 如何消费 `pendingExtraTurns`
+  - 以及 `activeExtraTurn.completedExtraTurn -> returnToPlayerIndex` 是否仍保持正确
+- 因此这轮正确动作不是再造一条 E2E，而是补 L2 锚点：
+  - 3P 下，当前玩家结束回合 -> 赢家额外回合 -> 结束后回到“原本下一位玩家”
+  - 多条 `pendingExtraTurns` 并存时，先消费队首，保留队尾，再在后续正常回合结束时启动第二条额外回合
+- 这轮定向复跑 `Portal Room` 测试簇 `5 passed` 后，可以更准确地收紧口径：
+  - `Portal Room` 的浏览器 scoped L3 仍然只覆盖 2P 单页/多客户端两条真实链
+  - 但 shared queue 的 3P return 与 FIFO 消费，已经不该继续算作隐性 residual
+- 这也再次说明一个长期审计原则：
+  - scoped L3 负责证明“真实入口是否按用户看到的方式走通”
+  - 更长顺位、多队列、跨 frame 的共享调度语义，往往应由 L2/shared contract 明确锁死，不能等价替换成“浏览器主链已经通过”
+- 2026-05-18 补充发现：`Missing Uplink` 的“额外回合结束”也属于 shared turn-boundary 合同，不该继续挂在 residual 里。本轮新增 `电子猿：丢失中继在额外回合结束时也应按拥有者实例数抽牌`，用 `activeExtraTurn={playerId:'0',returnToPlayerIndex:1,reason:'base_portal_room'}` 的夹具锁定 `onTurnEnd` 仍按 ownerId 聚合两张实例抽 `draw-a/draw-b`，最终 deck 留 `draw-c`。定向复跑 `... -t "丢失中继|Missing Uplink"` 结果 `6 passed / 189 skipped`；由此，`owner_turn_end_draw_one_per_instance` 的 residual 只剩更广 multi-client 浏览器视角，不再把额外回合结束误算成缺口。
+
+## 2026-05-18 补充发现：`Monkey on Your Back` 不能只靠“附着后天赋链已绿”冒充 attached-action 入口已闭合
+
+- `cyborg_apes_monkey_on_your_back` 这轮暴露出的证据空洞很具体：
+  - 现有 scoped L3 已证明“附着后的天赋 prompt 只列另一玩家低力量随从，并把本行动放到底”
+  - 但这并不自然推出“真实从手牌打出时，本行动也确实允许附着到敌方宿主”
+- 这两个问题属于同一个对象，但不是同一条 atom：
+  - `choose_other_player_low_power_minion_here` / `bottom_this_action_after_destroy` 证明的是附着后的 talent 链
+  - `attach_to_any_minion` 证明的是 attached action 自身的真实目标入口
+- 如果只看后者的 L2，再加上前者的 scoped L3，很容易误把对象级结论写得过满：
+  - 看起来像是 `Monkey on Your Back` 整条本地浏览器链都已闭合
+  - 实际上还缺“敌方宿主可作为真实附着目标”的直接浏览器证据
+- 这轮新增 E2E `电子猿-Monkey on Your Back-真实入口可附着到敌方随从` 后，证据口径才完整：
+  - `before` 图同屏可见己方宿主、敌方宿主和底部手牌里的 `Monkey on Your Back`
+  - `after` 图里只有右侧敌方宿主出现紫色附着图标且力量 `2 -> 3`
+  - 左侧己方 `Jumper` 仍是 `2` 且没有附着图标
+  - 状态断言进一步锁定：`interaction.current==null`、`hand` 移除 `monkey-attach-hand`、敌方宿主 `attachedActions` 含该 uid、己方宿主不含该 uid
+- 更稳的审计原则是：
+  - “对象里另一条后续链已 scoped L3” 不等于 “前置入口 atom 也自动变成 scoped L3”
+  - 对 attached action / extra play / afterScoring 这类多段链路，入口 atom 和后续 atom 必须分别找各自的真实证据
+- 由此，这轮只把 `cyborg_apes_monkey_on_your_back.attach_to_any_minion` 提升为 `L2 / scoped L3`
+- 但不外推宿主离场、多客户端视角或 forged target payload；这些仍应继续保留在较低层级或 shared contract
+
+## 2026-05-18 补充发现：`Cyberback` 的负例浏览器真相不是“非法牌/非法宿主不会出现”，而是“出现了也不会沿这条链结算”
+
+- 这轮 `Cyberback` 暴露的是一个典型的对象级误读：
+  - 单测和代码阅读都能证明 `Going Bananas`、敌方 `Cyberback`、己方普通随从不合法
+  - 但这不等于真实 UI 就一定把它们完全藏掉
+- 真实页面恰好相反：
+  - 弃牌面板里会同时显示 `Going Bananas` 和 `Cyberevolution`
+  - 所以旧口径“普通行动在 UI 中不会出现，因此无需 browser L3”是错的
+- 这里真正要验证的浏览器语义分两层：
+  - 点击普通基地行动时，不会偷偷通过 `Cyberback` 的弃牌入口结算到任何宿主
+  - 选中合法持续行动后，敌方 `Cyberback` 与己方普通随从都不会成为真实结算目标，最终只有己方 `Cyberback` 成功附着
+- 这轮新增 E2E 后，证据链才完整：
+  - 第一张图直接看到弃牌面板里同时有 `Going Bananas` 和 `Cyberevolution`
+  - 第二张图里选中 `Cyberevolution` 后，只有己方 `Cyberback` 所在基地保持高亮，其余基地被置灰
+  - 第三张图里最终只有左侧己方 `Cyberback` 拿到 `Cyberevolution` 附着和绿色 `+4`
+  - 状态断言进一步证明：
+    - 点 `Going Bananas` 后服务端权威状态完全不变
+    - 点敌方 `Cyberback` / 己方普通随从后也不结算
+    - 直到点己方 `Cyberback` 才真正把 `cyberback-valid-discard` 从 discard 移到 `attachedActions`
+- 这轮沉淀出的审计原则很重要：
+  - “validator 会拒绝” 不能直接替代 browser 证据
+  - “真实 UI 里看不到入口” 必须先用页面真相确认，不能靠代码路径脑补
+  - 对负例链，真正有价值的 scoped L3 往往不是“不可见”，而是“用户实际点了也不会沿错误链结算”
+- 由此，`cyborg_apes_cyberback.reject_non_ongoing_or_non_minion_action` 和 `reject_enemy_or_non_cyberback_target` 现在都可以升到 `L2 / scoped L3`
+- 但 forged discard / forged target payload 仍只是 L2/shared contract，不应被这条浏览器负例顺势外推成全部安全边界都已闭合
+
+## 2026-05-18 补充发现：`Baboom` 不能再被长期状态误记成“只验证过最早那条单合法行动分支”
+
+- 这轮发现的不是 `Baboom` 玩法实现缺口，而是长期状态口径落后于审计文档：
+  - atom/object 行已经明确写到 `skip` 收口和“多合法行动可选第二张且只执行所选项”
+  - 但根仓库 `progress.md / findings.md` 和 long-term state 还停在最早那条 `电子猿-Baboom-真实天赋给出可跳过的立即额外行动并只能打到自己身上`
+- 这里容易再犯的误判有两个：
+  - 把“出现了可跳过 prompt”误当成已经证明 `skip` 分支真正闭合
+  - 把“曾经验证过唯一合法行动自动附着”误外推成“多合法候选时也不会后台默认第一张”
+- 本轮重新核对多合法行动截图后，可以把这条浏览器真相写死：
+  - prompt 图里底部同屏可见 `Cyberevolution` 与 `Juiced Up` 两张合法候选，说明真实 UI 不是“只保留默认第一张”
+  - `Juiced Up` 在 prompt 中已被真实选中，resolved 图里中央显示 `Juiced Up` 带“已打出！”标记，Baboom 旁出现紫色附着图标和绿色 `+3`
+  - 底部 `Cyberevolution` 仍留在手牌区，因此这条链不是“选了第二张但后台仍顺手把第一张也打了”
+- 它沉淀出的审计口径是：
+  - `Baboom` 的 scoped L3 现在至少覆盖三条不同浏览器分支：
+    - 单合法行动自动附着到 Baboom 自己
+    - 显式点击 `放弃这次额外战术` 后直接收口
+    - 多合法行动时允许真实选择第二张，并且只执行所选项
+  - 这三条分支闭合后，`Baboom` 当前 residual 只该继续留在审计文档已经写出的外层边界：
+    - 多 `Baboom`
+    - 多 target prompt
+    - 多客户端视角
+- 换句话说，后续如果再看到 long-term state 只写“Baboom scoped L3 = 最早那条单合法行动分支”，那已经不是当前真相，应该视为过时口径
+
+## 2026-05-18 补充发现：`Baboom` 的 `this minion` 还包括“同名 twin 身份不能串台”
+
+- `Baboom` 之前剩下的“多 Baboom residual”本质上不是数量问题，而是宿主身份问题：
+  - 如果同基地再放一只同名 `Baboom`
+  - extra action 不能因为“同名、同基地、都是合法 attached host”就被误附着到另一只身上
+- 这条边界只有浏览器真链能真正说明白：
+  - 第一张图里同一基地两只 `Baboom` 同屏可见，下方那只带高亮和“已用”标记，说明当前 prompt 是由一只具体宿主发起
+  - 第二张图里只有下方发动天赋的 `Baboom` 旁出现紫色附着图标和绿色 `+4`
+  - 上方另一只同名 `Baboom` 没有拿到附着行动，也没有出现错误力量增幅
+- 这说明 `Baboom` 这条语义的真正不变量是：
+  - `on this minion` 不只是“不是别的己方随从”
+  - 还必须是“就是发动这次天赋的那张具体卡实例”
+- 所以这轮之后，`Baboom` 不该再把“多 Baboom”继续挂成 residual：
+  - 单合法行动自动附着
+  - 显式 skip 收口
+  - 多合法行动选择第二张
+  - 同基地 twin 身份不串台
+  这四条浏览器分支现在都已经闭合
+- 继续保留为外层边界的只剩：
+  - 多 target prompt
+  - 多客户端视角
+
+## 2026-05-18 补充发现：`Baboom` 不能继续把“多客户端视角”留在对象 residual
+
+- `Baboom` 这里最后一条容易被根状态漏掉的，不是玩法实现本身，而是 prompt 归属的对象级浏览器真相：
+  - 单页链已经证明了 `skip`、多合法行动第二张选择、以及 twin 身份不串台；
+  - 但 evidence 2026-05-18 又补上了多客户端链，明确证明 `smashup_immediate_extra_action` 只出现在发动者页面，另一页不会被错误镜像到 prompt 或 waiting overlay。
+- 这条补证的意义不是“再多一张图”，而是把对象级 residual 真正收空：
+  - Host 页会真实看到 `立刻打出一张额外战术，或放弃这次机会`、候选卡面与 `放弃这次额外战术` 按钮；
+  - Guest 页中央没有任何同链标题、按钮或额外行动交互入口；
+  - Host 点击 skip 后，两页都会一起回到正常出牌态，且权威状态不会偷偷把行动附着到 `Baboom` 或同基地其他随从。
+- 所以后续如果再把 `Baboom` 写成“当前只剩多客户端视角没回根状态”，那已经不是当前真相，而是 evidence 后续 finding 没有同步回根状态和长期 JSON。
+
+## 2026-05-18 补充发现：`Copycat` 不能再被对象级证据拼装冒充“trigger surface 已绿”
+
+- `Copycat` 最容易被误判的地方，是把这些东西机械拼起来：
+  - 选择敌方随从已绿
+  - metadata 只写本体已绿
+  - 复制 `Baboom` 的 talent 已绿
+  - 复制 `Furious George` 的 power 已绿
+  然后就顺势说“Copycat 的代理面都差不多了”
+- 这个结论是不够的，因为 `discard trigger` 是另一类 surface：
+  - 它依赖被摧毁当刻的 `triggerMinion.metadata`
+  - 它会跨过 `Bacta immediate extra` 与后续 `optional recover` 两层真实链
+  - 它还会碰到 `owner/controller` 分离这类最容易串语义的地方
+- `Copycat -> Jumper` 这条浏览器真相的价值就在这里：
+  - 真实顺序不是“Jumper trigger 直接冒出来”
+  - 而是先出现 `Bacta immediate extra minion`，玩家跳过后，才进入 `Copycat` 代理出来的 `optional recover` 反应窗口
+  - 最终回手的是 `Copycat` 本体，而且回到 owner 手牌，不是 controller 手牌
+- 所以这条链证明的不是一个孤立回手结果，而是三件事同时成立：
+  - copied trigger 确实被代理出来了
+  - 它没有插队破坏原本的 immediate extra 顺序
+  - 它没有把原生 `Jumper` 的 owner/controller 语义带歪
+- 这轮之后，`shapeshifters_copycat.proxy_current_supported_surfaces` 不该再被说成“只有 talent/power surface 有 scoped L3”
+- 现在更准确的口径是：
+  - choose surface：已 scoped L3
+  - metadata-write surface：已 scoped L3
+  - talent surface：已 scoped L3
+  - power surface：已 scoped L3
+  - trigger surface：已 scoped L3
+  - 剩下的只是更广的完整动态复制 runtime 和未显式适配的其它 copied trigger family
+
+## 2026-05-18 补充发现：`Do Over / Doctor When` 不能再把 `skip extra` 误记成“只验证过 returned card 会回手或会重打”
+
+- 这两条 atom 先前最容易被误读成：
+  - `specificCardUid` 合同已经锁住 returned 本体
+  - returned `Jumper / Time Raider` 也都能真实再次打出
+  - 所以 `skip extra` 大概只剩理论上的 UI 边界
+- 这个口径现在已经过时，因为本轮重新看的真实截图证明了更具体的不变量：
+  - `Do Over` 点击“放弃这次额外随从”后，`Portal Room` 仍为空，returned `Jumper` 继续留在手牌，没有被后台偷偷打回基地。
+  - `Doctor When` 点击“放弃这次额外随从”后，场上只剩 `Doctor When`，returned `Time Raider` 继续留在手牌，而且中央没有残留第二层 extra prompt。
+- 这说明这两条 effect atom 的 scoped L3 不该再只描述成“returned-card specific prompt/replay 已绿”。
+- 更准确的长期口径应该是：
+  - `time_travelers_do_over.may_play_returned_minion_again` 已同时覆盖 returned-card specific 与 `skip extra` 真实收口。
+  - `time_travelers_doctor_when.may_play_returned_minion_again` 已同时覆盖 returned-card specific 与 `skip extra` 真实收口。
+- 所以后续如果再把 `Do Over / Doctor When skip-extra` 挂回本地 residual，那已经不是当前真相，而是根状态落后于审计文档。
+
+## 2026-05-18 补充发现：`Time Box.counter_from_card_returned_to_hand` 不能再只靠场上回手分支代表全部浏览器证据
+
+- `Time Box` 这条 atom 的自然语言是 `from play or discard pile`，因此只看 `Primate Park -> attached action -> CARD_TRANSFERRED from play` 并不能自然推出 `discard -> owner hand` 的真实入口也已经闭合。
+- 它真正高风险的地方在于：
+  - `Jumper` recover 本身有 owner/controller 分离；
+  - recover 前面还串着 `Bacta immediate extra skip`；
+  - recover 之后 Time Box 的 reaction 与第 5 枚计数进场 prompt 必须回到 owner 页，而不是 controller 页。
+- 本轮重新看的多客户端截图已经把这条真链写死：
+  - `Jumper` 的 optional recover 先出现在 controller 页；
+  - recover 完成后，owner 页出现 `Time Box` 的 reaction；
+  - 随后 owner 页中央再出现 `时间盒子：是否移除全部计数器并打出到一个基地？`
+- 这说明 `time_travelers_time_box.counter_from_card_returned_to_hand` 的浏览器 scoped L3 现在至少覆盖两类回手来源：
+  - `CARD_TRANSFERRED from play`
+  - `CARD_RECOVERED_FROM_DISCARD` 且带 owner/controller split 的多客户端链
+- 因而后续不应再把“discard-recover owner/controller split”继续挂成这条 atom 的本地 residual；剩下的只该是更广多人局或其它回手家族。
+
+## 2026-05-18 补充发现：`From Q With Love` 不能再只把根状态停在 exact-2 主链
+
+- 这条对象先前在根状态里最容易被误读成：
+  - 已有“抽三张并从投影手牌中准确弃两张”的主链 scoped L3
+  - L2 也补过 `projectedHand.length===1/0`
+  - 所以剩下只是理论上的短候选可见性边界
+- 这个口径现在已经落后，因为本轮重新看的浏览器截图已经把两个端点都补成了真实入口证据：
+  - `projectedHand.length===1` 时，中央 discard prompt 只剩 1 张候选卡，不会错误要求第二张；收口后右下弃牌堆角标变成 `弃牌(2)`。
+  - `projectedHand.length===0` 时，中央完全没有 discard prompt、按钮或候选卡，而本行动自己正常进弃牌堆，右下角标变成 `弃牌(1)`。
+- 这说明 `super_spies_from_q_with_love.draw_three_then_discard_two_from_projected_hand` 的根状态不该再只写“exact-2 主链已绿”。
+- 更准确的长期口径应该是：
+  - exact-2 主链已 scoped L3；
+  - `projectedHand.length===1` 的单候选真实入口也已 scoped L3；
+  - `projectedHand.length===0` 的无 prompt 真实入口也已 scoped L3。
+- 所以后续如果再把 `From Q With Love` 的短候选或空投影手牌挂回本地 residual，那已经不是当前真相，而是根状态落后于审计文档。
+
+## 2026-05-18 补充发现：`Flying Monkey` 不能继续让根状态停在“只看过移动分支”
+
+- 这条对象先前在根状态里最容易被误读成：
+  - 正向移动宿主分支已有 scoped L3；
+  - `skip` 只是 handler/L2 的补充边界；
+  - 所以根状态继续把 `skip` 挂在 residual 也无伤大雅。
+- 这个口径现在已经失效，因为本轮重新看的浏览器截图已经把 `skip` 写成了真实入口事实：
+  - afterScoring prompt 中央明确同时给出目的地 `秘密火山总部` 与 `跳过（照常进入弃牌堆）`，说明不是伪造 handler 分支。
+  - 点击 `skip` 后中央 prompt 完整消失，两座基地都回到新回合常态布局，没有残留“再选基地”或“宿主仍在原地等待”的半收口态。
+- 这说明 `cyborg_apes_flying_monkey.after_scoring_move_instead_discard` 与 `destroy_attached_action_after_move` 的根状态不该再只写“正向移动已绿”。
+- 更准确的长期口径应该是：
+  - 正向移动分支已 scoped L3；
+  - `skip -> 按正常计分清场 -> 宿主/本行动进弃牌` 的真实入口也已 scoped L3。
+- 所以后续如果再把 `Flying Monkey skip` 挂回本地 residual，那已经不是当前真相，而是根状态落后于审计文档。
+
+## 2026-05-18 补充发现：`Portal Room` 不能再只把根状态停在“额外回合已启动”
+
+- `Portal Room` 之前最容易被误报完成的地方，是把：
+  - `activeExtraTurn` 已正确置上
+  - 浏览器也确实进入了额外回合
+  直接等价成“额外回合生命周期已经闭合”。
+- 这在当前状态已经不够，因为本轮重新看的真实截图又补了一层更关键的不变量：
+  - extra turn 启动图里左上已经切到 `回合2 / 出牌阶段`，说明当前回合结束后确实进入了额外回合。
+  - 最终收口图里当前玩家高亮已回到原顺位玩家，中央没有残留 prompt，且 `Faceless City` 仍保留在左侧，说明这条链已经真实走完 `pending -> active -> completed -> returnToPlayerIndex`。
+- 这说明 `base_portal_room.queue_extra_turn_after_current_turn` 的根状态不该再只写“额外回合会启动”。
+- 更准确的长期口径应该是：
+  - 2P 浏览器主链已覆盖接受后启动额外回合；
+  - 同一条浏览器链也已覆盖额外回合结束后恢复到原顺位玩家。
+- 所以后续如果再把“额外回合结束并回原顺位”挂回 `Portal Room` 的本地 residual，那已经不是当前真相，而是根状态落后于审计文档。
+
+## 2026-05-18 补充发现：`Portal Room` 不能把“赢家页独占选择权”继续只留在长期 JSON 或 atom 行里
+
+- `Portal Room` 还有另一条很容易被根状态漏掉的对象级真相，不是 extra-turn queue，而是 `optional_choice_owner_is_winner`：
+  - 浏览器主链已经不只证明“P0 自己是赢家时可以点传送门”；
+  - 多客户端证据还明确证明了 `winner != currentPlayer` 时，真正拿到这条 afterScoring 选择权的是赢家页，不是当前回合玩家页。
+- 这条语义如果不单独回根状态，很容易被后续误缩成“shared ownerPlayerId 合同已修”：
+  - 但 shared/L2 只能说明 trigger owner 应该是谁；
+  - 真正用户可见的对象级事实是：Guest 赢家页会出现 `传送门 / 跳过` 与可交互按钮，而 Host 当前回合玩家页只显示等待赢家响应，没有同一条选择权。
+- 这和 `queue_extra_turn_after_current_turn` 是两件事，不能互相代替：
+  - 一个证明“谁来决定要不要额外回合”；
+  - 一个证明“决定之后额外回合何时启动、何时结束并回到原顺位”。
+- 所以后续如果再把 `Portal Room` 写成“根状态只承认 2P 生命周期已闭合，赢家页归属仍主要在 evidence/长期 JSON”，那已经不是当前真相，而是 completion-audit 没把对象级多客户端主链回写完整。
+
+## 2026-05-18 补充发现：`Into the Time Slip` 不能再只把根状态停在 borrowed minion 分支
+
+- 这条对象先前在根状态里最容易被误读成：
+  - borrowed minion 会回到 owner hand 的浏览器主链已绿；
+  - 其它 `a card in play` family 大概只剩 L2 补充语义。
+- 这个口径现在已经过时，因为本轮重新看的截图证明 `Into the Time Slip` 的真实入口已经扩到了两类场上行动牌：
+  - base ongoing：`Portal Room` 上方的 `Stasis Field` 本体在 prompt 图里直接可见，收口图里则完全消失。
+  - attached action：宿主身上的白色行动牌本体与紫色附着角标在 prompt 图里仍在，收口图里一起消失。
+- 这说明 `time_travelers_into_the_time_slip.choose_one_in_play_card` 与 `return_to_owner_hand` 的根状态不该再只写“borrowed minion 的 owner/controller 分离已绿”。
+- 更准确的长期口径应该是：
+  - borrowed minion 分支已 scoped L3；
+  - base ongoing 分支也已 scoped L3；
+  - attached action 分支也已 scoped L3。
+- 所以后续如果再把 `Into the Time Slip` 的 base ongoing 或 attached action 本地浏览器边界挂回 residual，那已经不是当前真相，而是根状态落后于审计文档。
+
+## 2026-05-18 补充发现：`1.21 Gigawatts` 不能再只把根状态停在双按钮主链和单一牌种自动分支
+
+- 这条对象先前在根状态里最容易被误读成：
+  - 双按钮 prompt 主链已 scoped L3；
+  - 单一牌种自动分支也已 scoped L3；
+  - 所以空弃牌堆大概只剩 L2 的 feedback 语义。
+- 这个口径现在已经过时，因为本轮重新看的截图证明空弃牌堆已经补成了真实入口证据：
+  - toast locator 图里直接可见 `弃牌堆中没有符合条件的卡牌`。
+  - 收口图里顶部 toast 仍在，但中央完全没有“行动 / 仆从”按钮 prompt。
+  - 同一张收口图里右下弃牌堆已经能看到 `1.21 Gigawatts` 本体，说明本行动自己也按正常链进了 discard。
+- 这说明 `time_travelers_1_21_gigawatts.choose_card_type` 与 `shuffle_selected_type_to_deck` 的根状态不该再只写“双按钮主链 + 单一牌种自动分支”。
+- 更准确的长期口径应该是：
+  - 双按钮主链已 scoped L3；
+  - 单一牌种自动分支已 scoped L3；
+  - 空弃牌堆 feedback 的真实入口也已 scoped L3。
+- 所以后续如果再把 `1.21 Gigawatts` 的空弃牌堆本地浏览器边界挂回 residual，那已经不是当前真相，而是根状态落后于审计文档。
+
+## 2026-05-18 补充发现：`Moon Zero Three` 不能再把 `Time Box` rail 切换竞争留在 evidence 里、却让根状态停在更早的 special 口径
+
+- `Moon Zero Three.special_summon_condition` 这条对象在根状态里先前最容易被误读成：
+  - 已有单合法/单非法基地的真实 special 主链；
+  - 已有 armed cancel 的浏览器分支；
+  - 多合法基地并存、controller/owner 分离也已有 L2；
+  - 所以剩下只是笼统的“其他 Titan special 竞争窗口”。
+- 这个口径现在已经落后，因为审计文档 2026-05-18 的 finding #117 已经把最直接的本地竞争链写成了真实浏览器事实：
+  - `Moon Zero Three` armed 时，`Monkey Lab` 高亮、带敌方 `Jumper` 的 `Portal Room` 被置灰。
+  - 切到 `Time Box` 后，两座基地都恢复为合法落点，说明高亮集合真实跟随 `selectedSetAsideTitanUid` 切换刷新。
+  - 最终由 `Time Box` 真实落到原本对 `Moon Zero Three` 非法的 `Portal Room`，而 `Moon Zero Three` 继续留在牌库旁。
+- 这条浏览器链证明的不只是“UI 能切换高亮”，而是两层不变量同时成立：
+  - UI 层不会残留前一个 Titan 的旧合法目标集合；
+  - 命令层 `validateTitanSpecialActivation()` 也不会让第二个 Titan 在第一个已进场后继续伪装成可发动。
+- 所以这轮之后，更准确的长期口径应该是：
+  - `super_spies_moon_zero_three.special_summon_condition` 已覆盖单合法/单非法、armed cancel、本地 `Moon Zero Three vs Time Box` rail 切换竞争。
+  - 剩余 residual 只该继续保留更广 shared contract 的跨窗口 / 跨来源 special 排序问题。
+- 如果后续还把这条本地 rail 切换链挂成 `Moon Zero Three` 的对象级 residual，那已经不是当前真相，而是根状态落后于审计文档。
+
+## 2026-05-18 补充发现：`Secret Volcano Headquarters` 不能再让根状态继续引用那条已失效的旧 scoped L3
+
+- `base_secret_volcano_headquarters.reveal_one_each_player_then_play_revealed_minions_here` 这条对象当前最危险的不是实现回退，而是**旧完成证明已经失效，但根状态还保留着未加纠偏标记的早期 scoped L3 记录**。
+- 审计文档已经把这件事说得很明确：
+  - 2026-05-17 那条旧 E2E 当时的夹具实际误配成了 `base_monkey_lab / breakpoint 20`。
+  - 因此旧的 `Secret Volcano Headquarters scoped L3` 结论不能继续直接引用。
+  - 当前有效口径必须切到 finding #125：scene truth 纠偏、`eventStream` 两条 `REVEAL_DECK_TOP(viewerPlayerId='all')`、浏览器 `reveal-overlay` 可见、两次 dismiss 后回到无浮层桌面。
+- 这说明根状态里原先那种“某日 1 passed，所以对象已 scoped L3”的简写已经不够了，因为它把**失效证据**和**现行证据**混在了一起。
+- 更准确的长期口径应该是：
+  - 旧 scoped L3 证据已失效，不能再引用。
+  - 当前 `Secret Volcano Headquarters` 的 scoped L3 以审计文档修订后的新 scene-truth 与 overlay 证据为准。
+  - `RevealOverlay` 在自动计分链中的 `queueMicrotask` 竞态修复，是这条对象当前完成口径的一部分，不是旁枝注释。
+- 所以后续如果再拿旧的 `before-end-turn / scored-with-revealed-minion-only` 那条记录充当 `Secret Volcano Headquarters` 的完成证明，应视为引用了过期证据，而不是在描述当前真相。
+
+## 2026-05-18 补充发现：一整组变形者 optional search/choice 已不能再让根状态只停在“选择候选分支已绿”
+
+- 这轮确认到的不是新的实现红灯，而是一类很整齐的**根状态落后模式**：
+  - `Faceless City`
+  - `G.E.L.F.`
+  - `Really?`
+  - `Transmogrify`
+  - `Doppelganger`
+  - `Mitosis`
+  这些对象在长期状态 JSON 和审计文档里都已经补上了 `skip` 的真实浏览器证据，但根 `progress.md / findings.md` 还容易让人误读成“只验证过选第二张候选”的那一半。
+- 这组对象共享的风险点其实是同一个：
+  - 文字语义里都有 `may` / `optional search` / `optional choice`
+  - 最容易被“状态断言通过”偷换成“显式放弃也没问题”
+  - 真正要证明的是**玩家真实点击 skip / 放弃后，prompt 会不会直接收口，而不是偷偷把候选打出、加进手牌，或继续进入第二层选择**
+- 这轮之后，根状态应该同时承认下面这些浏览器真相：
+  - `Faceless City` 点击 `跳过搜寻` 后，同名搜索层直接消失，手牌不增，牌库顺序保持原样。
+  - `G.E.L.F.` 点击 `放弃这次选择` 后，`The Vats` 仍为空，没有候选被偷偷打回原基地。
+  - `Really?` 点击 `放弃这次选择` 后，不会进入第二层基地选择，两座基地都继续空场。
+  - `Transmogrify` 点击 `放弃这次选择` 后，牌库搜索层直接收口，原基地不会被偷偷补进候选随从。
+  - `Doppelganger` 在 `Bacta immediate extra skip` 之后进入自身 search，再点 `放弃这次选择` 后，搜索层直接收口，原基地继续空场。
+  - `Mitosis` 点击 `放弃这次选择` 后，目标基地仍只保留原目标，两张同名手牌都继续留在手里，不会被半路打上场。
+- 所以这轮之后，更准确的长期口径应该是：
+  - 这六条对象都不再只靠“选择候选”的 scoped L3 支撑 optional 语义。
+  - 它们各自的 `skip` / `放弃这次选择` 分支也都已经补到真实浏览器链。
+  - 剩下的 residual 只该继续保留更广的随机顺序、forged late-deck/discard、POD alias 或 shared search 合同，而不是把本地 `skip` 分支继续挂着不放。
+- 如果后续再把这批对象中的任意一条写成“只有选择候选那一半已绿，skip 还待浏览器补证”，那已经不是当前真相，而是根状态落后于审计文档和长期状态 JSON。
+
+## 2026-05-18 补充发现：一整组自动分支/空选分支也不能再让根状态只停在“主链已绿”
+
+- 这轮继续确认到另一类很整齐的根状态落后模式：
+  - `Operative`
+  - `Repeater Perfect`
+  - `Time Raider`
+  - `Spy`
+  - `For My Eyes Only`
+  这些对象在长期状态 JSON 里都已经承认了自动分支或空选/空牌库端点，但根 `progress.md / findings.md` 还容易让人误读成“只有正常选择/重排主链已绿”。
+- 这组对象共享的风险点也很一致：
+  - 不变量不是最终 `deck/hand/discard` 结果本身；
+  - 真正要证明的是**真实入口在只剩 1 个候选、0 个候选、或 0 勾选时，会不会错误弹出 prompt、残留 overlay、继续进入第二层，或者偷偷改状态**。
+- 这轮之后，根状态应该同时承认下面这些浏览器真相：
+  - `Operative` 第一层 0 勾选玩家后会直接收口且不 reveal 任意牌库顶；第二层 0 勾选展示牌后也会直接收口且不改任一玩家牌库顶顺序。
+  - `Repeater Perfect` 弃牌堆只剩 1 张行动时，会自动把它放到牌库顶，不弹 `time_travelers_repeater_perfect_choose`。
+  - `Time Raider` 弃牌堆只剩 1 张牌时，会自动把它放到牌库底，不弹 `time_travelers_time_raider_choose`。
+  - `Spy` 牌库只剩 1 张时，会自动查看且不弹 `super_spies_spy_reorder`；牌库为空时，也不会创建任何空的 reorder prompt。
+  - `For My Eyes Only` 牌库只剩 1 张时，会自动查看且不弹 `super_spies_for_my_eyes_only_reorder`；牌库为空时，也不会创建任何空的 reorder prompt。
+- 所以这轮之后，更准确的长期口径应该是：
+  - 这批对象都不再只靠“正常选择/重排主链”的 scoped L3 支撑完成口径。
+  - 它们各自的自动分支、空选分支或空牌库无 prompt 分支，也都已经补到真实浏览器链。
+  - 剩下的 residual 只该继续保留更广的 inspect 来源、多人视角、随机顺序或 shared transport/overlay 合同，而不是把这些本地自动/空选端点继续挂着不放。
+- 如果后续再把这批对象中的任意一条写成“只有主链已绿，单候选自动/空选/空牌库还待浏览器补证”，那已经不是当前真相，而是根状态落后于审计文档和长期状态 JSON。
+
+## 2026-05-18 补充发现：`Spy` 不能继续把“多客户端私有重排页归属”留在 evidence 里
+
+- `Spy` 当前根状态最容易漏掉的一层，不是单页顶三重排是否能改对顺序，而是私有 inspect/reorder prompt 的页归属：
+  - 单页主链已经证明了 `Spy` 会查看自己牌库顶三张并允许 top/bottom 重排；
+  - 单卡自动与空牌库无 prompt 端点也已经补齐；
+  - 但 evidence 2026-05-18 又补上了更关键的一条多客户端对象级事实：这条私有 prompt 只应该出现在行动玩家页面。
+- 这里真正要证明的是：
+  - Host 从手牌真实打出 `Spy` 后，只有 Host 页会看到 `间谍：将这几张牌按任意顺序放回牌库顶/底` 和 `Spy / Operative / Mole` 三张私有顶牌本体；
+  - Guest 页既不该镜像出 reorder prompt，也不该泄露任何 inspect 信息；
+  - Host 选完非默认 top/bottom 后，两页都应回到普通出牌态，不残留 prompt 或 waiting overlay。
+- 所以后续如果再把 `Spy` 写成“根状态只承认单页顶三主链 + 单卡自动/空牌库端点，多客户端私有归属仍主要在 evidence 里”，那已经不是当前真相，而是 completion-audit 没把对象级 owner-only inspect 链回写完整。
+
+## 2026-05-18 补充发现：`Time Box.play_at_five_and_clear` 不能再让根状态只停在“别的图集里 special 进场过”
+
+- `time_travelers_time_box.play_at_five_and_clear` 这条对象在根状态里最容易被误读成：
+  - alien/shared 侧已经有过一次 special 进场浏览器链；
+  - yuanhou 这边又已经补了 `turn-start -> 4->5 -> skip`；
+  - `discard-recover owner/controller split` 也已经补过；
+  - 所以 “第 5 枚计数后真实进场并清零” 大概已经可以自然外推。
+- 这个口径现在已经不够，因为审计文档 2026-05-18 的 finding #128 明确把缺口钉在了 **yuanhou 自身 counter source 的真实连通性** 上：
+  - `Primate Park` 回手链会不会先进入 `smashup_reaction_choose`；
+  - `Time Box` 会不会被真实推到第 5 枚计数；
+  - 玩家选基地后会不会真实落场并把计数清零；
+  - 原计分链会不会继续正常收口。
+- 这条 finding 还顺手纠正了一类很危险的假阳性：
+  - `smashup_reaction_choose` 里的 `时间盒子` 选项与 rail 上同名 Titan 卡会重名；
+  - 直接点 DOM 容易误中 rail 弹详情；
+  - 所以“页面上点到了一个叫时间盒子的东西”不能自动当成真链通过，必须按 interaction option id 响应当前 reaction。
+- 这轮之后，更准确的长期口径应该是：
+  - `time_travelers_time_box.play_at_five_and_clear` 已不再只靠 alien/shared 侧 special 进场旁证。
+  - 它在 yuanhou 自身 `Primate Park -> 回手 -> 第 5 枚计数 -> 进场 prompt -> 选基地 -> 清零计数` 这条浏览器链上，也已经补到 scoped L3。
+  - 剩下的 residual 只该继续保留更广 counter 来源、多人局与 Titan special 竞争窗口，而不是再把“真实进场并清零”挂回本地缺口。
+- 如果后续再把 `Time Box.play_at_five_and_clear` 写成“special 进场主链早就有了，所以 yuanhou 侧不用单独证明”，那已经不是当前真相，而是根状态落后于审计文档。
+
+## 2026-05-18 补充发现：`Time Box.counter_from_turn_start` 不能继续只留在旧单页 scoped L3 或 atom 行里
+
+- `time_travelers_time_box.counter_from_turn_start` 当前还有一层很容易被根状态漏掉的对象级真相：
+  - 旧长期状态已经承认过单页 `P1 end turn -> P0 startTurn -> Moon Zero Three 已在场 -> Time Box 4->5 -> rail 入口 -> skip`；
+  - 但 2026-05-18 的审计文档又补上了更关键的多客户端 owner-only 主链，而这层如果不单独回根状态，就很容易又被误缩回“单页已绿”。
+- 这里真正要证明的不是“第 5 枚计数 prompt 语义大概没问题”，而是：
+  - 回合开始时，只有 owner 页面拿到这条 `smashup_reaction_choose` 选择权；
+  - 非 owner 页面不会错误出现同一条 prompt 或 waiting overlay；
+  - owner 页响应后，才会继续进入真实的 `时间盒子：是否移除全部计数器并打出到一个基地？` 进场 prompt，并在 skip 后让两页一起收口。
+- 这条补证还顺手纠正了一个很危险的旧误判：
+  - 真实入口不是一个文本叫“时间盒子”的普通按钮；
+  - 页面可见的是 rail/Titan 上的 `可触发` badge；
+  - 测试层必须按 live `interaction option id` 响应当前 `smashup_reaction_choose`，否则会把点到同名 Titan 卡面详情的假阳性误当成真链。
+- 所以后续如果再把 `Time Box.counter_from_turn_start` 写成“根状态只承认旧单页 4->5 链，多客户端 owner-only 回合开始响应仍主要在 evidence 里”，那已经不是当前真相，而是 completion-audit 没把对象级多客户端主链回写完整。
+
+## 2026-05-18 补充发现：`Live and Let Chum` 不能再让根状态只停在未受保护 destroy 主链
+
+- `super_spies_live_and_let_chum.destroy_selected_minion` 这条对象在根状态里最容易被误读成：
+  - 已经有 beforeScoring 真实入口；
+  - 已经证明过选择低力量随从后会真实摧毁到 owner discard；
+  - 所以 `Shell Game` 保护宿主这类分支大概只是共享 destroy/protection 合同，不值得单独再写。
+- 这个口径现在已经不够，因为审计文档 2026-05-18 的 finding #143 已经把真正的浏览器缺口补掉了：
+  - 玩家在 beforeScoring 的真实 prompt 里，确实能选到受 `Shell Game` 保护的低力量宿主；
+  - 选中后 destroy 会被保护过滤，不会发出 `MINION_DESTROYED(shell-host)`；
+  - 基地总力量不会因为这次 protected-no-op 被错误拉低，而是继续按原 `4 vs 11` 结算；
+  - 计分完成后依然会正常翻新到 `The Nexus`。
+- 这条浏览器链的意义不只是给 `Live and Let Chum` 多补一张图，而是把两个对象的长期口径一起改正：
+  - `super_spies_live_and_let_chum.destroy_selected_minion` 不再只靠未受保护 destroy 主链支撑完成口径；
+  - `shapeshifters_shell_game.protect_attached_host_from_destroy` 也不再只靠 `Bacta` 来源的 protected-continue 支撑 source-family L3。
+- 所以这轮之后，更准确的长期口径应该是：
+  - `Live and Let Chum` 已同时覆盖未受保护 destroy->owner discard->计分变化，和受保护 destroy-no-op->按原力量继续计分这两条 source-family 浏览器分支。
+  - `Shell Game` 已同时覆盖 `Bacta` 与 `Live and Let Chum` 两个 destroy 来源下的真实入口表现。
+  - 剩下的 residual 只该继续保留更广 destroy family 的死亡触发连锁与 shared L4 时序，而不是把这条 protected-no-op scoring 再挂回本地缺口。
+- 如果后续再把 `Live and Let Chum` 写成“只审过未受保护 destroy 主链，受保护分支还待浏览器补证”，那已经不是当前真相，而是根状态落后于审计文档和长期状态 JSON。
+
+## 2026-05-18 补充发现：一组 response-window 对象不能继续只待在 evidence/JSON 里
+
+- 这轮继续扫到的根状态落后，不是实现缺陷，而是同一类 completion-audit 漏同步：
+  - `The Base Is Not Enough`
+  - `Time Is Fleeting`
+  - `Wormhole`
+  - `Mindraker`
+- 这四条如果只留在 `evidence` 和长期 JSON、却不进根 `progress.md / findings.md`，后续最容易产生两种误读：
+  - 把已经补过的真实入口 scoped L3 当成“还只是 L2”。
+  - 把已经被纠偏或被 L2 收紧的兄弟边界，重新挂回对象级 residual。
+- 当前应当固化的真相分别是：
+  - `The Base Is Not Enough` 已经不是“resolveSpecial 直接调用会给临时控制”这么浅。真实 beforeScoring 响应窗口里，`Primate Park 20/20` 时只会列出低力量 `Jumper / Time Raider`，不会把 5 力 `Silverback` 混进候选；收口后记分板到 `3:2`、基地翻新为 `The Nexus`，说明控制变化真实写进了本次计分。
+  - `Time Is Fleeting` 已经不只是一条单页弃牌堆换基地主链。它现在还明确覆盖了“赢家不是当前回合玩家时，只有赢家页面拿到弃牌堆基地选择权”的多客户端边界；同时单候选自动分支与同窗 `Wormhole` 多 special 排序，已经由后续 L2 收紧，不该再继续挂成对象级 residual。
+  - `Wormhole` 已经不只是一条“选一个己方随从洗回牌库”的 UI 主链。当前浏览器链证明的是“任意数量己方随从”的多选真实入口，而长期 JSON 已经明确纠偏：`optionIds: []` 的空选不是 bug，不应再被误判成对象级缺口。
+  - `Mindraker` 已经不是“代码里有 restriction 就算完成”。真实计分窗口里，`Mindraker + Mole + Going Bananas` 同时在场时，restriction 会把唯一候选行动直接封死，随后基地正常计分翻新、没有残留交互，这条 restriction 已经走到了 scoped L3。
+- 这组对象的共同不变量是：只要规则文本的第一入口在 response window，就不能让根状态只记 L2 或只记 handler/shared contract。
+- 所以后续如果再把这四条写成“对象级还没真正补浏览器”或“某些已纠偏的边界仍待处理”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
+
+## 2026-05-18 补充发现：`It's Astounding / Time Box talent / Mimic` 也不能继续只停在 evidence/JSON
+
+- 这三条的根状态落后模式和上面不同：它们不是 response-window 权限问题，而是对象级浏览器证据已经闭合，但根状态还在沿用更早的浅口径。
+- `It's Astounding` 当前最容易被误读成“只是 discard-action-extra-play 共享合同已审，或只证明了从弃牌堆能打出一张行动”。这已经不够准确，因为当前真实入口明确走通了三段链：
+  - 从弃牌堆选中 `Going Bananas`
+  - 继续进入 `Going Bananas` 的基地目标 prompt
+  - 只有在 `Monkey Lab / Portal Room` 目标按钮完全隐藏后才算真正收口
+  也就是说，这条证据证明的不是“弃牌堆行动被拿起来了”，而是被选行动的后续目标链也真实结算并收口。此前“状态断言通过但结果图仍残留目标按钮”的假收口已经被 finding #44 修正，不应再被根状态漏掉。
+- `Time Box talent` 当前最容易被误读成“旧 alien 套件里的 special/talent 图能跑通，所以 yuanhou 这边不用单独记”。这同样过时，因为长期 JSON 已经明确修订：
+  - 旧白卡图只保留为历史限制记录
+  - 现在真正承担 talent 视觉证据的是 yuanhou 自身图集下那条 `Portal Room` 真实天赋链
+  根状态如果不跟进，就会继续误导后续审计去引用已经降级的旧图集证据。
+- `Mimic` 当前最容易被误读成“L2 已 clean，UI 只是数字展示”。这也不对。它真正要证明的是：
+  - 旁边有一只被加成到有效 5、但印刷仍是 2 的对照随从时，`Mimic` 不会误跳到 `+5`
+  - 只有当真正印刷 5 力的随从进场后，它才会动态跳到 `+5`
+  这条浏览器证据把 printed power 与 effective power 的可见层差异钉死了，不能继续被根状态压成“对象级 clean L2”。
+- 这组三条的共同不变量是：当浏览器证据已经补到“共享合同之外的对象级真相”时，根状态必须显式承认这个对象级边界，而不是继续借早期共享合同或旧图集旁证代写。
+- 所以后续如果再把这三条写成“共享合同已绿即可”或“对象级只到 L2”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
+
+## 2026-05-18 补充发现：`Permit to Kill / Discards Are Forever / Clyde 2.0 / The Nexus` 也不能继续只待在长期 JSON
+
+- 这轮继续扫到一批典型的“长期 JSON 已记住，但根状态没显式承认”的对象：
+  - `Permit to Kill`
+  - `Discards Are Forever`
+  - `Clyde 2.0`
+  - `The Nexus`
+- 这四条如果继续只待在长期 JSON，后续最容易出现的误读是：
+  - 把它们重新当成“只做过 L2 或只做过单页链”的对象。
+  - 忘掉它们其实已经补过多玩家顺序、多客户端归属或 skip 这类对象级浏览器边界。
+- 当前应当固化的真相分别是：
+  - `Permit to Kill` 已经不只是一条三人局“看两张非随从并排序”的主链。长期 JSON 已明确记住四人局真实浏览器链：`P1 -> P2 -> P3` 的排序 prompt 会依次出现并逐次收口，因此不应再回到“会不会只处理第一个其他玩家”的旧疑点。
+  - `Discards Are Forever` 已经不只是一条无 prompt 的 L2 reveal/mill 语义。真实手牌入口 scoped L3 已经证明“双人局每位玩家都只 reveal 到首个随从为止，并把所有展示牌一起弃掉”，而空牌库、首张即随从、三人 turnOrder 这些兄弟边界也已被后续 L2 收紧。
+  - `Clyde 2.0` 已经不只是在 JSON 里写过“Host 页面有按钮”。多客户端真实链证明的是：离场行动的处置选择权在 Clyde 控制者页面，而非行动拥有者、当前回合玩家或 Guest 页；并且 `收入手牌 / 进入弃牌堆` 两个分支都走到了真实收口。
+  - `The Nexus` 已经不只是一条“赢家可从基地弃牌堆选基地”的主链。它还明确补了对象级 skip 浏览器分支：赢家点击 `跳过（照常抽新基地）` 后，会按 `baseDeck[0]` 正常翻新，不会残留在响应窗口。
+- 这四条的共同不变量是：**只要对象级浏览器证据已经覆盖了多玩家顺序、多客户端归属或显式 skip，根状态就必须承认这些边界，不应让它们继续藏在长期 JSON 里。**
+- 所以后续如果再把这四条写成“还只做到 L2”“还没证明多玩家/多客户端/skip”或“只是长期 JSON 里提过一下”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
+
+## 2026-05-18 补充发现：`Juiced Up / Monkey Lab / The Vats / Time Raider / Repeater Perfect / Monkey on Your Back` 也不能继续只停在长期 JSON
+
+- 这轮继续扫到另一类根状态落后：对象级主链 scoped L3 已经在长期 JSON 里写得很清楚，但根 `progress.md / findings.md` 还容易只保留它们的兄弟边界，或者只顺带提到其中一半。
+- 这批对象的风险点分别是：
+  - `Juiced Up / Monkey Lab` 很容易被误压成“只是 ongoing power modifier 的数字会算”。
+  - `The Vats` 很容易被误压成“shared static restriction 已绿”。
+  - `Time Raider / Repeater Perfect` 很容易因为后来补了单候选自动与空弃牌 feedback，就把原本的多候选主链忘回长期 JSON 里。
+  - `Monkey on Your Back` 很容易只记住“敌方宿主可附着”或“附着后天赋可选目标”其中一半，而丢掉对象级完整主链。
+- 当前应当固化的真相分别是：
+  - `Juiced Up` 已经不是抽象的 modifier。真实页面上，宿主先带 1 张附着行动时再贴 `Juiced Up`，会立刻出现绿色 `+4`，说明它把本卡也算进宿主上的行动总数。
+  - `Monkey Lab` 也不是纯数字断言。真实页面上，同一宿主从 1 张 attached action 增到 2 张时，基地加成会从绿色 `+1` 动态跳到 `+2`，说明它确实按“该随从自己身上的 attached action 数量”实时重算。
+  - `The Vats` 已经不是只靠 shared restriction 合同。真实普通出牌入口里，同名随从所在基地会被阻断/置灰，而同一张手牌仍可改打到别的基地并正常收口。
+  - `Time Raider` 的对象级浏览器证据不只剩单候选自动沉底和空弃牌 feedback；它原本的多候选主链也已经闭合，真实 prompt 会同时列出 minion 与 action 候选，并允许选择 `Time Walk` 进牌库底。
+  - `Repeater Perfect` 也不只剩单行动自动顶牌与空弃牌 feedback；它的主链 scoped L3 已经证明真实 prompt 只列行动、不列随从，并允许选择第二张 `Time Walk` 放到牌库顶。
+  - `Monkey on Your Back` 的对象级主链现在至少有两半都已经闭合：
+    - 手牌入口可真实附着到敌方宿主，而不是只在状态里“看似附着”；
+    - 附着后天赋能真实选择另一玩家低力量随从，并把本行动放到牌库底。
+- 这批对象的共同不变量是：**当对象级主链 scoped L3 已经成立时，根状态不能只保留后补的自动分支、空分支或共享合同旁证。**
+- 所以后续如果再把这批对象中的任意一条写成“只有共享合同已绿”“只有自动/空分支已补”“对象级主链还没回到根状态”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
+
+## 2026-05-18 补充发现：`Cellular Bonding` 不能继续只散落在旧 evidence 细节与长期 JSON 里
+
+- `Cellular Bonding` 当前最容易被根状态误压成两种过时口径：
+  - 只记得 2026-05-16 那条“复制 `Missing Uplink` 后回合结束抽牌”的 trigger-surface scoped L3。
+  - 或者反过来，只顺手提到 2026-05-17 的某一条 talent/protection/power finding，却没有把对象级主链显式承认出来。
+- 这两种写法都不够，因为 `shapeshifters_cellular_bonding` 真正已经闭合的是一组连续对象级事实，而不是一条孤立 surface：
+  - 前置入口不是“随便选个 live attached action”。
+  - 而是先真实附着到宿主，再只允许从**同宿主的另一张旧附着行动**里选择复制对象。
+  - metadata 也不是“只要最后 state 对了就算完”，而是只允许写回当前这张 `Cellular Bonding` 真实附着着的宿主。
+- 在这个前置链之上，当前对象级浏览器真相已经至少同时承认五个代理面：
+  - trigger-surface：复制 `Missing Uplink` 后真实结束回合抽牌。
+  - talent-surface：复制 `Monkey on Your Back` 后真实选择另一玩家低力量随从，并把本卡放到底。
+  - afterScoring-surface：复制 `Flying Monkey` 后真实移动宿主并摧毁本行动。
+  - protection-surface：复制 `Shielding` 后，在原护盾离场时仍保护宿主其他行动，且自己不会错误自保。
+  - power-surface：复制 `Splice as Nice` 后，即使原始 `Splice` 已离场，也仍由 copied metadata 保留持续 `+2`。
+- 这条对象的长期口径因此必须明确区分两件事：
+  - 已经 scoped L3 的，是“当前显式接入的 copied surfaces 与真实入口链”。
+  - 仍然没有被外推完成的，才是“完整动态复制 runtime”与更广的跨派系/未显式适配 surface。
+- 更直接地说：
+  - 后续如果再把 `Cellular Bonding` 写成“只做过一条 trigger/talent 的浏览器链”
+  - 或者把它重新挂回“对象级主链还没进根状态”
+  - 那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
+
+## 2026-05-18 补充发现：`Genetic Shift` 不能继续只停在长期 JSON 的一条 scoped L3 记录里
+
+- `Genetic Shift` 当前最容易被根状态误压成一句过浅的话：
+  - “有过一条无目标模式选择的浏览器链”
+  - 然后对象级细节就又消失了
+- 这个口径不够，因为审计文档已经把它拆成三个明确 atom，而且它们各自承认的真相并不相同：
+  - `choose_mode` 证明的不是数值结果，而是**真实入口方式**。
+    - Board 对普通无目标行动不是“一点即打出”。
+    - 而是先选中手牌，再二次点击，随后才进入 `基因转变：选择强化模式` prompt。
+  - `all_own_minions_plus_one` 证明的是 all 分支只按 controller=self 给己方全体加 `+1`。
+  - `single_own_minion_plus_three` 证明的是 single 分支只允许己方单体候选，敌方 `Baboom` 既不会出现在候选里，也不会被误加成。
+- 也就是说，这条对象级浏览器证据真正闭合的不是抽象的“二选一能点”：
+  - 而是“真实无目标入口 + all 己方全体过滤 + single 己方单体过滤”三件事同时成立。
+- 所以这轮之后，更准确的根状态口径应该是：
+  - `Genetic Shift` 已经有对象级 scoped L3，但范围明确限定在无目标真实入口和 all/single 两个模式分支。
+  - direct target 快捷入口与 forged/late target 负例仍继续留在 L2/shared 守门，不应被顺手外推成浏览器已全绿。
+- 如果后续再把 `Genetic Shift` 写成“只有一条泛化 scoped L3”或“对象级根状态仍空白”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
+
+## 2026-05-18 补充发现：`Shielding / Furious George / Splice as Nice / Missing Uplink` 不能继续只留在 atom 行、旧 finding 或单条边界补丁里
+
+- 这四条当前的根状态落后有一个共同模式：
+  - 审计文档与长期 JSON 其实已经把对象级主链写得很清楚；
+  - 但根状态里仍然很容易只看到某条局部补丁，比如 extra-turn L2、组合链里的旁证，或者某个共享 modifier 合同。
+- 分别看这四个对象，当前真正需要被根状态承认的真相是：
+  - `Shielding` 不能只写成“保护合同已绿”。
+    - 它的对象级浏览器真相至少同时包含：
+    - onPlay 真实清掉宿主上的对手旧行动；
+    - 后续对手行动来临时，宿主本体不受影响；
+    - `Shielding` 自身可离场，但宿主上的其他己方行动继续被保护。
+  - `Furious George` 不能只写成“动态算力公式正确”。
+    - 它真正闭合的是：真实 attached action 进入宿主后，左上绿色力量提示会随自身行动数从 `+1` 动态跳到 `+2`，而不是靠别的直接加力来源碰巧算对。
+  - `Splice as Nice` 也不能只写成“共享 ongoing modifier 已绿”。
+    - 它真正闭合的是：真实手牌入口附着到宿主后，本卡真实留在 `attachedActions`，宿主左上立即出现绿色 `+2`。
+  - `Missing Uplink` 不能只让根状态记住“额外回合结束也要抽牌”的那条 L2。
+    - 它当前已经有对象级 scoped L3：真实结束回合时，两张实例的额外抽牌会和正常回合结束抽牌一起收口；
+    - 而牌库不足洗弃牌、多 owner 混挂、额外回合结束继续按 owner 聚合，才是后续补进去的 shared/L2 收紧。
+- 这批对象的共同不变量是：
+  - 当对象级主链 scoped L3 已经成立时，根状态不能只留“某条边界后来补过”或“共享合同本身是绿的”。
+  - 必须显式承认对象本体在真实入口里的可见链路，否则后续审计很容易把它们重新误记成“只有实现/L2 正确，浏览器主链还空着”。
+- 如果后续再把这四条中的任意一条写成“只有共享合同或单条边界已补”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
+
+## 2026-05-18 补充发现：`Bacta / Going Bananas / Primate Park / Copycat choose+metadata` 不能继续只靠零散旁证挂在根状态里
+
+- 这四组对象当前的根状态落后，不是因为没有证据，而是因为证据被拆散到了不同位置：
+  - `Bacta` 的真实入口分支主要留在长期 JSON。
+  - `Going Bananas` 容易只在 `Shielding` 或 `It's Astounding` 的组合链里被顺带提到。
+  - `Primate Park` 的真实响应入口容易只留在 atom/object 行与旧 finding。
+  - `Copycat` 的 choose/metadata 前置链又容易被后来的 trigger-surface 盖过去。
+- 当前根状态必须显式承认的真相分别是：
+  - `Bacta` 不能只写成“Shell Game 保护时仍给 extra”。
+    - 它真正闭合的是三条对象级来源分支：
+    - 受保护目标；
+    - 未保护己方目标；
+    - 未保护敌方目标且 extra 机会真实归 owner。
+  - `Going Bananas` 不能只写成“某条组合链里看过清行动”。
+    - 它真正闭合的是：真实先选基地，然后只清该基地的其他玩家 `base ongoing + attached action`，己方行动和别的基地不被误伤。
+  - `Primate Park` 不能只写成“afterScoring base choice 合同已绿”。
+    - 它真正闭合的是：赢家真实点击响应入口后，prompt 只列“这里”的 attached action，多选后分别回各自 owner 手牌，而跨基地行动不会混进候选。
+  - `Copycat` 也不能只靠后来的 `Jumper trigger` 来代表整个对象。
+    - choose/metadata 这两层前置链本身已经有 scoped L3：
+    - 真实入口只允许选另一玩家随从；
+    - copied metadata 只写到 `Copycat` 本体，不写到别的 live minion。
+- 这批对象的共同不变量是：
+  - 当对象级浏览器证据已经覆盖了真实入口、目标归属或 owner/controller 语义时，根状态不能只保留后续链、共享合同或组合链里的旁证。
+  - 必须把对象本体在真实入口里已经闭合的范围单独写出来，否则后续很容易再把它们误记成“只有某条兄弟链做过浏览器验证”。
+- 如果后续再把这四组对象写成“只有零散事实、没有对象级主链承认”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
+
+## 2026-05-18 补充发现：一组变形者 optional search/choice 不能让根状态只承认 `skip`，却忘掉主链 scoped L3
+
+- 这批对象在根状态里当前最容易出现一种新的落后方式：
+  - `Faceless City / G.E.L.F. / Really? / Transmogrify / Doppelganger`
+  - 已经补了真实 `skip` 分支
+  - 但对象本体原先的“选择候选并真实结算”主链，反而又没有被显式承认
+- 这会导致另一个误读：
+  - 看起来像这批对象现在只证明了“可以放弃”
+  - 却没明确承认它们各自原本已经闭合的真实主链
+- 当前根状态必须显式承认的真相分别是：
+  - `Faceless City` 不只是 `跳过搜寻` 会收口。
+    - 它还已经证明多同名候选时可真实选择第二张收入手牌，并带着剩余牌库收口。
+  - `G.E.L.F.` 不只是 `放弃这次选择` 后不偷打候选。
+    - 它还已经证明天赋会先把自身洗回牌库，再只列合格候选，并把所选随从直接额外打回原基地。
+  - `Really?` 不只是第一层 discard search 可以 skip。
+    - 它还已经证明可从弃牌堆两张候选里选第二张，并在后续基地选择里打到别的合法基地。
+  - `Transmogrify` 不只是 deck search 可以 skip。
+    - 它还已经证明两张合格候选里可真实选第二张，过大候选被排除，且所选随从会打回原基地。
+  - `Doppelganger` 不只是 search 可以 skip。
+    - 它还已经证明在 `Bacta immediate extra skip` 之后，自己的 search 主链会真实出现，且所选候选会打回原基地。
+- 这批对象的共同不变量是：
+  - optional search/choice 的对象级根状态必须同时承认“选择候选结算主链”和“显式 skip 收口分支”。
+  - 只写其中一半，都会让后续审计把对象重新误读成“另一半还没补浏览器证据”。
+- 如果后续再把这批对象写成“只承认 skip，主链没进根状态”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
+
+## 2026-05-18 补充发现：`Mitosis / Operative / Spy / For My Eyes Only / 1.21 Gigawatts` 不能让根状态只剩端点边界
+
+- 这批对象当前最容易出现的根状态落后，是另一种“只记住后来补的端点，却忘了主链”的模式：
+  - `Mitosis` 只剩 `skip`
+  - `Operative` 只剩两层 `0 勾选`
+  - `Spy / For My Eyes Only` 只剩单卡自动与空牌库无 prompt
+  - `1.21 Gigawatts` 只剩单一牌种自动与空弃牌堆 feedback
+- 这会把对象级真相压扁成“边界都补了，但主链似乎不重要”，这是不对的。
+- 当前根状态必须显式承认的主链分别是：
+  - `Mitosis` 不只是“可以放弃同名手牌选择”。
+    - 它还已经证明先选己方目标，再从同名手牌候选里真实选第二张，并把所选同名随从直接额外打回目标基地。
+  - `Operative` 不只是“两层空选都会收口”。
+    - 它还已经证明第一层多选玩家、第二层只展示被查看的顶牌、最终只把所选玩家的所选顶牌放到底。
+  - `Spy` 不只是单卡自动和空牌库无 prompt。
+    - 它还已经证明真实随从进场后，会进入顶三张 inspect/reorder prompt，并按非默认 top/bottom 顺序完成收口。
+  - `For My Eyes Only` 不只是单卡自动和空牌库无 prompt。
+    - 它还已经证明无目标行动二次点击后，会进入顶五张 inspect/reorder prompt，并按非默认 top/bottom 顺序完成收口。
+  - `1.21 Gigawatts` 不只是单一牌种自动和空弃牌堆 feedback。
+    - 它还已经证明弃牌堆同时有两类牌时，会真实出现“行动 / 仆从”按钮 prompt，并只把所选牌种洗回 deck。
+- 这批对象的共同不变量是：
+  - 当对象级主链 scoped L3 已经存在时，根状态不能只保留“后来补的端点边界”。
+  - 否则后续审计会错误地把这些对象重新理解成“主链还没正式承认，只是若干边缘分支绿了”。
+- 如果后续再把这批对象写成“只有边界端点已补”，那已经不是当前真相，而是根状态落后于审计文档与长期 JSON。
+
+## 2026-05-18 补充发现：`ISI / Secret Agent / The Spy Who Ditched Me` 不能继续只留在长期 JSON、旧 finding 或 shared 残项里
+
+- 这三组对象当前的根状态缺口不是“还没证据”，而是对象级真相已经在审计文档与长期 JSON 里闭合，但根状态仍容易只留下某一条旧主链、某个 shared 修复，或一条局部端点。
+- `ISI's Swingin' Pad` 不能继续只写成“P0 赢家可重排自己牌库顶三张”。
+  - 它当前真正已经闭合的对象级真相是：
+    - 真实入口来自计分后的 `smashup_reaction_choose` 响应窗口；
+    - `winner != currentPlayer` 时，只有赢家页面能拿到 `ISI` 选择权与后续重排 prompt；
+    - `让过` 分支点击后会真实清掉旧 reaction frame，不再残留 stale `smashup_reaction_choose`；
+    - 短牌库 2 张仍可重排这条边界已由同对象 L2 锁定。
+  - 所以后续如果再把 `ISI` 写成“只剩多客户端或 optional pass 没回根状态”，那已经不是当前真相，而是根状态落后。
+- `Secret Agent` 不能继续只停在“queued trigger 根因修了”或“单页两手牌二选一那条 scoped L3”。
+  - 它当前真正已经闭合的对象级真相是：
+    - 行动玩家真实打出行动后，弃手牌选择权会回到行动玩家本人，且候选只来自该行动结算后的剩余手牌；
+    - 多客户端下只有行动玩家页面出现 prompt，非目标页不出现错误 waiting overlay；
+    - 多客户端 `2/1/0` 剩余手牌三条真实浏览器分支都已闭合，而且刚打出的 `Stasis Field` 会继续附着在 `Portal Room`，不会被误移走。
+  - 所以后续如果再把 `Secret Agent` 写成“对象级主链还没回到根状态”或“1/0 手分支只是 L2 没进浏览器证据”，那已经不是当前真相。
+- `The Spy Who Ditched Me` 也不能继续只剩“shared overlay residual 已修”或“施放者页 reveal 过一条”。
+  - 它当前真正已经闭合的对象级真相是：
+    - `each_other_player_discards_minion` 的多客户端主链里，目标玩家只在自己页面拿到弃随从 prompt，Host 非目标页没有错误 waiting overlay；
+    - `reveal_no_minion_hand` 的真实入口里，没有随从的其他玩家只会向施放者页私有展示手牌，而且 reveal 关闭后，另一位有随从玩家的 discard prompt 仍然保留并能继续收口；
+    - 旧 Host/非目标页 waiting overlay 已明确归类为 shared optimistic transport/playerView 根因，不应再作为这张卡自己的 residual 继续占位。
+  - 所以后续如果再把 `The Spy Who Ditched Me` 写成“只修过 shared overlay，还没对象级主链承认”，同样已经不是当前真相。
+- 这三组对象共同说明一条 completion-audit 不变量：
+  - 当对象级 scoped L3 已经覆盖“当前页/非当前页归属”“optional pass 清理”“私有 reveal 与并存 prompt”“自动分支 2/1/0”这类真实浏览器语义时，根状态不能再只保留 shared 修复、旧单链或长期 JSON 条目。
+  - 否则后续审计会把已经闭合的对象再次误记成“根状态仍空着”。
+
+## 2026-05-18 补充发现：`From Q With Love / Secret Volcano Headquarters` 不能让根状态只剩边界补丁或旧证据纠偏
+
+- 这两组对象当前的根状态落后方式比较隐蔽：
+  - `From Q With Love` 已经补了短候选与空投影手牌，但 exact-2 主链反而没有被根状态单独承认。
+  - `Secret Volcano Headquarters` 已经补了“旧 scoped L3 失效、改用新 scene-truth”的纠偏，但当前有效主链也还没有被根状态单独承认。
+- `From Q With Love` 不能继续只写成“投影手牌只剩 1 张 / 0 张时怎么收口”。
+  - 它当前真正已经闭合的对象级真相是：
+    - 真实入口先抽 3 张；
+    - discard prompt 来自“旧手牌 + 新抽牌 - 本牌”的投影手牌，而不是 live hand 任意选择；
+    - prompt 会同时列出旧手牌与新抽牌的候选，但不会把本牌自身混回候选；
+    - 选择两张后，只把这两张送入 discard，其余未选牌继续留手。
+  - 所以后续如果再把 `From Q With Love` 写成“根状态只补了短候选/空投影手牌，exact-2 主链还没回填”，那已经不是当前真相。
+- `Secret Volcano Headquarters` 也不能继续只写成“旧 E2E 夹具误配、现在要以新 finding 为准”。
+  - 它当前真正已经闭合的对象级真相是：
+    - 真实结束回合后会按 turnOrder 真实发出两条 `REVEAL_DECK_TOP(viewerPlayerId='all')`；
+    - `reveal-overlay` 会真实出现在页面中央，并与计分后的 VP / 换基地状态并存，而不是只在 `eventStream` 或 state 里存在；
+    - dismiss 两次后 overlay 会完全消失，桌面真实收口到替换后的 `Portal Room`，且只有展示出的随从会进入这次计分链。
+  - 所以后续如果再把 `Secret Volcano Headquarters` 写成“根状态只有旧证据失效修订，没有当前有效主链承认”，同样已经不是当前真相。
+- 这两组对象共同说明另一条 completion-audit 不变量：
+  - 根状态不能只承认“后来补的边界端点”或“旧证据失效后的纠偏”，却遗漏当前已经有效的对象级主链。
+  - 否则后续审计会错误地把对象理解成“周边都补了，但真正主链还没正式承认”。
+
+## 2026-05-18 补充发现：`Time Walk / Stasis Field` 不能继续只作为别的链路里的卡名旁证存在
+
+- 这两组对象当前的根状态缺口不在 evidence，而在表述层：
+  - `Time Walk` 在长期 JSON 和审计文档里已经是对象级 scoped L3，但根状态里仍容易只以 `Time Raider` 候选、`It's Astounding` 弃牌堆行动、或 shared `banked-extra-play` 合同的形式出现。
+  - `Stasis Field` 也类似，根状态里已经在 `Secret Agent`、`Into the Time Slip`、`Portal Room` 这些兄弟链里反复出现它的卡面或 uid，但对象本体的三段主链还没有被单独承认。
+- `Time Walk` 不能继续只写成“额度加 1”或者“后续某张 `Jumper / Juiced Up` 链里出现过”。
+  - 它当前真正已经闭合的对象级真相是：
+    - 真实入口会先抽 2 张；
+    - 本牌自己会沉到底牌库，而不是进 discard；
+    - 授予的是本回合 banked extra minion / extra action 额度，不会额外起 immediate prompt；
+    - 这两次 banked extra 会在同一回合里被真实消费掉，而不是只停在 toast 或 state 数字。
+  - 所以后续如果再把 `Time Walk` 写成“只有 shared 合同或别的链路旁证，没有对象级主链承认”，那已经不是当前真相。
+- `Stasis Field` 也不能继续只写成“在别的链里能看到它留在基地上或被回手”。
+  - 它当前真正已经闭合的对象级真相是：
+    - 真实手牌入口可以把它贴到目标基地并进入 `ongoingActions`；
+    - 该基地即使已经达断点，也会被真实压住，不发生本该在回合结束时发生的计分与替换；
+    - 到拥有者自己下一个回合开始时，它会自动离场并进入 owner discard。
+  - 所以后续如果再把 `Stasis Field` 写成“只是某些兄弟链里顺带出现过，没有对象级主链承认”，同样已经不是当前真相。
+- 这两组对象共同说明另一条 completion-audit 不变量：
+  - 根状态不能让一张卡长期只以“兄弟链旁证”或“shared 合同示例”形式存在。
+  - 当对象本体的整条真实浏览器链已经闭合时，必须单独承认它自己的主链，否则后续审计会错误地以为它还没从旁证升级成对象级完成。
+
+## 2026-05-18 补充发现：`Do Over / Doctor When` 不能让根状态只剩 `skip extra`
+
+- 这两组对象当前的根状态落后也很典型：
+  - `skip extra` 在 2026-05-18 已经补回根状态；
+  - 但对象本体的 returned-card 主链反而还没有被单独承认。
+- `Do Over` 不能继续只写成“点击放弃后 returned `Jumper` 会留在手里”。
+  - 它当前真正已经闭合的对象级真相是：
+    - `return_own_minion` 真实入口会先把 `Jumper` 从基地回到手牌；
+    - 接着进入 specific-card extra prompt；
+    - 该 prompt 只允许刚返回的 `jumper-a`，不会把同名手牌诱饵混进候选；
+    - 选择后会把 `jumper-a` 真实打回原基地并完整收口。
+  - 所以后续如果再把 `Do Over` 写成“根状态只补了 skip extra，returned-card 主链还没对象级承认”，那已经不是当前真相。
+- `Doctor When` 也不能继续只写成“可以 skip extra”。
+  - 它当前真正已经闭合的对象级真相是：
+    - 第一层 prompt 会真实列出“另一个己方随从”候选，`Doctor When` 自身不会混进候选；
+    - 选择 `Time Raider` 回手后，会进入 returned-card extra prompt；
+    - extra prompt 只允许刚返回的 `raider-a`，不会把同名手牌诱饵混进来；
+    - 选择后 `Time Raider` 会真实打回 `Portal Room` 并收口。
+  - 所以后续如果再把 `Doctor When` 写成“只有 may/skip 边界已补、主链还没回根状态”，同样已经不是当前真相。
+- 这两组对象共同说明另一条 completion-audit 不变量：
+  - 根状态不能只承认 returned-card 链的后半段端点，比如 skip extra；
+  - 当前半段 `return` 和后半段 `specific-card replay` 都已经在真实浏览器链里闭合时，必须把整条 returned-card 主链一起承认，否则会把对象重新误解成“主链未审，只补了端点”。
+
+## 2026-05-18 补充发现：`Mole` 不能让根状态只承认 `Mindraker` 负链
+
+- `Mole` 当前的根状态落后点已经很具体，不是实现没修，而是 completion-audit 还停在旧口径：
+  - evidence 对象行早就把 `super_spies_mole.grant_special_action` 写成了 `L2 / scoped L3`；
+  - 但根状态实际上只显式承认了 `super_spies_mole.respect_mindraker` 这条“被 restriction 封死后不弹 prompt”的负向浏览器链。
+- 这已经不是当前真相，因为 evidence finding #131 又把真正高风险的正向链补实了：
+  - 真实计分响应窗口里会先出现 `选择一个反应动作`；
+  - 玩家可真实点击 `内鬼特殊能力` 进入 `立刻打出一张额外战术，或放弃这次机会` prompt；
+  - 当前夹具下唯一合法候选是 `Going Bananas`，点击后不会再错误弹第二层基地选择 prompt，而是按“唯一合法基地”自动收口；
+  - 最终 `The Vats` 被 `The Nexus` 替换，记分板到 `3:1`，且 `Going Bananas / Mole / anchor` 与被清理的目标行动、目标随从都进入对应 discard。
+- 这条新 finding 还顺手纠偏了旧正向夹具的噪音来源：
+  - 旧版 P0 deck 为空，计分后的 draw 会把刚进弃牌的 `Going Bananas / Mole / Jumper` 洗回再抽走；
+  - 所以浏览器末态曾经容易把“行动已正确结算”误读成“行动没进弃牌或结果异常”；
+  - 现在给 P0 deck 补了 `mole-draw-a/mole-draw-b` 两张稳定抽牌后，这层 reshuffle 噪音已经被隔离，不该再拿旧末态继续怀疑正向链没闭合。
+- 所以后续如果再把 `Mole` 写成“根状态已经承认对象级 Mole 浏览器链，只剩 Mindraker 之类边界”，那也是错的；更准确的表述应是：
+  - `super_spies_mole.grant_special_action` 的正向 special 主链与 `super_spies_mole.respect_mindraker` 的负向 restriction 主链，现在都已经闭合；
+  - 根状态必须同时承认这两条链，不能继续只保留负链，让正链只停在 evidence 里。
+
+## 2026-05-18 补充发现：`For My Eyes Only` 不能再把多客户端私有顶五归属留在 evidence 里
+
+- `For My Eyes Only` 当前的根状态落后模式，和刚补完的 `Spy` 基本同型，只是对象还没同步到根状态：
+  - 根状态已经承认了单页顶五主链；
+  - 也承认了牌库只剩 1 张时自动查看、牌库为空时不弹 prompt；
+  - 但 evidence finding #149 又补上了更关键的一层对象级事实：多客户端下，这条私有顶五 inspect/reorder prompt 只应该出现在行动玩家页面。
+- 这已经不是当前根状态，因为真实多客户端链已经把风险点说死了：
+  - Host 真实双击打出 `For My Eyes Only` 后，中央会进入 `只为我的眼睛：选择牌库顶/牌库底顺序` prompt，并直接看到 `Spy / Operative / Mole / Secret Agent / Jumper` 五张 inspected 顶牌本体和非默认顶/底顺序按钮；
+  - Guest 页只保留公共 `For My Eyes Only 已打出!` spotlight，不会镜像出 `只为我的眼睛` 私有 prompt、五张 inspected 顶牌卡面或任何顶/底顺序按钮；
+  - Host 完成非默认 top/bottom 选择后，Host/Guest 两页都会收口到正常出牌态，不残留 waiting overlay 或私有按钮残影。
+- 这条新 finding 还把一个容易混淆的边界说清了：
+  - Guest 仍然可以看到公共“已打出” spotlight；
+  - 但这不等于 Guest 拿到了私有 inspect 信息或 reorder 控制权。
+  - 所以后续口径必须区分“公共出牌展示可见”和“私有顶牌信息泄露/私有 prompt 镜像”这两层，不要再把它们混成一句“Guest 看到了点什么”。
+- 所以后续如果再把 `For My Eyes Only` 写成“根状态只承认单页主链和单卡/空牌库端点，多客户端私有归属仍主要在 evidence 或长期 JSON”，那已经不是当前真相；更准确的表述应是：
+  - `super_spies_for_my_eyes_only.inspect_self_top_five` / `reorder_top_bottom_inspected_cards` 现在已经同时承认单页顶五主链、短牌库端点、空牌库端点，以及 2P owner-only 私有顶五页归属；
+  - 当前剩余边界只应继续保留更广多人局、其它 inspect 来源或 shared transport/spotlight 收口时序，而不是再把对象级多客户端主链挂回 residual。
+
+## 2026-05-18 补充发现：`Operative` 不能再把多客户端两层 prompt 归属留在 evidence 里
+
+- `Operative` 当前的根状态落后模式与 `Spy / For My Eyes Only` 有一半相同、另一半更细：
+  - 根状态已经承认了单页正常主链；
+  - 也承认了第一层 `0` 勾选玩家和第二层 `0` 勾选展示牌这两条端点；
+  - 但 evidence finding #144 又补上了更关键的一层对象级事实：双人联机下，`Operative` 的两层 prompt 都只应该出现在行动玩家页面。
+- 这已经不是当前根状态，因为真实多客户端链已经把双层控制权说死了：
+  - Host 打出 `Operative` 后，第一层 `密探：选择要查看牌库顶牌的玩家` prompt 只出现在 Host 页；
+  - Guest 页既没有第一层 prompt，也没有 waiting overlay；
+  - Host 在第一层只勾选 `玩家1` 后，第二层只出现 Guest 的 `Jumper` 顶牌本体，不夹带 Host 顶牌；
+  - Host 完成第二层选择后，Host/Guest 两页都会收口，而服务端只把 Guest 顶牌放到底，不误改 Host 牌库。
+- 这条新 finding 还说明一个容易被忽略的验收点：
+  - `Operative` 不是只有“谁能看到 prompt”这一层；
+  - 还要证明第二层展示集合没有串台，以及最终 deck 改写只落在被选中的玩家上。
+  - 否则就算 Guest 没拿到按钮，也可能仍有“Host 看到错牌 / 改错 deck”这类对象级漏项。
+- 所以后续如果再把 `Operative` 写成“根状态只承认单页主链和两层空选端点，多客户端非当前视角仍主要在 evidence 或长期 JSON”，那已经不是当前真相；更准确的表述应是：
+  - `super_spies_operative.choose_players_to_reveal` / `bottom_any_revealed_cards` 现在已经同时承认单页主链、两层 `0` 勾选端点，以及 2P owner-only 双层 prompt 页归属；
+  - 当前剩余边界只应继续保留 `>2` 玩家更广 turnOrder/UI 与 shared transport，而不是再把双人联机这条对象级主链挂回 residual。

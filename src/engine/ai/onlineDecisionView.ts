@@ -80,6 +80,31 @@ function resolveVisibilityByDefault(args: {
     privateOverlay: MatchState<unknown> | null;
     playerId: string;
 }): OnlineAiDecisionVisibility {
+    const sharedInteraction = args.sharedState.sys?.interaction as {
+        current?: {
+            kind?: unknown;
+            playerId?: unknown;
+            data?: {
+                contestants?: unknown;
+            };
+        } | null;
+        isBlocked?: unknown;
+    } | undefined;
+    const compareRollContestants = Array.isArray(sharedInteraction?.current?.data?.contestants)
+        ? sharedInteraction.current.data.contestants
+        : [];
+    const isSharedCompareRollVisible = sharedInteraction?.current?.kind === 'compare-roll-choice'
+        && (
+            typeof sharedInteraction.current?.playerId === 'string' && sharedInteraction.current.playerId === args.playerId
+            || compareRollContestants.some((contestant) => (
+                typeof (contestant as { playerId?: unknown } | null | undefined)?.playerId === 'string'
+                && (contestant as { playerId?: string }).playerId === args.playerId
+            ))
+        );
+    if (isSharedCompareRollVisible) {
+        return 'shared';
+    }
+
     const sharedPhase = resolveStatePhase(args.sharedState);
     const sharedCurrentPlayerId = resolveCurrentPlayerIdFromState(args.sharedState);
     const setupLikePhases = new Set(['setup', 'characterSelection', 'characterSelect', 'factionSelect']);
@@ -90,12 +115,6 @@ function resolveVisibilityByDefault(args: {
         return 'private-required';
     }
 
-    const sharedInteraction = args.sharedState.sys?.interaction as {
-        current?: {
-            playerId?: unknown;
-        } | null;
-        isBlocked?: unknown;
-    } | undefined;
     const sharedInteractionPlayerId = typeof sharedInteraction?.current?.playerId === 'string'
         ? sharedInteraction.current.playerId
         : null;
@@ -299,6 +318,28 @@ function isPrivateOverlayFreshEnough(args: {
     return true;
 }
 
+function shouldPreferSeatSnapshotForSharedVisibility(args: {
+    sharedState: MatchState<unknown>;
+    privateOverlay: MatchState<unknown> | null;
+    playerId: string;
+}): boolean {
+    if (!args.privateOverlay) {
+        return false;
+    }
+
+    const sharedInteractionId = resolveInteractionId(args.sharedState);
+    const seatInteractionId = resolveInteractionId(args.privateOverlay);
+    if (!sharedInteractionId || !seatInteractionId || sharedInteractionId !== seatInteractionId) {
+        return false;
+    }
+
+    return isPrivateOverlayFreshEnough({
+        sharedState: args.sharedState,
+        privateOverlay: args.privateOverlay,
+        playerId: args.playerId,
+    });
+}
+
 export function resolveOnlineAiDecisionView(
     args: ResolveOnlineAiDecisionViewArgs,
 ): ResolvedOnlineAiDecisionView {
@@ -331,12 +372,19 @@ export function resolveOnlineAiDecisionView(
     };
 
     if (visibility === 'shared') {
+        const visibleState = shouldPreferSeatSnapshotForSharedVisibility({
+            sharedState: args.sharedState,
+            privateOverlay,
+            playerId: args.playerId,
+        })
+            ? privateOverlay as MatchState<unknown>
+            : args.sharedState;
         return {
             kind: 'online-ai-decision-view',
             visibility,
             sharedState: args.sharedState,
             privateOverlay,
-            visibleState: args.sharedState,
+            visibleState,
             canDecide: true,
             blockedReason: null,
             diagnostics,

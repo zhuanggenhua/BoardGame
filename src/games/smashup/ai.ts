@@ -39,6 +39,7 @@ import {
 import { validate } from './domain/commands';
 import { getCardDefActivatableAbilities, hasCardActivatableAbility } from './domain/activationMetadata';
 import { resolveLiveSmashUpReactionChoice } from './domain/reactionSession';
+import { getSmashUpReactionWindowPresentation, hasBlockingLegacyResponseWindow } from './domain/reactionWindowState';
 import {
     actionLikeNeedsResponseWindowBase,
     getActionLikeResponseWindowTiming,
@@ -254,7 +255,10 @@ const hasPendingScoreBasesSpecialActivation = (state: SmashUpState, playerId: Pl
 const canAdvancePhase = (state: SmashUpState, playerId: PlayerId): boolean => {
     if (state.sys.interaction?.current) return false;
     if (state.sys.interaction?.isBlocked === true) return false;
-    if (state.sys.responseWindow?.current) return false;
+    if (getSmashUpReactionWindowPresentation(state)) return false;
+    if (hasBlockingLegacyResponseWindow(state)) return false;
+    const responseWindow = state.sys.responseWindow?.current as { sourceId?: unknown } | undefined;
+    if (responseWindow && responseWindow.sourceId !== 'smashup_reaction_choose') return false;
     if (state.sys.phase === 'scoreBases' && hasPendingScoreBasesSpecialActivation(state, playerId)) {
         return false;
     }
@@ -1682,10 +1686,36 @@ const estimateCardKeepValue = (card: CardInstance): number => {
 };
 
 const buildResponseWindowActions = (state: SmashUpState, playerId: PlayerId): AiLegalAction[] | null => {
-    const responseWindow = state.sys.responseWindow?.current;
-    if (!responseWindow) return null;
+    const reactionWindow = getSmashUpReactionWindowPresentation(state);
+    if (reactionWindow) {
+        if (reactionWindow.activePlayerId !== playerId) return null;
 
-    const currentResponderId = responseWindow.responderQueue?.[responseWindow.currentResponderIndex];
+        const actions: AiLegalAction[] = [{
+            actionId: createAiLegalActionId('response-pass', reactionWindow.windowType, playerId),
+            kind: 'response-pass',
+            label: '跳过响应',
+            commands: [{
+                type: 'RESPONSE_PASS',
+                payload: {},
+            }],
+            metadata: {
+                windowType: reactionWindow.windowType,
+            },
+        }];
+
+        actions.push(...buildPlayableCardActions(state, playerId, { inResponseWindow: true }));
+        return actions;
+    }
+
+    const responseWindow = state.sys.responseWindow?.current as {
+        sourceId?: unknown;
+        responderQueue?: unknown[];
+        currentResponderIndex?: number;
+        windowType?: string;
+    } | undefined;
+    if (!responseWindow || responseWindow.sourceId === 'smashup_reaction_choose') return null;
+
+    const currentResponderId = responseWindow.responderQueue?.[responseWindow.currentResponderIndex ?? 0];
     if (currentResponderId !== playerId) return null;
 
     const actions: AiLegalAction[] = [{

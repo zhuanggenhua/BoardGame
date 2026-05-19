@@ -1,5 +1,7 @@
 # DiceThrone Ninja 完整流程重审（2026-05-15）
 
+> 2026-05-19 范围澄清：本文件只覆盖 `ninja` 这一个英雄的逐对象矩阵与失效回写。当前整批“新英雄补审”的总范围已按用户要求扩到 `gunslinger / samurai / treant / ninja` 四位，新英雄总范围请以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 与 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准；不能再把本文件的“Ninja 子范围”误读成整批补审范围。
+
 ## 本次重审结论
 
 旧“全面审计完成”结论不成立。本次用户反馈证明旧审计只覆盖了“能进游戏、能触发代表路径、少量机制可收口”，没有对每个技能/Token/专属卡做完整生命周期矩阵。因此旧审计维度失效，必须降级为“代表链路审计”，不能继续作为 Ninja 全量完成证明。
@@ -21,6 +23,24 @@
 | 刀扇时机错误 | 卡牌有图、有定义，但没有回到图片/卡牌类型核对 `timing` 和 `isAttackModifier` | 真相源语义、静态定义、候选生成 |
 
 根本原因：旧流程把“代表 E2E 通过”外推成“全对象流程完成”。正确口径是：代表路径只能证明对应对象、对应阶段、对应分支，不能证明其它技能/卡牌/交叉规则。
+
+## 2026-05-18 补审回写
+
+这次漏审不是“维度再多加一点”就能解决，而是旧审计方法本身少了三道门禁：
+
+1. **没先冻结 Ninja 对象全集**：旧文档虽然补了很多代表链，但没有把 `blink` / `blink-2` / 各升级版差异按独立对象逐行冻结，导致升级差异和对象特有语义被“同家族差不多”吞掉。
+2. **把代表链外推成对象完成**：像 `slash-2`、`smoke-screen-2`、`death-blossom-2` 的真实入口证据，本来只能证明各自共享入口或共享收口，不应外推成 `blink` 这类不同语义对象也已全面审完。
+3. **没从框架消费点反查到真实合同**：旧结论停在“定义里有 `withDamage` / `rollDie`，E2E 最终 HP 也变了”，却没有继续反查 `defensiveRoll -> resolveAttack -> effect/customAction` 究竟消费的是“防御投已出骰面”还是“额外奖励骰/共享 rollDie 语义”。这正是本轮 `blink` 被再次推翻的直接根因。
+
+据此，本文件当前把 `blink` / `blink-2` 明确降回 **L2 合同层**：规则文本、录入合同、领域行为测试和实现入口已对齐；但新的**真防御 L3 截图链仍待补**，所以不能再沿用 2026-05-14 的旧 L3 收口口径。
+
+2026-05-18 实测：
+
+```powershell
+npx vitest run src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts --configLoader native --maxWorkers 1
+```
+
+结果：`1 file passed / 6 tests passed`。其中新增覆盖 `blink` 基础版与 `blink-2` 的防御投骰面合同。
 
 ## 证据层级说明
 
@@ -47,8 +67,8 @@
 | `smoke-screen-2` | 升级：忍术 3 | grant smoke 1/ninjutsu 3/poison 1 | 升级后 `lightning` 槽真实可点 | `sourceAbilityId=smoke-screen` | 升级卡替换 | 烟雾弹 1、忍术 3、慢性中毒 1，HP 不变 | 非伤害 utility 不进入防御 | `pendingAttack` 清空，可继续推进 | L3 | 真实玩家板入口与 utility 结算已补 |
 | `shadow-fang` | 面板：大顺子，忍术 2 + 8 伤害 | `largeStraight`，ninjutsu 2，damage 8 | 通用候选；`calm` 槽共享升级入口已测 | 通用 ability activate | N/A | token + damage | 无分支 | 通用攻击流程 | L1/L3 代表 | 基础版未单独 E2E；升级槽位入口已补 |
 | `shadow-fang-2` | 升级：忍术 2 + 9 伤害 | `largeStraight`，ninjutsu 2，damage 9 | 升级后 `calm` 槽真实可点 | `sourceAbilityId=shadow-fang` | 升级卡替换 | 主效果由通用攻击结算层覆盖 | 防御分支未展开 | `pendingAttack` 创建正常 | L3 入口 | 真实玩家板槽位入口已补；不外推防御后全分支 |
-| `blink` | 防御：掷 3 骰，忍刀/手里剑反击，面具烟雾弹 | `defensiveRoll` + `timing='withDamage'` | 防御阶段 pendingAttack | `resolveAttack` 调用防御效果 | N/A | 攻击者 HP -3，防御者烟雾弹 +1 | `isDefendable=false` 跳过 | 防御事件后攻击流程继续 | L2/L3 | 四项回归内已审 |
-| `blink-2` | 升级：瞬身 II | 当前 `BLINK_2` 复用基础定义 | 升级后防御入口 | `resolveAttack` | 升级卡替换 | 同基础定义 | 同基础定义 | 攻击流程继续 | L1 | 需要后续核图片确认 II 级差异 |
+| `blink` | 防御：掷 3 骰；若投出忍刀，造成 1 伤害；若投出手里剑，造成 2 伤害；若投出面具，获得烟雾弹 | `defensiveRoll` + 读取防御投已出骰面；不额外奖励骰 | 防御阶段 pendingAttack | `resolveAttack` 调用 `ninja-blink` | N/A | 当前 L2 合同：`1/4/6` 时攻击者 HP -3、防御者烟雾弹 +1 | `isDefendable=false` 跳过 | 防御事件后攻击流程继续 | L2 | 2026-05-18 证实旧“累计奖励骰反击”结论失效，需后续补新的 L3 真防御截图链 |
+| `blink-2` | 升级：瞬身 II；忍刀按数量造成伤害，手里剑固定 2 伤害，2 面具给烟雾弹 | 升级后使用独立 `ninja-blink-2`，不再复用基础定义 | 升级后防御入口 | `resolveAttack` | 升级卡替换 | 当前 L2 合同：`1/2/4` 时攻击者 HP -4；`1/6/6` 时攻击者 HP -1 且防御者烟雾弹 +1 | 同上 | 攻击流程继续 | L2 | 2026-05-18 按 `Ablilitycards.png` 修正；旧“同基础定义”结论失效 |
 | `ninja-assassinate` | 终极技：慢性中毒 2、烟雾弹、10 伤害 | mask 5，poison 2，smoke 1，damage 10 | `ultimate` 槽真实可点 | `sourceAbilityId=ninja-assassinate` | N/A | 对手 HP 30->20，慢性中毒 2，烟雾弹 1 | 终极不可防御 | `pendingAttack` 清空，可继续推进 | L3 | 真实玩家板终极槽结算已补 |
 
 ## Token / 状态完整流程矩阵
@@ -86,6 +106,7 @@
 - 四项用户指出回归已有独立审计：`evidence/dicethrone/dicethrone-ninja-regression-audit-2026-05-14.md`。
 - Token 复杂链路已有代表覆盖：`ninjutsu` 奖励骰与 6 点选择、`smoke_bomb` 成功免伤与失败分支、`delayed_poison` 回合结束。
 - `ninja-card-knife-fan` 时机合同已有 L2 覆盖：main 可打，offensiveRoll 不可打；2026-05-17 又补真实主阶段手牌 L3，证明 direct unblockable damage 1 会扣对手 HP。
+- `blink` / `blink-2` 当前最新权威口径已回到 `src/games/dicethrone/rule/ninja录入核对.md` 与 `src/games/dicethrone/__tests__/ninja-ability-card-contract.test.ts`：基础版读取防御投已出骰面后按“忍刀 +1 伤害 / 手里剑 +2 伤害 / 面具给烟雾弹”结算；II 级按“忍刀数量伤害 / 任一手里剑 +2 / 两个面具给烟雾弹”结算。对应实现入口为 `src/games/dicethrone/heroes/ninja/abilities.ts` 与 `src/games/dicethrone/domain/customActions/ninja.ts`。
 
 ## 仍不能宣称完成的范围
 
@@ -100,6 +121,11 @@
 ## 本次重审状态
 
 当前状态：重审矩阵已建立，旧“全面审计完成”已降级。Ninja 四项回归已在专项 evidence 中有 L2/L3 证据，但 Ninja 全对象仍存在未覆盖项，因此不能写“全量新机制新交互都已端到端”。
+
+补审后的更精确口径：
+
+- `poison-blade`、`death-blossom` 槽位问题、`smoke-screen` utility 入口、`shadow-step` 别名问题、`knife-fan` 时机问题都已有各自 L2/L3 证据。
+- `blink` / `blink-2` 的**规则语义**已通过 2026-05-18 的录入回写与合同测试重新对齐，但**真实防御入口 L3** 需要按“防御投本体出现 -> 伤害/烟雾弹变化 -> 收口可继续推进”的新截图链另补，旧 `withDamage` 口径不得再复用。
 
 ## 2026-05-15 追加抽样深审：Token 与手牌卡消费点
 

@@ -1,11 +1,13 @@
 # DiceThrone 新派系重审与 Wiki 差异记录（2026-05-17）
 
+> 2026-05-19 范围更正：本文件记录的是“当前四位新英雄总补审范围”中的一轮 Wiki 对照与差异回写。总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解，不再按“两位新英雄”理解。
+
 ## 范围与口径
 
 - 本轮触发问题：Treant `wild-growth` / `wild-growth-2`（中文 UI 为“野蛮生长 / 野蛮生长 II”，用户口径“野性怒吼2”疑似指同一升级技能）在 2 树枝 + 3 树叶骰面下，升级后不能按图面选择“移除树灵加伤 / 弃生命源泉不可防御”。
 - 主真相源：`src/games/dicethrone/rule/treant录入核对.md` 与 `src/games/dicethrone/rule/treant卡牌录入核对.md` 中记录的玩家板/卡图核对结论；清晰图片优先于 Wiki。
 - Wiki 仅作差异记录：本轮读取 Dice Throne Wiki 的 Treant 页面（https://dice-throne.fandom.com/wiki/Treant），确认 Wiki 提供 Treant 精灵/生命源泉/树灵通则说明，但页面正文没有列出 Wild Growth 的完整玩家板技能文本；因此本轮不使用 Wiki 覆盖图片口径。
-- 新派系全集重审对象暂列为：`gunslinger`、`samurai`、`treant`、`ninja`。当前 Treant 基础技能/被动/终极主效果已修到 L2，15 张专属卡已补逐卡真实手牌 L3，树灵每回合限用与神性树灵防负面可选响应已补代表链；Ninja `Training` / `Poison Dart` / `Knife Fan` / `Dojo` / `Shuriken` / `Vanish` / `Escape`、8 张升级卡，以及一组技能本体真实玩家板入口已补 L3。Treant/Ninja 不得据此宣称所有组合分支 L4 完成。
+- 新派系全集重审对象暂列为：`gunslinger`、`samurai`、`treant`、`ninja`。当前 Treant 基础技能/被动/终极主效果已修到 L2，15 张专属卡已补逐卡真实手牌 L3，树灵每回合限用与神性树灵防负面可选响应已补代表链；Ninja `Training` / `Poison Dart` / `Knife Fan` / `Dojo` / `Shuriken` / `Vanish` / `Escape`、8 张升级卡，以及一组技能本体真实玩家板入口已补 L3。Treant/Ninja 不得据此宣称所有组合分支 L4 完成。当前总补审范围仍以四位新英雄为准，gunslinger / samurai 也仍在总范围内。
 
 ## 已确认旧结论失效
 

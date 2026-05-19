@@ -1,17 +1,39 @@
 import { describe, expect, it } from 'vitest';
 import type { DiceThroneCore, DiceThroneEvent } from '../domain/types';
+import type { Die } from '../domain/types';
 import { reduce } from '../domain/reducer';
 import { RESOURCE_IDS } from '../domain/resources';
-import { TOKEN_IDS } from '../domain/ids';
+import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../domain/ids';
 import { resolveAttack } from '../domain/attack';
 import { resolveEffectsToEvents } from '../domain/effects';
 import { checkPlayCard } from '../domain/rules';
 import { getAbilitySlotIdForCharacter } from '../ui/abilitySlotMapping';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
+import { BLINK_2 } from '../heroes/ninja/abilities';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
 
 const applyEvents = (core: DiceThroneCore, events: DiceThroneEvent[]): DiceThroneCore =>
     events.reduce((current, event) => reduce(current, event), core);
+
+function createNinjaDie(value: number): Die {
+    const faceMap: Record<number, string> = {
+        1: NINJA_DICE_FACE_IDS.KATANA,
+        2: NINJA_DICE_FACE_IDS.KATANA,
+        3: NINJA_DICE_FACE_IDS.KATANA,
+        4: NINJA_DICE_FACE_IDS.SHURIKEN,
+        5: NINJA_DICE_FACE_IDS.SHURIKEN,
+        6: NINJA_DICE_FACE_IDS.MASK,
+    };
+
+    return {
+        id: `ninja-die-${value}`,
+        definitionId: 'ninja-dice',
+        value,
+        symbol: faceMap[value] as any,
+        symbols: [faceMap[value]],
+        isKept: false,
+    };
+}
 
 describe('DiceThrone Ninja 能力与卡牌合同', () => {
     it('Ninja v2 面板槽位应按角色实图映射毒刃与死亡盛放', () => {
@@ -22,10 +44,11 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
         expect(getAbilitySlotIdForCharacter('monk', 'taiji-combo')).toBe('combo');
     });
 
-    it('Blink 防御应在攻击结算中掷 3 骰并按骰面产生反击与烟雾弹', () => {
+    it('Blink 基础版应按防御投已出的骰面结算固定反击与烟雾弹，而不是额外奖励骰累计', () => {
         const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
         state.core.players['0'].resources[RESOURCE_IDS.HP] = 30;
         state.core.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.dice = [1, 4, 6].map(createNinjaDie);
         state.core.pendingAttack = {
             attackerId: '0',
             defenderId: '1',
@@ -35,12 +58,48 @@ describe('DiceThrone Ninja 能力与卡牌合同', () => {
             damage: 0,
         };
 
-        const events = resolveAttack(state.core, createQueuedRandom([1, 4, 6]), undefined, 100);
+        const events = resolveAttack(state.core, createQueuedRandom([1]), undefined, 100);
         const next = applyEvents(state.core, events);
 
-        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(3);
+        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(0);
         expect(events.some(event => event.type === 'ATTACK_DEFENSE_RESOLVED')).toBe(true);
         expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(27);
+        expect(next.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
+    });
+
+    it('Blink II 应按忍刀数量结算伤害，手里剑固定 +2，且只有两个面具才给烟雾弹', () => {
+        const state = createHeroMatchup('treant', 'ninja')(['0', '1'], createQueuedRandom([1]));
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.players['1'].abilities = state.core.players['1'].abilities.map(ability => (
+            ability.id === 'blink' ? BLINK_2 : ability
+        ));
+        state.core.players['1'].abilityLevels.blink = 2;
+        state.core.dice = [1, 2, 4].map(createNinjaDie);
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            sourceAbilityId: undefined,
+            defenseAbilityId: 'blink',
+            isDefendable: true,
+            damage: 0,
+        };
+
+        let events = resolveAttack(state.core, createQueuedRandom([1]), undefined, 100);
+        let next = applyEvents(state.core, events);
+
+        expect(events.filter(event => event.type === 'BONUS_DIE_ROLLED')).toHaveLength(0);
+        expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(26);
+        expect(next.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(0);
+
+        state.core.players['0'].resources[RESOURCE_IDS.HP] = 30;
+        state.core.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB] = 0;
+        state.core.dice = [1, 6, 6].map(createNinjaDie);
+
+        events = resolveAttack(state.core, createQueuedRandom([1]), undefined, 200);
+        next = applyEvents(state.core, events);
+
+        expect(next.players['0'].resources[RESOURCE_IDS.HP]).toBe(29);
         expect(next.players['1'].tokens[TOKEN_IDS.SMOKE_BOMB]).toBe(1);
     });
 

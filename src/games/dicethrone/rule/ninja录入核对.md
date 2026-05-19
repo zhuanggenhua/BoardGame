@@ -29,8 +29,8 @@
 | `smoke-screen-2` | upgrade | 烟雾阵 II，忍术 3 | smoke_bomb 1；ninjutsu 3；delayed_poison 1 | `cards.ts` + `abilities.ts` | L3：真实手牌升级 + 真实玩家板结算烟雾弹 1、忍术 3、慢性中毒 1 已测 |
 | `shadow-fang` | offensive | 大顺子，忍术 2 + 8 伤害 | largeStraight；ninjutsu 2；damage 8 | `abilities.ts` | L3：真实玩家板 `calm` 槽升级后 source 已测，基础/升级共享槽位链路 |
 | `shadow-fang-2` | upgrade | 影牙 II，忍术 2 + 9 伤害 | largeStraight；ninjutsu 2；damage 9 | `cards.ts` + `abilities.ts` | L3：真实手牌升级 + 真实玩家板槽位入口已测 |
-| `blink` | defensive | 防御掷 3 骰，忍刀/手里剑反击，面具烟雾弹 | diceCount 3；katana +1，shuriken +2，mask smoke_bomb；`withDamage` 防御时机 | `abilities.ts` / `domain/attack.ts` | L3：真实防御推进与不可防御跳过防御均已测；`blink-2` 真实手牌升级已测 |
-| `blink-2` | upgrade | 瞬身 II | replace `blink` | `cards.ts` + `abilities.ts` | L3：真实手牌升级已测；防御本体复用 `blink` 已有真实防御推进代表链 |
+| `blink` | defensive | 防御掷 3 骰；若投出忍刀，造成 1 伤害；若投出手里剑，造成 2 伤害；若投出面具，获得烟雾弹 | diceCount 3；katana=>damage 1；shuriken=>damage 2；mask=>smoke_bomb 1；读取防御投已出骰面，不额外奖励骰 | `abilities.ts` / `domain/customActions/ninja.ts` / `domain/attack.ts` | L2：2026-05-18 按本地图源修正；需后续补 L3 真防御截图链 |
+| `blink-2` | upgrade | 瞬身 II：造成等同于忍刀数量的伤害；若投出手里剑，造成 2 伤害；若投出 2 个面具，获得烟雾弹 | replace `blink`；katana=>count damage；shuriken present=>damage 2；mask>=2=>smoke_bomb 1 | `cards.ts` + `abilities.ts` + `domain/customActions/ninja.ts` | L2：2026-05-18 按升级卡图修正；不再复用基础版定义，需后续补 L3 真防御截图链 |
 | `ninja-assassinate` | ultimate | 终极技：慢性中毒 2、烟雾弹、10 伤害 | ultimate；delayed_poison 2；smoke_bomb 1；damage 10 | `abilities.ts` | L3：真实玩家板终极槽结算 HP 30->20、慢性中毒 2、烟雾弹 1 已测 |
 
 ## Token / 状态逐项核对
@@ -45,5 +45,6 @@
 
 - 旧结论“忍术固定 +1、烟雾弹固定减伤 2、慢性中毒为债务”已失效：这些机制已改为提示板口径并进入 L2 测试层。
 - 2026-05-14 回归审计又推翻了旧“Ninja 已全面收口”口径：`poison-blade` / `death-blossom` 槽位、`blink` 防御、不可防御跳过防御、`ninja-card-knife-fan` 时机均曾漏审。
+- 2026-05-18 再次按本地 `玩家面板.png` 与 `Ablilitycards.png` 复核后，旧 `blink` / `blink-2` 口径失效：之前把基础版误做成“按 3 颗奖励骰累计反击”，又把 II 级误复用基础版。当前已改为读取防御投已出的 3 颗骰子结算，且基础版与 II 级分开实现。
 - 2026-05-17 追加 Ninja 技能本体真实入口 E2E：修复 `shadow-step` 被全局别名到 Moon Elf `elusive-step` 的入口 bug；修复 `offensiveRoll` 过滤 `utility` 类型导致 `smoke-screen` 无法选择的问题。证据见 `evidence/dicethrone/dicethrone-ninja-ability-real-entry-e2e-2026-05-17.md`。
 - 当前修订后口径：上述四项已有 L2 合同测试与 L3 真实入口 E2E；Ninja 专属行动卡、升级卡与技能本体已有多条 L3 代表链，但全量机制是否“全面审计完成”仍必须以后续逐对象矩阵为准，不能再用旧接入审计直接代替。

@@ -100,7 +100,7 @@ export const openSmashUpModal = async (page: Page) => {
     }
 
     const modalRoot = page.locator('#modal-root');
-    const heading = modalRoot.getByRole('heading', { name: /Smash Up|大杀四方/i });
+    const heading = modalRoot.getByRole('heading', { name: /Smash Up|大杀四方/i }).first();
     if (!(await heading.isVisible().catch(() => false))) {
         const gameCard = page.locator('[data-game-id="smashup"]').first();
         await gameCard.scrollIntoViewIfNeeded();

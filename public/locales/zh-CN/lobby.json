@@ -494,6 +494,7 @@
     "ownerSeatUnit": "{{seat}} 号位（房主）",
     "occupiedSeatUnit": "{{seat}} 号位",
     "aiPlayerName": "AI {{seat}} 号位",
+    "aiManualFactionSelection": "玩家选择 AI 派系",
     "confirm": "确认创建"
   },
   "socket": {

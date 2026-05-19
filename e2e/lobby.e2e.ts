@@ -765,8 +765,13 @@ test.describe('Lobby E2E', () => {
         await page.getByRole('button', { name: /加入 AI/ }).click();
         await expect(page.getByText('已开启')).toBeVisible();
         await expect(page.getByRole('button', { name: '普通' })).toHaveAttribute('aria-pressed', 'true');
+        const manualFactionCheckbox = page.getByTestId('create-room-ai-manual-faction-checkbox');
+        await expect(manualFactionCheckbox).not.toBeChecked();
+        await manualFactionCheckbox.check();
+        await expect(manualFactionCheckbox).toBeChecked();
+        await expect(page.getByText('玩家选择 AI 派系')).toBeVisible();
 
-        await game.screenshot('lobby-smashup-create-room-ai-config-default-normal', testInfo);
+        await game.screenshot('lobby-smashup-create-room-ai-config-manual-faction', testInfo);
 
         await page.getByRole('button', { name: '困难' }).click();
         await expect(page.getByRole('button', { name: '1 号位（房主）' })).toBeDisabled();
@@ -790,7 +795,7 @@ test.describe('Lobby E2E', () => {
             setupData?: {
                 enableAi?: boolean;
                 setupSelections?: { expansions?: string[] };
-                seatControllers?: Record<string, { type?: string; difficulty?: string }>;
+                seatControllers?: Record<string, { type?: string; difficulty?: string; manualFactionSelection?: boolean }>;
             };
         };
 
@@ -800,6 +805,8 @@ test.describe('Lobby E2E', () => {
         expect(payload.setupData?.seatControllers?.['2']?.type).toBe('local-ai');
         expect(payload.setupData?.seatControllers?.['1']?.difficulty).toBe('hard');
         expect(payload.setupData?.seatControllers?.['2']?.difficulty).toBe('hard');
+        expect(payload.setupData?.seatControllers?.['1']?.manualFactionSelection).toBe(true);
+        expect(payload.setupData?.seatControllers?.['2']?.manualFactionSelection).toBe(true);
 
         const storedPreferences = await page.evaluate(() => {
             const raw = localStorage.getItem('local_ai_match_preferences:smashup');
@@ -808,10 +815,10 @@ test.describe('Lobby E2E', () => {
         expect(storedPreferences).not.toBeNull();
         expect(storedPreferences?.numPlayers).toBe(3);
         expect(storedPreferences?.setupSelections?.expansions ?? []).toEqual([]);
-        expect(storedPreferences?.seatControllers?.['1']?.type).toBe('local-ai');
-        expect(storedPreferences?.seatControllers?.['2']?.type).toBe('local-ai');
-        expect(storedPreferences?.seatControllers?.['1']?.difficulty).toBe('hard');
-        expect(storedPreferences?.seatControllers?.['2']?.difficulty).toBe('hard');
+        expect(storedPreferences?.seatControllers?.['1']?.type).toBe('human');
+        expect(storedPreferences?.seatControllers?.['2']?.type).toBe('human');
+        expect(storedPreferences?.seatControllers?.['1']?.manualFactionSelection).toBeUndefined();
+        expect(storedPreferences?.seatControllers?.['2']?.manualFactionSelection).toBeUndefined();
 
         const aiSeatCredentials = await page.evaluate(() => {
             const key = Object.keys(localStorage).find((item) => item.startsWith('match_ai_creds_'));

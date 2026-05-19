@@ -59,8 +59,9 @@ const ADVISORY_EVENT_CATEGORY_MAP: Record<string, string | string[]> = {
 /** 构建最小可用的 mock 状态 */
 function createMockState(actionId: string): any {
     const isSamuraiDefense = actionId === 'samurai-stand-tall' || actionId === 'samurai-stand-tall-2';
+    const isNinjaDefense = actionId === 'ninja-blink' || actionId === 'ninja-blink-2';
 
-    const p0CharId = isSamuraiDefense ? 'samurai' : 'pyromancer';
+    const p0CharId = isSamuraiDefense ? 'samurai' : isNinjaDefense ? 'ninja' : 'pyromancer';
     const p1CharId = 'monk';
 
     const p0Data = CHARACTER_DATA_MAP[p0CharId];
@@ -71,8 +72,8 @@ function createMockState(actionId: string): any {
             '0': {
                 characterId: p0CharId,
                 resources: { [RESOURCE_IDS.HP]: 50, [RESOURCE_IDS.CP]: 5 },
-                tokens: isSamuraiDefense ? {} : { [TOKEN_IDS.FIRE_MASTERY]: 3 },
-                tokenStackLimits: isSamuraiDefense ? {} : { [TOKEN_IDS.FIRE_MASTERY]: 5 },
+                tokens: isSamuraiDefense || isNinjaDefense ? {} : { [TOKEN_IDS.FIRE_MASTERY]: 3 },
+                tokenStackLimits: isSamuraiDefense || isNinjaDefense ? {} : { [TOKEN_IDS.FIRE_MASTERY]: 5 },
                 statusEffects: {},
                 abilities: p0Data.abilities,
                 hand: [{ id: 'test-card', name: 'Test', type: 'action' as const, cost: 0, effects: [], description: '', timing: 'instant' as const }],
@@ -99,8 +100,8 @@ function createMockState(actionId: string): any {
         rollDiceCount: 5,
         tokenDefinitions: ALL_TOKEN_DEFINITIONS,
         pendingAttack: {
-            attackerId: isSamuraiDefense ? '1' : '0',
-            defenderId: isSamuraiDefense ? '0' : '1',
+            attackerId: isSamuraiDefense || isNinjaDefense ? '1' : '0',
+            defenderId: isSamuraiDefense || isNinjaDefense ? '0' : '1',
             abilityId: 'test-ability',
             attackDiceFaceCounts: { fire: 2, magma: 1, fiery_soul: 1, meteor: 1 },
             bonusDamage: 0,
@@ -118,6 +119,17 @@ function createMockState(actionId: string): any {
                 { id: 'die-2', value: 4, locked: false, symbol: 'helm', definitionId: p0Data.diceDefinition?.[0]?.id ?? 'samurai-die' },
                 { id: 'die-3', value: 6, locked: false, symbol: 'rising_sun', definitionId: p0Data.diceDefinition?.[0]?.id ?? 'samurai-die' },
                 { id: 'die-4', value: 1, locked: false, symbol: 'katana', definitionId: p0Data.diceDefinition?.[0]?.id ?? 'samurai-die' },
+            ],
+        };
+    }
+
+    if (isNinjaDefense) {
+        return {
+            ...baseState,
+            dice: [
+                { id: 'die-0', value: 1, locked: false, symbol: 'katana', definitionId: p0Data.diceDefinition?.[0]?.id ?? 'ninja-die' },
+                { id: 'die-1', value: 4, locked: false, symbol: 'shuriken', definitionId: p0Data.diceDefinition?.[0]?.id ?? 'ninja-die' },
+                { id: 'die-2', value: 6, locked: false, symbol: 'mask', definitionId: p0Data.diceDefinition?.[0]?.id ?? 'ninja-die' },
             ],
         };
     }
@@ -141,20 +153,21 @@ function createMockContext(actionId: string, state: any): CustomActionContext {
     );
 
     const isSamuraiDefense = actionId === 'samurai-stand-tall' || actionId === 'samurai-stand-tall-2';
+    const isNinjaDefense = actionId === 'ninja-blink' || actionId === 'ninja-blink-2';
 
     return {
         ctx: {
             // defensiveRoll 会把“当前执行防御技的玩家”放到 ctx.attackerId，
             // Stand Tall 内部会从 ctx.defenderId 取回原始进攻方
-            attackerId: isSamuraiDefense ? '0' : '0',
-            defenderId: isSamuraiDefense ? '1' : '1',
+            attackerId: isSamuraiDefense || isNinjaDefense ? '0' : '0',
+            defenderId: isSamuraiDefense || isNinjaDefense ? '1' : '1',
             sourceAbilityId: 'test-ability',
             state,
             damageDealt: 0,
             timestamp: 1000,
         },
-        targetId: isSamuraiDefense ? '0' : '1',
-        attackerId: isSamuraiDefense ? '0' : '0',
+        targetId: isSamuraiDefense || isNinjaDefense ? '0' : '1',
+        attackerId: isSamuraiDefense || isNinjaDefense ? '0' : '0',
         sourceAbilityId: 'test-ability',
         state,
         timestamp: 1000,

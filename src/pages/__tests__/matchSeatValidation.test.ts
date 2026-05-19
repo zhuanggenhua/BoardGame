@@ -10,6 +10,7 @@ import {
     loadOnlineAiSeatState,
     resolveMissingOnlineAiSeatCredentialIds,
 } from '../onlineAiSeats';
+import { loadGameImplementation } from '../../games/registry';
 import type { GameManifestEntry } from '../../games/manifest.types';
 import type { MatchState } from '../../engine/types';
 import { registerGameAiRuntime, resolveNextAiAction, resolveNextAiDispatch, resolveOnlineAiDecisionView } from '../../engine/ai';
@@ -40,6 +41,7 @@ import {
     resolveMissingMatchConfirmationSignal,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
+    shouldReleaseFactionSelectAttemptFromSharedState,
     shouldShowOnlineGameErrorToast,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from '../MatchRoom';
@@ -1002,6 +1004,107 @@ describe('onlineAiSeats', () => {
             },
         });
         expect(resolveDispatchImpl).toHaveBeenCalledTimes(1);
+    });
+
+    it('手动恢复遇到 compare-roll contestant 时，应把 blocked seat snapshot 交给 dispatch，而不是提前 force-end-turn', async () => {
+        await loadGameImplementation('dicethrone');
+
+        const resolveDispatchImpl = vi.fn().mockImplementation(async (dispatchArgs) => {
+            const resolved = dispatchArgs.visibleStateResolver?.('1');
+            expect(resolved).toMatchObject({
+                kind: 'online-ai-decision-view',
+                visibility: 'shared',
+                canDecide: true,
+                blockedReason: null,
+            });
+            if (!resolved || typeof resolved !== 'object' || !('visibleState' in resolved)) {
+                throw new Error('expected resolved online ai decision view');
+            }
+            const visibleState = resolved.visibleState as MatchState<unknown>;
+            expect(visibleState.sys?.interaction?.current).toMatchObject({
+                id: 'compare-roll-1',
+                kind: 'compare-roll-choice',
+                playerId: '0',
+            });
+            expect(visibleState.sys?.interaction?.isBlocked).toBe(true);
+            return {
+                kind: 'idle',
+                idleReason: 'no-action',
+            };
+        });
+
+        const result = await resolveManualOnlineAiRecovery({
+            engineConfig: { gameId: 'dicethrone' },
+            matchId: 'match-manual-compare-roll-contestant',
+            sharedState: {
+                core: {
+                    currentPlayerId: '1',
+                },
+                sys: {
+                    phase: 'defensiveRoll',
+                    turnNumber: 9,
+                    eventStream: { nextId: 42, entries: [] },
+                    interaction: {
+                        current: {
+                            id: 'compare-roll-1',
+                            kind: 'compare-roll-choice',
+                            playerId: '0',
+                            data: {
+                                contestants: [
+                                    { playerId: '0', roll: 6, labelKey: 'compareRoll.gunslingerDuel.attacker' },
+                                    { playerId: '1', roll: 2, labelKey: 'compareRoll.gunslingerDuel.defender' },
+                                ],
+                                options: [{ id: 'confirm', label: '确认' }],
+                            },
+                        },
+                        queue: [],
+                        isBlocked: false,
+                    },
+                    responseWindow: {
+                        current: undefined,
+                    },
+                },
+            } as MatchState<unknown>,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai' },
+            },
+            seatStates: {
+                '1': {
+                    core: {
+                        currentPlayerId: '1',
+                    },
+                    sys: {
+                        phase: 'defensiveRoll',
+                        turnNumber: 9,
+                        eventStream: { nextId: 42, entries: [] },
+                        interaction: {
+                            current: {
+                                id: 'compare-roll-1',
+                                kind: 'compare-roll-choice',
+                                playerId: '0',
+                                data: {
+                                    contestants: [
+                                        { playerId: '0', roll: 6, labelKey: 'compareRoll.gunslingerDuel.attacker' },
+                                        { playerId: '1', roll: 2, labelKey: 'compareRoll.gunslingerDuel.defender' },
+                                    ],
+                                    options: [{ id: 'confirm', label: '确认' }],
+                                },
+                            },
+                            queue: [],
+                            isBlocked: true,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                } as MatchState<unknown>,
+            },
+            resolveDispatchImpl,
+        });
+
+        expect(resolveDispatchImpl).toHaveBeenCalledTimes(1);
+        expect(result).toEqual({ kind: 'unavailable' });
     });
 
     it('仅凭据有变化时才触发持久化', () => {
@@ -2197,6 +2300,71 @@ describe('submitOnlineAiResolution', () => {
         })).toBe(true);
     });
 
+    it('shared state 已记录 AI 选中的派系时，应立即释放 select-faction attempt', () => {
+        const sharedState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['robots'],
+                    playerSelections: {
+                        '0': [],
+                        '1': ['robots'],
+                    },
+                    completedPlayers: [],
+                },
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+
+        expect(shouldReleaseFactionSelectAttemptFromSharedState({
+            sharedState,
+            playerId: '1',
+            factionId: 'robots',
+        })).toBe(true);
+    });
+
+    it('shared state 未记录该派系且仍在 factionSelect 时，不应提前释放 select-faction attempt', () => {
+        const sharedState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['wizards'],
+                    playerSelections: {
+                        '0': ['wizards'],
+                        '1': [],
+                    },
+                    completedPlayers: [],
+                },
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+
+        expect(shouldReleaseFactionSelectAttemptFromSharedState({
+            sharedState,
+            playerId: '1',
+            factionId: 'robots',
+        })).toBe(false);
+    });
+
+    it('shared state 已离开 factionSelect 时，可视为 select-faction attempt 已被权威态吸收', () => {
+        const sharedState = {
+            core: {
+                factionSelection: undefined,
+            },
+            sys: {
+                phase: 'startTurn',
+            },
+        } as MatchState<unknown>;
+
+        expect(shouldReleaseFactionSelectAttemptFromSharedState({
+            sharedState,
+            playerId: '1',
+            factionId: 'robots',
+        })).toBe(true);
+    });
+
     it('batch confirmed 只透传权威态，不直接回写 seat latestState', () => {
         const updateLatestState = vi.fn();
         const resync = vi.fn();
@@ -2594,7 +2762,7 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
         expect(candidate?.interactionId).toBe('hoverbot-hidden');
         expect(candidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'skip' },
+            payload: { interactionId: 'hoverbot-hidden', optionId: 'skip' },
         });
     });
 
@@ -2640,7 +2808,7 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
 
         expect(candidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'skip' },
+            payload: { interactionId: 'hoverbot-hidden', optionId: 'skip' },
         });
     });
     it('隐藏交互只剩 __emergency_skip__ 或 done 时，也应返回自动收口 resolution', () => {
@@ -2683,7 +2851,7 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
 
         expect(emergencyCandidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: '__emergency_skip__' },
+            payload: { interactionId: 'empty-hidden', optionId: '__emergency_skip__' },
         });
 
         const doneCandidate = resolveForceSkippableHiddenAiInteraction({
@@ -2725,7 +2893,7 @@ describe('resolveForceSkippableHiddenAiInteraction', () => {
 
         expect(doneCandidate?.resolution.action.commands[0]).toEqual({
             type: 'SYS_INTERACTION_RESPOND',
-            payload: { optionId: 'done' },
+            payload: { interactionId: 'done-hidden', optionId: 'done' },
         });
     });
 
@@ -2872,7 +3040,7 @@ describe('resolveForceEndTurnForStalledAi', () => {
         expect(candidate?.reason).toBe('hidden-interaction');
         expect(candidate?.requiresConfirmedAdvancePhase).toBe(true);
         expect(candidate?.resolution.action.commands).toEqual([
-            { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: 'skip' } },
+            { type: 'SYS_INTERACTION_RESPOND', payload: { interactionId: 'hidden-skip', optionId: 'skip' } },
         ]);
     });
 
@@ -2910,7 +3078,7 @@ describe('resolveForceEndTurnForStalledAi', () => {
         expect(candidate?.reason).toBe('visible-interaction');
         expect(candidate?.requiresConfirmedAdvancePhase).toBe(true);
         expect(candidate?.resolution.action.commands).toEqual([
-            { type: 'SYS_INTERACTION_CANCEL', payload: {} },
+            { type: 'SYS_INTERACTION_CANCEL', payload: { interactionId: 'visible-mandatory' } },
         ]);
     });
 

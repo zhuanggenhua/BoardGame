@@ -204,7 +204,16 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
         aiSupport?.localAi ? t('lobby:ai.local') : null,
         aiSupport?.remoteAi ? t('lobby:ai.remote') : null,
     ].filter(Boolean) as string[]), [aiSupport?.capture, aiSupport?.localAi, aiSupport?.remoteAi, t]);
-    const formatSeatController = React.useCallback((controller: { type: string; policyId?: string; providerId?: string; difficulty?: string }) => {
+    const formatSeatController = React.useCallback((controller: {
+        type: string;
+        policyId?: string;
+        providerId?: string;
+        difficulty?: string;
+        manualFactionSelection?: boolean;
+    }) => {
+        const manualFactionSuffix = controller.manualFactionSelection
+            ? ` · ${t('lobby:createRoom.aiManualFactionSelection')}`
+            : '';
         if (controller.type === 'local-ai') {
             const label = t('debug.ai.local');
             const difficultyKey = controller.difficulty === 'easy'
@@ -222,14 +231,14 @@ export const GameDebugPanel: React.FC<DebugPanelProps> = ({
                                     : 'lobby:ai.difficulties.normal';
             const difficultyLabel = t(difficultyKey);
             return controller.policyId
-                ? `${label} · ${difficultyLabel} · ${t('debug.ai.policy', { value: controller.policyId })}`
-                : `${label} · ${difficultyLabel}`;
+                ? `${label} · ${difficultyLabel} · ${t('debug.ai.policy', { value: controller.policyId })}${manualFactionSuffix}`
+                : `${label} · ${difficultyLabel}${manualFactionSuffix}`;
         }
         if (controller.type === 'remote-ai') {
             const label = t('debug.ai.remote');
             return controller.providerId
-                ? `${label} · ${t('debug.ai.provider', { value: controller.providerId })}`
-                : label;
+                ? `${label} · ${t('debug.ai.provider', { value: controller.providerId })}${manualFactionSuffix}`
+                : `${label}${manualFactionSuffix}`;
         }
         return t('debug.ai.human');
     }, [t]);

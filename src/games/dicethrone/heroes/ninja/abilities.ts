@@ -206,17 +206,8 @@ const BLINK: AbilityDef = {
     trigger: { type: 'phase', phaseId: 'defensiveRoll', diceCount: 3 },
     effects: [
         {
-            description: '防御掷 3 骰。忍刀/手里剑反击，面具获得烟雾弹。',
-            action: {
-                type: 'rollDie',
-                target: 'self',
-                diceCount: 3,
-                conditionalEffects: [
-                    { face: FACE.KATANA, bonusDamage: 1 },
-                    { face: FACE.SHURIKEN, bonusDamage: 2 },
-                    { face: FACE.MASK, grantToken: { tokenId: TOKEN_IDS.SMOKE_BOMB, value: 1 } },
-                ],
-            },
+            description: '防御掷 3 骰；若投出忍刀，造成 1 点伤害；若投出手里剑，造成 2 点伤害；若投出面具，获得 1 个烟雾弹。',
+            action: { type: 'custom', target: 'self', customActionId: 'ninja-blink' },
             timing: 'withDamage',
         },
     ],
@@ -226,6 +217,13 @@ export const BLINK_2: AbilityDef = {
     ...BLINK,
     name: abilityText('blink-2', 'name'),
     description: abilityText('blink-2', 'description'),
+    effects: [
+        {
+            description: '防御掷 3 骰；造成等同于忍刀数量的伤害；若投出手里剑，造成 2 点伤害；若投出 2 个面具，获得 1 个烟雾弹。',
+            action: { type: 'custom', target: 'self', customActionId: 'ninja-blink-2' },
+            timing: 'withDamage',
+        },
+    ],
 };
 
 const NINJA_ASSASSINATE: AbilityDef = {

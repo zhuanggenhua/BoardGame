@@ -9,6 +9,7 @@ import {
     LocalGameProvider,
     BoardBridge,
     buildAiProgressMarker,
+    GameClientOverrideProvider,
     releaseAiAttemptKeyIfMatches,
     tryReserveAiAttemptKey,
     useGameClient,
@@ -109,6 +110,7 @@ const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_st
 const ONLINE_AI_SEAT_LOAD_RETRY_BASE_MS = 1_000;
 const ONLINE_AI_SEAT_LOAD_RETRY_MAX_MS = 8_000;
 const ONLINE_AI_SEAT_LOAD_RETRY_MAX_ATTEMPTS = 5;
+const FACTION_SELECTION_ACTION_KINDS = new Set(['select-faction', 'setup-select-faction']);
 
 export const isTutorialRoutePath = (pathname: string): boolean => (
     /^\/play\/[^/]+\/tutorial(?:\/[^/]+)?\/?$/.test(pathname)
@@ -207,6 +209,38 @@ export async function resolveManualOnlineAiRecovery(args: {
     return { kind: 'unavailable' };
 }
 
+export function shouldReleaseFactionSelectAttemptFromSharedState(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    playerId: string;
+    factionId: string | null | undefined;
+}): boolean {
+    const factionId = typeof args.factionId === 'string' ? args.factionId : '';
+    if (!factionId || !args.sharedState || typeof args.sharedState !== 'object') {
+        return false;
+    }
+
+    const phase = typeof args.sharedState.sys?.phase === 'string'
+        ? args.sharedState.sys.phase
+        : null;
+    const core = args.sharedState.core as {
+        factionSelection?: {
+            playerSelections?: Record<string, unknown>;
+        };
+    } | undefined;
+
+    const selectedByPlayer = core?.factionSelection?.playerSelections?.[args.playerId];
+    const selectedFactionIds = Array.isArray(selectedByPlayer)
+        ? selectedByPlayer.filter((item): item is string => typeof item === 'string')
+        : [];
+
+    if (selectedFactionIds.includes(factionId)) {
+        return true;
+    }
+
+    // 公开选派系一旦结束，shared state 已经进入后续阶段，也可以视为这条提交已被权威态吸收。
+    return phase !== null && phase !== 'factionSelect';
+}
+
 type OnlineAiDebugWindow = Window & {
     __BG_ONLINE_AI_DEBUG__?: {
         getSeatLatestState: (playerId: string) => MatchState<unknown> | null;
@@ -286,6 +320,9 @@ const STALE_SEAT_RECOVERY_RETRY_MS = 350;
 const STALE_SEAT_RECOVERY_MIN_INTERVAL_MS = 1200;
 const STALE_ONLINE_AI_ATTEMPT_TIMEOUT_MS = 4000;
 const onlineAiPerfLogger = createScopedLogger('ONLINE_AI_PERF');
+
+type ManualAiSeatDispatch = (playerId: string, type: string, payload: unknown) => boolean;
+
 function appendOnlineAiDevLog(kind: 'transport' | 'perf', event: Record<string, unknown>): void {
     if (typeof window === 'undefined' || !import.meta.env.DEV) {
         return;
@@ -320,6 +357,44 @@ function summarizeSeatControllerTypes(seatControllers: Record<string, AiSeatCont
             .map(([playerId, controller]) => [playerId, controller.type]),
     );
 }
+
+const OnlineManualFactionSelectionBridge = ({
+    children,
+    seatControllers,
+    dispatchManualAiCommand,
+}: {
+    children: ReactNode;
+    seatControllers: Record<string, AiSeatController>;
+    dispatchManualAiCommand: ManualAiSeatDispatch | null;
+}) => {
+    const { state, dispatch } = useGameClient();
+    const currentPlayerId = resolveCurrentPlayerId(state as MatchState<unknown>);
+    const shouldTakeOver = Boolean(
+        currentPlayerId
+        && state?.sys?.phase === 'factionSelect'
+        && seatControllers[currentPlayerId]?.type !== 'human'
+        && seatControllers[currentPlayerId]?.manualFactionSelection === true
+        && dispatchManualAiCommand,
+    );
+
+    const manualDispatch = useCallback((type: string, payload: unknown) => {
+        if (shouldTakeOver && currentPlayerId) {
+            dispatchManualAiCommand?.(currentPlayerId, type, payload);
+            return;
+        }
+        dispatch(type, payload);
+    }, [currentPlayerId, dispatch, dispatchManualAiCommand, shouldTakeOver]);
+
+    if (!shouldTakeOver) {
+        return children;
+    }
+
+    return (
+        <GameClientOverrideProvider playerId={currentPlayerId} dispatch={manualDispatch}>
+            {children}
+        </GameClientOverrideProvider>
+    );
+};
 
 type OnlineAiSeatStateRecord = Record<string, MatchState<unknown> | null | undefined>;
 
@@ -376,6 +451,7 @@ const OnlineAiSeatBridge = ({
     seatControllers,
     seatCredentials,
     onForceEndAiPhaseReady,
+    onManualFactionDispatchReady,
 }: {
     server: string;
     matchId: string;
@@ -383,6 +459,7 @@ const OnlineAiSeatBridge = ({
     seatControllers: Record<string, AiSeatController>;
     seatCredentials: Record<string, string>;
     onForceEndAiPhaseReady?: (handler: (() => Promise<boolean>) | null) => void;
+    onManualFactionDispatchReady?: (handler: ManualAiSeatDispatch | null) => void;
 }) => {
     const { state } = useGameClient();
     const toast = useToast();
@@ -423,12 +500,34 @@ const OnlineAiSeatBridge = ({
         reservedAt: number;
         sharedMarker: string;
         seatMarker: string | null;
+        actionKind: string;
+        pendingFactionId: string | null;
     } | null>(null);
     const pendingSeatResyncRef = useRef<Record<string, {
         requestedAt: number;
         reason: string;
         meta?: Record<string, unknown>;
     }>>({});
+
+    useEffect(() => {
+        if (!onManualFactionDispatchReady) {
+            return;
+        }
+
+        const dispatchManualAiCommand: ManualAiSeatDispatch = (playerId, type, payload) => {
+            const client = clientsRef.current[playerId];
+            if (!client?.isConnected) {
+                return false;
+            }
+            client.sendCommand(type, payload);
+            return true;
+        };
+
+        onManualFactionDispatchReady(dispatchManualAiCommand);
+        return () => {
+            onManualFactionDispatchReady(null);
+        };
+    }, [onManualFactionDispatchReady]);
 
     const getSeatLatestState = useCallback((playerId: string): MatchState<unknown> | null => {
         const latestState = clientsRef.current[playerId]?.latestState;
@@ -773,32 +872,51 @@ const OnlineAiSeatBridge = ({
         const runAiTurn = async () => {
             const activeAttempt = activeAiAttemptRef.current;
             if (activeAttempt) {
-                const elapsedMs = Date.now() - activeAttempt.reservedAt;
+                const sharedFactionConfirmed = FACTION_SELECTION_ACTION_KINDS.has(activeAttempt.actionKind)
+                    && shouldReleaseFactionSelectAttemptFromSharedState({
+                        sharedState: state as MatchState<unknown>,
+                        playerId: activeAttempt.playerId,
+                        factionId: activeAttempt.pendingFactionId,
+                    });
+                if (sharedFactionConfirmed) {
+                    aiSeatDecisionDebugRef.current[activeAttempt.playerId] = {
+                        stage: 'shared-faction-select-confirmed',
+                        attemptKey: activeAttempt.attemptKey,
+                        factionId: activeAttempt.pendingFactionId,
+                        updatedAt: Date.now(),
+                    };
+                    clearActiveAiAttemptIfMatches(activeAttempt.attemptKey);
+                }
+            }
+
+            const latestActiveAttempt = activeAiAttemptRef.current;
+            if (latestActiveAttempt) {
+                const elapsedMs = Date.now() - latestActiveAttempt.reservedAt;
                 const currentSharedMarker = buildAiProgressMarker(state as MatchState<unknown>);
-                const currentSeatState = getEffectiveSeatState(activeAttempt.playerId);
+                const currentSeatState = getEffectiveSeatState(latestActiveAttempt.playerId);
                 const currentSeatMarker = currentSeatState ? buildAiProgressMarker(currentSeatState) : null;
                 if (
                     elapsedMs >= STALE_ONLINE_AI_ATTEMPT_TIMEOUT_MS
-                    && currentSharedMarker === activeAttempt.sharedMarker
-                    && currentSeatMarker === activeAttempt.seatMarker
+                    && currentSharedMarker === latestActiveAttempt.sharedMarker
+                    && currentSeatMarker === latestActiveAttempt.seatMarker
                 ) {
-                    aiSeatDecisionDebugRef.current[activeAttempt.playerId] = {
+                    aiSeatDecisionDebugRef.current[latestActiveAttempt.playerId] = {
                         stage: 'stale-attempt-released',
-                        attemptKey: activeAttempt.attemptKey,
+                        attemptKey: latestActiveAttempt.attemptKey,
                         elapsedMs,
                         sharedMarker: currentSharedMarker,
                         seatMarker: currentSeatMarker,
                         updatedAt: Date.now(),
                     };
-                    clearActiveAiAttemptIfMatches(activeAttempt.attemptKey);
-                    const targetClient = clientsRef.current[activeAttempt.playerId];
+                    clearActiveAiAttemptIfMatches(latestActiveAttempt.attemptKey);
+                    const targetClient = clientsRef.current[latestActiveAttempt.playerId];
                     if (targetClient) {
                         requestSeatResync({
-                            playerId: activeAttempt.playerId,
+                            playerId: latestActiveAttempt.playerId,
                             client: targetClient,
                             reason: 'stale-inflight-attempt',
                             meta: {
-                                attemptKey: activeAttempt.attemptKey,
+                                attemptKey: latestActiveAttempt.attemptKey,
                                 elapsedMs,
                             },
                         });
@@ -1050,6 +1168,14 @@ const OnlineAiSeatBridge = ({
                 sharedMarker: buildAiProgressMarker(state as MatchState<unknown>),
                 seatMarker: getEffectiveSeatState(resolution.playerId)
                     ? buildAiProgressMarker(getEffectiveSeatState(resolution.playerId) as MatchState<unknown>)
+                    : null,
+                actionKind: resolution.action.kind,
+                pendingFactionId: FACTION_SELECTION_ACTION_KINDS.has(resolution.action.kind)
+                    ? (() => {
+                        const firstCommand = resolution.action.commands[0];
+                        const payload = firstCommand?.payload as { factionId?: unknown } | undefined;
+                        return typeof payload?.factionId === 'string' ? payload.factionId : null;
+                    })()
                     : null,
             };
 
@@ -2408,6 +2534,7 @@ export const MatchRoom = () => {
     const [isLeaving, setIsLeaving] = useState(false);
     const [destroyModalId, setDestroyModalId] = useState<string | null>(null);
     const [forceExitModalId, setForceExitModalId] = useState<string | null>(null);
+    const [dispatchManualAiCommand, setDispatchManualAiCommand] = useState<ManualAiSeatDispatch | null>(null);
     const [localStorageTick, setLocalStorageTick] = useState(0);
     const [onlineAiSeatReloadTick, setOnlineAiSeatReloadTick] = useState(0);
     const [onlineAiSeatControllers, setOnlineAiSeatControllers] = useState<Record<string, AiSeatController>>({});
@@ -3446,19 +3573,25 @@ export const MatchRoom = () => {
                                                         seatControllers={onlineAiSeatControllers}
                                                         seatCredentials={onlineAiSeatCredentials}
                                                         onForceEndAiPhaseReady={handleForceEndAiPhaseReady}
+                                                        onManualFactionDispatchReady={setDispatchManualAiCommand}
                                                     />
                                                 )}
-                                                <BoardBridge
-                                                    board={WrappedBoard}
-                                                    loading={(
-                                                        <OnlineRoomConnectionLoading
-                                                            title={tLobby('matchRoom.title.connecting')}
-                                                            description={tLobby('matchRoom.connectingRoom')}
-                                                            gameId={gameId}
-                                                            transportError={onlineTransportError}
-                                                        />
-                                                    )}
-                                                />
+                                                <OnlineManualFactionSelectionBridge
+                                                    seatControllers={onlineAiSeatControllers}
+                                                    dispatchManualAiCommand={dispatchManualAiCommand}
+                                                >
+                                                    <BoardBridge
+                                                        board={WrappedBoard}
+                                                        loading={(
+                                                            <OnlineRoomConnectionLoading
+                                                                title={tLobby('matchRoom.title.connecting')}
+                                                                description={tLobby('matchRoom.connectingRoom')}
+                                                                gameId={gameId}
+                                                                transportError={onlineTransportError}
+                                                            />
+                                                        )}
+                                                    />
+                                                </OnlineManualFactionSelectionBridge>
                                             </GameProvider>
                                         </RematchProvider>
                                     </GameModeProvider>

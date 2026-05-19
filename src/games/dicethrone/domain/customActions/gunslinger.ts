@@ -249,7 +249,6 @@ function handleShowdownBonus({ attackerId, sourceAbilityId, state, timestamp, ra
                     value: showdownWon ? amount : 0,
                     customId: 'gunslinger-showdown-apply-bonus',
                 },
-                autoConfirmDelayMs: 1300,
             },
         },
         sourceCommandType: 'ABILITY_EFFECT',
@@ -311,7 +310,6 @@ function handleDuelResolve({ sourceAbilityId, state, timestamp, random, action }
                 resultTone: duelWon ? 'success' : 'danger',
                 ...(duelWon ? {} : {
                     confirmValue: { value: 1, customId: 'gunslinger-duel-lose' },
-                    autoConfirmDelayMs: 1300,
                 }),
             },
         },

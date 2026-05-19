@@ -704,6 +704,31 @@ describe('AI seat controller helpers', () => {
         expect(search.get('seat2')).toBe('remote-ai:astrbot');
     });
 
+    it('本地对局 URL 会保存并恢复 AI 手动选派系标记', () => {
+        const search = buildLocalMatchSearchParams({
+            numPlayers: 2,
+            playerOptions: [2],
+            aiSupport,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', difficulty: 'normal', manualFactionSelection: true },
+            },
+        });
+
+        expect(search.get('seat1ManualFaction')).toBe('1');
+
+        const controllers = resolveSeatControllersFromSearchParams({
+            numPlayers: 2,
+            searchParams: search,
+            aiSupport,
+        });
+        expect(controllers['1']).toEqual({
+            type: 'local-ai',
+            difficulty: 'normal',
+            manualFactionSelection: true,
+        });
+    });
+
     it('显式 difficulty 参数会恢复到 local-ai controller', () => {
         const searchParams = new URLSearchParams('seat1=local-ai:opening-v1&seat1Difficulty=expert');
         const controllers = resolveSeatControllersFromSearchParams({

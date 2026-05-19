@@ -87,10 +87,10 @@ export function useCardSpotlightQueue<TData = unknown>(
 
     // 消费新事件
     useEffect(() => {
-        const { entries: newEntries, didReset } = consumeNew();
+        const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
 
-        // Undo 回退：清空队列
-        if (didReset) {
+        // Undo 回退 / reconnect-resync 乐观回滚：清空队列
+        if (didReset || didOptimisticRollback) {
             setQueue([]);
             if (newEntries.length === 0) return;
         }

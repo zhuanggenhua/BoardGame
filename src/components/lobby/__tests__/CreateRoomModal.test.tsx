@@ -36,6 +36,7 @@ vi.mock('react-i18next', () => ({
             if (key === 'createRoom.occupiedSeatsHint') return '选择 AI 座位';
             if (key === 'createRoom.ownerSeatUnit') return `seat-${options?.seat}-owner`;
             if (key === 'createRoom.occupiedSeatUnit') return `seat-${options?.seat}`;
+            if (key === 'createRoom.aiManualFactionSelection') return '玩家选择 AI 派系';
             return key;
         },
     }),
@@ -108,6 +109,7 @@ describe('CreateRoomModal AI default state', () => {
 
         expect(screen.getByText('Enabled')).toBeInTheDocument();
         expect(screen.getByText('AI 占位')).toBeInTheDocument();
+        expect(screen.getByRole('checkbox', { name: /玩家选择 AI 派系/i })).not.toBeChecked();
     });
 
     it('房间密码支持右侧眼睛按钮切换显隐', () => {
@@ -151,6 +153,29 @@ describe('CreateRoomModal AI default state', () => {
             seatControllers: expect.objectContaining({
                 '0': { type: 'human' },
                 '1': { type: 'local-ai', difficulty: 'normal' },
+            }),
+        }));
+    });
+
+    it('勾选手动选派系后会写入 AI 座位配置', () => {
+        const onConfirm = vi.fn();
+
+        render(createElement(CreateRoomModal, {
+            isOpen: true,
+            onClose: vi.fn(),
+            onConfirm,
+            gameManifest,
+            initialPreferences: null,
+        }));
+
+        fireEvent.click(screen.getByRole('button', { name: /加入 AI/i }));
+        fireEvent.click(screen.getByRole('checkbox', { name: /玩家选择 AI 派系/i }));
+        fireEvent.click(screen.getByRole('button', { name: '确认' }));
+
+        expect(onConfirm).toHaveBeenCalledWith(expect.objectContaining({
+            enableAi: true,
+            seatControllers: expect.objectContaining({
+                '1': { type: 'local-ai', difficulty: 'normal', manualFactionSelection: true },
             }),
         }));
     });

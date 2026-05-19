@@ -311,4 +311,73 @@ describe('useEventStreamCursor', () => {
 
         expect(consumedTypes).toEqual(['SUMMON_C']);
     });
+
+    it('watermark=null 的 rollback signal 后，恢复旧 ID 时不应重播历史事件且应标记 didOptimisticRollback', () => {
+        let rollbackValue: EventStreamRollbackValue = {
+            watermark: null,
+            seq: 0,
+            reconcileSeq: 0,
+        };
+
+        const wrapper = ({ children }: { children: React.ReactNode }) =>
+            React.createElement(
+                EventStreamRollbackContext.Provider,
+                { value: rollbackValue },
+                children,
+            );
+
+        const initialEntries = [
+            createEntry(1, 'OLD_A'),
+            createEntry(2, 'OLD_B'),
+        ];
+
+        const { result, rerender } = renderHook(
+            ({ entries }: { entries: EventStreamEntry[] }) =>
+                useEventStreamCursor({ entries }),
+            {
+                initialProps: { entries: initialEntries },
+                wrapper,
+            },
+        );
+
+        act(() => {
+            expect(result.current.consumeNew().entries).toEqual([]);
+        });
+
+        rollbackValue = {
+            watermark: null,
+            seq: 1,
+            reconcileSeq: 0,
+        };
+
+        rerender({ entries: [] });
+
+        act(() => {
+            const consumed = result.current.consumeNew();
+            expect(consumed.entries).toEqual([]);
+            expect(consumed.didOptimisticRollback).toBe(true);
+            expect(consumed.didReset).toBe(false);
+        });
+
+        rerender({ entries: initialEntries });
+
+        act(() => {
+            expect(result.current.consumeNew().entries).toEqual([]);
+        });
+
+        rerender({
+            entries: [
+                createEntry(1, 'OLD_A'),
+                createEntry(2, 'OLD_B'),
+                createEntry(3, 'NEW_C'),
+            ],
+        });
+
+        let consumedTypes: string[] = [];
+        act(() => {
+            consumedTypes = result.current.consumeNew().entries.map((entry) => entry.event.type);
+        });
+
+        expect(consumedTypes).toEqual(['NEW_C']);
+    });
 });
