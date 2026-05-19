@@ -289,18 +289,31 @@ export default defineConfig(({ mode }) => {
     },
     resolve: {
       dedupe: ['react', 'react-dom'],
-      alias: {
-        '@': path.resolve(configDir, './src'),
-        '@locales': path.resolve(configDir, './public/locales'),
-        'void-elements': path.resolve(configDir, './src/vendor/void-elements.ts'),
-      },
+      alias: [
+        { find: '@', replacement: path.resolve(configDir, './src') },
+        { find: '@locales', replacement: path.resolve(configDir, './public/locales') },
+        { find: 'void-elements', replacement: path.resolve(configDir, './src/vendor/void-elements.ts') },
+      ],
     },
     optimizeDeps: {
       ...(forceInlineVite
         ? {
-            // In constrained environments, disable dep optimization to avoid esbuild spawn EPERM.
+            // In constrained environments, keep discovery off but still prebundle a tiny set of
+            // critical CJS-heavy deps; otherwise inline mode falls back to raw node_modules files.
             noDiscovery: true,
-            include: [],
+            include: [
+              'react',
+              'react/jsx-runtime',
+              'react/jsx-dev-runtime',
+              'react-dom',
+              'react-dom/client',
+              'react-i18next',
+              'framer-motion',
+              'cookie',
+              'set-cookie-parser',
+              'debug',
+              'socket.io-msgpack-parser',
+            ],
             entries: undefined,
           }
         : {

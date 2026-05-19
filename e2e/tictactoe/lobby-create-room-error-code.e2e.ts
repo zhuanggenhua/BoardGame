@@ -1,6 +1,11 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from '../framework';
-import { resetMatchStorage, setChineseLocale } from '../helpers/common';
+import {
+    resetMatchStorage,
+    setChineseLocale,
+    waitForFrontendAssets,
+    waitForHomeGameList,
+} from '../helpers/common';
 
 function isRetryableNavigationError(error: unknown): boolean {
     return error instanceof Error
@@ -29,21 +34,10 @@ async function gotoLobbyWithRetry(page: Page): Promise<void> {
 }
 
 async function ensureLobbyReady(page: Page): Promise<void> {
-    const maxAttempts = 6;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-        await gotoLobbyWithRetry(page);
-
-        try {
-            await expect(page.getByRole('heading', { name: '井字棋' })).toBeVisible({ timeout: 10000 });
-            return;
-        } catch (error) {
-            if (attempt === maxAttempts) {
-                throw error;
-            }
-            await page.waitForTimeout(1500);
-        }
-    }
+    await gotoLobbyWithRetry(page);
+    await waitForFrontendAssets(page, 45000);
+    await waitForHomeGameList(page, 45000);
+    await expect(page.getByRole('heading', { name: '井字棋' })).toBeVisible({ timeout: 15000 });
 }
 
 test.describe('Lobby create room error code E2E', () => {

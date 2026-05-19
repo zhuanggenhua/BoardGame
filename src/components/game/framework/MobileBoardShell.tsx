@@ -1,5 +1,4 @@
-import {
-    Children,
+import React, {
     cloneElement,
     isValidElement,
     useCallback,
@@ -379,8 +378,8 @@ export const MobileBattlefieldViewport = ({
     const shouldLockTouchGestures = isEnabled && transform.scale > MIN_SCALE;
     const supportsTouchPointerEvents = typeof window !== 'undefined' && typeof window.PointerEvent !== 'undefined';
     const shouldUseTouchFallback = isEnabled && !supportsTouchPointerEvents;
-    const childCount = Children.count(children);
-    const singleChild = childCount === 1 ? Children.only(children) : null;
+    const childCount = React.Children.count(children);
+    const singleChild = childCount === 1 ? React.Children.only(children) : null;
     const hasDedicatedZoomTarget = transformTarget === 'content' && isValidElement<ZoomTargetElementProps>(singleChild);
 
     useEffect(() => {

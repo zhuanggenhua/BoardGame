@@ -1,6 +1,8 @@
 # DiceThrone Treant 全面审计 2026-05-16
 
 > 2026-05-19 范围澄清：本文件只覆盖 `treant` 单英雄补审。当前整批“新英雄补审”总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解；总范围与跨英雄汇总口径请以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 和 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
+>
+> 2026-05-19 本轮复核：按“四个新英雄”总范围重新回看后，Treant 这份单英雄文档当前没有新增实现级 finding。现有有效口径仍是“主效果 L2 已收敛、15 张专属卡逐卡真实手牌入口 L3 已补、部分组合分支 L4 已补，但不能外推成全分支 L4 完成”。本轮没有再发现超出本文既有残余范围的新 bug。
 
 ## 范围
 

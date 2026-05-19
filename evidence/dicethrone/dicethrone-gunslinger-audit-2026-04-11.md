@@ -1,6 +1,8 @@
 # DiceThrone 枪手（Gunslinger）审计报告（2026-04-11）
 
 > 2026-05-19 范围澄清：本文件只覆盖 `gunslinger` 单英雄补审。当前整批“新英雄补审”总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解；总范围与跨英雄汇总口径请以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 和 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
+>
+> 2026-05-19 本轮补审回写：已重新复跑 `Mark the Target` 的真实 UI/E2E，旧文档里“`mark-the-target` 仍缺真实 UI/E2E”这条结论失效；当前枪手残余风险重新收敛到 `Loaded` 基础奖励骰特写缺少单独 evidence 文档，而不是 `mark-the-target` 本体未验。
 
 ## 审计范围
 - 角色板能力/终极技：左轮、赏金猎人、快枪手、掩护、枪战决斗、死亡之眼、左轮速射、对决、终极技
@@ -186,6 +188,13 @@
       - 肉眼观察：右侧可见 5 个奖励骰均为子弹面，顶部可见 `攻击修正 +5`，目标头像区可见击倒图标；用例状态断言 `attackModifierBonusDamage=5`、`bonusDamage=5`、`knockdown=1`。
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\gunslinger-eat-my-lead-should-roll-five-bonus-dice-from-real-hand-play\31-gunslinger-eat-my-lead-after-closeout.png`
       - 肉眼观察：奖励骰特写已关闭，5 个骰面、`攻击修正 +5` 与击倒结果仍保留，证明该链路可收口。
+  - `npm run test:e2e:ci:file -- dicethrone-watch-out-spotlight.e2e.ts "should open target selection and apply bounty after selecting upgraded take cover variant"`，`1 passed`
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-open-target-selection-and-apply-bounty-after-selecting-upgraded-take-cover-variant\32-mark-the-target-before-select.png`
+      - 肉眼观察：真实战斗页面里，枪手升级后的 `take-cover` 槽已叠加升级卡图，进入结算前能看到玩家板、目标头像区与可推进的当前战斗 UI；这证明 `mark-the-target` 不是靠伪造交互直接起效，而是从真实玩家板变体入口进入。
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-open-target-selection-and-apply-bounty-after-selecting-upgraded-take-cover-variant\33-mark-the-target-selected-target.png`
+      - 肉眼观察：目标选择弹窗中至少能看到两个候选目标；点击 `dt-player-target-1` 后，确认按钮从 disabled 变为 enabled，证明“选择 1 名目标玩家”这条 UI 门禁真实存在。
+    - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-open-target-selection-and-apply-bounty-after-selecting-upgraded-take-cover-variant\34-mark-the-target-resolved.png`
+      - 肉眼观察：交互关闭后，枪手自己保留 `2` 层闪避，P1 目标出现赏金，未选中的 P2 没有被误加赏金；这达到 `mark-the-target` 的“单目标选择 -> 只作用于所选玩家 -> 收口后可继续推进”验收要求。
   - `src/games/dicethrone/__tests__/ability-customaction-audit.test.ts:239-242`（枪手 resolve handler 已接线）
 
 ## 旧结论失效与本轮补审回写（2026-04-12）
@@ -230,12 +239,12 @@
 - **D12 写入-消耗对称**：✅ 赏金/装填写入与主流程消耗基本对称；`The Law` 交互 resolve 只消费已选目标。
 - **D13 多来源竞争**：⚠️ 装填与其他攻击修正叠加未做组合回归。
 - **D14 回合清理完整**：✅ 攻击修正结算后自动清理。
-- **D15 UI 状态同步**：⚠️ Wild West、High Noon、Eat My Lead 特写链路已覆盖，主骰盘不改动已验证；攻击修正加伤通过统一 attack-modifier 区域可观测；`Quick Draw II` 与 `Fill'Em With Lead` 的 Loaded 可重掷单骰特写均已补真实 UI 证据；Spin the Chamber 真实手牌授 Loaded 已补 UI 证据；`mark-the-target` 仍未补齐真实 UI。
+- **D15 UI 状态同步**：⚠️ Wild West、High Noon、Eat My Lead 特写链路已覆盖，主骰盘不改动已验证；攻击修正加伤通过统一 attack-modifier 区域可观测；`Quick Draw II` 与 `Fill'Em With Lead` 的 Loaded 可重掷单骰特写均已补真实 UI 证据；Spin the Chamber 与 `mark-the-target` 真实手牌/真实玩家板交互已补 UI 证据。当前 UI 缺口重新收敛到 `Loaded` 基础奖励骰缺少单独 evidence 文档，而不是 `mark-the-target` 未验证。
 - **D16 条件优先级**：✅ Revolver/升级变体判定顺序正确。
 - **D17 隐式依赖**：✅ `Quick Draw II / Fill'Em With Lead` 的装填例外已从 `quickDrawLevel / sourceAbilityId` 硬编码分支收敛到 `tokenBonusDieReroll` 定义层 hook；规则文档 merge conflict 风险已消除。
 - **D18 否定路径**：✅ Wild West 奖励骰重掷后进入“达到重掷上限不可再次重掷”的否定路径，已由 E2E 截图链路覆盖（见 `dicethrone-wild-west-e2e-test.md` 第 2 张截图）。
 - **D19 组合场景**：⚠️ 赏金+装填叠加未做组合回归。
-- **D20 状态可观测性**：⚠️ UI 证据已覆盖 Wild West / High Noon / The Law / Spin the Chamber / Eat My Lead 的关键交互阶段；基础 Loaded、`Quick Draw II` 与 `Fill'Em With Lead` 单骰特写已有 E2E 截图入口；The Law 单选收口已有最终态截图。剩余风险集中在 `mark-the-target`。
+- **D20 状态可观测性**：⚠️ UI 证据已覆盖 Wild West / High Noon / The Law / Spin the Chamber / Eat My Lead / `mark-the-target` 的关键交互阶段；基础 Loaded、`Quick Draw II` 与 `Fill'Em With Lead` 单骰特写已有 E2E 截图入口。剩余风险集中在 `Loaded` 基础奖励骰缺少独立 evidence 叙述，而不是 `mark-the-target` 本体。
 - **D21 触发频率门控**：✅ 装填消耗与奖励骰仅触发一次。
 - **D22 伤害计算管线配置**：✅ `Bounty` 通过 `damageTriggerScope: 'opponentAttackDamage'` 明确限定触发范围；其余主线伤害事件仍由统一管线输出。
 - **D23 架构假设一致性**：✅ 特写与复合升级合同一致；装填例外语义已由能力定义层声明、通用 loaded handler 消费，避免共享假设分叉。
@@ -263,14 +272,13 @@
 - **D44 测试设计反模式检测**：✅ 旧审计漏项已补；本轮新增定义层合同测试，避免只靠行为测试掩盖 hook 漏建。
 - **D45 Pipeline 多阶段调用去重**：N/A。
 - **D46 交互选项 UI 渲染模式声明完整性**：N/A。
-- **D47 E2E 覆盖完整性**：⚠️ Wild West / High Noon / Wanted / Pistol Whip / The Law / Spin the Chamber / Eat My Lead 已有 UI 证据；`Quick Draw II` 与 `Fill'Em With Lead` 的 Loaded 可重掷单骰特写已补真实 UI/E2E；`mark-the-target` 仍缺真实 UI/E2E。
+- **D47 E2E 覆盖完整性**：⚠️ Wild West / High Noon / Wanted / Pistol Whip / The Law / Spin the Chamber / Eat My Lead / `mark-the-target` 已有真实 UI 证据；`Quick Draw II` 与 `Fill'Em With Lead` 的 Loaded 可重掷单骰特写已补真实 UI/E2E。当前未补的是 `Loaded` 基础奖励骰的单独 evidence 文档化，而不是 `mark-the-target` 的真实入口。
 - **D48 UI 交互渲染模式完整性**：N/A。
 - **D49 abilityTags 与触发机制一致性**：N/A。
 
 ## 未覆盖风险 / 待确认
 1. **`Loaded` 基础奖励骰特写已有 E2E 文件覆盖，但仍缺单独 evidence 文档承载 flow→choice→effect→UI 的完整叙述。** 当前可引用既有 E2E 文件、截图产物与静态实现路径，但不能写成枪手 Loaded 全对象 UI 已完成。
-2. **`Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷结构层与 UI 单骰特写已补。** 当前仍不得外推到 `spin-the-chamber / mark-the-target / eat-my-lead` 等未逐项补 UI 的对象。
-3. **`mark-the-target` 仍缺真实 UI/E2E 截图链。** 目前只有静态或行为测试证据，不能把该对象写成 UI 侧已完全验收。
+2. **`Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷结构层与 UI 单骰特写已补。** 当前仍不得把这些证据外推成“基础 Loaded 奖励骰对象自己的独立 evidence 文档也已齐全”。
 
 ## 修订记录
 - 2026-04-11：补审枪手派系并记录已修复项（Revolver II 四同点、Wanted/The Law 目标范围、High Noon 骰面归属）。
@@ -299,3 +307,8 @@
   - 将 `Quick Draw II / Fill'Em With Lead` 的 Loaded 重掷从 `handleLoadedUse()` 内硬编码 id/等级分支迁移到 `tokenBonusDieReroll` 定义层 hook。
   - 新增 `gunslinger-loaded-contract.test.ts` 锁定 hook 合同，并复跑相关 `cross-hero.test.ts` 行为链。
   - 补充 `Quick Draw II` 与 `Fill'Em With Lead` 花费 Loaded 后的独立真实 UI/E2E 截图链；保留若干专属卡真实 UI/E2E 缺口。
+- 2026-05-19（`mark-the-target` UI 证据回写）：
+  - 旧结论：`mark-the-target` 仍缺真实 UI/E2E 截图链。
+  - 失效原因：仓库里实际已存在对应真实 E2E 场景，但旧审计没有把 `dicethrone-watch-out-spotlight.e2e.ts` 中的升级变体入口、目标选择和最终态截图链回写到枪手单英雄文档。
+  - 新证据路径：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\should-open-target-selection-and-apply-bounty-after-selecting-upgraded-take-cover-variant\32-mark-the-target-before-select.png`、`33-mark-the-target-selected-target.png`、`34-mark-the-target-resolved.png`
+  - 新结论：`mark-the-target` 的真实玩家板入口、目标选择门禁和只作用于已选目标的收口结果都已补齐；对应 D15/D20/D47 收敛。

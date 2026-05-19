@@ -1,6 +1,8 @@
 # Dice Throne 武士（Samurai）D1–D49 补审记录（2026-04-11，2026-04-12 回写）
 
 > 2026-05-19 范围澄清：本文件只覆盖 `samurai` 单英雄补审。当前整批“新英雄补审”总范围统一按 `gunslinger / samurai / treant / ninja` 四位理解；总范围与跨英雄汇总口径请以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 和 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准。
+>
+> 2026-05-19 本轮补审回写：已把“`Stand Tall` 完全挡住伤害时仍错误开启 `Back Strike` 响应窗”从文档风险升级为真实共享逻辑 bug，随后在 `effects.ts` 修掉“开窗判定仍看护盾前伤害”的问题，并用武士专属回归与跨英雄护盾回归重新验证。
 
 ## 审计范围
 - 角色板能力 / 终极技：太刀斩、胁差、武士道、肃穆之仪、武道、叶隐之心、正宗、昂首无畏、征夷大将军！
@@ -129,9 +131,9 @@
 - 旧审计把它写成“OCR 不稳定 / 不影响闭环”属于过宽结论。
 - 当前代码已在 `src/games/dicethrone/heroes/samurai/tokens.ts` 落地对应 `stackLimit`，但**把“溢出授予时最终态被 clamp”锁死为 E2E 成功链**仍未完成，因此该问题已从“实现错误”转为“证据链仍不够硬”。
 
-### Finding B：旧审计没有把 `Stand Tall` 的防御减伤同步时序风险单独登记（D8 / D15 / D23）
-- 风险点不是“技能描述错”，而是：防御事件中的 `DAMAGE_SHIELD_GRANTED` 若未同步进入后续伤害计算/响应窗口，会让 `Back Strike` 在本应被完全格挡的场景下仍错误开窗。
-- 当前静态实现可见 `src/games/dicethrone/domain/attack.ts` 已使用 `applyEvents(state, defenseEvents, reduce)` 做同步，但主审计必须保留这条风险说明，直到有专属动态复验为止。
+### Finding B：`Stand Tall` 的防御减伤同步时序风险已被本轮动态回归坐实并修复（D8 / D15 / D23）
+- 风险点不是“技能描述错”，而是：即便 `defenseEvents` 已同步进状态，只要 `shouldOpenTokenResponse` 仍看护盾前伤害，`Back Strike` 仍会在本应被完全格挡的场景下错误开窗。
+- 本轮已用 `cross-hero.test.ts` 新增回归把这条风险坐实为真实 bug，随后在 `src/games/dicethrone/domain/effects.ts` 增加“既有护盾吸收后的有效伤害”门禁估算，只把它用于 token 开窗判定，避免改坏 reducer 的真实扣盾职责。
 
 ### Finding C：旧审计没有把 `Back Strike` 的“仅攻击伤害可用”门禁列为显式审查项（D1 / D5 / D8）
 - 当前实现已在 `src/games/dicethrone/heroes/samurai/tokens.ts` 通过 `requiresAttackDamage: true`、并在 `src/games/dicethrone/domain/tokenResponse.ts` 通过 `damageScope` 过滤落地静态门禁。
@@ -169,6 +171,15 @@
   - 关键截图（成功链路，绝对路径）：
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-righteousness-should-resolve-a-valid-branch-against-monk\09-samurai-righteousness-bonus-die-overlay.png`
     - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\dicethrone\dicethrone-watch-out-spotlight.e2e\samurai-righteousness-should-resolve-a-valid-branch-against-monk\09-samurai-righteousness-bonus-die-closed.png`
+- 2026-05-19 本轮新增动态回归（代码级复验，不冒充 E2E）：
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/cross-hero.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "stand-tall fully prevents the attack without opening back-strike mitigation window"`，`1 passed`
+    - 结论：`Stand Tall` 完全格挡 6 点攻击时，`shouldOpenTokenResponse` 现已读取“护盾后有效伤害 0”，不会再错误打出 `defenderMitigation / Back Strike` 响应窗。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/cross-hero.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "stand-tall reflects 1 and prevents 3 on defense"`，`1 passed`
+    - 结论：基础版 `Stand Tall` 的“反伤 1 + 抵挡 3”既有正向链路仍成立，没有因为本次开窗门禁修补而退化。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/token-execution.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "direct damage 不应打开 defenderMitigation"`，`1 passed`
+    - 结论：`Back Strike` 的 attack-only / direct-damage 负路径仍保持成立，本次修补没有把 `damageScope` 门禁打坏。
+  - `node scripts/infra/vitest-cli-safe.mjs run src/games/dicethrone/__tests__/gunslinger-take-cover-loaded-vs-stand-tall.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`，`1 passed`
+    - 结论：`Stand Tall` 与枪手 Loaded 奖励骰叠加时，护盾后剩余 1 点伤害仍能正常落地，没有被本次门禁修补吞成 0。
 - 既有历史 E2E / 截图证据（本轮未复跑，仅引用）：
   - `evidence/dicethrone/dicethrone-new-passives-e2e-test-2026-04-06.md`（`Bushido` 开局 / 回合末真实 UI）
   - `evidence/dicethrone/dicethrone-gunslinger-samurai-4p-targeted-cards-e2e-test.md`（`You Should Be Ashamed` 4P 真点击选敌与结算）
@@ -214,10 +225,10 @@
    - 旧问题：此前把 `tip.webp` 的堆叠上限写成“OCR 不稳定 / 不影响闭环”，属于 D1 / D43 过宽结论。
    - 当前事实：真相源已可肉眼确认 `shame=2`、`honor=2`、`retribution=1`，并已在 `src/games/dicethrone/heroes/samurai/tokens.ts` 落地对应 `stackLimit`。
    - 当前残留：`Righteousness!` / `Zanshin!` 本轮复跑只证明了特写出现、文案可见与收口；“溢出授予时最终态被 clamp”仍待专属证据链。
-7. **`Stand Tall` 防御减伤未同步进后续伤害判断**（旧风险已修复，待复验）
-   - 旧风险：`resolveDefenseEffects` 仅同步 `TOKEN_GRANTED`，`DAMAGE_SHIELD_GRANTED` 没有进入后续 `shouldOpenTokenResponse` / 伤害计算。
-   - 当前事实：已改为对 `defenseEvents` 执行 `applyEvents`，确保护盾同步进入后续窗口判定。
-   - 证据：`src/games/dicethrone/domain/attack.ts`。
+7. **`Stand Tall` 防御减伤未同步进后续伤害判断**（旧风险已坐实并修复）
+   - 旧风险：旧审计一度把问题简化成“`attack.ts` 是否同步 `DAMAGE_SHIELD_GRANTED`”；但本轮补审发现，即便护盾已同步进状态，只要 `effects.ts` 里的 token 开窗判定仍看护盾前伤害，`Back Strike` 依然会在完全格挡时误开响应窗。
+   - 当前事实：`src/games/dicethrone/domain/effects.ts` 已新增“既有护盾吸收后的有效伤害”估算，只用于 `shouldOpenTokenResponse` 的 gating；真正的扣盾/扣血仍留给 reducer，避免双重结算。
+   - 新证据：`src/games/dicethrone/__tests__/cross-hero.test.ts` 中的 `stand-tall fully prevents the attack without opening back-strike mitigation window`、`stand-tall reflects 1 and prevents 3 on defense`，以及 `src/games/dicethrone/__tests__/gunslinger-take-cover-loaded-vs-stand-tall.test.ts`。
 8. **`Back Strike` 未限制“仅攻击伤害”**（旧风险已修复，待补专属负路径证据）
    - 旧风险：旧审计没有把 attack-only 门禁作为显式 finding，`tokenResponse` 若只按 timing / 持有量判断，容易把 `Back Strike` 与普通受伤 token 混审。
    - 当前事实：`samurai_retribution` 已在 token 定义中标注 `requiresAttackDamage`，token 响应侧也已加入 `damageScope` 过滤。
@@ -225,32 +236,32 @@
    - 证据：`src/games/dicethrone/heroes/samurai/tokens.ts`、`src/games/dicethrone/domain/tokenResponse.ts`。
 
 ## 未覆盖风险 / 待确认
-1. **`Stand Tall` 防御减伤同步修复缺少动态复验**（需验证护盾对响应窗口/伤害计算的影响）。
+1. **基础版 `Stand Tall` 仍缺专属 UI 连续截图链**：代码级动态复验已通过，但当前缺的是“真实防御入口 -> 挡伤结果 -> 收口后可继续推进”的专属 E2E 截图链，而不是实现是否继续误开 `Back Strike`。
 2. **token 上限溢出的最终态证据仍不够硬**：当前能证明真相源与静态实现一致，但 `honor / shame / samurai_retribution` 在“超出上限授予”时的最终 UI / 状态截图链仍待补。
 3. **`Back Strike` attack-only 负路径仍缺专属动态证明**：当前主审计已补静态门禁与代码落点，但“非攻击 direct damage 不开窗”的真实业务路径证据仍待补。
 4. **组合场景回归不足**：`Honor + Shame + Back Strike` 同回合叠加、多人局与防御时序叠加，本轮仍未新增代表性组合验证。
 
 ## D1–D49 全量审计表（2026-04-12 补审回写）
 - **D1 语义保真**：✅ 角色板能力、升级卡、攻击修正卡、提示板 token 主语义已对齐；本轮补记了此前漏审的 token 堆叠上限与 `Back Strike` attack-only 语义。
-- **D2 边界完整**：⚠️ `Stand Tall`（基础版）的防御减伤同步仍建议补一条独立动态复验（见“未覆盖风险 / 待确认”）。
-- **D3 数据流闭环**：✅ 真相源 → abilities/cards/tokens/customActions → locales → 测试 / evidence 路径已闭环；但 token 上限溢出最终态与 `Stand Tall` 防御减伤同步的动态证据仍不足。
+- **D2 边界完整**：⚠️ `Stand Tall`（基础版）的“完全格挡不应再开 `Back Strike` 响应窗”已由本轮动态回归坐实并修复；当前剩余边界缺口转为专属 UI 截图链，而不是实现是否还会误开窗。
+- **D3 数据流闭环**：✅ 真相源 → abilities/cards/tokens/customActions → locales → 测试 / evidence 路径已闭环；`Stand Tall` 的防御减伤同步现已补到共享 `effects.ts` gating，剩余不足主要是 token 上限溢出与基础版 `Stand Tall` 的 UI 证据链。
 - **D4 查询一致性**：✅ 未发现应走统一查询入口的动态数值被直接绕过读取。
 - **D5 交互完整**：✅ `You Should Be Ashamed`、`Honor`、`Back Strike` 有真实交互证据；⚠️ `Back Strike` 的 attack-only 仍缺“非攻击 direct damage 不开窗”的专属动态负路径。
 - **D6 副作用传播**：✅ `Honor` / `Shame` / `Back Strike` 均能进入既有伤害与 token 结算链。
 - **D7 资源守恒**：⚠️ `Honor` / `Shame` / `Back Strike` 的堆叠上限与消耗规则已与真相源对齐，但“超出上限授予时最终态被 clamp”的专属证据链仍待补。
-- **D8 时序正确**：⚠️ `Bushido`、`Honor`、`Back Strike`、`You Should Be Ashamed` 有静态 + 历史链路证据；`Righteousness!` / `Zanshin!` 已在 2026-04-12 真实复跑 E2E 中补齐“特写出现 → 文案可见 → 关闭收口”；`Stand Tall`（基础版）防御减伤同步仍缺动态复验；`Back Strike` attack-only 仍缺 direct-damage 专属负路径。
+- **D8 时序正确**：⚠️ `Bushido`、`Honor`、`Back Strike`、`You Should Be Ashamed` 有静态 + 历史链路证据；`Righteousness!` / `Zanshin!` 已在 2026-04-12 真实复跑 E2E 中补齐“特写出现 → 文案可见 → 关闭收口”；`Stand Tall`（基础版）“完全格挡不再开窗”已在 2026-05-19 的领域回归中补齐；`Back Strike` attack-only 仍缺 direct-damage 专属 UI 负路径。
 - **D9 幂等与重入**：⚠️ 未做“重复进入防御交互 / 重复消费 Back Strike / 连续打开奖励骰结算”的专项回归，本轮只看到单次链路正确。
 - **D10 元数据一致**：✅ `samurai-stand-tall*` 已声明 `damage`；未发现“输出 `DAMAGE_DEALT` 但 `categories` 不含 `damage`”的现存问题。
 - **D11 Reducer 消耗路径**：✅ `Honor` / `Shame` / `Back Strike` 均通过 token activeUse 进入正确的消耗路径。
 - **D12 写入-消耗对称**：✅ 授予 `Honor` / `Shame` / `Back Strike` 的路径都能被后续消费链读取。
 - **D13 多来源竞争**：⚠️ 多来源同时授予 `Honor` / `Shame` / `Back Strike` 的组合场景未做专项复验。
 - **D14 回合清理完整**：✅ `Bushido` 历史 E2E 已说明 `TURN_CHANGED` 后攻掷计数被清空；未发现武士专属临时字段跨回合泄漏。
-- **D15 UI 状态同步**：⚠️ `Righteousness!` / `Zanshin!` 已在 2026-04-12 真实复跑中补齐成功链路（见本文件“验证证据”里的 4 张绝对路径截图）；`Stand Tall II` 与 `Masamune II` 的既有成功链路仍可引用 `dicethrone-hero-ability-cards-e2e-test.md` §9、§10；基础版 `Stand Tall` 与 token 上限溢出最终态仍缺专门证据。
+- **D15 UI 状态同步**：⚠️ `Righteousness!` / `Zanshin!` 已在 2026-04-12 真实复跑中补齐成功链路（见本文件“验证证据”里的 4 张绝对路径截图）；`Stand Tall II` 与 `Masamune II` 的既有成功链路仍可引用 `dicethrone-hero-ability-cards-e2e-test.md` §9、§10；基础版 `Stand Tall` 的代码级动态复验已补，但 UI 连续截图链与 token 上限溢出最终态仍缺专门证据。
 - **D16 条件优先级**：✅ `Stand Tall` 中“先反伤、再减伤、最后按条件自加 Shame”的分支顺序与描述一致。
 - **D17 隐式依赖**：⚠️ `Stand Tall` / `Back Strike` 依赖 defensiveRoll 上下文中的 attacker/defender 角色约定；静态看已处理，缺少组合回归进一步压实。
 - **D18 否定路径**：⚠️ 已有 `Bushido`“恰好 3 次攻掷不再加 Honor”、`You Should Be Ashamed` 不选队友等否定路径；`Stand Tall II`“无盾也不自加 Shame”已补 E2E 成功链路（见 `dicethrone-hero-ability-cards-e2e-test.md` §9）。
 - **D19 组合场景**：⚠️ `Honor + Shame` 对冲、`Back Strike + 防御减伤` 等组合场景本轮未复验。
-- **D20 状态可观测性**：⚠️ `Righteousness!` / `Zanshin!` 已通过本轮复跑补齐“可见性 + 收口”截图链；`Masamune II` 仍可引用既有 6 骰特写闭环；但基础版 `Stand Tall`、token 上限溢出最终态、`Back Strike` 非攻击负路径的可观测证据仍不足。
+- **D20 状态可观测性**：⚠️ `Righteousness!` / `Zanshin!` 已通过本轮复跑补齐“可见性 + 收口”截图链；`Masamune II` 仍可引用既有 6 骰特写闭环；基础版 `Stand Tall` 现已补代码级动态证据，但其真实 UI 连续截图、token 上限溢出最终态、`Back Strike` 非攻击负路径的可观测证据仍不足。
 - **D21 触发频率门控**：✅ `Bushido` 起手与回合末触发都有明确门控；`Back Strike` 以单个 token 主动消费，不存在一枚多次触发的静态迹象。
 - **D22 伤害计算管线配置**：✅ `Stand Tall` / `Back Strike` 都通过 `createDamageCalculation` 生成伤害事件，`Stand Tall` 额外显式标记 `unblockable`。
 - **D23 架构假设一致性**：✅ 武士的“防御反伤 + token 反弹”仍落在 customAction + damage pipeline 合同内，没有继续回落到旁路特判。
@@ -275,10 +286,10 @@
 - **D41 系统职责重叠检测**：✅ 本轮未见武士实现继续走旧旁路特判。
 - **D42 事件流全链路审计**：⚠️ 仓库中已有多份历史 E2E / 截图证据；本轮已新增 `Stand Tall II` / `Masamune II` 的 UI 成功链路证据，但尚未补“UI → eventStream”的专项截图/断言。
 - **D43 重构完整性检查**：⚠️ 运行时代码侧本轮未见新的结构残缺；但旧审计对 token 上限与 `Back Strike` attack-only 的结论曾明显过宽，已在本审计文档回写纠偏。
-- **D44 测试设计反模式检测**：⚠️ 当前武士证据以状态级 / E2E 混合承担；本轮已补 `Stand Tall II` / `Masamune II` 专用用例，但基础版 `Stand Tall` 仍可补一条对位用例以避免回归。
+- **D44 测试设计反模式检测**：✅ 当前武士证据以状态级 / E2E 混合承担；本轮已补基础版 `Stand Tall` 的对位回归用例，能直接卡住“完全格挡仍误开 `Back Strike` 响应窗”的共享回归。
 - **D45 Pipeline 多阶段调用去重**：N/A。
 - **D46 交互选项 UI 渲染模式声明完整性**：N/A。
-- **D47 E2E 覆盖完整性**：⚠️ `Righteousness!` / `Zanshin!` 已在本轮补齐真实复跑证据；`Stand Tall II` 与 `Masamune II` 可继续引用既有连续截图链；基础版 `Stand Tall`、token 上限溢出最终态、`Back Strike` 非攻击伤害负路径仍应补专属链路。
+- **D47 E2E 覆盖完整性**：⚠️ `Righteousness!` / `Zanshin!` 已在本轮补齐真实复跑证据；`Stand Tall II` 与 `Masamune II` 可继续引用既有连续截图链；基础版 `Stand Tall` 的实现缺陷已由本轮 Vitest 回归修住，但 UI 专属链路、token 上限溢出最终态、`Back Strike` 非攻击伤害负路径仍应补专属 E2E。
 - **D48 UI 交互渲染模式完整性**：N/A。
 - **D49 abilityTags 与触发机制一致性**：N/A（DiceThrone 此处不依赖 `abilityTags` 作为核心合同）。
 
@@ -300,3 +311,8 @@
   - 改写 `Stand Tall` 相关口径：`Stand Tall II` 继续引用既有成功链路；基础版 `Stand Tall` 单独登记为“减伤同步时序仍需动态复验”。
   - 回写此前漏审的 3 条焦点：token 堆叠上限、`Stand Tall` 防御减伤同步、`Back Strike` attack-only 门禁。
   - 把武士 E2E 覆盖范围拆细为“本轮新复跑”“可继续引用的历史链路”“仍待补的专属链路”，避免继续笼统表述。
+- 2026-05-19（`Stand Tall` / `Back Strike` 共享 bug 回写）：
+  - 旧结论：`Stand Tall` 的防御减伤同步“已修复，待动态复验”。
+  - 失效原因：这条口径只盯住了 `attack.ts` 是否把 `DAMAGE_SHIELD_GRANTED` 同步进状态，漏掉了 `effects.ts` 在 token 开窗门禁上仍读取护盾前伤害，导致 `Stand Tall` 完全格挡时依旧误开 `Back Strike`。
+  - 新证据路径：`src/games/dicethrone/__tests__/cross-hero.test.ts` 新增 `stand-tall fully prevents the attack without opening back-strike mitigation window`，以及 `src/games/dicethrone/__tests__/gunslinger-take-cover-loaded-vs-stand-tall.test.ts`。
+  - 新结论：这条风险已被动态回归坐实并修复；当前残余从“实现是否还错”下调为“基础版 `Stand Tall` 仍缺专属 UI 连续截图链”。

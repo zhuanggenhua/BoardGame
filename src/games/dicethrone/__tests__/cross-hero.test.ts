@@ -2288,6 +2288,57 @@ describe('cross hero battles', () => {
             expect(result.finalState.core.pendingAttack).toBeNull();
         });
 
+        it('stand-tall fully prevents the attack without opening back-strike mitigation window', () => {
+            const runner = new GameTestRunner({
+                domain: DiceThroneDomain,
+                systems: testSystems,
+                playerIds: ['0', '1'],
+                random: createQueuedRandom([1, 1, 1, 1, 2, 6, 6, 6]),
+                setup: (playerIds: PlayerId[], random: RandomFn) => {
+                    const state = createInitializedStateWithCharacters(
+                        playerIds,
+                        random,
+                        { '0': 'monk', '1': 'samurai' }
+                    );
+                    state.core.players['1'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION] = 1;
+                    return state;
+                },
+                assertFn: assertState,
+                silent: true,
+            });
+
+            const result = runner.run({
+                name: 'samurai stand-tall full prevent keeps back strike unused',
+                commands: [
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '0'),
+                    cmd('CONFIRM_ROLL', '0'),
+                    cmd('RESPONSE_PASS', '0'),
+                    cmd('RESPONSE_PASS', '1'),
+                    cmd('SELECT_ABILITY', '0', { abilityId: 'fist-technique-4' }),
+                    cmd('ADVANCE_PHASE', '0'),
+                    cmd('ROLL_DICE', '1'),
+                    cmd('CONFIRM_ROLL', '1'),
+                    cmd('RESPONSE_PASS', '0'),
+                    cmd('RESPONSE_PASS', '1'),
+                    cmd('ADVANCE_PHASE', '1'),
+                ],
+                expect: {
+                    turnPhase: 'main2',
+                    pendingInteraction: null,
+                    players: {
+                        '0': { hp: 50 },
+                        '1': { hp: 50 },
+                    },
+                },
+            });
+
+            expect(result.assertionErrors).toEqual([]);
+            expect(result.finalState.core.players['1'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION]).toBe(1);
+            expect(result.finalState.core.pendingDamage ?? null).toBeNull();
+            expect(result.finalState.core.pendingAttack).toBeNull();
+        });
+
 
         it('righteousness katana face adds 2 damage to current attack', () => {
             const righteousnessCard = SAMURAI_CARDS.find(card => card.id === 'card-righteousness');

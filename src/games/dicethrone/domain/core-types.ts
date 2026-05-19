@@ -361,6 +361,8 @@ export interface DamageShield {
     sourceId?: string;
     /** 是否用于防止本次攻击的状态效果 */
     preventStatus?: boolean;
+    /** 百分比减伤（0-100），与固定值护盾互斥） */
+    reductionPercent?: number;
 }
 
 // ============================================================================

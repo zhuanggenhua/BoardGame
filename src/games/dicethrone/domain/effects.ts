@@ -460,6 +460,46 @@ export function createDTPassiveTriggerHandler(
     };
 }
 
+/**
+ * 估算既有护盾吸收后的有效伤害，仅用于 Token 响应开窗门禁。
+ *
+ * 注意：
+ * - 这里只做“是否还剩可响应伤害”的判断，不会真正消耗护盾。
+ * - 真正的护盾消耗仍由 reducer 在 DAMAGE_DEALT 时统一处理，避免双扣。
+ */
+function estimateDamageAfterExistingShields(
+    state: DiceThroneCore,
+    targetId: PlayerId,
+    incomingDamage: number,
+    options?: { bypassShields?: boolean },
+): number {
+    if (incomingDamage <= 0) return 0;
+    if (options?.bypassShields) return incomingDamage;
+    if (state.pendingAttack?.isUltimate) return incomingDamage;
+
+    const target = state.players[targetId];
+    const shields = target?.damageShields ?? [];
+    if (shields.length === 0) return incomingDamage;
+
+    let remainingDamage = incomingDamage;
+    const percentShields = shields.filter((shield) => !shield.preventStatus && shield.reductionPercent !== undefined);
+    const fixedShields = shields.filter((shield) => !shield.preventStatus && shield.reductionPercent === undefined);
+
+    for (const shield of percentShields) {
+        if (remainingDamage <= 0) break;
+        const reductionPercent = shield.reductionPercent ?? 0;
+        const reductionAmount = Math.ceil(remainingDamage * (reductionPercent / 100));
+        remainingDamage = Math.max(0, remainingDamage - reductionAmount);
+    }
+
+    for (const shield of fixedShields) {
+        if (remainingDamage <= 0) break;
+        remainingDamage = Math.max(0, remainingDamage - shield.value);
+    }
+
+    return remainingDamage;
+}
+
 
 
 /**
@@ -536,12 +576,18 @@ function resolveEffectAction(
                 // target: 'all'/'allOpponents' 的全体伤害不触发 Token 响应窗口；
                 // 明确标记为 unblockable 的动作伤害也不允许任何减伤/回避类 Token 响应。
                 if (!action.unblockable && action.target !== 'all' && action.target !== 'allOpponents') {
+                    const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
+                        state,
+                        dmgTargetId,
+                        result.finalDamage,
+                    );
+
                     // 检查是否需要打开 Token 响应窗口
                     const tokenResponseType = shouldOpenTokenResponse(
                         state,
                         attackerId,
                         dmgTargetId,
-                        result.finalDamage,
+                        effectiveDamageForTokenResponse,
                         ctx.isDefensiveContext,
                         action.damageScope ?? 'attack'
                     );
@@ -550,6 +596,7 @@ function resolveEffectAction(
                         attackerId,
                         dmgTargetId,
                         damage: result.finalDamage,
+                        effectiveDamageForTokenResponse,
                         isDefensiveContext: ctx.isDefensiveContext,
                         tokenResponseType,
                         hasPendingDamage: !!state.pendingDamage,
@@ -828,15 +875,23 @@ function resolveEffectAction(
                         const dmgAmount = dmgPayload.amount ?? 0;
                         const dmgTargetId = dmgPayload.targetId;
                         const isUnblockable = dmgPayload.unblockable === true;
+                        const bypassShields = dmgPayload.bypassShields === true;
                         const damageScope = dmgPayload.damageScope ?? (state.pendingAttack ? 'attack' : 'direct');
 
                         // 检查是否需要打开 Token 响应窗口
                         if (shouldCheckTokenResponse && dmgAmount > 0 && !isUnblockable) {
+                            const effectiveDamageForTokenResponse = estimateDamageAfterExistingShields(
+                                state,
+                                dmgTargetId,
+                                dmgAmount,
+                                { bypassShields },
+                            );
+
                             const tokenResponseType = shouldOpenTokenResponse(
                                 state,
                                 attackerId,
                                 dmgTargetId,
-                                dmgAmount,
+                                effectiveDamageForTokenResponse,
                                 ctx.isDefensiveContext,
                                 damageScope
                             );

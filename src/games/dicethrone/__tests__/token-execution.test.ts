@@ -1322,6 +1322,21 @@ describe('Token 响应窗口判定', () => {
         const responseType = shouldOpenTokenResponse(state.core, '0', '1', 4);
         expect(responseType).toBeNull();
     });
+
+    it('防御方有 samurai_retribution Token 且仍在战斗上下文中，但 direct damage 不应打开 defenderMitigation', () => {
+        const baseSetup = createNoResponseSetupWithEmptyHand();
+        const state = baseSetup(['0', '1'], fixedRandom);
+        state.core.players['1'].tokens[TOKEN_IDS.SAMURAI_RETRIBUTION] = 1;
+        state.core.pendingAttack = {
+            attackerId: '0',
+            defenderId: '1',
+            isDefendable: true,
+            sourceAbilityId: 'test-attack',
+        } as any;
+
+        const responseType = shouldOpenTokenResponse(state.core, '0', '1', 4, false, 'direct');
+        expect(responseType).toBeNull();
+    });
 });
 
 // ============================================================================

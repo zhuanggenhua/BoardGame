@@ -1,6 +1,11 @@
 import type { Page } from '@playwright/test';
 import { test, expect } from './framework';
-import { getGameServerBaseURL, setChineseLocale } from './helpers/common';
+import {
+    getGameServerBaseURL,
+    setChineseLocale,
+    waitForFrontendAssets,
+    waitForHomeGameList,
+} from './helpers/common';
 
 function isRetryableNavigationError(error: unknown): boolean {
     return error instanceof Error
@@ -29,21 +34,10 @@ async function gotoLobbyWithRetry(page: Page): Promise<void> {
 }
 
 async function ensureLobbyReady(page: Page): Promise<void> {
-    const maxAttempts = 6;
-
-    for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-        await gotoLobbyWithRetry(page);
-
-        try {
-            await expect(page.locator('[data-game-id="tictactoe"]').first()).toBeVisible({ timeout: 10000 });
-            return;
-        } catch (error) {
-            if (attempt === maxAttempts) {
-                throw error;
-            }
-            await page.waitForTimeout(1500);
-        }
-    }
+    await gotoLobbyWithRetry(page);
+    await waitForFrontendAssets(page, 45000);
+    await waitForHomeGameList(page, 45000);
+    await expect(page.locator('[data-game-id]').first()).toBeVisible({ timeout: 15000 });
 }
 
 async function applyKeyboardViewportSimulation(page: Page, options: { runtimeViewportHeight: number; keyboardInsetHeight: number }) {

@@ -1,6 +1,8 @@
 # DiceThrone Ninja 完整流程重审（2026-05-15）
 
 > 2026-05-19 范围澄清：本文件只覆盖 `ninja` 这一个英雄的逐对象矩阵与失效回写。当前整批“新英雄补审”的总范围已按用户要求扩到 `gunslinger / samurai / treant / ninja` 四位，新英雄总范围请以 `evidence/dicethrone/dicethrone-new-factions-full-cycle-audit-2026-05-15.md` 与 `evidence/dicethrone/dicethrone-new-factions-reaudit-wiki-diff-2026-05-17.md` 为准；不能再把本文件的“Ninja 子范围”误读成整批补审范围。
+>
+> 2026-05-19 本轮复核：按“四个新英雄”总范围重新回看后，Ninja 当前没有新增实现级 finding。现有有效口径仍是“代表链和专项回归已补到 L2/L3，部分技能本体与组合分支仍保留为未覆盖项”；本轮没有再发现超出本文既有残余范围的新 bug。
 
 ## 本次重审结论
 
