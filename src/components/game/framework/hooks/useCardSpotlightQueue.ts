@@ -10,7 +10,7 @@
  * - 游戏层只需提供渲染函数
  */
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useReducer, useEffect, useRef, useCallback } from 'react';
 import type { EventStreamEntry, GameEvent, PlayerId } from '../../../../engine/types';
 import { useEventStreamCursor } from '../../../../engine/hooks';
 
@@ -56,6 +56,45 @@ export interface UseCardSpotlightQueueReturn<TData = unknown> {
     dismissAll: () => void;
 }
 
+type SpotlightQueueAction<TData> =
+    | {
+        type: 'consume';
+        resetQueue: boolean;
+        items: SpotlightItem<TData>[];
+        maxQueue: number;
+    }
+    | {
+        type: 'dismiss';
+        id: string;
+    }
+    | {
+        type: 'dismiss-all';
+    };
+
+function spotlightQueueReducer<TData>(
+    state: SpotlightItem<TData>[],
+    action: SpotlightQueueAction<TData>,
+): SpotlightItem<TData>[] {
+    switch (action.type) {
+        case 'consume': {
+            const baseQueue = action.resetQueue ? [] : state;
+            if (action.items.length === 0) {
+                return baseQueue;
+            }
+            const merged = [...baseQueue, ...action.items];
+            return merged.length > action.maxQueue
+                ? merged.slice(merged.length - action.maxQueue)
+                : merged;
+        }
+        case 'dismiss':
+            return state.filter((item) => item.id !== action.id);
+        case 'dismiss-all':
+            return [];
+        default:
+            return state;
+    }
+}
+
 // ============================================================================
 // Hook
 // ============================================================================
@@ -72,7 +111,7 @@ export function useCardSpotlightQueue<TData = unknown>(
         maxQueue = 5,
     } = config;
 
-    const [queue, setQueue] = useState<SpotlightItem<TData>[]>([]);
+    const [queue, dispatch] = useReducer(spotlightQueueReducer<TData>, []);
     const triggerSetRef = useRef(new Set(triggerEventTypes));
 
     // 保持 triggerSet 同步
@@ -89,14 +128,7 @@ export function useCardSpotlightQueue<TData = unknown>(
     useEffect(() => {
         const { entries: newEntries, didReset, didOptimisticRollback } = consumeNew();
 
-        // Undo 回退 / reconnect-resync 乐观回滚：清空队列
-        if (didReset || didOptimisticRollback) {
-            setQueue([]);
-            if (newEntries.length === 0) return;
-        }
-
-        if (newEntries.length === 0) return;
-
+        const resetQueue = didReset || didOptimisticRollback;
         const newItems: SpotlightItem<TData>[] = [];
 
         for (const entry of newEntries) {
@@ -116,23 +148,22 @@ export function useCardSpotlightQueue<TData = unknown>(
             });
         }
 
-        if (newItems.length > 0) {
-            setQueue(prev => {
-                const merged = [...prev, ...newItems];
-                // 超出上限时丢弃最旧的
-                return merged.length > maxQueue
-                    ? merged.slice(merged.length - maxQueue)
-                    : merged;
+        if (resetQueue || newItems.length > 0) {
+            dispatch({
+                type: 'consume',
+                resetQueue,
+                items: newItems,
+                maxQueue,
             });
         }
     }, [entries, consumeNew, currentPlayerId, extractCard, maxQueue]);
 
     const dismiss = useCallback((id: string) => {
-        setQueue(prev => prev.filter(item => item.id !== id));
+        dispatch({ type: 'dismiss', id });
     }, []);
 
     const dismissAll = useCallback(() => {
-        setQueue([]);
+        dispatch({ type: 'dismiss-all' });
     }, []);
 
     return { queue, dismiss, dismissAll };
