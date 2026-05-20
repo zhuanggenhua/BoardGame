@@ -961,7 +961,7 @@ function collectCommands(files, baseRef, affectsTypecheck) {
       args: [
         'scripts/infra/run-e2e-single.mjs',
         'ci',
-        'e2e/dicethrone-simple-start.e2e.ts',
+        'e2e/dicethrone/dicethrone-simple-start.e2e.ts',
         'Online match: Can start a game successfully',
       ],
     });
