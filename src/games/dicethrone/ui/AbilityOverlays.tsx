@@ -16,34 +16,13 @@ import type { CardPreviewRef } from '../../../core';
 import type { AbilityCard } from '../types';
 import {
     ABILITY_SLOT_MAP as SHARED_ABILITY_SLOT_MAP,
-    getAbilitySlotId as getSharedAbilitySlotId,
     slotContainsAbilityIdForCharacter,
 } from './abilitySlotMapping';
-// 导入所有英雄的卡牌定义
-import { MONK_CARDS } from '../heroes/monk/cards';
-import { BARBARIAN_CARDS } from '../heroes/barbarian/cards';
-import { PYROMANCER_CARDS } from '../heroes/pyromancer/cards';
-import { PALADIN_CARDS } from '../heroes/paladin/cards';
-import { MOON_ELF_CARDS } from '../heroes/moon_elf/cards';
-import { SHADOW_THIEF_CARDS } from '../heroes/shadow_thief/cards';
-import { GUNSLINGER_CARDS } from '../heroes/gunslinger/cards';
-import { SAMURAI_CARDS } from '../heroes/samurai/cards';
-import { TREANT_CARDS } from '../heroes/treant/cards';
-import { NINJA_CARDS } from '../heroes/ninja/cards';
-
-// 角色 ID 到卡牌定义的映射
-const HERO_CARDS_MAP: Record<string, AbilityCard[]> = {
-    monk: MONK_CARDS,
-    barbarian: BARBARIAN_CARDS,
-    pyromancer: PYROMANCER_CARDS,
-    paladin: PALADIN_CARDS,
-    moon_elf: MOON_ELF_CARDS,
-    shadow_thief: SHADOW_THIEF_CARDS,
-    gunslinger: GUNSLINGER_CARDS,
-    samurai: SAMURAI_CARDS,
-    treant: TREANT_CARDS,
-    ninja: NINJA_CARDS,
-};
+import {
+    HERO_CARDS_MAP,
+    getSlotAbilityId,
+    getUpgradeCardForAbilityLevel,
+} from './abilityOverlayHelpers';
 
 // 被动能力配置（按角色）
 const PASSIVE_ABILITIES: Record<string, { slotId: string; cardId?: string }[]> = {
@@ -68,162 +47,7 @@ const getUpgradeTargetFromCard = (card?: AbilityCard): string | null => {
 };
 
 
-export const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
-
-export const getAbilitySlotId = (abilityId: string) => {
-    return getSharedAbilitySlotId(abilityId);
-};
-
-// 技能槽到基础技能 ID 的映射（按角色分类）
-const HERO_SLOT_TO_ABILITY: Record<string, Record<string, string>> = {
-    monk: {
-        fist: 'fist-technique',
-        chi: 'zen-forget',
-        sky: 'harmony',
-        lotus: 'lotus-palm',
-        combo: 'taiji-combo',
-        lightning: 'thunder-strike',
-        calm: 'calm-water',
-        meditate: 'meditation',
-        ultimate: 'transcendence',   // 超越
-    },
-    pyromancer: {
-        fist: 'fireball',
-        chi: 'soul-burn',
-        sky: 'fiery-combo',
-        lotus: 'meteor',
-        combo: 'pyro-blast',
-        lightning: 'burn-down',
-        calm: 'ignite',
-        meditate: 'magma-armor',
-        ultimate: 'ultimate-inferno', // 终极炼狱
-    },
-    barbarian: {
-        fist: 'slap',
-        chi: 'all-out-strike',
-        sky: 'powerful-strike',
-        lotus: 'violent-assault',
-        combo: 'steadfast',
-        lightning: 'suppress',
-        calm: 'reckless-strike',
-        meditate: 'thick-skin',
-        ultimate: 'rage',  // 狂怒（终极技能，5个力量面触发）
-    },
-    paladin: {
-        // 顶部左侧为被动“教皇税”，不映射为可选技能
-        chi: 'vengeance',             // 复仇 (3 Helm + 1 Pray)
-        sky: 'holy-strike',           // 神圣冲击 小顺子 (Small Straight)
-        lotus: 'righteous-prayer',    // 正义祈祷 (4 Pray)
-        combo: 'righteous-combat',    // 正义冲击 (3 Sword + 1 Helm)
-        lightning: 'blessing-of-might', // 力量祝福 (3 Sword + 1 Pray)
-        calm: 'holy-light',           // 圣光 (2 Heart)
-        meditate: 'holy-defense',     // 神圣防御
-        ultimate: 'unyielding-faith', // 坚毅信念
-    },
-    moon_elf: {
-        fist: 'longbow',              // 长弓 (3/4/5 Arrow)
-        chi: 'covert-fire',           // 隐蔽射击 (2 Moon)
-        sky: 'entangling-shot',       // 缠绕射击 (Small Straight)
-        lotus: 'eclipse',             // 月蚀 (4 Moon)
-        combo: 'covering-fire',       // 掩护射击 (2 Bow + 2 Foot)
-        lightning: 'exploding-arrow', // 爆裂箭 (1 Bow + 3 Moon)
-        calm: 'blinding-shot',        // 致盲射击 (Large Straight)
-        meditate: 'elusive-step',     // 迷影步 (防御)
-        ultimate: 'lunar-eclipse',    // 月蚀终极
-    },
-    shadow_thief: {
-        fist: 'dagger-strike',        // 匕首打击 (3/4/5 Dagger)
-        chi: 'pickpocket',            // 抢夺 (2 Shadow)
-        sky: 'shadow-dance',          // 暗影之舞 (3 Shadow)
-        lotus: 'shadow-defense',      // 暗影守护 (防御)
-        combo: 'steal',               // 偷窃 (2/3/4 Bag)
-        lightning: 'kidney-shot',     // 肾击 (Large Straight)
-        calm: 'cornucopia',           // 聚宝盆 (2 Card)
-        meditate: 'fearless-riposte', // 恐惧反击 (防御)
-        ultimate: 'shadow-shank',     // 暗影刺杀 (终极)
-    },
-    gunslinger: {
-        fist: 'revolver',
-        chi: 'bounty-hunter',
-        sky: 'quick-draw',
-        lotus: 'take-cover',
-        combo: 'showdown',
-        lightning: 'deadeye',
-        calm: 'fan-the-hammer',
-        meditate: 'duel',
-        ultimate: 'fill-em-with-lead',
-    },
-    samurai: {
-        fist: 'katana-slice',
-        chi: 'wakizashi',
-        sky: 'bushido',
-        lotus: 'solemnity',
-        combo: 'budo',
-        lightning: 'samurai-slot-06',
-        calm: 'masamune',
-        meditate: 'stand-tall',
-        ultimate: 'samurai-ultimate',
-    },
-    treant: {
-        fist: 'shattering-fist',
-        chi: 'tend-care',
-        sky: 'quiet-cultivation',
-        lotus: 'wild-growth',
-        combo: 'vengeful-vines',
-        lightning: 'nature-touch',
-        meditate: 'rooted',
-        ultimate: 'forest-awakens',
-    },
-    ninja: {
-        fist: 'slash',
-        chi: 'going-forward',
-        sky: 'death-blossom',
-        lotus: 'shadow-step',
-        combo: 'poison-blade',
-        lightning: 'smoke-screen',
-        calm: 'shadow-fang',
-        meditate: 'blink',
-        ultimate: 'ninja-assassinate',
-    },
-};
-
-    // 获取槽位对应的基础技能 ID
-    export const getSlotAbilityId = (characterId: string, slotId: string): string | undefined => {
-        return HERO_SLOT_TO_ABILITY[characterId]?.[slotId];
-    };
-
-    /**
-     * 从卡牌定义中动态查找升级卡的预览引用
-     * @param characterId 角色 ID
-     * @param abilityId 目标技能 ID
-     * @param level 升级后的等级
-     * @returns 对应升级卡的预览引用，未找到返回 undefined
-     */
-    export const getUpgradeCardForAbilityLevel = (characterId: string, abilityId: string, level: number): AbilityCard | undefined => {
-        // 根据角色 ID 获取对应的卡牌定义
-        const heroCards = HERO_CARDS_MAP[characterId];
-        if (!heroCards) return undefined;
-
-        for (const card of heroCards) {
-            if (card.type !== 'upgrade' || !card.effects) continue;
-            for (const effect of card.effects) {
-                const action = effect.action;
-                if (
-                    action?.type === 'replaceAbility' &&
-                    action.targetAbilityId === abilityId &&
-                    action.newAbilityLevel === level
-                ) {
-                    return card;
-                }
-            }
-        }
-        return undefined;
-    };
-
-    export const getUpgradeCardPreviewRef = (characterId: string, abilityId: string, level: number): CardPreviewRef | undefined => {
-        return getUpgradeCardForAbilityLevel(characterId, abilityId, level)?.previewRef;
-    };
-
+const ABILITY_SLOT_MAP = SHARED_ABILITY_SLOT_MAP;
     /** AbilityOverlays 通过 ref 暴露的方法 */
     export interface AbilityOverlaysHandle {
         /** 保存当前布局到服务端 */

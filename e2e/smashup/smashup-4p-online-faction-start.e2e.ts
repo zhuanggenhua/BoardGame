@@ -21,6 +21,27 @@ type FactionPick = {
     expectedCountAfterPick: number;
 };
 
+type FactionSelectionHarnessState = {
+    core?: {
+        turnOrder?: string[];
+        currentPlayerIndex?: number;
+        factionSelection?: {
+            playerSelections?: Record<string, string[]>;
+        };
+        players?: Record<string, {
+            factions?: string[];
+        }>;
+    };
+};
+
+type HarnessWindow = Window & {
+    __BG_TEST_HARNESS__?: {
+        state?: {
+            get?: () => FactionSelectionHarnessState | null;
+        };
+    };
+};
+
 const SHARED_SCREENSHOT_DIR = join(
     process.cwd(),
     'test-results',
@@ -117,7 +138,7 @@ async function waitForFactionTurn(
 ) {
     await hostPage.waitForFunction(
         ({ playerId, selectedCount }) => {
-            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const state = (window as HarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
             if (!state?.core?.turnOrder || !state?.core?.factionSelection) return false;
 
             const turnOrder = state.core.turnOrder;
@@ -133,12 +154,12 @@ async function waitForFactionTurn(
 
 async function waitForFactionSelections(page: Page) {
     return page.evaluate(() => {
-        const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+        const state = (window as HarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
         return {
             playerCount: state?.core?.turnOrder?.length ?? 0,
             factionSelectionCleared: state?.core?.factionSelection === undefined,
             factionsByPlayer: Object.fromEntries(
-                Object.entries(state?.core?.players ?? {}).map(([playerId, player]: [string, any]) => [
+                Object.entries(state?.core?.players ?? {}).map(([playerId, player]) => [
                     playerId,
                     Array.isArray(player?.factions) ? [...player.factions].sort() : [],
                 ]),
@@ -149,6 +170,72 @@ async function waitForFactionSelections(page: Page) {
         factionSelectionCleared: boolean;
         factionsByPlayer: Record<string, string[]>;
     }>;
+}
+
+async function assertFactionCardsClearPlayerRail(page: Page) {
+    const PLAYER_RAIL_CLEARANCE_PX = 12;
+    const metrics = await page.evaluate(() => {
+        const viewportHeight = window.innerHeight;
+        const rail = document.querySelector('[data-testid="faction-selection-player-rail"]') as HTMLElement | null;
+        const cards = Array.from(document.querySelectorAll('[data-testid^="faction-option-"]')) as HTMLElement[];
+        const playerCards = Array.from(document.querySelectorAll('[data-testid^="faction-selection-player-card-"]')) as HTMLElement[];
+        if (!rail || cards.length === 0) {
+            return { skippedBecausePlayerRailNotVisible: true };
+        }
+
+        const railRect = rail.getBoundingClientRect();
+        const railVisibleHeight = Math.min(railRect.bottom, viewportHeight) - Math.max(railRect.top, 0);
+        if (railRect.bottom <= 0 || railRect.top >= viewportHeight || railVisibleHeight < 24) {
+            return { skippedBecausePlayerRailNotVisible: true };
+        }
+
+        const cardRects = cards
+            .map((card) => {
+                const rect = card.getBoundingClientRect();
+                const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+                const visibleHeightAboveRail = Math.min(rect.bottom, railRect.top) - Math.max(rect.top, 0);
+                return { rect, visibleHeight, visibleHeightAboveRail };
+            })
+            .filter(({ rect, visibleHeight, visibleHeightAboveRail }) =>
+                rect.bottom > 0
+                && rect.top < railRect.top
+                && rect.top < viewportHeight
+                && visibleHeight >= Math.min(rect.height * 0.5, 24)
+                && visibleHeightAboveRail >= Math.min(rect.height * 0.72, 96))
+            .map(({ rect }) => rect);
+        if (cardRects.length === 0) {
+            return { skippedBecausePlayerRailNotVisible: true };
+        }
+
+        const playerCardRects = playerCards
+            .map((card) => {
+                const rect = card.getBoundingClientRect();
+                const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+                return { rect, visibleHeight };
+            })
+            .filter(({ rect, visibleHeight }) => rect.bottom > 0 && rect.top < viewportHeight && visibleHeight >= Math.min(rect.height * 0.5, 24));
+        if (playerCardRects.length === 0) {
+            return { skippedBecausePlayerRailNotVisible: true };
+        }
+
+        const maxCardBottom = Math.max(...cardRects.map((rect) => rect.bottom));
+        const bottomRowCount = cardRects.filter((rect) => maxCardBottom - rect.bottom <= 4).length;
+        const minPlayerCardTop = Math.min(...playerCardRects.map(({ rect }) => rect.top));
+        return {
+            railTop: railRect.top,
+            maxCardBottom,
+            minPlayerCardTop,
+            overlap: maxCardBottom - minPlayerCardTop,
+            bottomRowCount,
+        };
+    });
+
+    expect(metrics, '派系选择页必须能拿到候选卡与玩家状态条几何信息').not.toBeNull();
+    if ('skippedBecausePlayerRailNotVisible' in metrics!) {
+        return;
+    }
+    expect(metrics!.bottomRowCount, '应至少识别到底排候选卡').toBeGreaterThan(0);
+    expect(metrics!.maxCardBottom, '候选卡底边必须位于玩家状态卡上方，不能被底部玩家状态卡遮挡').toBeLessThanOrEqual(metrics!.minPlayerCardTop + PLAYER_RAIL_CLEARANCE_PX);
 }
 
 async function selectFactionAndConfirm(
@@ -170,7 +257,7 @@ async function selectFactionAndConfirm(
 
     await hostPage.waitForFunction(
         ({ playerId, factionId, expectedCountAfterPick }) => {
-            const state = (window as any).__BG_TEST_HARNESS__?.state?.get?.();
+            const state = (window as HarnessWindow).__BG_TEST_HARNESS__?.state?.get?.();
             const picks = state?.core?.factionSelection?.playerSelections?.[playerId] ?? [];
             if (picks.length === expectedCountAfterPick && picks.includes(factionId)) {
                 return true;
@@ -233,6 +320,7 @@ test.describe('大杀四方四人联机开局', () => {
                 );
 
                 if (pick.playerId === '3' && pick.expectedCountAfterPick === 1) {
+                    await assertFactionCardsClearPlayerRail(page);
                     await page.screenshot({
                         path: join(
                             SHARED_SCREENSHOT_DIR,

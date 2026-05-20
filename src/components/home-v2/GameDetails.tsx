@@ -213,6 +213,7 @@ export const Right = ({ game }: RightProps) => {
     const [isLoading, setIsLoading] = React.useState(false);
     const [isPreparingCreateRoom, setIsPreparingCreateRoom] = React.useState(false);
     const [initialCreateRoomPreferences, setInitialCreateRoomPreferences] = React.useState<ReturnType<typeof readLocalMatchPreferences> | null>(null);
+    const createRoomInFlightRef = React.useRef(false);
 
     if (!game) return null;
 
@@ -263,6 +264,10 @@ export const Right = ({ game }: RightProps) => {
     };
 
     const handleCreateRoom = async (config: RoomConfig) => {
+        if (createRoomInFlightRef.current) {
+            return;
+        }
+        createRoomInFlightRef.current = true;
         setIsLoading(true);
         try {
             writeLocalMatchPreferences(game, {
@@ -318,6 +323,7 @@ export const Right = ({ game }: RightProps) => {
             toast.error({ kind: 'i18n', key: 'error.createRoomFailed', ns: 'lobby' });
         } finally {
             setIsLoading(false);
+            createRoomInFlightRef.current = false;
         }
     };
 

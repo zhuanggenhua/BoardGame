@@ -22,7 +22,16 @@ type HiddenSimpleChoiceInteraction = {
         sourceId?: unknown;
         multi?: { min?: unknown };
         options?: HiddenSimpleChoiceOption[];
+        confirmValue?: unknown;
+        allowedDieIds?: unknown;
+        completedDieIds?: unknown;
     };
+};
+
+type DefenderChoiceOption = {
+    playerId?: unknown;
+    customId?: unknown;
+    disabled?: unknown;
 };
 
 export type HiddenInteractionDescriptor = {
@@ -34,6 +43,9 @@ export type HiddenInteractionDescriptor = {
         sourceId?: unknown;
         multi?: { min?: unknown };
         options?: HiddenSimpleChoiceOption[];
+        confirmValue?: unknown;
+        allowedDieIds?: unknown;
+        completedDieIds?: unknown;
     };
 };
 
@@ -61,6 +73,7 @@ export const ONLINE_AI_LEGAL_ACTION_ONLY_REASONS = [
 
 export const ONLINE_AI_EMERGENCY_OVERLAY_FALLBACK_REASONS = [
     'response-window',
+    'response-loop',
     'active-turn',
     'active-turn-legal-only',
     'seat-legal-only',
@@ -213,6 +226,126 @@ export function buildAiProgressMarker(state: MatchState<unknown>): string {
     ].join('|');
 }
 
+function buildInteractionOptionValueSignature(value: unknown): string {
+    return JSON.stringify(value ?? null);
+}
+
+function buildInteractionOptionSemanticSignature(options: unknown): string {
+    if (!Array.isArray(options)) {
+        return '';
+    }
+
+    return options
+        .map((option) => {
+            const item = option as HiddenSimpleChoiceOption | undefined;
+            const optionId = typeof item?.id === 'string' ? item.id : '';
+            const disabledFlag = item?.disabled === true ? '1' : '0';
+            const valueSignature = buildInteractionOptionValueSignature(item?.value);
+            return `${optionId}:${disabledFlag}:${valueSignature}`;
+        })
+        .join(',');
+}
+
+function buildDefenderChoiceOptionSemanticSignature(options: unknown): string {
+    if (!Array.isArray(options)) {
+        return '';
+    }
+
+    return options
+        .map((option) => {
+            const item = option as DefenderChoiceOption | undefined;
+            const playerId = typeof item?.playerId === 'string' ? item.playerId : '';
+            const customId = typeof item?.customId === 'string' ? item.customId : '';
+            const disabledFlag = item?.disabled === true ? '1' : '0';
+            return `${playerId}:${customId}:${disabledFlag}`;
+        })
+        .join(',');
+}
+
+function buildNumberArraySemanticSignature(values: unknown): string {
+    if (!Array.isArray(values)) {
+        return '';
+    }
+
+    return values
+        .filter((value): value is number => typeof value === 'number')
+        .join(',');
+}
+
+export function buildInteractionRecoveryFingerprintHint(
+    state: MatchState<unknown>,
+    interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction | null | undefined,
+    fallbackPlayerId: string,
+): string {
+    const phase = typeof state.sys?.phase === 'string' ? state.sys.phase : '';
+    const playerId = typeof interaction?.playerId === 'string' ? interaction.playerId : fallbackPlayerId;
+    const kind = typeof interaction?.kind === 'string' ? interaction.kind : 'interaction';
+    const interactionId = typeof interaction?.id === 'string' ? interaction.id : '';
+    const sourceId = typeof interaction?.data?.sourceId === 'string' ? interaction.data.sourceId : '';
+    const title = typeof interaction?.data?.title === 'string' ? interaction.data.title : '';
+    const optionSignature = buildInteractionOptionSemanticSignature(interaction?.data?.options);
+
+    if (kind === 'simple-choice') {
+        const minCount = typeof interaction?.data?.multi?.min === 'number' ? interaction.data.multi.min : '';
+        return `interaction:${playerId}:${phase}:simple-choice:${sourceId}:${title}:${minCount}:${optionSignature}`;
+    }
+
+    if (kind === 'compare-roll-choice') {
+        const confirmValueSignature = buildInteractionOptionValueSignature(interaction?.data?.confirmValue);
+        return `interaction:${playerId}:${phase}:compare-roll-choice:${sourceId}:${confirmValueSignature}:${optionSignature}:${interactionId}`;
+    }
+
+    if (kind === 'dt:defender-choice') {
+        const data = interaction?.data as {
+            attackerId?: unknown;
+            targetRollValue?: unknown;
+            options?: unknown;
+        } | undefined;
+        const attackerId = typeof data?.attackerId === 'string' ? data.attackerId : '';
+        const targetRollValue = typeof data?.targetRollValue === 'number' ? String(data.targetRollValue) : '';
+        const defenderOptionSignature = buildDefenderChoiceOptionSemanticSignature(data?.options);
+        return `interaction:${playerId}:${phase}:dt:defender-choice:${sourceId}:${attackerId}:${targetRollValue}:${defenderOptionSignature}:${interactionId}`;
+    }
+
+    if (kind === 'multistep-choice') {
+        const allowedDieIdsSignature = buildNumberArraySemanticSignature(interaction?.data?.allowedDieIds);
+        const completedDieIdsSignature = buildNumberArraySemanticSignature(interaction?.data?.completedDieIds);
+        return `interaction:${playerId}:${phase}:multistep-choice:${sourceId}:${allowedDieIdsSignature}:${completedDieIdsSignature}:${interactionId}`;
+    }
+
+    return `interaction:${playerId}:${phase}:${kind}:${interactionId}`;
+}
+
+export function buildResponseWindowRecoveryFingerprintHint(
+    state: MatchState<unknown> | null | undefined,
+    fallbackPlayerId: string,
+    reason: 'response-window' | 'response-loop' | 'manual-response-window' = 'response-window',
+): string {
+    const phase = typeof state?.sys?.phase === 'string' ? state.sys.phase : '';
+    const current = (state?.sys?.responseWindow as { current?: unknown } | undefined)?.current as {
+        id?: unknown;
+        windowType?: unknown;
+        sourceId?: unknown;
+        responderQueue?: unknown;
+        currentResponderIndex?: unknown;
+    } | undefined;
+
+    const windowId = typeof current?.id === 'string' ? current.id : '';
+    const windowType = typeof current?.windowType === 'string' ? current.windowType : '';
+    const sourceId = typeof current?.sourceId === 'string' ? current.sourceId : '';
+    const responderQueue = Array.isArray(current?.responderQueue) ? current.responderQueue : [];
+    const responderIndex = typeof current?.currentResponderIndex === 'number' ? current.currentResponderIndex : 0;
+    const responderId = typeof responderQueue[responderIndex] === 'string'
+        ? responderQueue[responderIndex]
+        : fallbackPlayerId;
+    const queueSignature = responderQueue
+        .map((value) => (typeof value === 'string' ? value : ''))
+        .filter((value) => value.length > 0)
+        .join('|');
+
+    return `${reason}:${responderId}:${phase}:${windowType}:${sourceId}:${queueSignature}:${windowId}`;
+}
+
 function buildForceEndTurnResolution(args: {
     playerId: string;
     suffix: string;
@@ -241,15 +374,18 @@ function buildForceEndTurnFromInteractionState(
         return null;
     }
 
+    const fingerprintHint = buildInteractionRecoveryFingerprintHint(state, current, playerId);
+
     const forceSkipPayload = buildForceSkipPayloadFromSeatState(state, playerId);
     if (forceSkipPayload) {
         return {
             playerId,
             reason,
             requiresConfirmedAdvancePhase: true,
+            fingerprintHint,
             resolution: buildForceEndTurnResolution({
                 playerId,
-                suffix: `${reason}:${forceSkipPayload.interactionId}`,
+                suffix: fingerprintHint,
                 commands: [{ type: 'SYS_INTERACTION_RESPOND', payload: forceSkipPayload.payload }],
             }),
         };
@@ -258,15 +394,57 @@ function buildForceEndTurnFromInteractionState(
     const fallbackInteractionId = typeof current.id === 'string' && current.id.length > 0
         ? current.id
         : `${playerId}:unknown-interaction`;
+    const interactionKind = typeof current.kind === 'string' ? current.kind : '';
+    const compareRollData = current.data as {
+        options?: Array<{ id?: unknown; disabled?: unknown }> | unknown;
+        confirmValue?: unknown;
+    } | undefined;
+    const compareRollEnabledOptionIds = interactionKind === 'compare-roll-choice' && Array.isArray(compareRollData?.options)
+        ? compareRollData.options
+            .filter((option): option is { id: string; disabled?: unknown } =>
+                typeof option?.id === 'string' && option.disabled !== true)
+            .map((option) => option.id)
+        : [];
+    const defenderChoiceData = current.data as {
+        options?: Array<{ playerId?: unknown; disabled?: unknown }> | unknown;
+    } | undefined;
+    const defenderChoiceEnabledPlayerIds = interactionKind === 'dt:defender-choice' && Array.isArray(defenderChoiceData?.options)
+        ? defenderChoiceData.options
+            .filter((option): option is { playerId: string; disabled?: unknown } =>
+                typeof option?.playerId === 'string' && option.disabled !== true)
+            .map((option) => option.playerId)
+        : [];
+    const defenderChoiceSinglePlayerId = defenderChoiceEnabledPlayerIds.length === 1
+        ? defenderChoiceEnabledPlayerIds[0]
+        : null;
+    const compareRollSingleOptionId = compareRollEnabledOptionIds.length === 1
+        ? compareRollEnabledOptionIds[0]
+        : null;
+    const shouldForceCompareRollConfirm = interactionKind === 'compare-roll-choice'
+        && compareRollEnabledOptionIds.length === 0
+        && compareRollData !== undefined
+        && Object.prototype.hasOwnProperty.call(compareRollData, 'confirmValue');
+    const forceCommand = interactionKind === 'dt:token-response'
+        ? { type: 'SKIP_TOKEN_RESPONSE', payload: {} }
+        : interactionKind === 'dt:bonus-dice'
+            ? { type: 'SKIP_BONUS_DICE_REROLL', payload: {} }
+            : defenderChoiceSinglePlayerId
+                ? { type: 'SELECT_DEFENDER_TARGET', payload: { defenderId: defenderChoiceSinglePlayerId } }
+            : compareRollSingleOptionId
+                ? { type: 'SYS_INTERACTION_RESPOND', payload: { optionId: compareRollSingleOptionId } }
+                : shouldForceCompareRollConfirm
+                    ? { type: 'SYS_INTERACTION_CONFIRM', payload: {} }
+                    : { type: 'SYS_INTERACTION_CANCEL', payload: { interactionId: fallbackInteractionId } };
 
     return {
         playerId,
         reason,
         requiresConfirmedAdvancePhase: true,
+        fingerprintHint,
         resolution: buildForceEndTurnResolution({
             playerId,
-            suffix: `${reason}:${fallbackInteractionId}`,
-            commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: { interactionId: fallbackInteractionId } }],
+            suffix: fingerprintHint,
+            commands: [forceCommand],
         }),
     };
 }
@@ -662,13 +840,19 @@ export function resolveForceEndTurnForStalledAi(args: {
         : 0;
     const responderId = responderQueue[responderIndex];
     if (typeof responderId === 'string' && args.seatControllers[responderId]?.type !== 'human') {
+        const fingerprintHint = buildResponseWindowRecoveryFingerprintHint(
+            args.sharedState,
+            responderId,
+            'response-window',
+        );
         return {
             playerId: responderId,
             reason: 'response-window',
             requiresConfirmedAdvancePhase: true,
+            fingerprintHint,
             resolution: buildForceEndTurnResolution({
                 playerId: responderId,
-                suffix: `response-window:${responderId}`,
+                suffix: fingerprintHint,
                 commands: [{ type: 'RESPONSE_PASS', payload: {} }],
             }),
         };
@@ -818,13 +1002,19 @@ export function resolveManualForceEndAiPhase(args: {
         const interactionId = typeof visibleCurrent.id === 'string' && visibleCurrent.id.length > 0
             ? visibleCurrent.id
             : `${interactionPlayerId}:manual-visible-interaction`;
+        const fingerprintHint = `manual-visible-interaction:${buildInteractionRecoveryFingerprintHint(
+            args.sharedState,
+            visibleCurrent,
+            interactionPlayerId,
+        )}`;
         return {
             playerId: interactionPlayerId,
             reason: 'visible-interaction',
             requiresConfirmedAdvancePhase: true,
+            fingerprintHint,
             resolution: buildForceEndTurnResolution({
                 playerId: interactionPlayerId,
-                suffix: `manual-visible-interaction:${interactionId}`,
+                suffix: `${fingerprintHint}:${interactionId}`,
                 commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: { interactionId } }],
             }),
         };
@@ -843,13 +1033,20 @@ export function resolveManualForceEndAiPhase(args: {
         const interactionId = typeof seatCurrent.id === 'string' && seatCurrent.id.length > 0
             ? seatCurrent.id
             : `${playerId}:manual-hidden-interaction`;
+        const seatState = args.seatStates[playerId];
+        const fingerprintHint = `manual-hidden-interaction:${buildInteractionRecoveryFingerprintHint(
+            seatState ?? args.sharedState,
+            seatCurrent,
+            playerId,
+        )}`;
         return {
             playerId,
             reason: 'hidden-interaction',
             requiresConfirmedAdvancePhase: true,
+            fingerprintHint,
             resolution: buildForceEndTurnResolution({
                 playerId,
-                suffix: `manual-hidden-interaction:${interactionId}`,
+                suffix: `${fingerprintHint}:${interactionId}`,
                 commands: [{ type: 'SYS_INTERACTION_CANCEL', payload: { interactionId } }],
             }),
         };
@@ -870,16 +1067,19 @@ export function resolveManualForceEndAiPhase(args: {
             const windowId = typeof currentWindow.id === 'string' && currentWindow.id.length > 0
                 ? currentWindow.id
                 : `${responderId}:manual-response-window`;
-            const windowType = typeof currentWindow.windowType === 'string' ? currentWindow.windowType : 'unknown-type';
-            const sourceId = typeof currentWindow.sourceId === 'string' ? currentWindow.sourceId : 'unknown-source';
+            const fingerprintHint = buildResponseWindowRecoveryFingerprintHint(
+                args.sharedState,
+                responderId,
+                'manual-response-window',
+            );
             return {
                 playerId: responderId,
                 reason: 'response-window',
                 requiresConfirmedAdvancePhase: true,
-                fingerprintHint: `manual-response-window:${responderId}:${windowType}:${sourceId}`,
+                fingerprintHint,
                 resolution: buildForceEndTurnResolution({
                     playerId: responderId,
-                    suffix: `manual-response-window:${responderId}:${windowType}:${sourceId}:${windowId}`,
+                    suffix: `${fingerprintHint}:${windowId}`,
                     commands: [{ type: 'SYS_RESPONSE_WINDOW_FORCE_CLOSE', payload: {} }],
                 }),
             };

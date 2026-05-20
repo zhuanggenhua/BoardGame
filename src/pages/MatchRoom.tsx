@@ -404,10 +404,17 @@ export function resolveOnlineAiEffectiveSeatState(args: {
     seatLatestStates: OnlineAiSeatStateRecord;
 }): MatchState<unknown> | null {
     const override = args.seatStateOverrides[args.playerId];
+    const latestState = args.seatLatestStates[args.playerId] ?? null;
     if (override !== undefined) {
+        if (!shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: override,
+            latestSeatState: latestState,
+        })) {
+            return latestState;
+        }
         return override ?? null;
     }
-    return args.seatLatestStates[args.playerId] ?? null;
+    return latestState;
 }
 
 export function resolveOnlineAiEffectiveSeatStates(args: {
@@ -442,6 +449,21 @@ export function shouldStageOnlineAiSeatOverrideFromConfirmedState(args: {
         return true;
     }
     return buildAiProgressMarker(latestSeatState) !== buildAiProgressMarker(authoritativeState);
+}
+
+export function shouldRetainOnlineAiSeatOverrideAfterLatestState(args: {
+    seatStateOverride: MatchState<unknown> | null | undefined;
+    latestSeatState: MatchState<unknown> | null | undefined;
+}): boolean {
+    const override = args.seatStateOverride ?? null;
+    if (!override) {
+        return false;
+    }
+    const latestSeatState = args.latestSeatState ?? null;
+    if (!latestSeatState) {
+        return true;
+    }
+    return buildAiProgressMarker(latestSeatState) !== buildAiProgressMarker(override);
 }
 
 const OnlineAiSeatBridge = ({
@@ -782,7 +804,13 @@ const OnlineAiSeatBridge = ({
                     onlineAiTransportLogger.info('state-update', payload);
                     emitOnlineAiTransport('state-update', payload);
                     delete pendingSeatResyncRef.current[playerId];
-                    delete aiSeatStateOverridesRef.current[playerId];
+                    const existingOverride = aiSeatStateOverridesRef.current[playerId];
+                    if (!shouldRetainOnlineAiSeatOverrideAfterLatestState({
+                        seatStateOverride: existingOverride,
+                        latestSeatState: authoritativeState,
+                    })) {
+                        delete aiSeatStateOverridesRef.current[playerId];
+                    }
                     setAiRetryVersion((version) => version + 1);
                 },
                 onConnectionChange: (connected) => {
@@ -1714,8 +1742,8 @@ const OnlineAiSeatBridge = ({
         // 旧实现把 progressMarker（包含 responseWindowId/interactionId 等高度易变字段）拼进 key，
         // 会导致同一类卡死在“窗口反复重开但语义不变”时不断刷新 key，从而持续弹出失败提示。
         //
-        // 强口径裁决：trackerKey 只应随“语义变化”或“回合/阶段变化”而变化。
-        // - 优先使用 candidate.fingerprintHint（去除了 windowId 等噪音字段）
+        // 强口径裁决：trackerKey 只应随“恢复语义变化”或“回合/阶段变化”而变化。
+        // - 优先使用 candidate.fingerprintHint
         // - 再用 attemptKey 作为回退
         // - 追加 turnNumber/phase，确保跨回合/跨阶段不会被错误地视为同一 incident
         const trackerSemanticKey = candidate.fingerprintHint ?? candidate.resolution.attemptKey;

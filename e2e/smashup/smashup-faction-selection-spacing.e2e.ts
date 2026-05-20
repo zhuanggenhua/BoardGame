@@ -15,6 +15,65 @@ const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
 };
 void __ensureThreeAxesMarker;
 
+async function assertFactionCardsClearPlayerRail(page: import('@playwright/test').Page) {
+  const PLAYER_RAIL_CLEARANCE_PX = 12;
+    const metrics = await page.evaluate(() => {
+      const viewportHeight = window.innerHeight;
+      const rail = document.querySelector('[data-testid="faction-selection-player-rail"]') as HTMLElement | null;
+    const cards = Array.from(document.querySelectorAll('[data-testid^="faction-option-"]')) as HTMLElement[];
+    const playerCards = Array.from(document.querySelectorAll('[data-testid^="faction-selection-player-card-"]')) as HTMLElement[];
+    if (!rail || cards.length === 0 || playerCards.length === 0) {
+      return { skippedBecausePlayerRailNotVisible: true };
+    }
+
+    const railRect = rail.getBoundingClientRect();
+    const railVisibleHeight = Math.min(railRect.bottom, viewportHeight) - Math.max(railRect.top, 0);
+    if (railRect.bottom <= 0 || railRect.top >= viewportHeight || railVisibleHeight < 24) {
+      return { skippedBecausePlayerRailNotVisible: true };
+    }
+
+    const cardRects = cards
+      .map((card) => {
+        const rect = card.getBoundingClientRect();
+        const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+        const visibleHeightAboveRail = Math.min(rect.bottom, railRect.top) - Math.max(rect.top, 0);
+        return { rect, visibleHeight, visibleHeightAboveRail };
+      })
+      .filter(({ rect, visibleHeight, visibleHeightAboveRail }) =>
+        rect.bottom > 0
+        && rect.top < railRect.top
+        && rect.top < viewportHeight
+        && visibleHeight >= Math.min(rect.height * 0.5, 24)
+        && visibleHeightAboveRail >= Math.min(rect.height * 0.72, 96))
+      .map(({ rect }) => rect);
+    if (cardRects.length === 0) {
+      return { skippedBecausePlayerRailNotVisible: true };
+    }
+
+    const playerCardRects = playerCards
+      .map((card) => {
+        const rect = card.getBoundingClientRect();
+        const visibleHeight = Math.min(rect.bottom, viewportHeight) - Math.max(rect.top, 0);
+        return { rect, visibleHeight };
+      })
+      .filter(({ rect, visibleHeight }) => rect.bottom > 0 && rect.top < viewportHeight && visibleHeight >= Math.min(rect.height * 0.5, 24));
+    if (playerCardRects.length === 0) {
+      return { skippedBecausePlayerRailNotVisible: true };
+    }
+
+    return {
+      maxCardBottom: Math.max(...cardRects.map((rect) => rect.bottom)),
+      minPlayerCardTop: Math.min(...playerCardRects.map(({ rect }) => rect.top)),
+    };
+  });
+
+  expect(metrics, '派系选择页几何断言至少应返回有效结果或显式跳过理由').not.toBeNull();
+  if ('skippedBecausePlayerRailNotVisible' in metrics!) {
+    return;
+  }
+  expect(metrics!.maxCardBottom, '候选卡底边必须位于玩家状态卡上方，不能被底部玩家状态卡遮挡').toBeLessThanOrEqual(metrics!.minPlayerCardTop + PLAYER_RAIL_CLEARANCE_PX);
+}
+
 test.describe('SmashUp 派系选择页移动端间距', () => {
   test('移动端横屏应保持桌面化主布局并输出移动端/桌面端参考截图', async ({ page }, testInfo) => {
     const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'smashup-faction-selection-spacing');
@@ -51,6 +110,7 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     expect(mobileMetrics.horizontalGap, '移动端派系卡之间应保留可见间距').toBeGreaterThanOrEqual(0);
     expect(Math.abs(mobileMetrics.thirdTop - mobileMetrics.firstTop), '手机横屏主布局不应被误改成窄屏双列，前三张卡应仍在同一行').toBeLessThanOrEqual(4);
     expect(mobileMetrics.thirdLeft, '第三张卡应位于第一张卡右侧，证明仍是横屏桌面化排布').toBeGreaterThan(mobileMetrics.firstLeft + mobileMetrics.firstWidth);
+    await assertFactionCardsClearPlayerRail(page);
 
     await page.screenshot({ path: join(evidenceDir, 'mobile-landscape.png'), fullPage: false });
     await page.screenshot({ path: testInfo.outputPath('mobile-landscape.png'), fullPage: false });
@@ -60,6 +120,7 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     await gotoLocalSmashUp(page);
     await expect(title).toBeVisible({ timeout: 30000 });
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
+    await assertFactionCardsClearPlayerRail(page);
 
     await page.screenshot({ path: join(evidenceDir, 'desktop-reference.png'), fullPage: false });
     await page.screenshot({ path: testInfo.outputPath('desktop-reference.png'), fullPage: false });

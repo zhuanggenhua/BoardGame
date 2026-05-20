@@ -2060,6 +2060,40 @@ describe('GameDetailsModal create room ai entry', () => {
         });
     });
 
+    it('创建房间确认被连续触发时，只会提交一次 create 请求', async () => {
+        markGamePackageInstalled();
+        let resolveCreateMatch: ((value: { matchID: string; ownerPlayerID?: string; ownerCredentials?: string }) => void) | null = null;
+        const createMatchSpy = vi.spyOn(matchApi, 'createMatch').mockImplementationOnce(() => new Promise((resolve) => {
+            resolveCreateMatch = resolve as (value: { matchID: string; ownerPlayerID?: string; ownerCredentials?: string }) => void;
+        }));
+        vi.spyOn(matchApi, 'claimSeat').mockResolvedValueOnce({ playerCredentials: 'ai-seat-creds' });
+
+        render(createElement(GameDetailsModal, baseProps));
+
+        fireEvent.click(screen.getByText('actions.createRoom'));
+        await waitFor(() => {
+            expect(screen.getByText('mock-create-room-confirm')).toBeInTheDocument();
+        });
+
+        const confirmButton = screen.getByText('mock-create-room-confirm');
+        fireEvent.click(confirmButton);
+        fireEvent.click(confirmButton);
+
+        await waitFor(() => {
+            expect(createMatchSpy).toHaveBeenCalledTimes(1);
+        });
+
+        resolveCreateMatch?.({
+            matchID: 'match-created',
+            ownerPlayerID: '0',
+            ownerCredentials: 'seat-creds',
+        });
+
+        await waitFor(() => {
+            expect(navigateMock).toHaveBeenCalledWith('/play/dicethrone/match/match-created?playerID=0');
+        });
+    });
+
     it('仅有本地旧房主状态时，会隐藏创建按钮并保留返回/强制退出入口', async () => {
         markGamePackageInstalled();
         vi.mocked(matchStatus.getOwnerActiveMatch).mockImplementation(() => ({

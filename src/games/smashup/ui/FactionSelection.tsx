@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
@@ -32,16 +32,33 @@ interface Props {
     getPlayerOrderLabel: (playerId: string | null | undefined) => string;
 }
 
+type FactionVisibilityMode = 'available' | 'all' | 'taken';
+
+function shouldUseCompactPlayerRail(
+    viewportSize: { width: number; height: number },
+    playerCount: number,
+): boolean {
+    return playerCount >= 4 || viewportSize.height < 920 || viewportSize.width < 1280;
+}
+
+function getDefaultFactionVisibilityMode(viewportSize: { width: number; height: number }): FactionVisibilityMode {
+    void viewportSize;
+    return 'available';
+}
+
 export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, playerNames, playerOrder, getPlayerOrderLabel }) => {
     const { t, i18n } = useTranslation('game-smashup');
     const navigate = useNavigate();
     const selectionState = core.factionSelection;
     const [focusedGroupId, setFocusedGroupId] = useState<string | null>(null);
     const [viewingCard, setViewingCard] = useState<{ defId: string; type: 'minion' | 'base' | 'action' | 'titan' } | null>(null);
+    const selectionGridRef = useRef<HTMLDivElement | null>(null);
     const [viewportSize, setViewportSize] = useState(() => ({
         width: typeof window === 'undefined' ? 1440 : window.innerWidth,
         height: typeof window === 'undefined' ? 900 : window.innerHeight,
     }));
+    const [factionSearch, setFactionSearch] = useState('');
+    const [customVisibilityMode, setCustomVisibilityMode] = useState<FactionVisibilityMode | null>(null);
 
     useEffect(() => {
         const updateViewportSize = () => {
@@ -51,7 +68,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             });
         };
 
-        updateViewportSize();
         window.addEventListener('resize', updateViewportSize);
         window.addEventListener('orientationchange', updateViewportSize);
 
@@ -85,6 +101,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const isMyTurn = playerID === getCurrentPlayerId(core);
     const currentPlayerId = getCurrentPlayerId(core);
     const locale = i18n.language;
+    const remainingSelections = Math.max(0, 2 - mySelections.length);
+    const visibilityMode = customVisibilityMode ?? getDefaultFactionVisibilityMode(viewportSize);
 
     const visibleFactionGroups = useMemo(() => getVisibleFactionVariantGroups(locale), [locale]);
     const focusedFactionGroup = useMemo(
@@ -103,6 +121,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     }, [activeFactionId, focusedFactionGroup, locale, mySelections]);
 
     const isMobileLandscape = viewportSize.width < 1024 && viewportSize.width > viewportSize.height;
+    const isUltraCompactLandscape = isMobileLandscape && viewportSize.height <= 520;
+    const useCompactPlayerRail = shouldUseCompactPlayerRail(viewportSize, playerOrder.length);
+    const shouldShowPlayerSelectionRail = !isUltraCompactLandscape;
     const focusedFactionMeta = resolvedActiveFactionId ? getFactionMeta(resolvedActiveFactionId) ?? null : null;
     const focusedMechanicTutorial = focusedFactionGroup
         ? getFactionMechanicTutorial(focusedFactionGroup.groupId)
@@ -111,6 +132,94 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         ? isFactionImplementationInProgress(focusedFactionGroup.groupId)
             || (resolvedActiveFactionId ? isFactionImplementationInProgress(resolvedActiveFactionId) : false)
         : false;
+
+    const factionStatusCounts = useMemo(() => {
+        let available = 0;
+        let taken = 0;
+        let selected = 0;
+
+        for (const group of visibleFactionGroups) {
+            const isSelectedByMe = mySelectionIdentities.has(group.groupId);
+            const isTakenByOther = takenFactionIdentities.has(group.groupId) && !isSelectedByMe;
+            if (isSelectedByMe) {
+                selected += 1;
+            } else if (isTakenByOther) {
+                taken += 1;
+            } else {
+                available += 1;
+            }
+        }
+
+        return {
+            available,
+            taken,
+            selected,
+            total: visibleFactionGroups.length,
+        };
+    }, [mySelectionIdentities, takenFactionIdentities, visibleFactionGroups]);
+
+    const normalizedFactionSearch = factionSearch.trim().toLowerCase();
+    const shouldShowFactionFilterToolbar = isMobileLandscape
+        || viewportSize.width < 960
+        || factionStatusCounts.total >= 10
+        || factionStatusCounts.taken > 0
+        || visibilityMode !== 'all'
+        || normalizedFactionSearch.length > 0;
+    useEffect(() => {
+        const grid = selectionGridRef.current;
+        if (!grid) return;
+        if (typeof grid.scrollTo === 'function') {
+            grid.scrollTo({ top: 0 });
+            return;
+        }
+        grid.scrollTop = 0;
+    }, [mySelections.length, normalizedFactionSearch, visibilityMode]);
+    const filteredFactionGroups = useMemo(() => {
+        return visibleFactionGroups
+            .map((group) => {
+                const selectedVariantId = mySelections.find((selectedId) => group.variants.some((variant) => variant.id === selectedId)) ?? null;
+                const isSelectedByMe = Boolean(selectedVariantId);
+                const isTakenByOther = takenFactionIdentities.has(group.groupId) && !isSelectedByMe;
+                const status: 'selected' | 'available' | 'taken' = isSelectedByMe
+                    ? 'selected'
+                    : isTakenByOther ? 'taken' : 'available';
+                const translatedNames = group.variants
+                    .map((variant) => t(variant.nameKey))
+                    .join(' ')
+                    .toLowerCase();
+                const variantIds = group.variants.map((variant) => variant.id.toLowerCase()).join(' ');
+                const matchesSearch = normalizedFactionSearch.length === 0
+                    || translatedNames.includes(normalizedFactionSearch)
+                    || group.groupId.toLowerCase().includes(normalizedFactionSearch)
+                    || variantIds.includes(normalizedFactionSearch);
+                const matchesVisibility = visibilityMode === 'all'
+                    ? true
+                    : visibilityMode === 'taken'
+                        ? status === 'taken'
+                        : status !== 'taken';
+
+                return {
+                    group,
+                    selectedVariantId,
+                    isSelectedByMe,
+                    isTakenByOther,
+                    status,
+                    matchesSearch,
+                    matchesVisibility,
+                };
+            })
+            .filter((group) => group.matchesSearch && group.matchesVisibility)
+            .sort((left, right) => {
+                const priority = {
+                    selected: 0,
+                    available: 1,
+                    taken: 2,
+                } as const;
+                const diff = priority[left.status] - priority[right.status];
+                if (diff !== 0) return diff;
+                return left.group.groupId.localeCompare(right.group.groupId);
+            });
+    }, [mySelections, normalizedFactionSearch, t, takenFactionIdentities, visibilityMode, visibleFactionGroups]);
 
     if (!selectionState) return null;
 
@@ -143,12 +252,27 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     };
 
     const useDesktopLikeLandscapeLayout = isMobileLandscape;
+    const useMinimalPlayerRail = !useDesktopLikeLandscapeLayout && playerOrder.length <= 2;
+    const useFocusedDesktopDraftLayout = !useDesktopLikeLandscapeLayout && playerOrder.length <= 2;
+    const useCondensedFactionFilterToolbar = !useDesktopLikeLandscapeLayout && useCompactPlayerRail;
     const selectionGridClassName = useDesktopLikeLandscapeLayout
-        ? 'mx-auto grid w-fit max-w-none grid-cols-[repeat(5,160px)] justify-center gap-x-6 gap-y-3.5 pb-28'
-        : 'mx-auto grid w-full max-w-[920px] grid-cols-4 justify-items-center gap-3 lg:max-w-none xl:grid-cols-4 2xl:grid-cols-5 lg:gap-6 pb-24 lg:pb-28';
+        ? isUltraCompactLandscape
+            ? 'mx-auto grid w-fit max-w-none grid-cols-[repeat(5,136px)] justify-center gap-x-4 gap-y-2 pb-3'
+            : 'mx-auto grid w-fit max-w-none grid-cols-[repeat(5,160px)] justify-center gap-x-6 gap-y-3.5 pb-4'
+        : useFocusedDesktopDraftLayout
+            ? 'mx-auto grid w-full max-w-[1020px] grid-cols-6 justify-items-center gap-x-2 gap-y-2 pb-2 lg:max-w-[1140px] xl:max-w-[1240px] xl:grid-cols-6 xl:gap-x-2.5 xl:gap-y-2.5 2xl:grid-cols-7'
+        : useCompactPlayerRail
+            ? 'mx-auto grid w-full max-w-[860px] grid-cols-4 justify-items-center gap-1.5 pb-2 lg:max-w-none lg:gap-2.5 xl:grid-cols-5 2xl:grid-cols-6'
+            : 'mx-auto grid w-full max-w-[920px] grid-cols-4 justify-items-center gap-3 lg:max-w-none xl:grid-cols-4 2xl:grid-cols-5 lg:gap-6 pb-6';
     const selectionCardFrameClassName = useDesktopLikeLandscapeLayout
-        ? 'relative mb-1.5 w-[160px] aspect-[0.727]'
-        : 'relative mb-2.5 w-full max-w-[148px] lg:max-w-[192px] aspect-[0.727] xl:max-w-[208px]';
+        ? isUltraCompactLandscape
+            ? 'relative mb-1 w-[136px] aspect-[0.727]'
+            : 'relative mb-1.5 w-[160px] aspect-[0.727]'
+        : useFocusedDesktopDraftLayout
+            ? 'relative mb-1 w-full max-w-[108px] lg:max-w-[124px] xl:max-w-[132px] aspect-[0.727]'
+        : useCompactPlayerRail
+            ? 'relative mb-1 w-full max-w-[116px] lg:max-w-[140px] aspect-[0.727] xl:max-w-[152px]'
+            : 'relative mb-2.5 w-full max-w-[148px] lg:max-w-[192px] aspect-[0.727] xl:max-w-[208px]';
     const selectionCardSurfaceClassName = useDesktopLikeLandscapeLayout
         ? 'absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] transition-all bg-white p-[3px]'
         : 'absolute inset-0 rounded-sm overflow-hidden shadow-[3px_3px_10px_rgba(0,0,0,0.38)] border-[4px] lg:border-[5px] transition-all bg-white p-[3px] lg:p-[4px]';
@@ -157,24 +281,36 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             initial={{ y: -50, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             className={useDesktopLikeLandscapeLayout
-                ? 'text-center pt-3 pb-1 relative z-20 w-full max-w-4xl mx-auto flex flex-col items-center'
-                : 'text-center pt-6 pb-3 relative z-20 w-full max-w-4xl mx-auto flex flex-col items-center'}
+                ? isUltraCompactLandscape
+                    ? 'text-center pt-2 pb-0.5 relative z-20 w-full max-w-4xl mx-auto flex flex-col items-center'
+                    : 'text-center pt-3 pb-1 relative z-20 w-full max-w-4xl mx-auto flex flex-col items-center'
+                : useCompactPlayerRail
+                    ? 'text-center pt-4 pb-1.5 relative z-20 w-full max-w-4xl mx-auto flex flex-col items-center'
+                    : 'text-center pt-6 pb-3 relative z-20 w-full max-w-4xl mx-auto flex flex-col items-center'}
         >
             <h1 className={useDesktopLikeLandscapeLayout
-                ? 'text-[2.05rem] font-black text-white tracking-tighter drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] mb-0.5 uppercase italic'
-                : 'text-4xl md:text-5xl font-black text-white tracking-tighter drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] mb-1 uppercase italic'}
+                ? isUltraCompactLandscape
+                    ? 'text-[1.6rem] font-black text-white tracking-tight drop-shadow-[0_3px_0_rgba(0,0,0,0.5)] mb-0 uppercase italic'
+                    : 'text-[2.05rem] font-black text-white tracking-tighter drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] mb-0.5 uppercase italic'
+                : useCompactPlayerRail
+                    ? 'text-[2.4rem] md:text-[2.85rem] font-black text-white tracking-tight drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] mb-0.5 uppercase italic'
+                    : 'text-4xl md:text-5xl font-black text-white tracking-tighter drop-shadow-[0_4px_0_rgba(0,0,0,0.5)] mb-1 uppercase italic'}
             >
                 {t('ui.select_factions_title')}
             </h1>
 
             <p className={useDesktopLikeLandscapeLayout
-                ? 'text-amber-100/60 text-[11px] max-w-lg mx-auto font-bold uppercase tracking-tight mb-1.5'
-                : 'text-amber-100/60 text-xs max-w-lg mx-auto font-bold uppercase tracking-tight mb-3'}
+                ? isUltraCompactLandscape
+                    ? 'text-amber-100/60 text-[9px] max-w-md mx-auto font-bold uppercase tracking-tight mb-1'
+                    : 'text-amber-100/60 text-[11px] max-w-lg mx-auto font-bold uppercase tracking-tight mb-1.5'
+                : useCompactPlayerRail
+                    ? 'text-amber-100/60 text-[10px] max-w-lg mx-auto font-bold uppercase tracking-tight mb-2'
+                    : 'text-amber-100/60 text-xs max-w-lg mx-auto font-bold uppercase tracking-tight mb-3'}
             >
                 {t('ui.select_factions_desc')}
             </p>
 
-            <div className={useDesktopLikeLandscapeLayout ? 'h-7 relative flex items-center justify-center' : 'h-10 relative flex items-center justify-center'}>
+            <div className={useDesktopLikeLandscapeLayout ? (isUltraCompactLandscape ? 'h-6 relative flex items-center justify-center' : 'h-7 relative flex items-center justify-center') : useCompactPlayerRail ? 'h-8 relative flex items-center justify-center' : 'h-10 relative flex items-center justify-center'}>
                 <AnimatePresence mode="wait">
                     {isMyTurn ? (
                         <motion.div
@@ -219,11 +355,13 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             </div>
         </motion.div>
     );
-    const factionOptionNodes = visibleFactionGroups.map((group, idx) => {
-        const selectedVariantId = mySelections.find((selectedId) => group.variants.some((variant) => variant.id === selectedId)) ?? null;
+    const filterButtons: Array<{ mode: FactionVisibilityMode; icon: typeof Check; label: string; testId: string }> = [
+        { mode: 'available', icon: Check, label: t('ui.faction_filter_available', { defaultValue: '可选' }), testId: 'faction-filter-available' },
+        { mode: 'all', icon: Layers, label: t('ui.faction_filter_all', { defaultValue: '全部' }), testId: 'faction-filter-all' },
+        { mode: 'taken', icon: Lock, label: t('ui.faction_filter_taken', { defaultValue: '已锁定' }), testId: 'faction-filter-taken' },
+    ];
+    const factionOptionNodes = filteredFactionGroups.map(({ group, selectedVariantId, isSelectedByMe, isTakenByOther }, idx) => {
         const ownerId = Object.entries(playerSelectionIdentities).find(([, identities]) => identities.has(group.groupId))?.[0];
-        const isSelectedByMe = Boolean(selectedVariantId);
-        const isTakenByOther = takenFactionIdentities.has(group.groupId) && !isSelectedByMe;
         const previewFactionId = selectedVariantId ?? group.defaultVariant.id;
         const cards = getFactionCards(previewFactionId);
         const coverCard = cards.find((card) => card.type === 'minion') || cards[0];
@@ -322,19 +460,184 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             </motion.div>
         );
     });
+    const selectionFilterToolbar = (
+        <div
+            className={useDesktopLikeLandscapeLayout
+                ? isUltraCompactLandscape
+                    ? 'sticky top-0 z-20 mb-2 flex flex-col gap-2 bg-gradient-to-b from-[#2d1b10] via-[#2d1b10]/96 to-transparent pb-2'
+                    : 'sticky top-0 z-20 mb-3 flex flex-col gap-2.5 bg-gradient-to-b from-[#2d1b10] via-[#2d1b10]/96 to-transparent pb-3'
+                : useCondensedFactionFilterToolbar
+                    ? 'sticky top-0 z-20 mb-2 flex flex-col gap-2 bg-gradient-to-b from-[#2d1b10] via-[#2d1b10]/96 to-transparent pb-2'
+                : 'sticky top-0 z-20 mb-3 flex flex-col gap-2.5 bg-gradient-to-b from-[#2d1b10] via-[#2d1b10]/96 to-transparent pb-3'}
+        >
+            <div className="flex items-center gap-2">
+                <div className="relative min-w-0 flex-1">
+                    <Search
+                        size={useDesktopLikeLandscapeLayout ? (isUltraCompactLandscape ? 13 : 15) : 16}
+                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-amber-200/75"
+                    />
+                    <input
+                        type="search"
+                        value={factionSearch}
+                        onChange={(event) => setFactionSearch(event.target.value)}
+                        placeholder={t('ui.faction_search_placeholder', { defaultValue: '搜索派系' })}
+                        data-testid="faction-search-input"
+                        className={useDesktopLikeLandscapeLayout
+                            ? isUltraCompactLandscape
+                                ? 'h-9 w-full rounded border border-amber-200/25 bg-black/28 pl-9 pr-9 text-[12px] font-bold text-white placeholder:text-amber-100/45 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-300/25'
+                                : 'h-10 w-full rounded border border-amber-200/25 bg-black/28 pl-10 pr-10 text-sm font-bold text-white placeholder:text-amber-100/45 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-300/25'
+                            : useCondensedFactionFilterToolbar
+                                ? 'h-9 w-full rounded border border-amber-200/25 bg-black/28 pl-9 pr-9 text-[12px] font-bold text-white placeholder:text-amber-100/45 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-300/25'
+                            : 'h-10 w-full rounded border border-amber-200/25 bg-black/28 pl-10 pr-10 text-sm font-bold text-white placeholder:text-amber-100/45 focus:border-amber-300/70 focus:outline-none focus:ring-2 focus:ring-amber-300/25'}
+                    />
+                    {factionSearch.trim().length > 0 && (
+                        <button
+                            type="button"
+                            onClick={() => setFactionSearch('')}
+                            data-testid="faction-search-clear"
+                            className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-white/10 text-amber-50 transition-colors hover:bg-white/20"
+                            aria-label={t('ui.faction_search_clear', { defaultValue: '清空搜索' })}
+                        >
+                            <X size={14} />
+                        </button>
+                    )}
+                </div>
+
+                <div className="flex shrink-0 gap-1.5">
+                    {filterButtons.map(({ mode, icon: Icon, label, testId }) => (
+                        <GameButton
+                            key={mode}
+                            type="button"
+                            size="sm"
+                            variant={visibilityMode === mode ? 'primary' : 'secondary'}
+                            icon={<Icon size={useDesktopLikeLandscapeLayout && isUltraCompactLandscape ? 12 : 14} strokeWidth={2.6} />}
+                            className={useDesktopLikeLandscapeLayout && isUltraCompactLandscape
+                                ? 'min-w-[4.6rem] px-2 text-[10px]'
+                                : useCondensedFactionFilterToolbar
+                                    ? 'min-w-[4.7rem] px-2.5 text-[11px]'
+                                    : 'min-w-[5.3rem] px-3'}
+                            data-testid={testId}
+                            clickSoundKey={null}
+                            onClick={() => {
+                                setCustomVisibilityMode(mode);
+                            }}
+                        >
+                            {label}
+                        </GameButton>
+                    ))}
+                </div>
+            </div>
+
+            {!useCondensedFactionFilterToolbar && (
+                <div className="flex flex-wrap items-center gap-2 text-[11px] font-black uppercase tracking-[0.08em] text-amber-100/70">
+                    <span data-testid="faction-filter-summary">
+                        {t('ui.faction_filter_result_count', {
+                            visible: filteredFactionGroups.length,
+                            total: factionStatusCounts.total,
+                            defaultValue: '显示 {{visible}} / {{total}}',
+                        })}
+                    </span>
+                    <span>
+                        {t('ui.faction_available_count', {
+                            count: factionStatusCounts.available + factionStatusCounts.selected,
+                            defaultValue: '可选 {{count}}',
+                        })}
+                    </span>
+                    <span>
+                        {t('ui.faction_taken_count', {
+                            count: factionStatusCounts.taken,
+                            defaultValue: '已锁定 {{count}}',
+                        })}
+                    </span>
+                    <span className={remainingSelections > 0 ? 'text-amber-200' : 'text-emerald-300'}>
+                        {remainingSelections > 0
+                            ? t('ui.faction_picks_left', { count: remainingSelections, defaultValue: '还需选择 {{count}} 个' })
+                            : t('ui.faction_ready_to_start', { defaultValue: '已选满 2 个派系' })}
+                    </span>
+                </div>
+            )}
+        </div>
+    );
+    const selectionEmptyState = (
+        <div
+            className={useDesktopLikeLandscapeLayout
+                ? 'mx-auto mt-8 flex max-w-xl flex-col items-center rounded border border-dashed border-amber-200/25 bg-black/18 px-6 py-8 text-center shadow-[0_10px_24px_rgba(0,0,0,0.22)]'
+                : 'mx-auto mt-8 flex max-w-xl flex-col items-center rounded border border-dashed border-amber-200/25 bg-black/18 px-6 py-8 text-center shadow-[0_10px_24px_rgba(0,0,0,0.22)]'}
+            data-testid="faction-filter-empty"
+        >
+            <Search size={18} className="mb-3 text-amber-200/70" />
+            <div className="mb-1 text-sm font-black uppercase tracking-[0.12em] text-white">
+                {t('ui.faction_filter_empty_title', { defaultValue: '没有匹配派系' })}
+            </div>
+            <p className="mb-4 max-w-md text-xs font-bold leading-relaxed text-amber-100/70">
+                {t('ui.faction_filter_empty_desc', { defaultValue: '试试切换筛选或清空搜索，先聚焦当前真正能选的派系。' })}
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+                {factionSearch.trim().length > 0 && (
+                    <GameButton
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        clickSoundKey={null}
+                        onClick={() => setFactionSearch('')}
+                        data-testid="faction-filter-reset-search"
+                    >
+                        {t('ui.faction_search_clear', { defaultValue: '清空搜索' })}
+                    </GameButton>
+                )}
+                {visibilityMode !== 'all' && (
+                    <GameButton
+                        type="button"
+                        size="sm"
+                        variant="secondary"
+                        clickSoundKey={null}
+                        onClick={() => {
+                            setCustomVisibilityMode('all');
+                        }}
+                        data-testid="faction-filter-reset-all"
+                    >
+                        {t('ui.faction_filter_show_all', { defaultValue: '显示全部派系' })}
+                    </GameButton>
+                )}
+            </div>
+        </div>
+    );
     const selectionGrid = (
-        <div className={useDesktopLikeLandscapeLayout
-            ? 'flex-1 w-full overflow-y-auto px-5 py-2 relative z-10 custom-scrollbar'
-            : 'flex-1 w-full max-w-7xl mx-auto overflow-y-auto px-3 py-3 lg:px-6 lg:py-4 relative z-10 custom-scrollbar'}>
-            <div className={selectionGridClassName}>{factionOptionNodes}</div>
+        <div
+            ref={selectionGridRef}
+            className={useDesktopLikeLandscapeLayout
+            ? isUltraCompactLandscape
+                ? 'flex-1 min-h-0 w-full overflow-y-auto px-3 py-1 relative z-10 custom-scrollbar'
+                : 'flex-1 min-h-0 w-full overflow-y-auto px-5 py-2 relative z-10 custom-scrollbar'
+            : useFocusedDesktopDraftLayout
+                ? 'flex-1 min-h-0 w-full max-w-7xl mx-auto overflow-y-auto px-4 py-2 lg:px-6 lg:py-3 relative z-10 custom-scrollbar'
+            : 'flex-1 min-h-0 w-full max-w-7xl mx-auto overflow-y-auto px-3 py-3 lg:px-6 lg:py-4 relative z-10 custom-scrollbar'}>
+            {shouldShowFactionFilterToolbar ? selectionFilterToolbar : null}
+            {factionOptionNodes.length > 0 ? (
+                <div className={selectionGridClassName}>{factionOptionNodes}</div>
+            ) : (
+                selectionEmptyState
+            )}
         </div>
     );
     const playerSelectionRail = (
         <div
-            className={useDesktopLikeLandscapeLayout ? 'absolute bottom-[17px] inset-x-0 z-40 pointer-events-none' : 'absolute bottom-3 inset-x-0 z-40 pointer-events-none'}
+            className={useDesktopLikeLandscapeLayout
+                ? isUltraCompactLandscape
+                    ? 'relative z-30 w-full shrink-0 pointer-events-none bg-gradient-to-t from-black/42 via-black/12 to-transparent px-2 pb-2 pt-1.5'
+                    : 'relative z-30 w-full shrink-0 pointer-events-none bg-gradient-to-t from-black/45 via-black/18 to-transparent px-3 pb-4 pt-3'
+                : useMinimalPlayerRail
+                    ? 'relative z-30 w-full shrink-0 pointer-events-none bg-gradient-to-t from-black/34 via-black/10 to-transparent px-2.5 pb-1.5 pt-1.5 lg:px-5'
+                    : 'relative z-30 w-full shrink-0 pointer-events-none bg-gradient-to-t from-black/40 via-black/12 to-transparent px-3 pb-4 pt-4 lg:px-6'}
             data-testid="faction-selection-player-rail"
         >
-            <div className={useDesktopLikeLandscapeLayout ? 'max-w-6xl mx-auto flex items-end justify-center gap-5 px-3' : 'max-w-7xl mx-auto flex items-end justify-center gap-3 px-3 lg:gap-8 lg:px-6'}>
+            <div className={useDesktopLikeLandscapeLayout
+                ? isUltraCompactLandscape
+                    ? 'mx-auto flex max-w-5xl items-end justify-center gap-2'
+                    : 'mx-auto flex max-w-6xl items-end justify-center gap-3'
+                : useMinimalPlayerRail
+                    ? 'mx-auto flex max-w-4xl items-end justify-center gap-1.5'
+                    : 'mx-auto flex max-w-7xl items-end justify-center gap-2.5 lg:gap-4'}>
                 {playerOrder.map((pid, pidx) => {
                     const selections = selectionState.playerSelections[pid] || [];
                     const isCurrent = pid === currentPlayerId;
@@ -351,23 +654,37 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                             className={`
                                 flex rounded-sm border-2 pointer-events-auto transition-all
                                 ${isCurrent
-                                    ? useDesktopLikeLandscapeLayout
-                                        ? 'w-[128px] flex-col items-center gap-2.5 px-3.5 py-2.5 bg-[#fef3c7] border-amber-500 shadow-[0_10px_22px_rgba(0,0,0,0.42)] -rotate-[0.8deg] z-10'
-                                        : 'flex-col items-center gap-2 px-4 py-2.5 lg:px-6 lg:py-3 bg-[#fef3c7] border-amber-500 shadow-[0_10px_25px_rgba(0,0,0,0.5)] -rotate-1 z-10 scale-110'
-                                    : useDesktopLikeLandscapeLayout
-                                        ? 'w-[124px] flex-col items-center gap-2.5 px-3.5 py-2.5 bg-white/92 border-slate-200 shadow-lg rotate-[0.8deg] grayscale-[0.08] opacity-95'
-                                        : 'flex-col items-center gap-2 px-4 py-2.5 lg:px-6 lg:py-3 bg-white/90 border-slate-200 shadow-lg rotate-1 grayscale-[0.3]'}
+                                    ? useMinimalPlayerRail
+                                        ? 'w-[82px] flex-col items-center gap-0.5 px-1.5 py-1 bg-[#fef3c7] border-amber-500 shadow-[0_5px_12px_rgba(0,0,0,0.24)] -rotate-[0.4deg] z-10'
+                                        : useCompactPlayerRail
+                                        ? 'w-[102px] flex-col items-center gap-1 px-2 py-1.5 bg-[#fef3c7] border-amber-500 shadow-[0_7px_16px_rgba(0,0,0,0.3)] -rotate-[0.6deg] z-10'
+                                        : useDesktopLikeLandscapeLayout
+                                            ? 'w-[128px] flex-col items-center gap-2.5 px-3.5 py-2.5 bg-[#fef3c7] border-amber-500 shadow-[0_10px_22px_rgba(0,0,0,0.42)] -rotate-[0.8deg] z-10'
+                                            : 'flex-col items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-3 bg-[#fef3c7] border-amber-500 shadow-[0_10px_22px_rgba(0,0,0,0.42)] -rotate-[0.8deg] z-10'
+                                    : useMinimalPlayerRail
+                                        ? 'w-[76px] flex-col items-center gap-0.5 px-1.5 py-1 bg-white/92 border-slate-200 shadow-[0_4px_10px_rgba(0,0,0,0.22)] rotate-[0.4deg] grayscale-[0.05] opacity-95'
+                                        : useCompactPlayerRail
+                                        ? 'w-[96px] flex-col items-center gap-1 px-2 py-1.5 bg-white/92 border-slate-200 shadow-[0_5px_12px_rgba(0,0,0,0.24)] rotate-[0.6deg] grayscale-[0.06] opacity-95'
+                                        : useDesktopLikeLandscapeLayout
+                                            ? 'w-[124px] flex-col items-center gap-2.5 px-3.5 py-2.5 bg-white/92 border-slate-200 shadow-lg rotate-[0.8deg] grayscale-[0.08] opacity-95'
+                                            : 'flex-col items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-3 bg-white/90 border-slate-200 shadow-lg rotate-[0.8deg] grayscale-[0.18]'}
                             `}
                         >
                             <div className={`
                                 rounded-full flex items-center justify-center font-black text-white shadow-inner border-4 border-white
-                                ${useDesktopLikeLandscapeLayout ? 'w-11 h-11 text-[13px]' : 'w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 text-sm sm:text-base md:text-lg'}
+                                ${useMinimalPlayerRail
+                                    ? 'w-7 h-7 text-[10px]'
+                                    : useCompactPlayerRail
+                                    ? 'w-8 h-8 text-[11px]'
+                                    : useDesktopLikeLandscapeLayout
+                                        ? 'w-11 h-11 text-[13px]'
+                                        : 'w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 text-sm sm:text-base md:text-lg'}
                                 ${pid === '0' ? 'bg-red-500' : pidx === 1 ? 'bg-blue-500' : 'bg-green-500'}
                             `}>
                                 {badgeLabel}
                             </div>
 
-                            <div className={useDesktopLikeLandscapeLayout ? 'flex gap-2 shrink-0' : 'flex gap-1.5 sm:gap-2'}>
+                            <div className={useMinimalPlayerRail ? 'flex gap-1 shrink-0' : useCompactPlayerRail ? 'flex gap-1.5 shrink-0' : useDesktopLikeLandscapeLayout ? 'flex gap-2 shrink-0' : 'flex gap-1.5 sm:gap-2'}>
                                 {[0, 1].map((i) => {
                                     const fid = selections[i];
                                     const meta = fid ? FACTION_METADATA.find((faction) => faction.id === fid) : null;
@@ -377,18 +694,22 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                             key={i}
                                             className={`
                                                 rounded-sm border-2 bg-slate-100 flex items-center justify-center overflow-hidden shadow-sm transition-all
-                                                ${useDesktopLikeLandscapeLayout ? 'w-11 h-11' : 'w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12'}
+                                                ${useMinimalPlayerRail
+                                                    ? 'w-6 h-6'
+                                                    : useCompactPlayerRail
+                                                    ? 'w-7 h-7'
+                                                    : useDesktopLikeLandscapeLayout ? 'w-11 h-11' : 'w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12'}
                                                 ${!fid ? 'border-dashed border-slate-300 opacity-40' : 'border-slate-800 rotate-[-4deg]'}
                                             `}
                                             title={meta ? t(meta.nameKey) : undefined}
                                             style={{ transform: fid ? `rotate(${(i * 10) - 5}deg)` : 'none' }}
                                         >
                                             {meta?.icon ? (
-                                                <div className={useDesktopLikeLandscapeLayout ? 'text-slate-900 scale-[0.95]' : 'text-slate-900 scale-90 sm:scale-100'}>
-                                                    <meta.icon size={useDesktopLikeLandscapeLayout ? 26 : 28} strokeWidth={2.5} />
+                                                <div className={useMinimalPlayerRail ? 'text-slate-900 scale-[0.72]' : useCompactPlayerRail ? 'text-slate-900 scale-[0.85]' : useDesktopLikeLandscapeLayout ? 'text-slate-900 scale-[0.95]' : 'text-slate-900 scale-90 sm:scale-100'}>
+                                                    <meta.icon size={useMinimalPlayerRail ? 16 : useCompactPlayerRail ? 18 : useDesktopLikeLandscapeLayout ? 26 : 28} strokeWidth={2.5} />
                                                 </div>
                                             ) : (
-                                                <span className={useDesktopLikeLandscapeLayout ? 'text-[10px] text-slate-400 font-black' : 'text-[10px] sm:text-xs text-slate-400 font-black'}>?</span>
+                                                <span className={useMinimalPlayerRail ? 'text-[7px] text-slate-400 font-black' : useCompactPlayerRail ? 'text-[9px] text-slate-400 font-black' : useDesktopLikeLandscapeLayout ? 'text-[10px] text-slate-400 font-black' : 'text-[10px] sm:text-xs text-slate-400 font-black'}>?</span>
                                             )}
                                         </div>
                                     );
@@ -396,11 +717,15 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                             </div>
 
                             <div className={useDesktopLikeLandscapeLayout ? 'flex min-w-0 flex-col items-center leading-none' : 'flex flex-col items-center'}>
-                                <span className={`${useDesktopLikeLandscapeLayout ? 'max-w-[6.5rem] text-[10.5px]' : 'max-w-[6rem] text-[10px] sm:text-[11px]'} truncate font-black tracking-tight sm:tracking-tighter leading-none ${isCurrent ? 'text-amber-800' : 'text-slate-700'}`}>
+                                <span className={`${useMinimalPlayerRail ? 'max-w-[4.2rem] text-[7.5px]' : useCompactPlayerRail ? 'max-w-[5.5rem] text-[9.5px]' : useDesktopLikeLandscapeLayout ? 'max-w-[6.5rem] text-[10.5px]' : 'max-w-[6rem] text-[10px] sm:text-[11px]'} truncate font-black tracking-tight sm:tracking-tighter leading-none ${isCurrent ? 'text-amber-800' : 'text-slate-700'}`}>
                                     {displayName}
                                 </span>
                                 {isCurrent && (
-                                    <span className={useDesktopLikeLandscapeLayout
+                                    <span className={useMinimalPlayerRail
+                                        ? 'text-[6px] font-black text-amber-600 uppercase tracking-[0.04em] mt-0.5 animate-pulse'
+                                        : useCompactPlayerRail
+                                        ? 'text-[7px] font-black text-amber-600 uppercase tracking-[0.05em] mt-0.5 animate-pulse'
+                                        : useDesktopLikeLandscapeLayout
                                         ? 'text-[9px] font-black text-amber-600 uppercase tracking-[0.06em] mt-0.5 animate-pulse'
                                         : 'text-[9px] sm:text-[10px] font-black text-amber-600 uppercase tracking-[0.12em] sm:tracking-widest mt-0.5 sm:mt-1 animate-pulse'}
                                     >
@@ -433,11 +758,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
 
             <div
                 data-testid={useDesktopLikeLandscapeLayout ? 'faction-selection-main-stage' : undefined}
-                className="relative z-10 flex h-full w-full flex-col"
+                className="relative z-10 flex h-full min-h-0 w-full flex-col"
             >
                 {selectionIntro}
                 {selectionGrid}
-                {playerSelectionRail}
+                {shouldShowPlayerSelectionRail ? playerSelectionRail : null}
             </div>
 
             <AnimatePresence>

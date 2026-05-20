@@ -1,9 +1,27 @@
 import React from 'react';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SmashUpCore } from '../domain/types';
 import { FactionSelection } from '../ui/FactionSelection';
+
+vi.mock('framer-motion', () => {
+    const createMotionComponent = (tag: keyof JSX.IntrinsicElements) => {
+        const Component = React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
+            ({ children, whileHover: _whileHover, whileTap: _whileTap, layoutId: _layoutId, initial: _initial, animate: _animate, exit: _exit, transition: _transition, ...props }: React.PropsWithChildren<any>, ref) =>
+                React.createElement(tag, { ...props, ref }, children),
+        );
+        Component.displayName = `MockMotion(${tag})`;
+        return Component;
+    };
+
+    return {
+        motion: new Proxy({}, {
+            get: (_target, key) => createMotionComponent(String(key) as keyof JSX.IntrinsicElements),
+        }),
+        AnimatePresence: ({ children }: { children?: React.ReactNode }) => <>{children}</>,
+    };
+});
 
 vi.mock('react-i18next', () => ({
     useTranslation: () => ({
@@ -100,23 +118,92 @@ function renderSelection(dispatch = vi.fn()) {
     return dispatch;
 }
 
+function setViewport(width: number, height: number) {
+    Object.defineProperty(window, 'innerWidth', {
+        configurable: true,
+        writable: true,
+        value: width,
+    });
+    Object.defineProperty(window, 'innerHeight', {
+        configurable: true,
+        writable: true,
+        value: height,
+    });
+    act(() => {
+        window.dispatchEvent(new Event('resize'));
+    });
+}
+
 describe('FactionSelection POD/旧版派系统一占用', () => {
     afterEach(() => {
         vi.clearAllMocks();
+        setViewport(1024, 768);
     });
 
     it('别人选择 robots_pod 后，robots 组应直接显示为已占用', () => {
         renderSelection();
+        fireEvent.click(screen.getByTestId('faction-filter-all'));
 
         expect(screen.getByText('AI 已占领')).toBeInTheDocument();
     });
 
     it('别人选择 robots_pod 后，打开 robots 详情不应再出现确认选择按钮', () => {
         renderSelection();
+        fireEvent.click(screen.getByTestId('faction-filter-all'));
 
         fireEvent.click(screen.getByTestId('faction-option-robots'));
 
         expect(screen.queryByTestId('faction-confirm-button')).not.toBeInTheDocument();
         expect(screen.getByText('ui.taken_by_other')).toBeInTheDocument();
+    });
+
+    it('玩家状态条应占据独立底栏，不再绝对覆盖候选卡面', () => {
+        renderSelection();
+
+        const rail = screen.getByTestId('faction-selection-player-rail');
+        const currentPlayerCard = screen.getByTestId('faction-selection-player-card-0');
+
+        expect(String(rail.className)).not.toContain('absolute');
+        expect(String(rail.className)).toContain('shrink-0');
+        expect(String(currentPlayerCard.className)).not.toContain('scale-110');
+    });
+
+    it('超紧凑横屏默认聚焦可选派系，并允许切回全部查看已锁定项', () => {
+        setViewport(800, 450);
+        renderSelection();
+
+        expect(screen.queryByTestId('faction-option-robots')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('faction-filter-all'));
+
+        expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
+    });
+
+    it('桌面高密度候选池也应提供减负入口，并默认聚焦可选派系', () => {
+        setViewport(1440, 900);
+        renderSelection();
+
+        expect(screen.getByTestId('faction-search-input')).toBeInTheDocument();
+        expect(screen.getByTestId('faction-filter-available')).toBeInTheDocument();
+        expect(screen.queryByTestId('faction-option-robots')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('faction-filter-all'));
+
+        expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
+    });
+
+    it('搜索应按派系 id 或名称过滤候选列表', () => {
+        setViewport(800, 450);
+        renderSelection();
+
+        const searchInput = screen.getByTestId('faction-search-input');
+        fireEvent.change(searchInput, { target: { value: 'pirates' } });
+
+        expect(screen.getByTestId('faction-option-pirates')).toBeInTheDocument();
+        expect(screen.queryByTestId('faction-option-ninjas')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByTestId('faction-search-clear'));
+
+        expect(screen.getByTestId('faction-option-ninjas')).toBeInTheDocument();
     });
 });

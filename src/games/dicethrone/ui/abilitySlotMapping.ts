@@ -14,11 +14,13 @@ export const ABILITY_SLOT_MAP: Record<string, { labelKey: string; ids: string[] 
 };
 
 const CHARACTER_SLOT_ABILITY_OVERRIDES: Record<string, Record<string, string[]>> = {
-    // Ninja v2 玩家面板的两个视觉槽位与旧共享语义不同：
-    // top-right(combo 坐标) 是毒刃小顺子，bottom-left(sky 坐标) 是死亡盛放。
+    // Ninja v2 玩家面板的中间四格与旧共享语义不同：
+    // top-right 两格分别是毒刃 / 暗影步，bottom-left 两格分别是死亡盛放 / 烟雾阵。
     ninja: {
         sky: ['death-blossom'],
         combo: ['poison-blade'],
+        lotus: ['smoke-screen'],
+        lightning: ['shadow-step'],
     },
     // Treant v2 玩家面板采用独立被动槽，且右下角防御位在 meditate。
     // 旧实现曾错误复用共享语义，导致 passive / defense 高亮错位。

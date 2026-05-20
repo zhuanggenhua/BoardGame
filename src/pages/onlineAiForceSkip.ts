@@ -46,6 +46,7 @@ export function resolveOnlineAiAutoRecoveryCompletionNotice(args: {
         candidateReason !== 'hidden-interaction'
         && candidateReason !== 'visible-interaction'
         && candidateReason !== 'response-window'
+        && candidateReason !== 'response-loop'
     ) {
         return null;
     }

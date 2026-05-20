@@ -41,6 +41,7 @@ import {
     resolveMissingMatchConfirmationSignal,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
+    shouldRetainOnlineAiSeatOverrideAfterLatestState,
     shouldReleaseFactionSelectAttemptFromSharedState,
     shouldShowOnlineGameErrorToast,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
@@ -268,7 +269,7 @@ describe('TutorialMatchRoomWithAudio', () => {
                         return () => {
                             lifecycle.push(`unmount:${location.pathname}`);
                         };
-                    }, []);
+                    }, [location.pathname]);
 
                     return React.createElement('div', { 'data-testid': 'tutorial-match-room-probe' }, location.pathname);
                 },
@@ -494,6 +495,27 @@ describe('resolveOnlineAiAutoRecoveryCompletionNotice', () => {
                 },
                 sys: {
                     phase: 'main2',
+                },
+            } as MatchState<unknown>,
+            seatControllers,
+        });
+
+        expect(notice).toEqual({
+            tone: 'info',
+            title: 'AI 响应超时',
+            message: 'AI 已自动跳过。',
+        });
+    });
+
+    it('response-loop hard-close 收口后若仍停留在 AI 流程，也应显示自动跳过提示', () => {
+        const notice = resolveOnlineAiAutoRecoveryCompletionNotice({
+            candidateReason: 'response-loop',
+            authoritativeState: {
+                core: {
+                    activePlayerId: '1',
+                },
+                sys: {
+                    phase: 'afterRollConfirmed',
                 },
             } as MatchState<unknown>,
             seatControllers,
@@ -2298,6 +2320,64 @@ describe('submitOnlineAiResolution', () => {
             authoritativeState: advancedConfirmedState,
             latestSeatState: null,
         })).toBe(true);
+    });
+
+    it('staged override 只应作为 confirmed 到 state update 之间的一拍桥接，latestState 追平后应退回最新 seat state', () => {
+        const staleSeatState = buildOnlineAiSeatState({
+            nextId: 10,
+            interactionId: 'stale-hidden',
+            interactionSourceId: 'wizard_sacrifice',
+        });
+        const confirmedSeatState = buildOnlineAiSeatState({ nextId: 11 });
+        const latestCaughtUpSeatState = buildOnlineAiSeatState({ nextId: 11 });
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': staleSeatState },
+        })).toBe(confirmedSeatState);
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: {},
+            seatLatestStates: { '1': latestCaughtUpSeatState },
+        })).toBe(latestCaughtUpSeatState);
+    });
+
+    it('latest seat state 已追平 confirmed override 时，不应继续沿用 override 阴影状态', () => {
+        const confirmedSeatState = buildOnlineAiSeatState({ nextId: 12 });
+        const latestCaughtUpSeatState = buildOnlineAiSeatState({ nextId: 12 });
+
+        expect(shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: confirmedSeatState,
+            latestSeatState: latestCaughtUpSeatState,
+        })).toBe(false);
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': latestCaughtUpSeatState },
+        })).toBe(latestCaughtUpSeatState);
+    });
+
+    it('latest seat state 尚未追平 confirmed override 时，必须继续保留 override 作为桥接态', () => {
+        const confirmedSeatState = buildOnlineAiSeatState({ nextId: 14 });
+        const staleSeatState = buildOnlineAiSeatState({
+            nextId: 13,
+            interactionId: 'stale-hidden',
+            interactionSourceId: 'wizard_sacrifice',
+        });
+
+        expect(shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: confirmedSeatState,
+            latestSeatState: staleSeatState,
+        })).toBe(true);
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': staleSeatState },
+        })).toBe(confirmedSeatState);
     });
 
     it('shared state 已记录 AI 选中的派系时，应立即释放 select-faction attempt', () => {

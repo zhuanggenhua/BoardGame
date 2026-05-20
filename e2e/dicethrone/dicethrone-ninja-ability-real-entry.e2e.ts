@@ -367,8 +367,8 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
         const cases = [
             { label: 'slash-2', values: [1, 1, 2, 2, 3], slot: 'fist', expected: 'slash-2-5', upgrades: ['slash'] },
             { label: 'going-forward-2', values: [4, 4, 5, 5, 6], slot: 'chi', expected: 'going-forward', upgrades: ['going-forward'] },
-            { label: 'shadow-step-2', values: [6, 6, 6, 6, 1], slot: 'lotus', expected: 'shadow-step', upgrades: ['shadow-step'] },
-            { label: 'smoke-screen-2', values: [1, 4, 5, 6, 1], slot: 'lightning', expected: 'smoke-screen', upgrades: ['smoke-screen'] },
+            { label: 'shadow-step-2', values: [6, 6, 6, 6, 1], slot: 'lightning', expected: 'shadow-step', upgrades: ['shadow-step'] },
+            { label: 'smoke-screen-2', values: [1, 4, 5, 6, 1], slot: 'lotus', expected: 'smoke-screen', upgrades: ['smoke-screen'] },
             { label: 'shadow-fang-2', values: [1, 2, 3, 4, 5], slot: 'calm', expected: 'shadow-fang', upgrades: ['shadow-fang'] },
             { label: 'assassinate', values: [6, 6, 6, 6, 6], slot: 'ultimate', expected: 'ninja-assassinate', upgrades: [] },
         ];
@@ -398,7 +398,7 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
         try {
             await setNinjaScenario(match, [6, 6, 6, 6, 1], { upgradedAbilityIds: ['shadow-step'] });
             await screenshot(match.guestPage, testName, '01-shadow-step-2-before-click.png');
-            await clickResolvedAbilitySlot(match.guestPage, 'lotus', 'shadow-step');
+            await clickResolvedAbilitySlot(match.guestPage, 'lightning', 'shadow-step');
             await clickAdvancePhase(match.guestPage, '1');
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);
@@ -448,7 +448,7 @@ test.describe('DiceThrone Ninja 技能本体真实入口', () => {
 
             await setNinjaScenario(match, [1, 4, 5, 6, 1], { upgradedAbilityIds: ['smoke-screen'] });
             await screenshot(match.guestPage, testName, '05-smoke-screen-2-before-click.png');
-            await clickResolvedAbilitySlot(match.guestPage, 'lightning', 'smoke-screen');
+            await clickResolvedAbilitySlot(match.guestPage, 'lotus', 'smoke-screen');
             await clickAdvancePhase(match.guestPage, '1');
             await expect.poll(async () => {
                 const core = await readHarnessCoreState(match.guestPage);

@@ -24,7 +24,7 @@ import {
     getPlayerBoardAspectRatio,
 } from './abilitySlotLayout';
 import { useHorizontalDragScroll } from '../../../hooks/ui/useHorizontalDragScroll';
-import { getSlotAbilityId, getUpgradeCardPreviewRef } from './AbilityOverlays';
+import { getSlotAbilityId, getUpgradeCardPreviewRef } from './abilityOverlayHelpers';
 import { createScopedLogger } from '../../../lib/logger';
 
 const boardOverlaysLogger = createScopedLogger('DT_BOARD_OVERLAYS');

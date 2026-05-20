@@ -21,12 +21,12 @@
 | `going-forward-2` | upgrade | 一往无前 II | replace `going-forward` | `cards.ts` + `abilities.ts` | L3：真实手牌升级 + 真实玩家板槽位入口已测 |
 | `poison-blade` | offensive | 小顺子，慢性中毒 + 5 伤害 | smallStraight；delayed_poison 1；damage 5；Ninja v2 面板使用 `combo` 视觉槽 | `abilities.ts` / `ui/abilitySlotMapping.ts` | L3：真实 UI 槽位选择已测 |
 | `poison-blade-2` | upgrade | 毒刃 II，慢性中毒 + 不可防御伤害 | delayed_poison 1；unblockable damage 6 | `cards.ts` + `abilities.ts` | L3：真实手牌升级 + 真实玩家板 `combo` 槽结算 HP 30->24、慢性中毒 1 已测 |
-| `shadow-step` | offensive | 4 面具，烟雾弹、慢性中毒、不可防御伤害 | mask=4；smoke_bomb 1；delayed_poison 1；unblockable damage 6 | `abilities.ts` | L3：真实玩家板 `lotus` 槽升级后 source 与结算链已测，且已修复旧 `shadow-step` -> `elusive-step` 全局误别名 |
-| `shadow-step-2` | upgrade | 暗影步 II，慢性中毒 2、伤害 7 | smoke_bomb 1；delayed_poison 2；unblockable damage 7 | `cards.ts` + `abilities.ts` | L3：真实手牌升级 + 真实玩家板结算 HP 30->23、烟雾弹 1、慢性中毒 2 已测 |
+| `shadow-step` | offensive | 4 面具，烟雾弹、慢性中毒、不可防御伤害 | mask=4；smoke_bomb 1；delayed_poison 1；unblockable damage 6 | `abilities.ts` | L3：真实玩家板 `lightning` 槽升级后 source 与结算链已测，且已修复旧 `shadow-step` -> `elusive-step` 全局误别名 |
+| `shadow-step-2` | upgrade | 暗影步 II，慢性中毒 2、伤害 7 | smoke_bomb 1；delayed_poison 2；unblockable damage 7 | `cards.ts` + `abilities.ts` | L3：真实手牌升级 + 真实玩家板结算 HP 30->23、烟雾弹 1、慢性中毒 2 已测；`lightning` 槽证据已补 |
 | `death-blossom` | offensive | 忍刀/手里剑累计伤害，面具给忍术 | rollDie 5；katana +1，shuriken +2，mask ninjutsu +1；Ninja v2 面板使用 `sky` 视觉槽 | `abilities.ts` / `ui/abilitySlotMapping.ts` | L3：真实 UI 槽位选择已测 |
 | `death-blossom-2` | upgrade | 死亡盛放 II | replace `death-blossom` | `cards.ts` + `abilities.ts` | L3：真实手牌升级 + 真实玩家板 `sky` 槽奖励骰特写与收口已测 |
-| `smoke-screen` | utility | 获得烟雾弹/忍术并给慢性中毒 | smoke_bomb 1；ninjutsu 2；opponent delayed_poison 1 | `abilities.ts` | L3：真实玩家板 `lightning` 槽升级后结算链已测，且已修复 offensiveRoll 过滤 utility 的入口 bug |
-| `smoke-screen-2` | upgrade | 烟雾阵 II，忍术 3 | smoke_bomb 1；ninjutsu 3；delayed_poison 1 | `cards.ts` + `abilities.ts` | L3：真实手牌升级 + 真实玩家板结算烟雾弹 1、忍术 3、慢性中毒 1 已测 |
+| `smoke-screen` | utility | 获得烟雾弹/忍术并给慢性中毒 | smoke_bomb 1；ninjutsu 2；opponent delayed_poison 1 | `abilities.ts` | L3：真实玩家板 `lotus` 槽升级后结算链已测，且已修复 offensiveRoll 过滤 utility 的入口 bug |
+| `smoke-screen-2` | upgrade | 烟雾阵 II，忍术 3 | smoke_bomb 1；ninjutsu 3；delayed_poison 1 | `cards.ts` + `abilities.ts` | L3：真实手牌升级 + 真实玩家板结算烟雾弹 1、忍术 3、慢性中毒 1 已测；`lotus` 槽证据已补 |
 | `shadow-fang` | offensive | 大顺子，忍术 2 + 8 伤害 | largeStraight；ninjutsu 2；damage 8 | `abilities.ts` | L3：真实玩家板 `calm` 槽升级后 source 已测，基础/升级共享槽位链路 |
 | `shadow-fang-2` | upgrade | 影牙 II，忍术 2 + 9 伤害 | largeStraight；ninjutsu 2；damage 9 | `cards.ts` + `abilities.ts` | L3：真实手牌升级 + 真实玩家板槽位入口已测 |
 | `blink` | defensive | 防御掷 3 骰；若投出忍刀，造成 1 伤害；若投出手里剑，造成 2 伤害；若投出面具，获得烟雾弹 | diceCount 3；katana=>damage 1；shuriken=>damage 2；mask=>smoke_bomb 1；读取防御投已出骰面，不额外奖励骰 | `abilities.ts` / `domain/customActions/ninja.ts` / `domain/attack.ts` | L2：2026-05-18 按本地图源修正；需后续补 L3 真防御截图链 |
@@ -46,5 +46,5 @@
 - 旧结论“忍术固定 +1、烟雾弹固定减伤 2、慢性中毒为债务”已失效：这些机制已改为提示板口径并进入 L2 测试层。
 - 2026-05-14 回归审计又推翻了旧“Ninja 已全面收口”口径：`poison-blade` / `death-blossom` 槽位、`blink` 防御、不可防御跳过防御、`ninja-card-knife-fan` 时机均曾漏审。
 - 2026-05-18 再次按本地 `玩家面板.png` 与 `Ablilitycards.png` 复核后，旧 `blink` / `blink-2` 口径失效：之前把基础版误做成“按 3 颗奖励骰累计反击”，又把 II 级误复用基础版。当前已改为读取防御投已出的 3 颗骰子结算，且基础版与 II 级分开实现。
-- 2026-05-17 追加 Ninja 技能本体真实入口 E2E：修复 `shadow-step` 被全局别名到 Moon Elf `elusive-step` 的入口 bug；修复 `offensiveRoll` 过滤 `utility` 类型导致 `smoke-screen` 无法选择的问题。证据见 `evidence/dicethrone/dicethrone-ninja-ability-real-entry-e2e-2026-05-17.md`。
+- 2026-05-19 纠正 Ninja v2 玩家板槽位合同：`shadow-step` 实际落在 `lightning`，`smoke-screen` 实际落在 `lotus`；旧 `lotus/lightning` 口径失效，相关 L3 截图与证据文档已回写。
 - 当前修订后口径：上述四项已有 L2 合同测试与 L3 真实入口 E2E；Ninja 专属行动卡、升级卡与技能本体已有多条 L3 代表链，但全量机制是否“全面审计完成”仍必须以后续逐对象矩阵为准，不能再用旧接入审计直接代替。

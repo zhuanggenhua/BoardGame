@@ -33,6 +33,7 @@ import {
     DUPLICATE_OWNER_DISCONNECT_GRACE_MS,
     planDuplicateOwnerRoomCreate,
 } from './src/server/duplicateOwnerRooms';
+import { applyRematchVoteToggle, resolveRematchPlayerGroups } from './src/server/rematch';
 import { buildUgcServerGames } from './src/server/ugcRegistration';
 import { GameTransportServer } from './src/engine/transport/server';
 import { getAiSeatIds, resolveSeatPlayerDisplayName } from './src/engine/ai';
@@ -1845,28 +1846,10 @@ lobbySocketIO.on('connection', (socket) => {
         }
 
         const state = rematchStateByMatch.get(matchId)!;
-        const wasReady = state.ready;
         const autoAcceptedPlayerIds = await resolveAutoAcceptedRematchPlayerIds(matchId, payload?.autoAcceptedPlayerIds);
-        let autoAcceptedChanged = false;
-        for (const autoPlayerId of autoAcceptedPlayerIds) {
-            if (state.votes[autoPlayerId] === true) {
-                continue;
-            }
-            state.votes[autoPlayerId] = true;
-            autoAcceptedChanged = true;
-        }
-        if (autoAcceptedChanged) {
-            updateRematchReady(state);
-            state.revision += 1;
-            logger.info(`[RematchIO] AI 自动同意重赛: match=${matchId}, players=${autoAcceptedPlayerIds.join(',')}, ready=${state.ready}`);
-            lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, state);
-            if (!wasReady && state.ready) {
-                lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.TRIGGER_RESET);
-                scheduleRematchStateReset(matchId);
-            }
-        }
+        socket.data.rematchAutoAcceptedPlayerIds = autoAcceptedPlayerIds;
         socket.emit(REMATCH_EVENTS.STATE_UPDATE, state);
-        logger.info(`[RematchIO] ${socket.id} 加入对局 ${matchId} (玩家 ${playerId})`);
+        logger.info(`[RematchIO] ${socket.id} 加入对局 ${matchId} (玩家 ${playerId})，登记 AI 自动同意席位=${autoAcceptedPlayerIds.join(',') || 'none'}`);
     });
 
     socket.on(REMATCH_EVENTS.LEAVE_MATCH, () => {
@@ -1882,6 +1865,7 @@ lobbySocketIO.on('connection', (socket) => {
         }
         socket.data.rematchMatchId = undefined;
         socket.data.rematchPlayerId = undefined;
+        socket.data.rematchAutoAcceptedPlayerIds = undefined;
         logger.info(`[RematchIO] ${socket.id} 离开对局`);
     });
 
@@ -1891,22 +1875,27 @@ lobbySocketIO.on('connection', (socket) => {
         socket.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.DEBUG_NEW_ROOM, data);
     });
 
-    socket.on(REMATCH_EVENTS.VOTE, () => {
+    socket.on(REMATCH_EVENTS.VOTE, async () => {
         const matchId = socket.data.rematchMatchId as string | undefined;
         const playerId = socket.data.rematchPlayerId as string | undefined;
         if (!matchId || !playerId) return;
 
         const state = rematchStateByMatch.get(matchId);
         if (!state || state.ready) return;
-
-        const currentVote = state.votes[playerId] ?? false;
-        state.votes[playerId] = !currentVote;
+        const autoAcceptedPlayerIds = normalizeRematchPlayerIds(socket.data.rematchAutoAcceptedPlayerIds);
+        const matchResult = await storage.fetch(matchId, { metadata: true });
+        const nextState = applyRematchVoteToggle(state, {
+            playerId,
+            autoAcceptedPlayerIds,
+            playerGroups: resolveRematchPlayerGroups(matchResult.metadata),
+        });
+        state.votes = nextState.votes;
 
         const wasReady = state.ready;
-        updateRematchReady(state);
+        state.ready = nextState.ready;
         state.revision += 1;
 
-        logger.info(`[RematchIO] ${socket.id} 投票: ${playerId} -> ${state.votes[playerId]}, ready=${state.ready}`);
+        logger.info(`[RematchIO] ${socket.id} 投票: ${playerId} -> ${state.votes[playerId]}, ready=${state.ready}, autoAcceptedAi=${autoAcceptedPlayerIds.join(',') || 'none'}`);
 
         lobbySocketIO.to(`rematch:${matchId}`).emit(REMATCH_EVENTS.STATE_UPDATE, state);
 

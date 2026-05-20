@@ -130,4 +130,51 @@ describe('AbilityOverlays', () => {
         expect(onMagnifyCard).not.toHaveBeenCalled();
     });
 
+    it('Ninja v2 中间两列应把 shadow-step / smoke-screen 落到正确视觉槽位', () => {
+        const { container } = renderAbilityOverlays({
+            characterId: 'ninja',
+            availableAbilityIds: ['shadow-step', 'smoke-screen'],
+            canHighlight: true,
+            abilityLevels: {},
+        });
+
+        const lotusSlot = container.querySelector('[data-ability-slot="lotus"]');
+        const lightningSlot = container.querySelector('[data-ability-slot="lightning"]');
+
+        expect(lotusSlot).toHaveAttribute('data-base-ability-id', 'smoke-screen');
+        expect(lotusSlot).toHaveAttribute('data-resolved-ability-id', 'smoke-screen');
+        expect(lightningSlot).toHaveAttribute('data-base-ability-id', 'shadow-step');
+        expect(lightningSlot).toHaveAttribute('data-resolved-ability-id', 'shadow-step');
+    });
+
+    it('Ninja v2 只有烟雾阵时不应错误点亮暗影步槽', () => {
+        const { container } = renderAbilityOverlays({
+            characterId: 'ninja',
+            availableAbilityIds: ['smoke-screen'],
+            canHighlight: true,
+            abilityLevels: {},
+        });
+
+        const lotusSlot = container.querySelector('[data-ability-slot="lotus"]');
+        const lightningSlot = container.querySelector('[data-ability-slot="lightning"]');
+
+        expect(lotusSlot).toHaveAttribute('data-resolved-ability-id', 'smoke-screen');
+        expect(lightningSlot).toHaveAttribute('data-resolved-ability-id', '');
+    });
+
+    it('Ninja v2 只有暗影步时不应错误点亮烟雾阵槽', () => {
+        const { container } = renderAbilityOverlays({
+            characterId: 'ninja',
+            availableAbilityIds: ['shadow-step'],
+            canHighlight: true,
+            abilityLevels: {},
+        });
+
+        const lotusSlot = container.querySelector('[data-ability-slot="lotus"]');
+        const lightningSlot = container.querySelector('[data-ability-slot="lightning"]');
+
+        expect(lotusSlot).toHaveAttribute('data-resolved-ability-id', '');
+        expect(lightningSlot).toHaveAttribute('data-resolved-ability-id', 'shadow-step');
+    });
+
 });

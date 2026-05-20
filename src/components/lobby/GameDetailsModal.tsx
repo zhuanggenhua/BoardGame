@@ -281,6 +281,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
     const pendingActionRef = useRef<PendingRoomAction | null>(null);
     const isConfirmingActionRef = useRef(false);
     const roomsRef = useRef<Room[]>([]);
+    const createRoomInFlightRef = useRef(false);
 
     // 排行榜状态
     const [activeTab, setActiveTab] = useState<'lobby' | 'leaderboard' | 'changelog' | 'reviews'>('lobby');
@@ -866,6 +867,11 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
             forceReplaceOwnerRoom?: boolean;
         },
     ) => {
+        if (createRoomInFlightRef.current) {
+            logger.warn('[GameDetailsModal] create-room 被重复触发，已忽略');
+            return;
+        }
+        createRoomInFlightRef.current = true;
         let shouldPreserveLoading = false;
         setIsLoading(true);
         setMatchEntryLoadingPhase('creating');
@@ -1227,6 +1233,7 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
                 { dedupeKey: `create-room-failed.${errorCode}.${errorStatus ?? 'unknown'}` }
             );
         } finally {
+            createRoomInFlightRef.current = false;
             setIsLoading(false);
             if (!shouldPreserveLoading) {
                 setMatchEntryLoadingPhase(null);

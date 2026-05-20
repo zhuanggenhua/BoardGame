@@ -6,8 +6,8 @@ import { RESOURCE_IDS } from '../domain/resources';
 import { NINJA_DICE_FACE_IDS, TOKEN_IDS } from '../domain/ids';
 import { resolveAttack } from '../domain/attack';
 import { resolveEffectsToEvents } from '../domain/effects';
-import { checkPlayCard } from '../domain/rules';
-import { getAbilitySlotIdForCharacter } from '../ui/abilitySlotMapping';
+import { checkPlayCard, getAvailableAbilityIds } from '../domain/rules';
+import { getAbilitySlotIdForCharacter, slotContainsAbilityIdForCharacter } from '../ui/abilitySlotMapping';
 import { NINJA_CARDS } from '../heroes/ninja/cards';
 import { BLINK_2 } from '../heroes/ninja/abilities';
 import { createHeroMatchup, createQueuedRandom } from './test-utils';
@@ -36,12 +36,37 @@ function createNinjaDie(value: number): Die {
 }
 
 describe('DiceThrone Ninja 能力与卡牌合同', () => {
-    it('Ninja v2 面板槽位应按角色实图映射毒刃与死亡盛放', () => {
+    it('Ninja v2 面板槽位应按角色实图映射四个中间技能槽', () => {
         expect(getAbilitySlotIdForCharacter('ninja', 'poison-blade')).toBe('combo');
         expect(getAbilitySlotIdForCharacter('ninja', 'death-blossom')).toBe('sky');
+        expect(getAbilitySlotIdForCharacter('ninja', 'smoke-screen')).toBe('lotus');
+        expect(getAbilitySlotIdForCharacter('ninja', 'shadow-step')).toBe('lightning');
+
+        expect(slotContainsAbilityIdForCharacter('ninja', 'lotus', 'smoke-screen')).toBe(true);
+        expect(slotContainsAbilityIdForCharacter('ninja', 'lotus', 'shadow-step')).toBe(false);
+        expect(slotContainsAbilityIdForCharacter('ninja', 'lightning', 'shadow-step')).toBe(true);
+        expect(slotContainsAbilityIdForCharacter('ninja', 'lightning', 'smoke-screen')).toBe(false);
 
         expect(getAbilitySlotIdForCharacter('moon_elf', 'entangling-shot')).toBe('sky');
         expect(getAbilitySlotIdForCharacter('monk', 'taiji-combo')).toBe('combo');
+    });
+
+    it('Ninja 的骰面合同应分别命中烟雾阵和暗影步，不应互相串槽', () => {
+        const smokeState = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        smokeState.core.activePlayerId = '0';
+        smokeState.core.rollDiceCount = 4;
+        smokeState.core.dice = [1, 4, 5, 6].map(createNinjaDie);
+
+        expect(getAvailableAbilityIds(smokeState.core, '0', 'offensiveRoll')).toContain('smoke-screen');
+        expect(getAvailableAbilityIds(smokeState.core, '0', 'offensiveRoll')).not.toContain('shadow-step');
+
+        const shadowState = createHeroMatchup('ninja', 'treant')(['0', '1'], createQueuedRandom([1]));
+        shadowState.core.activePlayerId = '0';
+        shadowState.core.rollDiceCount = 4;
+        shadowState.core.dice = [6, 6, 6, 6].map(createNinjaDie);
+
+        expect(getAvailableAbilityIds(shadowState.core, '0', 'offensiveRoll')).toContain('shadow-step');
+        expect(getAvailableAbilityIds(shadowState.core, '0', 'offensiveRoll')).not.toContain('smoke-screen');
     });
 
     it('Blink 基础版应按防御投已出的骰面结算固定反击与烟雾弹，而不是额外奖励骰累计', () => {
