@@ -273,6 +273,107 @@ async function waitForHomeV2FlipMode(page: Page, expectedMode: 'overview' | 'det
     await expect(flipStage).toHaveAttribute('data-turn-animating', 'false', { timeout: 10000 });
 }
 
+async function installHomeV2FlipTimingProbe(page: Page): Promise<void> {
+    await page.evaluate(() => {
+        const globalWindow = window as Window & {
+            __BG_HOME_V2_FLIP_TIMING__?: {
+                read: () => Record<string, number | null>;
+                cleanup: () => void;
+            };
+        };
+        globalWindow.__BG_HOME_V2_FLIP_TIMING__?.cleanup();
+        delete globalWindow.__BG_HOME_V2_FLIP_TIMING__;
+
+        const stage = document.querySelector('[data-testid="home-v2-root"] [data-testid="home-v2-fold-line-flip"]') as HTMLElement | null;
+        if (!stage) {
+            throw new Error('HomeV2 翻页舞台不存在，无法安装时序探针');
+        }
+
+        const metrics = {
+            animatingStartedMs: null as number | null,
+            animatingStoppedMs: null as number | null,
+            detailModeMs: null as number | null,
+            detailLeftVisibleMs: null as number | null,
+            detailRightVisibleMs: null as number | null,
+        };
+
+        const markVisible = (selector: string, key: 'detailLeftVisibleMs' | 'detailRightVisibleMs') => {
+            if (metrics[key] !== null) {
+                return;
+            }
+            const element = document.querySelector(selector) as HTMLElement | null;
+            if (!element || element.offsetParent === null) {
+                return;
+            }
+            const rect = element.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0) {
+                return;
+            }
+            metrics[key] = performance.now();
+        };
+
+        const sample = () => {
+            const now = performance.now();
+            const animating = stage.getAttribute('data-turn-animating');
+            const mode = stage.getAttribute('data-flip-mode');
+            if (metrics.animatingStartedMs === null && animating === 'true') {
+                metrics.animatingStartedMs = now;
+            }
+            if (metrics.animatingStartedMs !== null && metrics.animatingStoppedMs === null && animating === 'false') {
+                metrics.animatingStoppedMs = now;
+            }
+            if (metrics.detailModeMs === null && mode === 'detail') {
+                metrics.detailModeMs = now;
+            }
+            markVisible('[data-testid="home-v2-detail-left-page"]', 'detailLeftVisibleMs');
+            markVisible('[data-testid="home-v2-detail-right-page"]', 'detailRightVisibleMs');
+        };
+
+        const observer = new MutationObserver(sample);
+        observer.observe(stage, { attributes: true, attributeFilter: ['data-turn-animating', 'data-flip-mode'] });
+
+        let rafId = 0;
+        const tick = () => {
+            sample();
+            rafId = window.requestAnimationFrame(tick);
+        };
+        sample();
+        rafId = window.requestAnimationFrame(tick);
+
+        globalWindow.__BG_HOME_V2_FLIP_TIMING__ = {
+            read: () => {
+                sample();
+                return metrics;
+            },
+            cleanup: () => {
+                observer.disconnect();
+                if (rafId) {
+                    window.cancelAnimationFrame(rafId);
+                }
+            },
+        };
+    });
+}
+
+async function readHomeV2FlipTimingProbe(page: Page): Promise<Record<string, number | null> | null> {
+    return page.evaluate(() => {
+        const globalWindow = window as Window & {
+            __BG_HOME_V2_FLIP_TIMING__?: {
+                read: () => Record<string, number | null>;
+                cleanup: () => void;
+            };
+        };
+        const probe = globalWindow.__BG_HOME_V2_FLIP_TIMING__;
+        if (!probe) {
+            return null;
+        }
+        const snapshot = probe.read();
+        probe.cleanup();
+        delete globalWindow.__BG_HOME_V2_FLIP_TIMING__;
+        return snapshot;
+    });
+}
+
 async function createTicTacToeRoom(page: Page): Promise<string> {
     const gameServerBaseURL = getGameServerBaseURL();
     const guestId = `home-banner-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
@@ -483,6 +584,21 @@ test.describe('Lobby E2E', () => {
             await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
             await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30000 });
             await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
+            await page.route('**/leaderboard', async (route) => {
+                await route.fulfill({
+                    status: 200,
+                    contentType: 'application/json; charset=utf-8',
+                    body: JSON.stringify({
+                        leaderboard: [
+                            { name: '北境王座', wins: 28, matches: 34 },
+                            { name: '银河守卫', wins: 24, matches: 31 },
+                            { name: '青铜棋手', wins: 19, matches: 27 },
+                            { name: '夜航者', wins: 16, matches: 22 },
+                            { name: '纸页旅人', wins: 12, matches: 20 },
+                        ],
+                    }),
+                });
+            });
             const mobileStageMetrics = await page.evaluate(() => {
             const stage = document.querySelector('[data-testid="home-v2-book-stage"]') as HTMLElement | null;
             if (!stage) return null;
@@ -807,11 +923,49 @@ test.describe('Lobby E2E', () => {
 
         await page.mouse.click(12, 12);
         await expect(page.getByTestId('auth-modal')).toHaveCount(0);
+        const timingCard = page.locator('[data-testid="home-v2-root"] [data-game-id="dicethrone"]').first();
+        await expect(timingCard).toBeVisible({ timeout: 20000 });
+        await installHomeV2FlipTimingProbe(page);
+        await timingCard.click();
+        await waitForHomeV2FlipMode(page, 'detail');
+        const baselineFlipTimingMetrics = await readHomeV2FlipTimingProbe(page);
+        if (!baselineFlipTimingMetrics) {
+            throw new Error('HomeV2 基线翻页时序探针缺失');
+        }
+        const baselineFlipAnimationMs = (baselineFlipTimingMetrics.animatingStartedMs !== null && baselineFlipTimingMetrics.animatingStoppedMs !== null)
+            ? baselineFlipTimingMetrics.animatingStoppedMs - baselineFlipTimingMetrics.animatingStartedMs
+            : null;
+        const baselineDetailModeLagMs = (baselineFlipTimingMetrics.animatingStoppedMs !== null && baselineFlipTimingMetrics.detailModeMs !== null)
+            ? baselineFlipTimingMetrics.detailModeMs - baselineFlipTimingMetrics.animatingStoppedMs
+            : null;
+        const baselineDetailReadyLagMs = (baselineFlipTimingMetrics.animatingStoppedMs !== null)
+            ? Math.max(
+                (baselineFlipTimingMetrics.detailLeftVisibleMs ?? baselineFlipTimingMetrics.animatingStoppedMs),
+                (baselineFlipTimingMetrics.detailRightVisibleMs ?? baselineFlipTimingMetrics.animatingStoppedMs),
+            ) - baselineFlipTimingMetrics.animatingStoppedMs
+            : null;
+        console.log(
+            `[home-v2-flip-timing:baseline] flipAnimationMs=${baselineFlipAnimationMs?.toFixed(2) ?? 'null'}, detailModeLagMs=${baselineDetailModeLagMs?.toFixed(2) ?? 'null'}, detailReadyLagMs=${baselineDetailReadyLagMs?.toFixed(2) ?? 'null'}`,
+        );
+        expect(baselineFlipAnimationMs).not.toBeNull();
+        expect(baselineDetailModeLagMs).not.toBeNull();
+        expect(baselineDetailReadyLagMs).not.toBeNull();
+        expect(baselineFlipAnimationMs!).toBeLessThan(520);
+        expect(baselineDetailModeLagMs!).toBeLessThan(120);
+        expect(baselineDetailReadyLagMs!).toBeLessThan(120);
+        await page.getByRole('button', { name: /返回目录/ }).click();
+        await waitForHomeV2FlipMode(page, 'overview');
+        await expect(page.locator('[data-scene-slot="overview_spread_body"]').first()).toBeVisible({ timeout: 10000 });
+
         for (const { suffix, progress } of HOME_V2_FLIP_CAPTURE_POINTS) {
             const diceThroneCard = page.locator('[data-testid="home-v2-root"] [data-game-id="dicethrone"]').first();
             await expect(diceThroneCard).toBeVisible({ timeout: 20000 });
             await diceThroneCard.click();
             await captureHomeV2FlipFrameAtProgress(page, testInfo, `page-flip-to-detail-${suffix}`, progress);
+            if (suffix === '50') {
+                await expect(page.getByTestId('home-v2-detail-left-page')).toBeVisible({ timeout: 5000 });
+                await expect(page.getByTestId('home-v2-detail-right-page')).toBeVisible({ timeout: 5000 });
+            }
             await waitForHomeV2FlipMode(page, 'detail');
 
             const backButton = page.getByRole('button', { name: /返回目录/ });
@@ -985,8 +1139,8 @@ test.describe('Lobby E2E', () => {
                 expect(detailLayoutMetrics.recommendedVisible).toBe(true);
                 expect(detailLayoutMetrics.recommendedTopRatio).toBeGreaterThan(0.60);
                 expect(detailLayoutMetrics.recommendedTopRatio).toBeLessThan(0.92);
-                expect(detailLayoutMetrics.recommendedWidthRatio).toBeGreaterThan(0.42);
-                expect(detailLayoutMetrics.recommendedWidthRatio).toBeLessThan(0.82);
+                expect(detailLayoutMetrics.recommendedWidthRatio).toBeGreaterThan(0.30);
+                expect(detailLayoutMetrics.recommendedWidthRatio).toBeLessThan(0.70);
                 expect(detailLayoutMetrics.playerCountBoxCount).toBeGreaterThanOrEqual(1);
                 expect(detailLayoutMetrics.firstPlayerCountBoxAspectRatio).toBeGreaterThan(0.88);
                 expect(detailLayoutMetrics.firstPlayerCountBoxAspectRatio).toBeLessThan(1.12);
@@ -1078,11 +1232,23 @@ test.describe('Lobby E2E', () => {
                 await expect(createRoomModal).toBeHidden({ timeout: 10000 });
 
                 for (const tabId of ['changelog', 'reviews', 'leaderboard'] as const) {
+                    const leaderboardResponsePromise = tabId === 'leaderboard'
+                        ? page.waitForResponse((response) => response.url().includes('/leaderboard') && response.ok())
+                        : null;
                     await page.locator(`[data-testid="home-v2-detail-tab"][data-tab-id="${tabId}"]`).click();
                     await expect(page.getByTestId(`home-v2-detail-panel-${tabId}`)).toBeVisible({ timeout: 10000 });
                     await expect(page.getByTestId('home-v2-fold-line-flip')).toHaveAttribute('data-flip-mode', 'detail');
                     await expect(page.getByTestId('home-v2-fold-line-flip')).toHaveAttribute('data-turn-animating', 'false');
-                    await page.waitForTimeout(300);
+                    if (tabId === 'leaderboard') {
+                        await leaderboardResponsePromise;
+                        await expect(page.getByTestId('home-v2-leaderboard-rank-badge').nth(0)).toBeVisible({ timeout: 10000 });
+                        await expect(page.getByTestId('home-v2-leaderboard-rank-badge').nth(0)).toHaveText('1');
+                        await expect(page.getByTestId('home-v2-leaderboard-rank-badge').nth(1)).toHaveText('2');
+                        await expect(page.getByTestId('home-v2-leaderboard-rank-badge').nth(2)).toHaveText('3');
+                        await expect(page.getByTestId('home-v2-leaderboard-record').first()).toContainText('/');
+                    } else {
+                        await page.waitForTimeout(300);
+                    }
                     const tabScreenshotPath = getEvidenceScreenshotPath(testInfo, `detail-tab-${tabId}-20260516`);
                     await page.screenshot({ path: tabScreenshotPath, fullPage: true });
                 }

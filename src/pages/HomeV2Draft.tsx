@@ -55,6 +55,7 @@ import {
     type UISceneFlowAlign,
     type UISceneNodeMovePosition,
 } from '../ui-scene';
+import { useLobbyMatchPresence } from '../hooks/useLobbyMatchPresence';
 
 const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
 const HOME_V2_BOOK_DESK = `${HOME_V2_ASSET_ROOT}/book-desk/compressed/1.webp`;
@@ -105,6 +106,15 @@ function resolveTabFlipDirection(from: HomeV2TabId, to: HomeV2TabId): 'flippingT
     const fromIndex = HOME_V2_TAB_ORDER.indexOf(from);
     const toIndex = HOME_V2_TAB_ORDER.indexOf(to);
     return toIndex >= fromIndex ? 'flippingTabForward' : 'flippingTabBackward';
+}
+
+function HomeV2DetailWarmup({ gameId }: { gameId: string | null }) {
+    useLobbyMatchPresence({
+        gameId,
+        enabled: Boolean(gameId),
+        requireSeen: false,
+    });
+    return null;
 }
 
 function formatAuthoringError(error: unknown): string {
@@ -1326,24 +1336,6 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
         </div>
     ), [detailStageLayout.height, detailStageLayout.scale, detailStageLayout.width, handleBackToOverview, handleTabChange, selectedGame, t]);
 
-    const renderDetailFlipStage = React.useCallback(({ includeTestId = true }: { includeTestId?: boolean } = {}) => (
-        <div
-            data-testid={includeTestId ? 'home-v2-book-stage' : undefined}
-            className="relative overflow-visible"
-            style={{
-                width: detailStageLayout.width,
-                height: detailStageLayout.height,
-                ['--home-v2-stage-scale' as const]: detailStageLayout.scale,
-            }}
-        >
-            <img
-                src={HOME_V2_OVERVIEW_BACKGROUND}
-                alt=""
-                className="absolute inset-0 h-full w-full object-fill"
-            />
-        </div>
-    ), [detailStageLayout.height, detailStageLayout.scale, detailStageLayout.width]);
-
     const sceneSlots = React.useMemo(() => {
         const slots: Record<string, React.ReactNode> = {};
 
@@ -1391,6 +1383,9 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
                 className="absolute inset-0 h-full w-full object-cover object-top opacity-90"
             />
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(255,216,160,0.16)_0%,_rgba(0,0,0,0)_42%),linear-gradient(180deg,_rgba(30,20,14,0.05)_0%,_rgba(24,16,11,0.16)_100%)]" />
+            {sceneState === 'flippingToDetail' ? (
+                <HomeV2DetailWarmup gameId={selectedGame?.id ?? null} />
+            ) : null}
             <div className="relative flex h-full w-full items-center justify-center">
                     <div
                         data-testid="home-v2-shell-ready"
@@ -1407,7 +1402,6 @@ export const HomeV2Draft = ({ authoringMode = true }: HomeV2DraftProps) => {
                             renderOverviewStage={renderOverviewStage}
                             renderDetailStage={renderDetailStage}
                             renderOverviewFlipStage={renderOverviewFlipStage}
-                            renderDetailFlipStage={renderDetailFlipStage}
                             overviewStageSize={overviewStageLayout}
                             detailStageSize={detailStageLayout}
                             leftPageRect={HOME_V2_FLIP_TO_OVERVIEW_RECT}

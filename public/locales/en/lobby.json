@@ -105,8 +105,8 @@
       }
     },
     "detailSearchPlaceholder": "Search rooms or players",
-    "detailNoMatchTitle": "No rooms match this filter",
-    "detailNoMatchDescription": "Try another filter or create a new room.",
+    "detailNoMatchTitle": "No rooms match this search",
+    "detailNoMatchDescription": "Try another keyword or create a new room.",
     "detailOpenSummary": "Open {{open}} · Locked {{locked}}",
     "detailFilters": {
       "all": "All",

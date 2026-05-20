@@ -100,14 +100,22 @@ export const openSmashUpModal = async (page: Page) => {
     }
 
     const modalRoot = page.locator('#modal-root');
-    const heading = modalRoot.getByRole('heading', { name: /Smash Up|大杀四方/i });
-    if (!(await heading.isVisible().catch(() => false))) {
+    const modalTitle = modalRoot.getByText(/Smash Up|大杀四方/i).first();
+    const createRoomButtonInModal = modalRoot.locator('button').filter({ hasText: /Create Room|创建房间/i }).last();
+    try {
+        await expect(createRoomButtonInModal).toBeVisible({ timeout: 2500 });
+        return createRoomButtonInModal;
+    } catch {
+        // 弹窗未在短时间内就绪时，再回退到首页卡片点击流程。
+    }
+
+    if (!(await modalTitle.isVisible().catch(() => false))) {
         const gameCard = page.locator('[data-game-id="smashup"]').first();
         await gameCard.scrollIntoViewIfNeeded();
-        await gameCard.evaluate((node) => (node as HTMLElement | null)?.click());
+        await gameCard.click();
     }
-    await expect(heading).toBeVisible({ timeout: 15000 });
-    return heading;
+    await expect(createRoomButtonInModal).toBeVisible({ timeout: 15000 });
+    return createRoomButtonInModal;
 };
 
 export const createRoom = async (page: Page): Promise<string | null> => {
@@ -126,7 +134,9 @@ export const createRoom = async (page: Page): Promise<string | null> => {
     await expect(twoPlayersButton).toBeVisible({ timeout: 5000 });
     await twoPlayersButton.click();
 
-    await createModal.getByRole('button', { name: /Confirm|确认/i }).evaluate((el) => (el as HTMLButtonElement).click());
+    const confirmButton = createModal.getByRole('button', { name: /Confirm|确认/i });
+    await expect(confirmButton).toBeVisible({ timeout: 5000 });
+    await confirmButton.click();
     await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
 
     try {

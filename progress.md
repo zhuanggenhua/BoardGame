@@ -26,6 +26,7 @@
 - **2026-05-17 Home V2 design spec / detail button pass:** 新增 `docs/ai-rules/home-v2-design.md`，限定 Home V2 移动横屏首页/详情/弹窗的目标稿来源、书页构图、详情页缩略图/描述/账本密度和按钮语法。`GameDetails.tsx` 继续按该规范收：左页详情缩略图从 `96px` 缩到 `78px`，描述宽度提升到 `0.83`，教程/创建房间按钮改为带图标、内描边、金色角标和上下细线的书本控件。`BG_HOME_V2_VIEWPORT=852x393` 专项 E2E 通过，截图已复看。
 - **2026-05-17 detail search / button rebuild:** 继续按用户反馈重构右页搜索和按钮语法：`GameDetails.tsx` 将创建房间从顶栏孤立大按钮下沉到搜索行，搜索框改为无填充的窄幅书页线框并使用 lucide `Search` 图标；`BookFrameButton` 降低圆角、阴影和胶囊感，房间行内操作改为同家族的 `RoomLedgerActionTag`。`npm run typecheck`、`npx eslint src/components/home-v2/GameDetails.tsx e2e/lobby.e2e.ts` 和 `BG_HOME_V2_VIEWPORT=852x393` 专项 E2E 均通过；最新量测 `createRoomButtonHeight=32.00`、`createRoomButtonWidthRatio=0.30`、`rightLedgerTopRatio=0.23`、`firstRoomActionHeight=20.00`、`visibleRoomRowCount=6`，截图已复看：搜索不再撑满右页，也不再是一块浅色网页输入背景；创建/加入/加密/观战按钮不再是普通网页胶囊。
 - **2026-05-18 detail action polish after visual review:** 用户继续指出“所有按钮叠层、教程不显眼、人数用 V1 方块、搜索图标歪/输入框怪”后，重新按局部截图审查并收敛：`GameDetails.tsx` 将 `BookFrameButton` / `BookLineButton` / `RoomLedgerActionTag` 改成单层书本动作语法，去掉多层内描边和重阴影；教程模式改为明确深色动作按钮，推荐人数保持 V1 风格数字方块；房间状态从伪按钮改为非按钮状态戳；搜索框改为单底线账本搜索，并用 E2E 量测锁住底线和 `Search` 图标垂直居中。`npm run typecheck`、`npx eslint src/components/home-v2/GameDetails.tsx e2e/lobby.e2e.ts` 和 `BG_HOME_V2_VIEWPORT=852x393` 专项 E2E 均通过；最新量测 `createRoomButtonHeight=31.00`、`createRoomButtonWidthRatio=0.31`、`playerCountBoxCount=2`、`firstPlayerCountBoxAspectRatio=1.00`、`tutorialTopRatio=0.85`、`tutorialBottomRatio=0.96`、`tutorialWidthRatio=0.41`、`roomSearchFieldBorderBottomWidth=1.00`、`roomSearchIconCenterYDelta=0.50`、`firstRoomActionHeight=19.00`，截图已复看：教程不再像灰色遮罩或隐形入口，房间状态不再伪装成按钮，搜索图标不再漂在输入框外侧。
+- **2026-05-20 flip tail diagnosis / cutover:** 针对用户继续反馈“翻页结束后还要等几秒才显示”，本轮先在 `e2e/lobby.e2e.ts` 增加翻页时序探针，再对 `FoldLinePageFlipStage.tsx` 改成“自有进度阈值优先收口，turn.js 事件与 timer 只保底”。量测证明：问题主要在翻页动画尾巴，不是详情页翻完后再额外等数据；修正后基线时序变为 `flipAnimationMs=363.20`、`detailModeLagMs=0.00`、`detailReadyLagMs=-409.60`。也就是详情内容在动画结束前已经露出，翻完后不再额外卡一段。`npm run typecheck`、`npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx e2e/lobby.e2e.ts` 与移动横屏专项 E2E 已重新通过。
 - **Screenshot directory:** 已重新打开截图目录，并将最新 `auth-modal-overlay.png` 复制为唯一命名 `auth-modal-overlay-20260514-inner-rhythm.png`，避免图片查看器继续显示同名旧缓存。源文件和副本 `LastWriteTime` 均为 `2026/5/14 23:40:25`。
 - **Detail screenshot directory:** 已打开详情截图目录，并把最新详情页截图复制为唯一命名 `detail-entry-20260515-table-readable.png`，避免同名截图缓存误判。副本 `LastWriteTime=2026/5/15 21:02:36`。
 - **Verification:** `npx eslint src/components/home-v2/GameDetails.tsx e2e/lobby.e2e.ts` 0 error；`npm run typecheck` 通过；同一条 Home V2 E2E 通过。
@@ -1092,3 +1093,68 @@
   - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260516-action-buttons.png`
   - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-create-room-modal-20260516.png`
   - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-tab-reviews-20260516.png`
+
+## Addendum（2026-05-19）：推荐人数语法、排行榜样例与翻页预热补齐
+
+- 本轮只收三个漏项：
+  - 左页底部推荐人数从“标签一排、方块另一排/偏左重心”收回成居中的单行 `推荐人数：方块`；
+  - 右页排行榜 compact 加入固定样例数据做真实验收，前三名改成金/银/铜色块，胜场记录改成单行 `x/x`；
+  - `HomeV2Draft.tsx` 增加 `HomeV2DetailWarmup`，在 `flippingToDetail` 阶段提前预热详情页房间数据，避免把详情加载完全拖到翻页完成后。
+- 涉及文件：
+  - `src/components/home-v2/GameDetails.tsx`
+  - `src/pages/HomeV2Draft.tsx`
+  - `docs/ai-rules/home-v2-design.md`
+  - `e2e/lobby.e2e.ts`
+- 验证：
+  - `npm run typecheck` 通过。
+  - `npx eslint src/components/home-v2/GameDetails.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts` 通过。
+  - `BG_HOME_V2_VIEWPORT=852x393 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` 通过。
+- 复看截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260516-action-buttons.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-tab-leaderboard-20260516.png`
+- 肉眼结论：
+  - 推荐人数现在是单行 `推荐人数：2 4`，重心回到左页底部中段，不再拆成两排。
+  - 排行榜前三已经有明确金/银/铜色块，右侧胜场记录改成 `28/34` 这类单行格式，不再拆成两行小字。
+  - 搜索图标保持输入框中线量测 `0.50`，没有因为本轮细修把输入框再次改歪。
+
+## Addendum（2026-05-19）：翻页中段预显与安装语义门禁
+
+- 本轮新增两条收口：
+  - 根 `AGENTS.md` 补了一条强制门禁：用户说“安装到手机 / 装到设备”但没明确说 `release / 正式包 / 覆盖正式安装` 时，默认只能按**测试安装**理解；若测试包因签名或包名冲突无法完成目标，必须先说明阻塞，再等用户确认是否切到正式包路线。
+  - `FoldLinePageFlipStage.tsx` 在 `flippingToDetail` 阶段增加 detail 预显层，不再等翻页完成后才把详情页主内容整块挂上；`HomeV2Draft.tsx` 同时去掉了旧的空白 detail flip shell，避免中段一直是整张纸面空页。
+- 涉及文件：
+  - `AGENTS.md`
+  - `src/components/home-v2/FoldLinePageFlipStage.tsx`
+  - `src/pages/HomeV2Draft.tsx`
+  - `e2e/lobby.e2e.ts`
+- 验证：
+  - `npm run typecheck` 通过。
+  - `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts` 通过。
+  - `CODEX_MANAGED_BY_NPM=1 node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` 通过。
+- 最新复看截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-75.png`
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260516-action-buttons.png`
+- 肉眼结论：
+  - `50%` 翻页帧已经不是整张白页：左侧详情缩略图与简介、右侧房间账本都已经预显，只是中缝翻页区域仍被纸页覆盖。
+  - `75%` 翻页帧时，详情页主体已经基本完整出现，不再存在“翻页完成后还要再等几秒才出内容”的整页空白感。
+
+## Addendum（2026-05-20）：推荐人数回中与规范重写复验
+
+- 本轮修正：
+  - 根 `AGENTS.md` 把刚才那条错误的“安装到手机”局部规则，重写成通用门禁：任何动作口令都不得擅自升级对象、范围、环境或交付级别。
+  - `GameDetails.tsx` 把左页底部推荐人数从左下角偏置布局，改成居中单行底带，教程按钮也收成固定宽度，不再把推荐人数挤到角落。
+  - `e2e/lobby.e2e.ts` 的推荐人数宽度断言同步到新布局，避免旧门槛继续代表旧口径。
+- 验证：
+  - `npm run typecheck` 通过。
+  - `npx eslint src/components/home-v2/GameDetails.tsx src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts` 通过。
+  - `CODEX_MANAGED_BY_NPM=1 BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 BG_HOME_V2_VIEWPORT=852x393 node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"` 通过。
+- 当前量测：
+  - `recommendedWidthRatio=0.34`
+  - `tutorialWidthRatio=0.47`
+  - `recommendedTopRatio=0.87`
+- 关键截图：
+  - `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260516-action-buttons.png`
+- 肉眼结论：
+  - 推荐人数现在在底部中轴，不再贴左下角。
+  - 教程按钮仍保持单层书页按钮，宽度收窄后没有把推荐人数挤成副作用布局。

@@ -105,8 +105,8 @@
       }
     },
     "detailSearchPlaceholder": "搜索房间或玩家",
-    "detailNoMatchTitle": "没有符合筛选的房间",
-    "detailNoMatchDescription": "试试切换筛选条件，或直接创建新房间。",
+    "detailNoMatchTitle": "没有符合搜索的房间",
+    "detailNoMatchDescription": "试试换个关键词，或直接创建新房间。",
     "detailOpenSummary": "可加入 {{open}} · 加密 {{locked}}",
     "detailFilters": {
       "all": "全部",

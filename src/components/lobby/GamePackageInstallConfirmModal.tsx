@@ -18,6 +18,7 @@ interface GamePackageInstallConfirmModalProps {
     onCancel: () => void | Promise<void>;
     isLoading?: boolean;
     closeOnBackdrop?: boolean;
+    visualStyle?: 'default' | 'home-v2';
 }
 
 export const GamePackageInstallConfirmModal = ({
@@ -34,8 +35,10 @@ export const GamePackageInstallConfirmModal = ({
     onCancel,
     isLoading = false,
     closeOnBackdrop = true,
+    visualStyle = 'default',
 }: GamePackageInstallConfirmModalProps) => {
     const { t } = useTranslation('lobby');
+    const isHomeV2Style = visualStyle === 'home-v2';
     const sizeUnknownLabel = t('packageManager.sizeUnknown');
     const packageItems = [
         {
@@ -95,7 +98,7 @@ export const GamePackageInstallConfirmModal = ({
         <ModalBase
             onClose={onClose}
             closeOnBackdrop={closeOnBackdrop}
-            overlayClassName="bg-[#2b2114]/30"
+            overlayClassName={isHomeV2Style ? 'bg-[rgba(33,20,12,0.42)] backdrop-blur-[1px]' : 'bg-[#2b2114]/30'}
             containerClassName="p-4 sm:p-6"
             containerStyle={{
                 paddingTop: 'max(1rem, env(safe-area-inset-top))',
@@ -104,7 +107,12 @@ export const GamePackageInstallConfirmModal = ({
                 paddingLeft: 'max(1rem, env(safe-area-inset-left))',
             }}
         >
-            <section className="pointer-events-auto w-full max-w-[21rem] rounded-sm border border-parchment-card-border/50 bg-parchment-card-bg p-5 font-serif text-parchment-base-text shadow-parchment-card-hover">
+            <section
+                data-testid="game-details-mobile-package-install-confirm-modal"
+                className={isHomeV2Style
+                    ? 'pointer-events-auto w-full max-w-[36rem] rounded-[8px] border border-[#8e6140]/52 bg-[linear-gradient(180deg,_rgba(247,225,191,0.98)_0%,_rgba(236,199,151,0.98)_100%)] p-6 font-serif text-[#3f2718] shadow-[0_24px_48px_rgba(40,24,13,0.32),inset_0_1px_0_rgba(255,246,225,0.72)]'
+                    : 'pointer-events-auto w-full max-w-[21rem] rounded-sm border border-parchment-card-border/50 bg-parchment-card-bg p-5 font-serif text-parchment-base-text shadow-parchment-card-hover'}
+            >
                 <div className="inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-parchment-light-text">
                     {isFailed ? <AlertTriangle size={15} /> : <HardDriveDownload size={15} />}
                     <span>{isPreview ? t('packageManager.confirmEyebrow') : t('packageManager.eyebrow')}</span>

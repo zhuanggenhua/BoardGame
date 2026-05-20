@@ -1,3 +1,128 @@
+## Addendum（2026-05-13）：Home V2 首页按 ig_0623 设计稿重做
+
+### Goal
+> 回应用户最新指定：`ig_0623cd92f8bdcbc0016a034df8b4c88199ae0c1276fee29f85.png` 才是要实现的首页设计稿。当前首页必须保留书本主轴、移动端横屏优先，并用真实 React DOM/CSS 实现 3+3 游戏目录、顶部分类索引、右上账号/语言、左页分页和右页继续对局；禁止贴图、搜索框、帮助、Logo、说明文案和“100 游戏说明”。
+
+### Phase
+- [x] **Phase A: 失败方向切断**
+  - [x] 明确废弃“贴图基线 + 透明热区”口径
+  - [x] 不再生成新图，不再把设计稿图片作为页面可见层
+  - [x] 保存目标稿到 `artifacts/home-v2-design/home-v2-mobile-book-catalog-target.png`
+  - [x] 继续禁止搜索、帮助、Logo 大标题、“100 游戏说明/游戏数量说明”等说明型 UI
+
+- [x] **Phase B: 实现**
+  - [x] 生成项目内宽版空书本背景 `public/assets/common/images/home-v2/book-catalog-wide/1.png`
+  - [x] `HomeV2.tsx` / `HomeV2Draft.tsx` 首页背景切到宽版空书本，overview stage 恢复上一版 `1864x843`
+  - [x] `LobbyDirectory.tsx` 改成 `ig_0623` 结构：左页顶部分类线、右页账号 + 语言、左右 3+3 六条目录、左页底部分页、右页底部继续对局
+  - [x] `全部游戏` 只显示 `type === 'game'`，不再混入架构可视化、素材切片机等工具项目
+  - [x] 分类文案改为 `全部`，active 态使用页眉选中线/小菱形，不再使用大绿色书签块
+  - [x] 删除搜索框、在线大厅第二按钮和底部游戏数量说明
+  - [x] 调整条目纵向位置，减少移动横屏上半页空白
+
+- [x] **Phase C: 验证**
+  - [x] ESLint
+  - [x] Typecheck
+  - [x] 同一条 Home V2 移动横屏 E2E
+  - [x] 人工复看 `homepage-catalog.png`，确认真实 DOM 已按 `ig_0623` 方向改变：无贴图、无搜索/说明/帮助/Logo，6 个游戏为 3+3，工具未混入全部游戏
+
+- [x] **Phase D: 设计稿逐项对齐规范**
+  - [x] 建立本轮视觉对比清单：底部分页与继续对局必须同一中心线；左侧 active 分类必须是页眉分割线上的选中线 + 居中小菱形；不得只凭“大结构像”收口
+  - [x] E2E 增加 `bottomControlCenterDelta`、`activeRuleWidthRatio`、`activeRuleHeaderTopDelta`、`activeTextToRuleGap`、`activeMarkerCenterDelta`、`activeRuleMarkerCenterDelta` 量测，避免再次漏看底部和选中态细节
+  - [x] 将 active 线/标记从按钮内部拆出，固定到页眉分割线坐标，避免把设计稿里的页眉选中线误当成文字下划线
+  - [x] 重新跑 E2E 并复看 `homepage-catalog.png`
+  - [x] 回写证据，明确每个被指出的问题位点是否达标
+
+- [x] **Phase E: 登录弹窗设计稿前置盘点**
+  - [x] 读取真实 `AuthModal.tsx` / `auth.json`，确认现有登录、注册、重置密码字段与按钮
+  - [x] 更新 UI/UX 规范：生图前必须盘点真实 UI 内容，禁止凭常见登录页模式添加不存在的第三方登录、协议勾选、帮助说明等控件
+  - [x] 基于真实 AuthModal 内容重新生成登录弹窗设计稿；登录走 modal 覆盖，在线大厅继续走书本
+  - [x] 复看生成稿，确认前景只包含真实登录态字段；背景书本大厅已压暗虚化，避免再生成可读的假游戏名
+
+- [x] **Phase F: 登录弹窗实现**
+  - [x] 账号入口改为打开 `AuthModal` 覆盖层，不再把登录表单嵌进书页右页
+  - [x] `AuthModal` 非 embedded 样式改成紧凑羊皮纸弹窗：暗金细边、小角饰、盒式输入框、深色主按钮
+  - [x] E2E 改为验证 `auth-modal` 覆盖书本大厅、`auth-embedded-panel` 不存在、登录态只包含真实字段和登录/注册切换
+  - [x] 复看 `auth-modal-overlay.png`，确认书本大厅仍在背景、modal 内容未出现第三方登录/协议勾选/说明区
+  - [x] 用户指出弹窗过小后，补目标稿量测：目标 modal 图片量测 `0.2808w / 0.6275h`，当前截图图片量测 `0.2768w / 0.6120h`；E2E DOM 量测 `0.266w / 0.588h`，并把门禁改为参考图比例区间
+  - [x] 更正规范落点：`ui-ux.md` 只保留入口提醒；新增 `docs/ai-rules/generated-design-implementation.md` 作为“生图设计稿 -> 实现设计稿”的专项流程
+  - [x] 打开截图目录，并复制唯一命名截图 `auth-modal-overlay-20260514-inner-rhythm.png`，避免同名覆盖导致图片查看器缓存误判
+  - [x] 为“实现校验”新增项目级 skill：`.windsurf/skills/generated-design-implementation/SKILL.md`，要求同时量外框比例和内部节奏
+  - [x] 修正登录态内部节奏：不再让 `body` 吃满剩余高度，`forgot` 到 `submit` 间隙收敛，按钮回到设计稿的中下部位置
+
+- [x] **Phase G: 详情/在线大厅书页网格重构**
+  - [x] 读取真实 `GameDetails.tsx` 和当前 `detail-entry.png`，确认详情页实际是左页游戏上下文 + 右页房间账本
+  - [x] 更正生图 skill：主次不允许打破既有左右平衡；非必要控件不能默认进入生成稿；推荐人数/筛选/底部统计不得被放大成主角
+  - [x] 再次更正生图 skill / UIUX：看实际内容是继承内容职责，不是照搬旧载体版式；同级 tab 禁止一大一小，active 态必须保持同一视觉语法
+  - [x] 根据用户纠偏停止继续生图，直接重构 `GameDetails.tsx`：左页改为横向封面 + 标题信息 + 正文 + 教程行动的书页网格；右页移除筛选胶囊和底部统计，只保留同级 tab、搜索、创建房间和房间账本
+  - [x] E2E 增加详情页布局量测：左页 hero 宽度/顶部、正文顶部、教程按钮顶部、右页账本顶部、tab 字号/基线/高度差、筛选按钮数量
+  - [x] 更新生成设计到实现 skill：实现阶段必须量支持区域占位和空白占比，不能让次级区域变成窄内容带 + 大空白
+  - [x] 重新按目标稿复核后修正根因：详情页切回宽书本载体，左页 footer 上移收口，右页账本补列分割线
+  - [x] 重新跑 ESLint、Typecheck、同一条 Home V2 E2E，并复看 `detail-entry-20260515-wide-ledger.png`
+  - [x] 生成同尺度并排图 `artifacts/home-v2-design/compare-crops/detail-target-current-side-by-side-final.png`，作为设计稿实现验收证据
+  - [x] 根据用户反馈修正两个细节：返回入口改为轻量 `← 返回目录` 文本，不再是深色胶囊按钮；推荐人数改为 V1 风格数字方框，不再使用横向长条
+  - [x] E2E 增加返回按钮背景/宽度和人数方框数量/宽高比量测，并复看 `detail-entry-20260515-back-player-boxes.png`
+  - [x] 用户继续指出返回和创建房间按钮过小后，先放大热区；随后纠正动作语义：返回入口按目标稿保持透明轻量导航，不强加按钮背景；创建房间仍作为主操作 prominent 按钮，并补 `backButtonBackgroundAlpha/BorderWidth/Height/WidthRatio/FontSize` 与 `createRoomButtonHeight/WidthRatio/FontSize` 门禁
+  - [x] 放大按钮后同步收紧左页简介和右页搜索/账本垂直节奏，避免只修按钮却把内容整体下推
+  - [x] 更新生成设计到实现 skill/规范：主操作和导航入口不能因为书本风格被压成装饰性小标签，也不能用固定 px 尺寸冒充已按设计稿比例缩放；同时必须区分动作类型，不能把返回这类轻量导航误套成深色按钮背景
+
+- [x] **Phase H: 详情页其他标签页与创建房间弹窗收口审计**
+  - [x] `CreateRoomModal` 可作为通用组件，Home V2 通过 `visualStyle="home-v2"` 保持书本/羊皮纸风格统一，并生成 `detail-create-room-modal-20260516.png`
+  - [x] 右页 `更新 / 评价 / 排行榜` 三个标签页已接入真实数据源和 Home V2 书页面板，不添加假数据，并分别生成 `detail-tab-changelog-20260516.png`、`detail-tab-reviews-20260516.png`、`detail-tab-leaderboard-20260516.png`
+  - [x] E2E 验证切换上述标签页不触发翻页：`home-v2-fold-line-flip` 保持 `data-flip-mode="detail"` 且 `data-turn-animating="false"`
+  - [x] 完成审计：上述截图均来自 2026-05-16 09:54 最新 E2E 运行，已实际打开复看
+
+- [x] **Phase I: V2 首页剩余遗漏审计**
+  - [x] `继续对局` 从假 `#A12F` 改为读取真实本地 match credentials / owner active match，并可直接进入真实对局
+  - [x] 右上语言入口从假按钮改为真实语言菜单，切换后写入 `bg_locale_preference` 并调用 `i18n.changeLanguage`
+  - [x] 账号入口保持“登录走弹窗，大厅走书本”，`HomeV2.tsx` 不再渲染旧 rooms 内嵌登录分支
+  - [x] 加密房密码输入改为右页覆盖浮层，不再散在右页底部；E2E 量测 `centerYRatio=0.50`、输入框 `54px`
+  - [x] 登录弹窗补注册/重置态截图验收，确认邮箱、验证码、昵称/新密码、确认密码等真实字段可见
+  - [x] 静态检查通过；Home V2 两条目标 E2E 单独复跑通过并复看截图
+  - [x] 记录剩余非阻塞项：`/dev/home-v2-authoring` 的 `HomeV2Draft.tsx` 仍保留旧 authoring/内嵌登录实现；`lobby.e2e.ts` 整文件混有旧大厅断言，Home V2 环境下 5 条旧用例失败，需要后续按 V1/V2 拆分或改造
+
+- [ ] **Phase J: V2 首页/详情最终遗漏复查**
+  - [x] 复看最新首页、详情、登录、创建房间、密码浮层和其它 tab 截图本体，不再只依赖 E2E 断言
+  - [x] 代码检索旧 `GameDetailsModal` 与 Home V2 `GameDetails` 的功能差异
+  - [x] 用户纠偏后重做 Home V2 弹窗统一：`AuthModal` / `CreateRoomModal` 复用共享纸面 modal 壳层与通用输入/按钮 token，并用专项 E2E 复验设计稿方向与键盘稳定性
+  - [x] 按设计稿重新确认登录 / 创建房间 / 加密房密码三类弹窗：统一为整本书/视口中心的实心纸面 modal，并恢复目标稿要求的压暗 + 轻 blur 背景
+  - [x] 用户否定“可实现目标稿”后，直接回到原始 `home-v2-auth-modal-target.png` 实现：登录标题、输入框、按钮、边框/角饰和底部切换按原稿收敛；密码弹窗按内容高度收短但保持同壳层居中
+  - [x] 修正移动端全局 `16px !important` 输入规则对 Home V2 纸面 modal 的污染：只在 `.home-v2-paper-modal-frame` 内局部覆盖，避免端到端截图和真机移动端密度继续不一致
+  - [x] 最新复跑登录/创建房间统一弹窗与加密房密码专项 E2E，复看截图并回写 `evidence/_shared/home-v2-auth-modal-compact-landscape-e2e-test.md`
+  - [x] 继续对齐 Home V2 详情页目标稿：移动横屏 compact 下恢复左页简介/推荐人数，右页房间账本从大卡片列表压回表格密度，并把行高/缩略图/操作按钮纳入 E2E 门禁
+  - [x] 新增 `docs/ai-rules/home-v2-design.md` 专项规范，并按该规范继续压详情页：左页缩略图从抢空间改为辅助视觉，描述宽度扩到正文区，教程/创建房间按钮重构为书页控件
+  - [x] 按用户最新反馈继续重构详情页搜索和按钮：搜索框改成窄幅书页线框，创建房间下沉到搜索行，房间行内操作统一为书本小按钮；复跑移动横屏专项 E2E 并复看截图
+  - [x] 继续按局部截图修正教程/创建/搜索：教程降为纸面次级线性按钮，搜索改为单底线并修正图标对齐，创建房间压薄但保留主操作语义
+  - [x] 按用户最新指出的“所有按钮叠层、教程不显眼、人数用 V1 方块、搜索图标歪/输入框怪”继续收敛：按钮统一成单层书本动作语法，状态改为非按钮状态戳，推荐人数保持数字方块，搜索框加入底线与图标居中门禁
+  - [x] 确认 Home V2 当前先隐藏 `package-managed` 包管理入口：旧 V1 逻辑保留，V2 书页详情不再展示下载卡片、绿色版本徽记或安装确认弹窗
+  - [x] 将 Home V2 包管理专项 E2E 改成隐藏态保护：验证详情左页不显示包管理区域、版本徽记和安装确认弹窗
+  - [ ] 决定 `/dev/home-v2-authoring` 的 rooms/auth authoring 分支是否继续保留旧书页登录预览；若要作为 V2 设计入口，也需要跟主链路统一为 modal
+  - [ ] 拆分或改造 `lobby.e2e.ts` 中 V1 旧大厅断言与 Home V2 专项断言，避免整文件在 Home V2 环境下长期不绿
+
+## Addendum（2026-05-12）：Home V2 移动横屏首页目录重构
+
+### Goal
+> 直接实现用户要求的首页重构：保留书本主轴，面向移动横屏，使用现有首页 UI 元素，删除帮助/说明/“100 游戏说明”等无中生有内容，让首页成为简洁可实现的书本目录页。
+
+### Phase
+- [x] **Phase A: 约束收敛**
+  - [x] 不再生成设计图，直接改实现
+  - [x] 只围绕现有目录元素重排：分类、账号、游戏条目、标签、人数、分页
+  - [x] 明确禁止帮助入口和说明文案占据首页
+
+- [x] **Phase B: 实现**
+  - [x] 删除 `LobbyDirectory.tsx` 的帮助按钮
+  - [x] 删除空状态说明正文
+  - [x] 保存新图到 `artifacts/home-v2-design/home-v2-mobile-book-catalog-reference.png`
+  - [x] 按新图实现书签分类、左页搜索、右上账号设置、条框目录、底部分页和在线大厅入口
+  - [x] 将首页目录改为分类过滤 + 搜索过滤 + 分页切片；`全部游戏` 纳入现有启用条目，首屏按左右各四条展示
+
+- [x] **Phase C: 验证**
+  - [x] `npx eslint src/components/home-v2/LobbyDirectory.tsx src/pages/HomeV2.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts`
+  - [x] `npm run typecheck`
+  - [x] 同一条 Home V2 移动横屏 E2E
+  - [x] 人工复看 `homepage-catalog.png` 与 `catalog-return-after-flip.png`
+  - [x] 回写 `evidence/_shared/home-v2-query-entry-e2e-test.md` / `progress.md` / `findings.md`
+
 ## Addendum（2026-05-12）：Home V2 turn.js 翻页 checkpoint 提交
 
 ### Goal
@@ -660,3 +785,19 @@
 - [x] 实际复看 `page-flip-back-to-catalog-50.png`：无重复王权、无房间列表窄缝泄漏，右页是目录目标页
 - [x] 实际复看 `page-flip-to-detail-50.png`：正向 50% 未被带坏
 - [x] 回写 `evidence/_shared/home-v2-query-entry-e2e-test.md` / `progress.md` / `findings.md`
+
+## Addendum（2026-05-18）：Android 首页 V1/V2 分流修复
+
+### Goal
+> 查清“安装到手机后为什么还是 V1 首页”，修正 Android 包的首页真相源，并重新安装到真机确认启动落点已经是 Home V2。
+
+### Phase
+- [x] 核对 `HomeEntry` / `homeV2Routing` / `MainActivity` / `android-build-meta.json` 链路
+- [x] 确认手机之前运行的仍是旧包 `0.5.59`
+- [x] 修复 Android build meta，把 `homeV2DraftEnabled` 与 Android 首页默认 V2 的路由口径对齐
+- [x] 新增 `homeV2Routing` 回归测试，锁住 Android shell/native runtime 默认进 V2
+- [x] 复跑 `npm run typecheck`
+- [x] 复跑 `npx vitest run src/lib/__tests__/homeV2Routing.test.ts`
+- [x] 重新执行 `npm run mobile:android:build:release`
+- [x] 真机 `10ADAU063C0010U` 成功覆盖安装到 `0.5.61 / 561`
+- [x] 真机拉起 App 并抓图确认当前首页已经是 Home V2：`C:\Users\zhuagenbao\AppData\Local\Temp\easyboardgame-home-20260518.png`

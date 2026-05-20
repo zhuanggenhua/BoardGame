@@ -54,7 +54,7 @@ android {
         }
     }
     defaultConfig {
-        applicationId "top.easyboardgame.app"
+        applicationId "top.easyboardgame.app.debug"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode packageVersionCode

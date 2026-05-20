@@ -24,6 +24,8 @@ type ParsedRect = {
 };
 
 const DEFAULT_DURATION_MS = 380;
+const COMPLETION_PROGRESS_THRESHOLD = 0.86;
+const COMPLETION_FALLBACK_EXTRA_MS = 80;
 const TURNJS_OVERVIEW_PAGE = 2;
 const TURNJS_DETAIL_PAGE = 4;
 const JQUERY_SCRIPT_PATH = '/vendor/jquery/jquery-1.12.0.min.js';
@@ -299,15 +301,25 @@ export function FoldLinePageFlipStage({
     const completionTimerRef = React.useRef<number | null>(null);
     const completionHoldPollRef = React.useRef<number | null>(null);
     const completeOnceRef = React.useRef(false);
+    const isAnimatingRef = React.useRef(false);
     const mainEffectRunCountRef = React.useRef(0);
     const progressLoopStartCountRef = React.useRef(0);
     const progressTickCountRef = React.useRef(0);
+    const rawProgressRef = React.useRef(0);
     const [turnReady, setTurnReady] = React.useState(false);
     const [isAnimating, setIsAnimating] = React.useState(false);
     const [progress, setProgress] = React.useState(0);
     const [rawProgress, setRawProgress] = React.useState(0);
     const [turnError, setTurnError] = React.useState<string | null>(null);
     const [overviewStageReady, setOverviewStageReady] = React.useState(false);
+
+    React.useEffect(() => {
+        isAnimatingRef.current = isAnimating;
+    }, [isAnimating]);
+
+    React.useEffect(() => {
+        rawProgressRef.current = rawProgress;
+    }, [rawProgress]);
 
     React.useEffect(() => () => {
         cancelProgressLoopRef.current?.();
@@ -350,9 +362,33 @@ export function FoldLinePageFlipStage({
         }
     }, [onFlipToDetailComplete, onFlipToOverviewComplete, turningToDetail]);
 
+    const requestFinishFlip = React.useCallback(() => {
+        if (completeOnceRef.current) {
+            return;
+        }
+        if (completionHoldPollRef.current !== null) {
+            window.clearTimeout(completionHoldPollRef.current);
+            completionHoldPollRef.current = null;
+        }
+
+        const tryFinishWhenReleased = () => {
+            if (readE2EHoldProgress() !== null) {
+                completionHoldPollRef.current = window.setTimeout(tryFinishWhenReleased, 16);
+                return;
+            }
+            completionHoldPollRef.current = null;
+            finishFlip();
+        };
+
+        tryFinishWhenReleased();
+    }, [finishFlip]);
+
     const overviewStageForTurn = (renderOverviewFlipStage ?? renderOverviewStage)({ includeTestId: false });
     const detailStageForTurn = (renderDetailFlipStage ?? renderDetailStage)({ includeTestId: false });
     const flippingShellStage = turningToDetail ? detailStageForTurn : overviewStageForTurn;
+    const detailPreviewOpacity = turningToDetail && isFlipping
+        ? Math.min(0.92, Math.max(0, (progress - 0.12) / 0.32) * 0.92)
+        : 0;
     const activeStageSize = mode === 'detail' || mode === 'flippingToDetail'
         ? detailStageSize
         : overviewStageSize;
@@ -366,6 +402,15 @@ export function FoldLinePageFlipStage({
             : isFlipping
                 ? (
                     <div className="relative h-full w-full">
+                        {turningToDetail ? (
+                            <div
+                                className="pointer-events-none absolute inset-0 z-[11]"
+                                aria-hidden="true"
+                                style={{ opacity: detailPreviewOpacity }}
+                            >
+                                {renderDetailStage({ includeTestId: false })}
+                            </div>
+                        ) : null}
                         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
                             {flippingShellStage}
                         </div>
@@ -495,6 +540,16 @@ export function FoldLinePageFlipStage({
     }, [durationMs, isAnimating, isFlipping]);
 
     React.useEffect(() => {
+        if (!isFlipping || !isAnimating || rawProgress < COMPLETION_PROGRESS_THRESHOLD) {
+            return;
+        }
+        if (readE2EHoldProgress() !== null) {
+            return;
+        }
+        requestFinishFlip();
+    }, [isAnimating, isFlipping, rawProgress, requestFinishFlip]);
+
+    React.useEffect(() => {
         if (!isFlipping || !isAnimating) {
             return undefined;
         }
@@ -507,19 +562,10 @@ export function FoldLinePageFlipStage({
             completionHoldPollRef.current = null;
         }
 
-        const tryFinishWhenReleased = () => {
-            if (readE2EHoldProgress() !== null) {
-                completionHoldPollRef.current = window.setTimeout(tryFinishWhenReleased, 16);
-                return;
-            }
-            completionHoldPollRef.current = null;
-            finishFlip();
-        };
-
         completionTimerRef.current = window.setTimeout(() => {
             completionTimerRef.current = null;
-            tryFinishWhenReleased();
-        }, durationMs + 220);
+            requestFinishFlip();
+        }, durationMs + COMPLETION_FALLBACK_EXTRA_MS);
 
         return () => {
             if (completionTimerRef.current !== null) {
@@ -531,7 +577,7 @@ export function FoldLinePageFlipStage({
                 completionHoldPollRef.current = null;
             }
         };
-    }, [durationMs, finishFlip, isAnimating, isFlipping]);
+    }, [durationMs, isAnimating, isFlipping, requestFinishFlip]);
 
     React.useEffect(() => {
         const node = flipbookRef.current;
@@ -582,6 +628,19 @@ export function FoldLinePageFlipStage({
                         rootRef.current.dataset.turnPluginAnimating = '';
                     }
                 };
+                const handleTurnEvent = () => {
+                    writeTurnSnapshot();
+                    if (!isFlipping || completeOnceRef.current || !isAnimatingRef.current || rawProgressRef.current < 0.84) {
+                        return;
+                    }
+                    window.requestAnimationFrame(() => {
+                        if (disposed) {
+                            return;
+                        }
+                        requestFinishFlip();
+                    });
+                };
+
                 instance.turn({
                     width: unionWidth,
                     height: unionHeight,
@@ -596,8 +655,8 @@ export function FoldLinePageFlipStage({
                     when: {
                         start: writeTurnSnapshot,
                         turning: writeTurnSnapshot,
-                        turned: writeTurnSnapshot,
-                        end: writeTurnSnapshot,
+                        turned: handleTurnEvent,
+                        end: handleTurnEvent,
                     },
                 });
                 writeTurnSnapshot();
@@ -667,6 +726,7 @@ export function FoldLinePageFlipStage({
         turningToDetail,
         unionHeight,
         unionWidth,
+        requestFinishFlip,
     ]);
 
     return (

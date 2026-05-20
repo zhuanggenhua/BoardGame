@@ -203,23 +203,31 @@ function HomeV2LeaderboardPanel({
             ) : (
                 <div className="border-b border-[rgba(105,66,37,0.28)]">
                     {entries.map((player, index) => {
-                        const rankLabel = String(index + 1).padStart(2, '0');
+                        const rankLabel = String(index + 1);
+                        const rankTheme = index === 0
+                            ? 'border-[#c39a4d] bg-[linear-gradient(180deg,_rgba(244,216,154,0.98)_0%,_rgba(191,142,58,0.98)_100%)] text-[#fff4d5] shadow-[0_2px_5px_rgba(103,69,26,0.18)]'
+                            : index === 1
+                                ? 'border-[#b0b4bf] bg-[linear-gradient(180deg,_rgba(235,238,246,0.98)_0%,_rgba(170,175,186,0.98)_100%)] text-[#fbfcff] shadow-[0_2px_5px_rgba(92,94,104,0.14)]'
+                                : index === 2
+                                    ? 'border-[#b77d4d] bg-[linear-gradient(180deg,_rgba(233,188,149,0.98)_0%,_rgba(180,117,67,0.98)_100%)] text-[#fff2e3] shadow-[0_2px_5px_rgba(104,63,31,0.15)]'
+                                    : 'border-[#a5743c]/54 bg-[rgba(79,46,25,0.06)] text-[#5b351d]';
                         return (
                             <div
                                 key={`${player.name}-${index}`}
                                 className={`grid items-center border-t border-[rgba(105,66,37,0.28)] text-[#3f2718] ${
                                     compact
-                                        ? 'min-h-[44px] grid-cols-[40px_minmax(0,1fr)_74px] gap-[6px] py-[4px]'
+                                        ? 'min-h-[40px] grid-cols-[30px_minmax(0,1fr)_60px] gap-[5px] py-[3px]'
                                         : 'min-h-[66px] grid-cols-[66px_minmax(0,1fr)_148px] gap-[14px]'
                                 }`}
                             >
                                 <div className="flex justify-center">
                                     <span
-                                        className={`inline-flex items-center justify-center rounded-[2px] border border-[#a5743c]/54 bg-[rgba(79,46,25,0.06)] font-bold tabular-nums text-[#5b351d] ${
+                                        data-testid="home-v2-leaderboard-rank-badge"
+                                        className={`inline-flex items-center justify-center rounded-[2px] border font-bold tabular-nums ${
                                             compact
-                                                ? 'h-[24px] min-w-[24px] px-[4px] text-[10px]'
+                                                ? 'h-[22px] min-w-[22px] px-[3px] text-[9px]'
                                                 : 'h-[34px] min-w-[34px] px-[8px] text-[clamp(18px,1.18vw,22px)]'
-                                        }`}
+                                        } ${rankTheme}`}
                                     >
                                         {rankLabel}
                                     </span>
@@ -227,24 +235,17 @@ function HomeV2LeaderboardPanel({
                                 <div
                                     className={`min-w-0 font-bold text-[#3f2718] ${
                                         compact
-                                            ? 'pr-[4px] text-[10.6px] leading-[1.16] [display:-webkit-box] overflow-hidden [-webkit-box-orient:vertical] [-webkit-line-clamp:2]'
+                                            ? 'pr-[2px] text-[10px] leading-[1.08] truncate'
                                             : 'truncate pr-[12px] text-[clamp(17px,1.16vw,20px)]'
                                     }`}
                                 >
                                     {player.name}
                                 </div>
-                                <div className={`justify-self-end text-right font-semibold text-[#6e4a32] ${compact ? 'text-[8.5px] leading-[1.08]' : 'text-[clamp(13px,0.94vw,15px)]'}`}>
+                                <div data-testid="home-v2-leaderboard-record" className={`justify-self-end text-right font-semibold text-[#6e4a32] ${compact ? 'text-[9.2px] leading-[1]' : 'text-[clamp(13px,0.94vw,15px)]'}`}>
                                     {compact ? (
-                                        <>
-                                            <div>
-                                                <span className="tabular-nums">{player.wins}</span>
-                                                <span className="ml-[1px] text-[#8a6444]">胜</span>
-                                            </div>
-                                            <div className="mt-[2px]">
-                                                <span className="tabular-nums">{player.matches}</span>
-                                                <span className="ml-[1px] text-[#8a6444]">局</span>
-                                            </div>
-                                        </>
+                                        <span className="tabular-nums">
+                                            {player.wins}/{player.matches}
+                                        </span>
                                     ) : (
                                         t('lobby:leaderboard.record', { wins: player.wins, matches: player.matches })
                                     )}
@@ -713,36 +714,35 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
 
                 <div className={`mt-auto ${isCompactLandscape ? 'pb-[4.2%]' : 'flex flex-col items-center gap-[14px] pb-[8.6%]'}`}>
                     {isCompactLandscape ? (
-                        <div className="grid grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)] items-end gap-[14px]">
-                            <div
-                                data-testid="home-v2-recommended-player-band"
-                                className="flex w-full items-center justify-center gap-[7px] text-[#4d301e]"
-                            >
-                                <span className="min-w-[38px] shrink-0 text-right text-[8.6px] font-semibold tracking-[0.08em] text-[#6f4b32]/78">
-                                    {t('common:game_details.recommended_players')}
-                                </span>
-                                <div className="flex items-center justify-start gap-[6px]">
-                                    {recommendedPlayerCounts.map((count) => {
-                                        const isBest = bestPlayerCountSet.size === 0 || bestPlayerCountSet.has(count);
-                                        return (
-                                            <span
-                                                key={count}
-                                                data-testid="home-v2-player-count-box"
-                                                title={isBest ? t('common:game_details.best_recommendation') : undefined}
-                                                className={`flex h-[24px] w-[24px] items-center justify-center rounded-[3px] border font-bold leading-none text-[10px] ${
-                                                    isBest
-                                                        ? 'border-[#3f2718] bg-[#3f2718] text-[#f4e6ce] shadow-[0_2px_4px_rgba(63,38,20,0.14)]'
-                                                        : 'border-[#8d6a46]/52 bg-transparent text-[#6f4b32]/76'
-                                                }`}
-                                            >
-                                                {count}
-                                            </span>
-                                        );
-                                    })}
+                        <div className="flex w-full flex-col items-center gap-[8px]">
+                            <div className="flex w-full items-center justify-center text-[#4d301e]">
+                                <div data-testid="home-v2-recommended-player-band" className="inline-flex items-center justify-center gap-[7px]">
+                                    <span className="shrink-0 text-[8.8px] font-semibold tracking-[0.04em] text-[#6f4b32]/82">
+                                        {t('common:game_details.recommended_players')}：
+                                    </span>
+                                    <div className="flex items-center justify-center gap-[6px]">
+                                        {recommendedPlayerCounts.map((count) => {
+                                            const isBest = bestPlayerCountSet.size === 0 || bestPlayerCountSet.has(count);
+                                            return (
+                                                <span
+                                                    key={count}
+                                                    data-testid="home-v2-player-count-box"
+                                                    title={isBest ? t('common:game_details.best_recommendation') : undefined}
+                                                    className={`flex h-[24px] w-[24px] items-center justify-center rounded-[3px] border font-bold leading-none text-[10px] ${
+                                                        isBest
+                                                            ? 'border-[#3f2718] bg-[#3f2718] text-[#f4e6ce] shadow-[0_2px_4px_rgba(63,38,20,0.14)]'
+                                                            : 'border-[#8d6a46]/52 bg-transparent text-[#6f4b32]/76'
+                                                    }`}
+                                                >
+                                                    {count}
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             </div>
                             <BookLineButton
-                                className="min-h-[31px] w-[92%] justify-self-end px-[14px] text-[10.2px] tracking-[0.05em]"
+                                className="min-h-[31px] w-[146px] shrink-0 px-[14px] text-[10.2px] tracking-[0.05em]"
                                 icon={<BookOpen aria-hidden="true" className="h-[13px] w-[13px]" strokeWidth={2.1} />}
                                 onClick={handleTutorial}
                                 testId="home-v2-tutorial-button"
@@ -755,32 +755,34 @@ const GameDetailsLeftContent = ({ game, onBack }: { game: GameConfig; onBack: ()
                         <>
                     <div
                         data-testid="home-v2-recommended-player-band"
-                        className={`flex flex-col items-center justify-center gap-[5px] text-[#4d301e] ${isCompactLandscape ? 'w-[46%]' : 'w-[52%]'}`}
+                        className={`flex items-center justify-center text-[#4d301e] ${isCompactLandscape ? 'w-[46%]' : 'w-[52%]'}`}
                     >
-                        <div className={`flex items-center justify-center ${isCompactLandscape ? 'gap-[6px]' : 'gap-[9px]'}`}>
-                            {recommendedPlayerCounts.map((count) => {
-                                const isBest = bestPlayerCountSet.size === 0 || bestPlayerCountSet.has(count);
-                                return (
-                                    <span
-                                        key={count}
-                                        data-testid="home-v2-player-count-box"
-                                        title={isBest ? t('common:game_details.best_recommendation') : undefined}
-                                        className={`flex items-center justify-center rounded-[4px] border font-bold leading-none ${
-                                            isCompactLandscape ? 'h-[24px] w-[24px] text-[10px]' : 'h-[34px] w-[34px] text-[14px]'
-                                        } ${
-                                            isBest
-                                                ? 'border-[#3f2718] bg-[#3f2718] text-[#f4e6ce] shadow-[0_2px_4px_rgba(63,38,20,0.14)]'
-                                                : 'border-[#8d6a46]/52 bg-transparent text-[#6f4b32]/76'
-                                        }`}
-                                    >
-                                        {count}
-                                    </span>
-                                );
-                            })}
+                        <div className="inline-flex items-center justify-center gap-[10px]">
+                            <span className={`${isCompactLandscape ? 'text-[8.6px]' : 'text-[10px]'} shrink-0 font-semibold tracking-[0.04em] text-[#6f4b32]/78`}>
+                                {t('common:game_details.recommended_players')}：
+                            </span>
+                            <div className={`flex items-center justify-center ${isCompactLandscape ? 'gap-[6px]' : 'gap-[9px]'}`}>
+                                {recommendedPlayerCounts.map((count) => {
+                                    const isBest = bestPlayerCountSet.size === 0 || bestPlayerCountSet.has(count);
+                                    return (
+                                        <span
+                                            key={count}
+                                            data-testid="home-v2-player-count-box"
+                                            title={isBest ? t('common:game_details.best_recommendation') : undefined}
+                                            className={`flex items-center justify-center rounded-[4px] border font-bold leading-none ${
+                                                isCompactLandscape ? 'h-[24px] w-[24px] text-[10px]' : 'h-[34px] w-[34px] text-[14px]'
+                                            } ${
+                                                isBest
+                                                    ? 'border-[#3f2718] bg-[#3f2718] text-[#f4e6ce] shadow-[0_2px_4px_rgba(63,38,20,0.14)]'
+                                                    : 'border-[#8d6a46]/52 bg-transparent text-[#6f4b32]/76'
+                                            }`}
+                                        >
+                                            {count}
+                                        </span>
+                                    );
+                                })}
+                            </div>
                         </div>
-                        <span className={`${isCompactLandscape ? 'text-[8.6px]' : 'text-[10px]'} font-semibold tracking-[0.08em] text-[#6f4b32]/72`}>
-                            {t('common:game_details.recommended_players')}
-                        </span>
                     </div>
                     <BookLineButton
                         className="min-h-[48px] w-[52%] px-[24px] text-[clamp(16px,1.08vw,20px)] tracking-[0.06em]"

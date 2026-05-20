@@ -9,6 +9,7 @@ const entry: GameManifestEntry = {
     category: 'abstract',
     playersKey: 'games.tictactoe.players',
     icon: '#',
+    thumbnailPath: 'tictactoe/thumbnails/cover',
     cursorTheme: 'tictactoe-neon',
     mobileProfile: 'portrait-adapted',
     preferredOrientation: 'portrait',

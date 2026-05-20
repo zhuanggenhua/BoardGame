@@ -1,12 +1,13 @@
 import React from 'react';
-import { Compass, User } from 'lucide-react';
+import { ChevronDown, ChevronLeft, ChevronRight, Globe2, User, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { GameConfig } from '../../config/games.config';
 import { useAuth } from '../../contexts/AuthContext';
+import { LANGUAGE_OPTIONS } from '../../lib/i18n/types';
 import { OptimizedImage } from '../common/media/OptimizedImage';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
 
-type LobbyCategory = 'all' | 'card' | 'dice' | 'abstract' | 'wargame' | 'casual' | 'tools';
+export type LobbyCategory = 'all' | 'card' | 'dice' | 'abstract' | 'wargame' | 'casual' | 'tools';
 
 type PositionedRect = {
     left: string;
@@ -16,58 +17,58 @@ type PositionedRect = {
 };
 
 type HomepageCatalogEntryMeta = {
-    id: string;
     rect: PositionedRect;
 };
 
 type CategoryNavItem = {
     id: LobbyCategory;
-    left: string;
-    width: string;
+    rect: PositionedRect;
+};
+
+export type HomeV2ContinueMatch = {
+    matchID: string;
+    gameName: string;
+    gameLabel: string;
+    playerID?: string;
+    playerLabel?: string;
 };
 
 const CATEGORY_NAV_ITEMS: CategoryNavItem[] = [
-    { id: 'all', left: '9.9%', width: '15.4%' },
-    { id: 'card', left: '31.2%', width: '6.8%' },
-    { id: 'dice', left: '41.5%', width: '6.4%' },
-    { id: 'abstract', left: '54.8%', width: '7.0%' },
-    { id: 'wargame', left: '66.2%', width: '7.0%' },
-    { id: 'casual', left: '76.2%', width: '6.4%' },
-    { id: 'tools', left: '85.4%', width: '6.4%' },
+    { id: 'all', rect: { left: '10.8%', top: '8.1%', width: '4.6%', height: '5.8%' } },
+    { id: 'card', rect: { left: '16.2%', top: '8.1%', width: '4.6%', height: '5.8%' } },
+    { id: 'dice', rect: { left: '21.6%', top: '8.1%', width: '4.6%', height: '5.8%' } },
+    { id: 'abstract', rect: { left: '27.0%', top: '8.1%', width: '4.6%', height: '5.8%' } },
+    { id: 'wargame', rect: { left: '32.4%', top: '8.1%', width: '4.6%', height: '5.8%' } },
+    { id: 'casual', rect: { left: '37.8%', top: '8.1%', width: '4.6%', height: '5.8%' } },
+    { id: 'tools', rect: { left: '43.2%', top: '8.1%', width: '4.6%', height: '5.8%' } },
 ];
 
 const HOMEPAGE_CATALOG_LAYOUT: HomepageCatalogEntryMeta[] = [
-    {
-        id: 'cardia',
-        rect: { left: '6.7%', top: '18.0%', width: '39.4%', height: '20.5%' },
-    },
-    {
-        id: 'dicethrone',
-        rect: { left: '6.7%', top: '40.8%', width: '39.4%', height: '20.5%' },
-    },
-    {
-        id: 'smashup',
-        rect: { left: '6.7%', top: '63.6%', width: '39.4%', height: '20.5%' },
-    },
-    {
-        id: 'splendor',
-        rect: { left: '52.9%', top: '18.0%', width: '39.7%', height: '20.5%' },
-    },
-    {
-        id: 'summonerwars',
-        rect: { left: '52.9%', top: '40.8%', width: '39.7%', height: '20.5%' },
-    },
-    {
-        id: 'tictactoe',
-        rect: { left: '52.9%', top: '63.6%', width: '39.7%', height: '20.5%' },
-    },
+    { rect: { left: '10.4%', top: '17.0%', width: '37.4%', height: '15.4%' } },
+    { rect: { left: '10.4%', top: '35.3%', width: '37.4%', height: '15.4%' } },
+    { rect: { left: '10.4%', top: '53.6%', width: '37.4%', height: '15.4%' } },
+    { rect: { left: '53.0%', top: '17.0%', width: '37.0%', height: '15.4%' } },
+    { rect: { left: '53.0%', top: '35.3%', width: '37.0%', height: '15.4%' } },
+    { rect: { left: '53.0%', top: '53.6%', width: '37.0%', height: '15.4%' } },
 ];
 
-const ACCOUNT_RECT: PositionedRect = { left: '79.1%', top: '2.0%', width: '12.7%', height: '5.7%' };
-const HELP_RECT: PositionedRect = { left: '90.9%', top: '2.0%', width: '6.2%', height: '5.7%' };
-const EMPTY_STATE_RECT: PositionedRect = { left: '28.5%', top: '36.8%', width: '43.0%', height: '20.0%' };
+const FEATURED_GAME_ORDER = [
+    'cardia',
+    'dicethrone',
+    'smashup',
+    'splendor',
+    'summonerwars',
+    'tictactoe',
+];
+const PAGE_SIZE = HOMEPAGE_CATALOG_LAYOUT.length;
 
-const OVERVIEW_CONTENT_RECT: PositionedRect = { left: '4.4%', top: '4.3%', width: '91.2%', height: '86.4%' };
+const ACCOUNT_RECT: PositionedRect = { left: '71.0%', top: '7.6%', width: '10.0%', height: '5.2%' };
+const LANGUAGE_RECT: PositionedRect = { left: '82.2%', top: '7.6%', width: '8.8%', height: '5.2%' };
+const PREVIOUS_PAGE_RECT: PositionedRect = { left: '33.7%', top: '75.4%', width: '2.4%', height: '5.6%' };
+const PAGE_LABEL_RECT: PositionedRect = { left: '37.3%', top: '75.4%', width: '5.8%', height: '5.6%' };
+const NEXT_PAGE_RECT: PositionedRect = { left: '44.2%', top: '75.4%', width: '2.4%', height: '5.6%' };
+const CONTINUE_RECT: PositionedRect = { left: '52.8%', top: '74.8%', width: '38.4%', height: '6.8%' };
+const EMPTY_STATE_RECT: PositionedRect = { left: '31.0%', top: '44.0%', width: '38.0%', height: '10.0%' };
 
 function asAbsoluteStyle(rect: PositionedRect): React.CSSProperties {
     return {
@@ -78,9 +79,17 @@ function asAbsoluteStyle(rect: PositionedRect): React.CSSProperties {
     };
 }
 
+function scaled(value: number) {
+    return `calc(${value}px * var(--home-v2-stage-scale))`;
+}
+
+function centeredPercent(left: string, width: string) {
+    return `${parseFloat(left) + parseFloat(width) / 2}%`;
+}
+
 function buildCategoryLabel(category: LobbyCategory, t: (key: string, options?: { defaultValue?: string }) => string) {
     if (category === 'all') {
-        return t('lobby:homeV2.catalog.allGames');
+        return '全部';
     }
     return t(`common:category.${category}`);
 }
@@ -90,10 +99,10 @@ function buildPlayerLabel(
     t: (key: string, options?: { defaultValue?: string }) => string,
 ) {
     if (game.playerOptions && game.playerOptions.length > 1) {
-        return `${Math.min(...game.playerOptions)}-${Math.max(...game.playerOptions)}${t('common:game_details.people')}`;
+        return `${Math.min(...game.playerOptions)}-${Math.max(...game.playerOptions)} ${t('common:game_details.people')}`;
     }
     if (game.playerOptions?.length === 1) {
-        return `${game.playerOptions[0]}${t('common:game_details.people')}`;
+        return `${game.playerOptions[0]} ${t('common:game_details.people')}`;
     }
     return t(game.playersKey);
 }
@@ -110,27 +119,27 @@ function buildHomepageSummary(
     const sentenceMatches = fullDescription.match(/[^。！？!?；;]+[。！？!?；;]?/g) ?? [];
     if (sentenceMatches.length > 0) {
         let summary = sentenceMatches[0].trim();
-        if (summary.length < 20 && sentenceMatches.length > 1) {
+        if (summary.length < 18 && sentenceMatches.length > 1) {
             const appended = `${summary}${sentenceMatches[1].trim()}`.trim();
-            if (appended.length <= 32) {
+            if (appended.length <= 34) {
                 summary = appended;
             }
         }
-        if (summary.length <= 30) {
+        if (summary.length <= 34) {
             return summary;
         }
     }
 
     const clauseBreakIndex = fullDescription.search(/[，,、：:]/);
-    if (clauseBreakIndex >= 0 && clauseBreakIndex <= 22) {
+    if (clauseBreakIndex >= 0 && clauseBreakIndex <= 24) {
         return fullDescription.slice(0, clauseBreakIndex);
     }
 
-    if (fullDescription.length <= 30) {
+    if (fullDescription.length <= 34) {
         return fullDescription;
     }
 
-    return `${fullDescription.slice(0, 28).trim()}…`;
+    return `${fullDescription.slice(0, 32).trim()}...`;
 }
 
 function resolveGameBadgeKeys(game: Pick<GameConfig, 'category' | 'tags'>): string[] {
@@ -193,11 +202,14 @@ function resolveBadgeLabel(
     }
 }
 
-function matchesActiveCategory(game: Pick<GameConfig, 'category' | 'tags'>, activeCategory: LobbyCategory) {
+function matchesActiveCategory(game: Pick<GameConfig, 'category' | 'tags' | 'type'>, activeCategory: LobbyCategory) {
     if (activeCategory === 'all') {
-        return true;
+        return game.type === 'game';
     }
-    return game.category === activeCategory || game.tags?.includes(activeCategory);
+    if (activeCategory === 'tools') {
+        return game.type === 'tool' || game.category === activeCategory || game.tags?.includes(activeCategory);
+    }
+    return game.type === 'game' && (game.category === activeCategory || game.tags?.includes(activeCategory));
 }
 
 function renderBadge(
@@ -210,9 +222,11 @@ function renderBadge(
     return (
         <span
             key={`${badgeKey}:${index}`}
-            className="rounded-[calc(6px*var(--home-v2-stage-scale))] border border-[#c6aa79]/70 bg-[rgba(247,236,212,0.74)] px-[calc(10px*var(--home-v2-stage-scale))] py-[calc(4px*var(--home-v2-stage-scale))] text-[#7b5b34]"
+            className="inline-flex items-center border border-[#b8945e]/70 bg-[rgba(239,222,185,0.72)] text-[#6d4a2b]"
             style={{
-                fontSize: 'calc(16px * var(--home-v2-stage-scale))',
+                borderRadius: scaled(4),
+                padding: `${scaled(2)} ${scaled(6)}`,
+                fontSize: scaled(12),
                 lineHeight: 1,
             }}
         >
@@ -246,12 +260,12 @@ function HomeCatalogThumbnail({ game }: { game: GameConfig }) {
                     aria-label={title}
                     title={title}
                     style={{
-                        fontSize: 'calc(30px * var(--home-v2-stage-scale))',
+                        fontSize: scaled(30),
                         lineHeight: 1,
                         fontWeight: 600,
                     }}
                 >
-                    {game.icon || '·'}
+                    {game.icon || '.'}
                 </span>
             </div>
         );
@@ -267,255 +281,453 @@ function HomeCatalogThumbnail({ game }: { game: GameConfig }) {
     );
 }
 
-function renderHomepageThumbnail(game: GameConfig) {
-    return <HomeCatalogThumbnail game={game} />;
-}
-
 export interface OverviewSpreadProps {
     games: GameConfig[];
+    activeCategory: LobbyCategory;
+    onCategoryChange: (category: LobbyCategory) => void;
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
+    continueMatch?: HomeV2ContinueMatch | null;
+    onContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const OverviewSpread = ({ games, onGameClick, onAccountClick }: OverviewSpreadProps) => {
-    const { t } = useTranslation(['lobby', 'common']);
+export const OverviewSpread = ({
+    games,
+    activeCategory,
+    onCategoryChange,
+    onGameClick,
+    onAccountClick,
+    continueMatch,
+    onContinueMatch,
+}: OverviewSpreadProps) => {
+    const { t, i18n } = useTranslation(['lobby', 'common']);
     const { user } = useAuth();
-    const [activeCategory, setActiveCategory] = React.useState<LobbyCategory>('all');
+    const [catalogPageIndex, setCatalogPageIndex] = React.useState(0);
+    const [languageMenuOpen, setLanguageMenuOpen] = React.useState(false);
+    const languageMenuRef = React.useRef<HTMLDivElement>(null);
 
-    const gameMap = React.useMemo(() => new Map(games.map((game) => [game.id, game])), [games]);
+    const orderedGames = React.useMemo(
+        () => {
+            const priorityById = new Map(FEATURED_GAME_ORDER.map((gameId, index) => [gameId, index]));
+            return games
+                .filter((game) => matchesActiveCategory(game, activeCategory))
+                .slice()
+                .sort((left, right) => {
+                    const leftPriority = priorityById.get(left.id) ?? Number.MAX_SAFE_INTEGER;
+                    const rightPriority = priorityById.get(right.id) ?? Number.MAX_SAFE_INTEGER;
+                    if (leftPriority !== rightPriority) {
+                        return leftPriority - rightPriority;
+                    }
+                    return games.indexOf(left) - games.indexOf(right);
+                });
+        },
+        [activeCategory, games],
+    );
+    const totalPages = Math.max(1, Math.ceil(orderedGames.length / PAGE_SIZE));
     const visibleEntries = React.useMemo(
-        () => HOMEPAGE_CATALOG_LAYOUT.filter((entry) => {
-            const game = gameMap.get(entry.id);
-            if (!game) {
-                return false;
-            }
-            return matchesActiveCategory(game, activeCategory);
-        }),
-        [activeCategory, gameMap],
+        () => orderedGames
+            .slice(catalogPageIndex * PAGE_SIZE, catalogPageIndex * PAGE_SIZE + PAGE_SIZE)
+            .map((game, index) => ({
+                game,
+                rect: HOMEPAGE_CATALOG_LAYOUT[index]?.rect,
+            }))
+            .filter((entry): entry is { game: GameConfig; rect: PositionedRect } => Boolean(entry.rect)),
+        [catalogPageIndex, orderedGames],
     );
 
-    const playerLabel = user?.username?.trim() || t('lobby:homeV2.catalog.playerNickname');
+    React.useEffect(() => {
+        setCatalogPageIndex(0);
+    }, [activeCategory]);
+
+    React.useEffect(() => {
+        setCatalogPageIndex((current) => Math.min(current, totalPages - 1));
+    }, [totalPages]);
+
+    const playerLabel = user?.username?.trim() || t('auth:menu.login', '登录');
+    const canGoPrevious = catalogPageIndex > 0;
+    const canGoNext = catalogPageIndex + 1 < totalPages;
+    const activeCategoryRect = CATEGORY_NAV_ITEMS.find((item) => item.id === activeCategory)?.rect ?? CATEGORY_NAV_ITEMS[0].rect;
+    const activeCategoryCenter = centeredPercent(activeCategoryRect.left, activeCategoryRect.width);
+    const currentLanguage = i18n.resolvedLanguage ?? i18n.language;
+    const currentLanguageOption = LANGUAGE_OPTIONS.find((option) => option.code === currentLanguage) ?? LANGUAGE_OPTIONS[0];
+    const continueMatchCode = continueMatch?.matchID ? `#${continueMatch.matchID.slice(-4).toUpperCase()}` : '';
+
+    React.useEffect(() => {
+        if (!languageMenuOpen) return undefined;
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (languageMenuRef.current?.contains(event.target as Node)) return;
+            setLanguageMenuOpen(false);
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+        return () => document.removeEventListener('mousedown', handlePointerDown);
+    }, [languageMenuOpen]);
 
     return (
-        <div className="pointer-events-auto relative h-full w-full text-[#5a3f27] select-none">
-            <div
-                className="absolute"
-                style={asAbsoluteStyle(OVERVIEW_CONTENT_RECT)}
-            >
-            <div
-                className="absolute left-[6.9%] top-[12.2%] h-px w-[85.0%] bg-[linear-gradient(90deg,rgba(149,113,68,0)_0%,rgba(149,113,68,0.55)_12%,rgba(149,113,68,0.55)_88%,rgba(149,113,68,0)_100%)]"
-                aria-hidden="true"
-            />
+        <div
+            className="pointer-events-auto relative h-full w-full text-[#51361f] select-none"
+            data-home-v2-reference-layout="real-dom"
+        >
+            {[
+                { left: '8.6%', top: '15.0%', width: '39.2%' },
+                { left: '53.0%', top: '15.0%', width: '37.0%' },
+            ].map((rect, index) => (
+                <div
+                    key={index}
+                    data-testid={index === 0 ? 'home-v2-left-header-rule' : 'home-v2-right-header-rule'}
+                    className="pointer-events-none absolute bg-[linear-gradient(90deg,rgba(130,92,47,0.08)_0%,rgba(130,92,47,0.34)_12%,rgba(130,92,47,0.34)_88%,rgba(130,92,47,0.08)_100%)]"
+                    style={{
+                        left: rect.left,
+                        top: rect.top,
+                        width: rect.width,
+                        height: scaled(1),
+                    }}
+                    aria-hidden="true"
+                />
+            ))}
 
-            {CATEGORY_NAV_ITEMS.map(({ id, left, width }) => {
+            {CATEGORY_NAV_ITEMS.map(({ id, rect }) => {
                 const isActive = activeCategory === id;
+                const label = buildCategoryLabel(id, t);
                 return (
                     <button
                         key={id}
                         type="button"
                         data-testid={`home-v2-category-${id}`}
+                        aria-label={label}
                         aria-pressed={isActive}
-                        className="absolute flex items-center justify-center border-0 bg-transparent p-0 text-[#4f3824] transition-opacity duration-150 hover:opacity-100"
+                        className="absolute flex items-center justify-center border-0 bg-transparent p-0 font-serif transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
                         style={{
-                            left,
-                            top: '4.5%',
-                            width,
-                            height: '7.2%',
-                            fontSize: isActive
-                                ? 'calc(33px * var(--home-v2-stage-scale))'
-                                : 'calc(29px * var(--home-v2-stage-scale))',
-                            fontWeight: isActive ? 700 : 600,
-                            letterSpacing: isActive ? '0' : '0.01em',
-                            color: isActive ? '#66713a' : '#5a4028',
-                            opacity: isActive ? 1 : 0.9,
+                            ...asAbsoluteStyle(rect),
+                            color: isActive ? '#315c27' : '#2f2116',
+                            fontSize: scaled(20),
+                            fontWeight: isActive ? 800 : 700,
+                            letterSpacing: '0',
                         }}
-                        onClick={() => setActiveCategory(id)}
+                        onClick={() => {
+                            if (!isActive) {
+                                onCategoryChange(id);
+                            }
+                        }}
                     >
                         <span
-                            className="relative inline-flex h-full items-center justify-center px-[calc(6px*var(--home-v2-stage-scale))]"
-                            style={{ fontSize: isActive ? 'calc(29px * var(--home-v2-stage-scale))' : undefined }}
+                            className="relative flex h-full w-full items-center justify-center"
                         >
-                            {buildCategoryLabel(id, t)}
-                            {isActive ? (
-                                <span
-                                    aria-hidden="true"
-                                    className="absolute bottom-[10%] left-1/2 h-[calc(2px*var(--home-v2-stage-scale))] w-[72%] -translate-x-1/2 rounded-full bg-[linear-gradient(90deg,rgba(128,140,67,0)_0%,rgba(128,140,67,0.95)_20%,rgba(128,140,67,0.95)_80%,rgba(128,140,67,0)_100%)]"
-                                />
-                            ) : null}
+                            {label}
                         </span>
                     </button>
                 );
             })}
+
+            <span
+                data-testid="home-v2-category-active-rule"
+                aria-hidden="true"
+                className="pointer-events-none absolute bg-[#315c27]"
+                style={{
+                    left: activeCategoryCenter,
+                    top: '15.0%',
+                    width: '5.1%',
+                    height: scaled(3),
+                    transform: 'translateX(-50%)',
+                }}
+            />
+            <span
+                data-testid="home-v2-category-active-marker"
+                aria-hidden="true"
+                className="pointer-events-none absolute bg-[#315c27]"
+                style={{
+                    left: activeCategoryCenter,
+                    top: `calc(15.0% - ${scaled(4)})`,
+                    width: scaled(8),
+                    height: scaled(8),
+                    transform: 'translateX(-50%) rotate(45deg)',
+                }}
+            />
 
             <button
                 type="button"
                 data-testid="home-v2-account-entry"
                 aria-label={playerLabel}
                 title={playerLabel}
-                className="absolute flex items-center justify-start gap-[calc(5px*var(--home-v2-stage-scale))] border-0 bg-transparent p-0 text-[#5a3f27]"
-                style={asAbsoluteStyle(ACCOUNT_RECT)}
+                className="absolute flex items-center justify-end border-0 bg-transparent p-0 font-serif text-[#2f2116] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
+                style={{
+                    ...asAbsoluteStyle(ACCOUNT_RECT),
+                    gap: scaled(6),
+                }}
                 onClick={onAccountClick}
             >
-                <span className="flex items-center justify-center rounded-full bg-[rgba(209,166,69,0.96)] text-[#fff4d3] shadow-[0_2px_4px_rgba(70,41,16,0.22)]">
-                    <User
-                        size={18}
-                        style={{
-                            width: 'calc(25px * var(--home-v2-stage-scale))',
-                            height: 'calc(25px * var(--home-v2-stage-scale))',
-                            padding: 'calc(5px * var(--home-v2-stage-scale))',
-                        }}
-                    />
-                </span>
+                <User aria-hidden="true" style={{ width: scaled(21), height: scaled(21) }} />
                 <span
                     className="truncate"
                     style={{
-                        maxWidth: 'calc(126px * var(--home-v2-stage-scale))',
-                        fontSize: 'calc(15.5px * var(--home-v2-stage-scale))',
+                        maxWidth: scaled(102),
+                        fontSize: scaled(16),
                         fontWeight: 700,
-                        opacity: 0.98,
                     }}
                 >
                     {playerLabel}
                 </span>
+                <ChevronDown aria-hidden="true" style={{ width: scaled(17), height: scaled(17) }} />
             </button>
 
-            <button
-                type="button"
-                aria-label={t('lobby:homeV2.catalog.help')}
-                title={t('lobby:homeV2.catalog.help')}
-                className="absolute flex items-center justify-start gap-[calc(5px*var(--home-v2-stage-scale))] border-0 bg-transparent p-0 text-[#5a3f27]"
-                style={asAbsoluteStyle(HELP_RECT)}
+            <div
+                className="pointer-events-none absolute bg-[rgba(98,65,33,0.45)]"
+                style={{
+                    left: '81.65%',
+                    top: '8.2%',
+                    width: scaled(1),
+                    height: '4.2%',
+                }}
+                aria-hidden="true"
+            />
+
+            <div
+                ref={languageMenuRef}
+                className="absolute"
+                style={asAbsoluteStyle(LANGUAGE_RECT)}
             >
-                <span className="flex items-center justify-center rounded-full bg-[rgba(209,166,69,0.82)] text-[#604224] shadow-[0_2px_4px_rgba(70,41,16,0.16)]">
-                    <Compass
-                        size={18}
-                        style={{
-                            width: 'calc(23px * var(--home-v2-stage-scale))',
-                            height: 'calc(23px * var(--home-v2-stage-scale))',
-                            padding: 'calc(5px * var(--home-v2-stage-scale))',
-                        }}
-                    />
-                </span>
-                <span
-                    className="truncate"
+                <button
+                    type="button"
+                    data-testid="home-v2-language-entry"
+                    aria-label={currentLanguageOption.label}
+                    aria-expanded={languageMenuOpen}
+                    className="flex h-full w-full items-center justify-start border-0 bg-transparent p-0 font-serif text-[#2f2116] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
                     style={{
-                        maxWidth: 'calc(58px * var(--home-v2-stage-scale))',
-                        fontSize: 'calc(14.5px * var(--home-v2-stage-scale))',
+                        gap: scaled(6),
+                        fontSize: scaled(16),
                         fontWeight: 700,
-                        opacity: 0.98,
                     }}
+                    onClick={() => setLanguageMenuOpen((open) => !open)}
                 >
-                    {t('lobby:homeV2.catalog.help')}
-                </span>
-            </button>
+                    <Globe2 aria-hidden="true" style={{ width: scaled(21), height: scaled(21) }} />
+                    <span className="truncate">{currentLanguageOption.label}</span>
+                    <ChevronDown aria-hidden="true" style={{ width: scaled(17), height: scaled(17) }} />
+                </button>
+                {languageMenuOpen ? (
+                    <div
+                        data-testid="home-v2-language-menu"
+                        className="absolute right-0 z-30 overflow-hidden border border-[#8b633e]/45 bg-[#f5e5c7] shadow-[0_8px_20px_rgba(54,35,20,0.18)]"
+                        style={{
+                            top: `calc(100% + ${scaled(7)})`,
+                            minWidth: scaled(148),
+                            borderRadius: scaled(5),
+                        }}
+                    >
+                        {LANGUAGE_OPTIONS.map((option) => (
+                            <button
+                                key={option.code}
+                                type="button"
+                                data-testid={`home-v2-language-option-${option.code}`}
+                                className="flex w-full items-center justify-between border-0 bg-transparent text-left font-serif text-[#3c2819] hover:bg-[rgba(120,84,48,0.12)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
+                                style={{
+                                    padding: `${scaled(10)} ${scaled(12)}`,
+                                    fontSize: scaled(15),
+                                    fontWeight: currentLanguageOption.code === option.code ? 800 : 700,
+                                }}
+                                onClick={() => {
+                                    try {
+                                        localStorage.setItem('bg_locale_preference', option.code);
+                                    } catch {
+                                        // ignore storage failures
+                                    }
+                                    void i18n.changeLanguage(option.code);
+                                    setLanguageMenuOpen(false);
+                                }}
+                            >
+                                <span>{option.label}</span>
+                                {currentLanguageOption.code === option.code ? <span aria-hidden="true">◆</span> : null}
+                            </button>
+                        ))}
+                    </div>
+                ) : null}
+            </div>
 
             {visibleEntries.length === 0 ? (
                 <div
-                    className="absolute flex flex-col items-center justify-center rounded-[calc(22px*var(--home-v2-stage-scale))] border border-[#b89a6b]/55 bg-[rgba(247,237,212,0.72)] text-center text-[#6b4a2b]"
-                    style={asAbsoluteStyle(EMPTY_STATE_RECT)}
+                    className="absolute flex items-center justify-center border border-[#b99767]/55 bg-[rgba(238,220,184,0.32)] font-serif text-[#68472b]"
+                    style={{
+                        ...asAbsoluteStyle(EMPTY_STATE_RECT),
+                        borderRadius: scaled(4),
+                        fontSize: scaled(22),
+                        fontWeight: 700,
+                    }}
                 >
-                    <div
-                        style={{
-                            fontSize: 'calc(22px * var(--home-v2-stage-scale))',
-                            fontWeight: 700,
-                            marginBottom: 'calc(8px * var(--home-v2-stage-scale))',
-                        }}
-                    >
-                        {t('lobby:homeV2.referenceCatalog.emptyTitle')}
-                    </div>
-                    <div style={{ fontSize: 'calc(14px * var(--home-v2-stage-scale))' }}>
-                        {t('lobby:homeV2.referenceCatalog.emptyDescription')}
-                    </div>
+                    {t('lobby:homeV2.referenceCatalog.emptyTitle')}
                 </div>
             ) : null}
 
-            {visibleEntries.map((entry) => {
-                const game = gameMap.get(entry.id);
-                if (!game) {
-                    return null;
-                }
+            {visibleEntries.map(({ game, rect }) => {
+                const name = resolveGameDisplayName(game, t, game.id);
+                const summary = buildHomepageSummary(game, t);
+                const playerLabelText = buildPlayerLabel(game, t);
                 const badgeKeys = resolveGameBadgeKeys(game).filter((badgeKey, index, allKeys) => {
                     const label = resolveBadgeLabel(badgeKey, t);
                     return allKeys.findIndex((candidate) => resolveBadgeLabel(candidate, t) === label) === index;
                 });
-                const homepageSummary = buildHomepageSummary(game, t);
+                const accessibleLabel = [name, summary, playerLabelText].filter(Boolean).join('，');
 
                 return (
                     <button
-                        key={entry.id}
+                        key={game.id}
                         type="button"
-                        data-game-id={entry.id}
-                        aria-label={resolveGameDisplayName(game, t, entry.id)}
-                        className="absolute border-0 bg-transparent p-0 text-left transition-transform duration-150 hover:scale-[1.005]"
-                        style={asAbsoluteStyle(entry.rect)}
-                        onClick={() => onGameClick(entry.id)}
+                        data-game-id={game.id}
+                        aria-label={accessibleLabel}
+                        title={accessibleLabel}
+                        className="group absolute border-0 bg-transparent p-0 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
+                        style={asAbsoluteStyle(rect)}
+                        onClick={() => onGameClick(game.id)}
                     >
-                        <div className="relative flex h-full w-full gap-[calc(18px*var(--home-v2-stage-scale))]">
+                        <div
+                            className="relative flex h-full w-full bg-transparent transition-colors duration-150 group-hover:bg-[rgba(238,220,184,0.16)]"
+                            style={{
+                                borderRadius: scaled(3),
+                                padding: `${scaled(5)} ${scaled(9)}`,
+                                gap: scaled(15),
+                            }}
+                        >
                             <div
-                                className="relative shrink-0 overflow-hidden rounded-[calc(14px*var(--home-v2-stage-scale))] shadow-[0_8px_18px_rgba(57,35,14,0.18)]"
+                                className="relative shrink-0 overflow-hidden border border-[#584022]/42 bg-[#d8c59b] shadow-[0_3px_7px_rgba(60,36,14,0.16)]"
                                 style={{
-                                    width: '30.2%',
-                                    height: '85.5%',
-                                    marginTop: '1.1%',
+                                    width: '25.7%',
+                                    height: '100%',
+                                    borderRadius: scaled(4),
                                 }}
                             >
-                                <div className="absolute inset-0">{renderHomepageThumbnail(game)}</div>
+                                <HomeCatalogThumbnail game={game} />
                             </div>
 
                             <div className="flex min-w-0 flex-1 flex-col">
-                                <div
-                                    className="truncate text-[#4b2f1d]"
-                                    style={{
-                                        marginTop: 'calc(1px * var(--home-v2-stage-scale))',
-                                        fontSize: 'calc(41px * var(--home-v2-stage-scale))',
-                                        fontWeight: 700,
-                                        lineHeight: 1.04,
-                                    }}
-                                >
-                                    {resolveGameDisplayName(game, t, entry.id)}
+                                <div className="flex min-w-0 items-start justify-between" style={{ gap: scaled(10) }}>
+                                    <div
+                                        className="truncate font-serif text-[#3f2818]"
+                                        style={{
+                                            fontSize: scaled(24),
+                                            fontWeight: 800,
+                                            lineHeight: 1.08,
+                                        }}
+                                    >
+                                        {name}
+                                    </div>
+                                    <div
+                                        className="ml-auto flex shrink-0 items-center text-[#4f3521]"
+                                        style={{
+                                            gap: scaled(4),
+                                            fontSize: scaled(17),
+                                            fontWeight: 700,
+                                            paddingTop: scaled(3),
+                                        }}
+                                    >
+                                        <Users aria-hidden="true" style={{ width: scaled(20), height: scaled(20) }} />
+                                        <span className="whitespace-nowrap">{playerLabelText}</span>
+                                    </div>
                                 </div>
 
                                 <div
-                                    className="mt-[calc(9px*var(--home-v2-stage-scale))] max-w-[76%] text-[#6c4b2f]"
+                                    className="text-[#65462d]"
                                     style={{
-                                        fontSize: 'calc(19px * var(--home-v2-stage-scale))',
-                                        lineHeight: 1.42,
-                                        minHeight: 'calc(46px * var(--home-v2-stage-scale))',
+                                        marginTop: scaled(3),
+                                        fontSize: scaled(15),
+                                        lineHeight: 1.35,
+                                        minHeight: scaled(27),
                                         display: '-webkit-box',
                                         WebkitLineClamp: 2,
                                         WebkitBoxOrient: 'vertical',
                                         overflow: 'hidden',
                                     }}
                                 >
-                                    {homepageSummary}
+                                    {summary}
                                 </div>
 
-                                <div className="mt-[calc(11px*var(--home-v2-stage-scale))] flex items-end justify-between gap-[calc(10px*var(--home-v2-stage-scale))]">
-                                    <div className="flex flex-wrap gap-[calc(8px*var(--home-v2-stage-scale))]">
-                                        {badgeKeys.map((badgeKey, index) => renderBadge(badgeKey, index, t))}
-                                    </div>
-                                    <div
-                                        className="shrink-0 text-[#705238]"
-                                        style={{
-                                            fontSize: 'calc(23px * var(--home-v2-stage-scale))',
-                                            fontWeight: 600,
-                                            marginRight: 'calc(4px * var(--home-v2-stage-scale))',
-                                        }}
-                                    >
-                                        {buildPlayerLabel(game, t)}
-                                    </div>
+                                <div className="mt-auto flex flex-wrap" style={{ gap: scaled(7) }}>
+                                    {badgeKeys.map((badgeKey, index) => renderBadge(badgeKey, index, t))}
                                 </div>
                             </div>
 
                             <div
-                                className="pointer-events-none absolute bottom-0 left-[16.8%] h-px w-[78.8%] bg-[linear-gradient(90deg,rgba(168,132,81,0)_0%,rgba(168,132,81,0.52)_15%,rgba(168,132,81,0.52)_85%,rgba(168,132,81,0)_100%)]"
+                                className="pointer-events-none absolute bottom-0 h-px bg-[linear-gradient(90deg,rgba(167,125,76,0)_0%,rgba(167,125,76,0.54)_18%,rgba(167,125,76,0.54)_82%,rgba(167,125,76,0)_100%)]"
+                                style={{
+                                    left: '0',
+                                    width: '100%',
+                                }}
                                 aria-hidden="true"
                             />
                         </div>
                     </button>
                 );
             })}
-            </div>
+
+            <button
+                type="button"
+                data-testid="home-v2-catalog-prev-page"
+                aria-label="上一页"
+                className="absolute flex items-center justify-center border border-[#a98655]/60 bg-[rgba(229,209,174,0.54)] text-[#604126] transition-opacity disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
+                style={{
+                    ...asAbsoluteStyle(PREVIOUS_PAGE_RECT),
+                    borderRadius: scaled(3),
+                }}
+                disabled={!canGoPrevious}
+                onClick={() => setCatalogPageIndex((current) => Math.max(0, current - 1))}
+            >
+                <ChevronLeft aria-hidden="true" style={{ width: scaled(18), height: scaled(18) }} />
+            </button>
+            <span
+                data-testid="home-v2-catalog-page-label"
+                className="absolute flex items-center justify-center font-serif tabular-nums text-[#5f4027]"
+                style={{
+                    ...asAbsoluteStyle(PAGE_LABEL_RECT),
+                    fontSize: scaled(16),
+                    fontWeight: 700,
+                }}
+            >
+                {catalogPageIndex + 1} / {totalPages}
+            </span>
+            <button
+                type="button"
+                data-testid="home-v2-catalog-next-page"
+                aria-label="下一页"
+                className="absolute flex items-center justify-center border border-[#a98655]/60 bg-[rgba(229,209,174,0.54)] text-[#604126] transition-opacity disabled:opacity-35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
+                style={{
+                    ...asAbsoluteStyle(NEXT_PAGE_RECT),
+                    borderRadius: scaled(3),
+                }}
+                disabled={!canGoNext}
+                onClick={() => setCatalogPageIndex((current) => Math.min(totalPages - 1, current + 1))}
+            >
+                <ChevronRight aria-hidden="true" style={{ width: scaled(18), height: scaled(18) }} />
+            </button>
+            <button
+                type="button"
+                data-testid="home-v2-continue-entry"
+                aria-label={continueMatch ? `继续对局 ${continueMatch.gameLabel}` : '暂无可继续对局'}
+                className="absolute flex items-center border border-[#9a7a4a]/52 bg-[rgba(196,179,136,0.36)] font-serif text-[#3b321f] shadow-[inset_0_1px_0_rgba(255,248,222,0.25)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#e1c36c]/70"
+                style={{
+                    ...asAbsoluteStyle(CONTINUE_RECT),
+                    borderRadius: scaled(3),
+                    fontSize: scaled(16),
+                    fontWeight: 700,
+                    opacity: continueMatch ? 1 : 0.48,
+                }}
+                disabled={!continueMatch}
+                onClick={() => continueMatch ? onContinueMatch?.(continueMatch) : undefined}
+            >
+                <span
+                    aria-hidden="true"
+                    className="self-stretch bg-[#315c27]"
+                    style={{
+                        width: scaled(27),
+                        marginRight: scaled(18),
+                        clipPath: 'polygon(0 0,100% 0,100% 100%,50% 78%,0 100%)',
+                    }}
+                />
+                <span className="min-w-0 flex-1 truncate leading-none">
+                    {continueMatch ? `继续对局 · ${continueMatch.gameLabel} ${continueMatchCode}` : '暂无可继续对局'}
+                </span>
+                <span className="flex items-center whitespace-nowrap" style={{ gap: scaled(5), marginLeft: scaled(12) }}>
+                    <span>{continueMatch?.playerLabel ?? '-'}</span>
+                    <ChevronRight aria-hidden="true" style={{ width: scaled(19), height: scaled(19) }} />
+                </span>
+            </button>
         </div>
     );
 };
@@ -524,30 +736,36 @@ export interface OverviewProps {
     games: GameConfig[];
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
+    continueMatch?: HomeV2ContinueMatch | null;
+    onContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Overview = ({ games, onGameClick, onAccountClick }: OverviewProps) => (
-    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} />
+export const Overview = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch }: OverviewProps) => (
+    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} />
 );
 
 export interface LeftProps {
     games: GameConfig[];
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
+    continueMatch?: HomeV2ContinueMatch | null;
+    onContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Left = ({ games, onGameClick, onAccountClick }: LeftProps) => (
-    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} />
+export const Left = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch }: LeftProps) => (
+    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} />
 );
 
 export interface RightProps {
     games: GameConfig[];
     onGameClick: (id: string) => void;
     onAccountClick?: () => void;
+    continueMatch?: HomeV2ContinueMatch | null;
+    onContinueMatch?: (match: HomeV2ContinueMatch) => void;
 }
 
-export const Right = ({ games, onGameClick, onAccountClick }: RightProps) => (
-    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} />
+export const Right = ({ games, onGameClick, onAccountClick, continueMatch, onContinueMatch }: RightProps) => (
+    <OverviewSpread games={games} onGameClick={onGameClick} onAccountClick={onAccountClick} continueMatch={continueMatch} onContinueMatch={onContinueMatch} />
 );
 
 export const LobbyDirectory = {

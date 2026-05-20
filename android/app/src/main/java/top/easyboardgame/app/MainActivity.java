@@ -65,6 +65,11 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         WebView.setWebContentsDebuggingEnabled(true);
+        // Android shell root now renders Home V2, so the native shell must start
+        // in the same landscape/immersive contract before the WebView reports a URL.
+        lastRequestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
+        lastNeedsImmersiveWindow = true;
+        setRequestedOrientation(lastRequestedOrientation);
         gameOrientations.putAll(loadOrientationMap());
         homeV2DraftEnabledByBuild = loadHomeV2DraftFlag();
         registerPlugin(GamePackagePlugin.class);
@@ -87,6 +92,7 @@ public class MainActivity extends BridgeActivity {
             }
         );
         super.onCreate(savedInstanceState);
+        applyWindowMode(true);
     }
 
     @Override
@@ -143,9 +149,12 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void syncOrientation(String url) {
+        if (url == null || url.isEmpty()) {
+            return;
+        }
         final boolean isGamePage = extractGameId(url) != null;
         final boolean isHomeV2Page = isHomeV2Route(url);
-        final boolean needsImmersiveWindow = isGamePage || isHomeV2Page;
+        final boolean needsImmersiveWindow = isGamePage || isHomeV2Page || homeV2DraftEnabledByBuild;
         final int requestedOrientation = resolveRequestedOrientation(url);
         if (requestedOrientation == lastRequestedOrientation && needsImmersiveWindow == lastNeedsImmersiveWindow) {
             return;
@@ -159,20 +168,20 @@ public class MainActivity extends BridgeActivity {
     }
 
     private int resolveRequestedOrientation(String url) {
-        if (isHomeV2Route(url)) {
-            return ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
-        }
-
         String gameId = extractGameId(url);
-        if (gameId == null) {
-            return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
+        if (gameId != null) {
+            String orientation = gameOrientations.getOrDefault(gameId, ORIENTATION_PORTRAIT);
+            if (ORIENTATION_LANDSCAPE.equals(orientation)) {
+                return ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
+            }
+            return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
         }
 
-        String orientation = gameOrientations.getOrDefault(gameId, ORIENTATION_PORTRAIT);
-        if (ORIENTATION_LANDSCAPE.equals(orientation)) {
+        if (isHomeV2Route(url) || homeV2DraftEnabledByBuild) {
             return ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
         }
-        return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+
+        return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
     }
 
     private boolean isHomeV2Route(String url) {
@@ -182,17 +191,32 @@ public class MainActivity extends BridgeActivity {
 
         android.net.Uri uri = android.net.Uri.parse(url);
         List<String> segments = uri.getPathSegments();
-        boolean isRootPath = segments.isEmpty() || (segments.size() == 1 && "index.html".equals(segments.get(0)));
+        boolean hasPlaySegment = segments.contains(PLAY_SEGMENT);
+        if (hasPlaySegment) {
+            return false;
+        }
+
+        boolean isRootPath = segments.isEmpty()
+            || "index.html".equals(segments.get(segments.size() - 1));
         if (!isRootPath) {
             return false;
         }
 
         String explicitFlag = uri.getQueryParameter("homeV2Draft");
+        if (!"1".equals(explicitFlag)) {
+            String fragment = uri.getFragment();
+            if (fragment != null && fragment.contains("homeV2Draft=1")) {
+                explicitFlag = "1";
+            }
+        }
         if ("1".equals(explicitFlag)) {
             return true;
         }
 
-        return homeV2DraftEnabledByBuild;
+        // In Android shell builds the root route is Home V2 even without the
+        // homeV2Draft query flag. Keep native orientation/immersive handling in
+        // sync with src/lib/homeV2Routing.ts.
+        return isRootPath || homeV2DraftEnabledByBuild;
     }
 
     private String extractGameId(String url) {

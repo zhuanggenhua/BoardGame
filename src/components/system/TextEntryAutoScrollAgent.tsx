@@ -33,6 +33,7 @@ export const TextEntryAutoScrollAgent = () => {
 
         const shouldHandleTarget = (target: HTMLElement) => {
             if (!isCoarsePointer()) return false;
+            if (target.closest('[data-text-entry-autoscroll="off"]')) return false;
             return modalRoot.contains(target);
         };
 

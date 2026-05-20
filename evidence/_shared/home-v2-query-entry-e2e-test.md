@@ -1978,3 +1978,116 @@ NODE_OPTIONS=--max-old-space-size=4096 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_
 - 肉眼结论：
   - `0%` 和右侧 `0/0` 明显比上一轮收小，进度条也更薄，不再把右页空态压成“大数字海报”。
   - 评价页仍保留清晰的书页 panel 结构，没有为了缩数字把版式打散。
+
+## Addendum（2026-05-19）：推荐人数、排行榜与翻页预热复验
+
+### 本轮运行
+
+- `npm run typecheck`
+- `npx eslint src/components/home-v2/GameDetails.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts`
+- `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 BG_HOME_V2_VIEWPORT=852x393 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+
+结果：Typecheck 通过；ESLint 通过；E2E 通过，并重新生成了带排行榜样例数据的截图。
+
+### 本轮关键截图（绝对路径）
+
+#### 1) 详情页大厅页
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260516-action-buttons.png`
+- 肉眼结论：
+  - 左页底部的推荐人数现在写成单行 `推荐人数：方块`，标签与数字方块在同一轴线上，重心明显比上一轮更居中。
+  - 教程按钮仍保持单层深色书页按钮，没有因为推荐人数回中而被挤成异常窄按钮。
+
+#### 2) 排行榜页
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-tab-leaderboard-20260516.png`
+- 肉眼结论：
+  - 第一、二、三名现在分别有金 / 银 / 铜色块，不再是同色小方块混排。
+  - 右侧战绩收成单行 `28/34`、`24/31` 这类格式，右页中段不再因为双行小字留下大块无意义空白。
+  - 排名本体直接使用 `1 / 2 / 3`，没有再出现不正式的 `#1` 语法。
+
+#### 3) 翻页预热
+
+- 本轮实现上增加了 `HomeV2DetailWarmup`，在 `flippingToDetail` 阶段提前挂载房间数据预热；它不生成额外可见页面，只提前让详情页房间快照开始准备。
+- 该项当前以源码与链路行为修正为主，没有单独新增“延迟秒数”断言；但本轮复跑后的详情页稳态截图已正常生成，未再出现因为等待排行榜样例或房间账本而卡住用例的情况。
+
+## Addendum（2026-05-19）：翻页中段预显复验
+
+### 本轮运行
+
+- `npm run typecheck`
+- `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts`
+- `CODEX_MANAGED_BY_NPM=1 BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 BG_HOME_V2_VIEWPORT=852x393 node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+
+结果：Typecheck 通过；ESLint 通过；E2E 通过，并重新生成了 `50% / 75%` 翻页帧截图。
+
+### 本轮关键截图（绝对路径）
+
+#### 1) 50% 翻页帧
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 肉眼结论：
+  - 当前已不是整张白页：左页能看到返回入口、缩略图、简介文字与推荐人数区域，右页能看到搜索、表头和房间账本。
+  - 中间翻页纸张仍遮住一块区域，这属于翻页本体；但“翻完后才整体显现”的整页空白感已经消失。
+
+#### 2) 75% 翻页帧
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-75.png`
+- 肉眼结论：
+  - 到 `75%` 时，左页详情与右页账本已经基本完整出现，已经不是“翻页完成后再等几秒才开始出内容”的状态。
+  - 这张图更接近真实用户感知：内容在翻页过程中逐步露出，而不是翻页结束后才整页突变。
+
+## Addendum（2026-05-20）：推荐人数居中复验
+
+### 本轮运行
+
+- `npm run typecheck`
+- `npx eslint src/components/home-v2/GameDetails.tsx src/components/home-v2/FoldLinePageFlipStage.tsx src/pages/HomeV2Draft.tsx e2e/lobby.e2e.ts`
+- `CODEX_MANAGED_BY_NPM=1 BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 BG_HOME_V2_VIEWPORT=852x393 node scripts/infra/run-e2e-single.mjs ci e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+
+结果：Typecheck 通过；ESLint 通过；E2E 通过。
+
+### 本轮关键截图（绝对路径）
+
+#### 1) 详情页大厅页
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260516-action-buttons.png`
+- 肉眼结论：
+  - `推荐人数：2 4` 已回到底部中轴，标签在左、数字方块在右，但整组没有再硬贴左下角。
+  - 教程按钮缩成固定宽度后，左页底部重心更平，不再是“推荐人数被甩到角落、按钮单独占大片空间”的旧问题。
+  - 当前量测 `recommendedWidthRatio=0.34`、`recommendedTopRatio=0.87`、`tutorialWidthRatio=0.47`，说明推荐人数已从旧的宽底条收成中轴短带，而不是消失或被挤坏。
+
+## Addendum（2026-05-20）：翻页尾巴时序复验
+
+### 本轮运行
+
+- `npm run typecheck`
+- `npx eslint src/components/home-v2/FoldLinePageFlipStage.tsx e2e/lobby.e2e.ts`
+- `CODEX_MANAGED_BY_NPM=1 BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 BG_HOME_V2_VIEWPORT=852x393 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+
+结果：Typecheck 通过；ESLint 通过；E2E 通过。
+
+### 本轮关键结论
+
+- 本轮先在 E2E 里加入翻页时序探针，把“动画本体时长”和“翻完后详情稳态切换延迟”拆开量。
+- 首轮量测证明问题本体是翻页尾巴太长，而不是翻完后再额外加载：旧行为下 `flipAnimationMs` 一度接近 `1519ms`，但 `detailModeLagMs` 已接近 `0ms`。
+- 当前实现把 `FoldLinePageFlipStage` 改成“自有进度阈值优先收口，turn.js 的 `turned/end` 与 fallback timer 只做兜底”，最新基线量测为：
+  - `flipAnimationMs=363.20`
+  - `detailModeLagMs=0.00`
+  - `detailReadyLagMs=-409.60`
+
+### 关键截图（绝对路径）
+
+#### 1) 详情页稳态
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-detail-entry-20260516-action-buttons.png`
+- 肉眼结论：
+  - 这次提速后，详情页稳态构图没有回退，左页推荐人数与教程按钮仍保留在最新收敛版位置。
+  - 右页搜索、创建房间、账本表格仍保持对齐，没有因为提前切稳态而出现“翻完瞬间再闪一下”的新异常。
+
+#### 2) 50% 翻页帧
+
+- `D:\gongzuo\webgame\BoardGame\.worktrees\homepage-v2\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-page-flip-to-detail-50.png`
+- 肉眼结论：
+  - 翻页中段仍然能看到左页详情和右页账本，不是靠提前切稳态把中段内容掐掉。
+  - 这证明当前修法是“截短 turn.js 尾巴”，不是“把中段动画删掉”。

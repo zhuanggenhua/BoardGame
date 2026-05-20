@@ -1,4 +1,4 @@
-import { isNativeAndroidRuntime } from './mobile/androidRuntime';
+import { isAndroidShellBuildMode, isNativeAndroidRuntime } from './mobile/androidRuntime';
 
 export const HOME_V2_PREVIEW_PATH = '/dev/home-v2-preview';
 
@@ -16,7 +16,7 @@ export function isHomeV2PreviewRoute(pathname: string) {
 }
 
 export function isHomeV2DraftEnabled(search: string | URLSearchParams) {
-    return isHomeV2DraftEnvEnabled || readHomeV2DraftParam(search) || isNativeAndroidRuntime();
+    return isHomeV2DraftEnvEnabled || isAndroidShellBuildMode() || readHomeV2DraftParam(search) || isNativeAndroidRuntime();
 }
 
 export function isHomeV2DraftRoute(pathname: string, search: string | URLSearchParams) {
