@@ -20,6 +20,8 @@
   - `a1eba9f4^`（也就是 `c169bac9` 版本）里还没有“正常桌面两人局默认走 minimal rail”这条路线。
 - 我实际对比到的差异：
   - 旧基线里的底部玩家卡明显更接近“摘要卡”，不是被压成便签块。
+  - 旧基线初始页没有搜索/筛选工具条，顶部标题下方直接进入候选卡网格。
+  - 旧基线候选卡是更大的桌面密度，不是 `focused desktop draft` 那种高密小卡排法。
   - 因此这次正确修法不是继续微调 `82px/76px` 那套极小分支，而是先把“正常桌面两人局默认走 minimal rail”这个前提撤掉。
 
 ## 本轮修正
@@ -68,6 +70,28 @@ node .\node_modules\playwright\cli.js test e2e/smashup/smashup-faction-selection
 验收结论：
 
 - 达标。证明两人在线房的玩家 rail 已脱离 `80px` 级别的过度压缩状态。
+
+### 1.1 宽屏当前图 vs 旧基线对比
+
+当前宽屏在线截图：
+
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-two-player-player-rail-1920\two-player-online-selection-1920.png`
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\smashup-two-player-player-rail-1920\two-player-online-player-rail-1920.png`
+
+我实际看到：
+
+- 当前宽屏图已经和旧基线一样，标题下方直接进入候选卡区，没有再露出整条搜索/筛选工具条。
+- 当前宽屏图首屏候选卡尺寸已经回到旧桌面密度，不再是先前那种更小、更密的 `focused desktop` 排法。
+- 当前宽屏图底部两张玩家卡视觉上已恢复为“摘要卡”尺度，和旧基线属于同一路线，不再是 `80px` 级别的小便签。
+
+仍然存在的非关键差异：
+
+- 当前截图因为测试环境跳过了图片门禁，部分卡图是白底占位，不影响本轮布局对比。
+- 当前在线截图里的玩家名是 `Host-Rail-1920 / AI-Rail-1920`，旧基线是 `P0 / P1`，这是测试身份差异，不是布局回归。
+
+对比结论：
+
+- 这轮修正已经把“宽屏两人桌面局误切进新布局路线”的主要回归收回来了。
 
 ### 2. 房主代 AI 选派系真实在线链路复核
 

@@ -2066,3 +2066,70 @@ const interactionDataForEvent = responseValidationMode === 'live'
 
 - 这条比纯 transport JSON 断言更接近用户看到的 waiting overlay，因为它验证了权威关闭态能让真实 `PromptOverlay` DOM 卸载 waiting 文案。
 - 它仍不是最终多人浏览器截图：没有真实创建 Host/Guest 两个页面，也没有覆盖 `The Spy Who Ditched Me` 原始多人链路。下一步如果继续收口，应优先补多人 E2E 或等价截图证据；在此之前不能宣布 goal 完成。
+
+## 2026-05-20 shared transport follow-up 60
+
+- 本轮继续补真实多人浏览器证据：使用真实 Host/Guest 两个页面、在线房间、服务端状态注入，让 Host 拥有一个 owner-only prompt，并验证 Guest 非目标页在 prompt 打开期间和权威关闭后都没有中央 `waiting_for_player` 残留。
+
+### 本轮新增 E2E gate
+
+- `e2e/smashup/smashup-phase-transition-simple.e2e.ts`
+  - 新增 `在线双人非目标页在 prompt 打开与权威关闭后都不应残留 waiting overlay`
+  - 第一拍注入 `interaction.current.playerId='0'` 的 prompt：Host 页面能看到并操作 `确认` 按钮；Guest 页面权威状态被过滤成 `currentId:null / isBlocked:true`，DOM 中没有 `正在等待 Host-SU-E2E`。
+  - 第二拍注入权威关闭态：Guest 页面收到 `currentId:null / isBlocked:false`，DOM 中仍没有 waiting 文案。
+- `e2e/helpers/smashup-skip-setup.ts`
+  - 状态注入专用在线房间 helper 改为 `skipImageGate:true`，避免此类测试卡在“加载素材 9/10”。
+  - 派系选择标题等待补充 `选择你的派系`，兼容当前中文文案。
+
+### 本轮实际验证
+
+1. `PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4274 PW_PORT=4274 PW_E2E_GAME_SERVER_PORT=20210 PW_GAME_SERVER_PORT=20210 GAME_SERVER_PORT=20210 PW_E2E_API_SERVER_PORT=21210 PW_API_SERVER_PORT=21210 API_SERVER_PORT=21210 PW_RUNTIME_SCOPE=smashup-waiting-overlay-close BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup/smashup-phase-transition-simple.e2e.ts "在线双人非目标页在 prompt 打开与权威关闭后都不应残留 waiting overlay"`
+   - 结果：`1 passed`
+2. 截图：
+   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\在线双人非目标页在-prompt-打开与权威关闭后都不应残留-waiting-overlay\在线双人非目标页在-prompt-打开与权威关闭后都不应残留-waiting-overlay-online-waiting-overlay-open-filtered-nontarget.png`
+   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\在线双人非目标页在-prompt-打开与权威关闭后都不应残留-waiting-overlay\在线双人非目标页在-prompt-打开与权威关闭后都不应残留-waiting-overlay-online-waiting-overlay-after-authoritative-close.png`
+
+### 本轮看图结论
+
+- 两张截图均为 Guest 非目标页真实浏览器画面，能看到对局棋盘、计分板、对手回合提示与底部手牌/弃牌区域，没有中央 waiting overlay，也没有 `正在等待 Host-SU-E2E` 文案。
+- `open-filtered-nontarget` 截图对应 prompt 打开期间：服务端状态断言 Guest 视角 `currentId:null / isBlocked:true`，画面上没有可操作 prompt 或 waiting overlay。
+- `after-authoritative-close` 截图对应权威关闭后：服务端状态断言 Guest 视角 `currentId:null / isBlocked:false`，画面仍无 waiting overlay。
+
+### 当前边界
+
+- 这条已经是多人浏览器证据，不再停在组件/transport 单测。
+- 它仍是 synthetic owner-only prompt 状态注入，不是 `The Spy Who Ditched Me` 从真实卡牌入口打出的完整链路；因此可以把 Host/非目标页 waiting overlay 残留风险大幅降级，但不能把整个 yuanhou effect atom goal 标记完成。
+
+## 2026-05-20 shared transport follow-up 61
+
+- 本轮直接回应“是不是死循环”：没有继续回扫旧 `goal.objective=The Spy Who Ditched Me ... waiting overlay`，而是按当前长期状态里的 shared transport / completion-audit 锚点，扫出 3 条仍停在 `reason` 或 `stateSnapshot` 级的 success/recovered payload 薄口。
+- 这轮没有改 runtime；只把已有成功恢复分支补成 `stateSnapshot + actionLog` 双出口 direct gate，确认反馈 payload 会保留 blocker provenance 与 `trackerKey`。
+
+### 本轮补强 gate
+
+- `src/engine/transport/__tests__/server.test.ts`
+  - `online AI watchdog 完成 legal action 恢复后也应写入系统反馈`
+    - 旧断言只看 `reason` 与 `stateSnapshot` 存在。
+    - 新断言解析 `stateSnapshot/actionLog`，确认二者都保留 `4|main2|1|0`，且 `trackerKey` 与 payload 顶层一致。
+  - `online AI watchdog 在 human active 的 off-turn 防御阶段也应代 AI 执行合法动作，避免 defensiveRoll 卡死`
+    - 新增 `stateSnapshot/actionLog.blockerFingerprint` 对 `seat-legal-only` 与 `defensiveRoll` 的断言。
+  - `online AI watchdog 在 human active 的 off-turn targetingRoll 阶段也应代 AI 执行合法动作，避免 4 人选目标卡死`
+    - 新增 `stateSnapshot/actionLog.blockerFingerprint` 对 `seat-legal-only` 与 `targetingRoll` 的断言。
+
+### 本轮实际验证
+
+1. focused 两条联跑：
+   `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 完成 legal action 恢复后也应写入系统反馈|online AI watchdog 在 human active 的 off-turn defensiveRoll 阶段也应代 AI 执行合法动作，避免防御骰卡死|online AI watchdog 在 human active 的 off-turn targetingRoll 阶段也应代 AI 执行合法动作，避免 4 人选目标卡死"`
+   - 结果：`1 file passed, 2 passed / 200 skipped`
+   - 注：过滤词中的 defensiveRoll 用例标题未命中，随后单独补跑。
+2. focused 防御骰单条：
+   `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 human active 的 off-turn 防御阶段也应代 AI 执行合法动作，避免 defensiveRoll 卡死"`
+   - 结果：`1 file passed, 1 passed / 201 skipped`
+3. 整文件：
+   `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`
+   - 结果：`1 file passed, 202 passed`
+
+### 当前边界
+
+- 这是 completion-audit 证据补强，不是新的玩法 runtime 修复，也不是 `The Spy Who Ditched Me` 原卡真实入口 E2E。
+- 后续不要再把这三条 `legal-action-recovered / seat-legal-only` success 分支当成 “只有 reason、缺 payload provenance” 的开放残口；继续时应找别的 still-reason-only/suppressed success seam，或回到真实多人原卡链路。

@@ -3754,9 +3754,17 @@ describe('GameTransportServer（离座与重连）', () => {
             status: 'resolved',
         }));
 
-        const payload = feedbackReporter.mock.calls[0]?.[0] as { reason?: string; stateSnapshot?: string } | undefined;
+        const payload = feedbackReporter.mock.calls[0]?.[0] as { reason?: string; trackerKey?: string; stateSnapshot?: string; actionLog?: string } | undefined;
         expect(payload?.reason).toContain('active-turn:legal-action:advance-phase:legal-advance');
         expect(typeof payload?.stateSnapshot).toBe('string');
+
+        const snapshot = JSON.parse(payload?.stateSnapshot ?? '{}');
+        expect(snapshot.blockerFingerprint).toContain('4|main2|1|0');
+        expect(snapshot.trackerKey).toBe(payload?.trackerKey);
+
+        const actionLog = JSON.parse(payload?.actionLog ?? '{}');
+        expect(actionLog.blockerFingerprint).toContain('4|main2|1|0');
+        expect(actionLog.trackerKey).toBe(payload?.trackerKey);
     });
 
     it('online AI watchdog 在 summonerwars 应使用 END_PHASE 推进阶段', async () => {
@@ -17295,8 +17303,18 @@ describe('GameTransportServer（离座与重连）', () => {
                 status: 'resolved',
             }));
 
-            const payload = feedbackReporter.mock.calls[0]?.[0] as { reason?: string } | undefined;
+            const payload = feedbackReporter.mock.calls[0]?.[0] as { reason?: string; trackerKey?: string; stateSnapshot?: string; actionLog?: string } | undefined;
             expect(payload?.reason).toContain('seat-legal-only:legal-action:advance-phase:legal-advance');
+
+            const snapshot = JSON.parse(payload?.stateSnapshot ?? '{}');
+            expect(snapshot.blockerFingerprint).toContain('seat-legal-only');
+            expect(snapshot.blockerFingerprint).toContain('defensiveRoll');
+            expect(snapshot.trackerKey).toBe(payload?.trackerKey);
+
+            const actionLog = JSON.parse(payload?.actionLog ?? '{}');
+            expect(actionLog.blockerFingerprint).toContain('seat-legal-only');
+            expect(actionLog.blockerFingerprint).toContain('defensiveRoll');
+            expect(actionLog.trackerKey).toBe(payload?.trackerKey);
         } finally {
             executeSpy.mockRestore();
         }
@@ -17492,8 +17510,18 @@ describe('GameTransportServer（离座与重连）', () => {
                 status: 'resolved',
             }));
 
-            const payload = feedbackReporter.mock.calls[0]?.[0] as { reason?: string } | undefined;
+            const payload = feedbackReporter.mock.calls[0]?.[0] as { reason?: string; trackerKey?: string; stateSnapshot?: string; actionLog?: string } | undefined;
             expect(payload?.reason).toContain('seat-legal-only:legal-action:advance-phase:legal-advance');
+
+            const snapshot = JSON.parse(payload?.stateSnapshot ?? '{}');
+            expect(snapshot.blockerFingerprint).toContain('seat-legal-only');
+            expect(snapshot.blockerFingerprint).toContain('targetingRoll');
+            expect(snapshot.trackerKey).toBe(payload?.trackerKey);
+
+            const actionLog = JSON.parse(payload?.actionLog ?? '{}');
+            expect(actionLog.blockerFingerprint).toContain('seat-legal-only');
+            expect(actionLog.blockerFingerprint).toContain('targetingRoll');
+            expect(actionLog.trackerKey).toBe(payload?.trackerKey);
         } finally {
             executeSpy.mockRestore();
         }

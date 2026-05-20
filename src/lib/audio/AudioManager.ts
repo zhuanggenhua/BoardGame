@@ -6,6 +6,7 @@ import { Howl, Howler } from 'howler';
 import type { SoundDefinition, SoundKey, GameAudioConfig, BgmDefinition } from './types';
 import type { AudioRegistryEntry } from './commonRegistry';
 import { assetsPath, getOptimizedAudioUrl, waitForCriticalImages, isCriticalImagesReady, resolveAssetsBaseUrlFromEnv } from '../../core/AssetLoader';
+import { readInstalledGamePackageAssetBlobUrl } from '../../features/mobile-packages/nativeGamePackagePlugin';
 
 const isPassthroughSource = (src: string) => (
     src.startsWith('data:')
@@ -41,6 +42,7 @@ const OFFICIAL_REMOTE_ASSETS_BASE_URL = resolveAssetsBaseUrlFromEnv({
 });
 
 const MAX_CONCURRENT_LOADS = 4;
+const INSTALLED_ASSET_PATH_MARKER = '/current/assets/';
 
 const splitUrlSuffix = (value: string) => {
     const hashIndex = value.indexOf('#');
@@ -53,39 +55,115 @@ const splitUrlSuffix = (value: string) => {
     };
 };
 
-const dedupeAudioSrcList = (list: string[]) => {
-    const unique: string[] = [];
-    const seen = new Set<string>();
-    for (const item of list) {
-        if (!item || seen.has(item)) continue;
-        seen.add(item);
-        unique.push(item);
+const stripVersionParam = (value: string) => {
+    const { path, suffix } = splitUrlSuffix(value);
+    if (!suffix.startsWith('?')) {
+        return value;
     }
-    return unique;
+
+    const params = new URLSearchParams(suffix.slice(1));
+    if (!params.has('v')) {
+        return value;
+    }
+    params.delete('v');
+    const nextQuery = params.toString();
+    return nextQuery ? `${path}?${nextQuery}` : path;
+};
+
+const isCapacitorFileAssetUrl = (src: string) => {
+    const { path } = splitUrlSuffix(src);
+    return /^https?:\/\/[^/]+\/_capacitor_file_\//i.test(path)
+        || path.startsWith('/_capacitor_file_/');
+};
+
+const extractCommonAudioRelativePath = (src: string) => {
+    const { path } = splitUrlSuffix(src);
+    const marker = '/common/audio/';
+    const markerIndex = path.indexOf(marker);
+    if (markerIndex < 0) {
+        return null;
+    }
+    return path.slice(markerIndex + 1);
+};
+
+const resolveInstalledAssetLocationFromUrl = (src: string) => {
+    const { path } = splitUrlSuffix(src);
+    const markerIndex = path.indexOf(INSTALLED_ASSET_PATH_MARKER);
+    if (markerIndex < 0) {
+        return null;
+    }
+
+    const beforeMarker = path.slice(0, markerIndex);
+    const gamePackagesMarker = '/game-packages/';
+    const gamePackagesIndex = beforeMarker.lastIndexOf(gamePackagesMarker);
+    if (gamePackagesIndex < 0) {
+        return null;
+    }
+
+    const gameId = beforeMarker.slice(gamePackagesIndex + gamePackagesMarker.length).split('/')[0]?.trim();
+    const relativePath = path
+        .slice(markerIndex + INSTALLED_ASSET_PATH_MARKER.length)
+        .split(/[?#]/, 1)[0]
+        .trim();
+
+    if (!gameId || !relativePath) {
+        return null;
+    }
+
+    try {
+        return {
+            gameId,
+            relativePath: decodeURIComponent(relativePath),
+        };
+    } catch {
+        return {
+            gameId,
+            relativePath,
+        };
+    }
 };
 
 const toOfficialRemoteAssetUrl = (src: string) => {
-    if (!src.startsWith('/assets/')) return null;
-    const { path, suffix } = splitUrlSuffix(src);
-    const relativePath = path.replace(/^\/+assets\/+/, '');
+    const { suffix } = splitUrlSuffix(src);
+    const relativePath = src.startsWith('/assets/')
+        ? splitUrlSuffix(src).path.replace(/^\/+assets\/+/, '')
+        : extractCommonAudioRelativePath(src);
     if (!relativePath) return null;
     return `${OFFICIAL_REMOTE_ASSETS_BASE_URL}/${relativePath}${suffix}`;
 };
 
-const buildAudioFallbackSrcs = (src: string | string[]) => {
+type AudioFallbackCandidate =
+    | { kind: 'url'; value: string }
+    | { kind: 'native-blob'; value: string };
+
+const buildAudioFallbackCandidates = (src: string | string[]) => {
     const sourceList = Array.isArray(src) ? src : [src];
-    const candidates: string[] = [];
+    const candidates: AudioFallbackCandidate[] = [];
+    const seen = new Set<string>();
+
+    const pushCandidate = (candidate: AudioFallbackCandidate) => {
+        const key = `${candidate.kind}:${candidate.value}`;
+        if (!candidate.value || seen.has(key)) {
+            return;
+        }
+        seen.add(key);
+        candidates.push(candidate);
+    };
 
     for (const item of sourceList) {
         if (!item) continue;
-        candidates.push(item);
+        pushCandidate({ kind: 'url', value: item });
+        if (isCapacitorFileAssetUrl(item)) {
+            pushCandidate({ kind: 'native-blob', value: item });
+            pushCandidate({ kind: 'url', value: stripVersionParam(item) });
+        }
         const remoteFallback = toOfficialRemoteAssetUrl(item);
         if (remoteFallback) {
-            candidates.push(remoteFallback);
+            pushCandidate({ kind: 'url', value: remoteFallback });
         }
     }
 
-    return dedupeAudioSrcList(candidates);
+    return candidates;
 };
 
 const extractNameFromSrc = (src: string): string => {
@@ -101,6 +179,8 @@ class AudioManagerClass {
     private registryEntries: Map<string, AudioRegistryEntry> = new Map();
     private registryBasePath: string = '';
     private failedKeys: Set<SoundKey> = new Set();
+    private nativeBlobUrlCache: Map<string, string> = new Map();
+    private nativeBlobUrlPromises: Map<string, Promise<string | null>> = new Map();
 
     private bgmListeners: Set<(currentBgm: string | null) => void> = new Set();
 
@@ -122,29 +202,101 @@ class AudioManagerClass {
         options: Omit<ConstructorParameters<typeof Howl>[0], 'src' | 'onloaderror'> & {
             onloaderror?: (id: number, error: unknown) => void;
             onReplace?: (howl: Howl) => void;
+            onFallbackReady?: (howl: Howl) => void;
         }
     ): Howl {
-        const candidates = buildAudioFallbackSrcs(src);
+        const candidates = buildAudioFallbackCandidates(src);
 
-        const createAt = (index: number): Howl => {
-            const candidateSrc = candidates[index];
+        const createUrlHowlAt = (candidateSrc: string, index: number, isFallback: boolean): Howl => {
             const howl = new Howl({
                 ...options,
                 src: [candidateSrc],
                 onloaderror: (id, error) => {
-                    if (index + 1 < candidates.length) {
-                        const nextHowl = createAt(index + 1);
-                        options.onReplace?.(nextHowl);
-                        howl.unload();
-                        return;
-                    }
-                    options.onloaderror?.(id, error);
+                    void tryFallback(index + 1, id, error, howl);
                 },
             });
+            if (isFallback) {
+                options.onReplace?.(howl);
+                options.onFallbackReady?.(howl);
+            }
             return howl;
         };
 
-        return createAt(0);
+        const tryFallback = (
+            index: number,
+            id: number,
+            error: unknown,
+            previousHowl: Howl,
+        ): void => {
+            if (index >= candidates.length) {
+                options.onloaderror?.(id, error);
+                return;
+            }
+
+            const candidate = candidates[index];
+            if (candidate.kind === 'url') {
+                const nextHowl = createUrlHowlAt(candidate.value, index, true);
+                previousHowl.unload();
+                void nextHowl;
+                return;
+            }
+
+            void this.resolveNativeAudioBlobUrl(candidate.value)
+                .then((blobUrl) => {
+                    if (!blobUrl) {
+                        tryFallback(index + 1, id, error, previousHowl);
+                        return;
+                    }
+
+                    const nextHowl = createUrlHowlAt(blobUrl, index, true);
+                    previousHowl.unload();
+                    void nextHowl;
+                })
+                .catch(() => {
+                    tryFallback(index + 1, id, error, previousHowl);
+                });
+        };
+
+        const firstCandidate = candidates[0];
+        if (!firstCandidate || firstCandidate.kind !== 'url') {
+            throw new Error('Audio fallback candidates must start with a URL candidate.');
+        }
+        return createUrlHowlAt(firstCandidate.value, 0, false);
+    }
+
+    private async resolveNativeAudioBlobUrl(src: string): Promise<string | null> {
+        const location = resolveInstalledAssetLocationFromUrl(src);
+        if (!location) {
+            return null;
+        }
+
+        const cacheKey = `${location.gameId}:${location.relativePath}`;
+        const cached = this.nativeBlobUrlCache.get(cacheKey);
+        if (cached) {
+            return cached;
+        }
+
+        const pending = this.nativeBlobUrlPromises.get(cacheKey);
+        if (pending) {
+            return pending;
+        }
+
+        const promise = (async () => {
+            const result = await readInstalledGamePackageAssetBlobUrl(location.gameId, location.relativePath);
+            const blobUrl = result?.blobUrl?.trim();
+            if (!blobUrl) {
+                return null;
+            }
+            this.nativeBlobUrlCache.set(cacheKey, blobUrl);
+            return blobUrl;
+        })();
+
+        this.nativeBlobUrlPromises.set(cacheKey, promise);
+        try {
+            return await promise;
+        } finally {
+            this.nativeBlobUrlPromises.delete(cacheKey);
+        }
     }
 
     private isAudioDisabled(): boolean {
@@ -432,6 +584,19 @@ class AudioManagerClass {
                 onReplace: (nextHowl) => {
                     this.sounds.set(key, nextHowl);
                 },
+                onFallbackReady: (nextHowl) => {
+                    const retryPlay = () => {
+                        const retriedSoundId = nextHowl.play(spriteKey);
+                        if (onEnd && retriedSoundId != null) {
+                            nextHowl.once('end', onEnd, retriedSoundId);
+                        }
+                    };
+                    if (nextHowl.state() === 'loaded') {
+                        retryPlay();
+                        return;
+                    }
+                    nextHowl.once('load', retryPlay);
+                },
                 onload: () => {
                     this._loadingCount = Math.max(0, this._loadingCount - 1);
                 },
@@ -496,6 +661,18 @@ class AudioManagerClass {
                 preload: false,
                 onReplace: (nextHowl) => {
                     this.bgms.set(key, nextHowl);
+                },
+                onFallbackReady: (nextHowl) => {
+                    const retryPlay = () => {
+                        nextHowl.volume(0);
+                        const nextPlayId = nextHowl.play();
+                        nextHowl.fade(0, this._bgmVolume, 1000, nextPlayId);
+                    };
+                    if (nextHowl.state() === 'loaded') {
+                        retryPlay();
+                        return;
+                    }
+                    nextHowl.once('load', retryPlay);
                 },
                 onload: () => {},
                 onplay: () => {
@@ -736,6 +913,15 @@ class AudioManagerClass {
         for (const howl of this.bgms.values()) howl.unload();
         this.sounds.clear();
         this.bgms.clear();
+        for (const blobUrl of this.nativeBlobUrlCache.values()) {
+            try {
+                URL.revokeObjectURL(blobUrl);
+            } catch {
+                // ignore blob revoke failures
+            }
+        }
+        this.nativeBlobUrlCache.clear();
+        this.nativeBlobUrlPromises.clear();
         this._loadingCount = 0;
         this._pendingBgmKey = null;
         if (this._currentBgm !== null) {

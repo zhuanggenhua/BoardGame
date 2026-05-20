@@ -124,8 +124,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const isMyTurn = playerID === getCurrentPlayerId(core);
     const currentPlayerId = getCurrentPlayerId(core);
     const locale = i18n.language;
-    const remainingSelections = Math.max(0, 2 - mySelections.length);
-    const visibilityMode = customVisibilityMode ?? getDefaultFactionVisibilityMode(viewportSize);
 
     const visibleFactionGroups = useMemo(() => getVisibleFactionVariantGroups(locale), [locale]);
     const focusedFactionGroup = useMemo(
@@ -144,9 +142,18 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     }, [activeFactionId, focusedFactionGroup, locale, mySelections]);
 
     const isMobileLandscape = viewportSize.width < 1024 && viewportSize.width > viewportSize.height;
+    const useLegacyWideDesktopDraftLayout = !isMobileLandscape
+        && playerOrder.length <= 2
+        && viewportSize.width >= 1500
+        && viewportSize.height >= 860;
     const isUltraCompactLandscape = isMobileLandscape && viewportSize.height <= 520;
     const useCompactPlayerRail = shouldUseCompactPlayerRail(viewportSize, playerOrder.length);
     const shouldShowPlayerSelectionRail = !isUltraCompactLandscape;
+    const remainingSelections = Math.max(0, 2 - mySelections.length);
+    const effectiveFactionSearch = useLegacyWideDesktopDraftLayout ? '' : factionSearch;
+    const visibilityMode = useLegacyWideDesktopDraftLayout
+        ? 'all'
+        : (customVisibilityMode ?? getDefaultFactionVisibilityMode(viewportSize));
     const focusedFactionMeta = resolvedActiveFactionId ? getFactionMeta(resolvedActiveFactionId) ?? null : null;
     const focusedMechanicTutorial = focusedFactionGroup
         ? getFactionMechanicTutorial(focusedFactionGroup.groupId)
@@ -181,13 +188,15 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         };
     }, [mySelectionIdentities, takenFactionIdentities, visibleFactionGroups]);
 
-    const normalizedFactionSearch = factionSearch.trim().toLowerCase();
-    const shouldShowFactionFilterToolbar = isMobileLandscape
+    const normalizedFactionSearch = effectiveFactionSearch.trim().toLowerCase();
+    const shouldShowFactionFilterToolbar = !useLegacyWideDesktopDraftLayout && (
+        isMobileLandscape
         || viewportSize.width < 960
         || factionStatusCounts.total >= 10
         || factionStatusCounts.taken > 0
         || visibilityMode !== 'all'
-        || normalizedFactionSearch.length > 0;
+        || normalizedFactionSearch.length > 0
+    );
     const factionGroupOrder = useMemo(
         () => new Map(visibleFactionGroups.map((group, index) => [group.groupId, index])),
         [visibleFactionGroups],
@@ -287,7 +296,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         && playerOrder.length <= 2
         && viewportSize.width < 1180
         && viewportSize.height < 820;
-    const useFocusedDesktopDraftLayout = !useDesktopLikeLandscapeLayout && playerOrder.length <= 2;
+    const useFocusedDesktopDraftLayout = !useDesktopLikeLandscapeLayout
+        && playerOrder.length <= 2
+        && !useLegacyWideDesktopDraftLayout;
     const useCondensedFactionFilterToolbar = !useDesktopLikeLandscapeLayout && useCompactPlayerRail;
     const selectionGridClassName = useDesktopLikeLandscapeLayout
         ? isUltraCompactLandscape

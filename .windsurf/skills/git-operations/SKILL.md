@@ -1,0 +1,123 @@
+---
+name: git-operations
+description: "本项目 Git 操作 skill。用于提交、推送、同步主分支、处理 pre-push 阻塞、PR/worktree/fork/merge 等 Git 协作场景。目标是把 Git 规则按日常用法和复杂协作细则分层组织，避免根 AGENTS 一次性塞满。"
+---
+
+# Git 操作 Skill
+
+> 本 skill 只负责一件事：告诉 AI 在本项目里怎么做 Git 操作。
+> 根 `AGENTS.md` 只保留通用红线和高频入口；复杂 Git 协作细则以下文为准。
+
+## 0. 什么时候用
+
+命中以下任一场景就用本 skill：
+
+- 用户要 `git status` / `diff` / `commit` / `push`
+- 用户要“检查一下没问题就提交”“看下再推”
+- 用户要同步 `main`、处理 `pre-push` 阻塞、排查远端失败
+- 用户要处理 PR、merge、fork、worktree、跨仓库写回
+
+## 1. 日常高频操作
+
+### 1.1 看改动
+
+- 先看 `git status --short --branch`
+- 再按需要看 `git diff --stat`、关键文件 `git diff`
+- 不要先跑一堆和当前动作无关的 Git 命令
+
+### 1.2 提交
+
+- 先冻结本次提交范围：以收到“提交”口令后第一次 `git status` 为准
+- 默认只提交本轮明确范围内的改动
+- `git commit -m` 默认用中文，且要点明业务对象
+- 不要用“修复问题”“更新代码”这种空标题
+
+### 1.3 推送
+
+- 默认先推**已提交内容**，不要把未提交工作区和 push 混在一起
+- 分支 `ahead N` 且用户要 `push` 时，先直接尝试推送当前提交
+- `push` 失败先分辨：是网络/协议、hook 门禁、还是代码测试失败
+
+## 2. 本项目默认口径
+
+### 2.1 远端协议
+
+- 默认优先 SSH
+- 只要 SSH 已验证可用，`fetch/pull/push/ls-remote` 都优先走 SSH
+- 不要在已知 HTTPS 443 不稳定时反复重试 HTTPS
+
+### 2.2 当前仓库
+
+- `origin` 默认应指向主仓库 SSH：
+  - `git@github.com:zhuanggenhua/BoardGame.git`
+- 若发现 `origin` 还是 HTTPS，且用户目标涉及远端操作，可直接切为 SSH
+
+### 2.3 工作区
+
+- 默认假设工作区可能是脏的
+- 不得擅自 `git stash`、`git restore`、`git checkout --`、`git clean`
+- 看见陌生改动，先判断是否影响当前任务；不影响就绕开，不要顺手清
+
+## 3. 检查与门禁
+
+### 3.1 “检查一下再提交/推”
+
+- 默认做最小必要检查
+- 代码改动至少满足：
+  - `git diff --check`
+  - 变更 TS/TSX 的 `eslint` 0 errors
+- 若仓库已有 `pre-commit` / `pre-push` 等价门禁，默认依赖 hook，不重复手工预跑同类检查
+
+### 3.2 `pre-push` 失败
+
+先分类，再处理：
+
+1. 网络/协议失败
+   - HTTPS 失败且 SSH 可用：直接切 SSH
+2. hook/质量门禁失败
+   - 按失败项修，不要笼统说“push 失败”
+3. 门禁脚本自身锁冲突
+   - 先确认是陈旧 runtime / stale lock / 预算冷却，还是实际 E2E 失败
+4. 真实测试失败
+   - 按失败用例定位，不能把它说成“只是网络问题”
+
+## 4. 低频复杂协作
+
+### 4.1 分支 / worktree
+
+- 未获用户明确许可，不擅自创建、切换、删除分支或 worktree
+- 但若用户已明确进入 PR 修复/合并流，且隔离现场明显更安全，可按根规范使用隔离 worktree
+
+### 4.2 fork / 主仓
+
+- 默认优先主仓协作，不默认 fork
+- 只有主仓不可写、需要账号隔离、或用户明确要求时才走 fork
+
+### 4.3 PR 写回 / merge
+
+- 可写 PR：默认先本地修，再推回，再 review / merge
+- 不可写 PR：再走 fallback，不要假装能推回 head
+- merge 前若命中项目要求，先读：
+  - `docs/git-merge-checklist.md`
+
+## 5. 不该做的事
+
+- 不要把 Git 规则写成一整段大而全提示词塞回根 `AGENTS.md`
+- 不要把“日常 commit/push”与“复杂 PR/fork/worktree 协作”混成一层
+- 不要把网络失败、hook 失败、测试失败混成一句“push 没成功”
+- 不要在用户没授权时做破坏性清理
+
+## 6. 根文件与本 skill 的分工
+
+根 `AGENTS.md` 应只保留：
+
+- 提交 / push 的高频入口规则
+- 不可越过的红线
+- 本 skill 的入口指引
+
+本 skill 承担：
+
+- Git 日常用法模板
+- 远端协议口径
+- pre-push 失败分类
+- PR / merge / fork / worktree / 协作细则

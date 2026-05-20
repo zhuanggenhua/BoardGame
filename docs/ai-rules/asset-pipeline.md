@@ -373,6 +373,10 @@ registerCriticalImageResolver('<gameId>', <gameId>CriticalImageResolver);
 - **禁止**使用旧短 key（如 `click` / `dice_roll` / `card_draw`）。
 - **必须**使用 registry 的完整 key（如 `ui.general....uiclick_dialog_choice_01_krst_none`）。
 - **路径规则**：`getOptimizedAudioUrl()` 自动插入 `compressed/`，配置中**不得**手写 `compressed/`。
+- **移动端已安装包音频直链禁令（强制）**：当音频资源来自 Android 已安装游戏包 / 共享音频包（`/_capacitor_file_/.../game-packages/.../current/assets/...`）时，**禁止**只依赖浏览器直接解码该本地 URL 并在失败后“换个 URL 就算修好”。必须保证：
+  1. 首个本地候选失败后，优先走原生 `readInstalledAsset -> blob URL` 或等价桥接读取；
+  2. 当前这一次播放请求会续到新候选实例上（BGM / SFX 都一样），不能只替换 `Howl` 实例却不重放；
+  3. 官方远端 URL 只能作为最后一道兜底，不能充当对本地包媒体兼容问题的主修复。
 
 ### ✅ 音效触发规范（当前 + 长期规划）
 
