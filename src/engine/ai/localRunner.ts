@@ -14,7 +14,11 @@ import { createScopedLogger } from '../../lib/logger';
 
 const DEFAULT_REMOTE_AI_TIMEOUT_MS = 3000;
 const FAST_PASS_ACTION_KINDS = new Set(['advance-phase', 'response-pass']);
-const SETUP_FACTION_ACTION_KINDS = new Set(['select-faction', 'setup-select-faction']);
+const MANUAL_SETUP_SELECTION_ACTION_KINDS = new Set([
+    'select-faction',
+    'setup-select-faction',
+    'setup-select-character',
+]);
 const aiRunnerLogger = createScopedLogger('AI_RUNNER_PERF');
 function emitAiRunnerPerf(stage: string, payload: Record<string, unknown>): void {
     console.log('[AI_RUNNER_PERF]', { stage, ...payload });
@@ -80,7 +84,7 @@ function shouldPlayerManuallyResolveFactionSelection(
 ): boolean {
     return seatController.type !== 'human'
         && seatController.manualFactionSelection === true
-        && SETUP_FACTION_ACTION_KINDS.has(action.kind);
+        && MANUAL_SETUP_SELECTION_ACTION_KINDS.has(action.kind);
 }
 
 function shouldUseRemoteDecision(args: {

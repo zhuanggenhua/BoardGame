@@ -22,6 +22,14 @@ const { refreshInteractionOptionsMock, mockClientInstances } = vi.hoisted(() => 
     })),
     mockClientInstances: [] as MockClientInstance[],
 }));
+const { appVisibleListeners } = vi.hoisted(() => ({
+    appVisibleListeners: [] as Array<() => void>,
+}));
+const { optimisticEngineControls } = vi.hoisted(() => ({
+    optimisticEngineControls: {
+        engine: null as any,
+    },
+}));
 
 vi.mock('../client', () => {
     class MockGameTransportClient {
@@ -54,12 +62,46 @@ vi.mock('../client', () => {
     return { GameTransportClient: MockGameTransportClient };
 });
 
-vi.mock('../../systems/InteractionSystem', () => ({
-    refreshInteractionOptions: refreshInteractionOptionsMock,
+vi.mock('../latency/optimisticEngine', () => ({
+    createOptimisticEngine: vi.fn(() => optimisticEngineControls.engine),
+    filterPlayedEvents: vi.fn((state: unknown) => state),
+}));
+
+vi.mock('../../systems/InteractionSystem', async (importOriginal) => {
+    const actual = await importOriginal<typeof import('../../systems/InteractionSystem')>();
+    return {
+        ...actual,
+        refreshInteractionOptions: refreshInteractionOptionsMock,
+    };
+});
+
+vi.mock('../../../lib/mobile/appVisibility', () => ({
+    onAppVisible: (callback: () => void) => {
+        appVisibleListeners.push(callback);
+        return () => {
+            const index = appVisibleListeners.indexOf(callback);
+            if (index >= 0) {
+                appVisibleListeners.splice(index, 1);
+            }
+        };
+    },
+}));
+
+vi.mock('react-i18next', () => ({
+    useTranslation: () => ({
+        t: (key: string, options?: { defaultValue?: string }) => options?.defaultValue ?? key,
+        i18n: { exists: () => false },
+    }),
+    initReactI18next: {
+        type: '3rdParty',
+        init: vi.fn(),
+    },
 }));
 
 import { GameProvider, useGameClient } from '../react';
 import { useEventStreamRollback } from '../../hooks/EventStreamRollbackContext';
+import { ToastProvider } from '../../../contexts/ToastContext';
+import { PromptOverlay } from '../../../games/smashup/ui/PromptOverlay';
 
 function StateProbe(): JSX.Element {
     const { state } = useGameClient();
@@ -71,10 +113,28 @@ function RollbackProbe(): JSX.Element {
     return <pre data-testid="rollback">{JSON.stringify(rollback)}</pre>;
 }
 
+function SmashUpPromptProbe({ playerID }: { playerID: string }): JSX.Element {
+    const { state, dispatch } = useGameClient();
+    const interaction = (state as any)?.sys?.interaction?.current;
+
+    return (
+        <ToastProvider>
+            <PromptOverlay
+                interaction={interaction}
+                dispatch={dispatch}
+                playerID={playerID}
+                playerNames={{ '0': 'Host-SU-E2E', '1': 'Guest-SU-E2E' }}
+            />
+        </ToastProvider>
+    );
+}
+
 describe('GameProvider transport baseline', () => {
     beforeEach(() => {
         mockClientInstances.length = 0;
         refreshInteractionOptionsMock.mockClear();
+        appVisibleListeners.length = 0;
+        optimisticEngineControls.engine = null;
     });
 
     afterEach(() => {
@@ -127,6 +187,264 @@ describe('GameProvider transport baseline', () => {
         expect(client.latestState).not.toEqual(expect.objectContaining({
             __refreshedByUi: true,
         }));
+    });
+
+    it('clears stale owner-only current prompt from rendered state when authoritative update closes it', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-clear-owner-only-current"
+                playerId="0"
+            >
+                <StateProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        const ownerOnlyPromptState = {
+            core: { hp: 10 },
+            sys: {
+                interaction: {
+                    current: {
+                        id: 'owner-only-current-a',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(ownerOnlyPromptState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(1);
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith(ownerOnlyPromptState);
+        expect(client.updateLatestState).toHaveBeenCalledTimes(1);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(ownerOnlyPromptState);
+        expect(screen.getByTestId('state').textContent).toContain('owner-only-current-a');
+
+        const closedPromptState = {
+            core: { hp: 9 },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 2 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(closedPromptState, [], { stateID: 2, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(2);
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith(closedPromptState);
+        expect(client.updateLatestState).toHaveBeenCalledTimes(2);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(closedPromptState);
+        expect(client.latestState).toBe(closedPromptState);
+        expect(screen.getByTestId('state').textContent).toContain('"hp":9');
+        expect(screen.getByTestId('state').textContent).not.toContain('owner-only-current-a');
+    });
+
+    it('clears stale hidden-interaction isBlocked from rendered state when authoritative update unblocks it', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-clear-hidden-isblocked"
+                playerId="0"
+            >
+                <StateProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        const blockedState = {
+            core: { hp: 10 },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: true,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(blockedState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(1);
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith(blockedState);
+        expect(client.updateLatestState).toHaveBeenCalledTimes(1);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(blockedState);
+        expect(screen.getByTestId('state').textContent).toContain('"isBlocked":true');
+
+        const unblockedState = {
+            core: { hp: 11 },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 2 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(unblockedState, [], { stateID: 2, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(2);
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith(unblockedState);
+        expect(client.updateLatestState).toHaveBeenCalledTimes(2);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(unblockedState);
+        expect(client.latestState).toBe(unblockedState);
+        expect(screen.getByTestId('state').textContent).toContain('"hp":11');
+        expect(screen.getByTestId('state').textContent).toContain('"isBlocked":false');
+        expect(screen.getByTestId('state').textContent).not.toContain('"isBlocked":true');
+    });
+
+    it('removes SmashUp waiting prompt from rendered UI when authoritative close reaches the non owner page', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-smashup-waiting-close"
+                playerId="0"
+            >
+                <SmashUpPromptProbe playerID="0" />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        const visibleWaitingState = {
+            core: { marker: 'prompt-open' },
+            sys: {
+                interaction: {
+                    current: {
+                        id: 'spy-discard-visible-current',
+                        kind: 'simple-choice',
+                        playerId: '1',
+                        data: {
+                            title: '由 Guest-SU-E2E 选择',
+                            sourceId: 'shared_visible_prompt',
+                            targetType: 'button',
+                            options: [
+                                { id: 'confirm', label: '确认', value: { chosenBy: '1' }, displayMode: 'button' },
+                            ],
+                        },
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(visibleWaitingState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        expect(screen.getByText('正在等待 {{player}}')).toBeInTheDocument();
+
+        const authoritativeClosedState = {
+            core: { marker: 'prompt-closed' },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 2 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(authoritativeClosedState, [], { stateID: 2, randomCursor: 0 });
+        });
+
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(authoritativeClosedState);
+        expect(screen.queryByText('正在等待 {{player}}')).not.toBeInTheDocument();
+    });
+
+    it('replaces a stale visible current prompt with hidden blocked state when authoritative update hides it', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-visible-to-hidden-blocked"
+                playerId="0"
+            >
+                <StateProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        const visiblePromptState = {
+            core: { hp: 10 },
+            sys: {
+                interaction: {
+                    current: {
+                        id: 'shared-visible-current-a',
+                        kind: 'simple-choice',
+                        playerId: '1',
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(visiblePromptState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(1);
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith(visiblePromptState);
+        expect(client.updateLatestState).toHaveBeenCalledTimes(1);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(visiblePromptState);
+        expect(screen.getByTestId('state').textContent).toContain('shared-visible-current-a');
+        expect(screen.getByTestId('state').textContent).toContain('"isBlocked":false');
+
+        const hiddenBlockedState = {
+            core: { hp: 11 },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: true,
+                },
+                eventStream: { entries: [], nextId: 2 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(hiddenBlockedState, [], { stateID: 2, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(2);
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith(hiddenBlockedState);
+        expect(client.updateLatestState).toHaveBeenCalledTimes(2);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(hiddenBlockedState);
+        expect(client.latestState).toBe(hiddenBlockedState);
+        expect(screen.getByTestId('state').textContent).toContain('"hp":11');
+        expect(screen.getByTestId('state').textContent).toContain('"isBlocked":true');
+        expect(screen.getByTestId('state').textContent).not.toContain('shared-visible-current-a');
     });
 
     it('ignores stale authoritative updates whose stateID is older than the latest confirmed state', () => {
@@ -253,6 +571,77 @@ describe('GameProvider transport baseline', () => {
         expect(screen.getByTestId('state').textContent).not.toContain('"hp":20');
     });
 
+    it('accepts a lower post-reconnect authoritative close and clears stale owner-only current prompt', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-reconnect-clear-owner-only-current"
+                playerId="0"
+            >
+                <StateProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        const preDisconnectPromptState = {
+            core: { hp: 20, turn: 2 },
+            sys: {
+                interaction: {
+                    current: {
+                        id: 'owner-only-current-reconnect-a',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 2 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(preDisconnectPromptState, [], { stateID: 5, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(1);
+        expect(client.updateLatestState).toHaveBeenCalledTimes(1);
+        expect(screen.getByTestId('state').textContent).toContain('owner-only-current-reconnect-a');
+
+        act(() => {
+            client.emitConnectionChange(false);
+        });
+
+        act(() => {
+            client.emitConnectionChange(true);
+        });
+
+        const postReconnectClosedState = {
+            core: { hp: 7, turn: 1 },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(postReconnectClosedState, [], { stateID: 1, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenCalledTimes(2);
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith(postReconnectClosedState);
+        expect(client.updateLatestState).toHaveBeenCalledTimes(2);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(postReconnectClosedState);
+        expect(client.latestState).toBe(postReconnectClosedState);
+        expect(screen.getByTestId('state').textContent).toContain('"hp":7');
+        expect(screen.getByTestId('state').textContent).not.toContain('owner-only-current-reconnect-a');
+    });
+
     it('emits a rollback-seq reset signal on reconnect so event cursors can realign to the latest state', () => {
         render(
             <GameProvider
@@ -280,5 +669,154 @@ describe('GameProvider transport baseline', () => {
         });
 
         expect(screen.getByTestId('rollback').textContent).toBe('{"watermark":null,"seq":1,"reconcileSeq":0}');
+    });
+
+    it('requests resync on app-visible restore so a stale owner-only current prompt can be replaced by authoritative close', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-app-visible-resync"
+                playerId="0"
+            >
+                <StateProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        expect(appVisibleListeners).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        const stalePromptState = {
+            core: { hp: 10, turn: 2 },
+            sys: {
+                interaction: {
+                    current: {
+                        id: 'owner-only-current-app-visible-a',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(stalePromptState, [], { stateID: 3, randomCursor: 0 });
+        });
+
+        expect(screen.getByTestId('state').textContent).toContain('owner-only-current-app-visible-a');
+        expect(client.resync).toHaveBeenCalledTimes(0);
+
+        act(() => {
+            appVisibleListeners[0]!();
+        });
+
+        expect(client.resync).toHaveBeenCalledTimes(1);
+
+        const authoritativeClosedState = {
+            core: { hp: 11, turn: 2 },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 2 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(authoritativeClosedState, [], { stateID: 4, randomCursor: 0 });
+        });
+
+        expect(refreshInteractionOptionsMock).toHaveBeenLastCalledWith(authoritativeClosedState);
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(authoritativeClosedState);
+        expect(screen.getByTestId('state').textContent).toContain('"hp":11');
+        expect(screen.getByTestId('state').textContent).not.toContain('owner-only-current-app-visible-a');
+    });
+
+    it('clears stale owner-only current prompt on optimistic reconcile when authoritative close arrives', () => {
+        const mockEngine = {
+            hasPendingCommands: vi.fn()
+                .mockReturnValueOnce(false)
+                .mockReturnValueOnce(true),
+            reconcile: vi.fn((state: unknown) => ({
+                stateToRender: state,
+                didRollback: false,
+                optimisticEventWatermark: null,
+            })),
+            setPlayerIds: vi.fn(),
+            syncRandom: vi.fn(),
+            reset: vi.fn(),
+            processCommand: vi.fn(),
+        };
+        optimisticEngineControls.engine = mockEngine;
+
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-optimistic-close-owner-only-current"
+                playerId="0"
+                engineConfig={{ domain: {} as any, systems: [] as any[] } as any}
+                latencyConfig={{ optimistic: { enabled: true } } as any}
+            >
+                <StateProbe />
+                <RollbackProbe />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        const stalePromptState = {
+            core: { hp: 10, turn: 2 },
+            sys: {
+                interaction: {
+                    current: {
+                        id: 'owner-only-current-optimistic-a',
+                        kind: 'simple-choice',
+                        playerId: '0',
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(stalePromptState, [], { stateID: 3, randomCursor: 0 });
+        });
+
+        expect(mockEngine.hasPendingCommands).toHaveBeenCalledTimes(1);
+        expect(mockEngine.reconcile).toHaveBeenCalledTimes(1);
+        expect(screen.getByTestId('state').textContent).toContain('owner-only-current-optimistic-a');
+        expect(screen.getByTestId('rollback').textContent).toBe('{"watermark":null,"seq":0,"reconcileSeq":0}');
+
+        const authoritativeClosedState = {
+            core: { hp: 11, turn: 2 },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 2 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(authoritativeClosedState, [], { stateID: 4, randomCursor: 0 });
+        });
+
+        expect(mockEngine.hasPendingCommands).toHaveBeenCalledTimes(2);
+        expect(mockEngine.reconcile).toHaveBeenCalledTimes(2);
+        expect(mockEngine.reconcile).toHaveBeenLastCalledWith(authoritativeClosedState, { stateID: 4, randomCursor: 0 });
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(authoritativeClosedState);
+        expect(screen.getByTestId('state').textContent).toContain('"hp":11');
+        expect(screen.getByTestId('state').textContent).not.toContain('owner-only-current-optimistic-a');
+        expect(screen.getByTestId('rollback').textContent).toBe('{"watermark":null,"seq":0,"reconcileSeq":1}');
     });
 });

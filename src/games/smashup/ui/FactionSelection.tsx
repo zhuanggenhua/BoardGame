@@ -17,7 +17,7 @@ import {
 import type { PlayerId } from '../../../engine/types';
 import { getFactionCards, getFactionTitans, resolveCardName } from '../data/cards';
 import { CardPreview } from '../../../components/common/media/CardPreview';
-import { X, Check, Search, Layers, ZoomIn, Pencil, Lock, BookOpen } from 'lucide-react';
+import { X, Check, Layers, ZoomIn, Pencil, Lock, BookOpen } from 'lucide-react';
 import { UI_Z_INDEX } from '../../../core';
 import { GameButton } from './GameButton';
 import { CardMagnifyOverlay } from './CardMagnifyOverlay';
@@ -33,6 +33,29 @@ interface Props {
 }
 
 type FactionVisibilityMode = 'available' | 'all' | 'taken';
+
+const SearchGlyph: React.FC<{ className?: string }> = ({ className }) => (
+    <svg
+        viewBox="0 0 20 20"
+        fill="none"
+        aria-hidden="true"
+        className={className}
+    >
+        <circle
+            cx="8.25"
+            cy="8.25"
+            r="4.75"
+            stroke="currentColor"
+            strokeWidth="2.1"
+        />
+        <path
+            d="M11.8 11.8L16.1 16.1"
+            stroke="currentColor"
+            strokeWidth="2.1"
+            strokeLinecap="round"
+        />
+    </svg>
+);
 
 function shouldUseCompactPlayerRail(
     viewportSize: { width: number; height: number },
@@ -165,6 +188,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         || factionStatusCounts.taken > 0
         || visibilityMode !== 'all'
         || normalizedFactionSearch.length > 0;
+    const factionGroupOrder = useMemo(
+        () => new Map(visibleFactionGroups.map((group, index) => [group.groupId, index])),
+        [visibleFactionGroups],
+    );
     useEffect(() => {
         const grid = selectionGridRef.current;
         if (!grid) return;
@@ -203,6 +230,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                     selectedVariantId,
                     isSelectedByMe,
                     isTakenByOther,
+                    isImplementationInProgress: isFactionImplementationInProgress(group.groupId),
                     status,
                     matchesSearch,
                     matchesVisibility,
@@ -217,9 +245,12 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                 } as const;
                 const diff = priority[left.status] - priority[right.status];
                 if (diff !== 0) return diff;
-                return left.group.groupId.localeCompare(right.group.groupId);
+                const inProgressDiff = Number(left.isImplementationInProgress) - Number(right.isImplementationInProgress);
+                if (inProgressDiff !== 0) return inProgressDiff;
+                return (factionGroupOrder.get(left.group.groupId) ?? Number.MAX_SAFE_INTEGER)
+                    - (factionGroupOrder.get(right.group.groupId) ?? Number.MAX_SAFE_INTEGER);
             });
-    }, [mySelections, normalizedFactionSearch, t, takenFactionIdentities, visibilityMode, visibleFactionGroups]);
+    }, [factionGroupOrder, mySelections, normalizedFactionSearch, t, takenFactionIdentities, visibilityMode, visibleFactionGroups]);
 
     if (!selectionState) return null;
 
@@ -252,7 +283,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     };
 
     const useDesktopLikeLandscapeLayout = isMobileLandscape;
-    const useMinimalPlayerRail = !useDesktopLikeLandscapeLayout && playerOrder.length <= 2;
+    const useMinimalPlayerRail = !useDesktopLikeLandscapeLayout
+        && playerOrder.length <= 2
+        && viewportSize.width < 1180
+        && viewportSize.height < 820;
     const useFocusedDesktopDraftLayout = !useDesktopLikeLandscapeLayout && playerOrder.length <= 2;
     const useCondensedFactionFilterToolbar = !useDesktopLikeLandscapeLayout && useCompactPlayerRail;
     const selectionGridClassName = useDesktopLikeLandscapeLayout
@@ -462,6 +496,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     });
     const selectionFilterToolbar = (
         <div
+            data-testid="faction-filter-toolbar"
             className={useDesktopLikeLandscapeLayout
                 ? isUltraCompactLandscape
                     ? 'sticky top-0 z-20 mb-2 flex flex-col gap-2 bg-gradient-to-b from-[#2d1b10] via-[#2d1b10]/96 to-transparent pb-2'
@@ -472,10 +507,18 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         >
             <div className="flex items-center gap-2">
                 <div className="relative min-w-0 flex-1">
-                    <Search
-                        size={useDesktopLikeLandscapeLayout ? (isUltraCompactLandscape ? 13 : 15) : 16}
-                        className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-amber-200/75"
-                    />
+                    <span
+                        data-testid="faction-search-leading-icon"
+                        className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-amber-200/75"
+                    >
+                        <SearchGlyph
+                            className={useDesktopLikeLandscapeLayout
+                                ? isUltraCompactLandscape
+                                    ? 'h-[13px] w-[13px]'
+                                    : 'h-[15px] w-[15px]'
+                                : 'h-4 w-4'}
+                        />
+                    </span>
                     <input
                         type="search"
                         value={factionSearch}
@@ -565,7 +608,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                 : 'mx-auto mt-8 flex max-w-xl flex-col items-center rounded border border-dashed border-amber-200/25 bg-black/18 px-6 py-8 text-center shadow-[0_10px_24px_rgba(0,0,0,0.22)]'}
             data-testid="faction-filter-empty"
         >
-            <Search size={18} className="mb-3 text-amber-200/70" />
+            <SearchGlyph className="mb-3 h-[18px] w-[18px] text-amber-200/70" />
             <div className="mb-1 text-sm font-black uppercase tracking-[0.12em] text-white">
                 {t('ui.faction_filter_empty_title', { defaultValue: '没有匹配派系' })}
             </div>
@@ -655,14 +698,14 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                 flex rounded-sm border-2 pointer-events-auto transition-all
                                 ${isCurrent
                                     ? useMinimalPlayerRail
-                                        ? 'w-[82px] flex-col items-center gap-0.5 px-1.5 py-1 bg-[#fef3c7] border-amber-500 shadow-[0_5px_12px_rgba(0,0,0,0.24)] -rotate-[0.4deg] z-10'
+                                        ? 'w-[112px] flex-col items-center gap-1 px-2.5 py-1.5 bg-[#fef3c7] border-amber-500 shadow-[0_7px_16px_rgba(0,0,0,0.28)] -rotate-[0.5deg] z-10'
                                         : useCompactPlayerRail
                                         ? 'w-[102px] flex-col items-center gap-1 px-2 py-1.5 bg-[#fef3c7] border-amber-500 shadow-[0_7px_16px_rgba(0,0,0,0.3)] -rotate-[0.6deg] z-10'
                                         : useDesktopLikeLandscapeLayout
                                             ? 'w-[128px] flex-col items-center gap-2.5 px-3.5 py-2.5 bg-[#fef3c7] border-amber-500 shadow-[0_10px_22px_rgba(0,0,0,0.42)] -rotate-[0.8deg] z-10'
                                             : 'flex-col items-center gap-2 px-4 py-2.5 lg:px-5 lg:py-3 bg-[#fef3c7] border-amber-500 shadow-[0_10px_22px_rgba(0,0,0,0.42)] -rotate-[0.8deg] z-10'
                                     : useMinimalPlayerRail
-                                        ? 'w-[76px] flex-col items-center gap-0.5 px-1.5 py-1 bg-white/92 border-slate-200 shadow-[0_4px_10px_rgba(0,0,0,0.22)] rotate-[0.4deg] grayscale-[0.05] opacity-95'
+                                        ? 'w-[106px] flex-col items-center gap-1 px-2.5 py-1.5 bg-white/92 border-slate-200 shadow-[0_6px_14px_rgba(0,0,0,0.24)] rotate-[0.5deg] grayscale-[0.05] opacity-95'
                                         : useCompactPlayerRail
                                         ? 'w-[96px] flex-col items-center gap-1 px-2 py-1.5 bg-white/92 border-slate-200 shadow-[0_5px_12px_rgba(0,0,0,0.24)] rotate-[0.6deg] grayscale-[0.06] opacity-95'
                                         : useDesktopLikeLandscapeLayout
@@ -673,7 +716,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                             <div className={`
                                 rounded-full flex items-center justify-center font-black text-white shadow-inner border-4 border-white
                                 ${useMinimalPlayerRail
-                                    ? 'w-7 h-7 text-[10px]'
+                                    ? 'w-8 h-8 text-[11px]'
                                     : useCompactPlayerRail
                                     ? 'w-8 h-8 text-[11px]'
                                     : useDesktopLikeLandscapeLayout
@@ -684,7 +727,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                 {badgeLabel}
                             </div>
 
-                            <div className={useMinimalPlayerRail ? 'flex gap-1 shrink-0' : useCompactPlayerRail ? 'flex gap-1.5 shrink-0' : useDesktopLikeLandscapeLayout ? 'flex gap-2 shrink-0' : 'flex gap-1.5 sm:gap-2'}>
+                            <div className={useMinimalPlayerRail ? 'flex gap-1.5 shrink-0' : useCompactPlayerRail ? 'flex gap-1.5 shrink-0' : useDesktopLikeLandscapeLayout ? 'flex gap-2 shrink-0' : 'flex gap-1.5 sm:gap-2'}>
                                 {[0, 1].map((i) => {
                                     const fid = selections[i];
                                     const meta = fid ? FACTION_METADATA.find((faction) => faction.id === fid) : null;
@@ -695,7 +738,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                             className={`
                                                 rounded-sm border-2 bg-slate-100 flex items-center justify-center overflow-hidden shadow-sm transition-all
                                                 ${useMinimalPlayerRail
-                                                    ? 'w-6 h-6'
+                                                    ? 'w-7 h-7'
                                                     : useCompactPlayerRail
                                                     ? 'w-7 h-7'
                                                     : useDesktopLikeLandscapeLayout ? 'w-11 h-11' : 'w-9 h-9 sm:w-10 sm:h-10 md:w-12 md:h-12'}
@@ -705,11 +748,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                             style={{ transform: fid ? `rotate(${(i * 10) - 5}deg)` : 'none' }}
                                         >
                                             {meta?.icon ? (
-                                                <div className={useMinimalPlayerRail ? 'text-slate-900 scale-[0.72]' : useCompactPlayerRail ? 'text-slate-900 scale-[0.85]' : useDesktopLikeLandscapeLayout ? 'text-slate-900 scale-[0.95]' : 'text-slate-900 scale-90 sm:scale-100'}>
-                                                    <meta.icon size={useMinimalPlayerRail ? 16 : useCompactPlayerRail ? 18 : useDesktopLikeLandscapeLayout ? 26 : 28} strokeWidth={2.5} />
+                                                <div className={useMinimalPlayerRail ? 'text-slate-900 scale-[0.82]' : useCompactPlayerRail ? 'text-slate-900 scale-[0.85]' : useDesktopLikeLandscapeLayout ? 'text-slate-900 scale-[0.95]' : 'text-slate-900 scale-90 sm:scale-100'}>
+                                                    <meta.icon size={useMinimalPlayerRail ? 18 : useCompactPlayerRail ? 18 : useDesktopLikeLandscapeLayout ? 26 : 28} strokeWidth={2.5} />
                                                 </div>
                                             ) : (
-                                                <span className={useMinimalPlayerRail ? 'text-[7px] text-slate-400 font-black' : useCompactPlayerRail ? 'text-[9px] text-slate-400 font-black' : useDesktopLikeLandscapeLayout ? 'text-[10px] text-slate-400 font-black' : 'text-[10px] sm:text-xs text-slate-400 font-black'}>?</span>
+                                                <span className={useMinimalPlayerRail ? 'text-[8px] text-slate-400 font-black' : useCompactPlayerRail ? 'text-[9px] text-slate-400 font-black' : useDesktopLikeLandscapeLayout ? 'text-[10px] text-slate-400 font-black' : 'text-[10px] sm:text-xs text-slate-400 font-black'}>?</span>
                                             )}
                                         </div>
                                     );
@@ -717,12 +760,12 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                             </div>
 
                             <div className={useDesktopLikeLandscapeLayout ? 'flex min-w-0 flex-col items-center leading-none' : 'flex flex-col items-center'}>
-                                <span className={`${useMinimalPlayerRail ? 'max-w-[4.2rem] text-[7.5px]' : useCompactPlayerRail ? 'max-w-[5.5rem] text-[9.5px]' : useDesktopLikeLandscapeLayout ? 'max-w-[6.5rem] text-[10.5px]' : 'max-w-[6rem] text-[10px] sm:text-[11px]'} truncate font-black tracking-tight sm:tracking-tighter leading-none ${isCurrent ? 'text-amber-800' : 'text-slate-700'}`}>
+                                <span className={`${useMinimalPlayerRail ? 'max-w-[5.4rem] text-[9px]' : useCompactPlayerRail ? 'max-w-[5.5rem] text-[9.5px]' : useDesktopLikeLandscapeLayout ? 'max-w-[6.5rem] text-[10.5px]' : 'max-w-[6rem] text-[10px] sm:text-[11px]'} truncate font-black tracking-tight sm:tracking-tighter leading-none ${isCurrent ? 'text-amber-800' : 'text-slate-700'}`}>
                                     {displayName}
                                 </span>
                                 {isCurrent && (
                                     <span className={useMinimalPlayerRail
-                                        ? 'text-[6px] font-black text-amber-600 uppercase tracking-[0.04em] mt-0.5 animate-pulse'
+                                        ? 'text-[7px] font-black text-amber-600 uppercase tracking-[0.05em] mt-0.5 animate-pulse'
                                         : useCompactPlayerRail
                                         ? 'text-[7px] font-black text-amber-600 uppercase tracking-[0.05em] mt-0.5 animate-pulse'
                                         : useDesktopLikeLandscapeLayout
@@ -1017,7 +1060,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
 
                                         <div className="flex-1 min-h-0 bg-white/50 overflow-y-auto p-3 sm:p-4 md:p-8 custom-scrollbar">
                                             <h3 className="text-slate-400 text-sm font-black uppercase tracking-widest mb-4 md:mb-6 flex items-center gap-2">
-                                                <Search size={14} strokeWidth={3} />
+                                                <SearchGlyph className="h-[14px] w-[14px]" />
                                                 <span>{t('ui.preview_cards')}</span>
                                             </h3>
 

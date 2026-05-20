@@ -406,6 +406,36 @@ describe('InteractionSystem', () => {
         expect(viewForOwner?.interaction?.current?.data?.contestants?.[0]?.roll).toBe(6);
     });
 
+    it('普通 simple-choice 对非 owner 只应暴露 blocked，不应透出 current prompt', () => {
+        const system = createInteractionSystem<TestCore>();
+        const state: MatchState<TestCore> = {
+            core: { value: 0 },
+            sys: {
+                interaction: {
+                    current: createSimpleChoice(
+                        'interaction-owner-only',
+                        '1',
+                        '只给 P2 的选择',
+                        [
+                            { id: 'keep', label: '保留', value: { choice: 'keep' } },
+                            { id: 'discard', label: '弃掉', value: { choice: 'discard' } },
+                        ],
+                    ),
+                    queue: [],
+                },
+            },
+        } as unknown as MatchState<TestCore>;
+
+        const viewForOwner = system.playerView?.(state, '1') as any;
+        expect(viewForOwner?.interaction?.current?.id).toBe('interaction-owner-only');
+        expect(viewForOwner?.interaction?.isBlocked).toBe(false);
+
+        const viewForOther = system.playerView?.(state, '0') as any;
+        expect(viewForOther?.interaction?.current).toBeUndefined();
+        expect(viewForOther?.interaction?.queue).toEqual([]);
+        expect(viewForOther?.interaction?.isBlocked).toBe(true);
+    });
+
     it('非 slider simple-choice 允许追加 mergedValue 字段，但不允许覆盖原字段', () => {
         const system = createSimpleChoiceSystem<TestCore>();
         const current = createSimpleChoice(

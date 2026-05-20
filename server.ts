@@ -1142,7 +1142,16 @@ router.post('/games/:name/:matchID/claim-seat', async (ctx) => {
     if (ctx.status === 200 || !ctx.status) {
         const refreshed = await storage.fetch(matchID, { metadata: true });
         if (refreshed.metadata) {
-            gameTransport.updateMatchMetadata(matchID, refreshed.metadata);
+            const metadata = refreshed.metadata;
+            // claim-seat is used by room creation and host-owned AI seat recovery.
+            // Keep the same occupancy state transition as /join so 4p rooms with
+            // AI seats do not remain in waiting after all seats have credentials.
+            if ((metadata.status === 'waiting' || !metadata.status) && areAllSeatsOccupied(metadata.players)) {
+                metadata.status = 'playing';
+                metadata.updatedAt = Date.now();
+                await storage.setMetadata(matchID, metadata);
+            }
+            gameTransport.updateMatchMetadata(matchID, metadata);
         }
         setTimeout(() => void handleMatchJoined(matchID, gameName), 50);
     }

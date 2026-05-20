@@ -193,4 +193,47 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         fireEvent.click(previews[1]);
         expect(onSelect).toHaveBeenCalledWith('prompt-option-copy');
     });
+
+    it('非 owner 只有拿到可见 current prompt 时才会出现中央 waiting_for_player 文案', () => {
+        const dispatch = vi.fn();
+        const visiblePrompt: InteractionDescriptor<SimpleChoiceData> = {
+            id: 'shared-visible-choice',
+            kind: 'simple-choice',
+            playerId: '1',
+            data: {
+                title: '由另一位玩家决定',
+                sourceId: 'shared_visible_prompt',
+                targetType: 'button',
+                options: [
+                    { id: 'confirm', label: '确认', value: { chosenBy: '1' }, displayMode: 'button' },
+                ],
+            },
+        };
+
+        const { rerender } = render(
+            <ToastProvider>
+                <PromptOverlay
+                    interaction={visiblePrompt}
+                    dispatch={dispatch}
+                    playerID="0"
+                    playerNames={{ '0': 'Host-SU-E2E', '1': 'Guest-SU-E2E' }}
+                />
+            </ToastProvider>,
+        );
+
+        expect(screen.getByText('正在等待 {{player}}')).toBeInTheDocument();
+
+        rerender(
+            <ToastProvider>
+                <PromptOverlay
+                    interaction={undefined}
+                    dispatch={dispatch}
+                    playerID="0"
+                    playerNames={{ '0': 'Host-SU-E2E', '1': 'Guest-SU-E2E' }}
+                />
+            </ToastProvider>,
+        );
+
+        expect(screen.queryByText('正在等待 {{player}}')).not.toBeInTheDocument();
+    });
 });

@@ -3,6 +3,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { SmashUpCore } from '../domain/types';
+import { SMASHUP_FACTION_IDS } from '../domain/ids';
 import { FactionSelection } from '../ui/FactionSelection';
 
 vi.mock('framer-motion', () => {
@@ -183,6 +184,13 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         setViewport(1440, 900);
         renderSelection();
 
+        const searchToolbar = screen.getByTestId('faction-filter-toolbar');
+        const searchLeadingIcon = screen.getByTestId('faction-search-leading-icon');
+
+        expect(String(searchToolbar.className)).toContain('sticky');
+        expect(String(searchLeadingIcon.className)).toContain('inset-y-0');
+        expect(String(searchLeadingIcon.className)).toContain('items-center');
+        expect(searchLeadingIcon.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 20 20');
         expect(screen.getByTestId('faction-search-input')).toBeInTheDocument();
         expect(screen.getByTestId('faction-filter-available')).toBeInTheDocument();
         expect(screen.queryByTestId('faction-option-robots')).not.toBeInTheDocument();
@@ -205,5 +213,29 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         fireEvent.click(screen.getByTestId('faction-search-clear'));
 
         expect(screen.getByTestId('faction-option-ninjas')).toBeInTheDocument();
+    });
+
+    it('默认可选列表应保留元数据顺序，并把实施中派系压到末尾', () => {
+        renderSelection();
+
+        const orderedIds = Array.from(
+            document.querySelectorAll<HTMLElement>('[data-testid^="faction-option-"]'),
+        ).map((node) => node.dataset.testid?.replace('faction-option-', '') ?? '');
+
+        expect(orderedIds.slice(0, 4)).toEqual([
+            SMASHUP_FACTION_IDS.PIRATES,
+            SMASHUP_FACTION_IDS.NINJAS,
+            SMASHUP_FACTION_IDS.DINOSAURS,
+            SMASHUP_FACTION_IDS.ALIENS,
+        ]);
+        expect(orderedIds.slice(-5)).toEqual([
+            SMASHUP_FACTION_IDS.FAIRIES,
+            SMASHUP_FACTION_IDS.PRINCESSES,
+            SMASHUP_FACTION_IDS.SHARKS,
+            SMASHUP_FACTION_IDS.TORNADOS,
+            SMASHUP_FACTION_IDS.MYTHIC_GREEKS,
+        ]);
+        expect(orderedIds.indexOf(SMASHUP_FACTION_IDS.SKELETONS)).toBeLessThan(orderedIds.indexOf(SMASHUP_FACTION_IDS.FAIRIES));
+        expect(orderedIds.indexOf(SMASHUP_FACTION_IDS.WORLD_CHAMPS)).toBeLessThan(orderedIds.indexOf(SMASHUP_FACTION_IDS.SHARKS));
     });
 });

@@ -110,7 +110,16 @@ const TUTORIAL_SILENT_ERRORS = new Set(['tutorial_command_blocked', 'tutorial_st
 const ONLINE_AI_SEAT_LOAD_RETRY_BASE_MS = 1_000;
 const ONLINE_AI_SEAT_LOAD_RETRY_MAX_MS = 8_000;
 const ONLINE_AI_SEAT_LOAD_RETRY_MAX_ATTEMPTS = 5;
-const FACTION_SELECTION_ACTION_KINDS = new Set(['select-faction', 'setup-select-faction']);
+const MANUAL_SETUP_SELECTION_ACTION_KINDS = new Set([
+    'select-faction',
+    'setup-select-faction',
+    'setup-select-character',
+]);
+
+type ManualSetupSelectionActionKind =
+    | 'select-faction'
+    | 'setup-select-faction'
+    | 'setup-select-character';
 
 export const isTutorialRoutePath = (pathname: string): boolean => (
     /^\/play\/[^/]+\/tutorial(?:\/[^/]+)?\/?$/.test(pathname)
@@ -136,6 +145,45 @@ export function resolveMissingMatchConfirmationSignal(args: {
     if (args.shouldAutoJoin || args.isAutoJoining || args.autoJoinGraceActive) return null;
     if (args.onlineTransportError === 'match_not_found') return 'transport_not_found';
     return null;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function resolveMatchRoomRouteIdentity(args: {
+    isTutorialRoute: boolean;
+    debugPlayerID?: string | null;
+    urlPlayerID: string | null;
+    storedPlayerID?: string | null;
+    shouldAutoJoin: boolean;
+    spectateParam: string | null;
+}): {
+    hasStoredSeat: boolean;
+    isSpectatorRoute: boolean;
+    effectivePlayerID: string | undefined;
+    statusPlayerID: string | null;
+    transportPlayerID: string | null;
+} {
+    const hasStoredSeat = Boolean(args.storedPlayerID);
+    const isSpectatorRoute = !args.isTutorialRoute
+        && !args.shouldAutoJoin
+        && !args.urlPlayerID
+        && !hasStoredSeat
+        && (args.spectateParam === null || args.spectateParam === '1' || args.spectateParam === 'true');
+    const tutorialPlayerID = args.debugPlayerID ?? args.urlPlayerID ?? '0';
+    const effectivePlayerID = args.isTutorialRoute
+        ? tutorialPlayerID
+        : (args.urlPlayerID ?? args.storedPlayerID ?? undefined);
+    const statusPlayerID = args.isTutorialRoute
+        ? (args.urlPlayerID ?? args.debugPlayerID ?? null)
+        : (args.urlPlayerID ?? args.storedPlayerID ?? null);
+    const transportPlayerID = isSpectatorRoute ? null : (effectivePlayerID ?? null);
+
+    return {
+        hasStoredSeat,
+        isSpectatorRoute,
+        effectivePlayerID,
+        statusPlayerID,
+        transportPlayerID,
+    };
 }
 
 export async function resolveManualOnlineAiRecovery(args: {
@@ -209,13 +257,92 @@ export async function resolveManualOnlineAiRecovery(args: {
     return { kind: 'unavailable' };
 }
 
-export function shouldReleaseFactionSelectAttemptFromSharedState(args: {
+function isPlainRecord(value: unknown): value is Record<string, unknown> {
+    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function isManualSetupSelectionActionKind(kind: string): kind is ManualSetupSelectionActionKind {
+    return MANUAL_SETUP_SELECTION_ACTION_KINDS.has(kind);
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function shouldTakeOverManualSetupSelection(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    currentPlayerId: string | null;
+    seatControllers: Record<string, AiSeatController>;
+    hasManualDispatch: boolean;
+}): boolean {
+    return resolveManualSetupSelectionTakeoverPlayerId(args) !== null;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function resolveManualSetupSelectionTakeoverPlayerId(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    currentPlayerId: string | null;
+    seatControllers: Record<string, AiSeatController>;
+    hasManualDispatch: boolean;
+}): string | null {
+    if (!args.hasManualDispatch || !args.sharedState || typeof args.sharedState !== 'object') {
+        return null;
+    }
+
+    const manualAiSeatIds = Object.entries(args.seatControllers)
+        .filter(([, controller]) => controller.type !== 'human' && controller.manualFactionSelection === true)
+        .map(([playerId]) => playerId);
+    if (manualAiSeatIds.length === 0) {
+        return null;
+    }
+
+    const phase = typeof args.sharedState.sys?.phase === 'string'
+        ? args.sharedState.sys.phase
+        : null;
+    if (phase === 'factionSelect' && args.currentPlayerId && manualAiSeatIds.includes(args.currentPlayerId)) {
+        return args.currentPlayerId;
+    }
+
+    const core = isPlainRecord(args.sharedState.core) ? args.sharedState.core : null;
+    if (core?.hostStarted !== false) {
+        return null;
+    }
+
+    if (isPlainRecord(core.selectedFactions)) {
+        if (args.currentPlayerId && args.seatControllers[args.currentPlayerId]?.type === 'human') {
+            const currentPlayerFaction = core.selectedFactions?.[args.currentPlayerId];
+            if (typeof currentPlayerFaction !== 'string' || currentPlayerFaction === 'unselected') {
+                return null;
+            }
+        }
+        return manualAiSeatIds.find((playerId) => {
+            const selectedFaction = core.selectedFactions?.[playerId];
+            return typeof selectedFaction !== 'string' || selectedFaction === 'unselected';
+        }) ?? null;
+    }
+
+    if (isPlainRecord(core.selectedCharacters)) {
+        if (args.currentPlayerId && args.seatControllers[args.currentPlayerId]?.type === 'human') {
+            const currentPlayerCharacter = core.selectedCharacters?.[args.currentPlayerId];
+            if (typeof currentPlayerCharacter !== 'string' || currentPlayerCharacter === 'unselected') {
+                return null;
+            }
+        }
+        return manualAiSeatIds.find((playerId) => {
+            const selectedCharacter = core.selectedCharacters?.[playerId];
+            return typeof selectedCharacter !== 'string' || selectedCharacter === 'unselected';
+        }) ?? null;
+    }
+
+    return null;
+}
+
+// eslint-disable-next-line react-refresh/only-export-components
+export function shouldReleaseManualSetupAttemptFromSharedState(args: {
     sharedState: MatchState<unknown> | null | undefined;
     playerId: string;
-    factionId: string | null | undefined;
+    actionKind: ManualSetupSelectionActionKind;
+    selectionId: string | null | undefined;
 }): boolean {
-    const factionId = typeof args.factionId === 'string' ? args.factionId : '';
-    if (!factionId || !args.sharedState || typeof args.sharedState !== 'object') {
+    const selectionId = typeof args.selectionId === 'string' ? args.selectionId : '';
+    if (!selectionId || !args.sharedState || typeof args.sharedState !== 'object') {
         return false;
     }
 
@@ -223,22 +350,65 @@ export function shouldReleaseFactionSelectAttemptFromSharedState(args: {
         ? args.sharedState.sys.phase
         : null;
     const core = args.sharedState.core as {
+        hostStarted?: unknown;
         factionSelection?: {
             playerSelections?: Record<string, unknown>;
         };
+        selectedFactions?: Record<string, unknown>;
+        selectedCharacters?: Record<string, unknown>;
     } | undefined;
 
-    const selectedByPlayer = core?.factionSelection?.playerSelections?.[args.playerId];
-    const selectedFactionIds = Array.isArray(selectedByPlayer)
-        ? selectedByPlayer.filter((item): item is string => typeof item === 'string')
-        : [];
-
-    if (selectedFactionIds.includes(factionId)) {
-        return true;
+    if (args.actionKind === 'select-faction') {
+        const selectedByPlayer = core?.factionSelection?.playerSelections?.[args.playerId];
+        const selectedFactionIds = Array.isArray(selectedByPlayer)
+            ? selectedByPlayer.filter((item): item is string => typeof item === 'string')
+            : [];
+        if (selectedFactionIds.includes(selectionId)) {
+            return true;
+        }
+        // SmashUp 公开选派系一旦结束，shared state 已经进入后续阶段，也可以视为这条提交已被权威态吸收。
+        return phase !== null && phase !== 'factionSelect';
     }
 
-    // 公开选派系一旦结束，shared state 已经进入后续阶段，也可以视为这条提交已被权威态吸收。
-    return phase !== null && phase !== 'factionSelect';
+    if (args.actionKind === 'setup-select-faction') {
+        if (core?.selectedFactions?.[args.playerId] === selectionId) {
+            return true;
+        }
+        return core?.hostStarted === true;
+    }
+
+    if (core?.selectedCharacters?.[args.playerId] === selectionId) {
+        return true;
+    }
+    return core?.hostStarted === true;
+}
+
+export function shouldReleaseFactionSelectAttemptFromSharedState(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    playerId: string;
+    factionId: string | null | undefined;
+}): boolean {
+    return shouldReleaseManualSetupAttemptFromSharedState({
+        sharedState: args.sharedState,
+        playerId: args.playerId,
+        actionKind: 'select-faction',
+        selectionId: args.factionId,
+    });
+}
+
+function resolveManualSetupSelectionId(args: {
+    actionKind: string;
+    payload: unknown;
+}): string | null {
+    if (!isManualSetupSelectionActionKind(args.actionKind) || !isPlainRecord(args.payload)) {
+        return null;
+    }
+
+    if (args.actionKind === 'setup-select-character') {
+        return typeof args.payload.characterId === 'string' ? args.payload.characterId : null;
+    }
+
+    return typeof args.payload.factionId === 'string' ? args.payload.factionId : null;
 }
 
 type OnlineAiDebugWindow = Window & {
@@ -368,29 +538,52 @@ const OnlineManualFactionSelectionBridge = ({
     dispatchManualAiCommand: ManualAiSeatDispatch | null;
 }) => {
     const { state, dispatch } = useGameClient();
-    const currentPlayerId = resolveCurrentPlayerId(state as MatchState<unknown>);
-    const shouldTakeOver = Boolean(
-        currentPlayerId
-        && state?.sys?.phase === 'factionSelect'
-        && seatControllers[currentPlayerId]?.type !== 'human'
-        && seatControllers[currentPlayerId]?.manualFactionSelection === true
-        && dispatchManualAiCommand,
-    );
+    const sharedState = state as MatchState<unknown> | null;
+    const currentPlayerId = resolveCurrentPlayerId(sharedState);
+    const manualSetupPlayerId = resolveManualSetupSelectionTakeoverPlayerId({
+        sharedState,
+        currentPlayerId,
+        seatControllers,
+        hasManualDispatch: Boolean(dispatchManualAiCommand),
+    });
+    const shouldTakeOver = manualSetupPlayerId !== null;
+    const latestSharedStateRef = useRef<MatchState<unknown> | null>(sharedState);
+    const latestManualDispatchRef = useRef<ManualAiSeatDispatch | null>(dispatchManualAiCommand);
+
+    useEffect(() => {
+        latestSharedStateRef.current = sharedState;
+    }, [sharedState]);
+
+    useEffect(() => {
+        latestManualDispatchRef.current = dispatchManualAiCommand;
+    }, [dispatchManualAiCommand]);
 
     const manualDispatch = useCallback((type: string, payload: unknown) => {
-        if (shouldTakeOver && currentPlayerId) {
-            dispatchManualAiCommand?.(currentPlayerId, type, payload);
+        const latestSharedState = latestSharedStateRef.current;
+        const latestCurrentPlayerId = resolveCurrentPlayerId(latestSharedState);
+        const latestManualSetupPlayerId = resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState: latestSharedState,
+            currentPlayerId: latestCurrentPlayerId,
+            seatControllers,
+            hasManualDispatch: Boolean(latestManualDispatchRef.current),
+        });
+        if (latestManualSetupPlayerId) {
+            latestManualDispatchRef.current?.(latestManualSetupPlayerId, type, payload);
             return;
         }
         dispatch(type, payload);
-    }, [currentPlayerId, dispatch, dispatchManualAiCommand, shouldTakeOver]);
+    }, [dispatch, seatControllers]);
 
     if (!shouldTakeOver) {
         return children;
     }
 
     return (
-        <GameClientOverrideProvider playerId={currentPlayerId} dispatch={manualDispatch}>
+        <GameClientOverrideProvider
+            key={manualSetupPlayerId ?? 'manual-setup-host'}
+            playerId={manualSetupPlayerId}
+            dispatch={manualDispatch}
+        >
             {children}
         </GameClientOverrideProvider>
     );
@@ -451,6 +644,18 @@ export function shouldStageOnlineAiSeatOverrideFromConfirmedState(args: {
     return buildAiProgressMarker(latestSeatState) !== buildAiProgressMarker(authoritativeState);
 }
 
+function hasSeatScopedBlockingSurface(state: MatchState<unknown> | null): boolean {
+    if (!state) {
+        return false;
+    }
+    const currentInteraction = state.sys?.interaction?.current;
+    const queuedInteractions = state.sys?.interaction?.queue;
+    const responseWindow = state.sys?.responseWindow?.current;
+    return Boolean(currentInteraction)
+        || (Array.isArray(queuedInteractions) && queuedInteractions.length > 0)
+        || Boolean(responseWindow);
+}
+
 export function shouldRetainOnlineAiSeatOverrideAfterLatestState(args: {
     seatStateOverride: MatchState<unknown> | null | undefined;
     latestSeatState: MatchState<unknown> | null | undefined;
@@ -462,6 +667,9 @@ export function shouldRetainOnlineAiSeatOverrideAfterLatestState(args: {
     const latestSeatState = args.latestSeatState ?? null;
     if (!latestSeatState) {
         return true;
+    }
+    if (hasSeatScopedBlockingSurface(override) && !hasSeatScopedBlockingSurface(latestSeatState)) {
+        return false;
     }
     return buildAiProgressMarker(latestSeatState) !== buildAiProgressMarker(override);
 }
@@ -523,7 +731,7 @@ const OnlineAiSeatBridge = ({
         sharedMarker: string;
         seatMarker: string | null;
         actionKind: string;
-        pendingFactionId: string | null;
+        pendingSelectionId: string | null;
     } | null>(null);
     const pendingSeatResyncRef = useRef<Record<string, {
         requestedAt: number;
@@ -900,17 +1108,18 @@ const OnlineAiSeatBridge = ({
         const runAiTurn = async () => {
             const activeAttempt = activeAiAttemptRef.current;
             if (activeAttempt) {
-                const sharedFactionConfirmed = FACTION_SELECTION_ACTION_KINDS.has(activeAttempt.actionKind)
-                    && shouldReleaseFactionSelectAttemptFromSharedState({
+                const sharedSelectionConfirmed = isManualSetupSelectionActionKind(activeAttempt.actionKind)
+                    && shouldReleaseManualSetupAttemptFromSharedState({
                         sharedState: state as MatchState<unknown>,
                         playerId: activeAttempt.playerId,
-                        factionId: activeAttempt.pendingFactionId,
+                        actionKind: activeAttempt.actionKind,
+                        selectionId: activeAttempt.pendingSelectionId,
                     });
-                if (sharedFactionConfirmed) {
+                if (sharedSelectionConfirmed) {
                     aiSeatDecisionDebugRef.current[activeAttempt.playerId] = {
                         stage: 'shared-faction-select-confirmed',
                         attemptKey: activeAttempt.attemptKey,
-                        factionId: activeAttempt.pendingFactionId,
+                        selectionId: activeAttempt.pendingSelectionId,
                         updatedAt: Date.now(),
                     };
                     clearActiveAiAttemptIfMatches(activeAttempt.attemptKey);
@@ -1198,13 +1407,13 @@ const OnlineAiSeatBridge = ({
                     ? buildAiProgressMarker(getEffectiveSeatState(resolution.playerId) as MatchState<unknown>)
                     : null,
                 actionKind: resolution.action.kind,
-                pendingFactionId: FACTION_SELECTION_ACTION_KINDS.has(resolution.action.kind)
-                    ? (() => {
-                        const firstCommand = resolution.action.commands[0];
-                        const payload = firstCommand?.payload as { factionId?: unknown } | undefined;
-                        return typeof payload?.factionId === 'string' ? payload.factionId : null;
-                    })()
-                    : null,
+                pendingSelectionId: (() => {
+                    const firstCommand = resolution.action.commands[0];
+                    return resolveManualSetupSelectionId({
+                        actionKind: resolution.action.kind,
+                        payload: firstCommand?.payload,
+                    });
+                })(),
             };
 
             const controller = seatControllers[resolution.playerId];
@@ -2563,6 +2772,9 @@ export const MatchRoom = () => {
     const [destroyModalId, setDestroyModalId] = useState<string | null>(null);
     const [forceExitModalId, setForceExitModalId] = useState<string | null>(null);
     const [dispatchManualAiCommand, setDispatchManualAiCommand] = useState<ManualAiSeatDispatch | null>(null);
+    const handleManualFactionDispatchReady = useCallback((handler: ManualAiSeatDispatch | null) => {
+        setDispatchManualAiCommand(() => handler);
+    }, []);
     const [localStorageTick, setLocalStorageTick] = useState(0);
     const [onlineAiSeatReloadTick, setOnlineAiSeatReloadTick] = useState(0);
     const [onlineAiSeatControllers, setOnlineAiSeatControllers] = useState<Record<string, AiSeatController>>({});
@@ -2623,12 +2835,15 @@ export const MatchRoom = () => {
         }
     }, [matchId, isTutorialRoute, localStorageTick]);
     const storedPlayerID = storedMatchCreds?.playerID;
-    const hasStoredSeat = Boolean(storedPlayerID);
-    const isSpectatorRoute = !isTutorialRoute
-        && !shouldAutoJoin
-        && !urlPlayerID
-        && !hasStoredSeat
-        && (spectateParam === null || spectateParam === '1' || spectateParam === 'true');
+    const routeIdentity = resolveMatchRoomRouteIdentity({
+        isTutorialRoute,
+        debugPlayerID,
+        urlPlayerID,
+        storedPlayerID,
+        shouldAutoJoin,
+        spectateParam,
+    });
+    const { isSpectatorRoute, effectivePlayerID, statusPlayerID, transportPlayerID } = routeIdentity;
     useEffect(() => {
         // 日志已移除：Spectate 调试信息过于频繁
     }, [gameId, matchId, urlPlayerID, shouldAutoJoin, spectateParam, isSpectatorRoute]);
@@ -2639,6 +2854,7 @@ export const MatchRoom = () => {
     const autoJoinStartedRef = useRef(false);
     // 自动加入完成后的宽限期（防止 validateStoredMatchSeat 在 matchStatus 刷新前清除凭据）
     const autoJoinGraceRef = useRef(false);
+    const pendingSeatValidationClearKeyRef = useRef<string | null>(null);
     useEffect(() => {
         if (!shouldAutoJoin || !gameId || !matchId || isTutorialRoute) return;
         if (autoJoinStartedRef.current) {
@@ -2784,8 +3000,6 @@ export const MatchRoom = () => {
         }
     }, [gameId, matchId]);
 
-    const tutorialPlayerID = debugPlayerID ?? urlPlayerID ?? '0';
-
     // 进入联机对局时，调试面板自动切换到自己对应的玩家视角
     useEffect(() => {
         if (isTutorialRoute) return;
@@ -2793,15 +3007,6 @@ export const MatchRoom = () => {
         if (debugPlayerID === urlPlayerID) return;
         setPlayerID(urlPlayerID);
     }, [debugPlayerID, isTutorialRoute, setPlayerID, urlPlayerID]);
-
-    // 联机对局始终使用地址中的玩家编号，缺失时回退到本地凭据
-    const effectivePlayerID = isTutorialRoute
-        ? tutorialPlayerID
-        : (urlPlayerID ?? storedPlayerID ?? undefined);
-
-    const statusPlayerID = isTutorialRoute
-        ? (urlPlayerID ?? debugPlayerID ?? null)
-        : (urlPlayerID ?? storedPlayerID ?? null);
 
     useEffect(() => {
         const seatControllerTypes = summarizeSeatControllerTypes(onlineAiSeatControllers);
@@ -2891,15 +3096,37 @@ export const MatchRoom = () => {
         isTutorialRoute ? null : statusPlayerID
     );
     useEffect(() => {
-        if (isTutorialRoute) return;
-        if (!matchId || !statusPlayerID) return;
-        if (matchStatus.isLoading || matchStatus.players.length === 0) return;
+        if (isTutorialRoute) {
+            pendingSeatValidationClearKeyRef.current = null;
+            return;
+        }
+        if (!matchId || !statusPlayerID) {
+            pendingSeatValidationClearKeyRef.current = null;
+            return;
+        }
+        if (matchStatus.isLoading || matchStatus.players.length === 0) {
+            pendingSeatValidationClearKeyRef.current = null;
+            return;
+        }
         // 自动加入过程中或刚完成自动加入时跳过验证（matchStatus 可能还未反映新加入的玩家）
-        if (shouldAutoJoin || isAutoJoining || autoJoinGraceRef.current) return;
+        if (shouldAutoJoin || isAutoJoining || autoJoinGraceRef.current) {
+            pendingSeatValidationClearKeyRef.current = null;
+            return;
+        }
 
         const stored = readStoredMatchCredentials(matchId);
         const validation = validateStoredMatchSeat(stored, matchStatus.players, statusPlayerID);
-        if (!validation.shouldClear) return;
+        if (!validation.shouldClear) {
+            pendingSeatValidationClearKeyRef.current = null;
+            return;
+        }
+
+        const validationKey = `${matchId}:${statusPlayerID}:${validation.reason ?? 'unknown'}:${stored?.playerID ?? ''}`;
+        if (pendingSeatValidationClearKeyRef.current !== validationKey) {
+            pendingSeatValidationClearKeyRef.current = validationKey;
+            return;
+        }
+        pendingSeatValidationClearKeyRef.current = null;
 
         clearMatchCredentials(matchId);
         clearOwnerActiveMatch(matchId);
@@ -3563,7 +3790,7 @@ export const MatchRoom = () => {
                                             <GameProvider
                                                 server={getGameServerUrl()}
                                                 matchId={matchId}
-                                                playerId={isSpectatorRoute ? null : (effectivePlayerID ?? null)}
+                                                playerId={transportPlayerID}
                                                 credentials={credentials}
                                                 engineConfig={engineConfig ?? undefined}
                                                 latencyConfig={latencyConfig}
@@ -3601,7 +3828,7 @@ export const MatchRoom = () => {
                                                         seatControllers={onlineAiSeatControllers}
                                                         seatCredentials={onlineAiSeatCredentials}
                                                         onForceEndAiPhaseReady={handleForceEndAiPhaseReady}
-                                                        onManualFactionDispatchReady={setDispatchManualAiCommand}
+                                                        onManualFactionDispatchReady={handleManualFactionDispatchReady}
                                                     />
                                                 )}
                                                 <OnlineManualFactionSelectionBridge

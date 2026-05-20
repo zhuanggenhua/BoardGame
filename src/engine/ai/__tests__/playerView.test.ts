@@ -60,6 +60,39 @@ describe('applyPlayerViewToState', () => {
         expect(otherView.sys.interaction.queue).toEqual([]);
     });
 
+    it('spectator 视角不应直接看到 owner-only current 与 queue 交互', () => {
+        const authoritativeState: MatchState<{ hp: number }> = {
+            core: { hp: 10 },
+            sys: {
+                interaction: {
+                    current: createSimpleChoice(
+                        'owner-current',
+                        '0',
+                        '选择要弃掉的手牌',
+                        [{ id: 'hand-a', label: '手牌 A', value: { cardUid: 'hand-a' } }],
+                        { sourceId: 'super_spies_secret_agent_discard', targetType: 'hand' },
+                    ),
+                    queue: [
+                        createSimpleChoice(
+                            'owner-queued',
+                            '0',
+                            '继续选择要弃掉的手牌',
+                            [{ id: 'hand-b', label: '手牌 B', value: { cardUid: 'hand-b' } }],
+                            { sourceId: 'super_spies_secret_agent_discard_queue', targetType: 'hand' },
+                        ),
+                    ],
+                    isBlocked: false,
+                },
+            },
+        } as MatchState<{ hp: number }>;
+
+        const spectatorView = applyPlayerViewToState(engineConfig, authoritativeState, null) as any;
+
+        expect(spectatorView.sys.interaction.current).toBeUndefined();
+        expect(spectatorView.sys.interaction.queue).toEqual([]);
+        expect(spectatorView.sys.interaction.isBlocked).toBe(true);
+    });
+
     it('deep-clones nested data for custom owner-only interaction kinds', () => {
         const authoritativeState: MatchState<{ hp: number }> = {
             core: { hp: 10 },

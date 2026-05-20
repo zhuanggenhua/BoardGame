@@ -559,6 +559,215 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
         expect(baseResult?.resolution.attemptKey).not.toBe(driftedResult?.resolution.attemptKey);
     });
 
+    it('可见 simple-choice 在 sourceId/title/options 不变但 slider 配置漂移时，watchdog 的 attemptKey 也必须跟着变化', () => {
+        const baseState: MatchState<unknown> = {
+            core: {
+                activePlayerId: '1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'scoreBases',
+                interaction: {
+                    current: {
+                        id: 'reaction-slider-choice',
+                        playerId: '1',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'giant_ants_transfer_counter_prompt',
+                            title: '选择要转移的数量',
+                            options: [
+                                {
+                                    id: 'confirm',
+                                    label: '确认转移',
+                                    value: { kind: 'confirm' },
+                                },
+                                {
+                                    id: 'skip',
+                                    label: '跳过',
+                                    value: { kind: 'pass', skip: true },
+                                },
+                            ],
+                            slider: {
+                                min: 1,
+                                max: 2,
+                                step: 1,
+                                defaultValue: 2,
+                                confirmOptionId: 'confirm',
+                                skipOptionId: 'skip',
+                                confirmLabel: '确认转移 {{value}}',
+                                valueLabel: '当前数量：{{value}} / {{max}}',
+                                skipLabel: '跳过',
+                            },
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        };
+        const driftedState: MatchState<unknown> = {
+            ...baseState,
+            sys: {
+                ...baseState.sys,
+                interaction: {
+                    current: {
+                        id: 'reaction-slider-choice',
+                        playerId: '1',
+                        kind: 'simple-choice',
+                        data: {
+                            sourceId: 'giant_ants_transfer_counter_prompt',
+                            title: '选择要转移的数量',
+                            options: [
+                                {
+                                    id: 'confirm',
+                                    label: '确认转移',
+                                    value: { kind: 'confirm' },
+                                },
+                                {
+                                    id: 'skip',
+                                    label: '跳过',
+                                    value: { kind: 'pass', skip: true },
+                                },
+                            ],
+                            slider: {
+                                min: 1,
+                                max: 4,
+                                step: 1,
+                                defaultValue: 4,
+                                confirmOptionId: 'confirm',
+                                skipOptionId: 'skip',
+                                confirmLabel: '确认转移 {{value}}',
+                                valueLabel: '当前数量：{{value}} / {{max}}',
+                                skipLabel: '跳过',
+                            },
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        };
+
+        const baseResult = resolveForceEndTurnForStalledAi({
+            sharedState: baseState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+        const driftedResult = resolveForceEndTurnForStalledAi({
+            sharedState: driftedState,
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(baseResult?.resolution.attemptKey).not.toBe(driftedResult?.resolution.attemptKey);
+    });
+
+    it('可见 multistep-choice 在 allowed/completed 不变但 selectCount 漂移时，watchdog 的 attemptKey 也必须跟着变化', () => {
+        const buildState = (selectCount: number): MatchState<unknown> => ({
+            core: {
+                activePlayerId: '1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'defensiveRoll',
+                interaction: {
+                    current: {
+                        id: 'multistep-choice-select-count-drift',
+                        playerId: '1',
+                        kind: 'multistep-choice',
+                        data: {
+                            title: 'dice.modify',
+                            sourceId: 'shadow_thief_samesies',
+                            allowedDieIds: [0, 1, 2],
+                            completedDieIds: [],
+                            meta: {
+                                dtType: 'selectDie',
+                                selectCount,
+                            },
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        });
+
+        const first = resolveForceEndTurnForStalledAi({
+            sharedState: buildState(1),
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+        const second = resolveForceEndTurnForStalledAi({
+            sharedState: buildState(2),
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
+    });
+
+    it('可见 multistep-choice 在 allowed/completed 不变但 dieModifyConfig 漂移时，watchdog 的 attemptKey 也必须跟着变化', () => {
+        const buildState = (targetValue: number): MatchState<unknown> => ({
+            core: {
+                activePlayerId: '1',
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'defensiveRoll',
+                interaction: {
+                    current: {
+                        id: 'multistep-choice-die-config-drift',
+                        playerId: '1',
+                        kind: 'multistep-choice',
+                        data: {
+                            title: 'dice.modify',
+                            sourceId: 'gunslinger_tip_it',
+                            allowedDieIds: [0, 1],
+                            completedDieIds: [0],
+                            meta: {
+                                dtType: 'modifyDie',
+                                selectCount: 1,
+                                dieModifyConfig: {
+                                    mode: 'set',
+                                    targetValue,
+                                },
+                            },
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        });
+
+        const first = resolveForceEndTurnForStalledAi({
+            sharedState: buildState(1),
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+        const second = resolveForceEndTurnForStalledAi({
+            sharedState: buildState(6),
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
+    });
+
     it('可见 compare-roll-choice 只有 confirmValue 且无选项时，watchdog 应返回 CONFIRM 而不是 cancel', () => {
         const sharedState: MatchState<unknown> = {
             core: {
@@ -744,6 +953,107 @@ describe('onlineAiRecovery - 游戏结束检查', () => {
             type: 'SKIP_BONUS_DICE_REROLL',
             payload: {},
         });
+    });
+
+    it('可见 dt:token-response 的 pendingDamage 语义漂移时，watchdog 的 attemptKey 也必须跟着变化', () => {
+        const buildState = (currentDamage: number): MatchState<unknown> => ({
+            core: {
+                activePlayerId: '1',
+                pendingDamage: {
+                    id: 'pending-damage-1',
+                    responderId: '1',
+                    responseType: 'token',
+                    currentDamage,
+                    sourceAbilityId: 'barbarian_revenge',
+                    tokenUsageTotals: { rage: currentDamage },
+                },
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'defensiveRoll',
+                interaction: {
+                    current: {
+                        id: 'token-response-1',
+                        playerId: '1',
+                        kind: 'dt:token-response',
+                        data: {
+                            sourceId: 'barbarian_revenge',
+                            title: '是否消耗 token',
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        });
+
+        const first = resolveForceEndTurnForStalledAi({
+            sharedState: buildState(2),
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+        const second = resolveForceEndTurnForStalledAi({
+            sharedState: buildState(4),
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
+    });
+
+    it('可见 dt:bonus-dice 的 settlement 语义漂移时，watchdog 的 attemptKey 也必须跟着变化', () => {
+        const buildState = (rerollCount: number): MatchState<unknown> => ({
+            core: {
+                activePlayerId: '1',
+                pendingBonusDiceSettlement: {
+                    id: 'bonus-settlement-1',
+                    attackerId: '1',
+                    displayOnly: false,
+                    rerollCount,
+                    dice: [{ index: 0, value: 6 - rerollCount }],
+                },
+            },
+            sys: {
+                gameover: undefined,
+                phase: 'offensiveRoll',
+                interaction: {
+                    current: {
+                        id: 'bonus-dice-1',
+                        playerId: '1',
+                        kind: 'dt:bonus-dice',
+                        data: {
+                            sourceId: 'bonus-roll',
+                            title: '是否重掷奖励骰',
+                        },
+                    },
+                    isBlocked: false,
+                },
+            },
+        });
+
+        const first = resolveForceEndTurnForStalledAi({
+            sharedState: buildState(1),
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+        const second = resolveForceEndTurnForStalledAi({
+            sharedState: buildState(2),
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', policyId: 'baseline' },
+            },
+            seatStates: {},
+        });
+
+        expect(first?.resolution.attemptKey).not.toBe(second?.resolution.attemptKey);
     });
 
     it('可见 compare-roll-choice 在同 interactionId 下若 confirmValue 漂移，watchdog 的 attemptKey 也必须跟着变化', () => {

@@ -15,6 +15,23 @@ const buildFactionSelectState = (): MatchState<unknown> => ({
     },
 }) as MatchState<unknown>;
 
+const buildCharacterSelectState = (): MatchState<unknown> => ({
+    core: {
+        currentPlayerId: '1',
+        hostStarted: false,
+        selectedCharacters: {
+            '0': 'monk',
+            '1': 'unselected',
+        },
+    },
+    sys: {
+        phase: 'setup',
+        turnNumber: 1,
+        interaction: { current: null, queue: [], isBlocked: false },
+        responseWindow: { current: null },
+    },
+}) as MatchState<unknown>;
+
 describe('AI 手动选派系', () => {
     it('勾选 manualFactionSelection 后，AI 不自动提交 setup 派系选择动作', async () => {
         const gameId = '__test_manual_faction_selection__';
@@ -131,5 +148,43 @@ describe('AI 手动选派系', () => {
         expect(resolution?.action.commands).toEqual([
             { type: 'SELECT_FACTION', payload: { factionId: 'robots' } },
         ]);
+    });
+
+    it('勾选 manualFactionSelection 后，AI 也不自动提交 setup-select-character 动作', async () => {
+        const gameId = '__test_manual_setup_character_selection__';
+        registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId }) => {
+                if (playerId !== '1') return [];
+                return [{
+                    actionId: 'setup-select-character-samurai',
+                    kind: 'setup-select-character',
+                    label: '选择角色 samurai',
+                    commands: [{ type: 'SELECT_CHARACTER', payload: { characterId: 'samurai' } }],
+                }];
+            },
+            localPolicies: {
+                default: {
+                    id: 'default',
+                    decide: () => ({ actionId: 'setup-select-character-samurai' }),
+                },
+            },
+            defaultLocalPolicyId: 'default',
+        });
+
+        const resolution = await resolveNextAiAction({
+            engineConfig: {
+                gameId,
+                domain: {},
+                systems: [],
+            } as never,
+            state: buildCharacterSelectState(),
+            matchId: 'local:manual-setup-character-selection',
+            seatControllers: {
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+        });
+
+        expect(resolution).toBeNull();
     });
 });

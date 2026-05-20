@@ -4,7 +4,16 @@ import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-libr
 import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import * as matchApi from '../../services/matchApi';
-import { isMatchNotFoundError, leaveMatch, useMatchStatus, validateStoredMatchSeat, type StoredMatchCredentials } from '../../hooks/match/useMatchStatus';
+import {
+    clearMatchCredentials,
+    isMatchNotFoundError,
+    leaveMatch,
+    persistMatchCredentials,
+    readStoredMatchCredentials,
+    useMatchStatus,
+    validateStoredMatchSeat,
+    type StoredMatchCredentials,
+} from '../../hooks/match/useMatchStatus';
 import {
     haveAiSeatCredentialsChanged,
     loadOnlineAiSeatState,
@@ -38,11 +47,15 @@ import {
 import {
     isTutorialRoutePath,
     resolveManualOnlineAiRecovery,
+    resolveMatchRoomRouteIdentity,
     resolveMissingMatchConfirmationSignal,
+    resolveManualSetupSelectionTakeoverPlayerId,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
+    shouldReleaseManualSetupAttemptFromSharedState,
     shouldRetainOnlineAiSeatOverrideAfterLatestState,
     shouldReleaseFactionSelectAttemptFromSharedState,
+    shouldTakeOverManualSetupSelection,
     shouldShowOnlineGameErrorToast,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from '../MatchRoom';
@@ -248,6 +261,109 @@ describe('resolveMissingMatchConfirmationSignal', () => {
             autoJoinGraceActive: false,
             onlineTransportError: 'match_not_found',
         })).toBeNull();
+    });
+});
+
+describe('resolveMatchRoomRouteIdentity', () => {
+    it('有 stored seat 且 URL 缺失时，必须继续使用 seat 身份而不是误退 spectator/null playerID', () => {
+        const result = resolveMatchRoomRouteIdentity({
+            isTutorialRoute: false,
+            debugPlayerID: null,
+            urlPlayerID: null,
+            storedPlayerID: '1',
+            shouldAutoJoin: false,
+            spectateParam: null,
+        });
+
+        expect(result.hasStoredSeat).toBe(true);
+        expect(result.isSpectatorRoute).toBe(false);
+        expect(result.effectivePlayerID).toBe('1');
+        expect(result.statusPlayerID).toBe('1');
+        expect(result.transportPlayerID).toBe('1');
+    });
+
+    it('即使显式带 spectate=1，只要本地仍有 stored seat，也不能把真实 seat 页压成 spectator', () => {
+        const result = resolveMatchRoomRouteIdentity({
+            isTutorialRoute: false,
+            debugPlayerID: null,
+            urlPlayerID: null,
+            storedPlayerID: '0',
+            shouldAutoJoin: false,
+            spectateParam: '1',
+        });
+
+        expect(result.hasStoredSeat).toBe(true);
+        expect(result.isSpectatorRoute).toBe(false);
+        expect(result.effectivePlayerID).toBe('0');
+        expect(result.statusPlayerID).toBe('0');
+        expect(result.transportPlayerID).toBe('0');
+    });
+
+    it('只有无 URL、无 stored seat、且允许 spectate 路由时，才应退回 spectator/null playerID', () => {
+        const result = resolveMatchRoomRouteIdentity({
+            isTutorialRoute: false,
+            debugPlayerID: null,
+            urlPlayerID: null,
+            storedPlayerID: null,
+            shouldAutoJoin: false,
+            spectateParam: null,
+        });
+
+        expect(result.hasStoredSeat).toBe(false);
+        expect(result.isSpectatorRoute).toBe(true);
+        expect(result.effectivePlayerID).toBeUndefined();
+        expect(result.statusPlayerID).toBeNull();
+        expect(result.transportPlayerID).toBeNull();
+    });
+});
+
+describe('match-credentials-changed lifecycle', () => {
+    afterEach(() => {
+        localStorage.clear();
+    });
+
+    it('persistMatchCredentials 会立刻写入 localStorage，并通知同页监听器刷新 stored seat', () => {
+        const handler = vi.fn();
+        window.addEventListener('match-credentials-changed', handler);
+
+        try {
+            persistMatchCredentials('match-1', {
+                matchID: 'match-1',
+                playerID: '0',
+                credentials: 'cred-0',
+                gameName: 'smashup',
+            });
+
+            expect(readStoredMatchCredentials('match-1')).toEqual(expect.objectContaining({
+                matchID: 'match-1',
+                playerID: '0',
+                credentials: 'cred-0',
+                gameName: 'smashup',
+            }));
+            expect(handler).toHaveBeenCalledTimes(1);
+        } finally {
+            window.removeEventListener('match-credentials-changed', handler);
+        }
+    });
+
+    it('clearMatchCredentials 会立刻清空 localStorage，并通知同页监听器避免页面继续沿用旧 seat', () => {
+        persistMatchCredentials('match-1', {
+            matchID: 'match-1',
+            playerID: '0',
+            credentials: 'cred-0',
+            gameName: 'smashup',
+        });
+        const handler = vi.fn();
+        window.addEventListener('match-credentials-changed', handler);
+
+        try {
+            clearMatchCredentials('match-1');
+
+            expect(readStoredMatchCredentials('match-1')).toBeNull();
+            expect(handler).toHaveBeenCalledTimes(1);
+        } finally {
+            window.removeEventListener('match-credentials-changed', handler);
+        }
     });
 });
 
@@ -2380,6 +2496,30 @@ describe('submitOnlineAiResolution', () => {
         })).toBe(confirmedSeatState);
     });
 
+    it('seat latest state 在重连后即使 nextId 更低，只要已明确关闭旧 owner-only prompt，也不应继续沿用 override 阴影状态', () => {
+        const confirmedSeatState = buildOnlineAiSeatState({
+            nextId: 14,
+            interactionId: 'stale-hidden',
+            interactionSourceId: 'wizard_sacrifice',
+        });
+        const postReconnectClosedSeatState = buildOnlineAiSeatState({
+            nextId: 1,
+            phase: 'playCards',
+            currentPlayerId: '1',
+        });
+
+        expect(shouldRetainOnlineAiSeatOverrideAfterLatestState({
+            seatStateOverride: confirmedSeatState,
+            latestSeatState: postReconnectClosedSeatState,
+        })).toBe(false);
+
+        expect(resolveOnlineAiEffectiveSeatState({
+            playerId: '1',
+            seatStateOverrides: { '1': confirmedSeatState },
+            seatLatestStates: { '1': postReconnectClosedSeatState },
+        })).toBe(postReconnectClosedSeatState);
+    });
+
     it('shared state 已记录 AI 选中的派系时，应立即释放 select-faction attempt', () => {
         const sharedState = {
             core: {
@@ -2401,6 +2541,134 @@ describe('submitOnlineAiResolution', () => {
             sharedState,
             playerId: '1',
             factionId: 'robots',
+        })).toBe(true);
+    });
+
+    it('SummonerWars 在线前置阶段：hostStarted=false 且 AI 还未选阵营时，应解析出要接管的 AI 座位', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedFactions: {
+                    '0': 'necromancer',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBe('1');
+        expect(shouldTakeOverManualSetupSelection({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBe(true);
+    });
+
+    it('SummonerWars 在线前置阶段：房主自己还没选阵营时，不应提前接管 AI 座位', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedFactions: {
+                    '0': 'unselected',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBeNull();
+    });
+
+    it('DiceThrone 在线前置阶段：房主自己还没选角色时，不应提前接管 AI 座位', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedCharacters: {
+                    '0': 'unselected',
+                    '1': 'unselected',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupSelectionTakeoverPlayerId({
+            sharedState,
+            currentPlayerId: '0',
+            seatControllers: {
+                '0': { type: 'human' },
+                '1': { type: 'local-ai', manualFactionSelection: true },
+            },
+            hasManualDispatch: true,
+        })).toBeNull();
+    });
+
+    it('DiceThrone 角色选择已写回 shared state 时，应释放 setup-select-character attempt', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedCharacters: {
+                    '0': 'monk',
+                    '1': 'samurai',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState,
+            playerId: '1',
+            actionKind: 'setup-select-character',
+            selectionId: 'samurai',
+        })).toBe(true);
+    });
+
+    it('SummonerWars 阵营选择已写回 shared state 时，应释放 setup-select-faction attempt', () => {
+        const sharedState = {
+            core: {
+                hostStarted: false,
+                selectedFactions: {
+                    '0': 'necromancer',
+                    '1': 'paladin',
+                },
+            },
+            sys: {
+                phase: 'setup',
+            },
+        } as MatchState<unknown>;
+
+        expect(shouldReleaseManualSetupAttemptFromSharedState({
+            sharedState,
+            playerId: '1',
+            actionKind: 'setup-select-faction',
+            selectionId: 'paladin',
         })).toBe(true);
     });
 

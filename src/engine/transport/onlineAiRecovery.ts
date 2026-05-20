@@ -23,6 +23,8 @@ type HiddenSimpleChoiceInteraction = {
         multi?: { min?: unknown };
         options?: HiddenSimpleChoiceOption[];
         confirmValue?: unknown;
+        slider?: unknown;
+        meta?: unknown;
         allowedDieIds?: unknown;
         completedDieIds?: unknown;
     };
@@ -44,6 +46,8 @@ export type HiddenInteractionDescriptor = {
         multi?: { min?: unknown };
         options?: HiddenSimpleChoiceOption[];
         confirmValue?: unknown;
+        slider?: unknown;
+        meta?: unknown;
         allowedDieIds?: unknown;
         completedDieIds?: unknown;
     };
@@ -272,6 +276,94 @@ function buildNumberArraySemanticSignature(values: unknown): string {
         .join(',');
 }
 
+export function buildInteractionSliderSemanticSignature(slider: unknown): string {
+    if (!slider || typeof slider !== 'object') {
+        return '';
+    }
+
+    const raw = slider as Record<string, unknown>;
+    return JSON.stringify({
+        min: typeof raw.min === 'number' ? raw.min : null,
+        max: typeof raw.max === 'number' ? raw.max : null,
+        step: typeof raw.step === 'number' ? raw.step : null,
+        defaultValue: typeof raw.defaultValue === 'number' ? raw.defaultValue : null,
+        confirmOptionId: typeof raw.confirmOptionId === 'string' ? raw.confirmOptionId : null,
+        confirmLabel: typeof raw.confirmLabel === 'string' ? raw.confirmLabel : null,
+        valueLabel: typeof raw.valueLabel === 'string' ? raw.valueLabel : null,
+        skipOptionId: typeof raw.skipOptionId === 'string' ? raw.skipOptionId : null,
+        skipLabel: typeof raw.skipLabel === 'string' ? raw.skipLabel : null,
+        hintKey: typeof raw.hintKey === 'string' ? raw.hintKey : null,
+    });
+}
+
+export function buildDiceModifyConfigSemanticSignature(config: unknown): string {
+    if (!config || typeof config !== 'object') {
+        return '';
+    }
+
+    const raw = config as Record<string, unknown>;
+    const adjustRange = raw.adjustRange && typeof raw.adjustRange === 'object'
+        ? raw.adjustRange as Record<string, unknown>
+        : undefined;
+
+    return JSON.stringify({
+        mode: typeof raw.mode === 'string' ? raw.mode : null,
+        targetValue: typeof raw.targetValue === 'number' ? raw.targetValue : null,
+        adjustRange: adjustRange
+            ? {
+                min: typeof adjustRange.min === 'number' ? adjustRange.min : null,
+                max: typeof adjustRange.max === 'number' ? adjustRange.max : null,
+            }
+            : null,
+    });
+}
+
+export function buildMultistepChoiceMetaSemanticSignature(meta: unknown): string {
+    if (!meta || typeof meta !== 'object') {
+        return '';
+    }
+
+    const raw = meta as Record<string, unknown>;
+    return JSON.stringify({
+        dtType: typeof raw.dtType === 'string' ? raw.dtType : null,
+        selectCount: typeof raw.selectCount === 'number' ? raw.selectCount : null,
+        targetOpponentDice: raw.targetOpponentDice === true ? true : null,
+        diceOwnerId: typeof raw.diceOwnerId === 'string' ? raw.diceOwnerId : null,
+        dieModifyConfig: raw.dieModifyConfig ? JSON.parse(buildDiceModifyConfigSemanticSignature(raw.dieModifyConfig) || 'null') : null,
+    });
+}
+
+export function buildPendingDamageSemanticSignature(pendingDamage: unknown): string {
+    if (!pendingDamage || typeof pendingDamage !== 'object') {
+        return '';
+    }
+
+    const raw = pendingDamage as Record<string, unknown>;
+    return JSON.stringify({
+        id: typeof raw.id === 'string' ? raw.id : null,
+        responderId: typeof raw.responderId === 'string' ? raw.responderId : null,
+        responseType: typeof raw.responseType === 'string' ? raw.responseType : null,
+        currentDamage: typeof raw.currentDamage === 'number' ? raw.currentDamage : null,
+        sourceAbilityId: typeof raw.sourceAbilityId === 'string' ? raw.sourceAbilityId : null,
+        tokenUsageTotals: raw.tokenUsageTotals ?? null,
+    });
+}
+
+export function buildPendingBonusDiceSettlementSemanticSignature(settlement: unknown): string {
+    if (!settlement || typeof settlement !== 'object') {
+        return '';
+    }
+
+    const raw = settlement as Record<string, unknown>;
+    return JSON.stringify({
+        id: typeof raw.id === 'string' ? raw.id : null,
+        attackerId: typeof raw.attackerId === 'string' ? raw.attackerId : null,
+        displayOnly: raw.displayOnly === true ? true : null,
+        rerollCount: typeof raw.rerollCount === 'number' ? raw.rerollCount : null,
+        dice: raw.dice ?? null,
+    });
+}
+
 export function buildInteractionRecoveryFingerprintHint(
     state: MatchState<unknown>,
     interaction: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction | null | undefined,
@@ -284,10 +376,15 @@ export function buildInteractionRecoveryFingerprintHint(
     const sourceId = typeof interaction?.data?.sourceId === 'string' ? interaction.data.sourceId : '';
     const title = typeof interaction?.data?.title === 'string' ? interaction.data.title : '';
     const optionSignature = buildInteractionOptionSemanticSignature(interaction?.data?.options);
+    const sliderSignature = buildInteractionSliderSemanticSignature(interaction?.data?.slider);
+    const core = state.core as {
+        pendingDamage?: unknown;
+        pendingBonusDiceSettlement?: unknown;
+    } | undefined;
 
     if (kind === 'simple-choice') {
         const minCount = typeof interaction?.data?.multi?.min === 'number' ? interaction.data.multi.min : '';
-        return `interaction:${playerId}:${phase}:simple-choice:${sourceId}:${title}:${minCount}:${optionSignature}`;
+        return `interaction:${playerId}:${phase}:simple-choice:${sourceId}:${title}:${minCount}:${sliderSignature}:${optionSignature}`;
     }
 
     if (kind === 'compare-roll-choice') {
@@ -310,7 +407,18 @@ export function buildInteractionRecoveryFingerprintHint(
     if (kind === 'multistep-choice') {
         const allowedDieIdsSignature = buildNumberArraySemanticSignature(interaction?.data?.allowedDieIds);
         const completedDieIdsSignature = buildNumberArraySemanticSignature(interaction?.data?.completedDieIds);
-        return `interaction:${playerId}:${phase}:multistep-choice:${sourceId}:${allowedDieIdsSignature}:${completedDieIdsSignature}:${interactionId}`;
+        const metaSignature = buildMultistepChoiceMetaSemanticSignature(interaction?.data?.meta);
+        return `interaction:${playerId}:${phase}:multistep-choice:${sourceId}:${allowedDieIdsSignature}:${completedDieIdsSignature}:${metaSignature}:${interactionId}`;
+    }
+
+    if (kind === 'dt:token-response') {
+        const pendingDamageSignature = buildPendingDamageSemanticSignature(core?.pendingDamage);
+        return `interaction:${playerId}:${phase}:dt:token-response:${sourceId}:${pendingDamageSignature}:${interactionId}`;
+    }
+
+    if (kind === 'dt:bonus-dice') {
+        const settlementSignature = buildPendingBonusDiceSettlementSemanticSignature(core?.pendingBonusDiceSettlement);
+        return `interaction:${playerId}:${phase}:dt:bonus-dice:${sourceId}:${settlementSignature}:${interactionId}`;
     }
 
     return `interaction:${playerId}:${phase}:${kind}:${interactionId}`;

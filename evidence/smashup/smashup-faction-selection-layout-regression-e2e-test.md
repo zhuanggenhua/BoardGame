@@ -93,3 +93,27 @@
   - 2 人桌面与多人 compact 桌面分支分别压缩密度
 - `e2e/smashup/smashup-faction-selection-spacing.e2e.ts`
   - 几何门禁从“视口内半可见就算到底排”改为“rail 上方有足够可见面积才算有效候选行”
+
+## 2026-05-20 搜索图标复核补充
+
+命令：
+- `BG_HEAVY_E2E_MEMORY_MIN_FREE_GB=0.3 npm run test:e2e:ci:file -- e2e/smashup/smashup-faction-selection-spacing.e2e.ts "移动端横屏应保持桌面化主布局并输出移动端/桌面端参考截图"`
+
+结果：
+- 通过
+
+### 本轮根因与修正
+- **根因**：派系选择页直接使用 raw `lucide-react` `Search` SVG 贴在输入框左侧，视觉重心容易偏右下，看起来像“放大镜歪了”。
+- **本轮 UI 修正**：改成统一的 `SearchGlyph`，放进固定前导槽位，再用 E2E 断言输入框与图标槽位中心对齐，避免继续靠手写偏移猜位置。
+
+### 1. 搜索工具条近景（桌面）
+截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-faction-selection-spacing\desktop-search-toolbar.png`
+- 我实际看到：放大镜已稳定落在搜索框左侧内边距内，没有贴边，也没有上飘/下坠。
+- 我实际看到：输入框、图标和右侧筛选按钮处于同一条工具条上，视觉重心没有再偏到右下角。
+- 验收结论：**达到。**
+
+### 2. 搜索工具条近景（移动端横屏）
+截图：`D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup-faction-selection-spacing\mobile-search-toolbar.png`
+- 我实际看到：缩窄后图标仍保留清晰左侧留白，没有被压成斜着贴边的小图形。
+- 我实际看到：工具条仍是单行减负入口，不会挤爆候选主区。
+- 验收结论：**达到。**

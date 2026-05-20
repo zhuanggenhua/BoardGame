@@ -254,6 +254,16 @@ test.describe('SmashUp 四人 AI 进房稳定性', () => {
             message: 'AI 座位凭据应能补齐到 1/2/3 号位',
         }).toEqual(['1', '2', '3']);
 
+        await expect.poll(async () => {
+            const response = await page.request.get(`${getGameServerBaseURL()}/games/${GAME_NAME}/${matchId}`);
+            if (!response.ok()) return `http-${response.status()}`;
+            const data = await response.json().catch(() => null) as { status?: string } | null;
+            return data?.status ?? null;
+        }, {
+            timeout: 10_000,
+            message: '所有真人/AI 座位 claim-seat 后房间应进入 playing，不能一直停在 waiting',
+        }).toBe('playing');
+
         assertNoFatalFrontendErrors([{ label: 'ui-host', diagnostics }]);
 
         const evidenceDir = join(

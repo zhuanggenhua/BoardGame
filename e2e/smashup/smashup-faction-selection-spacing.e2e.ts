@@ -74,8 +74,42 @@ async function assertFactionCardsClearPlayerRail(page: import('@playwright/test'
   expect(metrics!.maxCardBottom, '候选卡底边必须位于玩家状态卡上方，不能被底部玩家状态卡遮挡').toBeLessThanOrEqual(metrics!.minPlayerCardTop + PLAYER_RAIL_CLEARANCE_PX);
 }
 
+async function assertFactionSearchIconAligned(page: import('@playwright/test').Page) {
+  const metrics = await page.evaluate(() => {
+    const input = document.querySelector('[data-testid="faction-search-input"]') as HTMLElement | null;
+    const iconSlot = document.querySelector('[data-testid="faction-search-leading-icon"]') as HTMLElement | null;
+    const iconSvg = iconSlot?.querySelector('svg') as SVGElement | null;
+    if (!input || !iconSlot || !iconSvg) {
+      return null;
+    }
+
+    const inputRect = input.getBoundingClientRect();
+    const slotRect = iconSlot.getBoundingClientRect();
+    const svgRect = iconSvg.getBoundingClientRect();
+
+    return {
+      inputCenterY: inputRect.top + inputRect.height / 2,
+      slotCenterY: slotRect.top + slotRect.height / 2,
+      svgCenterY: svgRect.top + svgRect.height / 2,
+      inputLeft: inputRect.left,
+      slotLeft: slotRect.left,
+      svgLeft: svgRect.left,
+      svgWidth: svgRect.width,
+      inputHeight: inputRect.height,
+    };
+  });
+
+  expect(metrics, '派系搜索框必须渲染输入框和前导放大镜图标').not.toBeNull();
+  expect(Math.abs(metrics!.inputCenterY - metrics!.slotCenterY), '放大镜图标槽位必须与搜索框垂直中心对齐').toBeLessThanOrEqual(1);
+  expect(Math.abs(metrics!.inputCenterY - metrics!.svgCenterY), '放大镜 SVG 本体必须与搜索框垂直中心对齐').toBeLessThanOrEqual(1);
+  expect(metrics!.svgWidth, '放大镜 SVG 必须成功渲染').toBeGreaterThan(0);
+  expect(metrics!.svgLeft, '放大镜图标应稳定位于搜索框左侧内边距区域').toBeGreaterThan(metrics!.inputLeft);
+  expect(metrics!.slotLeft, '放大镜图标槽位应稳定位于搜索框内部').toBeGreaterThanOrEqual(metrics!.inputLeft);
+}
+
 test.describe('SmashUp 派系选择页移动端间距', () => {
   test('移动端横屏应保持桌面化主布局并输出移动端/桌面端参考截图', async ({ page }, testInfo) => {
+    test.setTimeout(90000);
     const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'smashup-faction-selection-spacing');
     mkdirSync(evidenceDir, { recursive: true });
 
@@ -111,9 +145,12 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     expect(Math.abs(mobileMetrics.thirdTop - mobileMetrics.firstTop), '手机横屏主布局不应被误改成窄屏双列，前三张卡应仍在同一行').toBeLessThanOrEqual(4);
     expect(mobileMetrics.thirdLeft, '第三张卡应位于第一张卡右侧，证明仍是横屏桌面化排布').toBeGreaterThan(mobileMetrics.firstLeft + mobileMetrics.firstWidth);
     await assertFactionCardsClearPlayerRail(page);
+    await assertFactionSearchIconAligned(page);
 
     await page.screenshot({ path: join(evidenceDir, 'mobile-landscape.png'), fullPage: false });
     await page.screenshot({ path: testInfo.outputPath('mobile-landscape.png'), fullPage: false });
+    await page.locator('[data-testid="faction-filter-toolbar"]').screenshot({ path: join(evidenceDir, 'mobile-search-toolbar.png') });
+    await page.locator('[data-testid="faction-filter-toolbar"]').screenshot({ path: testInfo.outputPath('mobile-search-toolbar.png') });
 
     await page.setViewportSize({ width: 1440, height: 900 });
     await page.reload({ waitUntil: 'domcontentloaded' });
@@ -121,9 +158,12 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     await expect(title).toBeVisible({ timeout: 30000 });
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
     await assertFactionCardsClearPlayerRail(page);
+    await assertFactionSearchIconAligned(page);
 
     await page.screenshot({ path: join(evidenceDir, 'desktop-reference.png'), fullPage: false });
     await page.screenshot({ path: testInfo.outputPath('desktop-reference.png'), fullPage: false });
+    await page.locator('[data-testid="faction-filter-toolbar"]').screenshot({ path: join(evidenceDir, 'desktop-search-toolbar.png') });
+    await page.locator('[data-testid="faction-filter-toolbar"]').screenshot({ path: testInfo.outputPath('desktop-search-toolbar.png') });
   });
 
   test('回合状态提示不应触发派系详情', async ({ page }, testInfo) => {

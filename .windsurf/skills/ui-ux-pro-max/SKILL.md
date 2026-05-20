@@ -322,6 +322,7 @@ These are frequently overlooked issues that make UI look unprofessional:
 | **Stable hover states** | Use color/opacity transitions on hover | Use scale transforms that shift layout |
 | **Correct brand logos** | Research official SVG from Simple Icons | Guess or use incorrect logo paths |
 | **Consistent icon sizing** | Use fixed viewBox (24x24) with w-6 h-6 | Mix different icon sizes randomly |
+| **Optical icon alignment in slots** | Put input leading/trailing icons and other small inline SVGs in fixed slots (`absolute inset-y-0 ... flex items-center` or equivalent), then verify optical centering against the host control instead of trusting the raw viewBox | Drop a raw SVG into the control with ad-hoc offsets/translates and assume mathematical center equals visual center |
 
 ### Interaction & Cursor
 
@@ -357,6 +358,7 @@ Before delivering UI code, verify these items:
 ### Visual Quality
 - [ ] No emojis used as icons (use SVG instead)
 - [ ] All icons from consistent icon set (Heroicons/Lucide)
+- [ ] Input leading/trailing icons and other small inline SVGs use dedicated slots and are optically centered, not just mathematically offset
 - [ ] Brand logos are correct (verified from Simple Icons)
 - [ ] Hover states don't cause layout shift
 - [ ] Use theme colors directly (bg-primary) not var() wrapper

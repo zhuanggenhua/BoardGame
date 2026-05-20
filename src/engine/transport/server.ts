@@ -48,7 +48,11 @@ import { resolveSetupPlayerIds } from './setupPlayerOrder';
 import {
     applyAiAutoRecoveryRejection,
     buildAiProgressMarker,
+    buildMultistepChoiceMetaSemanticSignature,
+    buildPendingBonusDiceSettlementSemanticSignature,
+    buildPendingDamageSemanticSignature,
     buildInteractionRecoveryFingerprintHint,
+    buildInteractionSliderSemanticSignature,
     buildResponseWindowRecoveryFingerprintHint,
     resolveCurrentPlayerId,
     resolveUnsatisfiableReasonFromInteraction,
@@ -1168,6 +1172,47 @@ export class GameTransportServer {
             }),
         });
 
+        const phase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
+        if (aiDispatchResult.kind === 'blocked') {
+            const playerId = aiDispatchResult.playerId;
+            if (
+                aiDispatchResult.visibility !== 'private-required'
+                || (
+                    aiDispatchResult.blockedReason !== 'stale-private-overlay'
+                    && aiDispatchResult.blockedReason !== 'missing-private-overlay'
+                )
+                || playerId === currentPlayerId
+            ) {
+                return null;
+            }
+
+            const fingerprintHint = [
+                'seat-legal-only',
+                playerId,
+                phase,
+                aiDispatchResult.blockedReason,
+                aiDispatchResult.blockedKey,
+            ].join(':');
+
+            return {
+                playerId,
+                reason: 'seat-legal-only',
+                legalActionOnly: true,
+                fingerprintHint,
+                resolution: {
+                    playerId,
+                    attemptKey: `force-end-turn:${playerId}:${fingerprintHint}`,
+                    source: 'local-ai',
+                    action: {
+                        actionId: `force-end-turn:${fingerprintHint}`,
+                        kind: 'force-end-turn',
+                        label: '服务端代 AI 执行合法动作',
+                        commands: [],
+                    },
+                },
+            };
+        }
+
         if (aiDispatchResult.kind !== 'action') {
             return null;
         }
@@ -1177,7 +1222,6 @@ export class GameTransportServer {
             return null;
         }
 
-        const phase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
         const fingerprintHint = [
             'seat-legal-only',
             resolution.playerId,
@@ -1363,6 +1407,14 @@ export class GameTransportServer {
             const recoveryFingerprint = this.buildOnlineAiRecoveryFingerprint(match, candidate, progressMarker);
             const trackerKey = `${candidate.playerId}:${candidate.reason}:${recoveryFingerprint}`;
             const recoveryTimeoutMs = this.resolveOnlineAiRecoveryTimeoutMs(match, candidate);
+            if (candidate.reason === 'active-turn'
+                && this.hasRecentOnlineAiOverlayResync({
+                    matchId: match.matchID,
+                    playerId: candidate.playerId,
+                    progressMarker,
+                })) {
+                continue;
+            }
             let currentTracker = this.onlineAiRecoveryTrackers.get(match.matchID);
 
             if (!currentTracker || currentTracker.key !== trackerKey) {
@@ -1423,7 +1475,10 @@ export class GameTransportServer {
         const revalidateRecoveryCandidate = async (
             expectedCandidate: ForceEndTurnStalledAiResolution,
         ): Promise<ForceEndTurnStalledAiResolution | null> => {
-            const latestCandidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
+            const rawLatestCandidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
+            const latestCandidate = rawLatestCandidate
+                ? this.normalizeFollowUpLegalActionOnlyCandidate(rawLatestCandidate, expectedCandidate)
+                : rawLatestCandidate;
             if (!latestCandidate) {
                 this.onlineAiRecoveryTrackers.delete(match.matchID);
                 tracker.autoSubmittedAt = null;
@@ -1448,6 +1503,23 @@ export class GameTransportServer {
             }
 
             return latestCandidate;
+        };
+        const syncRecoveryTrackerToCandidate = (
+            nextCandidate: ForceEndTurnStalledAiResolution,
+        ): void => {
+            const nextProgressMarker = buildAiProgressMarker(match.state);
+            const nextRecoveryFingerprint = this.buildOnlineAiRecoveryFingerprint(
+                match,
+                nextCandidate,
+                nextProgressMarker,
+            );
+            const nextTrackerKey = `${nextCandidate.playerId}:${nextCandidate.reason}:${nextRecoveryFingerprint}`;
+            if (tracker.key === nextTrackerKey) {
+                return;
+            }
+            tracker.key = nextTrackerKey;
+            tracker.lastReportedFailureReason = null;
+            tracker.failureCount = 0;
         };
         const hasHumanResponderInCurrentWindow = (): boolean => {
             const currentWindow = (match.state.sys as { responseWindow?: { current?: unknown } } | undefined)
@@ -1494,14 +1566,64 @@ export class GameTransportServer {
 
         const isInteractionRecoveryReason = (reason: ForceEndTurnStalledAiResolution['reason']): boolean =>
             reason === 'visible-interaction' || reason === 'hidden-interaction';
+        const readCurrentAiInteractionRecoveryFingerprintHint = (playerId: string): string | null => {
+            const currentInteraction = (match.state.sys?.interaction as {
+                current?: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction;
+            } | undefined)?.current;
+            if (!currentInteraction || String(currentInteraction.playerId ?? '') !== playerId) {
+                return null;
+            }
+            return buildInteractionRecoveryFingerprintHint(match.state, currentInteraction, playerId);
+        };
+        const readCurrentAiSeatViewInteractionRecoveryFingerprintHint = (playerId: string): string | null => {
+            const playerView = this.applyPlayerView(match, playerId) as MatchState<unknown>;
+            const currentInteraction = (playerView.sys?.interaction as {
+                current?: HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction;
+            } | undefined)?.current;
+            if (!currentInteraction || String(currentInteraction.playerId ?? '') !== playerId) {
+                return null;
+            }
+            return buildInteractionRecoveryFingerprintHint(playerView, currentInteraction, playerId);
+        };
+        const readCurrentAiResponseWindowRecoveryFingerprintHint = (playerId: string): string | null => {
+            const currentWindow = (match.state.sys?.responseWindow as {
+                current?: {
+                    responderQueue?: unknown;
+                    currentResponderIndex?: unknown;
+                };
+            } | undefined)?.current;
+            if (!currentWindow) {
+                return null;
+            }
+
+            const responderQueue = Array.isArray(currentWindow.responderQueue) ? currentWindow.responderQueue : [];
+            const responderIndex = typeof currentWindow.currentResponderIndex === 'number'
+                ? currentWindow.currentResponderIndex
+                : 0;
+            if (String(responderQueue[responderIndex] ?? '') !== playerId) {
+                return null;
+            }
+
+            return buildResponseWindowRecoveryFingerprintHint(
+                match.state,
+                playerId,
+                'response-window',
+            );
+        };
         const readCurrentAiInteractionSemanticFingerprint = (playerId: string): string | null => {
             const currentInteraction = (match.state.sys?.interaction as {
                 current?: {
+                    id?: unknown;
                     playerId?: unknown;
                     kind?: unknown;
                     data?: {
                         sourceId?: unknown;
                         title?: unknown;
+                        slider?: unknown;
+                        meta?: unknown;
+                        confirmValue?: unknown;
+                        allowedDieIds?: unknown;
+                        completedDieIds?: unknown;
                         options?: unknown;
                     };
                 };
@@ -1509,6 +1631,11 @@ export class GameTransportServer {
             if (!currentInteraction || String(currentInteraction.playerId ?? '') !== playerId) {
                 return null;
             }
+            const interactionKind = typeof currentInteraction.kind === 'string' ? currentInteraction.kind : '';
+            const interactionId = typeof currentInteraction.id === 'string' ? currentInteraction.id : '';
+            const interactionIdSignature = interactionKind === 'compare-roll-choice'
+                ? interactionId
+                : '';
             const data = currentInteraction.data;
             const options = Array.isArray(data?.options)
                 ? data.options.map((option) => {
@@ -1524,10 +1651,26 @@ export class GameTransportServer {
                     ].join(':');
                 }).join(',')
                 : '';
+            const sliderSignature = buildInteractionSliderSemanticSignature(data?.slider);
+            const multistepMetaSignature = buildMultistepChoiceMetaSemanticSignature(data?.meta);
+            const pendingDamageSignature = buildPendingDamageSemanticSignature(
+                (match.state.core as { pendingDamage?: unknown } | undefined)?.pendingDamage,
+            );
+            const pendingBonusDiceSignature = buildPendingBonusDiceSettlementSemanticSignature(
+                (match.state.core as { pendingBonusDiceSettlement?: unknown } | undefined)?.pendingBonusDiceSettlement,
+            );
             return [
-                typeof currentInteraction.kind === 'string' ? currentInteraction.kind : '',
+                interactionKind,
+                interactionIdSignature,
                 typeof data?.sourceId === 'string' ? data.sourceId : '',
                 typeof data?.title === 'string' ? data.title : '',
+                sliderSignature,
+                multistepMetaSignature,
+                pendingDamageSignature,
+                pendingBonusDiceSignature,
+                Array.isArray(data?.allowedDieIds) ? data.allowedDieIds.join(',') : '',
+                Array.isArray(data?.completedDieIds) ? data.completedDieIds.join(',') : '',
+                JSON.stringify(data?.confirmValue ?? null),
                 options,
             ].join('|');
         };
@@ -1544,10 +1687,14 @@ export class GameTransportServer {
             const currentInteraction = (match.state.sys?.interaction as {
                 current?: {
                     id?: unknown;
+                    kind?: unknown;
                     playerId?: unknown;
                 };
             } | undefined)?.current;
             if (!currentInteraction || String(currentInteraction.playerId ?? '') !== candidateToCancel.playerId) {
+                return false;
+            }
+            if (currentInteraction.kind === 'compare-roll-choice') {
                 return false;
             }
 
@@ -1568,7 +1715,20 @@ export class GameTransportServer {
         };
 
         try {
-            const seenMarkers = new Set<string>([progressMarkerBeforeRecovery]);
+            const buildRecoverySequenceStepKey = (playerId: string, progressMarker: string): string => {
+                const interactionFingerprint = readCurrentAiInteractionSemanticFingerprint(playerId);
+                if (interactionFingerprint) {
+                    return `${progressMarker}|interaction:${interactionFingerprint}`;
+                }
+
+                const responseWindowFingerprint = readCurrentAiResponseWindowRecoveryFingerprintHint(playerId);
+                if (responseWindowFingerprint) {
+                    return `${progressMarker}|response-window:${responseWindowFingerprint}`;
+                }
+
+                return progressMarker;
+            };
+            const seenStepKeys = new Set<string>();
             let recoverySteps = 0;
             let allowNaturalAiContinuation = false;
             let lastUnreportedLegalActionRecovery: {
@@ -1584,11 +1744,15 @@ export class GameTransportServer {
                 }
                 currentCandidate = initialCandidate;
             }
+            seenStepKeys.add(buildRecoverySequenceStepKey(currentCandidate.playerId, progressMarkerBeforeRecovery));
 
             while (recoverySteps <= this.onlineAiRecoveryMaxAdvanceSteps) {
                 phaseLabel = currentCandidate.requiresConfirmedAdvancePhase ? 'recover-interaction' : 'follow-up-advance';
                 const markerBeforeStep = buildAiProgressMarker(match.state);
+                const currentPlayerIdBeforeStep = resolveCurrentPlayerId(match.state);
+                const stepKeyBefore = buildRecoverySequenceStepKey(currentCandidate.playerId, markerBeforeStep);
                 const interactionFingerprintBeforeStep = readCurrentAiInteractionSemanticFingerprint(currentCandidate.playerId);
+                const responseWindowFingerprintBeforeStep = readCurrentAiResponseWindowRecoveryFingerprintHint(currentCandidate.playerId);
                 const actionRecovery = await this.tryRecoverOnlineAiWithLegalAction(
                     match,
                     currentCandidate,
@@ -1604,13 +1768,21 @@ export class GameTransportServer {
                             : null;
                 const actionRecoveryApplied = actionRecovery.applied;
                 if (actionRecovery.applied && actionRecovery.reportedAction) {
-                    lastUnreportedLegalActionRecovery = actionRecovery.resolved
-                        ? null
-                        : actionRecovery.reportedAction;
+                    lastUnreportedLegalActionRecovery = actionRecovery.reportedAction;
                 }
                 const executedCommandTypes = new Set<string>(actionRecovery.executedCommandTypes);
 
                 if (!actionRecoveryApplied) {
+                    const shouldPauseAfterForcedInteractionOverlayResync =
+                        currentCandidate.reason === 'active-turn'
+                        && currentCandidate.legalActionOnly !== true
+                        && blockedFailureReason != null
+                        && usedForcedRecoveryCommand
+                        && isInteractionRecoveryReason(lastForcedReason ?? candidate.reason);
+                    if (shouldPauseAfterForcedInteractionOverlayResync) {
+                        syncRecoveryTrackerToCandidate(currentCandidate);
+                        return;
+                    }
                     const recoveryCommands = currentCandidate.resolution.action.commands;
                     if (actionRecovery.outcome === 'legal-action-command-failed') {
                         const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
@@ -1714,11 +1886,14 @@ export class GameTransportServer {
                 recoverySteps += 1;
                 const attemptedInteractionRespond = executedCommandTypes.has(INTERACTION_COMMANDS.RESPOND);
                 const nextMarker = buildAiProgressMarker(match.state);
+                const nextStepKey = buildRecoverySequenceStepKey(currentCandidate.playerId, nextMarker);
                 const interactionFingerprintAfterStep = readCurrentAiInteractionSemanticFingerprint(currentCandidate.playerId);
-                if (nextMarker === markerBeforeStep) {
+                const interactionRecoveryFingerprintAfterStep = readCurrentAiInteractionRecoveryFingerprintHint(currentCandidate.playerId);
+                if (nextStepKey === stepKeyBefore) {
                     if (attemptedInteractionRespond
                         && interactionFingerprintBeforeStep
                         && interactionFingerprintAfterStep === interactionFingerprintBeforeStep
+                        && interactionRecoveryFingerprintAfterStep === currentCandidate.fingerprintHint
                         && await tryHardCancelCurrentAiInteraction(currentCandidate)) {
                         const postCancelCandidate = await resolveChainedRecoveryCandidate(candidate.playerId);
                         if (!postCancelCandidate || postCancelCandidate.playerId !== candidate.playerId) {
@@ -1747,7 +1922,7 @@ export class GameTransportServer {
                     );
                     return;
                 }
-                if (seenMarkers.has(nextMarker)) {
+                if (seenStepKeys.has(nextStepKey)) {
                     const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
                     if (!revalidatedCandidate) {
                         return;
@@ -1763,10 +1938,29 @@ export class GameTransportServer {
                     );
                     return;
                 }
-                seenMarkers.add(nextMarker);
+                seenStepKeys.add(nextStepKey);
 
                 const nextCandidate = await resolveChainedRecoveryCandidate(candidate.playerId);
                 if (!nextCandidate || nextCandidate.playerId !== candidate.playerId) {
+                    break;
+                }
+                const shouldRestrictFollowUpToLegalActions = candidate.requiresConfirmedAdvancePhase
+                    && (candidate.reason === 'visible-interaction' || candidate.reason === 'hidden-interaction')
+                    && nextCandidate.reason === 'active-turn'
+                    && currentPlayerIdBeforeStep !== candidate.playerId
+                    && resolveCurrentPlayerId(match.state) === candidate.playerId;
+                const seatViewInteractionAfterStep = readCurrentAiSeatViewInteractionRecoveryFingerprintHint(candidate.playerId);
+                if (actionRecoveryApplied
+                    && isInteractionRecoveryReason(candidate.reason)
+                    && isInteractionRecoveryReason(currentCandidate.reason)
+                    && !responseWindowFingerprintBeforeStep
+                    && !seatViewInteractionAfterStep
+                    && nextCandidate.reason === 'active-turn'
+                    && !shouldRestrictFollowUpToLegalActions) {
+                    // visible/hidden interaction 自己已通过 legal action 收口时，
+                    // 这一轮 watchdog 的成功点就是“解除交互阻塞”；
+                    // 后续普通 active-turn 代打应交给下一轮 candidate，而不是吞掉本次 resolved feedback。
+                    allowNaturalAiContinuation = true;
                     break;
                 }
                 if (attemptedInteractionRespond
@@ -1811,9 +2005,6 @@ export class GameTransportServer {
                     };
                     continue;
                 }
-                const shouldRestrictFollowUpToLegalActions = candidate.requiresConfirmedAdvancePhase
-                    && (candidate.reason === 'visible-interaction' || candidate.reason === 'hidden-interaction')
-                    && nextCandidate.reason === 'active-turn';
                 const currentPhase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
                 const allowAdvancePhaseFallbackAfterLegalExhausted = shouldRestrictFollowUpToLegalActions
                     && !hasHumanResponderInCurrentWindow()
@@ -1847,6 +2038,9 @@ export class GameTransportServer {
                 if (actionRecoveryApplied && normalizedNextCandidate.reason === 'active-turn' && hasLiveSeatConnection) {
                     allowNaturalAiContinuation = true;
                     break;
+                }
+                if (normalizedNextCandidate.legalActionOnly === true) {
+                    syncRecoveryTrackerToCandidate(normalizedNextCandidate);
                 }
                 currentCandidate = normalizedNextCandidate;
             }
@@ -2266,8 +2460,15 @@ export class GameTransportServer {
         const baseFingerprint = candidate.fingerprintHint
             ?? this.extractOnlineAiRecoveryFingerprintFromTrackerKey(candidate.playerId, candidate.reason, trackerKey)
             ?? this.buildOnlineAiRecoveryFingerprint(match, candidate, progressMarker);
-        if (failureReason === 'missing_visible_state') {
-            return `${baseFingerprint}:missing-visible-state`;
+        const detailedFailureFingerprintSegment = failureReason === 'missing_visible_state'
+            ? 'missing-visible-state'
+            : failureReason === 'private_overlay_missing'
+                ? 'missing-private-overlay'
+                : failureReason === 'private_overlay_stale'
+                    ? 'stale-private-overlay'
+                    : null;
+        if (detailedFailureFingerprintSegment) {
+            return `${baseFingerprint}:${detailedFailureFingerprintSegment}`;
         }
         return baseFingerprint;
     }
@@ -2335,18 +2536,85 @@ export class GameTransportServer {
         return progressMarker;
     }
 
+    private normalizeFollowUpLegalActionOnlyCandidate(
+        candidate: ForceEndTurnStalledAiResolution,
+        expectedCandidate: ForceEndTurnStalledAiResolution,
+    ): ForceEndTurnStalledAiResolution {
+        if (
+            expectedCandidate.reason !== 'active-turn'
+            || expectedCandidate.legalActionOnly !== true
+            || candidate.reason !== 'active-turn'
+            || candidate.legalActionOnly === true
+        ) {
+            return candidate;
+        }
+
+        return {
+            ...candidate,
+            legalActionOnly: true,
+            ...(expectedCandidate.allowForceCommandAfterLegalActionExhausted === true
+                ? {
+                    allowForceCommandAfterLegalActionExhausted: true,
+                }
+                : {}),
+        };
+    }
+
     private async hasOnlineAiRecoveryResolved(
         match: ActiveMatch,
         candidate: ForceEndTurnStalledAiResolution,
         seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
     ): Promise<boolean> {
         if (candidate.legalActionOnly === true) {
+            const rawNextCandidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
+            const nextCandidate = rawNextCandidate
+                ? this.normalizeFollowUpLegalActionOnlyCandidate(rawNextCandidate, candidate)
+                : rawNextCandidate;
+            if (!nextCandidate || nextCandidate.playerId !== candidate.playerId) {
+                return true;
+            }
+            if (nextCandidate.legalActionOnly !== true) {
+                return nextCandidate.reason !== 'response-window' && nextCandidate.reason !== 'response-loop';
+            }
+            if (nextCandidate.reason !== candidate.reason) {
+                return true;
+            }
+            if (typeof candidate.fingerprintHint === 'string' && candidate.fingerprintHint.length > 0) {
+                return nextCandidate.fingerprintHint !== candidate.fingerprintHint;
+            }
+            return false;
+        }
+
+        if (candidate.reason === 'active-turn') {
             const nextCandidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
-            return !nextCandidate || nextCandidate.playerId !== candidate.playerId;
+            return !nextCandidate
+                || nextCandidate.playerId !== candidate.playerId
+                || nextCandidate.reason !== 'active-turn';
+        }
+
+        if (candidate.reason === 'seat-legal-only') {
+            const nextCandidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
+            if (!nextCandidate || nextCandidate.playerId !== candidate.playerId || nextCandidate.reason !== 'seat-legal-only') {
+                return true;
+            }
+            if (typeof candidate.fingerprintHint === 'string' && candidate.fingerprintHint.length > 0) {
+                return nextCandidate.fingerprintHint !== candidate.fingerprintHint;
+            }
+            return false;
         }
 
         if (candidate.reason === 'visible-interaction') {
             const current = (match.state.sys?.interaction as { current?: { playerId?: unknown } } | undefined)?.current;
+            if (current && typeof candidate.fingerprintHint === 'string' && candidate.fingerprintHint.length > 0) {
+                const currentFingerprint = buildInteractionRecoveryFingerprintHint(
+                    match.state,
+                    current as HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction,
+                    candidate.playerId,
+                );
+                if (currentFingerprint !== candidate.fingerprintHint) {
+                    return true;
+                }
+            }
             return String(current?.playerId ?? '') !== candidate.playerId;
         }
 
@@ -2357,12 +2625,32 @@ export class GameTransportServer {
 
             if (sharedInteraction?.current) {
                 const sharedCurrent = sharedInteraction.current as { playerId?: unknown } | undefined;
+                if (typeof candidate.fingerprintHint === 'string' && candidate.fingerprintHint.length > 0) {
+                    const sharedFingerprint = buildInteractionRecoveryFingerprintHint(
+                        match.state,
+                        sharedInteraction.current as HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction,
+                        candidate.playerId,
+                    );
+                    if (sharedFingerprint !== candidate.fingerprintHint) {
+                        return true;
+                    }
+                }
                 if (String(sharedCurrent?.playerId ?? '') === candidate.playerId) {
                     return false;
                 }
             }
 
             if (seatInteraction?.current) {
+                if (typeof candidate.fingerprintHint === 'string' && candidate.fingerprintHint.length > 0) {
+                    const seatFingerprint = buildInteractionRecoveryFingerprintHint(
+                        seatView,
+                        seatInteraction.current as HiddenInteractionDescriptor | HiddenSimpleChoiceInteraction,
+                        candidate.playerId,
+                    );
+                    if (seatFingerprint !== candidate.fingerprintHint) {
+                        return true;
+                    }
+                }
                 return String(seatInteraction.current.playerId ?? '') !== candidate.playerId;
             }
 
@@ -2378,6 +2666,17 @@ export class GameTransportServer {
             } | undefined)?.current;
             if (!current) {
                 return true;
+            }
+
+            if (typeof candidate.fingerprintHint === 'string' && candidate.fingerprintHint.length > 0) {
+                const currentFingerprint = buildResponseWindowRecoveryFingerprintHint(
+                    match.state,
+                    candidate.playerId,
+                    candidate.reason,
+                );
+                if (currentFingerprint !== candidate.fingerprintHint) {
+                    return true;
+                }
             }
 
             const responderQueue = Array.isArray(current.responderQueue) ? current.responderQueue : [];
@@ -2831,32 +3130,6 @@ export class GameTransportServer {
             resolved,
         });
 
-        if (resolved) {
-            await this.reportOnlineAiRecoveryFeedback({
-                matchId: match.matchID,
-                gameId: match.gameId,
-                playerId: resolution.playerId,
-                incidentKind: 'legal-action-recovered',
-                severity: 'medium',
-                status: 'resolved',
-                reason: `${candidate.reason}:legal-action:${resolution.action.kind}:${resolution.action.actionId}`,
-                trackerKey: tracker.key,
-                progressMarker: markerBefore,
-                stateSnapshot: await this.buildOnlineAiRecoveryStateSnapshot(
-                    match,
-                    candidate,
-                    tracker.key,
-                    markerBefore,
-                ),
-                actionLog: this.buildOnlineAiRecoveryActionLog(
-                    match,
-                    candidate,
-                    tracker.key,
-                    markerBefore,
-                ),
-            });
-        }
-
         return {
             applied: true,
             resolved,
@@ -2895,6 +3168,28 @@ export class GameTransportServer {
             blockedKey: args.blockedKey,
         });
         this.broadcastState(args.match);
+    }
+
+    private hasRecentOnlineAiOverlayResync(args: {
+        matchId: string;
+        playerId: string;
+        progressMarker: string;
+    }): boolean {
+        const now = Date.now();
+        const keySuffix = `:${args.progressMarker}`;
+        for (const [cooldownKey, expiresAt] of this.onlineAiOverlayResyncCooldown.entries()) {
+            if (expiresAt <= now) {
+                continue;
+            }
+            if (!cooldownKey.startsWith(`${args.matchId}:${args.playerId}:`)) {
+                continue;
+            }
+            if (!cooldownKey.endsWith(keySuffix)) {
+                continue;
+            }
+            return true;
+        }
+        return false;
     }
 
     private async drainCommandQueue(match: ActiveMatch): Promise<void> {
