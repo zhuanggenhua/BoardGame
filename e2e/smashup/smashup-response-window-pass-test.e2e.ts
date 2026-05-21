@@ -211,11 +211,12 @@ test.describe('大杀四方 - 响应窗口 Pass 测试', () => {
 
         await game.screenshot('01-madness-unleashed-prompt', testInfo);
 
-        await selectAllButton.evaluate((button: HTMLButtonElement) => button.click());
+        await expect(selectAllButton).toBeVisible({ timeout: 5000 });
+        await selectAllButton.click();
         await expect(confirmButton).toHaveText(/^(确认|Confirm)\s*\(2\)$/i);
         await game.screenshot('01b-madness-unleashed-select-all', testInfo);
 
-        await confirmButton.evaluate((button: HTMLButtonElement) => button.click());
+        await confirmButton.click();
         await waitForNoInteraction();
 
         const actionQuota = page.locator('.group\\/action').first();

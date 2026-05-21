@@ -2,10 +2,10 @@ import type { CSSProperties } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Flame } from 'lucide-react';
 import type { GameConfig } from '../../config/games.config';
-import { getOptimizedImageUrls } from '../../core/AssetLoader';
 import { resolveGameDescription, resolveGameDisplayName } from './gameDetailsContent';
 
-const HOME_V2_HOLDER_BG = getOptimizedImageUrls('/assets/common/images/home-v2/holders/1.png').webp;
+const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
+const HOME_V2_HOLDER_BG = `${HOME_V2_ASSET_ROOT}/holders/compressed/1.webp`;
 
 export interface GameListCardProps {
     game: GameConfig;
@@ -15,7 +15,7 @@ export interface GameListCardProps {
     mostPopularGameId?: string | null;
     className?: string;
     style?: CSSProperties;
-    variant?: 'default' | 'homeV2Compact';
+    variant?: 'default' | 'homeV2Compact' | 'homeV2Row';
 }
 
 export const GameListCard = ({
@@ -30,6 +30,79 @@ export const GameListCard = ({
 }: GameListCardProps) => {
     const { t, i18n } = useTranslation(['lobby', 'common']);
     const title = resolveGameDisplayName(game, t, game.id);
+    const categoryLabel = t(`common:category.${game.category}`);
+    const chipLabels = Array.from(new Set([
+        categoryLabel,
+        ...(game.tags?.slice(0, 1).map((tag) => t(`common:game_tags.${tag}`)) ?? []),
+    ].filter(Boolean)));
+    const playerLabel = game.type === 'game' && game.playerOptions && game.playerOptions.length > 1
+        ? (() => {
+            const min = Math.min(...game.playerOptions);
+            const max = Math.max(...game.playerOptions);
+            const unit = t('common:game_details.people');
+            const sep = i18n.language.startsWith('en') ? ' ' : '';
+            return `${min}-${max}${sep}${unit}`;
+        })()
+        : t(game.playersKey);
+
+    if (variant === 'homeV2Row') {
+        return (
+            <a
+                data-game-id={game.id}
+                href={`/?game=${game.id}`}
+                onClick={(e) => {
+                    e.preventDefault();
+                    onGameClick(game.id);
+                }}
+                onMouseEnter={() => onGameIntent?.(game.id)}
+                onFocus={() => onGameIntent?.(game.id)}
+                onPointerDown={() => onGameIntent?.(game.id)}
+                className={`group relative flex w-full items-start gap-[14px] cursor-pointer no-underline text-left ${className ?? ''}`}
+                style={style}
+            >
+                <div
+                    className="relative w-[86px] shrink-0 overflow-hidden rounded-[18px] border border-[#6f4d32]/15 bg-[rgba(64,40,24,0.1)] shadow-[0_8px_18px_rgba(50,30,18,0.12)] transition-transform duration-200 group-hover:-translate-y-[1px]"
+                    style={{ aspectRatio: '1 / 1' }}
+                >
+                    <div className="absolute inset-[2px] overflow-hidden rounded-[14px] bg-[rgba(255,245,224,0.4)] [&_*img]:!block [&_*img]:!h-full [&_*img]:!w-full [&_*img]:!object-cover [&_*img]:!object-center]">
+                        {game.thumbnail ? (
+                            game.thumbnail
+                        ) : (
+                            <div className="flex h-full w-full items-center justify-center text-[28px] text-[#7c5c42]">
+                                {game.icon}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                <div className="min-w-0 flex-1 pt-[2px]">
+                    <div className="flex items-start gap-3">
+                        <div className="min-w-0 flex-1">
+                            <h3 className="truncate text-[clamp(15px,1.05vw,17px)] font-semibold tracking-[0.01em] text-[#55351f]">
+                                {title}
+                            </h3>
+                            <p className="mt-[6px] line-clamp-2 text-[clamp(11px,0.85vw,13px)] leading-[1.55] text-[#71553d]">
+                                {resolveGameDescription(game, t, '')}
+                            </p>
+                            <div className="mt-[8px] flex flex-wrap gap-[6px]">
+                                {chipLabels.slice(0, 2).map((label) => (
+                                    <span
+                                        key={`${game.id}-${label}`}
+                                        className="inline-flex items-center rounded-[8px] border border-[#b79168]/35 bg-[rgba(245,228,197,0.42)] px-[8px] py-[2px] text-[10px] font-medium text-[#6c4a31]"
+                                    >
+                                        {label}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="shrink-0 pt-[6px] text-[clamp(12px,0.95vw,14px)] font-medium text-[#735138] whitespace-nowrap">
+                            {playerLabel}
+                        </div>
+                    </div>
+                </div>
+            </a>
+        );
+    }
 
     if (variant === 'homeV2Compact') {
         return (
@@ -52,16 +125,18 @@ export const GameListCard = ({
             >
                 <div className="relative flex w-full justify-center">
                     <div
-                        className="relative w-full bg-center bg-no-repeat transition-transform duration-200 group-hover:-translate-y-[1px]"
+                        className="relative w-full bg-transparent transition-transform duration-200 group-hover:-translate-y-[1px]"
                         style={{
                             aspectRatio: '1 / 1',
-                            backgroundImage: `url(${HOME_V2_HOLDER_BG})`,
-                            backgroundSize: '100% 100%',
-                            backgroundPosition: 'center',
+                            borderStyle: 'solid',
+                            borderWidth: '10px 12px',
+                            borderImageSource: `url("${HOME_V2_HOLDER_BG}")`,
+                            borderImageSlice: '38 38 38 38 fill',
+                            borderImageRepeat: 'round',
                         }}
                     >
-                        <div className="absolute inset-[11%] overflow-hidden rounded-[4px] bg-[#ead9ba]">
-                            <div className="h-full w-full transition-transform duration-300 group-hover:scale-[1.03]">
+                        <div className="absolute inset-[11%] overflow-hidden rounded-[6px]">
+                            <div className="h-full w-full transition-transform duration-300 group-hover:scale-[1.03] [&_*img]:!block [&_*img]:!h-full [&_*img]:!w-full [&_*img]:!object-contain [&_*img]:!object-center">
                                 {game.thumbnail ? (
                                     game.thumbnail
                                 ) : (
@@ -73,7 +148,7 @@ export const GameListCard = ({
                         </div>
                     </div>
                 </div>
-                <h3 className="mt-[6%] line-clamp-3 max-w-[122%] text-center text-[clamp(10px,0.92vw,14px)] font-medium leading-[1.08] text-[#f7e6bc] [text-shadow:0_1px_2px_rgba(66,38,19,0.45)]">
+                <h3 className="mt-[5.2%] min-h-[2.1em] line-clamp-2 max-w-full text-center text-[clamp(8px,0.76vw,10px)] font-medium leading-[1.1] text-[#f7e6bc] [text-shadow:0_1px_2px_rgba(66,38,19,0.45)]">
                     {title}
                 </h3>
             </a>
@@ -158,22 +233,13 @@ export const GameListCard = ({
                         )}
                     </div>
                     <span className="text-[10px] text-parchment-light-text italic">
-                        {game.type === 'game' && game.playerOptions && game.playerOptions.length > 1
-                            ? (() => {
-                                const min = Math.min(...game.playerOptions);
-                                const max = Math.max(...game.playerOptions);
-                                const unit = t('common:game_details.people');
-                                const sep = i18n.language.startsWith('en') ? ' ' : '';
-                                return `${min}-${max}${sep}${unit}`;
-                            })()
-                            : t(game.playersKey)}
+                        {playerLabel}
                     </span>
                 </div>
             </div>
         </a>
     );
 };
-
 interface GameListProps {
     games: GameConfig[];
     onGameClick: (id: string) => void;

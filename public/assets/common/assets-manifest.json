@@ -1030,6 +1030,16 @@
         }
       }
     },
+    "images/home-v2/holders/compressed/1": {
+      "variants": {
+        "webp": {
+          "sha256": "977808d669109e654f680f69967b3f2daf271e484ed653ce9a1559c450ecae83",
+          "bytes": 1534,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/home-v2/page-flip-left/1": {
     "audio/sfx/ambient/Water Sound FX Pack Vol. 1/Designed/compressed/Torrent A": {
       "variants": {
         "ogg": {

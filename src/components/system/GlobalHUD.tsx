@@ -6,7 +6,15 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useToast } from '../../contexts/ToastContext';
 import { FabMenu, type FabAction } from './FabMenu';
 import { MessageSquare, Settings, Info, MessageSquareWarning, Maximize, Minimize, Download, RefreshCw } from 'lucide-react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import {
+    isHomeEntryRoute,
+    isHomeV2PreviewRoute,
+    persistHomeEntryStyle,
+    resolveHomeEntryStyle,
+    subscribeHomeEntryStyleChange,
+    type HomeEntryStyle,
+} from '../../lib/homeV2Routing';
 import {
     readAndroidLiveUpdateActivityState,
     readAndroidLiveUpdateConfig,
@@ -37,6 +45,7 @@ type LegacyFullscreenElement = HTMLElement & {
 };
 
 const LEGACY_KEYBOARD_INPUT_ALLOWED = 1;
+const HOME_STYLE_QUERY_PARAM = 'homeStyle';
 
 const openExternalUrlInNewTab = (url: string) => {
     const anchor = document.createElement('a');
@@ -55,10 +64,17 @@ export const GlobalHUD = () => {
     const { openModal, closeModal, closeByNamespace } = useModalStack();
     const { user } = useAuth();
     const location = useLocation();
+    const navigate = useNavigate();
     const toast = useToast();
+    const [homeStyleRevision, setHomeStyleRevision] = useState(0);
 
     // 根据路由判断主题
     const isGamePage = location.pathname.startsWith('/play/');
+    const isHomeEntryStyleRoute = isHomeEntryRoute(location.pathname) || isHomeV2PreviewRoute(location.pathname);
+    const currentHomeEntryStyle: HomeEntryStyle = isHomeV2PreviewRoute(location.pathname)
+        ? 'book'
+        : resolveHomeEntryStyle(location.search);
+    void homeStyleRevision;
 
     const isDark = false;
 
@@ -69,6 +85,19 @@ export const GlobalHUD = () => {
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
     const [socialModalId, setSocialModalId] = useState<string | null>(null);
     const [otaActivityState, setOtaActivityState] = useState(() => readAndroidLiveUpdateActivityState());
+
+    const applyHomeEntryStyle = (nextStyle: HomeEntryStyle, closePanel?: () => void) => {
+        persistHomeEntryStyle(nextStyle);
+        closePanel?.();
+        const nextSearch = `?${HOME_STYLE_QUERY_PARAM}=${nextStyle}`;
+        navigate(
+            {
+                pathname: '/',
+                search: nextSearch,
+            },
+            { replace: true },
+        );
+    };
 
     const toggleFullscreen = async () => {
         const doc = document as LegacyFullscreenDocument;
@@ -161,6 +190,12 @@ export const GlobalHUD = () => {
         });
     }, [isNativeAndroid]);
 
+    useEffect(() => {
+        return subscribeHomeEntryStyleChange(() => {
+            setHomeStyleRevision((value) => value + 1);
+        });
+    }, []);
+
     // 从游戏页返回大厅/主页时，清理 HUD 自己打开的弹窗，避免遗留。
     useEffect(() => {
         if (isGamePage) return;
@@ -182,14 +217,45 @@ export const GlobalHUD = () => {
         id: 'settings',
         icon: <Settings size={22} />,
         label: t('hud.actions.settings'),
-        content: (
-            <Suspense fallback={null}>
-                <LazyAudioProvider>
-                    <div>
-                        <LazyAudioControlSection isDark={isDark} />
-                    </div>
-                </LazyAudioProvider>
-            </Suspense>
+        content: ({ closePanel }) => (
+            <div className="space-y-4">
+                {isHomeEntryStyleRoute ? (
+                    <section className="space-y-2 border-b border-white/10 pb-4">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8b6a47]">
+                            {t('hud.homeStyle.title')}
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            {([
+                                { id: 'book', label: t('hud.homeStyle.book') },
+                                { id: 'classic', label: t('hud.homeStyle.classic') },
+                            ] as Array<{ id: HomeEntryStyle; label: string }>).map((option) => {
+                                const isActive = currentHomeEntryStyle === option.id;
+                                return (
+                                    <button
+                                        key={option.id}
+                                        type="button"
+                                        className={`rounded-[10px] border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                                            isActive
+                                                ? 'border-[#b98741] bg-[linear-gradient(180deg,_rgba(247,232,192,0.96)_0%,_rgba(238,214,164,0.96)_100%)] text-[#5b391f] shadow-[inset_0_1px_0_rgba(255,255,255,0.75),0_1px_3px_rgba(91,57,31,0.10)]'
+                                                : 'border-[#d7c3a4] bg-[rgba(255,251,241,0.82)] text-[#7a5a39] hover:border-[#c8ae84] hover:bg-[rgba(255,248,235,0.94)]'
+                                        }`}
+                                        onClick={() => applyHomeEntryStyle(option.id, closePanel)}
+                                    >
+                                        {option.label}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </section>
+                ) : null}
+                <Suspense fallback={null}>
+                    <LazyAudioProvider>
+                        <div>
+                            <LazyAudioControlSection isDark={isDark} />
+                        </div>
+                    </LazyAudioProvider>
+                </Suspense>
+            </div>
         )
     });
 
@@ -276,6 +342,7 @@ export const GlobalHUD = () => {
     return (
         <>
             <FabMenu
+                key={`global-hud-${location.pathname}-${currentHomeEntryStyle}`}
                 isDark={isDark}
                 items={items}
                 position="bottom-right"

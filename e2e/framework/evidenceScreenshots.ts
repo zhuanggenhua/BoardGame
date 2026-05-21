@@ -85,7 +85,7 @@ export async function clearEvidenceScreenshotsForTest(testInfo: TestInfo): Promi
     const caseDir = getEvidenceScreenshotDir(testInfo);
     await rm(caseDir, { recursive: true, force: true });
 
-    // 兼容旧的平铺目录，首次截图前清掉当前用例的历史遗留文件。
+    // 兼容旧目录：首次截图前清掉当前用例在 legacy 路径下的历史遗留（含“平铺文件”和“用例子目录”两种结构）。
     const legacyFileSubdir =
         sanitizeEvidencePathSegment(parse(testInfo.file).name || 'unknown-test') || 'unknown-test';
     const legacyDir = join(
@@ -94,7 +94,11 @@ export async function clearEvidenceScreenshotsForTest(testInfo: TestInfo): Promi
         'evidence-screenshots',
         legacyFileSubdir,
     );
+    const legacyCaseSubdir = sanitizeEvidencePathSegment(testInfo.title || 'unnamed-test') || 'unnamed-test';
+    const legacyCaseDir = join(legacyDir, legacyCaseSubdir);
     const legacyPrefix = `${sanitizeEvidencePathSegment(testInfo.title || 'unnamed')}-`;
+
+    await rm(legacyCaseDir, { recursive: true, force: true });
 
     try {
         const entries = await readdir(legacyDir, { withFileTypes: true });

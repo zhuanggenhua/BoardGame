@@ -37,6 +37,8 @@ public class MainActivity extends BridgeActivity {
     private static final String PLAY_SEGMENT = "play";
     private static final String ORIENTATION_LANDSCAPE = "landscape";
     private static final String ORIENTATION_PORTRAIT = "portrait";
+    private static final String HOME_STYLE_BOOK = "book";
+    private static final String HOME_STYLE_CLASSIC = "classic";
     private static final String CAPGO_NEXT_VERSION_PREF = "nextVersion";
     private static final String CAPGO_FALLBACK_VERSION_PREF = "pastVersion";
     private static final String CAPGO_BUILTIN_BUNDLE_ID = "builtin";
@@ -73,6 +75,11 @@ public class MainActivity extends BridgeActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         WebView.setWebContentsDebuggingEnabled(true);
+        // Android shell root now renders Home V2, so the native shell must start
+        // in the same landscape/immersive contract before the WebView reports a URL.
+        lastRequestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
+        lastNeedsImmersiveWindow = true;
+        setRequestedOrientation(lastRequestedOrientation);
         gameOrientations.putAll(loadOrientationMap());
         homeV2DraftEnabledByBuild = loadHomeV2DraftFlag();
         forceBuiltinBundleByBuild = loadForceBuiltinBundleFlag();
@@ -100,6 +107,7 @@ public class MainActivity extends BridgeActivity {
             }
         );
         super.onCreate(savedInstanceState);
+        applyWindowMode(true);
     }
 
     @Override
@@ -156,6 +164,9 @@ public class MainActivity extends BridgeActivity {
     }
 
     private void syncOrientation(String url) {
+        if (url == null || url.isEmpty()) {
+            return;
+        }
         final boolean isGamePage = extractGameId(url) != null;
         final boolean isHomeV2Page = isHomeV2Route(url);
         final boolean needsImmersiveWindow = isGamePage || isHomeV2Page;
@@ -172,6 +183,15 @@ public class MainActivity extends BridgeActivity {
     }
 
     private int resolveRequestedOrientation(String url) {
+        String gameId = extractGameId(url);
+        if (gameId != null) {
+            String orientation = gameOrientations.getOrDefault(gameId, ORIENTATION_PORTRAIT);
+            if (ORIENTATION_LANDSCAPE.equals(orientation)) {
+                return ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
+            }
+            return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+        }
+
         if (isHomeV2Route(url)) {
             return ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
         }
@@ -180,16 +200,7 @@ public class MainActivity extends BridgeActivity {
             return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
         }
 
-        String gameId = extractGameId(url);
-        if (gameId == null) {
-            return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
-        }
-
-        String orientation = gameOrientations.getOrDefault(gameId, ORIENTATION_PORTRAIT);
-        if (ORIENTATION_LANDSCAPE.equals(orientation)) {
-            return ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
-        }
-        return ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+        return ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
     }
 
     private boolean isHomeV2Route(String url) {
@@ -202,14 +213,53 @@ public class MainActivity extends BridgeActivity {
             return false;
         }
 
+        String explicitHomeStyle = readHomeEntryStyle(uri);
+        if (HOME_STYLE_CLASSIC.equals(explicitHomeStyle)) {
+            return false;
+        }
+        if (HOME_STYLE_BOOK.equals(explicitHomeStyle)) {
+            return true;
+        }
+
         String explicitFlag = uri.getQueryParameter("homeV2Draft");
+        if (!"1".equals(explicitFlag)) {
+            String fragment = uri.getFragment();
+            if (fragment != null && fragment.contains("homeV2Draft=1")) {
+                explicitFlag = "1";
+            }
+        }
         if ("1".equals(explicitFlag)) {
             return true;
         }
 
+        // In Android shell builds the root route is Home V2 when the packaged
+        // build metadata enables the V2 draft; keep native orientation/immersive
+        // handling in sync with src/lib/homeV2Routing.ts.
         return homeV2DraftEnabledByBuild;
     }
+    private String readHomeEntryStyle(android.net.Uri uri) {
+        if (uri == null) {
+            return null;
+        }
 
+        String style = uri.getQueryParameter("homeStyle");
+        if (HOME_STYLE_BOOK.equals(style) || HOME_STYLE_CLASSIC.equals(style)) {
+            return style;
+        }
+
+        String fragment = uri.getFragment();
+        if (fragment == null || fragment.isEmpty()) {
+            return null;
+        }
+
+        android.net.Uri fragmentUri = android.net.Uri.parse("https://localhost/?" + fragment);
+        String fragmentStyle = fragmentUri.getQueryParameter("homeStyle");
+        if (HOME_STYLE_BOOK.equals(fragmentStyle) || HOME_STYLE_CLASSIC.equals(fragmentStyle)) {
+            return fragmentStyle;
+        }
+
+        return null;
+    }
     private boolean isHomeEntryRoute(String url) {
         if (url == null || url.isEmpty()) {
             return false;

@@ -1,15 +1,22 @@
 import { startTransition, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { UI_Z_INDEX } from '../../core';
 import { GAME_MANIFEST_BY_ID } from '../../games/manifest';
 import type { GameManifestEntry } from '../../games/manifest';
 import {
     extractGameIdFromPlayPath,
     getGameMobileBannerKind,
+    isMobileViewport,
+    isPortraitViewport,
     resolveGameMobileSupport,
     type GameMobileBannerKind,
 } from '../../games/mobileSupport';
 import { useRuntimeViewport } from '../../hooks/ui/useRuntimeViewport';
-import { isHomeEntryRoute, isHomeV2PreviewRoute } from '../../lib/homeV2Routing';
+import {
+    isBookHomeRoute,
+    isHomeEntryRoute,
+    subscribeHomeEntryStyleChange,
+} from '../../lib/homeV2Routing';
 
 type GameMobileEntry = Pick<
     GameManifestEntry,
@@ -160,6 +167,13 @@ const getBannerMessage = (bannerKind: GameMobileBannerKind) => {
     }
 };
 
+const getHomeOrientationGateCopy = (bookStyle: boolean) => ({
+    title: bookStyle ? '书本主页需要横屏' : '经典主页需要竖屏',
+    description: bookStyle
+        ? '当前主页样式按横屏构图验收，切到横屏后再继续。'
+        : '当前主页样式按竖屏信息流验收，切回竖屏后再继续。',
+});
+
 export function MobileOrientationGuard({ children }: { children: React.ReactNode }) {
     const location = useLocation();
     const viewport = useRuntimeViewport({ syncCssVars: true });
@@ -167,11 +181,14 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
     const [nativeAppShell, setNativeAppShell] = useState(() => hasCapacitorRuntime());
     const nativeAppShellRef = useRef(nativeAppShell);
     const [dynamicGameConfig, setDynamicGameConfig] = useState<GameMobileEntry | undefined>(undefined);
+    const [homeEntryStyleRevision, setHomeEntryStyleRevision] = useState(0);
     nativeAppShellRef.current = nativeAppShell;
 
     const gameId = extractGameIdFromPlayPath(location.pathname);
-    const isHomeV2Route = isHomeV2PreviewRoute(location.pathname);
     const isHomeRoute = isHomeEntryRoute(location.pathname);
+    void homeEntryStyleRevision;
+    const isBookHomeEntry = isBookHomeRoute(location.pathname, location.search);
+    const isHomeV2Route = isBookHomeEntry;
     const builtInGameConfig = gameId ? GAME_MANIFEST_BY_ID[gameId] : undefined;
     const gameConfig = builtInGameConfig ?? dynamicGameConfig;
     const preferredOrientation = gameId
@@ -184,12 +201,26 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
             : isHomeRoute
                 ? 'portrait'
                 : null;
-    const bannerKind = getGameMobileBannerKind(gameConfig, viewport.width, viewport.height);
+    const homeBannerKind: GameMobileBannerKind | null = isHomeRoute && isMobileViewport(viewport.width)
+        ? (
+            isBookHomeEntry
+                ? (isPortraitViewport(viewport.width, viewport.height) ? 'rotate-to-landscape' : null)
+                : (!isPortraitViewport(viewport.width, viewport.height) ? 'rotate-to-portrait' : null)
+        )
+        : null;
+    const shouldShowForcedHomeOrientationGate = isHomeRoute && homeBannerKind !== null && !nativeAppShell;
+    const bannerKind = homeBannerKind ?? getGameMobileBannerKind(gameConfig, viewport.width, viewport.height);
     const bannerKey = bannerKind ? `${location.pathname}:${bannerKind}` : null;
-    const shouldSuppressBannerInAppShell = nativeAppShell && Boolean(gameId);
+    const shouldSuppressBannerInAppShell = nativeAppShell && (Boolean(gameId) || isHomeRoute);
     const activeBannerKind = !shouldSuppressBannerInAppShell && bannerKey && dismissedBannerKey !== bannerKey
         ? bannerKind
         : null;
+
+    useEffect(() => {
+        return subscribeHomeEntryStyleChange(() => {
+            setHomeEntryStyleRevision((value) => value + 1);
+        });
+    }, []);
     useEffect(() => {
         if (!gameId || builtInGameConfig) {
             setDynamicGameConfig(undefined);
@@ -302,6 +333,31 @@ export function MobileOrientationGuard({ children }: { children: React.ReactNode
 
     return (
         <>
+            {shouldShowForcedHomeOrientationGate ? (
+                <div
+                    data-testid="mobile-orientation-home-gate"
+                    className="fixed inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,rgba(61,44,30,0.96)_0%,rgba(23,17,12,0.985)_58%,rgba(10,8,6,1)_100%)] px-6 py-8 text-[#f4e7cb]"
+                    style={{
+                        zIndex: UI_Z_INDEX.hud - 1,
+                        paddingTop: 'calc(env(safe-area-inset-top) + 1.5rem)',
+                        paddingRight: 'calc(env(safe-area-inset-right) + 1.5rem)',
+                        paddingBottom: 'calc(env(safe-area-inset-bottom) + 1.5rem)',
+                        paddingLeft: 'calc(env(safe-area-inset-left) + 1.5rem)',
+                    }}
+                >
+                    <div className="flex w-full max-w-[22rem] flex-col items-center text-center">
+                        <div className="mb-5 flex items-center justify-center gap-3 text-[#e7d0a0]">
+                            {renderBannerVisual(homeBannerKind)}
+                        </div>
+                        <div className="font-serif text-[1.45rem] font-semibold leading-tight text-[#f7ead1]">
+                            {getHomeOrientationGateCopy(isBookHomeEntry).title}
+                        </div>
+                        <div className="mt-3 max-w-[18rem] text-[0.95rem] leading-6 text-[#dbc8a8]">
+                            {getHomeOrientationGateCopy(isBookHomeEntry).description}
+                        </div>
+                    </div>
+                </div>
+            ) : null}
             {activeBannerKind ? (
                 <div
                     className="fixed top-0 left-0 right-0 bg-parchment-brown/95 backdrop-blur-sm text-parchment-cream pb-3 z-[9999] shadow-lg border-b-2 border-parchment-gold/30"

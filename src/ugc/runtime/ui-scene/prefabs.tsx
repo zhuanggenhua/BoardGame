@@ -1,6 +1,6 @@
 import type { CSSProperties, ReactNode } from 'react';
 import { FrameSequencePlayer, type FrameSequenceDefinition } from '../../../components/common/animations';
-import { getOptimizedImageUrls } from '../../../core/AssetLoader';
+import { assetsPath, getOptimizedImageUrls } from '../../../core/AssetLoader';
 import type {
     UISceneNodeProps,
     UIScenePrefabDefinition,
@@ -12,6 +12,7 @@ export interface UIImagePrefabProps extends UISceneNodeProps {
     alt?: string;
     fit?: CSSProperties['objectFit'];
     opacity?: number;
+    preferRaw?: boolean;
 }
 
 export interface UIFrameSequencePrefabProps extends UISceneNodeProps {
@@ -109,7 +110,7 @@ const imagePrefab: UIScenePrefabDefinition<UIImagePrefabProps> = {
     displayName: '静态图片',
     render: ({ clipRect, node, rect }) => {
         const props = node.props;
-        const src = getOptimizedImageUrls(props.image || '').webp;
+        const src = props.preferRaw ? assetsPath(props.image || '') : getOptimizedImageUrls(props.image || '').webp;
 
         return renderVisualLayer(
             <img
@@ -132,7 +133,12 @@ const bookTabStripPrefab: UIScenePrefabDefinition<UIImagePrefabProps> = {
     prefabId: 'book-tab-strip',
     version: '1.0.0',
     displayName: '书本书签条',
-    render: (context) => imagePrefab.render(context),
+    render: (context) => {
+        if (context.sceneContext?.showLegacyTabs === false) {
+            return null;
+        }
+        return imagePrefab.render(context);
+    },
 };
 
 const frameSequencePrefab: UIScenePrefabDefinition<UIFrameSequencePrefabProps> = {
@@ -186,6 +192,9 @@ const bookTabPrefab: UIScenePrefabDefinition<UIBookTabPrefabProps> = {
     version: '1.0.0',
     displayName: '书本书签',
     render: ({ emit, node, rect, regionRect, sceneContext }) => {
+        if (sceneContext?.showLegacyTabs === false) {
+            return null;
+        }
         const targetRect = regionRect ?? rect;
         if (!targetRect) {
             return null;
@@ -207,7 +216,7 @@ const bookTabPrefab: UIScenePrefabDefinition<UIBookTabPrefabProps> = {
             >
                 <div
                     className={clsx(
-                        'absolute left-[38%] top-1/2 -translate-x-1/2 -translate-y-1/2 writing-vertical-rl text-[11px] font-bold leading-none tracking-[0.12em] select-none',
+                        'absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 whitespace-nowrap text-[10px] font-bold leading-none tracking-[0.08em] select-none',
                         isActive ? 'text-[#4b2f1b]' : 'text-[#6a442a]',
                     )}
                     style={{

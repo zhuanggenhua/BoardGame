@@ -21,22 +21,14 @@ nodes:
   tab_button_rooms:
     名称: 房间页签按钮
     说明: 切换到房间页签
-  tab_button_leaderboard:
-    名称: 排行榜页签按钮
-    说明: 切换到排行榜页签
   tab_button_changelog:
     名称: 更新日志页签按钮
     说明: 切换到更新日志页签
-  tab_button_about:
-    名称: 关于页签按钮
-    说明: 切换到关于页签
 
 actions:
   openLobbyTab: 切换到大厅
   openRoomsTab: 切换到房间
-  openLeaderboardTab: 切换到排行榜
   openChangelogTab: 切换到更新日志
-  openAboutTab: 切换到关于
 
 slots:
   overview_left_page: 左页概览插槽

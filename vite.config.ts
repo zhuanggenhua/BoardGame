@@ -65,7 +65,7 @@ const isNonReleaseAndroidAppId = (appId: string) => (
     .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()))
 )
 
-const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string) => ({
+const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string, homeV2DraftEnabled: boolean) => ({
   name: 'android-build-meta',
   apply: 'build' as const,
   generateBundle() {
@@ -78,6 +78,9 @@ const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string) => ({
         || process.env.ANDROID_FORCE_BUILTIN_BUNDLE?.trim()
         || '',
     )
+    // Android shell root already treats Home V2 as the default homepage.
+    // Keep the packaged build metadata aligned with the web/router contract.
+    const homeV2EnabledForAndroidBuild = mode === 'android' || homeV2DraftEnabled
 
     this.emitFile({
       type: 'asset',
@@ -91,6 +94,7 @@ const createAndroidBuildMetaPlugin = (mode: string, backendUrl: string) => ({
           appName,
           shellType: appId && !isNonReleaseAndroidAppId(appId) ? 'release' : 'non-release',
           forceBuiltinBundle,
+          homeV2DraftEnabled: homeV2EnabledForAndroidBuild,
         },
         null,
         2,
@@ -255,7 +259,7 @@ export default defineConfig(({ mode }) => {
       assetHashPlugin(),
       publicFileHashPlugin(),
       readyCheckPlugin(),
-      createAndroidBuildMetaPlugin(mode, backendUrl),
+      createAndroidBuildMetaPlugin(mode, backendUrl, env.VITE_HOME_V2_DRAFT === '1'),
       createAndroidDistPrunePlugin(mode),
     ],
     esbuild: forceInlineVite ? false : undefined,

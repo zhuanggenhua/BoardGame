@@ -6,13 +6,16 @@ export type HomeV2SceneState =
     | 'open'
     | 'tabs'
     | 'overview'
+    | 'flippingTabForward'
+    | 'flippingTabBackward'
     | 'flippingToDetail'
     | 'detail'
     | 'flippingToOverview';
 
 const ARTBOARD_WIDTH = 896;
 const ARTBOARD_HEIGHT = 720;
-const HOME_V2_LOCAL_ASSET_ROOT = '/assets/common/images/home-v2';
+const HOME_V2_ASSET_ROOT = '/assets/common/images/home-v2';
+const HOME_V2_OVERVIEW_SPREAD = `${HOME_V2_ASSET_ROOT}/overview-homepage/1.png`;
 
 const fullArtboardTransform: LayoutTransform = {
     anchor: { x: 0, y: 0 },
@@ -21,12 +24,11 @@ const fullArtboardTransform: LayoutTransform = {
     width: ARTBOARD_WIDTH,
     height: ARTBOARD_HEIGHT,
 };
-
 export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
     id: 'home-v2-book-scene',
     presentation: {
-        scaleMultiplier: 1.56,
-        offsetYPct: 1,
+        scaleMultiplier: 1.638,
+        offsetYPct: -0.8,
     },
     artboard: {
         id: 'home-v2-book-artboard',
@@ -39,12 +41,9 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             spreadBody: { x: 158, y: 216, width: 577, height: 312, label: '首页总览区域' },
         },
         slots: {
-            tabStrip: { x: 738, y: 0, width: 158, height: 720, label: '书签槽位' },
-            tabLobby: { x: 806.4, y: 108, width: 53.76, height: 72, label: '大厅书签' },
-            tabRooms: { x: 806.4, y: 187.2, width: 53.76, height: 72, label: '房间书签' },
-            tabLeaderboard: { x: 806.4, y: 266.4, width: 53.76, height: 72, label: '榜单书签' },
-            tabChangelog: { x: 806.4, y: 345.6, width: 53.76, height: 72, label: '更新书签' },
-            tabAbout: { x: 806.4, y: 424.8, width: 53.76, height: 72, label: '关于书签' },
+            tabStrip: { x: 738, y: 96, width: 158, height: 262, label: '书签槽位' },
+            tabLobby: { x: 766, y: 243.5, width: 53.76, height: 32, label: '大厅书签' },
+            tabRooms: { x: 766, y: 281.5, width: 53.76, height: 32, label: '房间书签' },
         },
         hitAreas: {
             prevPage: { x: 44, y: 122, width: 66, height: 472, label: '左页翻页热点' },
@@ -60,10 +59,22 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             prefabId: 'image',
             transform: fullArtboardTransform,
             zIndex: 0,
-            visibleInStates: ['tabs', 'overview', 'flippingToDetail', 'detail', 'flippingToOverview'],
+            visibleInStates: ['tabs', 'flippingTabForward', 'flippingTabBackward', 'flippingToDetail', 'detail', 'flippingToOverview'],
             props: {
-                image: `${HOME_V2_LOCAL_ASSET_ROOT}/book-idle/1.png`,
+                image: `${HOME_V2_ASSET_ROOT}/book-idle/compressed/1.webp`,
                 fit: 'contain',
+            },
+        },
+        {
+            id: 'book-overview-shell',
+            prefabId: 'image',
+            transform: fullArtboardTransform,
+            zIndex: 0,
+            visibleInStates: ['overview'],
+            props: {
+                image: HOME_V2_OVERVIEW_SPREAD,
+                fit: 'cover',
+                preferRaw: true,
             },
         },
         {
@@ -74,8 +85,9 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             visibleInStates: ['open'],
             testId: 'home-v2-opening',
             props: {
-                sequence: createFrameSequence(`${HOME_V2_LOCAL_ASSET_ROOT}/book-open`, 4, {
+                sequence: createFrameSequence(`${HOME_V2_ASSET_ROOT}/book-open/compressed`, 4, {
                     fps: 6,
+                    extension: 'webp',
                     holdLastFrame: true,
                     reducedMotionBehavior: 'last-frame',
                 }),
@@ -91,8 +103,44 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             zIndex: 10,
             visibleInStates: ['overview', 'detail'],
             props: {
-                image: `${HOME_V2_LOCAL_ASSET_ROOT}/side-tabs-static/1.png`,
+                image: `${HOME_V2_ASSET_ROOT}/side-tabs-static/compressed/1.webp`,
                 fit: 'contain',
+            },
+        },
+        {
+            id: 'home-v2-page-flip-tab-forward',
+            prefabId: 'frame-sequence',
+            transform: fullArtboardTransform,
+            zIndex: 60,
+            visibleInStates: ['flippingTabForward'],
+            testId: 'home-v2-tab-flipping',
+            props: {
+                sequence: createFrameSequence(`${HOME_V2_ASSET_ROOT}/page-flip-left/compressed`, 8, {
+                    fps: 18,
+                    extension: 'webp',
+                    holdLastFrame: true,
+                    reducedMotionBehavior: 'last-frame',
+                }),
+                fit: 'contain',
+                eventId: 'page.flip.tab.forward.complete',
+            },
+        },
+        {
+            id: 'home-v2-page-flip-tab-backward',
+            prefabId: 'frame-sequence',
+            transform: fullArtboardTransform,
+            zIndex: 60,
+            visibleInStates: ['flippingTabBackward'],
+            testId: 'home-v2-tab-flipping',
+            props: {
+                sequence: createFrameSequence(`${HOME_V2_ASSET_ROOT}/page-flip-right/compressed`, 8, {
+                    fps: 18,
+                    extension: 'webp',
+                    holdLastFrame: true,
+                    reducedMotionBehavior: 'last-frame',
+                }),
+                fit: 'contain',
+                eventId: 'page.flip.tab.backward.complete',
             },
         },
         {
@@ -104,8 +152,9 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             visibleInStates: ['tabs'],
             testId: 'home-v2-opening',
             props: {
-                sequence: createFrameSequence(`${HOME_V2_LOCAL_ASSET_ROOT}/side-tabs-appear`, 17, {
+                sequence: createFrameSequence(`${HOME_V2_ASSET_ROOT}/side-tabs-appear/compressed`, 17, {
                     fps: 18,
+                    extension: 'webp',
                     holdLastFrame: true,
                     reducedMotionBehavior: 'last-frame',
                 }),
@@ -132,39 +181,6 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             visibleInStates: ['overview', 'detail'],
             props: {
                 tabId: 'rooms',
-                eventId: 'navigation.tab-select',
-            },
-        },
-        {
-            id: 'home-v2-tab-leaderboard',
-            prefabId: 'book-tab',
-            regionId: 'tabLeaderboard',
-            zIndex: 30,
-            visibleInStates: ['overview', 'detail'],
-            props: {
-                tabId: 'leaderboard',
-                eventId: 'navigation.tab-select',
-            },
-        },
-        {
-            id: 'home-v2-tab-changelog',
-            prefabId: 'book-tab',
-            regionId: 'tabChangelog',
-            zIndex: 30,
-            visibleInStates: ['overview', 'detail'],
-            props: {
-                tabId: 'changelog',
-                eventId: 'navigation.tab-select',
-            },
-        },
-        {
-            id: 'home-v2-tab-about',
-            prefabId: 'book-tab',
-            regionId: 'tabAbout',
-            zIndex: 30,
-            visibleInStates: ['overview', 'detail'],
-            props: {
-                tabId: 'about',
                 eventId: 'navigation.tab-select',
             },
         },
@@ -197,8 +213,9 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             zIndex: 60,
             visibleInStates: ['flippingToDetail'],
             props: {
-                sequence: createFrameSequence(`${HOME_V2_LOCAL_ASSET_ROOT}/page-flip-left`, 8, {
+                sequence: createFrameSequence(`${HOME_V2_ASSET_ROOT}/page-flip-left/compressed`, 8, {
                     fps: 18,
+                    extension: 'webp',
                     holdLastFrame: true,
                     reducedMotionBehavior: 'last-frame',
                 }),
@@ -213,8 +230,9 @@ export const HOME_V2_BOOK_SCENE: UISceneDefinition = {
             zIndex: 60,
             visibleInStates: ['flippingToOverview'],
             props: {
-                sequence: createFrameSequence(`${HOME_V2_LOCAL_ASSET_ROOT}/page-flip-right`, 8, {
+                sequence: createFrameSequence(`${HOME_V2_ASSET_ROOT}/page-flip-right/compressed`, 8, {
                     fps: 18,
+                    extension: 'webp',
                     holdLastFrame: true,
                     reducedMotionBehavior: 'last-frame',
                 }),

@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Home V2 Auth Modal Implementable Target</title>
+  <style>
+    :root {
+      --paper: #f2ddb5;
+      --paper-light: #fff0cf;
+      --paper-deep: #dfbd82;
+      --ink: #442716;
+      --muted: #8b6648;
+      --line: #9b7142;
+      --green: #12380c;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      width: 852px;
+      height: 393px;
+      overflow: hidden;
+      font-family: "Noto Serif SC", "Songti SC", SimSun, serif;
+      color: var(--ink);
+      background: #140d08;
+    }
+
+    .stage {
+      position: relative;
+      width: 852px;
+      height: 393px;
+      background:
+        radial-gradient(circle at 50% 2%, rgba(255, 224, 164, 0.12), transparent 30%),
+        linear-gradient(90deg, #211409 0%, #4b311c 8%, #d3b479 9%, #ead4a4 49.2%, #835a32 50%, #ead4a4 50.8%, #dac08a 91%, #4b311c 92%, #1d1209 100%);
+    }
+
+    .book-page {
+      position: absolute;
+      inset: 21px 32px 18px;
+      border-radius: 10px;
+      border: 3px solid rgba(53, 31, 15, 0.62);
+      background:
+        linear-gradient(90deg, rgba(77, 48, 25, 0.2), transparent 14%, transparent 49%, rgba(70, 38, 18, 0.28) 50%, transparent 52%, transparent 86%, rgba(77, 48, 25, 0.2)),
+        repeating-linear-gradient(0deg, rgba(76, 47, 30, 0.12) 0 1px, transparent 1px 54px),
+        #ead2a1;
+      box-shadow: inset 0 0 30px rgba(55, 35, 19, 0.28), 0 16px 28px rgba(0, 0, 0, 0.45);
+    }
+
+    .nav {
+      position: absolute;
+      top: 44px;
+      left: 78px;
+      right: 78px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      opacity: 0.7;
+    }
+
+    .rows {
+      position: absolute;
+      top: 88px;
+      left: 78px;
+      right: 78px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 70px;
+      row-gap: 20px;
+      opacity: 0.42;
+    }
+
+    .row {
+      height: 54px;
+      border-bottom: 1px solid rgba(80, 52, 31, 0.26);
+      display: grid;
+      grid-template-columns: 84px 1fr;
+      gap: 14px;
+      align-items: center;
+    }
+
+    .thumb {
+      height: 42px;
+      border-radius: 4px;
+      background: linear-gradient(135deg, #244b61, #6e3520);
+      box-shadow: inset 0 0 16px rgba(255,255,255,0.18);
+    }
+
+    .copy {
+      height: 8px;
+      width: 76%;
+      border-radius: 999px;
+      background: rgba(68, 39, 22, 0.28);
+      box-shadow: 0 17px 0 rgba(68, 39, 22, 0.16);
+    }
+
+    .scrim {
+      position: absolute;
+      inset: 0;
+      background: rgba(18, 13, 9, 0.50);
+      backdrop-filter: blur(2px);
+    }
+
+    .modal {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 246px;
+      height: 246px;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      padding: 13px 24px 12px;
+      border-radius: 5px;
+      border: 1.5px solid #7f552d;
+      background:
+        radial-gradient(circle at 50% 10%, #fff2d5 0%, #f4dfb8 42%, #e2c28a 100%);
+      box-shadow:
+        0 16px 34px rgba(0, 0, 0, 0.46),
+        0 0 0 1px rgba(255, 245, 220, 0.76) inset,
+        0 0 0 4px rgba(85, 50, 22, 0.22);
+    }
+
+    .modal::before {
+      content: "";
+      position: absolute;
+      inset: 5px;
+      border: 1px solid rgba(138, 96, 56, 0.34);
+      border-radius: 3px;
+      pointer-events: none;
+    }
+
+    .modal::after {
+      content: "";
+      position: absolute;
+      inset: 9px;
+      border-radius: 2px;
+      pointer-events: none;
+      background:
+        linear-gradient(#b48852, #b48852) left top / 22px 1px no-repeat,
+        linear-gradient(#b48852, #b48852) left top / 1px 22px no-repeat,
+        linear-gradient(#b48852, #b48852) right top / 22px 1px no-repeat,
+        linear-gradient(#b48852, #b48852) right top / 1px 22px no-repeat,
+        linear-gradient(#b48852, #b48852) left bottom / 22px 1px no-repeat,
+        linear-gradient(#b48852, #b48852) left bottom / 1px 22px no-repeat,
+        linear-gradient(#b48852, #b48852) right bottom / 22px 1px no-repeat,
+        linear-gradient(#b48852, #b48852) right bottom / 1px 22px no-repeat;
+      opacity: 0.85;
+    }
+
+    .title {
+      text-align: center;
+      font-size: 18px;
+      line-height: 1.05;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+    }
+
+    .divider {
+      width: 61%;
+      margin: 8px auto 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .divider span {
+      height: 1px;
+      flex: 1;
+      background: linear-gradient(90deg, transparent, rgba(125, 83, 45, 0.68));
+    }
+
+    .divider span:last-child {
+      background: linear-gradient(90deg, rgba(125, 83, 45, 0.68), transparent);
+    }
+
+    .diamond {
+      width: 7px;
+      height: 7px;
+      transform: rotate(45deg);
+      border: 1px solid #c59a64;
+      background: #a87c45;
+    }
+
+    label {
+      display: block;
+      margin: 0 0 4px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+    }
+
+    .input {
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 9px;
+      padding: 0 12px;
+      border-radius: 5px;
+      border: 1px solid #b6905e;
+      background: rgba(251, 240, 218, 0.94);
+      color: #b59a79;
+      font-size: 14px;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.42);
+    }
+
+    .forgot {
+      margin: -1px 2px 7px 0;
+      text-align: right;
+      font-size: 10px;
+      font-weight: 700;
+      color: #7b573d;
+    }
+
+    .primary {
+      height: 34px;
+      border-radius: 5px;
+      border: 1px solid #b58a4f;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--green);
+      color: #f8f2e5;
+      font-size: 17px;
+      font-weight: 800;
+      letter-spacing: 0.18em;
+      box-shadow: 0 10px 24px rgba(20, 35, 11, 0.28), inset 0 0 0 1px rgba(40, 23, 10, 0.44);
+    }
+
+    .footer-line {
+      width: 58%;
+      margin: 8px auto 4px;
+    }
+
+    .tabs {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tabs .off {
+      color: #8c7b64;
+    }
+  </style>
+</head>
+<body>
+  <main class="stage" aria-label="Home V2 auth modal implementable target">
+    <div class="book-page"></div>
+    <div class="nav">
+      <span>全部　卡牌　骰子　抽象　战棋　休闲　工具</span>
+      <span>玩家昵称　｜　简体中文</span>
+    </div>
+    <div class="rows">
+      <div class="row"><div class="thumb"></div><div class="copy"></div></div>
+      <div class="row"><div class="thumb"></div><div class="copy"></div></div>
+      <div class="row"><div class="thumb"></div><div class="copy"></div></div>
+      <div class="row"><div class="thumb"></div><div class="copy"></div></div>
+      <div class="row"><div class="thumb"></div><div class="copy"></div></div>
+      <div class="row"><div class="thumb"></div><div class="copy"></div></div>
+    </div>
+    <div class="scrim"></div>
+    <section class="modal">
+      <div class="title">登录</div>
+      <div class="divider"><span></span><i class="diamond"></i><span></span></div>
+      <label>邮箱</label>
+      <div class="input">输入邮箱</div>
+      <label>密码</label>
+      <div class="input">输入密码 <span>◉</span></div>
+      <div class="forgot">忘记密码?</div>
+      <div class="primary">登 录</div>
+      <div class="divider footer-line"><span></span><i class="diamond"></i><span></span></div>
+      <div class="tabs"><span>登录</span><span class="off">|</span><span class="off">注册</span></div>
+    </section>
+  </main>
+</body>
+</html>

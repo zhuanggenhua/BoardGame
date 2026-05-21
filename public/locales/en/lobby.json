@@ -1,6 +1,6 @@
 {
   "home": {
-    "title": "Yi Board Game",
+    "title": "Board Game Platform",
     "subtitle": "Platform for Tutorials, Online Play, and Prototyping",
     "logoAlt": "Board Game Platform Logo",
     "gameDetailsLoadingEyebrow": "Preparing",
@@ -16,10 +16,115 @@
       "players": "{{count}} seated"
     }
   },
+  "homeV2": {
+    "waitingPlayers": "Waiting for players",
+    "roomTitleFallback": "Room {{id}}",
+    "roomLedgerTitle": "Room List",
+    "roomCount": "{{count}} rooms",
+    "emptyRoomTitle": "No public rooms yet",
+    "emptyRoomDescription": "No joinable room records yet.",
+    "lockedRoomLabel": "Locked",
+    "lockedRoomHint": "Please use the legacy lobby to enter password-protected rooms for now.",
+    "details": {
+      "typeLabel": "Type",
+      "defaultCategory": "Board Game",
+      "playerCountLabel": "Recommended Players",
+      "overviewLabel": "Overview",
+      "onlineLobbyLabel": "Online Lobby"
+    },
+    "catalog": {
+      "allGames": "All Games",
+      "accountSettings": "Account and Settings",
+      "playerNickname": "Player",
+      "help": "Filter"
+    },
+    "referenceCatalog": {
+      "emptyTitle": "Nothing in this category yet",
+      "emptyDescription": "Switch to another category to browse games.",
+      "badges": {
+        "strategy": "Strategy",
+        "collection": "Collection",
+        "war": "War"
+      },
+      "games": {
+        "cardia": {
+          "summary": "Build your deck in a magical card world and fight for glory."
+        },
+        "dicethrone": {
+          "summary": "Claim the throne, battle for honor, and rule the realm."
+        },
+        "smashup": {
+          "summary": "Survive the chaotic battlefield and crush every enemy."
+        },
+        "splendor": {
+          "summary": "Gather gems and forge your own legendary empire."
+        },
+        "summonerwars": {
+          "summary": "Summon mighty creatures and enter an epic battle."
+        },
+        "tictactoe": {
+          "summary": "The classic XO game—simple, clean, and still fun."
+        }
+      }
+    },
+    "sceneTabs": {
+      "lobby": "Lobby",
+      "rooms": "Login",
+      "leaderboard": "",
+      "changelog": "Updates"
+    },
+    "tabs": {
+      "rooms": {
+        "eyebrow": "Account",
+        "title": "Account Login",
+        "description": "View recent active public rooms.",
+        "accountActionLabel": "Account",
+        "loading": "Checking account status…",
+        "emptyTitle": "No public rooms yet",
+        "emptyDescription": "No public room records yet.",
+        "loggedInHint": "Signed in",
+        "playerSummary": "{{players}} / {{seats}} seated",
+        "openGame": "Open Game"
+      },
+      "leaderboard": {
+        "eyebrow": "Leaderboard",
+        "title": "Live Ranking",
+        "description": "View current trending games.",
+        "loading": "Loading ranking data…",
+        "emptyTitle": "No ranking data yet",
+        "emptyDescription": "No ranking data yet.",
+        "statSummary": "{{rooms}} rooms · {{players}} players"
+      },
+      "changelog": {
+        "eyebrow": "Changelog",
+        "title": "Recent Updates",
+        "description": "View recent update entries.",
+        "loading": "Reading release notes…",
+        "emptyTitle": "No updates yet",
+        "emptyDescription": "No update records yet."
+      }
+    },
+    "detailSearchPlaceholder": "Search rooms or players",
+    "detailNoMatchTitle": "No rooms match this search",
+    "detailNoMatchDescription": "Try another keyword or create a new room.",
+    "detailOpenSummary": "Open {{open}} · Locked {{locked}}",
+    "detailFilters": {
+      "all": "All",
+      "open": "Open",
+      "locked": "Locked",
+      "full": "Full"
+    },
+    "detailColumns": {
+      "roomName": "Room",
+      "players": "Seats",
+      "status": "Status",
+      "action": "Action"
+    }
+  },
   "password": {
     "modalTitle": "Private Room",
     "modalDesc": "This room requires a password.",
-    "placeholder": "Enter password..."
+    "placeholder": "Password"
   },
   "confirm": {
     "destroy": {

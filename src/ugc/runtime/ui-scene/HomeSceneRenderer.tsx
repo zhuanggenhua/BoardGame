@@ -9,6 +9,7 @@ export interface HomeSceneRendererProps extends Omit<UISceneRendererProps, 'scen
     onIntroOpenComplete: () => void;
     onIntroTabsComplete: () => void;
     onSceneEvent?: (event: UISceneNodeEvent) => void;
+    presentationOverride?: UISceneRendererProps['presentationOverride'];
 }
 
 export const HomeSceneRenderer = ({
@@ -17,6 +18,7 @@ export const HomeSceneRenderer = ({
     onIntroOpenComplete,
     onIntroTabsComplete,
     onSceneEvent,
+    presentationOverride,
     ...rendererProps
 }: HomeSceneRendererProps) => {
     const handleNodeEvent = React.useCallback(
@@ -40,6 +42,7 @@ export const HomeSceneRenderer = ({
             {...rendererProps}
             scene={HOME_V2_BOOK_SCENE}
             activeState={sceneState}
+            presentationOverride={presentationOverride}
             sceneContext={sceneContext}
             onNodeEvent={handleNodeEvent}
         >

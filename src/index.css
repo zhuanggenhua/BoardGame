@@ -576,7 +576,17 @@ html[data-keyboard-visible="true"] .auth-modal-container {
         scroll-margin-block: max(6rem, calc(var(--keyboard-inset-height) + 1rem));
         -webkit-text-size-adjust: 100%;
     }
-    
+
+    .home-v2-paper-modal-frame :is(input:not([type="button"]):not([type="checkbox"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([type="image"]):not([type="radio"]):not([type="range"]):not([type="reset"]):not([type="submit"]), textarea, select) {
+        font-size: 14px !important;
+        line-height: 1.18;
+    }
+
+    .home-v2-paper-modal-frame.home-v2-paper-modal-compact :is(input:not([type="button"]):not([type="checkbox"]):not([type="color"]):not([type="file"]):not([type="hidden"]):not([type="image"]):not([type="radio"]):not([type="range"]):not([type="reset"]):not([type="submit"]), textarea, select) {
+        font-size: 8.4px !important;
+        line-height: 1.12;
+    }
+
     /* 仅对显式 opt-in 的交互补命中区，避免把所有按钮一起做胖 */
     .touch-target-min {
         min-height: 44px;

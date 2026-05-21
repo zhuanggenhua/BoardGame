@@ -18,8 +18,13 @@ export const TextEntryAutoScrollAgent = () => {
             return undefined;
         }
 
+        const isCoarsePointer = () => window.matchMedia?.('(pointer: coarse)').matches ?? false;
         const shouldHandleTarget = (target: HTMLElement) => {
+            if (!isCoarsePointer()) return false;
             if (isTextEntryProxyEligible(target)) {
+                return false;
+            }
+            if (target.closest('[data-text-entry-autoscroll="off"]')) {
                 return false;
             }
             return document.documentElement.dataset.keyboardVisible !== 'true';
