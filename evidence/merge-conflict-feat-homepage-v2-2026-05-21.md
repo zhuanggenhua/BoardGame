@@ -99,5 +99,5 @@
   - 真机安装/方向切换复测
 
 ## 7. 最终提交信息
-- merge commit: `ab11eb35`
+- merge commit: `196274f0`
 - push 目标分支: `main`
