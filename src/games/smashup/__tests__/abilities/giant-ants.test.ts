@@ -4,7 +4,8 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { startSmashUpReactionSession } from '../../domain/reactionSession';
 import { reduce } from '../../domain/reduce';
 import {
@@ -411,6 +412,118 @@ describe('巨蚁派系能力', () => {
         const added = amountResult.events.find(e => e.type === SU_EVENTS.POWER_COUNTER_ADDED);
         expect(removed).toBeUndefined();
         expect((added as any).payload.amount).toBe(1);
+    });
+
+    it('giant_ant_we_are_the_champions 在对手计分时仍应把 queued afterScoring 选择权交给 special 拥有者', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('ga-source-1', 'giant_ant_worker', '0', 3, { powerCounters: 2 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('ga-target-1', 'test_other', '0', 2, { powerCounters: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+            pendingAfterScoringSpecials: [
+                {
+                    sourceDefId: 'giant_ant_we_are_the_champions',
+                    playerId: '0',
+                    baseIndex: 0,
+                    cardUid: 'ga-champ-1',
+                    minionSnapshots: [
+                        {
+                            uid: 'ga-source-1',
+                            defId: 'giant_ant_worker',
+                            baseIndex: 0,
+                            counterAmount: 2,
+                        },
+                    ],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            rankings: [{ playerId: '1', power: 10, vp: 3 }],
+            random: defaultTestRandom,
+            now: 1101,
+        });
+
+        expect(queued).toBeDefined();
+        const trigger = (queued as any).payload.triggers.find((entry: any) => entry.sourceCardUid === 'ga-champ-1');
+        expect(trigger).toBeDefined();
+        expect(trigger.ownerPlayerId).toBe('0');
+
+        const queuedState = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
+            defaultTestRandom,
+            1101,
+        );
+        expect(queuedState).toBeDefined();
+        expect(getSimpleChoicePrompt(queuedState!.state, 'giant_ant_we_are_the_champions_choose_snapshot_source')?.playerId).toBe('0');
+    });
+
+    it('giant_ant_we_are_the_champions_pod 在对手计分时仍应把 queued afterScoring 选择权交给 special 拥有者', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('ga-source-pod-1', 'giant_ant_worker', '0', 3, { powerCounters: 2 })],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('ga-target-pod-1', 'test_other', '0', 2, { powerCounters: 0 })],
+                    ongoingActions: [],
+                },
+            ],
+            pendingAfterScoringSpecials: [
+                {
+                    sourceDefId: 'giant_ant_we_are_the_champions_pod',
+                    playerId: '0',
+                    baseIndex: 0,
+                    cardUid: 'ga-champ-pod-1',
+                    minionSnapshots: [
+                        {
+                            uid: 'ga-source-pod-1',
+                            defId: 'giant_ant_worker',
+                            baseIndex: 0,
+                            counterAmount: 2,
+                        },
+                    ],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            rankings: [{ playerId: '1', power: 10, vp: 3 }],
+            random: defaultTestRandom,
+            now: 1102,
+        });
+
+        expect(queued).toBeDefined();
+        const trigger = (queued as any).payload.triggers.find((entry: any) => entry.sourceCardUid === 'ga-champ-pod-1');
+        expect(trigger).toBeDefined();
+        expect(trigger.ownerPlayerId).toBe('0');
     });
 
     it('兵蚁：onPlay 放2指示物；talent 移除1并转移1个指示物给另一个随从', () => {

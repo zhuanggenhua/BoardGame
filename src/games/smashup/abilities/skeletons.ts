@@ -433,26 +433,32 @@ export function registerSkeletonAbilities(): void {
 
     registerTrigger('skeletons_gravetender', 'onCardBuried', skeletonsGravetenderTriggered, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('skeletons_gravetender', 'onBuriedCardUncovered', skeletonsGravetenderTriggered, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('skeletons_returned_one', 'onMinionPlayed', skeletonsReturnedOneAfterUncover, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('skeletons_lord_of_bones', 'onBuriedCardUncovered', skeletonsLordOfBonesOnUncovered, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
     });
     registerTrigger('skeletons_gravestones', 'onBuriedCardUncovered', skeletonsGravestonesOnUncovered, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('skeletons_gravestones', 'afterScoring', skeletonsGravestonesAfterScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
 }

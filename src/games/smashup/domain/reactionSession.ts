@@ -681,7 +681,13 @@ function executeQueuedTrigger(
                 powerModifier: trigger.lkiMinion.powerModifier,
                 tempPowerModifier: trigger.lkiMinion.tempPowerModifier,
                 talentUsed: false,
-                attachedActions: [],
+                attachedActions: (trigger.lkiMinion.attachedActionDefIds ?? []).map((defId, index) => ({
+                    uid: defId === trigger.sourceDefId && trigger.sourceCardUid
+                        ? trigger.sourceCardUid
+                        : `${trigger.lkiMinion.uid}:attached:${index}:${defId}`,
+                    defId,
+                    ownerId: trigger.sourceControllerId ?? trigger.lkiMinion.owner,
+                })),
                 metadata: trigger.lkiMinion.metadata ? { ...trigger.lkiMinion.metadata } : undefined,
             }
             : undefined,

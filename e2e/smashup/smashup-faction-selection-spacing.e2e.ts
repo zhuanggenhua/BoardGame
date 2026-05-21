@@ -15,6 +15,60 @@ const __ensureThreeAxesMarker = async (game: __ThreeAxeGameMarker) => {
 };
 void __ensureThreeAxesMarker;
 
+function createFactionSelectionPlayerState(
+  playerId: string,
+  factions: [string, string],
+) {
+  return {
+    id: playerId,
+    vp: 0,
+    hand: [],
+    deck: [],
+    discard: [],
+    factions,
+    minionsPlayed: 1,
+    minionLimit: 1,
+    actionsPlayed: 1,
+    actionLimit: 1,
+  };
+}
+
+function buildFactionSearchRegressionScene() {
+  return {
+    gameId: 'smashup',
+    currentPlayer: '0' as const,
+    phase: 'factionSelect' as const,
+    extra: {
+      core: {
+        turnOrder: ['0', '1'],
+        currentPlayerIndex: 0,
+        turnNumber: 1,
+        nextUid: 1000,
+        players: {
+          '0': createFactionSelectionPlayerState('0', ['aliens', 'pirates']),
+          '1': createFactionSelectionPlayerState('1', ['robots', 'ninjas']),
+        },
+        factionSelection: {
+          takenFactions: ['robots'],
+          playerSelections: {
+            '0': [],
+            '1': ['robots'],
+          },
+          completedPlayers: [],
+        },
+      },
+    },
+  };
+}
+
+async function waitForFactionSelectionReady(page: import('@playwright/test').Page) {
+  const title = page.locator('h1').filter({ hasText: /Draft Your Factions|选择你的派系/i });
+  await expect(title).toBeVisible({ timeout: 15000 });
+  await expect(page.getByTestId('faction-filter-toolbar')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId('faction-search-input')).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId('faction-option-pirates')).toBeVisible({ timeout: 10000 });
+}
+
 async function assertFactionCardsClearPlayerRail(page: import('@playwright/test').Page) {
   const PLAYER_RAIL_CLEARANCE_PX = 12;
     const metrics = await page.evaluate(() => {
@@ -108,7 +162,7 @@ async function assertFactionSearchIconAligned(page: import('@playwright/test').P
 }
 
 test.describe('SmashUp 派系选择页移动端间距', () => {
-  test('移动端横屏应保持桌面化主布局并输出移动端/桌面端参考截图', async ({ page }, testInfo) => {
+  test('移动端横屏应保持桌面化主布局并输出移动端/桌面端参考截图', async ({ page, game }, testInfo) => {
     test.setTimeout(90000);
     const evidenceDir = join(process.cwd(), 'test-results', 'evidence-screenshots', 'smashup-faction-selection-spacing');
     mkdirSync(evidenceDir, { recursive: true });
@@ -118,9 +172,16 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     const cards = grid.locator('> div');
 
     await page.setViewportSize({ width: 800, height: 450 });
-    await gotoLocalSmashUp(page);
+    await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+    await game.setupScene(buildFactionSearchRegressionScene());
+    await waitForFactionSelectionReady(page);
     await expect(title).toBeVisible({ timeout: 30000 });
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('faction-filter-toolbar')).toBeVisible();
+    await expect(page.getByTestId('faction-search-input')).toBeVisible();
+    await expect(page.getByTestId('faction-option-pirates')).toBeVisible();
+    await expect(page.getByTestId('faction-option-ninjas')).toBeVisible();
+    await expect(page.getByTestId('faction-option-robots')).toHaveCount(0);
 
     const mobileMetrics = await page.evaluate(() => {
       const cards = Array.from(document.querySelectorAll('.grid > div')) as HTMLElement[];
@@ -152,11 +213,22 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     await page.locator('[data-testid="faction-filter-toolbar"]').screenshot({ path: join(evidenceDir, 'mobile-search-toolbar.png') });
     await page.locator('[data-testid="faction-filter-toolbar"]').screenshot({ path: testInfo.outputPath('mobile-search-toolbar.png') });
 
+    await page.getByTestId('faction-search-input').fill('pirates');
+    await expect(page.getByTestId('faction-option-pirates')).toBeVisible();
+    await expect(page.getByTestId('faction-option-ninjas')).toHaveCount(0);
+    await page.screenshot({ path: join(evidenceDir, 'mobile-search-pirates.png'), fullPage: false });
+    await page.screenshot({ path: testInfo.outputPath('mobile-search-pirates.png'), fullPage: false });
+
     await page.setViewportSize({ width: 1440, height: 900 });
-    await page.reload({ waitUntil: 'domcontentloaded' });
-    await gotoLocalSmashUp(page);
+    await game.openTestGame('smashup', { skipInitialization: true }, 20000);
+    await game.setupScene(buildFactionSearchRegressionScene());
+    await waitForFactionSelectionReady(page);
     await expect(title).toBeVisible({ timeout: 30000 });
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('faction-option-robots')).toHaveCount(0);
+    await page.getByTestId('faction-search-input').fill('pirates');
+    await expect(page.getByTestId('faction-option-pirates')).toBeVisible();
+    await expect(page.getByTestId('faction-option-ninjas')).toHaveCount(0);
     await assertFactionCardsClearPlayerRail(page);
     await assertFactionSearchIconAligned(page);
 

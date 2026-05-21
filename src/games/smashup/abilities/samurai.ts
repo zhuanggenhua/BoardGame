@@ -657,7 +657,9 @@ function samuraiHonorTheFallenTrigger(ctx: TriggerContext): SmashUpEvent[] {
 
 function samuraiFinalHaikuTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.sourceCardUid || !ctx.sourceControllerId) return [];
-    const host = findAttachedActionHost(ctx.state, ctx.sourceCardUid, ctx.sourceBaseIndex);
+    const host = ctx.triggerMinion?.attachedActions?.some(action => action.uid === ctx.sourceCardUid)
+        ? ctx.triggerMinion
+        : findAttachedActionHost(ctx.state, ctx.sourceCardUid, ctx.sourceBaseIndex);
     if (!host || host.uid !== ctx.triggerMinionUid) return [];
     const events: SmashUpEvent[] = [];
     ctx.state.bases.forEach((base, baseIndex) => {

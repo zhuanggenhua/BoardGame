@@ -966,9 +966,8 @@ export function resolveForceEndTurnForStalledAi(args: {
         };
     }
     if (typeof responderId === 'string' && args.seatControllers[responderId]?.type === 'human') {
-        // 当前响应权在 human 手里时，watchdog 不能把它误判成 active AI 卡死，
-        // 否则 DiceThrone 的 afterRollConfirmed / afterAttackResolved 会被错误上报为
-        // active-turn-legal-only，并制造不该有的 force-end-turn 门禁。
+        // 当前响应权在 human 手里时，无论 active player 是否为 AI，都应保持真人流程。
+        // watchdog 不能替真人强制关窗，也不能回退成 active-turn-legal-only。
         return null;
     }
 

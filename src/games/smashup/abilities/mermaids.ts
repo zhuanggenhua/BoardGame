@@ -1193,6 +1193,7 @@ export function registerMermaidsAbilities(): void {
     registerTrigger('mermaids_shipwreck_cove', 'afterScoring', mermaidsShipwreckCoveAfterScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('mermaids_desert_island', 'onTurnStart', mermaidsDesertIslandOnTurnStart, {

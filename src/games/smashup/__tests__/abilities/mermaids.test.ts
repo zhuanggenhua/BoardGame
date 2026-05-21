@@ -4,7 +4,8 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { reduce } from '../../domain/reduce';
 import { validate } from '../../domain/commands';
 import { getCardDef } from '../../data/cards';
@@ -17,6 +18,7 @@ import {
     getSimpleChoicePrompt,
     getPromptOption,
     getPromptOptions,
+    getReactionPrompt,
     respondToPrompt,
     expectNoPrompt,
 } from '../helpers';
@@ -496,5 +498,50 @@ describe('Mermaids abilities', () => {
         const resolved = respondToPrompt(promptState, option.id, '0', defaultTestRandom);
         expect(resolved.finalState.core.bases[0].ongoingActions.some(action => action.uid === sourceCardUid)).toBe(false);
         expect(resolved.finalState.core.bases[1].ongoingActions.some(action => action.uid === sourceCardUid)).toBe(true);
+    });
+
+    it('mermaids_shipwreck_cove 在对手计分时仍应把 queued afterScoring 选择权交给持续行动控制者', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [{ uid: 'ship-1', defId: 'mermaids_shipwreck_cove', ownerId: '1' } as any],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 0, vp: 0 }],
+            random: defaultTestRandom,
+            now: 3902,
+        });
+
+        expect(queued).toBeDefined();
+        const shipTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'ship-1');
+        expect(shipTrigger).toBeDefined();
+        expect(shipTrigger.ownerPlayerId).toBe('1');
+
+        const queuedState = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
+            defaultTestRandom,
+            3902,
+        );
+        expect(queuedState).toBeDefined();
+        const reactionPrompt = getReactionPrompt(queuedState!.state);
+        expect(reactionPrompt?.playerId).toBe('1');
     });
 });

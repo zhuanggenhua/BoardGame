@@ -348,8 +348,9 @@ function vikingsVikingFuneralTrigger(ctx: TriggerContext): SmashUpEvent[] {
     if (!ctx.triggerMinionUid || !ctx.triggerMinionDefId || ctx.baseIndex === undefined || !ctx.sourceCardUid || !ctx.sourceControllerId) {
         return [];
     }
-    const base = ctx.state.bases[ctx.baseIndex];
-    const minion = base?.minions.find(entry => entry.uid === ctx.triggerMinionUid);
+    const minion = ctx.triggerMinion?.attachedActions?.some(action => action.uid === ctx.sourceCardUid && action.defId === 'vikings_viking_funeral')
+        ? ctx.triggerMinion
+        : ctx.state.bases[ctx.baseIndex]?.minions.find(entry => entry.uid === ctx.triggerMinionUid);
     const funeral = minion?.attachedActions.find(action => action.uid === ctx.sourceCardUid && action.defId === 'vikings_viking_funeral');
     if (!funeral) return [];
 

@@ -7,6 +7,7 @@ import type {
     QidahenFactionId,
     QidahenFactionState,
 } from './types';
+import { QIDAHEN_MAP_REGIONS } from '../config/mapRegions';
 
 const factionOrder: QidahenFactionId[] = ['ming', 'mongol', 'jin'];
 
@@ -33,6 +34,27 @@ const createFactionState = (
 
 const createInitialCore = (playerIds: PlayerId[]): QidahenCore => {
     const normalizedPlayerIds = factionOrder.map((_, index) => playerIds[index] ?? String(index));
+    const regionControllers: Record<string, QidahenFactionId | 'neutral'> = {
+        datong: 'ming',
+        baicheng: 'mongol',
+        jinzhou: 'jin',
+        shengjing: 'jin',
+        beijing: 'ming',
+    };
+    const regionTroops: Record<string, number> = {
+        datong: 3,
+        baicheng: 2,
+        jinzhou: 2,
+        shengjing: 3,
+        beijing: 2,
+    };
+    const regionPopulation: Record<string, number> = {
+        datong: 6,
+        baicheng: 4,
+        jinzhou: 2,
+        shengjing: 5,
+        beijing: 6,
+    };
 
     return {
         playerIds: normalizedPlayerIds,
@@ -46,13 +68,19 @@ const createInitialCore = (playerIds: PlayerId[]): QidahenCore => {
             mongol: createFactionState('mongol', normalizedPlayerIds[1], '蒙古', 'bg-[#6f4c24]', 16, 10, 65),
             jin: createFactionState('jin', normalizedPlayerIds[2], '后金', 'bg-[#244c6f]', 17, 11, 75),
         },
-        regions: [
-            { id: 'datong', name: '大同', controller: 'ming', x: 0.315, y: 0.61, troops: 3, population: 6, note: '地形：平原｜控制：蒙古｜相邻：锦州、太原、宣府' },
-            { id: 'baicheng', name: '白城', controller: 'mongol', x: 0.39, y: 0.36, troops: 2, population: 4, note: '马匹区域，适合骑兵调度。' },
-            { id: 'jinzhou', name: '锦州', controller: 'jin', x: 0.62, y: 0.45, troops: 2, population: 2, note: '辽西关键点，连通山海关与辽东。' },
-            { id: 'shengjing', name: '盛京', controller: 'jin', x: 0.82, y: 0.43, troops: 3, population: 5, note: '后金核心区域，右侧接近朝鲜牌库。' },
-            { id: 'beijing', name: '北京', controller: 'ming', x: 0.47, y: 0.66, troops: 2, population: 6, note: '大明首都，城战与 VP 判断重点。' },
-        ],
+        regions: QIDAHEN_MAP_REGIONS.map((region) => ({
+            id: region.id,
+            name: region.name,
+            type: region.type,
+            controller: regionControllers[region.id] ?? 'neutral',
+            x: region.labelPoint.x,
+            y: region.labelPoint.y,
+            adjacentRegionIds: region.adjacentRegionIds,
+            movementCostByRegionId: region.movementCostByRegionId,
+            troops: regionTroops[region.id] ?? 0,
+            population: regionPopulation[region.id] ?? 0,
+            note: region.note,
+        })),
         pendingEffects: [
             { id: 'tax-datong', title: '大同 开发完成', detail: '获得 1 粮草，更新土地税赋', timer: '1' },
             { id: 'train-jinzhou', title: '锦州 训练完成', detail: '获得 2 兵力', timer: '1' },

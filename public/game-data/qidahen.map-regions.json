@@ -1,0 +1,139 @@
+{
+  "schemaVersion": 1,
+  "image": {
+    "path": "public/assets/i18n/zh-CN/qidahen/board/qidahen-main-map.png",
+    "width": 1265,
+    "height": 893
+  },
+  "regions": [
+    {
+      "id": "datong",
+      "name": "大同",
+      "type": "region",
+      "polygon": [
+        { "x": 0.275, "y": 0.565 },
+        { "x": 0.355, "y": 0.562 },
+        { "x": 0.365, "y": 0.645 },
+        { "x": 0.29, "y": 0.675 },
+        { "x": 0.25, "y": 0.625 }
+      ],
+      "labelPoint": { "x": 0.315, "y": 0.61 },
+      "stackPoints": [
+        { "id": "datong-army", "role": "army", "x": 0.312, "y": 0.635 },
+        { "id": "datong-population", "role": "population", "x": 0.34, "y": 0.592 },
+        { "id": "datong-control", "role": "control", "x": 0.287, "y": 0.594 }
+      ],
+      "adjacentRegionIds": ["baicheng", "jinzhou", "beijing"],
+      "movementCostByRegionId": {
+        "baicheng": 2,
+        "jinzhou": 2,
+        "beijing": 1
+      },
+      "note": "地形：平原｜控制：蒙古｜相邻：锦州、太原、宣府"
+    },
+    {
+      "id": "baicheng",
+      "name": "白城",
+      "type": "region",
+      "polygon": [
+        { "x": 0.345, "y": 0.315 },
+        { "x": 0.43, "y": 0.315 },
+        { "x": 0.455, "y": 0.392 },
+        { "x": 0.395, "y": 0.425 },
+        { "x": 0.338, "y": 0.382 }
+      ],
+      "labelPoint": { "x": 0.39, "y": 0.36 },
+      "stackPoints": [
+        { "id": "baicheng-army", "role": "army", "x": 0.387, "y": 0.385 },
+        { "id": "baicheng-control", "role": "control", "x": 0.365, "y": 0.34 }
+      ],
+      "adjacentRegionIds": ["datong", "jinzhou"],
+      "movementCostByRegionId": {
+        "datong": 2,
+        "jinzhou": 1
+      },
+      "note": "马匹区域，适合骑兵调度。"
+    },
+    {
+      "id": "jinzhou",
+      "name": "锦州",
+      "type": "city",
+      "polygon": [
+        { "x": 0.575, "y": 0.405 },
+        { "x": 0.66, "y": 0.392 },
+        { "x": 0.69, "y": 0.462 },
+        { "x": 0.64, "y": 0.515 },
+        { "x": 0.575, "y": 0.49 }
+      ],
+      "labelPoint": { "x": 0.62, "y": 0.45 },
+      "stackPoints": [
+        { "id": "jinzhou-army", "role": "army", "x": 0.616, "y": 0.474 },
+        { "id": "jinzhou-city", "role": "city", "x": 0.642, "y": 0.436 },
+        { "id": "jinzhou-control", "role": "control", "x": 0.596, "y": 0.43 }
+      ],
+      "adjacentRegionIds": ["datong", "baicheng", "shengjing", "beijing"],
+      "movementCostByRegionId": {
+        "datong": 2,
+        "baicheng": 1,
+        "shengjing": 1,
+        "beijing": 2
+      },
+      "note": "辽西关键点，连通山海关与辽东。"
+    },
+    {
+      "id": "shengjing",
+      "name": "盛京",
+      "type": "city",
+      "polygon": [
+        { "x": 0.765, "y": 0.375 },
+        { "x": 0.865, "y": 0.37 },
+        { "x": 0.89, "y": 0.455 },
+        { "x": 0.825, "y": 0.508 },
+        { "x": 0.755, "y": 0.47 }
+      ],
+      "labelPoint": { "x": 0.82, "y": 0.43 },
+      "stackPoints": [
+        { "id": "shengjing-army", "role": "army", "x": 0.818, "y": 0.462 },
+        { "id": "shengjing-city", "role": "city", "x": 0.842, "y": 0.414 },
+        { "id": "shengjing-control", "role": "control", "x": 0.792, "y": 0.412 }
+      ],
+      "adjacentRegionIds": ["jinzhou"],
+      "movementCostByRegionId": {
+        "jinzhou": 1
+      },
+      "note": "后金核心区域，右侧接近朝鲜牌库。"
+    },
+    {
+      "id": "beijing",
+      "name": "北京",
+      "type": "city",
+      "polygon": [
+        { "x": 0.425, "y": 0.612 },
+        { "x": 0.515, "y": 0.61 },
+        { "x": 0.54, "y": 0.695 },
+        { "x": 0.47, "y": 0.735 },
+        { "x": 0.412, "y": 0.685 }
+      ],
+      "labelPoint": { "x": 0.47, "y": 0.66 },
+      "stackPoints": [
+        { "id": "beijing-army", "role": "army", "x": 0.468, "y": 0.69 },
+        { "id": "beijing-city", "role": "city", "x": 0.494, "y": 0.642 },
+        { "id": "beijing-population", "role": "population", "x": 0.445, "y": 0.638 }
+      ],
+      "adjacentRegionIds": ["datong", "jinzhou"],
+      "movementCostByRegionId": {
+        "datong": 1,
+        "jinzhou": 2
+      },
+      "note": "大明首都，城战与 VP 判断重点。"
+    }
+  ],
+  "movementEdges": [
+    { "id": "baicheng__datong", "fromRegionId": "datong", "toRegionId": "baicheng", "cost": 2, "bidirectional": true },
+    { "id": "datong__jinzhou", "fromRegionId": "datong", "toRegionId": "jinzhou", "cost": 2, "bidirectional": true },
+    { "id": "beijing__datong", "fromRegionId": "datong", "toRegionId": "beijing", "cost": 1, "bidirectional": true },
+    { "id": "baicheng__jinzhou", "fromRegionId": "baicheng", "toRegionId": "jinzhou", "cost": 1, "bidirectional": true },
+    { "id": "jinzhou__shengjing", "fromRegionId": "jinzhou", "toRegionId": "shengjing", "cost": 1, "bidirectional": true },
+    { "id": "beijing__jinzhou", "fromRegionId": "jinzhou", "toRegionId": "beijing", "cost": 2, "bidirectional": true }
+  ]
+}

@@ -150,10 +150,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const useCompactPlayerRail = shouldUseCompactPlayerRail(viewportSize, playerOrder.length);
     const shouldShowPlayerSelectionRail = !isUltraCompactLandscape;
     const remainingSelections = Math.max(0, 2 - mySelections.length);
-    const effectiveFactionSearch = useLegacyWideDesktopDraftLayout ? '' : factionSearch;
-    const visibilityMode = useLegacyWideDesktopDraftLayout
-        ? 'all'
-        : (customVisibilityMode ?? getDefaultFactionVisibilityMode(viewportSize));
+    const visibilityMode = customVisibilityMode ?? getDefaultFactionVisibilityMode(viewportSize);
     const focusedFactionMeta = resolvedActiveFactionId ? getFactionMeta(resolvedActiveFactionId) ?? null : null;
     const focusedMechanicTutorial = focusedFactionGroup
         ? getFactionMechanicTutorial(focusedFactionGroup.groupId)
@@ -188,8 +185,8 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         };
     }, [mySelectionIdentities, takenFactionIdentities, visibleFactionGroups]);
 
-    const normalizedFactionSearch = effectiveFactionSearch.trim().toLowerCase();
-    const shouldShowFactionFilterToolbar = !useLegacyWideDesktopDraftLayout && (
+    const normalizedFactionSearch = factionSearch.trim().toLowerCase();
+    const shouldShowFactionFilterToolbar = (
         isMobileLandscape
         || viewportSize.width < 960
         || factionStatusCounts.total >= 10
@@ -678,11 +675,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         <div
             className={useDesktopLikeLandscapeLayout
                 ? isUltraCompactLandscape
-                    ? 'relative z-30 w-full shrink-0 pointer-events-none bg-gradient-to-t from-black/42 via-black/12 to-transparent px-2 pb-2 pt-1.5'
-                    : 'relative z-30 w-full shrink-0 pointer-events-none bg-gradient-to-t from-black/45 via-black/18 to-transparent px-3 pb-4 pt-3'
+                    ? 'absolute inset-x-0 bottom-0 z-30 w-full pointer-events-none bg-gradient-to-t from-black/42 via-black/12 to-transparent px-2 pb-2 pt-1.5'
+                    : 'absolute inset-x-0 bottom-0 z-30 w-full pointer-events-none bg-gradient-to-t from-black/45 via-black/18 to-transparent px-3 pb-4 pt-3'
                 : useMinimalPlayerRail
-                    ? 'relative z-30 w-full shrink-0 pointer-events-none bg-gradient-to-t from-black/34 via-black/10 to-transparent px-2.5 pb-1.5 pt-1.5 lg:px-5'
-                    : 'relative z-30 w-full shrink-0 pointer-events-none bg-gradient-to-t from-black/40 via-black/12 to-transparent px-3 pb-4 pt-4 lg:px-6'}
+                    ? 'absolute inset-x-0 bottom-0 z-30 w-full pointer-events-none bg-gradient-to-t from-black/34 via-black/10 to-transparent px-2.5 pb-1.5 pt-1.5 lg:px-5'
+                    : 'absolute inset-x-0 bottom-0 z-30 w-full pointer-events-none bg-gradient-to-t from-black/40 via-black/12 to-transparent px-3 pb-4 pt-4 lg:px-6'}
             data-testid="faction-selection-player-rail"
         >
             <div className={useDesktopLikeLandscapeLayout

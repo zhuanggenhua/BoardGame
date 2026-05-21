@@ -1,6 +1,7 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import { initAllAbilities, resetAbilityInit } from '../abilities';
-import { fireTriggers } from '../domain/ongoingEffects';
+import { collectTriggers, fireTriggers } from '../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../domain/reactionQueue';
 import { SU_EVENTS } from '../domain/types';
 import {
     getPromptsBySourceId,
@@ -8,6 +9,7 @@ import {
     makeBase,
     makeMatchState,
     makeMinion,
+    makePlayer,
     makeState,
     respondToPromptOption,
     withOnlyCurrentPrompt,
@@ -148,5 +150,44 @@ describe('外星侦察兵 afterScoring', () => {
         expect(resolved.success, resolved.error).toBe(true);
         expect(resolved.events.some(event => event.type === SU_EVENTS.MINION_RETURNED)).toBe(false);
         expect(resolved.finalState.core.players['1'].hand.some(card => card.uid === 'scout1')).toBe(false);
+    });
+
+    it('alien_scout 在对手计分时仍应把 queued afterScoring 选择权交给侦察兵控制者', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase('base_great_library', [
+                    makeMinion('scout1', 'alien_scout', '1', 3),
+                    makeMinion('m1', 'wizard_neophyte', '0', 2),
+                ]),
+                makeBase('base_other'),
+            ],
+        });
+
+        const queued = collectTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 10, vp: 3 }],
+            random: dummyRandom,
+            now: 102,
+        });
+
+        expect(queued).toBeDefined();
+        const trigger = (queued as any).payload.triggers.find((entry: any) => entry.sourceCardUid === 'scout1');
+        expect(trigger).toBeDefined();
+        expect(trigger.ownerPlayerId).toBe('1');
+
+        const queuedState = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
+            dummyRandom,
+            102,
+        );
+        expect(queuedState).toBeDefined();
+        expect(getSimpleChoicePrompt(queuedState!.state, 'alien_scout_return')?.playerId).toBe('1');
     });
 });

@@ -248,7 +248,8 @@ function princessesSleepingBeautyOnDiscarded(ctx: TriggerContext): TriggerResult
     if (ctx.triggerMinionDefId !== 'princesses_sleeping_beauty' && ctx.triggerMinionDefId !== 'princesses_sleeping_beauty_pod') {
         return [];
     }
-    const player = ctx.state.players[ctx.playerId];
+    const ownerId = ctx.triggerMinion?.owner ?? ctx.playerId;
+    const player = ctx.state.players[ownerId];
     const card = player?.discard.find(entry => entry.uid === ctx.triggerMinionUid && entry.defId === ctx.triggerMinionDefId);
     if (!card || !ctx.triggerMinionUid) return [];
 
@@ -256,7 +257,7 @@ function princessesSleepingBeautyOnDiscarded(ctx: TriggerContext): TriggerResult
     return [{
         type: SU_EVENTS.DECK_REORDERED,
         payload: {
-            playerId: ctx.playerId,
+            playerId: ownerId,
             deckUids: shuffled.map(entry => entry.uid),
         },
         timestamp: ctx.now,

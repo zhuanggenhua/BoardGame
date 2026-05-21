@@ -2133,3 +2133,27 @@ const interactionDataForEvent = responseValidationMode === 'live'
 
 - 这是 completion-audit 证据补强，不是新的玩法 runtime 修复，也不是 `The Spy Who Ditched Me` 原卡真实入口 E2E。
 - 后续不要再把这三条 `legal-action-recovered / seat-legal-only` success 分支当成 “只有 reason、缺 payload provenance” 的开放残口；继续时应找别的 still-reason-only/suppressed success seam，或回到真实多人原卡链路。
+
+## 2026-05-21 waiting overlay revalidation
+
+- 本轮没有继续横向扩 `server.test.ts` 或再造新的 synthetic seam，而是先把 active goal 里最贴脸的 waiting overlay 多人门禁在**当前主仓**重新复跑，确认这条 shared transport / playerView / page-shell 证据在后续一轮轮 owner-context / queued-trigger 修复后没有回归。
+
+### 本轮复验
+
+1. `PW_WORKERS=1 PW_USE_DEV_SERVERS=false PW_E2E_FRONTEND_PORT=4274 PW_PORT=4274 PW_E2E_GAME_SERVER_PORT=20210 PW_GAME_SERVER_PORT=20210 GAME_SERVER_PORT=20210 PW_E2E_API_SERVER_PORT=21210 PW_API_SERVER_PORT=21210 API_SERVER_PORT=21210 PW_RUNTIME_SCOPE=smashup-waiting-overlay-close BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=300000 npm run test:e2e:ci:file -- e2e/smashup/smashup-phase-transition-simple.e2e.ts "在线双人非目标页在 prompt 打开与权威关闭后都不应残留 waiting overlay"`
+   - 结果：`1 passed`
+
+2. 当前仓复跑截图：
+   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\在线双人非目标页在-prompt-打开与权威关闭后都不应残留-waiting-overlay\在线双人非目标页在-prompt-打开与权威关闭后都不应残留-waiting-overlay-online-waiting-overlay-open-filtered-nontarget.png`
+   - `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\smashup\smashup-phase-transition-simple.e2e\在线双人非目标页在-prompt-打开与权威关闭后都不应残留-waiting-overlay\在线双人非目标页在-prompt-打开与权威关闭后都不应残留-waiting-overlay-online-waiting-overlay-after-authoritative-close.png`
+
+### 本轮结论
+
+- 当前主仓里，Guest 非目标页在 prompt 打开期间仍保持 `currentId:null / isBlocked:true` 且**没有**中央 waiting overlay；权威关闭后保持 `currentId:null / isBlocked:false` 且**仍没有**中央 waiting overlay。
+- 这说明 active goal 里点名的 Host/非目标页 waiting overlay synthetic 多人浏览器证据在当前仓没有被后续 shared 变更打坏。
+
+### 当前边界
+
+- 这次是**当前仓复验仍绿**，不是新的玩法 runtime 修复。
+- 它仍然只是 synthetic owner-only prompt 状态注入，不是 `The Spy Who Ditched Me` 从真实卡牌入口打出的完整多人链；因此可以确认当前 shared transport/playerView/page-shell 证据未回退，但不能把整个 goal 标记完成。
+- 后续若继续贴着旧 objective 往前推，下一格应优先找“当前仓能真实打出的 owner-only prompt 链”或对应 worktree 里的 `super_spies` 真卡入口，而不是重复把这条 synthetic waiting-overlay 门禁当成未验证项。

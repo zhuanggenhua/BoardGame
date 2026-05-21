@@ -800,7 +800,13 @@ describe('scoreBases 阶段自动推进', () => {
 
         expect(withSeatSpecificState?.playerId).toBe('1');
         expect(withSeatSpecificState?.action.kind).toBe('interaction-choice');
-        expect(withSeatSpecificState?.action.commands).toEqual([respondCommand('target-shinobi')]);
+        expect(withSeatSpecificState?.action.commands).toEqual([{
+            ...respondCommand('target-shinobi'),
+            payload: {
+                interactionId: 'wizard_sacrifice_hidden_choice',
+                optionId: 'target-shinobi',
+            },
+        }]);
         expect((withSeatSpecificState?.action as any)?.metadata?.optionValue).toEqual({ minionUid: 'c66', baseIndex: 0 });
     });
 

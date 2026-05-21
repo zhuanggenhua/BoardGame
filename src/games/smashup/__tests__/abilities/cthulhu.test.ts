@@ -5,8 +5,9 @@ import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { countMadnessCards, madnessVpPenalty } from '../../domain/abilityHelpers';
-import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
 import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { execute, reduce } from '../../domain/reducer';
 import type {
     BaseReplacedEvent,
@@ -453,6 +454,82 @@ describe('cthulhu_chosen beforeScoring', () => {
         expect(powerEvents).toHaveLength(1);
         expect(powerEvents[0].payload.minionUid).toBe('ch1');
         expect(powerEvents[0].payload.baseIndex).toBe(1);
+    });
+
+    it('cthulhu_chosen 在对手计分前仍应把 queued beforeScoring 选择权交给随从控制者', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ minions: [makeMinion('chosen-owner-1', 'cthulhu_chosen', '1', 3, { powerModifier: 0 })] }),
+                makeBase(),
+            ],
+            madnessDeck: Array.from({ length: 2 }, (_, i) => ({
+                uid: `mad-owner-${i}`,
+                defId: MADNESS_CARD_DEF_ID,
+                type: 'madness' as const,
+            })),
+            nextUid: 220,
+        });
+
+        const queued = collectTriggers(state, 'beforeScoring', {
+            state,
+            matchState: makeMS(state),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 10, vp: 1 }],
+            random: dummyRandom,
+            now: 1,
+        });
+
+        expect(queued).toBeDefined();
+        const chosenTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'chosen-owner-1');
+        expect(chosenTrigger).toBeDefined();
+        expect(chosenTrigger.ownerPlayerId).toBe('1');
+
+        const queuedState = maybeResolveReactionQueue(
+            makeMatchState({ ...state, triggerQueue: (queued as any).payload.triggers }),
+            dummyRandom,
+            1,
+        );
+        expect(queuedState).toBeDefined();
+        expect(getSimpleChoicePrompt(queuedState!.state, 'cthulhu_chosen_confirm')?.playerId).toBe('1');
+    });
+
+    it('cthulhu_chosen_pod 在对手计分前仍应把 queued beforeScoring 选择权交给随从控制者', () => {
+        const state = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                makeBase({ minions: [makeMinion('chosen-owner-pod-1', 'cthulhu_chosen_pod', '1', 3, { powerModifier: 0 })] }),
+                makeBase(),
+            ],
+            madnessDeck: Array.from({ length: 2 }, (_, i) => ({
+                uid: `mad-owner-pod-${i}`,
+                defId: MADNESS_CARD_DEF_ID,
+                type: 'madness' as const,
+            })),
+            nextUid: 221,
+        });
+
+        const queued = collectTriggers(state, 'beforeScoring', {
+            state,
+            matchState: makeMS(state),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 10, vp: 1 }],
+            random: dummyRandom,
+            now: 2,
+        });
+
+        expect(queued).toBeDefined();
+        const chosenTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'chosen-owner-pod-1');
+        expect(chosenTrigger).toBeDefined();
+        expect(chosenTrigger.ownerPlayerId).toBe('1');
     });
 });
 

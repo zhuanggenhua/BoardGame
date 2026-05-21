@@ -203,6 +203,7 @@ export function registerCowboysAbilities(): void {
     registerTrigger('cowboys_sheriff', 'beforeScoring', cowboysSheriffBeforeScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('cowboys_gold_strike', 'onMinionPlayed', cowboysGoldStrikeOnMinionPlayed, {

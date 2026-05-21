@@ -1085,6 +1085,72 @@ describe('Samurai abilities', () => {
         expect(tempPowerTargets).toContain('ally-pod-2');
     });
 
+    it('samurai_final_haiku 在宿主进入弃牌堆后仍会通过 queued discard trigger 给其他己方随从 +2 力量', () => {
+        const preDiscardCore = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [
+                        makeMinion('host-1', 'samurai_bushi', '0', 4, {
+                            attachedActions: [{ uid: 'haiku-1', defId: 'samurai_final_haiku', ownerId: '0' }] as any,
+                        }),
+                        makeMinion('ally-1', 'samurai_ronin', '0', 3),
+                    ],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('ally-2', 'robot_microbot_alpha', '0', 2)],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(preDiscardCore, 'onMinionDiscardedFromBase', {
+            state: preDiscardCore,
+            matchState: makeMatchState(preDiscardCore),
+            playerId: '0',
+            baseIndex: 0,
+            triggerMinion: preDiscardCore.bases[0].minions[0],
+            triggerMinionUid: 'host-1',
+            triggerMinionDefId: 'samurai_bushi',
+            random: defaultTestRandom,
+            now: 1006,
+        });
+
+        expect(queued).toBeDefined();
+
+        const queuedCore = makeState({
+            players: preDiscardCore.players,
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [makeMinion('ally-1', 'samurai_ronin', '0', 3)],
+                    ongoingActions: [],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [makeMinion('ally-2', 'robot_microbot_alpha', '0', 2)],
+                    ongoingActions: [],
+                },
+            ],
+            triggerQueue: (queued as any).payload.triggers,
+        });
+
+        const resolved = maybeResolveReactionQueue(makeMatchState(queuedCore), defaultTestRandom, 1006);
+        expect(resolved).toBeDefined();
+        const tempPowerTargets = resolved!.events
+            .filter(event => event.type === SU_EVENTS.TEMP_POWER_ADDED)
+            .map((event: any) => event.payload.minionUid);
+        expect(tempPowerTargets).toContain('ally-1');
+        expect(tempPowerTargets).toContain('ally-2');
+        expect(tempPowerTargets).not.toContain('host-1');
+    });
+
     it('samurai_honor_the_fallen 在你此处的随从进入弃牌堆后让你抓一张牌', () => {
         const state = makeState({
             players: {

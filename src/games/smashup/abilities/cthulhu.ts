@@ -283,6 +283,7 @@ export function registerCthulhuAbilities(): void {
     // 天选之人：基地计分前抽疑狂卡?2力量
     registerTrigger('cthulhu_chosen', 'beforeScoring', cthulhuChosenBeforeScoringPerInstance, {
         perInstance: true,
+        playerContext: 'sourceController',
     });
     // 完成仪式：回合开始时清场并换基地
     registerTrigger('cthulhu_complete_the_ritual', 'onTurnStart', cthulhuCompleteTheRitualTrigger, {

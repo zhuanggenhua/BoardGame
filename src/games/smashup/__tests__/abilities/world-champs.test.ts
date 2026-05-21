@@ -4,17 +4,11 @@ import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { clearOngoingEffectRegistry, collectTriggers } from '../../domain/ongoingEffects';
-import { clearPowerModifierRegistry } from '../../domain/ongoingModifiers';
 import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
-import { SU_COMMANDS } from '../../domain/types';
-import { defaultTestRandom, runCommand } from '../testRunner';
+import { defaultTestRandom } from '../testRunner';
 import {
     getReactionPrompt,
-    getPromptSourceId,
-    getPromptTargetType,
-    getSimpleChoicePrompt,
     makeBase,
-    makeCard,
     makeMatchState,
     makeMinion,
     makePlayer,
@@ -24,44 +18,14 @@ import {
 beforeAll(() => {
     clearRegistry();
     clearBaseAbilityRegistry();
-    clearPowerModifierRegistry();
     clearOngoingEffectRegistry();
     clearInteractionHandlers();
     resetAbilityInit();
     initAllAbilities();
 });
 
-describe('ancient_egyptians_plague_of_locusts onPlay', () => {
-    it('正常打出时会创建选基地交互', () => {
-        const state = makeState({
-            players: {
-                '0': makePlayer('0', {
-                    hand: [makeCard('plague-1', 'ancient_egyptians_plague_of_locusts', 'action', '0')],
-                }),
-                '1': makePlayer('1'),
-            },
-            bases: [makeBase(), makeBase()],
-        });
-        const matchState = makeMatchState(state);
-        const result = runCommand(
-            matchState,
-            {
-                type: SU_COMMANDS.PLAY_ACTION,
-                playerId: '0',
-                payload: { cardUid: 'plague-1', targetBaseIndex: 0 },
-            } as any,
-            defaultTestRandom,
-        );
-
-        expect(result.success).toBe(true);
-        const current = getSimpleChoicePrompt(result.finalState, 'ancient_egyptians_plague_of_locusts');
-        expect(getPromptSourceId(current)).toBe('ancient_egyptians_plague_of_locusts');
-        expect(getPromptTargetType(current)).toBe('base');
-    });
-});
-
-describe('Ancient Egyptians queued source-controller runtime context', () => {
-    it('ancient_egyptians_mummy 在对手计分时仍应把 queued afterScoring 选择权交给随从控制者', () => {
+describe('World Champs queued source-controller runtime context', () => {
+    it('world_champs_mummy 在对手计分时仍应把 queued afterScoring 选择权交给随从控制者', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -70,7 +34,7 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
             bases: [
                 makeBase({
                     defId: 'base_a',
-                    minions: [makeMinion('mummy-1', 'ancient_egyptians_mummy', '1', 4)],
+                    minions: [makeMinion('wc-mummy-1', 'world_champs_mummy', '1', 4)],
                     ongoingActions: [],
                 }),
                 makeBase({
@@ -88,24 +52,24 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
             baseIndex: 0,
             rankings: [{ playerId: '0', power: 10, vp: 1 }],
             random: defaultTestRandom,
-            now: 4101,
+            now: 4201,
         });
 
         expect(queued).toBeDefined();
-        const mummyTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'mummy-1');
+        const mummyTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'wc-mummy-1');
         expect(mummyTrigger).toBeDefined();
         expect(mummyTrigger.ownerPlayerId).toBe('1');
 
         const queuedState = maybeResolveReactionQueue(
             makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
             defaultTestRandom,
-            4101,
+            4201,
         );
         expect(queuedState).toBeDefined();
         expect(getReactionPrompt(queuedState!.state)?.playerId).toBe('1');
     });
 
-    it('ancient_egyptians_mummy_pod 在对手计分时仍应把 queued afterScoring 选择权交给随从控制者', () => {
+    it('world_champs_mummy_pod 在对手计分时仍应把 queued afterScoring 选择权交给随从控制者', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -114,7 +78,7 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
             bases: [
                 makeBase({
                     defId: 'base_a',
-                    minions: [makeMinion('mummy-pod-1', 'ancient_egyptians_mummy_pod', '1', 4)],
+                    minions: [makeMinion('wc-mummy-pod-1', 'world_champs_mummy_pod', '1', 4)],
                     ongoingActions: [],
                 }),
                 makeBase({
@@ -132,16 +96,16 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
             baseIndex: 0,
             rankings: [{ playerId: '0', power: 10, vp: 1 }],
             random: defaultTestRandom,
-            now: 4103,
+            now: 4203,
         });
 
         expect(queued).toBeDefined();
-        const mummyTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'mummy-pod-1');
+        const mummyTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'wc-mummy-pod-1');
         expect(mummyTrigger).toBeDefined();
         expect(mummyTrigger.ownerPlayerId).toBe('1');
     });
 
-    it('ancient_egyptians_pharaoh 在对手计分前仍应把 queued beforeScoring 选择权交给随从控制者', () => {
+    it('world_champs_sheriff 在对手计分前仍应把 queued beforeScoring 选择权交给随从控制者', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -150,8 +114,10 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
             bases: [
                 makeBase({
                     defId: 'base_a',
-                    minions: [makeMinion('pharaoh-1', 'ancient_egyptians_pharaoh', '1', 5)],
-                    buriedCards: [makeCard('buried-1', 'robot_microbot_alpha', 'minion', '1')],
+                    minions: [
+                        makeMinion('wc-sheriff-1', 'world_champs_sheriff', '1', 4),
+                        makeMinion('enemy-1', 'robot_microbot_alpha', '0', 2),
+                    ],
                     ongoingActions: [],
                 }),
                 makeBase({
@@ -169,24 +135,24 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
             baseIndex: 0,
             rankings: [{ playerId: '0', power: 10, vp: 1 }],
             random: defaultTestRandom,
-            now: 4102,
+            now: 4202,
         });
 
         expect(queued).toBeDefined();
-        const pharaohTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'pharaoh-1');
-        expect(pharaohTrigger).toBeDefined();
-        expect(pharaohTrigger.ownerPlayerId).toBe('1');
+        const sheriffTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'wc-sheriff-1');
+        expect(sheriffTrigger).toBeDefined();
+        expect(sheriffTrigger.ownerPlayerId).toBe('1');
 
         const queuedState = maybeResolveReactionQueue(
             makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
             defaultTestRandom,
-            4102,
+            4202,
         );
         expect(queuedState).toBeDefined();
         expect(getReactionPrompt(queuedState!.state)?.playerId).toBe('1');
     });
 
-    it('ancient_egyptians_pharaoh_pod 在对手计分前仍应把 queued beforeScoring 选择权交给随从控制者', () => {
+    it('world_champs_sheriff_pod 在对手计分前仍应把 queued beforeScoring 选择权交给随从控制者', () => {
         const core = makeState({
             players: {
                 '0': makePlayer('0'),
@@ -195,8 +161,10 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
             bases: [
                 makeBase({
                     defId: 'base_a',
-                    minions: [makeMinion('pharaoh-pod-1', 'ancient_egyptians_pharaoh_pod', '1', 5)],
-                    buriedCards: [makeCard('buried-2', 'robot_microbot_alpha', 'minion', '1')],
+                    minions: [
+                        makeMinion('wc-sheriff-pod-1', 'world_champs_sheriff_pod', '1', 4),
+                        makeMinion('enemy-pod-1', 'robot_microbot_alpha', '0', 2),
+                    ],
                     ongoingActions: [],
                 }),
                 makeBase({
@@ -214,12 +182,12 @@ describe('Ancient Egyptians queued source-controller runtime context', () => {
             baseIndex: 0,
             rankings: [{ playerId: '0', power: 10, vp: 1 }],
             random: defaultTestRandom,
-            now: 4104,
+            now: 4204,
         });
 
         expect(queued).toBeDefined();
-        const pharaohTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'pharaoh-pod-1');
-        expect(pharaohTrigger).toBeDefined();
-        expect(pharaohTrigger.ownerPlayerId).toBe('1');
+        const sheriffTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'wc-sheriff-pod-1');
+        expect(sheriffTrigger).toBeDefined();
+        expect(sheriffTrigger.ownerPlayerId).toBe('1');
     });
 });

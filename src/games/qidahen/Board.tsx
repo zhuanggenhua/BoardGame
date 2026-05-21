@@ -2,6 +2,11 @@ import React from 'react';
 import type { GameBoardProps } from '../../engine/transport/protocol';
 import type { QidahenCommandMap, QidahenCore, QidahenFactionId, QidahenRegionSummary } from './domain';
 import { QIDAHEN_COMMANDS } from './domain/commands';
+import {
+    QIDAHEN_MAP_REGION_DATA,
+    type QidahenMapRegion,
+    type QidahenMovementEdge,
+} from './config/mapRegions';
 
 type Props = GameBoardProps<QidahenCore, QidahenCommandMap>;
 
@@ -288,9 +293,315 @@ const ActionWheelMini: React.FC<{ current: string }> = ({ current }) => {
     );
 };
 
+const canonicalEdgeId = (fromRegionId: string, toRegionId: string) => (
+    [fromRegionId, toRegionId].sort().join('__')
+);
+
+const edgeLabelPoint = (from: QidahenMapRegion, to: QidahenMapRegion) => ({
+    x: (from.labelPoint.x + to.labelPoint.x) / 2,
+    y: (from.labelPoint.y + to.labelPoint.y) / 2,
+});
+
+const buildRegionDataExport = (
+    regions: QidahenMapRegion[],
+    edges: QidahenMovementEdge[],
+) => {
+    const movementByRegionId: Record<string, Record<string, number>> = {};
+    const adjacencyByRegionId: Record<string, Set<string>> = {};
+
+    for (const region of regions) {
+        movementByRegionId[region.id] = {};
+        adjacencyByRegionId[region.id] = new Set();
+    }
+
+    for (const edge of edges) {
+        movementByRegionId[edge.fromRegionId][edge.toRegionId] = edge.cost;
+        adjacencyByRegionId[edge.fromRegionId].add(edge.toRegionId);
+        if (edge.bidirectional) {
+            movementByRegionId[edge.toRegionId][edge.fromRegionId] = edge.cost;
+            adjacencyByRegionId[edge.toRegionId].add(edge.fromRegionId);
+        }
+    }
+
+    return {
+        ...QIDAHEN_MAP_REGION_DATA,
+        regions: regions.map((region) => ({
+            ...region,
+            adjacentRegionIds: Array.from(adjacencyByRegionId[region.id]).sort(),
+            movementCostByRegionId: Object.fromEntries(
+                Object.entries(movementByRegionId[region.id]).sort(([left], [right]) => left.localeCompare(right)),
+            ),
+        })),
+        movementEdges: edges,
+    };
+};
+
+const QidahenMapCostEditor: React.FC<{
+    selectedRegionId: string;
+    onSelectRegion: (regionId: string) => void;
+}> = ({ selectedRegionId, onSelectRegion }) => {
+    const regions = QIDAHEN_MAP_REGION_DATA.regions;
+    const regionById = React.useMemo(() => new Map(regions.map((region) => [region.id, region])), [regions]);
+    const [sourceRegionId, setSourceRegionId] = React.useState(selectedRegionId);
+    const [targetRegionId, setTargetRegionId] = React.useState<string | null>(null);
+    const [edges, setEdges] = React.useState<QidahenMovementEdge[]>(() => QIDAHEN_MAP_REGION_DATA.movementEdges);
+    const [copied, setCopied] = React.useState(false);
+
+    React.useEffect(() => {
+        if (selectedRegionId) setSourceRegionId(selectedRegionId);
+    }, [selectedRegionId]);
+
+    const selectedSource = regionById.get(sourceRegionId) ?? regions[0];
+    const outgoingEdges = edges.filter((edge) => (
+        edge.fromRegionId === sourceRegionId || (edge.bidirectional && edge.toRegionId === sourceRegionId)
+    ));
+    const exportData = React.useMemo(() => buildRegionDataExport(regions, edges), [edges, regions]);
+    const exportText = React.useMemo(() => JSON.stringify(exportData, null, 2), [exportData]);
+
+    const upsertEdge = React.useCallback((fromRegionId: string, toRegionId: string, cost: number) => {
+        if (fromRegionId === toRegionId) return;
+        const id = canonicalEdgeId(fromRegionId, toRegionId);
+        setEdges((current) => {
+            const existing = current.find((edge) => edge.id === id);
+            if (existing) {
+                return current.map((edge) => (
+                    edge.id === id
+                        ? { ...edge, cost: clamp(Math.round(cost), 1, 9) }
+                        : edge
+                ));
+            }
+            return [
+                ...current,
+                {
+                    id,
+                    fromRegionId,
+                    toRegionId,
+                    cost: clamp(Math.round(cost), 1, 9),
+                    bidirectional: true,
+                },
+            ].sort((left, right) => left.id.localeCompare(right.id));
+        });
+    }, []);
+
+    const removeEdge = React.useCallback((edgeId: string) => {
+        setEdges((current) => current.filter((edge) => edge.id !== edgeId));
+    }, []);
+
+    const handleRegionPick = React.useCallback((regionId: string) => {
+        onSelectRegion(regionId);
+        if (!sourceRegionId || sourceRegionId === regionId) {
+            setSourceRegionId(regionId);
+            setTargetRegionId(null);
+            return;
+        }
+        setTargetRegionId(regionId);
+        upsertEdge(sourceRegionId, regionId, 1);
+    }, [onSelectRegion, sourceRegionId, upsertEdge]);
+
+    const handleCopy = React.useCallback(async () => {
+        try {
+            await navigator.clipboard?.writeText(exportText);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1400);
+        } catch {
+            setCopied(false);
+        }
+    }, [exportText]);
+
+    return (
+        <>
+            <svg
+                className="absolute inset-0 z-10 h-full w-full"
+                viewBox="0 0 1 1"
+                preserveAspectRatio="none"
+                data-testid="qidahen-map-cost-editor-overlay"
+            >
+                {regions.map((region) => {
+                    const selected = region.id === sourceRegionId;
+                    const target = region.id === targetRegionId;
+                    return (
+                        <polygon
+                            key={region.id}
+                            points={region.polygon.map((point) => `${point.x},${point.y}`).join(' ')}
+                            className="cursor-crosshair"
+                            fill={selected ? 'rgba(190, 68, 46, 0.26)' : target ? 'rgba(223, 173, 83, 0.24)' : 'rgba(23, 17, 10, 0.06)'}
+                            stroke={selected ? '#f0b35f' : target ? '#ffe2a8' : '#b8884b'}
+                            strokeWidth={selected || target ? 0.004 : 0.002}
+                            vectorEffect="non-scaling-stroke"
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                handleRegionPick(region.id);
+                            }}
+                        />
+                    );
+                })}
+                {edges.map((edge) => {
+                    const from = regionById.get(edge.fromRegionId);
+                    const to = regionById.get(edge.toRegionId);
+                    if (!from || !to) return null;
+                    const active = edge.fromRegionId === sourceRegionId
+                        || edge.toRegionId === sourceRegionId
+                        || edge.toRegionId === targetRegionId
+                        || edge.fromRegionId === targetRegionId;
+                    return (
+                        <line
+                            key={edge.id}
+                            x1={from.labelPoint.x}
+                            y1={from.labelPoint.y}
+                            x2={to.labelPoint.x}
+                            y2={to.labelPoint.y}
+                            stroke={active ? '#ffd071' : '#d35642'}
+                            strokeWidth={active ? 0.005 : 0.003}
+                            strokeDasharray={active ? '0.015 0.008' : undefined}
+                            strokeLinecap="round"
+                            vectorEffect="non-scaling-stroke"
+                        />
+                    );
+                })}
+            </svg>
+            <div className="pointer-events-none absolute inset-0 z-20">
+                {edges.map((edge) => {
+                    const from = regionById.get(edge.fromRegionId);
+                    const to = regionById.get(edge.toRegionId);
+                    if (!from || !to) return null;
+                    const label = edgeLabelPoint(from, to);
+                    return (
+                        <div
+                            key={edge.id}
+                            className="absolute grid h-7 min-w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border border-[#ffe0a2] bg-[#3b1711]/95 px-2 text-[12px] font-black text-[#ffe4ad] shadow-[0_4px_12px_rgba(0,0,0,0.42)]"
+                            style={{ left: `${label.x * 100}%`, top: `${label.y * 100}%` }}
+                            data-testid={`qidahen-map-cost-label-${edge.id}`}
+                        >
+                            {edge.cost}
+                        </div>
+                    );
+                })}
+            </div>
+            <aside
+                className="absolute right-3 top-3 z-40 flex max-h-[calc(100%-24px)] w-[360px] flex-col border border-[#c18b4c] bg-[#120d08]/96 shadow-[0_18px_44px_rgba(0,0,0,0.52)]"
+                data-testid="qidahen-map-cost-editor"
+            >
+                <div className="border-b border-[#6d5433] bg-[#421b13] px-3 py-2">
+                    <div className="text-[13px] font-black tracking-[0.18em] text-[#ffe2ad]">区域移动代价编辑</div>
+                    <div className="mt-1 text-[11px] text-[#d9bd85]">源区域：{selectedSource?.name ?? '未选择'}，点击地图区域可建立/选中边。</div>
+                </div>
+                <div className="min-h-0 flex-1 overflow-y-auto p-3">
+                    <div className="grid grid-cols-3 gap-1.5">
+                        {regions.map((region) => (
+                            <button
+                                key={region.id}
+                                type="button"
+                                className={`border px-2 py-1.5 text-[12px] font-bold ${region.id === sourceRegionId ? 'border-[#f0c36a] bg-[#6f2a1f] text-[#ffe2ad]' : 'border-[#5b4329] bg-[#1d160f] text-[#d8bf8c]'}`}
+                                onClick={() => {
+                                    setSourceRegionId(region.id);
+                                    setTargetRegionId(null);
+                                    onSelectRegion(region.id);
+                                }}
+                            >
+                                {region.name}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mt-3 border border-[#4a3824] bg-black/24 p-2">
+                        <div className="mb-2 text-[12px] font-bold text-[#f0c989]">相邻区域与移动代价</div>
+                        {outgoingEdges.length > 0 ? (
+                            <div className="space-y-2">
+                                {outgoingEdges.map((edge) => {
+                                    const otherRegionId = edge.fromRegionId === sourceRegionId ? edge.toRegionId : edge.fromRegionId;
+                                    const otherRegion = regionById.get(otherRegionId);
+                                    return (
+                                        <div
+                                            key={edge.id}
+                                            className="grid grid-cols-[1fr_70px_52px] items-center gap-2"
+                                            data-testid={`qidahen-map-cost-edge-row-${edge.id}`}
+                                        >
+                                            <span className="truncate text-[12px] text-[#dec58e]">{otherRegion?.name ?? otherRegionId}</span>
+                                            <input
+                                                className="h-8 border border-[#755632] bg-[#20150d] px-2 text-center text-[14px] font-black text-[#ffe2ad]"
+                                                type="number"
+                                                min={1}
+                                                max={9}
+                                                value={edge.cost}
+                                                aria-label={`${otherRegion?.name ?? otherRegionId} 移动代价`}
+                                                onChange={(event) => upsertEdge(edge.fromRegionId, edge.toRegionId, Number(event.target.value))}
+                                            />
+                                            <button
+                                                type="button"
+                                                className="h-8 border border-[#5d3328] bg-[#2a1812] text-[12px] font-bold text-[#d9a081]"
+                                                data-testid={`qidahen-map-cost-edge-delete-${edge.id}`}
+                                                onClick={() => removeEdge(edge.id)}
+                                            >
+                                                删除
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        ) : (
+                            <div className="text-[12px] text-[#9f875e]">当前源区域还没有移动边。</div>
+                        )}
+                    </div>
+
+                    <div className="mt-3 border border-[#4a3824] bg-black/24 p-2">
+                        <div className="mb-2 flex items-center justify-between">
+                            <span className="text-[12px] font-bold text-[#f0c989]">新增/更新边</span>
+                            <span className="text-[11px] text-[#9f875e]">默认双向</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-1.5">
+                            {regions.filter((region) => region.id !== sourceRegionId).map((region) => {
+                                const edgeId = canonicalEdgeId(sourceRegionId, region.id);
+                                const exists = edges.some((edge) => edge.id === edgeId);
+                                return (
+                                    <button
+                                        key={region.id}
+                                        type="button"
+                                        className={`border px-2 py-1.5 text-[12px] ${exists ? 'border-[#ba6a3e] bg-[#3a1a12] text-[#ffd6a0]' : 'border-[#4d3b28] bg-[#17120d] text-[#cbb58a]'}`}
+                                        onClick={() => {
+                                            setTargetRegionId(region.id);
+                                            upsertEdge(sourceRegionId, region.id, exists ? edges.find((edge) => edge.id === edgeId)?.cost ?? 1 : 1);
+                                        }}
+                                    >
+                                        {exists ? '更新 ' : '连接 '}{region.name}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+
+                    <div className="mt-3">
+                        <div className="mb-2 flex items-center justify-between">
+                            <span className="text-[12px] font-bold text-[#f0c989]">导出 JSON</span>
+                            <button
+                                type="button"
+                                className="border border-[#8f6a3b] bg-[#2c2115] px-2 py-1 text-[12px] font-bold text-[#f2d392]"
+                                onClick={handleCopy}
+                            >
+                                {copied ? '已复制' : '复制'}
+                            </button>
+                        </div>
+                        <textarea
+                            className="h-44 w-full resize-none border border-[#4a3824] bg-[#100c08] p-2 font-mono text-[11px] leading-4 text-[#d9c193]"
+                            value={exportText}
+                            readOnly
+                            data-testid="qidahen-map-cost-export"
+                        />
+                    </div>
+                </div>
+            </aside>
+        </>
+    );
+};
+
 export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
     const core = G.core;
     const selectedRegion = core.regions.find((region) => region.id === core.selectedRegionId) ?? core.regions[0];
+    const mapCostEditorEnabled = React.useMemo(() => {
+        if (typeof window === 'undefined') return false;
+        const params = new URLSearchParams(window.location.search);
+        return params.get('mapCostEditor') === '1'
+            || window.localStorage.getItem('qidahen_map_cost_editor') === '1';
+    }, []);
 
     const selectRegion = React.useCallback((regionId: string) => {
         dispatch(QIDAHEN_COMMANDS.SELECT_REGION, { regionId });
@@ -353,6 +664,12 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
                                 draggable={false}
                             />
                             <div className="absolute inset-0">
+                                {mapCostEditorEnabled ? (
+                                    <QidahenMapCostEditor
+                                        selectedRegionId={selectedRegion.id}
+                                        onSelectRegion={selectRegion}
+                                    />
+                                ) : null}
                                 {core.regions.map((region) => (
                                     <RegionMarker
                                         key={region.id}
@@ -368,6 +685,11 @@ export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
                                     >
                                         <div className="text-[16px] font-black text-[#f3d18f]">{selectedRegion.name}</div>
                                         <div className="mt-1 text-[12px] leading-5 text-[#d5c098]">{selectedRegion.note}</div>
+                                        <div className="mt-1 text-[11px] leading-4 text-[#bfa875]">
+                                            移动代价：{Object.entries(selectedRegion.movementCostByRegionId)
+                                                .map(([regionId, cost]) => `${core.regions.find((item) => item.id === regionId)?.name ?? regionId} ${cost}`)
+                                                .join(' / ') || '未标注'}
+                                        </div>
                                         <button className="mt-2 rounded border border-[#9d3f32] bg-[#64251e] px-2 py-1 text-[12px] text-[#ffe0ad]">
                                             查看区域详情
                                         </button>

@@ -1475,6 +1475,7 @@ export function registerWorldChampsAbilities(): void {
     registerTrigger('world_champs_sheriff', 'beforeScoring', worldChampsSheriffBeforeScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('world_champs_bewitched', 'onMinionDestroyed', worldChampsBewitchedTransferOnLeave, {
@@ -1495,6 +1496,7 @@ export function registerWorldChampsAbilities(): void {
     registerTrigger('world_champs_mummy', 'afterScoring', worldChampsMummyAfterScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('world_champs_shark_tattoo', 'onTurnStart', worldChampsSharkTattooTurnStart, {

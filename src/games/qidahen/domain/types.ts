@@ -18,9 +18,12 @@ export interface QidahenFactionState {
 export interface QidahenRegionSummary {
     id: string;
     name: string;
+    type: 'region' | 'city' | 'route' | 'offmap';
     controller: QidahenFactionId | 'neutral';
     x: number;
     y: number;
+    adjacentRegionIds: string[];
+    movementCostByRegionId: Record<string, number>;
     troops?: number;
     population?: number;
     note: string;

@@ -6,6 +6,7 @@ import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { getDiscardSpecialOptions } from '../../domain/discardSpecialAbilities';
 import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { reduce } from '../../domain/reduce';
 import { validate } from '../../domain/commands';
 import {
@@ -14,6 +15,7 @@ import {
     makePlayer,
     makeState,
     makeMatchState,
+    getReactionPrompt,
     getSimpleChoicePrompt,
     getPromptOption,
     getPromptOptions,
@@ -856,6 +858,50 @@ describe('Skeletons abilities', () => {
         );
 
         expect((resolved.finalState.core.bases[1].buriedCards ?? []).some(card => card.uid === 'gravestones-1')).toBe(true);
+    });
+
+    it('skeletons_gravestones 在对手计分后仍应把 queued afterScoring 选择权交给来源控制者', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'base_a',
+                    minions: [],
+                    ongoingActions: [{ uid: 'gravestones-1', defId: 'skeletons_gravestones', ownerId: '1' }],
+                },
+                {
+                    defId: 'base_b',
+                    minions: [],
+                    ongoingActions: [],
+                },
+            ],
+        });
+
+        const queued = collectTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '0',
+            baseIndex: 0,
+            rankings: [{ playerId: '0', power: 10, vp: 1 }],
+            random: defaultTestRandom,
+            now: 3902,
+        });
+
+        expect(queued).toBeDefined();
+        const gravestonesTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'gravestones-1');
+        expect(gravestonesTrigger).toBeDefined();
+        expect(gravestonesTrigger.ownerPlayerId).toBe('1');
+
+        const queuedState = maybeResolveReactionQueue(
+            makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
+            defaultTestRandom,
+            3902,
+        );
+        expect(queuedState).toBeDefined();
+        expect(getReactionPrompt(queuedState!.state)?.playerId).toBe('1');
     });
 
     it('skeletons_gravetender 每回合仅首次埋葬/挖掘触发抽牌', () => {

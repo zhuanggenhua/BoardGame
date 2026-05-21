@@ -3765,6 +3765,7 @@ export function registerTitanAbilities(): void {
         now: ctx.now,
     }), {
         global: true,
+        playerContext: 'sourceController',
     });
 
     registerAbility('magical_girls_walking_castle', 'special', magicalGirlsWalkingCastleSpecial);
@@ -3789,6 +3790,7 @@ export function registerTitanAbilities(): void {
             ? null
             : '你只能将超级佐德打出到有你至少 3 个随从的基地');
     registerTrigger('mega_troopers_megabot', 'beforeScoring', megaTroopersMegabotBeforeScoring, {
+        playerContext: 'sourceController',
     });
     registerTitanPowerModifier('mega_troopers_megabot', ({ state, baseIndex, playerId }) =>
         getOwnMinionCountOnBase(state, baseIndex, playerId));
@@ -3991,6 +3993,7 @@ export function registerTitanAbilities(): void {
     });
     registerTrigger('pirates_the_kraken', 'afterScoring', piratesTheKrakenAfterScoring, {
         global: true,
+        playerContext: 'sourceController',
     });
 }
 

@@ -90,11 +90,25 @@ export function registerAncientEgyptiansAbilities(): void {
     registerTrigger('ancient_egyptians_mummy', 'afterScoring', ancientEgyptiansMummyAfterScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('ancient_egyptians_mummy_pod', 'afterScoring', ancientEgyptiansMummyAfterScoring, {
+        optional: true,
+        perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('ancient_egyptians_pharaoh', 'beforeScoring', ancientEgyptiansPharaohBeforeScoring, {
         optional: true,
         perInstance: true,
+        playerContext: 'sourceController',
+        sourceScope: 'triggerBase',
+    });
+    registerTrigger('ancient_egyptians_pharaoh_pod', 'beforeScoring', ancientEgyptiansPharaohBeforeScoring, {
+        optional: true,
+        perInstance: true,
+        playerContext: 'sourceController',
         sourceScope: 'triggerBase',
     });
     registerTrigger('ancient_egyptians_pharaoh', 'onBuriedCardUncovered', ancientEgyptiansPharaohOnUncover, {

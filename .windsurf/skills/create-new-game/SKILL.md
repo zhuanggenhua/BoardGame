@@ -11,6 +11,7 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 
 > 本 skill 只做“分阶段流程 + 验收门禁 + 最小闭环”。
 > 任何**规范/红线/最佳实践**若在下列文档中已有定义，必须以它们为准；本 skill 不重复展开。
+> 若本文与下列权威文档出现路径、组件、命令或门禁冲突，先按权威文档执行，并立即修正本文，不得用本文内的旧示例覆盖实施规范。
 
 - 总则：`AGENTS.md`
 - 引擎/系统/move/command：`docs/ai-rules/engine-systems.md`
@@ -23,6 +24,22 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 - 工具脚本：`docs/tools.md`
 - 图片 intake 复刻案例：`docs/games/smashup/workflows/smashup-faction-intake.md`
 - 不确定该读哪份：`docs/ai-rules/doc-index.md`
+
+## 实施规范接入门禁（强制）
+
+进入任何目录创建、素材落盘、压缩、资源引用、`thumbnail.tsx`、`criticalImageResolver` 或 manifest 资源字段之前，先执行对应实施规范；本 skill 不允许自带第二套路由。
+
+- 图片/缩略图/图集/音频落盘与引用：以 `docs/ai-rules/asset-pipeline.md` 为单一实施合同。
+- UI 组件与布局：以 `docs/ai-rules/ui-ux.md` 为实施合同。
+- 引擎、系统、move/command：以 `docs/ai-rules/engine-systems.md` 为实施合同。
+- React 白屏、Hook、函数提升、注册时机：以 `docs/ai-rules/golden-rules.md` 为实施合同。
+
+资源实施最低门禁：
+
+1. 新游戏图片默认进入 `public/assets/i18n/zh-CN/<gameId>/...`；`public/assets/<gameId>/...` 只作为历史兼容或 `asset-pipeline` 明确允许的例外，不得作为新资源默认落点。
+2. 缩略图也属于图片资源，默认落到 `public/assets/i18n/zh-CN/<gameId>/thumbnails/`，运行时由 `ManifestGameThumbnail` / `OptimizedImage` 解析。
+3. 代码里传资源路径只传相对逻辑路径，例如 `<gameId>/thumbnails/cover`；禁止硬编码 `/assets/`、`compressed/`、`.webp` 或版本参数。
+4. 如果必须偏离上述公共链路，必须在当前任务证据中写明原因、影响范围和验收方式。
 
 ## 前置 0：环境与来源确认（强制）
 
@@ -144,12 +161,13 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
    - 从规则书或用户指定真相源中抽取组件清单，至少记录对象类别、阵营/归属、数量、是否运行时可见、规则出处。
    - 若规则书没有显式配件表，必须用规则文本和素材图面建立“临时准入表”，并标注为待复核；不得因为来源目录里有文件就默认全部接入。
 2. **给每个源文件做准入裁决**
-   - `runtime`：规则/MVP 运行态需要，允许进入 `public/assets/i18n/<locale>/<gameId>/`。
+   - `runtime`：规则/MVP 运行态需要，默认进入 `public/assets/i18n/<locale>/<gameId>/`。
    - `reference`：只作为规则、帮助、剧本或人工核对资料，允许进入明确的 `aids/` 或留在 `rule/` / `evidence/`，但不得被当成运行时对象。
    - `candidate`：可能有用但规则依据不足，只能登记到 `temp/<gameId>-intake/` 或清单里，禁止进正式运行时目录。
    - `excluded`：TTS/Workshop 材质色块、编辑器占位图、无规则对象对应的贴图、重复导出、下载站装饰图等，必须写排除原因，禁止压缩、上传和引用。
 3. **正式目录只接收白名单资源**
-   - 进入 `public/assets/<gameId>` 或 `public/assets/i18n/<locale>/<gameId>` 的文件，必须在准入表中有 `runtime` 或明确的 `reference` 状态。
+   - 进入 `public/assets/i18n/<locale>/<gameId>` 的文件，必须在准入表中有 `runtime` 或明确的 `reference` 状态。
+   - 新游戏不得默认把正式图片放入顶层 `public/assets/<gameId>`；确需使用历史兼容落点时，必须先说明 `asset-pipeline` 依据和运行时加载链路。
    - 不能用“以免漏资产”“以后可能用到”“目录里有”作为正式接入理由。
    - 若需要保留原始包的完整快照，只能放在用户原目录、`temp/<gameId>-intake/raw/` 或外部资料目录，不能混入正式运行时资源树。
 4. **命名必须有证据链**
@@ -217,7 +235,7 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
    - 若是随机名、默认导出名、批量下载残留名，则按**图片内容语义**自动重命名并移动到正式目录。
    - 若现有文件名看起来是用户有意命名的语义名，则默认不改名，只询问是否需要统一为项目规范命名。
 3. 移动正式资源前必须完成 `runtime/reference/candidate/excluded` 裁决；`candidate/excluded` 不得进入 `public/assets/` 正式树。
-4. 原图落盘后立即运行 `npm run compress:images -- public/assets/<gameId>` 或最小必要子目录。
+4. 原图落盘后立即运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>` 或最小必要子目录。
 5. 若用户给的是“位置/顺序”，则直接建立索引映射和命名合同，不等待后续手工整理。
 6. 若默认运行态依赖远端资源，数据录入或图片 intake 完成后必须跑 `npm run assets:check`；只要本轮新增/变更了运行时资源且远端有缺口，就必须继续执行上传闭环，直到远端对象可访问，不能停留在“本地已落盘”。
 
@@ -225,7 +243,7 @@ description: "为本项目创建新游戏或先做新游戏资源/data intake。
 
 | 素材类型 | 默认命名 | 默认目录 |
 |---------|---------|---------|
-| 缩略图 | `cover.png` | `public/assets/<gameId>/thumbnails/` |
+| 缩略图 | `cover.png` | `public/assets/i18n/zh-CN/<gameId>/thumbnails/` |
 | 卡牌 atlas | `<batch>.png` | `public/assets/i18n/zh-CN/<gameId>/cards/` |
 | 基地 atlas | `<batch>_base.png` | `public/assets/i18n/zh-CN/<gameId>/base/` |
 | 角色/英雄面板 | `<entityId>-board.png` | `public/assets/i18n/zh-CN/<gameId>/hero/` |
@@ -436,9 +454,10 @@ export default <GameId>Board;
 ### 1.9 资源目录
 
 ```
-public/assets/<gameId>/
+public/assets/i18n/zh-CN/<gameId>/
   thumbnails/.gitkeep
-  images/.gitkeep
+  board/.gitkeep
+  cards/.gitkeep
 ```
 
 ### 1.10 i18n 文件
@@ -1226,9 +1245,10 @@ UI 侧使用 `TutorialSelectionGate`（框架组件）或自定义选择组件�
    - 自动移动到正确目录
    - 自动运行最小必要范围的压缩命令
 2. 缩略图默认流程：
-   - 原图放入 `public/assets/<gameId>/thumbnails/cover.png`
-   - 运行 `npm run compress:images -- public/assets/<gameId>/thumbnails`
+   - 原图放入 `public/assets/i18n/zh-CN/<gameId>/thumbnails/cover.png`
+   - 运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>/thumbnails`
    - `manifest.ts` 中 `thumbnailPath` 使用 `<gameId>/thumbnails/cover`
+   - `thumbnail.tsx` 使用 `ManifestGameThumbnail`，禁止自写 `<img src="/assets/...">`
 3. 图集 / 运行时图片默认流程：
    - 原图按业务语义落到 `public/assets/i18n/zh-CN/<gameId>/<category>/`
    - 图集配置落到 `public/assets/atlas-configs/<gameId>/`
@@ -1307,4 +1327,5 @@ export default function Thumbnail() {
 ```
 
 - `manifest.ts` 中配置 `thumbnailPath: '<gameId>/thumbnails/cover'`（不含扩展名、不含 `compressed/`）。
-- 用户提供图片后，运行 `npm run compress:images -- public/assets/<gameId>/thumbnails` 压缩。
+- 用户提供图片后，运行 `npm run compress:images -- public/assets/i18n/zh-CN/<gameId>/thumbnails` 压缩。
+- 禁止在 `thumbnail.tsx` 中硬编码 `/assets/<gameId>/.../compressed/*.webp`；如需定制视觉，在 `ManifestGameThumbnail` 或公共缩略图组件层扩展。

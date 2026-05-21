@@ -158,14 +158,14 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(screen.getByText('ui.taken_by_other')).toBeInTheDocument();
     });
 
-    it('玩家状态条应占据独立底栏，不再绝对覆盖候选卡面', () => {
+    it('玩家状态条应固定在底部覆盖层，避免挤压候选卡面', () => {
         renderSelection();
 
         const rail = screen.getByTestId('faction-selection-player-rail');
         const currentPlayerCard = screen.getByTestId('faction-selection-player-card-0');
 
-        expect(String(rail.className)).not.toContain('absolute');
-        expect(String(rail.className)).toContain('shrink-0');
+        expect(String(rail.className)).toContain('absolute');
+        expect(String(rail.className)).toContain('bottom-0');
         expect(String(currentPlayerCard.className)).not.toContain('scale-110');
     });
 
@@ -198,6 +198,21 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         fireEvent.click(screen.getByTestId('faction-filter-all'));
 
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
+    });
+
+    it('双人宽屏旧布局也不应关闭搜索和默认可选筛选', () => {
+        setViewport(1600, 900);
+        renderSelection();
+
+        expect(screen.getByTestId('faction-filter-toolbar')).toBeInTheDocument();
+        expect(screen.getByTestId('faction-search-input')).toBeInTheDocument();
+        expect(screen.queryByTestId('faction-option-robots')).not.toBeInTheDocument();
+
+        const searchInput = screen.getByTestId('faction-search-input');
+        fireEvent.change(searchInput, { target: { value: 'pirates' } });
+
+        expect(screen.getByTestId('faction-option-pirates')).toBeInTheDocument();
+        expect(screen.queryByTestId('faction-option-ninjas')).not.toBeInTheDocument();
     });
 
     it('搜索应按派系 id 或名称过滤候选列表', () => {

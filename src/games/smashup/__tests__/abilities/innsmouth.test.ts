@@ -4,7 +4,8 @@ import { grantExtraMinion } from '../../domain/abilityHelpers';
 import { clearRegistry } from '../../domain/abilityRegistry';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
 import { validate } from '../../domain/commands';
-import { clearOngoingEffectRegistry, isMinionProtected } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, isMinionProtected } from '../../domain/ongoingEffects';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import { SMASHUP_FACTION_IDS } from '../../domain/ids';
 import { reduce } from '../../domain/reducer';
 import { createScoringBaseRef, createScoringSession, setScoringSession } from '../../domain/scoringSession';
@@ -343,6 +344,61 @@ describe('印斯茅斯 ongoing 能力', () => {
             );
             expect(staleResult.success, staleResult.error).toBe(true);
             expect(staleResult.events).toHaveLength(0);
+        });
+
+        test('innsmouth_return_to_the_sea 在对手计分后仍应把 queued afterScoring 选择权交给 special 拥有者', () => {
+            const seaMinion = makeMinion({
+                uid: 'sea-minion-1',
+                defId: 'innsmouth_the_locals',
+                controller: '1',
+                owner: '1',
+            });
+            const core = makeState([
+                makeBase({
+                    defId: 'base_the_mothership',
+                    minions: [seaMinion],
+                    ongoingActions: [],
+                }),
+                makeBase({
+                    defId: 'base_factory_436_1337',
+                    minions: [],
+                    ongoingActions: [],
+                }),
+            ], {
+                players: {
+                    '0': makePlayer('0', { hand: [], deck: [], discard: [] }),
+                    '1': makePlayer('1', { hand: [], deck: [], discard: [] }),
+                },
+                pendingAfterScoringSpecials: [{
+                    sourceDefId: 'innsmouth_return_to_the_sea',
+                    playerId: '1',
+                    baseIndex: 0,
+                    cardUid: 'sea-armed-1',
+                }],
+            });
+
+            const queued = collectTriggers(core, 'afterScoring', {
+                state: core,
+                matchState: makeMatchState(core),
+                playerId: '0',
+                baseIndex: 0,
+                rankings: [{ playerId: '0', power: 10, vp: 1 }],
+                random: defaultTestRandom,
+                now: 4301,
+            });
+
+            expect(queued).toBeDefined();
+            const seaTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceCardUid === 'sea-armed-1');
+            expect(seaTrigger).toBeDefined();
+            expect(seaTrigger.ownerPlayerId).toBe('1');
+
+            const queuedState = maybeResolveReactionQueue(
+                makeMatchState({ ...core, triggerQueue: (queued as any).payload.triggers }),
+                defaultTestRandom,
+                4301,
+            );
+            expect(queuedState).toBeDefined();
+            expect(getSimpleChoicePrompt(queuedState!.state, 'innsmouth_return_to_the_sea')?.playerId).toBe('1');
         });
     });
 

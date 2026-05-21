@@ -4,7 +4,7 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry, resolveOnPlay } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
 import {
     makeMinion,
     makeCard,
@@ -287,6 +287,44 @@ describe('Vampires abilities', () => {
 });
 
 describe('vampire_buffet afterScoring', () => {
+    it('vampire_buffet 在对手计分时仍应把 queued afterScoring owner 交给 special 拥有者', () => {
+        const core = makeState({
+            players: {
+                '0': makePlayer('0'),
+                '1': makePlayer('1'),
+            },
+            bases: [
+                {
+                    defId: 'test_base',
+                    minions: [
+                        makeMinion('m1', 'test_minion', '0', 5, { powerModifier: 0 }),
+                        makeMinion('m2', 'test_minion', '1', 8, { powerModifier: 0 }),
+                    ],
+                    ongoingActions: [],
+                },
+            ],
+            pendingAfterScoringSpecials: [{ sourceDefId: 'vampire_buffet', playerId: '0', baseIndex: 0 }],
+        });
+
+        const queued = collectTriggers(core, 'afterScoring', {
+            state: core,
+            matchState: makeMatchState(core),
+            playerId: '1',
+            baseIndex: 0,
+            rankings: [
+                { playerId: '1', power: 8, vp: 4 },
+                { playerId: '0', power: 5, vp: 2 },
+            ],
+            random: defaultTestRandom,
+            now: 101,
+        });
+
+        expect(queued).toBeDefined();
+        const buffetTrigger = (queued as any).payload.triggers.find((trigger: any) => trigger.sourceDefId === 'vampire_buffet');
+        expect(buffetTrigger).toBeDefined();
+        expect(buffetTrigger.ownerPlayerId).toBe('0');
+    });
+
     it('赢家拥有 buffet 时，所有己方随从获得 +1 指示物', () => {
         const core = makeState({
             bases: [

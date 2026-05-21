@@ -4,9 +4,10 @@ import { initAllAbilities, resetAbilityInit } from '../../abilities';
 import { clearRegistry, resolveSpecial } from '../../domain/abilityRegistry';
 import { clearBaseAbilityRegistry } from '../../domain/baseAbilities';
 import { clearInteractionHandlers } from '../../domain/abilityInteractionHandlers';
-import { clearOngoingEffectRegistry, fireTriggers } from '../../domain/ongoingEffects';
+import { clearOngoingEffectRegistry, collectTriggers, fireTriggers } from '../../domain/ongoingEffects';
 import { reduce } from '../../domain/reduce';
 import { validate } from '../../domain/commands';
+import { maybeResolveReactionQueue } from '../../domain/reactionQueue';
 import {
     makeMinion,
     makeCard,
@@ -418,6 +419,65 @@ describe('Princesses abilities', () => {
         const finalCore = triggerResult.events.reduce((current, event) => reduce(current, event as any), core);
         expect(finalCore.players['0'].discard.map(card => card.uid)).not.toContain('sleep-1');
         expect(finalCore.players['0'].deck.map(card => card.uid)).toContain('sleep-1');
+    });
+
+    it('princesses_sleeping_beauty 在对手回合进入弃牌堆后仍会通过 queued discard trigger 洗回拥有者牌库', () => {
+        const preDiscardCore = makeState({
+            turnOrder: ['1', '0'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-0', 'robot_microbot_alpha', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [makeMinion('sleep-1', 'princesses_sleeping_beauty', '0', 5)],
+                ongoingActions: [],
+            }],
+        });
+
+        const postDiscardCore = makeState({
+            turnOrder: ['1', '0'],
+            currentPlayerIndex: 0,
+            players: {
+                '0': makePlayer('0', {
+                    deck: [makeCard('deck-0', 'robot_microbot_alpha', 'minion', '0')],
+                    discard: [makeCard('sleep-1', 'princesses_sleeping_beauty', 'minion', '0')],
+                }),
+                '1': makePlayer('1'),
+            },
+            bases: [{
+                defId: 'base_a',
+                minions: [],
+                ongoingActions: [],
+            }],
+        });
+
+        const queued = collectTriggers(postDiscardCore, 'onMinionDiscardedFromBase', {
+            state: postDiscardCore,
+            matchState: makeMatchState(postDiscardCore),
+            playerId: '1',
+            baseIndex: 0,
+            triggerMinionUid: 'sleep-1',
+            triggerMinionDefId: 'princesses_sleeping_beauty',
+            triggerMinion: preDiscardCore.bases[0].minions[0],
+            random: defaultTestRandom,
+            now: 1000,
+        });
+
+        expect(queued).toBeDefined();
+        postDiscardCore.triggerQueue = (queued as any).payload.triggers;
+
+        const resolved = maybeResolveReactionQueue(makeMatchState(postDiscardCore), defaultTestRandom, 1000);
+        expect(resolved).toBeDefined();
+        expectNoPrompt(resolved!.state);
+        expect(resolved!.events.some(event =>
+            event.type === SU_EVENTS.DECK_REORDERED
+            && (event as any).payload.playerId === '0'
+            && ((event as any).payload.deckUids ?? []).includes('sleep-1'),
+        )).toBe(true);
     });
 
     it('princesses_eliza 会阻止对手在同回合打出第二张额外牌', () => {

@@ -2212,10 +2212,12 @@ function registerGiantAntProtections(): void {
     registerTrigger('giant_ant_we_are_the_champions', 'afterScoring', giantAntWeAreTheChampionsAfterScoring, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
     registerTrigger('giant_ant_we_are_the_champions_pod', 'afterScoring', giantAntWeAreTheChampionsAfterScoring, {
         perInstance: true,
         sourceScope: 'triggerBase',
+        playerContext: 'sourceController',
     });
     registerTrigger('giant_ant_drone', 'onMinionDestroyed', giantAntDronePreventTrigger, {
         phase: 'replacement',

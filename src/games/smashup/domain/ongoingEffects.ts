@@ -589,7 +589,7 @@ export function collectTriggers(
                 entry,
                 timing,
                 entry.globalZones ?? ['hand', 'discard'],
-                pid,
+                ctx,
             );
             if (!located) continue;
             triggers.push(createTriggerInstance(state, entry, timing, now, triggers.length, pid, located, ctx));
@@ -700,6 +700,7 @@ export function registerPodOngoingAliases(): void {
             callback: rawCallback,
             optional: entry.optional,
             phase: entry.phase,
+            playerContext: entry.playerContext,
             perInstance: entry.perInstance,
             sourceScope: entry.sourceScope,
             global: entry.global,
@@ -713,6 +714,7 @@ export function registerPodOngoingAliases(): void {
         registerTrigger(entry.sourceDefId, entry.timing, entry.callback, {
             optional: entry.optional,
             phase: entry.phase,
+            playerContext: entry.playerContext,
             perInstance: entry.perInstance,
             sourceScope: entry.sourceScope,
             global: entry.global,
@@ -1221,7 +1223,7 @@ export function fireTriggers(
                 entry,
                 timing,
                 entry.globalZones ?? ['hand', 'discard'],
-                ctx.playerId,
+                ctx,
             );
             if (!located) continue;
             const result = entry.callback({
@@ -1344,7 +1346,7 @@ export function fireTriggerForSource(
                 entry,
                 timing,
                 entry.globalZones ?? ['hand', 'discard'],
-                ctx.playerId,
+                ctx,
             );
             if (!located) continue;
             const result = entry.callback({
@@ -1472,13 +1474,16 @@ function selectGlobalTriggerSourceLocation(
     entry: TriggerEntry,
     timing: TitanAwareTriggerTiming,
     zones: Array<'hand' | 'discard' | 'deck'>,
-    playerId: PlayerId,
+    ctx: Omit<TriggerContext, 'timing'>,
 ): TriggerSourceLocation | undefined {
     if (!isSourceInZones(state, entry.sourceDefId, zones)) return undefined;
     if (entry.playerContext !== 'sourceController') return {};
-    if (timing !== 'onTurnStart' && timing !== 'onTurnEnd') return {};
-    return locateGlobalSources(state, entry.sourceDefId, zones).find(located =>
-        isTurnBoundarySourceControllerEligible(entry, timing, located, playerId),
+    return selectSpecificSourceLocation(
+        locateGlobalSources(state, entry.sourceDefId, zones),
+        ctx,
+        located => Boolean(located.controllerId)
+            && isTriggerSourceEligible(entry, timing, located, ctx.baseIndex)
+            && isTurnBoundarySourceControllerEligible(entry, timing, located, ctx.playerId),
     );
 }
 

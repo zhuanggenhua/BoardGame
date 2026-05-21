@@ -1925,5 +1925,6 @@ function registerVampireOngoingEffects(): void {
         }
         return events;
     }, {
+        playerContext: 'sourceController',
     });
 }
