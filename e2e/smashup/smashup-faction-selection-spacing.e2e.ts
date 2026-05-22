@@ -161,8 +161,8 @@ async function assertFactionSearchIconAligned(page: import('@playwright/test').P
   expect(metrics!.slotLeft, '放大镜图标槽位应稳定位于搜索框内部').toBeGreaterThanOrEqual(metrics!.inputLeft);
 }
 
-async function assertPlayerRailVisuallyOnTop(page: import('@playwright/test').Page) {
-  await expect.poll(async () => page.evaluate(() => {
+async function getPlayerRailVisualMetrics(page: import('@playwright/test').Page) {
+  return page.evaluate(() => {
     const rail = document.querySelector<HTMLElement>('[data-testid="faction-selection-player-rail"]');
     const playerCard = document.querySelector<HTMLElement>('[data-testid="faction-selection-player-card-0"]');
     if (!rail || !playerCard) {
@@ -171,6 +171,7 @@ async function assertPlayerRailVisuallyOnTop(page: import('@playwright/test').Pa
 
     const railRect = rail.getBoundingClientRect();
     const cardRect = playerCard.getBoundingClientRect();
+    const cardStyle = window.getComputedStyle(playerCard);
     const x = cardRect.left + cardRect.width / 2;
     const y = cardRect.top + cardRect.height / 2;
     const topElement = document.elementFromPoint(x, y);
@@ -180,18 +181,32 @@ async function assertPlayerRailVisuallyOnTop(page: import('@playwright/test').Pa
         && railRect.bottom <= window.innerHeight + 2
         && cardRect.top < window.innerHeight
         && cardRect.bottom <= window.innerHeight + 2
+        && playerCard.offsetWidth >= 124
         && Boolean(topElement?.closest('[data-testid="faction-selection-player-rail"]')),
       reason: topElement instanceof HTMLElement ? topElement.dataset.testid ?? topElement.className : 'no-top-element',
       railTop: railRect.top,
       railBottom: railRect.bottom,
       cardTop: cardRect.top,
       cardBottom: cardRect.bottom,
+      cardWidth: cardRect.width,
+      cardOffsetWidth: playerCard.offsetWidth,
+      cardComputedWidth: cardStyle.width,
+      cardClassName: playerCard.className,
       viewportHeight: window.innerHeight,
     };
-  }), {
+  });
+}
+
+async function assertPlayerRailVisuallyOnTop(page: import('@playwright/test').Page) {
+  try {
+    await expect.poll(async () => getPlayerRailVisualMetrics(page), {
     timeout: 5000,
     message: '玩家状态卡必须真实显示在视觉顶层，不能只是在 DOM 中可见',
   }).toMatchObject({ ok: true });
+  } catch (error) {
+    const metrics = await getPlayerRailVisualMetrics(page);
+    throw new Error(`玩家状态卡必须真实显示在视觉顶层，不能只是在 DOM 中可见。实际测量: ${JSON.stringify(metrics)}`, { cause: error });
+  }
 }
 
 test.describe('SmashUp 派系选择页移动端间距', () => {
@@ -212,6 +227,9 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
     await expect(page.getByTestId('faction-filter-toolbar')).toBeVisible();
     await expect(page.getByTestId('faction-search-input')).toBeVisible();
+    await expect(page.getByTestId('faction-filter-available')).toHaveCount(0);
+    await expect(page.getByTestId('faction-filter-all')).toHaveCount(0);
+    await expect(page.getByTestId('faction-filter-taken')).toHaveCount(0);
     await expect(page.getByTestId('faction-option-pirates')).toBeVisible();
     await expect(page.getByTestId('faction-option-ninjas')).toBeVisible();
     await expect(page.getByTestId('faction-option-robots')).toBeVisible();
@@ -261,6 +279,9 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     await page.waitForTimeout(1000);
     await expect(title).toBeVisible({ timeout: 30000 });
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByTestId('faction-filter-available')).toHaveCount(0);
+    await expect(page.getByTestId('faction-filter-all')).toHaveCount(0);
+    await expect(page.getByTestId('faction-filter-taken')).toHaveCount(0);
     await expect(page.getByTestId('faction-option-robots')).toBeVisible();
     await expect(page.getByTestId('faction-selection-player-rail')).toBeVisible();
     await assertPlayerRailVisuallyOnTop(page);

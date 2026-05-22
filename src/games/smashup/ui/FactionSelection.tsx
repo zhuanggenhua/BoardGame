@@ -32,8 +32,6 @@ interface Props {
     getPlayerOrderLabel: (playerId: string | null | undefined) => string;
 }
 
-type FactionVisibilityMode = 'available' | 'all' | 'taken';
-
 const SearchGlyph: React.FC<{ className?: string }> = ({ className }) => (
     <svg
         viewBox="0 0 20 20"
@@ -61,12 +59,20 @@ function shouldUseCompactPlayerRail(
     viewportSize: { width: number; height: number },
     playerCount: number,
 ): boolean {
-    return playerCount >= 4 || viewportSize.height < 920 || viewportSize.width < 1280;
-}
+    const isMobileLandscape = viewportSize.width < 1024 && viewportSize.width > viewportSize.height;
+    const isLegacyWideTwoPlayerDraft = playerCount <= 2
+        && !isMobileLandscape
+        && viewportSize.width >= 1500
+        && viewportSize.height >= 860;
 
-function getDefaultFactionVisibilityMode(viewportSize: { width: number; height: number }): FactionVisibilityMode {
-    void viewportSize;
-    return 'all';
+    if (playerCount <= 2 && (isMobileLandscape || isLegacyWideTwoPlayerDraft)) {
+        return false;
+    }
+    if (playerCount <= 2 && viewportSize.width >= 1280 && viewportSize.height >= 720) {
+        return false;
+    }
+
+    return playerCount >= 4 || viewportSize.height < 920 || viewportSize.width < 1280;
 }
 
 export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, playerNames, playerOrder, getPlayerOrderLabel }) => {
@@ -81,7 +87,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         height: typeof window === 'undefined' ? 900 : window.innerHeight,
     }));
     const [factionSearch, setFactionSearch] = useState('');
-    const [customVisibilityMode, setCustomVisibilityMode] = useState<FactionVisibilityMode | null>(null);
 
     useEffect(() => {
         const updateViewportSize = () => {
@@ -150,7 +155,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const useCompactPlayerRail = shouldUseCompactPlayerRail(viewportSize, playerOrder.length);
     const shouldShowPlayerSelectionRail = true;
     const remainingSelections = Math.max(0, 2 - mySelections.length);
-    const visibilityMode = customVisibilityMode ?? getDefaultFactionVisibilityMode(viewportSize);
     const focusedFactionMeta = resolvedActiveFactionId ? getFactionMeta(resolvedActiveFactionId) ?? null : null;
     const focusedMechanicTutorial = focusedFactionGroup
         ? getFactionMechanicTutorial(focusedFactionGroup.groupId)
@@ -191,7 +195,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         || viewportSize.width < 960
         || factionStatusCounts.total >= 10
         || factionStatusCounts.taken > 0
-        || visibilityMode !== 'all'
         || normalizedFactionSearch.length > 0
     );
     const factionGroupOrder = useMemo(
@@ -206,7 +209,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             return;
         }
         grid.scrollTop = 0;
-    }, [mySelections.length, normalizedFactionSearch, visibilityMode]);
+    }, [mySelections.length, normalizedFactionSearch]);
     const filteredFactionGroups = useMemo(() => {
         return visibleFactionGroups
             .map((group) => {
@@ -225,12 +228,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                     || translatedNames.includes(normalizedFactionSearch)
                     || group.groupId.toLowerCase().includes(normalizedFactionSearch)
                     || variantIds.includes(normalizedFactionSearch);
-                const matchesVisibility = visibilityMode === 'all'
-                    ? true
-                    : visibilityMode === 'taken'
-                        ? status === 'taken'
-                        : status !== 'taken';
-
                 return {
                     group,
                     selectedVariantId,
@@ -239,10 +236,9 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                     isImplementationInProgress: isFactionImplementationInProgress(group.groupId),
                     status,
                     matchesSearch,
-                    matchesVisibility,
                 };
             })
-            .filter((group) => group.matchesSearch && group.matchesVisibility)
+            .filter((group) => group.matchesSearch)
             .sort((left, right) => {
                 const priority = {
                     selected: 0,
@@ -256,7 +252,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                 return (factionGroupOrder.get(left.group.groupId) ?? Number.MAX_SAFE_INTEGER)
                     - (factionGroupOrder.get(right.group.groupId) ?? Number.MAX_SAFE_INTEGER);
             });
-    }, [factionGroupOrder, mySelections, normalizedFactionSearch, t, takenFactionIdentities, visibilityMode, visibleFactionGroups]);
+    }, [factionGroupOrder, mySelections, normalizedFactionSearch, t, takenFactionIdentities, visibleFactionGroups]);
 
     if (!selectionState) return null;
 
@@ -397,11 +393,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             </div>
         </motion.div>
     );
-    const filterButtons: Array<{ mode: FactionVisibilityMode; icon: typeof Check; label: string; testId: string }> = [
-        { mode: 'available', icon: Check, label: t('ui.faction_filter_available', { defaultValue: '可选' }), testId: 'faction-filter-available' },
-        { mode: 'all', icon: Layers, label: t('ui.faction_filter_all', { defaultValue: '全部' }), testId: 'faction-filter-all' },
-        { mode: 'taken', icon: Lock, label: t('ui.faction_filter_taken', { defaultValue: '已锁定' }), testId: 'faction-filter-taken' },
-    ];
     const factionOptionNodes = filteredFactionGroups.map(({ group, selectedVariantId, isSelectedByMe, isTakenByOther }, idx) => {
         const ownerId = Object.entries(playerSelectionIdentities).find(([, identities]) => identities.has(group.groupId))?.[0];
         const previewFactionId = selectedVariantId ?? group.defaultVariant.id;
@@ -553,30 +544,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                         </button>
                     )}
                 </div>
-
-                <div className="flex shrink-0 gap-1.5">
-                    {filterButtons.map(({ mode, icon: Icon, label, testId }) => (
-                        <GameButton
-                            key={mode}
-                            type="button"
-                            size="sm"
-                            variant={visibilityMode === mode ? 'primary' : 'secondary'}
-                            icon={<Icon size={useDesktopLikeLandscapeLayout && isUltraCompactLandscape ? 12 : 14} strokeWidth={2.6} />}
-                            className={useDesktopLikeLandscapeLayout && isUltraCompactLandscape
-                                ? 'min-w-[4.6rem] px-2 text-[10px]'
-                                : useCondensedFactionFilterToolbar
-                                    ? 'min-w-[4.7rem] px-2.5 text-[11px]'
-                                    : 'min-w-[5.3rem] px-3'}
-                            data-testid={testId}
-                            clickSoundKey={null}
-                            onClick={() => {
-                                setCustomVisibilityMode(mode);
-                            }}
-                        >
-                            {label}
-                        </GameButton>
-                    ))}
-                </div>
             </div>
 
             {!useCondensedFactionFilterToolbar && (
@@ -634,20 +601,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                         data-testid="faction-filter-reset-search"
                     >
                         {t('ui.faction_search_clear', { defaultValue: '清空搜索' })}
-                    </GameButton>
-                )}
-                {visibilityMode !== 'all' && (
-                    <GameButton
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        clickSoundKey={null}
-                        onClick={() => {
-                            setCustomVisibilityMode('all');
-                        }}
-                        data-testid="faction-filter-reset-all"
-                    >
-                        {t('ui.faction_filter_show_all', { defaultValue: '显示全部派系' })}
                     </GameButton>
                 )}
             </div>

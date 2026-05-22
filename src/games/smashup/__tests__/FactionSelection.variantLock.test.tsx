@@ -143,14 +143,12 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
 
     it('别人选择 robots_pod 后，robots 组应直接显示为已占用', () => {
         renderSelection();
-        fireEvent.click(screen.getByTestId('faction-filter-all'));
 
         expect(screen.getByText('AI 已占领')).toBeInTheDocument();
     });
 
     it('别人选择 robots_pod 后，打开 robots 详情不应再出现确认选择按钮', () => {
         renderSelection();
-        fireEvent.click(screen.getByTestId('faction-filter-all'));
 
         fireEvent.click(screen.getByTestId('faction-option-robots'));
 
@@ -174,14 +172,14 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         renderSelection();
 
         expect(screen.getByTestId('faction-selection-player-rail')).toBeInTheDocument();
+        expect(String(screen.getByTestId('faction-selection-player-card-0').className)).toContain('w-[128px]');
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
-
-        fireEvent.click(screen.getByTestId('faction-filter-available'));
-
-        expect(screen.queryByTestId('faction-option-robots')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('faction-filter-available')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('faction-filter-all')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('faction-filter-taken')).not.toBeInTheDocument();
     });
 
-    it('桌面高密度候选池应提供减负入口，但默认不隐藏别人已选派系', () => {
+    it('桌面高密度候选池应提供搜索入口，但不提供状态过滤按钮', () => {
         setViewport(1440, 900);
         renderSelection();
 
@@ -193,21 +191,24 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(String(searchLeadingIcon.className)).toContain('items-center');
         expect(searchLeadingIcon.querySelector('svg')?.getAttribute('viewBox')).toBe('0 0 20 20');
         expect(screen.getByTestId('faction-search-input')).toBeInTheDocument();
-        expect(screen.getByTestId('faction-filter-available')).toBeInTheDocument();
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
-
-        fireEvent.click(screen.getByTestId('faction-filter-available'));
-
-        expect(screen.queryByTestId('faction-option-robots')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('faction-filter-available')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('faction-filter-all')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('faction-filter-taken')).not.toBeInTheDocument();
     });
 
-    it('双人宽屏旧布局也不应关闭搜索，且默认不隐藏别人已选派系', () => {
+    it('双人宽屏旧布局也不应关闭搜索，且不提供状态过滤按钮', () => {
         setViewport(1600, 900);
         renderSelection();
 
         expect(screen.getByTestId('faction-filter-toolbar')).toBeInTheDocument();
         expect(screen.getByTestId('faction-search-input')).toBeInTheDocument();
+        expect(String(screen.getByTestId('faction-selection-player-card-0').className)).not.toContain('w-[102px]');
+        expect(String(screen.getByTestId('faction-selection-player-card-0').className)).not.toContain('w-[112px]');
         expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
+        expect(screen.queryByTestId('faction-filter-available')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('faction-filter-all')).not.toBeInTheDocument();
+        expect(screen.queryByTestId('faction-filter-taken')).not.toBeInTheDocument();
 
         const searchInput = screen.getByTestId('faction-search-input');
         fireEvent.change(searchInput, { target: { value: 'pirates' } });
@@ -231,13 +232,13 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
         expect(screen.getByTestId('faction-option-ninjas')).toBeInTheDocument();
     });
 
-    it('可选筛选列表应保留元数据顺序，并把实施中派系压到末尾', () => {
+    it('默认列表应保留上下文，并把实施中派系压到可选派系末尾', () => {
         renderSelection();
-        fireEvent.click(screen.getByTestId('faction-filter-available'));
 
         const orderedIds = Array.from(
             document.querySelectorAll<HTMLElement>('[data-testid^="faction-option-"]'),
         ).map((node) => node.dataset.testid?.replace('faction-option-', '') ?? '');
+        const nonTakenOrderedIds = orderedIds.filter((id) => id !== SMASHUP_FACTION_IDS.ROBOTS);
 
         expect(orderedIds.slice(0, 4)).toEqual([
             SMASHUP_FACTION_IDS.PIRATES,
@@ -245,7 +246,8 @@ describe('FactionSelection POD/旧版派系统一占用', () => {
             SMASHUP_FACTION_IDS.DINOSAURS,
             SMASHUP_FACTION_IDS.ALIENS,
         ]);
-        expect(orderedIds.slice(-5)).toEqual([
+        expect(screen.getByTestId('faction-option-robots')).toBeInTheDocument();
+        expect(nonTakenOrderedIds.slice(-5)).toEqual([
             SMASHUP_FACTION_IDS.FAIRIES,
             SMASHUP_FACTION_IDS.PRINCESSES,
             SMASHUP_FACTION_IDS.SHARKS,
