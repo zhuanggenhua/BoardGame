@@ -70,7 +70,7 @@ export const GlobalHUD = () => {
 
     // 根据路由判断主题
     const isGamePage = location.pathname.startsWith('/play/');
-    const isHomeEntryStyleRoute = isHomeEntryRoute(location.pathname) || isHomeV2PreviewRoute(location.pathname);
+    const isHomeEntryStyleRoute = isNativeAndroid && isHomeEntryRoute(location.pathname);
     const currentHomeEntryStyle: HomeEntryStyle = isHomeV2PreviewRoute(location.pathname)
         ? 'book'
         : resolveHomeEntryStyle(location.search);

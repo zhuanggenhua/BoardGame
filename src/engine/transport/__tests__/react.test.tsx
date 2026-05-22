@@ -737,6 +737,78 @@ describe('GameProvider transport baseline', () => {
         expect(screen.getByTestId('state').textContent).not.toContain('owner-only-current-app-visible-a');
     });
 
+    it('clears the non owner waiting prompt when app-visible resync returns an authoritative close with the same stateID', () => {
+        render(
+            <GameProvider
+                server="http://127.0.0.1:3000"
+                matchId="match-react-app-visible-waiting-close-same-stateid"
+                playerId="0"
+            >
+                <SmashUpPromptProbe playerID="0" />
+            </GameProvider>,
+        );
+
+        expect(mockClientInstances).toHaveLength(1);
+        expect(appVisibleListeners).toHaveLength(1);
+        const client = mockClientInstances[0]!;
+
+        const visibleWaitingState = {
+            core: { marker: 'waiting-open', turn: 2 },
+            sys: {
+                interaction: {
+                    current: {
+                        id: 'spy-discard-app-visible-waiting',
+                        kind: 'simple-choice',
+                        playerId: '1',
+                        data: {
+                            title: '由 Guest-SU-E2E 选择',
+                            sourceId: 'shared_visible_prompt',
+                            targetType: 'button',
+                            options: [
+                                { id: 'confirm', label: '确认', value: { chosenBy: '1' }, displayMode: 'button' },
+                            ],
+                        },
+                    },
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 1 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(visibleWaitingState, [], { stateID: 7, randomCursor: 0 });
+        });
+
+        expect(screen.getByText('正在等待 {{player}}')).toBeInTheDocument();
+        expect(client.resync).toHaveBeenCalledTimes(0);
+
+        act(() => {
+            appVisibleListeners[0]!();
+        });
+
+        expect(client.resync).toHaveBeenCalledTimes(1);
+
+        const authoritativeClosedState = {
+            core: { marker: 'waiting-closed', turn: 2 },
+            sys: {
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                eventStream: { entries: [], nextId: 2 },
+            },
+        };
+
+        act(() => {
+            client.emitStateUpdate(authoritativeClosedState, [], { stateID: 7, randomCursor: 0 });
+        });
+
+        expect(client.updateLatestState).toHaveBeenLastCalledWith(authoritativeClosedState);
+        expect(screen.queryByText('正在等待 {{player}}')).not.toBeInTheDocument();
+    });
+
     it('clears stale owner-only current prompt on optimistic reconcile when authoritative close arrives', () => {
         const mockEngine = {
             hasPendingCommands: vi.fn()

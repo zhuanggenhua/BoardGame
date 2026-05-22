@@ -2091,3 +2091,24 @@ NODE_OPTIONS=--max-old-space-size=4096 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_
 - 肉眼结论：
   - 翻页中段仍然能看到左页详情和右页账本，不是靠提前切稳态把中段内容掐掉。
   - 这证明当前修法是“截短 turn.js 尾巴”，不是“把中段动画删掉”。
+
+## Addendum（2026-05-22）：井字棋目录缩略图复验
+
+### 本轮运行
+
+- `npm run typecheck`
+- `npx eslint src/components/home-v2/LobbyDirectory.tsx src/components/home-v2/GameDetails.tsx src/components/home-v2/homeV2Thumbnails.ts src/components/home-v2/__tests__/homeV2Thumbnails.test.ts src/games/tictactoe/manifest.ts src/games/tictactoe/thumbnail.tsx e2e/lobby.e2e.ts`
+- `npx vitest run src/components/home-v2/__tests__/homeV2Thumbnails.test.ts src/components/__tests__/ManifestGameThumbnail.test.tsx --configLoader native`
+- `BG_BYPASS_GLOBAL_HEAVY_BUDGET=1 BG_HEAVY_WAIT_FOR_BUDGET=1 BG_HEAVY_WAIT_TIMEOUT_MS=600000 BG_HOME_V2_VIEWPORT=852x393 npm run test:e2e:ci:file -- e2e/lobby.e2e.ts "homeV2Draft 查询参数会切到 V2 首页并可进入详情页"`
+
+结果：Typecheck 通过；Vitest 通过；E2E 通过。ESLint 无错误，仅保留 `LobbyDirectory.tsx` 既有 `react-refresh/only-export-components` warning。
+
+### 本轮关键截图（绝对路径）
+
+#### 1) 首页目录
+
+- `D:\gongzuo\webgame\BoardGame\test-results\evidence-screenshots\_shared\lobby.e2e\homeV2Draft-查询参数会切到-V2-首页并可进入详情页\homeV2Draft-查询参数会切到-V2-首页并可进入详情页-homepage-catalog.png`
+- 肉眼结论：
+  - 井字棋目录项现在能直接看到蓝/紫 X/O 棋盘缩略图，不再是只有“2-4人”的纸面弱图，也不是空白占位。
+  - E2E 增加了针对性门禁：井字棋卡片不得继续使用 `reference-thumbnails/tictactoe.png`，并且必须能看到 `X` 与 `O` 缩略图字形。
+  - 根因是井字棋 manifest 里声明了不存在的 `tictactoe/thumbnails/cover`，同时 Home V2 曾用仅含人数的参考图覆盖共享缩略图；本轮已改为井字棋使用 V1 既有 `NeonTicTacToeThumbnail`，V2 不再用弱参考图覆盖它。

@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import type { GameConfig } from '../../config/games.config';
 import { useAuth } from '../../contexts/AuthContext';
 import { LANGUAGE_OPTIONS } from '../../lib/i18n/types';
-import { OptimizedImage } from '../common/media/OptimizedImage';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
+import { getHomeV2ReferenceThumbnailSrc } from './homeV2Thumbnails';
 
 export type LobbyCategory = 'all' | 'card' | 'dice' | 'abstract' | 'wargame' | 'casual' | 'tools';
 
@@ -237,7 +237,8 @@ function renderBadge(
 
 function HomeCatalogThumbnail({ game }: { game: GameConfig }) {
     const { t } = useTranslation(['lobby', 'common']);
-    const [imgFailed, setImgFailed] = React.useState(false);
+    const referenceThumbnailSrc = getHomeV2ReferenceThumbnailSrc(game.id);
+    const [referenceFailed, setReferenceFailed] = React.useState(false);
     const title = resolveGameDisplayName(game, t, game.id);
     const manifestThumbnail = React.useMemo(() => {
         if (!React.isValidElement(game.thumbnail)) {
@@ -246,38 +247,40 @@ function HomeCatalogThumbnail({ game }: { game: GameConfig }) {
         return React.cloneElement(game.thumbnail);
     }, [game.thumbnail]);
 
-    if (!game.thumbnailPath || imgFailed) {
-        if (manifestThumbnail) {
-            return (
-                <div className="absolute inset-0 overflow-hidden rounded-[inherit]">
-                    {manifestThumbnail}
-                </div>
-            );
-        }
+    if (referenceThumbnailSrc && !referenceFailed) {
         return (
-            <div className="flex h-full w-full items-center justify-center rounded-[inherit] bg-[rgba(248,240,224,0.92)] text-[#8a6a46]">
-                <span
-                    aria-label={title}
-                    title={title}
-                    style={{
-                        fontSize: scaled(30),
-                        lineHeight: 1,
-                        fontWeight: 600,
-                    }}
-                >
-                    {game.icon || '.'}
-                </span>
+            <img
+                src={referenceThumbnailSrc}
+                alt={title}
+                className="absolute inset-0 h-full w-full object-cover"
+                draggable={false}
+                onError={() => setReferenceFailed(true)}
+            />
+        );
+    }
+
+    if (manifestThumbnail) {
+        return (
+            <div className="absolute inset-0 overflow-hidden rounded-[inherit] [&_*img]:!h-full [&_*img]:!w-full [&_*img]:!object-cover">
+                {manifestThumbnail}
             </div>
         );
     }
 
     return (
-        <OptimizedImage
-            src={game.thumbnailPath}
-            alt={title}
-            className="absolute inset-0 h-full w-full object-cover"
-            onError={() => setImgFailed(true)}
-        />
+        <div className="flex h-full w-full items-center justify-center rounded-[inherit] bg-[rgba(248,240,224,0.92)] text-[#8a6a46]">
+            <span
+                aria-label={title}
+                title={title}
+                style={{
+                    fontSize: scaled(30),
+                    lineHeight: 1,
+                    fontWeight: 600,
+                }}
+            >
+                {game.icon || '.'}
+            </span>
+        </div>
     );
 }
 

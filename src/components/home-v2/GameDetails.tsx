@@ -24,7 +24,6 @@ import { useLobbyMatchPresence } from '../../hooks/useLobbyMatchPresence';
 import { useHomeV2CompactLandscape } from '../../hooks/ui/useHomeV2CompactLandscape';
 import { CreateRoomModal, type RoomConfig } from '../lobby/CreateRoomModal';
 import { PasswordField } from '../common/PasswordField';
-import { OptimizedImage } from '../common/media/OptimizedImage';
 import { HomeV2PaperModalFrame } from '../common/overlays/HomeV2PaperModalFrame';
 import {
     homeV2PaperCompactHintClassName,
@@ -43,6 +42,7 @@ import {
     resolveGameDescription,
 } from '../lobby/gameDetailsContent';
 import { logger } from '../../lib/logger';
+import { getHomeV2ReferenceThumbnailSrc } from './homeV2Thumbnails';
 
 type HomeV2Translate = TFunction<['lobby', 'common']>;
 type GameConfigWithDraftMeta = GameConfig & {
@@ -477,7 +477,8 @@ function BookLineButton({
 }
 
 function DetailGameThumbnail({ game, title, framed = false }: { game: GameConfig; title: string; framed?: boolean }) {
-    const [imgFailed, setImgFailed] = React.useState(false);
+    const referenceThumbnailSrc = getHomeV2ReferenceThumbnailSrc(game.id);
+    const [referenceFailed, setReferenceFailed] = React.useState(false);
     const manifestThumbnail = React.useMemo(() => {
         if (!React.isValidElement(game.thumbnail)) {
             return game.thumbnail;
@@ -496,12 +497,13 @@ function DetailGameThumbnail({ game, title, framed = false }: { game: GameConfig
                 boxShadow: 'inset 0 0 0 1px rgba(86, 49, 24, 0.86), inset 0 0 0 4px rgba(214, 164, 83, 0.20), 0 12px 22px rgba(63,38,20,0.16)',
             } : undefined}
         >
-            {game.thumbnailPath && !imgFailed ? (
-                <OptimizedImage
-                    src={game.thumbnailPath}
+            {referenceThumbnailSrc && !referenceFailed ? (
+                <img
+                    src={referenceThumbnailSrc}
                     alt={title}
                     className={`${framed ? 'absolute inset-[3.5%] h-[93%] w-[93%]' : 'absolute inset-[6%] h-[88%] w-[88%]'} object-contain`}
-                    onError={() => setImgFailed(true)}
+                    draggable={false}
+                    onError={() => setReferenceFailed(true)}
                 />
             ) : manifestThumbnail ? (
                 <div className={`${framed ? 'absolute inset-[3.5%] rounded-[1px]' : 'absolute inset-[6%] rounded-[10px]'} flex items-center justify-center overflow-hidden`}>

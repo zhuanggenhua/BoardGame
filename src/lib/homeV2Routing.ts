@@ -5,7 +5,6 @@ export const HOME_ENTRY_STYLE_STORAGE_KEY = 'bg_home_entry_style';
 
 export type HomeEntryStyle = 'book' | 'classic';
 
-const isHomeV2DraftEnvEnabled = import.meta.env.VITE_HOME_V2_DRAFT === '1';
 const HOME_ENTRY_STYLE_CHANGE_EVENT = 'bg-home-entry-style-change';
 
 function normalizeHomeEntryStyle(value: string | null | undefined): HomeEntryStyle | null {
@@ -13,11 +12,6 @@ function normalizeHomeEntryStyle(value: string | null | undefined): HomeEntrySty
         return value;
     }
     return null;
-}
-
-function readHomeV2DraftParam(search: string | URLSearchParams) {
-    const searchParams = typeof search === 'string' ? new URLSearchParams(search) : search;
-    return searchParams.get('homeV2Draft') === '1';
 }
 
 function readHomeEntryStyleParam(search: string | URLSearchParams) {
@@ -39,6 +33,10 @@ function readStoredHomeEntryStyle() {
 
 const normalizePathname = (pathname: string) => pathname.replace(/\/+$/, '') || '/';
 
+function isHomeV2AppRuntimeEnabled() {
+    return isAndroidShellBuildMode() || isNativeAndroidRuntime();
+}
+
 export function isHomeEntryRoute(pathname: string) {
     const normalizedPathname = normalizePathname(pathname);
     return normalizedPathname === '/' || normalizedPathname === '/index.html';
@@ -49,25 +47,24 @@ export function isHomeV2PreviewRoute(pathname: string) {
 }
 
 export function resolveHomeEntryStyle(search: string | URLSearchParams): HomeEntryStyle {
+    const canUseBookHome = isHomeV2AppRuntimeEnabled();
     const queryStyle = readHomeEntryStyleParam(search);
-    if (queryStyle) {
-        return queryStyle;
+    if (queryStyle === 'classic') {
+        return 'classic';
     }
-
-    if (readHomeV2DraftParam(search)) {
+    if (queryStyle === 'book' && canUseBookHome) {
         return 'book';
     }
 
     const storedStyle = readStoredHomeEntryStyle();
-    if (storedStyle) {
-        return storedStyle;
+    if (storedStyle === 'classic') {
+        return 'classic';
     }
-
-    if (isHomeV2DraftEnvEnabled || isAndroidShellBuildMode() || isNativeAndroidRuntime()) {
+    if (storedStyle === 'book' && canUseBookHome) {
         return 'book';
     }
 
-    return 'book';
+    return canUseBookHome ? 'book' : 'classic';
 }
 
 export function persistHomeEntryStyle(style: HomeEntryStyle) {
@@ -108,7 +105,8 @@ export function subscribeHomeEntryStyleChange(listener: () => void) {
 }
 
 export function isHomeV2DraftEnabled(search: string | URLSearchParams) {
-    return isHomeV2DraftEnvEnabled || isAndroidShellBuildMode() || readHomeV2DraftParam(search) || isNativeAndroidRuntime();
+    void search;
+    return isHomeV2AppRuntimeEnabled();
 }
 
 export function isHomeV2DraftRoute(pathname: string, search: string | URLSearchParams) {

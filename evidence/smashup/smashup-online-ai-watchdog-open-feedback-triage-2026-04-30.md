@@ -2157,3 +2157,33 @@ const interactionDataForEvent = responseValidationMode === 'live'
 - 这次是**当前仓复验仍绿**，不是新的玩法 runtime 修复。
 - 它仍然只是 synthetic owner-only prompt 状态注入，不是 `The Spy Who Ditched Me` 从真实卡牌入口打出的完整多人链；因此可以确认当前 shared transport/playerView/page-shell 证据未回退，但不能把整个 goal 标记完成。
 - 后续若继续贴着旧 objective 往前推，下一格应优先找“当前仓能真实打出的 owner-only prompt 链”或对应 worktree 里的 `super_spies` 真卡入口，而不是重复把这条 synthetic waiting-overlay 门禁当成未验证项。
+
+## 2026-05-22 response-window same-sequence handoff revalidation
+
+- 本轮继续按长期 state 的 shared transport / completion-audit 锚点推进，没有回扫旧 `The Spy Who Ditched Me ... waiting overlay` 文案。
+- 这次命中的是一条测试合同纠偏：`response-window` 先走 `RESPONSE_PASS` 后，同一 AI 若立刻落到 `active-turn` 的合法动作，当前 runtime 会在同一恢复序列里继续消费后续合法动作，但不承诺额外写 `legal-action-recovered` resolved feedback payload。
+
+### 本轮新增 gate
+
+- `src/engine/transport/__tests__/server.test.ts`
+  - 新增 `online AI watchdog 在 response-window 先 RESPONSE_PASS 后若同一 AI 紧接给出 active-turn legal action，应在同一恢复序列内继续收口且不误落成失败反馈`
+  - 测试构造 `responseWindow.current.id='response-loop-handoff-1'`，第一步 AI dispatch 返回 `RESPONSE_PASS`，执行后窗口重开成 `response-loop-handoff-2`；第二步 strict view 被 `stale-private-overlay` 阻挡；emergency playerView 后第三步返回 `ADVANCE_PHASE`。
+  - 断言真实执行链为 `['RESPONSE_PASS', 'ADVANCE_PHASE']`，最终 `activePlayerId='0'`，并且不会把这次收口误写成 `force-end-turn-failed`。
+
+### 本轮实际验证
+
+1. focused：
+   `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1 -t "online AI watchdog 在 response-window 先 RESPONSE_PASS 后若同一 AI 紧接给出 active-turn legal action，应在同一恢复序列内继续收口且不误落成失败反馈"`
+   - 结果：`1 file passed, 1 passed / 204 skipped`
+2. 整文件：
+   `node scripts/infra/vitest-cli-safe.mjs run src/engine/transport/__tests__/server.test.ts --configLoader native --pool forks --no-file-parallelism --maxWorkers 1`
+   - 结果：`1 file passed, 205 passed`
+3. diff 检查：
+   `git diff --check -- src/engine/transport/__tests__/server.test.ts`
+   - 结果：passed，仅 LF/CRLF warning。
+
+### 当前边界
+
+- 这是 completion-audit 直测补强，不是新的 runtime 修复。
+- 当前证明的是 `response-window -> response-loop emergency-view -> active-turn legal action` 能在同一恢复序列继续收口，并且不会误报失败；它不证明所有 `response-window` recovery 分支都已全量覆盖。
+- 后续若 shared transport / playerView 还像死循环，应继续找别的 caller provenance 或真实多人卡牌链路，不要再把这条 same-sequence handoff 当开放 residual。

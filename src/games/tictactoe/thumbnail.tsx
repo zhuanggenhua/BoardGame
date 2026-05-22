@@ -1,6 +1,5 @@
-import manifest from './manifest';
-import { ManifestGameThumbnail } from '../../components/lobby/thumbnails';
+import { NeonTicTacToeThumbnail } from '../../components/lobby/thumbnails';
 
-const TicTacToeThumbnail = () => <ManifestGameThumbnail manifest={manifest} />;
+const TicTacToeThumbnail = () => <NeonTicTacToeThumbnail />;
 
 export default TicTacToeThumbnail;

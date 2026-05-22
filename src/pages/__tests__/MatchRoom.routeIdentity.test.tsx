@@ -9,6 +9,7 @@ async function loadMatchRoomWithOnlineMocks(args?: {
     storedMatchCreds?: Record<string, unknown> | null;
     matchPlayers?: MatchPlayer[];
     matchPlayersRef?: { current: MatchPlayer[] };
+    searchParams?: string;
 }) {
     vi.resetModules();
     localStorage.clear();
@@ -31,11 +32,19 @@ async function loadMatchRoomWithOnlineMocks(args?: {
 
     vi.doMock('react-router-dom', async () => {
         const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
+        const searchParams = new URLSearchParams(args?.searchParams ?? '');
+        const search = searchParams.toString();
         return {
             ...actual,
             useParams: () => ({ gameId: 'smashup', matchId: 'match-1', tutorialId: undefined }),
-            useLocation: () => ({ pathname: '/play/smashup/match/match-1', search: '', hash: '', state: null, key: 'match-room-route' }),
-            useSearchParams: () => [new URLSearchParams(), vi.fn()],
+            useLocation: () => ({
+                pathname: '/play/smashup/match/match-1',
+                search: search ? `?${search}` : '',
+                hash: '',
+                state: null,
+                key: 'match-room-route',
+            }),
+            useSearchParams: () => [searchParams, vi.fn()],
             useNavigate: () => navigateMock,
         };
     });
@@ -404,6 +413,30 @@ describe('MatchRoom route identity integration', () => {
         expect(gameProviderSpy).toHaveBeenCalled();
         expect(gameModeSpy).toHaveBeenCalled();
         expect(setPlayerIDMock).not.toHaveBeenCalled();
+    });
+
+    it('即使 URL 显式带 spectate=1，只要 localStorage 仍有 stored seat，集成链也不应把 GameProvider 挂成 spectator/null', async () => {
+        const {
+            MatchRoom,
+            navigateMock,
+        } = await loadMatchRoomWithOnlineMocks({
+            storedMatchCreds: {
+                matchID: 'match-1',
+                playerID: '0',
+                credentials: 'cred-0',
+                gameName: 'smashup',
+                updatedAt: Date.now(),
+            },
+            searchParams: 'spectate=1',
+        });
+
+        render(createElement(MatchRoom));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('game-provider-probe')).toHaveAttribute('data-player-id', '0');
+        });
+        expect(screen.getByTestId('game-mode-probe')).toHaveAttribute('data-spectator', 'false');
+        expect(navigateMock).not.toHaveBeenCalled();
     });
 
     it('最近刚写入的 stored seat 即使 matchStatus 暂时缺少该座位，也不应立刻清空凭据并退回 spectator', async () => {

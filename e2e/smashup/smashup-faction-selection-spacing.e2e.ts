@@ -161,6 +161,39 @@ async function assertFactionSearchIconAligned(page: import('@playwright/test').P
   expect(metrics!.slotLeft, '放大镜图标槽位应稳定位于搜索框内部').toBeGreaterThanOrEqual(metrics!.inputLeft);
 }
 
+async function assertPlayerRailVisuallyOnTop(page: import('@playwright/test').Page) {
+  await expect.poll(async () => page.evaluate(() => {
+    const rail = document.querySelector<HTMLElement>('[data-testid="faction-selection-player-rail"]');
+    const playerCard = document.querySelector<HTMLElement>('[data-testid="faction-selection-player-card-0"]');
+    if (!rail || !playerCard) {
+      return { ok: false, reason: 'missing' };
+    }
+
+    const railRect = rail.getBoundingClientRect();
+    const cardRect = playerCard.getBoundingClientRect();
+    const x = cardRect.left + cardRect.width / 2;
+    const y = cardRect.top + cardRect.height / 2;
+    const topElement = document.elementFromPoint(x, y);
+
+    return {
+      ok: railRect.top < window.innerHeight
+        && railRect.bottom <= window.innerHeight + 2
+        && cardRect.top < window.innerHeight
+        && cardRect.bottom <= window.innerHeight + 2
+        && Boolean(topElement?.closest('[data-testid="faction-selection-player-rail"]')),
+      reason: topElement instanceof HTMLElement ? topElement.dataset.testid ?? topElement.className : 'no-top-element',
+      railTop: railRect.top,
+      railBottom: railRect.bottom,
+      cardTop: cardRect.top,
+      cardBottom: cardRect.bottom,
+      viewportHeight: window.innerHeight,
+    };
+  }), {
+    timeout: 5000,
+    message: '玩家状态卡必须真实显示在视觉顶层，不能只是在 DOM 中可见',
+  }).toMatchObject({ ok: true });
+}
+
 test.describe('SmashUp 派系选择页移动端间距', () => {
   test('移动端横屏应保持桌面化主布局并输出移动端/桌面端参考截图', async ({ page, game }, testInfo) => {
     test.setTimeout(90000);
@@ -181,7 +214,9 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     await expect(page.getByTestId('faction-search-input')).toBeVisible();
     await expect(page.getByTestId('faction-option-pirates')).toBeVisible();
     await expect(page.getByTestId('faction-option-ninjas')).toBeVisible();
-    await expect(page.getByTestId('faction-option-robots')).toHaveCount(0);
+    await expect(page.getByTestId('faction-option-robots')).toBeVisible();
+    await expect(page.getByTestId('faction-selection-player-rail')).toBeVisible();
+    await assertPlayerRailVisuallyOnTop(page);
 
     const mobileMetrics = await page.evaluate(() => {
       const cards = Array.from(document.querySelectorAll('.grid > div')) as HTMLElement[];
@@ -219,13 +254,16 @@ test.describe('SmashUp 派系选择页移动端间距', () => {
     await page.screenshot({ path: join(evidenceDir, 'mobile-search-pirates.png'), fullPage: false });
     await page.screenshot({ path: testInfo.outputPath('mobile-search-pirates.png'), fullPage: false });
 
+    await page.getByTestId('faction-search-clear').click();
+    await expect(page.getByTestId('faction-option-robots')).toBeVisible();
+
     await page.setViewportSize({ width: 1440, height: 900 });
-    await game.openTestGame('smashup', { skipInitialization: true }, 20000);
-    await game.setupScene(buildFactionSearchRegressionScene());
-    await waitForFactionSelectionReady(page);
+    await page.waitForTimeout(1000);
     await expect(title).toBeVisible({ timeout: 30000 });
     await expect(cards.first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByTestId('faction-option-robots')).toHaveCount(0);
+    await expect(page.getByTestId('faction-option-robots')).toBeVisible();
+    await expect(page.getByTestId('faction-selection-player-rail')).toBeVisible();
+    await assertPlayerRailVisuallyOnTop(page);
     await page.getByTestId('faction-search-input').fill('pirates');
     await expect(page.getByTestId('faction-option-pirates')).toBeVisible();
     await expect(page.getByTestId('faction-option-ninjas')).toHaveCount(0);

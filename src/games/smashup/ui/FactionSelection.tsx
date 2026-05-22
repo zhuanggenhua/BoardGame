@@ -66,7 +66,7 @@ function shouldUseCompactPlayerRail(
 
 function getDefaultFactionVisibilityMode(viewportSize: { width: number; height: number }): FactionVisibilityMode {
     void viewportSize;
-    return 'available';
+    return 'all';
 }
 
 export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, playerNames, playerOrder, getPlayerOrderLabel }) => {
@@ -148,7 +148,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         && viewportSize.height >= 860;
     const isUltraCompactLandscape = isMobileLandscape && viewportSize.height <= 520;
     const useCompactPlayerRail = shouldUseCompactPlayerRail(viewportSize, playerOrder.length);
-    const shouldShowPlayerSelectionRail = !isUltraCompactLandscape;
+    const shouldShowPlayerSelectionRail = true;
     const remainingSelections = Math.max(0, 2 - mySelections.length);
     const visibilityMode = customVisibilityMode ?? getDefaultFactionVisibilityMode(viewportSize);
     const focusedFactionMeta = resolvedActiveFactionId ? getFactionMeta(resolvedActiveFactionId) ?? null : null;
@@ -658,11 +658,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
             ref={selectionGridRef}
             className={useDesktopLikeLandscapeLayout
             ? isUltraCompactLandscape
-                ? 'flex-1 min-h-0 w-full overflow-y-auto px-3 py-1 relative z-10 custom-scrollbar'
-                : 'flex-1 min-h-0 w-full overflow-y-auto px-5 py-2 relative z-10 custom-scrollbar'
+                ? 'flex-1 min-h-0 w-full overflow-y-auto px-3 pt-1 pb-24 relative z-10 custom-scrollbar'
+                : 'flex-1 min-h-0 w-full overflow-y-auto px-5 pt-2 pb-32 relative z-10 custom-scrollbar'
             : useFocusedDesktopDraftLayout
-                ? 'flex-1 min-h-0 w-full max-w-7xl mx-auto overflow-y-auto px-4 py-2 lg:px-6 lg:py-3 relative z-10 custom-scrollbar'
-            : 'flex-1 min-h-0 w-full max-w-7xl mx-auto overflow-y-auto px-3 py-3 lg:px-6 lg:py-4 relative z-10 custom-scrollbar'}>
+                ? 'flex-1 min-h-0 w-full max-w-7xl mx-auto overflow-y-auto px-4 pt-2 pb-28 lg:px-6 lg:pt-3 lg:pb-32 relative z-10 custom-scrollbar'
+            : 'flex-1 min-h-0 w-full max-w-7xl mx-auto overflow-y-auto px-3 pt-3 pb-28 lg:px-6 lg:pt-4 lg:pb-36 relative z-10 custom-scrollbar'}>
             {shouldShowFactionFilterToolbar ? selectionFilterToolbar : null}
             {factionOptionNodes.length > 0 ? (
                 <div className={selectionGridClassName}>{factionOptionNodes}</div>
@@ -680,6 +680,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                 : useMinimalPlayerRail
                     ? 'absolute inset-x-0 bottom-0 z-30 w-full pointer-events-none bg-gradient-to-t from-black/34 via-black/10 to-transparent px-2.5 pb-1.5 pt-1.5 lg:px-5'
                     : 'absolute inset-x-0 bottom-0 z-30 w-full pointer-events-none bg-gradient-to-t from-black/40 via-black/12 to-transparent px-3 pb-4 pt-4 lg:px-6'}
+            style={{ zIndex: UI_Z_INDEX.overlay + 1 }}
             data-testid="faction-selection-player-rail"
         >
             <div className={useDesktopLikeLandscapeLayout

@@ -80,12 +80,21 @@ const OWNER_PLAYER_ID = '0';
 function getEnabledAiController(
     gameManifest: GameManifestEntry,
     difficulty: AiDifficultyLevel,
+    manualFactionSelection: boolean,
 ): AiSeatController {
     if (gameManifest.ai?.localAi) {
-        return { type: 'local-ai', difficulty };
+        return {
+            type: 'local-ai',
+            difficulty,
+            ...(manualFactionSelection ? { manualFactionSelection: true } : {}),
+        };
     }
     if (gameManifest.ai?.remoteAi) {
-        return { type: 'remote-ai', providerId: 'astrbot' };
+        return {
+            type: 'remote-ai',
+            providerId: 'astrbot',
+            ...(manualFactionSelection ? { manualFactionSelection: true } : {}),
+        };
     }
     return { type: 'human' };
 }
@@ -123,6 +132,28 @@ function applyLocalAiDifficulty(
                 difficulty,
             };
         }
+    }
+    return nextControllers;
+}
+
+function applyManualFactionSelection(
+    seatControllers: Record<string, AiSeatController>,
+    numPlayers: number,
+    enabled: boolean,
+): Record<string, AiSeatController> {
+    const nextControllers = forceHumanOwnerSeat({ ...seatControllers });
+    for (let index = 1; index < numPlayers; index += 1) {
+        const playerId = String(index);
+        const controller = nextControllers[playerId];
+        if (!controller || controller.type === 'human') {
+            continue;
+        }
+        nextControllers[playerId] = enabled
+            ? { ...controller, manualFactionSelection: true }
+            : (() => {
+                const { manualFactionSelection: _ignored, ...rest } = controller;
+                return rest;
+            })();
     }
     return nextControllers;
 }
@@ -216,6 +247,7 @@ export const CreateRoomModal = ({
     const [password, setPassword] = useState('');
     const [enableAi, setEnableAi] = useState(false);
     const [aiDifficulty, setAiDifficulty] = useState<AiDifficultyLevel>(DEFAULT_LOCAL_AI_DIFFICULTY);
+    const [manualFactionSelection, setManualFactionSelection] = useState(false);
     const [seatControllers, setSeatControllers] = useState<Record<string, AiSeatController>>({});
     const [setupSelections, setSetupSelections] = useState<GameSetupSelections>(() => {
         const defaults = getDefaultSetupSelections(gameManifest);
@@ -245,6 +277,9 @@ export const CreateRoomModal = ({
                 controller.type === 'local-ai' && typeof controller.difficulty === 'string'
             ),
         )?.difficulty ?? DEFAULT_LOCAL_AI_DIFFICULTY;
+        const shouldManualFactionSelection = Object.values(nextSeatControllers).some(
+            (controller) => controller.type !== 'human' && controller.manualFactionSelection === true,
+        );
         const shouldEnableAi = initialPreferences
             ? countAiSeats(nextSeatControllers, nextPreferences.numPlayers) > 0
             : false;
@@ -255,6 +290,7 @@ export const CreateRoomModal = ({
         setPassword('');
         setEnableAi(shouldEnableAi);
         setAiDifficulty(inferredDifficulty);
+        setManualFactionSelection(shouldManualFactionSelection);
         setSeatControllers(nextSeatControllers);
         setSetupSelections({
             ...nextPreferences.setupSelections,
@@ -307,7 +343,7 @@ export const CreateRoomModal = ({
                     const nextControllers = forceHumanOwnerSeat({ ...existing });
                     const hasAiSeat = countAiSeats(nextControllers, numPlayers) > 0;
                     if (!hasAiSeat && numPlayers > 1) {
-                        nextControllers['1'] = getEnabledAiController(gameManifest, aiDifficulty);
+                        nextControllers['1'] = getEnabledAiController(gameManifest, aiDifficulty, manualFactionSelection);
                     }
                     return nextControllers;
                 });
@@ -331,7 +367,7 @@ export const CreateRoomModal = ({
             const nextControllers = forceHumanOwnerSeat({ ...current });
             const currentController = nextControllers[playerId];
             nextControllers[playerId] = currentController?.type === 'human'
-                ? getEnabledAiController(gameManifest, aiDifficulty)
+                ? getEnabledAiController(gameManifest, aiDifficulty, manualFactionSelection)
                 : { type: 'human' };
             return nextControllers;
         });
@@ -340,6 +376,11 @@ export const CreateRoomModal = ({
     const handleDifficultyChange = (difficulty: AiDifficultyLevel) => {
         setAiDifficulty(difficulty);
         setSeatControllers((current) => applyLocalAiDifficulty(current, numPlayers, difficulty));
+    };
+
+    const handleManualFactionSelectionChange = (checked: boolean) => {
+        setManualFactionSelection(checked);
+        setSeatControllers((current) => applyManualFactionSelection(current, numPlayers, checked));
     };
 
     const handleConfirm = () => {
@@ -641,6 +682,19 @@ export const CreateRoomModal = ({
                                                             );
                                                         })}
                                                     </div>
+
+                                                    <label className={`${isCompactHomeV2Layout ? 'gap-[6px] rounded-[5px] px-[8px] py-[5px]' : 'gap-3 rounded-[8px] px-3 py-2'} flex cursor-pointer items-center border border-[#b6905e]/34 bg-[rgba(247,227,191,0.44)] text-left transition-colors hover:bg-[rgba(240,212,164,0.64)]`}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={manualFactionSelection}
+                                                            onChange={(event) => handleManualFactionSelectionChange(event.target.checked)}
+                                                            className={isCompactHomeV2Layout ? 'h-[10px] w-[10px] cursor-pointer accent-[#875b3b]' : 'h-4 w-4 cursor-pointer accent-[#875b3b]'}
+                                                            data-testid="create-room-ai-manual-faction-checkbox"
+                                                        />
+                                                        <span className={isCompactHomeV2Layout ? 'text-[7.6px] font-bold text-[#5b3822]' : 'text-xs font-bold text-[#5b3822]'}>
+                                                            {t('createRoom.aiManualFactionSelection')}
+                                                        </span>
+                                                    </label>
                                                 </>
                                             )}
                                         </div>
@@ -879,6 +933,19 @@ export const CreateRoomModal = ({
                                                         );
                                                     })}
                                                 </div>
+
+                                                <label className="flex cursor-pointer items-center gap-3 rounded-[6px] border border-parchment-card-border/25 bg-parchment-card-bg/70 px-3 py-2 text-left transition-colors hover:bg-parchment-base-bg/45">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={manualFactionSelection}
+                                                        onChange={(event) => handleManualFactionSelectionChange(event.target.checked)}
+                                                        className="h-4 w-4 cursor-pointer accent-emerald-600"
+                                                        data-testid="create-room-ai-manual-faction-checkbox"
+                                                    />
+                                                    <span className="text-xs font-bold text-parchment-base-text">
+                                                        {t('createRoom.aiManualFactionSelection')}
+                                                    </span>
+                                                </label>
                                             </>
                                         )}
                                     </div>

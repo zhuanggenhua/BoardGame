@@ -39,10 +39,10 @@ describe('homeV2Routing', () => {
         expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('book');
     });
 
-    it('普通网页根路由默认使用书本主页', async () => {
+    it('普通网页根路由默认使用经典主页', async () => {
         const { isHomeV2DraftEnabled, resolveHomeEntryStyle } = await import('../homeV2Routing');
 
-        expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('book');
+        expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('classic');
         expect(isHomeV2DraftEnabled(new URLSearchParams())).toBe(false);
     });
 
@@ -52,18 +52,19 @@ describe('homeV2Routing', () => {
         expect(resolveHomeEntryStyle(new URLSearchParams('homeStyle=classic'))).toBe('classic');
     });
 
-    it('已保存的主页偏好会覆盖默认书本主页', async () => {
+    it('已保存的经典主页偏好会覆盖 App 默认书本主页', async () => {
+        runtimeState.nativeAndroid = true;
         window.localStorage.setItem('bg_home_entry_style', 'classic');
         const { resolveHomeEntryStyle } = await import('../homeV2Routing');
 
         expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('classic');
     });
 
-    it('legacy homeV2Draft=1 仍会强制走书本主页', async () => {
-        window.localStorage.setItem('bg_home_entry_style', 'classic');
+    it('普通网页会忽略旧的书本主页偏好和查询参数', async () => {
+        window.localStorage.setItem('bg_home_entry_style', 'book');
         const { isHomeV2DraftEnabled, resolveHomeEntryStyle } = await import('../homeV2Routing');
 
-        expect(isHomeV2DraftEnabled(new URLSearchParams('homeV2Draft=1'))).toBe(true);
-        expect(resolveHomeEntryStyle(new URLSearchParams('homeV2Draft=1'))).toBe('book');
+        expect(isHomeV2DraftEnabled(new URLSearchParams('homeV2Draft=1'))).toBe(false);
+        expect(resolveHomeEntryStyle(new URLSearchParams('homeStyle=book&homeV2Draft=1'))).toBe('classic');
     });
 });

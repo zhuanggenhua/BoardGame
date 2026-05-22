@@ -653,7 +653,7 @@ test.describe('Lobby E2E', () => {
             const continueMatchId = await createTicTacToeRoom(page);
             const injectedRoom = await createHomeV2DetailShowcaseRooms(page);
 
-            await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
+            await page.goto('/dev/home-v2-preview', { waitUntil: 'domcontentloaded' });
             await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
             await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30000 });
             await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
@@ -727,7 +727,11 @@ test.describe('Lobby E2E', () => {
         await page.getByTestId('home-v2-category-all').click();
         await waitForHomeV2FlipMode(page, 'overview');
         await expect(page.locator('[data-scene-slot="overview_spread_body"] [data-game-id="dicethrone"]').first()).toBeVisible({ timeout: 10000 });
-        await expect(page.locator('[data-scene-slot="overview_spread_body"] [data-game-id="tictactoe"]').first()).toBeVisible({ timeout: 10000 });
+        const tictactoeCatalogCard = page.locator('[data-scene-slot="overview_spread_body"] [data-game-id="tictactoe"]').first();
+        await expect(tictactoeCatalogCard).toBeVisible({ timeout: 10000 });
+        await expect(tictactoeCatalogCard.locator('img[src*="reference-thumbnails/tictactoe.png"]')).toHaveCount(0);
+        await expect(tictactoeCatalogCard.locator('span').filter({ hasText: /^X$/ }).first()).toBeVisible({ timeout: 10000 });
+        await expect(tictactoeCatalogCard.locator('span').filter({ hasText: /^O$/ }).first()).toBeVisible({ timeout: 10000 });
 
         const catalogMetrics = await page.evaluate(() => {
             const cards = Array.from(document.querySelectorAll('[data-scene-slot="overview_spread_body"] [data-game-id]')) as HTMLElement[];
@@ -1357,7 +1361,7 @@ test.describe('Lobby E2E', () => {
         try {
             await useHomeV2MobileLandscapeViewport(page);
 
-            await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
+            await page.goto('/dev/home-v2-preview', { waitUntil: 'domcontentloaded' });
             await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 15000 });
             await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
 
@@ -1532,7 +1536,7 @@ test.describe('Lobby E2E', () => {
             await useHomeV2MobileLandscapeViewport(page);
             const injectedLockedRoom = await createLockedTicTacToeRoom(page);
 
-            await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
+            await page.goto('/dev/home-v2-preview', { waitUntil: 'domcontentloaded' });
             await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
             await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30000 });
             await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
@@ -1648,7 +1652,7 @@ test.describe('Lobby E2E', () => {
         const page = await context.newPage();
         try {
             await useHomeV2MobileLandscapeViewport(page);
-            await page.goto('/?homeV2Draft=1', { waitUntil: 'domcontentloaded' });
+            await page.goto('/dev/home-v2-preview', { waitUntil: 'domcontentloaded' });
             await expect(page.getByTestId('home-v2-root')).toBeVisible({ timeout: 30000 });
             await expect(page.getByTestId('home-v2-book-stage')).toBeVisible({ timeout: 30000 });
             await ensureHomeV2BookMaterialsReady(page, { requireLegacyTabs: false });
