@@ -39,6 +39,7 @@ export interface AffectRecord {
     sourceControllerId?: PlayerId;
     sourceBaseIndex?: number;
     triggerMinion?: MinionOnBase;
+    protectionTargetMinion?: MinionOnBase;
     triggerMinionUid?: string;
     triggerMinionDefId?: string;
     counterChangeKind?: 'added' | 'removed';
@@ -260,13 +261,15 @@ export function buildAffectRecords(
                 ...minion,
                 controller: payload.toControllerId,
             };
-            return [buildMinionAffectRecord(
+            const record = buildMinionAffectRecord(
                 affectedMinion,
                 payload.baseIndex,
                 'control_change',
                 payload.reason,
                 resolveSourceMeta(payload as unknown as Record<string, unknown>, payload.sourcePlayerId, payload.reason),
-            )];
+            );
+            record.protectionTargetMinion = minion;
+            return [record];
         }
         case SU_EVENTS.POWER_COUNTER_ADDED: {
             const payload = (event as PowerCounterAddedEvent).payload;

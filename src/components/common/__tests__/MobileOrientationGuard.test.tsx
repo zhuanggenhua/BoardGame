@@ -83,7 +83,7 @@ describe('MobileOrientationGuard home orientation gate', () => {
         document.body.innerHTML = '';
     });
 
-    it('在竖屏下为书本主页显示横屏强制 gate', () => {
+    it('在竖屏下也不显示强制横屏 gate，保留首页可操作', () => {
         vi.useFakeTimers();
         setViewport(390, 844);
 
@@ -92,11 +92,11 @@ describe('MobileOrientationGuard home orientation gate', () => {
             vi.runOnlyPendingTimers();
         });
 
-        expect(screen.getByTestId('mobile-orientation-home-gate')).toBeTruthy();
-        expect(screen.getByText('书本主页需要横屏')).toBeTruthy();
+        expect(screen.getByTestId('home-content')).toBeTruthy();
+        expect(screen.queryByTestId('mobile-orientation-home-gate')).toBeNull();
     });
 
-    it('在横屏下为经典主页显示竖屏强制 gate', () => {
+    it('在横屏下为经典主页只显示竖屏建议 banner，不强制遮挡首页操作', () => {
         vi.useFakeTimers();
         setViewport(844, 390);
         window.localStorage.setItem('bg_home_entry_style', 'classic');
@@ -106,8 +106,9 @@ describe('MobileOrientationGuard home orientation gate', () => {
             vi.runOnlyPendingTimers();
         });
 
-        expect(screen.getByTestId('mobile-orientation-home-gate')).toBeTruthy();
-        expect(screen.getByText('经典主页需要竖屏')).toBeTruthy();
+        expect(screen.getByTestId('home-content')).toBeTruthy();
+        expect(screen.queryByTestId('mobile-orientation-home-gate')).toBeNull();
+        expect(screen.getByText('建议切换为竖屏以获得更佳体验')).toBeTruthy();
     });
 
     it('原生壳中的书本主页不会显示横屏 gate，而是继续保留首页内容并交给原生锁屏', () => {

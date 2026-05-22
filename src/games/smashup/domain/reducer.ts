@@ -959,7 +959,7 @@ export function filterProtectedAffectEvents(
         for (const record of affectRecords) {
             if (record.baseIndex === undefined || !record.triggerMinion) continue;
 
-            const blockedProtectionType = resolveBlockedProtectionType(core, record, record.triggerMinion);
+            const blockedProtectionType = resolveBlockedProtectionType(core, record, record.protectionTargetMinion ?? record.triggerMinion);
             if (!blockedProtectionType) continue;
 
             const effectiveSourcePlayerId = record.reason?.startsWith('base_')
@@ -969,7 +969,7 @@ export function filterProtectedAffectEvents(
             if (effectiveSourcePlayerId) {
                 const protectionSource = getConsumableProtectionSource(
                     core,
-                    record.triggerMinion,
+                    record.protectionTargetMinion ?? record.triggerMinion,
                     record.baseIndex,
                     effectiveSourcePlayerId,
                     blockedProtectionType,

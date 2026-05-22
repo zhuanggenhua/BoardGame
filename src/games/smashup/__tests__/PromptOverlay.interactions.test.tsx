@@ -57,7 +57,10 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         fireEvent.click(screen.getByRole('button', { name: '弃掉' }));
 
         const response = respondCommand('discard');
-        expect(dispatch).toHaveBeenCalledWith(response.type, response.payload);
+        expect(dispatch).toHaveBeenCalledWith(response.type, {
+            ...response.payload,
+            interactionId: interaction.id,
+        });
     });
 
     it('button-only prompts submit on touch pointerdown before mobile click can be lost', () => {
@@ -83,7 +86,10 @@ describe('SmashUp PromptOverlay interaction regressions', () => {
         fireEvent.click(discardButton);
 
         const response = respondCommand('discard');
-        expect(dispatch).toHaveBeenCalledWith(response.type, response.payload);
+        expect(dispatch).toHaveBeenCalledWith(response.type, {
+            ...response.payload,
+            interactionId: interaction.id,
+        });
         expect(dispatch).toHaveBeenCalledTimes(1);
     });
 

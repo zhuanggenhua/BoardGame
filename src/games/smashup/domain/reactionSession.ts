@@ -247,7 +247,7 @@ function isTriggerSourceStillPresentDuringScoring(
 
     return (state.core.titans ?? []).some(titan => (
         titan.uid === trigger.sourceCardUid
-        && titan.location.zone === 'base'
+        && (titan.location.zone === 'base' || titan.location.zone === 'setaside')
     ));
 }
 

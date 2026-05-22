@@ -628,11 +628,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         <div
             className={useDesktopLikeLandscapeLayout
                 ? isUltraCompactLandscape
-                    ? 'absolute inset-x-0 bottom-0 z-30 w-full pointer-events-none bg-gradient-to-t from-black/42 via-black/12 to-transparent px-2 pb-2 pt-1.5'
-                    : 'absolute inset-x-0 bottom-0 z-30 w-full pointer-events-none bg-gradient-to-t from-black/45 via-black/18 to-transparent px-3 pb-4 pt-3'
+                    ? 'absolute inset-x-0 bottom-0 z-30 w-full min-h-[5.75rem] pointer-events-none bg-gradient-to-t from-black/42 via-black/12 to-transparent px-2 pb-2 pt-1.5'
+                    : 'absolute inset-x-0 bottom-0 z-30 w-full min-h-[7.5rem] pointer-events-none bg-gradient-to-t from-black/45 via-black/18 to-transparent px-3 pb-4 pt-3'
                 : useMinimalPlayerRail
-                    ? 'absolute inset-x-0 bottom-0 z-30 w-full pointer-events-none bg-gradient-to-t from-black/34 via-black/10 to-transparent px-2.5 pb-1.5 pt-1.5 lg:px-5'
-                    : 'absolute inset-x-0 bottom-0 z-30 w-full pointer-events-none bg-gradient-to-t from-black/40 via-black/12 to-transparent px-3 pb-4 pt-4 lg:px-6'}
+                    ? 'absolute inset-x-0 bottom-0 z-30 w-full min-h-[5.75rem] pointer-events-none bg-gradient-to-t from-black/34 via-black/10 to-transparent px-2.5 pb-1.5 pt-1.5 lg:px-5'
+                    : 'absolute inset-x-0 bottom-0 z-30 w-full min-h-[7.5rem] pointer-events-none bg-gradient-to-t from-black/40 via-black/12 to-transparent px-3 pb-4 pt-4 lg:px-6'}
             style={{ zIndex: UI_Z_INDEX.overlay + 1 }}
             data-testid="faction-selection-player-rail"
         >
