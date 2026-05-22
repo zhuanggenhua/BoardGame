@@ -34,14 +34,15 @@
 
 ## 本轮资源结论
 
-- 正式资源已落到 `public/assets/i18n/zh-CN/qidahen/` 与 `public/assets/qidahen/thumbnails/`。
+- 2026-05-21 修订：旧结论中“缩略图位于 `public/assets/qidahen/thumbnails/`”已失效；缩略图按新游戏资源实施规范归入 `public/assets/i18n/zh-CN/qidahen/thumbnails/`，`thumbnail.tsx` 统一通过 `ManifestGameThumbnail` 读取 `manifest.thumbnailPath`。
+- 正式资源已落到 `public/assets/i18n/zh-CN/qidahen/`，缩略图同样归入 `public/assets/i18n/zh-CN/qidahen/thumbnails/`。
 - 已生成 71 个运行时 WebP，其中主资源目录 70 个、缩略图目录 1 个。
 - `npm run assets:manifest` 与 `npm run assets:validate` 已通过。
 - `npm run assets:upload` 已上传本轮新增 71 个远端对象，失败 0。
 - 远端抽查通过：
   - `https://assets.easyboardgame.top/official/i18n/zh-CN/qidahen/board/compressed/main-board.webp`
   - `https://assets.easyboardgame.top/official/i18n/zh-CN/qidahen/cards/atlases/compressed/ming-deck-atlas.webp`
-  - `https://assets.easyboardgame.top/official/qidahen/thumbnails/compressed/cover.webp`
+  - `https://assets.easyboardgame.top/official/i18n/zh-CN/qidahen/thumbnails/compressed/cover.webp`
 
 ## 推荐实现阶段
 
@@ -62,5 +63,5 @@
 - 规则 Markdown：`src/games/qidahen/rule/七大恨规则.md`
 - 素材清单：`src/games/qidahen/rule/七大恨素材接入清单.md`
 - 正式图片资源：`public/assets/i18n/zh-CN/qidahen/`
-- 缩略图：`public/assets/qidahen/thumbnails/cover.png`
+- 缩略图：`public/assets/i18n/zh-CN/qidahen/thumbnails/cover.png`
 - 临时核对图：`temp/qidahen-intake/contact-*.png`

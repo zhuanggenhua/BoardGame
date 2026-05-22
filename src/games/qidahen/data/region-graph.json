@@ -1,0 +1,122 @@
+{
+  "boundaryTypes": [
+    {
+      "id": "plain",
+      "label": "平原",
+      "note": "战场宽度 3",
+      "battleWidth": 3
+    },
+    {
+      "id": "mountain",
+      "label": "山脉",
+      "note": "战场宽度 2",
+      "battleWidth": 2
+    },
+    {
+      "id": "river",
+      "label": "河流",
+      "note": "战场宽度 2",
+      "battleWidth": 2
+    },
+    {
+      "id": "coast",
+      "label": "海岸/水路",
+      "note": "船锚区相邻，最多 2 部队",
+      "battleWidth": 2
+    },
+    {
+      "id": "wall-convex",
+      "label": "攻入长城",
+      "note": "凸面战场宽度 1",
+      "battleWidth": 1
+    },
+    {
+      "id": "wall-flat",
+      "label": "出长城",
+      "note": "平面战场宽度 3",
+      "battleWidth": 3
+    },
+    {
+      "id": "city",
+      "label": "攻城",
+      "note": "战场宽度 1",
+      "battleWidth": 1
+    },
+    {
+      "id": "shanhaiguan",
+      "label": "山海关特殊",
+      "note": "破关时视为平原",
+      "battleWidth": 1
+    }
+  ],
+  "nodes": [
+    {
+      "id": "jinzhou",
+      "name": "锦州",
+      "seed": {
+        "x": 772,
+        "y": 420
+      },
+      "center": {
+        "x": 777,
+        "y": 417
+      },
+      "pixelCount": 16980
+    },
+    {
+      "id": "song-jin",
+      "name": "宋进",
+      "seed": {
+        "x": 697,
+        "y": 630
+      },
+      "center": {
+        "x": 736,
+        "y": 568
+      },
+      "pixelCount": 17909
+    },
+    {
+      "id": "shan-hai-guan",
+      "name": "山海关",
+      "seed": {
+        "x": 635,
+        "y": 552
+      },
+      "center": null,
+      "pixelCount": 0
+    },
+    {
+      "id": "xian-xing",
+      "name": "咸兴",
+      "seed": {
+        "x": 1098,
+        "y": 511
+      },
+      "center": null,
+      "pixelCount": 0
+    },
+    {
+      "id": "shou-cheng",
+      "name": "汉城",
+      "seed": {
+        "x": 1118,
+        "y": 629
+      },
+      "center": null,
+      "pixelCount": 0
+    }
+  ],
+  "edges": [
+    {
+      "id": "jinzhou::song-jin",
+      "from": "jinzhou",
+      "to": "song-jin",
+      "bidirectional": true,
+      "boundaryType": "mountain",
+      "boundaryLabel": "山脉",
+      "battleWidth": 2,
+      "ruleNote": "战场宽度 2"
+    }
+  ]
+}

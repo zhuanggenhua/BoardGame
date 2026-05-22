@@ -1,0 +1,110 @@
+{
+  "map": "qidahen/board/qidahen-main-map.png",
+  "width": 1265,
+  "height": 893,
+  "boundaryRules": [
+    {
+      "id": "painted-slate-line",
+      "label": "实画边界 1",
+      "rgb": [
+        61,
+        69,
+        66
+      ],
+      "enabled": true,
+      "tolerance": 14
+    },
+    {
+      "id": "painted-brown-line",
+      "label": "实画边界 2",
+      "rgb": [
+        126,
+        97,
+        56
+      ],
+      "enabled": true,
+      "tolerance": 14
+    },
+    {
+      "id": "painted-ochre-line",
+      "label": "实画边界 3",
+      "rgb": [
+        128,
+        104,
+        62
+      ],
+      "enabled": true,
+      "tolerance": 14
+    },
+    {
+      "id": "painted-ink-line",
+      "label": "实画边界 4",
+      "rgb": [
+        43,
+        36,
+        34
+      ],
+      "enabled": true,
+      "tolerance": 14
+    }
+  ],
+  "boundaryExpansion": 4,
+  "regionColorTolerance": 32,
+  "paintedBoundaryOnly": true,
+  "regions": [
+    {
+      "id": "jinzhou",
+      "name": "锦州",
+      "color": "#d64c3a",
+      "seed": {
+        "x": 772,
+        "y": 420
+      },
+      "links": [
+        "song-jin"
+      ]
+    },
+    {
+      "id": "song-jin",
+      "name": "宋进",
+      "color": "#e4a93a",
+      "seed": {
+        "x": 697,
+        "y": 630
+      },
+      "links": [
+        "jinzhou"
+      ]
+    },
+    {
+      "id": "shan-hai-guan",
+      "name": "山海关",
+      "color": "#4f88d2",
+      "seed": {
+        "x": 635,
+        "y": 552
+      },
+      "links": []
+    },
+    {
+      "id": "xian-xing",
+      "name": "咸兴",
+      "color": "#6fbe73",
+      "seed": {
+        "x": 1098,
+        "y": 511
+      },
+      "links": []
+    },
+    {
+      "id": "shou-cheng",
+      "name": "汉城",
+      "color": "#8f63d8",
+      "seed": {
+        "x": 1118,
+        "y": 629
+      },
+      "links": []
+    }
+  ]
+}

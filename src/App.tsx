@@ -62,6 +62,7 @@ const DevToolsSlicer = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pag
 const DevToolsFxPreview = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/EffectPreview')) : null;
 const DevToolsAudioBrowser = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/AudioBrowser')) : null;
 const DevToolsArchView = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/ArchitectureView')) : null;
+const DevToolsQidahenRegionMask = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./pages/devtools/QidahenRegionMaskTool')) : null;
 const UgcBuilderPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/builder/pages/UnifiedBuilderWithAudio')) : null;
 const UgcSandboxPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/builder/pages/UGCSandbox')) : null;
 const UgcRuntimeViewPage = ENABLE_INTERNAL_DEVTOOLS ? React.lazy(() => import('./ugc/runtime/RuntimeViewPage')) : null;
@@ -163,6 +164,9 @@ const AppContent = () => {
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && DevToolsArchView && (
                       <Route path="/dev/arch" element={<React.Suspense fallback={null}><DevToolsArchView /></React.Suspense>} />
+                    )}
+                    {ENABLE_INTERNAL_DEVTOOLS && DevToolsQidahenRegionMask && (
+                      <Route path="/dev/qidahen-region-mask" element={<React.Suspense fallback={null}><DevToolsQidahenRegionMask /></React.Suspense>} />
                     )}
                     {ENABLE_INTERNAL_DEVTOOLS && HomeV2AuthoringPage && (
                       <Route path="/dev/home-v2-authoring" element={<React.Suspense fallback={null}><HomeV2AuthoringPage /></React.Suspense>} />

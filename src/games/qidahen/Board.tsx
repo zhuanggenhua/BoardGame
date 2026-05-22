@@ -1,67 +1,296 @@
 import React from 'react';
+import type { CardPreviewRef } from '../../core/types';
 import type { GameBoardProps } from '../../engine/transport/protocol';
-import type { QidahenCommandMap, QidahenCore, QidahenFactionId, QidahenRegionSummary } from './domain';
+import { CardPreview } from '../../components/common/media/CardPreview';
+import { OptimizedImage } from '../../components/common/media/OptimizedImage';
+import { getCardAtlasSource } from '../../components/common/media/cardAtlasRegistry';
+import { getLocalizedAssetPath, getOptimizedImageUrls } from '../../core/AssetLoader';
+import type { SpriteAtlasConfig, SpriteAtlasFrame } from '../../engine/primitives/spriteAtlas';
+import type {
+    QidahenActionChoice,
+    QidahenCommandMap,
+    QidahenCore,
+    QidahenFactionId,
+    QidahenHandCard,
+    QidahenMapToken,
+    QidahenWheelMoveChoice,
+    QidahenYearCardSlot,
+} from './domain';
 import { QIDAHEN_COMMANDS } from './domain/commands';
+import {
+    QIDAHEN_MAP_HEIGHT,
+    QIDAHEN_MAP_REGION_SHAPES,
+    QIDAHEN_MAP_REGION_SHAPES_BY_ID,
+    QIDAHEN_MAP_WIDTH,
+    type QidahenMapRegionShape,
+} from './ui/mapRegions';
 
 type Props = GameBoardProps<QidahenCore, QidahenCommandMap>;
 
-const boardImage = '/assets/i18n/zh-CN/qidahen/board/compressed/main-board.webp';
-const cardBackImage = '/assets/i18n/zh-CN/qidahen/cards/backs/compressed/qidahen-cover-card.webp';
-const BOARD_WIDTH = 1265;
-const BOARD_HEIGHT = 893;
+const STAGE_WIDTH = 1920;
+const STAGE_HEIGHT = 1080;
 
-const factionTone: Record<QidahenFactionId | 'neutral', string> = {
-    ming: '#a93a2f',
-    mongol: '#8a642c',
-    jin: '#2d628e',
-    neutral: '#c4a365',
+const ASSETS = {
+    mainMap: 'qidahen/board/qidahen-main-map',
+    mapCleanPatch: 'qidahen/board/left-top-clean-patch-v2',
+    coverCard: 'qidahen/cards/backs/qidahen-cover-card',
+    koreaCard: 'qidahen/cards/backs/korea-card-back',
+    mingCard: 'qidahen/cards/backs/ming-card-back',
+    mongolCard: 'qidahen/cards/backs/mongol-card-back',
+    jinCard: 'qidahen/cards/backs/jin-card-back',
+    mingMarker: 'qidahen/markers/ming-control-diplomacy-marker-a',
+    mongolMarker: 'qidahen/markers/mongol-control-diplomacy-marker-a',
+    jinMarker: 'qidahen/markers/jin-control-diplomacy-marker-a',
+} as const;
+
+const MAP_COVER_SCALE = Math.max(STAGE_WIDTH / QIDAHEN_MAP_WIDTH, STAGE_HEIGHT / QIDAHEN_MAP_HEIGHT);
+const MAP_COVER_LEFT = (STAGE_WIDTH - QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE) / 2;
+const MAP_COVER_TOP = (STAGE_HEIGHT - QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE) / 2;
+
+const CARD_BACK_BY_FACTION: Record<QidahenFactionId, string> = {
+    ming: ASSETS.mingCard,
+    mongol: ASSETS.mongolCard,
+    jin: ASSETS.jinCard,
 };
 
-const factionName: Record<QidahenFactionId, string> = {
-    ming: '大明',
-    mongol: '蒙古',
-    jin: '后金',
+const WHEEL_SECTORS = [
+    { id: 'wheel-reclaim', label: ['开垦', '军屯'], angle: -90 },
+    { id: 'wheel-military-farm', label: ['开垦', '军屯'], angle: -45 },
+    { id: 'wheel-recruit-train', label: ['征兵', '训练'], angle: 0 },
+    { id: 'wheel-diplomacy', label: ['进攻', '调度'], angle: 45 },
+    { id: 'wheel-hire', label: ['进攻', '调度'], angle: 90 },
+    { id: 'wheel-attack', label: ['外交', '雇佣'], angle: 135 },
+    { id: 'wheel-midyear', label: ['征兵', '训练'], angle: 180 },
+    { id: 'wheel-new-year', label: ['外交', '雇佣'], angle: 225 },
+] as const;
+
+const WHEEL_VIEW = 384;
+const WHEEL_CENTER = WHEEL_VIEW / 2;
+const WHEEL_INNER_RADIUS = 72;
+const WHEEL_OUTER_RADIUS = 176;
+const WHEEL_LABEL_RADIUS = 118;
+const WHEEL_SELECTED_SCALE = 1.145;
+const WHEEL_SELECTED_PUSH = 15;
+
+const UI_STYLE = {
+    paper: '#f6ecd8',
+    paperLight: '#fff8e9',
+    cardField: '#f7ead6',
+    paperDeep: '#e8d6b5',
+    ink: '#2f2419',
+    mutedInk: '#6f5840',
+    bronze: '#8d673c',
+    bronzeSoft: '#c9aa78',
+    bronzeFaint: 'rgba(141,103,60,0.34)',
+    cinnabar: '#b83b27',
+    oldGold: '#b79a65',
+    soot: '#1f1812',
+    shadow: 'rgba(67,43,21,0.16)',
+    shadowSoft: 'rgba(67,43,21,0.10)',
+} as const;
+
+const UI_SURFACE = {
+    paper: `linear-gradient(180deg, ${UI_STYLE.paperLight} 0%, ${UI_STYLE.paper} 58%, ${UI_STYLE.paperDeep} 100%)`,
+    paperQuiet: `linear-gradient(180deg, #fffaf0 0%, ${UI_STYLE.paper} 100%)`,
+    paperPressed: `linear-gradient(180deg, ${UI_STYLE.paper} 0%, ${UI_STYLE.paperDeep} 100%)`,
+    panelShadow: `0 6px 0 ${UI_STYLE.shadow}, 0 16px 30px ${UI_STYLE.shadowSoft}`,
+    softShadow: `0 10px 22px ${UI_STYLE.shadowSoft}`,
+    inkInset: `inset 0 0 0 1px rgba(255,248,233,0.78), inset 0 -3px 0 rgba(141,103,60,0.12)`,
+    cutCorner: 'polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)',
+    smallCutCorner: 'polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px)',
+} as const;
+
+const CARD_DIMENSIONS = {
+    deck: { width: 157, height: 218, rawWidth: 476, rawHeight: 660 },
+    koreaDeck: { width: 150, height: 208, rawWidth: 476, rawHeight: 660 },
+    year: { width: 154, height: 214, rawWidth: 476, rawHeight: 661 },
+    hand: { width: 182, height: 252, rawWidth: 479, rawHeight: 664 },
+} as const;
+
+const BOTTOM_DOCK_INSET = 10;
+
+const factionTone: Record<QidahenFactionId, { bg: string; border: string; text: string; chip: string }> = {
+    ming: { bg: UI_STYLE.paper, border: UI_STYLE.cinnabar, text: UI_STYLE.ink, chip: ASSETS.mingMarker },
+    mongol: { bg: UI_STYLE.paper, border: UI_STYLE.oldGold, text: UI_STYLE.ink, chip: ASSETS.mongolMarker },
+    jin: { bg: UI_STYLE.paper, border: UI_STYLE.bronze, text: UI_STYLE.ink, chip: ASSETS.jinMarker },
 };
 
-const factionText: Record<QidahenFactionId, string> = {
-    ming: 'text-[#ff7869]',
-    mongol: 'text-[#d8aa64]',
-    jin: 'text-[#82b8df]',
+const REGION_HIT_COLORS = QIDAHEN_MAP_REGION_SHAPES.reduce<Record<string, [number, number, number]>>((colors, shape, index) => {
+    colors[shape.id] = [index + 1, 0, 0];
+    return colors;
+}, {});
+
+const REGION_BY_COLOR = QIDAHEN_MAP_REGION_SHAPES.reduce<Record<number, string>>((regions, shape, index) => {
+    regions[index + 1] = shape.id;
+    return regions;
+}, {});
+
+const polarToPoint = (center: number, radius: number, angleDeg: number) => {
+    const radians = (angleDeg * Math.PI) / 180;
+    return {
+        x: center + Math.cos(radians) * radius,
+        y: center + Math.sin(radians) * radius,
+    };
 };
 
-const Panel: React.FC<{
-    title: string;
-    children: React.ReactNode;
-    className?: string;
-}> = ({ title, children, className = '' }) => (
-    <section className={`border border-[#6d5433]/70 bg-[#120f0a]/88 shadow-[0_14px_34px_rgba(0,0,0,0.36)] ${className}`}>
-        <header className="border-b border-[#6d5433]/60 bg-[#28130f]/86 px-3 py-2 text-[13px] font-bold tracking-[0.18em] text-[#f0d59a]">
-            {title}
-        </header>
-        {children}
-    </section>
+const getAtlasFrame = (index: number, atlas: SpriteAtlasConfig): SpriteAtlasFrame => {
+    if ('frames' in atlas) {
+        if (atlas.frames.length === 0) {
+            return { x: 0, y: 0, width: atlas.imageW, height: atlas.imageH };
+        }
+        return atlas.frames[index % atlas.frames.length] ?? atlas.frames[0];
+    }
+
+    const safeIndex = index % (atlas.cols * atlas.rows);
+    const col = safeIndex % atlas.cols;
+    const row = Math.floor(safeIndex / atlas.cols);
+    return {
+        x: atlas.colStarts[col] ?? atlas.colStarts[0],
+        y: atlas.rowStarts[row] ?? atlas.rowStarts[0],
+        width: atlas.colWidths[col] ?? atlas.colWidths[0],
+        height: atlas.rowHeights[row] ?? atlas.rowHeights[0],
+    };
+};
+
+const describeAnnularSlice = (center: number, innerRadius: number, outerRadius: number, startAngle: number, endAngle: number) => {
+    const outerStart = polarToPoint(center, outerRadius, startAngle);
+    const outerEnd = polarToPoint(center, outerRadius, endAngle);
+    const innerEnd = polarToPoint(center, innerRadius, endAngle);
+    const innerStart = polarToPoint(center, innerRadius, startAngle);
+    const largeArc = endAngle - startAngle <= 180 ? '0' : '1';
+
+    return [
+        `M ${outerStart.x.toFixed(3)} ${outerStart.y.toFixed(3)}`,
+        `A ${outerRadius} ${outerRadius} 0 ${largeArc} 1 ${outerEnd.x.toFixed(3)} ${outerEnd.y.toFixed(3)}`,
+        `L ${innerEnd.x.toFixed(3)} ${innerEnd.y.toFixed(3)}`,
+        `A ${innerRadius} ${innerRadius} 0 ${largeArc} 0 ${innerStart.x.toFixed(3)} ${innerStart.y.toFixed(3)}`,
+        'Z',
+    ].join(' ');
+};
+
+const getSliceFocusTransform = (angle: number, scale: number, push: number) => {
+    const focus = polarToPoint(WHEEL_CENTER, (WHEEL_INNER_RADIUS + WHEEL_OUTER_RADIUS) / 2, angle);
+    const pushed = polarToPoint(0, push, angle);
+    return [
+        `translate(${pushed.x.toFixed(3)} ${pushed.y.toFixed(3)})`,
+        `translate(${focus.x.toFixed(3)} ${focus.y.toFixed(3)})`,
+        `scale(${scale})`,
+        `translate(${-focus.x.toFixed(3)} ${-focus.y.toFixed(3)})`,
+    ].join(' ');
+};
+
+const getCurrentFactionId = (core: QidahenCore): QidahenFactionId => (
+    (['ming', 'mongol', 'jin'] as QidahenFactionId[])
+        .find((id) => core.factions[id].playerId === core.currentPlayer) ?? 'ming'
 );
 
-const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
+const mapPath = (shape: QidahenMapRegionShape) => (
+    shape.polygon.map(([x, y], index) => `${index === 0 ? 'M' : 'L'} ${x} ${y}`).join(' ') + ' Z'
+);
 
-const distance = (touchA: React.Touch, touchB: React.Touch) => {
-    const dx = touchA.clientX - touchB.clientX;
-    const dy = touchA.clientY - touchB.clientY;
-    return Math.sqrt(dx * dx + dy * dy);
+const buildRegionHitmap = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = QIDAHEN_MAP_WIDTH;
+    canvas.height = QIDAHEN_MAP_HEIGHT;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) return null;
+
+    for (const shape of QIDAHEN_MAP_REGION_SHAPES) {
+        const color = REGION_HIT_COLORS[shape.id];
+        if (!color) continue;
+        context.fillStyle = `rgb(${color[0]}, ${color[1]}, ${color[2]})`;
+        context.beginPath();
+        shape.polygon.forEach(([x, y], index) => {
+            if (index === 0) {
+                context.moveTo(x, y);
+                return;
+            }
+            context.lineTo(x, y);
+        });
+        context.closePath();
+        context.fill();
+    }
+
+    return context.getImageData(0, 0, QIDAHEN_MAP_WIDTH, QIDAHEN_MAP_HEIGHT).data;
 };
 
-const QidahenMapViewport: React.FC<{
-    children: React.ReactNode;
-}> = ({ children }) => {
+const CardPreviewFit: React.FC<{
+    previewRef: CardPreviewRef;
+    locale?: string;
+    title: string;
+    width: number;
+    height: number;
+    rawWidth: number;
+    rawHeight: number;
+}> = ({ previewRef, locale, title, width, height, rawWidth, rawHeight }) => {
+    if (previewRef.type === 'atlas') {
+        const source = getCardAtlasSource(previewRef.atlasId, locale);
+        if (source) {
+            const frame = getAtlasFrame(previewRef.index, source.config);
+            const scale = Math.min(width / frame.width, height / frame.height);
+            const scaledWidth = frame.width * scale;
+            const scaledHeight = frame.height * scale;
+            const localizedPath = getLocalizedAssetPath(source.image, locale ?? 'zh-CN');
+            const urls = getOptimizedImageUrls(localizedPath);
+
+            return (
+                <div className="absolute inset-0 overflow-hidden" style={{ background: UI_STYLE.cardField }}>
+                    <div
+                        className="absolute overflow-hidden"
+                        data-card-atlas-frame="true"
+                        data-card-atlas-id={previewRef.atlasId}
+                        data-card-atlas-index={previewRef.index}
+                        title={title}
+                        style={{
+                            left: (width - scaledWidth) / 2,
+                            top: (height - scaledHeight) / 2,
+                            width: scaledWidth,
+                            height: scaledHeight,
+                        }}
+                    >
+                        <img
+                            src={urls.webp}
+                            alt={title}
+                            draggable={false}
+                            style={{
+                                display: 'block',
+                                width: source.config.imageW * scale,
+                                height: source.config.imageH * scale,
+                                maxWidth: 'none',
+                                transform: `translate(${-frame.x * scale}px, ${-frame.y * scale}px)`,
+                                transformOrigin: 'top left',
+                            }}
+                        />
+                    </div>
+                </div>
+            );
+        }
+    }
+
+    const scale = Math.min(width / rawWidth, height / rawHeight);
+    const scaledWidth = rawWidth * scale;
+    const scaledHeight = rawHeight * scale;
+
+    return (
+        <div className="absolute inset-0 overflow-hidden" style={{ background: UI_STYLE.cardField }}>
+            <CardPreview
+                previewRef={previewRef}
+                locale={locale}
+                title={title}
+                style={{
+                    width: rawWidth,
+                    height: rawHeight,
+                    transform: `translate(${(width - scaledWidth) / 2}px, ${(height - scaledHeight) / 2}px) scale(${scale})`,
+                    transformOrigin: 'top left',
+                }}
+            />
+        </div>
+    );
+};
+
+const StageRoot: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const containerRef = React.useRef<HTMLDivElement>(null);
-    const dragStartRef = React.useRef({ x: 0, y: 0 });
-    const offsetStartRef = React.useRef({ x: 0, y: 0 });
-    const pinchStartDistanceRef = React.useRef<number | null>(null);
-    const pinchStartZoomRef = React.useRef<number | null>(null);
-    const [containerSize, setContainerSize] = React.useState({ width: 0, height: 0 });
-    const [offset, setOffset] = React.useState({ x: 0, y: 0 });
-    const [zoom, setZoom] = React.useState(1);
-    const [isDragging, setIsDragging] = React.useState(false);
+    const [stageMetrics, setStageMetrics] = React.useState({ scale: 1, left: 0, top: 0 });
 
     React.useEffect(() => {
         const element = containerRef.current;
@@ -69,138 +298,40 @@ const QidahenMapViewport: React.FC<{
 
         const update = () => {
             const rect = element.getBoundingClientRect();
-            setContainerSize({ width: rect.width, height: rect.height });
+            const isLandscapeMobileViewport = window.innerWidth <= 1023 && window.innerWidth > window.innerHeight;
+            const visibleWidth = isLandscapeMobileViewport ? Math.min(rect.width, window.innerWidth) : rect.width;
+            const visibleHeight = isLandscapeMobileViewport ? Math.min(rect.height, window.innerHeight) : rect.height;
+            const scale = Math.min(visibleWidth / STAGE_WIDTH, visibleHeight / STAGE_HEIGHT);
+            setStageMetrics({
+                scale,
+                left: Math.max(0, (visibleWidth - STAGE_WIDTH * scale) / 2),
+                top: Math.max(0, (visibleHeight - STAGE_HEIGHT * scale) / 2),
+            });
         };
 
         update();
         const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(update) : null;
         observer?.observe(element);
         window.addEventListener('resize', update);
-        window.addEventListener('orientationchange', update);
         return () => {
             observer?.disconnect();
             window.removeEventListener('resize', update);
-            window.removeEventListener('orientationchange', update);
         };
     }, []);
 
-    const baseScale = React.useMemo(() => {
-        if (!containerSize.width || !containerSize.height) return 1;
-        const widthFit = containerSize.width / BOARD_WIDTH;
-        const heightFit = containerSize.height / BOARD_HEIGHT;
-        return containerSize.width <= 1100 ? widthFit : Math.min(widthFit, heightFit);
-    }, [containerSize.height, containerSize.width]);
-
-    const scale = baseScale * zoom;
-
-    const clampOffset = React.useCallback((nextOffset: { x: number; y: number }, nextScale = scale) => {
-        if (!containerSize.width || !containerSize.height) return nextOffset;
-        const scaledWidth = BOARD_WIDTH * nextScale;
-        const scaledHeight = BOARD_HEIGHT * nextScale;
-        const maxX = Math.max(0, (scaledWidth - containerSize.width) / 2 + 48);
-        const maxY = Math.max(0, (scaledHeight - containerSize.height) / 2 + 48);
-        return {
-            x: clamp(nextOffset.x, -maxX, maxX),
-            y: clamp(nextOffset.y, -maxY, maxY),
-        };
-    }, [containerSize.height, containerSize.width, scale]);
-
-    React.useEffect(() => {
-        setOffset((current) => clampOffset(current));
-    }, [clampOffset]);
-
-    const updateZoom = React.useCallback((nextZoom: number) => {
-        const clampedZoom = clamp(nextZoom, 0.72, 3.4);
-        setZoom(clampedZoom);
-        setOffset((current) => clampOffset(current, baseScale * clampedZoom));
-    }, [baseScale, clampOffset]);
-
-    React.useEffect(() => {
-        const element = containerRef.current;
-        if (!element) return undefined;
-
-        const handleWheel = (event: WheelEvent) => {
-            event.preventDefault();
-            updateZoom(zoom + (event.deltaY > 0 ? -0.08 : 0.08));
-        };
-
-        element.addEventListener('wheel', handleWheel, { passive: false });
-        return () => element.removeEventListener('wheel', handleWheel);
-    }, [updateZoom, zoom]);
-
-    const beginDrag = (clientX: number, clientY: number) => {
-        dragStartRef.current = { x: clientX, y: clientY };
-        offsetStartRef.current = offset;
-        setIsDragging(true);
-    };
-
-    const moveDrag = (clientX: number, clientY: number) => {
-        if (!isDragging) return;
-        const dx = clientX - dragStartRef.current.x;
-        const dy = clientY - dragStartRef.current.y;
-        setOffset(clampOffset({
-            x: offsetStartRef.current.x + dx,
-            y: offsetStartRef.current.y + dy,
-        }));
-    };
-
     return (
-        <div
-            ref={containerRef}
-            className="relative h-full w-full overflow-hidden select-none"
-            data-testid="qidahen-map-container"
-            onMouseDown={(event) => {
-                if (event.button !== 0) return;
-                beginDrag(event.clientX, event.clientY);
-            }}
-            onMouseMove={(event) => moveDrag(event.clientX, event.clientY)}
-            onMouseUp={() => setIsDragging(false)}
-            onMouseLeave={() => setIsDragging(false)}
-            onTouchStart={(event) => {
-                if (event.touches.length === 2) {
-                    pinchStartDistanceRef.current = distance(event.touches[0], event.touches[1]);
-                    pinchStartZoomRef.current = zoom;
-                    setIsDragging(false);
-                    return;
-                }
-                const touch = event.touches[0];
-                if (touch) beginDrag(touch.clientX, touch.clientY);
-            }}
-            onTouchMove={(event) => {
-                if (event.touches.length === 2 && pinchStartDistanceRef.current && pinchStartZoomRef.current) {
-                    event.preventDefault();
-                    const nextDistance = distance(event.touches[0], event.touches[1]);
-                    updateZoom(pinchStartZoomRef.current * (nextDistance / pinchStartDistanceRef.current));
-                    return;
-                }
-                const touch = event.touches[0];
-                if (touch) moveDrag(touch.clientX, touch.clientY);
-            }}
-            onTouchEnd={() => {
-                pinchStartDistanceRef.current = null;
-                pinchStartZoomRef.current = null;
-                setIsDragging(false);
-            }}
-            style={{
-                cursor: isDragging ? 'grabbing' : 'grab',
-                touchAction: 'none',
-            }}
-        >
+        <div ref={containerRef} className="relative h-full min-h-0 overflow-hidden bg-white" data-testid="qidahen-board">
             <div
-                className="pointer-events-none absolute left-3 top-3 z-20 rounded-lg border border-white/20 bg-black/70 px-3 py-1.5 text-sm font-bold text-white shadow-lg"
-                data-testid="qidahen-map-scale"
-            >
-                {Math.round(zoom * 100)}%
-            </div>
-            <div
-                className="absolute left-1/2 top-1/2 origin-center"
-                data-testid="qidahen-map-content"
+                className="absolute overflow-hidden bg-white"
+                data-testid="qidahen-desktop-stage"
                 style={{
-                    width: BOARD_WIDTH,
-                    height: BOARD_HEIGHT,
-                    transform: `translate(-50%, -50%) translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-                    transition: isDragging ? 'none' : 'transform 90ms ease-out',
-                    willChange: isDragging ? 'transform' : 'auto',
+                    width: STAGE_WIDTH,
+                    height: STAGE_HEIGHT,
+                    left: stageMetrics.left,
+                    top: stageMetrics.top,
+                    color: UI_STYLE.ink,
+                    transform: `scale(${stageMetrics.scale})`,
+                    transformOrigin: 'top left',
                 }}
             >
                 {children}
@@ -209,270 +340,785 @@ const QidahenMapViewport: React.FC<{
     );
 };
 
-const FactionSummary: React.FC<{
+const PlayerChip: React.FC<{
     faction: QidahenCore['factions'][QidahenFactionId];
-}> = ({ faction }) => (
-    <div className="border-b border-[#4e3a24]/70 px-3 py-2.5 last:border-b-0">
-        <div className={`${faction.colorClass} -mx-3 -mt-2.5 mb-2 flex items-center justify-between px-3 py-1.5 text-[#f7e7bd]`}>
-            <span className="text-[18px] font-black tracking-[0.12em]">{faction.name}</span>
-            <span className="text-[11px] opacity-80">手牌 {faction.handCount}/{faction.handLimit}</span>
-        </div>
-        <div className="grid grid-cols-3 gap-2 text-[12px] text-[#d7c39a]">
-            <span>兵力 <b className="text-[#f4dfab]">{faction.troops}</b></span>
-            <span>粮草 <b className="text-[#f4dfab]">{faction.grain}</b></span>
-            <span>土气 <b className="text-[#f4dfab]">{faction.landTax}</b></span>
-        </div>
-        <div className="mt-2 flex items-center gap-1.5">
-            {Array.from({ length: 3 }, (_, index) => (
+    current: boolean;
+}> = ({ faction, current }) => {
+    const tone = factionTone[faction.id];
+    return (
+        <div
+            className="relative flex h-[70px] min-w-0 flex-1 items-center gap-3 overflow-hidden border px-4"
+            data-testid={`qidahen-player-${faction.id}`}
+            style={{
+                borderColor: current ? tone.border : UI_STYLE.bronze,
+                background: UI_SURFACE.paper,
+                color: tone.text,
+                boxShadow: `${UI_SURFACE.panelShadow}, ${UI_SURFACE.inkInset}`,
+                clipPath: UI_SURFACE.cutCorner,
+            }}
+        >
+            <span
+                className="pointer-events-none absolute inset-y-0 left-0 w-[7px]"
+                style={{ background: current ? tone.border : UI_STYLE.bronzeSoft }}
+            />
+            <OptimizedImage
+                src={tone.chip}
+                alt={faction.name}
+                className="h-10 w-10 shrink-0 rounded-full border-2 object-cover"
+                style={{ borderColor: tone.border, boxShadow: `0 0 0 3px ${UI_STYLE.paperLight}, 0 4px 10px ${UI_STYLE.shadowSoft}` }}
+                draggable={false}
+                placeholder={false}
+            />
+            <div className="min-w-0 flex-1 whitespace-nowrap text-[20px] font-black leading-none tracking-[0.03em]">
+                <span>{faction.name}</span>
+                <span className="ml-3 text-[16px]">VP{faction.vp}</span>
+                <span className="ml-3 text-[16px]">{faction.handCount}/{faction.handLimit}</span>
+            </div>
+            {current ? (
                 <span
-                    key={index}
-                    className={`h-3 w-3 rotate-45 border ${index < faction.actionDiamonds ? 'border-[#c75a42] bg-[#9f3a2e]' : 'border-[#b58b4f]/80 bg-transparent'}`}
+                    className="grid h-[30px] w-[50px] shrink-0 place-items-center border text-[13px] font-black"
+                    style={{ background: UI_STYLE.paperLight, borderColor: tone.border, color: tone.border, clipPath: UI_SURFACE.smallCutCorner }}
+                >
+                    当前
+                </span>
+            ) : null}
+        </div>
+    );
+};
+
+const PlayerFloat: React.FC<{ core: QidahenCore }> = ({ core }) => (
+    <div
+        className="pointer-events-auto absolute left-1/2 top-[36px] z-40 flex w-[920px] gap-3"
+        data-testid="qidahen-player-float"
+        data-ui-anchor="top-center"
+        style={{ transform: 'translateX(-50%)' }}
+    >
+        {(['ming', 'mongol', 'jin'] as QidahenFactionId[]).map((id) => (
+            <PlayerChip key={id} faction={core.factions[id]} current={core.currentPlayer === core.factions[id].playerId} />
+        ))}
+    </div>
+);
+
+const MapToken: React.FC<{ token: QidahenMapToken }> = ({ token }) => {
+    const size = token.size ?? 30;
+    const tone = factionTone[token.faction === 'neutral' ? 'ming' : token.faction];
+    return (
+        <div
+            className="pointer-events-none absolute grid -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full text-[13px] font-black"
+            data-testid={`qidahen-map-token-${token.id}`}
+            style={{
+                left: token.x * QIDAHEN_MAP_WIDTH,
+                top: token.y * QIDAHEN_MAP_HEIGHT,
+                width: size,
+                height: size,
+                color: UI_STYLE.ink,
+            }}
+        >
+            {token.imageSrc ? (
+                <OptimizedImage
+                    src={token.imageSrc}
+                    alt={token.id}
+                    className="h-full w-full rounded-full object-cover"
+                    draggable={false}
+                    placeholder={false}
+                    style={{ boxShadow: `0 2px 8px ${UI_STYLE.shadowSoft}` }}
                 />
+            ) : (
+                <span
+                    className="grid h-full w-full place-items-center rounded-full border-2"
+                    style={{ borderColor: tone.border, background: UI_STYLE.paperLight }}
+                >
+                    {token.value}
+                </span>
+            )}
+        </div>
+    );
+};
+
+const MapSceneLayer: React.FC<{
+    core: QidahenCore;
+    locale?: string;
+    onSelectRegion: (regionId: string) => void;
+}> = ({ core, locale, onSelectRegion }) => {
+    const canvasRef = React.useRef<HTMLCanvasElement>(null);
+    const hitmapRef = React.useRef<Uint8ClampedArray | null>(null);
+    const [hoveredRegionId, setHoveredRegionId] = React.useState<string | null>(null);
+
+    React.useEffect(() => {
+        hitmapRef.current = buildRegionHitmap();
+    }, []);
+
+    const selectedRegion = core.regions.find((region) => region.id === core.selectedRegionId);
+    const hoveredRegion = hoveredRegionId ? core.regions.find((region) => region.id === hoveredRegionId) : undefined;
+    const activeRegion = hoveredRegion ?? selectedRegion;
+
+    const getRegionFromPointer = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        const canvas = canvasRef.current;
+        const hitmap = hitmapRef.current;
+        if (!canvas || !hitmap) return null;
+
+        const rect = canvas.getBoundingClientRect();
+        const x = Math.floor(((event.clientX - rect.left) / rect.width) * QIDAHEN_MAP_WIDTH);
+        const y = Math.floor(((event.clientY - rect.top) / rect.height) * QIDAHEN_MAP_HEIGHT);
+        if (x < 0 || y < 0 || x >= QIDAHEN_MAP_WIDTH || y >= QIDAHEN_MAP_HEIGHT) return null;
+
+        const offset = (y * QIDAHEN_MAP_WIDTH + x) * 4;
+        const colorKey = hitmap[offset];
+        return colorKey ? REGION_BY_COLOR[colorKey] ?? null : null;
+    }, []);
+
+    const handlePointerMove = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        setHoveredRegionId(getRegionFromPointer(event));
+    }, [getRegionFromPointer]);
+
+    const handleClick = React.useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+        const regionId = getRegionFromPointer(event);
+        if (regionId) {
+            onSelectRegion(regionId);
+        }
+    }, [getRegionFromPointer, onSelectRegion]);
+
+    const tipLeft = activeRegion
+        ? Math.min(STAGE_WIDTH - 250, Math.max(18, MAP_COVER_LEFT + activeRegion.x * QIDAHEN_MAP_WIDTH * MAP_COVER_SCALE + 18))
+        : 0;
+    const tipTop = activeRegion
+        ? Math.min(STAGE_HEIGHT - 118, Math.max(18, MAP_COVER_TOP + activeRegion.y * QIDAHEN_MAP_HEIGHT * MAP_COVER_SCALE - 34))
+        : 0;
+
+    return (
+        <div
+            className="pointer-events-auto absolute inset-0 z-10 overflow-hidden"
+            data-testid="qidahen-map-layer"
+            data-map-layout="full-bleed-cover"
+            data-map-selected={core.selectedRegionId}
+            style={{
+                background: '#c8a970',
+            }}
+        >
+            <div
+                className="absolute"
+                style={{
+                    left: MAP_COVER_LEFT,
+                    top: MAP_COVER_TOP,
+                    width: QIDAHEN_MAP_WIDTH,
+                    height: QIDAHEN_MAP_HEIGHT,
+                    transform: `scale(${MAP_COVER_SCALE})`,
+                    transformOrigin: 'top left',
+                }}
+            >
+                <OptimizedImage
+                    src={ASSETS.mainMap}
+                    locale={locale}
+                    alt="七大恨主地图"
+                    className="absolute inset-0 h-full w-full select-none object-fill"
+                    data-testid="qidahen-main-map-image"
+                    draggable={false}
+                    placeholder={false}
+                />
+                <OptimizedImage
+                    src={ASSETS.mapCleanPatch}
+                    locale={locale}
+                    alt="地图左上清理层"
+                    className="pointer-events-none absolute left-0 top-0 select-none object-fill"
+                    data-testid="qidahen-map-clean-patch"
+                    draggable={false}
+                    placeholder={false}
+                    style={{ width: 560, height: 560 }}
+                />
+                <svg
+                    className="pointer-events-none absolute inset-0 h-full w-full"
+                    viewBox={`0 0 ${QIDAHEN_MAP_WIDTH} ${QIDAHEN_MAP_HEIGHT}`}
+                    aria-hidden="true"
+                    data-testid="qidahen-map-overlay"
+                >
+                    <defs>
+                        <filter id="qidahen-map-province-selected" x="-12%" y="-12%" width="124%" height="124%">
+                            <feDropShadow dx="0" dy="0" stdDeviation="3.2" floodColor="rgba(255,248,233,0.58)" />
+                            <feDropShadow dx="0" dy="0" stdDeviation="6.5" floodColor="rgba(184,59,39,0.34)" />
+                        </filter>
+                        <filter id="qidahen-map-province-hover" x="-10%" y="-10%" width="120%" height="120%">
+                            <feDropShadow dx="0" dy="0" stdDeviation="4.2" floodColor="rgba(255,220,146,0.44)" />
+                        </filter>
+                    </defs>
+                    {QIDAHEN_MAP_REGION_SHAPES.map((shape) => {
+                        const selected = shape.id === core.selectedRegionId;
+                        const hovered = shape.id === hoveredRegionId;
+                        const pending = shape.id === core.pendingTargetAction?.targetRegionId;
+                        return (
+                            <path
+                                key={shape.id}
+                                d={mapPath(shape)}
+                                data-testid={`qidahen-map-region-${shape.id}`}
+                                fill={selected ? 'rgba(198,54,36,0.40)' : hovered ? 'rgba(238,190,94,0.32)' : pending ? 'rgba(184,59,39,0.24)' : 'transparent'}
+                                stroke={selected ? 'rgba(255,248,233,0.96)' : hovered ? 'rgba(255,230,157,0.88)' : pending ? 'rgba(184,59,39,0.82)' : 'rgba(255,248,233,0.0)'}
+                                strokeWidth={selected ? 8 : hovered ? 6 : pending ? 5 : 0}
+                                strokeLinejoin="round"
+                                vectorEffect="non-scaling-stroke"
+                                style={{
+                                    filter: selected ? 'url(#qidahen-map-province-selected)' : hovered ? 'url(#qidahen-map-province-hover)' : undefined,
+                                    mixBlendMode: selected || hovered || pending ? 'multiply' : undefined,
+                                }}
+                            />
+                        );
+                    })}
+                    {core.routeLines.map((route) => (
+                        <polyline
+                            key={route.id}
+                            points={route.points.map((point) => `${point.x * QIDAHEN_MAP_WIDTH},${point.y * QIDAHEN_MAP_HEIGHT}`).join(' ')}
+                            fill="none"
+                            stroke={route.tone === 'red' ? 'rgba(184,59,39,0.72)' : 'rgba(43,101,145,0.74)'}
+                            strokeWidth="4"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeDasharray={route.tone === 'red' ? '12 10' : undefined}
+                        />
+                    ))}
+                </svg>
+                {core.mapTokens.map((token) => (
+                    <MapToken key={token.id} token={token} />
+                ))}
+                <canvas
+                    ref={canvasRef}
+                    width={QIDAHEN_MAP_WIDTH}
+                    height={QIDAHEN_MAP_HEIGHT}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    data-testid="qidahen-map-hitmap-canvas"
+                    onPointerMove={handlePointerMove}
+                    onPointerLeave={() => setHoveredRegionId(null)}
+                    onPointerDown={handleClick}
+                    aria-label="七大恨地图区域选择"
+                />
+            </div>
+            {activeRegion && QIDAHEN_MAP_REGION_SHAPES_BY_ID.has(activeRegion.id) ? (
+                <div
+                    className="pointer-events-none absolute z-20 border px-3 py-2 text-[13px] font-black leading-5"
+                    data-testid="qidahen-map-region-tip"
+                    style={{
+                        left: tipLeft,
+                        top: tipTop,
+                        width: 212,
+                        borderColor: activeRegion.id === core.selectedRegionId ? UI_STYLE.cinnabar : UI_STYLE.bronze,
+                        background: UI_SURFACE.paperQuiet,
+                        color: UI_STYLE.ink,
+                        boxShadow: `${UI_SURFACE.softShadow}, ${UI_SURFACE.inkInset}`,
+                        clipPath: UI_SURFACE.smallCutCorner,
+                    }}
+                >
+                    <div className="text-[16px] text-[#2f2419]">{activeRegion.name} · {activeRegion.controlLabel}</div>
+                    <div className="mt-1 text-[12px] text-[#6f5840]">兵力 {activeRegion.troops} · 人口 {activeRegion.population}</div>
+                </div>
+            ) : null}
+        </div>
+    );
+};
+
+const DeckStack: React.FC<{
+    src?: string;
+    previewRef?: CardPreviewRef;
+    label: string;
+    count: number;
+    className?: string;
+    locale?: string;
+    tone?: 'ink' | 'red';
+    testId?: string;
+    width?: number;
+    height?: number;
+    rawWidth?: number;
+    rawHeight?: number;
+}> = ({
+    src,
+    previewRef,
+    label,
+    count,
+    className = '',
+    locale,
+    tone = 'ink',
+    testId,
+    width = CARD_DIMENSIONS.deck.width,
+    height = CARD_DIMENSIONS.deck.height,
+    rawWidth = CARD_DIMENSIONS.deck.rawWidth,
+    rawHeight = CARD_DIMENSIONS.deck.rawHeight,
+}) => {
+    const border = tone === 'red' ? UI_STYLE.cinnabar : UI_STYLE.bronze;
+    const text = tone === 'red' ? UI_STYLE.cinnabar : UI_STYLE.ink;
+
+    return (
+        <div className={`relative shrink-0 ${className}`} data-testid={testId} aria-label={`${label} ${count}`} style={{ width, height }}>
+            <div className="absolute left-[14px] top-[12px] h-full w-full border" style={{ borderColor: border, background: UI_STYLE.paperDeep, clipPath: UI_SURFACE.smallCutCorner }} />
+            <div className="absolute left-[7px] top-[6px] h-full w-full border" style={{ borderColor: border, background: UI_STYLE.paper, clipPath: UI_SURFACE.smallCutCorner }} />
+            <div className="relative h-full w-full overflow-hidden border" style={{ borderColor: border, background: UI_STYLE.paperLight, boxShadow: `0 14px 28px ${UI_STYLE.shadow}`, clipPath: UI_SURFACE.smallCutCorner }}>
+                {previewRef ? (
+                    <CardPreviewFit previewRef={previewRef} locale={locale} title={label} width={width} height={height} rawWidth={rawWidth} rawHeight={rawHeight} />
+                ) : src ? (
+                    <OptimizedImage src={src} alt={label} className="h-full w-full object-cover" draggable={false} placeholder={false} />
+                ) : null}
+                <div
+                    className="pointer-events-none absolute left-2 top-2 border px-2 py-0.5 text-[13px] font-black tracking-[0.05em]"
+                    style={{ color: text, borderColor: border, background: UI_SURFACE.paperQuiet, clipPath: UI_SURFACE.smallCutCorner, boxShadow: UI_SURFACE.inkInset }}
+                >
+                    {label}
+                </div>
+                <div className="pointer-events-none absolute bottom-2 right-2 grid h-[42px] w-[42px] place-items-center rounded-full border-2 text-[18px] font-black" style={{ borderColor: border, color: text, background: UI_STYLE.paperLight, boxShadow: `0 4px 10px ${UI_STYLE.shadowSoft}` }}>
+                    {count}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const WheelPanel: React.FC<{
+    selectedId: string;
+    selectedMoveId: string;
+    moveChoices: QidahenWheelMoveChoice[];
+    moveSummary: string;
+    onSelectMove: (moveId: string) => void;
+    onExecuteMove: (moveId: string) => void;
+}> = ({ selectedId, selectedMoveId, moveChoices, moveSummary, onSelectMove, onExecuteMove }) => {
+    const [activeMoveId, setActiveMoveId] = React.useState(selectedMoveId);
+    const selectedIndex = Math.max(0, WHEEL_SECTORS.findIndex((sector) => sector.id === selectedId));
+    const selectedAngle = WHEEL_SECTORS[selectedIndex]?.angle ?? -90;
+    const activeMove = moveChoices.find((choice) => choice.id === activeMoveId)
+        ?? moveChoices.find((choice) => choice.id === selectedMoveId)
+        ?? moveChoices[0];
+    const activeSummary = activeMove ? `${activeMove.label}：${activeMove.drawText}` : moveSummary;
+
+    React.useEffect(() => {
+        setActiveMoveId(selectedMoveId);
+    }, [selectedMoveId]);
+
+    const getMoveTargetAngle = (steps: number) => {
+        const targetIndex = (selectedIndex + steps) % WHEEL_SECTORS.length;
+        return WHEEL_SECTORS[targetIndex]?.angle ?? selectedAngle;
+    };
+
+    const selectedMove = moveChoices.find((choice) => choice.id === selectedMoveId);
+    const selectedMoveTargetIndex = selectedMove ? (selectedIndex + selectedMove.steps) % WHEEL_SECTORS.length : selectedIndex;
+    const sectorRenderOrder = WHEEL_SECTORS
+        .map((sector, index) => ({ sector, index }))
+        .sort((a, b) => {
+            if (a.index === selectedMoveTargetIndex) return 1;
+            if (b.index === selectedMoveTargetIndex) return -1;
+            return a.index - b.index;
+        });
+
+    return (
+        <div
+            className="pointer-events-auto group absolute left-[64px] top-[56px] z-30 h-[430px] w-[430px]"
+            data-testid="qidahen-action-wheel"
+            data-ui-anchor="left-top"
+        >
+            <div
+                className="relative h-[414px] w-[414px]"
+                role="img"
+                aria-label="七大恨行动轮盘"
+                data-testid="qidahen-action-wheel-asset"
+            >
+                <div
+                    className="absolute inset-0 rounded-full"
+                    style={{
+                        background: 'radial-gradient(circle at 47% 43%, #efe6cf 0%, #d8cbad 56%, #c3b08d 100%)',
+                        boxShadow: `0 16px 28px ${UI_STYLE.shadowSoft}, inset 0 0 12px rgba(31,24,18,0.12)`,
+                    }}
+                />
+                <svg
+                    viewBox={`0 0 ${WHEEL_VIEW} ${WHEEL_VIEW}`}
+                    className="absolute inset-0 h-full w-full"
+                    aria-hidden="true"
+                >
+                    <defs>
+                        <filter id="qidahen-wheel-press" x="-15%" y="-15%" width="130%" height="130%">
+                            <feDropShadow dx="0" dy="2" stdDeviation="1.2" floodColor="rgba(184,59,39,0.28)" />
+                        </filter>
+                        <filter id="qidahen-wheel-lift" x="-25%" y="-25%" width="150%" height="150%">
+                            <feDropShadow dx="0" dy="12" stdDeviation="5.2" floodColor="rgba(37,27,17,0.38)" />
+                        </filter>
+                        <filter id="qidahen-wheel-current" x="-20%" y="-20%" width="140%" height="140%">
+                            <feDropShadow dx="0" dy="2.5" stdDeviation="1.4" floodColor="rgba(72,54,31,0.24)" />
+                        </filter>
+                        <filter id="qidahen-wheel-grain" x="-10%" y="-10%" width="120%" height="120%">
+                            <feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="2" seed="17" />
+                            <feColorMatrix type="saturate" values="0" />
+                            <feComponentTransfer>
+                                <feFuncA type="table" tableValues="0 0.12" />
+                            </feComponentTransfer>
+                        </filter>
+                        <clipPath id="qidahen-wheel-face-clip">
+                            <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r={WHEEL_OUTER_RADIUS - 18} />
+                        </clipPath>
+                    </defs>
+                    <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r={WHEEL_OUTER_RADIUS + 4} fill="rgba(239,230,207,0.56)" stroke="#241b14" strokeWidth="2.4" opacity="0.96" />
+                    <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r={WHEEL_OUTER_RADIUS - 16} fill="none" stroke="rgba(36,27,20,0.28)" strokeWidth="1.05" />
+                    {sectorRenderOrder.map(({ sector, index }) => {
+                        const current = index === selectedIndex;
+                        const selectedTarget = selectedMove ? index === selectedMoveTargetIndex : false;
+                        const labelPoint = polarToPoint(WHEEL_CENTER, WHEEL_LABEL_RADIUS, sector.angle);
+                        return (
+                            <g
+                                key={sector.id}
+                                data-testid="qidahen-wheel-sector"
+                                data-wheel-sector-id={sector.id}
+                                data-wheel-selected={selectedTarget ? 'true' : undefined}
+                                transform={selectedTarget ? getSliceFocusTransform(sector.angle, WHEEL_SELECTED_SCALE, WHEEL_SELECTED_PUSH) : undefined}
+                                filter={selectedTarget ? 'url(#qidahen-wheel-lift)' : current ? 'url(#qidahen-wheel-current)' : undefined}
+                            >
+                                <path
+                                    d={describeAnnularSlice(WHEEL_CENTER, selectedTarget ? WHEEL_INNER_RADIUS + 2 : WHEEL_INNER_RADIUS, selectedTarget ? WHEEL_OUTER_RADIUS - 10 : WHEEL_OUTER_RADIUS - 16, sector.angle - 22.5, sector.angle + 22.5)}
+                                    fill={selectedTarget ? 'rgba(206,155,88,0.88)' : current ? 'rgba(214,176,111,0.46)' : index % 2 === 0 ? 'rgba(112,104,88,0.32)' : 'rgba(89,81,68,0.25)'}
+                                    stroke={selectedTarget ? 'rgba(184,59,39,0.92)' : current ? 'rgba(141,103,60,0.96)' : 'rgba(35,27,20,0.58)'}
+                                    strokeWidth={selectedTarget ? 3.1 : current ? 2.6 : 1.05}
+                                />
+                                <text
+                                    x={labelPoint.x}
+                                    y={labelPoint.y - (selectedTarget ? 10 : 9)}
+                                    textAnchor="middle"
+                                    dominantBaseline="middle"
+                                    className="fill-[#241b14]"
+                                    style={{ fontSize: selectedTarget ? '17px' : '16px', fontWeight: 900, paintOrder: 'stroke', stroke: selectedTarget ? 'rgba(246,236,216,0.88)' : 'rgba(214,202,170,0.78)', strokeWidth: selectedTarget ? 2.25 : 1.95 }}
+                                >
+                                    {sector.label[0]}
+                                </text>
+                                <text
+                                    x={labelPoint.x}
+                                    y={labelPoint.y + (selectedTarget ? 11 : 10)}
+                                    textAnchor="middle"
+                                    dominantBaseline="middle"
+                                    className="fill-[#241b14]"
+                                    style={{ fontSize: selectedTarget ? '17px' : '16px', fontWeight: 900, paintOrder: 'stroke', stroke: selectedTarget ? 'rgba(246,236,216,0.88)' : 'rgba(214,202,170,0.78)', strokeWidth: selectedTarget ? 2.25 : 1.95 }}
+                                >
+                                    {sector.label[1]}
+                                </text>
+                            </g>
+                        );
+                    })}
+                    <text
+                        x={WHEEL_CENTER}
+                        y="24"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="fill-[#241b14]"
+                        style={{ fontSize: '16px', fontWeight: 900, paintOrder: 'stroke', stroke: 'rgba(214,202,170,0.72)', strokeWidth: 1.6 }}
+                    >
+                        新年 &gt;&gt;&gt;
+                    </text>
+                    <text
+                        x={WHEEL_CENTER}
+                        y={WHEEL_VIEW - 20}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="fill-[#241b14]"
+                        style={{ fontSize: '16px', fontWeight: 900, paintOrder: 'stroke', stroke: 'rgba(214,202,170,0.72)', strokeWidth: 1.6 }}
+                    >
+                        年中
+                    </text>
+                    <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r={WHEEL_INNER_RADIUS - 7} fill="rgba(184,169,135,0.92)" stroke="#2f251b" strokeWidth="1.6" />
+                    <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r="18" fill="rgba(49,41,31,0.22)" />
+                    <text
+                        x={WHEEL_CENTER}
+                        y={WHEEL_CENTER - 12}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="fill-[#241b14]"
+                        style={{ fontSize: '26px', fontWeight: 900, paintOrder: 'stroke', stroke: 'rgba(214,202,170,0.75)', strokeWidth: 2.1 }}
+                    >
+                        行动
+                    </text>
+                    <text
+                        x={WHEEL_CENTER}
+                        y={WHEEL_CENTER + 17}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="fill-[#241b14]"
+                        style={{ fontSize: '26px', fontWeight: 900, paintOrder: 'stroke', stroke: 'rgba(214,202,170,0.75)', strokeWidth: 2.1 }}
+                    >
+                        轮盘
+                    </text>
+                    <rect x="18" y="18" width={WHEEL_VIEW - 36} height={WHEEL_VIEW - 36} clipPath="url(#qidahen-wheel-face-clip)" filter="url(#qidahen-wheel-grain)" opacity="0.32" />
+                    <g data-testid="qidahen-wheel-move-layer">
+                        {moveChoices.map((choice) => {
+                            const targetAngle = getMoveTargetAngle(choice.steps);
+                            const activateMove = () => {
+                                if (choice.id === selectedMoveId) {
+                                    onExecuteMove(choice.id);
+                                    return;
+                                }
+                                onSelectMove(choice.id);
+                            };
+                            return (
+                                <path
+                                    key={choice.id}
+                                    role="button"
+                                    tabIndex={0}
+                                    aria-label={choice.label}
+                                    data-testid={`qidahen-wheel-move-target-${choice.id}`}
+                                    d={describeAnnularSlice(WHEEL_CENTER, WHEEL_INNER_RADIUS - 8, WHEEL_OUTER_RADIUS - 8, targetAngle - 23.5, targetAngle + 23.5)}
+                                    fill="rgba(255,248,233,0.001)"
+                                    stroke="transparent"
+                                    strokeWidth="1"
+                                    className="cursor-pointer outline-none transition-[fill,stroke]"
+                                    onClick={activateMove}
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter' || event.key === ' ') {
+                                            event.preventDefault();
+                                            activateMove();
+                                        }
+                                    }}
+                                    onFocus={() => setActiveMoveId(choice.id)}
+                                    onMouseEnter={() => setActiveMoveId(choice.id)}
+                                    onBlur={() => setActiveMoveId(selectedMoveId)}
+                                    onMouseLeave={() => setActiveMoveId(selectedMoveId)}
+                                />
+                            );
+                        })}
+                    </g>
+                </svg>
+            </div>
+
+            <div
+                className="absolute left-[408px] top-[300px] hidden w-[238px] border px-3 py-2 text-[13px] font-black leading-5 tracking-[0.03em] group-hover:block group-focus-within:block"
+                data-testid="qidahen-wheel-tip"
+                role="tooltip"
+                style={{
+                    borderColor: UI_STYLE.bronze,
+                    background: UI_SURFACE.paperQuiet,
+                    color: UI_STYLE.ink,
+                    boxShadow: `${UI_SURFACE.softShadow}, ${UI_SURFACE.inkInset}`,
+                    clipPath: UI_SURFACE.smallCutCorner,
+                }}
+            >
+                {activeSummary}
+            </div>
+        </div>
+    );
+};
+
+const YearCardSlot: React.FC<{
+    card: QidahenYearCardSlot;
+    locale?: string;
+}> = ({ card, locale }) => (
+    <div
+        className="relative overflow-hidden border"
+        data-testid={`qidahen-year-card-slot-${card.id}`}
+        style={{
+            width: CARD_DIMENSIONS.year.width,
+            height: CARD_DIMENSIONS.year.height,
+            borderColor: UI_STYLE.bronze,
+            background: UI_STYLE.paperLight,
+            boxShadow: `${UI_SURFACE.softShadow}, ${UI_SURFACE.inkInset}`,
+            clipPath: UI_SURFACE.smallCutCorner,
+        }}
+    >
+        <CardPreviewFit
+            previewRef={card.previewRef}
+            locale={locale}
+            title={card.label}
+            width={CARD_DIMENSIONS.year.width}
+            height={CARD_DIMENSIONS.year.height}
+            rawWidth={CARD_DIMENSIONS.year.rawWidth}
+            rawHeight={CARD_DIMENSIONS.year.rawHeight}
+        />
+    </div>
+);
+
+const ChronologyZone: React.FC<{
+    cards: QidahenYearCardSlot[];
+    locale?: string;
+}> = ({ cards, locale }) => (
+    <div className="pointer-events-auto absolute left-[80px] top-[472px] z-20" data-testid="qidahen-chronology-zone" data-ui-anchor="left-middle">
+        <div className="flex items-end gap-3">
+            {cards.slice(0, 2).map((card) => (
+                <YearCardSlot key={card.id} card={card} locale={locale} />
             ))}
         </div>
     </div>
 );
 
-const RegionMarker: React.FC<{
-    region: QidahenRegionSummary;
+const KoreaZone: React.FC<{
+    core: QidahenCore;
+    locale?: string;
+}> = ({ core, locale }) => (
+    <div
+        className="pointer-events-auto absolute right-[80px] top-[92px] z-20 flex gap-4"
+        data-testid="qidahen-korea-zone"
+        data-ui-anchor="right-top"
+    >
+        <DeckStack
+            src={ASSETS.koreaCard}
+            label="朝鲜牌库"
+            count={core.koreaDeckCount}
+            width={CARD_DIMENSIONS.koreaDeck.width}
+            height={CARD_DIMENSIONS.koreaDeck.height}
+            rawWidth={CARD_DIMENSIONS.koreaDeck.rawWidth}
+            rawHeight={CARD_DIMENSIONS.koreaDeck.rawHeight}
+            testId="qidahen-korea-draw-pile"
+        />
+        <DeckStack
+            previewRef={core.koreaDiscardPreviewRef}
+            locale={locale}
+            label="朝鲜弃牌"
+            count={core.koreaDiscardCount}
+            tone="red"
+            width={CARD_DIMENSIONS.koreaDeck.width}
+            height={CARD_DIMENSIONS.koreaDeck.height}
+            rawWidth={CARD_DIMENSIONS.koreaDeck.rawWidth}
+            rawHeight={CARD_DIMENSIONS.koreaDeck.rawHeight}
+            testId="qidahen-korea-discard-pile"
+        />
+    </div>
+);
+
+const ActionButton: React.FC<{
+    action: QidahenActionChoice;
     selected: boolean;
-    onSelect: (regionId: string) => void;
-}> = ({ region, selected, onSelect }) => (
+    onClick: () => void;
+}> = ({ action, selected, onClick }) => (
     <button
         type="button"
-        className="absolute flex -translate-x-1/2 -translate-y-1/2 items-center justify-center"
-        style={{ left: `${region.x * 100}%`, top: `${region.y * 100}%` }}
-        onClick={(event) => {
-            event.stopPropagation();
-            onSelect(region.id);
+        data-testid={`qidahen-action-${action.id}`}
+        title={action.detail}
+        className="relative inline-flex h-[50px] min-w-[146px] cursor-pointer items-center justify-start overflow-hidden border px-4 text-left text-[18px] font-black tracking-[0.03em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30"
+        onClick={onClick}
+        style={{
+            borderColor: selected ? UI_STYLE.cinnabar : UI_STYLE.bronze,
+            background: selected ? UI_SURFACE.paperQuiet : UI_SURFACE.paper,
+            color: selected ? UI_STYLE.cinnabar : UI_STYLE.ink,
+            boxShadow: `${UI_SURFACE.panelShadow}, ${UI_SURFACE.inkInset}`,
+            clipPath: UI_SURFACE.cutCorner,
         }}
-        aria-label={`选择${region.name}`}
     >
-        <span
-            className={`relative grid min-h-9 min-w-9 place-items-center rounded-sm border-2 px-2 text-[13px] font-black text-[#f4e2ad] shadow-[0_5px_12px_rgba(0,0,0,0.38)] transition ${selected ? 'scale-110 border-[#f2c064] bg-[#5a2a18]' : 'border-black/60 bg-[#2a2117]/88'}`}
-            style={{ outline: selected ? `3px solid ${factionTone[region.controller]}` : undefined }}
-        >
-            <span className="absolute -right-2 -top-2 rounded-full border border-black/70 px-1.5 text-[11px] text-white" style={{ backgroundColor: factionTone[region.controller] }}>
-                {region.troops ?? region.population ?? 0}
-            </span>
-            {region.name}
-        </span>
+        <span className="pointer-events-none absolute inset-y-0 left-0 w-[6px]" style={{ background: selected ? UI_STYLE.cinnabar : UI_STYLE.bronzeSoft }} />
+        <span className="min-w-0 whitespace-nowrap">{action.label}</span>
     </button>
 );
 
-const ActionWheelMini: React.FC<{ current: string }> = ({ current }) => {
-    const items = ['征兵', '外交', '征收', '调度', '演练', '迂逃', '计策', '间谋'];
-    return (
-        <div className="relative mx-auto grid h-48 w-48 place-items-center rounded-full border-2 border-[#a98045] bg-[#2a2117] shadow-inner">
-            <div className="grid h-20 w-20 place-items-center rounded-full border border-[#d2a95b] bg-[#5a3a1d] text-center text-[15px] font-black leading-tight text-[#f7df9f]">
-                行动<br />轮盘
+const ActionsZone: React.FC<{
+    core: QidahenCore;
+    onExecuteAction: (actionId: string) => void;
+}> = ({ core, onExecuteAction }) => (
+        <div
+            className="pointer-events-auto absolute right-[80px] top-[396px] z-30"
+            data-testid="qidahen-actions-zone"
+            data-ui-anchor="right-middle"
+        >
+            <div className="flex flex-col items-end gap-2" data-testid="qidahen-action-rail">
+                {core.actionChoices.map((action) => (
+                    <ActionButton
+                        key={action.id}
+                        action={action}
+                        selected={core.selectedActionId === action.id}
+                        onClick={() => onExecuteAction(action.id)}
+                    />
+                ))}
             </div>
-            {items.map((item, index) => {
-                const angle = (index / items.length) * Math.PI * 2 - Math.PI / 2;
-                const active = item === current;
-                return (
-                    <div
-                        key={item}
-                        className={`absolute rounded px-1.5 py-0.5 text-[12px] font-bold ${active ? 'bg-[#8f2f24] text-[#ffe2ad]' : 'text-[#cdb58a]'}`}
-                        style={{
-                            left: `calc(50% + ${Math.cos(angle) * 70}px)`,
-                            top: `calc(50% + ${Math.sin(angle) * 70}px)`,
-                            transform: 'translate(-50%, -50%)',
-                        }}
-                    >
-                        {item}
-                    </div>
-                );
-            })}
+            {core.pendingTargetAction ? (
+                <div
+                    className="mt-3 border px-3 py-2 text-[14px] font-black leading-6"
+                    data-testid="qidahen-raid-intent"
+                    style={{ borderColor: UI_STYLE.cinnabar, background: UI_SURFACE.paperQuiet, color: UI_STYLE.ink, boxShadow: UI_SURFACE.inkInset, clipPath: UI_SURFACE.smallCutCorner }}
+                >
+                    {core.pendingTargetAction.title} · 目标 {core.pendingTargetAction.targetRegionName} · 防守 {core.pendingTargetAction.defenderLabel}
+                </div>
+            ) : null}
         </div>
+);
+
+const HandCard: React.FC<{
+    card: QidahenHandCard;
+    locale?: string;
+}> = ({ card, locale }) => {
+    const disabled = card.status === 'disabled';
+
+    return (
+        <button
+            type="button"
+            aria-label={card.label}
+            disabled={disabled}
+            data-testid={`qidahen-hand-card-${card.id}`}
+            tabIndex={disabled ? -1 : 0}
+            className="relative shrink-0 overflow-hidden border transition-transform duration-150 hover:-translate-y-3 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30 disabled:cursor-not-allowed disabled:opacity-55"
+            style={{
+                width: CARD_DIMENSIONS.hand.width,
+                height: CARD_DIMENSIONS.hand.height,
+                borderColor: UI_STYLE.bronzeSoft,
+                background: UI_STYLE.paperLight,
+                boxShadow: `0 12px 22px ${UI_STYLE.shadowSoft}`,
+                clipPath: UI_SURFACE.smallCutCorner,
+            }}
+        >
+            <CardPreviewFit
+                previewRef={card.previewRef}
+                locale={locale}
+                title={card.label}
+                width={CARD_DIMENSIONS.hand.width}
+                height={CARD_DIMENSIONS.hand.height}
+                rawWidth={CARD_DIMENSIONS.hand.rawWidth}
+                rawHeight={CARD_DIMENSIONS.hand.rawHeight}
+            />
+        </button>
     );
 };
 
-export const QidahenBoard: React.FC<Props> = ({ G, dispatch }) => {
+const HandZone: React.FC<{
+    core: QidahenCore;
+    locale?: string;
+}> = ({ core, locale }) => (
+        <div className="pointer-events-auto absolute inset-x-0 bottom-0 z-30 h-[314px]" data-testid="qidahen-bottom-dock">
+            <div className="absolute left-[44px]" data-testid="qidahen-draw-anchor" style={{ bottom: BOTTOM_DOCK_INSET }}>
+                <DeckStack src={CARD_BACK_BY_FACTION[getCurrentFactionId(core)]} label="抽牌" count={core.drawPileCount} testId="qidahen-draw-pile" />
+            </div>
+            <div
+                className="absolute left-1/2 flex h-[314px] w-[1310px] items-end justify-center gap-3"
+                data-testid="qidahen-hand-zone"
+                data-ui-role="qidahen-hand-dock"
+                style={{ bottom: BOTTOM_DOCK_INSET, transform: 'translateX(-50%)' }}
+            >
+                <div className="flex items-end justify-center gap-3" data-testid="qidahen-hand-row">
+                    {core.handCards.map((card) => (
+                        <HandCard key={card.id} card={card} locale={locale} />
+                    ))}
+                </div>
+            </div>
+            <div className="absolute right-[44px]" data-testid="qidahen-discard-anchor" style={{ bottom: BOTTOM_DOCK_INSET }}>
+                <DeckStack src={ASSETS.coverCard} label="弃牌" count={core.discardPileCount} tone="red" testId="qidahen-discard-pile" />
+            </div>
+        </div>
+);
+
+export const QidahenBoard: React.FC<Props> = ({ G, dispatch, locale }) => {
     const core = G.core;
-    const selectedRegion = core.regions.find((region) => region.id === core.selectedRegionId) ?? core.regions[0];
+
+    const selectWheelMove = React.useCallback((moveId: string) => {
+        dispatch(QIDAHEN_COMMANDS.SELECT_WHEEL_MOVE, { moveId });
+    }, [dispatch]);
+
+    const executeWheelMove = React.useCallback((moveId: string) => {
+        dispatch(QIDAHEN_COMMANDS.EXECUTE_WHEEL_MOVE, { moveId });
+    }, [dispatch]);
+
+    const executeAction = React.useCallback((actionId: string) => {
+        dispatch(QIDAHEN_COMMANDS.EXECUTE_ACTION, { actionId });
+    }, [dispatch]);
 
     const selectRegion = React.useCallback((regionId: string) => {
         dispatch(QIDAHEN_COMMANDS.SELECT_REGION, { regionId });
     }, [dispatch]);
 
-    const confirmPreviewAction = React.useCallback(() => {
-        dispatch(QIDAHEN_COMMANDS.CONFIRM_PREVIEW_ACTION, { actionId: core.actionWheelPosition });
-    }, [core.actionWheelPosition, dispatch]);
-
     return (
-        <div className="relative h-full min-h-0 overflow-hidden bg-[#0b0906] text-[#ead8ad]" data-testid="qidahen-board">
-            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_52%_38%,rgba(174,112,51,0.20),transparent_34%),linear-gradient(180deg,rgba(10,8,5,0.58),rgba(10,8,5,0.18)_28%,rgba(10,8,5,0.72))]" />
-
-            <div className="relative z-10 grid h-full min-h-0 grid-cols-[234px_minmax(0,1fr)_276px] grid-rows-[38px_minmax(0,1fr)_172px] gap-1.5 p-1.5 max-[1100px]:grid-cols-[minmax(0,1fr)] max-[1100px]:grid-rows-[34px_minmax(0,1fr)_164px]">
-                <div className="col-span-3 flex items-center justify-between border border-[#6d5433]/70 bg-[#0e0c08]/92 px-3 text-[13px] text-[#d9c59a] max-[1100px]:col-span-1">
-                    <div className="flex min-w-0 items-center gap-4">
-                        <span>对局：七大恨</span>
-                        <span>房间号：73218</span>
-                        <span>{core.turnLabel}</span>
-                    </div>
-                    <div className="flex shrink-0 items-center gap-2">
-                        <span className="hidden text-[#f1d493] sm:inline">行动顺序</span>
-                        {(['ming', 'mongol', 'jin'] as QidahenFactionId[]).map((id) => (
-                            <span key={id} className={`rounded-full px-3 py-1 text-xs font-bold text-white ${core.factions[id].colorClass}`}>
-                                {factionName[id]}
-                            </span>
-                        ))}
-                        <span className="rounded border border-[#6d5433] px-2 py-1 text-[#f1d493]">重置视角</span>
-                        <span className="rounded border border-[#6d5433] px-2 py-1 text-[#f1d493]">聚焦</span>
-                    </div>
-                </div>
-
-                <aside className="min-h-0 overflow-hidden max-[1100px]:hidden">
-                    <Panel title="当前年度">
-                        <div className="px-4 py-4 text-center">
-                            <div className="text-2xl font-black tracking-[0.2em] text-[#f5dfad]">{core.currentYear.split(' ')[0]}</div>
-                            <div className="mt-1 text-[22px] font-bold text-[#f5dfad]">{core.currentYear.split(' ')[1]}</div>
-                        </div>
-                    </Panel>
-                    <Panel title="行动轮盘" className="mt-1.5">
-                        <div className="p-3">
-                            <div className="mb-2 text-center text-xs text-[#c9aa78]">当前：{core.actionWheelPosition}</div>
-                            <ActionWheelMini current={core.actionWheelPosition} />
-                        </div>
-                    </Panel>
-                    <Panel title="势力状态" className="mt-1.5">
-                        {(['ming', 'mongol', 'jin'] as QidahenFactionId[]).map((id) => (
-                            <FactionSummary key={id} faction={core.factions[id]} />
-                        ))}
-                    </Panel>
-                </aside>
-
-                <main className="relative min-h-0 overflow-hidden border border-[#6d5433]/70 bg-[#14100b]">
-                    <QidahenMapViewport>
-                        <div className="relative w-[1265px]">
-                            <img
-                                src={boardImage}
-                                alt="七大恨主地图"
-                                className="block w-[1265px] max-w-none select-none"
-                                draggable={false}
-                            />
-                            <div className="absolute inset-0">
-                                {core.regions.map((region) => (
-                                    <RegionMarker
-                                        key={region.id}
-                                        region={region}
-                                        selected={region.id === selectedRegion.id}
-                                        onSelect={selectRegion}
-                                    />
-                                ))}
-                                {selectedRegion ? (
-                                    <div
-                                        className="absolute max-w-[270px] -translate-x-1/2 rounded border border-[#d1a65d]/80 bg-[#17110a]/94 px-3 py-2 text-left shadow-[0_12px_28px_rgba(0,0,0,0.45)]"
-                                        style={{ left: `${selectedRegion.x * 100}%`, top: `${Math.max(0.08, selectedRegion.y - 0.16) * 100}%` }}
-                                    >
-                                        <div className="text-[16px] font-black text-[#f3d18f]">{selectedRegion.name}</div>
-                                        <div className="mt-1 text-[12px] leading-5 text-[#d5c098]">{selectedRegion.note}</div>
-                                        <button className="mt-2 rounded border border-[#9d3f32] bg-[#64251e] px-2 py-1 text-[12px] text-[#ffe0ad]">
-                                            查看区域详情
-                                        </button>
-                                    </div>
-                                ) : null}
-                            </div>
-                        </div>
-                    </QidahenMapViewport>
-                    <div className="pointer-events-none absolute bottom-4 left-4 rounded-full border border-[#7d613b] bg-[#13100c]/92 px-3 py-2 text-xs text-[#d8bd83]">
-                        拖拽地图 · 滚轮/双指缩放 · 点击区域
-                    </div>
-                </main>
-
-                <aside className="min-h-0 overflow-hidden max-[1100px]:hidden">
-                    <Panel title="待处理">
-                        <div className="space-y-2 p-2">
-                            {core.pendingEffects.map((effect) => (
-                                <div key={effect.id} className="border border-[#40311f] bg-[#221b13] px-3 py-2">
-                                    <div className="flex items-center justify-between text-sm font-bold text-[#f0c989]">
-                                        <span>{effect.title}</span>
-                                        <span>⌛ {effect.timer}</span>
-                                    </div>
-                                    <div className="mt-1 text-xs text-[#bda880]">{effect.detail}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </Panel>
-
-                    <Panel title="战斗" className="mt-1.5">
-                        <div className="p-3 text-center">
-                            <div className="text-lg font-black text-[#f0d59a]">{core.battlePreview.regionName} 之战</div>
-                            <div className="mt-1 text-xs text-[#c9aa78]">
-                                攻方：<span className={factionText[core.battlePreview.attacker]}>{factionName[core.battlePreview.attacker]}</span>
-                                <span className="mx-2">守方：</span>
-                                <span className={factionText[core.battlePreview.defender]}>{factionName[core.battlePreview.defender]}</span>
-                            </div>
-                            <div className="mt-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3">
-                                <div className="text-2xl font-black text-[#d95845]">{core.battlePreview.attackerStrength}</div>
-                                <div className="text-[#e5c178]">⚔</div>
-                                <div className="text-2xl font-black text-[#d1a35d]">{core.battlePreview.defenderStrength}</div>
-                            </div>
-                            <div className="mt-3 rounded border border-[#64452b] bg-black/30 px-2 py-1 text-xs text-[#dbc28e]">战场：{core.battlePreview.phase}</div>
-                        </div>
-                    </Panel>
-
-                    <Panel title="行动记录" className="mt-1.5 flex max-h-[calc(100%-246px)] min-h-0 flex-col">
-                        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
-                            {core.actionLog.map((entry) => (
-                                <div key={entry.id} className="border-b border-[#3b2d1d] pb-2 text-[12px] leading-5 text-[#cdb78b]">
-                                    <span className={`${factionText[entry.faction]} font-bold`}>{factionName[entry.faction]}</span>
-                                    <span className="ml-1">{entry.text.replace(factionName[entry.faction], '')}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </Panel>
-                </aside>
-
-                <section className="col-span-2 min-h-0 border border-[#6d5433]/70 bg-[#110e09]/94 max-[1100px]:col-span-1">
-                    <div className="grid h-full grid-cols-[160px_minmax(0,1fr)_330px] gap-2 p-2 max-[1100px]:grid-cols-[minmax(0,1fr)_280px] max-[760px]:grid-cols-[minmax(0,1fr)]">
-                        <div className="grid place-items-center border border-[#3f3122] bg-[#17120d] text-2xl font-black tracking-[0.28em] text-[#b99458] max-[1100px]:hidden">手牌</div>
-                        <div className="min-w-0 overflow-x-auto">
-                            <div className="flex h-full min-w-max items-center gap-2">
-                                {core.handCards.map((card) => (
-                                    <button key={card.id} type="button" className="relative h-[142px] w-[92px] shrink-0 overflow-hidden border border-[#9c7946] bg-[#e8d19b] text-left text-[#28170f] shadow-[0_8px_18px_rgba(0,0,0,0.36)]">
-                                        <div className="absolute left-1 top-1 grid h-6 w-6 place-items-center rounded-full border border-[#6f4d23] bg-[#f3dda5] text-sm font-black">{card.cost}</div>
-                                        <div className="h-10 bg-[#6b2b20]" />
-                                        <div className="px-2 pt-7">
-                                            <div className="text-sm font-black">{card.title}</div>
-                                            <div className="mt-1 text-[10px] text-[#7b5d38]">{card.type}</div>
-                                            <div className="mt-2 text-[11px] leading-4">{card.text}</div>
-                                        </div>
-                                    </button>
-                                ))}
-                                <div className="h-[142px] w-[92px] shrink-0 overflow-hidden border border-[#6d5433] bg-[#18120c]">
-                                    <img src={cardBackImage} alt="牌背" className="h-full w-full object-cover opacity-80" draggable={false} />
-                                </div>
-                            </div>
-                        </div>
-                        <div className="border border-[#3f3122] bg-[#17120d] p-3 max-[760px]:hidden">
-                            <div className="mb-2 hidden border-b border-[#3b2d1d] pb-2 max-[1100px]:block">
-                                <div className="mb-1 text-[11px] font-bold tracking-[0.14em] text-[#f0c989]">行动记录</div>
-                                {core.actionLog.slice(0, 2).map((entry) => (
-                                    <div key={entry.id} className="truncate text-[11px] leading-4 text-[#cdb78b]">
-                                        <span className={`${factionText[entry.faction]} font-bold`}>{factionName[entry.faction]}</span>
-                                        <span className="ml-1">{entry.text.replace(factionName[entry.faction], '')}</span>
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="text-xs text-[#c9aa78]">已触行动：调兵遣将</div>
-                            <div className="mt-2 text-sm text-[#f0d59a]">消耗行动点：◆ ◆</div>
-                            <div className="mt-4 flex gap-2">
-                                <button type="button" className="flex-1 border border-[#ad4938] bg-[#7a2f25] px-4 py-3 text-lg font-black text-[#ffe1ae]" onClick={confirmPreviewAction}>确认</button>
-                                <button type="button" className="flex-1 border border-[#5d4a31] bg-[#20180f] px-4 py-3 text-lg font-black text-[#d4bd8b]">取消</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section className="min-h-0 border border-[#6d5433]/70 bg-[#120f0a]/94 p-3 max-[1100px]:hidden">
-                    <button type="button" className="grid h-full w-full place-items-center rounded-full border-2 border-[#8a632f] bg-[#23160d] text-3xl font-black tracking-[0.18em] text-[#d2a35b] shadow-inner" onClick={confirmPreviewAction}>
-                        结束<br />行动
-                    </button>
-                </section>
-            </div>
-        </div>
+        <StageRoot>
+            <MapSceneLayer core={core} locale={locale} onSelectRegion={selectRegion} />
+            <PlayerFloat core={core} />
+            <WheelPanel
+                selectedId={core.actionWheelPosition}
+                selectedMoveId={core.selectedWheelMoveId}
+                moveChoices={core.wheelMoveChoices}
+                moveSummary={core.wheelMoveSummary}
+                onSelectMove={selectWheelMove}
+                onExecuteMove={executeWheelMove}
+            />
+            <KoreaZone core={core} locale={locale} />
+            <ChronologyZone cards={core.yearCards} locale={locale} />
+            <ActionsZone core={core} onExecuteAction={executeAction} />
+            <HandZone core={core} locale={locale} />
+        </StageRoot>
     );
 };
 

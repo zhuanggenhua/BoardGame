@@ -1,14 +1,26 @@
 import type { CriticalImageResolver } from '../../core/types';
 
 export const qidahenCriticalImageResolver: CriticalImageResolver = () => ({
-    critical: ['i18n/zh-CN/qidahen/board/main-board'],
+    critical: [
+        'qidahen/board/qidahen-main-map',
+        'qidahen/board/left-top-clean-patch-v2',
+        'qidahen/cards/backs/ming-card-back',
+        'qidahen/cards/backs/korea-card-back',
+        'qidahen/cards/backs/qidahen-cover-card',
+        'qidahen/cards/atlases/ming-faction-deck-atlas',
+        'qidahen/cards/atlases/chronology-deck-atlas',
+        'qidahen/cards/atlases/korea-special-deck-atlas',
+        'qidahen/markers/ming-control-diplomacy-marker-a',
+        'qidahen/markers/jin-control-diplomacy-marker-a',
+        'qidahen/units/ming-regular-infantry-unit',
+        'qidahen/units/ming-regular-cavalry-unit',
+    ],
     warm: [
-        'i18n/zh-CN/qidahen/cards/backs/ming-card-back',
-        'i18n/zh-CN/qidahen/cards/backs/mongol-card-back',
-        'i18n/zh-CN/qidahen/cards/backs/jin-card-back',
-        'i18n/zh-CN/qidahen/aids/player-aid-ming',
-        'i18n/zh-CN/qidahen/aids/player-aid-mongol',
-        'i18n/zh-CN/qidahen/aids/player-aid-jin',
+        'qidahen/cards/backs/mongol-card-back',
+        'qidahen/cards/backs/jin-card-back',
+        'qidahen/cards/atlases/jin-faction-deck-atlas',
+        'qidahen/cards/atlases/mongol-faction-deck-atlas',
+        'qidahen/markers/mongol-control-diplomacy-marker-a',
     ],
 });
 
