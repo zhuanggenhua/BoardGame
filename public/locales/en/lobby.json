@@ -30,7 +30,8 @@
       "defaultCategory": "Board Game",
       "playerCountLabel": "Recommended Players",
       "overviewLabel": "Overview",
-      "onlineLobbyLabel": "Online Lobby"
+      "onlineLobbyLabel": "Online Lobby",
+      "onlineLobbyCompactLabel": "Lobby"
     },
     "catalog": {
       "allGames": "All Games",
@@ -84,7 +85,15 @@
         "emptyDescription": "No public room records yet.",
         "loggedInHint": "Signed in",
         "playerSummary": "{{players}} / {{seats}} seated",
-        "openGame": "Open Game"
+        "openGame": "Open Game",
+        "brandFeatureStrategyTitle": "Deep Strategy",
+        "brandFeatureStrategyDescription": "Build endless card combinations",
+        "brandFeatureBattleTitle": "Fair Competition",
+        "brandFeatureBattleDescription": "Balanced matches decided by skill",
+        "brandFeaturePartyTitle": "Play With Friends",
+        "brandFeaturePartyDescription": "Team up and enjoy board games together",
+        "brandTitle": "Easy Board Game",
+        "brandSubtitle": "Strategy · Cards · Battles"
       },
       "leaderboard": {
         "eyebrow": "Leaderboard",
@@ -103,6 +112,18 @@
         "emptyTitle": "No updates yet",
         "emptyDescription": "No update records yet."
       }
+    },
+    "reviews": {
+      "error": "Failed to load reviews. Please try again later.",
+      "empty": "No reviews yet"
+    },
+    "detailTabs": {
+      "updates": "Updates",
+      "updatesCompact": "Updates",
+      "reviews": "Reviews",
+      "reviewsCompact": "Reviews",
+      "ranking": "Leaderboard",
+      "rankingCompact": "Ranks"
     },
     "detailSearchPlaceholder": "Search rooms or players",
     "detailNoMatchTitle": "No rooms match this search",
@@ -202,6 +223,7 @@
     "changelogEmpty": "No updates yet"
   },
   "changelog": {
+    "title": "Recent Updates",
     "loading": "Loading changelog...",
     "error": "Failed to load changelog",
     "pinned": "Pinned"

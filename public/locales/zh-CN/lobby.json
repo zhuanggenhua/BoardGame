@@ -30,7 +30,8 @@
       "defaultCategory": "桌游",
       "playerCountLabel": "建议人数",
       "overviewLabel": "玩法概览",
-      "onlineLobbyLabel": "在线大厅"
+      "onlineLobbyLabel": "在线大厅",
+      "onlineLobbyCompactLabel": "大厅"
     },
     "catalog": {
       "allGames": "全部游戏",
@@ -84,7 +85,15 @@
         "emptyDescription": "暂无公开房间记录。",
         "loggedInHint": "已登录",
         "playerSummary": "{{players}} / {{seats}} 在席",
-        "openGame": "查看游戏"
+        "openGame": "查看游戏",
+        "brandFeatureStrategyTitle": "丰富策略",
+        "brandFeatureStrategyDescription": "海量卡牌组合，构筑无限可能",
+        "brandFeatureBattleTitle": "公平竞技",
+        "brandFeatureBattleDescription": "平衡对战环境，凭实力一决高下",
+        "brandFeaturePartyTitle": "好友畅玩",
+        "brandFeaturePartyDescription": "组队开黑，享受桌游乐趣",
+        "brandTitle": "易桌游",
+        "brandSubtitle": "策略 · 卡牌 · 对战"
       },
       "leaderboard": {
         "eyebrow": "排行榜",
@@ -103,6 +112,18 @@
         "emptyTitle": "暂时没有更新记录",
         "emptyDescription": "暂无更新记录。"
       }
+    },
+    "reviews": {
+      "error": "加载评价失败，请稍后重试",
+      "empty": "暂无评论"
+    },
+    "detailTabs": {
+      "updates": "更新",
+      "updatesCompact": "更新",
+      "reviews": "评价",
+      "reviewsCompact": "评价",
+      "ranking": "排行榜",
+      "rankingCompact": "排行"
     },
     "detailSearchPlaceholder": "搜索房间或玩家",
     "detailNoMatchTitle": "没有符合搜索的房间",
@@ -202,6 +223,7 @@
     "changelogEmpty": "暂无日志"
   },
   "changelog": {
+    "title": "最近更新",
     "loading": "加载更新日志中...",
     "error": "更新日志加载失败",
     "pinned": "置顶"

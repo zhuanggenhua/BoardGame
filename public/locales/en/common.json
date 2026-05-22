@@ -25,6 +25,7 @@
     "under_construction": "Under Construction"
   },
   "game_details": {
+    "description": "Description",
     "best_players": "Best Players",
     "people": "Players",
     "player_count": "Players",

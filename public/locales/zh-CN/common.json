@@ -25,6 +25,7 @@
     "under_construction": "实施中"
   },
   "game_details": {
+    "description": "游戏简介",
     "best_players": "最佳人数",
     "people": "人",
     "player_count": "支持人数",

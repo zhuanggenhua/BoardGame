@@ -36,6 +36,11 @@
       "tutorial": "教学模式",
       "online": "联机房间"
     },
+    "homeStyle": {
+      "title": "首页样式",
+      "book": "书本",
+      "classic": "经典"
+    },
     "copyRoomId": "复制房间 ID",
     "roomId": "ID: {{id}}",
     "status": {

@@ -36,6 +36,11 @@
       "tutorial": "Tutorial",
       "online": "Online Room"
     },
+    "homeStyle": {
+      "title": "Home Style",
+      "book": "Book",
+      "classic": "Classic"
+    },
     "copyRoomId": "Copy Room ID",
     "roomId": "ID: {{id}}",
     "status": {
