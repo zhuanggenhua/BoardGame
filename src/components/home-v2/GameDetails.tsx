@@ -475,7 +475,7 @@ function BookLineButton({
     );
 }
 
-function DetailGameThumbnail({ game, title, framed = false }: { game: GameConfig; title: string; framed?: boolean }) {
+function DetailGameThumbnail({ game, framed = false }: { game: GameConfig; title: string; framed?: boolean }) {
     const manifestThumbnail = React.useMemo(() => {
         if (!React.isValidElement(game.thumbnail)) {
             return game.thumbnail;

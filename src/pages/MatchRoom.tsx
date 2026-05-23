@@ -411,10 +411,12 @@ function resolveManualSetupSelectionId(args: {
     return typeof args.payload.factionId === 'string' ? args.payload.factionId : null;
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt(actionKind: string): boolean {
     return isManualSetupSelectionActionKind(actionKind);
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function resolveManualSetupAttemptReleaseSource(args: {
     sharedState: MatchState<unknown> | null | undefined;
     seatState: MatchState<unknown> | null | undefined;

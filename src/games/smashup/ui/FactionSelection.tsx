@@ -216,9 +216,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                 const selectedVariantId = mySelections.find((selectedId) => group.variants.some((variant) => variant.id === selectedId)) ?? null;
                 const isSelectedByMe = Boolean(selectedVariantId);
                 const isTakenByOther = takenFactionIdentities.has(group.groupId) && !isSelectedByMe;
-                const status: 'selected' | 'available' | 'taken' = isSelectedByMe
-                    ? 'selected'
-                    : isTakenByOther ? 'taken' : 'available';
                 const translatedNames = group.variants
                     .map((variant) => t(variant.nameKey))
                     .join(' ')
