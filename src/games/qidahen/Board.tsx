@@ -381,7 +381,6 @@ const PlayerChip: React.FC<{
                 color: UI_STYLE.mapIvory,
                 boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
                 borderRadius: 3,
-                backdropFilter: 'blur(0.8px)',
             }}
         >
             <span
@@ -625,7 +624,6 @@ const MapSceneLayer: React.FC<{
                         color: UI_STYLE.mapIvory,
                         boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
                         borderRadius: 3,
-                        backdropFilter: 'blur(0.8px)',
                     }}
                 >
                     <div className="text-[16px] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">{activeRegion.name} · {activeRegion.controlLabel}</div>
