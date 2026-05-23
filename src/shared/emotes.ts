@@ -19,8 +19,7 @@ const normalizeGameId = (gameId?: string | null): string | undefined => {
 export const EMOTE_CATALOG: readonly EmoteDefinition[] = [
     {
         id: 'dicethrone.moon-elf.speechless-facepalm',
-        scope: 'game',
-        gameId: 'dicethrone',
+        scope: 'common',
         characterId: 'moon-elf',
         emotion: 'speechless',
         label: '无语',
@@ -29,12 +28,20 @@ export const EMOTE_CATALOG: readonly EmoteDefinition[] = [
     },
     {
         id: 'dicethrone.moon-elf.smug-v1',
-        scope: 'game',
-        gameId: 'dicethrone',
+        scope: 'common',
         characterId: 'moon-elf',
         emotion: 'smug',
         label: '得意',
         assetPath: 'dicethrone/emotes/moon-elf/smug-v1',
+        enabled: true,
+    },
+    {
+        id: 'dicethrone.barbarian.thumbs-up-v1',
+        scope: 'common',
+        characterId: 'barbarian',
+        emotion: 'thumbs-up',
+        label: '点赞',
+        assetPath: 'dicethrone/emotes/barbarian/thumbs-up-v1',
         enabled: true,
     },
 ] as const;

@@ -1,4 +1,5 @@
 import {
+    compareBundleVersion,
     compareVersion,
     isManifestCompatibleWithNativeVersion,
     readAndroidLiveUpdateActivityState,
@@ -133,8 +134,8 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/manual.apk',
-            source: 'direct',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk',
+            source: 'versioned',
         });
     });
 
@@ -154,6 +155,21 @@ describe('androidLiveUpdates', () => {
         });
     });
 
+    it('manifest 不可用时，网页端下载入口按当前站点版本兜底到对应 APK', async () => {
+        const result = await resolveAndroidWebAppDownload({
+            VITE_ANDROID_NATIVE_UPDATE_MANIFEST_URL: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/latest.json',
+        }, vi.fn(async () => ({
+            ok: false,
+            status: 503,
+            json: async () => ({}),
+        } as Response)));
+
+        expect(result).toEqual({
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk',
+            source: 'versioned',
+        });
+    });
+
     it('默认 manifest 也不可用且没有 APK 直链时，网页端下载入口返回 manifest-unavailable', async () => {
         const result = await resolveAndroidWebAppDownload({}, vi.fn(async () => ({
             ok: false,
@@ -162,8 +178,8 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: null,
-            reason: 'manifest-unavailable',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk',
+            source: 'versioned',
         });
     });
 
@@ -172,6 +188,13 @@ describe('androidLiveUpdates', () => {
         expect(compareVersion('1.2.0', '1.2.0')).toBe(0);
         expect(compareVersion('1.2.0', '1.2.1')).toBe(-1);
         expect(compareVersion('1.2.0+20260329', '1.2.0')).toBe(0);
+    });
+
+    it('bundle 版本比较会阻止旧基线 OTA 覆盖更新原生壳或较新的同基线 OTA', () => {
+        expect(compareBundleVersion('0.5.62-ota-2026-05-23T01-00-00-000Z', '0.5.62')).toBe(1);
+        expect(compareBundleVersion('0.5.61-ota-2026-05-23T01-00-00-000Z', '0.5.62')).toBe(-1);
+        expect(compareBundleVersion('0.5.61-ota-2026-05-23T01-00-00-000Z', '0.5.61-ota-2026-05-23T00-28-30-595Z')).toBe(1);
+        expect(compareBundleVersion('0.5.61-ota-2026-05-23T00-28-30-595Z', '0.5.61-ota-2026-05-23T01-00-00-000Z')).toBe(-1);
     });
 
     it('读取原生已准备更新状态时保留结构化错误码', async () => {
@@ -447,6 +470,80 @@ describe('androidLiveUpdates', () => {
         expect(result).toEqual({ status: 'up-to-date' });
         expect(currentMock).toHaveBeenCalledTimes(1);
         expect(states.some((state) => state.blocking)).toBe(false);
+    });
+
+    it('后台 OTA 检查遇到更老基线的 latest manifest 时，必须视为已是最新而不是回退下载', async () => {
+        vi.resetModules();
+        vi.stubEnv('VITE_ANDROID_OTA_ENABLED', 'true');
+        vi.stubEnv('VITE_ANDROID_OTA_MANIFEST_URL', 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json');
+        vi.stubEnv('VITE_ANDROID_OTA_CHANNEL', 'stable');
+        vi.stubEnv('VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS', '15000');
+
+        vi.doMock('@capacitor/core', () => ({
+            Capacitor: {
+                isNativePlatform: () => true,
+                getPlatform: () => 'android',
+            },
+            registerPlugin: vi.fn(() => ({})),
+        }));
+
+        const currentMock = vi.fn().mockResolvedValue({
+            native: '0.5.62',
+            bundle: {
+                id: 'builtin',
+                version: '0.5.62',
+                downloaded: '1970-01-01T00:00:00.000Z',
+                checksum: '',
+                status: 'success',
+            },
+        });
+        const listMock = vi.fn();
+        const downloadMock = vi.fn();
+
+        vi.doMock('@capgo/capacitor-updater', () => ({
+            CapacitorUpdater: {
+                notifyAppReady: vi.fn(),
+                current: currentMock,
+                list: listMock,
+                download: downloadMock,
+                next: vi.fn(),
+                set: vi.fn(),
+                reload: vi.fn(),
+                setMultiDelay: vi.fn(),
+                addListener: vi.fn(async () => ({ remove: async () => undefined })),
+            },
+        }));
+
+        vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+            status: 200,
+            ok: true,
+            headers: {
+                get: (name: string) => (name.toLowerCase() === 'content-type' ? 'application/json' : null),
+            },
+            json: async () => ({
+                version: '0.5.61-ota-2026-05-23T00-28-30-595Z',
+                url: 'https://assets.easyboardgame.top/official/app-updates/android/stable/bundles/0.5.61-ota-2026-05-23T00-28-30-595Z.zip',
+                checksum: 'abc',
+                channel: 'stable',
+            }),
+        }));
+
+        const { startAndroidLiveUpdateBackgroundCheck } = await import('../mobile/androidLiveUpdates');
+
+        const result = await startAndroidLiveUpdateBackgroundCheck({
+            force: true,
+            envOverride: {
+                VITE_ANDROID_OTA_ENABLED: 'true',
+                VITE_ANDROID_OTA_MANIFEST_URL: 'https://assets.easyboardgame.top/official/app-updates/android/stable/latest.json',
+                VITE_ANDROID_OTA_CHANNEL: 'stable',
+                VITE_ANDROID_OTA_APP_READY_TIMEOUT_MS: '15000',
+            },
+        });
+
+        expect(result).toEqual({ status: 'up-to-date' });
+        expect(currentMock).toHaveBeenCalledTimes(1);
+        expect(listMock).not.toHaveBeenCalled();
+        expect(downloadMock).not.toHaveBeenCalled();
     });
 
     it('强制 OTA manifest 若发现新版本，也只后台排队等待重进 App 生效', async () => {

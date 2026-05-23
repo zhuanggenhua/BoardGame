@@ -50,15 +50,18 @@ import {
     resolveMatchRoomRouteIdentity,
     resolveMissingMatchConfirmationSignal,
     resolveManualSetupSelectionTakeoverPlayerId,
+    resolveManualSetupAttemptReleaseSource,
     resolveOnlineAiEffectiveSeatState,
     resolveOnlineAiEffectiveSeatStates,
     shouldReleaseManualSetupAttemptFromSharedState,
     shouldRetainOnlineAiSeatOverrideAfterLatestState,
     shouldReleaseFactionSelectAttemptFromSharedState,
+    shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt,
     shouldTakeOverManualSetupSelection,
     shouldShowOnlineGameErrorToast,
     shouldStageOnlineAiSeatOverrideFromConfirmedState,
 } from '../MatchRoom';
+import { resolveSmashUpLocalPregameControlledPlayerId } from '../../games/smashup/localPregameControl';
 import { resolveOnlineHudPresence } from '../matchHudPresence';
 import { resolveMatchSeatSwapContext } from '../../components/game/framework/matchSeatSwap';
 import { findMatchPlayerInfo, resolveMatchPlayerConnected } from '../../engine/transport/matchPlayers';
@@ -2544,6 +2547,75 @@ describe('submitOnlineAiResolution', () => {
         })).toBe(true);
     });
 
+    it('shared state 未吸收但 seat state 已写回该派系时，应允许释放 attempt 继续推进', () => {
+        const sharedState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['pirates'],
+                    playerSelections: {
+                        '0': ['pirates'],
+                        '1': [],
+                    },
+                    completedPlayers: [],
+                },
+                currentPlayerIndex: 1,
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+        const seatState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['pirates', 'robots'],
+                    playerSelections: {
+                        '0': ['pirates'],
+                        '1': ['robots'],
+                    },
+                    completedPlayers: [],
+                },
+                currentPlayerIndex: 2,
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupAttemptReleaseSource({
+            sharedState,
+            seatState,
+            playerId: '1',
+            actionKind: 'select-faction',
+            selectionId: 'robots',
+        })).toBe('seat');
+    });
+
+    it('shared 与 seat 都已吸收时，应优先标记为 shared release', () => {
+        const sharedState = {
+            core: {
+                factionSelection: {
+                    takenFactions: ['pirates', 'robots'],
+                    playerSelections: {
+                        '0': ['pirates'],
+                        '1': ['robots'],
+                    },
+                    completedPlayers: [],
+                },
+            },
+            sys: {
+                phase: 'factionSelect',
+            },
+        } as MatchState<unknown>;
+
+        expect(resolveManualSetupAttemptReleaseSource({
+            sharedState,
+            seatState: sharedState,
+            playerId: '1',
+            actionKind: 'select-faction',
+            selectionId: 'robots',
+        })).toBe('shared');
+    });
+
     it('SummonerWars 在线前置阶段：hostStarted=false 且 AI 还未选阵营时，应解析出要接管的 AI 座位', () => {
         const sharedState = {
             core: {
@@ -2711,6 +2783,13 @@ describe('submitOnlineAiResolution', () => {
             playerId: '1',
             factionId: 'robots',
         })).toBe(true);
+    });
+
+    it('在线 AI 的前置选择动作在 seat 侧确认后，必须等待 shared state 吸收后再重试', () => {
+        expect(shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt('select-faction')).toBe(true);
+        expect(shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt('setup-select-faction')).toBe(true);
+        expect(shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt('setup-select-character')).toBe(true);
+        expect(shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt('advance-phase')).toBe(false);
     });
 
     it('batch confirmed 只透传权威态，不直接回写 seat latestState', () => {
@@ -4256,6 +4335,125 @@ describe('LocalGameProvider 视角与重置契约', () => {
         });
         expect(setupSpy.mock.calls[0]?.[2]).toEqual(setupData);
         expect(setupSpy.mock.calls[1]?.[2]).toEqual(setupData);
+    });
+
+    it('回归：四人手动代 AI 选派系进入第二轮时，P4 的第二个派系必须写回到 player 3', async () => {
+        const Probe = () => {
+            const { state, dispatch, playerId } = useGameClient<{
+                currentPlayerIndex: number;
+                factionSelection?: {
+                    playerSelections?: Record<string, string[]>;
+                };
+            }>();
+
+            return createElement(
+                'div',
+                null,
+                createElement('button', {
+                    'data-testid': 'local-manual-p4-dispatch',
+                    onClick: () => dispatch('su:select_faction', { factionId: 'tricksters' }),
+                }),
+                createElement(
+                    'div',
+                    { 'data-testid': 'local-manual-p4-probe' },
+                    JSON.stringify({
+                        playerId,
+                        currentPlayerIndex: state?.core.currentPlayerIndex ?? null,
+                        playerSelections: state?.core.factionSelection?.playerSelections ?? null,
+                    }),
+                ),
+            );
+        };
+
+        const engineConfig = {
+            gameId: '__test_smashup_local_manual_p4_second_pick__',
+            resolveLocalPregameControlledPlayerId: resolveSmashUpLocalPregameControlledPlayerId,
+            domain: {
+                gameId: '__test_smashup_local_manual_p4_second_pick__',
+                setup: () => ({
+                    turnOrder: ['0', '1', '2', '3'],
+                    currentPlayerIndex: 3,
+                    factionSelection: {
+                        playerSelections: {
+                            '0': ['aliens'],
+                            '1': ['ninjas'],
+                            '2': ['robots'],
+                            '3': ['wizards'],
+                        },
+                    },
+                }),
+                validate: () => ({ valid: true }),
+                execute: (_state: MatchState<unknown>, command: { type: string; playerId?: string; payload?: { factionId?: string } }) => (
+                    command.type === 'su:select_faction' && command.playerId && command.payload?.factionId
+                        ? [{
+                            type: 'FACTION_SELECTED',
+                            payload: {
+                                playerId: command.playerId,
+                                factionId: command.payload.factionId,
+                            },
+                        } as const]
+                        : []
+                ),
+                reduce: (
+                    core: {
+                        currentPlayerIndex: number;
+                        factionSelection: {
+                            playerSelections: Record<string, string[]>;
+                        };
+                    },
+                    event: { type: string; payload?: { playerId?: string; factionId?: string } },
+                ) => {
+                    if (event.type !== 'FACTION_SELECTED' || !event.payload?.playerId || !event.payload?.factionId) {
+                        return core;
+                    }
+
+                    return {
+                        ...core,
+                        currentPlayerIndex: 2,
+                        factionSelection: {
+                            playerSelections: {
+                                ...core.factionSelection.playerSelections,
+                                [event.payload.playerId]: [
+                                    ...(core.factionSelection.playerSelections[event.payload.playerId] ?? []),
+                                    event.payload.factionId,
+                                ],
+                            },
+                        },
+                    };
+                },
+            },
+            systems: [],
+        } as const;
+
+        render(
+            createElement(
+                LocalGameProvider,
+                {
+                    config: engineConfig as never,
+                    numPlayers: 4,
+                    seed: 'smashup-local-manual-p4-second-pick',
+                    playerId: '0',
+                    seatControllers: {
+                        '0': { type: 'human' },
+                        '1': { type: 'local-ai', manualFactionSelection: true },
+                        '2': { type: 'local-ai', manualFactionSelection: true },
+                        '3': { type: 'local-ai', manualFactionSelection: true },
+                    },
+                },
+                createElement(Probe),
+            ),
+        );
+
+        expect(screen.getByTestId('local-manual-p4-probe').textContent).toContain('"playerId":"3"');
+
+        await act(async () => {
+            screen.getByTestId('local-manual-p4-dispatch').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+        });
+
+        const probe = screen.getByTestId('local-manual-p4-probe');
+        expect(probe.textContent).toContain('"playerId":"2"');
+        expect(probe.textContent).toContain('"currentPlayerIndex":2');
+        expect(probe.textContent).toContain('"3":["wizards","tricksters"]');
     });
 });
 

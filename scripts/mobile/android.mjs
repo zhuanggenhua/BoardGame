@@ -31,6 +31,12 @@ const command = process.argv[2];
 const distDir = path.join(rootDir, 'dist');
 const distLocalesDir = path.join(distDir, 'locales');
 const distLocalizedAssetsDir = path.join(distDir, 'assets', 'i18n');
+const androidEmbeddedBlockedPrefixes = [
+    'assets/common/audio/',
+];
+const androidEmbeddedPrunedPaths = [
+    path.join(distDir, 'assets', 'common', 'audio'),
+];
 const androidPublicDir = path.join(androidDir, 'app', 'src', 'main', 'assets', 'public');
 const androidBuildMetaFileName = 'android-build-meta.json';
 const gameManifestGeneratorPath = path.join(rootDir, 'scripts', 'game', 'generate_game_manifests.js');
@@ -327,6 +333,47 @@ const clearDirectoryChildren = (dirPath, { preserve = [] } = {}) => {
     }
 };
 
+const collectBlockedRelativePaths = (baseDir, blockedPrefixes) => {
+    if (!existsSync(baseDir)) return [];
+
+    const matches = [];
+    const visit = (currentDir) => {
+        for (const entry of readdirSync(currentDir, { withFileTypes: true })) {
+            const fullPath = path.join(currentDir, entry.name);
+            if (entry.isDirectory()) {
+                visit(fullPath);
+                continue;
+            }
+
+            if (!entry.isFile()) {
+                continue;
+            }
+
+            const relativePath = toUnixPath(path.relative(baseDir, fullPath));
+            if (blockedPrefixes.some((prefix) => relativePath.startsWith(prefix))) {
+                matches.push(relativePath);
+            }
+        }
+    };
+
+    visit(baseDir);
+    return matches.sort((left, right) => left.localeCompare(right));
+};
+
+const ensureNoBlockedEmbeddedAssets = (baseDir, label) => {
+    const blockedPaths = collectBlockedRelativePaths(baseDir, androidEmbeddedBlockedPrefixes);
+    if (blockedPaths.length === 0) {
+        return;
+    }
+
+    const sample = blockedPaths.slice(0, 5).join(', ');
+    const suffix = blockedPaths.length > 5 ? ` 等 ${blockedPaths.length} 项` : '';
+    throw new Error(
+        `${label} 仍包含禁止内置到 Android embedded 包的运行时资源: ${sample}${suffix}。`
+        + ' 这些资源必须继续走 R2 / 游戏包链路，不能被打进 APK。',
+    );
+};
+
 const pruneAndroidEmbeddedDist = () => {
     clearDirectoryChildren(distLocalesDir, {
         preserve: [path.join(distLocalesDir, 'zh-CN')],
@@ -335,6 +382,13 @@ const pruneAndroidEmbeddedDist = () => {
     if (existsSync(distLocalizedAssetsDir)) {
         rmSync(distLocalizedAssetsDir, { recursive: true, force: true });
     }
+
+    for (const targetPath of androidEmbeddedPrunedPaths) {
+        if (!existsSync(targetPath)) continue;
+        rmSync(targetPath, { recursive: true, force: true });
+    }
+
+    ensureNoBlockedEmbeddedAssets(distDir, 'dist');
 };
 
 const writeText = (filePath, content) => {
@@ -842,6 +896,7 @@ const syncAndroid = async () => {
     await ensureAndroidProject();
     if (mode === 'embedded') {
         await runCapacitor(['sync', 'android']);
+        ensureNoBlockedEmbeddedAssets(androidPublicDir, 'android/app/src/main/assets/public');
     } else {
         await runCapacitor(['update', 'android']);
         clearBundledWebAssetsForRemote();

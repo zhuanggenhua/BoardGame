@@ -3937,6 +3937,24 @@
         }
       }
     },
+    "zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "0a175d39964c550b686d8411b9bb6d8254d9c74f30b27847b60cdde9254efba9",
+          "bytes": 236184,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/emotes/barbarian/thumbs-up-v1": {
+      "variants": {
+        "png": {
+          "sha256": "5e2e2613f53767d8c583e90e1272510cf17eaf5fbeb6363e4538dc3dff1ba674",
+          "bytes": 2387515,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/emotes/moon-elf/compressed/smug-v1": {
       "variants": {
         "webp": {

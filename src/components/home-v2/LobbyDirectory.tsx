@@ -5,7 +5,6 @@ import type { GameConfig } from '../../config/games.config';
 import { useAuth } from '../../contexts/AuthContext';
 import { LANGUAGE_OPTIONS } from '../../lib/i18n/types';
 import { resolveGameDisplayName } from '../lobby/gameDetailsContent';
-import { getHomeV2ReferenceThumbnailSrc } from './homeV2Thumbnails';
 
 export type LobbyCategory = 'all' | 'card' | 'dice' | 'abstract' | 'wargame' | 'casual' | 'tools';
 
@@ -237,8 +236,6 @@ function renderBadge(
 
 function HomeCatalogThumbnail({ game }: { game: GameConfig }) {
     const { t } = useTranslation(['lobby', 'common']);
-    const referenceThumbnailSrc = getHomeV2ReferenceThumbnailSrc(game.id);
-    const [referenceFailed, setReferenceFailed] = React.useState(false);
     const title = resolveGameDisplayName(game, t, game.id);
     const manifestThumbnail = React.useMemo(() => {
         if (!React.isValidElement(game.thumbnail)) {
@@ -246,18 +243,6 @@ function HomeCatalogThumbnail({ game }: { game: GameConfig }) {
         }
         return React.cloneElement(game.thumbnail);
     }, [game.thumbnail]);
-
-    if (referenceThumbnailSrc && !referenceFailed) {
-        return (
-            <img
-                src={referenceThumbnailSrc}
-                alt={title}
-                className="absolute inset-0 h-full w-full object-cover"
-                draggable={false}
-                onError={() => setReferenceFailed(true)}
-            />
-        );
-    }
 
     if (manifestThumbnail) {
         return (

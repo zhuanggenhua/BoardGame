@@ -179,6 +179,7 @@ const DEFAULT_DOWNLOAD_TIMEOUT_MS = 60000;
 const DEFAULT_MANIFEST_TIMEOUT_MS = 8000;
 const DEFAULT_APPLY_RELOAD_TIMEOUT_MS = 8000;
 const DEBUG_ANDROID_APP_ID_SEGMENTS = new Set(['debug', 'dev', 'test', 'qa']);
+const OTA_VERSION_MARKER = '-ota-';
 const HIDDEN_FORCE_UPDATE_STATE: AndroidForceUpdateState = {
     phase: 'hidden',
     blocking: false,
@@ -246,7 +247,24 @@ const normalizeComparableVersion = (value: string) => {
     return main.trim();
 };
 
-const parseVersionParts = (value: string) => normalizeComparableVersion(value)
+const extractBundleBaseVersion = (value: string) => {
+    const normalized = normalizeComparableVersion(value);
+    const otaMarkerIndex = normalized.indexOf(OTA_VERSION_MARKER);
+    return (otaMarkerIndex >= 0 ? normalized.slice(0, otaMarkerIndex) : normalized).trim();
+};
+
+const extractBundleOtaRevision = (value: string) => {
+    const normalized = normalizeComparableVersion(value);
+    const otaMarkerIndex = normalized.indexOf(OTA_VERSION_MARKER);
+    if (otaMarkerIndex < 0) {
+        return null;
+    }
+
+    const revision = normalized.slice(otaMarkerIndex + OTA_VERSION_MARKER.length).trim();
+    return revision || null;
+};
+
+const parseVersionParts = (value: string) => extractBundleBaseVersion(value)
     .split('.')
     .map((part) => {
         const parsed = Number.parseInt(part, 10);
@@ -365,6 +383,27 @@ export const compareVersion = (left: string, right: string) => {
     }
 
     return 0;
+};
+
+export const compareBundleVersion = (left: string, right: string) => {
+    const baseComparison = compareVersion(left, right);
+    if (baseComparison !== 0) {
+        return baseComparison;
+    }
+
+    const leftRevision = extractBundleOtaRevision(left);
+    const rightRevision = extractBundleOtaRevision(right);
+    if (leftRevision === rightRevision) {
+        return 0;
+    }
+    if (leftRevision == null) {
+        return rightRevision == null ? 0 : -1;
+    }
+    if (rightRevision == null) {
+        return 1;
+    }
+
+    return leftRevision > rightRevision ? 1 : -1;
 };
 
 export const readAndroidLiveUpdateConfig = (
@@ -1020,17 +1059,20 @@ export const startAndroidLiveUpdateBackgroundCheck = async (
                     } as const;
                 }
 
-                if (current.bundle.version === manifest.version) {
+                const manifestVsCurrent = compareBundleVersion(manifest.version, current.bundle.version);
+                if (manifestVsCurrent <= 0) {
                     if (applyMode === 'immediate') {
                         clearImmediateActivityPhase();
                     }
                     emitCriticalOtaLog('already-up-to-date', {
                         currentVersion: current.bundle.version,
                         manifestVersion: manifest.version,
+                        comparison: manifestVsCurrent,
                     });
                     logMobileRuntime('OTA', 'already-up-to-date', {
                         currentVersion: current.bundle.version,
                         manifestVersion: manifest.version,
+                        comparison: manifestVsCurrent,
                     });
                     emitForceState(onForceStateChange, HIDDEN_FORCE_UPDATE_STATE);
                     return { status: 'up-to-date' } as const;

@@ -258,6 +258,8 @@ GitHub Actions 自动化：
 约束：
 
 - `--dry-run` 只本地打 zip 和 manifest，不上传
+- Android native embedded APK 也必须遵守“轻包体”约束：只允许内置壳运行必需的 H5 bundle 与轻量静态文件，`public/assets/common/audio/**` 这类运行时大资源必须继续走 R2 / 游戏包链路。
+- `scripts/mobile/android.mjs` 会在 Android embedded 构建阶段主动裁掉 `dist/assets/common/audio/**`，并在 `dist/` 或 `android/app/src/main/assets/public/` 里仍检测到这些前缀时直接失败，禁止再把公共音频打进 APK。
 - `--skip-latest` 会上传 bundle 与版本 manifest，但不会切换该 channel 的 `latest.json`
 - 正式覆盖 `latest.json` 后，指向该 channel 的 Android App 会在下一次启动后的后台检查中感知到新 bundle，并在切后台或重启后生效
 - OTA 只覆盖 Web bundle；涉及原生层改动时仍必须重新发 APK / AAB

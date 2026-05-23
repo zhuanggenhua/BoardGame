@@ -15,15 +15,14 @@ The system SHALL let a seated player send a whitelisted emote to the current mat
 - **AND** no `matchEmote:show` event is emitted
 
 ### Requirement: Emote Whitelist and Scope
-The system SHALL only allow enabled emotes from the catalog, scoped by common availability or the current game.
+The system SHALL only allow enabled emotes from the catalog. The current shipped emote set is globally shared across games unless a future catalog entry is explicitly scoped to a game.
 
-#### Scenario: Game-specific emote is available in matching game
-- **WHEN** the current match game id is `dicethrone`
-- **THEN** enabled `gameId=dicethrone` emotes are available in the picker
-- **AND** enabled common emotes are also available
+#### Scenario: Shared emotes are available in every game
+- **WHEN** the current match game id is `dicethrone` or `smashup`
+- **THEN** enabled shared emotes are available in the picker
 
-#### Scenario: Game-specific emote is rejected in another game
-- **WHEN** a player in a non-DiceThrone match sends a DiceThrone-only emote id
+#### Scenario: Unknown emote is rejected
+- **WHEN** a player sends an emote id that is not enabled in the catalog
 - **THEN** the server rejects the emote as invalid for that match
 
 ### Requirement: Emote Rate Limiting

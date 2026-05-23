@@ -4,6 +4,7 @@ type SmashUpPregameStateLike = {
     core?: {
         turnOrder?: Array<string | number>;
         currentPlayerIndex?: number;
+        factionSelection?: unknown;
     };
     sys?: {
         phase?: string;
@@ -20,7 +21,11 @@ export const resolveSmashUpLocalPregameControlledPlayerId: LocalPregameControlRe
     }
 
     const state = args.state as SmashUpPregameStateLike | null | undefined;
-    if (state?.sys?.phase !== 'factionSelect') {
+    const phase = state?.sys?.phase;
+    const hasFactionSelectionState = Boolean(state?.core?.factionSelection);
+    const isFactionDraftActive = phase === 'factionSelect'
+        || ((phase === undefined || phase === null || phase === '') && hasFactionSelectionState);
+    if (!isFactionDraftActive) {
         return null;
     }
 

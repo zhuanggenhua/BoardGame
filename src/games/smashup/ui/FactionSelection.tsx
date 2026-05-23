@@ -234,19 +234,11 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                     isSelectedByMe,
                     isTakenByOther,
                     isImplementationInProgress: isFactionImplementationInProgress(group.groupId),
-                    status,
                     matchesSearch,
                 };
             })
             .filter((group) => group.matchesSearch)
             .sort((left, right) => {
-                const priority = {
-                    selected: 0,
-                    available: 1,
-                    taken: 2,
-                } as const;
-                const diff = priority[left.status] - priority[right.status];
-                if (diff !== 0) return diff;
                 const inProgressDiff = Number(left.isImplementationInProgress) - Number(right.isImplementationInProgress);
                 if (inProgressDiff !== 0) return inProgressDiff;
                 return (factionGroupOrder.get(left.group.groupId) ?? Number.MAX_SAFE_INTEGER)

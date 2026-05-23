@@ -9,8 +9,11 @@ import {
 } from './ota-publish-config.mjs';
 
 const rootDir = process.cwd();
-const OTA_EXCLUDED_PREFIXES = [
+const OTA_BLOCKED_PREFIXES = [
     'assets/i18n/',
+];
+const OTA_OPTIONAL_EXCLUDED_PREFIXES = [
+    'assets/common/audio/',
 ];
 const OTA_ALLOWED_LOCALE_PREFIX = 'locales/zh-CN/';
 const MAX_ANDROID_OTA_ZIP_BYTES = 20 * 1024 * 1024;
@@ -245,23 +248,29 @@ const s3Client = new S3Client({
     },
 });
 
-const shouldIncludeOtaFile = (relativePath) => {
-    if (OTA_EXCLUDED_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
-        return false;
+const classifyOtaFile = (relativePath) => {
+    if (OTA_OPTIONAL_EXCLUDED_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
+        return 'optional-skip';
+    }
+
+    if (OTA_BLOCKED_PREFIXES.some((prefix) => relativePath.startsWith(prefix))) {
+        return 'blocked-skip';
     }
 
     if (relativePath.startsWith('locales/')) {
-        return relativePath.startsWith(OTA_ALLOWED_LOCALE_PREFIX);
+        return relativePath.startsWith(OTA_ALLOWED_LOCALE_PREFIX) ? 'include' : 'blocked-skip';
     }
 
-    return true;
+    return 'include';
 };
 
 const collectFiles = (dirPath, baseDir, entries = {}, stats = {
     includedFiles: 0,
     includedBytes: 0,
-    skippedFiles: 0,
-    skippedBytes: 0,
+    blockedSkippedFiles: 0,
+    blockedSkippedBytes: 0,
+    optionalSkippedFiles: 0,
+    optionalSkippedBytes: 0,
 }) => {
     for (const entry of readdirSync(dirPath, { withFileTypes: true })) {
         const fullPath = path.join(dirPath, entry.name);
@@ -272,9 +281,15 @@ const collectFiles = (dirPath, baseDir, entries = {}, stats = {
 
         const relativePath = path.relative(baseDir, fullPath).replace(/\\/g, '/');
         const fileBuffer = new Uint8Array(readFileSync(fullPath));
-        if (!shouldIncludeOtaFile(relativePath)) {
-            stats.skippedFiles += 1;
-            stats.skippedBytes += fileBuffer.byteLength;
+        const classification = classifyOtaFile(relativePath);
+        if (classification === 'blocked-skip') {
+            stats.blockedSkippedFiles += 1;
+            stats.blockedSkippedBytes += fileBuffer.byteLength;
+            continue;
+        }
+        if (classification === 'optional-skip') {
+            stats.optionalSkippedFiles += 1;
+            stats.optionalSkippedBytes += fileBuffer.byteLength;
             continue;
         }
         entries[relativePath] = fileBuffer;
@@ -289,10 +304,10 @@ const {
     entries: otaEntries,
     stats: otaCollectionStats,
 } = collectFiles(distDir, distDir);
-if (otaCollectionStats.skippedFiles > 0) {
+if (otaCollectionStats.blockedSkippedFiles > 0) {
     throw new Error(
-        `检测到当前 dist 含有不允许进入 OTA 的文件：skippedFiles=${otaCollectionStats.skippedFiles}, `
-        + `skippedBytes=${otaCollectionStats.skippedBytes}。`
+        `检测到当前 dist 含有不允许进入 OTA 的文件：skippedFiles=${otaCollectionStats.blockedSkippedFiles}, `
+        + `skippedBytes=${otaCollectionStats.blockedSkippedBytes}。`
         + ' 这通常说明你没有走 `npm run mobile:android:sync` 这条 Android 专用裁剪链路，'
         + ' 或 dist 混入了 `assets/i18n/**` / 非 `locales/zh-CN/**` 资源。'
         + ' 为避免再次打出整包，发布已强制中止。',
@@ -353,8 +368,10 @@ console.log(`skipLatest=${skipLatest ? 'true' : 'false'}`);
 console.log(`zipBytes=${zipBuffer.length}`);
 console.log(`otaIncludedFiles=${otaCollectionStats.includedFiles}`);
 console.log(`otaIncludedBytes=${otaCollectionStats.includedBytes}`);
-console.log(`otaSkippedFiles=${otaCollectionStats.skippedFiles}`);
-console.log(`otaSkippedBytes=${otaCollectionStats.skippedBytes}`);
+console.log(`otaBlockedSkippedFiles=${otaCollectionStats.blockedSkippedFiles}`);
+console.log(`otaBlockedSkippedBytes=${otaCollectionStats.blockedSkippedBytes}`);
+console.log(`otaOptionalSkippedFiles=${otaCollectionStats.optionalSkippedFiles}`);
+console.log(`otaOptionalSkippedBytes=${otaCollectionStats.optionalSkippedBytes}`);
 console.log(`indexMtime=${distStats.mtime.toISOString()}`);
 console.log(`androidBuildBackendUrl=${androidBuildMeta.backendUrl}`);
 console.log(`androidBuildBuiltAt=${androidBuildMeta.builtAt || '(unknown)'}`);

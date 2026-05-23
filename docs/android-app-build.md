@@ -32,7 +32,8 @@
 
 - `embedded`：默认模式（未显式指定时生效）
   - 将 `dist/` 同步到 `android/app/src/main/assets/public/`
-  - APK 内置完整前端资源
+  - APK 只内置壳运行必需的 H5 bundle 与轻量静态文件
+  - `public/assets/common/audio/**` 这类运行时大资源必须继续走 R2 / 游戏包链路，禁止跟随 embedded 打进 APK
   - 这是当前主线发布方案
 - `remote`：仅在明确指定时启用
   - 通过 `Capacitor server.url` 加载线上页面
@@ -62,6 +63,14 @@ ANDROID_REMOTE_WEB_URL=https://your-domain.com
 - 依据 Capacitor 官方文档，长期更新 Web 内容的主流方向是 **Live Update / Realtime Updates**：原生壳保持不变，按版本下发新的 Web bundle；不涉及原生二进制能力变更时，这类更新是可行的。
 - 仍然需要重新发包的内容包括：原生插件、Java/Kotlin/Swift/Objective-C 代码、权限、Manifest、原生启动逻辑、图标与启动图等二进制侧变更。
 - 结论：文档和实现都应以 `embedded` 为默认，以 OTA/Live Update 作为热更新主线；`remote` 仅保留为兼容/调试路径，不再作为产品默认推荐。
+
+## Embedded 包体门禁
+
+- Android embedded 构建前会先裁剪 `dist/`，至少删除：
+  - `dist/assets/i18n/**`
+  - `dist/assets/common/audio/**`
+- 构建阶段如果检测到 `dist/` 或 `android/app/src/main/assets/public/` 里仍包含 `assets/common/audio/**`，脚本必须直接失败。
+- 这条门禁的本质约束是：**native APK 不得重复内置本应从 R2 / 游戏包下载的运行时大资源**。发现这类资源进入 APK，不是“先发再说”，而是构建链路配置错误。
 
 ## 原生 APK 自更新
 

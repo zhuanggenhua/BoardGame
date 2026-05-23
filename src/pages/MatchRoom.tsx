@@ -411,6 +411,38 @@ function resolveManualSetupSelectionId(args: {
     return typeof args.payload.factionId === 'string' ? args.payload.factionId : null;
 }
 
+export function shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt(actionKind: string): boolean {
+    return isManualSetupSelectionActionKind(actionKind);
+}
+
+export function resolveManualSetupAttemptReleaseSource(args: {
+    sharedState: MatchState<unknown> | null | undefined;
+    seatState: MatchState<unknown> | null | undefined;
+    playerId: string;
+    actionKind: ManualSetupSelectionActionKind;
+    selectionId: string | null | undefined;
+}): 'shared' | 'seat' | null {
+    if (shouldReleaseManualSetupAttemptFromSharedState({
+        sharedState: args.sharedState,
+        playerId: args.playerId,
+        actionKind: args.actionKind,
+        selectionId: args.selectionId,
+    })) {
+        return 'shared';
+    }
+
+    if (shouldReleaseManualSetupAttemptFromSharedState({
+        sharedState: args.seatState,
+        playerId: args.playerId,
+        actionKind: args.actionKind,
+        selectionId: args.selectionId,
+    })) {
+        return 'seat';
+    }
+
+    return null;
+}
+
 type OnlineAiDebugWindow = Window & {
     __BG_ONLINE_AI_DEBUG__?: {
         getSeatLatestState: (playerId: string) => MatchState<unknown> | null;
@@ -1103,16 +1135,20 @@ const OnlineAiSeatBridge = ({
         const runAiTurn = async () => {
             const activeAttempt = activeAiAttemptRef.current;
             if (activeAttempt) {
-                const sharedSelectionConfirmed = isManualSetupSelectionActionKind(activeAttempt.actionKind)
-                    && shouldReleaseManualSetupAttemptFromSharedState({
+                const releaseSource = isManualSetupSelectionActionKind(activeAttempt.actionKind)
+                    ? resolveManualSetupAttemptReleaseSource({
                         sharedState: state as MatchState<unknown>,
+                        seatState: getEffectiveSeatState(activeAttempt.playerId),
                         playerId: activeAttempt.playerId,
                         actionKind: activeAttempt.actionKind,
                         selectionId: activeAttempt.pendingSelectionId,
-                    });
-                if (sharedSelectionConfirmed) {
+                    })
+                    : null;
+                if (releaseSource) {
                     aiSeatDecisionDebugRef.current[activeAttempt.playerId] = {
-                        stage: 'shared-faction-select-confirmed',
+                        stage: releaseSource === 'shared'
+                            ? 'shared-faction-select-confirmed'
+                            : 'seat-faction-select-confirmed',
                         attemptKey: activeAttempt.attemptKey,
                         selectionId: activeAttempt.pendingSelectionId,
                         updatedAt: Date.now(),
@@ -1739,6 +1775,32 @@ const OnlineAiSeatBridge = ({
                                 commandTypes,
                             },
                         });
+                    }
+                    if (shouldAwaitSharedStateBeforeRetryingOnlineAiAttempt(resolution.action.kind)) {
+                        const releaseSource = isManualSetupSelectionActionKind(resolution.action.kind)
+                            ? resolveManualSetupAttemptReleaseSource({
+                                sharedState: state as MatchState<unknown>,
+                                seatState: confirmedSeatState,
+                                playerId: resolution.playerId,
+                                actionKind: resolution.action.kind,
+                                selectionId: resolveManualSetupSelectionId({
+                                    actionKind: resolution.action.kind,
+                                    payload: resolution.action.commands[0]?.payload,
+                                }),
+                            })
+                            : null;
+                        if (!releaseSource) {
+                            return;
+                        }
+                        aiSeatDecisionDebugRef.current[resolution.playerId] = {
+                            stage: releaseSource === 'shared'
+                                ? 'shared-faction-select-confirmed'
+                                : 'seat-faction-select-confirmed',
+                            source: resolution.source,
+                            actionKind: resolution.action.kind,
+                            commandTypes,
+                            updatedAt: Date.now(),
+                        };
                     }
                     finalizeOnlineAiResolutionConfirmation({
                         lastAiAttemptKeyRef,

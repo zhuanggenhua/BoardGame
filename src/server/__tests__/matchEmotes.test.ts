@@ -16,7 +16,7 @@ const metadata = (gameName = 'dicethrone'): MatchEmoteMetadata => ({
 });
 
 describe('match emote decisions', () => {
-    it('allows an occupied player to send a game-scoped emote', () => {
+    it('allows an occupied player to send a whitelisted emote', () => {
         const decision = resolveMatchEmoteSendDecision({
             matchId: 'match-1',
             playerId: '0',
@@ -47,7 +47,7 @@ describe('match emote decisions', () => {
         });
     });
 
-    it('rejects unknown emotes and emotes scoped to a different game', () => {
+    it('rejects unknown emotes but allows the shared catalog across games', () => {
         expect(resolveMatchEmoteSendDecision({
             matchId: 'match-1',
             playerId: '0',
@@ -62,7 +62,7 @@ describe('match emote decisions', () => {
             emoteId: 'dicethrone.moon-elf.speechless-facepalm',
             metadata: metadata('smashup'),
             now: 10_000,
-        })).toEqual({ ok: false, reason: 'invalid_emote' });
+        })).toMatchObject({ ok: true, gameId: 'smashup' });
     });
 
     it('rejects unjoined and malformed send payloads before game validation', () => {

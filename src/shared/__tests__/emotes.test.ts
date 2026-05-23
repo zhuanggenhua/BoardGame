@@ -6,20 +6,28 @@ import {
 } from '../emotes';
 
 describe('emote catalog', () => {
-    it('exposes the DiceThrone Moon Elf emote for DiceThrone matches', () => {
-        const emotes = getAvailableEmotesForGame('dicethrone');
+    it('exposes the current shared emotes in every game picker', () => {
+        const diceThroneEmotes = getAvailableEmotesForGame('dicethrone');
+        const smashupEmotes = getAvailableEmotesForGame('smashup');
 
-        expect(emotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.speechless-facepalm');
+        expect(diceThroneEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.speechless-facepalm');
+        expect(smashupEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.speechless-facepalm');
         expect(getEmoteById('dicethrone.moon-elf.speechless-facepalm')?.assetPath)
             .toBe('dicethrone/emotes/moon-elf/speechless-facepalm-chibi-v1');
-        expect(emotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.smug-v1');
+        expect(diceThroneEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.smug-v1');
+        expect(smashupEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.smug-v1');
         expect(getEmoteById('dicethrone.moon-elf.smug-v1')?.assetPath)
             .toBe('dicethrone/emotes/moon-elf/smug-v1');
+        expect(diceThroneEmotes.map((emote) => emote.id)).toContain('dicethrone.barbarian.thumbs-up-v1');
+        expect(smashupEmotes.map((emote) => emote.id)).toContain('dicethrone.barbarian.thumbs-up-v1');
+        expect(getEmoteById('dicethrone.barbarian.thumbs-up-v1')?.assetPath)
+            .toBe('dicethrone/emotes/barbarian/thumbs-up-v1');
     });
 
-    it('rejects game-scoped emotes for other games and unknown ids', () => {
-        expect(isEmoteAllowedForGame('dicethrone.moon-elf.speechless-facepalm', 'smashup')).toBe(false);
-        expect(isEmoteAllowedForGame('dicethrone.moon-elf.smug-v1', 'smashup')).toBe(false);
+    it('allows current shared emotes across games and still rejects unknown ids', () => {
+        expect(isEmoteAllowedForGame('dicethrone.moon-elf.speechless-facepalm', 'smashup')).toBe(true);
+        expect(isEmoteAllowedForGame('dicethrone.moon-elf.smug-v1', 'smashup')).toBe(true);
+        expect(isEmoteAllowedForGame('dicethrone.barbarian.thumbs-up-v1', 'smashup')).toBe(true);
         expect(isEmoteAllowedForGame('unknown.emote', 'dicethrone')).toBe(false);
     });
 });
