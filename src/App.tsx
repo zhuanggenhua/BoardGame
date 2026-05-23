@@ -24,6 +24,7 @@ import { GamePageRescueGate } from './components/system/GamePageRescueGate';
 import { LoadingScreen } from './components/system/LoadingScreen';
 import { TextEntryAutoScrollAgent } from './components/system/TextEntryAutoScrollAgent';
 import { MobileTextEntryProxyLayer } from './components/system/MobileTextEntryProxyLayer';
+import { PcWebMascot } from './components/system/PcWebMascot';
 import { InteractionGuardProvider } from './components/game/framework/InteractionGuard';
 import AdminGuard from './components/auth/AdminGuard';
 import { MobileOrientationGuard } from './components/common/MobileOrientationGuard';
@@ -257,6 +258,7 @@ const AppContent = () => {
                     <Toaster />
                     {isNativeAndroid ? <AndroidNativeUpdateManager /> : null}
                     {isNativeAndroid ? <AndroidLiveUpdateManager /> : null}
+                    <PcWebMascot />
                     <EngineNotificationListener />
                     <GamePageRescueGate />
                 </MobileOrientationGuard>

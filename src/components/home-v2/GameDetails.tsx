@@ -15,7 +15,11 @@ import {
     persistMatchCredentials,
     setOwnerActiveMatch,
 } from '../../hooks/match/useMatchStatus';
-import { readLocalMatchPreferences, writeLocalMatchPreferences } from '../../engine/ai/localMatchPreferences';
+import {
+    readLocalMatchPreferences,
+    stripAiSeatsFromLocalMatchPreferences,
+    writeLocalMatchPreferences,
+} from '../../engine/ai/localMatchPreferences';
 import * as matchApi from '../../services/matchApi';
 import { fetchReviews, fetchReviewStats, type Review, type ReviewStats } from '../../api/review';
 import { GAME_CHANGELOG_API_URL, GAME_SERVER_URL } from '../../config/server';
@@ -1008,7 +1012,7 @@ export const Right = ({ game }: RightProps) => {
             if (!i18n.hasLoadedNamespace(namespace)) {
                 await i18n.loadNamespaces(namespace);
             }
-            setInitialCreateRoomPreferences(readLocalMatchPreferences(game));
+            setInitialCreateRoomPreferences(stripAiSeatsFromLocalMatchPreferences(readLocalMatchPreferences(game)));
             setShowCreateRoomModal(true);
         } finally {
             setIsPreparingCreateRoom(false);
@@ -1028,11 +1032,11 @@ export const Right = ({ game }: RightProps) => {
         createRoomInFlightRef.current = true;
         setIsLoading(true);
         try {
-            writeLocalMatchPreferences(game, {
+            writeLocalMatchPreferences(game, stripAiSeatsFromLocalMatchPreferences({
                 numPlayers: config.numPlayers,
                 seatControllers: config.seatControllers,
                 setupSelections: config.setupSelections,
-            });
+            }));
 
             const setupSelections = Object.fromEntries(
                 Object.entries(config.setupSelections ?? {}).map(([key, value]) => [key, Array.isArray(value) ? [...value] : value]),

@@ -114,11 +114,12 @@ describe('androidLiveUpdates', () => {
             json: async () => ({
                 version: '0.5.1',
                 url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.1.apk',
+                checksum: 'abc123',
             }),
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.1.apk',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.1.apk?v=abc123',
             source: 'manifest',
         });
     });
@@ -134,7 +135,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk?v=0.5.62',
             source: 'versioned',
         });
     });
@@ -146,11 +147,12 @@ describe('androidLiveUpdates', () => {
             json: async () => ({
                 version: '0.5.2',
                 url: String(input).replace('latest.json', 'packages/0.5.2.apk'),
+                publishedAt: '2026-05-23T02:00:05.837Z',
             }),
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.2.apk',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.2.apk?v=2026-05-23T02%3A00%3A05.837Z',
             source: 'manifest',
         });
     });
@@ -165,7 +167,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk?v=0.5.62',
             source: 'versioned',
         });
     });
@@ -178,7 +180,7 @@ describe('androidLiveUpdates', () => {
         } as Response)));
 
         expect(result).toEqual({
-            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk',
+            url: 'https://assets.easyboardgame.top/official/native-app-updates/android/stable/packages/0.5.62.apk?v=0.5.62',
             source: 'versioned',
         });
     });

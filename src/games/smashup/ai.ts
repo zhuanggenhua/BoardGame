@@ -1296,6 +1296,7 @@ const buildFactionSelectActions = (state: SmashUpState, playerId: PlayerId): AiL
             }],
             metadata: {
                 factionId,
+                visibleStepDelayPolicy: 'hidden',
             },
         });
     }

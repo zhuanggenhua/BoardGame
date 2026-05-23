@@ -11,6 +11,7 @@ import { postProcessSystemEvents } from '../domain';
 import { smashUpFlowHooks } from '../domain/index';
 import { createFlowSystem, createBaseSystems, createInitialSystemState } from '../../../engine';
 import { resolveNextLocalAiAction } from '../../../engine/ai';
+import { resolveLocalAiActionVisibility } from '../../../engine/ai/actionVisibility';
 import { resolveAiDifficultyProfile } from '../../../engine/ai/difficulty';
 import { createSimpleChoice, INTERACTION_EVENTS } from '../../../engine/systems/InteractionSystem';
 import { executePipeline } from '../../../engine/pipeline';
@@ -1734,6 +1735,21 @@ describe('smashup', () => {
         expect(currentPlayerActions.length).toBeGreaterThan(10);
         expect(currentPlayerActions.every((action) => action.kind === 'select-faction')).toBe(true);
         expect(waitingPlayerActions).toHaveLength(0);
+    });
+
+    it('Smash Up AI 的 select-faction 应走隐式交互，不吃 visible delay', () => {
+        const runner = createRunner(['0', '1', '2', '3']);
+        const result = runner.run({ name: '四人 setup', commands: [] });
+
+        const currentPlayerActions = buildSmashUpAiLegalActions({
+            playerId: '0',
+            state: result.finalState,
+        });
+
+        expect(currentPlayerActions.length).toBeGreaterThan(0);
+        expect(
+            currentPlayerActions.every((action) => resolveLocalAiActionVisibility(action, smashUpAiRuntime) === 'hidden'),
+        ).toBe(true);
     });
 
     it('Smash Up AI 选派系会避开已被拿走的派系', () => {

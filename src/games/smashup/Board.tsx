@@ -2769,6 +2769,7 @@ const SmashUpBoard: FC<Props> = ({ G, dispatch, playerID: rawPlayerID, reset, ma
                                                     className={`flex flex-col items-center relative group ${isCurrent ? 'scale-110' : 'opacity-60 grayscale'}`}
                                                     animate={isCurrent ? { scale: 1.1 } : { scale: 1 }}
                                                     transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                                                    data-player-seat-anchor={pid}
                                                     onMouseEnter={() => {
                                                         // 悬浮在对手区域时显示眼睛图标
                                                     }}

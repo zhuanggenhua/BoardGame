@@ -33,6 +33,7 @@ import { ensureGameCriticalImageResolverLoaded, hasGameTutorialLoader, prefetchG
 import {
     normalizeLocalMatchPreferences,
     readStoredLocalMatchPreferences,
+    stripAiSeatsFromLocalMatchPreferences,
     writeLocalMatchPreferences,
     type LocalMatchPreferences,
 } from '../../engine/ai';
@@ -684,39 +685,35 @@ export const GameDetailsModal = ({ isOpen, onClose, gameId, titleKey, descriptio
         }
 
         const localFallback = readStoredLocalMatchPreferences(gameManifest);
+        const sanitizedLocalFallback = localFallback
+            ? stripAiSeatsFromLocalMatchPreferences(localFallback)
+            : null;
 
         if (!token) {
-            return localFallback;
+            return sanitizedLocalFallback;
         }
 
         try {
             const result = await getLocalMatchPreferences(token, gameManifest.id);
             if (result.empty || !result.settings) {
-                return localFallback;
+                return sanitizedLocalFallback;
             }
-            return normalizeLocalMatchPreferences(
+            return stripAiSeatsFromLocalMatchPreferences(normalizeLocalMatchPreferences(
                 gameManifest,
                 result.settings as unknown as Record<string, unknown>,
-            );
+            ));
         } catch (error) {
             logger.error('[GameDetailsModal] 读取创建房间 AI 偏好失败，回退到本地设置', {
                 gameId,
                 error: error instanceof Error ? error.message : String(error),
             });
-            return localFallback;
+            return sanitizedLocalFallback;
         }
     };
 
-    const stripAiSeatsFromPreferences = useCallback((preferences: LocalMatchPreferences): LocalMatchPreferences => ({
-        ...preferences,
-        seatControllers: Object.fromEntries(
-            Array.from({ length: preferences.numPlayers }, (_, index) => [String(index), { type: 'human' }]),
-        ),
-    }), []);
-
     const persistCreateRoomPreferences = async (preferences: LocalMatchPreferences) => {
         if (!gameManifest) return;
-        const sanitizedPreferences = stripAiSeatsFromPreferences(preferences);
+        const sanitizedPreferences = stripAiSeatsFromLocalMatchPreferences(preferences);
 
         if (!token) {
             writeLocalMatchPreferences(gameManifest, sanitizedPreferences);

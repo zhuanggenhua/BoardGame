@@ -12784,6 +12784,24 @@
         }
       }
     },
+    "images/mascot/compressed/easyboardgame-kanban-girl": {
+      "variants": {
+        "webp": {
+          "sha256": "87aa2dbaa84f52af85f26362045c54b25cf9c0fc0f23acf8954d79c7ec0f34c3",
+          "bytes": 190484,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "images/mascot/easyboardgame-kanban-girl": {
+      "variants": {
+        "png": {
+          "sha256": "55c290794e0718e72f54875bc2f4e7866f9d3241add2d16a379c3228071884bf",
+          "bytes": 2891751,
+          "mime": "image/png"
+        }
+      }
+    },
     "images/noise": {
       "variants": {
         "svg": {

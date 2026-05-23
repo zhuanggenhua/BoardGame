@@ -26,6 +26,13 @@
 - `npm run mobile:android:build:release`
 - `npm run mobile:android:build:bundle`
 
+补充约束：
+
+- `mobile:android:build:release`、`mobile:android:build:bundle`、`mobile:android:prepare-release` 默认强制正式壳：
+  - `CAPACITOR_APP_ID=top.easyboardgame.app`
+  - `CAPACITOR_APP_NAME=易桌游`
+- `debug / run / sync` 才继续默认使用测试壳；禁止再出现“release 命令打出 易桌游测试 / top.easyboardgame.app.debug”的情况。
+
 ## WebView 模式（强制约定）
 
 通过环境变量 `ANDROID_WEBVIEW_MODE` 控制 Android 壳加载方式：

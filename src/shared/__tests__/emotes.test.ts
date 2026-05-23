@@ -18,6 +18,10 @@ describe('emote catalog', () => {
         expect(smashupEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.smug-v1');
         expect(getEmoteById('dicethrone.moon-elf.smug-v1')?.assetPath)
             .toBe('dicethrone/emotes/moon-elf/smug-v1');
+        expect(diceThroneEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.confused-v1');
+        expect(smashupEmotes.map((emote) => emote.id)).toContain('dicethrone.moon-elf.confused-v1');
+        expect(getEmoteById('dicethrone.moon-elf.confused-v1')?.assetPath)
+            .toBe('dicethrone/emotes/moon-elf/confused-v1');
         expect(diceThroneEmotes.map((emote) => emote.id)).toContain('dicethrone.barbarian.thumbs-up-v1');
         expect(smashupEmotes.map((emote) => emote.id)).toContain('dicethrone.barbarian.thumbs-up-v1');
         expect(getEmoteById('dicethrone.barbarian.thumbs-up-v1')?.assetPath)
@@ -27,6 +31,7 @@ describe('emote catalog', () => {
     it('allows current shared emotes across games and still rejects unknown ids', () => {
         expect(isEmoteAllowedForGame('dicethrone.moon-elf.speechless-facepalm', 'smashup')).toBe(true);
         expect(isEmoteAllowedForGame('dicethrone.moon-elf.smug-v1', 'smashup')).toBe(true);
+        expect(isEmoteAllowedForGame('dicethrone.moon-elf.confused-v1', 'smashup')).toBe(true);
         expect(isEmoteAllowedForGame('dicethrone.barbarian.thumbs-up-v1', 'smashup')).toBe(true);
         expect(isEmoteAllowedForGame('unknown.emote', 'dicethrone')).toBe(false);
     });

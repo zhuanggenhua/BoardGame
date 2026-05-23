@@ -179,14 +179,87 @@
 }
 
 .seat-emote-pop {
-    animation: seat-emote-pop 2200ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
+    animation: seat-emote-pop 3000ms cubic-bezier(0.2, 0.9, 0.2, 1) both;
     transform-origin: 50% 92%;
+}
+
+@keyframes pc-web-mascot-scale {
+    0% {
+        transform: scale(1);
+    }
+    42% {
+        transform: scale(1.065);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.pc-web-mascot {
+    position: fixed;
+    right: clamp(2.75rem, 4vw, 4.75rem);
+    bottom: max(0.75rem, var(--safe-area-bottom));
+    z-index: 3;
+    display: none;
+    width: clamp(8.5rem, 11vw, 12.75rem);
+    max-height: min(44vh, 24rem);
+    pointer-events: none;
+}
+
+.pc-web-mascot__button {
+    display: block;
+    width: 100%;
+    border: 0;
+    padding: 0;
+    background: transparent;
+    filter: drop-shadow(0 1rem 1.4rem rgba(20, 45, 46, 0.2));
+    pointer-events: auto;
+    transform-origin: 70% 92%;
+    transition: filter 180ms ease, transform 180ms ease;
+}
+
+.pc-web-mascot__button:hover {
+    filter: drop-shadow(0 1.2rem 1.7rem rgba(20, 45, 46, 0.26));
+    transform: translateY(-0.1rem) scale(1.015);
+}
+
+.pc-web-mascot__button:active {
+    transform: translateY(0) scale(0.97);
+}
+
+.pc-web-mascot__scale {
+    display: block;
+    transform-origin: 70% 92%;
+    animation: pc-web-mascot-scale 280ms cubic-bezier(0.2, 0.9, 0.25, 1);
+}
+
+.pc-web-mascot__image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: min(44vh, 24rem);
+    object-fit: contain;
+    object-position: bottom right;
+    user-select: none;
+    -webkit-user-drag: none;
+}
+
+@media (min-width: 1024px) {
+    .pc-web-mascot {
+        display: block;
+    }
 }
 
 @media (prefers-reduced-motion: reduce) {
     .seat-emote-pop {
         animation: none;
         opacity: 1;
+    }
+
+    .pc-web-mascot__button,
+    .pc-web-mascot__scale {
+        animation: none;
+        transition: none;
     }
 }
 

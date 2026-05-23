@@ -264,6 +264,23 @@ const buildVersionedAndroidApkUrl = (manifestUrl: string, version: string) => {
     }
 };
 
+const appendDownloadCacheBust = (
+    downloadUrl: string,
+    token: string | undefined,
+) => {
+    if (!isAbsoluteHttpUrl(downloadUrl) || !token?.trim()) {
+        return downloadUrl;
+    }
+
+    try {
+        const parsedUrl = new URL(downloadUrl);
+        parsedUrl.searchParams.set('v', token.trim());
+        return parsedUrl.toString();
+    } catch {
+        return downloadUrl;
+    }
+};
+
 const getNativePlugin = (): NativeAppUpdatePlugin | null => {
     if (nativePluginLoader !== undefined) {
         return nativePluginLoader;
@@ -399,15 +416,16 @@ export const resolveAndroidWebAppDownload = async (
     if (manifestUrl) {
         const manifest = await fetchAndroidNativeUpdateManifest(manifestUrl, fetchImpl);
         if (manifest?.url) {
+            const cacheBustToken = manifest.checksum || manifest.publishedAt || manifest.version;
             return {
-                url: manifest.url,
+                url: appendDownloadCacheBust(manifest.url, cacheBustToken),
                 source: 'manifest',
             };
         }
 
         if (versionedFallbackUrl) {
             return {
-                url: versionedFallbackUrl,
+                url: appendDownloadCacheBust(versionedFallbackUrl, packageJson.version),
                 source: 'versioned',
             };
         }

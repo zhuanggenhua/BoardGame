@@ -99,6 +99,15 @@ export function readLocalMatchPreferences(gameManifest: GameManifestEntry): Loca
         ?? createDefaultLocalMatchPreferences(gameManifest);
 }
 
+export function stripAiSeatsFromLocalMatchPreferences(preferences: LocalMatchPreferences): LocalMatchPreferences {
+    return {
+        ...preferences,
+        seatControllers: Object.fromEntries(
+            Array.from({ length: preferences.numPlayers }, (_, index) => [String(index), { type: 'human' } as AiSeatController]),
+        ),
+    };
+}
+
 export function writeLocalMatchPreferences(gameManifest: GameManifestEntry, preferences: LocalMatchPreferences): void {
     const normalized = normalizeLocalMatchPreferences(gameManifest, preferences as unknown as Record<string, unknown>);
     localStorage.setItem(STORAGE_PREFIX + gameManifest.id, JSON.stringify(normalized));

@@ -36,6 +36,15 @@ export const EMOTE_CATALOG: readonly EmoteDefinition[] = [
         enabled: true,
     },
     {
+        id: 'dicethrone.moon-elf.confused-v1',
+        scope: 'common',
+        characterId: 'moon-elf',
+        emotion: 'confused',
+        label: '疑惑',
+        assetPath: 'dicethrone/emotes/moon-elf/confused-v1',
+        enabled: true,
+    },
+    {
         id: 'dicethrone.barbarian.thumbs-up-v1',
         scope: 'common',
         characterId: 'barbarian',

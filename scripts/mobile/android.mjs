@@ -25,6 +25,8 @@ const gradleWrapper = process.platform === 'win32'
 const defaultAppId = 'top.easyboardgame.app.debug';
 const defaultAppName = '易桌游测试';
 const stableAndroidSourcePackage = 'top.easyboardgame.app';
+const releaseAppId = stableAndroidSourcePackage;
+const releaseAppName = '易桌游';
 const defaultAndroidWebviewMode = 'embedded';
 const supportedAndroidWebviewModes = new Set(['embedded', 'remote']);
 const command = process.argv[2];
@@ -50,7 +52,7 @@ for (const file of envFiles) {
 }
 process.env.VITE_CAPACITOR_APP_ID = process.env.VITE_CAPACITOR_APP_ID?.trim()
     || process.env.CAPACITOR_APP_ID?.trim()
-    || defaultAppId;
+    || '';
 
 const runCommand = (cmd, args, options = {}) => new Promise((resolve, reject) => {
     const child = spawn(cmd, args, {
@@ -443,13 +445,26 @@ const findFirstFile = (dirPath, fileName) => {
 };
 
 const getAppConfig = () => ({
-    appId: process.env.CAPACITOR_APP_ID?.trim() || defaultAppId,
+    appId: process.env.CAPACITOR_APP_ID?.trim()
+        || process.env.VITE_CAPACITOR_APP_ID?.trim()
+        || defaultAppId,
     appName: process.env.CAPACITOR_APP_NAME?.trim() || defaultAppName,
 });
 
 const isNonReleaseAndroidAppId = (appId) => appId
     .split('.')
     .some((segment) => debugAndroidAppIdSegments.has(segment.trim().toLowerCase()));
+
+const applyReleaseShellDefaults = () => {
+    process.env.CAPACITOR_APP_ID = releaseAppId;
+    process.env.VITE_CAPACITOR_APP_ID = releaseAppId;
+    process.env.CAPACITOR_APP_NAME = releaseAppName;
+
+    const { appId, appName } = getAppConfig();
+    if (appId !== releaseAppId || appName !== releaseAppName || isNonReleaseAndroidAppId(appId)) {
+        throw new Error(`release 构建检测到非正式壳配置: appId=${appId}, appName=${appName}`);
+    }
+};
 
 const isAndroidOtaAllowedForApp = () => {
     const { appId } = getAppConfig();
@@ -993,6 +1008,10 @@ const printDoctor = async () => {
 };
 
 const run = async () => {
+    if (new Set(['prepare-release', 'build-release', 'build-bundle']).has(command)) {
+        applyReleaseShellDefaults();
+    }
+
     switch (command) {
         case 'doctor':
             await printDoctor();

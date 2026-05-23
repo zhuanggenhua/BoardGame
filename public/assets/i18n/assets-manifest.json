@@ -3937,11 +3937,29 @@
         }
       }
     },
+    "zh-CN/common/images/mascot/compressed/easyboardgame-kanban-girl": {
+      "variants": {
+        "webp": {
+          "sha256": "87aa2dbaa84f52af85f26362045c54b25cf9c0fc0f23acf8954d79c7ec0f34c3",
+          "bytes": 190484,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/common/images/mascot/easyboardgame-kanban-girl": {
+      "variants": {
+        "png": {
+          "sha256": "55c290794e0718e72f54875bc2f4e7866f9d3241add2d16a379c3228071884bf",
+          "bytes": 2891751,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/emotes/barbarian/compressed/thumbs-up-v1": {
       "variants": {
         "webp": {
-          "sha256": "0a175d39964c550b686d8411b9bb6d8254d9c74f30b27847b60cdde9254efba9",
-          "bytes": 236184,
+          "sha256": "d47f6a1ee96f4cef89756acf5222eded650b98552c1b23eeeb2216b02574834b",
+          "bytes": 226422,
           "mime": "image/webp"
         }
       }
@@ -3949,9 +3967,18 @@
     "zh-CN/dicethrone/emotes/barbarian/thumbs-up-v1": {
       "variants": {
         "png": {
-          "sha256": "5e2e2613f53767d8c583e90e1272510cf17eaf5fbeb6363e4538dc3dff1ba674",
-          "bytes": 2387515,
+          "sha256": "02c8d57acc9a827bacc5403cd12c3f24e1c86efad1dd51436c7bf4c39cb0519c",
+          "bytes": 2192536,
           "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/emotes/moon-elf/compressed/confused-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "3cba8b9d2cb98e5699f6ce7cff43655ec65e47c57bf8a168fd126ffeec00b673",
+          "bytes": 155104,
+          "mime": "image/webp"
         }
       }
     },
@@ -3970,6 +3997,15 @@
           "sha256": "d073e74d3fc9bb0323f637541caf84ff546761ccc1741610069cf32fd00f6a8d",
           "bytes": 114334,
           "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/emotes/moon-elf/confused-v1": {
+      "variants": {
+        "png": {
+          "sha256": "09481fa2eeac157f8604938ff36a6e73856f991611cb077ac87656b9a3ee5ae4",
+          "bytes": 1543390,
+          "mime": "image/png"
         }
       }
     },

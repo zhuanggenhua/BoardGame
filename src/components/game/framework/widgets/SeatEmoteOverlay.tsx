@@ -8,7 +8,7 @@ interface SeatEmoteOverlayProps {
     events: MatchEmoteEvent[];
 }
 
-const EMOTE_LIFETIME_MS = 2200;
+const EMOTE_LIFETIME_MS = 3000;
 const EMOTE_SIZE_PX = 112;
 
 type SeatEmotePosition = {

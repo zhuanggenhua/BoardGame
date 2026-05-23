@@ -316,6 +316,7 @@ export const setupTwoPlayerMatch = async (
     options?: {
         enableE2EDebug?: boolean;
         skipImageGate?: boolean;
+        blockLobbySocket?: boolean;
         contextOptions?: BrowserContextOptions;
     },
 ): Promise<TwoPlayerSetup | null> => {
@@ -331,6 +332,7 @@ export const setupTwoPlayerMatch = async (
     await initContext(hostContext, {
         storageKey: '__smashup_storage_reset',
         skipImageGate: options?.skipImageGate ?? false,
+        blockLobbySocket: options?.blockLobbySocket,
     });
     const hostPage = await hostContext.newPage();
 
@@ -361,6 +363,7 @@ export const setupTwoPlayerMatch = async (
     await initContext(guestContext, {
         storageKey: '__smashup_storage_reset',
         skipImageGate: options?.skipImageGate ?? false,
+        blockLobbySocket: options?.blockLobbySocket,
     });
     const guestPage = await guestContext.newPage();
 
