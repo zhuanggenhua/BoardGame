@@ -459,6 +459,7 @@ type InitContextOptions = {
     storageKey?: string;
     skipTutorial?: boolean;
     skipImageGate?: boolean;
+    blockLobbySocket?: boolean;
     gameServerBaseURL?: string;
     apiServerBaseURL?: string;
     locale?: E2ETestLocale;
@@ -482,7 +483,9 @@ export const initContext = async (
     const resolved = normalizeInitContextOptions(opts);
     await enableTestMode(context); // 启用测试模式
     await blockAudioRequests(context);
-    await blockLobbySocket(context);
+    if (resolved.blockLobbySocket !== false) {
+        await blockLobbySocket(context);
+    }
     await injectDirectGameServerUrl(context, resolved.gameServerBaseURL);
     await injectDirectApiServerUrl(context, resolved.apiServerBaseURL);
     if (resolved.blockCdnAssets === true) {

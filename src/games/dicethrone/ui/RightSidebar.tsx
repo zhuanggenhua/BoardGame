@@ -195,6 +195,7 @@ export const RightSidebar = ({
         <div
             className={sidebarFrameClassName}
             style={{ zIndex: UI_Z_INDEX.hud }}
+            data-player-seat-anchor={rootPlayerId}
         >
             <div className="flex-grow" />
             <div className={`relative w-full flex flex-col items-center ${stackGapClassName}`}>

@@ -31,6 +31,7 @@ import { registerCriticalImageResolver } from '../../core';
 import { smashUpCriticalImageResolver } from './criticalImageResolver';
 import { registerGameAiRuntime } from '../../engine/ai';
 import { smashUpAiRuntime } from './ai';
+import { resolveSmashUpLocalPregameControlledPlayerId } from './localPregameControl';
 import './ui/SmashUpCardRenderer'; // 注册卡牌渲染器
 
 // 注册所有派系能力
@@ -108,8 +109,17 @@ const adapterConfig = {
 // 引擎配置
 export const engineConfig = {
     ...createGameEngine<SmashUpCore, SmashUpCommand, SmashUpEvent>(adapterConfig),
+    resolveLocalPregameControlledPlayerId: resolveSmashUpLocalPregameControlledPlayerId,
     onlineAiRecovery: {
-        allowForceCommandAfterLegalActionExhausted: ({ phase }) => phase === 'scoreBases' || phase === 'endTurn',
+        allowForceCommandAfterLegalActionExhausted: ({ phase, previousCandidate, nextCandidate }) => phase === 'scoreBases'
+            || phase === 'endTurn'
+            || (
+                phase === 'playCards'
+                && previousCandidate.reason === 'active-turn'
+                && previousCandidate.legalActionOnly !== true
+                && nextCandidate.reason === 'active-turn'
+                && nextCandidate.legalActionOnly !== true
+            ),
     },
 };
 registerGameAiRuntime(smashUpAiRuntime);

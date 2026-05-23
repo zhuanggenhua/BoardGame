@@ -201,6 +201,9 @@ export default defineConfig(({ mode }) => {
         || env.BG_DEV_HOT_RELOAD?.trim()
         || '',
     )
+  const disableViteHmr = disableViteWatch
+    || process.env.BG_DEV_DISABLE_HMR === '1'
+    || env.BG_DEV_DISABLE_HMR === '1'
   const cliPort = Number(readCliFlag('port'))
   const cliHost = readCliFlag('host')
   const devPort = Number.isFinite(cliPort) && cliPort > 0
@@ -328,7 +331,7 @@ export default defineConfig(({ mode }) => {
       host: serverHost,
       port: devPort,
       strictPort: true,
-      hmr: disableViteWatch
+      hmr: disableViteHmr
         ? false
         : {
             protocol: 'ws',

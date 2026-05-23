@@ -93,6 +93,7 @@
       "settings": "设置",
       "audio": "音频",
       "chat": "聊天",
+      "emotes": "表情",
       "seatSwap": "换位",
       "actionLog": "行为日志",
       "info": "信息",
@@ -168,6 +169,14 @@
       "readonlyWarning": "观战模式不可发言。",
       "notConnected": "聊天服务未连接，请稍后重试。",
       "connecting": "聊天连接中，请稍后重试。"
+    },
+    "emotes": {
+      "empty": "暂无可用表情",
+      "rateLimited": "表情发送太快了",
+      "invalid": "这个表情暂不可用",
+      "sendFailed": "表情没有发送成功",
+      "notConnected": "表情连接未就绪",
+      "connecting": "正在连接表情频道"
     },
     "fullscreen": {
       "enterFailed": "全屏失败，请检查浏览器权限或系统全屏占用。",

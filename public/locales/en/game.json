@@ -93,6 +93,7 @@
       "settings": "Settings",
       "audio": "Audio",
       "chat": "Chat",
+      "emotes": "Emotes",
       "seatSwap": "Seat Swap",
       "actionLog": "Action Log",
       "info": "Info",
@@ -168,6 +169,14 @@
       "readonlyWarning": "Spectators cannot chat.",
       "notConnected": "Chat service disconnected. Please try again.",
       "connecting": "Connecting to chat. Please try again."
+    },
+    "emotes": {
+      "empty": "No emotes available",
+      "rateLimited": "You're sending emotes too quickly.",
+      "invalid": "This emote is not available.",
+      "sendFailed": "Emote was not sent.",
+      "notConnected": "Emote connection is not ready.",
+      "connecting": "Connecting to emote channel."
     },
     "fullscreen": {
       "enterFailed": "Failed to enter fullscreen. Check browser permissions.",

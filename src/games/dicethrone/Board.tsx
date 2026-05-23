@@ -1782,6 +1782,7 @@ export const DiceThroneBoard: React.FC<DiceThroneBoardProps> = ({ G: rawG, dispa
                     <LeftSidebar
                         currentPhase={currentPhase}
                         viewPlayer={player} // Always show own stats
+                        playerId={rootPid}
                         locale={locale}
                         statusIconAtlas={statusIconAtlas}
                         selfBuffRef={selfBuffRef}

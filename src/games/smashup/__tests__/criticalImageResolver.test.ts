@@ -55,7 +55,7 @@ describe('smashUpCriticalImageResolver', () => {
         );
 
         expect(result.critical).toEqual(ALL_CARD_ATLAS);
-        expect(result.phaseKey).toBe('factionSelect:0:0:dinosaurs,miskatonic_university|1:robots,wizards');
+        expect(result.phaseKey).toBe('factionSelect');
 
         const base1Index = result.warm.indexOf('smashup/base/base1');
         const base4Index = result.warm.indexOf('smashup/base/base4');

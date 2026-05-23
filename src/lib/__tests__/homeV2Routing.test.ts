@@ -23,20 +23,20 @@ describe('homeV2Routing', () => {
         vi.unstubAllEnvs();
     });
 
-    it('Android shell build 默认把根路由切到 Home V2', async () => {
+    it('Android shell build 默认回到经典主页', async () => {
         runtimeState.androidShellBuild = true;
         const { isHomeV2DraftEnabled, resolveHomeEntryStyle } = await import('../homeV2Routing');
 
-        expect(isHomeV2DraftEnabled(new URLSearchParams())).toBe(true);
-        expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('book');
+        expect(isHomeV2DraftEnabled(new URLSearchParams())).toBe(false);
+        expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('classic');
     });
 
-    it('原生 Android runtime 默认把根路由切到 Home V2', async () => {
+    it('原生 Android runtime 默认回到经典主页', async () => {
         runtimeState.nativeAndroid = true;
         const { isHomeV2DraftEnabled, resolveHomeEntryStyle } = await import('../homeV2Routing');
 
-        expect(isHomeV2DraftEnabled(new URLSearchParams())).toBe(true);
-        expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('book');
+        expect(isHomeV2DraftEnabled(new URLSearchParams())).toBe(false);
+        expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('classic');
     });
 
     it('普通网页根路由默认使用经典主页', async () => {
@@ -52,12 +52,29 @@ describe('homeV2Routing', () => {
         expect(resolveHomeEntryStyle(new URLSearchParams('homeStyle=classic'))).toBe('classic');
     });
 
-    it('已保存的经典主页偏好会覆盖 App 默认书本主页', async () => {
+    it('旧的书本偏好会在本次迁移时被重置成经典主页', async () => {
         runtimeState.nativeAndroid = true;
-        window.localStorage.setItem('bg_home_entry_style', 'classic');
+        window.localStorage.setItem('bg_home_entry_style', 'book');
         const { resolveHomeEntryStyle } = await import('../homeV2Routing');
 
         expect(resolveHomeEntryStyle(new URLSearchParams())).toBe('classic');
+        expect(window.localStorage.getItem('bg_home_entry_style')).toBe('classic');
+    });
+
+    it('App 里仍可通过带版本标记的显式查询参数进入书本主页', async () => {
+        runtimeState.nativeAndroid = true;
+        const { isHomeV2DraftEnabled, resolveHomeEntryStyle } = await import('../homeV2Routing');
+
+        expect(isHomeV2DraftEnabled(new URLSearchParams('homeStyle=book&homeStyleVersion=classic-default-v1'))).toBe(true);
+        expect(resolveHomeEntryStyle(new URLSearchParams('homeStyle=book&homeStyleVersion=classic-default-v1'))).toBe('book');
+    });
+
+    it('App 会忽略没有版本标记的旧书本查询参数', async () => {
+        runtimeState.nativeAndroid = true;
+        const { isHomeV2DraftEnabled, resolveHomeEntryStyle } = await import('../homeV2Routing');
+
+        expect(isHomeV2DraftEnabled(new URLSearchParams('homeStyle=book'))).toBe(false);
+        expect(resolveHomeEntryStyle(new URLSearchParams('homeStyle=book'))).toBe('classic');
     });
 
     it('普通网页会忽略旧的书本主页偏好和查询参数', async () => {

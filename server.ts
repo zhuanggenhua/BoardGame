@@ -34,6 +34,12 @@ import {
     planDuplicateOwnerRoomCreate,
 } from './src/server/duplicateOwnerRooms';
 import { applyRematchVoteToggle, resolveRematchPlayerGroups } from './src/server/rematch';
+import {
+    createMatchEmoteRateLimiter,
+    type MatchEmoteRejectReason,
+    resolveMatchEmoteJoinDecision,
+    resolveMatchEmoteSendDecision,
+} from './src/server/matchEmotes';
 import { buildUgcServerGames } from './src/server/ugcRegistration';
 import { GameTransportServer } from './src/engine/transport/server';
 import { getAiSeatIds, resolveSeatPlayerDisplayName } from './src/engine/ai';
@@ -73,6 +79,14 @@ const MATCH_CHAT_EVENTS = {
     SEND: 'matchChat:send',
     MESSAGE: 'matchChat:message',
     HISTORY: 'matchChat:history',
+} as const;
+
+const MATCH_EMOTE_EVENTS = {
+    JOIN: 'matchEmote:join',
+    LEAVE: 'matchEmote:leave',
+    SEND: 'matchEmote:send',
+    SHOW: 'matchEmote:show',
+    ERROR: 'matchEmote:error',
 } as const;
 
 // ============================================================================
@@ -146,6 +160,42 @@ interface ChatHistoryMessage {
     createdAt: string;
 }
 const chatHistoryByMatch = new Map<string, ChatHistoryMessage[]>();
+
+interface MatchEmotePayload {
+    matchId: string;
+    playerId: string;
+    emoteId: string;
+    createdAt: string;
+}
+
+const matchEmoteRateLimiter = createMatchEmoteRateLimiter();
+
+const emitMatchEmoteError = (
+    socket: IOSocket,
+    reason: MatchEmoteRejectReason,
+    ack?: (response: { ok: false; reason: MatchEmoteRejectReason }) => void,
+) => {
+    const response = { ok: false as const, reason };
+    socket.emit(MATCH_EMOTE_EVENTS.ERROR, response);
+    ack?.(response);
+};
+
+const resolvePlayableMatchEmoteContext = async (
+    matchId: string,
+    playerId: string,
+): Promise<{ metadata: MatchMetadata; gameId: string } | { reason: Exclude<MatchEmoteRejectReason, 'missing_payload' | 'invalid_emote' | 'rate_limited' | 'not_joined'> }> => {
+    const result = await storage.fetch(matchId, { metadata: true });
+    const metadata = result.metadata;
+    const decision = resolveMatchEmoteJoinDecision(metadata, playerId);
+    if (!decision.ok) {
+        return { reason: decision.reason };
+    }
+
+    return {
+        metadata,
+        gameId: decision.gameId,
+    };
+};
 
 const LOBBY_ROOM = 'lobby:subscribers';
 const LOBBY_ALL = 'all';
@@ -1824,6 +1874,14 @@ lobbySocketIO.on('connection', (socket) => {
         }
         socket.data.chatMatchId = undefined;
 
+        // 清理局内座位表情订阅
+        const emoteMatchId = socket.data.emoteMatchId as string | undefined;
+        if (emoteMatchId) {
+            socket.leave(`matchemote:${emoteMatchId}`);
+        }
+        socket.data.emoteMatchId = undefined;
+        socket.data.emotePlayerId = undefined;
+
         logger.debug(`[LobbyIO] ${socket.id} 断开连接`);
     });
 
@@ -1976,6 +2034,116 @@ lobbySocketIO.on('connection', (socket) => {
         }
 
         lobbySocketIO.to(`matchchat:${matchId}`).emit(MATCH_CHAT_EVENTS.MESSAGE, message);
+    });
+
+    // ========== 对局座位表情事件处理 ==========
+
+    socket.on(MATCH_EMOTE_EVENTS.JOIN, async (
+        payload?: { matchId?: string; playerId?: string },
+        ack?: (response: { ok: boolean; reason?: MatchEmoteRejectReason }) => void,
+    ) => {
+        const matchId = payload?.matchId?.trim();
+        const playerId = payload?.playerId?.trim();
+        if (!matchId || !playerId) {
+            emitMatchEmoteError(socket, 'missing_payload', ack);
+            return;
+        }
+
+        try {
+            const context = await resolvePlayableMatchEmoteContext(matchId, playerId);
+            if ('reason' in context) {
+                emitMatchEmoteError(socket, context.reason, ack);
+                return;
+            }
+
+            const prevMatchId = socket.data.emoteMatchId as string | undefined;
+            if (prevMatchId && prevMatchId !== matchId) {
+                socket.leave(`matchemote:${prevMatchId}`);
+            }
+
+            socket.data.emoteMatchId = matchId;
+            socket.data.emotePlayerId = playerId;
+            socket.join(`matchemote:${matchId}`);
+            ack?.({ ok: true });
+            logger.info(`[MatchEmote] ${socket.id} 加入对局表情 ${matchId} (玩家 ${playerId})`);
+        } catch (error) {
+            logger.warn('[MatchEmote] 加入表情房间失败', {
+                socketId: socket.id,
+                matchId,
+                playerId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            emitMatchEmoteError(socket, 'match_not_found', ack);
+        }
+    });
+
+    socket.on(MATCH_EMOTE_EVENTS.LEAVE, () => {
+        const matchId = socket.data.emoteMatchId as string | undefined;
+        if (matchId) {
+            socket.leave(`matchemote:${matchId}`);
+        }
+        socket.data.emoteMatchId = undefined;
+        socket.data.emotePlayerId = undefined;
+    });
+
+    socket.on(MATCH_EMOTE_EVENTS.SEND, async (
+        payload?: { emoteId?: string; matchId?: string; playerId?: string },
+        ack?: (response: { ok: boolean; reason?: MatchEmoteRejectReason }) => void,
+    ) => {
+        const matchId = (socket.data.emoteMatchId as string | undefined) ?? payload?.matchId?.trim();
+        const playerId = (socket.data.emotePlayerId as string | undefined) ?? payload?.playerId?.trim();
+        const emoteId = payload?.emoteId?.trim();
+
+        if (!matchId || !playerId) {
+            emitMatchEmoteError(socket, 'not_joined', ack);
+            return;
+        }
+        if (!emoteId) {
+            emitMatchEmoteError(socket, 'missing_payload', ack);
+            return;
+        }
+
+        const now = Date.now();
+        const lastSentAt = matchEmoteRateLimiter.getLastSentAt(matchId, playerId);
+
+        try {
+            const result = await storage.fetch(matchId, { metadata: true });
+            const decision = resolveMatchEmoteSendDecision({
+                matchId,
+                playerId,
+                emoteId,
+                metadata: result.metadata,
+                now,
+                lastSentAt,
+                cooldownMs: matchEmoteRateLimiter.cooldownMs,
+            });
+            if (!decision.ok) {
+                emitMatchEmoteError(socket, decision.reason, ack);
+                return;
+            }
+
+            matchEmoteRateLimiter.markSent(matchId, playerId, now);
+            socket.data.emoteMatchId = matchId;
+            socket.data.emotePlayerId = playerId;
+            socket.join(`matchemote:${matchId}`);
+            const message: MatchEmotePayload = {
+                matchId,
+                playerId,
+                emoteId,
+                createdAt: new Date(now).toISOString(),
+            };
+            lobbySocketIO.to(`matchemote:${matchId}`).emit(MATCH_EMOTE_EVENTS.SHOW, message);
+            ack?.({ ok: true });
+        } catch (error) {
+            logger.warn('[MatchEmote] 发送表情失败', {
+                socketId: socket.id,
+                matchId,
+                playerId,
+                emoteId,
+                error: error instanceof Error ? error.message : String(error),
+            });
+            emitMatchEmoteError(socket, 'match_not_found', ack);
+        }
     });
 });
 

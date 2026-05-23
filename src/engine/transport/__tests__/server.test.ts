@@ -214,12 +214,20 @@ const createEngineConfigWithId = (gameId: string): GameEngineConfig => {
         ...base,
         gameId,
         onlineAiRecovery: {
-            allowForceCommandAfterLegalActionExhausted: ({ phase }) => {
+            allowForceCommandAfterLegalActionExhausted: ({ phase, previousCandidate, nextCandidate }) => {
                 if (gameId === 'dicethrone') {
                     return phase === 'defensiveRoll';
                 }
                 if (gameId === 'smashup') {
-                    return phase === 'scoreBases' || phase === 'endTurn';
+                    return phase === 'scoreBases'
+                        || phase === 'endTurn'
+                        || (
+                            phase === 'playCards'
+                            && previousCandidate.reason === 'active-turn'
+                            && previousCandidate.legalActionOnly !== true
+                            && nextCandidate.reason === 'active-turn'
+                            && nextCandidate.legalActionOnly !== true
+                        );
                 }
                 return false;
             },
@@ -17869,6 +17877,108 @@ describe('GameTransportServer（离座与重连）', () => {
         expect(actionLog.blockerFingerprint).toContain('targetingRoll');
     });
 
+    it('online AI watchdog 在手动代 AI 选派系阶段不应上报 legal_action_unavailable 噪音反馈', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+        const gameId = 'test-watchdog-manual-faction-selection-suppressed';
+
+        aiModule.registerGameAiRuntime({
+            gameId,
+            buildLegalActions: ({ playerId, state }) => {
+                if (playerId !== '1' || state.sys?.phase !== 'factionSelect') {
+                    return [];
+                }
+
+                return [{
+                    actionId: 'select-faction-wizard',
+                    kind: 'select-faction',
+                    label: '选择派系 wizard',
+                    commands: [{ type: 'SELECT_FACTION', payload: { factionId: 'wizard' } }],
+                }];
+            },
+            localPolicies: {
+                manualFactionSelectionPolicy: {
+                    id: 'manualFactionSelectionPolicy',
+                    decide: () => ({
+                        actionId: 'select-faction-wizard',
+                        confidence: 0.99,
+                        reasoningSummary: '存在合法选派系动作，但该 AI 座位开启了手动代选，应交给真人。',
+                    }),
+                },
+            },
+            defaultLocalPolicyId: 'manualFactionSelectionPolicy',
+        });
+
+        await storage.createMatch('match-watchdog-manual-faction-selection-suppressed', {
+            initialState: {
+                G: {
+                    core: {
+                        activePlayerId: '1',
+                        currentPlayerIndex: 1,
+                        turnOrder: ['0', '1'],
+                        hostStarted: false,
+                    },
+                    sys: {
+                        phase: 'factionSelect',
+                        turnNumber: 1,
+                        eventStream: { nextId: 1 },
+                        interaction: {
+                            current: undefined,
+                            queue: [],
+                            isBlocked: false,
+                        },
+                        responseWindow: {
+                            current: undefined,
+                        },
+                    },
+                },
+                _stateID: 0,
+                randomSeed: 'seed',
+                randomCursor: 0,
+            },
+            metadata: createOnlineAiRecoveryMetadata({
+                gameName: gameId,
+                seatControllers: {
+                    '0': { type: 'human' },
+                    '1': { type: 'local-ai', policyId: 'manualFactionSelectionPolicy', manualFactionSelection: true },
+                },
+            }),
+        });
+
+        const server = new GameTransportServer({
+            io: io as unknown as any,
+            storage,
+            games: [createEngineConfigWithId(gameId)],
+            onlineAiRecoveryTickMs: 0,
+            onlineAiRecoveryTimeoutMs: 0,
+            onlineAiRecoveryFailureReportThreshold: 1,
+            onlineAiFeedbackReporter: feedbackReporter,
+        });
+
+        const serverInternal = server as unknown as {
+            loadMatch: (matchID: string) => Promise<any>;
+            runOnlineAiRecoveryTick: () => Promise<void>;
+            executeCommandInternal: (
+                match: any,
+                playerID: string,
+                commandType: string,
+                payload: unknown,
+                options?: { suppressBroadcast?: boolean },
+            ) => Promise<boolean>;
+        };
+
+        await serverInternal.loadMatch('match-watchdog-manual-faction-selection-suppressed');
+        const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal');
+
+        await serverInternal.runOnlineAiRecoveryTick();
+        await serverInternal.runOnlineAiRecoveryTick();
+        await nextTick();
+
+        expect(executeSpy).not.toHaveBeenCalled();
+        expect(feedbackReporter).not.toHaveBeenCalled();
+    });
+
     it('online AI watchdog 在 active-turn-legal-only 的合法动作命令失败时，应上报 legal_action_command_failed 并保留 legal-only blockerFingerprint', async () => {
         const io = new MockIO();
         const storage = new InMemoryStorage();
@@ -20511,6 +20621,124 @@ describe('GameTransportServer（离座与重连）', () => {
             expect(actionLog.blockerFingerprint).toContain('playCards');
             expect(actionLog.blockerFingerprint).toContain('4|playCards|1|0');
             expect(actionLog.trackerKey).toContain('active-turn:4|playCards|1|0');
+        } finally {
+            resolutionSpy.mockRestore();
+        }
+    });
+
+    it('online AI watchdog 在 SmashUp playCards 的合法动作无进展时，应 fallback 到 ADVANCE_PHASE 收口', async () => {
+        const io = new MockIO();
+        const storage = new InMemoryStorage();
+        const feedbackReporter = vi.fn(async () => undefined);
+
+        await storage.createMatch('match-watchdog-smashup-playcards-no-progress-fallback', {
+            initialState: createOnlineAiRecoveryState({
+                activePlayerId: '1',
+                currentPlayerIndex: 1,
+                turnOrder: ['0', '1'],
+                phase: 'playCards',
+                turnNumber: 0,
+                interaction: {
+                    current: undefined,
+                    queue: [],
+                    isBlocked: false,
+                },
+                responseWindow: {
+                    current: undefined,
+                },
+                eventStreamNextId: 118,
+            }),
+            metadata: createOnlineAiRecoveryMetadata({ gameName: 'smashup' }),
+        });
+
+        const resolutionSpy = vi.spyOn(aiModule, 'resolveNextAiDispatch').mockResolvedValue({
+            kind: 'action',
+            resolution: {
+                playerId: '1',
+                attemptKey: 'watchdog-smashup-activate-special-no-progress',
+                source: 'local-ai',
+                action: {
+                    actionId: 'activate-special:c70:2',
+                    kind: 'activate-special',
+                    label: '激活特殊能力 ninja_acolyte',
+                    commands: [{ type: 'su:activate_special', payload: { minionUid: 'c70', baseIndex: 2 } }],
+                },
+            },
+        });
+
+        try {
+            const server = new GameTransportServer({
+                io: io as unknown as any,
+                storage,
+                games: [createEngineConfigWithId('smashup')],
+                onlineAiRecoveryTickMs: 0,
+                onlineAiRecoveryTimeoutMs: 0,
+                onlineAiRecoveryFailureReportThreshold: 1,
+                onlineAiFeedbackReporter: feedbackReporter,
+            });
+
+            const serverInternal = server as unknown as {
+                loadMatch: (matchID: string) => Promise<any>;
+                runOnlineAiRecoveryTick: () => Promise<void>;
+                executeCommandInternal: (
+                    match: any,
+                    playerID: string,
+                    commandType: string,
+                    payload: unknown,
+                    options?: { suppressBroadcast?: boolean },
+                ) => Promise<boolean>;
+            };
+
+            const match = await serverInternal.loadMatch('match-watchdog-smashup-playcards-no-progress-fallback');
+            const executeSpy = vi.spyOn(serverInternal, 'executeCommandInternal').mockImplementation(async (activeMatch, playerID, commandType, payload) => {
+                expect(playerID).toBe('1');
+
+                if (commandType === 'su:activate_special') {
+                    expect(payload).toEqual({ minionUid: 'c70', baseIndex: 2 });
+                    return true;
+                }
+
+                if (commandType === 'ADVANCE_PHASE') {
+                    expect(payload).toEqual({});
+                    activeMatch.state = {
+                        ...activeMatch.state,
+                        core: {
+                            ...activeMatch.state.core,
+                            activePlayerId: '0',
+                            currentPlayerIndex: 0,
+                        },
+                        sys: {
+                            ...activeMatch.state.sys,
+                            turnNumber: 1,
+                            eventStream: {
+                                ...(activeMatch.state.sys?.eventStream ?? {}),
+                                nextId: 119,
+                            },
+                        },
+                    };
+                    return true;
+                }
+
+                throw new Error(`Unexpected command: ${commandType}`);
+            });
+
+            await serverInternal.runOnlineAiRecoveryTick();
+            await serverInternal.runOnlineAiRecoveryTick();
+            await nextTick();
+            await nextTick();
+
+            expect(executeSpy.mock.calls.map(([, , commandType]) => commandType)).toEqual([
+                'su:activate_special',
+                'ADVANCE_PHASE',
+            ]);
+            expect(match.state.core.activePlayerId).toBe('0');
+            expect(match.state.sys.turnNumber).toBe(1);
+            expect(feedbackReporter).toHaveBeenCalledWith(expect.objectContaining({
+                matchId: 'match-watchdog-smashup-playcards-no-progress-fallback',
+                incidentKind: 'force-end-turn-success',
+                status: 'resolved',
+                reason: 'active-turn:follow-up-advance:steps=1',
+            }));
         } finally {
             resolutionSpy.mockRestore();
         }

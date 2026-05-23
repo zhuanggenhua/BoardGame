@@ -39,6 +39,8 @@ public class MainActivity extends BridgeActivity {
     private static final String ORIENTATION_PORTRAIT = "portrait";
     private static final String HOME_STYLE_BOOK = "book";
     private static final String HOME_STYLE_CLASSIC = "classic";
+    private static final String HOME_STYLE_QUERY_VERSION_KEY = "homeStyleVersion";
+    private static final String HOME_STYLE_QUERY_VERSION = "classic-default-v1";
     private static final String CAPGO_NEXT_VERSION_PREF = "nextVersion";
     private static final String CAPGO_FALLBACK_VERSION_PREF = "pastVersion";
     private static final String CAPGO_BUILTIN_BUNDLE_ID = "builtin";
@@ -69,19 +71,17 @@ public class MainActivity extends BridgeActivity {
     private int lastRequestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED;
     private boolean lastNeedsImmersiveWindow = false;
     private boolean orientationPolling = false;
-    private boolean homeV2DraftEnabledByBuild = false;
     private boolean forceBuiltinBundleByBuild = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         WebView.setWebContentsDebuggingEnabled(true);
-        // Android shell root now renders Home V2, so the native shell must start
-        // in the same landscape/immersive contract before the WebView reports a URL.
-        lastRequestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE;
-        lastNeedsImmersiveWindow = true;
+        // App 默认首页已回到经典主页；在 WebView 上报实际 URL 前，先按竖屏非沉浸式启动，
+        // 避免旧的书本首页默认横屏假设把根路由误锁到 landscape。
+        lastRequestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT;
+        lastNeedsImmersiveWindow = false;
         setRequestedOrientation(lastRequestedOrientation);
         gameOrientations.putAll(loadOrientationMap());
-        homeV2DraftEnabledByBuild = loadHomeV2DraftFlag();
         forceBuiltinBundleByBuild = loadForceBuiltinBundleFlag();
         if (forceBuiltinBundleByBuild) {
             forceBuiltinCapgoBundleSelection();
@@ -221,21 +221,7 @@ public class MainActivity extends BridgeActivity {
             return true;
         }
 
-        String explicitFlag = uri.getQueryParameter("homeV2Draft");
-        if (!"1".equals(explicitFlag)) {
-            String fragment = uri.getFragment();
-            if (fragment != null && fragment.contains("homeV2Draft=1")) {
-                explicitFlag = "1";
-            }
-        }
-        if ("1".equals(explicitFlag)) {
-            return true;
-        }
-
-        // In Android shell builds the root route is Home V2 when the packaged
-        // build metadata enables the V2 draft; keep native orientation/immersive
-        // handling in sync with src/lib/homeV2Routing.ts.
-        return homeV2DraftEnabledByBuild;
+        return false;
     }
     private String readHomeEntryStyle(android.net.Uri uri) {
         if (uri == null) {
@@ -243,7 +229,10 @@ public class MainActivity extends BridgeActivity {
         }
 
         String style = uri.getQueryParameter("homeStyle");
-        if (HOME_STYLE_BOOK.equals(style) || HOME_STYLE_CLASSIC.equals(style)) {
+        if (HOME_STYLE_CLASSIC.equals(style)) {
+            return style;
+        }
+        if (HOME_STYLE_BOOK.equals(style) && hasCurrentHomeStyleVersion(uri)) {
             return style;
         }
 
@@ -254,11 +243,21 @@ public class MainActivity extends BridgeActivity {
 
         android.net.Uri fragmentUri = android.net.Uri.parse("https://localhost/?" + fragment);
         String fragmentStyle = fragmentUri.getQueryParameter("homeStyle");
-        if (HOME_STYLE_BOOK.equals(fragmentStyle) || HOME_STYLE_CLASSIC.equals(fragmentStyle)) {
+        if (HOME_STYLE_CLASSIC.equals(fragmentStyle)) {
+            return fragmentStyle;
+        }
+        if (HOME_STYLE_BOOK.equals(fragmentStyle) && hasCurrentHomeStyleVersion(fragmentUri)) {
             return fragmentStyle;
         }
 
         return null;
+    }
+
+    private boolean hasCurrentHomeStyleVersion(android.net.Uri uri) {
+        if (uri == null) {
+            return false;
+        }
+        return HOME_STYLE_QUERY_VERSION.equals(uri.getQueryParameter(HOME_STYLE_QUERY_VERSION_KEY));
     }
     private boolean isHomeEntryRoute(String url) {
         if (url == null || url.isEmpty()) {
@@ -307,16 +306,6 @@ public class MainActivity extends BridgeActivity {
             // Fallback to portrait when the generated map is unavailable.
         }
         return map;
-    }
-
-    private boolean loadHomeV2DraftFlag() {
-        try (InputStream inputStream = getAssets().open(ANDROID_BUILD_META_ASSET)) {
-            String raw = readAll(inputStream);
-            JSONObject json = new JSONObject(raw);
-            return json.optBoolean("homeV2DraftEnabled", false);
-        } catch (IOException | JSONException ignored) {
-            return false;
-        }
     }
 
     private boolean loadForceBuiltinBundleFlag() {

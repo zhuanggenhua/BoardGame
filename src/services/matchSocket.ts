@@ -28,6 +28,14 @@ export const MATCH_CHAT_EVENTS = {
     HISTORY: 'matchChat:history',
 } as const;
 
+export const MATCH_EMOTE_EVENTS = {
+    JOIN: 'matchEmote:join',
+    LEAVE: 'matchEmote:leave',
+    SEND: 'matchEmote:send',
+    SHOW: 'matchEmote:show',
+    ERROR: 'matchEmote:error',
+} as const;
+
 export interface RematchVoteState {
     votes: Record<string, boolean>;
     ready: boolean;
@@ -43,11 +51,28 @@ export interface MatchChatMessage {
     createdAt: string;
 }
 
+export interface MatchEmoteEvent {
+    matchId: string;
+    playerId: string;
+    emoteId: string;
+    createdAt: string;
+}
+
+export type MatchEmoteSendReason =
+    | 'not_connected'
+    | 'not_joined'
+    | 'missing_payload'
+    | 'match_not_found'
+    | 'not_player'
+    | 'invalid_emote'
+    | 'rate_limited';
+
 export type RematchStateCallback = (state: RematchVoteState) => void;
 export type RematchResetCallback = () => void;
 export type NewRoomCallback = (url: string) => void;
 export type MatchChatCallback = (message: MatchChatMessage) => void;
 export type MatchChatHistoryCallback = (history: MatchChatMessage[]) => void;
+export type MatchEmoteCallback = (event: MatchEmoteEvent) => void;
 
 class MatchSocketService {
     private socket: Socket | null = null;
@@ -57,12 +82,15 @@ class MatchSocketService {
     private currentMatchId: string | null = null;
     private currentPlayerId: string | null = null;
     private currentChatMatchId: string | null = null;
+    private currentEmoteMatchId: string | null = null;
+    private currentEmotePlayerId: string | null = null;
     private currentAutoAcceptedPlayerIds: string[] = [];
     private stateCallbacks: Set<RematchStateCallback> = new Set();
     private resetCallbacks: Set<RematchResetCallback> = new Set();
     private newRoomCallbacks: Set<NewRoomCallback> = new Set();
     private chatCallbacks: Set<MatchChatCallback> = new Set();
     private chatHistoryCallbacks: Set<MatchChatHistoryCallback> = new Set();
+    private emoteCallbacks: Set<MatchEmoteCallback> = new Set();
     private currentState: RematchVoteState = { votes: {}, ready: false, revision: 0 };
     private lastAcceptedRevision = 0;
 
@@ -119,6 +147,10 @@ class MatchSocketService {
         this.notifyChatHistoryCallbacks(history);
     };
 
+    private readonly handleEmoteShow = (payload: MatchEmoteEvent) => {
+        this.notifyEmoteCallbacks(payload);
+    };
+
     connect(): void {
         const sharedSocket = this.ensureSocketConnection();
         if (!sharedSocket) {
@@ -165,6 +197,7 @@ class MatchSocketService {
         socket.on(REMATCH_EVENTS.DEBUG_NEW_ROOM, this.handleNewRoom);
         socket.on(MATCH_CHAT_EVENTS.MESSAGE, this.handleChatMessage);
         socket.on(MATCH_CHAT_EVENTS.HISTORY, this.handleChatHistory);
+        socket.on(MATCH_EMOTE_EVENTS.SHOW, this.handleEmoteShow);
         this.boundSocket = socket;
     }
 
@@ -181,6 +214,7 @@ class MatchSocketService {
         this.boundSocket.off(REMATCH_EVENTS.DEBUG_NEW_ROOM, this.handleNewRoom);
         this.boundSocket.off(MATCH_CHAT_EVENTS.MESSAGE, this.handleChatMessage);
         this.boundSocket.off(MATCH_CHAT_EVENTS.HISTORY, this.handleChatHistory);
+        this.boundSocket.off(MATCH_EMOTE_EVENTS.SHOW, this.handleEmoteShow);
         this.boundSocket = null;
     }
 
@@ -196,10 +230,17 @@ class MatchSocketService {
         if (this.currentChatMatchId) {
             this.socket.emit(MATCH_CHAT_EVENTS.JOIN, { matchId: this.currentChatMatchId });
         }
+
+        if (this.currentEmoteMatchId && this.currentEmotePlayerId) {
+            this.socket.emit(MATCH_EMOTE_EVENTS.JOIN, {
+                matchId: this.currentEmoteMatchId,
+                playerId: this.currentEmotePlayerId,
+            });
+        }
     }
 
     private releaseConnectionIfIdle(): void {
-        if (this.currentMatchId || this.currentChatMatchId) {
+        if (this.currentMatchId || this.currentChatMatchId || this.currentEmoteMatchId) {
             return;
         }
 
@@ -256,6 +297,16 @@ class MatchSocketService {
                 callback(history);
             } catch (error) {
                 log.error('chat_history_callback_failed', { error, count: history.length });
+            }
+        });
+    }
+
+    private notifyEmoteCallbacks(event: MatchEmoteEvent): void {
+        this.emoteCallbacks.forEach((callback) => {
+            try {
+                callback(event);
+            } catch (error) {
+                log.error('emote_callback_failed', { error, emoteId: event.emoteId });
             }
         });
     }
@@ -360,6 +411,68 @@ class MatchSocketService {
         return { ok: true };
     }
 
+    joinEmotes(matchId: string, playerId: string): void {
+        if (this.currentEmoteMatchId && this.currentEmoteMatchId !== matchId && this.socket?.connected) {
+            this.socket.emit(MATCH_EMOTE_EVENTS.LEAVE);
+        }
+
+        this.currentEmoteMatchId = matchId;
+        this.currentEmotePlayerId = playerId;
+        const socket = this.ensureSocketConnection();
+        if (!socket?.connected) {
+            this.isConnected = false;
+            this.isConnecting = true;
+            return;
+        }
+
+        this.isConnected = true;
+        this.isConnecting = false;
+        socket.emit(MATCH_EMOTE_EVENTS.JOIN, { matchId, playerId });
+    }
+
+    leaveEmotes(): void {
+        if (this.socket?.connected && this.currentEmoteMatchId) {
+            this.socket.emit(MATCH_EMOTE_EVENTS.LEAVE);
+        }
+
+        this.currentEmoteMatchId = null;
+        this.currentEmotePlayerId = null;
+        this.releaseConnectionIfIdle();
+    }
+
+    sendEmote(
+        emoteId: string,
+        onResult?: (response: { ok: boolean; reason?: MatchEmoteSendReason }) => void,
+    ): { ok: boolean; reason?: MatchEmoteSendReason } {
+        if (!this.socket?.connected) {
+            return { ok: false, reason: 'not_connected' };
+        }
+
+        if (!this.currentEmoteMatchId || !this.currentEmotePlayerId) {
+            return { ok: false, reason: 'not_joined' };
+        }
+
+        this.socket.emit(MATCH_EMOTE_EVENTS.SEND, {
+            emoteId,
+            matchId: this.currentEmoteMatchId,
+            playerId: this.currentEmotePlayerId,
+        }, (response?: { ok?: boolean; reason?: MatchEmoteSendReason }) => {
+            onResult?.({
+                ok: response?.ok !== false,
+                reason: response?.reason,
+            });
+            if (response?.ok === false) {
+                log.warn('emote_send_rejected', {
+                    matchId: this.currentEmoteMatchId,
+                    playerId: this.currentEmotePlayerId,
+                    emoteId,
+                    reason: response.reason,
+                });
+            }
+        });
+        return { ok: true };
+    }
+
     vote(): void {
         if (!this.socket?.connected) {
             log.warn('vote_skipped_not_connected');
@@ -428,6 +541,13 @@ class MatchSocketService {
         };
     }
 
+    subscribeEmote(callback: MatchEmoteCallback): () => void {
+        this.emoteCallbacks.add(callback);
+        return () => {
+            this.emoteCallbacks.delete(callback);
+        };
+    }
+
     getState(): RematchVoteState {
         return this.currentState;
     }
@@ -439,6 +559,7 @@ class MatchSocketService {
     disconnect(): void {
         this.leaveMatch();
         this.leaveChat();
+        this.leaveEmotes();
         this.teardownEventHandlers();
         lobbySocket.releaseConnection('match');
         this.socket = null;
@@ -450,6 +571,7 @@ class MatchSocketService {
         this.newRoomCallbacks.clear();
         this.chatCallbacks.clear();
         this.chatHistoryCallbacks.clear();
+        this.emoteCallbacks.clear();
     }
 }
 

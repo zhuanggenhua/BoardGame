@@ -1727,7 +1727,7 @@ test.describe('Lobby E2E', () => {
         await page.locator('[data-fab-id="settings"]').click();
         await page.locator('[data-fab-id="about"]').click();
 
-        await expect(page.getByRole('heading', { name: '桌游平台', level: 2 })).toBeVisible({ timeout: 10000 });
+        await expect(page.getByRole('heading', { name: '易桌游', level: 2 })).toBeVisible({ timeout: 10000 });
         await expect(page.getByText('如果喜欢这个项目，可以请作者喝杯咖啡。')).toBeVisible();
 
         const wechatQr = page.getByAltText('微信支付二维码');

@@ -153,6 +153,7 @@ export const OpponentHeader = ({
             data-testid={testId}
             data-team-tone={tone}
             data-player-id={playerId}
+            data-player-seat-anchor={playerId}
         >
             {headerError && (
                 <div className="px-[1.2vw] py-[0.4vw] bg-red-600/90 text-white font-bold text-[0.8vw] rounded-full shadow-2xl border border-red-400/50 backdrop-blur-md animate-in slide-in-from-top-4 pointer-events-auto flex items-center gap-[0.35vw]">

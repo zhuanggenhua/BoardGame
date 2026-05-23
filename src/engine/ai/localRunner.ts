@@ -14,7 +14,7 @@ import { createScopedLogger } from '../../lib/logger';
 
 const DEFAULT_REMOTE_AI_TIMEOUT_MS = 3000;
 const FAST_PASS_ACTION_KINDS = new Set(['advance-phase', 'response-pass']);
-const MANUAL_SETUP_SELECTION_ACTION_KINDS = new Set([
+export const MANUAL_SETUP_SELECTION_ACTION_KINDS = new Set([
     'select-faction',
     'setup-select-faction',
     'setup-select-character',
@@ -78,7 +78,7 @@ export interface AiActionResolution {
 
 export type AiDispatchResult = AiActionResolution | AiBlockedResolution | AiIdleResolution;
 
-function shouldPlayerManuallyResolveFactionSelection(
+export function shouldPlayerManuallyResolveFactionSelection(
     seatController: AiSeatController,
     action: AiLegalAction,
 ): boolean {

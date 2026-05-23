@@ -133,6 +133,8 @@ const normalizeOnlineAiWatchdogSeatControllerType = (
     return 'human';
 };
 
+type OnlineAiWatchdogSeatController = aiModule.AiSeatController;
+
 const DEFAULT_TRAINING_CAPTURE_POLICY = 'human-only' as const;
 const DEFAULT_ONLINE_AI_RECOVERY_TICK_MS = 500;
 const DEFAULT_ONLINE_AI_RECOVERY_TIMEOUT_MS = 8000;
@@ -1128,7 +1130,7 @@ export class GameTransportServer {
 
     private async resolveOnlineAiLegalActionOnlyCandidate(
         match: ActiveMatch,
-        seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+        seatControllers: Record<string, OnlineAiWatchdogSeatController>,
     ): Promise<ForceEndTurnStalledAiResolution | null> {
         const currentPlayerId = resolveCurrentPlayerId(match.state);
         if (!currentPlayerId || seatControllers[currentPlayerId]?.type !== 'human') {
@@ -1249,9 +1251,41 @@ export class GameTransportServer {
         };
     }
 
+    private async shouldSuppressOnlineAiWatchdogForManualFactionSelection(
+        match: ActiveMatch,
+        playerId: string,
+        seatControllers: Record<string, OnlineAiWatchdogSeatController>,
+    ): Promise<boolean> {
+        const seatController = seatControllers[playerId];
+        if (!seatController || seatController.type === 'human' || seatController.manualFactionSelection !== true) {
+            return false;
+        }
+
+        const decisionView = resolveOnlineAiDecisionView({
+            runtime: getGameAiRuntime(match.gameId) ?? null,
+            sharedState: match.state,
+            privateOverlay: this.applyPlayerView(match, playerId) as MatchState<unknown>,
+            playerId,
+        });
+        const visibleState = decisionView?.visibleState ?? this.applyPlayerView(match, playerId) as MatchState<unknown>;
+
+        const legalActions = buildAiDecisionContext({
+            gameId: match.engineConfig.gameId,
+            matchId: match.matchID,
+            playerId,
+            visibleState,
+            rulesVersion: this.rulesVersion,
+            decisionBudgetMs: 250,
+            source: 'online',
+        }).legalActions;
+
+        return legalActions.length > 0
+            && legalActions.every((action) => aiModule.shouldPlayerManuallyResolveFactionSelection(seatController, action));
+    }
+
     private async resolveOnlineAiRecoveryCandidate(
         match: ActiveMatch,
-        seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+        seatControllers: Record<string, OnlineAiWatchdogSeatController>,
     ): Promise<ForceEndTurnStalledAiResolution | null> {
         const needsSeatStates = shouldInspectSeatStatesForHiddenAiInteraction(match.state);
         const seatStates: Record<string, MatchState<unknown> | null | undefined> = needsSeatStates
@@ -1270,6 +1304,15 @@ export class GameTransportServer {
         }) ?? await this.resolveOnlineAiLegalActionOnlyCandidate(match, seatControllers);
 
         if (!candidate) {
+            return null;
+        }
+
+        if ((candidate.reason === 'active-turn-legal-only' || candidate.reason === 'seat-legal-only')
+            && await this.shouldSuppressOnlineAiWatchdogForManualFactionSelection(
+                match,
+                candidate.playerId,
+                seatControllers,
+            )) {
             return null;
         }
 
@@ -1389,7 +1432,7 @@ export class GameTransportServer {
                             },
                     ];
                 }),
-            ) as Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>;
+            ) as Record<string, OnlineAiWatchdogSeatController>;
 
             const hasAiSeat = Object.values(seatControllers).some((controller) => controller.type !== 'human');
             if (!hasAiSeat) {
@@ -1449,7 +1492,7 @@ export class GameTransportServer {
         tracker: OnlineAiRecoveryTracker,
         candidate: ForceEndTurnStalledAiResolution,
         progressMarkerBeforeRecovery: string,
-        seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+        seatControllers: Record<string, OnlineAiWatchdogSeatController>,
     ): Promise<void> {
         if (match.executing) {
             tracker.autoSubmittedAt = null;
@@ -1784,25 +1827,41 @@ export class GameTransportServer {
                         return;
                     }
                     const recoveryCommands = currentCandidate.resolution.action.commands;
+                    const currentPhase = typeof match.state.sys?.phase === 'string' ? match.state.sys.phase : '';
+                    const canFallbackToRecoveryCommandAfterActiveTurnNoProgress =
+                        currentCandidate.reason === 'active-turn'
+                        && currentCandidate.legalActionOnly !== true
+                        && actionRecovery.outcome === 'legal-action-command-failed'
+                        && !actionRecovery.failedCommandType
+                        && recoveryCommands.length > 0
+                        && !hasHumanResponderInCurrentWindow()
+                        && match.engineConfig.onlineAiRecovery?.allowForceCommandAfterLegalActionExhausted?.({
+                            state: match.state,
+                            phase: currentPhase,
+                            previousCandidate: currentCandidate,
+                            nextCandidate: currentCandidate,
+                        }) === true;
                     if (actionRecovery.outcome === 'legal-action-command-failed') {
-                        const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
-                        if (!revalidatedCandidate) {
+                        if (!canFallbackToRecoveryCommandAfterActiveTurnNoProgress) {
+                            const revalidatedCandidate = await revalidateRecoveryCandidate(currentCandidate);
+                            if (!revalidatedCandidate) {
+                                return;
+                            }
+                            currentCandidate = revalidatedCandidate;
+                            await this.handleOnlineAiRecoveryFailure(
+                                match,
+                                tracker,
+                                currentCandidate,
+                                phaseLabel,
+                                progressMarkerBeforeRecovery,
+                                formatOnlineAiCommandFailureReason(
+                                    'legal_action_command_failed',
+                                    actionRecovery.failedCommandType,
+                                    actionRecovery.commandFailureReason,
+                                ),
+                            );
                             return;
                         }
-                        currentCandidate = revalidatedCandidate;
-                        await this.handleOnlineAiRecoveryFailure(
-                            match,
-                            tracker,
-                            currentCandidate,
-                            phaseLabel,
-                            progressMarkerBeforeRecovery,
-                            formatOnlineAiCommandFailureReason(
-                                'legal_action_command_failed',
-                                actionRecovery.failedCommandType,
-                                actionRecovery.commandFailureReason,
-                            ),
-                        );
-                        return;
                     }
                     const canFallbackToRecoveryCommandAfterLegalActionAttempt =
                         currentCandidate.allowForceCommandAfterLegalActionExhausted === true
@@ -2563,7 +2622,7 @@ export class GameTransportServer {
     private async hasOnlineAiRecoveryResolved(
         match: ActiveMatch,
         candidate: ForceEndTurnStalledAiResolution,
-        seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+        seatControllers: Record<string, OnlineAiWatchdogSeatController>,
     ): Promise<boolean> {
         if (candidate.legalActionOnly === true) {
             const rawNextCandidate = await this.resolveOnlineAiRecoveryCandidate(match, seatControllers);
@@ -2955,7 +3014,7 @@ export class GameTransportServer {
         match: ActiveMatch,
         candidate: ForceEndTurnStalledAiResolution,
         tracker: OnlineAiRecoveryTracker,
-        seatControllers: Record<string, { type: 'human' | 'local-ai' | 'remote-ai' }>,
+        seatControllers: Record<string, OnlineAiWatchdogSeatController>,
     ): Promise<{
         applied: boolean;
         resolved: boolean;

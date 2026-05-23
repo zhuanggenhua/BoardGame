@@ -1873,9 +1873,15 @@ export function LocalGameProvider({
 export function BoardBridge<TCore = unknown>({
     board: Board,
     loading: Loading,
+    remountKey,
 }: {
     board: React.ComponentType<GameBoardProps<TCore>>;
     loading?: React.ReactNode;
+    /**
+     * 默认按 playerID 重挂载 Board，保留旧行为。
+     * 传入 false 时保持同一个 Board 实例，只通过 props 更新视角。
+     */
+    remountKey?: React.Key | false;
 }) {
     const props = useBoardProps<TCore>();
     
@@ -1885,9 +1891,10 @@ export function BoardBridge<TCore = unknown>({
         return Loading ?? null;
     }
     
-    // 使用 key 强制在 props 变化时重新挂载组件
-    // 这确保了组件状态的清洁重置
-    const stableKey = props.playerID ?? 'board';
+    // 默认使用 playerID 强制重挂载，调用方可在“代选/跟随视角”场景关闭。
+    const stableKey = remountKey === false
+        ? 'board'
+        : remountKey ?? props.playerID ?? 'board';
     
     return (
         <BoardErrorBoundary fallback={Loading}>

@@ -2,6 +2,9 @@ import { isAndroidShellBuildMode, isNativeAndroidRuntime } from './mobile/androi
 
 export const HOME_V2_PREVIEW_PATH = '/dev/home-v2-preview';
 export const HOME_ENTRY_STYLE_STORAGE_KEY = 'bg_home_entry_style';
+export const HOME_ENTRY_STYLE_QUERY_VERSION_KEY = 'homeStyleVersion';
+export const HOME_ENTRY_STYLE_VERSION = 'classic-default-v1';
+const HOME_ENTRY_STYLE_STORAGE_VERSION_KEY = 'bg_home_entry_style_version';
 
 export type HomeEntryStyle = 'book' | 'classic';
 
@@ -19,6 +22,11 @@ function readHomeEntryStyleParam(search: string | URLSearchParams) {
     return normalizeHomeEntryStyle(searchParams.get('homeStyle'));
 }
 
+function hasCurrentHomeEntryStyleVersion(search: string | URLSearchParams) {
+    const searchParams = typeof search === 'string' ? new URLSearchParams(search) : search;
+    return searchParams.get(HOME_ENTRY_STYLE_QUERY_VERSION_KEY) === HOME_ENTRY_STYLE_VERSION;
+}
+
 function readStoredHomeEntryStyle() {
     if (typeof window === 'undefined') {
         return null;
@@ -28,6 +36,24 @@ function readStoredHomeEntryStyle() {
         return normalizeHomeEntryStyle(window.localStorage.getItem(HOME_ENTRY_STYLE_STORAGE_KEY));
     } catch {
         return null;
+    }
+}
+
+function migrateStoredHomeEntryStyleIfNeeded() {
+    if (typeof window === 'undefined') {
+        return false;
+    }
+
+    try {
+        const storedVersion = window.localStorage.getItem(HOME_ENTRY_STYLE_STORAGE_VERSION_KEY);
+        if (storedVersion === HOME_ENTRY_STYLE_VERSION) {
+            return false;
+        }
+        window.localStorage.setItem(HOME_ENTRY_STYLE_STORAGE_KEY, 'classic');
+        window.localStorage.setItem(HOME_ENTRY_STYLE_STORAGE_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
+        return true;
+    } catch {
+        return false;
     }
 }
 
@@ -48,11 +74,16 @@ export function isHomeV2PreviewRoute(pathname: string) {
 
 export function resolveHomeEntryStyle(search: string | URLSearchParams): HomeEntryStyle {
     const canUseBookHome = isHomeV2AppRuntimeEnabled();
+    const migratedStoredStyle = migrateStoredHomeEntryStyleIfNeeded();
+    const hasCurrentQueryVersion = hasCurrentHomeEntryStyleVersion(search);
     const queryStyle = readHomeEntryStyleParam(search);
+    if (migratedStoredStyle) {
+        return 'classic';
+    }
     if (queryStyle === 'classic') {
         return 'classic';
     }
-    if (queryStyle === 'book' && canUseBookHome) {
+    if (queryStyle === 'book' && canUseBookHome && hasCurrentQueryVersion) {
         return 'book';
     }
 
@@ -64,7 +95,7 @@ export function resolveHomeEntryStyle(search: string | URLSearchParams): HomeEnt
         return 'book';
     }
 
-    return canUseBookHome ? 'book' : 'classic';
+    return 'classic';
 }
 
 export function persistHomeEntryStyle(style: HomeEntryStyle) {
@@ -74,6 +105,7 @@ export function persistHomeEntryStyle(style: HomeEntryStyle) {
 
     try {
         window.localStorage.setItem(HOME_ENTRY_STYLE_STORAGE_KEY, style);
+        window.localStorage.setItem(HOME_ENTRY_STYLE_STORAGE_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
     } catch {
         // ignore storage failures
     }
@@ -105,8 +137,7 @@ export function subscribeHomeEntryStyleChange(listener: () => void) {
 }
 
 export function isHomeV2DraftEnabled(search: string | URLSearchParams) {
-    void search;
-    return isHomeV2AppRuntimeEnabled();
+    return isHomeV2AppRuntimeEnabled() && resolveHomeEntryStyle(search) === 'book';
 }
 
 export function isHomeV2DraftRoute(pathname: string, search: string | URLSearchParams) {

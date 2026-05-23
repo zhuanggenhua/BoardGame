@@ -8,7 +8,7 @@
   },
   "scripts": {
     "predev": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs && node scripts/infra/ensure-dev-mongo.mjs",
-    "dev": "cross-env NODE_ENV=development node scripts/infra/dev-orchestrator.js",
+    "dev": "cross-env NODE_ENV=development BG_DEV_DISABLE_HMR=1 node scripts/infra/dev-orchestrator.js",
     "predev:no-hot": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs && node scripts/infra/ensure-dev-mongo.mjs",
     "dev:no-hot": "cross-env NODE_ENV=development BG_DEV_DISABLE_HOT_RELOAD=1 node scripts/infra/dev-orchestrator.js",
     "predev:un": "node scripts/infra/clean_ports.js && node scripts/game/generate_game_manifests.js && node scripts/audio/generate-slim-registry.mjs && node scripts/infra/ensure-dev-mongo.mjs",

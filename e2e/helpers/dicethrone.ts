@@ -238,9 +238,13 @@ export interface DTMultiMatchSetup {
 export const setupDTOnlineMatch = async (
     browser: Browser,
     baseURL: string | undefined,
+    options?: { blockLobbySocket?: boolean },
 ): Promise<DTMatchSetup | null> => {
+    const contextInitOptions = typeof options === 'object' && options !== null
+        ? { blockLobbySocket: options.blockLobbySocket }
+        : {};
     const hostContext = await browser.newContext({ baseURL });
-    await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
+    await initContext(hostContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const hostPage = await hostContext.newPage();
 
     await hostPage.goto('/', { waitUntil: 'domcontentloaded' }).catch(() => {});
@@ -259,7 +263,7 @@ export const setupDTOnlineMatch = async (
     await waitForCharacterSelection(hostPage);
 
     const guestContext = await browser.newContext({ baseURL });
-    await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false });
+    await initContext(guestContext, { storageKey: '__dicethrone_storage_reset', skipTutorial: false, ...contextInitOptions });
     const guestPage = await guestContext.newPage();
 
     // 先导航到首页，确保 guestPage 有正确的 cookie

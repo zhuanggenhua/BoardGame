@@ -528,7 +528,7 @@ function summarizeSeatControllerTypes(seatControllers: Record<string, AiSeatCont
     );
 }
 
-const OnlineManualFactionSelectionBridge = ({
+export const OnlineManualFactionSelectionBridge = ({
     children,
     seatControllers,
     dispatchManualAiCommand,
@@ -574,15 +574,10 @@ const OnlineManualFactionSelectionBridge = ({
         dispatch(type, payload);
     }, [dispatch, seatControllers]);
 
-    if (!shouldTakeOver) {
-        return children;
-    }
-
     return (
         <GameClientOverrideProvider
-            key={manualSetupPlayerId ?? 'manual-setup-host'}
-            playerId={manualSetupPlayerId}
-            dispatch={manualDispatch}
+            playerId={shouldTakeOver ? manualSetupPlayerId : undefined}
+            dispatch={shouldTakeOver ? manualDispatch : undefined}
         >
             {children}
         </GameClientOverrideProvider>
@@ -2717,6 +2712,16 @@ export const MatchRoom = () => {
     // 联机模式仅在首次进入对局时阻塞并显示真实素材进度，首轮完成后恢复后台预加载，
     // 避免后续阶段切换反复盖住棋盘。
     const shouldBlockBoardOnImagePreload = isTutorialRoute || !hasCompletedInitialOnlinePreload;
+    const boardGateRuntimeRef = useRef({
+        isTutorialRoute,
+        locale: i18n.language,
+        shouldBlockBoardOnImagePreload,
+    });
+    boardGateRuntimeRef.current = {
+        isTutorialRoute,
+        locale: i18n.language,
+        shouldBlockBoardOnImagePreload,
+    };
     const WrappedBoard = useMemo<ComponentType<GameBoardProps> | null>(() => {
         if (!gameId || !gameImplReady) return null;
         const impl = getGameImplementation(gameId);
@@ -2726,13 +2731,13 @@ export const MatchRoom = () => {
             <CriticalImageGate
                 gameId={gameId}
                 gameState={props?.G}
-                locale={i18n.language}
+                locale={boardGateRuntimeRef.current.locale}
                 playerID={props?.playerID}
                 enabled={true}
-                blockRendering={shouldBlockBoardOnImagePreload}
+                blockRendering={boardGateRuntimeRef.current.shouldBlockBoardOnImagePreload}
                 loadingDescription={tRef.current('matchRoom.loadingResources')}
                 onReady={() => {
-                    if (!isTutorialRoute) {
+                    if (!boardGateRuntimeRef.current.isTutorialRoute) {
                         setHasCompletedInitialOnlinePreload(true);
                     }
                 }}
@@ -2745,9 +2750,6 @@ export const MatchRoom = () => {
     }, [
         gameId,
         gameImplReady,
-        i18n.language,
-        isTutorialRoute,
-        shouldBlockBoardOnImagePreload,
     ]);
 
     // 从游戏实现中获取引擎配置（教学模式用）
@@ -3837,6 +3839,7 @@ export const MatchRoom = () => {
                                                 >
                                                     <BoardBridge
                                                         board={WrappedBoard}
+                                                        remountKey={false}
                                                         loading={(
                                                             <OnlineRoomConnectionLoading
                                                                 title={tLobby('matchRoom.title.connecting')}

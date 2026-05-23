@@ -17,6 +17,7 @@ import {
     Users,
     ListOrdered,
     ArrowLeftRight,
+    SmilePlus,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUndo, useUndoStatus } from '../../../../contexts/UndoContext';
@@ -28,8 +29,9 @@ import { AboutModal } from '../../../system/AboutModal';
 import { FeedbackModal } from '../../../system/FeedbackModal';
 import { useToast } from '../../../../contexts/ToastContext';
 import { useAuth } from '../../../../contexts/AuthContext';
-import { matchSocket, type MatchChatMessage } from '../../../../services/matchSocket';
+import { matchSocket, type MatchChatMessage, type MatchEmoteEvent } from '../../../../services/matchSocket';
 import { MAX_CHAT_LENGTH, MAX_CHAT_MESSAGES } from '../../../../shared/chat';
+import { getAvailableEmotesForGame } from '../../../../shared/emotes';
 import { useModalStack } from '../../../../contexts/ModalStackContext';
 import { FriendsChatModal } from '../../../social/FriendsChatModal';
 import { useOptionalSocial } from '../../../../contexts/SocialContext';
@@ -41,6 +43,9 @@ import { OpponentOfflineBanner } from './OpponentOfflineBanner';
 import { logger } from '../../../../lib/logger';
 import { useSmashUpOverlay } from '../../../../games/smashup/ui/SmashUpOverlayContext';
 import { isNativeAndroidRuntime } from '../../../../lib/mobile/androidRuntime';
+import { OptimizedImage } from '../../../common/media/OptimizedImage';
+import { EmotePicker } from './EmotePicker';
+import { SeatEmoteOverlay } from './SeatEmoteOverlay';
 
 interface GameHUDProps {
     mode: 'local' | 'online' | 'tutorial' | 'test';
@@ -191,6 +196,8 @@ export const GameHUD = ({
     const [chatMessages, setChatMessages] = useState<MatchChatMessage[]>([]);
     const [chatInput, setChatInput] = useState('');
     const chatEndRef = useRef<HTMLDivElement>(null);
+    const [showChatEmotePicker, setShowChatEmotePicker] = useState(false);
+    const [localChatEmotes, setLocalChatEmotes] = useState<MatchEmoteEvent[]>([]);
     const isChatReadonly = isSpectator;
     const [unreadChatState, setUnreadChatState] = useState<{ matchId?: string; count: number }>({
         matchId,
@@ -199,6 +206,9 @@ export const GameHUD = ({
     const [isChatPanelOpen, setIsChatPanelOpen] = useState(false);
     const isChatPanelOpenRef = useRef(false);
     const unreadChatCount = unreadChatState.matchId === matchId ? unreadChatState.count : 0;
+    const [seatEmoteEvents, setSeatEmoteEvents] = useState<MatchEmoteEvent[]>([]);
+    const availableEmotes = useMemo(() => getAvailableEmotesForGame(_gameId), [_gameId]);
+    const canUseSeatEmotes = isOnline && !isSpectator && !isSetupPhase && !!matchId && !!myPlayerId && availableEmotes.length > 0;
 
     const myDisplayName = useMemo(() => {
         if (user?.username) return user.username;
@@ -312,6 +322,22 @@ export const GameHUD = ({
         };
     }, [incrementUnreadChatCount, isOnline, matchId, isSelfMessage]);
 
+    useEffect(() => {
+        if (!canUseSeatEmotes || !matchId || !myPlayerId) return;
+
+        matchSocket.joinEmotes(matchId, String(myPlayerId));
+        const unsubscribe = matchSocket.subscribeEmote((event) => {
+            if (event.matchId !== matchId) return;
+            if (myPlayerId != null && String(event.playerId) === String(myPlayerId)) return;
+            setSeatEmoteEvents((prev) => [...prev.slice(-19), event]);
+        });
+
+        return () => {
+            unsubscribe();
+            matchSocket.leaveEmotes();
+        };
+    }, [canUseSeatEmotes, matchId, myPlayerId]);
+
     const handleSendMessage = (e: React.FormEvent) => {
         e.preventDefault();
         const trimmed = chatInput.trim();
@@ -364,6 +390,48 @@ export const GameHUD = ({
 
         setChatInput('');
     };
+
+    const handleSendEmote = useCallback((emoteId: string) => {
+        const selfEmoteEvent: MatchEmoteEvent | null = matchId && myPlayerId != null
+            ? {
+                matchId,
+                playerId: String(myPlayerId),
+                emoteId,
+                createdAt: new Date().toISOString(),
+            }
+            : null;
+        const handleRejected = (reason?: string) => {
+            if (selfEmoteEvent) {
+                setLocalChatEmotes((prev) => prev.filter((event) => event.createdAt !== selfEmoteEvent.createdAt));
+            }
+            if (reason === 'rate_limited') {
+                toast.info(t('hud.emotes.rateLimited'));
+            } else if (reason === 'invalid_emote') {
+                toast.warning(t('hud.emotes.invalid'));
+            } else if (reason && reason !== 'not_connected') {
+                toast.info(t('hud.emotes.sendFailed'));
+            }
+        };
+        if (selfEmoteEvent) {
+            setLocalChatEmotes((prev) => [...prev.slice(-9), selfEmoteEvent]);
+            setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
+        }
+        const result = matchSocket.sendEmote(emoteId, (response) => {
+            if (response.ok) return;
+            handleRejected(response.reason);
+        });
+        if (!result.ok) {
+            if (selfEmoteEvent) {
+                setLocalChatEmotes((prev) => prev.filter((event) => event.createdAt !== selfEmoteEvent.createdAt));
+            }
+            if (result.reason === 'not_connected') {
+                toast.error(t('hud.emotes.notConnected'));
+            } else {
+                if (matchId && myPlayerId != null) matchSocket.joinEmotes(matchId, String(myPlayerId));
+                toast.info(t('hud.emotes.connecting'));
+            }
+        }
+    }, [matchId, myPlayerId, t, toast]);
 
     // 全屏状态
     const [isFullscreen, setIsFullscreen] = useState(!!document.fullscreenElement);
@@ -616,9 +684,49 @@ export const GameHUD = ({
                                 </div>
                             </div>
                         ))}
+                        {localChatEmotes.map((event) => {
+                            const emote = availableEmotes.find((item) => item.id === event.emoteId);
+                            if (!emote) return null;
+                            return (
+                                <div key={`${event.playerId}:${event.createdAt}`} className="flex flex-col items-end" data-testid={`hud-chat-local-emote-${event.emoteId}`}>
+                                    <span className="mb-0.5 text-[10px] font-bold text-white/40">{myDisplayName}</span>
+                                    <div className="rounded-lg rounded-tr-none bg-cyan-400/10 p-2">
+                                        <OptimizedImage
+                                            src={emote.assetPath}
+                                            alt={emote.label}
+                                            placeholder={false}
+                                            draggable={false}
+                                            className="h-16 w-16 object-contain drop-shadow-[0_8px_16px_rgba(0,0,0,0.45)]"
+                                        />
+                                    </div>
+                                </div>
+                            );
+                        })}
                         <div ref={chatEndRef} />
                     </div>
+                    {showChatEmotePicker && canUseSeatEmotes && (
+                        <div className="mt-2 rounded-md border border-white/10 bg-white/5 p-2" data-testid="hud-chat-emote-panel">
+                            <EmotePicker
+                                emotes={availableEmotes}
+                                onSelect={(emoteId) => {
+                                    handleSendEmote(emoteId);
+                                    setShowChatEmotePicker(false);
+                                }}
+                            />
+                        </div>
+                    )}
                     <form onSubmit={handleSendMessage} className="shrink-0 mt-2 pt-2 border-t border-white/10 flex items-center gap-2">
+                        {canUseSeatEmotes && (
+                            <button
+                                type="button"
+                                onClick={() => setShowChatEmotePicker((prev) => !prev)}
+                                aria-label={t('hud.actions.emotes')}
+                                className="p-1.5 bg-cyan-500/15 hover:bg-cyan-500/30 text-cyan-200 rounded border border-cyan-300/25 transition-colors"
+                                data-testid="hud-chat-emote-toggle"
+                            >
+                                <SmilePlus size={14} />
+                            </button>
+                        )}
                         <div className="relative flex-1">
                             <input
                                 type="text"
@@ -1089,6 +1197,7 @@ export const GameHUD = ({
                     name={opponentName}
                 />
             )}
+            <SeatEmoteOverlay events={seatEmoteEvents} />
             <FabMenu
                 isDark={true}
                 items={items}

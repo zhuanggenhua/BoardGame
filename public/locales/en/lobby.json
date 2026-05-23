@@ -1,6 +1,6 @@
 {
   "home": {
-    "title": "Board Game Platform",
+    "title": "Yi Board Game",
     "subtitle": "Platform for Tutorials, Online Play, and Prototyping",
     "logoAlt": "Board Game Platform Logo",
     "gameDetailsLoadingEyebrow": "Preparing",
@@ -92,7 +92,7 @@
         "brandFeatureBattleDescription": "Balanced matches decided by skill",
         "brandFeaturePartyTitle": "Play With Friends",
         "brandFeaturePartyDescription": "Team up and enjoy board games together",
-        "brandTitle": "Easy Board Game",
+        "brandTitle": "Yi Board Game",
         "brandSubtitle": "Strategy · Cards · Battles"
       },
       "leaderboard": {

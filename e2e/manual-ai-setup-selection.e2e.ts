@@ -176,6 +176,84 @@ async function expectSmashUpCurrentSeat(page: Page, playerId: string) {
     await expect(page.getByText(/现在轮到你了|Your Turn/i).first()).toBeVisible({ timeout: 10000 });
 }
 
+async function installSmashUpFactionDraftRemountProbe(page: Page) {
+    await page.evaluate(() => {
+        const probeWindow = window as Window & {
+            __BG_SU_FACTION_DRAFT_REMOUNT_PROBE__?: {
+                removals: number;
+                additions: number;
+                observer?: MutationObserver;
+            };
+        };
+        probeWindow.__BG_SU_FACTION_DRAFT_REMOUNT_PROBE__?.observer?.disconnect();
+        const probe = {
+            removals: 0,
+            additions: 0,
+            observer: undefined as MutationObserver | undefined,
+        };
+        const isFactionDraftNode = (node: Node) => {
+            if (node.nodeType !== Node.ELEMENT_NODE) return false;
+            const element = node as Element;
+            return element.matches('[data-tutorial-id="su-faction-select"]')
+                || Boolean(element.querySelector('[data-tutorial-id="su-faction-select"]'));
+        };
+        probe.observer = new MutationObserver((mutations) => {
+            for (const mutation of mutations) {
+                mutation.removedNodes.forEach((node) => {
+                    if (isFactionDraftNode(node)) probe.removals += 1;
+                });
+                mutation.addedNodes.forEach((node) => {
+                    if (isFactionDraftNode(node)) probe.additions += 1;
+                });
+            }
+        });
+        probe.observer.observe(document.body, { childList: true, subtree: true });
+        probeWindow.__BG_SU_FACTION_DRAFT_REMOUNT_PROBE__ = probe;
+    });
+}
+
+async function expectSmashUpFactionDraftNotRemounted(page: Page, label: string) {
+    await expect.poll(async () => page.evaluate(() => {
+        const probe = (window as Window & {
+            __BG_SU_FACTION_DRAFT_REMOUNT_PROBE__?: {
+                removals: number;
+                additions: number;
+            };
+        }).__BG_SU_FACTION_DRAFT_REMOUNT_PROBE__;
+        return {
+            removals: probe?.removals ?? 0,
+            additions: probe?.additions ?? 0,
+        };
+    }), {
+        timeout: 3000,
+        message: `${label} 后 factionSelect 不应被卸载重建`,
+    }).toEqual({ removals: 0, additions: 0 });
+}
+
+async function expectSmashUpSelectionCounts(
+    page: Page,
+    matchId: string,
+    expected: { host: number; ai1: number; ai2: number; ai3: number },
+    label: string,
+) {
+    await expect.poll(async () => {
+        const core = await readLiveCore<{
+            factionSelection?: {
+                playerSelections?: Record<string, string[]>;
+            };
+        }>(matchId, page);
+        return {
+            host: core.factionSelection?.playerSelections?.['0']?.length ?? 0,
+            ai1: core.factionSelection?.playerSelections?.['1']?.length ?? 0,
+            ai2: core.factionSelection?.playerSelections?.['2']?.length ?? 0,
+            ai3: core.factionSelection?.playerSelections?.['3']?.length ?? 0,
+        };
+    }, {
+        timeout: 20000,
+        message: `等待 SmashUp 四人手动代选写回 shared state: ${label}`,
+    }).toEqual(expected);
+}
+
 async function prepareHostContext(args: {
     context: BrowserContext;
     guestId: string;
@@ -259,39 +337,46 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             await waitForOnlineAiSeatBridgeReady(page, '1');
             await waitForOnlineAiSeatBridgeReady(page, '2');
             await waitForOnlineAiSeatBridgeReady(page, '3');
+            await installSmashUpFactionDraftRemountProbe(page);
 
             const draftSequence = ['aliens', 'ninjas', 'robots', 'wizards', 'tricksters', 'zombies', 'dinosaurs', 'pirates'];
             await expectSmashUpCurrentSeat(page, '0');
             await selectSmashUpFactionById(page, draftSequence[0]);
-
-            await expect.poll(async () => {
-                const core = await readLiveCore<{
-                    factionSelection?: {
-                        playerSelections?: Record<string, string[]>;
-                    };
-                }>(matchId, page);
-                return {
-                    host: core.factionSelection?.playerSelections?.['0']?.length ?? 0,
-                    ai1: core.factionSelection?.playerSelections?.['1']?.length ?? 0,
-                    ai2: core.factionSelection?.playerSelections?.['2']?.length ?? 0,
-                    ai3: core.factionSelection?.playerSelections?.['3']?.length ?? 0,
-                };
-            }, {
-                timeout: 20000,
-                message: '等待 SmashUp 四人选派系前半段写回 shared state',
-            }).toEqual({
+            await expectSmashUpSelectionCounts(page, matchId, {
                 host: 1,
                 ai1: 0,
                 ai2: 0,
                 ai3: 0,
-            });
+            }, '第 1 次 host 选择');
+            await expectSmashUpFactionDraftNotRemounted(page, '第 1 次选择');
 
             await expectSmashUpCurrentSeat(page, '1');
             await selectSmashUpFactionById(page, draftSequence[1]);
+            await expectSmashUpSelectionCounts(page, matchId, {
+                host: 1,
+                ai1: 1,
+                ai2: 0,
+                ai3: 0,
+            }, '第 2 次 AI1 选择');
+            await expectSmashUpFactionDraftNotRemounted(page, '第 2 次选择');
             await expectSmashUpCurrentSeat(page, '2');
             await selectSmashUpFactionById(page, draftSequence[2]);
+            await expectSmashUpSelectionCounts(page, matchId, {
+                host: 1,
+                ai1: 1,
+                ai2: 1,
+                ai3: 0,
+            }, '第 3 次 AI2 选择');
+            await expectSmashUpFactionDraftNotRemounted(page, '第 3 次选择');
             await expectSmashUpCurrentSeat(page, '3');
             await selectSmashUpFactionById(page, draftSequence[3]);
+            await expectSmashUpSelectionCounts(page, matchId, {
+                host: 1,
+                ai1: 1,
+                ai2: 1,
+                ai3: 1,
+            }, '第 4 次 AI3 选择');
+            await expectSmashUpFactionDraftNotRemounted(page, '第 4 次选择');
 
             await page.screenshot({
                 path: getEvidenceScreenshotPath(testInfo, 'smashup-manual-ai-mid-draft', {
@@ -301,14 +386,37 @@ test.describe('在线房间手动代 AI 做前置选择', () => {
             });
 
             await expectSmashUpCurrentSeat(page, '3');
-            for (const factionId of draftSequence.slice(4)) {
+            for (const [index, factionId] of draftSequence.slice(4).entries()) {
                 await selectSmashUpFactionById(page, factionId);
                 if (factionId === 'tricksters') {
+                    await expectSmashUpSelectionCounts(page, matchId, {
+                        host: 1,
+                        ai1: 1,
+                        ai2: 1,
+                        ai3: 2,
+                    }, '第 5 次 AI3 第二派系选择');
+                    await expectSmashUpFactionDraftNotRemounted(page, '第 5 次选择');
                     await expectSmashUpCurrentSeat(page, '2');
                 } else if (factionId === 'zombies') {
+                    await expectSmashUpSelectionCounts(page, matchId, {
+                        host: 1,
+                        ai1: 1,
+                        ai2: 2,
+                        ai3: 2,
+                    }, '第 6 次 AI2 第二派系选择');
+                    await expectSmashUpFactionDraftNotRemounted(page, '第 6 次选择');
                     await expectSmashUpCurrentSeat(page, '1');
                 } else if (factionId === 'dinosaurs') {
+                    await expectSmashUpSelectionCounts(page, matchId, {
+                        host: 1,
+                        ai1: 2,
+                        ai2: 2,
+                        ai3: 2,
+                    }, '第 7 次 AI1 第二派系选择');
+                    await expectSmashUpFactionDraftNotRemounted(page, '第 7 次选择');
                     await expectSmashUpCurrentSeat(page, '0');
+                } else if (index !== 3) {
+                    await expectSmashUpFactionDraftNotRemounted(page, `第 ${index + 5} 次选择`);
                 }
             }
 

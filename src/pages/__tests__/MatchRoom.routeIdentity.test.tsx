@@ -1,5 +1,5 @@
 /* @vitest-environment happy-dom */
-import { createElement } from 'react';
+import { createElement, useEffect } from 'react';
 import { act, cleanup, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -10,6 +10,8 @@ async function loadMatchRoomWithOnlineMocks(args?: {
     matchPlayers?: MatchPlayer[];
     matchPlayersRef?: { current: MatchPlayer[] };
     searchParams?: string;
+    gameClientStateRef?: { current: any };
+    resolveCurrentPlayerId?: (state: any) => string | null;
 }) {
     vi.resetModules();
     localStorage.clear();
@@ -89,7 +91,7 @@ async function loadMatchRoomWithOnlineMocks(args?: {
         releaseAiAttemptKeyIfMatches: () => undefined,
         tryReserveAiAttemptKey: () => true,
         useGameClient: () => ({
-            state: { core: {}, sys: {} },
+            state: args?.gameClientStateRef?.current ?? { core: {}, sys: {} },
             playerId: '0',
             dispatch: vi.fn(),
             commandError: null,
@@ -329,7 +331,7 @@ async function loadMatchRoomWithOnlineMocks(args?: {
     vi.doMock('../onlineAiForceSkip', () => ({
         applyAiAutoRecoveryRejection: () => undefined,
         finalizeOnlineAiResolutionConfirmation: () => undefined,
-        resolveCurrentPlayerId: () => '0',
+        resolveCurrentPlayerId: (state: any) => args?.resolveCurrentPlayerId?.(state) ?? '0',
         resolveManualForceEndAiPhase: () => null,
         resolveOnlineAiAutoRecoveryCompletionNotice: () => null,
         resolveForceEndTurnRecoveryStep: () => null,
@@ -368,9 +370,10 @@ async function loadMatchRoomWithOnlineMocks(args?: {
         RematchProvider: ({ children }: any) => createElement('div', null, children),
     }));
 
-    const { MatchRoom } = await import('../MatchRoom');
+    const { MatchRoom, OnlineManualFactionSelectionBridge } = await import('../MatchRoom');
     return {
         MatchRoom,
+        OnlineManualFactionSelectionBridge,
         clearMatchCredentialsSpy,
         gameModeSpy,
         gameProviderSpy,
@@ -565,5 +568,114 @@ describe('MatchRoom route identity integration', () => {
         await waitFor(() => {
             expect(screen.getByTestId('game-provider-probe')).toHaveAttribute('data-player-id', 'null');
         });
+    });
+
+    it('手动代 AI 选派系时，接管座位切换不应重挂载整个对局子树', async () => {
+        const gameClientStateRef = {
+            current: {
+                core: {
+                    hostStarted: false,
+                    factionSelection: {
+                        playerSelections: {
+                            '0': ['aliens'],
+                            '1': [],
+                            '2': [],
+                        },
+                    },
+                },
+                sys: {
+                    phase: 'factionSelect',
+                    currentPlayerId: '0',
+                },
+            },
+        };
+
+        const {
+            OnlineManualFactionSelectionBridge,
+        } = await loadMatchRoomWithOnlineMocks({
+            gameClientStateRef,
+            resolveCurrentPlayerId: (state) => state?.sys?.currentPlayerId ?? null,
+        });
+
+        const mountSpy = vi.fn();
+        const unmountSpy = vi.fn();
+
+        const MountProbe = () => {
+            useEffect(() => {
+                mountSpy();
+                return () => {
+                    unmountSpy();
+                };
+            }, []);
+            return createElement('div', { 'data-testid': 'manual-ai-bridge-child' }, 'bridge-child');
+        };
+
+        const seatControllers = {
+            '0': { type: 'human' },
+            '1': { type: 'local-ai', manualFactionSelection: true },
+            '2': { type: 'local-ai', manualFactionSelection: true },
+        } as const;
+
+        const dispatchManualAiCommand = vi.fn();
+        const { rerender } = render(createElement(
+            OnlineManualFactionSelectionBridge,
+            {
+                seatControllers,
+                dispatchManualAiCommand,
+            },
+            createElement(MountProbe),
+        ));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('manual-ai-bridge-child')).toBeInTheDocument();
+        });
+        expect(mountSpy).toHaveBeenCalledTimes(1);
+        expect(unmountSpy).not.toHaveBeenCalled();
+
+        gameClientStateRef.current = {
+            ...gameClientStateRef.current,
+            sys: {
+                ...gameClientStateRef.current.sys,
+                currentPlayerId: '1',
+            },
+        };
+
+        rerender(createElement(
+            OnlineManualFactionSelectionBridge,
+            {
+                seatControllers,
+                dispatchManualAiCommand,
+            },
+            createElement(MountProbe),
+        ));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('manual-ai-bridge-child')).toBeInTheDocument();
+        });
+        expect(mountSpy).toHaveBeenCalledTimes(1);
+        expect(unmountSpy).not.toHaveBeenCalled();
+
+        gameClientStateRef.current = {
+            ...gameClientStateRef.current,
+            sys: {
+                ...gameClientStateRef.current.sys,
+                currentPlayerId: '2',
+            },
+        };
+
+        rerender(createElement(
+            OnlineManualFactionSelectionBridge,
+            {
+                seatControllers,
+                dispatchManualAiCommand,
+            },
+            createElement(MountProbe),
+        ));
+
+        await waitFor(() => {
+            expect(screen.getByTestId('manual-ai-bridge-child')).toBeInTheDocument();
+        });
+        expect(mountSpy).toHaveBeenCalledTimes(1);
+        expect(unmountSpy).not.toHaveBeenCalled();
     });
 });

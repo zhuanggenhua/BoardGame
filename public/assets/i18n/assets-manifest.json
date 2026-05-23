@@ -3937,6 +3937,42 @@
         }
       }
     },
+    "zh-CN/dicethrone/emotes/moon-elf/compressed/smug-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "140096cf3f4c4ec65a4a7f5fb9a0cffb35b65518ef7c50e9c533b453e5559c2f",
+          "bytes": 133764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/emotes/moon-elf/compressed/speechless-facepalm-chibi-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "d073e74d3fc9bb0323f637541caf84ff546761ccc1741610069cf32fd00f6a8d",
+          "bytes": 114334,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/dicethrone/emotes/moon-elf/smug-v1": {
+      "variants": {
+        "png": {
+          "sha256": "447dc8f87377baf2866771e464c93ce48ea949dbfb21328934d19b51bdaac9a4",
+          "bytes": 1932442,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/dicethrone/emotes/moon-elf/speechless-facepalm-chibi-v1": {
+      "variants": {
+        "png": {
+          "sha256": "0319ca5d1b08e308aace6bb15be9185ed0879677ab2d1dc2b866ccdc28de7ce0",
+          "bytes": 2064233,
+          "mime": "image/png"
+        }
+      }
+    },
     "zh-CN/dicethrone/images/barbarian/compressed/ability-cards": {
       "variants": {
         "webp": {
@@ -6111,6 +6147,24 @@
         "png": {
           "sha256": "ae666d1c8d215b7dc339cdba062dfc1c397d221daa13dcc752e26cc33ef2b334",
           "bytes": 44486175,
+          "mime": "image/png"
+        }
+      }
+    },
+    "zh-CN/smashup/emotes/compressed/smug-v1": {
+      "variants": {
+        "webp": {
+          "sha256": "140096cf3f4c4ec65a4a7f5fb9a0cffb35b65518ef7c50e9c533b453e5559c2f",
+          "bytes": 133764,
+          "mime": "image/webp"
+        }
+      }
+    },
+    "zh-CN/smashup/emotes/smug-v1": {
+      "variants": {
+        "png": {
+          "sha256": "447dc8f87377baf2866771e464c93ce48ea949dbfb21328934d19b51bdaac9a4",
+          "bytes": 1932442,
           "mime": "image/png"
         }
       }

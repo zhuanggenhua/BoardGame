@@ -15,6 +15,7 @@ import { AutoResponseToggle } from './AutoResponseToggle';
 export const LeftSidebar = ({
     currentPhase,
     viewPlayer,
+    playerId,
     locale,
     statusIconAtlas,
     selfBuffRef,
@@ -36,6 +37,7 @@ export const LeftSidebar = ({
 }: {
     currentPhase: TurnPhase;
     viewPlayer: HeroState;
+    playerId?: string;
     locale?: string;
     statusIconAtlas?: StatusAtlases | null;
     selfBuffRef?: RefObject<HTMLDivElement | null>;
@@ -139,7 +141,11 @@ export const LeftSidebar = ({
                         </div>
                     </div>
                 </div>
-                <div className="w-full px-[1vw] pt-[0.3vw]" data-tutorial-id="draw-deck">
+                <div
+                    className="w-full px-[1vw] pt-[0.3vw]"
+                    data-tutorial-id="draw-deck"
+                    data-player-seat-anchor={playerId}
+                >
                     <DrawDeck ref={drawDeckRef} count={viewPlayer.deck.length} locale={locale} />
                 </div>
             </div>
