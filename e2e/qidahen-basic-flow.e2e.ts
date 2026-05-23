@@ -66,7 +66,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-map-hitmap-canvas"]')).toBeVisible();
-        await expect(page.locator('[data-testid="qidahen-map-clean-patch"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-map-region-jinzhou"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-player-float"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-action-wheel"]')).toBeVisible();
@@ -83,7 +82,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-discard-pile"]')).toBeVisible();
         await waitForAtlasFrames(page, '[data-testid^="qidahen-year-card-slot-"] [data-card-atlas-frame], [data-testid^="qidahen-hand-card-"] [data-card-atlas-frame]');
         await waitForImage(page, '[data-testid="qidahen-map-layer"] img[alt="七大恨主地图"]');
-        await waitForImage(page, '[data-testid="qidahen-map-clean-patch"]');
 
         await expect(page.locator('[data-testid="fab-menu"]')).toHaveCount(0);
         await expect(page.locator('[data-testid="qidahen-action-wheel-asset"] svg')).toBeVisible();
@@ -146,7 +144,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-action-wheel-asset"] svg')).toBeVisible();
         await waitForAtlasFrames(page, '[data-testid^="qidahen-year-card-slot-"] [data-card-atlas-frame], [data-testid^="qidahen-hand-card-"] [data-card-atlas-frame]');
         await waitForImage(page, '[data-testid="qidahen-map-layer"] img[alt="七大恨主地图"]');
-        await waitForImage(page, '[data-testid="qidahen-map-clean-patch"]');
         await page.locator('[data-testid="qidahen-wheel-move-target-move-2-one-opponent"]').hover();
         await expect(page.locator('[data-testid="qidahen-wheel-tip"]')).toContainText('一名对手抽 2，走 2');
         await page.locator('[data-testid="qidahen-wheel-move-target-move-3-all-opponents"]').click();
@@ -183,7 +180,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
 
         await expect(page.locator('[data-testid="qidahen-board"]')).toBeVisible({ timeout: 30000 });
         await expect(page.locator('[data-testid="qidahen-map-layer"]')).toBeVisible();
-        await expect(page.locator('[data-testid="qidahen-map-clean-patch"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-player-float"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-action-wheel"]')).toBeVisible();
         await expect(page.locator('[data-testid="qidahen-action-wheel-asset"]')).toBeVisible();
@@ -192,7 +188,6 @@ test.describe('七大恨 Board 地图交互与 HUD 布局', () => {
         await expect(page.locator('[data-testid="qidahen-action-wheel-asset"] svg')).toBeVisible();
         await waitForAtlasFrames(page, '[data-testid^="qidahen-year-card-slot-"] [data-card-atlas-frame], [data-testid^="qidahen-hand-card-"] [data-card-atlas-frame]');
         await waitForImage(page, '[data-testid="qidahen-map-layer"] img[alt="七大恨主地图"]');
-        await waitForImage(page, '[data-testid="qidahen-map-clean-patch"]');
 
         const stageBox = await page.locator('[data-testid="qidahen-desktop-stage"]').boundingBox();
         const drawBox = await page.locator('[data-testid="qidahen-draw-pile"]').boundingBox();

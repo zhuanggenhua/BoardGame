@@ -32,7 +32,6 @@ const STAGE_HEIGHT = 1080;
 
 const ASSETS = {
     mainMap: 'qidahen/board/qidahen-main-map',
-    mapCleanPatch: 'qidahen/board/left-top-clean-patch-v2',
     coverCard: 'qidahen/cards/backs/qidahen-cover-card',
     koreaCard: 'qidahen/cards/backs/korea-card-back',
     mingCard: 'qidahen/cards/backs/ming-card-back',
@@ -73,38 +72,65 @@ const WHEEL_SELECTED_SCALE = 1.145;
 const WHEEL_SELECTED_PUSH = 15;
 
 const UI_STYLE = {
-    paper: '#f6ecd8',
-    paperLight: '#fff8e9',
-    cardField: '#f7ead6',
-    paperDeep: '#e8d6b5',
-    ink: '#2f2419',
-    mutedInk: '#6f5840',
-    bronze: '#8d673c',
-    bronzeSoft: '#c9aa78',
-    bronzeFaint: 'rgba(141,103,60,0.34)',
-    cinnabar: '#b83b27',
-    oldGold: '#b79a65',
+    paper: '#e6d3a8',
+    paperLight: '#f3e7c4',
+    paperWash: 'rgba(244,233,202,0.92)',
+    cardField: '#efe0ba',
+    paperDeep: '#c8ae72',
+    paperEdge: '#9a7d4f',
+    ink: '#2a1f15',
+    mutedInk: '#66503a',
+    bronze: '#5f472d',
+    bronzeSoft: '#a88957',
+    bronzeFaint: 'rgba(95,71,45,0.34)',
+    bronzeDark: '#342417',
+    mapInk: '#20150d',
+    mapInkSoft: 'rgba(32,21,13,0.76)',
+    mapGold: '#d2b775',
+    mapIvory: '#ead7a7',
+    cinnabar: '#9f3426',
+    cinnabarGlow: 'rgba(159,52,38,0.18)',
+    oldGold: '#9f7d42',
     soot: '#1f1812',
-    shadow: 'rgba(67,43,21,0.16)',
-    shadowSoft: 'rgba(67,43,21,0.10)',
+    shadow: 'rgba(56,35,15,0.24)',
+    shadowSoft: 'rgba(56,35,15,0.14)',
 } as const;
 
 const UI_SURFACE = {
-    paper: `linear-gradient(180deg, ${UI_STYLE.paperLight} 0%, ${UI_STYLE.paper} 58%, ${UI_STYLE.paperDeep} 100%)`,
-    paperQuiet: `linear-gradient(180deg, #fffaf0 0%, ${UI_STYLE.paper} 100%)`,
-    paperPressed: `linear-gradient(180deg, ${UI_STYLE.paper} 0%, ${UI_STYLE.paperDeep} 100%)`,
-    panelShadow: `0 6px 0 ${UI_STYLE.shadow}, 0 16px 30px ${UI_STYLE.shadowSoft}`,
-    softShadow: `0 10px 22px ${UI_STYLE.shadowSoft}`,
-    inkInset: `inset 0 0 0 1px rgba(255,248,233,0.78), inset 0 -3px 0 rgba(141,103,60,0.12)`,
+    paper: [
+        `linear-gradient(180deg, rgba(255,247,224,0.95) 0%, ${UI_STYLE.paperWash} 34%, rgba(224,205,158,0.96) 100%)`,
+        'radial-gradient(circle at 20% 18%, rgba(255,251,240,0.48), transparent 34%)',
+        'radial-gradient(circle at 82% 88%, rgba(134,100,55,0.14), transparent 42%)',
+    ].join(', '),
+    paperQuiet: [
+        'linear-gradient(180deg, rgba(248,239,211,0.94) 0%, rgba(230,211,168,0.92) 100%)',
+        'radial-gradient(circle at 18% 16%, rgba(255,250,235,0.45), transparent 34%)',
+    ].join(', '),
+    paperPressed: 'linear-gradient(180deg, rgba(226,205,157,0.98) 0%, rgba(194,167,110,0.98) 100%)',
+    panelShadow: '0 3px 0 rgba(58,37,17,0.24), 0 14px 24px rgba(56,35,15,0.14)',
+    softShadow: '0 8px 18px rgba(56,35,15,0.14)',
+    hardShadow: '0 4px 0 rgba(58,37,17,0.22), 0 12px 20px rgba(58,37,17,0.18)',
+    inkInset: 'inset 0 0 0 1px rgba(255,245,218,0.52), inset 0 -2px 0 rgba(77,56,32,0.12), inset 0 1px 0 rgba(93,67,39,0.08)',
+    inkLine: 'inset 0 0 0 1px rgba(49,35,21,0.18)',
+    mapPanel: [
+        'linear-gradient(180deg, rgba(56,39,24,0.88) 0%, rgba(28,20,13,0.82) 100%)',
+        'radial-gradient(circle at 16% 12%, rgba(231,197,126,0.16), transparent 36%)',
+    ].join(', '),
+    mapPanelSelected: [
+        'linear-gradient(180deg, rgba(142,53,38,0.9) 0%, rgba(69,32,22,0.88) 100%)',
+        'radial-gradient(circle at 15% 12%, rgba(238,198,127,0.18), transparent 38%)',
+    ].join(', '),
+    mapPanelShadow: '0 2px 0 rgba(7,5,3,0.7), 0 10px 18px rgba(22,14,8,0.32)',
+    mapPanelInset: 'inset 0 0 0 1px rgba(232,200,133,0.2), inset 0 -2px 0 rgba(0,0,0,0.2)',
     cutCorner: 'polygon(10px 0, calc(100% - 10px) 0, 100% 10px, 100% calc(100% - 10px), calc(100% - 10px) 100%, 10px 100%, 0 calc(100% - 10px), 0 10px)',
     smallCutCorner: 'polygon(6px 0, calc(100% - 6px) 0, 100% 6px, 100% calc(100% - 6px), calc(100% - 6px) 100%, 6px 100%, 0 calc(100% - 6px), 0 6px)',
 } as const;
 
 const CARD_DIMENSIONS = {
-    deck: { width: 157, height: 218, rawWidth: 476, rawHeight: 660 },
+    deck: { width: 154, height: 214, rawWidth: 476, rawHeight: 660 },
     koreaDeck: { width: 150, height: 208, rawWidth: 476, rawHeight: 660 },
     year: { width: 154, height: 214, rawWidth: 476, rawHeight: 661 },
-    hand: { width: 182, height: 252, rawWidth: 479, rawHeight: 664 },
+    hand: { width: 182, height: 251, rawWidth: 487, rawHeight: 672 },
 } as const;
 
 const BOTTOM_DOCK_INSET = 10;
@@ -347,37 +373,45 @@ const PlayerChip: React.FC<{
     const tone = factionTone[faction.id];
     return (
         <div
-            className="relative flex h-[70px] min-w-0 flex-1 items-center gap-3 overflow-hidden border px-4"
+            className="relative flex h-[64px] min-w-0 flex-1 items-center gap-3 overflow-hidden border-[3px] px-3.5"
             data-testid={`qidahen-player-${faction.id}`}
             style={{
-                borderColor: current ? tone.border : UI_STYLE.bronze,
-                background: UI_SURFACE.paper,
-                color: tone.text,
-                boxShadow: `${UI_SURFACE.panelShadow}, ${UI_SURFACE.inkInset}`,
-                clipPath: UI_SURFACE.cutCorner,
+                borderColor: current ? tone.border : UI_STYLE.mapInk,
+                background: current ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
+                color: UI_STYLE.mapIvory,
+                boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                borderRadius: 3,
+                backdropFilter: 'blur(0.8px)',
             }}
         >
             <span
-                className="pointer-events-none absolute inset-y-0 left-0 w-[7px]"
-                style={{ background: current ? tone.border : UI_STYLE.bronzeSoft }}
+                className="pointer-events-none absolute inset-y-0 left-0 w-[8px]"
+                style={{ background: current ? tone.border : 'rgba(210,183,117,0.72)' }}
             />
+            <span className="pointer-events-none absolute inset-x-[16px] top-[3px] h-[1px]" style={{ background: 'rgba(232,200,133,0.34)' }} />
             <OptimizedImage
                 src={tone.chip}
                 alt={faction.name}
                 className="h-10 w-10 shrink-0 rounded-full border-2 object-cover"
-                style={{ borderColor: tone.border, boxShadow: `0 0 0 3px ${UI_STYLE.paperLight}, 0 4px 10px ${UI_STYLE.shadowSoft}` }}
+                style={{ borderColor: tone.border, boxShadow: `0 0 0 2px rgba(32,21,13,0.92), 0 3px 8px rgba(0,0,0,0.34)` }}
                 draggable={false}
                 placeholder={false}
             />
-            <div className="min-w-0 flex-1 whitespace-nowrap text-[20px] font-black leading-none tracking-[0.03em]">
+            <div className="min-w-0 flex-1 whitespace-nowrap text-[19px] font-black leading-none tracking-[0.02em] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">
                 <span>{faction.name}</span>
-                <span className="ml-3 text-[16px]">VP{faction.vp}</span>
-                <span className="ml-3 text-[16px]">{faction.handCount}/{faction.handLimit}</span>
+                <span className="ml-3 text-[15px]" style={{ color: UI_STYLE.mapGold }}>VP{faction.vp}</span>
+                <span className="ml-3 text-[15px]" style={{ color: UI_STYLE.mapGold }}>{faction.handCount}/{faction.handLimit}</span>
             </div>
             {current ? (
                 <span
-                    className="grid h-[30px] w-[50px] shrink-0 place-items-center border text-[13px] font-black"
-                    style={{ background: UI_STYLE.paperLight, borderColor: tone.border, color: tone.border, clipPath: UI_SURFACE.smallCutCorner }}
+                    className="grid h-[28px] w-[48px] shrink-0 place-items-center border-2 text-[12px] font-black"
+                    style={{
+                        background: 'linear-gradient(180deg, rgba(196,81,61,0.96) 0%, rgba(159,52,38,0.96) 100%)',
+                        borderColor: UI_STYLE.mapInk,
+                        color: '#f8e7c9',
+                        boxShadow: `0 3px 7px ${UI_STYLE.cinnabarGlow}`,
+                        borderRadius: 2,
+                    }}
                 >
                     当前
                 </span>
@@ -388,10 +422,9 @@ const PlayerChip: React.FC<{
 
 const PlayerFloat: React.FC<{ core: QidahenCore }> = ({ core }) => (
     <div
-        className="pointer-events-auto absolute left-1/2 top-[36px] z-40 flex w-[920px] gap-3"
+        className="pointer-events-auto absolute left-[720px] top-[36px] z-40 flex w-[700px] gap-3"
         data-testid="qidahen-player-float"
-        data-ui-anchor="top-center"
-        style={{ transform: 'translateX(-50%)' }}
+        data-ui-anchor="top-right"
     >
         {(['ming', 'mongol', 'jin'] as QidahenFactionId[]).map((id) => (
             <PlayerChip key={id} faction={core.factions[id]} current={core.currentPlayer === core.factions[id].playerId} />
@@ -515,16 +548,6 @@ const MapSceneLayer: React.FC<{
                     draggable={false}
                     placeholder={false}
                 />
-                <OptimizedImage
-                    src={ASSETS.mapCleanPatch}
-                    locale={locale}
-                    alt="地图左上清理层"
-                    className="pointer-events-none absolute left-0 top-0 select-none object-fill"
-                    data-testid="qidahen-map-clean-patch"
-                    draggable={false}
-                    placeholder={false}
-                    style={{ width: 560, height: 560 }}
-                />
                 <svg
                     className="pointer-events-none absolute inset-0 h-full w-full"
                     viewBox={`0 0 ${QIDAHEN_MAP_WIDTH} ${QIDAHEN_MAP_HEIGHT}`}
@@ -591,21 +614,22 @@ const MapSceneLayer: React.FC<{
             </div>
             {activeRegion && QIDAHEN_MAP_REGION_SHAPES_BY_ID.has(activeRegion.id) ? (
                 <div
-                    className="pointer-events-none absolute z-20 border px-3 py-2 text-[13px] font-black leading-5"
+                    className="pointer-events-none absolute z-20 border-[3px] px-3 py-2 text-[13px] font-black leading-5"
                     data-testid="qidahen-map-region-tip"
                     style={{
                         left: tipLeft,
                         top: tipTop,
                         width: 212,
-                        borderColor: activeRegion.id === core.selectedRegionId ? UI_STYLE.cinnabar : UI_STYLE.bronze,
-                        background: UI_SURFACE.paperQuiet,
-                        color: UI_STYLE.ink,
-                        boxShadow: `${UI_SURFACE.softShadow}, ${UI_SURFACE.inkInset}`,
-                        clipPath: UI_SURFACE.smallCutCorner,
+                        borderColor: activeRegion.id === core.selectedRegionId ? UI_STYLE.cinnabar : UI_STYLE.mapInk,
+                        background: activeRegion.id === core.selectedRegionId ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
+                        color: UI_STYLE.mapIvory,
+                        boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                        borderRadius: 3,
+                        backdropFilter: 'blur(0.8px)',
                     }}
                 >
-                    <div className="text-[16px] text-[#2f2419]">{activeRegion.name} · {activeRegion.controlLabel}</div>
-                    <div className="mt-1 text-[12px] text-[#6f5840]">兵力 {activeRegion.troops} · 人口 {activeRegion.population}</div>
+                    <div className="text-[16px] [text-shadow:0_1px_0_rgba(0,0,0,0.55)]">{activeRegion.name} · {activeRegion.controlLabel}</div>
+                    <div className="mt-1 text-[12px]" style={{ color: UI_STYLE.mapGold }}>兵力 {activeRegion.troops} · 人口 {activeRegion.population}</div>
                 </div>
             ) : null}
         </div>
@@ -644,21 +668,21 @@ const DeckStack: React.FC<{
 
     return (
         <div className={`relative shrink-0 ${className}`} data-testid={testId} aria-label={`${label} ${count}`} style={{ width, height }}>
-            <div className="absolute left-[14px] top-[12px] h-full w-full border" style={{ borderColor: border, background: UI_STYLE.paperDeep, clipPath: UI_SURFACE.smallCutCorner }} />
-            <div className="absolute left-[7px] top-[6px] h-full w-full border" style={{ borderColor: border, background: UI_STYLE.paper, clipPath: UI_SURFACE.smallCutCorner }} />
-            <div className="relative h-full w-full overflow-hidden border" style={{ borderColor: border, background: UI_STYLE.paperLight, boxShadow: `0 14px 28px ${UI_STYLE.shadow}`, clipPath: UI_SURFACE.smallCutCorner }}>
+            <div className="absolute left-[9px] top-[8px] h-full w-full" style={{ background: 'rgba(32,21,13,0.58)', borderRadius: 7 }} />
+            <div className="absolute left-[5px] top-[4px] h-full w-full" style={{ background: 'rgba(87,61,34,0.62)', borderRadius: 7 }} />
+            <div className="relative h-full w-full overflow-hidden" style={{ background: UI_SURFACE.mapPanel, boxShadow: '0 8px 16px rgba(22,14,8,0.28)', borderRadius: 7 }}>
                 {previewRef ? (
                     <CardPreviewFit previewRef={previewRef} locale={locale} title={label} width={width} height={height} rawWidth={rawWidth} rawHeight={rawHeight} />
                 ) : src ? (
                     <OptimizedImage src={src} alt={label} className="h-full w-full object-cover" draggable={false} placeholder={false} />
                 ) : null}
                 <div
-                    className="pointer-events-none absolute left-2 top-2 border px-2 py-0.5 text-[13px] font-black tracking-[0.05em]"
-                    style={{ color: text, borderColor: border, background: UI_SURFACE.paperQuiet, clipPath: UI_SURFACE.smallCutCorner, boxShadow: UI_SURFACE.inkInset }}
+                    className="pointer-events-none absolute left-2 top-2 border-2 px-2 py-0.5 text-[12px] font-black tracking-[0.08em]"
+                    style={{ color: tone === 'red' ? '#f4d0a0' : UI_STYLE.mapIvory, borderColor: UI_STYLE.mapInk, background: tone === 'red' ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel, borderRadius: 2, boxShadow: UI_SURFACE.mapPanelInset }}
                 >
                     {label}
                 </div>
-                <div className="pointer-events-none absolute bottom-2 right-2 grid h-[42px] w-[42px] place-items-center rounded-full border-2 text-[18px] font-black" style={{ borderColor: border, color: text, background: UI_STYLE.paperLight, boxShadow: `0 4px 10px ${UI_STYLE.shadowSoft}` }}>
+                <div className="pointer-events-none absolute bottom-2 right-2 grid h-[40px] w-[40px] place-items-center rounded-full border-2 text-[17px] font-black" style={{ borderColor: border, color: text, background: 'rgba(248,237,206,0.96)', boxShadow: `0 3px 8px ${UI_STYLE.shadowSoft}` }}>
                     {count}
                 </div>
             </div>
@@ -703,23 +727,16 @@ const WheelPanel: React.FC<{
 
     return (
         <div
-            className="pointer-events-auto group absolute left-[64px] top-[56px] z-30 h-[430px] w-[430px]"
+            className="pointer-events-auto group absolute left-[103px] top-[-60px] z-30 h-[500px] w-[500px]"
             data-testid="qidahen-action-wheel"
             data-ui-anchor="left-top"
         >
             <div
-                className="relative h-[414px] w-[414px]"
+                className="relative h-full w-full"
                 role="img"
                 aria-label="七大恨行动轮盘"
                 data-testid="qidahen-action-wheel-asset"
             >
-                <div
-                    className="absolute inset-0 rounded-full"
-                    style={{
-                        background: 'radial-gradient(circle at 47% 43%, #efe6cf 0%, #d8cbad 56%, #c3b08d 100%)',
-                        boxShadow: `0 16px 28px ${UI_STYLE.shadowSoft}, inset 0 0 12px rgba(31,24,18,0.12)`,
-                    }}
-                />
                 <svg
                     viewBox={`0 0 ${WHEEL_VIEW} ${WHEEL_VIEW}`}
                     className="absolute inset-0 h-full w-full"
@@ -746,8 +763,6 @@ const WheelPanel: React.FC<{
                             <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r={WHEEL_OUTER_RADIUS - 18} />
                         </clipPath>
                     </defs>
-                    <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r={WHEEL_OUTER_RADIUS + 4} fill="rgba(239,230,207,0.56)" stroke="#241b14" strokeWidth="2.4" opacity="0.96" />
-                    <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r={WHEEL_OUTER_RADIUS - 16} fill="none" stroke="rgba(36,27,20,0.28)" strokeWidth="1.05" />
                     {sectorRenderOrder.map(({ sector, index }) => {
                         const current = index === selectedIndex;
                         const selectedTarget = selectedMove ? index === selectedMoveTargetIndex : false;
@@ -763,9 +778,9 @@ const WheelPanel: React.FC<{
                             >
                                 <path
                                     d={describeAnnularSlice(WHEEL_CENTER, selectedTarget ? WHEEL_INNER_RADIUS + 2 : WHEEL_INNER_RADIUS, selectedTarget ? WHEEL_OUTER_RADIUS - 10 : WHEEL_OUTER_RADIUS - 16, sector.angle - 22.5, sector.angle + 22.5)}
-                                    fill={selectedTarget ? 'rgba(206,155,88,0.88)' : current ? 'rgba(214,176,111,0.46)' : index % 2 === 0 ? 'rgba(112,104,88,0.32)' : 'rgba(89,81,68,0.25)'}
-                                    stroke={selectedTarget ? 'rgba(184,59,39,0.92)' : current ? 'rgba(141,103,60,0.96)' : 'rgba(35,27,20,0.58)'}
-                                    strokeWidth={selectedTarget ? 3.1 : current ? 2.6 : 1.05}
+                                    fill={selectedTarget ? 'rgba(159,52,38,0.22)' : current ? 'rgba(234,215,167,0.08)' : 'rgba(255,248,233,0.001)'}
+                                    stroke={selectedTarget ? 'rgba(159,52,38,0.95)' : current ? 'rgba(32,21,13,0.18)' : 'transparent'}
+                                    strokeWidth={selectedTarget ? 2.5 : current ? 1.8 : 1}
                                 />
                                 <text
                                     x={labelPoint.x}
@@ -773,7 +788,7 @@ const WheelPanel: React.FC<{
                                     textAnchor="middle"
                                     dominantBaseline="middle"
                                     className="fill-[#241b14]"
-                                    style={{ fontSize: selectedTarget ? '17px' : '16px', fontWeight: 900, paintOrder: 'stroke', stroke: selectedTarget ? 'rgba(246,236,216,0.88)' : 'rgba(214,202,170,0.78)', strokeWidth: selectedTarget ? 2.25 : 1.95 }}
+                                    style={{ fontSize: selectedTarget ? '17px' : '16px', fontWeight: 900, opacity: 0 }}
                                 >
                                     {sector.label[0]}
                                 </text>
@@ -783,7 +798,7 @@ const WheelPanel: React.FC<{
                                     textAnchor="middle"
                                     dominantBaseline="middle"
                                     className="fill-[#241b14]"
-                                    style={{ fontSize: selectedTarget ? '17px' : '16px', fontWeight: 900, paintOrder: 'stroke', stroke: selectedTarget ? 'rgba(246,236,216,0.88)' : 'rgba(214,202,170,0.78)', strokeWidth: selectedTarget ? 2.25 : 1.95 }}
+                                    style={{ fontSize: selectedTarget ? '17px' : '16px', fontWeight: 900, opacity: 0 }}
                                 >
                                     {sector.label[1]}
                                 </text>
@@ -796,7 +811,7 @@ const WheelPanel: React.FC<{
                         textAnchor="middle"
                         dominantBaseline="middle"
                         className="fill-[#241b14]"
-                        style={{ fontSize: '16px', fontWeight: 900, paintOrder: 'stroke', stroke: 'rgba(214,202,170,0.72)', strokeWidth: 1.6 }}
+                        style={{ fontSize: '16px', fontWeight: 900, opacity: 0 }}
                     >
                         新年 &gt;&gt;&gt;
                     </text>
@@ -806,19 +821,17 @@ const WheelPanel: React.FC<{
                         textAnchor="middle"
                         dominantBaseline="middle"
                         className="fill-[#241b14]"
-                        style={{ fontSize: '16px', fontWeight: 900, paintOrder: 'stroke', stroke: 'rgba(214,202,170,0.72)', strokeWidth: 1.6 }}
+                        style={{ fontSize: '16px', fontWeight: 900, opacity: 0 }}
                     >
                         年中
                     </text>
-                    <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r={WHEEL_INNER_RADIUS - 7} fill="rgba(184,169,135,0.92)" stroke="#2f251b" strokeWidth="1.6" />
-                    <circle cx={WHEEL_CENTER} cy={WHEEL_CENTER} r="18" fill="rgba(49,41,31,0.22)" />
                     <text
                         x={WHEEL_CENTER}
                         y={WHEEL_CENTER - 12}
                         textAnchor="middle"
                         dominantBaseline="middle"
                         className="fill-[#241b14]"
-                        style={{ fontSize: '26px', fontWeight: 900, paintOrder: 'stroke', stroke: 'rgba(214,202,170,0.75)', strokeWidth: 2.1 }}
+                        style={{ fontSize: '26px', fontWeight: 900, opacity: 0 }}
                     >
                         行动
                     </text>
@@ -828,11 +841,10 @@ const WheelPanel: React.FC<{
                         textAnchor="middle"
                         dominantBaseline="middle"
                         className="fill-[#241b14]"
-                        style={{ fontSize: '26px', fontWeight: 900, paintOrder: 'stroke', stroke: 'rgba(214,202,170,0.75)', strokeWidth: 2.1 }}
+                        style={{ fontSize: '26px', fontWeight: 900, opacity: 0 }}
                     >
                         轮盘
                     </text>
-                    <rect x="18" y="18" width={WHEEL_VIEW - 36} height={WHEEL_VIEW - 36} clipPath="url(#qidahen-wheel-face-clip)" filter="url(#qidahen-wheel-grain)" opacity="0.32" />
                     <g data-testid="qidahen-wheel-move-layer">
                         {moveChoices.map((choice) => {
                             const targetAngle = getMoveTargetAngle(choice.steps);
@@ -874,15 +886,15 @@ const WheelPanel: React.FC<{
             </div>
 
             <div
-                className="absolute left-[408px] top-[300px] hidden w-[238px] border px-3 py-2 text-[13px] font-black leading-5 tracking-[0.03em] group-hover:block group-focus-within:block"
+                className="pointer-events-none absolute left-[420px] top-[386px] hidden w-[244px] border-[3px] px-3 py-2 text-[13px] font-black leading-5 tracking-[0.03em] group-hover:block group-focus-within:block"
                 data-testid="qidahen-wheel-tip"
                 role="tooltip"
                 style={{
-                    borderColor: UI_STYLE.bronze,
-                    background: UI_SURFACE.paperQuiet,
-                    color: UI_STYLE.ink,
-                    boxShadow: `${UI_SURFACE.softShadow}, ${UI_SURFACE.inkInset}`,
-                    clipPath: UI_SURFACE.smallCutCorner,
+                    borderColor: UI_STYLE.mapInk,
+                    background: UI_SURFACE.mapPanel,
+                    color: UI_STYLE.mapIvory,
+                    boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+                    borderRadius: 3,
                 }}
             >
                 {activeSummary}
@@ -896,15 +908,14 @@ const YearCardSlot: React.FC<{
     locale?: string;
 }> = ({ card, locale }) => (
     <div
-        className="relative overflow-hidden border"
+        className="relative overflow-hidden"
         data-testid={`qidahen-year-card-slot-${card.id}`}
         style={{
             width: CARD_DIMENSIONS.year.width,
             height: CARD_DIMENSIONS.year.height,
-            borderColor: UI_STYLE.bronze,
-            background: UI_STYLE.paperLight,
-            boxShadow: `${UI_SURFACE.softShadow}, ${UI_SURFACE.inkInset}`,
-            clipPath: UI_SURFACE.smallCutCorner,
+            background: 'transparent',
+            boxShadow: '0 8px 16px rgba(56,35,15,0.18)',
+            borderRadius: 7,
         }}
     >
         <CardPreviewFit
@@ -923,7 +934,7 @@ const ChronologyZone: React.FC<{
     cards: QidahenYearCardSlot[];
     locale?: string;
 }> = ({ cards, locale }) => (
-    <div className="pointer-events-auto absolute left-[80px] top-[472px] z-20" data-testid="qidahen-chronology-zone" data-ui-anchor="left-middle">
+    <div className="pointer-events-auto absolute left-[80px] top-[542px] z-20" data-testid="qidahen-chronology-zone" data-ui-anchor="left-middle">
         <div className="flex items-end gap-3">
             {cards.slice(0, 2).map((card) => (
                 <YearCardSlot key={card.id} card={card} locale={locale} />
@@ -975,18 +986,19 @@ const ActionButton: React.FC<{
         type="button"
         data-testid={`qidahen-action-${action.id}`}
         title={action.detail}
-        className="relative inline-flex h-[50px] min-w-[146px] cursor-pointer items-center justify-start overflow-hidden border px-4 text-left text-[18px] font-black tracking-[0.03em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30"
+        className="relative inline-flex h-[52px] min-w-[146px] cursor-pointer items-center justify-start overflow-hidden border-[3px] px-4 text-left text-[18px] font-black tracking-[0.04em] transition-[background-color,transform,box-shadow] duration-150 hover:-translate-y-0.5 active:translate-y-0.5 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#9f3426]/30"
         onClick={onClick}
         style={{
-            borderColor: selected ? UI_STYLE.cinnabar : UI_STYLE.bronze,
-            background: selected ? UI_SURFACE.paperQuiet : UI_SURFACE.paper,
-            color: selected ? UI_STYLE.cinnabar : UI_STYLE.ink,
-            boxShadow: `${UI_SURFACE.panelShadow}, ${UI_SURFACE.inkInset}`,
-            clipPath: UI_SURFACE.cutCorner,
+            borderColor: UI_STYLE.mapInk,
+            background: selected ? UI_SURFACE.mapPanelSelected : UI_SURFACE.mapPanel,
+            color: selected ? '#f6d5a8' : UI_STYLE.mapIvory,
+            boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`,
+            borderRadius: 3,
         }}
     >
-        <span className="pointer-events-none absolute inset-y-0 left-0 w-[6px]" style={{ background: selected ? UI_STYLE.cinnabar : UI_STYLE.bronzeSoft }} />
-        <span className="min-w-0 whitespace-nowrap">{action.label}</span>
+        <span className="pointer-events-none absolute inset-y-0 left-0 w-[8px]" style={{ background: selected ? UI_STYLE.cinnabar : 'rgba(210,183,117,0.76)' }} />
+        <span className="pointer-events-none absolute inset-x-[14px] top-[3px] h-[1px]" style={{ background: 'rgba(232,200,133,0.3)' }} />
+        <span className="min-w-0 whitespace-nowrap [text-shadow:0_1px_0_rgba(0,0,0,0.6)]">{action.label}</span>
     </button>
 );
 
@@ -1011,9 +1023,9 @@ const ActionsZone: React.FC<{
             </div>
             {core.pendingTargetAction ? (
                 <div
-                    className="mt-3 border px-3 py-2 text-[14px] font-black leading-6"
+                    className="mt-3 border-[3px] px-3 py-2 text-[14px] font-black leading-6"
                     data-testid="qidahen-raid-intent"
-                    style={{ borderColor: UI_STYLE.cinnabar, background: UI_SURFACE.paperQuiet, color: UI_STYLE.ink, boxShadow: UI_SURFACE.inkInset, clipPath: UI_SURFACE.smallCutCorner }}
+                    style={{ borderColor: UI_STYLE.mapInk, background: UI_SURFACE.mapPanelSelected, color: UI_STYLE.mapIvory, boxShadow: `${UI_SURFACE.mapPanelShadow}, ${UI_SURFACE.mapPanelInset}`, borderRadius: 3 }}
                 >
                     {core.pendingTargetAction.title} · 目标 {core.pendingTargetAction.targetRegionName} · 防守 {core.pendingTargetAction.defenderLabel}
                 </div>
@@ -1034,14 +1046,13 @@ const HandCard: React.FC<{
             disabled={disabled}
             data-testid={`qidahen-hand-card-${card.id}`}
             tabIndex={disabled ? -1 : 0}
-            className="relative shrink-0 overflow-hidden border transition-transform duration-150 hover:-translate-y-3 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30 disabled:cursor-not-allowed disabled:opacity-55"
+            className="relative shrink-0 overflow-hidden transition-transform duration-150 hover:-translate-y-3 focus:outline-none focus-visible:ring-4 focus-visible:ring-[#b83b27]/30 disabled:cursor-not-allowed disabled:opacity-55"
             style={{
                 width: CARD_DIMENSIONS.hand.width,
                 height: CARD_DIMENSIONS.hand.height,
-                borderColor: UI_STYLE.bronzeSoft,
-                background: UI_STYLE.paperLight,
-                boxShadow: `0 12px 22px ${UI_STYLE.shadowSoft}`,
-                clipPath: UI_SURFACE.smallCutCorner,
+                background: 'transparent',
+                boxShadow: '0 8px 16px rgba(56,35,15,0.18)',
+                borderRadius: 7,
             }}
         >
             <CardPreviewFit

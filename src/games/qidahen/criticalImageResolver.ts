@@ -3,7 +3,6 @@ import type { CriticalImageResolver } from '../../core/types';
 export const qidahenCriticalImageResolver: CriticalImageResolver = () => ({
     critical: [
         'qidahen/board/qidahen-main-map',
-        'qidahen/board/left-top-clean-patch-v2',
         'qidahen/cards/backs/ming-card-back',
         'qidahen/cards/backs/korea-card-back',
         'qidahen/cards/backs/qidahen-cover-card',

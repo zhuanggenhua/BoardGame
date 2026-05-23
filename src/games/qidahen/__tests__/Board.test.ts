@@ -10,8 +10,6 @@ const REQUIRED_TEST_IDS = [
     'data-testid="qidahen-map-overlay"',
     'data-testid={`qidahen-map-region-${shape.id}`}',
     "mainMap: 'qidahen/board/qidahen-main-map'",
-    "mapCleanPatch: 'qidahen/board/left-top-clean-patch-v2'",
-    'data-testid="qidahen-map-clean-patch"',
     'data-testid="qidahen-player-float"',
     'data-testid="qidahen-action-wheel"',
     'data-testid="qidahen-action-wheel-asset"',
