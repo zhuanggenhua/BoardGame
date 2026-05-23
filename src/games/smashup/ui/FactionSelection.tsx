@@ -237,10 +237,6 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
         }
         grid.scrollTop = 0;
     }, [mySelections.length, normalizedFactionSearch]);
-    useEffect(() => {
-        if (!focusedGroupId) return;
-        setDetailPreviewTab('hand');
-    }, [focusedGroupId, resolvedActiveFactionId]);
     const filteredFactionGroups = useMemo(() => {
         return visibleFactionGroups
             .map((group) => {
@@ -279,6 +275,7 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
     const handleOpenFactionGroup = (groupId: string, preferredFactionId: string) => {
         setFocusedGroupId(groupId);
         setActiveFactionId(preferredFactionId);
+        setDetailPreviewTab('hand');
     };
 
     const handleCloseDetails = () => {
@@ -928,7 +925,10 @@ export const FactionSelection: React.FC<Props> = ({ core, dispatch, playerID, pl
                                                                                 size="sm"
                                                                                 variant={isActive ? 'primary' : 'secondary'}
                                                                                 className="min-w-[6.5rem] text-[11px]"
-                                                                                onClick={() => setActiveFactionId(variant.id)}
+                                                                                onClick={() => {
+                                                                                    setActiveFactionId(variant.id);
+                                                                                    setDetailPreviewTab('hand');
+                                                                                }}
                                                                                 data-testid={variantTestId}
                                                                             >
                                                                                 {variant.id.endsWith('_pod')

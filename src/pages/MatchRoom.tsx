@@ -644,21 +644,6 @@ export const OnlineManualFactionSelectionBridge = ({
         latestManualDispatchRef.current = dispatchManualAiCommand;
     }, [dispatchManualAiCommand]);
 
-    useEffect(() => {
-        const pending = pendingManualSetupSelectionRef.current;
-        if (!pending) {
-            return;
-        }
-        if (shouldReleaseManualSetupAttemptFromSharedState({
-            sharedState,
-            playerId: pending.playerId,
-            actionKind: pending.actionKind,
-            selectionId: pending.selectionId,
-        })) {
-            setPendingManualSetupSelection(null);
-        }
-    }, [setPendingManualSetupSelection, sharedState]);
-
     const manualDispatch = useCallback((type: string, payload: unknown) => {
         const latestSharedState = latestSharedStateRef.current;
         const pending = pendingManualSetupSelectionRef.current;
