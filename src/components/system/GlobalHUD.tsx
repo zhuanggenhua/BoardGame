@@ -8,6 +8,8 @@ import { FabMenu, type FabAction } from './FabMenu';
 import { MessageSquare, Settings, Info, MessageSquareWarning, Maximize, Minimize, Download, RefreshCw } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
+    HOME_ENTRY_STYLE_QUERY_VERSION_KEY,
+    HOME_ENTRY_STYLE_VERSION,
     isHomeEntryRoute,
     isHomeV2PreviewRoute,
     persistHomeEntryStyle,
@@ -89,11 +91,15 @@ export const GlobalHUD = () => {
     const applyHomeEntryStyle = (nextStyle: HomeEntryStyle, closePanel?: () => void) => {
         persistHomeEntryStyle(nextStyle);
         closePanel?.();
-        const nextSearch = `?${HOME_STYLE_QUERY_PARAM}=${nextStyle}`;
+        const nextSearchParams = new URLSearchParams();
+        nextSearchParams.set(HOME_STYLE_QUERY_PARAM, nextStyle);
+        if (nextStyle === 'book') {
+            nextSearchParams.set(HOME_ENTRY_STYLE_QUERY_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
+        }
         navigate(
             {
                 pathname: '/',
-                search: nextSearch,
+                search: `?${nextSearchParams.toString()}`,
             },
             { replace: true },
         );

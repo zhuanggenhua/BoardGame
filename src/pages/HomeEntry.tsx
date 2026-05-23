@@ -1,7 +1,12 @@
 import React from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Home } from './Home';
-import { resolveHomeEntryStyle, subscribeHomeEntryStyleChange } from '../lib/homeV2Routing';
+import {
+    HOME_ENTRY_STYLE_QUERY_VERSION_KEY,
+    HOME_ENTRY_STYLE_VERSION,
+    resolveHomeEntryStyle,
+    subscribeHomeEntryStyleChange,
+} from '../lib/homeV2Routing';
 
 const LazyHomeV2 = React.lazy(() => import('./HomeV2').then((module) => ({ default: module.HomeV2 })));
 
@@ -41,8 +46,11 @@ export const HomeEntry = () => {
 
         const nextSearchParams = new URLSearchParams(searchParams);
         nextSearchParams.set('homeStyle', homeEntryStyle);
-        if (homeEntryStyle === 'classic') {
-            nextSearchParams.delete('homeV2Draft');
+        nextSearchParams.delete('homeV2Draft');
+        if (homeEntryStyle === 'book') {
+            nextSearchParams.set(HOME_ENTRY_STYLE_QUERY_VERSION_KEY, HOME_ENTRY_STYLE_VERSION);
+        } else {
+            nextSearchParams.delete(HOME_ENTRY_STYLE_QUERY_VERSION_KEY);
         }
 
         navigate(

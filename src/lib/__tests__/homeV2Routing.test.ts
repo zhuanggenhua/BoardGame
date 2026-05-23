@@ -61,8 +61,10 @@ describe('homeV2Routing', () => {
         expect(window.localStorage.getItem('bg_home_entry_style')).toBe('classic');
     });
 
-    it('App 里仍可通过带版本标记的显式查询参数进入书本主页', async () => {
+    it('迁移完成后，App 里仍可通过带版本标记的显式查询参数进入书本主页', async () => {
         runtimeState.nativeAndroid = true;
+        window.localStorage.setItem('bg_home_entry_style', 'classic');
+        window.localStorage.setItem('bg_home_entry_style_version', 'classic-default-v1');
         const { isHomeV2DraftEnabled, resolveHomeEntryStyle } = await import('../homeV2Routing');
 
         expect(isHomeV2DraftEnabled(new URLSearchParams('homeStyle=book&homeStyleVersion=classic-default-v1'))).toBe(true);
